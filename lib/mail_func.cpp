@@ -1321,7 +1321,7 @@ void enriched_to_html(const char *enriched_txt,
  *
  * Returns 1 for success and negative numbers to indicate error.
  */
-static int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
+int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 {
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	bool linebegin = true;
@@ -1500,59 +1500,4 @@ static int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 	return 1;
 } catch (...) {
 	return -1;
-}
-
-/**
- * Render HTML document as plaintext.
- *
- * @inbuf:  input data
- * @cpid:   character set of input data (overriding any <meta> tag
- *          inside the data); use %CP_OEMCP to indicate "guess".
- * @outbuf: result variable for caller
- *
- * Returns %CP_UTF8 to indicate conversion to UTF-8 happened.
- * Returns @cpid to indicate no charset conversion happened.
- * Thus it is possible for %CP_OEMCP to be returned again if the input cpid was
- * %CP_OEMCP, which creates a situation where html_to_plain's caller may need
- * to postprocess the output.
- * Returns a negative number on error.
- */
-int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
-{
-	auto s = getenv("AVOID_W3M"); /* for testing */
-	if (s == nullptr || parse_bool(s) == 0) {
-		auto ret = feed_w3m(inbuf, cpid_to_cset(cpid), outbuf);
-		if (ret >= 0)
-			return CP_UTF8;
-	}
-	auto ret = html_to_plain_boring(inbuf, outbuf);
-	if (ret < 0)
-		return ret;
-	return cpid;
-}
-
-/**
- * @rbuf: input buffer; must be UTF-8
- *        (this is normally the case, since props.get<char>(PR_BODY) is UTF-8)
- * @out:  output buffer; will be filled with UTF-8
- *        (caller may need to set PR_INTERNET_CPID=65001 [CP_UTF8] if not
- *        already done).
- *
- * It is allowed for @rbuf to point to the same object as @out.
- */
-ec_error_t plain_to_html(const char *rbuf, std::string &out) try
-{
-	static constexpr char head[] =
-		"<html><head><meta name=\"Generator\" content=\"gromox-texttohtml"
-		"\">\r\n</head>\r\n<body>\r\n<pre>";
-	static constexpr char footer[] = "</pre>\r\n</body>\r\n</html>";
-
-	std::unique_ptr<char[], stdlib_delete> body(HX_strquote(rbuf, HXQUOTE_HTML, nullptr));
-	if (body == nullptr)
-		return ecMAPIOOM;
-	out = std::string(head) + body.get() + footer;
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "%s: ENOMEM", __func__);
-	return ecMAPIOOM;
 }
