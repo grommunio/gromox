@@ -1133,18 +1133,17 @@ ssize_t MIME::get_length() const
 
 bool MIME::get_filename(std::string &file_name) const
 {
-	static constexpr size_t fnsize = 1024;
-	char cdname[fnsize];
 	auto pmime = this;
 	
 	if (pmime->get_content_param("name", file_name)) {
 		;
-	} else if (pmime->get_field("Content-Disposition", cdname, fnsize)) {
-		const char *pbegin = strcasestr(cdname, "filename=");
+	} else if (auto dispo_s = pmime->get_field("Content-Disposition")) {
+		auto cdname = dispo_s->c_str();
+		const char *pbegin = strcasestr(cdname, "filename="); /* CONST-STRCHR-MARKER */
 		if (pbegin == nullptr)
 			return false;
 		pbegin += 9;
-		const char *pend = strchr(pbegin, ';');
+		const char *pend = strchr(pbegin, ';'); /* CONST-STRCHR-MARKER */
 		if (pend == nullptr)
 			file_name.assign(pbegin);
 		else
@@ -1226,9 +1225,7 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
 	size_t content_len = 0;
-	char content_type[256], encoding_buff[128];
-	char temp_buff[512], content_ID[128];
-	char content_location[256], content_disposition[256], *ptoken;
+	char content_type[256], encoding_buff[128], content_disposition[256], *ptoken;
 
 	strcpy(content_type, pmime->content_type);
 	if (!str_isasciipr(content_type))
@@ -1295,16 +1292,10 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 			digest["cntdspn"] = content_disposition;
 		}
 	}
-	if (pmime->get_field("Content-ID", content_ID, 128)) {
-		auto tmp_len = strlen(content_ID);
-		encode64(content_ID, tmp_len, temp_buff, 256, &tmp_len);
-		digest["cid"] = temp_buff;
-	}
-	if (pmime->get_field("Content-Location", content_location, 256)) {
-		auto tmp_len = strlen(content_location);
-		encode64(content_location, tmp_len, temp_buff, 512, &tmp_len);
-		digest["cntl"] = temp_buff;
-	}
+	if (auto hval = pmime->get_field("Content-ID"))
+		digest["cid"] = base64_encode(*hval);
+	if (auto hval = pmime->get_field("Content-Location"))
+		digest["cntl"] = base64_encode(*hval);
 	dsarray.append(std::move(digest));
 	return 0;
 }
