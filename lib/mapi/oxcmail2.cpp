@@ -11,8 +11,6 @@
 #include <libHX/string.h>
 #include <libxml/HTMLparser.h>
 #include <libxml/HTMLtree.h>
-#include <vmime/generationContext.hpp>
-#include <vmime/utility/outputStreamStringAdapter.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
@@ -547,24 +545,6 @@ ec_error_t oxcmail_converter::export_tnef_body(const mime_skeleton &skel,
 }
 
 namespace gromox {
-
-vmime::generationContext vmail_default_genctx()
-{
-	vmime::generationContext c;
-	/* Outlook is unable to read RFC 2231. */
-	c.setEncodedParameterValueMode(vmime::generationContext::EncodedParameterValueModes::PARAMETER_VALUE_RFC2231_AND_RFC2047);
-	/* Outlook is also unable to parse Content-ID:\n id... */
-	c.setWrapMessageId(false);
-	return c;
-}
-
-std::string vmail_to_string(const vmime::message &msg)
-{
-	std::string ss;
-	vmime::utility::outputStreamStringAdapter adap(ss);
-	msg.generate(vmail_default_genctx(), adap);
-	return ss;
-}
 
 bool vmail_to_mail(const vmime::message &in, MAIL &out) try
 {

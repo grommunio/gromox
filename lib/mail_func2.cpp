@@ -5,7 +5,10 @@
 #include <memory>
 #include <string>
 #include <libHX/string.h>
+#include <vmime/generationContext.hpp>
+#include <vmime/utility/outputStreamStringAdapter.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
@@ -67,4 +70,26 @@ ec_error_t plain_to_html(const char *rbuf, std::string &out) try
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecMAPIOOM;
+}
+
+namespace gromox {
+
+vmime::generationContext vmail_default_genctx()
+{
+	vmime::generationContext c;
+	/* Outlook is unable to read RFC 2231. */
+	c.setEncodedParameterValueMode(vmime::generationContext::EncodedParameterValueModes::PARAMETER_VALUE_RFC2231_AND_RFC2047);
+	/* Outlook is also unable to parse Content-ID:\n id... */
+	c.setWrapMessageId(false);
+	return c;
+}
+
+std::string vmail_to_string(const vmime::message &msg)
+{
+	std::string ss;
+	vmime::utility::outputStreamStringAdapter adap(ss);
+	msg.generate(vmail_default_genctx(), adap);
+	return ss;
+}
+
 }
