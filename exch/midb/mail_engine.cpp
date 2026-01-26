@@ -390,8 +390,7 @@ static bool me_ct_search_head(const char *charset, const char *mid_string,
 	if (!exmdb_client->imapfile_read(cu_get_maildir(), "eml",
 	    mid_string, &content))
 		return false;
-	vmime::parsingContext vpctx;
-	vpctx.setInternationalizedEmailSupport(true); /* RFC 6532 */
+	auto vpctx = vmail_default_parsectx();
 	vmime::header hdr;
 	hdr.parse(vpctx, content);
 

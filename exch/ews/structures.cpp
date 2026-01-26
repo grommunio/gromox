@@ -21,6 +21,7 @@
 #include <gromox/freebusy.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
 #include "ews.hpp"
@@ -3624,7 +3625,7 @@ tInternetMessageHeader::tInternetMessageHeader(const std::string_view& hn, const
 std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(const char *content)
 {
 	std::vector<tInternetMessageHeader> result;
-	vmime::parsingContext vpctx;
+	auto vpctx = vmail_default_parsectx();
 	vpctx.setInternationalizedEmailSupport(true); /* RFC 6532 */
 	vmime::header hdr;
 	hdr.parse(vpctx, content);

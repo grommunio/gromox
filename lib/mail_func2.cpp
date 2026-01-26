@@ -74,6 +74,13 @@ ec_error_t plain_to_html(const char *rbuf, std::string &out) try
 
 namespace gromox {
 
+vmime::parsingContext vmail_default_parsectx()
+{
+	vmime::parsingContext c;
+	c.setInternationalizedEmailSupport(true); /* RFC 6532 */
+	return c;
+}
+
 vmime::generationContext vmail_default_genctx()
 {
 	vmime::generationContext c;

@@ -14,6 +14,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/oxcmail.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -238,8 +239,7 @@ static protocol_state read_data(lmtp_context &ctx, FILE *cin)
 
 static protocol_state finalize_data(lmtp_context &ctx)
 {
-	vmime::parsingContext vpctx;
-	vpctx.setInternationalizedEmailSupport(true); /* RFC 6532 */
+	auto vpctx = vmail_default_parsectx();
 	ctx.vmail.parse(vpctx, ctx.content);
 	ctx.content = {};
 

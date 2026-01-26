@@ -89,8 +89,7 @@ void auto_response_reply(const char *user_home,
 
 	auto subject_text = znul(ar_props.get<const char>(same_org ? PR_EC_OUTOFOFFICE_SUBJECT : PR_EC_EXTERNAL_SUBJECT));
 	auto message_text = znul(ar_props.get<const char>(same_org ? PR_EC_OUTOFOFFICE_MSG : PR_EC_EXTERNAL_REPLY));
-	vmime::parsingContext vpctx;
-	vpctx.setInternationalizedEmailSupport(true); /* RFC 6532 */
+	auto vpctx = vmail_default_parsectx();
 	vmime::message vmsg;
 
 	auto hdr = vmsg.getHeader();
