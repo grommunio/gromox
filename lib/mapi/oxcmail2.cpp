@@ -440,18 +440,17 @@ bool parse_keywords(const char *field, propid_t propid,
     TPROPVAL_ARRAY &props) try
 {
 	proptag_t tag;
-	static constexpr size_t tmp_buff_size = MIME_FIELD_LEN;
-	auto tmp_buff = std::make_unique<char[]>(tmp_buff_size);
+	std::string tmp_buff;
 
-	if (!mime_string_to_utf8("us-ascii", field, tmp_buff.get(), tmp_buff_size)) {
+	if (!mime_string_to_utf8(field, tmp_buff)) {
 		tag = PROP_TAG(PT_MV_STRING8, propid);
-		gx_strlcpy(tmp_buff.get(), field, tmp_buff_size);
+		tmp_buff = field;
 	} else {
 		tag = PROP_TAG(PT_MV_UNICODE, propid);
 	}
 	std::vector<char *> vec;
 	char *saveptr = nullptr;
-	for (auto token = strtok_r(tmp_buff.get(), ",;", &saveptr);
+	for (auto token = strtok_r(tmp_buff.data(), ",;", &saveptr);
 	     token != nullptr;
 	     token = strtok_r(nullptr, ",;", &saveptr)) {
 		while (HX_isspace(*token))

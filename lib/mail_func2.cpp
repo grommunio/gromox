@@ -72,6 +72,17 @@ ec_error_t plain_to_html(const char *rbuf, std::string &out) try
 	return ecMAPIOOM;
 }
 
+bool mime_string_to_utf8(std::string_view in, std::string &out) try
+{
+	auto vpctx = vmail_default_parsectx();
+	vmime::text t;
+	t.parse(vpctx, std::string(in));
+	out = t.getConvertedText(vmime::charsets::UTF_8);
+	return true;
+} catch (const std::bad_alloc &) {
+	return false;
+}
+
 namespace gromox {
 
 vmime::parsingContext vmail_default_parsectx()

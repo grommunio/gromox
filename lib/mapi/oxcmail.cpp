@@ -555,18 +555,17 @@ static BOOL oxcmail_parse_subject(const char *field, TPROPVAL_ARRAY *pproplist) 
 	char prefix_buff[32];
 	static constexpr uint8_t seperator[] = {':', 0x00, ' ', 0x00};
 
-	static constexpr size_t utf8_field_size = MIME_FIELD_LEN;
-	auto utf8_field = std::make_unique<char[]>(utf8_field_size);
-	if (!mime_string_to_utf8("us-ascii", field, utf8_field.get(), utf8_field_size))
+	std::string utf8_field;
+	if (!mime_string_to_utf8(field, utf8_field))
 		return pproplist->set(PR_SUBJECT_A, field) == ecSuccess ? TRUE : false;
 
-	static constexpr size_t tmp_buff_size = utf8_field_size;
+	static constexpr size_t tmp_buff_size = MIME_FIELD_LEN;
 	auto tmp_buff = std::make_unique<char[]>(tmp_buff_size);
-	auto subject_len = utf8_to_utf16le(utf8_field.get(),
+	auto subject_len = utf8_to_utf16le(utf8_field.c_str(),
 	              tmp_buff.get(), tmp_buff_size);
 	if (subject_len < 0) {
-		utf8_truncate(utf8_field.get(), 255);
-		subject_len = utf8_to_utf16le(utf8_field.get(),
+		utf8_truncate(utf8_field.data(), 255);
+		subject_len = utf8_to_utf16le(utf8_field.c_str(),
 		              tmp_buff.get(), tmp_buff_size);
 		if (subject_len < 0)
 			subject_len = 0;
@@ -611,11 +610,9 @@ static BOOL oxcmail_parse_subject(const char *field, TPROPVAL_ARRAY *pproplist) 
 static BOOL oxcmail_parse_thread_topic(const char *field,
     TPROPVAL_ARRAY *pproplist) try
 {
-	static constexpr size_t utf8_field_size = MIME_FIELD_LEN;
-	auto utf8_field = std::make_unique<char[]>(utf8_field_size);
-	
-	if (mime_string_to_utf8("us-ascii", field, utf8_field.get(), utf8_field_size))
-		return pproplist->set(PR_CONVERSATION_TOPIC, utf8_field.get()) == ecSuccess;
+	std::string utf8_field;
+	if (mime_string_to_utf8(field, utf8_field))
+		return pproplist->set(PR_CONVERSATION_TOPIC, utf8_field.c_str()) == ecSuccess;
 	return pproplist->set(PR_CONVERSATION_TOPIC_A, field) == ecSuccess ? TRUE : false;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
@@ -625,12 +622,10 @@ static BOOL oxcmail_parse_thread_topic(const char *field,
 static BOOL oxcmail_parse_thread_index(const char *field,
     TPROPVAL_ARRAY *pproplist) try
 {
-	static constexpr size_t len = MIME_FIELD_LEN;
-	auto tmp_buff = std::make_unique<char[]>(len);
-	
-	if (!mime_string_to_utf8("us-ascii", field, tmp_buff.get(), len))
+	std::string tmp_buff;
+	if (!mime_string_to_utf8(field, tmp_buff))
 		return TRUE;
-	auto raw = base64_decode(tmp_buff.get());
+	auto raw = base64_decode(tmp_buff);
 	BINARY tmp_bin;
 	tmp_bin.pc = raw.data();
 	tmp_bin.cb = std::min(raw.size(), static_cast<size_t>(UINT32_MAX));
@@ -1328,12 +1323,11 @@ static gmf_output oxcmail_get_massaged_filename(const MIME *mime,
 	auto have_fn = mime->get_filename(raw_fn);
 
 	if (have_fn) {
-		char cooked_fn[1024];
-		auto uni = mime_string_to_utf8("us-ascii", raw_fn.c_str(),
-		           cooked_fn, std::size(cooked_fn));
+		std::string cooked_fn;
+		auto uni = mime_string_to_utf8(raw_fn, cooked_fn);
 		if (uni) {
 			ret.tag = PR_ATTACH_LONG_FILENAME;
-			ret.fn  = cooked_fn;
+			ret.fn  = std::move(cooked_fn);
 		} else {
 			ret.fn  = std::move(raw_fn);
 		}
@@ -1364,7 +1358,6 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	uint32_t tmp_int32;
 	char tmp_buff[1024];
 	char date_buff[128];
-	char display_name[512];
 	ATTACHMENT_CONTENT *pattachment;
 	
 	assert(pmime != nullptr);
@@ -1402,15 +1395,16 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		return;
 	auto b_description = pmime->get_field("Content-Description", tmp_buff, 256);
 	if (b_description) {
-		uint32_t tag;
-		if (mime_string_to_utf8("us-ascii", tmp_buff,
-		    display_name, std::size(display_name))) {
+		std::string dname;
+		proptag_t tag;
+
+		if (mime_string_to_utf8(tmp_buff, dname)) {
 			tag = PR_DISPLAY_NAME;
 		} else {
 			tag = PR_DISPLAY_NAME_A;
-			gx_strlcpy(display_name, tmp_buff, std::size(display_name));
+			dname = tmp_buff;
 		}
-		if (pattachment->proplist.set(tag, display_name) != ecSuccess)
+		if (pattachment->proplist.set(tag, dname.c_str()) != ecSuccess)
 			return;
 	}
 	bool b_inline = false;
@@ -1542,12 +1536,12 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME_A);
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION);
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION_A);
-			char sbbf[512];
+
+			std::string sbbf;
 			if (!b_description &&
 			    mail.get_head()->get_field("Subject", tmp_buff, std::size(tmp_buff)) &&
-			    mime_string_to_utf8("us-ascii", tmp_buff,
-			    sbbf, std::size(sbbf)) &&
-			    pattachment->proplist.set(PR_DISPLAY_NAME, sbbf) != ecSuccess)
+			    mime_string_to_utf8(tmp_buff, sbbf) &&
+			    pattachment->proplist.set(PR_DISPLAY_NAME, sbbf.c_str()) != ecSuccess)
 				return;
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess)
@@ -1940,13 +1934,13 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 	if (pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32) != ecSuccess)
 		return false;
 
-	char display_name[512]{};
+	std::string dispname;
 	if (f_info.x_display_name != nullptr &&
 	    strlen(f_info.x_display_name) < 256 &&
-	    mime_string_to_utf8("utf-8", f_info.x_display_name, display_name,
-	    std::size(display_name)) &&
-	    pproplist->set(PR_DISPLAY_NAME, display_name) != ecSuccess)
+	    mime_string_to_utf8(f_info.x_display_name, dispname) &&
+	    pproplist->set(PR_DISPLAY_NAME, dispname.c_str()) != ecSuccess)
 		return false;
+
 	auto dtypx = DT_MAILUSER;
 	std::string essdn, skb;
 	if (!oxcmail_get_user_ids(f_info.final_recipient, nullptr, nullptr, &dtypx) ||
@@ -1974,7 +1968,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 	tmp_bin.pc = tmp_buff;
 	if ('\0' == essdn[0]) {
 		if (!oxcmail_username_to_oneoff(f_info.final_recipient,
-		    display_name, &tmp_bin))
+		    dispname.c_str(), &tmp_bin))
 			return false;
 	} else {
 		if (!oxcmail_essdn_to_entryid(essdn.c_str(), &tmp_bin))
@@ -2157,9 +2151,9 @@ static bool oxcmail_enum_mdn(const char *tag,
 		return mcparam->proplist.set(PidTagOriginalMessageId, value) == ecSuccess &&
 		       mcparam->proplist.set(PR_INTERNET_REFERENCES, value) == ecSuccess;
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
-		if (mime_string_to_utf8("utf-8", value, tmp_buff,
-		    std::size(tmp_buff)))
-			return mcparam->proplist.set(PR_DISPLAY_NAME, tmp_buff) == ecSuccess;
+		std::string dname;
+		if (mime_string_to_utf8(value, dname))
+			return mcparam->proplist.set(PR_DISPLAY_NAME, dname.c_str()) == ecSuccess;
 		return mcparam->proplist.set(PR_DISPLAY_NAME_A, value) == ecSuccess;
 	}
 	return true;

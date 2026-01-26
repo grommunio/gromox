@@ -60,10 +60,11 @@ std::string bounce_gen_charset(const MAIL &m)
 
 std::string bounce_gen_subject(const MAIL &m, const char *cset)
 {
-	char buf[1024], b2[1024];
+	std::string b2;
+	char buf[1024];
 	auto &mi = *m.get_head();
 	if (!mi.get_field("Subject", buf, std::size(buf)) ||
-	    !mime_string_to_utf8(cset, buf, b2, std::size(b2)))
+	    !mime_string_to_utf8(buf, b2))
 		return {};
 	return b2;
 }

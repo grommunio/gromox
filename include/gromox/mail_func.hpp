@@ -51,7 +51,7 @@ extern GX_EXPORT int mutf7_to_utf8(const char *u7, size_t u7len, char *u8, size_
 extern GX_EXPORT int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len);
 extern GX_EXPORT int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax);
 extern GX_EXPORT BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime);
-extern GX_EXPORT BOOL mime_string_to_utf8(const char *charset, const char *mime_string, char *out_string, size_t out_len);
+extern GX_EXPORT bool mime_string_to_utf8(std::string_view in, std::string &out);
 extern GX_EXPORT void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
 extern GX_EXPORT int html_to_plain(std::string_view in, cpid_t, std::string &out);

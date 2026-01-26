@@ -639,7 +639,6 @@ BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
 static ec_error_t autoreply_getprop1(const char *dir,
     proptag_t proptag, void *&value)
 {
-	char subject[1024];
 	MIME_FIELD mime_field;
 	auto path = autoreply_fspath(dir, proptag);
 
@@ -685,10 +684,10 @@ static ec_error_t autoreply_getprop1(const char *dir,
 		size_t offset = 0;
 		while (auto parsed = parse_mime_field(&buf[offset], st.st_size - offset, &mime_field)) {
 			offset += parsed;
+			std::string subject;
 			if (strcasecmp(mime_field.name.c_str(), "Subject") == 0 &&
-			    mime_field.value.size() < sizeof(subject) &&
-			    mime_string_to_utf8("utf-8", mime_field.value.c_str(), subject, sizeof(subject))) {
-				value = common_util_dup(subject);
+			    mime_string_to_utf8(mime_field.value, subject)) {
+				value = common_util_dup(subject.c_str());
 				return value != nullptr ? ecSuccess : ecServerOOM;
 			}
 			if (buf[offset] == '\r' && buf[offset+1] == '\n')
