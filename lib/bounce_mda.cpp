@@ -23,10 +23,9 @@ std::string bounce_gen_thrindex(const MAIL &m) try
 	auto h = m.get_head();
 	if (h == nullptr)
 		return {};
-	char b[128];
-	if (!h->get_field("Thread-Index", b, std::size(b)))
-		return {};
-	return b;
+	if (auto val = h->get_field("Thread-Index"))
+		return *val;
+	return {};
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
@@ -60,11 +59,14 @@ std::string bounce_gen_charset(const MAIL &m)
 
 std::string bounce_gen_subject(const MAIL &m, const char *cset)
 {
+	auto head = m.get_head();
+	if (head == nullptr)
+		return {};
+	auto subj = head->get_field("Subject");
+	if (subj == nullptr)
+		return {};
 	std::string b2;
-	char buf[1024];
-	auto &mi = *m.get_head();
-	if (!mi.get_field("Subject", buf, std::size(buf)) ||
-	    !mime_string_to_utf8(buf, b2))
+	if (!mime_string_to_utf8(*subj, b2))
 		return {};
 	return b2;
 }

@@ -34,6 +34,7 @@ struct GX_EXPORT MIME {
 	bool set_content_type(const char *);
 	bool enum_field(MIME_FIELD_ENUM, void *) const;
 	bool get_field(const char *tag, char *value, size_t len) const;
+	const std::string *get_field(const char *tag) const;
 	int get_field_num(const char *tag) const;
 	bool search_field(const char *tag, int order, std::string &value) const;
 	bool set_field(const char *tag, const char *value);

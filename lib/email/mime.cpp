@@ -8,6 +8,7 @@
  * will then maintain its own buffer.
  */
 #include <algorithm>
+#include <cassert>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
@@ -431,6 +432,15 @@ bool MIME::get_field(const char *tag, char *value, size_t length) const
 		} 
 	}
 	return false;
+}
+
+const std::string *MIME::get_field(const char *tag) const
+{
+	assert(strcasecmp(tag, "Content-Type") != 0); /* not supported here */
+	for (const auto &[k, v] : f_other_fields)
+		if (strcasecmp(tag, k.c_str()) == 0)
+			return &v;
+	return nullptr;
 }
 
 /*

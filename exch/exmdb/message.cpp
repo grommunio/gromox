@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -2584,14 +2584,13 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		}
 		pmime->set_field("To", tmp_buff);
 
-		auto pmime_old = imail.get_head();
-		memset(tmp_buff, '\0', std::size(tmp_buff));
-		if (pmime_old == nullptr ||
-		    !pmime_old->get_field("Subject", tmp_buff + 5, std::size(tmp_buff) - 5))
-			snprintf(tmp_buff, std::size(tmp_buff), "Fwd: (no subject)");
+		const std::string *old_subject = nullptr;
+		if (auto pmime_old = imail.get_head())
+			old_subject = pmime_old->get_field("Subject");
+		if (old_subject != nullptr)
+			pmime->set_field("Subject", "Fwd: " + *old_subject);
 		else
-			memcpy(tmp_buff, "Fwd: ", 5);
-		pmime->set_field("Subject", tmp_buff);
+			pmime->set_field("Subject", "Fwd: (no subject)");
 		auto cur_time = time(nullptr);
 		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z", 
 			localtime_r(&cur_time, &time_buff));
