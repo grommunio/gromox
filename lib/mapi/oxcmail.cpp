@@ -1382,12 +1382,12 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		return;
 	if (pattachment->proplist.set(gmf.tag, gmf.fn.c_str()) != ecSuccess)
 		return;
-	auto b_description = pmime->get_field("Content-Description", tmp_buff, 256);
-	if (b_description) {
+	auto ct_desc = pmime->get_field("Content-Description");
+	if (ct_desc != nullptr) {
 		std::string dname;
 		proptag_t tag;
 
-		if (mime_string_to_utf8(tmp_buff, dname)) {
+		if (mime_string_to_utf8(*ct_desc, dname)) {
 			tag = PR_DISPLAY_NAME;
 		} else {
 			tag = PR_DISPLAY_NAME_A;
@@ -1397,15 +1397,17 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			return;
 	}
 	bool b_inline = false;
-	if (pmime->get_field("Content-Disposition", tmp_buff, 1024)) {
-		b_inline = strcmp(tmp_buff, "inline") == 0 || strncasecmp(tmp_buff, "inline;", 7) == 0;
-		if (oxcmail_get_field_param(tmp_buff, "create-date", date_buff, 128) &&
+	if (auto dispo_s = pmime->get_field("Content-Disposition")) {
+		auto dispo = dispo_s->c_str();
+		b_inline = strcmp(dispo, "inline") == 0 ||
+		           strncasecmp(dispo, "inline;", 7) == 0;
+		if (oxcmail_get_field_param(dispo, "create-date", date_buff, 128) &&
 		    parse_rfc822_timestamp(date_buff, &tmp_time)) {
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 			if (pattachment->proplist.set(PR_CREATION_TIME, &tmp_int64) != ecSuccess)
 				return;
 		}
-		if (oxcmail_get_field_param(tmp_buff, "modification-date", date_buff, 128) &&
+		if (oxcmail_get_field_param(dispo, "modification-date", date_buff, 128) &&
 		    parse_rfc822_timestamp(date_buff, &tmp_time)) {
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 			if (pattachment->proplist.set(PR_LAST_MODIFICATION_TIME, &tmp_int64) != ecSuccess)
@@ -1418,15 +1420,16 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	if (!pattachment->proplist.has(PR_LAST_MODIFICATION_TIME) &&
 	    pattachment->proplist.set(PR_LAST_MODIFICATION_TIME, &pmime_enum->nttime_stamp) != ecSuccess)
 		return;
-	if (pmime->get_field("Content-ID", tmp_buff, 128)) {
-		tmp_int32 = strlen(tmp_buff);
-		if (tmp_int32 > 0) {
-			if (tmp_buff[tmp_int32-1] == '>')
-				tmp_buff[tmp_int32 - 1] = '\0';
-			newval = tmp_buff[0] == '<' ? tmp_buff + 1 : tmp_buff;
-			uint32_t tag = str_isascii(newval) ?
+	if (auto ct_id = pmime->get_field("Content-ID")) {
+		if (ct_id->size() > 0) {
+			auto wid = *ct_id;
+			if (wid.front() == '<' && wid.back() == '>') {
+				wid.pop_back();
+				wid.erase(0, 1);
+			}
+			uint32_t tag = str_isascii(wid.c_str()) ?
 			                  PR_ATTACH_CONTENT_ID : PR_ATTACH_CONTENT_ID_A;
-			if (pattachment->proplist.set(tag, newval) != ecSuccess)
+			if (pattachment->proplist.set(tag, wid.c_str()) != ecSuccess)
 				return;
 		}
 	} else {
@@ -1435,17 +1438,17 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		    pattachment->proplist.set(PR_ATTACH_CONTENT_ID, ct_iter->second.c_str()) != ecSuccess)
 			return;
 	}
-	if (pmime->get_field("Content-Location", tmp_buff, 1024)) {
-		uint32_t tag = str_isascii(tmp_buff) ?
+	if (auto loc = pmime->get_field("Content-Location")) {
+		uint32_t tag = str_isascii(loc->c_str()) ?
 		                  PR_ATTACH_CONTENT_LOCATION :
 		                  PR_ATTACH_CONTENT_LOCATION_A;
-		if (pattachment->proplist.set(tag, tmp_buff) != ecSuccess)
+		if (pattachment->proplist.set(tag, loc->c_str()) != ecSuccess)
 			return;
 	}
-	if (pmime->get_field("Content-Base", tmp_buff, 1024)) {
-		uint32_t tag = str_isascii(tmp_buff) ?
+	if (auto base = pmime->get_field("Content-Base")) {
+		uint32_t tag = str_isascii(base->c_str()) ?
 		                  PR_ATTACH_CONTENT_BASE : PR_ATTACH_CONTENT_BASE_A;
-		if (pattachment->proplist.set(tag, tmp_buff) != ecSuccess)
+		if (pattachment->proplist.set(tag, base->c_str()) != ecSuccess)
 			return;
 	}
 	if (b_inline && !cttype_is_image(cttype))
@@ -1526,10 +1529,11 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION);
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION_A);
 
+			const std::string *ex_subject = nullptr;
 			std::string sbbf;
-			if (!b_description &&
-			    mail.get_head()->get_field("Subject", tmp_buff, std::size(tmp_buff)) &&
-			    mime_string_to_utf8(tmp_buff, sbbf) &&
+			if (ct_desc == nullptr &&
+			    (ex_subject = mail.get_head()->get_field("Subject")) != nullptr &&
+			    mime_string_to_utf8(*ex_subject, sbbf) &&
 			    pattachment->proplist.set(PR_DISPLAY_NAME, sbbf.c_str()) != ecSuccess)
 				return;
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
@@ -2296,12 +2300,16 @@ static bool atxlist_all_hidden(const ATTACHMENT_LIST *atl)
 	return true;
 }
 
-static inline bool tnef_vfy_get_field(const MIME *head, char *buf, size_t z)
+#ifndef VERIFY_TNEF_CORRELATOR
+static const std::string tnef_empty;
+#endif
+
+static const std::string *tnef_vfy_get_field(const MIME *head)
 {
 #ifdef VERIFY_TNEF_CORRELATOR
-	return head->get_field("X-MS-TNEF-Correlator", buf, z);
+	return head->get_field("X-MS-TNEF-Correlator");
 #else
-	return true;
+	return &tnef_empty;
 #endif
 }
 
@@ -2366,8 +2374,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	if (phead == nullptr)
 		return imp_null;
 
-	char tmp_buff[256];
-	field_param.b_classified = phead->get_field("X-Microsoft-Classified", tmp_buff, 16);
+	field_param.b_classified = phead->get_field("X-Microsoft-Classified") != nullptr;
 	if (!phead->enum_field(oxcmail_enum_mail_head, &field_param))
 		return imp_null;
 	if (!pmsg->proplist.has(PR_SENDER_NAME) &&
@@ -2420,10 +2427,10 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 		return imp_null;
 
 	auto head_ct = phead->content_type;
-	if (strcasecmp(head_ct, "application/ms-tnef") == 0 &&
-	    tnef_vfy_get_field(phead, tmp_buff, std::size(tmp_buff))) {
+	if (strcasecmp(head_ct, "application/ms-tnef") == 0) {
+	if (auto tnef_correl = tnef_vfy_get_field(phead)) {
 		std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(phead, alloc, get_propids));
-		if (pmsg1 != nullptr && tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
+		if (pmsg1 != nullptr && tnef_vfy_check_key(pmsg1.get(), tnef_correl->c_str())) {
 			if (!oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 				return imp_null;
 			if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()))
@@ -2433,6 +2440,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 				oxcmail_remove_flag_properties(pmsg1.get(), std::move(get_propids));
 			return pmsg1;
 		}
+	}
 	}
 
 	std::string tmp_str;
@@ -2453,10 +2461,10 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 		    (pmime = phead->get_child()) != nullptr &&
 		    (pmime1 = pmime->get_sibling()) != nullptr &&
 		    strcasecmp(pmime->content_type, "text/plain") == 0 &&
-		    strcasecmp(pmime1->content_type, "application/ms-tnef") == 0 &&
-		    tnef_vfy_get_field(phead, tmp_buff, std::size(tmp_buff))) {
+		    strcasecmp(pmime1->content_type, "application/ms-tnef") == 0) {
+		if (auto tnef_correl = tnef_vfy_get_field(phead)) {
 			std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(pmime1, alloc, get_propids));
-			if (pmsg1 != nullptr && tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
+			if (pmsg1 != nullptr && tnef_vfy_check_key(pmsg1.get(), tnef_correl->c_str())) {
 				if (!oxcmail_parse_message_body(pmime, &pmsg->proplist) ||
 				    !oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 					return imp_null;
@@ -2467,6 +2475,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 					oxcmail_remove_flag_properties(pmsg1.get(), std::move(get_propids));
 				return pmsg1;
 			}
+		}
 		}
 	} else if (smime_clearsigned(head_ct, phead)) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned") != ecSuccess)

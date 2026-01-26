@@ -47,10 +47,10 @@ using xmldocptr = std::unique_ptr<xmlDoc, xmlfree>;
  */
 void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) try
 {
-	char dispo[32];
-	if (part->get_field("Content-Disposition", dispo, std::size(dispo)) &&
-	    strncasecmp(dispo, "attachment", 10) == 0 &&
-	    (dispo[10] == '\0' || dispo[10] == ';'))
+	auto dispo = part->get_field("Content-Disposition");
+	if (dispo != nullptr &&
+	    strncasecmp(dispo->c_str(), "attachment", 10) == 0 &&
+	    ((*dispo)[10] == '\0' || (*dispo)[10] == ';'))
 		return;
 	if (part->mime_type == mime_type::single) {
 		if (strcasecmp(part->content_type, "text/plain") == 0) {
@@ -308,19 +308,22 @@ static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
     xmldocptr &ag_doc) try
 {
 	std::string ctid;
-	char ctid_raw[128];
-	if (!mime->get_field("Content-ID", ctid_raw, std::size(ctid_raw))) {
+	auto old_ctid = mime->get_field("Content-ID");
+
+	if (old_ctid == nullptr) {
+		char ctid_raw[128];
 		GUID::random_new().to_str(&ctid_raw[0], std::size(ctid_raw), 32);
 		ctid_raw[32] = '@';
 		GUID::random_new().to_str(&ctid_raw[33], std::size(ctid_raw) - 33, 32);
 		ctid = "cid:"s + ctid_raw;
 		epar.new_ctids.emplace(mime, ctid_raw);
-	} else if (ctid_raw[0] == '<') {
-		ctid = "cid:"s + &ctid_raw[1];
-		if (ctid.size() > 0 && ctid.back() == '>')
-			ctid.pop_back();
+	} else if (old_ctid->size() >= 2 && old_ctid->front() == '<' && old_ctid->back() == '>') {
+		std::string_view sv(*old_ctid);
+		sv.remove_prefix(1);
+		sv.remove_suffix(1);
+		ctid = "cid:"s + sv;
 	} else {
-		ctid = "cid:"s + ctid_raw;
+		ctid = "cid:"s + *old_ctid;
 	}
 	auto ag_body = find_element(ag_doc.get(), "body");
 	if (ag_body == nullptr)
