@@ -1329,7 +1329,7 @@ static gmf_output oxcmail_get_massaged_filename(const MIME *mime,
 
 	if (have_fn) {
 		char cooked_fn[1024];
-		auto uni = mime_string_to_utf8(ei.charset, raw_fn.c_str(),
+		auto uni = mime_string_to_utf8("us-ascii", raw_fn.c_str(),
 		           cooked_fn, std::size(cooked_fn));
 		if (uni) {
 			ret.tag = PR_ATTACH_LONG_FILENAME;
@@ -1403,7 +1403,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	auto b_description = pmime->get_field("Content-Description", tmp_buff, 256);
 	if (b_description) {
 		uint32_t tag;
-		if (mime_string_to_utf8(pmime_enum->charset, tmp_buff,
+		if (mime_string_to_utf8("us-ascii", tmp_buff,
 		    display_name, std::size(display_name))) {
 			tag = PR_DISPLAY_NAME;
 		} else {
@@ -1495,8 +1495,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 
 		std::string mime_charset;
 		if (!oxcmail_get_content_param(pmime, "charset", mime_charset))
-			mime_charset = utf8_valid(pcontent.get()) ?
-				       "utf-8" : pmime_enum->charset;
+			mime_charset = "us-ascii";
 
 		if (string_mb_to_utf8(mime_charset.c_str(), pcontent.get(),
 		    &pcontent[content_len+1], contallocsz - content_len - 1)) {
@@ -1546,7 +1545,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			char sbbf[512];
 			if (!b_description &&
 			    mail.get_head()->get_field("Subject", tmp_buff, std::size(tmp_buff)) &&
-			    mime_string_to_utf8(pmime_enum->charset, tmp_buff,
+			    mime_string_to_utf8("us-ascii", tmp_buff,
 			    sbbf, std::size(sbbf)) &&
 			    pattachment->proplist.set(PR_DISPLAY_NAME, sbbf) != ecSuccess)
 				return;
@@ -2499,7 +2498,6 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	}
 	mime_enum.b_result = true;
 	mime_enum.attach_id = 0;
-	mime_enum.charset = "us-ascii";
 	mime_enum.get_propids = get_propids;
 	mime_enum.alloc = alloc;
 	mime_enum.pmsg = pmsg.get();

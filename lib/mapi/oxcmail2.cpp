@@ -381,8 +381,7 @@ ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props)
 
 			std::string mime_charset;
 			if (!oxcmail_get_content_param(mime, "charset", mime_charset))
-				mime_charset = utf8_valid(rawbody.c_str()) ?
-				               "utf-8" : epar.charset;
+				mime_charset = "us-ascii";
 			utfbody.resize(mb_to_utf8_xlen(rawbody.size()));
 			if (!string_mb_to_utf8(mime_charset.c_str(), rawbody.c_str(),
 			    utfbody.data(), utfbody.size() + 1))
