@@ -321,7 +321,8 @@ static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
 		std::string_view sv(*old_ctid);
 		sv.remove_prefix(1);
 		sv.remove_suffix(1);
-		ctid = "cid:"s + sv;
+		ctid = "cid:"s;
+		ctid += sv;
 	} else {
 		ctid = "cid:"s + *old_ctid;
 	}
