@@ -431,6 +431,7 @@ E(3300, "Failed to get offset from the timezone definition");
 E(3301, "Failed to copy message to sent items");
 E(3302, "Failed to get the display name");
 E(3303, "failed to load item");
+E(3307, "occurrence index out of range");
 
 #undef E
 }

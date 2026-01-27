@@ -1082,6 +1082,8 @@ template<typename T> const T *sShape::get(proptag_t tag, uint8_t mask) const
 	return prop ? static_cast<const T *>(prop->pvalue) : nullptr;
 }
 
+template const BINARY *sShape::get<BINARY>(proptag_t, uint8_t) const;
+
 /**
  * @brief      Get property data
  *
@@ -1100,6 +1102,15 @@ template<typename T> const T* sShape::get(const PROPERTY_NAME& name, uint8_t mas
 	auto index = std::distance(names.begin(), it);
 	return get<T>(namedTags[index], mask);
 }
+
+/*
+ * Only expressions in structures.cpp can autoinstantiate get(),
+ * structures.hpp declared the template as out-of-line.
+ * structures.cpp has the definition available so can autoinstantiate,
+ * but this does not apply to the other .cpp files. Therefore, some explicit instantiations:
+ */
+template const uint64_t *sShape::get<const uint64_t>(proptag_t, uint8_t) const;
+template const BINARY *sShape::get<const BINARY>(const PROPERTY_NAME &, uint8_t) const;
 
 /**
  * @brief      Wrap requested property names

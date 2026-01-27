@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
-#include <chrono>
 #include <cctype>
+#include <chrono>
 #include <climits>
 #include <cstdint>
 #include <cstdlib>
@@ -14,16 +14,17 @@
 #include <libHX/string.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/mapidefs.h>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "exceptions.hpp"
 #include "ews.hpp"
+#include "exceptions.hpp"
 #include "namedtags.hpp"
 #include "structures.hpp"
 
@@ -1545,6 +1546,24 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 }
 
 /**
+ * @brief      Mark an item's ItemId as an occurrence ID
+ *
+ * Appends the basedate to the entry ID and sets the type to ID_OCCURRENCE
+ * so clients can use this ItemId to address the specific occurrence.
+ */
+static void markOccurrenceId(sItem &item, uint32_t basedate)
+{
+	auto setter = [basedate](auto &it) {
+		if (!it.ItemId)
+			return;
+		it.ItemId->Id.append(reinterpret_cast<const char *>(&basedate),
+		                     sizeof(basedate));
+		it.ItemId->type = tBaseItemId::ID_OCCURRENCE;
+	};
+	std::visit(setter, item);
+}
+
+/**
  * @brief      Load occurrence
  *
  * @param      dir      Store directory
@@ -1578,13 +1597,59 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	auto tags_1 = shape.proptags_vec();
 	tags_1.emplace_back(ex_replace_time_tag);
 
+	/*
+	 * Compute timezone offset for rtime→UTC conversion. Recurrence blob
+	 * rtimes are "local-as-UTC" – derive the offset from the master's
+	 * PR_START_DATE (real UTC) vs the recurrence pattern's first
+	 * occurrence rtime.
+	 */
+	std::chrono::seconds tz_offset{0};
+	uint32_t start_off = 0, end_off = 1440;
+	APPOINTMENT_RECUR_PAT apr{};
+	bool apr_valid = false;
+	auto recur_prop_tz = shape.get<const BINARY>(NtAppointmentRecur);
+	auto start_prop_tz = shape.get<const uint64_t>(PR_START_DATE);
+	if (!start_prop_tz)
+		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
+	if (start_prop_tz != nullptr && recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
+		EXT_PULL rp;
+		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, alloc, 0);
+		if (rp.g_apptrecpat(&apr) == pack_result::ok) {
+			apr_valid = true;
+			start_off = apr.starttimeoffset;
+			end_off   = apr.endtimeoffset;
+			auto su   = rop_util_nttime_to_unix(*start_prop_tz);
+			auto sl   = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
+			tz_offset = std::chrono::seconds(su - sl);
+		}
+	}
+
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
 	struct tm basedate_local;
 	localtime_r(&basedate_ts, &basedate_local);
 
+	/* Find EXCEPTIONINFO for this basedate from the recurrence blob.
+	 * It has the correct startdatetime/enddatetime for the exception,
+	 * unlike the embedded message which may have the master's dates. */
+	const EXCEPTIONINFO *matching_exc = nullptr;
+	if (apr_valid) {
+		uint32_t bd = basedate / 1440;
+		for (uint16_t ei = 0; ei < apr.exceptioncount; ++ei) {
+			if (apr.pexceptioninfo[ei].originalstartdate / 1440 == bd) {
+				matching_exc = &apr.pexceptioninfo[ei];
+				break;
+			}
+		}
+	}
+
 	for (uint16_t i = 0; i < count; ++i) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
-		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		} catch (const DispatchError &) {
+			continue; /* skip non-embedded attachments */
+		}
 		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, tags_1, &props))
 			throw DispatchError(E3211);
 
@@ -1596,14 +1661,57 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 		localtime_r(&exstart, &exstart_local);
 		if (is_same_day(basedate_local, exstart_local)) {
 			sItem item = tItem::create(shape);
-			if (shape.special)
-				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
+			/* For exceptions, skip MimeContent from master —
+			 * the embedded msg body is applied via updateProps.
+			 * Attachments and attendees still come from master. */
+			auto exc_special = shape.special & ~sShape::MimeContent;
+			if (exc_special)
+				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, exc_special); }, item);
 			std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
-
+			if (auto *cal = std::get_if<tCalendarItem>(&item)) {
+				/* Override Start/End: the embedded message has the
+				 * master's dates; use EXCEPTIONINFO from the blob. */
+				if (matching_exc) {
+					cal->Start.emplace(
+						rop_util_rtime_to_unix2(matching_exc->startdatetime) + tz_offset);
+					cal->End.emplace(
+						rop_util_rtime_to_unix2(matching_exc->enddatetime) + tz_offset);
+				} else {
+					cal->Start.emplace(
+						rop_util_rtime_to_unix2(basedate + start_off) + tz_offset);
+					cal->End.emplace(
+						rop_util_rtime_to_unix2(basedate + end_off) + tz_offset);
+				}
+				cal->CalendarItemType.emplace(Enum::Exception);
+				cal->RecurrenceId.emplace(
+					rop_util_rtime_to_unix2(basedate) + tz_offset);
+				cal->Recurrence.reset();
+				cal->ModifiedOccurrences.reset();
+				cal->DeletedOccurrences.reset();
+			}
+			markOccurrenceId(item, basedate);
 			return item;
 		}
 	}
-	throw EWSError::ItemCorrupt(E3209);
+
+	/* Unmodified occurrence: construct from master properties */
+	sItem item = tItem::create(shape);
+	if (shape.special)
+		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
+	if (auto *cal = std::get_if<tCalendarItem>(&item)) {
+		cal->Start.emplace(
+			rop_util_rtime_to_unix2(basedate + start_off) + tz_offset);
+		cal->End.emplace(
+			rop_util_rtime_to_unix2(basedate + end_off) + tz_offset);
+		cal->CalendarItemType.emplace(Enum::Occurrence);
+		cal->RecurrenceId.emplace(
+			rop_util_rtime_to_unix2(basedate) + tz_offset);
+		cal->Recurrence.reset();
+		cal->ModifiedOccurrences.reset();
+		cal->DeletedOccurrences.reset();
+	}
+	markOccurrenceId(item, basedate);
+	return item;
 }
 
 /**
