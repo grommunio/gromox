@@ -443,8 +443,14 @@ static bool purg_discover_ids(sqlite3 *db, const std::string &query,
 	auto stm = gx_sql_prep(db, query.c_str());
 	if (stm == nullptr)
 		return false;
-	while (stm.step() == SQLITE_ROW)
+	while (true) {
+		auto ret = stm.step();
+		if (ret == SQLITE_DONE)
+			break;
+		else if (ret != SQLITE_ROW)
+			return false;
 		used.push_back(stm.col_text(0));
+	}
 	return true;
 }
 

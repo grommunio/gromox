@@ -1,4 +1,4 @@
-Gromox 3.3.139 (Development)
+Gromox 3.3.143 (Development)
 ===========================
 
 Enhancements:
@@ -16,6 +16,7 @@ Fixes:
 * oxcmail: the "Keywords:" RFC5322 header (Categories) used to get filled with
   text garbage, which is now fixed.
 * zcore: plug a memory leak occuring when importing vCards
+* exmdb: abort purge-datafiles if there is a database error midway
 
 Changes:
 
