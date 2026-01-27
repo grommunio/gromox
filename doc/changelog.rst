@@ -17,6 +17,7 @@ Fixes:
   text garbage, which is now fixed.
 * zcore: plug a memory leak occuring when importing vCards
 * exmdb: abort purge-datafiles if there is a database error midway
+* imap: release potentially-large APPEND buffers much earlier
 
 Changes:
 

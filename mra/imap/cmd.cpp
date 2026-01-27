@@ -2072,6 +2072,7 @@ static int icp_long_append_end2(int argc, char **argv, imap_context &ctx) try
 		content.append(static_cast<char *>(strb), strb_size);
 		strb_size = STREAM_BLOCK_SIZE;
 	}
+	ctx.append_stream.clear();
 	imrpc_build_env();
 	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 	if (!exmdb_client->imapfile_write(ctx.maildir, "eml",
