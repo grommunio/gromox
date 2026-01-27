@@ -1,4 +1,4 @@
-Gromox 3.3.139 (Development)
+Gromox 3.3.185 (Development)
 ===========================
 
 Enhancements:
@@ -19,6 +19,8 @@ Fixes:
 * zcore: plug a memory leak occuring when importing vCards
 * Any data, when converted from windows-1255 or 1258 character set to Unicode,
   sometimes lost the last character in the conversion, which has been fixed.
+* exmdb: abort purge-datafiles if there is a database error midway
+* imap: release potentially-large APPEND buffers much earlier
 
 Changes:
 

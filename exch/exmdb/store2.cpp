@@ -242,7 +242,13 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 		auto stm = gx_sql_prep(db.psqlite, qstr);
 		if (stm == nullptr)
 			return false;
-		while (stm.step() == SQLITE_ROW) {
+		while (true) {
+			ret = stm.step();
+			if (ret == SQLITE_DONE)
+				break;
+			else if (ret != SQLITE_ROW)
+				return false;
+
 			auto assoc = stm.col_uint64(0);
 			auto count = stm.col_uint64(1);
 			auto size  = stm.col_uint64(2);
@@ -271,7 +277,13 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 		auto stmt = gx_sql_prep(db.psqlite, qstr);
 		if (stmt == nullptr)
 			return false;
-		while (stmt.step() == SQLITE_ROW) {
+		while (true) {
+			ret = stmt.step();
+			if (ret == SQLITE_DONE)
+				break;
+			else if (ret != SQLITE_ROW)
+				return false;
+
 			auto msgid = stmt.col_uint64(0);
 			ret = have_delete_perm(db, username, folder_id, msgid);
 			if (ret < 0)
@@ -302,7 +314,13 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 	auto stm = gx_sql_prep(db.psqlite, qstr);
 	if (stm == nullptr)
 		return FALSE;
-	while (stm.step() == SQLITE_ROW) {
+	while (true) {
+		ret = stm.step();
+		if (ret == SQLITE_DONE)
+			break;
+		else if (ret != SQLITE_ROW)
+			return false;
+
 		auto subfld = stm.col_uint64(0);
 		bool sub_partial = false;
 		if (!folder_purge_softdel(db, cpid, username, subfld,
@@ -425,8 +443,14 @@ static bool purg_discover_ids(sqlite3 *db, const std::string &query,
 	auto stm = gx_sql_prep(db, query.c_str());
 	if (stm == nullptr)
 		return false;
-	while (stm.step() == SQLITE_ROW)
+	while (true) {
+		auto ret = stm.step();
+		if (ret == SQLITE_DONE)
+			break;
+		else if (ret != SQLITE_ROW)
+			return false;
 		used.push_back(stm.col_text(0));
+	}
 	return true;
 }
 
