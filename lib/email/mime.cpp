@@ -19,6 +19,7 @@
 #include <fmt/core.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
+#include <vmime/parameterizedHeaderField.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
@@ -1165,36 +1166,40 @@ ssize_t MIME::get_length() const
 	return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 }
 
-bool MIME::get_filename(std::string &file_name) const
+bool MIME::get_filename(std::string &file_name) const try
 {
-	auto pmime = this;
-	
-	if (pmime->get_content_param("name", file_name)) {
-		;
-	} else if (auto dispo_s = pmime->get_field("Content-Disposition")) {
-		auto cdname = dispo_s->c_str();
-		const char *pbegin = strcasestr(cdname, "filename="); /* CONST-STRCHR-MARKER */
-		if (pbegin == nullptr)
-			return false;
-		pbegin += 9;
-		const char *pend = strchr(pbegin, ';'); /* CONST-STRCHR-MARKER */
-		if (pend == nullptr)
-			file_name.assign(pbegin);
-		else
-			file_name.assign(pbegin, pend - pbegin);
-	} else {
-		return false;
+	auto vpctx = vmail_default_parsectx();
+	vmime::header vhdr;
+	std::string raw_val, selector;
+
+	/* RFC 2231 */
+	if (get_field("Content-Disposition", raw_val)) {
+		raw_val.insert(0, "Content-Disposition: ");
+		vhdr.parse(raw_val);
+		auto phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(vhdr.ContentDisposition());
+		if (phf != nullptr) {
+			if (auto par = phf->findParameter("filename")) {
+				file_name = par->getValue().getConvertedText(vmime::charsets::UTF_8);
+				return true;
+			}
+		}
 	}
-	
-	HX_strrtrim(file_name.data());
-	HX_strltrim(file_name.data());
-	auto tmp_len = file_name.size();
-	if (('"' == file_name[0] && '"' == file_name[tmp_len - 1]) ||
-		('\'' == file_name[0] && '\'' == file_name[tmp_len - 1])) {
-		file_name.pop_back();
-		file_name.erase(0, 1);
+	/* RFC 2184 */
+	if (get_field("Content-Type", raw_val)) {
+		raw_val.insert(0, "Content-Type: ");
+		vhdr.parse(raw_val);
+		auto phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(vhdr.ContentType());
+		if (phf != nullptr) {
+			if (auto par = phf->findParameter("name")) {
+				file_name = par->getValue().getConvertedText(vmime::charsets::UTF_8);
+				return true;
+			}
+		}
 	}
-	return !file_name.empty();
+	return false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 static int make_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
