@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <climits>
@@ -293,12 +293,6 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
     const char *storage_path, const char *msg_filename, const char *charset,
     const char *email_charset, BOOL b_ext, std::string &buf) try
 {
-#ifdef _DEBUG_UMTA
-	if (pmime == nullptr) {
-		mlog(LV_DEBUG, "mail: NULL pointer in mjson_fetch_mime_structure");
-		return -1;
-	}
-#endif
 	auto ctype = pmime->ctype;
 	HX_strupper(ctype.data());
 	auto pos = ctype.find('/');
@@ -694,12 +688,6 @@ int MJSON::rfc822_fetch(mjson_io &io, const char *storage_path,
     const char *cset, BOOL b_ext, std::string &buf) const
 {
 	auto pjson = this;
-#ifdef _DEBUG_UMTA
-	if (storage_path == nullptr) {
-		mlog(LV_DEBUG, "mail: NULL pointer in mjson_rfc822_fetch");
-		return -1;
-	}
-#endif
 	if (!has_rfc822_part())
 		return -1;
 	auto temp_path = storage_path + "/"s + get_mail_filename();
@@ -712,12 +700,6 @@ int MJSON::rfc822_fetch(mjson_io &io, const char *storage_path,
 static int mjson_rfc822_fetch_internal(mjson_io &io, const MJSON *pjson,
     const char *storage_path, const char *charset, BOOL b_ext, std::string &buf)
 {
-#ifdef _DEBUG_UMTA
-	if (pjson == nullptr || storage_path == nullptr) {
-		mlog(LV_DEBUG, "mail: NULL pointer in mjson_rfc822_fetch_internal");
-		return -1;
-	}
-#endif
 	if (!pjson->m_root.has_value())
 		return -1;
 	return mjson_fetch_mime_structure(io, &*pjson->m_root, storage_path,

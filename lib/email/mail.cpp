@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstring>
@@ -47,12 +47,6 @@ bool MAIL::refonly_parse(const char *in_buff, size_t length)
 {
 	auto pmail = this;
 
-#ifdef _DEBUG_UMTA
-	if (in_buff == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	clear();
 	auto mime_uq = MIME::create();
 	auto pmime = mime_uq.get();
@@ -194,10 +188,6 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 bool MAIL::serialize(STREAM *pstream) const
 {
 	auto pmail = this;
-#ifdef _DEBUG_UMTA
-	if (pstream == nullptr)
-		return false;
-#endif
 	auto pnode = pmail->tree.get_root();
 	if (pnode == nullptr)
 		return false;
@@ -319,12 +309,6 @@ int MAIL::make_digest(Json::Value &digest) const try
 	BOOL b_tags[TAG_NUM];
 	char temp_buff[1024];
 
-#ifdef _DEBUG_UMTA
-	if (poffset == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
-		return -1;
-	}
-#endif
 	auto pnode = pmail->tree.get_root();
 	if (pnode == nullptr)
 		return -1;
@@ -441,12 +425,6 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
 {
 	auto pmail = this;
 
-#ifdef _DEBUG_UMTA
-	if (pmime_base == nullptr) {
-	        mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
-        return NULL;
-    }
-#endif
 	if (pmime_base->mime_type != mime_type::multiple)
 		return NULL;
 	auto mime_uq = MIME::create();
@@ -463,12 +441,6 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
 void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param) const
 {
 	auto pmail = this;
-#ifdef _DEBUG_UMTA
-	if (enum_func == nullptr) {
-	        mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
-        return;
-    }
-#endif
 	simple_tree_enum_from_node(pmail->tree.get_root(), [&](const tree_node *stn, unsigned int) {
 		auto m = containerof(stn, const MIME, stree);
 		enum_func(m, param);
@@ -487,12 +459,6 @@ bool MAIL::dup(MAIL *pmail_dst)
 	unsigned int size;
 	void *ptr;
 	
-#ifdef _DEBUG_UMTA
-	if (pmail_dst == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	pmail_dst->clear();
 	auto mail_len = get_length();
 	if (mail_len < 0)

@@ -1,5 +1,5 @@
 #pragma once
-#if defined(COMPILE_DIAG) || defined(DEBUG_UMTA)
+#ifdef COMPILE_DIAG
 #	include <cassert>
 #endif
 #include <cstdint>

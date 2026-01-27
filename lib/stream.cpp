@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
+// This file is part of Gromox.
 /* 
  *	  stream is specified for smtp protocol
  */
@@ -68,12 +70,6 @@ unsigned int STREAM::readline(char **ppline)
 	auto pstream = this;
 	unsigned int distance;
 
-#ifdef _DEBUG_UMTA
-	if (ppline == nullptr) {
-		mlog(LV_DEBUG, "stream: stream_readline, param NULL");
-		return 0;
-	}
-#endif
 	if (has_newline() != STREAM_LINE_AVAILABLE)
 		return 0;
 	distance = pstream->block_line_pos - pstream->rd_block_pos;
@@ -186,10 +182,6 @@ void STREAM::clear()
 static BOOL stream_append_node(STREAM *pstream) try
 {
 	std::list<stream_block>::iterator pnode;
-#ifdef _DEBUG_UMTA
-	if (pstream == nullptr)
-		return FALSE;
-#endif
 	auto &rlist = *pstream->list;
 	if (rlist.size() > 0 && &*pstream->pnode_wr != &*rlist.rbegin()) {
 		pnode = std::next(pstream->pnode_wr);
@@ -218,12 +210,6 @@ static BOOL stream_append_node(STREAM *pstream) try
 void *STREAM::get_write_buf(unsigned int *psize)
 {
 	auto pstream = this;
-#ifdef _DEBUG_UMTA
-	if (psize == nullptr) {
-		mlog(LV_DEBUG, "stream: stream_get_wrbuf, param NULL");
-		return NULL;
-	}
-#endif
 	if (pstream->wr_block_pos == STREAM_BLOCK_SIZE) {
 		*psize = 0;
 		return NULL;
@@ -244,13 +230,6 @@ void *STREAM::get_write_buf(unsigned int *psize)
 unsigned int STREAM::fwd_write_ptr(unsigned int offset)
 {
 	auto pstream = this;
-#ifdef _DEBUG_UMTA
-	if(offset + pstream->wr_block_pos > STREAM_BLOCK_SIZE) {
-		mlog(LV_DEBUG, "stream: offset is larger than block size in " 
-				   "stream_forward_writing_ptr");
-		return 0;
-	}
-#endif
 	pstream->wr_block_pos += offset;
 	pstream->wr_total_pos += offset;
 	if (pstream->wr_block_pos == STREAM_BLOCK_SIZE)
@@ -341,12 +320,6 @@ unsigned int STREAM::rewind_read_ptr(unsigned int offset)
 void *STREAM::get_read_buf(unsigned int *psize)
 {
 	auto pstream = this;
-#ifdef _DEBUG_UMTA
-	if (psize == nullptr) {
-		mlog(LV_DEBUG, "stream: stream_get_rdbuf, param NULL");
-		return NULL;
-	}
-#endif
 	if (pstream->pnode_wr != pstream->pnode_rd) {
 		auto ret_ptr = &pnode_rd->cdata[rd_block_pos];
 		if (*psize >= STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
@@ -417,7 +390,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 	auto pstream = this;
 	unsigned int state = 0;
 
-#if defined(_DEBUG_UMTA) || defined(COMPILE_DIAG)
+#ifdef COMPILE_DIAG
 	assert(pstream->rd_block_pos < STREAM_BLOCK_SIZE);
 	assert(pstream->wr_block_pos < STREAM_BLOCK_SIZE);
 	if (pbuff == nullptr || psize == nullptr) {
@@ -649,14 +622,6 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 	auto pstream = this;
 	unsigned int actual_size;
 
-#ifdef _DEBUG_UMTA
-	if (pbuff == nullptr) {
-		mlog(LV_DEBUG, "stream: stream_peek_buffer, param NULL");
-		return 0;
-	}
-#endif
-	
-
 	/* 
 	if the read pointer has reached the end of the stream, return 
 	immediately 
@@ -734,13 +699,6 @@ int STREAM::write(const void *pbuff, size_t size)
 {
 	unsigned int buff_size, actual_size;
 	size_t offset;
-
-#ifdef _DEBUG_UMTA
-	if (pbuff == nullptr) {
-		mlog(LV_DEBUG, "stream: stream_write, param NULL");
-		return STREAM_WRITE_FAIL;
-	}
-#endif
 
 	offset = 0;
 	while (offset < size) {

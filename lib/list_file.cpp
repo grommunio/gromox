@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdlib>
@@ -112,12 +112,6 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 	int i, num = 0, distance;
 	char temp_buf[64];
 	
-#ifdef _DEBUG_UMTA
-	if (NULL == list_file) {
-		mlog(LV_DEBUG, "list_file: list_file_analyse_format, param NULL");
-		return FALSE;
-	}
-#endif
 	auto ptr = format;
 	while ('\0' != *ptr) {
 		if ('%' == *ptr) {
@@ -192,12 +186,6 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 	char line[MAX_LINE];
 	int table_size;
 
-#ifdef _DEBUG_UMTA
-	if (NULL == list_file) {
-		mlog(LV_DEBUG, "list_file: list_file_construct_list, param NULL");
-		return FALSE;
-	}
-#endif
 	/* calculate the line number in file */
 	for (table_size = 0; fgets(line, MAX_LINE, list_file->file_ptr.get()); ++table_size) {
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
@@ -234,13 +222,6 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 	int i, j;
 	BOOL b_terminate = FALSE;
 
-#ifdef _DEBUG_UMTA
-	if (NULL == list_file || NULL == pfile || NULL == line) {
-		mlog(LV_DEBUG, "list_file: list_file_parse_line, param NULL");
-		return FALSE;
-	}
-#endif
-	
 	for (i=0; i<list_file->type_num; i++) {
 		switch (list_file->format[i]) {
 		case 'l':

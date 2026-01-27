@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  * normally, MIME object does'n maintain its own content buffer, it just take
@@ -72,13 +72,6 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 	auto pmime = this;
 	size_t current_offset = 0;
 
-#ifdef _DEBUG_UMTA
-	if (in_buff == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
-	
 	pmime->clear();
 	if (0 == length) {
 		/* No content: syntactically same as implied plaintext */
@@ -233,12 +226,6 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	auto pmime = this;
 	/* align the buffer with 64K */
 	
-#ifdef _DEBUG_UMTA
-	if (pcontent == nullptr && length != 0) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (pmime->mime_type != mime_type::single &&
 	    pmime->mime_type != mime_type::single_obj)
 		return false;
@@ -330,12 +317,6 @@ bool MIME::write_content(const char *pcontent, size_t length,
 bool MIME::write_mail(MAIL *pmail)
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (pmail == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-    }
-#endif
 	if (pmime->mime_type != mime_type::single &&
 	    pmime->mime_type != mime_type::single_obj)
 		return false;
@@ -359,13 +340,6 @@ bool MIME::set_content_type(const char *newtype)
 	auto pmime = this;
 	BOOL b_multiple;
 
-#ifdef _DEBUG_UMTA
-	if (newtype == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
-	
 	b_multiple = FALSE;
 	if (strncasecmp(newtype, "multipart/", 10) == 0)
 		b_multiple = TRUE;
@@ -448,12 +422,6 @@ static bool mime_get_content_type_field(const MIME *pmime, char *value, size_t l
 bool MIME::get_field(const char *tag, char *value, size_t length) const
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (strcasecmp(tag, "Content-Type") == 0)
 		return mime_get_content_type_field(pmime, value, length);
 	for (const auto &[k, v] : f_other_fields) {
@@ -475,12 +443,6 @@ bool MIME::get_field(const char *tag, char *value, size_t length) const
  */
 int MIME::get_field_num(const char *tag) const
 {
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return 0;
-	}
-#endif
 	if (strcasecmp(tag, "Content-Type") == 0)
 		return 1;
 	size_t i = 0;
@@ -508,12 +470,6 @@ bool MIME::search_field(const char *tag, int order, std::string &value) const tr
 	auto pmime = this;
 	int i;
 	
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (order < 0)
 		return false;
 	if (0 == strcasecmp(tag, "Content-Type")) {
@@ -554,12 +510,6 @@ bool MIME::set_field(const char *tag, const char *value) try
 	auto pmime = this;
 	char	tmp_buff[MIME_FIELD_LEN];
 	
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (0 == strcasecmp(tag, "Content-Type")) {
 		pmime->f_type_params.clear();
 		parse_field_value(value, strlen(value), tmp_buff, 256,
@@ -625,12 +575,6 @@ bool MIME::append_field(const char *tag, const char *value) try
 {
 	auto pmime = this;
 	
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (strcasecmp(tag, "Content-Type") == 0)
 		return false;
 	f_other_fields.emplace_back(MIME_FIELD{tag, value});
@@ -667,12 +611,6 @@ void MIME::remove_field(const char *tag)
  */
 bool MIME::get_content_param(const char *tag, std::string &value) const try
 {
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	for (const auto &[k, v] : f_type_params) {
 		if (strcasecmp(tag, k.c_str()) == 0) {
 			value = v;
@@ -694,12 +632,6 @@ bool MIME::get_content_param(const char *tag, std::string &value) const try
 bool MIME::set_content_param(const char *tag, const char *value) try
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (0 == strcasecmp(tag, "boundary")) {
 		auto bdlen = strlen(value);
 		if (bdlen > VALUE_LEN - 3 || bdlen < 3)
@@ -742,12 +674,6 @@ bool MIME::serialize(STREAM *pstream) const
 	long	len, tmp_len;
 	BOOL	has_submime;
 	
-#ifdef _DEBUG_UMTA
-	if (pstream == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (pmime->mime_type == mime_type::none)
 		return false;
 	if (!pmime->head_touched) {
@@ -915,9 +841,6 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 	char	tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
 	if (pmime->mime_type == mime_type::none) {
-#ifdef _DEBUG_UMTA
-		mlog(LV_DEBUG, "mime: mime content type is not set");
-#endif
 		return false;
 	}
 	if (!pmime->head_touched){
@@ -1008,12 +931,6 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	size_t offset, max_length;
 	unsigned int buff_size;
 	
-#ifdef _DEBUG_UMTA
-	if (out_buff == nullptr || plength == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	max_length = *plength;
 	if (max_length > 0)
 		*out_buff = '\0';
@@ -1253,12 +1170,6 @@ int MIME::make_mimes_digest(const char *id_string, size_t *poffset,
     Json::Value &dsarray) const try
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (poffset == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return -1;
-	}
-#endif
 	if (pmime->mime_type == mime_type::none)
 		return -1;
 	/* This function must produce *exactly* the same bytecount as MIME::emit */
@@ -1442,12 +1353,6 @@ int MIME::make_structure_digest(const char *id_string, size_t *poffset,
     Json::Value &dsarray) const try
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (poffset == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return -1;
-	}
-#endif
 	if (pmime->mime_type == mime_type::none)
 		return -1;
 	size_t head_offset = *poffset;
@@ -1553,12 +1458,6 @@ static bool mime_parse_multiple(MIME *pmime)
 	BOOL b_match;
 	int boundary_len;
 
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (pmime->content_begin == nullptr)
 		return false;
 	boundary_len = strlen(pmime->boundary_string);
@@ -1621,14 +1520,6 @@ static void mime_produce_boundary(MIME *pmime)
 	char *begin, *end, *ptr;
 	char temp_boundary[VALUE_LEN];
     int boundary_len;
-
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return;
-	}
-#endif
 	int depth = pmime->stree.get_depth();
 	strcpy(pmime->boundary_string, "----=_NextPart_");
 	auto length = sprintf(pmime->boundary_string + 15, "00%d_000%d_",
