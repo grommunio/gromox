@@ -50,7 +50,8 @@ Envelope::Envelope(const VersionInfo &ver, bool with_decl)
  */
 Envelope::Envelope(const char* content, size_t nBytes)
 {
-	doc.Parse(content, nBytes);
+	if (doc.Parse(content, nBytes) != XML_SUCCESS)
+		throw SOAPError("Invalid XML");
 	XMLElement *envelope = doc.RootElement();
 	if (!envelope)
 		throw SOAPError("Invalid XML");
