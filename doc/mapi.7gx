@@ -32,14 +32,12 @@ package, with types like "IMAPIFolder" and "IMessage", functions like
 The Office VBA interface for programming in VisualBasic, with types like
 "Outlook.MailItem", object properties like "MailItem.Subject".
 .IP \(bu 4
-The wire protocols used for communication with Exchange Server. This has
-received unfortunate terms like "MAPI/RPC" or "MAPI protocol". Specifically,
-this includes the independently specified parts of: the Remote Operations
-(ROP/OXCROPS) protocol, the EMSMDB v1 protocol, the NSPI protocol, the MAPI
-Extensions For HTTP protocol (MAPI-over-HTTP, MAPIHTTP), and their particular
-format of serialized representations of MAPI objects that each peer may have.
-Note that MAPIHTTP is not in any way "more MAPI" than RPC-over-HTTP (aka RPCH)
-already was: both MAPIHTTP and RPCH wrap OXCROPS.
+The collection of wire protocols used for communication with Exchange Server.
+It has colloquially been referred to as "MAPI/RPC" or "MAPI protocol", but
+detail-oriented readers will get know the actual parts instead: the Remote
+Operations (ROP/OXCROPS) protocol, the EMSMDB v1 protocol, the NSPI protocol,
+the MAPI Extensions For HTTP protocol (MAPIHTTP, MH), and all the serialized
+representations of MAPI data structures.
 .SH Gromox implementation
 Gromox does not offer an MSMAPI-style programming API for the C or C++ language
 environments; the types and functions that are exposed in .h/.hpp files are
