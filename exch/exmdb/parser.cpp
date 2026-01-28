@@ -71,7 +71,7 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 	g_max_routers = max_routers;
 }
 
-std::unique_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
+static std::unique_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
 {
 	if (g_max_threads != 0) {
 		std::lock_guard lk(g_connection_lock);
@@ -378,14 +378,22 @@ static void *request_parser_thread(void *pparam)
 	return nullptr;
 }
 
-void exmdb_parser_insert_conn(std::unique_ptr<EXMDB_CONNECTION> &&pconnection)
+bool exmdb_parser_insert_conn(generic_connection &&co)
 {
+	auto pconnection = exmdb_parser_make_conn();
+	if (pconnection == nullptr)
+		return false;
+	static_cast<generic_connection &>(*pconnection) = std::move(co);
+
 	auto ret = pthread_create4(&pconnection->thr_id, nullptr,
 	           request_parser_thread, pconnection.get());
-	if (ret != 0)
+	if (ret != 0) {
 		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
-	else
+		return false;
+	} else {
 		pconnection.release(); /* thread should be vivid now */
+		return true;
+	}
 }
 
 std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_extract_router(const char *remote_id)
@@ -474,16 +482,12 @@ static int sockaccept_thread(generic_connection &&conn)
 				/* ignore */;
 			return 0;
 		}
-		auto pconnection = exmdb_parser_make_conn();
-		if (pconnection == nullptr) {
+		if (!exmdb_parser_insert_conn(std::move(conn))) {
 			auto tmp_byte = exmdb_response::max_reached;
 			if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
 				/* ignore */;
 			return 0;
 		}
-		/* move(conn) deferred until here, else cov-scan complains about conn.sockd being moved out */
-		static_cast<generic_connection &>(*pconnection) = std::move(conn);
-		exmdb_parser_insert_conn(std::move(pconnection));
 
 	return 0;
 }
