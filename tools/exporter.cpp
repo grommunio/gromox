@@ -103,7 +103,7 @@ static constexpr cfg_directive exm2eml_cfg_defaults[] = {
 };
 
 static int fetch_as_instance(const char *idstr, std::string &log_id,
-    eid_t &msg_id, MESSAGE_CONTENT *&ctnt)
+    eid_t &msg_id, MESSAGE_CONTENT &ctnt)
 {
 	char *sep = nullptr;
 	eid_t folder_id(1, strtoull(idstr, &sep, 0));
@@ -119,9 +119,6 @@ static int fetch_as_instance(const char *idstr, std::string &log_id,
 		return -1;
 	}
 	uint32_t inst_id = 0;
-	ctnt = message_content_init();
-	if (ctnt == nullptr)
-		throw std::bad_alloc();
 	if (!exmdb_client_remote::load_message_instance(g_storedir,
 	    nullptr, CP_UTF8, false, folder_id, msg_id, &inst_id)) {
 		fprintf(stderr, "RPC load_message_instance rejected; probably message not found.\n");
@@ -129,7 +126,7 @@ static int fetch_as_instance(const char *idstr, std::string &log_id,
 	}
 	auto cl_6 = HX::make_scope_exit([&]() { exmdb_client_remote::unload_instance(g_storedir, inst_id); });
 	if (!exmdb_client_remote::read_message_instance(g_storedir,
-	    inst_id, ctnt)) {
+	    inst_id, &ctnt)) {
 		fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
 		return -1;
 	}
@@ -478,10 +475,16 @@ static int do_item(const char *idstr, const parent_desc &pd)
 	}
 
 	std::string log_id;
+	if (strchr(idstr, ':') != nullptr) {
+		MESSAGE_CONTENT ctnt{};
+		auto err = fetch_as_instance(idstr, log_id, eid, ctnt);
+		if (err != 0)
+			return err;
+		return do_content(ctnt, pd, eid, std::move(log_id));
+	}
+
 	message_content *ctnt = nullptr;
-	auto err = strchr(idstr, ':') != nullptr ?
-	           fetch_as_instance(idstr, log_id, eid, ctnt) :
-	           fetch_message(idstr, log_id, eid, ctnt);
+	auto err = fetch_message(idstr, log_id, eid, ctnt);
 	if (err != 0)
 		return err;
 	if (ctnt == nullptr)
