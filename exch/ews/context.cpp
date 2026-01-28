@@ -158,14 +158,11 @@ void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur)
 	while (strstream >> dayOfWeek) {
 		tolower_inplace(dayOfWeek);
 		if (dayOfWeek == "day") {
-			weekrecur = 0x7F;
-			break;
+			weekrecur |= 0x7F;
 		} else if (dayOfWeek == "weekday") {
-			weekrecur = 0x3E;
-			break;
+			weekrecur |= 0x3E;
 		} else if (dayOfWeek == "weekendday") {
-			weekrecur = 0x41;
-			break;
+			weekrecur |= 0x41;
 		} else if (dayOfWeek == "sunday") {
 			weekrecur |= 1 << FIRSTDOW_SUNDAY;
 		} else if (dayOfWeek == "monday") {
