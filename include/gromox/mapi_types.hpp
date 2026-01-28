@@ -573,7 +573,10 @@ static constexpr unsigned int
 	wed = 1U << 3, /* rdfWed */
 	thu = 1U << 4, /* rdfThu */
 	fri = 1U << 5, /* rdfFri */
-	sat = 1U << 6; /* rdfSat */
+	sat = 1U << 6, /* rdfSat */
+	weekday = mon | tue | wed | thu | fri,
+	weekend = sat | sun,
+	day = weekday | weekend;
 }
 
 #define RECURRENCENUM_FIRST							0x00000001
@@ -588,14 +591,6 @@ union PATTERNTYPE_SPECIFIC {
 		uint32_t weekrecur, recurnum;
 	} monthnth;
 };
-
-#define FIRSTDOW_SUNDAY								0x00000000
-#define FIRSTDOW_MONDAY								0x00000001
-#define FIRSTDOW_TUESDAY							0x00000002
-#define FIRSTDOW_WEDNESDAY							0x00000003
-#define FIRSTDOW_THURSDAY							0x00000004
-#define FIRSTDOW_FRIDAY								0x00000005
-#define FIRSTDOW_SATURDAY							0x00000006
 
 enum {
 	ENDDATE_MISSING        = 0x5ae980df,

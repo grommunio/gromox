@@ -14,6 +14,7 @@
 #include <libHX/string.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
@@ -158,25 +159,25 @@ void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur)
 	while (strstream >> dayOfWeek) {
 		tolower_inplace(dayOfWeek);
 		if (dayOfWeek == "day") {
-			weekrecur |= 0x7F;
+			weekrecur |= week_recur_bit::day;
 		} else if (dayOfWeek == "weekday") {
-			weekrecur |= 0x3E;
+			weekrecur |= week_recur_bit::weekday;
 		} else if (dayOfWeek == "weekendday") {
-			weekrecur |= 0x41;
+			weekrecur |= week_recur_bit::weekend;
 		} else if (dayOfWeek == "sunday") {
-			weekrecur |= 1 << FIRSTDOW_SUNDAY;
+			weekrecur |= week_recur_bit::sun;
 		} else if (dayOfWeek == "monday") {
-			weekrecur |= 1 << FIRSTDOW_MONDAY;
+			weekrecur |= week_recur_bit::mon;
 		} else if (dayOfWeek ==  "tuesday") {
-			weekrecur |= 1 << FIRSTDOW_TUESDAY;
+			weekrecur |= week_recur_bit::tue;
 		} else if (dayOfWeek == "wednesday") {
-			weekrecur |= 1 << FIRSTDOW_WEDNESDAY;
+			weekrecur |= week_recur_bit::wed;
 		} else if (dayOfWeek == "thursday") {
-			weekrecur |= 1 << FIRSTDOW_THURSDAY;
+			weekrecur |= week_recur_bit::thu;
 		} else if (dayOfWeek == "friday") {
-			weekrecur |= 1 << FIRSTDOW_FRIDAY;
+			weekrecur |= week_recur_bit::fri;
 		} else if (dayOfWeek == "saturday") {
-			weekrecur |= 1 << FIRSTDOW_SATURDAY;
+			weekrecur |= week_recur_bit::sat;
 		} else {
 			throw EWSError::CalendarInvalidRecurrence(E3260);
 		}
