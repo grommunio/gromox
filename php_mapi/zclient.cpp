@@ -117,6 +117,7 @@ bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 		return 0;
 	}
 	ext_pack_free(tmp_bin.pb);
+	tmp_bin.pb = nullptr;
 	if (!zclient_read_socket(sockd, tmp_bin)) {
 		close(sockd);
 		return 0;
@@ -124,19 +125,18 @@ bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 	close(sockd);
 	if (tmp_bin.cb < 5 ||
 	    static_cast<zcore_response>(tmp_bin.pb[0]) != zcore_response::success) {
-		if (NULL != tmp_bin.pb) {
+		if (tmp_bin.pb != nullptr)
 			ext_pack_free(tmp_bin.pb);
-		}
 		return 0;
 	}
 	presponse->call_id = prequest->call_id;
-	tmp_bin.cb -= 5;
-	tmp_bin.pb += 5;
-	if (rpc_ext_pull_response(tmp_bin, presponse) != pack_result::ok) {
-		ext_pack_free(tmp_bin.pb - 5);
+	std::string_view input = tmp_bin;
+	input.remove_prefix(5);
+	if (rpc_ext_pull_response(input, presponse) != pack_result::ok) {
+		ext_pack_free(tmp_bin.pb);
 		return 0;
 	}
-	ext_pack_free(tmp_bin.pb - 5);
+	ext_pack_free(tmp_bin.pb);
 	return 1;
 }
 
