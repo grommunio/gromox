@@ -108,10 +108,7 @@ static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
 
 static void *zcrp_thrwork(void *param)
 {
-	int read_len;
-	BINARY tmp_bin;
 	uint32_t offset;
-	uint32_t buff_len;
 	struct pollfd fdpoll;
 	DOUBLE_LIST_NODE *pnode;
 
@@ -131,22 +128,25 @@ static void *zcrp_thrwork(void *param)
 	free(pnode->pdata);
 	
 	offset = 0;
-	buff_len = 0;
-	
 	fdpoll.fd = clifd;
 	fdpoll.events = POLLIN|POLLPRI;
 	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
 		close(clifd);
 		continue;
 	}
-	read_len = read(clifd, &buff_len, sizeof(uint32_t));
-	if (read_len != sizeof(uint32_t) || buff_len >= UINT_MAX) {
-		close(clifd);
-		continue;
-	}
-	buff_len = std::min(buff_len, UINT32_MAX);
-	auto pbuff = malloc(buff_len);
-	if (NULL == pbuff) {
+
+	std::string pbuff;
+	try {
+		uint32_t buff_len = 0;
+		auto read_len = read(clifd, &buff_len, sizeof(uint32_t));
+		if (read_len < 0 || static_cast<size_t>(read_len) != sizeof(uint32_t) ||
+		    buff_len >= UINT_MAX) {
+			close(clifd);
+			continue;
+		}
+		buff_len = std::min(buff_len, UINT32_MAX);
+		pbuff.resize(buff_len);
+	} catch (const std::bad_alloc &) {
 		auto tmp_byte = zcore_response::lack_memory;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
@@ -158,32 +158,27 @@ static void *zcrp_thrwork(void *param)
 	while (true) {
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
 			close(clifd);
-			free(pbuff);
 			break;
 		}
-		read_len = read(clifd, static_cast<char *>(pbuff) + offset, buff_len - offset);
+		auto read_len = read(clifd, &pbuff[offset], pbuff.size() - offset);
 		if (read_len <= 0) {
 			close(clifd);
-			free(pbuff);
 			break;
 		}
 		offset += read_len;
-		if (offset == buff_len)
+		if (offset == pbuff.size())
 			break;
 	}
 	/*
 	 * Interrupt the read loop and, if the entire buffer has not
 	 * been read, we go back to waiting.
 	 */
-	if (offset != buff_len)
+	if (offset != pbuff.size())
 		continue;
 
 	common_util_build_environment();
-	tmp_bin.pv = pbuff;
-	tmp_bin.cb = buff_len;
 	std::unique_ptr<zcreq> request;
-	if (rpc_ext_pull_request(tmp_bin, request) != pack_result::ok) {
-		free(pbuff);
+	if (rpc_ext_pull_request(pbuff, request) != pack_result::ok) {
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::pull_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
@@ -193,7 +188,7 @@ static void *zcrp_thrwork(void *param)
 		close(clifd);
 		continue;
 	}
-	free(pbuff);
+	pbuff = {};
 	if (request->call_id == zcore_callid::notifdequeue)
 		common_util_set_clifd(clifd);
 	std::unique_ptr<zcresp> response;
@@ -213,6 +208,8 @@ static void *zcrp_thrwork(void *param)
 		// Connection stays active, handled elsewhere
 		continue;
 	}
+
+	BINARY tmp_bin{};
 	if (rpc_ext_push_response(response.get(), &tmp_bin) != pack_result::ok) {
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::push_error;
