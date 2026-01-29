@@ -10,8 +10,6 @@
 #include <cstring>
 #include <fcntl.h>
 #include <memory>
-#include <netdb.h>
-#include <pthread.h>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -21,12 +19,10 @@
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
-#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -34,6 +30,7 @@
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
 #include <gromox/svc_loader.hpp>
@@ -62,13 +59,7 @@ static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
 static thread_local std::unique_ptr<alloc_context> g_alloc_mgr;
 static thread_local unsigned int g_amgr_refcount;
-static pthread_t g_thr_id, g_ssl_thr_id;
-static gromox::atomic_bool g_stop_accept;
-static std::string g_listener_addr;
-static int g_listener_sock = -1, g_listener_ssl_sock = -1;
-static uint16_t g_listener_port;
 static unsigned int g_haproxy_level;
-uint16_t g_listener_ssl_port;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
@@ -190,16 +181,10 @@ static void system_services_stop()
 	service_release("broadcast_unselect", "system");
 }
 
-static void *imls_thrwork(void *arg)
+static int imls_thrwork(generic_connection &&conn)
 {
-	const bool use_tls = reinterpret_cast<uintptr_t>(arg);
-	auto sv_sock = use_tls ? g_listener_ssl_sock : g_listener_sock;
-	while (true) {
-		auto conn = generic_connection::accept(sv_sock, g_haproxy_level, &g_stop_accept);
-		if (conn.sockd == -2)
-			break;
-		else if (conn.sockd < 0)
-			continue;
+	const bool use_tls = conn.mark == M_TLS_CONN;
+
 		if (fcntl(conn.sockd, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1416: fcntl: %s", strerror(errno));
 		static constexpr int flag = 1;
@@ -215,7 +200,7 @@ static void *imls_thrwork(void *arg)
 			    HXio_fullwrite(conn.sockd, imap_reply_str, string_length) < 0 ||
 			    HXio_fullwrite(conn.sockd, "\r\n", 2) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 		ctx->type = sctx_status::constructing;
 		/* pass the client ipaddr into the ipaddr filter */
@@ -233,7 +218,7 @@ static void *imls_thrwork(void *arg)
 				conn.client_addr, reason.c_str());
 			/* release the context */
 			contexts_pool_insert(ctx, sctx_status::free);
-			continue;
+			return 0;
 		}
 		if (!use_tls) {
 			char caps[128];
@@ -251,75 +236,8 @@ static void *imls_thrwork(void *arg)
 		 */
 		ctx->polling_mask = POLLING_READ;
 		contexts_pool_insert(ctx, sctx_status::polling);
-	}
-	return nullptr;
-}
 
-static void listener_init(const char *addr, uint16_t port, uint16_t ssl_port)
-{
-	g_listener_addr = addr;
-	g_listener_port = port;
-	g_listener_ssl_port = ssl_port;
-	g_stop_accept = false;
-}
-
-static int listener_run()
-{
-	g_listener_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_port);
-	if (g_listener_sock < 0) {
-		printf("[listener]: failed to create socket [*]:%hu: %s\n",
-		       g_listener_port, strerror(-g_listener_sock));
-		return -1;
-	}
-	gx_reexec_record(g_listener_sock);
-	if (g_listener_ssl_port > 0) {
-		g_listener_ssl_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_ssl_port);
-		if (g_listener_ssl_sock < 0) {
-			printf("[listener]: failed to create socket [*]:%hu: %s\n",
-			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
-			return -1;
-		}
-		gx_reexec_record(g_listener_ssl_sock);
-	}
 	return 0;
-}
-
-static int listener_trigger_accept()
-{
-	auto ret = pthread_create4(&g_thr_id, nullptr, imls_thrwork,
-	           reinterpret_cast<void *>(uintptr_t(false)));
-	if (ret != 0) {
-		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
-		return -1;
-	}
-	pthread_setname_np(g_thr_id, "accept");
-	if (g_listener_ssl_port > 0) {
-		ret = pthread_create4(&g_ssl_thr_id, nullptr, imls_thrwork,
-		      reinterpret_cast<void *>(uintptr_t(true)));
-		if (ret != 0) {
-			printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
-			return -2;
-		}
-		pthread_setname_np(g_ssl_thr_id, "tls_accept");
-	}
-	return 0;
-}
-
-static void listener_stop_accept()
-{
-	g_stop_accept = true;
-	if (g_listener_sock >= 0)
-		shutdown(g_listener_sock, SHUT_RDWR); /* closed in listener_stop */
-	if (!pthread_equal(g_thr_id, {})) {
-		pthread_kill(g_thr_id, SIGALRM);
-		pthread_join(g_thr_id, nullptr);
-	}
-	if (g_listener_ssl_sock >= 0)
-		shutdown(g_listener_ssl_sock, SHUT_RDWR);
-	if (!pthread_equal(g_ssl_thr_id, {})) {
-		pthread_kill(g_ssl_thr_id, SIGALRM);
-		pthread_join(g_ssl_thr_id, nullptr);
-	}
 }
 
 char *capability_list(char *dst, size_t z, imap_context *ctx)
@@ -339,18 +257,6 @@ char *capability_list(char *dst, size_t z, imap_context *ctx)
 	if (parse_bool(g_config_file->get_value("enable_rfc2971_commands")))
 		HX_strlcat(dst, " ID", z);
 	return dst;
-}
-
-static void listener_stop()
-{
-	if (g_listener_sock >= 0) {
-		close(g_listener_sock);
-		g_listener_sock = -1;
-	}
-	if (g_listener_ssl_sock >= 0) {
-		close(g_listener_ssl_sock);
-		g_listener_ssl_sock = -1;
-	}
 }
 
 void imrpc_build_env()
@@ -378,7 +284,6 @@ static void *imrpc_alloc(size_t z)
 
 int main(int argc, char **argv)
 { 
-	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
 	HXopt6_auto_result argp;
 
@@ -510,13 +415,17 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	auto cleanup_2 = HX::make_scope_exit(resource_stop);
-	listener_init(g_config_file->get_value("imap_listen_addr"),
-		listen_port, listen_tls_port);
-	if (0 != listener_run()) {
-		printf("[system]: fail to start listener\n");
+
+	listener_ctx listener;
+	auto laddr = g_config_file->get_value("imap_listen_addr");
+	if (listen_port != 0 &&
+	    listener.add_inet(laddr, listen_port, M_UNENCRYPTED_CONN) != 0)
 		return EXIT_FAILURE;
-	}
-	auto cleanup_4 = HX::make_scope_exit(listener_stop);
+	if (listen_tls_port != 0 &&
+	    listener.add_inet(laddr, listen_tls_port, M_TLS_CONN) != 0)
+		return EXIT_FAILURE;
+	listener.m_haproxy_level = g_haproxy_level;
+	listener.m_thread_name   = "accept";
 
 	filedes_limit_bump(gxconfig->get_ll("imap_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, context_num});
@@ -582,12 +491,11 @@ int main(int argc, char **argv)
 	auto cleanup_18 = HX::make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
-	if (listener_trigger_accept() != 0) {
-		printf("[system]: fail trigger accept\n");
+	auto err = listener.watch_start(g_imap_stop, imls_thrwork);
+	if (err != 0) {
+		mlog(LV_ERR, "listener.thread_start: %s", strerror(err));
 		return EXIT_FAILURE;
 	}
-	
-	retcode = EXIT_SUCCESS;
 	printf("[system]: IMAP DAEMON is now running\n");
 	while (!g_imap_stop) {
 		sleep(3);
@@ -596,8 +504,7 @@ int main(int argc, char **argv)
 			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}
-	listener_stop_accept();
-	return retcode;
+	return EXIT_SUCCESS;
 }
 
 static void term_handler(int signo)
