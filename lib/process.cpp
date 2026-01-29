@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1 /* linux: gettid */
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <cerrno>
 #include <csignal>
 #include <cstdlib>
@@ -18,6 +21,12 @@
 #endif
 #if defined(__linux__) && defined(__GLIBC__) && __GLIBC__ == 2 && __GLIBC_MINOR__ >= 30
 #	define HAVE_GLIBC_GETTID 1
+#endif
+#ifdef HAVE_SYS_EPOLL_H
+#	include <sys/epoll.h>
+#endif
+#ifdef HAVE_SYS_EVENT_H
+#	include <sys/event.h>
 #endif
 #include <sys/resource.h>
 #include <sys/socket.h>
@@ -36,6 +45,7 @@
 #include <libHX/io.h>
 #include <libHX/proc.h>
 #include <libHX/string.h>
+#include <gromox/poll_ctx.hpp>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
 
@@ -308,6 +318,125 @@ errno_t switch_user_exec(const char *user, char *const *argv)
 		break;
 	}
 	return se;
+}
+
+poll_ctx::~poll_ctx()
+{
+	if (m_epfd >= 0)
+		close(m_epfd);
+}
+
+void poll_ctx::reset()
+{
+	if (m_epfd >= 0) {
+		close(m_epfd);
+		m_epfd = -1;
+	}
+	m_events = {};
+}
+
+errno_t poll_ctx::init(int max_ev)
+{
+	if (m_epfd >= 0) {
+		close(m_epfd);
+		m_epfd = -1;
+	}
+	try {
+#ifdef HAVE_SYS_EPOLL_H
+		m_events.resize(max_ev);
+#elif defined(HAVE_SYS_EVENT_H)
+		/* READ-ready and WRITE-ready seems to be separately notified */
+		m_events.resize(max_ev * 2);
+#endif
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+		return ENOMEM;
+	}
+#ifdef HAVE_SYS_EPOLL_H
+	m_epfd = epoll_create1(EPOLL_CLOEXEC);
+	if (m_epfd < 0) {
+		errno_t se = errno;
+		mlog(LV_ERR, "poll_ctx::setup: epoll_create: %s", strerror(se));
+		return se;
+	}
+#elif defined(HAVE_SYS_EVENT_H)
+	m_epfd = kqueue();
+	if (m_epfd < 0) {
+		errno_t se = errno;
+		mlog(LV_ERR, "poll_ctx::setup: kqueue: %s", strerror(se));
+		return se;
+	}
+#endif
+	return 0;
+}
+
+errno_t poll_ctx::addmod(unsigned int mask, int fd, void *ctx, bool add)
+{
+#ifdef HAVE_SYS_EPOLL_H
+	struct epoll_event ev{};
+	ev.data.ptr = ctx;
+	if (mask & polling_read)
+		ev.events |= EPOLLIN;
+	if (mask & polling_write)
+		ev.events |= EPOLLOUT;
+	if (!(mask & level_trigger))
+		ev.events |= EPOLLET | EPOLLONESHOT;
+	auto ret = epoll_ctl(m_epfd, add ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, fd, &ev);
+#elif defined(HAVE_SYS_EVENT_H)
+	unsigned int flags = (mask & level_trigger) ? EV_CLEAR : EV_ONESHOT;
+	struct kevent ev[2]{};
+	ev[0].ident = ev[1].ident = fd;
+	ev[0].flags = ev[1].flags = EV_ADD | EV_ENABLE | flags;
+	ev[0].udata = ev[1].udata = ctx;
+	unsigned int nev = 0;
+	if (mask & POLLING_READ)
+		ev[nev++].filter = EVFILT_READ;
+	if (mask & POLLING_WRITE)
+		ev[nev++].filter = EVFILT_WRITE;
+	auto ret = kevent(m_epfd, ev, nev, nullptr, 0, nullptr);
+#endif
+	if (ret == 0)
+		return 0;
+	errno_t se = errno;
+	mlog(LV_ERR, "poll_ctx::%s: %s\n", add ? "add" : "mod", strerror(se));
+	return se;
+}
+
+errno_t poll_ctx::del(int fd)
+{
+#ifdef HAVE_SYS_EPOLL_H
+	auto ret = epoll_ctl(m_epfd, EPOLL_CTL_DEL, fd, nullptr);
+#elif defined(HAVE_SYS_EVENT_H)
+	struct kevent ev[2]{};
+	EV_SET(&ev[0], fd, EVFILT_READ, EV_DELETE, 0, 0, nullptr);
+	EV_SET(&ev[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
+	auto ret = kevent(m_epfd, ev, std::size(ev), nullptr, 0, nullptr);
+#endif
+	if (ret == 0)
+		return 0;
+	errno_t se = errno;
+	mlog(LV_ERR, "poll_ctx::del: %s\n", strerror(se));
+	return se;
+}
+
+int poll_ctx::wait(const struct timespec *timeout, int max_ev)
+{
+	if (max_ev < 0 || static_cast<size_t>(max_ev) > m_events.size())
+		max_ev = m_events.size();
+#ifdef HAVE_SYS_EPOLL_H
+	return epoll_pwait2(m_epfd, m_events.data(), max_ev, timeout, nullptr);
+#elif defined(HAVE_SYS_EVENT_H)
+	return kevent(m_epfd, nullptr, 0, m_events.data(), max_ev, timeout);
+#endif
+}
+
+void *poll_ctx::data(unsigned int idx) const
+{
+#ifdef HAVE_SYS_EPOLL_H
+	return idx < m_events.size() ? m_events[idx].data.ptr : nullptr;
+#elif defined(HAVE_SYS_EVENT_H)
+	return idx < m_events.size() ? m_events[idx].udata : nullptr;
+#endif
 }
 
 }
