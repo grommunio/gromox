@@ -5,6 +5,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <cassert>
 #include <cerrno>
 #include <csignal>
 #include <cstdlib>
@@ -44,7 +45,10 @@
 #endif
 #include <libHX/io.h>
 #include <libHX/proc.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
+#include <gromox/generic_connection.hpp>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/poll_ctx.hpp>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
@@ -437,6 +441,125 @@ void *poll_ctx::data(unsigned int idx) const
 #elif defined(HAVE_SYS_EVENT_H)
 	return idx < m_events.size() ? m_events[idx].udata : nullptr;
 #endif
+}
+
+void listener_ctx::reset()
+{
+	watch_stop();
+	for (auto &e : m_sockets)
+		close(e.fd);
+	m_sockets.clear();
+}
+
+/**
+ * @mark: an integer the caller can use to later recognize certain sockets again
+ *        (e.g. unencrypted vs. Implicit TLS)
+ */
+errno_t listener_ctx::add_inet(const char *addr, uint16_t port, uint32_t mark)
+{
+	auto fd = HX_inet_listen(addr, port);
+	if (fd < 0) {
+		auto se = errno;
+		mlog(LV_ERR, "%s([%s]:%hu): %s", __PRETTY_FUNCTION__, addr, port, strerror(se));
+		return se;
+	}
+	try {
+		m_sockets.emplace_back(fd, mark);
+	} catch (const std::bad_alloc &) {
+		close(fd);
+		mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+		return ENOMEM;
+	}
+	gx_reexec_record(fd);
+	return 0;
+}
+
+/**
+ * Wait on sockets and invoke a callback on new incoming connections.
+ *
+ * @stop: an extern variable to also evaluate when to stop accepting
+ * @cb:   callback when a connection has been accept()ed
+ *
+ * @cb shall return 0 if processing should continue normally. Any other value
+ * causes loop_fptr to return with that value. This way, @cb too can induce a
+ * temporary exit from the loop.
+ *
+ * loop_f returns 0 when stopping normally, -1 on error, and otherwise whatever
+ * @cb returned.
+ *
+ * NOTE: Because the signal handler for e.g. SIGINT may run in a completely
+ * unrelated thread, epoll_wait may not get interrupted at all. For this
+ * reason, most main() functions have a sleeping loop that evaluates @stop and
+ * then specifically pthread_kill()s any children [such as listener_thread],
+ * which then also stops epoll_wait.
+ */
+void *listener_ctx::listener_thread(void *thread_arg)
+{
+	auto &lctx = *static_cast<listener_ctx *>(thread_arg);
+	if (lctx.m_thread_name.size() > 0)
+		pthread_setname_np(pthread_self(), lctx.m_thread_name.c_str());
+
+	while (!*lctx.m_stop) {
+		auto ready = lctx.m_poller.wait();
+		if (ready < 0) {
+			if (errno == EINTR)
+				continue;
+			return nullptr;
+		}
+		for (int i = 0; i < ready; ++i) {
+			auto sd = static_cast<socket_desc *>(lctx.m_poller.data(i));
+			assert(sd != nullptr);
+			auto conn = generic_connection::accept(sd->fd, lctx.m_haproxy_level, lctx.m_stop);
+			if (conn.sockd == -2)
+				return 0; /* stop signalled */
+			if (conn.sockd < 0)
+				continue;
+			conn.mark = sd->mark;
+			lctx.m_callback(std::move(conn));
+		}
+	}
+	return nullptr;
+}
+
+errno_t listener_ctx::watch_start(gromox::atomic_bool &stop,
+    int (*cb)(generic_connection &&)) try
+{
+	watch_stop();
+	if (m_sockets.size() == 0)
+		return 0;
+	m_stop = &stop;
+	m_callback = cb;
+	auto err = m_poller.init(m_sockets.size());
+	if (err != 0)
+		return err;
+	for (auto &entry : m_sockets) {
+		err = m_poller.add(poll_ctx::polling_read | poll_ctx::level_trigger,
+		      entry.fd, &entry);
+		if (err != 0) {
+			m_poller.reset();
+			return err;
+		}
+	}
+	auto ret = pthread_create4(&m_thr_id, nullptr, listener_thread, this);
+	if (ret != 0) {
+		m_poller.reset();
+		mlog(LV_ERR, "%s: pthread_create: %s", __PRETTY_FUNCTION__, strerror(ret));
+		return ret;
+	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ENOMEM;
+}
+
+void listener_ctx::watch_stop()
+{
+	if (!pthread_equal(m_thr_id, {})) {
+		pthread_kill(m_thr_id, SIGALRM);
+		pthread_join(m_thr_id, nullptr);
+		m_thr_id = {};
+	}
+	m_poller.reset();
 }
 
 }
