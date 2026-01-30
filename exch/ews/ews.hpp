@@ -307,6 +307,7 @@ class EWSContext {
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
 	void deleteOccurrence(const std::string &, uint64_t, uint64_t, uint32_t) const;
+	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tContactsFolderType&, uint64_t) const;
@@ -367,6 +368,8 @@ class EWSContext {
 private:
 	const void* getFolderProp(const std::string&, uint64_t, uint32_t) const;
 	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
+	int32_t recurTzOffset(const std::string &, uint64_t, const APPOINTMENT_RECUR_PAT &) const;
+	bool saveRecurBlob(const std::string &, uint64_t, proptag_t, const APPOINTMENT_RECUR_PAT &) const;
 	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
 
 	struct NotificationContext {

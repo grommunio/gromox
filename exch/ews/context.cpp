@@ -1913,6 +1913,94 @@ void EWSContext::deleteOccurrence(const std::string &dir, uint64_t fid,
 }
 
 /**
+ * Compute timezone offset (in rtime minutes) from the master appointment's
+ * real UTC start vs the recurrence blob's local-as-UTC startdate.
+ */
+int32_t EWSContext::recurTzOffset(const std::string &dir, uint64_t mid,
+    const APPOINTMENT_RECUR_PAT &apr) const
+{
+	proptag_t tags[] = {PR_START_DATE};
+	TPROPVAL_ARRAY sd_res = getItemProps(dir, mid, tags);
+	if (sd_res.count != 1 || sd_res.ppropval->proptag != PR_START_DATE)
+		return 0;
+	auto su = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(sd_res.ppropval->pvalue));
+	auto sl = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
+	return (su - sl) / 60;
+}
+
+/**
+ * Apply property changes to an EXCEPTIONINFO/EXTENDEDEXCEPTION pair
+ * in the recurrence blob.
+ */
+static void applyExceptionOverrides(EXCEPTIONINFO &ei, EXTENDEDEXCEPTION &ee,
+    const TPROPVAL_ARRAY &props, propid_t location_id, propid_t busystatus_id,
+    propid_t subtype_id, propid_t reminderdelta_id, propid_t reminderset_id,
+    int32_t tz_min)
+{
+	for (unsigned int j = 0; j < props.count; ++j) {
+		auto tag = props.ppropval[j].proptag;
+		if (tag == PR_SUBJECT || tag == PR_SUBJECT_A ||
+		    tag == PR_NORMALIZED_SUBJECT ||
+		    tag == PR_NORMALIZED_SUBJECT_A) {
+			ei.overrideflags |= ARO_SUBJECT;
+			ei.subject = static_cast<char *>(props.ppropval[j].pvalue);
+			ee.subject = ei.subject;
+		} else if (PROP_ID(tag) == location_id) {
+			ei.overrideflags |= ARO_LOCATION;
+			ei.location = static_cast<char *>(props.ppropval[j].pvalue);
+			ee.location = ei.location;
+		} else if (PROP_ID(tag) == busystatus_id) {
+			ei.overrideflags |= ARO_BUSYSTATUS;
+			ei.busystatus = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
+		} else if (PROP_ID(tag) == subtype_id) {
+			ei.overrideflags |= ARO_SUBTYPE;
+			ei.subtype = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
+		} else if (PROP_ID(tag) == reminderdelta_id) {
+			ei.overrideflags |= ARO_REMINDERDELTA;
+			ei.reminderdelta = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
+		} else if (PROP_ID(tag) == reminderset_id) {
+			ei.overrideflags |= ARO_REMINDER;
+			ei.reminderset = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
+		} else if (tag == PR_START_DATE) {
+			auto nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+			ei.startdatetime = rop_util_nttime_to_rtime(nt) - tz_min;
+			ee.startdatetime = ei.startdatetime;
+		} else if (tag == PR_END_DATE) {
+			auto nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+			ei.enddatetime = rop_util_nttime_to_rtime(nt) - tz_min;
+			ee.enddatetime = ei.enddatetime;
+		} else if (tag == PR_BODY || tag == PR_BODY_W || tag == PR_HTML) {
+			ei.overrideflags |= ARO_EXCEPTIONAL_BODY;
+		}
+	}
+	ei.overrideflags |= ARO_ATTACHMENT;
+	ei.attachment = 1;
+}
+
+/**
+ * Serialize an APPOINTMENT_RECUR_PAT and save it as a property.
+ * Returns false on serialization failure.
+ */
+bool EWSContext::saveRecurBlob(const std::string &dir, uint64_t mid,
+    proptag_t recur_tag, const APPOINTMENT_RECUR_PAT &apr) const
+{
+	EXT_PUSH ext_push;
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ext_push.p_apptrecpat(apr) != pack_result::ok)
+		return false;
+	BINARY new_bin;
+	new_bin.cb = ext_push.m_offset;
+	new_bin.pb = alloc<uint8_t>(new_bin.cb);
+	memcpy(new_bin.pb, ext_push.m_udata, new_bin.cb);
+	const TAGGED_PROPVAL rprop[] = {{recur_tag, &new_bin}};
+	const TPROPVAL_ARRAY rpropvals = {std::size(rprop), deconst(rprop)};
+	PROBLEM_ARRAY rproblems;
+	return m_plugin.exmdb.set_message_properties(dir.c_str(),
+	       nullptr, CP_ACP, mid, &rpropvals, &rproblems) &&
+	       rproblems.count == 0;
+}
+
+/**
  * Resolve PidLidAppointmentRecur, load the binary, and parse it.
  * Returns the resolved proptag and the parsed recurrence pattern.
  */
@@ -1932,6 +2020,492 @@ EWSContext::loadRecurPat(const std::string &dir, uint64_t mid) const
 	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok)
 		throw EWSError::ItemCorrupt(E3306);
 	return {tag, std::move(apr)};
+}
+
+void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
+    uint64_t mid, uint32_t basedate, const TPROPVAL_ARRAY &props,
+    const proptag_cspan &rm_tags) const
+{
+	auto &exmdb = m_plugin.exmdb;
+
+	/* Resolve named property IDs */
+	const PROPERTY_NAME pn_buf[] = {
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
+		{MNID_ID, PSETID_Appointment, PidLidLocation},
+		{MNID_ID, PSETID_Appointment, PidLidBusyStatus},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentSubType},
+		{MNID_ID, PSETID_Common, PidLidReminderDelta},
+		{MNID_ID, PSETID_Common, PidLidReminderSet},
+		{MNID_ID, PSETID_Common, PidLidCommonStart},
+		{MNID_ID, PSETID_Common, PidLidCommonEnd},
+		{MNID_ID, PSETID_Appointment, PidLidRecurring},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+	};
+	const PROPNAME_ARRAY propnames = {std::size(pn_buf), deconst(pn_buf)};
+	auto namedids         = getNamedPropIds(dir, propnames, true);
+	auto ex_replace_tag   = PROP_TAG(PT_SYSTIME, namedids[0]);
+	auto recur_tag        = PROP_TAG(PT_BINARY, namedids[1]);
+	auto location_id      = namedids[2];
+	auto busystatus_id    = namedids[3];
+	auto subtype_id       = namedids[4];
+	auto reminderdelta_id = namedids[5];
+	auto reminderset_id   = namedids[6];
+	auto common_start_tag = PROP_TAG(PT_SYSTIME, namedids[7]);
+	auto common_end_tag   = PROP_TAG(PT_SYSTIME, namedids[8]);
+	auto recurring_tag    = PROP_TAG(PT_BOOLEAN, namedids[9]);
+	auto appt_start_tag   = PROP_TAG(PT_SYSTIME, namedids[10]);
+	auto appt_end_tag     = PROP_TAG(PT_SYSTIME, namedids[11]);
+
+	/* Load message instance and count attachments */
+	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
+	uint16_t att_count = 0;
+	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
+	    mInst->instanceId, &att_count))
+		throw DispatchError(E3210);
+
+	/* Search for an existing exception matching this basedate */
+	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
+	struct tm basedate_local{};
+	localtime_r(&basedate_ts, &basedate_local);
+
+	for (uint16_t i = 0; i < att_count; ++i) {
+		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		} catch (const DispatchError &) {
+			continue; /* skip non-embedded attachments */
+		}
+		TPROPVAL_ARRAY eprops{};
+		proptag_t etags[] = {ex_replace_tag};
+		if (!exmdb.get_instance_properties(dir.c_str(), 0,
+		    eInst->instanceId, proptag_cspan{etags}, &eprops))
+			continue;
+		auto extime = eprops.get<const uint64_t>(ex_replace_tag);
+		if (!extime)
+			continue;
+		auto ex_ts = clock::to_time_t(rop_util_nttime_to_unix2(*extime));
+		struct tm ex_local{};
+		localtime_r(&ex_ts, &ex_local);
+		if (!is_same_day(basedate_local, ex_local))
+			continue;
+
+		/* Found existing exception – update its embedded message */
+		PROBLEM_ARRAY problems;
+		if (rm_tags.size() > 0 &&
+		    !exmdb.remove_instance_properties(dir.c_str(),
+		    eInst->instanceId, rm_tags, &problems))
+			throw EWSError::ItemSave(E3309);
+		if (!exmdb.set_instance_properties(dir.c_str(),
+		    eInst->instanceId, &props, &problems))
+			throw EWSError::ItemSave(E3309);
+
+		/* Scan props once for body changes and start/end times */
+		bool body_upd = false;
+		bool has_html = false, has_text = false;
+		uint64_t upd_start_nt = 0, upd_end_nt = 0;
+		bool has_start = false, has_end = false;
+		for (unsigned int j = 0; j < props.count; ++j) {
+			auto t = props.ppropval[j].proptag;
+			if (t == PR_HTML) {
+				body_upd = true;
+				has_html = true;
+			} else if (t == PR_BODY || t == PR_BODY_W) {
+				body_upd = true;
+				has_text = true;
+			} else if (t == PR_START_DATE) {
+				upd_start_nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+				has_start = true;
+			} else if (t == PR_END_DATE) {
+				upd_end_nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+				has_end = true;
+			}
+		}
+		if (body_upd) {
+			std::vector<proptag_t> body_rm = {PR_RTF_COMPRESSED};
+			if (has_html && !has_text)
+				body_rm.insert(body_rm.end(), {PR_BODY, PR_BODY_W});
+			else if (has_text && !has_html)
+				body_rm.push_back(PR_HTML);
+			PROBLEM_ARRAY rtf_problems;
+			if (!exmdb.remove_instance_properties(dir.c_str(),
+			    eInst->instanceId, proptag_cspan{body_rm}, &rtf_problems))
+				throw EWSError::ItemSave(E3309);
+			uint8_t rtf_nosync = 0;
+			const TAGGED_PROPVAL rtf_prop[] = {PR_RTF_IN_SYNC, &rtf_nosync};
+			const TPROPVAL_ARRAY rtf_arr = {std::size(rtf_prop), deconst(rtf_prop)};
+			if (!exmdb.set_instance_properties(dir.c_str(),
+			    eInst->instanceId, &rtf_arr, &rtf_problems))
+				throw EWSError::ItemSave(E3309);
+		}
+
+		/*
+		 * Set PidLidRecurring=false and PR_MESSAGE_CLASS to the
+		 * exception class on the embedded message.
+		 */
+		uint8_t recurring_false = 0;
+		const TAGGED_PROPVAL rf_props[] = {
+			{recurring_tag, &recurring_false},
+			{PR_MESSAGE_CLASS, deconst(IPM_Appointment_Exception)},
+		};
+		const TPROPVAL_ARRAY rf_arr = {std::size(rf_props), deconst(rf_props)};
+		if (!exmdb.set_instance_properties(dir.c_str(),
+		    eInst->instanceId, &rf_arr, &problems))
+			throw EWSError::ItemSave(E3309);
+
+		/*
+		 * Ensure the attachment is properly marked as hidden exception
+		 * with all required properties (oxcical layout).
+		 */
+		uint32_t afl = afException;
+		uint8_t ahid = true;
+		uint32_t att_linkid = 0;
+		uint32_t att_fl = 0;
+		uint32_t indet_rendering_pos = UINT32_MAX;
+		std::vector<TAGGED_PROPVAL> afix_vec = {
+			{PR_ATTACHMENT_FLAGS, &afl},
+			{PR_ATTACHMENT_HIDDEN, &ahid},
+			{PR_ATTACHMENT_LINKID, &att_linkid},
+			{PR_ATTACH_FLAGS, &att_fl},
+			{PR_RENDERING_POSITION, &indet_rendering_pos},
+		};
+
+		if (has_start)
+			afix_vec.push_back({PR_EXCEPTION_STARTTIME, &upd_start_nt});
+		if (has_end)
+			afix_vec.push_back({PR_EXCEPTION_ENDTIME, &upd_end_nt});
+		const TPROPVAL_ARRAY afix_arr = {static_cast<uint16_t>(afix_vec.size()), afix_vec.data()};
+		if (!exmdb.set_instance_properties(dir.c_str(),
+		    aInst->instanceId, &afix_arr, &problems))
+			throw EWSError::ItemSave(E3309);
+		ec_error_t err = ecSuccess;
+		if (!exmdb.flush_instance(dir.c_str(),
+		    eInst->instanceId, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3309);
+		if (!exmdb.flush_instance(dir.c_str(),
+		    aInst->instanceId, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3309);
+		if (!exmdb.flush_instance(dir.c_str(),
+		    mInst->instanceId, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3309);
+
+		/* Also update the EXCEPTIONINFO in the recurrence blob */
+		auto *recur_bin = getItemProp<BINARY>(dir, mid, recur_tag);
+		if (recur_bin) {
+			EXT_PULL ext_pull;
+			ext_pull.init(recur_bin->pb, recur_bin->cb, alloc, 0);
+			APPOINTMENT_RECUR_PAT apr{};
+			if (ext_pull.g_apptrecpat(&apr) == pack_result::ok) {
+				int32_t tz_min = recurTzOffset(dir, mid, apr);
+				for (uint16_t k = 0; k < apr.exceptioncount; ++k) {
+					if (apr.pexceptioninfo[k].originalstartdate != basedate)
+						continue;
+					applyExceptionOverrides(apr.pexceptioninfo[k],
+						apr.pextendedexception[k],
+						props, location_id,
+						busystatus_id, subtype_id,
+						reminderdelta_id,
+						reminderset_id, tz_min);
+					break;
+				}
+				saveRecurBlob(dir, mid, recur_tag, apr);
+			}
+		}
+		return;
+	}
+
+	/* No existing exception — create a new one */
+
+	/*
+	 * Read recurrence blob first — needed for timezone offset and
+	 * occurrence time computation before building the embedded msg.
+	 */
+	auto *recur_bin = getItemProp<const BINARY>(dir, mid, recur_tag);
+	if (!recur_bin)
+		throw EWSError::ItemCorrupt(E3305);
+	EXT_PULL ext_pull;
+	ext_pull.init(recur_bin->pb, recur_bin->cb, alloc, 0);
+	APPOINTMENT_RECUR_PAT apr{};
+	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok)
+		throw EWSError::ItemCorrupt(E3306);
+
+	int32_t tz_minutes = recurTzOffset(dir, mid, apr);
+
+	/* Compute occurrence start/end as local-as-UTC rtimes */
+	auto start_rtime = basedate + apr.starttimeoffset;
+	auto end_rtime   = basedate + apr.endtimeoffset;
+
+	/*
+	 * Check if the update has explicit start/end times and override
+	 * rtimes. Pick up the subject for the attachment's PR_DISPLAY_NAME,
+	 * too.
+	 */
+	uint64_t start_nttime = 0, end_nttime = 0;
+	bool has_explicit_start = false, has_explicit_end = false;
+	const char *disp_name = nullptr;
+	bool body_changed = false;
+	const BINARY *upd_html = nullptr;
+	const char *upd_text = nullptr;
+	for (unsigned int j = 0; j < props.count; ++j) {
+		auto tag = props.ppropval[j].proptag;
+		if (tag == PR_START_DATE) {
+			start_nttime = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+			start_rtime  = rop_util_nttime_to_rtime(start_nttime) - tz_minutes;
+			has_explicit_start = true;
+		} else if (tag == PR_END_DATE) {
+			end_nttime = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+			end_rtime  = rop_util_nttime_to_rtime(end_nttime) - tz_minutes;
+			has_explicit_end = true;
+		} else if (!disp_name && (tag == PR_SUBJECT ||
+		    tag == PR_NORMALIZED_SUBJECT)) {
+			disp_name = static_cast<const char *>(props.ppropval[j].pvalue);
+		} else if (tag == PR_HTML) {
+			body_changed = true;
+			upd_html = static_cast<const BINARY *>(props.ppropval[j].pvalue);
+		} else if (tag == PR_BODY || tag == PR_BODY_W) {
+			body_changed = true;
+			upd_text = static_cast<const char *>(props.ppropval[j].pvalue);
+		}
+	}
+
+	/* If no explicit times, compute real UTC NTTIMEs from rtimes */
+	if (!has_explicit_start)
+		start_nttime = rop_util_unix_to_nttime(rop_util_rtime_to_unix(start_rtime) + static_cast<time_t>(tz_minutes) * 60);
+	if (!has_explicit_end)
+		end_nttime = rop_util_unix_to_nttime(rop_util_rtime_to_unix(end_rtime) + static_cast<time_t>(tz_minutes) * 60);
+
+	/* Read master's properties as defaults for the embedded message */
+	auto master_props = getItemProps(dir, mid, proptag_cspan{});
+
+	/* Create new attachment instance */
+	uint32_t aInstId = 0, aNum = 0;
+	if (!exmdb.create_attachment_instance(dir.c_str(),
+	    mInst->instanceId, &aInstId, &aNum))
+		throw EWSError::ItemSave(E3309);
+
+	/* Set attachment properties — match oxcical exception layout */
+	uint32_t method = ATTACH_EMBEDDED_MSG;
+	uint32_t att_flags_val = afException;
+	uint8_t att_hidden = true;
+	uint32_t att_linkid = 0;
+	uint32_t att_fl = 0;
+	BINARY att_enc{0, nullptr};
+	uint32_t indet_rendering_pos = UINT32_MAX;
+	auto *att_start_nt = construct<uint64_t>(start_nttime);
+	auto *att_end_nt = construct<uint64_t>(end_nttime);
+	std::vector<TAGGED_PROPVAL> att_pvec = {
+		{PR_ATTACH_METHOD, &method},
+		{PR_ATTACHMENT_FLAGS, &att_flags_val},
+		{PR_ATTACHMENT_HIDDEN, &att_hidden},
+		{PR_ATTACHMENT_LINKID, &att_linkid},
+		{PR_ATTACH_FLAGS, &att_fl},
+		{PR_ATTACH_ENCODING, &att_enc},
+		{PR_RENDERING_POSITION, &indet_rendering_pos},
+		{PR_EXCEPTION_STARTTIME, att_start_nt},
+		{PR_EXCEPTION_ENDTIME, att_end_nt},
+	};
+
+	/* Build embedded message content */
+	MESSAGE_CONTENT content{};
+
+	/*
+	 * Copy relevant properties from the master message.
+	 * Pick up the master subject as disp_name fallback, too.
+	 */
+	std::vector<TAGGED_PROPVAL> emb_props;
+	for (unsigned int j = 0; j < master_props.count; ++j) {
+		auto tag = master_props.ppropval[j].proptag;
+		/* Skip properties that should not be on exceptions */
+		if (tag == PR_ENTRYID || tag == PR_CHANGE_KEY ||
+		    tag == PR_SOURCE_KEY || tag == PR_PREDECESSOR_CHANGE_LIST ||
+		    tag == PidTagMid || tag == PidTagChangeNumber ||
+		    PROP_TAG(0, PROP_ID(tag)) == PROP_TAG(0, PROP_ID(recur_tag)))
+			continue;
+		if (!disp_name && tag == PR_SUBJECT)
+			disp_name = static_cast<const char *>(
+				master_props.ppropval[j].pvalue);
+		emb_props.push_back(master_props.ppropval[j]);
+	}
+
+	if (disp_name)
+		att_pvec.push_back({PR_DISPLAY_NAME, deconst(disp_name)});
+	TPROPVAL_ARRAY att_list = {static_cast<uint16_t>(att_pvec.size()),
+	                           att_pvec.data()};
+
+	/* Apply the update properties (overrides) */
+	for (unsigned int j = 0; j < props.count; ++j) {
+		auto tag = props.ppropval[j].proptag;
+		/* Remove any existing prop with same tag */
+		std::erase_if(emb_props, [tag](const TAGGED_PROPVAL &p) { return p.proptag == tag; });
+		emb_props.push_back(props.ppropval[j]);
+	}
+
+	/*
+	 * If the body was updated, synchronize all body formats on the
+	 * embedded message. write_attachment_instance does *not* run
+	 * sync_message_body_formats, so we must do it here. Remove *all* stale
+	 * body formats from the master copy, then regenerate the missing ones
+	 * from the update's format.
+	 *
+	 * Remove master properties that will be replaced on the exception:
+	 * recurring flag, message class, all date tags, and (if body changed)
+	 * all body format tags.
+	 */
+	auto *occ_start_nt = construct<uint64_t>(start_nttime);
+	auto *occ_end_nt = construct<uint64_t>(end_nttime);
+	std::erase_if(emb_props, [&](const TAGGED_PROPVAL &p) {
+			auto t = p.proptag;
+			if (t == recurring_tag ||
+			    t == PR_MESSAGE_CLASS ||
+			    t == PR_START_DATE || t == PR_END_DATE ||
+			    t == common_start_tag ||
+			    t == common_end_tag ||
+			    t == appt_start_tag ||
+			    t == appt_end_tag)
+				return true;
+			if (body_changed &&
+			    (t == PR_BODY || t == PR_BODY_W ||
+			     t == PR_HTML || t == PR_RTF_COMPRESSED ||
+			     t == PR_RTF_IN_SYNC))
+				return true;
+			return false;
+		});
+
+	/* Re-add body formats from the update */
+	if (body_changed) {
+		if (upd_html != nullptr)
+			emb_props.push_back({PR_HTML, deconst(upd_html)});
+		if (upd_text != nullptr)
+			emb_props.push_back({PR_BODY, deconst(upd_text)});
+		if (upd_html != nullptr && upd_text == nullptr) {
+			std::string plain;
+			if (html_to_plain(*upd_html, CP_UTF8, plain) >= 0)
+				emb_props.push_back({PR_BODY, cpystr(plain)});
+		} else if (upd_text != nullptr && upd_html == nullptr) {
+			std::string html;
+			if (plain_to_html(upd_text, html) == ecSuccess) {
+				auto *bin = construct<BINARY>(BINARY{
+				            static_cast<uint32_t>(html.size()),
+				            {reinterpret_cast<uint8_t *>(cpystr(html))}});
+				emb_props.push_back({PR_HTML, bin});
+			}
+		}
+		emb_props.push_back({PR_RTF_IN_SYNC, construct<uint8_t>(0)});
+	}
+
+	/* Set exception-specific properties */
+	emb_props.push_back({recurring_tag, construct<uint8_t>(0)});
+	emb_props.push_back({PR_MESSAGE_CLASS, deconst(IPM_Appointment_Exception)});
+	emb_props.push_back({PR_START_DATE, occ_start_nt});
+	emb_props.push_back({PR_END_DATE, occ_end_nt});
+	emb_props.push_back({common_start_tag, occ_start_nt});
+	emb_props.push_back({common_end_tag, occ_end_nt});
+	emb_props.push_back({appt_start_tag, occ_start_nt});
+	emb_props.push_back({appt_end_tag, occ_end_nt});
+
+	/*
+	 * Set PidLidExceptionReplaceTime to the original start time. This must
+	 * be the original date+time (not just date) so Outlook can match the
+	 * embedded message to the exception.
+	 */
+	auto orig_start_utc = rop_util_rtime_to_unix(basedate + apr.starttimeoffset) +
+	                      static_cast<time_t>(tz_minutes) * 60;
+	auto *orig_time = construct<uint64_t>(rop_util_unix_to_nttime(orig_start_utc));
+	emb_props.push_back({ex_replace_tag, orig_time});
+
+	content.proplist.count = emb_props.size();
+	content.proplist.ppropval = emb_props.data();
+
+	/* Write attachment with embedded message */
+	ATTACHMENT_CONTENT ac{};
+	ac.proplist = att_list;
+	ac.pembedded = &content;
+	PROBLEM_ARRAY write_problems;
+	if (!exmdb.write_attachment_instance(dir.c_str(),
+	    aInstId, &ac, false, &write_problems))
+		throw EWSError::ItemSave(E3309);
+
+	ec_error_t err = ecSuccess;
+	if (!exmdb.flush_instance(dir.c_str(), aInstId, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3309);
+	if (!exmdb.flush_instance(dir.c_str(), mInst->instanceId, &err) ||
+	    err != ecSuccess)
+		throw EWSError::ItemSave(E3309);
+
+	/* Update the recurrence blob: add to modified+deleted lists */
+	auto &rp = apr.recur_pat;
+
+	/* Add to deleted instances (required for modified occurrences too) */
+	bool in_deleted = false;
+	for (uint32_t i = 0; i < rp.deletedinstancecount; ++i)
+		if (rp.pdeletedinstancedates[i] == basedate)
+			{ in_deleted = true; break; }
+	if (!in_deleted) {
+		auto *nd = alloc<uint32_t>(rp.deletedinstancecount + 1);
+		memcpy(nd, rp.pdeletedinstancedates,
+		       rp.deletedinstancecount * sizeof(uint32_t));
+		nd[rp.deletedinstancecount] = basedate;
+		rp.pdeletedinstancedates = nd;
+		++rp.deletedinstancecount;
+		std::sort(rp.pdeletedinstancedates,
+		          rp.pdeletedinstancedates + rp.deletedinstancecount);
+	}
+
+	/* Add to modified instances */
+	bool in_modified = false;
+	for (uint32_t i = 0; i < rp.modifiedinstancecount; ++i)
+		if (rp.pmodifiedinstancedates[i] == basedate)
+			{ in_modified = true; break; }
+	if (!in_modified) {
+		auto *nm = alloc<uint32_t>(rp.modifiedinstancecount + 1);
+		memcpy(nm, rp.pmodifiedinstancedates,
+		       rp.modifiedinstancecount * sizeof(uint32_t));
+		nm[rp.modifiedinstancecount] = basedate;
+		rp.pmodifiedinstancedates = nm;
+		++rp.modifiedinstancecount;
+		std::sort(rp.pmodifiedinstancedates,
+		          rp.pmodifiedinstancedates + rp.modifiedinstancecount);
+	}
+
+	/* Build new EXCEPTIONINFO + EXTENDEDEXCEPTION entries */
+	auto new_exc_count = apr.exceptioncount + 1;
+	auto *new_exc = alloc<EXCEPTIONINFO>(new_exc_count);
+	auto *new_ext = alloc<EXTENDEDEXCEPTION>(new_exc_count);
+	memcpy(new_exc, apr.pexceptioninfo, apr.exceptioncount * sizeof(EXCEPTIONINFO));
+	memcpy(new_ext, apr.pextendedexception, apr.exceptioncount * sizeof(EXTENDEDEXCEPTION));
+
+	auto &ei = new_exc[apr.exceptioncount];
+	memset(&ei, 0, sizeof(ei));
+	ei.startdatetime = start_rtime;
+	ei.enddatetime = end_rtime;
+	ei.originalstartdate = basedate;
+	ei.overrideflags = 0;
+
+	auto &ee = new_ext[apr.exceptioncount];
+	memset(&ee, 0, sizeof(ee));
+	ee.changehighlight.size = sizeof(uint32_t);
+	ee.startdatetime = start_rtime;
+	ee.enddatetime = end_rtime;
+	ee.originalstartdate = basedate;
+
+	applyExceptionOverrides(ei, ee, props, location_id,
+		busystatus_id, subtype_id, reminderdelta_id,
+		reminderset_id, tz_minutes);
+
+	apr.pexceptioninfo = new_exc;
+	apr.pextendedexception = new_ext;
+	apr.exceptioncount = new_exc_count;
+
+	/* Sort exceptions by start time */
+	std::sort(apr.pexceptioninfo,
+	          apr.pexceptioninfo + apr.exceptioncount);
+	std::sort(apr.pextendedexception,
+	          apr.pextendedexception + apr.exceptioncount);
+
+	if (!saveRecurBlob(dir, mid, recur_tag, apr))
+		throw DispatchError(E3308);
 }
 
 /**
