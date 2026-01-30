@@ -350,7 +350,7 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 			return tproc_status::close;
 		} else {
 			pcontext->last_cmd = T_NONE_CMD;
-			if (pcontext->connection.server_port == g_listener_ssl_port) {
+			if (pcontext->connection.mark == M_TLS_CONN) {
 				/* 220 <domain> Service ready */
 				auto smtp_reply_str = resource_get_smtp_code(202, 1, &string_length);
 				auto smtp_reply_str2 = resource_get_smtp_code(202, 2, &string_length);
