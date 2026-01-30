@@ -308,6 +308,7 @@ class EWSContext {
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
 	void deleteOccurrence(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
+	void applyRecurrence(const std::string &, uint64_t, const tinyxml2::XMLElement *, Structures::sShape &) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tContactsFolderType&, uint64_t) const;

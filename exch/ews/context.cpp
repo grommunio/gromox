@@ -2509,6 +2509,268 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 }
 
 /**
+ * @brief      Convert EWS Recurrence XML to MAPI properties and write to shape
+ *
+ * Used by UpdateItem when the client modifies the recurrence of an existing
+ * calendar item.  The start/end times needed for blob construction are taken
+ * from the shape if they were also updated, otherwise read from the message.
+ *
+ * @param      dir   Store directory
+ * @param      mid   Message ID of the calendar item
+ * @param      xml   XML element containing the Recurrence child elements
+ * @param      shape Shape to write properties to
+ */
+void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
+    const tinyxml2::XMLElement *xml, sShape &shape) const
+{
+	tRecurrenceType recurrence(xml);
+
+	/* Resolve named property IDs for start/end and all-day flag */
+	const PROPERTY_NAME pn_buf[] = {
+		{MNID_ID, PSETID_Common, PidLidCommonStart},
+		{MNID_ID, PSETID_Common, PidLidCommonEnd},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentSubType},
+	};
+	const PROPNAME_ARRAY propnames = {std::size(pn_buf), deconst(pn_buf)};
+	auto namedids    = getNamedPropIds(dir, propnames, false);
+	auto start_tag   = PROP_TAG(PT_SYSTIME, namedids[0]);
+	auto end_tag     = PROP_TAG(PT_SYSTIME, namedids[1]);
+	auto subtype_tag = PROP_TAG(PT_BOOLEAN, namedids[2]);
+
+	/* Get start/end: prefer values from the shape (co-updated), fall back to message */
+	time_t localStartTime = 0, localEndTime = 0;
+	auto *sp = shape.writes(start_tag);
+	auto *ep = shape.writes(end_tag);
+	if (sp) {
+		localStartTime = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(sp->pvalue));
+	} else {
+		auto *v = getItemProp<uint64_t>(dir, mid, start_tag);
+		if (v)
+			localStartTime = rop_util_nttime_to_unix(*v);
+	}
+	if (ep) {
+		localEndTime = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(ep->pvalue));
+	} else {
+		auto *v = getItemProp<uint64_t>(dir, mid, end_tag);
+		if (v)
+			localEndTime = rop_util_nttime_to_unix(*v);
+	}
+	if (localStartTime == 0 || localEndTime == 0)
+		throw EWSError::CalendarInvalidRecurrence(E3265);
+
+	/* Check if this is an all-day event */
+	bool isAllDay = false;
+	auto *st = shape.writes(subtype_tag);
+	if (st) {
+		isAllDay = *static_cast<const uint32_t *>(st->pvalue) != 0;
+	} else {
+		auto *v = getItemProp<uint32_t>(dir, mid, subtype_tag);
+		if (v)
+			isAllDay = *v != 0;
+	}
+
+	/*
+	 * For recurring all-day events, normalize End to exactly one day after
+	 * Start so occurrences do not overlap.
+	 */
+	if (isAllDay && localEndTime - localStartTime != 86400) {
+		localEndTime = localStartTime + 86400;
+		auto corrected_end = construct<uint64_t>(rop_util_unix_to_nttime(localEndTime));
+		shape.write(TAGGED_PROPVAL{end_tag, corrected_end});
+	}
+	auto duration = localEndTime - localStartTime;
+	/*
+	 * Use RecurrenceRange StartDate for the recurrence start date. For
+	 * all-day events, the Start time is midnight local in UTC (e.g. 23:00Z
+	 * for CET), but StartDate is the correct date.
+	 */
+	auto &rr = recurrence.RecurrenceRange;
+	auto rangeStart = clock::to_time_t(std::visit([](const auto &r) { return r.StartDate; }, rr));
+	struct tm startdate_tm{};
+	if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
+		throw EWSError::CalendarInvalidRecurrence(E3265);
+
+	APPOINTMENT_RECUR_PAT apr{};
+	uint32_t deleted_dates[1024], modified_dates[1024];
+	EXCEPTIONINFO exceptions[1024];
+	EXTENDEDEXCEPTION ext_exceptions[1024];
+
+	apr.readerversion2 = 0x3006;
+	apr.writerversion2 = 0x3009;
+	apr.exceptioncount = 0;
+	apr.pexceptioninfo = exceptions;
+	apr.pextendedexception = ext_exceptions;
+	if (isAllDay) {
+		apr.starttimeoffset = 0;
+		apr.endtimeoffset = 1440;
+	} else {
+		/* localStartTime is real UTC from NTTIME.  Convert to
+		 * the appointment's local timezone for the blob. */
+		time_t appt_local = localStartTime;
+		auto caltz_tag = shape.tag(NtCalendarTimeZone);
+		if (caltz_tag != 0) {
+			const TAGGED_PROPVAL *caltz = shape.writes(NtCalendarTimeZone);
+			if (caltz) {
+				auto buf = ianatz_to_tzdef(static_cast<char *>(caltz->pvalue));
+				if (!buf)
+					buf = wintz_to_tzdef(static_cast<char *>(caltz->pvalue));
+				if (buf) {
+					EXT_PULL ep;
+					TZDEF tz;
+					ep.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+					int64_t tz_off = 0;
+					if (ep.g_tzdef(&tz) == pack_result::ok &&
+					    offset_from_tz(&tz, localStartTime, tz_off))
+						appt_local = localStartTime -
+							static_cast<time_t>(tz_off) * 60;
+				}
+			}
+		}
+		struct tm start_tm{};
+		gmtime_r(&appt_local, &start_tm);
+		apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
+		apr.endtimeoffset = apr.starttimeoffset + duration / 60;
+	}
+	apr.recur_pat.readerversion = 0x3004;
+	apr.recur_pat.writerversion = 0x3004;
+	apr.recur_pat.calendartype = CAL_DEFAULT;
+	apr.recur_pat.deletedinstancecount = 0;
+	apr.recur_pat.pdeletedinstancedates = deleted_dates;
+	apr.recur_pat.modifiedinstancecount = 0;
+	apr.recur_pat.pmodifiedinstancedates = modified_dates;
+	apr.recur_pat.slidingflag = 0;
+	startdate_tm.tm_hour = 0;
+	startdate_tm.tm_min = 0;
+	startdate_tm.tm_sec = 0;
+	time_t startdate = timegm(&startdate_tm);
+	apr.recur_pat.startdate = rop_util_unix_to_rtime(startdate);
+	uint8_t rectype = rectypeNone;
+	auto &rp = recurrence.RecurrencePattern;
+
+	if (std::holds_alternative<tDailyRecurrencePattern>(rp)) {
+		auto interval = std::get<tDailyRecurrencePattern>(rp).Interval;
+		if (interval < 1 || interval > 999)
+			throw EWSError::CalendarInvalidRecurrence(E3266);
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_DAILY;
+		apr.recur_pat.patterntype = rptMinute;
+		apr.recur_pat.period = interval * 1440;
+		rectype = rectypeDaily;
+	} else if (std::holds_alternative<tWeeklyRecurrencePattern>(rp)) {
+		auto interval = std::get<tWeeklyRecurrencePattern>(rp).Interval;
+		if (interval < 1 || interval > 99)
+			throw EWSError::CalendarInvalidRecurrence(E3267);
+		auto firstdow = 1;
+		if (std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek)
+			firstdow = std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek->index();
+		if (firstdow > 6)
+			throw EWSError::CalendarInvalidRecurrence(E3268);
+		const auto &daysOfWeek = std::get<tWeeklyRecurrencePattern>(rp).DaysOfWeek;
+		apr.recur_pat.pts.weekrecur = 0;
+		daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.weekrecur);
+		if (apr.recur_pat.pts.weekrecur == 0)
+			throw EWSError::CalendarInvalidRecurrence(E3269);
+		apr.recur_pat.recurfrequency = apr.recur_pat.pts.weekrecur != 0x3E ?
+			IDC_RCEV_PAT_ORB_WEEKLY : IDC_RCEV_PAT_ORB_DAILY;
+		apr.recur_pat.patterntype = rptWeek;
+		apr.recur_pat.period = interval;
+		apr.recur_pat.firstdow = firstdow;
+		rectype = rectypeWeekly;
+	} else if (std::holds_alternative<tRelativeMonthlyRecurrencePattern>(rp)) {
+		auto interval = std::get<tRelativeMonthlyRecurrencePattern>(rp).Interval;
+		if (interval < 1 || interval > 99)
+			throw EWSError::CalendarInvalidRecurrence(E3270);
+		const auto &daysOfWeek = std::get<tRelativeMonthlyRecurrencePattern>(rp).DaysOfWeek;
+		apr.recur_pat.pts.monthnth.weekrecur = 0;
+		daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
+		if (apr.recur_pat.pts.monthnth.weekrecur == 0)
+			throw EWSError::CalendarInvalidRecurrence(E3271);
+		auto dayOfWeekIndex = std::get<tRelativeMonthlyRecurrencePattern>(rp).DayOfWeekIndex.index();
+		if (dayOfWeekIndex > 4)
+			throw EWSError::CalendarInvalidRecurrence(E3272);
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
+		apr.recur_pat.patterntype = rptMonthNth;
+		apr.recur_pat.period = interval;
+		apr.recur_pat.pts.monthnth.recurnum = static_cast<uint8_t>(dayOfWeekIndex) + 1;
+		rectype = rectypeMonthly;
+	} else if (std::holds_alternative<tAbsoluteMonthlyRecurrencePattern>(rp)) {
+		auto interval = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).Interval;
+		if (interval < 1 || interval > 99)
+			throw EWSError::CalendarInvalidRecurrence(E3273);
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
+		apr.recur_pat.patterntype = rptMonth;
+		apr.recur_pat.period = interval;
+		apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).DayOfMonth;
+		if (apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
+			throw EWSError::CalendarInvalidRecurrence(E3274);
+		rectype = rectypeMonthly;
+	} else if (std::holds_alternative<tRelativeYearlyRecurrencePattern>(rp)) {
+		const auto &daysOfWeek = std::get<tRelativeYearlyRecurrencePattern>(rp).DaysOfWeek;
+		apr.recur_pat.pts.monthnth.weekrecur = 0;
+		daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
+		if (apr.recur_pat.pts.monthnth.weekrecur == 0)
+			throw EWSError::CalendarInvalidRecurrence(E3275);
+		auto dayOfWeekIndex = std::get<tRelativeYearlyRecurrencePattern>(rp).DayOfWeekIndex.index();
+		auto month = std::get<tRelativeYearlyRecurrencePattern>(rp).Month.index();
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
+		apr.recur_pat.patterntype = rptMonthNth;
+		apr.recur_pat.period = 12;
+		apr.recur_pat.pts.monthnth.recurnum = static_cast<uint8_t>(dayOfWeekIndex) + 1;
+		rectype = rectypeYearly;
+		startdate_tm.tm_mon = month;
+	} else if (std::holds_alternative<tAbsoluteYearlyRecurrencePattern>(rp)) {
+		auto month = std::get<tAbsoluteYearlyRecurrencePattern>(rp).Month.index();
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
+		apr.recur_pat.patterntype = rptMonth;
+		apr.recur_pat.period = 12;
+		apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteYearlyRecurrencePattern>(rp).DayOfMonth;
+		if (apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
+			throw EWSError::CalendarInvalidRecurrence(E3279);
+		rectype = rectypeYearly;
+		startdate_tm.tm_mon = month;
+	} else {
+		throw EWSError::CalendarInvalidRecurrence(E3280);
+	}
+
+	calc_firstdatetime(apr.recur_pat, &startdate_tm);
+	if (std::holds_alternative<tNoEndRecurrenceRange>(rr)) {
+		apr.recur_pat.endtype = IDC_RCEV_PAT_ERB_NOEND;
+		apr.recur_pat.occurrencecount = 0xA;
+		apr.recur_pat.enddate = ENDDATE_MISSING;
+	} else if (std::holds_alternative<tEndDateRecurrenceRange>(rr)) {
+		apr.recur_pat.endtype = IDC_RCEV_PAT_ERB_END;
+		apr.recur_pat.occurrencecount = 0xA;
+		auto ed = std::get<tEndDateRecurrenceRange>(rr).EndDate;
+		auto enddate = clock::to_time_t(ed);
+		apr.recur_pat.enddate = rop_util_unix_to_rtime(enddate);
+	} else if (std::holds_alternative<tNumberedRecurrenceRange>(rr)) {
+		apr.recur_pat.endtype = IDC_RCEV_PAT_ERB_AFTERNOCCUR;
+		apr.recur_pat.occurrencecount = std::get<tNumberedRecurrenceRange>(rr).NumberOfOccurrences;
+		calc_enddate(apr.recur_pat, &startdate_tm);
+	} else {
+		throw EWSError::CalendarInvalidRecurrence(E3281);
+	}
+
+	BINARY tmp_bin;
+	EXT_PUSH ext_push;
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ext_push.p_apptrecpat(apr) != pack_result::ok)
+		throw DispatchError(E3120);
+	tmp_bin.cb = ext_push.m_offset;
+	tmp_bin.pb = ext_push.m_udata;
+
+	uint8_t *recurdata = alloc<uint8_t>(tmp_bin.cb);
+	memcpy(recurdata, tmp_bin.pv, tmp_bin.cb);
+
+	shape.write(NtRecurrenceType, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(rectype)});
+	shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY, construct<BINARY>(BINARY{tmp_bin.cb, {recurdata}})});
+	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(1)});
+	auto clipstart = construct<uint64_t>(rop_util_unix_to_nttime(startdate));
+	shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME, clipstart});
+	auto clipend = construct<uint64_t>(rop_util_rtime_to_nttime(apr.recur_pat.enddate));
+	shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
+}
+
+/**
  * @brief      Generate initial predecessor change list from xid
  *
  * @param      xid  Initial change key
