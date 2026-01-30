@@ -267,8 +267,6 @@ minid ab_base::at_filtered(uint32_t idx) const
 /**
  * @brief      Write company name to target string
  *
- * Retrieves value from PR_COMPANY_NAME property, uses domain title as fallback.
- *
  * @param      mid           Mid of the node
  * @param      str_name      String to write company name to, or nullptr to ignore
  *
@@ -280,14 +278,9 @@ bool ab_base::company_name(minid mid, std::string &str_name) const
 	if (!user)
 		return false;
 	auto it = user->propvals.find(PR_COMPANY_NAME);
-	if(it != user->propvals.end()) {
-		str_name = it->second;
-		return true;
-	}
-	const ab_domain *domain = find_domain(user->domain_id);
-	if (!domain)
+	if(it == user->propvals.end())
 		return false;
-	str_name = domain->info.title;
+	str_name = it->second;
 	return true;
 }
 
@@ -606,8 +599,6 @@ bool ab_base::mlist_info(minid mid, std::string *mail_address, std::string *crea
 /**
  * @brief      Write office location to target string
  *
- * Retrieves value from PR_OFFICE_LOCATION property, uses domain title as fallback.
- *
  * @param      mid           Mid of the node
  * @param      str_address   String to write company address to, or nullptr to ignore
  *
@@ -619,14 +610,9 @@ bool ab_base::office_location(minid mid, std::string &str_address) const
 	if (!user)
 		return false;
 	auto it = user->propvals.find(PR_OFFICE_LOCATION);
-	if(it != user->propvals.end()) {
-		str_address = it->second;
-		return true;
-	}
-	const ab_domain *domain = find_domain(user->domain_id);
-	if (!domain)
+	if(it == user->propvals.end())
 		return false;
-	str_address = domain->info.address;
+	str_address = it->second;
 	return true;
 }
 
