@@ -434,6 +434,7 @@ E(3303, "failed to load item");
 E(3305, "failed to resolve occurrence index: no recurrence blob");
 E(3306, "failed to resolve occurrence index: could not parse recurrence blob");
 E(3307, "occurrence index out of range");
+E(3308, "failed to save modified recurrence blob");
 
 #undef E
 }

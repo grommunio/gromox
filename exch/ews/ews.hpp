@@ -306,6 +306,7 @@ class EWSContext {
 	TARRAY_SET loadPermissions(const std::string&, uint64_t) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
+	void deleteOccurrence(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tContactsFolderType&, uint64_t) const;

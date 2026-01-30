@@ -1875,6 +1875,44 @@ uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
 }
 
 /**
+ * @brief      Delete a single occurrence from a recurring appointment
+ *
+ * Adds the occurrence date to the deleted instances list in the
+ * recurrence blob and saves it back to the item.
+ *
+ * @param      dir       Store directory
+ * @param      fid       Folder ID
+ * @param      mid       Message ID of the recurring master
+ * @param      basedate  Occurrence date in rtime format
+ */
+void EWSContext::deleteOccurrence(const std::string &dir, uint64_t fid,
+    uint64_t mid, uint32_t basedate) const
+{
+	auto [recur_tag, apr] = loadRecurPat(dir, mid);
+
+	/* Check if this date is already deleted */
+	auto &rp = apr.recur_pat;
+	if (std::any_of(&rp.pdeletedinstancedates[0], &rp.pdeletedinstancedates[rp.deletedinstancecount],
+	    [=](uint32_t entry) { return entry == basedate; }))
+		return; /* already deleted */
+
+	/* Add the basedate to the deleted instances array */
+	auto *new_del = alloc<uint32_t>(rp.deletedinstancecount + 1);
+	memcpy(new_del, rp.pdeletedinstancedates,
+	       rp.deletedinstancecount * sizeof(uint32_t));
+	new_del[rp.deletedinstancecount] = basedate;
+	rp.pdeletedinstancedates = new_del;
+	++rp.deletedinstancecount;
+
+	/* Sort the deleted dates array */
+	std::sort(rp.pdeletedinstancedates,
+	          rp.pdeletedinstancedates + rp.deletedinstancecount);
+
+	if (!saveRecurBlob(dir, mid, recur_tag, apr))
+		throw DispatchError(E3308);
+}
+
+/**
  * Resolve PidLidAppointmentRecur, load the binary, and parse it.
  * Returns the resolved proptag and the parsed recurrence pattern.
  */
