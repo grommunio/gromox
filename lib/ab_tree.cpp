@@ -265,15 +265,14 @@ minid ab_base::at_filtered(uint32_t idx) const
 }
 
 /**
- * @brief      Write company info to target strings
+ * @brief      Write company name to target string
  *
  * @param      mid           Mid of the node
  * @param      str_name      String to write company name to, or nullptr to ignore
- * @param      str_address   String to write company address to, or nullptr to ignore
  *
  * @return     true if successful, false otherwise
  */
-bool ab_base::company_info(minid mid, std::string *str_name, std::string *str_address) const
+bool ab_base::company_name(minid mid, std::string &str_name) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
@@ -281,10 +280,7 @@ bool ab_base::company_info(minid mid, std::string *str_name, std::string *str_ad
 	const ab_domain *domain = find_domain(user->domain_id);
 	if (!domain)
 		return false;
-	if (str_name != nullptr)
-		*str_name = domain->info.title;
-	if (str_address != nullptr)
-		*str_address = domain->info.address;
+	str_name = domain->info.title;
 	return true;
 }
 
@@ -597,6 +593,26 @@ bool ab_base::mlist_info(minid mid, std::string *mail_address, std::string *crea
 		*create_day = '\0';
 	if (privilege != nullptr)
 		*privilege = user->list_priv;
+	return true;
+}
+
+/**
+ * @brief      Write office location to target string
+ *
+ * @param      mid           Mid of the node
+ * @param      str_address   String to write company address to, or nullptr to ignore
+ *
+ * @return     true if successful, false otherwise
+ */
+bool ab_base::office_location(minid mid, std::string &str_address) const
+{
+	const sql_user *user = fetch_user(mid);
+	if (!user)
+		return false;
+	const ab_domain *domain = find_domain(user->domain_id);
+	if (!domain)
+		return false;
+	str_address = domain->info.address;
 	return true;
 }
 

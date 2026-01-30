@@ -229,7 +229,7 @@ class GX_EXPORT ab_base {
 	minid at(uint32_t) const;
 	const std::vector<std::string> &aliases(minid) const;
 	size_t children_count(minid) const;
-	bool company_info(minid, std::string *, std::string *) const;
+	bool company_name(minid, std::string &) const;
 	std::string displayname(minid) const;
 	bool dn(minid, std::string &) const;
 	uint32_t dtyp(minid) const;
@@ -247,6 +247,7 @@ class GX_EXPORT ab_base {
 	uint32_t hidden(minid) const;
 	ec_error_t mdbdn(minid, std::string &) const;
 	bool mlist_info(minid, std::string *, std::string *, int *) const;
+	bool office_location(minid, std::string &) const;
 	ec_error_t proplist(minid, std::vector<gromox::proptag_t> &) const;
 	minid resolve(const char *) const;
 	inline size_t size() const { return m_users.size() + m_domains.size(); }
@@ -354,7 +355,7 @@ struct GX_EXPORT ab_node {
 
 	WRAP(aliases)
 	WRAP(children_count)
-	WRAP(company_info)
+	WRAP(company_name)
 	WRAP(displayname)
 	WRAP(dn)
 	WRAP(dtyp)
@@ -366,6 +367,7 @@ struct GX_EXPORT ab_node {
 	WRAP(get_leaves_num)
 	WRAP(mdbdn)
 	WRAP(mlist_info)
+	WRAP(office_location)
 	WRAP(proplist)
 	WRAP(type)
 	WRAP(user_info)

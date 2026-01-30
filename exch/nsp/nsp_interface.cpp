@@ -356,28 +356,28 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		pprop->value.pstr = cu_utf8_to_mb_dup(codepage, dn);
 		return pprop->value.pstr != nullptr ? ecSuccess : errno2mapi(errno);
 	case PR_COMPANY_NAME:
-		if (!node.company_info(&dn, nullptr))
+		if (!node.company_name(dn))
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
 		pprop->value.pstr = cu_strdup(dn, NDR_STACK_OUT);
 		return pprop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
 	case PR_COMPANY_NAME_A:
-		if (!node.company_info(&dn, nullptr))
+		if (!node.company_name(dn))
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
 		pprop->value.pstr = cu_utf8_to_mb_dup(codepage, dn);
 		return pprop->value.pstr != nullptr ? ecSuccess : errno2mapi(errno);
 	case PR_OFFICE_LOCATION:
-		if (!node.company_info(nullptr, &dn))
+		if (!node.office_location(dn))
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
 		pprop->value.pstr = cu_strdup(dn, NDR_STACK_OUT);
 		return pprop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
 	case PR_OFFICE_LOCATION_A:
-		if (!node.company_info(nullptr, &dn))
+		if (!node.office_location(dn))
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;

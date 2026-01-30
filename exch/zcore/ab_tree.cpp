@@ -289,7 +289,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
 		if (node_type >= ab_tree::abnode_type::containers)
 			return TRUE;
 		std::string dn;
-		pnode.company_info(&dn, nullptr);
+		pnode.company_name(dn);
 		if (dn.empty())
 			return TRUE;
 		auto pvalue = common_util_dup(dn);
