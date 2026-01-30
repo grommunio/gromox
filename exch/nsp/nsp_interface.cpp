@@ -250,7 +250,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecInvalidObject;
 		if (pprop == nullptr)
 			return ecSuccess;
-		pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
+		pprop->value.pstr = cu_strdup(dn, NDR_STACK_OUT);
 		return pprop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
 	case PR_OBJECT_TYPE: {
 		if (pprop == nullptr)
@@ -339,7 +339,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
-		pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
+		pprop->value.pstr = cu_strdup(dn, NDR_STACK_OUT);
 		return pprop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
 	case PR_TRANSMITABLE_DISPLAY_NAME_A:
 		if (node_type != ab_tree::abnode_type::user)
@@ -360,7 +360,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
-		pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
+		pprop->value.pstr = cu_strdup(dn, NDR_STACK_OUT);
 		return pprop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
 	case PR_COMPANY_NAME_A:
 		if (!node.company_info(&dn, nullptr))
@@ -374,7 +374,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
-		pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
+		pprop->value.pstr = cu_strdup(dn, NDR_STACK_OUT);
 		return pprop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
 	case PR_OFFICE_LOCATION_A:
 		if (!node.company_info(nullptr, &dn))
@@ -397,7 +397,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
-		pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
+		pprop->value.pstr = cu_strdup(dn, NDR_STACK_OUT);
 		return pprop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
 	case PR_EMS_AB_PROXY_ADDRESSES:
 	case PR_EMS_AB_PROXY_ADDRESSES_A: {
