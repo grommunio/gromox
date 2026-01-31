@@ -37,7 +37,6 @@ using namespace gromox;
 
 static void *htls_thrwork(void *);
 
-static unsigned int g_mss_size;
 static gromox::atomic_bool g_stop_accept;
 static pthread_t g_thr_id;
 static int g_listener_sock = -1, g_listener_ssl_sock = -1;
@@ -45,13 +44,11 @@ static std::string g_listener_addr;
 static uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;
 
-void listener_init(const char *addr, uint16_t port, uint16_t ssl_port,
-    unsigned int mss_size)
+void listener_init(const char *addr, uint16_t port, uint16_t ssl_port)
 {
 	g_listener_addr = addr;
 	g_listener_port = port;
 	g_listener_ssl_port = ssl_port;
-	g_mss_size = mss_size;
 	g_stop_accept = false;
 }
 
@@ -72,11 +69,6 @@ int listener_run()
 		return -1;
 	}
 	gx_reexec_record(g_listener_sock);
-	if (g_mss_size > 0 &&
-	    setsockopt(g_listener_sock, IPPROTO_TCP, TCP_MAXSEG,
-	    &g_mss_size, sizeof(g_mss_size)) < 0)
-		return -2;
-	
 	if (g_listener_ssl_port > 0) {
 		g_listener_ssl_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_ssl_port);
 		if (g_listener_ssl_sock < 0) {
@@ -85,10 +77,6 @@ int listener_run()
 			return -1;
 		}
 		gx_reexec_record(g_listener_ssl_sock);
-		if (g_mss_size > 0 &&
-		    setsockopt(g_listener_ssl_sock, IPPROTO_TCP, TCP_MAXSEG,
-		    &g_mss_size, sizeof(g_mss_size)) < 0)
-			return -2;
 	}
 
 	return 0;

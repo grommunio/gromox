@@ -119,7 +119,6 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"ntlmssp_program", "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp"},
 	{"request_max_mem", "4M", CFG_SIZE, "1M"},
 	{"running_identity", RUNNING_IDENTITY},
-	{"tcp_max_segment", "0", CFG_SIZE},
 	{"thread_charge_num", "http_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "http_thread_init_num", CFG_ALIAS},
 	{"tls_min_proto", "tls1.2"},
@@ -303,9 +302,8 @@ int main(int argc, char **argv)
 	HX_unit_seconds(temp_buff, std::size(temp_buff), fastcgi_exec_timeout.count(), 0);
 	mlog(LV_INFO, "http: fastcgi execution timeout is %s", temp_buff);
 	uint16_t listen_port = g_config_file->get_ll("http_listen_port");
-	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
 	listener_init(g_config_file->get_value("http_listen_addr"),
-		listen_port, listen_tls_port, mss_size);
+		listen_port, listen_tls_port);
 	auto cleanup_4 = HX::make_scope_exit(listener_stop);
 	if (0 != listener_run()) {
 		mlog(LV_ERR, "system: failed to start listener");
