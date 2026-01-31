@@ -1,25 +1,37 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cerrno>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
+#include <list>
 #include <memory>
 #include <string>
+#include <unistd.h>
 #include <utility>
+#include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <vmime/utility/url.hpp>
+#include <gromox/atomic.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_provider_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>
+#include <gromox/list_file.hpp>
+#include <gromox/listener_ctx.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
 #include <gromox/svc_common.h>
 #include <gromox/svc_loader.hpp>
@@ -273,4 +285,181 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 	default:
 		return TRUE;
 	}
+}
+
+/* ex server.cpp */
+namespace {
+
+struct env_context {
+	alloc_context alloc_ctx;
+	const char *dir = nullptr;
+	unsigned int account_id = 0;
+	bool b_local = false, b_private = false;
+};
+
+}
+
+static thread_local const char *g_id_key;
+static thread_local const char *g_public_username_key;
+
+namespace exmdb_server {
+
+using evproc_t = void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
+static thread_local std::unique_ptr<env_context> g_env_key;
+static std::vector<evproc_t> event_proc_handlers;
+
+void build_env(unsigned int flags, const char *dir) try
+{
+	common_util_build_tls();
+	auto pctx = std::make_unique<env_context>();
+	pctx->b_local = flags & EM_LOCAL;
+	pctx->b_private = flags & EM_PRIVATE;
+	pctx->dir = dir;
+	pctx->account_id = 0;
+	g_env_key = std::move(pctx);
+} catch (const std::bad_alloc &) {
+	gromox::mlog(LV_ERR, "%s: ENOMEM", __func__);
+}
+
+void free_env()
+{
+	g_env_key.reset();
+}
+
+void set_remote_id(const char *remote_id)
+{
+	g_id_key = remote_id;
+}
+
+ALLOC_CONTEXT *get_alloc_context()
+{
+	auto pctx = g_env_key.get();
+	if (pctx == nullptr || pctx->b_local)
+		return NULL;
+	return &pctx->alloc_ctx;
+}
+
+const char *get_remote_id()
+{
+	return g_id_key;
+}
+
+void set_public_username(const char *username)
+{
+	g_public_username_key = username;
+}
+
+const char *get_public_username()
+{
+	/* Only ever used by readstate tracking */
+	return g_public_username_key;
+}
+
+/* can not be called in local rpc thread without
+	invoking exmdb_server::build_environment before! */
+bool is_private()
+{
+	return g_env_key->b_private;
+}
+
+/* can not be called in local rpc thread without invoking exmdb_server::build_env before! */
+const char *get_dir()
+{
+	return g_env_key->dir;
+}
+
+/* can not be called in local rpc thread without invoking exmdb_server::build_env before! */
+void set_dir(const char *dir)
+{
+	g_env_key->dir = dir;
+}
+
+unsigned int get_account_id()
+{
+	unsigned int account_id = 0;
+	auto pctx = g_env_key.get();
+	if (pctx->account_id == 0) {
+		if (pctx->b_private) {
+			if (mysql_adaptor_get_id_from_maildir(pctx->dir, &account_id))
+				pctx->account_id = account_id;
+		} else {
+			if (mysql_adaptor_get_id_from_homedir(pctx->dir, &account_id))
+				pctx->account_id = account_id;
+		}
+	}
+	return pctx->account_id;
+}
+
+const GUID *get_handle()
+{
+	auto pctx = g_env_key.get();
+	if (pctx == nullptr || !pctx->b_local)
+		return NULL;
+	return common_util_get_handle();
+}
+
+void register_proc(void *f)
+{
+	event_proc_handlers.emplace_back(reinterpret_cast<evproc_t>(f));
+	/*
+	 * All modifications of event_proc_handlers happen during process startup,
+	 * so exmdb_server::event_proc can run lock-free.
+	 */
+}
+
+void event_proc(const char *dir, BOOL is_table,
+    uint32_t notify_id, const DB_NOTIFY *datagram)
+{
+	for (auto f : event_proc_handlers)
+		f(dir, is_table, notify_id, datagram);
+}
+
+}
+
+/* ex client.cpp */
+static void buildenv(bool pvt)
+{
+	exmdb_server::build_env(pvt ? EM_PRIVATE : 0, nullptr);
+}
+
+int exmdb_client_run_front(const char *dir)
+{
+	return exmdb_client_run(dir, EXMDB_CLIENT_ALLOW_DIRECT,
+	       buildenv, exmdb_server::free_env);
+}
+
+/*
+ * Caution. This function is not a common exmdb service, it only can be called
+ * by message_rule_new_message to pass a message to the delegate's mailbox.
+ */
+BOOL exmdb_client_relay_delivery(const char *dir, const char *from_address,
+    const char *account, cpid_t cpid, const MESSAGE_CONTENT *pmsg,
+	const char *pdigest, uint32_t *presult)
+{
+	bool b_private;
+
+	if (exmdb_client_can_use_lpc(dir, g_host_id.c_str(), &b_private)) {
+		auto original_dir = exmdb_server::get_dir();
+		exmdb_server::set_dir(dir);
+		uint64_t folder_id = 0, msg_id = 0;
+		auto b_result = exmdb_server::deliver_message(dir, from_address,
+		                account, cpid,
+		                DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV,
+		                pmsg, pdigest, &folder_id, &msg_id, presult);
+		exmdb_server::set_dir(original_dir);
+		return b_result;
+	}
+	exreq_deliver_message q{};
+	exresp_deliver_message r{};
+	q.call_id = exmdb_callid::deliver_message;
+	q.dir = deconst(dir);
+	q.from_address = deconst(from_address);
+	q.account = deconst(account);
+	q.cpid = cpid;
+	q.pmsg = deconst(pmsg);
+	q.pdigest = deconst(pdigest);
+	if (!exmdb_client_do_rpc(&q, &r))
+		return FALSE;
+	*presult = r.result;
+	return TRUE;
 }
