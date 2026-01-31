@@ -20,6 +20,20 @@ enum class mime_type {
 	none, single, single_obj, multiple,
 };
 
+/*
+ * A custom memory allocator that hands out memory in a stack-like (LIFO) fashion
+ * and where deallocation happens in a single operation and nukes all objects.
+ *
+ * It's full of drawbacks.
+ * - You can’t easily return memory early
+ * - Memory usage spikes silently
+ * - Tools like Valgrind often won’t flag leaks /
+ *   Memory is freed eventually, just very late.
+ * - Not suitable for long-lived objects (objects supposed to outlive the
+ *   allocator instance lifetime or a .clear call)
+ * - Anything with ownership transfer (e.g transferring to another scope which
+ *   outlives the allocator)
+ */
 struct GX_EXPORT alloc_context {
 	alloc_context() = default;
 	NOMOVE(alloc_context);

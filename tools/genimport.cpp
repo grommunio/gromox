@@ -497,6 +497,11 @@ int gi_startup_client(unsigned int maxconn)
 	return exmdb_client_run(PKGSYSCONFDIR);
 }
 
+void gi_purge_alloc()
+{
+	g_alloc_mgr.clear();
+}
+
 void gi_shutdown()
 {
 	g_alloc_mgr.clear();

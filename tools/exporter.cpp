@@ -378,6 +378,9 @@ static int do_folder(eid_t folder_id, const parent_desc &pd)
 		return -1;
 	}
 
+	/* hack to cope with exmdb_client's idiotic reliance on alloc_context for everything */	
+	auto cl_0 = HX::make_scope_exit(gi_purge_alloc);
+
 	PROPTAG_ARRAY ptall{};
 	if (!exmdb_client->get_folder_all_proptags(g_storedir, folder_id, &ptall))
 		return -1;
@@ -430,6 +433,8 @@ static int do_folder(eid_t folder_id, const parent_desc &pd)
 	}
 	std::string log_id_unused;
 	for (auto msg_id : chosen) {
+		auto cl_1 = HX::make_scope_exit(gi_purge_alloc);
+
 		message_content *ctnt = nullptr;
 		if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
 		    msg_id, &ctnt)) {
@@ -462,6 +467,7 @@ static int do_folder(eid_t folder_id, const parent_desc &pd)
 
 static int do_item(const char *idstr, const parent_desc &pd)
 {
+	auto cl_0 = HX::make_scope_exit(gi_purge_alloc);
 	auto eid = gi_lookup_eid_by_name(g_storedir, idstr);
 	if (eid != 0)
 		return do_folder(eid, pd);
