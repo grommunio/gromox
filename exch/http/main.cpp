@@ -158,7 +158,6 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 
 int main(int argc, char **argv)
 {
-	int retcode = EXIT_FAILURE;
 	char host_name[UDOM_SIZE], *ptoken;
 	const char *dns_name, *dns_domain, *netbios_name;
 	HXopt6_auto_result argp;
@@ -302,13 +301,12 @@ int main(int argc, char **argv)
 	HX_unit_seconds(temp_buff, std::size(temp_buff), fastcgi_exec_timeout.count(), 0);
 	mlog(LV_INFO, "http: fastcgi execution timeout is %s", temp_buff);
 	uint16_t listen_port = g_config_file->get_ll("http_listen_port");
-	listener_init(g_config_file->get_value("http_listen_addr"),
-		listen_port, listen_tls_port);
-	auto cleanup_4 = HX::make_scope_exit(listener_stop);
-	if (0 != listener_run()) {
+	if (listener_init(g_config_file->get_value("http_listen_addr"),
+	    listen_port, listen_tls_port) != 0) {
 		mlog(LV_ERR, "system: failed to start listener");
 		return EXIT_FAILURE;
 	}
+	auto cleanup_4 = HX::make_scope_exit(listener_stop);
 
 	const char *program_identifier = "http";
 	auto istore_standalone = gxconfig->get_ll("istore_standalone");
@@ -416,16 +414,14 @@ int main(int argc, char **argv)
 	}
 
 	/*
-	 * The listening socket comes last. The htls_thrwork function
+	 * Connection acceptance thread comes last. The htls_thrwork function
 	 * needs an initialized contexts_pool object.
 	 */
 	if (listener_trigger_accept() != 0) {
 		mlog(LV_ERR, "system: failed listening socket setup");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_29 = HX::make_scope_exit(listener_stop_accept);
 	
-	retcode = EXIT_SUCCESS;
 	mlog(LV_INFO, "system: HTTP daemon is now running");
 	while (!g_httpmain_stop) {
 		sleep(3);
@@ -446,7 +442,7 @@ int main(int argc, char **argv)
 	service_trigger_all(PLUGIN_QUENCH_ASYNC);
 	pdu_processor_trigger(PLUGIN_QUENCH_ASYNC);
 	pdu_processor_trigger(PLUGIN_QUENCH_ASYNC);
-	return retcode;
+	return EXIT_SUCCESS;
 }
 
 static void term_handler(int signo)

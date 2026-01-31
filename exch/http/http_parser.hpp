@@ -147,3 +147,4 @@ extern size_t g_rqbody_flush_size, g_rqbody_max_size;
 extern bool g_enforce_auth;
 extern std::string g_http_remote_host_hdr;
 extern gromox::time_duration g_http_basic_auth_validity;
+extern gromox::atomic_bool g_httpmain_stop;
