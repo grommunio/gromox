@@ -19,6 +19,11 @@ static inline int _pthread_setname_np(pthread_t thread, const char *name)
 
 namespace gromox {
 
+enum {
+	ISTORE_SPLIT_DIRECTOR = 0x1U,
+	ISTORE_SPLIT_WORKERS  = 0x2U,
+};
+
 #ifdef __OpenBSD__
 static constexpr char RUNNING_IDENTITY[] = "_gromox";
 #else

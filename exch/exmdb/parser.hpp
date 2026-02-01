@@ -62,9 +62,10 @@ extern bool exmdb_parser_insert_conn(generic_connection &&);
 extern std::shared_ptr<router_connection> exmdb_parser_get_router(const char *remote_id);
 extern void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&);
 extern BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &);
+extern int exmdb_pickup(int control_fd);
 extern int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg);
 extern int exmdb_listener_run(const char *config_path, const config_file &gxcfg);
 extern void exmdb_listener_stop();
 
-extern std::atomic<unsigned int> g_exrpc_debug, g_enable_dam;
+extern std::atomic<unsigned int> g_exrpc_debug, g_enable_dam, g_istore_standalone;
 extern std::string g_host_id;

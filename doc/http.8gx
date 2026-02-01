@@ -88,12 +88,10 @@ its own reporting, which in turn is useful for e.g. fail2ban setups.
 Default: (empty)
 .TP
 \fBistore_standalone\fP
-This directive serves as a mutual exclusion device between http(8gx) and
-istore(8gx) and controls which one of the two is in charge of running the
-mailbox engine. If this is set to no, http will be the one and istore(8gx) has
-no function.
+A bitmask controlling how the Information Store code should run as separate
+processes in separate address spaces. See istore(8gx) for details.
 .br
-Default: \fIno\fP
+Default: \fI0\fP
 .SH Configuration directives (http.cfg)
 The following directives are recognized when reading from /etc/gromox/http.cfg,
 or when the \fB\-c\fP option is used to specify a custom file:

@@ -37,7 +37,10 @@
 #include <gromox/listener_ctx.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/paths.h>
 #include <gromox/process.hpp>
+#include <gromox/socketpass.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "notification_agent.hpp"
 #include "parser.hpp"
@@ -48,8 +51,14 @@
 using namespace gromox;
 
 struct parser_params {
+	/* worker state */
 	std::shared_ptr<EXMDB_CONNECTION> conn;
+	std::string single_user, injected_pkt;
 	bool is_connected = false, b_private = false;
+
+	/* set only when director role */
+	bool use_workers = false;
+	std::string_view input_buf;
 };
 
 static size_t g_max_threads, g_max_routers;
@@ -60,7 +69,7 @@ static std::mutex g_router_lock, g_connection_lock;
 static gromox::atomic_bool g_exmdblisten_stop;
 static std::vector<std::string> g_acl_list;
 static listener_ctx exmdb_listen_ctx;
-std::atomic<unsigned int> g_enable_dam;
+std::atomic<unsigned int> g_enable_dam, g_istore_standalone;
 std::string g_host_id;
 
 exmdb_connection::exmdb_connection(generic_connection &&co) :
@@ -262,6 +271,35 @@ static bool max_routers_reached()
 	return g_router_list.size() >= g_max_routers;
 }
 
+static std::mutex spwork_lock;
+static std::map<std::string, socketpass_worker> spworkers;
+static bool rqi_handoff(EXMDB_CONNECTION &conn, const char *dir,
+    std::string_view input_buf)
+{
+	if (*dir == '\0') {
+		mlog(LV_ERR, "Tried to call rqi_handoff with empty dir\n");
+		raise(SIGABRT);
+	}
+	/* End the connection in any case once we return */
+	conn.b_stop = true;
+
+	std::string prog = znul(service_get_prog_arg0());
+	if (!prog.empty())
+		prog = std::unique_ptr<char[], stdlib_delete>(HX_dirname(prog.c_str())).get();
+	prog += "/istore";
+	const char *args[] = {prog.c_str(), "-x", dir, nullptr};
+
+	std::lock_guard lk(spwork_lock);
+	auto [iter, added] = spworkers.try_emplace(dir);
+	auto &worker = iter->second;
+	auto err = worker.start(prog.c_str(), const_cast<char **>(args));
+	if (err != 0) {
+		mlog(LV_ERR, "spworker_start %s: %s", prog.c_str(), strerror(err));
+		return false;
+	}
+	return worker.pass(input_buf, conn.sockd) == 0;
+}
+
 static int rqi_terminate(EXMDB_CONNECTION &conn, exmdb_response resp_code)
 {
 	if (HXio_fullwrite(conn.sockd, &resp_code, 1) != 1)
@@ -270,14 +308,19 @@ static int rqi_terminate(EXMDB_CONNECTION &conn, exmdb_response resp_code)
 }
 
 static int rqi_connect(parser_params &param, const exreq_connect &q,
-    BINARY &output_buf)
+    std::string_view input_buf, BINARY &output_buf)
 {
 	auto &conn = *param.conn;
 
+	if (!param.single_user.empty() &&
+	    strcmp(param.single_user.c_str(), q.dir) != 0)
+		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
 	if (!exmdb_parser_is_local(q.dir, &param.b_private))
 		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
 	else if (!!param.b_private != !!q.b_private)
 		return rqi_terminate(conn, exmdb_response::misconfig_mode);
+	if (param.use_workers)
+		return rqi_handoff(conn, q.dir, input_buf);
 
 	/* q.remote_id is going away, copy it */
 	conn.remote_id = q.remote_id;
@@ -292,11 +335,17 @@ static int rqi_connect(parser_params &param, const exreq_connect &q,
 	return 0;
 }
 
-static int rqi_listen(parser_params &param, const exreq_listen_notification &q) try
+static int rqi_listen(parser_params &param, const exreq_listen_notification &q,
+    std::string_view input_buf) try
 {
 	auto &conn = *param.conn;
+	if (!param.single_user.empty() &&
+	    strcmp(param.single_user.c_str(), q.dir) != 0)
+		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
 	if (g_max_routers != 0 && max_routers_reached())
 		return rqi_terminate(conn, exmdb_response::max_reached);
+	if (param.use_workers)
+		return rqi_handoff(conn, q.dir, input_buf);
 
 	auto router = std::make_shared<router_connection>(std::move(static_cast<generic_connection &>(conn)),
 	              std::move(conn.thr_id), q.remote_id);
@@ -323,14 +372,15 @@ static int rqi_listen(parser_params &param, const exreq_listen_notification &q) 
 }
 
 static int rqi_unconnected(parser_params &param, const exreq &request,
-    BINARY &output_buf)
+    std::string_view input_buf, BINARY &output_buf)
 {
 	switch (request.call_id) {
 	case exmdb_callid::connect:
 		return rqi_connect(param, static_cast<const exreq_connect &>(request),
-		       output_buf);
+		       input_buf, output_buf);
 	case exmdb_callid::listen_notification:
-		return rqi_listen(param, static_cast<const exreq_listen_notification &>(request));
+		return rqi_listen(param, static_cast<const exreq_listen_notification &>(request),
+		       input_buf);
 	default:
 		return rqi_terminate(*param.conn, exmdb_response::connect_incomplete);
 	}
@@ -360,7 +410,7 @@ static int rqi_handle_buffer(parser_params &param, std::string_view input_buf,
 
 	std::unique_ptr<exresp> response;
 	if (!param.is_connected)
-		return rqi_unconnected(param, *request, output_buf);
+		return rqi_unconnected(param, *request, input_buf, output_buf);
 	if (!exmdb_parser_dispatch(request.get(), response))
 		return rqi_terminate(conn, exmdb_response::dispatch_error);
 	if (exmdb_ext_push_response(response.get(), &output_buf) != pack_result::success)
@@ -383,6 +433,8 @@ static void *request_parser_thread(void *pparam)
 		/* Force remaining holders into a wall */
 		pconnection->close_fd();
 	});
+	param->use_workers = strcmp(service_get_prog_id(), "istore-director") == 0 &&
+	                     g_istore_standalone & ISTORE_SPLIT_WORKERS;
 	try {
 		char txt[16];
 		snprintf(txt, std::size(txt), "exrq/%hu", pconnection->client_port);
@@ -412,6 +464,14 @@ static void *request_parser_thread(void *pparam)
 			output_buf.cb = 0;
 			offset = 0;
 			is_writing = false;
+			continue;
+		}
+		if (!param->injected_pkt.empty()) {
+			if (rqi_handle_buffer(*param, param->injected_pkt, output_buf) < 0)
+				break;
+			param->injected_pkt.clear();
+			offset = 0;
+			is_writing = true;
 			continue;
 		}
 		pfd_read.fd = pconnection->sockd;
@@ -548,6 +608,28 @@ static int sockaccept_thread(generic_connection &&conn)
 			return 0;
 		}
 
+	return 0;
+}
+
+int exmdb_pickup(int control_fd)
+{
+	auto par = std::make_unique<parser_params>();
+	int client_fd = -1;
+	auto ern = socketpass_receive(control_fd, par->injected_pkt, client_fd);
+	if (ern != 0)
+		return -1;
+	par->conn = std::make_shared<exmdb_connection>(generic_connection::takeover(std::move(client_fd)));
+	if (par->conn->sockd < 0)
+		return 0;
+
+	/* reprise of exmdb_parser_insert_conn */
+	par->single_user = znul(getenv("ISTORE_USER"));
+	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
+	           request_parser_thread, par.get());
+	if (ret != 0)
+		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
+	else
+		par.release(); /* thread should be vivid now */
 	return 0;
 }
 

@@ -15,6 +15,10 @@ debuggability.
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
 specified, /etc/gromox/gromox.cfg will be read if it exists.
+.TP
+\fB\-x\fP \fIusername\fP
+Used internally by istore to re-launch itself as a single-store worker process.
+This option is not meant to be used by administrators.
 .SH Configuration directives (gromox.cfg)
 The following directives are recognized when reading from
 /etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
@@ -64,12 +68,19 @@ Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug
 Default: \fI4\fP (notice)
 .TP
 \fBistore_standalone\fP
-This directive serves as a mutual exclusion device between http(8gx) and
-istore(8gx) and controls which one of the two will execute the mailbox engine.
-If and only if this is set to yes will istore be able to startup, while http
-will disable the engine on its startup.
+A bitmask controlling how the Information Store code should split itself up to
+run as separate processes in separate address spaces.
 .br
-Default: \fIno\fP
+Flag 0x1: Separation of the Information Store from the HTTP server. If set, the
+Information Store is to be launched from
+/usr/libexec/gromox/istore (e.g. the gromox-istore.service systemd unit) and
+not from /usr/libexec/gromox/http (gromox-http.service).
+.br
+Flag 0x2: Separation of individual stores. If set, the Information Store
+director, i.e. the code that has the port 5000 listening socket open, will
+spawn worker processes instead of threads.
+.br
+Default: \fI0\fP
 .TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.

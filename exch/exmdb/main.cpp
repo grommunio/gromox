@@ -170,9 +170,18 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		if (!exmdb_provider_reload(gxcfg, pconfig))
 			return false;
-		bool allow_lpc = strcmp(service_get_prog_id(), "istore") == 0;
-		if (!allow_lpc)
-			return TRUE;
+		/*
+		 * Looking at the config does not tell us [libgxs_exmdb_provider.so]
+		 * what process we are in; hence the use of get_prog_id() instead.
+		 * But we do need istore_standalone for other purposes.
+		 */
+		g_istore_standalone = gxcfg->get_ll("istore_standalone");
+		auto prog_id = service_get_prog_id();
+		if (strncmp(prog_id, "istore-worker:", 14) == 0)
+			return TRUE; /* worker role; no listening socket */
+		if (strcmp(prog_id, "istore-director") != 0)
+			return TRUE; /* client role; no listening socket */
+		/* Director role */
 		if (exmdb_listener_init(*gxcfg, *pconfig) != 0)
 			return FALSE;
 		return TRUE;
@@ -238,15 +247,18 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule, std::move(smtp_url));
 		db_engine_init(table_size, cache_interval, sfpop_max, par_upg, par_shut);
-		bool allow_lpc = strcmp(service_get_prog_id(), "istore") == 0;
-		if (!allow_lpc)
-			exmdb_parser_init(0, 0);
-		else
+		auto prog_id = service_get_prog_id();
+		bool run_parser = strncmp(prog_id, "istore-", 7) == 0;
+		if (run_parser)
+			/* Director or worker */
 			exmdb_parser_init(max_threads, max_routers);
+		else
+			/* This process seems to be a client */
+			exmdb_parser_init(0, 0);
 
 		exmdb_client.emplace(connection_num);
 		exmdb_client->set_async_notif(exmdb_server::event_proc);
-		exmdb_client->m_allow_lpc = allow_lpc;
+		exmdb_client->m_allow_lpc = run_parser && g_istore_standalone == 0;
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "mail_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
@@ -263,7 +275,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		 * process image, which means we are authoritative and should
 		 * launch the socket.
 		 */
-		if (exmdb_client->m_allow_lpc &&
+		if (run_parser &&
 		    exmdb_listener_run(get_config_path(), *pconfig) != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start exmdb listener");
 			exmdb_listener_stop();
@@ -286,6 +298,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 #undef IDLOUT
 		register_service("exmdb_client_register_proc", exmdb_server::register_proc);
 		register_service("pass_service", common_util_pass_service);
+		register_service("exmdb_pickup", exmdb_pickup);
 		return TRUE;
 	}
 	case PLUGIN_FREE:
