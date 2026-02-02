@@ -79,8 +79,22 @@ struct remote_conn_ref {
 	std::list<remote_conn> tmplist;
 };
 
-struct remote_svr : public EXMDB_ITEM {
-	remote_svr(EXMDB_ITEM &&o) noexcept : EXMDB_ITEM(std::move(o)) {}
+struct remote_svr {
+	public:
+	remote_svr() = default;
+	remote_svr(remote_svr &&o) :
+		prefix(std::move(o.prefix)), host(std::move(o.host)),
+		port(o.port), type(o.type), conn_list(std::move(o.conn_list)),
+		active_handles(o.active_handles.load())
+	{}
+	void operator=(remote_svr &&) = delete;
+
+	std::string prefix, host;
+	uint16_t port = 0;
+	enum {
+		EXMDB_PRIVATE,
+		EXMDB_PUBLIC,
+	} type;
 
 	std::list<remote_conn> conn_list;
 	std::optional<agent_thread> m_agent;
@@ -183,7 +197,7 @@ exmdb_client_remote::~exmdb_client_remote()
 	mdcl_event_proc = nullptr;
 }
 
-static int exmdb_client_connect_exmdb(const EXMDB_ITEM &srv, bool b_listen,
+static int exmdb_client_connect_exmdb(const remote_svr &srv, bool b_listen,
     const char *prog_id)
 {
 	int sockd = HX_inet_connect(srv.host.c_str(), srv.port, 0);
@@ -204,7 +218,7 @@ static int exmdb_client_connect_exmdb(const EXMDB_ITEM &srv, bool b_listen,
 		rqc.call_id = exmdb_callid::connect;
 		rqc.prefix = deconst(srv.prefix.c_str());
 		rqc.remote_id = mdcl_remote_id;
-		rqc.b_private = srv.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
+		rqc.b_private = srv.type == remote_svr::EXMDB_PRIVATE ? TRUE : false;
 		if (exmdb_ext_push_request(&rqc, &bin) != pack_result::ok)
 			return -1;
 	} else {
@@ -221,7 +235,7 @@ static int exmdb_client_connect_exmdb(const EXMDB_ITEM &srv, bool b_listen,
 	free(bin.pb);
 	bin.pb = nullptr;
 	if (mdcl_build_env != nullptr)
-		mdcl_build_env(srv.type == EXMDB_ITEM::EXMDB_PRIVATE);
+		mdcl_build_env(srv.type == remote_svr::EXMDB_PRIVATE);
 	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	if (!exmdb_client_read_socket(sockd, bin, mdcl_rpc_timeout) ||
 	    bin.pb == nullptr)
@@ -275,7 +289,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	bin.cb = buff.size();
 	bin.pc = buff.data();
 	if (mdcl_build_env != nullptr)
-		mdcl_build_env(agent.pserver->type == EXMDB_ITEM::EXMDB_PRIVATE);
+		mdcl_build_env(agent.pserver->type == remote_svr::EXMDB_PRIVATE);
 	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	DB_NOTIFY_DATAGRAM notify;
 	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == pack_result::ok ?
@@ -428,14 +442,16 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 	/* std::list iterators don't invalidate unless the element goes away */
 	if (i == mdcl_server_list.end()) try {
 		sv_hold.unlock();
-		EXMDB_ITEM itm{dir, std::string{}, 5000}; /* XXX: hardcoded port number.. */
+		remote_svr itm;
+		itm.prefix = dir;
+		itm.port = 5000; /* XXX: hardcoded port number */
 		bool is_pvt = false;
 		auto err = mysql_adaptor_get_homeserver_for_dir(dir, &is_pvt, itm.host);
 		if (err != 0) {
 			mlog(LV_ERR, "exmdb_client: cannot find remote server for %s", dir);
 			return fc;
 		}
-		itm.type = is_pvt ? EXMDB_ITEM::EXMDB_PRIVATE : EXMDB_ITEM::EXMDB_PUBLIC;
+		itm.type = is_pvt ? remote_svr::EXMDB_PRIVATE : remote_svr::EXMDB_PUBLIC;
 		sv_hold.lock();
 		mdcl_server_list.emplace_back(std::move(itm));
 		i = std::prev(mdcl_server_list.end());
