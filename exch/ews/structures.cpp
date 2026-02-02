@@ -2484,6 +2484,12 @@ void tContact::update(const sShape& shape)
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Callback));
 	if ((val = shape.get<char>(PR_RADIO_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::RadioPhone));
+	if ((val = shape.get<char>(PR_CAR_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::CarPhone));
+	if ((val = shape.get<char>(PR_ISDN_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Isdn));
+	if ((val = shape.get<char>(PR_PRIMARY_FAX_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::OtherFax));
 
 	std::optional<tPhysicalAddressDictionaryEntry> bAddr, hAddr, oAddr; // "Business", "Home", and "Other" address
 	if ((val = shape.get<char>(NtBusinessAddressCity)))

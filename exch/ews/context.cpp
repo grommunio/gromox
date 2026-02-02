@@ -3735,11 +3735,14 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 			case 2: tag = PR_BUSINESS_TELEPHONE_NUMBER; break;
 			case 3: tag = PR_BUSINESS2_TELEPHONE_NUMBER; break;
 			case 4: tag = PR_CALLBACK_TELEPHONE_NUMBER; break;
+			case 5: tag = PR_CAR_TELEPHONE_NUMBER; break;
 			case 6: tag = PR_COMPANY_MAIN_PHONE_NUMBER; break;
 			case 7: tag = PR_HOME_FAX_NUMBER; break;
 			case 8: tag = PR_HOME_TELEPHONE_NUMBER; break;
 			case 9: tag = PR_HOME2_TELEPHONE_NUMBER; break;
+			case 10: tag = PR_ISDN_NUMBER; break;
 			case 11: tag = PR_MOBILE_TELEPHONE_NUMBER; break;
+			case 12: tag = PR_PRIMARY_FAX_NUMBER; break;
 			case 13: tag = PR_OTHER_TELEPHONE_NUMBER; break;
 			case 14: tag = PR_PAGER_TELEPHONE_NUMBER; break;
 			case 15: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
