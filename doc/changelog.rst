@@ -1,5 +1,5 @@
-Gromox 3.3.185 (Development)
-===========================
+Gromox 3.4 (2026-02-02)
+=======================
 
 Enhancements:
 
@@ -21,6 +21,7 @@ Fixes:
   sometimes lost the last character in the conversion, which has been fixed.
 * exmdb: abort purge-datafiles if there is a database error midway
 * imap: release potentially-large APPEND buffers much earlier
+* exporter: plug two memory leaks
 
 Changes:
 
@@ -29,6 +30,12 @@ Changes:
   and no longer magically assumed to be in the same charset as the body.
 * exporter: FAI messages are no longer emitted by default and explicitly need
   to be requested with the -a option.
+* ruleproc: treat not only "Busy" as a collision, but also "Tentative" and
+  "Out-Of-Office"
+* ruleproc: evaluate not just PR_START_DATE but also
+  PidLidAppointmentStartWhole (and their end counterparts)
+* ab_tree: PR_COMPANY_NAME is no longer synthesized from the title of the
+  domain a user belongs to
 * daemons: deleted the oxcical_allday_ymd config directive
 
 

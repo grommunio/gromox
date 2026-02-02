@@ -18,9 +18,6 @@ possibly transformed by the ABP:
 
 * ``PR_ADDRTYPE``: Not read, but synthesized.
 
-* ``PR_COMPANY_NAME``: Not read from the user object, but copied from the
-  ``domain.title`` column of the user's domain.
-
 * ``PR_CREATION_TIME``: Not read, but synthesized.
 
 * ``PR_DEPARTMENT_NAME``: [Before Gromox 2.42] Not read, but copied from the

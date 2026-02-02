@@ -1,4 +1,4 @@
-AC_INIT([gromox], [3.3])
+AC_INIT([gromox], [3.4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
