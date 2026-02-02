@@ -21,7 +21,7 @@ static const PROPERTY_NAME NtMeetingType = {MNID_ID, PSETID_Meeting, PidLidMeeti
 /* PSETID_Address */
 static const PROPERTY_NAME NtBusinessAddress = {MNID_ID, PSETID_Address, PidLidBusinessAddress};
 static const PROPERTY_NAME NtBusinessAddressCity = {MNID_ID, PSETID_Address, PidLidWorkAddressCity};
-static const PROPERTY_NAME NtBusinessAddressCountry = {MNID_ID, PSETID_Address, PidLidWorkAddressStreet};
+static const PROPERTY_NAME NtBusinessAddressCountry = {MNID_ID, PSETID_Address, PidLidWorkAddressCountry};
 static const PROPERTY_NAME NtBusinessAddressPostalCode = {MNID_ID, PSETID_Address, PidLidWorkAddressPostalCode};
 static const PROPERTY_NAME NtBusinessAddressState = {MNID_ID, PSETID_Address, PidLidWorkAddressState};
 static const PROPERTY_NAME NtBusinessAddressStreet = {MNID_ID, PSETID_Address, PidLidWorkAddressStreet};

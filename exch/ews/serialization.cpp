@@ -907,6 +907,7 @@ void tContact::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(PhysicalAddresses);
 	XMLDUMPT(PhoneNumbers);
 	XMLDUMPT(AssistantName);
+	XMLDUMPT(Birthday);
 	XMLDUMPT(BusinessHomePage);
 	XMLDUMPT(Children);
 	XMLDUMPT(Department);

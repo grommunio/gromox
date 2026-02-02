@@ -3746,6 +3746,7 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 		auto it = sa->begin();
 		for (const std::string &child : *item.Children)
 			*it++ = const_cast<char*>(child.c_str());
+		shape.write(TAGGED_PROPVAL{PR_CHILDRENS_NAMES, sa});
 	}
 }
 

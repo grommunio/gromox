@@ -3364,7 +3364,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"contacts:Initials", PR_INITIALS},
 	{"contacts:JobTitle", PR_TITLE},
 	{"contacts:Manager", PR_MANAGER_NAME},
-	{"contacts:MiddleName", PR_GIVEN_NAME},
+	{"contacts:MiddleName", PR_MIDDLE_NAME},
 	{"contacts:Nickname", PR_NICKNAME},
 	{"contacts:OfficeLocation", PR_OFFICE_LOCATION},
 	{"contacts:SpouseName", PR_SPOUSE_NAME},
