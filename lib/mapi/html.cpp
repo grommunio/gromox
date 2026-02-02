@@ -690,14 +690,16 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 	return ecSuccess;
 }
 
-static ec_error_t html_write_a_begin(RTF_WRITER *pwriter, const char *link)
+static ec_error_t html_write_a_begin(RTF_WRITER *pwriter, const char *link) try
 {
-	char tmp_buff[1024];
-	auto length = gx_snprintf(tmp_buff, std::size(tmp_buff),
-			"{\\field{\\*\\fldinst{HYPERLINK %s}}"
-			"{\\fldrslt\\cf0 ", link);
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	static constexpr char head[] = "{\\field{\\*\\fldinst{HYPERLINK ",
+		foot[] = "}}{\\fldrslt\\cf0 ";
+	QRF(pwriter->ext_push.p_bytes(head, strlen(head)));
+	QRF(pwriter->ext_push.p_bytes(link, strlen(link)));
+	QRF(pwriter->ext_push.p_bytes(foot, strlen(foot)));
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 static ec_error_t html_write_a_end(RTF_WRITER *pwriter)
