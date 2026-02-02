@@ -2273,6 +2273,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtAppointmentTimeZoneDefinitionEndDisplay, PT_BINARY);
 		shape.add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
 		shape.add(NtTimeZoneStruct, PT_BINARY);
+		shape.add(NtPrivate, PT_BOOLEAN);
 		ctx.getNamedTags(dir, shape, true);
 		for (const auto &update : change.Updates) {
 			if (std::holds_alternative<tSetItemField>(update))

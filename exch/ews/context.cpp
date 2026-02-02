@@ -3567,6 +3567,9 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(
 		rop_util_unix_to_nttime(startTime + (startOffset - reminderdelta) * 60))});
 
+	shape.write(NtPrivate, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint8_t>(
+		item.Sensitivity && item.Sensitivity->index() >= 2 ? 1 : 0)});
+
 	if (item.UID) {
 		BINARY goid_bin;
 		auto uid = item.UID.value().c_str();
@@ -3604,11 +3607,9 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		auto addrType = deconst("SMTP");
 		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, addrType});
 		shape.write(TAGGED_PROPVAL{PR_SENDER_ADDRTYPE, addrType});
-		auto uint0 = construct<uint8_t>(0);
 		auto uint1 = construct<uint32_t>(1);
 		auto uint5 = construct<uint32_t>(5);
 		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, uint1});
-		shape.write(NtPrivate, TAGGED_PROPVAL{PT_BOOLEAN, uint0});
 		shape.write(NtAppointmentStateFlags, TAGGED_PROPVAL{PT_LONG, uint1});
 		shape.write(NtResponseStatus, TAGGED_PROPVAL{PT_LONG, uint5});
 		std::string essdn;

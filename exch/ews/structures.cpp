@@ -2065,7 +2065,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.permissionSet = xml; }}},
 	{"Recurrence", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.recurrence = xml; }, "CalendarItem"}},
 	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
-	{"Sensitivity", {[](auto&&... args) {convEnumIndex<Enum::SensitivityChoicesType>(PR_SENSITIVITY, args...);}}},
+	{"Sensitivity", {[](auto &&...args) { convSensitivity(args...); }}},
 	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
 	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
 	{"SpouseName", {[](auto&&... args){convText(PR_SPOUSE_NAME, args...);}}},
@@ -2294,6 +2294,15 @@ void tChangeDescription::convTzAttr(const PROPERTY_NAME &name, const XMLElement 
 	auto tag = shape.tag(name);
 	if (tag)
 		shape.write(TAGGED_PROPVAL{tag, EWSContext::cpystr(id)});
+}
+
+void tChangeDescription::convSensitivity(const XMLElement *v, sShape &shape)
+{
+	convEnumIndex<Enum::SensitivityChoicesType>(PR_SENSITIVITY, v, shape);
+	auto tag = shape.tag(NtPrivate);
+	if (tag)
+		shape.write(mkProp(tag, static_cast<uint8_t>(
+			Enum::SensitivityChoicesType{znul(v->GetText())}.index() >= 2 ? TRUE : false)));
 }
 
 void tChangeDescription::convUID(const XMLElement *v, sShape &shape)
