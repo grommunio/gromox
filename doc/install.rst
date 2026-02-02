@@ -15,7 +15,7 @@ dependencies are needed:
 * jsoncpp
 * libHX >= 4.28
 * libiconv (OpenBSD)
-* libxml2 (we use this for HTML parsing)
+* libxml2 >= 2.7.3 (used for HTML parsing)
 * libzstd >= 1.4
 * MariaDB Connector/C or mariadb-client or compatible API
 * OpenLDAP

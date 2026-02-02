@@ -137,7 +137,7 @@ PKG_CHECK_MODULES([libldap], [ldap], [], [
 PKG_CHECK_MODULES([libolecf], [libolecf], [have_olecf=1], [have_olecf=0])
 PKG_CHECK_MODULES([libpff], [libpff], [have_pff=1], [have_pff=0])
 PKG_CHECK_MODULES([libssl], [libssl])
-PKG_CHECK_MODULES([libxml2], [libxml-2.0])
+PKG_CHECK_MODULES([libxml2], [libxml-2.0 >= 2.7.3])
 PKG_CHECK_MODULES([libxxhash], [libxxhash >= 0.7], [have_xxhash=1], [have_xxhash=0])
 PKG_CHECK_MODULES([libzstd], [libzstd >= 1.4])
 PKG_CHECK_MODULES([sqlite], [sqlite3])
