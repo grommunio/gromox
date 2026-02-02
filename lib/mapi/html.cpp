@@ -18,7 +18,6 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/endian.h>
-#include <libHX/libxml_helper.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <libxml/HTMLparser.h>
@@ -43,6 +42,12 @@ using namespace gromox;
 namespace {
 
 using rgb_t = unsigned int;
+
+struct xmlfree {
+	void operator()(char *s) const { xmlFree(s); }
+};
+
+using xmlastr = std::unique_ptr<char[], xmlfree>;
 
 struct RTF_WRITER {
 	RTF_WRITER();
@@ -99,6 +104,12 @@ static constexpr struct tagentry {
 }
 
 static ec_error_t html_enum_write(RTF_WRITER *, const xmlNode *);
+
+static inline char *gx_xml_getprop(const xmlNode *node, const char *attr)
+{
+	return reinterpret_cast<char *>(xmlGetProp(node,
+	       reinterpret_cast<const xmlChar *>(attr)));
+}
 
 static inline iconv_t html_iconv_open()
 {
@@ -638,16 +649,16 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 {
 	int color;
 	char value[128];
-	
-	auto pattribute = xml_getprop(pelement, "style");
+
+	xmlastr pattribute(gx_xml_getprop(pelement, "style"));
 	if (pattribute == nullptr)
 		return ecSuccess;
-	if (html_match_style(pattribute,
+	if (html_match_style(pattribute.get(),
 		"font-family", value, sizeof(value))) {
 		html_trim_style_value(value);
 		ERF(html_write_style_font_family(pwriter, value));
 	}
-	if (html_match_style(pattribute,
+	if (html_match_style(pattribute.get(),
 		"font-size", value, sizeof(value))) {
 		html_trim_style_value(value);
 		bool unit_point = false;
@@ -666,22 +677,22 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 		if (font_size > 0)
 			ERF(html_write_style_font_size(pwriter, font_size, unit_point));
 	}
-	if (html_match_style(pattribute,
+	if (html_match_style(pattribute.get(),
 		"line-height", value, sizeof(value))) {
 		if (class_match_suffix(value, "px") == 0)
 			ERF(html_write_style_line_height(pwriter, strtol(value, nullptr, 0)));
 	}
-	if (html_match_style(pattribute,
+	if (html_match_style(pattribute.get(),
 		"margin-top", value, sizeof(value))) {
 		if (class_match_suffix(value, "px") == 0)
 			ERF(html_write_style_margin_top(pwriter, strtol(value, nullptr, 0)));
 	}
-	if (html_match_style(pattribute,
+	if (html_match_style(pattribute.get(),
 		"text-indent", value, sizeof(value))) {
 		if (class_match_suffix(value, "px") == 0)
 			ERF(html_write_style_text_indent(pwriter, strtol(value, nullptr, 0)));
 	}
-	if (html_match_style(pattribute,
+	if (html_match_style(pattribute.get(),
 		"color", value, sizeof(value))) {
 		color = html_convert_color(value);
 		if (color != -1)
@@ -933,8 +944,8 @@ static ec_error_t html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 	if (pnode->type == XML_ELEMENT_NODE) {
 		switch (lookup_tag(pnode)) {
 		case htag::a: {
-			auto pvalue = znul(xml_getprop(pnode, "href"));
-			ERF(html_write_a_begin(pwriter, pvalue));
+			xmlastr pvalue(gx_xml_getprop(pnode, "href"));
+			ERF(html_write_a_begin(pwriter, pvalue != nullptr ? pvalue.get() : ""));
 			ERF(html_write_children(pwriter, pnode));
 			return html_write_a_end(pwriter);
 		}
@@ -1003,19 +1014,19 @@ static ec_error_t html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 			return html_write_span_end(pwriter);
 		case htag::font: {
 			ERF(html_write_font_begin(pwriter));
-			auto pattribute = xml_getprop(pnode, "face");
+			xmlastr pattribute(gx_xml_getprop(pnode, "face"));
 			if (pattribute != nullptr)
-				ERF(html_write_style_font_family(pwriter, pattribute));
-			pattribute = xml_getprop(pnode, "color");
+				ERF(html_write_style_font_family(pwriter, pattribute.get()));
+			pattribute.reset(gx_xml_getprop(pnode, "color"));
 			if (NULL != pattribute) {
-				color = html_convert_color(pattribute);
+				color = html_convert_color(pattribute.get());
 				if (color != -1)
 					ERF(html_write_style_color(pwriter, color));
 			}
-			pattribute = xml_getprop(pnode, "size");
+			pattribute.reset(gx_xml_getprop(pnode, "size"));
 			if (pattribute != nullptr)
 				ERF(html_write_style_font_size(pwriter,
-					strtol(pattribute, nullptr, 0) * 3 + 8, false));
+					strtol(pattribute.get(), nullptr, 0) * 3 + 8, false));
 			ERF(html_write_children(pwriter, pnode));
 			return html_write_font_end(pwriter);
 		}
@@ -1066,24 +1077,25 @@ static void html_enum_tables(RTF_WRITER *pwriter, xmlNode *pnode)
 	if (pnode->type != XML_ELEMENT_NODE)
 		return;
 	if (lookup_tag(pnode) == htag::font) {
-		auto pattribute = xml_getprop(pnode, "face");
+		xmlastr pattribute(gx_xml_getprop(pnode, "face"));
 		if (pattribute != nullptr)
-			html_set_fonttable(pwriter, pattribute);
-		pattribute = xml_getprop(pnode, "color");
+			html_set_fonttable(pwriter, pattribute.get());
+		pattribute.reset(gx_xml_getprop(pnode, "color"));
 		if (NULL != pattribute) {
-			color = html_convert_color(pattribute);
+			color = html_convert_color(pattribute.get());
 			if (color != -1)
 				html_set_colortable(pwriter, color);
 		}
 	}
-	auto pattribute = xml_getprop(pnode, "style");
+
+	xmlastr pattribute(gx_xml_getprop(pnode, "style"));
 	if (NULL != pattribute) {
-		if (html_match_style(pattribute,
+		if (html_match_style(pattribute.get(),
 			"font-family", value, sizeof(value))) {
 			html_trim_style_value(value);
 			html_set_fonttable(pwriter, value);
 		}
-		if (html_match_style(pattribute,
+		if (html_match_style(pattribute.get(),
 			"color", value, sizeof(value))) {
 			color = html_convert_color(value);
 			if (color != -1)
