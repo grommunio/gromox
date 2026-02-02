@@ -2400,6 +2400,24 @@ void tContact::genFields(sShape& shape)
 		if (displayName)
 			shape.write(TAGGED_PROPVAL{tag, displayName->pvalue});
 	}
+
+	static constexpr struct {
+		const PROPERTY_NAME &addr, &type, &disp;
+	} emailCompanions[] = {
+		{NtEmailAddress1, NtEmailAddressType1, NtEmailDisplayName1},
+		{NtEmailAddress2, NtEmailAddressType2, NtEmailDisplayName2},
+		{NtEmailAddress3, NtEmailAddressType3, NtEmailDisplayName3},
+	};
+	for (const auto &ec : emailCompanions) {
+		auto addrTag = shape.tag(ec.addr);
+		const auto *addrVal = addrTag ? shape.writes(addrTag) : nullptr;
+		if (!addrVal)
+			continue;
+		if ((tag = shape.tag(ec.type)) && !shape.writes(tag))
+			shape.write(TAGGED_PROPVAL{tag, deconst("SMTP")});
+		if ((tag = shape.tag(ec.disp)) && !shape.writes(tag))
+			shape.write(TAGGED_PROPVAL{tag, addrVal->pvalue});
+	}
 }
 
 /**
@@ -2543,14 +2561,21 @@ void tContact::update(const sShape& shape)
 	if (names != nullptr)
 		Children.emplace(names->begin(), names->end());
 	auto str = shape.get<const char>(NtEmailAddress1);
-	if (str != nullptr)
-		defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress1);
-	str = shape.get<const char>(NtEmailAddress2);
-	if (str != nullptr)
-		defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress2);
-	str = shape.get<const char>(NtEmailAddress3);
-	if (str != nullptr)
-		defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress3);
+	if (str) {
+		auto &entry = defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress1);
+		fromProp(shape.get(NtEmailDisplayName1), entry.Name);
+		fromProp(shape.get(NtEmailAddressType1), entry.RoutingType);
+	}
+	if ((str =  shape.get<const char>(NtEmailAddress2))) {
+		auto &entry = defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress2);
+		fromProp(shape.get(NtEmailDisplayName2), entry.Name);
+		fromProp(shape.get(NtEmailAddressType2), entry.RoutingType);
+	}
+	if ((str = shape.get<const char>(NtEmailAddress3))) {
+		auto &entry = defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress3);
+		fromProp(shape.get(NtEmailDisplayName3), entry.Name);
+		fromProp(shape.get(NtEmailAddressType3), entry.RoutingType);
+	}
 	auto postidx = shape.get<const uint32_t>(NtPostalAddressIndex);
 	if (postidx != nullptr)
 		PostalAddressIndex.emplace(*postidx);
@@ -3971,6 +3996,12 @@ decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefa
 	{&NtLocation, PT_UNICODE},
 	{&NtGlobalObjectId, PT_BINARY},
 	{&NtFInvited, PT_BOOLEAN},
+	{&NtEmailDisplayName1, PT_UNICODE},
+	{&NtEmailDisplayName2, PT_UNICODE},
+	{&NtEmailDisplayName3, PT_UNICODE},
+	{&NtEmailAddressType1, PT_UNICODE},
+	{&NtEmailAddressType2, PT_UNICODE},
+	{&NtEmailAddressType3, PT_UNICODE},
 }};
 
 decltype(tItemResponseShape::namedTagsAllProperties) tItemResponseShape::namedTagsAllProperties = {{

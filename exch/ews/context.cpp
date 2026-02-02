@@ -3684,10 +3684,20 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 		shape.write(NtPostalAddressIndex, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(item.PostalAddressIndex->index())});
 	if (item.EmailAddresses)
 		for (const tEmailAddressDictionaryEntry &entry : *item.EmailAddresses) {
-			const PROPERTY_NAME &name = entry.Key == Enum::EmailAddress1 ? NtEmailAddress1 :
-			                            entry.Key == Enum::EmailAddress2 ? NtEmailAddress2 :
-			                            NtEmailAddress3;
-			shape.write(name, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(entry.Entry.c_str())});
+			const PROPERTY_NAME &addrName = entry.Key == Enum::EmailAddress1 ? NtEmailAddress1 :
+			                                entry.Key == Enum::EmailAddress2 ? NtEmailAddress2 :
+			                                NtEmailAddress3;
+			const PROPERTY_NAME &dispName = entry.Key == Enum::EmailAddress1 ? NtEmailDisplayName1 :
+			                                entry.Key == Enum::EmailAddress2 ? NtEmailDisplayName2 :
+			                                NtEmailDisplayName3;
+			const PROPERTY_NAME &typeName = entry.Key == Enum::EmailAddress1 ? NtEmailAddressType1 :
+			                                entry.Key == Enum::EmailAddress2 ? NtEmailAddressType2 :
+			                                NtEmailAddressType3;
+			shape.write(addrName, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(entry.Entry.c_str())});
+			const char *addrType = entry.RoutingType ? entry.RoutingType->c_str() : "SMTP";
+			shape.write(typeName, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(addrType)});
+			const char *displayName = entry.Name ? entry.Name->c_str() : entry.Entry.c_str();
+			shape.write(dispName, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(displayName)});
 		}
 	if (item.PhysicalAddresses)
 		for (const tPhysicalAddressDictionaryEntry &entry : *item.PhysicalAddresses) {
