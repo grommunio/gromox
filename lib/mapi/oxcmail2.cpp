@@ -26,14 +26,26 @@ using namespace std::string_literals;
 using namespace gromox;
 using namespace oxcmail;
 
-namespace oxcmail {
+namespace {
 
 struct xmlfree {
 	void operator()(xmlDoc *d) const { xmlFreeDoc(d); }
 	void operator()(xmlChar *s) const { xmlFree(s); }
+	void operator()(char *s) const { xmlFree(reinterpret_cast<xmlChar *>(s)); }
 };
 
 using xmldocptr = std::unique_ptr<xmlDoc, xmlfree>;
+using xmlastr = std::unique_ptr<char[], xmlfree>;
+
+}
+
+static inline char *gx_xml_getprop(const xmlNode *node, const char *attr)
+{
+	return reinterpret_cast<char *>(xmlGetProp(node,
+	       reinterpret_cast<const xmlChar *>(attr)));
+}
+
+namespace oxcmail {
 
 /**
  * @part:  MIME part to analyze (including its children)
@@ -235,8 +247,8 @@ static void filter_meta(xmlNode *root)
 		if (curr->type != XML_ELEMENT_NODE ||
 		    xml_strcasecmp(curr->name, "meta") != 0)
 			continue;
-		auto val = xml_getprop(curr, "http-equiv");
-		if (val == nullptr || strcasecmp(val, "Content-Type") != 0)
+		xmlastr val(gx_xml_getprop(curr, "http-equiv"));
+		if (val == nullptr || strcasecmp(val.get(), "Content-Type") != 0)
 			continue;
 		xmlUnlinkNode(curr);
 		xmlFreeNode(curr);
