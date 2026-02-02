@@ -1483,6 +1483,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	loadSpecial(dir, fid, mid, static_cast<tItem&>(calItem), special);
 	if (!(special & sShape::Attendees))
 		return;
+	if (!calItem.IsMeeting || !*calItem.IsMeeting)
+		return;
 	TARRAY_SET rcpts;
 	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
 		mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%llu)",
