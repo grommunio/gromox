@@ -452,7 +452,7 @@ errno_t mysql_plugin::get_homeserver(const char *entity, bool is_pvt,
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2132: ENOMEM");
-	return -ENOMEM;
+	return ENOMEM;
 }
 
 void mysql_plugin::init(mysql_adaptor_init_param &&parm)
