@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
@@ -160,9 +160,9 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		mlog(LV_INFO, "exmdb_provider: listen address is [%s]:%hu",
 		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
-		exmdb_listener_init(listen_ip, listen_port);
-		if (exmdb_listener_run(get_config_path(),
-		    pconfig->get_value("exmdb_hosts_allow")) != 0) {
+		if (exmdb_listener_init(get_config_path(),
+		    pconfig->get_value("exmdb_hosts_allow"),
+		    listen_ip, listen_port) != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to run exmdb listener");
 			return FALSE;
 		}
@@ -271,8 +271,8 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		exmdb_client.reset();
 		exmdb_listener_stop();
+		exmdb_client.reset();
 		exmdb_parser_stop();
 		db_engine_stop();
 		return TRUE;

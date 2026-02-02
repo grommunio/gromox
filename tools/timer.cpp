@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <list>
 #include <mutex>
-#include <netdb.h>
 #include <poll.h>
 #include <pthread.h>
 #include <string>
@@ -22,7 +21,6 @@
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
-#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -33,6 +31,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/generic_connection.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
@@ -47,7 +46,7 @@ namespace {
 
 struct CONNECTION_NODE : public generic_connection {
 	CONNECTION_NODE() = default;
-	CONNECTION_NODE(CONNECTION_NODE &&) noexcept;
+	CONNECTION_NODE(CONNECTION_NODE &&) noexcept = delete;
 	CONNECTION_NODE(generic_connection &&o) : generic_connection(std::move(o)) {}
 	void operator=(CONNECTION_NODE &&) noexcept = delete;
 	ssize_t sk_write(const char *, size_t = -1);
@@ -105,7 +104,7 @@ static constexpr cfg_directive timer_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static void *tmr_acceptwork(void *);
+static int tmr_acceptwork(generic_connection &&);
 static void *tmr_thrwork(void *);
 static void execute_timer(TIMER *ptimer);
 
@@ -116,14 +115,6 @@ static void encode_line(const char *in, char *out);
 static BOOL read_mark(CONNECTION_NODE *pconnection);
 
 static void term_handler(int signo);
-
-CONNECTION_NODE::CONNECTION_NODE(CONNECTION_NODE &&o) noexcept :
-	generic_connection(std::move(o)), offset(o.offset)
-	//ask qir about D::D() : B(move(o.B)) {}
-{
-	memcpy(buffer, o.buffer, sizeof(buffer));
-	memcpy(line, o.line, sizeof(line));
-}
 
 ssize_t CONNECTION_NODE::sk_write(const char *s, size_t z)
 {
@@ -222,7 +213,6 @@ static void do_tasks(time_t &last_cltime)
 
 int main(int argc, char **argv)
 {
-	pthread_t thr_accept_id{};
 	std::vector<pthread_t> thr_ids;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -262,13 +252,11 @@ int main(int argc, char **argv)
 	printf("[system]: processing threads number is %u\n", g_threads_num);
 	g_threads_num ++;
 
-	auto sockd = HX_inet_listen(listen_ip, listen_port);
-	if (sockd < 0) {
-		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
+	listener_ctx listener;
+	if (listen_port != 0 &&
+	    listener.add_inet(listen_ip, listen_port) != 0)
 		return EXIT_FAILURE;
-	}
-	gx_reexec_record(sockd);
-	auto cl_0 = HX::make_scope_exit([&]() { close(sockd); });
+	listener.m_thread_name = "accept";
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
 
@@ -351,20 +339,12 @@ int main(int argc, char **argv)
 		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
 		g_acl_list = {"::1"};
 	}
-	
-	auto ret = pthread_create4(&thr_accept_id, nullptr, tmr_acceptwork,
-	      reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
-	if (ret != 0) {
-		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
-		g_notify_stop = true;
+
+	auto err = listener.watch_start(g_notify_stop, tmr_acceptwork);
+	if (err != 0) {
+		mlog(LV_ERR, "listener.thread_start: %s", strerror(err));
 		return EXIT_FAILURE;
 	}
-	auto cl_3 = HX::make_scope_exit([&]() {
-		pthread_kill(thr_accept_id, SIGALRM); /* kick accept() */
-		pthread_join(thr_accept_id, nullptr);
-	});
-	
-	pthread_setname_np(thr_accept_id, "accept");
 	auto last_cltime = time(nullptr);
 	setup_signal_defaults();
 	sact.sa_handler = term_handler;
@@ -380,20 +360,13 @@ int main(int argc, char **argv)
 	return EXIT_SUCCESS;
 }
 
-static void *tmr_acceptwork(void *param)
+static int tmr_acceptwork(generic_connection &&conn)
 {
-	int sockd = reinterpret_cast<intptr_t>(param);
-	while (!g_notify_stop) {
-		CONNECTION_NODE conn(generic_connection::accept(sockd, false, &g_notify_stop));
-		if (conn.sockd == -2)
-			break;
-		else if (conn.sockd < 0)
-			continue;
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    conn.client_addr) == g_acl_list.cend()) {
 			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 
 		std::unique_lock co_hold(g_connection_lock);
@@ -401,19 +374,17 @@ static void *tmr_acceptwork(void *param)
 			co_hold.unlock();
 			if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 
-		CONNECTION_NODE *cn;
+		CONNECTION_NODE *cn = nullptr;
 		auto rawfd = conn.sockd;
 		try {
-			g_connection_list1.push_back(std::move(conn));
-			cn = &g_connection_list1.back();
+			cn = &g_connection_list1.emplace_back(std::move(conn));
 		} catch (const std::bad_alloc &) {
-			// conn may be trash already (push_back isn't try_emplace)
 			if (HXio_fullwrite(rawfd, "FALSE Not enough memory\r\n", 25) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 		co_hold.unlock();
 		if (HXio_fullwrite(cn->sockd, "OK\r\n", 4) < 0) {
@@ -421,8 +392,8 @@ static void *tmr_acceptwork(void *param)
 			cn->sockd = -1;
 		}
 		g_waken_cond.notify_one();
-	}
-	return nullptr;
+
+	return 0;
 }
 
 static void execute_timer(TIMER *ptimer)

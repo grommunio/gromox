@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -14,7 +14,6 @@
 #include <list>
 #include <memory>
 #include <mutex>
-#include <netdb.h>
 #include <optional>
 #include <poll.h>
 #include <pthread.h>
@@ -29,7 +28,6 @@
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
-#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -38,6 +36,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/generic_connection.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
@@ -130,7 +129,7 @@ static constexpr cfg_directive event_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static void *ev_acceptwork(void *);
+static int ev_acceptwork(generic_connection &&);
 static void *ev_enqwork(void *);
 static void *ev_deqwork(void *);
 static void *ev_scanwork(void *);
@@ -214,13 +213,11 @@ int main(int argc, char **argv)
 	g_threads_num = pconfig->get_ll("event_threads_num");
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
 
-	auto sockd = HX_inet_listen(listen_ip, listen_port);
-	if (sockd < 0) {
-		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
+	listener_ctx listener;
+	if (listen_port != 0 &&
+	    listener.add_inet(listen_ip, listen_port) != 0)
 		return EXIT_FAILURE;
-	}
-	gx_reexec_record(sockd);
-	auto cl_2 = HX::make_scope_exit([&]() { close(sockd); });
+	listener.m_thread_name = "accept";
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
 	
@@ -272,20 +269,8 @@ int main(int argc, char **argv)
 		g_acl_list = {"::1"};
 	}
 
-	pthread_t acc_thr{}, scan_thr{};
-	auto ret = pthread_create4(&acc_thr, nullptr, ev_acceptwork,
-	           reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
-	if (ret != 0) {
-		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
-		g_notify_stop = true;
-		return EXIT_FAILURE;
-	}
-	auto cl_5 = HX::make_scope_exit([&]() {
-		pthread_kill(acc_thr, SIGALRM); /* kick accept() */
-		pthread_join(acc_thr, nullptr);
-	});
-	pthread_setname_np(acc_thr, "accept");
-	ret = pthread_create4(&scan_thr, nullptr, ev_scanwork, nullptr);
+	pthread_t scan_thr{};
+	auto ret = pthread_create4(&scan_thr, nullptr, ev_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[system]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -296,6 +281,11 @@ int main(int argc, char **argv)
 		pthread_join(scan_thr, nullptr);
 	});
 	pthread_setname_np(scan_thr, "scan");
+	auto err = listener.watch_start(g_notify_stop, ev_acceptwork);
+	if (err != 0) {
+		mlog(LV_ERR, "listener.thread_start: %s", strerror(err));
+		return EXIT_FAILURE;
+	}
 	setup_signal_defaults();
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
@@ -345,22 +335,15 @@ static void *ev_scanwork(void *param)
 	return NULL;
 }
 
-static void *ev_acceptwork(void *param)
+static int ev_acceptwork(generic_connection &&conn)
 {
 	ENQUEUE_NODE *penqueue;
 
-	int sockd = reinterpret_cast<intptr_t>(param);
-	while (!g_notify_stop) {
-		auto conn = generic_connection::accept(sockd, false, &g_notify_stop);
-		if (conn.sockd == -2)
-			break;
-		else if (conn.sockd < 0)
-			continue;
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    conn.client_addr) == g_acl_list.cend()) {
 			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 
 		std::unique_lock eq_hold(g_enqueue_lock);
@@ -368,7 +351,7 @@ static void *ev_acceptwork(void *param)
 			eq_hold.unlock();
 			if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 		try {
 			g_enqueue_list1.emplace_back();
@@ -377,7 +360,7 @@ static void *ev_acceptwork(void *param)
 			eq_hold.unlock();
 			if (HXio_fullwrite(conn.sockd, "FALSE Not enough memory\r\n", 25) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 
 		static_cast<generic_connection &>(*penqueue) = std::move(conn);
@@ -385,8 +368,8 @@ static void *ev_acceptwork(void *param)
 		if (HXio_fullwrite(penqueue->sockd, "OK\r\n", 4) < 0)
 			penqueue->reset();
 		g_enqueue_waken_cond.notify_one();
-	}
-	return nullptr;
+
+	return 0;
 }
 
 using eq_iter_t = std::list<ENQUEUE_NODE>::iterator;

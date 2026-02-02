@@ -290,12 +290,6 @@ To inhibit the switch, assign the empty value.
 .br
 Default: \fIgromox\fP
 .TP
-\fBtcp_mss_size\fP
-Sets the TCP_MAXSEG socket option with the given MSS value for the listening
-socket(s), cf. tcp(7).
-.br
-Default: \fI0\fP (do not limit the MSS)
-.TP
 \fBuser_default_lang\fP
 Default: \fIen\fP
 .SH Normative references

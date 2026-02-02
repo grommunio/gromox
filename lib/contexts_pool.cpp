@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#ifdef HAVE_CONFIG_H
-#	include "config.h"
-#endif
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <csignal>
 #include <cstdio>
@@ -10,47 +9,20 @@
 #include <mutex>
 #include <pthread.h>
 #include <unistd.h>
-#ifdef HAVE_SYS_EPOLL_H
-#	include <sys/epoll.h>
-#endif
-#ifdef HAVE_SYS_EVENT_H
-#	include <sys/event.h>
-#endif
 #include <sys/socket.h>
 #include <gromox/atomic.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
+#include <gromox/poll_ctx.hpp>
 #include <gromox/process.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
 
-namespace {
-struct evqueue {
-	~evqueue() { reset(); }
-
-	unsigned int m_num = 0;
-	int m_fd = -1;
-#ifdef HAVE_SYS_EPOLL_H
-	std::unique_ptr<epoll_event[]> m_events;
-	inline SCHEDULE_CONTEXT *get_data(size_t i) const { return static_cast<schedule_context *>(m_events[i].data.ptr); }
-#elif defined(HAVE_SYS_EVENT_H)
-	std::unique_ptr<struct kevent[]> m_events;
-	inline SCHEDULE_CONTEXT *get_data(size_t i) const { return static_cast<schedule_context *>(m_events[i].udata); }
-#endif
-
-	errno_t init(unsigned int numctx);
-	int wait();
-	errno_t mod(SCHEDULE_CONTEXT *, bool add);
-	errno_t del(SCHEDULE_CONTEXT *);
-	void reset();
-};
-}
-
 static time_duration g_time_out;
 static unsigned int g_context_num, g_contexts_per_thr;
-static evqueue g_poll_ctx;
+static poll_ctx g_poll_ctx;
 static pthread_t g_scan_id;
 static SCHEDULE_CONTEXT **g_context_ptr;
 static pthread_t g_thread_id;
@@ -60,96 +32,6 @@ static std::mutex g_context_locks[static_cast<int>(sctx_status::_alloc_max)]; /*
 
 static int (*contexts_pool_get_context_socket)(const schedule_context *);
 static time_point (*contexts_pool_get_context_timestamp)(const schedule_context *);
-
-void evqueue::reset()
-{
-	if (m_fd >= 0) {
-		close(m_fd);
-		m_fd = -1;
-	}
-	m_events.reset();
-}
-
-errno_t evqueue::init(unsigned int numctx) try
-{
-	m_num = numctx;
-#ifdef HAVE_SYS_EPOLL_H
-	if (m_fd >= 0)
-		close(m_fd);
-	m_fd = epoll_create1(EPOLL_CLOEXEC);
-	if (m_fd < 0) {
-		mlog(LV_ERR, "contexts_pool: epoll_create: %s", strerror(errno));
-		return errno;
-	}
-	m_events = std::make_unique<epoll_event[]>(numctx);
-#elif defined(HAVE_SYS_EVENT_H)
-	m_fd = kqueue();
-	if (m_fd < 0) {
-		mlog(LV_ERR, "contexts_pool: kqueue: %s", strerror(errno));
-		return errno;
-	}
-	m_events = std::make_unique<struct kevent[]>(numctx * 2);
-#endif
-	return 0;
-} catch (const std::bad_alloc &) {
-	return ENOMEM;
-}
-
-int evqueue::wait()
-{
-#ifdef HAVE_SYS_EPOLL_H
-	return epoll_wait(m_fd, m_events.get(), m_num, -1);
-#elif defined(HAVE_SYS_EVENT_H)
-	return kevent(m_fd, nullptr, 0, m_events.get(), m_num, nullptr);
-#endif
-}
-
-errno_t evqueue::mod(SCHEDULE_CONTEXT *ctx, bool add)
-{
-	auto fd = contexts_pool_get_context_socket(ctx);
-#ifdef HAVE_SYS_EPOLL_H
-	struct epoll_event ev{};
-	ev.data.ptr = ctx;
-	ev.events = EPOLLET | EPOLLONESHOT;
-	if (ctx->polling_mask & POLLING_READ)
-		ev.events |= EPOLLIN;
-	if (ctx->polling_mask & POLLING_WRITE)
-		ev.events |= EPOLLOUT;
-	return epoll_ctl(m_fd, add ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, fd, &ev);
-#else
-	struct kevent ev{};
-	if (ctx->polling_mask & POLLING_READ) {
-		EV_SET(&ev, fd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT | EV_CLEAR, 0, 0, ctx);
-		auto ret = kevent(m_fd, &ev, 1, nullptr, 0, nullptr);
-		if (ret != 0)
-			return ret;
-		if (ev.flags & EV_ERROR)
-			mlog(LV_ERR, "evqueue::add: %s", strerror(ev.data));
-	}
-	if (ctx->polling_mask & POLLING_WRITE) {
-		EV_SET(&ev, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT | EV_CLEAR, 0, 0, ctx);
-		auto ret = kevent(m_fd, &ev, 1, nullptr, 0, nullptr);
-		if (ret != 0)
-			return ret;
-		if (ev.flags & EV_ERROR)
-			mlog(LV_ERR, "evqueue::add: %s", strerror(ev.data));
-	}
-	return 0;
-#endif
-}
-
-errno_t evqueue::del(SCHEDULE_CONTEXT *ctx)
-{
-	auto fd = contexts_pool_get_context_socket(ctx);
-#ifdef HAVE_SYS_EPOLL_H
-	return epoll_ctl(m_fd, EPOLL_CTL_DEL, fd, nullptr);
-#elif defined(HAVE_SYS_EVENT_H)
-	struct kevent ev[2];
-	EV_SET(&ev[0], fd, EVFILT_READ, EV_DELETE, 0, 0, nullptr);
-	EV_SET(&ev[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
-	return kevent(m_fd, ev, std::size(ev), nullptr, 0, nullptr);
-#endif
-}
 
 static void context_init(SCHEDULE_CONTEXT *pcontext)
 {
@@ -197,7 +79,7 @@ static void *ctxp_thrwork(void *pparam)
 		if (num <= 0)
 			continue;
 		for (unsigned int i = 0; i < static_cast<unsigned int>(num); ++i) {
-			auto pcontext = g_poll_ctx.get_data(i);
+			auto pcontext = static_cast<schedule_context *>(g_poll_ctx.data(i));
 			std::unique_lock poll_hold(g_context_locks[static_cast<int>(sctx_status::polling)]);
 			if (pcontext->type != sctx_status::polling)
 				/* context may be waked up and modified by
@@ -242,7 +124,7 @@ static void *ctxp_scanwork(void *pparam)
 				goto CHECK_TAIL;
 			}
 			if (current_time - contexts_pool_get_context_timestamp(pcontext) >= g_time_out) {
-				if (g_poll_ctx.del(pcontext) != 0) {
+				if (g_poll_ctx.del(contexts_pool_get_context_socket(pcontext)) != 0) {
 					mlog(LV_DEBUG, "contexts_pool: failed to remove event from epoll");
 				} else {
 					pcontext->b_waiting = FALSE;
@@ -305,13 +187,11 @@ void contexts_pool_init(SCHEDULE_CONTEXT **pcontexts, unsigned int context_num,
 
 int contexts_pool_run()
 {    
-	auto ret = g_poll_ctx.init(g_context_num);
-	if (ret != 0) {
-		mlog(LV_ERR, "contexts_pool: evqueue: %s", strerror(ret));
+	auto err = g_poll_ctx.init(g_context_num);
+	if (err != 0)
 		return -1;
-	}
 	g_ctxpool_stop = false;
-	ret = pthread_create4(&g_thread_id, nullptr, ctxp_thrwork, nullptr);
+	int ret = pthread_create4(&g_thread_id, nullptr, ctxp_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "contexts_pool: failed to create epoll thread: %s", strerror(ret));
 		g_ctxpool_stop = true;
@@ -400,16 +280,17 @@ void contexts_pool_insert(schedule_context *pcontext, sctx_status tpraw)
 	auto original_type = pcontext->type;
 	pcontext->type = tpraw;
 	if (tpraw == sctx_status::polling) {
+		int fd = contexts_pool_get_context_socket(pcontext);
 		if (original_type == sctx_status::constructing) {
-			if (g_poll_ctx.mod(pcontext, true) != 0) {
+			if (g_poll_ctx.add(pcontext->polling_mask, fd, pcontext) != 0) {
 				pcontext->b_waiting = FALSE;
 				mlog(LV_DEBUG, "contexts_pool: failed to add event to epoll");
 			} else {
 				pcontext->b_waiting = TRUE;
 			}
-		} else if (g_poll_ctx.mod(pcontext, false) != 0) {
+		} else if (g_poll_ctx.mod(pcontext->polling_mask, fd, pcontext) != 0) {
 			int se = errno;
-			if (errno == ENOENT && g_poll_ctx.mod(pcontext, true) == 0) {
+			if (errno == ENOENT && g_poll_ctx.add(pcontext->polling_mask, fd, pcontext) == 0) {
 				/* sometimes, fd will be removed by scanning
 				thread because of timeout, add it back
 				into epoll queue again */
@@ -417,8 +298,7 @@ void contexts_pool_insert(schedule_context *pcontext, sctx_status tpraw)
 			} else {
 				mlog(LV_DEBUG, "contexts_pool: failed to modify event in epoll: %s (T1), %s (T2)",
 					strerror(se), strerror(errno));
-				shutdown(contexts_pool_get_context_socket(
-				         pcontext), SHUT_RDWR);
+				shutdown(fd, SHUT_RDWR);
 			}
 		}
 	} else if (tpraw == sctx_status::free && original_type == sctx_status::turning) {

@@ -251,7 +251,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 			return tproc_status::close;
 		} else {
 			pcontext->is_stls = FALSE;
-			if (pcontext->connection.server_port == g_listener_ssl_port) {
+			if (pcontext->connection.mark == M_TLS_CONN) {
 				/* +OK <domain> Service ready */
 				auto pop3_reply_str = resource_get_pop3_code(1711, 1, &string_length);
 				auto pop3_reply_str2 = resource_get_pop3_code(1711, 2, &string_length);

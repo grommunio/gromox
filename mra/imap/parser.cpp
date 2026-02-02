@@ -301,7 +301,7 @@ static tproc_status ps_stat_stls(imap_context &ctx)
 
 	if (SSL_accept(pcontext->connection.ssl) != -1) {
 		pcontext->sched_stat = isched_stat::rdcmd;
-		if (pcontext->connection.server_port == g_listener_ssl_port) {
+		if (pcontext->connection.mark == M_TLS_CONN) {
 			char caps[128];
 			capability_list(caps, std::size(caps), pcontext);
 			SSL_write(pcontext->connection.ssl, "* OK [CAPABILITY ", 17);

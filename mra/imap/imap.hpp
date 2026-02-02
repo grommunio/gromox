@@ -36,6 +36,11 @@ enum {
 	DISPATCH_ACTMASK = 0xFF000000U,
 };
 
+enum {
+	M_UNENCRYPTED_CONN,
+	M_TLS_CONN,
+};
+
 enum class iproto_stat {
 	none = 0, noauth, username, password, auth, select,
 };
@@ -204,7 +209,6 @@ extern void (*system_services_broadcast_select)(const char *, const std::string 
 extern void (*system_services_broadcast_unselect)(const char *, const std::string &fld);
 
 extern std::shared_ptr<CONFIG_FILE> g_config_file;
-extern uint16_t g_listener_ssl_port;
 extern unsigned int g_imapcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
 extern bool g_support_tls, g_force_tls, g_rfc9051_enable;

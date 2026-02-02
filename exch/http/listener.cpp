@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 /*
  *    listener is a module, which listen a certain port and if a connection is
  *    coming, pass the connection in connection filter module and if the
@@ -6,27 +8,19 @@
  *    throw it into contexts pool, or close the connection
  */
 #include <cerrno>
-#include <csignal>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
-#include <netdb.h>
-#include <pthread.h>
+#include <optional>
 #include <string>
-#include <unistd.h>
+#include <utility>
 #include <libHX/io.h>
-#include <libHX/socket.h>
-#include <libHX/string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <gromox/atomic.hpp>
 #include <gromox/contexts_pool.hpp>
-#include <gromox/fileio.h>
-#include <gromox/process.hpp>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/util.hpp>
 #include "http_parser.hpp"
 #include "listener.hpp"
@@ -35,115 +29,29 @@
 
 using namespace gromox;
 
-static void *htls_thrwork(void *);
+enum {
+	M_UNENCRYPTED_CONN, M_TLS_CONN,
+};
 
-static unsigned int g_mss_size;
-static gromox::atomic_bool g_stop_accept;
-static pthread_t g_thr_id;
-static int g_listener_sock = -1, g_listener_ssl_sock = -1;
-static std::string g_listener_addr;
-static uint16_t g_listener_port, g_listener_ssl_port;
-static pthread_t g_ssl_thr_id;
+static listener_ctx http_listen_ctx;
 
-void listener_init(const char *addr, uint16_t port, uint16_t ssl_port,
-    unsigned int mss_size)
+int listener_init(const char *laddr, uint16_t port, uint16_t tls_port)
 {
-	g_listener_addr = addr;
-	g_listener_port = port;
-	g_listener_ssl_port = ssl_port;
-	g_mss_size = mss_size;
-	g_stop_accept = false;
-}
-
-/*
- *    @return     
- *         0    success 
- *        -1    fail to create socket for listening
- *        -2    fail to set address for reuse
- *        -3    fail to bind listening socket
- *        -4    fail to listen    
- */
-int listener_run()
-{
-	g_listener_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_port);
-	if (g_listener_sock < 0) {
-		mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
-		       g_listener_port, strerror(-g_listener_sock));
+	if (port == 0 && tls_port == 0)
+		return 0;
+	http_listen_ctx.m_thread_name = "http_accept";
+	if (port != 0 && http_listen_ctx.add_inet(laddr, port, M_UNENCRYPTED_CONN) != 0)
 		return -1;
-	}
-	gx_reexec_record(g_listener_sock);
-	if (g_mss_size > 0 &&
-	    setsockopt(g_listener_sock, IPPROTO_TCP, TCP_MAXSEG,
-	    &g_mss_size, sizeof(g_mss_size)) < 0)
-		return -2;
-	
-	if (g_listener_ssl_port > 0) {
-		g_listener_ssl_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_ssl_port);
-		if (g_listener_ssl_sock < 0) {
-			mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
-			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
-			return -1;
-		}
-		gx_reexec_record(g_listener_ssl_sock);
-		if (g_mss_size > 0 &&
-		    setsockopt(g_listener_ssl_sock, IPPROTO_TCP, TCP_MAXSEG,
-		    &g_mss_size, sizeof(g_mss_size)) < 0)
-			return -2;
-	}
-
+	if (tls_port != 0 && http_listen_ctx.add_inet(laddr, tls_port, M_TLS_CONN) != 0)
+		return -1;
 	return 0;
 }
 
-int listener_trigger_accept()
+static int htls_thrwork(generic_connection &&conn)
 {
-	auto ret = pthread_create4(&g_thr_id, nullptr, htls_thrwork,
-	           reinterpret_cast<void *>(uintptr_t(false)));
-	if (ret != 0) {
-		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
-		return -1;
-	}
-	pthread_setname_np(g_thr_id, "accept");
-	if (g_listener_ssl_port > 0) {
-		ret = pthread_create4(&g_ssl_thr_id, nullptr, htls_thrwork,
-		      reinterpret_cast<void *>(uintptr_t(true)));
-		if (ret != 0) {
-			mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
-			return -2;
-		}
-		pthread_setname_np(g_ssl_thr_id, "tls_accept");
-	}
-	return 0;
-}
-
-void listener_stop_accept()
-{
-	g_stop_accept = true;
-	if (g_listener_sock >= 0)
-		shutdown(g_listener_sock, SHUT_RDWR); /* closed in listener_stop */
-	if (!pthread_equal(g_thr_id, {})) {
-		pthread_kill(g_thr_id, SIGALRM);
-		pthread_join(g_thr_id, NULL);
-	}
-	if (g_listener_ssl_sock >= 0)
-		shutdown(g_listener_ssl_sock, SHUT_RDWR);
-	if (!pthread_equal(g_ssl_thr_id, {})) {
-		pthread_kill(g_ssl_thr_id, SIGALRM);
-		pthread_join(g_ssl_thr_id, NULL);
-	}
-}
-
-static void *htls_thrwork(void *arg)
-{
-	bool use_tls = reinterpret_cast<uintptr_t>(arg);
+	const bool use_tls = conn.mark == M_TLS_CONN;
 	char buff[1024];
-	auto sv_sock = use_tls ? g_listener_ssl_sock : g_listener_sock;
 	
-	for (;;) {
-		auto conn = generic_connection::accept(sv_sock, false, &g_stop_accept);
-		if (conn.sockd == -2)
-			break;
-		else if (conn.sockd < 0)
-			continue;
 		if (fcntl(conn.sockd, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1408: fcntl: %s", strerror(errno));
 		static const int flag = 1;
@@ -162,7 +70,7 @@ static void *htls_thrwork(void *arg)
 								"\r\n");
 			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				mlog(LV_WARN, "W-1984: write: %s", strerror(errno));
-			continue;
+			return 0;
 		}
 		pcontext->type = sctx_status::constructing;
 		/* pass the client ipaddr into the ipaddr filter */
@@ -178,7 +86,7 @@ static void *htls_thrwork(void *arg)
 				conn.client_addr, reason.c_str());
 			/* release the context */
 			contexts_pool_insert(pcontext, sctx_status::free);
-			continue;
+			return 0;
 		}
 
 		/* construct the context object */
@@ -190,18 +98,23 @@ static void *htls_thrwork(void *arg)
 		*/
 		pcontext->polling_mask = POLLING_READ;
 		contexts_pool_insert(pcontext, sctx_status::polling);
+
+	return 0;
+}
+
+int listener_trigger_accept()
+{
+	if (http_listen_ctx.empty())
+		return 0;
+	auto ret = http_listen_ctx.watch_start(g_httpmain_stop, htls_thrwork);
+	if (ret != 0) {
+		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
+		return -1;
 	}
-	return nullptr;
+	return 0;
 }
 
 void listener_stop()
 {
-	if (g_listener_sock >= 0) {
-		close(g_listener_sock);
-		g_listener_sock = -1;
-	}
-	if (g_listener_ssl_sock >= 0) {
-		close(g_listener_ssl_sock);
-		g_listener_ssl_sock = -1;
-	}
+	http_listen_ctx.reset();
 }

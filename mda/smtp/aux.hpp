@@ -10,6 +10,11 @@ enum {
     FLUSHER_MODE_GATEWAY    
 };
 
+enum {
+	M_UNENCRYPTED_CONN,
+	M_TLS_CONN,
+};
+
 class config_file;
 struct FLUSH_ENTITY;
 struct smtp_context;
@@ -25,8 +30,6 @@ extern void message_enqueue_handle_workitem(FLUSH_ENTITY &);
 extern BOOL flusher_register_cancel(CANCEL_FUNCTION);
 extern void flusher_set_flush_ID(int);
 extern BOOL FLH_LibMain(enum plugin_op);
-
-extern uint16_t g_listener_ssl_port;
 
 extern int resource_run();
 extern void resource_stop();
