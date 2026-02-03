@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -84,14 +84,11 @@ std::optional<exmdb_client_remote> exmdb_client;
 bool g_exmdb_disallow_lpc;
 
 static int mdcl_rpc_timeout = -1;
-static constexpr unsigned int mdcl_ping_timeout = 2;
-static_assert(SOCKET_TIMEOUT >= mdcl_ping_timeout);
 static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock; /* he protecc mdcl_server_list+mdcl_agent_list */
 static atomic_bool mdcl_notify_stop;
 static unsigned int mdcl_conn_max, mdcl_threads_max;
-static pthread_t mdcl_scan_id;
 static void (*mdcl_build_env)(bool pvt);
 static void (*mdcl_free_env)();
 static void (*mdcl_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
@@ -160,13 +157,8 @@ exmdb_client_remote::exmdb_client_remote(unsigned int conn_max,
 
 exmdb_client_remote::~exmdb_client_remote()
 {
-	if (mdcl_conn_max != 0 && !mdcl_notify_stop) {
+	if (mdcl_conn_max != 0 && !mdcl_notify_stop)
 		mdcl_notify_stop = true;
-		if (!pthread_equal(mdcl_scan_id, {})) {
-			pthread_kill(mdcl_scan_id, SIGALRM);
-			pthread_join(mdcl_scan_id, nullptr);
-		}
-	}
 	mdcl_notify_stop = true;
 	std::lock_guard sv_hold(mdcl_server_lock);
 	for (auto &ag : mdcl_agent_list) {
@@ -247,70 +239,6 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	}
 	cl_sock.release();
 	return sockd;
-}
-
-static void cl_pinger2()
-{
-	time_t now_time = time(nullptr);
-	std::list<REMOTE_CONN> temp_list;
-	std::unique_lock sv_hold(mdcl_server_lock);
-
-	/* Extract nodes to ping */
-	for (auto &srv : mdcl_server_list) {
-		auto tail = srv.conn_list.size() > 0 ? &srv.conn_list.back() : nullptr;
-		while (srv.conn_list.size() > 0) {
-			auto conn = &srv.conn_list.front();
-			if (now_time - conn->last_time >= SOCKET_TIMEOUT - 3)
-				temp_list.splice(temp_list.end(), srv.conn_list, srv.conn_list.begin());
-			else
-				srv.conn_list.splice(srv.conn_list.end(), srv.conn_list, srv.conn_list.begin());
-			if (conn == tail)
-				break;
-		}
-	}
-	sv_hold.unlock();
-
-	if (mdcl_notify_stop)
-		temp_list.clear();
-	auto conn1 = temp_list.begin();
-	auto ping_buff = cpu_to_le32(0);
-	while (conn1 != temp_list.end()) {
-		struct pollfd pfd = {conn1->sockd, POLLOUT};
-		if (poll(&pfd, 1, 0) != 1 ||
-		    write(conn1->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t))
-			conn1 = temp_list.erase(conn1);
-		else
-			++conn1;
-	}
-
-	while (temp_list.size() > 0) {
-		if (mdcl_notify_stop) {
-			temp_list.clear();
-			break;
-		}
-		auto conn = &temp_list.front();
-		struct pollfd pfd_read{conn->sockd, POLLIN | POLLPRI};
-		auto resp_buff = exmdb_response::invalid;
-		if (poll(&pfd_read, 1, mdcl_ping_timeout * 1000) != 1 ||
-		    read(conn->sockd, &resp_buff, 1) != 1 ||
-		    resp_buff != exmdb_response::success) {
-			temp_list.pop_front();
-			continue;
-		}
-		conn->last_time = time(nullptr);
-		sv_hold.lock();
-		conn->psvr->conn_list.splice(conn->psvr->conn_list.end(), temp_list, temp_list.begin());
-		sv_hold.unlock();
-	}
-}
-
-static void *cl_pinger(void *)
-{
-	while (!mdcl_notify_stop) {
-		cl_pinger2();
-		sleep(1);
-	}
-	return nullptr;
 }
 
 static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
@@ -471,13 +399,6 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	}
 	if (mdcl_conn_max == 0)
 		return 0;
-	auto ret = pthread_create4(&mdcl_scan_id, nullptr, cl_pinger, nullptr);
-	if (ret != 0) {
-		mlog(LV_ERR, "exmdb_client: failed to create proxy scan thread: %s", strerror(ret));
-		mdcl_notify_stop = true;
-		return 9;
-	}
-	pthread_setname_np(mdcl_scan_id, "exmdbcl/scan");
 	return 0;
 }
 
