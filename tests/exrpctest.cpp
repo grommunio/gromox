@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
+#include <cstdlib>
 #include <vector>
 #include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
@@ -66,19 +67,26 @@ int main(int argc, char **argv)
 	char *newdir = nullptr;
 	unsigned int user_id = 0, domain_id = 0;
 
-	printf("req 1\n");
 	if (!exmdb_client->store_eid_to_user(g_storedir, &other_store, &newdir,
 	    &user_id, &domain_id))
 		mlog(LV_DEBUG, "store_eid_to_user failed as expected");
 	else
 		mlog(LV_ERR, "store_eid_to_user unexpectedly succeeded");
-	// Connection should have died by now
-	printf("req 2\n");
+
+	// Connection should have died (reset by client due to failed RPC)
 
 	static constexpr proptag_t tags[] = {PR_STORE_RECORD_KEY};
+	// set SOCKET_TIMEOUT to a low value in source
+	::srand(time(nullptr));
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client->get_store_properties(g_storedir, CP_UTF8, tags, &props))
-		mlog(LV_ERR, "get_store_properties failed unexpectedly");
+	for (size_t reqnum = 1; reqnum < 100; ++reqnum) {
+		printf("req %zu\n", reqnum);
+		if (!exmdb_client->get_store_properties(g_storedir, CP_UTF8, tags, &props))
+			mlog(LV_ERR, "get_store_properties failed unexpectedly");
+		int waitx = ::rand() * 10.0 / INT_MAX;
+		printf("sleeping %u sec\n", waitx);
+		sleep(waitx);
+	}
 
 	return t_2209(g_storedir);
 }

@@ -422,10 +422,7 @@ bool exmdb_client_is_local(const char *prefix, BOOL *pvt)
 static bool sock_ready_for_write(int fd)
 {
 	struct pollfd pfd = {fd, POLLIN};
-	/*
-	 * If there was already data to read (poll returns 1) or EOF was hit
-	 * (poll returns 1), the socket is not ready for write.
-	 */
+	/* The fd must not have any input data (or EOF) waiting */
 	return poll(&pfd, 1, 0) == 0;
 }
 
@@ -519,61 +516,3 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 }
 
 }
-
-#ifdef TEST1
-int main(int argc, const char **argv)
-{
-	setup_signal_defaults();
-	exmdb_client.emplace(2, 0);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
-	auto ret = exmdb_client_run(PKGSYSCONFDIR);
-	if (ret != 0)
-		return EXIT_FAILURE;
-	auto dir = argc >= 2 ? argv[1] : "/var/lib/gromox/user/test@";
-	{
-		auto fc1 = exmdb_client_get_connection(dir);
-		assert(fc1 != nullptr);
-		mlog(LV_DEBUG, "C#1a: fd %d", fc1->sockd);
-		//sleep(1);
-		{
-			auto fc2 = exmdb_client_get_connection(dir);
-			assert(fc2 != nullptr);
-			mlog(LV_DEBUG, "C#2a: fd %d", fc2->sockd);
-			auto fc3 = exmdb_client_get_connection(dir);
-			mlog(LV_DEBUG, "C#3: fd %d", fc3 != nullptr ? fc3->sockd : -1);
-		}
-		auto fc2 = exmdb_client_get_connection(dir);
-		assert(fc2 != nullptr);
-		mlog(LV_DEBUG, "C#2b: fd %d", fc2->sockd);
-		fc2.reset();
-		sleep(64);
-		// fc1 should now be dead (server-side timeout of 60)
-		// give it back into the hands of cl_pinger2
-		fc1.reset();
-		sleep(2);
-		auto fc3 = exmdb_client_get_connection(dir);
-		assert(fc3 != nullptr);
-		mlog(LV_DEBUG, "C#3: fd %d", fc3->sockd);
-		auto fc4 = exmdb_client_get_connection(dir);
-		assert(fc4 != nullptr);
-		mlog(LV_DEBUG, "C#4: fd %d", fc4->sockd);
-	}
-	return EXIT_SUCCESS;
-}
-#endif
-#ifdef TEST2
-int main()
-{
-	exmdb_client.emplace(2, 0);
-	exmdb_client_run(PKGSYSCONFDIR);
-	{
-		auto fc = exmdb_client_get_connection("/var/lib/gromox/user/test@grammm.com");
-		mlog(LV_DEBUG, "%s", fc != nullptr ? "OK" : "FAIL");
-		mlog(LV_DEBUG, "fd %d", fc != nullptr ? fc->sockd : -1);
-		fc.reset();
-	}
-	sleep(64);
-	mlog(LV_DEBUG, "check state");
-	sleep(9000);
-}
-#endif
