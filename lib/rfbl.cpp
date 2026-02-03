@@ -310,13 +310,17 @@ static errno_t read_file_by_line(FILE *fp, std::vector<std::string> &out)
 errno_t read_file_by_line(const char *file, std::vector<std::string> &out)
 {
 	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
-	return fp != nullptr ? read_file_by_line(fp.get(), out) : errno;
+	if (fp == nullptr)
+		return errno;
+	return read_file_by_line(fp.get(), out);
 }
 
 errno_t read_file_by_line(const char *file, const char *sdlist, std::vector<std::string> &out)
 {
 	auto fp = fopen_sd(file, sdlist);
-	return fp != nullptr ? read_file_by_line(fp.get(), out) : errno;
+	if (fp == nullptr)
+		return errno;
+	return read_file_by_line(fp.get(), out);
 }
 
 int gx_vsnprintf1(char *buf, size_t sz, const char *file, unsigned int line,
