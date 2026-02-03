@@ -59,7 +59,7 @@ int exmdb_listener_init(const char *config_path, const char *hosts_allow,
 	auto &acl = g_acl_list;
 	if (hosts_allow != nullptr)
 		acl = gx_split(hosts_allow, ' ');
-	auto ret = list_file_read_fixedstrings("exmdb_acl.txt", config_path, acl);
+	auto ret = read_file_by_line("exmdb_acl.txt", config_path, acl);
 	if (ret == ENOENT) {
 	} else if (ret != 0) {
 		mlog(LV_ERR, "exmdb_provider: Failed to read ACLs from exmdb_acl.txt: %s", strerror(errno));

@@ -238,7 +238,7 @@ int mbop_truncate_chown(const char *tool, const char *file, bool force_overwrite
 int mbop_insert_namedprops(sqlite3 *sdb, const char *datadir)
 {
 	std::vector<std::string> nplist;
-	auto err = list_file_read_fixedstrings("propnames.txt", datadir, nplist);
+	auto err = read_file_by_line("propnames.txt", datadir, nplist);
 	if (err == ENOENT) {
 		return 0;
 	} else if (err != 0) {

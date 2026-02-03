@@ -288,15 +288,11 @@ const char *mapi_strerror(ec_error_t e)
 #undef E
 }
 
-errno_t read_file_by_line(const char *file, std::vector<std::string> &out)
+static errno_t read_file_by_line(FILE *fp, std::vector<std::string> &out)
 {
-	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
-	if (fp == nullptr)
-		return errno;
-
 	hxmc_t *line = nullptr;
 	try {
-		while (HX_getl(&line, fp.get()) != nullptr) {
+		while (HX_getl(&line, fp) != nullptr) {
 			HX_chomp(line);
 			out.emplace_back(line);
 		}
@@ -309,6 +305,18 @@ errno_t read_file_by_line(const char *file, std::vector<std::string> &out)
 		HXmc_free(line);
 		throw;
 	}
+}
+
+errno_t read_file_by_line(const char *file, std::vector<std::string> &out)
+{
+	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
+	return fp != nullptr ? read_file_by_line(fp.get(), out) : errno;
+}
+
+errno_t read_file_by_line(const char *file, const char *sdlist, std::vector<std::string> &out)
+{
+	auto fp = fopen_sd(file, sdlist);
+	return fp != nullptr ? read_file_by_line(fp.get(), out) : errno;
 }
 
 int gx_vsnprintf1(char *buf, size_t sz, const char *file, unsigned int line,

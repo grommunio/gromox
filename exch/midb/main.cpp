@@ -204,7 +204,7 @@ static int listener_init(const char *configdir, const char *hosts_allow,
 	auto &acl = g_acl_list;
 	if (hosts_allow != nullptr)
 		acl = gx_split(hosts_allow, ' ');
-	auto ret = list_file_read_fixedstrings("midb_acl.txt", configdir, acl);
+	auto ret = read_file_by_line("midb_acl.txt", configdir, acl);
 	if (ret == ENOENT) {
 	} else if (ret != 0) {
 		mlog(LV_ERR, "listener: list_file_initd \"midb_acl.txt\": %s", strerror(errno));
