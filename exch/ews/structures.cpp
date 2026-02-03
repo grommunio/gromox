@@ -2590,6 +2590,8 @@ void tContact::update(const sShape& shape)
 	auto postidx = shape.get<const uint32_t>(NtPostalAddressIndex);
 	if (postidx != nullptr)
 		PostalAddressIndex.emplace(*postidx);
+	if ((str = shape.get<const char>(NtImAddress1)))
+		defaulted(ImAddresses).emplace_back(str, Enum::ImAddress1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2762,6 +2764,11 @@ tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const std::string& em
 tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
     Enum::PhoneNumberKeyType pnkt) :
 	Entry(std::move(phone)), Key(std::move(pnkt))
+{}
+
+tImAddressDictionaryEntry::tImAddressDictionaryEntry(std::string addr,
+    Enum::ImAddressKeyType iakt) :
+	Entry(std::move(addr)), Key(std::move(iakt))
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4014,6 +4021,7 @@ decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefa
 	{&NtEmailAddressType1, PT_UNICODE},
 	{&NtEmailAddressType2, PT_UNICODE},
 	{&NtEmailAddressType3, PT_UNICODE},
+	{&NtImAddress1, PT_UNICODE},
 }};
 
 decltype(tItemResponseShape::namedTagsAllProperties) tItemResponseShape::namedTagsAllProperties = {{

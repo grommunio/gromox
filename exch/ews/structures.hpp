@@ -775,6 +775,21 @@ struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
 };
 
 /**
+ * Types.xsd:5222
+ */
+struct tImAddressDictionaryEntry : public NS_EWS_Types {
+	static constexpr char NAME[] = "Entry";
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	tImAddressDictionaryEntry(std::string, Enum::ImAddressKeyType);
+	explicit tImAddressDictionaryEntry(const tinyxml2::XMLElement *);
+
+	std::string Entry;
+	Enum::ImAddressKeyType Key; //Attribute
+};
+
+/**
  * Types.xsd:8508 (simplified)
  */
 struct tPersona : public NS_EWS_Types {
@@ -2093,7 +2108,7 @@ struct tContact : public tItem {
 	std::optional<Enum::ContactSourceType> ContactSource;
 	std::optional<std::string> Department;
 	std::optional<std::string> Generation;
-	// <xs:element name="ImAddresses" type="t:ImAddressDictionaryType" minOccurs="0" />
+	std::optional<std::vector<tImAddressDictionaryEntry>> ImAddresses;
 	std::optional<std::string> JobTitle;
 	std::optional<std::string> Manager;
 	// <xs:element name="Mileage" type="xs:string" minOccurs="0" />
@@ -2211,7 +2226,7 @@ struct tItemResponseShape {
 		PR_BUSINESS_FAX_NUMBER, PR_ASSISTANT_TELEPHONE_NUMBER, PR_HOME2_TELEPHONE_NUMBER,
 		PR_COMPANY_MAIN_PHONE_NUMBER, PR_HOME_FAX_NUMBER, PR_OTHER_TELEPHONE_NUMBER,
 		PR_CALLBACK_TELEPHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER};
-	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 22> namedTagsDefault;
+	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 23> namedTagsDefault;
 	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 10> namedTagsAllProperties;
 };
 

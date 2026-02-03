@@ -882,6 +882,7 @@ tContact::tContact(const tinyxml2::XMLElement *xml) :
 	XMLINIT(ContactSource),
 	XMLINIT(Department),
 	XMLINIT(Generation),
+	XMLINIT(ImAddresses),
 	XMLINIT(JobTitle),
 	XMLINIT(Manager),
 	XMLINIT(OfficeLocation),
@@ -913,6 +914,7 @@ void tContact::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(Children);
 	XMLDUMPT(Department);
 	XMLDUMPT(Generation);
+	XMLDUMPT(ImAddresses);
 	XMLDUMPT(ContactSource);
 	XMLDUMPT(JobTitle);
 	XMLDUMPT(Manager);
@@ -1054,6 +1056,17 @@ tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(const tinyxml2::XMLElem
 void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement *xml) const
 {
 	xml_set_filtered_text(xml, Entry.c_str());
+	XMLDUMPA(Key);
+}
+
+tImAddressDictionaryEntry::tImAddressDictionaryEntry(const tinyxml2::XMLElement *xml) :
+	Entry(fromXMLNode<std::string>(xml)),
+	XMLINITA(Key)
+{}
+
+void tImAddressDictionaryEntry::serialize(tinyxml2::XMLElement *xml) const
+{
+	xml->SetText(Entry.c_str());
 	XMLDUMPA(Key);
 }
 

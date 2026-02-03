@@ -3701,6 +3701,10 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 			const char *displayName = entry.Name ? entry.Name->c_str() : entry.Entry.c_str();
 			shape.write(dispName, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(displayName)});
 		}
+	if (item.ImAddresses)
+		for (const tImAddressDictionaryEntry &entry : *item.ImAddresses)
+			if (entry.Key == Enum::ImAddress1)
+				shape.write(NtImAddress1, TAGGED_PROPVAL{PT_UNICODE, const_cast<char *>(entry.Entry.c_str())});
 	if (item.PhysicalAddresses)
 		for (const tPhysicalAddressDictionaryEntry &entry : *item.PhysicalAddresses) {
 			std::string address = item.mkAddress(entry.Street, entry.City, entry.State, entry.PostalCode,

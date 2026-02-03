@@ -201,6 +201,9 @@ struct Enum {
 	STR(HomePhone2);
 	STR(Id);
 	STR(IdOnly);
+	STR(ImAddress1);
+	STR(ImAddress2);
+	STR(ImAddress3);
 	STR(ImplicitContact);
 	STR(InformationalUpdate);
 	STR(InProgress);
@@ -446,6 +449,7 @@ struct Enum {
 	using DistinguishedUserType = StrEnum<Default, Anonymous>; ///< Types.xsd:6732
 	using EmailAddressKeyType = StrEnum<EmailAddress1, EmailAddress2, EmailAddress3>; ///< Types.xsd:5205
 	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
+	using ImAddressKeyType = StrEnum<ImAddress1, ImAddress2, ImAddress3>; ///< Types.xsd:5222
 	using FileAsMappingType = StrEnum<None, LastCommaFirst, FirstSpaceLast, Company, LastCommaFirstCompany, CompanyLastFirst, LastFirst, LastFirstCompany, CompanyLastCommaFirst, LastFirstSuffix, LastSpaceFirstCompany, CompanyLastSpaceFirst, LastSpaceFirst, DisplayName, FirstName, LastFirstMiddleSuffix, LastName, Empty>; ///< Types.xsd:5283
 	using FlagStatusType = StrEnum<NotFlagged, Flagged, Complete>; ///< Types.xsd:2445
 	using FolderQueryTraversalType = StrEnum<Shallow, Deep, SoftDeleted>; ///< Types.xsd:1212
