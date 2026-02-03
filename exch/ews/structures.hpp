@@ -2099,7 +2099,7 @@ struct tContact : public tItem {
 	// <xs:element name="Mileage" type="xs:string" minOccurs="0" />
 	std::optional<std::string> OfficeLocation;
 	std::optional<Enum::PhysicalAddressIndexType> PostalAddressIndex;
-	// <xs:element name="Profession" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Profession;
 	std::optional<std::string> SpouseName;
 	std::optional<std::string> Surname;
 	std::optional<sTimePoint> WeddingAnniversary;

@@ -2058,6 +2058,8 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"JobTitle", {[](auto&&... args){convText(PR_TITLE, args...);}}},
 	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
 	{"Location", {[](auto &&...args) { convText(NtLocation, args...); }, "CalendarItem"}},
+	{"Manager", {[](auto &&...args) { convText(PR_MANAGER_NAME, args...); }}},
+	{"MiddleName", {[](auto &&...args) { convText(PR_MIDDLE_NAME, args...); }}},
 	{"MimeContent", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.mimeContent = base64_decode(xml->GetText()); }}},
 	{"Nickname", {[](auto&&... args){convText(PR_NICKNAME, args...);}}},
 	{"OfficeLocation", {[](auto&&... args){convText(PR_OFFICE_LOCATION, args...);}}},
@@ -2065,6 +2067,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.permissionSet = xml; }}},
 	{"Recurrence", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.recurrence = xml; }, "CalendarItem"}},
 	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
+	{"Profession", {[](auto &&...args) { convText(PR_PROFESSION, args...); }}},
 	{"Sensitivity", {[](auto &&...args) { convSensitivity(args...); }}},
 	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
 	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
@@ -2451,7 +2454,9 @@ void tContact::update(const sShape& shape)
 	fromProp(shape.get(PR_COMPANY_NAME), CompanyName);
 	fromProp(shape.get(PR_DEPARTMENT_NAME), Department);
 	fromProp(shape.get(PR_TITLE), JobTitle);
+	fromProp(shape.get(PR_MANAGER_NAME), Manager);
 	fromProp(shape.get(PR_OFFICE_LOCATION), OfficeLocation);
+	fromProp(shape.get(PR_PROFESSION), Profession);
 	fromProp(shape.get(PR_SPOUSE_NAME), SpouseName);
 	fromProp(shape.get(PR_WEDDING_ANNIVERSARY), WeddingAnniversary);
 	fromProp(shape.get(NtFileAs), FileAs);
@@ -3398,6 +3403,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"contacts:MiddleName", PR_MIDDLE_NAME},
 	{"contacts:Nickname", PR_NICKNAME},
 	{"contacts:OfficeLocation", PR_OFFICE_LOCATION},
+	{"contacts:Profession", PR_PROFESSION},
 	{"contacts:SpouseName", PR_SPOUSE_NAME},
 	{"contacts:Surname", PR_SURNAME},
 	{"contacts:WeddingAnniversary", PR_WEDDING_ANNIVERSARY},

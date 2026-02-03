@@ -3672,8 +3672,10 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 	writeProp(shape, item.Department, PR_DEPARTMENT_NAME);
 	writeProp(shape, item.Generation, PR_GENERATION);
 	writeProp(shape, item.JobTitle, PR_TITLE);
+	writeProp(shape, item.Manager, PR_MANAGER_NAME);
 	writeProp(shape, item.CompanyName, PR_COMPANY_NAME);
 	writeProp(shape, item.OfficeLocation, PR_OFFICE_LOCATION);
+	writeProp(shape, item.Profession, PR_PROFESSION);
 	writeProp(shape, item.SpouseName, PR_SPOUSE_NAME);
 	writeProp(shape, item.Surname, PR_SURNAME);
 	writeProp(shape, item.WeddingAnniversary, PR_WEDDING_ANNIVERSARY);
