@@ -236,12 +236,13 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 }
 
 static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
-    uint8_t (&buff)[0x8000], uint32_t &buff_len, uint32_t &offset)
+    std::string &buff, size_t &offset)
 {
 	if (poll(&pfd, 1, SOCKET_TIMEOUT * 1000) != 1)
 		return -1;
-	if (buff_len == 0) {
-		if (read(agent.sockd, &buff_len, sizeof(uint32_t)) != sizeof(uint32_t))
+	if (buff.size() == 0) {
+		uint32_t buff_len = 0;
+		if (read(agent.sockd, &buff_len, sizeof(buff_len)) != sizeof(buff_len))
 			return -1;
 		/* ping packet */
 		if (buff_len == 0) {
@@ -249,20 +250,21 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 			if (write(agent.sockd, &resp_code, 1) != 1)
 				return -1;
 		}
+		buff.resize(buff_len);
 		offset = 0;
 		return 0;
 	}
-	auto read_len = read(agent.sockd, buff + offset, buff_len - offset);
+	auto read_len = read(agent.sockd, &buff.data()[offset], buff.size() - offset);
 	if (read_len <= 0)
 		return -1;
 	offset += read_len;
-	if (offset != buff_len)
+	if (offset != buff.size())
 		return 0;
 
 	/* packet complete */
 	BINARY bin;
-	bin.cb = buff_len;
-	bin.pb = buff;
+	bin.cb = buff.size();
+	bin.pc = buff.data();
 	if (mdcl_build_env != nullptr)
 		mdcl_build_env(agent.pserver->type == EXMDB_ITEM::EXMDB_PRIVATE);
 	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
@@ -275,7 +277,8 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 		for (size_t i = 0; i < notify.id_array.size(); ++i)
 			mdcl_event_proc(notify.dir, notify.b_table,
 				notify.id_array[i], &notify.db_notify);
-	buff_len = 0;
+	buff.clear();
+	offset = 0;
 	return 0;
 }
 
@@ -289,9 +292,9 @@ static void cl_notif_reader2(agent_thread &agent)
 	agent.startup_wait = false;
 	agent.startup_cv.notify_one();
 	struct pollfd pfd = {agent.sockd, POLLIN | POLLPRI};
-	uint32_t buff_len = 0, offset = 0;
-	uint8_t buff[0x8000];
-	while (cl_notif_reader3(agent, pfd, buff, buff_len, offset) == 0)
+	size_t offset = 0;
+	std::string buff;
+	while (cl_notif_reader3(agent, pfd, buff, offset) == 0)
 		/* */;
 	close(agent.sockd);
 	agent.sockd = -1;
