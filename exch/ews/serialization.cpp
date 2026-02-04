@@ -2251,6 +2251,11 @@ mRemoveDelegateRequest::mRemoveDelegateRequest(const XMLElement *xml) :
 	XMLINIT(UserIds)
 {}
 
+mUpdateDelegateRequest::mUpdateDelegateRequest(const XMLElement *xml) :
+	XMLINIT(Mailbox),
+	XMLINIT(DelegateUsers)
+{}
+
 void mGetUserOofSettingsResponse::serialize(XMLElement *xml) const
 {
 	XMLDUMPM(ResponseMessage);

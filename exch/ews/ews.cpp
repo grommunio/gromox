@@ -263,6 +263,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"MoveItem", process<Structures::mMoveItemRequest>},
 	{"RemoveDelegate", process<Structures::mRemoveDelegateRequest>},
 	{"ResolveNames", process<Structures::mResolveNamesRequest>},
+	{"UpdateDelegate", process<Structures::mUpdateDelegateRequest>},
 	{"SendItem", process<Structures::mSendItemRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"Subscribe", process<Structures::mSubscribeRequest>},

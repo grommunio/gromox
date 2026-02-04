@@ -663,6 +663,49 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 }
 
 /**
+ * @brief      Process UpdateDelegate
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:UpdateDelegateResponse");
+
+	ctx.normalize(request.Mailbox);
+	std::string dir = ctx.get_maildir(request.Mailbox);
+
+	std::vector<std::string> delegate_list;
+	if (!ctx.plugin().exmdb.read_delegates(dir.c_str(), 0, &delegate_list))
+		throw DispatchError("failed to read delegates");
+	std::unordered_set<std::string> existing(delegate_list.begin(), delegate_list.end());
+
+	mGetDelegateResponse data;
+	for (const auto &du : request.DelegateUsers) {
+		auto &msg = data.ResponseMessages.emplace_back();
+		if (!du.UserId.PrimarySmtpAddress ||
+		    du.UserId.PrimarySmtpAddress->empty()) {
+			msg.error("ErrorDelegateNoUser", "No user specified");
+			continue;
+		}
+		const auto &addr = *du.UserId.PrimarySmtpAddress;
+		if (!existing.contains(addr)) {
+			msg.error("ErrorDelegateNotFound", "Delegate not found");
+			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
+			continue;
+		}
+		if (du.DelegatePermissions)
+			write_deleg_perms(ctx, dir, addr, *du.DelegatePermissions);
+		msg.success();
+		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
+	}
+
+	data.success();
+	data.serialize(response);
+}
+
+/**
  * @brief      Process CreateFolder
  *
  * @param      request   Request data

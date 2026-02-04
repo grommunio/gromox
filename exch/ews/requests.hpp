@@ -46,6 +46,7 @@ EWSFUNC_NC(mGetUserPhotoRequest);
 void process(const Structures::mBaseMoveCopyFolder &, tinyxml2::XMLElement *, const gromox::EWS::EWSContext &);
 void process(const Structures::mBaseMoveCopyItem &, tinyxml2::XMLElement *, const gromox::EWS::EWSContext &);
 EWSFUNC(mRemoveDelegateRequest);
+EWSFUNC(mUpdateDelegateRequest);
 EWSFUNC(mResolveNamesRequest);
 EWSFUNC(mSendItemRequest);
 EWSFUNC(mSetUserOofSettingsRequest);

@@ -4318,6 +4318,16 @@ struct mRemoveDelegateRequest {
 };
 
 /**
+ * Messages.xsd:2305
+ */
+struct mUpdateDelegateRequest {
+	explicit mUpdateDelegateRequest(const tinyxml2::XMLElement *);
+
+	tMailbox Mailbox;
+	std::vector<tDelegateUser> DelegateUsers;
+};
+
+/**
  * @brief      Get inbox rules request
  *
  * Messages.xsg:2935
