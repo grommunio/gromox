@@ -80,15 +80,6 @@ struct remote_conn_ref {
 };
 
 struct remote_svr {
-	public:
-	remote_svr() = default;
-	remote_svr(remote_svr &&o) :
-		prefix(std::move(o.prefix)), host(std::move(o.host)),
-		port(o.port), type(o.type), conn_list(std::move(o.conn_list)),
-		active_handles(o.active_handles.load())
-	{}
-	void operator=(remote_svr &&) = delete;
-
 	std::string prefix, host;
 	uint16_t port = 0;
 	enum {
@@ -98,7 +89,6 @@ struct remote_svr {
 
 	std::list<remote_conn> conn_list;
 	std::optional<agent_thread> m_agent;
-	std::atomic<unsigned int> active_handles{0};
 };
 
 }
@@ -117,6 +107,7 @@ static void (*mdcl_build_env)(bool pvt);
 static void (*mdcl_free_env)();
 static void (*mdcl_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
 static char mdcl_remote_id[128];
+static std::atomic<unsigned int> g_exmdbcl_active_handles;
 
 }
 
@@ -130,12 +121,18 @@ agent_thread::~agent_thread()
 
 remote_conn::~remote_conn()
 {
-	if (sockd >= 0) {
-		close(sockd);
-		sockd = -1;
-		if (psvr != nullptr)
-			--psvr->active_handles;
-	}
+	if (sockd < 0)
+		return;
+	close(sockd);
+	sockd = -1;
+	do {
+		unsigned int curr = gromox::g_exmdbcl_active_handles;
+		if (curr == 0)
+			break;
+		unsigned int next = curr - 1;
+		if (gromox::g_exmdbcl_active_handles.compare_exchange_weak(curr, next))
+			return;
+	} while (true);
 }
 
 remote_conn_ref::remote_conn_ref(remote_conn_ref &&o)
@@ -466,10 +463,22 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		}
 		i->conn_list.pop_front();
 	}
-	if (i->active_handles >= mdcl_conn_max) {
-		// make it wait instead?
-		mlog(LV_ERR, "exmdb_client: reached maximum connections (%u) to [%s]:%hu/%s",
-		        mdcl_conn_max, i->host.c_str(), i->port, i->prefix.c_str());
+	if (g_exmdbcl_active_handles >= mdcl_conn_max) {
+		/*
+		 * Try closing an older connection. But do not touch async
+		 * notifier threads, they are kind of separate anyway.
+		 */
+		for (auto j = mdcl_server_list.rbegin(); j != mdcl_server_list.rend(); ++j) {
+			if (i->conn_list.size() > 0)
+				i->conn_list.pop_back();
+			if (i->conn_list.empty() && !i->m_agent.has_value())
+				mdcl_server_list.erase(j.base());
+			break;
+		}
+	}
+	if (g_exmdbcl_active_handles >= mdcl_conn_max) {
+		mlog(LV_ERR, "exmdb_client: reached global maximum connections (max:%u)",
+		        mdcl_conn_max);
 		return fc;
 	}
 
@@ -487,7 +496,7 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		        i->host.c_str(), i->port, i->prefix.c_str());
 		return fc;
 	}
-	++i->active_handles;
+	++g_exmdbcl_active_handles;
 	sv_hold.lock();
 	if (mdcl_event_proc != nullptr && !i->m_agent.has_value())
 		launch_notify_listener(*i);
