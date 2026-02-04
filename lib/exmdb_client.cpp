@@ -36,6 +36,10 @@ namespace {
 struct remote_svr;
 
 struct agent_thread {
+	agent_thread() = default;
+	NOMOVE(agent_thread);
+	~agent_thread();
+
 	remote_svr *pserver = nullptr;
 	pthread_t thr_id{};
 	int sockd = -1;
@@ -71,11 +75,6 @@ struct remote_svr : public EXMDB_ITEM {
 	std::atomic<unsigned int> active_handles{0};
 };
 
-using AGENT_THREAD = agent_thread;
-using REMOTE_CONN = remote_conn;
-using REMOTE_SVR = remote_svr;
-using REMOTE_CONN_floating = remote_conn_ref;
-
 }
 
 namespace gromox {
@@ -94,6 +93,14 @@ static void (*mdcl_free_env)();
 static void (*mdcl_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
 static char mdcl_remote_id[128];
 
+}
+
+agent_thread::~agent_thread()
+{
+	pthread_kill(thr_id, SIGALRM);
+	pthread_join(thr_id, nullptr);
+	if (sockd >= 0)
+		close(sockd);
 }
 
 remote_conn::~remote_conn()
@@ -161,20 +168,8 @@ exmdb_client_remote::~exmdb_client_remote()
 		mdcl_notify_stop = true;
 	mdcl_notify_stop = true;
 	std::lock_guard sv_hold(mdcl_server_lock);
-	for (auto &ag : mdcl_agent_list) {
-		pthread_kill(ag.thr_id, SIGALRM);
-		pthread_join(ag.thr_id, nullptr);
-		if (ag.sockd >= 0) {
-			close(ag.sockd);
-			ag.sockd = -1;
-		}
-	}
-	for (auto &srv : mdcl_server_list) {
-		for (auto &conn : srv.conn_list) {
-			close(conn.sockd);
-			conn.sockd = -1;
-		}
-	}
+	mdcl_agent_list.clear();
+	mdcl_server_list.clear();
 	mdcl_build_env = nullptr;
 	mdcl_free_env = nullptr;
 	mdcl_event_proc = nullptr;
