@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
@@ -15,6 +15,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
+#include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
@@ -69,6 +70,8 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
+		if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+			return false;
 		textmaps_init();
 		/* get the plugin name from system api */
 		auto pfile = config_file_initd("exchange_nsp.cfg",
@@ -85,7 +88,8 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 		HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 		mlog(LV_INFO, "nsp: address book tree item"
 				" cache interval is %s", temp_buff);
-		ab_tree::AB.init(org_name, cache_interval);
+		if (ab_tree::AB.init(org_name, cache_interval) != 0)
+			return false;
 
 		query_service2("exmdb_client_get_named_propids", get_named_propids);
 		query_service2("exmdb_client_get_store_properties", get_store_properties);

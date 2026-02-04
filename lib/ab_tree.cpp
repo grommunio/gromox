@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2025–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <chrono>
 #include <cstdint>
@@ -12,6 +12,7 @@
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/process.hpp>
+#include <gromox/svc_loader.hpp>
 
 namespace gromox::ab_tree
 {
@@ -46,12 +47,15 @@ void ab::drop(int32_t id)
  * @param      org               x500 organization name
  * @param      cache_interval    Lifespan of ab_tree in seconds
  */
-void ab::init(std::string_view org, int cache_interval)
+int ab::init(std::string_view org, int cache_interval)
 {
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return -1;
 	m_org_name = org;
 	m_cache_interval = std::chrono::seconds(cache_interval);
 	m_essdn_server_prefix = fmt::format("/o={}/" EAG_SERVERS "/cn=", m_org_name);
 	m_essdn_rcpts_prefix = fmt::format("/o={}/" EAG_RCPTS "/cn=", m_org_name);
+	return 0;
 }
 
 /**

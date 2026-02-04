@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -14,6 +14,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
@@ -254,6 +255,8 @@ BOOL PROC_exchange_rfr(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
+		if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+			return false;
 		ep_6001 = register_endpoint("*", 6001);
 		if (ep_6001 == nullptr) {
 			mlog(LV_ERR, "rfr: failed to register endpoint with port 6001");

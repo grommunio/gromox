@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
@@ -25,6 +25,7 @@
 #include <gromox/idset.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/usercvt.hpp>
 
 using namespace std::string_literals;
@@ -1163,6 +1164,8 @@ static std::unique_ptr<OxdiscoPlugin> g_oxdisco_plugin;
 static BOOL oxdisco_init(const struct dlfuncs &apidata)
 {
 	LINK_HPM_API(apidata)
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return false;
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &OxdiscoPlugin::preproc;
 	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_oxdisco_plugin->proc(ctx, cont, len); };

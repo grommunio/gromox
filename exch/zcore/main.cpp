@@ -73,7 +73,6 @@ static constexpr HXoption g_options_table[] = {
 
 static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},
 	{"libgxs_timer_agent.so", SVC_timer_agent},
 };
@@ -291,7 +290,8 @@ int main(int argc, char **argv)
 	mlog(LV_INFO, "system: address book tree item"
 		" cache interval is %s", temp_buff);
 
-	ab_tree::AB.init(g_config_file->get_value("x500_org_name"), cache_interval);
+	if (ab_tree::AB.init(g_config_file->get_value("x500_org_name"), cache_interval) != 0)
+		return EXIT_FAILURE;
 	auto cl_5 = HX::make_scope_exit([]{ab_tree::AB.stop();});
 
 	auto max_rcpt = pconfig->get_ll("max_rcpt_num");

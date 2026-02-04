@@ -301,7 +301,7 @@ class GX_EXPORT ab {
 	using base_ref = std::shared_ptr<ab_base>;
 	using const_base_ref = std::shared_ptr<const ab_base>;
 
-	void init(std::string_view org, int cache_interval);
+	int init(std::string_view org, int cache_interval);
 
 	const_base_ref get(int32_t base_id);
 	inline const_base_ref get(const GUID &guid) { return get(base_id(guid)); }

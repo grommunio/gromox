@@ -22,6 +22,7 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/svc_common.h>
+#include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
@@ -163,6 +164,8 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_INIT: {
+		if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+        		return false;
 		auto pconfig = std::move(g_config_during_init);
 		auto gxcfg = std::move(g_config_during_init2);
 		if (gxcfg == nullptr) {

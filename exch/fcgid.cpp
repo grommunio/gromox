@@ -40,10 +40,6 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static constexpr generic_module g_dfl_svc_plugins[] = {
-	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-};
-
 static gromox::atomic_bool g_notify_stop, g_hup_signalled;
 static std::shared_ptr<config_file> g_config_file;
 static const char *opt_config_file;
@@ -115,7 +111,7 @@ int main(int argc, char **argv)
 	mlog(LV_INFO, "istore: host ID is \"%s\"", str);
 
 	filedes_limit_bump(cfg->get_ll("fcgid_fd_limit"));
-	service_init({cfg, g_dfl_svc_plugins, 1, "fcgid"});
+	service_init({cfg, {}, 1, "fcgid"});
 	auto cl_0 = HX::make_scope_exit(service_stop);
 	if (switch_user_exec(*cfg, argv) != 0)
 		return EXIT_FAILURE;

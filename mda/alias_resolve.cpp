@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <chrono>
@@ -19,6 +19,7 @@
 #include <gromox/database_mysql.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "mdabounce.hpp"
@@ -235,6 +236,8 @@ BOOL HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
 		return TRUE;
 	LINK_HOOK_API(data);
 	textmaps_init();
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return false;
 	if (mlex_bounce_init(get_config_path(), get_data_path(),
 	    "mlist_bounce") != 0) {
 		mlog(LV_ERR, "mlist_expand: failed to run bounce producer");

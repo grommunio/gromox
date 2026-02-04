@@ -66,8 +66,6 @@ static constexpr HXoption g_options_table[] = {
 static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_event_proxy.so", SVC_event_proxy},
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
-	{"libgromox_auth.so/mgr", SVC_authmgr},
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {

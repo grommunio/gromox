@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -34,6 +34,7 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
 #include <gromox/svc_common.h>
+#include <gromox/svc_loader.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "ldap_adaptor.hpp"
@@ -308,6 +309,9 @@ BOOL SVC_authmgr(enum plugin_op reason, const struct dlfuncs &datap) try
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_SVC_API(datap);
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK ||
+	    service_run_library({"libgromox_auth.so/ldap", SVC_ldap_adaptor}) != PLUGIN_LOAD_OK)
+		return false;
 	return authmgr_init() ? TRUE : false;
 } catch (...) {
 	return false;

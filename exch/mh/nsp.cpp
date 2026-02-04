@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <csignal>
@@ -27,6 +27,7 @@
 #include <gromox/hpm_common.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/process.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "mh_common.hpp"
 #include "nsp_bridge.hpp"
@@ -259,6 +260,8 @@ BOOL HPM_mh_nsp(enum plugin_op reason, const struct dlfuncs &plugdata)
 
 	switch (reason) {
 	case PLUGIN_INIT: {
+		if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+			return false;
 		std::unique_ptr<MhNspPlugin> created;
 		try {
 			created = std::make_unique<MhNspPlugin>(plugdata);

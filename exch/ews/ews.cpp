@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -21,6 +21,7 @@
 #include <gromox/notify_types.hpp>
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/svc_loader.hpp>
 #include "exceptions.hpp"
 #include "hash.hpp"
 #include "requests.hpp"
@@ -558,6 +559,8 @@ static BOOL ews_init(const struct dlfuncs &apidata)
 {
 	auto fail = [](auto&&... args){mlog(LV_ERR, args...); return false;};
 	LINK_HPM_API(apidata)
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return false;
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
 	ifc.proc    = [](detail::ContextKey ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
