@@ -2193,6 +2193,10 @@ void mGetUserConfigurationResponse::serialize(XMLElement *xml) const
 	XMLDUMPM(ResponseMessages);
 }
 
+tDelegateUser::tDelegateUser(const XMLElement *xml) :
+	XMLINIT(UserId)
+{}
+
 void tDelegateUser::serialize(XMLElement *xml) const
 {
 	XMLDUMPT(UserId);
@@ -2215,6 +2219,16 @@ void mGetDelegateResponse::serialize(XMLElement *xml) const
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(ResponseMessages);
 }
+
+mAddDelegateRequest::mAddDelegateRequest(const XMLElement *xml) :
+	XMLINIT(Mailbox),
+	XMLINIT(DelegateUsers)
+{}
+
+mRemoveDelegateRequest::mRemoveDelegateRequest(const XMLElement *xml) :
+	XMLINIT(Mailbox),
+	XMLINIT(UserIds)
+{}
 
 void mGetUserOofSettingsResponse::serialize(XMLElement *xml) const
 {

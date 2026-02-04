@@ -469,6 +469,97 @@ void process(mGetDelegateRequest &&request, XMLElement *response, const EWSConte
 }
 
 /**
+ * @brief      Process AddDelegate
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mAddDelegateRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:AddDelegateResponse");
+
+	ctx.normalize(request.Mailbox);
+	std::string dir = ctx.get_maildir(request.Mailbox);
+
+	std::vector<std::string> delegate_list;
+	if (!ctx.plugin().exmdb.read_delegates(dir.c_str(), 0, &delegate_list))
+		throw DispatchError("failed to read delegates");
+	std::unordered_set<std::string> existing(delegate_list.begin(), delegate_list.end());
+
+	mGetDelegateResponse data;
+	for (const auto &du : request.DelegateUsers) {
+		auto &msg = data.ResponseMessages.emplace_back();
+		if (!du.UserId.PrimarySmtpAddress ||
+		    du.UserId.PrimarySmtpAddress->empty()) {
+			msg.error("ErrorDelegateNoUser", "No user specified");
+			continue;
+		}
+		const auto &addr = *du.UserId.PrimarySmtpAddress;
+		if (existing.contains(addr)) {
+			msg.error("ErrorDelegateAlreadyExists", "Delegate already exists");
+			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
+			continue;
+		}
+		delegate_list.emplace_back(addr);
+		existing.emplace(addr);
+		msg.success();
+		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
+	}
+
+	if (!ctx.plugin().exmdb.write_delegates(dir.c_str(), 0, delegate_list))
+		throw DispatchError("failed to write delegates");
+
+	data.success();
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process RemoveDelegate
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:RemoveDelegateResponse");
+
+	ctx.normalize(request.Mailbox);
+	std::string dir = ctx.get_maildir(request.Mailbox);
+
+	std::vector<std::string> delegate_list;
+	if (!ctx.plugin().exmdb.read_delegates(dir.c_str(), 0, &delegate_list))
+		throw DispatchError("failed to read delegates");
+
+	mGetDelegateResponse data;
+	for (const auto &uid : request.UserIds) {
+		auto &msg = data.ResponseMessages.emplace_back();
+		if (!uid.PrimarySmtpAddress ||
+		    uid.PrimarySmtpAddress->empty()) {
+			msg.error("ErrorDelegateNoUser", "No user specified");
+			continue;
+		}
+		const auto &addr = *uid.PrimarySmtpAddress;
+		auto it = std::find(delegate_list.begin(), delegate_list.end(), addr);
+		if (it == delegate_list.end()) {
+			msg.error("ErrorDelegateNotFound", "Delegate not found");
+			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
+			continue;
+		}
+		delegate_list.erase(it);
+		msg.success();
+		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
+	}
+
+	if (!ctx.plugin().exmdb.write_delegates(dir.c_str(), 0, delegate_list))
+		throw DispatchError("failed to write delegates");
+
+	data.success();
+	data.serialize(response);
+}
+
+/**
  * @brief      Process CreateFolder
  *
  * @param      request   Request data

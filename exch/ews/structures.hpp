@@ -1166,6 +1166,9 @@ struct tUserId {
  * Types.xsd:6909
  */
 struct tDelegateUser {
+	tDelegateUser() = default;
+	explicit tDelegateUser(const tinyxml2::XMLElement *);
+
 	tUserId UserId;
 
 	void serialize(tinyxml2::XMLElement *) const;
@@ -4274,6 +4277,26 @@ struct mGetDelegateResponse : public mResponseMessageType {
 	std::vector<mDelegateUserResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * Messages.xsd:2274
+ */
+struct mAddDelegateRequest {
+	explicit mAddDelegateRequest(const tinyxml2::XMLElement *);
+
+	tMailbox Mailbox;
+	std::vector<tDelegateUser> DelegateUsers;
+};
+
+/**
+ * Messages.xsd:2295
+ */
+struct mRemoveDelegateRequest {
+	explicit mRemoveDelegateRequest(const tinyxml2::XMLElement *);
+
+	tMailbox Mailbox;
+	std::vector<tUserId> UserIds;
 };
 
 /**
