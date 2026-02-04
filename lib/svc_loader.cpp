@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -74,11 +74,10 @@ struct svc_mgr final {
 	std::shared_ptr<config_file> g_config_file;
 
 	protected:
-	int load_library(const generic_module &);
+	void load_library(const generic_module &);
 
 	std::list<SVC_PLUG_ENTITY> g_list_plug;
 	std::vector<std::shared_ptr<service_entry>> g_list_service;
-	std::span<const generic_module> g_plugin_names;
 	SVC_PLUG_ENTITY g_system_image;
 };
 
@@ -94,12 +93,19 @@ static thread_local SVC_PLUG_ENTITY *g_cur_plug;
  *  init the service module with the path specified where
  *  we can load the .svc plug-in
  */
-svc_mgr::svc_mgr(service_init_param &&parm)
+svc_mgr::svc_mgr(service_init_param &&parm) :
+	g_context_num(parm.context_num), g_program_identifier(parm.prog_id),
+	g_config_file(std::move(parm.cfg))
 {
-	g_context_num = parm.context_num;
-	g_config_file = std::move(parm.cfg);
-	g_plugin_names = parm.plugin_list;
-	g_program_identifier = parm.prog_id;
+	if (g_config_file == nullptr) {
+		g_config_file = std::make_shared<config_file>();
+		g_config_file->set_value("config_file_path", PKGSYSCONFDIR);
+		g_config_file->set_value("data_file_path", PKGDATADIR);
+	}
+	g_config_dir = znul(g_config_file->get_value("config_file_path"));
+	g_data_dir = znul(g_config_file->get_value("data_file_path"));
+	for (const auto &i : parm.plugin_list)
+		load_library(i);
 }
 
 /* See commentary of service_query() why it's done */
@@ -116,34 +122,20 @@ static constexpr struct dlfuncs server_funcs = {
 	/* .get_prog_id = */ []() { return le_svc_mgr->g_program_identifier; },
 };
 
-int svc_mgr::run_early() try
+int svc_mgr::run_early()
 {
-	if (g_config_file == nullptr) {
-		g_config_file = std::make_shared<config_file>();
-		g_config_file->set_value("config_file_path", PKGSYSCONFDIR);
-		g_config_file->set_value("data_file_path", PKGDATADIR);
-	}
-	g_config_dir = znul(g_config_file->get_value("config_file_path"));
-	g_data_dir = znul(g_config_file->get_value("data_file_path"));
-
-	for (const auto &i : g_plugin_names) {
-		int ret = load_library(i);
-		if (ret == PLUGIN_LOAD_OK) {
-			if (g_cur_plug == nullptr)
-				continue;
-			if (g_cur_plug->lib_main(PLUGIN_EARLY_INIT, server_funcs)) {
-				g_cur_plug = nullptr;
-				continue;
-			}
-			g_list_plug.pop_back();
+	for (auto it = g_list_plug.begin(); it != g_list_plug.end(); ) {
+		g_cur_plug = &*it;
+		if (g_cur_plug->lib_main(PLUGIN_EARLY_INIT, server_funcs)) {
+			g_cur_plug = nullptr;
+			++it;
+			continue;
 		}
+		mlog(LV_ERR, "service: init of %s not successful", znul(g_cur_plug->file_name));
 		g_cur_plug = nullptr;
-		service_stop();
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	return 0;
-} catch (const std::bad_alloc &) {
-	return PLUGIN_FAIL_EXECUTEMAIN;
+	return PLUGIN_LOAD_OK;
 }
 
 int svc_mgr::run()
@@ -157,12 +149,10 @@ int svc_mgr::run()
 			continue;
 		}
 		mlog(LV_ERR, "service: init of %s not successful", znul(g_cur_plug->file_name));
-		it = g_list_plug.erase(it);
 		g_cur_plug = nullptr;
-		service_stop();
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	return 0;
+	return PLUGIN_LOAD_OK;
 }
 
 svc_mgr::~svc_mgr()
@@ -177,36 +167,16 @@ svc_mgr::~svc_mgr()
 	g_list_service.clear();
 }
 
-/*
- *  load the plug-in in the specified path
- *
- *  @return
- *      PLUGIN_LOAD_OK              success
- *      PLUGIN_ALREADY_LOADED       already loaded by service module
- *      PLUGIN_FAIL_OPEN            error loading the file
- *      PLUGIN_NO_MAIN              error finding library function
- *      PLUGIN_FAIL_ALLOCNODE       fail to allocate memory for a node
- *      PLUGIN_FAIL_EXECUTEMAIN     error executing the plugin's init function
- */
-int svc_mgr::load_library(const generic_module &mod)
+void svc_mgr::load_library(const generic_module &mod)
 {
 	/* check whether the library is already loaded */
 	if (std::any_of(g_list_plug.cbegin(), g_list_plug.cend(),
-	    [&](const SVC_PLUG_ENTITY &p) { return p.file_name == znul(mod.file_name); })) {
-		mlog(LV_ERR, "%s: already loaded", znul(mod.file_name));
-		return PLUGIN_ALREADY_LOADED;
-	}
+	    [&](const SVC_PLUG_ENTITY &p) { return p.file_name == znul(mod.file_name); }))
+		return;
 	SVC_PLUG_ENTITY plug;
 	plug.lib_main = mod.lib_main;
 	plug.file_name = mod.file_name;
 	g_list_plug.push_back(std::move(plug));
-	/*
-	 *  indicate the current lib node when plugin rigisters service
-     *  plugin can only register service in "SVC_LibMain"
-	 *  with the parameter PLUGIN_INIT
-	 */
-	g_cur_plug = &g_list_plug.back();
-	return PLUGIN_LOAD_OK;
 }
 
 SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) noexcept :
