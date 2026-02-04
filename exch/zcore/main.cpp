@@ -354,7 +354,8 @@ int main(int argc, char **argv)
 
 	zserver_init(table_size, cache_interval, ping_interval);
 	auto cl_7 = HX::make_scope_exit(zserver_stop);
-	exmdb_client.emplace(proxy_num, stub_num);
+	exmdb_client.emplace(proxy_num);
+	exmdb_client->set_async_notif(zs_notification_proc, stub_num);
 	auto cl_8 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	/* parser after zserver: dependency on session table */
 	/* parser after service: dependency on mysql_adaptor */

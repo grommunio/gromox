@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 {
 	exmdb_rpc_alloc = [](size_t z) { return g_alloc_mgr.alloc(z); };
 	exmdb_rpc_free = [](void *) {};
-	exmdb_client.emplace(1, 0);
+	exmdb_client.emplace();
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	if (exmdb_client_run(PKGSYSCONFDIR) != 0)
 		return EXIT_FAILURE;

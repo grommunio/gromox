@@ -142,7 +142,7 @@ static int exmdb_client_run_front(const char *dir)
 {
 	return exmdb_client_run(dir, EXMDB_CLIENT_SKIP_PUBLIC |
 	       EXMDB_CLIENT_SKIP_REMOTE, buildenv,
-	       cu_free_environment, event_proc);
+	       cu_free_environment);
 }
 
 void exmdb_client_register_proc(void *pproc)
@@ -318,7 +318,8 @@ int main(int argc, char **argv)
 	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
 	auto cl_0 = HX::make_scope_exit(service_stop);
 	
-	exmdb_client.emplace(proxy_num, stub_num);
+	exmdb_client.emplace(proxy_num);
+	exmdb_client->set_async_notif(event_proc, stub_num);
 	auto cl_6 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	me_init(g_config_file->get_value("x500_org_name"), table_size);
 	auto cl_5 = HX::make_scope_exit(me_stop);

@@ -139,8 +139,7 @@ static constexpr cfg_directive exmdb_client_dflt[] = {
 
 namespace gromox {
 
-exmdb_client_remote::exmdb_client_remote(unsigned int conn_max,
-    unsigned int notify_threads_max)
+exmdb_client_remote::exmdb_client_remote(unsigned int conn_max)
 {
 	auto cfg = config_file_initd("gromox.cfg", PKGSYSCONFDIR, exmdb_client_dflt);
 	if (cfg == nullptr) {
@@ -156,7 +155,6 @@ exmdb_client_remote::exmdb_client_remote(unsigned int conn_max,
 	setup_signal_defaults();
 	mdcl_notify_stop = true;
 	mdcl_conn_max = conn_max;
-	mdcl_threads_max = notify_threads_max;
 	snprintf(mdcl_remote_id, std::size(mdcl_remote_id), "%u.", static_cast<unsigned int>(getpid()));
 	auto z = strlen(mdcl_remote_id);
 	GUID::machine_id().to_str(mdcl_remote_id + z, std::size(mdcl_remote_id) - z, 32);
@@ -173,6 +171,7 @@ exmdb_client_remote::~exmdb_client_remote()
 	mdcl_build_env = nullptr;
 	mdcl_free_env = nullptr;
 	mdcl_event_proc = nullptr;
+	mdcl_threads_max = 0;
 }
 
 static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
@@ -343,13 +342,22 @@ static int launch_notify_listener(remote_svr &srv) try
 	return 7;
 }
 
+/**
+ * @ep:     callback function for notifications
+ * max_thr: maximum number of threads that will wait on async notifs
+ */
+void exmdb_client_remote::set_async_notif(void (*ep)(const char *, BOOL, uint32_t, const DB_NOTIFY *),
+    unsigned int max_thr)
+{
+	mdcl_event_proc = ep;
+	mdcl_threads_max = max_thr;
+}
+
 int exmdb_client_run(const char *cfgdir, unsigned int flags,
-    void (*build_env)(bool), void (*free_env)(),
-    void (*event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *))
+    void (*build_env)(bool), void (*free_env)())
 {
 	mdcl_build_env = build_env;
 	mdcl_free_env = free_env;
-	mdcl_event_proc = event_proc;
 	std::vector<EXMDB_ITEM> xmlist;
 
 	auto err = list_file_read_exmdb("exmdb_list.txt", cfgdir, xmlist);

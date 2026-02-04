@@ -552,7 +552,7 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
-		exmdb_client.emplace(conn_num, 0);
+		exmdb_client.emplace(conn_num);
 		exmdb_rpc_alloc = exmdb_local_alloc;
 		exmdb_rpc_free  = [](void *) {};
 		exmdb_local_init(org_name);

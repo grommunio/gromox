@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1
 #include <algorithm>
@@ -493,7 +493,7 @@ int gi_startup_client(unsigned int maxconn)
 	                            "system", typeid(*exmdb_local_rules_execute)));
 	exmdb_rpc_alloc = gi_alloc;
 	exmdb_rpc_free = gi_free;
-	exmdb_client.emplace(maxconn, 0);
+	exmdb_client.emplace(maxconn);
 	return exmdb_client_run(PKGSYSCONFDIR);
 }
 

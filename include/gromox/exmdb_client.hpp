@@ -38,14 +38,15 @@ enum {
 	 */
 };
 
-extern GX_EXPORT int exmdb_client_run(const char *cfgdir, unsigned int fl = EXMDB_CLIENT_NO_FLAGS, void (*build_cb)(bool) = nullptr, void (*free_cb)() = nullptr, void (*event_cb)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr);
+extern GX_EXPORT int exmdb_client_run(const char *cfgdir, unsigned int fl = EXMDB_CLIENT_NO_FLAGS, void (*build_cb)(bool) = nullptr, void (*free_cb)() = nullptr);
 extern GX_EXPORT bool exmdb_client_can_use_lpc(const char *pfx, BOOL *pvt);
 extern GX_EXPORT BOOL exmdb_client_do_rpc(const exreq *, exresp *);
 
 class GX_EXPORT exmdb_client_remote {
 	public:
-	exmdb_client_remote(unsigned int conn_max, unsigned int notify_threads_max = 0);
+	exmdb_client_remote(unsigned int conn_max = 1);
 	~exmdb_client_remote();
+	void set_async_notif(void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *), unsigned int max_threads);
 
 #define IDLOUT
 #define EXMIDL(n, p) static EXMIDL_RETTYPE n p;

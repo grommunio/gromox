@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <list>
@@ -20,7 +20,7 @@ static void buildenv(bool pvt)
 int exmdb_client_run_front(const char *dir)
 {
 	return exmdb_client_run(dir, EXMDB_CLIENT_ALLOW_DIRECT,
-	       buildenv, exmdb_server::free_env, exmdb_server::event_proc);
+	       buildenv, exmdb_server::free_env);
 }
 
 /* Caution. This function is not a common exmdb service,
