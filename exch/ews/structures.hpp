@@ -1163,6 +1163,23 @@ struct tUserId {
 };
 
 /**
+ * Types.xsd:6895
+ */
+struct tDelegatePermissions {
+	tDelegatePermissions() = default;
+	explicit tDelegatePermissions(const tinyxml2::XMLElement *);
+
+	std::optional<Enum::DelegateFolderPermissionLevelType> CalendarFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> TasksFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> InboxFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> ContactsFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> NotesFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> JournalFolderPermissionLevel;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Types.xsd:6909
  */
 struct tDelegateUser {
@@ -1170,6 +1187,7 @@ struct tDelegateUser {
 	explicit tDelegateUser(const tinyxml2::XMLElement *);
 
 	tUserId UserId;
+	std::optional<tDelegatePermissions> DelegatePermissions;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };

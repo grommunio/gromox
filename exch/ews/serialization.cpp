@@ -2193,13 +2193,34 @@ void mGetUserConfigurationResponse::serialize(XMLElement *xml) const
 	XMLDUMPM(ResponseMessages);
 }
 
+tDelegatePermissions::tDelegatePermissions(const XMLElement *xml) :
+	XMLINIT(CalendarFolderPermissionLevel),
+	XMLINIT(TasksFolderPermissionLevel),
+	XMLINIT(InboxFolderPermissionLevel),
+	XMLINIT(ContactsFolderPermissionLevel),
+	XMLINIT(NotesFolderPermissionLevel),
+	XMLINIT(JournalFolderPermissionLevel)
+{}
+
+void tDelegatePermissions::serialize(XMLElement *xml) const
+{
+	XMLDUMPT(CalendarFolderPermissionLevel);
+	XMLDUMPT(TasksFolderPermissionLevel);
+	XMLDUMPT(InboxFolderPermissionLevel);
+	XMLDUMPT(ContactsFolderPermissionLevel);
+	XMLDUMPT(NotesFolderPermissionLevel);
+	XMLDUMPT(JournalFolderPermissionLevel);
+}
+
 tDelegateUser::tDelegateUser(const XMLElement *xml) :
-	XMLINIT(UserId)
+	XMLINIT(UserId),
+	XMLINIT(DelegatePermissions)
 {}
 
 void tDelegateUser::serialize(XMLElement *xml) const
 {
 	XMLDUMPT(UserId);
+	XMLDUMPT(DelegatePermissions);
 }
 
 mGetDelegateRequest::mGetDelegateRequest(const XMLElement *xml) :
