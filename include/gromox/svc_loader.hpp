@@ -18,6 +18,7 @@ struct GX_EXPORT service_init_param {
 extern GX_EXPORT void service_init(service_init_param &&);
 extern GX_EXPORT int service_run_early();
 extern GX_EXPORT int service_run();
+extern GX_EXPORT int service_run_library(const gromox::generic_module &);
 extern GX_EXPORT void service_stop();
 extern GX_EXPORT void *service_query(const char *service_name, const char *module, const std::type_info &);
 extern GX_EXPORT void service_release(const char *service_name, const char *module);

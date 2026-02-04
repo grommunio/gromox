@@ -66,6 +66,7 @@ struct svc_mgr final {
 	void *symget(const char *, const char *, const std::type_info &);
 	void symput(const char *, const char *);
 	void trigger_all(enum plugin_op);
+	int run_library(const generic_module &);
 
 	public:
 	std::string g_config_dir, g_data_dir;
@@ -74,7 +75,8 @@ struct svc_mgr final {
 	std::shared_ptr<config_file> g_config_file;
 
 	protected:
-	void load_library(const generic_module &);
+	bool library_present(const generic_module &);
+	void insert_library(const generic_module &);
 
 	std::list<SVC_PLUG_ENTITY> g_list_plug;
 	std::vector<std::shared_ptr<service_entry>> g_list_service;
@@ -105,7 +107,7 @@ svc_mgr::svc_mgr(service_init_param &&parm) :
 	g_config_dir = znul(g_config_file->get_value("config_file_path"));
 	g_data_dir = znul(g_config_file->get_value("data_file_path"));
 	for (const auto &i : parm.plugin_list)
-		load_library(i);
+		insert_library(i);
 }
 
 /* See commentary of service_query() why it's done */
@@ -125,16 +127,15 @@ static constexpr struct dlfuncs server_funcs = {
 int svc_mgr::run_early()
 {
 	for (auto it = g_list_plug.begin(); it != g_list_plug.end(); ) {
-		g_cur_plug = &*it;
+		if (it->init_state != generic_module::state::uninit)
+			continue;
 		it->init_state = generic_module::state::early_start;
-		if (g_cur_plug->lib_main(PLUGIN_EARLY_INIT, server_funcs)) {
+		if (it->lib_main(PLUGIN_EARLY_INIT, server_funcs)) {
 			it->init_state = generic_module::state::early_done;
-			g_cur_plug = nullptr;
 			++it;
 			continue;
 		}
-		mlog(LV_ERR, "service: init of %s not successful", znul(g_cur_plug->file_name));
-		g_cur_plug = nullptr;
+		mlog(LV_ERR, "service: init of %s not successful", znul(it->file_name));
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
 	return PLUGIN_LOAD_OK;
@@ -143,16 +144,18 @@ int svc_mgr::run_early()
 int svc_mgr::run()
 {
 	for (auto it = g_list_plug.begin(); it != g_list_plug.end(); ) {
-		g_cur_plug = &*it;
+		if (it->init_state != generic_module::state::uninit &&
+		    it->init_state != generic_module::state::early_done)
+			continue;
 		it->init_state = generic_module::state::init_start;
+		g_cur_plug = &*it;
 		if (g_cur_plug->lib_main(PLUGIN_INIT, server_funcs)) {
-			it->init_state = generic_module::state::init_done;
 			g_cur_plug = nullptr;
+			it->init_state = generic_module::state::init_done;
 			++it;
 			continue;
 		}
-		mlog(LV_ERR, "service: init of %s not successful", znul(g_cur_plug->file_name));
-		g_cur_plug = nullptr;
+		mlog(LV_ERR, "service: init of %s not successful", znul(it->file_name));
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
 	return PLUGIN_LOAD_OK;
@@ -170,16 +173,47 @@ svc_mgr::~svc_mgr()
 	g_list_service.clear();
 }
 
-void svc_mgr::load_library(const generic_module &mod)
+bool svc_mgr::library_present(const generic_module &mod)
+{
+	return std::any_of(g_list_plug.cbegin(), g_list_plug.cend(),
+	       [&](const SVC_PLUG_ENTITY &p) {
+	       	return strcmp(p.file_name, znul(mod.file_name)) == 0 ||
+		       p.lib_main == mod.lib_main;
+	       });
+}
+
+void svc_mgr::insert_library(const generic_module &mod)
 {
 	/* check whether the library is already loaded */
-	if (std::any_of(g_list_plug.cbegin(), g_list_plug.cend(),
-	    [&](const SVC_PLUG_ENTITY &p) { return strcmp(p.file_name, znul(mod.file_name)) == 0 || p.lib_main == mod.lib_main; }))
+	if (library_present(mod))
 		return;
 	SVC_PLUG_ENTITY plug;
 	plug.lib_main = mod.lib_main;
 	plug.file_name = mod.file_name;
 	g_list_plug.push_back(std::move(plug));
+}
+
+/*
+ * For use by all kinds of modules to load libraries in the moment they are
+ * needed. EARLY_INIT not included on purpose.
+ */
+int svc_mgr::run_library(const generic_module &mod) try
+{
+	if (library_present(mod))
+		return PLUGIN_LOAD_OK;
+	SVC_PLUG_ENTITY plug;
+	plug.lib_main = mod.lib_main;
+	plug.file_name = mod.file_name;
+	g_list_plug.push_back(std::move(plug));
+	g_cur_plug = &g_list_plug.back();
+	if (!g_cur_plug->lib_main(PLUGIN_INIT, server_funcs)) {
+		g_cur_plug = nullptr;
+		return PLUGIN_FAIL_EXECUTEMAIN;
+	}
+	g_cur_plug = nullptr;
+	return PLUGIN_LOAD_OK;
+} catch (const std::bad_alloc &) {
+	return PLUGIN_FAIL_ALLOCNODE;
 }
 
 SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) noexcept :
@@ -366,6 +400,11 @@ int service_run_early()
 int service_run()
 {
 	return le_svc_mgr->run();
+}
+
+int service_run_library(const generic_module &mod)
+{
+	return le_svc_mgr->run_library(mod);
 }
 
 BOOL service_register_service(const char *fun, void *addr,
