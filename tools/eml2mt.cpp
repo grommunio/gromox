@@ -347,7 +347,7 @@ int main(int argc, char **argv) try
 	}
 	service_init({g_config_file, g_dfl_svc_plugins, 1});
 	auto cl_0 = HX::make_scope_exit(service_stop);
-	if (service_run_early() != 0 || service_run() != 0) {
+	if (service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;
 	}

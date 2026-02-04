@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -125,10 +125,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE; /* permission error */
 	service_init({std::move(cfg), g_dfl_svc_plugins, 0, "authtest"});
 	auto cl_1 = HX::make_scope_exit(service_stop);
-	if (service_run_early() != 0) {
-		fprintf(stderr, "service_run_early failed\n");
-		return EXIT_FAILURE;
-	} else if (service_run() != 0) { 
+	if (service_run() != 0) {
 		fprintf(stderr, "service_run failed\n");
 		return EXIT_FAILURE;
 	}

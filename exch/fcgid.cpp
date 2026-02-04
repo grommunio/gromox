@@ -117,8 +117,6 @@ int main(int argc, char **argv)
 	filedes_limit_bump(cfg->get_ll("fcgid_fd_limit"));
 	service_init({cfg, g_dfl_svc_plugins, 1, "fcgid"});
 	auto cl_0 = HX::make_scope_exit(service_stop);
-	if (service_run_early() != 0)
-		return EXIT_FAILURE;
 	if (switch_user_exec(*cfg, argv) != 0)
 		return EXIT_FAILURE;
 	setup_utf8_locale();

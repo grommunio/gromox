@@ -348,10 +348,6 @@ int main(int argc, char **argv)
 
 	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, scfg.context_num});
-	if (service_run_early() != 0) {
-		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
-		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	if (0 != service_run()) { 

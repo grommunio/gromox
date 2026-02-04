@@ -450,10 +450,6 @@ int main(int argc, char **argv)
 
 	filedes_limit_bump(gxconfig->get_ll("imap_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, context_num});
-	if (service_run_early() != 0) {
-		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
-		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	textmaps_init();

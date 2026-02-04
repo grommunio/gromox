@@ -310,10 +310,6 @@ int main(int argc, char **argv)
 	g_max_mail_size = cfg->get_ll("lda_max_mail_size");
 	service_init({cfg, g_dfl_svc_plugins, 0, "lda"});
 	auto cl_0 = HX::make_scope_exit(service_stop);
-	if (service_run_early() != 0) {
-		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
-		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*cfg, argv) != 0)
 		return EXIT_FAILURE;
 	if (service_run() != 0) {

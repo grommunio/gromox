@@ -328,10 +328,6 @@ int main(int argc, char **argv)
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);
 	auto cl_4 = HX::make_scope_exit(cmd_parser_stop);
 
-	if (service_run_early() != 0) {
-		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
-		return EXIT_FAILURE;
-	}
 	listener_ctx listen_ctx;
 	if (listener_init(listen_ctx, *gxconfig, *g_config_file) != 0)
 		return EXIT_FAILURE;

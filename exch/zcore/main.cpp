@@ -337,10 +337,6 @@ int main(int argc, char **argv)
 	HX_unit_seconds(temp_buff, std::size(temp_buff), ping_interval, 0);
 	mlog(LV_INFO, "system: mailbox ping interval is %s", temp_buff);
 
-	if (service_run_early() != 0) {
-		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
-		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	if (iconv_validate() != EXIT_SUCCESS)
