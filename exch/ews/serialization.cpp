@@ -2201,17 +2201,18 @@ void tDelegateUser::serialize(XMLElement *xml) const
 mGetDelegateRequest::mGetDelegateRequest(const XMLElement *xml) :
 	XMLINIT(Mailbox),
 	XMLINIT(UserIds),
-	XMLINIT(IncludePermissions)
+	XMLINITA(IncludePermissions)
 {}
 
 void mDelegateUserResponseMessage::serialize(XMLElement *xml) const
 {
 	mResponseMessageType::serialize(xml);
-	XMLDUMPT(DelegateUser);
+	XMLDUMPM(DelegateUser);
 }
 
 void mGetDelegateResponse::serialize(XMLElement *xml) const
 {
+	mResponseMessageType::serialize(xml);
 	XMLDUMPM(ResponseMessages);
 }
 

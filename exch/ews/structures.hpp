@@ -4268,7 +4268,9 @@ struct mDelegateUserResponseMessage : public mResponseMessageType {
 	void serialize(tinyxml2::XMLElement *) const;
 };
 
-struct mGetDelegateResponse {
+struct mGetDelegateResponse : public mResponseMessageType {
+	using mResponseMessageType::success;
+
 	std::vector<mDelegateUserResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement *) const;

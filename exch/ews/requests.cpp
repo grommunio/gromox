@@ -433,6 +433,7 @@ void process(mGetDelegateRequest &&request, XMLElement *response, const EWSConte
 	std::vector<std::string> delegate_list;
 	if (!ctx.plugin().exmdb.read_delegates(ctx.get_maildir(request.Mailbox).c_str(),
 	    0, &delegate_list)) {
+		data.success();
 		data.serialize(response);
 		return;
 	}
@@ -463,6 +464,7 @@ void process(mGetDelegateRequest &&request, XMLElement *response, const EWSConte
 		}
 	}
 
+	data.success();
 	data.serialize(response);
 }
 
