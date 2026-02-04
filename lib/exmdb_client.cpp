@@ -37,8 +37,16 @@ struct remote_svr;
 
 struct agent_thread {
 	agent_thread() = default;
-	NOMOVE(agent_thread);
+	agent_thread(agent_thread &&o) :
+		pserver(o.pserver), thr_id(o.thr_id), sockd(o.sockd),
+		startup_wait(o.startup_wait.load())
+	{
+		o.pserver = nullptr;
+		o.thr_id = {};
+		o.sockd = -1;
+	}
 	~agent_thread();
+	void operator=(agent_thread &&) = delete;
 
 	remote_svr *pserver = nullptr;
 	pthread_t thr_id{};
@@ -71,7 +79,9 @@ struct remote_conn_ref {
 
 struct remote_svr : public EXMDB_ITEM {
 	remote_svr(EXMDB_ITEM &&o) noexcept : EXMDB_ITEM(std::move(o)) {}
+
 	std::list<remote_conn> conn_list;
+	std::optional<agent_thread> m_agent;
 	std::atomic<unsigned int> active_handles{0};
 };
 
@@ -83,7 +93,6 @@ std::optional<exmdb_client_remote> exmdb_client;
 bool g_exmdb_allow_lpc;
 
 static int mdcl_rpc_timeout = -1;
-static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock; /* he protecc mdcl_server_list+mdcl_agent_list */
 static atomic_bool mdcl_notify_stop;
@@ -166,7 +175,6 @@ exmdb_client_remote::~exmdb_client_remote()
 		mdcl_notify_stop = true;
 	mdcl_notify_stop = true;
 	std::lock_guard sv_hold(mdcl_server_lock);
-	mdcl_agent_list.clear();
 	mdcl_server_list.clear();
 	mdcl_build_env = nullptr;
 	mdcl_free_env = nullptr;
@@ -309,19 +317,18 @@ static void *cl_notif_reader(void *vargs)
 
 static int launch_notify_listener(remote_svr &srv) try
 {
-	mdcl_agent_list.emplace_back();
 	/* Notification thread creates its own socket. */
-	auto &ag = mdcl_agent_list.back();
+	auto &ag = srv.m_agent.emplace();
+	auto thrtxt = std::string("mcn") + mdcl_remote_id;
 	ag.pserver = &srv;
 	ag.sockd = -1;
 	ag.startup_wait = true;
 	auto ret = pthread_create4(&ag.thr_id, nullptr, cl_notif_reader, &ag);
 	if (ret != 0) {
 		mlog(LV_ERR, "E-1449: pthread_create: %s", strerror(ret));
-		mdcl_agent_list.pop_back();
+		srv.m_agent.reset();
 		return 8;
 	}
-	auto thrtxt = std::string("mcn") + mdcl_remote_id;
 	ret = pthread_setname_np(ag.thr_id, thrtxt.c_str());
 #ifdef __GLIBC__
 	/* prctl truncates the name. Why can't you do the same, glibc? */
@@ -479,7 +486,7 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		return fc;
 	}
 	++i->active_handles;
-	if (mdcl_event_proc != nullptr && mdcl_agent_list.size() < mdcl_threads_max)
+	if (mdcl_event_proc != nullptr && !i->m_agent.has_value())
 		launch_notify_listener(*i);
 	return fc;
 }
