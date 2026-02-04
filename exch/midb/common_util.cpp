@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/pcl.hpp>
@@ -20,7 +21,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
-#include "exmdb_client.hpp"
 
 using namespace gromox;
 

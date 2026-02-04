@@ -35,6 +35,7 @@
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/mail.hpp>
@@ -51,7 +52,6 @@
 #include <gromox/util.hpp>
 #include "cmd_parser.hpp"
 #include "common_util.hpp"
-#include "exmdb_client.hpp"
 #include "mail_engine.hpp"
 #include "system_services.hpp"
 #define MAX_DIGLEN						256*1024
@@ -3920,11 +3920,12 @@ static void notif_msg_modified(IDB_ITEM *pidb, uint64_t folder_id,
 	mlog(LV_ERR, "E-2424: ENOMEM");
 }
 
-static void notif_handler(const char *dir,
+void midb_notif_handler(const char *dir,
     BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify) try
 {
 	if (b_table)
 		return;
+	cu_set_maildir(dir);
 	auto pidb = me_peek_idb(dir);
 	if (pidb == nullptr || pidb->sub_id != notify_id)
 		return;
@@ -4127,7 +4128,6 @@ int me_run()
 	}
 	for (const auto &e : me_commands)
 		cmd_parser_register_command(e.key, e.value);
-	exmdb_client_register_proc(reinterpret_cast<void *>(notif_handler));
 	return 0;
 }
 
