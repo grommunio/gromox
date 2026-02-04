@@ -44,7 +44,7 @@ while (<STDIN>) {
 		my @anames = ("dir", map { $_->[1] } (@$iargs, @$oargs));
 		print "BOOL exmdb_client_local::$func($rbsig)\n{\n";
 		print "\tBOOL xb_private;\n\n";
-		print "\tif (!exmdb_client_is_local(dir, &xb_private))\n";
+		print "\tif (!exmdb_client_can_use_lpc(dir, &xb_private))\n";
 		print "\t\treturn exmdb_client_remote::$func(".join(", ", @anames).");\n";
 		print "\tauto tstart = gromox::tp_now();\n";
 		print "\texmdb_server::build_env(EM_LOCAL | (xb_private ? EM_PRIVATE : 0), dir);\n";

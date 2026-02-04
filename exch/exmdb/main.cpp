@@ -151,8 +151,8 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		if (!exmdb_provider_reload(nullptr, pconfig))
 			return false;
-		g_exmdb_disallow_lpc = strcasecmp(get_prog_id(), "istore") != 0;
-		if (g_exmdb_disallow_lpc)
+		g_exmdb_allow_lpc = strcasecmp(get_prog_id(), "istore") == 0;
+		if (!g_exmdb_allow_lpc)
 			return TRUE;
 
 		auto listen_ip = pconfig->get_value("listen_ip");
@@ -246,7 +246,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 			db_engine_stop();
 			return FALSE;
 		}
-		if (!g_exmdb_disallow_lpc && exmdb_listener_trigger_accept() != 0) {
+		if (g_exmdb_allow_lpc && exmdb_listener_trigger_accept() != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start exmdb listener");
 			exmdb_listener_stop();
 			exmdb_parser_stop();

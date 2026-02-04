@@ -81,7 +81,7 @@ using REMOTE_CONN_floating = remote_conn_ref;
 namespace gromox {
 
 std::optional<exmdb_client_remote> exmdb_client;
-bool g_exmdb_disallow_lpc;
+bool g_exmdb_allow_lpc;
 
 static int mdcl_rpc_timeout = -1;
 static std::list<agent_thread> mdcl_agent_list;
@@ -402,9 +402,18 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	return 0;
 }
 
-bool exmdb_client_is_local(const char *prefix, BOOL *pvt)
+/**
+ * Indicate whether this host is responsible for serving a mailbox
+ * and whether we can actually exercise it (usually only in the
+ * specific setup when exchange_emsmdb is in the same process image
+ * as exmdb_provider).
+ *
+ * @prefix:  a mailbox directory
+ * @pvt:     returns whether the directory refers to a private or public store
+ */
+bool exmdb_client_can_use_lpc(const char *prefix, BOOL *pvt)
 {
-	if (g_exmdb_disallow_lpc)
+	if (!g_exmdb_allow_lpc)
 		return false;
 	if (*prefix == '\0')
 		return true;
