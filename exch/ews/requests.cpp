@@ -2284,6 +2284,59 @@ void process(mResolveNamesRequest &&request, XMLElement *response, const EWSCont
 	unres = unres ? unres + 1 : request.UnresolvedEntry.c_str();
 	request.UnresolvedEntry = gx_utf8_to_punycode(unres);
 
+	/* Try partial matching via address book tree first */
+	std::string domain = znul(ctx.auth_info().username);
+	auto at = domain.find('@');
+	if (at != std::string::npos)
+		domain.erase(0, at + 1);
+
+	std::vector<ab_tree::minid> results;
+	uint32_t domId = ctx.getAccountId(domain, true);
+	auto base = ab_tree::AB.get(-static_cast<int32_t>(domId));
+	if (base)
+		ab_tree_resolvename(*base, request.UnresolvedEntry.c_str(), results);
+	if (!results.empty()) {
+		auto &msg = data.ResponseMessages.emplace_back();
+		auto &resolutionSet = msg.ResolutionSet.emplace();
+		for (auto mid : results) {
+			ab_tree::ab_node node(base.get(), mid);
+			auto email = node.user_info(ab_tree::userinfo::mail_address);
+			if (email == nullptr || *email == '\0')
+				continue;
+			auto &resol = resolutionSet.Resolution.emplace_back();
+			resol.Mailbox.EmailAddress = email;
+			resol.Mailbox.Name = node.displayname();
+			resol.Mailbox.RoutingType = "SMTP";
+			resol.Mailbox.MailboxType = Enum::Mailbox;
+			TPROPVAL_ARRAY userProps{};
+			if (mysql_adaptor_get_user_properties(email, userProps) &&
+			    userProps.count != 0) {
+				resol.Contact.emplace(sShape(userProps));
+				tpropval_array_free_internal(&userProps);
+			}
+		}
+		if (resolutionSet.Resolution.empty()) {
+			/*
+			 * All ab_tree results lacked SMTP addresses, fall
+			 * through to exact match.
+			 */
+			data.ResponseMessages.pop_back();
+		} else {
+			resolutionSet.TotalItemsInView = resolutionSet.Resolution.size();
+			resolutionSet.IncludesLastItemInRange = true;
+			if (resolutionSet.Resolution.size() > 1) {
+				msg.ResponseClass = "Warning";
+				msg.ResponseCode  = "ErrorNameResolutionMultipleResults";
+				msg.MessageText   = "Multiple results were found.";
+			} else {
+				msg.success();
+			}
+			data.serialize(response);
+			return;
+		}
+	}
+
+	/* Fall back to exact match */
 	TPROPVAL_ARRAY userProps{};
 	if (!mysql_adaptor_get_user_properties(request.UnresolvedEntry.c_str(), userProps))
 		throw DispatchError(E3067);
@@ -2300,7 +2353,7 @@ void process(mResolveNamesRequest &&request, XMLElement *response, const EWSCont
 	resol.Mailbox.Name = displayName ? static_cast<const char *>(displayName->pvalue) : request.UnresolvedEntry;
 	resol.Mailbox.EmailAddress = request.UnresolvedEntry;
 	resol.Mailbox.RoutingType = "SMTP";
-	resol.Mailbox.MailboxType = Enum::Mailbox; // Currently the only supported
+	resol.Mailbox.MailboxType = Enum::Mailbox;
 
 	tContact& cnt = resol.Contact.emplace(sShape(userProps));
 	tpropval_array_free_internal(&userProps);
