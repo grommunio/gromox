@@ -280,7 +280,6 @@ int main(int argc, char **argv)
 		pthread_kill(scan_thr, SIGALRM); /* kick sleep() */
 		pthread_join(scan_thr, nullptr);
 	});
-	pthread_setname_np(scan_thr, "scan");
 	auto err = listener.watch_start(g_notify_stop, ev_acceptwork);
 	if (err != 0) {
 		mlog(LV_ERR, "listener.thread_start: %s", strerror(err));
@@ -300,6 +299,7 @@ int main(int argc, char **argv)
 
 static void *ev_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "scan");
 	int i = 0;
 	
 	while (!g_notify_stop) {

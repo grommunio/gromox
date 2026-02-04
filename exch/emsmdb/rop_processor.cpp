@@ -314,6 +314,7 @@ logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 
 static void *emsrop_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "rop_scan");
 	int count;
 	
 	count = 0;
@@ -355,7 +356,6 @@ int rop_processor_run()
 		       "for logon hash table: %s", strerror(ret));
 		return -5;
 	}
-	pthread_setname_np(g_scan_id, "rop_scan");
 	return 0;
 }
 

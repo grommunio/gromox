@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <algorithm>
@@ -442,7 +442,6 @@ int emsmdb_interface_run()
 		mlog(LV_ERR, "E-1447: pthread_create: %s", strerror(ret));
 		return -4;
 	}
-	pthread_setname_np(g_scan_id, "emsmdb/scan");
 	return 0;
 }
 
@@ -1162,6 +1161,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 
 static void *emsi_scanwork(void *pparam)
 {
+	pthread_setname_np(pthread_self(), "emsi_scan");
 	while (!g_emsi_stop) {
 		std::vector<GUID> temp_list;
 		auto cur_time = tp_now();

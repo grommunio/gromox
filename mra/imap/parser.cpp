@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  * imap parser is a module, which first read data from socket, parses the imap
@@ -195,7 +195,6 @@ int imap_parser_run()
 		g_parser_stop = true;
 		return -11;
 	}
-	pthread_setname_np(g_thr_id, "parser/worker");
 	ret = pthread_create4(&g_scan_id, nullptr, imps_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "Failed to create select hash scanning thread: %s", strerror(ret));
@@ -1519,6 +1518,7 @@ static void imap_parser_context_clear(imap_context *pcontext)
 
 static void *imps_thrwork(void *argp)
 {
+	pthread_setname_np(pthread_self(), "imps_thrwork");
 	int peek_len;
 	char tmp_buff;
 

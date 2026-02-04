@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -75,7 +77,6 @@ int threads_pool_run(const char *hint) try
 		mlog(LV_ERR, "threads_pool: failed to create scan thread: %s", strerror(ret));
 		return -2;
 	}
-	pthread_setname_np(g_scan_id, "ep_pool/scan");
 
 	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
@@ -255,6 +256,7 @@ void threads_pool_wakeup_all_threads()
  */
 static void *tpol_scanwork(void *pparam)
 {
+	pthread_setname_np(pthread_self(), "tpol_scan");
 	while (!g_thrpool_stop) {
 		if (contexts_pool_get_param(CUR_SCHEDULING_CONTEXTS) <= 1) {
 			sleep(1);

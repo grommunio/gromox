@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  *  mail queue have three parts, tape, mess, message queue.when a mail
@@ -179,7 +179,6 @@ int message_dequeue_run()
 		message_dequeue_collect_resource();
 		return -9;
 	}
-	pthread_setname_np(g_thread_id, "msg_dequeue");
 	return 0;
 }
 
@@ -379,6 +378,7 @@ static void message_dequeue_load_from_mess(int mess) try
 
 static void *mdq_thrwork(void *arg)
 {
+	pthread_setname_np(pthread_self(), "msg_dequeue");
 	MSG_BUFF msg;
     DIR *dirp;
     struct dirent *direntp;

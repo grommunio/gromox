@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <cerrno>
@@ -103,7 +103,6 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 			        strerror(ret));
 			return FALSE;
 		}
-		pthread_setname_np(g_scan_id, "timer_agent");
 		if (!register_service("add_timer", add_timer)) {
 			mlog(LV_ERR, "timer_agent: failed to register add_timer");
 			return false;
@@ -142,6 +141,7 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 static void *tmrag_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "timer_agent");
 	char temp_buff[1024];
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;

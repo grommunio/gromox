@@ -74,6 +74,7 @@ int contexts_pool_get_param(int type)
 
 static void *ctxp_thrwork(void *pparam)
 {
+	pthread_setname_np(pthread_self(), "ctxp_thrwork");
 	while (!g_ctxpool_stop) {
 		auto num = g_poll_ctx.wait();
 		if (num <= 0)
@@ -106,6 +107,7 @@ static void *ctxp_thrwork(void *pparam)
 
 static void *ctxp_scanwork(void *pparam)
 {
+	pthread_setname_np(pthread_self(), "ctxp_scanwork");
 	int num;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
@@ -197,7 +199,6 @@ int contexts_pool_run()
 		g_ctxpool_stop = true;
 		return -3;
 	}
-	pthread_setname_np(g_thread_id, "epollctx/work");
 	ret = pthread_create4(&g_scan_id, nullptr, ctxp_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "contexts_pool: failed to create scan thread: %s", strerror(ret));
@@ -208,7 +209,6 @@ int contexts_pool_run()
 		}
 		return -4;
 	}
-	pthread_setname_np(g_scan_id, "epollctx/scan");
 	return 0;    
 }
 

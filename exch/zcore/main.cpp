@@ -175,6 +175,7 @@ static void system_services_stop()
 
 static void *zcls_thrwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "accept");
 	struct sockaddr_storage unix_addr;
 
 	while (!g_listener_notify_stop) {
@@ -216,7 +217,6 @@ static int listener_run(const char *sockpath)
 		mlog(LV_ERR, "listener: failed to create accept thread: %s", strerror(ret));
 		return -5;
 	}
-	pthread_setname_np(g_listener_id, "accept");
 	return 0;
 }
 

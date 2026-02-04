@@ -1973,6 +1973,7 @@ IDB_ITEM::~IDB_ITEM()
 
 static void *midbme_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "mail_engine");
 	int count;
 
 	count = 0;
@@ -4133,7 +4134,6 @@ int me_run()
 		mlog(LV_ERR, "mail_engine: failed to create scan thread: %s", strerror(ret));
 		return -5;
 	}
-	pthread_setname_np(g_scan_tid, "mail_engine");
 	for (const auto &e : me_commands)
 		cmd_parser_register_command(e.key, e.value);
 	exmdb_client_register_proc(reinterpret_cast<void *>(notif_handler));

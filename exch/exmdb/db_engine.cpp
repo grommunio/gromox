@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -764,6 +764,7 @@ static bool remove_from_hash(const db_base &pdb, time_point now)
 
 static void *db_expiry_thread(void *param)
 {
+	pthread_setname_np(pthread_self(), "db_expiry");
 	int count;
 
 	count = 0;
@@ -1075,7 +1076,6 @@ int db_engine_run()
 		mlog(LV_ERR, "exmdb_provider: failed to create db scan thread: %s", strerror(ret));
 		return -4;
 	}
-	pthread_setname_np(g_scan_tid, "db_expiry");
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
 		ret = pthread_create4(&tid, nullptr, sf_popul_thread, nullptr);

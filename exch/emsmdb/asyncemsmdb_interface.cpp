@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <condition_variable>
 #include <csignal>
@@ -87,7 +87,6 @@ int asyncemsmdb_interface_run()
 		g_aemsi_stop = true;
 		return -5;
 	}
-	pthread_setname_np(g_scan_id, "asyncems/scan");
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
 		ret = pthread_create4(&tid, nullptr, aemsi_thrwork, nullptr);
@@ -281,6 +280,7 @@ static void *aemsi_thrwork(void *param)
 
 static void *aemsi_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "aemsi_scan");
 	std::vector<std::shared_ptr<ASYNC_WAIT>> tl;
 	
 	while (!g_aemsi_stop) {

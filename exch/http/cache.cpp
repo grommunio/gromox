@@ -121,6 +121,7 @@ static bool stat4_eq(const struct stat &a, const struct stat &b)
 
 static void *mod_cache_scanwork(void *pparam)
 {
+	pthread_setname_np(pthread_self(), "mod_cache");
 	int count;
 	struct stat node_stat;
 	
@@ -197,7 +198,6 @@ int mod_cache_run() try
 		g_httpcache_stpo = true;
 		return -4;
 	}
-	pthread_setname_np(g_scan_tid, "mod_cache");
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "mod_cache: failed to allocate context list");

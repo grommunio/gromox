@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <cerrno>
@@ -110,7 +110,6 @@ BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 			printf("[event_proxy]: failed to create scan thread: %s\n", strerror(ret));
 			return FALSE;
 		}
-		pthread_setname_np(g_scan_id, "event_proxy");
 		if (!register_service("broadcast_event", broadcast_event))
 			printf("[event_proxy]: failed to register broadcast_event\n");
 		if (!register_service("broadcast_select", broadcast_select))
@@ -142,6 +141,7 @@ BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 static void *evpx_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "evpx_scanwork");
 	char temp_buff[1024];
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;

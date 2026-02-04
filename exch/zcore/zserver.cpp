@@ -151,6 +151,7 @@ void user_info_del::operator()(USER_INFO *pinfo)
 
 static void *zcorezs_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "zs_scan");
 	int count;
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
@@ -518,7 +519,6 @@ int zserver_run()
 		mlog(LV_ERR, "E-1443: pthread_create: %s", strerror(ret));
 		return -4;
 	}
-	pthread_setname_np(g_scan_id, "zarafa");
 	return 0;
 }
 
