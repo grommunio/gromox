@@ -323,7 +323,6 @@ void process(mConvertIdRequest &&request, XMLElement *response, EWSContext &ctx)
 		if (aid.Format == request.DestinationFormat) {
 			data.ResponseMessages.emplace_back().AlternateId = std::move(aid);
 		} else {
-			std::string dir = ctx.get_maildir(aid.Mailbox);
 			tBaseItemId id(sBase64Binary(aid.Format == Enum::HexEntryId ?
 			               hex2bin(aid.Id) : base64_decode(aid.Id)),
 			               tBaseItemId::ID_GUESS);
