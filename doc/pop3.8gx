@@ -46,6 +46,18 @@ extension to convey the actual client address, and gxpop3 can pick this up for
 its own reporting, which in turn is useful for e.g. fail2ban setups.
 .br
 Default: \fI0\fP
+.TP
+\fBpop3_listen\fP
+A space-separated list of bind address specifiers to expose standard POP3
+(unencrypted and/or explicit STARTTLS) on.
+.br
+Default: \fB[::]:110\fP
+.TP
+\fBpop3_listen_tls\fP
+A space-separated list of bind address specifiers to expose implicit-TLS POP3
+(POP3S) on.
+.br
+Default: \fB[::]:995\fP
 .SH Configuration directives (pop3.cfg)
 The following directives are recognized when reading from /etc/gromox/pop3.cfg,
 or when the \fB\-c\fP option is used to specify a custom file:
@@ -132,26 +144,18 @@ Default: \fI3 minutes\fP
 .TP
 \fBpop3_force_tls\fP
 This flag controls whether clients must utilize TLS, either by way of implicit
-TLS (cf. \fBpop3_listen_tls_port\fP), or through the STLS command.
+TLS, or through the STLS command.
 .br
 Default: \fIfalse\fP
 .TP
 \fBpop3_listen_addr\fP
-AF_INET6 socket address to bind the POP3 service to.
-.br
-Default: \fI::\fP
+Deprecated in favor of gromox.cfg:pop3_listen / gromox.cfg:pop3_listen_tls.
 .TP
 \fBpop3_listen_port\fP
-The TCP port to expose the POP3 protocol service on. (The IP address is fixed
-to the wildcard address.)
-.br
-Default: \fI110\fP
+Deprecated in favor of gromox.cfg:pop3_listen.
 .TP
 \fBpop3_listen_tls_port\fP
-The TCP port to expose implicit-TLS POP3 protocol service (POP3S) on. (The IP
-address is fixed to the wildcard address.)
-.br
-Default: (unset)
+Deprecated in favor of gromox.cfg:pop3_listen_tls.
 .TP
 \fBpop3_log_file\fP
 Target for log messages here. Special values: "\fI-\fP" (stderr/syslog

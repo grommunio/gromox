@@ -95,9 +95,6 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"pop3_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"pop3_force_stls", "pop3_force_tls", CFG_ALIAS},
 	{"pop3_force_tls", "false", CFG_BOOL},
-	{"pop3_listen_addr", "::"},
-	{"pop3_listen_port", "110"},
-	{"pop3_listen_tls_port", "0"},
 	{"pop3_log_file", "-"},
 	{"pop3_log_level", "4" /* LV_NOTICE */},
 	{"pop3_support_stls", "pop3_support_tls", CFG_ALIAS},
@@ -265,6 +262,34 @@ static void *xrpc_alloc(size_t z)
 	return g_alloc_mgr->alloc(z);
 }
 
+static int pop3_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
+    const char *gxkey, const config_file &oldcfg, const char *oldkey,
+    const char *oldportkey, unsigned int mark)
+{
+	auto line = gxcfg.get_value(gxkey);
+	if (line != nullptr)
+		return ctx.add_bunch(line, mark);
+	auto host = oldcfg.get_value(oldkey);
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldkey,
+			gxcfg.m_filename.c_str(), gxkey);
+	else
+		host = "::";
+	auto ps = oldcfg.get_value(oldportkey);
+	uint16_t port = mark == M_UNENCRYPTED_CONN ? 143 : 993;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldportkey,
+			gxcfg.m_filename.c_str(), gxkey);
+		port = strtoul(ps, nullptr, 0);
+	}
+	if (port != 0 &&
+	    ctx.add_inet(host, port, mark) != 0)
+		return -1;
+	return 0;
+}
+
 int main(int argc, char **argv)
 { 
 	char temp_buff[256];
@@ -387,26 +412,20 @@ int main(int argc, char **argv)
 	auto pop3_force_tls = parse_bool(g_config_file->get_value("pop3_force_tls"));
 	if (pop3_support_tls && pop3_force_tls)
 		printf("[pop3]: pop3 MUST be running with TLS\n");
-	uint16_t listen_tls_port = g_config_file->get_ll("pop3_listen_tls_port");
-	if (!pop3_support_tls && listen_tls_port > 0)
-		listen_tls_port = 0;
-	if (listen_tls_port > 0)
-		printf("[system]: system TLS listening port %d\n", listen_tls_port);
 
 	if (resource_run() != 0) {
 		printf("[system]: Failed to load resource\n");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_2 = HX::make_scope_exit(resource_stop);
-	uint16_t listen_port = g_config_file->get_ll("pop3_listen_port");
 
 	listener_ctx listener;
-	auto laddr = g_config_file->get_value("pop3_listen_addr");
-	if (listen_port != 0 &&
-	    listener.add_inet(laddr, listen_port, M_UNENCRYPTED_CONN) != 0)
+	if (pop3_parse_binds(listener, *gxconfig, "pop3_listen", *g_config_file,
+	    "pop3_listen_addr", "pop3_listen_port", M_UNENCRYPTED_CONN) != 0)
 		return EXIT_FAILURE;
-	if (listen_tls_port != 0 &&
-	    listener.add_inet(laddr, listen_tls_port, M_TLS_CONN) != 0)
+	if (pop3_support_tls &&
+	    pop3_parse_binds(listener, *gxconfig, "pop3_listen_tls", *g_config_file,
+	    "pop3_listen_addr", "pop3_listen_tls_port", M_TLS_CONN) != 0)
 		return EXIT_FAILURE;
 	listener.m_haproxy_level = g_haproxy_level;
 	listener.m_thread_name   = "accept";
