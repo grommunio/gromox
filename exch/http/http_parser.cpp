@@ -2649,7 +2649,7 @@ int htls_thrwork(generic_connection &&conn)
 		mlog(LV_WARN, "W-1408: fcntl: %s", strerror(errno));
 	static const int flag = 1;
 	if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-		mlog(LV_WARN, "W-1409: setsockopt: %s", strerror(errno));
+		/* ignore */;
 	auto ctx = static_cast<HTTP_CONTEXT *>(contexts_pool_get_context(sctx_status::free));
 	/* there's no context available in contexts pool, close the connection*/
 	if (ctx == nullptr) {

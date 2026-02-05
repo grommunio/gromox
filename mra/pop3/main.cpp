@@ -180,7 +180,7 @@ static int p3ls_thrwork(generic_connection &&conn)
 			mlog(LV_WARN, "W-1405: fctnl: %s", strerror(errno));
 		static constexpr int flag = 1;
 		if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			mlog(LV_WARN, "W-1339: setsockopt: %s", strerror(errno));
+			/* ignore */;
 		auto ctx = static_cast<pop3_context *>(contexts_pool_get_context(sctx_status::free));
 		/* there's no context available in contexts pool, close the connection*/
 		if (ctx == nullptr) {
