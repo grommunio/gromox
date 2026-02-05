@@ -72,7 +72,7 @@ A space-separated list of bind address specifiers to expose HTTP on.
 .br
 Default: \fB[::]:80\fP
 .TP
-\fBimap_listen_tls\fP
+\fBhttp_listen_tls\fP
 A space-separated list of bind address specifiers to expose implicit-TLS
 (HTTPS) on.
 .br
@@ -266,7 +266,7 @@ Default: \fI20\fP
 The initial and also minimum number of client processing threads to keep
 around. This is similar to php-fpm's start_servers/min_spare_servere. (The
 maximum number of threads, i.e. what would be max_spare_servers, is determined
-by: context_num divided by imap_thread_charge_num)
+by: context_num divided by http_thread_charge_num)
 .br
 Default: \fI5\fP
 .TP

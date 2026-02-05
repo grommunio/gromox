@@ -41,7 +41,7 @@ A space-separated list of bind address specifiers to expose standard SMTP/LMTP
 .br
 Default: \fB[::]:25\fP
 .TP
-\fBimap_listen_tls\fP
+\fBlda_listen_tls\fP
 A space-separated list of bind address specifiers to expose implicit-TLS
 SMTP (SMTPS)/LMTP on.
 .br
