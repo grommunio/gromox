@@ -35,6 +35,18 @@ should be used.
 .br
 Default: \fI0\fP
 .TP
+\fBlda_listen\fP
+A space-separated list of bind address specifiers to expose standard SMTP/LMTP
+(unencrypted and/or explicit STARTTLS) on.
+.br
+Default: \fB[::]:25\fP
+.TP
+\fBimap_listen_tls\fP
+A space-separated list of bind address specifiers to expose implicit-TLS
+SMTP (SMTPS)/LMTP on.
+.br
+Default: (empty)
+.TP
 \fBlda_recipient_delimiter\fP
 The set of characters that separate an email address into localpart and
 extension. This mirrors the "recipient_delimiter" directive from postconf(5).
@@ -91,19 +103,13 @@ by delivery-queue on the network.
 Default: (system hostname)
 .TP
 \fBlda_listen_addr\fP
-AF_INET6 socket address to bind the LDA service to.
-.br
-Default: \fI::\fP
+Deprecated in favor of gromox.cfg:lda_listen / gromox.cfg:lda_listen_tls.
 .TP
 \fBlda_listen_port\fP
-The TCP port to export the SMTP protocol service on.
-.br
-Default: \fI25\fP
+Deprecated in favor of gromox.cfg:lda_listen.
 .TP
 \fBlda_listen_tls_port\fP
-The TCP port to expose the implicit-TLS SMTP protocol service on.
-.br
-Default: (unset)
+Deprecated in favor of gromox.cfg:lda_listen_tls.
 .TP
 \fBlda_log_file\fP
 Target for log messages here. Special values: "\fI-\fP" (stderr/syslog

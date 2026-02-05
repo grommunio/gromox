@@ -77,9 +77,6 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"context_max_mem", "2M", CFG_SIZE},
 	{"context_num", "0", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
-	{"lda_listen_addr", "::"},
-	{"lda_listen_port", "25"},
-	{"lda_listen_tls_port", "0"},
 	{"lda_log_file", "-"},
 	{"lda_log_level", "4" /* LV_NOTICE */},
 	{"lda_thread_charge_num", "400", CFG_SIZE, "4"},
@@ -164,6 +161,34 @@ static int smls_thrwork(generic_connection &&conn)
 		ctx->polling_mask = POLLING_READ;
 		contexts_pool_insert(ctx, sctx_status::polling);
 
+	return 0;
+}
+
+static int smtp_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
+    const char *gxkey, const config_file &oldcfg, const char *oldkey,
+    const char *oldportkey, unsigned int mark)
+{
+	auto line = gxcfg.get_value(gxkey);
+	if (line != nullptr)
+		return ctx.add_bunch(line, mark);
+	auto host = oldcfg.get_value(oldkey);
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldkey,
+			gxcfg.m_filename.c_str(), gxkey);
+	else
+		host = "::";
+	auto ps = oldcfg.get_value(oldportkey);
+	uint16_t port = mark == M_UNENCRYPTED_CONN ? 143 : 993;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldportkey,
+			gxcfg.m_filename.c_str(), gxkey);
+		port = strtoul(ps, nullptr, 0);
+	}
+	if (port != 0 &&
+	    ctx.add_inet(host, port, mark) != 0)
+		return -1;
 	return 0;
 }
 
@@ -295,12 +320,6 @@ int main(int argc, char **argv)
 	scfg.force_starttls = parse_bool(g_config_file->get_value("smtp_force_starttls"));
 	if (scfg.support_starttls && scfg.force_starttls)
 		mlog(LV_NOTICE, "dq: clients are required to use STARTTLS");
-	uint16_t listen_port = g_config_file->get_ll("lda_listen_port");
-	uint16_t listen_tls_port = g_config_file->get_ll("lda_listen_tls_port");
-	if (!scfg.support_starttls && listen_tls_port > 0)
-		listen_tls_port = 0;
-	if (listen_tls_port > 0)
-		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
 
 	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");
 	HX_unit_size(temp_buff, std::size(temp_buff), scfg.max_mail_length, 1024, 0);
@@ -317,12 +336,12 @@ int main(int argc, char **argv)
 		scfg.cmd_prot = 0;
 
 	listener_ctx listener;
-	auto laddr = g_config_file->get_value("lda_listen_addr");
-	if (listen_port != 0 &&
-	    listener.add_inet(laddr, listen_port, M_UNENCRYPTED_CONN) != 0)
+	if (smtp_parse_binds(listener, *gxconfig, "lda_listen", *g_config_file,
+	    "lda_listen_addr", "lda_listen_port", M_UNENCRYPTED_CONN) != 0)
 		return EXIT_FAILURE;
-	if (listen_tls_port != 0 &&
-	    listener.add_inet(laddr, listen_tls_port, M_TLS_CONN) != 0)
+	if (scfg.support_starttls &&
+	    smtp_parse_binds(listener, *gxconfig, "lda_listen_tls", *g_config_file,
+	    "lda_listen_addr", "lda_listen_tls_port", M_TLS_CONN) != 0)
 		return EXIT_FAILURE;
 	listener.m_haproxy_level = g_haproxy_level;
 	listener.m_thread_name   = "accept";
