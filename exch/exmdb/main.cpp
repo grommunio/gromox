@@ -26,7 +26,6 @@
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 #include "db_engine.hpp"
-#include "listener.hpp"
 #include "parser.hpp"
 
 using namespace std::string_literals;
