@@ -174,7 +174,7 @@ void svc_mgr::load_library(const generic_module &mod)
 {
 	/* check whether the library is already loaded */
 	if (std::any_of(g_list_plug.cbegin(), g_list_plug.cend(),
-	    [&](const SVC_PLUG_ENTITY &p) { return strcmp(p.file_name, znul(mod.file_name)) == 0; }))
+	    [&](const SVC_PLUG_ENTITY &p) { return strcmp(p.file_name, znul(mod.file_name)) == 0 || p.lib_main == mod.lib_main; }))
 		return;
 	SVC_PLUG_ENTITY plug;
 	plug.lib_main = mod.lib_main;
