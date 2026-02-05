@@ -126,7 +126,9 @@ int svc_mgr::run_early()
 {
 	for (auto it = g_list_plug.begin(); it != g_list_plug.end(); ) {
 		g_cur_plug = &*it;
+		it->init_state = generic_module::state::early_start;
 		if (g_cur_plug->lib_main(PLUGIN_EARLY_INIT, server_funcs)) {
+			it->init_state = generic_module::state::early_done;
 			g_cur_plug = nullptr;
 			++it;
 			continue;
@@ -142,8 +144,9 @@ int svc_mgr::run()
 {
 	for (auto it = g_list_plug.begin(); it != g_list_plug.end(); ) {
 		g_cur_plug = &*it;
+		it->init_state = generic_module::state::init_start;
 		if (g_cur_plug->lib_main(PLUGIN_INIT, server_funcs)) {
-			g_cur_plug->completed_init = true;
+			it->init_state = generic_module::state::init_done;
 			g_cur_plug = nullptr;
 			++it;
 			continue;
@@ -203,7 +206,7 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 		mlog(LV_NOTICE, "Unbalanced refcount on %s + ENOMEM", znul(plib->file_name));
 		return;
 	}
-	if (!plib->completed_init)
+	if (plib->init_state != generic_module::state::init_done)
 		return;
 	if (plib->file_name != nullptr)
 		mlog(LV_INFO, "service: unloading %s", plib->file_name);
@@ -340,9 +343,9 @@ void svc_mgr::trigger_all(enum plugin_op ev)
 generic_module::generic_module(generic_module &&o) noexcept :
 	file_name(std::move(o.file_name)),
 	lib_main(std::move(o.lib_main)),
-	completed_init(std::move(o.completed_init))
+	init_state(std::move(o.init_state))
 {
-	o.completed_init = false;
+	o.init_state = state::uninit;
 }
 
 void service_init(service_init_param &&parm)

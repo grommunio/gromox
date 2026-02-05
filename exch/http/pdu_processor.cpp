@@ -2892,7 +2892,7 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	PLUGIN_MAIN func;
 	auto pplugin = this;
 	
-	if (pplugin->completed_init) {
+	if (pplugin->init_state == generic_module::state::init_done) {
 		if (pplugin->file_name != nullptr)
 			mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name);
 		func = (PLUGIN_MAIN)pplugin->lib_main;
@@ -3000,6 +3000,7 @@ static int pdu_processor_load_library(const generic_module &mod)
 	
 	/* append the pendpoint node into endpoint list */
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
+	g_cur_plugin->init_state = generic_module::state::init_start;
 	if (!g_cur_plugin->lib_main(PLUGIN_INIT, server_funcs)) {
 		mlog(LV_ERR, "pdu_processor: error executing the plugin's init "
 			"function in %s", g_cur_plugin->file_name);
@@ -3007,7 +3008,7 @@ static int pdu_processor_load_library(const generic_module &mod)
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	g_cur_plugin->completed_init = true;
+	g_cur_plugin->init_state = generic_module::state::init_done;
 	g_cur_plugin = NULL;
 	return PLUGIN_LOAD_OK;
 }

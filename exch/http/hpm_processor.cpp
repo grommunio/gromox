@@ -194,7 +194,7 @@ HPM_PLUGIN::~HPM_PLUGIN()
 {
 	PLUGIN_MAIN func;
 	auto pplugin = this;
-	if (pplugin->completed_init) {
+	if (pplugin->init_state == generic_module::state::init_done) {
 		if (pplugin->file_name != nullptr)
 			mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name);
 		func = (PLUGIN_MAIN)pplugin->lib_main;
@@ -216,6 +216,7 @@ static int hpm_processor_load_library(const generic_module &mod)
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
+	g_cur_plugin->init_state = generic_module::state::init_start;
 	if (!g_cur_plugin->lib_main(PLUGIN_INIT, server_funcs) ||
 	    g_cur_plugin->interface.preproc == nullptr ||
 	    g_cur_plugin->interface.proc == nullptr ||
@@ -226,7 +227,7 @@ static int hpm_processor_load_library(const generic_module &mod)
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	g_cur_plugin->completed_init = true;
+	g_cur_plugin->init_state = generic_module::state::init_done;
 	g_cur_plugin = NULL;
 	return PLUGIN_LOAD_OK;
 }
