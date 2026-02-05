@@ -11,6 +11,12 @@ identity and separate it with an exclamation mark, e.g.
 "myaccount@domain.example!sharedmbox@domain.example". Accessing a store in such
 manner is only possible when the authenticating user has store ownership over
 the mailbox.
+.PP
+(The exclamation mark was once used for path routing in Usenet, which might
+explain how the exclamation mark never became a character that is widely used
+for email addresses, despite being a valid character for an RFC 5322 addr-spec.
+That drove the choice to use the character for denoting impersonation; it could
+be regarded as a form of routing. ("Through myaccount@, access sharedmbox@"))
 .SH Synopsis
 \fBimap\fP [\fB\-c\fP \fIconfig\fP]
 .SH Options
