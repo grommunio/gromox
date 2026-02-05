@@ -33,7 +33,6 @@
 #include <gromox/util.hpp>
 #include "hpm_processor.hpp"
 #include "http_parser.hpp"
-#include "listener.hpp"
 #include "cache.hpp"
 #include "fastcgi.hpp"
 #include "rewrite.hpp"

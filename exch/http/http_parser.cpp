@@ -37,6 +37,7 @@
 #include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
+#include <netinet/tcp.h>
 #include <openssl/err.h>
 #if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
 #	define WITH_SSLPROV 1
@@ -54,6 +55,7 @@
 #include <gromox/fileio.h>
 #include <gromox/hpm_common.h>
 #include <gromox/http.hpp>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/threads_pool.hpp>
@@ -92,6 +94,10 @@ struct VIRTUAL_CONNECTION {
 	HTTP_CONTEXT *pcontext_out = nullptr, *pcontext_outsucc = nullptr;
 };
 }
+
+enum {
+	M_UNENCRYPTED_CONN, M_TLS_CONN,
+};
 
 static constexpr time_duration OUT_CHANNEL_MAX_WAIT = std::chrono::seconds(10);
 
@@ -175,6 +181,7 @@ bool g_enforce_auth;
 time_duration g_http_basic_auth_validity;
 static thread_local HTTP_CONTEXT *g_context_key;
 static std::optional<http_parser> g_parser;
+static listener_ctx http_listen_ctx;
 
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
 
@@ -2631,4 +2638,89 @@ RPC_OUT_CHANNEL::~RPC_OUT_CHANNEL()
 		pdu_processor_free_blob(bnode);
 	}
 	double_list_free(&pdu_list);
+}
+
+int htls_thrwork(generic_connection &&conn)
+{
+	const bool use_tls = conn.mark == M_TLS_CONN;
+	char buff[1024];
+
+	if (fcntl(conn.sockd, F_SETFL, O_NONBLOCK) < 0)
+		mlog(LV_WARN, "W-1408: fcntl: %s", strerror(errno));
+	static const int flag = 1;
+	if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+		mlog(LV_WARN, "W-1409: setsockopt: %s", strerror(errno));
+	auto ctx = static_cast<HTTP_CONTEXT *>(contexts_pool_get_context(sctx_status::free));
+	/* there's no context available in contexts pool, close the connection*/
+	if (ctx == nullptr) {
+		mlog(LV_NOTICE, "Rejecting connection from [%s]:%hu: "
+			"reached %d connections (http.cfg:context_num)",
+			conn.client_addr, conn.client_port,
+			contexts_pool_get_param(MAX_CONTEXTS_NUM));
+		auto len = gx_snprintf(buff, std::size(buff),
+		           "HTTP/1.1 503 L-202 Service Unavailable\r\n"
+		           "Content-Length: 0\r\n"
+		           "Connection: close\r\n"
+		           "\r\n");
+		if (HXio_fullwrite(conn.sockd, buff, len) < 0)
+			mlog(LV_WARN, "W-1984: write: %s", strerror(errno));
+		return 0;
+	}
+	ctx->type = sctx_status::constructing;
+	/* pass the client ipaddr into the ipaddr filter */
+	std::string reason;
+	if (!system_services_judge_addr(conn.client_addr, reason)) {
+		auto len = gx_snprintf(buff, std::size(buff),
+		           "HTTP/1.1 503 L-216 Service Unavailable\r\n"
+		           "Content-Length: 0\r\n"
+		           "Connection: close\r\n"
+		           "\r\n");
+		if (HXio_fullwrite(conn.sockd, buff, len) < 0)
+			mlog(LV_WARN, "W-1983: write: %s", strerror(errno));
+		mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter: %s",
+			conn.client_addr, reason.c_str());
+		/* release the context */
+		contexts_pool_insert(ctx, sctx_status::free);
+		return 0;
+	}
+
+	/* construct the context object */
+	ctx->connection = std::move(conn);
+	ctx->sched_stat = use_tls ? hsched_stat::initssl : hsched_stat::rdhead;
+	/*
+	 * Valid the context and wake up one thread if there are some threads
+	 * block on the condition variable
+	 */
+	ctx->polling_mask = POLLING_READ;
+	contexts_pool_insert(ctx, sctx_status::polling);
+	return 0;
+}
+
+int listener_init(const char *laddr, uint16_t port, uint16_t tls_port)
+{
+	if (port == 0 && tls_port == 0)
+		return 0;
+	http_listen_ctx.m_thread_name = "http_accept";
+	if (port != 0 && http_listen_ctx.add_inet(laddr, port, M_UNENCRYPTED_CONN) != 0)
+		return -1;
+	if (tls_port != 0 && http_listen_ctx.add_inet(laddr, tls_port, M_TLS_CONN) != 0)
+		return -1;
+	return 0;
+}
+
+int listener_trigger_accept()
+{
+	if (http_listen_ctx.empty())
+		return 0;
+	auto ret = http_listen_ctx.watch_start(g_httpmain_stop, htls_thrwork);
+	if (ret != 0) {
+		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
+		return -1;
+	}
+	return 0;
+}
+
+void listener_stop()
+{
+	http_listen_ctx.reset();
 }
