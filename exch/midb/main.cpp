@@ -82,8 +82,6 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"midb_cache_interval", "30min", CFG_TIME, "1min", "1year"},
 	{"midb_cmd_debug", "0"},
 	{"midb_hosts_allow", ""}, /* ::1 default set later during startup */
-	{"midb_listen_ip", "::1"},
-	{"midb_listen_port", "5555"},
 	{"midb_log_file", "-"},
 	{"midb_log_level", "4" /* LV_NOTICE */},
 	{"midb_reload_interval", "60min", CFG_TIME, "1min", "1year"},
@@ -198,8 +196,7 @@ static int midls_thrwork(generic_connection &&gco)
 	return 0;
 }
 
-static int listener_init(const char *configdir, const char *hosts_allow,
-    listener_ctx &mlc, const char *laddr, uint16_t port)
+static int midb_acl_read(const char *configdir, const char *hosts_allow)
 {
 	auto &acl = g_acl_list;
 	if (hosts_allow != nullptr)
@@ -217,9 +214,34 @@ static int listener_init(const char *configdir, const char *hosts_allow,
 		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
 		acl = {"::1"};
 	}
+	return 0;
+}
 
-	mlc.m_thread_name = "accept";
-	if (port != 0 && mlc.add_inet(laddr, port) != 0)
+static int listener_init(listener_ctx &ctx, const config_file &gxcfg,
+    const config_file &oldcfg)
+{
+	ctx.m_thread_name = "accept";
+	auto ret = midb_acl_read(oldcfg.get_value("config_file_path"),
+	           oldcfg.get_value("midb_hosts_allow"));
+	if (ret != 0)
+		return ret;
+	auto line = gxcfg.get_value("midb_listen");
+	if (line != nullptr)
+		return ctx.add_bunch(line);
+	auto host = oldcfg.get_value("midb_listen_ip");
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:listen_ip is deprecated in favor of %s:midb_listen",
+			oldcfg.m_filename.c_str(), gxcfg.m_filename.c_str());
+	else
+		host = "::1";
+	auto ps = oldcfg.get_value("midb_listen_port");
+	uint16_t port = 5555;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:listen_port is deprecated in favor of %s:midb_listen",
+			oldcfg.m_filename.c_str(), gxcfg.m_filename.c_str());
+		port = strtoul(znul(ps), nullptr, 0);
+	}
+	if (port != 0 && ctx.add_inet(host, port) != 0)
 		return -1;
 	return 0;
 }
@@ -282,11 +304,6 @@ int main(int argc, char **argv)
 	int stub_num = pconfig->get_ll("notify_stub_threads_num");
 	mlog(LV_INFO, "system: exmdb notify stub threads number is %d", stub_num);
 	
-	auto listen_ip = pconfig->get_value("midb_listen_ip");
-	uint16_t listen_port = pconfig->get_ll("midb_listen_port");
-	mlog(LV_INFO, "system: listen address is [%s]:%hu",
-	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
-
 	unsigned int threads_num = pconfig->get_ll("midb_threads_num");
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
@@ -316,12 +333,8 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	listener_ctx listen_ctx;
-	if (listener_init(g_config_file->get_value("config_file_path"),
-	    g_config_file->get_value("midb_hosts_allow"),
-	    listen_ctx, listen_ip, listen_port) != 0) {
-		mlog(LV_ERR, "system: failed to start TCP listener");
+	if (listener_init(listen_ctx, *gxconfig, *g_config_file) != 0)
 		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
 	if (iconv_validate() != 0)

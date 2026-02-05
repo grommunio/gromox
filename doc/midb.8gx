@@ -40,6 +40,12 @@ Request that the file descriptor table be at least this large. The magic value
 should be used.
 .br
 Default: \fI0\fP
+.TP
+\fBmidb_listen\fP
+A space-separated list of bind address specifiers to expose the MIDB service
+on.
+.br
+Default: \fB[::1]:5555\fP
 .SH Configuration directives (midb.cfg)
 The following directives are recognized when reading from /etc/gromox/midb.cfg,
 or when the \fB\-c\fP option is used to specify a custom file:
@@ -81,14 +87,10 @@ deprecates the /etc/gromox/midb_acl.txt file used before Gromox 2.8.
 Default: \fI::1\fP
 .TP
 \fBmidb_listen_ip\fP
-An IPv6 address (or v4-mapped address) for exposing the event service on.
-.br
-Default: \fI::1\fP
+Deprecated in favor of gromox.cfg:midb_listen.
 .TP
 \fBmidb_listen_port\fP
-The TCP port number for exposing the event service on.
-.br
-Default: \fI5555\fP
+Deprecated in favor of gromox.cfg:midb_listen.
 .TP
 \fBmidb_log_file\fP
 Target for log messages here. Special values: "\fI-\fP" (stderr/syslog
