@@ -478,6 +478,51 @@ errno_t listener_ctx::add_inet(const char *addr, uint16_t port, uint32_t mark)
 	return 0;
 }
 
+errno_t listener_ctx::add_local(const char *path, uint32_t mark)
+{
+	auto fd = HX_local_listen(path);
+	if (fd < 0) {
+		auto se = errno;
+		mlog(LV_ERR, "%s(%s): %s", __PRETTY_FUNCTION__, path, strerror(se));
+		return se;
+	}
+	try {
+		m_sockets.emplace_back(fd, mark);
+	} catch (const std::bad_alloc &) {
+		close(fd);
+		mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+		return ENOMEM;
+	}
+	gx_reexec_record(fd);
+	return 0;
+}
+
+errno_t listener_ctx::add_bunch(const char *line, uint32_t mark)
+{
+	for (auto &&spec : gx_split_ws(line)) {
+		if (strncmp(spec.c_str(), "unix:", 5) == 0) {
+			auto err = add_local(&spec[5]);
+			if (err != 0)
+				return err;
+			continue;
+		}
+		std::string host;
+		host.resize(spec.size());
+		uint16_t port = 0;
+		auto ret = HX_addrport_split(spec.c_str(), host.data(), host.size(), &port);
+		if (ret != 2) {
+			mlog(LV_ERR, "%s: syntax near \"%s\": need both host and port",
+				__PRETTY_FUNCTION__, spec.c_str());
+			return EINVAL;
+		}
+		host.resize(strlen(host.data()));
+		auto err = add_inet(host.c_str(), port, mark);
+		if (err != 0)
+			return err;
+	}
+	return 0;
+}
+
 /**
  * Wait on sockets and invoke a callback on new incoming connections.
  *

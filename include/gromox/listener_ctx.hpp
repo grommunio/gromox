@@ -23,6 +23,8 @@ class GX_EXPORT listener_ctx {
 	~listener_ctx() { reset(); }
 	void reset();
 	errno_t add_inet(const char *addr, uint16_t port, unsigned int mark = 0);
+	errno_t add_local(const char *path, unsigned int mark = 0);
+	errno_t add_bunch(const char *line, unsigned int mark = 0);
 	errno_t watch_start(atomic_bool &stop, int (*cb)(generic_connection &&));
 	void watch_stop();
 	bool empty() const { return m_sockets.size() == 0; }
