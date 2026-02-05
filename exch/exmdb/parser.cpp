@@ -27,6 +27,7 @@
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_ext.hpp>
@@ -485,8 +486,7 @@ static int sockaccept_thread(generic_connection &&conn)
 	return 0;
 }
 
-int exmdb_listener_init(const char *config_path, const char *hosts_allow,
-    const char *laddr, uint16_t port)
+static int exmdb_acl_read(const char *config_path, const char *hosts_allow)
 {
 	auto &acl = g_acl_list;
 	if (hosts_allow != nullptr)
@@ -504,11 +504,34 @@ int exmdb_listener_init(const char *config_path, const char *hosts_allow,
 		mlog(LV_NOTICE, "exmdb_provider: defaulting to implicit access ACL containing ::1.");
 		acl = {"::1"};
 	}
+	return 0;
+}
 
-	if (port == 0)
-		return 0;
-	exmdb_listen_ctx.m_thread_name = "exmdb_accept";
-	if (exmdb_listen_ctx.add_inet(laddr, port) != 0)
+int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg)
+{
+	auto &ctx = exmdb_listen_ctx;
+	ctx.m_thread_name = "exmdb_accept";
+	auto ret = exmdb_acl_read(oldcfg.get_value("config_file_path"),
+	           oldcfg.get_value("exmdb_hosts_allow"));
+	if (ret != 0)
+		return ret;
+	auto line = gxcfg.get_value("exmdb_listen");
+	if (line != nullptr)
+		return ctx.add_bunch(line);
+	auto host = oldcfg.get_value("listen_ip");
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:listen_ip is deprecated in favor of %s:exmdb_listen",
+			oldcfg.m_filename.c_str(), gxcfg.m_filename.c_str());
+	else
+		host = "::1";
+	auto ps = oldcfg.get_value("exmdb_listen_port");
+	uint16_t port = 5000;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:exmdb_listen_port is deprecated in favor of %s:exmdb_listen",
+			oldcfg.m_filename.c_str(), gxcfg.m_filename.c_str());
+		port = strtoul(znul(ps), nullptr, 0);
+	}
+	if (port != 0 && ctx.add_inet(host, port) != 0)
 		return -1;
 	return 0;
 }

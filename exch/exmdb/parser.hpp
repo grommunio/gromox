@@ -9,6 +9,8 @@
 #include <gromox/common_types.hpp>
 #include <gromox/generic_connection.hpp>
 
+struct config_file;
+
 class EXMDB_CONNECTION : public GENERIC_CONNECTION {
 	public:
 	EXMDB_CONNECTION() = default;
@@ -42,7 +44,7 @@ extern void exmdb_parser_insert_conn(std::unique_ptr<EXMDB_CONNECTION> &&);
 extern std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_extract_router(const char *remote_id);
 extern void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&);
 extern BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &);
-extern int exmdb_listener_init(const char *config_path, const char *hosts_allow, const char *host, uint16_t port);
+extern int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg);
 extern int exmdb_listener_trigger_accept();
 extern void exmdb_listener_stop();
 
