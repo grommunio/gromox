@@ -101,9 +101,6 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_debug", "0"},
 	{"http_enforce_auth", "0", CFG_BOOL},
 	{"http_krb_service_principal", ""},
-	{"http_listen_addr", "::"},
-	{"http_listen_port", "80"},
-	{"http_listen_tls_port", "0"},
 	{"http_log_file", "-"},
 	{"http_log_level", "4" /* LV_NOTICE */},
 	{"http_rqbody_flush_size", "512K", CFG_SIZE, "0"},
@@ -276,12 +273,6 @@ int main(int argc, char **argv)
 		mlog(LV_NOTICE, "http: TLS support deactivated via config");
 	}
 
-	uint16_t listen_tls_port = g_config_file->get_ll("http_listen_tls_port");
-	if (!http_support_tls && listen_tls_port > 0)
-		listen_tls_port = 0;
-	if (listen_tls_port > 0)
-		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
-	
 	size_t max_request_mem = g_config_file->get_ll("request_max_mem");
 	HX_unit_size(temp_buff, std::size(temp_buff), max_request_mem, 1024, 0);
 	mlog(LV_INFO, "pdu_processor: maximum request memory is %s", temp_buff);
@@ -299,12 +290,8 @@ int main(int argc, char **argv)
 	std::chrono::seconds fastcgi_exec_timeout{g_config_file->get_ll("fastcgi_exec_timeout")};
 	HX_unit_seconds(temp_buff, std::size(temp_buff), fastcgi_exec_timeout.count(), 0);
 	mlog(LV_INFO, "http: fastcgi execution timeout is %s", temp_buff);
-	uint16_t listen_port = g_config_file->get_ll("http_listen_port");
-	if (listener_init(g_config_file->get_value("http_listen_addr"),
-	    listen_port, listen_tls_port) != 0) {
-		mlog(LV_ERR, "system: failed to start listener");
+	if (listener_init(*gxconfig, *g_config_file, http_support_tls) != 0)
 		return EXIT_FAILURE;
-	}
 	auto cleanup_4 = HX::make_scope_exit(listener_stop);
 
 	const char *program_identifier = "http";

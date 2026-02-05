@@ -142,7 +142,7 @@ void http_parser_vconnection_async_reply(const char *host,
 extern void http_report();
 extern std::string http_make_err_response(const http_context &, http_status);
 
-extern int listener_init(const char *addr, uint16_t port, uint16_t port_ssl);
+extern int listener_init(const config_file &gx, const config_file &oldcfg, bool with_tls);
 extern int listener_trigger_accept();
 extern void listener_stop();
 extern int htls_thrwork(generic_connection &&);

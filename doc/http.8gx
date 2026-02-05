@@ -67,6 +67,17 @@ should be used.
 .br
 Default: \fI0\fP
 .TP
+\fBhttp_listen\fP
+A space-separated list of bind address specifiers to expose HTTP on.
+.br
+Default: \fB[::]:80\fP
+.TP
+\fBimap_listen_tls\fP
+A space-separated list of bind address specifiers to expose implicit-TLS
+(HTTPS) on.
+.br
+Default: \fB[::]:443\fP
+.TP
 \fBhttp_remote_host_hdr\fP
 The name of the HTTP request header which contains the actual client IPv6/IPv4
 address. When a (reverse) proxy is placed in front of gromox-http, the address
@@ -203,19 +214,13 @@ be
 Default: (empty)
 .TP
 \fBhttp_listen_addr\fP
-AF_INET6 socket address to bind the HTTP service to.
-.br
-Default: \fI::\fP
+Deprecated in favor of gromox.cfg:http_listen / gromox.cfg:http_listen_tls.
 .TP
 \fBhttp_listen_port\fP
-The TCP port to expose the HTTP protocol service on.
-.br
-Default: \fI80\fP
+Deprecated in favor of gromox.cfg:http_listen.
 .TP
 \fBhttp_listen_tls_port\fP
-The TCP port to expose implicit-TLS HTTP protocol service (HTTPS) on.
-.br
-Default: (unset)
+Deprecated in favor of gromox.cfg:http_listen_tls.
 .TP
 \fBhttp_log_file\fP
 Target for log messages here. Special values: "\fI-\fP" (stderr/syslog

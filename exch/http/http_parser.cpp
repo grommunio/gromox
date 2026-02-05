@@ -2696,15 +2696,46 @@ int htls_thrwork(generic_connection &&conn)
 	return 0;
 }
 
-int listener_init(const char *laddr, uint16_t port, uint16_t tls_port)
+static int http_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
+    const char *gxkey, const config_file &oldcfg, const char *oldkey,
+    const char *oldportkey, unsigned int mark)
 {
-	if (port == 0 && tls_port == 0)
-		return 0;
-	http_listen_ctx.m_thread_name = "http_accept";
-	if (port != 0 && http_listen_ctx.add_inet(laddr, port, M_UNENCRYPTED_CONN) != 0)
+	auto line = gxcfg.get_value(gxkey);
+	if (line != nullptr)
+		return ctx.add_bunch(line, mark);
+	auto host = oldcfg.get_value(oldkey);
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldkey,
+			gxcfg.m_filename.c_str(), gxkey);
+	else
+		host = "::";
+	auto ps = oldcfg.get_value(oldportkey);
+	uint16_t port = mark == M_UNENCRYPTED_CONN ? 143 : 993;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldportkey,
+			gxcfg.m_filename.c_str(), gxkey);
+		port = strtoul(ps, nullptr, 0);
+	}
+	if (port != 0 &&
+	    ctx.add_inet(host, port, mark) != 0)
 		return -1;
-	if (tls_port != 0 && http_listen_ctx.add_inet(laddr, tls_port, M_TLS_CONN) != 0)
-		return -1;
+	return 0;
+}
+
+int listener_init(const config_file &gxcfg, const config_file &oldcfg,
+    bool with_tls)
+{
+	auto &ctx = http_listen_ctx;
+	ctx.m_thread_name = "http_accept";
+	if (http_parse_binds(ctx, gxcfg, "http_listen", oldcfg,
+	    "http_listen_addr", "http_listen_port", M_UNENCRYPTED_CONN) != 0)
+		return EXIT_FAILURE;
+	if (with_tls &&
+	    http_parse_binds(ctx, gxcfg, "http_listen_tls", oldcfg,
+	    "http_listen_addr", "http_listen_tls_port", M_TLS_CONN) != 0)
+		return EXIT_FAILURE;
 	return 0;
 }
 
