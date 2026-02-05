@@ -1237,15 +1237,19 @@ std::vector<std::string> gx_split(std::string_view sv, char sep)
 	return out;
 }
 
-std::vector<std::string> gx_split_ws(std::string_view sv, char sep)
+std::vector<std::string> gx_split_ws(std::string_view sv)
 {
-	size_t start = 0, pos;
+	static constexpr char sep[] = " \f\n\r\t\v";
 	std::vector<std::string> out;
-	while ((pos = sv.find(sep, start)) != sv.npos) {
-		out.emplace_back(sv.substr(start, pos - start));
-		start = sv.find_first_not_of(sep, pos + 1);
+	for (auto azbeg = sv.find_first_not_of(sep); azbeg != sv.npos; ) {
+		auto azend = sv.find_first_of(sep, azbeg);
+		if (azend == sv.npos) {
+			out.emplace_back(sv.substr(azbeg));
+			break;
+		}
+		out.emplace_back(sv.substr(azbeg, azend - azbeg));
+		azbeg = sv.find_first_not_of(sep, azend);
 	}
-	out.emplace_back(sv.substr(start));
 	return out;
 }
 

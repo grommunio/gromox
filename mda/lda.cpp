@@ -188,7 +188,7 @@ static protocol_state read_command(lmtp_context &ctx, FILE *cin)
 		return protocol_state::rdcmd;
 	}
 	HX_chomp(input_line);
-	auto argv = gx_split_ws(input_line, ' ');
+	auto argv = gx_split_ws(input_line);
 	if (argv.size() < 1) {
 		rsp_no_cmd();
 	} else if (strcasecmp(argv[0].c_str(), "QUIT") == 0) {

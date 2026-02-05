@@ -543,6 +543,13 @@ static int t_string()
 	assert(p != nullptr);
 	p = search_string("", "foo", 0);
 	assert(p == nullptr);
+
+	for (auto &s : gx_split_ws(" foo bar  baz "))
+		printf("<%s>,", s.c_str());
+	printf("\n");
+	for (auto &s : gx_split_ws(" foo bar \t baz"))
+		printf("<%s>,", s.c_str());
+	printf("\n");
 	return EXIT_SUCCESS;
 }
 
