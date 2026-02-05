@@ -16,6 +16,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/util.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::success) return klfdv; } while (false)
 
 using namespace gromox;

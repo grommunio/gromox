@@ -16,6 +16,10 @@ enum {
 	QP_MIME_HEADER = 1U << 0,
 };
 
+enum {
+	ICONVTEXT_TRANSLIT = 0x1U,
+};
+
 enum class mime_type {
 	none, single, single_obj, multiple,
 };
@@ -76,6 +80,17 @@ extern GX_EXPORT int decode_hex_int(const char *in);
 extern GX_EXPORT BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
 extern GX_EXPORT BOOL decode_hex_binary(const char *src, void *dst, int dstlen);
 
+#ifdef COMPILE_DIAG
+/* Compiler generates important -Wformat-truncation diagnostics */
+#define gx_snprintf snprintf
+#define gx_vsnprintf vsnprintf
+#else
+#define gx_snprintf(buf, size, fmt, ...) gx_snprintf1((buf), (size), __FILE__, __LINE__, (fmt), ## __VA_ARGS__)
+#define gx_vsnprintf(buf, size, fmt, ...) gx_vsnprintf1((buf), (size), __FILE__, __LINE__, (fmt), ## __VA_ARGS__)
+#endif
+extern GX_EXPORT int gx_snprintf1(char *, size_t, const char *, unsigned int, const char *, ...) __attribute__((format(printf, 5, 6)));
+extern GX_EXPORT int gx_vsnprintf1(char *, size_t, const char *, unsigned int, const char *, va_list);
+
 namespace gromox {
 
 /**
@@ -124,8 +139,15 @@ extern GX_EXPORT uint64_t apptime_to_nttime_approx(double);
 extern GX_EXPORT std::string gx_utf8_to_punycode(const char *);
 extern GX_EXPORT bool str_isascii(const char *);
 extern GX_EXPORT bool str_isasciipr(const char *);
-extern GX_EXPORT gromox::errno_t canonical_hostname(std::string &);
 extern GX_EXPORT int ece2nerrno(ec_error_t);
+extern GX_EXPORT std::string iconvtext(std::string_view, const char *from, const char *to, unsigned int flags = 0);
+extern GX_EXPORT std::vector<std::string> gx_split(std::string_view, char sep);
+extern GX_EXPORT std::vector<std::string> gx_split_ws(std::string_view, char sep);
+extern GX_EXPORT std::string resource_parse_stcode_line(const char *);
+extern GX_EXPORT void startup_banner(const char *);
+extern GX_EXPORT std::string base64_encode(const std::string_view &);
+extern GX_EXPORT std::string base64_decode(const std::string_view &);
+extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
 
 /* _xlen - exact length (chars); _len - allocation size, i.e. \0-terminated */
 /* All the classic 8-bit charsets map to within the Unicode Basic Multilingual Plane */

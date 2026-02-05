@@ -6,6 +6,8 @@
 #include <string>
 #include <gromox/defs.h>
 
+struct sockaddr_storage;
+
 #if defined(__OpenBSD__)
 static inline int _pthread_setname_np(pthread_t thread, const char *name)
 {
@@ -31,5 +33,6 @@ extern GX_EXPORT int pthread_create4(pthread_t *, std::nullptr_t, void *(*)(void
 extern GX_EXPORT int setup_signal_defaults();
 extern GX_EXPORT std::string simple_backtrace();
 extern GX_EXPORT errno_t switch_user_exec(const char *user, char *const *argv);
+extern GX_EXPORT int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *);
 
 }

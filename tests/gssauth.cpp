@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <gssapi/gssapi.h>
 #include <libHX/string.h>
-#include <gromox/fileio.h>
+#include <gromox/util.hpp>
 
 using namespace gromox;
 

@@ -32,6 +32,7 @@
 #include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/un.h>
 #ifdef __sun
 #	include <sys/lwp.h>
 #endif
@@ -47,11 +48,14 @@
 #include <libHX/proc.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
+#include <gromox/clock.hpp>
 #include <gromox/generic_connection.hpp>
 #include <gromox/listener_ctx.hpp>
 #include <gromox/poll_ctx.hpp>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
+
+using namespace gromox;
 
 namespace gromox {
 
@@ -562,4 +566,144 @@ void listener_ctx::watch_stop()
 	m_poller.reset();
 }
 
+int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
+{
+	if (level == 0)
+		return 0;
+	if (level != 2)
+		return -1;
+	static constexpr uint8_t sig[12] = {0xd, 0xa, 0xd, 0xa, 0x0, 0xd, 0xa, 0x51, 0x55, 0x49, 0x54, 0xa};
+	uint8_t buf[4096];
+	if (HXio_fullread(fd, buf, 16) != 16)
+		return -1;
+	if (memcmp(buf, sig, sizeof(sig)) != 0)
+		return -1;
+	if (static_cast<unsigned int>((buf[12] & 0xF0) >> 4) != level || level != 2)
+		return -1;
+	if ((buf[12] & 0xF) == 0)
+		return 0;
+	if ((buf[12] & 0xF) != 1)
+		return -1;
+	uint16_t hlen = static_cast<uint16_t>(buf[14] << 8) | buf[15];
+	switch (buf[13] & 0xF0) {
+	case 0x10: {
+		if (hlen != 12 || HXio_fullread(fd, buf, 12) != 12)
+			return -1;
+		auto peer = reinterpret_cast<sockaddr_in *>(ss);
+		*peer = {};
+		peer->sin_family = AF_INET;
+		memcpy(&peer->sin_addr, &buf[0], sizeof(peer->sin_addr));
+		memcpy(&peer->sin_port, &buf[8], sizeof(peer->sin_port));
+		static_assert(sizeof(peer->sin_addr) == 4 && sizeof(peer->sin_port) == 2);
+		return 0;
+	}
+	case 0x20: {
+		if (hlen != 36 || HXio_fullread(fd, buf, 36) != 36)
+			return -1;
+		auto peer = reinterpret_cast<sockaddr_in6 *>(ss);
+		*peer = {};
+		peer->sin6_family = AF_INET6;
+		memcpy(&peer->sin6_addr, &buf[0], sizeof(peer->sin6_addr));
+		memcpy(&peer->sin6_port, &buf[32], sizeof(peer->sin6_port));
+		static_assert(sizeof(peer->sin6_addr) == 16 && sizeof(peer->sin6_port) == 2);
+		return 0;
+	}
+	case 0x30: {
+		if (hlen != 216 || HXio_fullread(fd, buf, 216) != 216)
+			return -1;
+		auto peer = reinterpret_cast<sockaddr_un *>(ss);
+		*peer = {};
+		peer->sun_family = AF_LOCAL;
+		memcpy(&peer->sun_path, &buf[0], std::min(static_cast<size_t>(108), sizeof(peer->sun_path)));
+		return 0;
+	}
+	default:
+		while (hlen > 0) {
+			auto toread = std::min(static_cast<size_t>(hlen), sizeof(buf));
+			auto ret = HXio_fullread(fd, buf, toread);
+			if (ret < 0 || static_cast<size_t>(ret) != toread)
+				return -1;
+			hlen -= toread;
+		}
+		return 0;
+	}
+	return -1;
+}
+
+}
+
+generic_connection::generic_connection(generic_connection &&o) :
+	client_port(o.client_port), server_port(o.server_port),
+	sockd(std::move(o.sockd)), ssl(std::move(o.ssl)),
+	last_timestamp(o.last_timestamp)
+{
+	memcpy(client_addr, o.client_addr, sizeof(client_addr));
+	memcpy(server_addr, o.server_addr, sizeof(server_addr));
+	o.sockd = -1;
+	o.ssl = nullptr;
+}
+
+generic_connection &generic_connection::operator=(generic_connection &&o)
+{
+	memcpy(client_addr, o.client_addr, sizeof(client_addr));
+	memcpy(server_addr, o.server_addr, sizeof(server_addr));
+	client_port = o.client_port;
+	server_port = o.server_port;
+	sockd = std::move(o.sockd);
+	o.sockd = -1;
+	ssl = std::move(o.ssl);
+	o.ssl = nullptr;
+	last_timestamp = o.last_timestamp;
+	return *this;
+}
+
+generic_connection generic_connection::accept(int sv_sock,
+    int haproxy, gromox::atomic_bool *stop_accept)
+{
+	generic_connection conn;
+	struct sockaddr_storage sv_addr, cl_addr;
+	socklen_t addrlen = sizeof(cl_addr);
+	auto cl_sock = accept4(sv_sock, reinterpret_cast<struct sockaddr *>(&cl_addr),
+	               &addrlen, SOCK_CLOEXEC);
+	conn.sockd = cl_sock;
+	if (*stop_accept) {
+		conn.reset();
+		conn.sockd = -2;
+		return conn;
+	} else if (cl_sock < 0) {
+		conn.reset();
+		return conn;
+	}
+	if (haproxy_intervene(cl_sock, haproxy, &cl_addr) < 0) {
+		conn.reset();
+		return conn;
+	}
+	char txtport[40];
+	auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
+		   conn.client_addr, sizeof(conn.client_addr), txtport,
+		   sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.client_port = strtoul(txtport, nullptr, 0);
+	addrlen = sizeof(sv_addr);
+	ret = getsockname(cl_sock, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
+	if (ret != 0) {
+		mlog(LV_WARN, "getsockname: %s\n", strerror(errno));
+		conn.reset();
+		return conn;
+	}
+	ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
+	      conn.server_addr, sizeof(conn.server_addr), txtport,
+	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.server_port = strtoul(txtport, nullptr, 0);
+	conn.last_timestamp = tp_now();
+	return conn;
 }

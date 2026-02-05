@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdarg>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -13,18 +12,7 @@
 #include <gromox/defs.h>
 
 struct BINARY;
-struct sockaddr_storage;
 
-#ifdef COMPILE_DIAG
-/* Compiler generates important -Wformat-truncation diagnostics */
-#define gx_snprintf snprintf
-#define gx_vsnprintf vsnprintf
-#else
-#define gx_snprintf(buf, size, fmt, ...) gx_snprintf1((buf), (size), __FILE__, __LINE__, (fmt), ## __VA_ARGS__)
-#define gx_vsnprintf(buf, size, fmt, ...) gx_vsnprintf1((buf), (size), __FILE__, __LINE__, (fmt), ## __VA_ARGS__)
-#endif
-extern GX_EXPORT int gx_snprintf1(char *, size_t, const char *, unsigned int, const char *, ...) __attribute__((format(printf, 5, 6)));
-extern GX_EXPORT int gx_vsnprintf1(char *, size_t, const char *, unsigned int, const char *, va_list);
 extern GX_EXPORT gromox::errno_t read_file_by_line(const char *file, std::vector<std::string> &);
 extern GX_EXPORT gromox::errno_t read_file_by_line(const char *file, const char *sdlist, std::vector<std::string> &);
 
@@ -82,28 +70,16 @@ class GX_EXPORT wrapfd {
 	int m_fd = -1;
 };
 
-enum {
-	ICONVTEXT_TRANSLIT = 0x1U,
-};
-
-extern GX_EXPORT std::string iconvtext(std::string_view, const char *from, const char *to, unsigned int flags = 0);
+extern GX_EXPORT errno_t canonical_hostname(std::string &);
 extern GX_EXPORT pid_t popenfd(const char *const *, int *, int *, int *, const char *const *);
 extern GX_EXPORT int feed_w3m(std::string_view, const char *in_cset, std::string &out);
-extern GX_EXPORT std::vector<std::string> gx_split(std::string_view, char sep);
-extern GX_EXPORT std::vector<std::string> gx_split_ws(std::string_view, char sep);
 extern GX_EXPORT DIR_mp opendir_sd(const char *, const char *);
 extern GX_EXPORT std::unique_ptr<FILE, file_deleter> fopen_sd(const char *, const char *);
-extern GX_EXPORT std::string resource_parse_stcode_line(const char *);
-extern GX_EXPORT void startup_banner(const char *);
 extern GX_EXPORT std::string zstd_decompress(std::string_view);
 extern GX_EXPORT size_t gx_decompressed_size(const char *);
 extern GX_EXPORT errno_t gx_decompress_file(const char *, BINARY &, void *(*)(size_t), void *(*)(void *, size_t));
 extern GX_EXPORT errno_t gx_compress_tofd(std::string_view, int fd, uint8_t complvl = 0);
 extern GX_EXPORT errno_t gx_compress_tofile(std::string_view, const char *outfile, uint8_t complvl = 0, unsigned int mode = FMODE_PRIVATE);
-extern GX_EXPORT std::string base64_encode(const std::string_view &);
-extern GX_EXPORT std::string base64_decode(const std::string_view &);
-extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
-extern GX_EXPORT int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *);
 extern GX_EXPORT int gx_mkbasedir(const char *file, unsigned int mode);
 
 }
