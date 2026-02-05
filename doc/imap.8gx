@@ -117,7 +117,7 @@ Default: \fI10\fP
 .TP
 \fBimap_autologout_time\fP
 If an authenticated IMAP connection is idle for the given period, the
-connection is terminated. RFC 2060 §5.4 recommends 30 minutes minimum.
+connection is terminated. RFC 2060 \(sc5.4 recommends 30 minutes minimum.
 (Connections that have not authenticated are subject to the regular
 imap_conn_timeout.)
 .br

@@ -32,14 +32,14 @@ The usual config file location is /etc/gromox/event.cfg.
 .TP
 \fBevent_hosts_allow\fP
 A space-separated list of individual host addresses that are allowed to
-converse with the event service. The addresses must conform to gromox(7) \sc
+converse with the event service. The addresses must conform to gromox(7) \(sc
 "Host addresses". No networks and no CIDR notations are permitted.
 .br
 Default: \fI::1\fP
 .TP
 \fBevent_listen_ip\fP
 The IPv6 socket address for exposing the event service on. The address must
-conform to gromox(7) \sc "Host addresses".
+conform to gromox(7) \(sc "Host addresses".
 .br
 Default: \fI::1\fP
 .TP

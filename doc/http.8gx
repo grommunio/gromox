@@ -274,7 +274,7 @@ Default: \fI0\fP
 .TP
 \fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
-(C706 §12.6.3.7, MS-RPCE v33 §2.2.2.6).
+(C706 \(sc12.6.3.7, MS-RPCE v33 \(sc2.2.2.6).
 .br
 Default: \fI4M\fP
 .TP

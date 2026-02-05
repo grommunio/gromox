@@ -86,7 +86,7 @@ Default: \fIzstd\-6\fP
 .TP
 \fBexmdb_hosts_allow\fP
 A space-separated list of individual host addresses that are allowed to
-converse with the exmdb service. The addresses must conform to gromox(7) \sc
+converse with the exmdb service. The addresses must conform to gromox(7) \(sc
 "Host addresses". No networks and no CIDR notations are permitted. This option
 deprecates the /etc/gromox/exmdb_acl.txt file used before Gromox 2.8.
 .br
@@ -186,7 +186,7 @@ Default: \fI0\fP
 .TP
 \fBlisten_ip\fP
 The IPv6 socket address for exposing the exmdb service on. The address must
-conform to gromox(7) \sc "Host addresses".
+conform to gromox(7) \(sc "Host addresses".
 .br
 Default: \fI::1\fP
 .TP
@@ -269,7 +269,7 @@ The type of mail stores that are served beneath the prefix. This must either be
 "private" or "public".
 .IP \(bu 4
 The IPv6 socket address of the exmdb server to connect to for all requests
-involving this prefix. The address must conform to gromox(7) \sc "Host
+involving this prefix. The address must conform to gromox(7) \(sc "Host
 addresses".
 .IP \(bu 4
 The port number.
