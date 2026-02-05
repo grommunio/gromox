@@ -53,6 +53,18 @@ extension to convey the actual client address, and gximap can pick this up for
 its own reporting, which in turn is useful for e.g. fail2ban setups.
 .br
 Default: \fI0\fP
+.TP
+\fBimap_listen\fP
+A space-separated list of bind address specifiers to expose standard IMAP
+(unencrypted and/or explicit STARTTLS) on.
+.br
+Default: \fB[::]:143\fP
+.TP
+\fBimap_listen_tls\fP
+A space-separated list of bind address specifiers to expose implicit-TLS IMAP
+(IMAPS) on.
+.br
+Default: \fB[::]:993\fP
 .SH Configuration directives (imap.cfg)
 The following directives are recognized when reading from /etc/gromox/imap.cfg,
 or when the \fB\-c\fP option is used to specify a custom file:
@@ -155,26 +167,18 @@ Default: \fI3 minutes\fP
 .TP
 \fBimap_force_tls\fP
 This flag controls whether clients must utilize TLS, either by way of implicit
-TLS (cf. \fBimap_listen_tls_port\fP), or through the STARTTLS command.
+TLS, or through the STARTTLS command.
 .br
 Default: \fIfalse\fP
 .TP
 \fBimap_listen_addr\fP
-AF_INET6 socket address to bind the IMAP service to.
-.br
-Default: \fI::\fP
+Deprecated in favor of gromox.cfg:imap_listen / gromox.cfg:imap_listen_tls.
 .TP
 \fBimap_listen_port\fP
-The TCP port to expose the IMAP protocol service on. (The IP address is fixed
-to the wildcard address.)
-.br
-Default: \fI143\fP
+Deprecated in favor of gromox.cfg:imap_listen.
 .TP
 \fBimap_listen_tls_port\fP
-The TCP port to expose implicit-TLS IMAP protocol service (IMAPS) on. (The IP
-address is fixed to the wildcard address.)
-.br
-Default: (unset)
+Deprecated in favor of gromox.cfg:imap_listen_tls.
 .TP
 \fBimap_log_file\fP
 Target for log messages here. Special values: "\fI-\fP" (stderr/syslog

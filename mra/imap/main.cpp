@@ -40,6 +40,7 @@
 #include "imap.hpp"
 
 using namespace gromox;
+using bind_list = std::vector<std::pair<std::string, uint16_t>>;
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
 E(judge_addr)
@@ -99,9 +100,6 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"imap_force_starttls", "imap_force_tls", CFG_ALIAS},
 	{"imap_force_tls", "false", CFG_BOOL},
-	{"imap_listen_addr", "::"},
-	{"imap_listen_port", "143"},
-	{"imap_listen_tls_port", "0"},
 	{"imap_log_file", "-"},
 	{"imap_log_level", "4" /* LV_NOTICE */},
 	{"imap_rfc9051", "1", CFG_BOOL},
@@ -282,6 +280,34 @@ static void *imrpc_alloc(size_t z)
 	return g_alloc_mgr->alloc(z);
 }
 
+static int imap_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
+    const char *gxkey, const config_file &oldcfg, const char *oldkey,
+    const char *oldportkey, unsigned int mark)
+{
+	auto line = gxcfg.get_value(gxkey);
+	if (line != nullptr)
+		return ctx.add_bunch(line, mark);
+	auto host = oldcfg.get_value(oldkey);
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldkey,
+			gxcfg.m_filename.c_str(), gxkey);
+	else
+		host = "::";
+	auto ps = oldcfg.get_value(oldportkey);
+	uint16_t port = mark == M_UNENCRYPTED_CONN ? 143 : 993;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldportkey,
+			gxcfg.m_filename.c_str(), gxkey);
+		port = strtoul(ps, nullptr, 0);
+	}
+	if (port != 0 &&
+	    ctx.add_inet(host, port, mark) != 0)
+		return -1;
+	return 0;
+}
+
 int main(int argc, char **argv)
 { 
 	char temp_buff[256];
@@ -321,8 +347,6 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	setup_utf8_locale();
 
-	uint16_t listen_port = g_config_file->get_ll("imap_listen_port");
-	uint16_t listen_tls_port = g_config_file->get_ll("imap_listen_tls_port");
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
 		std::string hn;
@@ -405,10 +429,6 @@ int main(int argc, char **argv)
 		}
 		printf("[imap]: imap connections MUST be using TLS\n");
 	}
-	if (!imap_support_tls && listen_tls_port > 0)
-		listen_tls_port = 0;
-	if (listen_tls_port > 0)
-		printf("[system]: system TLS listening port %d\n", listen_tls_port);
 
 	if (resource_run() != 0) {
 		printf("[system]: Failed to load resource\n");
@@ -417,13 +437,14 @@ int main(int argc, char **argv)
 	auto cleanup_2 = HX::make_scope_exit(resource_stop);
 
 	listener_ctx listener;
-	auto laddr = g_config_file->get_value("imap_listen_addr");
-	if (listen_port != 0 &&
-	    listener.add_inet(laddr, listen_port, M_UNENCRYPTED_CONN) != 0)
+	if (imap_parse_binds(listener, *gxconfig, "imap_listen", *g_config_file,
+	    "imap_listen_addr", "imap_listen_port", M_UNENCRYPTED_CONN) != 0)
 		return EXIT_FAILURE;
-	if (listen_tls_port != 0 &&
-	    listener.add_inet(laddr, listen_tls_port, M_TLS_CONN) != 0)
+	if (imap_support_tls &&
+	    imap_parse_binds(listener, *gxconfig, "imap_listen_tls", *g_config_file,
+	    "imap_listen_addr", "imap_listen_tls_port", M_TLS_CONN) != 0)
 		return EXIT_FAILURE;
+
 	listener.m_haproxy_level = g_haproxy_level;
 	listener.m_thread_name   = "accept";
 
