@@ -1470,7 +1470,53 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 }
 
 /**
- * @brief     Load message attributes not contained in tags
+ * @brief     Load meeting request attributes not contained in tags
+ *
+ * Populates attendee lists from the recipient table in addition
+ * to loading standard message attributes.
+ *
+ * @param     dir     Store to load from
+ * @param     fid     Parent folder ID
+ * @param     mid     Message to load
+ * @param     meetReq Meeting request to store data in
+ * @param     special Bit mask of attributes to load
+ */
+void EWSContext::loadSpecial(const std::string &dir, uint64_t fid, uint64_t mid,
+    tMeetingRequestMessage &meetReq, uint64_t special) const
+{
+	loadSpecial(dir, fid, mid, static_cast<tMessage &>(meetReq), special);
+	if (!(special & sShape::Attendees))
+		return;
+	TARRAY_SET rcpts;
+	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
+		mlog(LV_ERR, "[ews] failed to load meeting request "
+		     "attendees (%s:%llu)", dir.c_str(),
+		     static_cast<unsigned long long>(mid));
+		return;
+	}
+	for (const auto &rcpt : rcpts) {
+		auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (!recipientType)
+			continue;
+		switch (*recipientType) {
+		case 1:
+			if (special & sShape::RequiredAttendees)
+				defaulted(meetReq.RequiredAttendees).emplace_back(rcpt);
+			break;
+		case 2:
+			if (special & sShape::OptionalAttendees)
+				defaulted(meetReq.OptionalAttendees).emplace_back(rcpt);
+			break;
+		case 3:
+			if (special & sShape::Resources)
+				defaulted(meetReq.Resources).emplace_back(rcpt);
+			break;
+		}
+	}
+}
+
+/**
+ * @brief     Load calendar item attributes not contained in tags
  *
  * @param     dir     Store to load from
  * @param     fid     Parent folder ID
