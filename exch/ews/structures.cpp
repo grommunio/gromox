@@ -1668,6 +1668,12 @@ void tCalendarItem::update(const sShape& shape)
 		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
 	if ((prop = shape.get(PR_SENDER_NAME)))
 		fromProp(prop, defaulted(Organizer).Mailbox.Name);
+	if (Organizer && Organizer->Mailbox.RoutingType &&
+	    strcasecmp(Organizer->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
+	    (prop = shape.get(PR_SENDER_SMTP_ADDRESS))) {
+		fromProp(prop, Organizer->Mailbox.EmailAddress);
+		Organizer->Mailbox.RoutingType = "SMTP";
+	}
 
 	if ((prop = shape.get(NtAppointmentNotAllowPropose)))
 		AllowNewTimeProposal.emplace(!*static_cast<const uint8_t*>(prop->pvalue));
@@ -3386,6 +3392,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
+	{"calendar:Organizer", PR_SENDER_SMTP_ADDRESS},
 	{"calendar:Start", PR_START_DATE},
 	{"contacts:AssistantName", PR_ASSISTANT},
 	{"contacts:Birthday", PR_BIRTHDAY},
@@ -4314,6 +4321,12 @@ void tMeetingRequestMessage::update(const sShape& shape)
 		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
 	if ((prop = shape.get(PR_SENDER_NAME)))
 		fromProp(prop, defaulted(Organizer).Mailbox.Name);
+	if (Organizer && Organizer->Mailbox.RoutingType &&
+	    strcasecmp(Organizer->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
+	    (prop = shape.get(PR_SENDER_SMTP_ADDRESS))) {
+		fromProp(prop, Organizer->Mailbox.EmailAddress);
+		Organizer->Mailbox.RoutingType = "SMTP";
+	}
 
 	if ((prop = shape.get(NtAppointmentReplyTime)))
 		AppointmentReplyTime.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
