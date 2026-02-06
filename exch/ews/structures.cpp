@@ -2727,6 +2727,11 @@ tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
 		EmailAddress = data;
 	if ((data = tps.get<const char>(PR_ADDRTYPE)))
 		RoutingType = data;
+	if (RoutingType && strcasecmp(RoutingType->c_str(), "SMTP") != 0 &&
+	    (data = tps.get<const char>(PR_SMTP_ADDRESS))) {
+		EmailAddress = data;
+		RoutingType = "SMTP";
+	}
 }
 
 /**
@@ -2760,6 +2765,12 @@ tAttendee::tAttendee(const TPROPVAL_ARRAY& tps)
 		Mailbox.EmailAddress = data;
 	if ((data = tps.get<const char>(PR_ADDRTYPE)))
 		Mailbox.RoutingType = data;
+	if (Mailbox.RoutingType &&
+	    strcasecmp(Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
+	    (data = tps.get<const char>(PR_SMTP_ADDRESS))) {
+		Mailbox.EmailAddress = data;
+		Mailbox.RoutingType = "SMTP";
+	}
 }
 
 tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const std::string& email,
