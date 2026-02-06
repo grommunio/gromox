@@ -12,6 +12,7 @@
 #include <fmt/core.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
+#include <vmime/message.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
@@ -22,11 +23,14 @@
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
+#include "exceptions.hpp"
 #include "ews.hpp"
 #include "exceptions.hpp"
 #include "namedtags.hpp"
 #include "structures.hpp"
+#include "../bounce_exch.cpp"
 
 DECLARE_HPM_API(gromox::EWS, extern);
 
@@ -3108,6 +3112,57 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	           m_auth_info.username, rcpts);
 	if (err != ecSuccess)
 		throw DispatchError(E3117(err));
+}
+
+/**
+ * @brief      Send read receipt if requested by the sender
+ *
+ * Tests whether the message has PR_READ_RECEIPT_REQUESTED set and, if so,
+ * generates and sends a read receipt (MDN) to the original sender. After
+ * sending, the receipt request flags are cleared to prevent duplicate
+ * notifications.
+ *
+ * @param      dir     Store directory
+ * @param      mid     Message ID
+ */
+void EWSContext::notifyReadReceipt(const std::string &dir,
+    uint64_t mid) const try
+{
+	void *pval = nullptr;
+	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr,
+	    CP_ACP, mid, PR_READ_RECEIPT_REQUESTED, &pval))
+		return;
+	if (!pvb_enabled(pval))
+		return;
+	MESSAGE_CONTENT *pbrief = nullptr;
+	if (!m_plugin.exmdb.get_message_brief(dir.c_str(), CP_ACP,
+	    mid, &pbrief) || pbrief == nullptr)
+		return;
+	auto str = pbrief->proplist.get<const char>(
+	           PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (str == nullptr)
+		return;
+	std::vector<std::string> rcpt_list = {str};
+	vmime::shared_ptr<vmime::message> imail;
+	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
+	    mysql_adaptor_meta, m_auth_info.username, pbrief,
+	    "BOUNCE_NOTIFY_READ", imail))
+		return;
+	auto ret = cu_send_vmail(std::move(imail), m_plugin.smtp_url.c_str(),
+	           m_auth_info.username, rcpt_list);
+	if (ret != ecSuccess)
+		mlog(LV_ERR, "[ews] read receipt send: %s", mapi_strerror(ret));
+	static constexpr uint8_t fake_false = 0;
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PR_READ_RECEIPT_REQUESTED, deconst(&fake_false)},
+		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&fake_false)},
+	};
+	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
+	PROBLEM_ARRAY problems;
+	m_plugin.exmdb.set_message_properties(dir.c_str(), nullptr,
+		CP_ACP, mid, &propvals, &problems);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "[ews] read receipt: ENOMEM");
 }
 
 /**

@@ -78,6 +78,10 @@ static constexpr cfg_directive bounce_gen_dflt[] = {
 errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
     const char *bounce_grp) try
 {
+	/*
+	 * NOTE: bounce_gen_init may get called multiple times within a process
+	 * image (e.g. ews_init, PROC_exchange_emsmdb, SVC_exmdb_provider).
+	 */
 	auto cfg = config_file_initd("gromox.cfg", cfgdir, bounce_gen_dflt);
 	if (cfg == nullptr) {
 		mlog(LV_ERR, "exmdb_provider: config_file_initd gromox.cfg: %s",

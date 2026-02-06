@@ -2631,6 +2631,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				 * props.erase() must not be used.
 				 */
 				readprop->proptag = PR_NULL;
+				if (mark_as_read != 0)
+					ctx.notifyReadReceipt(dir, mid.messageId());
 			}
 			if (props.count > 0 &&
 			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),

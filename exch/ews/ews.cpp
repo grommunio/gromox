@@ -15,6 +15,7 @@
 #include <fmt/core.h>
 #include <libHX/scope.hpp>
 #include <vmime/utility/url.hpp>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/hpm_common.h>
@@ -564,6 +565,9 @@ static BOOL ews_init(const struct dlfuncs &apidata)
 	LINK_HPM_API(apidata)
 	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
 		return false;
+	if (bounce_gen_init(get_config_path(), get_data_path(),
+	    "notify_bounce") != 0)
+		return fail("[ews] failed to start bounce producer");
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
 	ifc.proc    = [](detail::ContextKey ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
