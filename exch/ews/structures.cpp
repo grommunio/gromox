@@ -3449,6 +3449,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:From", PR_SENT_REPRESENTING_ADDRTYPE},
 	{"message:From", PR_SENT_REPRESENTING_EMAIL_ADDRESS},
 	{"message:From", PR_SENT_REPRESENTING_NAME},
+	{"message:From", PR_SENT_REPRESENTING_SMTP_ADDRESS},
 	{"message:InternetMessageId", PR_INTERNET_MESSAGE_ID},
 	{"message:IsDeliveryReceiptRequested", PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED},
 	{"message:IsRead", PR_READ},
@@ -3463,6 +3464,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:Sender", PR_SENDER_ADDRTYPE},
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
 	{"message:Sender", PR_SENDER_NAME},
+	{"message:Sender", PR_SENDER_SMTP_ADDRESS},
 };
 
 decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
@@ -4122,12 +4124,24 @@ void tMessage::update(const sShape& shape)
 		fromProp(prop, defaulted(Sender).Mailbox.EmailAddress);
 	if ((prop = shape.get(PR_SENDER_NAME)))
 		fromProp(prop, defaulted(Sender).Mailbox.Name);
+	if (Sender && Sender->Mailbox.RoutingType &&
+	    strcasecmp(Sender->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
+	    (prop = shape.get(PR_SENDER_SMTP_ADDRESS))) {
+		fromProp(prop, Sender->Mailbox.EmailAddress);
+		Sender->Mailbox.RoutingType = "SMTP";
+	}
 	if ((prop = shape.get(PR_SENT_REPRESENTING_ADDRTYPE)))
 		fromProp(prop, defaulted(From).Mailbox.RoutingType);
 	if ((prop = shape.get(PR_SENT_REPRESENTING_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(From).Mailbox.EmailAddress);
 	if ((prop = shape.get(PR_SENT_REPRESENTING_NAME)))
 		fromProp(prop, defaulted(From).Mailbox.Name);
+	if (From && From->Mailbox.RoutingType &&
+	    strcasecmp(From->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
+	    (prop = shape.get(PR_SENT_REPRESENTING_SMTP_ADDRESS))) {
+		fromProp(prop, From->Mailbox.EmailAddress);
+		From->Mailbox.RoutingType = "SMTP";
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

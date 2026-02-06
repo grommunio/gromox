@@ -2238,8 +2238,9 @@ struct tItemResponseShape {
 
 	static constexpr std::array<proptag_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
 	static constexpr std::array<proptag_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
-	static constexpr std::array<proptag_t, 44> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
+	static constexpr std::array<proptag_t, 45> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
 		PR_ASSOCIATED, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,
+		PR_SENDER_SMTP_ADDRESS,
 		PR_LOCAL_COMMIT_TIME, PR_DISPLAY_NAME_PREFIX, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 		PR_SURNAME, PR_GENERATION, PR_INITIALS, PR_DISPLAY_NAME, PR_NICKNAME,
 		PR_BUSINESS_TELEPHONE_NUMBER, PR_HOME_TELEPHONE_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER,
