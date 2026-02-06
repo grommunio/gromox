@@ -511,10 +511,6 @@ int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg)
 {
 	auto &ctx = exmdb_listen_ctx;
 	ctx.m_thread_name = "exmdb_accept";
-	auto ret = exmdb_acl_read(oldcfg.get_value("config_file_path"),
-	           oldcfg.get_value("exmdb_hosts_allow"));
-	if (ret != 0)
-		return ret;
 	auto line = gxcfg.get_value("exmdb_listen");
 	if (line != nullptr)
 		return ctx.add_bunch(line);
@@ -536,14 +532,18 @@ int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg)
 	return 0;
 }
 
-int exmdb_listener_trigger_accept()
+int exmdb_listener_run(const config_file &oldcfg)
 {
+	auto ret = exmdb_acl_read(oldcfg.get_value("config_file_path"),
+	           oldcfg.get_value("exmdb_hosts_allow"));
+	if (ret != 0)
+		return ret;
 	if (exmdb_listen_ctx.empty())
 		return 0;
 	g_exmdblisten_stop = false;
-	auto ret = exmdb_listen_ctx.watch_start(g_exmdblisten_stop, sockaccept_thread);
-	if (ret != 0) {
-		mlog(LV_ERR, "exmdb_provider: failed to create exmdb listener thread: %s", strerror(ret));
+	auto err = exmdb_listen_ctx.watch_start(g_exmdblisten_stop, sockaccept_thread);
+	if (err != 0) {
+		mlog(LV_ERR, "exmdb_provider: failed to create exmdb listener thread: %s", strerror(err));
 		return -1;
 	}
 	return 0;

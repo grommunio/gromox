@@ -45,7 +45,7 @@ extern std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_extract_router(const char
 extern void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&);
 extern BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &);
 extern int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg);
-extern int exmdb_listener_trigger_accept();
+extern int exmdb_listener_run(const config_file &gxcfg);
 extern void exmdb_listener_stop();
 
 extern unsigned int g_exrpc_debug, g_enable_dam;
