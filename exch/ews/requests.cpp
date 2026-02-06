@@ -2619,7 +2619,21 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			if (!ctx.plugin().exmdb.remove_message_properties(dir.c_str(),
 			    CP_ACP, mid.messageId(), tagsRm))
 				throw EWSError::ItemSave(E3093);
-			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			auto readprop = props.find(PR_READ);
+			if (readprop != nullptr) {
+				uint8_t mark_as_read = *static_cast<uint8_t *>(readprop->pvalue);
+				uint64_t read_cn;
+				if (!ctx.plugin().exmdb.set_message_read_state(dir.c_str(),
+				    username, mid.messageId(), mark_as_read, &read_cn))
+					throw EWSError::ItemSave(E3092);
+				/*
+				 * props is a shallow view onto ndr_stack-alloc-backed data, so
+				 * props.erase() must not be used.
+				 */
+				readprop->proptag = PR_NULL;
+			}
+			if (props.count > 0 &&
+			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 			    username, CP_ACP, mid.messageId(), &props, &problems))
 				throw EWSError::ItemSave(E3092);
 			msg.ConflictResults.Count = problems.count;
