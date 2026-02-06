@@ -239,7 +239,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 			db_engine_stop();
 			return FALSE;
 		}
-		if (g_exmdb_allow_lpc && exmdb_listener_run(*pconfig) != 0) {
+		if (g_exmdb_allow_lpc && exmdb_listener_run(get_config_path(), *pconfig) != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start exmdb listener");
 			exmdb_listener_stop();
 			exmdb_parser_stop();

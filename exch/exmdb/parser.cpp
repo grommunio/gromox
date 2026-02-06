@@ -532,10 +532,9 @@ int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg)
 	return 0;
 }
 
-int exmdb_listener_run(const config_file &oldcfg)
+int exmdb_listener_run(const char *config_path, const config_file &oldcfg)
 {
-	auto ret = exmdb_acl_read(oldcfg.get_value("config_file_path"),
-	           oldcfg.get_value("exmdb_hosts_allow"));
+	auto ret = exmdb_acl_read(config_path, oldcfg.get_value("exmdb_hosts_allow"));
 	if (ret != 0)
 		return ret;
 	if (exmdb_listen_ctx.empty())
