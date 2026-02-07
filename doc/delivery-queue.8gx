@@ -43,9 +43,9 @@ Default: \fB[::]:25\fP
 .TP
 \fBlda_listen_tls\fP
 A space-separated list of bind address specifiers to expose implicit-TLS
-SMTP (SMTPS)/LMTP on.
+SMTP (SMTPS)/LMTP on. (Port 465 is the recommendation from RFC 8314.)
 .br
-Default: (empty)
+Default: \fB[::]:465\fP
 .TP
 \fBlda_recipient_delimiter\fP
 The set of characters that separate an email address into localpart and
