@@ -1046,6 +1046,64 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		if (!(ctx.permissions(dir, parent.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
 
+		if (itemId.type == tItemId::ID_ITEM &&
+		    itemId.InstanceIndex == 0 &&
+		    request.SendMeetingCancellations &&
+		    *request.SendMeetingCancellations != Enum::SendToNone) {
+			const char *username = ctx.effectiveUser(parent);
+			MESSAGE_CONTENT *cancelcontent = nullptr;
+			if (!exmdb.read_message(dir.c_str(),
+			    username, CP_ACP, meid.messageId(), &cancelcontent) ||
+			    cancelcontent == nullptr)
+				throw EWSError::ItemNotFound(E3143);
+			auto cls = cancelcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
+			if (cls != nullptr &&
+			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
+			    cancelcontent->children.prcpts != nullptr &&
+			    cancelcontent->children.prcpts->count > 0) {
+				if (*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy) {
+					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+					uint64_t newMid = 0;
+					if (!exmdb.allocate_message_id(dir.c_str(),
+					    sentitems.folderId, &newMid))
+						throw EWSError::InternalServerError(E3132);
+					BOOL result = false;
+					if (!exmdb.movecopy_message(dir.c_str(), CP_ACP,
+					    meid.messageId(), sentitems.folderId, newMid,
+					    false, &result) || !result)
+						throw EWSError::InternalServerError(E3301);
+					const char *sentuser = ctx.effectiveUser(sentitems);
+					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+					const TAGGED_PROPVAL sprops[] = {
+						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Canceled")},
+						{PR_CLIENT_SUBMIT_TIME, now},
+						{PR_MESSAGE_DELIVERY_TIME, now},
+					};
+					const TPROPVAL_ARRAY sproplist = {std::size(sprops), deconst(sprops)};
+					PROBLEM_ARRAY sproblems;
+					if (!exmdb.set_message_properties(dir.c_str(),
+					    sentuser, CP_ACP, newMid, &sproplist, &sproblems))
+						throw EWSError::ItemSave(E3092);
+					MESSAGE_CONTENT *sentcontent = nullptr;
+					if (!exmdb.read_message(dir.c_str(),
+					    sentuser, CP_ACP, newMid, &sentcontent) ||
+					    sentcontent == nullptr)
+						throw EWSError::ItemNotFound(E3143);
+					ctx.send(dir, meid.messageId(), *sentcontent);
+				} else {
+					/* dup just like in process(mUpdateItemRequest) */
+					EWSContext::MCONT_PTR dupcontent(cancelcontent->dup());
+					if (!dupcontent)
+						throw EWSError::NotEnoughMemory(E3288);
+					dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Canceled");
+					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+					dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
+					dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+					ctx.send(dir, meid.messageId(), *dupcontent);
+				}
+			}
+		}
+
 		if (itemId.InstanceIndex > 0) {
 			/* OccurrenceItemId: delete a single occurrence */
 			auto mid = meid.messageId();
