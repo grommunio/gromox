@@ -316,7 +316,9 @@ struct Enum {
 	STR(SendAndSaveCopy);
 	STR(SendOnly);
 	STR(SendOnlyToAll);
+	STR(SendOnlyToChanged);
 	STR(SendToAllAndSaveCopy);
+	STR(SendToChangedAndSaveCopy);
 	STR(SendToNone);
 	STR(September);
 	STR(Shallow);
@@ -435,6 +437,7 @@ struct Enum {
 	using BodyTypeResponseType = StrEnum<Best, HTML, Text>; ///< Types.xsd:1265
 	using BodyTypeType = StrEnum<HTML, Text>; ///< Types.xsd:1717
 	using CalendarItemCreateOrDeleteOperationType = StrEnum<SendToNone, SendOnlyToAll, SendToAllAndSaveCopy>; ///<< Types.xsd:4005
+	using CalendarItemUpdateOperationType = StrEnum<SendToNone, SendOnlyToAll, SendOnlyToChanged, SendToAllAndSaveCopy, SendToChangedAndSaveCopy>; ///< Types.xsd:4010
 	using CalendarItemTypeType = StrEnum<Single, Occurrence, Exception, RecurringMaster>; ///< Types.xsd:4363
 	using CalendarPermissionLevelType = StrEnum<None, Owner, PublishingEditor, Editor, PublishingAuthor, Author, NoneditingAuthor, Reviewer, Contributor, FreeBusyTimeOnly, FreeBusyTimeAndSubjectAndLocation, Custom>; ///< Types.xsd
 	using CalendarPermissionReadAccessType = StrEnum<None, TimeOnly, TimeAndSubjectAndLocation, FullDetails>; ///< Types.xsd:6764
