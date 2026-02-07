@@ -2674,7 +2674,7 @@ decltype(tExtendedFieldURI::typeMap) tExtendedFieldURI::typeMap = {{
 	{"IntegerArray", PT_MV_LONG},
 	{"Long", PT_I8},
 	{"LongArray", PT_MV_I8},
-	{"Null", PT_UNSPECIFIED},
+	{"Null", PT_NULL},
 	{"Object", PT_OBJECT},
 	//{"ObjectArray", ???},
 	{"Short", PT_SHORT},
@@ -3156,7 +3156,7 @@ const char *tExtendedFieldURI::typeName(proptype_t type)
 	case PT_MV_LONG: return "IntegerArray";
 	case PT_I8: return "Long";
 	case PT_MV_I8: return "LongArray";
-	case PT_UNSPECIFIED: return "Null";
+	case PT_NULL: return "Null";
 	case PT_OBJECT: return "Object";
 	case PT_SHORT: return "Short";
 	case PT_MV_SHORT: return "ShortArray";
