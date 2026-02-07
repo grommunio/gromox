@@ -4163,7 +4163,7 @@ struct mUpdateItemRequest {
 	std::vector<tItemChange> ItemChanges;
 	//<xs:attribute name="ConflictResolution" type="t:ConflictResolutionType" use="required"/>
 	//<xs:attribute name="MessageDisposition" type="t:MessageDispositionType"  use="optional"/>
-	//<xs:attribute name="SendMeetingInvitationsOrCancellations" type="t:CalendarItemUpdateOperationType"  use="optional"/>
+	std::optional<Enum::CalendarItemUpdateOperationType> SendMeetingInvitationsOrCancellations;
 	//<xs:attribute name="SuppressReadReceipts" type="xs:boolean" use="optional"/>
 };
 
