@@ -849,9 +849,16 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemNotFound(E3143);
 			ctx.send(dir, messageId, *sendcontent);
 		}
-		if ((std::holds_alternative<tMessage>(item) && send_message) ||
-		    (std::holds_alternative<tCalendarItem>(item) && request.SendMeetingInvitations == Enum::SendOnlyToAll))
+		if (std::holds_alternative<tMessage>(item) && send_message)
 			ctx.send(dir, 0, *content);
+		if (std::holds_alternative<tCalendarItem>(item) &&
+		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
+			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+			content->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");
+			content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
+			content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+			ctx.send(dir, 0, *content);
+		}
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
