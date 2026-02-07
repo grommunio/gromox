@@ -846,8 +846,18 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		break;
 	}
 	case db_notify_type::folder_modified: {
-		mgr->events.emplace_back(tModifiedEvent(now,
-			mkFid(evt.folder_id), mkFid(evt.parent_id)));
+		auto modEvt = tModifiedEvent(now,
+		              mkFid(evt.folder_id), mkFid(evt.parent_id));
+		static constexpr proptag_t tags[] = {PR_CONTENT_UNREAD};
+		TPROPVAL_ARRAY props{};
+		if (exmdb.get_folder_properties(dir, CP_ACP,
+		    rop_util_make_eid_ex(1, evt.folder_id),
+		    proptag_cspan{tags}, &props)) {
+			auto unread = props.get<const uint32_t>(PR_CONTENT_UNREAD);
+			if (unread)
+				modEvt.UnreadCount = *unread;
+		}
+		mgr->events.emplace_back(std::move(modEvt));
 		break;
 	}
 	case db_notify_type::message_modified: {
