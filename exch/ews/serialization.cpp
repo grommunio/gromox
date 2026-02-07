@@ -1943,6 +1943,7 @@ void mDeleteFolderResponse::serialize(tinyxml2::XMLElement *xml) const
 
 mDeleteItemRequest::mDeleteItemRequest(const tinyxml2::XMLElement *xml) :
 	XMLINITA(DeleteType),
+	XMLINITA(SendMeetingCancellations),
 	XMLINIT(ItemIds)
 {
 	parseOccurrenceItemIds(xml, ItemIds);

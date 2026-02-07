@@ -3267,7 +3267,7 @@ struct mDeleteItemRequest {
 	explicit mDeleteItemRequest(const tinyxml2::XMLElement *);
 
 	Enum::DisposalType DeleteType; // Attribute
-	//<xs:attribute name="SendMeetingCancellations" type="t:CalendarItemCreateOrDeleteOperationType" use="optional"/>
+	std::optional<Enum::CalendarItemCreateOrDeleteOperationType> SendMeetingCancellations;
 	//<xs:attribute name="AffectedTaskOccurrences" type="t:AffectedTaskOccurrencesType" use="optional"/>
 	//<xs:attribute name="SuppressReadReceipts" type="xs:boolean" use="optional"/>
 
