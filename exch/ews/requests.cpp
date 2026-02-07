@@ -2655,6 +2655,67 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
 		else
 			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
+		if (occ_basedate == 0 &&
+		    request.SendMeetingInvitationsOrCancellations &&
+		    *request.SendMeetingInvitationsOrCancellations != Enum::SendToNone) {
+			MESSAGE_CONTENT *sendcontent = nullptr;
+			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
+			    username, CP_ACP, mid.messageId(), &sendcontent) ||
+			    sendcontent == nullptr)
+				throw EWSError::ItemNotFound(E3143);
+			auto cls = sendcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
+			if (cls != nullptr &&
+			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
+			    sendcontent->children.prcpts != nullptr &&
+			    sendcontent->children.prcpts->count > 0) {
+				if (*request.SendMeetingInvitationsOrCancellations == Enum::SendToAllAndSaveCopy ||
+				    *request.SendMeetingInvitationsOrCancellations == Enum::SendToChangedAndSaveCopy) {
+					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+					uint64_t newMid = 0;
+					if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
+					    sentitems.folderId, &newMid))
+						throw EWSError::InternalServerError(E3132);
+					BOOL result = false;
+					if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(), CP_ACP,
+					    mid.messageId(), sentitems.folderId, newMid, false, &result) ||
+					    !result)
+						throw EWSError::InternalServerError(E3301);
+					const char *sentuser = ctx.effectiveUser(sentitems);
+					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+					const TAGGED_PROPVAL sprops[] = {
+						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
+						{PR_CLIENT_SUBMIT_TIME, now},
+						{PR_MESSAGE_DELIVERY_TIME, now},
+					};
+					const TPROPVAL_ARRAY sproplist = {std::size(sprops), deconst(sprops)};
+					PROBLEM_ARRAY sproblems;
+					if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+					    sentuser, CP_ACP, newMid, &sproplist, &sproblems))
+						throw EWSError::ItemSave(E3092);
+					MESSAGE_CONTENT *sentcontent = nullptr;
+					if (!ctx.plugin().exmdb.read_message(dir.c_str(),
+					    sentuser, CP_ACP, newMid, &sentcontent) ||
+					    sentcontent == nullptr)
+						throw EWSError::ItemNotFound(E3143);
+					ctx.send(dir, mid.messageId(), *sentcontent);
+				} else {
+					/*
+					 * read_message returns pointers backed by ndr_stack
+					 * regions. Calling cancelcontent->set() invokes
+					 * propval_free() and tpropval_array_append(), which use
+					 * incompatible malloc/realloc/free. Thus, dup() first.
+					 */
+					EWSContext::MCONT_PTR dupcontent(sendcontent->dup());
+					if (!dupcontent)
+						throw EWSError::NotEnoughMemory(E3288);
+					dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");
+					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+					dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
+					dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+					ctx.send(dir, mid.messageId(), *dupcontent);
+				}
+			}
+		}
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
