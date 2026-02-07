@@ -1,3 +1,26 @@
+Milestone 3.4.53
+================
+
+Enhancements:
+
+* Finer-grained control over listening socket creation, including new config
+  directives (`http_listen`, `imap_listen_tls`, etc.) for specifying these.
+  This makes it possible not having to use the wildcard address.
+
+Fixes:
+
+* Plugged a memory leak that occurred when a multi-HTML Internet Mail is
+  converted to MAPI
+* Plugged a memory leak that occurred when HTML is converted to RTF
+* Plugged a logical memleak stemming from never shrinking the buffer of
+  `FETCH RFC822` and related commands
+
+Changes:
+
+* php_mapi can now tolerate the _presence_ of the PHP `opcache` module,
+  though opcache must still be disabled due to miscompilation.
+
+
 Gromox 3.4 (2026-02-02)
 =======================
 
