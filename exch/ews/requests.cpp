@@ -1821,10 +1821,14 @@ void process(mGetUserOofSettingsRequest &&request, XMLElement *response, const E
 		tDuration& Duration = data.OofSettings->Duration.emplace();
 		Duration.StartTime = clock::from_time_t(strtoll(start_time, nullptr, 0));
 		Duration.EndTime = clock::from_time_t(strtoll(end_time, nullptr, 0));
+#if 0
+	// XXX: Normally we need this else branch, see reasoning in commit
+	// message gromox-2.46-99-g716671da5
 	} else {
 		auto &dur = data.OofSettings->Duration.emplace();
 		dur.StartTime = clock::now();
 		dur.EndTime = dur.StartTime + std::chrono::days(1);
+#endif
 	}
 	auto reply = readMessageBody(maildir + "/config/internal-reply");
 	if (reply)
