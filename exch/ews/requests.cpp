@@ -813,6 +813,63 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			if (dec->ReferenceItemId)
 				updateRef(*dec->ReferenceItemId, respDeclined);
 		}
+		if (send_message) {
+			const tItemId *responseRef = nullptr;
+			if (auto acc = std::get_if<tAcceptItem>(&item))
+				responseRef = acc->ReferenceItemId ?
+				              &*acc->ReferenceItemId : nullptr;
+			else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item))
+				responseRef = tent->ReferenceItemId ?
+				              &*tent->ReferenceItemId : nullptr;
+			else if (auto dec2 = std::get_if<tDeclineItem>(&item))
+				responseRef = dec2->ReferenceItemId ?
+				              &*dec2->ReferenceItemId : nullptr;
+			if (responseRef != nullptr) {
+				ctx.assertIdType(responseRef->type, tItemId::ID_ITEM);
+				sMessageEntryId refMid(responseRef->Id.data(),
+				                       responseRef->Id.size());
+				sFolderSpec refFolder = ctx.resolveFolder(refMid);
+				std::string refDir = ctx.getDir(refFolder);
+				const char *refUser = ctx.effectiveUser(refFolder);
+				MESSAGE_CONTENT *reqContent = nullptr;
+				if (!ctx.plugin().exmdb.read_message(
+				    refDir.c_str(), refUser, CP_ACP,
+				    refMid.messageId(), &reqContent) ||
+				    reqContent == nullptr)
+					throw EWSError::ItemNotFound(E3143);
+				auto wantResp = reqContent->proplist.get<const uint8_t>(PR_RESPONSE_REQUESTED);
+				auto orgSmtp = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+				if (!orgSmtp)
+					orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+				if ((wantResp == nullptr || *wantResp != 0)
+				    && orgSmtp != nullptr) {
+					EWSContext::MCONT_PTR respContent(reqContent->dup());
+					if (!respContent)
+						throw EWSError::NotEnoughMemory(E3288);
+					auto respClass = content->proplist.get<const char>(PR_MESSAGE_CLASS);
+					if (respClass)
+						respContent->proplist.set(PR_MESSAGE_CLASS, respClass);
+					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+					respContent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
+					respContent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+					respContent->proplist.set(PR_SENDER_SMTP_ADDRESS, deconst(ctx.auth_info().username));
+					respContent->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(ctx.auth_info().username));
+					if (respContent->children.prcpts)
+						tarray_set_free(respContent->children.prcpts);
+					respContent->children.prcpts = tarray_set_init();
+					if (!respContent->children.prcpts)
+						throw EWSError::NotEnoughMemory(E3288);
+					tEmailAddressType org;
+					org.EmailAddress = orgSmtp;
+					auto orgName = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
+					if (orgName)
+						org.Name = orgName;
+					org.RoutingType = "SMTP";
+					org.mkRecipient(respContent->children.prcpts->emplace(), MAPI_TO);
+					ctx.send(refDir, 0, *respContent);
+				}
+			}
+		}
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
 		if (std::holds_alternative<tCalendarItem>(item) &&
