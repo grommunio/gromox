@@ -2708,6 +2708,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    username, CP_ACP, mid.messageId(), &props, &problems))
 				throw EWSError::ItemSave(E3092);
 			msg.ConflictResults.Count = problems.count;
+			if (shape.requiredAttendees || shape.optionalAttendees ||
+			    shape.resourceAttendees)
+				ctx.updateAttendees(dir, parentFolder,
+				    mid.messageId(), shape);
 		}
 		if (occ_basedate != 0)
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));

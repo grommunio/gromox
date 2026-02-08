@@ -2561,6 +2561,97 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 }
 
 /**
+ * @brief      Update attendee recipients on existing calendar item
+ *
+ * Used by UpdateItem when the client sets RequiredAttendees,
+ * OptionalAttendees, or Resources. Replaces all recipients via the
+ * message instance API and sets organizer properties.
+ *
+ * @param      dir     Store directory
+ * @param      parent  Parent folder specification
+ * @param      mid     Message ID of the calendar item
+ * @param      shape   Shape containing attendee XML pointers
+ */
+void EWSContext::updateAttendees(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid,
+    const sShape &shape) const
+{
+	auto &exmdb = plugin().exmdb;
+	auto inst = m_plugin.loadMessageInstance(dir, parent.folderId, mid);
+	if (!exmdb.empty_message_instance_rcpts(dir.c_str(), inst->instanceId))
+		throw EWSError::ItemSave(E3092);
+
+	TARRAY_SET rcpts{};
+	auto parseAttendees = [&](const tinyxml2::XMLElement *xml, uint32_t type) {
+		for (auto entry = xml->FirstChildElement("Attendee");
+		     entry != nullptr;
+		     entry = entry->NextSiblingElement("Attendee")) {
+			tAttendee att(entry);
+			att.Mailbox.mkRecipient(rcpts.emplace(), type);
+		}
+	};
+	if (shape.requiredAttendees)
+		parseAttendees(shape.requiredAttendees, MAPI_TO);
+	if (shape.optionalAttendees)
+		parseAttendees(shape.optionalAttendees, MAPI_CC);
+	if (shape.resourceAttendees)
+		parseAttendees(shape.resourceAttendees, MAPI_TO);
+
+	if (rcpts.count > 0) {
+		if (!exmdb.update_message_instance_rcpts(dir.c_str(),
+		    inst->instanceId, &rcpts))
+			throw EWSError::ItemSave(E3092);
+		/* Set organizer properties when attendees are present */
+		std::string dispName;
+		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
+			throw DispatchError(E3302);
+		const char *username = effectiveUser(parent);
+		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
+		auto meetType   = construct<uint32_t>(mtgRequest);
+		auto apptState  = construct<uint32_t>(asfMeeting);
+		auto respStatus = construct<uint32_t>(respNotResponded);
+		const TAGGED_PROPVAL oprops[] = {
+			{PR_SENT_REPRESENTING_NAME, deconst(dispName.c_str())},
+			{PR_SENDER_NAME, deconst(dispName.c_str())},
+			{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(m_auth_info.username)},
+			{PR_SENDER_SMTP_ADDRESS, deconst(m_auth_info.username)},
+			{PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP")},
+			{PR_SENDER_ADDRTYPE, deconst("SMTP")},
+			{PR_SENT_REPRESENTING_EMAIL_ADDRESS, deconst(m_auth_info.username)},
+			{PR_SENDER_EMAIL_ADDRESS, deconst(m_auth_info.username)},
+		};
+		const TPROPVAL_ARRAY oproplist = {std::size(oprops), deconst(oprops)};
+		PROBLEM_ARRAY problems;
+		if (!exmdb.set_message_properties(dir.c_str(),
+		    username, CP_ACP, mid, &oproplist, &problems))
+			throw EWSError::ItemSave(E3092);
+		const PROPERTY_NAME pnames[] = {
+			NtMeetingType,
+			NtAppointmentStateFlags,
+			NtResponseStatus,
+		};
+		const PROPNAME_ARRAY pnarr = {std::size(pnames), deconst(pnames)};
+		auto ids = getNamedPropIds(dir, pnarr);
+		if (ids.size() == 3 && ids[0] && ids[1] && ids[2]) {
+			const TAGGED_PROPVAL nprops[] = {
+				{PROP_TAG(PT_LONG, ids[0]), meetType},
+				{PROP_TAG(PT_LONG, ids[1]), apptState},
+				{PROP_TAG(PT_LONG, ids[2]), respStatus},
+			};
+			const TPROPVAL_ARRAY nproplist = {std::size(nprops), deconst(nprops)};
+			if (!exmdb.set_message_properties(dir.c_str(), username,
+			    CP_ACP, mid, &nproplist, &problems))
+				throw EWSError::ItemSave(E3092);
+		}
+	}
+
+	ec_error_t err;
+	if (!exmdb.flush_instance(dir.c_str(),
+	    inst->instanceId, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3092);
+}
+
+/**
  * @brief      Convert EWS Recurrence XML to MAPI properties and write to shape
  *
  * Used by UpdateItem when the client modifies the recurrence of an existing
@@ -3728,8 +3819,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		if (cvt_username_to_essdn(m_auth_info.username, m_plugin.x500_org_name.c_str(),
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
 			throw DispatchError(E3085);
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, strcpy(alloc<char>(essdn.size() + 1), essdn.c_str())});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_EMAIL_ADDRESS, strcpy(alloc<char>(essdn.size() + 1), essdn.c_str())});
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, username});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_EMAIL_ADDRESS, username});
 		EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
 		EXT_PUSH ext_push;
 		static constexpr size_t ABEIDBUFFSIZE = 1280;
