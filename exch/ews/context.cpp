@@ -4075,6 +4075,14 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 	}
 	if (item.References)
 		shape.write(TAGGED_PROPVAL{PR_INTERNET_REFERENCES, deconst(item.References->c_str())});
+	if (item.ConversationIndex) {
+		auto *bin = construct<BINARY>(BINARY{
+		            static_cast<uint32_t>(item.ConversationIndex->size()),
+		            {reinterpret_cast<uint8_t *>(item.ConversationIndex->data())}});
+		shape.write(TAGGED_PROPVAL{PR_CONVERSATION_INDEX, bin});
+	}
+	if (item.ConversationTopic)
+		shape.write(TAGGED_PROPVAL{PR_CONVERSATION_TOPIC, deconst(item.ConversationTopic->c_str())});
 	if (item.IsResponseRequested)
 		writeBoolProp(shape, item.IsResponseRequested, PR_RESPONSE_REQUESTED);
 	if (item.IsDeliveryReceiptRequested)
