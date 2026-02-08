@@ -9,7 +9,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
 # lib_LTL must be dependency-ordered, or make install fails
-lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_mapi.la libgromox_exrpc.la libgromox_ndr.la libgxs_mysql_adaptor.la libgromox_abtree.la libgromox_auth.la libgromox_authz.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_timer_agent.la libgxs_ruleproc.la
+lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_mapi.la libgromox_exrpc.la libgromox_ndr.la libgromox_nofastbin.la libgxs_mysql_adaptor.la libgromox_abtree.la libgromox_auth.la libgromox_authz.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_timer_agent.la libgxs_ruleproc.la
 
 pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap istore lda midb oab oxdisco pop3 timer zcore tools/authtry tools/ddbg tools/textmapquery
 if WITH_GNU_LD
@@ -78,6 +78,7 @@ libgromox_mapi_la_SOURCES = lib/email/dsn.cpp lib/email/ical.cpp lib/email/ical2
 libgromox_mapi_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} ${iconv_LIBS} ${vmime_LIBS} ${libxml2_LIBS} libgromox_common.la
 libgromox_ndr_la_SOURCES = exch/ndr.cpp
 libgromox_ndr_la_LIBADD = libgromox_common.la
+libgromox_nofastbin_la_SOURCES = tools/nofastbin.cpp
 
 delivery_SOURCES = mda/delivery_app/delivery.hpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/transporter.cpp
 delivery_LDADD = -lpthread ${libHX_LIBS} ${libssl_LIBS} ${vmime_LIBS} libgromox_auth.la libgromox_common.la libgromox_mapi.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgxs_mysql_adaptor.la libgxs_ruleproc.la
