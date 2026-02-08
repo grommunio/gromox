@@ -392,6 +392,9 @@ class sShape {
 	const tinyxml2::XMLElement *permissionSet = nullptr; ///< PermissionSet for update
 	const tinyxml2::XMLElement *calendarPermissionSet = nullptr; ///< CalendarPermissionSet for update
 	const tinyxml2::XMLElement *recurrence = nullptr; ///< Recurrence for update
+	const tinyxml2::XMLElement *requiredAttendees = nullptr; ///< RequiredAttendees for update
+	const tinyxml2::XMLElement *optionalAttendees = nullptr; ///< OptionalAttendees for update
+	const tinyxml2::XMLElement *resourceAttendees = nullptr; ///< Resources for update
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 
