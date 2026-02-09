@@ -2040,16 +2040,20 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
  * List of field -> conversion function mapping
  */
 decltype(tChangeDescription::fields) tChangeDescription::fields = {{
+	{"ActualWork", {[](auto &&...args) { convInt32(NtTaskActualEffort, args...); }, "Task"}},
 	{"AssistantName", {[](auto &&...args) { convText(PR_ASSISTANT, args...); }}},
-	{"Body", {tChangeDescription::convBody}},
+	{"BillingInformation", {[](auto &&...args) { convText(NtBilling, args...); }, "Task"}},
 	{"Birthday", {[](auto&&... args){convDate(PR_BIRTHDAY, args...);}}},
+	{"Body", {tChangeDescription::convBody}},
 	{"BusinessHomePage", {[](auto&&... args){convText(PR_BUSINESS_HOME_PAGE, args...);}}},
 	{"Categories", {[](auto&&... args){convStrArray(NtCategories, args...);}}},
 	{"Children", {[](auto&&... args){convStrArray(PR_CHILDRENS_NAMES, args...);}}},
+	{"Companies", {[](auto &&...args) { convStrArray(NtCompanies, args...); }, "Task"}},
 	{"CompanyName", {[](auto&&... args){convText(PR_COMPANY_NAME, args...);}}},
-	{"YomiCompanyName", {[](auto &&...args) { convText(NtYomiCompanyName, args...); }}},
+	{"CompleteDate", {[](auto &&...args) { convDate(NtTaskDateCompleted, args...); }, "Task"}},
 	{"Department", {[](auto&&... args){convText(PR_DEPARTMENT_NAME, args...);}}},
 	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
+	{"DueDate", {[](auto &&...args) { convDate(NtTaskDueDate, args...); }, "Task"}},
 	{"End", {[](auto&&... args){convDate(NtCommonEnd, args...);}}},
 	{"EndTimeZone", {[](auto &&...args) { convTzAttr(NtCalendarTimeZone, args...); }}},
 	{"EndTimeZoneId", {[](auto&&... args){convText(NtCalendarTimeZone, args...);}}},
@@ -2059,6 +2063,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
 	{"Initials", {[](auto&&... args){convText(PR_INITIALS, args...);}}},
 	{"IsAllDayEvent", {[](auto &&...args) { convBool(NtAppointmentSubType, args...); }}},
+	{"IsComplete", {[](auto &&...args) { convBool(NtTaskComplete, args...); }, "Task"}},
 	{"IsDeliveryReceiptRequested", {[](auto&&... args){convBool(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED, args...);}}},
 	{"IsRead", {[](auto&&... args){convBool(PR_READ, args...);}}},
 	{"IsReadReceiptRequested", {[](auto&&... args){convBool(PR_READ_RECEIPT_REQUESTED, args...);}}},
@@ -2067,26 +2072,33 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Location", {[](auto &&...args) { convText(NtLocation, args...); }, "CalendarItem"}},
 	{"Manager", {[](auto &&...args) { convText(PR_MANAGER_NAME, args...); }}},
 	{"MiddleName", {[](auto &&...args) { convText(PR_MIDDLE_NAME, args...); }}},
+	{"Mileage", {[](auto &&...args) { convText(NtMileage, args...); }, "Task"}},
 	{"MimeContent", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.mimeContent = base64_decode(xml->GetText()); }}},
 	{"Nickname", {[](auto&&... args){convText(PR_NICKNAME, args...);}}},
 	{"OfficeLocation", {[](auto&&... args){convText(PR_OFFICE_LOCATION, args...);}}},
 	{"OptionalAttendees", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.optionalAttendees = xml; }, "CalendarItem"}},
+	{"Owner", {[](auto &&...args) { convText(NtTaskOwner, args...); }, "Task"}},
+	{"PercentComplete", {[](auto &&...args) { convDouble(NtPercentComplete, args...); }, "Task"}},
 	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.calendarPermissionSet = xml; }, "CalendarFolder"}},
 	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.permissionSet = xml; }}},
+	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
+	{"Profession", {[](auto &&...args) { convText(PR_PROFESSION, args...); }}},
 	{"Recurrence", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.recurrence = xml; }, "CalendarItem"}},
 	{"RequiredAttendees", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.requiredAttendees = xml; }, "CalendarItem"}},
 	{"Resources", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.resourceAttendees = xml; }, "CalendarItem"}},
-	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
-	{"Profession", {[](auto &&...args) { convText(PR_PROFESSION, args...); }}},
 	{"Sensitivity", {[](auto &&...args) { convSensitivity(args...); }}},
-	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
-	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
 	{"SpouseName", {[](auto&&... args){convText(PR_SPOUSE_NAME, args...);}}},
 	{"Start", {[](auto&&... args){convDate(NtCommonStart, args...);}}},
+	{"StartDate", {[](auto &&...args) { convDate(NtTaskStartDate, args...); }, "Task"}},
 	{"StartTimeZone", {[](auto &&...args) { convTzAttr(NtCalendarTimeZone, args...); }}},
 	{"StartTimeZoneId", {[](auto&&... args){convText(NtCalendarTimeZone, args...);}}},
+	{"Status", {[](auto &&...args) { convEnumIndex<Enum::TaskStatusType>(NtTaskStatus, args...); }, "Task"}},
+	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
+	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
+	{"TotalWork", {[](auto &&...args) { convInt32(NtTaskEstimatedEffort, args...); }, "Task"}},
 	{"UID", {[](auto &&...args) { convUID(args...); }}},
 	{"WeddingAnniversary", {[](auto&&... args){convDate(PR_WEDDING_ANNIVERSARY, args...);}}},
+	{"YomiCompanyName", {[](auto &&...args) { convText(NtYomiCompanyName, args...); }}},
 }};
 
 
@@ -2307,6 +2319,20 @@ void tChangeDescription::convTzAttr(const PROPERTY_NAME &name, const XMLElement 
 	auto tag = shape.tag(name);
 	if (tag)
 		shape.write(TAGGED_PROPVAL{tag, EWSContext::cpystr(id)});
+}
+
+void tChangeDescription::convInt32(const PROPERTY_NAME &name, const XMLElement *v, sShape &shape)
+{
+	auto tag = shape.tag(name);
+	if (tag)
+		shape.write(mkProp(tag, static_cast<int32_t>(strtol(znul(v->GetText()), nullptr, 10))));
+}
+
+void tChangeDescription::convDouble(const PROPERTY_NAME &name, const XMLElement *v, sShape &shape)
+{
+	auto tag = shape.tag(name);
+	if (tag)
+		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<double>(strtod(znul(v->GetText()), nullptr))});
 }
 
 void tChangeDescription::convSensitivity(const XMLElement *v, sShape &shape)
@@ -4067,6 +4093,20 @@ decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefa
 	{&NtYomiFirstName, PT_UNICODE},
 	{&NtYomiLastName, PT_UNICODE},
 	{&NtYomiCompanyName, PT_UNICODE},
+	{&NtTaskStatus, PT_LONG},
+	{&NtPercentComplete, PT_DOUBLE},
+	{&NtTaskStartDate, PT_SYSTIME},
+	{&NtTaskDueDate, PT_SYSTIME},
+	{&NtTaskDateCompleted, PT_SYSTIME},
+	{&NtTaskActualEffort, PT_LONG},
+	{&NtTaskEstimatedEffort, PT_LONG},
+	{&NtTaskComplete, PT_BOOLEAN},
+	{&NtTaskOwner, PT_UNICODE},
+	{&NtTaskFRecurring, PT_BOOLEAN},
+	{&NtTaskRecurrence, PT_BINARY},
+	{&NtBilling, PT_UNICODE},
+	{&NtMileage, PT_UNICODE},
+	{&NtCompanies, PT_MV_UNICODE},
 }};
 
 decltype(tItemResponseShape::namedTagsAllProperties) tItemResponseShape::namedTagsAllProperties = {{

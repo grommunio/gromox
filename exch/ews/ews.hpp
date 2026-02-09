@@ -400,6 +400,7 @@ private:
 	void toContent(const std::string&, Structures::tContact&, Structures::sShape&, MCONT_PTR&) const;
 	void toContent(const std::string&, Structures::tItem&, Structures::sShape&, MCONT_PTR&) const;
 	void toContent(const std::string&, Structures::tMessage&, Structures::sShape&, MCONT_PTR&) const;
+	void toContent(const std::string &, Structures::tTask &, Structures::sShape &, MCONT_PTR &) const;
 	void toContent(const std::string &, Structures::tAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
 	void toContent(const std::string &, Structures::tTentativelyAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
 	void toContent(const std::string &, Structures::tDeclineItem &, Structures::sShape &, MCONT_PTR &) const;

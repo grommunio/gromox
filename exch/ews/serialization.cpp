@@ -464,7 +464,19 @@ void tBody::serialize(tinyxml2::XMLElement *xml) const
 }
 
 tTask::tTask(const tinyxml2::XMLElement *xml) :
-	tItem(xml)
+	tItem(xml),
+	XMLINIT(ActualWork),
+	XMLINIT(CompleteDate),
+	XMLINIT(DueDate),
+	XMLINIT(StartDate),
+	XMLINIT(BillingInformation),
+	XMLINIT(Companies),
+	XMLINIT(IsComplete),
+	XMLINIT(Mileage),
+	XMLINIT(Owner),
+	XMLINIT(PercentComplete),
+	XMLINIT(Status),
+	XMLINIT(TotalWork)
 {}
 
 void tTask::serialize(tinyxml2::XMLElement *xml) const

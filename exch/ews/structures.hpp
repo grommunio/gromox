@@ -1349,6 +1349,8 @@ struct tChangeDescription {
 	static void convText(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convText(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convTzAttr(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convInt32(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convDouble(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
@@ -2257,7 +2259,7 @@ struct tItemResponseShape {
 		PR_WEDDING_ANNIVERSARY, PR_CHILDRENS_NAMES, PR_MANAGER_NAME, PR_PROFESSION,
 		PR_CAR_TELEPHONE_NUMBER, PR_ISDN_NUMBER, PR_PRIMARY_FAX_NUMBER,
 		PR_TELEX_NUMBER, PR_TTYTDD_PHONE_NUMBER};
-	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 26> namedTagsDefault;
+	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 40> namedTagsDefault;
 	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 10> namedTagsAllProperties;
 };
 

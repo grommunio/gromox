@@ -3977,6 +3977,69 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 }
 
 /**
+ * @brief      Write task properties to shape
+ *
+ * @param      dir       Home directory of the target store
+ * @param      item      Task item to create
+ * @param      shape     Shape to store properties in
+ * @param      content   Message content
+ */
+void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
+    MCONT_PTR &content) const
+{
+	toContent(dir, static_cast<tItem &>(item), shape, content);
+	if (!item.ItemClass)
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Task")});
+	if (item.ActualWork)
+		shape.write(NtTaskActualEffort, TAGGED_PROPVAL{PT_LONG,
+		            construct<int32_t>(*item.ActualWork)});
+	writeProp(shape, item.BillingInformation, NtBilling, PT_UNICODE);
+	if (item.Companies && !item.Companies->empty() &&
+	    item.Companies->size() <= UINT32_MAX) {
+		uint32_t count = item.Companies->size();
+		auto *sa = construct<STRING_ARRAY>(STRING_ARRAY{count,
+		           alloc<char *>(count)});
+		char **dest = sa->ppstr;
+		for (const std::string &c : *item.Companies)
+			*dest++ = deconst(c.c_str());
+		shape.write(NtCompanies, TAGGED_PROPVAL{PT_MV_UNICODE, sa});
+	}
+	if (item.CompleteDate)
+		shape.write(NtTaskDateCompleted, TAGGED_PROPVAL{PT_SYSTIME,
+		            construct<uint64_t>(toNT(*item.CompleteDate))});
+	if (item.DueDate)
+		shape.write(NtTaskDueDate, TAGGED_PROPVAL{PT_SYSTIME,
+		            construct<uint64_t>(toNT(*item.DueDate))});
+	if (item.StartDate)
+		shape.write(NtTaskStartDate, TAGGED_PROPVAL{PT_SYSTIME,
+		            construct<uint64_t>(toNT(*item.StartDate))});
+	if (item.IsComplete)
+		shape.write(NtTaskComplete, TAGGED_PROPVAL{PT_BOOLEAN,
+		            construct<uint8_t>(*item.IsComplete ? 1 : 0)});
+	writeProp(shape, item.Mileage, NtMileage, PT_UNICODE);
+	writeProp(shape, item.Owner, NtTaskOwner, PT_UNICODE);
+	if (item.PercentComplete)
+		shape.write(NtPercentComplete, TAGGED_PROPVAL{PT_DOUBLE,
+		            construct<double>(*item.PercentComplete)});
+	if (item.Status) {
+		uint32_t st = tsvNotStarted;
+		if (*item.Status == Enum::InProgress)
+			st = tsvInProgress;
+		else if (*item.Status == Enum::Completed)
+			st = tsvComplete;
+		else if (*item.Status == Enum::WaitingOnOthers)
+			st = tsvWaiting;
+		else if (*item.Status == Enum::Deferred)
+			st = tsvDeferred;
+		shape.write(NtTaskStatus, TAGGED_PROPVAL{PT_LONG,
+		            construct<uint32_t>(st)});
+	}
+	if (item.TotalWork)
+		shape.write(NtTaskEstimatedEffort, TAGGED_PROPVAL{PT_LONG,
+		            construct<int32_t>(*item.TotalWork)});
+}
+
+/**
  * @brief      Write item properties to shape
  *
  * Provides base for all derived classes and should be called before further
