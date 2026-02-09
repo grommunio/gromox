@@ -40,6 +40,9 @@ static const PROPERTY_NAME NtImAddress1 = {MNID_ID, PSETID_Address, PidLidInstan
 static const PROPERTY_NAME NtMailingAddress = {MNID_ID, PSETID_Address, PidLidMailingAdress};
 static const PROPERTY_NAME NtOtherAddress = {MNID_ID, PSETID_Address, PidLidOtherAddress};
 static const PROPERTY_NAME NtPostalAddressIndex = {MNID_ID, PSETID_Address, PidLidPostalAddressIndex};
+static const PROPERTY_NAME NtYomiFirstName = {MNID_ID, PSETID_Address, PidLidYomiFirstName};
+static const PROPERTY_NAME NtYomiLastName = {MNID_ID, PSETID_Address, PidLidYomiLastName};
+static const PROPERTY_NAME NtYomiCompanyName = {MNID_ID, PSETID_Address, PidLidYomiCompanyName};
 
 /* PSETID_Task */
 static const PROPERTY_NAME NtTaskStatus = {MNID_ID, PSETID_Task, PidLidTaskStatus};

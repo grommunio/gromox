@@ -1129,6 +1129,9 @@ enum {
 	PidLidMailingAdress = 0x8022,  // PT_UNICODE
 	PidLidPostalAddressIndex = 0x8022, // PT_LONG
 	dispidEmailList = 0x8027,
+	PidLidYomiFirstName = 0x802C,
+	PidLidYomiLastName = 0x802D,
+	PidLidYomiCompanyName = 0x802E,
 	PidLidBusinessCardDisplayDefinition = 0x8040,
 	PidLidWorkAddressStreet = 0x8045,
 	PidLidWorkAddressCity = 0x8046,

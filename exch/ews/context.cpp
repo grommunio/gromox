@@ -3859,6 +3859,10 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 		writeProp(shape, item.CompleteName->Initials, PR_INITIALS);
 		writeProp(shape, item.CompleteName->FullName, PR_DISPLAY_NAME);
 		writeProp(shape, item.CompleteName->Nickname, PR_NICKNAME);
+		writeProp(shape, item.CompleteName->YomiFirstName,
+		          NtYomiFirstName, PT_UNICODE);
+		writeProp(shape, item.CompleteName->YomiLastName,
+		          NtYomiLastName, PT_UNICODE);
 	}
 
 	writeProp(shape, item.DisplayName, PR_DISPLAY_NAME);
@@ -3874,12 +3878,12 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 	writeProp(shape, item.Generation, PR_GENERATION);
 	writeProp(shape, item.JobTitle, PR_TITLE);
 	writeProp(shape, item.Manager, PR_MANAGER_NAME);
-	writeProp(shape, item.CompanyName, PR_COMPANY_NAME);
 	writeProp(shape, item.OfficeLocation, PR_OFFICE_LOCATION);
 	writeProp(shape, item.Profession, PR_PROFESSION);
 	writeProp(shape, item.SpouseName, PR_SPOUSE_NAME);
 	writeProp(shape, item.Surname, PR_SURNAME);
 	writeProp(shape, item.WeddingAnniversary, PR_WEDDING_ANNIVERSARY);
+	writeProp(shape, item.YomiCompanyName, NtYomiCompanyName, PT_UNICODE);
 
 	if (!item.FileAs && item.DisplayName)
 		shape.write(NtFileAs, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.DisplayName)});

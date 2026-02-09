@@ -2120,6 +2120,7 @@ struct tContact : public tItem {
 	std::optional<std::string> Nickname;
 	std::optional<tCompleteName> CompleteName;
 	std::optional<std::string> CompanyName;
+	std::optional<std::string> YomiCompanyName;
 	std::optional<std::vector<tEmailAddressDictionaryEntry>> EmailAddresses;
 	// <xs:element name="AbchEmailAddresses" type="t:AbchEmailAddressDictionaryType" minOccurs="0" />
 	std::optional<std::vector<tPhysicalAddressDictionaryEntry>> PhysicalAddresses;
@@ -2256,7 +2257,7 @@ struct tItemResponseShape {
 		PR_WEDDING_ANNIVERSARY, PR_CHILDRENS_NAMES, PR_MANAGER_NAME, PR_PROFESSION,
 		PR_CAR_TELEPHONE_NUMBER, PR_ISDN_NUMBER, PR_PRIMARY_FAX_NUMBER,
 		PR_TELEX_NUMBER, PR_TTYTDD_PHONE_NUMBER};
-	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 23> namedTagsDefault;
+	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 26> namedTagsDefault;
 	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 10> namedTagsAllProperties;
 };
 

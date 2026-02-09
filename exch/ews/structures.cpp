@@ -2584,6 +2584,12 @@ void tContact::update(const sShape& shape)
 	auto names = shape.get<const STRING_ARRAY>(PR_CHILDRENS_NAMES);
 	if (names != nullptr)
 		Children.emplace(names->begin(), names->end());
+	if ((prop = shape.get(NtYomiFirstName)))
+		fromProp(prop, defaulted(CompleteName).YomiFirstName);
+	if ((prop = shape.get(NtYomiLastName)))
+		fromProp(prop, defaulted(CompleteName).YomiLastName);
+	if ((prop = shape.get(NtYomiCompanyName)))
+		fromProp(prop, YomiCompanyName);
 	auto str = shape.get<const char>(NtEmailAddress1);
 	if (str) {
 		auto &entry = defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress1);
@@ -4054,6 +4060,9 @@ decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefa
 	{&NtEmailAddressType2, PT_UNICODE},
 	{&NtEmailAddressType3, PT_UNICODE},
 	{&NtImAddress1, PT_UNICODE},
+	{&NtYomiFirstName, PT_UNICODE},
+	{&NtYomiLastName, PT_UNICODE},
+	{&NtYomiCompanyName, PT_UNICODE},
 }};
 
 decltype(tItemResponseShape::namedTagsAllProperties) tItemResponseShape::namedTagsAllProperties = {{

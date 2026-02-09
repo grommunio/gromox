@@ -872,6 +872,7 @@ tContact::tContact(const tinyxml2::XMLElement *xml) :
 	XMLINIT(Nickname),
 	XMLINIT(CompleteName),
 	XMLINIT(CompanyName),
+	XMLINIT(YomiCompanyName),
 	XMLINIT(EmailAddresses),
 	XMLINIT(PhysicalAddresses),
 	XMLINIT(PhoneNumbers),
@@ -905,6 +906,7 @@ void tContact::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(Nickname);
 	XMLDUMPT(CompleteName);
 	XMLDUMPT(CompanyName);
+	XMLDUMPT(YomiCompanyName);
 	XMLDUMPT(EmailAddresses);
 	XMLDUMPT(PhysicalAddresses);
 	XMLDUMPT(PhoneNumbers);
