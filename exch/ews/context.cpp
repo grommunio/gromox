@@ -3885,7 +3885,21 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 	writeProp(shape, item.WeddingAnniversary, PR_WEDDING_ANNIVERSARY);
 	writeProp(shape, item.YomiCompanyName, NtYomiCompanyName, PT_UNICODE);
 
-	if (!item.FileAs && item.DisplayName)
+	if (!shape.writes(PR_DISPLAY_NAME)) {
+		std::string dn;
+		if (item.GivenName)
+			dn = *item.GivenName;
+		if (item.Surname) {
+			if (!dn.empty())
+				dn += ' ';
+			dn += *item.Surname;
+		}
+		if (!dn.empty())
+			shape.write(TAGGED_PROPVAL{PR_DISPLAY_NAME, cpystr(dn)});
+	}
+	if (item.FileAs)
+		shape.write(NtFileAs, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.FileAs)});
+	else if (!shape.writes(NtFileAs) && item.DisplayName)
 		shape.write(NtFileAs, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.DisplayName)});
 	if (item.PostalAddressIndex)
 		shape.write(NtPostalAddressIndex, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(item.PostalAddressIndex->index())});
