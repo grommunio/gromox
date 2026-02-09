@@ -27,8 +27,7 @@ enum {
 };
 
 enum {
-	M_UNENCRYPTED_CONN,
-	M_TLS_CONN,
+	M_UNSPECIFIED_CONN, M_UNENCRYPTED_CONN, M_TLS_CONN,
 };
 
 enum {
