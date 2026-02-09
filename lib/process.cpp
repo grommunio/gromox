@@ -679,7 +679,7 @@ int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
 
 generic_connection::generic_connection(generic_connection &&o) :
 	client_port(o.client_port), server_port(o.server_port),
-	sockd(std::move(o.sockd)), ssl(std::move(o.ssl)),
+	sockd(std::move(o.sockd)), mark(std::move(o.mark)), ssl(std::move(o.ssl)),
 	last_timestamp(o.last_timestamp)
 {
 	memcpy(client_addr, o.client_addr, sizeof(client_addr));
@@ -696,6 +696,7 @@ generic_connection &generic_connection::operator=(generic_connection &&o)
 	server_port = o.server_port;
 	sockd = std::move(o.sockd);
 	o.sockd = -1;
+	mark = std::move(o.mark);
 	ssl = std::move(o.ssl);
 	o.ssl = nullptr;
 	last_timestamp = o.last_timestamp;
