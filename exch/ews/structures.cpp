@@ -973,6 +973,10 @@ void sShape::write(const PROPERTY_NAME& name, const TAGGED_PROPVAL& tp)
 		return;
 	}
 	auto index = std::distance(names.begin(), it);
+	if (PROP_ID(namedTags[index]) == 0) {
+		namedCache[index] = tp;
+		return;
+	}
 	TAGGED_PROPVAL augmented{namedTags[index], tp.pvalue};
 	write(augmented);
 }
