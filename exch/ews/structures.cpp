@@ -2040,13 +2040,14 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
  * List of field -> conversion function mapping
  */
 decltype(tChangeDescription::fields) tChangeDescription::fields = {{
-	{"Assistant", {[](auto&&... args){convText(PR_ASSISTANT, args...);}}},
+	{"AssistantName", {[](auto &&...args) { convText(PR_ASSISTANT, args...); }}},
 	{"Body", {tChangeDescription::convBody}},
 	{"Birthday", {[](auto&&... args){convDate(PR_BIRTHDAY, args...);}}},
 	{"BusinessHomePage", {[](auto&&... args){convText(PR_BUSINESS_HOME_PAGE, args...);}}},
 	{"Categories", {[](auto&&... args){convStrArray(NtCategories, args...);}}},
 	{"Children", {[](auto&&... args){convStrArray(PR_CHILDRENS_NAMES, args...);}}},
 	{"CompanyName", {[](auto&&... args){convText(PR_COMPANY_NAME, args...);}}},
+	{"YomiCompanyName", {[](auto &&...args) { convText(NtYomiCompanyName, args...); }}},
 	{"Department", {[](auto&&... args){convText(PR_DEPARTMENT_NAME, args...);}}},
 	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
 	{"End", {[](auto&&... args){convDate(NtCommonEnd, args...);}}},
@@ -3429,7 +3430,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"contacts:CompleteName", PR_GIVEN_NAME},
 	{"contacts:CompleteName", PR_INITIALS},
 	{"contacts:CompleteName", PR_MIDDLE_NAME},
-	{"contacts:CompleteName", PR_NICKNAME}, // TODO: YomiFirstName, YomiLastName;
+	{"contacts:CompleteName", PR_NICKNAME},
 	{"contacts:CompleteName", PR_SURNAME},
 	{"contacts:Department", PR_DEPARTMENT_NAME},
 	{"contacts:DisplayName", PR_DISPLAY_NAME},
@@ -3535,9 +3536,12 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:StartTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:TimeZone", {NtTimeZone, PT_UNICODE}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
+	{"contacts:CompleteName", {NtYomiFirstName, PT_UNICODE}},
+	{"contacts:CompleteName", {NtYomiLastName, PT_UNICODE}},
 	{"contacts:DisplayName", {NtFileAs, PT_UNICODE}},
 	{"contacts:FileAs", {NtFileAs, PT_UNICODE}},
 	{"contacts:PostalAddressIndex", {NtPostalAddressIndex, PT_LONG}},
+	{"contacts:YomiCompanyName", {NtYomiCompanyName, PT_UNICODE}},
 	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
 	{"item:Flag", {NtTaskDateCompleted, PT_SYSTIME}},
 	{"item:Flag", {NtTaskDueDate, PT_SYSTIME}},
