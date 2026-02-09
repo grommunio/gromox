@@ -46,6 +46,7 @@ static thread_local const char *g_storedir;
 
 static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int flags);
 static junk_rule_list g_junk_rules;
+static bool was_recipient_directly_addressed(sql_meta_result mres, message_content* pmsg);
 
 void exmdb_local_init(const char *org_name)
 {
@@ -391,6 +392,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 			lq_report(pcontext->ctrl.queue_ID, rop_util_get_gc_value(message_id),
 				"after_delivery", *rbct);
 	}
+    bool directly_addressed = was_recipient_directly_addressed(mres, pmsg.get());
 	pmsg.reset();
 
 	switch (dm_status) {
@@ -399,8 +401,14 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 			"message %s was delivered OK", mid_string.c_str());
 		if (pcontext->ctrl.need_bounce &&
 		    strcmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) != 0&&
-		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
+		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF) &&
+		    directly_addressed)
 			auto_response_reply(home_dir, address, pcontext->ctrl.from);
+		else if (pcontext->ctrl.need_bounce &&
+			!(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF) &&
+			!directly_addressed)
+			exmdb_local_log_info(pcontext->ctrl, address, LV_DEBUG,
+				"auto-response suppressed: recipient not in To/Cc");
 		break;
 	case deliver_message_result::partial_completion:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
@@ -585,4 +593,48 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 	default:
 		return TRUE;
 	}
+}
+
+static bool was_recipient_directly_addressed(sql_meta_result mres, message_content* pmsg)
+{
+	bool was_directly_addressed = false;
+	// Collect user's personal addresses: primary plus aliases
+	std::vector<std::string> user_addrs;
+	if (!mres.username.empty())
+		user_addrs.emplace_back(mres.username);
+	std::vector<std::string> aliases;
+	if (mysql_adaptor_get_user_aliases(mres.username.c_str(), aliases)) {
+		for (auto &a : aliases)
+			user_addrs.emplace_back(a);
+	}
+	// Build set of lowercased To/Cc SMTP addresses from the message
+	std::vector<std::string> tocc;
+	if (pmsg->children.prcpts != nullptr) {
+		for (auto &r : *pmsg->children.prcpts) {
+			TPROPVAL_ARRAY pv{r.count, r.ppropval};
+			auto prt = pv.get<const uint32_t>(PR_RECIPIENT_TYPE);
+			if (prt == nullptr || (*prt != MAPI_TO && *prt != MAPI_CC))
+				continue;
+			const char *smtp = pv.get<const char>(PR_SMTP_ADDRESS);
+			if (smtp == nullptr) {
+				const char *atype = pv.get<const char>(PR_ADDRTYPE);
+				if (atype != nullptr && strcasecmp(atype, "SMTP") == 0)
+					smtp = pv.get<const char>(PR_EMAIL_ADDRESS);
+			}
+			if (smtp != nullptr)
+				tocc.emplace_back(smtp);
+		}
+	}
+	// Compare case-insensitively
+	for (auto &ua : user_addrs) {
+		for (auto &rc : tocc) {
+			if (strcasecmp(ua.c_str(), rc.c_str()) == 0) {
+				was_directly_addressed = true;
+				break;
+			}
+		}
+		if (was_directly_addressed)
+			break;
+	}
+	return was_directly_addressed;
 }
