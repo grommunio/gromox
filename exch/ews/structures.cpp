@@ -4150,6 +4150,8 @@ void tItemResponseShape::tags(sShape& shape) const
 	std::string_view type = BodyType ? *BodyType : Enum::Best;
 	if ((IncludeMimeContent && *IncludeMimeContent) || (BodyType && type == Enum::Best))
 		shape.special |= sShape::MimeContent;
+	if (BodyType)
+		shape.special |= sShape::Body;
 	if (AdditionalProperties)
 		for (const auto& additional : *AdditionalProperties)
 			additional.tags(shape);
