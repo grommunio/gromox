@@ -3954,6 +3954,8 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 			case 14: tag = PR_PAGER_TELEPHONE_NUMBER; break;
 			case 15: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
 			case 16: tag = PR_RADIO_TELEPHONE_NUMBER; break;
+			case 17: tag = PR_TELEX_NUMBER; break;
+			case 18: tag = PR_TTYTDD_PHONE_NUMBER; break;
 			default: continue;
 			}
 			shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(entry.Entry.c_str())});

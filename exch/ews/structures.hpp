@@ -1101,7 +1101,7 @@ struct tIndexedFieldURI {
 
 	using UIKey = std::pair<std::string, std::string>;
 	//Types.xsd:988
-	static std::array<std::pair<UIKey, proptag_t>, 25> tagMap;
+	static std::array<std::pair<UIKey, proptag_t>, 29> tagMap;
 	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, proptype_t>>, 25> nameMap;
 };
 
@@ -2241,7 +2241,7 @@ struct tItemResponseShape {
 
 	static constexpr std::array<proptag_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
 	static constexpr std::array<proptag_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
-	static constexpr std::array<proptag_t, 45> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
+	static constexpr std::array<proptag_t, 47> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
 		PR_ASSOCIATED, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,
 		PR_SENDER_SMTP_ADDRESS,
 		PR_LOCAL_COMMIT_TIME, PR_DISPLAY_NAME_PREFIX, PR_GIVEN_NAME, PR_MIDDLE_NAME,
@@ -2254,7 +2254,8 @@ struct tItemResponseShape {
 		PR_ASSISTANT, PR_BIRTHDAY, PR_BUSINESS_HOME_PAGE, PR_COMPANY_NAME,
 		PR_DEPARTMENT_NAME, PR_TITLE, PR_OFFICE_LOCATION, PR_SPOUSE_NAME,
 		PR_WEDDING_ANNIVERSARY, PR_CHILDRENS_NAMES, PR_MANAGER_NAME, PR_PROFESSION,
-		PR_CAR_TELEPHONE_NUMBER, PR_ISDN_NUMBER, PR_PRIMARY_FAX_NUMBER};
+		PR_CAR_TELEPHONE_NUMBER, PR_ISDN_NUMBER, PR_PRIMARY_FAX_NUMBER,
+		PR_TELEX_NUMBER, PR_TTYTDD_PHONE_NUMBER};
 	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 23> namedTagsDefault;
 	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 10> namedTagsAllProperties;
 };

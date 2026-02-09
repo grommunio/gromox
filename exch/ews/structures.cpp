@@ -2504,6 +2504,10 @@ void tContact::update(const sShape& shape)
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Isdn));
 	if ((val = shape.get<char>(PR_PRIMARY_FAX_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::OtherFax));
+	if ((val = shape.get<char>(PR_TELEX_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Telex));
+	if ((val = shape.get<char>(PR_TTYTDD_PHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::TtyTddPhone));
 
 	std::optional<tPhysicalAddressDictionaryEntry> bAddr, hAddr, oAddr; // "Business", "Home", and "Other" address
 	if ((val = shape.get<char>(NtBusinessAddressCity)))
@@ -3719,6 +3723,7 @@ std::string tGuid::serialize() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/* bisected map (must be kept in lexicographic order) */
 decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 	{{"contacts:PhoneNumber", "AssistantPhone"}, PR_ASSISTANT_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "BusinessFax"}, PR_BUSINESS_FAX_NUMBER},
@@ -3730,11 +3735,15 @@ decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 	{{"contacts:PhoneNumber", "HomeFax"}, PR_HOME_FAX_NUMBER},
 	{{"contacts:PhoneNumber", "HomePhone"}, PR_HOME_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "HomePhone2"}, PR_HOME2_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "Isdn"}, PR_ISDN_NUMBER},
 	{{"contacts:PhoneNumber", "MobilePhone"}, PR_MOBILE_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "OtherFax"}, PR_PRIMARY_FAX_NUMBER},
 	{{"contacts:PhoneNumber", "OtherTelephone"}, PR_OTHER_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "Pager"}, PR_PAGER_TELEPHONE_NUMBER}, // same as PR_BEEPER_TELEPHONE_NUMBER
+	{{"contacts:PhoneNumber", "PrimaryPhone"}, PR_PRIMARY_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "RadioPhone"}, PR_RADIO_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "Telex"}, PR_TELEX_NUMBER},
+	{{"contacts:PhoneNumber", "TtyTddPhone"}, PR_TTYTDD_PHONE_NUMBER},
 	{{"contacts:PhysicalAddress:City", "Home"}, PR_HOME_ADDRESS_CITY},
 	{{"contacts:PhysicalAddress:City", "Other"}, PR_OTHER_ADDRESS_CITY},
 	{{"contacts:PhysicalAddress:CountryOrRegion", "Home"}, PR_HOME_ADDRESS_COUNTRY},
