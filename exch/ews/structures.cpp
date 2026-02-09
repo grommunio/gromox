@@ -3725,7 +3725,7 @@ decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 	{{"contacts:PhoneNumber", "BusinessPhone"}, PR_BUSINESS_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "BusinessPhone2"}, PR_BUSINESS2_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "Callback"}, PR_CALLBACK_TELEPHONE_NUMBER},
-	{{"contacts:PhoneNumber", "Car"}, PR_CAR_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "CarPhone"}, PR_CAR_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "CompanyMainPhone"}, PR_COMPANY_MAIN_PHONE_NUMBER},
 	{{"contacts:PhoneNumber", "HomeFax"}, PR_HOME_FAX_NUMBER},
 	{{"contacts:PhoneNumber", "HomePhone"}, PR_HOME_TELEPHONE_NUMBER},
