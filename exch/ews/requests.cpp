@@ -2516,6 +2516,78 @@ void process(mResolveNamesRequest &&request, XMLElement *response, const EWSCont
 }
 
 /**
+ * @brief      Process ExpandDL
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mExpandDLRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:ExpandDLResponse");
+
+	mExpandDLResponse data;
+	mExpandDLResponseMessage &msg = data.ResponseMessages.emplace_back();
+
+	ctx.normalize(request.Mailbox);
+	if (!request.Mailbox.EmailAddress.has_value() ||
+	    request.Mailbox.EmailAddress->empty()) {
+		msg = mExpandDLResponseMessage(EWSError::NameResolutionNoResults(E3310));
+		data.serialize(response);
+		return;
+	}
+
+	const auto &address = *request.Mailbox.EmailAddress;
+	std::vector<std::string> member_list;
+	int result = 0;
+	if (!mysql_adaptor_get_mlist_memb(address.c_str(), address.c_str(),
+	    &result, member_list) || result != 0) {
+		msg = mExpandDLResponseMessage(EWSError::NameResolutionNoResults(E3311));
+		data.serialize(response);
+		return;
+	}
+
+	auto &dlexp = msg.DLExpansion.emplace();
+	auto domain = extract_domain(ctx.auth_info().username);
+	uint32_t domId = 0;
+	ab_tree::ab::const_base_ref base;
+	if (!domain.empty()) {
+		domId = ctx.getAccountId(domain, true);
+		base  = ab_tree::AB.get(-static_cast<int32_t>(domId));
+	}
+
+	for (const auto &member : member_list) {
+		auto &mbx = dlexp.Mailbox.emplace_back();
+		mbx.EmailAddress = member;
+		mbx.RoutingType  = "SMTP";
+
+		unsigned int user_id = 0, domain_id = 0;
+		enum display_type dt = DT_MAILUSER;
+		if (base && mysql_adaptor_get_user_ids(member.c_str(),
+		    &user_id, &domain_id, &dt)) {
+			ab_tree::minid mid(ab_tree::minid::address, user_id);
+			ab_tree::ab_node node(base, mid);
+			if (node.valid()) {
+				mbx.Name = node.displayname();
+				mbx.MailboxType = node.type() == ab_tree::abnode_type::mlist ?
+				                  Enum::MailboxTypeType(Enum::PublicDL) :
+				                  Enum::MailboxTypeType(Enum::Mailbox);
+				continue;
+			}
+		}
+		mbx.Name = member;
+		mbx.MailboxType = dt == DT_DISTLIST ?
+		                  Enum::MailboxTypeType(Enum::PublicDL) :
+		                  Enum::MailboxTypeType(Enum::Mailbox);
+	}
+
+	dlexp.TotalItemsInView = dlexp.Mailbox.size();
+	dlexp.IncludesLastItemInRange = true;
+	msg.success();
+	data.serialize(response);
+}
+
+/**
  * @brief      Process SendItem
  *
  * @param      request   Request data

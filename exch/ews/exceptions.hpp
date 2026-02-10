@@ -437,6 +437,8 @@ E(3306, "failed to resolve occurrence index: could not parse recurrence blob");
 E(3307, "occurrence index out of range");
 E(3308, "failed to save modified recurrence blob");
 E(3309, "failed to update occurrence exception");
+E(3310, "ExpandDL: no email address in request");
+E(3311, "ExpandDL: distribution list not found");
 
 #undef E
 }

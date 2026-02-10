@@ -4045,6 +4045,46 @@ struct mResolveNamesResponse {
 };
 
 /**
+ * MS-OXWSDLIST / Messages.xsd
+ */
+struct mExpandDLRequest {
+	explicit mExpandDLRequest(const tinyxml2::XMLElement *);
+
+	tEmailAddressType Mailbox;
+};
+
+/**
+ * MS-OXWSDLIST / Types.xsd
+ */
+struct tDLExpansion : public tFindResponsePagingAttributes {
+	std::vector<tEmailAddressType> Mailbox;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * MS-OXWSDLIST / Messages.xsd
+ */
+struct mExpandDLResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "ExpandDLResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tDLExpansion> DLExpansion;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * MS-OXWSDLIST / Messages.xsd
+ */
+struct mExpandDLResponse {
+	std::vector<mExpandDLResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd:1121
  */
 struct mSendItemRequest {

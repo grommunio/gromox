@@ -47,6 +47,7 @@ void process(const Structures::mBaseMoveCopyFolder &, tinyxml2::XMLElement *, co
 void process(const Structures::mBaseMoveCopyItem &, tinyxml2::XMLElement *, const gromox::EWS::EWSContext &);
 EWSFUNC(mRemoveDelegateRequest);
 EWSFUNC(mUpdateDelegateRequest);
+EWSFUNC(mExpandDLRequest);
 EWSFUNC(mResolveNamesRequest);
 EWSFUNC(mSendItemRequest);
 EWSFUNC(mSetUserOofSettingsRequest);

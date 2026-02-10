@@ -2468,6 +2468,28 @@ void mResolveNamesResponse::serialize(XMLElement *xml) const
 	XMLDUMPM(ResponseMessages);
 }
 
+mExpandDLRequest::mExpandDLRequest(const XMLElement *xml) :
+	XMLINIT(Mailbox)
+{}
+
+void tDLExpansion::serialize(XMLElement *xml) const
+{
+	tFindResponsePagingAttributes::serialize(xml);
+	for (const auto &mbx : Mailbox)
+		toXMLNode(xml, "t:Mailbox", mbx);
+}
+
+void mExpandDLResponseMessage::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(DLExpansion);
+}
+
+void mExpandDLResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
 mUpdateFolderRequest::mUpdateFolderRequest(const tinyxml2::XMLElement *xml) :
 	XMLINIT(FolderChanges)
 {}

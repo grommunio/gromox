@@ -241,6 +241,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"DeleteFolder", process<Structures::mDeleteFolderRequest>},
 	{"DeleteItem", process<Structures::mDeleteItemRequest>},
 	{"EmptyFolder", process<Structures::mEmptyFolderRequest>},
+	{"ExpandDL", process<Structures::mExpandDLRequest>},
 	{"FindFolder", process<Structures::mFindFolderRequest>},
 	{"FindItem", process<Structures::mFindItemRequest>},
 	{"FindPeople", process<Structures::mFindPeopleRequest>},
