@@ -97,14 +97,14 @@ void notify_response::clear()
 }
 
 static ec_error_t cvt_new_mail(notify_response &n,
-    const DB_NOTIFY_NEW_MAIL &x, BOOL b_unicode)
+    const DB_NOTIFY &x, BOOL b_unicode)
 {
 	n.nflags       = fnevNewMail | NF_BY_MESSAGE;
 	n.folder_id    = rop_util_make_eid_ex(1, x.folder_id);
 	n.message_id   = rop_util_make_eid_ex(1, x.message_id);
 	n.msg_flags    = x.message_flags;
 	n.unicode_flag = !!b_unicode;
-	n.msg_class    = strdup(x.pmessage_class);
+	n.msg_class    = strdup(x.pmessage_class.c_str());
 	if (n.msg_class == nullptr)
 		return ecServerOOM;
 	return ecSuccess;
@@ -123,7 +123,7 @@ static ec_error_t copy_tags(notify_response &m, const PROPTAG_ARRAY &tags)
 }
 
 static ec_error_t cvt_fld_created(notify_response &n,
-    const DB_NOTIFY_FOLDER_CREATED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags    = fnevObjectCreated;
 	n.folder_id = rop_util_nfid_to_eid(x.folder_id);
@@ -132,7 +132,7 @@ static ec_error_t cvt_fld_created(notify_response &n,
 }
 
 static ec_error_t cvt_msg_created(notify_response &n,
-    const DB_NOTIFY_MESSAGE_CREATED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectCreated | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
@@ -141,7 +141,7 @@ static ec_error_t cvt_msg_created(notify_response &n,
 }
 
 static ec_error_t cvt_link_created(notify_response &n,
-    const DB_NOTIFY_LINK_CREATED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectCreated | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
@@ -151,7 +151,7 @@ static ec_error_t cvt_link_created(notify_response &n,
 }
 
 static ec_error_t cvt_fld_deleted(notify_response &n,
-    const DB_NOTIFY_FOLDER_DELETED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags    = fnevObjectDeleted;
 	n.folder_id = rop_util_nfid_to_eid(x.folder_id);
@@ -160,7 +160,7 @@ static ec_error_t cvt_fld_deleted(notify_response &n,
 }
 
 static ec_error_t cvt_msg_deleted(notify_response &n,
-    const DB_NOTIFY_MESSAGE_DELETED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectDeleted | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
@@ -169,7 +169,7 @@ static ec_error_t cvt_msg_deleted(notify_response &n,
 }
 
 static ec_error_t cvt_link_deleted(notify_response &n,
-    const DB_NOTIFY_LINK_DELETED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectDeleted | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
@@ -179,7 +179,7 @@ static ec_error_t cvt_link_deleted(notify_response &n,
 }
 
 static ec_error_t cvt_fld_modified(notify_response &n,
-    const DB_NOTIFY_FOLDER_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags    = fnevObjectModified;
 	n.folder_id = rop_util_nfid_to_eid(x.folder_id);
@@ -197,7 +197,7 @@ static ec_error_t cvt_fld_modified(notify_response &n,
 }
 
 static ec_error_t cvt_msg_modified(notify_response &n,
-    const DB_NOTIFY_MESSAGE_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectModified | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
@@ -206,7 +206,7 @@ static ec_error_t cvt_msg_modified(notify_response &n,
 }
 
 static ec_error_t cvt_fld_mvcp(notify_response &n, uint8_t nflags,
-    const DB_NOTIFY_FOLDER_MVCP &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags        = nflags;
 	n.folder_id     = rop_util_nfid_to_eid(x.folder_id);
@@ -217,7 +217,7 @@ static ec_error_t cvt_fld_mvcp(notify_response &n, uint8_t nflags,
 }
 
 static ec_error_t cvt_msg_mvcp(notify_response &n, uint8_t nflags,
-    const DB_NOTIFY_MESSAGE_MVCP &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags         = nflags | NF_BY_MESSAGE;
 	n.folder_id      = rop_util_make_eid_ex(1, x.folder_id);
@@ -228,7 +228,7 @@ static ec_error_t cvt_msg_mvcp(notify_response &n, uint8_t nflags,
 }
 
 static ec_error_t cvt_fld_search_completed(notify_response &n,
-    const DB_NOTIFY_SEARCH_COMPLETED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags    = fnevSearchComplete;
 	n.folder_id = rop_util_make_eid_ex(1, x.folder_id);
@@ -257,7 +257,7 @@ static ec_error_t cvt_srchtbl_changed(notify_response &n)
 }
 
 static ec_error_t cvt_hierrow_added(notify_response &n,
-    const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags          = fnevTableModified;
 	n.table_event     = TABLE_EVENT_ROW_ADDED;
@@ -268,7 +268,7 @@ static ec_error_t cvt_hierrow_added(notify_response &n,
 }
 
 static ec_error_t cvt_ctrow_added(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags          = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_ADDED;
@@ -284,7 +284,7 @@ static ec_error_t cvt_ctrow_added(notify_response &n,
 }
 
 static ec_error_t cvt_srchrow_added(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags          = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_ADDED;
@@ -300,7 +300,7 @@ static ec_error_t cvt_srchrow_added(notify_response &n,
 }
 
 static ec_error_t cvt_hierrow_deleted(notify_response &n,
-    const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags        = fnevTableModified;
 	n.table_event   = TABLE_EVENT_ROW_DELETED;
@@ -309,7 +309,7 @@ static ec_error_t cvt_hierrow_deleted(notify_response &n,
 }
 
 static ec_error_t cvt_ctrow_deleted(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags         = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event    = TABLE_EVENT_ROW_DELETED;
@@ -320,7 +320,7 @@ static ec_error_t cvt_ctrow_deleted(notify_response &n,
 }
 
 static ec_error_t cvt_srchrow_deleted(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags         = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event    = TABLE_EVENT_ROW_DELETED;
@@ -331,7 +331,7 @@ static ec_error_t cvt_srchrow_deleted(notify_response &n,
 }
 
 static ec_error_t cvt_hierrow_modified(notify_response &n,
-    const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags          = fnevTableModified;
 	n.table_event     = TABLE_EVENT_ROW_MODIFIED;
@@ -342,7 +342,7 @@ static ec_error_t cvt_hierrow_modified(notify_response &n,
 }
 
 static ec_error_t cvt_ctrow_modified(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags          = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_MODIFIED;
@@ -358,7 +358,7 @@ static ec_error_t cvt_ctrow_modified(notify_response &n,
 }
 
 static ec_error_t cvt_srchrow_modified(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags          = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_MODIFIED;
@@ -380,37 +380,37 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 	switch (dbn.type) {
 	using enum db_notify_type;
 	case new_mail:
-		return cvt_new_mail(n, std::any_cast<const DB_NOTIFY_NEW_MAIL &>(dbn.pdata), b_cache);
+		return cvt_new_mail(n, dbn, b_cache);
 	case folder_created:
-		return cvt_fld_created(n, std::any_cast<const DB_NOTIFY_FOLDER_CREATED &>(dbn.pdata));
+		return cvt_fld_created(n, dbn);
 	case message_created:
-		return cvt_msg_created(n, std::any_cast<const DB_NOTIFY_MESSAGE_CREATED &>(dbn.pdata));
+		return cvt_msg_created(n, dbn);
 	case link_created:
-		return cvt_link_created(n, std::any_cast<const DB_NOTIFY_LINK_CREATED &>(dbn.pdata));
+		return cvt_link_created(n, dbn);
 	case folder_deleted:
-		return cvt_fld_deleted(n, std::any_cast<const DB_NOTIFY_FOLDER_DELETED &>(dbn.pdata));
+		return cvt_fld_deleted(n, dbn);
 	case message_deleted:
-		return cvt_msg_deleted(n, std::any_cast<const DB_NOTIFY_MESSAGE_DELETED &>(dbn.pdata));
+		return cvt_msg_deleted(n, dbn);
 	case link_deleted:
-		return cvt_link_deleted(n, std::any_cast<const DB_NOTIFY_LINK_DELETED &>(dbn.pdata));
+		return cvt_link_deleted(n, dbn);
 	case folder_modified:
-		return cvt_fld_modified(n, std::any_cast<const DB_NOTIFY_FOLDER_MODIFIED &>(dbn.pdata));
+		return cvt_fld_modified(n, dbn);
 	case message_modified:
-		return cvt_msg_modified(n, std::any_cast<const DB_NOTIFY_MESSAGE_MODIFIED &>(dbn.pdata));
+		return cvt_msg_modified(n, dbn);
 	case folder_moved:
 	case folder_copied: {
 		auto nf = dbn.type == folder_moved ?
 		          fnevObjectMoved : fnevObjectCopied;
-		return cvt_fld_mvcp(n, nf, std::any_cast<const DB_NOTIFY_FOLDER_MVCP &>(dbn.pdata));
+		return cvt_fld_mvcp(n, nf, dbn);
 	}
 	case message_moved:
 	case message_copied: {
 		auto nf = dbn.type == message_moved ?
 		          fnevObjectMoved : fnevObjectCopied;
-		return cvt_msg_mvcp(n, nf, std::any_cast<const DB_NOTIFY_MESSAGE_MVCP &>(dbn.pdata));
+		return cvt_msg_mvcp(n, nf, dbn);
 	}
 	case search_completed:
-		return cvt_fld_search_completed(n, std::any_cast<const DB_NOTIFY_SEARCH_COMPLETED &>(dbn.pdata));
+		return cvt_fld_search_completed(n, dbn);
 	case hiertbl_changed:
 		return cvt_hiertbl_changed(n);
 	case cttbl_changed:
@@ -418,23 +418,23 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 	case srchtbl_changed:
 		return cvt_srchtbl_changed(n);
 	case hiertbl_row_added:
-		return cvt_hierrow_added(n, std::any_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED &>(dbn.pdata));
+		return cvt_hierrow_added(n, dbn);
 	case cttbl_row_added:
-		return cvt_ctrow_added(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED &>(dbn.pdata));
+		return cvt_ctrow_added(n, dbn);
 	case srchtbl_row_added:
-		return cvt_srchrow_added(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED &>(dbn.pdata));
+		return cvt_srchrow_added(n, dbn);
 	case hiertbl_row_deleted:
-		return cvt_hierrow_deleted(n, std::any_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED &>(dbn.pdata));
+		return cvt_hierrow_deleted(n, dbn);
 	case cttbl_row_deleted:
-		return cvt_ctrow_deleted(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED &>(dbn.pdata));
+		return cvt_ctrow_deleted(n, dbn);
 	case srchtbl_row_deleted:
-		return cvt_srchrow_deleted(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED &>(dbn.pdata));
+		return cvt_srchrow_deleted(n, dbn);
 	case hiertbl_row_modified:
-		return cvt_hierrow_modified(n, std::any_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED &>(dbn.pdata));
+		return cvt_hierrow_modified(n, dbn);
 	case cttbl_row_modified:
-		return cvt_ctrow_modified(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED &>(dbn.pdata));
+		return cvt_ctrow_modified(n, dbn);
 	case srchtbl_row_modified:
-		return cvt_srchrow_modified(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED &>(dbn.pdata));
+		return cvt_srchrow_modified(n, dbn);
 	default:
 		return ecInvalidParam;
 	}

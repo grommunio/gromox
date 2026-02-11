@@ -952,7 +952,7 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 		return;
 	datagram.dir = deconst(dir);
 	datagram.db_notify.type = db_notify_type::search_completed;
-	auto psearch_completed = &datagram.db_notify.pdata.emplace<DB_NOTIFY_SEARCH_COMPLETED>();
+	auto psearch_completed = &datagram.db_notify;
 	psearch_completed->folder_id = folder_id;
 	notifq.emplace_back(std::move(datagram), std::move(parrays));
 } catch (const std::bad_alloc &) {
@@ -1638,7 +1638,7 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	BOOL b_read = false;
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
-	DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *padded_row = nullptr, *padded_row1 = nullptr;
+	DB_NOTIFY *padded_row = nullptr, *padded_row1 = nullptr;
 	
 	uint8_t *pread_byte = nullptr;
 	void *pvalue0;
@@ -1681,10 +1681,10 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			continue;
 		}
 		if (NULL == padded_row) {
-			padded_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
+			padded_row = &datagram.db_notify;
 			padded_row->row_folder_id = folder_id;
 			padded_row->row_message_id = message_id;
-			padded_row1 = &datagram1.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
+			padded_row1 = &datagram1.db_notify;
 			padded_row1->row_folder_id = folder_id;
 			padded_row1->row_instance = 0;
 			if (!pdb->begin_optim())
@@ -2259,11 +2259,11 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 		return;
 	datagram.dir = deconst(dir);
 	datagram.db_notify.type = db_notify_type::new_mail;
-	auto pnew_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_NEW_MAIL>();
+	auto pnew_mail = &datagram.db_notify;
 	pnew_mail->folder_id = folder_id;
 	pnew_mail->message_id = message_id;
 	pnew_mail->message_flags = message_flags;
-	pnew_mail->pmessage_class = pstr_class;
+	pnew_mail->pmessage_class = znul(pstr_class);
 	notifq.emplace_back(std::move(datagram), std::move(parrays));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
@@ -2281,7 +2281,7 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::new_mail;
-		auto pnew_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_NEW_MAIL>();
+		auto pnew_mail = &datagram.db_notify;
 		pnew_mail->folder_id = folder_id;
 		pnew_mail->message_id = message_id;
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
@@ -2312,7 +2312,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_created;
-		auto pcreated_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_MESSAGE_CREATED>();
+		auto pcreated_mail = &datagram.db_notify;
 		pcreated_mail->folder_id = folder_id;
 		pcreated_mail->message_id = message_id;
 		pcreated_mail->proptags.count = 0;
@@ -2341,7 +2341,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_created;
-		auto plinked_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_LINK_CREATED>();
+		auto plinked_mail = &datagram.db_notify;
 		plinked_mail->folder_id = anchor_fld;
 		plinked_mail->message_id = message_id;
 		plinked_mail->parent_id = srch_fld;
@@ -2366,9 +2366,8 @@ static void dbeng_notify_hiertbl_add_row(db_conn &db, uint64_t parent_id,
 	xstmt pstmt;
 	char sql_string[256];
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
+	DB_NOTIFY *padded_row = nullptr;
 	
-	padded_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2166: failed to start transaction in hiertbl_add_row");
@@ -2394,7 +2393,7 @@ static void dbeng_notify_hiertbl_add_row(db_conn &db, uint64_t parent_id,
 			continue;
 		if (NULL == padded_row) {
 			datagram.db_notify.type = db_notify_type::hiertbl_row_added;
-			padded_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
+			padded_row = &datagram.db_notify;
 		}
 		datagram.id_array[0] = ptable->table_id; // reserved earlier
 		if ((ptable->table_flags & TABLE_FLAG_DEPTH) &&
@@ -2518,7 +2517,7 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_created;
-		auto pcreated_folder = &datagram.db_notify.pdata.emplace<DB_NOTIFY_FOLDER_CREATED>();
+		auto pcreated_folder = &datagram.db_notify;
 		pcreated_folder->folder_id = folder_id;
 		pcreated_folder->parent_id = parent_id;
 		pcreated_folder->proptags.count = 0;
@@ -2594,10 +2593,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn &db, uint64_t folder_id,
 	uint64_t parent_id;
 	DB_NOTIFY_DATAGRAM dg_del = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_DATAGRAM dg_mod = dg_del;
-	DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *pdeleted_row;
-	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
+	DB_NOTIFY *pdeleted_row = nullptr, *pmodified_row = nullptr;
 
-	pdeleted_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2162: failed to start transaction in cttbl_delete_row");
@@ -2631,8 +2628,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn &db, uint64_t folder_id,
 			continue;
 		}
 		if (NULL == pdeleted_row) {
-			pdeleted_row  = &dg_del.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
-			pmodified_row = &dg_mod.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
+			pdeleted_row  = &dg_del.db_notify;
+			pmodified_row = &dg_mod.db_notify;
 			pmodified_row->row_folder_id = folder_id;
 			pmodified_row->row_instance = 0;
 			pmodified_row->after_folder_id = folder_id;
@@ -3048,7 +3045,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_deleted;
-		auto pdeleted_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_MESSAGE_DELETED>();
+		auto pdeleted_mail = &datagram.db_notify;
 		pdeleted_mail->folder_id = folder_id;
 		pdeleted_mail->message_id = message_id;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
@@ -3077,7 +3074,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_deleted;
-		auto punlinked_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_LINK_DELETED>();
+		auto punlinked_mail = &datagram.db_notify;
 		punlinked_mail->folder_id = folder_id;
 		punlinked_mail->message_id = message_id;
 		punlinked_mail->parent_id = parent_id;
@@ -3098,9 +3095,8 @@ static void dbeng_notify_hiertbl_delete_row(db_conn &db, uint64_t parent_id,
 	BOOL b_included;
 	char sql_string[256];
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
+	DB_NOTIFY *pdeleted_row = nullptr;
 	
-	pdeleted_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2168: failed to start transaction in hiertbl_delete_row");
@@ -3149,7 +3145,7 @@ static void dbeng_notify_hiertbl_delete_row(db_conn &db, uint64_t parent_id,
 		}
 		if (NULL == pdeleted_row) {
 			datagram.db_notify.type = db_notify_type::hiertbl_row_deleted;
-			pdeleted_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
+			pdeleted_row = &datagram.db_notify;
 			pdeleted_row->row_folder_id = folder_id;
 		}
 		datagram.id_array[0] = ptable->table_id; // reserved earlier
@@ -3172,7 +3168,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_deleted;
-		auto pdeleted_folder = &datagram.db_notify.pdata.emplace<DB_NOTIFY_FOLDER_DELETED>();
+		auto pdeleted_folder = &datagram.db_notify;
 		pdeleted_folder->parent_id = parent_id;
 		pdeleted_folder->folder_id = folder_id;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
@@ -3203,9 +3199,8 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 	uint64_t row_folder_id;
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
-	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row;
+	DB_NOTIFY *pmodified_row = nullptr;
 	
-	pmodified_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2164: failed to start transaction in cttbl_modify_row");
@@ -3230,7 +3225,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 			continue;
 		pstmt.finalize();
 		if (NULL == pmodified_row) {
-			pmodified_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
+			pmodified_row = &datagram.db_notify;
 			if (!common_util_get_message_parent_folder(pdb->psqlite,
 			    message_id, &row_folder_id))
 				return;
@@ -3763,7 +3758,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_modified;
-		auto pmodified_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_MESSAGE_MODIFIED>();
+		auto pmodified_mail = &datagram.db_notify;
 		pmodified_mail->folder_id = folder_id;
 		pmodified_mail->message_id = message_id;
 		pmodified_mail->proptags.count = 0;
@@ -3787,13 +3782,8 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	DB_NOTIFY_DATAGRAM datagram2 = datagram;
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *pmodified_row;
+	DB_NOTIFY *padded_row = nullptr, *pdeleted_row = nullptr, *pmodified_row = nullptr;
 	
-	padded_row = NULL;
-	pdeleted_row = NULL;
-	pmodified_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2170: failed to start transaction in hiertbl_modify_row");
@@ -3827,7 +3817,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
 			    db, folder_id, ptable->prestriction)) {
 				if (NULL == padded_row) {
 					datagram2.db_notify.type = db_notify_type::hiertbl_row_added;
-					padded_row = &datagram2.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
+					padded_row = &datagram2.db_notify;
 				}
 				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (folder_id)"
 				        " VALUES (%llu)", ptable->table_id, LLU{folder_id});
@@ -3891,7 +3881,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
 			}
 			if (NULL == pdeleted_row) {
 				datagram1.db_notify.type = db_notify_type::hiertbl_row_deleted;
-				pdeleted_row = &datagram1.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
+				pdeleted_row = &datagram1.db_notify;
 				pdeleted_row->row_folder_id = folder_id;
 			}
 			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
@@ -3906,7 +3896,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
 		}
 		if (NULL == pmodified_row) {
 			datagram.db_notify.type = db_notify_type::hiertbl_row_modified;
-			pmodified_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
+			pmodified_row = &datagram.db_notify;
 			pmodified_row->row_folder_id = folder_id;
 		}
 		if (1 == idx) {
@@ -3940,7 +3930,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_modified;
-		auto pmodified_folder = &datagram.db_notify.pdata.emplace<DB_NOTIFY_FOLDER_MODIFIED>();
+		auto pmodified_folder = &datagram.db_notify;
 		pmodified_folder->folder_id = folder_id;
 		pmodified_folder->parent_id = parent_id;
 		pmodified_folder->proptags.count = 0;
@@ -3980,7 +3970,7 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::message_copied :
 		                          db_notify_type::message_moved;
-		auto pmvcp_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_MESSAGE_MVCP>();
+		auto pmvcp_mail = &datagram.db_notify;
 		pmvcp_mail->folder_id = folder_id;
 		pmvcp_mail->message_id = message_id;
 		pmvcp_mail->old_folder_id = old_fid;
@@ -4029,7 +4019,7 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::folder_copied :
 		                          db_notify_type::folder_moved;
-		auto pmvcp_folder = &datagram.db_notify.pdata.emplace<DB_NOTIFY_FOLDER_MVCP>();
+		auto pmvcp_folder = &datagram.db_notify;
 		pmvcp_folder->folder_id = folder_id;
 		pmvcp_folder->parent_id = parent_id;
 		pmvcp_folder->old_folder_id = old_fid;
@@ -4061,7 +4051,6 @@ void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase,
 	datagram.db_notify.type = !ptable->b_search ?
 		db_notify_type::cttbl_changed :
 		db_notify_type::srchtbl_changed;
-	datagram.db_notify.pdata = NULL;
 	datagram.b_table = TRUE;
 	datagram.id_array.push_back(table_id);
 	notifq.emplace_back(datagram, table_to_idarray(*ptable));
