@@ -181,6 +181,18 @@ std::optional<Enum::ResponseTypeType> response_type_from_class(const std::option
 	return std::nullopt;
 }
 
+Enum::LegacyFreeBusyType legacy_free_busy_from_status(uint32_t status)
+{
+	switch (status) {
+	case olFree:             return Enum::Free;
+	case olTentative:        return Enum::Tentative;
+	case olBusy:             return Enum::Busy;
+	case olOutOfOffice:      return Enum::OOF;
+	case olWorkingElsewhere: return Enum::WorkingElsewhere;
+	default:                 return Enum::NoData;
+	}
+}
+
 /**
  * @brief      Convert STL vector to gromox array
  *
@@ -1668,15 +1680,7 @@ void tCalendarItem::update(const sShape& shape)
 
 	if ((prop = shape.get(NtBusyStatus))) {
 		const uint32_t* busyStatus = static_cast<const uint32_t*>(prop->pvalue);
-		Enum::LegacyFreeBusyType freeBusy = Enum::NoData;
-		switch (*busyStatus) {
-			case olFree:             freeBusy = Enum::Free; break;
-			case olTentative:        freeBusy = Enum::Tentative; break;
-			case olBusy:             freeBusy = Enum::Busy; break;
-			case olOutOfOffice:      freeBusy = Enum::OOF; break;
-			case olWorkingElsewhere: freeBusy = Enum::WorkingElsewhere; break;
-		}
-		LegacyFreeBusyStatus.emplace(freeBusy);
+		LegacyFreeBusyStatus.emplace(legacy_free_busy_from_status(*busyStatus));
 	}
 
 	if ((prop = shape.get(NtCommonEnd)))
