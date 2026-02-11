@@ -123,6 +123,7 @@ struct rxparam {
 	rxparam(message_node &&in);
 	NOMOVE(rxparam);
 	ec_error_t run();
+	ec_error_t run_rules();
 	ec_error_t is_oof(bool *out) const;
 	ec_error_t load_std_rules(bool oof, std::vector<rule_node> &out) const;
 	ec_error_t load_ext_rules(bool oof, std::vector<rule_node> &out) const;
@@ -131,7 +132,8 @@ struct rxparam {
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
 	message_content *ctnt = nullptr;
-	bool del = false, exit = false, do_autoproc = true;
+	unsigned int flags = ~0U;
+	bool del = false, exit = false;
 };
 
 }
@@ -1294,7 +1296,7 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 rxparam::rxparam(message_node &&x) : cur(std::move(x))
 {}
 
-ec_error_t rxparam::run()
+ec_error_t rxparam::run_rules()
 {
 	bool oof = false;
 	auto err = is_oof(&oof);
@@ -1332,12 +1334,21 @@ ec_error_t rxparam::run()
 		if (!exmdb_client->delete_messages(cur.dirc(), CP_ACP, nullptr,
 		    cur.fid, &ids, true/*hard*/, &partial))
 			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
-		return ecSuccess;
+	}
+	return ecSuccess;
+}
+
+ec_error_t rxparam::run()
+{
+	if (flags & DELIVERY_DO_RULES_CL) {
+		auto err = run_rules();
+		if (err != ecSuccess)
+			return err;
 	}
 
-	if (do_autoproc) {
+	if (flags & DELIVERY_DO_MRAUTOPROC) {
 		mr_policy res_policy;
-		err = mr_get_policy(ev_to, res_policy);
+		auto err = mr_get_policy(ev_to, res_policy);
 		if (err != ecSuccess)
 			return err;
 		err = mr_start(*this, res_policy);
@@ -1345,7 +1356,8 @@ ec_error_t rxparam::run()
 			return err;
 	}
 
-	notify();
+	if (flags & DELIVERY_DO_NOTIF_CL)
+		notify();
 	return ecSuccess;
 }
 
@@ -1374,7 +1386,7 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 	rxparam p({dir, folder_id, msg_id});
 	p.ev_from = ev_from;
 	p.ev_to   = ev_to;
-	p.do_autoproc = flags & DELIVERY_DO_MRAUTOPROC;
+	p.flags   = flags;
 	return std::move(p).run();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
