@@ -183,6 +183,7 @@ static ec_error_t cvt_fld_modified(notify_response &n,
 {
 	n.nflags    = fnevObjectModified;
 	n.folder_id = rop_util_nfid_to_eid(x.folder_id);
+#if 0
 	if (x.ptotal != nullptr) {
 		n.nflags |= NF_HAS_TOTAL;
 		n.total_count = *x.ptotal;
@@ -191,6 +192,7 @@ static ec_error_t cvt_fld_modified(notify_response &n,
 		n.nflags |= NF_HAS_UNREAD;
 		n.unread_count = *x.punread;
 	}
+#endif
 	return copy_tags(n, x.proptags);
 }
 

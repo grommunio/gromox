@@ -3943,8 +3943,6 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 		auto pmodified_folder = &datagram.db_notify.pdata.emplace<DB_NOTIFY_FOLDER_MODIFIED>();
 		pmodified_folder->folder_id = folder_id;
 		pmodified_folder->parent_id = parent_id;
-		pmodified_folder->ptotal = NULL;
-		pmodified_folder->punread = NULL;
 		pmodified_folder->proptags.count = 0;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}

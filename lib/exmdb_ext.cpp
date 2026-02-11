@@ -3897,24 +3897,6 @@ pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	case db_notify_type::folder_modified: {
 		auto n = &pnotify->db_notify.pdata.emplace<DB_NOTIFY_FOLDER_MODIFIED>();
 		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint8(&tmp_byte));
-		if (0 == tmp_byte) {
-			n->ptotal = nullptr;
-		} else {
-			n->ptotal = cu_alloc<uint32_t>();
-			if (n->ptotal == nullptr)
-				return pack_result::alloc;	
-			TRY(ext_pull.g_uint32(n->ptotal));
-		}
-		TRY(ext_pull.g_uint8(&tmp_byte));
-		if (0 == tmp_byte) {
-			n->punread = nullptr;
-		} else {
-			n->punread = cu_alloc<uint32_t>();
-			if (n->punread == nullptr)
-				return pack_result::alloc;	
-			TRY(ext_pull.g_uint32(n->punread));
-		}
 		return ext_pull.g_proptag_a(&n->proptags);
 	}
 	case db_notify_type::message_modified: {
@@ -4059,18 +4041,6 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 	case db_notify_type::folder_modified: {
 		auto n = std::any_cast<const DB_NOTIFY_FOLDER_MODIFIED>(&pnotify->db_notify.pdata);
 		TRY(ext_push.p_uint64(n->folder_id));
-		if (n->ptotal != nullptr) {
-			TRY(ext_push.p_uint8(1));
-			TRY(ext_push.p_uint32(*n->ptotal));
-		} else {
-			TRY(ext_push.p_uint8(0));
-		}
-		if (n->punread != nullptr) {
-			TRY(ext_push.p_uint8(1));
-			TRY(ext_push.p_uint32(*n->punread));
-		} else {
-			TRY(ext_push.p_uint8(0));
-		}
 		TRY(ext_push.p_proptag_a(n->proptags));
 		break;
 	}
