@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 /**
  * @brief      Implementation of EWS structure (de-)serialization
@@ -1326,6 +1326,83 @@ void tMeetingMessage::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(RecurrenceId);
 	XMLDUMPT(DateTimeStamp);
 	XMLDUMPT(IsOrganizer);
+}
+
+tChangeHighlights::tChangeHighlights(const tinyxml2::XMLElement* xml) :
+	XMLINIT(HasLocationChanged),
+	XMLINIT(Location),
+	XMLINIT(HasStartTimeChanged),
+	XMLINIT(Start),
+	XMLINIT(HasEndTimeChanged),
+	XMLINIT(End)
+{}
+
+void tChangeHighlights::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(HasLocationChanged);
+	XMLDUMPT(Location);
+	XMLDUMPT(HasStartTimeChanged);
+	XMLDUMPT(Start);
+	XMLDUMPT(HasEndTimeChanged);
+	XMLDUMPT(End);
+}
+
+tMeetingRequestMessage::tMeetingRequestMessage(const tinyxml2::XMLElement* xml) :
+	tMeetingMessage(xml),
+	XMLINIT(MeetingRequestType),
+	XMLINIT(IntendedFreeBusyStatus),
+	XMLINIT(Start),
+	XMLINIT(End),
+	XMLINIT(OriginalStart),
+	XMLINIT(IsAllDayEvent),
+	XMLINIT(LegacyFreeBusyStatus),
+	XMLINIT(Location),
+	XMLINIT(IsMeeting),
+	XMLINIT(IsCancelled),
+	XMLINIT(IsRecurring),
+	XMLINIT(MeetingRequestWasSent),
+	XMLINIT(CalendarItemType),
+	XMLINIT(MyResponseType),
+	XMLINIT(Organizer),
+	XMLINIT(RequiredAttendees),
+	XMLINIT(OptionalAttendees),
+	XMLINIT(Resources),
+	XMLINIT(AppointmentReplyTime),
+	XMLINIT(AppointmentSequenceNumber),
+	XMLINIT(AppointmentState),
+	XMLINIT(Recurrence),
+	XMLINIT(AllowNewTimeProposal),
+	XMLINIT(ChangeHighlights)
+{}
+
+void tMeetingRequestMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	tMeetingMessage::serialize(xml);
+	XMLDUMPT(MeetingRequestType);
+	XMLDUMPT(IntendedFreeBusyStatus);
+	XMLDUMPT(Start);
+	XMLDUMPT(End);
+	XMLDUMPT(IsAllDayEvent);
+	XMLDUMPT(LegacyFreeBusyStatus);
+	XMLDUMPT(Location);
+	XMLDUMPT(IsMeeting);
+	XMLDUMPT(IsCancelled);
+	XMLDUMPT(IsRecurring);
+	XMLDUMPT(MeetingRequestWasSent);
+	XMLDUMPT(CalendarItemType);
+	XMLDUMPT(MyResponseType);
+	XMLDUMPT(Organizer);
+	XMLDUMPT(RequiredAttendees);
+	XMLDUMPT(OptionalAttendees);
+	XMLDUMPT(Resources);
+	XMLDUMPT(AppointmentReplyTime);
+	XMLDUMPT(AppointmentSequenceNumber);
+	XMLDUMPT(AppointmentState);
+	XMLDUMPT(Recurrence);
+	XMLDUMPT(ModifiedOccurrences);
+	XMLDUMPT(DeletedOccurrences);
+	XMLDUMPT(AllowNewTimeProposal);
+	XMLDUMPT(ChangeHighlights);
 }
 
 tAcceptItem::tAcceptItem(const tinyxml2::XMLElement *xml) :
