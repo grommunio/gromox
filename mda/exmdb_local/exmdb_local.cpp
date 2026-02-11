@@ -346,7 +346,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	pmsg->proplist.erase(PidTagChangeNumber);
 	uint64_t folder_id, message_id = 0;
 	uint32_t r32 = 0;
-	unsigned int flags = DELIVERY_DO_RULES | DELIVERY_DO_NOTIF;
+	unsigned int flags = DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV;
 	if (g_lda_twostep)
 		flags = 0;
 	if (deliver_to_junk)

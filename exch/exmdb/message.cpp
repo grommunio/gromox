@@ -3664,7 +3664,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		partial ? " (partial only)" : "");
 
 	seen.msg.emplace_back(fid_val, message_id);
-	if (dlflags & DELIVERY_DO_RULES) {
+	if (dlflags & DELIVERY_DO_RULES_SV) {
 		auto ec = message_rule_new_message({from_address, account.c_str(), cpid, b_oof,
 		          *pdb, pdb->psqlite, fid_val, message_id, std::move(digest)}, seen);
 		if (ec != ecSuccess)
@@ -3683,7 +3683,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		 */
 		pdb->notify_message_creation(mn.folder_id,
 			mn.message_id, *dbase, notifq);
-		if (message_id == mn.message_id && dlflags & DELIVERY_DO_NOTIF)
+		if (message_id == mn.message_id && dlflags & DELIVERY_DO_NOTIF_SV)
 			pdb->notify_new_mail(mn.folder_id,
 				mn.message_id, *dbase, notifq);
 	}

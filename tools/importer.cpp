@@ -450,7 +450,7 @@ static int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
 	uint64_t folder_id = 0, msg_id = 0;
 	uint32_t r32 = 0;
 	if (mode & DELIVERY_TWOSTEP)
-		mode &= ~(DELIVERY_DO_RULES | DELIVERY_DO_NOTIF);
+		mode &= ~(DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV);
 	uint64_t change_num = 0;
 	if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
 		fprintf(stderr, "exm: allocate_cn(msg)[delivery] RPC failed\n");
@@ -575,12 +575,12 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 	}
 	unsigned int mode = 0;
 	if (!g_skip_rules)
-		mode |= DELIVERY_DO_RULES;
+		mode |= DELIVERY_DO_RULES_SV;
 	if (!g_skip_notif)
-		mode |= DELIVERY_DO_NOTIF;
+		mode |= DELIVERY_DO_NOTIF_SV;
 	if (g_twostep) {
 		mode |= DELIVERY_TWOSTEP;
-		mode &= ~(DELIVERY_DO_RULES | DELIVERY_DO_NOTIF);
+		mode &= ~(DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV);
 	}
 	if (g_mrautoproc)
 		mode |= DELIVERY_MRAUTOPROC;

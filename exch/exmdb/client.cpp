@@ -38,7 +38,7 @@ BOOL exmdb_client_relay_delivery(const char *dir, const char *from_address,
 		uint64_t folder_id = 0, msg_id = 0;
 		auto b_result = exmdb_server::deliver_message(dir, from_address,
 		                account, cpid,
-		                DELIVERY_DO_RULES | DELIVERY_DO_NOTIF,
+		                DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV,
 		                pmsg, pdigest, &folder_id, &msg_id, presult);
 		exmdb_server::set_dir(original_dir);
 		return b_result;
