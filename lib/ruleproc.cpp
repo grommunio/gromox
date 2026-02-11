@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -998,12 +998,18 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	for (auto t : rmprops)
 		prop.erase(t);
 	static constexpr uint32_t v_busy = olBusy, stateflags = asfMeeting | asfReceived;
+	static constexpr uint8_t v_false = false;
 	ec_error_t err;
 	if ((err = prop.set(PROP_TAG(PT_LONG, propids[l_response_status]), &accept_type)) != ecSuccess ||
 	    (err = prop.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_busy)) != ecSuccess ||
 	    (err = prop.set(PROP_TAG(PT_LONG, propids[l_appt_state_flags]), &stateflags)) != ecSuccess ||
 	    (err = prop.set(PR_MESSAGE_CLASS, "IPM.Appointment")) != ecSuccess)
 		return err;
+	if (!prop.has(propids[l_recurring])) {
+		err = prop.set(PROP_TAG(PT_LONG, propids[l_recurring]), &v_false);
+		if (err != ecSuccess)
+			return err;
+	}
 	uint64_t cal_mid = 0, cal_cn = 0;
 	if (!exmdb_client->write_message(par.cur.dir.c_str(), CP_ACP,
 	    cal_fid, msg.get(), std::string(), &cal_mid, &cal_cn, &err))
