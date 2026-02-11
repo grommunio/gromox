@@ -19,6 +19,7 @@
 #include <gromox/fileio.h>
 #include <gromox/freebusy.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/process.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
@@ -492,6 +493,10 @@ static int single_user_wrap(int argc, char **argv)
 	return ret;
 }
 
+static constexpr generic_module g_dfl_svc_plugins[] = {
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
+};
+
 int main(int argc, char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -510,7 +515,7 @@ int main(int argc, char **argv)
 	argv = result.uarg;
 	if (argc == 0)
 		return global::help();
-	service_init({nullptr, {}, 2});
+	service_init({nullptr, g_dfl_svc_plugins, 2});
 	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
