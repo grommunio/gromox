@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 /**
  * @brief      Implementation of EWS structure methods
@@ -3273,6 +3273,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"item:Sensitivity", PR_SENSITIVITY},
 	{"item:Size", PR_MESSAGE_SIZE},
 	{"item:Subject", PR_SUBJECT},
+	{"meeting:HasBeenProcessed", PR_PROCESSED},
 	{"message:ConversationIndex", PR_CONVERSATION_INDEX},
 	{"message:ConversationTopic", PR_CONVERSATION_TOPIC},
 	{"message:From", PR_SENT_REPRESENTING_ADDRTYPE},
@@ -3292,7 +3293,6 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:Sender", PR_SENDER_ADDRTYPE},
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
 	{"message:Sender", PR_SENDER_NAME},
-	{"meeting:HasBeenProcessed", PR_PROCESSED},
 };
 
 decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
@@ -3328,6 +3328,8 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"item:ReminderDueBy", {NtReminderTime, PT_SYSTIME}},
 	{"item:ReminderIsSet", {NtReminderSet, PT_BOOLEAN}},
 	{"item:ReminderMinutesBeforeStart", {NtReminderDelta, PT_LONG}},
+	{"meeting:IsOutOfDate", {NtMeetingType, PT_LONG}},
+	{"meeting:ResponseType", {NtResponseStatus, PT_LONG}},
 	{"task:ActualWork", {NtTaskActualEffort, PT_LONG}},
 	// {"task:AssignedTime", {}},
 	{"task:BillingInformation", {NtBilling, PT_UNICODE}},
@@ -3350,8 +3352,6 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"task:Status", {NtTaskStatus, PT_LONG}},
 	// {"task:StatusDescription", {}},
 	{"task:TotalWork", {NtTaskEstimatedEffort, PT_LONG}},
-	{"meeting:IsOutOfDate", {NtMeetingType, PT_LONG}},
-	{"meeting:ResponseType", {NtResponseStatus, PT_LONG}},
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
@@ -3904,10 +3904,9 @@ void tMeetingMessage::update(const sShape& shape)
 	if ((prop = shape.get(NtResponseStatus))) {
 		const uint32_t* responseStatus = static_cast<const uint32_t*>(prop->pvalue);
 		ResponseType.emplace(response_type_from_status(*responseStatus));
-	} else {
-		if (auto inferred = response_type_from_class(ItemClass))
-			ResponseType.emplace(*inferred);
 	}
+	else if (auto inferred = response_type_from_class(ItemClass))
+		ResponseType.emplace(*inferred);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
