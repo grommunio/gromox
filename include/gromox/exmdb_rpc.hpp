@@ -1005,6 +1005,8 @@ enum delivery_flags {
 	DELIVERY_DO_NOTIF_SV = 0x2U,
 	DELIVERY_DO_MRAUTOPROC = 0x4U,
 	DELIVERY_FORCE_JUNK = 0x8U,
+	DELIVERY_DO_RULES_CL = 0x10U,
+	DELIVERY_DO_NOTIF_CL = 0x20U,
 };
 
 struct exreq_deliver_message final : public exreq {

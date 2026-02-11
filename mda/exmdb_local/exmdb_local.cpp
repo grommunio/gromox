@@ -348,7 +348,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	uint32_t r32 = 0;
 	unsigned int flags = DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV;
 	if (g_lda_twostep)
-		flags = 0;
+		flags = DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
 	if (deliver_to_junk)
 		flags |= DELIVERY_FORCE_JUNK;
 	if (!exmdb_client_remote::deliver_message(home_dir,

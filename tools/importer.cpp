@@ -449,8 +449,10 @@ static int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
 		return ece2nerrno(ret);
 	uint64_t folder_id = 0, msg_id = 0;
 	uint32_t r32 = 0;
-	if (mode & DELIVERY_TWOSTEP)
+	if (mode & DELIVERY_TWOSTEP) {
 		mode &= ~(DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV);
+		mode |= DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
+	}
 	uint64_t change_num = 0;
 	if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
 		fprintf(stderr, "exm: allocate_cn(msg)[delivery] RPC failed\n");
@@ -573,17 +575,17 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 		}
 		return EXIT_SUCCESS;
 	}
-	unsigned int mode = 0;
-	if (!g_skip_rules)
-		mode |= DELIVERY_DO_RULES_SV;
-	if (!g_skip_notif)
-		mode |= DELIVERY_DO_NOTIF_SV;
+	unsigned int mode = DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV;
 	if (g_twostep) {
-		mode |= DELIVERY_TWOSTEP;
-		mode &= ~(DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV);
+		mode  = DELIVERY_TWOSTEP;
+		mode |= DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
+		if (g_mrautoproc)
+			mode |= DELIVERY_MRAUTOPROC;
 	}
-	if (g_mrautoproc)
-		mode |= DELIVERY_MRAUTOPROC;
+	if (g_skip_rules)
+		mode &= ~(DELIVERY_DO_RULES_SV | DELIVERY_DO_RULES_CL);
+	if (g_skip_notif)
+		mode &= ~(DELIVERY_DO_NOTIF_SV | DELIVERY_DO_NOTIF_CL);
 	for (auto i = 0U; i < g_repeat_iter; ++i) {
 		if (i > 0 && i % 1024 == 0)
 			fprintf(stderr, "importer repeat cycle %u/%u\n", i, g_repeat_iter);
