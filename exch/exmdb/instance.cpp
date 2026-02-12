@@ -49,6 +49,12 @@ static BOOL instance_read_message(
 
 static BOOL instance_identify_message(MESSAGE_CONTENT *pmsgctnt);
 
+static bool msgclass_needs_rtf(const TPROPVAL_ARRAY &props)
+{
+	auto cls = props.get<const char>(PR_MESSAGE_CLASS);
+	return cls != nullptr && class_match_prefix(cls, "IPM.Task") == 0;
+}
+
 static BOOL sync_message_body_formats(instance_node *pinstance,
     TPROPVAL_ARRAY &props)
 {
@@ -89,8 +95,11 @@ static BOOL sync_message_body_formats(instance_node *pinstance,
 		const BINARY *html = html_updated ? props.get<const BINARY>(PR_HTML) : nullptr;
 		const BINARY *rtfc = rtf_updated  ? props.get<const BINARY>(PR_RTF_COMPRESSED) : nullptr;
 
-		if (!rtf_updated) {
-			/* RTF needs updating from one of the others */
+		if (!rtf_updated && !msgclass_needs_rtf(props)) {
+			/* RTF needs updating. Deleting it entirely is good enough an update, though! */
+			props.erase(PR_RTF_COMPRESSED);
+		} else if (!rtf_updated) {
+			/* RTF needs updating from one of the other formats */
 			std::string newdoc;
 			if (html_updated && html != nullptr) {
 				if (html_to_rtf(*html, cpid, newdoc) == ecSuccess &&

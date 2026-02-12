@@ -52,8 +52,10 @@ BOOL exmdb_client_relay_delivery(const char *dir, const char *from_address,
 	q.cpid = cpid;
 	q.pmsg = deconst(pmsg);
 	q.pdigest = deconst(pdigest);
-	if (!exmdb_client_do_rpc(&q, &r))
+	if (!exmdb_client_do_rpc(&q, &r)) {
+		mlog(LV_ERR, "relay_delivery: do_rpc failed");
 		return FALSE;
+	}
 	*presult = r.result;
 	return TRUE;
 }

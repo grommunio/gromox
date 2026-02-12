@@ -2895,8 +2895,10 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 
 	if (!message_read_message(rp.db, rp.cpid, rp.message_id, &pmsgctnt) ||
-	    pmsgctnt == nullptr)
+	    pmsgctnt == nullptr) {
+		mlog(LV_DEBUG, "op_delegate: unable to read message %llxh for replication", LLU{rp.message_id});
 		return ecError;
+	}
 	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
 		mlog(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
@@ -2985,8 +2987,11 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		auto djson = json_to_str(newdigest);
 		uint32_t result = 0;
 		if (!exmdb_client_relay_delivery(maildir, rp.ev_from,
-		    eaddr.c_str(), rp.cpid, pmsgctnt, djson.c_str(), &result))
+		    eaddr.c_str(), rp.cpid, pmsgctnt, djson.c_str(), &result)) {
+			mlog(LV_ERR, "op_delegate %s %llxh: relay_delivery to %s failed",
+				maildir, LLU{rp.message_id}, eaddr.c_str());
 			return ecError;
+		}
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -3503,12 +3508,18 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	std::string account, display_name;
 
 	if (exmdb_server::is_private()) {
-		if (mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), account) != ecSuccess)
+		auto err = mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), account);
+		if (err != ecSuccess) {
+			mlog(LV_DEBUG, "deliver_message %s: userid_to_name: %s",
+				dir, mapi_strerror(err));
 			return false;
+		}
 	} else {
 		sql_domain dinfo;
-		if (!mysql_adaptor_get_domain_info(exmdb_server::get_account_id(), dinfo))
+		if (!mysql_adaptor_get_domain_info(exmdb_server::get_account_id(), dinfo)) {
+			mlog(LV_DEBUG, "deliver_message %s: get_domain_info: failed", dir);
 			return false;
+		}
 		account = std::move(dinfo.name);
 	}
 	auto pdb = db_engine_get_db(dir);
@@ -3524,15 +3535,17 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	if (exmdb_server::is_private()) {
 		void *pvalue;
 		if (!cu_get_property(MAPI_STORE, 0, CP_ACP,
-		    *pdb, PR_OOF_STATE, &pvalue))
+		    *pdb, PR_OOF_STATE, &pvalue)) {
+			mlog(LV_DEBUG, "deliver_message %s: unable to retr PR_OOF_STATE", dir);
 			return FALSE;
+		}
 		b_oof = pvb_disabled(pvalue);
 		fid_val = (dlflags & DELIVERY_FORCE_JUNK) ?
 		          PRIVATE_FID_JUNK : PRIVATE_FID_INBOX;
 	} else {
 		b_oof = false;
 		//TODO get public folder id
-		mlog(LV_ERR, "%s - public folder not implemented", __PRETTY_FUNCTION__);
+		mlog(LV_ERR, "deliver_message %s: public folder delivery not implemented", dir);
 		return false;
 	}
 	seen_list seen{{fid_val}};
@@ -3541,70 +3554,103 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	std::string essdn_buff;
 	if (exmdb_server::is_private()) {
 		tmp_msg.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsg->proplist.count + 15);
-		if (tmp_msg.proplist.ppropval == nullptr)
+		if (tmp_msg.proplist.ppropval == nullptr) {
+			mlog(LV_DEBUG, "deliver_message: ENOMEM");
 			return FALSE;
+		}
 		memcpy(tmp_msg.proplist.ppropval, pmsg->proplist.ppropval,
 					sizeof(TAGGED_PROPVAL)*pmsg->proplist.count);
 		auto pentryid = common_util_username_to_addressbook_entryid(account.c_str());
-		if (pentryid == nullptr)
+		if (pentryid == nullptr) {
+			mlog(LV_DEBUG, "deliver_message %s: cu_u_to_abkeid(%s) no result",
+				dir, account.c_str());
 			return FALSE;	
-		if (cvt_username_to_essdn(account.c_str(), g_exmdb_org_name,
-		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
-		    essdn_buff) != ecSuccess)
+		}
+		auto err = cvt_username_to_essdn(account.c_str(), g_exmdb_org_name,
+		           mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+		           essdn_buff);
+		if (err != ecSuccess) {
+			mlog(LV_DEBUG, "deliver_message %s: cvt_u_to_essdn %s: %s",
+				dir, account.c_str(), mapi_strerror(err));
 			return FALSE;
+		}
 		HX_strupper(essdn_buff.data());
 		essdn_buff.insert(0, "EX:");
-		auto err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ENTRYID, pentryid);
-		if (err != ecSuccess)
+		err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ENTRYID, pentryid);
+		if (err != ecSuccess) {
+			mlog(LV_DEBUG, "deliver_message %s: set_propval 1: %s", dir, mapi_strerror(err));
 			return false;
+		}
 		err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ADDRTYPE, "EX");
-		if (err != ecSuccess)
+		if (err != ecSuccess) {
+			mlog(LV_DEBUG, "deliver_message %s: set_propval 2: %s", dir, mapi_strerror(err));
 			return false;
+		}
 		err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (err != ecSuccess)
+		if (err != ecSuccess) {
+			mlog(LV_DEBUG, "deliver_message %s: set_propval 3: %s", dir, mapi_strerror(err));
 			return false;
+		}
 		if (mysql_adaptor_get_user_displayname(account.c_str(), display_name)) {
 			err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_NAME, display_name.c_str());
-			if (err != ecSuccess)
+			if (err != ecSuccess) {
+				mlog(LV_DEBUG, "deliver_message %s: set_propval 4: %s", dir, mapi_strerror(err));
 				return false;
+			}
 		} else {
 			display_name.clear();
 		}
 		searchkey_bin.cb = essdn_buff.size() + 1;
 		searchkey_bin.pv = deconst(essdn_buff.c_str());
 		err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_SEARCH_KEY, &searchkey_bin);
-		if (err != ecSuccess)
+		if (err != ecSuccess) {
+			mlog(LV_DEBUG, "deliver_message %s: set_propval 5: %s", dir, mapi_strerror(err));
 			return false;
+		}
 		if (!pmsg->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 			err = cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_ENTRYID, pentryid);
-			if (err != ecSuccess)
+			if (err != ecSuccess) {
+				mlog(LV_DEBUG, "deliver_message %s: set_propval 6: %s", dir, mapi_strerror(err));
 				return false;
+			}
 			err = cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
-			if (err != ecSuccess)
+			if (err != ecSuccess) {
+				mlog(LV_DEBUG, "deliver_message %s: set_propval 7: %s", dir, mapi_strerror(err));
 				return false;
+			}
 			err = cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-			if (err != ecSuccess)
+			if (err != ecSuccess) {
+				mlog(LV_DEBUG, "deliver_message %s: set_propval 8: %s", dir, mapi_strerror(err));
 				return false;
+			}
 			if (!display_name.empty()) {
 				err = cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_NAME, display_name.c_str());
-				if (err != ecSuccess)
+				if (err != ecSuccess) {
+					mlog(LV_DEBUG, "deliver_message %s: set_propval 9: %s", dir, mapi_strerror(err));
 					return false;
+				}
 			}
 			err = cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
-			if (err != ecSuccess)
+			if (err != ecSuccess) {
+				mlog(LV_DEBUG, "deliver_message %s: set_propval 10: %s", dir, mapi_strerror(err));
 				return false;
+			}
 		}
 		auto rcpt_type = detect_rcpt_type(account.c_str(), pmsg->children.prcpts);
 		if (rcpt_type == MAPI_TO || rcpt_type == MAPI_CC) {
 			err = cu_set_propval(&tmp_msg.proplist, rcpt_type == MAPI_TO ?
 				PR_MESSAGE_TO_ME : PR_MESSAGE_CC_ME, &fake_true);
-			if (err != ecSuccess)
+			if (err != ecSuccess) {
+				mlog(LV_DEBUG, "deliver_message %s: set_propval 11: %s", dir, mapi_strerror(err));
 				return false;
+			}
 		}
 		if (rcpt_type == MAPI_TO || rcpt_type == MAPI_CC || rcpt_type == MAPI_BCC) {
 			err = cu_set_propval(&tmp_msg.proplist, PR_MESSAGE_RECIP_ME, &fake_true);
-			if (err != ecSuccess)
+			if (err != ecSuccess) {
+				mlog(LV_DEBUG, "deliver_message %s: set_propval 12: %s", dir, mapi_strerror(err));
 				return false;
+			}
 		}
 	}
 	auto nt_time = rop_util_current_nttime();
@@ -3620,8 +3666,10 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	bool partial = false;
 	uint64_t message_id = 0, new_cn = 0;
 	if (!message_write_message(false, *pdb, cpid, false,
-	    fid_val, &tmp_msg, &message_id, &new_cn, &partial))
+	    fid_val, &tmp_msg, &message_id, &new_cn, &partial)) {
+		mlog(LV_DEBUG, "deliver_message %s: message_write_message failed", dir);
 		return FALSE;
+	}
 	if (0 == message_id) {
 		*presult = static_cast<uint32_t>(deliver_message_result::result_error);
 		return TRUE;
@@ -3655,8 +3703,10 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 				return false;
 			}
 			if (!common_util_set_mid_string(pdb->psqlite,
-			    message_id, mid_string))
+			    message_id, mid_string)) {
+				mlog(LV_ERR, "deliver_message %s: set_mid_str %s failed", dir, mid_string);
 				return FALSE;
+			}
 		}
 	}
 	mlog(LV_DEBUG, "to=%s from=%s fid=%llu delivery mid=%llu (%s)", account.c_str(),
@@ -3667,8 +3717,10 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	if (dlflags & DELIVERY_DO_RULES_SV) {
 		auto ec = message_rule_new_message({from_address, account.c_str(), cpid, b_oof,
 		          *pdb, pdb->psqlite, fid_val, message_id, std::move(digest)}, seen);
-		if (ec != ecSuccess)
+		if (ec != ecSuccess) {
+			mlog(LV_DEBUG, "deliver_message %s: 1S-ruleproc: %s", dir, mapi_strerror(ec));
 			return FALSE;
+		}
 	}
 
 	auto dbase = pdb->lock_base_wr();

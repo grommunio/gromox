@@ -1593,6 +1593,23 @@ static uint32_t aptrecur_to_recurtype(const APPOINTMENT_RECUR_PAT &apr)
 	}
 }
 
+static bool oxcical_parse_appt_not_recurring(namemap &phash, uint16_t &last_propid,
+    message_content &msg)
+{
+	/*
+	 * OL 2024/LTSC MSO (Version 2408 Build 16.0.17932.20638) seems picky
+	 * about the presence of this prop. Let it be there at all times.
+	 * OL 2021 MSO (Version 2310 Build 16.0.16924.20054) does not care.
+	 */
+	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, PidLidRecurring};
+	uint8_t flag = false;
+	if (namemap_add(phash, last_propid, std::move(propname)) != 0 ||
+	    msg.proplist.set(PROP_TAG(PT_BOOLEAN, last_propid), &flag) != ecSuccess)
+		return false;
+	++last_propid;
+	return true;
+}
+
 static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
@@ -2272,7 +2289,10 @@ static const char *oxcical_import_internal(const char *method,
 	piline = pmain_event->get_line("RRULE");
 	if (piline == nullptr)
 		piline = pmain_event->get_line("X-MICROSOFT-RRULE");
-	if (piline != nullptr) {
+	if (piline == nullptr) {
+		if (!oxcical_parse_appt_not_recurring(phash, last_propid, *pmsg))
+			return "E-2742";
+	} else {
 		if (ptz_component != nullptr &&
 		    !oxcical_parse_recurring_timezone(*ptz_component,
 		    phash, &last_propid, pmsg))

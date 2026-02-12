@@ -1,4 +1,4 @@
-Milestone 3.4.53
+Milestone 3.4.62
 ================
 
 Enhancements:
@@ -9,6 +9,14 @@ Enhancements:
 
 Fixes:
 
+* emsmdb: async notification connections were not marked active and would not
+  deliver a signal of new pending events.
+* oxcical: upon reception of non-recurring appointments, the PidLidRecurring=0
+  property will be set now, as some Outlook versions fail to show appointments
+  in the daily/weekly/monthly view if the property is absent.
+* exmdb: limit production of PR_RTF_COMPRESSED variants of
+  PR_BODY/PR_HTML when saving messages to IPM.Task objects, as OL
+  only depends on it for those message classes.
 * Plugged a memory leak that occurred when a multi-HTML Internet Mail is
   converted to MAPI
 * Plugged a memory leak that occurred when HTML is converted to RTF
