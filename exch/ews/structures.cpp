@@ -1703,19 +1703,11 @@ void tCalendarItem::update(const sShape& shape)
 	}
 
 	if ((prop = shape.get(NtResponseStatus))) {
-		const uint8_t* responseStatus = static_cast<const uint8_t*>(prop->pvalue);
-		Enum::ResponseTypeType responseType = Enum::Unknown;
-		switch (*responseStatus) {
-			case respOrganized:    responseType = Enum::Organizer; break;
-			case respTentative:    responseType = Enum::Tentative; break;
-			case respAccepted:     responseType = Enum::Accept; break;
-			case respDeclined:     responseType = Enum::Decline; break;
-			case respNotResponded: responseType = Enum::NoResponseReceived; break;
-		}
-		MyResponseType.emplace(responseType);
-	} else {
-		MyResponseType.emplace(Enum::Unknown);
+		const uint32_t* responseStatus = static_cast<const uint32_t*>(prop->pvalue);
+		MyResponseType.emplace(response_type_from_status(*responseStatus));
 	}
+	else
+		MyResponseType.emplace(Enum::Unknown);
 
 	if ((prop = shape.get(NtGlobalObjectId))) {
 		const BINARY* goid = static_cast<BINARY*>(prop->pvalue);
