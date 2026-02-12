@@ -11,6 +11,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/notify_types.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
@@ -612,6 +613,58 @@ std::string tarray_set::repr() const
 		s += e.repr() + "\n";
 	s += "}";
 	return s;
+}
+
+const char *DB_NOTIFY::type_repr() const
+{
+	switch (type) {
+	using enum db_notify_type;
+#define E(s) case s: return #s;
+	E(new_mail)
+	E(folder_created)
+	E(message_created)
+	E(link_created)
+	E(folder_deleted)
+	E(message_deleted)
+	E(link_deleted)
+	E(folder_modified)
+	E(message_modified)
+	E(folder_moved)
+	E(message_moved)
+	E(folder_copied)
+	E(message_copied)
+	E(search_completed)
+	E(hiertbl_changed)
+	E(cttbl_changed)
+	E(srchtbl_changed)
+	E(hiertbl_row_added)
+	E(cttbl_row_added)
+	E(srchtbl_row_added)
+	E(hiertbl_row_deleted)
+	E(cttbl_row_deleted)
+	E(srchtbl_row_deleted)
+	E(hiertbl_row_modified)
+	E(cttbl_row_modified)
+	E(srchtbl_row_modified)
+#undef E
+	default: return "?";
+	}
+}
+
+std::string DB_NOTIFY::repr() const
+{
+	return fmt::format("{{type={}, parent_id={:x}h, folder_id={:x}h, "
+		"message_id={:x}h, old_parent_id={:x}h, old_folder_id={:x}h, "
+		"old_message_id={:x}h, row_folder_id={:x}h, "
+		"row_message_id={:x}h, row_instance={}, "
+		"after_folder_id={:x}h, after_row_id={:x}h, "
+		"after_instance={}, mflags={:x}h, mclass={}, "
+		"{}}}",
+		type_repr(), parent_id, folder_id, message_id,
+		old_parent_id, old_folder_id, old_message_id,
+		row_folder_id, row_message_id, row_instance,
+		after_folder_id, after_row_id, after_instance,
+		message_flags, pmessage_class, proptags.repr());
 }
 
 namespace gromox {

@@ -44,4 +44,7 @@ struct GX_EXPORT DB_NOTIFY {
 	uint32_t message_flags = 0;
 	std::string pmessage_class;
 	PROPTAG_ARRAY proptags{};
+
+	const char *type_repr() const;
+	std::string repr() const;
 };
