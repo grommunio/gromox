@@ -529,21 +529,21 @@ ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT &xstat,
 	nsp_trace(__func__, 0, pstat);
 	auto rpc_info = get_rpc_info();
 	if (flags & fAnonymousLogin) {
-		memset(phandle, 0, sizeof(NSPI_HANDLE));
+		*phandle = {};
 		return MAPI_E_FAILONEPROVIDER;
 	}
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
-		memset(phandle, 0, sizeof(NSPI_HANDLE));
+		*phandle = {};
 		return ecNotSupported;
 	}
 	/* check if valid cpid has been supplied */
 	if (!acceptable_cpid_for_mapi(pstat->codepage)) {
-		memset(phandle, 0, sizeof(NSPI_HANDLE));
+		*phandle = {};
 		return MAPI_E_UNKNOWN_CPID;
 	}
 	auto pdomain = strchr(rpc_info.username, '@');
 	if (NULL == pdomain) {
-		memset(phandle, 0, sizeof(NSPI_HANDLE));
+		*phandle = {};
 		return ecLoginFailure;
 	}
 	pdomain ++;
@@ -551,14 +551,14 @@ ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT &xstat,
 	if (!mysql_adaptor_get_domain_ids(pdomain, &domain_id, &org_id)) {
 		mlog(LV_WARN, "W-2176: could not satisfy nsp_bind request for domain %s: not found", pdomain);
 		phandle->handle_type = HANDLE_EXCHANGE_NSP;
-		memset(&phandle->guid, 0, sizeof(GUID));
+		phandle->guid = {};
 		return ecError;
 	}
 	phandle->handle_type = HANDLE_EXCHANGE_NSP;
 	int base_id = org_id == 0 ? -domain_id : org_id;
 	auto pbase = ab_tree::AB.get(base_id);
 	if (pbase == nullptr) {
-		memset(&phandle->guid, 0, sizeof(GUID));
+		phandle->guid = {};
 		return ecError;
 	}
 	if (g_nsp_trace >= 2)
@@ -574,7 +574,7 @@ ec_error_t nsp_interface_unbind(NSPI_HANDLE *phandle)
 {
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "Entering %s\n", __func__);
-	memset(phandle, 0, sizeof(NSPI_HANDLE));
+	*phandle = {};
 	return MAPI_E_UNBINDSUCCESS;
 }
 
