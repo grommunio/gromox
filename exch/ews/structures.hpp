@@ -2424,8 +2424,10 @@ struct tChangeHighlights : public NS_EWS_Types {
 struct tMeetingRequestMessage : public tMeetingMessage {
 	static constexpr char NAME[] = "MeetingRequest";
 
-	using tMeetingMessage::tMeetingMessage;
+	explicit tMeetingRequestMessage(const sShape&);
+
 	explicit tMeetingRequestMessage(const tinyxml2::XMLElement*);
+	void update(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 

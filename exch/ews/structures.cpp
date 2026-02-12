@@ -193,6 +193,21 @@ Enum::LegacyFreeBusyType legacy_free_busy_from_status(uint32_t status)
 	}
 }
 
+std::optional<Enum::MeetingRequestTypeType> meeting_request_type_from_meeting_type(uint32_t meetingType)
+{
+	if (meetingType & mtgOutOfDate)
+		return Enum::Outdated;
+	if (meetingType & mtgDelegatorCopy)
+		return Enum::SilentUpdate;
+	if (meetingType & mtgFull)
+		return Enum::FullUpdate;
+	if (meetingType & mtgInfo)
+		return Enum::InformationalUpdate;
+	if (meetingType & mtgRequest)
+		return Enum::NewMeetingRequest;
+	return std::nullopt;
+}
+
 /**
  * @brief      Convert STL vector to gromox array
  *
@@ -3326,6 +3341,8 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"item:ReminderMinutesBeforeStart", {NtReminderDelta, PT_LONG}},
 	{"meeting:IsOutOfDate", {NtMeetingType, PT_LONG}},
 	{"meeting:ResponseType", {NtResponseStatus, PT_LONG}},
+	{"meetingRequest:MeetingRequestType", {NtMeetingType, PT_LONG}},
+	{"meetingRequest:IntendedFreeBusyStatus", {NtIntendedBusyStatus, PT_LONG}},
 	{"task:ActualWork", {NtTaskActualEffort, PT_LONG}},
 	// {"task:AssignedTime", {}},
 	{"task:BillingInformation", {NtBilling, PT_UNICODE}},
@@ -3903,6 +3920,129 @@ void tMeetingMessage::update(const sShape& shape)
 	}
 	else if (auto inferred = response_type_from_class(ItemClass))
 		ResponseType.emplace(*inferred);
+
+	if ((prop = shape.get(NtExceptionReplaceTime)))
+		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tMeetingRequestMessage::tMeetingRequestMessage(const sShape& shape) :
+	tMeetingMessage(shape)
+{
+	tMeetingRequestMessage::update(shape);
+}
+
+void tMeetingRequestMessage::update(const sShape& shape)
+{
+	const TAGGED_PROPVAL* prop;
+
+	tMeetingMessage::update(shape);
+
+	if ((prop = shape.get(NtMeetingType))) {
+		const uint32_t meetingType = *static_cast<const uint32_t*>(prop->pvalue);
+		if (auto mapped = meeting_request_type_from_meeting_type(meetingType))
+			MeetingRequestType.emplace(*mapped);
+	}
+
+	if ((prop = shape.get(NtIntendedBusyStatus))) {
+		const uint32_t status = *static_cast<const uint32_t*>(prop->pvalue);
+		IntendedFreeBusyStatus.emplace(legacy_free_busy_from_status(status));
+	}
+	if ((prop = shape.get(NtCommonStart)))
+		Start.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+	if ((prop = shape.get(NtCommonEnd)))
+		End.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+
+	fromProp(shape.get(NtAppointmentSubType), IsAllDayEvent);
+
+	if ((prop = shape.get(NtBusyStatus))) {
+		const uint32_t* busyStatus = static_cast<const uint32_t*>(prop->pvalue);
+		LegacyFreeBusyStatus.emplace(legacy_free_busy_from_status(*busyStatus));
+	}
+
+	fromProp(shape.get(NtLocation), Location);
+
+	if ((prop = shape.get(NtAppointmentStateFlags))) {
+		const uint32_t* stateFlags = static_cast<const uint32_t*>(prop->pvalue);
+		AppointmentState.emplace(*stateFlags);
+		IsMeeting = *stateFlags & asfMeeting ? TRUE : false;
+		IsCancelled = *stateFlags & asfCanceled ? TRUE : false;
+	} else {
+		AppointmentState = 0;
+		IsMeeting = false;
+		IsCancelled = false;
+	}
+
+	fromProp(shape.get(NtRecurring), IsRecurring);
+	fromProp(shape.get(NtFInvited), MeetingRequestWasSent);
+
+	Enum::CalendarItemTypeType calendarItemType = Enum::Single;
+	if ((prop = shape.get(NtAppointmentRecur))) {
+		calendarItemType = Enum::RecurringMaster;
+		const BINARY* recurData = static_cast<BINARY*>(prop->pvalue);
+		if (recurData->cb > 0) {
+			APPOINTMENT_RECUR_PAT apprecurr = getAppointmentRecurPattern(recurData);
+
+			auto& rec = Recurrence.emplace();
+			rec.RecurrencePattern = get_recurrence_pattern(apprecurr.recur_pat);
+			rec.RecurrenceRange = get_recurrence_range(apprecurr.recur_pat);
+
+			// The count of the exceptions (modified and deleted occurrences)
+			// is summed in deletedinstancecount
+			if (apprecurr.recur_pat.deletedinstancecount > 0) {
+				std::vector<tOccurrenceInfoType> modOccs;
+				std::vector<tDeletedOccurrenceInfoType> delOccs;
+				auto entryid_propval = shape.get(PR_ENTRYID);
+				process_occurrences(entryid_propval, apprecurr, modOccs, delOccs);
+				if (modOccs.size() > 0)
+					ModifiedOccurrences.emplace(modOccs);
+				if (delOccs.size() > 0)
+					DeletedOccurrences.emplace(delOccs);
+			}
+		}
+	}
+	if (calendarItemType != Enum::RecurringMaster) {
+		bool isSeriesMember = (IsRecurring && *IsRecurring);
+		if (!isSeriesMember) {
+			const TAGGED_PROPVAL* recurFlag = shape.get(NtRecurring);
+			if (recurFlag) {
+				if (PROP_TYPE(recurFlag->proptag) == PT_BOOLEAN)
+					isSeriesMember = *static_cast<const uint8_t*>(recurFlag->pvalue) != 0;
+				else if (PROP_TYPE(recurFlag->proptag) == PT_LONG)
+					isSeriesMember = *static_cast<const uint32_t*>(recurFlag->pvalue) != 0;
+			}
+		}
+		if (RecurrenceId.has_value())
+			calendarItemType = Enum::Exception;
+		else if (isSeriesMember)
+			calendarItemType = Enum::Occurrence;
+		else
+			calendarItemType = Enum::Single;
+	}
+	CalendarItemType.emplace(calendarItemType);
+
+	if ((prop = shape.get(NtResponseStatus))) {
+		const uint32_t* responseStatus = static_cast<const uint32_t*>(prop->pvalue);
+		MyResponseType.emplace(response_type_from_status(*responseStatus));
+	}
+	else
+		MyResponseType.emplace(Enum::Unknown);
+
+	if ((prop = shape.get(PR_SENDER_ADDRTYPE)))
+		fromProp(prop, defaulted(Organizer).Mailbox.RoutingType);
+	if ((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
+		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
+	if ((prop = shape.get(PR_SENDER_NAME)))
+		fromProp(prop, defaulted(Organizer).Mailbox.Name);
+
+	if ((prop = shape.get(NtAppointmentReplyTime)))
+		AppointmentReplyTime.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+
+	fromProp(shape.get(NtAppointmentSequence), AppointmentSequenceNumber);
+
+	if ((prop = shape.get(NtAppointmentNotAllowPropose)))
+		AllowNewTimeProposal.emplace(!*static_cast<const uint8_t*>(prop->pvalue));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
