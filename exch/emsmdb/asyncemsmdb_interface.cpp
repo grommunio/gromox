@@ -177,7 +177,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	if (!pair.second)
 		return DISPATCH_SUCCESS;
 	auto cl_fail2 = HX::make_scope_exit([&]() { g_async_hash.erase(async_id); });
-	if (g_tag_hash.size() >= g_tag_hash_max &&
+	if (g_tag_hash.size() < g_tag_hash_max &&
 	    g_tag_hash.emplace(tag, pwait).second) {
 		/* actual success case */
 		cl_fail2.release();
