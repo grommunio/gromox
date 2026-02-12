@@ -426,6 +426,27 @@ static constexpr char tbl_pub_msgs_0[] =
 "CREATE INDEX assoc_index ON messages(is_associated);"
 "CREATE INDEX parent_assoc_delete_index ON messages(parent_fid, is_associated, is_deleted);";
 
+static constexpr char tbl_pub_msgs_26[] =
+"CREATE TABLE messages ("
+"  message_id INTEGER PRIMARY KEY,"
+"  parent_fid INTEGER,"
+"  parent_attid INTEGER,"
+"  is_deleted INTEGER DEFAULT 0,"
+"  is_associated INTEGER,"
+"  change_number INTEGER UNIQUE NOT NULL,"
+"  message_size INTEGER NOT NULL,"
+"  group_id INTEGER DEFAULT NULL,"
+"  mid_string TEXT DEFAULT NULL,"
+"  FOREIGN KEY (parent_fid) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE,"
+"  FOREIGN KEY (parent_attid) REFERENCES attachments (attachment_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX pid_messages_index ON messages(parent_fid);"
+"CREATE INDEX attid_messages_index ON messages(parent_attid);"
+"CREATE INDEX assoc_index ON messages(is_associated);"
+"CREATE INDEX parent_assoc_delete_index ON messages(parent_fid, is_associated, is_deleted);";
+
+static constexpr char tbl_pub_msgs_upgrade26[] =
+"ALTER TABLE messages ADD COLUMN mid_string TEXT DEFAULT NULL";
+
 static constexpr char tbl_pub_readst_0[] =
 "CREATE TABLE read_states ("
 "  message_id INTEGER NOT NULL,"
@@ -532,7 +553,7 @@ static constexpr tbl_init tbl_pub_init_top[] = {
 	{"attachments", tbl_attach_0},
 	{"attachment_properties", tbl_atxprops_6},
 	{"folders", tbl_pub_folders_0},
-	{"messages", tbl_pub_msgs_0},
+	{"messages", tbl_pub_msgs_26},
 	{"read_states", tbl_pub_readst_0},
 	{"read_cns", tbl_pub_readcn_0},
 	{"replguidmap", tbl_replguidmap_14},
@@ -689,6 +710,7 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{23, tbl_addmsgtimeindex_23},
 	{24, tbl_mboxpermissionindex_24},
 	{25, tbl_droppropvalindex_25},
+	{26, tbl_pub_msgs_upgrade26},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };
