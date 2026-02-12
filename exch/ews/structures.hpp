@@ -2407,6 +2407,7 @@ struct tMeetingMessage : public tMessage {
 struct tChangeHighlights : public NS_EWS_Types {
 	static constexpr char NAME[] = "ChangeHighlights";
 
+	tChangeHighlights() = default;
 	explicit tChangeHighlights(const tinyxml2::XMLElement*);
 	void serialize(tinyxml2::XMLElement*) const;
 

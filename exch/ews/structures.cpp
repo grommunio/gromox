@@ -3341,8 +3341,9 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"item:ReminderMinutesBeforeStart", {NtReminderDelta, PT_LONG}},
 	{"meeting:IsOutOfDate", {NtMeetingType, PT_LONG}},
 	{"meeting:ResponseType", {NtResponseStatus, PT_LONG}},
-	{"meetingRequest:MeetingRequestType", {NtMeetingType, PT_LONG}},
+	{"meetingRequest:ChangeHighlights", {NtChangeHighlight, PT_LONG}},
 	{"meetingRequest:IntendedFreeBusyStatus", {NtIntendedBusyStatus, PT_LONG}},
+	{"meetingRequest:MeetingRequestType", {NtMeetingType, PT_LONG}},
 	{"task:ActualWork", {NtTaskActualEffort, PT_LONG}},
 	// {"task:AssignedTime", {}},
 	{"task:BillingInformation", {NtBilling, PT_UNICODE}},
@@ -4043,6 +4044,25 @@ void tMeetingRequestMessage::update(const sShape& shape)
 
 	if ((prop = shape.get(NtAppointmentNotAllowPropose)))
 		AllowNewTimeProposal.emplace(!*static_cast<const uint8_t*>(prop->pvalue));
+
+	if ((prop = shape.get(NtChangeHighlight))) {
+		const uint32_t flags = *static_cast<const uint32_t*>(prop->pvalue);
+		tChangeHighlights highlights;
+
+		highlights.HasLocationChanged.emplace((flags & BIT_CH_LOCATION) != 0);
+		if (highlights.HasLocationChanged.value_or(false) && Location.has_value())
+			highlights.Location = Location;
+
+		highlights.HasStartTimeChanged.emplace((flags & BIT_CH_START) != 0);
+		if (highlights.HasStartTimeChanged.value_or(false) && Start.has_value())
+			highlights.Start = Start;
+
+		highlights.HasEndTimeChanged.emplace((flags & BIT_CH_END) != 0);
+		if (highlights.HasEndTimeChanged.value_or(false) && End.has_value())
+			highlights.End = End;
+
+		ChangeHighlights.emplace(std::move(highlights));
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
