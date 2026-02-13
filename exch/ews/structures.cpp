@@ -151,7 +151,7 @@ constexpr size_t max_count()
 	return std::numeric_limits<count_t<C>>::max();
 }
 
-Enum::ResponseTypeType response_type_from_status(uint32_t status)
+Enum::ResponseTypeType respstatus_to_resptype(uint32_t status)
 {
 	switch (status) {
 	case respOrganized:    return Enum::Organizer;
@@ -163,7 +163,7 @@ Enum::ResponseTypeType response_type_from_status(uint32_t status)
 	}
 }
 
-std::optional<Enum::ResponseTypeType> response_type_from_class(const std::optional<std::string>& itemClass)
+std::optional<Enum::ResponseTypeType> respclass_to_resptype(const std::optional<std::string>& itemClass)
 {
 	if (!itemClass)
 		return std::nullopt;
@@ -181,7 +181,7 @@ std::optional<Enum::ResponseTypeType> response_type_from_class(const std::option
 	return std::nullopt;
 }
 
-Enum::LegacyFreeBusyType legacy_free_busy_from_status(uint32_t status)
+Enum::LegacyFreeBusyType busystatus_to_legacyfb(uint32_t status)
 {
 	switch (status) {
 	case olFree:             return Enum::Free;
@@ -193,35 +193,17 @@ Enum::LegacyFreeBusyType legacy_free_busy_from_status(uint32_t status)
 	}
 }
 
-std::optional<Enum::MeetingRequestTypeType> meeting_request_type_from_property(uint32_t value)
+std::optional<Enum::MeetingRequestTypeType> meettype_to_mrtype(uint32_t meetingType)
 {
-	switch (value) {
-	case 0: return Enum::None;
-	case 1: return Enum::FullUpdate;
-	case 2: return Enum::InformationalUpdate;
-	case 3: return Enum::NewMeetingRequest;
-	case 4: return Enum::Outdated;
-	case 5: return Enum::SilentUpdate;
-	case 6: return Enum::PrincipalWantsCopy;
-	default: return std::nullopt;
+	switch (meetingType) {
+	case mtgEmpty:         return Enum::None;
+	case mtgRequest:       return Enum::NewMeetingRequest;
+	case mtgFull:          return Enum::FullUpdate;
+	case mtgInfo:          return Enum::InformationalUpdate;
+	case mtgOutOfDate:     return Enum::Outdated;
+	case mtgDelegatorCopy: return Enum::PrincipalWantsCopy;
+	default:               return std::nullopt;
 	}
-}
-
-std::optional<Enum::MeetingRequestTypeType> meeting_request_type_from_meeting_type(uint32_t meetingType)
-{
-	if (auto direct = meeting_request_type_from_property(meetingType))
-		return direct;
-	if (meetingType == mtgOutOfDate)
-		return Enum::Outdated;
-	if (meetingType == mtgDelegatorCopy)
-		return Enum::PrincipalWantsCopy;
-	if (meetingType == mtgFull)
-		return Enum::FullUpdate;
-	if (meetingType == mtgInfo)
-		return Enum::InformationalUpdate;
-	if (meetingType == mtgRequest)
-		return Enum::NewMeetingRequest;
-	return std::nullopt;
 }
 
 /**
@@ -1711,7 +1693,7 @@ void tCalendarItem::update(const sShape& shape)
 
 	if ((prop = shape.get(NtBusyStatus))) {
 		const uint32_t* busyStatus = static_cast<const uint32_t*>(prop->pvalue);
-		LegacyFreeBusyStatus.emplace(legacy_free_busy_from_status(*busyStatus));
+		LegacyFreeBusyStatus.emplace(busystatus_to_legacyfb(*busyStatus));
 	}
 
 	if ((prop = shape.get(NtCommonEnd)))
@@ -1746,7 +1728,7 @@ void tCalendarItem::update(const sShape& shape)
 
 	if ((prop = shape.get(NtResponseStatus))) {
 		const uint32_t* responseStatus = static_cast<const uint32_t*>(prop->pvalue);
-		MyResponseType.emplace(response_type_from_status(*responseStatus));
+		MyResponseType.emplace(respstatus_to_resptype(*responseStatus));
 	}
 	else
 		MyResponseType.emplace(Enum::Unknown);
@@ -3959,9 +3941,9 @@ void tMeetingMessage::update(const sShape& shape)
 
 	if ((prop = shape.get(NtResponseStatus))) {
 		const uint32_t* responseStatus = static_cast<const uint32_t*>(prop->pvalue);
-		ResponseType.emplace(response_type_from_status(*responseStatus));
+		ResponseType.emplace(respstatus_to_resptype(*responseStatus));
 	}
-	else if (auto inferred = response_type_from_class(ItemClass))
+	else if (auto inferred = respclass_to_resptype(ItemClass))
 		ResponseType.emplace(*inferred);
 
 	if ((prop = shape.get(NtGlobalObjectId))) {
@@ -4000,7 +3982,7 @@ void tMeetingRequestMessage::update(const sShape& shape)
 
 	if ((prop = shape.get(NtMeetingType))) {
 		const uint32_t meetingType = *static_cast<const uint32_t*>(prop->pvalue);
-		if (auto mapped = meeting_request_type_from_meeting_type(meetingType))
+		if (auto mapped = meettype_to_mrtype(meetingType))
 			MeetingRequestType.emplace(*mapped);
 	}
 	if (!MeetingRequestType)
@@ -4008,7 +3990,7 @@ void tMeetingRequestMessage::update(const sShape& shape)
 
 	if ((prop = shape.get(NtIntendedBusyStatus))) {
 		const uint32_t status = *static_cast<const uint32_t*>(prop->pvalue);
-		IntendedFreeBusyStatus.emplace(legacy_free_busy_from_status(status));
+		IntendedFreeBusyStatus.emplace(busystatus_to_legacyfb(status));
 	}
 	if ((prop = shape.get(NtCommonStart)))
 		Start.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
@@ -4019,7 +4001,7 @@ void tMeetingRequestMessage::update(const sShape& shape)
 
 	if ((prop = shape.get(NtBusyStatus))) {
 		const uint32_t* busyStatus = static_cast<const uint32_t*>(prop->pvalue);
-		LegacyFreeBusyStatus.emplace(legacy_free_busy_from_status(*busyStatus));
+		LegacyFreeBusyStatus.emplace(busystatus_to_legacyfb(*busyStatus));
 	}
 
 	fromProp(shape.get(NtLocation), Location);
@@ -4085,7 +4067,7 @@ void tMeetingRequestMessage::update(const sShape& shape)
 
 	if ((prop = shape.get(NtResponseStatus))) {
 		const uint32_t* responseStatus = static_cast<const uint32_t*>(prop->pvalue);
-		MyResponseType.emplace(response_type_from_status(*responseStatus));
+		MyResponseType.emplace(respstatus_to_resptype(*responseStatus));
 	}
 	else
 		MyResponseType.emplace(Enum::Unknown);
