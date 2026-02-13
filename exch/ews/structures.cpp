@@ -211,15 +211,15 @@ std::optional<Enum::MeetingRequestTypeType> meeting_request_type_from_meeting_ty
 {
 	if (auto direct = meeting_request_type_from_property(meetingType))
 		return direct;
-	if (meetingType & mtgOutOfDate)
+	if (meetingType == mtgOutOfDate)
 		return Enum::Outdated;
-	if (meetingType & mtgDelegatorCopy)
+	if (meetingType == mtgDelegatorCopy)
 		return Enum::PrincipalWantsCopy;
-	if (meetingType & mtgFull)
+	if (meetingType == mtgFull)
 		return Enum::FullUpdate;
-	if (meetingType & mtgInfo)
+	if (meetingType == mtgInfo)
 		return Enum::InformationalUpdate;
-	if (meetingType & mtgRequest)
+	if (meetingType == mtgRequest)
 		return Enum::NewMeetingRequest;
 	return std::nullopt;
 }
@@ -3952,7 +3952,7 @@ void tMeetingMessage::update(const sShape& shape)
 
 	if ((prop = shape.get(NtMeetingType))) {
 		const uint32_t* meetingType = static_cast<const uint32_t*>(prop->pvalue);
-		IsOutOfDate.emplace((*meetingType & mtgOutOfDate) != 0);
+		IsOutOfDate.emplace((*meetingType == mtgOutOfDate));
 	}
 
 	fromProp(shape.get(PR_PROCESSED), HasBeenProcessed);
