@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #pragma once
 #include <atomic>
@@ -1965,8 +1965,8 @@ struct tCalendarItem : public tItem {
 	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
 	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
 	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
-	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Duration;
+	std::optional<std::string> TimeZone;
 	std::optional<time_point> AppointmentReplyTime;
 	std::optional<int> AppointmentSequenceNumber;
 	std::optional<int> AppointmentState;
@@ -1980,11 +1980,11 @@ struct tCalendarItem : public tItem {
 	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
 	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="ConferenceType" type="xs:int" minOccurs="0" />
+	std::optional<int32_t> ConferenceType;
 	std::optional<bool> AllowNewTimeProposal;
-	// <xs:element name="IsOnlineMeeting" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="MeetingWorkspaceUrl" type="xs:string" minOccurs="0" />
-	// <xs:element name="NetShowUrl" type="xs:string" minOccurs="0" />
+	std::optional<bool> IsOnlineMeeting;
+	std::optional<std::string> MeetingWorkspaceUrl;
+	std::optional<std::string> NetShowUrl;
 	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
 	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
@@ -1995,7 +1995,7 @@ struct tCalendarItem : public tItem {
 	// <xs:element name="OnlineMeetingSettings" type="t:OnlineMeetingSettingsType" minOccurs="0" maxOccurs="1"/>
 	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
 	// <xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
-	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
+	std::optional<bool> DoNotForwardMeeting;
 };
 
 /**
@@ -2383,24 +2383,40 @@ struct tMessage : public tItem {
 struct tMeetingMessage : public tMessage {
 	static constexpr char NAME[] = "MeetingMessage";
 
-	using tMessage::tMessage;
+	explicit tMeetingMessage(const sShape&);
+	explicit tMeetingMessage(const tinyxml2::XMLElement*);
+	void update(const sShape&);
 
-	// <xs:element name="AssociatedCalendarItemId" type="t:ItemIdType" minOccurs="0"/>
-	// <xs:element name="IsDelegated" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="IsOutOfDate" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="HasBeenProcessed" type="xs:boolean" minOccurs="0" />
+	std::optional<tItemId> AssociatedCalendarItemId;
+	std::optional<bool> IsDelegated;
+	std::optional<bool> IsOutOfDate;
+	std::optional<bool> HasBeenProcessed;
 
-	// <!-- Meeting response related properties -->
+	std::optional<Enum::ResponseTypeType> ResponseType;
+	std::optional<std::string> UID;
+	std::optional<time_point> RecurrenceId;
+	std::optional<sTimePoint> DateTimeStamp;
+	std::optional<bool> IsOrganizer;
 
-	// <xs:element name="ResponseType" type="t:ResponseTypeType" minOccurs="0" />
+	void serialize(tinyxml2::XMLElement*) const;
+};
 
-	// <!-- iCalendar properties -->
+/**
+ * Types.xsd:5053
+ */
+struct tChangeHighlights : public NS_EWS_Types {
+	static constexpr char NAME[] = "ChangeHighlights";
 
-	// <xs:element name="UID" type="xs:string" minOccurs="0" />
-	// <xs:element name="RecurrenceId" type="xs:dateTime" minOccurs="0" />
-	// <xs:element name="DateTimeStamp" type="xs:dateTime" minOccurs="0" />
+	tChangeHighlights() = default;
+	explicit tChangeHighlights(const tinyxml2::XMLElement*);
+	void serialize(tinyxml2::XMLElement*) const;
 
-	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
+	std::optional<bool> HasLocationChanged;
+	std::optional<std::string> Location;
+	std::optional<bool> HasStartTimeChanged;
+	std::optional<sTimePoint> Start;
+	std::optional<bool> HasEndTimeChanged;
+	std::optional<sTimePoint> End;
 };
 
 /**
@@ -2409,41 +2425,40 @@ struct tMeetingMessage : public tMessage {
 struct tMeetingRequestMessage : public tMeetingMessage {
 	static constexpr char NAME[] = "MeetingRequest";
 
-	using tMeetingMessage::tMeetingMessage;
+	explicit tMeetingRequestMessage(const sShape&);
+
+	explicit tMeetingRequestMessage(const tinyxml2::XMLElement*);
+	void update(const sShape&);
+
+	void serialize(tinyxml2::XMLElement*) const;
 
 	// <!--- MeetingRequest properties -->
-
-	// <xs:element name="MeetingRequestType" type="t:MeetingRequestTypeType" minOccurs="0" />
-	// <xs:element name="IntendedFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
+	std::optional<Enum::MeetingRequestTypeType> MeetingRequestType;
+	std::optional<Enum::LegacyFreeBusyType> IntendedFreeBusyStatus;
 
 	// <!-- Calendar Properties of the associated meeting request -->
-
 	// <!-- Single and Occurrence only -->
-
-	// <xs:element name="Start" type="xs:dateTime" minOccurs="0" />
-	// <xs:element name="End" type="xs:dateTime" minOccurs="0" />
+	std::optional<sTimePoint> Start;
+	std::optional<sTimePoint> End;
 
 	// <!-- Occurrence only -->
-
-	// <xs:element name="OriginalStart" type="xs:dateTime" minOccurs="0" />
-
-	// <xs:element name="IsAllDayEvent" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="LegacyFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
-	// <xs:element name="Location" type="xs:string" minOccurs="0" />
+	std::optional<time_point> OriginalStart;
+	std::optional<bool> IsAllDayEvent;
+	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
+	std::optional<std::string> Location;
 	// <xs:element name="When" type="xs:string" minOccurs="0" />
-	// <xs:element name="IsMeeting" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="IsCancelled" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="IsRecurring" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="MeetingRequestWasSent" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="CalendarItemType" type="t:CalendarItemTypeType" minOccurs="0" />
-	// <xs:element name="MyResponseType" type="t:ResponseTypeType" minOccurs="0" />
-	// <xs:element name="Organizer" type="t:SingleRecipientType" minOccurs="0" />
-	// <xs:element name="RequiredAttendees" type="t:NonEmptyArrayOfAttendeesType" minOccurs="0" />
-	// <xs:element name="OptionalAttendees" type="t:NonEmptyArrayOfAttendeesType" minOccurs="0" />
-	// <xs:element name="Resources" type="t:NonEmptyArrayOfAttendeesType" minOccurs="0" />
+	std::optional<bool> IsMeeting;
+	std::optional<bool> IsCancelled;
+	std::optional<bool> IsRecurring;
+	std::optional<bool> MeetingRequestWasSent;
+	std::optional<Enum::CalendarItemTypeType> CalendarItemType;
+	std::optional<Enum::ResponseTypeType> MyResponseType;
+	std::optional<tSingleRecipient> Organizer;
+	std::optional<std::vector<tAttendee>> RequiredAttendees;
+	std::optional<std::vector<tAttendee>> OptionalAttendees;
+	std::optional<std::vector<tAttendee>> Resources;
 
 	// <!-- Conflicting and adjacent meetings -->
-
 	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
 	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
 	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
@@ -2451,30 +2466,26 @@ struct tMeetingRequestMessage : public tMeetingMessage {
 
 	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
 	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
-
-	// <xs:element name="AppointmentReplyTime" type="xs:dateTime" minOccurs="0" />
-	// <xs:element name="AppointmentSequenceNumber" type="xs:int" minOccurs="0" />
-	// <xs:element name="AppointmentState" type="xs:int" minOccurs="0" />
+	std::optional<time_point> AppointmentReplyTime;
+	std::optional<int> AppointmentSequenceNumber;
+	std::optional<int> AppointmentState;
 
 	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
-
-	// <xs:element name="Recurrence" type="t:RecurrenceType" minOccurs="0" />
+	std::optional<tRecurrenceType> Recurrence;
 	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
 	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	// <xs:element name="ModifiedOccurrences" type="t:NonEmptyArrayOfOccurrenceInfoType" minOccurs="0" />
-	// <xs:element name="DeletedOccurrences" type="t:NonEmptyArrayOfDeletedOccurrencesType" minOccurs="0" />
+	std::optional<std::vector<tOccurrenceInfoType>> ModifiedOccurrences;
+	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
 	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0" />
 	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-
 	// <xs:element name="ConferenceType" type="xs:int" minOccurs="0" />
-	// <xs:element name="AllowNewTimeProposal" type="xs:boolean" minOccurs="0" />
+	std::optional<bool> AllowNewTimeProposal;
 	// <xs:element name="IsOnlineMeeting" type="xs:boolean" minOccurs="0" />
 	// <xs:element name="MeetingWorkspaceUrl" type="xs:string" minOccurs="0" />
 	// <xs:element name="NetShowUrl" type="xs:string" minOccurs="0" />
 	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
-	// <xs:element name="ChangeHighlights" type="t:ChangeHighlightsType" minOccurs="0" />
-
+	std::optional<tChangeHighlights> ChangeHighlights;
 	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="StartTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />

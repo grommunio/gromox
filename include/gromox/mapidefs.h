@@ -1553,6 +1553,15 @@ enum { /* for PidLidResponseStatus */
 	respNotResponded,
 };
 
+enum { /* for PidLidMeetingType */
+	mtgEmpty         = 0x00000000,
+	mtgRequest       = 0x00000001,
+	mtgFull          = 0x00010000,
+	mtgInfo          = 0x00020000,
+	mtgOutOfDate     = 0x00080000,
+	mtgDelegatorCopy = 0x00100000,
+};
+
 enum {
 	MEMBER_ID_DEFAULT = 0,
 	MEMBER_ID_ANONYMOUS = -1,

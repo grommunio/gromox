@@ -188,6 +188,7 @@ struct Enum {
 	STR(FreeBusyTimeOnly);
 	STR(Friday);
 	STR(FullDetails);
+	STR(FullUpdate);
 	STR(Good);
 	STR(GroupMailbox);
 	STR(HTML);
@@ -201,6 +202,7 @@ struct Enum {
 	STR(Id);
 	STR(IdOnly);
 	STR(ImplicitContact);
+	STR(InformationalUpdate);
 	STR(InProgress);
 	STR(Integer);
 	STR(IntegerArray);
@@ -250,6 +252,7 @@ struct Enum {
 	STR(MovedEvent);
 	STR(Msn);
 	STR(NewMailEvent);
+	STR(NewMeetingRequest);
 	STR(NoData);
 	STR(NoResponseReceived);
 	STR(NoneditingAuthor);
@@ -274,6 +277,7 @@ struct Enum {
 	STR(Other);
 	STR(OtherFax);
 	STR(OtherTelephone);
+	STR(Outdated);
 	STR(OutOfOfficeMessage);
 	STR(OwaId);
 	STR(Owned);
@@ -285,6 +289,7 @@ struct Enum {
 	STR(Poor);
 	STR(PreferAccessibleContent);
 	STR(PrimaryPhone);
+	STR(PrincipalWantsCopy);
 	STR(Private);
 	STR(PrivateDL);
 	STR(ProtectionRules);
@@ -316,6 +321,7 @@ struct Enum {
 	STR(Sharing); //=Caring
 	STR(Short);
 	STR(ShortArray);
+	STR(SilentUpdate);
 	STR(Single);
 	STR(SoftDelete);
 	STR(SoftDeleted);
@@ -453,6 +459,7 @@ struct Enum {
 	using MailTipTypes = StrEnum<All, OutOfOfficeMessage, MailboxFullStatus, CustomMailTip, ExternalMemberCount, TotalMemberCount, MaxMessageSize, DeliveryRestriction, ModerationStatus, InvalidRecipient, Scope, RecipientSuggestions, PreferAccessibleContent>; ///< Types.xsd:6947
 	using MapiPropertyTypeType = StrEnum<ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray, Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object, ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray>; ///< Types.xsd:1060
 	using MeetingAttendeeType = StrEnum<Organizer, Required, Optional, Room, Resource>; ///< Types.xsd:6278
+	using MeetingRequestTypeType = StrEnum<None, FullUpdate, InformationalUpdate, NewMeetingRequest, Outdated, SilentUpdate, PrincipalWantsCopy>; ///< Types.xsd:4310
 	using MessageDispositionType = StrEnum<SaveOnly, SendOnly, SendAndSaveCopy>; ///< Types.xsd:3997
 	using MonthNamesType = StrEnum<January, February, March, April, May, June, July, August, September, October, November, December>; ///< Types.xsd:4510
 	using NotificationEventType = StrEnum<CopiedEvent, CreatedEvent, DeletedEvent, ModifiedEvent, MovedEvent, NewMailEvent, FreeBusyChangedEvent>; ///< Types.xsd:6085
