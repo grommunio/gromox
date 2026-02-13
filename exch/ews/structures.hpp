@@ -3472,6 +3472,36 @@ struct mGetAttachmentResponse {
 };
 
 /**
+ * Messages.xsd:1502
+ */
+struct mDeleteAttachmentRequest {
+	mDeleteAttachmentRequest(const tinyxml2::XMLElement *);
+
+	std::vector<tRequestAttachmentId> AttachmentIds;
+};
+
+/**
+ * Messages.xsd:1512
+ */
+struct mDeleteAttachmentResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "DeleteAttachmentResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+	using mResponseMessageType::success;
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::optional<sBase64Binary> RootItemId;
+	std::optional<sBase64Binary> RootItemChangeKey;
+};
+
+struct mDeleteAttachmentResponse {
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::vector<mDeleteAttachmentResponseMessage> ResponseMessages;
+};
+
+/**
  * Messages.xsd:2002
  */
 struct mGetEventsRequest {
