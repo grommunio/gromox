@@ -3870,6 +3870,7 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	dg_notify(std::move(notifq));
+	*outmid = eid_t(1, *outmid);
 	*pe_result = ecSuccess;
 	return TRUE;
 }

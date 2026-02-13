@@ -434,7 +434,7 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
 		fprintf(stderr, "exm: write_message: %s\n", mapi_strerror(ret));
 		return -EIO;
 	} else if (g_verbose_create) {
-		fprintf(stderr, "Created new message 0x%llx:0x%llx\n",
+		fprintf(stderr, "Created new message f%llu:m%llu\n",
 			LLU{rop_util_get_gc_value(parent_fld)},
 			LLU{rop_util_get_gc_value(outmid)});
 	}
