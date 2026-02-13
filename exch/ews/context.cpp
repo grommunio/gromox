@@ -396,7 +396,7 @@ EWSContext::EWSContext(detail::ContextKey id, const HTTP_AUTH_INFO &ai,
 	m_request(data, length), m_response(p.server_version()), m_plugin(p),
 	m_created(tp_now())
 {
-	tinyxml2::XMLElement* imp = nullptr;
+	tinyxml2::XMLElement *imp = nullptr;
 	if (m_request.header && (imp = m_request.header->FirstChildElement("ExchangeImpersonation")) &&
 	   (imp = imp->FirstChildElement("ConnectingSID")) && (imp = imp->FirstChildElement()))
 		impersonate(imp->Name(), imp->GetText());

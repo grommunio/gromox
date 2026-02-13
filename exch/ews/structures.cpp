@@ -1999,11 +1999,11 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"IsReadReceiptRequested", {[](auto&&... args){convBool(PR_READ_RECEIPT_REQUESTED, args...);}}},
 	{"JobTitle", {[](auto&&... args){convText(PR_TITLE, args...);}}},
 	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
-	{"MimeContent", {[](const tinyxml2::XMLElement* xml, sShape& shape){shape.mimeContent = base64_decode(xml->GetText());}}},
+	{"MimeContent", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.mimeContent = base64_decode(xml->GetText()); }}},
 	{"Nickname", {[](auto&&... args){convText(PR_NICKNAME, args...);}}},
 	{"OfficeLocation", {[](auto&&... args){convText(PR_OFFICE_LOCATION, args...);}}},
-	{"PermissionSet", {[](const tinyxml2::XMLElement* xml, sShape& shape){shape.calendarPermissionSet = xml;}, "CalendarFolder"}},
-	{"PermissionSet", {[](const tinyxml2::XMLElement* xml, sShape& shape){shape.permissionSet = xml;}}},
+	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.calendarPermissionSet = xml; }, "CalendarFolder"}},
+	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.permissionSet = xml; }}},
 	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
 	{"Sensitivity", {[](auto&&... args) {convEnumIndex<Enum::SensitivityChoicesType>(PR_SENSITIVITY, args...);}}},
 	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
@@ -2067,7 +2067,7 @@ TAGGED_PROPVAL tChangeDescription::mkProp(proptag_t tag, const T &val)
  * @param      value  Value structure
  * @param      shape  Shape to write the property to
  */
-void tChangeDescription::convProp(const char* type, const char* name, const tinyxml2::XMLElement* value, sShape& shape)
+void tChangeDescription::convProp(const char *type, const char *name, const tinyxml2::XMLElement *value, sShape &shape)
 {
 	const Field* field = find(type, name);
 	if (!field) {
@@ -2083,7 +2083,7 @@ void tChangeDescription::convProp(const char* type, const char* name, const tiny
  * @param      xml     XML node containing the body
  * @param      shape   Shape to store the data in
  */
-void tChangeDescription::convBody(const tinyxml2::XMLElement* xml, sShape& shape)
+void tChangeDescription::convBody(const tinyxml2::XMLElement *xml, sShape &shape)
 {
 	const char* bodyType = xml->Attribute("BodyType");
 	Enum::BodyTypeType type = bodyType ? bodyType : Enum::Text;
@@ -2154,7 +2154,7 @@ void tChangeDescription::convDate(proptag_t tag, const XMLElement *v, sShape &sh
  * @param      v      XML value node
  * @param      shape  Shape to store property in
  */
-void tChangeDescription::convDate(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
+void tChangeDescription::convDate(const PROPERTY_NAME &name, const XMLElement *v, sShape &shape)
 {
 	auto tag = shape.tag(name);
 	if (tag)
@@ -2193,7 +2193,7 @@ void tChangeDescription::convEnumIndex(proptag_t tag, const XMLElement *v, sShap
  * @tparam     PT     Numeric property type
  */
 template<typename ET, typename PT>
-void tChangeDescription::convEnumIndex(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
+void tChangeDescription::convEnumIndex(const PROPERTY_NAME &name, const XMLElement *v, sShape &shape)
 {
 	shape.write(mkProp(shape.tag(name), PT(ET(znul(v->GetText())).index())));
 }
@@ -2217,7 +2217,7 @@ void tChangeDescription::convText(proptag_t tag, const XMLElement *v, sShape &sh
  * @param      v      XML value node
  * @param      shape  Shape to store property in
  */
-void tChangeDescription::convText(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
+void tChangeDescription::convText(const PROPERTY_NAME &name, const XMLElement *v, sShape &shape)
 {
 	auto tag = shape.tag(name);
 	if (tag)
@@ -2238,7 +2238,7 @@ void tChangeDescription::convStrArray(proptag_t tag, const XMLElement *v, sShape
 	shape.write(TAGGED_PROPVAL{tag, categories});
 }
 
-void tChangeDescription::convStrArray(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
+void tChangeDescription::convStrArray(const PROPERTY_NAME &name, const XMLElement *v, sShape &shape)
 {
 	auto tag = shape.tag(name);
 	if (tag)
@@ -2679,7 +2679,7 @@ RESTRICTION* tRestriction::build(const sGetNameId& getId) const
 	return restriction;
 }
 
-void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
+void tRestriction::deserialize(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
 {
 	const char* name = src->Name();
 	if (!strcmp(name, "And") || !strcmp(name, "Or")) {
@@ -2700,7 +2700,7 @@ void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src
 	}
 }
 
-void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
+void tRestriction::build_andor(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
 {
 	dst.rt = strcmp(src->Name(), "And") ? mapi_rtype::r_or : mapi_rtype::r_and;
 	dst.andor = EWSContext::alloc<RESTRICTION_AND_OR>();
@@ -2714,10 +2714,10 @@ void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src
 		deserialize(*res++, child, getId);
 }
 
-void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* src, relop op, const sGetNameId& getId)
+void tRestriction::build_compare(RESTRICTION &dst, const tinyxml2::XMLElement *src, relop op, const sGetNameId &getId)
 {
 	auto tag = getTag(src, getId);
-	const tinyxml2::XMLElement* cmptarget = src->FirstChildElement("FieldURIOrConstant");
+	const tinyxml2::XMLElement *cmptarget = src->FirstChildElement("FieldURIOrConstant");
 	if (!cmptarget)
 		throw EWSError::InvalidRestriction(E3221);
 	void* constantData = loadConstant(cmptarget, PROP_TYPE(tag));
@@ -2738,7 +2738,7 @@ void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* s
 	}
 }
 
-void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
+void tRestriction::build_contains(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
 {
 	dst.rt = mapi_rtype::content;
 	dst.cont = EWSContext::construct<RESTRICTION_CONTENT>();
@@ -2780,7 +2780,7 @@ void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* 
 		throw EWSError::InvalidRestriction(E3228(comp));
 }
 
-void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
+void tRestriction::build_excludes(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
 {
 	dst.rt = mapi_rtype::bitmask;
 	dst.bm = EWSContext::construct<RESTRICTION_BITMASK>();
@@ -2789,13 +2789,13 @@ void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* 
 		throw EWSError::InvalidRestriction(E3229);
 	if (!dst.bm->comparable())
 		throw EWSError::InvalidRestriction(E3230(tExtendedFieldURI::typeName(PROP_TYPE(dst.bm->proptag)), dst.bm->proptag));
-	const tinyxml2::XMLElement* bitmask = src->FirstChildElement("BitMask");
+	const tinyxml2::XMLElement *bitmask = src->FirstChildElement("BitMask");
 	if (!bitmask)
 		throw EWSError::InvalidRestriction(E3231);
 	dst.bm->mask = bitmask->UnsignedAttribute("Value");
 }
 
-void tRestriction::build_exists(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
+void tRestriction::build_exists(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
 {
 	dst.rt = mapi_rtype::exist;
 	dst.exist = EWSContext::construct<RESTRICTION_EXIST>();
@@ -2803,9 +2803,9 @@ void tRestriction::build_exists(RESTRICTION& dst, const tinyxml2::XMLElement* sr
 		throw EWSError::InvalidRestriction(E3232);
 }
 
-void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
+void tRestriction::build_not(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
 {
-	const tinyxml2::XMLElement* child = src->FirstChildElement();
+	const tinyxml2::XMLElement *child = src->FirstChildElement();
 	if (!child)
 		throw EWSError::InvalidRestriction(E3233);
 	dst.rt = mapi_rtype::r_not;
@@ -2815,7 +2815,7 @@ void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src, 
 
 void *tRestriction::loadConstant(const tinyxml2::XMLElement *parent, proptype_t type)
 {
-	const tinyxml2::XMLElement* constantNode = parent->FirstChildElement("Constant");
+	const tinyxml2::XMLElement *constantNode = parent->FirstChildElement("Constant");
 	if (!constantNode)
 		return nullptr;
 	const char* value = constantNode->Attribute("Value");
@@ -3037,7 +3037,7 @@ void tExtendedProperty::deserializeMV(const XMLElement *xml, proptype_t type, T 
 	     child != nullptr; child = child->NextSiblingElement("Value"))
 		++container->count;
 	container->*values = EWSContext::alloc<T>(container->count);
-	const XMLElement* child = xml->FirstChildElement("Value");
+	const XMLElement *child = xml->FirstChildElement("Value");
 	for (T *value = container->*values; value < container->*values + container->count; ++value) {
 		deserialize(child, type&~MV_FLAG, value);
 		child = child->NextSiblingElement("Value");
@@ -4479,7 +4479,7 @@ bool tSerializableTimeZoneTime::valid() const
  */
 void tSetFolderField::put(sShape& shape) const
 {
-	const XMLElement* child = folder->FirstChildElement();
+	const XMLElement *child = folder->FirstChildElement();
 	if (!child)
 		throw EWSError::InvalidExtendedPropertyValue(E3178);
 	if (!strcmp(child->Name(), "ExtendedProperty")) {
@@ -4502,7 +4502,7 @@ void tSetFolderField::put(sShape& shape) const
  */
 void tSetItemField::put(sShape& shape) const
 {
-	const XMLElement* child = item->FirstChildElement();
+	const XMLElement *child = item->FirstChildElement();
 	if (!child)
 		throw EWSError::InvalidExtendedPropertyValue(E3108);
 	if (!strcmp(child->Name(), "ExtendedProperty")) {
@@ -4523,9 +4523,9 @@ void tSetItemField::put(sShape& shape) const
 			mlog(LV_WARN, "ews: unsupported indexed property type for %s/%s", uri.FieldURI.c_str(), uri.FieldIndex.c_str());
 			return;
 		}
-		const tinyxml2::XMLElement* value = item;
+		const tinyxml2::XMLElement *value = item;
 		// The value is contained in the lower most text node. The XML path is ignored.
-		for (const tinyxml2::XMLElement *temp= item->FirstChildElement();
+		for (const tinyxml2::XMLElement *temp = item->FirstChildElement();
 		     temp != nullptr; temp = temp->FirstChildElement())
 			value = temp;
 		const char*	text = value->GetText(); // Life time of the XML node exceeds shape, no need to copy value

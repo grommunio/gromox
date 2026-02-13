@@ -27,7 +27,7 @@ Envelope::Envelope(const VersionInfo &ver, bool with_decl)
 		auto decl = doc.NewDeclaration();
 		doc.InsertEndChild(decl);
 	}
-	XMLElement* root = doc.NewElement("SOAP:Envelope");
+	XMLElement *root = doc.NewElement("SOAP:Envelope");
 	doc.InsertEndChild(root);
 	root->SetAttribute("xmlns:SOAP", NS_SOAP);
 	root->SetAttribute("xmlns:xsi", NS_XSI);
@@ -35,7 +35,7 @@ Envelope::Envelope(const VersionInfo &ver, bool with_decl)
 	header = root->InsertNewChildElement("SOAP:Header");
 	body = root->InsertNewChildElement("SOAP:Body");
 
-	XMLElement* ServerVersionInfo = header->InsertNewChildElement("t:ServerVersionInfo");
+	XMLElement *ServerVersionInfo = header->InsertNewChildElement("t:ServerVersionInfo");
 	ServerVersionInfo->SetAttribute("xmlns:t", NS_TYPS);
 	ServerVersionInfo->SetAttribute("MajorVersion", ver.server[0]);
 	ServerVersionInfo->SetAttribute("MinorVersion", ver.server[1]);
@@ -52,7 +52,7 @@ Envelope::Envelope(const VersionInfo &ver, bool with_decl)
 Envelope::Envelope(const char* content, size_t nBytes)
 {
 	doc.Parse(content, nBytes);
-	XMLElement* envelope = doc.RootElement();
+	XMLElement *envelope = doc.RootElement();
 	if (!envelope)
 		throw SOAPError("Invalid XML");
 	clean(envelope);
@@ -71,7 +71,7 @@ Envelope::Envelope(const char* content, size_t nBytes)
  *
  * @param      element  XMLElement to clean
  */
-void Envelope::clean(XMLElement* element)
+void Envelope::clean(XMLElement *element)
 {
 	const char* prefix = strchr(element->Name(), ':');
 	if (prefix)

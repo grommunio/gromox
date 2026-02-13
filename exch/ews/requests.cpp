@@ -116,7 +116,7 @@ std::optional<std::string> readMessageBody(const std::string &path) try
  */
 std::optional<tSerializableTimeZone> timezone_from_context(const EWSContext& ctx)
 {
-	const XMLElement* tag = ctx.request().header;
+	const XMLElement *tag = ctx.request().header;
 	if (tag == nullptr)
 		return std::nullopt;
 	/* SOAP::Envelope::clean() strips namespace prefixes from element names */
@@ -308,7 +308,7 @@ static tRoomListEntry make_room_list_entry(const sql_domain& domain)
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mConvertIdRequest&& request, XMLElement* response, EWSContext& ctx)
+void process(mConvertIdRequest &&request, XMLElement *response, EWSContext &ctx)
 {
 	response->SetName("m:ConvertIdResponse");
 	ctx.response().body->SetAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
@@ -422,7 +422,7 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
 */
-void process(mGetDelegateRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mGetDelegateRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetDelegateResponse");
 
@@ -473,7 +473,7 @@ void process(mGetDelegateRequest&& request, XMLElement* response, const EWSConte
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mCreateFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mCreateFolderRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:CreateFolderResponse");
 
@@ -503,7 +503,7 @@ void process(mCreateFolderRequest&& request, XMLElement* response, const EWSCont
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mCreateItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mCreateItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:CreateItemResponse");
 
@@ -732,7 +732,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mDeleteFolderRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:DeleteFolderResponse");
 
@@ -782,7 +782,7 @@ void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSCont
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:DeleteItemResponse");
 
@@ -838,7 +838,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mEmptyFolderRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:EmptyFolderResponse");
 
@@ -876,7 +876,7 @@ void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSConte
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mFindFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mFindFolderRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:FindFolderResponse");
 
@@ -953,7 +953,7 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mFindItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mFindItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:FindItemResponse");
 
@@ -1048,7 +1048,7 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetAppManifestsRequest&&, XMLElement* response, const EWSContext&)
+void process(mGetAppManifestsRequest&&, XMLElement *response, const EWSContext&)
 {
 	response->SetName("m:GetAppManifestsResponse");
 
@@ -1064,7 +1064,7 @@ void process(mGetAppManifestsRequest&&, XMLElement* response, const EWSContext&)
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mGetAttachmentRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetAttachmentResponse");
 
@@ -1095,7 +1095,7 @@ void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSCon
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetEventsRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mGetEventsRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetEventsResponse");
 
@@ -1126,7 +1126,7 @@ void process(mGetEventsRequest&& request, XMLElement* response, const EWSContext
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetFolderResponse");
 
@@ -1167,7 +1167,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetInboxRulesRequest&&, XMLElement* response, const EWSContext&)
+void process(mGetInboxRulesRequest&&, XMLElement *response, const EWSContext&)
 {
 	response->SetName("m:GetInboxRulesResponse");
 
@@ -1191,7 +1191,7 @@ void process(mGetInboxRulesRequest&&, XMLElement* response, const EWSContext&)
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSContext&)
+void process(mGetMailTipsRequest &&request, XMLElement *response, const EWSContext&)
 {
 	response->SetName("m:GetMailTipsResponse");
 
@@ -1216,7 +1216,7 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
 /**
  * @brief      Process GetRoomListsRequest
  */
-void process(mGetRoomListsRequest&&, XMLElement* response, const EWSContext& ctx)
+void process(mGetRoomListsRequest&&, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetRoomListsResponse");
 
@@ -1254,7 +1254,7 @@ void process(mGetRoomListsRequest&&, XMLElement* response, const EWSContext& ctx
 /**
  * @brief      Process GetRoomsRequest
  */
-void process(mGetRoomsRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mGetRoomsRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetRoomsResponse");
 
@@ -1299,7 +1299,7 @@ void process(mGetRoomsRequest&& request, XMLElement* response, const EWSContext&
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSContext&)
+void process(mGetServiceConfigurationRequest&&, XMLElement *response, const EWSContext&)
 {
 	response->SetName("m:GetServiceConfigurationResponse");
 
@@ -1323,7 +1323,7 @@ void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSC
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetUserAvailabilityResponse");
 
@@ -1388,7 +1388,7 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetStreamingEventsRequest&& request, XMLElement* response, EWSContext& ctx)
+void process(mGetStreamingEventsRequest &&request, XMLElement *response, EWSContext &ctx)
 {
 	response->SetName("m:GetStreamingEventsResponse");
 
@@ -1421,7 +1421,7 @@ void process(mGetStreamingEventsRequest&& request, XMLElement* response, EWSCont
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetUserConfigurationRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mGetUserConfigurationRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetUserConfigurationResponse");
 
@@ -1520,7 +1520,7 @@ void process(mGetUserConfigurationRequest&& request, XMLElement* response, const
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mGetUserOofSettingsRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	//Set name of the response node
 	response->SetName("m:GetUserOofSettingsResponse");
@@ -1595,7 +1595,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& ctx)
+void process(mGetUserPhotoRequest &&request, XMLElement *response, EWSContext &ctx)
 {
 	response->SetName("m:GetUserPhotoResponse");
 
@@ -1631,7 +1631,7 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWSContext& ctx)
+void process(const mBaseMoveCopyFolder &request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName(request.copy ? "m:CopyFolderResponse" : "m:MoveFolderResponse");
 
@@ -1674,7 +1674,7 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSContext& ctx)
+void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName(request.copy ? "m:CopyItemResponse" : "m:MoveItemResponse");
 
@@ -1726,7 +1726,7 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mSetUserOofSettingsRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:SetUserOofSettingsResponse");
 
@@ -1779,7 +1779,7 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mSyncFolderHierarchyRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:SyncFolderHierarchyResponse");
 
@@ -1847,7 +1847,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:SyncFolderItemsResponse");
 
@@ -1967,7 +1967,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
  *
  * @todo optimize shape generation
  */
-void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetItemResponse");
 
@@ -2010,7 +2010,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
  * @todo consider attributes
  * @todo support contacts
  */
-void process(mResolveNamesRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mResolveNamesRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:ResolveNamesResponse");
 
@@ -2068,7 +2068,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mSendItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mSendItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:SendItemResponse");
 
@@ -2123,7 +2123,7 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mUpdateFolderRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:UpdateFolderResponse");
 
@@ -2173,7 +2173,7 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mSubscribeRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mSubscribeRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:SubscribeResponse");
 
@@ -2192,7 +2192,7 @@ void process(mSubscribeRequest&& request, XMLElement* response, const EWSContext
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mUnsubscribeRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mUnsubscribeRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:UnsubscribeResponse");
 
@@ -2215,7 +2215,7 @@ void process(mUnsubscribeRequest&& request, XMLElement* response, const EWSConte
  *
  * @todo check whether instances should rathe be used
  */
-void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:UpdateItemResponse");
 

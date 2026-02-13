@@ -221,7 +221,7 @@ void* EWSContext::alloc(size_t count)
  * @tparam     T         Request data type
  */
 template<typename T>
-static void process(const XMLElement* request, XMLElement* response, EWSContext& context)
+static void process(const XMLElement *request, XMLElement *response, EWSContext& context)
 {
 	Requests::process(T(request), response, context);
 }
@@ -360,7 +360,7 @@ http_status EWSPlugin::dispatch(detail::ContextKey ctx_id, HTTP_AUTH_INFO &auth_
 	           std::make_unique<EWSContext>(ctx_id,
 	           auth_info, static_cast<const char *>(data), len, *this);
 	EWSContext& context = *pc;
-	const XMLElement* request = context.request().body->FirstChildElement();
+	const XMLElement *request = context.request().body->FirstChildElement();
 	if (!request)
 		return fault(ctx_id, http_status::bad_request, "Missing request node");
 	if (request->NextSibling())
@@ -373,7 +373,7 @@ http_status EWSPlugin::dispatch(detail::ContextKey ctx_id, HTTP_AUTH_INFO &auth_
 		mlog(LV_DEBUG, "[ews#%d]%s Incoming data: %.*s", ctx_id, timestamp().c_str(),
 		     len > INT_MAX ? INT_MAX : static_cast<int>(len), static_cast<const char *>(data));
 
-	XMLElement* responseContainer = context.response().body->InsertNewChildElement(request->Name());
+	XMLElement *responseContainer = context.response().body->InsertNewChildElement(request->Name());
 	responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 	responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
 	if (enableLog && request_logging)
@@ -646,7 +646,7 @@ int EWSContext::notify()
 	mGetStreamingEventsResponse data;
 	mGetStreamingEventsResponseMessage& msg = data.ResponseMessages.emplace_back();
 	SOAP::Envelope envelope(m_plugin.server_version(), SOAP::Envelope::WITHOUT_DECL);
-	tinyxml2::XMLElement* response = envelope.body->InsertNewChildElement("m:GetStreamingEventsResponse");
+	tinyxml2::XMLElement *response = envelope.body->InsertNewChildElement("m:GetStreamingEventsResponse");
 	response->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 	response->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
 	auto flush = [&]() {
