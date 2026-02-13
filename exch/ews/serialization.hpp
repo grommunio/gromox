@@ -509,7 +509,7 @@ T fromXMLNodeVariantFind(const tinyxml2::XMLElement *parent)
 	} else {
 		using Contained = std::variant_alternative_t<I, T>;
 		const char* tname = getName<Contained>();
-		const tinyxml2::XMLElement *child;
+		const tinyxml2::XMLElement *child = nullptr;
 		if (!tname || !(child = parent->FirstChildElement(tname)))
 			return fromXMLNodeVariantFind<T, I + 1>(parent);
 		return T(std::in_place_index_t<I>(), fromXMLNodeDispatch<Contained>(child));
@@ -707,7 +707,7 @@ static tinyxml2::XMLElement *toXMLNode(tinyxml2::XMLElement *parent, const char 
 	if constexpr(BaseType<T>::container == OPTIONAL)
 		if (!value)
 			return nullptr;
-	tinyxml2::XMLElement *xml;
+	tinyxml2::XMLElement *xml = nullptr;
 	if constexpr (BaseType<T>::container == VARIANT) {
 		name = getName(value, name);
 		const char* ns = getNSPrefix(value);

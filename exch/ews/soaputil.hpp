@@ -31,8 +31,8 @@ class Envelope {
 	explicit Envelope(const char *, size_t = static_cast<size_t>(-1));
 
 	tinyxml2::XMLDocument doc; ///< XML document containing the envelope
-	tinyxml2::XMLElement *body; ///< SOAP body element
-	tinyxml2::XMLElement *header; ///< SOAP header element
+	tinyxml2::XMLElement *body = nullptr; ///< SOAP body element
+	tinyxml2::XMLElement *header = nullptr; ///< SOAP header element
 
 	static std::string fault(const char*, const char*);
 
