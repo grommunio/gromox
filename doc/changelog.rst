@@ -6,11 +6,13 @@ Enhancements:
 * Finer-grained control over listening socket creation, including new config
   directives (`http_listen`, `imap_listen_tls`, etc.) for specifying these.
   This makes it possible not having to use the wildcard address.
+* importer: make -B option usable with public stores
 
 Fixes:
 
 * emsmdb: async notification connections were not marked active and would not
   deliver a signal of new pending events.
+* emsmdb: fix UAF/crash when notifications are sent over RPCH
 * oxcical: upon reception of non-recurring appointments, the PidLidRecurring=0
   property will be set now, as some Outlook versions fail to show appointments
   in the daily/weekly/monthly view if the property is absent.
