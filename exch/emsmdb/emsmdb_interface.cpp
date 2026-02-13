@@ -534,7 +534,7 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 	auto cl_0 = HX::make_scope_exit([&]() {
 		if (is_success)
 			return;
-		memset(pcxh, 0, sizeof(CXH));
+		*pcxh = {};
 		*pmax_polls = 0;
 		*pmax_retry = 0;
 		*pretry_delay = 0;
@@ -657,7 +657,7 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	/* ms-oxcrpc 3.1.4.2 */
 	if (cb_in < 8 || *pcb_out < 8) {
 		*pcb_out = 0;
-		memset(pcxh, 0, sizeof(CXH));
+		*pcxh = {};
 		return ecRpcFailed;
 	}
 	if (cb_in > 0x40000)
@@ -670,28 +670,28 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	 */
 	if (cb_auxin > 0x1008) {
 		*pcb_out = 0;
-		memset(pcxh, 0, sizeof(CXH));
+		*pcxh = {};
 		return RPC_X_BAD_STUB_DATA;
 	}
 	auto first_time = tp_now();
 	phandle = emsmdb_interface_get_handle_data(pcxh);
 	if (NULL == phandle) {
 		*pcb_out = 0;
-		memset(pcxh, 0, sizeof(CXH));
+		*pcxh = {};
 		return ecError;
 	}
 	auto rpc_info = get_rpc_info();
 	if (0 != strcasecmp(phandle->username, rpc_info.username)) {
 		emsmdb_interface_put_handle_data(phandle);
 		*pcb_out = 0;
-		memset(pcxh, 0, sizeof(CXH));
+		*pcxh = {};
 		return ecAccessDenied;
 	}
 	if (first_time - phandle->last_time > HANDLE_VALID_INTERVAL) {
 		emsmdb_interface_put_handle_data(phandle);
 		emsmdb_interface_remove_handle(cxh);
 		*pcb_out = 0;
-		memset(pcxh, 0, sizeof(CXH));
+		*pcxh = {};
 		return ecError;
 	}
 	phandle->last_time = tp_now();

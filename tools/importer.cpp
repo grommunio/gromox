@@ -88,7 +88,8 @@ static void filter_folder_map(gi_folder_map_t &fmap)
 		fmap.emplace(MAILBOX_FID_UNANCHORED, tgt_folder{false, g_anchor_folder != 0 ?
 			g_anchor_folder : PRIVATE_FID_DRAFT, ""});
 	else
-		fmap.emplace(MAILBOX_FID_UNANCHORED, tgt_folder{false, PUBLIC_FID_IPMSUBTREE, ""});
+		fmap.emplace(MAILBOX_FID_UNANCHORED, tgt_folder{false, g_anchor_folder != 0 ?
+			g_anchor_folder : PUBLIC_FID_IPMSUBTREE, ""});
 	for (auto &p : fmap)
 		p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
 }
@@ -433,7 +434,7 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
 		fprintf(stderr, "exm: write_message: %s\n", mapi_strerror(ret));
 		return -EIO;
 	} else if (g_verbose_create) {
-		fprintf(stderr, "Created new message 0x%llx:0x%llx\n",
+		fprintf(stderr, "Created new message f%llu:m%llu\n",
 			LLU{rop_util_get_gc_value(parent_fld)},
 			LLU{rop_util_get_gc_value(outmid)});
 	}

@@ -741,7 +741,8 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		return ecRpcFailed;
 	}
 	if (g_ruleproc_debug)
-		mlog(LV_DEBUG, "ruleproc: OP_COPY/MOVE to %s:%llxh", newdir, LLU{dst_fid});
+		mlog(LV_DEBUG, "ruleproc: OP_COPY/MOVE to %s:f%llxh:m%llxh",
+			newdir, LLU{dst_fid}, LLU{rop_util_get_gc_value(outmid)});
 	if (act_type != OP_MOVE)
 		return ecSuccess;
 

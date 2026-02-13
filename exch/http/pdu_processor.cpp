@@ -963,7 +963,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		auto &u = pbind->ctx_list[1].transfer_syntaxes[0].uuid;
 		char bitmap = pcall->b_bigendian ? u.node[5] : u.clock_seq[0];
 		bind_ack->ctx_list[1].reason = bitmap & DCERPC_SECURITY_CONTEXT_MULTIPLEXING;;
-		memset(&bind_ack->ctx_list[1].syntax, 0, sizeof(SYNTAX_ID));
+		bind_ack->ctx_list[1].syntax = {};
 	}
 	bind_ack->ctx_list[0].result = result;
 	bind_ack->ctx_list[0].reason = reason;
