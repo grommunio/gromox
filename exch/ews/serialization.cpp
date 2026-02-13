@@ -237,10 +237,12 @@ sTime::sTime(const XMLElement *xml)
 		throw DeserializationError(E3042(xml->Name(), xml->GetText()));
 }
 
-sTimePoint::sTimePoint(const tinyxml2::XMLAttribute *xml) : sTimePoint(xml->Value())
+sTimePoint::sTimePoint(const tinyxml2::XMLAttribute *xml) :
+	sTimePoint(xml->Value())
 {}
 
-sTimePoint::sTimePoint(const tinyxml2::XMLElement *xml) : sTimePoint(xml->GetText())
+sTimePoint::sTimePoint(const tinyxml2::XMLElement *xml) :
+	sTimePoint(xml->GetText())
 {}
 
 void sTimePoint::serialize(XMLElement *xml) const
@@ -373,7 +375,8 @@ void tBaseObjectChangedEvent::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(ParentFolderId);
 }
 
-tBasePagingType::tBasePagingType(const tinyxml2::XMLElement *xml) : XMLINITA(MaxEntriesReturned)
+tBasePagingType::tBasePagingType(const tinyxml2::XMLElement *xml) :
+	XMLINITA(MaxEntriesReturned)
 {}
 
 tBasePermission::tBasePermission(const tinyxml2::XMLElement *xml) :
@@ -1479,7 +1482,8 @@ void tMovedCopiedEvent::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(OldParentFolderId);
 }
 
-tPath::tPath(const XMLElement *xml) : Base(fromXMLNodeDispatch<Base>(xml))
+tPath::tPath(const XMLElement *xml) :
+	Base(fromXMLNodeDispatch<Base>(xml))
 {}
 
 tPermission::tPermission(const tinyxml2::XMLElement *xml) :
@@ -1537,7 +1541,8 @@ tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement *xml) :
 	XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
 {}
 
-tSetFolderField::tSetFolderField(const tinyxml2::XMLElement *xml) : tChangeDescription(xml)
+tSetFolderField::tSetFolderField(const tinyxml2::XMLElement *xml) :
+	tChangeDescription(xml)
 {
 	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
@@ -1550,7 +1555,8 @@ tSetFolderField::tSetFolderField(const tinyxml2::XMLElement *xml) : tChangeDescr
 		throw InputError(E3177);
 }
 
-tSetItemField::tSetItemField(const tinyxml2::XMLElement *xml) : tChangeDescription(xml)
+tSetItemField::tSetItemField(const tinyxml2::XMLElement *xml) :
+	tChangeDescription(xml)
 {
 	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
