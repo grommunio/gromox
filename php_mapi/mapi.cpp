@@ -492,14 +492,14 @@ static bool opcache_is_interfering()
 
 	auto cl_0 = HX::make_scope_exit([&]() { zval_ptr_dtor(&zconfig); });
 	const char sz_directives[] = "directives";
-	const zval *pdirectives = zend_hash_str_find(Z_ARRVAL(zconfig),
+	zval *pdirectives = zend_hash_str_find(Z_ARRVAL(zconfig),
 	                          sz_directives, std::size(sz_directives) - 1);
 	if (pdirectives == nullptr || Z_TYPE_P(pdirectives) != IS_ARRAY)
 		return false;
 
 	/* look up directive['opcache.enable'] */
 	const char sz_enabled[] = "opcache.enable";
-	const zval *penabled = zend_hash_str_find(Z_ARRVAL_P(pdirectives),
+	zval *penabled = zend_hash_str_find(Z_ARRVAL_P(pdirectives),
 	                       sz_enabled, std::size(sz_enabled) - 1);
 	if (penabled == nullptr || !zval_get_long(penabled))
 		return false;
