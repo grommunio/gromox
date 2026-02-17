@@ -216,12 +216,6 @@ keep. The technical limit is somewhere around 2^47.
 .br
 Default: \fI0\fP (no limit)
 .TP
-\fBnotify_stub_threads_num\fP
-For every remote exmdb server in exmdb_list.txt, establish and keep this many
-number of outbound connections for receiving notification RPCs.
-.br
-Default: \fI4\fP
-.TP
 \fBpopulating_threads_num\fP
 The number of threads to spawn that will work on asynchronous search folder
 population.

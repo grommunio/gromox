@@ -68,7 +68,6 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"max_rpc_stub_threads", "4095M", CFG_SIZE},
 	{"max_rule_number", "1000", CFG_SIZE, "1", "2000"},
 	{"max_store_message_count", "0", CFG_SIZE},
-	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
 	{"populating_threads_num", "4", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
 	{"sqlite_debug", "0"},
@@ -175,7 +174,6 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		auto org_name = pconfig->get_value("x500_org_name");
 		int connection_num = pconfig->get_ll("rpc_proxy_connection_num");
-		int threads_num = pconfig->get_ll("notify_stub_threads_num");
 		size_t max_threads = pconfig->get_ll("max_rpc_stub_threads");
 		size_t max_routers = pconfig->get_ll("max_router_connections");
 		int table_size = pconfig->get_ll("table_size");
@@ -211,10 +209,10 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 
 		mlog(LV_INFO, "exmdb_provider: x500=\"%s\", "
-		        "rpc_proxyconn_num=%d, notify_stub_threads_num=%d, "
+		        "rpc_proxyconn_num=%d, "
 		        "db_hash_table_size=%d, cache_interval=%s, max_msgs_per_store=%d, "
 		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, popul_num=%d, smtp=%s",
-		        org_name, connection_num, threads_num, table_size,
+		        org_name, connection_num, table_size,
 		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
 		        populating_num, smtp_url.c_str());
 
@@ -225,8 +223,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		else
 			exmdb_parser_init(max_threads, max_routers);
 
-		exmdb_client.emplace(connection_num, threads_num);
-		
+		exmdb_client.emplace(connection_num);
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "mail_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
