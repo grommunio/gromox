@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2020 grommunio GmbH
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
@@ -7,107 +7,19 @@
 
 using namespace gromox;
 
-//#define E(s) [static_cast<unsigned int>(zcore_callid::s)] = #s
-//#define U(p, s) [p] = (s)
-#define E(s) (static_cast<void>(zcore_callid::s), #s)
-#define U(p, s) (s)
+//#define EDEF(str, num) [static_cast<unsigned int>(zcore_callid::str)] = #str
+//#define EOBSOL(num) [num] = (nullptr)
+#define EDEF(str, id) (static_cast<void>(zcore_callid::str), #str),
+#define EOBSOL(str, id) #str,
+#define EUNDEF(id) nullptr,
+
 static constexpr const char *zcore_rpc_names[] = {
-	E(logon),
-	E(unloadobject),
-	E(openentry),
-	E(openstoreentry),
-	E(openabentry),
-	E(resolvename),
-	U(0x06, nullptr),
-	E(getpermissions),
-	E(modifypermissions),
-	E(modifyrules),
-	E(getabgal),
-	E(loadstoretable),
-	E(openstore),
-	E(openprofilesec),
-	E(loadhierarchytable),
-	E(loadcontenttable),
-	E(loadrecipienttable),
-	U(0x17, nullptr),
-	E(loadruletable),
-	E(createmessage),
-	E(deletemessages),
-	E(copymessages),
-	E(setreadflags),
-	E(createfolder),
-	E(deletefolder),
-	E(emptyfolder),
-	E(copyfolder),
-	E(getstoreentryid),
-	E(entryidfromsourcekey),
-	E(storeadvise),
-	E(unadvise),
-	E(notifdequeue),
-	E(queryrows),
-	E(setcolumns),
-	E(seekrow),
-	E(sorttable),
-	E(getrowcount),
-	E(restricttable),
-	E(findrow),
-	E(createbookmark),
-	E(freebookmark),
-	E(getreceivefolder),
-	E(modifyrecipients),
-	E(submitmessage),
-	E(loadattachmenttable),
-	E(openattachment),
-	E(createattachment),
-	E(deleteattachment),
-	E(setpropvals),
-	E(getpropvals),
-	E(deletepropvals),
-	E(setmessagereadflag),
-	E(openembedded),
-	E(getnamedpropids),
-	E(getpropnames),
-	E(copyto),
-	E(savechanges),
-	E(hierarchysync),
-	E(contentsync),
-	E(configsync),
-	E(statesync),
-	E(syncmessagechange),
-	E(syncfolderchange),
-	E(syncreadstatechanges),
-	E(syncdeletions),
-	E(hierarchyimport),
-	E(contentimport),
-	E(configimport),
-	E(stateimport),
-	E(importmessage),
-	E(importfolder),
-	E(importdeletion),
-	E(importreadstates),
-	E(getsearchcriteria),
-	E(setsearchcriteria),
-	E(messagetorfc822),
-	U(0x4c, "rfc822tomessage(v1)"),
-	E(messagetoical),
-	E(icaltomessage),
-	E(messagetovcf),
-	E(vcftomessage),
-	E(uinfo),
-	E(checksession),
-	U(0x53, "getuseravailability"),
-	E(setpasswd),
-	E(linkmessage),
-	E(rfc822tomessage),
-	U(0x57, "icaltomessage2"),
-	E(imtomessage2),
-	E(essdn_to_username),	
-	E(logon_token),
-	E(getuserfreebusy),
-	E(getuserfreebusyical),
-	E(logon_np),
+#	include <gromox/zcore_allcalls.hpp>
 };
-#undef E
+
+#undef EDEF
+#undef EOBSOL
+#undef EUNDEF
 
 const char *zcore_rpc_idtoname(zcore_callid i)
 {

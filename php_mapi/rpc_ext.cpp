@@ -5,6 +5,16 @@
 #include "ext.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
+static inline pack_result zrpc_push(PUSH_CTX &x, const zcreq &d)
+{
+	return pack_result::ok;
+}
+
+static inline pack_result zrpc_pull(PULL_CTX &x, zcresp &d)
+{
+	return pack_result::ok;
+}
+
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_logon_token &d)
 {
 	TRY(x.p_str(d.token));
@@ -1132,101 +1142,21 @@ pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 		return pack_result::alloc;
 	TRY(push_ctx.advance(sizeof(uint32_t)));
 	TRY(push_ctx.p_uint8(static_cast<uint8_t>(prequest->call_id)));
+
+#define EDEF(t, id) case zcore_callid::t: b_result = zrpc_push(push_ctx, *static_cast<const zcreq_ ## t ::view_t *>(prequest)); break;
+#define EOBSOL(t, id)
+#define EUNDEF(id)
+
 	switch (prequest->call_id) {
-#define E(t) case zcore_callid::t: b_result = zrpc_push(push_ctx, *static_cast<const zcreq_ ## t ::view_t *>(prequest)); break;
-	E(logon)
-	E(checksession)
-	E(uinfo)
-	E(unloadobject)
-	E(openentry)
-	E(openstoreentry)
-	E(openabentry)
-	E(resolvename)
-	E(getpermissions)
-	E(modifypermissions)
-	E(modifyrules)
-	E(getabgal)
-	E(loadstoretable)
-	E(openstore)
-	E(openprofilesec)
-	E(loadhierarchytable)
-	E(loadcontenttable)
-	E(loadrecipienttable)
-	E(loadruletable)
-	E(createmessage)
-	E(deletemessages)
-	E(copymessages)
-	E(setreadflags)
-	E(createfolder)
-	E(deletefolder)
-	E(emptyfolder)
-	E(copyfolder)
-	E(getstoreentryid)
-	E(entryidfromsourcekey)
-	E(storeadvise)
-	E(unadvise)
-	E(notifdequeue)
-	E(queryrows)
-	E(setcolumns)
-	E(seekrow)
-	E(sorttable)
-	E(getrowcount)
-	E(restricttable)
-	E(findrow)
-	E(createbookmark)
-	E(freebookmark)
-	E(getreceivefolder)
-	E(modifyrecipients)
-	E(submitmessage)
-	E(loadattachmenttable)
-	E(openattachment)
-	E(createattachment)
-	E(deleteattachment)
-	E(setpropvals)
-	E(getpropvals)
-	E(deletepropvals)
-	E(setmessagereadflag)
-	E(openembedded)
-	E(getnamedpropids)
-	E(getpropnames)
-	E(copyto)
-	E(savechanges)
-	E(hierarchysync)
-	E(contentsync)
-	E(configsync)
-	E(statesync)
-	E(syncmessagechange)
-	E(syncfolderchange)
-	E(syncreadstatechanges)
-	E(syncdeletions)
-	E(hierarchyimport)
-	E(contentimport)
-	E(configimport)
-	E(stateimport)
-	E(importmessage)
-	E(importfolder)
-	E(importdeletion)
-	E(importreadstates)
-	E(getsearchcriteria)
-	E(setsearchcriteria)
-	E(messagetorfc822)
-	E(rfc822tomessage)
-	E(messagetoical)
-	E(icaltomessage)
-	E(messagetovcf)
-	E(vcftomessage)
-	E(setpasswd)
-	E(linkmessage)
-	E(imtomessage2)
-	E(essdn_to_username)
-	E(logon_token)
-	E(getuserfreebusy)
-	E(getuserfreebusyical)
-	E(logon_np)
-#undef E
+	#include <gromox/zcore_allcalls.hpp>
 	default:
 		return pack_result::bad_switch;
 	}
+
+#undef EDEF
+#undef EOBSOL
+#undef EUNDEF
+
 	if (b_result != pack_result::ok)
 		return b_result;
 	pbin_out->cb = push_ctx.m_offset;
@@ -1246,100 +1176,18 @@ pack_result rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 	presponse->result = static_cast<ec_error_t>(v);
 	if (presponse->result != ecSuccess)
 		return pack_result::ok;
+
+#define EDEF(t, id) case zcore_callid::t: return zrpc_pull(pull_ctx, *static_cast<zcresp_ ## t *>(presponse));
+#define EOBSOL(t, id)
+#define EUNDEF(t)
+
 	switch (presponse->call_id) {
-	case zcore_callid::checksession:
-	case zcore_callid::unloadobject:
-	case zcore_callid::modifypermissions:
-	case zcore_callid::modifyrules:
-	case zcore_callid::deletemessages:
-	case zcore_callid::copymessages:
-	case zcore_callid::setreadflags:
-	case zcore_callid::deletefolder:
-	case zcore_callid::emptyfolder:
-	case zcore_callid::copyfolder:
-	case zcore_callid::unadvise:
-	case zcore_callid::setcolumns:
-	case zcore_callid::seekrow:
-	case zcore_callid::sorttable:
-	case zcore_callid::restricttable:
-	case zcore_callid::freebookmark:
-	case zcore_callid::modifyrecipients:
-	case zcore_callid::submitmessage:
-	case zcore_callid::deleteattachment:
-	case zcore_callid::setpropvals:
-	case zcore_callid::deletepropvals:
-	case zcore_callid::setmessagereadflag:
-	case zcore_callid::copyto:
-	case zcore_callid::savechanges:
-	case zcore_callid::configimport:
-	case zcore_callid::importfolder:
-	case zcore_callid::importdeletion:
-	case zcore_callid::importreadstates:
-	case zcore_callid::setsearchcriteria:
-	case zcore_callid::rfc822tomessage:
-	case zcore_callid::icaltomessage:
-	case zcore_callid::vcftomessage:
-	case zcore_callid::setpasswd:
-	case zcore_callid::linkmessage:
-		return pack_result::ok;
-#define E(t) case zcore_callid::t: return zrpc_pull(pull_ctx, *static_cast<zcresp_ ## t *>(presponse));
-	E(logon)
-	E(uinfo)
-	E(openentry)
-	E(openstoreentry)
-	E(openabentry)
-	E(resolvename)
-	E(getpermissions)
-	E(getabgal)
-	E(loadstoretable)
-	E(openstore)
-	E(openprofilesec)
-	E(loadhierarchytable)
-	E(loadcontenttable)
-	E(loadrecipienttable)
-	E(loadruletable)
-	E(createmessage)
-	E(createfolder)
-	E(getstoreentryid)
-	E(entryidfromsourcekey)
-	E(storeadvise)
-	E(notifdequeue)
-	E(queryrows)
-	E(getrowcount)
-	E(findrow)
-	E(createbookmark)
-	E(getreceivefolder)
-	E(loadattachmenttable)
-	E(openattachment)
-	E(createattachment)
-	E(getpropvals)
-	E(openembedded)
-	E(getnamedpropids)
-	E(getpropnames)
-	E(hierarchysync)
-	E(contentsync)
-	E(configsync)
-	E(statesync)
-	E(syncmessagechange)
-	E(syncfolderchange)
-	E(syncreadstatechanges)
-	E(syncdeletions)
-	E(hierarchyimport)
-	E(contentimport)
-	E(stateimport)
-	E(importmessage)
-	E(getsearchcriteria)
-	E(messagetorfc822)
-	E(messagetoical)
-	E(messagetovcf)
-	E(imtomessage2)
-	E(essdn_to_username)
-	E(logon_token)
-	E(getuserfreebusy)
-	E(getuserfreebusyical)
-	E(logon_np)
-#undef E
+	#include <gromox/zcore_allcalls.hpp>
 	default:
 		return pack_result::bad_switch;
 	}
+
+#undef EDEF
+#undef EOBSOL
+#undef EUNDEF
 }

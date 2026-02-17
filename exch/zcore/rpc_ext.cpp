@@ -374,6 +374,16 @@ static pack_result rpc_ext_push_znotification_array(EXT_PUSH &x, const ZNOTIFICA
 	return pack_result::ok;
 }
 
+static inline pack_result zrpc_pull(EXT_PULL &, zcreq &)
+{
+	return pack_result::ok;
+}
+
+static inline pack_result zrpc_push(EXT_PUSH &, const zcresp &)
+{
+	return pack_result::ok;
+}
+
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_logon_token &d)
 {
 	QRF(x.g_str(&d.token));
@@ -1561,7 +1571,7 @@ static pack_result zrpc_push(EXT_PUSH &x, const zcresp_imtomessage2 &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(EXT_PUSH &x, const zcresp_essdn_to_username&d)
+static pack_result zrpc_push(EXT_PUSH &x, const zcresp_essdn_to_username &d)
 {
 	QRF(x.p_str(d.username));
 	return pack_result::ok;
@@ -1607,106 +1617,26 @@ pack_result rpc_ext_pull_request(const BINARY *pbin_in,
 	
 	ext_pull.init(pbin_in->pb, pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
 	QRF(ext_pull.g_uint8(&call_id));
-	switch (static_cast<zcore_callid>(call_id)) {
-#define E(t) case zcore_callid::t: { \
+
+#define EDEF(t, id) case zcore_callid::t: { \
 		auto r0 = std::make_unique<zcreq_ ## t>(); \
 		b_ret = zrpc_pull(ext_pull, *r0); \
 		prequest = std::move(r0); \
 		break; \
 	}
-	E(logon)
-	E(checksession)
-	E(uinfo)
-	E(unloadobject)
-	E(openentry)
-	E(openstoreentry)
-	E(openabentry)
-	E(resolvename)
-	E(getpermissions)
-	E(modifypermissions)
-	E(modifyrules)
-	E(getabgal)
-	E(loadstoretable)
-	E(openstore)
-	E(openprofilesec)
-	E(loadhierarchytable)
-	E(loadcontenttable)
-	E(loadrecipienttable)
-	E(loadruletable)
-	E(createmessage)
-	E(deletemessages)
-	E(copymessages)
-	E(setreadflags)
-	E(createfolder)
-	E(deletefolder)
-	E(emptyfolder)
-	E(copyfolder)
-	E(getstoreentryid)
-	E(entryidfromsourcekey)
-	E(storeadvise)
-	E(unadvise)
-	E(notifdequeue)
-	E(queryrows)
-	E(setcolumns)
-	E(seekrow)
-	E(sorttable)
-	E(getrowcount)
-	E(restricttable)
-	E(findrow)
-	E(createbookmark)
-	E(freebookmark)
-	E(getreceivefolder)
-	E(modifyrecipients)
-	E(submitmessage)
-	E(loadattachmenttable)
-	E(openattachment)
-	E(createattachment)
-	E(deleteattachment)
-	E(setpropvals)
-	E(getpropvals)
-	E(deletepropvals)
-	E(setmessagereadflag)
-	E(openembedded)
-	E(getnamedpropids)
-	E(getpropnames)
-	E(copyto)
-	E(savechanges)
-	E(hierarchysync)
-	E(contentsync)
-	E(configsync)
-	E(statesync)
-	E(syncmessagechange)
-	E(syncfolderchange)
-	E(syncreadstatechanges)
-	E(syncdeletions)
-	E(hierarchyimport)
-	E(contentimport)
-	E(configimport)
-	E(stateimport)
-	E(importmessage)
-	E(importfolder)
-	E(importdeletion)
-	E(importreadstates)
-	E(getsearchcriteria)
-	E(setsearchcriteria)
-	E(messagetorfc822)
-	E(rfc822tomessage)
-	E(messagetoical)
-	E(icaltomessage)
-	E(messagetovcf)
-	E(vcftomessage)
-	E(setpasswd)
-	E(linkmessage)
-	E(imtomessage2)
-	E(essdn_to_username)
-	E(logon_token)
-	E(getuserfreebusy)
-	E(getuserfreebusyical)
-	E(logon_np)
-#undef E
+#define EOBSOL(t, id)
+#define EUNDEF(id)
+
+	switch (static_cast<zcore_callid>(call_id)) {
+	#include <gromox/zcore_allcalls.hpp>
 	default:
 		return pack_result::bad_switch;
 	}
+
+#undef EDEF
+#undef EOBSOL
+#undef EUNDEF
+
 	prequest->call_id = static_cast<zcore_callid>(call_id);
 	return b_ret;
 } catch (const std::bad_alloc &) {
@@ -1730,103 +1660,21 @@ pack_result rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 	}
 	QRF(ext_push.advance(sizeof(uint32_t)));
 	QRF(ext_push.p_uint32(presponse->result));
+
+#define EDEF(t, id) case zcore_callid::t: b_result = zrpc_push(ext_push, *static_cast<const zcresp_ ## t ::view_t *>(presponse)); break;
+#define EOBSOL(t, id)
+#define EUNDEF(t)
+
 	switch (presponse->call_id) {
-	case zcore_callid::checksession:
-	case zcore_callid::unloadobject:
-	case zcore_callid::modifypermissions:
-	case zcore_callid::modifyrules:
-	case zcore_callid::deletemessages:
-	case zcore_callid::copymessages:
-	case zcore_callid::setreadflags:
-	case zcore_callid::deletefolder:
-	case zcore_callid::emptyfolder:
-	case zcore_callid::copyfolder:
-	case zcore_callid::unadvise:
-	case zcore_callid::setcolumns:
-	case zcore_callid::sorttable:
-	case zcore_callid::restricttable:
-	case zcore_callid::freebookmark:
-	case zcore_callid::modifyrecipients:
-	case zcore_callid::submitmessage:
-	case zcore_callid::deleteattachment:
-	case zcore_callid::setpropvals:
-	case zcore_callid::deletepropvals:
-	case zcore_callid::setmessagereadflag:
-	case zcore_callid::copyto:
-	case zcore_callid::savechanges:
-	case zcore_callid::configimport:
-	case zcore_callid::importfolder:
-	case zcore_callid::importdeletion:
-	case zcore_callid::importreadstates:
-	case zcore_callid::setsearchcriteria:
-	case zcore_callid::rfc822tomessage:
-	case zcore_callid::icaltomessage:
-	case zcore_callid::vcftomessage:
-	case zcore_callid::setpasswd:
-	case zcore_callid::linkmessage:
-		b_result = pack_result::ok;
-		break;
-#define E(t) case zcore_callid::t: b_result = zrpc_push(ext_push, *static_cast<const zcresp_ ## t ::view_t *>(presponse)); break;
-	E(logon)	
-	E(uinfo)
-	E(openentry)
-	E(openstoreentry)
-	E(openabentry)
-	E(resolvename)
-	E(getpermissions)
-	E(getabgal)
-	E(loadstoretable)
-	E(openstore)
-	E(openprofilesec)
-	E(loadhierarchytable)
-	E(loadcontenttable)
-	E(loadrecipienttable)
-	E(loadruletable)
-	E(createmessage)
-	E(createfolder)
-	E(getstoreentryid)
-	E(entryidfromsourcekey)
-	E(storeadvise)
-	E(notifdequeue)
-	E(queryrows)
-	E(seekrow)
-	E(getrowcount)
-	E(findrow)
-	E(createbookmark)
-	E(getreceivefolder)
-	E(loadattachmenttable)
-	E(openattachment)
-	E(createattachment)
-	E(getpropvals)
-	E(openembedded)
-	E(getnamedpropids)
-	E(getpropnames)
-	E(hierarchysync)
-	E(contentsync)
-	E(configsync)
-	E(statesync)
-	E(syncmessagechange)
-	E(syncfolderchange)
-	E(syncreadstatechanges)
-	E(syncdeletions)
-	E(hierarchyimport)
-	E(contentimport)
-	E(stateimport)
-	E(importmessage)
-	E(getsearchcriteria)
-	E(messagetorfc822)
-	E(messagetoical)
-	E(messagetovcf)
-	E(imtomessage2)
-	E(essdn_to_username)
-	E(logon_token)
-	E(getuserfreebusy)
-	E(getuserfreebusyical)
-	E(logon_np)
-#undef E
+	#include <gromox/zcore_allcalls.hpp>
 	default:
 		return pack_result::bad_switch;
 	}
+
+#undef EDEF
+#undef EOBSOL
+#undef EUNDEF
+
 	if (b_result != pack_result::ok)
 		return b_result;
 	pbin_out->cb = ext_push.m_offset;
