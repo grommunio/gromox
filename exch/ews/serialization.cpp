@@ -2065,6 +2065,25 @@ void mGetAttachmentResponseMessage::serialize(XMLElement *xml) const
 	XMLDUMPM(Attachments);
 }
 
+mDeleteAttachmentRequest::mDeleteAttachmentRequest(const XMLElement *xml) :
+	XMLINIT(AttachmentIds)
+{}
+
+void mDeleteAttachmentResponseMessage::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	if (RootItemId) {
+		auto *elem = xml->InsertNewChildElement("m:RootItemId");
+		toXMLAttr(elem, "RootItemId", *RootItemId);
+		toXMLAttr(elem, "RootItemChangeKey", RootItemChangeKey);
+	}
+}
+
+void mDeleteAttachmentResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
 mGetEventsRequest::mGetEventsRequest(const tinyxml2::XMLElement *xml) :
 	XMLINIT(SubscriptionId)
 {}
