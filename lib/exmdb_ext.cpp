@@ -37,6 +37,11 @@ template<typename T> T *cu_alloc(size_t elem)
 	return static_cast<T *>(exmdb_rpc_alloc(sizeof(T) * elem));
 }
 
+static inline pack_result exmdb_pull(EXT_PULL &, exreq &) { return pack_result::ok; }
+static inline pack_result exmdb_push(EXT_PUSH &, const exreq &) { return pack_result::ok; }
+static inline pack_result exmdb_pull(EXT_PULL &, exresp &) { return pack_result::ok; }
+static inline pack_result exmdb_push(EXT_PUSH &, const exresp &) { return pack_result::ok; }
+
 static pack_result exmdb_pull(EXT_PULL &x, exreq_connect &d)
 {
 	TRY(x.g_str(&d.prefix));
@@ -2222,135 +2227,6 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_write_delegates &d)
 	return x.g_str_a(&d.userlist);
 }
 
-#define RQ_WITH_ARGS \
-	E(get_named_propids) \
-	E(get_named_propnames) \
-	E(get_mapping_guid) \
-	E(get_mapping_replid) \
-	E(get_store_properties) \
-	E(set_store_properties) \
-	E(remove_store_properties) \
-	E(get_mbox_perm) \
-	E(get_folder_by_class) \
-	E(set_folder_by_class) \
-	E(is_folder_present) \
-	E(is_folder_deleted) \
-	E(get_folder_by_name) \
-	E(get_folder_perm) \
-	E(create_folder_v1) \
-	E(create_folder) \
-	E(get_folder_all_proptags) \
-	E(get_folder_properties) \
-	E(set_folder_properties) \
-	E(remove_folder_properties) \
-	E(delete_folder) \
-	E(empty_folder) \
-	E(is_descendant_folder) \
-	E(copy_folder_internal) \
-	E(get_search_criteria) \
-	E(set_search_criteria) \
-	E(movecopy_message) \
-	E(movecopy_messages) \
-	E(movecopy_folder) \
-	E(delete_messages) \
-	E(get_message_brief) \
-	E(sum_hierarchy) \
-	E(load_hierarchy_table) \
-	E(sum_content) \
-	E(load_content_table) \
-	E(reload_content_table) \
-	E(load_permission_table) \
-	E(load_rule_table) \
-	E(unload_table) \
-	E(sum_table) \
-	E(query_table) \
-	E(match_table) \
-	E(locate_table) \
-	E(read_table_row) \
-	E(mark_table) \
-	E(get_table_all_proptags) \
-	E(expand_table) \
-	E(collapse_table) \
-	E(store_table_state) \
-	E(restore_table_state) \
-	E(is_msg_present) \
-	E(is_msg_deleted) \
-	E(load_message_instance) \
-	E(load_embedded_instance) \
-	E(get_embedded_cn) \
-	E(reload_message_instance) \
-	E(clear_message_instance) \
-	E(read_message_instance) \
-	E(write_message_instance) \
-	E(load_attachment_instance) \
-	E(create_attachment_instance) \
-	E(read_attachment_instance) \
-	E(write_attachment_instance) \
-	E(delete_message_instance_attachment) \
-	E(flush_instance) \
-	E(unload_instance) \
-	E(get_instance_all_proptags) \
-	E(get_instance_properties) \
-	E(set_instance_properties) \
-	E(remove_instance_properties) \
-	E(is_descendant_instance) \
-	E(empty_message_instance_rcpts) \
-	E(get_message_instance_rcpts_num) \
-	E(get_message_instance_rcpts_all_proptags) \
-	E(get_message_instance_rcpts) \
-	E(update_message_instance_rcpts) \
-	E(copy_instance_rcpts) \
-	E(empty_message_instance_attachments) \
-	E(get_message_instance_attachments_num) \
-	E(get_message_instance_attachment_table_all_proptags) \
-	E(query_message_instance_attachment_table) \
-	E(copy_instance_attachments) \
-	E(set_message_instance_conflict) \
-	E(get_message_rcpts) \
-	E(get_message_properties) \
-	E(set_message_properties) \
-	E(set_message_read_state) \
-	E(remove_message_properties) \
-	E(allocate_message_id) \
-	E(mark_modified) \
-	E(try_mark_submit) \
-	E(clear_submit) \
-	E(link_message) \
-	E(unlink_message) \
-	E(rule_new_message) \
-	E(set_message_timer) \
-	E(get_message_timer) \
-	E(empty_folder_permission) \
-	E(update_folder_permission) \
-	E(empty_folder_rule) \
-	E(update_folder_rule) \
-	E(deliver_message) \
-	E(write_message) \
-	E(read_message) \
-	E(get_content_sync) \
-	E(get_hierarchy_sync) \
-	E(allocate_ids) \
-	E(subscribe_notification) \
-	E(unsubscribe_notification) \
-	E(transport_new_mail) \
-	E(check_contact_address) \
-	E(get_public_folder_unread_count) \
-	E(notify_new_mail) \
-	E(store_eid_to_user) \
-	E(purge_softdelete) \
-	E(autoreply_tsquery) \
-	E(autoreply_tsupdate) \
-	E(recalc_store_size) \
-	E(imapfile_read) \
-	E(imapfile_write) \
-	E(imapfile_delete) \
-	E(cgkreset) \
-	E(set_maintenance) \
-	E(autoreply_getprop) \
-	E(autoreply_setprop) \
-	E(read_delegates) \
-	E(write_delegates)
-
 /**
  * This uses *& because we do not know which request type we are going to get
  * (cf. exmdb_ext_pull_response).
@@ -2380,33 +2256,26 @@ pack_result exmdb_ext_pull_request(const BINARY *pbin_in,
 
 	char *dir = nullptr;
 	TRY(ext_pull.g_str(&dir));
-	pack_result xret;
-	xret = pack_result::bad_callid;
-	switch (call_id) {
-	case exmdb_callid::connect:
-	case exmdb_callid::listen_notification:
-		break;
-	case exmdb_callid::ping_store:
-	case exmdb_callid::get_all_named_propids:
-	case exmdb_callid::get_store_all_proptags:
-	case exmdb_callid::get_folder_class_table:
-	case exmdb_callid::allocate_cn:
-	case exmdb_callid::vacuum:
-	case exmdb_callid::unload_store:
-	case exmdb_callid::purge_datafiles: {
-		prequest = std::make_unique<exreq>();
-		xret = pack_result::ok;
-		break;
-	}
-#define E(t) case exmdb_callid::t: { \
+	pack_result xret = pack_result::bad_callid;
+
+#define EDEF(t, id) case exmdb_callid::t: { \
 		auto r = std::make_unique<exreq_ ## t >(); \
 		xret = exmdb_pull(ext_pull, *r); \
 		prequest = std::move(r); \
 		break; \
 	}
-	RQ_WITH_ARGS
-#undef E
+#define EOBSOL(t, id)
+
+	switch (call_id) {
+	#include <gromox/exmdb_allcalls.hpp>
+	default:
+		xret = pack_result::bad_callid;
+		break;
 	}
+
+#undef EDEF
+#undef EOBSOL
+
 	prequest->call_id = call_id;
 	prequest->dir = dir;
 	return xret;
@@ -2431,28 +2300,22 @@ pack_result exmdb_ext_push_request(const exreq *prequest, BINARY *pbin_out)
 	} else if (prequest->call_id == exmdb_callid::listen_notification) {
 		status = exmdb_push(ext_push, *static_cast<const exreq_listen_notification *>(prequest));
 	} else {
-	status = ext_push.p_str(prequest->dir);
-	if (status != pack_result::ok)
-		return status;
-	status = pack_result::bad_callid;
-	switch (prequest->call_id) {
-	case exmdb_callid::connect:
-	case exmdb_callid::listen_notification:
-		break;
-	case exmdb_callid::ping_store:
-	case exmdb_callid::get_all_named_propids:
-	case exmdb_callid::get_store_all_proptags:
-	case exmdb_callid::get_folder_class_table:
-	case exmdb_callid::allocate_cn:
-	case exmdb_callid::vacuum:
-	case exmdb_callid::unload_store:
-	case exmdb_callid::purge_datafiles:
-		status = pack_result::ok;
-		break;
-#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exreq_ ## t::view_t *>(prequest)); break;
-	RQ_WITH_ARGS
-#undef E
-	}
+		status = ext_push.p_str(prequest->dir);
+		if (status != pack_result::ok)
+			return status;
+
+#define EDEF(t, id) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exreq_ ## t::view_t *>(prequest)); break;
+#define EOBSOL(t, id)
+
+		switch (prequest->call_id) {
+		#include <gromox/exmdb_allcalls.hpp>
+		default:
+			status = pack_result::bad_callid;
+			break;
+		}
+
+#undef EDEF
+#undef EOBSOL
 	}
 	if (status != pack_result::ok)
 		return status;
@@ -3631,144 +3494,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	return x.p_uint64(d.sz_fai);
 }
 
-#define RSP_WITHOUT_ARGS \
-	E(ping_store) \
-	E(remove_store_properties) \
-	E(remove_folder_properties) \
-	E(reload_content_table) \
-	E(unload_table) \
-	E(clear_message_instance) \
-	E(delete_message_instance_attachment) \
-	E(unload_instance) \
-	E(empty_message_instance_rcpts) \
-	E(update_message_instance_rcpts) \
-	E(empty_message_instance_attachments) \
-	E(set_message_instance_conflict) \
-	E(remove_message_properties) \
-	E(mark_modified) \
-	E(clear_submit) \
-	E(unlink_message) \
-	E(rule_new_message) \
-	E(set_message_timer) \
-	E(empty_folder_permission) \
-	E(update_folder_permission) \
-	E(empty_folder_rule) \
-	E(unsubscribe_notification) \
-	E(transport_new_mail) \
-	E(vacuum) \
-	E(unload_store) \
-	E(notify_new_mail) \
-	E(purge_datafiles) \
-	E(autoreply_tsupdate) \
-	E(recalc_store_size) \
-	E(imapfile_write) \
-	E(imapfile_delete) \
-	E(cgkreset) \
-	E(set_maintenance) \
-	E(write_delegates)
-#define RSP_WITH_ARGS \
-	E(get_all_named_propids) \
-	E(get_named_propids) \
-	E(get_named_propnames) \
-	E(get_mapping_guid) \
-	E(get_mapping_replid) \
-	E(get_store_all_proptags) \
-	E(get_store_properties) \
-	E(set_store_properties) \
-	E(get_mbox_perm) \
-	E(get_folder_by_class) \
-	E(set_folder_by_class) \
-	E(get_folder_class_table) \
-	E(is_folder_present) \
-	E(is_folder_deleted) \
-	E(get_folder_by_name) \
-	E(get_folder_perm) \
-	E(create_folder_v1) \
-	E(create_folder) \
-	E(get_folder_all_proptags) \
-	E(get_folder_properties) \
-	E(set_folder_properties) \
-	E(delete_folder) \
-	E(empty_folder) \
-	E(is_descendant_folder) \
-	E(copy_folder_internal) \
-	E(get_search_criteria) \
-	E(set_search_criteria) \
-	E(movecopy_message) \
-	E(movecopy_messages) \
-	E(movecopy_folder) \
-	E(delete_messages) \
-	E(get_message_brief) \
-	E(sum_hierarchy) \
-	E(load_hierarchy_table) \
-	E(sum_content) \
-	E(load_content_table) \
-	E(load_permission_table) \
-	E(load_rule_table) \
-	E(sum_table) \
-	E(query_table) \
-	E(match_table) \
-	E(locate_table) \
-	E(read_table_row) \
-	E(mark_table) \
-	E(get_table_all_proptags) \
-	E(expand_table) \
-	E(collapse_table) \
-	E(store_table_state) \
-	E(restore_table_state) \
-	E(is_msg_present) \
-	E(is_msg_deleted) \
-	E(load_message_instance) \
-	E(load_embedded_instance) \
-	E(get_embedded_cn) \
-	E(reload_message_instance) \
-	E(read_message_instance) \
-	E(write_message_instance) \
-	E(load_attachment_instance) \
-	E(create_attachment_instance) \
-	E(read_attachment_instance) \
-	E(write_attachment_instance) \
-	E(flush_instance) \
-	E(get_instance_all_proptags) \
-	E(get_instance_properties) \
-	E(set_instance_properties) \
-	E(remove_instance_properties) \
-	E(is_descendant_instance) \
-	E(get_message_instance_rcpts_num) \
-	E(get_message_instance_rcpts_all_proptags) \
-	E(get_message_instance_rcpts) \
-	E(copy_instance_rcpts) \
-	E(get_message_instance_attachments_num) \
-	E(get_message_instance_attachment_table_all_proptags) \
-	E(query_message_instance_attachment_table) \
-	E(copy_instance_attachments) \
-	E(get_message_rcpts) \
-	E(get_message_properties) \
-	E(set_message_properties) \
-	E(set_message_read_state) \
-	E(allocate_message_id) \
-	E(allocate_cn) \
-	E(try_mark_submit) \
-	E(link_message) \
-	E(get_message_timer) \
-	E(update_folder_rule) \
-	E(deliver_message) \
-	E(write_message) \
-	E(read_message) \
-	E(get_content_sync) \
-	E(get_hierarchy_sync) \
-	E(allocate_ids) \
-	E(subscribe_notification) \
-	E(check_contact_address) \
-	E(get_public_folder_unread_count) \
-	E(store_eid_to_user) \
-	E(autoreply_tsquery) \
-	E(imapfile_read) \
-	E(autoreply_getprop) \
-	E(autoreply_setprop) \
-	E(purge_softdelete) \
-	E(read_delegates)
-
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 /*
  * This uses just *presponse, because the caller expects to receive the
@@ -3779,19 +3504,18 @@ pack_result exmdb_ext_pull_response(const BINARY *pbin_in, exresp *presponse)
 	EXT_PULL ext_pull;
 	
 	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+
+#define EDEF(t, id) case exmdb_callid::t: return exmdb_pull(ext_pull, *static_cast<exresp_ ## t *>(presponse));
+#define EOBSOL(t, id)
+
 	switch (presponse->call_id) {
-	case exmdb_callid::connect:
-	case exmdb_callid::listen_notification:
-		break;
-#define E(t) case exmdb_callid::t:
-	RSP_WITHOUT_ARGS
-		return pack_result::ok;
-#undef E
-#define E(t) case exmdb_callid::t: return exmdb_pull(ext_pull, *static_cast<exresp_ ## t *>(presponse));
-	RSP_WITH_ARGS
-#undef E
+	#include <gromox/exmdb_allcalls.hpp>
+	default:
+		return pack_result::bad_callid;
 	}
-	return pack_result::bad_callid;
+
+#undef EDEF
+#undef EOBSOL
 }
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
@@ -3808,20 +3532,19 @@ pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *pbin_out)
 	if (status != pack_result::ok)
 		return status;
 
-	status = pack_result::bad_callid;
+#define EDEF(t, idx) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exresp_ ## t::view_t *>(presponse)); break;
+#define EOBSOL(t, idx)
+
 	switch (presponse->call_id) {
-	case exmdb_callid::connect:
-	case exmdb_callid::listen_notification:
+	#include <gromox/exmdb_allcalls.hpp>
+	default:
+		status = pack_result::bad_callid;
 		break;
-#define E(t) case exmdb_callid::t:
-	RSP_WITHOUT_ARGS
-		status = pack_result::ok;
-		break;
-#undef E
-#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exresp_ ## t::view_t *>(presponse)); break;
-	RSP_WITH_ARGS
-#undef E
 	}
+
+#undef EDEF
+#undef EOBSOL
+
 	if (status != pack_result::ok)
 		return status;
 	pbin_out->cb = ext_push.m_offset;
