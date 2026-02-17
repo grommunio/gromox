@@ -942,6 +942,7 @@ static BOOL instance_read_message(const MESSAGE_CONTENT *src,
 			psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX_A);
 			auto pvalue = std::string(znul(psubject_prefix)) + znul(pnormalized_subject);
 			dst->proplist.ppropval[i].pvalue = common_util_dup(pvalue);
+			dst->proplist.ppropval[i].proptag = PR_SUBJECT_A;
 			++dst->proplist.count;
 		} else {
 			psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX);
@@ -964,6 +965,7 @@ static BOOL instance_read_message(const MESSAGE_CONTENT *src,
 		psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX);
 		auto pvalue = std::string(znul(psubject_prefix)) + znul(pnormalized_subject);
 		dst->proplist.ppropval[i].pvalue = common_util_dup(pvalue);
+		dst->proplist.ppropval[i].proptag = PR_SUBJECT;
 		++dst->proplist.count;
 	}
 	if (src->children.prcpts == nullptr) {
