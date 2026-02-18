@@ -54,22 +54,21 @@ enum {
 namespace {
 
 struct NTLMSSP_SERVER_AUTH_STATE {
-	DATA_BLOB user_session_key;
-	uint8_t user_session_key_buff[32];
-	DATA_BLOB lm_session_key;
-	uint8_t lm_session_key_buff[32];
-	DATA_BLOB encrypted_session_key; /* internal variables used by KEY_EXCH */
-	uint8_t encrypted_session_key_buff[32];
-	bool doing_ntlm2;
-	uint8_t session_nonce[16]; /* internal variables used by NTLM2 */
+	DATA_BLOB user_session_key{};
+	uint8_t user_session_key_buff[32]{};
+	DATA_BLOB lm_session_key{};
+	uint8_t lm_session_key_buff[32]{};
+	DATA_BLOB encrypted_session_key{}; /* internal variables used by KEY_EXCH */
+	uint8_t encrypted_session_key_buff[32]{};
+	bool doing_ntlm2 = false;
+	uint8_t session_nonce[16]{}; /* internal variables used by NTLM2 */
 };
 
 struct NTLMSSP_VERSION {
-	uint8_t major_vers;
-	uint8_t minor_vers;
-	uint16_t product_build;
-	uint8_t reserved[3];
-	uint8_t ntlm_revers;
+	uint8_t major_vers = 0, minor_vers = 0;
+	uint16_t product_build = 0;
+	uint8_t reserved[3]{};
+	uint8_t ntlm_revers = 0;
 };
 
 struct GX_EXPORT HMACMD5_CTX {
@@ -823,7 +822,7 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 	version_blob.cb = 0;
 	
 	if (chal_flags & NTLMSSP_NEGOTIATE_VERSION) {
-		memset(&vers, 0, sizeof(NTLMSSP_VERSION));
+		vers = {};
 		vers.major_vers = NTLMSSP_WINDOWS_MAJOR_VERSION_6;
 		vers.minor_vers = NTLMSSP_WINDOWS_MINOR_VERSION_1;
 		vers.product_build = 0;
@@ -1402,7 +1401,7 @@ static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	
 	/* zero the outbound NTLMSSP packet */
 	pout->cb = 0;
-	memset(&auth_state, 0, sizeof(NTLMSSP_SERVER_AUTH_STATE));
+	auth_state = {};
 	if (!ntlmssp_server_preauth(pntlmssp, &auth_state, in))
 		return false;
 	auth_state.user_session_key.pb = auth_state.user_session_key_buff;
