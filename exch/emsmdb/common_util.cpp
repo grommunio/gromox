@@ -910,7 +910,7 @@ static bool cu_row_to_propvals(const PROPERTY_ROW *prow, proptag_cspan pcolumns,
 static bool cu_propvals_to_recipient(cpid_t cpid, TPROPVAL_ARRAY *ppropvals,
     proptag_cspan pcolumns, RECIPIENT_ROW *prow)
 {
-	memset(prow, 0, sizeof(RECIPIENT_ROW));
+	*prow = {};
 	prow->flags |= RECIPIENT_ROW_FLAG_UNICODE;
 	auto flag = ppropvals->get<const uint8_t>(PR_RESPONSIBILITY);
 	if (flag != nullptr && *flag != 0)

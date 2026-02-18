@@ -1207,7 +1207,7 @@ static bool oxcical_parse_uid(const ical_component &main_event,
 			goto MAKE_GLOBALOBJID;
 		}
 	}
-	memset(&globalobjectid, 0, sizeof(GLOBALOBJECTID));
+	globalobjectid = {};
 	globalobjectid.arrayid = EncodedGlobalId;
 	globalobjectid.year = effective_itime.year;
 	globalobjectid.month = effective_itime.month;

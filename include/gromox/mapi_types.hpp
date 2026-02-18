@@ -15,14 +15,12 @@
 
 /* https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/wrapstoreentryid */
 struct GX_EXPORT STORE_ENTRYID {
-	uint32_t flags;
-	uint8_t version;
-	uint8_t ivflag;
-	uint32_t wrapped_flags;
-	FLATUID wrapped_provider_uid; /* g_muidStorePrivate / g_muidStorePublic */
-	uint32_t wrapped_type;
-	char *pserver_name;
-	char *pmailbox_dn;
+	uint32_t flags = 0;
+	uint8_t version = 0, ivflag = 0;
+	uint32_t wrapped_flags = 0;
+	FLATUID wrapped_provider_uid{}; /* g_muidStorePrivate / g_muidStorePublic */
+	uint32_t wrapped_type = 0;
+	char *pserver_name = nullptr, *pmailbox_dn = nullptr;
 };
 
 #define EITLT_PRIVATE_FOLDER						0x0001
@@ -34,24 +32,24 @@ struct GX_EXPORT STORE_ENTRYID {
 #define EITLT_PUBLIC_FOLDER_BY_NAME					0x000c
 
 struct GX_EXPORT FOLDER_ENTRYID {
-	uint32_t flags;
-	FLATUID provider_uid; /* glossary.rst:Store GUID */
-	uint16_t eid_type;
-	GUID folder_dbguid;
-	GLOBCNT folder_gc;
-	uint8_t pad1[2];
+	uint32_t flags = 0;
+	FLATUID provider_uid{}; /* glossary.rst:Store GUID */
+	uint16_t eid_type = 0;
+	GUID folder_dbguid{};
+	GLOBCNT folder_gc{};
+	uint8_t pad1[2]{};
 };
 
 struct GX_EXPORT MESSAGE_ENTRYID : public FOLDER_ENTRYID {
-	GUID message_dbguid;
-	GLOBCNT message_gc;
-	uint8_t pad2[2];
+	GUID message_dbguid{};
+	GLOBCNT message_gc{};
+	uint8_t pad2[2]{};
 };
 
 struct GX_EXPORT MOVECOPY_ACTION {
-	uint8_t same_store;
-	STORE_ENTRYID *pstore_eid;
-	void *pfolder_eid; /* SVREID or BINARY */
+	uint8_t same_store = 0;
+	STORE_ENTRYID *pstore_eid = nullptr;
+	void *pfolder_eid = nullptr; /* SVREID or BINARY */
 
 	std::string repr() const;
 };
@@ -78,14 +76,14 @@ struct GX_EXPORT EXT_REPLY_ACTION {
 #define BOUNCE_CODE_MESSAGE_DENIED					0x00000026
 
 struct GX_EXPORT EXT_RECIPIENT_BLOCK {
-	uint8_t reserved;
-	uint32_t count;
-	TAGGED_PROPVAL *ppropval;
+	uint8_t reserved = 0;
+	uint32_t count = 0;
+	TAGGED_PROPVAL *ppropval = nullptr;
 };
 
 struct GX_EXPORT EXT_FORWARDDELEGATE_ACTION {
-	uint32_t count;
-	EXT_RECIPIENT_BLOCK *pblock;
+	uint32_t count = 0;
+	EXT_RECIPIENT_BLOCK *pblock = nullptr;
 	I_BEGIN_END(pblock, count);
 };
 
@@ -102,16 +100,14 @@ enum { /* ACTION_BLOCK::flavor for OP_REPLY */
 };
 
 struct GX_EXPORT EXT_ACTION_BLOCK {
-	uint32_t length;
-	uint8_t type;
-	uint32_t flavor;
-	uint32_t flags;
-	void *pdata;
+	uint32_t length = 0, flavor = 0, flags = 0;
+	uint8_t type = 0;
+	void *pdata = nullptr;
 };
 
 struct GX_EXPORT EXT_RULE_ACTIONS {
-	uint32_t count;
-	EXT_ACTION_BLOCK *pblock;
+	uint32_t count = 0;
+	EXT_ACTION_BLOCK *pblock = nullptr;
 	I_BEGIN_END(pblock, count);
 };
 
@@ -141,9 +137,9 @@ enum {
 #define RULE_ERROR_FOLDER_QUOTA						0x0000000E			
 
 struct GX_EXPORT NAMEDPROPERTY_INFO {
-	uint16_t count;
-	uint16_t *ppropid;
-	PROPERTY_NAME *ppropname;
+	uint16_t count = 0;
+	uint16_t *ppropid = nullptr;
+	PROPERTY_NAME *ppropname = nullptr;
 };
 
 #define FLAGGED_PROPVAL_FLAG_AVAILABLE				0x0
@@ -151,31 +147,30 @@ struct GX_EXPORT NAMEDPROPERTY_INFO {
 #define FLAGGED_PROPVAL_FLAG_ERROR					0xA
 
 struct GX_EXPORT FLAGGED_PROPVAL {
-	uint8_t flag;
-	void *pvalue;
+	uint8_t flag = false;
+	void *pvalue = nullptr;
 };
 
 struct GX_EXPORT TYPED_PROPVAL {
-	uint16_t type;
-	void *pvalue;
+	uint16_t type = 0;
+	void *pvalue = nullptr;
 };
 
 struct GX_EXPORT LONG_TERM_ID {
 	/* LTIDs are a specific form of XIDs */
-	GUID guid;
-	GLOBCNT global_counter;
-	uint16_t padding;
+	GUID guid{};
+	GLOBCNT global_counter{};
+	uint16_t padding = 0;
 };
 
 struct GX_EXPORT LONG_TERM_ID_ARRAY {
-	uint16_t count;
-	LONG_TERM_ID *pids;
+	uint16_t count = 0;
+	LONG_TERM_ID *pids = nullptr;
 	I_BEGIN_END(pids, count);
 };
 
 struct GX_EXPORT LONG_TERM_ID_RANGE {
-	LONG_TERM_ID min;
-	LONG_TERM_ID max;
+	LONG_TERM_ID min, max;
 };
 
 struct GX_EXPORT XID {
@@ -184,8 +179,8 @@ struct GX_EXPORT XID {
 	GLOBCNT local_to_gc() const { GLOBCNT r; memcpy(r.ab, local_id, 6); return r; }
 
 	GUID guid;
-	uint8_t local_id[8];
-	uint8_t size;
+	uint8_t local_id[8]{};
+	uint8_t size = 0;
 };
 
 #define STRING_TYPE_NONE							0x0
@@ -195,8 +190,8 @@ struct GX_EXPORT XID {
 #define STRING_TYPE_UNICODE							0x4
 
 struct GX_EXPORT TYPED_STRING {
-	uint8_t string_type;
-	char *pstring;
+	uint8_t string_type = 0;
+	char *pstring = nullptr;
 };
 
 #define PROPERTY_ROW_NO_ERROR						0x00
@@ -206,13 +201,13 @@ struct GX_EXPORT TYPED_STRING {
 #define PROPERTY_ROW_FLAG_FLAGGED					0x01
 
 struct GX_EXPORT PROPERTY_ROW {
-	uint8_t flag;
-	void **pppropval;
+	uint8_t flag = false;
+	void **pppropval = nullptr;
 };
 
 struct GX_EXPORT PROPROW_SET {
-	uint16_t count;
-	PROPERTY_ROW *prows;
+	uint16_t count = 0;
+	PROPERTY_ROW *prows = nullptr;
 	I_BEGIN_END(prows, count);
 };
 
@@ -222,9 +217,9 @@ struct GX_EXPORT PROPROW_SET {
 #define TABLE_SORT_MINIMUM_CATEGORY					0x8
 
 struct GX_EXPORT PROPERTY_PROBLEM {
-	uint16_t index;
-	gromox::proptag_t proptag;
-	uint32_t err;
+	uint16_t index = 0;
+	gromox::proptag_t proptag{};
+	uint32_t err = 0;
 
 	inline bool operator<(const PROPERTY_PROBLEM &o) const { return index < o.index; }
 };
@@ -252,15 +247,13 @@ struct GX_EXPORT EMSAB_ENTRYID_view {
 };
 
 struct GX_EXPORT EMSAB_ENTRYID_manual {
-	uint32_t flags;
-	uint32_t type;
-	char *px500dn;
+	uint32_t flags = 0, type = 0;
+	char *px500dn = nullptr;
 	operator EMSAB_ENTRYID_view() const { return {flags, type, px500dn}; }
 };
 
 struct GX_EXPORT EMSAB_ENTRYID {
-	uint32_t flags = 0;
-	uint32_t type = 0;
+	uint32_t flags = 0, type = 0;
 	std::string x500dn;
 	operator EMSAB_ENTRYID_view() const { return {flags, type, x500dn.c_str()}; }
 };
@@ -274,19 +267,13 @@ struct GX_EXPORT EMSAB_ENTRYID {
 #define DAYOFWEEK_SATURDAY							0x6
 
 struct GX_EXPORT LOGON_TIME {
-	uint8_t second;
-	uint8_t minute;
-	uint8_t hour;
-	uint8_t day_of_week;
-	uint8_t day;
-	uint8_t month;
-	uint16_t year;
+	uint8_t second = 0, minute = 0, hour = 0, day_of_week = 0, day = 0, month = 0;
+	uint16_t year = 0;
 };
 
 struct GX_EXPORT GHOST_SERVER {
-	uint16_t server_count;
-	uint16_t cheap_server_count;
-	char **ppservers;
+	uint16_t server_count = 0, cheap_server_count = 0;
+	char **ppservers = nullptr;
 };
 
 #define RECIPIENT_ROW_FLAG_RESPONSIBLE				0x0080
@@ -309,55 +296,50 @@ struct GX_EXPORT GHOST_SERVER {
 #define RECIPIENT_ROW_TYPE_PERSONAL_DLIST2			0x7
 
 struct GX_EXPORT RECIPIENT_ROW {
-	uint8_t *pprefix_used;
-	char *px500dn;
-	BINARY *pentry_id;
-	BINARY *psearch_key;
-	char *paddress_type;
-	char *pmail_address;
-	char *pdisplay_name;
-	char *psimple_name;
-	char *ptransmittable_name;
-	uint8_t have_display_type, display_type;
-	uint16_t flags, count;
-	PROPERTY_ROW properties;
+	uint8_t *pprefix_used = nullptr;
+	char *px500dn = nullptr;
+	BINARY *pentry_id = nullptr, *psearch_key = nullptr;
+	char *paddress_type = nullptr, *pmail_address = nullptr;
+	char *pdisplay_name = nullptr, *psimple_name = nullptr;
+	char *ptransmittable_name = nullptr;
+	uint8_t have_display_type = false, display_type = 0;
+	uint16_t flags = 0, count = 0;
+	PROPERTY_ROW properties{};
 };
 
 struct GX_EXPORT OPENRECIPIENT_ROW {
-	uint8_t recipient_type;
-	uint16_t cpid;
-	uint16_t reserved;
-	RECIPIENT_ROW recipient_row;
+	uint8_t recipient_type = 0;
+	uint16_t cpid = 0, reserved = 0;
+	RECIPIENT_ROW recipient_row{};
 };
 
 struct GX_EXPORT MODIFYRECIPIENT_ROW {
-	uint32_t row_id;
-	uint8_t recipient_type;
-	RECIPIENT_ROW *precipient_row;
+	uint32_t row_id = 0;
+	uint8_t recipient_type = 0;
+	RECIPIENT_ROW *precipient_row{};
 };
 
 struct GX_EXPORT READRECIPIENT_ROW {
-	uint32_t row_id;
-	uint8_t recipient_type;
-	uint16_t cpid;
-	uint16_t reserved;
-	RECIPIENT_ROW recipient_row;
+	uint32_t row_id = 0;
+	uint8_t recipient_type = 0;
+	uint16_t cpid = 0, reserved = 0;
+	RECIPIENT_ROW recipient_row{};
 };
 
 struct GX_EXPORT PERMISSION_DATA {
-	uint8_t flags;
-	TPROPVAL_ARRAY propvals;
+	uint8_t flags = 0;
+	TPROPVAL_ARRAY propvals{};
 };
 
 struct GX_EXPORT PROPIDNAME_ARRAY {
-	uint16_t count;
-	uint16_t *ppropid;
-	PROPERTY_NAME *ppropname;
+	uint16_t count = 0;
+	uint16_t *ppropid = nullptr;
+	PROPERTY_NAME *ppropname = nullptr;
 };
 
 struct GX_EXPORT MESSAGE_READ_STAT {
-	BINARY message_xid;
-	uint8_t mark_as_read;
+	BINARY message_xid{};
+	uint8_t mark_as_read = false;
 };
 
 #define FAST_SOURCE_OPERATION_COPYTO				0x1
@@ -524,13 +506,9 @@ struct GX_EXPORT SYSTEMTIME {
 
 /* pidLidTimeZoneStruct - MS-OXOCAL v21 §2.2.1.39 */
 struct GX_EXPORT TZSTRUCT {
-	int32_t bias;
-	int32_t standardbias;
-	int32_t daylightbias;
-	int16_t standardyear;
-	SYSTEMTIME standarddate;
-	int16_t daylightyear;
-	SYSTEMTIME daylightdate;
+	int32_t bias = 0, standardbias = 0, daylightbias = 0;
+	int16_t standardyear = 0, daylightyear = 0;
+	SYSTEMTIME standarddate{}, daylightdate{};
 };
 
 #define TZRULE_FLAG_RECUR_CURRENT_TZREG				0x0001
@@ -588,8 +566,8 @@ static constexpr unsigned int
 union PATTERNTYPE_SPECIFIC {
 	uint32_t weekrecur, dayofmonth;
 	struct {
-		uint32_t weekrecur, recurnum;
-	} monthnth;
+		uint32_t weekrecur = 0, recurnum = 0;
+	} monthnth{};
 };
 
 enum {
@@ -681,19 +659,18 @@ struct GX_EXPORT APPOINTMENT_RECUR_PAT {
 
 /* GOID is not to be confused with GID (MS-OXCPRPT v25 §1.1) */
 struct GX_EXPORT GLOBALOBJECTID {
-	FLATUID arrayid; /* SHOULD be EncodedGlobalId */
-	uint16_t year;
-	uint8_t month;
-	uint8_t day;
-	uint64_t creationtime;
-	uint8_t x[8];
-	BINARY data;
-	bool unparsed;
+	FLATUID arrayid{}; /* SHOULD be EncodedGlobalId */
+	uint16_t year = 0;
+	uint8_t month = 0, day = 0;
+	uint64_t creationtime = 0;
+	uint8_t x[8]{};
+	BINARY data{};
+	bool unparsed = false;
 };
 
 struct GX_EXPORT EID_ARRAY {
-	uint32_t count;
-	eid_t *pids;
+	uint32_t count = 0;
+	eid_t *pids = nullptr;
 	I_BEGIN_END(pids, count);
 	void emplace_back(eid_t t) { pids[count++] = t; }
 };
@@ -707,13 +684,12 @@ using INDEX_ARRAY = PROPTAG_ARRAY;
 #define MAX_ATTACHMENT_NUM							200
 
 struct GX_EXPORT EXTENDED_ERROR {
-	uint16_t version;
-	uint16_t padding;
-	uint32_t errcode;
+	uint16_t version = 0, padding = 0;
+	uint32_t errcode = 0;
 	LONG_TERM_ID folder_gid;
 	LONG_TERM_ID message_gid;
-	uint8_t reserved[24];
-	BINARY *paux_bytes;
+	uint8_t reserved[24]{};
+	BINARY *paux_bytes = nullptr;
 };
 
 #define LOGON_FLAG_PRIVATE							0x1

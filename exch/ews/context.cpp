@@ -360,7 +360,7 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 		    goid.day > ical_get_monthdays(goid.year, goid.month)))
 			goid.year = goid.month = goid.day = 0;
 	} else {
-		memset(&goid, 0, sizeof(GLOBALOBJECTID));
+		goid = {};
 		goid.arrayid = EncodedGlobalId;
 		goid.year = goid.month = goid.day = 0;
 		goid.creationtime = 0;

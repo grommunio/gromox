@@ -391,7 +391,7 @@ ec_error_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
 		return ecNotSupported;
-	memset(plong_term_id, 0, sizeof(LONG_TERM_ID));
+	*plong_term_id = {};
 	plong_term_id->global_counter = rop_util_get_gc_array(id);
 	return replid_to_replguid(*plogon, rop_util_get_replid(id), plong_term_id->guid);
 }	
