@@ -28,253 +28,228 @@ struct zcreq {
 	using view_t = zcreq;
 	zcreq() = default; /* Prevent use of direct-init-list */
 	virtual ~zcreq() = default;
-	zcore_callid call_id;
+	zcore_callid call_id{};
 };
 
 struct zcreq_logon_token final : public zcreq {
 	using view_t = zcreq_logon_token;
-	char *token;
-	char *rhost;
+	char *token = nullptr, *rhost = nullptr;
 };
 
 struct zcreq_logon final : public zcreq {
 	using view_t = zcreq_logon;
-	char *username;
-	char *password;
-	char *rhost;
-	uint32_t flags;
+	char *username = nullptr, *password = nullptr, *rhost = nullptr;
+	uint32_t flags = 0;
 };
 using zcreq_logon_np = zcreq_logon;
 
 struct zcreq_checksession final : public zcreq {
 	using view_t = zcreq_checksession;
-	GUID hsession;
+	GUID hsession{};
 };
 
 struct zcreq_uinfo final : public zcreq {
 	using view_t = zcreq_uinfo;
-	char *username;
+	char *username = nullptr;
 };
 
 struct zcreq_unloadobject final : public zcreq {
 	using view_t = zcreq_unloadobject;
-	GUID hsession;
-	uint32_t hobject;
+	GUID hsession{};
+	uint32_t hobject = 0;
 };
 
 struct zcreq_openentry final : public zcreq {
 	using view_t = zcreq_openentry;
-	GUID hsession;
-	BINARY entryid;
-	uint32_t flags;
+	GUID hsession{};
+	BINARY entryid{};
+	uint32_t flags = 0;
 };
 
 struct zcreq_openstoreentry final : public zcreq {
 	using view_t = zcreq_openstoreentry;
-	GUID hsession;
-	uint32_t hobject;
-	BINARY entryid;
-	uint32_t flags;
+	GUID hsession{};
+	BINARY entryid{};
+	uint32_t hobject = 0, flags = 0;
 };
 
 struct zcreq_openabentry final : public zcreq {
 	using view_t = zcreq_openabentry;
-	GUID hsession;
-	BINARY entryid;
+	GUID hsession{};
+	BINARY entryid{};
 };
 
 struct zcreq_resolvename final : public zcreq {
 	using view_t = zcreq_resolvename;
-	GUID hsession;
-	TARRAY_SET *pcond_set;
+	GUID hsession{};
+	TARRAY_SET *pcond_set = nullptr;
 };
 
 struct zcreq_getpermissions final : public zcreq {
 	using view_t = zcreq_getpermissions;
-	GUID hsession;
-	uint32_t hobject;
+	GUID hsession{};
+	uint32_t hobject = 0;
 };
 
 struct zcreq_modifypermissions final : public zcreq {
 	using view_t = zcreq_modifypermissions;
-	GUID hsession;
-	uint32_t hfolder;
-	PERMISSION_SET *pset;
+	GUID hsession{};
+	uint32_t hfolder = 0;
+	PERMISSION_SET *pset = nullptr;
 };
 
 struct zcreq_modifyrules final : public zcreq {
 	using view_t = zcreq_modifyrules;
-	GUID hsession;
-	uint32_t hfolder;
-	uint32_t flags;
-	RULE_LIST *plist;
+	GUID hsession{};
+	uint32_t hfolder = 0, flags = 0;
+	RULE_LIST *plist = nullptr;
 };
 
 struct zcreq_getabgal final : public zcreq {
 	using view_t = zcreq_getabgal;
-	GUID hsession;
+	GUID hsession{};
 };
 
 struct zcreq_loadstoretable final : public zcreq {
 	using view_t = zcreq_loadstoretable;
-	GUID hsession;
+	GUID hsession{};
 };
 
 struct zcreq_openstore final : public zcreq {
 	using view_t = zcreq_openstore;
-	GUID hsession;
-	BINARY entryid;
+	GUID hsession{};
+	BINARY entryid{};
 };
 
 struct zcreq_openprofilesec final : public zcreq {
 	using view_t = zcreq_openprofilesec;
-	GUID hsession;
-	const FLATUID *puid;
+	GUID hsession{};
+	const FLATUID *puid = nullptr;
 };
 
 struct zcreq_loadhierarchytable final : public zcreq {
 	using view_t = zcreq_loadhierarchytable;
-	GUID hsession;
-	uint32_t hfolder;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hfolder = 0, flags = 0;
 };
 
 struct zcreq_loadcontenttable final : public zcreq {
 	using view_t = zcreq_loadcontenttable;
-	GUID hsession;
-	uint32_t hfolder;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hfolder = 0, flags = 0;
 };
 
 struct zcreq_loadrecipienttable final : public zcreq {
 	using view_t = zcreq_loadrecipienttable;
-	GUID hsession;
-	uint32_t hmessage;
+	GUID hsession{};
+	uint32_t hmessage = 0;
 };
 
 struct zcreq_loadruletable final : public zcreq {
 	using view_t = zcreq_loadruletable;
-	GUID hsession;
-	uint32_t hfolder;
+	GUID hsession{};
+	uint32_t hfolder = 0;
 };
 	
 struct zcreq_createmessage final : public zcreq {
 	using view_t = zcreq_createmessage;
-	GUID hsession;
-	uint32_t hfolder;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hfolder = 0, flags = 0;
 };
 
 struct zcreq_deletemessages final : public zcreq {
 	using view_t = zcreq_deletemessages;
-	GUID hsession;
-	uint32_t hfolder;
-	BINARY_ARRAY *pentryids;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hfolder = 0, flags = 0;
+	BINARY_ARRAY *pentryids = nullptr;
 };
 
 struct zcreq_copymessages final : public zcreq {
 	using view_t = zcreq_copymessages;
-	GUID hsession;
-	uint32_t hsrcfolder;
-	uint32_t hdstfolder;
-	BINARY_ARRAY *pentryids;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hsrcfolder = 0, hdstfolder = 0, flags = 0;
+	BINARY_ARRAY *pentryids = nullptr;
 };
 
 struct zcreq_setreadflags final : public zcreq {
 	using view_t = zcreq_setreadflags;
-	GUID hsession;
-	uint32_t hfolder;
-	BINARY_ARRAY *pentryids;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hfolder = 0, flags = 0;
+	BINARY_ARRAY *pentryids = nullptr;
 };
 
 struct zcreq_createfolder final : public zcreq {
 	using view_t = zcreq_createfolder;
-	GUID hsession;
-	uint32_t hparent_folder;
-	uint32_t folder_type;
-	char *folder_name;
-	char *folder_comment;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hparent_folder = 0, folder_type = 0, flags = 0;
+	char *folder_name = nullptr, *folder_comment = nullptr;
 };
 
 struct zcreq_deletefolder final : public zcreq {
 	using view_t = zcreq_deletefolder;
-	GUID hsession;
-	uint32_t hparent_folder;
-	BINARY entryid;
-	uint32_t flags;
+	GUID hsession{};
+	BINARY entryid{};
+	uint32_t hparent_folder = 0, flags = 0;
 };
 
 struct zcreq_emptyfolder final : public zcreq {
 	using view_t = zcreq_emptyfolder;
-	GUID hsession;
-	uint32_t hfolder;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hfolder = 0, flags = 0;
 };
 
 struct zcreq_copyfolder final : public zcreq {
 	using view_t = zcreq_copyfolder;
-	GUID hsession;
-	uint32_t hsrc_folder;
-	BINARY entryid;
-	uint32_t hdst_folder;
-	char *new_name;
-	uint32_t flags;
+	GUID hsession{};
+	BINARY entryid{};
+	uint32_t hsrc_folder = 0, hdst_folder = 0, flags = 0;
+	char *new_name = nullptr;
 };
 
 struct zcreq_getstoreentryid final : public zcreq {
 	using view_t = zcreq_getstoreentryid;
-	char *mailbox_dn;
+	char *mailbox_dn = nullptr;
 };
 
 struct zcreq_entryidfromsourcekey final : public zcreq {
 	using view_t = zcreq_entryidfromsourcekey;
-	GUID hsession;
-	uint32_t hstore;
-	BINARY folder_key;
-	BINARY *pmessage_key;
+	GUID hsession{};
+	BINARY folder_key{};
+	uint32_t hstore = 0;
+	BINARY *pmessage_key = nullptr;
 };
 
 struct zcreq_storeadvise final : public zcreq {
 	using view_t = zcreq_storeadvise;
-	GUID hsession;
-	uint32_t hstore;
-	BINARY *pentryid;
-	uint32_t event_mask;
+	GUID hsession{};
+	uint32_t hstore = 0, event_mask = 0;
+	BINARY *pentryid = nullptr;
 };
 
 struct zcreq_unadvise final : public zcreq {
 	using view_t = zcreq_unadvise;
-	GUID hsession;
-	uint32_t hstore;
-	uint32_t sub_id;
+	GUID hsession{};
+	uint32_t hstore = 0, sub_id = 0;
 };
 
 struct zcreq_notifdequeue final : public zcreq {
 	using view_t = zcreq_notifdequeue;
-	NOTIF_SINK *psink;
-	uint32_t timeval;
+	NOTIF_SINK *psink = nullptr;
+	uint32_t timeval = 0;
 };
 
 struct zcreq_queryrows_v final : public zcreq {
-	GUID hsession;
-	uint32_t htable;
-	uint32_t start;
-	uint32_t count;
-	RESTRICTION *prestriction;
+	GUID hsession{};
+	uint32_t htable = 0, start = 0, count = 0;
+	RESTRICTION *prestriction = nullptr;
 	std::optional<proptag_cspan> pproptags;
 };
 
 struct zcreq_queryrows final : public zcreq {
 	using view_t = zcreq_queryrows_v;
-	GUID hsession;
-	uint32_t htable;
-	uint32_t start;
-	uint32_t count;
-	RESTRICTION *prestriction;
+	GUID hsession{};
+	uint32_t htable = 0, start = 0, count = 0;
+	RESTRICTION *prestriction = nullptr;
 	std::optional<proptag_vector> pproptags;
 	operator view_t() const {
 		view_t v;
@@ -292,15 +267,15 @@ struct zcreq_queryrows final : public zcreq {
 };
 
 struct zcreq_setcolumns_v final : public zcreq {
-	GUID hsession;
-	uint32_t htable, flags;
+	GUID hsession{};
+	uint32_t htable = 0, flags = 0;
 	proptag_cspan pproptags;
 };
 
 struct zcreq_setcolumns final : public zcreq {
 	using view_t = zcreq_setcolumns_v;
-	GUID hsession;
-	uint32_t htable, flags;
+	GUID hsession{};
+	uint32_t htable = 0, flags = 0;
 	proptag_vector pproptags;
 	operator view_t() const {
 		view_t v;
@@ -314,119 +289,111 @@ struct zcreq_setcolumns final : public zcreq {
 
 struct zcreq_seekrow final : public zcreq {
 	using view_t = zcreq_seekrow;
-	GUID hsession;
-	uint32_t htable;
-	uint32_t bookmark;
-	int32_t seek_rows;
+	GUID hsession{};
+	uint32_t htable = 0, bookmark = 0;
+	int32_t seek_rows = 0;
 };
 
 struct zcreq_sorttable final : public zcreq {
 	using view_t = zcreq_sorttable;
-	GUID hsession;
-	uint32_t htable;
-	SORTORDER_SET *psortset;
+	GUID hsession{};
+	uint32_t htable = 0;
+	SORTORDER_SET *psortset = nullptr;
 };
 
 struct zcreq_getrowcount final : public zcreq {
 	using view_t = zcreq_getrowcount;
-	GUID hsession;
-	uint32_t htable;
+	GUID hsession{};
+	uint32_t htable = 0;
 };
 
 struct zcreq_restricttable final : public zcreq {
 	using view_t = zcreq_restricttable;
-	GUID hsession;
-	uint32_t htable;
-	RESTRICTION *prestriction;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t htable = 0, flags = 0;
+	RESTRICTION *prestriction = nullptr;
 };
 
 struct zcreq_findrow final : public zcreq {
 	using view_t = zcreq_findrow;
-	GUID hsession;
-	uint32_t htable;
-	uint32_t bookmark;
-	RESTRICTION *prestriction;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t htable = 0, bookmark = 0, flags = 0;
+	RESTRICTION *prestriction = nullptr;
 };
 
 struct zcreq_createbookmark final : public zcreq {
 	using view_t = zcreq_createbookmark;
-	GUID hsession;
-	uint32_t htable;
+	GUID hsession{};
+	uint32_t htable = 0;
 };
 
 struct zcreq_freebookmark final : public zcreq {
 	using view_t = zcreq_freebookmark;
-	GUID hsession;
-	uint32_t htable;
-	uint32_t bookmark;
+	GUID hsession{};
+	uint32_t htable = 0, bookmark = 0;
 };
 
 struct zcreq_getreceivefolder final : public zcreq {
 	using view_t = zcreq_getreceivefolder;
-	GUID hsession;
-	uint32_t hstore;
-	char *pstrclass;
+	GUID hsession{};
+	uint32_t hstore = 0;
+	char *pstrclass = nullptr;
 };
 
 struct zcreq_modifyrecipients final : public zcreq {
 	using view_t = zcreq_modifyrecipients;
-	GUID hsession;
-	uint32_t hmessage;
-	uint32_t flags;
-	TARRAY_SET *prcpt_list;
+	GUID hsession{};
+	uint32_t hmessage = 0, flags = 0;
+	TARRAY_SET *prcpt_list = nullptr;
 };
 
 struct zcreq_submitmessage final : public zcreq {
 	using view_t = zcreq_submitmessage;
-	GUID hsession;
-	uint32_t hmessage;
+	GUID hsession{};
+	uint32_t hmessage = 0;
 };
 
 struct zcreq_loadattachmenttable final : public zcreq {
 	using view_t = zcreq_loadattachmenttable;
-	GUID hsession;
-	uint32_t hmessage;
+	GUID hsession{};
+	uint32_t hmessage = 0;
 };
 
 struct zcreq_openattachment final : public zcreq {
 	using view_t = zcreq_openattachment;
-	GUID hsession;
-	uint32_t hmessage;
-	uint32_t attach_id;
+	GUID hsession{};
+	uint32_t hmessage = 0, attach_id = 0;
 };
 
 struct zcreq_createattachment final : public zcreq {
 	using view_t = zcreq_createattachment;
-	GUID hsession;
-	uint32_t hmessage;
+	GUID hsession{};
+	uint32_t hmessage = 0;
 };
 
 struct zcreq_deleteattachment final : public zcreq {
 	using view_t = zcreq_deleteattachment;
-	GUID hsession;
-	uint32_t hmessage;
-	uint32_t attach_id;
+	GUID hsession{};
+	uint32_t hmessage = 0, attach_id = 0;
 };
 
 struct zcreq_setpropvals final : public zcreq {
 	using view_t = zcreq_setpropvals;
-	GUID hsession;
-	uint32_t hobject;
-	TPROPVAL_ARRAY *ppropvals;
+	GUID hsession{};
+	uint32_t hobject = 0;
+	TPROPVAL_ARRAY *ppropvals = nullptr;
 };
 
 struct zcreq_getpropvals_v final : public zcreq {
-	GUID hsession;
-	uint32_t hobject;
+	GUID hsession{};
+	uint32_t hobject = 0;
 	std::optional<proptag_cspan> pproptags;
 };
 
 struct zcreq_getpropvals final : public zcreq {
 	using view_t = zcreq_getpropvals_v;
-	GUID hsession;
-	uint32_t hobject;
+	GUID hsession{};
+	uint32_t hobject = 0;
 	std::optional<proptag_vector> pproptags;
 	operator view_t() const {
 		view_t v;
@@ -441,15 +408,15 @@ struct zcreq_getpropvals final : public zcreq {
 };
 
 struct zcreq_deletepropvals_v final : public zcreq {
-	GUID hsession;
-	uint32_t hobject;
+	GUID hsession{};
+	uint32_t hobject = 0;
 	proptag_cspan pproptags;
 };
 
 struct zcreq_deletepropvals final : public zcreq {
 	using view_t = zcreq_deletepropvals_v;
-	GUID hsession;
-	uint32_t hobject;
+	GUID hsession{};
+	uint32_t hobject = 0;
 	proptag_vector pproptags;
 	operator view_t() const {
 		view_t v;
@@ -462,30 +429,28 @@ struct zcreq_deletepropvals final : public zcreq {
 
 struct zcreq_setmessagereadflag final : public zcreq {
 	using view_t = zcreq_setmessagereadflag;
-	GUID hsession;
-	uint32_t hmessage;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hmessage = 0, flags = 0;
 };
 
 struct zcreq_openembedded final : public zcreq {
 	using view_t = zcreq_openembedded;
-	GUID hsession;
-	uint32_t hattachment;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hattachment = 0, flags = 0;
 };
 
 struct zcreq_getnamedpropids final : public zcreq {
 	using view_t = zcreq_getnamedpropids;
-	GUID hsession;
-	uint32_t hstore;
-	PROPNAME_ARRAY *ppropnames;
+	GUID hsession{};
+	uint32_t hstore = 0;
+	PROPNAME_ARRAY *ppropnames = nullptr;
 };
 
 struct zcreq_getpropnames final : public zcreq {
 	using view_t = zcreq_getpropnames;
-	GUID hsession;
-	uint32_t hstore;
-	PROPID_ARRAY ppropids;
+	GUID hsession{};
+	uint32_t hstore = 0;
+	PROPID_ARRAY ppropids{};
 };
 
 struct zcreq_copyto_v final : public zcreq {
@@ -496,10 +461,8 @@ struct zcreq_copyto_v final : public zcreq {
 
 struct zcreq_copyto final : public zcreq {
 	using view_t = zcreq_copyto_v;
-	GUID hsession;
-	uint32_t hsrcobject;
-	uint32_t hdstobject;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hsrcobject = 0, hdstobject = 0, flags = 0;
 	proptag_vector pexclude_proptags;
 	operator view_t() const {
 		view_t v;
@@ -514,157 +477,152 @@ struct zcreq_copyto final : public zcreq {
 
 struct zcreq_savechanges final : public zcreq {
 	using view_t = zcreq_savechanges;
-	GUID hsession;
-	uint32_t hobject;
+	GUID hsession{};
+	uint32_t hobject = 0;
 };
 
 struct zcreq_hierarchysync final : public zcreq {
 	using view_t = zcreq_hierarchysync;
-	GUID hsession;
-	uint32_t hfolder;
+	GUID hsession{};
+	uint32_t hfolder = 0;
 };
 
 struct zcreq_contentsync final : public zcreq {
 	using view_t = zcreq_contentsync;
-	GUID hsession;
-	uint32_t hfolder;
+	GUID hsession{};
+	uint32_t hfolder = 0;
 };
 
 struct zcreq_configsync final : public zcreq {
 	using view_t = zcreq_configsync;
-	GUID hsession;
-	uint32_t hctx;
-	uint32_t flags;
-	BINARY *pstate;
-	RESTRICTION *prestriction;
+	GUID hsession{};
+	uint32_t hctx = 0, flags = 0;
+	BINARY *pstate = nullptr;
+	RESTRICTION *prestriction = nullptr;
 };
 
 struct zcreq_statesync final : public zcreq {
 	using view_t = zcreq_statesync;
-	GUID hsession;
-	uint32_t hctx;
+	GUID hsession{};
+	uint32_t hctx = 0;
 };
 
 struct zcreq_syncmessagechange final : public zcreq {
 	using view_t = zcreq_syncmessagechange;
-	GUID hsession;
-	uint32_t hctx;
+	GUID hsession{};
+	uint32_t hctx = 0;
 };
 
 struct zcreq_syncfolderchange final : public zcreq {
 	using view_t = zcreq_syncfolderchange;
-	GUID hsession;
-	uint32_t hctx;
+	GUID hsession{};
+	uint32_t hctx = 0;
 };
 
 struct zcreq_syncreadstatechanges final : public zcreq {
 	using view_t = zcreq_syncreadstatechanges;
-	GUID hsession;
-	uint32_t hctx;
+	GUID hsession{};
+	uint32_t hctx = 0;
 };
 
 struct zcreq_syncdeletions final : public zcreq {
 	using view_t = zcreq_syncdeletions;
-	GUID hsession;
-	uint32_t hctx;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t hctx = 0, flags = 0;
 };
 
 struct zcreq_hierarchyimport final : public zcreq {
 	using view_t = zcreq_hierarchyimport;
-	GUID hsession;
-	uint32_t hfolder;
+	GUID hsession{};
+	uint32_t hfolder = 0;
 };
 
 struct zcreq_contentimport final : public zcreq {
 	using view_t = zcreq_contentimport;
-	GUID hsession;
-	uint32_t hfolder;
+	GUID hsession{};
+	uint32_t hfolder = 0;
 };
 
 struct zcreq_configimport final : public zcreq {
 	using view_t = zcreq_configimport;
-	GUID hsession;
-	uint32_t hctx;
-	uint8_t sync_type;
-	BINARY *pstate;
+	GUID hsession{};
+	uint32_t hctx = 0;
+	uint8_t sync_type = 0;
+	BINARY *pstate = nullptr;
 };
 	
 struct zcreq_stateimport final : public zcreq {
 	using view_t = zcreq_stateimport;
-	GUID hsession;
-	uint32_t hctx;
+	GUID hsession{};
+	uint32_t hctx = 0;
 };
 
 struct zcreq_importmessage final : public zcreq {
 	using view_t = zcreq_importmessage;
-	GUID hsession;
-	uint32_t hctx;
-	uint32_t flags;
-	TPROPVAL_ARRAY *pproplist;
+	GUID hsession{};
+	uint32_t hctx = 0, flags = 0;
+	TPROPVAL_ARRAY *pproplist = nullptr;
 };
 	
 struct zcreq_importfolder final : public zcreq {
 	using view_t = zcreq_importfolder;
-	GUID hsession;
-	uint32_t hctx;
-	TPROPVAL_ARRAY *pproplist;
+	GUID hsession{};
+	uint32_t hctx = 0;
+	TPROPVAL_ARRAY *pproplist = nullptr;
 };
 
 struct zcreq_importdeletion final : public zcreq {
 	using view_t = zcreq_importdeletion;
-	GUID hsession;
-	uint32_t hctx;
-	uint32_t flags;
-	BINARY_ARRAY *pbins;
+	GUID hsession{};
+	uint32_t hctx = 0, flags = 0;
+	BINARY_ARRAY *pbins = nullptr;
 };
 
 struct zcreq_importreadstates final : public zcreq {
 	using view_t = zcreq_importreadstates;
-	GUID hsession;
-	uint32_t hctx;
-	STATE_ARRAY *pstates;
+	GUID hsession{};
+	uint32_t hctx = 0;
+	STATE_ARRAY *pstates = nullptr;
 };
 
 struct zcreq_getsearchcriteria final : public zcreq {
 	using view_t = zcreq_getsearchcriteria;
-	GUID hsession;
-	uint32_t hfolder;
+	GUID hsession{};
+	uint32_t hfolder = 0;
 };
 	
 struct zcreq_setsearchcriteria final : public zcreq {
 	using view_t = zcreq_setsearchcriteria;
-	GUID hsession;
-	uint32_t hfolder;
-	uint32_t flags;
-	BINARY_ARRAY *pfolder_array;
-	RESTRICTION *prestriction;
+	GUID hsession{};
+	uint32_t hfolder = 0, flags = 0;
+	BINARY_ARRAY *pfolder_array = nullptr;
+	RESTRICTION *prestriction = nullptr;
 };
 
 struct zcreq_messagetorfc822 final : public zcreq {
 	using view_t = zcreq_messagetorfc822;
-	GUID hsession;
-	uint32_t hmessage;
+	GUID hsession{};
+	uint32_t hmessage = 0;
 };
 
 struct zcreq_rfc822tomessage final : public zcreq {
 	using view_t = zcreq_rfc822tomessage;
-	GUID hsession;
-	uint32_t hmessage, mxf_flags;
-	BINARY *peml_bin;
+	GUID hsession{};
+	uint32_t hmessage = 0, mxf_flags = 0;
+	BINARY *peml_bin = nullptr;
 };
 
 struct zcreq_messagetoical final : public zcreq {
 	using view_t = zcreq_messagetoical;
-	GUID hsession;
-	uint32_t hmessage;
+	GUID hsession{};
+	uint32_t hmessage = 0;
 };
 
 struct zcreq_icaltomessage final : public zcreq {
 	using view_t = zcreq_icaltomessage;
-	GUID hsession;
-	uint32_t hmessage;
-	BINARY *pical_bin;
+	GUID hsession{};
+	uint32_t hmessage = 0;
+	BINARY *pical_bin = nullptr;
 };
 
 enum imtomessage2_type {
@@ -674,86 +632,80 @@ enum imtomessage2_type {
 
 struct zcreq_imtomessage2 final : public zcreq {
 	using view_t = zcreq_imtomessage2;
-	GUID session;
-	uint32_t folder;
-	uint32_t data_type;
-	char *im_data;
+	GUID session{};
+	uint32_t folder = 0, data_type = 0;
+	char *im_data = nullptr;
 };
 
 struct zcreq_messagetovcf final : public zcreq {
 	using view_t = zcreq_messagetovcf;
-	GUID hsession;
-	uint32_t hmessage;
+	GUID hsession{};
+	uint32_t hmessage = 0;
 };
 
 struct zcreq_vcftomessage final : public zcreq {
 	using view_t = zcreq_vcftomessage;
-	GUID hsession;
-	uint32_t hmessage;
-	BINARY *pvcf_bin;
+	GUID hsession{};
+	uint32_t hmessage = 0;
+	BINARY *pvcf_bin = nullptr;
 };
 
 struct zcreq_setpasswd final : public zcreq {
 	using view_t = zcreq_setpasswd;
-	char *username;
-	char *passwd;
-	char *new_passwd;
+	char *username = nullptr, *passwd = nullptr, *new_passwd = nullptr;
 };
 
 struct zcreq_linkmessage final : public zcreq {
 	using view_t = zcreq_linkmessage;
-	GUID hsession;
-	BINARY search_entryid;
-	BINARY message_entryid;
+	GUID hsession{};
+	BINARY search_entryid{}, message_entryid{};
 };
 
 struct zcreq_savesession final : public zcreq {
 	using view_t = zcreq_savesession;
-	GUID hsession;
+	GUID hsession{};
 };
 
 struct zcreq_restoresession final : public zcreq {
 	using view_t = zcreq_restoresession;
-	BINARY *pdata_bin;
+	BINARY *pdata_bin = nullptr;
 };
 
 struct zcreq_essdn_to_username final : public zcreq {
 	using view_t = zcreq_essdn_to_username;
-	char *essdn;
+	char *essdn = nullptr;
 };
 
 struct zcreq_getuserfreebusy final : public zcreq {
 	using view_t = zcreq_getuserfreebusy;
-	GUID hsession;
-	BINARY entryid;
-	int64_t starttime;
-	int64_t endtime;
+	GUID hsession{};
+	BINARY entryid{};
+	int64_t starttime = 0, endtime = 0;
 };
 
 struct zcreq_getuserfreebusyical final : public zcreq {
 	using view_t = zcreq_getuserfreebusyical;
-	GUID hsession;
-	BINARY entryid;
-	int64_t starttime;
-	int64_t endtime;
+	GUID hsession{};
+	BINARY entryid{};
+	int64_t starttime = 0, endtime = 0;
 };
 
 struct zcresp {
 	using view_t = zcresp;
 	zcresp() = default; /* Prevent use of direct-init-list */
 	virtual ~zcresp() = default;
-	zcore_callid call_id;
-	ec_error_t result;
+	zcore_callid call_id{};
+	ec_error_t result{};
 };
 
 struct zcresp_logon final : public zcresp {
 	using view_t = zcresp_logon;
-	GUID hsession;
+	GUID hsession{};
 };
 
 struct zcresp_logon_token final : public zcresp {
 	using view_t = zcresp_logon_token;
-	GUID hsession;
+	GUID hsession{};
 };
 
 struct zcresp_uinfo final : public zcresp {
@@ -765,267 +717,266 @@ struct zcresp_uinfo final : public zcresp {
 
 struct zcresp_openentry final : public zcresp {
 	using view_t = zcresp_openentry;
-	zs_objtype mapi_type;
-	uint32_t hobject;
+	zs_objtype mapi_type{};
+	uint32_t hobject = 0;
 };
 
 struct zcresp_openstoreentry final : public zcresp {
 	using view_t = zcresp_openstoreentry;
-	zs_objtype mapi_type;
-	uint32_t hxobject;
+	zs_objtype mapi_type{};
+	uint32_t hxobject = 0;
 };
 
 struct zcresp_openabentry final : public zcresp {
 	using view_t = zcresp_openabentry;
-	zs_objtype mapi_type;
-	uint32_t hobject;
+	zs_objtype mapi_type{};
+	uint32_t hobject = 0;
 };
 
 struct zcresp_resolvename final : public zcresp {
 	using view_t = zcresp_resolvename;
-	TARRAY_SET result_set;
+	TARRAY_SET result_set{};
 };
 
 struct zcresp_getpermissions final : public zcresp {
 	using view_t = zcresp_getpermissions;
-	PERMISSION_SET perm_set;
+	PERMISSION_SET perm_set{};
 };
 
 struct zcresp_getabgal final : public zcresp {
 	using view_t = zcresp_getabgal;
-	BINARY entryid;
+	BINARY entryid{};
 };
 
 struct zcresp_loadstoretable final : public zcresp {
 	using view_t = zcresp_loadstoretable;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_openstore final : public zcresp {
 	using view_t = zcresp_openstore;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_openprofilesec final : public zcresp {
 	using view_t = zcresp_openprofilesec;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_loadhierarchytable final : public zcresp {
 	using view_t = zcresp_loadhierarchytable;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_loadcontenttable final : public zcresp {
 	using view_t = zcresp_loadcontenttable;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_loadrecipienttable final : public zcresp {
 	using view_t = zcresp_loadrecipienttable;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_loadruletable final : public zcresp {
 	using view_t = zcresp_loadruletable;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 	
 struct zcresp_createmessage final : public zcresp {
 	using view_t = zcresp_createmessage;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_createfolder final : public zcresp {
 	using view_t = zcresp_createfolder;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_getstoreentryid final : public zcresp {
 	using view_t = zcresp_getstoreentryid;
-	BINARY entryid;
+	BINARY entryid{};
 };
 
 struct zcresp_entryidfromsourcekey final : public zcresp {
 	using view_t = zcresp_entryidfromsourcekey;
-	BINARY entryid;
+	BINARY entryid{};
 };
 
 struct zcresp_storeadvise final : public zcresp {
 	using view_t = zcresp_storeadvise;
-	uint32_t sub_id;
+	uint32_t sub_id = 0;
 };
 
 struct zcresp_notifdequeue final : public zcresp {
 	using view_t = zcresp_notifdequeue;
-	ZNOTIFICATION_ARRAY notifications;
+	ZNOTIFICATION_ARRAY notifications{};
 };
 
 struct zcresp_queryrows final : public zcresp {
 	using view_t = zcresp_queryrows;
-	TARRAY_SET rowset;
+	TARRAY_SET rowset{};
 };
 
 struct zcresp_setcolumns final : public zcresp {
 	using view_t = zcresp_setcolumns;
-	GUID hsession;
-	uint32_t htable;
-	PROPTAG_ARRAY *pproptags;
-	uint32_t flags;
+	GUID hsession{};
+	uint32_t htable = 0, flags = 0;
+	PROPTAG_ARRAY *pproptags = nullptr;
 };
 
 struct zcresp_seekrow final : public zcresp {
 	using view_t = zcresp_seekrow;
-	int32_t sought_rows;
+	int32_t sought_rows = 0;
 };
 
 struct zcresp_getrowcount final : public zcresp {
 	using view_t = zcresp_getrowcount;
-	uint32_t count;
+	uint32_t count = 0;
 };
 
 struct zcresp_findrow final : public zcresp {
 	using view_t = zcresp_findrow;
-	uint32_t row_idx;
+	uint32_t row_idx = 0;
 };
 
 struct zcresp_createbookmark final : public zcresp {
 	using view_t = zcresp_createbookmark;
-	uint32_t bookmark;
+	uint32_t bookmark = 0;
 };
 
 struct zcresp_getreceivefolder final : public zcresp {
 	using view_t = zcresp_getreceivefolder;
-	BINARY entryid;
+	BINARY entryid{};
 };
 
 struct zcresp_loadattachmenttable final : public zcresp {
 	using view_t = zcresp_loadattachmenttable;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_openattachment final : public zcresp {
 	using view_t = zcresp_openattachment;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_createattachment final : public zcresp {
 	using view_t = zcresp_createattachment;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_getpropvals final : public zcresp {
 	using view_t = zcresp_getpropvals;
-	TPROPVAL_ARRAY propvals;
+	TPROPVAL_ARRAY propvals{};
 };
 
 struct zcresp_openembedded final : public zcresp {
 	using view_t = zcresp_openembedded;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_getnamedpropids final : public zcresp {
 	using view_t = zcresp_getnamedpropids;
-	PROPID_ARRAY propids;
+	PROPID_ARRAY propids{};
 };
 
 struct zcresp_getpropnames final : public zcresp {
 	using view_t = zcresp_getpropnames;
-	PROPNAME_ARRAY propnames;
+	PROPNAME_ARRAY propnames{};
 };
 
 struct zcresp_hierarchysync final : public zcresp {
 	using view_t = zcresp_hierarchysync;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_contentsync final : public zcresp {
 	using view_t = zcresp_contentsync;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_configsync final : public zcresp {
 	using view_t = zcresp_configsync;
-	uint8_t b_changed;
-	uint32_t count;
+	uint8_t b_changed = false;
+	uint32_t count = 0;
 };
 
 struct zcresp_statesync final : public zcresp {
 	using view_t = zcresp_statesync;
-	BINARY state;
+	BINARY state{};
 };
 
 struct zcresp_syncmessagechange final : public zcresp {
 	using view_t = zcresp_syncmessagechange;
-	uint8_t b_new;
-	TPROPVAL_ARRAY proplist;
+	uint8_t b_new = false;
+	TPROPVAL_ARRAY proplist{};
 };
 
 struct zcresp_syncfolderchange final : public zcresp {
 	using view_t = zcresp_syncfolderchange;
-	TPROPVAL_ARRAY proplist;
+	TPROPVAL_ARRAY proplist{};
 };
 
 struct zcresp_syncreadstatechanges final : public zcresp {
 	using view_t = zcresp_syncreadstatechanges;
-	STATE_ARRAY states;
+	STATE_ARRAY states{};
 };
 
 struct zcresp_syncdeletions final : public zcresp {
 	using view_t = zcresp_syncdeletions;
-	BINARY_ARRAY bins;
+	BINARY_ARRAY bins{};
 };
 
 struct zcresp_hierarchyimport final : public zcresp {
 	using view_t = zcresp_hierarchyimport;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_contentimport final : public zcresp {
 	using view_t = zcresp_contentimport;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 	
 struct zcresp_stateimport final : public zcresp {
 	using view_t = zcresp_stateimport;
-	BINARY state;
+	BINARY state{};
 };
 
 struct zcresp_importmessage final : public zcresp {
 	using view_t = zcresp_importmessage;
-	uint32_t hobject;
+	uint32_t hobject = 0;
 };
 
 struct zcresp_getsearchcriteria final : public zcresp {
 	using view_t = zcresp_getsearchcriteria;
-	BINARY_ARRAY folder_array;
-	RESTRICTION *prestriction;
-	uint32_t search_stat;
+	BINARY_ARRAY folder_array{};
+	RESTRICTION *prestriction = nullptr;
+	uint32_t search_stat = 0;
 };
 
 struct zcresp_messagetorfc822 final : public zcresp {
 	using view_t = zcresp_messagetorfc822;
-	BINARY eml_bin;
+	BINARY eml_bin{};
 };
 
 struct zcresp_messagetoical final : public zcresp {
 	using view_t = zcresp_messagetoical;
-	BINARY ical_bin;
+	BINARY ical_bin{};
 };
 
 struct zcresp_messagetovcf final : public zcresp {
 	using view_t = zcresp_messagetovcf;
-	BINARY vcf_bin;
+	BINARY vcf_bin{};
 };
 
 struct zcresp_imtomessage2 final : public zcresp {
 	using view_t = zcresp_imtomessage2;
-	LONG_ARRAY msg_handles;
+	LONG_ARRAY msg_handles{};
 };
 
 struct zcresp_essdn_to_username final : public zcresp {
 	using view_t = zcresp_essdn_to_username;
-	char *username;
+	char *username = nullptr;
 };
 
 struct zcresp_getuserfreebusy final : public zcresp {
@@ -1035,7 +986,7 @@ struct zcresp_getuserfreebusy final : public zcresp {
 
 struct zcresp_getuserfreebusyical final : public zcresp {
 	using view_t = zcresp_getuserfreebusyical;
-	BINARY ical_bin;
+	BINARY ical_bin{};
 };
 
 using zcresp_checksession = zcresp;
