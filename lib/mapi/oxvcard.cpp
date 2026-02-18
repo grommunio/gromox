@@ -197,8 +197,11 @@ static void add_adr(vcard &card, const char *type, Func &&get_part)
 		return;
 	auto &adr_line = card.append_line("ADR");
 	adr_line.append_param("TYPE", type);
-	for (const auto *part : parts)
-		adr_line.append_value(znul(part));
+	adr_line.append_value(znul(parts[0]));
+	/* MAPI has 6 properties, but the ADR line has 7 fields. */
+	adr_line.append_value("");
+	for (size_t i = 1; i < N; ++i)
+		adr_line.append_value(znul(parts[i]));
 }
 
 static std::string join(const char *gn, const char *mn, const char *sn)
@@ -362,27 +365,46 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 			    pvparam->m_paramvals.size() == 0)
 				throw unrecog(line, *pvparam);
 			address_type = pvparam->m_paramvals[0].c_str();
-			count = 0;
+
+			/* Map ADR's 7 fields to MAPI's 6 properties */
+			unsigned int vcf_idx = 0, mapi_idx = 0;
+			const std::string *ext_addr = nullptr;
 			for (const auto &vnode : pvline->m_values) {
-				if (count > 5)
+				if (mapi_idx >= std::size(g_homeaddr_proptags))
 					break;
 				auto pvvalue = &vnode;
 				auto list_count = pvvalue->m_subvals.size();
 				if (list_count > 1)
 					throw unrecog(line);
-				if (list_count > 0 &&
-				    !pvvalue->m_subvals[0].empty()) {
+				if (vcf_idx == 1 && list_count > 0) {
+					/* Save Extended Address for later concatenation with Street */
+					ext_addr = &pvvalue->m_subvals[0];
+					++vcf_idx;
+					continue;
+				}
+				std::string val;
+				if (list_count > 0)
+					val = pvvalue->m_subvals[0];
+				if (vcf_idx == 2 && ext_addr != nullptr && ext_addr->size() > 0) {
+					/* Prepend Extended Address to Street */
+					if (val.empty())
+						val = *ext_addr;
+					else
+						val = *ext_addr + "\n" + std::move(val);
+				}
+				++vcf_idx;
+				if (!val.empty()) {
 					uint32_t tag;
 					if (strcasecmp(address_type, "work") == 0)
-						tag = g_workaddr_proptags[count];
+						tag = g_workaddr_proptags[mapi_idx];
 					else if (strcasecmp(address_type, "home") == 0)
-						tag = g_homeaddr_proptags[count];
+						tag = g_homeaddr_proptags[mapi_idx];
 					else
-						tag = g_otheraddr_proptags[count];
-					if (pmsg->proplist.set(tag, pvvalue->m_subvals[0].c_str()) != ecSuccess)
+						tag = g_otheraddr_proptags[mapi_idx];
+					if (pmsg->proplist.set(tag, val.c_str()) != ecSuccess)
 						return imp_null;
 				}
-				count ++;
+				++mapi_idx;
 			}
 		} else if (strcasecmp(pvline_name, "TEL") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
