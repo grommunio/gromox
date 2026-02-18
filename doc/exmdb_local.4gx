@@ -29,8 +29,8 @@ Default: \fIno\fP
 .TP
 \fBlda_twostep_ruleproc\fP
 If set to \fI1\fP, an alternate rule processor codebase will be used which
-supports cross-store moves and OOF condition but (at this time) no delegation,
-or autoreply.
+supports cross-store moves, forwarding and OOF condition but (at this time)
+no delegation or autoreply.
 .br
 Default: \fI0\fP
 .TP
