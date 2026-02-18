@@ -878,18 +878,16 @@ struct GX_EXPORT eid_t {
 };
 
 struct GX_EXPORT ACTION_BLOCK {
-	uint16_t length;
-	uint8_t type;
-	uint32_t flavor;
-	uint32_t flags;
-	void *pdata;
+	uint16_t length = 0;
+	uint8_t type = 0;
+	uint32_t flavor = 0, flags = 0;
+	void *pdata = nullptr;
 
 	std::string repr() const;
 };
 
 struct GX_EXPORT ADVISE_INFO {
-	uint32_t hstore;
-	uint32_t sub_id;
+	uint32_t hstore = 0, sub_id = 0;
 };
 
 /*
@@ -946,7 +944,7 @@ struct GUID;
 struct GX_EXPORT FLATUID {
 	operator GUID() const;
 
-	uint8_t ab[16];
+	uint8_t ab[16]{};
 	/*
 	 * Not using auto operator==/<=> because of
 	 * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=103733
@@ -970,7 +968,7 @@ struct GX_EXPORT FLOAT_ARRAY {
 };
 
 struct GX_EXPORT GLOBCNT {
-	uint8_t ab[6];
+	uint8_t ab[6]{};
 };
 
 /**
@@ -990,8 +988,7 @@ struct GX_EXPORT GUID {
 	static const GUID &machine_id();
 
 	uint32_t time_low;
-	uint16_t time_mid;
-	uint16_t time_hi_and_version;
+	uint16_t time_mid, time_hi_and_version;
 	uint8_t clock_seq[2];
 	uint8_t node[6];
 
@@ -1032,21 +1029,22 @@ struct GX_EXPORT LPROPTAG_ARRAY {
 };
 
 struct GX_EXPORT MESSAGE_STATE {
-	BINARY source_key;
-	uint32_t message_flags;
+	BINARY source_key{};
+	uint32_t message_flags = 0;
 };
 
 struct GX_EXPORT NOTIF_SINK {
-	GUID hsession;
-	uint16_t count;
-	ADVISE_INFO *padvise;
+	GUID hsession{};
+	uint16_t count = 0;
+	ADVISE_INFO *padvise = nullptr;
 };
 
 struct GX_EXPORT ONEOFF_ENTRYID_view {
 	uint32_t flags = 0;
 	uint16_t version = 0;
 	uint16_t ctrl_flags = 0;
-	const char *pdisplay_name, *paddress_type, *pmail_address;
+	const char *pdisplay_name = nullptr, *paddress_type = nullptr;
+	const char *pmail_address = nullptr;
 };
 
 struct GX_EXPORT ONEOFF_ENTRYID {
@@ -1061,20 +1059,20 @@ struct GX_EXPORT ONEOFF_ENTRYID {
 };
 
 struct GX_EXPORT PERMISSION_ROW {
-	uint32_t flags, member_id, member_rights;
-	BINARY entryid;
+	uint32_t flags = 0, member_id = 0, member_rights = 0;
+	BINARY entryid{};
 };
 
 struct GX_EXPORT PERMISSION_SET {
-	uint16_t count;
-	PERMISSION_ROW *prows;
+	uint16_t count = 0;
+	PERMISSION_ROW *prows = nullptr;
 };
 
 struct GX_EXPORT PROPERTY_NAME {
-	uint8_t kind;
-	GUID guid;
-	uint32_t lid;
-	char *pname;
+	uint8_t kind = 0;
+	GUID guid{};
+	uint32_t lid = 0;
+	char *pname = nullptr;
 
 	inline bool operator==(const PROPERTY_NAME& o) const
 	{return kind == o.kind && guid == o.guid && (kind == MNID_STRING? !strcmp(pname, o.pname) : lid == o.lid);}
@@ -1094,8 +1092,8 @@ struct GX_EXPORT PROPERTY_XNAME {
 using PROPID_ARRAY = std::vector<gromox::propid_t>;
 
 struct GX_EXPORT PROPNAME_ARRAY {
-	uint16_t count;
-	PROPERTY_NAME *ppropname;
+	uint16_t count = 0;
+	PROPERTY_NAME *ppropname = nullptr;
 	I_BEGIN_END(ppropname, count);
 };
 
@@ -1140,8 +1138,8 @@ struct GX_EXPORT PROPTAG_ARRAY {
 	void emplace_back(gromox::proptag_t t) { pproptag[count++] = t; }
 	void emplace_back_nd(gromox::proptag_t t) { if (!has(t)) pproptag[count++] = t; }
 
-	uint16_t count;
-	gromox::proptag_t *pproptag;
+	uint16_t count = 0;
+	gromox::proptag_t *pproptag = nullptr;
 	static constexpr size_t npos = -1;
 	I_BEGIN_END(pproptag, count);
 };
@@ -1158,9 +1156,9 @@ struct GX_EXPORT SHORT_ARRAY {
  * @table_sort: TBL_ASCEND / TBL_DESCEND
  */
 struct GX_EXPORT SORT_ORDER {
-	uint16_t type;
-	gromox::propid_t propid;
-	uint8_t table_sort;
+	uint16_t type = 0;
+	gromox::propid_t propid{};
+	uint8_t table_sort = 0;
 
 	std::string repr() const;
 };
@@ -1169,18 +1167,16 @@ struct GX_EXPORT SORT_ORDER {
  * https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/ssortorderset
  */
 struct GX_EXPORT SORTORDER_SET {
-	uint16_t count;
-	uint16_t ccategories;
-	uint16_t cexpanded;
-	SORT_ORDER *psort;
+	uint16_t count = 0, ccategories = 0, cexpanded = 0;
+	SORT_ORDER *psort = nullptr;
 
 	std::string repr() const;
 	I_BEGIN_END(psort, count);
 };
 
 struct GX_EXPORT STATE_ARRAY {
-	uint32_t count;
-	MESSAGE_STATE *pstate;
+	uint32_t count = 0;
+	MESSAGE_STATE *pstate = nullptr;
 	I_BEGIN_END(pstate, count);
 };
 
@@ -1267,8 +1263,8 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 	TPROPVAL_ARRAY *dup() const;
 	std::string repr() const;
 
-	uint16_t count;
-	TAGGED_PROPVAL *ppropval;
+	uint16_t count = 0;
+	TAGGED_PROPVAL *ppropval = nullptr;
 	I_BEGIN_END(ppropval, count);
 };
 
@@ -1279,8 +1275,8 @@ struct GX_EXPORT mapidefs1_del {
 using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, mapidefs1_del>;
 
 struct GX_EXPORT LTPROPVAL_ARRAY {
-	uint32_t count;
-	TAGGED_PROPVAL *propval;
+	uint32_t count = 0;
+	TAGGED_PROPVAL *propval = nullptr;
 	I_BEGIN_END(propval, count);
 };
 
@@ -1298,15 +1294,15 @@ struct GX_EXPORT tarray_set {
 	inline gromox::const_deref_iterator<TPROPVAL_ARRAY> end() const { return pparray + count; }
 	std::string repr() const;
 
-	uint32_t count;
-	TPROPVAL_ARRAY **pparray;
+	uint32_t count = 0;
+	TPROPVAL_ARRAY **pparray = nullptr;
 };
 using TARRAY_SET = tarray_set;
 
 struct GX_EXPORT RECIPIENT_BLOCK {
-	uint8_t reserved;
-	uint16_t count;
-	TAGGED_PROPVAL *ppropval;
+	uint8_t reserved = 0;
+	uint16_t count = 0;
+	TAGGED_PROPVAL *ppropval = nullptr;
 
 	std::string repr() const;
 	I_BEGIN_END(ppropval, count);
@@ -1325,9 +1321,9 @@ struct SCommentRestriction;
 struct SCountRestriction;
 
 struct GX_EXPORT SRestriction {
-	enum mapi_rtype rt;
+	enum mapi_rtype rt{};
 	union {
-		void *pres;
+		void *pres = nullptr;
 		restriction_list *andor;
 		SNotRestriction *xnot;
 		SContentRestriction *cont;
@@ -1347,8 +1343,8 @@ struct GX_EXPORT SRestriction {
 using RESTRICTION = SRestriction;
 
 struct GX_EXPORT restriction_list {
-	uint32_t count;
-	SRestriction *pres;
+	uint32_t count = 0;
+	SRestriction *pres = nullptr;
 
 	std::string repr(const char *sep = ",") const;
 	restriction_list *dup() const;
@@ -1359,7 +1355,7 @@ using SAndRestriction = restriction_list;
 using SOrRestriction = restriction_list;
 
 struct GX_EXPORT SNotRestriction {
-	RESTRICTION res;
+	RESTRICTION res{};
 
 	std::string repr() const;
 	SNotRestriction *dup() const;
@@ -1367,9 +1363,9 @@ struct GX_EXPORT SNotRestriction {
 using RESTRICTION_NOT = SNotRestriction;
 
 struct GX_EXPORT SContentRestriction {
-	uint32_t fuzzy_level;
-	gromox::proptag_t proptag;
-	TAGGED_PROPVAL propval;
+	uint32_t fuzzy_level = 0;
+	gromox::proptag_t proptag{};
+	TAGGED_PROPVAL propval{};
 	bool comparable() const;
 	bool eval(const void *) const;
 
@@ -1379,13 +1375,13 @@ struct GX_EXPORT SContentRestriction {
 using RESTRICTION_CONTENT = SContentRestriction;
 
 struct GX_EXPORT SPropertyRestriction {
-	enum relop relop;
-	gromox::proptag_t proptag;
+	enum relop relop{};
+	gromox::proptag_t proptag{};
 	/*
 	 * propval.proptag is only used for proptype information, the propid is
 	 * ignored, but generally the same as RESTRICTION_PROPERTY::proptag.
 	 */
-	TAGGED_PROPVAL propval;
+	TAGGED_PROPVAL propval{};
 	bool comparable() const;
 	bool eval(const void *) const;
 
@@ -1395,8 +1391,8 @@ struct GX_EXPORT SPropertyRestriction {
 using RESTRICTION_PROPERTY = SPropertyRestriction;
 
 struct GX_EXPORT SComparePropsRestriction {
-	enum relop relop;
-	gromox::proptag_t proptag1, proptag2;
+	enum relop relop{};
+	gromox::proptag_t proptag1{}, proptag2{};
 	bool comparable() const;
 
 	std::string repr() const;
@@ -1405,9 +1401,9 @@ struct GX_EXPORT SComparePropsRestriction {
 using RESTRICTION_PROPCOMPARE = SComparePropsRestriction;
 
 struct GX_EXPORT SBitMaskRestriction {
-	enum bm_relop bitmask_relop;
-	gromox::proptag_t proptag;
-	uint32_t mask;
+	enum bm_relop bitmask_relop{};
+	gromox::proptag_t proptag{};
+	uint32_t mask = 0;
 	bool comparable() const { return PROP_TYPE(proptag) == PT_LONG; }
 	bool eval(const void *) const;
 
@@ -1417,9 +1413,9 @@ struct GX_EXPORT SBitMaskRestriction {
 using RESTRICTION_BITMASK = SBitMaskRestriction;
 
 struct GX_EXPORT SSizeRestriction {
-	enum relop relop;
-	gromox::proptag_t proptag;
-	uint32_t size;
+	enum relop relop{};
+	gromox::proptag_t proptag{};
+	uint32_t size = 0;
 	bool eval(const void *) const;
 
 	std::string repr() const;
@@ -1428,7 +1424,7 @@ struct GX_EXPORT SSizeRestriction {
 using RESTRICTION_SIZE = SSizeRestriction;
 
 struct GX_EXPORT SExistRestriction {
-	gromox::proptag_t proptag;
+	gromox::proptag_t proptag{};
 
 	std::string repr() const;
 	SExistRestriction *dup() const;
@@ -1436,8 +1432,8 @@ struct GX_EXPORT SExistRestriction {
 using RESTRICTION_EXIST = SExistRestriction;
 
 struct GX_EXPORT SSubRestriction {
-	uint32_t subobject;
-	RESTRICTION res;
+	uint32_t subobject = 0;
+	RESTRICTION res{};
 
 	std::string repr() const;
 	SSubRestriction *dup() const;
@@ -1445,9 +1441,9 @@ struct GX_EXPORT SSubRestriction {
 using RESTRICTION_SUBOBJ = SSubRestriction;
 
 struct GX_EXPORT SCommentRestriction {
-	uint8_t count;
-	TAGGED_PROPVAL *ppropval;
-	RESTRICTION *pres;
+	uint8_t count = 0;
+	TAGGED_PROPVAL *ppropval = nullptr;
+	RESTRICTION *pres = nullptr;
 
 	std::string repr() const;
 	SCommentRestriction *dup() const;
@@ -1455,8 +1451,8 @@ struct GX_EXPORT SCommentRestriction {
 using RESTRICTION_COMMENT = SCommentRestriction;
 
 struct GX_EXPORT SCountRestriction {
-	uint32_t count;
-	RESTRICTION sub_res;
+	uint32_t count = 0;
+	RESTRICTION sub_res{};
 
 	std::string repr() const;
 	SCountRestriction *dup() const;
@@ -1464,27 +1460,27 @@ struct GX_EXPORT SCountRestriction {
 using RESTRICTION_COUNT = SCountRestriction;
 
 struct GX_EXPORT RULE_ACTIONS {
-	uint16_t count;
-	ACTION_BLOCK *pblock;
+	uint16_t count = 0;
+	ACTION_BLOCK *pblock = nullptr;
 
 	std::string repr() const;
 	I_BEGIN_END(pblock, count);
 };
 
 struct GX_EXPORT RULE_DATA {
-	uint8_t flags;
-	TPROPVAL_ARRAY propvals;
+	uint8_t flags = 0;
+	TPROPVAL_ARRAY propvals{};
 };
 
 struct GX_EXPORT RULE_LIST {
-	uint16_t count;
-	RULE_DATA *prule;
+	uint16_t count = 0;
+	RULE_DATA *prule = nullptr;
 	I_BEGIN_END(prule, count);
 };
 
 struct GX_EXPORT FORWARDDELEGATE_ACTION {
-	uint16_t count;
-	RECIPIENT_BLOCK *pblock;
+	uint16_t count = 0;
+	RECIPIENT_BLOCK *pblock = nullptr;
 
 	std::string repr() const;
 	I_BEGIN_END(pblock, count);

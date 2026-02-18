@@ -1043,6 +1043,7 @@ BOOL exmdb_server::read_message_instance(const char *dir,
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
+	*pmsgctnt = {};
 	return instance_read_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pmsgctnt);
 }
 
@@ -1329,6 +1330,7 @@ BOOL exmdb_server::read_attachment_instance(const char *dir,
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::attachment)
 		return FALSE;
+	*pattctnt = {};
 	return instance_read_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pattctnt);
 }
 
