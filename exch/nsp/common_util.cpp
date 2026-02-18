@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -85,31 +85,24 @@ char *cu_utf8_to_mb_dup(cpid_t cpid, std::string_view sv, unsigned int ndr)
 	return errno == 0 ? cu_strdup(cvt, ndr) : nullptr;
 }
 
-bool common_util_set_permanententryid(unsigned int display_type,
-    const GUID *pobj_guid, const char *pdn, EMSAB_ENTRYID_manual *ppermeid)
+bool common_util_set_permanententryid(display_type dtyp,
+    const GUID *pobj_guid, const char *pdn, EMSAB_ENTRYID *ppermeid) try
 {
-	char buff[128];
-	
 	ppermeid->flags = ENTRYID_TYPE_PERMANENT;
-	ppermeid->type = display_type;
-	ppermeid->px500dn = nullptr;
-	if (DT_CONTAINER == display_type) {
-		if (NULL == pobj_guid) {
-			ppermeid->px500dn = deconst("/");
-		} else {
-			memcpy(buff, "/guid=", 6);
-			pobj_guid->to_str(&buff[6], 32);
-			buff[38] = '\0';
-			ppermeid->px500dn = cu_strdup({buff, 38}, NDR_STACK_OUT);
-			if (ppermeid->px500dn == nullptr)
-				return FALSE;
-		}
-	}  else {
-		ppermeid->px500dn = cu_strdup(pdn, NDR_STACK_OUT);
-		if (ppermeid->px500dn == nullptr)
-			return FALSE;
+	ppermeid->type = dtyp;
+	if (dtyp != DT_CONTAINER) {
+		ppermeid->x500dn = pdn;
+	} else if (pobj_guid == nullptr) {
+		ppermeid->x500dn = "/";
+	} else {
+		char buff[GUIDSTR_SIZE]{};
+		pobj_guid->to_str(buff, std::size(buff));
+		ppermeid->x500dn = std::string("/guid=") + buff;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 bool cu_permeid_to_bin(const EMSAB_ENTRYID_view &permeid, BINARY *pbin)

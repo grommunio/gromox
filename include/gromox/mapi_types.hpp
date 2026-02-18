@@ -246,12 +246,6 @@ struct GX_EXPORT EMSAB_ENTRYID_view {
 	const char *px500dn = nullptr;
 };
 
-struct GX_EXPORT EMSAB_ENTRYID_manual {
-	uint32_t flags = 0, type = 0;
-	char *px500dn = nullptr;
-	operator EMSAB_ENTRYID_view() const { return {flags, type, px500dn}; }
-};
-
 struct GX_EXPORT EMSAB_ENTRYID {
 	uint32_t flags = 0, type = 0;
 	std::string x500dn;

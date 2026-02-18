@@ -53,7 +53,7 @@ extern char *cu_utf8_to_mb_dup(cpid_t, std::string_view, unsigned int = NDR_STAC
 extern char *cu_mb_to_utf8_dup(cpid_t, std::string_view, unsigned int = NDR_STACK_OUT);
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid);
-extern bool common_util_set_permanententryid(uint32_t display_type, const GUID *in, const char *dn, EMSAB_ENTRYID_manual *out);
+extern bool common_util_set_permanententryid(enum display_type dtyp, const GUID *in, const char *dn, EMSAB_ENTRYID *out);
 extern bool cu_permeid_to_bin(const EMSAB_ENTRYID_view &, BINARY *);
 extern bool cu_ephid_to_bin(const EPHEMERAL_ENTRYID &, BINARY *);
 extern NSP_ROWSET *common_util_proprowset_init();

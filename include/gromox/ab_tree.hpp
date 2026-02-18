@@ -235,7 +235,7 @@ class GX_EXPORT ab_base {
 	uint32_t dtyp(minid) const;
 	std::optional<uint32_t> dtypx(minid) const;
 	void dump() const;
-	uint32_t etyp(minid) const;
+	enum display_type etyp(minid) const;
 	bool exists(minid) const;
 	const ab_domain *fetch_domain(minid) const;
 	ec_error_t fetch_prop(minid, gromox::proptag_t, std::string &) const;

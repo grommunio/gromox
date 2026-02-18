@@ -440,7 +440,7 @@ display_type ab_base::dtypx_to_etyp(display_type dt)
  *
  * @return     Entry ID type of the node
  */
-uint32_t ab_base::etyp(minid mid) const
+enum display_type ab_base::etyp(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)

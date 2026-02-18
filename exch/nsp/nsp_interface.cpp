@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -198,7 +198,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 {
 	std::string dn;
 	EPHEMERAL_ENTRYID ephid;
-	EMSAB_ENTRYID_manual permeid;
+	EMSAB_ENTRYID permeid;
 	
 	if (pprop != nullptr) {
 		pprop->proptag = proptag;
@@ -1677,12 +1677,10 @@ static ec_error_t nsp_interface_get_specialtables_from_node(
     const ab_tree::ab_node &node,
     bool b_unicode, cpid_t codepage, NSP_ROWSET *prows)
 {
-	auto ppermeid = ndr_stack_anew<EMSAB_ENTRYID_manual>(NDR_STACK_OUT);
-	if (ppermeid == nullptr)
-		return ecServerOOM;
+	EMSAB_ENTRYID permeid;
 	auto tmp_guid = node.guid();
 	if (!common_util_set_permanententryid(DT_CONTAINER, &tmp_guid,
-	    nullptr, ppermeid))
+	    nullptr, &permeid))
 		return ecServerOOM;
 	auto prow = common_util_proprowset_enlarge(prows);
 	if (prow == nullptr)
@@ -1694,7 +1692,7 @@ static ec_error_t nsp_interface_get_specialtables_from_node(
 
 	std::string str_dname = node.displayname();
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage, has_child,
-	    container_id, str_dname.c_str(), *ppermeid))
+	    container_id, str_dname.c_str(), permeid))
 		return ecServerOOM;
 	if (!has_child)
 		return ecSuccess;
@@ -1730,7 +1728,7 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	auto prow = common_util_proprowset_enlarge(rowset);
 	if (prow == nullptr)
 		return ecServerOOM;
-	EMSAB_ENTRYID_manual permeid;
+	EMSAB_ENTRYID permeid;
 	if (!common_util_set_permanententryid(DT_CONTAINER,
 	    nullptr, nullptr, &permeid))
 		return ecServerOOM;
