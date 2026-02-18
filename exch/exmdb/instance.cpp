@@ -1024,7 +1024,6 @@ static BOOL instance_read_message(const MESSAGE_CONTENT *src,
 		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (pattachment == nullptr)
 			return FALSE;
-		memset(pattachment, 0 ,sizeof(ATTACHMENT_CONTENT));
 		dst->children.pattachments->pplist[i++] = pattachment;
 		if (!instance_read_attachment(&attachment1, pattachment))
 			return FALSE;
@@ -1038,8 +1037,8 @@ BOOL exmdb_server::read_message_instance(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	*pmsgctnt = {};
 	/* No database access, so no transaction. */
-	memset(pmsgctnt, 0, sizeof(MESSAGE_CONTENT));
 	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
@@ -1324,8 +1323,8 @@ BOOL exmdb_server::read_attachment_instance(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	*pattctnt = {};
 	/* No database access, so no transaction. */
-	memset(pattctnt, 0, sizeof(ATTACHMENT_CONTENT));
 	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::attachment)

@@ -19,37 +19,27 @@ struct GX_EXPORT attachment_list {
 	gromox::const_deref_iterator<attachment_content> cbegin() const { return pplist; }
 	gromox::const_deref_iterator<attachment_content> cend() const { return pplist + count; }
 
-	uint16_t count;
-	attachment_content **pplist;
+	uint16_t count = 0;
+	attachment_content **pplist = nullptr;
 };
 using ATTACHMENT_LIST = attachment_list;
 
 struct GX_EXPORT message_children {
-	TARRAY_SET *prcpts;
-	ATTACHMENT_LIST *pattachments;
+	TARRAY_SET *prcpts = nullptr;
+	ATTACHMENT_LIST *pattachments = nullptr;
 };
 using MESSAGE_CHILDREN = message_children;
 
-struct GX_EXPORT change_part {
-	uint32_t group;
-	TPROPVAL_ARRAY proplist;
-};
-using CHANGE_PART = change_part;
-
 struct GX_EXPORT progress_message {
-	uint32_t message_size;
+	uint32_t message_size = 0;
 	BOOL b_fai;
 };
 using PROGRESS_MESSAGE = progress_message;
 
 struct GX_EXPORT progress_information {
-	uint16_t version;
-	uint16_t padding1;
-	uint32_t fai_count;
-	uint64_t fai_size;
-	uint32_t normal_count;
-	uint32_t padding2;
-	uint64_t normal_size;
+	uint16_t version = 0, padding1 = 0, padding2 = 0;
+	uint32_t fai_count = 0, normal_count = 0;
+	uint64_t fai_size = 0, normal_size = 0;
 };
 using PROGRESS_INFORMATION = progress_information;
 
@@ -59,8 +49,8 @@ struct GX_EXPORT message_content {
 	void set_attachments_internal(ATTACHMENT_LIST *);
 	message_content *dup() const;
 
-	TPROPVAL_ARRAY proplist;
-	MESSAGE_CHILDREN children;
+	TPROPVAL_ARRAY proplist{};
+	MESSAGE_CHILDREN children{};
 };
 using MESSAGE_CONTENT = message_content;
 
@@ -68,14 +58,13 @@ struct GX_EXPORT attachment_content {
 	void set_embedded_internal(message_content *);
 	attachment_content *dup() const;
 
-	TPROPVAL_ARRAY proplist; /* PR_ATTACH_NUM must be the first */
-	MESSAGE_CONTENT *pembedded;
+	TPROPVAL_ARRAY proplist{}; /* PR_ATTACH_NUM must be the first */
+	MESSAGE_CONTENT *pembedded = nullptr;
 };
 using ATTACHMENT_CONTENT = attachment_content;
 
 struct GX_EXPORT folder_messages {
-	EID_ARRAY *pfai_msglst;
-	EID_ARRAY *pnormal_msglst;
+	EID_ARRAY *pfai_msglst = nullptr, *pnormal_msglst = nullptr;
 };
 using FOLDER_MESSAGES = folder_messages;
 
@@ -96,8 +85,8 @@ struct GX_EXPORT folder_content {
 using FOLDER_CONTENT = folder_content;
 
 struct GX_EXPORT folder_changes {
-	uint32_t count;
-	TPROPVAL_ARRAY *pfldchgs;
+	uint32_t count = 0;
+	TPROPVAL_ARRAY *pfldchgs = nullptr;
 	I_BEGIN_END(pfldchgs, count);
 };
 using FOLDER_CHANGES = folder_changes;
