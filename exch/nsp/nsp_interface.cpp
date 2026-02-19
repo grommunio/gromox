@@ -1949,6 +1949,13 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	nsp_trace(__func__, 0, pstat);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
+	if (g_nsp_trace >= 2) {
+		std::string tog = "resolvenames {";
+		for (const auto &s : strs)
+			tog += "\"" + s + "\",";
+		tog += "}";
+		mlog(LV_DEBUG, "%s", tog.c_str());
+	}
 	/*
 	 * MS-OXNPI §3.1.4.1.17 states that "If the input parameter Reserved
 	 * contains any value other than 0, the server MUST return one of the
