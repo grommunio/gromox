@@ -23,6 +23,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include <gromox/textmaps.hpp>
 #include "ews.hpp"
 #include "structures.hpp"
@@ -3176,8 +3177,12 @@ void tExtendedProperty::serialize(const void *data, proptype_t type, XMLElement 
 	case PT_APPTIME:
 		return xml->SetText(*(reinterpret_cast<const double*>(data)));
 	case PT_STRING8:
-	case PT_UNICODE:
-		return xml->SetText((reinterpret_cast<const char*>(data)));
+	case PT_UNICODE: {
+		std::string filtered(reinterpret_cast<const char *>(data));
+		utf8_filter(filtered.data());
+		filtered.resize(strlen(filtered.c_str()));
+		return xml->SetText(filtered.c_str());
+	}
 	case PT_BINARY:
 		return xml->SetText(sBase64Binary(static_cast<const BINARY*>(data)).serialize().c_str());
 	case PT_MV_SHORT:
