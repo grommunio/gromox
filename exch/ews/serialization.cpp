@@ -38,6 +38,12 @@ static void xml_set_filtered_text(tinyxml2::XMLElement *xml, const char *text)
 	std::string filtered(text);
 	utf8_filter(filtered.data());
 	filtered.resize(strlen(filtered.c_str()));
+	/*
+	 * That is not enough - the XML Technical Recommendation does
+	 * not allow control chars, despite those being valid Unicode.
+	 */
+	auto isctrl = [](unsigned char c) { return c < 0x20 && c != '\t' && c != '\n' && c != '\r'; };
+	std::erase_if(filtered, isctrl);
 	xml->SetText(filtered.c_str());
 }
 
