@@ -12,7 +12,10 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, proptag_t proptag,
     const void *xpropval)
 {
 	if (xpropval == nullptr) {
-		mlog(LV_DEBUG, "pvalue is NULL in %s", __PRETTY_FUNCTION__);
+		mlog(LV_DEBUG, "%s: pvalue being NULL not allowed", __func__);
+		return true;
+	} else if (PROP_ID(proptag) == 0) {
+		mlog(LV_DEBUG, "%s: propid 0 not allowed", __func__);
 		return true;
 	}
 	if (parray->count == 0 && parray->ppropval == nullptr &&
