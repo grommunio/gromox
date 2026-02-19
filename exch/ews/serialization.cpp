@@ -33,6 +33,14 @@ using namespace std::string_literals;
 
 #define EXT_TRY(expr) EWSContext::ext_error(expr)
 
+static void xml_set_filtered_text(tinyxml2::XMLElement *xml, const char *text)
+{
+	std::string filtered(text);
+	utf8_filter(filtered.data());
+	filtered.resize(strlen(filtered.c_str()));
+	xml->SetText(filtered.c_str());
+}
+
 namespace {
 
 /**
@@ -412,7 +420,7 @@ tBody::tBody(const tinyxml2::XMLElement* xml) :
 
 void tBody::serialize(tinyxml2::XMLElement* xml) const
 {
-	xml->SetText(c_str());
+	xml_set_filtered_text(xml, c_str());
 	XMLDUMPA(BodyType);
 	XMLDUMPA(IsTruncated);
 }
@@ -910,7 +918,7 @@ tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const tinyxml2::XMLEl
 
 void tEmailAddressDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 {
-	xml->SetText(Entry.c_str());
+	xml_set_filtered_text(xml, Entry.c_str());
 	XMLDUMPA(Key);
 	XMLDUMPA(Name);
 	XMLDUMPA(RoutingType);
@@ -971,7 +979,7 @@ tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(const tinyxml2::XMLElem
 
 void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 {
-	xml->SetText(Entry.c_str());
+	xml_set_filtered_text(xml, Entry.c_str());
 	XMLDUMPA(Key);
 }
 
@@ -1124,7 +1132,7 @@ tIndexedPageView::tIndexedPageView(const tinyxml2::XMLElement* xml) :
 void tInternetMessageHeader::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPA(HeaderName);
-	xml->SetText(content.c_str());
+	xml_set_filtered_text(xml, content.c_str());
 }
 
 tFlagType::tFlagType(const tinyxml2::XMLElement* xml) :
