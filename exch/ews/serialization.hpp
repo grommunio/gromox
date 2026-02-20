@@ -136,6 +136,11 @@ template<> struct ExplicitConvert<std::string> {
 		auto filtered = value;
 		utf8_filter(filtered.data());
 		filtered.resize(strlen(filtered.c_str()));
+		/*
+		 * XML 1.0 forbids most C0 controls even if they are valid Unicode code points.
+		 */
+		auto isctrl = [](unsigned char c) { return c < 0x20 && c != '\t' && c != '\n' && c != '\r'; };
+		std::erase_if(filtered, isctrl);
 		if (!filtered.empty())
 			setter(filtered.c_str());
 	}

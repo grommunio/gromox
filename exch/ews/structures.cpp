@@ -37,6 +37,15 @@ using namespace tinyxml2;
 
 namespace {
 
+static inline void ews_strip_invalid_xml_controls(std::string &text)
+{
+	/*
+	 * XML 1.0 forbids most C0 controls even if they are valid Unicode code points.
+	 */
+	auto isctrl = [](unsigned char c) { return c < 0x20 && c != '\t' && c != '\n' && c != '\r'; };
+	std::erase_if(text, isctrl);
+}
+
 /**
  * @brief      Helper struct for property type derivation
  *
@@ -3131,6 +3140,7 @@ void tExtendedProperty::serialize(const void *data, proptype_t type, XMLElement 
 		std::string filtered(reinterpret_cast<const char *>(data));
 		utf8_filter(filtered.data());
 		filtered.resize(strlen(filtered.c_str()));
+		ews_strip_invalid_xml_controls(filtered);
 		return xml->SetText(filtered.c_str());
 	}
 	case PT_BINARY:
