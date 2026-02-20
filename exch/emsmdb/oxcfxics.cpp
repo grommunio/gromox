@@ -1125,8 +1125,30 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (!exmdb_client->get_folder_by_name(dir, parent_id1,
 		    static_cast<char *>(phichyvals->ppropval[5].pvalue), &tmp_fid))
 			return ecError;
-		if (tmp_fid != 0)
+		if (tmp_fid != 0) {
+			/*
+			 * Name collision with a server-provisioned folder.
+			 * OXCFXICS mostly talks about (OXCFXICS) special
+			 * folders, so for now, we match that logic and limit
+			 * it to (Gromox) special folders.
+			 */
+			if (plogon->is_private() &&
+			    rop_util_get_gc_value(tmp_fid) < CUSTOM_EID_BEGIN) {
+				if (!exmdb_client->get_folder_property(dir,
+				    CP_ACP, tmp_fid, PR_FOLDER_TYPE, &pvalue) ||
+				    pvalue == nullptr)
+					return ecError;
+				auto pnum = ppropvals->get<const uint32_t>(PR_FOLDER_TYPE);
+				uint32_t req_type = pnum != nullptr ? *pnum : FOLDER_GENERIC;
+				if (*static_cast<uint32_t *>(pvalue) == req_type)
+					return ecSuccess;
+			}
+			/*
+			 * Technically this error code is not permitted per
+			 * OXCFXICS. May want to revise in the future.
+			 */
 			return ecDuplicateName;
+		}
 		if (!exmdb_client->allocate_cn(dir, &change_num))
 			return ecError;
 		tmp_propvals.count = 0;
