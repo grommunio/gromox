@@ -80,6 +80,7 @@ void object_node::clear() noexcept
 			if (ref != g_logon_hash.end() && --ref->second == 0)
 				g_logon_hash.erase(ref);
 		}
+		mlog(LV_DEBUG, "E-DBG: object_node(%p)::clear: logon=%p", this, pobject);
 		delete logon;
 		break;
 	}
@@ -87,6 +88,7 @@ void object_node::clear() noexcept
 		delete static_cast<folder_object *>(pobject);
 		break;
 	case ems_objtype::message:
+		mlog(LV_DEBUG, "E-DBG: object_node(%p)::clear: msg=%p", this, pobject);
 		delete static_cast<message_object *>(pobject);
 		break;
 	case ems_objtype::attach:
@@ -746,4 +748,14 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	rop_ext_set_rhe_flag_last(pout, last_offset);
 	*pcb_out = offset;
 	return ecSuccess;
+}
+
+LOGON_ITEM::~LOGON_ITEM()
+{
+	if (!g_logon_debug)
+		return;
+	mlog(LV_DEBUG, "E-DBG: ~LOGON_ITEM(%p)", this);
+	for (const auto &e : phash)
+		mlog(LV_DEBUG, "E-DBG: LOGON_ITEM::phash entry %u -> %p ty%u",
+			e.first, e.second.get(), static_cast<unsigned int>(e.second->type));
 }

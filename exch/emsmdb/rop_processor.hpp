@@ -18,6 +18,7 @@ struct object_node;
  * to do without a member indicating the root (whether pointer or integer).
  */
 struct LOGON_ITEM {
+	~LOGON_ITEM();
 	std::unordered_map<uint32_t, std::shared_ptr<object_node>> phash;
 	std::shared_ptr<object_node> root;
 };

@@ -100,7 +100,7 @@ extern ec_error_t replid_to_replguid(const logon_object &, uint16_t, GUID &);
 extern ec_error_t replguid_to_replid(const logon_object &, const GUID &, uint16_t &);
 
 extern size_t g_max_mail_len;
-extern unsigned int g_max_rcpt;
+extern unsigned int g_logon_debug, g_max_rcpt;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
 extern char g_emsmdb_org_name[256];
 

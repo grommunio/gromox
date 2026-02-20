@@ -96,6 +96,9 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	pmessage->b_new = b_new;
 	pmessage->cpid = cpid;
 	pmessage->message_id = eid_t{message_id};
+	if (g_logon_debug)
+		mlog(LV_DEBUG, "E-DBG: message_object(%p): logon=%p mid=%llxh",
+			pmessage.get(), plogon, static_cast<unsigned long long>(message_id));
 	pmessage->tag_access = tag_access;
 	pmessage->open_flags = open_flags;
 	pmessage->pstate = std::move(pstate);
@@ -178,6 +181,8 @@ ec_error_t message_object::check_original_touched() const
 message_object::~message_object()
 {
 	auto pmessage = this;
+	if (g_logon_debug)
+		mlog(LV_DEBUG, "E-DBG: ~message_object(%p): logon=%p", this, plogon);
 	
 	if (pmessage->instance_id != 0)
 		exmdb_client->unload_instance(pmessage->plogon->get_dir(),

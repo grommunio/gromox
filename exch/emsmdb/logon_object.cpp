@@ -76,7 +76,15 @@ std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 	gx_strlcpy(plogon->dir, dir, std::size(plogon->dir));
 	plogon->mailbox_guid = std::move(record_key);
 	plogon->mapping_signature = std::move(mapping_sig);
+	if (g_logon_debug)
+		mlog(LV_DEBUG, "E-DBG: logon_object(%p, dir=%s)", plogon.get(), dir);
 	return plogon;
+}
+
+logon_object::~logon_object()
+{
+	if (g_logon_debug)
+		mlog(LV_DEBUG, "E-DBG: ~logon_object(%p)", this);
 }
 
 GUID logon_object::guid() const

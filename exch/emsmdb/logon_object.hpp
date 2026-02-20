@@ -16,6 +16,7 @@ struct logon_object {
 	NOMOVE(logon_object);
 
 	public:
+	~logon_object();
 	static std::unique_ptr<logon_object> create(uint8_t logon_flags, uint32_t open_flags, enum logon_mode, int account_id, int dom_id, const char *account, const char *dir, GUID mailbox_guid, GUID mapping_sig);
 	bool is_private() const { return logon_flags & LOGON_FLAG_PRIVATE; }
 	GUID guid() const;

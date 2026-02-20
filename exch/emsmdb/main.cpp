@@ -18,6 +18,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
+#include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
@@ -42,6 +43,9 @@ static int exchange_async_emsmdb_dispatch(unsigned int op, const GUID *obj, uint
 static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
 static DCERPC_ENDPOINT *ep_6001;
+namespace emsmdb {
+unsigned int g_logon_debug;
+}
 
 static constexpr cfg_directive emsmdb_gxcfg_dflt[] = {
 	{"backfill_transport_headers", "0", CFG_BOOL},
@@ -148,6 +152,7 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
 			return false;
 		textmaps_init();
+		emsmdb::g_logon_debug = getenv("MILLENIUM_PRIZE") != nullptr;
 		auto pfile = config_file_initd("exchange_emsmdb.cfg",
 		             get_config_path(), emsmdb_cfg_defaults);
 		if (NULL == pfile) {
@@ -248,6 +253,8 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_QUENCH_ASYNC:
+		if (g_logon_debug)
+			mlog(LV_DEBUG, "E-DBG: running emsmdb QUENCH_ASYNC section in TID %lu...", gx_gettid());
 		asyncemsmdb_interface_stop();
 		emsmdb_interface_stop();
 		return TRUE;
