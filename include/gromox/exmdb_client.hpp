@@ -44,7 +44,7 @@ extern GX_EXPORT BOOL exmdb_client_do_rpc(const exreq *, exresp *);
 
 class GX_EXPORT exmdb_client_remote {
 	public:
-	exmdb_client_remote(unsigned int conn_max, unsigned int notify_threads_max);
+	exmdb_client_remote(unsigned int conn_max, unsigned int notify_threads_max = 0);
 	~exmdb_client_remote();
 
 #define IDLOUT
