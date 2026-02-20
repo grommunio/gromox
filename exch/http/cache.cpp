@@ -45,7 +45,7 @@ using namespace gromox;
 namespace {
 struct cache_item {
 	cache_item() = default;
-	cache_item(cache_item &&) = delete;
+	NOMOVE(cache_item);
 	~cache_item();
 
 	const char *content_type = nullptr;
