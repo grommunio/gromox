@@ -146,8 +146,12 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	    &pwait->cxr, true) ||
 	    strcasecmp(rpc_info.username, pwait->username.c_str()) != 0)
 		return DISPATCH_SUCCESS;
-	if (emsmdb_interface_notifications_pending(pin->acxh))
+	if (emsmdb_interface_notifications_pending(pin->acxh)) {
+		cl_fail.release();
+		pout->flags_out = FLAG_NOTIFICATION_PENDING;
+		pout->result = ecSuccess;
 		return DISPATCH_SUCCESS;
+	}
 	pwait->async_id = async_id;
 	HX_strlower(pwait->username.data());
 	pwait->wait_time = time(nullptr);
