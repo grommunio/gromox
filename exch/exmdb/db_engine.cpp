@@ -662,7 +662,7 @@ db_conn::db_conn(db_base &base) :
 	++base.reference;
 }
 
-db_conn::db_conn(db_conn &&o) :
+db_conn::db_conn(db_conn &&o) noexcept :
 	psqlite(std::move(o.psqlite)),
 	m_sqlite_eph(std::move(o.m_sqlite_eph)),
 	m_base(std::move(o.m_base))
@@ -680,7 +680,7 @@ db_conn::~db_conn()
 	g_maint_ref_cv.notify_all();
 }
 
-db_conn &db_conn::operator=(db_conn &&o)
+db_conn &db_conn::operator=(db_conn &&o) noexcept
 {
 	psqlite = std::move(o.psqlite);
 	m_sqlite_eph = std::move(o.m_sqlite_eph);

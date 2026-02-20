@@ -196,8 +196,8 @@ struct db_conn {
 
 	db_conn(db_base &);
 	~db_conn();
-	db_conn(db_conn &&);
-	db_conn &operator=(db_conn &&);
+	db_conn(db_conn &&) noexcept;
+	db_conn &operator=(db_conn &&) noexcept;
 
 	bool open(const char *dir);
 	db_base_rd_ptr lock_base_rd() const;
