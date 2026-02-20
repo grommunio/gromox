@@ -496,7 +496,9 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
  *
  * @param    data   Binary data to copy
  */
-sBase64Binary::sBase64Binary(std::string &&data) : std::string(std::move(data))
+sBase64Binary::sBase64Binary(std::string &&data)
+    noexcept(noexcept(std::string(std::move(data)))) :
+	std::string(std::move(data))
 {}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4552,7 +4554,9 @@ std::atomic<detail::SubscriptionKey> tSubscriptionId::globcnt = 0;
 tSubscriptionId::tSubscriptionId(uint32_t t) : tsub_rawkey(++globcnt), timeout(t)
 {}
 
-tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f))
+tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f)
+    noexcept(noexcept(sFolder(std::move(f)))) :
+	folder(std::move(f))
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4562,13 +4566,16 @@ tSyncFolderItemsDelete::tSyncFolderItemsDelete(const sBase64Binary& meid) : Item
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tTargetFolderIdType::tTargetFolderIdType(sFolderId&& id) :
-    FolderId(std::move(id))
+tTargetFolderIdType::tTargetFolderIdType(sFolderId &&id)
+    noexcept(noexcept(sFolderId(std::move(id)))) :
+	FolderId(std::move(id))
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-mFreeBusyResponse::mFreeBusyResponse(tFreeBusyView&& fbv) : FreeBusyView(std::move(fbv))
+mFreeBusyResponse::mFreeBusyResponse(tFreeBusyView &&fbv)
+    noexcept(noexcept(std::optional<tFreeBusyView>(std::move(fbv)))) :
+	FreeBusyView(std::move(fbv))
 {}
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -138,7 +138,7 @@ struct sBase64Binary : public std::string {
 	sBase64Binary() = default;
 	sBase64Binary(const TAGGED_PROPVAL&);
 	sBase64Binary(const BINARY*);
-	explicit sBase64Binary(std::string &&);
+	explicit sBase64Binary(std::string &&o) noexcept(noexcept(std::string(std::move(o))));
 	explicit sBase64Binary(const tinyxml2::XMLElement *);
 	explicit sBase64Binary(const tinyxml2::XMLAttribute *);
 
@@ -2292,7 +2292,7 @@ using tSyncFolderHierarchyChange = std::variant<tSyncFolderHierarchyCreate, tSyn
  * Types.xsd:6223
  */
 struct tSyncFolderHierarchyCU : public NS_EWS_Types {
-	tSyncFolderHierarchyCU(sFolder&&);
+	tSyncFolderHierarchyCU(sFolder &&o) noexcept(noexcept(sFolder(std::move(o))));
 
 	sFolder folder;
 
@@ -2889,7 +2889,7 @@ struct tSuggestionsViewOptions {
  * Types.xsd:1898
  */
 struct tTargetFolderIdType {
-	explicit tTargetFolderIdType(sFolderId&&);
+	explicit tTargetFolderIdType(sFolderId &&o) noexcept(noexcept(sFolderId(std::move(o))));
 	explicit tTargetFolderIdType(const tinyxml2::XMLElement *);
 
 	sFolderId FolderId;
@@ -3650,7 +3650,7 @@ struct mFreeBusyResponse : public NS_EWS_Messages {
 	static constexpr char NAME[] = "FreeBusyResponse";
 
 	mFreeBusyResponse() = default;
-	explicit mFreeBusyResponse(tFreeBusyView&&);
+	explicit mFreeBusyResponse(tFreeBusyView &&o) noexcept(noexcept(std::optional<tFreeBusyView>(std::move(o))));
 
 	void serialize(tinyxml2::XMLElement *) const;
 
