@@ -658,7 +658,13 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (!exmdb_client->read_message(dir, pctx->pstream->plogon->readstate_user(),
 	    pinfo->cpid, message_id, &pmsgctnt))
 		return FALSE;
-	if (NULL == pmsgctnt) {
+	if (pmsgctnt == nullptr ||
+	    !pmsgctnt->proplist.has(PR_CHANGE_KEY) ||
+	    !pmsgctnt->proplist.has(PR_PREDECESSOR_CHANGE_LIST) ||
+	    !pmsgctnt->proplist.has(PR_MSG_STATUS)) {
+		if (pmsgctnt != nullptr)
+			mlog(LV_WARN, "W-5325: ICS: skipping corrupt msg %llxh"
+				" (missing CK/PCL/MSGSTATUS)", LLU{message_id});
 		pctx->pstate->pgiven->remove(message_id);
 		if (b_downloaded) {
 			if (!(pctx->sync_flags & SYNC_NO_DELETIONS) &&
@@ -674,10 +680,6 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	icsdownctx_object_trim_report_recipients(*pmsgctnt);
 	auto folder_id = pctx->pfolder->folder_id;
 	auto pstatus = pmsgctnt->proplist.get<uint32_t>(PR_MSG_STATUS);
-	if (pstatus == nullptr) {
-		mlog(LV_INFO, "I-2055: ICS: cannot transfer msg %llxh without PR_MSG_STATUS", LLU{message_id});
-		return FALSE;
-	}
 	if (*pstatus & MSGSTATUS_IN_CONFLICT) {
 		if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
 			if (!exmdb_client->get_folder_property(dir,
