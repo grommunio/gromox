@@ -1292,9 +1292,10 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	auto dir = plogon->get_dir();
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED &&
-	    sync_type == SYNC_TYPE_CONTENTS &&
-	    !exmdb_client->get_folder_perm(dir,
-	    folder_id, username, &permission)) {
+	    sync_type == SYNC_TYPE_CONTENTS) {
+		if (!exmdb_client->get_folder_perm(dir,
+		    folder_id, username, &permission))
+			return ecRpcFailed;
 		if (permission & (frightsOwner | frightsDeleteAny))
 			username = NULL;
 		else if (!(permission & frightsDeleteOwned))
@@ -1373,9 +1374,12 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 					return ecError;
 				if (!b_owner)
 					return ecAccessDenied;
-			} else if (!exmdb_client->get_folder_perm(dir,
-			    eid, username, &permission) && !(permission & frightsOwner)) {
-				return ecAccessDenied;
+			} else {
+				if (!exmdb_client->get_folder_perm(dir,
+				    eid, username, &permission))
+					return ecRpcFailed;
+				if (!(permission & frightsOwner))
+					return ecAccessDenied;
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
