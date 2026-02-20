@@ -1472,16 +1472,16 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	 */
 	if (!b_exist)
 		return SYNC_E_OBJECT_DELETED;
-	auto rpc_info = get_rpc_info();
-	if (plogon->logon_mode != logon_mode::owner) {
+	auto username = plogon->eff_user();
+	if (username != STORE_OWNER_GRANTED) {
 		if (!exmdb_client->get_folder_perm(dir,
-		    src_fid, rpc_info.username, &permission))
+		    src_fid, username, &permission))
 			return ecError;
 		if (permission & frightsDeleteAny) {
 			/* do nothing */
 		} else if (permission & frightsDeleteOwned) {
 			if (!exmdb_client->is_message_owner(dir,
-			    src_mid, rpc_info.username, &b_owner))
+			    src_mid, username, &b_owner))
 				return ecError;
 			if (!b_owner)
 				return ecAccessDenied;
@@ -1489,7 +1489,7 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 			return ecAccessDenied;
 		}
 		if (!exmdb_client->get_folder_perm(dir,
-		    folder_id, rpc_info.username, &permission))
+		    folder_id, username, &permission))
 			return ecError;
 		if (!(permission & frightsCreate))
 			return ecAccessDenied;
