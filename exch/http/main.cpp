@@ -426,7 +426,6 @@ int main(int argc, char **argv)
 	}
 	service_trigger_all(PLUGIN_QUENCH_ASYNC);
 	pdu_processor_trigger(PLUGIN_QUENCH_ASYNC);
-	pdu_processor_trigger(PLUGIN_QUENCH_ASYNC);
 	return EXIT_SUCCESS;
 }
 
