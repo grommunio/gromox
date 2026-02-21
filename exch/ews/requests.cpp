@@ -1040,6 +1040,71 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 }
 
 /**
+ * @brief      Process DeleteAttachment
+ *
+ * Delete one or more attachments from existing items.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:DeleteAttachmentResponse");
+
+	mDeleteAttachmentResponse data;
+	data.ResponseMessages.reserve(request.AttachmentIds.size());
+	for (const tRequestAttachmentId &raid : request.AttachmentIds) try {
+		sAttachmentId aid(raid.Id.data(), raid.Id.size());
+		sFolderSpec parentFolder = ctx.resolveFolder(aid);
+		std::string dir = ctx.getDir(parentFolder);
+		ctx.validate(dir, aid);
+		// XXX: Permission check is wrong; we must check whether message can be modified
+		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
+			throw EWSError::AccessDenied(E3190);
+
+		auto mInst = ctx.plugin().loadMessageInstance(dir,
+		             aid.folderId(), aid.messageId());
+		if (!ctx.plugin().exmdb.delete_message_instance_attachment(dir.c_str(),
+		    mInst->instanceId, aid.attachment_num))
+			throw EWSError::ItemSave(E3094);
+		ec_error_t err;
+		if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
+		    mInst->instanceId, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3094);
+
+		sShape shape;
+		ctx.updated(dir, aid, shape);
+		TPROPVAL_ARRAY msgProps = shape.write();
+		PROBLEM_ARRAY msgProblems;
+		if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+		    ctx.effectiveUser(parentFolder), CP_ACP, aid.messageId(),
+		    &msgProps, &msgProblems))
+			throw EWSError::ItemSave(E3092);
+
+		static constexpr proptag_t propids[] = {PR_ENTRYID, PR_CHANGE_KEY};
+		static constexpr PROPTAG_ARRAY proptags = {std::size(propids), deconst(propids)};
+		TPROPVAL_ARRAY props = ctx.getItemProps(dir, aid.messageId(), proptags);
+		auto entryId   = props.get<const BINARY>(PR_ENTRYID);
+		auto changeKey = props.get<const BINARY>(PR_CHANGE_KEY);
+
+		mDeleteAttachmentResponseMessage msg;
+		if (entryId) {
+			sMessageEntryId rootMid(entryId->pv, entryId->cb);
+			msg.RootItemId = rootMid.serialize();
+		}
+		if (changeKey)
+			msg.RootItemChangeKey = sBase64Binary(changeKey);
+		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
+	} catch (const EWSError &err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process DeleteFolder
  *
  * @param      request   Request data
