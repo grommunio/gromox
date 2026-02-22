@@ -2227,6 +2227,26 @@ void mGetUserConfigurationResponse::serialize(XMLElement *xml) const
 	XMLDUMPM(ResponseMessages);
 }
 
+static const XMLElement *getChild(const XMLElement *xml, const char *name)
+{
+	auto *child = xml->FirstChildElement(name);
+	if (!child)
+		throw Exceptions::DeserializationError(
+			Exceptions::E3046(name, xml->Name()));
+	return child;
+}
+
+mUpdateUserConfigurationRequest::mUpdateUserConfigurationRequest(const XMLElement *xml) :
+	UserConfigurationName(fromXMLNode<tUserConfigurationName>(getChild(xml, "UserConfiguration"), "UserConfigurationName")),
+	XmlData(fromXMLNode<std::optional<sBase64Binary>>(getChild(xml, "UserConfiguration"), "XmlData")),
+	BinaryData(fromXMLNode<std::optional<sBase64Binary>>(getChild(xml, "UserConfiguration"), "BinaryData"))
+{}
+
+void mUpdateUserConfigurationResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
 tDelegatePermissions::tDelegatePermissions(const XMLElement *xml) :
 	XMLINIT(CalendarFolderPermissionLevel),
 	XMLINIT(TasksFolderPermissionLevel),
