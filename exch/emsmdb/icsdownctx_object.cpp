@@ -469,8 +469,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			rop_util_free_binary(pbin);
 		return FALSE;
 	}
-	if (!pctx->pstream->write_hierarchysync(&fldchgs,
-	    pproplist_deletions, pproplist_state)) {
+	if (!pctx->pstream->write_hierarchysync(fldchgs,
+	    pproplist_deletions, *pproplist_state)) {
 		tpropval_array_free(pproplist_state);
 		if (pproplist_deletions != nullptr)
 			rop_util_free_binary(pbin);
@@ -501,10 +501,11 @@ BOOL icsdownctx_object::make_sync()
 	return TRUE;
 }
 
-static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
+static bool icsdownctx_object_extract_msgctntinfo(message_content &msg,
     uint8_t extra_flags, uint64_t message_id, TPROPVAL_ARRAY *pchgheader,
     PROGRESS_MESSAGE *pprogmsg)
 {
+	auto pmsgctnt = &msg;
 	pchgheader->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (pchgheader->ppropval == nullptr)
 		return FALSE;
@@ -573,9 +574,10 @@ static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
 	return TRUE;
 }
 
-static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
+static void icsdownctx_object_adjust_msgctnt(message_content &msg,
     proptag_cspan pproptags, bool b_exclude)
 {
+	auto pmsgctnt = &msg;
 	if (b_exclude) {
 		for (const auto tag : pproptags) {
 			switch (tag) {
@@ -605,9 +607,9 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 		pmsgctnt->children.pattachments = NULL;
 }
 
-static void icsdownctx_object_trim_embedded(
-	MESSAGE_CONTENT *pmsgctnt)
+static void icsdownctx_object_trim_embedded(message_content &msg)
 {
+	auto pmsgctnt = &msg;
 	if (pmsgctnt->children.pattachments == nullptr)
 		return;
 	for (auto &at : *pmsgctnt->children.pattachments) {
@@ -622,15 +624,15 @@ static void icsdownctx_object_trim_embedded(
 		}
 		common_util_remove_propvals(&pembedded->proplist, PidTagChangeNumber);
 		common_util_remove_propvals(&pembedded->proplist, PR_MSG_STATUS);
-		icsdownctx_object_trim_embedded(pembedded);
+		icsdownctx_object_trim_embedded(*pembedded);
 	}
 }
 
 /* Outlook 2016 does not accept recipients
 	of report messages, get rid of them */
-static void icsdownctx_object_trim_report_recipients(
-	MESSAGE_CONTENT *pmsgctnt)
+static void icsdownctx_object_trim_report_recipients(message_content &msg)
 {
+	auto pmsgctnt = &msg;
 	auto pvalue = pmsgctnt->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (class_match_prefix(pvalue, "REPORT.IPM.Note") == 0)
 		pmsgctnt->children.prcpts = NULL;
@@ -638,7 +640,7 @@ static void icsdownctx_object_trim_report_recipients(
 		return;
 	for (auto &at : *pmsgctnt->children.pattachments)
 		if (at.pembedded != nullptr)
-			icsdownctx_object_trim_report_recipients(at.pembedded);
+			icsdownctx_object_trim_report_recipients(*at.pembedded);
 }
 
 static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
@@ -669,7 +671,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		}
 		return TRUE;
 	}
-	icsdownctx_object_trim_report_recipients(pmsgctnt);
+	icsdownctx_object_trim_report_recipients(*pmsgctnt);
 	auto folder_id = pctx->pfolder->folder_id;
 	auto pstatus = pmsgctnt->proplist.get<uint32_t>(PR_MSG_STATUS);
 	if (pstatus == nullptr) {
@@ -694,7 +696,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			auto pembedded = at.pembedded;
 			if (pembedded == nullptr)
 				return FALSE;
-			icsdownctx_object_trim_embedded(pembedded);
+			icsdownctx_object_trim_embedded(*pembedded);
 			auto ppropval = cu_alloc<TAGGED_PROPVAL>(pembedded->proplist.count + 2);
 			if (ppropval == nullptr)
 				return FALSE;
@@ -712,13 +714,13 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 				    PR_SOURCE_KEY, psk) != ecSuccess)
 					return false;
 			}
-			if (!icsdownctx_object_extract_msgctntinfo(pembedded,
+			if (!icsdownctx_object_extract_msgctntinfo(*pembedded,
 			    pctx->extra_flags, message_id, &chgheader, &progmsg))
 				return FALSE;
-			icsdownctx_object_adjust_msgctnt(pembedded, pctx->pproptags,
+			icsdownctx_object_adjust_msgctnt(*pembedded, pctx->pproptags,
 				!(pctx->sync_flags & SYNC_ONLY_SPECIFIED_PROPS));
 			if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
-			    !pctx->pstream->write_progresspermessage(&progmsg))
+			    !pctx->pstream->write_progresspermessage(progmsg))
 				return FALSE;
 			common_util_remove_propvals(&pembedded->proplist, PR_READ);
 			common_util_remove_propvals(&pembedded->proplist, PR_CHANGE_KEY);
@@ -735,12 +737,12 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit) != ecSuccess)
 				return false;
 			fxs_propsort(*pembedded);
-			if (!pctx->pstream->write_messagechangefull(&chgheader, pembedded))
+			if (!pctx->pstream->write_messagechangefull(chgheader, *pembedded))
 				return FALSE;
 		}
 		return TRUE;
 	}
-	icsdownctx_object_trim_embedded(pmsgctnt);
+	icsdownctx_object_trim_embedded(*pmsgctnt);
 	auto ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 10);
 	if (ppropval == nullptr)
 		return FALSE;
@@ -780,16 +782,16 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		if (cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue) != ecSuccess)
 			return false;
 	}
-	if (!icsdownctx_object_extract_msgctntinfo(pmsgctnt,
+	if (!icsdownctx_object_extract_msgctntinfo(*pmsgctnt,
 	    pctx->extra_flags, message_id, &chgheader, &progmsg))
 		return FALSE;
 	auto cond1 = !(pctx->sync_flags & SYNC_ONLY_SPECIFIED_PROPS);
 	if (!(pctx->sync_flags & SYNC_IGNORE_SPECIFIED_ON_ASSOCIATED) ||
 	    cond1 || !progmsg.b_fai)
-		icsdownctx_object_adjust_msgctnt(pmsgctnt, pctx->pproptags, cond1);
+		icsdownctx_object_adjust_msgctnt(*pmsgctnt, pctx->pproptags, cond1);
 
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
-	    !pctx->pstream->write_progresspermessage(&progmsg))
+	    !pctx->pstream->write_progresspermessage(progmsg))
 		return FALSE;
 	pctx->next_progress_steps += progmsg.message_size;
 
@@ -808,7 +810,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit) != ecSuccess)
 		return false;
 	fxs_propsort(*pmsgctnt);
-	return pctx->pstream->write_messagechangefull(&chgheader, pmsgctnt);
+	return pctx->pstream->write_messagechangefull(chgheader, *pmsgctnt);
 }
 
 /* only be called under content sync */
@@ -848,7 +850,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	}
 	if (proplist.count == 0)
 		return TRUE;
-	if (!pctx->pstream->write_deletions(&proplist)) {
+	if (!pctx->pstream->write_deletions(proplist)) {
 		if (pbin1 != nullptr)
 			rop_util_free_binary(pbin1);
 		if (pbin2 != nullptr)
@@ -899,7 +901,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 	}
 	if (proplist.count == 0)
 		return TRUE;
-	if (!pctx->pstream->write_readstatechanges(&proplist))
+	if (!pctx->pstream->write_readstatechanges(proplist))
 		return FALSE;
 	return TRUE;
 }
@@ -931,7 +933,7 @@ static BOOL icsdownctx_object_write_state(icsdownctx_object *pctx)
 	auto pproplist = pctx->pstate->serialize();
 	if (pproplist == nullptr)
 		return FALSE;
-	if (!pctx->pstream->write_state(pproplist)) {
+	if (!pctx->pstream->write_state(*pproplist)) {
 		tpropval_array_free(pproplist);
 		return FALSE;
 	}
@@ -976,7 +978,7 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 				return FALSE;
 			break;
 		case ics_flow_func::progress:
-			if (!pctx->pstream->write_progresstotal(pctx->pprogtotal))
+			if (!pctx->pstream->write_progresstotal(*pctx->pprogtotal))
 				return FALSE;
 			break;
 		case ics_flow_func::upd_msg_id:

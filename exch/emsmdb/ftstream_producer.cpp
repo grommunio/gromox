@@ -466,17 +466,17 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 	return FALSE;
 }
 
-BOOL fxstream_producer::write_proplist(const TPROPVAL_ARRAY *pproplist)
+bool fxstream_producer::write_proplist(const TPROPVAL_ARRAY &props)
 {
 	auto pstream = this;
-	for (const auto &pv : *pproplist)
+	for (const auto &pv : props)
 		if (!ftstream_producer_write_propvalue(pstream, &pv))
 			return FALSE;	
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_embeddedmessage(fxstream_producer *pstream,
-    BOOL b_delprop, const message_content *pmessage)
+static bool ftstream_producer_write_embeddedmessage(fxstream_producer *pstream,
+    bool b_delprop, const message_content &pmessage)
 {
 	if (!pstream->write_uint32(STARTEMBED))
 		return FALSE;	
@@ -487,21 +487,21 @@ static BOOL ftstream_producer_write_embeddedmessage(fxstream_producer *pstream,
 	return TRUE;
 }
 
-BOOL fxstream_producer::write_attachmentcontent(BOOL b_delprop,
-	const ATTACHMENT_CONTENT *pattachment)
+bool fxstream_producer::write_attachmentcontent(bool b_delprop,
+    const attachment_content &at)
 {
 	auto pstream = this;
-	if (!write_proplist(&pattachment->proplist))
+	if (!write_proplist(at.proplist))
 		return FALSE;	
-	if (pattachment->pembedded != nullptr &&
+	if (at.pembedded != nullptr &&
 	    !ftstream_producer_write_embeddedmessage(pstream,
-	    b_delprop, pattachment->pembedded))
+	    b_delprop, *at.pembedded))
 		return FALSE;
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_recipient(fxstream_producer *pstream,
-    const TPROPVAL_ARRAY *prcpt)
+static bool ftstream_producer_write_recipient(fxstream_producer *pstream,
+    const TPROPVAL_ARRAY &prcpt)
 {
 	if (!pstream->write_uint32(STARTRECIP))
 		return FALSE;
@@ -512,8 +512,8 @@ static BOOL ftstream_producer_write_recipient(fxstream_producer *pstream,
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_attachment(fxstream_producer *pstream,
-    BOOL b_delprop, const attachment_content *pattachment)
+static bool ftstream_producer_write_attachment(fxstream_producer *pstream,
+    bool b_delprop, const attachment_content &pattachment)
 {
 	if (!pstream->write_uint32(NEWATTACH))
 		return FALSE;
@@ -524,9 +524,10 @@ static BOOL ftstream_producer_write_attachment(fxstream_producer *pstream,
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_messagechildren(fxstream_producer *pstream,
-    BOOL b_delprop, const MESSAGE_CHILDREN *pchildren)
+static bool ftstream_producer_write_messagechildren(fxstream_producer *pstream,
+    bool b_delprop, const message_children &xchld)
 {
+	auto pchildren = &xchld;
 	if (b_delprop) {
 		if (!pstream->write_uint32(MetaTagFXDelProp))
 			return FALSE;
@@ -535,7 +536,7 @@ static BOOL ftstream_producer_write_messagechildren(fxstream_producer *pstream,
 	}
 	if (pchildren->prcpts != nullptr)
 		for (auto &rcpt : *pchildren->prcpts)
-			if (!ftstream_producer_write_recipient(pstream, &rcpt))
+			if (!ftstream_producer_write_recipient(pstream, rcpt))
 				return FALSE;
 	if (b_delprop) {
 		if (!pstream->write_uint32(MetaTagFXDelProp))
@@ -546,43 +547,42 @@ static BOOL ftstream_producer_write_messagechildren(fxstream_producer *pstream,
 	if (pchildren->pattachments == nullptr)
 		return TRUE;
 	for (auto &at : *pchildren->pattachments)
-		if (!ftstream_producer_write_attachment(pstream, b_delprop, &at))
+		if (!ftstream_producer_write_attachment(pstream, b_delprop, at))
 			return FALSE;
 	return TRUE;
 }
 
-BOOL fxstream_producer::write_messagecontent(BOOL b_delprop,
-	const MESSAGE_CONTENT *pmessage)
+bool fxstream_producer::write_messagecontent(bool b_delprop,
+    const message_content &msg)
 {	
 	auto pstream = this;
-	if (!write_proplist(&pmessage->proplist))
+	if (!write_proplist(msg.proplist))
 		return FALSE;	
-	return ftstream_producer_write_messagechildren(
-			pstream, b_delprop, &pmessage->children);
+	return ftstream_producer_write_messagechildren(pstream, b_delprop, msg.children);
 }
 
-BOOL fxstream_producer::write_message(const MESSAGE_CONTENT *pmessage)
+bool fxstream_producer::write_message(const message_content &msg)
 {
+	auto pmessage = &msg;
 	auto pbool = pmessage->proplist.get<uint8_t>(PR_ASSOCIATED);
 	uint32_t marker = pbool == nullptr || *pbool == 0 ? STARTMESSAGE : STARTFAIMSG;
 	if (!write_uint32(marker))
 		return FALSE;
-	if (!write_messagecontent(false, pmessage))
+	if (!write_messagecontent(false, msg))
 		return FALSE;	
 	if (!write_uint32(ENDMESSAGE))
 		return FALSE;
 	return TRUE;
 }	
 
-static BOOL ftstream_producer_write_messagechangeheader(fxstream_producer *pstream,
-    const TPROPVAL_ARRAY *pheader)
+static bool ftstream_producer_write_messagechangeheader(fxstream_producer *pstream,
+    const TPROPVAL_ARRAY &pheader)
 {
 	return pstream->write_proplist(pheader);
 }
 
-BOOL fxstream_producer::write_messagechangefull(
-	const TPROPVAL_ARRAY *pchgheader,
-	MESSAGE_CONTENT *pmessage)
+bool fxstream_producer::write_messagechangefull(const TPROPVAL_ARRAY &pchgheader,
+    const message_content &msg)
 {
 	auto pstream = this;
 	if (!write_uint32(INCRSYNCCHG))
@@ -591,41 +591,41 @@ BOOL fxstream_producer::write_messagechangefull(
 		return FALSE;	
 	if (!write_uint32(INCRSYNCMESSAGE))
 		return FALSE;
-	if (!write_proplist(&pmessage->proplist))
+	if (!write_proplist(msg.proplist))
 		return FALSE;	
-	return ftstream_producer_write_messagechildren(
-				pstream, TRUE, &pmessage->children);
+	return ftstream_producer_write_messagechildren(pstream, true, msg.children);
 }
 
-static BOOL ftstream_producer_write_folderchange(fxstream_producer *pstream,
-	const TPROPVAL_ARRAY *pproplist)
+static bool ftstream_producer_write_folderchange(fxstream_producer *pstream,
+    const TPROPVAL_ARRAY &props)
 {
 	if (!pstream->write_uint32(INCRSYNCCHG))
 		return FALSE;
-	return pstream->write_proplist(pproplist);
+	return pstream->write_proplist(props);
 }
 
-BOOL fxstream_producer::write_deletions(const TPROPVAL_ARRAY *pproplist)
+bool fxstream_producer::write_deletions(const TPROPVAL_ARRAY &props)
 {
 	if (!write_uint32(INCRSYNCDEL))
 		return FALSE;
-	return write_proplist(pproplist);
+	return write_proplist(props);
 }
 
-BOOL fxstream_producer::write_state(const TPROPVAL_ARRAY *pproplist)
+bool fxstream_producer::write_state(const TPROPVAL_ARRAY &props)
 {
 	if (!write_uint32(INCRSYNCSTATEBEGIN))
 		return FALSE;
-	if (!write_proplist(pproplist))
+	if (!write_proplist(props))
 		return FALSE;
 	if (!write_uint32(INCRSYNCSTATEEND))
 		return FALSE;
 	return TRUE;
 }
 
-BOOL fxstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogmsg)
+bool fxstream_producer::write_progresspermessage(const progress_message &msg)
 {
 	auto pstream = this;
+	auto pprogmsg = &msg;
 	if (!write_uint32(INCRSYNCPROGRESSPERMSG))
 		return FALSE;
 	if (!write_uint32(PROP_TAG(PT_LONG, 0)))
@@ -640,7 +640,7 @@ BOOL fxstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogms
 	return TRUE;
 }
 
-BOOL fxstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtotal)
+bool fxstream_producer::write_progresstotal(const progress_information &total)
 {
 	/*
 	 * We are sending 64-bit values. It's Outlook's fault for not
@@ -648,6 +648,7 @@ BOOL fxstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtot
 	 * https://docs.microsoft.com/en-us/outlook/troubleshoot/synchronization/status-bar-never-shows-more-than-3-99-gb
 	 */
 	auto pstream = this;
+	auto pprogtotal = &total;
 	if (!write_uint32(INCRSYNCPROGRESSMODE))
 		return FALSE;
 	if (!write_uint32(PROP_TAG(PT_BINARY, 0)))
@@ -671,23 +672,21 @@ BOOL fxstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtot
 			pstream, pprogtotal->normal_size);
 }
 
-BOOL fxstream_producer::write_readstatechanges(const TPROPVAL_ARRAY *pproplist)
+bool fxstream_producer::write_readstatechanges(const TPROPVAL_ARRAY &props)
 {
 	if (!write_uint32(INCRSYNCREAD))
 		return FALSE;
-	return write_proplist(pproplist);
+	return write_proplist(props);
 }
 
-BOOL fxstream_producer::write_hierarchysync(
-	const FOLDER_CHANGES *pfldchgs,
-	const TPROPVAL_ARRAY *pdels,
-	const TPROPVAL_ARRAY *pstate)
+bool fxstream_producer::write_hierarchysync(const folder_changes &fc,
+    const TPROPVAL_ARRAY *pdels, const TPROPVAL_ARRAY &pstate)
 {
 	auto pstream = this;
-	for (const auto &chg : *pfldchgs)
-		if (!ftstream_producer_write_folderchange(pstream, &chg))
+	for (const auto &chg : fc)
+		if (!ftstream_producer_write_folderchange(pstream, chg))
 			return FALSE;
-	if (pdels != nullptr && !write_deletions(pdels))
+	if (pdels != nullptr && !write_deletions(*pdels))
 		return FALSE;
 	if (!write_state(pstate))
 		return FALSE;

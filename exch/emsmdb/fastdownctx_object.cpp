@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -36,82 +36,83 @@ bool fxdown_flow_list::record_node(fxdown_flow_func func_id, const void *param)
 	return record_node(func_id, reinterpret_cast<uintptr_t>(param));
 }
 
-bool fxdown_flow_list::record_messagelist(EID_ARRAY *pmsglst)
+bool fxdown_flow_list::record_messagelist(const EID_ARRAY &mvec)
 {
-	for (uint64_t mid : *pmsglst)
+	for (uint64_t mid : mvec)
 		if (!record_node(fxdown_flow_func::msg_id, mid))
 			return false;
 	return true;
 }
 
-bool fxdown_flow_list::record_foldermessages(const FOLDER_MESSAGES *pfldmsgs)
+bool fxdown_flow_list::record_foldermessages(const folder_messages &fm)
 {	
-	if (NULL != pfldmsgs->pfai_msglst) {
+	if (fm.pfai_msglst != nullptr) {
 		if (!record_tag(MetaTagFXDelProp) ||
 		    !record_tag(PR_FOLDER_ASSOCIATED_CONTENTS) ||
-		    !record_messagelist(pfldmsgs->pfai_msglst))
+		    !record_messagelist(*fm.pfai_msglst))
 			return false;
 	}
-	if (NULL != pfldmsgs->pnormal_msglst) {
+	if (fm.pnormal_msglst != nullptr) {
 		if (!record_tag(MetaTagFXDelProp) ||
 		    !record_tag(PR_CONTAINER_CONTENTS) ||
-		    !record_messagelist(pfldmsgs->pnormal_msglst))
+		    !record_messagelist(*fm.pnormal_msglst))
 			return false;
 	}
 	return true;
 }
 
-bool fxdown_flow_list::record_foldermessagesnodelprops(const FOLDER_MESSAGES *pfldmsgs)
+bool fxdown_flow_list::record_foldermessagesnodelprops(const folder_messages &fm)
 {
+	auto pfldmsgs = &fm;
 	if (pfldmsgs->pfai_msglst != nullptr &&
-	    !record_messagelist(pfldmsgs->pfai_msglst))
+	    !record_messagelist(*fm.pfai_msglst))
 		return false;
 	if (pfldmsgs->pnormal_msglst != nullptr &&
-	    !record_messagelist(pfldmsgs->pnormal_msglst))
+	    !record_messagelist(*fm.pnormal_msglst))
 		return false;
 	return true;
 }
 
-bool fxdown_flow_list::record_foldercontent(const FOLDER_CONTENT *pfldctnt)
+bool fxdown_flow_list::record_foldercontent(const folder_content &fc)
 {
-	if (pfldctnt->proplist.has(MetaTagNewFXFolder))
-		return record_node(fxdown_flow_func::proplist_ptr, &pfldctnt->proplist);
-	if (!record_node(fxdown_flow_func::proplist_ptr, &pfldctnt->proplist) ||
-	    !record_foldermessages(&pfldctnt->fldmsgs) ||
+	if (fc.proplist.has(MetaTagNewFXFolder))
+		return record_node(fxdown_flow_func::proplist_ptr, &fc.proplist);
+	if (!record_node(fxdown_flow_func::proplist_ptr, &fc.proplist) ||
+	    !record_foldermessages(fc.fldmsgs) ||
 	    !record_tag(MetaTagFXDelProp) ||
 	    !record_tag(PR_CONTAINER_HIERARCHY))
 		return false;
-	for (const auto &f : pfldctnt->psubflds)
-		if (!record_subfolder(&f))
+	for (const auto &f : fc.psubflds)
+		if (!record_subfolder(f))
 			return false;
 	return true;
 }
 
-bool fxdown_flow_list::record_foldercontentnodelprops(const FOLDER_CONTENT *pfldctnt)
+bool fxdown_flow_list::record_foldercontentnodelprops(const folder_content &fc)
 {
-	if (!record_node(fxdown_flow_func::proplist_ptr, &pfldctnt->proplist) ||
-	    !record_foldermessagesnodelprops(&pfldctnt->fldmsgs))
+	if (!record_node(fxdown_flow_func::proplist_ptr, &fc.proplist) ||
+	    !record_foldermessagesnodelprops(fc.fldmsgs))
 		return false;
-	for (const auto &f : pfldctnt->psubflds)
-		if (!record_subfoldernodelprops(&f))
+	for (const auto &f : fc.psubflds)
+		if (!record_subfoldernodelprops(f))
 			return false;
 	return true;
 }
 
-bool fxdown_flow_list::record_subfoldernodelprops(const FOLDER_CONTENT *pfldctnt)
+bool fxdown_flow_list::record_subfoldernodelprops(const folder_content &fc)
 {
 	return record_tag(STARTSUBFLD) &&
-	       record_foldercontentnodelprops(pfldctnt) &&
+	       record_foldercontentnodelprops(fc) &&
 	       record_tag(ENDFOLDER);
 }
 
-bool fxdown_flow_list::record_subfolder(const FOLDER_CONTENT *pfldctnt)
+bool fxdown_flow_list::record_subfolder(const folder_content &fc)
 {
-	return record_tag(STARTSUBFLD) && record_foldercontent(pfldctnt) &&
+	return record_tag(STARTSUBFLD) && record_foldercontent(fc) &&
 	       record_tag(ENDFOLDER);
 }
 
-BOOL fastdownctx_object::make_messagecontent(const message_content *pmsgctnt)
+bool fastdownctx_object::make_messagecontent(const message_content &pmsgctnt)
 {
 	auto pctx = this;
 	if (!pctx->pstream->write_messagecontent(false, pmsgctnt))
@@ -122,7 +123,7 @@ BOOL fastdownctx_object::make_messagecontent(const message_content *pmsgctnt)
 	return TRUE;
 }
 
-BOOL fastdownctx_object::make_attachmentcontent(const attachment_content *pattachment)
+bool fastdownctx_object::make_attachmentcontent(const attachment_content &pattachment)
 {
 	auto pctx = this;
 	if (!pctx->pstream->write_attachmentcontent(false, pattachment))
@@ -133,13 +134,13 @@ BOOL fastdownctx_object::make_attachmentcontent(const attachment_content *pattac
 	return TRUE;
 }
 
-BOOL fastdownctx_object::make_state(ics_state *pstate)
+bool fastdownctx_object::make_state(ics_state &pstate)
 {
-	auto pproplist = pstate->serialize();
+	auto pproplist = pstate.serialize();
 	if (pproplist == nullptr)
 		return FALSE;
 	auto pctx = this;
-	if (!pctx->pstream->write_state(pproplist)) {
+	if (!pctx->pstream->write_state(*pproplist)) {
 		tpropval_array_free(pproplist);
 		return FALSE;	
 	}
@@ -225,14 +226,14 @@ void fxs_propsort(MESSAGE_CONTENT &mc)
 
 }
 
-BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
+bool fastdownctx_object::make_foldercontent(bool b_subfolders,
     std::unique_ptr<FOLDER_CONTENT> &&fc)
 {
 	auto pctx = this;
 	
 	fxs_propsort(*fc);
 	if (!flow_list.record_node(fxdown_flow_func::proplist_ptr, &fc->proplist) ||
-	    !flow_list.record_foldermessages(&fc->fldmsgs))
+	    !flow_list.record_foldermessages(fc->fldmsgs))
 		return FALSE;	
 	if (b_subfolders) {
 		if (!flow_list.record_tag(MetaTagFXDelProp) ||
@@ -240,7 +241,7 @@ BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
 			return FALSE;
 		for (auto &f : fc->psubflds) {
 			fxs_propsort(f);
-			if (!flow_list.record_subfolder(&f))
+			if (!flow_list.record_subfolder(f))
 				return FALSE;
 		}
 	}
@@ -251,12 +252,12 @@ BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
 	return TRUE;
 }
 	
-BOOL fastdownctx_object::make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&fc)
+bool fastdownctx_object::make_topfolder(std::unique_ptr<folder_content> &&fc)
 {
 	auto pctx = this;
 	
 	if (!flow_list.record_tag(STARTTOPFLD) ||
-	    !flow_list.record_foldercontentnodelprops(fc.get()) ||
+	    !flow_list.record_foldercontentnodelprops(*fc) ||
 	    !flow_list.record_tag(ENDFOLDER))
 		return FALSE;
 	pctx->pfldctnt = std::move(fc);
@@ -270,10 +271,10 @@ BOOL fastdownctx_object::make_messagelist(BOOL chginfo, EID_ARRAY *msglst)
 {
 	auto pctx = this;
 	
-	if (!flow_list.record_messagelist(msglst))
+	if (!flow_list.record_messagelist(*msglst))
 		return FALSE;
 	pctx->b_chginfo = chginfo;
-	pctx->pmsglst = msglst;
+	pctx->pmsglst = std::move(msglst);
 	pctx->progress_steps = 0;
 	total_steps = std::count_if(flow_list.cbegin(), flow_list.cend(), is_message);
 	divisor = fx_divisor(total_steps);
@@ -315,7 +316,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 			break;
 		case fxdown_flow_func::proplist_ptr:
 			/* Property sorting done by make_foldercontent. */
-			if (!pctx->pstream->write_proplist(static_cast<const TPROPVAL_ARRAY *>(reinterpret_cast<const void *>(static_cast<uintptr_t>(param)))))
+			if (!pctx->pstream->write_proplist(*static_cast<const TPROPVAL_ARRAY *>(reinterpret_cast<const void *>(static_cast<uintptr_t>(param)))))
 				return FALSE;
 			break;
 		case fxdown_flow_func::msg_id: {
@@ -355,7 +356,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 					PR_ENTRYID, PR_ORIGINAL_ENTRYID);
 			}
 			fxs_propsort(*pmsgctnt);
-			if (!pctx->pstream->write_message(pmsgctnt))
+			if (!pctx->pstream->write_message(*pmsgctnt))
 				return FALSE;
 			pctx->progress_steps ++;
 			break;

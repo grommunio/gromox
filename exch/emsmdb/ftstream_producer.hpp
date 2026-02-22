@@ -38,17 +38,17 @@ struct fxstream_producer {
 	inline uint32_t total_length() const { return offset; }
 	BOOL read_buffer(void *buf, uint16_t *len, BOOL *last);
 	BOOL write_uint32(uint32_t);
-	BOOL write_proplist(const TPROPVAL_ARRAY *);
-	BOOL write_attachmentcontent(BOOL delprop, const attachment_content *);
-	BOOL write_messagecontent(BOOL delprop, const message_content *);
-	BOOL write_message(const message_content *);
-	BOOL write_progresstotal(const PROGRESS_INFORMATION *);
-	BOOL write_progresspermessage(const PROGRESS_MESSAGE *);
-	BOOL write_messagechangefull(const TPROPVAL_ARRAY *chgheader, message_content *);
-	BOOL write_deletions(const TPROPVAL_ARRAY *);
-	BOOL write_readstatechanges(const TPROPVAL_ARRAY *);
-	BOOL write_state(const TPROPVAL_ARRAY *);
-	BOOL write_hierarchysync(const FOLDER_CHANGES *fldchgs, const TPROPVAL_ARRAY *del, const TPROPVAL_ARRAY *state);
+	bool write_proplist(const TPROPVAL_ARRAY &);
+	bool write_attachmentcontent(bool delprop, const attachment_content &);
+	bool write_messagecontent(bool delprop, const message_content &);
+	bool write_message(const message_content &);
+	bool write_progresstotal(const progress_information &);
+	bool write_progresspermessage(const progress_message &);
+	bool write_messagechangefull(const TPROPVAL_ARRAY &chgheader, const message_content &);
+	bool write_deletions(const TPROPVAL_ARRAY &);
+	bool write_readstatechanges(const TPROPVAL_ARRAY &);
+	bool write_state(const TPROPVAL_ARRAY &);
+	bool write_hierarchysync(const folder_changes &, const TPROPVAL_ARRAY *del, const TPROPVAL_ARRAY &state);
 
 	int type = 0;
 	uint32_t offset = 0;

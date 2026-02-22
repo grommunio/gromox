@@ -399,7 +399,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *pmessage_ids,
 		eid_array_free(pmids);
 		return ecError;
 	}
-	if (!pctx->make_messagelist(b_chginfo, pmids)) {
+	if (!pctx->make_messagelist(b_chginfo, std::move(pmids))) {
 		pctx.reset();
 		eid_array_free(pmids);
 		return ecError;
@@ -496,7 +496,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			msgctnt.children.prcpts = NULL;
 			msgctnt.children.pattachments = NULL;
 		}
-		if (!pctx->make_messagecontent(&msgctnt))
+		if (!pctx->make_messagecontent(msgctnt))
 			return ecError;
 		break;
 	case ems_objtype::attach:
@@ -515,7 +515,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 				break;
 			}
 		}
-		if (!pctx->make_attachmentcontent(&attctnt))
+		if (!pctx->make_attachmentcontent(attctnt))
 			return ecError;
 		break;
 	default:
@@ -607,7 +607,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			msgctnt.children.prcpts = NULL;
 			msgctnt.children.pattachments = NULL;
 		}
-		if (!pctx->make_messagecontent(&msgctnt))
+		if (!pctx->make_messagecontent(msgctnt))
 			return ecError;
 		break;
 	case ems_objtype::attach:
@@ -626,7 +626,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		}
 		if (!pproptags.has(PR_ATTACH_DATA_OBJ))
 			attctnt.pembedded = NULL;
-		if (!pctx->make_attachmentcontent(&attctnt))
+		if (!pctx->make_attachmentcontent(attctnt))
 			return ecError;
 		break;
 	default:
@@ -1542,7 +1542,7 @@ ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	auto pctx = fastdownctx_object::create(plogon, 0);
 	if (pctx == nullptr)
 		return ecError;
-	if (!pctx->make_state(pstate))
+	if (!pctx->make_state(*pstate))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
