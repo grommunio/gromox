@@ -4349,6 +4349,29 @@ struct mGetUserConfigurationResponse {
 };
 
 /**
+ * Messages.xsd:2590
+ */
+struct mUpdateUserConfigurationRequest {
+	explicit mUpdateUserConfigurationRequest(const tinyxml2::XMLElement *);
+
+	tUserConfigurationName UserConfigurationName;
+	std::optional<sBase64Binary> XmlData;
+	std::optional<sBase64Binary> BinaryData;
+};
+
+struct mUpdateUserConfigurationResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "UpdateUserConfigurationResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+struct mUpdateUserConfigurationResponse {
+	std::vector<mUpdateUserConfigurationResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd:2321
  */
 struct mGetDelegateRequest {
