@@ -944,16 +944,6 @@
         <wsdl:part name="ServerVersion" element="t:ServerVersionInfo"/>
     </wsdl:message>
 
-    <wsdl:message name="UpdateExtensionUsageSoapIn">
-        <wsdl:part name="request" element="tns:UpdateExtensionUsage" />
-        <wsdl:part name="Impersonation" element="t:ExchangeImpersonation"/>
-        <wsdl:part name="RequestVersion" element="t:RequestServerVersion"/>
-    </wsdl:message>
-    <wsdl:message name="UpdateExtensionUsageSoapOut">
-        <wsdl:part name="UpdateExtensionUsageResult" element="tns:UpdateExtensionUsageResponse" />
-        <wsdl:part name="ServerVersion" element="t:ServerVersionInfo"/>
-    </wsdl:message>		
-	
     <wsdl:message name="UninstallAppSoapIn">
         <wsdl:part name="request" element="tns:UninstallApp" />
         <wsdl:part name="Impersonation" element="t:ExchangeImpersonation"/>
@@ -1813,11 +1803,6 @@
             <wsdl:output message="tns:InstallAppSoapOut"/>
         </wsdl:operation>
 
-        <wsdl:operation name="UpdateExtensionUsage">
-            <wsdl:input message="tns:UpdateExtensionUsageSoapIn"/>
-            <wsdl:output message="tns:UpdateExtensionUsageSoapOut"/>
-        </wsdl:operation>
-		
         <wsdl:operation name="UninstallApp">
             <wsdl:input message="tns:UninstallAppSoapIn"/>
             <wsdl:output message="tns:UninstallAppSoapOut"/>
@@ -3345,18 +3330,6 @@
             </wsdl:output>
         </wsdl:operation>
 
-        <wsdl:operation name="UpdateExtensionUsage">
-            <soap:operation soapAction="http://schemas.microsoft.com/exchange/services/2006/messages/UpdateExtensionUsage"/>
-            <wsdl:input>
-                <soap:header message="tns:UpdateExtensionUsageSoapIn" part="RequestVersion" use="literal"/>
-                <soap:body parts="request" use="literal"/>
-            </wsdl:input>
-            <wsdl:output>
-                <soap:body parts="UpdateExtensionUsageResult" use="literal"/>
-                <soap:header message="tns:UpdateExtensionUsageSoapOut" part="ServerVersion" use="literal"/>
-            </wsdl:output>
-        </wsdl:operation>
-		
         <wsdl:operation name="UninstallApp">
             <soap:operation soapAction="http://schemas.microsoft.com/exchange/services/2006/messages/UninstallApp"/>
             <wsdl:input>

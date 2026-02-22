@@ -183,9 +183,6 @@
       <xs:enumeration value="V2017_01_07" />
       <xs:enumeration value="V2017_04_14" />
       <xs:enumeration value="V2017_07_11" />
-      <!-- M365 -->
-      <xs:enumeration value="V2017_10_09" />
-      <xs:enumeration value="V2018_01_08" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -266,8 +263,6 @@
       <xs:enumeration value="PublicFolder" />
       <xs:enumeration value="GroupMailbox" />
       <xs:enumeration value="ImplicitContact" />
-	  
-      <xs:enumeration value="User" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -1824,17 +1819,13 @@
       <xs:enumeration value="orionnotes" />
       <xs:enumeration value="tagitems" />
       <xs:enumeration value="alltaggeditems" />
-      <xs:enumeration value="allcategorizeditems" />
       <xs:enumeration value="externalcontacts" />
       <xs:enumeration value="teamchat" />
       <xs:enumeration value="teamchathistory" />
-      <xs:enumeration value="yammerdata" />
       <xs:enumeration value="yammerroot" />
       <xs:enumeration value="yammerinbound" />
       <xs:enumeration value="yammeroutbound" />
       <xs:enumeration value="yammerfeeds" />
-      <xs:enumeration value="kaizaladata" />
-      <xs:enumeration value="messageingestion" />
       <xs:enumeration value="onedriveroot" />
       <xs:enumeration value="onedriverecylebin" />
       <xs:enumeration value="onedrivesystem" />
@@ -2550,10 +2541,6 @@
           <xs:element name="MeetingString" type="xs:string" minOccurs="0" />
           <xs:element name="StartTime" type="xs:dateTime" minOccurs="0" />
           <xs:element name="EndTime" type="xs:dateTime" minOccurs="0" />
-          <xs:element name="TimeStringBeginIndex" type="xs:integer" minOccurs="0" />
-          <xs:element name="TimeStringLength" type="xs:integer" minOccurs="0" />
-          <xs:element name="EntityId" type="xs:string" minOccurs="0" />
-          <xs:element name="ExtractionId" type="xs:string" minOccurs="0" />
         </xs:sequence>
       </xs:extension>
     </xs:complexContent>
@@ -3694,19 +3681,12 @@
     <xs:sequence>
       <xs:element name="ExternalDirectoryObjectId" type="xs:string" minOccurs="0" maxOccurs="1" />
       <xs:element name="LegacyDn" type="xs:string" minOccurs="0" maxOccurs="1" />
-      <xs:element name="EmailAddress" type="xs:string" minOccurs="0" maxOccurs="1" />
-      <xs:element name="DisplayName" type="xs:string" minOccurs="0" maxOccurs="1" />
-      <xs:element name="OrganizationId" type="xs:string" minOccurs="0" maxOccurs="1" />
     </xs:sequence>
   </xs:complexType>
 
   <xs:complexType name="GroupLocatorType">
     <xs:complexContent>
-      <xs:extension base="t:MailboxLocatorType">
-        <xs:sequence>
-          <xs:element name="AccessType" type="xs:int" minOccurs="0" maxOccurs="1" />
-        </xs:sequence>
-      </xs:extension>
+      <xs:extension base="t:MailboxLocatorType" />
     </xs:complexContent>
   </xs:complexType>
 
@@ -7424,23 +7404,6 @@
       <xs:enumeration value="NotJunk"/>
       <xs:enumeration value="Phish"/>
       <xs:enumeration value="Unsubscribe"/>
-      <xs:enumeration value="GetPolicy"/>
-    </xs:restriction>
-  </xs:simpleType>
-
-  <!-- Report Message Platform-->
-  <xs:simpleType name="ReportMessagePlatformType">
-    <xs:annotation>
-      <xs:documentation>Surfaces the various report message platform types</xs:documentation>
-    </xs:annotation>
-    <xs:restriction base="xs:string">
-      <xs:enumeration value="Unknown"/>
-      <xs:enumeration value="Android"/>
-      <xs:enumeration value="iOS"/>
-      <xs:enumeration value="Mac"/>
-      <xs:enumeration value="OfficeOnline"/>
-      <xs:enumeration value="PC"/>
-      <xs:enumeration value="Universal"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -8652,8 +8615,6 @@
     <xs:attribute name="AppStatus" type="xs:string" use="optional"/>
     <xs:attribute name="Etoken" type="xs:string" use="optional"/>
     <xs:attribute name="InstalledDateTime" type="xs:string" use="optional"/>
-    <xs:attribute name="Version" type="xs:string" use="optional"/>
-    <xs:attribute name="ExtensionId" type="xs:string" use="optional"/>
   </xs:complexType>
 
   <xs:simpleType name="ConsentStateType">
@@ -9809,15 +9770,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="AADOfficeExtensionStatusType">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="OptionalDisabled"/>
-            <xs:enumeration value="OptionalEnabled"/>
-            <xs:enumeration value="Mandatory"/>
-            <xs:enumeration value="Undefined"/>            
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:complexType name="OfficeClientType">
         <xs:attribute name="Code" type="t:OfficeClientCodeType" use="required"/>
         <xs:attribute name="Version" type="t:VersionType" use="required"/>
@@ -9852,7 +9804,6 @@
     <xs:complexType name="Metadata">
         <xs:sequence>
             <xs:element name="CustomApps" type="xs:string" minOccurs="1" maxOccurs="1"/>
-            <xs:element name="GenericInfo" type="xs:string" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
     </xs:complexType>
 
@@ -9872,16 +9823,4 @@
           <xs:element name="IsMandatory" type="xs:boolean" minOccurs="0" maxOccurs="1"/>                        
       </xs:sequence>
     </xs:complexType>
-
-    <!-- Ome Message revocation status type -->
-    <xs:simpleType name="OMEMessageRevocationStatus">
-      <xs:restriction base="xs:string">
-        <xs:enumeration value="None" />
-        <xs:enumeration value="Success" />
-        <xs:enumeration value="Failed" />
-        <xs:enumeration value="MessageNotFound" />
-        <xs:enumeration value="PartialFailed" />
-        <xs:enumeration value="AlreadyRevoked" />
-      </xs:restriction>
-    </xs:simpleType>
 </xs:schema>

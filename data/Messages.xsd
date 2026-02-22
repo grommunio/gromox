@@ -118,7 +118,6 @@
             <xs:enumeration value="ErrorDistributionListMemberNotExist"/>
             <xs:enumeration value="ErrorDuplicateInputFolderNames"/>
             <xs:enumeration value="ErrorDuplicateUserIdsSpecified"/>
-            <xs:enumeration value="ErrorDuplicateTransactionId"/>
             <xs:enumeration value="ErrorEmailAddressMismatch"/>
             <xs:enumeration value="ErrorEventNotFound"/>
             <xs:enumeration value="ErrorExceededConnectionCount"/>
@@ -298,7 +297,6 @@
             <xs:enumeration value="ErrorMoreThanOneAccessModeSpecified"/>
             <xs:enumeration value="ErrorMoveCopyFailed"/>
             <xs:enumeration value="ErrorMoveDistinguishedFolder"/>
-            <xs:enumeration value="ErrorMoveUnifiedGroupPropertyFailed"/>
             <xs:enumeration value="ErrorMultiLegacyMailboxAccess"/>
             <xs:enumeration value="ErrorNameResolutionMultipleResults"/>
             <xs:enumeration value="ErrorNameResolutionNoMailbox"/>
@@ -390,8 +388,7 @@
             <xs:enumeration value="ErrorToFolderNotFound"/>
             <xs:enumeration value="ErrorTokenSerializationDenied"/>
             <xs:enumeration value="ErrorTooManyObjectsOpened"/>
-            <xs:enumeration value="ErrorUpdatePropertyMismatch"/>
-            <xs:enumeration value="ErrorAccessingPartialCreatedUnifiedGroup"/>
+            <xs:enumeration value="ErrorUpdatePropertyMismatch"/>          
             <xs:enumeration value="ErrorUnifiedGroupMailboxAADCreationFailed"/>
             <xs:enumeration value="ErrorUnifiedGroupMailboxAADDeleteFailed"/>
             <xs:enumeration value="ErrorUnifiedGroupMailboxNamingPolicy"/>
@@ -539,11 +536,6 @@
             <xs:enumeration value="ErrorCalendarForwardActionNotAllowed"/>
             <xs:enumeration value="ErrorUnifiedGroupAliasNamingPolicy"/>
             <xs:enumeration value="ErrorSubscriptionsDisabledForGroup"/>
-            <xs:enumeration value="ErrorCannotFindFileAttachment"/>
-            <xs:enumeration value="ErrorInvalidValueForFilter"/>
-            <xs:enumeration value="ErrorQuotaExceededOnDelete"/>
-            <xs:enumeration value="ErrorAccessDeniedDueToCompliance"/>
-            <xs:enumeration value="ErrorRecoverableItemsAccessDenied"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -590,8 +582,6 @@
       <xs:element name="SetClientExtensionResponseMessage" type="m:ResponseMessageType"/>
       <xs:element name="GetOMEConfigurationResponseMessage" type="m:ResponseMessageType"/>
       <xs:element name="SetOMEConfigurationResponseMessage" type="m:ResponseMessageType"/>
-      <xs:element name="GetOMEMessageStatusResponseType" type="m:ResponseMessageType"/>
-      <xs:element name="SetOMEMessageStatusResponseType" type="m:ResponseMessageType"/>
       <!-- Generic reponse to enumerating the items below a folder -->
       <xs:element name="FindItemResponseMessage" type="m:FindItemResponseMessageType"/>
       <xs:element name="MoveItemResponseMessage" type="m:ItemInfoResponseMessageType"/>
@@ -668,8 +658,6 @@
       <xs:element name="GetUserPhotoResponseMessage" type="m:GetUserPhotoResponseMessageType"/>
       <!-- MarkAsJunk response-->
       <xs:element name="MarkAsJunkResponseMessage" type="m:MarkAsJunkResponseMessageType" />
-      <!-- MarkAsPhishing response-->
-      <xs:element name="MarkAsPhishingResponseMessage" type="m:MarkAsPhishingResponseMessageType" />
       <!-- ReportMessage response-->
       <xs:element name="ReportMessageResponseMessage" type="m:ReportMessageResponseMessageType" />
       <!-- PostModernGroupItem response-->
@@ -1310,7 +1298,6 @@
           <xs:element name="TopicQueryString" type="xs:string" minOccurs="0" maxOccurs="1"/>
           <xs:element name="Context" type="t:ArrayOfContextProperty" minOccurs="0" maxOccurs="1"/>
           <xs:element name="QuerySources" type="t:ArrayOfPeopleQuerySource" minOccurs="0" maxOccurs="1"/>
-          <xs:element name="ReturnFlattenedResults" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
       </xs:extension>
     </xs:complexContent>
@@ -3375,11 +3362,7 @@
   <!-- GetOMEConfiguration request -->
   <xs:complexType name="GetOMEConfigurationType">
     <xs:complexContent>
-      <xs:extension base="m:BaseRequestType" >
-	    <xs:sequence>
-		  <xs:element name="TemplateName" type="xs:string" minOccurs="0" maxOccurs="1"/>
-		</xs:sequence>
-	  </xs:extension>
+      <xs:extension base="m:BaseRequestType" />
     </xs:complexContent>
   </xs:complexType>
   
@@ -3390,8 +3373,7 @@
     <xs:complexContent>
       <xs:extension base="m:ResponseMessageType">
         <xs:sequence>
-		  <xs:element name="Xml" type="xs:string" minOccurs="0" maxOccurs="1" />
-          <xs:element name="ConfigList" type="t:ArrayOfStringsType" minOccurs="0" maxOccurs="1" />
+          <xs:element name="Xml" type="xs:string" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
       </xs:extension>
     </xs:complexContent>
@@ -3405,7 +3387,6 @@
       <xs:extension base="m:BaseRequestType">
         <xs:sequence>
           <xs:element name="Xml" type="xs:string" minOccurs="0" maxOccurs="1" />
-		  <xs:element name="TemplateName" type="xs:string" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
       </xs:extension>
     </xs:complexContent>
@@ -3422,67 +3403,6 @@
 
   <xs:element name="SetOMEConfigurationResponse" type="m:SetOMEConfigurationResponseType"/>
 
-  <!-- GetOMEMessageStatus request -->
-  <xs:complexType name="GetOMEMessageStatusType">
-    <xs:complexContent>
-      <xs:extension base="m:BaseRequestType">
-        <xs:sequence>
-          <xs:element name="MessageId" type="xs:string" minOccurs="0" maxOccurs="1" />
-        </xs:sequence>
-      </xs:extension>
-    </xs:complexContent>
-  </xs:complexType>
-
-  <xs:element name="GetOMEMessageStatus" type="m:GetOMEMessageStatusType"/>
-
-  <!-- GetOMEMessageStatus response -->
-  <xs:complexType name="GetOMEMessageStatusResponseType">
-    <xs:complexContent>
-      <xs:extension base="m:ResponseMessageType">
-        <xs:sequence>
-          <xs:element name="IsRevoked" type="xs:boolean" minOccurs="0" maxOccurs="1" />
-          <xs:element name="ReceivedTime" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-          <xs:element name="Subject" type="xs:string" minOccurs="0" maxOccurs="1" />
-          <xs:element name="Container" type="xs:string" minOccurs="0" maxOccurs="1" />
-          <xs:element name="IsRevocable" type="xs:boolean" minOccurs="0" maxOccurs="1" />          
-        </xs:sequence>
-      </xs:extension>
-    </xs:complexContent>
-  </xs:complexType>
-
-  <xs:element name="GetOMEMessageStatusResponse" type="m:GetOMEMessageStatusResponseType"/>
-
-    <!-- SetOMEMessageStatus request -->
-  <xs:complexType name="SetOMEMessageStatusType">
-    <xs:complexContent>
-      <xs:extension base="m:BaseRequestType">
-        <xs:sequence>
-          <xs:element name="MessageId" type="xs:string" minOccurs="0" maxOccurs="1" />
-          <xs:element name="IsRevoked" type="xs:boolean" minOccurs="0" maxOccurs="1" />
-        </xs:sequence>
-      </xs:extension>
-    </xs:complexContent>
-  </xs:complexType>
-
-  <xs:element name="SetOMEMessageStatus" type="m:SetOMEMessageStatusType"/>
-
-  <!-- SetOMEMessageStatus response -->
-  <xs:complexType name="SetOMEMessageStatusResponseType">
-    <xs:complexContent>
-      <xs:extension base="m:ResponseMessageType">
-        <xs:sequence>
-          <xs:element name="Subject" type="xs:string" minOccurs="0" maxOccurs="1" />
-          <xs:element name="MessageId" type="xs:string" minOccurs="0" maxOccurs="1" />
-          <xs:element name="CorrelationId" type="xs:string" minOccurs="0" maxOccurs="1" />
-          <xs:element name="RevokeStatus" type="t:OMEMessageRevocationStatus"/>
-          <xs:element name="IsRevoked" type="xs:boolean" minOccurs="0" maxOccurs="1" />
-        </xs:sequence>
-      </xs:extension>
-    </xs:complexContent>
-  </xs:complexType>
-
-  <xs:element name="SetOMEMessageStatusResponse" type="m:SetOMEMessageStatusResponseType"/>
-
   <!-- GetAppManifests request -->
   <xs:complexType name="GetAppManifestsType">
     <xs:complexContent>
@@ -3496,7 +3416,6 @@
               <xs:element name="IncludeCustomAppsData" type="xs:boolean" minOccurs="0" maxOccurs="1" />
               <xs:element name="ExtensionIds" type="m:ListOfExtensionIdsType" minOccurs="0" maxOccurs="1" />
               <xs:element name="AddIns" type="m:ArrayOfPrivateCatalogAddInsType" minOccurs="0" maxOccurs="1"/>
-              <xs:element name="IncludeExtensionMetaData" type="xs:boolean" minOccurs="0" maxOccurs="1" />
           </xs:sequence>
       </xs:extension>
     </xs:complexContent>
@@ -3585,47 +3504,12 @@
     </xs:complexContent>
   </xs:complexType>
 
-    <!-- MarkAsPhishing request -->
-    <xs:complexType name="MarkAsPhishingType">
-        <xs:complexContent mixed="false">
-            <xs:extension base="m:BaseRequestType">
-                <xs:sequence>
-                    <xs:element name="ItemIds" type="t:NonEmptyArrayOfBaseItemIdsType" minOccurs="1" maxOccurs="1"/>
-                </xs:sequence>
-                <xs:attribute name="MoveItem" type="xs:boolean" use="required" />
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-    <xs:element name="MarkAsPhishing" type="m:MarkAsPhishingType" />
-
-    <!-- MarkAsPhishing response -->
-    <xs:complexType name="MarkAsPhishingResponseType">
-        <xs:complexContent>
-            <xs:extension base="m:BaseResponseMessageType" />
-        </xs:complexContent>
-    </xs:complexType>
-    <xs:element name="MarkAsPhishingResponse" type="m:MarkAsPhishingResponseType" />
-
-    <xs:complexType name="MarkAsPhishingResponseMessageType">
-        <xs:complexContent>
-            <xs:extension base="m:ResponseMessageType">
-                <xs:sequence>
-                    <xs:sequence>
-                        <xs:element name="MovedItemId" type="t:ItemIdType" minOccurs="0" maxOccurs="1"/>
-                    </xs:sequence>
-                </xs:sequence>
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-
   <!-- ReportMessage request -->
   <xs:complexType name="ReportMessageType">
     <xs:complexContent mixed="false">
       <xs:extension base="m:BaseRequestType">
         <xs:sequence>
-          <xs:element name="ItemIds" type="t:ArrayOfBaseItemIdsType" minOccurs="0" maxOccurs="1"/>
-          <xs:element name="BlockReportingToMicrosoft" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
-          <xs:element name="Platform" type="t:ReportMessagePlatformType" minOccurs="0" maxOccurs="1"/>
+          <xs:element name="ItemIds" type="t:NonEmptyArrayOfBaseItemIdsType" minOccurs="1" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="ReportAction" type="t:ReportMessageActionType" use="required" />
       </xs:extension>
@@ -3647,7 +3531,6 @@
         <xs:sequence>
           <xs:sequence>
             <xs:element name="MovedItemId" type="t:ItemIdType" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="Policy" type="xs:string" minOccurs="0" maxOccurs="1"/>
           </xs:sequence>
         </xs:sequence>
       </xs:extension>
@@ -3666,7 +3549,6 @@
                     <xs:element name="ManifestUrl" type="xs:string" minOccurs="0" maxOccurs="1"/>
                     <xs:element name="MarketplaceCorrelationId" type="xs:string" minOccurs="0" maxOccurs="1"/>
                     <xs:element name="CampaignId" type="xs:string" minOccurs="0" maxOccurs="1"/>
-                    <xs:element name="Id" type="xs:string" minOccurs="0" maxOccurs="1"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>
@@ -3686,41 +3568,6 @@
     </xs:complexType>
     <xs:element name="InstallAppResponse" type="m:InstallAppResponseType"/>
     
-    <!-- UpdateExtensionUsage request -->
-    <xs:complexType name="UpdateExtensionUsageType">
-        <xs:complexContent>
-            <xs:extension base="m:BaseRequestType">
-                <xs:sequence>
-                    <xs:element name="Client" type="xs:string" minOccurs="0" maxOccurs="1"/>
-                    <xs:element name="Extensions" type="m:ArrayOfUpdateExtensionUsageItemType" minOccurs="0" maxOccurs="1"/>
-                </xs:sequence>
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-    <xs:element name="UpdateExtensionUsage" type="m:UpdateExtensionUsageType"/>
-
-    <xs:complexType name="ArrayOfUpdateExtensionUsageItemType">
-        <xs:sequence>
-            <xs:element name="ExtensionId" type="xs:string" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="Scenarios" type="m:ArrayOfExtensionUsageScenarioCounterType" minOccurs="0" maxOccurs="1"/>
-        </xs:sequence>
-    </xs:complexType>
-	
-	<xs:complexType name="ArrayOfExtensionUsageScenarioCounterType">
-        <xs:sequence>
-            <xs:element name="ScenarioName" type="xs:string" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="Count" type="xs:int" minOccurs="0" maxOccurs="1"/>
-        </xs:sequence>
-    </xs:complexType>
-
-    <!-- UpdateExtension response -->
-    <xs:complexType name="UpdateExtensionUsageResponseType">
-      <xs:complexContent>
-        <xs:extension base="m:ResponseMessageType"/>
-      </xs:complexContent>
-    </xs:complexType>
-    <xs:element name="UpdateExtensionUsageResponse" type="m:UpdateExtensionUsageResponseType"/>
-
     <!-- UninstallApp request -->
     <xs:complexType name="UninstallAppType">
         <xs:complexContent>
@@ -4581,7 +4428,6 @@
                     <xs:element name="SortOrder" type="t:ExecuteSearchSortOrderType" minOccurs="0" maxOccurs="1"/>
                     <xs:element name="KeywordMatchOption" type="t:MatchOptionsType" default="Prefix" minOccurs="0" maxOccurs="1"/>
                     <xs:element name="ReturnAdditionalIds" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
-                    <xs:element name="RequestedProperties" type="t:ArrayOfStringsType" minOccurs="0" maxOccurs="1"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>
@@ -4683,7 +4529,6 @@
         <xs:attribute name="ProductId" type="xs:string" use="required"/>
         <xs:attribute name="State" type="t:AddInStateType" use="required"/>
         <xs:attribute name="Version" type="t:VersionType" use="required"/>
-        <xs:attribute name="DefaultEnabledStatus" type="t:AADOfficeExtensionStatusType" use="optional"/>
     </xs:complexType>
 
     <xs:complexType name="PrivateCatalogAddInStoreInfoType">
