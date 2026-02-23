@@ -96,7 +96,7 @@ static int mdcl_rpc_timeout = -1;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock; /* he protecc mdcl_server_list+mdcl_agent_list */
 static atomic_bool mdcl_notify_stop;
-static unsigned int mdcl_conn_max, mdcl_threads_max;
+static unsigned int mdcl_conn_max;
 static void (*mdcl_build_env)(bool pvt);
 static void (*mdcl_free_env)();
 static void (*mdcl_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
@@ -179,7 +179,6 @@ exmdb_client_remote::~exmdb_client_remote()
 	mdcl_build_env = nullptr;
 	mdcl_free_env = nullptr;
 	mdcl_event_proc = nullptr;
-	mdcl_threads_max = 0;
 }
 
 static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
@@ -354,13 +353,10 @@ static int launch_notify_listener(remote_svr &srv) try
 
 /**
  * @ep:     callback function for notifications
- * max_thr: maximum number of threads that will wait on async notifs
  */
-void exmdb_client_remote::set_async_notif(void (*ep)(const char *, BOOL, uint32_t, const DB_NOTIFY *),
-    unsigned int max_thr)
+void exmdb_client_remote::set_async_notif(void (*ep)(const char *, BOOL, uint32_t, const DB_NOTIFY *))
 {
 	mdcl_event_proc = ep;
-	mdcl_threads_max = max_thr;
 }
 
 int exmdb_client_run(const char *cfgdir, unsigned int flags,

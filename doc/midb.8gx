@@ -127,12 +127,10 @@ towards midb.
 .br
 Default: \fI100\fP
 .TP
-\fBnotify_stub_threads_num\fP
-Default: \fI10\fP
-.TP
 \fBrpc_proxy_connection_num\fP
-The maximum number of concurrent connections that midb may open towards exmdb.
-Every prefix in exmdb_list.txt takes up one slot effectively.
+For every exmdb server in exmdb_list.txt, establish and keep this many number
+of outbound connections for sending commands. (There is at most one additional
+connection, for async notification, alive per server.)
 .br
 Default: \fI10\fP
 .TP

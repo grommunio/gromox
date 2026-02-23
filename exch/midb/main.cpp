@@ -84,7 +84,6 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"midb_schema_upgrades", "auto"},
 	{"midb_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"midb_threads_num", "100", CFG_SIZE, "20", "1000"},
-	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
 	{"sqlite_debug", "0"},
 	{"x500_org_name", "Gromox default"},
@@ -285,9 +284,6 @@ int main(int argc, char **argv)
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	mlog(LV_INFO, "system: exmdb proxy connection number is %d", proxy_num);
 	
-	int stub_num = pconfig->get_ll("notify_stub_threads_num");
-	mlog(LV_INFO, "system: exmdb notify stub threads number is %d", stub_num);
-	
 	unsigned int threads_num = pconfig->get_ll("midb_threads_num");
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
@@ -305,7 +301,7 @@ int main(int argc, char **argv)
 	auto cl_0 = HX::make_scope_exit(service_stop);
 	
 	exmdb_client.emplace(proxy_num);
-	exmdb_client->set_async_notif(midb_notif_handler, stub_num);
+	exmdb_client->set_async_notif(midb_notif_handler);
 	auto cl_6 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	me_init(g_config_file->get_value("x500_org_name"), table_size);
 	auto cl_5 = HX::make_scope_exit(me_stop);

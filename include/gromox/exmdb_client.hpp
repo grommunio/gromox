@@ -46,7 +46,7 @@ class GX_EXPORT exmdb_client_remote {
 	public:
 	exmdb_client_remote(unsigned int conn_max = 1);
 	~exmdb_client_remote();
-	void set_async_notif(void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *), unsigned int max_threads);
+	void set_async_notif(void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *));
 
 #define IDLOUT
 #define EXMIDL(n, p) static EXMIDL_RETTYPE n p;

@@ -95,7 +95,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
-	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
 	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
@@ -323,9 +322,6 @@ int main(int argc, char **argv)
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	mlog(LV_INFO, "system: exmdb proxy connection number is %d", proxy_num);
 	
-	int stub_num = pconfig->get_ll("notify_stub_threads_num");
-	mlog(LV_INFO, "system: exmdb notify stub threads number is %d", stub_num);
-	
 	table_size = pconfig->get_ll("user_table_size");
 	mlog(LV_INFO, "system: hash table size is %d", table_size);
 
@@ -355,7 +351,7 @@ int main(int argc, char **argv)
 	zserver_init(table_size, cache_interval, ping_interval);
 	auto cl_7 = HX::make_scope_exit(zserver_stop);
 	exmdb_client.emplace(proxy_num);
-	exmdb_client->set_async_notif(zs_notification_proc, stub_num);
+	exmdb_client->set_async_notif(zs_notification_proc);
 	auto cl_8 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	/* parser after zserver: dependency on session table */
 	/* parser after service: dependency on mysql_adaptor */
