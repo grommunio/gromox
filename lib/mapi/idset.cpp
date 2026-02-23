@@ -278,6 +278,11 @@ BINARY *idset::serialize_replid() const
 	return pbin.release();
 }
 
+/*
+ * Not a this-const function, because the replid table can get
+ * updated (which is a publicly visible change in the object, and so
+ * employing the `mutable` keyword is not a logical thing to do).
+ */
 BINARY *idset::serialize_replguid()
 {
 	auto pset = this;
