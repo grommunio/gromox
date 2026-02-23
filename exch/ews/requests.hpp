@@ -58,6 +58,7 @@ EWSFUNC(mSyncFolderItemsRequest);
 EWSFUNC(mUnsubscribeRequest);
 EWSFUNC(mUpdateFolderRequest);
 EWSFUNC(mUpdateItemRequest);
+EWSFUNC(mUpdateUserConfigurationRequest);
 
 #undef EWSFUNC
 

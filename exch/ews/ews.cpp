@@ -275,6 +275,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"Unsubscribe", process<Structures::mUnsubscribeRequest>},
 	{"UpdateFolder", process<Structures::mUpdateFolderRequest>},
 	{"UpdateItem", process<Structures::mUpdateItemRequest>},
+	{"UpdateUserConfiguration", process<Structures::mUpdateUserConfigurationRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
