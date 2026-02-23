@@ -272,7 +272,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	                 exmdb_response::success : exmdb_response::pull_error;
 	if (write(agent.sockd, &resp_code, 1) != 1)
 		return -1;
-	if (resp_code == exmdb_response::success && mdcl_event_proc != nullptr)
+	if (resp_code == exmdb_response::success)
 		for (size_t i = 0; i < notify.id_array.size(); ++i)
 			mdcl_event_proc(notify.dir, notify.b_table,
 				notify.id_array[i], &notify.db_notify);
@@ -307,8 +307,6 @@ static void *cl_notif_reader(void *vargs)
 
 static int launch_notify_listener(remote_svr &srv) try
 {
-	if (mdcl_event_proc == nullptr)
-		return 0;
 	mdcl_agent_list.emplace_back();
 	/* Notification thread creates its own socket. */
 	auto &ag = mdcl_agent_list.back();
@@ -470,7 +468,7 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		return fc;
 	}
 	++i->active_handles;
-	if (mdcl_agent_list.size() < mdcl_threads_max)
+	if (mdcl_event_proc != nullptr && mdcl_agent_list.size() < mdcl_threads_max)
 		launch_notify_listener(*i);
 	return fc;
 }
