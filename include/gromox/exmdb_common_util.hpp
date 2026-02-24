@@ -103,8 +103,7 @@ BOOL common_util_check_message_associated(
 	sqlite3 *psqlite, uint64_t message_id);
 extern bool cu_get_msg_flags(const db_conn &, uint64_t msg_id, bool b_native, uint32_t **out);
 extern std::string cu_cid_path(const char *dir, const char *cid, unsigned int type);
-void common_util_set_message_read(sqlite3 *psqlite,
-	uint64_t message_id, uint8_t is_read);
+extern int cu_set_message_read(sqlite3 *, uint64_t msg_id, bool is_read);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
 extern bool cu_parse_abkeid(const BINARY *, std::string &type, std::string &addr);

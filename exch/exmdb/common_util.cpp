@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -2688,31 +2688,27 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 	return pvalue;
 }
 
-static void common_util_set_folder_changenum(sqlite3 *psqlite,
+static int cu_set_folder_changenum(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t change_num)
 {
 	char sql_string[128];
-	
 	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET change_number=%llu"
 	        " WHERE folder_id=%llu", LLU{change_num}, LLU{folder_id});
-	gx_sql_exec(psqlite, sql_string);
+	return gx_sql_exec(psqlite, sql_string);
 }
 
-static void common_util_set_message_changenum(sqlite3 *psqlite,
+static int cu_set_message_changenum(sqlite3 *psqlite,
 	uint64_t message_id, uint64_t change_num)
 {
 	char sql_string[128];
-	
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET change_number=%llu"
 	        " WHERE message_id=%llu", LLU{change_num}, LLU{message_id});
-	gx_sql_exec(psqlite, sql_string);
+	return gx_sql_exec(psqlite, sql_string);
 }
 
-void common_util_set_message_read(sqlite3 *psqlite,
-	uint64_t message_id, uint8_t is_read)
+int cu_set_message_read(sqlite3 *psqlite, uint64_t message_id, bool is_read)
 {
 	char sql_string[128];
-	
 	if (is_read)
 		snprintf(sql_string, std::size(sql_string), "UPDATE message_properties "
 			"SET propval=propval|%u WHERE message_id=%llu"
@@ -2723,7 +2719,9 @@ void common_util_set_message_read(sqlite3 *psqlite,
 			"SET propval=propval&(~%u) WHERE message_id=%llu"
 			" AND proptag=%u", MSGFLAG_EVERREAD,
 		        LLU{message_id}, PR_MESSAGE_FLAGS);
-	gx_sql_exec(psqlite, sql_string);
+	auto ret = gx_sql_exec(psqlite, sql_string);
+	if (ret != SQLITE_OK)
+		return ret;
 	if (exmdb_server::is_private()) {
 		if (!is_read)
 			snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
@@ -2731,12 +2729,11 @@ void common_util_set_message_read(sqlite3 *psqlite,
 		else
 			snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
 				"read_state=1 WHERE message_id=%llu", LLU{message_id});
-		gx_sql_exec(psqlite, sql_string);
-		return;
+		return gx_sql_exec(psqlite, sql_string);
 	}
 	auto username = exmdb_pf_read_per_user ? exmdb_server::get_public_username() : "";
 	if (username == nullptr)
-		return;
+		return SQLITE_OK;
 	if (is_read)
 		snprintf(sql_string, std::size(sql_string), "REPLACE INTO "
 			"read_states VALUES (%llu, ?)", LLU{message_id});
@@ -2746,11 +2743,14 @@ void common_util_set_message_read(sqlite3 *psqlite,
 			"username=?", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
-		return;
+		return SQLITE_NOMEM;
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-	auto ret = pstmt.step();
-	if (ret != SQLITE_DONE)
+	ret = pstmt.step();
+	if (ret != SQLITE_DONE) {
 		mlog(LV_WARN, "W-1274: %s", sqlite3_errstr(ret));
+		return ret;
+	}
+	return SQLITE_OK;
 }
 
 static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
@@ -3166,8 +3166,9 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 				continue;
 			case PidTagChangeNumber:
-				common_util_set_folder_changenum(psqlite, id,
-					rop_util_get_gc_value(*static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)));
+				if (cu_set_folder_changenum(psqlite, id,
+				    rop_util_get_gc_value(*static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue))) != SQLITE_OK)
+					pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 				continue;
 			case PR_DISPLAY_NAME:
 			case PR_DISPLAY_NAME_A:
@@ -3213,12 +3214,14 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 				continue;
 			case PidTagChangeNumber:
-				common_util_set_message_changenum(psqlite, id,
-					rop_util_get_gc_value(*static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)));
+				if (cu_set_message_changenum(psqlite, id,
+				    rop_util_get_gc_value(*static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue))) != SQLITE_OK)
+					pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 				continue;
 			case PR_READ:
-				common_util_set_message_read(psqlite, id,
-					*static_cast<uint8_t *>(ppropvals->ppropval[i].pvalue));
+				if (cu_set_message_read(psqlite, id,
+				    *static_cast<uint8_t *>(ppropvals->ppropval[i].pvalue)) != SQLITE_OK)
+					pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 				continue;
 			case PR_MESSAGE_FLAGS:
 				/*

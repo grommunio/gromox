@@ -1033,8 +1033,9 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 	if (!exmdb_server::is_private()) {
 		exmdb_server::set_public_username(username);
 		auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
-		common_util_set_message_read(pdb->psqlite,
-			mid_val, mark_as_read);
+		if (cu_set_message_read(pdb->psqlite,
+		    mid_val, mark_as_read) != SQLITE_OK)
+			return false;
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "REPLACE INTO "
 				"read_cns VALUES (%llu, ?, %llu)",
@@ -1046,8 +1047,9 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
 	} else {
-		common_util_set_message_read(pdb->psqlite,
-			mid_val, mark_as_read);
+		if (cu_set_message_read(pdb->psqlite,
+		    mid_val, mark_as_read) != SQLITE_OK)
+			return false;
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
 			"read_cn=%llu WHERE message_id=%llu",

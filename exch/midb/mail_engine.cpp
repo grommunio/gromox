@@ -1574,7 +1574,8 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 	}
 	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET sort_field=%d "
 	        "WHERE folder_id=%llu", FIELD_NONE, LLU{folder_id});
-	gx_sql_exec(pidb->psqlite, sql_string);
+	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
+		return false;
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1208: ENOMEM");
@@ -1762,7 +1763,8 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 				auto qstr = fmt::format("UPDATE folders SET "
 					"parent_fid={} WHERE folder_id={}",
 					parent_fid, folder_id);
-				gx_sql_exec(pidb->psqlite, qstr.c_str());
+				if (gx_sql_exec(pidb->psqlite, qstr.c_str()) != SQLITE_OK)
+					return false;
 			}
 			if (strcasecmp(encoded_name.c_str(), znul(stm_select.col_text(3))) != 0) {
 				auto ust = gx_sql_prep(pidb->psqlite, "UPDATE folders SET name=? "
