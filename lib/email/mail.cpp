@@ -257,6 +257,8 @@ MAIL::~MAIL()
 
 MAIL &MAIL::operator=(MAIL &&o)
 {
+	if (this == &o)
+		return *this;
 	clear();
 	tree.clear();
 	tree = o.tree;

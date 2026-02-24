@@ -183,6 +183,8 @@ void instance_node::release()
 
 instance_node &instance_node::operator=(instance_node &&o) noexcept
 {
+	if (this == &o)
+		return *this;
 	release();
 	instance_id = o.instance_id;
 	parent_id = o.parent_id;

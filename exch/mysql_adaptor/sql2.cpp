@@ -168,6 +168,8 @@ MYSQL *mysql_plugin::sql_make_conn()
 
 sqlconn &sqlconn::operator=(sqlconn &&o) noexcept
 {
+	if (this == &o)
+		return *this;
 	mysql_close(m_conn);
 	m_conn = o.m_conn;
 	o.m_conn = nullptr;

@@ -690,6 +690,8 @@ generic_connection::generic_connection(generic_connection &&o) :
 
 generic_connection &generic_connection::operator=(generic_connection &&o)
 {
+	if (this == &o)
+		return *this;
 	memcpy(client_addr, o.client_addr, sizeof(client_addr));
 	memcpy(server_addr, o.server_addr, sizeof(server_addr));
 	client_port = o.client_port;

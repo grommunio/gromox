@@ -223,6 +223,8 @@ rule_node::rule_node(rule_node &&o) :
 
 rule_node &rule_node::operator=(rule_node &&o)
 {
+	if (this == &o)
+		return *this;
 	seq = o.seq;
 	state = o.state;
 	extended = o.extended;

@@ -342,6 +342,8 @@ bool PROBLEM_ARRAY::have_index(unsigned int i) const
 
 PROBLEM_ARRAY &PROBLEM_ARRAY::operator+=(PROBLEM_ARRAY &&other)
 {
+	if (this == &other)
+		return *this;
 	std::move(other.pproblem, other.pproblem + other.count, pproblem + count);
 	count += other.count;
 	other.count = 0;

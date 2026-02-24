@@ -122,6 +122,8 @@ void object_node::clear() noexcept
 
 void object_node::operator=(object_node &&o) noexcept
 {
+	if (this == &o)
+		return;
 	clear();
 	type = std::move(o.type);
 	pobject = std::move(o.pobject);

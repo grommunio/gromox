@@ -21,6 +21,8 @@ class GX_EXPORT DB_RESULT {
 
 	DB_RESULT &operator=(DB_RESULT &&o) noexcept
 	{
+		if (this == &o)
+			return *this;
 		clear();
 		m_res = o.m_res;
 		o.m_res = nullptr;

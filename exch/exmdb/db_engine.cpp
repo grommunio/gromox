@@ -684,6 +684,8 @@ db_conn::~db_conn()
 
 db_conn &db_conn::operator=(db_conn &&o)
 {
+	if (this == &o)
+		return *this;
 	psqlite = std::move(o.psqlite);
 	m_sqlite_eph = std::move(o.m_sqlite_eph);
 	o.psqlite = o.m_sqlite_eph = nullptr;

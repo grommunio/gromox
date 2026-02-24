@@ -41,6 +41,8 @@ STREAM::STREAM() : list(std::make_shared<std::list<stream_block>>())
 
 STREAM &STREAM::operator=(STREAM &&o)
 {
+	if (this == &o)
+		return *this;
 	clear();
 	std::swap(pnode_rd, o.pnode_rd);
 	std::swap(pnode_wr, o.pnode_wr);
