@@ -582,8 +582,10 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 	}
 	gx_sql_exec(db, "PRAGMA journal_mode=WAL");
 	sqlite3_busy_timeout(db, int(g_sqlite_busy_timeout_ns / 1000000)); // ns -> ms
-	if (type == DB_EPH)
-		gx_sql_exec(db, "PRAGMA	synchronous=OFF"); /* completely disable disk synchronization for eph db */
+	if (type == DB_MAIN)
+		gx_sql_exec(db, "PRAGMA synchronous=FULL");
+	else
+		gx_sql_exec(db, "PRAGMA synchronous=OFF");
 	return hdb;
 }
 
