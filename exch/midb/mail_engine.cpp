@@ -1917,6 +1917,7 @@ static IDB_REF me_get_idb(const char *path, bool force_resync = false)
 		sqlite3_busy_timeout(pidb->psqlite, g_midb_busy_timeout_ns / 1000000);
 		gx_sql_exec(pidb->psqlite, "PRAGMA foreign_keys=ON");
 		gx_sql_exec(pidb->psqlite, "PRAGMA journal_mode=WAL");
+		gx_sql_exec(pidb->psqlite, "PRAGMA synchronous=FULL");
 		gx_sql_exec(pidb->psqlite, "DELETE FROM mapping");
 		/* Delete obsolete field (old midb versions cannot use the db then however) */
 		// gx_sql_exec(pidb->psqlite, "DELETE FROM configurations WHERE config_id=1");
