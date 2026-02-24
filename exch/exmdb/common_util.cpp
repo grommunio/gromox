@@ -89,7 +89,7 @@ std::string g_exmdb_smtp_url;
 char g_exmdb_org_name[256];
 thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
-unsigned int g_max_rule_num, g_max_extrule_num;
+unsigned int g_max_rule_num, g_max_extrule_num, g_exmdb_enable_optim_stm;
 unsigned int g_cid_compression = 0; /* disabled(0), specific_level(n) */
 
 decltype(common_util_get_handle) common_util_get_handle;
@@ -439,6 +439,8 @@ namespace exmdb {
 static sqlite3_stmt *
 cu_get_optimize_stmt(const db_conn &db, mapi_object_type table_type, bool b_normal)
 {
+	if (!g_exmdb_enable_optim_stm)
+		return nullptr;
 	if (table_type != MAPI_MESSAGE && table_type != MAPI_MAILUSER)
 		return NULL;	
 	if (db.m_prepstm == nullptr)

@@ -157,6 +157,7 @@ extern bool timeindex_refresh(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern ec_error_t autoreply_make_oofstate(const char *dir, void *&outptr);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num, g_cid_compression;
+extern unsigned int g_exmdb_enable_optim_stm;
 extern thread_local unsigned int g_inside_flush_instance;
 extern thread_local sqlite3 *g_sqlite_for_oxcmail;
 extern char g_exmdb_org_name[];

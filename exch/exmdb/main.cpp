@@ -39,6 +39,7 @@ static constexpr cfg_directive exmdb_gromox_cfg_defaults[] = {
 	{"exmdb_deep_backtrace", "0", CFG_BOOL},
 	{"exmdb_force_write_txn", "0", CFG_BOOL},
 	{"exmdb_ics_log_file", ""},
+	{"exmdb_optimize_stm", "1", CFG_BOOL},
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	CFG_TABLE_END,
 };
@@ -70,8 +71,8 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
 	{"populating_threads_num", "4", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
-	{"sqlite_debug", "0"},
 	{"sqlite_busy_timeout", "60s", CFG_TIME_NS, "0s", "1h"},
+	{"sqlite_debug", "0"},
 	{"table_size", "5000", CFG_SIZE, "100"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
@@ -197,6 +198,8 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_INFO, "Content File Compression: off");
 		else
 			mlog(LV_INFO, "Content File Compression: zstd-%d", g_cid_compression);
+
+		g_exmdb_enable_optim_stm = gxcfg->get_ll("exmdb_optimize_stm");
 		str = gxcfg->get_value("outgoing_smtp_url");
 		std::string smtp_url;
 		try {
@@ -210,10 +213,11 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		mlog(LV_INFO, "exmdb_provider: x500=\"%s\", "
 		        "rpc_proxyconn_num=%d, notify_stub_threads_num=%d, "
 		        "db_hash_table_size=%d, cache_interval=%s, max_msgs_per_store=%d, "
-		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, popul_num=%d, smtp=%s",
+		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, "
+		        "popul_num=%d, smtp=%s, getprop_optimize_stm=%u",
 		        org_name, connection_num, threads_num, table_size,
 		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
-		        populating_num, smtp_url.c_str());
+		        populating_num, smtp_url.c_str(), g_exmdb_enable_optim_stm);
 
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule, std::move(smtp_url));
 		db_engine_init(table_size, cache_interval, populating_num);
