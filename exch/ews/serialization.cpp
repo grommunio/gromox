@@ -2211,6 +2211,30 @@ mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement *xml) :
 	XMLINIT(Mailbox)
 {}
 
+static const XMLElement *getChild(const XMLElement *xml, const char *name)
+{
+	auto *child = xml->FirstChildElement(name);
+	if (!child)
+		throw Exceptions::DeserializationError(
+			Exceptions::E3046(name, xml->Name()));
+	return child;
+}
+
+mCreateUserConfigurationRequest::mCreateUserConfigurationRequest(const XMLElement *xml)
+	: UserConfigurationName(fromXMLNode<tUserConfigurationName>(
+		getChild(xml, "UserConfiguration"),
+		"UserConfigurationName")),
+	  XmlData(fromXMLNode<std::optional<sBase64Binary>>(
+		getChild(xml, "UserConfiguration"), "XmlData")),
+	  BinaryData(fromXMLNode<std::optional<sBase64Binary>>(
+		getChild(xml, "UserConfiguration"), "BinaryData"))
+{}
+
+void mCreateUserConfigurationResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
 mGetUserConfigurationRequest::mGetUserConfigurationRequest(const tinyxml2::XMLElement *xml) :
 	XMLINIT(UserConfigurationName),
 	XMLINIT(UserConfigurationProperties)
@@ -2225,15 +2249,6 @@ void mGetUserConfigurationResponseMessage::serialize(tinyxml2::XMLElement *xml) 
 void mGetUserConfigurationResponse::serialize(XMLElement *xml) const
 {
 	XMLDUMPM(ResponseMessages);
-}
-
-static const XMLElement *getChild(const XMLElement *xml, const char *name)
-{
-	auto *child = xml->FirstChildElement(name);
-	if (!child)
-		throw Exceptions::DeserializationError(
-			Exceptions::E3046(name, xml->Name()));
-	return child;
 }
 
 mUpdateUserConfigurationRequest::mUpdateUserConfigurationRequest(const XMLElement *xml) :
