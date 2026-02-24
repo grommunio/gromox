@@ -1,4 +1,4 @@
-Milestone 3.4.74
+Milestone 3.4.83
 ================
 
 Enhancements:
@@ -12,11 +12,15 @@ Fixes:
 
 * emsmdb: async notification connections were not marked active and would not
   deliver a signal of new pending events.
+* emsmdb: repair EcDoAsyncWaitEx to immediately return when notifications are
+  already pending in the session queue
 * emsmdb: fix UAF/crash when notifications are sent over RPCH
 * oxcical: upon reception of non-recurring appointments, the PidLidRecurring=0
   property will be set now, as some Outlook versions fail to show appointments
   in the daily/weekly/monthly view if the property is absent.
 * oxcmail: messages with timezones ±08xx/09xx were mistreated as UTC
+* oxvcard: fixed a field shift in the ADR line's parsing and emission
+* ews: trim all C0 control codes from XML responses
 * exmdb: limit production of PR_RTF_COMPRESSED variants of
   PR_BODY/PR_HTML when saving messages to IPM.Task objects, as OL
   only depends on it for those message classes.
