@@ -667,6 +667,7 @@ db_conn::db_conn(db_base &base) :
 db_conn::db_conn(db_conn &&o) :
 	psqlite(std::move(o.psqlite)),
 	m_sqlite_eph(std::move(o.m_sqlite_eph)),
+	m_prepstm(std::move(o.m_prepstm)),
 	m_base(std::move(o.m_base))
 {
 	o.psqlite = o.m_sqlite_eph = nullptr;
@@ -677,6 +678,13 @@ db_conn::~db_conn()
 {
 	if (m_base == nullptr)
 		return;
+	/*
+	 * Finalize any cached prepared statements while the
+	 * sqlite3 handles are still ours, before returning them
+	 * to the connection pool where another thread could
+	 * pick them up immediately.
+	 */
+	m_prepstm.reset();
 	m_base->handle_spares(std::move(psqlite), std::move(m_sqlite_eph));
 	--m_base->reference;
 	g_maint_ref_cv.notify_all();
@@ -686,8 +694,16 @@ db_conn &db_conn::operator=(db_conn &&o)
 {
 	if (this == &o)
 		return *this;
+	/* Clean up our own state first. */
+	m_prepstm.reset();
+	if (m_base != nullptr) {
+		m_base->handle_spares(std::move(psqlite), std::move(m_sqlite_eph));
+		--m_base->reference;
+		g_maint_ref_cv.notify_all();
+	}
 	psqlite = std::move(o.psqlite);
 	m_sqlite_eph = std::move(o.m_sqlite_eph);
+	m_prepstm = std::move(o.m_prepstm);
 	o.psqlite = o.m_sqlite_eph = nullptr;
 	m_base = std::move(o.m_base);
 	o.m_base = nullptr;
