@@ -420,6 +420,10 @@ bool prepared_statements::begin(sqlite3 *psqlite)
 
 bool db_conn::begin_optim() try
 {
+	if (m_prepstm != nullptr) {
+		mlog(LV_ERR, "begin_optim called twice in a row (programming bug)");
+		return true;
+	}
 	auto op = std::make_unique<prepared_statements>();
 	if (!op->begin(psqlite))
 		return false;
