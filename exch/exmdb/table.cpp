@@ -3075,6 +3075,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 			mlog(LV_ERR, "E-1435: sqlite3_open %s: %s", state_path.c_str(), sqlite3_errstr(ret));
 			return FALSE;
 		}
+		sqlite3_busy_timeout(psqlite, g_sqlite_busy_timeout_ns / 1000000);
 		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
 		gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
 		const char *sql_string = (
@@ -3106,6 +3107,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 			mlog(LV_ERR, "E-1436: sqlite3_open %s: %s", state_path.c_str(), sqlite3_errstr(ret));
 			return FALSE;
 		}
+		sqlite3_busy_timeout(psqlite, g_sqlite_busy_timeout_ns / 1000000);
 		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
 		gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
 	} else {
@@ -3350,6 +3352,7 @@ BOOL exmdb_server::restore_table_state(const char *dir, uint32_t table_id,
 		return false;
 	}
 	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close_v2(psqlite); });
+	sqlite3_busy_timeout(psqlite, g_sqlite_busy_timeout_ns / 1000000);
 	gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
 	gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id, table_flags,"

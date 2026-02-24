@@ -166,6 +166,7 @@ enum {
 
 unsigned int g_midb_schema_upgrades;
 unsigned int g_midb_cache_interval, g_midb_reload_interval;
+unsigned long long g_midb_busy_timeout_ns;
 
 static constexpr time_duration DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static size_t g_table_size;
@@ -1913,6 +1914,7 @@ static IDB_REF me_get_idb(const char *path, bool force_resync = false)
 			pidb->psqlite = nullptr;
 			return {};
 		}
+		sqlite3_busy_timeout(pidb->psqlite, g_midb_busy_timeout_ns / 1000000);
 		gx_sql_exec(pidb->psqlite, "PRAGMA foreign_keys=ON");
 		gx_sql_exec(pidb->psqlite, "PRAGMA journal_mode=WAL");
 		gx_sql_exec(pidb->psqlite, "DELETE FROM mapping");
@@ -3365,6 +3367,7 @@ static int me_psrhl(int argc, char **argv, int sockd) try
 		mlog(LV_ERR, "E-1439: sqlite3_open %s: %s", midb_path.c_str(), sqlite3_errstr(ret));
 		return MIDB_E_HASHTABLE_FULL;
 	}
+	sqlite3_busy_timeout(psqlite, g_midb_busy_timeout_ns / 1000000);
 	auto presult = me_ct_match(argv[3], psqlite, folder_id, ptree.get(), false);
 	if (!presult.has_value()) {
 		sqlite3_close_v2(psqlite);
@@ -3442,6 +3445,7 @@ static int me_psrhu(int argc, char **argv, int sockd) try
 		mlog(LV_ERR, "E-1505: sqlite3_open %s: %s", midb_path.c_str(), sqlite3_errstr(ret));
 		return MIDB_E_HASHTABLE_FULL;
 	}
+	sqlite3_busy_timeout(psqlite, g_midb_busy_timeout_ns / 1000000);
 	auto presult = me_ct_match(argv[3], psqlite, folder_id, ptree.get(), TRUE);
 	if (!presult.has_value()) {
 		sqlite3_close_v2(psqlite);
