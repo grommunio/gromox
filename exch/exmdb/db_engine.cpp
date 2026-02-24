@@ -653,9 +653,9 @@ void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 	}
 	lock.unlock();
 	if (eph != nullptr)
-		sqlite3_close(eph);
+		sqlite3_close_v2(eph);
 	if (main != nullptr)
-		sqlite3_close(main);
+		sqlite3_close_v2(main);
 }
 
 db_conn::db_conn(db_base &base) :
