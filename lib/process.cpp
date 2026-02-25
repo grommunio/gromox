@@ -20,6 +20,7 @@
 #ifdef __GLIBC__
 #	include <execinfo.h>
 #endif
+#include <netinet/in.h>
 #if defined(__linux__) && defined(__GLIBC__) && __GLIBC__ == 2 && __GLIBC_MINOR__ >= 30
 #	define HAVE_GLIBC_GETTID 1
 #endif

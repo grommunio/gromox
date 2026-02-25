@@ -37,6 +37,7 @@
 #include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
+#include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <openssl/err.h>
 #if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
