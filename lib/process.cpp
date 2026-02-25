@@ -397,9 +397,9 @@ errno_t poll_ctx::addmod(unsigned int mask, int fd, void *ctx, bool add)
 	ev[0].flags = ev[1].flags = EV_ADD | EV_ENABLE | flags;
 	ev[0].udata = ev[1].udata = ctx;
 	unsigned int nev = 0;
-	if (mask & POLLING_READ)
+	if (mask & polling_read)
 		ev[nev++].filter = EVFILT_READ;
-	if (mask & POLLING_WRITE)
+	if (mask & polling_write)
 		ev[nev++].filter = EVFILT_WRITE;
 	auto ret = kevent(m_epfd, ev, nev, nullptr, 0, nullptr);
 #endif

@@ -37,7 +37,7 @@ class GX_EXPORT poll_ctx {
 #ifdef HAVE_SYS_EPOLL_H
 	std::vector<epoll_event> m_events;
 #elif defined(HAVE_SYS_EVENT_H)
-	std::vector<kevent> m_events;
+	std::vector<struct kevent> m_events;
 #endif
 };
 

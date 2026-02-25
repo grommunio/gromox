@@ -9,7 +9,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/generic_connection.hpp>
 
-struct config_file;
+class config_file;
 
 class EXMDB_CONNECTION : public GENERIC_CONNECTION {
 	public:
