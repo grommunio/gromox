@@ -76,6 +76,8 @@ struct GX_EXPORT xstmt {
 	}
 	inline void operator=(std::nullptr_t) { finalize(); }
 	void operator=(xstmt &&o) noexcept {
+		if (this == &o)
+			return;
 		if (m_ptr != nullptr)
 			sqlite3_finalize(m_ptr);
 		m_ptr = o.m_ptr;

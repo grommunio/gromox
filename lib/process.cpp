@@ -20,6 +20,7 @@
 #ifdef __GLIBC__
 #	include <execinfo.h>
 #endif
+#include <netinet/in.h>
 #if defined(__linux__) && defined(__GLIBC__) && __GLIBC__ == 2 && __GLIBC_MINOR__ >= 30
 #	define HAVE_GLIBC_GETTID 1
 #endif
@@ -397,9 +398,9 @@ errno_t poll_ctx::addmod(unsigned int mask, int fd, void *ctx, bool add)
 	ev[0].flags = ev[1].flags = EV_ADD | EV_ENABLE | flags;
 	ev[0].udata = ev[1].udata = ctx;
 	unsigned int nev = 0;
-	if (mask & POLLING_READ)
+	if (mask & polling_read)
 		ev[nev++].filter = EVFILT_READ;
-	if (mask & POLLING_WRITE)
+	if (mask & polling_write)
 		ev[nev++].filter = EVFILT_WRITE;
 	auto ret = kevent(m_epfd, ev, nev, nullptr, 0, nullptr);
 #endif
@@ -432,7 +433,11 @@ int poll_ctx::wait(const struct timespec *timeout, int max_ev)
 	if (max_ev < 0 || static_cast<size_t>(max_ev) > m_events.size())
 		max_ev = m_events.size();
 #ifdef HAVE_SYS_EPOLL_H
+#ifdef HAVE_EPOLL_PWAIT2
 	return epoll_pwait2(m_epfd, m_events.data(), max_ev, timeout, nullptr);
+#else
+	return epoll_wait(m_epfd, m_events.data(), max_ev, timeout->tv_nsec / 1000000 + timeout->tv_sec);
+#endif
 #elif defined(HAVE_SYS_EVENT_H)
 	return kevent(m_epfd, nullptr, 0, m_events.data(), max_ev, timeout);
 #endif
@@ -690,6 +695,8 @@ generic_connection::generic_connection(generic_connection &&o) :
 
 generic_connection &generic_connection::operator=(generic_connection &&o)
 {
+	if (this == &o)
+		return *this;
 	memcpy(client_addr, o.client_addr, sizeof(client_addr));
 	memcpy(server_addr, o.server_addr, sizeof(server_addr));
 	client_port = o.client_port;

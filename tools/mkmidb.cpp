@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 		printf("fail to create store database\n");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_1 = HX::make_scope_exit([&]() { sqlite3_close_v2(psqlite); });
 	if (opt_integ)
 		return dbop_sqlite_integcheck(psqlite, LV_ERR) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 	if (opt_upgrade) {

@@ -40,6 +40,7 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"istore_fd_limit", "0", CFG_SIZE},
 	{"istore_log_file", "-"},
 	{"istore_log_level", "4" /* LV_NOTICE */},
+	{"istore_standalone", "0", CFG_BOOL},
 	{"running_identity", RUNNING_IDENTITY},
 	CFG_TABLE_END,
 };

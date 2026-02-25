@@ -96,7 +96,10 @@ BOOL utf8_truncate(char *str, int length)
 	return TRUE;
 }
 
-/* Strip invalid UTF-8 and replace by '?' */
+/**
+ * Strip invalid UTF-8 and also most C0 control characters (not valid
+ * in XML 1.0), and replace by '?'.
+ */
 void utf8_filter(char *string)  
 {
 	int m;

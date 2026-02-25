@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 		printf("== %s ==\n", le_file);
-		auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(db); });
+		auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close_v2(db); });
 		if (gx_sql_exec(db, "PRAGMA foreign_keys=ON") != SQLITE_OK ||
 		    gx_sql_exec(db, "PRAGMA journal_mode=WAL") != SQLITE_OK ||
 		    sqlite3_busy_timeout(db, 60000) != SQLITE_OK)

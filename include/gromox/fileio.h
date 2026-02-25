@@ -62,6 +62,8 @@ class GX_EXPORT wrapfd {
 	errno_t close_rd() noexcept;
 	errno_t close_wr() noexcept __attribute__((warn_unused_result)) { return close_rd(); };
 	void operator=(wrapfd &&o) noexcept {
+		if (this == &o)
+			return;
 		close_rd();
 		m_fd = o.m_fd;
 		o.m_fd = -1;

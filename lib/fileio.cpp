@@ -44,6 +44,10 @@
 using namespace std::string_literals;
 using namespace gromox;
 
+extern "C" {
+extern char **environ;
+}
+
 namespace {
 
 struct popen_fdset {

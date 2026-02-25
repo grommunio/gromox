@@ -15,4 +15,5 @@ extern void midb_notif_handler(const char *dir, BOOL table, uint32_t nid, const 
 
 extern unsigned int g_midb_schema_upgrades;
 extern unsigned int g_midb_cache_interval, g_midb_reload_interval;
+extern unsigned long long g_midb_busy_timeout_ns;
 extern std::string g_host_id;

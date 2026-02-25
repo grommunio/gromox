@@ -69,6 +69,7 @@ static constexpr generic_module g_dfl_svc_plugins[] = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "midb_fd_limit", CFG_ALIAS},
 	{"midb_fd_limit", "0", CFG_SIZE},
+	{"midb_sqlite_busy_timeout", "60s", CFG_TIME_NS, "0s", "1h"},
 	CFG_TABLE_END,
 };
 
@@ -296,6 +297,7 @@ int main(int argc, char **argv)
 	
 	filedes_limit_bump(gxconfig->get_ll("midb_fd_limit"));
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
+	g_midb_busy_timeout_ns = pconfig->get_ll("midb_sqlite_busy_timeout");
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
 	auto cl_0 = HX::make_scope_exit(service_stop);

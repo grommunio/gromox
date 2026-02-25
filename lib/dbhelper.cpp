@@ -62,6 +62,8 @@ xstmt gx_sql_prep(sqlite3 *db, const char *query)
 
 xtransaction &xtransaction::operator=(xtransaction &&o) noexcept
 {
+	if (this == &o)
+		return *this;
 	teardown();
 	m_db = o.m_db;
 	o.m_db = nullptr;

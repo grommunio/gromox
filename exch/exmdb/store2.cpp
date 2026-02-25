@@ -40,7 +40,7 @@ using namespace gromox;
 namespace {
 
 struct sql_del {
-	void operator()(sqlite3 *x) const { sqlite3_close(x); }
+	void operator()(sqlite3 *x) const { sqlite3_close_v2(x); }
 };
 
 }
@@ -492,6 +492,7 @@ static bool purg_discover_mids(const char *dir, std::vector<std::string> &used)
 		mlog(LV_ERR, "E-2018: cannot open %s: %s", dbpath.c_str(), sqlite3_errstr(ret));
 		return false;
 	}
+	sqlite3_busy_timeout(db.get(), g_sqlite_busy_timeout_ns / 1000000);
 	return purg_discover_ids(db.get(), "SELECT mid_string FROM messages", used);
 }
 

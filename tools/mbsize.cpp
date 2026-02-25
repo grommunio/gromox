@@ -27,7 +27,7 @@ static constexpr int MB = 1048576, BLOCKUNIT = 512;
 namespace {
 
 struct deleter {
-	void operator()(sqlite3 *x) const { sqlite3_close(x); }
+	void operator()(sqlite3 *x) const { sqlite3_close_v2(x); }
 };
 
 struct ustat {

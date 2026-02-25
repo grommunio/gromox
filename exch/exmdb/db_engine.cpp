@@ -582,8 +582,10 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 	}
 	gx_sql_exec(db, "PRAGMA journal_mode=WAL");
 	sqlite3_busy_timeout(db, int(g_sqlite_busy_timeout_ns / 1000000)); // ns -> ms
-	if (type == DB_EPH)
-		gx_sql_exec(db, "PRAGMA	synchronous=OFF"); /* completely disable disk synchronization for eph db */
+	if (type == DB_MAIN)
+		gx_sql_exec(db, "PRAGMA synchronous=FULL");
+	else
+		gx_sql_exec(db, "PRAGMA synchronous=OFF");
 	return hdb;
 }
 
@@ -651,9 +653,9 @@ void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 	}
 	lock.unlock();
 	if (eph != nullptr)
-		sqlite3_close(eph);
+		sqlite3_close_v2(eph);
 	if (main != nullptr)
-		sqlite3_close(main);
+		sqlite3_close_v2(main);
 }
 
 db_conn::db_conn(db_base &base) :
@@ -665,6 +667,7 @@ db_conn::db_conn(db_base &base) :
 db_conn::db_conn(db_conn &&o) noexcept :
 	psqlite(std::move(o.psqlite)),
 	m_sqlite_eph(std::move(o.m_sqlite_eph)),
+	m_prepstm(std::move(o.m_prepstm)),
 	m_base(std::move(o.m_base))
 {
 	o.psqlite = o.m_sqlite_eph = nullptr;
@@ -675,6 +678,13 @@ db_conn::~db_conn()
 {
 	if (m_base == nullptr)
 		return;
+	/*
+	 * Finalize any cached prepared statements while the
+	 * sqlite3 handles are still ours, before returning them
+	 * to the connection pool where another thread could
+	 * pick them up immediately.
+	 */
+	m_prepstm.reset();
 	m_base->handle_spares(std::move(psqlite), std::move(m_sqlite_eph));
 	--m_base->reference;
 	g_maint_ref_cv.notify_all();
@@ -682,8 +692,18 @@ db_conn::~db_conn()
 
 db_conn &db_conn::operator=(db_conn &&o) noexcept
 {
+	if (this == &o)
+		return *this;
+	/* Clean up our own state first. */
+	m_prepstm.reset();
+	if (m_base != nullptr) {
+		m_base->handle_spares(std::move(psqlite), std::move(m_sqlite_eph));
+		--m_base->reference;
+		g_maint_ref_cv.notify_all();
+	}
 	psqlite = std::move(o.psqlite);
 	m_sqlite_eph = std::move(o.m_sqlite_eph);
+	m_prepstm = std::move(o.m_prepstm);
 	o.psqlite = o.m_sqlite_eph = nullptr;
 	m_base = std::move(o.m_base);
 	o.m_base = nullptr;
