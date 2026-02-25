@@ -20,6 +20,7 @@ EWSFUNC_NC(mConvertIdRequest);
 EWSFUNC(mCreateAttachmentRequest);
 EWSFUNC(mCreateFolderRequest);
 EWSFUNC(mCreateItemRequest);
+EWSFUNC(mCreateUserConfigurationRequest);
 EWSFUNC(mDeleteAttachmentRequest);
 EWSFUNC(mDeleteFolderRequest);
 EWSFUNC(mDeleteItemRequest);

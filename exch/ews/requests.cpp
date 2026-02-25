@@ -1861,13 +1861,109 @@ void process(mGetStreamingEventsRequest &&request, XMLElement *response, EWSCont
 }
 
 /**
+ * @brief      Process CreateUserConfiguration
+ *
+ * Create a new FAI message to hold user configuration data.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
+    const EWSContext &ctx)
+{
+	response->SetName("m:CreateUserConfigurationResponse");
+
+	mCreateUserConfigurationResponse data;
+	try {
+		auto &exmdb = ctx.plugin().exmdb;
+		const auto &reqName  = request.UserConfigurationName;
+		const auto &folderId = reqName.FolderId;
+		sFolderSpec folder;
+
+		if (auto raw = std::get_if<tFolderId>(&folderId))
+			folder = ctx.resolveFolder(*raw);
+		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
+			folder = ctx.resolveFolder(*dist);
+		else if (reqName.FolderId.valueless_by_exception())
+			throw EWSError::InvalidFolderId(E3252);
+
+		if (!folder.target)
+			folder.target = ctx.auth_info().username;
+		std::string dir = ctx.getDir(folder);
+		if (!(ctx.permissions(dir, folder.folderId) & frightsCreate))
+			throw EWSError::AccessDenied(E3218);
+
+		uint64_t messageId, changeNumber;
+		if (!exmdb.allocate_message_id(dir.c_str(),
+		    folder.folderId, &messageId))
+			throw EWSError::ItemSave(E3092);
+		if (!exmdb.allocate_cn(dir.c_str(), &changeNumber))
+			throw EWSError::ItemSave(E3092);
+
+		bool isPublic = folder.location == folder.PUBLIC;
+		uint32_t accountId = ctx.getAccountId(*folder.target, isPublic);
+		XID xid{isPublic ?
+			rop_util_make_domain_guid(accountId) :
+			rop_util_make_user_guid(accountId),
+			changeNumber};
+		BINARY ckeyBin = ctx.serialize(xid);
+		auto pclBin = ctx.mkPCL(xid);
+
+		std::string configClass = "IPM.Configuration." + reqName.Name;
+		static constexpr uint8_t trueVal = TRUE;
+
+		std::vector<TAGGED_PROPVAL> props;
+		props.push_back({PidTagMid, &messageId});
+		props.push_back({PidTagChangeNumber, &changeNumber});
+		props.push_back({PR_CHANGE_KEY, &ckeyBin});
+		props.push_back({PR_PREDECESSOR_CHANGE_LIST, pclBin.get()});
+		props.push_back({PR_ASSOCIATED, deconst(&trueVal)});
+		props.push_back({PR_MESSAGE_CLASS, deconst(configClass.c_str())});
+		props.push_back({PR_READ, deconst(&trueVal)});
+		auto modtime = rop_util_current_nttime();
+		props.push_back({PR_LAST_MODIFICATION_TIME, &modtime});
+
+		if (request.XmlData) {
+			auto bin = EWSContext::construct<BINARY>(BINARY{
+			           static_cast<uint32_t>(request.XmlData->size()),
+			           {EWSContext::alloc<uint8_t>(request.XmlData->size())}});
+			memcpy(bin->pv, request.XmlData->data(),
+			       request.XmlData->size());
+			props.push_back({PR_ROAMING_XMLSTREAM, bin});
+		}
+		if (request.BinaryData) {
+			auto bin = EWSContext::construct<BINARY>(BINARY{
+			           static_cast<uint32_t>(request.BinaryData->size()),
+			           {EWSContext::alloc<uint8_t>(request.BinaryData->size())}});
+			memcpy(bin->pv, request.BinaryData->data(),
+			       request.BinaryData->size());
+			props.push_back({PR_ROAMING_BINARYSTREAM, bin});
+		}
+
+		MESSAGE_CONTENT content{};
+		content.proplist.count = props.size();
+		content.proplist.ppropval = props.data();
+
+		ec_error_t err;
+		uint64_t outmid = 0, outcn = 0;
+		if (!exmdb.write_message(dir.c_str(), CP_ACP,
+		    folder.folderId, &content, {}, &outmid,
+		    &outcn, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3092);
+
+		mCreateUserConfigurationResponseMessage msg;
+		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
+	} catch (const EWSError &err) {
+		data.ResponseMessages.clear();
+		data.ResponseMessages.emplace_back(err);
+	}
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetUserConfigurationRequest
- *
- * Provides the functionality of GetUserConfiguration
- *
- * In its current state it does nothing more than sending not found response.
- *
- * @todo       This function lacks most of its functionality and is practically worthless.
  *
  * @param      request   Request data
  * @param      response  XMLElement to store response in
