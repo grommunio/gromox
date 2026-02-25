@@ -106,7 +106,7 @@ for everything to come together:
 .. code-block::
 
 	./configure LDFLAGS="-L/opt/ooce/lib/amd64"
-	LD_LIBRARY_PATH=/opt/ooce/lib/amd64:/opt/ooce/mariadb-10.11/lib/amd64 make
+	LD_LIBRARY_PATH=/opt/ooce/lib/amd64:/opt/ooce/mariadb-10.11/lib/amd64:/usr/local/lib make
 
 wmime notes
 -----------
