@@ -580,12 +580,12 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 		mlog(LV_ERR, "E-2101: enable foreign keys %s: %s (%d)", dir, sqlite3_errstr(ret), ret);
 		return nullptr;
 	}
-	gx_sql_exec(db, "PRAGMA journal_mode=WAL");
+	if (gx_sql_exec(db, "PRAGMA journal_mode=WAL") != SQLITE_OK)
+		/* keep going with existing mode */;
 	sqlite3_busy_timeout(db, int(g_sqlite_busy_timeout_ns / 1000000)); // ns -> ms
-	if (type == DB_MAIN)
-		gx_sql_exec(db, "PRAGMA synchronous=FULL");
-	else
-		gx_sql_exec(db, "PRAGMA synchronous=OFF");
+	ret = gx_sql_exec(db, type == DB_MAIN ? "PRAGMA synchronous=FULL" : "PRAGMA synchronous=OFF");
+	if (ret != SQLITE_OK)
+		/* keep going with existing mode */;
 	return hdb;
 }
 
