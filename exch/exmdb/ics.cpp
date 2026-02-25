@@ -127,7 +127,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (sqlite3_open_v2(":memory:", &psqlite,
 	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close_v2(psqlite); });
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
@@ -635,7 +635,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	if (sqlite3_open_v2(":memory:", &psqlite,
 	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close_v2(psqlite); });
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(folder_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;

@@ -379,7 +379,7 @@ int mbop_upgrade(const char *file, sqlite_kind kind, unsigned int dbop_flags)
 {
 	sqlite3 *db = nullptr;
 	auto ret = sqlite3_open_v2(file, &db, SQLITE_OPEN_READWRITE, nullptr);
-	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(db); });
+	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close_v2(db); });
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "sqlite3_open_v2: %s\n", sqlite3_errstr(ret));
 		return EXIT_FAILURE;

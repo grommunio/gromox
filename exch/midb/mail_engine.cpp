@@ -1909,7 +1909,7 @@ static IDB_REF me_get_idb(const char *path, bool force_resync = false)
 		}
 		ret = me_autoupgrade(pidb->psqlite, midb_path.c_str());
 		if (ret != 0) {
-			sqlite3_close(pidb->psqlite);
+			sqlite3_close_v2(pidb->psqlite);
 			pidb->psqlite = nullptr;
 			return {};
 		}
@@ -1968,7 +1968,7 @@ void idb_item_del::operator()(IDB_ITEM *pidb)
 IDB_ITEM::~IDB_ITEM()
 {
 	if (psqlite != nullptr)
-		sqlite3_close(psqlite);
+		sqlite3_close_v2(psqlite);
 }
 
 static void *midbme_scanwork(void *param)
@@ -3367,10 +3367,10 @@ static int me_psrhl(int argc, char **argv, int sockd) try
 	}
 	auto presult = me_ct_match(argv[3], psqlite, folder_id, ptree.get(), false);
 	if (!presult.has_value()) {
-		sqlite3_close(psqlite);
+		sqlite3_close_v2(psqlite);
 		return MIDB_E_MNG_CTMATCH;
 	}
-	sqlite3_close(psqlite);
+	sqlite3_close_v2(psqlite);
 
 	std::string rsp = "TRUE";
 	rsp.reserve(65536);
@@ -3444,10 +3444,10 @@ static int me_psrhu(int argc, char **argv, int sockd) try
 	}
 	auto presult = me_ct_match(argv[3], psqlite, folder_id, ptree.get(), TRUE);
 	if (!presult.has_value()) {
-		sqlite3_close(psqlite);
+		sqlite3_close_v2(psqlite);
 		return MIDB_E_MNG_CTMATCH;
 	}
-	sqlite3_close(psqlite);
+	sqlite3_close_v2(psqlite);
 
 	std::string rsp = "TRUE";
 	rsp.reserve(65536);

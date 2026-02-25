@@ -388,7 +388,7 @@ int main(int argc, char **argv)
 		printf("fail to create store database\n");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_1 = HX::make_scope_exit([&]() { sqlite3_close_v2(psqlite); });
 	if (gx_sql_exec(psqlite, "PRAGMA journal_mode=WAL") != SQLITE_OK)
 		return EXIT_FAILURE;
 	if (opt_integ)

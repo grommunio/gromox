@@ -40,7 +40,7 @@ using namespace gromox;
 namespace {
 
 struct sql_del {
-	void operator()(sqlite3 *x) const { sqlite3_close(x); }
+	void operator()(sqlite3 *x) const { sqlite3_close_v2(x); }
 };
 
 }
