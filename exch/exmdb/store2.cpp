@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1 /* AT_* */
 #include <algorithm>
@@ -924,7 +924,7 @@ BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 			"(proptag,propval) VALUES (%u, (SELECT COALESCE((SELECT SUM(message_size) "
 			"FROM messages WHERE %s), 0)))",
 			tag, wh);
-		gx_sql_exec(idb, query);
+		return gx_sql_exec(idb, query) == SQLITE_OK;
 	};
 #ifdef EXC
 	/*
@@ -933,23 +933,33 @@ BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 	 *
 	 * This means a user can fill up the disk with endless softdelete items.
 	 */
-	comp(PR_MESSAGE_SIZE_EXTENDED, "is_deleted=0");
-	comp(PR_NORMAL_MESSAGE_SIZE_EXTENDED, "is_deleted=0 AND is_associated=0");
-	comp(PR_ASSOC_MESSAGE_SIZE_EXTENDED, "is_deleted=0 AND is_associated=1");
-	comp(PR_DELETED_MESSAGE_SIZE_EXTENDED, "is_deleted=1");
-	comp(PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED, "is_deleted=1 AND is_associated=0");
-	comp(PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED, "is_deleted=1 AND is_associated=1");
+	if (!comp(PR_MESSAGE_SIZE_EXTENDED, "is_deleted=0"))
+		return false;
+	if (!comp(PR_NORMAL_MESSAGE_SIZE_EXTENDED, "is_deleted=0 AND is_associated=0"))
+		return false;
+	if (!comp(PR_ASSOC_MESSAGE_SIZE_EXTENDED, "is_deleted=0 AND is_associated=1"))
+		return false;
+	if (!comp(PR_DELETED_MESSAGE_SIZE_EXTENDED, "is_deleted=1"))
+		return false;
+	if (!comp(PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED, "is_deleted=1 AND is_associated=0"))
+		return false;
+	if (!comp(PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED, "is_deleted=1 AND is_associated=1"))
+		return false;
 #else
 	/* Gromox tracks/reports actual use that is controllable by the user (GXL-407). */
-	comp(PR_MESSAGE_SIZE_EXTENDED, "1");
-	comp(PR_NORMAL_MESSAGE_SIZE_EXTENDED, "is_associated=0");
-	comp(PR_ASSOC_MESSAGE_SIZE_EXTENDED, "is_associated=1");
+	if (!comp(PR_MESSAGE_SIZE_EXTENDED, "1"))
+		return false;
+	if (!comp(PR_NORMAL_MESSAGE_SIZE_EXTENDED, "is_associated=0"))
+		return false;
+	if (!comp(PR_ASSOC_MESSAGE_SIZE_EXTENDED, "is_associated=1"))
+		return false;
 	char query[240];
 	snprintf(query, std::size(query), "DELETE FROM store_properties WHERE proptag IN (%u,%u,%u)",
 	         PR_DELETED_MESSAGE_SIZE_EXTENDED,
 	         PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED,
 	         PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED);
-	gx_sql_exec(idb, query);
+	if (gx_sql_exec(idb, query) != SQLITE_OK)
+		return false;
 #endif
 	/*
 	 * Currently folder sizes are calculated on-the-fly, but perhaps we

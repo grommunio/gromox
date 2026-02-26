@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <mutex>
@@ -84,7 +84,8 @@ void xtransaction::teardown()
 		std::unique_lock lk(active_xa_lock);
 		active_xa.erase(fn);
 	}
-	gx_sql_exec(m_db, "ROLLBACK");
+	if (gx_sql_exec(m_db, "ROLLBACK") != SQLITE_OK)
+		/* ignore */;
 }
 
 int xtransaction::commit()

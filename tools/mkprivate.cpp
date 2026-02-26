@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -191,11 +191,13 @@ static int mk_folders(sqlite3 *psqlite, uint32_t user_id)
 	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%llu, 'default', %u)",
 		static_cast<unsigned long long>(PRIVATE_FID_CALENDAR), frightsFreeBusySimple | frightsVisible);
-	gx_sql_exec(psqlite, tmp_sql);
+	if (gx_sql_exec(psqlite, tmp_sql) != SQLITE_OK)
+		return EXIT_FAILURE;
 	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%llu, 'default', %u)",
 		static_cast<unsigned long long>(PRIVATE_FID_LOCAL_FREEBUSY), frightsFreeBusySimple);
-	gx_sql_exec(psqlite, tmp_sql);
+	if (gx_sql_exec(psqlite, tmp_sql) != SQLITE_OK)
+		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
 
