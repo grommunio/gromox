@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 	
 	filedes_limit_bump(gxconfig->get_ll("midb_fd_limit"));
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
-	g_midb_busy_timeout_ns = pconfig->get_ll("midb_sqlite_busy_timeout");
+	g_midb_busy_timeout_ns = gxconfig->get_ll("midb_sqlite_busy_timeout");
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
 	auto cl_0 = HX::make_scope_exit(service_stop);
