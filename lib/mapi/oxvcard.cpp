@@ -749,7 +749,7 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 		return pmsg;
 
 	/* Remap our "bf" propids to the caller's space */
-	if (!oxvcard_get_propids(&propids, std::move(get_propids)))
+	if (!oxvcard_get_propids(&propids, get_propids))
 		return imp_null;
 	for (i=0; i<pmsg->proplist.count; i++) {
 		auto proptag = pmsg->proplist.ppropval[i].proptag;

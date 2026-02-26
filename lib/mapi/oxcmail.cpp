@@ -2437,7 +2437,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 				return imp_null;
 			std::swap(pmsg->children.prcpts, pmsg1->children.prcpts);
 			if (field_param.b_flag_del)
-				oxcmail_remove_flag_properties(pmsg1.get(), std::move(get_propids));
+				oxcmail_remove_flag_properties(pmsg1.get(), get_propids);
 			return pmsg1;
 		}
 	}
@@ -2472,7 +2472,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 					return imp_null;
 				std::swap(pmsg->children.prcpts, pmsg1->children.prcpts);
 				if (field_param.b_flag_del)
-					oxcmail_remove_flag_properties(pmsg1.get(), std::move(get_propids));
+					oxcmail_remove_flag_properties(pmsg1.get(), get_propids);
 				return pmsg1;
 			}
 		}
@@ -2646,7 +2646,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 			return imp_null;
 	}
 	if (field_param.b_flag_del)
-		oxcmail_remove_flag_properties(pmsg.get(), std::move(get_propids));
+		oxcmail_remove_flag_properties(pmsg.get(), get_propids);
 	return pmsg;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
