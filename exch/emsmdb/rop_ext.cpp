@@ -1908,7 +1908,6 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	int tmp_num;
 	uint16_t size;
 	EXT_PULL subext;
-	uint32_t decompressed_len;
 	RPC_HEADER_EXT rpc_header_ext;
 	
 	TRY(x.g_rpc_header_ext(&rpc_header_ext));
@@ -1931,10 +1930,11 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 		common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size);
 	/* lzxpress case */
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
-		decompressed_len = lzxpress_decompress(pdata,
+		auto decompressed_len = lzxpress_decompress(pdata,
 					rpc_header_ext.size, pbuff, 0x8000);
-		if (decompressed_len < rpc_header_ext.size_actual) {
-			mlog(LV_WARN, "W-1097: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)",
+		if (decompressed_len < 0 ||
+		    static_cast<size_t>(decompressed_len) < rpc_header_ext.size_actual) {
+			mlog(LV_WARN, "W-1097: lzxdecompress failed for client input (z=%u, exp=%u, got=%zd)",
 				rpc_header_ext.size, rpc_header_ext.size_actual,
 				decompressed_len);
 			return pack_result::compress;
