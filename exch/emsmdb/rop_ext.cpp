@@ -1940,6 +1940,8 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 			return pack_result::compress;
 		}
 	} else {
+		if (rpc_header_ext.size_actual > x.m_data_size - x.m_offset)
+			return pack_result::header_size;
 		memcpy(pbuff, pdata, rpc_header_ext.size_actual);
 	}
 	subext.init(pbuff, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
