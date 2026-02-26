@@ -4395,6 +4395,27 @@ struct mUpdateUserConfigurationResponse {
 };
 
 /**
+ * Messages.xsd:2605
+ */
+struct mDeleteUserConfigurationRequest {
+	explicit mDeleteUserConfigurationRequest(const tinyxml2::XMLElement *);
+
+	tUserConfigurationName UserConfigurationName;
+};
+
+struct mDeleteUserConfigurationResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "DeleteUserConfigurationResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+struct mDeleteUserConfigurationResponse {
+	std::vector<mDeleteUserConfigurationResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd:2321
  */
 struct mGetDelegateRequest {
