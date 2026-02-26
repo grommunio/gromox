@@ -623,7 +623,8 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 	uint16_t cxr;
 	GUID old_guid;
 	uint16_t clv[3];
-	parse_xclientapp(ctx.cl_app, ctx.user_agent, clv);
+	if (!parse_xclientapp(ctx.cl_app, ctx.user_agent, clv))
+		memset(clv, 0, sizeof(clv));
 	connect_response cr;
 	cr.status = 0;
 	cr.result = emsmdb_bridge_connect(ctx.request.connect, cr, cxr, ctx.session_guid, clv);
