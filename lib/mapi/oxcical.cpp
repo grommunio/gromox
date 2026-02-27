@@ -1067,6 +1067,19 @@ static bool oxcical_set_stateflags(const char *method,
 	if (msg.proplist.set(PROP_TAG(PT_LONG, last_propid), &val) != ecSuccess)
 		return false;
 	++last_propid;
+
+	/* An incoming request should start as respNotResponded. */
+	if (method != nullptr &&
+	    (strcasecmp(method, "REQUEST") == 0 ||
+	     strcasecmp(method, "CANCEL") == 0)) {
+		uint32_t rs = respNotResponded;
+		pn = {MNID_ID, PSETID_Appointment, PidLidResponseStatus};
+		if (namemap_add(hash, last_propid, std::move(pn)) != 0)
+			return false;
+		if (msg.proplist.set(PROP_TAG(PT_LONG, last_propid), &rs) != ecSuccess)
+			return false;
+		++last_propid;
+	}
 	return true;
 }
 
