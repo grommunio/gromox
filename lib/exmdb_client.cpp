@@ -431,7 +431,11 @@ static bool sock_ready_for_write(int fd)
 static void close_older_connection(decltype(mdcl_server_list)::const_iterator i)
 {
 	/* Try closing one older connection. */
-	for (auto j = mdcl_server_list.begin(); j != i; ) {
+	for (auto j = mdcl_server_list.begin(); j != mdcl_server_list.end(); ) {
+		if (j == i) {
+			++j;
+			continue;
+		}
 		bool do_pop = j->conn_list.size() > 0;
 		if (do_pop) {
 			mlog(LV_DEBUG, "exmdb_client: kicking [%s]:%hu/%s fd %d to make room",
