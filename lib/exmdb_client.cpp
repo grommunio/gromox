@@ -123,6 +123,9 @@ remote_conn::~remote_conn()
 {
 	if (sockd < 0)
 		return;
+	gromox::mlog(LV_DEBUG, "exmdb_client: disconnect [%s]:%hu/%s, fd %d, ah=%u",
+		psvr->host.c_str(), psvr->port, psvr->prefix.c_str(), sockd,
+		gromox::g_exmdbcl_active_handles.load());
 	close(sockd);
 	sockd = -1;
 	do {
@@ -430,8 +433,11 @@ static void close_older_connection(decltype(mdcl_server_list)::const_iterator i)
 	/* Try closing one older connection. */
 	for (auto j = mdcl_server_list.begin(); j != i; ) {
 		bool do_pop = j->conn_list.size() > 0;
-		if (do_pop)
+		if (do_pop) {
+			mlog(LV_DEBUG, "exmdb_client: kicking [%s]:%hu/%s fd %d to make room",
+				j->host.c_str(), j->port, j->prefix.c_str(), j->conn_list.back().sockd);
 			j->conn_list.pop_back();
+		}
 		/* Do not touch async notifier threads, they are kind of separate anyway. */
 		auto clean = j->conn_list.empty() && !j->m_agent.has_value();
 		if (do_pop) {
@@ -510,6 +516,9 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		return fc;
 	}
 	++g_exmdbcl_active_handles;
+	mlog(LV_DEBUG, "exmdb_client: connected to [%s]:%hu/%s, fd %d, active_handles=%u",
+		i->host.c_str(), i->port, i->prefix.c_str(), conn.sockd,
+		g_exmdbcl_active_handles.load());
 	sv_hold.lock();
 	if (mdcl_event_proc != nullptr && !i->m_agent.has_value())
 		launch_notify_listener(*i);
