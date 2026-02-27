@@ -3252,8 +3252,8 @@ void EWSContext::notifyReadReceipt(const std::string &dir,
 	PROBLEM_ARRAY problems;
 	m_plugin.exmdb.set_message_properties(dir.c_str(), nullptr,
 		CP_ACP, mid, &propvals, &problems);
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "[ews] read receipt: ENOMEM");
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "[ews] read receipt: %s", e.what());
 }
 
 /**
