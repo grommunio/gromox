@@ -794,8 +794,12 @@ static bool oxcical_parse_recipients(const ical_component &main_ev,
 		if (!is_attendee && !is_organizer)
 			continue;
 		paddress = piline->get_first_subvalue();
-		if (paddress == nullptr || strncasecmp(paddress, "MAILTO:", 7) != 0)
+		if (paddress == nullptr || strncasecmp(paddress, "MAILTO:", 7) != 0) {
+			if (paddress != nullptr && is_organizer)
+				mlog(LV_WARN, "W-2745: %s has non-MAILTO URI \"%s\", skipping recipient entry",
+					piline->m_name.c_str(), paddress);
 			continue;
+		}
 		paddress += 7;
 		pdisplay_name = piline->get_first_paramval("CN");
 		auto cutype = piline->get_first_paramval("CUTYPE");
@@ -1356,10 +1360,13 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 		return true;
 	paddress = piline->get_first_subvalue();
 	if (paddress != nullptr) {
-		if (strncasecmp(paddress, "MAILTO:", 7) == 0)
+		if (strncasecmp(paddress, "MAILTO:", 7) == 0) {
 			paddress += 7;
-		else
+		} else {
+			mlog(LV_WARN, "W-2744: ORGANIZER has non-MAILTO URI \"%s\", "
+				"address properties will be incomplete", paddress);
 			paddress = nullptr;
+		}
 	}
 	pdisplay_name = piline->get_first_paramval("CN");
 	/*
