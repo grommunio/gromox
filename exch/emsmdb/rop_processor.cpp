@@ -80,7 +80,8 @@ void object_node::clear() noexcept
 			if (ref != g_logon_hash.end() && --ref->second == 0)
 				g_logon_hash.erase(ref);
 		}
-		mlog(LV_DEBUG, "E-DBG: object_node(%p)::clear: logon=%p", this, pobject);
+		if (g_logon_debug)
+			mlog(LV_DEBUG, "E-DBG: object_node(%p)::clear: logon=%p", this, pobject);
 		delete logon;
 		break;
 	}
