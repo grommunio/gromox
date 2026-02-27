@@ -2503,7 +2503,8 @@ void mUnsubscribeResponse::serialize(tinyxml2::XMLElement *xml) const
 
 mUpdateItemRequest::mUpdateItemRequest(const XMLElement *xml) :
 	XMLINIT(ItemChanges),
-	XMLINITA(SendMeetingInvitationsOrCancellations)
+	XMLINITA(SendMeetingInvitationsOrCancellations),
+	XMLINITA(SuppressReadReceipts)
 {}
 
 void mUpdateItemResponse::serialize(XMLElement *xml) const

@@ -4171,7 +4171,7 @@ struct mUpdateItemRequest {
 	//<xs:attribute name="ConflictResolution" type="t:ConflictResolutionType" use="required"/>
 	//<xs:attribute name="MessageDisposition" type="t:MessageDispositionType"  use="optional"/>
 	std::optional<Enum::CalendarItemUpdateOperationType> SendMeetingInvitationsOrCancellations;
-	//<xs:attribute name="SuppressReadReceipts" type="xs:boolean" use="optional"/>
+	std::optional<bool> SuppressReadReceipts;
 };
 
 /**

@@ -2757,7 +2757,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				 * props.erase() must not be used.
 				 */
 				readprop->proptag = PR_NULL;
-				if (mark_as_read != 0)
+				if (mark_as_read != 0 &&
+				    !request.SuppressReadReceipts.value_or(false))
 					ctx.notifyReadReceipt(dir, mid.messageId());
 			}
 			if (props.count > 0 &&
