@@ -2262,6 +2262,15 @@ void mUpdateUserConfigurationResponse::serialize(XMLElement *xml) const
 	XMLDUMPM(ResponseMessages);
 }
 
+mDeleteUserConfigurationRequest::mDeleteUserConfigurationRequest(const XMLElement *xml) :
+	XMLINIT(UserConfigurationName)
+{}
+
+void mDeleteUserConfigurationResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
 tDelegatePermissions::tDelegatePermissions(const XMLElement *xml) :
 	XMLINIT(CalendarFolderPermissionLevel),
 	XMLINIT(TasksFolderPermissionLevel),
