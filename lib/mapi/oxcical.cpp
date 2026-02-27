@@ -1400,14 +1400,21 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	 * but EXC2019 does not do that either, and X-MS-OLK-SENDER is only generated
 	 * under peculiar circumstances (cf. doc/oxocal.rst).
 	 */
+	auto skb = "SMTP:"s + paddress;
+	HX_strupper(skb.data());
+	BINARY srchkey;
+	srchkey.cb = skb.size() + 1;
+	srchkey.pc = deconst(skb.c_str());
 	if (pmsg->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP") != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != ecSuccess ||
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_SEARCH_KEY, &srchkey) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != ecSuccess ||
-	    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != ecSuccess)
+	    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != ecSuccess ||
+	    pmsg->proplist.set(PR_SENDER_SEARCH_KEY, &srchkey) != ecSuccess)
 		return false;
 	return true;
 }
