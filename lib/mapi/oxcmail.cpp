@@ -121,6 +121,10 @@ static constexpr addr_tags tags_read_rcpt = {
 
 }
 
+namespace gromox {
+bool g_oxcmail_smtp_addrtype = true;
+}
+
 static constexpr char
 	PidNameContentClass[] = "Content-Class",
 	PidNameKeywords[] = "Keywords";
@@ -323,10 +327,12 @@ static BOOL oxcmail_parse_recipient(const EMAIL_ADDR *paddr,
 	if (paddr->has_addr()) {
 		auto dtypx = DT_MAILUSER;
 		std::string essdn, skb;
-		if (!oxcmail_get_user_ids(paddr->addr, nullptr, nullptr, &dtypx) ||
-		    cvt_username_to_essdn(paddr->addr, g_oxcmail_org_name,
-		    oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn) != ecSuccess) {
+		bool ex_avail = oxcmail_get_user_ids(paddr->addr, nullptr, nullptr, &dtypx) &&
+		                cvt_username_to_essdn(paddr->addr, g_oxcmail_org_name,
+		                oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn) == ecSuccess;
+		if (!ex_avail)
 			dtypx = DT_MAILUSER;
+		if (g_oxcmail_smtp_addrtype || essdn.empty() || !ex_avail) {
 			skb = "SMTP:"s + paddr->addr;
 			if (pproplist->set(PR_ADDRTYPE, "SMTP") != ecSuccess ||
 			    pproplist->set(PR_EMAIL_ADDRESS, paddr->addr) != ecSuccess)
@@ -419,8 +425,9 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
 	    pproplist->set(pr_smtpaddr, paddr->addr) != ecSuccess)
 		return FALSE;
 	std::string essdn, skb;
-	if (cvt_username_to_essdn(paddr->addr, g_oxcmail_org_name,
-	    oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn) != ecSuccess)
+	auto ex_avail = cvt_username_to_essdn(paddr->addr, g_oxcmail_org_name,
+	                oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn);
+	if (g_oxcmail_smtp_addrtype || essdn.empty() || !ex_avail)
 		skb = "SMTP:"s + paddr->addr;
 	else
 		skb = "EX:"s + essdn;
@@ -1936,10 +1943,12 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 
 	auto dtypx = DT_MAILUSER;
 	std::string essdn, skb;
-	if (!oxcmail_get_user_ids(f_info.final_recipient, nullptr, nullptr, &dtypx) ||
-	    cvt_username_to_essdn(f_info.final_recipient, g_oxcmail_org_name,
-	    oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn) != ecSuccess) {
+	bool ex_avail = oxcmail_get_user_ids(f_info.final_recipient, nullptr, nullptr, &dtypx) &&
+	                cvt_username_to_essdn(f_info.final_recipient, g_oxcmail_org_name,
+	                oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn) == ecSuccess;
+	if (!ex_avail)
 		dtypx = DT_MAILUSER;
+	if (g_oxcmail_smtp_addrtype || essdn.empty() || !ex_avail) {
 		skb = "SMTP:"s + f_info.final_recipient;
 		if (pproplist->set(PR_ADDRTYPE, "SMTP") != ecSuccess ||
 		    pproplist->set(PR_EMAIL_ADDRESS, f_info.final_recipient) != ecSuccess)

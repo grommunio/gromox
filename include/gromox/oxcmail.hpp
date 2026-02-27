@@ -30,6 +30,7 @@ extern GX_EXPORT std::string vmail_to_string(const vmime::message &);
 extern GX_EXPORT bool vmail_to_mail(const vmime::message &, MAIL &);
 
 extern GX_EXPORT unsigned int g_oxvcard_pedantic;
+extern GX_EXPORT bool g_oxcmail_smtp_addrtype;
 
 }
 
