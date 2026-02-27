@@ -423,6 +423,30 @@ static bool sock_ready_for_write(int fd)
 }
 
 /**
+ * @i: the one remote_svr entry we just added and which should not be removed
+ */
+static void close_older_connection(decltype(mdcl_server_list)::const_iterator i)
+{
+	/* Try closing one older connection. */
+	for (auto j = mdcl_server_list.begin(); j != i; ) {
+		bool do_pop = j->conn_list.size() > 0;
+		if (do_pop)
+			j->conn_list.pop_back();
+		/* Do not touch async notifier threads, they are kind of separate anyway. */
+		auto clean = j->conn_list.empty() && !j->m_agent.has_value();
+		if (do_pop) {
+			if (clean)
+				mdcl_server_list.erase(j);
+			break;
+		}
+		if (clean)
+			j = mdcl_server_list.erase(j);
+		else
+			++j;
+	}
+}
+
+/**
  * Get a connection file descriptor for the given homedir.
  * If necessary, vivify a remote_svr entry and/or sockets.
  *
@@ -463,25 +487,8 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		}
 		i->conn_list.pop_front();
 	}
-	if (g_exmdbcl_active_handles >= mdcl_conn_max) {
-		/* Try closing one older connection. */
-		for (auto j = mdcl_server_list.begin(); j != i; ) {
-			bool do_pop = j->conn_list.size() > 0;
-			if (do_pop)
-				j->conn_list.pop_back();
-			/* Do not touch async notifier threads, they are kind of separate anyway. */
-			auto clean = j->conn_list.empty() && !j->m_agent.has_value();
-			if (do_pop) {
-				if (clean)
-					mdcl_server_list.erase(j);
-				break;
-			}
-			if (clean)
-				j = mdcl_server_list.erase(j);
-			else
-				++j;
-		}
-	}
+	if (g_exmdbcl_active_handles >= mdcl_conn_max)
+		close_older_connection(i);
 	if (g_exmdbcl_active_handles >= mdcl_conn_max) {
 		mlog(LV_ERR, "exmdb_client: reached global maximum connections (max:%u)",
 		        mdcl_conn_max);
