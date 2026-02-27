@@ -1051,10 +1051,16 @@ static bool oxcical_parse_subtype(namemap &phash, uint16_t *plast_propid,
 	return true;
 }
 
-static bool oxcical_set_stateflags(namemap &hash, uint16_t &last_propid,
-    MESSAGE_CONTENT &msg)
+static bool oxcical_set_stateflags(const char *method,
+    namemap &hash, uint16_t &last_propid, message_content &msg)
 {
 	uint32_t val = 0;
+	if (method != nullptr) {
+		if (strcasecmp(method, "REQUEST") == 0)
+			val = asfMeeting | asfReceived;
+		else if (strcasecmp(method, "CANCEL") == 0)
+			val = asfMeeting | asfReceived | asfCanceled;
+	}
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentStateFlags};
 	if (namemap_add(hash, last_propid, std::move(pn)) != 0)
 		return false;
@@ -2201,7 +2207,7 @@ static const char *oxcical_import_internal(const char *method,
 		b_allday = true;
 	if (b_allday && !oxcical_parse_subtype(phash, &last_propid, pmsg, pexception))
 		return "E-2704: oxcical_parse_subtype returned an unspecified error";
-	if (!oxcical_set_stateflags(phash, last_propid, *pmsg))
+	if (!oxcical_set_stateflags(method, phash, last_propid, *pmsg))
 		return "E-2739";
 
 	ical_time itime{};
