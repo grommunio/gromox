@@ -42,6 +42,15 @@ enum class srv_type : uint8_t {
 	undef, xprivate, xpublic,
 };
 
+/**
+ * "Unique key" for a server, i.e. if any paramter (of @host, @port, @type) is
+ * different, it constitutes a different server logically, and needs its own
+ * set of file descriptors.
+ *
+ * The member order @host,@port,@type is fine, as we expect the overwhelming
+ * amount of srv_ident instances to have the same @port and @type (5000 and
+ * private), so that comparing port/type ahead of host would not buy much.
+ */
 struct srv_ident {
 	std::string host;
 	uint16_t port = 0;
@@ -49,6 +58,7 @@ struct srv_ident {
 	auto operator<=>(const srv_ident &o) const = default;
 };
 
+/* Augmented wrapfd with logging */
 class srv_conn {
 	public:
 	~srv_conn();
@@ -59,6 +69,18 @@ class srv_conn {
 
 class srv_entry;
 
+/**
+ * @m_pool: where to return the fd to as the ref gets destroyed
+ *
+ * The class is designed such that connections do not implicitly get returned
+ * to pools when an exception occurs somewhere. Putback to the pool is
+ * explicit, and needs to be invoked with `ref.reset()`.
+ *
+ * Because srv_entry::conn_list is a std::list<>, it makes sense to also use
+ * std::list in srv_conn_ref, so that, on putback, there is no memory
+ * allocation. (There would be one if srv_conn_ref was based on a pure srv_conn
+ * and we were to use m_pool.conn_list.emplace_back(std::move(*this)).)
+ */
 class srv_conn_ref {
 	public:
 	srv_conn_ref() = default;
@@ -75,6 +97,14 @@ class srv_conn_ref {
 	std::weak_ptr<srv_entry> m_pool;
 };
 
+/**
+ * Async notification listener.
+ * @m_thr_id:     pthread internal identifier
+ * @startup_wait: means to wait for the pthread being up
+ * @startup_cv:   means to wait for the pthread being up
+ * @m_ident:      connection parameter(s); it's a copy so we do not need to rely
+ *                on srv_entry being around
+ */
 struct async_listener {
 	async_listener() = default;
 	async_listener(const srv_ident &ident, exmdb_client_remote *bp_client) :
@@ -95,6 +125,15 @@ struct async_listener {
 	exmdb_client_remote *m_client = nullptr;
 };
 
+/**
+ * Connection pool for one server
+ *
+ * @ident:     (re-)provided so we have something for logging
+ * @conn_list: connections that are still open and can be re-used
+ *             (older ones to the front, newer ones to the back)
+ * @conn_lock: protects conn_list
+ * @m_async:   notification listener thread (manages connections individually)
+ */
 class srv_entry {
 	public:
 	srv_conn_ref extract_one_connection();
@@ -102,6 +141,10 @@ class srv_entry {
 	bool purgable() const;
 	void launch_notify_listener(exmdb_client_remote *);
 
+	/*
+	 * Repeat the identifier so we have all the connection info even if the
+	 * unordered_map entry is going away.
+	 */
 	srv_ident ident;
 	std::list<srv_conn> conn_list;
 	std::mutex conn_lock; /* protects conn_list & m_async */
@@ -112,6 +155,19 @@ class srv_entry {
 
 namespace exmdb_client_impl {
 
+/**
+ * Connection tree helper class
+ *
+ * @dir_to_srv:   speedy direct map from directory to connection pool
+ *                (meant for recently-used userdirs)
+ * @name_to_srv:  semi-speedy map from homeserver to connection pool
+ *                (meant for recently-used homeservers, but newly-seen userdirs)
+ * @dts_lock:     protects dir_to_srv
+ * @nts_lock:     protects name_to_srv
+ * @maker_lock:   exclusion to wanting to increase m_active
+ * @m_active:     current global connections
+ * @m_maxconn:    maximum global connections
+ */
 class locator {
 	public:
 	locator(size_t maxconn, exmdb_client_remote *client) : m_maxconn(maxconn), m_client(client) {}
@@ -146,6 +202,17 @@ namespace gromox {
 std::optional<exmdb_client_remote> exmdb_client;
 }
 
+/**
+ * Lower-level connection establisher
+ *
+ * @srv:      where to connect
+ * @dir:      mailbox store
+ * @b_listen: true if the connection should switch into becoming
+ *            an async notify listener
+ *
+ * Returns the file descriptor number, or -2 on connection problems,
+ * or -1 on data exchange problems.
+ */
 static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir, bool b_listen)
 {
 	wrapfd fd = HX_inet_connect(ident.host.c_str(), ident.port, 0);
@@ -168,6 +235,12 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir, boo
 		if (exmdb_ext_push_request(&rql, &bin) != pack_result::ok)
 			return -1;
 	} else {
+		/*
+		 * "connect" is a misnomer; exmdb_server merely verifies that
+		 * @dir is served (and that the serve check was done at least
+		 * once). Any subsequent EXRPC can specify an arbitrary
+		 * userdir.
+		 */
 		exreq_connect rqc;
 		rqc.call_id   = exmdb_callid::connect;
 		rqc.prefix    = deconst(dir);
@@ -259,6 +332,14 @@ async_listener::~async_listener()
 	}
 }
 
+/**
+ * Reads some bytes off the network and, if a complete EXRPC packet is formed,
+ * processes it.
+ *
+ * Returns 0 on "success" or when waiting for more data.
+ * Returns <0 when it has been determined that the current notify channel should
+ * be recreated. (timeout, read errors, etc.)
+ */
 int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
     std::string &buff, size_t &offset)
 {
@@ -375,6 +456,13 @@ void srv_conn_ref::splice_one_from_back(std::list<srv_conn> &pool)
 	m_hold.splice(m_hold.end(), pool, std::prev(pool.end()));
 }
 
+/**
+ * Drops any one connection (preferably the oldest).
+ * The caller is in charge of acquiring srv_entry.conn_lock
+ * (because they generally want to do more operations in a chain).
+ *
+ * Returns a bool indicating whether some cleanup happened.
+ */
 bool srv_entry::drop_one_connection()
 {
 	if (conn_list.empty())
@@ -386,6 +474,12 @@ bool srv_entry::drop_one_connection()
 	return true;
 }
 
+/**
+ * Returns an indicator whether this srv_entry has nothing in it and could be
+ * removed from data structures it might be embedded in.
+ *
+ * The caller is in charge of acquiring srv_entry.conn_lock.
+ */
 bool srv_entry::purgable() const
 {
 	return conn_list.empty() && m_async == nullptr;
@@ -404,6 +498,7 @@ srv_conn_ref srv_entry::extract_one_connection()
 	std::lock_guard hold(conn_lock);
 	while (conn_list.size() > 0) {
 		/* Try reusing the most recent one (in the back) */
+		/* Server may have closed the connection due to our idling, though. */
 		if (sock_ready_for_write(conn_list.back().m_fd.get())) {
 			fc.splice_one_from_back(conn_list);
 			break;
@@ -413,6 +508,13 @@ srv_conn_ref srv_entry::extract_one_connection()
 	return fc;
 }
 
+/**
+ * Launch an async notification listening thread for this srv_entry,
+ * provided notifications are not globally disabled.
+ *
+ * conn_lock is acquired internally for the check+emplace of m_async,
+ * but released before the potentially blocking launch() call.
+ */
 void srv_entry::launch_notify_listener(exmdb_client_remote *bp_client) try
 {
 	if (bp_client->m_event_proc == nullptr)
@@ -486,6 +588,18 @@ size_t locator::drop_active_count()
 	}
 }
 
+/**
+ * @dk:	the srv_entry for which we want to make a connection (dontkill)
+ *
+ * Evaluate whether the connection limits have been reached, and if so,
+ * remove one connection (ideally the oldest one, but that is not guaranteed).
+ *
+ * The caller should have taken maker_lock before calling this function, to
+ * guarantee that no other thread snatches a connection while this thread tries
+ * to make room.
+ *
+ * Returns true if there is room / room has been made for a new connection.
+ */
 bool locator::clean_some_connection(const srv_ident &dk)
 {
 	if (m_active < m_maxconn)
@@ -522,6 +636,14 @@ bool locator::clean_some_connection(const srv_ident &dk)
 	return false; /* found no connection for teardown */
 }
 
+/**
+ * Get a connection file descriptor for the given homedir.
+ * If necessary, vivify a srv_entry entry and/or sockets.
+ *
+ * This function always produces a socket: If you want to do LPC call
+ * exmdb_client_is_local instead (and if LPC is available, don't use
+ * get_connection).
+ */
 srv_conn_ref locator::get_connection(const char *dir) try
 {
 	auto ident = try_emplace_dir(dir);
@@ -535,7 +657,11 @@ srv_conn_ref locator::get_connection(const char *dir) try
 		cref.m_pool = srv;
 		return cref;
 	}
-
+	/*
+	 * Larger-scoped lock so no other thread builds connections
+	 * while we are trying to, as that could increase m_active
+	 * beyond its limit.
+	 */
 	std::lock_guard maker_hold(maker_lock);
 	if (!clean_some_connection(ident)) {
 		mlog(LV_ERR, "exmdb_client: reached global maximum connections (max:%zu)", m_maxconn);
@@ -584,6 +710,13 @@ exmdb_client_remote::exmdb_client_remote(unsigned int conn_max)
 
 exmdb_client_remote::~exmdb_client_remote()
 {
+	/*
+	 * Careful: When `exmdb_client.reset()` is called, the std::optional
+	 * may be marked disengaged before ~exmdb_client_remote and inner
+	 * destructors like ~locator are run. Thus, access from member
+	 * functions of exmdb_client_remote or other subordinate classes should
+	 * only ever be done with "m_client"-style backpointers.
+	 */
 	m_notify_stop = true;
 }
 
@@ -600,6 +733,18 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	return 0;
 }
 
+/**
+ * Indicate whether this host is responsible for serving a mailbox
+ * and whether we can actually exercise it (usually only in the
+ * specific setup when exchange_emsmdb is in the same process image
+ * as exmdb_provider).
+ *
+ * @prefix:  a mailbox directory
+ * @ourhost: caller's hostname
+ * @pvt:     returns whether the directory refers to a private or public store
+ *
+ * A similar function body is located in exmdb_parser_is_local().
+ */
 bool exmdb_client_can_use_lpc(const char *prefix, const char *ourhost,
     bool *is_pvt)
 {
