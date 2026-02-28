@@ -482,6 +482,8 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 			mlog(LV_ERR, "exmdb_client: cannot find remote server for %s", dir);
 			return fc;
 		}
+		if (itm.host.empty())
+			itm.host = "localhost";
 		itm.type = is_pvt ? remote_svr::EXMDB_PRIVATE : remote_svr::EXMDB_PUBLIC;
 		sv_hold.lock();
 		mdcl_server_list.emplace_back(std::move(itm));

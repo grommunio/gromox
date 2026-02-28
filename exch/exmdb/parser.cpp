@@ -103,7 +103,7 @@ static bool exmdb_parser_is_local(const char *prefix, bool *pvt)
 		mlog(LV_ERR, "%s: %s: %s", __func__, prefix, strerror(err));
 		return false;
 	}
-	if (hostname == g_host_id)
+	if (hostname == g_host_id || hostname.empty())
 		return true;
 	mlog(LV_DEBUG, "exmdb: is_local: %s not served here (%s) (but at %s)",
 		prefix, g_host_id.c_str(), hostname.c_str());
