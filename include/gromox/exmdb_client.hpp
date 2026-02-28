@@ -1,25 +1,21 @@
 #pragma once
-#include <atomic>
-#include <condition_variable>
-#include <ctime>
-#include <list>
-#include <mutex>
 #include <optional>
-#include <pthread.h>
+#include <string>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
-#include <gromox/ext_buffer.hpp>
 #include <gromox/idset.hpp>
-#include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/mapierr.hpp>
 
 struct DB_NOTIFY;
 struct exreq;
 struct exresp;
+
+namespace exmdb_client_impl {
+class locator;
+}
 
 namespace gromox {
 
@@ -46,16 +42,27 @@ class GX_EXPORT exmdb_client_remote {
 	public:
 	exmdb_client_remote(unsigned int conn_max = 1);
 	~exmdb_client_remote();
-	void set_async_notif(void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *));
+	using async_handler_t = void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
+	void set_async_notif(async_handler_t h) { m_event_proc = h; }
+	exmdb_client_impl::locator *locator() { return m_locator.get(); }
 
 #define IDLOUT
 #define EXMIDL(n, p) static EXMIDL_RETTYPE n p;
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
 #undef IDLOUT
+
+	public:
+	std::string m_client_id;
+	std::unique_ptr<exmdb_client_impl::locator> m_locator;
+	void (*m_build_env)(bool pvt) = nullptr;
+	void (*m_free_env)() = nullptr;
+	void (*m_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr;
+	int m_rpc_timeout = -1;
+	gromox::atomic_bool m_notify_stop;
+	bool m_allow_lpc = false;
 };
 
 extern GX_EXPORT std::optional<exmdb_client_remote> exmdb_client;
-extern GX_EXPORT bool g_exmdb_allow_lpc;
 
 }

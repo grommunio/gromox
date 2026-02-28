@@ -168,8 +168,8 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		if (!exmdb_provider_reload(gxcfg, pconfig))
 			return false;
-		g_exmdb_allow_lpc = strcasecmp(get_prog_id(), "istore") == 0;
-		if (!g_exmdb_allow_lpc)
+		bool allow_lpc = strcasecmp(get_prog_id(), "istore") == 0;
+		if (!allow_lpc)
 			return TRUE;
 		if (exmdb_listener_init(*gxcfg, *pconfig) != 0)
 			return FALSE;
@@ -234,12 +234,14 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule, std::move(smtp_url));
 		db_engine_init(table_size, cache_interval, populating_num);
-		if (!g_exmdb_allow_lpc)
+		bool allow_lpc = strcasecmp(get_prog_id(), "istore") == 0;
+		if (!allow_lpc)
 			exmdb_parser_init(0, 0);
 		else
 			exmdb_parser_init(max_threads, max_routers);
 
 		exmdb_client.emplace(connection_num);
+		exmdb_client->m_allow_lpc = allow_lpc;
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "mail_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
@@ -256,7 +258,8 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		 * process image, which means we are authoritative and should
 		 * launch the socket.
 		 */
-		if (g_exmdb_allow_lpc && exmdb_listener_run(get_config_path(), *pconfig) != 0) {
+		if (exmdb_client->m_allow_lpc &&
+		    exmdb_listener_run(get_config_path(), *pconfig) != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start exmdb listener");
 			exmdb_listener_stop();
 			exmdb_parser_stop();
