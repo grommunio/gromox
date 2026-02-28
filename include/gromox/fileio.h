@@ -51,23 +51,35 @@ class GX_EXPORT tmpfile {
 	int open_impl(const char *dir, unsigned int flags, unsigned int mode, bool anon);
 };
 
+/**
+ * close_rd: Regular closing routine, generally meant for read-only fds.
+ * close_wr: Preferably use this when the wrapped fd is in read-write mode.
+ *           (close() could return an error, e.g. disk full)
+ */
 class GX_EXPORT wrapfd {
 	public:
 	wrapfd() = default;
-	wrapfd(int z) : m_fd{z} {}
-	wrapfd(wrapfd &&) noexcept = delete;
-	~wrapfd() { close_rd(); }
-	int get() const { return m_fd; }
-	int release() { int t = m_fd; m_fd = -1; return t; }
-	errno_t close_rd() noexcept;
-	errno_t close_wr() noexcept __attribute__((warn_unused_result)) { return close_rd(); };
-	void operator=(wrapfd &&o) noexcept {
-		if (this == &o)
-			return;
+	wrapfd(int z) noexcept : m_fd{z} {}
+	wrapfd(wrapfd &&o) noexcept
+	{
 		close_rd();
 		m_fd = o.m_fd;
 		o.m_fd = -1;
 	}
+	~wrapfd() { close_rd(); }
+	int get() const noexcept { return m_fd; }
+	int release() noexcept { int t = m_fd; m_fd = -1; return t; }
+	errno_t close_rd() noexcept;
+	errno_t close_wr() noexcept __attribute__((warn_unused_result)) { return close_rd(); };
+	wrapfd &operator=(wrapfd &&o) noexcept {
+		if (this == &o)
+			return *this;
+		close_rd();
+		m_fd = o.m_fd;
+		o.m_fd = -1;
+		return *this;
+	}
+
 	private:
 	int m_fd = -1;
 };
