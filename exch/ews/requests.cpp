@@ -2153,6 +2153,83 @@ void process(mUpdateUserConfigurationRequest &&request, XMLElement *response,
 }
 
 /**
+ * @brief      Process DeleteUserConfigurationRequest
+ *
+ * Delete a user configuration object (FAI message) from a folder.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mDeleteUserConfigurationRequest &&request,
+    XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:DeleteUserConfigurationResponse");
+
+	mDeleteUserConfigurationResponse data;
+	try {
+		auto &exmdb = ctx.plugin().exmdb;
+		const auto &reqName  = request.UserConfigurationName;
+		const auto &folderId = reqName.FolderId;
+		sFolderSpec folder;
+
+		if (auto raw = std::get_if<tFolderId>(&folderId))
+			folder = ctx.resolveFolder(*raw);
+		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
+			folder = ctx.resolveFolder(*dist);
+		else if (reqName.FolderId.valueless_by_exception())
+			throw EWSError::InvalidFolderId(E3252);
+
+		std::string dir = ctx.getDir(folder);
+		if (!(ctx.permissions(dir, folder.folderId) & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3218);
+
+		std::string configClass = "IPM.Configuration." + reqName.Name;
+		const RESTRICTION_PROPERTY resProp =
+			{RELOP_EQ, PR_MESSAGE_CLASS,
+			 {PR_MESSAGE_CLASS, deconst(configClass.c_str())}};
+		const RESTRICTION res = {RES_PROPERTY, {deconst(&resProp)}};
+
+		uint32_t tableId = 0, rowCount = 0;
+		const char *username = ctx.effectiveUser(folder);
+		if (!exmdb.load_content_table(dir.c_str(), CP_UTF8,
+		    folder.folderId, username, TABLE_FLAG_ASSOCIATED,
+		    &res, nullptr, &tableId, &rowCount))
+			throw EWSError::ItemPropertyRequestFailed(E3245);
+		auto unloadTable = HX::make_scope_exit([&] { exmdb.unload_table(dir.c_str(), tableId); });
+		if (rowCount == 0)
+			throw EWSError::ItemNotFound(E3143);
+
+		static constexpr proptag_t midTag = PidTagMid;
+		TARRAY_SET rows;
+		if (!exmdb.query_table(dir.c_str(), username, CP_UTF8,
+		    tableId, {&midTag, 1}, 0, 1, &rows))
+			throw EWSError::ItemNotFound(E3143);
+		if (rows.count == 0 || rows.pparray[0] == nullptr)
+			throw EWSError::ItemNotFound(E3143);
+		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
+		if (mid == nullptr)
+			throw EWSError::ItemNotFound(E3143);
+
+		eid_t eid = *mid;
+		EID_ARRAY eids{1, &eid};
+		BOOL partial;
+		if (!exmdb.delete_messages(dir.c_str(), CP_ACP,
+		    username, folder.folderId, &eids, TRUE,
+		    &partial) || partial)
+			throw EWSError::CannotDeleteObject(E3134);
+
+		mDeleteUserConfigurationResponseMessage msg;
+		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
+	} catch (const EWSError &err) {
+		data.ResponseMessages.clear();
+		data.ResponseMessages.emplace_back(err);
+	}
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetUserOofSettingsRequest
  *
  * Provides the functionality of GetUserOofSettingsRequest

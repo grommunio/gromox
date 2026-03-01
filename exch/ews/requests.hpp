@@ -24,6 +24,7 @@ EWSFUNC(mCreateUserConfigurationRequest);
 EWSFUNC(mDeleteAttachmentRequest);
 EWSFUNC(mDeleteFolderRequest);
 EWSFUNC(mDeleteItemRequest);
+EWSFUNC(mDeleteUserConfigurationRequest);
 EWSFUNC(mEmptyFolderRequest);
 EWSFUNC(mFindFolderRequest);
 EWSFUNC(mFindItemRequest);

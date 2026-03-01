@@ -242,6 +242,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"DeleteAttachment", process<Structures::mDeleteAttachmentRequest>},
 	{"DeleteFolder", process<Structures::mDeleteFolderRequest>},
 	{"DeleteItem", process<Structures::mDeleteItemRequest>},
+	{"DeleteUserConfiguration", process<Structures::mDeleteUserConfigurationRequest>},
 	{"EmptyFolder", process<Structures::mEmptyFolderRequest>},
 	{"ExpandDL", process<Structures::mExpandDLRequest>},
 	{"FindFolder", process<Structures::mFindFolderRequest>},
