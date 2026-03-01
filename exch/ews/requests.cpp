@@ -852,8 +852,20 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 					respContent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 					respContent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
-					respContent->proplist.set(PR_SENDER_SMTP_ADDRESS, deconst(ctx.auth_info().username));
-					respContent->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(ctx.auth_info().username));
+					auto respUser = deconst(ctx.auth_info().username);
+					std::string respName;
+					mysql_adaptor_get_user_displayname(ctx.auth_info().username, respName);
+					auto rname = deconst(respName.c_str());
+					respContent->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
+					respContent->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
+					respContent->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
+					respContent->proplist.set(PR_SENDER_NAME, rname);
+					/*
+					 * Keep PR_SENT_REPRESENTING_* as the
+					 * organizer from the original request;
+					 * oxcical uses it for the ORGANIZER
+					 * line in the iCalendar REPLY.
+					 */
 					if (respContent->children.prcpts)
 						tarray_set_free(respContent->children.prcpts);
 					respContent->children.prcpts = tarray_set_init();
