@@ -108,6 +108,28 @@ struct lzx_bitstream {
 
 } /* anon-ns */
 
+/* LZX Delta constants for 32 KB window (MS-PATCH v12 §2.2) */
+static constexpr unsigned LZX_NUM_POS_SLOTS = 30;
+static constexpr unsigned LZX_MAIN_SYMBOLS = 256 + 8 * LZX_NUM_POS_SLOTS; /* 496 */
+static constexpr unsigned LZX_LEN_SYMBOLS = 249;
+static constexpr unsigned LZX_PRETREE_SYMBOLS = 20;
+static constexpr unsigned LZX_MIN_MATCH = 2;
+static constexpr unsigned LZX_MAX_MATCH = 257;
+
+/* Extra footer bits per position slot */
+static constexpr uint8_t lzx_extra_bits[LZX_NUM_POS_SLOTS] = {
+	0,0,0,0, 1,1,2,2, 3,3,4,4, 5,5,6,6,
+	7,7,8,8, 9,9,10,10, 11,11,12,12,13,13,
+};
+
+/* Base offset per position slot */
+static constexpr uint32_t lzx_position_base[LZX_NUM_POS_SLOTS] = {
+	0,1,2,3, 4,6,8,12, 16,24,32,48,
+	64,96,128,192, 256,384,512,768,
+	1024,1536,2048,3072, 4096,6144,8192,12288,
+	16384,24576,
+};
+
 void oab_writer::put_u32le(uint32_t v)
 {
 	buf.push_back(v & 0xFF);
@@ -366,6 +388,91 @@ static void huff_make_codes(const uint8_t *lengths, unsigned int nsyms,
 		} else {
 			codes[i] = 0;
 		}
+	}
+}
+
+/**
+ * Encode one tree-delta segment via a pretree.
+ * LZX encodes path-length differences as (prev - cur + 17) % 17,
+ * with RLE codes 17 (4-19 zeros), 18 (20-51 zeros),
+ * 19 (4-5 same non-zero).
+ */
+static void lzx_encode_pretree(lzx_bitstream &bs, const uint8_t *prev_lengths,
+    const uint8_t *cur_lengths, unsigned int count)
+{
+	std::vector<uint8_t> deltas(count);
+	for (unsigned int i = 0; i < count; ++i)
+		deltas[i] = (prev_lengths[i] - cur_lengths[i] + 17) % 17;
+
+	struct pretree_code {
+		uint8_t code = 0, extra = 0, extra_bits = 0;
+	};
+	std::vector<pretree_code> codes;
+	codes.reserve(count);
+
+	for (unsigned int i = 0; i < count; ) {
+		if (deltas[i] == 0) {
+			unsigned int run = 1;
+			while (i + run < count && deltas[i+run] == 0)
+				++run;
+			while (run >= 20) {
+				unsigned int emit = std::min(run, 51U);
+				codes.emplace_back(18, emit - 20, 5);
+				run -= emit;
+				i += emit;
+			}
+			if (run >= 4) {
+				codes.emplace_back(17, run - 4, 4);
+				i += run;
+			} else {
+				for (unsigned int j = 0; j < run; ++j)
+					codes.emplace_back(0, 0, 0);
+				i += run;
+			}
+			continue;
+		}
+		if (deltas[i] != 0) {
+			unsigned int run = 1;
+			while (i + run < count && deltas[i+run] == deltas[i])
+				++run;
+			if (run < 4) {
+				codes.emplace_back(deltas[i++], 0, 0);
+			} else {
+				while (run >= 4) {
+					auto emit = std::min(run, 5U);
+					codes.emplace_back(19, emit - 4, 1);
+					codes.emplace_back(deltas[i], 0, 0);
+					run -= emit;
+					i += emit;
+				}
+				for (unsigned int j = 0; j < run; ++j)
+					codes.emplace_back(deltas[i++], 0, 0);
+			}
+		}
+	}
+
+	/* Build pretree Huffman from the code stream */
+	uint32_t pt_freq[LZX_PRETREE_SYMBOLS]{};
+	for (auto &c : codes)
+		++pt_freq[c.code];
+
+	uint8_t pt_lengths[LZX_PRETREE_SYMBOLS]{};
+	uint16_t pt_codes[LZX_PRETREE_SYMBOLS]{};
+	huff_build(pt_freq, LZX_PRETREE_SYMBOLS, pt_lengths, 15);
+	huff_make_codes(pt_lengths, LZX_PRETREE_SYMBOLS, pt_codes, 15);
+
+	/* 20 pretree path lengths (4 bits each) */
+	for (unsigned int i = 0; i < LZX_PRETREE_SYMBOLS; ++i)
+		bs.put_bits(4, pt_lengths[i]);
+
+	for (auto &c : codes) {
+		bs.put_bits(pt_lengths[c.code], pt_codes[c.code]);
+		if (c.code == 17)
+			bs.put_bits(4, c.extra);
+		else if (c.code == 18)
+			bs.put_bits(5, c.extra);
+		else if (c.code == 19)
+			bs.put_bits(1, c.extra);
 	}
 }
 
