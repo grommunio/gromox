@@ -5,6 +5,7 @@
  * MS-OXOAB Offline Address Book implementation.
  * Generates OAB Full Details files and XML manifest for Outlook clients.
  */
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstring>
@@ -223,6 +224,149 @@ static uint32_t crc32_oab(const void *data, size_t len)
 			crc = (crc >> 1) ^ (0xEDB88320 & -(crc & 1));
 	}
 	return crc; /* running CRC, no final XOR */
+}
+
+/**
+ * Build canonical Huffman code lengths from symbol frequencies.
+ * Two-queue approach with length limiting via Kraft inequality.
+ */
+static void huff_build(const uint32_t *freq, unsigned int nsyms,
+    uint8_t *lengths, unsigned max_len)
+{
+	memset(lengths, 0, nsyms);
+
+	struct sym_freq {
+		uint32_t f = 0;
+		unsigned int sym = 0;
+		auto operator<=>(const sym_freq &) const = default;
+	};
+	std::vector<sym_freq> active;
+	active.reserve(nsyms);
+	for (unsigned int i = 0; i < nsyms; ++i)
+		if (freq[i] > 0)
+			active.emplace_back(freq[i], i);
+
+	if (active.empty())
+		return;
+	if (active.size() == 1) {
+		lengths[active[0].sym] = 1;
+		return;
+	}
+
+	std::sort(active.begin(), active.end());
+	size_t nact = active.size();
+	std::vector<uint64_t> node_freq(2 * nact);
+	std::vector<unsigned int> depth(2 * nact, 0), left_child(2 * nact), right_child(2 * nact);
+
+	for (size_t i = 0; i < nact; ++i)
+		node_freq[i] = active[i].f;
+
+	size_t leaf = 0, intern = nact, next = nact;
+
+	auto pick_min = [&]() -> size_t {
+		size_t idx;
+		if (leaf < nact && (intern >= next ||
+		     node_freq[leaf] <= node_freq[intern]))
+			idx = leaf++;
+		else
+			idx = intern++;
+		return idx;
+	};
+
+	for (size_t i = 0; i < nact - 1; ++i) {
+		size_t a = pick_min();
+		size_t b = pick_min();
+		node_freq[next] = node_freq[a] + node_freq[b];
+		depth[next] = std::max(depth[a], depth[b]) + 1;
+		left_child[next] = a;
+		right_child[next] = b;
+		++next;
+	}
+
+	/* Walk tree to assign depths to leaves */
+	std::vector<unsigned int> stack, node_depth(next, 0);
+	size_t root = next - 1;
+	node_depth[root] = 0;
+	stack.push_back(root);
+	while (!stack.empty()) {
+		auto nd = stack.back();
+		stack.pop_back();
+		if (nd < nact) {
+			lengths[active[nd].sym] = std::min(node_depth[nd], max_len);
+			continue;
+		}
+		auto lc = left_child[nd];
+		auto rc = right_child[nd];
+		node_depth[lc] = node_depth[nd] + 1;
+		node_depth[rc] = node_depth[nd] + 1;
+		stack.push_back(lc);
+		stack.push_back(rc);
+	}
+
+	/*
+	 * Length limiting via Kraft inequality: if any code was
+	 * clamped to max_len, the Kraft sum is over-full. Fix by
+	 * lengthening the shortest codes to free budget.
+	 */
+	bool over = std::any_of(lengths, lengths + nsyms,
+	            [=](uint8_t L) { return L > max_len; });
+	if (!over)
+		return;
+
+	for (unsigned int i = 0; i < nsyms; ++i)
+		if (lengths[i] > max_len)
+			lengths[i] = max_len;
+
+	for (;;) {
+		int64_t kraft = 0;
+		for (unsigned int i = 0; i < nsyms; ++i)
+			if (lengths[i] > 0)
+				kraft += 1LL << (max_len - lengths[i]);
+
+		int64_t target = 1LL << max_len;
+		if (kraft <= target)
+			break;
+
+		unsigned int shortest = max_len;
+		for (unsigned int i = 0; i < nsyms; ++i)
+			if (lengths[i] > 0 && lengths[i] < shortest)
+				shortest = lengths[i];
+
+		for (unsigned int i = 0; i < nsyms; ++i)
+			if (lengths[i] == shortest && kraft > target) {
+				kraft -= 1LL << (max_len - lengths[i]);
+				++lengths[i];
+				kraft += 1LL << (max_len - lengths[i]);
+			}
+	}
+}
+
+/**
+ * Generate canonical Huffman codes from code lengths.
+ * Standard bl_count / next_code algorithm per RFC 1951.
+ */
+static void huff_make_codes(const uint8_t *lengths, unsigned int nsyms,
+    uint16_t *codes, unsigned int max_len)
+{
+	unsigned int bl_count[17]{};
+	for (unsigned int i = 0; i < nsyms; ++i)
+		if (lengths[i] > 0)
+			++bl_count[lengths[i]];
+
+	uint32_t next_code[17]{}, code = 0;
+	for (unsigned int bits = 1; bits <= max_len; ++bits) {
+		code = (code + bl_count[bits - 1]) << 1;
+		next_code[bits] = code;
+	}
+
+	for (unsigned int i = 0; i < nsyms; ++i) {
+		if (lengths[i] > 0) {
+			codes[i] = next_code[lengths[i]];
+			++next_code[lengths[i]];
+		} else {
+			codes[i] = 0;
+		}
+	}
 }
 
 /**
