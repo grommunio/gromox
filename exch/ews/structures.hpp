@@ -2243,7 +2243,9 @@ struct tItemResponseShape {
 	//std::optional<int32_t> MaximumBodySize;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr std::array<proptag_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
+	static constexpr std::array<proptag_t, 3> tagsStructural = {
+		PR_MESSAGE_CLASS, PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME,
+	};
 	static constexpr std::array<proptag_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
 	static constexpr std::array<proptag_t, 56> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
 		PR_ASSOCIATED, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,

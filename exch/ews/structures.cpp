@@ -3999,9 +3999,11 @@ void tItem::update(const sShape& shape)
 	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
 	fromProp(shape.get(PR_MESSAGE_CLASS), ItemClass);
 	fromProp(shape.get(PR_MESSAGE_DELIVERY_TIME), DateTimeReceived);
-
-	v32 = shape.get<const uint32_t>(PR_MESSAGE_FLAGS);
-	if (v32 != nullptr) {
+	if (!DateTimeReceived)
+		fromProp(shape.get(PR_CREATION_TIME), DateTimeReceived);
+	if (!DateTimeReceived)
+		fromProp(shape.get(PR_LAST_MODIFICATION_TIME), DateTimeReceived);
+	if ((v32 = shape.get<const uint32_t>(PR_MESSAGE_FLAGS))) {
 		IsSubmitted = *v32 & MSGFLAG_SUBMITTED;
 		IsDraft = *v32 & MSGFLAG_UNSENT;
 		IsFromMe = *v32 & MSGFLAG_FROMME;
