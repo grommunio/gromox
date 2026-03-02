@@ -4183,6 +4183,11 @@ void tItemResponseShape::tags(sShape& shape) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static inline bool tmsg_noaddr(const tSingleRecipient &r)
+{
+	return !r.Mailbox.EmailAddress || r.Mailbox.EmailAddress->empty();
+}
+
 tMessage::tMessage(const sShape& shape) : tItem(shape)
 {
 	tMessage::update(shape);
@@ -4234,6 +4239,14 @@ void tMessage::update(const sShape& shape)
 		fromProp(prop, From->Mailbox.EmailAddress);
 		From->Mailbox.RoutingType = "SMTP";
 	}
+	if (From && tmsg_noaddr(*From))
+		From.reset();
+	if (Sender && tmsg_noaddr(*Sender))
+		Sender.reset();
+	if (ReceivedBy && tmsg_noaddr(*ReceivedBy))
+		ReceivedBy.reset();
+	if (ReceivedRepresenting && tmsg_noaddr(*ReceivedRepresenting))
+		ReceivedRepresenting.reset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
