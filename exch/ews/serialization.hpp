@@ -21,6 +21,8 @@
 #include "exceptions.hpp"
 #include "structures.hpp"
 
+extern void utf8_sanitize_codepoints(std::string &);
+
 namespace gromox::EWS::Serialization {
 
 using SetterFunc = const std::function<void(const char*)>&;
@@ -135,6 +137,7 @@ template<> struct ExplicitConvert<std::string> {
 			return;
 		auto filtered = value;
 		utf8_filter(filtered.data());
+		utf8_sanitize_codepoints(filtered);
 		filtered.resize(strlen(filtered.c_str()));
 		if (!filtered.empty())
 			setter(filtered.c_str());

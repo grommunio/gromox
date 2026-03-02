@@ -33,10 +33,48 @@ using namespace std::string_literals;
 
 #define EXT_TRY(expr) EWSContext::ext_error(expr)
 
+/**
+ * @brief      Sanitize decoded UTF-8 codepoints
+ *
+ * Complements utf8_filter (which handles structural byte validation) by
+ * rejecting codepoints that are structurally valid UTF-8 but semantically
+ * illegal in XML: overlong encodings, surrogates, and non-characters.
+ */
+void utf8_sanitize_codepoints(std::string &s)
+{
+	auto p = reinterpret_cast<unsigned char *>(s.data());
+	auto end = p + s.size();
+	while (p < end) {
+		if (*p < 0x80) {
+			++p;
+			continue;
+		}
+		unsigned n = (*p & 0xE0) == 0xC0 ? 2 :
+		             (*p & 0xF0) == 0xE0 ? 3 :
+		             (*p & 0xF8) == 0xF0 ? 4 : 1;
+		if (n == 1 || p + n > end) {
+			*p++ = '?';
+			continue;
+		}
+		bool bad = (n == 2 && *p <= 0xC1) ||
+		           (n == 3 && *p == 0xE0 && p[1] < 0xA0) ||
+		           (n == 3 && *p == 0xED && p[1] >= 0xA0) ||
+		           (n == 3 && *p == 0xEF && p[1] == 0xBF &&
+		            p[2] >= 0xBE) ||
+		           (n == 4 && *p == 0xF0 && p[1] < 0x90) ||
+		           (n == 4 && (*p > 0xF4 ||
+		            (*p == 0xF4 && p[1] >= 0x90)));
+		if (bad)
+			memset(p, '?', n);
+		p += n;
+	}
+}
+
 static void xml_set_filtered_text(tinyxml2::XMLElement *xml, const char *text)
 {
 	std::string filtered(text);
 	utf8_filter(filtered.data());
+	utf8_sanitize_codepoints(filtered);
 	filtered.resize(strlen(filtered.c_str()));
 	xml->SetText(filtered.c_str());
 }
