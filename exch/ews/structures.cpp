@@ -4026,15 +4026,14 @@ void tItem::update(const sShape& shape)
 
 	v32 = shape.get<const uint32_t>(PR_FLAG_STATUS);
 	if (v32 != nullptr) {
-		defaulted(Flag).FlagStatus = *v32 == followupComplete ? Enum::Complete : Enum::Flagged;
-		v64 = shape.get<const uint64_t>(NtTaskDateCompleted);
-		if (v64 != nullptr)
+		defaulted(Flag).FlagStatus = *v32 == followupComplete ? Enum::Complete :
+		                             *v32 == followupFlagged ? Enum::Flagged :
+		                             Enum::NotFlagged;
+		if ((v64 = shape.get<const uint64_t>(NtTaskDateCompleted)))
 			defaulted(Flag).CompleteDate.emplace(rop_util_nttime_to_unix2(*v64));
-		v64 = shape.get<const uint64_t>(NtTaskDueDate);
-		if (v64 != nullptr)
+		if ((v64 = shape.get<const uint64_t>(NtTaskDueDate)))
 			defaulted(Flag).DueDate.emplace(rop_util_nttime_to_unix2(*v64));
-		v64 = shape.get<const uint64_t>(NtTaskStartDate);
-		if (v64 != nullptr)
+		if ((v64 = shape.get<const uint64_t>(NtTaskStartDate)))
 			defaulted(Flag).StartDate.emplace(rop_util_nttime_to_unix2(*v64));
 	} else if(shape.requested(PR_FLAG_STATUS)) {
 		defaulted(Flag).FlagStatus = Enum::NotFlagged;
