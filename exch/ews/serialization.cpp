@@ -2490,6 +2490,16 @@ void mFindPeopleResponse::serialize(XMLElement *xml) const
 	XMLDUMPM(ResponseMessages);
 }
 
+mGetPersonaRequest::mGetPersonaRequest(const XMLElement *xml) :
+	XMLINIT(EmailAddress)
+{}
+
+void mGetPersonaResponseMessage::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPT(Persona);
+}
+
 void tFindResponsePagingAttributes::serialize(XMLElement *xml) const
 {
 	XMLDUMPA(IndexedPagingOffset);
