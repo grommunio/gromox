@@ -60,7 +60,7 @@ namespace {
 
 /* Cached OAB data for a single address book base */
 struct oab_cache_entry {
-	std::string manifest_xml, lzx_data;
+	std::string manifest_xml, lzx_data, tmpl_lzx_data;
 	gromox::time_point gen_time;
 	uint32_t sequence = 1;
 };
@@ -321,6 +321,7 @@ class OabPlugin {
 	http_status send_error(int ctx_id, http_status);
 	http_status serve_manifest(int ctx_id, int32_t base_id);
 	http_status serve_lzx(int ctx_id, int32_t base_id, uint32_t seq);
+	http_status serve_tmpl(int ctx_id, int32_t base_id, uint32_t seq);
 	const oab_cache_entry *get_or_generate(int32_t base_id);
 	std::string generate_uc(int32_t base_id, uint32_t seq, const std::string &guid, const std::string &oab_dn);
 	bool generate_oab(int32_t base_id, oab_cache_entry &entry);
@@ -363,6 +364,37 @@ BOOL OabPlugin::preproc(int ctx_id)
 	return strncasecmp(req->f_request_uri.c_str(), "/OAB/", 5) == 0 ? TRUE : false;
 }
 
+/**
+ * Look for "<seq>.lzx" and extract the sequence number.
+ */
+static unsigned int parse_seq_path(const char *s)
+{
+	char *end = nullptr;
+	auto seq = strtoul(s, &end, 10);
+	if (end == nullptr || end == s || strcmp(end, ".lzx") != 0)
+		return 0;
+	return seq;
+}
+
+/**
+ * Look for "lng<lcid>-<seq>.lzx" and extract the parts.
+ */
+static unsigned int parse_template_path(const char *s)
+{
+	if (strncmp(s, "lng", 3) != 0)
+		return 0;
+	char *end = nullptr;
+	s += 3;
+	strtoul(s, &end, 10); /* LCID */
+	if (end == nullptr || end == s || *end != '-')
+		return 0;
+	s = end + 1;
+	auto seq = strtoul(s, &end, 10);
+	if (end == s || strcmp(end, ".lzx") != 0)
+		return 0;
+	return seq;
+}
+
 http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
@@ -382,19 +414,22 @@ http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	}
 	int32_t base_id = org_id == 0 ? -domain_id : org_id;
 
-	/* Parse URI */
+	/*
+	 * Parse URI: /OAB/oab.xml
+	 *            /OAB/<seq>.lzx
+	 *            /OAB/lng<lcid>-<seq>.lzx
+	 */
 	auto req = get_request(ctx_id);
 	const auto &uri = req->f_request_uri;
 
-	/* /OAB/oab.xml or /OAB/{seq}.lzx */
 	if (strcasecmp(&uri[5], "oab.xml") == 0)
 		return serve_manifest(ctx_id, base_id);
-
-	/* Check for {N}.lzx */
-	char *end = nullptr;
-	auto seq = strtoul(&uri[5], &end, 10);
-	if (end != nullptr && end != &uri[5] && strcmp(end, ".lzx") == 0)
+	auto seq = parse_seq_path(&uri[5]);
+	if (seq != 0)
 		return serve_lzx(ctx_id, base_id, seq);
+	seq = parse_template_path(&uri[5]);
+	if (seq != 0)
+		return serve_tmpl(ctx_id, base_id, seq);
 
 	return send_error(ctx_id, http_status::not_found);
 } catch (const std::bad_alloc &) {
@@ -474,6 +509,14 @@ http_status OabPlugin::serve_lzx(int ctx_id, int32_t base_id, uint32_t seq)
 	if (entry == nullptr || entry->sequence != seq)
 		return send_error(ctx_id, http_status::not_found);
 	return send_response(ctx_id, "application/octet-stream", entry->lzx_data);
+}
+
+http_status OabPlugin::serve_tmpl(int ctx_id, int32_t base_id, uint32_t seq)
+{
+	auto entry = get_or_generate(base_id);
+	if (entry == nullptr || entry->sequence != seq)
+		return send_error(ctx_id, http_status::not_found);
+	return send_response(ctx_id, "application/octet-stream", entry->tmpl_lzx_data);
 }
 
 /**
@@ -638,9 +681,17 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	auto raw = generate_uc(base_id, entry.sequence, guid_str, oab_dn);
 	if (raw.empty())
 		return false;
-
 	entry.lzx_data = oab_wrap_lzx(raw);
-	auto sha = sha1_hex(entry.lzx_data);
+
+	/* Generate and compress display template (MS-OXOAB 2.2) */
+	auto tmpl_raw = generate_template_raw();
+	entry.tmpl_lzx_data = oab_wrap_lzx(tmpl_raw);
+
+	auto data_sha = sha1_hex(entry.lzx_data);
+	auto tmpl_sha = sha1_hex(entry.tmpl_lzx_data);
+	auto data_file = fmt::format("{}.lzx", entry.sequence);
+	auto tmpl_file = fmt::format("lng0409-{}.lzx", entry.sequence);
+
 	/* Generate manifest XML (MS-OXWOAB) */
 	tinyxml2::XMLDocument doc;
 	doc.InsertEndChild(doc.NewDeclaration());
@@ -658,9 +709,20 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	full->SetAttribute("ver", OAB_V4_VERSION);
 	full->SetAttribute("size", entry.lzx_data.size());
 	full->SetAttribute("uncompressedsize", raw.size());
-	full->SetAttribute("SHA", sha.c_str());
+	full->SetAttribute("SHA", data_sha.c_str());
 	full->SetText((std::to_string(entry.sequence) + ".lzx").c_str());
 	oal->InsertEndChild(full);
+
+	auto tmpl = doc.NewElement("Template");
+	tmpl->SetAttribute("seq", entry.sequence);
+	tmpl->SetAttribute("ver", OAB_TMPL_VERSION);
+	tmpl->SetAttribute("size", entry.tmpl_lzx_data.size());
+	tmpl->SetAttribute("uncompressedsize", tmpl_raw.size());
+	tmpl->SetAttribute("SHA", tmpl_sha.c_str());
+	tmpl->SetAttribute("langid", "0409");
+	tmpl->SetAttribute("type", "windows");
+	tmpl->SetText(tmpl_file.c_str());
+	oal->InsertEndChild(tmpl);
 
 	tinyxml2::XMLPrinter printer(nullptr, true);
 	doc.Print(&printer);
