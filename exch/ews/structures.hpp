@@ -4039,6 +4039,28 @@ struct mFindPeopleResponse {
 };
 
 /**
+ * Messages.xsd (simplified)
+ */
+struct mGetPersonaRequest {
+	explicit mGetPersonaRequest(const tinyxml2::XMLElement *);
+
+	std::optional<tEmailAddressType> EmailAddress;
+};
+
+/**
+ * Messages.xsd (simplified)
+ */
+struct mGetPersonaResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "GetPersonaResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tPersona> Persona;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd:1676
  */
 struct mResolveNamesRequest {
