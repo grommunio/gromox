@@ -4209,6 +4209,8 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 {
 	auto &to = item.ToRecipients, &cc = item.CcRecipients, &bcc = item.BccRecipients;
 	toContent(dir, static_cast<tItem&>(item), shape, content);
+	if (!item.ItemClass)
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Note")});
 	size_t recipients = (to ? to->size() : 0) +
 	                    (cc ? cc->size() : 0) +
 	                    (bcc ? bcc->size() : 0);

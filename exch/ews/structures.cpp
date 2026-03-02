@@ -4168,14 +4168,18 @@ void tItemResponseShape::tags(sShape& shape) const
 	}
 	size_t baseShape = BaseShape.index();
 	if (baseShape >= 1) {
+		shape.add(PR_MESSAGE_CLASS, sShape::FL_FIELD);
 		for (auto tag : tagsDefault)
 			shape.add(tag, sShape::FL_FIELD);
 		for (const auto& named : namedTagsDefault)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
-	if (baseShape >= 2)
-		for (const auto &named : namedTagsAllProperties)
+	if (baseShape >= 2) {
+		for (auto tag : tagsAllProperties)
+			shape.add(tag, sShape::FL_FIELD);
+		for (const auto& named : namedTagsAllProperties)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
