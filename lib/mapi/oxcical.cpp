@@ -3804,14 +3804,14 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefstart]));
 			if (bin != nullptr)
 				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefend]));
-			if (bin != nullptr) {
+			if (bin != nullptr && bin->cb > 0) {
 				EXT_PULL ext_pull;
 				TZDEF tz_definition;
 				TZSTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
-					return "E-2209: PidLidAppointmentTimeZoneDefinitionEndDisplay contents not recognized";
+					return "E-2209: PidLidAppointmentTimeZoneDefinition{Start/End}Display contents not recognized";
 				tzid = tz_definition.keyname;
 				oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
 				ptz_component = oxcical_export_timezone(
