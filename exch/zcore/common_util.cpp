@@ -1780,7 +1780,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	common_util_set_dir(dir);
-	auto log_id = dir + ":m"s + std::to_string(message_id);
+	auto log_id = dir + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	oxcical_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.org_name = g_org_name;
