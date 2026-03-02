@@ -237,8 +237,6 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 		         "ON m.message_id=mp.message_id AND m.is_deleted=1 AND m.parent_fid=%llu AND "
 		         "mp.proptag=%u AND mp.propval<=%llu GROUP BY m.is_associated",
 		         LLU{folder_id}, PR_LAST_MODIFICATION_TIME, LLU{cutoff});
-		if (gx_sql_exec(db.psqlite, qstr) != SQLITE_OK)
-			return false;
 		auto stm = gx_sql_prep(db.psqlite, qstr);
 		if (stm == nullptr)
 			return false;
