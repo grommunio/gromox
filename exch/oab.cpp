@@ -620,6 +620,88 @@ static std::vector<lzx_token> lzx_find_matches(const uint8_t *data, size_t len)
 }
 
 /**
+ * Emit compressed tokens using main and length Huffman codes
+ */
+static void lzx_encode_tokens(lzx_bitstream &bs,
+    const std::vector<lzx_token> &tokens, const uint8_t *main_lengths,
+    const uint16_t *main_codes, const uint8_t *len_lengths,
+    const uint16_t *len_codes)
+{
+	for (auto &t : tokens) {
+		bs.put_bits(main_lengths[t.main_sym], main_codes[t.main_sym]);
+		if (t.main_sym < 256)
+			continue;
+		if (t.has_len_sym)
+			bs.put_bits(len_lengths[t.len_sym], len_codes[t.len_sym]);
+		if (t.footer_nbits > 0)
+			bs.put_bits(t.footer_nbits, t.footer_val);
+	}
+}
+
+/**
+ * Encode a data block as an LZX Delta verbatim block (type 1) per MS-PATCH v12
+ * §2.2. Produces Huffman-compressed output compatible with all LZX decoders.
+ */
+static std::string lzxd_encode_verbatim(const void *vdata, size_t len)
+{
+	auto data = static_cast<const uint8_t *>(vdata);
+	auto tokens = lzx_find_matches(data, len);
+
+	/* Collect symbol frequencies */
+	uint32_t main_freq[LZX_MAIN_SYMBOLS]{};
+	uint32_t len_freq[LZX_LEN_SYMBOLS]{};
+	for (auto &t : tokens) {
+		++main_freq[t.main_sym];
+		if (t.has_len_sym)
+			++len_freq[t.len_sym];
+	}
+
+	/* Build Huffman codes */
+	uint8_t main_lengths[LZX_MAIN_SYMBOLS]{};
+	uint16_t main_codes[LZX_MAIN_SYMBOLS]{};
+	huff_build(main_freq, LZX_MAIN_SYMBOLS, main_lengths, 16);
+	huff_make_codes(main_lengths, LZX_MAIN_SYMBOLS, main_codes, 16);
+
+	uint8_t len_lengths[LZX_LEN_SYMBOLS]{};
+	uint16_t len_codes[LZX_LEN_SYMBOLS]{};
+	huff_build(len_freq, LZX_LEN_SYMBOLS, len_lengths, 16);
+	huff_make_codes(len_lengths, LZX_LEN_SYMBOLS, len_codes, 16);
+
+	lzx_bitstream bs;
+	bs.buf.reserve(len);
+
+	/* Reserve 2 bytes for chunk_size (patched later) */
+	bs.buf.push_back(0);
+	bs.buf.push_back(0);
+
+	/* E8=0, block type=1 (verbatim), block size */
+	bs.put_bits(1, 0);
+	bs.put_bits(3, 1);
+	bs.put_bits(24, len);
+
+	/* Encode trees via pretree (two segments for main) */
+	uint8_t prev_zeros[LZX_MAIN_SYMBOLS]{};
+	lzx_encode_pretree(bs, prev_zeros, main_lengths, 256);
+	lzx_encode_pretree(bs, prev_zeros + 256, main_lengths + 256,
+	                   LZX_MAIN_SYMBOLS - 256);
+
+	uint8_t prev_len_zeros[LZX_LEN_SYMBOLS]{};
+	lzx_encode_pretree(bs, prev_len_zeros, len_lengths, LZX_LEN_SYMBOLS);
+
+	/* Emit compressed tokens */
+	lzx_encode_tokens(bs, tokens, main_lengths, main_codes,
+	                  len_lengths, len_codes);
+	bs.flush();
+
+	/* Patch chunk_size (16-bit LE, bytes after this field) */
+	uint16_t cs = bs.buf.size() - 2;
+	bs.buf[0] = cs & 0xFF;
+	bs.buf[1] = (cs >> 8) & 0xFF;
+
+	return std::move(bs.buf);
+}
+
+/**
  * Encode a raw data block as an LZXD type 3 block (uncompressed), as per
  * MS-PATCH §2.2.3. The LZXD bitstream uses 16-bit LE words with bits consumed
  * MSB-first.
@@ -697,6 +779,7 @@ static std::string lzxd_encode_uncompressed(const void *vdata, size_t len)
  * Wrap uncompressed OAB binary data (MS-OXOAB v16 §2.11) in various ways.
  *
  * @mode: 0: wrap OAB with LZX_HDR + LZX_BLK
+ *        1: wrap OAB with LZX_HDR + LZX_BLK + LZXD type 1 frames
  *        3: wrap OAB with LZX_HDR + LZX_BLK + LZXD type 3 frames
  *
  * OL2021 violates the MS-OXOAB specification, ignores the LZX_BLK::ulFlags
@@ -745,6 +828,17 @@ static std::string oab_wrap_lzx(const std::string &raw, unsigned int mode)
 			put_u32(chunk); // ulUncompSize
 			put_u32(blk_crc); // ulCRC: CRC32 of decompressed block
 			out.append(raw, pos, chunk);
+		} else if (mode == 1) {
+			/*
+			 * LZX_BLK with LZXD payload (MS-OXOAB v16 §2.11.2).
+			 * LZXD frame with compressed payload.
+			 */
+			auto blk = lzxd_encode_verbatim(&raw[pos], chunk);
+			put_u32(1); /* ulFlags: LZX compressed */
+			put_u32(blk.size()); /* ulCompSize */
+			put_u32(chunk); /* ulUncompSize */
+			put_u32(blk_crc); /* ulCRC of decompressed data */
+			out += std::move(blk);
 		} else if (mode == 3) {
 			/*
 			 * LZX_BLK with LZXD payload (MS-OXOAB v16 §2.11.2).
