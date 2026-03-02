@@ -2062,6 +2062,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"EndTimeZone", {[](auto &&...args) { convTzAttr(NtCalendarTimeZone, args...); }}},
 	{"EndTimeZoneId", {[](auto&&... args){convText(NtCalendarTimeZone, args...);}}},
 	{"FileAs", {[](auto&&... args){convText(NtFileAs, args...);}}},
+	{"Flag", {[](auto &&...args) { convFlag(args...); }}},
 	{"Generation", {[](auto&&... args){convText(PR_GENERATION, args...);}}},
 	{"GivenName", {[](auto&&... args){convText(PR_GIVEN_NAME, args...);}}},
 	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
@@ -2337,6 +2338,17 @@ void tChangeDescription::convDouble(const PROPERTY_NAME &name, const XMLElement 
 	auto tag = shape.tag(name);
 	if (tag)
 		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<double>(strtod(znul(v->GetText()), nullptr))});
+}
+
+void tChangeDescription::convFlag(const XMLElement *v, sShape &shape)
+{
+	auto fs = v->FirstChildElement("FlagStatus");
+	if (!fs || !fs->GetText())
+		return;
+	auto idx = Enum::FlagStatusType(fs->GetText()).index();
+	uint32_t val = idx == 2 ? followupComplete :
+	               idx == 1 ? followupFlagged : 0;
+	shape.write(mkProp(PR_FLAG_STATUS, val));
 }
 
 void tChangeDescription::convSensitivity(const XMLElement *v, sShape &shape)

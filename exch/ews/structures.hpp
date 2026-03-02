@@ -1357,6 +1357,7 @@ struct tChangeDescription {
 	static void convEnumIndex(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convStrArray(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convStrArray(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convFlag(const tinyxml2::XMLElement *, sShape &);
 	static void convSensitivity(const tinyxml2::XMLElement *, sShape &);
 	static void convUID(const tinyxml2::XMLElement *, sShape &);
 	static void convBody(const tinyxml2::XMLElement *, sShape &);
