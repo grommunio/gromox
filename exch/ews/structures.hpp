@@ -235,6 +235,7 @@ struct sFolderSpec {
 
 	sFolderSpec& normalize();
 	bool isDistinguished() const;
+	static const char *distinguishedName(uint64_t folder_id);
 
 	std::optional<std::string> target;
 	uint64_t folderId=0;
@@ -961,7 +962,7 @@ struct tBaseFolderType : public NS_EWS_Types {
 	std::vector<tExtendedProperty> ExtendedProperty;
 	//<xs:element name="ManagedFolderInformation" type="t:ManagedFolderInformationType" minOccurs="0"/>
 	std::optional<tEffectiveRights> EffectiveRights;
-	//<xs:element name="DistinguishedFolderId" type="t:DistinguishedFolderIdNameType" minOccurs="0"/>
+	std::optional<Enum::DistinguishedFolderIdNameType> DistinguishedFolderId;
 	//<xs:element name="PolicyTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ReplicaList" type="t:ArrayOfStringsType" minOccurs="0" />
@@ -2726,7 +2727,7 @@ struct tFolderResponseShape {
 	Enum::DefaultShapeNamesType BaseShape;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr proptag_t tagsStructural[] = {PR_CONTAINER_CLASS, PR_FOLDER_TYPE};
+	static constexpr proptag_t tagsStructural[] = {PR_CONTAINER_CLASS, PR_FOLDER_TYPE, PidTagFolderId};
 	static constexpr proptag_t tagsIdOnly[] = {PR_ENTRYID, PR_CHANGE_KEY};
 	static constexpr proptag_t tagsDefault[] = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
 	/*

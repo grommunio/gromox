@@ -775,6 +775,15 @@ bool sFolderSpec::isDistinguished() const
 	return rop_util_get_gc_value(folderId) < CUSTOM_EID_BEGIN;
 }
 
+const char *sFolderSpec::distinguishedName(uint64_t folder_id)
+{
+	auto gc = rop_util_get_gc_value(folder_id);
+	for (auto &e : distNameInfo)
+		if (e.id == gc)
+			return e.name;
+	return nullptr;
+}
+
 /**
  * @brief     Trim target specification according to location
  */
@@ -1449,6 +1458,11 @@ tBaseFolderType::tBaseFolderType(const sShape& shape)
 	fromProp(shape.get(PR_FOLDER_CHILD_COUNT), ChildFolderCount);
 	if ((prop = shape.get(PR_PARENT_ENTRYID)))
 		fromProp(prop, defaulted(ParentFolderId).Id);
+	if (auto v64 = shape.get<uint64_t>(PidTagFolderId)) {
+		auto dn = sFolderSpec::distinguishedName(*v64);
+		if (dn)
+			DistinguishedFolderId.emplace(dn);
+	}
 	shape.putExtended(ExtendedProperty);
 }
 
@@ -3490,6 +3504,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"contacts:WeddingAnniversary", PR_WEDDING_ANNIVERSARY},
 	{"folder:ChildFolderCount", PR_FOLDER_CHILD_COUNT},
 	{"folder:DisplayName", PR_DISPLAY_NAME},
+	{"folder:DistinguishedFolderId", PidTagFolderId},
 	{"folder:FolderClass", PR_CONTAINER_CLASS},
 	{"folder:FolderId", PidTagFolderId},
 	{"folder:ManagedFolderInformation", PR_FOLDER_TYPE},

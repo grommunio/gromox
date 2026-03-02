@@ -346,6 +346,7 @@ void tBaseFolderType::serialize(XMLElement *xml) const
 	XMLDUMPT(TotalCount);
 	XMLDUMPT(ChildFolderCount);
 	XMLDUMPT(EffectiveRights);
+	XMLDUMPT(DistinguishedFolderId);
 	for (const tExtendedProperty &ep : ExtendedProperty)
 		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
