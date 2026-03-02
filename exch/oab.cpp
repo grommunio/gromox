@@ -89,6 +89,22 @@ class oab_writer {
 	std::string buf;
 };
 
+/**
+ * LZX bitstream writer.
+ *
+ * LZX uses 16-bit LE words with bits consumed MSB-first.
+ * Bits accumulate in a 32-bit register; when >=16 bits are
+ * pending, the top 16 are flushed as a little-endian word.
+ */
+struct lzx_bitstream {
+	std::string buf;
+	uint32_t bits = 0;
+	unsigned int n = 0; /* number of bits pending */
+
+	void put_bits(unsigned count, uint32_t value);
+	void flush();
+};
+
 } /* anon-ns */
 
 void oab_writer::put_u32le(uint32_t v)
@@ -153,6 +169,41 @@ void oab_writer::patch_u32le(size_t off, uint32_t v)
 	buf[off+1] = (v >> 8) & 0xFF;
 	buf[off+2] = (v >> 16) & 0xFF;
 	buf[off+3] = (v >> 24) & 0xFF;
+}
+
+void lzx_bitstream::put_bits(unsigned int count, uint32_t value)
+{
+	/*
+	 * For counts > 16 (e.g. the 24-bit block_size
+	 * field), split into two halves to keep each
+	 * shift in range.
+	 */
+	if (count > 16) {
+		unsigned int hi = count - 16;
+		put_bits(hi, value >> 16);
+		put_bits(16, value & 0xFFFF);
+		return;
+	}
+	bits |= (value & ((1U << count) - 1)) << (32 - n - count);
+	n += count;
+	if (n < 16)
+		return;
+	uint16_t w = bits >> 16;
+	buf.push_back(w & 0xFF);
+	buf.push_back((w >> 8) & 0xFF);
+	bits <<= 16;
+	n -= 16;
+}
+
+void lzx_bitstream::flush()
+{
+	if (n <= 0)
+		return;
+	uint16_t w = bits >> 16;
+	buf.push_back(w & 0xFF);
+	buf.push_back((w >> 8) & 0xFF);
+	bits = 0;
+	n = 0;
 }
 
 /**
