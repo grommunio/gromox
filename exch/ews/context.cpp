@@ -1381,6 +1381,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			aid.attachment_num = i;
 			item.Attachments->emplace_back(tAttachment::create(aid, std::move(shape)));
 		}
+		if (item.Attachments->empty())
+			item.Attachments.reset();
 	}
 	if (special & sShape::Rights)
 		item.EffectiveRights.emplace(permissions(dir, fid));
