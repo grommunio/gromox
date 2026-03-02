@@ -175,17 +175,93 @@ static uint32_t crc32_oab(const void *data, size_t len)
 }
 
 /**
- * Wrap raw OAB binary data in the compressed file format. MS-OXOAB v16
- * §2.11.1: LZX_HDR (16 bytes) followed by LZX_BLK blocks. Uses stored
- * (uncompressed) blocks with ulFlags=0.
+ * Encode a raw data block as an LZXD type 3 block (uncompressed), as per
+ * MS-PATCH §2.2.3. The LZXD bitstream uses 16-bit LE words with bits consumed
+ * MSB-first.
+ *
+ * Layout:
+ * - 16-bit LE chunk size (byte count after this field, incl. padding)
+ * - 1-bit E8 translation flag (0 = disabled)
+ * - 3-bit block type (3 = uncompressed)
+ * - 24-bit block size (decompressed byte count)
+ * - 0-15 bits of padding up to next 16-bit word boundary
+ * - 3x uint32_t LE variables R0, R1, R2 (recent match offsets, set to 1)
+ * - N bytes of raw data
+ * - 0-1 bytes padding to restore 16-bit alignment
  */
-static std::string oab_wrap_lzx(const std::string &raw)
+static std::string lzxd_encode_uncompressed(const void *vdata, size_t len)
 {
-	static constexpr size_t BLOCK_MAX = 0x40000;
+	/*
+	 * After the chunk size word we emit:
+	 * - 2 bytes: (E8+type+block_size_hi in one 16-bit word)
+	 * - 2 bytes: (block_size_lo+padding in one 16-bit word)
+	 * - 12 bytes:  R0, R1, R2
+	 * - len bytes of raw data
+	 * - 0 or 1 byte padding for 16-bit alignment
+	 */
+	auto data = static_cast<const uint8_t *>(vdata);
+	size_t padded = len + (len & 1);
+	size_t chunk_payload = 4 + 12 + padded;
 	std::string out;
-	/* LZX_HDR (16 bytes) + per-block 16 bytes header + data */
-	size_t nblocks = raw.empty() ? 1 : (raw.size() + BLOCK_MAX - 1) / BLOCK_MAX;
-	out.reserve(16 + nblocks * 16 + raw.size());
+	out.reserve(2 + chunk_payload);
+
+	/* Chunk size (16-bit LE): bytes following this field */
+	uint16_t cs = static_cast<uint16_t>(chunk_payload);
+	out.push_back(cs & 0xFF);
+	out.push_back((cs >> 8) & 0xFF);
+
+	/*
+	 * Pack bit fields into 16-bit LE words (MSB-first).
+	 *
+	 * Word 0: E8(1) | type(3) | block_size[23:12]
+	 * Word 1: block_size[11:0] | padding(4)
+	 */
+	uint32_t bs = static_cast<uint32_t>(len);
+	uint16_t w0 = (0 << 15)
+	            | (3 << 12)
+	            | ((bs >> 12) & 0xFFF);
+	uint16_t w1 = ((bs & 0xFFF) << 4);
+
+	out.push_back(w0 & 0xFF);
+	out.push_back((w0 >> 8) & 0xFF);
+	out.push_back(w1 & 0xFF);
+	out.push_back((w1 >> 8) & 0xFF);
+
+	/* R0=1, R1=1, R2=1 (recent match offsets, LE) */
+	auto put_u32 = [&out](uint32_t v) {
+		out.push_back(v & 0xFF);
+		out.push_back((v >> 8) & 0xFF);
+		out.push_back((v >> 16) & 0xFF);
+		out.push_back((v >> 24) & 0xFF);
+	};
+	put_u32(1);
+	put_u32(1);
+	put_u32(1);
+
+	/* Raw data bytes */
+	out.append(reinterpret_cast<const char *>(data), len);
+
+	/* Pad to 16-bit alignment */
+	if (len & 1)
+		out.push_back(0);
+
+	return out;
+}
+
+/**
+ * Wrap uncompressed OAB binary data (MS-OXOAB v16 §2.11) in various ways.
+ *
+ * @mode: 0: wrap OAB with LZX_HDR + LZX_BLK
+ *        3: wrap OAB with LZX_HDR + LZX_BLK + LZXD type 3 frames
+ *
+ * OL2021 violates the MS-OXOAB specification, ignores the LZX_BLK::ulFlags
+ * and always treats data as LZXD. Thus we are never using mode 0 in practice.
+ * (But Evolution-EWS is ok with getting mode 0-wrapped data.)
+ */
+static std::string oab_wrap_lzx(const std::string &raw, unsigned int mode)
+{
+	size_t BLOCK_MAX = mode == 0 ? 0x40000 : 0x8000;
+	std::string out;
 
 	auto put_u32 = [&out](uint32_t v) {
 		out.push_back(v & 0xFF);
@@ -195,31 +271,48 @@ static std::string oab_wrap_lzx(const std::string &raw)
 	};
 
 	/* LZX_HDR */
-	put_u32(3); // ulVersionHi
-	put_u32(1); // ulVersionLo
-	put_u32(BLOCK_MAX); // ulBlockMax
-	put_u32(raw.size()); // ulTargetSize
+	put_u32(3); /* ulVersionHi */
+	put_u32(1); /* ulVersionLo */
+	put_u32(BLOCK_MAX); /* ulBlockMax */
+	put_u32(raw.size()); /* ulTargetSize */
+
+	if (raw.empty()) {
+		/* Empty block: use ulFlags=0 stored (zero bytes to copy) */
+		put_u32(0);
+		put_u32(0);
+		put_u32(0);
+		put_u32(crc32_oab(nullptr, 0));
+		return out;
+	}
 
 	size_t pos = 0;
 	while (pos < raw.size()) {
 		uint32_t chunk = std::min(raw.size() - pos, BLOCK_MAX);
 		auto blk_crc = crc32_oab(raw.data() + pos, chunk);
 
-		/* LZX_BLK header (16 bytes) */
-		put_u32(0); // ulFlags: not compressed (stored)
-		put_u32(chunk); // ulCompSize: same as uncompressed for stored
-		put_u32(chunk); // ulUncompSize
-		put_u32(blk_crc); // ulCRC: CRC32 of decompressed block
-		out.append(raw, pos, chunk);
+		if (mode == 0) {
+			/*
+			 * LZX_BLK with uncompressed payload, as per MS-OXOAB v16 §2.11.2.
+			 * Works with Evolution-EWS's gal-lzx-decompress-test.
+			 */
+			put_u32(0); // ulFlags: not compressed (stored)
+			put_u32(chunk); // ulCompSize: same as uncompressed for stored
+			put_u32(chunk); // ulUncompSize
+			put_u32(blk_crc); // ulCRC: CRC32 of decompressed block
+			out.append(raw, pos, chunk);
+		} else if (mode == 3) {
+			/*
+			 * LZX_BLK with LZXD payload (MS-OXOAB v16 §2.11.2).
+			 * LZXD frame with uncompressed payload (MS-PATCH v12 §2.3.1.1).
+			 */
+			auto blk = lzxd_encode_uncompressed(&raw[pos], chunk);
+			put_u32(1); /* ulFlags: LZX compressed */
+			put_u32(blk.size()); /* ulCompSize */
+			put_u32(chunk); /* ulUncompSize */
+			put_u32(blk_crc); /* ulCRC of decompressed data */
+			out += std::move(blk);
+		}
 		pos += chunk;
-	}
-
-	/* Handle empty input: one empty stored block */
-	if (raw.empty()) {
-		put_u32(0); // ulFlags
-		put_u32(0); // ulCompSize
-		put_u32(0); // ulUncompSize
-		put_u32(crc32_oab(nullptr, 0)); // ulCRC
 	}
 	return out;
 }
@@ -681,11 +774,11 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	auto raw = generate_uc(base_id, entry.sequence, guid_str, oab_dn);
 	if (raw.empty())
 		return false;
-	entry.lzx_data = oab_wrap_lzx(raw);
+	entry.lzx_data = oab_wrap_lzx(raw, 3);
 
 	/* Generate and compress display template (MS-OXOAB 2.2) */
 	auto tmpl_raw = generate_template_raw();
-	entry.tmpl_lzx_data = oab_wrap_lzx(tmpl_raw);
+	entry.tmpl_lzx_data = oab_wrap_lzx(tmpl_raw, 3);
 
 	auto data_sha = sha1_hex(entry.lzx_data);
 	auto tmpl_sha = sha1_hex(entry.tmpl_lzx_data);
