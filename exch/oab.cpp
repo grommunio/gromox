@@ -35,6 +35,7 @@ using namespace gromox::ab_tree;
 
 /* OAB v4 binary format constants */
 static constexpr uint32_t OAB_V4_VERSION = 0x20;
+static constexpr uint32_t OAB_TMPL_VERSION = 0x07;
 
 /* Header schema (4 properties) */
 static constexpr proptag_t hdr_props[] = {
@@ -264,6 +265,46 @@ static uint32_t etyp_to_objtype(enum display_type dt)
 	default:
 		return static_cast<uint32_t>(MAPI_MAILUSER);
 	}
+}
+
+/**
+ * Generate a minimal OAB display template file (MS-OXOAB v12 §2.2). The
+ * template file is a package of TMPLT_ENTRY structures describing how to
+ * display Address Book objects. Clients that do not use templates still
+ * require the <Template> element in the manifest to consider it valid per
+ * MS-OXWOAB.
+ *
+ * Structure:
+ *   OAB_HDR:          12 bytes (ulVersion=7, ulSerial=0, ulTotRecs=0)
+ *   7x TMPLT_ENTRY:  224 bytes (all zeros — no template data)
+ *   NAMES_STRUCT:     16 bytes (all zeros — no named properties)
+ *   address templates: 4 bytes (oot-count = 0)
+ */
+static std::string generate_template_raw()
+{
+	static constexpr size_t TMPLT_ENTRY_SIZE = 32; /* 8 x 4 bytes */
+	static constexpr size_t TMPLT_COUNT = 7;
+
+	oab_writer w;
+	/* OAB_HDR */
+	w.put_u32le(OAB_TMPL_VERSION);
+	w.put_u32le(0); /* ulSerial: MUST be 0 */
+	w.put_u32le(0); /* ulTotRecs: SHOULD be 0 */
+
+	/* 7 TMPLT_ENTRY structures, all zeros (no template data) */
+	for (size_t i = 0; i < TMPLT_COUNT * (TMPLT_ENTRY_SIZE / 4); ++i)
+		w.put_u32le(0);
+
+	/* NAMES_STRUCT */
+	w.put_u8(0); w.put_u8(0); /* cIDsNames (2 bytes) */
+	w.put_u8(0); w.put_u8(0); /* cGuids (2 bytes) */
+	w.put_u32le(0); /* oIDs */
+	w.put_u32le(0); /* oGuids */
+	w.put_u32le(0); /* oNames */
+
+	/* address-templates: oot-count = 0 */
+	w.put_u32le(0);
+	return w.data();
 }
 
 namespace {
