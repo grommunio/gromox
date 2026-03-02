@@ -89,6 +89,7 @@ struct remote_svr {
 
 	std::list<remote_conn> conn_list;
 	std::optional<agent_thread> m_agent;
+	unsigned int in_flight = 0; /* conns borrowed into remote_conn_ref::tmplist */
 };
 
 }
@@ -149,11 +150,13 @@ void remote_conn_ref::reset(bool lost)
 	if (tmplist.size() == 0)
 		return;
 	auto pconn = &tmplist.front();
+	std::lock_guard sv_hold(gromox::mdcl_server_lock);
+	if (pconn->psvr != nullptr)
+		--pconn->psvr->in_flight;
 	if (pconn->sockd < 0 || lost) {
 		tmplist.clear();
 		return;
 	}
-	std::lock_guard sv_hold(gromox::mdcl_server_lock);
 	pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), tmplist, tmplist.begin());
 }
 
@@ -443,7 +446,7 @@ static void close_older_connection(decltype(mdcl_server_list)::const_iterator i)
 			j->conn_list.pop_back();
 		}
 		/* Do not touch async notifier threads, they are kind of separate anyway. */
-		auto clean = j->conn_list.empty() && !j->m_agent.has_value();
+		auto clean = j->conn_list.empty() && !j->m_agent.has_value() && j->in_flight == 0;
 		if (do_pop) {
 			if (clean)
 				mdcl_server_list.erase(j);
@@ -494,6 +497,7 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 	}
 	while (i->conn_list.size() > 0) {
 		if (sock_ready_for_write(i->conn_list.front().sockd)) {
+			++i->in_flight;
 			fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
 			return fc;
 		}
@@ -507,18 +511,19 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		return fc;
 	}
 
+	++i->in_flight;
 	sv_hold.unlock();
 	/* i->{host,port,prefix} is unchanging after init, so should be ok to access without lock */
 	fc.tmplist.emplace_back(&*i);
 	auto &conn = fc.tmplist.back();
 	conn.sockd = exmdb_client_connect_exmdb(*i, false, "mdcl");
 	if (conn.sockd == -2) {
-		fc.tmplist.clear();
+		fc.reset(true);
 		return fc;
 	} else if (conn.sockd < 0) {
-		fc.tmplist.clear();
 		mlog(LV_ERR, "exmdb_client: protocol error connecting to [%s]:%hu/%s",
 		        i->host.c_str(), i->port, i->prefix.c_str());
+		fc.reset(true);
 		return fc;
 	}
 	++g_exmdbcl_active_handles;
