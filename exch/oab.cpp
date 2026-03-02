@@ -106,6 +106,15 @@ struct lzx_bitstream {
 	void flush();
 };
 
+/* Token produced by the match finder */
+struct lzx_token {
+	uint16_t main_sym;    /* 0-255 literal, 256+ match */
+	uint8_t len_sym;      /* length tree symbol */
+	bool has_len_sym;
+	uint8_t footer_nbits; /* extra bits for position slot */
+	uint32_t footer_val;
+};
+
 } /* anon-ns */
 
 /* LZX Delta constants for 32 KB window (MS-PATCH v12 §2.2) */
@@ -474,6 +483,140 @@ static void lzx_encode_pretree(lzx_bitstream &bs, const uint8_t *prev_lengths,
 		else if (c.code == 19)
 			bs.put_bits(1, c.extra);
 	}
+}
+
+/**
+ * Find the position slot for a formatted offset
+ */
+static unsigned int lzx_position_slot(uint32_t foff)
+{
+	for (unsigned int s = 1; s < LZX_NUM_POS_SLOTS; ++s)
+		if (foff < lzx_position_base[s])
+			return s - 1;
+	return LZX_NUM_POS_SLOTS - 1;
+}
+
+static constexpr unsigned int LZX_HASH_BITS = 13;
+static constexpr unsigned int LZX_HASH_SIZE = 1u << LZX_HASH_BITS;
+
+static inline uint32_t lzx_hash3(const uint8_t *p)
+{
+	uint32_t v = p[0] | (static_cast<uint32_t>(p[1]) << 8) |
+	             (static_cast<uint32_t>(p[2]) << 16);
+	return (v * 0x1E35A7BD) >> (32 - LZX_HASH_BITS);
+}
+
+/**
+ * Greedy hash-based match finder with R0/R1/R2 repeated
+ * offset LRU. Produces an LZX token stream from raw data.
+ */
+static std::vector<lzx_token> lzx_find_matches(const uint8_t *data, size_t len)
+{
+	std::vector<lzx_token> tokens;
+	tokens.reserve(len);
+
+	uint32_t htab[LZX_HASH_SIZE];
+	std::fill(std::begin(htab), std::end(htab), UINT32_MAX);
+
+	uint32_t R0 = 1, R1 = 1, R2 = 1;
+
+	for (size_t pos = 0; pos < len; ) {
+		size_t remain = len - pos;
+		uint32_t best_len = 0, best_offset = 0;
+		bool best_is_repeat = false;
+		unsigned int best_repeat_slot = 0;
+
+		/* Check repeated offsets (slots 0, 1, 2) */
+		uint32_t repeats[3] = {R0, R1, R2};
+		for (unsigned int ri = 0; ri < 3; ++ri) {
+			uint32_t off = repeats[ri];
+			if (off > pos)
+				continue;
+			auto mp = data + pos - off;
+			uint32_t mlen = 0;
+			auto max_m = std::min(static_cast<size_t>(LZX_MAX_MATCH), remain);
+			while (mlen < max_m && data[pos+mlen] == mp[mlen])
+				++mlen;
+			if (mlen >= LZX_MIN_MATCH && mlen > best_len) {
+				best_len = mlen;
+				best_offset = off;
+				best_is_repeat = true;
+				best_repeat_slot = ri;
+			}
+		}
+
+		/* Hash lookup needs 3 bytes */
+		if (remain >= 3) {
+			uint32_t h = lzx_hash3(data + pos);
+			uint32_t prev = htab[h];
+			if (prev != 0xFFFFFFFF && pos > prev) {
+				uint32_t dist = pos - prev;
+				if (dist <= 32765) {
+					auto mp = data + prev;
+					uint32_t mlen = 0;
+					auto max_m = std::min(static_cast<size_t>(LZX_MAX_MATCH), remain);
+					while (mlen < max_m && data[pos+mlen] == mp[mlen])
+						++mlen;
+					if (mlen >= LZX_MIN_MATCH && mlen > best_len) {
+						best_len = mlen;
+						best_offset = dist;
+						best_is_repeat = false;
+					}
+				}
+			}
+			htab[h] = pos;
+		}
+
+		if (best_len < LZX_MIN_MATCH) {
+			tokens.emplace_back(data[pos], 0, false, 0, 0);
+			++pos;
+			continue;
+		}
+
+		/* Update R0/R1/R2 */
+		if (best_is_repeat) {
+			switch (best_repeat_slot) {
+			case 0: break;
+			case 1: std::swap(R0, R1); break;
+			case 2: {
+				auto t = R2;
+				R2 = R1; R1 = R0; R0 = t;
+				break;
+			}
+			}
+		} else {
+			R2 = R1; R1 = R0; R0 = best_offset;
+		}
+
+		/* Encode match as LZX token */
+		uint32_t length_header = std::min(best_len - LZX_MIN_MATCH, 7u);
+		uint32_t formatted_offset = best_is_repeat ? best_repeat_slot : (best_offset + 2);
+		unsigned int slot = best_is_repeat ? best_repeat_slot :
+		                    lzx_position_slot(formatted_offset);
+		uint16_t main_sym = 256 + slot * 8 + length_header;
+
+		lzx_token tok;
+		tok.main_sym = main_sym;
+		tok.has_len_sym = (length_header == 7);
+		tok.len_sym = tok.has_len_sym ? static_cast<uint8_t>(best_len - LZX_MIN_MATCH - 7) : 0;
+
+		if (!best_is_repeat && lzx_extra_bits[slot] > 0) {
+			tok.footer_nbits = lzx_extra_bits[slot];
+			tok.footer_val = formatted_offset - lzx_position_base[slot];
+		} else {
+			tok.footer_nbits = 0;
+			tok.footer_val = 0;
+		}
+
+		tokens.emplace_back(tok);
+
+		/* Hash intermediate positions */
+		for (uint32_t j = 1; j < best_len && pos + j + 2 < len; ++j)
+			htab[lzx_hash3(data + pos + j)] = pos + j;
+
+		pos += best_len;
+	}
+	return tokens;
 }
 
 /**
