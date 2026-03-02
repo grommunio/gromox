@@ -410,6 +410,72 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 	data.serialize(response);
 }
 
+void process(mGetPersonaRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:GetPersonaResponseMessage");
+
+	mGetPersonaResponseMessage data;
+
+	if (!request.EmailAddress || !request.EmailAddress->EmailAddress) {
+		data.error("ErrorInvalidArgument", "EmailAddress is required");
+		data.serialize(response);
+		return;
+	}
+	const auto &target = *request.EmailAddress->EmailAddress;
+	std::string domain = znul(ctx.auth_info().username);
+	auto at = domain.find('@');
+	if (at != std::string::npos)
+		domain.erase(0, at + 1);
+
+	try {
+		uint32_t domId = ctx.getAccountId(domain, true);
+		auto base = ab_tree::AB.get(-static_cast<int32_t>(domId));
+		if (base) {
+			for (auto it = base->ubegin(); it != base->uend(); ++it) {
+				ab_tree::ab_node node(it);
+				if (node.hidden() & AB_HIDE_RESOLVE)
+					continue;
+				std::string val;
+				if (node.fetch_prop(PR_SMTP_ADDRESS, val) != ecSuccess)
+					continue;
+				if (strcasecmp(val.c_str(), target.c_str()) != 0)
+					continue;
+				tPersona persona;
+				persona.EmailAddress = std::move(val);
+				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
+					persona.DisplayName = std::move(val);
+				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
+					persona.Title = std::move(val);
+				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
+					persona.Nickname = std::move(val);
+				if (node.fetch_prop(PR_PRIMARY_TELEPHONE_NUMBER, val) == ecSuccess)
+					persona.BusinessPhoneNumber = std::move(val);
+				if (node.fetch_prop(PR_MOBILE_TELEPHONE_NUMBER, val) == ecSuccess)
+					persona.MobilePhoneNumber = std::move(val);
+				if (node.fetch_prop(PR_HOME_ADDRESS_STREET, val) == ecSuccess)
+					persona.HomeAddress = std::move(val);
+				if (node.fetch_prop(PR_COMMENT, val) == ecSuccess)
+					persona.Comment = std::move(val);
+				data.Persona = std::move(persona);
+				break;
+			}
+		}
+	} catch (const EWSError &err) {
+		mGetPersonaResponseMessage errdata(err);
+		errdata.serialize(response);
+		return;
+	}
+
+	if (!data.Persona) {
+		data.error("ErrorPersonNotFound", "No persona found for the specified email address");
+		data.serialize(response);
+		return;
+	}
+
+	data.success();
+	data.serialize(response);
+}
+
 /**
  * @brief      Map MAPI rights to delegate permission level
  */
