@@ -4190,66 +4190,55 @@ const char *exmdb_rpc_strerror(exmdb_response v)
 	return xbuf;
 }
 
-BOOL exmdb_client_read_socket(int fd, BINARY &bin, long timeout_ms)
+bool exmdb_client_read_socket(int fd, std::string &bin, long timeout_ms) try
 {
 	if (fd < 0) {
 		errno = EBADF;
 		return false;
 	}
-	uint32_t offset = 0;
+	size_t offset = 0;
 	struct pollfd pfd;
 
-	bin.cb = 0;
-	bin.pb = nullptr;
+	bin.clear();
 	pfd.fd = fd;
 	pfd.events = POLLIN | POLLPRI;
 
 	while (true) {
-		if (timeout_ms >= 0 && poll(&pfd, 1, timeout_ms) != 1) {
-			exmdb_rpc_free(bin.pb);
-			bin.pb = nullptr;
+		if (timeout_ms >= 0 && poll(&pfd, 1, timeout_ms) != 1)
 			return false;
-		}
 
-		if (bin.cb == 0) {
+		if (bin.size() == 0) {
 			uint8_t resp_buff[5];
 			ssize_t read_len = read(fd, resp_buff, 5);
 			if (read_len == 1) {
-				bin.cb = 1;
-				bin.pb = static_cast<uint8_t *>(exmdb_rpc_alloc(1));
-				if (bin.pb == nullptr)
-					return false;
-				*bin.pb = resp_buff[0];
+				bin.resize(1);
+				bin[0] = resp_buff[0];
 				return TRUE;
 			} else if (read_len == 5) {
-				bin.cb = le32p_to_cpu(resp_buff + 1) + 5;
-				CLAMP32(bin.cb);
-				bin.pb = static_cast<uint8_t *>(exmdb_rpc_alloc(bin.cb));
-				if (bin.pb == nullptr) {
-					bin.cb = 0;
-					return false;
-				}
-				memcpy(bin.pv, resp_buff, 5);
+				uint32_t cb = le32p_to_cpu(resp_buff + 1) + 5;
+				CLAMP32(cb);
+				bin.resize(cb);
+				memcpy(bin.data(), resp_buff, 5);
 				offset = 5;
-				if (offset == bin.cb)
+				if (offset == bin.size())
 					return TRUE;
 				continue;
 			} else {
-				exmdb_rpc_free(bin.pb);
-				bin.pb = nullptr;
+				bin.clear();
 				return false;
 			}
 		}
-		ssize_t read_len = read(fd, bin.pb + offset, bin.cb - offset);
+		ssize_t read_len = read(fd, &bin[offset], bin.size() - offset);
 		if (read_len <= 0) {
-			exmdb_rpc_free(bin.pb);
-			bin.pb = nullptr;
+			bin.clear();
 			return false;
 		}
 		offset += read_len;
-		if (offset == bin.cb)
+		if (offset == bin.size())
 			return TRUE;
 	}
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 BOOL exmdb_client_write_socket(int fd, std::string_view sv, long timeout_ms)

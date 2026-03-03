@@ -212,21 +212,18 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	}
 	free(bin.pb);
 	bin.pb = nullptr;
-	if (mdcl_build_env != nullptr)
-		mdcl_build_env(srv.type == EXMDB_ITEM::EXMDB_PRIVATE);
-	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
-	if (!exmdb_client_read_socket(sockd, bin, mdcl_rpc_timeout) ||
-	    bin.pb == nullptr)
+
+	std::string rsp_bin;
+	if (!exmdb_client_read_socket(sockd, rsp_bin, mdcl_rpc_timeout) ||
+	    rsp_bin.empty())
 		return -1;
-	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
-	exmdb_rpc_free(bin.pb);
-	bin.pb = nullptr;
+	auto response_code = static_cast<exmdb_response>(rsp_bin[0]);
 	if (response_code != exmdb_response::success) {
 		mlog(LV_ERR, "exmdb_client: Failed to connect to [%s]:%hu/%s: %s",
 		       srv.host.c_str(), srv.port, srv.prefix.c_str(),
 		       exmdb_rpc_strerror(response_code));
 		return -1;
-	} else if (bin.cb != 5) {
+	} else if (rsp_bin.size() != 5) {
 		mlog(LV_ERR, "exmdb_client: response format error "
 		       "during connect to [%s]:%hu/%s",
 		       srv.host.c_str(), srv.port, srv.prefix.c_str());
@@ -489,19 +486,19 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 	}
 	free(bin.pb);
 	bin.pb = nullptr;
-	if (!exmdb_client_read_socket(conn->sockd, bin, mdcl_rpc_timeout))
+
+	std::string rsp_bin;
+	if (!exmdb_client_read_socket(conn->sockd, rsp_bin, mdcl_rpc_timeout))
 		return false;
 	conn->last_time = time(nullptr);
-	if (bin.pb == nullptr)
+	if (rsp_bin.empty())
 		return false;
-	if (bin.cb == 1) {
-		exmdb_rpc_free(bin.pb);
+	if (rsp_bin.size() == 1) {
 		/* Connection is still good in principle. */
 		conn.reset();
 		return false;
 	}
-	if (bin.cb < 5) {
-		exmdb_rpc_free(bin.pb);
+	if (rsp_bin.size() < 5) {
 		/*
 		 * Malformed packet? Let connection die
 		 * (~exmdb_connection_ref), lest the next response might pick
@@ -511,11 +508,9 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 	}
 	conn.reset();
 	rsp->call_id = rq->call_id;
-	bin.cb -= 5;
-	bin.pb += 5;
-	auto ret = exmdb_ext_pull_response(bin, rsp);
-	bin.pb -= 5;
-	exmdb_rpc_free(bin.pb);
+	std::string_view rsp_sv(rsp_bin);
+	rsp_sv.remove_prefix(5);
+	auto ret = exmdb_ext_pull_response(rsp_sv, rsp);
 	return ret == pack_result::ok ? TRUE : false;
 }
 
