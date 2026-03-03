@@ -113,22 +113,29 @@ struct lzx_token {
 	bool has_len_sym;
 	uint8_t footer_nbits; /* extra bits for position slot */
 	uint32_t footer_val;
+	uint32_t extra_len;   /* LZXD extended match: match_length - 257 */
 };
 
 } /* anon-ns */
 
-/* LZX Delta constants for 32 KB window (MS-PATCH v12 §2.2) */
-static constexpr unsigned LZX_NUM_POS_SLOTS = 30;
-static constexpr unsigned LZX_MAIN_SYMBOLS = 256 + 8 * LZX_NUM_POS_SLOTS; /* 496 */
+/* LZX constants for 256 KB window (MS-OXOAB ulBlockMax=0x40000, window_bits=18) */
+static constexpr unsigned LZX_NUM_POS_SLOTS = 36;
+static constexpr unsigned LZX_MAIN_SYMBOLS = 256 + 8 * LZX_NUM_POS_SLOTS; /* 544 */
 static constexpr unsigned LZX_LEN_SYMBOLS = 249;
 static constexpr unsigned LZX_PRETREE_SYMBOLS = 20;
 static constexpr unsigned LZX_MIN_MATCH = 2;
-static constexpr unsigned LZX_MAX_MATCH = 257;
+/*
+ * LZX Delta extends maximum match from 257 to 33024 via an extra length
+ * encoding after the standard length symbol. When the base match length
+ * decodes as 257 (LZX_NUM_PRIMARY_LENGTHS + LZX_NUM_SECONDARY_LENGTHS - 1 +
+ * LZX_MIN_MATCH), the decoder reads additional bits for the extension.
+ */
+static constexpr unsigned LZX_MAX_MATCH = 33024;
 
 /* Extra footer bits per position slot */
 static constexpr uint8_t lzx_extra_bits[LZX_NUM_POS_SLOTS] = {
 	0,0,0,0, 1,1,2,2, 3,3,4,4, 5,5,6,6,
-	7,7,8,8, 9,9,10,10, 11,11,12,12,13,13,
+	7,7,8,8, 9,9,10,10, 11,11,12,12, 13,13,14,14, 15,15,16,16,
 };
 
 /* Base offset per position slot */
@@ -136,7 +143,7 @@ static constexpr uint32_t lzx_position_base[LZX_NUM_POS_SLOTS] = {
 	0,1,2,3, 4,6,8,12, 16,24,32,48,
 	64,96,128,192, 256,384,512,768,
 	1024,1536,2048,3072, 4096,6144,8192,12288,
-	16384,24576,
+	16384,24576,32768,49152, 65536,98304,131072,196608,
 };
 
 void oab_writer::put_u32le(uint32_t v)
@@ -280,7 +287,16 @@ static void huff_build(const uint32_t *freq, unsigned int nsyms,
 	if (active.empty())
 		return;
 	if (active.size() == 1) {
+		/*
+		 * A single symbol needs length 1 but would leave half the
+		 * Huffman code space empty. Decoders such as the MonoGame
+		 * LzxDecoder reject incomplete trees (MakeDecodeTable returns
+		 * error), so assign a dummy second symbol to form a complete
+		 * binary tree. The dummy code is never emitted.
+		 */
 		lengths[active[0].sym] = 1;
+		unsigned int dummy = active[0].sym == 0 ? 1 : 0;
+		lengths[dummy] = 1;
 		return;
 	}
 
@@ -319,11 +335,15 @@ static void huff_build(const uint32_t *freq, unsigned int nsyms,
 	size_t root = next - 1;
 	node_depth[root] = 0;
 	stack.push_back(root);
+	bool over = false;
 	while (!stack.empty()) {
 		auto nd = stack.back();
 		stack.pop_back();
 		if (nd < nact) {
-			lengths[active[nd].sym] = std::min(node_depth[nd], max_len);
+			auto d = node_depth[nd];
+			if (d > max_len)
+				over = true;
+			lengths[active[nd].sym] = std::min(d, max_len);
 			continue;
 		}
 		auto lc = left_child[nd];
@@ -339,8 +359,6 @@ static void huff_build(const uint32_t *freq, unsigned int nsyms,
 	 * clamped to max_len, the Kraft sum is over-full. Fix by
 	 * lengthening the shortest codes to free budget.
 	 */
-	bool over = std::any_of(lengths, lengths + nsyms,
-	            [=](uint8_t L) { return L > max_len; });
 	if (!over)
 		return;
 
@@ -404,7 +422,12 @@ static void huff_make_codes(const uint8_t *lengths, unsigned int nsyms,
  * Encode one tree-delta segment via a pretree.
  * LZX encodes path-length differences as (prev - cur + 17) % 17,
  * with RLE codes 17 (4-19 zeros), 18 (20-51 zeros),
- * 19 (4-5 same non-zero).
+ * 19 (4-5 same non-zero delta).
+ *
+ * Important: codes 17/18 unconditionally SET lengths to zero in the decoder.
+ * They must only be used for runs where the TARGET length (cur_lengths[i]) is
+ * zero. A zero delta with a non-zero target must be encoded as literal symbol
+ * 0.
  */
 static void lzx_encode_pretree(lzx_bitstream &bs, const uint8_t *prev_lengths,
     const uint8_t *cur_lengths, unsigned int count)
@@ -420,9 +443,13 @@ static void lzx_encode_pretree(lzx_bitstream &bs, const uint8_t *prev_lengths,
 	codes.reserve(count);
 
 	for (unsigned int i = 0; i < count; ) {
-		if (deltas[i] == 0) {
+		/*
+		 * Codes 17/18: run of 4+ positions where cur_lengths[i] == 0.
+		 * The decoder sets those positions to zero unconditionally.
+		 */
+		if (cur_lengths[i] == 0) {
 			unsigned int run = 1;
-			while (i + run < count && deltas[i+run] == 0)
+			while (i + run < count && cur_lengths[i+run] == 0)
 				++run;
 			while (run >= 20) {
 				unsigned int emit = std::min(run, 51U);
@@ -435,29 +462,40 @@ static void lzx_encode_pretree(lzx_bitstream &bs, const uint8_t *prev_lengths,
 				i += run;
 			} else {
 				for (unsigned int j = 0; j < run; ++j)
-					codes.emplace_back(0, 0, 0);
+					codes.emplace_back(deltas[i+j], 0, 0);
 				i += run;
 			}
 			continue;
+		} else if (deltas[i] == 0) {
+			/* Emit literal symbol 0 (no change). */
+			codes.emplace_back(0, 0, 0);
+			++i;
+			continue;
 		}
-		if (deltas[i] != 0) {
-			unsigned int run = 1;
-			while (i + run < count && deltas[i+run] == deltas[i])
-				++run;
-			if (run < 4) {
-				codes.emplace_back(deltas[i++], 0, 0);
-			} else {
-				while (run >= 4) {
-					auto emit = std::min(run, 5U);
-					codes.emplace_back(19, emit - 4, 1);
-					codes.emplace_back(deltas[i], 0, 0);
-					run -= emit;
-					i += emit;
-				}
-				for (unsigned int j = 0; j < run; ++j)
-					codes.emplace_back(deltas[i++], 0, 0);
-			}
+
+		/*
+		 * Non-zero delta: try code 19 (RLE for 4-5 same
+		 * non-zero delta values). The decoder computes the new
+		 * length from the FIRST position's prev only, so all
+		 * positions must share the same target length.
+		 */
+		unsigned int run = 1;
+		while (i + run < count && deltas[i+run] == deltas[i] &&
+		       cur_lengths[i+run] == cur_lengths[i])
+			++run;
+		if (run < 4) {
+			codes.emplace_back(deltas[i++], 0, 0);
+			continue;
 		}
+		while (run >= 4) {
+			auto emit = std::min(run, 5U);
+			codes.emplace_back(19, emit - 4, 1);
+			codes.emplace_back(deltas[i], 0, 0);
+			run -= emit;
+			i += emit;
+		}
+		for (unsigned int j = 0; j < run; ++j)
+			codes.emplace_back(deltas[i++], 0, 0);
 	}
 
 	/* Build pretree Huffman from the code stream */
@@ -496,6 +534,31 @@ static unsigned int lzx_position_slot(uint32_t foff)
 	return LZX_NUM_POS_SLOTS - 1;
 }
 
+/**
+ * Compute the number of main tree elements for a given uncompressed block
+ * size. libmspack's OAB decompressor (oabd.c) creates a fresh LZX decoder per
+ * block with window_bits derived from blk_dsize:
+ *
+ *   window_bits = 17;
+ *   while (window_bits < 25 && (1 << window_bits) < blk_dsize)
+ *       window_bits++;
+ *   posn_slots = window_bits << 1;   (for window_bits <= 19)
+ *   num_main_elements = 256 + posn_slots * 8;
+ */
+static unsigned int lzx_main_elements_for(size_t blk_dsize)
+{
+	unsigned int wb = 17, posn_slots;
+	while (wb < 25 && (1u << wb) < blk_dsize)
+		++wb;
+	if (wb == 20)
+		posn_slots = 42;
+	else if (wb == 21)
+		posn_slots = 50;
+	else
+		posn_slots = wb << 1;
+	return 256 + posn_slots * 8;
+}
+
 static constexpr unsigned int LZX_HASH_BITS = 13;
 static constexpr unsigned int LZX_HASH_SIZE = 1u << LZX_HASH_BITS;
 
@@ -510,15 +573,14 @@ static inline uint32_t lzx_hash3(const uint8_t *p)
  * Greedy hash-based match finder with R0/R1/R2 repeated
  * offset LRU. Produces an LZX token stream from raw data.
  */
-static std::vector<lzx_token> lzx_find_matches(const uint8_t *data, size_t len)
+static std::vector<lzx_token> lzx_find_matches(const uint8_t *data, size_t len,
+    uint32_t &R0, uint32_t &R1, uint32_t &R2)
 {
 	std::vector<lzx_token> tokens;
 	tokens.reserve(len);
 
 	uint32_t htab[LZX_HASH_SIZE];
 	std::fill(std::begin(htab), std::end(htab), UINT32_MAX);
-
-	uint32_t R0 = 1, R1 = 1, R2 = 1;
 
 	for (size_t pos = 0; pos < len; ) {
 		size_t remain = len - pos;
@@ -551,7 +613,8 @@ static std::vector<lzx_token> lzx_find_matches(const uint8_t *data, size_t len)
 			uint32_t prev = htab[h];
 			if (prev != 0xFFFFFFFF && pos > prev) {
 				uint32_t dist = pos - prev;
-				if (dist <= 32765) {
+				/* max encodable distance for the 256 KB window */
+				if (dist <= 262141) {
 					auto mp = data + prev;
 					uint32_t mlen = 0;
 					auto max_m = std::min(static_cast<size_t>(LZX_MAX_MATCH), remain);
@@ -568,7 +631,7 @@ static std::vector<lzx_token> lzx_find_matches(const uint8_t *data, size_t len)
 		}
 
 		if (best_len < LZX_MIN_MATCH) {
-			tokens.emplace_back(data[pos], 0, false, 0, 0);
+			tokens.emplace_back(data[pos], 0, false, 0, 0, 0);
 			++pos;
 			continue;
 		}
@@ -578,18 +641,19 @@ static std::vector<lzx_token> lzx_find_matches(const uint8_t *data, size_t len)
 			switch (best_repeat_slot) {
 			case 0: break;
 			case 1: std::swap(R0, R1); break;
-			case 2: {
-				auto t = R2;
-				R2 = R1; R1 = R0; R0 = t;
-				break;
-			}
+			case 2: std::swap(R0, R2); break;
 			}
 		} else {
 			R2 = R1; R1 = R0; R0 = best_offset;
 		}
 
-		/* Encode match as LZX token */
-		uint32_t length_header = std::min(best_len - LZX_MIN_MATCH, 7u);
+		/*
+		 * Encode match as LZX token. LZXD extended matches: when
+		 * base_len == 257 the decoder reads extra_len bits, so cap the
+		 * Huffman-encoded length at 257 and store the remainder.
+		 */
+		uint32_t base_len = std::min(best_len, 257u);
+		uint32_t length_header = std::min(base_len - LZX_MIN_MATCH, 7u);
 		uint32_t formatted_offset = best_is_repeat ? best_repeat_slot : (best_offset + 2);
 		unsigned int slot = best_is_repeat ? best_repeat_slot :
 		                    lzx_position_slot(formatted_offset);
@@ -598,7 +662,8 @@ static std::vector<lzx_token> lzx_find_matches(const uint8_t *data, size_t len)
 		lzx_token tok;
 		tok.main_sym = main_sym;
 		tok.has_len_sym = (length_header == 7);
-		tok.len_sym = tok.has_len_sym ? static_cast<uint8_t>(best_len - LZX_MIN_MATCH - 7) : 0;
+		tok.len_sym = tok.has_len_sym ? static_cast<uint8_t>(base_len - LZX_MIN_MATCH - 7) : 0;
+		tok.extra_len = best_len > 257 ? best_len - 257 : 0;
 
 		if (!best_is_repeat && lzx_extra_bits[slot] > 0) {
 			tok.footer_nbits = lzx_extra_bits[slot];
@@ -620,6 +685,35 @@ static std::vector<lzx_token> lzx_find_matches(const uint8_t *data, size_t len)
 }
 
 /**
+ * Encode LZXD extended match length.
+ *
+ * When the base match length decodes as 257 (LZX_MAX_MATCH in the standard LZX
+ * sense), the LZXD decoder reads additional bits to extend the match length.
+ * The encoding uses a 4-entry prefix tree:
+ *
+ *   '0'   + 8 bits  → extra_len 0..255
+ *   '10'  + 10 bits → extra_len 0x100..0x4FF
+ *   '110' + 12 bits → extra_len 0x500..0x14FF
+ *   '111' + 15 bits → extra_len 0..0x7FFF
+ */
+static void lzx_encode_extra_len(lzx_bitstream &bs, uint32_t extra_len)
+{
+	if (extra_len <= 0xFF) {
+		bs.put_bits(1, 0);
+		bs.put_bits(8, extra_len);
+	} else if (extra_len <= 0x4FF) {
+		bs.put_bits(2, 2); /* '10' */
+		bs.put_bits(10, extra_len - 0x100);
+	} else if (extra_len <= 0x14FF) {
+		bs.put_bits(3, 6); /* '110' */
+		bs.put_bits(12, extra_len - 0x500);
+	} else {
+		bs.put_bits(3, 7); /* '111' */
+		bs.put_bits(15, extra_len);
+	}
+}
+
+/**
  * Emit compressed tokens using main and length Huffman codes
  */
 static void lzx_encode_tokens(lzx_bitstream &bs,
@@ -635,17 +729,35 @@ static void lzx_encode_tokens(lzx_bitstream &bs,
 			bs.put_bits(len_lengths[t.len_sym], len_codes[t.len_sym]);
 		if (t.footer_nbits > 0)
 			bs.put_bits(t.footer_nbits, t.footer_val);
+		/*
+		 * LZXD extended match: when the base match length is 257, emit
+		 * extra_len.
+		 */
+		if (t.has_len_sym && t.len_sym == 248)
+			lzx_encode_extra_len(bs, t.extra_len);
 	}
 }
 
 /**
- * Encode a data block as an LZX Delta verbatim block (type 1) per MS-PATCH v12
- * §2.2. Produces Huffman-compressed output compatible with all LZX decoders.
+ * Encode a data block as an independent LZXD verbatim chunk.
+ *
+ * Per MS-PATCH v12 §2.2.1, LZXD compressed data consists of 32 KB chunks, each
+ * preceded by a 16-bit LE chunk_size prefix. This function produces one
+ * complete LZXD chunk (prefix + E8 header + verbatim block + padding).
+ *
+ * Each OAB LZX_BLK creates a new decoder (libmspack oabd.c), so each chunk is
+ * self-contained with fresh R0/R1/R2, E8 header, and tree lengths starting
+ * from zero.
+ *
+ * num_main is the number of main tree elements the decoder expects (derived
+ * from the decoder's window size).
  */
-static std::string lzxd_encode_verbatim(const void *vdata, size_t len)
+static std::string lzxd_encode_verbatim(const void *vdata, size_t len,
+    unsigned int num_main)
 {
 	auto data = static_cast<const uint8_t *>(vdata);
-	auto tokens = lzx_find_matches(data, len);
+	uint32_t R0 = 1, R1 = 1, R2 = 1;
+	auto tokens = lzx_find_matches(data, len, R0, R1, R2);
 
 	/* Collect symbol frequencies */
 	uint32_t main_freq[LZX_MAIN_SYMBOLS]{};
@@ -656,11 +768,11 @@ static std::string lzxd_encode_verbatim(const void *vdata, size_t len)
 			++len_freq[t.len_sym];
 	}
 
-	/* Build Huffman codes */
+	/* Build Huffman codes (only for num_main elements) */
 	uint8_t main_lengths[LZX_MAIN_SYMBOLS]{};
 	uint16_t main_codes[LZX_MAIN_SYMBOLS]{};
-	huff_build(main_freq, LZX_MAIN_SYMBOLS, main_lengths, 16);
-	huff_make_codes(main_lengths, LZX_MAIN_SYMBOLS, main_codes, 16);
+	huff_build(main_freq, num_main, main_lengths, 16);
+	huff_make_codes(main_lengths, num_main, main_codes, 16);
 
 	uint8_t len_lengths[LZX_LEN_SYMBOLS]{};
 	uint16_t len_codes[LZX_LEN_SYMBOLS]{};
@@ -668,35 +780,45 @@ static std::string lzxd_encode_verbatim(const void *vdata, size_t len)
 	huff_make_codes(len_lengths, LZX_LEN_SYMBOLS, len_codes, 16);
 
 	lzx_bitstream bs;
-	bs.buf.reserve(len);
+	bs.buf.reserve(len + 2);
 
-	/* Reserve 2 bytes for chunk_size (patched later) */
+	/*
+	 * MS-PATCH v12 §2.2.1: 16-bit LE chunk_size prefix.
+	 * Reserve 2 bytes; backpatch after encoding.
+	 */
 	bs.buf.push_back(0);
 	bs.buf.push_back(0);
 
-	/* E8=0, block type=1 (verbatim), block size */
-	bs.put_bits(1, 0);
+	/* E8 call translation header (each chunk is independent) */
+	bs.put_bits(1, 0); /* E8=0 (no translation) */
+
+	/* Block type=1 (verbatim), block size (24 bits) */
 	bs.put_bits(3, 1);
 	bs.put_bits(24, len);
 
-	/* Encode trees via pretree (two segments for main) */
-	uint8_t prev_zeros[LZX_MAIN_SYMBOLS]{};
-	lzx_encode_pretree(bs, prev_zeros, main_lengths, 256);
-	lzx_encode_pretree(bs, prev_zeros + 256, main_lengths + 256,
-	                   LZX_MAIN_SYMBOLS - 256);
+	/*
+	 * Encode trees via pretree. Each block starts from zero previous
+	 * lengths (fresh decoder).
+	 */
+	uint8_t zeros[LZX_MAIN_SYMBOLS]{};
+	lzx_encode_pretree(bs, zeros, main_lengths, 256);
+	lzx_encode_pretree(bs, zeros + 256, main_lengths + 256, num_main - 256);
 
-	uint8_t prev_len_zeros[LZX_LEN_SYMBOLS]{};
-	lzx_encode_pretree(bs, prev_len_zeros, len_lengths, LZX_LEN_SYMBOLS);
+	uint8_t len_zeros[LZX_LEN_SYMBOLS]{};
+	lzx_encode_pretree(bs, len_zeros, len_lengths, LZX_LEN_SYMBOLS);
 
 	/* Emit compressed tokens */
 	lzx_encode_tokens(bs, tokens, main_lengths, main_codes,
 	                  len_lengths, len_codes);
 	bs.flush();
 
-	/* Patch chunk_size (16-bit LE, bytes after this field) */
-	uint16_t cs = bs.buf.size() - 2;
-	bs.buf[0] = cs & 0xFF;
-	bs.buf[1] = (cs >> 8) & 0xFF;
+	/*
+	 * Backpatch chunk_size: number of compressed bytes following the
+	 * 2-byte prefix (MS-PATCH v12 §2.2.1).
+	 */
+	uint16_t chunk_size = bs.buf.size() - 2;
+	bs.buf[0] = chunk_size & 0xFF;
+	bs.buf[1] = (chunk_size >> 8) & 0xFF;
 
 	return std::move(bs.buf);
 }
@@ -788,7 +910,8 @@ static std::string lzxd_encode_uncompressed(const void *vdata, size_t len)
  */
 static std::string oab_wrap_lzx(const std::string &raw, unsigned int mode)
 {
-	size_t BLOCK_MAX = mode == 0 ? 0x40000 : 0x8000;
+	static constexpr size_t BLOCK_MAX_HDR = 0x40000; /* ulBlockMax in LZX_HDR */
+	static constexpr size_t CHUNK_SIZE = 32768;      /* LZXD chunk = 32 KB */
 	std::string out;
 
 	auto put_u32 = [&out](uint32_t v) {
@@ -801,7 +924,7 @@ static std::string oab_wrap_lzx(const std::string &raw, unsigned int mode)
 	/* LZX_HDR */
 	put_u32(3); /* ulVersionHi */
 	put_u32(1); /* ulVersionLo */
-	put_u32(BLOCK_MAX); /* ulBlockMax */
+	put_u32(BLOCK_MAX_HDR); /* ulBlockMax */
 	put_u32(raw.size()); /* ulTargetSize */
 
 	if (raw.empty()) {
@@ -815,7 +938,7 @@ static std::string oab_wrap_lzx(const std::string &raw, unsigned int mode)
 
 	size_t pos = 0;
 	while (pos < raw.size()) {
-		uint32_t chunk = std::min(raw.size() - pos, BLOCK_MAX);
+		uint32_t chunk = std::min(raw.size() - pos, mode == 0 ? BLOCK_MAX_HDR : CHUNK_SIZE);
 		auto blk_crc = crc32_oab(raw.data() + pos, chunk);
 
 		if (mode == 0) {
@@ -833,7 +956,8 @@ static std::string oab_wrap_lzx(const std::string &raw, unsigned int mode)
 			 * LZX_BLK with LZXD payload (MS-OXOAB v16 §2.11.2).
 			 * LZXD frame with compressed payload.
 			 */
-			auto blk = lzxd_encode_verbatim(&raw[pos], chunk);
+			auto num_main = lzx_main_elements_for(chunk);
+			auto blk = lzxd_encode_verbatim(&raw[pos], chunk, num_main);
 			put_u32(1); /* ulFlags: LZX compressed */
 			put_u32(blk.size()); /* ulCompSize */
 			put_u32(chunk); /* ulUncompSize */
