@@ -32,7 +32,7 @@ using SetterFunc = const std::function<void(const char*)>&;
 
 static constexpr uint8_t EC_IN = 0x1U; ///< Needs explicit conversion on import
 static constexpr uint8_t EC_OUT = 0x2U; ///< Needs explicit conversion on export
-static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitely by SetText
+static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitly by SetText
 
 /**
  * @brief      Explicit conversion information

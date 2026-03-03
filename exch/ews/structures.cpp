@@ -237,7 +237,7 @@ inline C mkArray(const std::vector<T>& data)
  * Calculates amount of memory to allocate for a given type.
  * Includes only the primary structure used for storage, i.e. the contained
  * type itself for single values and a management structure
- * (e.g. BINARY, X_ARRAY) for complext types. Does not take into account any
+ * (e.g. BINARY, X_ARRAY) for complex types. Does not take into account any
  * further necessary allocations.
  *
  * In case of dynamic length types (e.g. PT_UNICODE), returns 0.
@@ -288,7 +288,7 @@ static constexpr size_t typeWidth(proptype_t type)
  * @param weekrecur    Bit pattern
  * @param daysofweek   Return string
  *
- * PatternTypeSpecific Week/MonthNth
+ * PatternTypeSpecific Week/MonthNth (MS-OXOCAL v22.1 §2.2.1.44.1.4)
  * X  (1 bit): This bit is not used. MUST be zero and MUST be ignored.
  * Sa (1 bit): (0x00000040) The event occurs on Saturday.
  * F  (1 bit): (0x00000020) The event occurs on Friday.
@@ -298,7 +298,7 @@ static constexpr size_t typeWidth(proptype_t type)
  * M  (1 bit): (0x00000002) The event occurs on Monday.
  * Su (1 bit): (0x00000001) The event occurs on Sunday.
  * unused (3 bytes): These bits are not used. MUST be zero and MUST be ignored.
- * Nth Day of month: (bits M, Tu, W, Th, F, SA, Su are set) - only rptMonthNth
+ * Nth Day of month: (bits M, Tu, W, Th, F, Sa, Su are set) - only rptMonthNth
  * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only rptMonthNth
  * Nth Weekend of month: (bits Sa, Su are set) - only rptMonthNth
  */
@@ -486,7 +486,7 @@ sBase64Binary::sBase64Binary(const BINARY *bin) : std::string(*bin)
 {}
 
 /**
- * @brief     Initilize binary data from tagged propval
+ * @brief     Initialize binary data from tagged propval
  *
  * Propval type must be PT_BINARY.
  */

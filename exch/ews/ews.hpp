@@ -132,7 +132,7 @@ class EWSPlugin {
 		Structures::sMailboxInfo mailboxInfo; ///< Target mailbox metadata
 		std::mutex lock; ///< I/O mutex
 		std::vector<detail::ExmdbSubscriptionKey> inner_subs; ///< Exmdb subscription keys
-		std::list<Structures::sNotificationEvent> events; ///< Events that occured since last check
+		std::list<Structures::sNotificationEvent> events; ///< Events that occurred since last check
 		detail::ContextKey waitingContext = -1; ///< ID of context waiting for events
 	};
 
@@ -164,7 +164,7 @@ class EWSPlugin {
 	size_t max_user_photo_size = 5 << 20; ///< Maximum user photo file size (5 MiB)
 	std::chrono::milliseconds cache_interval{5'000}; ///< Interval for cache cleanup
 	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; ///< Lifetime of attachment instances
-	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; /// Lifetime of embedded instances
+	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; ///< Lifetime of embedded instances
 	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; ///< Lifetime of message instances
 	std::chrono::milliseconds event_stream_interval{45'000}; ///< How often to send updates for GetStreamingEvents
 
@@ -201,7 +201,7 @@ class EWSPlugin {
 	 * expire.
 	 *
 	 * Once stored, only copies of the stored elements can be retrieved to avoid
-	 * asynchronous deconstruction during access (use std::shared_ptr).
+	 * asynchronous destruction during access (use std::shared_ptr).
 	 */
 	class ObjectCache {
 		private:
@@ -378,7 +378,7 @@ private:
 
 	struct NotificationContext {
 		enum State : uint8_t {
-			S_INIT, ///< Just initalized, flush data and wait
+			S_INIT, ///< Just initialized, flush data and wait
 			S_SLEEP, ///< Waiting for next wakeup
 			S_WRITE, ///< Just wrote data, proceed with sleeping
 			S_CLOSING, ///< All subscriptions died so we might as well

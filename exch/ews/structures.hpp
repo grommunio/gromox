@@ -4251,7 +4251,7 @@ struct mUnsubscribeRequest {
 };
 
 /**
- * Implicitely declared at Messages.xsd:1994
+ * Implicitly declared at Messages.xsd:1994
  */
 struct mUnsubscribeResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "UnsubscribeResponseMessage";

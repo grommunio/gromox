@@ -308,7 +308,7 @@ http_status EWSPlugin::fault(detail::ContextKey ctx_id, http_status code,
 }
 
 /**
- * @brief      Proccess request
+ * @brief      Process request
  *
  * Checks if an authentication context exists, dispatches the request and
  * writes the response.
@@ -594,7 +594,7 @@ static BOOL ews_init(const struct dlfuncs &apidata)
  *
  * Used for (de-)initializing the plugin
  *
- * @param      reason  Reason the function is calles
+ * @param      reason  Reason the function is called
  * @param      data    Additional, reason specific data
  *
  * @return     TRUE if successful, false otherwise

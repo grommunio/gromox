@@ -142,7 +142,7 @@ uint64_t toNT(const time_point& tp)
  * @param daysOfWeek
  * @param weekrecur
  *
- * PatternTypeSpecific Week/MonthNth
+ * PatternTypeSpecific Week/MonthNth (MS-OXOCAL v22.1 §2.2.1.44.1.4)
  * X  (1 bit): This bit is not used. MUST be zero and MUST be ignored.
  * Sa (1 bit): (0x00000040) The event occurs on Saturday.
  * F  (1 bit): (0x00000020) The event occurs on Friday.
@@ -152,7 +152,7 @@ uint64_t toNT(const time_point& tp)
  * M  (1 bit): (0x00000002) The event occurs on Monday.
  * Su (1 bit): (0x00000001) The event occurs on Sunday.
  * unused (3 bytes): These bits are not used. MUST be zero and MUST be ignored.
- * Nth Day of month: (bits M, Tu, W, Th, F, SA, Su are set) - only rptMonthNth
+ * Nth Day of month: (bits M, Tu, W, Th, F, Sa, Su are set) - only rptMonthNth
  * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only rptMonthNth
  * Nth Weekend of month: (bits Sa, Su are set) - only rptMonthNth
  */
@@ -173,7 +173,7 @@ void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur)
 			weekrecur |= week_recur_bit::sun;
 		} else if (dayOfWeek == "monday") {
 			weekrecur |= week_recur_bit::mon;
-		} else if (dayOfWeek ==  "tuesday") {
+		} else if (dayOfWeek == "tuesday") {
 			weekrecur |= week_recur_bit::tue;
 		} else if (dayOfWeek == "wednesday") {
 			weekrecur |= week_recur_bit::wed;
@@ -202,7 +202,7 @@ void calc_firstdatetime(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		recur_pat.firstdatetime = recur_pat.startdate % recur_pat.period;
 		break;
 	case rptWeek: {
-		// determine the first day of the week in which the first event occurrs
+		// determine the first day of the week in which the first event occurs
 		auto startdate = rop_util_rtime_to_unix(recur_pat.startdate);
 		if (gmtime_r(&startdate, tmp_tm) == nullptr)
 			throw EWSError::CalendarInvalidRecurrence(E3261);
@@ -1139,7 +1139,7 @@ sMailboxInfo EWSContext::getMailboxInfo(const std::string& dir, bool isDomain) c
 /**
  * @brief      Setup impersonation for user
  *
- * @param      addrtype    Adress type
+ * @param      addrtype    Address type
  * @param      addr        Smtp address of the user to impersonate
  */
 void EWSContext::impersonate(const char* addrtype, const char* addr)

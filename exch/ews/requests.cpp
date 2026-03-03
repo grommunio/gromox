@@ -94,8 +94,8 @@ std::optional<std::string> readMessageBody(const std::string &path) try
 	}
 	if (ifs.eof())
 		return std::nullopt;
-	size_t headerLenght = ifs.tellg();
-	std::string content(totalLength - headerLenght, 0);
+	size_t headerLength = ifs.tellg();
+	std::string content(totalLength - headerLength, 0);
 	ifs.read(content.data(), content.size());
 	return content;
 } catch (const std::exception &e) {
