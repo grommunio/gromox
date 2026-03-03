@@ -154,7 +154,13 @@ void oab_writer::patch_u32le(size_t off, uint32_t v)
 	buf[off+3] = (v >> 24) & 0xFF;
 }
 
-/* IEEE 802.3 CRC-32 (polynomial 0xEDB88320, seeded 0xFFFFFFFF) */
+/**
+ * CRC-32 for OAB LZX_BLK headers (polynomial 0xEDB88320).
+ *
+ * libmspack's OAB decompressor compares the running CRC (seeded
+ * 0xFFFFFFFF, no final XOR) directly against the stored value.
+ * So we store the running CRC, not the standard finalized one.
+ */
 static uint32_t crc32_oab(const void *data, size_t len)
 {
 	auto p = static_cast<const uint8_t *>(data);
@@ -164,7 +170,7 @@ static uint32_t crc32_oab(const void *data, size_t len)
 		for (int j = 0; j < 8; ++j)
 			crc = (crc >> 1) ^ (0xEDB88320 & -(crc & 1));
 	}
-	return crc ^ 0xFFFFFFFF;
+	return crc; /* running CRC, no final XOR */
 }
 
 /**
