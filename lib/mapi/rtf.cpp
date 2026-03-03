@@ -1188,7 +1188,7 @@ char *rtf_reader::read_element()
 	} while ('\n' == ch);
 	
 	if (' ' == ch) {
-		/* trm multiple space chars into one */
+		/* trim multiple space chars into one */
 		while (' ' == ch) {
 			if (getchar(&ch) != pack_result::ok) {
 				free(input_str);
@@ -2125,7 +2125,7 @@ int rtf_reader::cmd_deff(SIMPLE_TREE_NODE *pword,
 	auto preader = this;
 	if (have_param)
 		preader->default_font_number = num;
-    return CMD_RESULT_CONTINUE;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_highlight(SIMPLE_TREE_NODE *pword,
@@ -2797,7 +2797,7 @@ int rtf_reader::cmd_ansi(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	default_encoding = "windows-1252";
-    return CMD_RESULT_CONTINUE;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_ansicpg(SIMPLE_TREE_NODE *pword,
@@ -2827,7 +2827,7 @@ int rtf_reader::cmd_pc(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	default_encoding = "CP437";
-    return CMD_RESULT_CONTINUE;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_pca(SIMPLE_TREE_NODE *pword, int align,
@@ -3216,7 +3216,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 				return -EINVAL;
 			auto string = pnode->cdata;
 			if (*string == ' ' && preader->is_within_header) {
-				/* do nothing  */
+				/* do nothing */
 			} else if ('\\' != string[0]) {
 				if (skip_objattph_space) {
 					skip_objattph_space = false;
@@ -3362,7 +3362,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 					return -EINVAL;
 				b_paragraph_begun = true;
 			}
-			if (NULL != pchild)  {
+			if (pchild != nullptr) {
 				auto ret = convert_group_node(pchild);
 				if (ret != 0)
 					return -EINVAL;
