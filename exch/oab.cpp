@@ -487,7 +487,7 @@ std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
 		w.put_u8(0xF0);
 
 		// Prop 0: PidTagOfflineAddressBookName (PT_UNICODE)
-		w.put_str("\\Default Global Address List");
+		w.put_str("\\Global Address List");
 		// Prop 1: PidTagOfflineAddressBookDistinguishedName (PT_STRING8)
 		w.put_str(oab_dn);
 		// Prop 2: PidTagOfflineAddressBookSequence (PT_LONG)
@@ -588,8 +588,12 @@ std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
 bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 {
 	auto guid_str = deterministic_guid(base_id);
-	auto oab_dn   = fmt::format("/o={}/cn=addrlists/cn=oabs/cn=Default Offline Address Book",
-	                m_org_name);
+	/*
+	 * MS-OXOAB: PidTagOfflineAddressBookDistinguishedName
+	 * is the DN of the address list, not the OAB object.
+	 * For the GAL, Exchange uses "/" (the root).
+	 */
+	std::string oab_dn = "/";
 	auto raw = generate_uc(base_id, entry.sequence, guid_str, oab_dn);
 	if (raw.empty())
 		return false;
@@ -605,7 +609,7 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	auto oal = doc.NewElement("OAL");
 	oal->SetAttribute("id", guid_str.c_str());
 	oal->SetAttribute("dn", oab_dn.c_str());
-	oal->SetAttribute("name", "\\Default Global Address List");
+	oal->SetAttribute("name", "\\Global Address List");
 	root->InsertEndChild(oal);
 
 	auto full = doc.NewElement("Full");
