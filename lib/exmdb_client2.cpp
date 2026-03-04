@@ -358,6 +358,7 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 			auto resp_code = exmdb_response::success;
 			if (write(fd.get(), &resp_code, 1) != 1)
 				return -1;
+			return 0;
 		} else if (buff_len > 532*1024) {
 			/*
 			 * Datagram production is in function
