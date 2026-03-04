@@ -225,8 +225,8 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir, boo
 		auto now = tp_now();
 		if (next <= now && mdcl_lastwarn_time.compare_exchange_strong(prev, now))
 			mlog(LV_ERR, "exmdb_client: HX_inet_connect to [%s]:%hu: %s",
-			        ident.host.c_str(), ident.port, strerror(-fd.get()));
-	        return -2;
+				ident.host.c_str(), ident.port, strerror(-fd.get()));
+		return -2;
 	}
 
 	BINARY bin;
