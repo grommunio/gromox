@@ -120,7 +120,7 @@ struct async_listener {
 	void connect_and_listen();
 
 	pthread_t m_thr_id{};
-	atomic_bool startup_wait{false};
+	atomic_bool startup_wait{false}, m_stop{false};
 	std::condition_variable startup_cv;
 	srv_ident m_ident;
 	exmdb_client_remote *m_client = nullptr;
@@ -330,6 +330,7 @@ errno_t async_listener::launch() try
 
 async_listener::~async_listener()
 {
+	m_stop = true;
 	if (!pthread_equal(m_thr_id, {})) {
 		pthread_kill(m_thr_id, SIGALRM);
 		pthread_join(m_thr_id, nullptr);
@@ -429,7 +430,7 @@ void async_listener::connect_and_listen()
 void *async_listener::thread_entry(void *vargs)
 {
 	auto asl = static_cast<async_listener *>(vargs);
-	while (!asl->m_client->m_notify_stop)
+	while (!asl->m_stop && !asl->m_client->m_notify_stop)
 		asl->connect_and_listen();
 	return nullptr;
 }
