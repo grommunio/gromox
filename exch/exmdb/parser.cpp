@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -274,7 +274,7 @@ static void *request_parser_thread(void *pparam)
 		tmp_bin.pv = pbuff;
 		tmp_bin.cb = buff_len;
 		std::unique_ptr<exreq> request;
-		auto status = exmdb_ext_pull_request(&tmp_bin, request);
+		auto status = exmdb_ext_pull_request(tmp_bin, request);
 		free(pbuff);
 		pbuff = NULL;
 		if (request != nullptr && request->dir != nullptr)

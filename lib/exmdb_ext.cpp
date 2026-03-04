@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -2355,13 +2355,13 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_write_delegates &d)
  * This uses *& because we do not know which request type we are going to get
  * (cf. exmdb_ext_pull_response).
  */
-pack_result exmdb_ext_pull_request(const BINARY *pbin_in,
+pack_result exmdb_ext_pull_request(std::string_view pbin_in,
     std::unique_ptr<exreq> &prequest) try
 {
 	EXT_PULL ext_pull;
 	uint8_t raw_call_id;
 	
-	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in.data(), pbin_in.size(), exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_pull.g_uint8(&raw_call_id));
 	auto call_id = static_cast<exmdb_callid>(raw_call_id);
 	if (call_id == exmdb_callid::connect) {
@@ -3774,11 +3774,11 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
  * This uses just *presponse, because the caller expects to receive the
  * same response type as the request type.
  */
-pack_result exmdb_ext_pull_response(const BINARY *pbin_in, exresp *presponse)
+pack_result exmdb_ext_pull_response(std::string_view pbin_in, exresp *presponse)
 {
 	EXT_PULL ext_pull;
 	
-	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in.data(), pbin_in.size(), exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	switch (presponse->call_id) {
 	case exmdb_callid::connect:
 	case exmdb_callid::listen_notification:
@@ -3834,13 +3834,13 @@ pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *pbin_out)
 	return pack_result::ok;
 }
 
-pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
+pack_result exmdb_ext_pull_db_notify(std::string_view pbin_in,
     DB_NOTIFY_DATAGRAM *pnotify) try
 {
 	uint8_t tmp_byte;
 	EXT_PULL ext_pull;
 	
-	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in.data(), pbin_in.size(), exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_pull.g_str(&pnotify->dir));
 	TRY(ext_pull.g_bool(&pnotify->b_table));
 	TRY(ext_pull.g_uint32_a(&pnotify->id_array));

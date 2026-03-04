@@ -268,7 +268,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 		mdcl_build_env(agent.pserver->type == EXMDB_ITEM::EXMDB_PRIVATE);
 	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	DB_NOTIFY_DATAGRAM notify;
-	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == pack_result::ok ?
+	auto resp_code = exmdb_ext_pull_db_notify(bin, &notify) == pack_result::ok ?
 	                 exmdb_response::success : exmdb_response::pull_error;
 	if (write(agent.sockd, &resp_code, 1) != 1)
 		return -1;
@@ -513,7 +513,7 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 	rsp->call_id = rq->call_id;
 	bin.cb -= 5;
 	bin.pb += 5;
-	auto ret = exmdb_ext_pull_response(&bin, rsp);
+	auto ret = exmdb_ext_pull_response(bin, rsp);
 	bin.pb -= 5;
 	exmdb_rpc_free(bin.pb);
 	return ret == pack_result::ok ? TRUE : false;

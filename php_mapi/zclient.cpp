@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include "php.h"
 #include <algorithm>
@@ -132,7 +132,7 @@ bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 	presponse->call_id = prequest->call_id;
 	tmp_bin.cb -= 5;
 	tmp_bin.pb += 5;
-	if (rpc_ext_pull_response(&tmp_bin, presponse) != pack_result::ok) {
+	if (rpc_ext_pull_response(tmp_bin, presponse) != pack_result::ok) {
 		ext_pack_free(tmp_bin.pb - 5);
 		return 0;
 	}
