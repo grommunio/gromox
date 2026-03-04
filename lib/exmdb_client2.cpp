@@ -121,6 +121,7 @@ struct async_listener {
 	pthread_t m_thr_id{};
 	atomic_bool startup_wait{false}, m_stop{false};
 	std::condition_variable startup_cv;
+	std::mutex startup_mtx;
 	srv_ident m_ident;
 	exmdb_client_remote *m_client = nullptr;
 };
@@ -293,7 +294,11 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir,
 
 errno_t async_listener::launch() try
 {
-	startup_wait = true;
+	startup_wait = true; /* self-synchronizing primitive (because std::atomic) */
+	{
+		/* This lone line ensures access to cv is reasonably serialized */
+		std::lock_guard lk(startup_mtx);
+	}
 	if (!pthread_equal(m_thr_id, {})) {
 		mlog(LV_ERR, "%s:%u: assertion failed m_thr_id==null", __FILE__, __LINE__);
 		return EINVAL;
@@ -319,8 +324,7 @@ errno_t async_listener::launch() try
 	 * Wait for the notify thread to be up before allowing
 	 * current thread to send any commands.
 	 */
-	std::mutex mtx;
-	std::unique_lock lk(mtx);
+	std::unique_lock lk(startup_mtx);
 	if (!startup_cv.wait_for(lk, std::chrono::seconds(1),
 	    [&]() { return !startup_wait; }))
 		mlog(LV_WARN, "exmdb_client: notify thread for "
