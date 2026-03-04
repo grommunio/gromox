@@ -176,7 +176,6 @@ class locator {
 	size_t drop_active_count();
 
 	private:
-	srv_ident find_dir(const char *);
 	srv_ident try_emplace_dir(const char *);
 	std::shared_ptr<srv_entry> try_emplace_server(const srv_ident &);
 	bool clean_some_connection(const srv_ident &dontclean);
@@ -185,8 +184,11 @@ class locator {
 	size_t m_maxconn = 0;
 	exmdb_client_remote *m_client = nullptr;
 	std::map<srv_ident, std::shared_ptr<srv_entry>> name_to_srv;
-	std::unordered_map<std::string, srv_ident> dir_to_srv;
+	std::unordered_map<std::string, std::pair<srv_ident, gromox::time_point>> dir_to_srv;
 	std::mutex dts_lock, nts_lock, maker_lock;
+
+	/* maximum age for a dir_to_srv entry after which mysql_adaptor_get_homeserver() should be called again */
+	static constexpr std::chrono::seconds cache_lifetime_dir2srv{60};
 };
 
 }
@@ -535,20 +537,20 @@ void srv_entry::launch_notify_listener(exmdb_client_remote *bp_client) try
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
-srv_ident locator::find_dir(const char *dir)
-{
-	std::lock_guard hold(dts_lock);
-	auto iter = dir_to_srv.find(dir);
-	if (iter == dir_to_srv.end())
-		return {};
-	return iter->second;
-}
-
 srv_ident locator::try_emplace_dir(const char *dir)
 {
-	auto srv = find_dir(dir);
-	if (srv.type != srv_type::undef)
-		return srv;
+	auto now = tp_now();
+	srv_ident srv;
+	do {
+		std::lock_guard hold(dts_lock);
+		auto iter = dir_to_srv.find(dir);
+		if (iter == dir_to_srv.end() ||
+		    iter->second.first.type == srv_type::undef)
+			break;
+		srv = iter->second.first;
+		if (now - iter->second.second < cache_lifetime_dir2srv)
+			return srv;
+	} while (false);
 
 	srv.port = 5000; /* XXX: hardcoded port number */
 	bool is_pvt = false;
@@ -561,10 +563,16 @@ srv_ident locator::try_emplace_dir(const char *dir)
 		srv.host = "localhost";
 	srv.type = is_pvt ? srv_type::xprivate : srv_type::xpublic;
 
-	{
-		std::lock_guard hold(dts_lock);
-		dir_to_srv.try_emplace(dir, srv);
-	}
+	now = tp_now();
+	std::lock_guard hold(dts_lock);
+	auto [dts_iter, added] = dir_to_srv.try_emplace(dir, srv, now);
+	if (added)
+		return srv;
+	/* Update an existing DTS entry if we are the one with newer info */
+	if (now > dts_iter->second.second)
+		dts_iter->second = {srv, now};
+	else
+		srv = dts_iter->second.first;
 	return srv;
 }
 
