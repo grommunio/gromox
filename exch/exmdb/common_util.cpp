@@ -710,7 +710,7 @@ static ec_error_t cu_calc_folder_path(uint64_t folder_id,
 		if (dnlen > 255 || path.size() + dnlen + 1 >= 4096)
 			return ecQuotaExceeded;
 		auto dispname = pstmt.col_text(0);
-		if (dispname == nullptr)
+		if (*dispname == '\0')
 			return ecNotFound;
 		path.insert(0, dispname);
 		path.insert(0, delim);
@@ -1624,7 +1624,7 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 		return nullptr;
 	if (stm.step() == SQLITE_ROW) {
 		auto txt = stm.col_text(0);
-		if (txt != nullptr) {
+		if (*txt != '\0') {
 			GUID guid;
 			if (!guid.from_str(txt) ||
 			    ep.p_uint16(5) != pack_result::ok ||
@@ -1637,7 +1637,7 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 		return nullptr;
 	while (stm.step() == SQLITE_ROW) {
 		auto txt = stm.col_text(1);
-		if (txt == nullptr)
+		if (*txt == '\0')
 			continue;
 		GUID guid;
 		if (!guid.from_str(txt) ||
@@ -2055,7 +2055,7 @@ static GP_RESULT gp_msgprop_synth(uint64_t msgid, proptag_t proptag,
 		if (stm.step() != SQLITE_ROW)
 			break;
 		auto val = stm.col_text(0);
-		if (val == nullptr)
+		if (*val == '\0')
 			break;
 		if (*val == '/') {
 			auto v = cu_alloc<char>(3);
