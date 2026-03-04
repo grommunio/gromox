@@ -18,6 +18,7 @@
 #include <pthread.h>
 #include <string>
 #include <unordered_map>
+#include <libHX/io.h>
 #include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <gromox/atomic.hpp>
@@ -349,7 +350,7 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 		return -1;
 	if (buff.size() == 0) {
 		uint32_t buff_len = 0;
-		if (read(fd.get(), &buff_len, sizeof(buff_len)) != sizeof(buff_len))
+		if (HXio_fullread(fd.get(), &buff_len, sizeof(buff_len)) != sizeof(buff_len))
 			return -1;
 		/* ping packet */
 		if (buff_len == 0) {
