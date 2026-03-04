@@ -158,7 +158,7 @@ class db_base_rd_ptr {
 	constexpr db_base *get() { return m_base; }
 	constexpr db_base *operator->() { return m_base; }
 	constexpr db_base &operator*() { return *m_base; }
-	void reset() { if (m_base != nullptr) { m_base->giant_lock.unlock(); m_base = nullptr; } }
+	void reset() { if (m_base != nullptr) { m_base->giant_lock.unlock_shared(); m_base = nullptr; } }
 
 	private:
 	db_base *m_base = nullptr;
