@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -2263,7 +2263,7 @@ pack_result EXT_PUSH::p_rpchdr(const RPC_HEADER_EXT &r)
 }
 
 /* FALSE: overflow, TRUE: not overflow */
-BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
+bool EXT_PUSH::make_room(uint32_t extra_size)
 {
 	auto alloc_size = extra_size + m_offset;
 	if (m_alloc_size >= alloc_size)
@@ -2283,7 +2283,7 @@ BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
 
 pack_result EXT_PUSH::advance(uint32_t size)
 {
-	if (!check_ovf(size))
+	if (!make_room(size))
 		return pack_result::bufsize;
 	m_offset += size;
 	return pack_result::ok;
@@ -2297,7 +2297,7 @@ pack_result EXT_PUSH::p_bytes(const void *pdata, uint32_t n)
 		 * pdata==nullptr and n>0, memcpy/ASAN will usually crash/exit.
 		 */
 		return pack_result::ok;
-	if (!check_ovf(n))
+	if (!make_room(n))
 		return pack_result::bufsize;
 	memcpy(&m_udata[m_offset], pdata, n);
 	m_offset += n;
@@ -2306,7 +2306,7 @@ pack_result EXT_PUSH::p_bytes(const void *pdata, uint32_t n)
 
 pack_result EXT_PUSH::p_uint8(uint8_t v)
 {
-	if (!check_ovf(sizeof(uint8_t)))
+	if (!make_room(sizeof(uint8_t)))
 		return pack_result::bufsize;
 	m_udata[m_offset] = v;
 	m_offset += sizeof(uint8_t);
@@ -2315,7 +2315,7 @@ pack_result EXT_PUSH::p_uint8(uint8_t v)
 
 pack_result EXT_PUSH::p_uint16(uint16_t v)
 {
-	if (!check_ovf(sizeof(uint16_t)))
+	if (!make_room(sizeof(uint16_t)))
 		return pack_result::bufsize;
 	cpu_to_le16p(&m_udata[m_offset], v);
 	m_offset += sizeof(uint16_t);
@@ -2324,7 +2324,7 @@ pack_result EXT_PUSH::p_uint16(uint16_t v)
 
 pack_result EXT_PUSH::p_uint32(uint32_t v)
 {
-	if (!check_ovf(sizeof(uint32_t)))
+	if (!make_room(sizeof(uint32_t)))
 		return pack_result::bufsize;
 	cpu_to_le32p(&m_udata[m_offset], v);
 	m_offset += sizeof(uint32_t);
@@ -2333,7 +2333,7 @@ pack_result EXT_PUSH::p_uint32(uint32_t v)
 
 pack_result EXT_PUSH::p_uint64(uint64_t v)
 {
-	if (!check_ovf(sizeof(uint64_t)))
+	if (!make_room(sizeof(uint64_t)))
 		return pack_result::bufsize;
 	cpu_to_le64p(&m_udata[m_offset], v);
 	m_offset += sizeof(uint64_t);
@@ -2342,7 +2342,7 @@ pack_result EXT_PUSH::p_uint64(uint64_t v)
 
 pack_result EXT_PUSH::p_float(float v)
 {
-	if (!check_ovf(sizeof(float)))
+	if (!make_room(sizeof(float)))
 		return pack_result::bufsize;
 	float_cpu_to_le32p(&m_udata[m_offset], v);
 	m_offset += sizeof(float);
@@ -2351,7 +2351,7 @@ pack_result EXT_PUSH::p_float(float v)
 
 pack_result EXT_PUSH::p_double(double v)
 {
-	if (!check_ovf(sizeof(double)))
+	if (!make_room(sizeof(double)))
 		return pack_result::bufsize;
 	float_cpu_to_le64p(&m_udata[m_offset], v);
 	m_offset += sizeof(double);
@@ -2360,7 +2360,7 @@ pack_result EXT_PUSH::p_double(double v)
 
 pack_result EXT_PUSH::p_bool(BOOL v)
 {
-	if (!check_ovf(sizeof(uint8_t)))
+	if (!make_room(sizeof(uint8_t)))
 		return pack_result::bufsize;
 	m_udata[m_offset] = !!v;
 	m_offset += sizeof(uint8_t);

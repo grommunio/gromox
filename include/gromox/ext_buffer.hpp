@@ -234,7 +234,7 @@ struct GX_EXPORT EXT_PUSH {
 	NOMOVE(EXT_PUSH);
 	BOOL init(void *, uint32_t, uint32_t, const EXT_BUFFER_MGT * = nullptr);
 	uint8_t *release();
-	BOOL check_ovf(uint32_t);
+	bool make_room(uint32_t);
 	pack_result advance(uint32_t);
 	pack_result p_bytes(const void *, uint32_t);
 	pack_result p_uint8(uint8_t);
