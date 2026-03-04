@@ -426,7 +426,7 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
 		return FALSE;
 	std::string essdn, skb;
 	auto ex_avail = cvt_username_to_essdn(paddr->addr, g_oxcmail_org_name,
-	                oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn);
+	                oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn) == ecSuccess;
 	if (g_oxcmail_smtp_addrtype || essdn.empty() || !ex_avail)
 		skb = "SMTP:"s + paddr->addr;
 	else
