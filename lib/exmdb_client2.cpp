@@ -505,10 +505,10 @@ bool srv_entry::purgable() const
 	return conn_list.empty() && m_async == nullptr;
 }
 
-static bool sock_ready_for_write(int fd)
+static bool sock_is_idle(int fd)
 {
 	struct pollfd pfd = {fd, POLLIN};
-	/* The fd must not have any input data (or EOF) waiting */
+	/* No unexpected input (error/EOF) must be pending */
 	return poll(&pfd, 1, 0) == 0;
 }
 
@@ -519,7 +519,7 @@ srv_conn_ref srv_entry::extract_one_connection()
 	while (conn_list.size() > 0) {
 		/* Try reusing the most recent one (in the back) */
 		/* Server may have closed the connection due to our idling, though. */
-		if (sock_ready_for_write(conn_list.back().m_fd.get())) {
+		if (sock_is_idle(conn_list.back().m_fd.get())) {
 			fc.splice_one_from_back(conn_list);
 			break;
 		}
