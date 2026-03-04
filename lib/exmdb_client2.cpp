@@ -356,8 +356,23 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 			auto resp_code = exmdb_response::success;
 			if (write(fd.get(), &resp_code, 1) != 1)
 				return -1;
+		} else if (buff_len > 532*1024) {
+			/*
+			 * Datagram production is in function
+			 * exmdb_ext_push_db_notify2. 532 KB was chosen based
+			 * on an excessive notification packet for 64K object
+			 * subscriptions with 65536 proptag as payload.
+			 */
+			mlog(LV_ERR, "exmdb_client: notify packet size is Too Damn High (%u bytes)", buff_len);
+			return -1;
 		}
-		buff.resize(buff_len);
+		try {
+			buff.resize(buff_len);
+		} catch (const std::bad_alloc &) {
+			mlog(LV_ERR, "exmdb_client: notify alloc "
+				"failed (%u bytes)", buff_len);
+			return -1;
+		}
 		offset = 0;
 		return 0;
 	}
