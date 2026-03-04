@@ -323,6 +323,7 @@ BOOL db_engine_unload_db(const char *path)
 		auto &dbase = it->second;
 		std::unique_lock dhold(dbase.giant_lock);
 		if (remove_from_hash(dbase, now + g_cache_interval)) {
+			dhold.unlock();
 			g_hash_table.erase(it);
 			return TRUE;
 		}
@@ -805,10 +806,12 @@ static void *db_expiry_thread(void *param)
 			 * Hence another lock.
 			 */
 			std::unique_lock dhold(dbase.giant_lock);
-			if (remove_from_hash(dbase, now_time))
+			if (remove_from_hash(dbase, now_time)) {
+				dhold.unlock();
 				it = g_hash_table.erase(it);
-			else
+			} else {
 				++it;
+			}
 		}
 	}
 	return nullptr;
