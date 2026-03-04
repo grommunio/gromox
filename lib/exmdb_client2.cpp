@@ -179,6 +179,8 @@ class locator {
 	srv_ident try_emplace_dir(const char *);
 	std::shared_ptr<srv_entry> try_emplace_server(const srv_ident &);
 	bool clean_some_connection(const srv_ident &dontclean);
+	void cleanup_dts();
+	void cleanup_nts();
 
 	std::atomic<size_t> m_active{0};
 	size_t m_maxconn = 0;
@@ -186,9 +188,12 @@ class locator {
 	std::map<srv_ident, std::shared_ptr<srv_entry>> name_to_srv;
 	std::unordered_map<std::string, std::pair<srv_ident, gromox::time_point>> dir_to_srv;
 	std::mutex dts_lock, nts_lock, maker_lock;
+	gromox::time_point m_last_dts_purge{}, m_last_nts_purge{};
 
-	/* maximum age for a dir_to_srv entry after which mysql_adaptor_get_homeserver() should be called again */
-	static constexpr std::chrono::seconds cache_lifetime_dir2srv{60};
+	/* time after which mysql_adaptor_get_homeserver() should be called again */
+	static constexpr std::chrono::seconds dts_refresh_time{60};
+	/* time after which a dir_to_srv entry may be removed entirely */
+	static constexpr std::chrono::seconds dts_purge_time{120};
 };
 
 }
@@ -555,6 +560,41 @@ void srv_entry::launch_notify_listener(exmdb_client_remote *bp_client) try
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
+/**
+ * Erase dir_to_srv entries that have not been used for a while. The caller
+ * must hold dts_lock. Throttled so it does not run too often.
+ */
+void locator::cleanup_dts()
+{
+	auto now = tp_now();
+	if (now - m_last_dts_purge < dts_purge_time)
+		return;
+	m_last_dts_purge = now;
+	std::erase_if(dir_to_srv, [now](const decltype(dir_to_srv)::value_type &entry) {
+		return now - entry.second.second >= dts_purge_time;
+	});
+}
+
+/**
+ * Erase name_to_srv entries with no pooled connections and no async listener.
+ * The caller must hold nts_lock. Throttled.
+ */
+void locator::cleanup_nts()
+{
+	auto now = tp_now();
+	if (now - m_last_nts_purge < dts_purge_time)
+		return;
+	m_last_nts_purge = now;
+	std::erase_if(name_to_srv, [now](const decltype(name_to_srv)::value_type &entry) {
+		bool purgable;
+		{
+			std::lock_guard hold2(entry.second->conn_lock);
+			purgable = entry.second->purgable();
+		}
+		return purgable;
+	});
+}
+
 srv_ident locator::try_emplace_dir(const char *dir)
 {
 	auto now = tp_now();
@@ -566,7 +606,7 @@ srv_ident locator::try_emplace_dir(const char *dir)
 		    iter->second.first.type == srv_type::undef)
 			break;
 		srv = iter->second.first;
-		if (now - iter->second.second < cache_lifetime_dir2srv)
+		if (now - iter->second.second < dts_refresh_time)
 			return srv;
 	} while (false);
 
@@ -583,6 +623,7 @@ srv_ident locator::try_emplace_dir(const char *dir)
 
 	now = tp_now();
 	std::lock_guard hold(dts_lock);
+	cleanup_dts();
 	auto [dts_iter, added] = dir_to_srv.try_emplace(dir, srv, now);
 	if (added)
 		return srv;
@@ -596,9 +637,12 @@ srv_ident locator::try_emplace_dir(const char *dir)
 
 std::shared_ptr<srv_entry> locator::try_emplace_server(const srv_ident &ident)
 {
-	auto srv = std::make_shared<srv_entry>(ident);
 	std::lock_guard hold(nts_lock);
-	auto [iter, added] = name_to_srv.try_emplace(ident, std::move(srv));
+	auto it = name_to_srv.find(ident);
+	if (it != name_to_srv.end())
+		return it->second;
+	cleanup_nts();
+	auto [iter, added] = name_to_srv.emplace(ident, std::make_shared<srv_entry>(ident));
 	return iter->second;
 }
 
