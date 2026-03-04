@@ -216,7 +216,8 @@ std::optional<exmdb_client_remote> exmdb_client;
  * Returns the file descriptor number, or -2 on connection problems,
  * or -1 on data exchange problems.
  */
-static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir, bool b_listen)
+static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir,
+    bool b_listen, exmdb_client_remote *bp_client)
 {
 	wrapfd fd = HX_inet_connect(ident.host.c_str(), ident.port, 0);
 	if (fd.get() < 0) {
@@ -234,7 +235,7 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir, boo
 	if (b_listen) {
 		exreq_listen_notification rql;
 		rql.call_id   = exmdb_callid::listen_notification;
-		rql.remote_id = deconst(exmdb_client->m_client_id.c_str());
+		rql.remote_id = deconst(bp_client->m_client_id.c_str());
 		if (exmdb_ext_push_request(&rql, &bin) != pack_result::ok)
 			return -1;
 	} else {
@@ -247,7 +248,7 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir, boo
 		exreq_connect rqc;
 		rqc.call_id   = exmdb_callid::connect;
 		rqc.prefix    = deconst(dir);
-		rqc.remote_id = deconst(exmdb_client->m_client_id.c_str());
+		rqc.remote_id = deconst(bp_client->m_client_id.c_str());
 		rqc.b_private = ident.type == srv_type::xprivate ? TRUE : false;
 		if (exmdb_ext_push_request(&rqc, &bin) != pack_result::ok)
 			return -1;
@@ -259,13 +260,13 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir, boo
 	free(bin.pb);
 	bin.pb = nullptr;
 
-	if (exmdb_client->m_build_env != nullptr)
-		exmdb_client->m_build_env(ident.type == srv_type::xprivate);
-	auto cl_0 = HX::make_scope_exit([]() {
-		if (exmdb_client->m_free_env != nullptr)
-			exmdb_client->m_free_env();
+	if (bp_client->m_build_env != nullptr)
+		bp_client->m_build_env(ident.type == srv_type::xprivate);
+	auto cl_0 = HX::make_scope_exit([bp_client]() {
+		if (bp_client->m_free_env != nullptr)
+			bp_client->m_free_env();
 	});
-	if (!exmdb_client_read_socket(fd.get(), bin, exmdb_client->m_rpc_timeout) ||
+	if (!exmdb_client_read_socket(fd.get(), bin, bp_client->m_rpc_timeout) ||
 	    bin.pb == nullptr)
 		return -1;
 	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
@@ -411,7 +412,7 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 
 void async_listener::connect_and_listen()
 {
-	auto fd = make_exmdb_connection(m_ident, "", true);
+	auto fd = make_exmdb_connection(m_ident, "", true, m_client);
 	if (fd.get() < 0) {
 		sleep(1);
 		return;
@@ -692,7 +693,7 @@ srv_conn_ref locator::get_connection(const char *dir) try
 		return {};
 	}
 
-	cref = srv_conn_ref{make_exmdb_connection(ident, dir, false), srv, this};
+	cref = srv_conn_ref{make_exmdb_connection(ident, dir, false, m_client), srv, this};
 	if (cref->m_fd.get() == -2) {
 		return {};
 	} else if (cref->m_fd.get() < 0) {
