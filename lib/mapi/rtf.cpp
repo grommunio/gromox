@@ -2275,7 +2275,7 @@ int rtf_reader::cmd_nonbreaking_space(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_nonbreaking_hyphen(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x2011).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x2011)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
@@ -2504,7 +2504,7 @@ int rtf_reader::cmd_u(SIMPLE_TREE_NODE *pword, int align,
 {
 	/*
 	 * RTF uses signed 16-bit values for Unicode. Values > 32767 are
-	 * represented as negative numbers (e.g., \u-10000 means U+55536).
+	 * represented as negative numbers (e.g., \u-10000 means U+D8F0).
 	 * Convert to unsigned 16-bit first to get the correct codepoint.
 	 */
 	uint32_t codepoint = static_cast<uint16_t>(num);
@@ -2813,28 +2813,28 @@ int rtf_reader::cmd_zwbo(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	/* Not updating total_chars_in_line, since this is zero-width */
-	return escape_output(wchar_to_utf8(0x200B).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200B)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_zwj(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x200D).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200D)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_zwnbo(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0xFEFF).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0xFEFF)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_zwnj(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x200C).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200C)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
@@ -2906,14 +2906,14 @@ int rtf_reader::cmd_htmltag(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_ltrmark(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x200E).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200E)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_rtlmark(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x200F).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200F)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
