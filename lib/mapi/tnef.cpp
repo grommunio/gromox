@@ -1684,7 +1684,7 @@ pack_result tnef_push::p_propval(const TNEF_PROPVAL &rr)
 		if (bv->cb != UINT32_MAX) {
 			TRY(pext->p_uint32(bv->cb + 16));
 			TRY(pext->p_guid(IID_IStorage));
-			TRY(pext->p_bytes(bv->pb, bv->cb));
+			TRY(pext->p_bytes(*bv));
 			return pext->p_bytes(g_pad_bytes,
 			       tnef_align(bv->cb + 16));
 		}
@@ -1705,7 +1705,7 @@ pack_result tnef_push::p_propval(const TNEF_PROPVAL &rr)
 		TRY(pext->p_uint32(1));
 		auto bv = static_cast<BINARY *>(r->pvalue);
 		TRY(pext->p_uint32(bv->cb));
-		TRY(pext->p_bytes(bv->pb, bv->cb));
+		TRY(pext->p_bytes(*bv));
 		return pext->p_bytes(g_pad_bytes, tnef_align(bv->cb));
 	}
 	case PT_MV_SHORT: {
@@ -1792,7 +1792,7 @@ pack_result tnef_push::p_propval(const TNEF_PROPVAL &rr)
 		TRY(pext->p_uint32(ba->count));
 		for (size_t i = 0; i < ba->count; ++i) {
 			TRY(pext->p_uint32(ba->pbin[i].cb));
-			TRY(pext->p_bytes(ba->pbin[i].pb, ba->pbin[i].cb));
+			TRY(pext->p_bytes(ba->pbin[i]));
 			TRY(pext->p_bytes(g_pad_bytes,tnef_align(ba->pbin[i].cb)));
 		}
 		return pack_result::ok;
@@ -1870,11 +1870,9 @@ pack_result tnef_push::p_attr(uint8_t level, uint32_t attr_id, const void *value
 	case ATTRIBUTE_ID_AIDOWNER:
 		TRY(pext->p_uint32(*static_cast<const uint32_t *>(value)));
 		break;
-	case ATTRIBUTE_ID_BODY: {
-		auto b = static_cast<const char *>(value);
-		TRY(pext->p_bytes(b, strlen(b)));
+	case ATTRIBUTE_ID_BODY:
+		TRY(pext->p_bytes(static_cast<const char *>(value)));
 		break;
-	}
 	case ATTRIBUTE_ID_MSGPROPS:
 	case ATTRIBUTE_ID_ATTACHMENT: {
 		auto tf = static_cast<const TNEF_PROPLIST *>(value);
@@ -1916,11 +1914,9 @@ pack_result tnef_push::p_attr(uint8_t level, uint32_t attr_id, const void *value
 	case ATTRIBUTE_ID_DELEGATE:
 	case ATTRIBUTE_ID_ATTACHDATA:
 	case ATTRIBUTE_ID_ATTACHMETAFILE:
-	case ATTRIBUTE_ID_MESSAGESTATUS: {
-		auto bv = static_cast<const BINARY *>(value);
-		TRY(pext->p_bytes(bv->pb, bv->cb));
+	case ATTRIBUTE_ID_MESSAGESTATUS:
+		TRY(pext->p_bytes(*static_cast<const BINARY *>(value)));
 		break;
-	}
 	case ATTRIBUTE_ID_TNEFVERSION:
 	case ATTRIBUTE_ID_OEMCODEPAGE: {
 		auto la = static_cast<const LONG_ARRAY *>(value);

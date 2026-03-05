@@ -479,7 +479,7 @@ static pack_result nsp_ndr_push_binary(NDR_PUSH &x, unsigned int flag, const BIN
 	if (!(flag & FLAG_CONTENT) || r.pb == nullptr)
 		return pack_result::ok;
 	TRY(x.p_ulong(r.cb));
-	TRY(x.p_bytes(r.pb, r.cb));
+	TRY(x.p_bytes(r));
 	return pack_result::ok;
 }
 

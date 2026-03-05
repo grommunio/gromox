@@ -2400,7 +2400,7 @@ pack_result EXT_PUSH::p_bin(std::string_view r)
 			return pack_result::format;
 		TRY(p_uint16(r.size()));
 	}
-	return r.size() != 0 ? p_bytes(r.data(), r.size()) : pack_result::ok;
+	return r.size() != 0 ? p_bytes(r) : pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_bin_s(const BINARY &r)
@@ -2410,7 +2410,7 @@ pack_result EXT_PUSH::p_bin_s(const BINARY &r)
 	TRY(p_uint16(r.cb));
 	if (r.cb == 0)
 		return pack_result::ok;
-	return p_bytes(r.pb, r.cb);
+	return p_bytes(r);
 }
 
 pack_result EXT_PUSH::p_bin_ex(const BINARY &r)
@@ -2418,7 +2418,7 @@ pack_result EXT_PUSH::p_bin_ex(const BINARY &r)
 	TRY(p_uint32(r.cb));
 	if (r.cb == 0)
 		return pack_result::ok;
-	return p_bytes(r.pb, r.cb);
+	return p_bytes(r);
 }
 
 pack_result EXT_PUSH::p_guid(const GUID &r)
@@ -2606,7 +2606,7 @@ pack_result EXT_PUSH::p_svreid(const SVREID &r)
 	if (r.pbin != nullptr) {
 		TRY(p_uint16(r.pbin->cb + 1));
 		TRY(p_uint8(0));
-		return p_bytes(r.pbin->pb, r.pbin->cb);
+		return p_bytes(*r.pbin);
 	}
 	TRY(p_uint16(21));
 	TRY(p_uint8(1));
@@ -3364,7 +3364,7 @@ pack_result EXT_PUSH::p_goid(const GLOBALOBJECTID &r)
 	TRY(p_uint64(r.creationtime));
 	TRY(p_bytes(r.x, 8));
 	if (r.unparsed)
-		return p_bytes(r.data.pb, r.data.cb);
+		return p_bytes(r.data);
 	return p_bin_ex(r.data);
 }
 

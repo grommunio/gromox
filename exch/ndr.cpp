@@ -563,7 +563,7 @@ pack_result NDR_PUSH::p_blob(DATA_BLOB blob)
 		TRY(pndr->p_uint32(blob.cb));
 	}
 	assert(blob.pb != nullptr || blob.cb == 0);
-	TRY(pndr->p_bytes(blob.pb, blob.cb));
+	TRY(pndr->p_bytes(blob));
 	return pack_result::ok;
 }
 

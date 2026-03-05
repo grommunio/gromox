@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
@@ -490,7 +490,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const QUERYROWS_RESPONSE &r)
 {
 	TRY(x.p_uint8(r.seek_pos));
 	TRY(x.p_uint16(r.count));
-	return x.p_bytes(r.bin_rows.pb, r.bin_rows.cb);
+	return x.p_bytes(r.bin_rows);
 }
 
 static pack_result rop_ext_push(EXT_PUSH &x, const QUERYPOSITION_RESPONSE &r)
@@ -589,7 +589,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const EXPANDROW_RESPONSE &r)
 {
 	TRY(x.p_uint32(r.expanded_count));
 	TRY(x.p_uint16(r.count));
-	return x.p_bytes(r.bin_rows.pb, r.bin_rows.cb);
+	return x.p_bytes(r.bin_rows);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, COLLAPSEROW_REQUEST &r)
@@ -723,7 +723,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, READRECIPIENTS_REQUEST &r)
 static pack_result rop_ext_push(EXT_PUSH &x, const READRECIPIENTS_RESPONSE &r)
 {
 	TRY(x.p_uint8(r.count));
-	return x.p_bytes(r.bin_recipients.pb, r.bin_recipients.cb);
+	return x.p_bytes(r.bin_recipients);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, RELOADCACHEDINFORMATION_REQUEST &r)

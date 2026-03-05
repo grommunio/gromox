@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -160,7 +160,7 @@ static BINARY *zcsab_prepend(const BINARY *lower_eid,
 	    ep.p_guid(muidZCSAB) != pack_result::ok ||
 	    ep.p_uint32(static_cast<uint32_t>(type)) != pack_result::ok ||
 	    ep.p_uint32(ofs) != pack_result::ok ||
-	    ep.p_bytes(lower_eid->pb, lower_eid->cb) != pack_result::ok)
+	    ep.p_bytes(*lower_eid) != pack_result::ok)
 		return nullptr;
 	new_eid->cb = ep.m_offset;
 	return new_eid;
