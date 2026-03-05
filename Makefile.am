@@ -9,7 +9,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
 # lib_LTL must be dependency-ordered, or make install fails
-lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_mapi.la libgromox_exrpc.la libgromox_ndr.la libgxs_mysql_adaptor.la libgromox_abtree.la libgromox_auth.la libgromox_authz.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_timer_agent.la libgxs_ruleproc.la
+lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_mapi.la libgxs_mysql_adaptor.la libgromox_exrpc.la libgromox_ndr.la libgromox_abtree.la libgromox_auth.la libgromox_authz.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_timer_agent.la libgxs_ruleproc.la
 
 pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap istore lda midb oab oxdisco pop3 timer zcore tools/authtry tools/ddbg tools/textmapquery
 if WITH_GNU_LD
