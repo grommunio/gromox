@@ -791,20 +791,35 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 	auto& exmdb = ctx.plugin().exmdb;
 
 	for (const tItemId &itemId : request.ItemIds) try {
-		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
+		if (itemId.type != tItemId::ID_ITEM &&
+		    itemId.type != tItemId::ID_OCCURRENCE)
+			ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
 		ctx.validate(dir, meid);
 		if (!(ctx.permissions(dir, parent.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
-		if (request.DeleteType == Enum::MoveToDeletedItems) {
-			uint64_t newMid;
+
+		if (itemId.InstanceIndex > 0) {
+			/* OccurrenceItemId: delete a single occurrence */
+			auto mid = meid.messageId();
+			auto basedate = ctx.resolveOccurrenceIndex(dir, mid,
+			                itemId.InstanceIndex);
+			ctx.deleteOccurrence(dir, parent.folderId, mid, basedate);
+			data.ResponseMessages.emplace_back().success();
+		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
+			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
+			ctx.deleteOccurrence(dir, parent.folderId,
+				meid.messageId(), oid.basedate);
+			data.ResponseMessages.emplace_back().success();
+		} else if (request.DeleteType == Enum::MoveToDeletedItems) {
+			uint64_t newMid = 0;
 			if (!exmdb.allocate_message_id(dir.c_str(), parent.folderId, &newMid))
 				throw EWSError::MoveCopyFailed(E3132);
 
 			sFolderSpec deletedItems = ctx.resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
-			BOOL result;
+			BOOL result = false;
 			if (!exmdb.movecopy_message(dir.c_str(), CP_ACP,
 			    meid.messageId(), deletedItems.folderId, newMid,
 			    TRUE, &result) || !result)
@@ -816,7 +831,7 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			auto fid = rop_util_make_eid_ex(1, meid.folderId());
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete ? TRUE : false;
-			BOOL partial;
+			BOOL partial = false;
 			if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
 			    CP_ACP, ctx.effectiveUser(parent), fid, &eids,
 			    hardDelete, &partial) || partial)
@@ -1990,7 +2005,10 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 			throw EWSError::AccessDenied(E3139);
 		mGetItemResponseMessage msg;
 		auto mid = eid.messageId();
-		if (itemId.type == tItemId::ID_OCCURRENCE) {
+		if (itemId.InstanceIndex > 0) {
+			auto basedate = ctx.resolveOccurrenceIndex(dir, mid, itemId.InstanceIndex);
+			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid, basedate, shape));
+		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
 			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid, oid.basedate, shape));
 		} else {
@@ -2231,8 +2249,14 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 
 	sShape idOnly;
 	idOnly.add(PR_ENTRYID, sShape::FL_FIELD).add(PR_CHANGE_KEY, sShape::FL_FIELD).add(PR_MESSAGE_CLASS);
+	idOnly.add(PR_START_DATE, sShape::FL_FIELD);
+	idOnly.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD);
+	idOnly.add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD);
+	idOnly.add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
 	for (const auto &change : request.ItemChanges) try {
-		ctx.assertIdType(change.ItemId.type, tFolderId::ID_ITEM);
+		if (change.ItemId.type != tItemId::ID_ITEM &&
+		    change.ItemId.type != tItemId::ID_OCCURRENCE)
+			ctx.assertIdType(change.ItemId.type, tItemId::ID_ITEM);
 		sMessageEntryId mid(change.ItemId.Id.data(), change.ItemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(mid);
 		std::string dir = ctx.getDir(parentFolder);
@@ -2240,6 +2264,15 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
 			throw EWSError::AccessDenied(E3190);
 		sShape shape(change);
+		/*
+		 * Pre-register timezone properties that setDatetimeFields may
+		 * write, so they are included in the named property
+		 * resolution.
+		 */
+		shape.add(NtAppointmentTimeZoneDefinitionStartDisplay, PT_BINARY);
+		shape.add(NtAppointmentTimeZoneDefinitionEndDisplay, PT_BINARY);
+		shape.add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
+		shape.add(NtTimeZoneStruct, PT_BINARY);
 		ctx.getNamedTags(dir, shape, true);
 		for (const auto &update : change.Updates) {
 			if (std::holds_alternative<tSetItemField>(update))
@@ -2247,10 +2280,27 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		tContact::genFields(shape);
 		tCalendarItem::setDatetimeFields(shape);
+		if (shape.recurrence)
+			ctx.applyRecurrence(dir, mid.messageId(), shape.recurrence, shape);
 		const char* username = ctx.effectiveUser(parentFolder);
-		ctx.updated(dir, mid, shape);
 		mUpdateItemResponseMessage msg;
-		if (shape.mimeContent) {
+		uint32_t occ_basedate = 0;
+		if (change.ItemId.InstanceIndex > 0) {
+			occ_basedate = ctx.resolveOccurrenceIndex(dir,
+			               mid.messageId(), change.ItemId.InstanceIndex);
+			TPROPVAL_ARRAY props = shape.write();
+			const auto &tagsRm = shape.remove_vec();
+			ctx.updateOccurrence(dir, parentFolder.folderId,
+				mid.messageId(), occ_basedate, props, tagsRm);
+		} else if (change.ItemId.type == tItemId::ID_OCCURRENCE) {
+			sOccurrenceId oid(change.ItemId.Id.data(), change.ItemId.Id.size());
+			occ_basedate = oid.basedate;
+			TPROPVAL_ARRAY props = shape.write();
+			const auto &tagsRm = shape.remove_vec();
+			ctx.updateOccurrence(dir, parentFolder.folderId,
+				mid.messageId(), occ_basedate, props, tagsRm);
+		} else if (shape.mimeContent) {
+			ctx.updated(dir, mid, shape);
 			EWSContext::MCONT_PTR content = ctx.toContent(dir, *shape.mimeContent);
 			for (auto tag : shape.remove())
 				content->proplist.erase(tag);
@@ -2270,6 +2320,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    &outmid, &outcn, &error) || error != ecSuccess)
 				throw EWSError::ItemSave(E3255);
 		} else {
+			ctx.updated(dir, mid, shape);
 			TPROPVAL_ARRAY props = shape.write();
 			const auto &tagsRm = shape.remove_vec();
 			PROBLEM_ARRAY problems;
@@ -2281,7 +2332,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemSave(E3092);
 			msg.ConflictResults.Count = problems.count;
 		}
-		msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
+		if (occ_basedate != 0)
+			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
+		else
+			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {

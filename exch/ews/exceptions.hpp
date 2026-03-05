@@ -431,6 +431,7 @@ E(3300, "Failed to get offset from the timezone definition");
 E(3301, "Failed to copy message to sent items");
 E(3302, "Failed to get the display name");
 E(3303, "failed to load item");
+E(3304, "invalid OccurrenceItemId: missing RecurringMasterId or InstanceIndex");
 E(3305, "failed to resolve occurrence index: no recurrence blob");
 E(3306, "failed to resolve occurrence index: could not parse recurrence blob");
 E(3307, "occurrence index out of range");

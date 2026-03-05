@@ -376,6 +376,41 @@ void tBaseItemId::serialize(XMLElement *xml) const
 	XMLDUMPA(ChangeKey);
 }
 
+/**
+ * @brief      Parse OccurrenceItemId elements from an ItemIds parent
+ *
+ * OccurrenceItemId has RecurringMasterId + InstanceIndex attributes
+ * instead of the standard Id attribute.
+ */
+static void parseOccurrenceItemIds(const XMLElement *xml,
+    std::vector<tItemId> &ids)
+{
+	const XMLElement *parent = xml->FirstChildElement("ItemIds");
+	if (!parent)
+		return;
+	for (const XMLElement *elem = parent->FirstChildElement("OccurrenceItemId");
+	     elem; elem = elem->NextSiblingElement("OccurrenceItemId")) {
+		const char *masterId = elem->Attribute("RecurringMasterId");
+		int instanceIndex = 0;
+		elem->QueryIntAttribute("InstanceIndex", &instanceIndex);
+		if (!masterId || instanceIndex < 1)
+			throw DeserializationError(E3304);
+		tItemId id;
+		id.Id = sBase64Binary(base64_decode(masterId));
+		if (!id.Id.empty()) {
+			char t = id.Id.back();
+			id.type = t < 0 || t > tBaseItemId::ID_OCCURRENCE ?
+			          tBaseItemId::ID_UNKNOWN : tBaseItemId::IdType(t);
+			id.Id.pop_back();
+		}
+		const char *changeKey = elem->Attribute("ChangeKey");
+		if (changeKey)
+			id.ChangeKey = sBase64Binary(base64_decode(changeKey));
+		id.InstanceIndex = instanceIndex;
+		ids.emplace_back(std::move(id));
+	}
+}
+
 void tBaseObjectChangedEvent::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(TimeStamp);
@@ -1261,9 +1296,34 @@ void tItem::serialize(XMLElement *xml) const
 }
 
 tItemChange::tItemChange(const XMLElement *xml) :
-	XMLINIT(ItemId),
 	XMLINIT(Updates)
-{}
+{
+	const XMLElement *idElem = xml->FirstChildElement("ItemId");
+	if (idElem) {
+		ItemId = tItemId(idElem);
+		return;
+	}
+	const XMLElement *occElem = xml->FirstChildElement("OccurrenceItemId");
+	if (!occElem)
+		throw DeserializationError(E3046("ItemId", xml->Name()));
+
+	const char *masterId = occElem->Attribute("RecurringMasterId");
+	int instanceIndex = 0;
+	occElem->QueryIntAttribute("InstanceIndex", &instanceIndex);
+	if (!masterId || instanceIndex < 1)
+		throw DeserializationError(E3304);
+	ItemId.Id = sBase64Binary(base64_decode(masterId));
+	if (!ItemId.Id.empty()) {
+		char t = ItemId.Id.back();
+		ItemId.type = t < 0 || t > tBaseItemId::ID_OCCURRENCE ?
+			      tBaseItemId::ID_UNKNOWN : tBaseItemId::IdType(t);
+		ItemId.Id.pop_back();
+	}
+	const char *changeKey = occElem->Attribute("ChangeKey");
+	if (changeKey)
+		ItemId.ChangeKey = sBase64Binary(base64_decode(changeKey));
+	ItemId.InstanceIndex = instanceIndex;
+}
 
 tItemResponseShape::tItemResponseShape(const XMLElement *xml) :
 	XMLINIT(BaseShape),
@@ -1786,7 +1846,9 @@ mBaseMoveCopyItem::mBaseMoveCopyItem(const tinyxml2::XMLElement *xml, bool c) :
 	XMLINIT(ItemIds),
 	XMLINIT(ReturnNewItemIds),
 	copy(c)
-{}
+{
+	parseOccurrenceItemIds(xml, ItemIds);
+}
 
 mConvertIdRequest::mConvertIdRequest(const tinyxml2::XMLElement *xml) :
 	XMLINIT(SourceIds),
@@ -1859,7 +1921,9 @@ void mDeleteFolderResponse::serialize(tinyxml2::XMLElement *xml) const
 mDeleteItemRequest::mDeleteItemRequest(const tinyxml2::XMLElement *xml) :
 	XMLINITA(DeleteType),
 	XMLINIT(ItemIds)
-{}
+{
+	parseOccurrenceItemIds(xml, ItemIds);
+}
 
 void mDeleteItemResponse::serialize(tinyxml2::XMLElement *xml) const
 {
@@ -2182,7 +2246,9 @@ mSendItemRequest::mSendItemRequest(const tinyxml2::XMLElement *xml) :
 	XMLINITA(SaveItemToFolder),
 	XMLINIT(ItemIds),
 	XMLINIT(SavedItemFolderId)
-{}
+{
+	parseOccurrenceItemIds(xml, ItemIds);
+}
 
 void mSendItemResponse::serialize(tinyxml2::XMLElement *xml) const
 {
@@ -2251,7 +2317,9 @@ void mGetInboxRulesResponse::serialize(XMLElement *xml) const
 mGetItemRequest::mGetItemRequest(const XMLElement *xml) :
 	XMLINIT(ItemShape),
 	XMLINIT(ItemIds)
-{}
+{
+	parseOccurrenceItemIds(xml, ItemIds);
+}
 
 void mGetItemResponse::serialize(XMLElement *xml) const
 {
