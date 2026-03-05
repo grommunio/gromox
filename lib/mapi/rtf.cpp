@@ -2275,8 +2275,10 @@ int rtf_reader::cmd_nonbreaking_space(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_nonbreaking_hyphen(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return ext_push.p_bytes(wchar_to_utf8(0x2011)) == pack_result::ok ?
-	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	if (ext_push.p_bytes(wchar_to_utf8(0x2011)) != pack_result::ok)
+		return CMD_RESULT_ERROR;
+	++total_chars_in_line;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_soft_hyphen(SIMPLE_TREE_NODE *pword,
