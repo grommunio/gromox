@@ -4966,7 +4966,9 @@ mFreeBusyResponse::mFreeBusyResponse(tFreeBusyView &&fbv)
  */
 mResponseMessageType::mResponseMessageType(const std::string& rclass,
     const std::optional<std::string> &rcode, const std::optional<std::string> &mt) :
-	ResponseClass(rclass), MessageText(mt), ResponseCode(rcode)
+	ResponseClass(rclass), MessageText(mt), ResponseCode(rcode),
+	DescriptiveLinkKey(rclass == "Error" ?
+		std::optional<int32_t>(0) : std::nullopt)
 {}
 
 /**
@@ -4977,7 +4979,8 @@ mResponseMessageType::mResponseMessageType(const std::string& rclass,
 mResponseMessageType::mResponseMessageType(const EWSError& err) :
 	ResponseClass("Error"),
 	MessageText(err.what()),
-	ResponseCode(err.type)
+	ResponseCode(err.type),
+	DescriptiveLinkKey(0)
 {}
 
 /**
@@ -5005,5 +5008,6 @@ mResponseMessageType& mResponseMessageType::error(const std::string& rcode, cons
 	ResponseClass = "Error";
 	MessageText = mt;
 	ResponseCode = rcode;
+	DescriptiveLinkKey = 0;
 	return *this;
 }
