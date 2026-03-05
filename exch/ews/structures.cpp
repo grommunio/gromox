@@ -2841,6 +2841,12 @@ tAttendee::tAttendee(const TPROPVAL_ARRAY& tps)
 		Mailbox.EmailAddress = data;
 		Mailbox.RoutingType = "SMTP";
 	}
+	auto trackStatus = tps.get<const uint32_t>(PR_RECIPIENT_TRACKSTATUS);
+	if (trackStatus)
+		ResponseType.emplace(respstatus_to_resptype(*trackStatus));
+	auto trackTime = tps.get<const uint64_t>(PR_RECIPIENT_TRACKSTATUS_TIME);
+	if (trackTime)
+		LastResponseTime.emplace(rop_util_nttime_to_unix2(*trackTime));
 }
 
 tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const std::string& email,

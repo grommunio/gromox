@@ -757,9 +757,9 @@ enum {
 	// PR_RECIPIENT_PROPOSEDENDTIME = PROP_TAG(PT_SYSTIME, 0x5FE4), /* PidTagRecipientProposedEndTime */
 	PR_RECIPIENT_DISPLAY_NAME = PROP_TAG(PT_UNICODE, 0x5FF6), /* PidTagRecipientDisplayName */
 	PR_RECIPIENT_ENTRYID = PROP_TAG(PT_BINARY, 0x5FF7), /* PidTagRecipientEntryId */
-	// PR_RECIPIENT_TRACKSTATUS_TIME = PROP_TAG(PT_SYSTIME, 0x5FFB), /* PidTagRecipientTrackStatusTime */
+	PR_RECIPIENT_TRACKSTATUS_TIME = PROP_TAG(PT_SYSTIME, 0x5FFB), /* PidTagRecipientTrackStatusTime */
 	PR_RECIPIENT_FLAGS = PROP_TAG(PT_LONG, 0x5FFD), /* PidTagRecipientFlags */
-	// PR_RECIPIENT_TRACKSTATUS = PROP_TAG(PT_LONG, 0x5FFF), /* PidTagRecipientTrackStatus */
+	PR_RECIPIENT_TRACKSTATUS = PROP_TAG(PT_LONG, 0x5FFF), /* PidTagRecipientTrackStatus */
 	// PR_JUNK_INCLUDE_CONTACTS = PROP_TAG(PT_LONG, 0x6100), /* PidTagJunkIncludeContacts */
 	// PR_JUNK_THRESHOLD = PROP_TAG(PT_LONG, 0x6101), /* PidTagJunkThreshold */
 	// PR_JUNK_PERMANENTLY_DELETE = PROP_TAG(PT_LONG, 0x6102), /* PidTagJunkPermanentlyDelete */
