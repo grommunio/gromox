@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  * tzdump -f xyz.tzd
@@ -87,9 +87,6 @@ static int d_zones(int argc, char **argv, bool windows)
 {
 	int ret = EXIT_SUCCESS;
 	for (; argc-- > 0; ++argv) {
-		auto zone = *argv;
-		if (windows)
-			replace_unsafe_basename(zone);
 		auto buf = windows ? wintz_to_tzdef(*argv) : ianatz_to_tzdef(*argv);
 		if (buf == nullptr) {
 			fprintf(stderr, "%s: zone name not recognized\n", *argv);
