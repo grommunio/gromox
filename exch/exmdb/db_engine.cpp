@@ -112,7 +112,7 @@ unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
 unsigned long long g_sqlite_busy_timeout_ns;
 std::string exmdb_eph_prefix;
 
-static bool remove_from_hash(const db_base &, time_point);
+static bool dbase_is_purgable(const db_base &, time_point);
 static void dbeng_notify_cttbl_modify_row(db_conn &, uint64_t folder_id, uint64_t message_id, db_base &, db_conn::NOTIFQ &);
 
 static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
@@ -322,7 +322,7 @@ BOOL db_engine_unload_db(const char *path)
 		auto now = tp_now();
 		auto &dbase = it->second;
 		std::unique_lock dhold(dbase.giant_lock);
-		if (remove_from_hash(dbase, now + g_cache_interval)) {
+		if (dbase_is_purgable(dbase, now + g_cache_interval)) {
 			dhold.unlock();
 			g_hash_table.erase(it);
 			return TRUE;
@@ -770,7 +770,7 @@ void db_base::drop_all()
 /**
  * Check if this db_base object is ripe for deletion.
  */
-static bool remove_from_hash(const db_base &pdb, time_point now)
+static bool dbase_is_purgable(const db_base &pdb, time_point now)
 {
 	if (pdb.tables.table_list.size() > 0)
 		/* emsmdb still references in-memory tables */
@@ -806,7 +806,7 @@ static void *db_expiry_thread(void *param)
 			 * Hence another lock.
 			 */
 			std::unique_lock dhold(dbase.giant_lock);
-			if (remove_from_hash(dbase, now_time)) {
+			if (dbase_is_purgable(dbase, now_time)) {
 				dhold.unlock();
 				it = g_hash_table.erase(it);
 			} else {
