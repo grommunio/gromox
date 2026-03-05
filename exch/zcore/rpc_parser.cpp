@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -182,7 +182,7 @@ static void *zcrp_thrwork(void *param)
 	tmp_bin.pv = pbuff;
 	tmp_bin.cb = buff_len;
 	std::unique_ptr<zcreq> request;
-	if (rpc_ext_pull_request(&tmp_bin, request) != pack_result::ok) {
+	if (rpc_ext_pull_request(tmp_bin, request) != pack_result::ok) {
 		free(pbuff);
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::pull_error;

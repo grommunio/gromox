@@ -237,8 +237,6 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 		         "ON m.message_id=mp.message_id AND m.is_deleted=1 AND m.parent_fid=%llu AND "
 		         "mp.proptag=%u AND mp.propval<=%llu GROUP BY m.is_associated",
 		         LLU{folder_id}, PR_LAST_MODIFICATION_TIME, LLU{cutoff});
-		if (gx_sql_exec(db.psqlite, qstr) != SQLITE_OK)
-			return false;
 		auto stm = gx_sql_prep(db.psqlite, qstr);
 		if (stm == nullptr)
 			return false;
@@ -259,6 +257,7 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 			if (msg_count != nullptr)
 				*msg_count += count;
 		}
+		stm.finalize();
 		snprintf(qstr, sizeof(qstr), "DELETE FROM messages "
 		         "WHERE message_id IN (SELECT m.message_id "
 		         "FROM messages AS m INNER JOIN message_properties AS mp "
@@ -268,6 +267,12 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 		if (gx_sql_exec(db.psqlite, qstr) != SQLITE_OK)
 			return false;
 	} else {
+		/*
+		 * Permission-checked path: collect deletable messages first
+		 * so the cursor is closed before any DELETEs run.
+		 */
+		struct msg_info { uint64_t id = 0, size = 0; bool assoc = false; };
+		std::vector<msg_info> to_delete;
 		char qstr[257];
 		snprintf(qstr, sizeof(qstr), "SELECT m.message_id, m.message_size, m.is_associated "
 		         "FROM messages AS m INNER JOIN message_properties AS mp "
@@ -292,14 +297,17 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 				*partial = true;
 				continue;
 			}
-			bool assoc = stmt.col_uint64(2);
+			to_delete.emplace_back(msgid, stmt.col_uint64(1), stmt.col_uint64(2) != 0);
+		}
+		stmt.finalize();
+		for (const auto &mi : to_delete) {
 			if (msg_count != nullptr)
 				++*msg_count;
-			if (!assoc && normal_size != nullptr)
-				*normal_size += stmt.col_uint64(1);
-			else if (assoc && fai_size != nullptr)
-				*fai_size += stmt.col_uint64(1);
-			snprintf(qstr, sizeof(qstr), "DELETE FROM messages WHERE message_id=%llu", LLU{msgid});
+			if (!mi.assoc && normal_size != nullptr)
+				*normal_size += mi.size;
+			else if (mi.assoc && fai_size != nullptr)
+				*fai_size += mi.size;
+			snprintf(qstr, sizeof(qstr), "DELETE FROM messages WHERE message_id=%llu", LLU{mi.id});
 			if (gx_sql_exec(db.psqlite, qstr) != SQLITE_OK)
 				return false;
 		}
@@ -308,22 +316,28 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 	if (!(del_flags & DEL_FOLDERS))
 		return true;
 
+	/* Collect subfolder IDs so the cursor is closed before recursion. */
 	char qstr[80];
 	snprintf(qstr, sizeof(qstr), "SELECT folder_id,"
 	         " is_deleted FROM folders WHERE parent_id=%llu", LLU{folder_id});
 	auto stm = gx_sql_prep(db.psqlite, qstr);
 	if (stm == nullptr)
 		return FALSE;
+	struct subfld_info { uint64_t id = 0; bool is_del = false; };
+	std::vector<subfld_info> subfolders;
 	while (true) {
 		ret = stm.step();
 		if (ret == SQLITE_DONE)
 			break;
 		else if (ret != SQLITE_ROW)
 			return false;
+		subfolders.emplace_back(stm.col_uint64(0), stm.col_uint64(1) != 0);
+	}
+	stm.finalize();
 
-		auto subfld = stm.col_uint64(0);
+	for (const auto &sf : subfolders) {
 		bool sub_partial = false;
-		if (!folder_purge_softdel(db, cpid, username, subfld,
+		if (!folder_purge_softdel(db, cpid, username, sf.id,
 		    del_flags, &sub_partial, normal_size, fai_size,
 		    msg_count, fld_count, cutoff, dbase, notifq))
 			return false;
@@ -336,10 +350,9 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 		 * just like Unix permissions act in a filesystem (deep
 		 * directory with no perms can block toplevel dir deletion).
 		 */
-		bool is_del = stm.col_int64(1);
-		if (!is_del)
+		if (!sf.is_del)
 			continue;
-		ret = have_delete_perm(db, username, subfld);
+		ret = have_delete_perm(db, username, sf.id);
 		if (ret < 0)
 			return false;
 		if (ret == 0) {
@@ -349,10 +362,10 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 		if (fld_count != nullptr)
 			++*fld_count;
 		snprintf(qstr, sizeof(qstr), "DELETE FROM folders "
-		         "WHERE folder_id=%llu", LLU{subfld});
+		         "WHERE folder_id=%llu", LLU{sf.id});
 		if (gx_sql_exec(db.psqlite, qstr) != SQLITE_OK)
 			return false;
-		db.notify_folder_deletion(folder_id, subfld, *dbase, notifq);
+		db.notify_folder_deletion(folder_id, sf.id, *dbase, notifq);
 	}
 	return true;
 }

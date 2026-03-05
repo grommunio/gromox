@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
+#include <string_view>
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
 #include "ext.hpp"
@@ -1166,11 +1169,11 @@ pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 	return pack_result::ok;
 }
 
-pack_result rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
+pack_result rpc_ext_pull_response(std::string_view pbin_in, zcresp *presponse)
 {
 	PULL_CTX pull_ctx;
 	
-	pull_ctx.init(pbin_in->pb, pbin_in->cb);
+	pull_ctx.init(pbin_in.data(), pbin_in.size());
 	uint32_t v;
 	TRY(pull_ctx.g_uint32(&v));
 	presponse->result = static_cast<ec_error_t>(v);

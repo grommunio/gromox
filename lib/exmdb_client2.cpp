@@ -265,25 +265,17 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir,
 	free(bin.pb);
 	bin.pb = nullptr;
 
-	if (bp_client->m_build_env != nullptr)
-		bp_client->m_build_env(ident.type == srv_type::xprivate);
-	auto cl_0 = HX::make_scope_exit([bp_client]() {
-		if (bp_client->m_free_env != nullptr)
-			bp_client->m_free_env();
-	});
-	if (!exmdb_client_read_socket(fd.get(), bin, bp_client->m_rpc_timeout) ||
-	    bin.pb == nullptr)
+	std::string rsp_bin;
+	if (!exmdb_client_read_socket(fd.get(), rsp_bin, bp_client->m_rpc_timeout) ||
+	    rsp_bin.empty())
 		return -1;
-	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
-	exmdb_rpc_free(bin.pb);
-	bin.pb = nullptr;
-
+	auto response_code = static_cast<exmdb_response>(rsp_bin[0]);
 	if (response_code != exmdb_response::success) {
 		mlog(LV_ERR, "exmdb_client: Failed to connect to [%s]:%hu: %s",
 		       ident.host.c_str(), ident.port,
 		       exmdb_rpc_strerror(response_code));
 		return -1;
-	} else if (bin.cb != 5) {
+	} else if (rsp_bin.size() != 5) {
 		mlog(LV_ERR, "exmdb_client: response format error "
 		       "during connect to [%s]:%hu",
 		       ident.host.c_str(), ident.port);
@@ -407,7 +399,7 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 			lo_client->m_free_env();
 	});
 	DB_NOTIFY_DATAGRAM notify;
-	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == pack_result::ok ?
+	auto resp_code = exmdb_ext_pull_db_notify(bin, &notify) == pack_result::ok ?
 	                 exmdb_response::success : exmdb_response::pull_error;
 	if (write(fd.get(), &resp_code, 1) != 1)
 		return -1;
@@ -850,32 +842,30 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 	}
 	free(bin.pb);
 	bin.pb = nullptr;
-	if (!exmdb_client_read_socket(cref->m_fd.get(), bin, exmdb_client->m_rpc_timeout))
+
+	std::string rsp_bin;
+	if (!exmdb_client_read_socket(cref->m_fd.get(), rsp_bin, exmdb_client->m_rpc_timeout))
 		return false;
-	if (bin.pb == nullptr)
+	if (rsp_bin.empty())
 		return false;
-	if (bin.cb == 1) {
-		exmdb_rpc_free(bin.pb);
+	if (rsp_bin.size() == 1) {
 		/* Connection is still good in principle. */
 		cref.putback();
 		return false;
 	}
-	if (bin.cb < 5) {
-		exmdb_rpc_free(bin.pb);
+	if (rsp_bin.size() < 5) {
 		/*
-		 * Malformed packet. Let connection die (~srv_conn_ref), as
-		 * there may be bytes in the socket buffer that could be picked
-		 * up as garbage if we issue another RPC.
+		 * Malformed packet? Let connection die
+		 * (~exmdb_connection_ref), lest the next response might pick
+		 * up garbage from the current response.
 		 */
 		return false;
 	}
 	cref.putback();
 	rsp->call_id = rq->call_id;
-	bin.cb -= 5;
-	bin.pb += 5;
-	auto ret = exmdb_ext_pull_response(&bin, rsp);
-	bin.pb -= 5;
-	exmdb_rpc_free(bin.pb);
+	std::string_view rsp_sv(rsp_bin);
+	rsp_sv.remove_prefix(5);
+	auto ret = exmdb_ext_pull_response(rsp_sv, rsp);
 	return ret == pack_result::ok ? TRUE : false;
 }
 

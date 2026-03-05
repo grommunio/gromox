@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
 #include <cstdint>
+#include <string_view>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/zcore_rpc.hpp>
@@ -1608,14 +1609,14 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_essdn_to_username &d)
 	return pack_result::ok;
 }
 
-pack_result rpc_ext_pull_request(const BINARY *pbin_in,
+pack_result rpc_ext_pull_request(std::string_view pbin_in,
     std::unique_ptr<zcreq> &prequest) try
 {
 	EXT_PULL ext_pull;
 	uint8_t call_id;
 	auto b_ret = pack_result::failure;
 	
-	ext_pull.init(pbin_in->pb, pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
+	ext_pull.init(pbin_in.data(), pbin_in.size(), common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
 	QRF(ext_pull.g_uint8(&call_id));
 
 #define EDEF(t, id) case zcore_callid::t: { \
