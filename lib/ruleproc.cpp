@@ -1410,8 +1410,12 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 	auto rq_class = mr_get_class(rq_prop);
 	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Request") == 0)
 		return mr_do_request(par, propids, policy);
-	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Resp") == 0)
-		return mr_do_response(par, propids);
+	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Resp") == 0) {
+		auto err = mr_do_response(par, propids);
+		if (err != ecSuccess)
+			return err;
+		return mr_mark_done(par);
+	}
 	return ecSuccess;
 }
 
