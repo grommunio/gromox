@@ -637,9 +637,22 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 		throw EWSError::ItemSave(E3254);
 
 	auto &props = calendarItem->proplist;
-	// Remove PidTagMid and PidTagChangeNumber, otherwise the calendar item won't be
-	// created / updated
-	static constexpr proptag_t rmProps[] = {PidTagMid, PidTagChangeNumber};
+	/*
+	 * Strip message IDs (so write_message creates/updates rather than
+	 * colliding) and inbox-specific envelope properties that have no
+	 * place on a calendar item. Keep in sync with mr_insert_to_cal().
+	 */
+	static constexpr proptag_t rmProps[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST,
+		PR_RECEIVED_BY_ENTRYID, PR_RECEIVED_BY_NAME,
+		PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS,
+		PR_RECEIVED_BY_SEARCH_KEY, PR_RCVD_REPRESENTING_ENTRYID,
+		PR_RCVD_REPRESENTING_NAME, PR_RCVD_REPRESENTING_ADDRTYPE,
+		PR_RCVD_REPRESENTING_EMAIL_ADDRESS,
+		PR_RCVD_REPRESENTING_SEARCH_KEY, PR_MESSAGE_TO_ME,
+		PR_TRANSPORT_MESSAGE_HEADERS, PR_CONTENT_FILTER_SCL,
+	};
 	for (auto tag : rmProps)
 		props.erase(tag);
 
