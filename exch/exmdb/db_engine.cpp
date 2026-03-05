@@ -319,15 +319,10 @@ BOOL db_engine_unload_db(const char *path)
 		auto it = g_hash_table.find(path);
 		if (it == g_hash_table.end())
 			return TRUE;
-		auto now = tp_now();
-		auto &dbase = it->second;
-		std::unique_lock dhold(dbase.giant_lock);
-		if (dbase_is_purgable(dbase, now + g_cache_interval)) {
-			dhold.unlock();
+		if (dbase_is_purgable(it->second, tp_now() + g_cache_interval)) {
 			g_hash_table.erase(it);
 			return TRUE;
 		}
-		dhold.unlock();
 		hhold.unlock();
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
@@ -772,6 +767,8 @@ void db_base::drop_all()
  */
 static bool dbase_is_purgable(const db_base &pdb, time_point now)
 {
+	/* Guard against writers that might interfere with reads. */
+	std::lock_guard hold(pdb.giant_lock);
 	if (pdb.tables.table_list.size() > 0)
 		/* emsmdb still references in-memory tables */
 		return false;
@@ -799,20 +796,15 @@ static void *db_expiry_thread(void *param)
 		/* Exclusive ownership over the list is needed, obviously, since we modify it */
 		std::lock_guard hhold(g_hash_lock);
 		auto now_time = tp_now();
-		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
-			auto &dbase = it->second;
-			/*
-			 * There must be no readers nor writers if we destroy it.
-			 * Hence another lock.
-			 */
-			std::unique_lock dhold(dbase.giant_lock);
-			if (dbase_is_purgable(dbase, now_time)) {
-				dhold.unlock();
-				it = g_hash_table.erase(it);
-			} else {
-				++it;
-			}
-		}
+		/*
+		 * There must be no readers nor writers when we destroy it.
+		 * dbase_is_purgable is taking dbase.giant_lock, which is good
+		 * enough to establish absence of other readers (and there
+		 * ought to be no new ones, since we also hold g_hash_lock).
+		 */
+		std::erase_if(g_hash_table, [=](const decltype(g_hash_table)::value_type &iter) {
+			return dbase_is_purgable(iter.second, now_time);
+		});
 	}
 	return nullptr;
 }
