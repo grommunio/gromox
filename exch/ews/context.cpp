@@ -1512,10 +1512,69 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
  * @param     meetReq Meeting request to store data in
  * @param     special Bit mask of attributes to load
  */
+void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
+    uint64_t mid, tMeetingMessage &meetMsg, uint64_t special) const
+{
+	loadSpecial(dir, fid, mid, static_cast<tMessage &>(meetMsg), special);
+	if (!meetMsg.UID || meetMsg.AssociatedCalendarItemId)
+		return;
+	/*
+	 * Populate AssociatedCalendarItemId by searching the
+	 * calendar for an item matching the CleanGlobalObjectId.
+	 */
+	auto goid = getItemProp<BINARY>(dir, mid,
+	    PROP_TAG(PT_BINARY, getNamedPropId(dir,
+	    NtCleanGlobalObjectId)));
+	if (goid == nullptr || goid->cb == 0)
+		return;
+	sFolderSpec calFolder;
+	calFolder.folderId = rop_util_make_eid_ex(1,
+	    PRIVATE_FID_CALENDAR);
+	calFolder.location = sFolderSpec::PRIVATE;
+	calFolder.target = m_auth_info.username;
+	std::string calDir = getDir(calFolder);
+	auto pidCgoid  = getNamedPropId(calDir, NtCleanGlobalObjectId);
+	auto cgoid_tag = PROP_TAG(PT_BINARY, pidCgoid);
+	const RESTRICTION_PROPERTY rprop = {RELOP_EQ, cgoid_tag, {cgoid_tag, deconst(goid)}};
+	const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
+	uint32_t table_id = 0, row_count = 0;
+	if (!m_plugin.exmdb.load_content_table(calDir.c_str(),
+	    CP_ACP, calFolder.folderId, nullptr,
+	    TABLE_FLAG_NONOTIFICATIONS, &rst, nullptr,
+	    &table_id, &row_count) || row_count == 0)
+		return;
+	auto cl_tbl = HX::make_scope_exit([&]() {
+		m_plugin.exmdb.unload_table(calDir.c_str(), table_id);
+	});
+	static constexpr proptag_t eid_tag = PR_ENTRYID;
+	TARRAY_SET rows{};
+	if (!m_plugin.exmdb.query_table(calDir.c_str(), nullptr,
+	    CP_ACP, table_id, {&eid_tag, 1}, 0, 1, &rows) ||
+	    rows.count == 0 || rows.pparray[0] == nullptr)
+		return;
+	auto eid = rows.pparray[0]->get<const BINARY>(PR_ENTRYID);
+	if (eid == nullptr || eid->cb == 0)
+		return;
+	meetMsg.AssociatedCalendarItemId.emplace();
+	meetMsg.AssociatedCalendarItemId->Id.assign(*eid);
+}
+
+void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
+    uint64_t mid, tMeetingResponseMessage &msg, uint64_t special) const
+{
+	loadSpecial(dir, fid, mid, static_cast<tMeetingMessage &>(msg), special);
+}
+
+void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
+    uint64_t mid, tMeetingCancellationMessage &msg, uint64_t special) const
+{
+	loadSpecial(dir, fid, mid, static_cast<tMeetingMessage &>(msg), special);
+}
+
 void EWSContext::loadSpecial(const std::string &dir, uint64_t fid, uint64_t mid,
     tMeetingRequestMessage &meetReq, uint64_t special) const
 {
-	loadSpecial(dir, fid, mid, static_cast<tMessage &>(meetReq), special);
+	loadSpecial(dir, fid, mid, static_cast<tMeetingMessage &>(meetReq), special);
 	if (!(special & sShape::Attendees))
 		return;
 	TARRAY_SET rcpts;
@@ -3425,7 +3484,6 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& shape, MCONT_PTR& content) const
 {
 	toContent(dir, static_cast<tItem&>(item), shape, content);
-	// TODO: goid
 	if (!item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
 	int64_t startOffset = 0, endOffset = 0;
@@ -3807,6 +3865,30 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		BINARY* goid = construct<BINARY>(BINARY{goid_bin.cb, {goid_bin.pb}});
 		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
+	} else if (!shape.writes(NtGlobalObjectId)) {
+		GLOBALOBJECTID goid{};
+		goid.arrayid = EncodedGlobalId;
+		goid.creationtime = rop_util_unix_to_nttime(time(nullptr));
+		goid.data.cb = 16;
+		goid.data.pb = alloc<uint8_t>(16);
+		EXT_PUSH ep;
+		char buf[256];
+		if (!ep.init(goid.data.pb, 16, 0) ||
+		    ep.p_guid(GUID::random_new()) != pack_result::ok ||
+		    !ep.init(buf, sizeof(buf), 0) ||
+		    ep.p_goid(goid) != pack_result::ok)
+			throw EWSError::InternalServerError(E3299);
+		auto *gb = construct<BINARY>(BINARY{
+		           static_cast<uint32_t>(ep.m_offset), ep.m_udata});
+		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
+		goid.year = goid.month = goid.day = 0;
+		goid.creationtime = 0;
+		if (!ep.init(buf, sizeof(buf), 0) ||
+		    ep.p_goid(goid) != pack_result::ok)
+			throw EWSError::InternalServerError(E3299);
+		auto *cb = construct<BINARY>(BINARY{
+		           static_cast<uint32_t>(ep.m_offset), ep.m_udata});
+		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, cb});
 	}
 
 	size_t recipients = (item.RequiredAttendees ? item.RequiredAttendees->size() : 0) +
