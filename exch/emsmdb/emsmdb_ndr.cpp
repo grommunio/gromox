@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2025–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
@@ -74,7 +74,7 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECRREGISTERPUSHNOTIFICATION_IN *
 	r->pctx = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pctx == nullptr)
 		return pack_result::alloc;
-	TRY(x.g_uint8_a(r->pctx, size));
+	TRY(x.g_bytes(r->pctx, size));
 	TRY(x.g_uint16(&r->cb_ctx));
 	if (r->cb_ctx != size)
 		return pack_result::array_size;
@@ -83,7 +83,7 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECRREGISTERPUSHNOTIFICATION_IN *
 	r->paddr = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->paddr == nullptr)
 		return pack_result::alloc;
-	TRY(x.g_uint8_a(r->paddr, size));
+	TRY(x.g_bytes(r->paddr, size));
 	TRY(x.g_uint16(&r->cb_addr));
 	if (r->cb_addr != size)
 		return pack_result::array_size;
@@ -133,7 +133,7 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECDOCONNECTEX_IN *r)
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pauxin == nullptr)
 		return pack_result::alloc;
-	TRY(x.g_uint8_a(r->pauxin, size));
+	TRY(x.g_bytes(r->pauxin, size));
 	TRY(x.g_uint32(&r->cb_auxin));
 	if (r->cb_auxin != size)
 		return pack_result::array_size;
@@ -175,7 +175,7 @@ static pack_result emsmdb_ndr_push(NDR_PUSH &x, const ECDOCONNECTEX_OUT &r)
 	TRY(x.p_ulong(r.cb_auxout));
 	TRY(x.p_ulong(0));
 	TRY(x.p_ulong(r.cb_auxout));
-	TRY(x.p_uint8_a(r.pauxout, r.cb_auxout));
+	TRY(x.p_bytes(r.pauxout, r.cb_auxout));
 	TRY(x.p_uint32(r.cb_auxout));
 	return x.p_err32(r.result);
 }
@@ -202,7 +202,7 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECDORPCEXT2_IN *r)
 	r->pin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pin == nullptr)
 		return pack_result::alloc;
-	TRY(x.g_uint8_a(r->pin, size));
+	TRY(x.g_bytes(r->pin, size));
 	TRY(x.g_uint32(&r->cb_in));
 	if (r->cb_in != size)
 		return pack_result::array_size;
@@ -214,7 +214,7 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECDORPCEXT2_IN *r)
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pauxin == nullptr)
 		return pack_result::alloc;
-	TRY(x.g_uint8_a(r->pauxin, size));
+	TRY(x.g_bytes(r->pauxin, size));
 	TRY(x.g_uint32(&r->cb_auxin));
 	if (r->cb_auxin != size)
 		return pack_result::array_size;
@@ -233,14 +233,14 @@ static pack_result emsmdb_ndr_push(NDR_PUSH &x, const ECDORPCEXT2_OUT &r)
 	TRY(x.p_ulong(r.cb_out));
 	TRY(x.p_ulong(0));
 	TRY(x.p_ulong(r.cb_out));
-	TRY(x.p_uint8_a(r.pout, r.cb_out));
+	TRY(x.p_bytes(r.pout, r.cb_out));
 	TRY(x.p_uint32(r.cb_out));
 	if (r.cb_auxout > 0x1008)
 		return pack_result::range;
 	TRY(x.p_ulong(r.cb_auxout));
 	TRY(x.p_ulong(0));
 	TRY(x.p_ulong(r.cb_auxout));
-	TRY(x.p_uint8_a(r.pauxout, r.cb_auxout));
+	TRY(x.p_bytes(r.pauxout, r.cb_auxout));
 	TRY(x.p_uint32(r.cb_auxout));
 	TRY(x.p_uint32(r.trans_time));
 	return x.p_err32(r.result);

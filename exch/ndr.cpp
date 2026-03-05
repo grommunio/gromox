@@ -229,7 +229,7 @@ pack_result NDR_PULL::g_ulong(uint32_t *v)
 	return pndr->g_uint32(v);
 }
 
-pack_result NDR_PULL::g_uint8_a(uint8_t *d, uint32_t n)
+pack_result NDR_PULL::g_bytes(void *d, uint32_t n)
 {
 	auto pndr = this;
 	if (pndr->data_size < n || pndr->offset + n > pndr->data_size)
@@ -246,8 +246,8 @@ pack_result NDR_PULL::g_guid(GUID *r)
 	TRY(pndr->g_uint32(&r->time_low));
 	TRY(pndr->g_uint16(&r->time_mid));
 	TRY(pndr->g_uint16(&r->time_hi_and_version));
-	TRY(pndr->g_uint8_a(r->clock_seq, 2));
-	TRY(pndr->g_uint8_a(r->node, 6));
+	TRY(pndr->g_bytes(r->clock_seq, 2));
+	TRY(pndr->g_bytes(r->node, 6));
 	TRY(pndr->trailer_align(4));
 	return pack_result::ok;
 }
@@ -399,7 +399,7 @@ static bool ndr_push_make_room(NDR_PUSH *pndr, uint32_t extra_size)
 	return TRUE;
 }
 
-pack_result NDR_PUSH::p_uint8_a(const uint8_t *pdata, uint32_t n)
+pack_result NDR_PUSH::p_bytes(const void *pdata, uint32_t n)
 {
 	auto pndr = this;
 	if (n == 0)
@@ -551,12 +551,12 @@ pack_result NDR_PUSH::p_blob(DATA_BLOB blob)
 		else if (pndr->flags & NDR_FLAG_ALIGN8)
 			length = ndr_align_size(pndr->offset, 8);
 		memset(buff, 0, length);
-		return pndr->p_uint8_a(buff, length);
+		return pndr->p_bytes(buff, length);
 	} else {
 		TRY(pndr->p_uint32(blob.cb));
 	}
 	assert(blob.pb != nullptr || blob.cb == 0);
-	TRY(pndr->p_uint8_a(blob.pb, blob.cb));
+	TRY(pndr->p_bytes(blob.pb, blob.cb));
 	return pack_result::ok;
 }
 
@@ -578,8 +578,8 @@ pack_result NDR_PUSH::p_guid(const GUID &v)
 	TRY(pndr->p_uint32(r->time_low));
 	TRY(pndr->p_uint16(r->time_mid));
 	TRY(pndr->p_uint16(r->time_hi_and_version));
-	TRY(pndr->p_uint8_a(r->clock_seq, 2));
-	TRY(pndr->p_uint8_a(r->node, 6));
+	TRY(pndr->p_bytes(r->clock_seq, 2));
+	TRY(pndr->p_bytes(r->node, 6));
 	return pndr->trailer_align(4);
 }
 

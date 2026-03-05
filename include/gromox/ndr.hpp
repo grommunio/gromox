@@ -48,7 +48,7 @@ struct GX_EXPORT NDR_PULL {
 	pack_result g_float(float *);
 	pack_result g_double(double *);
 	pack_result g_ulong(uint32_t *);
-	pack_result g_uint8_a(uint8_t *v, uint32_t z);
+	pack_result g_bytes(void *v, uint32_t z) __attribute__((nonnull(2)));
 	pack_result g_guid(GUID *);
 	pack_result g_syntax(SYNTAX_ID *);
 	pack_result g_blob(DATA_BLOB *);
@@ -80,7 +80,7 @@ struct GX_EXPORT NDR_PUSH {
 	pack_result p_float(float);
 	pack_result p_double(double);
 	pack_result p_ulong(uint32_t);
-	pack_result p_uint8_a(const uint8_t *v, uint32_t z);
+	pack_result p_bytes(const void *v, uint32_t z); /* nullptr is allowed */
 	pack_result p_guid(const GUID &);
 	pack_result p_syntax(const SYNTAX_ID &);
 	pack_result p_blob(DATA_BLOB);
