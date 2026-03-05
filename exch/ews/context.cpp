@@ -669,6 +669,18 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
 		throw EWSError::ItemSave(E3254);
 
+	/* Set response/state/busy properties on the calendar item itself. */
+	auto pidResp  = getNamedPropId(calendarDir, NtResponseStatus, true);
+	auto pidState = getNamedPropId(calendarDir, NtAppointmentStateFlags, true);
+	auto pidBusy  = getNamedPropId(calendarDir, NtBusyStatus, true);
+	uint32_t stateFlags = asfMeeting | asfReceived;
+	uint32_t busyValue  = response == respAccepted ? olBusy :
+	                      response == respTentative ? olTentative : olFree;
+	if (props.set(PROP_TAG(PT_LONG, pidResp), construct<uint32_t>(response)) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, pidState), construct<uint32_t>(stateFlags)) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, pidBusy), construct<uint32_t>(busyValue)) != ecSuccess)
+		throw EWSError::ItemSave(E3254);
+
 	std::optional<uint64_t> existingMid = findExistingByGoid(calendarFolder, calendarDir, *content);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3254);
