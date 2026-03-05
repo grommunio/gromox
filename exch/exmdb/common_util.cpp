@@ -710,7 +710,7 @@ static ec_error_t cu_calc_folder_path(uint64_t folder_id,
 		if (dnlen > 255 || path.size() + dnlen + 1 >= 4096)
 			return ecQuotaExceeded;
 		auto dispname = pstmt.col_text(0);
-		if (dispname == nullptr)
+		if (*dispname == '\0')
 			return ecNotFound;
 		path.insert(0, dispname);
 		path.insert(0, delim);
@@ -1314,7 +1314,7 @@ static bool common_util_get_message_subject(const db_conn &db, cpid_t cpid,
 	sqlite3_bind_int64(pstmt, 1, message_id);
 	sqlite3_bind_int64(pstmt, 2, PR_NORMALIZED_SUBJECT);
 	if (gx_sql_step(pstmt) == SQLITE_ROW) {
-		pnormalized_subject = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
+		pnormalized_subject = common_util_dup(znul(S2A(sqlite3_column_text(pstmt, 0))));
 		if (pnormalized_subject == nullptr)
 			return FALSE;
 	} else {
@@ -1323,13 +1323,13 @@ static bool common_util_get_message_subject(const db_conn &db, cpid_t cpid,
 		sqlite3_bind_int64(pstmt, 2, PR_NORMALIZED_SUBJECT_A);
 		if (gx_sql_step(pstmt) == SQLITE_ROW)
 			pnormalized_subject = cu_mb_to_utf8_dup(cpid,
-			                      S2A(sqlite3_column_text(pstmt, 0)));
+			                      znul(S2A(sqlite3_column_text(pstmt, 0))));
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, message_id);
 	sqlite3_bind_int64(pstmt, 2, PR_SUBJECT_PREFIX);
 	if (gx_sql_step(pstmt) == SQLITE_ROW) {
-		psubject_prefix = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
+		psubject_prefix = common_util_dup(znul(S2A(sqlite3_column_text(pstmt, 0))));
 		if (psubject_prefix == nullptr)
 			return FALSE;
 	} else {
@@ -1338,7 +1338,7 @@ static bool common_util_get_message_subject(const db_conn &db, cpid_t cpid,
 		sqlite3_bind_int64(pstmt, 2, PR_SUBJECT_PREFIX_A);
 		if (gx_sql_step(pstmt) == SQLITE_ROW)
 			psubject_prefix = cu_mb_to_utf8_dup(cpid,
-			                  S2A(sqlite3_column_text(pstmt, 0)));
+			                  znul(S2A(sqlite3_column_text(pstmt, 0))));
 	}
 	own_stmt.finalize();
 	auto pvalue = std::string(znul(psubject_prefix)) + znul(pnormalized_subject);
@@ -1619,7 +1619,7 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 		return nullptr;
 	if (stm.step() == SQLITE_ROW) {
 		auto txt = stm.col_text(0);
-		if (txt != nullptr) {
+		if (*txt != '\0') {
 			GUID guid;
 			if (!guid.from_str(txt) ||
 			    ep.p_uint16(5) != pack_result::ok ||
@@ -1632,7 +1632,7 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 		return nullptr;
 	while (stm.step() == SQLITE_ROW) {
 		auto txt = stm.col_text(1);
-		if (txt == nullptr)
+		if (*txt == '\0')
 			continue;
 		GUID guid;
 		if (!guid.from_str(txt) ||
@@ -2046,7 +2046,7 @@ static GP_RESULT gp_msgprop_synth(uint64_t msgid, proptag_t proptag,
 		if (stm.step() != SQLITE_ROW)
 			break;
 		auto val = stm.col_text(0);
-		if (val == nullptr)
+		if (*val == '\0')
 			break;
 		if (*val == '/') {
 			pv.pvalue = common_util_dup("EX");
@@ -2416,24 +2416,24 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		if (ptyped == nullptr)
 			return nullptr;
 		ptyped->type = PROP_TYPE(sqlite3_column_int64(pstmt, 0));
-		ptyped->pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
+		ptyped->pvalue = common_util_dup(znul(S2A(sqlite3_column_text(pstmt, 1))));
 		if (ptyped->pvalue == nullptr)
 			return nullptr;
 		return ptyped;
 	}
 	case PT_STRING8:
 		if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
-			pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
+			pvalue = common_util_dup(znul(S2A(sqlite3_column_text(pstmt, 1))));
 		else
 			pvalue = cu_utf8_to_mb_dup(cpid,
-				 S2A(sqlite3_column_text(pstmt, 1)));
+				 znul(S2A(sqlite3_column_text(pstmt, 1))));
 		break;
 	case PT_UNICODE:
 		if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
-			pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
+			pvalue = common_util_dup(znul(S2A(sqlite3_column_text(pstmt, 1))));
 		else
 			pvalue = cu_mb_to_utf8_dup(cpid,
-				 S2A(sqlite3_column_text(pstmt, 1)));
+				 znul(S2A(sqlite3_column_text(pstmt, 1))));
 		break;
 	case PT_FLOAT: {
 		auto v = cu_alloc<float>();

@@ -1956,8 +1956,13 @@ static IDB_REF me_get_idb(const char *path, bool force_resync = false)
 		return {};
 	}
 	if (b_load || force_resync) {
-		if (!me_sync_mailbox(pidb, force_resync))
+		if (!me_sync_mailbox(pidb, force_resync)) {
+			pidb->giant_lock.unlock();
+			hhold.lock();
+			pidb->reference--;
+			hhold.unlock();
 			return {};
+		}
 	} else if (pidb->psqlite == nullptr) {
 		pidb->last_time = 0;
 		pidb->giant_lock.unlock();

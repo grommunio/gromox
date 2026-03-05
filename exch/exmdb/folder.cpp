@@ -180,7 +180,7 @@ BOOL exmdb_server::get_folder_class_table(
 		*v = rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 1));
 		ppropvals->ppropval[1].proptag = PR_MESSAGE_CLASS_A;
 		ppropvals->ppropval[1].pvalue =
-			common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)));
+			common_util_dup(znul(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0))));
 		if (ppropvals->ppropval[1].pvalue == nullptr)
 			return FALSE;
 		ppropvals->ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
