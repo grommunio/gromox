@@ -101,11 +101,9 @@ const std::string_view *wintz_to_tzdef(const char *izone)
 	if (wintz_load_once() != 0)
 		return nullptr;
 	std::string name = izone;
-	auto p = strcasestr(name.data(), " Standard Time");
-	if (p == nullptr)
-		p = strcasestr(name.data(), " Daylight Time");
-	if (p != nullptr)
-		name.erase(p - name.data());
+	if (class_match_suffix(izone, " Standard Time") == 0 ||
+	    class_match_suffix(izone, " Daylight Time") == 0)
+		name.erase(name.size() - 14);
 	replace_unsafe_basename(name.data());
 	name.resize(strlen(name.c_str()));
 	return tzd_archive.find(name + ".tzd");
