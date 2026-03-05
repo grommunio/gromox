@@ -414,6 +414,13 @@ pack_result NDR_PUSH::p_bytes(const void *pdata, uint32_t n)
 	return pack_result::ok;
 }
 
+pack_result NDR_PUSH::p_bytes(std::string_view sv)
+{
+	if (sv.size() > UINT32_MAX)
+		return pack_result::format;
+	return p_bytes(sv.data(), sv.size());
+}
+
 pack_result NDR_PUSH::p_uint8(uint8_t v)
 {
 	auto pndr = this;

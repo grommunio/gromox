@@ -81,6 +81,7 @@ struct GX_EXPORT NDR_PUSH {
 	pack_result p_double(double);
 	pack_result p_ulong(uint32_t);
 	pack_result p_bytes(const void *v, uint32_t z); /* nullptr is allowed */
+	pack_result p_bytes(std::string_view);
 	pack_result p_guid(const GUID &);
 	pack_result p_syntax(const SYNTAX_ID &);
 	pack_result p_blob(DATA_BLOB);

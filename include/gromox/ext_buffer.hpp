@@ -237,6 +237,7 @@ struct GX_EXPORT EXT_PUSH {
 	bool make_room(uint32_t);
 	pack_result advance(uint32_t);
 	pack_result p_bytes(const void *, uint32_t);
+	pack_result p_bytes(std::string_view);
 	pack_result p_uint8(uint8_t);
 	pack_result p_int8(int8_t v) { return p_uint8(v); }
 	pack_result p_uint16(uint16_t);
