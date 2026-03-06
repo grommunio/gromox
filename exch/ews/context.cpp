@@ -381,7 +381,10 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 	    ext_push.p_goid(goid) != pack_result::ok)
 		throw EWSError::InternalServerError(E3299);
 	goid_bin.cb = ext_push.m_offset;
-	goid_bin.pb = ext_push.m_udata;
+	goid_bin.pv = EWSContext::alloc(goid_bin.cb);
+	if (goid_bin.pv == nullptr)
+		throw EWSError::NotEnoughMemory(E3298);
+	memcpy(goid_bin.pv, ext_push.m_udata, goid_bin.cb);
 }
 
 } // Anonymous namespace
