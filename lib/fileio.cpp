@@ -341,6 +341,26 @@ DIR_mp opendir_sd(const char *dirname, const char *sdlist)
 	return dn;
 }
 
+int popenfd_keepfd_marker;
+
+/**
+ * Launches a separate subprocess and connects it with pipes to the current process.
+ *
+ * @argv:   which program to execute
+ * @fdinp:  If POPENFD_NULL, assigns /dev/null to the subprocess's stdin.
+ *          If POPENFD_KEEP, behaves like POPENFD_NULL.
+ *          For all other values, builds a pipe and returns the fd in *fdinp.
+ * @fdoutp: If POPENFD_NULL, assigns /dev/null to the subprocess's stdout.
+ *          If POPENFD_KEEP, stdout is carried over.
+ *          For all other values, builds a pipe and returns the fd in *fdoutp.
+ * @fderrp: If POPENFD_NULL, assigns /dev/null to the subprocess's stderr.
+ *          If POPENFD_KEEP, stderr is carried over.
+ *          If the same as @fdoutp, stdout and stderr will be appropriately
+ *          duplicated.
+ *          For all other values, builds a pipe and returns the fd in *fderrp.
+ * @env:    Environment to pass on. If nullptr, no environment is passed(!).
+ *          Pass the C stdlib variable `environ` explicitly to carry it over.
+ */
 pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
     int *fderrp, const char *const *env)
 {
@@ -360,7 +380,11 @@ pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
 	auto cl2 = HX::make_scope_exit([&]() { posix_spawn_file_actions_destroy(&fa); });
 
 	/* Close child-unused ends of the pipes; move child-used ends to fd 0-2. */
-	if (fdinp != nullptr) {
+	if (fdinp == POPENFD_NULL || fdinp == POPENFD_KEEP) {
+		ret = posix_spawn_file_actions_adddup2(&fa, fd.null, STDIN_FILENO);
+		if (ret != 0)
+			return -ret;
+	} else {
 		if (::pipe(fd.in) < 0)
 			return -errno;
 		ret = posix_spawn_file_actions_addclose(&fa, fd.in[1]);
@@ -369,13 +393,14 @@ pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
 		ret = posix_spawn_file_actions_adddup2(&fa, fd.in[0], STDIN_FILENO);
 		if (ret != 0)
 			return -ret;
-	} else {
-		ret = posix_spawn_file_actions_adddup2(&fa, fd.null, STDIN_FILENO);
-		if (ret != 0)
-			return -ret;
 	}
 
-	if (fdoutp != nullptr) {
+	if (fdoutp == POPENFD_NULL) {
+		ret = posix_spawn_file_actions_adddup2(&fa, fd.null, STDOUT_FILENO);
+		if (ret != 0)
+			return -ret;
+	} else if (fdoutp == POPENFD_KEEP) {
+	} else {
 		if (::pipe(fd.out) < 0)
 			return -errno;
 		ret = posix_spawn_file_actions_addclose(&fa, fd.out[0]);
@@ -384,16 +409,13 @@ pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
 		ret = posix_spawn_file_actions_adddup2(&fa, fd.out[1], STDOUT_FILENO);
 		if (ret != 0)
 			return -ret;
-	} else {
-		ret = posix_spawn_file_actions_adddup2(&fa, fd.null, STDOUT_FILENO);
-		if (ret != 0)
-			return -ret;
 	}
 
-	if (fderrp == nullptr) {
+	if (fderrp == POPENFD_NULL) {
 		ret = posix_spawn_file_actions_adddup2(&fa, fd.null, STDERR_FILENO);
 		if (ret != 0)
 			return -ret;
+	} else if (fderrp == POPENFD_KEEP) {
 	} else if (fderrp == fdoutp) {
 		ret = posix_spawn_file_actions_adddup2(&fa, fd.out[1], STDERR_FILENO);
 		if (ret != 0)
@@ -432,18 +454,19 @@ pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
 		return -ret;
 
 	pid_t pid = -1;
-	ret = posix_spawnp(&pid, argv[0], &fa, nullptr, const_cast<char **>(argv), const_cast<char **>(env));
+	ret = posix_spawnp(&pid, argv[0], &fa, nullptr,
+	      const_cast<char **>(argv), const_cast<char **>(env));
 	if (ret != 0)
 		return -ret;
-	if (fdinp != nullptr) {
+	if (fdinp != nullptr && fdinp != POPENFD_KEEP) {
 		*fdinp = fd.in[1];
 		fd.in[1] = -1;
 	}
-	if (fdoutp != nullptr) {
+	if (fdoutp != nullptr && fdoutp != POPENFD_KEEP) {
 		*fdoutp = fd.out[0];
 		fd.out[0] = -1;
 	}
-	if (fderrp != nullptr && fderrp != fdoutp) {
+	if (fderrp != nullptr && fderrp != fdoutp && fderrp != POPENFD_KEEP) {
 		*fderrp = fd.err[0];
 		fd.err[0] = -1;
 	}
@@ -547,7 +570,8 @@ int feed_w3m(std::string_view inbuf, const char *cset, std::string &final_buf) t
 	argv[argc++] = "-dump";
 	argv[argc++] = filename.c_str();
 	argv[argc]   = nullptr;
-	auto pid = popenfd(argv, nullptr, &fout, nullptr, const_cast<const char *const *>(environ));
+	auto pid = popenfd(argv, POPENFD_NULL, &fout, POPENFD_NULL,
+	           const_cast<const char *const *>(environ));
 	if (pid < 0)
 		return -1;
 	int status = 0;
