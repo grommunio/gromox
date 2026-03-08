@@ -527,6 +527,10 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size, const char
 	return 0;
 }
 
+enum {
+	REND_W3M, REND_CHAWAN,
+};
+
 /**
  * Run an external HTML-to-text converter.
  *
@@ -539,7 +543,8 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size, const char
  * Returns 0 on success, negative non-zero on error with errno set.
  * @outbuf is only replaced on success.
  */
-int feed_w3m(std::string_view inbuf, const char *cset, std::string &final_buf) try
+static int feed_htmltotext(std::string_view inbuf, const char *cset,
+    std::string &final_buf, unsigned int rend) try
 {
 	std::string filename;
 	auto tmpdir = getenv("TMPDIR");
@@ -558,16 +563,18 @@ int feed_w3m(std::string_view inbuf, const char *cset, std::string &final_buf) t
 	fp.reset();
 	int fout = -1;
 	auto cl2 = HX::make_scope_exit([&]() { if (fout != -1) close(fout); });
-	const char *argv[8];
+	const char *argv[9];
 	int argc = 0;
-	argv[argc++] = "w3m";
+	argv[argc++] = rend == REND_CHAWAN ? "cha" : "w3m";
 	if (cset != nullptr) {
 		argv[argc++] = "-I";
 		argv[argc++] = "UTF-8";
 	}
 	argv[argc++] = "-O";
 	argv[argc++] = "UTF-8";
-	argv[argc++] = "-dump";
+	argv[argc++] = rend == REND_CHAWAN ? "--dump" : "-dump";
+	if (rend == REND_CHAWAN)
+		argv[argc++] = "-obuffer.styling=false";
 	argv[argc++] = filename.c_str();
 	argv[argc]   = nullptr;
 	auto pid = popenfd(argv[0], argv, POPENFD_NULL, &fout, POPENFD_NULL,
@@ -590,6 +597,15 @@ int feed_w3m(std::string_view inbuf, const char *cset, std::string &final_buf) t
 	return 0;
 } catch (...) {
 	return -1;
+}
+
+int feed_html_renderer(std::string_view inbuf, const char *cset,
+    std::string &final_buf)
+{
+	auto ret = feed_htmltotext(inbuf, cset, final_buf, REND_CHAWAN);
+	if (ret == 0)
+		return ret;
+	return feed_htmltotext(inbuf, cset, final_buf, REND_W3M);
 }
 
 size_t gx_decompressed_size(const char *infile)

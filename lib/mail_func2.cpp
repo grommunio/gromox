@@ -36,7 +36,7 @@ int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
 {
 	auto s = getenv("AVOID_W3M"); /* for testing */
 	if (s == nullptr || parse_bool(s) == 0) {
-		auto ret = feed_w3m(inbuf, cpid_to_cset(cpid), outbuf);
+		auto ret = feed_html_renderer(inbuf, cpid_to_cset(cpid), outbuf);
 		if (ret >= 0)
 			return CP_UTF8;
 	}

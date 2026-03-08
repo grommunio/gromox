@@ -86,7 +86,7 @@ class GX_EXPORT wrapfd {
 
 extern GX_EXPORT errno_t canonical_hostname(std::string &);
 extern GX_EXPORT pid_t popenfd(const char *, const char *const *, int *, int *, int *, const char *const *);
-extern GX_EXPORT int feed_w3m(std::string_view, const char *in_cset, std::string &out);
+extern GX_EXPORT int feed_html_renderer(std::string_view, const char *in_cset, std::string &out);
 extern GX_EXPORT DIR_mp opendir_sd(const char *, const char *);
 extern GX_EXPORT std::unique_ptr<FILE, file_deleter> fopen_sd(const char *, const char *);
 extern GX_EXPORT std::string zstd_decompress(std::string_view);
