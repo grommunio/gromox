@@ -361,8 +361,8 @@ int popenfd_keepfd_marker;
  * @env:    Environment to pass on. If nullptr, no environment is passed(!).
  *          Pass the C stdlib variable `environ` explicitly to carry it over.
  */
-pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
-    int *fderrp, const char *const *env)
+pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
+    int *fdoutp, int *fderrp, const char *const *env)
 {
 	if (argv == nullptr || argv[0] == nullptr)
 		return -EINVAL;
@@ -454,7 +454,7 @@ pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
 		return -ret;
 
 	pid_t pid = -1;
-	ret = posix_spawnp(&pid, argv[0], &fa, nullptr,
+	ret = posix_spawnp(&pid, prog, &fa, nullptr,
 	      const_cast<char **>(argv), const_cast<char **>(env));
 	if (ret != 0)
 		return -ret;
@@ -570,7 +570,7 @@ int feed_w3m(std::string_view inbuf, const char *cset, std::string &final_buf) t
 	argv[argc++] = "-dump";
 	argv[argc++] = filename.c_str();
 	argv[argc]   = nullptr;
-	auto pid = popenfd(argv, POPENFD_NULL, &fout, POPENFD_NULL,
+	auto pid = popenfd(argv[0], argv, POPENFD_NULL, &fout, POPENFD_NULL,
 	           const_cast<const char *const *>(environ));
 	if (pid < 0)
 		return -1;
