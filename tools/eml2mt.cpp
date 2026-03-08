@@ -97,6 +97,47 @@ static void terse_help()
 	fprintf(stderr, "Documentation: man gromox-eml2mt\n");
 }
 
+static size_t g_msgcount = 0;
+static int do_emit(const parent_desc &parent, fat_message &&msg)
+{
+	if (g_attach_decap > 0) {
+		auto ret = gi_decapsulate_attachment(msg.content, g_attach_decap - 1);
+		if (ret != 0)
+			return 0;
+	}
+	if (g_show_tree) {
+		fprintf(stderr, "Message %zu\n", g_msgcount + 1);
+		gi_print(0, *msg.content, ee_get_propname);
+	}
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+		throw YError("E-2013: ENOMEM\n");
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+	    ep.p_uint64(g_msgcount + 1) != pack_result::ok ||
+	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
+	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
+	    ep.p_msgctnt(*msg.content) != pack_result::ok) {
+		fprintf(stderr, "E-2004\n");
+		return -1;
+	}
+	pack_result pr2 =
+		msg.im_std.size() > 0 ? ep.p_str(msg.im_std) :
+		msg.im_raw != nullptr ? ep.p_str(msg.im_raw.get()) :
+		ep.p_str("");
+	if (pr2 != pack_result::ok || ep.p_str("") != pack_result::ok) {
+		fprintf(stderr, "E-2014\n");
+		return -1;
+	}
+
+	uint64_t xsize = cpu_to_le64(ep.m_offset);
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+		throw YError("PG-1017: %s", strerror(errno));
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+		throw YError("PG-1018: %s", strerror(errno));
+	++g_msgcount;
+	return 1;
+}
+
 static message_ptr do_mail(const char *file, const char *data, size_t dsize)
 {
 	MAIL imail;
@@ -433,37 +474,9 @@ int main(int argc, char **argv) try
 
 	auto parent = parent_desc::as_folder(MAILBOX_FID_UNANCHORED);
 	for (size_t i = 0; i < msgs.size(); ++i) {
-		if (g_show_tree) {
-			fprintf(stderr, "Message %zu\n", i + 1);
-			gi_print(0, *msgs[i].content, ee_get_propname);
-		}
-		EXT_PUSH ep;
-		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
-			fprintf(stderr, "E-2013: ENOMEM\n");
+		auto ret = do_emit(parent, std::move(msgs[i]));
+		if (ret < 0)
 			return EXIT_FAILURE;
-		}
-		if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
-		    ep.p_uint64(i + 1) != pack_result::ok ||
-		    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
-		    ep.p_uint64(parent.folder_id) != pack_result::ok ||
-		    ep.p_msgctnt(*msgs[i].content) != pack_result::ok) {
-			fprintf(stderr, "E-2004\n");
-			return EXIT_FAILURE;
-		}
-		pack_result pr2 =
-			msgs[i].im_std.size() > 0 ? ep.p_str(msgs[i].im_std) :
-			msgs[i].im_raw != nullptr ? ep.p_str(msgs[i].im_raw.get()) :
-			ep.p_str("");
-		if (pr2 != pack_result::ok || ep.p_str("") != pack_result::ok) {
-			fprintf(stderr, "E-2014\n");
-			return EXIT_FAILURE;
-		}
-
-		uint64_t xsize = cpu_to_le64(ep.m_offset);
-		if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
-			throw YError("PG-1017: %s", strerror(errno));
-		if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
-			throw YError("PG-1018: %s", strerror(errno));
 	}
 	return EXIT_SUCCESS;
 } catch (const std::exception &e) {
