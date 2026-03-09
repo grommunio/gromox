@@ -38,6 +38,29 @@ using namespace tinyxml2;
 namespace {
 
 /**
+ * @brief Convert a GlobalObjectId binary to the EWS UID string.
+ *
+ * If the GOID wraps a third-party UID (vCal/CalDAV), extract the
+ * original string instead of hex-encoding the entire blob.
+ */
+std::string goid_to_uid(const BINARY &goid_bin)
+{
+	GLOBALOBJECTID goid;
+	EXT_PULL ep;
+	ep.init(goid_bin.pb, goid_bin.cb,
+	    EWSContext::alloc, 0);
+	if (ep.g_goid(&goid) == pack_result::ok &&
+	    goid.data.cb > 12 &&
+	    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0)
+		return std::string(goid.data.pc + 12,
+		    goid.data.cb - 12);
+	std::string uid(goid_bin.cb * 2, 0);
+	encode_hex_binary(goid_bin.pb, goid_bin.cb,
+	    uid.data(), static_cast<int>(uid.size() + 1));
+	return uid;
+}
+
+/**
  * @brief      Helper struct for property type derivation
  *
  * Provides a mapping from the requested EWS/C++ type to the (likely)
@@ -1791,13 +1814,9 @@ void tCalendarItem::update(const sShape& shape)
 		MyResponseType.emplace(Enum::Unknown);
 
 	if ((prop = shape.get(NtGlobalObjectId))) {
-		const BINARY* goid = static_cast<BINARY*>(prop->pvalue);
-		if (goid->cb > 0) {
-			std::string uid(goid->cb * 2, 0);
-			/* s[s.size()]='\0' is allowed >= C++17: */
-			encode_hex_binary(goid->pb, goid->cb, uid.data(), static_cast<int>(uid.size() + 1));
-			UID.emplace(std::move(uid));
-		}
+		const BINARY *goid = static_cast<BINARY *>(prop->pvalue);
+		if (goid->cb > 0)
+			UID.emplace(goid_to_uid(*goid));
 	}
 
 	bool hasExceptionReplaceTime = false;
@@ -4316,12 +4335,9 @@ void tMeetingMessage::update(const sShape& shape)
 		ResponseType.emplace(*inferred);
 
 	if ((prop = shape.get(NtGlobalObjectId))) {
-		const BINARY* goid = static_cast<const BINARY*>(prop->pvalue);
-		if (goid->cb > 0) {
-			std::string uid(goid->cb * 2, 0);
-			encode_hex_binary(goid->pb, goid->cb, uid.data(), static_cast<int>(uid.size() + 1));
-			UID.emplace(std::move(uid));
-		}
+		const BINARY *goid = static_cast<const BINARY *>(prop->pvalue);
+		if (goid->cb > 0)
+			UID.emplace(goid_to_uid(*goid));
 	}
 
 	if ((prop = shape.get(NtExceptionReplaceTime)))
