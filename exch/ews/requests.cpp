@@ -1957,7 +1957,7 @@ void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
 			folder = ctx.resolveFolder(*raw);
 		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
 			folder = ctx.resolveFolder(*dist);
-		else if (reqName.FolderId.valueless_by_exception())
+		else
 			throw EWSError::InvalidFolderId(E3252);
 
 		if (!folder.target)
@@ -2056,7 +2056,7 @@ void process(mGetUserConfigurationRequest &&request, XMLElement *response, const
 			folder = ctx.resolveFolder(*raw);
 		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
 			folder = ctx.resolveFolder(*dist);
-		else if (reqName.FolderId.valueless_by_exception())
+		else
 			throw EWSError::InvalidFolderId(E3252);
 
 		std::string dir = ctx.getDir(folder);
@@ -2154,7 +2154,7 @@ void process(mUpdateUserConfigurationRequest &&request, XMLElement *response,
 			folder = ctx.resolveFolder(*raw);
 		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
 			folder = ctx.resolveFolder(*dist);
-		else if (reqName.FolderId.valueless_by_exception())
+		else
 			throw EWSError::InvalidFolderId(E3252);
 
 		std::string dir = ctx.getDir(folder);
@@ -2249,7 +2249,7 @@ void process(mDeleteUserConfigurationRequest &&request,
 			folder = ctx.resolveFolder(*raw);
 		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
 			folder = ctx.resolveFolder(*dist);
-		else if (reqName.FolderId.valueless_by_exception())
+		else
 			throw EWSError::InvalidFolderId(E3252);
 
 		std::string dir = ctx.getDir(folder);
