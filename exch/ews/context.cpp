@@ -4608,12 +4608,8 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	BINARY* changeKeyContainer = construct<BINARY>(serialize(changeKey));
 	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, changeKeyContainer});
 
-	const BINARY *currentPclContainer = nullptr;
-	proptag_t pcl_tag = PR_PREDECESSOR_CHANGE_LIST;
-	PROPTAG_ARRAY pcl_tags{1, &pcl_tag};
-	TPROPVAL_ARRAY pcl_result = getItemProps(dir, mid.messageId(), pcl_tags);
-	if (pcl_result.count == 1 && pcl_result.ppropval->proptag == pcl_tag)
-		currentPclContainer = static_cast<const BINARY *>(pcl_result.ppropval->pvalue);
+	auto *currentPclContainer = getItemProp<const BINARY>(dir,
+	                            mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
 	PCL pcl;
 	if (currentPclContainer != nullptr && !pcl.deserialize(currentPclContainer))
 		throw DispatchError(E3087);
