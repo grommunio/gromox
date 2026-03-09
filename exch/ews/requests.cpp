@@ -359,10 +359,9 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 
 	mFindPeopleResponse data;
 	auto &msg = data.ResponseMessages.emplace_back();
-	std::string domain = znul(ctx.auth_info().username);
-	auto at = domain.find('@');
-	if (at != std::string::npos)
-		domain.erase(0, at + 1);
+	const char *user = znul(ctx.auth_info().username);
+	const char *at = strchr(user, '@');
+	std::string domain = at ? at + 1 : user;
 
 	std::vector<ab_tree::minid> results;
 	try {
@@ -422,10 +421,9 @@ void process(mGetPersonaRequest &&request, XMLElement *response, const EWSContex
 		return;
 	}
 	const auto &target = *request.EmailAddress->EmailAddress;
-	std::string domain = znul(ctx.auth_info().username);
-	auto at = domain.find('@');
-	if (at != std::string::npos)
-		domain.erase(0, at + 1);
+	const char *user = znul(ctx.auth_info().username);
+	const char *at = strchr(user, '@');
+	std::string domain = at ? at + 1 : user;
 
 	try {
 		uint32_t domId = ctx.getAccountId(domain, true);
@@ -2822,10 +2820,9 @@ void process(mResolveNamesRequest &&request, XMLElement *response, const EWSCont
 	request.UnresolvedEntry = gx_utf8_to_punycode(unres);
 
 	/* Try partial matching via address book tree first */
-	std::string domain = znul(ctx.auth_info().username);
-	auto at = domain.find('@');
-	if (at != std::string::npos)
-		domain.erase(0, at + 1);
+	const char *user = znul(ctx.auth_info().username);
+	const char *at = strchr(user, '@');
+	std::string domain = at ? at + 1 : user;
 
 	std::vector<ab_tree::minid> results;
 	uint32_t domId = ctx.getAccountId(domain, true);
