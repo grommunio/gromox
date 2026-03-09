@@ -1,3 +1,28 @@
+In Development 3.5.23
+=====================
+
+Enhancements:
+
+* oxcical: treat zero-length PidLidAppointmentTimeZoneDefinitionStartDisplay as if absent
+* eml2mt: output GXMT data as soon as practical
+
+Fixes:
+
+* oxcmail: resolve a case of bad_function_call getting thrown
+* midb: retrieve midb_sqlite_busy_timeout from the right config file,
+  avert a "config key .. has no default and was not set either" log message
+* exmdb: close cursors before modifying tables in purge
+* exmdb: fix use-after-free when exmdb_provider utilizes exmdb_client in multiserver
+* exmdb: proper symmetric unlocking for db_base_rd_ptr class
+* exmdb: unlock giant_lock before erasing the same from hash table
+* midb: release lock and reference when me_sync_mailbox experiences a sync failure
+* lib: avoid emitting colors to stderr when that is not a tty
+
+Changes:
+
+* imap: remodeled midb_agent to require a less memory in practice
+
+
 Gromox 3.5 (2025-02-26)
 =======================
 

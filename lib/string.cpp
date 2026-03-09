@@ -72,10 +72,17 @@ class hxmc_deleter {
 
 }
 
+enum output_mode {
+	OM_STDERR, /* direct to existing stderr file descriptor */
+	OM_STDERR_COLORS, /* with colors */
+	OM_SYSLOG, /* send to syslog instead */
+	OM_FILE, /* send to a g_logfp */
+};
+
 static unsigned int g_max_loglevel = MLOG_DEFAULT_LEVEL;
 static std::mutex g_log_mutex;
 static std::unique_ptr<FILE, file_deleter> g_logfp;
-static bool g_log_tty, g_log_syslog;
+static enum output_mode g_log_mode;
 
 static const char *mapi_errname(unsigned int e)
 {
@@ -773,33 +780,28 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
     const char *user)
 {
 	g_max_loglevel = max_level;
-	bool for_syslog = false, for_tty = false;
+	enum output_mode mode = OM_STDERR;
 	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0) {
 		if (isatty(STDERR_FILENO))
-			for_tty = true;
+			mode = OM_STDERR_COLORS;
 		else if (getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
-			for_syslog = true;
-		else
-			for_tty = true;
+			mode = OM_SYSLOG;
 	} else if (strcmp(filename, "syslog") == 0) {
-		for_syslog = true;
+		mode = OM_SYSLOG;
 	}
-	if (for_syslog) {
+	if (mode == OM_SYSLOG) {
 		openlog(ident, LOG_PID, LOG_MAIL);
 		setlogmask((1 << (max_level + 2)) - 1);
-		g_log_syslog = true;
-		g_log_tty = false;
+		g_log_mode = mode;
 		g_logfp.reset();
 		return;
-	}
-	if (for_tty) {
-		g_log_tty = true;
-		g_log_syslog = false;
+	} else if (mode == OM_STDERR || mode == OM_STDERR_COLORS) {
+		g_log_mode = mode;
 		g_logfp.reset();
 		setvbuf(stderr, nullptr, _IOLBF, 0);
 		return;
 	}
-	g_log_tty = g_log_syslog = false;
+	g_log_mode = mode;
 	if (user != nullptr) {
 		auto fd = open(filename, O_RDWR | O_CREAT | O_EXCL, FMODE_PRIVATE);
 		if (fd >= 0) {
@@ -814,12 +816,12 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
 	std::lock_guard hold(g_log_mutex);
 	g_logfp.reset(fopen(filename, "a"));
 	if (g_logfp == nullptr) {
-		g_log_tty = true;
-		g_log_syslog = false;
+		g_log_mode = mode;
+		setvbuf(stderr, nullptr, _IOLBF, 0);
 		mlog(LV_ERR, "Could not open %s for writing: %s. Using stderr.",
 		        filename, strerror(errno));
-		setvbuf(stderr, nullptr, _IOLBF, 0);
 	} else {
+		g_log_mode = OM_FILE;
 		setvbuf(g_logfp.get(), nullptr, _IOLBF, 0);
 	}
 }
@@ -830,27 +832,24 @@ void mlog(unsigned int level, const char *fmt, ...)
 		return;
 	va_list args;
 	va_start(args, fmt);
-	if (g_log_syslog) {
+	if (g_log_mode == OM_SYSLOG) {
 		vsyslog(level + 1, fmt, args);
 		va_end(args);
 		return;
-	} else if (g_logfp == nullptr) {
-		if (g_log_tty) {
-			auto c = level <= LV_ERR ? "\e[1;31m" :
-				 level <= LV_WARN ? "\e[31m" :
-				 level <= LV_NOTICE ? "\e[1;37m" :
-				 level == LV_DEBUG ? "\e[1;30m" : "";
-			if (*c != '\0')
-				fputs(c, stderr);
-		}
-#if 0
-		fprintf(stderr, "[%f] ", std::chrono::duration<double>(tp_now() - decltype(tp_now()){}).count());
-#endif
+	} else if (g_log_mode == OM_STDERR_COLORS) {
+		auto c = level <= LV_ERR ? "\e[1;31m" :
+			 level <= LV_WARN ? "\e[31m" :
+			 level <= LV_NOTICE ? "\e[1;37m" :
+			 level == LV_DEBUG ? "\e[1;30m" : "";
+		if (*c != '\0')
+			fputs(c, stderr);
 		vfprintf(stderr, fmt, args);
-		if (g_log_tty)
-			fputs("\e[0m\n", stderr);
-		else
-			fputc('\n', stderr);
+		fputs("\e[0m\n", stderr);
+		va_end(args);
+		return;
+	} else if (g_log_mode == OM_STDERR) {
+		vfprintf(stderr, fmt, args);
+		fputc('\n', stderr);
 		va_end(args);
 		return;
 	}
