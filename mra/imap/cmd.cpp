@@ -630,8 +630,12 @@ static int icp_process_fetch_item(imap_context &ctx,
 	
 	if (pitem->flag_bits & FLAG_LOADED) {
 		auto eml_path = std::string(pcontext->maildir) + "/eml";
-		if (!mjson.load_from_json(pitem->digest)) {
-			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied", ctx.maildir, ctx.mid.c_str());
+		Json::Value digest;
+		if (!str_to_json(pitem->digest, digest)) {
+			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied1", ctx.maildir, ctx.mid.c_str());
+			return 1923;
+		} else if (!mjson.load_from_json(digest)) {
+			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied2", ctx.maildir, ctx.mid.c_str());
 			return 1923;
 		}
 		mjson.path = std::move(eml_path);

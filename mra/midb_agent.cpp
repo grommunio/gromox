@@ -1479,21 +1479,25 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 					pspace = strchr(temp_line, ' ');
-					int temp_len = pspace == nullptr ? 0 :
-					           line_pos - (pspace + 1 - temp_line);
-					MITEM mitem;
-					if (pspace == nullptr ||
-					    !str_to_json(std::string_view(&pspace[1], temp_len), mitem.digest)) {
+					if (pspace == nullptr) {
 						b_format_error = TRUE;
-					} else if (get_digest(mitem.digest, "file", mitem.mid) &&
-					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {
+						line_pos = 0;
+						continue;
+					}
+					MITEM mitem;
+					mitem.digest.assign(&pspace[1], line_pos - (pspace + 1 - temp_line));
+					Json::Value digest;
+					if (!str_to_json(mitem.digest, digest)) {
+						b_format_error = TRUE;
+					} else if (get_digest(digest, "file", mitem.mid) &&
+					    get_digest_integer(digest, "uid", mitem.uid)) {
 						*pspace++ = '\0';
 						auto mitem_uid = mitem.uid;
 						if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
-							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pitem->digest);
+							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(digest);
 						}
 					}
 					line_pos = 0;
