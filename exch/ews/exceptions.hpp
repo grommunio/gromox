@@ -439,6 +439,15 @@ E(3308, "failed to save modified recurrence blob");
 E(3309, "failed to update occurrence exception");
 E(3310, "ExpandDL: no email address in request");
 E(3311, "ExpandDL: distribution list not found");
+E(3312, "delegate access denied: not mailbox owner");
+E(3313, "delegate access denied: not mailbox owner");
+E(3314, "delegate access denied: not mailbox owner");
+E(3315, "delegate access denied: not mailbox owner");
+E(3316, "failed to read delegate list");
+E(3317, "failed to write delegate list");
+E(3318, "failed to read delegate list");
+E(3319, "failed to write delegate list");
+E(3320, "failed to read delegate list");
 
 #undef E
 }

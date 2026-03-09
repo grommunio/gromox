@@ -583,6 +583,8 @@ void process(mGetDelegateRequest &&request, XMLElement *response, const EWSConte
 
 	ctx.normalize(request.Mailbox);
 	std::string dir = ctx.get_maildir(request.Mailbox);
+	if (dir != ctx.auth_info().maildir)
+		throw EWSError::AccessDenied(E3312);
 
 	mGetDelegateResponse data;
 
@@ -645,10 +647,12 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 
 	ctx.normalize(request.Mailbox);
 	std::string dir = ctx.get_maildir(request.Mailbox);
+	if (dir != ctx.auth_info().maildir)
+		throw EWSError::AccessDenied(E3313);
 
 	std::vector<std::string> delegate_list;
 	if (!ctx.plugin().exmdb.read_delegates(dir.c_str(), 0, &delegate_list))
-		throw DispatchError("failed to read delegates");
+		throw EWSError::InternalServerError(E3316);
 	std::unordered_set<std::string> existing(delegate_list.begin(), delegate_list.end());
 
 	mGetDelegateResponse data;
@@ -674,7 +678,7 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 	}
 
 	if (!ctx.plugin().exmdb.write_delegates(dir.c_str(), 0, delegate_list))
-		throw DispatchError("failed to write delegates");
+		throw EWSError::InternalServerError(E3317);
 
 	data.success();
 	data.serialize(response);
@@ -693,10 +697,12 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 
 	ctx.normalize(request.Mailbox);
 	std::string dir = ctx.get_maildir(request.Mailbox);
+	if (dir != ctx.auth_info().maildir)
+		throw EWSError::AccessDenied(E3314);
 
 	std::vector<std::string> delegate_list;
 	if (!ctx.plugin().exmdb.read_delegates(dir.c_str(), 0, &delegate_list))
-		throw DispatchError("failed to read delegates");
+		throw EWSError::InternalServerError(E3318);
 
 	mGetDelegateResponse data;
 	for (const auto &uid : request.UserIds) {
@@ -719,7 +725,7 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 	}
 
 	if (!ctx.plugin().exmdb.write_delegates(dir.c_str(), 0, delegate_list))
-		throw DispatchError("failed to write delegates");
+		throw EWSError::InternalServerError(E3319);
 
 	data.success();
 	data.serialize(response);
@@ -738,10 +744,12 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 
 	ctx.normalize(request.Mailbox);
 	std::string dir = ctx.get_maildir(request.Mailbox);
+	if (dir != ctx.auth_info().maildir)
+		throw EWSError::AccessDenied(E3315);
 
 	std::vector<std::string> delegate_list;
 	if (!ctx.plugin().exmdb.read_delegates(dir.c_str(), 0, &delegate_list))
-		throw DispatchError("failed to read delegates");
+		throw EWSError::InternalServerError(E3320);
 	std::unordered_set<std::string> existing(delegate_list.begin(), delegate_list.end());
 
 	mGetDelegateResponse data;
