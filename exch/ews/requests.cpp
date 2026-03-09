@@ -1309,11 +1309,11 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			auto mid = meid.messageId();
 			auto basedate = ctx.resolveOccurrenceIndex(dir, mid,
 			                itemId.InstanceIndex);
-			ctx.deleteOccurrence(dir, parent.folderId, mid, basedate);
+			ctx.deleteOccurrence(dir, mid, basedate);
 			data.ResponseMessages.emplace_back().success();
 		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
 			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
-			ctx.deleteOccurrence(dir, parent.folderId,
+			ctx.deleteOccurrence(dir,
 				meid.messageId(), oid.basedate);
 			data.ResponseMessages.emplace_back().success();
 		} else if (request.DeleteType == Enum::MoveToDeletedItems) {

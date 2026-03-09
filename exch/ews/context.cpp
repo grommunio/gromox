@@ -2027,7 +2027,7 @@ uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
  * @param      mid       Message ID of the recurring master
  * @param      basedate  Occurrence date in rtime format
  */
-void EWSContext::deleteOccurrence(const std::string &dir, uint64_t fid,
+void EWSContext::deleteOccurrence(const std::string &dir,
     uint64_t mid, uint32_t basedate) const
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
