@@ -1577,7 +1577,8 @@ void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
 void EWSContext::loadSpecial(const std::string &dir, uint64_t fid, uint64_t mid,
     tMeetingRequestMessage &meetReq, uint64_t special) const
 {
-	loadSpecial(dir, fid, mid, static_cast<tMeetingMessage &>(meetReq), special);
+	loadSpecial(dir, fid, mid,
+	            static_cast<tMeetingMessage &>(meetReq), special);
 	if (!(special & sShape::Attendees))
 		return;
 	TARRAY_SET rcpts;
@@ -1592,15 +1593,15 @@ void EWSContext::loadSpecial(const std::string &dir, uint64_t fid, uint64_t mid,
 		if (!recipientType)
 			continue;
 		switch (*recipientType) {
-		case 1:
+		case MAPI_TO:
 			if (special & sShape::RequiredAttendees)
 				defaulted(meetReq.RequiredAttendees).emplace_back(rcpt);
 			break;
-		case 2:
+		case MAPI_CC:
 			if (special & sShape::OptionalAttendees)
 				defaulted(meetReq.OptionalAttendees).emplace_back(rcpt);
 			break;
-		case 3:
+		case MAPI_BCC:
 			if (special & sShape::Resources)
 				defaulted(meetReq.Resources).emplace_back(rcpt);
 			break;
@@ -1635,15 +1636,15 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		if (!recipientType)
 			continue;
 		switch (*recipientType) {
-		case 1: //Required attendee
+		case MAPI_TO:
 			if (special & sShape::RequiredAttendees)
 				defaulted(calItem.RequiredAttendees).emplace_back(rcpt);
 			break;
-		case 2: //Optional attendee
+		case MAPI_CC:
 			if (special & sShape::OptionalAttendees)
 				defaulted(calItem.OptionalAttendees).emplace_back(rcpt);
 			break;
-		case 3: //Resource
+		case MAPI_BCC:
 			if (special & sShape::Resources)
 				defaulted(calItem.Resources).emplace_back(rcpt);
 			break;
