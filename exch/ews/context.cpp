@@ -672,6 +672,19 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
 		throw EWSError::ItemSave(E3254);
 
+	/*
+	 * Copy PidLidTimeZoneDescription to CalendarTimeZone so EWS can expose
+	 * StartTimeZone/EndTimeZone on the calendar item. oxcical sets the
+	 * former; EWS reads the latter.
+	 */
+	auto pidTzDesc = getNamedPropId(calendarDir, NtTimeZoneDescription);
+	auto pidCalTz  = getNamedPropId(calendarDir, NtCalendarTimeZone, true);
+	if (pidTzDesc != 0 && pidCalTz != 0) {
+		auto tz = props.get<const char>(PROP_TAG(PT_UNICODE, pidTzDesc));
+		if (tz != nullptr)
+			props.set(PROP_TAG(PT_UNICODE, pidCalTz), tz);
+	}
+
 	/* Set response/state/busy properties on the calendar item itself. */
 	auto pidResp  = getNamedPropId(calendarDir, NtResponseStatus, true);
 	auto pidState = getNamedPropId(calendarDir, NtAppointmentStateFlags, true);
