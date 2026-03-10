@@ -33,8 +33,6 @@
 using namespace gromox;
 using namespace gromox::ab_tree;
 
-namespace {
-
 /* OAB v4 binary format constants */
 static constexpr uint32_t OAB_V4_VERSION = 0x20;
 
@@ -56,6 +54,8 @@ static constexpr uint32_t obj_flags[] = {
 	2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 static constexpr size_t OBJ_PROP_COUNT = std::size(obj_props);
+
+namespace {
 
 /* Cached OAB data for a single address book base */
 struct oab_cache_entry {
@@ -87,6 +87,8 @@ class oab_writer {
 	private:
 	std::string buf;
 };
+
+} /* anon-ns */
 
 void oab_writer::put_u32le(uint32_t v)
 {
@@ -253,6 +255,8 @@ static uint32_t etyp_to_objtype(enum display_type dt)
 		return static_cast<uint32_t>(MAPI_MAILUSER);
 	}
 }
+
+namespace {
 
 class OabPlugin {
 	public:
