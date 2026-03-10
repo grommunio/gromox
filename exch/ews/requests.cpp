@@ -269,7 +269,7 @@ static bool collect_rooms(unsigned int domain_id, std::vector<tRoomType>* rooms=
 {
 	std::vector<sql_user> users;
 	if (!mysql_adaptor_get_domain_users(domain_id, users))
-		throw DispatchError(E3027);
+		throw DispatchError(E3386);
 	bool found = false;
 	if (rooms) {
 		rooms->clear();
@@ -349,7 +349,7 @@ static void send_meeting_response(const EWSContext &ctx,
 		tarray_set_free(content->children.prcpts);
 	content->children.prcpts = tarray_set_init();
 	if (!content->children.prcpts)
-		throw EWSError::NotEnoughMemory(E3288);
+		throw EWSError::NotEnoughMemory(E3406);
 	tEmailAddressType org;
 	org.EmailAddress = orgSmtp;
 	auto orgName = reqContent->proplist.get<const char>(
@@ -377,7 +377,7 @@ static void send_meeting_cancellation(const EWSContext &ctx,
 	if (!exmdb.read_message(dir.c_str(), username, CP_ACP,
 	    meid.messageId(), &cancelcontent) ||
 	    cancelcontent == nullptr)
-		throw EWSError::ItemNotFound(E3143);
+		throw EWSError::ItemNotFound(E3389);
 	auto cls = cancelcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (cls == nullptr ||
 	    class_match_prefix(cls, "IPM.Appointment") != 0 ||
@@ -413,12 +413,12 @@ static void send_meeting_cancellation(const EWSContext &ctx,
 		if (!exmdb.read_message(dir.c_str(), sentuser,
 		    CP_ACP, newMid, &sentcontent) ||
 		    sentcontent == nullptr)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3390);
 		ctx.send(dir, meid.messageId(), *sentcontent);
 	} else {
 		EWSContext::MCONT_PTR dupcontent(cancelcontent->dup());
 		if (!dupcontent)
-			throw EWSError::NotEnoughMemory(E3288);
+			throw EWSError::NotEnoughMemory(E3407);
 		dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Canceled");
 		auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 		dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
@@ -1001,7 +1001,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			PROBLEM_ARRAY problems;
 			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
 				mid.messageId(), &proplist, &problems))
-				throw EWSError::ItemSave(E3092);
+				throw EWSError::ItemSave(E3409);
 			if (resp == respAccepted || resp == respTentative)
 				ctx.createCalendarItemFromMeetingRequest(refId, resp);
 		};
@@ -1037,13 +1037,13 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			uint64_t newMid;
 			if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
 				sentitems.folderId, &newMid))
-				throw EWSError::InternalServerError(E3132);
+				throw EWSError::InternalServerError(E3424);
 			BOOL result;
 			auto messageId = *content->proplist.get<const uint64_t>(PidTagMid);
 			if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(), CP_ACP,
 				messageId, sentitems.folderId, newMid, false, &result)
 				|| !result)
-				throw EWSError::InternalServerError(E3301);
+				throw EWSError::InternalServerError(E3427);
 			const char* username = ctx.effectiveUser(sentitems);
 			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 			static constexpr uint8_t proptrue = 1;
@@ -1057,12 +1057,12 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			PROBLEM_ARRAY problems;
 			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 				username, CP_ACP, newMid, &proplist, &problems))
-				throw EWSError::ItemSave(E3092);
+				throw EWSError::ItemSave(E3410);
 			MESSAGE_CONTENT *sendcontent = nullptr;
 			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 				username, CP_ACP, newMid, &sendcontent)
 				|| sendcontent == nullptr)
-				throw EWSError::ItemNotFound(E3143);
+				throw EWSError::ItemNotFound(E3391);
 			ctx.send(dir, messageId, *sendcontent);
 		}
 		if (std::holds_alternative<tMessage>(item) && send_message)
@@ -1127,7 +1127,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 			PROBLEM_ARRAY initProblems;
 			if (!ctx.plugin().exmdb.set_instance_properties(dir.c_str(),
 			    aInstId, &initList, &initProblems))
-				throw EWSError::ItemSave(E3094);
+				throw EWSError::ItemSave(E3429);
 
 			ATTACHMENT_CONTENT ac{};
 			std::vector<TAGGED_PROPVAL> props;
@@ -1156,11 +1156,11 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 			PROBLEM_ARRAY problems;
 			if (!ctx.plugin().exmdb.write_attachment_instance(dir.c_str(),
 			    aInstId, &ac, false, &problems))
-				throw EWSError::ItemSave(E3094);
+				throw EWSError::ItemSave(E3430);
 			ec_error_t err;
 			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 			    aInstId, &err) || err != ecSuccess)
-				throw EWSError::ItemSave(E3094);
+				throw EWSError::ItemSave(E3431);
 
 			sShape shape;
 			ctx.updated(dir, mid, shape);
@@ -1169,7 +1169,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 			    ctx.effectiveUser(parentFolder), CP_ACP, mid.messageId(),
 			    &msgProps, &msgProblems))
-				throw EWSError::ItemSave(E3092);
+				throw EWSError::ItemSave(E3411);
 
 			mCreateAttachmentResponseMessage msg;
 			sAttachmentId aid(ctx.getItemEntryId(dir, mid.messageId()), aNum);
@@ -1208,17 +1208,17 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		ctx.validate(dir, aid);
 		// XXX: Permission check is wrong; we must check whether message can be modified
 		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
-			throw EWSError::AccessDenied(E3190);
+			throw EWSError::AccessDenied(E3444);
 
 		auto mInst = ctx.plugin().loadMessageInstance(dir,
 		             aid.folderId(), aid.messageId());
 		if (!ctx.plugin().exmdb.delete_message_instance_attachment(dir.c_str(),
 		    mInst->instanceId, aid.attachment_num))
-			throw EWSError::ItemSave(E3094);
+			throw EWSError::ItemSave(E3432);
 		ec_error_t err;
 		if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 		    mInst->instanceId, &err) || err != ecSuccess)
-			throw EWSError::ItemSave(E3094);
+			throw EWSError::ItemSave(E3433);
 
 		sShape shape;
 		ctx.updated(dir, aid, shape);
@@ -1227,7 +1227,7 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 		    ctx.effectiveUser(parentFolder), CP_ACP, aid.messageId(),
 		    &msgProps, &msgProblems))
-			throw EWSError::ItemSave(E3092);
+			throw EWSError::ItemSave(E3412);
 
 		static constexpr proptag_t propids[] = {PR_ENTRYID, PR_CHANGE_KEY};
 		static constexpr PROPTAG_ARRAY proptags = {std::size(propids), deconst(propids)};
@@ -1350,7 +1350,7 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		} else if (request.DeleteType == Enum::MoveToDeletedItems) {
 			uint64_t newMid = 0;
 			if (!exmdb.allocate_message_id(dir.c_str(), parent.folderId, &newMid))
-				throw EWSError::MoveCopyFailed(E3132);
+				throw EWSError::MoveCopyFailed(E3425);
 
 			sFolderSpec deletedItems = ctx.resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
 			BOOL result = false;
@@ -1779,7 +1779,7 @@ void process(mGetRoomListsRequest&&, XMLElement *response, const EWSContext &ctx
 
 	std::vector<unsigned int> domain_ids;
 	if (!mysql_adaptor_get_org_domains(org_id, domain_ids))
-		throw DispatchError(E3027);
+		throw DispatchError(E3387);
 
 	mGetRoomListsResponse data;
 	std::vector<tRoomListEntry> lists;
@@ -1788,7 +1788,7 @@ void process(mGetRoomListsRequest&&, XMLElement *response, const EWSContext &ctx
 	for (unsigned int domain_id : domain_ids) {
 		sql_domain info;
 		if (!mysql_adaptor_get_domain_info(domain_id, info))
-			throw DispatchError(E3027);
+			throw DispatchError(E3388);
 		if (!collect_rooms(domain_id))
 			continue;
 		lists.emplace_back(make_room_list_entry(info));
@@ -1809,17 +1809,17 @@ void process(mGetRoomsRequest &&request, XMLElement *response, const EWSContext 
 
 	ctx.normalize(request.RoomList);
 	if (!request.RoomList.EmailAddress)
-		throw DispatchError(E3090("RoomList"));
+		throw DispatchError(E3441("RoomList"));
 
 	auto user_domain = extract_domain(ctx.auth_info().username);
 	if (user_domain.empty())
-		throw DispatchError(E3090(ctx.auth_info().username));
+		throw DispatchError(E3442(ctx.auth_info().username));
 	unsigned int user_domain_id = 0, user_org_id = 0;
 	resolve_domain_ids(user_domain, user_domain_id, user_org_id);
 
 	auto target_domain = extract_domain(request.RoomList.EmailAddress->c_str());
 	if (target_domain.empty())
-		throw DispatchError(E3090(*request.RoomList.EmailAddress));
+		throw DispatchError(E3443(*request.RoomList.EmailAddress));
 	unsigned int target_domain_id = 0, target_org_id = 0;
 	resolve_domain_ids(target_domain, target_domain_id, target_org_id);
 
@@ -1983,20 +1983,20 @@ void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
 		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
 			folder = ctx.resolveFolder(*dist);
 		else
-			throw EWSError::InvalidFolderId(E3252);
+			throw EWSError::InvalidFolderId(E3420);
 
 		if (!folder.target)
 			folder.target = ctx.auth_info().username;
 		std::string dir = ctx.getDir(folder);
 		if (!(ctx.permissions(dir, folder.folderId) & frightsCreate))
-			throw EWSError::AccessDenied(E3218);
+			throw EWSError::AccessDenied(E3434);
 
 		uint64_t messageId, changeNumber;
 		if (!exmdb.allocate_message_id(dir.c_str(),
 		    folder.folderId, &messageId))
-			throw EWSError::ItemSave(E3092);
+			throw EWSError::ItemSave(E3413);
 		if (!exmdb.allocate_cn(dir.c_str(), &changeNumber))
-			throw EWSError::ItemSave(E3092);
+			throw EWSError::ItemSave(E3414);
 
 		bool isPublic = folder.location == folder.PUBLIC;
 		uint32_t accountId = ctx.getAccountId(*folder.target, isPublic);
@@ -2047,7 +2047,7 @@ void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
 		if (!exmdb.write_message(dir.c_str(), CP_ACP,
 		    folder.folderId, &content, {}, &outmid,
 		    &outcn, &err) || err != ecSuccess)
-			throw EWSError::ItemSave(E3092);
+			throw EWSError::ItemSave(E3415);
 
 		mCreateUserConfigurationResponseMessage msg;
 		msg.success();
@@ -2082,11 +2082,11 @@ void process(mGetUserConfigurationRequest &&request, XMLElement *response, const
 		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
 			folder = ctx.resolveFolder(*dist);
 		else
-			throw EWSError::InvalidFolderId(E3252);
+			throw EWSError::InvalidFolderId(E3421);
 
 		std::string dir = ctx.getDir(folder);
 		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
-			throw EWSError::AccessDenied(E3218);
+			throw EWSError::AccessDenied(E3435);
 
 		std::string configClass = "IPM.Configuration." + reqName.Name;
 		RESTRICTION_PROPERTY resProp{RELOP_EQ, PR_MESSAGE_CLASS,
@@ -2097,20 +2097,20 @@ void process(mGetUserConfigurationRequest &&request, XMLElement *response, const
 		const char *username = ctx.effectiveUser(folder);
 		if (!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId, username,
 		    TABLE_FLAG_ASSOCIATED, &res, nullptr, &tableId, &rowCount))
-			throw EWSError::ItemPropertyRequestFailed(E3245);
+			throw EWSError::ItemPropertyRequestFailed(E3438);
 		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 		if (rowCount == 0)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3392);
 
 		static constexpr proptag_t midTag = PidTagMid;
 		TARRAY_SET rows;
 		exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId,
 			{&midTag, 1}, 0, 1, &rows);
 		if (rows.count == 0 || rows.pparray[0] == nullptr)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3393);
 		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
 		if (mid == nullptr)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3394);
 
 		static constexpr proptag_t propTags[] = {
 			PR_ENTRYID, PR_CHANGE_KEY, PR_ROAMING_XMLSTREAM, PR_ROAMING_BINARYSTREAM,
@@ -2180,11 +2180,11 @@ void process(mUpdateUserConfigurationRequest &&request, XMLElement *response,
 		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
 			folder = ctx.resolveFolder(*dist);
 		else
-			throw EWSError::InvalidFolderId(E3252);
+			throw EWSError::InvalidFolderId(E3422);
 
 		std::string dir = ctx.getDir(folder);
 		if (!(ctx.permissions(dir, folder.folderId) & frightsEditAny))
-			throw EWSError::AccessDenied(E3218);
+			throw EWSError::AccessDenied(E3436);
 
 		std::string configClass = "IPM.Configuration." + reqName.Name;
 		const RESTRICTION_PROPERTY resProp =
@@ -2197,21 +2197,21 @@ void process(mUpdateUserConfigurationRequest &&request, XMLElement *response,
 		if (!exmdb.load_content_table(dir.c_str(), CP_UTF8,
 		    folder.folderId, username, TABLE_FLAG_ASSOCIATED,
 		    &res, nullptr, &tableId, &rowCount))
-			throw EWSError::ItemPropertyRequestFailed(E3245);
+			throw EWSError::ItemPropertyRequestFailed(E3439);
 		auto unloadTable = HX::make_scope_exit([&] { exmdb.unload_table(dir.c_str(), tableId); });
 		if (rowCount == 0)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3395);
 
 		static constexpr proptag_t midTag = PidTagMid;
 		TARRAY_SET rows;
 		if (!exmdb.query_table(dir.c_str(), username, CP_UTF8,
 		    tableId, {&midTag, 1}, 0, 1, &rows))
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3396);
 		if (rows.count == 0 || rows.pparray[0] == nullptr)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3397);
 		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
 		if (mid == nullptr)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3398);
 
 		std::vector<TAGGED_PROPVAL> props;
 		if (request.XmlData) {
@@ -2236,7 +2236,7 @@ void process(mUpdateUserConfigurationRequest &&request, XMLElement *response,
 			PROBLEM_ARRAY problems;
 			if (!exmdb.set_message_properties(dir.c_str(),
 			    username, CP_ACP, *mid, &propArray, &problems))
-				throw EWSError::ItemSave(E3092);
+				throw EWSError::ItemSave(E3416);
 		}
 
 		mUpdateUserConfigurationResponseMessage msg;
@@ -2275,11 +2275,11 @@ void process(mDeleteUserConfigurationRequest &&request,
 		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
 			folder = ctx.resolveFolder(*dist);
 		else
-			throw EWSError::InvalidFolderId(E3252);
+			throw EWSError::InvalidFolderId(E3423);
 
 		std::string dir = ctx.getDir(folder);
 		if (!(ctx.permissions(dir, folder.folderId) & frightsDeleteAny))
-			throw EWSError::AccessDenied(E3218);
+			throw EWSError::AccessDenied(E3437);
 
 		std::string configClass = "IPM.Configuration." + reqName.Name;
 		const RESTRICTION_PROPERTY resProp =
@@ -2292,21 +2292,21 @@ void process(mDeleteUserConfigurationRequest &&request,
 		if (!exmdb.load_content_table(dir.c_str(), CP_UTF8,
 		    folder.folderId, username, TABLE_FLAG_ASSOCIATED,
 		    &res, nullptr, &tableId, &rowCount))
-			throw EWSError::ItemPropertyRequestFailed(E3245);
+			throw EWSError::ItemPropertyRequestFailed(E3440);
 		auto unloadTable = HX::make_scope_exit([&] { exmdb.unload_table(dir.c_str(), tableId); });
 		if (rowCount == 0)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3399);
 
 		static constexpr proptag_t midTag = PidTagMid;
 		TARRAY_SET rows;
 		if (!exmdb.query_table(dir.c_str(), username, CP_UTF8,
 		    tableId, {&midTag, 1}, 0, 1, &rows))
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3400);
 		if (rows.count == 0 || rows.pparray[0] == nullptr)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3401);
 		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
 		if (mid == nullptr)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3402);
 
 		eid_t eid = *mid;
 		EID_ARRAY eids{1, &eid};
@@ -2314,7 +2314,7 @@ void process(mDeleteUserConfigurationRequest &&request,
 		if (!exmdb.delete_messages(dir.c_str(), CP_ACP,
 		    username, folder.folderId, &eids, TRUE,
 		    &partial) || partial)
-			throw EWSError::CannotDeleteObject(E3134);
+			throw EWSError::CannotDeleteObject(E3447);
 
 		mDeleteUserConfigurationResponseMessage msg;
 		msg.success();
@@ -2770,7 +2770,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 					throw DispatchError(E3066);
 			}
 			if (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn)))
-				throw DispatchError(E3066);
+				throw DispatchError(E3448);
 			syncState.readOffset = 0;
 		} else {
 			syncState.readOffset = readSynced + unread_mids.count - skip;
@@ -3058,7 +3058,7 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 		if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 		    ctx.effectiveUser(folder), CP_ACP, meid.messageId(),
 		    &content) || content == nullptr)
-			throw EWSError::ItemNotFound(E3143);
+			throw EWSError::ItemNotFound(E3403);
 		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
 
 		if (request.SaveItemToFolder)
@@ -3193,7 +3193,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, mid);
 		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
-			throw EWSError::AccessDenied(E3190);
+			throw EWSError::AccessDenied(E3445);
 		sShape shape(change);
 		/*
 		 * Pre-register timezone properties that setDatetimeFields may
@@ -3243,14 +3243,14 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			}
 			auto error = content->proplist.set(PidTagMid, EWSContext::construct<uint64_t>(rop_util_make_eid(1, mid.message_gc)));
 			if (error == ecServerOOM)
-				throw EWSError::ItemSave(E3035);
+				throw EWSError::ItemSave(E3449);
 			if (!content->proplist.has(PidTagChangeNumber))
 				throw EWSError::ItemSave(E3255);
 			uint64_t outmid = 0, outcn = 0;
 			if (!ctx.plugin().exmdb.write_message(dir.c_str(),
 			    CP_ACP, parentFolder.folderId, content.get(), {},
 			    &outmid, &outcn, &error) || error != ecSuccess)
-				throw EWSError::ItemSave(E3255);
+				throw EWSError::ItemSave(E3446);
 		} else {
 			ctx.updated(dir, mid, shape);
 			TPROPVAL_ARRAY props = shape.write();
@@ -3265,7 +3265,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				uint64_t read_cn;
 				if (!ctx.plugin().exmdb.set_message_read_state(dir.c_str(),
 				    username, mid.messageId(), mark_as_read, &read_cn))
-					throw EWSError::ItemSave(E3092);
+					throw EWSError::ItemSave(E3417);
 				/*
 				 * props is a shallow view onto ndr_stack-alloc-backed data, so
 				 * props.erase() must not be used.
@@ -3278,7 +3278,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			if (props.count > 0 &&
 			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 			    username, CP_ACP, mid.messageId(), &props, &problems))
-				throw EWSError::ItemSave(E3092);
+				throw EWSError::ItemSave(E3418);
 			msg.ConflictResults.Count = problems.count;
 			if (shape.requiredAttendees || shape.optionalAttendees ||
 			    shape.resourceAttendees)
@@ -3296,7 +3296,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 			    username, CP_ACP, mid.messageId(), &sendcontent) ||
 			    sendcontent == nullptr)
-				throw EWSError::ItemNotFound(E3143);
+				throw EWSError::ItemNotFound(E3404);
 			auto cls = sendcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
 			if (cls != nullptr &&
 			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
@@ -3308,12 +3308,12 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 					uint64_t newMid = 0;
 					if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
 					    sentitems.folderId, &newMid))
-						throw EWSError::InternalServerError(E3132);
+						throw EWSError::InternalServerError(E3426);
 					BOOL result = false;
 					if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(), CP_ACP,
 					    mid.messageId(), sentitems.folderId, newMid, false, &result) ||
 					    !result)
-						throw EWSError::InternalServerError(E3301);
+						throw EWSError::InternalServerError(E3428);
 					const char *sentuser = ctx.effectiveUser(sentitems);
 					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 					const TAGGED_PROPVAL sprops[] = {
@@ -3325,12 +3325,12 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 					PROBLEM_ARRAY sproblems;
 					if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 					    sentuser, CP_ACP, newMid, &sproplist, &sproblems))
-						throw EWSError::ItemSave(E3092);
+						throw EWSError::ItemSave(E3419);
 					MESSAGE_CONTENT *sentcontent = nullptr;
 					if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 					    sentuser, CP_ACP, newMid, &sentcontent) ||
 					    sentcontent == nullptr)
-						throw EWSError::ItemNotFound(E3143);
+						throw EWSError::ItemNotFound(E3405);
 					ctx.send(dir, mid.messageId(), *sentcontent);
 				} else {
 					/*
@@ -3341,7 +3341,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 					 */
 					EWSContext::MCONT_PTR dupcontent(sendcontent->dup());
 					if (!dupcontent)
-						throw EWSError::NotEnoughMemory(E3288);
+						throw EWSError::NotEnoughMemory(E3408);
 					dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");
 					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 					dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);

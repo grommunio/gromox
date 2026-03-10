@@ -383,7 +383,7 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 	goid_bin.cb = ext_push.m_offset;
 	goid_bin.pv = EWSContext::alloc(goid_bin.cb);
 	if (goid_bin.pv == nullptr)
-		throw EWSError::NotEnoughMemory(E3298);
+		throw EWSError::NotEnoughMemory(E3321);
 	memcpy(goid_bin.pv, ext_push.m_udata, goid_bin.cb);
 }
 
@@ -501,9 +501,9 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 	if (err == ecDuplicateName)
 		throw EWSError::FolderExists(E3155);
 	if (err != ecSuccess)
-		throw EWSError::FolderSave(std::string(E3154) + ": " + mapi_strerror(err));
+		throw EWSError::FolderSave(std::string(E3322) + ": " + mapi_strerror(err));
 	if (created.folderId == 0)
-		throw EWSError::FolderExists(E3155); // ??
+		throw EWSError::FolderExists(E3323); // ??
 
 	sShape retshape = sShape(tFolderResponseShape());
 	return loadFolder(dir, created.folderId, retshape);
@@ -529,7 +529,7 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 	uint64_t outmid = 0, outcn = 0;
 	if (!m_plugin.exmdb.write_message(dir.c_str(), CP_ACP, parent.folderId,
 	    &content, {}, &outmid, &outcn, &error) || error != ecSuccess)
-		throw EWSError::ItemSave(E3254);
+		throw EWSError::ItemSave(E3324);
 
 	sShape retshape = sShape(tItemResponseShape());
 	return loadItem(dir, parent.folderId, *messageId, retshape);
@@ -637,7 +637,7 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 
 	MCONT_PTR calendarItem(content->dup());
 	if (!calendarItem)
-		throw EWSError::ItemSave(E3254);
+		throw EWSError::ItemSave(E3325);
 
 	auto &props = calendarItem->proplist;
 	/*
@@ -670,7 +670,7 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 		throw EWSError::AccessDenied(E3130);
 
 	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
-		throw EWSError::ItemSave(E3254);
+		throw EWSError::ItemSave(E3326);
 
 	/*
 	 * Copy PidLidTimeZoneDescription to CalendarTimeZone so EWS can expose
@@ -695,17 +695,17 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	if (props.set(PROP_TAG(PT_LONG, pidResp), construct<uint32_t>(response)) != ecSuccess ||
 	    props.set(PROP_TAG(PT_LONG, pidState), construct<uint32_t>(stateFlags)) != ecSuccess ||
 	    props.set(PROP_TAG(PT_LONG, pidBusy), construct<uint32_t>(busyValue)) != ecSuccess)
-		throw EWSError::ItemSave(E3254);
+		throw EWSError::ItemSave(E3327);
 
 	std::optional<uint64_t> existingMid = findExistingByGoid(calendarFolder, calendarDir, *content);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
-		throw EWSError::ItemSave(E3254);
+		throw EWSError::ItemSave(E3328);
 
 	ec_error_t err = ecSuccess;
 	uint64_t newMid = 0, newCn = 0;
 	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, calendarFolder.folderId,
 	        calendarItem.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
-		throw EWSError::ItemSave(E3254);
+		throw EWSError::ItemSave(E3329);
 }
 
 /**
@@ -989,7 +989,7 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 	}
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(target, WANTPRIV_METAONLY, mres) != 0)
-		throw EWSError::CannotFindUser(E3126);
+		throw EWSError::CannotFindUser(E3331);
 	return std::move(mres.maildir);
 }
 
@@ -1203,7 +1203,7 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
 
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(addr, WANTPRIV_METAONLY, mres) != 0)
-		throw EWSError::CannotFindUser(E3007);
+		throw EWSError::CannotFindUser(E3330);
 	if (!(permissions(mres.maildir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
 		throw EWSError::ImpersonateUserDenied(E3243);
 	impersonationUser    = std::move(mres.username);
@@ -1266,7 +1266,7 @@ TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid) con
 	TARRAY_SET propTable;
 	if (!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId,
 	    proptag_cspan{tags}, 0, rowCount, &propTable))
-		throw EWSError::ItemCorrupt(E3284);
+		throw EWSError::ItemCorrupt(E3332);
 	return propTable;
 }
 
@@ -1410,7 +1410,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 				auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
 				MESSAGE_CONTENT eInstContent{};
 				if (!exmdb.read_message_instance(dir.c_str(), eInst->instanceId, &eInstContent))
-					throw DispatchError(E3208);
+					throw DispatchError(E3333);
 				auto log_id = dir + ":a" + std::to_string(i);
 				try {
 					shape.mimeContent.emplace(exportContent(dir, eInstContent, log_id));
@@ -2010,7 +2010,7 @@ static uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
 		break;
 	}
 	}
-	throw InputError(E3307);
+	throw InputError(E3334);
 }
 
 /**
@@ -2218,7 +2218,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	uint16_t att_count = 0;
 	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
 	    mInst->instanceId, &att_count))
-		throw DispatchError(E3210);
+		throw DispatchError(E3335);
 
 	/* Search for an existing exception matching this basedate */
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
@@ -2255,7 +2255,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			throw EWSError::ItemSave(E3309);
 		if (!exmdb.set_instance_properties(dir.c_str(),
 		    eInst->instanceId, &props, &problems))
-			throw EWSError::ItemSave(E3309);
+			throw EWSError::ItemSave(E3336);
 
 		/* Scan props once for body changes and start/end times */
 		bool body_upd = false;
@@ -2287,13 +2287,13 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			PROBLEM_ARRAY rtf_problems;
 			if (!exmdb.remove_instance_properties(dir.c_str(),
 			    eInst->instanceId, proptag_cspan{body_rm}, &rtf_problems))
-				throw EWSError::ItemSave(E3309);
+				throw EWSError::ItemSave(E3337);
 			uint8_t rtf_nosync = 0;
 			const TAGGED_PROPVAL rtf_prop[] = {PR_RTF_IN_SYNC, &rtf_nosync};
 			const TPROPVAL_ARRAY rtf_arr = {std::size(rtf_prop), deconst(rtf_prop)};
 			if (!exmdb.set_instance_properties(dir.c_str(),
 			    eInst->instanceId, &rtf_arr, &rtf_problems))
-				throw EWSError::ItemSave(E3309);
+				throw EWSError::ItemSave(E3338);
 		}
 
 		/*
@@ -2308,7 +2308,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		const TPROPVAL_ARRAY rf_arr = {std::size(rf_props), deconst(rf_props)};
 		if (!exmdb.set_instance_properties(dir.c_str(),
 		    eInst->instanceId, &rf_arr, &problems))
-			throw EWSError::ItemSave(E3309);
+			throw EWSError::ItemSave(E3339);
 
 		/*
 		 * Ensure the attachment is properly marked as hidden exception
@@ -2334,17 +2334,17 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		const TPROPVAL_ARRAY afix_arr = {static_cast<uint16_t>(afix_vec.size()), afix_vec.data()};
 		if (!exmdb.set_instance_properties(dir.c_str(),
 		    aInst->instanceId, &afix_arr, &problems))
-			throw EWSError::ItemSave(E3309);
+			throw EWSError::ItemSave(E3340);
 		ec_error_t err = ecSuccess;
 		if (!exmdb.flush_instance(dir.c_str(),
 		    eInst->instanceId, &err) || err != ecSuccess)
-			throw EWSError::ItemSave(E3309);
+			throw EWSError::ItemSave(E3341);
 		if (!exmdb.flush_instance(dir.c_str(),
 		    aInst->instanceId, &err) || err != ecSuccess)
-			throw EWSError::ItemSave(E3309);
+			throw EWSError::ItemSave(E3342);
 		if (!exmdb.flush_instance(dir.c_str(),
 		    mInst->instanceId, &err) || err != ecSuccess)
-			throw EWSError::ItemSave(E3309);
+			throw EWSError::ItemSave(E3343);
 
 		/* Also update the EXCEPTIONINFO in the recurrence blob */
 		auto *recur_bin = getItemProp<BINARY>(dir, mid, recur_tag);
@@ -2379,12 +2379,12 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	 */
 	auto *recur_bin = getItemProp<const BINARY>(dir, mid, recur_tag);
 	if (!recur_bin)
-		throw EWSError::ItemCorrupt(E3305);
+		throw EWSError::ItemCorrupt(E3344);
 	EXT_PULL ext_pull;
 	ext_pull.init(recur_bin->pb, recur_bin->cb, alloc, 0);
 	APPOINTMENT_RECUR_PAT apr{};
 	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok)
-		throw EWSError::ItemCorrupt(E3306);
+		throw EWSError::ItemCorrupt(E3345);
 
 	int32_t tz_minutes = recurTzOffset(dir, mid, apr);
 
@@ -2438,7 +2438,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	uint32_t aInstId = 0, aNum = 0;
 	if (!exmdb.create_attachment_instance(dir.c_str(),
 	    mInst->instanceId, &aInstId, &aNum))
-		throw EWSError::ItemSave(E3309);
+		throw EWSError::ItemSave(E3346);
 
 	/* Set attachment properties — match oxcical exception layout */
 	uint32_t method = ATTACH_EMBEDDED_MSG;
@@ -2580,14 +2580,14 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	PROBLEM_ARRAY write_problems;
 	if (!exmdb.write_attachment_instance(dir.c_str(),
 	    aInstId, &ac, false, &write_problems))
-		throw EWSError::ItemSave(E3309);
+		throw EWSError::ItemSave(E3347);
 
 	ec_error_t err = ecSuccess;
 	if (!exmdb.flush_instance(dir.c_str(), aInstId, &err) || err != ecSuccess)
-		throw EWSError::ItemSave(E3309);
+		throw EWSError::ItemSave(E3348);
 	if (!exmdb.flush_instance(dir.c_str(), mInst->instanceId, &err) ||
 	    err != ecSuccess)
-		throw EWSError::ItemSave(E3309);
+		throw EWSError::ItemSave(E3349);
 
 	/* Update the recurrence blob: add to modified+deleted lists */
 	auto &rp = apr.recur_pat;
@@ -2660,7 +2660,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	          apr.pextendedexception + apr.exceptioncount);
 
 	if (!saveRecurBlob(dir, mid, recur_tag, apr))
-		throw DispatchError(E3308);
+		throw DispatchError(E3350);
 }
 
 /**
@@ -2703,11 +2703,11 @@ void EWSContext::updateAttendees(const std::string &dir,
 	if (rcpts.count > 0) {
 		if (!exmdb.update_message_instance_rcpts(dir.c_str(),
 		    inst->instanceId, &rcpts))
-			throw EWSError::ItemSave(E3092);
+			throw EWSError::ItemSave(E3351);
 		/* Set organizer properties when attendees are present */
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
-			throw DispatchError(E3302);
+			throw DispatchError(E3352);
 		const char *username = effectiveUser(parent);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType   = construct<uint32_t>(mtgRequest);
@@ -2727,7 +2727,7 @@ void EWSContext::updateAttendees(const std::string &dir,
 		PROBLEM_ARRAY problems;
 		if (!exmdb.set_message_properties(dir.c_str(),
 		    username, CP_ACP, mid, &oproplist, &problems))
-			throw EWSError::ItemSave(E3092);
+			throw EWSError::ItemSave(E3353);
 		const PROPERTY_NAME pnames[] = {
 			NtMeetingType,
 			NtAppointmentStateFlags,
@@ -2744,14 +2744,14 @@ void EWSContext::updateAttendees(const std::string &dir,
 			const TPROPVAL_ARRAY nproplist = {std::size(nprops), deconst(nprops)};
 			if (!exmdb.set_message_properties(dir.c_str(), username,
 			    CP_ACP, mid, &nproplist, &problems))
-				throw EWSError::ItemSave(E3092);
+				throw EWSError::ItemSave(E3354);
 		}
 	}
 
 	ec_error_t err;
 	if (!exmdb.flush_instance(dir.c_str(),
 	    inst->instanceId, &err) || err != ecSuccess)
-		throw EWSError::ItemSave(E3092);
+		throw EWSError::ItemSave(E3355);
 }
 
 /**
@@ -2835,7 +2835,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	auto rangeStart = clock::to_time_t(std::visit([](const auto &r) { return r.StartDate; }, rr));
 	struct tm startdate_tm{};
 	if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
-		throw EWSError::CalendarInvalidRecurrence(E3265);
+		throw EWSError::CalendarInvalidRecurrence(E3356);
 
 	APPOINTMENT_RECUR_PAT apr{};
 	uint32_t deleted_dates[1024], modified_dates[1024];
@@ -3376,7 +3376,7 @@ BINARY EWSContext::serialize(const XID& xid) const
 	EXT_PUSH ext_push;
 	if (!ext_push.init(buff, xid.size, 0) ||
 	   ext_push.p_xid(xid) != pack_result::ok)
-		throw DispatchError(E3120);
+		throw DispatchError(E3357);
 	return BINARY{ext_push.m_offset, {buff}};
 }
 
@@ -3479,7 +3479,7 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 	for (const TAGGED_PROPVAL &prop : shape.write()) {
 		auto err = content->proplist.set(prop);
 		if (err == ecServerOOM)
-			throw EWSError::NotEnoughMemory(E3217);
+			throw EWSError::NotEnoughMemory(E3358);
 	}
 	return content;
 }
@@ -3573,7 +3573,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		auto rangeStart = clock::to_time_t(std::visit(
 		                  [](const auto &r) { return r.StartDate; }, rr));
 		if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
-			throw EWSError::CalendarInvalidRecurrence(E3265);
+			throw EWSError::CalendarInvalidRecurrence(E3359);
 		APPOINTMENT_RECUR_PAT apr{};
 		uint32_t deleted_dates[1024], modified_dates[1024];
 		EXCEPTIONINFO exceptions[1024];
@@ -3652,7 +3652,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		if (std::holds_alternative<tDailyRecurrencePattern>(rp)) {
 			auto interval = std::get<tDailyRecurrencePattern>(rp).Interval;
 			if (interval < 1 || interval > 999)
-				throw EWSError::CalendarInvalidRecurrence(E3266);
+				throw EWSError::CalendarInvalidRecurrence(E3360);
 			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_DAILY;
 			apr.recur_pat.patterntype = rptMinute;
 			apr.recur_pat.period = interval * 1440;
@@ -3660,18 +3660,18 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		} else if (std::holds_alternative<tWeeklyRecurrencePattern>(rp)) {
 			auto interval = std::get<tWeeklyRecurrencePattern>(rp).Interval;
 			if (interval < 1 || interval > 99)
-				throw EWSError::CalendarInvalidRecurrence(E3267);
+				throw EWSError::CalendarInvalidRecurrence(E3361);
 			auto firstdow = 1; // TODO get from user settings?
 			if (std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek)
 				firstdow = std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek->index();
 			if (firstdow > 6)
-				throw EWSError::CalendarInvalidRecurrence(E3268);
+				throw EWSError::CalendarInvalidRecurrence(E3362);
 
 			const auto& daysOfWeek = std::get<tWeeklyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.weekrecur = 0;
 			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.weekrecur);
 			if (apr.recur_pat.pts.weekrecur == 0)
-				throw EWSError::CalendarInvalidRecurrence(E3269);
+				throw EWSError::CalendarInvalidRecurrence(E3363);
 
 			// every weekday has daily frequency and weekly pattern type
 			apr.recur_pat.recurfrequency = apr.recur_pat.pts.weekrecur != 0x3E ?
@@ -3683,16 +3683,16 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		} else if (std::holds_alternative<tRelativeMonthlyRecurrencePattern>(rp)) {
 			auto interval = std::get<tRelativeMonthlyRecurrencePattern>(rp).Interval;
 			if (interval < 1 || interval > 99)
-				throw EWSError::CalendarInvalidRecurrence(E3270);
+				throw EWSError::CalendarInvalidRecurrence(E3364);
 
 			const auto& daysOfWeek = std::get<tRelativeMonthlyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.monthnth.weekrecur = 0;
 			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
 			if (apr.recur_pat.pts.monthnth.weekrecur == 0)
-				throw EWSError::CalendarInvalidRecurrence(E3271);
+				throw EWSError::CalendarInvalidRecurrence(E3365);
 			auto dayOfWeekIndex = std::get<tRelativeMonthlyRecurrencePattern>(rp).DayOfWeekIndex.index();
 			if (dayOfWeekIndex > 4)
-				throw EWSError::CalendarInvalidRecurrence(E3272);
+				throw EWSError::CalendarInvalidRecurrence(E3366);
 
 			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
 			apr.recur_pat.patterntype = rptMonthNth;
@@ -3702,20 +3702,20 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		} else if (std::holds_alternative<tAbsoluteMonthlyRecurrencePattern>(rp)) {
 			auto interval = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).Interval;
 			if (interval < 1 || interval > 99)
-				throw EWSError::CalendarInvalidRecurrence(E3273);
+				throw EWSError::CalendarInvalidRecurrence(E3367);
 			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
 			apr.recur_pat.patterntype = rptMonth;
 			apr.recur_pat.period = interval;
 			apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).DayOfMonth;
 			if (apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
-				throw EWSError::CalendarInvalidRecurrence(E3274);
+				throw EWSError::CalendarInvalidRecurrence(E3368);
 			rectype = rectypeMonthly;
 		} else if (std::holds_alternative<tRelativeYearlyRecurrencePattern>(rp)) {
 			const auto& daysOfWeek = std::get<tRelativeYearlyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.monthnth.weekrecur = 0;
 			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
 			if (apr.recur_pat.pts.monthnth.weekrecur == 0)
-				throw EWSError::CalendarInvalidRecurrence(E3275);
+				throw EWSError::CalendarInvalidRecurrence(E3369);
 			auto dayOfWeekIndex = std::get<tRelativeYearlyRecurrencePattern>(rp).DayOfWeekIndex.index();
 			auto month = std::get<tRelativeYearlyRecurrencePattern>(rp).Month.index();
 			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
@@ -3731,11 +3731,11 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			apr.recur_pat.period = 12;
 			apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteYearlyRecurrencePattern>(rp).DayOfMonth;
 			if (apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
-				throw EWSError::CalendarInvalidRecurrence(E3279);
+				throw EWSError::CalendarInvalidRecurrence(E3370);
 			rectype = rectypeYearly;
 			startdate_tm.tm_mon = month;
 		} else {
-			throw EWSError::CalendarInvalidRecurrence(E3280);
+			throw EWSError::CalendarInvalidRecurrence(E3371);
 		}
 
 		calc_firstdatetime(apr.recur_pat, &startdate_tm);
@@ -3754,7 +3754,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			apr.recur_pat.occurrencecount = std::get<tNumberedRecurrenceRange>(rr).NumberOfOccurrences;
 			calc_enddate(apr.recur_pat, &startdate_tm);
 		} else {
-			throw EWSError::CalendarInvalidRecurrence(E3281);
+			throw EWSError::CalendarInvalidRecurrence(E3372);
 		}
 
 		BINARY tmp_bin;
@@ -3762,7 +3762,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 
 		if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
 		    ext_push.p_apptrecpat(apr) != pack_result::ok)
-			throw EWS::DispatchError(E3120);
+			throw EWS::DispatchError(E3373);
 		tmp_bin.cb = ext_push.m_offset;
 		tmp_bin.pb = ext_push.m_udata;
 
@@ -3846,7 +3846,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				throw EWSError::TimeZone(E3300);
 			if ((endOffset == 0 && calcEndOffset) &&
 			    !offset_from_tz(&tzdef, endTime, endOffset))
-				throw EWSError::TimeZone(E3300);
+				throw EWSError::TimeZone(E3374);
 			item.Start.value().offset = std::chrono::minutes(startOffset);
 			item.End.value().offset = std::chrono::minutes(endOffset);
 		}
@@ -3894,7 +3894,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		    ep.p_guid(GUID::random_new()) != pack_result::ok ||
 		    !ep.init(buf, sizeof(buf), 0) ||
 		    ep.p_goid(goid) != pack_result::ok)
-			throw EWSError::InternalServerError(E3299);
+			throw EWSError::InternalServerError(E3375);
 		auto *gb = construct<BINARY>(BINARY{
 		           static_cast<uint32_t>(ep.m_offset), ep.m_udata});
 		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
@@ -3902,7 +3902,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		goid.creationtime = 0;
 		if (!ep.init(buf, sizeof(buf), 0) ||
 		    ep.p_goid(goid) != pack_result::ok)
-			throw EWSError::InternalServerError(E3299);
+			throw EWSError::InternalServerError(E3376);
 		auto *cb = construct<BINARY>(BINARY{
 		           static_cast<uint32_t>(ep.m_offset), ep.m_udata});
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, cb});
@@ -3913,7 +3913,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	                    (item.Resources ? item.Resources->size() : 0);
 	if (recipients) {
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
-			throw EWSError::NotEnoughMemory(E3288);
+			throw EWSError::NotEnoughMemory(E3377);
 		TARRAY_SET* rcpts = content->children.prcpts;
 		if (item.RequiredAttendees)
 			for (const auto &att : *item.RequiredAttendees)
@@ -3926,7 +3926,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
-			throw DispatchError(E3302);
+			throw DispatchError(E3378);
 		auto displayName = deconst(dispName.c_str());
 		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, displayName});
 		shape.write(TAGGED_PROPVAL{PR_SENDER_NAME, displayName});
@@ -3946,7 +3946,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		std::string essdn;
 		if (cvt_username_to_essdn(m_auth_info.username, m_plugin.x500_org_name.c_str(),
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
-			throw DispatchError(E3085);
+			throw DispatchError(E3379);
 		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, username});
 		shape.write(TAGGED_PROPVAL{PR_SENDER_EMAIL_ADDRESS, username});
 		EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
@@ -3955,7 +3955,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		uint8_t* abEidBuff = alloc<uint8_t>(ABEIDBUFFSIZE);
 		if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
 		    ext_push.p_abk_eid(abEid) != pack_result::ok)
-			throw DispatchError(E3085);
+			throw DispatchError(E3380);
 		BINARY* abEidContainer = construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
 		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ENTRYID, abEidContainer});
 		shape.write(TAGGED_PROPVAL{PR_SENDER_ENTRYID, abEidContainer});
@@ -4346,7 +4346,7 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 	if (recipients > 0 && rcpts == nullptr) {
 		rcpts = content->children.prcpts = tarray_set_init();
 		if (rcpts == nullptr)
-			throw EWSError::NotEnoughMemory(E3288);
+			throw EWSError::NotEnoughMemory(E3381);
 	}
 	if (rcpts != nullptr) {
 		if (to)
@@ -4544,7 +4544,7 @@ tSubscriptionId EWSContext::subscribe(const tPushSubscriptionRequest& req) const
 {
 	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
 	if (all && req.FolderIds)
-		throw EWSError::InvalidSubscriptionRequest(E3198);
+		throw EWSError::InvalidSubscriptionRequest(E3382);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
 	       req.eventMask(), all, req.StatusFrequency);
 }
@@ -4560,7 +4560,7 @@ tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) 
 {
 	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
 	if (all && req.FolderIds)
-		throw EWSError::InvalidSubscriptionRequest(E3198);
+		throw EWSError::InvalidSubscriptionRequest(E3383);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
 	       req.eventMask(), all, 5);
 }
@@ -4606,12 +4606,12 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	           m_plugin.x500_org_name.c_str(), mysql_adaptor_get_user_ids,
 	           mysql_adaptor_get_domain_ids, essdn);
 	if (err != ecSuccess)
-		throw DispatchError(E3085);
+		throw DispatchError(E3384);
 	HX_strupper(essdn.data());
 	EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
 	if (!wAbEid.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
 	    wAbEid.p_abk_eid(abEid) != pack_result::ok)
-		throw DispatchError(E3085);
+		throw DispatchError(E3385);
 	BINARY* abEidContainer = construct<BINARY>(BINARY{wAbEid.m_offset, {abEidBuff}});
 	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_ENTRYID, abEidContainer});
 
