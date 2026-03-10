@@ -73,7 +73,7 @@ class oab_writer {
 	void put_str(const std::string &);
 	size_t begin_record();
 
-	/*
+	/**
 	 * Patch the record size (cbSize) at the given offset. cbSize includes
 	 * itself per MS-OXOAB v16 §2.9.5.
 	 */
@@ -167,7 +167,7 @@ static uint32_t crc32_oab(const void *data, size_t len)
 	return crc ^ 0xFFFFFFFF;
 }
 
-/*
+/**
  * Wrap raw OAB binary data in the compressed file format. MS-OXOAB v16
  * §2.11.1: LZX_HDR (16 bytes) followed by LZX_BLK blocks. Uses stored
  * (uncompressed) blocks with ulFlags=0.
@@ -217,7 +217,9 @@ static std::string oab_wrap_lzx(const std::string &raw)
 	return out;
 }
 
-/* Compute SHA-1 hex digest of data (MS-OXWOAB specifies SHA-1, 40 hex chars) */
+/**
+ * Compute SHA-1 hex digest of data (MS-OXWOAB specifies SHA-1, 40 hex chars)
+ */
 static std::string sha1_hex(std::string_view input)
 {
 	unsigned char hash[EVP_MAX_MD_SIZE];
@@ -232,7 +234,7 @@ static std::string sha1_hex(std::string_view input)
 	return bin2hex(hash, len);
 }
 
-/*
+/**
  * Generate a deterministic GUID string from base_id
  * so the URL remains stable across ab_tree cache reloads.
  */
@@ -242,7 +244,9 @@ static std::string deterministic_guid(int32_t base_id)
 	return fmt::format("{:08x}-baad-cafe-0ab0-{:012x}", v, v);
 }
 
-/* Map display_type (etyp) to MAPI PidTagObjectType value */
+/**
+ * Map display_type (etyp) to MAPI PidTagObjectType value
+ */
 static uint32_t etyp_to_objtype(enum display_type dt)
 {
 	switch (dt) {
@@ -425,7 +429,10 @@ http_status OabPlugin::serve_lzx(int ctx_id, int32_t base_id, uint32_t seq)
 	return send_response(ctx_id, "application/octet-stream", entry->lzx_data);
 }
 
-/* Procedure for MS-OXOAB v16 §2.9 "Uncompressed OAB Version 4 Full Details File" */
+/**
+ * Procedure for MS-OXOAB v16 §2.9
+ * "Uncompressed OAB Version 4 Full Details File"
+ */
 std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
     const std::string &guid_str, const std::string &oab_dn)
 {
@@ -569,7 +576,9 @@ std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
 	return std::move(w.data());
 }
 
-/* Procedure for MS-OXOAB v16 §2.11 "Compressed OAB Version 4 Details File" */
+/**
+ * Procedure for MS-OXOAB v16 §2.11 "Compressed OAB Version 4 Details File"
+ */
 bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 {
 	auto guid_str = deterministic_guid(base_id);
