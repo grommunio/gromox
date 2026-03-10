@@ -297,6 +297,136 @@ static tRoomListEntry make_room_list_entry(const sql_domain& domain)
 	return entry;
 }
 
+/**
+ * @brief      Send a meeting response to the organizer
+ *
+ * Duplicates the original meeting request, stamps the responder's
+ * identity on PR_SENDER_*, preserves PR_SENT_REPRESENTING_* as the
+ * organizer, and sends.
+ */
+static void send_meeting_response(const EWSContext &ctx,
+    const tItemId &responseRef, const MESSAGE_CONTENT &respItem)
+{
+	ctx.assertIdType(responseRef.type, tItemId::ID_ITEM);
+	sMessageEntryId refMid(responseRef.Id.data(), responseRef.Id.size());
+	sFolderSpec refFolder = ctx.resolveFolder(refMid);
+	std::string refDir = ctx.getDir(refFolder);
+	const char *refUser = ctx.effectiveUser(refFolder);
+	MESSAGE_CONTENT *reqContent = nullptr;
+	if (!ctx.plugin().exmdb.read_message(refDir.c_str(),
+	    refUser, CP_ACP, refMid.messageId(), &reqContent) ||
+	    reqContent == nullptr)
+		throw EWSError::ItemNotFound(E3143);
+	auto wantResp = reqContent->proplist.get<const uint8_t>(PR_RESPONSE_REQUESTED);
+	auto orgSmtp = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (!orgSmtp)
+		orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	if ((wantResp != nullptr && *wantResp == 0) || orgSmtp == nullptr)
+		return;
+	EWSContext::MCONT_PTR content(reqContent->dup());
+	if (!content)
+		throw EWSError::NotEnoughMemory(E3288);
+	auto respClass = respItem.proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (respClass)
+		content->proplist.set(PR_MESSAGE_CLASS, respClass);
+	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
+	content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+	auto respUser = deconst(ctx.auth_info().username);
+	std::string respName;
+	mysql_adaptor_get_user_displayname(ctx.auth_info().username, respName);
+	auto rname = deconst(respName.c_str());
+	content->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
+	content->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
+	content->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
+	content->proplist.set(PR_SENDER_NAME, rname);
+	/*
+	 * Keep PR_SENT_REPRESENTING_* as the organizer from the
+	 * original request; oxcical uses it for the ORGANIZER
+	 * line in the iCalendar REPLY.
+	 */
+	if (content->children.prcpts)
+		tarray_set_free(content->children.prcpts);
+	content->children.prcpts = tarray_set_init();
+	if (!content->children.prcpts)
+		throw EWSError::NotEnoughMemory(E3288);
+	tEmailAddressType org;
+	org.EmailAddress = orgSmtp;
+	auto orgName = reqContent->proplist.get<const char>(
+	    PR_SENT_REPRESENTING_NAME);
+	if (orgName)
+		org.Name = orgName;
+	org.RoutingType = "SMTP";
+	org.mkRecipient(content->children.prcpts->emplace(), MAPI_TO);
+	ctx.send(refDir, 0, *content);
+}
+
+/**
+ * @brief      Send meeting cancellation to attendees
+ *
+ * Reads the calendar item, stamps it as a cancellation, and
+ * either saves a copy in Sent Items or sends directly.
+ */
+static void send_meeting_cancellation(const EWSContext &ctx,
+    const std::string &dir, const sMessageEntryId &meid,
+    const sFolderSpec &parent, bool saveCopy)
+{
+	auto &exmdb = ctx.plugin().exmdb;
+	const char *username = ctx.effectiveUser(parent);
+	MESSAGE_CONTENT *cancelcontent = nullptr;
+	if (!exmdb.read_message(dir.c_str(), username, CP_ACP,
+	    meid.messageId(), &cancelcontent) ||
+	    cancelcontent == nullptr)
+		throw EWSError::ItemNotFound(E3143);
+	auto cls = cancelcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr ||
+	    class_match_prefix(cls, "IPM.Appointment") != 0 ||
+	    cancelcontent->children.prcpts == nullptr ||
+	    cancelcontent->children.prcpts->count == 0)
+		return;
+	if (saveCopy) {
+		sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+		uint64_t newMid = 0;
+		if (!exmdb.allocate_message_id(dir.c_str(),
+		    sentitems.folderId, &newMid))
+			throw EWSError::InternalServerError(E3132);
+		BOOL result = false;
+		if (!exmdb.movecopy_message(dir.c_str(), CP_ACP,
+		    meid.messageId(), sentitems.folderId, newMid,
+		    false, &result) || !result)
+			throw EWSError::InternalServerError(E3301);
+		const char *sentuser =
+		    ctx.effectiveUser(sentitems);
+		auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+		const TAGGED_PROPVAL sprops[] = {
+			{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Canceled")},
+			{PR_CLIENT_SUBMIT_TIME, now},
+			{PR_MESSAGE_DELIVERY_TIME, now},
+		};
+		const TPROPVAL_ARRAY sproplist = {std::size(sprops), deconst(sprops)};
+		PROBLEM_ARRAY sproblems;
+		if (!exmdb.set_message_properties(dir.c_str(),
+		    sentuser, CP_ACP, newMid,
+		    &sproplist, &sproblems))
+			throw EWSError::ItemSave(E3092);
+		MESSAGE_CONTENT *sentcontent = nullptr;
+		if (!exmdb.read_message(dir.c_str(), sentuser,
+		    CP_ACP, newMid, &sentcontent) ||
+		    sentcontent == nullptr)
+			throw EWSError::ItemNotFound(E3143);
+		ctx.send(dir, meid.messageId(), *sentcontent);
+	} else {
+		EWSContext::MCONT_PTR dupcontent(cancelcontent->dup());
+		if (!dupcontent)
+			throw EWSError::NotEnoughMemory(E3288);
+		dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Canceled");
+		auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+		dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
+		dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+		ctx.send(dir, meid.messageId(), *dupcontent);
+	}
+}
+
 } //anonymous namespace
 ///////////////////////////////////////////////////////////////////////
 //Request implementations
@@ -896,63 +1026,8 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			else if (auto dec2 = std::get_if<tDeclineItem>(&item))
 				responseRef = dec2->ReferenceItemId ?
 				              &*dec2->ReferenceItemId : nullptr;
-			if (responseRef != nullptr) {
-				ctx.assertIdType(responseRef->type, tItemId::ID_ITEM);
-				sMessageEntryId refMid(responseRef->Id.data(),
-				                       responseRef->Id.size());
-				sFolderSpec refFolder = ctx.resolveFolder(refMid);
-				std::string refDir = ctx.getDir(refFolder);
-				const char *refUser = ctx.effectiveUser(refFolder);
-				MESSAGE_CONTENT *reqContent = nullptr;
-				if (!ctx.plugin().exmdb.read_message(
-				    refDir.c_str(), refUser, CP_ACP,
-				    refMid.messageId(), &reqContent) ||
-				    reqContent == nullptr)
-					throw EWSError::ItemNotFound(E3143);
-				auto wantResp = reqContent->proplist.get<const uint8_t>(PR_RESPONSE_REQUESTED);
-				auto orgSmtp = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-				if (!orgSmtp)
-					orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
-				if ((wantResp == nullptr || *wantResp != 0)
-				    && orgSmtp != nullptr) {
-					EWSContext::MCONT_PTR respContent(reqContent->dup());
-					if (!respContent)
-						throw EWSError::NotEnoughMemory(E3288);
-					auto respClass = content->proplist.get<const char>(PR_MESSAGE_CLASS);
-					if (respClass)
-						respContent->proplist.set(PR_MESSAGE_CLASS, respClass);
-					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					respContent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
-					respContent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
-					auto respUser = deconst(ctx.auth_info().username);
-					std::string respName;
-					mysql_adaptor_get_user_displayname(ctx.auth_info().username, respName);
-					auto rname = deconst(respName.c_str());
-					respContent->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
-					respContent->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
-					respContent->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
-					respContent->proplist.set(PR_SENDER_NAME, rname);
-					/*
-					 * Keep PR_SENT_REPRESENTING_* as the
-					 * organizer from the original request;
-					 * oxcical uses it for the ORGANIZER
-					 * line in the iCalendar REPLY.
-					 */
-					if (respContent->children.prcpts)
-						tarray_set_free(respContent->children.prcpts);
-					respContent->children.prcpts = tarray_set_init();
-					if (!respContent->children.prcpts)
-						throw EWSError::NotEnoughMemory(E3288);
-					tEmailAddressType org;
-					org.EmailAddress = orgSmtp;
-					auto orgName = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
-					if (orgName)
-						org.Name = orgName;
-					org.RoutingType = "SMTP";
-					org.mkRecipient(respContent->children.prcpts->emplace(), MAPI_TO);
-					ctx.send(refDir, 0, *respContent);
-				}
-			}
+			if (responseRef != nullptr)
+				send_meeting_response(ctx, *responseRef, *content);
 		}
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
@@ -1255,60 +1330,10 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		if (itemId.type == tItemId::ID_ITEM &&
 		    itemId.InstanceIndex == 0 &&
 		    request.SendMeetingCancellations &&
-		    *request.SendMeetingCancellations != Enum::SendToNone) {
-			const char *username = ctx.effectiveUser(parent);
-			MESSAGE_CONTENT *cancelcontent = nullptr;
-			if (!exmdb.read_message(dir.c_str(),
-			    username, CP_ACP, meid.messageId(), &cancelcontent) ||
-			    cancelcontent == nullptr)
-				throw EWSError::ItemNotFound(E3143);
-			auto cls = cancelcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
-			if (cls != nullptr &&
-			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
-			    cancelcontent->children.prcpts != nullptr &&
-			    cancelcontent->children.prcpts->count > 0) {
-				if (*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy) {
-					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
-					uint64_t newMid = 0;
-					if (!exmdb.allocate_message_id(dir.c_str(),
-					    sentitems.folderId, &newMid))
-						throw EWSError::InternalServerError(E3132);
-					BOOL result = false;
-					if (!exmdb.movecopy_message(dir.c_str(), CP_ACP,
-					    meid.messageId(), sentitems.folderId, newMid,
-					    false, &result) || !result)
-						throw EWSError::InternalServerError(E3301);
-					const char *sentuser = ctx.effectiveUser(sentitems);
-					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					const TAGGED_PROPVAL sprops[] = {
-						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Canceled")},
-						{PR_CLIENT_SUBMIT_TIME, now},
-						{PR_MESSAGE_DELIVERY_TIME, now},
-					};
-					const TPROPVAL_ARRAY sproplist = {std::size(sprops), deconst(sprops)};
-					PROBLEM_ARRAY sproblems;
-					if (!exmdb.set_message_properties(dir.c_str(),
-					    sentuser, CP_ACP, newMid, &sproplist, &sproblems))
-						throw EWSError::ItemSave(E3092);
-					MESSAGE_CONTENT *sentcontent = nullptr;
-					if (!exmdb.read_message(dir.c_str(),
-					    sentuser, CP_ACP, newMid, &sentcontent) ||
-					    sentcontent == nullptr)
-						throw EWSError::ItemNotFound(E3143);
-					ctx.send(dir, meid.messageId(), *sentcontent);
-				} else {
-					/* dup just like in process(mUpdateItemRequest) */
-					EWSContext::MCONT_PTR dupcontent(cancelcontent->dup());
-					if (!dupcontent)
-						throw EWSError::NotEnoughMemory(E3288);
-					dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Canceled");
-					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
-					dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
-					ctx.send(dir, meid.messageId(), *dupcontent);
-				}
-			}
-		}
+		    *request.SendMeetingCancellations != Enum::SendToNone)
+			send_meeting_cancellation(ctx, dir, meid, parent,
+			    *request.SendMeetingCancellations ==
+			    Enum::SendToAllAndSaveCopy);
 
 		if (itemId.InstanceIndex > 0) {
 			/* OccurrenceItemId: delete a single occurrence */
