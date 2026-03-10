@@ -729,6 +729,16 @@ void tNotification::serialize(tinyxml2::XMLElement *xml) const
 		XMLDUMPT(event);
 }
 
+tTimeZoneDefinitionType::tTimeZoneDefinitionType(const tinyxml2::XMLElement *xml) :
+	XMLINITA(Id)
+{}
+
+void tTimeZoneDefinitionType::serialize(tinyxml2::XMLElement *xml) const
+{
+	XMLDUMPA(Id);
+	xml->SetAttribute("Name", Id.c_str());
+}
+
 tCalendarItem::tCalendarItem(const tinyxml2::XMLElement *xml) :
 	tItem(xml),
 	XMLINIT(UID),
@@ -753,33 +763,19 @@ tCalendarItem::tCalendarItem(const tinyxml2::XMLElement *xml) :
 	XMLINIT(AppointmentState),
 	XMLINIT(Recurrence),
 	XMLINIT(AllowNewTimeProposal),
-	XMLINIT(StartTimeZoneId),
-	XMLINIT(EndTimeZoneId)
+	XMLINIT(StartTimeZone),
+	XMLINIT(EndTimeZone)
 {
-	/*
-	 * StartTimeZone/EndTimeZone are complex elements with an Id attribute.
-	 * If the simple StartTimeZoneId was not provided, fall back to
-	 * extracting the Id from the complex element.
-	 */
-	if (!StartTimeZoneId) {
-		auto el = xml->FirstChildElement("StartTimeZone");
-		if (!el)
-			el = xml->FirstChildElement("t:StartTimeZone");
-		if (el) {
-			const char *id = el->Attribute("Id");
-			if (id && *id)
-				StartTimeZoneId.emplace(id);
-		}
+	/* Fall back to simple StartTimeZoneId text element */
+	if (!StartTimeZone) {
+		auto el = xml->FirstChildElement("StartTimeZoneId");
+		if (el && el->GetText())
+			StartTimeZone.emplace(el->GetText());
 	}
-	if (!EndTimeZoneId) {
-		auto el = xml->FirstChildElement("EndTimeZone");
-		if (!el)
-			el = xml->FirstChildElement("t:EndTimeZone");
-		if (el) {
-			const char *id = el->Attribute("Id");
-			if (id && *id)
-				EndTimeZoneId.emplace(id);
-		}
+	if (!EndTimeZone) {
+		auto el = xml->FirstChildElement("EndTimeZoneId");
+		if (el && el->GetText())
+			EndTimeZone.emplace(el->GetText());
 	}
 }
 
@@ -819,8 +815,8 @@ void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(IsOnlineMeeting);
 	XMLDUMPT(MeetingWorkspaceUrl);
 	XMLDUMPT(NetShowUrl);
-	XMLDUMPT(StartTimeZoneId);
-	XMLDUMPT(EndTimeZoneId);
+	XMLDUMPT(StartTimeZone);
+	XMLDUMPT(EndTimeZone);
 	XMLDUMPT(DoNotForwardMeeting);
 }
 
@@ -1552,7 +1548,9 @@ tMeetingRequestMessage::tMeetingRequestMessage(const tinyxml2::XMLElement *xml) 
 	XMLINIT(AppointmentState),
 	XMLINIT(Recurrence),
 	XMLINIT(AllowNewTimeProposal),
-	XMLINIT(ChangeHighlights)
+	XMLINIT(ChangeHighlights),
+	XMLINIT(StartTimeZone),
+	XMLINIT(EndTimeZone)
 {}
 
 void tMeetingRequestMessage::serialize(tinyxml2::XMLElement *xml) const
@@ -1583,6 +1581,8 @@ void tMeetingRequestMessage::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(DeletedOccurrences);
 	XMLDUMPT(AllowNewTimeProposal);
 	XMLDUMPT(ChangeHighlights);
+	XMLDUMPT(StartTimeZone);
+	XMLDUMPT(EndTimeZone);
 }
 
 tAcceptItem::tAcceptItem(const tinyxml2::XMLElement *xml) :

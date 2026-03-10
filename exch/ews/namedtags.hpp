@@ -99,3 +99,4 @@ static const PROPERTY_NAME NtBilling = {MNID_ID, PSETID_Common, PidLidBilling};
 static const PROPERTY_NAME NtCompanies = {MNID_ID, PSETID_Common, PidLidCompanies};
 static const PROPERTY_NAME NtReminderSignalTime = {MNID_ID, PSETID_Common, PidLidReminderSignalTime};
 static const PROPERTY_NAME NtCalendarTimeZone = {MNID_STRING, EWS_Mac_PropertySetId, 0, deconst("CalendarTimeZone")};
+static const PROPERTY_NAME NtTimeZoneDescription = {MNID_ID, PSETID_Appointment, PidLidTimeZoneDescription};

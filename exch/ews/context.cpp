@@ -3509,10 +3509,10 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	}
 
 	if (!shape.writes(NtCalendarTimeZone)) {
-		if (item.StartTimeZoneId)
-			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.StartTimeZoneId)});
-		else if (item.EndTimeZoneId)
-			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.EndTimeZoneId)});
+		if (item.StartTimeZone)
+			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(item.StartTimeZone->Id)});
+		else if (item.EndTimeZone)
+			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(item.EndTimeZone->Id)});
 	}
 
 	if (item.IsAllDayEvent)
@@ -3596,10 +3596,10 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				 * property cache has not been resolved yet.
 				 */
 				const char *tz_name = nullptr;
-				if (item.StartTimeZoneId)
-					tz_name = item.StartTimeZoneId->c_str();
-				else if (item.EndTimeZoneId)
-					tz_name = item.EndTimeZoneId->c_str();
+				if (item.StartTimeZone)
+					tz_name = item.StartTimeZone->Id.c_str();
+				else if (item.EndTimeZone)
+					tz_name = item.EndTimeZone->Id.c_str();
 				if (tz_name) {
 					auto buf = ianatz_to_tzdef(tz_name);
 					if (!buf)
@@ -3776,10 +3776,10 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	 * though the value was written above.
 	 */
 	const char *tz_name = nullptr;
-	if (item.StartTimeZoneId)
-		tz_name = item.StartTimeZoneId->c_str();
-	else if (item.EndTimeZoneId)
-		tz_name = item.EndTimeZoneId->c_str();
+	if (item.StartTimeZone)
+		tz_name = item.StartTimeZone->Id.c_str();
+	else if (item.EndTimeZone)
+		tz_name = item.EndTimeZone->Id.c_str();
 	if (tz_name) {
 		auto buf = ianatz_to_tzdef(tz_name);
 		if (buf == nullptr)

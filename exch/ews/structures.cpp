@@ -1801,8 +1801,18 @@ void tCalendarItem::update(const sShape& shape)
 		std::optional<std::string> tzid;
 		fromProp(prop, tzid);
 		if (tzid) {
-			StartTimeZoneId = *tzid;
-			EndTimeZoneId = *tzid;
+			StartTimeZone.emplace(*tzid);
+			EndTimeZone.emplace(*tzid);
+		}
+	}
+	if (!StartTimeZone) {
+		if ((prop = shape.get(NtTimeZoneDescription))) {
+			std::optional<std::string> tzid;
+			fromProp(prop, tzid);
+			if (tzid) {
+				StartTimeZone.emplace(*tzid);
+				EndTimeZone.emplace(*tzid);
+			}
 		}
 	}
 
@@ -3597,6 +3607,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:End", {NtAppointmentEndWhole, PT_SYSTIME}},
 	{"calendar:End", {NtCommonEnd, PT_SYSTIME}},
 	{"calendar:EndTimeZone", {NtCalendarTimeZone, PT_UNICODE}},
+	{"calendar:EndTimeZone", {NtTimeZoneDescription, PT_UNICODE}},
 	{"calendar:EndTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:IsAllDayEvent", {NtAppointmentSubType, PT_BOOLEAN}},
 	{"calendar:IsCancelled", {NtAppointmentStateFlags, PT_LONG}},
@@ -3616,6 +3627,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:Start", {NtAppointmentStartWhole, PT_SYSTIME}},
 	{"calendar:Start", {NtCommonStart, PT_SYSTIME}},
 	{"calendar:StartTimeZone", {NtCalendarTimeZone, PT_UNICODE}},
+	{"calendar:StartTimeZone", {NtTimeZoneDescription, PT_UNICODE}},
 	{"calendar:StartTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:TimeZone", {NtTimeZone, PT_UNICODE}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
@@ -4390,6 +4402,25 @@ void tMeetingRequestMessage::update(const sShape& shape)
 	}
 
 	fromProp(shape.get(NtLocation), Location);
+
+	if ((prop = shape.get(NtCalendarTimeZone))) {
+		std::optional<std::string> tzid;
+		fromProp(prop, tzid);
+		if (tzid) {
+			StartTimeZone.emplace(*tzid);
+			EndTimeZone.emplace(*tzid);
+		}
+	}
+	if (!StartTimeZone) {
+		if ((prop = shape.get(NtTimeZoneDescription))) {
+			std::optional<std::string> tzid;
+			fromProp(prop, tzid);
+			if (tzid) {
+				StartTimeZone.emplace(*tzid);
+				EndTimeZone.emplace(*tzid);
+			}
+		}
+	}
 
 	if ((prop = shape.get(NtAppointmentStateFlags))) {
 		const uint32_t* stateFlags = static_cast<const uint32_t*>(prop->pvalue);
