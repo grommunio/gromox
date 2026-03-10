@@ -64,6 +64,94 @@ struct oab_cache_entry {
 	uint32_t sequence = 1;
 };
 
+/* OAB binary writer helper */
+class oab_writer {
+	public:
+	void put_u8(uint8_t v) { buf.push_back(v); }
+	void put_u32le(uint32_t);
+	void put_varui(uint32_t);
+	void put_str(const std::string &);
+	size_t begin_record();
+
+	/*
+	 * Patch the record size (cbSize) at the given offset. cbSize includes
+	 * itself per MS-OXOAB v16 §2.9.5.
+	 */
+	void end_record(size_t off) { patch_u32le(off, buf.size() - off); }
+
+	void patch_u32le(size_t off, uint32_t v);
+	std::string &data() { return buf; }
+	const std::string &data() const { return buf; }
+	size_t size() const { return buf.size(); }
+
+	private:
+	std::string buf;
+};
+
+void oab_writer::put_u32le(uint32_t v)
+{
+	buf.push_back(v & 0xFF);
+	buf.push_back((v >> 8) & 0xFF);
+	buf.push_back((v >> 16) & 0xFF);
+	buf.push_back((v >> 24) & 0xFF);
+}
+
+/**
+ * MS-OXOAB v16 §2.9.6.1 variable-length unsigned integer encoding.
+ */
+void oab_writer::put_varui(uint32_t v)
+{
+	if (v <= 0x7F) {
+		buf.push_back(static_cast<uint8_t>(v));
+	} else if (v <= 0xFF) {
+		buf.push_back(0x81);
+		buf.push_back(static_cast<uint8_t>(v));
+	} else if (v <= 0xFFFF) {
+		buf.push_back(0x82);
+		buf.push_back(v & 0xFF);
+		buf.push_back((v >> 8) & 0xFF);
+	} else if (v <= 0xFFFFFF) {
+		buf.push_back(0x83);
+		buf.push_back(v & 0xFF);
+		buf.push_back((v >> 8) & 0xFF);
+		buf.push_back((v >> 16) & 0xFF);
+	} else {
+		buf.push_back(0x84);
+		put_u32le(v);
+	}
+}
+
+/**
+ * Null-terminated string (PT_UNICODE or PT_STRING8). The caller must
+ * ensure the string is non-empty; empty strings are not encoded but
+ * marked absent in the presence bit array instead (v16 §2.9.6.3).
+ */
+void oab_writer::put_str(const std::string &s)
+{
+	buf.append(s.data(), s.data() + s.size() + 1); /* includes \0 this way */
+}
+
+/**
+ * Write placeholder for record size, return offset for later patching.
+ */
+size_t oab_writer::begin_record()
+{
+	auto off = buf.size();
+	put_u32le(0); // placeholder
+	return off;
+}
+
+/**
+ * Patch a uint32_t at a given offset
+ */
+void oab_writer::patch_u32le(size_t off, uint32_t v)
+{
+	buf[off]   = v & 0xFF;
+	buf[off+1] = (v >> 8) & 0xFF;
+	buf[off+2] = (v >> 16) & 0xFF;
+	buf[off+3] = (v >> 24) & 0xFF;
+}
+
 /* IEEE 802.3 CRC-32 (polynomial 0xEDB88320, seeded 0xFFFFFFFF) */
 static uint32_t crc32_oab(const void *data, size_t len)
 {
@@ -76,86 +164,6 @@ static uint32_t crc32_oab(const void *data, size_t len)
 	}
 	return crc ^ 0xFFFFFFFF;
 }
-
-/* OAB binary writer helper */
-class oab_writer {
-	public:
-	void put_u8(uint8_t v) { buf.push_back(v); }
-
-	void put_u32le(uint32_t v)
-	{
-		buf.push_back(v & 0xFF);
-		buf.push_back((v >> 8) & 0xFF);
-		buf.push_back((v >> 16) & 0xFF);
-		buf.push_back((v >> 24) & 0xFF);
-	}
-
-	/* MS-OXOAB v16 §2.9.6.1 variable-length unsigned integer encoding */
-	void put_varui(uint32_t v)
-	{
-		if (v <= 0x7F) {
-			buf.push_back(static_cast<uint8_t>(v));
-		} else if (v <= 0xFF) {
-			buf.push_back(0x81);
-			buf.push_back(static_cast<uint8_t>(v));
-		} else if (v <= 0xFFFF) {
-			buf.push_back(0x82);
-			buf.push_back(v & 0xFF);
-			buf.push_back((v >> 8) & 0xFF);
-		} else if (v <= 0xFFFFFF) {
-			buf.push_back(0x83);
-			buf.push_back(v & 0xFF);
-			buf.push_back((v >> 8) & 0xFF);
-			buf.push_back((v >> 16) & 0xFF);
-		} else {
-			buf.push_back(0x84);
-			put_u32le(v);
-		}
-	}
-
-	/*
-	 * Null-terminated string (PT_UNICODE or PT_STRING8). The caller must
-	 * ensure the string is non-empty; empty strings are not encoded but
-	 * marked absent in the presence bit array instead (v16 §2.9.6.3).
-	 */
-	void put_str(const std::string &s)
-	{
-		buf.append(s.data(), s.data() + s.size() + 1); /* includes \0 this way */
-	}
-
-	/* Write placeholder for record size, return offset for later patching */
-	size_t begin_record()
-	{
-		auto off = buf.size();
-		put_u32le(0); // placeholder
-		return off;
-	}
-
-	/*
-	 * Patch the record size (cbSize) at the given offset. cbSize includes
-	 * itself per MS-OXOAB v16 §2.9.5.
-	 */
-	void end_record(size_t off)
-	{
-		patch_u32le(off, buf.size() - off);
-	}
-
-	/* Patch a uint32_t at a given offset */
-	void patch_u32le(size_t off, uint32_t v)
-	{
-		buf[off]   = v & 0xFF;
-		buf[off+1] = (v >> 8) & 0xFF;
-		buf[off+2] = (v >> 16) & 0xFF;
-		buf[off+3] = (v >> 24) & 0xFF;
-	}
-
-	std::string &data() { return buf; }
-	const std::string &data() const { return buf; }
-	size_t size() const { return buf.size(); }
-
-	private:
-	std::string buf;
-};
 
 /*
  * Wrap raw OAB binary data in the compressed file format. MS-OXOAB v16
