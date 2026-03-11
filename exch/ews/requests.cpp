@@ -1893,7 +1893,7 @@ void process(mGetUserConfigurationRequest &&request, XMLElement *response, const
 		TPROPVAL_ARRAY propvals = ctx.getItemProps(dir, *mid, props);
 
 		mGetUserConfigurationResponseMessage& msg = data.ResponseMessages.emplace_back();
-		msg.UserConfiguration.emplace(tUserConfigurationType{reqName});
+		msg.UserConfiguration.emplace(tUserConfiguration{reqName});
 		auto &config = *msg.UserConfiguration;
 		config.UserConfigurationName = reqName;
 

@@ -1870,7 +1870,7 @@ void tUserConfigurationDictionaryType::serialize(tinyxml2::XMLElement *xml) cons
 	XMLDUMPT(DictionaryEntry);
 }
 
-void tUserConfigurationType::serialize(tinyxml2::XMLElement *xml) const
+void tUserConfiguration::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(UserConfigurationName);
 	XMLDUMPT(ItemId);

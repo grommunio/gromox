@@ -4358,7 +4358,7 @@ struct tUserConfigurationDictionaryType {
 /*
  * Types.xsd:7247
  */
-struct tUserConfigurationType {
+struct tUserConfiguration {
 	tUserConfigurationName UserConfigurationName;
 	std::optional<tItemId> ItemId;
 	std::optional<tUserConfigurationDictionaryType> Dictionary;
@@ -4409,7 +4409,7 @@ struct mGetUserConfigurationResponseMessage : public mResponseMessageType {
 
 	using mResponseMessageType::mResponseMessageType;
 
-	std::optional<tUserConfigurationType> UserConfiguration;
+	std::optional<tUserConfiguration> UserConfiguration;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
