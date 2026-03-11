@@ -140,7 +140,7 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(flush_instance),
 	E(unload_store),
 	E(deliver_message),
-	E(notify_new_mail),
+	"notify_new_mail",
 	E(store_eid_to_user),
 	E(empty_folder),
 	E(purge_softdelete),

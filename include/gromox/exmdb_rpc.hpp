@@ -158,7 +158,7 @@ enum class exmdb_callid : uint8_t {
 	flush_instance /* v2 */ = 0x7f,
 	unload_store = 0x80,
 	deliver_message = 0x81,
-	notify_new_mail = 0x82,
+	// notify_new_mail = 0x82,
 	store_eid_to_user = 0x83,
 	empty_folder = 0x84,
 	purge_softdelete = 0x85,
@@ -1086,11 +1086,6 @@ struct exreq_get_public_folder_unread_count final : public exreq {
 	uint64_t folder_id;
 };
 
-struct exreq_notify_new_mail final : public exreq {
-	using view_t = exreq_notify_new_mail;
-	uint64_t folder_id, message_id;
-};
-
 struct exreq_store_eid_to_user final : public exreq {
 	using view_t = exreq_store_eid_to_user;
 	STORE_ENTRYID *store_eid;
@@ -1742,7 +1737,6 @@ using exresp_transport_new_mail = exresp;
 using exresp_vacuum = exresp;
 using exresp_unload_store = exresp;
 using exresp_ping_store = exresp;
-using exresp_notify_new_mail = exresp;
 
 using exresp_purge_datafiles = exresp;
 using exresp_autoreply_tsupdate = exresp;

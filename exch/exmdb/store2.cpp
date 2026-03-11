@@ -72,22 +72,6 @@ BOOL exmdb_server::cgkreset(const char *dir, uint32_t flags)
 	return db_engine_cgkreset(dir, flags);
 }
 
-BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
-	uint64_t message_id)
-{
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return false;
-	/* db_conn::notify_new_mail needs an externally managed transaction. So start one. */
-	auto sql_trans = gx_sql_begin(pdb->psqlite, txn_mode::read);
-	auto dbase = pdb->lock_base_wr();
-	db_conn::NOTIFQ notifq;
-	pdb->notify_new_mail(rop_util_get_gc_value(folder_id),
-		rop_util_get_gc_value(message_id), *dbase, notifq);
-	dg_notify(std::move(notifq));
-	return TRUE;
-}
-
 BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_eid,
     char **maildir, uint32_t *user_id, uint32_t *domain_id)
 {

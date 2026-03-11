@@ -2077,18 +2077,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_transport_new_mail &d)
 	return x.p_str(d.pstr_class);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_notify_new_mail &d)
-{
-	TRY(x.g_uint64(&d.folder_id));
-	return x.g_uint64(&d.message_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_notify_new_mail &d)
-{
-	TRY(x.p_uint64(d.folder_id));
-	return x.p_uint64(d.message_id);
-}
-
 static pack_result exmdb_pull(EXT_PULL &x, exreq_check_contact_address &d)
 {
 	return x.g_str(&d.paddress);
@@ -2335,7 +2323,6 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_write_delegates &d)
 	E(transport_new_mail) \
 	E(check_contact_address) \
 	E(get_public_folder_unread_count) \
-	E(notify_new_mail) \
 	E(store_eid_to_user) \
 	E(purge_softdelete) \
 	E(autoreply_tsquery) \
@@ -3657,7 +3644,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	E(transport_new_mail) \
 	E(vacuum) \
 	E(unload_store) \
-	E(notify_new_mail) \
 	E(purge_datafiles) \
 	E(autoreply_tsupdate) \
 	E(recalc_store_size) \

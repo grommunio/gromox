@@ -125,7 +125,6 @@ EXMIDL(check_contact_address, (const char *dir, const char *paddress, IDLOUT BOO
 EXMIDL(get_public_folder_unread_count, (const char *dir, const char *username, uint64_t folder_id, IDLOUT uint32_t *count))
 EXMIDL(vacuum, (const char *dir))
 EXMIDL(unload_store, (const char *dir))
-EXMIDL(notify_new_mail, (const char *dir, uint64_t folder_id, uint64_t message_id))
 EXMIDL(store_eid_to_user, (const char *dir, const STORE_ENTRYID *store_eid, IDLOUT char **maildir, unsigned int *user_id, unsigned int *domain_id))
 EXMIDL(purge_softdelete, (const char *dir, const char *username, uint64_t folder_id, uint32_t del_flags, gromox::mapitime_t cutoff, IDLOUT uint32_t *cnt_folders, uint32_t *cnt_messages, uint64_t *sz_normal, uint64_t *sz_fai))
 EXMIDL(purge_datafiles, (const char *dir))
