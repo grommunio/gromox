@@ -729,11 +729,11 @@ void tNotification::serialize(tinyxml2::XMLElement *xml) const
 		XMLDUMPT(event);
 }
 
-tTimeZoneDefinitionType::tTimeZoneDefinitionType(const tinyxml2::XMLElement *xml) :
+tTimeZoneDefinition::tTimeZoneDefinition(const tinyxml2::XMLElement *xml) :
 	XMLINITA(Id)
 {}
 
-void tTimeZoneDefinitionType::serialize(tinyxml2::XMLElement *xml) const
+void tTimeZoneDefinition::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPA(Id);
 	xml->SetAttribute("Name", Id.c_str());

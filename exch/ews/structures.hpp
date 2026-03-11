@@ -1984,9 +1984,9 @@ struct tTask : public tItem {
  *
  * Partial: only the Id attribute is used for now.
  */
-struct tTimeZoneDefinitionType {
-	explicit tTimeZoneDefinitionType(const tinyxml2::XMLElement *);
-	explicit tTimeZoneDefinitionType(std::string id) : Id(std::move(id)) {}
+struct tTimeZoneDefinition {
+	explicit tTimeZoneDefinition(const tinyxml2::XMLElement *);
+	explicit tTimeZoneDefinition(std::string id) : Id(std::move(id)) {}
 
 	void serialize(tinyxml2::XMLElement *) const;
 
@@ -2064,8 +2064,8 @@ struct tCalendarItem : public tItem {
 	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
 	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	std::optional<tTimeZoneDefinitionType> StartTimeZone;
-	std::optional<tTimeZoneDefinitionType> EndTimeZone;
+	std::optional<tTimeZoneDefinition> StartTimeZone;
+	std::optional<tTimeZoneDefinition> EndTimeZone;
 	// <xs:element name="IntendedFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
 	// <xs:element name="JoinOnlineMeetingUrl" type="xs:string" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="OnlineMeetingSettings" type="t:OnlineMeetingSettingsType" minOccurs="0" maxOccurs="1"/>
@@ -2586,8 +2586,8 @@ struct tMeetingRequestMessage : public tMeetingMessage {
 	std::optional<tChangeHighlights> ChangeHighlights;
 	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	std::optional<tTimeZoneDefinitionType> StartTimeZone;
-	std::optional<tTimeZoneDefinitionType> EndTimeZone;
+	std::optional<tTimeZoneDefinition> StartTimeZone;
+	std::optional<tTimeZoneDefinition> EndTimeZone;
 	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
 };
 
