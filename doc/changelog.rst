@@ -18,6 +18,8 @@ Fixes:
 * midb: release lock and reference when me_sync_mailbox experiences a sync failure
 * lib: avoid emitting colors to stderr when that is not a tty
 * exmdb: strip redundant notifications from notify_new_mail()
+* exmdb: stop returning garbage in MAPI content table cells when the table sort
+  order contains a PT_MV_UNICODE | MV_INSTANCE column.
 
 Changes:
 

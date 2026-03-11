@@ -924,12 +924,12 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 				}
 				uint16_t type = PROP_TYPE(ptnode->instance_tag) & ~MV_INSTANCE;
 				switch (type) {
-#define H(ctyp, memb) { \
+#define H(ctyp, memb, ptrify) { \
 		auto sa = static_cast<ctyp *>(pvalue); \
 		if (sa->count == 0) \
 			goto BIND_NULL_INSTANCE; \
 		for (size_t i = 0; i < sa->count; ++i) { \
-			if (!common_util_bind_sqlite_statement(pstmt1, multi_index, type & ~MVI_FLAG, &sa->memb[i])) \
+			if (!common_util_bind_sqlite_statement(pstmt1, multi_index, type & ~MVI_FLAG, ptrify sa->memb[i])) \
 				return false; \
 			pstmt1.bind_int64(col_inum, i + 1); \
 			if (pstmt1.step() != SQLITE_DONE) \
@@ -939,18 +939,18 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 		break; \
 	}
 
-				case PT_MV_SHORT: H(SHORT_ARRAY, ps)
-				case PT_MV_LONG: H(LONG_ARRAY, pl)
+				case PT_MV_SHORT: H(SHORT_ARRAY, ps, &)
+				case PT_MV_LONG: H(LONG_ARRAY, pl, &)
 				case PT_MV_CURRENCY:
 				case PT_MV_I8:
-				case PT_MV_SYSTIME: H(LONGLONG_ARRAY, pll)
-				case PT_MV_FLOAT: H(FLOAT_ARRAY, mval)
+				case PT_MV_SYSTIME: H(LONGLONG_ARRAY, pll, &)
+				case PT_MV_FLOAT: H(FLOAT_ARRAY, mval, &)
 				case PT_MV_DOUBLE:
-				case PT_MV_APPTIME: H(DOUBLE_ARRAY, mval)
+				case PT_MV_APPTIME: H(DOUBLE_ARRAY, mval, &)
 				case PT_MV_STRING8:
-				case PT_MV_UNICODE: H(STRING_ARRAY, ppstr)
-				case PT_MV_CLSID: H(GUID_ARRAY, pguid)
-				case PT_MV_BINARY: H(BINARY_ARRAY, pbin)
+				case PT_MV_UNICODE: H(STRING_ARRAY, ppstr, )
+				case PT_MV_CLSID: H(GUID_ARRAY, pguid, &)
+				case PT_MV_BINARY: H(BINARY_ARRAY, pbin, &)
 				default:
 					return false;
 #undef H
