@@ -475,99 +475,6 @@ void process(mGetPersonaRequest &&request, XMLElement *response, const EWSContex
 }
 
 /**
- * @brief      Map MAPI rights to delegate permission level
- */
-static Enum::DelegateFolderPermissionLevelType rights_to_deleg_level(uint32_t rights)
-{
-	rights &= ~(frightsContact | frightsFreeBusySimple | frightsFreeBusyDetailed);
-	if (rights == 0)
-		return Enum::None;
-	if (rights == rightsEditor)
-		return Enum::Editor;
-	if (rights == rightsReviewer)
-		return Enum::Reviewer;
-	if (rights == rightsAuthor)
-		return Enum::Author;
-	return Enum::Custom;
-}
-
-/**
- * @brief      Map delegate permission level to MAPI rights
- *
- * DelegateFolderPermissionLevelType indices:
- * 0=None, 1=Editor, 2=Reviewer, 3=Author, 4=Custom
- */
-static uint32_t deleg_level_to_rights(Enum::DelegateFolderPermissionLevelType level)
-{
-	switch (level.index()) {
-	case 0: return 0;
-	case 1: return rightsEditor;
-	case 2: return rightsReviewer;
-	case 3: return rightsAuthor;
-	default: return 0;
-	}
-}
-
-struct DelegFolderPerm {
-	uint64_t fid;
-	std::optional<Enum::DelegateFolderPermissionLevelType> tDelegatePermissions::*field;
-};
-
-static constexpr DelegFolderPerm delegFolderMap[] = {
-	{PRIVATE_FID_CALENDAR, &tDelegatePermissions::CalendarFolderPermissionLevel},
-	{PRIVATE_FID_TASKS,    &tDelegatePermissions::TasksFolderPermissionLevel},
-	{PRIVATE_FID_INBOX,    &tDelegatePermissions::InboxFolderPermissionLevel},
-	{PRIVATE_FID_CONTACTS, &tDelegatePermissions::ContactsFolderPermissionLevel},
-	{PRIVATE_FID_NOTES,    &tDelegatePermissions::NotesFolderPermissionLevel},
-	{PRIVATE_FID_JOURNAL,  &tDelegatePermissions::JournalFolderPermissionLevel},
-};
-
-/**
- * @brief      Read delegate permissions from folder ACLs
- */
-static tDelegatePermissions read_deleg_perms(const EWSContext &ctx,
-    const std::string &dir, const std::string &username)
-{
-	tDelegatePermissions dp;
-	for (const auto &m : delegFolderMap) {
-		uint32_t rights = 0;
-		if (!ctx.plugin().exmdb.get_folder_perm(dir.c_str(),
-		    rop_util_make_eid_ex(1, m.fid), username.c_str(), &rights))
-			continue; /* ignore error */
-		dp.*(m.field) = rights_to_deleg_level(rights);
-	}
-	return dp;
-}
-
-/**
- * @brief      Write delegate permissions to folder ACLs
- */
-static void write_deleg_perms(const EWSContext &ctx,
-    const std::string &dir, const std::string &username,
-    const tDelegatePermissions &dp)
-{
-	std::string dispname;
-	mysql_adaptor_get_user_displayname(username.c_str(), dispname);
-
-	for (const auto &m : delegFolderMap) {
-		const auto &level = dp.*(m.field);
-		if (!level)
-			continue;
-		uint32_t rights = deleg_level_to_rights(*level);
-		PERMISSION_DATA perm = {ROW_ADD, TPROPVAL_ARRAY{0, EWSContext::alloc<TAGGED_PROPVAL>(4)}};
-		uint16_t &count = perm.propvals.count;
-		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_RIGHTS, EWSContext::construct<uint32_t>(rights)};
-		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_SMTP_ADDRESS, EWSContext::cpystr(username)};
-		if (!dispname.empty())
-			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_NAME, EWSContext::cpystr(dispname)};
-		uint64_t fid = rop_util_make_eid_ex(1, m.fid);
-		if (!ctx.plugin().exmdb.update_folder_permission(dir.c_str(),
-		    fid, false, 1, &perm))
-			/* ignore */;
-	}
-}
-
-/**
  * @brief      Process GetDelegate
  *
  * Reads the delegate configuration of a mailbox and returns the delegates
@@ -615,8 +522,7 @@ void process(mGetDelegateRequest &&request, XMLElement *response, const EWSConte
 			msg.DelegateUser.UserId.DisplayName.emplace(
 			    std::move(dispname));
 		if (request.IncludePermissions && *request.IncludePermissions)
-			msg.DelegateUser.DelegatePermissions.emplace(
-			    read_deleg_perms(ctx, dir, deleg));
+			msg.DelegateUser.DelegatePermissions.emplace(ctx.readDelegatePermissions(dir, deleg));
 		found.insert(deleg);
 	}
 
@@ -672,7 +578,7 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 		delegate_list.emplace_back(addr);
 		existing.emplace(addr);
 		if (du.DelegatePermissions)
-			write_deleg_perms(ctx, dir, addr, *du.DelegatePermissions);
+			ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
 		msg.success();
 		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 	}
@@ -767,7 +673,7 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 			continue;
 		}
 		if (du.DelegatePermissions)
-			write_deleg_perms(ctx, dir, addr, *du.DelegatePermissions);
+			ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
 		msg.success();
 		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 	}
