@@ -33,10 +33,9 @@
 using namespace gromox;
 using namespace gromox::ab_tree;
 
-namespace {
-
 /* OAB v4 binary format constants */
 static constexpr uint32_t OAB_V4_VERSION = 0x20;
+static constexpr uint32_t OAB_TMPL_VERSION = 0x07;
 
 /* Header schema (4 properties) */
 static constexpr proptag_t hdr_props[] = {
@@ -57,14 +56,112 @@ static constexpr uint32_t obj_flags[] = {
 };
 static constexpr size_t OBJ_PROP_COUNT = std::size(obj_props);
 
+namespace {
+
 /* Cached OAB data for a single address book base */
 struct oab_cache_entry {
-	std::string manifest_xml, lzx_data;
+	std::string manifest_xml, lzx_data, tmpl_lzx_data;
 	gromox::time_point gen_time;
 	uint32_t sequence = 1;
 };
 
-/* IEEE 802.3 CRC-32 (polynomial 0xEDB88320, seeded 0xFFFFFFFF) */
+/* OAB binary writer helper */
+class oab_writer {
+	public:
+	void put_u8(uint8_t v) { buf.push_back(v); }
+	void put_u32le(uint32_t);
+	void put_varui(uint32_t);
+	void put_str(const std::string &);
+	size_t begin_record();
+
+	/**
+	 * Patch the record size (cbSize) at the given offset. cbSize includes
+	 * itself per MS-OXOAB v16 §2.9.5.
+	 */
+	void end_record(size_t off) { patch_u32le(off, buf.size() - off); }
+
+	void patch_u32le(size_t off, uint32_t v);
+	std::string &data() { return buf; }
+	const std::string &data() const { return buf; }
+	size_t size() const { return buf.size(); }
+
+	private:
+	std::string buf;
+};
+
+} /* anon-ns */
+
+void oab_writer::put_u32le(uint32_t v)
+{
+	buf.push_back(v & 0xFF);
+	buf.push_back((v >> 8) & 0xFF);
+	buf.push_back((v >> 16) & 0xFF);
+	buf.push_back((v >> 24) & 0xFF);
+}
+
+/**
+ * MS-OXOAB v16 §2.9.6.1 variable-length unsigned integer encoding.
+ */
+void oab_writer::put_varui(uint32_t v)
+{
+	if (v <= 0x7F) {
+		buf.push_back(static_cast<uint8_t>(v));
+	} else if (v <= 0xFF) {
+		buf.push_back(0x81);
+		buf.push_back(static_cast<uint8_t>(v));
+	} else if (v <= 0xFFFF) {
+		buf.push_back(0x82);
+		buf.push_back(v & 0xFF);
+		buf.push_back((v >> 8) & 0xFF);
+	} else if (v <= 0xFFFFFF) {
+		buf.push_back(0x83);
+		buf.push_back(v & 0xFF);
+		buf.push_back((v >> 8) & 0xFF);
+		buf.push_back((v >> 16) & 0xFF);
+	} else {
+		buf.push_back(0x84);
+		put_u32le(v);
+	}
+}
+
+/**
+ * Null-terminated string (PT_UNICODE or PT_STRING8). The caller must
+ * ensure the string is non-empty; empty strings are not encoded but
+ * marked absent in the presence bit array instead (v16 §2.9.6.3).
+ */
+void oab_writer::put_str(const std::string &s)
+{
+	buf.append(s.data(), s.data() + s.size() + 1); /* includes \0 this way */
+}
+
+/**
+ * Write placeholder for record size, return offset for later patching.
+ */
+size_t oab_writer::begin_record()
+{
+	auto off = buf.size();
+	put_u32le(0); // placeholder
+	return off;
+}
+
+/**
+ * Patch a uint32_t at a given offset
+ */
+void oab_writer::patch_u32le(size_t off, uint32_t v)
+{
+	buf[off]   = v & 0xFF;
+	buf[off+1] = (v >> 8) & 0xFF;
+	buf[off+2] = (v >> 16) & 0xFF;
+	buf[off+3] = (v >> 24) & 0xFF;
+}
+
+/**
+ * CRC-32 for OAB LZX_BLK headers (polynomial 0xEDB88320).
+ *
+ * libmspack's OAB decompressor compares the running CRC (seeded
+ * 0xFFFFFFFF, no final XOR) directly against the stored value.
+ * So we store the running CRC, not the standard finalized one.
+ */
 static uint32_t crc32_oab(const void *data, size_t len)
 {
 	auto p = static_cast<const uint8_t *>(data);
@@ -74,101 +171,97 @@ static uint32_t crc32_oab(const void *data, size_t len)
 		for (int j = 0; j < 8; ++j)
 			crc = (crc >> 1) ^ (0xEDB88320 & -(crc & 1));
 	}
-	return crc ^ 0xFFFFFFFF;
+	return crc; /* running CRC, no final XOR */
 }
 
-/* OAB binary writer helper */
-class oab_writer {
-	public:
-	void put_u8(uint8_t v) { buf.push_back(v); }
-
-	void put_u32le(uint32_t v)
-	{
-		buf.push_back(v & 0xFF);
-		buf.push_back((v >> 8) & 0xFF);
-		buf.push_back((v >> 16) & 0xFF);
-		buf.push_back((v >> 24) & 0xFF);
-	}
-
-	/* MS-OXOAB v16 §2.9.6.1 variable-length unsigned integer encoding */
-	void put_varui(uint32_t v)
-	{
-		if (v <= 0x7F) {
-			buf.push_back(static_cast<uint8_t>(v));
-		} else if (v <= 0xFF) {
-			buf.push_back(0x81);
-			buf.push_back(static_cast<uint8_t>(v));
-		} else if (v <= 0xFFFF) {
-			buf.push_back(0x82);
-			buf.push_back(v & 0xFF);
-			buf.push_back((v >> 8) & 0xFF);
-		} else if (v <= 0xFFFFFF) {
-			buf.push_back(0x83);
-			buf.push_back(v & 0xFF);
-			buf.push_back((v >> 8) & 0xFF);
-			buf.push_back((v >> 16) & 0xFF);
-		} else {
-			buf.push_back(0x84);
-			put_u32le(v);
-		}
-	}
-
-	/*
-	 * Null-terminated string (PT_UNICODE or PT_STRING8). The caller must
-	 * ensure the string is non-empty; empty strings are not encoded but
-	 * marked absent in the presence bit array instead (v16 §2.9.6.3).
-	 */
-	void put_str(const std::string &s)
-	{
-		buf.append(s.data(), s.data() + s.size() + 1); /* includes \0 this way */
-	}
-
-	/* Write placeholder for record size, return offset for later patching */
-	size_t begin_record()
-	{
-		auto off = buf.size();
-		put_u32le(0); // placeholder
-		return off;
-	}
-
-	/*
-	 * Patch the record size (cbSize) at the given offset. cbSize includes
-	 * itself per MS-OXOAB v16 §2.9.5.
-	 */
-	void end_record(size_t off)
-	{
-		patch_u32le(off, buf.size() - off);
-	}
-
-	/* Patch a uint32_t at a given offset */
-	void patch_u32le(size_t off, uint32_t v)
-	{
-		buf[off]   = v & 0xFF;
-		buf[off+1] = (v >> 8) & 0xFF;
-		buf[off+2] = (v >> 16) & 0xFF;
-		buf[off+3] = (v >> 24) & 0xFF;
-	}
-
-	std::string &data() { return buf; }
-	const std::string &data() const { return buf; }
-	size_t size() const { return buf.size(); }
-
-	private:
-	std::string buf;
-};
-
-/*
- * Wrap raw OAB binary data in the compressed file format. MS-OXOAB v16
- * §2.11.1: LZX_HDR (16 bytes) followed by LZX_BLK blocks. Uses stored
- * (uncompressed) blocks with ulFlags=0.
+/**
+ * Encode a raw data block as an LZXD type 3 block (uncompressed), as per
+ * MS-PATCH §2.2.3. The LZXD bitstream uses 16-bit LE words with bits consumed
+ * MSB-first.
+ *
+ * Layout:
+ * - 16-bit LE chunk size (byte count after this field, incl. padding)
+ * - 1-bit E8 translation flag (0 = disabled)
+ * - 3-bit block type (3 = uncompressed)
+ * - 24-bit block size (decompressed byte count)
+ * - 0-15 bits of padding up to next 16-bit word boundary
+ * - 3x uint32_t LE variables R0, R1, R2 (recent match offsets, set to 1)
+ * - N bytes of raw data
+ * - 0-1 bytes padding to restore 16-bit alignment
  */
-static std::string oab_wrap_lzx(const std::string &raw)
+static std::string lzxd_encode_uncompressed(const void *vdata, size_t len)
 {
-	static constexpr size_t BLOCK_MAX = 0x40000;
+	/*
+	 * After the chunk size word we emit:
+	 * - 2 bytes: (E8+type+block_size_hi in one 16-bit word)
+	 * - 2 bytes: (block_size_lo+padding in one 16-bit word)
+	 * - 12 bytes:  R0, R1, R2
+	 * - len bytes of raw data
+	 * - 0 or 1 byte padding for 16-bit alignment
+	 */
+	auto data = static_cast<const uint8_t *>(vdata);
+	size_t padded = len + (len & 1);
+	size_t chunk_payload = 4 + 12 + padded;
 	std::string out;
-	/* LZX_HDR (16 bytes) + per-block 16 bytes header + data */
-	size_t nblocks = raw.empty() ? 1 : (raw.size() + BLOCK_MAX - 1) / BLOCK_MAX;
-	out.reserve(16 + nblocks * 16 + raw.size());
+	out.reserve(2 + chunk_payload);
+
+	/* Chunk size (16-bit LE): bytes following this field */
+	uint16_t cs = static_cast<uint16_t>(chunk_payload);
+	out.push_back(cs & 0xFF);
+	out.push_back((cs >> 8) & 0xFF);
+
+	/*
+	 * Pack bit fields into 16-bit LE words (MSB-first).
+	 *
+	 * Word 0: E8(1) | type(3) | block_size[23:12]
+	 * Word 1: block_size[11:0] | padding(4)
+	 */
+	uint32_t bs = static_cast<uint32_t>(len);
+	uint16_t w0 = (0 << 15)
+	            | (3 << 12)
+	            | ((bs >> 12) & 0xFFF);
+	uint16_t w1 = ((bs & 0xFFF) << 4);
+
+	out.push_back(w0 & 0xFF);
+	out.push_back((w0 >> 8) & 0xFF);
+	out.push_back(w1 & 0xFF);
+	out.push_back((w1 >> 8) & 0xFF);
+
+	/* R0=1, R1=1, R2=1 (recent match offsets, LE) */
+	auto put_u32 = [&out](uint32_t v) {
+		out.push_back(v & 0xFF);
+		out.push_back((v >> 8) & 0xFF);
+		out.push_back((v >> 16) & 0xFF);
+		out.push_back((v >> 24) & 0xFF);
+	};
+	put_u32(1);
+	put_u32(1);
+	put_u32(1);
+
+	/* Raw data bytes */
+	out.append(reinterpret_cast<const char *>(data), len);
+
+	/* Pad to 16-bit alignment */
+	if (len & 1)
+		out.push_back(0);
+
+	return out;
+}
+
+/**
+ * Wrap uncompressed OAB binary data (MS-OXOAB v16 §2.11) in various ways.
+ *
+ * @mode: 0: wrap OAB with LZX_HDR + LZX_BLK
+ *        3: wrap OAB with LZX_HDR + LZX_BLK + LZXD type 3 frames
+ *
+ * OL2021 violates the MS-OXOAB specification, ignores the LZX_BLK::ulFlags
+ * and always treats data as LZXD. Thus we are never using mode 0 in practice.
+ * (But Evolution-EWS is ok with getting mode 0-wrapped data.)
+ */
+static std::string oab_wrap_lzx(const std::string &raw, unsigned int mode)
+{
+	size_t BLOCK_MAX = mode == 0 ? 0x40000 : 0x8000;
+	std::string out;
 
 	auto put_u32 = [&out](uint32_t v) {
 		out.push_back(v & 0xFF);
@@ -178,36 +271,55 @@ static std::string oab_wrap_lzx(const std::string &raw)
 	};
 
 	/* LZX_HDR */
-	put_u32(3); // ulVersionHi
-	put_u32(1); // ulVersionLo
-	put_u32(BLOCK_MAX); // ulBlockMax
-	put_u32(raw.size()); // ulTargetSize
+	put_u32(3); /* ulVersionHi */
+	put_u32(1); /* ulVersionLo */
+	put_u32(BLOCK_MAX); /* ulBlockMax */
+	put_u32(raw.size()); /* ulTargetSize */
+
+	if (raw.empty()) {
+		/* Empty block: use ulFlags=0 stored (zero bytes to copy) */
+		put_u32(0);
+		put_u32(0);
+		put_u32(0);
+		put_u32(crc32_oab(nullptr, 0));
+		return out;
+	}
 
 	size_t pos = 0;
 	while (pos < raw.size()) {
 		uint32_t chunk = std::min(raw.size() - pos, BLOCK_MAX);
 		auto blk_crc = crc32_oab(raw.data() + pos, chunk);
 
-		/* LZX_BLK header (16 bytes) */
-		put_u32(0); // ulFlags: not compressed (stored)
-		put_u32(chunk); // ulCompSize: same as uncompressed for stored
-		put_u32(chunk); // ulUncompSize
-		put_u32(blk_crc); // ulCRC: CRC32 of decompressed block
-		out.append(raw, pos, chunk);
+		if (mode == 0) {
+			/*
+			 * LZX_BLK with uncompressed payload, as per MS-OXOAB v16 §2.11.2.
+			 * Works with Evolution-EWS's gal-lzx-decompress-test.
+			 */
+			put_u32(0); // ulFlags: not compressed (stored)
+			put_u32(chunk); // ulCompSize: same as uncompressed for stored
+			put_u32(chunk); // ulUncompSize
+			put_u32(blk_crc); // ulCRC: CRC32 of decompressed block
+			out.append(raw, pos, chunk);
+		} else if (mode == 3) {
+			/*
+			 * LZX_BLK with LZXD payload (MS-OXOAB v16 §2.11.2).
+			 * LZXD frame with uncompressed payload (MS-PATCH v12 §2.3.1.1).
+			 */
+			auto blk = lzxd_encode_uncompressed(&raw[pos], chunk);
+			put_u32(1); /* ulFlags: LZX compressed */
+			put_u32(blk.size()); /* ulCompSize */
+			put_u32(chunk); /* ulUncompSize */
+			put_u32(blk_crc); /* ulCRC of decompressed data */
+			out += std::move(blk);
+		}
 		pos += chunk;
-	}
-
-	/* Handle empty input: one empty stored block */
-	if (raw.empty()) {
-		put_u32(0); // ulFlags
-		put_u32(0); // ulCompSize
-		put_u32(0); // ulUncompSize
-		put_u32(crc32_oab(nullptr, 0)); // ulCRC
 	}
 	return out;
 }
 
-/* Compute SHA-1 hex digest of data (MS-OXWOAB specifies SHA-1, 40 hex chars) */
+/**
+ * Compute SHA-1 hex digest of data (MS-OXWOAB specifies SHA-1, 40 hex chars)
+ */
 static std::string sha1_hex(std::string_view input)
 {
 	unsigned char hash[EVP_MAX_MD_SIZE];
@@ -222,7 +334,7 @@ static std::string sha1_hex(std::string_view input)
 	return bin2hex(hash, len);
 }
 
-/*
+/**
  * Generate a deterministic GUID string from base_id
  * so the URL remains stable across ab_tree cache reloads.
  */
@@ -232,7 +344,9 @@ static std::string deterministic_guid(int32_t base_id)
 	return fmt::format("{:08x}-baad-cafe-0ab0-{:012x}", v, v);
 }
 
-/* Map display_type (etyp) to MAPI PidTagObjectType value */
+/**
+ * Map display_type (etyp) to MAPI PidTagObjectType value
+ */
 static uint32_t etyp_to_objtype(enum display_type dt)
 {
 	switch (dt) {
@@ -246,6 +360,48 @@ static uint32_t etyp_to_objtype(enum display_type dt)
 	}
 }
 
+/**
+ * Generate a minimal OAB display template file (MS-OXOAB v12 §2.2). The
+ * template file is a package of TMPLT_ENTRY structures describing how to
+ * display Address Book objects. Clients that do not use templates still
+ * require the <Template> element in the manifest to consider it valid per
+ * MS-OXWOAB.
+ *
+ * Structure:
+ *   OAB_HDR:          12 bytes (ulVersion=7, ulSerial=0, ulTotRecs=0)
+ *   7x TMPLT_ENTRY:  224 bytes (all zeros — no template data)
+ *   NAMES_STRUCT:     16 bytes (all zeros — no named properties)
+ *   address templates: 4 bytes (oot-count = 0)
+ */
+static std::string generate_template_raw()
+{
+	static constexpr size_t TMPLT_ENTRY_SIZE = 32; /* 8 x 4 bytes */
+	static constexpr size_t TMPLT_COUNT = 7;
+
+	oab_writer w;
+	/* OAB_HDR */
+	w.put_u32le(OAB_TMPL_VERSION);
+	w.put_u32le(0); /* ulSerial: MUST be 0 */
+	w.put_u32le(0); /* ulTotRecs: SHOULD be 0 */
+
+	/* 7 TMPLT_ENTRY structures, all zeros (no template data) */
+	for (size_t i = 0; i < TMPLT_COUNT * (TMPLT_ENTRY_SIZE / 4); ++i)
+		w.put_u32le(0);
+
+	/* NAMES_STRUCT */
+	w.put_u8(0); w.put_u8(0); /* cIDsNames (2 bytes) */
+	w.put_u8(0); w.put_u8(0); /* cGuids (2 bytes) */
+	w.put_u32le(0); /* oIDs */
+	w.put_u32le(0); /* oGuids */
+	w.put_u32le(0); /* oNames */
+
+	/* address-templates: oot-count = 0 */
+	w.put_u32le(0);
+	return w.data();
+}
+
+namespace {
+
 class OabPlugin {
 	public:
 	OabPlugin();
@@ -258,6 +414,7 @@ class OabPlugin {
 	http_status send_error(int ctx_id, http_status);
 	http_status serve_manifest(int ctx_id, int32_t base_id);
 	http_status serve_lzx(int ctx_id, int32_t base_id, uint32_t seq);
+	http_status serve_tmpl(int ctx_id, int32_t base_id, uint32_t seq);
 	const oab_cache_entry *get_or_generate(int32_t base_id);
 	std::string generate_uc(int32_t base_id, uint32_t seq, const std::string &guid, const std::string &oab_dn);
 	bool generate_oab(int32_t base_id, oab_cache_entry &entry);
@@ -300,6 +457,37 @@ BOOL OabPlugin::preproc(int ctx_id)
 	return strncasecmp(req->f_request_uri.c_str(), "/OAB/", 5) == 0 ? TRUE : false;
 }
 
+/**
+ * Look for "<seq>.lzx" and extract the sequence number.
+ */
+static unsigned int parse_seq_path(const char *s)
+{
+	char *end = nullptr;
+	auto seq = strtoul(s, &end, 10);
+	if (end == nullptr || end == s || strcmp(end, ".lzx") != 0)
+		return 0;
+	return seq;
+}
+
+/**
+ * Look for "lng<lcid>-<seq>.lzx" and extract the parts.
+ */
+static unsigned int parse_template_path(const char *s)
+{
+	if (strncmp(s, "lng", 3) != 0)
+		return 0;
+	char *end = nullptr;
+	s += 3;
+	strtoul(s, &end, 10); /* LCID */
+	if (end == nullptr || end == s || *end != '-')
+		return 0;
+	s = end + 1;
+	auto seq = strtoul(s, &end, 10);
+	if (end == s || strcmp(end, ".lzx") != 0)
+		return 0;
+	return seq;
+}
+
 http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
@@ -319,19 +507,22 @@ http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	}
 	int32_t base_id = org_id == 0 ? -domain_id : org_id;
 
-	/* Parse URI */
+	/*
+	 * Parse URI: /OAB/oab.xml
+	 *            /OAB/<seq>.lzx
+	 *            /OAB/lng<lcid>-<seq>.lzx
+	 */
 	auto req = get_request(ctx_id);
 	const auto &uri = req->f_request_uri;
 
-	/* /OAB/oab.xml or /OAB/{seq}.lzx */
 	if (strcasecmp(&uri[5], "oab.xml") == 0)
 		return serve_manifest(ctx_id, base_id);
-
-	/* Check for {N}.lzx */
-	char *end = nullptr;
-	auto seq = strtoul(&uri[5], &end, 10);
-	if (end != nullptr && end != &uri[5] && strcmp(end, ".lzx") == 0)
+	auto seq = parse_seq_path(&uri[5]);
+	if (seq != 0)
 		return serve_lzx(ctx_id, base_id, seq);
+	seq = parse_template_path(&uri[5]);
+	if (seq != 0)
+		return serve_tmpl(ctx_id, base_id, seq);
 
 	return send_error(ctx_id, http_status::not_found);
 } catch (const std::bad_alloc &) {
@@ -413,7 +604,18 @@ http_status OabPlugin::serve_lzx(int ctx_id, int32_t base_id, uint32_t seq)
 	return send_response(ctx_id, "application/octet-stream", entry->lzx_data);
 }
 
-/* Procedure for MS-OXOAB v16 §2.9 "Uncompressed OAB Version 4 Full Details File" */
+http_status OabPlugin::serve_tmpl(int ctx_id, int32_t base_id, uint32_t seq)
+{
+	auto entry = get_or_generate(base_id);
+	if (entry == nullptr || entry->sequence != seq)
+		return send_error(ctx_id, http_status::not_found);
+	return send_response(ctx_id, "application/octet-stream", entry->tmpl_lzx_data);
+}
+
+/**
+ * Procedure for MS-OXOAB v16 §2.9
+ * "Uncompressed OAB Version 4 Full Details File"
+ */
 std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
     const std::string &guid_str, const std::string &oab_dn)
 {
@@ -462,7 +664,7 @@ std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
 		w.put_u8(0xF0);
 
 		// Prop 0: PidTagOfflineAddressBookName (PT_UNICODE)
-		w.put_str("\\Default Global Address List");
+		w.put_str("\\Global Address List");
 		// Prop 1: PidTagOfflineAddressBookDistinguishedName (PT_STRING8)
 		w.put_str(oab_dn);
 		// Prop 2: PidTagOfflineAddressBookSequence (PT_LONG)
@@ -557,18 +759,32 @@ std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
 	return std::move(w.data());
 }
 
-/* Procedure for MS-OXOAB v16 §2.11 "Compressed OAB Version 4 Details File" */
+/**
+ * Procedure for MS-OXOAB v16 §2.11 "Compressed OAB Version 4 Details File"
+ */
 bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 {
 	auto guid_str = deterministic_guid(base_id);
-	auto oab_dn   = fmt::format("/o={}/cn=addrlists/cn=oabs/cn=Default Offline Address Book",
-	                m_org_name);
+	/*
+	 * MS-OXOAB: PidTagOfflineAddressBookDistinguishedName
+	 * is the DN of the address list, not the OAB object.
+	 * For the GAL, Exchange uses "/" (the root).
+	 */
+	std::string oab_dn = "/";
 	auto raw = generate_uc(base_id, entry.sequence, guid_str, oab_dn);
 	if (raw.empty())
 		return false;
+	entry.lzx_data = oab_wrap_lzx(raw, 3);
 
-	entry.lzx_data = oab_wrap_lzx(raw);
-	auto sha = sha1_hex(entry.lzx_data);
+	/* Generate and compress display template (MS-OXOAB 2.2) */
+	auto tmpl_raw = generate_template_raw();
+	entry.tmpl_lzx_data = oab_wrap_lzx(tmpl_raw, 3);
+
+	auto data_sha = sha1_hex(entry.lzx_data);
+	auto tmpl_sha = sha1_hex(entry.tmpl_lzx_data);
+	auto data_file = fmt::format("{}.lzx", entry.sequence);
+	auto tmpl_file = fmt::format("lng0409-{}.lzx", entry.sequence);
+
 	/* Generate manifest XML (MS-OXWOAB) */
 	tinyxml2::XMLDocument doc;
 	doc.InsertEndChild(doc.NewDeclaration());
@@ -578,7 +794,7 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	auto oal = doc.NewElement("OAL");
 	oal->SetAttribute("id", guid_str.c_str());
 	oal->SetAttribute("dn", oab_dn.c_str());
-	oal->SetAttribute("name", "\\Default Global Address List");
+	oal->SetAttribute("name", "\\Global Address List");
 	root->InsertEndChild(oal);
 
 	auto full = doc.NewElement("Full");
@@ -586,9 +802,20 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	full->SetAttribute("ver", OAB_V4_VERSION);
 	full->SetAttribute("size", entry.lzx_data.size());
 	full->SetAttribute("uncompressedsize", raw.size());
-	full->SetAttribute("SHA", sha.c_str());
+	full->SetAttribute("SHA", data_sha.c_str());
 	full->SetText((std::to_string(entry.sequence) + ".lzx").c_str());
 	oal->InsertEndChild(full);
+
+	auto tmpl = doc.NewElement("Template");
+	tmpl->SetAttribute("seq", entry.sequence);
+	tmpl->SetAttribute("ver", OAB_TMPL_VERSION);
+	tmpl->SetAttribute("size", entry.tmpl_lzx_data.size());
+	tmpl->SetAttribute("uncompressedsize", tmpl_raw.size());
+	tmpl->SetAttribute("SHA", tmpl_sha.c_str());
+	tmpl->SetAttribute("langid", "0409");
+	tmpl->SetAttribute("type", "windows");
+	tmpl->SetText(tmpl_file.c_str());
+	oal->InsertEndChild(tmpl);
 
 	tinyxml2::XMLPrinter printer(nullptr, true);
 	doc.Print(&printer);
