@@ -4486,7 +4486,7 @@ struct mDeleteUserConfigurationResponse {
 struct mGetDelegateRequest {
 	explicit mGetDelegateRequest(const tinyxml2::XMLElement *);
 
-	tMailbox Mailbox;
+	tEmailAddressType Mailbox;
 	std::optional<std::vector<tUserId>> UserIds;
 	std::optional<bool> IncludePermissions;
 };
@@ -4513,7 +4513,7 @@ struct mGetDelegateResponse : public mResponseMessageType {
 struct mAddDelegateRequest {
 	explicit mAddDelegateRequest(const tinyxml2::XMLElement *);
 
-	tMailbox Mailbox;
+	tEmailAddressType Mailbox;
 	std::vector<tDelegateUser> DelegateUsers;
 };
 
@@ -4523,7 +4523,7 @@ struct mAddDelegateRequest {
 struct mRemoveDelegateRequest {
 	explicit mRemoveDelegateRequest(const tinyxml2::XMLElement *);
 
-	tMailbox Mailbox;
+	tEmailAddressType Mailbox;
 	std::vector<tUserId> UserIds;
 };
 
@@ -4533,7 +4533,7 @@ struct mRemoveDelegateRequest {
 struct mUpdateDelegateRequest {
 	explicit mUpdateDelegateRequest(const tinyxml2::XMLElement *);
 
-	tMailbox Mailbox;
+	tEmailAddressType Mailbox;
 	std::vector<tDelegateUser> DelegateUsers;
 };
 

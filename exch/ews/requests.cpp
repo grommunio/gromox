@@ -489,7 +489,7 @@ void process(mGetDelegateRequest &&request, XMLElement *response, const EWSConte
 	response->SetName("m:GetDelegateResponse");
 
 	ctx.normalize(request.Mailbox);
-	std::string dir = ctx.get_maildir(request.Mailbox);
+	std::string dir = request.Mailbox.EmailAddress? ctx.get_maildir(*request.Mailbox.EmailAddress) : ctx.auth_info().maildir;
 	if (dir != ctx.auth_info().maildir)
 		throw EWSError::AccessDenied(E3312);
 
@@ -552,7 +552,7 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 	response->SetName("m:AddDelegateResponse");
 
 	ctx.normalize(request.Mailbox);
-	std::string dir = ctx.get_maildir(request.Mailbox);
+	std::string dir = request.Mailbox.EmailAddress? ctx.get_maildir(*request.Mailbox.EmailAddress) : ctx.auth_info().maildir;
 	if (dir != ctx.auth_info().maildir)
 		throw EWSError::AccessDenied(E3313);
 
@@ -602,7 +602,7 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 	response->SetName("m:RemoveDelegateResponse");
 
 	ctx.normalize(request.Mailbox);
-	std::string dir = ctx.get_maildir(request.Mailbox);
+	std::string dir = request.Mailbox.EmailAddress? ctx.get_maildir(*request.Mailbox.EmailAddress) : ctx.auth_info().maildir;
 	if (dir != ctx.auth_info().maildir)
 		throw EWSError::AccessDenied(E3314);
 
@@ -649,7 +649,7 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 	response->SetName("m:UpdateDelegateResponse");
 
 	ctx.normalize(request.Mailbox);
-	std::string dir = ctx.get_maildir(request.Mailbox);
+	std::string dir = request.Mailbox.EmailAddress? ctx.get_maildir(*request.Mailbox.EmailAddress) : ctx.auth_info().maildir;
 	if (dir != ctx.auth_info().maildir)
 		throw EWSError::AccessDenied(E3315);
 

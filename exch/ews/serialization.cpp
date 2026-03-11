@@ -1404,15 +1404,8 @@ tItemResponseShape::tItemResponseShape(const XMLElement *xml) :
 {}
 
 tMailbox::tMailbox(const XMLElement *xml) :
-	XMLINIT(Name), XMLINIT(RoutingType)
-{
-	/* t:EmailAddress uses <Address>, t:EmailAddressType uses <EmailAddress> */
-	auto *child = xml->FirstChildElement("Address");
-	if (!child)
-		child = xml->FirstChildElement("EmailAddress");
-	if (child)
-		Address = fromXMLNode<std::string>(child);
-}
+	XMLINIT(Name), XMLINIT(Address), XMLINIT(RoutingType)
+{}
 
 tMailboxData::tMailboxData(const tinyxml2::XMLElement *xml) :
 	XMLINIT(Email), XMLINIT(AttendeeType), XMLINIT(ExcludeConflicts)
