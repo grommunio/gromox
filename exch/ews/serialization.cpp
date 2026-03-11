@@ -1865,7 +1865,7 @@ void tUserConfigurationDictionaryEntry::serialize(tinyxml2::XMLElement *xml) con
 	XMLDUMPT(DictionaryValue);
 }
 
-void tUserConfigurationDictionaryType::serialize(tinyxml2::XMLElement *xml) const
+void tUserConfigurationDictionary::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(DictionaryEntry);
 }

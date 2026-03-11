@@ -4349,7 +4349,7 @@ struct tUserConfigurationDictionaryEntry {
 /**
  * Types.xsd:7241
  */
-struct tUserConfigurationDictionaryType {
+struct tUserConfigurationDictionary {
 	std::vector<tUserConfigurationDictionaryEntry> DictionaryEntry;
 
 	void serialize(tinyxml2::XMLElement *) const;
@@ -4361,7 +4361,7 @@ struct tUserConfigurationDictionaryType {
 struct tUserConfiguration {
 	tUserConfigurationName UserConfigurationName;
 	std::optional<tItemId> ItemId;
-	std::optional<tUserConfigurationDictionaryType> Dictionary;
+	std::optional<tUserConfigurationDictionary> Dictionary;
 	std::optional<sBase64Binary> XmlData;
 	std::optional<sBase64Binary> BinaryData;
 
