@@ -387,6 +387,24 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 	memcpy(goid_bin.pv, ext_push.m_udata, goid_bin.cb);
 }
 
+/**
+ * @brief      Mark an item's ItemId as an occurrence ID
+ *
+ * Appends the basedate to the entry ID and sets the type to ID_OCCURRENCE
+ * so clients can use this ItemId to address the specific occurrence.
+ */
+void markOccurrenceId(sItem &item, uint32_t basedate)
+{
+	auto setter = [basedate](auto &it) {
+		if (!it.ItemId)
+			return;
+		it.ItemId->Id.append(reinterpret_cast<const char *>(&basedate),
+		                     sizeof(basedate));
+		it.ItemId->type = tBaseItemId::ID_OCCURRENCE;
+	};
+	std::visit(setter, item);
+}
+
 } // Anonymous namespace
 
 namespace detail {
@@ -1686,24 +1704,6 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 	if (shape.special)
 		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
 	return item;
-}
-
-/**
- * @brief      Mark an item's ItemId as an occurrence ID
- *
- * Appends the basedate to the entry ID and sets the type to ID_OCCURRENCE
- * so clients can use this ItemId to address the specific occurrence.
- */
-static void markOccurrenceId(sItem &item, uint32_t basedate)
-{
-	auto setter = [basedate](auto &it) {
-		if (!it.ItemId)
-			return;
-		it.ItemId->Id.append(reinterpret_cast<const char *>(&basedate),
-		                     sizeof(basedate));
-		it.ItemId->type = tBaseItemId::ID_OCCURRENCE;
-	};
-	std::visit(setter, item);
 }
 
 /**
