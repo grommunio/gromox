@@ -220,9 +220,6 @@ E(3087, "failed to load predecessor change list");
 //3089 removed
 inline std::string E3090(const std::string_view& username) {return fmt::format("E-3090: invalid username '{}'", username);}
 inline std::string E3091(const std::string_view& username) {return fmt::format("E-3091: failed to get user info for '{}'", username);}
-inline std::string E3441(const char* name) {return fmt::format("E-3441: GetRooms: no email address in {}", name);}
-inline std::string E3442(const std::string_view& username) {return fmt::format("E-3442: GetRooms: failed to extract domain for '{}'", username);}
-inline std::string E3443(const std::string_view& addr) {return fmt::format("E-3443: GetRooms: failed to extract target domain for '{}'", addr);}
 E(3092, "failed to set item properties");
 E(3093, "failed to remove item properties");
 E(3094, "only one of 'Value' or 'Values' allowed");
@@ -571,6 +568,9 @@ E(3437, "access denied: delete user configuration");
 E(3438, "failed to load content table for user configuration (get)");
 E(3439, "failed to load content table for user configuration (update)");
 E(3440, "failed to load content table for user configuration (delete)");
+inline std::string E3441(const char* name) {return fmt::format("E-3441: GetRooms: no email address in {}", name);}
+inline std::string E3442(const std::string_view& username) {return fmt::format("E-3442: GetRooms: failed to extract domain for '{}'", username);}
+inline std::string E3443(const std::string_view& addr) {return fmt::format("E-3443: GetRooms: failed to extract target domain for '{}'", addr);}
 E(3444, "access denied: delete attachment");
 E(3445, "access denied: update item");
 E(3446, "failed to write updated message content");
