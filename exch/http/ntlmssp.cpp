@@ -745,7 +745,7 @@ static pack_result ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION
 	status = pndr->p_uint16(r->product_build);
 	if (status != pack_result::success)
 		return status;
-	status = pndr->p_uint8_a(r->reserved, 3);
+	status = pndr->p_bytes(r->reserved, 3);
 	if (status != pack_result::success)
 		return status;
 	status = pndr->p_uint8(r->ntlm_revers);

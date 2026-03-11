@@ -229,7 +229,7 @@ pack_result NDR_PULL::g_ulong(uint32_t *v)
 	return pndr->g_uint32(v);
 }
 
-pack_result NDR_PULL::g_uint8_a(uint8_t *d, uint32_t n)
+pack_result NDR_PULL::g_bytes(void *d, uint32_t n)
 {
 	auto pndr = this;
 	if (pndr->data_size < n || pndr->offset + n > pndr->data_size)
@@ -246,8 +246,8 @@ pack_result NDR_PULL::g_guid(GUID *r)
 	TRY(pndr->g_uint32(&r->time_low));
 	TRY(pndr->g_uint16(&r->time_mid));
 	TRY(pndr->g_uint16(&r->time_hi_and_version));
-	TRY(pndr->g_uint8_a(r->clock_seq, 2));
-	TRY(pndr->g_uint8_a(r->node, 6));
+	TRY(pndr->g_bytes(r->clock_seq, 2));
+	TRY(pndr->g_bytes(r->node, 6));
 	TRY(pndr->trailer_align(4));
 	return pack_result::ok;
 }
@@ -381,7 +381,7 @@ NDR_PUSH::~NDR_PUSH()
 		m_mgt.free(data);
 }
 
-static bool ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
+static bool ndr_push_make_room(NDR_PUSH *pndr, uint32_t extra_size)
 {
 	auto reqtot = extra_size + pndr->offset;
 	if (pndr->alloc_size >= reqtot)
@@ -399,12 +399,12 @@ static bool ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
 	return TRUE;
 }
 
-pack_result NDR_PUSH::p_uint8_a(const uint8_t *pdata, uint32_t n)
+pack_result NDR_PUSH::p_bytes(const void *pdata, uint32_t n)
 {
 	auto pndr = this;
 	if (n == 0)
 		return pack_result::ok;
-	if (!ndr_push_check_overflow(pndr, n))
+	if (!ndr_push_make_room(pndr, n))
 		return pack_result::bufsize;
 	if (pdata == nullptr)
 		memset(pndr->data + pndr->offset, 0, n);
@@ -414,10 +414,17 @@ pack_result NDR_PUSH::p_uint8_a(const uint8_t *pdata, uint32_t n)
 	return pack_result::ok;
 }
 
+pack_result NDR_PUSH::p_bytes(std::string_view sv)
+{
+	if (sv.size() > UINT32_MAX)
+		return pack_result::format;
+	return p_bytes(sv.data(), sv.size());
+}
+
 pack_result NDR_PUSH::p_uint8(uint8_t v)
 {
 	auto pndr = this;
-	if (!ndr_push_check_overflow(pndr, 1))
+	if (!ndr_push_make_room(pndr, 1))
 		return pack_result::bufsize;
 	pndr->data[pndr->offset] = v;
 	pndr->offset += 1;
@@ -455,7 +462,7 @@ pack_result NDR_PUSH::p_uint16(uint16_t v)
 {
 	auto pndr = this;
 	TRY(pndr->align(2));
-	if (!ndr_push_check_overflow(pndr, 2))
+	if (!ndr_push_make_room(pndr, 2))
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
 	NDR_BE(pndr) ? cpu_to_be16p(r, v) : cpu_to_le16p(r, v);
@@ -467,7 +474,7 @@ pack_result NDR_PUSH::p_uint32(uint32_t v)
 {
 	auto pndr = this;
 	TRY(pndr->align(4));
-	if (!ndr_push_check_overflow(pndr, 4))
+	if (!ndr_push_make_room(pndr, 4))
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
 	NDR_BE(pndr) ? cpu_to_be32p(r, v) : cpu_to_le32p(r, v);
@@ -488,7 +495,7 @@ pack_result NDR_PUSH::p_uint64(uint64_t v)
 	static_assert(CHAR_BIT == 8, "");
 	auto pndr = this;
 	TRY(pndr->align(8));
-	if (!ndr_push_check_overflow(pndr, 8))
+	if (!ndr_push_make_room(pndr, 8))
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
 	NDR_BE(pndr) ? cpu_to_be64p(r, v) : cpu_to_le64p(r, v);
@@ -500,7 +507,7 @@ pack_result NDR_PUSH::p_float(float v)
 {
 	auto pndr = this;
 	TRY(pndr->align(4));
-	if (!ndr_push_check_overflow(pndr, 4))
+	if (!ndr_push_make_room(pndr, 4))
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
 	NDR_BE(pndr) ? float_cpu_to_be32p(r, v) : float_cpu_to_le32p(r, v);
@@ -512,7 +519,7 @@ pack_result NDR_PUSH::p_double(double v)
 {
 	auto pndr = this;
 	TRY(pndr->align(8));
-	if (!ndr_push_check_overflow(pndr, 8))
+	if (!ndr_push_make_room(pndr, 8))
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
 	NDR_BE(pndr) ? float_cpu_to_be64p(r, v) : float_cpu_to_le64p(r, v);
@@ -551,19 +558,19 @@ pack_result NDR_PUSH::p_blob(DATA_BLOB blob)
 		else if (pndr->flags & NDR_FLAG_ALIGN8)
 			length = ndr_align_size(pndr->offset, 8);
 		memset(buff, 0, length);
-		return pndr->p_uint8_a(buff, length);
+		return pndr->p_bytes(buff, length);
 	} else {
 		TRY(pndr->p_uint32(blob.cb));
 	}
 	assert(blob.pb != nullptr || blob.cb == 0);
-	TRY(pndr->p_uint8_a(blob.pb, blob.cb));
+	TRY(pndr->p_bytes(blob));
 	return pack_result::ok;
 }
 
 pack_result NDR_PUSH::p_str(const char *var, uint32_t required)
 {	
 	auto pndr = this;
-	if (!ndr_push_check_overflow(pndr, required))
+	if (!ndr_push_make_room(pndr, required))
 		return pack_result::bufsize;
 	memcpy(pndr->data + pndr->offset, var, required);
 	pndr->offset += required;
@@ -578,8 +585,8 @@ pack_result NDR_PUSH::p_guid(const GUID &v)
 	TRY(pndr->p_uint32(r->time_low));
 	TRY(pndr->p_uint16(r->time_mid));
 	TRY(pndr->p_uint16(r->time_hi_and_version));
-	TRY(pndr->p_uint8_a(r->clock_seq, 2));
-	TRY(pndr->p_uint8_a(r->node, 6));
+	TRY(pndr->p_bytes(r->clock_seq, 2));
+	TRY(pndr->p_bytes(r->node, 6));
 	return pndr->trailer_align(4);
 }
 
@@ -597,7 +604,7 @@ pack_result NDR_PUSH::p_syntax(const SYNTAX_ID &v)
 pack_result NDR_PUSH::p_zero(uint32_t n)
 {
 	auto pndr = this;
-	if (!ndr_push_check_overflow(pndr, n))
+	if (!ndr_push_make_room(pndr, n))
 		return pack_result::bufsize;
 	memset(pndr->data + pndr->offset, 0, n);
 	pndr->offset += n;

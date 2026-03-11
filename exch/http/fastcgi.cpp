@@ -244,8 +244,8 @@ static pack_result mod_fastcgi_push_name_value(NDR_PUSH *pndr,
 		tmp_len = val_len | 0x80000000;
 		TRY(pndr->p_uint32(tmp_len));
 	}
-	TRY(pndr->p_uint8_a(reinterpret_cast<const uint8_t *>(pname), name_len));
-	return pndr->p_uint8_a(reinterpret_cast<const uint8_t *>(pvalue), val_len);
+	TRY(pndr->p_bytes(reinterpret_cast<const uint8_t *>(pname), name_len));
+	return pndr->p_bytes(reinterpret_cast<const uint8_t *>(pvalue), val_len);
 }
 
 static pack_result mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
@@ -317,7 +317,7 @@ static pack_result mod_fastcgi_push_stdin(NDR_PUSH *pndr,
 	TRY(pndr->p_uint8(0));
 	/* reserved */
 	TRY(pndr->p_uint8(0));
-	TRY(pndr->p_uint8_a(static_cast<const uint8_t *>(pbuff), length));
+	TRY(pndr->p_bytes(static_cast<const uint8_t *>(pbuff), length));
 	return mod_fastcgi_push_align_record(pndr);
 }
 
@@ -326,14 +326,14 @@ static pack_result mod_fastcgi_pull_end_request(NDR_PULL *pndr,
 {
 	TRY(pndr->g_uint32(&pend_request->app_status));
 	TRY(pndr->g_uint8(&pend_request->protocol_status));
-	TRY(pndr->g_uint8_a(pend_request->reserved, 3));
+	TRY(pndr->g_bytes(pend_request->reserved, 3));
 	return pndr->advance(padding_len);
 }
 
 static pack_result mod_fastcgi_pull_stdstream(NDR_PULL *pndr,
 	uint8_t padding_len, FCGI_STDSTREAM *pstd_stream)
 {
-	TRY(pndr->g_uint8_a(pstd_stream->buffer, pstd_stream->length));
+	TRY(pndr->g_bytes(pstd_stream->buffer, pstd_stream->length));
 	return pndr->advance(padding_len);
 }
 

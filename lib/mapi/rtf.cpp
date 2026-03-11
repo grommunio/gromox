@@ -31,9 +31,10 @@
 #define MAX_GROUP_DEPTH					1000
 #define MAX_COLORS						1024
 #define MAX_FONTS						1024
-#define MAX_CONTROL_LEN					50
+#define MAX_CONTROL_LEN					32
 #define MAX_FINTNAME_LEN				64
 
+#define AUTO_COLOR -1
 #define DEFAULT_FONT_STR				"Times,TimesRoman,TimesNewRoman"
 
 #define FONTNIL_STR						"Times,TimesRoman,TimesNewRoman"
@@ -184,7 +185,8 @@ enum {
 	ATTR_DBL_STRIKE, 
 	ATTR_EXPAND,
 	ATTR_UBYTES,
-	ATTR_HTMLTAG
+	ATTR_HTMLTAG,
+	ATTR_HIDDEN,
 };
 
 enum {
@@ -271,13 +273,14 @@ struct rtf_reader final {
 	cmd_i, cmd_ignore, cmd_info, cmd_intbl, cmd_jpegblip,
 	cmd_lang, cmd_langfe, cmd_langfenp, cmd_langnp, cmd_ldblquote,
 	cmd_line, cmd_loch, cmd_lquote, cmd_ltrmark, cmd_mac, cmd_macpict, cmd_maybe_ignore,
-	cmd_nonbreaking_hyphen, cmd_nonbreaking_space, cmd_nosupersub, cmd_outl, cmd_page, cmd_par,
+	cmd_nonbreaking_hyphen, cmd_nonbreaking_space, cmd_nosupersub,
+	cmd_objattph, cmd_outl, cmd_page, cmd_par,
 	cmd_pc, cmd_pca, cmd_pich, cmd_pict, cmd_picw, cmd_plain,
 	cmd_pmmetafile, cmd_pngblip, cmd_qmspace, cmd_rdblquote, cmd_rquote, cmd_rtlmark, cmd_scaps,
 	cmd_sect, cmd_shad, cmd_soft_hyphen, cmd_strike, cmd_striked,
 	cmd_strikedl, cmd_sub, cmd_super, cmd_tab, cmd_u, cmd_uc, cmd_ul,
 	cmd_uld, cmd_uldash, cmd_uldashd, cmd_uldashdd, cmd_uldb, cmd_ulnone,
-	cmd_ulth, cmd_ulthd, cmd_ulthdash, cmd_ulw, cmd_ulwave, cmd_up,
+	cmd_ulth, cmd_ulthd, cmd_ulthdash, cmd_ulw, cmd_ulwave, cmd_up, cmd_upr, cmd_v,
 	cmd_wbmbitspixel, cmd_wmetafile, cmd_zwbo, cmd_zwj, cmd_zwnbo, cmd_zwnj, flush_pending;
 
 	bool is_within_table = false, b_printed_row_begin = false;
@@ -287,7 +290,8 @@ struct rtf_reader final {
 	bool is_within_picture = false, have_printed_body = false;
 	bool is_within_header = true, have_ansicpg = false;
 	bool have_fromhtml = false, is_within_htmltag = false;
-	bool is_within_htmlrtf = false;
+	bool is_within_htmlrtf = false, paragraph_open = false;
+	bool skip_objattph_space = false;
 	int coming_pars_tabular = 0, ubytes_num = 1, ubytes_left = 0;
 	/*
 	 * Character byte mode for mixed single/double-byte text:
@@ -304,7 +308,7 @@ struct rtf_reader final {
 	int color_table[MAX_COLORS]{}, total_colors = 0;
 	int total_chars_in_line = 0;
 	std::string default_encoding = "windows-1252", current_encoding, html_charset;
-	int default_font_number = 0;
+	int default_font_number = -1; /* -1 means no explicit default, 0+ is valid font number */
 	std::unordered_map<int, FONTENTRY> pfont_hash;
 	std::vector<attrstack_node> attr_stack_list;
 	EXT_PULL ext_pull{};
@@ -419,7 +423,7 @@ bool rtf_reader::escape_output(char *string)
 	}
 	
 	if (preader->is_within_htmltag) {
-		QRF(preader->ext_push.p_bytes(string, tmp_len));
+		QRF(ext_push.p_bytes(string, tmp_len));
 		return true;
 	}
 	if (preader->b_simulate_allcaps)
@@ -429,16 +433,16 @@ bool rtf_reader::escape_output(char *string)
 	for (size_t i = 0; i < tmp_len; ++i) {
 		switch (string[i]) {
 		case '<':
-			QRF(preader->ext_push.p_bytes("&lt;", 4));
+			QRF(ext_push.p_bytes("&lt;"));
 			break;
 		case '>':
-			QRF(preader->ext_push.p_bytes("&gt;", 4));
+			QRF(ext_push.p_bytes("&gt;"));
 			break;
 		case '&':
-			QRF(preader->ext_push.p_bytes("&amp;", 5));
+			QRF(ext_push.p_bytes("&amp;"));
 			break;
 		default:
-			QRF(preader->ext_push.p_uint8(string[i]));
+			QRF(ext_push.p_uint8(string[i]));
 			break;
 		}
 	}
@@ -456,6 +460,9 @@ bool rtf_reader::push_text_encoded(const char *string, size_t len)
 			return true;
 	}
 	if (len == 0)
+		return true;
+	/* suppress output for hidden text (\v) */
+	if (stack_list_find_attr(ATTR_HIDDEN) != nullptr)
 		return true;
 	if (iconv_push.p_bytes(string, len) != pack_result::ok)
 		return false;
@@ -709,22 +716,22 @@ bool rtf_reader::express_begin_fontsize(int size)
 	
 	switch (size) {
 	case 8:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE8_BEGIN, sizeof(TAG_FONTSIZE8_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE8_BEGIN));
 		return true;
 	case 10:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE10_BEGIN, sizeof(TAG_FONTSIZE10_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE10_BEGIN));
 		return true;
 	case 12:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE12_BEGIN, sizeof(TAG_FONTSIZE12_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE12_BEGIN));
 		return true;
 	case 14:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE14_BEGIN, sizeof(TAG_FONTSIZE14_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE14_BEGIN));
 		return true;
 	case 18:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE18_BEGIN, sizeof(TAG_FONTSIZE18_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE18_BEGIN));
 		return true;
 	case 24:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE24_BEGIN, sizeof(TAG_FONTSIZE24_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE24_BEGIN));
 		return true;
 	}
 	auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff), TAG_FONTSIZE_BEGIN, size);
@@ -734,28 +741,27 @@ bool rtf_reader::express_begin_fontsize(int size)
 
 bool rtf_reader::express_end_fontsize(int size)
 {
-	auto preader = this;
 	switch (size) {
 	case 8:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE8_END, sizeof(TAG_FONTSIZE8_END) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE8_END));
 		return true;
 	case 10:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE10_END, sizeof(TAG_FONTSIZE10_END) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE10_END));
 		return true;
 	case 12:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE12_END, sizeof(TAG_FONTSIZE12_END) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE12_END));
 		return true;
 	case 14:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE14_END, sizeof(TAG_FONTSIZE14_END) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE14_END));
 		return true;
 	case 18:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE18_END, sizeof(TAG_FONTSIZE18_END) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE18_END));
 		return true;
 	case 24:
-		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE24_END, sizeof(TAG_FONTSIZE24_END) - 1));
+		QRF(ext_push.p_bytes(TAG_FONTSIZE24_END));
 		return true;
 	}
-	QRF(preader->ext_push.p_bytes(TAG_FONTSIZE_END, sizeof(TAG_FONTSIZE_END) - 1));
+	QRF(ext_push.p_bytes(TAG_FONTSIZE_END));
 	return true;
 }
 
@@ -765,10 +771,10 @@ bool rtf_reader::express_attr_begin(int attr, int param)
 	
 	switch (attr) {
 	case ATTR_BOLD:
-		QRF(preader->ext_push.p_bytes(TAG_BOLD_BEGIN, sizeof(TAG_BOLD_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_BOLD_BEGIN));
 		return true;
 	case ATTR_ITALIC:
-		QRF(preader->ext_push.p_bytes(TAG_ITALIC_BEGIN, sizeof(TAG_ITALIC_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_ITALIC_BEGIN));
 		return true;
 	case ATTR_THICK_UL:
 	case ATTR_WAVE_UL:
@@ -778,14 +784,20 @@ bool rtf_reader::express_attr_begin(int attr, int param)
 	case ATTR_2DOT_DASH_UL:
 	case ATTR_WORD_UL:
 	case ATTR_UNDERLINE:
-		QRF(preader->ext_push.p_bytes(TAG_UNDERLINE_BEGIN, sizeof(TAG_UNDERLINE_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_UNDERLINE_BEGIN));
 		return true;
 	case ATTR_DOUBLE_UL:
-		QRF(preader->ext_push.p_bytes(TAG_DBL_UNDERLINE_BEGIN, sizeof(TAG_DBL_UNDERLINE_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_DBL_UNDERLINE_BEGIN));
 		return true;
 	case ATTR_FONTSIZE:
 		return express_begin_fontsize(param);
 	case ATTR_FONTFACE: {
+		if (is_within_htmlrtf) {
+			auto entry = lookup_font(param);
+			auto encoding = entry != nullptr ? entry->encoding.c_str() :
+			                default_encoding.c_str();
+			return riconv_open(encoding);
+		}
 		auto pentry = lookup_font(param);
 		const char *encoding;
 		std::string tb;
@@ -798,54 +810,50 @@ bool rtf_reader::express_attr_begin(int attr, int param)
 			tb = fmt::format(TAG_FONT_BEGIN, pentry->name);
 		}
 		if (!preader->have_fromhtml)
-			QRF(ext_push.p_bytes(tb.c_str(), tb.size()));
+			QRF(ext_push.p_bytes(tb));
 		if (!riconv_open(encoding))
 			return false;
 		return true;
 	}
-	case ATTR_FOREGROUND: {
-		auto tb = fmt::format(TAG_FOREGROUND_BEGIN, param);
-		QRF(ext_push.p_bytes(tb.c_str(), tb.size()));
+	case ATTR_FOREGROUND:
+		QRF(ext_push.p_bytes(fmt::format(TAG_FOREGROUND_BEGIN, param)));
 		return true;
-	}
-	case ATTR_BACKGROUND: {
-		auto tb = fmt::format(TAG_BACKGROUND_BEGIN, param);
-		QRF(ext_push.p_bytes(tb.c_str(), tb.size()));
+	case ATTR_BACKGROUND:
+		QRF(ext_push.p_bytes(fmt::format(TAG_BACKGROUND_BEGIN, param)));
 		return true;
-	}
 	case ATTR_SUPER:
-		QRF(preader->ext_push.p_bytes(TAG_SUPERSCRIPT_BEGIN, sizeof(TAG_SUPERSCRIPT_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_SUPERSCRIPT_BEGIN));
 		return true;
 	case ATTR_SUB:
-		QRF(preader->ext_push.p_bytes(TAG_SUBSCRIPT_BEGIN, sizeof(TAG_SUBSCRIPT_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_SUBSCRIPT_BEGIN));
 		return true;
 	case ATTR_STRIKE:
-		QRF(preader->ext_push.p_bytes(TAG_STRIKETHRU_BEGIN, sizeof(TAG_STRIKETHRU_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_STRIKETHRU_BEGIN));
 		return true;
 	case ATTR_DBL_STRIKE:
-		QRF(preader->ext_push.p_bytes(TAG_DBL_STRIKETHRU_BEGIN, sizeof(TAG_DBL_STRIKETHRU_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_DBL_STRIKETHRU_BEGIN));
 		return true;
 	case ATTR_EXPAND:
-		QRF(preader->ext_push.p_bytes(TAG_EXPAND_BEGIN, sizeof(TAG_EXPAND_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_EXPAND_BEGIN));
 		return true;
 	case ATTR_OUTLINE:
-		QRF(preader->ext_push.p_bytes(TAG_OUTLINE_BEGIN, sizeof(TAG_OUTLINE_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_OUTLINE_BEGIN));
 		return true;
 	case ATTR_SHADOW:
-		QRF(preader->ext_push.p_bytes(TAG_SHADOW_BEGIN, sizeof(TAG_SHADOW_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_SHADOW_BEGIN));
 		return true;
 	case ATTR_EMBOSS:
-		QRF(preader->ext_push.p_bytes(TAG_EMBOSS_BEGIN, sizeof(TAG_EMBOSS_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_EMBOSS_BEGIN));
 		return true;
 	case ATTR_ENGRAVE:
-		QRF(preader->ext_push.p_bytes(TAG_ENGRAVE_BEGIN, sizeof(TAG_ENGRAVE_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_ENGRAVE_BEGIN));
 		return true;
 	case ATTR_CAPS:
 		preader->b_simulate_allcaps = true;
 		return true;
 	case ATTR_SMALLCAPS:
 		preader->b_simulate_smallcaps = true;
-		QRF(preader->ext_push.p_bytes(TAG_SMALLER_BEGIN, sizeof(TAG_SMALLER_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_SMALLER_BEGIN));
 		return true;
 	case ATTR_UBYTES:
 		preader->b_ubytes_switch = true;
@@ -886,10 +894,10 @@ bool rtf_reader::express_attr_end(int attr, int param)
 	
 	switch (attr) {
 	case ATTR_BOLD:
-		QRF(preader->ext_push.p_bytes(TAG_BOLD_END, sizeof(TAG_BOLD_END) - 1));
+		QRF(ext_push.p_bytes(TAG_BOLD_END));
 		return true;
 	case ATTR_ITALIC:
-		QRF(preader->ext_push.p_bytes(TAG_ITALIC_END, sizeof(TAG_ITALIC_END) - 1));
+		QRF(ext_push.p_bytes(TAG_ITALIC_END));
 		return true;
 	case ATTR_THICK_UL:
 	case ATTR_WAVE_UL:
@@ -899,17 +907,29 @@ bool rtf_reader::express_attr_end(int attr, int param)
 	case ATTR_2DOT_DASH_UL:
 	case ATTR_WORD_UL:
 	case ATTR_UNDERLINE:
-		QRF(preader->ext_push.p_bytes(TAG_UNDERLINE_END, sizeof(TAG_UNDERLINE_END) - 1));
+		QRF(ext_push.p_bytes(TAG_UNDERLINE_END));
 		return true;
 	case ATTR_DOUBLE_UL:
-		QRF(preader->ext_push.p_bytes(TAG_DBL_UNDERLINE_END, sizeof(TAG_DBL_UNDERLINE_END) - 1));
+		QRF(ext_push.p_bytes(TAG_DBL_UNDERLINE_END));
 		return true;
 	case ATTR_FONTSIZE:
 		return express_end_fontsize(param);
 	case ATTR_FONTFACE: 
+		if (is_within_htmlrtf) {
+			auto param = stack_list_find_attr(ATTR_FONTFACE);
+			const char *encoding;
+			if (param == nullptr) {
+				encoding = default_encoding.c_str();
+			} else {
+				auto entry = lookup_font(*param);
+				encoding = entry != nullptr ? entry->encoding.c_str() :
+				           default_encoding.c_str();
+			}
+			return riconv_open(encoding);
+		}
 		if (!preader->have_fromhtml)
-			QRF(preader->ext_push.p_bytes(TAG_FONT_END, sizeof(TAG_FONT_END) - 1));
-		/* Caution: no BREAK here */
+			QRF(ext_push.p_bytes(TAG_FONT_END));
+		[[fallthrough]];
 	case ATTR_HTMLTAG: {
 		if (attr == ATTR_HTMLTAG)
 			preader->is_within_htmltag = false;
@@ -927,43 +947,43 @@ bool rtf_reader::express_attr_end(int attr, int param)
 		return true;
 	}
 	case ATTR_FOREGROUND:
-		QRF(preader->ext_push.p_bytes(TAG_FOREGROUND_END, sizeof(TAG_FOREGROUND_END) - 1));
+		QRF(ext_push.p_bytes(TAG_FOREGROUND_END));
 		return true;
 	case ATTR_BACKGROUND:
-		QRF(preader->ext_push.p_bytes(TAG_BACKGROUND_END, sizeof(TAG_BACKGROUND_END) - 1));
+		QRF(ext_push.p_bytes(TAG_BACKGROUND_END));
 		return true;
 	case ATTR_SUPER:
-		QRF(preader->ext_push.p_bytes(TAG_SUPERSCRIPT_END, sizeof(TAG_SUPERSCRIPT_END) - 1));
+		QRF(ext_push.p_bytes(TAG_SUPERSCRIPT_END));
 		return true;
 	case ATTR_SUB:
-		QRF(preader->ext_push.p_bytes(TAG_SUBSCRIPT_END, sizeof(TAG_SUBSCRIPT_END) - 1));
+		QRF(ext_push.p_bytes(TAG_SUBSCRIPT_END));
 		return true;
 	case ATTR_STRIKE:
-		QRF(preader->ext_push.p_bytes(TAG_STRIKETHRU_END, sizeof(TAG_STRIKETHRU_END) - 1));
+		QRF(ext_push.p_bytes(TAG_STRIKETHRU_END));
 		return true;
 	case ATTR_DBL_STRIKE:
-		QRF(preader->ext_push.p_bytes(TAG_DBL_STRIKETHRU_END, sizeof(TAG_DBL_STRIKETHRU_END) - 1));
+		QRF(ext_push.p_bytes(TAG_DBL_STRIKETHRU_END));
 		return true;
 	case ATTR_OUTLINE:
-		QRF(preader->ext_push.p_bytes(TAG_OUTLINE_END, sizeof(TAG_OUTLINE_END) - 1));
+		QRF(ext_push.p_bytes(TAG_OUTLINE_END));
 		return true;
 	case ATTR_SHADOW:
-		QRF(preader->ext_push.p_bytes(TAG_SHADOW_END, sizeof(TAG_SHADOW_END) - 1));
+		QRF(ext_push.p_bytes(TAG_SHADOW_END));
 		return true;
 	case ATTR_EMBOSS:
-		QRF(preader->ext_push.p_bytes(TAG_EMBOSS_END, sizeof(TAG_EMBOSS_END) - 1));
+		QRF(ext_push.p_bytes(TAG_EMBOSS_END));
 		return true;
 	case ATTR_ENGRAVE: 
-		QRF(preader->ext_push.p_bytes(TAG_ENGRAVE_END, sizeof(TAG_ENGRAVE_END) - 1));
+		QRF(ext_push.p_bytes(TAG_ENGRAVE_END));
 		return true;
 	case ATTR_EXPAND: 
-		QRF(preader->ext_push.p_bytes(TAG_EXPAND_END, sizeof(TAG_EXPAND_END) - 1));
+		QRF(ext_push.p_bytes(TAG_EXPAND_END));
 		return true;
 	case ATTR_CAPS:
 		preader->b_simulate_allcaps = false;
 		return true;
 	case ATTR_SMALLCAPS: 
-		QRF(preader->ext_push.p_bytes(TAG_SMALLER_END, sizeof(TAG_SMALLER_END) - 1));
+		QRF(ext_push.p_bytes(TAG_SMALLER_END));
 		preader->b_simulate_smallcaps = false;
 		return true;
 	case ATTR_UBYTES:
@@ -1003,7 +1023,7 @@ bool rtf_reader::astk_pushx(int attr, int param)
 		mlog(LV_DEBUG, "rtf: too many attributes");
 		return false;
 	}
-	if (!start_body() || !start_text())
+	if (!is_within_htmlrtf && (!start_body() || !start_text()))
 		return false;
 	pattrstack->tos ++;
 	pattrstack->attr_stack[pattrstack->tos] = attr;
@@ -1168,7 +1188,7 @@ char *rtf_reader::read_element()
 	} while ('\n' == ch);
 	
 	if (' ' == ch) {
-		/* trm multiple space chars into one */
+		/* trim multiple space chars into one */
 		while (' ' == ch) {
 			if (getchar(&ch) != pack_result::ok) {
 				free(input_str);
@@ -1379,8 +1399,8 @@ bool rtf_reader::start_body()
 	preader->have_printed_body = true;
 	if (preader->have_fromhtml)
 		return true;
-	QRF(preader->ext_push.p_bytes(TAG_HEADER_END, sizeof(TAG_HEADER_END) - 1));
-	QRF(preader->ext_push.p_bytes(TAG_BODY_BEGIN, sizeof(TAG_BODY_BEGIN) - 1));
+	QRF(ext_push.p_bytes(TAG_HEADER_END));
+	QRF(ext_push.p_bytes(TAG_BODY_BEGIN));
 	return true;
 }
 
@@ -1390,13 +1410,13 @@ bool rtf_reader::start_text()
 	if (!preader->is_within_table)
 		return true;
 	if (!preader->b_printed_row_begin) {
-		QRF(preader->ext_push.p_bytes(TAG_TABLE_ROW_BEGIN, sizeof(TAG_TABLE_ROW_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_TABLE_ROW_BEGIN));
 		preader->b_printed_row_begin = true;
 		preader->b_printed_row_end = false;
 		preader->b_printed_cell_begin = false;
 	}
 	if (!preader->b_printed_cell_begin) {
-		QRF(preader->ext_push.p_bytes(TAG_TABLE_CELL_BEGIN, sizeof(TAG_TABLE_CELL_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_TABLE_CELL_BEGIN));
 		if (!astk_express_all())
 			return false;
 		preader->b_printed_cell_begin = true;
@@ -1413,34 +1433,42 @@ bool rtf_reader::start_par(int align)
 		return false;
 	switch (align) {
 	case ALIGN_CENTER:
-		QRF(preader->ext_push.p_bytes(TAG_CENTER_BEGIN, sizeof(TAG_CENTER_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_CENTER_BEGIN));
 		break;
 	case ALIGN_LEFT:
 		break;
 	case ALIGN_RIGHT:
-		QRF(preader->ext_push.p_bytes(TAG_ALIGN_RIGHT_BEGIN, sizeof(TAG_ALIGN_RIGHT_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_ALIGN_RIGHT_BEGIN));
 		break;
 	case ALIGN_JUSTIFY:
-		QRF(preader->ext_push.p_bytes(TAG_JUSTIFY_BEGIN, sizeof(TAG_JUSTIFY_BEGIN) - 1));
+		QRF(ext_push.p_bytes(TAG_JUSTIFY_BEGIN));
 		break;
+	}
+	if (!have_fromhtml && !paragraph_open) {
+		QRF(ext_push.p_bytes(TAG_PARAGRAPH_BEGIN));
+		paragraph_open = true;
+		total_chars_in_line = 0;
 	}
 	return true;
 }
 
 bool rtf_reader::end_par(int align)
 {
-	auto preader = this;
+	if (paragraph_open && !have_fromhtml) {
+		QRF(ext_push.p_bytes(TAG_PARAGRAPH_END));
+		paragraph_open = false;
+	}
 	switch (align) {
 	case ALIGN_CENTER:
-		QRF(preader->ext_push.p_bytes(TAG_CENTER_END, sizeof(TAG_CENTER_END) - 1));
+		QRF(ext_push.p_bytes(TAG_CENTER_END));
 		break;
 	case ALIGN_LEFT:
 		break;
 	case ALIGN_RIGHT:
-		QRF(preader->ext_push.p_bytes(TAG_ALIGN_RIGHT_END, sizeof(TAG_ALIGN_RIGHT_END) - 1));
+		QRF(ext_push.p_bytes(TAG_ALIGN_RIGHT_END));
 		break;
 	case ALIGN_JUSTIFY:
-		QRF(preader->ext_push.p_bytes(TAG_JUSTIFY_END, sizeof(TAG_JUSTIFY_END) - 1));
+		QRF(ext_push.p_bytes(TAG_JUSTIFY_END));
 		break;
 	}
 	return true;
@@ -1457,7 +1485,7 @@ bool rtf_reader::begin_table() try
 	preader->attr_stack_list.emplace_back();
 	if (!start_body())
 		return false;
-	QRF(preader->ext_push.p_bytes(TAG_TABLE_BEGIN, sizeof(TAG_TABLE_BEGIN) - 1));
+	QRF(ext_push.p_bytes(TAG_TABLE_BEGIN));
 	return true;
 } catch (const std::bad_alloc &) {
 	return false;
@@ -1471,11 +1499,11 @@ bool rtf_reader::end_table()
 	if (!preader->b_printed_cell_end) {
 		if (!astk_popx_all())
 			return false;
-		QRF(preader->ext_push.p_bytes(TAG_TABLE_CELL_END, sizeof(TAG_TABLE_CELL_END) - 1));
+		QRF(ext_push.p_bytes(TAG_TABLE_CELL_END));
 	}
 	if (!preader->b_printed_row_end)
-		QRF(preader->ext_push.p_bytes(TAG_TABLE_ROW_END, sizeof(TAG_TABLE_ROW_END) - 1));
-	QRF(preader->ext_push.p_bytes(TAG_TABLE_END, sizeof(TAG_TABLE_END) - 1));
+		QRF(ext_push.p_bytes(TAG_TABLE_ROW_END));
+	QRF(ext_push.p_bytes(TAG_TABLE_END));
 	preader->is_within_table = false;
 	preader->b_printed_row_begin = false;
 	preader->b_printed_cell_begin = false;
@@ -1624,16 +1652,16 @@ bool rtf_reader::build_font_table(SIMPLE_TREE_NODE *pword)
 	} while ((pword = pword->get_sibling()) != nullptr);
 	if (default_encoding.empty())
 		default_encoding = "windows-1252";
-	if (!preader->have_ansicpg) {
-		auto pentry = lookup_font(default_font_number);
-		default_encoding = pentry != nullptr ? pentry->encoding.c_str() : "windows-1252";
+	if (!have_ansicpg && default_font_number >= 0) {
+		auto entry = lookup_font(default_font_number);
+		if (entry != nullptr && !entry->encoding.empty())
+			default_encoding = entry->encoding;
 	}
 	return true;
 }
 
 bool rtf_reader::word_output_date(SIMPLE_TREE_NODE *pword)
 {
-	auto preader = this;
 	int day;
 	int hour;
 	int year;
@@ -1672,13 +1700,12 @@ bool rtf_reader::word_output_date(SIMPLE_TREE_NODE *pword)
 	auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff), "%04d-%02d-%02d ", year, month, day);
 	if (hour >= 0 && minute >= 0)
 		tmp_len += gx_snprintf(&tmp_buff[tmp_len], std::size(tmp_buff)-tmp_len, "%02d:%02d ", hour, minute);
-	QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
+	QRF(ext_push.p_bytes(tmp_buff, tmp_len));
 	return true;
 }
 
 bool rtf_reader::process_info_group(SIMPLE_TREE_NODE *pword)
 {
-	auto preader = this;
 	int ch;
 
 	for (; pword != nullptr; pword = pword->get_sibling()) {
@@ -1688,7 +1715,7 @@ bool rtf_reader::process_info_group(SIMPLE_TREE_NODE *pword)
 		if (pchild->pdata == nullptr)
 			return true;
 		if (strcmp(pchild->cdata, "\\title") == 0) {
-			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_TITLE_BEGIN, sizeof(TAG_DOCUMENT_TITLE_BEGIN) - 1));
+			QRF(ext_push.p_bytes(TAG_DOCUMENT_TITLE_BEGIN));
 			for (auto pword2 = pchild->get_sibling();
 			     pword2 != nullptr; pword2 = pword2->get_sibling()) {
 				if (pword2->pdata == nullptr)
@@ -1707,9 +1734,9 @@ bool rtf_reader::process_info_group(SIMPLE_TREE_NODE *pword)
 			}
 			if (!riconv_flush())
 				return false;
-			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_TITLE_END, sizeof(TAG_DOCUMENT_TITLE_END) - 1));
+			QRF(ext_push.p_bytes(TAG_DOCUMENT_TITLE_END));
 		} else if (strcmp(pchild->cdata, "\\author") == 0) {
-			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_BEGIN, sizeof(TAG_DOCUMENT_AUTHOR_BEGIN) - 1));
+			QRF(ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_BEGIN));
 			for (auto pword2 = pchild->get_sibling();
 			     pword2 != nullptr; pword2 = pword2->get_sibling()) {
 				if (pword2->pdata == nullptr)
@@ -1728,35 +1755,35 @@ bool rtf_reader::process_info_group(SIMPLE_TREE_NODE *pword)
 			}
 			if (!riconv_flush())
 				return false;
-			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_END, sizeof(TAG_DOCUMENT_AUTHOR_END) - 1));
+			QRF(ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_END));
 		} else if (strcmp(pchild->cdata, "\\creatim") == 0) {
-			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
-			QRF(preader->ext_push.p_bytes("creation date: ", 15));
+			QRF(ext_push.p_bytes(TAG_COMMENT_BEGIN));
+			QRF(ext_push.p_bytes("creation date: "));
 			if (pchild->get_sibling() != nullptr &&
 			    !word_output_date(pchild->get_sibling()))
 				return false;
-			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
+			QRF(ext_push.p_bytes(TAG_COMMENT_END));
 		} else if (strcmp(pchild->cdata, "\\printim") == 0) {
-			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
-			QRF(preader->ext_push.p_bytes("last print date: ", 17));
+			QRF(ext_push.p_bytes(TAG_COMMENT_BEGIN));
+			QRF(ext_push.p_bytes("last print date: "));
 			if (pchild->get_sibling() != nullptr &&
 			    !word_output_date(pchild->get_sibling()))
 				return false;
-			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
+			QRF(ext_push.p_bytes(TAG_COMMENT_END));
 		} else if (strcmp(pchild->cdata, "\\buptim") == 0) {
-			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
-			QRF(preader->ext_push.p_bytes("last backup date: ", 18));
+			QRF(ext_push.p_bytes(TAG_COMMENT_BEGIN));
+			QRF(ext_push.p_bytes("last backup date: "));
 			if (pchild->get_sibling() != nullptr &&
 			    !word_output_date(pchild->get_sibling()))
 					return false;
-			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
+			QRF(ext_push.p_bytes(TAG_COMMENT_END));
 		} else if (strcmp(pchild->cdata, "\\revtim") == 0) {
-			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
-			QRF(preader->ext_push.p_bytes("modified date: ", 15));
+			QRF(ext_push.p_bytes(TAG_COMMENT_BEGIN));
+			QRF(ext_push.p_bytes("modified date: "));
 			if (pchild->get_sibling() != nullptr &&
 			    !word_output_date(pchild->get_sibling()))
 				return false;
-			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
+			QRF(ext_push.p_bytes(TAG_COMMENT_END));
 		}
 	}
 	return true;
@@ -1769,6 +1796,7 @@ static void rtf_process_color_table(
 	int r;
 	int g;
 	int b;
+	bool has_color = false;
 	
 	r = 0;
 	g = 0;
@@ -1780,22 +1808,31 @@ static void rtf_process_color_table(
 			r = strtol(&pword->cdata[4], nullptr, 0);
 			while (r > 255)
 				r >>= 8;
+			has_color = true;
 		} else if (strncmp("\\green", pword->cdata, 6) == 0) {
 			g = strtol(&pword->cdata[6], nullptr, 0);
 			while (g > 255)
 				g >>= 8;
+			has_color = true;
 		} else if (strncmp("\\blue", pword->cdata, 5) == 0) {
 			b = strtol(&pword->cdata[5], nullptr, 0);
 			while (b > 255)
 				b >>= 8;
+			has_color = true;
 		} else if (strcmp(pword->cdata, ";") == 0) {
+			/*
+			 * If color definition is omitted (semicolon without
+			 * RGB values), it means "auto" color, inherited from
+			 * context. Use -1 as marker for auto color.
+			 */
 			preader->color_table[preader->total_colors++] =
-				(r << 16) | (g << 8) | b;
+				has_color ? ((r << 16) | (g << 8) | b) : AUTO_COLOR;
 			if (preader->total_colors >= MAX_COLORS)
 				return;
 			r = 0;
 			g = 0;
 			b = 0;
+			has_color = false;
 		}
 	} while ((pword = pword->get_sibling()) != nullptr);
 }
@@ -1808,22 +1845,32 @@ int rtf_reader::cmd_continue(SIMPLE_TREE_NODE *, int, bool, int)
 int rtf_reader::cmd_cf(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
-	if (!have_param || num < 0 || num >= preader->total_colors)
+	if (!have_param || num < 0 || num >= total_colors) {
 		mlog(LV_DEBUG, "rtf: font color change to %xh is invalid", num);
-	else if (!astk_pushx(ATTR_FOREGROUND, color_table[num]))
+	} else if (color_table[num] == AUTO_COLOR) {
+		/* Reset to default color */
+		if (!astk_find_popx(ATTR_FOREGROUND))
+			return CMD_RESULT_ERROR;
+		return CMD_RESULT_CONTINUE;
+	} else if (!astk_pushx(ATTR_FOREGROUND, color_table[num])) {
 		return CMD_RESULT_ERROR;
+	}
 	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_cb(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
-	if (!have_param || num < 0 || num >= preader->total_colors)
+	if (!have_param || num < 0 || num >= total_colors) {
 		mlog(LV_DEBUG, "rtf: font color change attempted is invalid");
-	else if (!astk_pushx(ATTR_BACKGROUND, color_table[num]))
+	} else if (color_table[num] == AUTO_COLOR) {
+		/* Reset to default background */
+		if (!astk_find_popx(ATTR_BACKGROUND))
 			return CMD_RESULT_ERROR;
+		return CMD_RESULT_CONTINUE;
+	} else if (!astk_pushx(ATTR_BACKGROUND, color_table[num])) {
+		return CMD_RESULT_ERROR;
+	}
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -1841,7 +1888,6 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 {
 	char tmp_buff[1024];
 	bool b_endnotecitations = false;
-	auto preader = this;
 	
 	do {
 		auto pchild = pword->get_child();
@@ -1869,7 +1915,7 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 						return CMD_RESULT_ERROR;
 					auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					          TAG_UNISYMBOL_PRINT, ch);
-					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != pack_result::ok)
+					if (ext_push.p_bytes(tmp_buff, tmp_len) != pack_result::ok)
 						return CMD_RESULT_ERROR;
 				}
 			}
@@ -1896,7 +1942,7 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 				if (NULL != pword4 && NULL != pword4->pdata) {
 					auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 						  TAG_HYPERLINK_BEGIN, pword4->cdata);
-					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != pack_result::ok)
+					if (ext_push.p_bytes(tmp_buff, tmp_len) != pack_result::ok)
 						return CMD_RESULT_ERROR;
 					return CMD_RESULT_HYPERLINKED;
 				}
@@ -2079,18 +2125,23 @@ int rtf_reader::cmd_deff(SIMPLE_TREE_NODE *pword,
 	auto preader = this;
 	if (have_param)
 		preader->default_font_number = num;
-    return CMD_RESULT_CONTINUE;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_highlight(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!have_param || num < 0 || num >= preader->total_colors)
+	if (!have_param || num < 0 || num >= total_colors) {
 		mlog(LV_DEBUG, "rtf: font background "
 			"color change attempted is invalid");
-	else if (!astk_pushx(ATTR_BACKGROUND, color_table[num]))
+	} else if (color_table[num] == AUTO_COLOR) {
+		/* Reset to default background */
+		if (!astk_find_popx(ATTR_BACKGROUND))
+			return CMD_RESULT_ERROR;
+		return CMD_RESULT_CONTINUE;
+	} else if (!astk_pushx(ATTR_BACKGROUND, color_table[num])) {
 		return CMD_RESULT_ERROR;
+	}
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -2109,8 +2160,7 @@ int rtf_reader::cmd_tab(SIMPLE_TREE_NODE *pword, int align,
 	need = 8 - preader->total_chars_in_line % 8;
 	preader->total_chars_in_line += need;
 	while (need > 0) {
-		if (preader->ext_push.p_bytes(TAG_FORCED_SPACE,
-		    sizeof(TAG_FORCED_SPACE) - 1) != pack_result::ok)
+		if (ext_push.p_bytes(TAG_FORCED_SPACE) != pack_result::ok)
 			return CMD_RESULT_ERROR;
 		need--;
 	}
@@ -2120,7 +2170,21 @@ int rtf_reader::cmd_tab(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_plain(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	return astk_popx_all() ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	/*
+	 * Per the spec, \plain resets character formatting to defaults:
+	 *
+	 * - Disable bold, italic, underline, etc.
+	 * - Reset font size to 12pt (24 half-points)
+	 * - Reset to default font
+	 *
+	 * First, close all current formatting, then apply defaults.
+	 */
+	if (!astk_popx_all())
+		return CMD_RESULT_ERROR;
+	/* Reset to default font (if defined via \deff) */
+	if (default_font_number >= 0 && !astk_pushx(ATTR_FONTFACE, default_font_number))
+		return CMD_RESULT_ERROR;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_fnil(SIMPLE_TREE_NODE *pword,
@@ -2236,8 +2300,7 @@ int rtf_reader::cmd_bullet(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_CHARS_BULLET,
-	    sizeof(TAG_CHARS_BULLET) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_CHARS_BULLET) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2247,8 +2310,7 @@ int rtf_reader::cmd_ldblquote(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_CHARS_LEFT_DBL_QUOTE,
-	    sizeof(TAG_CHARS_LEFT_DBL_QUOTE) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_CHARS_LEFT_DBL_QUOTE) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2258,8 +2320,7 @@ int rtf_reader::cmd_rdblquote(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_CHARS_RIGHT_DBL_QUOTE,
-	    sizeof(TAG_CHARS_RIGHT_DBL_QUOTE) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_CHARS_RIGHT_DBL_QUOTE) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2269,8 +2330,7 @@ int rtf_reader::cmd_lquote(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_CHARS_LEFT_QUOTE,
-	    sizeof(TAG_CHARS_LEFT_QUOTE) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_CHARS_LEFT_QUOTE) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2280,8 +2340,7 @@ int rtf_reader::cmd_nonbreaking_space(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_CHARS_NONBREAKING_SPACE,
-	    sizeof(TAG_CHARS_NONBREAKING_SPACE) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_CHARS_NONBREAKING_SPACE) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2290,16 +2349,17 @@ int rtf_reader::cmd_nonbreaking_space(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_nonbreaking_hyphen(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x2011).data()) ?
-	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	if (ext_push.p_bytes(wchar_to_utf8(0x2011)) != pack_result::ok)
+		return CMD_RESULT_ERROR;
+	++total_chars_in_line;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_soft_hyphen(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_CHARS_SOFT_HYPHEN,
-	    sizeof(TAG_CHARS_SOFT_HYPHEN) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_CHARS_SOFT_HYPHEN) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2309,8 +2369,7 @@ int rtf_reader::cmd_emdash(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_CHARS_EMDASH,
-	    sizeof(TAG_CHARS_EMDASH) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_CHARS_EMDASH) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2320,8 +2379,7 @@ int rtf_reader::cmd_endash(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_CHARS_ENDASH,
-	    sizeof(TAG_CHARS_ENDASH) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_CHARS_ENDASH) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2331,8 +2389,7 @@ int rtf_reader::cmd_rquote(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_CHARS_RIGHT_QUOTE,
-	    sizeof(TAG_CHARS_RIGHT_QUOTE) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_CHARS_RIGHT_QUOTE) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2342,14 +2399,12 @@ int rtf_reader::cmd_par(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->have_fromhtml) {
-		return preader->ext_push.p_bytes("\r\n", 2) == pack_result::ok ?
+	if (preader->have_fromhtml)
+		return preader->ext_push.p_bytes("\r\n") == pack_result::ok ?
 		       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
-	}
-	if (preader->ext_push.p_bytes(TAG_LINE_BREAK,
-	    sizeof(TAG_LINE_BREAK) - 1) != pack_result::ok)
+	if (!start_body() || !start_text() || !end_par(align) || !start_par(align))
 		return CMD_RESULT_ERROR;
-	preader->total_chars_in_line ++;
+	total_chars_in_line = 0;
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -2357,8 +2412,12 @@ int rtf_reader::cmd_line(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_LINE_BREAK,
-	    sizeof(TAG_LINE_BREAK) - 1) != pack_result::ok)
+	if (have_fromhtml) {
+		if (ext_push.p_bytes("\r\n") != pack_result::ok)
+			return CMD_RESULT_ERROR;
+		return CMD_RESULT_CONTINUE;
+	}
+	if (ext_push.p_bytes(TAG_LINE_BREAK) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2368,8 +2427,7 @@ int rtf_reader::cmd_page(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_PAGE_BREAK,
-	    sizeof(TAG_PAGE_BREAK) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_PAGE_BREAK) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2419,7 +2477,7 @@ int rtf_reader::cmd_uld(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_uldb(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	return astk_pushx(ATTR_DOT_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	return astk_pushx(ATTR_DOUBLE_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_uldash(SIMPLE_TREE_NODE *pword,
@@ -2522,12 +2580,69 @@ int rtf_reader::cmd_up(SIMPLE_TREE_NODE *pword, int align,
 	return CMD_RESULT_CONTINUE;
 }
 
+int rtf_reader::cmd_upr(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	/*
+	 * \upr groups contain two representations:
+	 * {\upr {ansi_text} {\*\ud {unicode_text}}}
+	 *
+	 * The first child is the ANSI representation for legacy readers. The
+	 * \ud destination contains the Unicode representation. As a
+	 * Unicode-aware reader, we skip the ANSI part and process only the \ud
+	 * content.
+	 */
+	for (auto sibling = pword->get_sibling(); sibling != nullptr;
+	     sibling = sibling->get_sibling()) {
+		/* Look for a group node (pdata == nullptr means it's a group) */
+		if (sibling->pdata != nullptr)
+			continue;
+		auto child = sibling->get_child();
+		if (child == nullptr || child->pdata == nullptr)
+			continue;
+		/* Check for \* prefix */
+		if (strcmp(child->cdata, "\\*") != 0)
+			continue;
+		/* Look for \ud in the group */
+		for (auto word2 = child->get_sibling(); word2 != nullptr;
+		     word2 = word2->get_sibling()) {
+			if (word2->pdata == nullptr ||
+			    strcmp(word2->cdata, "\\ud") != 0)
+				continue;
+			/* Found \ud; process the rest of this group */
+			auto ud_content = word2->get_sibling();
+			if (ud_content != nullptr) {
+				auto ret = convert_group_node(ud_content);
+				if (ret != 0)
+					return CMD_RESULT_ERROR;
+			}
+			/* Skip the ANSI representation */
+			return CMD_RESULT_IGNORE_REST;
+		}
+	}
+	/* No \ud found, fall back to processing everything (ANSI content) */
+	return CMD_RESULT_CONTINUE;
+}
+
+int rtf_reader::cmd_v(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (have_param && num == 0) {
+		if (!astk_popx(ATTR_HIDDEN))
+			return CMD_RESULT_ERROR;
+	} else {
+		if (!astk_pushx(ATTR_HIDDEN, 0))
+			return CMD_RESULT_ERROR;
+	}
+	return CMD_RESULT_CONTINUE;
+}
+
 int rtf_reader::cmd_u(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	/*
 	 * RTF uses signed 16-bit values for Unicode. Values > 32767 are
-	 * represented as negative numbers (e.g., \u-10000 means U+55536).
+	 * represented as negative numbers (e.g., \u-10000 means U+D8F0).
 	 * Convert to unsigned 16-bit first to get the correct codepoint.
 	 */
 	uint32_t codepoint = static_cast<uint16_t>(num);
@@ -2570,6 +2685,26 @@ int rtf_reader::cmd_nosupersub(SIMPLE_TREE_NODE *pword,
 {
 	return astk_popx(ATTR_SUPER) && astk_popx(ATTR_SUB) ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+}
+
+/**
+ * Object Attachment Placeholder
+ *
+ * MS-OXRTFEX v15 §2.2.3.4: This control word marks where in the text stream
+ * the next attachment should appear. It is followed by a space character that
+ * acts as a placeholder for the attachment.
+ *
+ * For HTML output, the Unicode Object Replacement Character is emitted, which
+ * is the standard placeholder for inline objects.
+ */
+int rtf_reader::cmd_objattph(SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
+{
+	if (ext_push.p_bytes(wchar_to_utf8(0xFFFC)) != pack_result::ok)
+		return CMD_RESULT_ERROR;
+	++total_chars_in_line;
+	skip_objattph_space = true;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_super(SIMPLE_TREE_NODE *pword,
@@ -2640,9 +2775,7 @@ int rtf_reader::cmd_i(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_sect(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (preader->ext_push.p_bytes(TAG_PARAGRAPH_BEGIN,
-	    sizeof(TAG_PARAGRAPH_BEGIN) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_PARAGRAPH_BEGIN) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2664,7 +2797,7 @@ int rtf_reader::cmd_ansi(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	default_encoding = "windows-1252";
-    return CMD_RESULT_CONTINUE;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_ansicpg(SIMPLE_TREE_NODE *pword,
@@ -2694,7 +2827,7 @@ int rtf_reader::cmd_pc(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	default_encoding = "CP437";
-    return CMD_RESULT_CONTINUE;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_pca(SIMPLE_TREE_NODE *pword, int align,
@@ -2810,7 +2943,7 @@ int rtf_reader::cmd_emfblip(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_emspace(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	if (ext_push.p_bytes("&emsp;", 6) != pack_result::ok)
+	if (ext_push.p_bytes("&emsp;") != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	++total_chars_in_line;
 	return CMD_RESULT_CONTINUE;
@@ -2819,7 +2952,7 @@ int rtf_reader::cmd_emspace(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_enspace(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	if (ext_push.p_bytes("&ensp;", 6) != pack_result::ok)
+	if (ext_push.p_bytes("&ensp;") != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	++total_chars_in_line;
 	return CMD_RESULT_CONTINUE;
@@ -2828,7 +2961,7 @@ int rtf_reader::cmd_enspace(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_qmspace(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	if (ext_push.p_bytes("&emsp14;", 8) != pack_result::ok)
+	if (ext_push.p_bytes("&emsp14;") != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	++total_chars_in_line;
 	return CMD_RESULT_CONTINUE;
@@ -2838,28 +2971,28 @@ int rtf_reader::cmd_zwbo(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	/* Not updating total_chars_in_line, since this is zero-width */
-	return escape_output(wchar_to_utf8(0x200B).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200B)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_zwj(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x200D).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200D)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_zwnbo(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0xFEFF).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0xFEFF)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_zwnj(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x200C).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200C)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
@@ -2931,14 +3064,14 @@ int rtf_reader::cmd_htmltag(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_ltrmark(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x200E).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200E)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_rtlmark(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return escape_output(wchar_to_utf8(0x200F).data()) ?
+	return ext_push.p_bytes(wchar_to_utf8(0x200F)) == pack_result::ok ?
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
@@ -2948,7 +3081,7 @@ static void rtf_unescape_string(char *string)
 	for (size_t i = 0; i < tmp_len; ++i)
 		if ('\\' == string[i] && ('\\' == string[i + 1] ||
 			'{' == string[i + 1] || '}' == string[i + 1])) {
-			memmove(string + i, string + 1, tmp_len - i);
+			memmove(&string[i], &string[i+1], tmp_len - i);
 			tmp_len --;
 		}
 }
@@ -2969,9 +3102,10 @@ static void pictype_to(unsigned int t, const char *&m, const char *&x)
 
 static CMD_PROC_FUNC rtf_find_fromhtml_func(const char *s)
 {
-	for (const auto x : {"par", "tab", "lquote", "rquote", "ldblquote",
-	     "rdblquote", "bullet", "endash", "emdash", "colortbl", "fonttbl",
-	     "htmltag", "uc", "u", "f", "-", "~", "_"})
+	for (const auto x : {"par", "line", "tab", "lquote", "rquote",
+	     "ldblquote", "rdblquote", "bullet", "endash", "emdash",
+	     "colortbl", "fonttbl", "htmltag", "uc", "u", "f", "deff",
+	     "-", "~", "_"})
 		if (strcmp(s, x) == 0)
 			return rtf_find_cmd_function(s);
 	return nullptr;
@@ -3010,9 +3144,9 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 		return ece2nerrno(ret);
 	}
 	free(bin.pv);
-	if (reader->ext_push.p_bytes(TAG_IMAGELINK_BEGIN, sizeof(TAG_IMAGELINK_BEGIN) - 1) != pack_result::ok ||
-	    reader->ext_push.p_bytes(cid_name, strlen(cid_name)) != pack_result::ok ||
-	    reader->ext_push.p_bytes(TAG_IMAGELINK_END, sizeof(TAG_IMAGELINK_END) - 1) != pack_result::ok)
+	if (ext_push.p_bytes(TAG_IMAGELINK_BEGIN) != pack_result::ok ||
+	    ext_push.p_bytes(cid_name) != pack_result::ok ||
+	    ext_push.p_bytes(TAG_IMAGELINK_END) != pack_result::ok)
 		return -EINVAL;
 	return 0;
 }
@@ -3042,10 +3176,13 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 	auto preader = this;
 	auto uc_prev_active = b_ubytes_switch;
 	auto uc_prev_num = ubytes_num;
+	auto htmlrtf_prev = is_within_htmlrtf;
 	auto uc_guard = HX::make_scope_exit([&,this]() {
 		b_ubytes_switch = uc_prev_active;
 		ubytes_num = uc_prev_num;
 		ubytes_left = 0;
+		/* Restore htmlrtf state per toggle control word semantics (MS-OXRTFEX 2.1.3.1.3) */
+		is_within_htmlrtf = htmlrtf_prev;
 	});
 	try {
 		preader->attr_stack_list.emplace_back();
@@ -3054,6 +3191,9 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 	}
 	while (NULL != pnode) {    
 		if (NULL != pnode->pdata) {
+			if (skip_objattph_space && pnode->cdata[0] == '\\' &&
+			    pnode->cdata[1] != '\'')
+				skip_objattph_space = false;
 			if (preader->have_fromhtml) {
 				if (strcasecmp(pnode->cdata, "\\htmlrtf") == 0 ||
 				    strcasecmp(pnode->cdata, "\\htmlrtf1") == 0) {
@@ -3062,6 +3202,11 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 					preader->is_within_htmlrtf = false;
 				}
 				if (preader->is_within_htmlrtf) {
+					if (strncasecmp(pnode->cdata, "\\f", 2) == 0 &&
+					    (pnode->cdata[2] >= '0' && pnode->cdata[2] <= '9')) {
+						int font_num = strtol(pnode->cdata + 2, nullptr, 10);
+						cmd_f(pnode, ALIGN_LEFT, true, font_num);
+					}
 					pnode = pnode->get_sibling();
 					continue;
 				}
@@ -3071,8 +3216,18 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 				return -EINVAL;
 			auto string = pnode->cdata;
 			if (*string == ' ' && preader->is_within_header) {
-				/* do nothing  */
+				/* do nothing */
 			} else if ('\\' != string[0]) {
+				if (skip_objattph_space) {
+					skip_objattph_space = false;
+					if (string[0] == ' ') {
+						if (string[1] == '\0') {
+							pnode = pnode->get_sibling();
+							continue;
+						}
+						++string;
+					}
+				}
 				if (!start_body() || !start_text())
 					return -EINVAL;
 				if (!b_paragraph_begun) {
@@ -3097,7 +3252,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 					    preader->picture_width != 0 &&
 					    preader->picture_height != 0 &&
 					    preader->picture_bits_per_pixel != 0 &&
-					    picture_push.p_bytes(string, strlen(string)) != pack_result::ok)
+					    picture_push.p_bytes(string) != pack_result::ok)
 						return -ENOBUFS;
 				} else {
 					rtf_unescape_string(string);
@@ -3132,27 +3287,38 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 						return -EINVAL;
 					paragraph_align = ALIGN_LEFT;
 					b_paragraph_begun = false;
-				} else if (0 == strcmp(string, "cell")) {
+				} else if (strcmp(string, "cell") == 0 ||
+				           strcmp(string, "nestcell") == 0) {
+					/* \cell ends table cell, \nestcell ends nested table cell */
 					is_cell_group = true;
 					if (!preader->b_printed_cell_begin) {
-						if (preader->ext_push.p_bytes(TAG_TABLE_CELL_BEGIN, sizeof(TAG_TABLE_CELL_BEGIN) - 1) != pack_result::ok)
+						if (ext_push.p_bytes(TAG_TABLE_CELL_BEGIN) != pack_result::ok)
 							return -ENOBUFS;
 						astk_express_all();
 					}
 					astk_popx_all();
-					if (preader->ext_push.p_bytes(TAG_TABLE_CELL_END, sizeof(TAG_TABLE_CELL_END) - 1) != pack_result::ok)
+					if (ext_push.p_bytes(TAG_TABLE_CELL_END) != pack_result::ok)
 						return -ENOBUFS;
 					preader->b_printed_cell_begin = false;
 					preader->b_printed_cell_end = true;
-				} else if (0 == strcmp(string, "row")) {
+				} else if (strcmp(string, "row") == 0 ||
+				           strcmp(string, "nestrow") == 0) {
+					/* \row ends table row, \nestrow ends nested table row */
 					if (preader->is_within_table) {
-						if (preader->ext_push.p_bytes(TAG_TABLE_ROW_END, sizeof(TAG_TABLE_ROW_END) - 1) != pack_result::ok)
+						if (ext_push.p_bytes(TAG_TABLE_ROW_END) != pack_result::ok)
 							return -ENOBUFS;
 						preader->b_printed_row_begin = false;
 						preader->b_printed_row_end = true;
 					}
 				} else if (string[0] == '\'' && string[1] != '\0' && string[2] != '\0') {
 					ch = rtf_decode_hex_char(string + 1);
+					if (skip_objattph_space) {
+						skip_objattph_space = false;
+						if (ch == 0x20) {
+							pnode = pnode->get_sibling();
+							continue;
+						}
+					}
 					if (!put_iconv_cache(ch))
 						return -EINVAL;
 				} else {
@@ -3167,7 +3333,6 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 						/* \b is like \b1 */
 						num = 1;
 					}
-
 
 					func = preader->have_fromhtml ? rtf_find_fromhtml_func(name) : rtf_find_cmd_function(name);
 					if (NULL != func) {
@@ -3185,6 +3350,8 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 								/* nothing */;
 							break;
 						}
+						if (func == &rtf_reader::cmd_par)
+							b_paragraph_begun = true;
 					}
 				}
 			}
@@ -3195,7 +3362,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 					return -EINVAL;
 				b_paragraph_begun = true;
 			}
-			if (NULL != pchild)  {
+			if (pchild != nullptr) {
 				auto ret = convert_group_node(pchild);
 				if (ret != 0)
 					return -EINVAL;
@@ -3215,8 +3382,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 	}
 	if (!riconv_flush())
 		return -EINVAL;
-	if (b_hyperlinked && preader->ext_push.p_bytes(TAG_HYPERLINK_END,
-	    sizeof(TAG_HYPERLINK_END) - 1) != pack_result::ok)
+	if (b_hyperlinked && ext_push.p_bytes(TAG_HYPERLINK_END) != pack_result::ok)
 		return -EINVAL;
 	if (!is_cell_group && !astk_popx_all())
 		return -EINVAL;
@@ -3255,8 +3421,8 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
 		pnode = pnode->get_sibling();
 	}
 	if (!reader.have_fromhtml) {
-		QRF2(reader.ext_push.p_bytes(TAG_DOCUMENT_BEGIN, sizeof(TAG_DOCUMENT_BEGIN) - 1));
-		QRF2(reader.ext_push.p_bytes(TAG_HEADER_BEGIN, sizeof(TAG_HEADER_BEGIN) - 1));
+		QRF2(reader.ext_push.p_bytes(TAG_DOCUMENT_BEGIN));
+		QRF2(reader.ext_push.p_bytes(TAG_HEADER_BEGIN));
 		auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 		          TAG_HTML_CHARSET, charset);
 		QRF2(reader.ext_push.p_bytes(tmp_buff, tmp_len));
@@ -3266,8 +3432,8 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
 		return ecError;
 	reader.riconv_flush(true);
 	if (!reader.have_fromhtml) {
-		QRF2(reader.ext_push.p_bytes(TAG_BODY_END, sizeof(TAG_BODY_END) - 1));
-		QRF2(reader.ext_push.p_bytes(TAG_DOCUMENT_END, sizeof(TAG_DOCUMENT_END) - 1));
+		QRF2(reader.ext_push.p_bytes(TAG_BODY_END));
+		QRF2(reader.ext_push.p_bytes(TAG_DOCUMENT_END));
 	}
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
@@ -3341,6 +3507,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"hich", &rtf_reader::cmd_hich}, /* subsequent text is high-byte characters (high-bit set) */
 	{"highlight", &rtf_reader::cmd_highlight},
 	{"hl", &rtf_reader::cmd_ignore},
+	{"hsv", &rtf_reader::cmd_ignore}, /* shape theme color info */
 	{"htmltag", &rtf_reader::cmd_htmltag},
 	{"i", &rtf_reader::cmd_i},
 	{"impr", &rtf_reader::cmd_engrave},
@@ -3360,9 +3527,16 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"ltrmark", &rtf_reader::cmd_ltrmark},
 	{"mac", &rtf_reader::cmd_mac},
 	{"macpict", &rtf_reader::cmd_macpict},
+	{"nesttableprops", &rtf_reader::cmd_ignore}, /* nested table properties destination */
+	{"nonesttables", &rtf_reader::cmd_ignore}, /* fallback content for readers without nested table support */
 	{"nonshppict", &rtf_reader::cmd_ignore},
 	{"noproof", &rtf_reader::cmd_continue},
 	{"nosupersub", &rtf_reader::cmd_nosupersub},
+	{"objattph", &rtf_reader::cmd_objattph},
+	{"objclass", &rtf_reader::cmd_ignore}, /* object class name destination */
+	{"objdata", &rtf_reader::cmd_ignore}, /* OLE object data destination - binary data we cannot render */
+	{"objname", &rtf_reader::cmd_ignore}, /* object name destination */
+	{"objtime", &rtf_reader::cmd_ignore}, /* object update time destination */
 	{"outl", &rtf_reader::cmd_outl},
 	{"page", &rtf_reader::cmd_page},
 	{"par", &rtf_reader::cmd_par},
@@ -3385,8 +3559,11 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"scaps", &rtf_reader::cmd_scaps},
 	{"sect", &rtf_reader::cmd_sect},
 	{"shad", &rtf_reader::cmd_shad},
-	{"shp", &rtf_reader::cmd_continue},
-	{"shppict", &rtf_reader::cmd_continue},
+	{"shpinst", &rtf_reader::cmd_ignore}, /* shape instructions - properties we cannot render */
+	{"sn", &rtf_reader::cmd_ignore}, /* shape property name */
+	{"sp", &rtf_reader::cmd_ignore}, /* shape property */
+	{"sv", &rtf_reader::cmd_ignore}, /* shape property value */
+	{"svb", &rtf_reader::cmd_ignore}, /* shape binary property value */
 	{"strike", &rtf_reader::cmd_strike},
 	{"striked", &rtf_reader::cmd_striked},
 	{"strikedl", &rtf_reader::cmd_strikedl},
@@ -3418,16 +3595,8 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"ulw", &rtf_reader::cmd_ulw},
 	{"ulwave", &rtf_reader::cmd_ulwave},
 	{"up", &rtf_reader::cmd_up},
-	/*
-	 * \upr - Unicode-preserving group
-	 *
-	 * \upr groups contain two representations: the first is for legacy
-	 * readers (using the ansicpg encoding), the second is in \ud and
-	 * contains Unicode. Since we support Unicode, we skip the first
-	 * representation and process only the \ud content.
-	 * The structure is: {\upr {ansi text} {\*\ud {unicode text}}}
-	 */
-	{"upr", &rtf_reader::cmd_continue},
+	{"upr", &rtf_reader::cmd_upr}, /* Unicode-preserving group - skip ANSI, process \ud */
+	{"v", &rtf_reader::cmd_v}, /* hidden text */
 	{"wbmbitspixel", &rtf_reader::cmd_wbmbitspixel},
 	{"wmetafile", &rtf_reader::cmd_wmetafile},
 	{"xe", &rtf_reader::cmd_continue},

@@ -106,12 +106,12 @@ static pack_result nsp_ndr_push_stat(NDR_PUSH &x, const STAT &r)
 
 static pack_result nsp_ndr_pull_flatuid(NDR_PULL &x, FLATUID *r)
 {
-	return x.g_uint8_a(r->ab, 16);
+	return x.g_bytes(r->ab, 16);
 }
 
 static pack_result nsp_ndr_push_flatuid(NDR_PUSH &x, const FLATUID &r)
 {	
-	return x.p_uint8_a(r.ab, 16);
+	return x.p_bytes(r.ab, 16);
 }
 
 static pack_result nsp_ndr_pull_proptag_array(NDR_PULL &x, std::vector<proptag_t> *r) try
@@ -463,7 +463,7 @@ static pack_result nsp_ndr_pull_binary(NDR_PULL &x, unsigned int flag, BINARY *r
 		r->cb = 0;
 		return pack_result::alloc;
 	}
-	TRY(x.g_uint8_a(r->pb, size));
+	TRY(x.g_bytes(r->pb, size));
 	return pack_result::ok;
 }
 
@@ -479,7 +479,7 @@ static pack_result nsp_ndr_push_binary(NDR_PUSH &x, unsigned int flag, const BIN
 	if (!(flag & FLAG_CONTENT) || r.pb == nullptr)
 		return pack_result::ok;
 	TRY(x.p_ulong(r.cb));
-	TRY(x.p_uint8_a(r.pb, r.cb));
+	TRY(x.p_bytes(r));
 	return pack_result::ok;
 }
 
