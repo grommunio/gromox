@@ -901,11 +901,6 @@ struct exreq_get_public_folder_unread_count final : public exreq {
 	uint64_t folder_id = 0;
 };
 
-struct exreq_notify_new_mail final : public exreq {
-	using view_t = exreq_notify_new_mail;
-	uint64_t folder_id = 0, message_id = 0;
-};
-
 struct exreq_store_eid_to_user final : public exreq {
 	using view_t = exreq_store_eid_to_user;
 	STORE_ENTRYID *store_eid = nullptr;
@@ -1544,7 +1539,6 @@ using exresp_transport_new_mail = exresp;
 using exresp_vacuum = exresp;
 using exresp_unload_store = exresp;
 using exresp_ping_store = exresp;
-using exresp_notify_new_mail = exresp;
 
 using exresp_purge_datafiles = exresp;
 using exresp_autoreply_tsupdate = exresp;

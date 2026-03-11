@@ -1,4 +1,4 @@
-In Development 3.5.23
+In Development 3.5.24
 =====================
 
 Enhancements:
@@ -17,6 +17,7 @@ Fixes:
 * exmdb: unlock giant_lock before erasing the same from hash table
 * midb: release lock and reference when me_sync_mailbox experiences a sync failure
 * lib: avoid emitting colors to stderr when that is not a tty
+* exmdb: strip redundant notifications from notify_new_mail()
 
 Changes:
 

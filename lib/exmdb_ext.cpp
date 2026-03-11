@@ -2082,18 +2082,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_transport_new_mail &d)
 	return x.p_str(d.pstr_class);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_notify_new_mail &d)
-{
-	TRY(x.g_uint64(&d.folder_id));
-	return x.g_uint64(&d.message_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_notify_new_mail &d)
-{
-	TRY(x.p_uint64(d.folder_id));
-	return x.p_uint64(d.message_id);
-}
-
 static pack_result exmdb_pull(EXT_PULL &x, exreq_check_contact_address &d)
 {
 	return x.g_str(&d.paddress);

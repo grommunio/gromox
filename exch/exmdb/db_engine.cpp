@@ -2309,9 +2309,6 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_cttbl_add_row(*pdb, folder_id, message_id, dbase, notifq);
-	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
-		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
