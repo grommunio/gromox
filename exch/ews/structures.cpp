@@ -1399,14 +1399,15 @@ tAttachment::tAttachment(const sAttachmentId& aid, const sShape& shape)
 
 sAttachment tAttachment::create(const sAttachmentId& aid, sShape&& shape)
 {
-	const TAGGED_PROPVAL* prop = shape.get(PR_ATTACH_METHOD);
-	if (prop)
-		switch(*static_cast<const uint32_t*>(prop->pvalue)) {
+	auto method = shape.get<const uint32_t>(PR_ATTACH_METHOD);
+	if (method != nullptr) {
+		switch (*method) {
 		case ATTACH_EMBEDDED_MSG:
 			return sAttachment(std::in_place_type_t<tItemAttachment>(), aid, std::move(shape));
 		case ATTACH_BY_REFERENCE:
 			return sAttachment(std::in_place_type_t<tReferenceAttachment>(), aid, std::move(shape));
 		}
+	}
 	return sAttachment(std::in_place_type_t<tFileAttachment>(), aid, std::move(shape));
 }
 
@@ -2445,19 +2446,21 @@ void tContact::update(const sShape& shape)
 		fromProp(prop, Nickname);
 		fromProp(prop, defaulted(CompleteName).Nickname);
 	}
-	if ((prop = shape.get(PR_CHILDRENS_NAMES))) {
-		const STRING_ARRAY* names = static_cast<const STRING_ARRAY*>(prop->pvalue);
+	auto names = shape.get<const STRING_ARRAY>(PR_CHILDRENS_NAMES);
+	if (names != nullptr)
 		Children.emplace(names->begin(), names->end());
-	}
-
-	if ((prop = shape.get(NtEmailAddress1)))
-		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress1);
-	if ((prop = shape.get(NtEmailAddress2)))
-		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress2);
-	if ((prop = shape.get(NtEmailAddress3)))
-		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress3);
-	if ((prop = shape.get(NtPostalAddressIndex)))
-		PostalAddressIndex.emplace(*static_cast<uint32_t*>(prop->pvalue));
+	auto str = shape.get<const char>(NtEmailAddress1);
+	if (str != nullptr)
+		defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress1);
+	str = shape.get<const char>(NtEmailAddress2);
+	if (str != nullptr)
+		defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress2);
+	str = shape.get<const char>(NtEmailAddress3);
+	if (str != nullptr)
+		defaulted(EmailAddresses).emplace_back(str, Enum::EmailAddress3);
+	auto postidx = shape.get<const uint32_t>(NtPostalAddressIndex);
+	if (postidx != nullptr)
+		PostalAddressIndex.emplace(*postidx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3726,17 +3729,17 @@ void tItem::update(const sShape& shape)
 	const uint32_t* v32;
 	const TAGGED_PROPVAL* prop;
 	fromProp(shape.get(PR_ASSOCIATED), IsAssociated);
-	const TAGGED_PROPVAL *bodyText = shape.get(PR_BODY), *bodyHtml = shape.get(PR_HTML);
-	if (bodyHtml) {
-		const BINARY* content = reinterpret_cast<const BINARY*>(bodyHtml->pvalue);
+	auto bodyText = shape.get<const char>(PR_BODY);
+	auto bodyHtml = shape.get<const BINARY>(PR_HTML);
+	if (bodyHtml != nullptr) {
 		const cpid_t* cpid = shape.get<cpid_t>(PR_INTERNET_CPID, sShape::FL_ANY);
 		const char* cset;
 		if (cpid && *cpid != CP_UTF8 && (cset = cpid_to_cset(*cpid)))
-			Body.emplace(iconvtext(*content, cset, "UTF-8"), Enum::HTML);
+			Body.emplace(iconvtext(*bodyHtml, cset, "UTF-8"), Enum::HTML);
 		else
-			Body.emplace(*content, Enum::HTML);
-	} else if (bodyText) {
-		Body.emplace(reinterpret_cast<const char*>(bodyText->pvalue), Enum::Text);
+			Body.emplace(*bodyHtml, Enum::HTML);
+	} else if (bodyText != nullptr) {
+		Body.emplace(bodyText, Enum::Text);
 	} else if (shape.requested(PR_BODY) || shape.requested(PR_HTML)) {
 		Body.emplace("", Enum::Text);
 	}
@@ -3758,7 +3761,9 @@ void tItem::update(const sShape& shape)
 	if ((prop = shape.get(PR_ENTRYID)))
 		fromProp(prop, defaulted(ItemId).Id);
 	fromProp(shape.get(PR_HASATTACH), HasAttachments);
-	if ((v32 = shape.get<uint32_t>(PR_IMPORTANCE)))
+
+	v32 = shape.get<const uint32_t>(PR_IMPORTANCE);
+	if (v32 != nullptr)
 		Importance = *v32 == IMPORTANCE_LOW ? Enum::Low :
 		             *v32 == IMPORTANCE_HIGH ? Enum::High : Enum::Normal;
 	fromProp(shape.get(PR_IN_REPLY_TO_ID), InReplyTo);
@@ -3766,7 +3771,9 @@ void tItem::update(const sShape& shape)
 	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
 	fromProp(shape.get(PR_MESSAGE_CLASS), ItemClass);
 	fromProp(shape.get(PR_MESSAGE_DELIVERY_TIME), DateTimeReceived);
-	if ((v32 = shape.get<uint32_t>(PR_MESSAGE_FLAGS))) {
+
+	v32 = shape.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	if (v32 != nullptr) {
 		IsSubmitted = *v32 & MSGFLAG_SUBMITTED;
 		IsDraft = *v32 & MSGFLAG_UNSENT;
 		IsFromMe = *v32 & MSGFLAG_FROMME;
@@ -3776,32 +3783,43 @@ void tItem::update(const sShape& shape)
 	fromProp(shape.get(PR_MESSAGE_SIZE), Size);
 	if ((prop = shape.get(PR_PARENT_ENTRYID)))
 		fromProp(prop, defaulted(ParentFolderId).Id);
-	if ((v32 = shape.get<uint32_t>(PR_SENSITIVITY)))
+
+	v32 = shape.get<const uint32_t>(PR_SENSITIVITY);
+	if (v32 != nullptr)
 		Sensitivity = *v32 == SENSITIVITY_PRIVATE ? Enum::Private :
 		              *v32 == SENSITIVITY_COMPANY_CONFIDENTIAL ? Enum::Confidential :
 		              *v32 == SENSITIVITY_PERSONAL ? Enum::Personal : Enum::Normal;
 	fromProp(shape.get(PR_SUBJECT), Subject);
-	if ((prop = shape.get(PR_TRANSPORT_MESSAGE_HEADERS)))
-		InternetMessageHeaders.emplace(tInternetMessageHeader::parse(static_cast<const char*>(prop->pvalue)));
-	if ((prop = shape.get(NtCategories)) && PROP_TYPE(prop->proptag) == PT_MV_UNICODE) {
-		const STRING_ARRAY* categories = static_cast<const STRING_ARRAY*>(prop->pvalue);
+
+	auto xprthdr = shape.get<const char>(PR_TRANSPORT_MESSAGE_HEADERS);
+	if (xprthdr != nullptr)
+		InternetMessageHeaders.emplace(tInternetMessageHeader::parse(xprthdr));
+	auto categories = shape.get<const STRING_ARRAY>(NtCategories);
+	if (categories != nullptr) {
 		Categories.emplace(categories->count);
 		char** src = categories->ppstr;
 		for (std::string& dest : *Categories)
 			dest = *src++;
 	}
-	if ((prop = shape.get(NtReminderTime)))
-		ReminderDueBy.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+
+	auto v64 = shape.get<const uint64_t>(NtReminderTime);
+	if (v64 != nullptr)
+		ReminderDueBy.emplace(rop_util_nttime_to_unix2(*v64));
 	fromProp(shape.get(NtReminderSet), ReminderIsSet);
 	fromProp(shape.get(NtReminderDelta), ReminderMinutesBeforeStart);
-	if ((v32 = shape.get<uint32_t>(PR_FLAG_STATUS))) {
+
+	v32 = shape.get<const uint32_t>(PR_FLAG_STATUS);
+	if (v32 != nullptr) {
 		defaulted(Flag).FlagStatus = *v32 == followupComplete ? Enum::Complete : Enum::Flagged;
-		if ((prop = shape.get(NtTaskDateCompleted)))
-			defaulted(Flag).CompleteDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
-		if ((prop = shape.get(NtTaskDueDate)))
-			defaulted(Flag).DueDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
-		if ((prop = shape.get(NtTaskStartDate)))
-			defaulted(Flag).StartDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+		v64 = shape.get<const uint64_t>(NtTaskDateCompleted);
+		if (v64 != nullptr)
+			defaulted(Flag).CompleteDate.emplace(rop_util_nttime_to_unix2(*v64));
+		v64 = shape.get<const uint64_t>(NtTaskDueDate);
+		if (v64 != nullptr)
+			defaulted(Flag).DueDate.emplace(rop_util_nttime_to_unix2(*v64));
+		v64 = shape.get<const uint64_t>(NtTaskStartDate);
+		if (v64 != nullptr)
+			defaulted(Flag).StartDate.emplace(rop_util_nttime_to_unix2(*v64));
 	} else if(shape.requested(PR_FLAG_STATUS)) {
 		defaulted(Flag).FlagStatus = Enum::NotFlagged;
 	}
