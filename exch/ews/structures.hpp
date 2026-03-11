@@ -4444,9 +4444,7 @@ struct mGetUserConfigurationResponse {
 struct mUpdateUserConfigurationRequest {
 	explicit mUpdateUserConfigurationRequest(const tinyxml2::XMLElement *);
 
-	tUserConfigurationName UserConfigurationName;
-	std::optional<sBase64Binary> XmlData;
-	std::optional<sBase64Binary> BinaryData;
+	tUserConfiguration UserConfiguration;
 };
 
 struct mUpdateUserConfigurationResponseMessage : public mResponseMessageType {

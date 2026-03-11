@@ -2259,15 +2259,6 @@ mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement *xml) :
 	XMLINIT(Mailbox)
 {}
 
-static const XMLElement *getChild(const XMLElement *xml, const char *name)
-{
-	auto *child = xml->FirstChildElement(name);
-	if (!child)
-		throw Exceptions::DeserializationError(
-			Exceptions::E3046(name, xml->Name()));
-	return child;
-}
-
 mCreateUserConfigurationRequest::mCreateUserConfigurationRequest(const XMLElement *xml) :
     XMLINIT(UserConfiguration)
 {}
@@ -2294,9 +2285,7 @@ void mGetUserConfigurationResponse::serialize(XMLElement *xml) const
 }
 
 mUpdateUserConfigurationRequest::mUpdateUserConfigurationRequest(const XMLElement *xml) :
-	UserConfigurationName(fromXMLNode<tUserConfigurationName>(getChild(xml, "UserConfiguration"), "UserConfigurationName")),
-	XmlData(fromXMLNode<std::optional<sBase64Binary>>(getChild(xml, "UserConfiguration"), "XmlData")),
-	BinaryData(fromXMLNode<std::optional<sBase64Binary>>(getChild(xml, "UserConfiguration"), "BinaryData"))
+    XMLINIT(UserConfiguration)
 {}
 
 void mUpdateUserConfigurationResponse::serialize(XMLElement *xml) const
