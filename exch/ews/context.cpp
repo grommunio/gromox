@@ -405,6 +405,150 @@ void markOccurrenceId(sItem &item, uint32_t basedate)
 	std::visit(setter, item);
 }
 
+/**
+ * @brief      Test whether a date is truly deleted (not a modified exception)
+ *
+ * @param      rp     Recurrence pattern
+ * @param      date   Date in rtime format
+ *
+ * @return     true if the date is deleted and not modified
+ */
+bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
+{
+	bool deleted = std::any_of(&rp.pdeletedinstancedates[0],
+	               &rp.pdeletedinstancedates[rp.deletedinstancecount],
+	               [date](uint32_t entry) { return entry == date; });
+	if (!deleted)
+		return false;
+	return std::none_of(&rp.pmodifiedinstancedates[0], &rp.pmodifiedinstancedates[rp.modifiedinstancecount],
+	       [date](uint32_t entry) { return entry == date; });
+}
+
+/**
+ * @brief      Compute the Nth non-deleted occurrence date
+ *
+ * EWS InstanceIndex counts only visible (non-deleted) occurrences.
+ * Modified exceptions are still visible and counted.
+ *
+ * @param      rp     Recurrence pattern (includes deleted/modified lists)
+ * @param      index  1-based occurrence index
+ *
+ * @return     Occurrence date in rtime format (minutes since 1601-01-01)
+ */
+uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
+{
+	if (index < 1)
+		throw InputError(E3307);
+
+	uint32_t count = 0;
+	auto check = [&](uint32_t date) -> uint32_t {
+		if (isTrulyDeleted(rp, date))
+			return 0;
+		if (++count == index)
+			return date;
+		return 0;
+	};
+
+	switch (rp.patterntype) {
+	case rptMinute:
+		/* Daily: period is in minutes (day count * 1440) */
+		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
+			auto date = rp.startdate + i * rp.period;
+			if (auto r = check(date); r != 0)
+				return r;
+		}
+		break;
+	case rptWeek: {
+		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+		struct tm tm;
+		if (gmtime_r(&start_unix, &tm) == nullptr)
+			break;
+		int start_wday = tm.tm_wday;
+		int days_back = (start_wday - static_cast<int>(rp.firstdow) + 7) % 7;
+		uint32_t week_start = rp.startdate - days_back * 1440;
+		uint32_t raw = 0;
+		for (uint32_t week = week_start; raw < rp.occurrencecount; week += rp.period * 7 * 1440) {
+			for (int d = 0; d < 7 && raw < rp.occurrencecount; ++d) {
+				int wday = (rp.firstdow + d) % 7;
+				uint32_t date = week + d * 1440;
+				if (date < rp.startdate)
+					continue;
+				if (!(rp.pts.weekrecur & (1 << wday)))
+					continue;
+				++raw;
+				if (auto r = check(date); r != 0)
+					return r;
+			}
+		}
+		break;
+	}
+	case rptMonth:
+	case rptMonthEnd: {
+		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+		struct tm tm;
+		if (gmtime_r(&start_unix, &tm) == nullptr)
+			break;
+		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
+		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
+			if (i > 0) {
+				month += rp.period;
+				while (month > 12) {
+					month -= 12;
+					++year;
+				}
+			}
+			int dom = rp.pts.dayofmonth;
+			int maxdays = ical_get_monthdays(year, month);
+			if (dom > maxdays)
+				dom = maxdays;
+			struct tm occ = {};
+			occ.tm_year = year - 1900;
+			occ.tm_mon  = month - 1;
+			occ.tm_mday = dom;
+			auto date = rop_util_unix_to_rtime(timegm(&occ));
+			if (auto r = check(date); r != 0)
+				return r;
+		}
+		break;
+	}
+	case rptMonthNth:
+	case rptHjMonthNth: {
+		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+		struct tm tm;
+		if (gmtime_r(&start_unix, &tm) == nullptr)
+			break;
+		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
+		int order = rp.pts.monthnth.recurnum;
+		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
+			if (i > 0) {
+				month += rp.period;
+				while (month > 12) {
+					month -= 12;
+					++year;
+				}
+			}
+			for (int wd = 0; wd < 7; ++wd) {
+				if (!(rp.pts.monthnth.weekrecur & (1 << wd)))
+					continue;
+				int day = ical_get_dayofmonth(year, month,
+				          order == 5 ? -1 : order, wd);
+				if (day > 0) {
+					struct tm occ = {};
+					occ.tm_year = year - 1900;
+					occ.tm_mon  = month - 1;
+					occ.tm_mday = day;
+					auto date = rop_util_unix_to_rtime(timegm(&occ));
+					if (auto r = check(date); r != 0)
+						return r;
+				}
+			}
+		}
+		break;
+	}
+	}
+	throw InputError(E3334);
+}
+
 } // Anonymous namespace
 
 namespace detail {
@@ -1855,150 +1999,6 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	}
 	markOccurrenceId(item, basedate);
 	return item;
-}
-
-/**
- * @brief      Test whether a date is truly deleted (not a modified exception)
- *
- * @param      rp     Recurrence pattern
- * @param      date   Date in rtime format
- *
- * @return     true if the date is deleted and not modified
- */
-static bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
-{
-	bool deleted = std::any_of(&rp.pdeletedinstancedates[0],
-	               &rp.pdeletedinstancedates[rp.deletedinstancecount],
-	               [date](uint32_t entry) { return entry == date; });
-	if (!deleted)
-		return false;
-	return std::none_of(&rp.pmodifiedinstancedates[0], &rp.pmodifiedinstancedates[rp.modifiedinstancecount],
-	       [date](uint32_t entry) { return entry == date; });
-}
-
-/**
- * @brief      Compute the Nth non-deleted occurrence date
- *
- * EWS InstanceIndex counts only visible (non-deleted) occurrences.
- * Modified exceptions are still visible and counted.
- *
- * @param      rp     Recurrence pattern (includes deleted/modified lists)
- * @param      index  1-based occurrence index
- *
- * @return     Occurrence date in rtime format (minutes since 1601-01-01)
- */
-static uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
-{
-	if (index < 1)
-		throw InputError(E3307);
-
-	uint32_t count = 0;
-	auto check = [&](uint32_t date) -> uint32_t {
-		if (isTrulyDeleted(rp, date))
-			return 0;
-		if (++count == index)
-			return date;
-		return 0;
-	};
-
-	switch (rp.patterntype) {
-	case rptMinute:
-		/* Daily: period is in minutes (day count * 1440) */
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			auto date = rp.startdate + i * rp.period;
-			if (auto r = check(date); r != 0)
-				return r;
-		}
-		break;
-	case rptWeek: {
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
-			break;
-		int start_wday = tm.tm_wday;
-		int days_back = (start_wday - static_cast<int>(rp.firstdow) + 7) % 7;
-		uint32_t week_start = rp.startdate - days_back * 1440;
-		uint32_t raw = 0;
-		for (uint32_t week = week_start; raw < rp.occurrencecount; week += rp.period * 7 * 1440) {
-			for (int d = 0; d < 7 && raw < rp.occurrencecount; ++d) {
-				int wday = (rp.firstdow + d) % 7;
-				uint32_t date = week + d * 1440;
-				if (date < rp.startdate)
-					continue;
-				if (!(rp.pts.weekrecur & (1 << wday)))
-					continue;
-				++raw;
-				if (auto r = check(date); r != 0)
-					return r;
-			}
-		}
-		break;
-	}
-	case rptMonth:
-	case rptMonthEnd: {
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
-			break;
-		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			if (i > 0) {
-				month += rp.period;
-				while (month > 12) {
-					month -= 12;
-					++year;
-				}
-			}
-			int dom = rp.pts.dayofmonth;
-			int maxdays = ical_get_monthdays(year, month);
-			if (dom > maxdays)
-				dom = maxdays;
-			struct tm occ = {};
-			occ.tm_year = year - 1900;
-			occ.tm_mon  = month - 1;
-			occ.tm_mday = dom;
-			auto date = rop_util_unix_to_rtime(timegm(&occ));
-			if (auto r = check(date); r != 0)
-				return r;
-		}
-		break;
-	}
-	case rptMonthNth:
-	case rptHjMonthNth: {
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
-			break;
-		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		int order = rp.pts.monthnth.recurnum;
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			if (i > 0) {
-				month += rp.period;
-				while (month > 12) {
-					month -= 12;
-					++year;
-				}
-			}
-			for (int wd = 0; wd < 7; ++wd) {
-				if (!(rp.pts.monthnth.weekrecur & (1 << wd)))
-					continue;
-				int day = ical_get_dayofmonth(year, month,
-				          order == 5 ? -1 : order, wd);
-				if (day > 0) {
-					struct tm occ = {};
-					occ.tm_year = year - 1900;
-					occ.tm_mon  = month - 1;
-					occ.tm_mday = day;
-					auto date = rop_util_unix_to_rtime(timegm(&occ));
-					if (auto r = check(date); r != 0)
-						return r;
-				}
-			}
-		}
-		break;
-	}
-	}
-	throw InputError(E3334);
 }
 
 /**
