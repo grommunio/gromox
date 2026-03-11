@@ -1575,18 +1575,6 @@ void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
 	meetMsg.AssociatedCalendarItemId->Id.assign(*eid);
 }
 
-void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
-    uint64_t mid, tMeetingResponseMessage &msg, uint64_t special) const
-{
-	loadSpecial(dir, fid, mid, static_cast<tMeetingMessage &>(msg), special);
-}
-
-void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
-    uint64_t mid, tMeetingCancellationMessage &msg, uint64_t special) const
-{
-	loadSpecial(dir, fid, mid, static_cast<tMeetingMessage &>(msg), special);
-}
-
 void EWSContext::loadSpecial(const std::string &dir, uint64_t fid, uint64_t mid,
     tMeetingRequestMessage &meetReq, uint64_t special) const
 {

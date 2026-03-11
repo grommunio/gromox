@@ -318,8 +318,6 @@ class EWSContext {
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingMessage &, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingRequestMessage &, uint64_t) const;
-	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingResponseMessage &, uint64_t) const;
-	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingCancellationMessage &, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
 	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&, PCL=PCL()) const;
 	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
