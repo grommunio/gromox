@@ -764,6 +764,21 @@ struct tRoomType : public NS_EWS_Types {
 };
 
 /**
+ * Types.xsd:1582
+ *
+ * Note: Diverges from specification (does not inherit from tBaseItemId)
+ * since tBaseItemId actually corresponds to ItemIdType…
+ */
+struct tRootItemId {
+	static constexpr char NAME[] = "RootItemId";
+
+	sBase64Binary RootItemId;
+	sBase64Binary RootItemChangeKey;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Types.xsd
  */
 struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
@@ -3521,8 +3536,7 @@ struct mDeleteAttachmentResponseMessage : public mResponseMessageType {
 
 	void serialize(tinyxml2::XMLElement *) const;
 
-	std::optional<sBase64Binary> RootItemId;
-	std::optional<sBase64Binary> RootItemChangeKey;
+	std::optional<tRootItemId> RootItemId;
 };
 
 struct mDeleteAttachmentResponse {

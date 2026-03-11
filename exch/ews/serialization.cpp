@@ -1065,6 +1065,12 @@ void tRoomType::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(Id);
 }
 
+void tRootItemId::serialize(tinyxml2::XMLElement *xml) const
+{
+	XMLDUMPA(RootItemId);
+	XMLDUMPA(RootItemChangeKey);
+}
+
 tFileAttachment::tFileAttachment(const XMLElement *xml)
 {
 	if (const XMLElement *xp = xml->FirstChildElement("Name"))
@@ -2118,11 +2124,7 @@ mDeleteAttachmentRequest::mDeleteAttachmentRequest(const XMLElement *xml) :
 void mDeleteAttachmentResponseMessage::serialize(XMLElement *xml) const
 {
 	mResponseMessageType::serialize(xml);
-	if (RootItemId) {
-		auto *elem = xml->InsertNewChildElement("m:RootItemId");
-		toXMLAttr(elem, "RootItemId", *RootItemId);
-		toXMLAttr(elem, "RootItemChangeKey", RootItemChangeKey);
-	}
+	XMLDUMPM(RootItemId);
 }
 
 void mDeleteAttachmentResponse::serialize(XMLElement *xml) const

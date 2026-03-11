@@ -1012,12 +1012,11 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		auto changeKey = props.get<const BINARY>(PR_CHANGE_KEY);
 
 		mDeleteAttachmentResponseMessage msg;
-		if (entryId) {
-			sMessageEntryId rootMid(entryId->pv, entryId->cb);
-			msg.RootItemId = rootMid.serialize();
+		if(entryId && changeKey) {
+			auto &rootItemId = msg.RootItemId.emplace();
+			rootItemId.RootItemId = sMessageEntryId(entryId->pv, entryId->cb).serialize();
+			rootItemId.RootItemChangeKey = sBase64Binary(changeKey);
 		}
-		if (changeKey)
-			msg.RootItemChangeKey = sBase64Binary(changeKey);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch (const EWSError &err) {
