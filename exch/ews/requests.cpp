@@ -1748,7 +1748,7 @@ void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
 	mCreateUserConfigurationResponse data;
 	try {
 		auto &exmdb = ctx.plugin().exmdb;
-		const auto &reqName  = request.UserConfigurationName;
+		const auto &reqName  = request.UserConfiguration.UserConfigurationName;
 		const auto &folderId = reqName.FolderId;
 		sFolderSpec folder;
 
@@ -1795,20 +1795,21 @@ void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
 		auto modtime = rop_util_current_nttime();
 		props.push_back({PR_LAST_MODIFICATION_TIME, &modtime});
 
-		if (request.XmlData) {
+		auto& userConfiguration = request.UserConfiguration;
+		if (userConfiguration.XmlData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
-			           static_cast<uint32_t>(request.XmlData->size()),
-			           {EWSContext::alloc<uint8_t>(request.XmlData->size())}});
-			memcpy(bin->pv, request.XmlData->data(),
-			       request.XmlData->size());
+			           static_cast<uint32_t>(userConfiguration.XmlData->size()),
+			           {EWSContext::alloc<uint8_t>(userConfiguration.XmlData->size())}});
+			memcpy(bin->pv, userConfiguration.XmlData->data(),
+			       userConfiguration.XmlData->size());
 			props.push_back({PR_ROAMING_XMLSTREAM, bin});
 		}
-		if (request.BinaryData) {
+		if (userConfiguration.BinaryData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
-			           static_cast<uint32_t>(request.BinaryData->size()),
-			           {EWSContext::alloc<uint8_t>(request.BinaryData->size())}});
-			memcpy(bin->pv, request.BinaryData->data(),
-			       request.BinaryData->size());
+			           static_cast<uint32_t>(userConfiguration.BinaryData->size()),
+			           {EWSContext::alloc<uint8_t>(userConfiguration.BinaryData->size())}});
+			memcpy(bin->pv, userConfiguration.BinaryData->data(),
+			       userConfiguration.BinaryData->size());
 			props.push_back({PR_ROAMING_BINARYSTREAM, bin});
 		}
 
@@ -1893,9 +1894,8 @@ void process(mGetUserConfigurationRequest &&request, XMLElement *response, const
 		TPROPVAL_ARRAY propvals = ctx.getItemProps(dir, *mid, props);
 
 		mGetUserConfigurationResponseMessage& msg = data.ResponseMessages.emplace_back();
-		msg.UserConfiguration.emplace(tUserConfiguration{reqName});
+		msg.UserConfiguration.emplace(reqName);
 		auto &config = *msg.UserConfiguration;
-		config.UserConfigurationName = reqName;
 
 		auto propType = request.UserConfigurationProperties;
 		bool includeAll = propType == Enum::All;

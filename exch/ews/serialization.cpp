@@ -1870,6 +1870,13 @@ void tUserConfigurationDictionary::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(DictionaryEntry);
 }
 
+tUserConfiguration::tUserConfiguration(const tinyxml2::XMLElement *xml) :
+    XMLINIT(UserConfigurationName),
+    XMLINIT(ItemId),
+    XMLINIT(XmlData),
+    XMLINIT(BinaryData)
+{}
+
 void tUserConfiguration::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(UserConfigurationName);
@@ -2259,14 +2266,8 @@ static const XMLElement *getChild(const XMLElement *xml, const char *name)
 	return child;
 }
 
-mCreateUserConfigurationRequest::mCreateUserConfigurationRequest(const XMLElement *xml)
-	: UserConfigurationName(fromXMLNode<tUserConfigurationName>(
-		getChild(xml, "UserConfiguration"),
-		"UserConfigurationName")),
-	  XmlData(fromXMLNode<std::optional<sBase64Binary>>(
-		getChild(xml, "UserConfiguration"), "XmlData")),
-	  BinaryData(fromXMLNode<std::optional<sBase64Binary>>(
-		getChild(xml, "UserConfiguration"), "BinaryData"))
+mCreateUserConfigurationRequest::mCreateUserConfigurationRequest(const XMLElement *xml) :
+    XMLINIT(UserConfiguration)
 {}
 
 void mCreateUserConfigurationResponse::serialize(XMLElement *xml) const

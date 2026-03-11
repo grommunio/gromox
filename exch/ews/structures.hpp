@@ -4359,6 +4359,9 @@ struct tUserConfigurationDictionary {
  * Types.xsd:7247
  */
 struct tUserConfiguration {
+	explicit inline tUserConfiguration(const tUserConfigurationName& ucn) : UserConfigurationName(ucn) {}
+	explicit tUserConfiguration(const tinyxml2::XMLElement *);
+
 	tUserConfigurationName UserConfigurationName;
 	std::optional<tItemId> ItemId;
 	std::optional<tUserConfigurationDictionary> Dictionary;
@@ -4374,9 +4377,7 @@ struct tUserConfiguration {
 struct mCreateUserConfigurationRequest {
 	explicit mCreateUserConfigurationRequest(const tinyxml2::XMLElement *);
 
-	tUserConfigurationName UserConfigurationName;
-	std::optional<sBase64Binary> XmlData;
-	std::optional<sBase64Binary> BinaryData;
+	tUserConfiguration UserConfiguration;
 };
 
 struct mCreateUserConfigurationResponseMessage : public mResponseMessageType {
