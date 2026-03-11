@@ -449,7 +449,7 @@ E(3318, "failed to read delegate list");
 E(3319, "failed to write delegate list");
 E(3320, "failed to read delegate list");
 E(3321, "failed to allocate goid binary data");
-E(3322, "failed to create folder: exmdb error");
+inline std::string E3322(ec_error_t err) {return fmt::format("failed to create folder: exmdb error: {}", mapi_strerror(err));}
 E(3323, "folder already exists (zero folder id)");
 E(3324, "failed to write imported message");
 E(3325, "failed to duplicate calendar item for acceptance");

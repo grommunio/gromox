@@ -519,7 +519,7 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 	if (err == ecDuplicateName)
 		throw EWSError::FolderExists(E3155);
 	if (err != ecSuccess)
-		throw EWSError::FolderSave(std::string(E3322) + ": " + mapi_strerror(err));
+		throw EWSError::FolderSave(E3322(err));
 	if (created.folderId == 0)
 		throw EWSError::FolderExists(E3323); // ??
 
