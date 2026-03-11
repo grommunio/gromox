@@ -96,7 +96,7 @@ std::string SVREID::repr(bool verbose) const
 std::string TAGGED_PROPVAL::value_repr(bool verbose) const
 {
 	char guidstr[GUIDSTR_SIZE];
-	if (proptag & MV_FLAG) {
+	if ((proptag & MVI_FLAG) == MV_FLAG) {
 		auto &xl = *static_cast<const GEN_ARRAY *>(pvalue);
 		auto r = fmt::format("[{}]", xl.count);
 		if (!verbose)
@@ -177,7 +177,8 @@ std::string TAGGED_PROPVAL::value_repr(bool verbose) const
 		r += "}";
 		return r;
 	}
-	switch (PROP_TYPE(proptag)) {
+
+	switch (PROP_TYPE(proptag) & ~MVI_FLAG) {
 	case PT_UNSPECIFIED:
 	case PT_NULL:
 		return {};
