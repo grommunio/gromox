@@ -362,20 +362,32 @@ ec_error_t table_object::read_row(uint64_t inst_id, uint32_t inst_num,
 	       inst_id, inst_num, ppropvals) ? ecSuccess : ecRpcFailed;
 }
 
-ec_error_t table_object::expand(uint64_t inst_id, BOOL *pb_found,
+ec_error_t table_object::expand(uint64_t inst_id,
     int32_t *pposition, uint32_t *prow_count) const
 {
-	return exmdb_client->expand_table(plogon->get_dir(),
-	       m_table_id, inst_id, pb_found, pposition, prow_count) ?
-	       ecSuccess : ecRpcFailed;
+	BOOL found = false;
+	if (!exmdb_client->expand_table(plogon->get_dir(),
+	    m_table_id, inst_id, &found, pposition, prow_count))
+		return ecRpcFailed;
+	if (!found)
+		return ecNotFound;
+	if (*pposition < 0)
+		return ecNotCollapsed;
+	return ecSuccess;
 }
 
-ec_error_t table_object::collapse(uint64_t inst_id, BOOL *pb_found,
+ec_error_t table_object::collapse(uint64_t inst_id,
     int32_t *pposition, uint32_t *prow_count) const
 {
-	return exmdb_client->collapse_table(plogon->get_dir(),
-	       m_table_id, inst_id, pb_found, pposition, prow_count) ?
-	       ecSuccess : ecRpcFailed;
+	BOOL found = false;
+	if (!exmdb_client->collapse_table(plogon->get_dir(),
+	    m_table_id, inst_id, &found, pposition, prow_count))
+		return ecRpcFailed;
+	if (!found)
+		return ecNotFound;
+	if (*pposition < 0)
+		return ecNotExpanded;
+	return ecSuccess;
 }
 
 ec_error_t table_object::store_state(uint64_t inst_id, uint32_t inst_num,

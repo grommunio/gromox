@@ -44,8 +44,8 @@ struct table_object {
 	ec_error_t get_all_columns(PROPTAG_ARRAY *cols) const;
 	ec_error_t match_row(BOOL forward, const RESTRICTION *, int32_t *pposition, TPROPVAL_ARRAY *) const;
 	ec_error_t read_row(uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *) const;
-	ec_error_t expand(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count) const;
-	ec_error_t collapse(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count) const;
+	ec_error_t expand(uint64_t inst_id, int32_t *pos, uint32_t *row_count) const;
+	ec_error_t collapse(uint64_t inst_id, int32_t *pos, uint32_t *row_count) const;
 	ec_error_t store_state(uint64_t inst_id, uint32_t inst_num, uint32_t *state_id) const;
 	ec_error_t restore_state(uint32_t state_id, uint32_t *index);
 

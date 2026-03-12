@@ -595,7 +595,6 @@ ec_error_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 {
 	auto &ext = *pext;
 	size_t i;
-	BOOL b_found;
 	ems_objtype object_type;
 	int32_t position;
 	TARRAY_SET tmp_set;
@@ -613,13 +612,9 @@ ec_error_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 	auto err = ptable->load();
 	if (err != ecSuccess)
 		return err;
-	err = ptable->expand(category_id, &b_found, &position, pexpanded_count);
+	err = ptable->expand(category_id, &position, pexpanded_count);
 	if (err != ecSuccess)
 		return err;
-	if (!b_found)
-		return ecNotFound;
-	else if (position < 0)
-		return ecNotCollapsed;
 	if (0 == *pexpanded_count || 0 == max_count) {
 		*pcount = 0;
 		return ecSuccess;
@@ -651,7 +646,6 @@ ec_error_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 ec_error_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	BOOL b_found;
 	ems_objtype object_type;
 	int32_t position;
 	
@@ -667,14 +661,10 @@ ec_error_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
 	auto err = ptable->load();
 	if (err != ecSuccess)
 		return err;
-	err = ptable->collapse(category_id, &b_found, &position, pcollapsed_count);
+	err = ptable->collapse(category_id, &position, pcollapsed_count);
 	if (err != ecSuccess)
 		return err;
-	if (!b_found)
-		return ecNotFound;
-	else if (position < 0)
-		return ecNotExpanded;
-	else if (*pcollapsed_count == 0)
+	if (*pcollapsed_count == 0)
 		return ecSuccess;
 	auto table_position = ptable->get_position();
 	if (table_position > static_cast<uint32_t>(position)) {
