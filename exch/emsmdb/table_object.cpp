@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -51,7 +51,7 @@ static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 	ptable->m_table_id = table_id;
 }
 
-BOOL table_object::load()
+ec_error_t table_object::load()
 {
 	auto ptable = this;
 	uint32_t row_num;
@@ -59,10 +59,10 @@ BOOL table_object::load()
 	uint32_t permission;
 	
 	if (ptable->rop_id == ropGetAttachmentTable)
-		return TRUE;
+		return ecSuccess;
 	if (m_loaded)
 		/* Already done */
-		return TRUE;
+		return ecSuccess;
 	switch (ptable->rop_id) {
 	case ropGetHierarchyTable: {
 		auto username = ptable->plogon->eff_user();
@@ -70,13 +70,13 @@ BOOL table_object::load()
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, ptable->table_flags, m_restriction,
 		    &table_id, &row_num))
-			return FALSE;
+			return ecRpcFailed;
 		break;
 	}
 	case ropGetContentsTable: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
-			return FALSE;
+			return ecError;
 		auto eff_user = ptable->plogon->eff_user();
 		auto rds_user = ptable->plogon->readstate_user();
 		if (eff_user != STORE_OWNER_GRANTED) {
@@ -85,7 +85,7 @@ BOOL table_object::load()
 				    ptable->plogon->get_dir(),
 				    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 				    eff_user, &permission))
-					return FALSE;	
+					return ecRpcFailed;
 				if (permission & (frightsReadAny | frightsOwner))
 					rds_user = nullptr;
 			}
@@ -94,7 +94,7 @@ BOOL table_object::load()
 		    pinfo->cpid, static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    rds_user, ptable->table_flags, m_restriction,
 		    m_sorts, &table_id, &row_num))
-			return FALSE;
+			return ecRpcFailed;
 		break;
 	}
 	case ropGetPermissionsTable:
@@ -102,23 +102,23 @@ BOOL table_object::load()
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    ptable->table_flags | PERMISSIONS_TABLE_FLAG_ROPFILTER,
 		    &table_id, &row_num))
-			return FALSE;
+			return ecRpcFailed;
 		break;
 	case ropGetRulesTable:
 		if (!exmdb_client->load_rule_table(ptable->plogon->get_dir(),
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    ptable->table_flags, m_restriction, &table_id, &row_num))
-			return FALSE;
+			return ecRpcFailed;
 		break;
 	default:
 		mlog(LV_DEBUG, "%s - not calling table_object_set_table_id",
 			__PRETTY_FUNCTION__);
-		return TRUE;
+		return ecSuccess;
 	}
 	/* exmdb may legitimately return a new_table_id of 0. */
 	table_object_set_table_id(ptable, table_id);
 	m_loaded = true;
-	return TRUE;
+	return ecSuccess;
 }
 
 void table_object::unload()
@@ -126,33 +126,33 @@ void table_object::unload()
 	table_object_set_table_id(this, 0);
 }
 
-BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count,
+ec_error_t table_object::query_rows(BOOL b_forward, uint16_t row_count,
     TARRAY_SET *pset)
 {
 	assert(is_loaded());
 	auto ptable = this;
 	
 	if (!m_colset)
-		return FALSE;
+		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
-		return FALSE;
+		return ecError;
 	if (m_position == 0 && !b_forward) {
 		pset->count = 0;
-		return TRUE;
+		return ecSuccess;
 	}
 	if (m_position >= ptable->get_total() && b_forward) {
 		pset->count = 0;
-		return TRUE;
+		return ecSuccess;
 	}
 	int32_t row_needed = b_forward ? row_count : -row_count; /* XXX */
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return static_cast<message_object *>(ptable->pparent_obj)->query_attachment_table(
-		       m_columns, m_position, row_needed, pset);
+		       m_columns, m_position, row_needed, pset) ? ecSuccess : ecError;
 	return exmdb_client->query_table(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, m_columns,
-	       m_position, row_needed, pset);
+	       m_position, row_needed, pset) ? ecSuccess : ecError;
 }
 
 void table_object::seek_current(BOOL b_forward, uint16_t row_count)
@@ -172,38 +172,38 @@ void table_object::seek_current(BOOL b_forward, uint16_t row_count)
 	}
 }
 
-bool table_object::set_columns(proptag_cspan pcolumns) try
+ec_error_t table_object::set_columns(proptag_cspan pcolumns) try
 {
 	m_columns.assign(pcolumns.begin(), pcolumns.end());
 	m_colset = true;
-	return true;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
 
-BOOL table_object::set_sorts(const SORTORDER_SET *psorts)
+ec_error_t table_object::set_sorts(const SORTORDER_SET *psorts)
 {
 	if (m_sorts != nullptr)
 		sortorder_set_free(m_sorts);
 	if (NULL == psorts) {
 		m_sorts = nullptr;
-		return TRUE;
+		return ecSuccess;
 	}
 	m_sorts = sortorder_set_dup(psorts);
-	return m_sorts != nullptr ? TRUE : false;
+	return m_sorts != nullptr ? ecSuccess : ecServerOOM;
 }
 
-BOOL table_object::set_restriction(const RESTRICTION *prestriction)
+ec_error_t table_object::set_restriction(const RESTRICTION *prestriction)
 {
 	if (m_restriction != nullptr)
 		restriction_free(m_restriction);
 	if (NULL == prestriction) {
 		m_restriction = nullptr;
-		return TRUE;
+		return ecSuccess;
 	}
 	m_restriction = prestriction->dup();
-	return m_restriction != nullptr ? TRUE : false;
+	return m_restriction != nullptr ? ecSuccess : ecServerOOM;
 }
 
 void table_object::set_position(uint32_t position)
@@ -253,7 +253,7 @@ table_object::~table_object()
 	ptable->reset();
 }
 
-BOOL table_object::create_bookmark(uint32_t *pindex) try
+ec_error_t table_object::create_bookmark(uint32_t *pindex) try
 {
 	auto ptable = this;
 	uint64_t inst_id;
@@ -262,17 +262,17 @@ BOOL table_object::create_bookmark(uint32_t *pindex) try
 	
 	if (!exmdb_client->mark_table(ptable->plogon->get_dir(), m_table_id,
 	    m_position, &inst_id, &inst_num, &row_type))
-		return FALSE;
+		return ecRpcFailed;
 	bookmark_list.push_back(bookmark_node{bookmark_index, row_type,
 		inst_num, m_position, inst_id});
 	*pindex = bookmark_index++;
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
 
-BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
+ec_error_t table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
 	assert(is_loaded());
 	auto ptable = this;
@@ -282,10 +282,10 @@ BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 	auto bm = std::find_if(bookmark_list.cbegin(), bookmark_list.cend(),
 	          [&](const bookmark_node &bn) { return bn.index == index; });
 	if (bm == bookmark_list.end())
-		return FALSE;
+		return ecInvalidBookmark;
 	if (!exmdb_client->locate_table(ptable->plogon->get_dir(),
 	    m_table_id, bm->inst_id, bm->inst_num, &tmp_position, &tmp_type))
-		return FALSE;
+		return ecRpcFailed;
 	*pb_exist = FALSE;
 	if (tmp_position >= 0) {
 		if (tmp_type == bm->row_type)
@@ -297,7 +297,7 @@ BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 	auto total_rows = ptable->get_total();
 	if (m_position > total_rows)
 		m_position = total_rows;
-	return TRUE;
+	return ecSuccess;
 }
 
 void table_object::remove_bookmark(uint32_t index)
@@ -326,64 +326,67 @@ void table_object::reset()
 	ptable->clear_bookmarks();
 }
 
-BOOL table_object::get_all_columns(PROPTAG_ARRAY *pcolumns) const
+ec_error_t table_object::get_all_columns(PROPTAG_ARRAY *pcolumns) const
 {
 	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return static_cast<message_object *>(ptable->pparent_obj)->
-		       get_attachment_table_all_proptags(pcolumns);
+		       get_attachment_table_all_proptags(pcolumns) ? ecSuccess : ecError;
 	return exmdb_client->get_table_all_proptags(ptable->plogon->get_dir(),
-	       m_table_id, pcolumns);
+	       m_table_id, pcolumns) ? ecSuccess : ecRpcFailed;
 }
 
-BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
+ec_error_t table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto ptable = this;
 	if (!m_colset)
-		return FALSE;
+		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	return exmdb_client->match_table(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, b_forward, m_position,
-	       pres, m_columns, pposition, ppropvals);
+	       pres, m_columns, pposition, ppropvals) ? ecSuccess : ecRpcFailed;
 }
 
-BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,
+ec_error_t table_object::read_row(uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals) const
 {
 	auto ptable = this;
 	if (!m_colset)
-		return FALSE;
+		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	return exmdb_client->read_table_row(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, m_columns,
-	       inst_id, inst_num, ppropvals);
+	       inst_id, inst_num, ppropvals) ? ecSuccess : ecRpcFailed;
 }
 
-BOOL table_object::expand(uint64_t inst_id, BOOL *pb_found, int32_t *pposition,
-    uint32_t *prow_count) const
+ec_error_t table_object::expand(uint64_t inst_id, BOOL *pb_found,
+    int32_t *pposition, uint32_t *prow_count) const
 {
 	return exmdb_client->expand_table(plogon->get_dir(),
-	       m_table_id, inst_id, pb_found, pposition, prow_count);
+	       m_table_id, inst_id, pb_found, pposition, prow_count) ?
+	       ecSuccess : ecRpcFailed;
 }
 
-BOOL table_object::collapse(uint64_t inst_id, BOOL *pb_found,
+ec_error_t table_object::collapse(uint64_t inst_id, BOOL *pb_found,
     int32_t *pposition, uint32_t *prow_count) const
 {
 	return exmdb_client->collapse_table(plogon->get_dir(),
-	       m_table_id, inst_id, pb_found, pposition, prow_count);
+	       m_table_id, inst_id, pb_found, pposition, prow_count) ?
+	       ecSuccess : ecRpcFailed;
 }
 
-BOOL table_object::store_state(uint64_t inst_id, uint32_t inst_num,
+ec_error_t table_object::store_state(uint64_t inst_id, uint32_t inst_num,
     uint32_t *pstate_id) const
 {
 	return exmdb_client->store_table_state(plogon->get_dir(),
-	       m_table_id, inst_id, inst_num, pstate_id);
+	       m_table_id, inst_id, inst_num, pstate_id) ?
+	       ecSuccess : ecRpcFailed;
 }
 
-BOOL table_object::restore_state(uint32_t state_id, uint32_t *pindex)
+ec_error_t table_object::restore_state(uint32_t state_id, uint32_t *pindex)
 {
 	int32_t position;
 	uint64_t inst_id;
@@ -394,24 +397,25 @@ BOOL table_object::restore_state(uint32_t state_id, uint32_t *pindex)
 	
 	if (!exmdb_client->mark_table(ptable->plogon->get_dir(),
 	    m_table_id, m_position, &inst_id, &inst_num, &tmp_type))
-		return FALSE;
+		return ecRpcFailed;
 	if (!exmdb_client->restore_table_state(ptable->plogon->get_dir(),
 	    m_table_id, state_id, &position))
-		return FALSE;	
+		return ecRpcFailed;	
 	if (!exmdb_client->locate_table(ptable->plogon->get_dir(),
 	    m_table_id, inst_id, inst_num,
 	    reinterpret_cast<int32_t *>(&new_position), &tmp_type))
-		return FALSE;
+		return ecRpcFailed;
 	if (position < 0) {
 		/* assign an invalid bookmark index */
 		*pindex = ptable->bookmark_index++;
-		return TRUE;
+		return ecSuccess;
 	}
 	m_position = position;
-	if (!ptable->create_bookmark(pindex)) {
+	auto err = ptable->create_bookmark(pindex);
+	if (err != ecSuccess) {
 		m_position = new_position;
-		return FALSE;
+		return err;
 	}
 	m_position = new_position;
-	return TRUE;
+	return ecSuccess;
 }
