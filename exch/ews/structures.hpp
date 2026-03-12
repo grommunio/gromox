@@ -1993,10 +1993,89 @@ struct tTimeZoneDefinition {
 	std::string Id;
 };
 
+
+/**
+ * @brief      Support struct to reduce redundancy
+ *
+ * Bundles overlapping properties and functionality of tCalendarItem and
+ * tMeetingRequestMessage.
+ */
+struct sCalendarMeetingRequestCommon {
+	sCalendarMeetingRequestCommon() = default;
+	explicit sCalendarMeetingRequestCommon(const tinyxml2::XMLElement *);
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+
+	//<!-- Single and Occurrence only -->
+	std::optional<sTimePoint> Start;
+	std::optional<sTimePoint> End;
+
+	// <!-- Occurrence only -->
+	std::optional<time_point> OriginalStart;
+	std::optional<bool> IsAllDayEvent;
+	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
+	std::optional<std::string> Location;
+
+	// <xs:element name="When" type="xs:string" minOccurs="0" />
+	std::optional<bool> IsMeeting;
+	std::optional<bool> IsCancelled;
+	std::optional<bool> IsRecurring;
+	std::optional<bool> MeetingRequestWasSent;
+	std::optional<Enum::CalendarItemTypeType> CalendarItemType;
+	std::optional<bool> IsResponseRequested;
+	std::optional<Enum::ResponseTypeType> MyResponseType;
+	std::optional<tSingleRecipient> Organizer;
+	std::optional<std::vector<tAttendee>> RequiredAttendees;
+	std::optional<std::vector<tAttendee>> OptionalAttendees;
+	std::optional<std::vector<tAttendee>> Resources;
+
+		// <!-- Conflicting and adjacent meetings -->
+	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+
+	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
+	std::optional<tRecurrenceType> Recurrence;
+	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+
+	std::optional<std::vector<tOccurrenceInfoType>> ModifiedOccurrences;
+	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
+
+	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
+	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+
+	std::optional<int32_t> ConferenceType;
+	std::optional<bool> AllowNewTimeProposal;
+	std::optional<bool> IsOnlineMeeting;
+	std::optional<std::string> MeetingWorkspaceUrl;
+	std::optional<std::string> NetShowUrl;
+
+	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+
+	std::optional<tTimeZoneDefinition> StartTimeZone;
+	std::optional<tTimeZoneDefinition> EndTimeZone;
+
+	std::optional<bool> DoNotForwardMeeting;
+	std::optional<Enum::LegacyFreeBusyType> IntendedFreeBusyStatus;
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+
+	std::optional<time_point> AppointmentReplyTime;
+	std::optional<int> AppointmentSequenceNumber;
+	std::optional<int> AppointmentState;
+
+	std::optional<std::string> Duration;
+	std::optional<std::string> TimeZone;
+};
+
 /**
  * Types.xsd:4933
  */
-struct tCalendarItem : public tItem {
+struct tCalendarItem : public tItem, public sCalendarMeetingRequestCommon {
 	static constexpr char NAME[] = "CalendarItem";
 
 	explicit tCalendarItem(const sShape&);
@@ -2013,65 +2092,13 @@ struct tCalendarItem : public tItem {
 	std::optional<time_point> RecurrenceId;
 	std::optional<sTimePoint> DateTimeStamp;
 
-	// <!-- Single and Occurrence only -->
-	std::optional<sTimePoint> Start;
-	std::optional<sTimePoint> End;
-
-	// <!-- Occurrence only -->
-	std::optional<time_point> OriginalStart;
-	std::optional<bool> IsAllDayEvent;
-	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
-	std::optional<std::string> Location;
-	// <xs:element name="When" type="xs:string" minOccurs="0" />
-	std::optional<bool> IsMeeting;
-	std::optional<bool> IsCancelled;
-	std::optional<bool> IsRecurring;
-	std::optional<bool> MeetingRequestWasSent;
-	std::optional<bool> IsResponseRequested;
-	std::optional<Enum::CalendarItemTypeType> CalendarItemType;
-	std::optional<Enum::ResponseTypeType> MyResponseType;
-	std::optional<tSingleRecipient> Organizer;
-	std::optional<std::vector<tAttendee>> RequiredAttendees;
-	std::optional<std::vector<tAttendee>> OptionalAttendees;
-	std::optional<std::vector<tAttendee>> Resources;
 	// <xs:element name="InboxReminders" type="t:ArrayOfInboxReminderType" minOccurs="0" />
 
-	// <!-- Conflicting and adjacent meetings -->
-	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-	std::optional<std::string> Duration;
-	std::optional<std::string> TimeZone;
-	std::optional<time_point> AppointmentReplyTime;
-	std::optional<int> AppointmentSequenceNumber;
-	std::optional<int> AppointmentState;
-
-	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
-	std::optional<tRecurrenceType> Recurrence;
-	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	std::optional<std::vector<tOccurrenceInfoType>> ModifiedOccurrences;
-	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
-	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
-	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	std::optional<int32_t> ConferenceType;
-	std::optional<bool> AllowNewTimeProposal;
-	std::optional<bool> IsOnlineMeeting;
-	std::optional<std::string> MeetingWorkspaceUrl;
-	std::optional<std::string> NetShowUrl;
-	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
-	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	std::optional<tTimeZoneDefinition> StartTimeZone;
-	std::optional<tTimeZoneDefinition> EndTimeZone;
-	// <xs:element name="IntendedFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
 	// <xs:element name="JoinOnlineMeetingUrl" type="xs:string" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="OnlineMeetingSettings" type="t:OnlineMeetingSettingsType" minOccurs="0" maxOccurs="1"/>
 	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
 	// <xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
-	std::optional<bool> DoNotForwardMeeting;
+
 };
 
 /**
@@ -2520,7 +2547,7 @@ struct tChangeHighlights : public NS_EWS_Types {
 /**
  * Types.xsd:5064
  */
-struct tMeetingRequestMessage : public tMeetingMessage {
+struct tMeetingRequestMessage : public tMeetingMessage, public sCalendarMeetingRequestCommon {
 	static constexpr char NAME[] = "MeetingRequest";
 
 	explicit tMeetingRequestMessage(const sShape&);
@@ -2532,63 +2559,7 @@ struct tMeetingRequestMessage : public tMeetingMessage {
 
 	// <!--- MeetingRequest properties -->
 	std::optional<Enum::MeetingRequestTypeType> MeetingRequestType;
-	std::optional<Enum::LegacyFreeBusyType> IntendedFreeBusyStatus;
-
-	// <!-- Calendar Properties of the associated meeting request -->
-	// <!-- Single and Occurrence only -->
-	std::optional<sTimePoint> Start;
-	std::optional<sTimePoint> End;
-
-	// <!-- Occurrence only -->
-	std::optional<time_point> OriginalStart;
-	std::optional<bool> IsAllDayEvent;
-	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
-	std::optional<std::string> Location;
-	// <xs:element name="When" type="xs:string" minOccurs="0" />
-	std::optional<bool> IsMeeting;
-	std::optional<bool> IsCancelled;
-	std::optional<bool> IsRecurring;
-	std::optional<bool> MeetingRequestWasSent;
-	std::optional<Enum::CalendarItemTypeType> CalendarItemType;
-	std::optional<Enum::ResponseTypeType> MyResponseType;
-	std::optional<tSingleRecipient> Organizer;
-	std::optional<std::vector<tAttendee>> RequiredAttendees;
-	std::optional<std::vector<tAttendee>> OptionalAttendees;
-	std::optional<std::vector<tAttendee>> Resources;
-
-	// <!-- Conflicting and adjacent meetings -->
-	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-
-	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
-	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
-	std::optional<time_point> AppointmentReplyTime;
-	std::optional<int> AppointmentSequenceNumber;
-	std::optional<int> AppointmentState;
-
-	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
-	std::optional<tRecurrenceType> Recurrence;
-	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	std::optional<std::vector<tOccurrenceInfoType>> ModifiedOccurrences;
-	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
-	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0" />
-	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="ConferenceType" type="xs:int" minOccurs="0" />
-	std::optional<bool> AllowNewTimeProposal;
-	// <xs:element name="IsOnlineMeeting" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="MeetingWorkspaceUrl" type="xs:string" minOccurs="0" />
-	// <xs:element name="NetShowUrl" type="xs:string" minOccurs="0" />
-	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
 	std::optional<tChangeHighlights> ChangeHighlights;
-	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	std::optional<tTimeZoneDefinition> StartTimeZone;
-	std::optional<tTimeZoneDefinition> EndTimeZone;
-	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
 };
 
 /**
