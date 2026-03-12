@@ -54,7 +54,7 @@ struct table_object {
 	LOGMAP *plogmap = nullptr;
 	void *pparent_obj = nullptr;
 	uint8_t logon_id = 0, rop_id = 0, table_flags = 0;
-	bool m_loaded = false, m_colset = false;
+	bool m_loaded = false, m_deleted = false, m_colset = false;
 	proptag_vector m_columns;
 	SORTORDER_SET *m_sorts = nullptr;
 	RESTRICTION *m_restriction = nullptr;

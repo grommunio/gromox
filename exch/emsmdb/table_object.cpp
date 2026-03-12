@@ -13,6 +13,7 @@
 #include <gromox/restriction.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>
+#include <gromox/rop_util.hpp>
 #include "common_util.hpp"
 #include "emsmdb_interface.hpp"
 #include "exmdb_client.hpp"
@@ -115,8 +116,15 @@ ec_error_t table_object::load()
 			__PRETTY_FUNCTION__);
 		return ecSuccess;
 	}
-	/* exmdb may legitimately return a new_table_id of 0. */
+	/*
+	 * exmdb may legitimately return a new_table_id of 0, e.g.
+	 * when the folder has just been deleted.
+	 */
 	table_object_set_table_id(ptable, table_id);
+	if (table_id == 0) {
+		m_loaded = false;
+		return ecObjectDeleted;
+	}
 	m_loaded = true;
 	return ecSuccess;
 }
@@ -129,7 +137,12 @@ void table_object::unload()
 ec_error_t table_object::query_rows(BOOL b_forward, uint16_t row_count,
     TARRAY_SET *pset)
 {
-	assert(is_loaded());
+	if (m_deleted)
+		return ecObjectDeleted;
+	if (!is_loaded()) {
+		pset->count = 0;
+		return ecSuccess;
+	}
 	auto ptable = this;
 	
 	if (!m_colset)
@@ -157,6 +170,8 @@ ec_error_t table_object::query_rows(BOOL b_forward, uint16_t row_count,
 
 void table_object::seek_current(BOOL b_forward, uint16_t row_count)
 {
+	if (m_deleted)
+		return;
 	assert(is_loaded());
 	if (b_forward) {
 		m_position += row_count;
@@ -174,6 +189,8 @@ void table_object::seek_current(BOOL b_forward, uint16_t row_count)
 
 ec_error_t table_object::set_columns(proptag_cspan pcolumns) try
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	m_columns.assign(pcolumns.begin(), pcolumns.end());
 	m_colset = true;
 	return ecSuccess;
@@ -184,6 +201,8 @@ ec_error_t table_object::set_columns(proptag_cspan pcolumns) try
 
 ec_error_t table_object::set_sorts(const SORTORDER_SET *psorts)
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	if (m_sorts != nullptr)
 		sortorder_set_free(m_sorts);
 	if (NULL == psorts) {
@@ -196,6 +215,8 @@ ec_error_t table_object::set_sorts(const SORTORDER_SET *psorts)
 
 ec_error_t table_object::set_restriction(const RESTRICTION *prestriction)
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	if (m_restriction != nullptr)
 		restriction_free(m_restriction);
 	if (NULL == prestriction) {
@@ -208,6 +229,8 @@ ec_error_t table_object::set_restriction(const RESTRICTION *prestriction)
 
 void table_object::set_position(uint32_t position)
 {
+	if (m_deleted)
+		return;
 	assert(is_loaded());
 	auto total_rows = get_total();
 	if (position > total_rows)
@@ -217,6 +240,8 @@ void table_object::set_position(uint32_t position)
 
 uint32_t table_object::get_total()
 {
+	if (m_deleted)
+		return 0;
 	if (rop_id == ropGetAttachmentTable) {
 		uint16_t num = 0;
 		static_cast<message_object *>(pparent_obj)->get_attachments_num(&num);
@@ -255,6 +280,8 @@ table_object::~table_object()
 
 ec_error_t table_object::create_bookmark(uint32_t *pindex) try
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	auto ptable = this;
 	uint64_t inst_id;
 	uint32_t row_type;
@@ -274,6 +301,8 @@ ec_error_t table_object::create_bookmark(uint32_t *pindex) try
 
 ec_error_t table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	assert(is_loaded());
 	auto ptable = this;
 	uint32_t tmp_type;
@@ -339,6 +368,8 @@ ec_error_t table_object::get_all_columns(PROPTAG_ARRAY *pcolumns) const
 ec_error_t table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals) const
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	auto ptable = this;
 	if (!m_colset)
 		return ecError;
@@ -352,6 +383,8 @@ ec_error_t table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 ec_error_t table_object::read_row(uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals) const
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	auto ptable = this;
 	if (!m_colset)
 		return ecError;
@@ -365,6 +398,8 @@ ec_error_t table_object::read_row(uint64_t inst_id, uint32_t inst_num,
 ec_error_t table_object::expand(uint64_t inst_id,
     int32_t *pposition, uint32_t *prow_count) const
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	BOOL found = false;
 	if (!exmdb_client->expand_table(plogon->get_dir(),
 	    m_table_id, inst_id, &found, pposition, prow_count))
@@ -379,6 +414,8 @@ ec_error_t table_object::expand(uint64_t inst_id,
 ec_error_t table_object::collapse(uint64_t inst_id,
     int32_t *pposition, uint32_t *prow_count) const
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	BOOL found = false;
 	if (!exmdb_client->collapse_table(plogon->get_dir(),
 	    m_table_id, inst_id, &found, pposition, prow_count))
@@ -393,6 +430,8 @@ ec_error_t table_object::collapse(uint64_t inst_id,
 ec_error_t table_object::store_state(uint64_t inst_id, uint32_t inst_num,
     uint32_t *pstate_id) const
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	return exmdb_client->store_table_state(plogon->get_dir(),
 	       m_table_id, inst_id, inst_num, pstate_id) ?
 	       ecSuccess : ecRpcFailed;
@@ -400,6 +439,8 @@ ec_error_t table_object::store_state(uint64_t inst_id, uint32_t inst_num,
 
 ec_error_t table_object::restore_state(uint32_t state_id, uint32_t *pindex)
 {
+	if (m_deleted)
+		return ecObjectDeleted;
 	int32_t position;
 	uint64_t inst_id;
 	uint32_t inst_num;
