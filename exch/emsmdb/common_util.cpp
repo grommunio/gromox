@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -1470,7 +1470,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 				TAGGED_PROPVAL tp  = {tag, deconst(th)};
 				TPROPVAL_ARRAY tpa = {1, &tp};
 				PROBLEM_ARRAY pa{};
-				if (!msg->set_properties(&tpa, &pa))
+				if (msg->set_properties(&tpa, &pa) != ecSuccess)
 					break;
 				/* Unclear if permitted to save (specs say nothing) */
 				msg->save();

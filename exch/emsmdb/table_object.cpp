@@ -148,7 +148,7 @@ ec_error_t table_object::query_rows(BOOL b_forward, uint16_t row_count,
 	int32_t row_needed = b_forward ? row_count : -row_count; /* XXX */
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return static_cast<message_object *>(ptable->pparent_obj)->query_attachment_table(
-		       m_columns, m_position, row_needed, pset) ? ecSuccess : ecError;
+		       m_columns, m_position, row_needed, pset);
 	return exmdb_client->query_table(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, m_columns,
@@ -331,7 +331,7 @@ ec_error_t table_object::get_all_columns(PROPTAG_ARRAY *pcolumns) const
 	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return static_cast<message_object *>(ptable->pparent_obj)->
-		       get_attachment_table_all_proptags(pcolumns) ? ecSuccess : ecError;
+		       get_attachment_table_all_proptags(pcolumns);
 	return exmdb_client->get_table_all_proptags(ptable->plogon->get_dir(),
 	       m_table_id, pcolumns) ? ecSuccess : ecRpcFailed;
 }

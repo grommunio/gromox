@@ -37,7 +37,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	switch (object_type) {
 	case ems_objtype::message: {
 		const proptag_t proptags[] = {proptag, PR_MESSAGE_SIZE};
-		if (!static_cast<message_object *>(pparent)->get_properties(0, proptags, &propvals))
+		auto msg = static_cast<message_object *>(pparent);
+		if (msg->get_properties(0, proptags, &propvals) != ecSuccess)
 			return NULL;
 		auto psize = propvals.get<uint32_t>(PR_MESSAGE_SIZE);
 		if (psize != nullptr && *psize >= g_max_mail_len)
@@ -153,8 +154,10 @@ std::pair<uint16_t, ec_error_t> stream_object::write(void *pbuff, uint16_t buf_l
 		if (!static_cast<attachment_object *>(pstream->pparent)->append_stream_object(pstream))
 			return {0, ecServerOOM};
 	} else if (pstream->object_type == ems_objtype::message) {
-		if (!static_cast<message_object *>(pstream->pparent)->append_stream_object(pstream))
-			return {0, ecServerOOM};
+		auto msg = static_cast<message_object *>(pstream->pparent);
+		auto err = msg->append_stream_object(pstream);
+		if (err != ecSuccess)
+			return {0, err};
 	}
 	memcpy(pstream->content_bin.pb +
 		pstream->seek_ptr, pbuff, buf_len);
