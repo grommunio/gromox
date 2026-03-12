@@ -2005,6 +2005,7 @@ struct sCalendarMeetingRequestCommon {
 	explicit sCalendarMeetingRequestCommon(const tinyxml2::XMLElement *);
 
 	void serialize(tinyxml2::XMLElement *) const;
+	void update(const sShape &);
 
 
 	//<!-- Single and Occurrence only -->
