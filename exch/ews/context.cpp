@@ -3695,10 +3695,9 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	}
 
 	if (!shape.writes(NtCalendarTimeZone)) {
-		if (item.StartTimeZone)
-			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(item.StartTimeZone->Id)});
-		else if (item.EndTimeZone)
-			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(item.EndTimeZone->Id)});
+		auto tz = item.timezoneId();
+		if(!tz.empty())
+			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(tz)});
 	}
 
 	if (item.IsAllDayEvent)
@@ -3781,15 +3780,11 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				 * rather than shape – the shape's named
 				 * property cache has not been resolved yet.
 				 */
-				const char *tz_name = nullptr;
-				if (item.StartTimeZone)
-					tz_name = item.StartTimeZone->Id.c_str();
-				else if (item.EndTimeZone)
-					tz_name = item.EndTimeZone->Id.c_str();
-				if (tz_name) {
-					auto buf = ianatz_to_tzdef(tz_name);
+				std::string tz(item.timezoneId());
+				if (!tz.empty()) {
+					auto buf = ianatz_to_tzdef(tz.c_str());
 					if (!buf)
-						buf = wintz_to_tzdef(tz_name);
+						buf = wintz_to_tzdef(tz.c_str());
 					if (buf) {
 						EXT_PULL ep;
 						TZDEF tz;
@@ -3961,17 +3956,13 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	 * point, so shape.writes(NtCalendarTimeZone) would return nullptr even
 	 * though the value was written above.
 	 */
-	const char *tz_name = nullptr;
-	if (item.StartTimeZone)
-		tz_name = item.StartTimeZone->Id.c_str();
-	else if (item.EndTimeZone)
-		tz_name = item.EndTimeZone->Id.c_str();
-	if (tz_name) {
-		auto buf = ianatz_to_tzdef(tz_name);
+	std::string tz(item.timezoneId());
+	if (!tz.empty()) {
+		auto buf = ianatz_to_tzdef(tz.c_str());
 		if (buf == nullptr)
-			buf = wintz_to_tzdef(tz_name);
+			buf = wintz_to_tzdef(tz.c_str());
 		if (buf == nullptr)
-			mlog(LV_WARN, "[ews] unknown timezone \"%s\"", tz_name);
+			mlog(LV_WARN, "[ews] unknown timezone \"%s\"", tz.c_str());
 		if (buf != nullptr) {
 			size_t len = buf->size();
 			if (len > UINT32_MAX)

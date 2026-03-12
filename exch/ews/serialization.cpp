@@ -204,13 +204,15 @@ sCalendarMeetingRequestCommon::sCalendarMeetingRequestCommon(const tinyxml2::XML
 	XMLINIT(OptionalAttendees),
 	XMLINIT(Resources),
 	XMLINIT(Recurrence),
+	XMLINIT(StartTimeZone),
+	XMLINIT(EndTimeZone),
 	XMLINIT(ConferenceType),
 	XMLINIT(AllowNewTimeProposal),
 	XMLINIT(IsOnlineMeeting),
 	XMLINIT(MeetingWorkspaceUrl),
 	XMLINIT(NetShowUrl),
-	XMLINIT(StartTimeZone),
-	XMLINIT(EndTimeZone),
+	XMLINIT(StartTimeZoneId),
+	XMLINIT(EndTimeZoneId),
 	XMLINIT(DoNotForwardMeeting),
 	XMLINIT(IntendedFreeBusyStatus),
 	XMLINIT(AppointmentReplyTime),
@@ -240,6 +242,8 @@ void sCalendarMeetingRequestCommon::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(OptionalAttendees);
 	XMLDUMPT(Resources);
 	XMLDUMPT(Recurrence);
+	XMLDUMPT(StartTimeZoneId);
+	XMLDUMPT(EndTimeZoneId);
 	XMLDUMPT(ModifiedOccurrences);
 	XMLDUMPT(DeletedOccurrences);
 	XMLDUMPT(ConferenceType);
@@ -816,19 +820,7 @@ tCalendarItem::tCalendarItem(const tinyxml2::XMLElement *xml) :
 	tItem(xml),
 	sCalendarMeetingRequestCommon(xml),
 	XMLINIT(UID)
-{
-	/* Fall back to simple StartTimeZoneId text element */
-	if (!StartTimeZone) {
-		auto el = xml->FirstChildElement("StartTimeZoneId");
-		if (el && el->GetText())
-			StartTimeZone.emplace(el->GetText());
-	}
-	if (!EndTimeZone) {
-		auto el = xml->FirstChildElement("EndTimeZoneId");
-		if (el && el->GetText())
-			EndTimeZone.emplace(el->GetText());
-	}
-}
+{}
 
 void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 {

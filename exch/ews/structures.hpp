@@ -1986,7 +1986,7 @@ struct tTask : public tItem {
  */
 struct tTimeZoneDefinition {
 	explicit tTimeZoneDefinition(const tinyxml2::XMLElement *);
-	explicit tTimeZoneDefinition(std::string id) : Id(std::move(id)) {}
+	explicit inline tTimeZoneDefinition(std::string_view id) : Id(id) {}
 
 	void serialize(tinyxml2::XMLElement *) const;
 
@@ -2007,6 +2007,8 @@ struct sCalendarMeetingRequestCommon {
 	void serialize(tinyxml2::XMLElement *) const;
 	void update(const sShape &);
 
+	void timezoneId(std::string_view, bool=true, bool=true);
+	std::string_view timezoneId() const;
 
 	//<!-- Single and Occurrence only -->
 	std::optional<sTimePoint> Start;
@@ -2046,8 +2048,8 @@ struct sCalendarMeetingRequestCommon {
 	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
 
 	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
-	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+	std::optional<tTimeZoneDefinition> StartTimeZone;
+	std::optional<tTimeZoneDefinition> EndTimeZone;
 
 	std::optional<int32_t> ConferenceType;
 	std::optional<bool> AllowNewTimeProposal;
@@ -2058,8 +2060,8 @@ struct sCalendarMeetingRequestCommon {
 	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
 
-	std::optional<tTimeZoneDefinition> StartTimeZone;
-	std::optional<tTimeZoneDefinition> EndTimeZone;
+	std::optional<std::string> StartTimeZoneId;
+	std::optional<std::string> EndTimeZoneId;
 
 	std::optional<bool> DoNotForwardMeeting;
 	std::optional<Enum::LegacyFreeBusyType> IntendedFreeBusyStatus;

@@ -561,6 +561,34 @@ sAttachmentId::sAttachmentId(const void* data, uint64_t size)
 	TRY(ext_pull.g_uint32(&attachment_num), E3147,"ErrorInvalidAttachmentId");
 }
 
+/**
+ * @brief      Set the timezone id
+ *
+ * @param      tzid      Timezone to set
+ * @param      setTz     Whether to set Id in the (Start|End)TimeZone
+ * @param      setTzId   Whether to set (Start|End)TimeZoneId
+ */
+void sCalendarMeetingRequestCommon::timezoneId(std::string_view tzid, bool setTz, bool setTzId)
+{
+	if(setTz)
+		EndTimeZone = StartTimeZone = tTimeZoneDefinition(tzid);
+	if(setTzId)
+		EndTimeZoneId = StartTimeZoneId = tzid;
+}
+
+std::string_view sCalendarMeetingRequestCommon::timezoneId() const
+{
+	if(StartTimeZoneId)
+		return *StartTimeZoneId;
+	if(EndTimeZoneId)
+		return *EndTimeZoneId;
+	if(StartTimeZone)
+		return StartTimeZone->Id;
+	if(EndTimeZone)
+		return EndTimeZone->Id;
+	return {};
+}
+
 void sCalendarMeetingRequestCommon::update(const sShape &shape)
 {
 	fromProp(shape.get(NtAppointmentSequence), AppointmentSequenceNumber);
@@ -628,7 +656,7 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	if (!(str = shape.get<char>(NtCalendarTimeZone)))
 		str = shape.get<char>(NtTimeZoneDescription);
 	if (str)
-		EndTimeZone = StartTimeZone.emplace(tTimeZoneDefinition(str));
+		timezoneId(str);
 
 	Enum::CalendarItemTypeType calendarItemType = Enum::Single;
 	if ((prop = shape.get(NtAppointmentRecur))) {
