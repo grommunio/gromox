@@ -1460,6 +1460,9 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 							return MIDB_RDWR_ERROR;
 						last_pos = i + 2;
 						line_pos = 0;
+						pxarray->m_vec.reserve(pxarray->m_vec.size() + lines);
+						pxarray->m_hash.reserve(pxarray->m_hash.size() + lines);
+						pxarray->m_dpool.reserve(pxarray->m_dpool.size() + static_cast<size_t>(lines) * 1024);
 						break;
 					} else if (strncmp(buff.c_str(), "FALSE ", 6) == 0) {
 						pback.reset();
@@ -1484,20 +1487,24 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 						line_pos = 0;
 						continue;
 					}
-					MITEM mitem;
-					mitem.digest.assign(&pspace[1], line_pos - (pspace + 1 - temp_line));
+					std::string_view digest_sv(&pspace[1], line_pos - (pspace + 1 - temp_line));
 					Json::Value digest;
-					if (!str_to_json(mitem.digest, digest)) {
+					if (!str_to_json(digest_sv, digest)) {
 						b_format_error = TRUE;
-					} else if (get_digest(digest, "file", mitem.mid) &&
-					    get_digest_integer(digest, "uid", mitem.uid)) {
-						*pspace++ = '\0';
-						auto mitem_uid = mitem.uid;
-						if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
-							auto num = pxarray->get_capacity();
-							assert(num > 0);
-							auto pitem = pxarray->get_item(num - 1);
-							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(digest);
+					} else {
+						MITEM mitem;
+						if (get_digest(digest, "file", mitem.mid) &&
+						    get_digest_integer(digest, "uid", mitem.uid)) {
+							mitem.digest_off = pxarray->m_dpool.size();
+							mitem.digest_len = digest_sv.size();
+							pxarray->m_dpool.append(digest_sv);
+							auto mitem_uid = mitem.uid;
+							if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
+								auto num = pxarray->get_capacity();
+								assert(num > 0);
+								auto pitem = pxarray->get_item(num - 1);
+								pitem->flag_bits = FLAG_LOADED | di_to_flagbits(digest);
+							}
 						}
 					}
 					line_pos = 0;

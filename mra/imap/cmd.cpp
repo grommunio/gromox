@@ -621,17 +621,18 @@ static int icp_print_structure(imap_context &ctx, MJSON *pjson,
 }
 
 static int icp_process_fetch_item(imap_context &ctx,
-    BOOL b_data, MITEM *pitem, int item_id, mdi_list &pitem_list) try
+    BOOL b_data, MITEM *pitem, std::string_view digest_str,
+    int item_id, mdi_list &pitem_list) try
 {
 	auto pcontext = &ctx;
 	int errnum;
 	MJSON mjson;
 	std::string buf;
-	
+
 	if (pitem->flag_bits & FLAG_LOADED) {
 		auto eml_path = std::string(pcontext->maildir) + "/eml";
 		Json::Value digest;
-		if (!str_to_json(pitem->digest, digest)) {
+		if (!str_to_json(digest_str, digest)) {
 			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied1", ctx.maildir, ctx.mid.c_str());
 			return 1923;
 		} else if (!mjson.load_from_json(digest)) {
@@ -2333,10 +2334,12 @@ int icp_fetch(int argc, char **argv, imap_context &ctx)
 		if (ct_item == nullptr)
 			continue;
 		result = icp_process_fetch_item(ctx, b_data,
-		         pitem, ct_item->id, list_data);
+		         pitem, xarray.get_digest(*pitem),
+		         ct_item->id, list_data);
 		if (result != 0)
 			return result;
 	}
+	xarray.clear();
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170020: OK FETCH completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1720, 1));
@@ -2606,10 +2609,12 @@ int icp_uid_fetch(int argc, char **argv, imap_context &ctx) try
 		if (ct_item == nullptr)
 			continue;
 		ret = icp_process_fetch_item(ctx, b_data,
-		      pitem, ct_item->id, list_data);
+		      pitem, xarray.get_digest(*pitem),
+		      ct_item->id, list_data);
 		if (ret != 0)
 			return ret;
 	}
+	xarray.clear();
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170028: OK UID FETCH completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1728, 1));

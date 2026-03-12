@@ -1355,6 +1355,7 @@ void XARRAY::clear()
 {
 	m_vec.clear();
 	m_hash.clear();
+	std::string{}.swap(m_dpool);
 }
 
 config_file::cfg_entry::cfg_entry(const cfg_directive &d) :
