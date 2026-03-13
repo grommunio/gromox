@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <csignal>
@@ -82,10 +82,17 @@ struct EMSMDB_HANDLE2 : public EMSMDB_HANDLE
 };
 
 struct notification_ctx {
-	uint8_t pending_status = 0, notification_status = 0;
+	notification_ctx() = default;
+	notification_ctx(notification_ctx &&o) noexcept;
+	void clear();
+
+	uint8_t pending_status = PENDING_STATUS_NONE;
+	uint8_t notification_status = NOTIFICATION_STATUS_NONE;
 	GUID session_guid{};
 	time_point pending_time{}; ///< Since when the connection is pending
 	wallclock::time_point wall_start_time{};
+
+	std::mutex lock; /* guards all previous members */
 };
 
 }
@@ -249,6 +256,23 @@ static constexpr struct cfg_directive mhems_gxcfg_deflt[] = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Plugin structure definitions
+
+notification_ctx::notification_ctx(notification_ctx &&o) noexcept :
+	pending_status(std::move(o.pending_status)),
+	notification_status(std::move(o.notification_status)),
+	session_guid(std::move(o.session_guid)),
+	pending_time(std::move(o.pending_time)),
+	wall_start_time(std::move(o.wall_start_time))
+{}
+
+void notification_ctx::clear()
+{
+	pending_status = PENDING_STATUS_NONE;
+	notification_status = NOTIFICATION_STATUS_NONE;
+	session_guid = {};
+	pending_time = {};
+	wall_start_time = {};
+}
 
 /**
  * @brief	Initialize the plugin
@@ -732,7 +756,7 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 	ProcRes result;
 	auto heapctx = std::make_unique<MhEmsmdbContext>(context_id, m_server_version); /* huge object */
 	MhEmsmdbContext &ctx = *heapctx;
-	status[ctx.ID] = {};
+	status[ctx.ID].clear();
 	if (ctx.auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	if (!ctx.loadHeaders())
@@ -772,26 +796,32 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 
 int MhEmsmdbPlugin::retr(int context_id)
 {
-	switch (status[context_id].notification_status) {
+	uint8_t nstat, pstat;
+	wallclock::time_point wst;
+
+	{
+		std::lock_guard lk(status[context_id].lock);
+		nstat = status[context_id].notification_status;
+		pstat = status[context_id].pending_status;
+		wst   = status[context_id].wall_start_time;
+		if (nstat != NOTIFICATION_STATUS_NONE)
+			status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
+		else if (pstat == PENDING_STATUS_KEEPALIVE)
+			status[context_id].pending_status = PENDING_STATUS_WAITING;
+	}
+	switch (nstat) {
 	case NOTIFICATION_STATUS_TIMED:
-		notification_response(context_id,
-			status[context_id].wall_start_time,
-			ecSuccess, 0);
-		status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
+		notification_response(context_id, wst, ecSuccess, 0);
 		return HPM_RETRIEVE_WRITE;
 	case NOTIFICATION_STATUS_PENDING:
-		notification_response(context_id,
-			status[context_id].wall_start_time,
-			ecSuccess, FLAG_NOTIFICATION_PENDING);
-		status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
+		notification_response(context_id, wst, ecSuccess, FLAG_NOTIFICATION_PENDING);
 		return HPM_RETRIEVE_WRITE;
 	}
-	switch (status[context_id].pending_status) {
+	switch (pstat) {
 	case PENDING_STATUS_NONE:
 		return HPM_RETRIEVE_DONE;
 	case PENDING_STATUS_KEEPALIVE:
 		write_response(context_id, "7\r\nPENDING\r\n", 12);
-		status[context_id].pending_status = PENDING_STATUS_WAITING;
 		return HPM_RETRIEVE_WRITE;
 	case PENDING_STATUS_WAITING:
 		return HPM_RETRIEVE_WAIT;
@@ -816,14 +846,15 @@ void MhEmsmdbPlugin::term(int context_id)
 
 void MhEmsmdbPlugin::async_wakeup(int context_id, BOOL b_pending)
 {
-	std::unique_lock ll_hold(pending_lock);
+	{
+	std::unique_lock lk(status[context_id].lock);
 	if (status[context_id].pending_status == PENDING_STATUS_NONE)
 		return;
 	status[context_id].notification_status =
 		b_pending ? NOTIFICATION_STATUS_PENDING : NOTIFICATION_STATUS_TIMED;
 	pending.erase(&status[context_id]);
 	status[context_id].pending_status = PENDING_STATUS_NONE;
-	ll_hold.unlock();
+	}
 	wakeup_context(context_id);
 }
 
