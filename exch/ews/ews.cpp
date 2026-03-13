@@ -567,13 +567,14 @@ static std::unique_ptr<EWSPlugin> g_ews_plugin; ///< Current plugin
  */
 static BOOL ews_init(const struct dlfuncs &apidata)
 {
-	auto fail = [](auto&&... args){mlog(LV_ERR, args...); return false;};
 	LINK_HPM_API(apidata)
 	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
 		return false;
 	if (bounce_gen_init(get_config_path(), get_data_path(),
-	    "notify_bounce") != 0)
-		return fail("[ews] failed to start bounce producer");
+	    "notify_bounce") != 0) {
+		mlog(LV_ERR, "[ews] failed to start bounce producer");
+		return false;
+	}
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
 	ifc.proc    = [](detail::ContextKey ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
@@ -584,7 +585,8 @@ static BOOL ews_init(const struct dlfuncs &apidata)
 	try {
 		g_ews_plugin.reset(new EWSPlugin());
 	} catch (const std::exception &e) {
-		return fail("[ews] failed to initialize plugin: %s", e.what());
+		mlog(LV_ERR, "[ews] failed to initialize plugin: %s", e.what());
+		return false;
 	}
 	return TRUE;
 }
