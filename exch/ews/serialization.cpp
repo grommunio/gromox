@@ -2363,9 +2363,7 @@ mSendItemRequest::mSendItemRequest(const tinyxml2::XMLElement *xml) :
 	XMLINITA(SaveItemToFolder),
 	XMLINIT(ItemIds),
 	XMLINIT(SavedItemFolderId)
-{
-	parseOccurrenceItemIds(xml, ItemIds);
-}
+{}
 
 void mSendItemResponse::serialize(tinyxml2::XMLElement *xml) const
 {

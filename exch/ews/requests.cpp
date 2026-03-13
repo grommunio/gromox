@@ -2818,7 +2818,8 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 	}
 
 	data.Responses.reserve(request.ItemIds.size());
-	for (tItemId &itemId : request.ItemIds) try {
+	for (const auto &id: request.ItemIds) try {
+		tItemId itemId = id.itemId();
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec folder = ctx.resolveFolder(meid);

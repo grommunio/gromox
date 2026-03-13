@@ -4203,7 +4203,7 @@ struct mSendItemRequest {
 
 	bool SaveItemToFolder;  // Attribute
 
-	std::vector<tItemId> ItemIds;
+	std::vector<sBaseItemId> ItemIds;
 	std::optional<tTargetFolderIdType> SavedItemFolderId;
 };
 
