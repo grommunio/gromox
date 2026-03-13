@@ -3338,7 +3338,7 @@ struct mDeleteItemRequest {
 	//<xs:attribute name="AffectedTaskOccurrences" type="t:AffectedTaskOccurrencesType" use="optional"/>
 	//<xs:attribute name="SuppressReadReceipts" type="xs:boolean" use="optional"/>
 
-	std::vector<tItemId> ItemIds;
+	std::vector<sBaseItemId> ItemIds;
 };
 
 /**

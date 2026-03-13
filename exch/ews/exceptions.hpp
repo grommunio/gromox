@@ -578,6 +578,7 @@ E(3447, "failed to delete user configuration message");
 E(3448, "failed to append read change number to sync state");
 E(3449, "failed to set message id on updated content");
 E(3450, "RecurringMasterId is currently not supported");
+E(3451, "RecurringMasterId is currently not supported");
 
 #undef E
 }

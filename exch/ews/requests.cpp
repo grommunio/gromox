@@ -1091,10 +1091,10 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	auto& exmdb = ctx.plugin().exmdb;
 
-	for (const tItemId &itemId : request.ItemIds) try {
-		if (itemId.type != tItemId::ID_ITEM &&
-		    itemId.type != tItemId::ID_OCCURRENCE)
-			ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
+	for (const auto &id : request.ItemIds) try {
+		tItemId itemId = id.itemId();
+		if (id.holds_alternative<tRecurringMasterItemId>())
+			throw EWSError::InvalidId(E3451);  // currently not supported
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
@@ -1102,17 +1102,15 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		if (!(ctx.permissions(dir, parent.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
 
-		if (itemId.type == tItemId::ID_ITEM &&
-		    itemId.InstanceIndex == 0 &&
-		    request.SendMeetingCancellations &&
-		    *request.SendMeetingCancellations != Enum::SendToNone)
-			ctx.sendMeetingCancellation(dir, meid, parent, *request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
-
-		if (itemId.InstanceIndex > 0) {
+		if (id.holds_alternative<tOccurrenceItemId>()) {
+			if (request.SendMeetingCancellations && *request.SendMeetingCancellations != Enum::SendToNone)
+				ctx.sendMeetingCancellation(dir, meid, parent,
+					                        *request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
 			/* OccurrenceItemId: delete a single occurrence */
+			tOccurrenceItemId occurrenceId = std::get<tOccurrenceItemId>(id.asVariant());
 			auto mid = meid.messageId();
 			auto basedate = ctx.resolveOccurrenceIndex(dir, mid,
-			                itemId.InstanceIndex);
+			                occurrenceId.InstanceIndex);
 			ctx.deleteOccurrence(dir, mid, basedate);
 			data.ResponseMessages.emplace_back().success();
 		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
