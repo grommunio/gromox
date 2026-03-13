@@ -871,14 +871,13 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	for (auto tag : rmProps)
 		props.erase(tag);
 
-	sFolderSpec calendarFolder = requestFolder;
-	calendarFolder.folderId = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
-	calendarFolder.location = sFolderSpec::PRIVATE;
-	if (!calendarFolder.target)
-		calendarFolder.target = m_auth_info.username;
-	std::string calendarDir = getDir(calendarFolder);
+	requestFolder.folderId = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	requestFolder.location = sFolderSpec::PRIVATE;
+	if (!requestFolder.target)
+		requestFolder.target = m_auth_info.username;
+	std::string calendarDir = getDir(requestFolder);
 
-	if (!(permissions(calendarDir, calendarFolder.folderId) & (frightsOwner | frightsCreate)))
+	if (!(permissions(calendarDir, requestFolder.folderId) & (frightsOwner | frightsCreate)))
 		throw EWSError::AccessDenied(E3130);
 
 	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
@@ -909,13 +908,13 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	    props.set(PROP_TAG(PT_LONG, pidBusy), construct<uint32_t>(busyValue)) != ecSuccess)
 		throw EWSError::ItemSave(E3327);
 
-	std::optional<uint64_t> existingMid = findExistingByGoid(calendarFolder, calendarDir, *content);
+	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *content);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3328);
 
 	ec_error_t err = ecSuccess;
 	uint64_t newMid = 0, newCn = 0;
-	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, calendarFolder.folderId,
+	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, requestFolder.folderId,
 	        calendarItem.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
 		throw EWSError::ItemSave(E3329);
 }
