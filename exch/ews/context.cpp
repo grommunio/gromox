@@ -2117,7 +2117,10 @@ int32_t EWSContext::recurTzOffset(const std::string &dir, uint64_t mid,
 		return 0;
 	auto su = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(sd_res.ppropval->pvalue));
 	auto sl = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
-	return (su - sl) / 60;
+	int64_t diff = (su - sl) / 60;
+	if (diff < std::numeric_limits<int32_t>::min() || diff > std::numeric_limits<int32_t>::max())
+		return 0;  // probable data corruption, pretend it does not exist
+	return int32_t(diff);
 }
 
 /**
