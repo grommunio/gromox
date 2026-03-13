@@ -2327,7 +2327,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			    eInst->instanceId, proptag_cspan{body_rm}, &rtf_problems))
 				throw EWSError::ItemSave(E3337);
 			uint8_t rtf_nosync = 0;
-			const TAGGED_PROPVAL rtf_prop[] = {PR_RTF_IN_SYNC, &rtf_nosync};
+			const TAGGED_PROPVAL rtf_prop[] = {{PR_RTF_IN_SYNC, &rtf_nosync}};
 			const TPROPVAL_ARRAY rtf_arr = {std::size(rtf_prop), deconst(rtf_prop)};
 			if (!exmdb.set_instance_properties(dir.c_str(),
 			    eInst->instanceId, &rtf_arr, &rtf_problems))
@@ -2484,7 +2484,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	uint8_t att_hidden = true;
 	uint32_t att_linkid = 0;
 	uint32_t att_fl = 0;
-	BINARY att_enc{0, nullptr};
+	BINARY att_enc{};
 	uint32_t indet_rendering_pos = UINT32_MAX;
 	auto *att_start_nt = construct<uint64_t>(start_nttime);
 	auto *att_end_nt = construct<uint64_t>(end_nttime);
@@ -4059,16 +4059,14 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		    !ep.init(buf, sizeof(buf), 0) ||
 		    ep.p_goid(goid) != pack_result::ok)
 			throw EWSError::InternalServerError(E3375);
-		auto *gb = construct<BINARY>(BINARY{
-		           static_cast<uint32_t>(ep.m_offset), ep.m_udata});
+		auto gb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_udata}});
 		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
 		goid.year = goid.month = goid.day = 0;
 		goid.creationtime = 0;
 		if (!ep.init(buf, sizeof(buf), 0) ||
 		    ep.p_goid(goid) != pack_result::ok)
 			throw EWSError::InternalServerError(E3376);
-		auto *cb = construct<BINARY>(BINARY{
-		           static_cast<uint32_t>(ep.m_offset), ep.m_udata});
+		auto cb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_udata}});
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, cb});
 	}
 

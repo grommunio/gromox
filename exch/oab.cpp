@@ -1463,8 +1463,9 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	auto full = doc.NewElement("Full");
 	full->SetAttribute("seq", entry.sequence);
 	full->SetAttribute("ver", OAB_V4_VERSION);
-	full->SetAttribute("size", entry.lzx_data.size());
-	full->SetAttribute("uncompressedsize", raw.size());
+	/* ambiguity warning in clang-19 warrants static_cast */
+	full->SetAttribute("size", static_cast<uint64_t>(entry.lzx_data.size()));
+	full->SetAttribute("uncompressedsize", static_cast<uint64_t>(raw.size()));
 	full->SetAttribute("SHA", data_sha.c_str());
 	full->SetText((std::to_string(entry.sequence) + ".lzx").c_str());
 	oal->InsertEndChild(full);
@@ -1472,8 +1473,8 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	auto tmpl = doc.NewElement("Template");
 	tmpl->SetAttribute("seq", entry.sequence);
 	tmpl->SetAttribute("ver", OAB_TMPL_VERSION);
-	tmpl->SetAttribute("size", entry.tmpl_lzx_data.size());
-	tmpl->SetAttribute("uncompressedsize", tmpl_raw.size());
+	tmpl->SetAttribute("size", static_cast<uint64_t>(entry.tmpl_lzx_data.size()));
+	tmpl->SetAttribute("uncompressedsize", static_cast<uint64_t>(tmpl_raw.size()));
 	tmpl->SetAttribute("SHA", tmpl_sha.c_str());
 	tmpl->SetAttribute("langid", "0409");
 	tmpl->SetAttribute("type", "windows");

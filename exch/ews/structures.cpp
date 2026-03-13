@@ -2444,10 +2444,10 @@ void tChangeDescription::convUID(const XMLElement *v, sShape &shape)
 	auto bin = gromox::hex2bin(text);
 	if (bin.empty())
 		return;
-	auto *goid = EWSContext::construct<BINARY>(BINARY{
-	             static_cast<uint32_t>(bin.size()),
-	             static_cast<uint8_t *>(EWSContext::alloc(bin.size()))});
-	memcpy(goid->pb, bin.data(), bin.size());
+	auto goid = EWSContext::construct<BINARY>();
+	goid->cb  = bin.size();
+	goid->pv  = EWSContext::alloc(bin.size());
+	memcpy(goid->pv, bin.data(), bin.size());
 	shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
 	shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
 }

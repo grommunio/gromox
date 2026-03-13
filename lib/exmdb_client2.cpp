@@ -581,7 +581,7 @@ void locator::cleanup_nts()
 	if (now - m_last_nts_purge < dts_purge_time)
 		return;
 	m_last_nts_purge = now;
-	std::erase_if(name_to_srv, [now](const decltype(name_to_srv)::value_type &entry) {
+	std::erase_if(name_to_srv, [](const decltype(name_to_srv)::value_type &entry) {
 		bool purgable;
 		{
 			std::lock_guard hold2(entry.second->conn_lock);

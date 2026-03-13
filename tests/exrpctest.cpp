@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstdlib>
+#include <unistd.h>
 #include <vector>
 #include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
