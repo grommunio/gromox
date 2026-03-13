@@ -3948,6 +3948,19 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 		pmodified_folder->have_total = false;
 		pmodified_folder->have_unread = false;
 		pmodified_folder->proptags.count = 0;
+
+		void *val = nullptr;
+		if (cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, *pdb,
+		    PR_CONTENT_COUNT, &val) && val != nullptr) {
+			pmodified_folder->total = *static_cast<const uint32_t *>(val);
+			pmodified_folder->have_total = true;
+		}
+		val = nullptr;
+		if (cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, *pdb,
+		    PR_CONTENT_UNREAD, &val) && val != nullptr) {
+			pmodified_folder->unread = *static_cast<const uint32_t *>(val);
+			pmodified_folder->have_unread = true;
+		}
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_hiertbl_modify_row(*pdb, parent_id, folder_id, dbase, notifq);
