@@ -3459,11 +3459,11 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 	auto respUser = deconst(m_auth_info.username);
 	std::string respName;
 	mysql_adaptor_get_user_displayname(m_auth_info.username, respName);
-	auto rname = deconst(respName.c_str());
 	content->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
-	content->proplist.set(PR_SENDER_NAME, rname);
+	if(!respName.empty())
+		content->proplist.set(PR_SENDER_NAME, respName.data());
 	/*
 	 * Keep PR_SENT_REPRESENTING_* as the organizer from the
 	 * original request; oxcical uses it for the ORGANIZER
