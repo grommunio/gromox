@@ -152,6 +152,11 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		pout->result = ecSuccess;
 		return DISPATCH_SUCCESS;
 	}
+
+	/*
+	 * Note how we are not holding any lock here; new notifications
+	 * can arrive in the meantime.
+	 */
 	pwait->async_id = async_id;
 	HX_strlower(pwait->username.data());
 	pwait->wait_time = time(nullptr);
@@ -161,10 +166,19 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		pwait->context_id = 0;
 	auto tag = pwait->username + ":" + std::to_string(pwait->cxr);
 	HX_strlower(tag.data());
+
 	std::unique_lock as_hold(g_async_lock);
 	if (async_id == 0) {
+		/* MAPIHTTP clients */
 		if (g_tag_hash.size() < g_tag_hash_max &&
 		    g_tag_hash.emplace(tag, pwait).second) {
+			/* Re-check for new notifs */
+			if (emsmdb_interface_notifications_pending(pin->acxh)) {
+				g_tag_hash.erase(tag);
+				pout->flags_out = FLAG_NOTIFICATION_PENDING;
+				pout->result = ecSuccess;
+				return DISPATCH_SUCCESS;
+			}
 			return DISPATCH_PENDING;
 		}
 		pout->flags_out = 0;
@@ -172,6 +186,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		return DISPATCH_SUCCESS;
 	}
 
+	/* RPCH clients */
 	if (g_async_hash.size() >= 2 * get_context_num()) {
 		pout->flags_out = 0;
 		pout->result = ecRejected;
@@ -186,6 +201,13 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	auto cl_fail2 = HX::make_scope_exit([&]() { g_async_hash.erase(async_id); });
 	if (g_tag_hash.size() < g_tag_hash_max &&
 	    g_tag_hash.emplace(tag, pwait).second) {
+		/* Re-check for new notifs */
+		if (emsmdb_interface_notifications_pending(pin->acxh)) {
+			g_tag_hash.erase(tag);
+			pout->flags_out = FLAG_NOTIFICATION_PENDING;
+			pout->result = ecSuccess;
+			return DISPATCH_SUCCESS;
+		}
 		cl_fail2.release();
 		return DISPATCH_PENDING;
 	}
