@@ -132,22 +132,22 @@ void asyncemsmdb_interface_free()
 	g_wakeup_list.clear();
 }
 
+/**
+ * This function returns DISPATCH_SUCCESS if a status (positive or negative)
+ * is available, or DISPATCH_PENDING when the connection is to be put on hold.
+ */
 int asyncemsmdb_interface_async_wait(uint32_t async_id,
-    const ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout)
+    const ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout) try
 {
-	auto cl_fail = HX::make_scope_exit([&]() {
-		pout->flags_out = 0;
-		pout->result = ecRejected;
-	});
-
 	auto pwait = std::make_shared<ASYNC_WAIT>();
 	auto rpc_info = get_rpc_info();
 	if (!emsmdb_interface_inspect_acxh(&pin->acxh, pwait->username,
 	    &pwait->cxr, true) ||
-	    strcasecmp(rpc_info.username, pwait->username.c_str()) != 0)
+	    strcasecmp(rpc_info.username, pwait->username.c_str()) != 0) {
+		pout->flags_out = 0;
+		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
-	if (emsmdb_interface_notifications_pending(pin->acxh)) {
-		cl_fail.release();
+	} else if (emsmdb_interface_notifications_pending(pin->acxh)) {
 		pout->flags_out = FLAG_NOTIFICATION_PENDING;
 		pout->result = ecSuccess;
 		return DISPATCH_SUCCESS;
@@ -165,26 +165,36 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	if (async_id == 0) {
 		if (g_tag_hash.size() < g_tag_hash_max &&
 		    g_tag_hash.emplace(tag, pwait).second) {
-			/* actual "success" case */
-			cl_fail.release();
 			return DISPATCH_PENDING;
 		}
+		pout->flags_out = 0;
+		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
 	}
 
-	if (g_async_hash.size() >= 2 * get_context_num())
+	if (g_async_hash.size() >= 2 * get_context_num()) {
+		pout->flags_out = 0;
+		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
+	}
 	auto pair = g_async_hash.emplace(async_id, pwait);
-	if (!pair.second)
+	if (!pair.second) {
+		pout->flags_out = 0;
+		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
+	}
 	auto cl_fail2 = HX::make_scope_exit([&]() { g_async_hash.erase(async_id); });
 	if (g_tag_hash.size() < g_tag_hash_max &&
 	    g_tag_hash.emplace(tag, pwait).second) {
-		/* actual success case */
 		cl_fail2.release();
-		cl_fail.release();
 		return DISPATCH_PENDING;
 	}
+	pout->flags_out = 0;
+	pout->result = ecRejected;
+	return DISPATCH_SUCCESS;
+} catch (const std::bad_alloc &) {
+	pout->flags_out = 0;
+	pout->result = ecServerOOM;
 	return DISPATCH_SUCCESS;
 }
 
