@@ -235,6 +235,7 @@ struct sFolderSpec {
 
 	sFolderSpec& normalize();
 	bool isDistinguished() const;
+	static const char *distinguishedName(uint64_t folder_id);
 
 	std::optional<std::string> target;
 	uint64_t folderId=0;
@@ -391,6 +392,10 @@ class sShape {
 	std::optional<std::string> mimeContent; ///< MimeContent to write
 	const tinyxml2::XMLElement *permissionSet = nullptr; ///< PermissionSet for update
 	const tinyxml2::XMLElement *calendarPermissionSet = nullptr; ///< CalendarPermissionSet for update
+	const tinyxml2::XMLElement *recurrence = nullptr; ///< Recurrence for update
+	const tinyxml2::XMLElement *requiredAttendees = nullptr; ///< RequiredAttendees for update
+	const tinyxml2::XMLElement *optionalAttendees = nullptr; ///< OptionalAttendees for update
+	const tinyxml2::XMLElement *resourceAttendees = nullptr; ///< Resources for update
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 
@@ -758,6 +763,21 @@ struct tRoomType : public NS_EWS_Types {
 };
 
 /**
+ * Types.xsd:1582
+ *
+ * Note: Diverges from specification (does not inherit from tBaseItemId)
+ * since tBaseItemId actually corresponds to ItemIdType…
+ */
+struct tRootItemId {
+	static constexpr char NAME[] = "RootItemId";
+
+	sBase64Binary RootItemId;
+	sBase64Binary RootItemChangeKey;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Types.xsd
  */
 struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
@@ -770,6 +790,21 @@ struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
 
 	std::string Entry;
 	Enum::PhoneNumberKeyType Key; //Attribute
+};
+
+/**
+ * Types.xsd:5222
+ */
+struct tImAddressDictionaryEntry : public NS_EWS_Types {
+	static constexpr char NAME[] = "Entry";
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	tImAddressDictionaryEntry(std::string, Enum::ImAddressKeyType);
+	explicit tImAddressDictionaryEntry(const tinyxml2::XMLElement *);
+
+	std::string Entry;
+	Enum::ImAddressKeyType Key; //Attribute
 };
 
 /**
@@ -941,7 +976,7 @@ struct tBaseFolderType : public NS_EWS_Types {
 	std::vector<tExtendedProperty> ExtendedProperty;
 	//<xs:element name="ManagedFolderInformation" type="t:ManagedFolderInformationType" minOccurs="0"/>
 	std::optional<tEffectiveRights> EffectiveRights;
-	//<xs:element name="DistinguishedFolderId" type="t:DistinguishedFolderIdNameType" minOccurs="0"/>
+	std::optional<Enum::DistinguishedFolderIdNameType> DistinguishedFolderId;
 	//<xs:element name="PolicyTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ReplicaList" type="t:ArrayOfStringsType" minOccurs="0" />
@@ -1081,7 +1116,7 @@ struct tIndexedFieldURI {
 
 	using UIKey = std::pair<std::string, std::string>;
 	//Types.xsd:988
-	static std::array<std::pair<UIKey, proptag_t>, 25> tagMap;
+	static std::array<std::pair<UIKey, proptag_t>, 29> tagMap;
 	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, proptype_t>>, 25> nameMap;
 };
 
@@ -1146,10 +1181,31 @@ struct tUserId {
 };
 
 /**
+ * Types.xsd:6895
+ */
+struct tDelegatePermissions {
+	tDelegatePermissions() = default;
+	explicit tDelegatePermissions(const tinyxml2::XMLElement *);
+
+	std::optional<Enum::DelegateFolderPermissionLevelType> CalendarFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> TasksFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> InboxFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> ContactsFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> NotesFolderPermissionLevel;
+	std::optional<Enum::DelegateFolderPermissionLevelType> JournalFolderPermissionLevel;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Types.xsd:6909
  */
 struct tDelegateUser {
+	tDelegateUser() = default;
+	explicit tDelegateUser(const tinyxml2::XMLElement *);
+
 	tUserId UserId;
+	std::optional<tDelegatePermissions> DelegatePermissions;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
@@ -1307,12 +1363,18 @@ struct tChangeDescription {
 	static void convDate(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convText(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convText(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convTzAttr(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convInt32(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convDouble(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convStrArray(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convStrArray(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convFlag(const tinyxml2::XMLElement *, sShape &);
+	static void convSensitivity(const tinyxml2::XMLElement *, sShape &);
+	static void convUID(const tinyxml2::XMLElement *, sShape &);
 	static void convBody(const tinyxml2::XMLElement *, sShape &);
 
 	static std::array<const char*, 15> itemTypes;
@@ -1773,6 +1835,49 @@ struct tOccurrenceInfoType : public NS_EWS_Types {
 };
 
 /**
+ * Types.xsd:4437
+ */
+struct tOccurrenceItemId {
+	static constexpr char NAME[] = "OccurrenceItemId";
+
+	explicit tOccurrenceItemId(const tinyxml2::XMLElement *);
+
+	sBase64Binary RecurringMasterId;  // Attribute
+	std::optional<sBase64Binary> ChangeKey;  // Attribute
+	uint32_t InstanceIndex;  // Attribute
+};
+
+/**
+ * Types.xsd:4447
+ */
+struct tRecurringMasterItemId {
+	static constexpr char NAME[] = "RecurringMasterItemId";
+
+	explicit tRecurringMasterItemId(const tinyxml2::XMLElement *);
+
+	sBase64Binary OccurrenceId;  // Attribute
+	std::optional<sBase64Binary> ChangeKey;  // Attribute
+};
+
+/**
+ * @brief Variant of different id types.
+ *
+ * Not explicetly defined by the specification, but used multiple times.
+ * Provides commonly used functionality for conversion.
+ */
+struct sBaseItemId : public std::variant<tItemId, tOccurrenceItemId, tRecurringMasterItemId> {
+	using Base = std::variant<tItemId, tOccurrenceItemId, tRecurringMasterItemId>;
+
+	explicit sBaseItemId(const tinyxml2::XMLElement *);
+	explicit inline sBaseItemId(Base &&b) : Base(std::move(b)) {}
+
+	tItemId itemId() const;
+
+	constexpr const Base &asVariant() const { return *this; }
+	template<typename T> constexpr bool holds_alternative() const {return std::holds_alternative<T>(asVariant());}
+};
+
+/**
  * Types.xsd:4919
  */
 struct tDeletedOccurrenceInfoType : public NS_EWS_Types {
@@ -1917,9 +2022,105 @@ struct tTask : public tItem {
 };
 
 /**
+ * @brief      TimeZoneDefinitionType
+ *
+ * Partial: only the Id attribute is used for now.
+ */
+struct tTimeZoneDefinition {
+	explicit tTimeZoneDefinition(const tinyxml2::XMLElement *);
+	explicit inline tTimeZoneDefinition(std::string_view id) : Id(id) {}
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::string Id;
+};
+
+
+/**
+ * @brief      Support struct to reduce redundancy
+ *
+ * Bundles overlapping properties and functionality of tCalendarItem and
+ * tMeetingRequestMessage.
+ */
+struct sCalendarMeetingRequestCommon {
+	sCalendarMeetingRequestCommon() = default;
+	explicit sCalendarMeetingRequestCommon(const tinyxml2::XMLElement *);
+
+	void serialize(tinyxml2::XMLElement *) const;
+	void update(const sShape &);
+
+	void timezoneId(std::string_view, bool=true, bool=true);
+	std::string_view timezoneId() const;
+
+	//<!-- Single and Occurrence only -->
+	std::optional<sTimePoint> Start;
+	std::optional<sTimePoint> End;
+
+	// <!-- Occurrence only -->
+	std::optional<time_point> OriginalStart;
+	std::optional<bool> IsAllDayEvent;
+	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
+	std::optional<std::string> Location;
+
+	// <xs:element name="When" type="xs:string" minOccurs="0" />
+	std::optional<bool> IsMeeting;
+	std::optional<bool> IsCancelled;
+	std::optional<bool> IsRecurring;
+	std::optional<bool> MeetingRequestWasSent;
+	std::optional<Enum::CalendarItemTypeType> CalendarItemType;
+	std::optional<bool> IsResponseRequested;
+	std::optional<Enum::ResponseTypeType> MyResponseType;
+	std::optional<tSingleRecipient> Organizer;
+	std::optional<std::vector<tAttendee>> RequiredAttendees;
+	std::optional<std::vector<tAttendee>> OptionalAttendees;
+	std::optional<std::vector<tAttendee>> Resources;
+
+		// <!-- Conflicting and adjacent meetings -->
+	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+
+	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
+	std::optional<tRecurrenceType> Recurrence;
+	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+
+	std::optional<std::vector<tOccurrenceInfoType>> ModifiedOccurrences;
+	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
+
+	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
+	std::optional<tTimeZoneDefinition> StartTimeZone;
+	std::optional<tTimeZoneDefinition> EndTimeZone;
+
+	std::optional<int32_t> ConferenceType;
+	std::optional<bool> AllowNewTimeProposal;
+	std::optional<bool> IsOnlineMeeting;
+	std::optional<std::string> MeetingWorkspaceUrl;
+	std::optional<std::string> NetShowUrl;
+
+	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+
+	std::optional<std::string> StartTimeZoneId;
+	std::optional<std::string> EndTimeZoneId;
+
+	std::optional<bool> DoNotForwardMeeting;
+	std::optional<Enum::LegacyFreeBusyType> IntendedFreeBusyStatus;
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+
+	std::optional<time_point> AppointmentReplyTime;
+	std::optional<int> AppointmentSequenceNumber;
+	std::optional<int> AppointmentState;
+
+	std::optional<std::string> Duration;
+	std::optional<std::string> TimeZone;
+};
+
+/**
  * Types.xsd:4933
  */
-struct tCalendarItem : public tItem {
+struct tCalendarItem : public tItem, public sCalendarMeetingRequestCommon {
 	static constexpr char NAME[] = "CalendarItem";
 
 	explicit tCalendarItem(const sShape&);
@@ -1936,65 +2137,13 @@ struct tCalendarItem : public tItem {
 	std::optional<time_point> RecurrenceId;
 	std::optional<sTimePoint> DateTimeStamp;
 
-	// <!-- Single and Occurrence only -->
-	std::optional<sTimePoint> Start;
-	std::optional<sTimePoint> End;
-
-	// <!-- Occurrence only -->
-	std::optional<time_point> OriginalStart;
-	std::optional<bool> IsAllDayEvent;
-	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
-	std::optional<std::string> Location;
-	// <xs:element name="When" type="xs:string" minOccurs="0" />
-	std::optional<bool> IsMeeting;
-	std::optional<bool> IsCancelled;
-	std::optional<bool> IsRecurring;
-	std::optional<bool> MeetingRequestWasSent;
-	std::optional<bool> IsResponseRequested;
-	std::optional<Enum::CalendarItemTypeType> CalendarItemType;
-	std::optional<Enum::ResponseTypeType> MyResponseType;
-	std::optional<tSingleRecipient> Organizer;
-	std::optional<std::vector<tAttendee>> RequiredAttendees;
-	std::optional<std::vector<tAttendee>> OptionalAttendees;
-	std::optional<std::vector<tAttendee>> Resources;
 	// <xs:element name="InboxReminders" type="t:ArrayOfInboxReminderType" minOccurs="0" />
 
-	// <!-- Conflicting and adjacent meetings -->
-	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-	std::optional<std::string> Duration;
-	std::optional<std::string> TimeZone;
-	std::optional<time_point> AppointmentReplyTime;
-	std::optional<int> AppointmentSequenceNumber;
-	std::optional<int> AppointmentState;
-
-	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
-	std::optional<tRecurrenceType> Recurrence;
-	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	std::optional<std::vector<tOccurrenceInfoType>> ModifiedOccurrences;
-	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
-	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
-	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	std::optional<int32_t> ConferenceType;
-	std::optional<bool> AllowNewTimeProposal;
-	std::optional<bool> IsOnlineMeeting;
-	std::optional<std::string> MeetingWorkspaceUrl;
-	std::optional<std::string> NetShowUrl;
-	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
-	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	std::optional<std::string> StartTimeZoneId;
-	std::optional<std::string> EndTimeZoneId;
-	// <xs:element name="IntendedFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
 	// <xs:element name="JoinOnlineMeetingUrl" type="xs:string" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="OnlineMeetingSettings" type="t:OnlineMeetingSettingsType" minOccurs="0" maxOccurs="1"/>
 	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
 	// <xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
-	std::optional<bool> DoNotForwardMeeting;
+
 };
 
 /**
@@ -2076,6 +2225,7 @@ struct tContact : public tItem {
 	std::optional<std::string> Nickname;
 	std::optional<tCompleteName> CompleteName;
 	std::optional<std::string> CompanyName;
+	std::optional<std::string> YomiCompanyName;
 	std::optional<std::vector<tEmailAddressDictionaryEntry>> EmailAddresses;
 	// <xs:element name="AbchEmailAddresses" type="t:AbchEmailAddressDictionaryType" minOccurs="0" />
 	std::optional<std::vector<tPhysicalAddressDictionaryEntry>> PhysicalAddresses;
@@ -2088,13 +2238,13 @@ struct tContact : public tItem {
 	std::optional<Enum::ContactSourceType> ContactSource;
 	std::optional<std::string> Department;
 	std::optional<std::string> Generation;
-	// <xs:element name="ImAddresses" type="t:ImAddressDictionaryType" minOccurs="0" />
+	std::optional<std::vector<tImAddressDictionaryEntry>> ImAddresses;
 	std::optional<std::string> JobTitle;
 	std::optional<std::string> Manager;
 	// <xs:element name="Mileage" type="xs:string" minOccurs="0" />
 	std::optional<std::string> OfficeLocation;
 	std::optional<Enum::PhysicalAddressIndexType> PostalAddressIndex;
-	// <xs:element name="Profession" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Profession;
 	std::optional<std::string> SpouseName;
 	std::optional<std::string> Surname;
 	std::optional<sTimePoint> WeddingAnniversary;
@@ -2167,9 +2317,7 @@ struct tItemChange {
 
 	tItemChange(const tinyxml2::XMLElement *);
 
-	tItemId ItemId;
-	//<xs:element name="OccurrenceItemId" type="t:OccurrenceItemIdType"/>
-	//<xs:element name="RecurringMasterItemId" type="t:RecurringMasterItemIdType"/>
+	sBaseItemId ItemId;
 	std::vector<sItemChangeDescription> Updates;
 	//<xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
 };
@@ -2195,18 +2343,39 @@ struct tItemResponseShape {
 	//std::optional<int32_t> MaximumBodySize;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr std::array<proptag_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
+	static constexpr std::array<proptag_t, 3> tagsStructural = {
+		PR_MESSAGE_CLASS, PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME,
+	};
 	static constexpr std::array<proptag_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
-	static constexpr std::array<proptag_t, 29> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
+	static constexpr std::array<proptag_t, 56> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
 		PR_ASSOCIATED, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,
+		PR_SENDER_SMTP_ADDRESS,
+		PR_CREATION_TIME, PR_CLIENT_SUBMIT_TIME,
+		PR_SENSITIVITY, PR_MESSAGE_SIZE,
+		PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED,
+		PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+		PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_SMTP_ADDRESS,
 		PR_LOCAL_COMMIT_TIME, PR_DISPLAY_NAME_PREFIX, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 		PR_SURNAME, PR_GENERATION, PR_INITIALS, PR_DISPLAY_NAME, PR_NICKNAME,
 		PR_BUSINESS_TELEPHONE_NUMBER, PR_HOME_TELEPHONE_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER,
 		PR_BUSINESS2_TELEPHONE_NUMBER, PR_MOBILE_TELEPHONE_NUMBER, PR_PAGER_TELEPHONE_NUMBER,
 		PR_BUSINESS_FAX_NUMBER, PR_ASSISTANT_TELEPHONE_NUMBER, PR_HOME2_TELEPHONE_NUMBER,
 		PR_COMPANY_MAIN_PHONE_NUMBER, PR_HOME_FAX_NUMBER, PR_OTHER_TELEPHONE_NUMBER,
-		PR_CALLBACK_TELEPHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER};
-	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 6> namedTagsDefault;
+		PR_CALLBACK_TELEPHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER,
+		PR_ASSISTANT, PR_BIRTHDAY, PR_BUSINESS_HOME_PAGE, PR_COMPANY_NAME,
+		PR_DEPARTMENT_NAME, PR_TITLE, PR_OFFICE_LOCATION, PR_SPOUSE_NAME,
+		PR_WEDDING_ANNIVERSARY, PR_CHILDRENS_NAMES, PR_MANAGER_NAME, PR_PROFESSION,
+		PR_CAR_TELEPHONE_NUMBER, PR_ISDN_NUMBER, PR_PRIMARY_FAX_NUMBER,
+		PR_TELEX_NUMBER, PR_TTYTDD_PHONE_NUMBER};
+	static constexpr std::array<proptag_t, 12> tagsAllProperties = {
+		PR_MESSAGE_FLAGS, PR_READ, PR_IMPORTANCE,
+		PR_CONVERSATION_INDEX, PR_CONVERSATION_TOPIC,
+		PR_INTERNET_MESSAGE_ID, PR_INTERNET_REFERENCES,
+		PR_MESSAGE_DELIVERY_TIME, PR_LAST_MODIFICATION_TIME,
+		PR_LAST_MODIFIER_NAME, PR_IN_REPLY_TO_ID,
+		PR_READ_RECEIPT_REQUESTED};
+	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 40> namedTagsDefault;
+	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 10> namedTagsAllProperties;
 };
 
 /**
@@ -2421,7 +2590,7 @@ struct tChangeHighlights : public NS_EWS_Types {
 /**
  * Types.xsd:5064
  */
-struct tMeetingRequestMessage : public tMeetingMessage {
+struct tMeetingRequestMessage : public tMeetingMessage, public sCalendarMeetingRequestCommon {
 	static constexpr char NAME[] = "MeetingRequest";
 
 	explicit tMeetingRequestMessage(const sShape&);
@@ -2433,63 +2602,7 @@ struct tMeetingRequestMessage : public tMeetingMessage {
 
 	// <!--- MeetingRequest properties -->
 	std::optional<Enum::MeetingRequestTypeType> MeetingRequestType;
-	std::optional<Enum::LegacyFreeBusyType> IntendedFreeBusyStatus;
-
-	// <!-- Calendar Properties of the associated meeting request -->
-	// <!-- Single and Occurrence only -->
-	std::optional<sTimePoint> Start;
-	std::optional<sTimePoint> End;
-
-	// <!-- Occurrence only -->
-	std::optional<time_point> OriginalStart;
-	std::optional<bool> IsAllDayEvent;
-	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
-	std::optional<std::string> Location;
-	// <xs:element name="When" type="xs:string" minOccurs="0" />
-	std::optional<bool> IsMeeting;
-	std::optional<bool> IsCancelled;
-	std::optional<bool> IsRecurring;
-	std::optional<bool> MeetingRequestWasSent;
-	std::optional<Enum::CalendarItemTypeType> CalendarItemType;
-	std::optional<Enum::ResponseTypeType> MyResponseType;
-	std::optional<tSingleRecipient> Organizer;
-	std::optional<std::vector<tAttendee>> RequiredAttendees;
-	std::optional<std::vector<tAttendee>> OptionalAttendees;
-	std::optional<std::vector<tAttendee>> Resources;
-
-	// <!-- Conflicting and adjacent meetings -->
-	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-
-	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
-	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
-	std::optional<time_point> AppointmentReplyTime;
-	std::optional<int> AppointmentSequenceNumber;
-	std::optional<int> AppointmentState;
-
-	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
-	std::optional<tRecurrenceType> Recurrence;
-	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	std::optional<std::vector<tOccurrenceInfoType>> ModifiedOccurrences;
-	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
-	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0" />
-	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="ConferenceType" type="xs:int" minOccurs="0" />
-	std::optional<bool> AllowNewTimeProposal;
-	// <xs:element name="IsOnlineMeeting" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="MeetingWorkspaceUrl" type="xs:string" minOccurs="0" />
-	// <xs:element name="NetShowUrl" type="xs:string" minOccurs="0" />
-	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
 	std::optional<tChangeHighlights> ChangeHighlights;
-	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="StartTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="EndTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
 };
 
 /**
@@ -2657,7 +2770,7 @@ struct tFolderResponseShape {
 	Enum::DefaultShapeNamesType BaseShape;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr proptag_t tagsStructural[] = {PR_CONTAINER_CLASS, PR_FOLDER_TYPE};
+	static constexpr proptag_t tagsStructural[] = {PR_CONTAINER_CLASS, PR_FOLDER_TYPE, PidTagFolderId};
 	static constexpr proptag_t tagsIdOnly[] = {PR_ENTRYID, PR_CHANGE_KEY};
 	static constexpr proptag_t tagsDefault[] = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
 	/*
@@ -3021,7 +3134,7 @@ struct mBaseMoveCopyItem {
 	mBaseMoveCopyItem(const tinyxml2::XMLElement *, bool);
 
 	tTargetFolderIdType ToFolderId;
-	std::vector<tItemId> ItemIds;
+	std::vector<sBaseItemId> ItemIds;
 	std::optional<bool> ReturnNewItemIds;
 
 	bool copy;
@@ -3220,11 +3333,11 @@ struct mDeleteItemRequest {
 	explicit mDeleteItemRequest(const tinyxml2::XMLElement *);
 
 	Enum::DisposalType DeleteType; // Attribute
-	//<xs:attribute name="SendMeetingCancellations" type="t:CalendarItemCreateOrDeleteOperationType" use="optional"/>
+	std::optional<Enum::CalendarItemCreateOrDeleteOperationType> SendMeetingCancellations;
 	//<xs:attribute name="AffectedTaskOccurrences" type="t:AffectedTaskOccurrencesType" use="optional"/>
 	//<xs:attribute name="SuppressReadReceipts" type="xs:boolean" use="optional"/>
 
-	std::vector<tItemId> ItemIds;
+	std::vector<sBaseItemId> ItemIds;
 };
 
 /**
@@ -3415,6 +3528,35 @@ struct mGetAttachmentResponse {
 	void serialize(tinyxml2::XMLElement *) const;
 
 	std::vector<mGetAttachmentResponseMessage> ResponseMessages;
+};
+
+/**
+ * Messages.xsd:1502
+ */
+struct mDeleteAttachmentRequest {
+	mDeleteAttachmentRequest(const tinyxml2::XMLElement *);
+
+	std::vector<tRequestAttachmentId> AttachmentIds;
+};
+
+/**
+ * Messages.xsd:1512
+ */
+struct mDeleteAttachmentResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "DeleteAttachmentResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+	using mResponseMessageType::success;
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::optional<tRootItemId> RootItemId;
+};
+
+struct mDeleteAttachmentResponse {
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::vector<mDeleteAttachmentResponseMessage> ResponseMessages;
 };
 
 /**
@@ -3902,8 +4044,7 @@ struct mGetItemRequest {
 	explicit mGetItemRequest(const tinyxml2::XMLElement *);
 
 	tItemResponseShape ItemShape;
-	std::vector<tItemId> ItemIds;
-
+	std::vector<sBaseItemId> ItemIds;
 };
 
 struct mGetItemResponseMessage : public mResponseMessageType {
@@ -3955,6 +4096,28 @@ struct mFindPeopleResponse {
 };
 
 /**
+ * Messages.xsd (simplified)
+ */
+struct mGetPersonaRequest {
+	explicit mGetPersonaRequest(const tinyxml2::XMLElement *);
+
+	std::optional<tEmailAddressType> EmailAddress;
+};
+
+/**
+ * Messages.xsd (simplified)
+ */
+struct mGetPersonaResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "GetPersonaResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tPersona> Persona;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd:1676
  */
 struct mResolveNamesRequest {
@@ -3991,6 +4154,46 @@ struct mResolveNamesResponse {
 };
 
 /**
+ * MS-OXWSDLIST / Messages.xsd
+ */
+struct mExpandDLRequest {
+	explicit mExpandDLRequest(const tinyxml2::XMLElement *);
+
+	tEmailAddressType Mailbox;
+};
+
+/**
+ * MS-OXWSDLIST / Types.xsd
+ */
+struct tDLExpansion : public tFindResponsePagingAttributes {
+	std::vector<tEmailAddressType> Mailbox;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * MS-OXWSDLIST / Messages.xsd
+ */
+struct mExpandDLResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "ExpandDLResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tDLExpansion> DLExpansion;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * MS-OXWSDLIST / Messages.xsd
+ */
+struct mExpandDLResponse {
+	std::vector<mExpandDLResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd:1121
  */
 struct mSendItemRequest {
@@ -3998,7 +4201,7 @@ struct mSendItemRequest {
 
 	bool SaveItemToFolder;  // Attribute
 
-	std::vector<tItemId> ItemIds;
+	std::vector<sBaseItemId> ItemIds;
 	std::optional<tTargetFolderIdType> SavedItemFolderId;
 };
 
@@ -4089,7 +4292,7 @@ struct mUnsubscribeRequest {
 };
 
 /**
- * Implicitely declared at Messages.xsd:1994
+ * Implicitly declared at Messages.xsd:1994
  */
 struct mUnsubscribeResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "UnsubscribeResponseMessage";
@@ -4116,8 +4319,8 @@ struct mUpdateItemRequest {
 	std::vector<tItemChange> ItemChanges;
 	//<xs:attribute name="ConflictResolution" type="t:ConflictResolutionType" use="required"/>
 	//<xs:attribute name="MessageDisposition" type="t:MessageDispositionType"  use="optional"/>
-	//<xs:attribute name="SendMeetingInvitationsOrCancellations" type="t:CalendarItemUpdateOperationType"  use="optional"/>
-	//<xs:attribute name="SuppressReadReceipts" type="xs:boolean" use="optional"/>
+	std::optional<Enum::CalendarItemUpdateOperationType> SendMeetingInvitationsOrCancellations;
+	std::optional<bool> SuppressReadReceipts;
 };
 
 /**
@@ -4173,7 +4376,7 @@ struct tUserConfigurationDictionaryEntry {
 /**
  * Types.xsd:7241
  */
-struct tUserConfigurationDictionaryType {
+struct tUserConfigurationDictionary {
 	std::vector<tUserConfigurationDictionaryEntry> DictionaryEntry;
 
 	void serialize(tinyxml2::XMLElement *) const;
@@ -4182,12 +4385,36 @@ struct tUserConfigurationDictionaryType {
 /*
  * Types.xsd:7247
  */
-struct tUserConfigurationType {
+struct tUserConfiguration {
+	explicit inline tUserConfiguration(const tUserConfigurationName& ucn) : UserConfigurationName(ucn) {}
+	explicit tUserConfiguration(const tinyxml2::XMLElement *);
+
 	tUserConfigurationName UserConfigurationName;
 	std::optional<tItemId> ItemId;
-	std::optional<tUserConfigurationDictionaryType> Dictionary;
+	std::optional<tUserConfigurationDictionary> Dictionary;
 	std::optional<sBase64Binary> XmlData;
 	std::optional<sBase64Binary> BinaryData;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * Messages.xsd:2544
+ */
+struct mCreateUserConfigurationRequest {
+	explicit mCreateUserConfigurationRequest(const tinyxml2::XMLElement *);
+
+	tUserConfiguration UserConfiguration;
+};
+
+struct mCreateUserConfigurationResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "CreateUserConfigurationResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+struct mCreateUserConfigurationResponse {
+	std::vector<mCreateUserConfigurationResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
@@ -4210,7 +4437,7 @@ struct mGetUserConfigurationResponseMessage : public mResponseMessageType {
 
 	using mResponseMessageType::mResponseMessageType;
 
-	std::optional<tUserConfigurationType> UserConfiguration;
+	std::optional<tUserConfiguration> UserConfiguration;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
@@ -4225,12 +4452,54 @@ struct mGetUserConfigurationResponse {
 };
 
 /**
+ * Messages.xsd:2590
+ */
+struct mUpdateUserConfigurationRequest {
+	explicit mUpdateUserConfigurationRequest(const tinyxml2::XMLElement *);
+
+	tUserConfiguration UserConfiguration;
+};
+
+struct mUpdateUserConfigurationResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "UpdateUserConfigurationResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+struct mUpdateUserConfigurationResponse {
+	std::vector<mUpdateUserConfigurationResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * Messages.xsd:2605
+ */
+struct mDeleteUserConfigurationRequest {
+	explicit mDeleteUserConfigurationRequest(const tinyxml2::XMLElement *);
+
+	tUserConfigurationName UserConfigurationName;
+};
+
+struct mDeleteUserConfigurationResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "DeleteUserConfigurationResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+struct mDeleteUserConfigurationResponse {
+	std::vector<mDeleteUserConfigurationResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd:2321
  */
 struct mGetDelegateRequest {
 	explicit mGetDelegateRequest(const tinyxml2::XMLElement *);
 
-	tMailbox Mailbox;
+	tEmailAddressType Mailbox;
 	std::optional<std::vector<tUserId>> UserIds;
 	std::optional<bool> IncludePermissions;
 };
@@ -4243,10 +4512,42 @@ struct mDelegateUserResponseMessage : public mResponseMessageType {
 	void serialize(tinyxml2::XMLElement *) const;
 };
 
-struct mGetDelegateResponse {
+struct mGetDelegateResponse : public mResponseMessageType {
+	using mResponseMessageType::success;
+
 	std::vector<mDelegateUserResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * Messages.xsd:2274
+ */
+struct mAddDelegateRequest {
+	explicit mAddDelegateRequest(const tinyxml2::XMLElement *);
+
+	tEmailAddressType Mailbox;
+	std::vector<tDelegateUser> DelegateUsers;
+};
+
+/**
+ * Messages.xsd:2295
+ */
+struct mRemoveDelegateRequest {
+	explicit mRemoveDelegateRequest(const tinyxml2::XMLElement *);
+
+	tEmailAddressType Mailbox;
+	std::vector<tUserId> UserIds;
+};
+
+/**
+ * Messages.xsd:2305
+ */
+struct mUpdateDelegateRequest {
+	explicit mUpdateDelegateRequest(const tinyxml2::XMLElement *);
+
+	tEmailAddressType Mailbox;
+	std::vector<tDelegateUser> DelegateUsers;
 };
 
 /**

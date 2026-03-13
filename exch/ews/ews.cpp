@@ -15,6 +15,7 @@
 #include <fmt/core.h>
 #include <libHX/scope.hpp>
 #include <vmime/utility/url.hpp>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/hpm_common.h>
@@ -230,15 +231,20 @@ static void process(const XMLElement *request, XMLElement *response, EWSContext&
  * Mapping of request names to handler functions.
  */
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap = {
+	{"AddDelegate", process<Structures::mAddDelegateRequest>},
 	{"ConvertId", process<Structures::mConvertIdRequest>},
 	{"CopyFolder", process<Structures::mCopyFolderRequest>},
 	{"CopyItem", process<Structures::mCopyItemRequest>},
 	{"CreateAttachment", process<Structures::mCreateAttachmentRequest>},
 	{"CreateFolder", process<Structures::mCreateFolderRequest>},
 	{"CreateItem", process<Structures::mCreateItemRequest>},
+	{"CreateUserConfiguration", process<Structures::mCreateUserConfigurationRequest>},
+	{"DeleteAttachment", process<Structures::mDeleteAttachmentRequest>},
 	{"DeleteFolder", process<Structures::mDeleteFolderRequest>},
 	{"DeleteItem", process<Structures::mDeleteItemRequest>},
+	{"DeleteUserConfiguration", process<Structures::mDeleteUserConfigurationRequest>},
 	{"EmptyFolder", process<Structures::mEmptyFolderRequest>},
+	{"ExpandDL", process<Structures::mExpandDLRequest>},
 	{"FindFolder", process<Structures::mFindFolderRequest>},
 	{"FindItem", process<Structures::mFindItemRequest>},
 	{"FindPeople", process<Structures::mFindPeopleRequest>},
@@ -250,6 +256,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetInboxRules", process<Structures::mGetInboxRulesRequest>},
 	{"GetItem", process<Structures::mGetItemRequest>},
 	{"GetMailTips", process<Structures::mGetMailTipsRequest>},
+	{"GetPersona", process<Structures::mGetPersonaRequest>},
 	{"GetRoomLists", process<Structures::mGetRoomListsRequest>},
 	{"GetRooms", process<Structures::mGetRoomsRequest>},
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
@@ -260,7 +267,9 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetUserPhoto", process<Structures::mGetUserPhotoRequest>},
 	{"MoveFolder", process<Structures::mMoveFolderRequest>},
 	{"MoveItem", process<Structures::mMoveItemRequest>},
+	{"RemoveDelegate", process<Structures::mRemoveDelegateRequest>},
 	{"ResolveNames", process<Structures::mResolveNamesRequest>},
+	{"UpdateDelegate", process<Structures::mUpdateDelegateRequest>},
 	{"SendItem", process<Structures::mSendItemRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"Subscribe", process<Structures::mSubscribeRequest>},
@@ -269,6 +278,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"Unsubscribe", process<Structures::mUnsubscribeRequest>},
 	{"UpdateFolder", process<Structures::mUpdateFolderRequest>},
 	{"UpdateItem", process<Structures::mUpdateItemRequest>},
+	{"UpdateUserConfiguration", process<Structures::mUpdateUserConfigurationRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -298,7 +308,7 @@ http_status EWSPlugin::fault(detail::ContextKey ctx_id, http_status code,
 }
 
 /**
- * @brief      Proccess request
+ * @brief      Process request
  *
  * Checks if an authentication context exists, dispatches the request and
  * writes the response.
@@ -561,6 +571,9 @@ static BOOL ews_init(const struct dlfuncs &apidata)
 	LINK_HPM_API(apidata)
 	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
 		return false;
+	if (bounce_gen_init(get_config_path(), get_data_path(),
+	    "notify_bounce") != 0)
+		return fail("[ews] failed to start bounce producer");
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
 	ifc.proc    = [](detail::ContextKey ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
@@ -581,7 +594,7 @@ static BOOL ews_init(const struct dlfuncs &apidata)
  *
  * Used for (de-)initializing the plugin
  *
- * @param      reason  Reason the function is calles
+ * @param      reason  Reason the function is called
  * @param      data    Additional, reason specific data
  *
  * @return     TRUE if successful, false otherwise
@@ -839,6 +852,16 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		break;
 	}
 	case db_notify_type::folder_modified: {
+		/*
+		 * Do not call exmdb.get_folder_properties() here to fetch
+		 * PR_CONTENT_UNREAD.  This handler runs on the exmdb parser
+		 * thread inside dg_notify → event_proc, where an env_context
+		 * is already active.  The exmdb_client_local LPC wrapper
+		 * calls build_env/free_env, which destroys the arena owning
+		 * the current request's dir pointer (use-after-free).
+		 * UnreadCount is optional in EWS ModifiedEvent.
+		 * If really required, the count must be included in the event generated by exmdb.
+		 */
 		mgr->events.emplace_back(tModifiedEvent(now,
 			mkFid(evt.folder_id), mkFid(evt.parent_id)));
 		break;

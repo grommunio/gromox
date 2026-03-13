@@ -21,6 +21,8 @@
 #include "exceptions.hpp"
 #include "structures.hpp"
 
+extern void utf8_sanitize_codepoints(std::string &);
+
 namespace gromox::EWS::Serialization {
 
 using SetterFunc = const std::function<void(const char*)>&;
@@ -30,7 +32,7 @@ using SetterFunc = const std::function<void(const char*)>&;
 
 static constexpr uint8_t EC_IN = 0x1U; ///< Needs explicit conversion on import
 static constexpr uint8_t EC_OUT = 0x2U; ///< Needs explicit conversion on export
-static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitely by SetText
+static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitly by SetText
 
 /**
  * @brief      Explicit conversion information
@@ -135,6 +137,7 @@ template<> struct ExplicitConvert<std::string> {
 			return;
 		auto filtered = value;
 		utf8_filter(filtered.data());
+		utf8_sanitize_codepoints(filtered);
 		filtered.resize(strlen(filtered.c_str()));
 		if (!filtered.empty())
 			setter(filtered.c_str());

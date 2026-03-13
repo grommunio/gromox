@@ -584,7 +584,7 @@ enum {
 	// PR_BUSINESS_ADDRESS_POSTAL_CODE = PROP_TAG(PT_UNICODE, 0x3A2A), /* PR_POSTAL_CODE */
 	// PR_POST_OFFICE_BOX = PROP_TAG(PT_UNICODE, 0x3A2B), /* PidTagPostOfficeBox */
 	// PR_BUSINESS_ADDRESS_POST_OFFICE_BOX = PROP_TAG(PT_UNICODE, 0x3A2B), /* PR_POST_OFFICE_BOX */
-	// PR_TELEX_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2C), /* PidTagTelexNumber */
+	PR_TELEX_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2C), /* PidTagTelexNumber */
 	PR_ISDN_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2D), /* PidTagIsdnNumber */
 	PR_ASSISTANT_TELEPHONE_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2E), /* PidTagAssistantTelephoneNumber */
 	PR_HOME2_TELEPHONE_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2F), /* PidTagHome2TelephoneNumber */
@@ -757,9 +757,9 @@ enum {
 	// PR_RECIPIENT_PROPOSEDENDTIME = PROP_TAG(PT_SYSTIME, 0x5FE4), /* PidTagRecipientProposedEndTime */
 	PR_RECIPIENT_DISPLAY_NAME = PROP_TAG(PT_UNICODE, 0x5FF6), /* PidTagRecipientDisplayName */
 	PR_RECIPIENT_ENTRYID = PROP_TAG(PT_BINARY, 0x5FF7), /* PidTagRecipientEntryId */
-	// PR_RECIPIENT_TRACKSTATUS_TIME = PROP_TAG(PT_SYSTIME, 0x5FFB), /* PidTagRecipientTrackStatusTime */
+	PR_RECIPIENT_TRACKSTATUS_TIME = PROP_TAG(PT_SYSTIME, 0x5FFB), /* PidTagRecipientTrackStatusTime */
 	PR_RECIPIENT_FLAGS = PROP_TAG(PT_LONG, 0x5FFD), /* PidTagRecipientFlags */
-	// PR_RECIPIENT_TRACKSTATUS = PROP_TAG(PT_LONG, 0x5FFF), /* PidTagRecipientTrackStatus */
+	PR_RECIPIENT_TRACKSTATUS = PROP_TAG(PT_LONG, 0x5FFF), /* PidTagRecipientTrackStatus */
 	// PR_JUNK_INCLUDE_CONTACTS = PROP_TAG(PT_LONG, 0x6100), /* PidTagJunkIncludeContacts */
 	// PR_JUNK_THRESHOLD = PROP_TAG(PT_LONG, 0x6101), /* PidTagJunkThreshold */
 	// PR_JUNK_PERMANENTLY_DELETE = PROP_TAG(PT_LONG, 0x6102), /* PidTagJunkPermanentlyDelete */
@@ -1129,6 +1129,9 @@ enum {
 	PidLidMailingAdress = 0x8022,  // PT_UNICODE
 	PidLidPostalAddressIndex = 0x8022, // PT_LONG
 	dispidEmailList = 0x8027,
+	PidLidYomiFirstName = 0x802C,
+	PidLidYomiLastName = 0x802D,
+	PidLidYomiCompanyName = 0x802E,
 	PidLidBusinessCardDisplayDefinition = 0x8040,
 	PidLidWorkAddressStreet = 0x8045,
 	PidLidWorkAddressCity = 0x8046,

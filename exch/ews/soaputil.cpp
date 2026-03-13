@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <stdexcept>
@@ -94,6 +94,7 @@ string Envelope::fault(const char* code, const char* message)
 	return fmt::format(
 	        "<SOAP:Envelope xmlns:SOAP=\"http://schemas.xmlsoap.org/soap/envelope/\""
 	                      " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\">"
+	          "<SOAP:Header/>"
 	          "<SOAP:Body>"
 	            "<SOAP:Fault>"
 	              "<faultcode xsi:type=\"xsd:string\">{}</faultcode>"

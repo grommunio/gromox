@@ -33,10 +33,48 @@ using namespace std::string_literals;
 
 #define EXT_TRY(expr) EWSContext::ext_error(expr)
 
+/**
+ * @brief      Sanitize decoded UTF-8 codepoints
+ *
+ * Complements utf8_filter (which handles structural byte validation) by
+ * rejecting codepoints that are structurally valid UTF-8 but semantically
+ * illegal in XML: overlong encodings, surrogates, and non-characters.
+ */
+void utf8_sanitize_codepoints(std::string &s)
+{
+	auto p = reinterpret_cast<unsigned char *>(s.data());
+	auto end = p + s.size();
+	while (p < end) {
+		if (*p < 0x80) {
+			++p;
+			continue;
+		}
+		unsigned n = (*p & 0xE0) == 0xC0 ? 2 :
+		             (*p & 0xF0) == 0xE0 ? 3 :
+		             (*p & 0xF8) == 0xF0 ? 4 : 1;
+		if (n == 1 || p + n > end) {
+			*p++ = '?';
+			continue;
+		}
+		bool bad = (n == 2 && *p <= 0xC1) ||
+		           (n == 3 && *p == 0xE0 && p[1] < 0xA0) ||
+		           (n == 3 && *p == 0xED && p[1] >= 0xA0) ||
+		           (n == 3 && *p == 0xEF && p[1] == 0xBF &&
+		            p[2] >= 0xBE) ||
+		           (n == 4 && *p == 0xF0 && p[1] < 0x90) ||
+		           (n == 4 && (*p > 0xF4 ||
+		            (*p == 0xF4 && p[1] >= 0x90)));
+		if (bad)
+			memset(p, '?', n);
+		p += n;
+	}
+}
+
 static void xml_set_filtered_text(tinyxml2::XMLElement *xml, const char *text)
 {
 	std::string filtered(text);
 	utf8_filter(filtered.data());
+	utf8_sanitize_codepoints(filtered);
 	filtered.resize(strlen(filtered.c_str()));
 	xml->SetText(filtered.c_str());
 }
@@ -145,6 +183,88 @@ std::string sBase64Binary::serialize() const
 void sBase64Binary::serialize(XMLElement *xml) const
 {
 	xml->SetText(empty() ? "" : base64_encode(*this).c_str());
+}
+
+sBaseItemId::sBaseItemId(const tinyxml2::XMLElement *xml) :
+    Base(fromXMLNodeDispatch<Base>(xml))
+{}
+
+
+sCalendarMeetingRequestCommon::sCalendarMeetingRequestCommon(const tinyxml2::XMLElement *xml) :
+	XMLINIT(Start),
+	XMLINIT(End),
+	XMLINIT(OriginalStart),
+	XMLINIT(IsAllDayEvent),
+	XMLINIT(LegacyFreeBusyStatus),
+	XMLINIT(Location),
+	XMLINIT(IsMeeting),
+	XMLINIT(IsCancelled),
+	XMLINIT(IsRecurring),
+	XMLINIT(MeetingRequestWasSent),
+	XMLINIT(CalendarItemType),
+	XMLINIT(IsResponseRequested),
+	XMLINIT(MyResponseType),
+	XMLINIT(Organizer),
+	XMLINIT(RequiredAttendees),
+	XMLINIT(OptionalAttendees),
+	XMLINIT(Resources),
+	XMLINIT(Recurrence),
+	XMLINIT(StartTimeZone),
+	XMLINIT(EndTimeZone),
+	XMLINIT(ConferenceType),
+	XMLINIT(AllowNewTimeProposal),
+	XMLINIT(IsOnlineMeeting),
+	XMLINIT(MeetingWorkspaceUrl),
+	XMLINIT(NetShowUrl),
+	XMLINIT(StartTimeZoneId),
+	XMLINIT(EndTimeZoneId),
+	XMLINIT(DoNotForwardMeeting),
+	XMLINIT(IntendedFreeBusyStatus),
+	XMLINIT(AppointmentReplyTime),
+	XMLINIT(AppointmentSequenceNumber),
+	XMLINIT(AppointmentState),
+	XMLINIT(Duration),
+	XMLINIT(TimeZone)
+{}
+
+void sCalendarMeetingRequestCommon::serialize(tinyxml2::XMLElement *xml) const
+{
+	XMLDUMPT(Start);
+	XMLDUMPT(End);
+	XMLDUMPT(OriginalStart);
+	XMLDUMPT(IsAllDayEvent);
+	XMLDUMPT(LegacyFreeBusyStatus);
+	XMLDUMPT(Location);
+	XMLDUMPT(IsMeeting);
+	XMLDUMPT(IsCancelled);
+	XMLDUMPT(IsRecurring);
+	XMLDUMPT(MeetingRequestWasSent);
+	XMLDUMPT(CalendarItemType);
+	XMLDUMPT(IsResponseRequested);
+	XMLDUMPT(MyResponseType);
+	XMLDUMPT(Organizer);
+	XMLDUMPT(RequiredAttendees);
+	XMLDUMPT(OptionalAttendees);
+	XMLDUMPT(Resources);
+	XMLDUMPT(Recurrence);
+	XMLDUMPT(StartTimeZoneId);
+	XMLDUMPT(EndTimeZoneId);
+	XMLDUMPT(ModifiedOccurrences);
+	XMLDUMPT(DeletedOccurrences);
+	XMLDUMPT(ConferenceType);
+	XMLDUMPT(AllowNewTimeProposal);
+	XMLDUMPT(IsOnlineMeeting);
+	XMLDUMPT(MeetingWorkspaceUrl);
+	XMLDUMPT(NetShowUrl);
+	XMLDUMPT(StartTimeZone);
+	XMLDUMPT(EndTimeZone);
+	XMLDUMPT(DoNotForwardMeeting);
+	XMLDUMPT(IntendedFreeBusyStatus);
+	XMLDUMPT(AppointmentReplyTime);
+	XMLDUMPT(AppointmentSequenceNumber);
+	XMLDUMPT(AppointmentState);
+	XMLDUMPT(Duration);
+	XMLDUMPT(TimeZone);
 }
 
 /**
@@ -346,6 +466,7 @@ void tBaseFolderType::serialize(XMLElement *xml) const
 	XMLDUMPT(TotalCount);
 	XMLDUMPT(ChildFolderCount);
 	XMLDUMPT(EffectiveRights);
+	XMLDUMPT(DistinguishedFolderId);
 	for (const tExtendedProperty &ep : ExtendedProperty)
 		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
@@ -429,7 +550,19 @@ void tBody::serialize(tinyxml2::XMLElement *xml) const
 }
 
 tTask::tTask(const tinyxml2::XMLElement *xml) :
-	tItem(xml)
+	tItem(xml),
+	XMLINIT(ActualWork),
+	XMLINIT(CompleteDate),
+	XMLINIT(DueDate),
+	XMLINIT(StartDate),
+	XMLINIT(BillingInformation),
+	XMLINIT(Companies),
+	XMLINIT(IsComplete),
+	XMLINIT(Mileage),
+	XMLINIT(Owner),
+	XMLINIT(PercentComplete),
+	XMLINIT(Status),
+	XMLINIT(TotalWork)
 {}
 
 void tTask::serialize(tinyxml2::XMLElement *xml) const
@@ -616,6 +749,17 @@ void tRecurrenceType::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(RecurrenceRange);
 }
 
+tOccurrenceItemId::tOccurrenceItemId(const tinyxml2::XMLElement *xml) :
+    XMLINITA(RecurringMasterId),
+    XMLINITA(ChangeKey),
+    XMLINITA(InstanceIndex)
+{}
+
+tRecurringMasterItemId::tRecurringMasterItemId(const tinyxml2::XMLElement *xml) :
+    XMLINITA(OccurrenceId),
+    XMLINITA(ChangeKey)
+{}
+
 void tOccurrenceInfoType::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(ItemId);
@@ -643,73 +787,29 @@ void tNotification::serialize(tinyxml2::XMLElement *xml) const
 		XMLDUMPT(event);
 }
 
+tTimeZoneDefinition::tTimeZoneDefinition(const tinyxml2::XMLElement *xml) :
+	XMLINITA(Id)
+{}
+
+void tTimeZoneDefinition::serialize(tinyxml2::XMLElement *xml) const
+{
+	XMLDUMPA(Id);
+	xml->SetAttribute("Name", Id.c_str());
+}
+
 tCalendarItem::tCalendarItem(const tinyxml2::XMLElement *xml) :
 	tItem(xml),
-	XMLINIT(UID),
-	XMLINIT(Start),
-	XMLINIT(End),
-	XMLINIT(OriginalStart),
-	XMLINIT(IsAllDayEvent),
-	XMLINIT(LegacyFreeBusyStatus),
-	XMLINIT(Location),
-	XMLINIT(IsMeeting),
-	XMLINIT(IsCancelled),
-	XMLINIT(IsRecurring),
-	XMLINIT(MeetingRequestWasSent),
-	XMLINIT(IsResponseRequested),
-	XMLINIT(MyResponseType),
-	XMLINIT(Organizer),
-	XMLINIT(RequiredAttendees),
-	XMLINIT(OptionalAttendees),
-	XMLINIT(Resources),
-	XMLINIT(AppointmentReplyTime),
-	XMLINIT(AppointmentSequenceNumber),
-	XMLINIT(AppointmentState),
-	XMLINIT(Recurrence),
-	XMLINIT(AllowNewTimeProposal),
-	XMLINIT(StartTimeZoneId),
-	XMLINIT(EndTimeZoneId)
+	sCalendarMeetingRequestCommon(xml),
+	XMLINIT(UID)
 {}
 
 void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 {
 	tItem::serialize(xml);
-
+	sCalendarMeetingRequestCommon::serialize(xml);
 	XMLDUMPT(UID);
-	XMLDUMPT(RecurrenceId);
-	XMLDUMPT(DateTimeStamp);
-	XMLDUMPT(Start);
-	XMLDUMPT(End);
-	XMLDUMPT(IsAllDayEvent);
-	XMLDUMPT(LegacyFreeBusyStatus);
-	XMLDUMPT(Location);
-	XMLDUMPT(IsMeeting);
-	XMLDUMPT(IsCancelled);
-	XMLDUMPT(IsRecurring);
-	XMLDUMPT(MeetingRequestWasSent);
-	XMLDUMPT(IsResponseRequested);
-	XMLDUMPT(CalendarItemType);
-	XMLDUMPT(MyResponseType);
-	XMLDUMPT(Organizer);
-	XMLDUMPT(RequiredAttendees);
-	XMLDUMPT(OptionalAttendees);
-	XMLDUMPT(Resources);
-	XMLDUMPT(Duration);
-	XMLDUMPT(TimeZone);
-	XMLDUMPT(AppointmentReplyTime);
-	XMLDUMPT(AppointmentSequenceNumber);
-	XMLDUMPT(AppointmentState);
-	XMLDUMPT(Recurrence);
-	XMLDUMPT(ModifiedOccurrences);
-	XMLDUMPT(DeletedOccurrences);
-	XMLDUMPT(ConferenceType);
-	XMLDUMPT(AllowNewTimeProposal);
-	XMLDUMPT(IsOnlineMeeting);
-	XMLDUMPT(MeetingWorkspaceUrl);
-	XMLDUMPT(NetShowUrl);
-	XMLDUMPT(StartTimeZoneId);
-	XMLDUMPT(EndTimeZoneId);
-	XMLDUMPT(DoNotForwardMeeting);
+	XMLDUMPT(StartTimeZone);
+	XMLDUMPT(EndTimeZone);
 }
 
 tCalendarPermission::tCalendarPermission(const tinyxml2::XMLElement *xml) :
@@ -811,6 +911,7 @@ tContact::tContact(const tinyxml2::XMLElement *xml) :
 	XMLINIT(Nickname),
 	XMLINIT(CompleteName),
 	XMLINIT(CompanyName),
+	XMLINIT(YomiCompanyName),
 	XMLINIT(EmailAddresses),
 	XMLINIT(PhysicalAddresses),
 	XMLINIT(PhoneNumbers),
@@ -821,10 +922,12 @@ tContact::tContact(const tinyxml2::XMLElement *xml) :
 	XMLINIT(ContactSource),
 	XMLINIT(Department),
 	XMLINIT(Generation),
+	XMLINIT(ImAddresses),
 	XMLINIT(JobTitle),
 	XMLINIT(Manager),
 	XMLINIT(OfficeLocation),
 	XMLINIT(PostalAddressIndex),
+	XMLINIT(Profession),
 	XMLINIT(SpouseName),
 	XMLINIT(Surname),
 	XMLINIT(WeddingAnniversary)
@@ -842,19 +945,23 @@ void tContact::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(Nickname);
 	XMLDUMPT(CompleteName);
 	XMLDUMPT(CompanyName);
+	XMLDUMPT(YomiCompanyName);
 	XMLDUMPT(EmailAddresses);
 	XMLDUMPT(PhysicalAddresses);
 	XMLDUMPT(PhoneNumbers);
 	XMLDUMPT(AssistantName);
+	XMLDUMPT(Birthday);
 	XMLDUMPT(BusinessHomePage);
 	XMLDUMPT(Children);
 	XMLDUMPT(Department);
 	XMLDUMPT(Generation);
+	XMLDUMPT(ImAddresses);
 	XMLDUMPT(ContactSource);
 	XMLDUMPT(JobTitle);
 	XMLDUMPT(Manager);
 	XMLDUMPT(OfficeLocation);
 	XMLDUMPT(PostalAddressIndex);
+	XMLDUMPT(Profession);
 	XMLDUMPT(SpouseName);
 	XMLDUMPT(Surname);
 	XMLDUMPT(WeddingAnniversary);
@@ -950,6 +1057,12 @@ void tRoomType::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(Id);
 }
 
+void tRootItemId::serialize(tinyxml2::XMLElement *xml) const
+{
+	XMLDUMPA(RootItemId);
+	XMLDUMPA(RootItemChangeKey);
+}
+
 tFileAttachment::tFileAttachment(const XMLElement *xml)
 {
 	if (const XMLElement *xp = xml->FirstChildElement("Name"))
@@ -990,6 +1103,17 @@ tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(const tinyxml2::XMLElem
 void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement *xml) const
 {
 	xml_set_filtered_text(xml, Entry.c_str());
+	XMLDUMPA(Key);
+}
+
+tImAddressDictionaryEntry::tImAddressDictionaryEntry(const tinyxml2::XMLElement *xml) :
+	Entry(fromXMLNode<std::string>(xml)),
+	XMLINITA(Key)
+{}
+
+void tImAddressDictionaryEntry::serialize(tinyxml2::XMLElement *xml) const
+{
+	xml->SetText(Entry.c_str());
 	XMLDUMPA(Key);
 }
 
@@ -1235,7 +1359,7 @@ void tItem::serialize(XMLElement *xml) const
 }
 
 tItemChange::tItemChange(const XMLElement *xml) :
-	XMLINIT(ItemId),
+	ItemId(fromXMLNodeVariantFind<sBaseItemId::Base>(xml)),
 	XMLINIT(Updates)
 {}
 
@@ -1367,59 +1491,16 @@ void tChangeHighlights::serialize(tinyxml2::XMLElement *xml) const
 
 tMeetingRequestMessage::tMeetingRequestMessage(const tinyxml2::XMLElement *xml) :
 	tMeetingMessage(xml),
+	sCalendarMeetingRequestCommon(xml),
 	XMLINIT(MeetingRequestType),
-	XMLINIT(IntendedFreeBusyStatus),
-	XMLINIT(Start),
-	XMLINIT(End),
-	XMLINIT(OriginalStart),
-	XMLINIT(IsAllDayEvent),
-	XMLINIT(LegacyFreeBusyStatus),
-	XMLINIT(Location),
-	XMLINIT(IsMeeting),
-	XMLINIT(IsCancelled),
-	XMLINIT(IsRecurring),
-	XMLINIT(MeetingRequestWasSent),
-	XMLINIT(CalendarItemType),
-	XMLINIT(MyResponseType),
-	XMLINIT(Organizer),
-	XMLINIT(RequiredAttendees),
-	XMLINIT(OptionalAttendees),
-	XMLINIT(Resources),
-	XMLINIT(AppointmentReplyTime),
-	XMLINIT(AppointmentSequenceNumber),
-	XMLINIT(AppointmentState),
-	XMLINIT(Recurrence),
-	XMLINIT(AllowNewTimeProposal),
 	XMLINIT(ChangeHighlights)
 {}
 
 void tMeetingRequestMessage::serialize(tinyxml2::XMLElement *xml) const
 {
 	tMeetingMessage::serialize(xml);
+	sCalendarMeetingRequestCommon::serialize(xml);
 	XMLDUMPT(MeetingRequestType);
-	XMLDUMPT(IntendedFreeBusyStatus);
-	XMLDUMPT(Start);
-	XMLDUMPT(End);
-	XMLDUMPT(IsAllDayEvent);
-	XMLDUMPT(LegacyFreeBusyStatus);
-	XMLDUMPT(Location);
-	XMLDUMPT(IsMeeting);
-	XMLDUMPT(IsCancelled);
-	XMLDUMPT(IsRecurring);
-	XMLDUMPT(MeetingRequestWasSent);
-	XMLDUMPT(CalendarItemType);
-	XMLDUMPT(MyResponseType);
-	XMLDUMPT(Organizer);
-	XMLDUMPT(RequiredAttendees);
-	XMLDUMPT(OptionalAttendees);
-	XMLDUMPT(Resources);
-	XMLDUMPT(AppointmentReplyTime);
-	XMLDUMPT(AppointmentSequenceNumber);
-	XMLDUMPT(AppointmentState);
-	XMLDUMPT(Recurrence);
-	XMLDUMPT(ModifiedOccurrences);
-	XMLDUMPT(DeletedOccurrences);
-	XMLDUMPT(AllowNewTimeProposal);
 	XMLDUMPT(ChangeHighlights);
 }
 
@@ -1703,12 +1784,19 @@ void tUserConfigurationDictionaryEntry::serialize(tinyxml2::XMLElement *xml) con
 	XMLDUMPT(DictionaryValue);
 }
 
-void tUserConfigurationDictionaryType::serialize(tinyxml2::XMLElement *xml) const
+void tUserConfigurationDictionary::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(DictionaryEntry);
 }
 
-void tUserConfigurationType::serialize(tinyxml2::XMLElement *xml) const
+tUserConfiguration::tUserConfiguration(const tinyxml2::XMLElement *xml) :
+    XMLINIT(UserConfigurationName),
+    XMLINIT(ItemId),
+    XMLINIT(XmlData),
+    XMLINIT(BinaryData)
+{}
+
+void tUserConfiguration::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(UserConfigurationName);
 	XMLDUMPT(ItemId);
@@ -1832,6 +1920,7 @@ void mDeleteFolderResponse::serialize(tinyxml2::XMLElement *xml) const
 
 mDeleteItemRequest::mDeleteItemRequest(const tinyxml2::XMLElement *xml) :
 	XMLINITA(DeleteType),
+	XMLINITA(SendMeetingCancellations),
 	XMLINIT(ItemIds)
 {}
 
@@ -1935,6 +2024,21 @@ void mGetAttachmentResponseMessage::serialize(XMLElement *xml) const
 {
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(Attachments);
+}
+
+mDeleteAttachmentRequest::mDeleteAttachmentRequest(const XMLElement *xml) :
+	XMLINIT(AttachmentIds)
+{}
+
+void mDeleteAttachmentResponseMessage::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(RootItemId);
+}
+
+void mDeleteAttachmentResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
 }
 
 mGetEventsRequest::mGetEventsRequest(const tinyxml2::XMLElement *xml) :
@@ -2064,6 +2168,15 @@ mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement *xml) :
 	XMLINIT(Mailbox)
 {}
 
+mCreateUserConfigurationRequest::mCreateUserConfigurationRequest(const XMLElement *xml) :
+    XMLINIT(UserConfiguration)
+{}
+
+void mCreateUserConfigurationResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
 mGetUserConfigurationRequest::mGetUserConfigurationRequest(const tinyxml2::XMLElement *xml) :
 	XMLINIT(UserConfigurationName),
 	XMLINIT(UserConfigurationProperties)
@@ -2080,27 +2193,86 @@ void mGetUserConfigurationResponse::serialize(XMLElement *xml) const
 	XMLDUMPM(ResponseMessages);
 }
 
+mUpdateUserConfigurationRequest::mUpdateUserConfigurationRequest(const XMLElement *xml) :
+    XMLINIT(UserConfiguration)
+{}
+
+void mUpdateUserConfigurationResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
+mDeleteUserConfigurationRequest::mDeleteUserConfigurationRequest(const XMLElement *xml) :
+	XMLINIT(UserConfigurationName)
+{}
+
+void mDeleteUserConfigurationResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
+tDelegatePermissions::tDelegatePermissions(const XMLElement *xml) :
+	XMLINIT(CalendarFolderPermissionLevel),
+	XMLINIT(TasksFolderPermissionLevel),
+	XMLINIT(InboxFolderPermissionLevel),
+	XMLINIT(ContactsFolderPermissionLevel),
+	XMLINIT(NotesFolderPermissionLevel),
+	XMLINIT(JournalFolderPermissionLevel)
+{}
+
+void tDelegatePermissions::serialize(XMLElement *xml) const
+{
+	XMLDUMPT(CalendarFolderPermissionLevel);
+	XMLDUMPT(TasksFolderPermissionLevel);
+	XMLDUMPT(InboxFolderPermissionLevel);
+	XMLDUMPT(ContactsFolderPermissionLevel);
+	XMLDUMPT(NotesFolderPermissionLevel);
+	XMLDUMPT(JournalFolderPermissionLevel);
+}
+
+tDelegateUser::tDelegateUser(const XMLElement *xml) :
+	XMLINIT(UserId),
+	XMLINIT(DelegatePermissions)
+{}
+
 void tDelegateUser::serialize(XMLElement *xml) const
 {
 	XMLDUMPT(UserId);
+	XMLDUMPT(DelegatePermissions);
 }
 
 mGetDelegateRequest::mGetDelegateRequest(const XMLElement *xml) :
 	XMLINIT(Mailbox),
 	XMLINIT(UserIds),
-	XMLINIT(IncludePermissions)
+	XMLINITA(IncludePermissions)
 {}
 
 void mDelegateUserResponseMessage::serialize(XMLElement *xml) const
 {
 	mResponseMessageType::serialize(xml);
-	XMLDUMPT(DelegateUser);
+	XMLDUMPM(DelegateUser);
 }
 
 void mGetDelegateResponse::serialize(XMLElement *xml) const
 {
+	mResponseMessageType::serialize(xml);
 	XMLDUMPM(ResponseMessages);
 }
+
+mAddDelegateRequest::mAddDelegateRequest(const XMLElement *xml) :
+	XMLINIT(Mailbox),
+	XMLINIT(DelegateUsers)
+{}
+
+mRemoveDelegateRequest::mRemoveDelegateRequest(const XMLElement *xml) :
+	XMLINIT(Mailbox),
+	XMLINIT(UserIds)
+{}
+
+mUpdateDelegateRequest::mUpdateDelegateRequest(const XMLElement *xml) :
+	XMLINIT(Mailbox),
+	XMLINIT(DelegateUsers)
+{}
 
 void mGetUserOofSettingsResponse::serialize(XMLElement *xml) const
 {
@@ -2254,6 +2426,16 @@ void mFindPeopleResponse::serialize(XMLElement *xml) const
 	XMLDUMPM(ResponseMessages);
 }
 
+mGetPersonaRequest::mGetPersonaRequest(const XMLElement *xml) :
+	XMLINIT(EmailAddress)
+{}
+
+void mGetPersonaResponseMessage::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPT(Persona);
+}
+
 void tFindResponsePagingAttributes::serialize(XMLElement *xml) const
 {
 	XMLDUMPA(IndexedPagingOffset);
@@ -2272,7 +2454,8 @@ void tResolution::serialize(XMLElement *xml) const
 void tResolutionSet::serialize(XMLElement *xml) const
 {
 	tFindResponsePagingAttributes::serialize(xml);
-	XMLDUMPT(Resolution);
+	for (const auto &resol : Resolution)
+		toXMLNode(xml, "t:Resolution", resol);
 }
 
 mResolveNamesRequest::mResolveNamesRequest(const XMLElement *xml) :
@@ -2290,6 +2473,28 @@ void mResolveNamesResponseMessage::serialize(XMLElement *xml) const
 }
 
 void mResolveNamesResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
+mExpandDLRequest::mExpandDLRequest(const XMLElement *xml) :
+	XMLINIT(Mailbox)
+{}
+
+void tDLExpansion::serialize(XMLElement *xml) const
+{
+	tFindResponsePagingAttributes::serialize(xml);
+	for (const auto &mbx : Mailbox)
+		toXMLNode(xml, "t:Mailbox", mbx);
+}
+
+void mExpandDLResponseMessage::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(DLExpansion);
+}
+
+void mExpandDLResponse::serialize(XMLElement *xml) const
 {
 	XMLDUMPM(ResponseMessages);
 }
@@ -2328,7 +2533,9 @@ void mUnsubscribeResponse::serialize(tinyxml2::XMLElement *xml) const
 }
 
 mUpdateItemRequest::mUpdateItemRequest(const XMLElement *xml) :
-	XMLINIT(ItemChanges)
+	XMLINIT(ItemChanges),
+	XMLINITA(SendMeetingInvitationsOrCancellations),
+	XMLINITA(SuppressReadReceipts)
 {}
 
 void mUpdateItemResponse::serialize(XMLElement *xml) const

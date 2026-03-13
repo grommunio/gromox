@@ -132,7 +132,7 @@ class EWSPlugin {
 		Structures::sMailboxInfo mailboxInfo; ///< Target mailbox metadata
 		std::mutex lock; ///< I/O mutex
 		std::vector<detail::ExmdbSubscriptionKey> inner_subs; ///< Exmdb subscription keys
-		std::list<Structures::sNotificationEvent> events; ///< Events that occured since last check
+		std::list<Structures::sNotificationEvent> events; ///< Events that occurred since last check
 		detail::ContextKey waitingContext = -1; ///< ID of context waiting for events
 	};
 
@@ -164,7 +164,7 @@ class EWSPlugin {
 	size_t max_user_photo_size = 5 << 20; ///< Maximum user photo file size (5 MiB)
 	std::chrono::milliseconds cache_interval{5'000}; ///< Interval for cache cleanup
 	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; ///< Lifetime of attachment instances
-	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; /// Lifetime of embedded instances
+	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; ///< Lifetime of embedded instances
 	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; ///< Lifetime of message instances
 	std::chrono::milliseconds event_stream_interval{45'000}; ///< How often to send updates for GetStreamingEvents
 
@@ -201,7 +201,7 @@ class EWSPlugin {
 	 * expire.
 	 *
 	 * Once stored, only copies of the stored elements can be retrieved to avoid
-	 * asynchronous deconstruction during access (use std::shared_ptr).
+	 * asynchronous destruction during access (use std::shared_ptr).
 	 */
 	class ObjectCache {
 		private:
@@ -305,25 +305,36 @@ class EWSContext {
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	TARRAY_SET loadPermissions(const std::string&, uint64_t) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
+	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
+	void deleteOccurrence(const std::string &, uint64_t, uint32_t) const;
+	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
+	void applyRecurrence(const std::string &, uint64_t, const tinyxml2::XMLElement *, Structures::sShape &) const;
+	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tContactsFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingMessage &, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingRequestMessage &, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
 	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&, PCL=PCL()) const;
 	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
 	uint64_t moveCopyItem(const std::string&, const Structures::sMessageEntryId&, uint64_t, bool) const;
 	void normalize(Structures::tEmailAddressType&) const;
+	void notifyReadReceipt(const std::string&, uint64_t) const;
 	void normalize(Structures::tMailbox&) const;
 	int notify();
 	uint32_t permissions(const std::string&, uint64_t) const;
+	Structures::tDelegatePermissions readDelegatePermissions(const std::string&, const std::string&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
+	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool) const;
+	void sendMeetingResponse(const Structures::tItemId&, const MESSAGE_CONTENT&) const;
 	BINARY serialize(const XID&) const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
 	void rcpt_add_unique(TARRAY_SET *, gromox::EWS::Structures::tEmailAddressType, uint32_t) const;
@@ -336,6 +347,7 @@ class EWSContext {
 	void updated(const std::string&, const Structures::sFolderSpec&) const;
 	void updated(const std::string&, const Structures::sMessageEntryId&, Structures::sShape&) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
+	void writeDelegatePermissions(const std::string&, const std::string&, const Structures::tDelegatePermissions&) const;
 	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
 
 	gromox::time_duration age() const { return tp_now() - m_created; }
@@ -365,10 +377,13 @@ class EWSContext {
 private:
 	const void* getFolderProp(const std::string&, uint64_t, uint32_t) const;
 	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
+	int32_t recurTzOffset(const std::string &, uint64_t, const APPOINTMENT_RECUR_PAT &) const;
+	bool saveRecurBlob(const std::string &, uint64_t, proptag_t, const APPOINTMENT_RECUR_PAT &) const;
+	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
 
 	struct NotificationContext {
 		enum State : uint8_t {
-			S_INIT, ///< Just initalized, flush data and wait
+			S_INIT, ///< Just initialized, flush data and wait
 			S_SLEEP, ///< Waiting for next wakeup
 			S_WRITE, ///< Just wrote data, proceed with sleeping
 			S_CLOSING, ///< All subscriptions died so we might as well
@@ -390,6 +405,7 @@ private:
 	void toContent(const std::string&, Structures::tContact&, Structures::sShape&, MCONT_PTR&) const;
 	void toContent(const std::string&, Structures::tItem&, Structures::sShape&, MCONT_PTR&) const;
 	void toContent(const std::string&, Structures::tMessage&, Structures::sShape&, MCONT_PTR&) const;
+	void toContent(const std::string &, Structures::tTask &, Structures::sShape &, MCONT_PTR &) const;
 	void toContent(const std::string &, Structures::tAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
 	void toContent(const std::string &, Structures::tTentativelyAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
 	void toContent(const std::string &, Structures::tDeclineItem &, Structures::sShape &, MCONT_PTR &) const;
