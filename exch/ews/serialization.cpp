@@ -1883,9 +1883,7 @@ mBaseMoveCopyItem::mBaseMoveCopyItem(const tinyxml2::XMLElement *xml, bool c) :
 	XMLINIT(ItemIds),
 	XMLINIT(ReturnNewItemIds),
 	copy(c)
-{
-	parseOccurrenceItemIds(xml, ItemIds);
-}
+{}
 
 mConvertIdRequest::mConvertIdRequest(const tinyxml2::XMLElement *xml) :
 	XMLINIT(SourceIds),

@@ -2285,7 +2285,8 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 
 	sShape shape = sShape(tItemResponseShape());
 
-	for (const tItemId &itemId : request.ItemIds) try {
+	for (const auto &id : request.ItemIds) try {
+		tItemId itemId = id.itemId();
 		if (!dstAccess)
 			throw EWSError::AccessDenied(E3184);
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);

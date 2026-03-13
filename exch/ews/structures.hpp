@@ -3135,7 +3135,7 @@ struct mBaseMoveCopyItem {
 	mBaseMoveCopyItem(const tinyxml2::XMLElement *, bool);
 
 	tTargetFolderIdType ToFolderId;
-	std::vector<tItemId> ItemIds;
+	std::vector<sBaseItemId> ItemIds;
 	std::optional<bool> ReturnNewItemIds;
 
 	bool copy;
