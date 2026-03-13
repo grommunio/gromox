@@ -561,7 +561,6 @@ struct tBaseItemId : public NS_EWS_Types {
 	mutable sBase64Binary Id; //Attribute
 	std::optional<sBase64Binary> ChangeKey; //Attribute
 	IdType type = ID_UNKNOWN;
-	uint32_t InstanceIndex = 0; ///< Non-zero for OccurrenceItemId (1-based)
 
 	tBaseItemId() = default;
 	tBaseItemId(const tinyxml2::XMLElement *);
@@ -4045,8 +4044,7 @@ struct mGetItemRequest {
 	explicit mGetItemRequest(const tinyxml2::XMLElement *);
 
 	tItemResponseShape ItemShape;
-	std::vector<tItemId> ItemIds;
-
+	std::vector<sBaseItemId> ItemIds;
 };
 
 struct mGetItemResponseMessage : public mResponseMessageType {

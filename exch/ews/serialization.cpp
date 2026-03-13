@@ -497,41 +497,6 @@ void tBaseItemId::serialize(XMLElement *xml) const
 	XMLDUMPA(ChangeKey);
 }
 
-/**
- * @brief      Parse OccurrenceItemId elements from an ItemIds parent
- *
- * OccurrenceItemId has RecurringMasterId + InstanceIndex attributes
- * instead of the standard Id attribute.
- */
-static void parseOccurrenceItemIds(const XMLElement *xml,
-    std::vector<tItemId> &ids)
-{
-	const XMLElement *parent = xml->FirstChildElement("ItemIds");
-	if (!parent)
-		return;
-	for (const XMLElement *elem = parent->FirstChildElement("OccurrenceItemId");
-	     elem; elem = elem->NextSiblingElement("OccurrenceItemId")) {
-		const char *masterId = elem->Attribute("RecurringMasterId");
-		int instanceIndex = 0;
-		elem->QueryIntAttribute("InstanceIndex", &instanceIndex);
-		if (!masterId || instanceIndex < 1)
-			throw DeserializationError(E3304);
-		tItemId id;
-		id.Id = sBase64Binary(base64_decode(masterId));
-		if (!id.Id.empty()) {
-			char t = id.Id.back();
-			id.type = t < 0 || t > tBaseItemId::ID_OCCURRENCE ?
-			          tBaseItemId::ID_UNKNOWN : tBaseItemId::IdType(t);
-			id.Id.pop_back();
-		}
-		const char *changeKey = elem->Attribute("ChangeKey");
-		if (changeKey)
-			id.ChangeKey = sBase64Binary(base64_decode(changeKey));
-		id.InstanceIndex = instanceIndex;
-		ids.emplace_back(std::move(id));
-	}
-}
-
 void tBaseObjectChangedEvent::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(TimeStamp);
@@ -2432,9 +2397,7 @@ void mGetInboxRulesResponse::serialize(XMLElement *xml) const
 mGetItemRequest::mGetItemRequest(const XMLElement *xml) :
 	XMLINIT(ItemShape),
 	XMLINIT(ItemIds)
-{
-	parseOccurrenceItemIds(xml, ItemIds);
-}
+{}
 
 void mGetItemResponse::serialize(XMLElement *xml) const
 {

@@ -2573,9 +2573,10 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 	mGetItemResponse data;
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	sShape shape(request.ItemShape);
-	for (auto &itemId : request.ItemIds) try {
-		if (itemId.type != tItemId::ID_ITEM && itemId.type != tItemId::ID_OCCURRENCE)
-			ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
+	for (const auto &id : request.ItemIds) try {
+		if (id.holds_alternative<tRecurringMasterItemId>())
+			throw EWSError::InvalidId(E3452);
+		tItemId itemId = id.itemId();
 		sMessageEntryId eid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);
 		std::string dir = ctx.getDir(parentFolder);
@@ -2584,8 +2585,9 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 			throw EWSError::AccessDenied(E3139);
 		mGetItemResponseMessage msg;
 		auto mid = eid.messageId();
-		if (itemId.InstanceIndex > 0) {
-			auto basedate = ctx.resolveOccurrenceIndex(dir, mid, itemId.InstanceIndex);
+		if (id.holds_alternative<tOccurrenceItemId>()) {
+			const tOccurrenceItemId& occurrenceId = std::get<tOccurrenceItemId>(id.asVariant());
+			auto basedate = ctx.resolveOccurrenceIndex(dir, mid, occurrenceId.InstanceIndex);
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid, basedate, shape));
 		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
 			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
