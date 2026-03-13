@@ -1836,6 +1836,49 @@ struct tOccurrenceInfoType : public NS_EWS_Types {
 };
 
 /**
+ * Types.xsd:4437
+ */
+struct tOccurrenceItemId {
+	static constexpr char NAME[] = "OccurrenceItemId";
+
+	explicit tOccurrenceItemId(const tinyxml2::XMLElement *);
+
+	sBase64Binary RecurringMasterId;  // Attribute
+	std::optional<sBase64Binary> ChangeKey;  // Attribute
+	uint32_t InstanceIndex;  // Attribute
+};
+
+/**
+ * Types.xsd:4447
+ */
+struct tRecurringMasterItemId {
+	static constexpr char NAME[] = "RecurringMasterItemId";
+
+	explicit tRecurringMasterItemId(const tinyxml2::XMLElement *);
+
+	sBase64Binary OccurrenceId;  // Attribute
+	std::optional<sBase64Binary> ChangeKey;  // Attribute
+};
+
+/**
+ * @brief Variant of different id types.
+ *
+ * Not explicetly defined by the specification, but used multiple times.
+ * Provides commonly used functionality for conversion.
+ */
+struct sBaseItemId : public std::variant<tItemId, tOccurrenceItemId, tRecurringMasterItemId> {
+	using Base = std::variant<tItemId, tOccurrenceItemId, tRecurringMasterItemId>;
+
+	explicit sBaseItemId(const tinyxml2::XMLElement *);
+	explicit inline sBaseItemId(Base &&b) : Base(std::move(b)) {}
+
+	tItemId itemId() const;
+
+	constexpr const Base &asVariant() const { return *this; }
+	template<typename T> constexpr bool holds_alternative() const {return std::holds_alternative<T>(asVariant());}
+};
+
+/**
  * Types.xsd:4919
  */
 struct tDeletedOccurrenceInfoType : public NS_EWS_Types {
@@ -2275,9 +2318,7 @@ struct tItemChange {
 
 	tItemChange(const tinyxml2::XMLElement *);
 
-	tItemId ItemId;
-	//<xs:element name="OccurrenceItemId" type="t:OccurrenceItemIdType"/>
-	//<xs:element name="RecurringMasterItemId" type="t:RecurringMasterItemIdType"/>
+	sBaseItemId ItemId;
 	std::vector<sItemChangeDescription> Updates;
 	//<xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
 };

@@ -2958,10 +2958,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 	idOnly.add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD);
 	idOnly.add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
 	for (const auto &change : request.ItemChanges) try {
-		if (change.ItemId.type != tItemId::ID_ITEM &&
-		    change.ItemId.type != tItemId::ID_OCCURRENCE)
-			ctx.assertIdType(change.ItemId.type, tItemId::ID_ITEM);
-		sMessageEntryId mid(change.ItemId.Id.data(), change.ItemId.Id.size());
+		if (change.ItemId.holds_alternative<tRecurringMasterItemId>())
+			throw EWSError::InvalidId(E3450);  // currently not supported
+		tItemId itemId = change.ItemId.itemId();
+		sMessageEntryId mid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(mid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, mid);
@@ -2990,15 +2990,16 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		const char* username = ctx.effectiveUser(parentFolder);
 		mUpdateItemResponseMessage msg;
 		uint32_t occ_basedate = 0;
-		if (change.ItemId.InstanceIndex > 0) {
+		if (change.ItemId.holds_alternative<tOccurrenceItemId>()) {
+			const auto& occurrence  = std::get<tOccurrenceItemId>(change.ItemId.asVariant());
 			occ_basedate = ctx.resolveOccurrenceIndex(dir,
-			               mid.messageId(), change.ItemId.InstanceIndex);
+			               mid.messageId(), occurrence.InstanceIndex);
 			TPROPVAL_ARRAY props = shape.write();
 			const auto &tagsRm = shape.remove_vec();
 			ctx.updateOccurrence(dir, parentFolder.folderId,
 				mid.messageId(), occ_basedate, props, tagsRm);
-		} else if (change.ItemId.type == tItemId::ID_OCCURRENCE) {
-			sOccurrenceId oid(change.ItemId.Id.data(), change.ItemId.Id.size());
+		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
+			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
 			occ_basedate = oid.basedate;
 			TPROPVAL_ARRAY props = shape.write();
 			const auto &tagsRm = shape.remove_vec();

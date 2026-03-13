@@ -532,6 +532,29 @@ sBase64Binary::sBase64Binary(std::string &&data)
 	std::string(std::move(data))
 {}
 
+/**
+ * @brief      Extract item id
+ *
+ * @return     Item id corresponding to the stored variant
+ */
+tItemId sBaseItemId::itemId() const
+{
+	const auto& base = asVariant();
+	if (std::holds_alternative<tItemId>(base))
+		return std::get<tItemId>(base);
+	if (std::holds_alternative<tOccurrenceItemId>(base)) {
+		const auto& ocid = std::get<tOccurrenceItemId>(base);
+		tItemId itemId(ocid.RecurringMasterId);
+		itemId.ChangeKey = ocid.ChangeKey;
+		return itemId;
+	}
+	// must be tReccurrenceMasterId then
+	const auto& rmid = std::get<tRecurringMasterItemId>(base);
+	tItemId itemId(rmid.OccurrenceId);
+	itemId.ChangeKey = rmid.ChangeKey;
+	return itemId;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define TRY(expr, msg, rc) EWSContext::ext_error(expr, msg, rc)

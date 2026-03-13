@@ -185,6 +185,11 @@ void sBase64Binary::serialize(XMLElement *xml) const
 	xml->SetText(empty() ? "" : base64_encode(*this).c_str());
 }
 
+sBaseItemId::sBaseItemId(const tinyxml2::XMLElement *xml) :
+    Base(fromXMLNodeDispatch<Base>(xml))
+{}
+
+
 sCalendarMeetingRequestCommon::sCalendarMeetingRequestCommon(const tinyxml2::XMLElement *xml) :
 	XMLINIT(Start),
 	XMLINIT(End),
@@ -778,6 +783,17 @@ void tRecurrenceType::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(RecurrencePattern);
 	XMLDUMPT(RecurrenceRange);
 }
+
+tOccurrenceItemId::tOccurrenceItemId(const tinyxml2::XMLElement *xml) :
+    XMLINITA(RecurringMasterId),
+    XMLINITA(ChangeKey),
+    XMLINITA(InstanceIndex)
+{}
+
+tRecurringMasterItemId::tRecurringMasterItemId(const tinyxml2::XMLElement *xml) :
+    XMLINITA(OccurrenceId),
+    XMLINITA(ChangeKey)
+{}
 
 void tOccurrenceInfoType::serialize(tinyxml2::XMLElement *xml) const
 {
@@ -1378,34 +1394,9 @@ void tItem::serialize(XMLElement *xml) const
 }
 
 tItemChange::tItemChange(const XMLElement *xml) :
+	ItemId(fromXMLNodeVariantFind<sBaseItemId::Base>(xml)),
 	XMLINIT(Updates)
-{
-	const XMLElement *idElem = xml->FirstChildElement("ItemId");
-	if (idElem) {
-		ItemId = tItemId(idElem);
-		return;
-	}
-	const XMLElement *occElem = xml->FirstChildElement("OccurrenceItemId");
-	if (!occElem)
-		throw DeserializationError(E3046("ItemId", xml->Name()));
-
-	const char *masterId = occElem->Attribute("RecurringMasterId");
-	int instanceIndex = 0;
-	occElem->QueryIntAttribute("InstanceIndex", &instanceIndex);
-	if (!masterId || instanceIndex < 1)
-		throw DeserializationError(E3304);
-	ItemId.Id = sBase64Binary(base64_decode(masterId));
-	if (!ItemId.Id.empty()) {
-		char t = ItemId.Id.back();
-		ItemId.type = t < 0 || t > tBaseItemId::ID_OCCURRENCE ?
-			      tBaseItemId::ID_UNKNOWN : tBaseItemId::IdType(t);
-		ItemId.Id.pop_back();
-	}
-	const char *changeKey = occElem->Attribute("ChangeKey");
-	if (changeKey)
-		ItemId.ChangeKey = sBase64Binary(base64_decode(changeKey));
-	ItemId.InstanceIndex = instanceIndex;
-}
+{}
 
 tItemResponseShape::tItemResponseShape(const XMLElement *xml) :
 	XMLINIT(BaseShape),
