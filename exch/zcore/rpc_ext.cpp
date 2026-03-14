@@ -375,11 +375,6 @@ static pack_result rpc_ext_push_znotification_array(EXT_PUSH &x, const ZNOTIFICA
 	return pack_result::ok;
 }
 
-static inline pack_result zrpc_pull(EXT_PULL &, zcreq &)
-{
-	return pack_result::ok;
-}
-
 static inline pack_result zrpc_push(EXT_PUSH &, const zcresp &)
 {
 	return pack_result::ok;

@@ -8,11 +8,6 @@
 #include "ext.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
-static inline pack_result zrpc_push(PUSH_CTX &x, const zcreq &d)
-{
-	return pack_result::ok;
-}
-
 static inline pack_result zrpc_pull(PULL_CTX &x, zcresp &d)
 {
 	return pack_result::ok;

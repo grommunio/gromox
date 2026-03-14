@@ -865,7 +865,7 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 				pmessage_ids->count, t_diff);
 	});
 	sql_transact = xtransaction();
-	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
+	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		if (g_dbeng_stop)
 			break;
 		auto sql_transact1 = gx_sql_begin(db.psqlite, txn_mode::write);
