@@ -23,10 +23,29 @@ struct LOGON_ITEM {
 	std::shared_ptr<object_node> root;
 };
 
+extern thread_local const char *g_last_rop_dir;
+
 /**
  * @username: RPC user. Only use this for log messages.
  */
-struct LOGMAP {
+class LOGMAP {
+	public:
+	int32_t insert_logon_item(uint8_t logon_id, std::unique_ptr<logon_object> &&);
+	int32_t add_object_handle(uint8_t logon_id, int32_t parent_handle, object_node &&);
+	void release_object_handle(uint8_t logon_id, uint32_t obj_handle);
+	logon_object *get_logon_object(uint8_t logon_id);
+	void *get_object(uint8_t logon_id, uint32_t obj_handle, ems_objtype *);
+	template<typename T> inline T *get_obj(uint8_t id, uint32_t oh, ems_objtype *ty)
+	{
+		return static_cast<T *>(get_object(id, oh, ty));
+	}
+	inline logon_object *get_obj(uint8_t id, uint32_t oh, ems_objtype *ty)
+	{
+		auto ob = static_cast<logon_object *>(get_object(id, oh, ty));
+		g_last_rop_dir = ob->get_dir();
+		return ob;
+	}
+
 	std::unique_ptr<LOGON_ITEM> p[256];
 	std::string username;
 };
@@ -49,20 +68,6 @@ struct object_node {
 
 extern void rop_processor_init(int scan_interval);
 extern ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *in, uint32_t cb_in, uint8_t *out, uint32_t *cb_out);
-extern int32_t rop_processor_create_logon_item(LOGMAP *, uint8_t logon_id, std::unique_ptr<logon_object> &&);
-extern int32_t rop_processor_add_object_handle(LOGMAP *, uint8_t logon_id, int32_t parent_handle, object_node &&);
-extern void *rop_processor_get_object(LOGMAP *, uint8_t logon_id, uint32_t obj_handle, ems_objtype *);
-template<typename T> T *rop_proc_get_obj(LOGMAP *l, uint8_t id, uint32_t oh, ems_objtype *ty) {
-	return static_cast<T *>(rop_processor_get_object(l, id, oh, ty));
-}
-extern thread_local const char *g_last_rop_dir;
-template<> inline logon_object *rop_proc_get_obj<logon_object>(LOGMAP *l, uint8_t id, uint32_t oh, ems_objtype *ty) {
-	auto ob = static_cast<logon_object *>(rop_processor_get_object(l, id, oh, ty));
-	g_last_rop_dir = ob->get_dir();
-	return ob;
-}
-extern void rop_processor_release_object_handle(LOGMAP *, uint8_t logon_id, uint32_t obj_handle);
-extern logon_object *rop_processor_get_logon_object(LOGMAP *, uint8_t logon_id);
 extern ec_error_t aoh_to_error(int);
 
 extern unsigned int emsmdb_rop_chaining, emsmdb_max_cxh_per_user;

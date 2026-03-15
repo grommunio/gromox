@@ -529,10 +529,10 @@ ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved
 	uint64_t folder_id;
 	uint64_t message_id;
 
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecNullObject;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (0 == want_whole_store) {
 		b_whole = FALSE;
@@ -548,8 +548,8 @@ ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved
 	if (psub == nullptr)
 		return ecServerOOM;
 	auto rsub = psub.get();
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::subscription, std::move(psub)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::subscription, std::move(psub)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	rsub->set_handle(hnd);
@@ -559,5 +559,5 @@ ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved
 
 void rop_release(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	rop_processor_release_object_handle(plogmap, logon_id, hin);
+	plogmap->release_object_handle(logon_id, hin);
 }

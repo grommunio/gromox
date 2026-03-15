@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <ctime>
@@ -145,7 +145,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		return ecServerOOM;
 	g_last_rop_dir = plogon->get_dir();
 	/* create logon map and logon object */
-	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
+	auto handle = plogmap->insert_logon_item(logon_id, std::move(plogon));
 	if (handle < 0) {
 		g_last_rop_dir = nullptr;
 		return aoh_to_error(handle);
@@ -231,7 +231,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecServerOOM;
 	g_last_rop_dir = plogon->get_dir();
 	/* create logon map and logon object */
-	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
+	auto handle = plogmap->insert_logon_item(logon_id, std::move(plogon));
 	if (handle < 0) {
 		g_last_rop_dir = nullptr;
 		return aoh_to_error(handle);
@@ -248,7 +248,7 @@ ec_error_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
 	auto ret = cu_validate_msgclass(pstr_class);
 	if (ret != ecSuccess)
 		return ret;
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -276,7 +276,7 @@ ec_error_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	if (strcasecmp(pstr_class, "IPM") == 0 ||
 	    strcasecmp(pstr_class, "REPORT.IPM") == 0)
 		return ecAccessDenied;
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -311,7 +311,7 @@ ec_error_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 		{PidTagFolderId, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
 	static constexpr PROPTAG_ARRAY columns = {std::size(proptags), deconst(proptags)};
 	
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -345,7 +345,7 @@ ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -376,7 +376,7 @@ ec_error_t rop_publicfolderisghosted(uint64_t folder_id, GHOST_SERVER **ppghost,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -391,7 +391,7 @@ ec_error_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -406,7 +406,7 @@ ec_error_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -425,7 +425,7 @@ ec_error_t rop_getperuserlongtermids(const GUID *pguid,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -442,7 +442,7 @@ ec_error_t rop_getperuserguid(const LONG_TERM_ID *plong_term_id, GUID *pguid,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -457,7 +457,7 @@ ec_error_t rop_readperuserinformation(const LONG_TERM_ID *plong_folder_id,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
@@ -474,7 +474,7 @@ ec_error_t rop_writeperuserinformation(const LONG_TERM_ID *plong_folder_id,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)

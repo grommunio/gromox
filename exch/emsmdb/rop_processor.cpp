@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <climits>
@@ -123,12 +123,13 @@ void object_node::operator=(object_node &&o) noexcept
 	o.pobject = nullptr;
 }
 
-int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
-    uint8_t logon_id, std::unique_ptr<logon_object> &&plogon) try
+int32_t LOGMAP::insert_logon_item(uint8_t logon_id,
+    std::unique_ptr<logon_object> &&plogon) try
 {
 	/* MS-OXCROPS 3.1.4.2 */
+	auto plogmap = this;
 	plogmap->p[logon_id] = std::make_unique<LOGON_ITEM>();
-	return rop_processor_add_object_handle(plogmap, logon_id, -1,
+	return plogmap->add_object_handle(logon_id, -1,
 	       {ems_objtype::logon, std::move(plogon)});
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
@@ -176,9 +177,10 @@ ec_error_t aoh_to_error(int x)
 	}
 }
 
-int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
+int32_t LOGMAP::add_object_handle(uint8_t logon_id,
     int32_t parent_handle, object_node &&in_object) try
 {
+	auto plogmap = this;
 	auto eiuser = plogmap->username.c_str();
 	auto plogitem = plogmap->p[logon_id].get();
 	if (plogitem == nullptr)
@@ -234,11 +236,12 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	return -ENOMEM;
 }
 
-void *rop_processor_get_object(LOGMAP *plogmap, uint8_t logon_id,
-    uint32_t obj_handle, ems_objtype *ptype)
+void *LOGMAP::get_object(uint8_t logon_id, uint32_t obj_handle,
+    ems_objtype *ptype)
 {
 	if (obj_handle >= INT32_MAX)
 		return NULL;
+	auto plogmap = this;
 	auto &plogitem = plogmap->p[logon_id];
 	if (plogitem == nullptr)
 		return NULL;
@@ -254,11 +257,11 @@ void *rop_processor_get_object(LOGMAP *plogmap, uint8_t logon_id,
 	return i->second->pobject;
 }
 
-void rop_processor_release_object_handle(LOGMAP *plogmap,
-	uint8_t logon_id, uint32_t obj_handle)
+void LOGMAP::release_object_handle(uint8_t logon_id, uint32_t obj_handle)
 {
 	if (obj_handle >= INT32_MAX)
 		return;
+	auto plogmap = this;
 	auto &plogitem = plogmap->p[logon_id];
 	if (plogitem == nullptr)
 		return;
@@ -283,8 +286,9 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 	plogitem->phash.erase(objnode->handle);
 }
 
-logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
+logon_object *LOGMAP::get_logon_object(uint8_t logon_id)
 {
+	auto plogmap = this;
 	auto &plogitem = plogmap->p[logon_id];
 	if (plogitem == nullptr)
 		return nullptr;
@@ -447,7 +451,8 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		}
 		uint32_t last_offset = ext_push.m_offset;
 		ems_objtype type;
-		auto pobject = rop_processor_get_object(&pemsmdb_info->logmap, pnotify->logon_id, pnotify->handle, &type);
+		auto pobject = pemsmdb_info->logmap.get_object(pnotify->logon_id,
+		               pnotify->handle, &type);
 		if (NULL != pobject) {
 			if (type == ems_objtype::table &&
 			    pnotify->nflags & fnevTableModified &&

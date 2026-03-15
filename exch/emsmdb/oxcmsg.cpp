@@ -51,10 +51,10 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	}
 	if (!acceptable_cpid_for_mapi(cpid))
 		return MAPI_E_UNKNOWN_CPID;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
@@ -156,8 +156,8 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		    *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	}
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -182,10 +182,10 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	}
 	if (!acceptable_cpid_for_mapi(cpid))
 		return MAPI_E_UNKNOWN_CPID;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
@@ -232,8 +232,8 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	auto err = pmessage->init_message(b_fai, cpid);
 	if (err != ecSuccess)
 		return err;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -249,7 +249,7 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	save_flags &= SAVE_FLAG_KEEPOPENREADONLY |
 					SAVE_FLAG_KEEPOPENREADWRITE |
 					SAVE_FLAG_FORCESAVE;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -291,7 +291,7 @@ ec_error_t rop_removeallrecipients(uint32_t reserved, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -322,7 +322,7 @@ ec_error_t rop_modifyrecipients(proptag_cspan pproptags, uint16_t count,
 			return ecInvalidParam;
 		}
 	}
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -364,7 +364,7 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 	TARRAY_SET tmp_set;
 	READRECIPIENT_ROW tmp_row;
 	
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -402,7 +402,7 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 	TARRAY_SET rcpts;
 	TPROPVAL_ARRAY propvals;
 	
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -459,10 +459,10 @@ ec_error_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	uint32_t new_status;
 	TAGGED_PROPVAL propval;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
@@ -494,10 +494,10 @@ ec_error_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
 	void *pvalue;
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
@@ -613,10 +613,10 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 	BOOL b_partial;
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto fld = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto fld = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (fld == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -671,12 +671,12 @@ ec_error_t rop_setmessagereadflag(uint8_t read_flags,
 	BOOL b_changed;
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hresponse, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hresponse, &object_type) == nullptr)
 		return ecNullObject;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -693,10 +693,10 @@ ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -715,8 +715,8 @@ ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 		return ecError;
 	if (pattachment->get_instance_id() == 0)
 		return ecNotFound;
-	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
-	           hin, {ems_objtype::attach, std::move(pattachment)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::attach, std::move(pattachment)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -728,10 +728,10 @@ ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -748,8 +748,8 @@ ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 		return ecMaxAttachmentExceeded;
 	if (!pattachment->init_attachment())
 		return ecError;
-	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
-	           hin, {ems_objtype::attach, std::move(pattachment)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::attach, std::move(pattachment)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -760,7 +760,7 @@ ec_error_t rop_deleteattachment(uint32_t attachment_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -779,11 +779,11 @@ ec_error_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
 	save_flags &= SAVE_FLAG_KEEPOPENREADONLY |
 					SAVE_FLAG_KEEPOPENREADWRITE |
 					SAVE_FLAG_FORCESAVE;
-	if (rop_processor_get_object(plogmap, logon_id, hresponse, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hresponse, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
 		return ecNotSupported;
-	auto pattachment = rop_proc_get_obj<attachment_object>(plogmap, logon_id, hin, &object_type);
+	auto pattachment = plogmap->get_obj<attachment_object>(logon_id, hin, &object_type);
 	if (pattachment == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::attach)
@@ -829,10 +829,10 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 	}
 	if (!acceptable_cpid_for_mapi(cpid))
 		return MAPI_E_UNKNOWN_CPID;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pattachment = rop_proc_get_obj<attachment_object>(plogmap, logon_id, hin, &object_type);
+	auto pattachment = plogmap->get_obj<attachment_object>(logon_id, hin, &object_type);
 	if (pattachment == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::attach)
@@ -867,8 +867,8 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		if (mid_p == nullptr)
 			return ecError;
 		*pmessage_id = *mid_p;
-		auto hnd = rop_processor_add_object_handle(plogmap,
-		           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
+		auto hnd = plogmap->add_object_handle(logon_id, hin,
+		           {ems_objtype::message, std::move(pmessage)});
 		if (hnd < 0)
 			return aoh_to_error(hnd);
 		*phout = hnd;
@@ -929,8 +929,8 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		if (!cu_propvals_to_openrecipient(pmessage->get_cpid(),
 		    rcpts.pparray[i], *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -942,10 +942,10 @@ ec_error_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -955,8 +955,8 @@ ec_error_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
 	if (ptable == nullptr)
 		return ecServerOOM;
 	auto rtable = ptable.get();
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);

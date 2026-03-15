@@ -4,7 +4,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
 
-struct LOGMAP;
+class LOGMAP;
 
 extern ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags, uint32_t store_stat, char *essdn, size_t dnmax, uint64_t *folder_id, uint8_t *response_flags, GUID *mailbox_guid, uint16_t *replid, GUID *replguid, LOGON_TIME *logon_time, uint64_t *pgwart_time, uint32_t *store_stat_out, LOGMAP *, uint8_t logon_id, uint32_t *hout);
 extern ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags, uint32_t store_stat, char *essdn, uint64_t *folder_id, uint16_t *replid, GUID *replguid, GUID *per_user_guid, LOGMAP *, uint8_t logon_id, uint32_t *hout);

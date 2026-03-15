@@ -1754,7 +1754,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, std::unique_ptr<rop_request> &reque
 	case ropWritePerUserInformation: {
 		auto r0 = std::make_unique<WRITEPERUSERINFORMATION_REQUEST>();
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, head.logon_id);
+		auto plogon = pemsmdb_info->logmap.get_logon_object(head.logon_id);
 		if (plogon == nullptr)
 			return pack_result::invalid_obj;
 		ret = rop_ext_pull(x, *r0, plogon->is_private());
@@ -1801,7 +1801,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, std::unique_ptr<rop_request> &reque
 	case ropSetMessageReadFlag: {
 		auto r0 = std::make_unique<SETMESSAGEREADFLAG_REQUEST>();
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, head.logon_id);
+		auto plogon = pemsmdb_info->logmap.get_logon_object(head.logon_id);
 		if (plogon == nullptr)
 			return pack_result::invalid_obj;
 		ret = rop_ext_pull(x, *r0, plogon->is_private());
@@ -1949,7 +1949,7 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const rop_response &r)
 	switch (r.rop_id) {
 	case ropLogon: {
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, logon_id);
+		auto plogon = pemsmdb_info->logmap.get_logon_object(logon_id);
 		if (plogon == nullptr)
 			return pack_result::invalid_obj;
 		return plogon->is_private() ?

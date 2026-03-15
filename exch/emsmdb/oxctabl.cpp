@@ -92,7 +92,7 @@ ec_error_t rop_setcolumns(uint8_t table_flags, proptag_cspan pproptags,
 	
 	if (pproptags.empty())
 		return ecInvalidParam;
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -127,7 +127,7 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 	
 	if (psort_criteria->count > MAXIMUM_SORT_COUNT)
 		return ecTooComplex;
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -198,7 +198,7 @@ ec_error_t rop_restrict(uint8_t res_flags, RESTRICTION *pres,
 {
 	ems_objtype object_type;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -233,7 +233,7 @@ ec_error_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count
 	TARRAY_SET tmp_set;
 	PROPERTY_ROW tmp_row;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -286,7 +286,7 @@ ec_error_t rop_abort(uint8_t *ptable_status, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -299,7 +299,7 @@ ec_error_t rop_getstatus(uint8_t *ptable_status, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -313,7 +313,7 @@ ec_error_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
 {
 	ems_objtype object_type;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -333,7 +333,7 @@ ec_error_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_coun
 	ems_objtype object_type;
 	uint32_t original_position;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -381,7 +381,7 @@ ec_error_t rop_seekrowbookmark(const BINARY *pbookmark, int32_t offset,
 	
 	if (pbookmark->cb != sizeof(uint32_t))
 		return ecInvalidBookmark;
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -414,7 +414,7 @@ ec_error_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
 	
 	if (denominator == 0)
 		return ecInvalidBookmark;
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -432,7 +432,7 @@ ec_error_t rop_createbookmark(BINARY *pbookmark, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -461,7 +461,7 @@ ec_error_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -482,7 +482,7 @@ ec_error_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	uint32_t offset_sought;
 	TPROPVAL_ARRAY propvals;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -556,7 +556,7 @@ ec_error_t rop_freebookmark(const BINARY *pbookmark, LOGMAP *plogmap,
 	
 	if (pbookmark->cb != sizeof(uint32_t))
 		return ecInvalidBookmark;
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -580,7 +580,7 @@ ec_error_t rop_resettable(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -600,7 +600,7 @@ ec_error_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 	TARRAY_SET tmp_set;
 	PROPERTY_ROW tmp_row;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -649,7 +649,7 @@ ec_error_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
 	ems_objtype object_type;
 	int32_t position;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -679,7 +679,7 @@ ec_error_t rop_getcollapsestate(uint64_t row_id, uint32_t row_instance,
 {
 	ems_objtype object_type;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -704,7 +704,7 @@ ec_error_t rop_setcollapsestate(const BINARY *pcollapse_state, BINARY *pbookmark
 {
 	ems_objtype object_type;
 	
-	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
+	auto ptable = plogmap->get_obj<table_object>(logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
@@ -733,10 +733,10 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	ems_objtype object_type;
 	uint32_t permission;
 
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -780,10 +780,10 @@ ec_error_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
 	ems_objtype object_type;
 	uint32_t permission;
 
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -801,8 +801,8 @@ ec_error_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
 	if (ptable == nullptr)
 		return ecServerOOM;
 	auto rtable = ptable.get();
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
@@ -820,10 +820,10 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	/* MS-OXORULE 3.2.5.2 */
 	if (flags & ~MODIFY_RULES_FLAG_REPLACE)
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -862,10 +862,10 @@ ec_error_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
 {
 	ems_objtype object_type;
 
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -875,8 +875,8 @@ ec_error_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
 	if (ptable == nullptr)
 		return ecServerOOM;
 	auto rtable = ptable.get();
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
@@ -900,7 +900,7 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	TAGGED_PROPVAL propval_buff[2];
 	RESTRICTION_PROPERTY res_property;
 
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())

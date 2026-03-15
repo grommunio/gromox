@@ -266,7 +266,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return ecError;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -276,7 +276,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecAccessDenied;
 	}
 
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -449,7 +449,7 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return ecError;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -495,7 +495,7 @@ ec_error_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
 {
 	static constexpr const char *address_types[] = {"SMTP", "EX"};
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -507,7 +507,7 @@ ec_error_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
 
 ec_error_t rop_setspooler(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	return plogon->is_private() ? ecSuccess : ecNotSupported;
@@ -527,7 +527,7 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return ecError;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -579,7 +579,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -588,7 +588,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		mlog(LV_INFO, "I-2143: transportsend disallowed because %s is guest", plogon->account);
 		return ecAccessDenied;
 	}
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -672,7 +672,7 @@ ec_error_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
     const char *pstr_class, uint32_t message_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!exmdb_client->transport_new_mail(plogon->get_dir(), message_id,
@@ -684,7 +684,7 @@ ec_error_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
 ec_error_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (!plogon->is_private())

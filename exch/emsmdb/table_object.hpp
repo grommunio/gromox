@@ -7,7 +7,7 @@
 
 struct logon_object;
 
-struct LOGMAP;
+class LOGMAP;
 struct table_object {
 	protected:
 	struct bookmark_node {
