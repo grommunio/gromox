@@ -780,7 +780,7 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
     const char *user)
 {
 	g_max_loglevel = max_level;
-	enum output_mode mode = OM_STDERR;
+	enum output_mode mode = OM_FILE;
 	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0) {
 		if (isatty(STDERR_FILENO))
 			mode = OM_STDERR_COLORS;
