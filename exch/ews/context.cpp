@@ -871,14 +871,13 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	for (auto tag : rmProps)
 		props.erase(tag);
 
-	sFolderSpec calendarFolder = requestFolder;
-	calendarFolder.folderId = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
-	calendarFolder.location = sFolderSpec::PRIVATE;
-	if (!calendarFolder.target)
-		calendarFolder.target = m_auth_info.username;
-	std::string calendarDir = getDir(calendarFolder);
+	requestFolder.folderId = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	requestFolder.location = sFolderSpec::PRIVATE;
+	if (!requestFolder.target)
+		requestFolder.target = m_auth_info.username;
+	std::string calendarDir = getDir(requestFolder);
 
-	if (!(permissions(calendarDir, calendarFolder.folderId) & (frightsOwner | frightsCreate)))
+	if (!(permissions(calendarDir, requestFolder.folderId) & (frightsOwner | frightsCreate)))
 		throw EWSError::AccessDenied(E3130);
 
 	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
@@ -909,13 +908,13 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	    props.set(PROP_TAG(PT_LONG, pidBusy), construct<uint32_t>(busyValue)) != ecSuccess)
 		throw EWSError::ItemSave(E3327);
 
-	std::optional<uint64_t> existingMid = findExistingByGoid(calendarFolder, calendarDir, *content);
+	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *content);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3328);
 
 	ec_error_t err = ecSuccess;
 	uint64_t newMid = 0, newCn = 0;
-	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, calendarFolder.folderId,
+	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, requestFolder.folderId,
 	        calendarItem.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
 		throw EWSError::ItemSave(E3329);
 }
@@ -2118,7 +2117,10 @@ int32_t EWSContext::recurTzOffset(const std::string &dir, uint64_t mid,
 		return 0;
 	auto su = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(sd_res.ppropval->pvalue));
 	auto sl = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
-	return (su - sl) / 60;
+	int64_t diff = (su - sl) / 60;
+	if (diff < std::numeric_limits<int32_t>::min() || diff > std::numeric_limits<int32_t>::max())
+		return 0;  // probable data corruption, pretend it does not exist
+	return int32_t(diff);
 }
 
 /**
@@ -3457,11 +3459,11 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 	auto respUser = deconst(m_auth_info.username);
 	std::string respName;
 	mysql_adaptor_get_user_displayname(m_auth_info.username, respName);
-	auto rname = deconst(respName.c_str());
 	content->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
-	content->proplist.set(PR_SENDER_NAME, rname);
+	if(!respName.empty())
+		content->proplist.set(PR_SENDER_NAME, respName.data());
 	/*
 	 * Keep PR_SENT_REPRESENTING_* as the organizer from the
 	 * original request; oxcical uses it for the ORGANIZER
