@@ -2004,7 +2004,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 			if (exc_special)
 				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, exc_special); }, item);
 			std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
-			if (auto *cal = std::get_if<tCalendarItem>(&item)) {
+			if (auto cal = std::get_if<tCalendarItem>(&item)) {
 				/* Override Start/End: the embedded message has the
 				 * master's dates; use EXCEPTIONINFO from the blob. */
 				if (matching_exc) {
@@ -2034,7 +2034,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	sItem item = tItem::create(shape);
 	if (shape.special)
 		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
-	if (auto *cal = std::get_if<tCalendarItem>(&item)) {
+	if (auto cal = std::get_if<tCalendarItem>(&item)) {
 		cal->Start.emplace(
 			rop_util_rtime_to_unix2(basedate + start_off) + tz_offset);
 		cal->End.emplace(
@@ -2089,7 +2089,7 @@ void EWSContext::deleteOccurrence(const std::string &dir,
 		return; /* already deleted */
 
 	/* Add the basedate to the deleted instances array */
-	auto *new_del = alloc<uint32_t>(rp.deletedinstancecount + 1);
+	auto new_del = alloc<uint32_t>(rp.deletedinstancecount + 1);
 	memcpy(new_del, rp.pdeletedinstancedates,
 	       rp.deletedinstancecount * sizeof(uint32_t));
 	new_del[rp.deletedinstancecount] = basedate;
@@ -2206,7 +2206,7 @@ EWSContext::loadRecurPat(const std::string &dir, uint64_t mid) const
 	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
 	auto ids = getNamedPropIds(dir, pna);
 	auto tag = PROP_TAG(PT_BINARY, ids[0]);
-	auto *bin = getItemProp<const BINARY>(dir, mid, tag);
+	auto bin = getItemProp<const BINARY>(dir, mid, tag);
 	if (!bin)
 		throw EWSError::ItemCorrupt(E3305);
 	EXT_PULL ext_pull;
@@ -2387,7 +2387,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			throw EWSError::ItemSave(E3343);
 
 		/* Also update the EXCEPTIONINFO in the recurrence blob */
-		auto *recur_bin = getItemProp<BINARY>(dir, mid, recur_tag);
+		auto recur_bin = getItemProp<const BINARY>(dir, mid, recur_tag);
 		if (recur_bin) {
 			EXT_PULL ext_pull;
 			ext_pull.init(recur_bin->pb, recur_bin->cb, alloc, 0);
@@ -2417,7 +2417,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	 * Read recurrence blob first — needed for timezone offset and
 	 * occurrence time computation before building the embedded msg.
 	 */
-	auto *recur_bin = getItemProp<const BINARY>(dir, mid, recur_tag);
+	auto recur_bin = getItemProp<const BINARY>(dir, mid, recur_tag);
 	if (!recur_bin)
 		throw EWSError::ItemCorrupt(E3344);
 	EXT_PULL ext_pull;
@@ -2488,8 +2488,8 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	uint32_t att_fl = 0;
 	BINARY att_enc{};
 	uint32_t indet_rendering_pos = UINT32_MAX;
-	auto *att_start_nt = construct<uint64_t>(start_nttime);
-	auto *att_end_nt = construct<uint64_t>(end_nttime);
+	auto att_start_nt = construct<uint64_t>(start_nttime);
+	auto att_end_nt   = construct<uint64_t>(end_nttime);
 	std::vector<TAGGED_PROPVAL> att_pvec = {
 		{PR_ATTACH_METHOD, &method},
 		{PR_ATTACHMENT_FLAGS, &att_flags_val},
@@ -2548,8 +2548,8 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	 * recurring flag, message class, all date tags, and (if body changed)
 	 * all body format tags.
 	 */
-	auto *occ_start_nt = construct<uint64_t>(start_nttime);
-	auto *occ_end_nt = construct<uint64_t>(end_nttime);
+	auto occ_start_nt = construct<uint64_t>(start_nttime);
+	auto occ_end_nt   = construct<uint64_t>(end_nttime);
 	std::erase_if(emb_props, [&](const TAGGED_PROPVAL &p) {
 			auto t = p.proptag;
 			if (t == recurring_tag ||
@@ -2581,9 +2581,9 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		} else if (upd_text != nullptr && upd_html == nullptr) {
 			std::string html;
 			if (plain_to_html(upd_text, html) == ecSuccess) {
-				auto *bin = construct<BINARY>(BINARY{
-				            static_cast<uint32_t>(html.size()),
-				            {reinterpret_cast<uint8_t *>(cpystr(html))}});
+				auto bin = construct<BINARY>(BINARY{
+				           static_cast<uint32_t>(html.size()),
+				           {reinterpret_cast<uint8_t *>(cpystr(html))}});
 				emb_props.push_back({PR_HTML, bin});
 			}
 		}
@@ -2607,7 +2607,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	 */
 	auto orig_start_utc = rop_util_rtime_to_unix(basedate + apr.starttimeoffset) +
 	                      static_cast<time_t>(tz_minutes) * 60;
-	auto *orig_time = construct<uint64_t>(rop_util_unix_to_nttime(orig_start_utc));
+	auto orig_time = construct<uint64_t>(rop_util_unix_to_nttime(orig_start_utc));
 	emb_props.push_back({ex_replace_tag, orig_time});
 
 	content.proplist.count = emb_props.size();
@@ -2638,7 +2638,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		if (rp.pdeletedinstancedates[i] == basedate)
 			{ in_deleted = true; break; }
 	if (!in_deleted) {
-		auto *nd = alloc<uint32_t>(rp.deletedinstancecount + 1);
+		auto nd = alloc<uint32_t>(rp.deletedinstancecount + 1);
 		memcpy(nd, rp.pdeletedinstancedates,
 		       rp.deletedinstancecount * sizeof(uint32_t));
 		nd[rp.deletedinstancecount] = basedate;
@@ -2654,7 +2654,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		if (rp.pmodifiedinstancedates[i] == basedate)
 			{ in_modified = true; break; }
 	if (!in_modified) {
-		auto *nm = alloc<uint32_t>(rp.modifiedinstancecount + 1);
+		auto nm = alloc<uint32_t>(rp.modifiedinstancecount + 1);
 		memcpy(nm, rp.pmodifiedinstancedates,
 		       rp.modifiedinstancecount * sizeof(uint32_t));
 		nm[rp.modifiedinstancecount] = basedate;
@@ -2666,8 +2666,8 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 
 	/* Build new EXCEPTIONINFO + EXTENDEDEXCEPTION entries */
 	auto new_exc_count = apr.exceptioncount + 1;
-	auto *new_exc = alloc<EXCEPTIONINFO>(new_exc_count);
-	auto *new_ext = alloc<EXTENDEDEXCEPTION>(new_exc_count);
+	auto new_exc = alloc<EXCEPTIONINFO>(new_exc_count);
+	auto new_ext = alloc<EXTENDEDEXCEPTION>(new_exc_count);
 	memcpy(new_exc, apr.pexceptioninfo, apr.exceptioncount * sizeof(EXCEPTIONINFO));
 	memcpy(new_ext, apr.pextendedexception, apr.exceptioncount * sizeof(EXTENDEDEXCEPTION));
 
@@ -2825,19 +2825,19 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 
 	/* Get start/end: prefer values from the shape (co-updated), fall back to message */
 	time_t localStartTime = 0, localEndTime = 0;
-	auto *sp = shape.writes(start_tag);
-	auto *ep = shape.writes(end_tag);
+	auto sp = shape.writes(start_tag);
+	auto ep = shape.writes(end_tag);
 	if (sp) {
 		localStartTime = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(sp->pvalue));
 	} else {
-		auto *v = getItemProp<uint64_t>(dir, mid, start_tag);
+		auto v = getItemProp<const uint64_t>(dir, mid, start_tag);
 		if (v)
 			localStartTime = rop_util_nttime_to_unix(*v);
 	}
 	if (ep) {
 		localEndTime = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(ep->pvalue));
 	} else {
-		auto *v = getItemProp<uint64_t>(dir, mid, end_tag);
+		auto v = getItemProp<const uint64_t>(dir, mid, end_tag);
 		if (v)
 			localEndTime = rop_util_nttime_to_unix(*v);
 	}
@@ -2846,11 +2846,11 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 
 	/* Check if this is an all-day event */
 	bool isAllDay = false;
-	auto *st = shape.writes(subtype_tag);
+	auto st = shape.writes(subtype_tag);
 	if (st) {
 		isAllDay = *static_cast<const uint32_t *>(st->pvalue) != 0;
 	} else {
-		auto *v = getItemProp<uint32_t>(dir, mid, subtype_tag);
+		auto v = getItemProp<const uint32_t>(dir, mid, subtype_tag);
 		if (v)
 			isAllDay = *v != 0;
 	}
@@ -3998,7 +3998,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				tzs.daylightdate = rule.daylightdate;
 				tzs.standardyear = tzs.standarddate.year;
 				tzs.daylightyear = tzs.daylightdate.year;
-				auto *tzdata = alloc<uint8_t>(48);
+				auto tzdata = alloc<uint8_t>(48);
 				EXT_PUSH ep;
 				if (ep.init(tzdata, 48, 0) &&
 				    ep.p_tzstruct(tzs) == pack_result::ok)
@@ -4303,8 +4303,8 @@ void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
 	if (item.Companies && !item.Companies->empty() &&
 	    item.Companies->size() <= UINT32_MAX) {
 		uint32_t count = item.Companies->size();
-		auto *sa = construct<STRING_ARRAY>(STRING_ARRAY{count,
-		           alloc<char *>(count)});
+		auto sa = construct<STRING_ARRAY>(STRING_ARRAY{count,
+		          alloc<char *>(count)});
 		char **dest = sa->ppstr;
 		for (const std::string &c : *item.Companies)
 			*dest++ = deconst(c.c_str());
@@ -4546,9 +4546,9 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 	if (item.References)
 		shape.write(TAGGED_PROPVAL{PR_INTERNET_REFERENCES, deconst(item.References->c_str())});
 	if (item.ConversationIndex) {
-		auto *bin = construct<BINARY>(BINARY{
-		            static_cast<uint32_t>(item.ConversationIndex->size()),
-		            {reinterpret_cast<uint8_t *>(item.ConversationIndex->data())}});
+		auto bin = construct<BINARY>(BINARY{
+		           static_cast<uint32_t>(item.ConversationIndex->size()),
+		           {reinterpret_cast<uint8_t *>(item.ConversationIndex->data())}});
 		shape.write(TAGGED_PROPVAL{PR_CONVERSATION_INDEX, bin});
 	}
 	if (item.ConversationTopic)
@@ -4785,8 +4785,8 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	BINARY* changeKeyContainer = construct<BINARY>(serialize(changeKey));
 	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, changeKeyContainer});
 
-	auto *currentPclContainer = getItemProp<const BINARY>(dir,
-	                            mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
+	auto currentPclContainer = getItemProp<const BINARY>(dir,
+	                           mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
 	PCL pcl;
 	if (currentPclContainer != nullptr && !pcl.deserialize(currentPclContainer))
 		throw DispatchError(E3087);

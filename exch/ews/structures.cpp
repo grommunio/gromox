@@ -1945,7 +1945,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 					tzs.daylightdate = rule.daylightdate;
 					tzs.standardyear = tzs.standarddate.year;
 					tzs.daylightyear = tzs.daylightdate.year;
-					auto *tzdata = EWSContext::alloc<uint8_t>(48);
+					auto tzdata = EWSContext::alloc<uint8_t>(48);
 					EXT_PUSH ep;
 					if (ep.init(tzdata, 48, 0) &&
 					    ep.p_tzstruct(tzs) == pack_result::ok)
