@@ -241,6 +241,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 			exmdb_parser_init(max_threads, max_routers);
 
 		exmdb_client.emplace(connection_num);
+		exmdb_client->set_async_notif(exmdb_server::event_proc);
 		exmdb_client->m_allow_lpc = allow_lpc;
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "mail_bounce") != 0) {
