@@ -18,6 +18,18 @@
 
 using namespace gromox;
 
+LOGON_TIME &LOGON_TIME::operator=(const struct tm &tm)
+{
+	second = tm.tm_sec;
+	minute = tm.tm_min;
+	hour   = tm.tm_hour;
+	day_of_week = tm.tm_wday;
+	day    = tm.tm_mday;
+	month  = tm.tm_mon + 1;
+	year   = tm.tm_year + 1900;
+	return *this;
+}
+
 ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
     uint32_t store_stat, char *pessdn, size_t dnmax, uint64_t *pfolder_id,
     uint8_t *presponse_flags, GUID *pmailbox_guid, uint16_t *replid,
@@ -119,17 +131,10 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	
 	auto cur_time = time(nullptr);
 	ptm = gmtime_r(&cur_time, &tmp_tm);
-	if (ptm != nullptr) {
-		plogon_time->second = ptm->tm_sec;
-		plogon_time->minute = ptm->tm_min;
-		plogon_time->hour = ptm->tm_hour;
-		plogon_time->day_of_week = ptm->tm_wday;
-		plogon_time->day = ptm->tm_mday;
-		plogon_time->month = ptm->tm_mon + 1;
-		plogon_time->year = ptm->tm_year + 1900;
-	} else {
-		*plogon_time = {};
-	}
+	if (ptm != nullptr)
+		*plogon_time = tmp_tm;
+	else
+		*plogon_time = LOGON_TIME{};
 	*pgwart_time = rop_util_unix_to_nttime(cur_time);
 	
 	*pstore_stat = 0;

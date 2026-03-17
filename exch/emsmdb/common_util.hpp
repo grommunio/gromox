@@ -55,6 +55,9 @@ struct READRECIPIENT_ROW {
 struct LOGON_TIME {
 	uint8_t second = 0, minute = 0, hour = 0, day_of_week = 0, day = 0, month = 0;
 	uint16_t year = 0;
+
+	LOGON_TIME &operator=(const LOGON_TIME &) = default;
+	LOGON_TIME &operator=(const struct tm &);
 };
 
 struct GHOST_SERVER {
