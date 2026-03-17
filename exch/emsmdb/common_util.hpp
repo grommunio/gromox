@@ -52,6 +52,16 @@ struct READRECIPIENT_ROW {
 	RECIPIENT_ROW recipient_row{};
 };
 
+struct LOGON_TIME {
+	uint8_t second = 0, minute = 0, hour = 0, day_of_week = 0, day = 0, month = 0;
+	uint16_t year = 0;
+};
+
+struct GHOST_SERVER {
+	uint16_t server_count = 0, cheap_server_count = 0;
+	char **ppservers = nullptr;
+};
+
 namespace emsmdb {
 
 void* common_util_alloc(size_t size);

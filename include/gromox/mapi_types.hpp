@@ -260,16 +260,6 @@ struct GX_EXPORT EMSAB_ENTRYID {
 #define DAYOFWEEK_FRIDAY							0x5
 #define DAYOFWEEK_SATURDAY							0x6
 
-struct GX_EXPORT LOGON_TIME {
-	uint8_t second = 0, minute = 0, hour = 0, day_of_week = 0, day = 0, month = 0;
-	uint16_t year = 0;
-};
-
-struct GX_EXPORT GHOST_SERVER {
-	uint16_t server_count = 0, cheap_server_count = 0;
-	char **ppservers = nullptr;
-};
-
 #define RECIPIENT_ROW_FLAG_RESPONSIBLE				0x0080
 #define RECIPIENT_ROW_FLAG_SAME						0x0040
 #define RECIPIENT_ROW_FLAG_TRANSMITTABLE			0x0020
