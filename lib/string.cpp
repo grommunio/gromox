@@ -776,23 +776,23 @@ bool set_digest(char *json, size_t iomax, const char *key, uint64_t val)
 	return set_digest2(json, iomax, key, Json::Value::UInt64(val));
 }
 
+static enum output_mode mlog_typical_mode(const char *filename)
+{
+	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0) {
+		if (isatty(STDERR_FILENO))
+			return OM_STDERR_COLORS;
+		else if (getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
+			return OM_SYSLOG;
+		return OM_STDERR;
+	}
+	return strcmp(filename, "syslog") == 0 ? OM_SYSLOG : OM_FILE;
+}
+
 void mlog_init(const char *ident, const char *filename, unsigned int max_level,
     const char *user)
 {
 	g_max_loglevel = max_level;
-	enum output_mode mode = OM_FILE;
-	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0) {
-		if (isatty(STDERR_FILENO))
-			mode = OM_STDERR_COLORS;
-		else {
-			if (getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
-				mode = OM_SYSLOG;
-			else
-				mode = OM_STDERR;
-		}
-	} else if (strcmp(filename, "syslog") == 0) {
-		mode = OM_SYSLOG;
-	}
+	auto mode = mlog_typical_mode(filename);
 	if (mode == OM_SYSLOG) {
 		openlog(ident, LOG_PID, LOG_MAIL);
 		setlogmask((1 << (max_level + 2)) - 1);
