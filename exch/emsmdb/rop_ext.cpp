@@ -42,6 +42,90 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GHOST_SERVER &r)
 	return pack_result::ok;
 }
 
+static pack_result rop_push_ext(EXT_PUSH &x, std::span<const proptag_t> cols,
+    const RECIPIENT_ROW &r)
+{
+	bool b_unicode = false;
+	if (r.flags & RECIPIENT_ROW_FLAG_UNICODE)
+		b_unicode = true;
+	TRY(x.p_uint16(r.flags));
+	if (r.pprefix_used != nullptr)
+		TRY(x.p_uint8(*r.pprefix_used));
+	if (r.have_display_type)
+		TRY(x.p_uint8(r.display_type));
+	if (r.px500dn != nullptr)
+		TRY(x.p_str(r.px500dn));
+	if (r.pentry_id != nullptr)
+		TRY(x.p_bin(*r.pentry_id));
+	if (r.psearch_key != nullptr)
+		TRY(x.p_bin(*r.psearch_key));
+	if (r.paddress_type != nullptr)
+		TRY(x.p_str(r.paddress_type));
+	if (r.pmail_address != nullptr) {
+		if (b_unicode)
+			TRY(x.p_wstr(r.pmail_address));
+		else
+			TRY(x.p_str(r.pmail_address));
+	}
+	if (r.pdisplay_name != nullptr) {
+		if (b_unicode)
+			TRY(x.p_wstr(r.pdisplay_name));
+		else
+			TRY(x.p_str(r.pdisplay_name));
+	}
+	if (r.psimple_name != nullptr) {
+		if (b_unicode)
+			TRY(x.p_wstr(r.psimple_name));
+		else
+			TRY(x.p_str(r.psimple_name));
+	}
+	if (r.ptransmittable_name != nullptr) {
+		if (b_unicode)
+			TRY(x.p_wstr(r.ptransmittable_name));
+		else
+			TRY(x.p_str(r.ptransmittable_name));
+	}
+	TRY(x.p_uint16(r.count));
+	if (r.count > cols.size())
+		return pack_result::format;
+	return x.p_proprow(cols, r.properties);
+}
+
+static pack_result rop_push_ext(EXT_PUSH &x, std::span<const proptag_t> cols,
+    const OPENRECIPIENT_ROW &r)
+{
+	TRY(x.p_uint8(r.recipient_type));
+	TRY(x.p_uint16(r.cpid));
+	TRY(x.p_uint16(r.reserved));
+	uint32_t offset = x.m_offset;
+	TRY(x.advance(sizeof(uint16_t)));
+	TRY(rop_push_ext(x, cols, r.recipient_row));
+	uint16_t row_size = x.m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = x.m_offset;
+	x.m_offset = offset;
+	TRY(x.p_uint16(row_size));
+	x.m_offset = offset1;
+	return pack_result::ok;
+}
+
+pack_result rop_push_ext(EXT_PUSH &x, std::span<const proptag_t> cols,
+    const READRECIPIENT_ROW &r)
+{
+	TRY(x.p_uint32(r.row_id));
+	TRY(x.p_uint8(r.recipient_type));
+	TRY(x.p_uint16(r.cpid));
+	TRY(x.p_uint16(r.reserved));
+	uint32_t offset = x.m_offset;
+	TRY(x.advance(sizeof(uint16_t)));
+	TRY(rop_push_ext(x, cols, r.recipient_row));
+	uint16_t row_size = x.m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = x.m_offset;
+	x.m_offset = offset;
+	TRY(x.p_uint16(row_size));
+	x.m_offset = offset1;
+	return pack_result::ok;
+}
+
 static pack_result rop_ext_push(EXT_PUSH &x, const NULL_DST_RESPONSE &r)
 {
 	TRY(x.p_uint32(r.dhindex));
@@ -70,6 +154,106 @@ static pack_result rop_ext_push(EXT_PUSH &x, const PROPIDNAME_ARRAY &r)
 		TRY(x.p_uint16(r.ppropid[i]));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(x.p_propname(r.ppropname[i]));
+	return pack_result::ok;
+}
+
+static pack_result rop_ext_pull(EXT_PULL &x, std::span<const proptag_t> tags,
+    RECIPIENT_ROW *r)
+{
+	TRY(x.g_uint16(&r->flags));
+	uint8_t type = r->flags & 0x0007;
+	bool b_unicode = false;
+	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE)
+		b_unicode = true;
+	r->pprefix_used = nullptr;
+	r->have_display_type = false;
+	r->px500dn = nullptr;
+	if (type == RECIPIENT_ROW_TYPE_X500DN) {
+		r->pprefix_used = x.anew<uint8_t>();
+		if (r->pprefix_used == nullptr)
+			return pack_result::alloc;
+		TRY(x.g_uint8(r->pprefix_used));
+		TRY(x.g_uint8(&r->display_type));
+		r->have_display_type = true;
+		TRY(x.g_str(&r->px500dn));
+	}
+	r->pentry_id = nullptr;
+	r->psearch_key = nullptr;
+	if (type == RECIPIENT_ROW_TYPE_PERSONAL_DLIST1 ||
+	    type == RECIPIENT_ROW_TYPE_PERSONAL_DLIST2) {
+		r->pentry_id = x.anew<BINARY>();
+		if (r->pentry_id == nullptr)
+			return pack_result::alloc;
+		TRY(x.g_bin(r->pentry_id));
+		r->psearch_key = x.anew<BINARY>();
+		if (r->psearch_key == nullptr)
+			return pack_result::alloc;
+		TRY(x.g_bin(r->psearch_key));
+	}
+	r->paddress_type = nullptr;
+	if (type == RECIPIENT_ROW_TYPE_NONE &&
+	    (r->flags & RECIPIENT_ROW_FLAG_OUTOFSTANDARD))
+		TRY(x.g_str(&r->paddress_type));
+	r->pmail_address = nullptr;
+	if (r->flags & RECIPIENT_ROW_FLAG_EMAIL) {
+		if (b_unicode)
+			TRY(x.g_wstr(&r->pmail_address));
+		else
+			TRY(x.g_str(&r->pmail_address));
+	}
+	r->pdisplay_name = nullptr;
+	if (r->flags & RECIPIENT_ROW_FLAG_DISPLAY) {
+		if (b_unicode)
+			TRY(x.g_wstr(&r->pdisplay_name));
+		else
+			TRY(x.g_str(&r->pdisplay_name));
+	}
+	r->psimple_name = NULL;
+	if (r->flags & RECIPIENT_ROW_FLAG_SIMPLE) {
+		if (b_unicode)
+			TRY(x.g_wstr(&r->psimple_name));
+		else
+			TRY(x.g_str(&r->psimple_name));
+	}
+	r->ptransmittable_name = NULL;
+	if (r->flags & RECIPIENT_ROW_FLAG_TRANSMITTABLE) {
+		if (b_unicode)
+			TRY(x.g_wstr(&r->ptransmittable_name));
+		else
+			TRY(x.g_str(&r->ptransmittable_name));
+	}
+	if (r->flags == RECIPIENT_ROW_FLAG_SAME) {
+		if (r->pdisplay_name == nullptr && r->ptransmittable_name != nullptr)
+			r->pdisplay_name = r->ptransmittable_name;
+		else if (r->pdisplay_name != nullptr && r->ptransmittable_name == nullptr)
+			r->ptransmittable_name = r->pdisplay_name;
+	}
+	TRY(x.g_uint16(&r->count));
+	if (r->count > tags.size())
+		return pack_result::format;
+	return x.g_proprow(tags.subspan(0, r->count), &r->properties);
+}
+
+static pack_result rop_ext_pull(EXT_PULL &x, std::span<const proptag_t> tags,
+    MODIFYRECIPIENT_ROW *r)
+{
+	uint16_t row_size;
+
+	TRY(x.g_uint32(&r->row_id));
+	TRY(x.g_uint8(&r->recipient_type));
+	TRY(x.g_uint16(&row_size));
+	if (row_size == 0) {
+		r->precipient_row = NULL;
+		return pack_result::ok;
+	}
+	uint32_t offset = x.m_offset + row_size;
+	r->precipient_row = x.anew<RECIPIENT_ROW>();
+	if (r->precipient_row == nullptr)
+		return pack_result::alloc;
+	TRY(rop_ext_pull(x, tags, r->precipient_row));
+	if (x.m_offset > offset)
+		return pack_result::format;
+	x.m_offset = offset;
 	return pack_result::ok;
 }
 
@@ -646,7 +830,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const OPENMESSAGE_RESPONSE &r)
 	unsigned int i;
 	for (i = 0; i < r.row_count; ++i) {
 		uint32_t last_offset = x.m_offset;
-		auto status = x.p_openrecipient_row(r.recipient_columns, r.precipient_row[i]);
+		auto status = rop_push_ext(x, r.recipient_columns, r.precipient_row[i]);
 		if (pack_result::ok != status ||
 		    x.m_alloc_size - x.m_offset < 256) {
 			x.m_offset = last_offset;
@@ -710,7 +894,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, MODIFYRECIPIENTS_REQUEST &r)
 		}
 	}
 	for (size_t i = 0; i < r.count; ++i)
-		TRY(x.g_modrcpt_row(r.proptags, &r.prow[i]));
+		TRY(rop_ext_pull(x, r.proptags, &r.prow[i]));
 	return pack_result::ok;
 }
 
@@ -745,7 +929,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const RELOADCACHEDINFORMATION_RESPO
 	unsigned int i;
 	for (i = 0; i < r.row_count; ++i) {
 		uint32_t last_offset = x.m_offset;
-		auto status = x.p_openrecipient_row(r.recipient_columns, r.precipient_row[i]);
+		auto status = rop_push_ext(x, r.recipient_columns, r.precipient_row[i]);
 		if (pack_result::ok != status ||
 		    x.m_alloc_size - x.m_offset < 256) {
 			x.m_offset = last_offset;
@@ -865,7 +1049,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const OPENEMBEDDEDMESSAGE_RESPONSE 
 	unsigned int i;
 	for (i = 0; i < r.row_count; ++i) {
 		uint32_t last_offset = x.m_offset;
-		auto status = x.p_openrecipient_row(r.recipient_columns, r.precipient_row[i]);
+		auto status = rop_push_ext(x, r.recipient_columns, r.precipient_row[i]);
 		if (pack_result::ok != status ||
 		    x.m_alloc_size - x.m_offset < 256) {
 			x.m_offset = last_offset;

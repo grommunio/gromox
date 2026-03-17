@@ -15,6 +15,7 @@
 #include "logon_object.hpp"
 #include "message_object.hpp"
 #include "processor_types.hpp"
+#include "rop_ext.hpp"
 #include "rop_funcs.hpp"
 #include "rop_ids.hpp"
 #include "rop_processor.hpp"
@@ -378,7 +379,7 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 		    tmp_set.pparray[i], *pmessage->get_rcpt_columns(), &tmp_row))
 			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
-		if (pext->p_readrecipient_row(*pmessage->get_rcpt_columns(),
+		if (rop_push_ext(*pext, *pmessage->get_rcpt_columns(),
 		    tmp_row) != pack_result::ok) {
 			ext.m_offset = last_offset;
 			break;

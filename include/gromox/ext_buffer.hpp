@@ -185,8 +185,6 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_msg_eid(MESSAGE_ENTRYID *);
 	pack_result g_sortorder(SORT_ORDER *);
 	pack_result g_sortorder_set(SORTORDER_SET *);
-	pack_result g_recipient_row(std::span<const gromox::proptag_t>, RECIPIENT_ROW *);
-	pack_result g_modrcpt_row(std::span<const gromox::proptag_t>, MODIFYRECIPIENT_ROW *);
 	pack_result g_permission_data(PERMISSION_DATA *);
 	pack_result g_rule_data(RULE_DATA *);
 	pack_result g_abk_eid(EMSAB_ENTRYID *);
@@ -298,9 +296,6 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_sortorder(const SORT_ORDER &);
 	pack_result p_sortorder_set(const SORTORDER_SET &);
 	pack_result p_typed_str(const TYPED_STRING &);
-	pack_result p_recipient_row(std::span<const gromox::proptag_t>, const RECIPIENT_ROW &);
-	pack_result p_openrecipient_row(std::span<const gromox::proptag_t>, const OPENRECIPIENT_ROW &);
-	pack_result p_readrecipient_row(std::span<const gromox::proptag_t>, const READRECIPIENT_ROW &);
 	pack_result p_permission_data(const PERMISSION_DATA &);
 	pack_result p_rule_data(const RULE_DATA &);
 	pack_result p_abk_eid(const EMSAB_ENTRYID_view &);

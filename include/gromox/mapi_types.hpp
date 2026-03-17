@@ -289,37 +289,6 @@ struct GX_EXPORT GHOST_SERVER {
 #define RECIPIENT_ROW_TYPE_PERSONAL_DLIST1			0x6
 #define RECIPIENT_ROW_TYPE_PERSONAL_DLIST2			0x7
 
-struct GX_EXPORT RECIPIENT_ROW {
-	uint8_t *pprefix_used = nullptr;
-	char *px500dn = nullptr;
-	BINARY *pentry_id = nullptr, *psearch_key = nullptr;
-	char *paddress_type = nullptr, *pmail_address = nullptr;
-	char *pdisplay_name = nullptr, *psimple_name = nullptr;
-	char *ptransmittable_name = nullptr;
-	uint8_t have_display_type = false, display_type = 0;
-	uint16_t flags = 0, count = 0;
-	PROPERTY_ROW properties{};
-};
-
-struct GX_EXPORT OPENRECIPIENT_ROW {
-	uint8_t recipient_type = 0;
-	uint16_t cpid = 0, reserved = 0;
-	RECIPIENT_ROW recipient_row{};
-};
-
-struct GX_EXPORT MODIFYRECIPIENT_ROW {
-	uint32_t row_id = 0;
-	uint8_t recipient_type = 0;
-	RECIPIENT_ROW *precipient_row{};
-};
-
-struct GX_EXPORT READRECIPIENT_ROW {
-	uint32_t row_id = 0;
-	uint8_t recipient_type = 0;
-	uint16_t cpid = 0, reserved = 0;
-	RECIPIENT_ROW recipient_row{};
-};
-
 struct GX_EXPORT PERMISSION_DATA {
 	uint8_t flags = 0;
 	TPROPVAL_ARRAY propvals{};

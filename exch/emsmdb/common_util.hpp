@@ -21,6 +21,37 @@ struct MAIL;
 struct message_content;
 struct message_object;
 
+struct RECIPIENT_ROW {
+	uint8_t *pprefix_used = nullptr;
+	char *px500dn = nullptr;
+	BINARY *pentry_id = nullptr, *psearch_key = nullptr;
+	char *paddress_type = nullptr, *pmail_address = nullptr;
+	char *pdisplay_name = nullptr, *psimple_name = nullptr;
+	char *ptransmittable_name = nullptr;
+	uint8_t have_display_type = false, display_type = 0;
+	uint16_t flags = 0, count = 0;
+	PROPERTY_ROW properties{};
+};
+
+struct OPENRECIPIENT_ROW {
+	uint8_t recipient_type = 0;
+	uint16_t cpid = 0, reserved = 0;
+	RECIPIENT_ROW recipient_row{};
+};
+
+struct MODIFYRECIPIENT_ROW {
+	uint32_t row_id = 0;
+	uint8_t recipient_type = 0;
+	RECIPIENT_ROW *precipient_row{};
+};
+
+struct READRECIPIENT_ROW {
+	uint32_t row_id = 0;
+	uint8_t recipient_type = 0;
+	uint16_t cpid = 0, reserved = 0;
+	RECIPIENT_ROW recipient_row{};
+};
+
 namespace emsmdb {
 
 void* common_util_alloc(size_t size);
