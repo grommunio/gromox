@@ -784,8 +784,12 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
 	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0) {
 		if (isatty(STDERR_FILENO))
 			mode = OM_STDERR_COLORS;
-		else if (getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
-			mode = OM_SYSLOG;
+		else {
+			if (getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
+				mode = OM_SYSLOG;
+			else
+				mode = OM_STDERR;
+		}
 	} else if (strcmp(filename, "syslog") == 0) {
 		mode = OM_SYSLOG;
 	}
