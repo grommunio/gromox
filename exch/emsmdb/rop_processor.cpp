@@ -129,6 +129,7 @@ int32_t LOGMAP::insert_logon_item(uint8_t logon_id,
 	/* MS-OXCROPS 3.1.4.2 */
 	auto plogmap = this;
 	plogmap->p[logon_id] = std::make_unique<LOGON_ITEM>();
+	plogmap->username = username;
 	return plogmap->add_object_handle(logon_id, -1,
 	       {ems_objtype::logon, std::move(plogon)});
 } catch (const std::bad_alloc &) {
@@ -177,14 +178,11 @@ ec_error_t aoh_to_error(int x)
 	}
 }
 
-int32_t LOGMAP::add_object_handle(uint8_t logon_id,
-    int32_t parent_handle, object_node &&in_object) try
+int32_t LOGON_ITEM::add_object_handle(int32_t parent_handle,
+    object_node &&in_object) try
 {
-	auto plogmap = this;
-	auto eiuser = plogmap->username.c_str();
-	auto plogitem = plogmap->p[logon_id].get();
-	if (plogitem == nullptr)
-		return -EINVAL;
+	auto plogitem = this;
+	auto eiuser = username.c_str();
 	auto root = plogitem->root.get();
 	const char *target = "";
 	if (root != nullptr && root->type == ems_objtype::logon) {
@@ -236,15 +234,21 @@ int32_t LOGMAP::add_object_handle(uint8_t logon_id,
 	return -ENOMEM;
 }
 
-void *LOGMAP::get_object(uint8_t logon_id, uint32_t obj_handle,
-    ems_objtype *ptype)
+int32_t LOGMAP::add_object_handle(uint8_t logon_id,
+    int32_t parent_handle, object_node &&in_object)
+{
+	auto plogmap = this;
+	auto plogitem = plogmap->p[logon_id].get();
+	if (plogitem == nullptr)
+		return -EINVAL;
+	return plogitem->add_object_handle(parent_handle, std::move(in_object));
+}
+
+void *LOGON_ITEM::get_object(uint32_t obj_handle, ems_objtype *ptype)
 {
 	if (obj_handle >= INT32_MAX)
 		return NULL;
-	auto plogmap = this;
-	auto &plogitem = plogmap->p[logon_id];
-	if (plogitem == nullptr)
-		return NULL;
+	auto plogitem = this;
 	if (g_rop_debug >= 1 && plogitem->root != nullptr) {
 		auto lo = static_cast<logon_object *>(plogitem->root->pobject);
 		if (lo != nullptr)
@@ -257,14 +261,20 @@ void *LOGMAP::get_object(uint8_t logon_id, uint32_t obj_handle,
 	return i->second->pobject;
 }
 
-void LOGMAP::release_object_handle(uint8_t logon_id, uint32_t obj_handle)
+void *LOGMAP::get_object(uint8_t logon_id, uint32_t obj_handle,
+    ems_objtype *ptype)
+{
+	auto plogitem = p[logon_id].get();
+	if (plogitem == nullptr)
+		return NULL;
+	return plogitem->get_object(obj_handle, ptype);
+}
+
+void LOGON_ITEM::release_object_handle(uint32_t obj_handle)
 {
 	if (obj_handle >= INT32_MAX)
 		return;
-	auto plogmap = this;
-	auto &plogitem = plogmap->p[logon_id];
-	if (plogitem == nullptr)
-		return;
+	auto plogitem = this;
 	if (g_rop_debug > 0) {
 		auto root = plogitem->root;
 		if (root != nullptr) {
@@ -286,18 +296,31 @@ void LOGMAP::release_object_handle(uint8_t logon_id, uint32_t obj_handle)
 	plogitem->phash.erase(objnode->handle);
 }
 
-logon_object *LOGMAP::get_logon_object(uint8_t logon_id)
+void LOGMAP::release_object_handle(uint8_t logon_id, uint32_t obj_handle)
 {
-	auto plogmap = this;
-	auto &plogitem = plogmap->p[logon_id];
+	auto plogitem = p[logon_id].get();
 	if (plogitem == nullptr)
-		return nullptr;
+		return;
+	return plogitem->release_object_handle(obj_handle);
+}
+
+logon_object *LOGON_ITEM::get_logon_object()
+{
+	auto plogitem = this;
 	auto proot = plogitem->root;
 	if (proot == nullptr)
 		return nullptr;
 	auto obj = static_cast<logon_object *>(proot->pobject);
 	g_last_rop_dir = obj->get_dir();
 	return obj;
+}
+
+logon_object *LOGMAP::get_logon_object(uint8_t logon_id)
+{
+	auto plogitem = p[logon_id].get();
+	if (plogitem == nullptr)
+		return nullptr;
+	return plogitem->get_logon_object();
 }
 
 void rop_processor_init(int scan_interval)

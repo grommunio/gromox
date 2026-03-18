@@ -13,20 +13,38 @@ enum class ems_objtype : uint8_t {
 struct object_node;
 
 /**
- * We cannot fixate the root to id 0, because alloc_handle_number could
- * yield *any* number for that matter; therefore it is not possible
- * to do without a member indicating the root (whether pointer or integer).
+ * LOGON_ITEM - container for tracking the handles within a ropLogon session
+ *
+ * Within the scope of a ropLogon, the user can e.g. open folders and messages
+ * and get handles, whose handle number is scoped to the logon. The store
+ * object, i.e. the container with a bunch of readable properties, gets a
+ * separate handle in its own right, and it is subordinate to the logon. (This
+ * handle is returned in the ropLogon response. It is often index 0 because it
+ * is the first handle to be given out, but this is not guaranteed, as
+ * alloc_handle_number could yield *any* number for that matter.)
  */
-struct LOGON_ITEM {
+class LOGON_ITEM {
+	public:
 	~LOGON_ITEM();
+	int32_t add_object_handle(int32_t parent_handle, object_node &&);
+	void release_object_handle(uint32_t obj_handle);
+	logon_object *get_logon_object();
+	void *get_object(uint32_t obj_handle, ems_objtype *);
+
 	std::unordered_map<uint32_t, std::shared_ptr<object_node>> phash;
 	std::shared_ptr<object_node> root;
+	std::string username;
 };
 
 extern thread_local const char *g_last_rop_dir;
 
 /**
- * @username: RPC user. Only use this for log messages.
+ * Each emsmdb_session (made with ecDoConnectEx) can have up to 256 "logon" slots that can be used
+ * with ropLogon. More on that in LOGON_ITEM.
+ *
+ * A client like emsmdb32.dll would typically create one ecDoConnectEx session
+ * per logical store (e.g. one's own store, someone else's, a public folder,
+ * etc.) and usually two logons (but sometimes more) on that.
  */
 class LOGMAP {
 	public:
