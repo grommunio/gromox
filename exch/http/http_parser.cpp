@@ -101,6 +101,14 @@ enum {
 };
 
 static constexpr time_duration OUT_CHANNEL_MAX_WAIT = std::chrono::seconds(10);
+static constexpr char uri_autod_xml[] = "/autodiscover/autodiscover.xml";
+
+static bool is_autodiscover_xml(const char *uri)
+{
+	auto z = sizeof(uri_autod_xml) - 1;
+	return strncasecmp(uri, uri_autod_xml, z) == 0 &&
+	       (uri[z] == '\0' || uri[z] == '/' || uri[z] == '?');
+}
 
 namespace {
 
@@ -841,16 +849,23 @@ tproc_status http_parser::auth_basic(http_context *pcontext, const char *token) 
 	gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
 	gx_strlcpy(ctx.password, p, std::size(ctx.password));
 	pcontext->auth_method = auth_method::basic;
-	if (!system_services_judge_user(pcontext->username)) {
+	const char *auth_user = pcontext->username;
+	std::string imp_store, imp_auth;
+	bool is_impersonation = false;
+	if (is_autodiscover_xml(pcontext->request.f_request_uri.c_str()) &&
+	    parse_impersonation_address(pcontext->username, imp_store, imp_auth,
+	    is_impersonation) && is_impersonation)
+		auth_user = imp_auth.c_str();
+	if (!system_services_judge_user(auth_user)) {
 		pcontext->log(LV_DEBUG,
 			"user %s is denied by user filter",
-			pcontext->username);
+			auth_user);
 		pcontext->auth_status = http_status::service_unavailable;
 		return tproc_status::runoff;
 	}
 
 	sql_meta_result mres;
-	if (system_services_auth_login(pcontext->username, pcontext->password,
+	if (system_services_auth_login(auth_user, pcontext->password,
 	    WANTPRIV_BASIC, mres)) {
 		/* Success */
 		gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
@@ -876,7 +891,7 @@ tproc_status http_parser::auth_basic(http_context *pcontext, const char *token) 
 	pcontext->log(LV_WARN, "HTTP auth rejected: %s", mres.errstr.c_str());
 	pcontext->auth_times ++;
 	if (pcontext->auth_times >= g_max_auth_times)
-		system_services_ban_user(pcontext->username, g_block_auth_fail);
+		system_services_ban_user(auth_user, g_block_auth_fail);
 	return tproc_status::runoff;
 } catch (const std::bad_alloc &) {
 	pcontext->b_close = TRUE;

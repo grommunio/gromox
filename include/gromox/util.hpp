@@ -129,6 +129,7 @@ extern GX_EXPORT const std::string_view *wintz_to_tzdef(const char *);
 extern GX_EXPORT bool get_digest(const char *src, const char *tag, char *out, size_t outmax);
 extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, const char *v);
 extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, uint64_t v);
+extern GX_EXPORT bool parse_impersonation_address(const char *address, std::string &store_user, std::string &auth_user, bool &is_impersonation);
 extern GX_EXPORT void mlog_init(const char *ident, const char *file, unsigned int level, const char *user = nullptr);
 extern GX_EXPORT void mlog(unsigned int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 extern GX_EXPORT int ssllog(const char *s, size_t len, void *);

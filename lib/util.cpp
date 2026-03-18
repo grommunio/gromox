@@ -45,6 +45,43 @@ const uint8_t utf8_byte_num[256] = {
 	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,0,0,
 	/* 0x80-0xBF,0xFE,0xFF cannot start a sequence, hence 0 */
 };
+
+bool parse_impersonation_address(const char *address, std::string &store_user,
+    std::string &auth_user, bool &is_impersonation)
+{
+	store_user = address != nullptr ? address : "";
+	auth_user.clear();
+	is_impersonation = false;
+	if (address == nullptr)
+		return false;
+	auto p1 = strchr(address, '!');
+	if (p1 == nullptr)
+		return true;
+	auto p2 = strchr(p1 + 1, '!');
+	if (p2 != nullptr && strchr(p2 + 1, '!') != nullptr)
+		return false;
+	std::string imp_user(address, p1 - address);
+	if (imp_user.empty())
+		return false;
+	if (p2 == nullptr) {
+		auth_user = p1 + 1;
+		auto at = strchr(auth_user.c_str(), '@');
+		if (at == nullptr || at[1] == '\0')
+			return false;
+		store_user = imp_user + "@" + (at + 1);
+	} else {
+		std::string imp_domain(p1 + 1, p2 - p1 - 1);
+		auth_user = p2 + 1;
+		if (imp_domain.empty())
+			return false;
+		auto at = strchr(auth_user.c_str(), '@');
+		if (at == nullptr || at[1] == '\0')
+			return false;
+		store_user = imp_user + "@" + imp_domain;
+	}
+	is_impersonation = true;
+	return true;
+}
 }
 
 /* check for invalid UTF-8 */

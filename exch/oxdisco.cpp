@@ -27,6 +27,7 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/usercvt.hpp>
+#include <gromox/util.hpp>
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -358,26 +359,55 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	auto email = gtx(*req_node, "EMailAddress");
 	if (email == nullptr || strchr(email, '@') == nullptr)
 		return die(ctx_id, invalid_request_code, invalid_request_msg);
-
-	sql_meta_result mres{};
-	if (strncasecmp(email, public_folder_email, 19) != 0) {
-		auto err = mysql_adaptor_meta(email, WANTPRIV_METAONLY, mres);
-		if (err != 0) {
-			mlog(LV_DEBUG, "oxdisco: unknown mailbox \"%s\": %s", email, strerror(err));
-			return die(ctx_id, 404, "Not Found");
-		}
-		email = mres.username.c_str();
-	}
-
 	auto ars = gtx(*req_node, "AcceptableResponseSchema");
 	if (ars == nullptr)
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
-	auto [err_code, reason] = access_ok(ctx_id, email, auth_info.username);
-	if (err_code != ok_code)
+	bool eas_schema = strcasecmp(ars, response_mobile_xmlns) == 0;
+
+	std::string auth_actor = auth_info.username;
+	std::string target_email = email;
+	bool eas_impersonation = false;
+	if (eas_schema && !parse_impersonation_address(email, target_email,
+	    auth_actor, eas_impersonation))
+		return die(ctx_id, invalid_request_code, invalid_request_msg);
+	if (eas_impersonation) {
+		unsigned int auth_uid = 0, auth_did = 0;
+		unsigned int conn_uid = 0, conn_did = 0;
+		if (!mysql_adaptor_get_user_ids(auth_actor.c_str(), &auth_uid, &auth_did, nullptr) ||
+		    !mysql_adaptor_get_user_ids(auth_info.username, &conn_uid, &conn_did, nullptr) ||
+		    auth_uid != conn_uid || auth_did != conn_did)
+			return http_status::unauthorized;
+	}
+
+	sql_meta_result mres{};
+	if (strncasecmp(target_email.c_str(), public_folder_email, 19) != 0) {
+		auto err = mysql_adaptor_meta(target_email.c_str(), WANTPRIV_METAONLY, mres);
+		if (err != 0) {
+			mlog(LV_DEBUG, "oxdisco: unknown mailbox \"%s\": %s", target_email.c_str(), strerror(err));
+			return die(ctx_id, 404, "Not Found");
+		}
+		target_email = mres.username;
+		if (eas_impersonation) {
+			uint32_t perm = rightsNone;
+			if (!exmdb.get_mbox_perm(mres.maildir.c_str(), auth_actor.c_str(), &perm))
+				return http_status::unauthorized;
+			if (!(perm & frightsGromoxStoreOwner)) {
+				mlog(LV_DEBUG, "oxdisco: autodiscover impersonation denied: actor \"%s\" lacks frightsGromoxStoreOwner on \"%s\" (perm=0x%x)",
+					auth_actor.c_str(), target_email.c_str(), perm);
+				return http_status::unauthorized;
+			}
+		}
+	}
+
+	auto [err_code, reason] = access_ok(ctx_id, target_email.c_str(), auth_actor.c_str());
+	if (err_code != ok_code) {
+		if (eas_impersonation)
+			return http_status::unauthorized;
 		return die(ctx_id, err_code, reason.c_str());
+	}
 	if (!RedirectAddr.empty() || !RedirectUrl.empty())
 		mlog(LV_DEBUG, "[oxdisco] send redirect response");
-	return resp(ctx_id, auth_info.username, email, ars);
+	return resp(ctx_id, auth_actor.c_str(), target_email.c_str(), ars);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1700: ENOMEM\n");
 	return die(ctx_id, server_error_code, server_error_msg);
