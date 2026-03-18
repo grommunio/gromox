@@ -5,6 +5,9 @@
  * MS-OXOAB Offline Address Book implementation.
  * Generates OAB Full Details files and XML manifest for Outlook clients.
  */
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -13,11 +16,16 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <tinyxml2.h>
 #include <unordered_map>
 #include <vector>
+#ifdef HAVE_XXHASH
+	/* xxh3 must come first in 0.7.0, or everything breaks apart */
+#	include <xxh3.h>
+#	include <xxhash.h>
+#endif
 #include <fmt/core.h>
 #include <openssl/evp.h>
-#include <tinyxml2.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
@@ -29,6 +37,7 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/unordered_map_assist.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -1007,14 +1016,57 @@ static std::string sha1_hex(std::string_view input)
 	return bin2hex(hash, len);
 }
 
-/**
- * Generate a deterministic GUID string from base_id
- * so the URL remains stable across ab_tree cache reloads.
- */
-static std::string deterministic_guid(int32_t base_id)
+static unsigned int g_oab_use_xxhash = 1; /* same idea as g_cid_use_xxhash */
+
+static GUID domain_guid2(const char *domain)
 {
-	uint32_t v = base_id;
-	return fmt::format("{:08x}-baad-cafe-0ab0-{:012x}", v, v);
+	static constexpr FLATUID rfc_dns_namespace = {{
+		/* RFC 9562 §6.6 {6ba7b810-9dad-11d1-80b4-00c04fd430c8} */
+		0x10,0xb8,0xa7,0x6b,0xad,0x9d,0xd1,0x11,
+		0x80,0xb4,0x00,0xc0,0x4f,0xd4,0x30,0xc8,
+	}};
+	if (g_oab_use_xxhash) {
+#ifdef HAVE_XXHASH
+		union {
+			FLATUID flat{};
+			XXH128_canonical_t canon;
+		} u;
+		XXH3_state_t st;
+		XXH3_128bits_reset(&st);
+		XXH3_128bits_update(&st, rfc_dns_namespace.ab, std::size(rfc_dns_namespace.ab));
+		XXH3_128bits_update(&st, domain, strlen(domain) + 1);
+		XXH128_canonicalFromHash(&u.canon, XXH3_128bits_digest(&st));
+		return u.flat;
+#endif
+	}
+	union {
+		FLATUID flat{};
+		unsigned char hash[EVP_MAX_MD_SIZE];
+	} u;
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+	if (ctx == nullptr)
+		return {};
+	unsigned int len = 0;
+	if (EVP_DigestInit_ex(ctx.get(), EVP_sha3_256(), nullptr) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), rfc_dns_namespace.ab, std::size(rfc_dns_namespace.ab)) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), domain, strlen(domain) + 1) <= 0 ||
+	    EVP_DigestFinal_ex(ctx.get(), u.hash, &len) <= 0 ||
+	    len < 16)
+		return {};
+	return u.flat;
+}
+
+static std::string domain_guid(const char *domain)
+{
+	auto g = domain_guid2(domain);
+	g.clock_seq[0] &= 0x3F;
+	g.clock_seq[0] |= 0x80;
+	g.time_hi_and_version &= 0x0FFF;
+	g.time_hi_and_version |= 4U << 12;
+	std::string out;
+	out.resize(36);
+	g.to_str(out.data(), out.size(), 36 /* text encoding variant */);
+	return out;
 }
 
 /**
@@ -1085,15 +1137,15 @@ class OabPlugin {
 	private:
 	http_status send_response(int ctx_id, const char *ct_type, const std::string &body);
 	http_status send_error(int ctx_id, http_status);
-	http_status serve_manifest(int ctx_id, int32_t base_id);
-	http_status serve_lzx(int ctx_id, int32_t base_id, uint32_t seq);
-	http_status serve_tmpl(int ctx_id, int32_t base_id, uint32_t seq);
-	std::shared_ptr<const oab_cache_entry> get_or_generate(int32_t base_id, http_status &);
+	http_status serve_manifest(int ctx_id, int32_t base_id, const char *domain);
+	http_status serve_lzx(int ctx_id, int32_t base_id, const char *domain, uint32_t seq);
+	http_status serve_tmpl(int ctx_id, int32_t base_id, const char *domain, uint32_t seq);
+	std::shared_ptr<const oab_cache_entry> get_or_generate(int32_t base_id, const char *domain, http_status &);
 	std::string generate_uc(int32_t base_id, uint32_t seq, const std::string &guid, const std::string &oab_dn);
-	http_status generate_oab(int32_t base_id, oab_cache_entry &entry);
+	http_status generate_oab(int32_t base_id, const char *domain, oab_cache_entry &entry);
 
 	std::mutex m_cache_lock;
-	std::unordered_map<int32_t, std::shared_ptr<oab_cache_entry>> m_cache;
+	std::unordered_map<std::string, std::shared_ptr<oab_cache_entry>, gromox::string_hash, std::equal_to<>> m_cache;
 	std::string m_org_name;
 	std::chrono::seconds m_cache_interval{300};
 };
@@ -1189,13 +1241,13 @@ http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	const auto &uri = req->f_request_uri;
 
 	if (strcasecmp(&uri[5], "oab.xml") == 0)
-		return serve_manifest(ctx_id, base_id);
+		return serve_manifest(ctx_id, base_id, pdomain);
 	auto seq = parse_seq_path(&uri[5]);
 	if (seq != 0)
-		return serve_lzx(ctx_id, base_id, seq);
+		return serve_lzx(ctx_id, base_id, pdomain, seq);
 	seq = parse_template_path(&uri[5]);
 	if (seq != 0)
-		return serve_tmpl(ctx_id, base_id, seq);
+		return serve_tmpl(ctx_id, base_id, pdomain, seq);
 
 	return send_error(ctx_id, http_status::not_found);
 } catch (const std::bad_alloc &) {
@@ -1242,10 +1294,11 @@ http_status OabPlugin::send_error(int ctx_id, http_status code)
 }
 
 std::shared_ptr<const oab_cache_entry>
-OabPlugin::get_or_generate(int32_t base_id, http_status &h_status) try
+OabPlugin::get_or_generate(int32_t base_id, const char *domain,
+    http_status &h_status) try
 {
 	std::lock_guard lock(m_cache_lock);
-	auto it = m_cache.find(base_id);
+	auto it = m_cache.find(domain);
 	auto now = std::chrono::steady_clock::now();
 	if (it != m_cache.end() &&
 	    now - it->second->gen_time < m_cache_interval)
@@ -1260,7 +1313,7 @@ OabPlugin::get_or_generate(int32_t base_id, http_status &h_status) try
 	 */
 	if (it != m_cache.end()) {
 		entry->sequence = prev_seq;
-		h_status = generate_oab(base_id, *entry);
+		h_status = generate_oab(base_id, domain, *entry);
 		if (h_status != http_status::ok)
 			return nullptr;
 		if (*it->second == *entry) {
@@ -1271,39 +1324,42 @@ OabPlugin::get_or_generate(int32_t base_id, http_status &h_status) try
 
 	/* Content changed or first generation — assign new sequence */
 	entry->sequence = prev_seq + 1;
-	h_status = generate_oab(base_id, *entry);
+	h_status = generate_oab(base_id, domain, *entry);
 	if (h_status != http_status::ok)
 		return nullptr;
-	entry->gen_time  = now;
-	m_cache[base_id] = entry;
+	entry->gen_time = now;
+	m_cache[domain] = entry;
 	return entry;
 } catch (const std::bad_alloc &) {
 	h_status = http_status::enomem_CL;
 	return nullptr;
 }
 
-http_status OabPlugin::serve_manifest(int ctx_id, int32_t base_id)
+http_status OabPlugin::serve_manifest(int ctx_id, int32_t base_id,
+    const char *domain)
 {
 	http_status status = http_status::server_error;
-	auto entry = get_or_generate(base_id, status);
+	auto entry = get_or_generate(base_id, domain, status);
 	if (entry == nullptr)
 		return send_error(ctx_id, status);
 	return send_response(ctx_id, "text/xml", entry->manifest_xml);
 }
 
-http_status OabPlugin::serve_lzx(int ctx_id, int32_t base_id, uint32_t seq)
+http_status OabPlugin::serve_lzx(int ctx_id, int32_t base_id,
+    const char *domain, uint32_t seq)
 {
 	http_status status = http_status::server_error;
-	auto entry = get_or_generate(base_id, status);
+	auto entry = get_or_generate(base_id, domain, status);
 	if (entry == nullptr || entry->sequence != seq)
 		return send_error(ctx_id, status);
 	return send_response(ctx_id, "application/octet-stream", entry->lzx_data);
 }
 
-http_status OabPlugin::serve_tmpl(int ctx_id, int32_t base_id, uint32_t seq)
+http_status OabPlugin::serve_tmpl(int ctx_id, int32_t base_id,
+    const char *domain, uint32_t seq)
 {
 	http_status status = http_status::server_error;
-	auto entry = get_or_generate(base_id, status);
+	auto entry = get_or_generate(base_id, domain, status);
 	if (entry == nullptr || entry->sequence != seq)
 		return send_error(ctx_id, status);
 	return send_response(ctx_id, "application/octet-stream", entry->tmpl_lzx_data);
@@ -1459,9 +1515,10 @@ std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
 /**
  * Procedure for MS-OXOAB v16 §2.11 "Compressed OAB Version 4 Details File"
  */
-http_status OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
+http_status OabPlugin::generate_oab(int32_t base_id, const char *domain,
+    oab_cache_entry &entry)
 {
-	auto guid_str = deterministic_guid(base_id);
+	auto guid_str = domain_guid(domain);
 	/*
 	 * MS-OXOAB: PidTagOfflineAddressBookDistinguishedName
 	 * is the DN of the address list, not the OAB object.
