@@ -1,10 +1,32 @@
-In Development 3.5.24
-=====================
+In Development 3.5.354
+======================
 
 Enhancements:
 
-* oxcical: treat zero-length PidLidAppointmentTimeZoneDefinitionStartDisplay as if absent
+* oab: Gromox now serves Offline Addressbook files
+* ews: implement task creation, update, and property retrieval
+* ews: implement ExpandDL, GetPersona, CreateUserConfiguration,
+  UpdateUserConfiguration, DeleteUserConfiguration, DeleteAttachment,
+  AddDelegate, UpdateDelegate and RemoveDelegate operations
+* ews: implement calendar occurrence operations (create, update, delete)
+  with timezone support
+* ews: implement lifecycle for meetings: invitation sending on UpdateItem,
+  cancellations on DeleteItem, and responses to organizer on accept/decline
+* ews: generate read receipts when marking messages as read, honor
+  SuppressReadReceipts on UpdateItem
+* ews: add partial matching to ResolveNames via ab_tree
+* ews: add delegate permission level support and cross-mailbox permission
+  checks
+* ews: add Flag write conversion, ConversationIndex/ConversationTopic
+  write, and attendee field handling for UpdateItem
+* ruleproc: update calendar on incoming meeting response, setting
+  PR_RECIPIENT_TRACKSTATUS on the matching attendee
+* oxdisco: support for impersonation username syntax with EAS
+* oxcical: treat zero-length PidLidAppointmentTimeZoneDefinitionStartDisplay
+  as if it were absent
 * eml2mt: output GXMT data as soon as practical
+* htmltotext: support and prefer Chawan as a new external htmltotext renderer
+* rtftohtml: support a few more RTF commands
 
 Fixes:
 
@@ -12,18 +34,29 @@ Fixes:
 * midb: retrieve midb_sqlite_busy_timeout from the right config file,
   avert a "config key .. has no default and was not set either" log message
 * exmdb: close cursors before modifying tables in purge
-* exmdb: fix use-after-free when exmdb_provider utilizes exmdb_client in multiserver
+* exmdb: fix use-after-free when exmdb_provider utilizes exmdb_client in
+  multiserver
 * exmdb: proper symmetric unlocking for db_base_rd_ptr class
 * exmdb: unlock giant_lock before erasing the same from hash table
-* midb: release lock and reference when me_sync_mailbox experiences a sync failure
+* midb: release lock and reference when me_sync_mailbox experiences a sync
+  failure
 * lib: avoid emitting colors to stderr when that is not a tty
 * exmdb: strip redundant notifications from notify_new_mail()
 * exmdb: stop returning garbage in MAPI content table cells when the table sort
   order contains a PT_MV_UNICODE | MV_INSTANCE column.
+* oxcical: on import, do set the PidLidAppointmentStateFlags,
+  PidLidResponseStatus, PidLidMeetingType properties
+* ews: Meeting requests that created with the EWS `SendOnlyToAll` flag had the
+  wrong iCal METHOD and lacked the attendees, which has been fixed.
 
 Changes:
 
+* exmdb: read multi-server map exclusively from SQL rather than exmdb_list.txt
+* oxcmail: on INET-to-MAPI conversion, set senders/receiver properties to
+  use SMTP rather than EX addressing
 * imap: remodeled midb_agent to require a less memory in practice
+* ews: strip all characters that are illegal in XML when e.g. sending the
+  bodytext to the client
 
 
 Gromox 3.5 (2025-02-26)
