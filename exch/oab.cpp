@@ -1078,9 +1078,9 @@ class OabPlugin {
 	http_status serve_manifest(int ctx_id, int32_t base_id);
 	http_status serve_lzx(int ctx_id, int32_t base_id, uint32_t seq);
 	http_status serve_tmpl(int ctx_id, int32_t base_id, uint32_t seq);
-	const oab_cache_entry *get_or_generate(int32_t base_id);
+	const oab_cache_entry *get_or_generate(int32_t base_id, http_status &);
 	std::string generate_uc(int32_t base_id, uint32_t seq, const std::string &guid, const std::string &oab_dn);
-	bool generate_oab(int32_t base_id, oab_cache_entry &entry);
+	http_status generate_oab(int32_t base_id, oab_cache_entry &entry);
 
 	std::mutex m_cache_lock;
 	std::unordered_map<int32_t, oab_cache_entry> m_cache;
@@ -1231,7 +1231,8 @@ http_status OabPlugin::send_error(int ctx_id, http_status code)
 	return write_response(ctx_id, body.data(), body.size());
 }
 
-const oab_cache_entry *OabPlugin::get_or_generate(int32_t base_id)
+const oab_cache_entry *OabPlugin::get_or_generate(int32_t base_id,
+    http_status &h_status) try
 {
 	std::lock_guard lock(m_cache_lock);
 	auto it = m_cache.find(base_id);
@@ -1244,34 +1245,41 @@ const oab_cache_entry *OabPlugin::get_or_generate(int32_t base_id)
 	oab_cache_entry entry;
 	if (it != m_cache.end())
 		entry.sequence = it->second.sequence + 1;
-	if (!generate_oab(base_id, entry))
+	h_status = generate_oab(base_id, entry);
+	if (h_status != http_status::ok)
 		return nullptr;
 	entry.gen_time = now;
 	auto &ref = m_cache[base_id] = std::move(entry);
 	return &ref;
+} catch (const std::bad_alloc &) {
+	h_status = http_status::enomem_CL;
+	return nullptr;
 }
 
 http_status OabPlugin::serve_manifest(int ctx_id, int32_t base_id)
 {
-	auto entry = get_or_generate(base_id);
+	http_status status = http_status::server_error;
+	auto entry = get_or_generate(base_id, status);
 	if (entry == nullptr)
-		return send_error(ctx_id, http_status::not_found);
+		return send_error(ctx_id, status);
 	return send_response(ctx_id, "text/xml", entry->manifest_xml);
 }
 
 http_status OabPlugin::serve_lzx(int ctx_id, int32_t base_id, uint32_t seq)
 {
-	auto entry = get_or_generate(base_id);
+	http_status status = http_status::server_error;
+	auto entry = get_or_generate(base_id, status);
 	if (entry == nullptr || entry->sequence != seq)
-		return send_error(ctx_id, http_status::not_found);
+		return send_error(ctx_id, status);
 	return send_response(ctx_id, "application/octet-stream", entry->lzx_data);
 }
 
 http_status OabPlugin::serve_tmpl(int ctx_id, int32_t base_id, uint32_t seq)
 {
-	auto entry = get_or_generate(base_id);
+	http_status status = http_status::server_error;
+	auto entry = get_or_generate(base_id, status);
 	if (entry == nullptr || entry->sequence != seq)
-		return send_error(ctx_id, http_status::not_found);
+		return send_error(ctx_id, status);
 	return send_response(ctx_id, "application/octet-stream", entry->tmpl_lzx_data);
 }
 
@@ -1425,7 +1433,7 @@ std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
 /**
  * Procedure for MS-OXOAB v16 §2.11 "Compressed OAB Version 4 Details File"
  */
-bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
+http_status OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 {
 	auto guid_str = deterministic_guid(base_id);
 	/*
@@ -1436,7 +1444,7 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	std::string oab_dn = "/";
 	auto raw = generate_uc(base_id, entry.sequence, guid_str, oab_dn);
 	if (raw.empty())
-		return false;
+		return http_status::server_error;
 	entry.lzx_data = oab_wrap_lzx(raw, 3);
 
 	/* Generate and compress display template (MS-OXOAB 2.2) */
@@ -1485,7 +1493,7 @@ bool OabPlugin::generate_oab(int32_t base_id, oab_cache_entry &entry)
 	doc.Print(&printer);
 	entry.manifest_xml.assign(printer.CStr(), printer.CStrSize() > 0 ?
 	                          printer.CStrSize() - 1 : 0);
-	return true;
+	return http_status::ok;
 }
 
 void OabPlugin::clear_cache()
