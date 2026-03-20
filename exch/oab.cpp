@@ -61,10 +61,11 @@ namespace {
 
 /* Cached OAB data for a single address book base */
 struct oab_cache_entry {
+	uint32_t sequence = 1;
 	std::string manifest_xml, lzx_data, tmpl_lzx_data;
+
 	/* transient state that is not part of the comparison: */
 	gromox::time_point gen_time{};
-	uint32_t sequence = 1;
 
 	bool operator==(const oab_cache_entry &o) const;
 };
@@ -151,8 +152,8 @@ static constexpr uint32_t lzx_position_base[LZX_NUM_POS_SLOTS] = {
 
 bool oab_cache_entry::operator==(const oab_cache_entry &o) const
 {
-	return manifest_xml == o.manifest_xml && lzx_data == o.lzx_data &&
-	       tmpl_lzx_data == o.tmpl_lzx_data;
+	return sequence == o.sequence && manifest_xml == o.manifest_xml &&
+	       lzx_data == o.lzx_data && tmpl_lzx_data == o.tmpl_lzx_data;
 }
 
 void oab_writer::put_u32le(uint32_t v)
@@ -1250,19 +1251,29 @@ OabPlugin::get_or_generate(int32_t base_id, http_status &h_status) try
 	    now - it->second->gen_time < m_cache_interval)
 		return it->second;
 
-	/* Generate fresh data */
 	auto entry = std::make_shared<oab_cache_entry>();
-	h_status = generate_oab(base_id, *entry);
-	if (h_status != http_status::ok)
-		return nullptr;
-	/* Only bump seq when content has changed */
+	uint32_t prev_seq = it != m_cache.end() ? it->second->sequence : 0;
+	/*
+	 * Because the sequence number gets embedded in the OAB data, the "new"
+	 * OAB must be coded with the old seq number for
+	 * oab_cache_entry::operator== to yield the desired result.
+	 */
 	if (it != m_cache.end()) {
+		entry->sequence = prev_seq;
+		h_status = generate_oab(base_id, *entry);
+		if (h_status != http_status::ok)
+			return nullptr;
 		if (*it->second == *entry) {
 			it->second->gen_time = now;
 			return it->second;
 		}
-		entry->sequence = it->second->sequence + 1;
 	}
+
+	/* Content changed or first generation — assign new sequence */
+	entry->sequence = prev_seq + 1;
+	h_status = generate_oab(base_id, *entry);
+	if (h_status != http_status::ok)
+		return nullptr;
 	entry->gen_time  = now;
 	m_cache[base_id] = entry;
 	return entry;
