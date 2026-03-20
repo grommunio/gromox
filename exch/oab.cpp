@@ -62,8 +62,11 @@ namespace {
 /* Cached OAB data for a single address book base */
 struct oab_cache_entry {
 	std::string manifest_xml, lzx_data, tmpl_lzx_data;
-	gromox::time_point gen_time;
+	/* transient state that is not part of the comparison: */
+	gromox::time_point gen_time{};
 	uint32_t sequence = 1;
+
+	bool operator==(const oab_cache_entry &o) const;
 };
 
 /* OAB binary writer helper */
@@ -145,6 +148,12 @@ static constexpr uint32_t lzx_position_base[LZX_NUM_POS_SLOTS] = {
 	1024,1536,2048,3072, 4096,6144,8192,12288,
 	16384,24576,32768,49152, 65536,98304,131072,196608,
 };
+
+bool oab_cache_entry::operator==(const oab_cache_entry &o) const
+{
+	return manifest_xml == o.manifest_xml && lzx_data == o.lzx_data &&
+	       tmpl_lzx_data == o.tmpl_lzx_data;
+}
 
 void oab_writer::put_u32le(uint32_t v)
 {
@@ -1243,11 +1252,17 @@ const oab_cache_entry *OabPlugin::get_or_generate(int32_t base_id,
 
 	/* Generate fresh data */
 	oab_cache_entry entry;
-	if (it != m_cache.end())
-		entry.sequence = it->second.sequence + 1;
 	h_status = generate_oab(base_id, entry);
 	if (h_status != http_status::ok)
 		return nullptr;
+	/* Only bump seq when content has changed */
+	if (it != m_cache.end()) {
+		if (it->second == entry) {
+			it->second.gen_time = now;
+			return &it->second;
+		}
+		entry.sequence = it->second.sequence + 1;
+	}
 	entry.gen_time = now;
 	auto &ref = m_cache[base_id] = std::move(entry);
 	return &ref;
