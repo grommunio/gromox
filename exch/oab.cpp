@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstring>
+#include <ctime>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -42,6 +43,7 @@
 
 using namespace gromox;
 using namespace gromox::ab_tree;
+using split_seq_t = std::pair<int32_t, uint32_t>;
 
 /* OAB v4 binary format constants */
 static constexpr uint32_t OAB_V4_VERSION = 0x20;
@@ -70,7 +72,7 @@ namespace {
 
 /* Cached OAB data for a single address book base */
 struct oab_cache_entry {
-	uint32_t sequence = 1;
+	split_seq_t sequence;
 	std::string manifest_xml, lzx_data, tmpl_lzx_data;
 
 	/* transient state that is not part of the comparison: */
@@ -1018,7 +1020,7 @@ static std::string sha1_hex(std::string_view input)
 
 static unsigned int g_oab_use_xxhash = 1; /* same idea as g_cid_use_xxhash */
 
-static GUID domain_guid2(const char *domain)
+static GUID domain_guid2(const char *domain, split_seq_t::first_type generation)
 {
 	static constexpr FLATUID rfc_dns_namespace = {{
 		/* RFC 9562 §6.6 {6ba7b810-9dad-11d1-80b4-00c04fd430c8} */
@@ -1035,6 +1037,7 @@ static GUID domain_guid2(const char *domain)
 		XXH3_128bits_reset(&st);
 		XXH3_128bits_update(&st, rfc_dns_namespace.ab, std::size(rfc_dns_namespace.ab));
 		XXH3_128bits_update(&st, domain, strlen(domain) + 1);
+		XXH3_128bits_update(&st, &generation, sizeof(generation));
 		XXH128_canonicalFromHash(&u.canon, XXH3_128bits_digest(&st));
 		return u.flat;
 #endif
@@ -1050,15 +1053,17 @@ static GUID domain_guid2(const char *domain)
 	if (EVP_DigestInit_ex(ctx.get(), EVP_sha3_256(), nullptr) <= 0 ||
 	    EVP_DigestUpdate(ctx.get(), rfc_dns_namespace.ab, std::size(rfc_dns_namespace.ab)) <= 0 ||
 	    EVP_DigestUpdate(ctx.get(), domain, strlen(domain) + 1) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), &generation, sizeof(generation)) <= 0 ||
 	    EVP_DigestFinal_ex(ctx.get(), u.hash, &len) <= 0 ||
 	    len < 16)
 		return {};
 	return u.flat;
 }
 
-static std::string domain_guid(const char *domain)
+static std::string domain_guid(const char *domain,
+    split_seq_t::first_type generation)
 {
-	auto g = domain_guid2(domain);
+	auto g = domain_guid2(domain, generation);
 	g.clock_seq[0] &= 0x3F;
 	g.clock_seq[0] |= 0x80;
 	g.time_hi_and_version &= 0x0FFF;
@@ -1293,41 +1298,47 @@ http_status OabPlugin::send_error(int ctx_id, http_status code)
 	return write_response(ctx_id, body.data(), body.size());
 }
 
+static inline split_seq_t to_split_seq(int64_t x)
+{
+	return {x / 0x80000000, x & 0x7FFFFFFF};
+}
+
 std::shared_ptr<const oab_cache_entry>
 OabPlugin::get_or_generate(int32_t base_id, const char *domain,
     http_status &h_status) try
 {
+	auto now_mono = tp_now();
+	auto now_wall = to_split_seq(time(nullptr));
+
 	std::lock_guard lock(m_cache_lock);
 	auto it = m_cache.find(domain);
-	auto now = std::chrono::steady_clock::now();
 	if (it != m_cache.end() &&
-	    now - it->second->gen_time < m_cache_interval)
+	    now_mono - it->second->gen_time < m_cache_interval)
 		return it->second;
 
 	auto entry = std::make_shared<oab_cache_entry>();
-	uint32_t prev_seq = it != m_cache.end() ? it->second->sequence : 0;
 	/*
 	 * Because the sequence number gets embedded in the OAB data, the "new"
 	 * OAB must be coded with the old seq number for
 	 * oab_cache_entry::operator== to yield the desired result.
 	 */
 	if (it != m_cache.end()) {
-		entry->sequence = prev_seq;
+		entry->sequence = it->second->sequence;
 		h_status = generate_oab(base_id, domain, *entry);
 		if (h_status != http_status::ok)
 			return nullptr;
 		if (*it->second == *entry) {
-			it->second->gen_time = now;
+			it->second->gen_time = now_mono;
 			return it->second;
 		}
 	}
 
 	/* Content changed or first generation — assign new sequence */
-	entry->sequence = prev_seq + 1;
+	entry->sequence = now_wall;
 	h_status = generate_oab(base_id, domain, *entry);
 	if (h_status != http_status::ok)
 		return nullptr;
-	entry->gen_time = now;
+	entry->gen_time = now_mono;
 	m_cache[domain] = entry;
 	return entry;
 } catch (const std::bad_alloc &) {
@@ -1350,7 +1361,7 @@ http_status OabPlugin::serve_lzx(int ctx_id, int32_t base_id,
 {
 	http_status status = http_status::server_error;
 	auto entry = get_or_generate(base_id, domain, status);
-	if (entry == nullptr || entry->sequence != seq)
+	if (entry == nullptr || entry->sequence.second != seq)
 		return send_error(ctx_id, status);
 	return send_response(ctx_id, "application/octet-stream", entry->lzx_data);
 }
@@ -1360,7 +1371,7 @@ http_status OabPlugin::serve_tmpl(int ctx_id, int32_t base_id,
 {
 	http_status status = http_status::server_error;
 	auto entry = get_or_generate(base_id, domain, status);
-	if (entry == nullptr || entry->sequence != seq)
+	if (entry == nullptr || entry->sequence.second != seq)
 		return send_error(ctx_id, status);
 	return send_response(ctx_id, "application/octet-stream", entry->tmpl_lzx_data);
 }
@@ -1518,14 +1529,14 @@ std::string OabPlugin::generate_uc(int32_t base_id, uint32_t sequence,
 http_status OabPlugin::generate_oab(int32_t base_id, const char *domain,
     oab_cache_entry &entry)
 {
-	auto guid_str = domain_guid(domain);
+	auto guid_str = domain_guid(domain, entry.sequence.first);
 	/*
 	 * MS-OXOAB: PidTagOfflineAddressBookDistinguishedName
 	 * is the DN of the address list, not the OAB object.
 	 * For the GAL, Exchange uses "/" (the root).
 	 */
 	std::string oab_dn = "/";
-	auto raw = generate_uc(base_id, entry.sequence, guid_str, oab_dn);
+	auto raw = generate_uc(base_id, entry.sequence.second, guid_str, oab_dn);
 	if (raw.empty())
 		return http_status::server_error;
 	entry.lzx_data = oab_wrap_lzx(raw, 3);
@@ -1536,8 +1547,8 @@ http_status OabPlugin::generate_oab(int32_t base_id, const char *domain,
 
 	auto data_sha = sha1_hex(entry.lzx_data);
 	auto tmpl_sha = sha1_hex(entry.tmpl_lzx_data);
-	auto data_file = fmt::format("{}.lzx", entry.sequence);
-	auto tmpl_file = fmt::format("lng0409-{}.lzx", entry.sequence);
+	auto data_file = fmt::format("{}.lzx", entry.sequence.second);
+	auto tmpl_file = fmt::format("lng0409-{}.lzx", entry.sequence.second);
 
 	/* Generate manifest XML (MS-OXWOAB) */
 	tinyxml2::XMLDocument doc;
@@ -1552,17 +1563,17 @@ http_status OabPlugin::generate_oab(int32_t base_id, const char *domain,
 	root->InsertEndChild(oal);
 
 	auto full = doc.NewElement("Full");
-	full->SetAttribute("seq", entry.sequence);
+	full->SetAttribute("seq", entry.sequence.second);
 	full->SetAttribute("ver", OAB_V4_VERSION);
 	/* ambiguity warning in clang-19 warrants static_cast */
 	full->SetAttribute("size", static_cast<uint64_t>(entry.lzx_data.size()));
 	full->SetAttribute("uncompressedsize", static_cast<uint64_t>(raw.size()));
 	full->SetAttribute("SHA", data_sha.c_str());
-	full->SetText((std::to_string(entry.sequence) + ".lzx").c_str());
+	full->SetText((std::to_string(entry.sequence.second) + ".lzx").c_str());
 	oal->InsertEndChild(full);
 
 	auto tmpl = doc.NewElement("Template");
-	tmpl->SetAttribute("seq", entry.sequence);
+	tmpl->SetAttribute("seq", entry.sequence.second);
 	tmpl->SetAttribute("ver", OAB_TMPL_VERSION);
 	tmpl->SetAttribute("size", static_cast<uint64_t>(entry.tmpl_lzx_data.size()));
 	tmpl->SetAttribute("uncompressedsize", static_cast<uint64_t>(tmpl_raw.size()));
