@@ -1087,12 +1087,12 @@ class OabPlugin {
 	http_status serve_manifest(int ctx_id, int32_t base_id);
 	http_status serve_lzx(int ctx_id, int32_t base_id, uint32_t seq);
 	http_status serve_tmpl(int ctx_id, int32_t base_id, uint32_t seq);
-	const oab_cache_entry *get_or_generate(int32_t base_id, http_status &);
+	std::shared_ptr<const oab_cache_entry> get_or_generate(int32_t base_id, http_status &);
 	std::string generate_uc(int32_t base_id, uint32_t seq, const std::string &guid, const std::string &oab_dn);
 	http_status generate_oab(int32_t base_id, oab_cache_entry &entry);
 
 	std::mutex m_cache_lock;
-	std::unordered_map<int32_t, oab_cache_entry> m_cache;
+	std::unordered_map<int32_t, std::shared_ptr<oab_cache_entry>> m_cache;
 	std::string m_org_name;
 	std::chrono::seconds m_cache_interval{300};
 };
@@ -1240,32 +1240,32 @@ http_status OabPlugin::send_error(int ctx_id, http_status code)
 	return write_response(ctx_id, body.data(), body.size());
 }
 
-const oab_cache_entry *OabPlugin::get_or_generate(int32_t base_id,
-    http_status &h_status) try
+std::shared_ptr<const oab_cache_entry>
+OabPlugin::get_or_generate(int32_t base_id, http_status &h_status) try
 {
 	std::lock_guard lock(m_cache_lock);
 	auto it = m_cache.find(base_id);
 	auto now = std::chrono::steady_clock::now();
 	if (it != m_cache.end() &&
-	    now - it->second.gen_time < m_cache_interval)
-		return &it->second;
+	    now - it->second->gen_time < m_cache_interval)
+		return it->second;
 
 	/* Generate fresh data */
-	oab_cache_entry entry;
-	h_status = generate_oab(base_id, entry);
+	auto entry = std::make_shared<oab_cache_entry>();
+	h_status = generate_oab(base_id, *entry);
 	if (h_status != http_status::ok)
 		return nullptr;
 	/* Only bump seq when content has changed */
 	if (it != m_cache.end()) {
-		if (it->second == entry) {
-			it->second.gen_time = now;
-			return &it->second;
+		if (*it->second == *entry) {
+			it->second->gen_time = now;
+			return it->second;
 		}
-		entry.sequence = it->second.sequence + 1;
+		entry->sequence = it->second->sequence + 1;
 	}
-	entry.gen_time = now;
-	auto &ref = m_cache[base_id] = std::move(entry);
-	return &ref;
+	entry->gen_time  = now;
+	m_cache[base_id] = entry;
+	return entry;
 } catch (const std::bad_alloc &) {
 	h_status = http_status::enomem_CL;
 	return nullptr;
