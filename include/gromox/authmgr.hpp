@@ -64,7 +64,7 @@ struct GX_EXPORT sql_meta_result {
 	std::string ldap_mail_attr;
 	bool ldap_start_tls = false;
 	uint8_t have_xid = 0xFF;
-	uint32_t user_id = 0, privbits = 0;
+	uint32_t user_id = 0, domain_id = 0, org_id = 0, privbits = 0;
 };
 
 using authmgr_login_t = bool (*)(const char *username, const char *password, unsigned int wantprivs, sql_meta_result &);
