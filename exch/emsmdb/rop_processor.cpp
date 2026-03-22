@@ -41,10 +41,6 @@
 using namespace gromox;
 
 static int g_scan_interval;
-static pthread_t g_scan_id;
-static gromox::atomic_bool g_rop_stop{true};
-static std::mutex g_hash_lock;
-static std::unordered_map<std::string, uint32_t> g_logon_hash;
 static unsigned int g_emsmdb_full_parenting;
 static unsigned int g_max_rop_payloads = 96;
 
@@ -73,13 +69,6 @@ void object_node::clear() noexcept
 	switch (type) {
 	case ems_objtype::logon: {
 		auto logon = static_cast<logon_object *>(pobject);
-		{
-			/* Remove from pinger list */
-			std::lock_guard hl_hold(g_hash_lock);
-			auto ref = g_logon_hash.find(logon->get_dir());
-			if (ref != g_logon_hash.end() && --ref->second == 0)
-				g_logon_hash.erase(ref);
-		}
 		if (g_logon_debug)
 			mlog(LV_DEBUG, "E-DBG: object_node(%p)::clear: logon=%p", this, pobject);
 		delete logon;
@@ -139,18 +128,8 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 {
 	/* MS-OXCROPS 3.1.4.2 */
 	plogmap->p[logon_id] = std::make_unique<LOGON_ITEM>();
-	auto rlogon = plogon.get();
-	auto handle = rop_processor_add_object_handle(plogmap, logon_id, -1,
-	              {ems_objtype::logon, std::move(plogon)});
-	if (handle < 0)
-		return handle;
-	std::lock_guard hl_hold(g_hash_lock);
-	auto pref = g_logon_hash.find(rlogon->get_dir());
-	if (pref != g_logon_hash.end())
-		++pref->second;
-	else
-		g_logon_hash.emplace(rlogon->get_dir(), 1);
-	return handle;
+	return rop_processor_add_object_handle(plogmap, logon_id, -1,
+	       {ems_objtype::logon, std::move(plogon)});
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return -ENOMEM;
@@ -317,66 +296,9 @@ logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 	return obj;
 }
 
-static void *emsrop_scanwork(void *param)
-{
-	pthread_setname_np(pthread_self(), "rop_scan");
-	int count;
-	
-	count = 0;
-	while (!g_rop_stop) try {
-		sleep(1);
-		count ++;
-		if (count < g_scan_interval) {
-			count ++;
-			continue;
-		}
-		count = 0;
-		std::unique_lock hl_hold(g_hash_lock);
-		std::vector<std::string> dirs;
-		for (const auto &pair : g_logon_hash)
-			dirs.push_back(pair.first);
-		hl_hold.unlock();
-		while (dirs.size() > 0) {
-			exmdb_client->ping_store(dirs.back().c_str());
-			dirs.pop_back();
-		}
-	} catch (const std::bad_alloc &) {
-		sleep(1);
-	}
-	return nullptr;
-}
-
 void rop_processor_init(int scan_interval)
 {
 	g_scan_interval = scan_interval;
-}
-
-int rop_processor_run()
-{
-	g_rop_stop = false;
-	auto ret = pthread_create4(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
-	if (ret != 0) {
-		g_rop_stop = true;
-		mlog(LV_ERR, "emsmdb: failed to create scanning thread "
-		       "for logon hash table: %s", strerror(ret));
-		return -5;
-	}
-	return 0;
-}
-
-void rop_processor_stop()
-{
-	if (!g_rop_stop) {
-		g_rop_stop = true;
-		if (!pthread_equal(g_scan_id, {})) {
-			pthread_kill(g_scan_id, SIGALRM);
-			pthread_join(g_scan_id, NULL);
-		}
-	}
-	{ /* silence cov-scan, take locks even in single-thread scenarios */
-		std::lock_guard lk(g_hash_lock);
-		g_logon_hash.clear();
-	}
 }
 
 static uint32_t rpcext_cutoff = 32U << 10; /* OXCRPC v23 3.1.4.2.1.2.2 */

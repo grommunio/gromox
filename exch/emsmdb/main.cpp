@@ -246,10 +246,6 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "emsmdb: failed to run asyncemsmdb interface");
 			return FALSE;
 		}
-		if (0 != rop_processor_run()) {
-			mlog(LV_ERR, "emsmdb: failed to run rop processor");
-			return FALSE;
-		}
 		return TRUE;
 	}
 	case PLUGIN_QUENCH_ASYNC:
@@ -261,7 +257,6 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 	case PLUGIN_FREE:
 		asyncemsmdb_interface_stop();
 		emsmdb_interface_stop();
-		rop_processor_stop();
 		asyncemsmdb_interface_free();
 		exmdb_client.reset();
 		return TRUE;
