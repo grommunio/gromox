@@ -9,7 +9,7 @@ delivery \(em Backend for local delivery
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
-specified, /etc/gromox/delivery.cfg will be read if it exists.
+specified, /etc/gromox/gromox.cfg and /etc/gromox/delivery.cfg will be read.
 .TP
 \fB\-?\fP
 Display option summary.

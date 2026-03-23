@@ -11,7 +11,7 @@ The POP3 server supports impersonation; see imap(8gx) for details.
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
-specified, /etc/gromox/pop3.cfg will be read if it exists.
+specified, /etc/gromox/gromox.cfg and /etc/gromox/pop3.cfg will be read.
 .TP
 \fB\-\-version\fP
 Output version information and exit.
