@@ -166,7 +166,6 @@ static void *zcorezs_scanwork(void *param)
 		count ++;
 		if (count >= g_ping_interval)
 			count = 0;
-		std::vector<std::string> maildir_list;
 		std::list<sink_node> expired_list;
 		std::unique_lock tl_hold(g_table_lock);
 		auto cur_time = time(nullptr);
@@ -202,13 +201,6 @@ static void *zcorezs_scanwork(void *param)
 					++iter;
 					continue;
 				}
-				try {
-					maildir_list.push_back(pinfo->get_maildir());
-				} catch (const std::bad_alloc &) {
-					mlog(LV_ERR, "E-2178: ENOMEM");
-					++iter;
-					continue;
-				}
 				++iter;
 			} else {
 				if (pinfo->sink_list.size() != 0) {
@@ -224,12 +216,6 @@ static void *zcorezs_scanwork(void *param)
 			}
 		}
 		tl_hold.unlock();
-		for (const auto &dir : maildir_list) {
-			common_util_build_environment();
-			exmdb_client->ping_store(dir.c_str());
-			common_util_free_environment();
-		}
-		maildir_list.clear();
 		while (expired_list.size() > 0) {
 			std::list<sink_node> holder;
 			holder.splice(holder.end(), expired_list, expired_list.begin());
