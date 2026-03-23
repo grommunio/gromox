@@ -349,7 +349,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 			if (prestriction != nullptr &&
 			    !container_object_match_contact_message(ppropvals.get(), prestriction))
 				continue;
-			if (pcontainer->contents.prow_set->append_move(std::move(ppropvals)) != 0)
+			if (pcontainer->contents.prow_set->append_move(std::move(ppropvals)) != ecSuccess)
 				return FALSE;
 			if (mot == MAPI_DISTLIST)
 				break;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -65,7 +65,7 @@ static errno_t storetbl_add_row(table_object *tbl, const USER_INFO &info,
 	tpropval_array_ptr pdup(props->dup());
 	if (pdup == nullptr)
 		return ENOMEM;
-	return tbl->fixed_data->append_move(std::move(pdup));
+	return tbl->fixed_data->append_move(std::move(pdup)) == ecSuccess ? 0 : EIO;
 }
 
 static errno_t storetbl_refresh(table_object *tbl)

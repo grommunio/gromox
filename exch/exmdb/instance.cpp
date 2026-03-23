@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -2837,7 +2837,7 @@ BOOL exmdb_server::update_message_instance_rcpts(const char *dir,
 		tpropval_array_ptr prcpt(mod.dup());
 		if (prcpt == nullptr)
 			return FALSE;
-		if (pmsgctnt->children.prcpts->append_move(std::move(prcpt)) != 0)
+		if (pmsgctnt->children.prcpts->append_move(std::move(prcpt)) != ecSuccess)
 			return FALSE;
 	}
 	return TRUE;

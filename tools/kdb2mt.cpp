@@ -294,9 +294,9 @@ errno_t ace_list::emplace(std::string &&s, uint32_t r)
 		return EIO;
 	}
 	PERMISSION_DATA d = {ROW_ADD, {2, props->ppropval}};
-	auto ret = m_rdata->append_move(std::move(props));
-	if (ret != 0)
-		return ret;
+	err = m_rdata->append_move(std::move(props));
+	if (err != ecSuccess)
+		return EIO;
 	m_rows.emplace_back(d);
 	return 0;
 }
@@ -1200,9 +1200,10 @@ static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, 
 {
 	tpropval_array_ptr props = std::move(item.get_props());
 	props->erase_if(skip_property);
-	if (parent.message->children.prcpts->append_move(std::move(props)) == ENOMEM)
+	auto err = parent.message->children.prcpts->append_move(std::move(props));
+	if (err == ecMAPIOOM)
 		throw std::bad_alloc();
-	return 0;
+	return err == ecSuccess ? 0 : -1;
 }
 
 static std::string slurp_file_gz(const char *file)
