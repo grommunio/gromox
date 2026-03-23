@@ -2507,7 +2507,8 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	if (!ptable->load())
+	auto err = ptable->load();
+	if (err != ecSuccess)
 		return ecError;
 	auto table_type = ptable->table_type;
 	if (start != UINT32_MAX)
@@ -2531,13 +2532,15 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 			if (prowset->pparray == nullptr)
 				return ecServerOOM;
 			while (true) {
-				if (!ptable->match_row(TRUE, prestriction, &position))
-					return ecError;
+				err = ptable->match_row(TRUE, prestriction, &position);
+				if (err != ecSuccess)
+					return err;
 				if (position < 0)
 					break;
 				ptable->set_position(position);
-				if (!ptable->query_rows(pproptags, 1, &tmp_set))
-					return ecError;
+				err = ptable->query_rows(pproptags, 1, &tmp_set);
+				if (err != ecSuccess)
+					return err;
 				if (tmp_set.count != 1)
 					break;
 				ptable->seek_current(TRUE, 1);
@@ -2549,16 +2552,19 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 		case zcore_tbltype::attachment:
 		case zcore_tbltype::recipient:
 		case zcore_tbltype::store:
-		case zcore_tbltype::abcontusr:
-			if (!ptable->filter_rows(count, prestriction, prowset))
-				return ecError;
+		case zcore_tbltype::abcontusr: {
+			err = ptable->filter_rows(count, prestriction, prowset);
+			if (err != ecSuccess)
+				return err;
 			break;
+		}
 		default:
 			return ecNotSupported;
 		}
 	} else {
-		if (!ptable->query_rows(pproptags, count, prowset))
-			return ecError;
+		err = ptable->query_rows(pproptags, count, prowset);
+		if (err != ecSuccess)
+			return err;
 		ptable->seek_current(TRUE, prowset->count);
 	}
 	pinfo.reset();
@@ -2613,7 +2619,7 @@ ec_error_t zs_setcolumns(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	return ptable->set_columns(pproptags) ? ecSuccess : ecError;
+	return ptable->set_columns(pproptags);
 }
 
 ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
@@ -2631,8 +2637,10 @@ ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	if (!ptable->load())
-		return ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
+
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
 		if (seek_rows < 0)
@@ -2652,8 +2660,9 @@ ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 		break;
 	default: {
 		original_position = ptable->get_position();
-		if (!ptable->retrieve_bookmark(bookmark, &b_exist))
-			return ecError;
+		err = ptable->retrieve_bookmark(bookmark, &b_exist);
+		if (err != ecSuccess)
+			return err;
 		if (!b_exist)
 			return ecNotFound;
 		auto original_position1 = ptable->get_position();
@@ -2773,8 +2782,9 @@ ec_error_t zs_sorttable(GUID hsession,
 	if (b_multi_inst && pcolumns != nullptr &&
 	    !cu_verify_columns_and_sorts(*pcolumns, psortset))
 		return ecNotSupported;
-	if (!ptable->set_sorts(psortset))
-		return ecError;
+	auto err = ptable->set_sorts(psortset);
+	if (err != ecSuccess)
+		return err;
 	ptable->unload();
 	ptable->clear_bookmarks();
 	ptable->clear_position();
@@ -2792,8 +2802,9 @@ ec_error_t zs_getrowcount(GUID hsession, uint32_t htable, uint32_t *pcount)
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	if (!ptable->load())
-		return ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
 	*pcount = ptable->get_total();
 	return ecSuccess;
 }
@@ -2820,8 +2831,9 @@ ec_error_t zs_restricttable(GUID hsession, uint32_t htable,
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->set_restriction(prestriction))
-		return ecError;
+	auto err = ptable->set_restriction(prestriction);
+	if (err != ecSuccess)
+		return err;
 	ptable->unload();
 	ptable->clear_bookmarks();
 	ptable->clear_position();
@@ -2851,8 +2863,10 @@ ec_error_t zs_findrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->load())
-		return ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
+
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
 		ptable->set_position(0);
@@ -2865,12 +2879,14 @@ ec_error_t zs_findrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	default:
 		if (ptable->table_type == zcore_tbltype::rule)
 			return ecNotSupported;
-		if (!ptable->retrieve_bookmark(bookmark, &b_exist))
-			return ecInvalidBookmark;
+		err = ptable->retrieve_bookmark(bookmark, &b_exist);
+		if (err != ecSuccess)
+			return err;
 		break;
 	}
-	if (ptable->match_row(TRUE, prestriction, &position))
-		return ecError;
+	err = ptable->match_row(TRUE, prestriction, &position);
+	if (err != ecSuccess)
+		return err;
 	if (position < 0)
 		return ecNotFound;
 	ptable->set_position(position);
@@ -2896,9 +2912,10 @@ ec_error_t zs_createbookmark(GUID hsession, uint32_t htable, uint32_t *pbookmark
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->load())
-		return ecError;
-	return ptable->create_bookmark(pbookmark) ? ecSuccess : ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
+	return ptable->create_bookmark(pbookmark);
 }
 
 ec_error_t zs_freebookmark(GUID hsession, uint32_t htable, uint32_t bookmark)

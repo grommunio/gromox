@@ -37,23 +37,23 @@ struct table_object {
 	~table_object();
 	static std::unique_ptr<table_object> create(store_object *, void *parent, zcore_tbltype, uint32_t table_flags);
 	const proptag_vector *get_columns() const { return m_colset ? &m_columns : nullptr; }
-	bool set_columns(proptag_cspan);
-	BOOL set_sorts(const SORTORDER_SET *);
-	BOOL load();
+	ec_error_t set_columns(proptag_cspan);
+	ec_error_t set_sorts(const SORTORDER_SET *);
+	ec_error_t load();
 	void unload();
-	bool query_rows(const proptag_cspan *cols, uint32_t row_count, TARRAY_SET *);
-	BOOL set_restriction(const RESTRICTION *);
+	ec_error_t query_rows(const proptag_cspan *cols, uint32_t row_count, TARRAY_SET *);
+	ec_error_t set_restriction(const RESTRICTION *);
 	void seek_current(BOOL forward, uint32_t row_count);
 	uint32_t get_position() const { return position; }
 	void set_position(uint32_t pos);
 	void clear_position() { position = 0; }
 	uint32_t get_total();
-	BOOL create_bookmark(uint32_t *index);
+	ec_error_t create_bookmark(uint32_t *index);
 	void remove_bookmark(uint32_t index);
 	void clear_bookmarks() { bookmark_list.clear(); }
-	BOOL retrieve_bookmark(uint32_t index, BOOL *exist);
-	bool filter_rows(uint32_t count, const RESTRICTION *, TARRAY_SET *);
-	BOOL match_row(BOOL forward, const RESTRICTION *, int32_t *pos);
+	ec_error_t retrieve_bookmark(uint32_t index, BOOL *exist);
+	ec_error_t filter_rows(uint32_t count, const RESTRICTION *, TARRAY_SET *);
+	ec_error_t match_row(BOOL forward, const RESTRICTION *, int32_t *pos);
 
 	store_object *pstore = nullptr;
 	uint32_t handle = 0, table_flags = 0;
