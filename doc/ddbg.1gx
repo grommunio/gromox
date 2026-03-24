@@ -6,8 +6,9 @@ ddbg \(em MAPI data debugger
 .SH Synopsis
 \fB/usr/libexec/gromox/ddbg\fP [options...] command [args...]
 .SH Description
-ddbg can be used to analyze various binary blobs. If no arguments are
-given, input is instead read from stdin instead.
+ddbg can be used to analyze various binary blobs. If no arguments are given,
+input is read from stdin. If arguments are given, they are treated as immediate
+values (i.e. content, never the name of a file to read).
 .SH Options
 .TP
 \fB\-p\fP, \fB\-\-pack\fP
@@ -45,6 +46,12 @@ Decode restriction blob (e.g. rule condition).
 \fB\-\-decode\-unixtime\fP
 Decode an Unix timestamp and show the equivalent NT time and calendar-based
 date.
+.TP
+\fB\-\-htmltortf\fP
+Convert a HTML document to RTF.
+.TP
+\fB\-\-htmltotext\fP
+Convert a HTML document to plaintext.
 .TP
 \fB\-\-lzxdec\fP
 Uncompress an lzxpress data stream.
