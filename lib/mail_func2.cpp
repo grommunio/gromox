@@ -62,6 +62,10 @@ ec_error_t plain_to_html(const char *rbuf, std::string &out) try
 		"\">\r\n</head>\r\n<body>\r\n<pre>";
 	static constexpr char footer[] = "</pre>\r\n</body>\r\n</html>";
 
+	/*
+	 * pandoc does not have any conversion from plain -> anything, we
+	 * really need to do this ourselves.
+	 */
 	std::unique_ptr<char[], stdlib_delete> body(HX_strquote(rbuf, HXQUOTE_HTML, nullptr));
 	if (body == nullptr)
 		return ecMAPIOOM;
