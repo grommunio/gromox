@@ -36,7 +36,9 @@ For user-attached properties that are read from SQL (cf. table
 handles a subset of property types: PT_BOOLEAN, PT_SHORT, PT_LONG,
 PT_I8, PT_SYSTIME, PT_BINARY, PT_UNICODE/STRING8 and
 PT_MV_UNICODE/STRING8.
-.SH Normative references
+.SH Signals
+Upon receipt of SIGHUP, the address book cache will be dropped; the next
+regular request for the AB will cause it to be reloaded.
 .IP \(bu 4
 MS-OXNSPI: Exchange Server Name Service Provider Interface (NSPI) Protocol
 .SH See also

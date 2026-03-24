@@ -85,5 +85,8 @@ triggered.
 .PP
 Default: \fIhost:(system_hostname)\fP
 .RE
+.SH Signals
+Upon receipt of SIGHUP, configuration files are re-read, but only a few select
+directives can be changed this way, as many parts do not implement reload.
 .SH See also
 \fBgromox\fP(7), \fBauthmgr\fP(4gx)

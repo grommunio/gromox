@@ -297,6 +297,12 @@ Default: \fIgromox\fP
 .TP
 \fBuser_default_lang\fP
 Default: \fIen\fP
+.SH Signals
+Upon receipt of SIGHUP, configuration files are re-read, but only a few select
+directives can be changed this way, as many parts do not implement reload.
+.PP
+Upon receipt of SIGUSR1, a dump of the currently active HTTP connections will
+be printed to stderr.
 .SH Normative references
 .IP \(bu 4
 MS-RPCE: Remote Procedure Call Protocol Extensions

@@ -191,6 +191,12 @@ The IPv6 socket address of the server running exmdb_provider(4gx). The address
 must conform to gromox(7) \(sc "Host addresses".
 .IP \(bu 4
 The TCP port number of the server
+.SH Signals
+Upon receipt of SIGHUP, configuration files are re-read, but only a few select
+directives can be changed this way, as many parts do not implement reload.
+.PP
+Upon receipt of SIGHUP, the address book cache will be dropped; the next
+regular request for the AB will cause it to be reloaded.
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
