@@ -533,12 +533,8 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size,
 	return 0;
 }
 
-enum {
-	REND_W3M, REND_CHAWAN, REND_PANDOC,
-};
-
 /**
- * Run an external HTML-to-text converter.
+ * Run an external document converter.
  *
  * @inbuf:  input data
  * @cset:   character set of input data (overriding any <meta> tag
@@ -549,7 +545,7 @@ enum {
  * Returns 0 on success, negative non-zero on error with errno set.
  * @outbuf is only replaced on success.
  */
-static int feed_htmltotext(std::string_view inbuf, const char *cset,
+int convert_doc_with_program(std::string_view inbuf, const char *cset,
     std::string &final_buf, unsigned int rend) try
 {
 	std::string filename;
@@ -566,14 +562,14 @@ static int feed_htmltotext(std::string_view inbuf, const char *cset,
 	auto cl1 = HX::make_scope_exit([&]() { unlink(filename.c_str()); });
 	/* pandoc immediately switches to latin1 on funny characters; forbid that */
 	if (utf8_writeout(fp.get(), inbuf.data(), inbuf.size(), cset,
-	    rend == REND_PANDOC) != 0)
+	    rend >= REND_PANDOC_HTP) != 0)
 		return -1;
 	fp.reset();
 	int fout = -1;
 	auto cl2 = HX::make_scope_exit([&]() { if (fout != -1) close(fout); });
 	const char *argv[9];
 	int argc = 0;
-	if (rend == REND_PANDOC) {
+	if (rend == REND_PANDOC_HTP) {
 		argv[argc++] = "pandoc";
 		argv[argc++] = "-f";
 		argv[argc++] = "html";
@@ -625,19 +621,6 @@ static int feed_htmltotext(std::string_view inbuf, const char *cset,
 	return 0;
 } catch (...) {
 	return -1;
-}
-
-int feed_html_renderer(std::string_view inbuf, const char *cset,
-    std::string &final_buf)
-{
-	/* Chawan handles <p align="right"> and produces nicer <ul> lists than pandoc */
-	auto ret = feed_htmltotext(inbuf, cset, final_buf, REND_CHAWAN);
-	if (ret == 0)
-		return ret;
-	ret = feed_htmltotext(inbuf, cset, final_buf, REND_PANDOC);
-	if (ret == 0)
-		return ret;
-	return feed_htmltotext(inbuf, cset, final_buf, REND_W3M);
 }
 
 size_t gx_decompressed_size(const char *infile)

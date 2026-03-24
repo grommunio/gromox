@@ -34,16 +34,41 @@ using namespace gromox;
  */
 int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
 {
-	auto s = getenv("AVOID_W3M"); /* for testing */
-	if (s == nullptr || parse_bool(s) == 0) {
-		auto ret = feed_html_renderer(inbuf, cpid_to_cset(cpid), outbuf);
+	auto cset = cpid_to_cset(cpid);
+	auto s = getenv("GROMOX_HTMLTOPLAIN"); /* for testing */
+	if (s == nullptr) {
+		/*
+		 * Automatic mode. Prefer Chawan because it handles <p
+		 * align="right"> and produces the nicest <ul> lists.
+		 */
+		auto ret = convert_doc_with_program(inbuf, cset, outbuf, REND_CHAWAN);
 		if (ret >= 0)
 			return CP_UTF8;
+		ret = convert_doc_with_program(inbuf, cset, outbuf, REND_PANDOC_HTP);
+		if (ret >= 0)
+			return CP_UTF8;
+		ret = convert_doc_with_program(inbuf, cset, outbuf, REND_W3M);
+		if (ret >= 0)
+			return CP_UTF8;
+		/*
+		 * LibreOffice works in principle but has plenty of undesirable
+		 * characteristics: underdocumented, quirky to invoke, slower
+		 * than pandoc, produces non-wrapped text (unacceptable).
+		 *
+		 * lowriter
+		 *     -env:UserInstallation=file://some/ephemeral/path
+		 *  or --nolockcheck
+		 * --convert-to txt:Text 1.html
+		 */
+	} else if (strcasecmp(s, "chawan") == 0) {
+		return convert_doc_with_program(inbuf, cset, outbuf, REND_CHAWAN) >= 0 ? CP_UTF8 : -1;
+	} else if (strcasecmp(s, "pandoc") == 0) {
+		return convert_doc_with_program(inbuf, cset, outbuf, REND_PANDOC_HTP) >= 0 ? CP_UTF8 : -1;
+	} else if (strcasecmp(s, "w3m") == 0) {
+		return convert_doc_with_program(inbuf, cset, outbuf, REND_W3M) >= 0 ? CP_UTF8 : -1;
 	}
 	auto ret = html_to_plain_boring(inbuf, outbuf);
-	if (ret < 0)
-		return ret;
-	return cpid;
+	return ret >= 0 ? cpid : ret;
 }
 
 /**
