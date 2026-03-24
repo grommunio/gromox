@@ -2728,7 +2728,7 @@ static int http_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
 	else
 		host = "::";
 	auto ps = oldcfg.get_value(oldportkey);
-	uint16_t port = mark == M_UNENCRYPTED_CONN ? 143 : 993;
+	uint16_t port = mark == M_UNENCRYPTED_CONN ? 80 : 443;
 	if (ps != nullptr) {
 		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
 			oldcfg.m_filename.c_str(), oldportkey,

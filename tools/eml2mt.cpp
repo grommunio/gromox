@@ -97,6 +97,37 @@ static void terse_help()
 	fprintf(stderr, "Documentation: man gromox-eml2mt\n");
 }
 
+static BOOL do_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) try
+{
+	ids->resize(names->count);
+	for (size_t i = 0; i < names->count; ++i) {
+		auto [le_id, added] = static_namedprop_map.emplace_2(0, names->ppropname[i]);
+		(*ids)[i] = le_id;
+		if (!added)
+			continue;
+
+		EXT_PUSH ep;
+		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+			throw YError("ENOMEM");
+		auto proptag = PROP_TAG(PT_UNSPECIFIED, le_id);
+		if (ep.p_uint32(GXMT_NAMEDPROP) != pack_result::success ||
+		    ep.p_uint64(proptag) != pack_result::success ||
+		    ep.p_uint32(0) != pack_result::success ||
+		    ep.p_uint64(0) != pack_result::success ||
+		    ep.p_propname(names->ppropname[i]) != pack_result::success)
+			throw YError("PG-1150");
+		uint64_t xsize = cpu_to_le64(ep.m_offset);
+		if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+			throw YError("PG-1151: %s", strerror(errno));
+		if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+			throw YError("PG-1152: %s", strerror(errno));
+	}
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	gromox::mlog(LV_ERR, "E-2237: ENOMEM");
+	return false;
+}
+
 static size_t g_msgcount = 0;
 static int do_emit(const parent_desc &parent, fat_message &&msg)
 {
@@ -147,7 +178,7 @@ static message_ptr do_mail(const char *file, const char *data, size_t dsize)
 	}
 	oxcmail_converter cvt;
 	cvt.alloc = gi_alloc;
-	cvt.get_propids = ee_get_propids;
+	cvt.get_propids = do_get_propids;
 	auto msg = cvt.inet_to_mapi(imail);
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
@@ -291,7 +322,7 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 
 	oxcical_converter cvt;
 	cvt.alloc = zalloc;
-	cvt.get_propids = ee_get_propids;
+	cvt.get_propids = do_get_propids;
 	cvt.username_to_entryid = oxcmail_username_to_entryid;
 	auto err = cvt.ical_to_mapi_multi(ical, mv);
 	if (err == ecNotFound) {
@@ -321,7 +352,7 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 		return EIO;
 	}
 	oxvcard_converter cvt;
-	cvt.get_propids = ee_get_propids;
+	cvt.get_propids = do_get_propids;
 	for (const auto &card : cardvec) {
 		auto mc = cvt.vcard_to_mapi(card);
 		if (mc == nullptr) {
@@ -343,7 +374,7 @@ static errno_t do_tnef(const char *file, std::vector<message_ptr> &mv)
 		return EIO;
 	}
 	message_content_ptr mc(tnef_deserialize(slurp_data.get(), slurp_size,
-		zalloc, ee_get_propids, oxcmail_username_to_entryid));
+		zalloc, do_get_propids, oxcmail_username_to_entryid));
 	if (mc == nullptr) {
 		fprintf(stderr, "tnef: %s: import rejected\n", file);
 		return EIO;

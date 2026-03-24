@@ -91,6 +91,7 @@ static constexpr struct tagentry {
 	{"s", htag::s},
 	{"script", htag::script},
 	{"span", htag::span},
+	{"strong", htag::b},
 	{"style", htag::style},
 	{"sub", htag::sub},
 	{"sup", htag::sup},
@@ -808,8 +809,8 @@ static ec_error_t html_write_span_begin(RTF_WRITER *pwriter)
 #define html_write_h_end html_write_div_end
 #define html_write_p_begin html_write_div_begin
 #define html_write_p_end html_write_div_end
-#define html_write_em_begin html_write_b_begin
-#define html_write_em_end html_write_b_end
+#define html_write_em_begin html_write_i_begin
+#define html_write_em_end html_write_i_end
 #define html_write_table_begin html_write_span_begin
 #define html_write_table_end html_write_span_end
 #define html_write_font_begin html_write_span_begin

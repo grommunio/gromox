@@ -34,5 +34,8 @@ only meaningful to the importer.
 \fIpam\fP: authmgr will selectively pick PAM/MySQL. The PAM service name will
 be "gromox". Be sure that pam_gromox.so is \fBnot\fP invoked as part of that
 PAM service stack, or it will lead to infinite recursion.
+.SH Signals
+Upon receipt of SIGHUP, configuration files are re-read, but only a few select
+directives can be changed this way, as many parts do not implement reload.
 .SH See also
 \fBgromox\fP(7), \fBldap_adaptor\fP(4gx), \fBmysql_adaptor\fP(4gx)
