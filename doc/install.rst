@@ -153,6 +153,9 @@ Optional runtime components
 * For improved conversion from HTML to plaintext (in order of preference):
   * chawan, or pandoc, or w3m
 
+* For improved conversion between HTML and RTF:
+  * pandoc
+
 * If tinkering with databases, the ``sqlite3`` and ``mysql``
   command-line clients may prove useful.
 

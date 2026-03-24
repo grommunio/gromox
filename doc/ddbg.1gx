@@ -75,6 +75,14 @@ Decompress RTFCP (either "MELA" or "LZFU") to RTF.
 GROMOX_HTMLTOPLAIN can be set to "chawan", "pandoc", "w3m", "internal" to pick
 one particular htmltoplain implementation. If unset or set to "auto", all of
 these converters are tried until a working one is found.
+.PP
+GROMOX_HTMLTORTF can be set to "pandoc" or "internal" to pick a particular
+htmltortf implementation. If unset or set to "auto", all of these converters
+are tried until a working one is found.
+.PP
+GROMOX_RTFTOHTML can be set to "pandoc" or "internal" to pick a particular
+htmltortf implementation. If unset or set to "auto", all of these converters
+are tried until a working one is found.
 .SH Examples
 .IP \(bu 4
 ddbg \-p \-\-decode\-guid 38a1bb1005e5101aa1bb08002b2a56c2

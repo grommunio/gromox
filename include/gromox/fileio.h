@@ -85,7 +85,7 @@ class GX_EXPORT wrapfd {
 };
 
 enum {
-	REND_W3M, REND_CHAWAN, REND_PANDOC_HTP,
+	REND_W3M, REND_CHAWAN, REND_PANDOC_HTP, REND_PANDOC_HTR, REND_PANDOC_RTH,
 };
 
 extern GX_EXPORT errno_t canonical_hostname(std::string &);

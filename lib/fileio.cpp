@@ -575,6 +575,20 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 		argv[argc++] = "html";
 		argv[argc++] = "-t";
 		argv[argc++] = "plain";
+	} else if (rend == REND_PANDOC_HTR) {
+		argv[argc++] = "pandoc";
+		argv[argc++] = "-s";
+		argv[argc++] = "-f";
+		argv[argc++] = "html";
+		argv[argc++] = "-t";
+		argv[argc++] = "rtf";
+	} else if (rend == REND_PANDOC_RTH) {
+		argv[argc++] = "pandoc";
+		argv[argc++] = "-f";
+		argv[argc++] = "rtf";
+		argv[argc++] = "-t";
+		argv[argc++] = "html";
+		argv[argc++] = "--embed-resources=true";
 	} else if (rend == REND_CHAWAN) {
 		argv[argc++] = "cha";
 		if (cset != nullptr) {
