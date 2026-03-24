@@ -91,6 +91,7 @@ static constexpr struct tagentry {
 	{"s", htag::s},
 	{"script", htag::script},
 	{"span", htag::span},
+	{"strong", htag::b},
 	{"style", htag::style},
 	{"sub", htag::sub},
 	{"sup", htag::sup},
