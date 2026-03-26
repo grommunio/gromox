@@ -6,6 +6,12 @@ gromox\-mbop \(em Mailbox operations utility
 .SH Synopsis
 \fBgromox\-mbop\fP [\fB\-d\fP \fImbox\fP|\fB\-u\fP
 [\fIrecipient\fP]\fB@domain.example\fP] \fIcommand\fP [command-args...]
+.SH Summary
+gromox\-mbop can be used to perform various administrative tasks on mailboxes.
+Technically, mbop contacts the respective home server(s) and instructs the
+server to perform the requested action. Unlike tools such as mbck,
+mkprivate/mkpublic/mkmidb, mbop itself does not do any direct filesystem access
+on the mailbox.
 .SH Global options
 .TP
 \fB\-c\fP
