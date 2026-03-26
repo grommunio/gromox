@@ -237,7 +237,8 @@ private:
 	std::mutex ses_lock;
 	std::unordered_map<std::string, int> users;
 	std::unordered_map<std::string, session_data> sessions;
-	std::vector<notification_ctx> status;
+
+	std::vector<notification_ctx> status; /* no locking, cf. hpm_processor_get_request() */
 	std::string m_server_version;
 };
 

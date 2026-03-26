@@ -90,6 +90,11 @@ static BOOL hpm_processor_register_interface(
 
 static HTTP_REQUEST *hpm_processor_get_request(unsigned int context_id)
 {
+	/*
+	 * `context_id` is an index-based handle. Every `whatever[context_id]`
+	 * is de-jure owned by a different thread. A particular thread can
+	 * access the members of its HTTP_CONTEXT without locking.
+	 */
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
 	return &phttp->request;
 }
