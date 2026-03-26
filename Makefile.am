@@ -309,6 +309,7 @@ dist_man_MANS = \
 	doc/ldap_adaptor.4gx doc/mapi.4gx doc/mapi.7gx doc/mh_emsmdb.4gx \
 	doc/mh_nsp.4gx doc/midb.8gx doc/midb_agent.4gx doc/mod_cache.4gx \
 	doc/mod_fastcgi.4gx doc/mod_rewrite.4gx doc/mysql_adaptor.4gx \
+	doc/oab.4gx \
 	doc/pam_gromox.4gx doc/php-mapi.4 doc/pop3.8gx doc/timer.8gx \
 	doc/timer_agent.4gx doc/user_filter.4gx doc/zcore.8gx
 if HAVE_ESEDB
