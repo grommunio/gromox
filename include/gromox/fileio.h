@@ -84,9 +84,13 @@ class GX_EXPORT wrapfd {
 	int m_fd = -1;
 };
 
+enum {
+	REND_W3M, REND_CHAWAN, REND_PANDOC_HTP, REND_PANDOC_HTR, REND_PANDOC_RTH,
+};
+
 extern GX_EXPORT errno_t canonical_hostname(std::string &);
 extern GX_EXPORT pid_t popenfd(const char *, const char *const *, int *, int *, int *, const char *const *);
-extern GX_EXPORT int feed_html_renderer(std::string_view, const char *in_cset, std::string &out);
+extern GX_EXPORT int convert_doc_with_program(std::string_view, const char *in_cset, std::string &out, unsigned int rend);
 extern GX_EXPORT DIR_mp opendir_sd(const char *, const char *);
 extern GX_EXPORT std::unique_ptr<FILE, file_deleter> fopen_sd(const char *, const char *);
 extern GX_EXPORT std::string zstd_decompress(std::string_view);

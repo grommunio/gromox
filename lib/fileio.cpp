@@ -477,20 +477,26 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
  * @fp:       file to emit to
  * @src:      input data
  * @cset:     character set of data in @src
+ * @force_conv: force-feed through iconv (e.g. is cset is already UTF-8 but the
+ *              content is not clean)
  *
  * Convert @src to UTF-8 if needed (depends on @cset), and writeout to @fp.
  * Updates @cset in case w3m should not be given the -I argument.
  * Returns 0 for success; other values indicate an error condition.
  */
-static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size, const char *&cset)
+static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size,
+    const char *&cset, bool force_conv)
 {
 	auto src = const_cast<char *>(static_cast<const char *>(vsrc));
-	if (cset == nullptr || strcasecmp(cset, "utf8") == 0 ||
-	    strcasecmp(cset, "utf-8") == 0)
+	if (cset == nullptr)
+		return fwrite(src, src_size, 1, fp) == 1 ? 0 : -1;
+	bool input_is_utf8 = strcasecmp(cset, "utf8") == 0 ||
+	                     strcasecmp(cset, "utf-8") == 0;
+	if (input_is_utf8 && !force_conv)
 		return fwrite(src, src_size, 1, fp) == 1 ? 0 : -1;
 	auto cd = iconv_open("utf-8", cset);
 	if (cd == iconv_t(-1)) {
-		/* Dunno how to translate, just feed it as-is to w3m */
+		/* Dunno how to translate, just feed it as-is to the converter */
 		cset = nullptr;
 		return 0;
 	}
@@ -527,12 +533,8 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size, const char
 	return 0;
 }
 
-enum {
-	REND_W3M, REND_CHAWAN,
-};
-
 /**
- * Run an external HTML-to-text converter.
+ * Run an external document converter.
  *
  * @inbuf:  input data
  * @cset:   character set of input data (overriding any <meta> tag
@@ -543,7 +545,7 @@ enum {
  * Returns 0 on success, negative non-zero on error with errno set.
  * @outbuf is only replaced on success.
  */
-static int feed_htmltotext(std::string_view inbuf, const char *cset,
+int convert_doc_with_program(std::string_view inbuf, const char *cset,
     std::string &final_buf, unsigned int rend) try
 {
 	std::string filename;
@@ -558,23 +560,59 @@ static int feed_htmltotext(std::string_view inbuf, const char *cset,
 	if (fp == nullptr)
 		return -1;
 	auto cl1 = HX::make_scope_exit([&]() { unlink(filename.c_str()); });
-	if (utf8_writeout(fp.get(), inbuf.data(), inbuf.size(), cset) != 0)
+	/* pandoc immediately switches to latin1 on funny characters; forbid that */
+	if (utf8_writeout(fp.get(), inbuf.data(), inbuf.size(), cset,
+	    rend >= REND_PANDOC_HTP) != 0)
 		return -1;
 	fp.reset();
 	int fout = -1;
 	auto cl2 = HX::make_scope_exit([&]() { if (fout != -1) close(fout); });
 	const char *argv[9];
 	int argc = 0;
-	argv[argc++] = rend == REND_CHAWAN ? "cha" : "w3m";
-	if (cset != nullptr) {
-		argv[argc++] = "-I";
+	if (rend == REND_PANDOC_HTP) {
+		argv[argc++] = "pandoc";
+		argv[argc++] = "-f";
+		argv[argc++] = "html";
+		argv[argc++] = "-t";
+		argv[argc++] = "plain";
+	} else if (rend == REND_PANDOC_HTR) {
+		argv[argc++] = "pandoc";
+		argv[argc++] = "-s";
+		argv[argc++] = "-f";
+		argv[argc++] = "html";
+		argv[argc++] = "-t";
+		argv[argc++] = "rtf";
+	} else if (rend == REND_PANDOC_RTH) {
+		argv[argc++] = "pandoc";
+		argv[argc++] = "-f";
+		argv[argc++] = "rtf";
+		argv[argc++] = "-t";
+		argv[argc++] = "html";
+		argv[argc++] = "--embed-resources=true";
+	} else if (rend == REND_CHAWAN) {
+		argv[argc++] = "cha";
+		if (cset != nullptr) {
+			argv[argc++] = "-I";
+			argv[argc++] = "UTF-8";
+		} else {
+			/* Caller did not know the cset; so let program guess */
+		}
+		argv[argc++] = "-O";
 		argv[argc++] = "UTF-8";
-	}
-	argv[argc++] = "-O";
-	argv[argc++] = "UTF-8";
-	argv[argc++] = rend == REND_CHAWAN ? "--dump" : "-dump";
-	if (rend == REND_CHAWAN)
+		argv[argc++] = "--dump";
 		argv[argc++] = "-obuffer.styling=false";
+	} else if (rend == REND_W3M) {
+		argv[argc++] = "w3m";
+		if (cset != nullptr) {
+			argv[argc++] = "-I";
+			argv[argc++] = "UTF-8";
+		} else {
+			/* Caller did not know the cset; so let program guess */
+		}
+		argv[argc++] = "-O";
+		argv[argc++] = "UTF-8";
+		argv[argc++] = "-dump";
+	}
 	argv[argc++] = filename.c_str();
 	argv[argc]   = nullptr;
 	auto pid = popenfd(argv[0], argv, POPENFD_NULL, &fout, POPENFD_NULL,
@@ -597,15 +635,6 @@ static int feed_htmltotext(std::string_view inbuf, const char *cset,
 	return 0;
 } catch (...) {
 	return -1;
-}
-
-int feed_html_renderer(std::string_view inbuf, const char *cset,
-    std::string &final_buf)
-{
-	auto ret = feed_htmltotext(inbuf, cset, final_buf, REND_CHAWAN);
-	if (ret == 0)
-		return ret;
-	return feed_htmltotext(inbuf, cset, final_buf, REND_W3M);
 }
 
 size_t gx_decompressed_size(const char *infile)
