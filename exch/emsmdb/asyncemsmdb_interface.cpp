@@ -59,12 +59,12 @@ static std::unordered_map<int, std::shared_ptr<ASYNC_WAIT>> g_async_hash;
 static void *aemsi_scanwork(void *);
 static void *aemsi_thrwork(void *);
 
-static void (*active_hpm_context)(int context_id, BOOL b_pending);
+static void (*activate_hpm_context)(int context_id, BOOL b_pending);
 
 /* called by moh_emsmdb module */
 void asyncemsmdb_interface_register_active(void *pproc)
 {
-	active_hpm_context = reinterpret_cast<decltype(active_hpm_context)>(pproc);
+	activate_hpm_context = reinterpret_cast<decltype(activate_hpm_context)>(pproc);
 }
 
 void asyncemsmdb_interface_init(unsigned int threads_num)
@@ -260,7 +260,7 @@ void asyncemsmdb_interface_remove(ACXH *pacxh) try
 static void asyncemsmdb_interface_activate(std::shared_ptr<ASYNC_WAIT> &&pwait, bool b_pending)
 {
 	if (0 == pwait->async_id) {
-		active_hpm_context(pwait->context_id, b_pending);
+		activate_hpm_context(pwait->context_id, b_pending);
 	} else if (rpc_build_environment(pwait->async_id)) {
 		pwait->xout.result = ecSuccess;
 		pwait->xout.flags_out = b_pending ? FLAG_NOTIFICATION_PENDING : 0;
