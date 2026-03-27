@@ -3649,8 +3649,8 @@ const char *exmdb_rpc_strerror(exmdb_response v)
 	case access_deny: return "Access denied";
 	case max_reached: return "Server reached maximum number of connections";
 	case lack_memory: return "Out of memory";
-	case misconfig_prefix: return "Prefix is not served";
-	case misconfig_mode: return "Prefix has type mismatch";
+	case misconfig_prefix: return "Server is not responsible for this mailbox (as identified by its directory path)";
+	case misconfig_mode: return "Client-server disagreement about the mailbox type";
 	case connect_incomplete: return "No prior CONNECT RPC made";
 	case pull_error: return "Invalid request/Server-side deserializing error";
 	case dispatch_error: return "Dispatch error/Request rejected/DB error (check gromox-http log)";
