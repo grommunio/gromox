@@ -90,6 +90,10 @@ struct NOTIFY_ITEM {
 	GUID guid{};
 };
 
+struct report_stats {
+	size_t sessions = 0, logons = 0, pend_notif = 0;
+};
+
 }
 
 static constexpr time_duration HANDLE_VALID_INTERVAL = std::chrono::seconds(2000);
@@ -109,51 +113,62 @@ static size_t ems_high_active_notifh, ems_high_pending_sesnotif;
 
 static void *emsi_scanwork(void *);
 
-void emsmdb_report()
+static void emsmdb_report_one_ses(const HANDLE_DATA &h, report_stats &st)
 {
-	size_t sessions = 0, logons = 0, pend_notif = 0;
-	std::unique_lock gl_hold(g_lock);
+	auto &ei = h.info;
+	auto pn = double_list_get_nodes_num(&h.notify_list);
+	mlog(LV_INFO, "%-32s  %-32s  /%-2u %-4u %-4u %3zu",
+		bin2hex(h.guid).c_str(), h.username, h.cxr,
+		ei.cpid, ei.lcid_string, pn);
+	++st.sessions;
+	st.pend_notif += pn;
+	for (unsigned int i = 0; i < std::size(ei.logmap.p); ++i) {
+		auto li = ei.logmap.p[i].get();
+		if (li == nullptr)
+			continue;
+		auto root = li->root.get();
+		if (root == nullptr || root->type != ems_objtype::logon) {
+			mlog(LV_INFO, "%5u  null", i);
+			continue;
+		}
+		++st.logons;
+		auto lo = static_cast<logon_object *>(root->pobject);
+		mlog(LV_INFO, "%5u  %-32s  %s(%u/%u)", i,
+			bin2hex(lo->mailbox_guid).c_str(),
+			lo->account, lo->account_id, lo->domain_id);
+	}
+}
+
+static void emsmdb_report_sessions(report_stats &st)
+{
+	std::lock_guard gl_hold(g_lock);
 	mlog(LV_INFO, "EMSMDB Sessions:");
 	mlog(LV_INFO, "%-32s  %-32s  CXR CPID LCID #NF", "GUID", "USERNAME");
 	mlog(LV_INFO, "LOGON  %-32s  MBOXUSER", "MBOXGUID");
 	mlog(LV_INFO, "--------------------------------------------------------------------------------");
 	/* Sort display by user, then CXR. */
-	for (const auto &e1 : g_user_hash) {
-	for (const auto hp : e1.second) {
-		auto &h = *hp;
-		auto &ei = h.info;
-		auto pn = double_list_get_nodes_num(&h.notify_list);
-		mlog(LV_INFO, "%-32s  %-32s  /%-2u %-4u %-4u %3zu",
-			bin2hex(h.guid).c_str(), h.username, h.cxr,
-			ei.cpid, ei.lcid_string, pn);
-		++sessions;
-		pend_notif += pn;
-		for (unsigned int i = 0; i < std::size(ei.logmap.p); ++i) {
-			auto li = ei.logmap.p[i].get();
-			if (li == nullptr)
-				continue;
-			auto root = li->root.get();
-			if (root == nullptr || root->type != ems_objtype::logon) {
-				mlog(LV_INFO, "%5u  null", i);
-				continue;
-			}
-			++logons;
-			auto lo = static_cast<logon_object *>(root->pobject);
-			mlog(LV_INFO, "%5u  %-32s  %s(%u/%u)", i,
-			        bin2hex(lo->mailbox_guid).c_str(),
-			        lo->account, lo->account_id, lo->domain_id);
-		}
-	}
-	}
+	for (const auto &e1 : g_user_hash)
+		for (const auto hp : e1.second)
+			emsmdb_report_one_ses(*hp, st);
 	mlog(LV_INFO, "Mailboxes %zu/%zu, EMSMDB ses %zu/%zu/%zu, ROPLogons %zu",
 		g_user_hash.size(), ems_high_active_users,
-		sessions, g_handle_hash.size(), ems_high_active_sessions,
-		logons);
-	gl_hold.unlock();
+		st.sessions, g_handle_hash.size(), ems_high_active_sessions,
+		st.logons);
+}
+
+static void emsmdb_report_notifs(report_stats &st)
+{
 	std::lock_guard gl2(g_notify_lock);
 	mlog(LV_INFO, "NotifyHandles %zu/%zu, NotifyPending %zu/%zu",
 		g_notify_hash.size(), ems_high_active_notifh,
-		pend_notif, ems_high_pending_sesnotif);
+		st.pend_notif, ems_high_pending_sesnotif);
+}
+
+void emsmdb_report()
+{
+	report_stats st;
+	emsmdb_report_sessions(st);
+	emsmdb_report_notifs(st);
 }
 
 emsmdb_info::emsmdb_info(emsmdb_info &&o) noexcept :
