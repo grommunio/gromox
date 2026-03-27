@@ -477,7 +477,11 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			}
 			if (rop_ext_push(ext_push, *pnotify) != pack_result::success) {
 				ext_push.m_offset = last_offset;
+				pnotify_list = emsmdb_interface_get_notify_list();
+				if (pnotify_list == nullptr)
+					goto NEXT_NOTIFY;
 				double_list_insert_as_head(pnotify_list, pnode);
+				emsmdb_interface_put_notify_list();
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
 				auto status = rop_ext_push(ext_push, tmp_pending);
 				if (status != pack_result::ok)
