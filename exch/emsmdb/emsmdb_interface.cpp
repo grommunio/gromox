@@ -484,11 +484,6 @@ ec_error_t emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
 	return ecNotSupported;
 }
 
-ec_error_t emsmdb_interface_dummy_rpc(uint64_t hrpc)
-{
-	return ecSuccess;
-}
-
 static BOOL emsmdb_interface_decode_version(const uint16_t pvers[3],
 	uint16_t pnormal_vers[4])
 {

@@ -293,7 +293,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 	}
 	case ecDummyRpc: {
 		auto out = std::make_unique<ECDUMMYRPC_OUT>();
-		out->result = emsmdb_interface_dummy_rpc(handle);
+		out->result = ecSuccess;
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
