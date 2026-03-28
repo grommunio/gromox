@@ -331,6 +331,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	temp_handle.info.client_mode = client_mode;
 	gx_strlcpy(temp_handle.username, username, std::size(temp_handle.username));
 	HX_strlower(temp_handle.username);
+	temp_handle.info.logmap.username = znul(username);
 	auto new_cxr = ei_alloc_cxr();
 	if (new_cxr == NO_CXR)
 		return false;
@@ -742,12 +743,6 @@ ec_error_t emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh)
 void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc)
 {
 	/* do nothing */
-}
-
-const char *emsmdb_interface_get_username()
-{
-	auto h = g_handle_key;
-	return h != nullptr ? h->username : nullptr;
 }
 
 const GUID* emsmdb_interface_get_handle()

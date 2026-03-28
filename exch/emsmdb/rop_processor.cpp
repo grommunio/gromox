@@ -179,7 +179,7 @@ ec_error_t aoh_to_error(int x)
 int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
     int32_t parent_handle, object_node &&in_object) try
 {
-	auto eiuser = znul(emsmdb_interface_get_username());
+	auto eiuser = plogmap->username.c_str();
 	auto plogitem = plogmap->p[logon_id].get();
 	if (plogitem == nullptr)
 		return -EINVAL;

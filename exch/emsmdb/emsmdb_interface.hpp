@@ -42,7 +42,6 @@ void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc);
 extern bool emsmdb_interface_inspect_acxh(const ACXH *, std::string &username, uint16_t *cxr, bool touch);
 extern bool emsmdb_interface_notifications_pending(const ACXH &);
 extern void emsmdb_interface_touch_handle(const CXH &);
-extern const char *emsmdb_interface_get_username();
 extern const GUID *emsmdb_interface_get_handle();
 extern emsmdb_info *emsmdb_interface_get_emsmdb_info();
 extern DOUBLE_LIST *emsmdb_interface_get_notify_list();

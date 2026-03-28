@@ -23,8 +23,12 @@ struct LOGON_ITEM {
 	std::shared_ptr<object_node> root;
 };
 
+/**
+ * @username: RPC user. Only use this for log messages.
+ */
 struct LOGMAP {
 	std::unique_ptr<LOGON_ITEM> p[256];
+	std::string username;
 };
 
 struct object_node {
