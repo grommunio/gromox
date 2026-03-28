@@ -3578,6 +3578,10 @@ pack_result exmdb_ext_pull_db_notify(std::string_view pbin_in,
 		TRY(ext_pull.g_uint64(&n.after_row_id));
 		TRY(ext_pull.g_uint64(&n.after_instance));
 		TRY(ext_pull.g_uint32(&n.message_flags));
+		TRY(ext_pull.g_uint32(&n.total));
+		TRY(ext_pull.g_uint32(&n.unread));
+		TRY(ext_pull.g_uint8(&n.have_total));
+		TRY(ext_pull.g_uint8(&n.have_unread));
 		TRY(ext_pull.g_str(&n.pmessage_class));
 		TRY(ext_pull.g_proptag_a(&n.proptags));
 		return pack_result::success;
@@ -3620,6 +3624,10 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 		TRY(ext_push.p_uint64(n.after_row_id));
 		TRY(ext_push.p_uint64(n.after_instance));
 		TRY(ext_push.p_uint32(n.message_flags));
+		TRY(ext_push.p_uint32(n.total));
+		TRY(ext_push.p_uint32(n.unread));
+		TRY(ext_push.p_uint8(n.have_total));
+		TRY(ext_push.p_uint8(n.have_unread));
 		TRY(ext_push.p_str(n.pmessage_class));
 		TRY(ext_push.p_proptag_a(n.proptags));
 		break;

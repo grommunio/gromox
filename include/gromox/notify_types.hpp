@@ -41,7 +41,8 @@ struct GX_EXPORT DB_NOTIFY {
 	uint64_t old_parent_id = 0, old_folder_id = 0, old_message_id = 0;
 	uint64_t row_folder_id = 0, row_message_id = 0, row_instance = 0;
 	uint64_t after_folder_id = 0, after_row_id = 0, after_instance = 0;
-	uint32_t message_flags = 0;
+	uint32_t message_flags = 0, total = 0, unread = 0;
+	uint8_t have_total = false, have_unread = false;
 	std::string pmessage_class;
 	PROPTAG_ARRAY proptags{};
 
