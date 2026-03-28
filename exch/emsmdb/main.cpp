@@ -349,7 +349,6 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 
 static void exchange_emsmdb_unbind(uint64_t handle)
 {
-	emsmdb_interface_unbind_rpc_handle(handle);
 }
 
 static int exchange_async_emsmdb_dispatch(unsigned int opnum,

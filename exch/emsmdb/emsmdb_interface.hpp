@@ -37,7 +37,6 @@ extern ec_error_t emsmdb_interface_register_push_notification(CXH *, uint32_t rp
 extern ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *, const char *user_dn, uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t, uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps, uint32_t *max_polls, uint32_t *max_retry, uint32_t *retry_delay, uint16_t *cxr, std::string &dn_prefix, std::string &dispname, const uint16_t client_vers[3], uint16_t server_vers[3], uint16_t best_vers[3], uint32_t *timestamp, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout);
 extern ec_error_t emsmdb_interface_rpc_ext2(CXH &, uint32_t *flags, const uint8_t *in, uint32_t cb_in, uint8_t *out, uint32_t *cb_out, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout, uint32_t *trans_time);
 extern ec_error_t emsmdb_interface_async_connect_ex(CXH, ACXH *);
-void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc);
 extern bool emsmdb_interface_inspect_acxh(const ACXH *, std::string &username, uint16_t *cxr, bool touch);
 extern bool emsmdb_interface_notifications_pending(const ACXH &);
 extern void emsmdb_interface_touch_handle(const CXH &);

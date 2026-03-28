@@ -735,11 +735,6 @@ ec_error_t emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh)
 	return ecSuccess;
 }
 
-void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc)
-{
-	/* do nothing */
-}
-
 const GUID* emsmdb_interface_get_handle()
 {
 	auto phandle = g_handle_key;
