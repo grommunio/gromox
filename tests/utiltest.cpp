@@ -273,6 +273,14 @@ static int t_id9()
 {
 	printf("\n== t_id9: range_set\n");
 	gromox::range_set<int> s;
+	s.insert(20);
+	assert(s.alloc_next_unused(0, 40) == 0);
+	s.clear();
+
+	s.insert(20);
+	assert(s.alloc_next_unused(20, 40) == 21);
+	s.clear();
+
 	s.insert(61, 63);
 	s.insert(51, 53);
 	assert(!s.contains(50));

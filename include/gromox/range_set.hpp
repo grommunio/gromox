@@ -136,12 +136,19 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 	 * @def: First legitimate value for any object.
 	 * @ill: First non-legitimate value for any object.
 	 *
+	 * Note well: @def and @ill do NOT specify a mandatory range where the
+	 * result must fall into.
+	 *
+	 * On success, returns the index that was assigned.
+	 * When there was no more room to insert an element smaller than @ill,
+	 * a number greater-or-equal to @ill is returned.
+	 *
 	 * Example 1: File descriptors - all calls should be alloc_next_unused(0).
 	 * Example 2: SQL row IDs - all calls should be alloc_next_unused(1).
 	 */
 	T alloc_next_unused(T def, T ill)
 	{
-		if (empty()) {
+		if (empty() || def < front().lo) {
 			base::emplace(begin(), def, def);
 			return def;
 		}
