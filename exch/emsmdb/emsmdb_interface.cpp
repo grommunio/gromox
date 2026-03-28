@@ -27,6 +27,7 @@
 #include <gromox/notify_types.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/process.hpp>
+#include <gromox/range_set.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
@@ -39,6 +40,7 @@
 #include "processor_types.hpp"
 #include "rop_ids.hpp"
 #include "rop_processor.hpp"
+#define NO_CXR 0xFFFFFFFF
 #define	EMSMDB_PCMSPOLLMAX				60000
 #define	EMSMDB_PCRETRY					6
 #define	EMSMDB_PCRETRYDELAY				10000
@@ -79,7 +81,7 @@ struct HANDLE_DATA {
 	uint32_t last_handle = 0;
 	int rop_num = 0;
 	uint16_t rop_left = 0; /* size left in rop response buffer */
-	uint16_t cxr = 0;
+	uint32_t cxr = NO_CXR; /* ... curious if EXC actually models it as int32_t */
 	emsmdb_info info;
 	DOUBLE_LIST notify_list{};
 };
@@ -99,13 +101,14 @@ struct report_stats {
 static constexpr time_duration HANDLE_VALID_INTERVAL = std::chrono::seconds(2000);
 static time_point g_start_time;
 static pthread_t g_scan_id;
-static std::mutex g_lock; /* protects g_handle_hash & g_user_hash */
+static std::mutex g_cxr_lock, g_lock; /* protects g_handle_hash & g_user_hash */
 static std::mutex g_notify_lock;
 static gromox::atomic_bool g_emsi_stop{true};
 static thread_local HANDLE_DATA *g_handle_key;
 static std::unordered_map<GUID, HANDLE_DATA> g_handle_hash;
-static std::unordered_map<std::string, std::vector<HANDLE_DATA *>> g_user_hash;
+static std::unordered_map<std::string, std::vector<HANDLE_DATA *>> g_user_hash; /* merely for counting sessions, otherwise no use */
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
+static range_set<uint16_t> g_cxr_bitmap; /* Session Index (CXR) that are in use */
 size_t ems_max_active_sessions, ems_max_active_users, ems_max_active_notifh;
 size_t ems_max_pending_sesnotif;
 static size_t ems_high_active_sessions, ems_high_active_users;
@@ -117,8 +120,8 @@ static void emsmdb_report_one_ses(const HANDLE_DATA &h, report_stats &st)
 {
 	auto &ei = h.info;
 	auto pn = double_list_get_nodes_num(&h.notify_list);
-	mlog(LV_INFO, "%-32s  %-32s  /%-2u %-4u %-4u %3zu",
-		bin2hex(h.guid).c_str(), h.username, h.cxr,
+	mlog(LV_INFO, "%-3u  %-32s  %-32s  %-4u %-4u %3zu",
+		h.cxr, bin2hex(h.guid).c_str(), h.username,
 		ei.cpid, ei.lcid_string, pn);
 	++st.sessions;
 	st.pend_notif += pn;
@@ -133,7 +136,7 @@ static void emsmdb_report_one_ses(const HANDLE_DATA &h, report_stats &st)
 		}
 		++st.logons;
 		auto lo = static_cast<logon_object *>(root->pobject);
-		mlog(LV_INFO, "%5u  %-32s  %s(%u/%u)", i,
+		mlog(LV_INFO, "  %-3u  %-32s  %s(%u/%u)", i,
 			bin2hex(lo->mailbox_guid).c_str(),
 			lo->account, lo->account_id, lo->domain_id);
 	}
@@ -143,13 +146,11 @@ static void emsmdb_report_sessions(report_stats &st)
 {
 	std::lock_guard gl_hold(g_lock);
 	mlog(LV_INFO, "EMSMDB Sessions:");
-	mlog(LV_INFO, "%-32s  %-32s  CXR CPID LCID #NF", "GUID", "USERNAME");
+	mlog(LV_INFO, "CXR  %-32s  %-32s  CPID LCID #NF", "GUID", "USERNAME");
 	mlog(LV_INFO, "LOGON  %-32s  MBOXUSER", "MBOXGUID");
-	mlog(LV_INFO, "--------------------------------------------------------------------------------");
-	/* Sort display by user, then CXR. */
-	for (const auto &e1 : g_user_hash)
-		for (const auto hp : e1.second)
-			emsmdb_report_one_ses(*hp, st);
+	mlog(LV_INFO, "---------------------------------------------------------------------------------------");
+	for (const auto &e : g_handle_hash)
+		emsmdb_report_one_ses(e.second, st);
 	mlog(LV_INFO, "Mailboxes %zu/%zu, EMSMDB ses %zu/%zu/%zu, ROPLogons %zu",
 		g_user_hash.size(), ems_high_active_users,
 		st.sessions, g_handle_hash.size(), ems_high_active_sessions,
@@ -283,26 +284,6 @@ static void emsmdb_interface_put_handle_notify_list(HANDLE_DATA *phandle)
 	phandle->b_occupied = FALSE;
 }
 
-static BOOL emsmdb_interface_alloc_cxr(std::vector<HANDLE_DATA *> &plist,
-	HANDLE_DATA *phandle)
-{
-	int i = 1;
-	
-	for (auto ha_iter = plist.begin(); ha_iter != plist.end() && i <= 0xFFFF;
-	     ++ha_iter, ++i) {
-		if (i < (*ha_iter)->cxr) {
-			phandle->cxr = i;
-			plist.insert(ha_iter, phandle);
-			return TRUE;
-		}
-	}
-	if (i > 0xFFFF)
-		return FALSE;
-	phandle->cxr = i;
-	plist.push_back(phandle);
-	return TRUE;
-}
-
 HANDLE_DATA::HANDLE_DATA() :
 	guid(GUID::random_new()), last_time(tp_now())
 {
@@ -312,16 +293,27 @@ HANDLE_DATA::HANDLE_DATA() :
 HANDLE_DATA::HANDLE_DATA(HANDLE_DATA &&o) noexcept :
 	guid(o.guid), b_processing(o.b_processing), b_occupied(o.b_occupied),
 	last_time(o.last_time), last_handle(o.last_handle), rop_num(o.rop_num),
-	rop_left(o.rop_left), cxr(o.cxr), info(std::move(o.info)),
+	rop_left(o.rop_left), cxr(std::move(o.cxr)), info(std::move(o.info)),
 	notify_list(std::move(o.notify_list))
 {
+	o.cxr = NO_CXR;
 	strcpy(username, o.username);
 	o.notify_list = {};
 }
 
 HANDLE_DATA::~HANDLE_DATA()
 {
-	double_list_free(&notify_list);
+	if (cxr == NO_CXR)
+		return;
+	std::lock_guard lk(g_cxr_lock);
+	g_cxr_bitmap.erase(cxr);
+}
+
+static uint32_t ei_alloc_cxr()
+{
+	std::lock_guard lk(g_cxr_lock);
+	auto n = g_cxr_bitmap.alloc_next_unused(0, UINT16_MAX);
+	return n < UINT16_MAX ? n : NO_CXR;
 }
 
 static BOOL emsmdb_interface_create_handle(const char *username,
@@ -339,6 +331,11 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	temp_handle.info.client_mode = client_mode;
 	gx_strlcpy(temp_handle.username, username, std::size(temp_handle.username));
 	HX_strlower(temp_handle.username);
+	auto new_cxr = ei_alloc_cxr();
+	if (new_cxr == NO_CXR)
+		return false;
+	temp_handle.cxr = new_cxr;
+
 	std::unique_lock gl_hold(g_lock);
 	if (ems_max_active_sessions > 0 &&
 	    g_handle_hash.size() >= ems_max_active_sessions) {
@@ -387,11 +384,10 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 			return FALSE;
 		}
 	}
-	if (!emsmdb_interface_alloc_cxr(uh_iter->second, phandle)) {
-		if (uh_iter->second.empty())
-			g_user_hash.erase(phandle->username);
+	try {
+		uh_iter->second.emplace_back(phandle);
+	} catch (const std::bad_alloc &) {
 		g_handle_hash.erase(phandle->guid);
-		gl_hold.unlock();
 		return FALSE;
 	}
 	*pcxr = phandle->cxr;
@@ -638,7 +634,7 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 	/* auxin parsing in commit history */
 	/* just like EXCHANGE 2010 or later, we do
 		not support session context linking */
-	if (cxr_link == UINT32_MAX)
+	if (cxr_link == NO_CXR)
 		*ptimestamp = emsmdb_interface_get_timestamp();
 	if (!emsmdb_interface_create_handle(rpc_info.username, client_version,
 	    client_mode, cpid, lcid_string, lcid_sort, pcxr, pcxh))
