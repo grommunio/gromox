@@ -238,7 +238,7 @@ bool db_engine_set_maint(const char *path, enum db_maint_mode mode) try
  * Iff this function returns a non-null pointer, then pdb->psqlite and
  * pdb->m_sqlite_eph are also guaranteed to be viable.
  */
-db_conn_ptr db_engine_get_db(const char *path)
+std::optional<db_conn> db_engine_get_db(const char *path)
 {
 	if (*path == '\0')
 		return std::nullopt;
@@ -259,7 +259,7 @@ db_conn_ptr db_engine_get_db(const char *path)
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
 		pdb = &it->second;
-		db_conn_ptr conn(*pdb);
+		std::optional<db_conn> conn(*pdb);
 		hhold.unlock();
 		if (!conn->open(path))
 			return std::nullopt;
@@ -294,7 +294,7 @@ db_conn_ptr db_engine_get_db(const char *path)
 		return std::nullopt;
 	}
 
-	db_conn_ptr conn(*pdb);
+	std::optional<db_conn> conn(*pdb);
 	if (!conn->open(path))
 		return std::nullopt;
 	return conn;
@@ -4090,7 +4090,8 @@ void db_conn::begin_batch_mode(db_base &dbase)
 	dbase.tables.b_batch = true;
 }
 
-void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb, db_base_wr_ptr &&dbase)
+void db_conn::commit_batch_mode_release(std::optional<db_conn> &&pdb,
+    db_base_wr_ptr &&dbase)
 {
 	auto table_num = dbase->tables.table_list.size();
 	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;
