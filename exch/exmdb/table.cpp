@@ -249,6 +249,10 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 	ptnode->folder_id = fid_val;
 	ptnode->table_flags = table_flags;
 	if (table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
+		/*
+		 * XXX: Because of how get_handle is implemented,
+		 * suppression only works for EMSMDB LPC.
+		 */
 		auto phandle_guid = exmdb_server::get_handle();
 		if (phandle_guid == nullptr)
 			memset(&ptnode->handle_guid, 0, sizeof(GUID));

@@ -821,7 +821,7 @@ bool exmdb_client_can_use_lpc(const char *prefix, const char *ourhost,
 	std::string remotehost;
 	auto err = mysql_adaptor_get_homeserver_for_dir(prefix, is_pvt, remotehost);
 	if (err == 0)
-		return remotehost == znul(ourhost);
+		return remotehost.empty() || remotehost == znul(ourhost);
 	else if (err == ENOENT)
 		return false;
 	mlog(LV_ERR, "%s: %s: %s", __func__, prefix, strerror(err));
