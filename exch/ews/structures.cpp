@@ -1845,6 +1845,8 @@ void tTask::update(const sShape& shape)
 	fromProp(shape.get(NtMileage), Mileage);
 	fromProp(shape.get(NtTaskOwner), Owner);
 	fromProp(shape.get(NtPercentComplete), PercentComplete);
+	if (PercentComplete)
+		*PercentComplete *= 100.0;
 	if ((prop = shape.get(NtTaskStatus))) {
 		const uint32_t* taskStatus = static_cast<const uint32_t*>(prop->pvalue);
 		Enum::TaskStatusType statusType = Enum::NotStarted;

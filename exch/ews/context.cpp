@@ -4326,7 +4326,7 @@ void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
 	writeProp(shape, item.Owner, NtTaskOwner, PT_UNICODE);
 	if (item.PercentComplete)
 		shape.write(NtPercentComplete, TAGGED_PROPVAL{PT_DOUBLE,
-		            construct<double>(*item.PercentComplete)});
+		            construct<double>(*item.PercentComplete / 100.0)});
 	if (item.Status) {
 		uint32_t st = tsvNotStarted;
 		if (*item.Status == Enum::InProgress)
