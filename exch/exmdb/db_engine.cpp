@@ -263,7 +263,15 @@ db_conn_ptr db_engine_get_db(const char *path)
 		hhold.unlock();
 		if (!conn->open(path))
 			return std::nullopt;
-		return conn;
+		if (getenv("SQLITE_WORKER") == nullptr)
+			return conn;
+		bool alive = gx_sql_exec(conn->psqlite, "PRAGMA zzz") == SQLITE_OK &&
+		             gx_sql_exec(conn->m_sqlite_eph, "PRAGMA zzz") == SQLITE_OK;
+		if (alive)
+			return conn;
+		conn.reset();
+		hhold.lock();
+		g_hash_table.erase(it);
 	}
 	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
