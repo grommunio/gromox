@@ -74,36 +74,6 @@ static inline std::string &tolower_inplace(std::string &str)
 }
 
 /**
- * @brief      Read message body from reply file
- *
- * @param      path    Path to the file
- *
- * @return     Body content or empty optional on error
- */
-std::optional<std::string> readMessageBody(const std::string &path) try
-{
-	std::ifstream ifs(path, std::ios::in | std::ios::ate | std::ios::binary);
-	if (!ifs.is_open())
-		return std::nullopt;
-	size_t totalLength = ifs.tellg();
-	ifs.seekg(std::ios::beg);
-	while (!ifs.eof()) {
-		ifs.ignore(std::numeric_limits<std::streamsize>::max(), '\r');
-		if (ifs.get() == '\n' && ifs.get() == '\r' && ifs.get() == '\n')
-			break;
-	}
-	if (ifs.eof())
-		return std::nullopt;
-	size_t headerLength = ifs.tellg();
-	std::string content(totalLength - headerLength, 0);
-	ifs.read(content.data(), content.size());
-	return content;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "[ews] %s", e.what());
-	return std::nullopt;
-}
-
-/**
  * @brief      Derive timezone information from request headers
  *
  * Attempts to construct a SerializableTimeZone from the SOAP TimeZoneContext
@@ -2127,19 +2097,18 @@ void process(mGetUserOofSettingsRequest &&request, XMLElement *response, const E
 	data.OofSettings.emplace();
 
 	//Get OOF state
-	static constexpr struct cfg_directive oof_defaults[] = {
-		{"allow_external_oof", "0", CFG_BOOL},
-		{"external_audience", "0", CFG_BOOL},
-		{"oof_state", "0"},
-		CFG_TABLE_END,
-	};
 	std::string maildir = ctx.get_maildir(request.Mailbox);
-	auto configPath = maildir + "/config/autoreply.cfg";
-	auto configFile = config_file_init(configPath.c_str(), oof_defaults);
-	unsigned int oof_state  = configFile != nullptr ? configFile->get_ll("oof_state") : 0;
-	bool allow_external_oof = configFile != nullptr ? configFile->get_ll("allow_external_oof") : false;
-	bool external_audience  = configFile != nullptr ? configFile->get_ll("external_audience") : false;
-	switch (oof_state) {
+	static constexpr proptag_t oof_tags[] = {
+		PR_EC_OUTOFOFFICE, PR_EC_ALLOW_EXTERNAL, PR_EC_EXTERNAL_AUDIENCE,
+		PR_EC_OUTOFOFFICE_FROM, PR_EC_OUTOFOFFICE_UNTIL,
+		PR_EC_OUTOFOFFICE_MSG, PR_EC_EXTERNAL_REPLY,
+	};
+	TPROPVAL_ARRAY props{};
+	if (!ctx.plugin().exmdb.autoreply_getprop(maildir.c_str(), CP_UTF8,
+	    {oof_tags, std::size(oof_tags)}, &props))
+		throw DispatchError(E3011);
+	auto oof_state = props.get<const uint32_t>(PR_EC_OUTOFOFFICE);
+	switch (oof_state != nullptr ? *oof_state : 0) {
 	case 1:
 		data.OofSettings->OofState = "Enabled"; break;
 	case 2:
@@ -2147,16 +2116,18 @@ void process(mGetUserOofSettingsRequest &&request, XMLElement *response, const E
 	default:
 		data.OofSettings->OofState = "Disabled"; break;
 	}
-	if (allow_external_oof)
-		data.OofSettings->ExternalAudience = external_audience ? "Known" : "All";
+	auto allow_ext = props.get<const uint8_t>(PR_EC_ALLOW_EXTERNAL);
+	auto ext_audience = props.get<const uint8_t>(PR_EC_EXTERNAL_AUDIENCE);
+	if (allow_ext != nullptr && *allow_ext)
+		data.OofSettings->ExternalAudience = (ext_audience != nullptr && *ext_audience) ? "Known" : "All";
 	else
 		data.OofSettings->ExternalAudience = "None";
-	auto start_time = configFile != nullptr ? configFile->get_value("start_time") : nullptr;
-	auto end_time   = configFile != nullptr ? configFile->get_value("end_time") : nullptr;
+	auto start_time = props.get<const mapitime_t>(PR_EC_OUTOFOFFICE_FROM);
+	auto end_time = props.get<const mapitime_t>(PR_EC_OUTOFOFFICE_UNTIL);
 	if (start_time != nullptr && end_time != nullptr) {
-		tDuration& Duration = data.OofSettings->Duration.emplace();
-		Duration.StartTime = clock::from_time_t(strtoll(start_time, nullptr, 0));
-		Duration.EndTime = clock::from_time_t(strtoll(end_time, nullptr, 0));
+		auto &Duration = data.OofSettings->Duration.emplace();
+		Duration.StartTime = rop_util_nttime_to_unix2(*start_time);
+		Duration.EndTime = rop_util_nttime_to_unix2(*end_time);
 #if 0
 	// XXX: Normally we need this else branch, see reasoning in commit
 	// message gromox-2.46-99-g716671da5
@@ -2166,13 +2137,14 @@ void process(mGetUserOofSettingsRequest &&request, XMLElement *response, const E
 		dur.EndTime = dur.StartTime + std::chrono::days(1);
 #endif
 	}
-	auto reply = readMessageBody(maildir + "/config/internal-reply");
-	if (reply)
-		data.OofSettings->InternalReply.emplace(std::move(reply));
+	auto int_reply = props.get<const char>(PR_EC_OUTOFOFFICE_MSG);
+	if (int_reply != nullptr)
+		data.OofSettings->InternalReply.emplace(std::string(int_reply));
 	else
 		data.OofSettings->InternalReply.emplace(std::string{});
-	if ((reply = readMessageBody(maildir + "/config/external-reply")))
-		data.OofSettings->ExternalReply.emplace(std::move(reply));
+	auto ext_reply = props.get<const char>(PR_EC_EXTERNAL_REPLY);
+	if (ext_reply != nullptr)
+		data.OofSettings->ExternalReply.emplace(std::string(ext_reply));
 	else
 		data.OofSettings->ExternalReply.emplace(std::string{});
 
