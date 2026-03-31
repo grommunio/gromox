@@ -398,7 +398,7 @@ static constexpr proptag_t trimtags[] = {
 	PR_PREDECESSOR_CHANGE_LIST,
 };
 
-bool message_object::write_message(const MESSAGE_CONTENT &content)
+ec_error_t message_object::write_message(const MESSAGE_CONTENT &content)
 {
 	auto pmsgctnt = &content;
 	auto pmessage = this;
@@ -408,22 +408,22 @@ bool message_object::write_message(const MESSAGE_CONTENT &content)
 	auto msgctnt = content;
 	msgctnt.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count);
 	if (msgctnt.proplist.ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	memcpy(msgctnt.proplist.ppropval, pmsgctnt->proplist.ppropval,
 				sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
 	if (!exmdb_client->clear_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id))
-		return FALSE;
+		return ecRpcFailed;
 	if (!exmdb_client->write_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &msgctnt, TRUE, &proptags, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	pmessage->b_new = TRUE;
 	pmessage->b_touched = TRUE;
-	return TRUE;
+	return ecSuccess;
 }
 
 BOOL message_object::read_recipients(uint32_t row_id, uint16_t need_count,
@@ -701,7 +701,7 @@ static ec_error_t message_object_get_calculated_property(message_object *pmessag
 	return ecNotFound;
 }
 
-bool message_object::get_properties(proptag_cspan pproptags,
+ec_error_t message_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto pmessage = this;
@@ -711,11 +711,11 @@ bool message_object::get_properties(proptag_cspan pproptags,
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropvals->count = 0;
 	for (const auto tag : pproptags) {
 		static constexpr proptag_t err_memory = ecMAPIOOM, err_generic = ecError;
@@ -731,13 +731,14 @@ bool message_object::get_properties(proptag_cspan pproptags,
 		else if (pvalue != nullptr)
 			ppropvals->emplace_back(tag, pvalue);
 		else
-			return false;
+			return ecNotFound;
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	if (!exmdb_client->get_instance_properties(pmessage->pstore->get_dir(),
 	    pmessage->cpid, pmessage->instance_id, tmp_proptags, &tmp_propvals))
-		return FALSE;	
+		return ecRpcFailed;
 	if (tmp_propvals.count > 0) {
 		memcpy(ppropvals->ppropval +
 			ppropvals->count, tmp_propvals.ppropval,
@@ -750,7 +751,7 @@ bool message_object::get_properties(proptag_cspan pproptags,
 	if (pproptags.has(PR_MESSAGE_CODEPAGE) &&
 	    !ppropvals->has(PR_MESSAGE_CODEPAGE))
 		ppropvals->emplace_back(PR_MESSAGE_CODEPAGE, &pmessage->cpid);
-	return TRUE;	
+	return ecSuccess;
 }
 
 static ec_error_t message_object_set_properties_internal(message_object *pmessage,
@@ -842,9 +843,9 @@ static ec_error_t message_object_set_properties_internal(message_object *pmessag
 	return ecServerOOM;
 }
 
-BOOL message_object::set_properties(TPROPVAL_ARRAY *ppropvals)
+ec_error_t message_object::set_properties(TPROPVAL_ARRAY *ppropvals)
 {
-	return message_object_set_properties_internal(this, true, ppropvals) == ecSuccess;
+	return message_object_set_properties_internal(this, true, ppropvals);
 }
 
 bool message_object::remove_properties(proptag_cspan pproptags) try

@@ -3198,8 +3198,9 @@ static ec_error_t rectify_message(message_object *pmessage,
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
-	if (!pmessage->set_properties(&tmp_propvals))
-		return ecError;
+	err = pmessage->set_properties(&tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	return pmessage->save();
 }
 
@@ -3244,8 +3245,9 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return ecTooManyRecips;
 
 	static constexpr proptag_t proptag_buff1[] = {PR_ASSOCIATED};
-	if (!pmessage->get_properties(proptag_buff1, &tmp_propvals))
-		return ecError;
+	err = pmessage->get_properties(proptag_buff1, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0)
@@ -3291,8 +3293,9 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS, PR_DEFERRED_SEND_TIME,
 		PR_DEFERRED_SEND_NUMBER, PR_DEFERRED_SEND_UNITS,
 		PR_DELETE_AFTER_SUBMIT};
-	if (!pmessage->get_properties(proptag_buff3, &tmp_propvals))
-		return ecError;
+	err = pmessage->get_properties(proptag_buff3, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	num = tmp_propvals.get<uint32_t>(PR_MESSAGE_SIZE);
 	if (num == nullptr)
 		return ecError;
@@ -3481,9 +3484,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->set_properties(ppropvals))
-			return ecError;
-		return ecSuccess;
+		return msg->set_properties(ppropvals);
 	}
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -3559,9 +3560,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				return ecError;
 			wtags = proptags;
 		}
-		if (!msg->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return msg->get_properties(wtags, ppropvals);
 	}
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -4842,7 +4841,7 @@ ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
 	auto pmsgctnt = cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt);
 }
 
 ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
@@ -4875,7 +4874,7 @@ ec_error_t zs_icaltomessage(GUID hsession,
 	auto pmsgctnt = cu_ical_to_message(pmessage->get_store(), pical_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt);
 }
 
 ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
@@ -4914,9 +4913,11 @@ ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 		if (rt2 != ecSuccess)
 			return rt2;
 		auto zmo = info->ptree->get_object<message_object>(msg_handle, &mapi_type);
-		if (zmo == nullptr || mapi_type != zs_objtype::message ||
-		    !zmo->write_message(*msgctnt))
+		if (zmo == nullptr || mapi_type != zs_objtype::message)
 			return ecError;
+		auto err = zmo->write_message(*msgctnt);
+		if (err != ecSuccess)
+			return err;
 		outhandles->pl[outhandles->count++] = msg_handle;
 	}
 	cl_0.release();
@@ -4952,7 +4953,7 @@ ec_error_t zs_vcftomessage(GUID hsession,
 	auto pmsgctnt = common_util_vcf_to_message(pmessage->get_store(), pvcf_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt);
 }
 
 ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
