@@ -468,7 +468,8 @@ BOOL message_object::empty_rcpts()
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
+	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS))
+		return ecServerOOM;
 	return TRUE;
 }
 
@@ -481,7 +482,8 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
+	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS))
+		return ecServerOOM;
 	return TRUE;
 }
 
@@ -501,7 +503,8 @@ BOOL message_object::delete_attachment(uint32_t attachment_num)
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
+	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS))
+		return ecServerOOM;
 	return TRUE;
 }
 
@@ -928,8 +931,9 @@ bool message_object::copy_to(message_object *pmessage_src,
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
 	for (unsigned int i = 0; i < proptags.count; ++i)
-		proptag_array_append(pmessage->pchanged_proptags,
-			proptags.pproptag[i]);
+		if (!proptag_array_append(pmessage->pchanged_proptags,
+		    proptags.pproptag[i]))
+			return false;
 	return TRUE;
 }
 
