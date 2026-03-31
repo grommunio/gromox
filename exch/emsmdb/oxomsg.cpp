@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cstdint>
@@ -122,8 +122,9 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
-	if (!pmessage->set_properties(&tmp_propvals, &tmp_problems))
-		return ecRpcFailed;
+	auto err = pmessage->set_properties(&tmp_propvals, &tmp_problems);
+	if (err != ecSuccess)
+		return err;
 	return pmessage->save();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
@@ -134,55 +135,56 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
  * Inspects a message that a delegate (secretary) wants to submit.
  *
  * Returns:
- * - %true and @username is empty: no delegation
- * - %true and @username is set: delegator ("boss") extracted and
+ * - ecSuccess and @username is empty: no delegation
+ * - ecSuccess and @username is set: delegator ("boss") extracted and
  *   identity guaranteed to exist; caller still needs to perform a
  *   permission check.
- * - %false: unable to contact server,
+ * - other error codes: unable to contact server,
  *   or requested identity (boss) not present in the system
  */
-static bool oxomsg_extract_delegator(message_object *pmessage,
-    std::string &username)
+static ec_error_t oxomsg_extract_delegator(message_object *pmessage,
+    std::string &username) try
 {
 	static constexpr proptag_t tmp_proptags[] =
 		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (!pmessage->get_properties(0, tmp_proptags, &tmp_propvals))
-		return FALSE;	
+	auto err = pmessage->get_properties(0, tmp_proptags, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	if (0 == tmp_propvals.count) {
 		username.clear();
-		return TRUE;
+		return ecSuccess;
 	}
 	auto addrtype = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
 	auto emaddr   = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (addrtype != nullptr) {
-		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
-		           g_emsmdb_org_name, mysql_adaptor_userid_to_name, username);
-		if (ret == ecSuccess)
-			return true;
-		else if (ret != ecNullObject)
-			return false;
+		err = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
+		      g_emsmdb_org_name, mysql_adaptor_userid_to_name, username);
+		if (err != ecNullObject)
+			return err;
 	}
 	auto str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr && *str != '\0') {
 		username = str;
-		return TRUE;
+		return ecSuccess;
 	}
-	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
-	           g_emsmdb_org_name, mysql_adaptor_userid_to_name, username);
-	if (ret == ecSuccess)
-		return TRUE;
-	if (ret == ecNullObject) {
+	err = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
+	      g_emsmdb_org_name, mysql_adaptor_userid_to_name, username);
+	if (err == ecSuccess)
+		return ecSuccess;
+	if (err == ecNullObject) {
 		username.clear();
-		return TRUE;
+		return ecSuccess;
 	}
 	mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because "
 		"its PR_SENT_REPRESENTING_ENTRYID does not reference "
 		"a user in the local system",
 		static_cast<unsigned long long>(pmessage->message_id));
-	return false;
+	return ecAccessDenied;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 /**
@@ -293,14 +295,16 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
-	if (!pmessage->get_recipient_num(&rcpt_num))
-		return ecError;
+	auto err = pmessage->get_recipient_num(&rcpt_num);
+	if (err != ecSuccess)
+		return err;
 	if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
 
 	static constexpr proptag_t ptags_one[] = {PR_ASSOCIATED, PR_MESSAGE_CLASS};
-	if (!pmessage->get_properties(0, ptags_one, &tmp_propvals))
-		return ecError;
+	err = pmessage->get_properties(0, ptags_one, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0) {
@@ -310,8 +314,9 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecAccessDenied;
 	}
 	std::string delegator;
-	if (!oxomsg_extract_delegator(pmessage, delegator))
-		return ecError;
+	err = oxomsg_extract_delegator(pmessage, delegator);
+	if (err != ecSuccess)
+		return err;
 	auto actor = plogon->get_account();
 	repr_grant repr_grant;
 	if (delegator.empty()) {
@@ -353,8 +358,9 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		PR_DEFERRED_SEND_TIME, PR_DEFERRED_SEND_NUMBER,
 		PR_DEFERRED_SEND_UNITS, PR_DELETE_AFTER_SUBMIT};
 	proptag_cspan tmp_proptags = {ptbuf_three, (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : std::size(ptbuf_three)};
-	if (!pmessage->get_properties(0, tmp_proptags, &tmp_propvals))
-		return ecError;
+	err = pmessage->get_properties(0, tmp_proptags, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	num = tmp_propvals.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (num == nullptr)
 		return ecError;
@@ -608,8 +614,9 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecAccessDenied;
 	}
 	std::string delegator;
-	if (!oxomsg_extract_delegator(pmessage, delegator))
-		return ecError;
+	auto err = oxomsg_extract_delegator(pmessage, delegator);
+	if (err != ecSuccess)
+		return err;
 	auto actor = plogon->get_account();
 	repr_grant repr_grant;
 	if (delegator.empty()) {
@@ -620,8 +627,9 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		TPROPVAL_ARRAY cls_vals{};
-		if (!pmessage->get_properties(0, cls_tags, &cls_vals))
-			/* ignore, since we can test for cls_vals fill */;
+		err = pmessage->get_properties(0, cls_tags, &cls_vals);
+		if (err != ecSuccess)
+			return err;
 		auto ret = pass_scheduling("E-2080", actor, delegator.c_str(), *pmessage,
 		           cls_vals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
@@ -637,13 +645,14 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			{PR_SENDER_NAME, PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY,
 			PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ENTRYID,
 			PR_SENT_REPRESENTING_SEARCH_KEY, PR_PROVIDER_SUBMIT_TIME};
-		if (!pmessage->get_properties(0, proptags, *pppropvals)) {
+		err = pmessage->get_properties(0, proptags, *pppropvals);
+		if (err != ecSuccess) {
 			*pppropvals = NULL;
 		} else if (!(**pppropvals).has(PR_PROVIDER_SUBMIT_TIME)) {
 			auto nt = cu_alloc<uint64_t>();
 			if (nt != nullptr) {
 				*nt = rop_util_current_nttime();
-				auto err = cu_set_propval(*pppropvals, PR_PROVIDER_SUBMIT_TIME, nt);
+				err = cu_set_propval(*pppropvals, PR_PROVIDER_SUBMIT_TIME, nt);
 				if (err != ecSuccess)
 					return err;
 			}

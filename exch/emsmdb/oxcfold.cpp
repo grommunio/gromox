@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <libHX/string.h>
@@ -907,8 +907,9 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	 * Inaccurate rowcounts crash OL's "Recover Deleted Items" dialog.
 	 * Perform the hard work early on, then.
 	 */
-	if (!rtable->load())
-		return ecError;
+	auto err = rtable->load();
+	if (err != ecSuccess)
+		return err;
 	*prow_count = rtable->get_total();
 	return ecSuccess;
 }

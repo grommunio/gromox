@@ -458,14 +458,16 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				if (!ext_push1.init(ext_buff1.get(), ext_buff_size, EXT_FLAG_UTF16))
 					goto NEXT_NOTIFY;
 				if (pnotify->nflags & NF_BY_MESSAGE) {
-					if (!tbl->read_row(pnotify->row_message_id,
+					if (tbl->read_row(pnotify->row_message_id,
 					    pnotify->row_instance,
-					    &propvals) || propvals.count == 0)
+					    &propvals) != ecSuccess ||
+					    propvals.count == 0)
 						goto NEXT_NOTIFY;
 					
 				} else {
-					if (!tbl->read_row(pnotify->row_folder_id,
-					    0, &propvals) || propvals.count == 0)
+					if (tbl->read_row(pnotify->row_folder_id,
+					    0, &propvals) != ecSuccess ||
+					    propvals.count == 0)
 						goto NEXT_NOTIFY;
 				}
 				if (!cu_propvals_to_row(&propvals, *pcolumns, &tmp_row) ||

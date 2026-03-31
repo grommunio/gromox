@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -473,12 +473,14 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			return ecError;
 		break;
 	}
-	case ems_objtype::message:
-		if (!static_cast<message_object *>(pobject)->flush_streams())
-			return ecError;
+	case ems_objtype::message: {
+		auto msg = static_cast<message_object *>(pobject);
+		auto err = msg->flush_streams();
+		if (err != ecSuccess)
+			return err;
 		if (!exmdb_client->read_message_instance(plogon->get_dir(),
-		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
-			return ecError;
+		    msg->get_instance_id(), &msgctnt))
+			return ecRpcFailed;
 		for (const auto tag : pproptags) {
 			switch (tag) {
 			case PR_MESSAGE_RECIPIENTS:	
@@ -499,6 +501,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!pctx->make_messagecontent(msgctnt))
 			return ecError;
 		break;
+	}
 	case ems_objtype::attach:
 		if (!static_cast<attachment_object *>(pobject)->flush_streams())
 			return ecError;
@@ -585,12 +588,14 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		break;
 	}
-	case ems_objtype::message:
-		if (!static_cast<message_object *>(pobject)->flush_streams())
-			return ecError;
+	case ems_objtype::message: {
+		auto msg = static_cast<message_object *>(pobject);
+		auto err = msg->flush_streams();
+		if (err != ecSuccess)
+			return err;
 		if (!exmdb_client->read_message_instance(plogon->get_dir(),
-		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
-			return ecError;
+		    msg->get_instance_id(), &msgctnt))
+			return ecRpcFailed;
 		for (unsigned int i = 0; i < msgctnt.proplist.count; ) {
 			if (!pproptags.has(msgctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&msgctnt.proplist,
@@ -610,6 +615,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		if (!pctx->make_messagecontent(msgctnt))
 			return ecError;
 		break;
+	}
 	case ems_objtype::attach:
 		if (!static_cast<attachment_object *>(pobject)->flush_streams())
 			return ecError;
@@ -766,8 +772,9 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 		return ecServerOOM;
 
 	BOOL b_fai = (import_flags & IMPORT_FLAG_ASSOCIATED) ? TRUE : false;
-	if (msg->init_message(b_fai, info->cpid) != 0)
-		return ecError;
+	auto err = msg->init_message(b_fai, info->cpid);
+	if (err != ecSuccess)
+		return err;
 
 	TAGGED_PROPVAL nupropd[2];
 	nupropd[0].proptag = PR_CHANGE_KEY;
@@ -894,8 +901,9 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		return ecError;
 	if (!b_new) {
 		static constexpr proptag_t tags[] = {PR_PREDECESSOR_CHANGE_LIST};
-		if (!pmessage->get_properties(0, tags, &tmp_propvals))
-			return ecError;
+		auto err = pmessage->get_properties(0, tags, &tmp_propvals);
+		if (err != ecSuccess)
+			return err;
 		auto bin = tmp_propvals.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 		if (bin == nullptr)
 			return ecError;
@@ -912,17 +920,18 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (!b_new) {
 		if (!exmdb_client->clear_message_instance(dir,
 		    pmessage->get_instance_id()))
-			return ecError;
+			return ecRpcFailed;
 	} else {
 		BOOL b_fai = (import_flags & IMPORT_FLAG_ASSOCIATED) ? TRUE : false;
-		if (pmessage->init_message(b_fai, pinfo->cpid) != 0)
-			return ecError;
+		auto err = pmessage->init_message(b_fai, pinfo->cpid);
+		if (err != ecSuccess)
+			return err;
 	}
 	tmp_propvals.count = 3;
 	tmp_propvals.ppropval = ppropvals->ppropval + 1;
 	if (!exmdb_client->set_instance_properties(dir,
 	    pmessage->get_instance_id(), &tmp_propvals, &tmp_problems))
-		return ecError;
+		return ecRpcFailed;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
