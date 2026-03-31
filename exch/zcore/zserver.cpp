@@ -3235,9 +3235,12 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return ecNotSupported;
 	if (pmessage->importing() || !pmessage->writable())
 		return ecAccessDenied;
-	if (pmessage->get_recipient_num(&rcpt_num) == 0)
+	auto err = pmessage->get_recipient_num(&rcpt_num);
+	if (err != ecSuccess)
+		return err;
+	else if (rcpt_num == 0)
 		return MAPI_E_NO_RECIPIENTS;
-	if (rcpt_num > g_max_rcpt)
+	else if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
 
 	static constexpr proptag_t proptag_buff1[] = {PR_ASSOCIATED};
@@ -3263,8 +3266,8 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		        actor, pstore->dir, LLU{pmessage->get_id()}, delegator.c_str());
 		return ecAccessDenied;
 	}
-	auto err = rectify_message(pmessage, delegator.c_str(),
-	           repr_grant >= repr_grant::send_as);
+	err = rectify_message(pmessage, delegator.c_str(),
+	      repr_grant >= repr_grant::send_as);
 	if (err != ecSuccess)
 		return err;
 	static constexpr proptag_t proptag_buff2[] =

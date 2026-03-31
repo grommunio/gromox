@@ -144,10 +144,10 @@ struct message_object {
 	BOOL get_recipient_all_proptags(PROPTAG_ARRAY *);
 	BOOL read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *);
 	BOOL get_rowid_begin(uint32_t *begin_id);
-	BOOL get_recipient_num(uint16_t *);
+	ec_error_t get_recipient_num(uint16_t *);
 	BOOL set_rcpts(const TARRAY_SET *);
 	BOOL empty_rcpts();
-	BOOL get_attachments_num(uint16_t *);
+	ec_error_t get_attachments_num(uint16_t *);
 	BOOL delete_attachment(uint32_t attachment_num);
 	BOOL get_attachment_table_all_proptags(PROPTAG_ARRAY *);
 	bool query_attachment_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);

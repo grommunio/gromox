@@ -452,11 +452,11 @@ BOOL message_object::get_rowid_begin(uint32_t *pbegin_id)
 	return TRUE;
 }
 
-BOOL message_object::get_recipient_num(uint16_t *pnum)
+ec_error_t message_object::get_recipient_num(uint16_t *pnum)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_rcpts_num(pmessage->pstore->get_dir(),
-			pmessage->instance_id, pnum);
+	       pmessage->instance_id, pnum) ? ecSuccess : ecRpcFailed;
 }
 
 BOOL message_object::empty_rcpts()
@@ -487,11 +487,11 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 	return TRUE;
 }
 
-BOOL message_object::get_attachments_num(uint16_t *pnum)
+ec_error_t message_object::get_attachments_num(uint16_t *pnum)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_attachments_num(pmessage->pstore->get_dir(),
-	       pmessage->instance_id, pnum);
+	       pmessage->instance_id, pnum) ? ecSuccess : ecRpcFailed;
 }
 
 BOOL message_object::delete_attachment(uint32_t attachment_num)

@@ -702,13 +702,13 @@ uint32_t table_object::get_total()
 	if (ptable->table_type == zcore_tbltype::attachment) {
 		num = 0;
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
-		msg->get_attachments_num(&num);
-		return num;
+		auto err = msg->get_attachments_num(&num);
+		return err == ecSuccess ? num : 0;
 	} else if (ptable->table_type == zcore_tbltype::recipient) {
 		num = 0;
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
-		msg->get_recipient_num(&num);
-		return num;
+		auto err = msg->get_recipient_num(&num);
+		return err == ecSuccess ? num : 0;
 	} else if (ptable->table_type == zcore_tbltype::container) {
 		num1 = 0;
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
