@@ -108,7 +108,9 @@ ec_error_t attachment_object::save()
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;
-	proptag_array_append(pattachment->pparent->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
+	if (!proptag_array_append(pattachment->pparent->pchanged_proptags,
+	    PR_MESSAGE_ATTACHMENTS))
+		return ecServerOOM;
 	return ecSuccess;
 }
 

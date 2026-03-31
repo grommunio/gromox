@@ -530,7 +530,8 @@ ec_error_t message_object::empty_rcpts()
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return ecSuccess;
-	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
+	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS))
+		return ecServerOOM;
 	return ecSuccess;
 }
 
@@ -559,13 +560,15 @@ ec_error_t message_object::set_rcpts(const TARRAY_SET *pset)
 			case PR_TRANSMITABLE_DISPLAY_NAME_A:
 				continue;
 			}
-			proptag_array_append(pmessage->precipient_columns, cell.proptag);
+			if (!proptag_array_append(pmessage->precipient_columns, cell.proptag))
+				return ecServerOOM;
 		}
 	}
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return ecSuccess;
-	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
+	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS))
+		return ecServerOOM;
 	return ecSuccess;
 }
 
@@ -585,7 +588,8 @@ ec_error_t message_object::delete_attachment(uint32_t attachment_num)
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return ecSuccess;
-	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
+	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS))
+		return ecServerOOM;
 	return ecSuccess;
 }
 
@@ -1146,7 +1150,9 @@ ec_error_t message_object::copy_to(message_object *pmessage_src,
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return ecSuccess;
 	for (const auto tag : proptags)
-		proptag_array_append(pmessage->pchanged_proptags, message_object_rectify_proptag(tag));
+		if (!proptag_array_append(pmessage->pchanged_proptags,
+		    message_object_rectify_proptag(tag)))
+			return ecServerOOM;
 	return ecSuccess;
 }
 
@@ -1157,8 +1163,9 @@ ec_error_t message_object::copy_rcpts(const message_object *pmessage_src,
 	if (!exmdb_client->copy_instance_rcpts(pmessage->plogon->get_dir(),
 	    b_force, pmessage_src->instance_id, pmessage->instance_id, pb_result))
 		return ecRpcFailed;
-	if (*pb_result)
-		proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
+	if (*pb_result && !proptag_array_append(pmessage->pchanged_proptags,
+	    PR_MESSAGE_ATTACHMENTS))
+		return ecServerOOM;
 	return ecSuccess;
 }
 	
@@ -1169,8 +1176,9 @@ ec_error_t message_object::copy_attachments(const message_object *pmessage_src,
 	if (!exmdb_client->copy_instance_attachments(pmessage->plogon->get_dir(),
 	    b_force, pmessage_src->instance_id, pmessage->instance_id, pb_result))
 		return ecRpcFailed;
-	if (*pb_result)
-		proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
+	if (*pb_result && !proptag_array_append(pmessage->pchanged_proptags,
+	    PR_MESSAGE_RECIPIENTS))
+		return ecServerOOM;
 	return ecSuccess;
 }
 
