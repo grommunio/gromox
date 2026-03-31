@@ -1551,8 +1551,9 @@ ec_error_t zs_createmessage(GUID hsession,
 	if (pmessage == nullptr)
 		return ecError;
 	BOOL b_fai = (flags & MAPI_ASSOCIATED) ? TRUE : false;
-	if (pmessage->init_message(b_fai, pinfo->cpid) != 0)
-		return ecError;
+	auto err = pmessage->init_message(b_fai, pinfo->cpid);
+	if (err != ecSuccess)
+		return err;
 	/* add the store handle as the parent object handle
 		because the caller normally will not keep the
 		handle of folder */
@@ -3002,7 +3003,9 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	if (MODRECIP_MODIFY == flags) {
-		pmessage->empty_rcpts();
+		auto err = pmessage->empty_rcpts();
+		if (err != ecSuccess)
+			return err;
 	} else if (MODRECIP_REMOVE == flags) {
 		for (size_t i = 0; i < prcpt_list->count; ++i) {
 			prcpt = prcpt_list->pparray[i];
@@ -3018,12 +3021,12 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			if (!b_found)
 				return ecInvalidParam;
 		}
-		if (!pmessage->set_rcpts(prcpt_list))
-			return ecError;
-		return ecSuccess;
+		return pmessage->set_rcpts(prcpt_list);
 	}
-	if (!pmessage->get_rowid_begin(&last_rowid))
-		return ecError;
+	auto err = pmessage->get_rowid_begin(&last_rowid);
+	if (err != ecSuccess)
+		return err;
+
 	for (size_t i = 0; i < prcpt_list->count; ++i, ++last_rowid) {
 		if (!prcpt_list->pparray[i]->has(PR_ENTRYID) &&
 		    !prcpt_list->pparray[i]->has(PR_EMAIL_ADDRESS) &&
@@ -3075,7 +3078,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			memcpy(ppropval, prcpt->ppropval,
 				prcpt->count*sizeof(TAGGED_PROPVAL));
 			prcpt->ppropval = ppropval;
-			auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
+			err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
 			if (err != ecSuccess)
 				return err;
 			auto dupval = common_util_dup(ab_entryid.x500dn.c_str());
@@ -3126,7 +3129,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				&persist_false : &persist_true);
 		}
 	}
-	return pmessage->set_rcpts(prcpt_list) ? ecSuccess : ecError;
+	return pmessage->set_rcpts(prcpt_list);
 }
 
 /**
@@ -3434,7 +3437,7 @@ ec_error_t zs_deleteattachment(GUID hsession,
 		return ecNotSupported;
 	if (!pmessage->writable())
 		return ecAccessDenied;
-	return pmessage->delete_attachment(attach_id) ? ecSuccess : ecError;
+	return pmessage->delete_attachment(attach_id);
 }
 
 ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
@@ -3556,8 +3559,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
 		if (NULL == pproptags) {
-			if (!msg->get_all_proptags(&proptags))
-				return ecError;
+			auto err = msg->get_all_proptags(&proptags);
+			if (err != ecSuccess)
+				return err;
 			wtags = proptags;
 		}
 		return msg->get_properties(wtags, ppropvals);
@@ -3644,9 +3648,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->remove_properties(pproptags))
-			return ecError;
-		return ecSuccess;
+		return msg->remove_properties(pproptags);
 	}
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -3674,7 +3676,7 @@ ec_error_t zs_setmessagereadflag(GUID hsession, uint32_t hmessage,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	return pmessage->set_readflag(flags, &b_changed) ? ecSuccess : ecError;
+	return pmessage->set_readflag(flags, &b_changed);
 }
 
 ec_error_t zs_openembedded(GUID hsession,
@@ -3719,8 +3721,9 @@ ec_error_t zs_openembedded(GUID hsession,
 		           pattachment, tag_access, TRUE, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		if (pmessage->init_message(false, pinfo->cpid) != 0)
-			return ecError;
+		auto err = pmessage->init_message(false, pinfo->cpid);
+		if (err != ecSuccess)
+			return err;
 	}
 	/* add the store handle as the parent object handle
 		because the caller normally will not keep the
@@ -3886,9 +3889,10 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		auto mdst = static_cast<message_object *>(pobject_dst);
 		if (!mdst->writable())
 			return ecAccessDenied;
-		if (!mdst->copy_to(static_cast<message_object *>(pobject),
-		    pexclude_proptags, b_force, &b_cycle))
-			return ecError;
+		auto err = mdst->copy_to(static_cast<message_object *>(pobject),
+		           pexclude_proptags, b_force, &b_cycle);
+		if (err != ecSuccess)
+			return err;
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}
 	case zs_objtype::attach: {
@@ -3919,8 +3923,9 @@ ec_error_t zs_savechanges(GUID hsession, uint32_t hobject)
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->check_original_touched(&b_touched))
-			return ecError;
+		auto err = msg->check_original_touched(&b_touched);
+		if (err != ecSuccess)
+			return err;
 		if (b_touched)
 			return ecObjectModified;
 		return msg->save();
@@ -4269,8 +4274,11 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 	                MAPI_MODIFY, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
-	if (b_new && pmessage->init_message(b_fai, pinfo->cpid) != 0)
-		return ecError;
+	if (b_new) {
+		auto err = pmessage->init_message(b_fai, pinfo->cpid);
+		if (err != ecSuccess)
+			return err;
+	}
 	*phobject = pinfo->ptree->add_object_handle(hctx, {zs_objtype::message, std::move(pmessage)});
 	return zh_error(*phobject);
 }
