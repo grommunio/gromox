@@ -852,8 +852,11 @@ void MhEmsmdbPlugin::async_wakeup(int context_id, BOOL b_pending)
 		return;
 	status[context_id].notification_status =
 		b_pending ? NOTIFICATION_STATUS_PENDING : NOTIFICATION_STATUS_TIMED;
-	pending.erase(&status[context_id]);
 	status[context_id].pending_status = PENDING_STATUS_NONE;
+	}
+	{
+	std::unique_lock lk(pending_lock);
+	pending.erase(&status[context_id]);
 	}
 	wakeup_context(context_id);
 }
