@@ -132,6 +132,7 @@ struct rxparam {
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
 	message_content *ctnt = nullptr;
+	std::string orig_dir; /* rule table origin */
 	unsigned int flags = ~0U;
 	bool del = false, exit = false;
 };
@@ -686,11 +687,15 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	 * loop. However, as we only ever load one rule table, namely from the
 	 * Envelope-To INBOX folder, we know the execution is finite.
 	 */
-	uint32_t permission = 0;
-	if (!exmdb_client->get_folder_perm(newdir, dst_fid, par.ev_to, &permission))
-		return ecRpcFailed;
-	if (!(permission & (frightsOwner | frightsCreate)))
-		return ecAccessDenied;
+
+	bool owner_mode = par.orig_dir == newdir;
+	if (!owner_mode) {
+		uint32_t permission = 0;
+		if (!exmdb_client->get_folder_perm(newdir, dst_fid, par.ev_to, &permission))
+			return ecRpcFailed;
+		if (!(permission & (frightsOwner | frightsCreate)))
+			return ecAccessDenied;
+	}
 
 	/* Prepare write */
 	message_content_ptr dst(par.ctnt->dup());
@@ -1428,6 +1433,7 @@ ec_error_t rxparam::run_rules()
 	auto err = is_oof(&oof);
 	if (err != ecSuccess)
 		return err;
+	orig_dir = cur.dir; /* remember where the rule table came from */
 	std::vector<rule_node> rule_list;
 	err = load_std_rules(oof, rule_list);
 	if (err != ecSuccess)
