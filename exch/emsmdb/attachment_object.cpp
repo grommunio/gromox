@@ -75,7 +75,7 @@ BOOL attachment_object::init_attachment()
 attachment_object::~attachment_object()
 {
 	auto pattachment = this;
-	if (pattachment->instance_id != 0)
+	if (pattachment->instance_id != 0 && exmdb_client.has_value())
 		exmdb_client->unload_instance(pattachment->pparent->plogon->get_dir(),
 			pattachment->instance_id);
 }

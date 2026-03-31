@@ -55,7 +55,8 @@ void subscription_object::set_handle(uint32_t h)
 subscription_object::~subscription_object()
 {
 	auto psub = this;
-	exmdb_client->unsubscribe_notification(psub->plogon->get_dir(), psub->sub_id);
+	if (exmdb_client.has_value())
+		exmdb_client->unsubscribe_notification(psub->plogon->get_dir(), psub->sub_id);
 	emsmdb_interface_remove_subscription_notify(psub->plogon->get_dir(), psub->sub_id);
 }
 
