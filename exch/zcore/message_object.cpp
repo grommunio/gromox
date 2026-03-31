@@ -30,11 +30,12 @@ using namespace gromox;
 
 static ec_error_t message_object_set_properties_internal(message_object *, bool check, const TPROPVAL_ARRAY *);
 
-BOOL message_object::get_recipient_all_proptags(PROPTAG_ARRAY *pproptags)
+ec_error_t message_object::get_recipient_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_rcpts_all_proptags(
-	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags);
+	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags) ?
+	       ecSuccess : ecRpcFailed;
 }
 
 std::unique_ptr<message_object> message_object::create(store_object *pstore,
@@ -426,12 +427,13 @@ ec_error_t message_object::write_message(const MESSAGE_CONTENT &content)
 	return ecSuccess;
 }
 
-BOOL message_object::read_recipients(uint32_t row_id, uint16_t need_count,
+ec_error_t message_object::read_recipients(uint32_t row_id, uint16_t need_count,
     TARRAY_SET *pset)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_rcpts(pmessage->pstore->get_dir(),
-		pmessage->instance_id, row_id, need_count, pset);
+	       pmessage->instance_id, row_id, need_count, pset) ?
+	       ecSuccess : ecRpcFailed;
 }
 
 BOOL message_object::get_rowid_begin(uint32_t *pbegin_id)
@@ -509,20 +511,21 @@ BOOL message_object::delete_attachment(uint32_t attachment_num)
 	return TRUE;
 }
 
-BOOL message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
+ec_error_t message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_attachment_table_all_proptags(
-	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags);
+	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags) ?
+	       ecSuccess : ecRpcFailed;
 }
 
-bool message_object::query_attachment_table(proptag_cspan pproptags,
+ec_error_t message_object::query_attachment_table(proptag_cspan pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	auto pmessage = this;
 	return exmdb_client->query_message_instance_attachment_table(
 	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags,
-	       start_pos, row_needed, pset);
+	       start_pos, row_needed, pset) ? ecSuccess : ecRpcFailed;
 }
 
 BOOL message_object::clear_unsent()

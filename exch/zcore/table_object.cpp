@@ -239,10 +239,10 @@ static ec_error_t table_object_get_all_columns(table_object *ptable,
 {
 	if (ptable->table_type == zcore_tbltype::attachment) {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
-		return msg->get_attachment_table_all_proptags(pcolumns) ? ecSuccess : ecError;
+		return msg->get_attachment_table_all_proptags(pcolumns);
 	} else if (ptable->table_type == zcore_tbltype::recipient) {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
-		return msg->get_recipient_all_proptags(pcolumns) ? ecSuccess : ecError;
+		return msg->get_recipient_all_proptags(pcolumns);
 	} else if (ptable->table_type == zcore_tbltype::container) {
 		container_object_get_container_table_all_proptags(pcolumns);
 		return ecSuccess;
@@ -293,10 +293,10 @@ static ec_error_t rcpttable_query_rows(const table_object *ptable,
     proptag_cspan pcolumns, TARRAY_SET *pset, uint32_t row_needed)
 {
 	TARRAY_SET rcpt_set;
-
-	if (!static_cast<message_object *>(ptable->pparent_obj)->
-	    read_recipients(0, 0xFFFF, &rcpt_set))
-		return ecRpcFailed;
+	auto zmo = static_cast<message_object *>(ptable->pparent_obj);
+	auto err = zmo->read_recipients(0, 0xFFFF, &rcpt_set);
+	if (err != ecSuccess)
+		return err;
 	uint32_t end_pos = ptable->position + row_needed > rcpt_set.count ?
 	                   rcpt_set.count : ptable->position + row_needed;
 	pset->count = 0;
@@ -587,7 +587,7 @@ ec_error_t table_object::query_rows(/*maybenull*/ const proptag_cspan *icols,
 	if (ptable->table_type == zcore_tbltype::attachment) {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		return msg->query_attachment_table(cols, ptable->position,
-		       row_count, pset) ? ecSuccess : ecError;
+		       row_count, pset);
 	} else if (ptable->table_type == zcore_tbltype::recipient) {
 		return rcpttable_query_rows(ptable, cols, pset, row_count);
 	} else if (ptable->table_type == zcore_tbltype::container) {
@@ -922,19 +922,24 @@ ec_error_t table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 	switch (ptable->table_type) {
 	case zcore_tbltype::attachment: {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
-		if (!msg->get_attachment_table_all_proptags(&proptags))
-			return ecRpcFailed;
+		auto err = msg->get_attachment_table_all_proptags(&proptags);
+		if (err != ecSuccess)
+			return err;
 		static constexpr proptag_t tmp_proptag[] = {PR_ATTACH_DATA_BIN};
 		cu_reduce_proptags(&proptags, tmp_proptag);
-		if (!msg->query_attachment_table(proptags, ptable->position, INT32_MAX, &tmp_set))
-			return ecRpcFailed;
+		err = msg->query_attachment_table(proptags, ptable->position,
+		      INT32_MAX, &tmp_set);
+		if (err != ecSuccess)
+			return err;
 		break;
 	}
-	case zcore_tbltype::recipient:
-		if (!static_cast<message_object *>(ptable->pparent_obj)->
-		    read_recipients(0, 0xFFFF, &tmp_set))
-			return ecError;
+	case zcore_tbltype::recipient: {
+		auto zmo = static_cast<message_object *>(ptable->pparent_obj);
+		auto err = zmo->read_recipients(0, 0xFFFF, &tmp_set);
+		if (err != ecSuccess)
+			return err;
 		break;
+	}
 	case zcore_tbltype::store: {
 		auto err = storetbl_refresh(this);
 		if (err != ecSuccess)
