@@ -1089,7 +1089,6 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 	add_child(srv, "socketType", "SSL");
 	add_child(srv, "authentication", "password-cleartext");
 	add_child(srv, "username", "%EMAILADDRESS%");
-	add_child(srv, "owaURL", "https://"s + t_host_id + "/web/");
 	add_child(srv, "ewsURL", fmt::format(ews_base_url, t_host_id, exchange_asmx));
 	add_child(srv, "easURL", fmt::format(msas_base_url, t_host_id));
 
