@@ -229,9 +229,9 @@ ec_error_t message_object::init_message(bool fai, cpid_t new_cpid)
 	propvals.emplace_back(PR_CREATOR_ENTRYID, abk_eid);
 
 	char id_string[UADDR_SIZE+2];
-	auto ret = make_inet_msgid(id_string, std::size(id_string), 0x5a54);
-	if (ret != 0)
-		return ecError;
+	auto err = make_inet_msgid(id_string, std::size(id_string), 0x5a54);
+	if (err != 0)
+		return err;
 	propvals.emplace_back(PR_INTERNET_MESSAGE_ID, id_string);
 
 	if (!exmdb_client->set_instance_properties(pmessage->pstore->get_dir(),

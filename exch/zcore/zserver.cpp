@@ -3180,7 +3180,9 @@ static ec_error_t rectify_message(message_object *pmessage,
 	repr_srch.cb = repr_skb.size() + 1;
 	repr_srch.pv = deconst(repr_skb.c_str());
 	char msgid[UADDR_SIZE+2];
-	make_inet_msgid(msgid, std::size(msgid), 0x5a53);
+	err = make_inet_msgid(msgid, std::size(msgid), 0x5a53);
+	if (err != ecSuccess)
+		return err;
 	TAGGED_PROPVAL pv[] = {
 		{PR_READ, &tmp_byte},
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
