@@ -66,7 +66,7 @@ Maximum number of pending notifications for an EMSMDB session. [Content tables
 on search folders can rack up enormous amounts of notifications, so worry not
 upon seeing W-2305 warnings in the log.]
 .br
-Default: \fI1K\fP
+Default: \fI64K\fP
 .TP
 \fBemsmdb_max_cxh_per_user\fP
 The maximum number of EMSMDB sessions (CXH = RPC context handle) for one user.
