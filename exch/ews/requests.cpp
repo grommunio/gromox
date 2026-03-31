@@ -5,7 +5,6 @@
 #include <climits>
 #include <cstdint>
 #include <cstring>
-#include <fstream>
 #include <tinyxml2.h>
 #include <unordered_set>
 #include <variant>
@@ -16,7 +15,6 @@
 #include <sys/wait.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/clock.hpp>
-#include <gromox/config_file.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
@@ -122,26 +120,6 @@ std::optional<tSerializableTimeZone> timezone_from_context(const EWSContext& ctx
 	if (negative)
 		minutes = -minutes;
 	return tSerializableTimeZone(minutes);
-}
-
-/**
- * @brief      Write message body to reply file
- *
- * If either the ReplyBody or its Message field are empty, the file is deleted instead.
- *
- * @param      path    Path to the file
- * @param      reply   Reply body
- */
-void writeMessageBody(const std::string &path, const std::optional<tReplyBody> &reply)
-{
-	if (!reply || !reply->Message)
-		return (void) unlink(path.c_str());
-	static constexpr char header[] = "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n\r\n";
-	auto& content = *reply->Message;
-	std::ofstream file(path, std::ios::binary); /* FMODE_PUBLIC */
-	file.write(header, std::size(header) - 1);
-	file.write(content.c_str(), content.size());
-	file.close();
 }
 
 /* Copied straight outta zcore/ab_tree.cpp */
@@ -2306,30 +2284,38 @@ void process(mSetUserOofSettingsRequest &&request, XMLElement *response, const E
 	std::string maildir = ctx.get_maildir(request.Mailbox);
 
 	tUserOofSettings& OofSettings = request.UserOofSettings;
-	int oof_state, allow_external_oof, external_audience;
 
-	oof_state = OofSettings.OofState;
-
+	uint32_t oof_state = OofSettings.OofState;
 	std::string externalAudience = OofSettings.ExternalAudience;
-	allow_external_oof = tolower_inplace(externalAudience) != "none";
+	uint8_t allow_external_oof = tolower_inplace(externalAudience) != "none";
 	//Note: counterintuitive but intentional: known -> 1, all -> 0
-	external_audience = externalAudience == "known";
+	uint8_t external_audience = externalAudience == "known";
 	if (allow_external_oof && !external_audience && externalAudience != "all")
 		throw DispatchError(E3009(OofSettings.ExternalAudience));
 
-	std::string filename = maildir+"/config/autoreply.cfg";
-	std::ofstream file(filename); /* FMODE_PUBLIC */
-	file << "oof_state = " << oof_state << "\n"
-	     << "allow_external_oof = " << allow_external_oof << "\n";
-	if (allow_external_oof)
-		file << "external_audience = " << external_audience << "\n";
-	if (OofSettings.Duration)
-		file << "start_time = " << clock::to_time_t(OofSettings.Duration->StartTime) << "\n"
-		     << "end_time = " << clock::to_time_t(OofSettings.Duration->EndTime) << "\n";
-	file.close();
-
-	writeMessageBody(maildir+"/config/internal-reply", OofSettings.InternalReply);
-	writeMessageBody(maildir+"/config/external-reply", OofSettings.ExternalReply);
+	std::vector<TAGGED_PROPVAL> pvs;
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE, &oof_state});
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_ALLOW_EXTERNAL, &allow_external_oof});
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_AUDIENCE, &external_audience});
+	mapitime_t nt_start{}, nt_end{};
+	if (OofSettings.Duration) {
+		nt_start = rop_util_unix_to_nttime(OofSettings.Duration->StartTime);
+		nt_end = rop_util_unix_to_nttime(OofSettings.Duration->EndTime);
+		pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_FROM, &nt_start});
+		pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_UNTIL, &nt_end});
+	}
+	std::string int_msg, ext_msg;
+	if (OofSettings.InternalReply && OofSettings.InternalReply->Message)
+		int_msg = *OofSettings.InternalReply->Message;
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_MSG, deconst(int_msg.c_str())});
+	if (OofSettings.ExternalReply && OofSettings.ExternalReply->Message)
+		ext_msg = *OofSettings.ExternalReply->Message;
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_REPLY, deconst(ext_msg.c_str())});
+	TPROPVAL_ARRAY vals = {static_cast<uint16_t>(pvs.size()), pvs.data()};
+	PROBLEM_ARRAY problems{};
+	if (!ctx.plugin().exmdb.autoreply_setprop(maildir.c_str(), CP_UTF8,
+	    &vals, &problems))
+		throw DispatchError(E3012);
 
 	mSetUserOofSettingsResponse data;
 	data.ResponseMessage.success();
