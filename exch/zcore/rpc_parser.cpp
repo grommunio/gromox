@@ -239,7 +239,7 @@ static void *zcrp_thrwork(void *param)
 	return nullptr;
 }
 
-int rpc_parser_run()
+int rpc_parser_run() try
 {
 	g_zrpc_stop = false;
 	int ret = 0;
@@ -249,7 +249,7 @@ int rpc_parser_run()
 		if (ret != 0) {
 			mlog(LV_ERR, "rpc_parser: failed to create pool thread: %s", strerror(ret));
 			rpc_parser_stop();
-			return -2;
+			return -1;
 		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "rpc/%u", i);
@@ -257,6 +257,9 @@ int rpc_parser_run()
 		g_thread_ids.push_back(tid);
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	rpc_parser_stop();
+	return -1;
 }
 
 void rpc_parser_stop()
