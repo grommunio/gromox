@@ -2,6 +2,8 @@
 #include <atomic>
 #include <cstdint>
 #include <string>
+#include <gromox/clock.hpp>
+#include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rpc_types.hpp>
 #include "rop_processor.hpp"
@@ -27,6 +29,24 @@ struct emsmdb_info {
 	uint16_t client_version[4]{}, client_mode = 0;
 	LOGMAP logmap;
 	std::atomic<int> upctx_ref{0};
+};
+
+struct HANDLE_DATA {
+	HANDLE_DATA();
+	~HANDLE_DATA();
+	NOMOVE(HANDLE_DATA);
+
+	GUID guid{};
+	char username[UADDR_SIZE]{};
+	uint32_t cxr = 0xFFFFFFFFU; /* ... curious if EXC actually models it as int32_t */
+	uint32_t last_handle = 0;
+	gromox::time_point last_time;
+	int rop_num = 0;
+	uint16_t rop_left = 0; /* size left in rop response buffer */
+	bool b_processing = false; /* if the handle is processing rops */
+	bool b_occupied = false; /* if the notify list is locked */
+	emsmdb_info info;
+	DOUBLE_LIST notify_list{};
 };
 
 extern void emsmdb_interface_init();

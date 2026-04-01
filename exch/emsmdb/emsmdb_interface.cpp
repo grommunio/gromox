@@ -67,24 +67,6 @@ template<> struct std::hash<GUID> {
 
 namespace {
 
-struct HANDLE_DATA {
-	HANDLE_DATA();
-	~HANDLE_DATA();
-	NOMOVE(HANDLE_DATA);
-
-	GUID guid{};
-	char username[UADDR_SIZE]{};
-	BOOL b_processing = false; /* if the handle is processing rops */
-	BOOL b_occupied = false; /* if the notify list is locked */
-	time_point last_time;
-	uint32_t last_handle = 0;
-	int rop_num = 0;
-	uint16_t rop_left = 0; /* size left in rop response buffer */
-	uint32_t cxr = NO_CXR; /* ... curious if EXC actually models it as int32_t */
-	emsmdb_info info;
-	DOUBLE_LIST notify_list{};
-};
-
 struct NOTIFY_ITEM {
 	uint32_t handle = 0;
 	uint8_t logon_id = 0;
