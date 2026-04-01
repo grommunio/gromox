@@ -3009,6 +3009,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				    !request.SuppressReadReceipts.value_or(false))
 					ctx.notifyReadReceipt(dir, mid.messageId());
 			}
+			/* Filter out e.g. neutralized PR_READ entries */
+			props.count = std::remove_if(props.ppropval, props.ppropval + props.count,
+			              [](const TAGGED_PROPVAL &v) { return PROP_TYPE(v.proptag) == PT_NULL; }) -
+			              props.ppropval;
 			if (props.count > 0 &&
 			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 			    username, CP_ACP, mid.messageId(), &props, &problems))
