@@ -137,8 +137,8 @@ template<> struct ExplicitConvert<std::string> {
 			return;
 		auto filtered = value;
 		utf8_filter(filtered.data());
-		utf8_sanitize_codepoints(filtered);
 		filtered.resize(strlen(filtered.c_str()));
+		utf8_sanitize_codepoints(filtered);
 		if (!filtered.empty())
 			setter(filtered.c_str());
 	}

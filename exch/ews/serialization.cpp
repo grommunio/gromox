@@ -74,8 +74,8 @@ static void xml_set_filtered_text(tinyxml2::XMLElement *xml, const char *text)
 {
 	std::string filtered(text);
 	utf8_filter(filtered.data());
-	utf8_sanitize_codepoints(filtered);
 	filtered.resize(strlen(filtered.c_str()));
+	utf8_sanitize_codepoints(filtered);
 	xml->SetText(filtered.c_str());
 }
 
