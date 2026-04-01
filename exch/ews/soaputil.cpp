@@ -95,6 +95,7 @@ string Envelope::fault(const char *code, const char *message)
 	doc.InsertEndChild(root);
 	root->SetAttribute("xmlns:SOAP", NS_SOAP);
 	root->SetAttribute("xmlns:xsi", NS_XSI);
+	root->SetAttribute("xmlns:xsd", NS_XSD);
 	root->InsertNewChildElement("SOAP:Header");
 	auto body = root->InsertNewChildElement("SOAP:Body");
 	auto fault = body->InsertNewChildElement("SOAP:Fault");
