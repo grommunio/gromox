@@ -1,6 +1,8 @@
 #pragma once
 #include <atomic>
 #include <cstdint>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <gromox/clock.hpp>
 #include <gromox/double_list.hpp>
@@ -44,9 +46,9 @@ struct HANDLE_DATA {
 	int rop_num = 0;
 	uint16_t rop_left = 0; /* size left in rop response buffer */
 	bool b_processing = false; /* if the handle is processing rops */
-	bool b_occupied = false; /* if the notify list is locked */
 	emsmdb_info info;
 	DOUBLE_LIST notify_list{};
+	std::mutex notify_lock; /* protects notify_list */
 };
 
 extern void emsmdb_interface_init();
@@ -60,10 +62,9 @@ extern ec_error_t emsmdb_interface_async_connect_ex(CXH, ACXH *);
 extern bool emsmdb_interface_inspect_acxh(const ACXH *, std::string &username, uint16_t *cxr, bool touch);
 extern bool emsmdb_interface_notifications_pending(const ACXH &);
 extern void emsmdb_interface_touch_handle(const CXH &);
+extern std::shared_ptr<HANDLE_DATA> emsmdb_interface_get_handle_data_SP();
 extern const GUID *emsmdb_interface_get_handle();
 extern emsmdb_info *emsmdb_interface_get_emsmdb_info();
-extern DOUBLE_LIST *emsmdb_interface_get_notify_list();
-extern void emsmdb_interface_put_notify_list();
 BOOL emsmdb_interface_get_cxr(uint16_t *pcxr);
 extern BOOL emsmdb_interface_alloc_handle_number(uint32_t *num);
 BOOL emsmdb_interface_get_cxh(CXH *pcxh);

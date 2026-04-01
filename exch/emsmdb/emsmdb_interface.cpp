@@ -97,10 +97,14 @@ static size_t ems_high_active_notifh, ems_high_pending_sesnotif;
 
 static void *emsi_scanwork(void *);
 
-static void emsmdb_report_one_ses(const HANDLE_DATA &h, report_stats &st)
+static void emsmdb_report_one_ses(HANDLE_DATA &h, report_stats &st)
 {
 	auto &ei = h.info;
-	auto pn = double_list_get_nodes_num(&h.notify_list);
+	size_t pn = 0;
+	{
+		std::lock_guard lk_occupied(h.notify_lock);
+		pn = double_list_get_nodes_num(&h.notify_list);
+	}
 	mlog(LV_INFO, "%-3u  %-32s  %-32s  %-4u %-4u %3zu",
 		h.cxr, bin2hex(h.guid).c_str(), h.username,
 		ei.cpid, ei.lcid_string, pn);
@@ -130,7 +134,7 @@ static void emsmdb_report_sessions(report_stats &st)
 	mlog(LV_INFO, "CXR  %-32s  %-32s  CPID LCID #NF", "GUID", "USERNAME");
 	mlog(LV_INFO, "LOGON  %-32s  MBOXUSER", "MBOXGUID");
 	mlog(LV_INFO, "---------------------------------------------------------------------------------------");
-	for (const auto &e : g_handle_hash)
+	for (auto &e : g_handle_hash)
 		emsmdb_report_one_ses(*e.second, st);
 	mlog(LV_INFO, "Mailboxes %zu/%zu, EMSMDB ses %zu/%zu/%zu, ROPLogons %zu",
 		g_user_hash.size(), ems_high_active_users,
@@ -168,6 +172,18 @@ static uint32_t emsmdb_interface_get_timestamp()
 	return std::chrono::duration_cast<std::chrono::seconds>(d).count() + 1230336000;
 }
 
+std::shared_ptr<HANDLE_DATA> emsmdb_interface_get_handle_data_SP()
+{
+	return g_handle_key;
+}
+
+static std::shared_ptr<HANDLE_DATA> ei_lookup_session(const CXH &cxh)
+{
+	std::lock_guard gl_hold(g_lock);
+	auto iter = g_handle_hash.find(cxh.guid);
+	return iter != g_handle_hash.end() ? iter->second : nullptr;
+}
+
 bool emsmdb_interface_inspect_acxh(const ACXH *pacxh, std::string &username,
     uint16_t *pcxr, bool b_touch) try
 {
@@ -193,11 +209,10 @@ bool emsmdb_interface_notifications_pending(const ACXH &acxh)
 	auto pacxh = &acxh;
 	if (pacxh->handle_type != HANDLE_EXCHANGE_ASYNCEMSMDB)
 		return FALSE;
-	std::lock_guard gl_hold(g_lock);
-	auto iter = g_handle_hash.find(pacxh->guid);
-	if (iter == g_handle_hash.end())
+	auto phandle = ei_lookup_session(acxh);
+	if (phandle == nullptr)
 		return false;
-	auto phandle = iter->second.get();
+	std::lock_guard lk_occupied(phandle->notify_lock);
 	return double_list_get_nodes_num(&phandle->notify_list) > 0;
 }
 
@@ -237,32 +252,6 @@ static void emsmdb_interface_put_handle_data(std::shared_ptr<HANDLE_DATA> &phand
 {
 	std::lock_guard gl_hold(g_lock);
 	phandle->b_processing = FALSE;
-}
-
-static std::shared_ptr<HANDLE_DATA> emsmdb_interface_get_handle_notify_list(CXH *pcxh)
-{
-	if (pcxh->handle_type != HANDLE_EXCHANGE_EMSMDB)
-		return NULL;
-	while (true) {
-		std::unique_lock gl_hold(g_lock);
-		auto iter = g_handle_hash.find(pcxh->guid);
-		if (iter == g_handle_hash.end())
-			return NULL;
-		auto phandle = iter->second;
-		if (phandle->b_occupied) {
-			gl_hold.unlock();
-			usleep(100000);
-		} else {
-			phandle->b_occupied = TRUE;
-			return phandle;
-		}
-	}
-}
-
-static void emsmdb_interface_put_handle_notify_list(std::shared_ptr<HANDLE_DATA> &phandle)
-{
-	std::lock_guard gl_hold(g_lock);
-	phandle->b_occupied = FALSE;
 }
 
 HANDLE_DATA::HANDLE_DATA() :
@@ -377,7 +366,7 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 		return;
 	std::shared_ptr<HANDLE_DATA> phandle;
 	std::unique_lock gl_hold(g_lock);
-	while (true) {
+	{
 		auto iter = g_handle_hash.find(pcxh->guid);
 		if (iter == g_handle_hash.end())
 			return;
@@ -387,11 +376,6 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 			   in emsmdb_interface_rpc_ext2 by another
 			   rpc connection, can not be released! */
 			return;
-		if (!phandle->b_occupied)
-			break;
-		gl_hold.unlock();
-		usleep(100000);
-		gl_hold.lock();
 	}
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter != g_user_hash.end()) {
@@ -680,7 +664,11 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		input_flags |= GROMOX_READSTREAM_NOCHAIN;
 
 	auto result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
-	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
+	bool b_wakeup = false;
+	{
+		std::lock_guard lk_occupied(phandle->notify_lock);
+		b_wakeup = double_list_get_nodes_num(&phandle->notify_list) > 0;
+	}
 	emsmdb_interface_put_handle_data(phandle);
 	if (b_wakeup)
 		asyncemsmdb_interface_wakeup(std::move(username), cxr);
@@ -713,31 +701,6 @@ emsmdb_info *emsmdb_interface_get_emsmdb_info()
 {
 	auto phandle = g_handle_key;
 	return phandle != nullptr ? &phandle->info : nullptr;
-}
-
-DOUBLE_LIST* emsmdb_interface_get_notify_list()
-{
-	auto phandle = g_handle_key;
-	if (phandle == nullptr)
-		return NULL;
-	while (true) {
-		std::unique_lock gl_hold(g_lock);
-		if (phandle->b_occupied) {
-			gl_hold.unlock();
-			usleep(100000);
-		} else {
-			phandle->b_occupied = TRUE;
-			return &phandle->notify_list;
-		}
-	}
-}
-
-void emsmdb_interface_put_notify_list()
-{
-	auto phandle = g_handle_key;
-	if (phandle == nullptr)
-		return;
-	emsmdb_interface_put_handle_notify_list(phandle);
 }
 
 BOOL emsmdb_interface_get_cxr(uint16_t *pcxr)
@@ -1040,17 +1003,17 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 
 	std::string username;
 	uint16_t cxr = 0;
-	auto phandle = emsmdb_interface_get_handle_notify_list(&cxh);
+	auto phandle = ei_lookup_session(cxh);
 	if (phandle == nullptr)
 		return;
 	username = phandle->username; /* Copy for later wakeup call */
 	cxr = phandle->cxr;
 
+	std::unique_lock lk_occupied(phandle->notify_lock);
 	switch (pdb_notify->type) {
 	case db_notify_type::cttbl_row_deleted:
 		if (!emsmdb_interface_merge_content_row_deleted(obj_handle, logon_id, &phandle->notify_list))
 			break;
-		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	case db_notify_type::hiertbl_row_modified:
 		if (!emsmdb_interface_merge_hierarchy_row_modified(pdb_notify,
@@ -1058,20 +1021,19 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 			break;
 		cxr = phandle->cxr;
 		username = phandle->username;
-		emsmdb_interface_put_handle_notify_list(phandle);
+		lk_occupied.unlock();
+		phandle.reset();
 		asyncemsmdb_interface_wakeup(std::move(username), cxr);
 		return;
 	case db_notify_type::message_modified:
 		if (!emsmdb_interface_merge_message_modified(pdb_notify,
 		    obj_handle, logon_id, &phandle->notify_list))
 			break;
-		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	case db_notify_type::folder_modified:
 		if (!emsmdb_interface_merge_folder_modified(pdb_notify,
 		    obj_handle, logon_id, &phandle->notify_list))
 			break;
-		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	default:
 		break;
@@ -1080,18 +1042,15 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	if (notifnum >= ems_max_pending_sesnotif) {
 		mlog(LV_WARN, "W-2305: EMS session %s reached maximum of %zu pending notifications",
 			bin2hex(phandle->guid).c_str(), ems_max_pending_sesnotif);
-		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	}
 	ems_high_pending_sesnotif = std::max(ems_high_pending_sesnotif, notifnum);
 	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
-		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	}
 	auto nfr = notify_response::create(obj_handle, logon_id);
 	if (nfr == nullptr) {
-		emsmdb_interface_put_handle_notify_list(phandle);
 		free(pnode);
 		return;
 	}
@@ -1102,9 +1061,11 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	BOOL b_cache = phandle->info.client_mode == CLIENT_MODE_CACHED ? TRUE : false;
 	if (nfr->cvt_from_dbnotify(b_cache, *pdb_notify) == ecSuccess) {
 		double_list_append_as_tail(&phandle->notify_list, pnode);
-		emsmdb_interface_put_handle_notify_list(phandle);
+		lk_occupied.unlock();
+		phandle.reset();
 	} else {
-		emsmdb_interface_put_handle_notify_list(phandle);
+		lk_occupied.unlock();
+		phandle.reset();
 		delete nfr;
 		free(pnode);
 	}
@@ -1121,7 +1082,7 @@ static void *emsi_scanwork(void *pparam)
 		auto cur_time = tp_now();
 		std::unique_lock gl_hold(g_lock);
 		for (const auto &[guid, phandle] : g_handle_hash) {
-			if (phandle->b_processing || phandle->b_occupied)
+			if (phandle->b_processing)
 				continue;
 			if (cur_time - phandle->last_time > HANDLE_VALID_INTERVAL) try {
 				temp_list.push_back(guid);
