@@ -1061,7 +1061,6 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	CXH cxh;
 	uint16_t cxr;
 	uint8_t logon_id;
-	BOOL b_processing;
 	std::string username;
 	uint32_t obj_handle;
 	HANDLE_DATA *phandle;
@@ -1090,14 +1089,10 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		if (!emsmdb_interface_merge_hierarchy_row_modified(pdb_notify,
 		    obj_handle, logon_id, &phandle->notify_list))
 			break;
-		b_processing = phandle->b_processing;
-		if (!b_processing) {
-			cxr = phandle->cxr;
-			username = phandle->username;
-		}
+		cxr = phandle->cxr;
+		username = phandle->username;
 		emsmdb_interface_put_handle_notify_list(phandle);
-		if (!b_processing)
-			asyncemsmdb_interface_wakeup(std::move(username), cxr);
+		asyncemsmdb_interface_wakeup(std::move(username), cxr);
 		return;
 	case db_notify_type::message_modified:
 		if (!emsmdb_interface_merge_message_modified(pdb_notify,
@@ -1142,16 +1137,13 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	BOOL b_cache = phandle->info.client_mode == CLIENT_MODE_CACHED ? TRUE : false;
 	if (nfr->cvt_from_dbnotify(b_cache, *pdb_notify) == ecSuccess) {
 		double_list_append_as_tail(&phandle->notify_list, pnode);
-		b_processing = phandle->b_processing;
 		emsmdb_interface_put_handle_notify_list(phandle);
 	} else {
-		b_processing = phandle->b_processing;
 		emsmdb_interface_put_handle_notify_list(phandle);
 		delete nfr;
 		free(pnode);
 	}
-	if (!b_processing)
-		asyncemsmdb_interface_wakeup(std::move(username), cxr);
+	asyncemsmdb_interface_wakeup(std::move(username), cxr);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
