@@ -661,6 +661,9 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		return RPC_X_BAD_STUB_DATA;
 	}
 	auto first_time = tp_now();
+
+	std::string username;
+	uint16_t cxr = 0;
 	auto phandle = emsmdb_interface_get_handle_data(pcxh);
 	if (NULL == phandle) {
 		*pcb_out = 0;
@@ -682,6 +685,10 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		*pcxh = {};
 		return ecError;
 	}
+
+	username = phandle->username; /* copy for later wakeup call */
+	cxr = phandle->cxr;
+
 	phandle->last_time = tp_now();
 	g_handle_key = phandle;
 	/* auxin parsing in commit history */
@@ -691,8 +698,6 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		input_flags |= GROMOX_READSTREAM_NOCHAIN;
 
 	auto result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
-	std::string username = phandle->username;
-	uint16_t cxr = phandle->cxr;
 	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
 	emsmdb_interface_put_handle_data(phandle);
 	if (b_wakeup)
@@ -1036,9 +1041,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
     uint32_t notify_id, const DB_NOTIFY *pdb_notify) try
 {
 	CXH cxh;
-	uint16_t cxr;
 	uint8_t logon_id;
-	std::string username;
 	uint32_t obj_handle;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -1052,9 +1055,15 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		    notify_id, &obj_handle, &logon_id, &cxh.guid))
 			return;
 	}
+
+	std::string username;
+	uint16_t cxr = 0;
 	auto phandle = emsmdb_interface_get_handle_notify_list(&cxh);
 	if (phandle == nullptr)
 		return;
+	username = phandle->username; /* Copy for later wakeup call */
+	cxr = phandle->cxr;
+
 	switch (pdb_notify->type) {
 	case db_notify_type::cttbl_row_deleted:
 		if (!emsmdb_interface_merge_content_row_deleted(obj_handle, logon_id, &phandle->notify_list))
@@ -1093,8 +1102,6 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		return;
 	}
 	ems_high_pending_sesnotif = std::max(ems_high_pending_sesnotif, notifnum);
-	cxr = phandle->cxr;
-	username = phandle->username;
 	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		emsmdb_interface_put_handle_notify_list(phandle);
