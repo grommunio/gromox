@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdlib>
@@ -113,7 +113,9 @@ ec_error_t attachment_object::save()
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;
-	proptag_array_append(pattachment->pparent->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
+	if (!proptag_array_append(pattachment->pparent->pchanged_proptags,
+	    PR_MESSAGE_ATTACHMENTS))
+		return ecServerOOM;
 	return ecSuccess;
 }
 

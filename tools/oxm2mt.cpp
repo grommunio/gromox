@@ -369,8 +369,11 @@ static int do_recips(libolecf_item_t *msg_dir, unsigned int nrecips,
 		auto ret = parse_propstrm(ep, cset, rcpt_dir.get(), *props);
 		if (ret < 0)
 			return -ret;
-		if (rcpts.append_move(std::move(props)) == ENOMEM)
+		auto ece = rcpts.append_move(std::move(props));
+		if (ece == ecMAPIOOM)
 			throw std::bad_alloc();
+		else if (ece != ecSuccess)
+			return -1;
 	}
 	return 0;
 }

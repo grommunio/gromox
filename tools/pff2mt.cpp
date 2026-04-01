@@ -787,7 +787,7 @@ static tarray_set_ptr item_to_tarray_set(libpff_item_t *item,
 			throw std::bad_alloc();
 		recordset_to_tpropval_a(rset.get(), tprops.get(), name_map);
 		auto ret = tset->append_move(std::move(tprops));
-		if (ret == ENOMEM)
+		if (ret == ecMAPIOOM)
 			throw std::bad_alloc();
 	}
 	return tset;
@@ -942,7 +942,7 @@ static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_
 		if (props == nullptr)
 			throw std::bad_alloc();
 		recordset_to_tpropval_a(rset.get(), props.get(), parent.names);
-		if (parent.message->children.prcpts->append_move(std::move(props)) == ENOMEM)
+		if (parent.message->children.prcpts->append_move(std::move(props)) == ecMAPIOOM)
 			throw std::bad_alloc();
 	}
 	return 0;

@@ -263,10 +263,10 @@ uint64_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
 	}
 }
 
-errno_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
+ec_error_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
 {
 	if (bufsize < 77)
-		return ENOSPC;
+		return ecInvalidParam;
 	char pack[32];
 	strcpy(id, "<gxxx.");
 	id[3] = lcid >> 8;
@@ -274,7 +274,7 @@ errno_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
 	EXT_PUSH ep;
 	if (!ep.init(pack, std::size(pack), 0) ||
 	    ep.p_guid(GUID::random_new()) != pack_result::ok)
-		return ENOMEM;
+		return ecServerOOM;
 	unsigned int ofs = 6;
 	encode64(pack, 16, id + ofs, bufsize - ofs, nullptr);
 	ofs += 22;
@@ -282,7 +282,7 @@ errno_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
 	ep.m_offset = 0;
 	if (ep.p_guid(GUID::random_new()) != pack_result::ok ||
 	    ep.p_guid(GUID::random_new()) != pack_result::ok)
-		return ENOMEM;
+		return ecServerOOM;
 	encode64(pack, 32, id + ofs, bufsize - ofs, nullptr);
 	ofs += 43;
 	strcpy(&id[ofs], ".xz>");
@@ -292,7 +292,7 @@ errno_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
 		else if (id[ofs] == '/')
 			id[ofs] = '_';
 	}
-	return 0;
+	return ecSuccess;
 }
 
 /**

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -2704,10 +2704,11 @@ BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
 			    rcpt.ppropval[j].proptag))
 				return FALSE;
 	/* MSMAPI expects to always see these four tags, even if no rows are sent later. */
-	proptag_array_append(pproptags1.get(), PR_RECIPIENT_TYPE);
-	proptag_array_append(pproptags1.get(), PR_DISPLAY_NAME);
-	proptag_array_append(pproptags1.get(), PR_ADDRTYPE);
-	proptag_array_append(pproptags1.get(), PR_EMAIL_ADDRESS);
+	if (!proptag_array_append(pproptags1.get(), PR_RECIPIENT_TYPE) ||
+	    !proptag_array_append(pproptags1.get(), PR_DISPLAY_NAME) ||
+	    !proptag_array_append(pproptags1.get(), PR_ADDRTYPE) ||
+	    !proptag_array_append(pproptags1.get(), PR_EMAIL_ADDRESS))
+		return false;
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<proptag_t>(pproptags1->count);
 	if (pproptags->pproptag == nullptr)
@@ -2837,7 +2838,7 @@ BOOL exmdb_server::update_message_instance_rcpts(const char *dir,
 		tpropval_array_ptr prcpt(mod.dup());
 		if (prcpt == nullptr)
 			return FALSE;
-		if (pmsgctnt->children.prcpts->append_move(std::move(prcpt)) != 0)
+		if (pmsgctnt->children.prcpts->append_move(std::move(prcpt)) != ecSuccess)
 			return FALSE;
 	}
 	return TRUE;

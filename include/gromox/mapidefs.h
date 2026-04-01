@@ -1286,7 +1286,7 @@ struct GX_EXPORT tarray_set {
 	TPROPVAL_ARRAY *emplace();
 	inline TPROPVAL_ARRAY *back() { return pparray[count-1]; }
 	inline const TPROPVAL_ARRAY *back() const { return pparray[count-1]; }
-	gromox::errno_t append_move(tpropval_array_ptr &&);
+	ec_error_t append_move(tpropval_array_ptr &&);
 	tarray_set *dup() const;
 	inline gromox::deref_iterator<TPROPVAL_ARRAY> begin() { return pparray; }
 	inline gromox::deref_iterator<TPROPVAL_ARRAY> end() { return pparray + count; }

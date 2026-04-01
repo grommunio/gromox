@@ -1551,8 +1551,9 @@ ec_error_t zs_createmessage(GUID hsession,
 	if (pmessage == nullptr)
 		return ecError;
 	BOOL b_fai = (flags & MAPI_ASSOCIATED) ? TRUE : false;
-	if (pmessage->init_message(b_fai, pinfo->cpid) != 0)
-		return ecError;
+	auto err = pmessage->init_message(b_fai, pinfo->cpid);
+	if (err != ecSuccess)
+		return err;
 	/* add the store handle as the parent object handle
 		because the caller normally will not keep the
 		handle of folder */
@@ -2507,7 +2508,8 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	if (!ptable->load())
+	auto err = ptable->load();
+	if (err != ecSuccess)
 		return ecError;
 	auto table_type = ptable->table_type;
 	if (start != UINT32_MAX)
@@ -2531,13 +2533,15 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 			if (prowset->pparray == nullptr)
 				return ecServerOOM;
 			while (true) {
-				if (!ptable->match_row(TRUE, prestriction, &position))
-					return ecError;
+				err = ptable->match_row(TRUE, prestriction, &position);
+				if (err != ecSuccess)
+					return err;
 				if (position < 0)
 					break;
 				ptable->set_position(position);
-				if (!ptable->query_rows(pproptags, 1, &tmp_set))
-					return ecError;
+				err = ptable->query_rows(pproptags, 1, &tmp_set);
+				if (err != ecSuccess)
+					return err;
 				if (tmp_set.count != 1)
 					break;
 				ptable->seek_current(TRUE, 1);
@@ -2549,16 +2553,19 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 		case zcore_tbltype::attachment:
 		case zcore_tbltype::recipient:
 		case zcore_tbltype::store:
-		case zcore_tbltype::abcontusr:
-			if (!ptable->filter_rows(count, prestriction, prowset))
-				return ecError;
+		case zcore_tbltype::abcontusr: {
+			err = ptable->filter_rows(count, prestriction, prowset);
+			if (err != ecSuccess)
+				return err;
 			break;
+		}
 		default:
 			return ecNotSupported;
 		}
 	} else {
-		if (!ptable->query_rows(pproptags, count, prowset))
-			return ecError;
+		err = ptable->query_rows(pproptags, count, prowset);
+		if (err != ecSuccess)
+			return err;
 		ptable->seek_current(TRUE, prowset->count);
 	}
 	pinfo.reset();
@@ -2613,7 +2620,7 @@ ec_error_t zs_setcolumns(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	return ptable->set_columns(pproptags) ? ecSuccess : ecError;
+	return ptable->set_columns(pproptags);
 }
 
 ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
@@ -2631,8 +2638,10 @@ ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	if (!ptable->load())
-		return ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
+
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
 		if (seek_rows < 0)
@@ -2652,8 +2661,9 @@ ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 		break;
 	default: {
 		original_position = ptable->get_position();
-		if (!ptable->retrieve_bookmark(bookmark, &b_exist))
-			return ecError;
+		err = ptable->retrieve_bookmark(bookmark, &b_exist);
+		if (err != ecSuccess)
+			return err;
 		if (!b_exist)
 			return ecNotFound;
 		auto original_position1 = ptable->get_position();
@@ -2773,8 +2783,9 @@ ec_error_t zs_sorttable(GUID hsession,
 	if (b_multi_inst && pcolumns != nullptr &&
 	    !cu_verify_columns_and_sorts(*pcolumns, psortset))
 		return ecNotSupported;
-	if (!ptable->set_sorts(psortset))
-		return ecError;
+	auto err = ptable->set_sorts(psortset);
+	if (err != ecSuccess)
+		return err;
 	ptable->unload();
 	ptable->clear_bookmarks();
 	ptable->clear_position();
@@ -2792,8 +2803,9 @@ ec_error_t zs_getrowcount(GUID hsession, uint32_t htable, uint32_t *pcount)
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	if (!ptable->load())
-		return ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
 	*pcount = ptable->get_total();
 	return ecSuccess;
 }
@@ -2820,8 +2832,9 @@ ec_error_t zs_restricttable(GUID hsession, uint32_t htable,
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->set_restriction(prestriction))
-		return ecError;
+	auto err = ptable->set_restriction(prestriction);
+	if (err != ecSuccess)
+		return err;
 	ptable->unload();
 	ptable->clear_bookmarks();
 	ptable->clear_position();
@@ -2851,8 +2864,10 @@ ec_error_t zs_findrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->load())
-		return ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
+
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
 		ptable->set_position(0);
@@ -2865,12 +2880,14 @@ ec_error_t zs_findrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	default:
 		if (ptable->table_type == zcore_tbltype::rule)
 			return ecNotSupported;
-		if (!ptable->retrieve_bookmark(bookmark, &b_exist))
-			return ecInvalidBookmark;
+		err = ptable->retrieve_bookmark(bookmark, &b_exist);
+		if (err != ecSuccess)
+			return err;
 		break;
 	}
-	if (ptable->match_row(TRUE, prestriction, &position))
-		return ecError;
+	err = ptable->match_row(TRUE, prestriction, &position);
+	if (err != ecSuccess)
+		return err;
 	if (position < 0)
 		return ecNotFound;
 	ptable->set_position(position);
@@ -2896,9 +2913,10 @@ ec_error_t zs_createbookmark(GUID hsession, uint32_t htable, uint32_t *pbookmark
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->load())
-		return ecError;
-	return ptable->create_bookmark(pbookmark) ? ecSuccess : ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
+	return ptable->create_bookmark(pbookmark);
 }
 
 ec_error_t zs_freebookmark(GUID hsession, uint32_t htable, uint32_t bookmark)
@@ -2985,7 +3003,9 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	if (MODRECIP_MODIFY == flags) {
-		pmessage->empty_rcpts();
+		auto err = pmessage->empty_rcpts();
+		if (err != ecSuccess)
+			return err;
 	} else if (MODRECIP_REMOVE == flags) {
 		for (size_t i = 0; i < prcpt_list->count; ++i) {
 			prcpt = prcpt_list->pparray[i];
@@ -3001,12 +3021,12 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			if (!b_found)
 				return ecInvalidParam;
 		}
-		if (!pmessage->set_rcpts(prcpt_list))
-			return ecError;
-		return ecSuccess;
+		return pmessage->set_rcpts(prcpt_list);
 	}
-	if (!pmessage->get_rowid_begin(&last_rowid))
-		return ecError;
+	auto err = pmessage->get_rowid_begin(&last_rowid);
+	if (err != ecSuccess)
+		return err;
+
 	for (size_t i = 0; i < prcpt_list->count; ++i, ++last_rowid) {
 		if (!prcpt_list->pparray[i]->has(PR_ENTRYID) &&
 		    !prcpt_list->pparray[i]->has(PR_EMAIL_ADDRESS) &&
@@ -3058,7 +3078,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			memcpy(ppropval, prcpt->ppropval,
 				prcpt->count*sizeof(TAGGED_PROPVAL));
 			prcpt->ppropval = ppropval;
-			auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
+			err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
 			if (err != ecSuccess)
 				return err;
 			auto dupval = common_util_dup(ab_entryid.x500dn.c_str());
@@ -3109,7 +3129,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				&persist_false : &persist_true);
 		}
 	}
-	return pmessage->set_rcpts(prcpt_list) ? ecSuccess : ecError;
+	return pmessage->set_rcpts(prcpt_list);
 }
 
 /**
@@ -3160,7 +3180,9 @@ static ec_error_t rectify_message(message_object *pmessage,
 	repr_srch.cb = repr_skb.size() + 1;
 	repr_srch.pv = deconst(repr_skb.c_str());
 	char msgid[UADDR_SIZE+2];
-	make_inet_msgid(msgid, std::size(msgid), 0x5a53);
+	err = make_inet_msgid(msgid, std::size(msgid), 0x5a53);
+	if (err != ecSuccess)
+		return err;
 	TAGGED_PROPVAL pv[] = {
 		{PR_READ, &tmp_byte},
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
@@ -3181,8 +3203,9 @@ static ec_error_t rectify_message(message_object *pmessage,
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
-	if (!pmessage->set_properties(&tmp_propvals))
-		return ecError;
+	err = pmessage->set_properties(&tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	return pmessage->save();
 }
 
@@ -3218,14 +3241,18 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return ecNotSupported;
 	if (pmessage->importing() || !pmessage->writable())
 		return ecAccessDenied;
-	if (pmessage->get_recipient_num(&rcpt_num) == 0)
+	auto err = pmessage->get_recipient_num(&rcpt_num);
+	if (err != ecSuccess)
+		return err;
+	else if (rcpt_num == 0)
 		return MAPI_E_NO_RECIPIENTS;
-	if (rcpt_num > g_max_rcpt)
+	else if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
 
 	static constexpr proptag_t proptag_buff1[] = {PR_ASSOCIATED};
-	if (!pmessage->get_properties(proptag_buff1, &tmp_propvals))
-		return ecError;
+	err = pmessage->get_properties(proptag_buff1, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0)
@@ -3246,8 +3273,8 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		        actor, pstore->dir, LLU{pmessage->get_id()}, delegator.c_str());
 		return ecAccessDenied;
 	}
-	auto err = rectify_message(pmessage, delegator.c_str(),
-	           repr_grant >= repr_grant::send_as);
+	err = rectify_message(pmessage, delegator.c_str(),
+	      repr_grant >= repr_grant::send_as);
 	if (err != ecSuccess)
 		return err;
 	static constexpr proptag_t proptag_buff2[] =
@@ -3271,8 +3298,9 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS, PR_DEFERRED_SEND_TIME,
 		PR_DEFERRED_SEND_NUMBER, PR_DEFERRED_SEND_UNITS,
 		PR_DELETE_AFTER_SUBMIT};
-	if (!pmessage->get_properties(proptag_buff3, &tmp_propvals))
-		return ecError;
+	err = pmessage->get_properties(proptag_buff3, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	num = tmp_propvals.get<uint32_t>(PR_MESSAGE_SIZE);
 	if (num == nullptr)
 		return ecError;
@@ -3411,7 +3439,7 @@ ec_error_t zs_deleteattachment(GUID hsession,
 		return ecNotSupported;
 	if (!pmessage->writable())
 		return ecAccessDenied;
-	return pmessage->delete_attachment(attach_id) ? ecSuccess : ecError;
+	return pmessage->delete_attachment(attach_id);
 }
 
 ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
@@ -3461,9 +3489,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->set_properties(ppropvals))
-			return ecError;
-		return ecSuccess;
+		return msg->set_properties(ppropvals);
 	}
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -3535,13 +3561,12 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
 		if (NULL == pproptags) {
-			if (!msg->get_all_proptags(&proptags))
-				return ecError;
+			auto err = msg->get_all_proptags(&proptags);
+			if (err != ecSuccess)
+				return err;
 			wtags = proptags;
 		}
-		if (!msg->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return msg->get_properties(wtags, ppropvals);
 	}
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -3625,9 +3650,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->remove_properties(pproptags))
-			return ecError;
-		return ecSuccess;
+		return msg->remove_properties(pproptags);
 	}
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -3655,7 +3678,7 @@ ec_error_t zs_setmessagereadflag(GUID hsession, uint32_t hmessage,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	return pmessage->set_readflag(flags, &b_changed) ? ecSuccess : ecError;
+	return pmessage->set_readflag(flags, &b_changed);
 }
 
 ec_error_t zs_openembedded(GUID hsession,
@@ -3700,8 +3723,9 @@ ec_error_t zs_openembedded(GUID hsession,
 		           pattachment, tag_access, TRUE, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		if (pmessage->init_message(false, pinfo->cpid) != 0)
-			return ecError;
+		auto err = pmessage->init_message(false, pinfo->cpid);
+		if (err != ecSuccess)
+			return err;
 	}
 	/* add the store handle as the parent object handle
 		because the caller normally will not keep the
@@ -3867,9 +3891,10 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		auto mdst = static_cast<message_object *>(pobject_dst);
 		if (!mdst->writable())
 			return ecAccessDenied;
-		if (!mdst->copy_to(static_cast<message_object *>(pobject),
-		    pexclude_proptags, b_force, &b_cycle))
-			return ecError;
+		auto err = mdst->copy_to(static_cast<message_object *>(pobject),
+		           pexclude_proptags, b_force, &b_cycle);
+		if (err != ecSuccess)
+			return err;
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}
 	case zs_objtype::attach: {
@@ -3900,8 +3925,9 @@ ec_error_t zs_savechanges(GUID hsession, uint32_t hobject)
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->check_original_touched(&b_touched))
-			return ecError;
+		auto err = msg->check_original_touched(&b_touched);
+		if (err != ecSuccess)
+			return err;
 		if (b_touched)
 			return ecObjectModified;
 		return msg->save();
@@ -4250,8 +4276,11 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 	                MAPI_MODIFY, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
-	if (b_new && pmessage->init_message(b_fai, pinfo->cpid) != 0)
-		return ecError;
+	if (b_new) {
+		auto err = pmessage->init_message(b_fai, pinfo->cpid);
+		if (err != ecSuccess)
+			return err;
+	}
 	*phobject = pinfo->ptree->add_object_handle(hctx, {zs_objtype::message, std::move(pmessage)});
 	return zh_error(*phobject);
 }
@@ -4822,7 +4851,7 @@ ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
 	auto pmsgctnt = cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt);
 }
 
 ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
@@ -4855,7 +4884,7 @@ ec_error_t zs_icaltomessage(GUID hsession,
 	auto pmsgctnt = cu_ical_to_message(pmessage->get_store(), pical_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt);
 }
 
 ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
@@ -4894,9 +4923,11 @@ ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 		if (rt2 != ecSuccess)
 			return rt2;
 		auto zmo = info->ptree->get_object<message_object>(msg_handle, &mapi_type);
-		if (zmo == nullptr || mapi_type != zs_objtype::message ||
-		    !zmo->write_message(*msgctnt))
+		if (zmo == nullptr || mapi_type != zs_objtype::message)
 			return ecError;
+		auto err = zmo->write_message(*msgctnt);
+		if (err != ecSuccess)
+			return err;
 		outhandles->pl[outhandles->count++] = msg_handle;
 	}
 	cl_0.release();
@@ -4932,7 +4963,7 @@ ec_error_t zs_vcftomessage(GUID hsession,
 	auto pmsgctnt = common_util_vcf_to_message(pmessage->get_store(), pvcf_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt);
 }
 
 ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,

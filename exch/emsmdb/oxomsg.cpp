@@ -101,7 +101,9 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	repr_srch.cb = repr_skb.size() + 1;
 	repr_srch.pv = deconst(repr_skb.c_str());
 	char msgid[UADDR_SIZE+2];
-	make_inet_msgid(msgid, std::size(msgid), 0x4553);
+	auto err = make_inet_msgid(msgid, std::size(msgid), 0x4553);
+	if (err != ecSuccess)
+		return err;
 	TAGGED_PROPVAL pv[] = {
 		{PR_READ, &tmp_byte},
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
@@ -122,7 +124,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
-	auto err = pmessage->set_properties(&tmp_propvals, &tmp_problems);
+	err = pmessage->set_properties(&tmp_propvals, &tmp_problems);
 	if (err != ecSuccess)
 		return err;
 	return pmessage->save();
