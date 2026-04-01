@@ -185,7 +185,7 @@ message_object::~message_object()
 	if (g_logon_debug)
 		mlog(LV_DEBUG, "E-DBG: ~message_object(%p): logon=%p", this, plogon);
 	
-	if (pmessage->instance_id != 0)
+	if (pmessage->instance_id != 0 && exmdb_client.has_value())
 		exmdb_client->unload_instance(pmessage->plogon->get_dir(),
 			pmessage->instance_id);
 	if (pmessage->precipient_columns != nullptr)

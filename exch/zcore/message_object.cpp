@@ -128,7 +128,7 @@ ec_error_t message_object::check_original_touched(BOOL *pb_touched)
 message_object::~message_object()
 {	
 	auto pmessage = this;
-	if (pmessage->instance_id != 0)
+	if (pmessage->instance_id != 0 && exmdb_client.has_value())
 		exmdb_client->unload_instance(pmessage->pstore->get_dir(),
 			pmessage->instance_id);
 	if (pmessage->pchanged_proptags != nullptr)

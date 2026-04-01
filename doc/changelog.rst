@@ -1,3 +1,18 @@
+Milestone 3.6.13
+================
+
+Fixes:
+
+* exmdb_client: treat homeserver 0 as LPC-capable
+  (does away with unnecessary TCP connections in single-server setups)
+* ews: scale PercentComplete attribute between EWS and MAPI
+* ews: send DateTimeReceived attribute fallback for message items that lack it
+* oxdisco: drop advertisement of owaUrl element
+  (which made Thunderbird try an API we do not offer)
+* ews: make Out Of Office settings retrieval/update multi-server safe
+  (drop direct access to on-disk config files and replaced by network requests)
+
+
 Gromox 3.6 (2026-03-26)
 =======================
 

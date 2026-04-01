@@ -1845,6 +1845,8 @@ void tTask::update(const sShape& shape)
 	fromProp(shape.get(NtMileage), Mileage);
 	fromProp(shape.get(NtTaskOwner), Owner);
 	fromProp(shape.get(NtPercentComplete), PercentComplete);
+	if (PercentComplete)
+		*PercentComplete *= 100.0;
 	if ((prop = shape.get(NtTaskStatus))) {
 		const uint32_t* taskStatus = static_cast<const uint32_t*>(prop->pvalue);
 		Enum::TaskStatusType statusType = Enum::NotStarted;
@@ -4087,9 +4089,9 @@ void tItem::update(const sShape& shape)
 	fromProp(shape.get(PR_MESSAGE_CLASS), ItemClass);
 	fromProp(shape.get(PR_MESSAGE_DELIVERY_TIME), DateTimeReceived);
 	if (!DateTimeReceived)
-		fromProp(shape.get(PR_CREATION_TIME), DateTimeReceived);
+		fromProp(shape.get(PR_CREATION_TIME, sShape::FL_ANY), DateTimeReceived);
 	if (!DateTimeReceived)
-		fromProp(shape.get(PR_LAST_MODIFICATION_TIME), DateTimeReceived);
+		fromProp(shape.get(PR_LAST_MODIFICATION_TIME, sShape::FL_ANY), DateTimeReceived);
 	if ((v32 = shape.get<const uint32_t>(PR_MESSAGE_FLAGS))) {
 		IsSubmitted = *v32 & MSGFLAG_SUBMITTED;
 		IsDraft = *v32 & MSGFLAG_UNSENT;
