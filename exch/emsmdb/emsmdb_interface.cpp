@@ -325,10 +325,9 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	gx_strlcpy(temp_handle.username, username, std::size(temp_handle.username));
 	HX_strlower(temp_handle.username);
 	temp_handle.info.logmap.username = znul(username);
-	auto new_cxr = ei_alloc_cxr();
-	if (new_cxr == NO_CXR)
+	phandle->cxr = ei_alloc_cxr();
+	if (phandle->cxr == NO_CXR)
 		return false;
-	temp_handle.cxr = new_cxr;
 
 	std::unique_lock gl_hold(g_lock);
 	if (ems_max_active_sessions > 0 &&
