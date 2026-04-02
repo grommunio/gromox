@@ -608,7 +608,8 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		*pcxh = {};
 		return ecAccessDenied;
 	}
-	if (first_time - phandle->last_time > HANDLE_VALID_INTERVAL) {
+	auto old_time = phandle->last_time.load(std::memory_order::relaxed);
+	if (first_time - old_time > HANDLE_VALID_INTERVAL) {
 		lk_processing.unlock();
 		phandle.reset();
 		emsmdb_interface_remove_handle(cxh);
@@ -619,8 +620,8 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 
 	username = phandle->username; /* copy for later wakeup call */
 	cxr = phandle->cxr;
-
-	phandle->last_time = tp_now();
+	phandle->last_time.compare_exchange_strong(old_time, tp_now(),
+		std::memory_order::relaxed, std::memory_order_relaxed);
 	g_handle_key = phandle;
 	/* auxin parsing in commit history */
 	if (enable_rop_chaining(phandle->info.client_version))
@@ -1048,7 +1049,7 @@ static void *emsi_scanwork(void *pparam)
 		auto cur_time = tp_now();
 		std::unique_lock gl_hold(g_lock);
 		for (const auto &[guid, phandle] : g_handle_hash) {
-			if (cur_time - phandle->last_time > HANDLE_VALID_INTERVAL) try {
+			if (cur_time - phandle->last_time.load(std::memory_order::relaxed) > HANDLE_VALID_INTERVAL) try {
 				temp_list.push_back(guid);
 			} catch (const std::bad_alloc &) {
 				mlog(LV_ERR, "%s: ENOMEM", __func__);

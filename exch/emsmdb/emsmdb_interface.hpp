@@ -41,11 +41,17 @@ struct HANDLE_DATA {
 	GUID guid{};
 	char username[UADDR_SIZE]{};
 	uint32_t cxr = 0xFFFFFFFFU; /* ... curious if EXC actually models it as int32_t */
+	std::atomic<gromox::time_point> last_time;
+
+	/*
+	 * In practice, these three are protected by processing_lock (only
+	 * modified in rpc_ext2 subordinate functions).
+	 */
 	uint32_t last_handle = 0;
-	gromox::time_point last_time;
 	int rop_num = 0;
 	uint16_t rop_left = 0; /* size left in rop response buffer */
 	emsmdb_info info;
+
 	DOUBLE_LIST notify_list{};
 	std::mutex notify_lock; /* protects notify_list */
 	std::mutex processing_lock; /* rpc_ext2 serial execution */
