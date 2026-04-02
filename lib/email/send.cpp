@@ -109,6 +109,20 @@ static vmime::shared_ptr<vmime::net::transport> make_transport(const char *url)
 #endif
 }
 
+static void transform_lf_to_crlf(std::string &str)
+{
+	size_t pos = 0;
+	while (true) {
+		pos = str.find('\n', pos);
+		if (pos == std::string::npos)
+			return;
+		auto have_cr = pos > 0 && str[pos-1] == '\r';
+		if (!have_cr)
+			str.insert(pos++, "\r");
+		++pos;
+	}
+}
+
 ec_error_t cu_send_mail(const MAIL &mail, const char *smtp_url, const char *sender,
     const std::vector<std::string> &rcpt_list) try
 {
@@ -132,6 +146,9 @@ ec_error_t cu_send_mail(const MAIL &mail, const char *smtp_url, const char *send
 		mlog(LV_ERR, "cu_send_mail: mail.serialize failed: %s", strerror(errno));
 		return MAPI_W_NO_SERVICE;
 	}
+
+	/* vmime has a LFToCRLFFilteredOutputStream, but nothing for input */
+	transform_lf_to_crlf(content);
 	vmime::utility::inputStreamStringAdapter ct_adap(content); /* copies */
 	content.clear();
 	vmime::shared_ptr<vmime::net::transport> xprt;

@@ -133,17 +133,8 @@ static constexpr char
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: application/json\r\n"
 		"Content-Length: {}\r\n\r\n",
-	error_templ[] =
-		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-		"<Autodiscover xmlns=\"http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006\">"
-			"<Response>"
-				"<Error Time=\"{}\" Id=\"{}\">"
-					"<ErrorCode>{}</ErrorCode>"
-					"<Message>{}</Message>"
-					"<DebugData />"
-				"</Error>"
-			"</Response>"
-		"</Autodiscover>";
+	autodiscover_error_xmlns[] =
+		"http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006";
 
 static const std::pair<const char *, const char *> protocol_list[] = {
 	{"Actions", ""}, // outlook.office365.com/actionsb2netcore
@@ -548,7 +539,24 @@ http_status OxdiscoPlugin::die(int ctx_id, unsigned int error_code,
 	auto timeinfo = localtime_r(&rawtime, &timebuf);
 	strftime(error_time, std::size(error_time), "%T", timeinfo);
 
-	auto data = fmt::format(error_templ, error_time, server_id, error_code, error_msg);
+	XMLDocument doc;
+	doc.InsertEndChild(doc.NewDeclaration());
+	auto root = doc.NewElement("Autodiscover");
+	doc.InsertEndChild(root);
+	root->SetAttribute("xmlns", autodiscover_error_xmlns);
+	auto resp = root->InsertNewChildElement("Response");
+	auto err = resp->InsertNewChildElement("Error");
+	err->SetAttribute("Time", error_time);
+	err->SetAttribute("Id", server_id);
+	auto ec = err->InsertNewChildElement("ErrorCode");
+	ec->SetText(error_code);
+	auto msg = err->InsertNewChildElement("Message");
+	msg->SetText(error_msg);
+	err->InsertNewChildElement("DebugData");
+	XMLPrinter printer(nullptr, true);
+	doc.Print(&printer);
+	std::string data = printer.CStr();
+
 	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
 	writeheader(ctx_id, 200, data.size());
 	return write_response(ctx_id, data.c_str(), data.size());

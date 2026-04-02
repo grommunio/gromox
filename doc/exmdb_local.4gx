@@ -32,7 +32,7 @@ If set to \fI1\fP, an alternate rule processor codebase will be used which
 supports cross-store moves and OOF condition but (at this time) no delegation,
 or autoreply.
 .br
-Default: \fI1\fP
+Default: \fI0\fP
 .TP
 \fBresponse_audit_capacity\fP
 Keep track of at most this many {From address, To address} pairs for bounce

@@ -27,13 +27,16 @@ Default: \fIno\fP
 .TP
 \fBews_request_logging\fP
 When set to 1 or higher, requests are logged (subject to restriction by
-log_filter). When set to 2 or higher, the XML input is dumped as well.
+log_filter). When set to 2 or higher, the XML input is dumped as well. The log
+messages are emitted with "debug" (6) priority, so you may also need to raise
+http.cfg:http_log_level and/or gromox.cfg:istore_log_level.
 .br
 Default: \fI0\fP
 .TP
 \fBews_response_logging\fP
 When set to 1 or higher, responses are logged. When set to 2 or higher, the XML
-output is dumped as well.
+output is dumped as well. Like requests, these are logged at "debug" priority
+level.
 .SH Normative references
 .IP \(bu 4
 OXWAVLS, OXWOOF, OXWSPHOTO
