@@ -291,6 +291,11 @@ HANDLE_DATA::HANDLE_DATA() :
 
 HANDLE_DATA::~HANDLE_DATA()
 {
+	DOUBLE_LIST_NODE *pnode;
+	while ((pnode = double_list_pop_front(&notify_list)) != nullptr) {
+		delete static_cast<notify_response *>(pnode->pdata);
+		free(pnode);
+	}
 	if (cxr == NO_CXR)
 		return;
 	std::lock_guard lk(g_cxr_lock);
@@ -386,7 +391,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 void emsmdb_interface_remove_handle(const CXH &cxh)
 {
 	auto pcxh = &cxh;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (pcxh->handle_type != HANDLE_EXCHANGE_EMSMDB)
 		return;
@@ -414,10 +418,6 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 		gromox::erase_first(uhv, phandle.get());
 		if (uhv.empty())
 			g_user_hash.erase(phandle->username);
-	}
-	while ((pnode = double_list_pop_front(&phandle->notify_list)) != nullptr) {
-		delete static_cast<notify_response *>(pnode->pdata);
-		free(pnode);
 	}
 	g_handle_hash.erase(pcxh->guid);
 }
