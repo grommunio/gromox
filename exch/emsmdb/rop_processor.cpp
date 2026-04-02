@@ -318,8 +318,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	auto ext_buff = std::make_unique<uint8_t[]>(ext_buff_size);
 	auto ext_buff1 = std::make_unique<uint8_t[]>(ext_buff_size);
 	TPROPVAL_ARRAY propvals;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST *pnotify_list;
 	PENDING_RESPONSE tmp_pending;
 	
 	/* ms-oxcrpc 3.1.4.2.1.2 */
@@ -437,15 +435,17 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	if (!b_notify || b_icsup)
 		goto MAKE_RPC_EXT;
 	while (true) {
-		pnotify_list = emsmdb_interface_get_notify_list();
-		if (pnotify_list == nullptr)
-			return ecRpcFailed;
-		pnode = double_list_pop_front(pnotify_list);
-		emsmdb_interface_put_notify_list();
-		if (pnode == nullptr)
-			break;
+		std::unique_ptr<notify_response> pnotify;
+		{
+			auto emsh = emsmdb_interface_get_handle_data_SP();
+			if (emsh == nullptr)
+				return ecRpcFailed;
+			std::lock_guard lk_occupied(emsh->notify_lock);
+			if (emsh->notify_list.empty())
+				break;
+			pnotify = pop_front_v(emsh->notify_list);
+		}
 		uint32_t last_offset = ext_push.m_offset;
-		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		ems_objtype type;
 		auto pobject = rop_processor_get_object(&pemsmdb_info->logmap, pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
@@ -456,7 +456,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				auto tbl = static_cast<table_object *>(pobject);
 				auto pcolumns = tbl->get_columns();
 				if (!ext_push1.init(ext_buff1.get(), ext_buff_size, EXT_FLAG_UTF16))
-					goto NEXT_NOTIFY;
+					continue;
 				if (pnotify->nflags & NF_BY_MESSAGE) {
 					if (tbl->read_row(pnotify->row_message_id,
 					    pnotify->row_instance,
@@ -472,18 +472,20 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				}
 				if (!cu_propvals_to_row(&propvals, *pcolumns, &tmp_row) ||
 				    ext_push1.p_proprow(*pcolumns, tmp_row) != pack_result::ok)
-					goto NEXT_NOTIFY;
+					continue;
 				tmp_bin.cb = ext_push1.m_offset;
 				tmp_bin.pb = ext_push1.m_udata;
 				pnotify->row_data = &tmp_bin;
 			}
 			if (rop_ext_push(ext_push, *pnotify) != pack_result::success) {
 				ext_push.m_offset = last_offset;
-				pnotify_list = emsmdb_interface_get_notify_list();
-				if (pnotify_list == nullptr)
-					goto NEXT_NOTIFY;
-				double_list_insert_as_head(pnotify_list, pnode);
-				emsmdb_interface_put_notify_list();
+				{
+					auto emsh = emsmdb_interface_get_handle_data_SP();
+					if (emsh == nullptr)
+						goto NEXT_NOTIFY;
+					std::lock_guard lk_occupied(emsh->notify_lock);
+					emsh->notify_list.emplace_back(std::move(pnotify));
+				}
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
 				auto status = rop_ext_push(ext_push, tmp_pending);
 				if (status != pack_result::ok)
@@ -492,8 +494,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			}
 		}
  NEXT_NOTIFY:
-		delete static_cast<notify_response *>(pnode->pdata);
-		free(pnode);
+		;
 	}
 	
  MAKE_RPC_EXT:
