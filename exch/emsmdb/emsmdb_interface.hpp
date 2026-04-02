@@ -45,10 +45,10 @@ struct HANDLE_DATA {
 	gromox::time_point last_time;
 	int rop_num = 0;
 	uint16_t rop_left = 0; /* size left in rop response buffer */
-	bool b_processing = false; /* if the handle is processing rops */
 	emsmdb_info info;
 	DOUBLE_LIST notify_list{};
 	std::mutex notify_lock; /* protects notify_list */
+	std::mutex processing_lock; /* rpc_ext2 serial execution */
 };
 
 extern void emsmdb_interface_init();

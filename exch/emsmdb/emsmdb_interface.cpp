@@ -228,32 +228,6 @@ void emsmdb_interface_touch_handle(const CXH &cxh)
 		iter->second->last_time = tp_now();
 }
 
-static std::shared_ptr<HANDLE_DATA> emsmdb_interface_get_handle_data(CXH *pcxh)
-{
-	if (pcxh->handle_type != HANDLE_EXCHANGE_EMSMDB)
-		return NULL;
-	while (true) {
-		std::unique_lock gl_hold(g_lock);
-		auto iter = g_handle_hash.find(pcxh->guid);
-		if (iter == g_handle_hash.end())
-			return NULL;
-		auto phandle = iter->second;
-		if (phandle->b_processing) {
-			gl_hold.unlock();
-			usleep(100000);
-		} else {
-			phandle->b_processing = TRUE;
-			return phandle;
-		}
-	}
-}
-
-static void emsmdb_interface_put_handle_data(std::shared_ptr<HANDLE_DATA> &phandle)
-{
-	std::lock_guard gl_hold(g_lock);
-	phandle->b_processing = FALSE;
-}
-
 HANDLE_DATA::HANDLE_DATA() :
 	guid(GUID::random_new()), last_time(tp_now())
 {
@@ -364,19 +338,9 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 	
 	if (pcxh->handle_type != HANDLE_EXCHANGE_EMSMDB)
 		return;
-	std::shared_ptr<HANDLE_DATA> phandle;
-	std::unique_lock gl_hold(g_lock);
-	{
-		auto iter = g_handle_hash.find(pcxh->guid);
-		if (iter == g_handle_hash.end())
-			return;
-		phandle = iter->second;
-		if (phandle->b_processing)
-			/* this means handle is being processed
-			   in emsmdb_interface_rpc_ext2 by another
-			   rpc connection, can not be released! */
-			return;
-	}
+	auto phandle = ei_lookup_session(*pcxh);
+	if (phandle == nullptr)
+		return;
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter != g_user_hash.end()) {
 		auto &uhv = uh_iter->second;
@@ -630,21 +594,22 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 
 	std::string username;
 	uint16_t cxr = 0;
-	auto phandle = emsmdb_interface_get_handle_data(pcxh);
+
+	auto phandle = ei_lookup_session(*pcxh);
 	if (NULL == phandle) {
 		*pcb_out = 0;
 		*pcxh = {};
 		return ecError;
 	}
+	std::unique_lock lk_processing(phandle->processing_lock);
 	auto rpc_info = get_rpc_info();
 	if (0 != strcasecmp(phandle->username, rpc_info.username)) {
-		emsmdb_interface_put_handle_data(phandle);
 		*pcb_out = 0;
 		*pcxh = {};
 		return ecAccessDenied;
 	}
 	if (first_time - phandle->last_time > HANDLE_VALID_INTERVAL) {
-		emsmdb_interface_put_handle_data(phandle);
+		lk_processing.unlock();
 		phandle.reset();
 		emsmdb_interface_remove_handle(cxh);
 		*pcb_out = 0;
@@ -669,7 +634,8 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		std::lock_guard lk_occupied(phandle->notify_lock);
 		b_wakeup = double_list_get_nodes_num(&phandle->notify_list) > 0;
 	}
-	emsmdb_interface_put_handle_data(phandle);
+	lk_processing.unlock();
+	phandle.reset();
 	if (b_wakeup)
 		asyncemsmdb_interface_wakeup(std::move(username), cxr);
 	g_handle_key.reset();
@@ -1082,8 +1048,6 @@ static void *emsi_scanwork(void *pparam)
 		auto cur_time = tp_now();
 		std::unique_lock gl_hold(g_lock);
 		for (const auto &[guid, phandle] : g_handle_hash) {
-			if (phandle->b_processing)
-				continue;
 			if (cur_time - phandle->last_time > HANDLE_VALID_INTERVAL) try {
 				temp_list.push_back(guid);
 			} catch (const std::bad_alloc &) {
