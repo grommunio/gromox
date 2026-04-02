@@ -85,9 +85,9 @@ static pthread_t g_scan_id;
 static std::mutex g_cxr_lock, g_lock; /* protects g_handle_hash & g_user_hash */
 static std::mutex g_notify_lock;
 static gromox::atomic_bool g_emsi_stop{true};
-static thread_local std::shared_ptr<HANDLE_DATA> g_handle_key;
-static std::unordered_map<GUID, std::shared_ptr<HANDLE_DATA>> g_handle_hash;
-static std::unordered_map<std::string, std::vector<HANDLE_DATA *>> g_user_hash; /* merely for counting sessions, otherwise no use */
+static thread_local std::shared_ptr<emsmdb_session> g_handle_key;
+static std::unordered_map<GUID, std::shared_ptr<emsmdb_session>> g_handle_hash;
+static std::unordered_map<std::string, std::vector<emsmdb_session *>> g_user_hash; /* merely for counting sessions, otherwise no use */
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
 static range_set<uint16_t> g_cxr_bitmap; /* Session Index (CXR) that are in use */
 size_t ems_max_active_sessions, ems_max_active_users, ems_max_active_notifh;
@@ -97,7 +97,7 @@ static size_t ems_high_active_notifh, ems_high_pending_sesnotif;
 
 static void *emsi_scanwork(void *);
 
-static void emsmdb_report_one_ses(HANDLE_DATA &h, report_stats &st)
+static void emsmdb_report_one_ses(emsmdb_session &h, report_stats &st)
 {
 	auto &ei = h.info;
 	size_t pn = 0;
@@ -172,12 +172,12 @@ static uint32_t emsmdb_interface_get_timestamp()
 	return std::chrono::duration_cast<std::chrono::seconds>(d).count() + 1230336000;
 }
 
-std::shared_ptr<HANDLE_DATA> emsmdb_interface_get_handle_data_SP()
+std::shared_ptr<emsmdb_session> emsmdb_interface_get_handle_data_SP()
 {
 	return g_handle_key;
 }
 
-static std::shared_ptr<HANDLE_DATA> ei_lookup_session(const CXH &cxh)
+static std::shared_ptr<emsmdb_session> ei_lookup_session(const CXH &cxh)
 {
 	std::lock_guard gl_hold(g_lock);
 	auto iter = g_handle_hash.find(cxh.guid);
@@ -228,11 +228,11 @@ void emsmdb_interface_touch_handle(const CXH &cxh)
 		iter->second->last_time = tp_now();
 }
 
-HANDLE_DATA::HANDLE_DATA() :
+emsmdb_session::emsmdb_session() :
 	guid(GUID::random_new()), last_time(tp_now())
 {}
 
-HANDLE_DATA::~HANDLE_DATA()
+emsmdb_session::~emsmdb_session()
 {
 	if (cxr == NO_CXR)
 		return;
@@ -253,7 +253,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 {
 	if (!acceptable_cpid_for_mapi(cpid))
 		return FALSE;
-	auto phandle = std::make_shared<HANDLE_DATA>();
+	auto phandle = std::make_shared<emsmdb_session>();
 	auto &temp_handle = *phandle;
 	temp_handle.info.cpid = cpid;
 	temp_handle.info.lcid_string = lcid_string;
@@ -293,7 +293,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 			return FALSE;
 		}
 		try {
-			auto xp = g_user_hash.emplace(phandle->username, std::vector<HANDLE_DATA *>{});
+			auto xp = g_user_hash.emplace(phandle->username, std::vector<emsmdb_session *>{});
 			ems_high_active_users = std::max(ems_high_active_users, g_user_hash.size());
 			uh_iter = xp.first;
 		} catch (const std::bad_alloc &) {
@@ -844,7 +844,7 @@ void emsmdb_interface_remove_subscription_notify(const char *dir, uint32_t sub_i
 }
 
 static bool emsmdb_interface_merge_content_row_deleted(uint32_t obj_handle,
-    uint8_t logon_id, HANDLE_DATA::notify_list_t &nvec)
+    uint8_t logon_id, emsmdb_session::notify_list_t &nvec)
 {
 	size_t count = 1;
 	for (auto &pnotify : nvec) {
@@ -866,7 +866,7 @@ static bool emsmdb_interface_merge_content_row_deleted(uint32_t obj_handle,
 }
 
 static bool emsmdb_interface_merge_hierarchy_row_modified(const DB_NOTIFY *pmodified_row,
-    uint32_t obj_handle, uint8_t logon_id, HANDLE_DATA::notify_list_t &nvec)
+    uint32_t obj_handle, uint8_t logon_id, emsmdb_session::notify_list_t &nvec)
 {
 	auto row_folder_id = rop_util_nfid_to_eid(pmodified_row->row_folder_id);
 	
@@ -888,7 +888,7 @@ static bool emsmdb_interface_merge_hierarchy_row_modified(const DB_NOTIFY *pmodi
 }
 
 static bool emsmdb_interface_merge_message_modified(const DB_NOTIFY *pmodified_message,
-    uint32_t obj_handle, uint8_t logon_id, const HANDLE_DATA::notify_list_t &nvec)
+    uint32_t obj_handle, uint8_t logon_id, const emsmdb_session::notify_list_t &nvec)
 {
 	uint64_t folder_id;
 	uint64_t message_id;
@@ -910,7 +910,7 @@ static bool emsmdb_interface_merge_message_modified(const DB_NOTIFY *pmodified_m
 }
 
 static bool emsmdb_interface_merge_folder_modified(const DB_NOTIFY *pmodified_folder,
-    uint32_t obj_handle, uint8_t logon_id, const HANDLE_DATA::notify_list_t &nvec)
+    uint32_t obj_handle, uint8_t logon_id, const emsmdb_session::notify_list_t &nvec)
 {
 	auto folder_id = rop_util_nfid_to_eid(pmodified_folder->folder_id);
 	

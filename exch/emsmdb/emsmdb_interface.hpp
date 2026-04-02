@@ -37,10 +37,10 @@ struct emsmdb_info {
 
 struct notify_response;
 
-struct HANDLE_DATA {
-	HANDLE_DATA();
-	~HANDLE_DATA();
-	NOMOVE(HANDLE_DATA);
+struct emsmdb_session {
+	emsmdb_session();
+	~emsmdb_session();
+	NOMOVE(emsmdb_session);
 
 	GUID guid{};
 	char username[UADDR_SIZE]{};
@@ -73,7 +73,7 @@ extern ec_error_t emsmdb_interface_async_connect_ex(CXH, ACXH *);
 extern bool emsmdb_interface_inspect_acxh(const ACXH *, std::string &username, uint16_t *cxr, bool touch);
 extern bool emsmdb_interface_notifications_pending(const ACXH &);
 extern void emsmdb_interface_touch_handle(const CXH &);
-extern std::shared_ptr<HANDLE_DATA> emsmdb_interface_get_handle_data_SP();
+extern std::shared_ptr<emsmdb_session> emsmdb_interface_get_handle_data_SP();
 extern const GUID *emsmdb_interface_get_handle();
 extern emsmdb_info *emsmdb_interface_get_emsmdb_info();
 
