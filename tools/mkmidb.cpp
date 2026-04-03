@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 	if (pconfig == nullptr)
 		return EXIT_FAILURE; /* e.g. permission denied */
 	std::string mysql_host = znul(pconfig->get_value("mysql_host"));
-	uint16_t mysql_port = pconfig->get_ll("mysql_port");
+	uint16_t sql_port = pconfig->get_ll("mysql_port");
 	std::string mysql_user = znul(pconfig->get_value("mysql_username"));
 	std::optional<std::string> mysql_pass;
 	if (auto s = pconfig->get_value("mysql_password"))
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 
 	if (mysql_real_connect(conn.get(), mysql_host.c_str(), mysql_user.c_str(),
 	    mysql_pass.has_value() ? mysql_pass->c_str() : nullptr,
-	    db_name.c_str(), mysql_port, nullptr, 0) == nullptr) {
+	    db_name.c_str(), sql_port, nullptr, 0) == nullptr) {
 		printf("Failed to connect to the MariaDB/MySQL database %s@%s/%s\n",
 		       mysql_user.c_str(), mysql_host.c_str(), db_name.c_str());
 		return EXIT_FAILURE;

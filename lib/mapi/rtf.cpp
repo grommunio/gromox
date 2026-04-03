@@ -916,12 +916,12 @@ bool rtf_reader::express_attr_end(int attr, int param)
 		return express_end_fontsize(param);
 	case ATTR_FONTFACE: 
 		if (is_within_htmlrtf) {
-			auto param = stack_list_find_attr(ATTR_FONTFACE);
+			auto ff = stack_list_find_attr(ATTR_FONTFACE);
 			const char *encoding;
-			if (param == nullptr) {
+			if (ff == nullptr) {
 				encoding = default_encoding.c_str();
 			} else {
-				auto entry = lookup_font(*param);
+				auto entry = lookup_font(*ff);
 				encoding = entry != nullptr ? entry->encoding.c_str() :
 				           default_encoding.c_str();
 			}

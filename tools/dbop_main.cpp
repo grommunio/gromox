@@ -83,10 +83,10 @@ int main(int argc, char **argv)
 	if (mysql_dbname == nullptr)
 		mysql_dbname = "email";
 	auto str = pconfig->get_value("mysql_port");
-	auto mysql_port = str != nullptr ? strtoul(str, nullptr, 0) : 0;
+	auto sql_port = str != nullptr ? strtoul(str, nullptr, 0) : 0;
 
 	if (mysql_real_connect(pmysql.get(), mysql_host, mysql_user, mysql_pass,
-	    mysql_dbname, mysql_port, nullptr, 0) == nullptr) {
+	    mysql_dbname, sql_port, nullptr, 0) == nullptr) {
 		fprintf(stderr, "mysql_connect: %s\n", mysql_error(pmysql.get()));
 		return EXIT_FAILURE;
 	}

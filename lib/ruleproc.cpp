@@ -133,7 +133,7 @@ struct rxparam {
 	message_node cur;
 	message_content *ctnt = nullptr;
 	std::string orig_dir; /* rule table origin */
-	unsigned int flags = ~0U;
+	unsigned int m_flags = ~0U;
 	bool del = false, exit = false;
 };
 
@@ -1472,13 +1472,13 @@ ec_error_t rxparam::run_rules()
 
 ec_error_t rxparam::run()
 {
-	if (flags & DELIVERY_DO_RULES_CL) {
+	if (m_flags & DELIVERY_DO_RULES_CL) {
 		auto err = run_rules();
 		if (err != ecSuccess)
 			return err;
 	}
 
-	if (flags & DELIVERY_DO_MRAUTOPROC) {
+	if (m_flags & DELIVERY_DO_MRAUTOPROC) {
 		mr_policy res_policy;
 		auto err = mr_get_policy(ev_to, res_policy);
 		if (err != ecSuccess)
@@ -1488,7 +1488,7 @@ ec_error_t rxparam::run()
 			return err;
 	}
 
-	if (flags & DELIVERY_DO_NOTIF_CL)
+	if (m_flags & DELIVERY_DO_NOTIF_CL)
 		notify();
 	return ecSuccess;
 }
@@ -1503,12 +1503,12 @@ void rxparam::notify()
 		return;
 	}
 	auto cls   = vals.get<const char>(PR_MESSAGE_CLASS);
-	auto flags = vals.get<const uint32_t>(PR_MESSAGE_FLAGS);
-	if (cls == nullptr || flags == nullptr) {
+	auto Tflags = vals.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	if (cls == nullptr || Tflags == nullptr) {
 		mlog(LV_ERR, "ruleproc: msg %llxh oddly missing FL/C", static_cast<unsigned long long>(cur.mid));
 		return;
 	}
-	if (!exmdb_client->transport_new_mail(cur.dirc(), cur.fid, cur.mid, *flags, cls))
+	if (!exmdb_client->transport_new_mail(cur.dirc(), cur.fid, cur.mid, *Tflags, cls))
 		mlog(LV_ERR, "ruleproc: tnewmail notification unsuccessful");
 }
 
@@ -1518,7 +1518,7 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 	rxparam p({dir, folder_id, msg_id});
 	p.ev_from = ev_from;
 	p.ev_to   = ev_to;
-	p.flags   = flags;
+	p.m_flags = flags;
 	return std::move(p).run();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);

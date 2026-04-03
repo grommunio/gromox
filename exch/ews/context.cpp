@@ -2902,11 +2902,11 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 				if (!buf)
 					buf = wintz_to_tzdef(static_cast<char *>(caltz->pvalue));
 				if (buf) {
-					EXT_PULL ep;
+					EXT_PULL exp;
 					TZDEF tz;
-					ep.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+					exp.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
 					int64_t tz_off = 0;
-					if (ep.g_tzdef(&tz) == pack_result::ok &&
+					if (exp.g_tzdef(&tz) == pack_result::ok &&
 					    offset_from_tz(&tz, localStartTime, tz_off))
 						appt_local = localStartTime -
 							static_cast<time_t>(tz_off) * 60;
@@ -3789,10 +3789,10 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 						buf = wintz_to_tzdef(tz.c_str());
 					if (buf) {
 						EXT_PULL ep;
-						TZDEF tz;
+						TZDEF tzd;
 						ep.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
-						if (ep.g_tzdef(&tz) == pack_result::ok)
-							offset_from_tz(&tz, localStartTime, tz_off);
+						if (ep.g_tzdef(&tzd) == pack_result::ok)
+							offset_from_tz(&tzd, localStartTime, tz_off);
 					}
 				}
 				auto real_utc = localStartTime + static_cast<time_t>(startOffset) * 60;
