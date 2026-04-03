@@ -230,7 +230,7 @@ ec_error_t message_object::init_message(bool fai, cpid_t new_cpid)
 
 	char id_string[UADDR_SIZE+2];
 	auto err = make_inet_msgid(id_string, std::size(id_string), 0x5a54);
-	if (err != 0)
+	if (err != ecSuccess)
 		return err;
 	propvals.emplace_back(PR_INTERNET_MESSAGE_ID, id_string);
 
