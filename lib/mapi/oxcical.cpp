@@ -3675,7 +3675,7 @@ static std::string oxcical_export_valarm(const MESSAGE_CONTENT &msg,
 static std::string oxcical_export_internal(const char *method, const char *tzid,
     const message_content &msg, const std::string &log_id_s, ical &pical,
     const std::string &org_name_s, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids) try
+    GET_PROPIDS get_propids, const char *parent_uid = nullptr) try
 {
 	const PROPERTY_NAME namequeries[] = {
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentCounterProposal},
@@ -3915,12 +3915,16 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			return "E-2214: export_rdate - unspecified error";
 	}
 
-	auto err = oxcical_export_uid(*pmsg, *pcomponent, alloc, get_propids);
-	if (err != nullptr)
-		return err;
+	if (parent_uid != nullptr) {
+		pcomponent->append_line("UID", parent_uid);
+	} else {
+		auto err = oxcical_export_uid(*pmsg, *pcomponent, alloc, get_propids);
+		if (err != nullptr)
+			return err;
+	}
 
 	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids[l_replacetime]);
-	err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
+	auto err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
 	      b_allday, *pcomponent, ptz_component, tzid, alloc, get_propids);
 	if (err != nullptr)
 		return err;
@@ -4065,6 +4069,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		pcomponent->append_line("X-MICROSOFT-DISALLOW-COUNTER", *flag != 0 ? "TRUE" : "FALSE");
 
 	if (!b_exceptional && pmsg->children.pattachments != nullptr) {
+		auto uid_line = pcomponent->get_line("UID");
+		auto uid_val  = uid_line != nullptr ? uid_line->get_first_subvalue() : nullptr;
 		for (auto &attachment : *pmsg->children.pattachments) {
 			auto pembedded = attachment.pembedded;
 			if (pembedded == nullptr)
@@ -4080,7 +4086,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				continue;
 			auto estr = oxcical_export_internal(method, tzid,
 			            *pembedded, log_id, pical, org_name,
-			            id2user, alloc, get_propids);
+			            id2user, alloc, get_propids, uid_val);
 			if (estr.size() > 0)
 				return estr;
 		}
