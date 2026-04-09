@@ -93,7 +93,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 		if (pvalue == nullptr)
 			return false;
 		int fromwest = 0;
-		if (!simple_zone_to_minwest(pvalue, &west, nullptr))
+		if (!simple_zone_to_minwest(pvalue, &fromwest, nullptr))
 			return false;
 		*pdaylightbias = west - fromwest;
 	}
