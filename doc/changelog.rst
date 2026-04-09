@@ -1,8 +1,9 @@
-Milestone 3.6.13
+Milestone 3.6.52
 ================
 
 Fixes:
 
+* Outlook no longer loses appointsments when a shared calendar is opened
 * The "percentage complete" of an appointment was mangled when passing through
   EWS, which has been fixed. (EWS uses [0, 100], but MAPI uses [0, 1.0])
 * EWS now synthesizes a value for the "Received Time" field
