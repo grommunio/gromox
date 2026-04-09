@@ -638,9 +638,24 @@ void db_base::ctor2_and_open(const char *dir)
 	mx_sqlite.emplace_back(std::move(hdb));
 }
 
+static void rollback_leaked_txn(sqlite3 *db)
+{
+	if (db == nullptr)
+		return;
+	auto state = sqlite3_txn_state(db, "main");
+	if (state == SQLITE_TXN_NONE)
+		return;
+	mlog(LV_ERR, "E-2765: handle %s returned to pool with active transaction (state=%d), "
+		"forcing rollback", znul(sqlite3_db_filename(db, nullptr)), state);
+	if (gx_sql_exec(db, "ROLLBACK") != SQLITE_OK)
+		/* nothing more we can do */;
+}
+
 void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 {
 	static constexpr size_t unlimited = 0;
+	rollback_leaked_txn(main);
+	rollback_leaked_txn(eph);
 	std::unique_lock lock(sqlite_lock);
 	try {
 		if (eph != nullptr && g_exmdb_max_sqlite_spares != unlimited &&

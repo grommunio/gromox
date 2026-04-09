@@ -1799,7 +1799,9 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	if (pfolder_ids != nullptr &&
 	    !cu_load_search_scopes(pdb->psqlite, fid_val, src_fo))
 		return FALSE;
+	sql_transact = xtransaction();
 	pdb.reset();
+
 	if (pfolder_ids != nullptr) {
 		pfolder_ids->count = 0;
 		pfolder_ids->pids = cu_alloc<eid_t>(src_fo.size());

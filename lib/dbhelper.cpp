@@ -92,20 +92,20 @@ int xtransaction::commit()
 {
 	if (m_db == nullptr)
 		return SQLITE_OK;
-	if (sqlite3_txn_state(m_db, "main") == SQLITE_TXN_WRITE) {
+	bool is_write = sqlite3_txn_state(m_db, "main") == SQLITE_TXN_WRITE;
+	auto ret = gx_sql_exec(m_db, "COMMIT TRANSACTION");
+	/* On error, it stays active and needs to be explicitly terminated. */
+	if (ret != SQLITE_OK)
+		/*
+		 * Leave m_db set so that ~xtransaction (executed in the
+		 * caller) will lead to a ROLLBACK.
+		 */
+		return ret;
+	if (is_write) {
 		auto fn = sqlite_unique_name(m_db);
 		std::unique_lock lk(active_xa_lock);
 		active_xa.erase(fn);
 	}
-	auto ret = gx_sql_exec(m_db, "COMMIT TRANSACTION");
-	if (ret == SQLITE_BUSY)
-		/*
-		 * As most callers have nothing else to do, they themselves
-		 * return from their frame, triggering ~xtransaction and a
-		 * rollback.
-		 */
-		return ret;
-
 	m_db = nullptr;
 	return ret;
 }

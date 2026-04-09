@@ -290,6 +290,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		}
 	}
 	pstmt.finalize();
+	sql_transact = xtransaction();
 	pdb.reset();
 
 	/* Delegate bit */
