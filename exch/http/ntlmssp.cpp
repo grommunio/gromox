@@ -262,8 +262,9 @@ static bool des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7
 	std::unique_ptr<EVP_CIPHER_CTX, sslfree> ctx(EVP_CIPHER_CTX_new());
 	if (ctx == nullptr)
 		return false;
-	if (EVP_CIPHER_CTX_set_padding(ctx.get(), 0) <= 0)
-		return false;
+	/* DES does not support this call (set_padding always returns 0) */
+	//if (EVP_CIPHER_CTX_set_padding(ctx.get(), 0) <= 0)
+	//	return false;
 	static constexpr uint8_t iv[16]{};
 	uint8_t derived_key[8];
 	str_to_key(key, derived_key);
