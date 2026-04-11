@@ -8,8 +8,20 @@ Fixes:
 * EWS now synthesizes a value for the "Received Time" field
 * AutoDiscover no longer erroneously advertises OWA API support.
   This had made it impossible for Thunderbird to connect.
+* EWS: Setting the read flag on a message no longer generates the
+  E-2901/E-3418 error message on the server.
 * The EWS implementation now performs retrieval/update of Out Of Office
   settings such that it works in multi-server environments.
+* The use of Qmail as an outgoing SMTP server is now supported by the message
+  sending routines.
+* Fix a case of Outlook notifications getting potentially suppressed.
+* Fix a case of `sqlite_busy on /var/lib/gromox/user/xyz: held by unknown`
+  log message appearing in the exmdb daemon (gromox-http/istore).
+* Conversion from MAPI to iCal appoinments used the wrong UID for exceptions
+  in a recurring series, which has been fixed.
+* Reading iCal timezone definitions mangled the daylightbias, which was fixed.
+* Logins with Outlook 2010 now work when Gromox is running with OpenSSL 3.
+  (OpenSSL 1.1 & LibreSSL were fine, but OSSL3 changed behavior. / Hyrum's law)
 
 
 Gromox 3.6 (2026-03-26)
