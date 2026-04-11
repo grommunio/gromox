@@ -317,7 +317,10 @@ static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc,
 			return ret;
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_REFERENCE) {
 		tlog("[attachment type=%c]\n", atype);
-		throw YError("PF-1005: EOPNOTSUPP");
+		/*
+		 * Has no actual content. The parent function (do_attach)
+		 * already transferred all needed properties.
+		 */
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_UNDEFINED) {
 		tlog("[attachment type=0]\n");
 	} else {
