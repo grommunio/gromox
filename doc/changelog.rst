@@ -3,14 +3,13 @@ Milestone 3.6.13
 
 Fixes:
 
-* exmdb_client: treat homeserver 0 as LPC-capable
-  (does away with unnecessary TCP connections in single-server setups)
-* ews: scale PercentComplete attribute between EWS and MAPI
-* ews: send DateTimeReceived attribute fallback for message items that lack it
-* oxdisco: drop advertisement of owaUrl element
-  (which made Thunderbird try an API we do not offer)
-* ews: make Out Of Office settings retrieval/update multi-server safe
-  (drop direct access to on-disk config files and replaced by network requests)
+* The "percentage complete" of an appointment was mangled when passing through
+  EWS, which has been fixed. (EWS uses [0, 100], but MAPI uses [0, 1.0])
+* EWS now synthesizes a value for the "Received Time" field
+* AutoDiscover no longer erroneously advertises OWA API support.
+  This had made it impossible for Thunderbird to connect.
+* The EWS implementation now performs retrieval/update of Out Of Office
+  settings such that it works in multi-server environments.
 
 
 Gromox 3.6 (2026-03-26)
@@ -18,60 +17,63 @@ Gromox 3.6 (2026-03-26)
 
 Enhancements:
 
-* oab: Gromox now serves Offline Addressbook files
-* ews: implement task creation, update, and property retrieval
-* ews: implement ExpandDL, GetPersona, CreateUserConfiguration,
-  UpdateUserConfiguration, DeleteUserConfiguration, DeleteAttachment,
-  AddDelegate, UpdateDelegate and RemoveDelegate operations
-* ews: implement calendar occurrence operations (create, update, delete)
-  with timezone support
-* ews: implement lifecycle for meetings: invitation sending on UpdateItem,
-  cancellations on DeleteItem, and responses to organizer on accept/decline
-* ews: generate read receipts when marking messages as read, honor
-  SuppressReadReceipts on UpdateItem
-* ews: add partial matching to ResolveNames via ab_tree
-* ews: add delegate permission level support and cross-mailbox permission
-  checks
-* ews: add Flag write conversion, ConversationIndex/ConversationTopic
-  write, and attendee field handling for UpdateItem
-* ruleproc: update calendar on incoming meeting response, setting
-  PR_RECIPIENT_TRACKSTATUS on the matching attendee
-* oxdisco: support for impersonation username syntax with EAS
-* oxcical: treat zero-length PidLidAppointmentTimeZoneDefinitionStartDisplay
-  as if it were absent
-* eml2mt: output GXMT data as soon as practical
-* htmltotext: support and prefer Chawan as a new external htmltotext renderer
-* rtftohtml: support a few more RTF commands
+* Gromox has gained a component that now serves the Offline Addressbook.
+* EWS: Task operations (creation, update, property retrieval) have been
+  implemented.
+* EWS: Calendar occurrence operations (create, update, delete), including
+  timezone support for those, have been implemented.
+* EWS: A number of request have been implemented: ExpandDL, GetPersona,
+  CreateUserConfiguration, UpdateUserConfiguration, DeleteUserConfiguration,
+  DeleteAttachment, AddDelegate, UpdateDelegate and RemoveDelegate.
+* EWS: Lifecycle for meetings have been implemented, i.e. invitation sending
+  when the `UpdateItem` operation is exercised, cancellation sending on
+  `DeleteItem`, and response sending to the organizer when a participant
+  accepts/declines a request.
+* EWS: Read receipts are now generated when a user messages are marked as read;
+  the `SuppressReadReceipts` attribute of the `UpdateItem` operation is honored
+  as well.
+* EWS: The `ResolveNames` operation now performs partial matches too.
+* EWS: Added delegate permission level support and cross-mailbox permission
+  checks.
+* EWS: eM Client reported "no conversion for Message::Flag" when toggling the
+  flagged state of a message, which has been fixed/implemented.
+* The server-side meeting autoprocessor now updates the organizer's calendar
+  when a meeting response is received, and sets the flag that XY has responded.
+* The AutoDiscover handler now supports the impersonation username syntax
+  (auth@a.de!sharedmbox@b.de) in conjunction with EAS
+* Conversion of appointments from MAPI to iCal form now can deal with a
+  zero-length PidLidAppointmentTimeZoneDefinitionStartDisplay attribute
+* The eml2mt conversion utility now emits messages sooner (previously it
+  collected all messages first before outputting)
+* Conversions from HTML to plaintext now support and prefer the use of the
+  external converter Chawan
 
 Fixes:
 
-* oxcmail: resolve a case of bad_function_call getting thrown
-* midb: retrieve midb_sqlite_busy_timeout from the right config file,
-  avert a "config key .. has no default and was not set either" log message
-* exmdb: close cursors before modifying tables in purge
-* exmdb: fix use-after-free when exmdb_provider utilizes exmdb_client in
-  multiserver
-* exmdb: proper symmetric unlocking for db_base_rd_ptr class
-* exmdb: unlock giant_lock before erasing the same from hash table
-* midb: release lock and reference when me_sync_mailbox experiences a sync
-  failure
-* lib: avoid emitting colors to stderr when that is not a tty
-* exmdb: strip redundant notifications from notify_new_mail()
-* exmdb: stop returning garbage in MAPI content table cells when the table sort
-  order contains a PT_MV_UNICODE | MV_INSTANCE column.
-* oxcical: on import, do set the PidLidAppointmentStateFlags,
-  PidLidResponseStatus, PidLidMeetingType properties
-* ews: Meeting requests that created with the EWS `SendOnlyToAll` flag had the
-  wrong iCal METHOD and lacked the attendees, which has been fixed.
+* The midb daemon had looked at the wrong config file for the
+  `midb_sqlite_busy_timeout` setting and as a result generated a "config key ..
+  has no default" log message on startup, both of which are fixed.
+* The command-line utilities' log messages no longer contain ANSI/VT100 color
+  sequences when stderr is not an interactive shell.
+* The Information Store no longer returns garbage in MAPI Content Taeble cells
+  when the table sort order contains a column of type
+  PT_MV_UNICODE|MV_INSTANCE.
+* Conversion from iCal to MAPI now sets the PidLidAppointmentStateFlags,
+  PidLidResponseStatus, PidLidMeetingType properties. (Some clients do not show
+  appointments without those.)
+* Meeting requests that were created with the EWS `SendOnlyToAll` flag had,
+  when converted to iCal, the wrong `METHOD` field value and lacked all the
+  attendees, which has been fixed.
 
 Changes:
 
-* exmdb: read multi-server map exclusively from SQL rather than exmdb_list.txt
-* oxcmail: on INET-to-MAPI conversion, set senders/receiver properties to
-  use SMTP rather than EX addressing
-* imap: remodeled midb_agent to require a less memory in practice
-* ews: strip all characters that are illegal in XML when e.g. sending the
-  bodytext to the client
+* The multi-server map is now exclusively read from SQL; the exmdb_list.txt
+  file has been obsoleted.
+* EWS XML responses, e.g. when a message body is retrieved by an EWS client,
+  are now sanitized and invalid XML characters stripped.
+* The IMAP implementation has been tuned to require a bit less memory.
+* Conversions from Internet Messages to MAPI now produce senders/receiver
+  properties with SMTP rather than EX addressing.
 
 
 Gromox 3.5 (2025-02-26)
