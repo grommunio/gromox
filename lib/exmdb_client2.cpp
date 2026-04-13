@@ -788,8 +788,7 @@ exmdb_client_remote::~exmdb_client_remote()
 
 namespace gromox {
 
-int exmdb_client_run(const char *cfgdir, unsigned int flags,
-    void (*build_env)(bool), void (*free_env)())
+int exmdb_client_run(const char *cfgdir, void (*build_env)(bool), void (*free_env)())
 {
 	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
 		return -1;
