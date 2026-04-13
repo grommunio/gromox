@@ -337,7 +337,7 @@ header_files += include/gromox/paths.h include/gromox/pcl.hpp include/gromox/plu
 if ENABLE_PRIVATE_HEADERS
 pkginclude_HEADERS = ${header_files}
 endif
-list_files = data/cpid.txt data/exmdb_list.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
+list_files = data/cpid.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
 pkgdata_DATA = data/abkt.pak data/timezone.pak
 dist_pkgdata_DATA = ${list_files} data/Services.wsdl data/Messages.xsd data/Types.xsd data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc tools/conf.php tools/db.php tools/submit.php
 EXTRA_DIST += \
