@@ -12,6 +12,7 @@
 #include <cstring>
 #include <errmsg.h>
 #include <map>
+#include <mutex>
 #include <mysql.h>
 #include <optional>
 #include <set>
@@ -55,12 +56,19 @@ static std::string crypt_estar(const char *a, const char *b)
 	auto r = crypt(a, b); /* uses thread-local storage */
 	return r != nullptr ? r : "*0";
 }
-#else
+#elif defined(HAVE_CRYPT_H)
 static std::string crypt_estar(const char *a, const char *b)
 {
 	struct crypt_data cd{};
 	auto r = crypt_r(a, b, &cd);
 	return r != nullptr ? r : "*0";
+}
+#else
+static std::string crypt_estar(const char *a, const char *b)
+{
+	static std::once_flag of;
+	std::call_once(of, []() { mlog(LV_ERR, "Gromox is built without crypt_r support, thus cannot evaluate such password hashes"); });
+	return "*0";
 }
 #endif
 
