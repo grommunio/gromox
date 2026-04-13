@@ -171,6 +171,7 @@ const void *stream_object::get_content() const
 	
 	switch (PROP_TYPE(pstream->proptag)) {
 	case PT_BINARY:
+	case PT_OBJECT:
 		return &pstream->content_bin;
 	case PT_STRING8:
 		return pstream->content_bin.pb;
