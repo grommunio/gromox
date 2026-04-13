@@ -23,7 +23,6 @@ enum {
 	EXMDB_CLIENT_NO_FLAGS = 0,
 	/* Skip over public folders */
 	EXMDB_CLIENT_SKIP_PUBLIC = 0x1U,
-	/* Skip over exmdb_list.txt entries that are remote */
 	EXMDB_CLIENT_SKIP_REMOTE = 0x2U,
 	/* Go via filesystem instead of TCP */
 	EXMDB_CLIENT_ALLOW_DIRECT = 0x4U,
