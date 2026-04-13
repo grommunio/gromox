@@ -981,6 +981,7 @@ struct GX_EXPORT GLOBCNT {
  */
 struct GX_EXPORT GUID {
 	operator FLATUID() const;
+	std::string repr(unsigned int type = 36) const;
 	void to_str(char *, size_t, unsigned int type = 36) const;
 	bool from_str(const char *);
 	int compare_4_12(const GUID &) const;
