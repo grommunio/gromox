@@ -3211,10 +3211,9 @@ uint32_t EWSContext::permissions(const std::string& maildir, uint64_t folderId) 
 	if (maildir == m_auth_info.maildir)
 		return 0xFFFFFFFF;
 	uint32_t permissions = 0;
-	if (!m_plugin.exmdb.get_mbox_perm(maildir.c_str(),
-	    m_auth_info.username, &permissions))
-		return 0;
-	if (permissions & frightsGromoxStoreOwner)
+	if (m_plugin.exmdb.get_mbox_perm(maildir.c_str(),
+	    m_auth_info.username, &permissions) &&
+	    (permissions & frightsGromoxStoreOwner))
 		return 0xFFFFFFFF;
 	if (!m_plugin.exmdb.get_folder_perm(maildir.c_str(), folderId,
 	    m_auth_info.username, &permissions))
