@@ -309,6 +309,13 @@ void GUID::to_str(char *buf, size_t z, unsigned int type) const
 	         node[3], node[4], node[5]);
 }
 
+std::string GUID::repr(unsigned int type) const
+{
+	char txt[GUIDSTR_SIZE];
+	to_str(txt, std::size(txt), type);
+	return txt;
+}
+
 /**
  * NOTE! GUID::from_str only supports host32/36/38 forms, not flatlsb32.
  */

@@ -22,8 +22,7 @@ static void buildenv(bool pvt)
 
 int exmdb_client_run_front(const char *dir)
 {
-	return exmdb_client_run(dir, EXMDB_CLIENT_NO_FLAGS, buildenv,
-	       common_util_free_environment);
+	return exmdb_client_run(dir, buildenv, common_util_free_environment);
 }
 
 bool exmdb_client_get_named_propid(const char *dir, bool b_create,

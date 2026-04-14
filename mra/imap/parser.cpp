@@ -980,6 +980,22 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 		case scopy_result::term:
 			return IMAP_RETRIEVE_ERROR;
 		case scopy_result::part:
+			/*
+			 * copyline may have cut the line at any byte, including
+			 * inside (or before) a <<{file}…/<<{rfc822}… marker. The
+			 * ok-branch below only recognizes a marker when the full
+			 * `<<{` prefix is present at a known position, so any
+			 * truncation — be it `<`, `<<`, `<<{f`, or within the
+			 * filename/length — would leak the raw marker onto the
+			 * wire. Whenever there is already buffered content to
+			 * flush, rewind the stream and hand that content to the
+			 * caller; the next retrieve call starts from an empty
+			 * buffer large enough to hold the full line.
+			 */
+			if (pcontext->write_length > 0) {
+				pcontext->stream.rewind_read_ptr(line_length);
+				return IMAP_RETRIEVE_OK;
+			}
 			pcontext->write_length += line_length;
 			return IMAP_RETRIEVE_OK;
 		case scopy_result::ok:

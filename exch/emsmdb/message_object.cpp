@@ -644,6 +644,8 @@ ec_error_t message_object::commit_stream_object(stream_object *pstream)
 		it = stream_list.erase(it);
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue  = deconst(pstream->get_content());
+		if (tmp_propval.pvalue == nullptr)
+			return ecError;
 		if (!exmdb_client->set_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, &tmp_propval, &result))
 			return ecRpcFailed;
@@ -662,6 +664,8 @@ ec_error_t message_object::flush_streams()
 		auto pstream = stream_list.front();
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue  = deconst(pstream->get_content());
+		if (tmp_propval.pvalue == nullptr)
+			return ecError;
 		if (!exmdb_client->set_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, &tmp_propval, &result))
 			return ecRpcFailed;

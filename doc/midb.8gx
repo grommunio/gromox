@@ -128,9 +128,8 @@ towards midb.
 Default: \fI100\fP
 .TP
 \fBrpc_proxy_connection_num\fP
-For every exmdb server in exmdb_list.txt, establish and keep this many number
-of outbound connections for sending commands. (There is at most one additional
-connection, for async notification, alive per server.)
+The maximum number of (idle) connections towards Information Store homeservers
+that are kept alive for rapid re-use.
 .br
 Default: \fI10\fP
 .TP
@@ -143,8 +142,5 @@ Default: \fI0\fP
 .TP
 \fBx500_org_name\fP
 Default: (unspecified)
-.SH Files
-.IP \(bu 4
-\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
 .SH See also
 \fBgromox\fP(7)

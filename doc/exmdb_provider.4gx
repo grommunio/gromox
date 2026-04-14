@@ -233,9 +233,8 @@ population.
 Default: \fI4\fP
 .TP
 \fBrpc_proxy_connection_num\fP
-For every remote exmdb server that needs to be contacted because of
-rule processing an OP_FOWARD (or similar) rule, keep this
-many number of outbound connections for sending commands.
+The maximum number of (idle) connections towards (other) Information Store
+homeservers that are kept alive for re-use.
 .br
 Default: \fI10\fP
 .TP

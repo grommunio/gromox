@@ -3291,7 +3291,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 			return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PR_CONVERSATION_TOPIC);
-	if (str != nullptr &&
+	if (str != nullptr && *str != '\0' &&
 	    !phead->set_field("Thread-Topic", enc_text(str)))
 		return FALSE;
 	auto bv = pmsg->proplist.get<BINARY>(PR_CONVERSATION_INDEX);

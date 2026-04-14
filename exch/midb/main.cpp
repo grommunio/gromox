@@ -131,9 +131,7 @@ static void buildenv(bool pvt)
 
 static int exmdb_client_run_front(const char *dir)
 {
-	return exmdb_client_run(dir, EXMDB_CLIENT_SKIP_PUBLIC |
-	       EXMDB_CLIENT_SKIP_REMOTE, buildenv,
-	       cu_free_environment);
+	return exmdb_client_run(dir, buildenv, cu_free_environment);
 }
 
 static int system_services_run()

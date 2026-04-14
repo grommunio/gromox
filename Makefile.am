@@ -72,7 +72,7 @@ libgromox_common_la_SOURCES = lib/bounce_gen.cpp lib/contexts_pool.cpp lib/crypt
 libgromox_common_la_LIBADD = -lpthread ${backtrace_LIBS} ${libcrypto_LIBS} ${fmt_LIBS} ${libHX_LIBS} ${libidn_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${libssl_LIBS} ${tinyxml2_LIBS} ${vmime_LIBS} ${libzstd_LIBS}
 libgromox_dbop_la_SOURCES = lib/dbop_mysql.cpp lib/dbop_sqlite.cpp
 libgromox_dbop_la_LIBADD = ${fmt_LIBS} ${mysql_LIBS} ${sqlite_LIBS} libgromox_common.la
-libgromox_exrpc_la_SOURCES = lib/exmdb_client2.cpp lib/exmdb_client.cpp lib/exmdb_ext.cpp lib/exmdb_rpc.cpp lib/freebusy.cpp
+libgromox_exrpc_la_SOURCES = lib/exmdb_client2.cpp lib/exmdb_ext.cpp lib/exmdb_rpc.cpp lib/freebusy.cpp
 libgromox_exrpc_la_LIBADD = libgromox_mapi.la libgxs_mysql_adaptor.la
 libgromox_mapi_la_SOURCES = lib/email/dsn.cpp lib/email/ical.cpp lib/email/ical2.cpp lib/email/mail.cpp lib/email/mime.cpp lib/email/mjson.cpp lib/email/send.cpp lib/email/vcard.cpp lib/mapi/eid_array.cpp lib/mapi/element_data.cpp lib/mapi/html.cpp lib/mapi/idset.cpp lib/mapi/lzxpress.cpp lib/mapi/oxcical.cpp lib/mapi/oxcmail.cpp lib/mapi/oxcmail2.cpp lib/mapi/oxvcard.cpp lib/mapi/pcl.cpp lib/mapi/proptag_array.cpp lib/mapi/propval.cpp lib/mapi/restriction.cpp lib/mapi/restriction2.cpp lib/mapi/rop_util.cpp lib/mapi/rtf.cpp lib/mapi/rtfcp.cpp lib/mapi/rule_actions.cpp lib/mapi/sortorder_set.cpp lib/mapi/tarray_set.cpp lib/mapi/tnef.cpp lib/mapi/tpropval_array.cpp lib/mapi/usercvt.cpp
 libgromox_mapi_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} ${iconv_LIBS} ${vmime_LIBS} ${libxml2_LIBS} libgromox_common.la
@@ -337,7 +337,7 @@ header_files += include/gromox/paths.h include/gromox/pcl.hpp include/gromox/plu
 if ENABLE_PRIVATE_HEADERS
 pkginclude_HEADERS = ${header_files}
 endif
-list_files = data/cpid.txt data/exmdb_list.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
+list_files = data/cpid.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
 pkgdata_DATA = data/abkt.pak data/timezone.pak
 dist_pkgdata_DATA = ${list_files} data/Services.wsdl data/Messages.xsd data/Types.xsd data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc tools/conf.php tools/db.php tools/submit.php
 EXTRA_DIST += \

@@ -432,8 +432,7 @@ static void buildenv(bool pvt)
 
 int exmdb_client_run_front(const char *dir)
 {
-	return exmdb_client_run(dir, EXMDB_CLIENT_ALLOW_DIRECT,
-	       buildenv, exmdb_server::free_env);
+	return exmdb_client_run(dir, buildenv, exmdb_server::free_env);
 }
 
 /*

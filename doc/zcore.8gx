@@ -91,9 +91,8 @@ The maximum number of recipients that an e-mail is allowed to have.
 Default: \fI256\fP
 .TP
 \fBrpc_proxy_connection_num\fP
-For every exmdb server in exmdb_list.txt, establish and keep this many number
-of outbound connections for sending commands. (There is at most one additional
-connection, for async notification, alive per server.)
+The maximum number of (idle) connections towards Information Store homeservers
+that are kept alive for rapid re-use.
 .br
 Default: \fI10\fP
 .TP
@@ -169,12 +168,8 @@ pdu := {
 	}
 }
 .SH Store lookup
-zcore determines the store path for a user from the user database, which is
-provided by mysql_adaptor(4gx).
-.PP
-The filemap that specifies how paths are handled is located at
-\fIdata_file_path\fP/exmdb_list.txt, whereby data_file_path is the eponymous
-directive from the config file.
+zcore determines the homeserver and store path for a user from the user
+database, which is provided by mysql_adaptor(4gx).
 .PP
 Each line in this file consists of 4 columns separated by whitespace:
 .IP \(bu 4
