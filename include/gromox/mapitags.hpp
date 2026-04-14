@@ -1,41 +1,11 @@
 #pragma once
-
 /*
- * Reserved:                          0x0000
- * Tagged props:                      0x0001..0x7FFF
- *  \_ MAPI-defined props:            0x0001..0x3FFF
- *      \_ Envelope props:            0x0001..0x0BFF
- *      \_ Recipient props:           0x0C00..0x0DFF
- *      \_ Non-transmittable props:   0x0E00..0x0FFF (non-transmittable)
- *      \_ Message content props:     0x1000..0x2FFF
- *      \_ Others:                    0x3000..0x3FFF
- *          \_ Common props:          0x3000..0x32FF
- *          \_ Form props:            0x3300..0x33FF
- *          \_ Message store:         0x3400..0x35FF
- *          \_ Container (folder/AB): 0x3600..0x36FF
- *          \_ Attachment:            0x3700..0x38FF
- *          \_ Address book:          0x3900..0x39FF
- *          \_ Mail user:             0x3A00..0x3BFF
- *          \_ Distribution list:     0x3C00..0x3CFF
- *          \_ Profsect:              0x3D00..0x3DFF
- *          \_ Status object:         0x3E00..0x3EFF
- *          \_ Display table:         0x3F00..0x3FFF
- *  \_ Transport-specific props:      0x4000..0x5FFF
- *      \_ Envelope props:            0x4000..0x57FF
- *      \_ Recipient props:           0x5800..0x5FFF
- *  \_ Client-specific props:         0x6000..0x65FF (non-transmittable)
- *  \_ Provider-specific props:       0x6600..0x67FF (non-transmittable)
- *      \_ Secure profile props:      0x67F0..0x67FF
- *  \_ Message class-specific props:  0x6800..0x7FFF
- *      \_ Content props:             0x6800..0x7BFF
- *      \_ Non-transmittable:         0x7C00..0x7FFF (non-transmittable)
- * Mapping range for named props:     0x8000..0xFFFE
- * Reserved:                          0xFFFF
- *
- * There are some more reserved ranges, but we need not bother with it.
- * NSP does not have named properties, so...
- *
- *  More properties!                  0x8000..0xFFFE
+ * See <https://codeberg.org/jengelh/mapitags> for a thorough list.
+ * mapitags.hpp only contains a subset:
+ * - those needed by Gromox C++ sources
+ * - additionally, those we want to expose as constants in php_mapi for
+ *   mapi-header-php/g-web/g-sync/g-dav (these are commented out because we do
+ *   not use them yet in C++).
  */
 namespace {
 enum {
