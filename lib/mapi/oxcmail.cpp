@@ -2436,6 +2436,9 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 		return imp_null;
 
 	auto head_ct = phead->content_type;
+	MAIL payload_mail;
+	auto active_mail = pmail;
+	auto mime_root = phead;
 	if (strcasecmp(head_ct, "application/ms-tnef") == 0) {
 	if (auto tnef_correl = tnef_vfy_get_field(phead)) {
 		std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(phead, alloc, get_propids));
@@ -2487,9 +2490,21 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 		}
 		}
 	} else if (smime_clearsigned(head_ct, phead)) {
-		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned") != ecSuccess)
-			return imp_null;
-		b_smime = true;
+		if (unwrap_smime_clearsigned) {
+			while (smime_clearsigned(mime_root->content_type, mime_root)) {
+				auto child = mime_root->get_child();
+				if (child == nullptr ||
+				    !payload_mail.refonly_parse(child->head_begin,
+				    child->content_begin + child->content_length - child->head_begin))
+					break;
+				active_mail = &payload_mail;
+				mime_root = active_mail->get_head();
+			}
+		} else {
+			if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned") != ecSuccess)
+				return imp_null;
+			b_smime = true;
+		}
 	} else if (strcasecmp(head_ct, "application/pkcs7-mime") == 0 ||
 	    strcasecmp(head_ct, "application/x-pkcs7-mime") == 0) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME") != ecSuccess ||
@@ -2503,7 +2518,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	mime_enum.alloc = alloc;
 	mime_enum.pmsg = pmsg.get();
 	mime_enum.phash = phash;
-	select_parts(phead, mime_enum, 0);
+	select_parts(mime_root, mime_enum, 0);
 
 	if (mime_enum.pplain != nullptr &&
 	    !oxcmail_parse_message_body(mime_enum.pplain, &pmsg->proplist))
@@ -2573,7 +2588,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 			return imp_null;
 	} else {
 		mime_enum.last_propid = field_param.last_propid;
-		pmail->enum_mime(oxcmail_enum_attachment, &mime_enum);
+		active_mail->enum_mime(oxcmail_enum_attachment, &mime_enum);
 		if (!mime_enum.b_result)
 			return imp_null;
 	}
