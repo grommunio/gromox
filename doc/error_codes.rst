@@ -81,9 +81,23 @@ Components of the sync error number vector:
 
 # first error code / local side (e.g. MSMAPI): operation error code
   * 0x80070057: MAPI_E_INVALID_PARAMETER
-  * 0x80040803: SYNC_E_NO_PARENT
-# component code
+  * 0x800408__: [Used by syncer]
+    * 0x80040803: SYNC_E_NO_PARENT
+    * 0x80040818
+    * 0x80040827
+    * 0x80040871
+    * 0x80040872
+    * 0x80040874 [Data format is wrong]
+# component error/location code
   * 501: synchronization
+  * 0x3014____: [MSPST32.DLL codes]
+    * 0x30141501 PR_SOURCE_KEY was not exactly size 22
+    * 0x30141502 PR_PARENT_SOURCE_KEY was not exactly size 22
+    * 0x30141503 PR_CHANGE_KEY too short (needs to be at least size 17)
+    * 0x30141504 PCL not quite right
+    * 0x30141505 One or more properties were missing. Need all of:
+      {PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY, PR_DISPLAY_NAME, PR_CHANGE_KEY, PCL}
+    * 0x30141506 PR_PARENT_SOURCE_KEY somehow not found in internal PST maps
 # second error code (e.g. ROP result)
   * 0x4B9: ecNullObject
   * 0x80070057: MAPI_E_INVALID_PARAMETER

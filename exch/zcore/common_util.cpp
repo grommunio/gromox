@@ -1734,36 +1734,18 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	return false;
 }
 
-static void zc_unwrap_clearsigned(MAIL &ma) try
-{
-	auto part = ma.get_head();
-	if (part == nullptr ||
-	    strcasecmp(part->content_type, "multipart/signed") != 0)
-		return;
-	part = part->get_child();
-	if (part == nullptr)
-		return;
-	/*
-	 * head_begin is a pointer into the caller's peml_bin block,
-	 * so lifetimes should still be ok.
-	 */
-	ma.refonly_parse(part->head_begin, part->content_begin + part->content_length - part->head_begin);
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "%s: ENOMEM", __func__);
-}
-
 std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object *pstore,
     unsigned int mxf_flags, /* effective-moved-from */ BINARY *peml_bin)
 {
 	MAIL imail;
 	if (!imail.refonly_parse(peml_bin->pc, peml_bin->cb))
 		return NULL;
-	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
-		zc_unwrap_clearsigned(imail);
 	common_util_set_dir(pstore->get_dir());
 	oxcmail_converter cvt;
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids_create;
+	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
+		cvt.unwrap_smime_clearsigned = true;
 	if (mxf_flags & MXF_ADD_RCVD_TIMESTAMP)
 		cvt.add_rcvd_timestamp = true;
 	return cvt.inet_to_mapi(imail);

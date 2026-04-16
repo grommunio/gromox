@@ -62,11 +62,13 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	           pproptags->pproptag, [](proptag_t x) { return !is_nameprop_id(PROP_ID(x)); });
 	pproptags->count = eop - pproptags->pproptag;
 	static constexpr proptag_t tags1[] = {
-		PR_ACCESS, PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY,
+		PR_ACCESS, PR_RIGHTS, PR_PARENT_ENTRYID,
 		PR_SOURCE_KEY, PR_CORRELATION_ID,
 	};
 	for (auto t : tags1)
 		pproptags->emplace_back_nd(t);
+	if (folder_id != eid_t{1, PRIVATE_FID_CALENDAR})
+		pproptags->emplace_back_nd(PR_PARENT_SOURCE_KEY);
 	static constexpr proptag_t tags2[] = {
 		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
 		PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_JOURNAL_ENTRYID,

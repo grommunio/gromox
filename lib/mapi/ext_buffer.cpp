@@ -886,8 +886,9 @@ static pack_result ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTI
 	TRY(pext->g_uint16(&eid_size));
 	CLAMP16(eid_size);
 	/*
-	 * Office-Inspectors-for-Fiddler uses if (eid_size > 0), citing EXC
-	 * server behavior not matching MS-OXORULE v23 §2.2.5.1.2.1.
+	 * Office-Inspectors-for-Fiddler uses `if (eid_size > 0)` instead of
+	 * `if (same_store)`, and claims EXC server behavior does not match
+	 * MS-OXORULE v23 §2.2.5.1.2.1.
 	 */
 	if (r->same_store) {
 		r->pstore_eid = NULL;
