@@ -202,13 +202,6 @@ static bool max_routers_reached()
 
 static void *request_parser_thread(void *pparam)
 {
-	void *pbuff;
-	BINARY tmp_bin;
-	uint32_t offset;
-	int written_len;
-	BOOL is_writing;
-	BOOL is_connected;
-	uint32_t buff_len;
 	uint8_t resp_buff[5]{};
 	struct pollfd pfd_read;
 	
@@ -224,34 +217,35 @@ static void *request_parser_thread(void *pparam)
 	} catch (...) {
 		return nullptr;
 	}
-	pbuff = NULL;
-	offset = 0;
-	buff_len = 0;
-	is_writing = FALSE;
-	is_connected = FALSE;
+	size_t offset = 0;
+	bool is_writing = false, is_connected = false;
 	bool b_private = false; /* whatever for connect request */
+	BINARY output_buf{};
+	auto cl_0 = HX::make_scope_exit([&]() { free(output_buf.pb); });
+	std::string input_buf;
 
 	while (!pconnection->b_stop) {
 		if (is_writing) {
-			written_len = write(pconnection->sockd,
-			              static_cast<char *>(pbuff) + offset, buff_len - offset);
-			if (written_len <= 0)
+			auto wlen = write(pconnection->sockd, &output_buf.pb[offset],
+			            output_buf.cb - offset);
+			if (wlen <= 0)
 				break;
-			offset += written_len;
-			if (offset == buff_len) {
-				free(pbuff);
-				pbuff = NULL;
-				buff_len = 0;
-				offset = 0;
-				is_writing = FALSE;
-			}
+			offset += wlen;
+			if (offset < output_buf.cb)
+				continue; /* keep writing if necessary */
+			free(output_buf.pb);
+			output_buf.pb = nullptr;
+			output_buf.cb = 0;
+			offset = 0;
+			is_writing = false;
 			continue;
 		}
 		pfd_read.fd = pconnection->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			break;
-		if (NULL == pbuff) {
+		if (input_buf.empty()) {
+			uint32_t buff_len = 0;
 			auto read_len = read(pconnection->sockd,
 					&buff_len, sizeof(uint32_t));
 			if (read_len != sizeof(uint32_t))
@@ -265,33 +259,36 @@ static void *request_parser_thread(void *pparam)
 				/* make cov-scan happy that we tested for buff_len */
 				break;
 			}
-			pbuff = malloc(buff_len);
-			if (NULL == pbuff) {
+			try {
+				input_buf.resize(buff_len);
+			} catch (const std::bad_alloc &) {
 				auto tmp_byte = exmdb_response::lack_memory;
 				if (HXio_fullwrite(pconnection->sockd, &tmp_byte, 1) != 1 ||
 				    !is_connected)
 					break;
-				buff_len = 0;
 			}
 			offset = 0;
 			continue;
 		}
-		auto read_len = read(pconnection->sockd,
-		                static_cast<char *>(pbuff) + offset, buff_len - offset);
+		auto read_len = read(pconnection->sockd, &input_buf[offset],
+		                input_buf.size() - offset);
 		if (read_len <= 0)
 			break;
 		offset += read_len;
-		if (offset < buff_len)
+		if (offset < input_buf.size())
 			continue;
+
+		/*
+		 * We have a complete request, so make sure that the next
+		 * iteration in any case starts with a blank input_buf.
+		 */
+		auto cl_1 = HX::make_scope_exit([&]() { input_buf.clear(); });
 		exmdb_server::build_env(b_private ? EM_PRIVATE : 0, nullptr);
-		tmp_bin.pv = pbuff;
-		tmp_bin.cb = buff_len;
 		std::unique_ptr<exreq> request;
-		auto status = exmdb_ext_pull_request(tmp_bin, request);
-		free(pbuff);
-		pbuff = NULL;
+		auto status = exmdb_ext_pull_request(input_buf, request);
 		if (request != nullptr && request->dir != nullptr)
 			stripslash(request->dir);
+
 		exmdb_response tmp_byte;
 		std::unique_ptr<exresp> response;
 		if (status != pack_result::ok ||
@@ -312,7 +309,6 @@ static void *request_parser_thread(void *pparam)
 					if (HXio_fullwrite(pconnection->sockd, resp_buff, 5) != 5)
 						break;
 					offset = 0;
-					buff_len = 0;
 					continue;
 				}
 			} else if (request->call_id == exmdb_callid::listen_notification) {
@@ -352,14 +348,13 @@ static void *request_parser_thread(void *pparam)
 			}
 		} else if (!exmdb_parser_dispatch(request.get(), response)) {
 			tmp_byte = exmdb_response::dispatch_error;
-		} else if (exmdb_ext_push_response(response.get(), &tmp_bin) != pack_result::success) {
+		} else if (exmdb_ext_push_response(response.get(), &output_buf) != pack_result::success) {
 			tmp_byte = exmdb_response::push_error;
 		} else {
+			/* Succesful serialization to output_buf */
 			exmdb_server::free_env();
 			offset = 0;
-			pbuff = tmp_bin.pb;
-			buff_len = tmp_bin.cb;
-			is_writing = TRUE;
+			is_writing = true;
 			continue;
 		}
 		exmdb_server::free_env();
@@ -369,7 +364,6 @@ static void *request_parser_thread(void *pparam)
 	}
 	close(pconnection->sockd);
 	pconnection->sockd = -1;
-	free(pbuff);
 	if (!pconnection->b_stop) {
 		pconnection->thr_id = {};
 		pthread_detach(pthread_self());
