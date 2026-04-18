@@ -47,8 +47,13 @@
 
 using namespace gromox;
 
+struct parser_params {
+	std::shared_ptr<EXMDB_CONNECTION> conn;
+};
+
 static size_t g_max_threads, g_max_routers;
 static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
+/* used for counting and for setting c->b_stop on exit from main thread */
 static std::unordered_set<std::shared_ptr<EXMDB_CONNECTION>> g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
 static gromox::atomic_bool g_exmdblisten_stop;
@@ -71,7 +76,7 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 	g_max_routers = max_routers;
 }
 
-static std::unique_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
+static std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
 {
 	if (g_max_threads != 0) {
 		std::lock_guard lk(g_connection_lock);
@@ -79,7 +84,7 @@ static std::unique_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
 			return nullptr;
 	}
 	try {
-		return std::make_unique<EXMDB_CONNECTION>();
+		return std::make_shared<EXMDB_CONNECTION>();
 	} catch (const std::bad_alloc &) {
 	}
 	return nullptr;
@@ -207,14 +212,8 @@ static void *request_parser_thread(void *pparam)
 	uint8_t resp_buff[5]{};
 	struct pollfd pfd_read;
 	
-	auto connraw = static_cast<EXMDB_CONNECTION *>(pparam);
-	std::shared_ptr<EXMDB_CONNECTION> pconnection;
-	try {
-		pconnection.reset(connraw);
-	} catch (...) {
-		/* reset() implies deletion of connraw */
-		return nullptr;
-	}
+	std::unique_ptr<parser_params> param(static_cast<parser_params *>(pparam));
+	auto &pconnection = param->conn;
 	try {
 		char txt[52];
 		snprintf(txt, std::size(txt), "exmdb/%s:%hu",
@@ -378,22 +377,26 @@ static void *request_parser_thread(void *pparam)
 	return nullptr;
 }
 
-bool exmdb_parser_insert_conn(generic_connection &&co)
+bool exmdb_parser_insert_conn(generic_connection &&co) try
 {
-	auto pconnection = exmdb_parser_make_conn();
-	if (pconnection == nullptr)
+	auto par = std::make_unique<parser_params>();
+	par->conn = exmdb_parser_make_conn();
+	if (par->conn == nullptr)
 		return false;
-	static_cast<generic_connection &>(*pconnection) = std::move(co);
+	static_cast<generic_connection &>(*par->conn) = std::move(co);
 
-	auto ret = pthread_create4(&pconnection->thr_id, nullptr,
-	           request_parser_thread, pconnection.get());
+	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
+	           request_parser_thread, par.get());
 	if (ret != 0) {
 		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
 		return false;
 	} else {
-		pconnection.release(); /* thread should be vivid now */
+		par.release(); /* thread should be vivid now */
 		return true;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_extract_router(const char *remote_id)
