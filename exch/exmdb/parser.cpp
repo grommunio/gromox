@@ -208,9 +208,8 @@ static void *request_parser_thread(void *pparam)
 	std::unique_ptr<parser_params> param(static_cast<parser_params *>(pparam));
 	auto &pconnection = param->conn;
 	try {
-		char txt[52];
-		snprintf(txt, std::size(txt), "exmdb/%s:%hu",
-			pconnection->client_addr, pconnection->client_port);
+		char txt[16];
+		snprintf(txt, std::size(txt), "exrq/%hu", pconnection->client_port);
 		pthread_setname_np(pthread_self(), txt);
 		std::unique_lock chold(g_connection_lock);
 		g_connection_list.insert(pconnection);
