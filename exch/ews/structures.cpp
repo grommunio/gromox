@@ -1407,12 +1407,25 @@ PROPTAG_ARRAY sShape::proptags() const
  *
  * @param      extprops  Location to store extended properties in
  */
+
 void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
 {
 	for (const auto &prop : props)
 		if (prop.second.flags & FL_EXT && prop.second.prop)
 			extprops.emplace_back(*prop.second.prop,
 				prop.second.name ? *prop.second.name : NONAME);
+
+	static const uint8_t ews_false = 0;
+
+	if (get(PROP_TAG(PT_BOOLEAN, 0x10F4), FL_EXT) == nullptr) {
+		TAGGED_PROPVAL tp{PROP_TAG(PT_BOOLEAN, 0x10F4), deconst(&ews_false)};
+		extprops.emplace_back(tp, NONAME);
+	}
+
+	if (get(PROP_TAG(PT_BOOLEAN, 0x10F6), FL_EXT) == nullptr) {
+		TAGGED_PROPVAL tp{PROP_TAG(PT_BOOLEAN, 0x10F6), deconst(&ews_false)};
+		extprops.emplace_back(tp, NONAME);
+	}
 }
 
 /**
@@ -1668,21 +1681,46 @@ sFolder tBaseFolderType::create(const sShape& shape)
 	const char* frClass = shape.get<char>(PR_CONTAINER_CLASS, sShape::FL_ANY);
 	const uint32_t* frType = shape.get<uint32_t>(PR_FOLDER_TYPE, sShape::FL_ANY);
 	Type folderType = NORMAL;
-	if (frType && *frType == FOLDER_SEARCH) {
-		folderType = SEARCH;
-	} else if (frClass) {
-		if (class_match_prefix(frClass, "IPF.Appointment") == 0)
-			folderType = CALENDAR;
-		else if (class_match_prefix(frClass, "IPF.Contact") == 0)
+
+	if (auto v64 = shape.get<uint64_t>(PidTagFolderId)) {
+		if (*v64 == PRIVATE_FID_RECIPIENT_CACHE)
 			folderType = CONTACTS;
-		else if (class_match_prefix(frClass, "IPF.Task") == 0)
-			folderType = TASKS;
 	}
+
+	if (folderType == NORMAL) {
+		if (frType && *frType == FOLDER_SEARCH) {
+			folderType = SEARCH;
+		}else if (frClass) {
+   			 const char* dn = shape.get<char>(PR_DISPLAY_NAME);
+
+    			if (class_match_prefix(frClass, "IPF.Appointment") == 0)
+        			folderType = CALENDAR;
+    			else if (
+        			class_match_prefix(frClass, "IPF.Contact") == 0 ||
+        			(dn && (
+            				strcmp(dn, "Cache des destinataires") == 0 ||
+            				strcmp(dn, "Recipient Cache") == 0
+        			))
+    			)
+        			folderType = CONTACTS;
+    			else if (class_match_prefix(frClass, "IPF.Task") == 0)
+        			folderType = TASKS;
+		}
+	}
+
 	switch (folderType) {
 	case CALENDAR:
 		return tCalendarFolderType(shape);
-	case CONTACTS:
-		return tContactsFolderType(shape);
+	case CONTACTS: {
+		sFolder folder = tContactsFolderType(shape);
+		if (auto* cf = std::get_if<tContactsFolderType>(&folder)) {
+			if (auto v64 = shape.get<uint64_t>(PidTagFolderId)) {
+				if (*v64 == PRIVATE_FID_RECIPIENT_CACHE)
+					cf->FolderClass.emplace("IPF.Contact.RecipientCache");
+			}
+		}
+		return folder;
+	}
 	case SEARCH:
 		return tSearchFolderType(shape);
 	case TASKS:
@@ -3240,12 +3278,14 @@ PROPERTY_NAME tExtendedFieldURI::name() const
  */
 void tExtendedFieldURI::tags(sShape& shape, bool add) const
 {
-	if (PropertyTag)
-		shape.add(tag(), add ? sShape::FL_EXT : sShape::FL_RM);
-	else if ((PropertySetId || DistinguishedPropertySetId) && (PropertyName || PropertyId))
-		shape.add(name(), type(), add ? sShape::FL_EXT : sShape::FL_RM);
-	else
-		throw InputError(E3061);
+        if (PropertyTag) {
+                auto t = tag();
+                shape.add(t, add ? sShape::FL_EXT : sShape::FL_RM);
+        } else if ((PropertySetId || DistinguishedPropertySetId) && (PropertyName || PropertyId)) {
+                shape.add(name(), type(), add ? sShape::FL_EXT : sShape::FL_RM);
+        } else {
+                throw InputError(E3061);
+        }
 }
 
 /**
