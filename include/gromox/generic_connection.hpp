@@ -11,6 +11,7 @@ struct GX_EXPORT generic_connection {
 	~generic_connection() { reset(); }
 	generic_connection &operator=(generic_connection &&);
 
+	static generic_connection takeover(int client_fd);
 	static generic_connection accept(int listen_fd, int haproxy_level, gromox::atomic_bool *stop_accept);
 
 	void reset(bool slp = 0) noexcept

@@ -710,6 +710,51 @@ generic_connection &generic_connection::operator=(generic_connection &&o)
 	return *this;
 }
 
+generic_connection generic_connection::takeover(int cl_sock)
+{
+	generic_connection conn;
+	conn.sockd = std::move(cl_sock);
+	struct sockaddr_storage sv_addr, cl_addr;
+	socklen_t addrlen = sizeof(cl_addr);
+	auto ret = getpeername(conn.sockd, reinterpret_cast<sockaddr *>(&cl_addr),
+	           &addrlen);
+	if (ret != 0) {
+		mlog(LV_WARN, "getpeername: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	/* no call to haproxy — the socket may already be through all those init stages */
+
+	char txtport[40];
+	ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
+	      conn.client_addr, sizeof(conn.client_addr), txtport,
+	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.client_port = strtoul(txtport, nullptr, 0);
+	addrlen = sizeof(sv_addr);
+	ret = getsockname(conn.sockd, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
+	if (ret != 0) {
+		mlog(LV_WARN, "getsockname: %s\n", strerror(errno));
+		conn.reset();
+		return conn;
+	}
+	ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
+	      conn.server_addr, sizeof(conn.server_addr), txtport,
+	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.server_port = strtoul(txtport, nullptr, 0);
+	conn.last_timestamp = tp_now();
+	return conn;
+}
+
 generic_connection generic_connection::accept(int sv_sock,
     int haproxy, gromox::atomic_bool *stop_accept)
 {
