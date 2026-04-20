@@ -49,6 +49,7 @@ using namespace gromox;
 
 struct parser_params {
 	std::shared_ptr<EXMDB_CONNECTION> conn;
+	bool is_connected = false, b_private = false;
 };
 
 static size_t g_max_threads, g_max_routers;
@@ -200,6 +201,115 @@ static bool max_routers_reached()
 	return g_router_list.size() >= g_max_routers;
 }
 
+static int rqi_terminate(EXMDB_CONNECTION &conn, exmdb_response resp_code)
+{
+	if (HXio_fullwrite(conn.sockd, &resp_code, 1) != 1)
+		/* ignore */;
+	return -1;
+}
+
+static int rqi_connect(parser_params &param, const exreq_connect &q,
+    BINARY &output_buf)
+{
+	auto &conn = *param.conn;
+
+	if (!exmdb_parser_is_local(q.prefix, &param.b_private))
+		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
+	else if (!!param.b_private != !!q.b_private)
+		return rqi_terminate(conn, exmdb_response::misconfig_mode);
+
+	conn.remote_id = q.remote_id;
+	exmdb_server::set_remote_id(conn.remote_id.c_str());
+	param.is_connected = true;
+	free(output_buf.pb);
+	output_buf.pb = static_cast<uint8_t *>(calloc(1, 5));
+	if (output_buf.pb == nullptr)
+		return rqi_terminate(conn, exmdb_response::lack_memory);
+	output_buf.pb[0] = static_cast<uint8_t>(exmdb_response::success);
+	output_buf.cb = 5;
+	return 0;
+}
+
+static int rqi_listen(parser_params &param, const exreq_listen_notification &q) try
+{
+	auto &conn = *param.conn;
+	if (g_max_routers != 0 && max_routers_reached())
+		return rqi_terminate(conn, exmdb_response::max_reached);
+
+	auto router = std::make_shared<ROUTER_CONNECTION>();
+	router->remote_id = q.remote_id;
+	static constexpr char success[5]{};
+	auto wrret = write(conn.sockd, success, std::size(success));
+	if (wrret < 0 || static_cast<size_t>(wrret) != std::size(success))
+		return -1; /* OS error */
+	router->thr_id = std::move(conn.thr_id);
+	router->sockd  = std::move(conn.sockd);
+	conn.thr_id = {};
+	conn.sockd = -1;
+	router->last_time = time(nullptr);
+	{
+		std::unique_lock r_hold(g_router_lock);
+		g_router_list.insert(router);
+	}
+	{
+		std::unique_lock chold(g_connection_lock);
+		g_connection_list.erase(param.conn);
+	}
+	/*
+	 * This function runs practically forever;
+	 * thus we close the connection when that is all done.
+	 */
+	return notification_agent_thread_work(std::move(router));
+} catch (const std::bad_alloc &) {
+	return rqi_terminate(*param.conn, exmdb_response::lack_memory);
+}
+
+static int rqi_unconnected(parser_params &param, const exreq &request,
+    BINARY &output_buf)
+{
+	switch (request.call_id) {
+	case exmdb_callid::connect:
+		return rqi_connect(param, static_cast<const exreq_connect &>(request),
+		       output_buf);
+	case exmdb_callid::listen_notification:
+		return rqi_listen(param, static_cast<const exreq_listen_notification &>(request));
+	default:
+		return rqi_terminate(*param.conn, exmdb_response::connect_incomplete);
+	}
+}
+
+/**
+ * On success, sets output_buf to something to send to the network and returns
+ * 0. On error when the connection should be immediately closed, -1 is
+ * returned. (In the error case, writing the error packet to the network is
+ * done by rqp_io itself.)
+ */
+static int rqi_handle_buffer(parser_params &param, std::string_view input_buf,
+    BINARY &output_buf)
+{
+	auto &conn = *param.conn;
+	exmdb_server::build_env(param.b_private ? EM_PRIVATE : 0, nullptr);
+	auto cl_env = HX::make_scope_exit(exmdb_server::free_env);
+
+	std::unique_ptr<exreq> request;
+	auto status = exmdb_ext_pull_request(input_buf, request);
+	if (status != pack_result::ok)
+		return rqi_terminate(conn, exmdb_response::pull_error);
+	if (request == nullptr)
+		return rqi_terminate(conn, exmdb_response::lack_memory);
+	if (request->dir != nullptr)
+		stripslash(request->dir);
+
+	std::unique_ptr<exresp> response;
+	if (!param.is_connected)
+		return rqi_unconnected(param, *request, output_buf);
+	if (!exmdb_parser_dispatch(request.get(), response))
+		return rqi_terminate(conn, exmdb_response::dispatch_error);
+	if (exmdb_ext_push_response(response.get(), &output_buf) != pack_result::success)
+		return rqi_terminate(conn, exmdb_response::push_error);
+	return 0;
+}
+
 static void *request_parser_thread(void *pparam)
 {
 	uint8_t resp_buff[5]{};
@@ -218,7 +328,6 @@ static void *request_parser_thread(void *pparam)
 	}
 	size_t offset = 0;
 	bool is_writing = false, is_connected = false;
-	bool b_private = false; /* whatever for connect request */
 	BINARY output_buf{};
 	auto cl_0 = HX::make_scope_exit([&]() { free(output_buf.pb); });
 	std::string input_buf;
@@ -275,94 +384,17 @@ static void *request_parser_thread(void *pparam)
 			break;
 		offset += read_len;
 		if (offset < input_buf.size())
-			continue;
-
-		/*
-		 * We have a complete request, so make sure that the next
-		 * iteration in any case starts with a blank input_buf.
-		 */
-		auto cl_1 = HX::make_scope_exit([&]() { input_buf.clear(); });
-		exmdb_server::build_env(b_private ? EM_PRIVATE : 0, nullptr);
-		std::unique_ptr<exreq> request;
-		auto status = exmdb_ext_pull_request(input_buf, request);
-		if (request != nullptr && request->dir != nullptr)
-			stripslash(request->dir);
-
-		exmdb_response tmp_byte;
-		std::unique_ptr<exresp> response;
-		if (status != pack_result::ok ||
-		    request == nullptr /* [cov-scan] same as status==pack_result::alloc */) {
-			tmp_byte = exmdb_response::pull_error;
-		} else if (!is_connected) {
-			if (request->call_id == exmdb_callid::connect) {
-				auto &q = *static_cast<const exreq_connect *>(request.get());
-				if (!exmdb_parser_is_local(q.prefix, &b_private)) {
-					tmp_byte = exmdb_response::misconfig_prefix;
-				} else if (!!b_private != !!q.b_private) {
-					tmp_byte = exmdb_response::misconfig_mode;
-				} else {
-					pconnection->remote_id = q.remote_id;
-					exmdb_server::free_env();
-					exmdb_server::set_remote_id(pconnection->remote_id.c_str());
-					is_connected = TRUE;
-					if (HXio_fullwrite(pconnection->sockd, resp_buff, 5) != 5)
-						break;
-					offset = 0;
-					continue;
-				}
-			} else if (request->call_id == exmdb_callid::listen_notification) {
-				auto &q = *static_cast<const exreq_listen_notification *>(request.get());
-				std::shared_ptr<ROUTER_CONNECTION> prouter;
-				try {
-					prouter = std::make_shared<ROUTER_CONNECTION>();
-					prouter->remote_id.reserve(strlen(q.remote_id));
-				} catch (const std::bad_alloc &) {
-				}
-				if (NULL == prouter) {
-					tmp_byte = exmdb_response::lack_memory;
-				} else if (g_max_routers != 0 && max_routers_reached()) {
-					tmp_byte = exmdb_response::max_reached;
-				} else {
-					prouter->remote_id = q.remote_id;
-					exmdb_server::free_env();
-					if (5 != write(pconnection->sockd, resp_buff, 5)) {
-						break;
-					} else {
-						prouter->thr_id = pconnection->thr_id;
-						prouter->sockd = pconnection->sockd;
-						pconnection->thr_id = {};
-						pconnection->sockd = -1;
-						prouter->last_time = time(nullptr);
-						std::unique_lock r_hold(g_router_lock);
-						g_router_list.insert(prouter);
-						r_hold.unlock();
-						std::unique_lock chold(g_connection_lock);
-						g_connection_list.erase(pconnection);
-						chold.unlock();
-						notification_agent_thread_work(std::move(prouter));
-					}
-				}
-			} else {
-				tmp_byte = exmdb_response::connect_incomplete;
-			}
-		} else if (!exmdb_parser_dispatch(request.get(), response)) {
-			tmp_byte = exmdb_response::dispatch_error;
-		} else if (exmdb_ext_push_response(response.get(), &output_buf) != pack_result::success) {
-			tmp_byte = exmdb_response::push_error;
-		} else {
-			/* Succesful serialization to output_buf */
-			exmdb_server::free_env();
-			offset = 0;
-			is_writing = true;
-			continue;
-		}
-		exmdb_server::free_env();
-		if (HXio_fullwrite(pconnection->sockd, &tmp_byte, 1) != 1)
-			/* ignore */;
-		break;
+			continue; /* keep reading as necessary */
+		if (rqi_handle_buffer(*param, input_buf, output_buf) < 0)
+			break;
+		input_buf.clear();
+		offset = 0;
+		is_writing = true;
 	}
-	close(pconnection->sockd);
-	pconnection->sockd = -1;
+	if (pconnection->sockd >= 0) {
+		close(pconnection->sockd);
+		pconnection->sockd = -1;
+	}
 	if (!pconnection->b_stop) {
 		pconnection->thr_id = {};
 		pthread_detach(pthread_self());

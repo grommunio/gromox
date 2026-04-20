@@ -59,7 +59,7 @@ static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> 
 	return TRUE;
 }
 
-void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
+int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 {
 	uint32_t ping_buff;
 	
@@ -120,4 +120,5 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 		pthread_detach(pthread_self());
 	}
 	pthread_exit(nullptr);
+	return -1;
 }
