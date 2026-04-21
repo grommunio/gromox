@@ -168,7 +168,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		if (!exmdb_provider_reload(gxcfg, pconfig))
 			return false;
-		bool allow_lpc = strcasecmp(get_prog_id(), "istore") == 0;
+		bool allow_lpc = strcmp(service_get_prog_id(), "istore") == 0;
 		if (!allow_lpc)
 			return TRUE;
 		if (exmdb_listener_init(*gxcfg, *pconfig) != 0)
@@ -234,7 +234,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule, std::move(smtp_url));
 		db_engine_init(table_size, cache_interval, populating_num);
-		bool allow_lpc = strcasecmp(get_prog_id(), "istore") == 0;
+		bool allow_lpc = strcmp(service_get_prog_id(), "istore") == 0;
 		if (!allow_lpc)
 			exmdb_parser_init(0, 0);
 		else

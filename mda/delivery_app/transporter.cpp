@@ -137,7 +137,6 @@ static constexpr struct dlfuncs server_funcs = {
 	},
 	/* .get_context_num = */ []() { return g_threads_max + g_free_num; },
 	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
-	/* .get_prog_id = */ nullptr,
 	/* .ndr_stack_alloc = */ nullptr,
 	/* .rpc_new_stack = */ nullptr,
 	/* .rpc_free_stack = */ nullptr,

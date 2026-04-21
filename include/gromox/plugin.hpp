@@ -63,7 +63,6 @@ struct dlfuncs {
 	const char *(*get_data_path)();
 	unsigned int (*get_context_num)();
 	const char *(*get_host_ID)();
-	const char *(*get_prog_id)();
 	void *(*ndr_stack_alloc)(int, size_t);
 	BOOL (*rpc_new_stack)();
 	void (*rpc_free_stack)();

@@ -36,6 +36,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "sql2.hpp"
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
@@ -592,7 +593,7 @@ bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&cfg)
 	if (v == nullptr)
 		v = cfg->get_value("schema_upgrades");
 	par.schema_upgrade = SSU_NOT_ENABLED;
-	auto prog_id = get_prog_id();
+	auto prog_id = service_get_prog_id();
 	auto host_id = get_host_ID();
 	if (prog_id == nullptr || strcmp(prog_id, "istore") != 0)
 		par.schema_upgrade = SSU_NOT_ME;

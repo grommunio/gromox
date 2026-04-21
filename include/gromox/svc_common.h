@@ -14,7 +14,6 @@
 	x decltype(dlfuncs::get_data_path) get_data_path; \
 	x decltype(dlfuncs::get_context_num) get_context_num; \
 	x decltype(dlfuncs::get_host_ID) get_host_ID; \
-	x decltype(dlfuncs::get_prog_id) get_prog_id; \
 	x decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
 }
 #define register_service(n, f) imp__symreg((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
@@ -28,5 +27,4 @@
 	get_data_path = param.get_data_path; \
 	get_context_num = param.get_context_num; \
 	get_host_ID = param.get_host_ID; \
-	get_prog_id = param.get_prog_id; \
 	query_service1(ndr_stack_alloc);

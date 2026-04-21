@@ -122,7 +122,6 @@ static constexpr struct dlfuncs server_funcs = {
                         auto r = le_svc_mgr->g_config_file->get_value("host_id");
                         return r != nullptr ? r : "localhost";
 	},
-	/* .get_prog_id = */ []() { return le_svc_mgr->m_prog_id.c_str(); },
 };
 
 int svc_mgr::run_early()
@@ -432,4 +431,9 @@ void service_release(const char *fun, const char *caller)
 void service_trigger_all(enum plugin_op ev)
 {
 	return le_svc_mgr->trigger_all(ev);
+}
+
+const char *service_get_prog_id()
+{
+	return le_svc_mgr->m_prog_id.c_str();
 }

@@ -2864,7 +2864,6 @@ static constexpr struct dlfuncs server_funcs = {
 	},
 	/* .get_context_num = */ []() { return g_connection_num; },
 	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
-	/* .get_prog_id = */ nullptr,
 	/* .ndr_stack_alloc = */ pdu_processor_ndr_stack_alloc,
 	/* .rpc_new_stack = */ pdu_processor_rpc_new_stack,
 	/* .rpc_free_stack = */ pdu_processor_rpc_free_stack,
