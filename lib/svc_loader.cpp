@@ -69,9 +69,8 @@ struct svc_mgr final {
 	int run_library(const generic_module &);
 
 	public:
-	std::string g_config_dir, g_data_dir;
+	std::string g_config_dir, g_data_dir, m_prog_id;
 	unsigned int g_context_num;
-	const char *g_program_identifier;
 	std::shared_ptr<config_file> g_config_file;
 
 	protected:
@@ -97,7 +96,8 @@ static thread_local SVC_PLUG_ENTITY *g_cur_plug;
  *  we can load the .svc plug-in
  */
 svc_mgr::svc_mgr(service_init_param &&parm) :
-	g_context_num(parm.context_num), g_program_identifier(parm.prog_id),
+	m_prog_id(znul(parm.prog_id)),
+	g_context_num(parm.context_num),
 	g_config_file(std::move(parm.cfg))
 {
 	if (g_config_file == nullptr) {
@@ -122,7 +122,7 @@ static constexpr struct dlfuncs server_funcs = {
                         auto r = le_svc_mgr->g_config_file->get_value("host_id");
                         return r != nullptr ? r : "localhost";
 	},
-	/* .get_prog_id = */ []() { return le_svc_mgr->g_program_identifier; },
+	/* .get_prog_id = */ []() { return le_svc_mgr->m_prog_id.c_str(); },
 };
 
 int svc_mgr::run_early()
