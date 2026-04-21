@@ -213,7 +213,7 @@ static int rqi_connect(parser_params &param, const exreq_connect &q,
 {
 	auto &conn = *param.conn;
 
-	if (!exmdb_parser_is_local(q.prefix, &param.b_private))
+	if (!exmdb_parser_is_local(q.dir, &param.b_private))
 		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
 	else if (!!param.b_private != !!q.b_private)
 		return rqi_terminate(conn, exmdb_response::misconfig_mode);

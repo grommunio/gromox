@@ -47,7 +47,7 @@ struct exreq {
 
 struct exreq_connect final : public exreq {
 	using view_t = exreq_connect;
-	char *prefix = nullptr, *remote_id = nullptr;
+	char *remote_id = nullptr;
 	BOOL b_private = true;
 };
 

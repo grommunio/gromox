@@ -254,7 +254,7 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir,
 		 */
 		exreq_connect rqc;
 		rqc.call_id   = exmdb_callid::connect;
-		rqc.prefix    = deconst(dir);
+		rqc.dir       = deconst(dir);
 		rqc.remote_id = deconst(bp_client->m_client_id.c_str());
 		rqc.b_private = ident.type == srv_type::xprivate ? TRUE : false;
 		if (exmdb_ext_push_request(&rqc, &bin) != pack_result::ok)
