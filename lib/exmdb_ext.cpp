@@ -2234,12 +2234,6 @@ pack_result exmdb_ext_pull_request(std::string_view pbin_in,
 		prequest = std::move(r);
 		prequest->call_id = call_id;
 		return xret;
-	} else if (call_id == exmdb_callid::listen_notification) {
-		auto r = std::make_unique<exreq_listen_notification>();
-		auto xret = exmdb_pull(ext_pull, *r);
-		prequest = std::move(r);
-		prequest->call_id = call_id;
-		return xret;
 	}
 
 	char *dir = nullptr;
@@ -2285,8 +2279,6 @@ pack_result exmdb_ext_push_request(const exreq *prequest, BINARY *pbin_out)
 		return status;
 	if (prequest->call_id == exmdb_callid::connect) {
 		status = exmdb_push(ext_push, *static_cast<const exreq_connect *>(prequest));
-	} else if (prequest->call_id == exmdb_callid::listen_notification) {
-		status = exmdb_push(ext_push, *static_cast<const exreq_listen_notification *>(prequest));
 	} else {
 		status = ext_push.p_str(prequest->dir);
 		if (status != pack_result::ok)

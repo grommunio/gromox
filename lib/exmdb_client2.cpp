@@ -107,8 +107,8 @@ class srv_conn_ref {
  */
 struct async_listener {
 	async_listener() = default;
-	async_listener(const srv_ident &ident, exmdb_client_remote *bp_client) :
-		m_ident(ident), m_client(bp_client) {}
+	async_listener(const srv_ident &ident, exmdb_client_remote *bp_client, const char *dir) :
+		m_ident(ident), m_client(bp_client), m_dir(dir) {}
 	NOMOVE(async_listener);
 	~async_listener();
 	errno_t launch();
@@ -124,6 +124,7 @@ struct async_listener {
 	std::mutex startup_mtx;
 	srv_ident m_ident;
 	exmdb_client_remote *m_client = nullptr;
+	std::string m_dir;
 };
 
 /**
@@ -140,7 +141,7 @@ class srv_entry {
 	srv_conn_ref extract_one_connection();
 	bool drop_one_connection();
 	bool purgable() const;
-	void launch_notify_listener(exmdb_client_remote *);
+	void launch_notify_listener(exmdb_client_remote *, const char *dir);
 
 	/*
 	 * Repeat the identifier so we have all the connection info even if the
@@ -240,6 +241,7 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir,
 	if (b_listen) {
 		exreq_listen_notification rql;
 		rql.call_id   = exmdb_callid::listen_notification;
+		rql.dir       = deconst(dir);
 		rql.remote_id = deconst(bp_client->m_client_id.c_str());
 		if (exmdb_ext_push_request(&rql, &bin) != pack_result::ok)
 			return -1;
@@ -414,7 +416,7 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 
 void async_listener::connect_and_listen()
 {
-	auto fd = make_exmdb_connection(m_ident, "", true, m_client);
+	auto fd = make_exmdb_connection(m_ident, m_dir.c_str(), true, m_client);
 	if (fd.get() < 0) {
 		sleep(1);
 		return;
@@ -536,7 +538,8 @@ srv_conn_ref srv_entry::extract_one_connection()
  * conn_lock is acquired internally for the check+emplace of m_async,
  * but released before the potentially blocking launch() call.
  */
-void srv_entry::launch_notify_listener(exmdb_client_remote *bp_client) try
+void srv_entry::launch_notify_listener(exmdb_client_remote *bp_client,
+    const char *dir) try
 {
 	if (bp_client->m_event_proc == nullptr)
 		return;
@@ -546,7 +549,7 @@ void srv_entry::launch_notify_listener(exmdb_client_remote *bp_client) try
 		std::lock_guard hold(conn_lock);
 		if (m_async != nullptr)
 			return;
-		asl = m_async = std::make_shared<async_listener>(ident, bp_client);
+		asl = m_async = std::make_shared<async_listener>(ident, bp_client, dir);
 	}
 	if (asl->launch() != 0) {
 		std::lock_guard hold(conn_lock);
@@ -746,7 +749,7 @@ srv_conn_ref locator::get_connection(const char *dir) try
 	mlog(LV_DEBUG, "exmdb_client: connected to [%s]:%hu (fd %d), hnew=%zu",
 		ident.host.c_str(), ident.port, cref->m_fd.get(), h_new);
 
-	srv->launch_notify_listener(m_client);
+	srv->launch_notify_listener(m_client, dir);
 	return cref;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
