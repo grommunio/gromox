@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 	mlog(LV_INFO, "istore: host ID is \"%s\"", str);
 
 	filedes_limit_bump(cfg->get_ll("istore_fd_limit"));
-	service_init({cfg, g_dfl_svc_plugins, 1, "istore"});
+	service_init({cfg, g_dfl_svc_plugins, 1, "istore", argv[0]});
 	auto cl_0 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0)
 		return EXIT_FAILURE;
