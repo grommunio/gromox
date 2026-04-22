@@ -2227,7 +2227,7 @@ static const char *oxcical_import_internal(const char *method,
 		return "E-2703: oxcical_parse_duration returned an unspecified error";
 
 	if (!b_allday && start_itime.type != itime_type::utc &&
-	    start_itime.type != itime_type::utc && start_itime.hour == 0 &&
+	    end_itime.type != itime_type::utc && start_itime.hour == 0 &&
 	    start_itime.minute == 0 && start_itime.second == 0 &&
 	    end_itime.hour == 0 && end_itime.minute == 0 &&
 	    end_itime.second == 0)
