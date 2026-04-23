@@ -77,6 +77,7 @@ struct MAIL;
 struct message_content;
 struct message_object;
 struct store_object;
+struct user_object;
 
 extern void common_util_init(const char *org_name, unsigned int max_rcpt, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
 extern int common_util_run(const char *data_path);
@@ -144,6 +145,7 @@ extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY 
 extern std::unique_ptr<message_content, gromox::mc_delete> cu_ical_to_message(store_object *, const BINARY *ical);
 extern ec_error_t cu_ical_to_message2(store_object *, char *ical_data, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
 extern BOOL common_util_message_to_vcf(message_object *, BINARY *vcfout);
+extern bool cu_abentry_to_vcf(user_object *, bool is_group, BINARY *vcfout);
 extern std::unique_ptr<message_content, gromox::mc_delete> common_util_vcf_to_message(store_object *, const BINARY *vcf);
 extern ec_error_t cu_vcf_to_message2(store_object *, char *vcf_data, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
 extern const char *common_util_get_default_timezone();
