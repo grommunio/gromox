@@ -840,7 +840,8 @@ errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 		return ENOENT; /* eof */
 	if (read_len < 0) {
 		errno_t se = errno;
-		mlog(LV_ERR, "%s: recvmsg.1: %s", __PRETTY_FUNCTION__, strerror(se));
+		if (se != EINTR && se != EAGAIN)
+			mlog(LV_ERR, "%s: recvmsg.1: %s", __PRETTY_FUNCTION__, strerror(se));
 		return se;
 	}
 	for (auto cmsg = CMSG_FIRSTHDR(&msg); cmsg != nullptr;
