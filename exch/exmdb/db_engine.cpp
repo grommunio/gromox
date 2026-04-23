@@ -805,6 +805,7 @@ static bool dbase_is_purgable(const db_base &pdb, time_point now)
 
 static void *db_expiry_thread(void *param)
 {
+	bool once = false;
 	pthread_setname_np(pthread_self(), "db_expiry");
 	int count;
 
@@ -825,9 +826,15 @@ static void *db_expiry_thread(void *param)
 		 * enough to establish absence of other readers (and there
 		 * ought to be no new ones, since we also hold g_hash_lock).
 		 */
-		std::erase_if(g_hash_table, [=](const decltype(g_hash_table)::value_type &iter) {
+		auto z = std::erase_if(g_hash_table, [=](const decltype(g_hash_table)::value_type &iter) {
 			return dbase_is_purgable(iter.second, now_time);
 		});
+		if (z > 0 && g_istore_standalone & ISTORE_SPLIT_WORKERS &&
+		    !once && g_hash_table.empty()) {
+			mlog(LV_INFO, "Ending istore worker since db was closed by inactivity");
+			once = true;
+			raise(SIGTERM);
+		}
 	}
 	return nullptr;
 }
