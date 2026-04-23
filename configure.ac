@@ -74,6 +74,12 @@ AC_ARG_WITH([ubsan], AS_HELP_STRING([--with-ubsan], [Activate Undefined Behavior
 	my_LDFLAGS="$my_LDFLAGS -fsanitize=undefined"
 	NO_VSYM=1
 ])
+AC_ARG_WITH([tsan], AS_HELP_STRING([--with-tsan], [Activate Undefined Behavior Sanitizer]), [
+	my_CFLAGS="$my_CFLAGS -fsanitize=thread"
+	my_CXXFLAGS="$my_CXXFLAGS -fsanitize=thread"
+	my_LDFLAGS="$my_LDFLAGS -fsanitize=thread"
+	NO_VSYM=1
+])
 AS_IF([test -z "$NO_VSYM"], [
 	my_CFLAGS="$my_CFLAGS -fvisibility=hidden"
 	my_CXXFLAGS="$my_CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
