@@ -4923,12 +4923,16 @@ ec_error_t zs_messagetovcf(GUID hsession, uint32_t hmessage, BINARY *pvcf_bin)
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
-	if (pmessage == nullptr)
+	auto obj = pinfo->ptree->get_object<void>(hmessage, &mapi_type);
+	if (obj == nullptr)
 		return ecNullObject;
-	if (mapi_type != zs_objtype::message)
-		return ecNotSupported;
-	return common_util_message_to_vcf(pmessage, pvcf_bin) ? ecSuccess : ecError;
+	if (mapi_type == zs_objtype::message)
+		return common_util_message_to_vcf(static_cast<message_object *>(obj), pvcf_bin) ?
+			ecSuccess : ecError;
+	if (mapi_type == zs_objtype::mailuser || mapi_type == zs_objtype::distlist)
+		return cu_abentry_to_vcf(static_cast<user_object *>(obj),
+		       mapi_type == zs_objtype::distlist, pvcf_bin) ? ecSuccess : ecError;
+	return ecNotSupported;
 }
 
 ec_error_t zs_vcftomessage(GUID hsession,
