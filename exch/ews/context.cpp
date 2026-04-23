@@ -2320,10 +2320,12 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		}
 		if (body_upd) {
 			std::vector<proptag_t> body_rm = {PR_RTF_COMPRESSED};
-			if (has_html && !has_text)
-				body_rm.insert(body_rm.end(), {PR_BODY, PR_BODY_W});
-			else if (has_text && !has_html)
-				body_rm.push_back(PR_HTML);
+			if (has_html && !has_text) {
+				body_rm.emplace_back(PR_BODY);
+				body_rm.emplace_back(PR_BODY_W);
+			} else if (has_text && !has_html) {
+				body_rm.emplace_back(PR_HTML);
+			}
 			PROBLEM_ARRAY rtf_problems;
 			if (!exmdb.remove_instance_properties(dir.c_str(),
 			    eInst->instanceId, proptag_cspan{body_rm}, &rtf_problems))
