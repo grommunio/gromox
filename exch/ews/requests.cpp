@@ -2946,10 +2946,66 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtTimeZoneStruct, PT_BINARY);
 		shape.add(NtPrivate, PT_BOOLEAN);
 		ctx.getNamedTags(dir, shape, true);
+
 		for (const auto &update : change.Updates) {
-			if (std::holds_alternative<tSetItemField>(update))
-				std::get<tSetItemField>(update).put(shape);
-		}
+    		    if (std::holds_alternative<tSetItemField>(update)) {
+        		const auto &f = std::get<tSetItemField>(update);
+        		bool skip_put = false;
+
+        		if (std::holds_alternative<tFieldURI>(f.fieldURI.asVariant())) {
+            		    const auto &uri = std::get<tFieldURI>(f.fieldURI.asVariant());
+            		    mlog(LV_ERR, "EWS RCPT XML: FieldURI=%s", uri.FieldURI.c_str());
+
+            		    if (f.item) {
+                		const char *top = f.item->Name();
+                		mlog(LV_ERR, "EWS RCPT XML: Item top node=%s",
+                    		    top ? top : "(null)");
+
+                		for (auto child = f.item->FirstChildElement();
+                     		     child != nullptr;
+                     		     child = child->NextSiblingElement()) {
+                    		    const char *name = child->Name();
+                    		    mlog(LV_ERR, "EWS RCPT XML: child node=%s",
+                        		name ? name : "(null)");
+
+                    		    if (name && strcmp(name, "ToRecipients") == 0) {
+                        		size_t n = 0;
+                        		for (auto mb = child->FirstChildElement("Mailbox");
+                             		     mb != nullptr;
+                             		     mb = mb->NextSiblingElement("Mailbox")) {
+                            		    ++n;
+                            		    auto ea = mb->FirstChildElement("EmailAddress");
+                            		    auto nm = mb->FirstChildElement("Name");
+                            		    mlog(LV_ERR,
+                                	        "EWS RCPT XML: To[%zu] email=%s name=%s",
+                                		n,
+                                		ea && ea->GetText() ? ea->GetText() : "(null)",
+                                		nm && nm->GetText() ? nm->GetText() : "(null)");
+                        		}
+                        		mlog(LV_ERR,
+                            		    "EWS RCPT XML: ToRecipients mailbox_count=%zu", n);
+                    		    }
+                		}
+            		    } else {
+                		mlog(LV_ERR, "EWS RCPT XML: item=(null)");
+            		    }
+
+            		    if (uri.FieldURI == "message:ToRecipients") {
+                		const tinyxml2::XMLElement *xml =
+                    		    f.item ? f.item->FirstChildElement("ToRecipients") : nullptr;
+                		ctx.updateMessageRecipients(dir, parentFolder,
+                    		    mid.messageId(), xml);
+                		mlog(LV_ERR, "EWS RCPT XML: bypass put(shape) for ToRecipients");
+                		skip_put = true;
+            		    }
+        		}
+
+        		if (!skip_put)
+            		    f.put(shape);
+    		}
+	}
+
+
 		tContact::genFields(shape);
 		tCalendarItem::setDatetimeFields(shape);
 		if (shape.recurrence)
@@ -2994,6 +3050,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemSave(E3446);
 		} else {
 			ctx.updated(dir, mid, shape);
+			
 			TPROPVAL_ARRAY props = shape.write();
 			const auto &tagsRm = shape.remove_vec();
 			PROBLEM_ARRAY problems;

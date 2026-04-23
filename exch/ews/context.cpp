@@ -2805,6 +2805,184 @@ void EWSContext::updateAttendees(const std::string &dir,
 		throw EWSError::ItemSave(E3355);
 }
 
+void EWSContext::updateMessageRecipients(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid,
+    const tinyxml2::XMLElement *toRecipients) const
+{
+    mlog(LV_ERR, "EWS RCPT ACTIVE: updateMessageRecipients called mid=%llu xml=%p",
+        static_cast<unsigned long long>(mid), toRecipients);
+
+    // --- log XML ---
+    unsigned int xml_count = 0;
+    for (auto mb = toRecipients ? toRecipients->FirstChildElement("Mailbox") : nullptr;
+         mb != nullptr;
+         mb = mb->NextSiblingElement("Mailbox")) {
+        ++xml_count;
+
+        const char *email = nullptr;
+        const char *name = nullptr;
+
+        if (auto e = mb->FirstChildElement("EmailAddress"))
+            email = e->GetText();
+        if (auto n = mb->FirstChildElement("Name"))
+            name = n->GetText();
+
+        mlog(LV_ERR, "EWS RCPT ACTIVE: xml mailbox[%u] email=%s name=%s",
+            xml_count,
+            email ? email : "(null)",
+            name ? name : "(null)");
+    }
+
+    mlog(LV_ERR, "EWS RCPT ACTIVE: xml mailbox_count=%u", xml_count);
+
+    // --- lecture message ---
+    MESSAGE_CONTENT *msg = nullptr;
+    const char *username = effectiveUser(parent);
+
+    if (!plugin().exmdb.read_message(dir.c_str(), username, CP_ACP, mid, &msg) || msg == nullptr) {
+        mlog(LV_ERR, "EWS RCPT ACTIVE: read_message failed mid=%llu",
+            static_cast<unsigned long long>(mid));
+        return;
+    }
+
+    unsigned int old_count = (msg->children.prcpts != nullptr)
+        ? msg->children.prcpts->count
+        : 0;
+
+    mlog(LV_ERR, "EWS RCPT ACTIVE: current stored rcpt_count=%u mid=%llu",
+        old_count, static_cast<unsigned long long>(mid));
+
+    // --- création prcpts conforme ---
+    auto prcpts = tarray_set_init();
+    if (prcpts == nullptr) {
+        mlog(LV_ERR, "EWS RCPT ACTIVE: tarray_set_init failed");
+        return;
+    }
+
+    msg->set_rcpts_internal(prcpts);
+
+    unsigned int added = 0;
+
+    // --- remplissage ---
+    for (auto mb = toRecipients ? toRecipients->FirstChildElement("Mailbox") : nullptr;
+         mb != nullptr;
+         mb = mb->NextSiblingElement("Mailbox")) {
+
+        const char *email = nullptr;
+        if (auto e = mb->FirstChildElement("EmailAddress"))
+            email = e->GetText();
+
+        if (!email || *email == '\0')
+            continue;
+
+        auto row = prcpts->emplace();
+        if (row == nullptr) {
+            mlog(LV_ERR, "EWS RCPT ACTIVE: emplace failed");
+            continue;
+        }
+
+        uint32_t recip_type = MAPI_TO;
+
+        row->set(PR_RECIPIENT_TYPE, &recip_type);
+        row->set(PR_ADDRTYPE, "SMTP");
+        row->set(PR_EMAIL_ADDRESS, email);
+        row->set(PR_SMTP_ADDRESS, email);
+        row->set(PR_DISPLAY_NAME, email);
+
+        ++added;
+    }
+
+    mlog(LV_ERR, "EWS RCPT ACTIVE: injected rcpt_count=%u", added);
+
+    // --- écriture correcte (signature réelle) ---
+    uint64_t outmid = 0, outcn = 0;
+    ec_error_t error = ecSuccess;
+
+    if (!plugin().exmdb.write_message(
+            dir.c_str(),
+            CP_ACP,
+            parent.folderId,
+            msg,
+            {},
+            &outmid,
+            &outcn,
+            &error) || error != ecSuccess) {
+        mlog(LV_ERR, "EWS RCPT ACTIVE: write_message FAILED mid=%llu error=%d",
+            static_cast<unsigned long long>(mid), static_cast<int>(error));
+        return;
+    }
+
+    mlog(LV_ERR, "EWS RCPT ACTIVE: write_message OK oldmid=%llu newmid=%llu outcn=%llu",
+        static_cast<unsigned long long>(mid),
+        static_cast<unsigned long long>(outmid),
+        static_cast<unsigned long long>(outcn));
+
+}
+
+/*
+void EWSContext::updateMessageRecipients(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid,
+    const tinyxml2::XMLElement *toRecipients) const
+{
+    mlog(LV_ERR, "EWS RCPT ACTIVE: updateMessageRecipients called mid=%llu xml=%p",
+        static_cast<unsigned long long>(mid), toRecipients);
+}
+*/
+/*
+void EWSContext::updateMessageRecipients(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid,
+    const tinyxml2::XMLElement *xml) const
+{
+    if (xml == nullptr)
+        return;
+
+    auto &exmdb = plugin().exmdb;
+    auto inst = m_plugin.loadMessageInstance(dir, parent.folderId, mid);
+
+    if (!exmdb.empty_message_instance_rcpts(dir.c_str(), inst->instanceId)) {
+        mlog(LV_ERR, "EWS RCPT: empty_message_instance_rcpts failed");
+        return;
+    }
+
+    TARRAY_SET rcpts{};
+
+    for (auto mb = xml->FirstChildElement("Mailbox");
+         mb != nullptr;
+         mb = mb->NextSiblingElement("Mailbox")) {
+
+        tEmailAddressType addr;
+
+        if (auto ea = mb->FirstChildElement("EmailAddress")) {
+            if (ea->GetText())
+                addr.EmailAddress = ea->GetText();
+        }
+
+        if (auto nm = mb->FirstChildElement("Name")) {
+            if (nm->GetText())
+                addr.Name = nm->GetText();
+        }
+
+        if (!addr.EmailAddress)
+            continue;
+
+        addr.mkRecipient(rcpts.emplace(), MAPI_TO);
+    }
+
+    if (rcpts.count == 0) {
+        mlog(LV_ERR, "EWS RCPT: no recipients parsed");
+        return;
+    }
+
+    if (!exmdb.update_message_instance_rcpts(dir.c_str(),
+        inst->instanceId, &rcpts)) {
+        mlog(LV_ERR, "EWS RCPT: update_message_instance_rcpts failed");
+        return;
+    }
+
+    mlog(LV_ERR, "EWS RCPT: recipients applied count=%u", rcpts.count);
+}
+*/
+
 /**
  * @brief      Convert EWS Recurrence XML to MAPI properties and write to shape
  *
