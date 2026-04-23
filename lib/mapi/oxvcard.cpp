@@ -43,6 +43,24 @@ unsigned int g_oxvcard_pedantic;
 static constexpr proptag_t g_n_proptags[] = 
 	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 	PR_DISPLAY_NAME_PREFIX, PR_GENERATION};
+static constexpr proptag_t g_abentry_proptags[] = {
+	PR_DISPLAY_NAME, PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
+	PR_DISPLAY_NAME_PREFIX, PR_GENERATION, PR_NICKNAME, PR_TITLE,
+	PR_COMPANY_NAME, PR_DEPARTMENT_NAME, PR_COMMENT,
+	PR_SMTP_ADDRESS, PR_ACCOUNT, PR_EMAIL_ADDRESS,
+	PR_EMS_AB_PROXY_ADDRESSES,
+	PR_PRIMARY_TELEPHONE_NUMBER, PR_HOME_TELEPHONE_NUMBER,
+	PR_HOME2_TELEPHONE_NUMBER, PR_OTHER_TELEPHONE_NUMBER,
+	PR_BUSINESS_TELEPHONE_NUMBER, PR_BUSINESS2_TELEPHONE_NUMBER,
+	PR_MOBILE_TELEPHONE_NUMBER, PR_PAGER_TELEPHONE_NUMBER,
+	PR_CAR_TELEPHONE_NUMBER, PR_ISDN_NUMBER, PR_HOME_FAX_NUMBER,
+	PR_BUSINESS_FAX_NUMBER, PR_ASSISTANT_TELEPHONE_NUMBER,
+	PR_CALLBACK_TELEPHONE_NUMBER, PR_COMPANY_MAIN_PHONE_NUMBER,
+	PR_RADIO_TELEPHONE_NUMBER, PR_TTYTDD_PHONE_NUMBER,
+	PR_HOME_ADDRESS_POST_OFFICE_BOX, PR_HOME_ADDRESS_STREET,
+	PR_HOME_ADDRESS_CITY, PR_HOME_ADDRESS_STATE_OR_PROVINCE,
+	PR_HOME_ADDRESS_POSTAL_CODE, PR_HOME_ADDRESS_COUNTRY,
+};
 /*
  * On vcf2mt, oxvcard_import produces named properties starting at 0x8000, and
  * at the end of the function, calls get_propids and remaps to the caller's
@@ -150,6 +168,88 @@ static bool is_fax_param(const vcard_param &p)
 static inline bool has_content(const char *value)
 {
 	return value != nullptr && *value != '\0';
+}
+
+static bool oxvcard_copy_prop(TPROPVAL_ARRAY &dst, const TPROPVAL_ARRAY &src,
+    proptag_t tag)
+{
+	auto value = src.getval(tag);
+	return value == nullptr || dst.set(tag, value) == ecSuccess;
+}
+
+static bool oxvcard_abentry_to_contact(const TPROPVAL_ARRAY &props,
+    bool is_group, GET_PROPIDS get_propids, MESSAGE_CONTENT &msg)
+{
+	PROPID_ARRAY propids{};
+	auto remap_tag = [&](proptag_t t) -> proptag_t {
+		/* Given one of the source pseudo proptags like 0x8000001F, emit the actual proptag */
+		return PROP_TAG(PROP_TYPE(t), propids[PROP_ID(t) - 0x8000]);
+	};
+
+	if (!oxvcard_get_propids(&propids, get_propids))
+		return false;
+	if (msg.proplist.set(PR_MESSAGE_CLASS,
+	    is_group ? "IPM.DistList" : "IPM.Contact") != ecSuccess)
+		return false;
+
+	for (auto tag : g_abentry_proptags) {
+		switch (tag) {
+		case PR_SMTP_ADDRESS:
+		case PR_ACCOUNT:
+		case PR_EMAIL_ADDRESS:
+		case PR_EMS_AB_PROXY_ADDRESSES:
+			continue;
+		default:
+			if (!oxvcard_copy_prop(msg.proplist, props, tag))
+				return false;
+		}
+	}
+
+	auto display_name = props.get<const char>(PR_DISPLAY_NAME);
+	if (!has_content(display_name))
+		display_name = props.get<const char>(PR_SMTP_ADDRESS);
+	if (!has_content(display_name))
+		display_name = props.get<const char>(PR_ACCOUNT);
+	if (!has_content(display_name))
+		display_name = props.get<const char>(PR_EMAIL_ADDRESS);
+	if (has_content(display_name) &&
+	    (msg.proplist.set(PR_DISPLAY_NAME, display_name) != ecSuccess ||
+	     msg.proplist.set(PR_NORMALIZED_SUBJECT, display_name) != ecSuccess ||
+	     msg.proplist.set(PR_CONVERSATION_TOPIC, display_name) != ecSuccess))
+		return false;
+
+	std::vector<std::string> emails;
+	auto add_email = [&](const char *value) {
+		if (!has_content(value) || emails.size() >= std::size(g_email_proptags))
+			return;
+		for (const auto &existing : emails)
+			if (strcasecmp(existing.c_str(), value) == 0)
+				return;
+		emails.emplace_back(value);
+	};
+	add_email(props.get<const char>(PR_SMTP_ADDRESS));
+	if (emails.empty())
+		add_email(props.get<const char>(PR_ACCOUNT));
+	if (emails.empty()) {
+		auto email = props.get<const char>(PR_EMAIL_ADDRESS);
+		if (has_content(email) && strchr(email, '@') != nullptr)
+			add_email(email);
+	}
+	auto aliases = props.get<const STRING_ARRAY>(PR_EMS_AB_PROXY_ADDRESSES);
+	if (aliases != nullptr) {
+		for (size_t i = 0; i < aliases->count; ++i) {
+			auto value = aliases->ppstr[i];
+			if (!has_content(value) || strncasecmp(value, "SMTP:", 5) != 0)
+				continue;
+			add_email(value + 5);
+		}
+	}
+	for (size_t i = 0; i < emails.size(); ++i) {
+		if (msg.proplist.set(remap_tag(g_email_proptags[i]), emails[i].c_str()) != ecSuccess ||
+		    msg.proplist.set(remap_tag(g_addrtype_proptags[i]), "SMTP") != ecSuccess)
+			return false;
+	}
+	return true;
 }
 
 static void add_person(vcard &card, const MESSAGE_CONTENT &msg,
@@ -769,6 +869,29 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 	return nullptr;
 }
 #undef imp_null
+
+void oxvcard_get_abentry_proptags(PROPTAG_ARRAY *pproptags)
+{
+	pproptags->count = std::size(g_abentry_proptags);
+	pproptags->pproptag = deconst(g_abentry_proptags);
+}
+
+bool oxvcard_converter::abentry_to_vcard(const TPROPVAL_ARRAY &props,
+    bool is_group, vcard &out) try
+{
+	std::unique_ptr<message_content, mc_delete> msg(message_content_init());
+	if (msg == nullptr)
+		return false;
+	if (!oxvcard_abentry_to_contact(props, is_group, get_propids, *msg))
+		return false;
+	if (!mapi_to_vcard(*msg, out))
+		return false;
+	out.append_line("KIND", is_group ? "group" : "individual");
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
+}
 
 bool oxvcard_converter::mapi_to_vcard(const message_content &msg, vcard &vcard) try
 {
