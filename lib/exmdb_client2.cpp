@@ -246,12 +246,6 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir,
 		if (exmdb_ext_push_request(&rql, &bin) != pack_result::ok)
 			return -1;
 	} else {
-		/*
-		 * "connect" is a misnomer; exmdb_server merely verifies that
-		 * @dir is served (and that the serve check was done at least
-		 * once). Any subsequent EXRPC can specify an arbitrary
-		 * userdir.
-		 */
 		exreq_connect rqc;
 		rqc.call_id   = exmdb_callid::connect;
 		rqc.dir       = deconst(dir);
