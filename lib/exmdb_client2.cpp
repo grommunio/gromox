@@ -52,7 +52,7 @@ enum class srv_type : uint8_t {
  * private), so that comparing port/type ahead of host would not buy much.
  */
 struct srv_ident {
-	std::string host;
+	std::string host, dir;
 	uint16_t port = 0;
 	srv_type type = srv_type::undef;
 	auto operator<=>(const srv_ident &o) const = default;
@@ -178,7 +178,7 @@ class locator {
 	size_t drop_active_count();
 
 	private:
-	srv_ident try_emplace_dir(const char *);
+	srv_ident try_emplace_dir(const char *, bool sharable = false);
 	std::shared_ptr<srv_entry> try_emplace_server(const srv_ident &);
 	bool clean_some_connection(const srv_ident &dontclean);
 	void cleanup_dts();
@@ -588,7 +588,7 @@ void locator::cleanup_nts()
 	});
 }
 
-srv_ident locator::try_emplace_dir(const char *dir)
+srv_ident locator::try_emplace_dir(const char *dir, bool sharable)
 {
 	auto now = tp_now();
 	srv_ident srv;
@@ -603,6 +603,8 @@ srv_ident locator::try_emplace_dir(const char *dir)
 			return srv;
 	} while (false);
 
+	if (!sharable)
+		srv.dir = dir;
 	srv.port = 5000; /* XXX: hardcoded port number */
 	bool is_pvt = false;
 	auto err = mysql_adaptor_get_homeserver_for_dir(dir, &is_pvt, srv.host);
