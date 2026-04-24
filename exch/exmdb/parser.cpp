@@ -283,10 +283,15 @@ static bool rqi_handoff(EXMDB_CONNECTION &conn, const char *dir,
 	/* End the connection in any case once we return */
 	conn.b_stop = true;
 
-	std::string prog = znul(service_get_prog_arg0());
-	if (!prog.empty())
-		prog = std::unique_ptr<char[], stdlib_delete>(HX_dirname(prog.c_str())).get();
-	prog += "/istore";
+	std::string prog;
+	if (auto s = getenv("ISTORE_WORKER")) {
+		prog = s;
+	} else {
+		prog = znul(service_get_prog_arg0());
+		if (!prog.empty())
+			prog = std::unique_ptr<char[], stdlib_delete>(HX_dirname(prog.c_str())).get();
+		prog += "/istore";
+	}
 	const char *args[] = {prog.c_str(), "-x", dir, nullptr};
 
 	std::lock_guard lk(spwork_lock);
@@ -307,6 +312,16 @@ static int rqi_terminate(EXMDB_CONNECTION &conn, exmdb_response resp_code)
 	return -1;
 }
 
+static bool handoff_just_one(const char *rq_dir)
+{
+	auto allow_dir = getenv("ISTORE_JUST_ONE");
+	if (allow_dir == nullptr)
+		return true; /* split all */
+
+	/* split just this one */
+	return rq_dir != nullptr && strcmp(rq_dir, allow_dir) == 0;
+}
+
 static int rqi_connect(parser_params &param, const exreq_connect &q,
     std::string_view input_buf, BINARY &output_buf)
 {
@@ -319,7 +334,7 @@ static int rqi_connect(parser_params &param, const exreq_connect &q,
 		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
 	else if (!!param.b_private != !!q.b_private)
 		return rqi_terminate(conn, exmdb_response::misconfig_mode);
-	if (param.use_workers)
+	if (param.use_workers && handoff_just_one(q.dir))
 		return rqi_handoff(conn, q.dir, input_buf);
 
 	/* q.remote_id is going away, copy it */
@@ -344,7 +359,7 @@ static int rqi_listen(parser_params &param, const exreq_listen_notification &q,
 		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
 	if (g_max_routers != 0 && max_routers_reached())
 		return rqi_terminate(conn, exmdb_response::max_reached);
-	if (param.use_workers)
+	if (param.use_workers && handoff_just_one(q.dir))
 		return rqi_handoff(conn, q.dir, input_buf);
 
 	auto router = std::make_shared<router_connection>(std::move(static_cast<generic_connection &>(conn)),

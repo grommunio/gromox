@@ -16,7 +16,7 @@ debuggability.
 Read configuration directives from the given file. If this option is not
 specified, /etc/gromox/gromox.cfg will be read if it exists.
 .TP
-\fB\-x\fP \fIusername\fP
+\fB\-x\fP \fIuserdir\fP
 Used internally by istore to re-launch itself as a single-store worker process.
 This option is not meant to be used by administrators.
 .SH Configuration directives (gromox.cfg)

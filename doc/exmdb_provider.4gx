@@ -326,6 +326,15 @@ pdu := {
 .PP
 \fIconfig_file_path\fP and \fIdata_file_path\fP is determined by the
 configuration of the program that loaded the exmdb_provider component.
+.SH Environment
+.IP \(bu 4
+ISTORE_JUST_ONE: A development knob that, in conjunction with
+gromox.cfg:istore_standalone=2/3, starts separate worker(s) only for the one
+specified user/directory.
+.IP \(bu 4
+ISTORE_WORKER: A development knob that overrides the executable to use for
+istore workers. (In conjunction with ISTORE_JUST_ONE, this allows for running
+one user's mailbox under ASAN/TSAN.)
 .SH Signals
 Upon receipt of SIGHUP, configuration files are re-read, but only a few select
 directives can be changed this way, as many parts do not implement reload.
