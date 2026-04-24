@@ -82,6 +82,7 @@ struct GX_EXPORT oxcical_converter {
 
 struct GX_EXPORT oxvcard_converter {
 	std::unique_ptr<message_content, gromox::mc_delete> vcard_to_mapi(const vcard &);
+	bool abentry_to_vcard(const TPROPVAL_ARRAY &, bool is_group, vcard &out);
 	bool mapi_to_vcard(const message_content &, vcard &out);
 
 	const char *log_id = "";
@@ -89,6 +90,7 @@ struct GX_EXPORT oxvcard_converter {
 };
 
 extern GX_EXPORT BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS, GET_DOMAIN_IDS, GET_USERNAME);
+extern GX_EXPORT void oxvcard_get_abentry_proptags(PROPTAG_ARRAY *);
 extern GX_EXPORT bool oxcical_export_freebusy(const char *, const char *, time_t, time_t, const std::vector<freebusy_event> &, ical &);
 extern GX_EXPORT BOOL oxcmail_username_to_entryid(const char *user, const char *disp, BINARY *, enum display_type *);
 extern GX_EXPORT BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &, const gromox::addr_tags *, const char *org, gromox::cvt_id2user, std::string &out);

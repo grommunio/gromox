@@ -1861,6 +1861,34 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 		/* ignore */;
 	return TRUE;
 }
+
+bool cu_abentry_to_vcf(user_object *puser, bool is_group, BINARY *pvcf_bin)
+{
+	PROPTAG_ARRAY tags{};
+	TPROPVAL_ARRAY props{};
+	std::string vcf_out;
+	vcard card;
+	auto pinfo = zs_get_info();
+
+	if (pinfo == nullptr)
+		return false;
+	oxvcard_get_abentry_proptags(&tags);
+	if (!puser->get_properties(tags, &props))
+		return false;
+	common_util_set_dir(pinfo->get_homedir());
+	oxvcard_converter cvt;
+	cvt.get_propids = common_util_get_propids_create;
+	if (!cvt.abentry_to_vcard(props, is_group, card))
+		return false;
+	if (!card.serialize(vcf_out))
+		return false;
+	pvcf_bin->cb = vcf_out.size();
+	pvcf_bin->pv = common_util_alloc(pvcf_bin->cb);
+	if (pvcf_bin->pv == nullptr)
+		return false;
+	memcpy(pvcf_bin->pv, vcf_out.c_str(), vcf_out.size());
+	return true;
+}
 	
 message_ptr common_util_vcf_to_message(store_object *pstore, const BINARY *pvcf_bin)
 {

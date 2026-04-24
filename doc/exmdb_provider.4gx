@@ -39,7 +39,7 @@ Log ICS/synchronization requests (and their results) to this file.
 Default: \fI(empty)\fP
 .TP
 \fBexmdb_optimize_stm\fP
-An debug knob to turn on/off a specific subset of the SQLite prepared
+A debug knob to turn on/off a specific subset of the SQLite prepared
 statements with extended lifetimes used in the vincinity of property retrieval
 in conjunction with Content Table querying (e.g. exmdb_server::query_table, or
 MAPI ropQueryRows), Content Table matching (exmdb_server::match_table, or MAPI

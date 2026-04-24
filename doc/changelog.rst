@@ -1,4 +1,4 @@
-Milestone 3.6.52
+Milestone 3.6.63
 ================
 
 Fixes:
@@ -23,6 +23,12 @@ Fixes:
 * Reading iCal timezone definitions mangled the daylightbias, which was fixed.
 * Logins with Outlook 2010 now work when Gromox is running with OpenSSL 3.
   (OpenSSL 1.1 & LibreSSL were fine, but OSSL3 changed behavior. / Hyrum's law)
+* SMIME messages signed multiple times are unwrapped recursively
+  and will now show the body (applies to just g-web; OL worked previously)
+
+Enhancements:
+
+* Added conversion routines to zcore so that g-web can export GAL items to vCard
 
 
 Gromox 3.6 (2026-03-26)

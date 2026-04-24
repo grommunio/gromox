@@ -3949,18 +3949,17 @@ static ZEND_FUNCTION(mapi_mapitovcf)
 	ZCL_MEMORY;
 	BINARY vcf_bin;
 	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
-	MAPI_RESOURCE *pmessage;
-	
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rrra", &pzressession, &pzresaddrbook, &pzresmessage,
 		&pzresoptions) == FAILURE || NULL == pzresmessage)
 		pthrow(ecInvalidParam);
-	ZEND_FETCH_RESOURCE(pmessage, pzresmessage, le_mapi_message);
-	if (pmessage->type != zs_objtype::message)
+	auto obj = resolve_resource(pzresmessage, {le_mapi_message, le_mapi_mailuser, le_mapi_distlist});
+	if (obj == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (obj == nullptr)
 		pthrow(ecInvalidParam);
-	auto result = zclient_messagetovcf(
-		pmessage->hsession, pmessage->hobject,
-		&vcf_bin);
+	auto result = zclient_messagetovcf(obj->hsession, obj->hobject, &vcf_bin);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_STRINGL(reinterpret_cast<const char *>(vcf_bin.pb), vcf_bin.cb);

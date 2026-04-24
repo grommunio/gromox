@@ -50,7 +50,6 @@ bool parse_impersonation_address(const char *address, std::string &store_user,
     std::string &auth_user, bool &is_impersonation)
 {
 	store_user = address != nullptr ? address : "";
-	auth_user.clear();
 	is_impersonation = false;
 	if (address == nullptr)
 		return false;
@@ -63,6 +62,7 @@ bool parse_impersonation_address(const char *address, std::string &store_user,
 	std::string imp_user(address, p1 - address);
 	if (imp_user.empty())
 		return false;
+	auth_user.clear();
 	if (p2 == nullptr) {
 		auth_user = p1 + 1;
 		auto at = strchr(auth_user.c_str(), '@');
