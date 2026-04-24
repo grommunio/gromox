@@ -411,6 +411,9 @@ static int rqi_handle_buffer(parser_params &param, std::string_view input_buf,
 	std::unique_ptr<exresp> response;
 	if (!param.is_connected)
 		return rqi_unconnected(param, *request, input_buf, output_buf);
+	if (request->dir != nullptr && !param.single_user.empty() &&
+	    param.single_user != request->dir)
+		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
 	if (!exmdb_parser_dispatch(request.get(), response))
 		return rqi_terminate(conn, exmdb_response::dispatch_error);
 	if (exmdb_ext_push_response(response.get(), &output_buf) != pack_result::success)
