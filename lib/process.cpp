@@ -698,7 +698,7 @@ errno_t socketpass_worker::start_raw(const char *prog, char **argv)
 	auto cl_actions = HX::make_scope_exit([&]() { posix_spawn_file_actions_destroy(&fa); });
 
 	int skfd[2]{-1, -1};
-	if (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, skfd) != 0)
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, skfd) != 0)
 		return errno;
 	auto cl_pair = HX::make_scope_exit([&]() {
 		if (skfd[0] >= 0)
