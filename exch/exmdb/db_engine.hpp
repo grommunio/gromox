@@ -256,11 +256,11 @@ extern bool db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint6
 extern bool db_engine_check_populating(const char *dir, uint64_t folder_id);
 extern void dg_notify(db_conn::NOTIFQ &&);
 
-extern unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
-extern unsigned long long g_exmdb_search_pacing_time, g_exmdb_lock_timeout;
-extern unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
-extern unsigned int g_exmdb_pvt_folder_softdel;
+extern std::atomic<unsigned int> g_exmdb_schema_upgrades, g_exmdb_search_pacing;
+extern std::atomic<unsigned long long> g_exmdb_search_pacing_time, g_exmdb_lock_timeout;
+extern std::atomic<unsigned int> g_exmdb_search_yield, g_exmdb_search_nice;
+extern std::atomic<unsigned int> g_exmdb_pvt_folder_softdel;
 extern std::string g_exmdb_ics_log_file, exmdb_eph_prefix;
 /* Max number of cached DB connections per store, 0 = unlimited */
-extern unsigned int g_exmdb_max_sqlite_spares;
-extern unsigned long long g_sqlite_busy_timeout_ns;
+extern std::atomic<unsigned int> g_exmdb_max_sqlite_spares;
+extern std::atomic<unsigned long long> g_sqlite_busy_timeout_ns;

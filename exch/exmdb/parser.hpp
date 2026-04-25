@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <condition_variable>
 #include <list>
 #include <memory>
@@ -46,5 +47,5 @@ extern int exmdb_listener_init(const config_file &gxcfg, const config_file &oldc
 extern int exmdb_listener_run(const char *config_path, const config_file &gxcfg);
 extern void exmdb_listener_stop();
 
-extern unsigned int g_exrpc_debug, g_enable_dam;
+extern std::atomic<unsigned int> g_exrpc_debug, g_enable_dam;
 extern std::string g_host_id;

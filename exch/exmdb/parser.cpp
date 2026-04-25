@@ -60,7 +60,7 @@ static std::mutex g_router_lock, g_connection_lock;
 static gromox::atomic_bool g_exmdblisten_stop;
 static std::vector<std::string> g_acl_list;
 static listener_ctx exmdb_listen_ctx;
-unsigned int g_enable_dam;
+std::atomic<unsigned int> g_enable_dam;
 std::string g_host_id;
 
 ROUTER_CONNECTION::~ROUTER_CONNECTION()
@@ -178,10 +178,11 @@ static BOOL exmdb_parser_dispatch(const exreq *prequest, std::unique_ptr<exresp>
 	auto ret = exmdb_parser_dispatch2(prequest, presponse);
 	if (ret)
 		presponse->call_id = prequest->call_id;
-	if (g_exrpc_debug == 0)
+	auto dbg = g_exrpc_debug.load();
+	if (dbg == 0)
 		return ret;
 	auto tend = tp_now();
-	if (!ret || g_exrpc_debug == 2)
+	if (!ret || dbg == 2)
 		mlog(LV_DEBUG, "EXRPC %s %s %5luµs %s", znul(prequest->dir),
 		        ret == 0 ? "ERR" : "ok ",
 		        static_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()),

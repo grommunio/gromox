@@ -12,15 +12,15 @@ our $gen_mode = "";
 );
 
 if ($gen_mode eq "CLN" || $gen_mode eq "SDP") {
-	print "#include <$_>\n" for qw(cstring utility gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
+	print "#include <$_>\n" for qw(atomic cstring utility gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
 	if ($gen_mode eq "SDP") {
 		print "#include <$_>\n" for qw(gromox/clock.hpp gromox/exmdb_common_util.hpp gromox/exmdb_ext.hpp gromox/exmdb_provider_client.hpp gromox/exmdb_server.hpp);
 	}
 	print "using namespace gromox;\n";
 }
 if ($gen_mode eq "SDP") {
-	print "extern unsigned int g_exrpc_debug;\n";
-	print "unsigned int g_exrpc_debug;\n\n";
+	print "extern std::atomic<unsigned int> g_exrpc_debug;\n";
+	print "std::atomic<unsigned int> g_exrpc_debug;\n\n";
 	print "static void lpc_log(bool ok, const char *dir, const char *func, gromox::time_point tstart, gromox::time_point tend)\n{\n";
 	print "\tif (g_exrpc_debug >= 2 || (!ok && g_exrpc_debug == 1))\n";
 	print "\t\tmlog(LV_DEBUG, \"LPC %s %s \%5luµs \%s\", dir, !ok ? \"ERR\" : \"ok \",\n";

@@ -3042,6 +3042,7 @@ BOOL exmdb_server::collapse_table(const char *dir,
 BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
     uint64_t inst_id, uint32_t inst_num, uint32_t *pstate_id) try
 {
+	const unsigned long long busy_timeout_ns = g_sqlite_busy_timeout_ns.load();
 	int depth;
 	void *pvalue;
 	uint16_t type;
@@ -3079,7 +3080,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 			mlog(LV_ERR, "E-1435: sqlite3_open %s: %s", state_path.c_str(), sqlite3_errstr(ret));
 			return FALSE;
 		}
-		sqlite3_busy_timeout(psqlite, g_sqlite_busy_timeout_ns / 1000000);
+		sqlite3_busy_timeout(psqlite, busy_timeout_ns / 1000000);
 		if (gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF") != SQLITE_OK ||
 		    gx_sql_exec(psqlite, "PRAGMA synchronous=OFF") != SQLITE_OK)
 			/* keep going with existing mode */;
@@ -3112,7 +3113,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 			mlog(LV_ERR, "E-1436: sqlite3_open %s: %s", state_path.c_str(), sqlite3_errstr(ret));
 			return FALSE;
 		}
-		sqlite3_busy_timeout(psqlite, g_sqlite_busy_timeout_ns / 1000000);
+		sqlite3_busy_timeout(psqlite, busy_timeout_ns / 1000000);
 		if (gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF") != SQLITE_OK ||
 		    gx_sql_exec(psqlite, "PRAGMA synchronous=OFF") != SQLITE_OK)
 			/* keep going with existing mode */;

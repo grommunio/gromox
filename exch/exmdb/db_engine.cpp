@@ -105,11 +105,11 @@ static std::unordered_map<std::string, db_maint_mode> g_maint_table; /* protecte
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 static std::optional<std::counting_semaphore<>> g_autoupg_limiter;
-unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
-unsigned long long g_exmdb_search_pacing_time = 2000000000;
-unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
-unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
-unsigned long long g_sqlite_busy_timeout_ns;
+std::atomic<unsigned int> g_exmdb_schema_upgrades, g_exmdb_search_pacing;
+std::atomic<unsigned long long> g_exmdb_search_pacing_time = 2000000000;
+std::atomic<unsigned int> g_exmdb_search_yield, g_exmdb_search_nice;
+std::atomic<unsigned int> g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
+std::atomic<unsigned long long> g_sqlite_busy_timeout_ns;
 std::string exmdb_eph_prefix;
 
 static bool dbase_is_purgable(const db_base &, time_point);
