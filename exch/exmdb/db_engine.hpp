@@ -243,7 +243,7 @@ struct db_conn {
 	db_base *m_base = nullptr;
 };
 
-extern void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num);
+extern void db_engine_init(size_t table_size, int cache_interval, unsigned int sfpop_max, unsigned int par_upg, unsigned int par_shut);
 extern int db_engine_run();
 extern void db_engine_stop();
 

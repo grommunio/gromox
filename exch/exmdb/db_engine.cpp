@@ -93,11 +93,11 @@ struct rowdel_node {
 }
 
 static size_t g_table_size; /* hash table size */
-static unsigned int g_threads_num;
+static unsigned int g_sfpop_thrmax, g_exmdb_par_shutdown;
 static gromox::atomic_bool g_dbeng_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static gromox::time_duration g_cache_interval; /* maximum living interval in table */
-static std::vector<pthread_t> g_thread_ids;
+static std::vector<pthread_t> g_sfpop_thrids;
 static std::mutex g_list_lock, g_hash_lock, g_maint_lock;
 static std::condition_variable g_waken_cond, g_maint_cv, g_maint_ref_cv;
 static std::unordered_map<std::string, db_base> g_hash_table; /* protected by g_hash_lock */
@@ -1085,14 +1085,16 @@ static void *sf_popul_thread(void *param)
 	return nullptr;
 }
 
-void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num)
+void db_engine_init(size_t table_size, int cache_interval, unsigned int sfpop_max,
+    unsigned int par_upg, unsigned int par_shut)
 {
 	g_dbeng_stop = true;
 	g_table_size = table_size;
 	g_cache_interval = std::chrono::seconds{cache_interval};
-	g_threads_num = threads_num;
-	g_thread_ids.reserve(g_threads_num);
-	g_autoupg_limiter.emplace(threads_num);
+	g_sfpop_thrmax = sfpop_max;
+	g_sfpop_thrids.reserve(sfpop_max);
+	g_exmdb_par_shutdown = par_shut;
+	g_autoupg_limiter.emplace(par_upg);
 }
 
 int db_engine_run()
@@ -1114,7 +1116,7 @@ int db_engine_run()
 		mlog(LV_ERR, "exmdb_provider: failed to create db scan thread: %s", strerror(ret));
 		return -4;
 	}
-	for (unsigned int i = 0; i < g_threads_num; ++i) {
+	for (unsigned int i = 0; i < g_sfpop_thrmax; ++i) {
 		pthread_t tid;
 		ret = pthread_create4(&tid, nullptr, sf_popul_thread, nullptr);
 		if (ret != 0) {
@@ -1125,7 +1127,7 @@ int db_engine_run()
 		char buf[32];
 		snprintf(buf, sizeof(buf), "sfpop/%u", i);
 		pthread_setname_np(tid, buf);
-		g_thread_ids.push_back(tid);
+		g_sfpop_thrids.push_back(tid);
 	}
 	return 0;
 }
@@ -1144,7 +1146,7 @@ void db_engine_stop()
 	if (!g_dbeng_stop) {
 		g_dbeng_stop = true;
 		g_waken_cond.notify_all();
-		for (auto tid : g_thread_ids) {
+		for (auto tid : g_sfpop_thrids) {
 			pthread_kill(tid, SIGALRM);
 			pthread_join(tid, nullptr);
 		}
@@ -1153,7 +1155,7 @@ void db_engine_stop()
 			pthread_join(g_scan_tid, NULL);
 		}
 	}
-	g_thread_ids.clear();
+	g_sfpop_thrids.clear();
 	/*
 	 * This is db_engine_stop. We know we are single threaded and do not
 	 * really need to hold any locks.
@@ -1163,7 +1165,7 @@ void db_engine_stop()
 	 */
 	{
 		auto t_start = tp_now();
-		size_t conc = std::min(gx_concurrency(), g_threads_num);
+		size_t conc = std::min(gx_concurrency(), g_exmdb_par_shutdown);
 		std::vector<std::future<void>> futs;
 		/*
 		 * cov-scan may complain here about missing locks, but this is

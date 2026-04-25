@@ -48,6 +48,22 @@ often used by our exporters).
 .br
 Default: \fIon\fP
 .TP
+\fBexmdb_parallelize_schemaup\fP
+The maximum number of EXRPC request parsing threads that can concurrently
+perform schema upgrades in sqlite database files. (Other threads must wait.)
+This directive is meant to limit the amount of disk I/O.
+.br
+Default: \fI4\fP
+.TP
+\fBexmdb_parallelize_sqliteshut\fP
+On shutdown, close SQLite databases in parallel with as many threads as
+declared by this directive, capped by the number of processors actually
+available in the system. This improves the speed of the shutdown procedure. As
+of sqlite version 3.47, the parallel portion (\\alpha in the context of
+Amdahl's law) is about 0.82.
+.br
+Default: \fI4\fP
+.TP
 \fBoutgoing_smtp_url\fP
 See gromox.cfg(5):outgoing_smtp_url.
 .SH Configuration directives (exmdb_provider.cfg)

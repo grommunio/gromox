@@ -53,6 +53,8 @@ static constexpr cfg_directive exmdb_gromox_cfg_defaults[] = {
 	{"exmdb_force_write_txn", "0", CFG_BOOL},
 	{"exmdb_ics_log_file", ""},
 	{"exmdb_optimize_stm", "1", CFG_BOOL},
+	{"exmdb_parallelize_schemaup", "4"},
+	{"exmdb_parallelize_sqliteshut", "4"},
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	CFG_TABLE_END,
 };
@@ -196,7 +198,9 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		int max_msg_count = pconfig->get_ll("max_store_message_count");
 		int max_rule = pconfig->get_ll("max_rule_number");
 		int max_ext_rule = pconfig->get_ll("max_ext_rule_number");
-		int populating_num = pconfig->get_ll("populating_threads_num");
+		int sfpop_max = pconfig->get_ll("populating_threads_num");
+		int par_upg = gxcfg->get_ll("exmdb_parallelize_schemaup");
+		int par_shut = gxcfg->get_ll("exmdb_parallelize_sqliteshut");
 		auto str = pconfig->get_value("exmdb_file_compression");
 		if (str == nullptr || !parse_bool(str))
 			g_cid_compression = 0;
@@ -230,10 +234,10 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		        "popul_num=%d, smtp=%s, getprop_optimize_stm=%u",
 		        org_name, connection_num, table_size,
 		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
-		        populating_num, smtp_url.c_str(), g_exmdb_enable_optim_stm);
+		        sfpop_max, smtp_url.c_str(), g_exmdb_enable_optim_stm);
 
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule, std::move(smtp_url));
-		db_engine_init(table_size, cache_interval, populating_num);
+		db_engine_init(table_size, cache_interval, sfpop_max, par_upg, par_shut);
 		bool allow_lpc = strcmp(service_get_prog_id(), "istore") == 0;
 		if (!allow_lpc)
 			exmdb_parser_init(0, 0);
