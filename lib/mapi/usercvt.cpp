@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -35,7 +35,7 @@ ec_error_t cvt_essdn_to_username(const char *idn, const char *org,
 	if (len < prefix.size() + 16 || idn[prefix.size()+16] != '-')
 		return ecUnknownUser;
 	auto local_part = &idn[prefix.size()+17];
-	auto user_id = decode_hex_int(&idn[prefix.size()+8]);
+	auto user_id = eight_LE_hexchars_to_int(&idn[prefix.size()+8]);
 	auto ret = id2user(user_id, username);
 	if (ret != ecSuccess)
 		return ret;

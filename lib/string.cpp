@@ -1576,3 +1576,11 @@ std::string wchar_to_utf8(uint32_t w)
 	}
 	return s;
 }
+
+uint32_t eight_LE_hexchars_to_int(const char *in)
+{
+	if (strlen(in) < 8)
+		return 0;
+	char buf[9] = {in[6], in[7], in[4], in[5], in[2], in[3], in[0], in[1], 0};
+	return strtoul(buf, nullptr, 16);
+}

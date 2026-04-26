@@ -267,7 +267,7 @@ BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
 		return FALSE;
-	*puid = decode_hex_int(pessdn + tmp_len + 8);
+	*puid = eight_LE_hexchars_to_int(&pessdn[tmp_len+8]);
 	return TRUE;
 }
 
@@ -280,8 +280,8 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
 		return FALSE;
-	*pdomain_id = decode_hex_int(pessdn + tmp_len);
-	*puser_id = decode_hex_int(pessdn + tmp_len + 8);
+	*pdomain_id = eight_LE_hexchars_to_int(&pessdn[tmp_len]);
+	*puser_id   = eight_LE_hexchars_to_int(&pessdn[tmp_len+8]);
 	return TRUE;	
 }
 

@@ -655,14 +655,14 @@ minid ab_base::resolve(const char* dn) const
 	if (strncasecmp(dn, server_prefix.c_str(), server_prefix.size()) == 0 &&
 	    z >= server_prefix.size() + 60) {
 		/* Reason for 60: see DN format in ab_tree_get_mdbdn */
-		auto id = decode_hex_int(dn + server_prefix.size() + 60);
+		auto id = eight_LE_hexchars_to_int(&dn[server_prefix.size()+60]);
 		return minid(minid::address, id);
 	}
 	const std::string &rcpts_prefix = AB.essdn_rcpts_prefix();
 	if (strncasecmp(dn, rcpts_prefix.c_str(), rcpts_prefix.size()) != 0 ||
 	    z < rcpts_prefix.size() + 8)
 		return {};
-	auto id = decode_hex_int(dn + rcpts_prefix.size() + 8);
+	auto id = eight_LE_hexchars_to_int(&dn[rcpts_prefix.size()+8]);
 	return minid(minid::address, id);
 }
 

@@ -1128,23 +1128,6 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 	return qp_decode(output, input, length, qp_flags);
 }
 
-int decode_hex_int(const char *in)
-{
-	int retval;
-	char t_buff[3];
-	
-	if (strlen(in) < 2 * sizeof(int))
-		return 0;
-	retval = 0;
-	for (size_t i = 0; i < sizeof(int); ++i) {
-		t_buff[0] = in[2*i];
-		t_buff[1] = in[2*i+1];
-		t_buff[2] = '\0';
-		retval |= strtol(t_buff, NULL, 16) << i*8;
-	}
-	return retval;
-}
-
 BOOL encode_hex_binary(const void *vsrc, int srclen, char *dst, int dstlen)
 {
 	auto src = static_cast<const uint8_t *>(vsrc);
