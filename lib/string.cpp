@@ -1036,7 +1036,7 @@ std::string base64_encode(std::string_view x)
 	std::string out;
 	out.resize((x.size() + 3) / 3 * 4);
 	size_t final_size = 0;
-	int ret = encode64(x.data(), x.size(), out.data(), out.size() + 1, &final_size);
+	int ret = base64_encode_sized(x, out.data(), out.size() + 1, &final_size);
 	if (ret < 0)
 		out.clear();
 	else
@@ -1049,7 +1049,7 @@ std::string base64_decode(std::string_view x)
 	std::string out;
 	out.resize(x.size());
 	size_t final_size = 0;
-	int ret = decode64_ex(x.data(), x.size(), out.data(), x.size(), &final_size);
+	int ret = base64nl_decode_sized(x, out.data(), x.size(), &final_size);
 	if (ret < 0)
 		out.clear();
 	else

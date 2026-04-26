@@ -71,10 +71,10 @@ extern GX_EXPORT char *search_string(const char *haystack, const char *needle,
     size_t haystacklen);
 extern GX_EXPORT int wildcard_match(const char *data, const char *mask, BOOL icase);
 extern GX_EXPORT void randstring(char *out, size_t len, const char *pool = nullptr);
-extern GX_EXPORT int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
-extern GX_EXPORT int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
-#define decode64 decode64_ex
-extern GX_EXPORT int decode64_ex(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
+extern GX_EXPORT int base64_encode_sized(std::string_view, char *out, size_t outmax, size_t *outlen);
+extern GX_EXPORT int base64nl_encode_sized(std::string_view, char *out, size_t outmax, size_t *outlen);
+#define base64_decode_sized base64nl_decode_sized /* indicates that caller does not strictly need NL decoding */
+extern GX_EXPORT int base64nl_decode_sized(std::string_view, void *out, size_t outmax, size_t *outlen);
 extern GX_EXPORT ssize_t qpnl_decode_sized(std::string_view, void *output, size_t outlen, unsigned int qp_flags = 0);
 extern GX_EXPORT ssize_t qpnl_encode_sized(std::string_view, void *output, size_t outlen);
 extern GX_EXPORT uint32_t eight_LE_hexchars_to_int(const char *in);

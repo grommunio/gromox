@@ -276,14 +276,14 @@ ec_error_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
 	    ep.p_guid(GUID::random_new()) != pack_result::ok)
 		return ecServerOOM;
 	unsigned int ofs = 6;
-	encode64(pack, 16, id + ofs, bufsize - ofs, nullptr);
+	base64_encode_sized({pack, 16}, id + ofs, bufsize - ofs, nullptr);
 	ofs += 22;
 	id[ofs++] = '@';
 	ep.m_offset = 0;
 	if (ep.p_guid(GUID::random_new()) != pack_result::ok ||
 	    ep.p_guid(GUID::random_new()) != pack_result::ok)
 		return ecServerOOM;
-	encode64(pack, 32, id + ofs, bufsize - ofs, nullptr);
+	base64_encode_sized({pack, 32}, id + ofs, bufsize - ofs, nullptr);
 	ofs += 43;
 	strcpy(&id[ofs], ".xz>");
 	for (ofs = 0; ofs < 76; ++ofs) {

@@ -2143,7 +2143,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 		       mcparam->proplist.set(PR_REPORT_TEXT, value) == ecSuccess;
 	} else if (0 == strcasecmp(tag, "X-MSExch-Correlation-Key")) {
 		len = strlen(value);
-		if (len <= 1024 && decode64(value, len, tmp_buff,
+		if (len <= 1024 && base64_decode_sized({value, len}, tmp_buff,
 		    std::size(tmp_buff), &len) == 0) {
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = len;
@@ -3627,7 +3627,7 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
 	if (!dsn.append_field(pdsn_fields, "Disposition", tmp_buff))
 		return FALSE;
 	auto bv = pmsg->proplist.get<const BINARY>(PR_PARENT_KEY);
-	if (bv != nullptr && encode64(bv->pb, bv->cb, tmp_buff,
+	if (bv != nullptr && base64_encode_sized(*bv, tmp_buff,
 	    std::size(tmp_buff), &base64_len) == 0) {
 		tmp_buff[base64_len] = '\0';
 		if (!dsn.append_field(pdsn_fields, "X-MSExch-Correlation-Key", tmp_buff))

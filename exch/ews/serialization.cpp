@@ -132,7 +132,7 @@ void sAttachmentId::serialize(XMLElement *xml) const
 	EXT_TRY(ext_push.p_msg_eid(*this));
 	EXT_TRY(ext_push.p_uint32(attachment_num));
 	EXT_TRY(ext_push.p_int8(tBaseItemId::ID_ATTACHMENT));
-	encode64(ext_push.m_vdata, ext_push.m_offset, enc, 256, nullptr);
+	base64_encode_sized({ext_push.m_cdata, ext_push.m_offset}, enc, 256, nullptr);
 	xml->SetAttribute("Id", enc);
 }
 
@@ -144,7 +144,7 @@ void sOccurrenceId::serialize(XMLElement *xml) const
 	EXT_TRY(ext_push.p_msg_eid(*this));
 	EXT_TRY(ext_push.p_uint32(basedate));
 	EXT_TRY(ext_push.p_int8(tBaseItemId::ID_OCCURRENCE));
-	encode64(ext_push.m_vdata, ext_push.m_offset, enc, 256, nullptr);
+	base64_encode_sized({ext_push.m_cdata, ext_push.m_offset}, enc, 256, nullptr);
 	xml->SetAttribute("Id", enc);
 }
 

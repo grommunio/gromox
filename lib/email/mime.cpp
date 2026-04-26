@@ -293,7 +293,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		content_begin = content_buf.get();
 		if (pmime->content_begin == nullptr)
 			return false;
-		encode64_ex(pcontent, length, content_buf.get(), buff_length,
+		base64nl_encode_sized({pcontent, length}, content_buf.get(), buff_length,
 				&pmime->content_length);
 		pmime->set_field("Content-Transfer-Encoding", "base64");
 		return true;
@@ -1052,7 +1052,8 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	
 	switch (encoding_type) {
 	case mime_encoding::base64:
-		if (decode64_ex(pbuff.get(), size, out_buff, max_length, plength) != 0) {
+		if (base64_decode_sized({pbuff.get(), size}, out_buff,
+		    max_length, plength) != 0) {
 			mlog(LV_DEBUG, "mime: failed to decode base64 mime content");
 			if (*plength == 0)
 				return false;

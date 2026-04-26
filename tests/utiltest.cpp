@@ -428,42 +428,42 @@ static int t_base64()
 	static constexpr char cpool[] = "12345678901234567890123456789012345678901234567890123456789012345678901234567890";
 	char out[120];
 	size_t outlen;
-	if (encode64(cpool, 60, out, 80, &outlen) >= 0)
+	if (base64_encode_sized({cpool, 60}, out, 80, &outlen) >= 0)
 		return printf("TB-1 failed\n");
-	if (encode64(cpool, 60, out, 81, &outlen) < 0)
+	if (base64_encode_sized({cpool, 60}, out, 81, &outlen) < 0)
 		return printf("TB-2 failed\n");
-	if (encode64_ex(cpool, 60, out, 84, &outlen) >= 0)
+	if (base64nl_encode_sized({cpool, 60}, out, 84, &outlen) >= 0)
 		return printf("TB-3 failed\n");
-	if (encode64_ex(cpool, 60, out, 85, &outlen) < 0)
+	if (base64nl_encode_sized({cpool, 60}, out, 85, &outlen) < 0)
 		return printf("TB-4 failed\n");
 
-	if (decode64_ex("MTIz", 4, out, 3, &outlen) >= 0)
+	if (base64_decode_sized({"MTIz", 4}, out, 3, &outlen) >= 0)
 		return printf("TB-6 failed\n");
-	if (decode64_ex("MTIz", 4, out, 4, &outlen) < 0)
+	if (base64_decode_sized({"MTIz", 4}, out, 4, &outlen) < 0)
 		printf("TB-7 failed\n");
-	if (decode64_ex("", 0, out, 0, &outlen) >= 0)
+	if (base64_decode_sized({"", 0}, out, 0, &outlen) >= 0)
 		return printf("TB-14 failed\n");
-	if (decode64_ex("", 0, out, 1, &outlen) < 0)
+	if (base64_decode_sized({"", 0}, out, 1, &outlen) < 0)
 		return printf("TB-15 failed\n");
-	if (decode64_ex("MTIz", 1, out, 4, &outlen) >= 0 &&
+	if (base64_decode_sized({"MTIz", 1}, out, 4, &outlen) >= 0 &&
 	    outlen != 0)
 		return printf("TB-17 failed\n");
 
-	if (decode64_ex(cpool, std::size(cpool) - 1, out, std::size(out), &outlen) < 0)
+	if (base64nl_decode_sized(cpool, out, std::size(out), &outlen) < 0)
 		return printf("TB-8 failed\n");
-	if (decode64_ex("MTIz\nMTIz\nMTIz\n", 15, out, std::size(out), &outlen) < 0)
+	if (base64nl_decode_sized({"MTIz\nMTIz\nMTIz\n", 15}, out, std::size(out), &outlen) < 0)
 		return printf("TB-9 failed\n");
 	else if (memcmp(out, "123123123", 9) != 0)
 		return printf("TB-10 failed\n");
 
-	if (decode64_ex("\xff\xff\xff\xff", 4, out, std::size(out), &outlen) >= 0)
+	if (base64_decode_sized({"\xff\xff\xff\xff", 4}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-18 failed\n");
 #if 0 /* implementation too lenient */
-	if (decode64_ex("====", 4, out, std::size(out), &outlen) >= 0)
+	if (base64_decode_sized({"====", 4}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-19 failed\n");
-	if (decode64_ex("A===", 4, out, std::size(out), &outlen) >= 0)
+	if (base64_decode_sized({"A===", 4}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-20 failed\n");
-	if (decode64_ex("AA==", 4, out, std::size(out), &outlen) >= 0)
+	if (base64_decode_sized({"AA==", 4}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-21 failed\n");
 #endif
 

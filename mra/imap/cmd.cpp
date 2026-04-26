@@ -1148,7 +1148,7 @@ static int icp_username2(const char *cmdbuf, imap_context &ctx)
 	auto pcontext = &ctx;
 	size_t temp_len;
 	
-	if (decode64_ex(cmdbuf, strlen(cmdbuf),
+	if (base64nl_decode_sized(cmdbuf,
 	    pcontext->username, std::size(pcontext->username),
 	    &temp_len) != 0) {
 		pcontext->proto_stat = iproto_stat::noauth;
@@ -1191,7 +1191,7 @@ static int icp_password2(const char *cmdbuf, imap_context &ctx) try
 	char temp_password[256];
 	
 	pcontext->proto_stat = iproto_stat::noauth;
-	if (decode64_ex(cmdbuf, strlen(cmdbuf),
+	if (base64nl_decode_sized(cmdbuf,
 	    temp_password, std::size(temp_password), &temp_len) != 0)
 		return 1820 | DISPATCH_TAG;
 

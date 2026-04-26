@@ -604,10 +604,11 @@ static constexpr int8_t base64idx[] = {
 /*
  * On success, 0 is returned and @out is NUL-terminated (@outlen does not count NUL).
  */
-int encode64(const void *vin, size_t inlen, char *out,
+int base64_encode_sized(std::string_view sv_in, char *out,
     size_t outmax, size_t *outlen)
 {
-	auto in = static_cast<const unsigned char *>(vin);
+	auto in = reinterpret_cast<const uint8_t *>(sv_in.data());
+	auto inlen = sv_in.size();
 	unsigned char oval;
 	size_t olen;
 
@@ -649,11 +650,11 @@ static char hextab[] = "0123456789ABCDEF";
  * BASE64-encode with newlines.
  * On success, 0 is returned and @_out is NUL-terminated (@outlen does count NUL)
  */
-int encode64_ex(const void *vin, size_t inlen, char *_out,
+int base64nl_encode_sized(std::string_view sv_in, char *_out,
 	size_t outmax, size_t *outlen)
 {
-	auto _in = static_cast<const uint8_t *>(vin);
-	size_t inLen = inlen;
+	auto _in = reinterpret_cast<const uint8_t *>(sv_in.data());
+	size_t inLen = sv_in.size();
 	size_t i;
 	char* out = _out;
 	size_t outsize = (inLen+2)/3*4;		/* 3:4 conversion ratio */
@@ -731,9 +732,11 @@ static inline bool isbase64(unsigned char c)
 /*
  * On success, 0 is returned, @vout is NUL-terminated (@outlen does not count NUL)
  */
-int decode64_ex(const char *_in, size_t inlen, void *vout,
-	size_t outmax, size_t *outlen)
+int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
+    size_t *outlen)
 {
+	auto _in = sv_in.data();
+	auto inlen = sv_in.size();
 	auto out = static_cast<uint8_t *>(vout);
 	size_t inLen = inlen;
 	size_t outsize = inlen / 4 * 3;

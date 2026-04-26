@@ -531,7 +531,8 @@ int search(const char *path, const std::string &folder,
 		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
 					"%s", elem.c_str()) + 1;
 	buff1[length1++] = '\0';
-	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
+	base64_encode_sized(std::string_view(buff1.get(), length1),
+		&buff[length], cbufsize - length,
 		&encode_len);
 	length += encode_len;
 	buff1.reset();
@@ -580,7 +581,8 @@ int search_uid(const char *path, const std::string &folder,
 		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
 					"%s", elem.c_str()) + 1;
 	buff1[length1++] = '\0';
-	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
+	base64_encode_sized(std::string_view(buff1.get(), length1),
+		&buff[length], cbufsize - length,
 		&encode_len);
 	length += encode_len;
 	buff1.reset();

@@ -760,7 +760,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					b_loaded = true;
 				}
 				if (!get_digest(digest, "to", temp_buff, std::size(temp_buff)) ||
-				    decode64(temp_buff, strlen(temp_buff),
+				    base64_decode_sized(temp_buff,
 				    temp_buff1, std::size(temp_buff1), &temp_len) != 0)
 					break;
 				temp_buff1[temp_len] = '\0';
@@ -1191,19 +1191,19 @@ static void me_extract_digest_fields(const Json::Value &digest, char *subject,
 	
 	subject[0] = '\0';
 	if (get_digest(digest, "subject", temp_buff, std::size(temp_buff)) &&
-	    decode64(temp_buff, strlen(temp_buff), subject, subjsize, &out_len) != 0)
+	    base64_decode_sized(temp_buff, subject, subjsize, &out_len) != 0)
 		/* Decode failed */
 		subject[0] = '\0';
 	from[0] = '\0';
 	if (get_digest(digest, "from", temp_buff, std::size(temp_buff)) &&
-	    decode64(temp_buff, strlen(temp_buff), temp_buff1,
+	    base64_decode_sized(temp_buff, temp_buff1,
 	    std::size(temp_buff1), &out_len) == 0) {
 		EMAIL_ADDR temp_address(temp_buff1);
 		gx_strlcpy(from, temp_address.addr, fromsize);
 	}
 	rcpt[0] = '\0';
 	if (get_digest(digest, "to", temp_buff, std::size(temp_buff)) &&
-	    decode64(temp_buff, strlen(temp_buff), temp_buff1,
+	    base64_decode_sized(temp_buff, temp_buff1,
 	    std::size(temp_buff1), &out_len) == 0) {
 		for (size_t i = 0; i < out_len; ++i) {
 			if (',' == temp_buff1[i] ||
@@ -3285,7 +3285,8 @@ static int me_psrhl(std::span<char *> argv, int sockd) try
 	
 	auto tmp_len = strlen(argv[4]);
 	if (tmp_len >= sizeof(tmp_buff) ||
-	    decode64(argv[4], tmp_len, tmp_buff, std::size(tmp_buff), &decode_len) != 0)
+	    base64_decode_sized({argv[4], tmp_len}, tmp_buff,
+	    std::size(tmp_buff), &decode_len) != 0)
 		return MIDB_E_PARAMETER_ERROR;
 	parg = tmp_buff;
 	while (parg - tmp_buff >= 0 &&
@@ -3359,7 +3360,8 @@ static int me_psrhu(std::span<char *> argv, int sockd) try
 	
 	auto tmp_len = strlen(argv[4]);
 	if (tmp_len >= sizeof(tmp_buff) ||
-	    decode64(argv[4], tmp_len, tmp_buff, std::size(tmp_buff), &decode_len) != 0)
+	    base64_decode_sized({argv[4], tmp_len}, tmp_buff,
+	    std::size(tmp_buff), &decode_len) != 0)
 		return MIDB_E_PARAMETER_ERROR;
 	parg = tmp_buff;
 	while (parg - tmp_buff >= 0 &&
