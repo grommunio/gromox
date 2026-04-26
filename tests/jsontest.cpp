@@ -63,8 +63,6 @@ static int t_digest()
 	if (strcmp(out, "15") != 0)
 		printf("test failure\n");
 
-	if (!set_digest(line, std::size(line), "bar", "YA"))
-		return EXIT_FAILURE;
 	if (!get_digest(line, "bar", out, std::size(out)))
 		return EXIT_FAILURE;
 	printf("digest test >%s<\n", out);

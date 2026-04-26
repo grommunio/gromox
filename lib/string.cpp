@@ -746,36 +746,6 @@ bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
 	return false;
 }
 
-template<typename T> static bool
-set_digest2(char *json, size_t iomax, const char *key, T &&val) try
-{
-	Json::Value jval;
-	if (!gromox::str_to_json(json, jval))
-                return false;
-	jval[key] = val;
-	Json::StreamWriterBuilder swb;
-	swb["indentation"] = "";
-	gx_strlcpy(json, Json::writeString(swb, std::move(jval)).c_str(), iomax);
-	return true;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "%s: ENOMEM", __func__);
-	return false;
-}
-
-bool set_digest(char *json, size_t iomax, const char *key, const char *val)
-{
-	return set_digest2(json, iomax, key, val);
-}
-
-bool set_digest(char *json, size_t iomax, const char *key, uint64_t val)
-{
-	/*
-	 * jsoncpp 1.7 has an ambiguous conversion at
-	 * `jval[key]=val`, so force a particular json type now.
-	 */
-	return set_digest2(json, iomax, key, Json::Value::UInt64(val));
-}
-
 static enum output_mode mlog_typical_mode(const char *filename)
 {
 	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0) {
@@ -1087,7 +1057,7 @@ std::string base64_decode(const std::string_view &x)
 	return out;
 }
 
-static std::string dom2idna(const std::string_view dom)
+static std::string dom2idna(std::string_view dom)
 {
 	std::string idn, part;
 	size_t p = 0;
