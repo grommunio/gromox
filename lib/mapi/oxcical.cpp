@@ -1907,7 +1907,7 @@ static bool oxcical_parse_atx_binary(const ical_line &piline,
 		tmp_bin.pv = malloc(tmp_int32);
 		if (tmp_bin.pv == nullptr)
 			return false;
-		if (decode64(pvalue, tmp_int32, tmp_bin.pv, tmp_int32, &decode_len) != 0) {
+		if (decode64(pvalue, strlen(pvalue), tmp_bin.pv, tmp_int32, &decode_len) != 0) {
 			free(tmp_bin.pb);
 			return false;
 		}
