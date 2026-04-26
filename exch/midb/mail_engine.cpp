@@ -311,8 +311,8 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
 				temp_buff[decode_len] = '\0';
 				tmp_string = me_ct_to_utf8(encode_string.charset, temp_buff);
 			} else if (strcasecmp(encode_string.encoding, "quoted-printable") == 0) {
-				auto decode_len = qp_decode_ex(temp_buff, std::size(temp_buff),
-				                  encode_string.title, tmp_len);
+				auto decode_len = qpnl_decode_sized({encode_string.title, tmp_len},
+				                  temp_buff, std::size(temp_buff));
 				if (decode_len < 0)
 					return NULL;
 				temp_buff[decode_len] = '\0';
@@ -369,7 +369,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	if (strcasecmp(pmime->get_encoding(), "base64") == 0) {
 		content = base64_decode(ctview);
 	} else if (strcasecmp(pmime->get_encoding(), "quoted-printable") == 0) {
-		auto xl = qp_decode_ex(&content[0], content.size(), ctview.data(), ctview.size());
+		auto xl = qpnl_decode_sized(ctview, &content[0], content.size());
 		if (xl < 0)
 			return;
 		content.resize(xl);

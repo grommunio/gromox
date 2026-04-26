@@ -886,8 +886,10 @@ void replace_unsafe_basename(char *s)
 /*
  * The resulting QP data is not suitable as encoded-words, only bodytext.
  */
-ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t length)
+ssize_t qpnl_encode_sized(std::string_view sv_in, void *voutput, size_t outlen)
 {
+	auto input = sv_in.data();
+	auto length = sv_in.size();
 	auto output = static_cast<uint8_t *>(voutput);
 	size_t inpos, outpos, linelen;
 
@@ -1082,9 +1084,11 @@ static size_t qp_decode(void *voutput, const char *input, size_t length,
 	return cnt;
 }
 
-ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
-    size_t length, unsigned int qp_flags)
+ssize_t qpnl_decode_sized(std::string_view sv_in, void *voutput, size_t out_len,
+    unsigned int qp_flags)
 {
+	auto input = sv_in.data();
+	auto length = sv_in.size();
 	auto output = static_cast<uint8_t *>(voutput);
 	int c;
 	size_t i, cnt = 0;

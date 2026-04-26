@@ -274,7 +274,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		content_begin = content_buf.get();
 		if (pmime->content_begin == nullptr)
 			return false;
-		auto qdlen = qp_encode_ex(pbuff.get(), buff_length, pcontent, length);
+		auto qdlen = qpnl_encode_sized({pcontent, length}, pbuff.get(), buff_length);
 		if (qdlen < 0)
 			return false;
 		length = qdlen;
@@ -1059,7 +1059,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 		}
 		return true;
 	case mime_encoding::qp: {
-		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff.get(), size);
+		auto qdlen = qpnl_decode_sized({pbuff.get(), size}, out_buff, max_length);
 		if (qdlen < 0)
 			goto COPY_RAW_DATA;
 		*plength = qdlen;

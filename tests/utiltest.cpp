@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <chrono>
 #include <climits>
@@ -467,20 +467,20 @@ static int t_base64()
 		return printf("TB-21 failed\n");
 #endif
 
-	if (qp_encode_ex(out, 3, "\x01", 1) >= 0)
+	if (qpnl_encode_sized({"\x01", 1}, out, 3) >= 0)
 		return printf("TQ-1 failed\n");
-	if (qp_encode_ex(out, 4, "\x01", 1) < 0)
+	if (qpnl_encode_sized({"\x01", 1}, out, 4) < 0)
 		return printf("TQ-2 failed\n");
-	if (qp_decode_ex(out, 1, "=3D", 3) >= 0)
+	if (qpnl_decode_sized({"=3D", 3}, out, 1) >= 0)
 		return printf("TQ-3 failed\n");
-	if (qp_decode_ex(out, 2, "=3D", 3) < 0)
+	if (qpnl_decode_sized({"=3D", 3}, out, 2) < 0)
 		return printf("TQ-4 failed\n");
 
 	char thebuf[1];
 	thebuf[0] = '=';
-	if (qp_decode_ex(out, 4, &thebuf[0], 1) > 0)
+	if (qpnl_decode_sized({&thebuf[0], 1}, out, 4) > 0)
 		return printf("TQ-5 failed\n");
-	if (qp_decode_ex(out, 0, &thebuf[0], 1) >= 0)
+	if (qpnl_decode_sized({&thebuf[0], 1}, out, 0) >= 0)
 		return printf("TQ-6 failed\n");
 	return 0;
 }

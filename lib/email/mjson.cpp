@@ -460,8 +460,9 @@ static std::string mjson_cvt_addr(const EMAIL_ADDR &email_addr)
 		buf += "(\"" + mjson_add_backslash(email_addr.display_name) + "\"";
 	else
 		/*
-		 * qp_encode_ex is only suitable for bodytext but not
-		 * encoded-words, so just pick base64
+		 * qpnl_encode is only suitable for bodytext but not
+		 * encoded-words (because of the newlines), so just pick
+		 * base64.
 		 */
 		buf += "(\"=?utf-8?b?" + base64_encode(email_addr.display_name) + "?=\"";
 
@@ -573,7 +574,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	} else if (pmime->encoding_is_q()) {
 		std::string qpout;
 		qpout.resize(eml.size());
-		auto qdlen = qp_decode_ex(qpout.data(), qpout.size(), eml.c_str(), eml.size());
+		auto qdlen = qpnl_decode_sized(eml, qpout.data(), qpout.size());
 		if (qdlen < 0) {
 			pbuild->build_result = false;
 			return;
