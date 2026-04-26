@@ -1031,7 +1031,7 @@ std::string iconvtext(std::string_view sv,
 	return {};
 }
 
-std::string base64_encode(const std::string_view &x)
+std::string base64_encode(std::string_view x)
 {
 	std::string out;
 	out.resize((x.size() + 3) / 3 * 4);
@@ -1044,7 +1044,7 @@ std::string base64_encode(const std::string_view &x)
 	return out;
 }
 
-std::string base64_decode(const std::string_view &x)
+std::string base64_decode(std::string_view x)
 {
 	std::string out;
 	out.resize(x.size());

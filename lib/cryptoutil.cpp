@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
@@ -58,7 +58,7 @@ void tls_set_renego(SSL_CTX *ctx)
 	SSL_CTX_set_dh_auto(ctx, true);
 }
 
-std::string sss_obf_reverse(const std::string_view &x)
+std::string sss_obf_reverse(std::string_view x)
 {
 	std::string out;
 	auto z = x.size();

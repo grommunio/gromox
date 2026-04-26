@@ -110,7 +110,7 @@ extern GX_EXPORT bool parse_bool(const char *s);
 extern GX_EXPORT std::string bin2cstr(const void *, size_t);
 extern GX_EXPORT std::string bin2txt(const void *, size_t);
 extern GX_EXPORT std::string bin2hex(const void *, size_t);
-inline std::string bin2hex(const std::string_view &s) { return bin2hex(s.data(), s.size()); }
+inline std::string bin2hex(const std::string_view s) { return bin2hex(s.data(), s.size()); }
 inline std::string bin2hex(const std::string &s) { return bin2hex(s.data(), s.size()); }
 template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }
 extern GX_EXPORT std::string hex2bin(std::string_view, hex2bin_mode = HEX2BIN_EMPTY);
@@ -145,9 +145,9 @@ extern GX_EXPORT std::vector<std::string> gx_split(std::string_view, char sep);
 extern GX_EXPORT std::vector<std::string> gx_split_ws(std::string_view);
 extern GX_EXPORT std::string resource_parse_stcode_line(const char *);
 extern GX_EXPORT void startup_banner(const char *);
-extern GX_EXPORT std::string base64_encode(const std::string_view &);
-extern GX_EXPORT std::string base64_decode(const std::string_view &);
-extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
+extern GX_EXPORT std::string base64_encode(std::string_view);
+extern GX_EXPORT std::string base64_decode(std::string_view);
+extern GX_EXPORT std::string sss_obf_reverse(std::string_view);
 
 /* _xlen - exact length (chars); _len - allocation size, i.e. \0-terminated */
 /* All the classic 8-bit charsets map to within the Unicode Basic Multilingual Plane */
