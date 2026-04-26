@@ -63,6 +63,35 @@ static listener_ctx exmdb_listen_ctx;
 std::atomic<unsigned int> g_enable_dam;
 std::string g_host_id;
 
+exmdb_connection::exmdb_connection(generic_connection &&co) :
+	generic_connection(std::move(co))
+{}
+
+exmdb_connection::~exmdb_connection()
+{
+	if (pthread_equal(thr_id, {}))
+		return;
+	if (pthread_equal(thr_id, pthread_self()))
+		pthread_detach(thr_id);
+	else
+		pthread_join(thr_id, nullptr);
+}
+
+void exmdb_connection::signal_stop()
+{
+	std::lock_guard lk(m_mtx);
+	if (sockd >= 0)
+		shutdown(sockd, SHUT_RDWR);
+	if (!pthread_equal(thr_id, {}))
+		pthread_kill(thr_id, SIGALRM);
+}
+
+void exmdb_connection::close_fd()
+{
+	std::lock_guard lk(m_mtx);
+	generic_connection::reset();
+}
+
 router_connection::router_connection(generic_connection &&o, pthread_t &&tid,
     std::string_view rid) :
 	generic_connection(std::move(o)), remote_id(rid),
@@ -104,6 +133,8 @@ void router_connection::signal_stop()
 {
 	b_stop = true;
 	std::lock_guard lk(lock);
+	if (sockd >= 0)
+		shutdown(sockd, SHUT_RDWR);
 	if (!pthread_equal(thr_id, {}))
 		pthread_kill(thr_id, SIGALRM);
 }
@@ -118,20 +149,6 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 {
 	g_max_threads = max_threads;
 	g_max_routers = max_routers;
-}
-
-static std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
-{
-	if (g_max_threads != 0) {
-		std::lock_guard lk(g_connection_lock);
-		if (g_connection_list.size() >= g_max_threads)
-			return nullptr;
-	}
-	try {
-		return std::make_shared<EXMDB_CONNECTION>();
-	} catch (const std::bad_alloc &) {
-	}
-	return nullptr;
 }
 
 /**
@@ -262,6 +279,7 @@ static int rqi_connect(parser_params &param, const exreq_connect &q,
 	else if (!!param.b_private != !!q.b_private)
 		return rqi_terminate(conn, exmdb_response::misconfig_mode);
 
+	/* q.remote_id is going away, copy it */
 	conn.remote_id = q.remote_id;
 	exmdb_server::set_remote_id(conn.remote_id.c_str());
 	param.is_connected = true;
@@ -358,8 +376,12 @@ static void *request_parser_thread(void *pparam)
 	std::unique_ptr<parser_params> param(static_cast<parser_params *>(pparam));
 	auto &pconnection = param->conn;
 	auto cl_conn = HX::make_scope_exit([&]() {
-		std::lock_guard lk(g_connection_lock);
-		g_connection_list.erase(param->conn);
+		{ /* No new holders */
+			std::lock_guard lk(g_connection_lock);
+			g_connection_list.erase(pconnection);
+		}
+		/* Force remaining holders into a wall */
+		pconnection->close_fd();
 	});
 	try {
 		char txt[16];
@@ -435,25 +457,19 @@ static void *request_parser_thread(void *pparam)
 		offset = 0;
 		is_writing = true;
 	}
-	if (pconnection->sockd >= 0) {
-		close(pconnection->sockd);
-		pconnection->sockd = -1;
-	}
-	if (!pconnection->b_stop) {
-		pconnection->thr_id = {};
-		pthread_detach(pthread_self());
-	}
 	return nullptr;
 }
 
 bool exmdb_parser_insert_conn(generic_connection &&co) try
 {
-	auto par = std::make_unique<parser_params>();
-	par->conn = exmdb_parser_make_conn();
-	if (par->conn == nullptr)
-		return false;
-	static_cast<generic_connection &>(*par->conn) = std::move(co);
+	if (g_max_threads != 0) {
+		std::lock_guard lk(g_connection_lock);
+		if (g_connection_list.size() >= g_max_threads)
+			return false;
+	}
 
+	auto par = std::make_unique<parser_params>();
+	par->conn = std::make_shared<exmdb_connection>(std::move(co));
 	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
 	           request_parser_thread, par.get());
 	if (ret != 0) {
@@ -497,24 +513,11 @@ BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &pconnec
 
 void exmdb_parser_stop()
 {
-	std::vector<pthread_t> pthr_ids;
-	
-	std::unique_lock chold(g_connection_lock);
-	size_t num = g_connection_list.size();
-	pthr_ids.reserve(num);
-	if (num > 0) {
-	for (auto &pconnection : g_connection_list) {
-		pconnection->b_stop = true;
-		if (pconnection->sockd >= 0)
-			shutdown(pconnection->sockd, SHUT_RDWR); /* closed in ~EXMDB_CONNECTION */
-		if (!pthread_equal(pconnection->thr_id, {})) {
-			pthr_ids.push_back(pconnection->thr_id);
-			pthread_kill(pconnection->thr_id, SIGALRM);
-		}
-	}
-	chold.unlock();
-		for (auto tid : pthr_ids)
-			pthread_join(tid, nullptr);
+	{
+		std::lock_guard chold(g_connection_lock);
+		for (auto &c : g_connection_list)
+			c->signal_stop();
+		g_connection_list.clear();
 	}
 
 	std::lock_guard rhold(g_router_lock);

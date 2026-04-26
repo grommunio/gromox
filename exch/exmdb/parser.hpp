@@ -13,15 +13,21 @@
 
 class config_file;
 
-class EXMDB_CONNECTION : public GENERIC_CONNECTION {
+/* Represents a connection from an exmdb_client */
+class exmdb_connection : public generic_connection {
 	public:
-	EXMDB_CONNECTION() = default;
-	NOMOVE(EXMDB_CONNECTION);
+	exmdb_connection(generic_connection &&);
+	~exmdb_connection();
+	NOMOVE(exmdb_connection);
+	void signal_stop();
+	void close_fd();
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
 	std::string remote_id;
+	std::mutex m_mtx; /* protects thr_id */
 };
+using EXMDB_CONNECTION = exmdb_connection;
 
 /**
  * Represents a connection from an exmdb_client which has been switched to
