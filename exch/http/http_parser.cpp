@@ -122,7 +122,7 @@ struct http_parser {
 	ssize_t readsock(http_context *, const char *tag, void *buf, unsigned int size);
 
 	int auth_finalize(http_context &, const char *);
-	int auth_krb(http_context &ctx, const char *input, size_t isize, std::string &output);
+	int auth_krb(http_context &ctx, std::string_view input, std::string &output);
 	int auth_exthelper(http_context &, const std::string &proc, const char *input, std::string &output);
 	tproc_status auth_spnego(http_context &ctx, const char *past_method);
 	tproc_status auth_basic(http_context *, const char *);
@@ -839,15 +839,12 @@ tproc_status http_parser::auth_basic(http_context *pcontext, const char *token) 
 		return tproc_status::runoff;
 	}
 
-	char decoded[1024];
-	size_t decode_len = 0;
-	if (decode64(token, strlen(token), decoded, std::size(decoded), &decode_len) != 0)
-		return tproc_status::runoff;
-	auto p = strchr(decoded, ':');
+	auto decoded = base64_decode(token);
+	auto p = strchr(decoded.data(), ':');
 	if (p == nullptr)
 		return tproc_status::runoff;
 	*p++ = '\0';
-	gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
+	gx_strlcpy(ctx.username, decoded.data(), std::size(ctx.username));
 	gx_strlcpy(ctx.password, p, std::size(ctx.password));
 	pcontext->auth_method = auth_method::basic;
 	const char *auth_user = pcontext->username;
@@ -1083,7 +1080,7 @@ static void krblog(const char* msg, OM_uint32 major, OM_uint32 minor)
  * returns negative for complete failure, returns 0 for auth-unsuccesful, 1 for
  * auth-success, 99 for GSS continue.
  */
-int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
+int http_parser::auth_krb(http_context &ctx, std::string_view input,
     std::string &output)
 {
 	OM_uint32 status{};
@@ -1125,8 +1122,8 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 		}
 	}
 
-	gss_input_buf.value  = deconst(input);
-	gss_input_buf.length = isize;
+	gss_input_buf.value  = deconst(input.data());
+	gss_input_buf.length = input.size();
 	auto ret = gss_accept_sec_context(&status, &ctx.m_gss_ctx,
 	           ctx.m_gss_srv_creds, &gss_input_buf, GSS_C_NO_CHANNEL_BINDINGS,
 	           &gss_username, nullptr, &gss_output_token, nullptr, nullptr, nullptr);
@@ -1155,7 +1152,8 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 }
 #endif
 
-tproc_status http_parser::auth_spnego(http_context &ctx, const char *past_method)
+tproc_status http_parser::auth_spnego(http_context &ctx,
+    const char *past_method) try
 {
 	if (gss_helper_program != "internal-gss") {
 		auto ret = auth_exthelper(ctx, gss_helper_program, past_method, ctx.last_gss_output);
@@ -1167,12 +1165,8 @@ tproc_status http_parser::auth_spnego(http_context &ctx, const char *past_method
 	}
 
 #ifdef HAVE_GSSAPI
-	char decoded[4096];
-	size_t decode_len = 0;
-	if (decode64(past_method, strlen(past_method), decoded,
-	    std::size(decoded), &decode_len) != 0)
-		return tproc_status::runoff;
-	auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
+	auto decoded = base64_decode(past_method);
+	auto ret = auth_krb(ctx, decoded, ctx.last_gss_output);
 	ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
 	ctx.auth_method = auth_method::negotiate;
 #else
@@ -1181,6 +1175,9 @@ tproc_status http_parser::auth_spnego(http_context &ctx, const char *past_method
 		mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
 	y = true;
 #endif
+	return tproc_status::runoff;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return tproc_status::runoff;
 }
 
