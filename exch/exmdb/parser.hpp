@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -23,9 +24,15 @@ class EXMDB_CONNECTION : public GENERIC_CONNECTION {
 };
 
 struct ROUTER_CONNECTION {
+	struct xbinary {
+		std::unique_ptr<uint8_t[], gromox::stdlib_delete> pb;
+		size_t cb = 0;
+	};
+
 	ROUTER_CONNECTION() = default;
 	NOMOVE(ROUTER_CONNECTION);
 	~ROUTER_CONNECTION();
+	void push_and_wake(BINARY &&);
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
@@ -34,7 +41,7 @@ struct ROUTER_CONNECTION {
 	time_t last_time = 0;
 	std::mutex lock;
 	std::condition_variable waken_cond;
-	std::list<BINARY> datagram_list; /* manual (de)allocation of .pb */
+	std::list<xbinary> datagram_list;
 };
 using router_connection = ROUTER_CONNECTION;
 

@@ -33,14 +33,7 @@ void notification_agent_backward_notify(const char *remote_id,
 	BINARY bin{};
 	if (exmdb_ext_push_db_notify(pnotify, &bin) != pack_result::ok)
 		return;	
-	try {
-		std::unique_lock rt_hold(prouter->lock);
-		prouter->datagram_list.push_back(bin);
-	} catch (...) {
-		free(bin.pb);
-		return;
-	}
-	prouter->waken_cond.notify_one();
+	prouter->push_and_wake(std::move(bin));
 }
 
 static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> prouter)
@@ -78,8 +71,7 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 		while (prouter->datagram_list.size() > 0) {
 			auto dg = std::move(prouter->datagram_list.front());
 			prouter->datagram_list.pop_front();
-			auto bytes_written = HXio_fullwrite(prouter->sockd, dg.pb, dg.cb);
-			free(dg.pb);
+			auto bytes_written = HXio_fullwrite(prouter->sockd, dg.pb.get(), dg.cb);
 			if (bytes_written < 0 ||
 			    static_cast<size_t>(bytes_written) != dg.cb ||
 			    !notification_agent_read_response(prouter))
@@ -93,8 +85,6 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 	prouter->sockd = -1;
 	{
 		std::lock_guard lk(prouter->lock);
-		for (auto &&bin : prouter->datagram_list)
-			free(bin.pb);
 		prouter->datagram_list.clear();
 	}
 	if (!prouter->b_stop) {

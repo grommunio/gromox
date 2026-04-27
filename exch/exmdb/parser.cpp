@@ -67,8 +67,18 @@ ROUTER_CONNECTION::~ROUTER_CONNECTION()
 {
 	if (sockd >= 0)
 		close(sockd);
-	for (auto &&bin : datagram_list)
-		free(bin.pb);
+}
+
+void router_connection::push_and_wake(BINARY &&b) try
+{
+	std::unique_ptr<uint8_t[], stdlib_delete> blob(std::move(b.pb));
+	b.pb = nullptr;
+	{
+		std::lock_guard lk(lock);
+		datagram_list.emplace_back(std::move(blob), b.cb);
+	}
+	waken_cond.notify_one();
+} catch (const std::bad_alloc &) {
 }
 
 void exmdb_parser_init(size_t max_threads, size_t max_routers)
