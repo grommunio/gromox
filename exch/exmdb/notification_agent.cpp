@@ -79,17 +79,6 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 		}
 	}
  EXIT_THREAD:
-	while (!exmdb_parser_erase_router(prouter))
-		sleep(1);
-	close(prouter->sockd);
-	prouter->sockd = -1;
-	{
-		std::lock_guard lk(prouter->lock);
-		prouter->datagram_list.clear();
-	}
-	if (!prouter->b_stop) {
-		prouter->thr_id = {};
-		pthread_detach(pthread_self());
-	}
+	exmdb_parser_erase_router(prouter);
 	return -1;
 }

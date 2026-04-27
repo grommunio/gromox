@@ -63,10 +63,22 @@ static listener_ctx exmdb_listen_ctx;
 std::atomic<unsigned int> g_enable_dam;
 std::string g_host_id;
 
-ROUTER_CONNECTION::~ROUTER_CONNECTION()
+router_connection::~router_connection()
 {
+	/* When the dtor runs, no thread should be in the notification_agent_thread_work inner loop anymore */
 	if (sockd >= 0)
 		close(sockd);
+	if (pthread_equal(thr_id, {}))
+		return;
+	/*
+	 * XXX: This is not great, but the logic has existed for
+	 * practically forever (it used to test b_stop rather than
+	 * thr_id, but that's even worse).
+	 */
+	if (pthread_equal(thr_id, pthread_self()))
+		pthread_detach(thr_id);
+	else
+		pthread_join(thr_id, nullptr);
 }
 
 void router_connection::push_and_wake(BINARY &&b) try
@@ -79,6 +91,14 @@ void router_connection::push_and_wake(BINARY &&b) try
 	}
 	waken_cond.notify_one();
 } catch (const std::bad_alloc &) {
+}
+
+void router_connection::signal_stop()
+{
+	b_stop = true;
+	std::lock_guard lk(lock);
+	if (!pthread_equal(thr_id, {}))
+		pthread_kill(thr_id, SIGALRM);
 }
 
 void exmdb_parser_init(size_t max_threads, size_t max_routers)
@@ -483,23 +503,11 @@ void exmdb_parser_stop()
 		for (auto tid : pthr_ids)
 			pthread_join(tid, nullptr);
 	}
-	std::unique_lock rhold(g_router_lock);
-	num = g_router_list.size();
-	pthr_ids.clear();
-	pthr_ids.reserve(num);
-	if (num > 0) {
-	for (auto &rt : g_router_list) {
-		rt->b_stop = true;
-		rt->waken_cond.notify_one();
-		if (!pthread_equal(rt->thr_id, {})) {
-			pthr_ids.emplace_back(rt->thr_id);
-			pthread_kill(rt->thr_id, SIGALRM);
-		}
-	}
-	rhold.unlock();
-		for (auto tid : pthr_ids)
-			pthread_join(tid, nullptr);
-	}
+
+	std::lock_guard rhold(g_router_lock);
+	for (auto &rt : g_router_list)
+		rt->signal_stop();
+	g_router_list.clear();
 }
 
 static int sockaccept_thread(generic_connection &&conn)

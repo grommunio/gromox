@@ -23,16 +23,17 @@ class EXMDB_CONNECTION : public GENERIC_CONNECTION {
 	std::string remote_id;
 };
 
-struct ROUTER_CONNECTION {
+struct router_connection {
 	struct xbinary {
 		std::unique_ptr<uint8_t[], gromox::stdlib_delete> pb;
 		size_t cb = 0;
 	};
 
-	ROUTER_CONNECTION() = default;
-	NOMOVE(ROUTER_CONNECTION);
-	~ROUTER_CONNECTION();
+	router_connection() = default;
+	NOMOVE(router_connection);
+	~router_connection();
 	void push_and_wake(BINARY &&);
+	void signal_stop();
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
@@ -43,7 +44,7 @@ struct ROUTER_CONNECTION {
 	std::condition_variable waken_cond;
 	std::list<xbinary> datagram_list;
 };
-using router_connection = ROUTER_CONNECTION;
+using ROUTER_CONNECTION = router_connection;
 
 extern void exmdb_parser_init(size_t max_threads, size_t max_routers);
 extern void exmdb_parser_stop();
