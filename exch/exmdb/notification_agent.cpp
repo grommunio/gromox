@@ -9,6 +9,7 @@
 #include <poll.h>
 #include <unistd.h>
 #include <utility>
+#include <libHX/io.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -61,44 +62,28 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 	uint32_t ping_buff;
 	
 	while (!prouter->b_stop) {
-		BINARY dg;
-		std::unique_lock cn_hold(prouter->cond_mutex);
+		std::unique_lock cn_hold(prouter->lock);
 		static_assert(SOCKET_TIMEOUT >= 3, "integer underflow");
-		prouter->waken_cond.wait_for(cn_hold, std::chrono::seconds(SOCKET_TIMEOUT - 3));
-		cn_hold.unlock();
-
-		std::unique_lock rt_hold(prouter->lock);
-		if (prouter->datagram_list.size() > 0) {
-			dg = prouter->datagram_list.front();
-			prouter->datagram_list.pop_front();
-		} else {
-			dg.cb = 0;
-			dg.pb = nullptr;
-		}
-		rt_hold.unlock();
-		if (dg.pb == nullptr) {
+		bool got = prouter->waken_cond.wait_for(cn_hold, std::chrono::seconds(SOCKET_TIMEOUT - 3),
+			   [&]() { return prouter->b_stop || prouter->datagram_list.size() > 0; });
+		if (prouter->b_stop)
+			break;
+		if (!got) {
 			ping_buff = 0;
 			if (write(prouter->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t) ||
 			    !notification_agent_read_response(prouter))
 				goto EXIT_THREAD;
 			continue;
 		}
-		while (dg.pb != nullptr) {
-			auto bytes_written = write(prouter->sockd, dg.pb, dg.cb);
+		while (prouter->datagram_list.size() > 0) {
+			auto dg = std::move(prouter->datagram_list.front());
+			prouter->datagram_list.pop_front();
+			auto bytes_written = HXio_fullwrite(prouter->sockd, dg.pb, dg.cb);
 			free(dg.pb);
 			if (bytes_written < 0 ||
 			    static_cast<size_t>(bytes_written) != dg.cb ||
 			    !notification_agent_read_response(prouter))
 				goto EXIT_THREAD;
-			std::unique_lock rt_lock(prouter->lock);
-			if (prouter->datagram_list.size() > 0) {
-				dg = prouter->datagram_list.front();
-				prouter->datagram_list.pop_front();
-			} else {
-				rt_lock.unlock();
-				dg.cb = 0;
-				dg.pb = nullptr;
-			}
 		}
 	}
  EXIT_THREAD:

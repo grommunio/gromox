@@ -32,7 +32,7 @@ struct ROUTER_CONNECTION {
 	std::string remote_id;
 	int sockd = -1;
 	time_t last_time = 0;
-	std::mutex lock, cond_mutex;
+	std::mutex lock;
 	std::condition_variable waken_cond;
 	std::list<BINARY> datagram_list; /* manual (de)allocation of .pb */
 };
