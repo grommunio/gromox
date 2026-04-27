@@ -1873,10 +1873,8 @@ static bool oxcical_parse_atx_value(const ical_line &piline,
 }
 
 static bool oxcical_parse_atx_binary(const ical_line &piline,
-    int count, MESSAGE_CONTENT *pmsg)
+    int count, MESSAGE_CONTENT *pmsg) try
 {
-	BINARY tmp_bin;
-	size_t decode_len;
 	uint8_t tmp_byte;
 	uint64_t tmp_int64;
 	char tmp_buff[1024];
@@ -1901,25 +1899,16 @@ static bool oxcical_parse_atx_binary(const ical_line &piline,
 		attachment_content_free(pattachment);
 		return false;
 	}
+	std::string bcontent;
+	BINARY tmp_bin{};
 	pvalue = piline.get_first_subvalue();
 	if (pvalue != nullptr) {
-		uint32_t tmp_int32 = strlen(pvalue) / 4 * 3 + 1;
-		tmp_bin.pv = malloc(tmp_int32);
-		if (tmp_bin.pv == nullptr)
-			return false;
-		if (decode64(pvalue, strlen(pvalue), tmp_bin.pv, tmp_int32, &decode_len) != 0) {
-			free(tmp_bin.pb);
-			return false;
-		}
-		tmp_bin.cb = decode_len;
-	} else {
-		tmp_bin.cb = 0;
-		tmp_bin.pb = nullptr;
+		bcontent = base64_decode(pvalue);
+		tmp_bin.pc = bcontent.data();
+		tmp_bin.cb = bcontent.size();
 	}
 	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != ecSuccess)
 		return false;
-	if (tmp_bin.pb != nullptr)
-		free(tmp_bin.pb);
 	tmp_bin.cb = 0;
 	tmp_bin.pb = nullptr;
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != ecSuccess)
@@ -1959,6 +1948,9 @@ static bool oxcical_parse_atx_binary(const ical_line &piline,
 	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != ecSuccess)
 		return false;
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static bool oxcical_parse_attachment(const ical_line &piline,
