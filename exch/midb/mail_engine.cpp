@@ -266,7 +266,6 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
     std::string_view sv_in) try
 {
 	ENCODE_STRING encode_string;
-	char temp_buff[1024];
 
 	auto buff_len = sv_in.size();
 	auto ret_string = std::make_unique<char[]>(2 * (buff_len + 1));
@@ -297,12 +296,9 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
 			auto tmp_len = strlen(encode_string.title);
 			std::string tmp_string;
 			if (strcasecmp(encode_string.encoding, "base64") == 0) {
-				size_t decode_len = 0;
-				decode64(encode_string.title, tmp_len,
-				         temp_buff, std::size(temp_buff), &decode_len);
-				temp_buff[decode_len] = '\0';
-				tmp_string = me_ct_to_utf8(encode_string.charset, temp_buff);
+				tmp_string = me_ct_to_utf8(encode_string.charset, base64_decode(encode_string.title));
 			} else if (strcasecmp(encode_string.encoding, "quoted-printable") == 0) {
+				char temp_buff[1024];
 				auto decode_len = qpnl_decode_sized({encode_string.title, tmp_len},
 				                  temp_buff, std::size(temp_buff));
 				if (decode_len < 0)
@@ -519,12 +515,9 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				if (!get_digest(digest, "cc", temp_buff, std::size(temp_buff)) ||
-				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, std::size(temp_buff1), &temp_len) != 0)
+				if (!get_digest(digest, "cc", temp_buff, std::size(temp_buff)))
 					break;
-				temp_buff1[temp_len] = '\0';
-				auto rs = me_ct_decode_mime(charset, temp_buff1);
+				auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
 				if (rs != nullptr && strcasestr(rs.get(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
@@ -563,12 +556,10 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				if (!get_digest(digest, "from", temp_buff, std::size(temp_buff)) ||
-				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, std::size(temp_buff1), &temp_len) != 0)
+				if (!get_digest(digest, "from", temp_buff, std::size(temp_buff)))
 					break;
 				temp_buff1[temp_len] = '\0';
-				auto rs = me_ct_decode_mime(charset, temp_buff1);
+				auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
 				if (rs != nullptr && strcasestr(rs.get(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
@@ -701,12 +692,9 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				if (!get_digest(digest, "subject", temp_buff, std::size(temp_buff)) ||
-				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, std::size(temp_buff1), &temp_len) != 0)
+				if (!get_digest(digest, "subject", temp_buff, std::size(temp_buff)))
 					break;
-				temp_buff1[temp_len] = '\0';
-				auto rs = me_ct_decode_mime(charset, temp_buff1);
+				auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
 				if (rs != nullptr && strcasestr(rs.get(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
@@ -718,44 +706,32 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				if (get_digest(digest, "cc", temp_buff, std::size(temp_buff)) &&
-				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, std::size(temp_buff1), &temp_len) == 0) {
-					temp_buff1[temp_len] = '\0';
-					auto rs = me_ct_decode_mime(charset, temp_buff1);
+				if (get_digest(digest, "cc", temp_buff, std::size(temp_buff))) {
+					auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
 					if (rs != nullptr && strcasestr(rs.get(),
 					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
 					break;
-				if (get_digest(digest, "from", temp_buff, std::size(temp_buff)) &&
-				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, std::size(temp_buff1), &temp_len) == 0) {
-					temp_buff1[temp_len] = '\0';
-					auto rs = me_ct_decode_mime(charset, temp_buff1);
+				if (get_digest(digest, "from", temp_buff, std::size(temp_buff))) {
+					auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
 					if (rs != nullptr && strcasestr(rs.get(),
 					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
 					break;
-				if (get_digest(digest, "subject", temp_buff, std::size(temp_buff)) &&
-				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, std::size(temp_buff1), &temp_len) == 0) {
-					temp_buff1[temp_len] = '\0';
-					auto rs = me_ct_decode_mime(charset, temp_buff1);
+				if (get_digest(digest, "subject", temp_buff, std::size(temp_buff))) {
+					auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
 					if (rs != nullptr && strcasestr(rs.get(),
 					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
 					break;
-				if (get_digest(digest, "to", temp_buff, std::size(temp_buff)) &&
-				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, std::size(temp_buff1), &temp_len) == 0) {
-					temp_buff1[temp_len] = '\0';
-					auto rs = me_ct_decode_mime(charset, temp_buff1);
+				if (get_digest(digest, "to", temp_buff, std::size(temp_buff))) {
+					auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
 					if (rs != nullptr && strcasestr(rs.get(),
 					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
