@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <chrono>
 #include <cstdint>
@@ -25,15 +25,13 @@ void notification_agent_backward_notify(const char *remote_id,
 				pnotify->id_array[i], &pnotify->db_notify);
 		return;
 	}
-	auto prouter = exmdb_parser_extract_router(remote_id);
+	auto prouter = exmdb_parser_get_router(remote_id);
 	if (NULL == prouter) {
 		return;
 	}
 	BINARY bin{};
-	if (exmdb_ext_push_db_notify(pnotify, &bin) != pack_result::ok) {
-		exmdb_parser_insert_router(std::move(prouter));
+	if (exmdb_ext_push_db_notify(pnotify, &bin) != pack_result::ok)
 		return;	
-	}
 	try {
 		std::unique_lock rt_hold(prouter->lock);
 		prouter->datagram_list.push_back(bin);
@@ -42,7 +40,6 @@ void notification_agent_backward_notify(const char *remote_id,
 		return;
 	}
 	prouter->waken_cond.notify_one();
-	exmdb_parser_insert_router(std::move(prouter));
 }
 
 static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> prouter)

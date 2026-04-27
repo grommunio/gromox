@@ -425,16 +425,12 @@ bool exmdb_parser_insert_conn(generic_connection &&co) try
 	return false;
 }
 
-std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_extract_router(const char *remote_id)
+std::shared_ptr<router_connection> exmdb_parser_get_router(const char *remote_id)
 {
 	std::lock_guard rhold(g_router_lock);
 	auto it = std::find_if(g_router_list.begin(), g_router_list.end(),
 	          [&](const auto &r) { return r->remote_id == remote_id; });
-	if (it == g_router_list.end())
-		return nullptr;
-	auto rt = *it;
-	g_router_list.erase(it);
-	return rt;
+	return it != g_router_list.end() ? *it : nullptr;
 }
 
 void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&pconnection)
