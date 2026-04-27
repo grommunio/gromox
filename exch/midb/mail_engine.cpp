@@ -263,22 +263,17 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 }
 
 static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
-    const char *mime_string) try
+    std::string_view sv_in) try
 {
-	int i, buff_len;
-	int offset;
-	int last_pos, begin_pos, end_pos;
 	ENCODE_STRING encode_string;
 	char temp_buff[1024];
 
-	buff_len = strlen(mime_string);
+	auto buff_len = sv_in.size();
 	auto ret_string = std::make_unique<char[]>(2 * (buff_len + 1));
-	auto in_buff = deconst(mime_string);
+	auto in_buff = sv_in.data();
 	auto out_buff = ret_string.get();
-	offset = 0;
-	begin_pos = -1;
-	end_pos = -1;
-	last_pos = 0;
+	size_t i, offset = 0, last_pos = 0;
+	int begin_pos = -1, end_pos = -1;
 	for (i=0; i<buff_len-1&&offset<2*buff_len+1; i++) {
 		if (-1 == begin_pos && '=' == in_buff[i] && '?' == in_buff[i + 1]) {
 			begin_pos = i;
