@@ -192,7 +192,8 @@ int svc_mgr::run_library(const generic_module &mod) try
 	SVC_PLUG_ENTITY e;
 	e.file_name = mod.file_name;
 	e.lib_main  = mod.lib_main;
-	auto new_it = g_list_plug.emplace(g_list_plug.end(), std::move(e));
+	auto cpos = g_cur_plug.has_value() ? *g_cur_plug : g_list_plug.end();
+	auto new_it = g_list_plug.emplace(cpos, std::move(e));
 	return run_library_internal(new_it);
 } catch (const std::bad_alloc &) {
 	return PLUGIN_FAIL_ALLOCNODE;
