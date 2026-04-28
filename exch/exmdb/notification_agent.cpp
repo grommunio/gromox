@@ -91,6 +91,5 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 		prouter->thr_id = {};
 		pthread_detach(pthread_self());
 	}
-	pthread_exit(nullptr);
 	return -1;
 }
