@@ -17,6 +17,7 @@
 #endif
 #include <libHX/endian.h>
 #include <gromox/mapidefs.h>
+#include <gromox/process.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -218,11 +219,11 @@ static uint32_t gromox_rng_seed()
 	ret = getrandom(&seed, sizeof(seed), 0);
 #endif
 	if (ret < 0 || static_cast<size_t>(ret) != sizeof(seed))
-		seed = std::chrono::steady_clock::now().time_since_epoch().count() ^ getpid();
+		seed = std::chrono::steady_clock::now().time_since_epoch().count() ^ gx_gettid();
 	return seed;
 }
 
-static std::mt19937 gromox_rng(gromox_rng_seed());
+static thread_local std::mt19937 gromox_rng(gromox_rng_seed());
 
 uint32_t rand()
 {
