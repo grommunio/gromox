@@ -83,7 +83,7 @@ logon (contrary to the name, not EMSMDB session) can have at any one time
 concurrently. Use 0 to indicate unlimited. On average, Outlook creates six ROP
 logons per mailbox that it opens.
 .br
-Default: \fI500\fP
+Default: \fI32768\fP
 .TP
 \fBemsmdb_private_folder_softdelete\fP
 Enables soft-delete support for folders in private stores. (This feature is
