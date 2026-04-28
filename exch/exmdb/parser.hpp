@@ -23,13 +23,17 @@ class EXMDB_CONNECTION : public GENERIC_CONNECTION {
 	std::string remote_id;
 };
 
-struct router_connection {
+/**
+ * Represents a connection from an exmdb_client which has been switched to
+ * notification listening mode.
+ */
+struct router_connection final : public generic_connection {
 	struct xbinary {
 		std::unique_ptr<uint8_t[], gromox::stdlib_delete> pb;
 		size_t cb = 0;
 	};
 
-	router_connection() = default;
+	router_connection(generic_connection &&, pthread_t &&, std::string_view);
 	NOMOVE(router_connection);
 	~router_connection();
 	void push_and_wake(BINARY &&);
@@ -38,7 +42,6 @@ struct router_connection {
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
 	std::string remote_id;
-	int sockd = -1;
 	time_t last_time = 0;
 	std::mutex lock;
 	std::condition_variable waken_cond;

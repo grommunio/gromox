@@ -63,11 +63,18 @@ static listener_ctx exmdb_listen_ctx;
 std::atomic<unsigned int> g_enable_dam;
 std::string g_host_id;
 
+router_connection::router_connection(generic_connection &&o, pthread_t &&tid,
+    std::string_view rid) :
+	generic_connection(std::move(o)), remote_id(rid),
+	last_time(time(nullptr))
+{
+	thr_id = std::move(tid);
+	tid = {};
+}
+
 router_connection::~router_connection()
 {
 	/* When the dtor runs, no thread should be in the notification_agent_thread_work inner loop anymore */
-	if (sockd >= 0)
-		close(sockd);
 	if (pthread_equal(thr_id, {}))
 		return;
 	/*
@@ -267,16 +274,12 @@ static int rqi_listen(parser_params &param, const exreq_listen_notification &q) 
 	if (g_max_routers != 0 && max_routers_reached())
 		return rqi_terminate(conn, exmdb_response::max_reached);
 
-	auto router = std::make_shared<ROUTER_CONNECTION>();
-	router->remote_id = q.remote_id;
+	auto router = std::make_shared<router_connection>(std::move(static_cast<generic_connection &>(conn)),
+	              std::move(conn.thr_id), q.remote_id);
 	static constexpr char success[5]{};
-	auto wrret = write(conn.sockd, success, std::size(success));
+	auto wrret = write(router->sockd, success, std::size(success));
 	if (wrret < 0 || static_cast<size_t>(wrret) != std::size(success))
 		return -1; /* OS error */
-	router->thr_id = std::move(conn.thr_id);
-	router->sockd  = std::move(conn.sockd);
-	conn.thr_id = {};
-	conn.sockd = -1;
 	router->last_time = time(nullptr);
 	{
 		std::unique_lock r_hold(g_router_lock);
