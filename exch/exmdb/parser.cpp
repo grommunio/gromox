@@ -351,6 +351,10 @@ static void *request_parser_thread(void *pparam)
 	
 	std::unique_ptr<parser_params> param(static_cast<parser_params *>(pparam));
 	auto &pconnection = param->conn;
+	auto cl_conn = HX::make_scope_exit([&]() {
+		std::lock_guard lk(g_connection_lock);
+		g_connection_list.erase(param->conn);
+	});
 	try {
 		char txt[16];
 		snprintf(txt, std::size(txt), "exrq/%hu", pconnection->client_port);
