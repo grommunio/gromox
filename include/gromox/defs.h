@@ -147,6 +147,8 @@ template<typename T> static inline T *me_alloc(size_t elem)
 {
 	static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
 	auto t = static_cast<T *>(malloc(sizeof(T) * elem));
+	if (t == nullptr)
+		return nullptr;
 	try {
 		for (size_t i = 0; i < elem; ++i)
 			new(&t[i]) T;
