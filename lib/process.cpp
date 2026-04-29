@@ -793,7 +793,7 @@ errno_t socketpass_worker::pass(std::string_view buffer, int fd_pass) const
 	struct iovec iov;
 	iov.iov_base = &pktlen;
 	iov.iov_len  = sizeof(pktlen);
-	char cbuf[CMSG_SPACE(sizeof(fd_pass))] alignas(struct cmsghdr);
+	alignas(struct cmsghdr) char cbuf[CMSG_SPACE(sizeof(fd_pass))];
 	struct msghdr msg{};
 	msg.msg_iov        = &iov;
 	msg.msg_iovlen     = 1;
