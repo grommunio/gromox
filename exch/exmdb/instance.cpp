@@ -1598,12 +1598,7 @@ BOOL exmdb_server::unload_instance(const char *dir, uint32_t instance_id)
 		return FALSE;
 	/* No database access, so no transaction. */
 	auto dbase = pdb->lock_base_wr();
-	for (auto it = dbase->instance_list.begin(); it != dbase->instance_list.end(); ++it) {
-		if (it->instance_id == instance_id) {
-			dbase->instance_list.erase(it);
-			break;
-		}
-	}
+	erase_first_if(dbase->instance_list, [&](const instance_node &n) { return n.instance_id == instance_id; });
 	return TRUE;
 }
 
