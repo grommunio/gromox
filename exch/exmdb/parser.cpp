@@ -108,6 +108,12 @@ void router_connection::signal_stop()
 		pthread_kill(thr_id, SIGALRM);
 }
 
+void router_connection::close_fd()
+{
+	std::lock_guard lk(lock);
+	generic_connection::reset();
+}
+
 void exmdb_parser_init(size_t max_threads, size_t max_routers)
 {
 	g_max_threads = max_threads;

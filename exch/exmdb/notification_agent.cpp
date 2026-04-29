@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <utility>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -53,6 +54,13 @@ static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> 
 int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 {
 	uint32_t ping_buff;
+	auto cl_0 = HX::make_scope_exit([&]() {
+		/* Stop others getting new references */
+		exmdb_parser_erase_router(prouter);
+
+		/* Force remaining holders into a wall */
+		prouter->close_fd();
+	});
 	
 	while (!prouter->b_stop) {
 		std::unique_lock cn_hold(prouter->lock);
@@ -65,7 +73,7 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 			ping_buff = 0;
 			if (write(prouter->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t) ||
 			    !notification_agent_read_response(prouter))
-				goto EXIT_THREAD;
+				return -1;
 			continue;
 		}
 		while (prouter->datagram_list.size() > 0) {
@@ -75,10 +83,8 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 			if (bytes_written < 0 ||
 			    static_cast<size_t>(bytes_written) != dg.cb ||
 			    !notification_agent_read_response(prouter))
-				goto EXIT_THREAD;
+				return -1;
 		}
 	}
- EXIT_THREAD:
-	exmdb_parser_erase_router(prouter);
 	return -1;
 }

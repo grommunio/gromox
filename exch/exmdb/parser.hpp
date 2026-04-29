@@ -38,6 +38,7 @@ struct router_connection final : public generic_connection {
 	~router_connection();
 	void push_and_wake(BINARY &&);
 	void signal_stop();
+	void close_fd();
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
