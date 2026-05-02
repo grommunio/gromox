@@ -224,10 +224,13 @@ int gx_sql_step(sqlite3_stmt *stm, unsigned int flags)
 		exp = sqlite3_expanded_sql(stm);
 		mlog(LV_DEBUG, "[T%lu] > sqlite3_step(%p, %s)", gx_gettid(), stm, exp);
 	}
-	if (ret == SQLITE_OK || ret == SQLITE_ROW || ret == SQLITE_DONE)
+	if (ret == SQLITE_OK || ret == SQLITE_ROW || ret == SQLITE_DONE) {
+		sqlite3_free(exp);
 		return ret;
-	else if (ret == SQLITE_CONSTRAINT && (flags & SQLEXEC_SILENT_CONSTRAINT))
+	} else if (ret == SQLITE_CONSTRAINT && (flags & SQLEXEC_SILENT_CONSTRAINT)) {
+		sqlite3_free(exp);
 		return ret;
+	}
 	if (exp == nullptr)
 		exp = sqlite3_expanded_sql(stm);
 	auto db  = sqlite3_db_handle(stm);
