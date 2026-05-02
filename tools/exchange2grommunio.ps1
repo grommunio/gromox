@@ -971,7 +971,7 @@ if ($CreateGrommunioMailbox) {
 	}
 }
 # Experimental, skip Exchange system mailboxes
-if ($MailboxesExSystem -e 0) {
+if ($MailboxesExSystem -ne 0) {
 	Write-MLog "$MailboxesExSystem Exchange system mailboxes skipped" green
 	Write-Mlog "Affected mailboxes: $SkipExSystemMBX" green
 }
