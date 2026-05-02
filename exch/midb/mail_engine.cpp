@@ -990,8 +990,10 @@ ct_node::ct_node(ct_node &&o) :
 
 ct_node::~ct_node()
 {
-	if (pbranch != nullptr)
+	if (pbranch != nullptr) {
+		delete pbranch;
 		return;
+	}
 	switch (condition) {
 	case midb_cond::id ... midb_cond::uid:
 		delete ct_seq;
