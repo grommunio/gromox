@@ -17,6 +17,12 @@ Noteworthy issues for administrators and packagers
   installed) after obtaining the listview for a folder with 70000 messages.
   https://github.com/grommunio/gromox/issues/214
 
+* Some C++ shared libraries can not be unloaded
+  (when `readelf -aW` outputs "UNIQUE"-type symbols). Components like
+  libgromox_common.so.0, once loaded into a process, stay resident across
+  dlclose-dlopen calls. This generally affects programs that use pam_gromox.so.
+  These programs (e.g. keycloak) need to be restarted after a Gromox update.
+
 
 Noteworthy issues for developers
 ================================
