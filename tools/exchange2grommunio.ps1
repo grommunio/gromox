@@ -72,6 +72,12 @@
 #       Linux commands in the log, you need to start the PowerShell session with this command:
 #       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -version 3.0 -noexit -command ". 'C:\Program Files\Microsoft\Exchange Server\V14\bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto"
 #
+#       For newer versions of Exchange, you can launch the script in this way:
+#       1. Right-click the Exchange Management Shell on the desktop and select 'Run as administrator'.
+#       2. Wait for PowerShell to connect to the Exchange server.
+#       3. Change directory to the folder where the script is stored, e.g. 'cd -d c:\grommunio'
+#       4. Launch the script with execution policy bypass: '.\exchange2grommunio.ps1 -ExecutionPolicy bypass'.
+#
 # 7. Test the migration.
 #
 # You may see this error:
@@ -568,6 +574,8 @@ $MailboxesImportFailed = 0
 $MailboxesExported = 0
 $MailboxesExportFailed = 0
 $MailboxesMB = 0
+$MailboxesExSystem = 0
+$SkipExSystemMBX = ""
 $CreateErrorsMBX = ""
 $ImportErrorsMBX = ""
 $ExportErrorsMBX = ""
@@ -660,11 +668,11 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 	$ImpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".import.log")
 	$ExpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".export.json")
 	Write-Debug "`nMigMBox: $MigMBox`nImpLogFile: $ImpLogFile`nExpLogFile: $ExpLogFile"
-
+	# $MigMBox is now in lower case
 
 	if ($ImportMboxes.length -gt 5) {
 		# Use $ImportMboxes only if it contains a minimum of one mail address
-		if ($ImportMboxes.ToLower().contains($MigMBox.ToLower())) {
+		if ($ImportMboxes.ToLower().contains($MigMBox)) {
 			Write-MLog "Mailbox: $MigMBox found in `$ImportMboxes list." green
 		} else {
 			$MailboxesSkipped++
@@ -674,12 +682,23 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 		}
 	} # if ($ImportMboxes.length -gt 5)
 
-	if ($IgnoreMboxes.ToLower().contains($MigMBox.ToLower())) {
+	if ($IgnoreMboxes.ToLower().contains($MigMBox)) {
 		$MailboxesSkipped++
 		$MailboxesTotal++
 		Write-MLog "Ignoring mailbox: $MigMBox, found mailbox in `$IgnoreMboxes list." yellow
 		continue
 	}
+
+	# This is experimental, ignore all internal/system mailboxes on this Exchange system.
+		if ($MigMBox -match 'healthmailbox|systemmailbox|federatedemail|msexchdiscovery|msexchapproval') {
+			$MailboxesSkipped++
+			$MailboxesTotal++
+			$MailboxesExSystem++
+			$SkipExSystemMBX += $MigMBox + ", "
+			Write-MLog "Ignoring mailbox: $MigMBox, it is an Exchange system mailbox." green
+		continue
+	}
+
 	Write-MLog "" white
 	# Clean up before exporting a mailbox
 	# Remove all MailboxExportRequest, to make check for "Completed" more robust
@@ -951,11 +970,18 @@ if ($CreateGrommunioMailbox) {
 		Write-MLog "Affected mailboxes: $CreateErrorsMBX" red
 	}
 }
+# Experimental, skip Exchange system mailboxes
+if ($MailboxesExSystem -e 0) {
+	Write-MLog "$MailboxesExSystem Exchange system mailboxes skipped" green
+	Write-Mlog "Affected mailboxes: $SkipExSystemMBX" green
+}
+# Show number of imported mailboxes
 Write-MLog "$MailboxesImported mailboxes imported" green
 if ($MailboxesImportFailed -ne 0) {
 	Write-MLog "$MailboxesImportFailed mailboxes imported with errors or import failed" red
 	Write-Mlog "Affected mailboxes: $ImportErrorsMBX" red
 }
+# Show failed mailboxes
 if ($MailboxesExportFailed -ne 0) {
 	Write-MLog "$MailboxesExportFailed mailboxes couldn't be exported" red
 	Write-Mlog "Affected mailboxes: $ExportErrorsMBX" red
