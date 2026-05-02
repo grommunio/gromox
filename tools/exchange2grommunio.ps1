@@ -1,7 +1,7 @@
 <#
 # A PowerShell script for Exchange to grommunio migration.
 #
-# Copyright 2022-2025 Walter Hofstaedtler & grommunio GmbH
+# Copyright 2022-2026 Walter Hofstaedtler & grommunio GmbH
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Authors: grommunio <dev@grommunio.com>
 #          Walter Hofstaedtler <walter@hofstaedtler.com>
@@ -227,6 +227,12 @@ $OnlyCreateGrommunioMailbox = $false
 # The languages can be found in: /usr/share/grommunio-admin-api/res/storelangs.json
 $MailboxLanguage = "de_DE"
 
+# An organization is needed to create mailboxes when a mailbox has aliases in different domains.
+# This is only needed if the script needs to create mailboxes. If no organization is used, leave the variable $Organization empty.
+# To create mailboxes in the first organization, use the following command: $Organization = "-o 1"
+#$Organization = "-o 1"
+$Organization = ""
+
 # Stop marker, if $WaitAfterImport = $false, create this file and migration will be interrupted after current mailbox
 $StopMarker = "exchange2grommunio.STOP"
 
@@ -266,12 +272,13 @@ $MigrationPriority = "Normal"
 #$CreateGrommunioMailbox = $false
 #$OnlyCreateGrommunioMailbox = $false
 #$MailboxLanguage = "de_DE"
+#$Organization = "-o 1"
 #$StopMarker = "exchange2grommunio.STOP"
 #$LogFile = "exchange2grommunio.log"
 #$MigrationPriority = "Normal"
 #>
 # Use configuration file named "exchange2grommunio.config.ps1" to override the
-# configration values above instead of changing the values in this script.
+# configuration values above instead of changing the values in this script.
 if (Test-Path $PSScriptRoot/exchange2grommunio.config.ps1) {
 	. $PSScriptRoot/exchange2grommunio.config.ps1
 }
@@ -592,7 +599,8 @@ $SkipImportCreateError = $false
 #
 # The migration loop
 #
-foreach ($Mailbox in (Get-Mailbox | Sort-Object -Property Alias)) {
+# Set parameter -ResultSize Unlimited. This will return all mailboxes rather than just the first 1000.
+foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property Alias)) {
 	$MigMBox = $Mailbox.PrimarySmtpAddress.ToString().ToLower()
 	$LogPath = (Join-Path -Path $WinSharedFolder -ChildPath logs)
 	New-Item -Path $LogPath -ErrorAction Ignore -Type Directory
@@ -743,10 +751,10 @@ foreach ($Mailbox in (Get-Mailbox | Sort-Object -Property Alias)) {
 	if ($CreateGrommunioMailbox) {
 		Write-MLog "Create grommunio mailbox: $MigMBox." green
 		if ($PowerShellOld) {
-			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox"
+			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox $Organization"
 			$CMDExitCode = $lastexitcode
 		} else {
-			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox $Organization" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			$CMDExitCode = $lastexitcode
 			# Save plink output to $LogFile
 			Write-MLog "---" none
