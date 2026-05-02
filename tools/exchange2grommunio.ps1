@@ -87,23 +87,31 @@
 # * After migration, you can reset the membership
 # * Remove-RoleGroupMember "Exchange Mailbox Import Export" -Member Administrator
 #
+#
 # To mount the Windows share on Linux:
 #
-# 1. install the cifs-utils package
+# 1. Create the Windows share $WinSharedFolder and give the $WindowsUser user at
+#    least read rights to this folder. As the Exchange service runs as the Network
+#    Service, give the Everyone group full rights to this folder!
+#
+# 2. Install the cifs-utils package
 #    SUSE: `zypper in -y cifs-utils`
 #    Debian / Ubuntu: `apt install cifs-utils`
 #    EL: `yum install cifs-utils`
 #
-# 2. Create the mount point <shared folder name> in /mnt.
+# 3. Create the mount point <shared folder name> in /mnt.
 #    mkdir /mnt/<shared folder name>
 #
-# 3. Mount the Windows share. This needs the Windows user and password.
+# 4. Mount the Windows share. This needs the Windows user and password.
 #    # mount.cifs "//<SERVER FQDN>/<shared folder name>" /mnt/<shared folder name>
 #      -v -o ro,username=<Windows user>,password=<Windows password>
 #
-#   To automount the Windows share, set $AutoMount = $true.
+#    Test the mount from the Linux command line and then unmount the Windows share
+#    using 'umount /mnt/<shared folder name>'.
 #
-# 3.1 Alternatively add a fstab entry and credentials file on the Grommunio Host.
+#    To automount the Windows share, set $AutoMount = $true.
+#
+# 4.1 Alternatively add a fstab entry and credentials file on the Grommunio Host.
 #    Remember so set $AutoMount = $false.
 #
 #    /etc/fstab - FSTAB(5)
@@ -118,7 +126,7 @@
 #    password=PASSWORD
 #    ```
 #
-# 4. Rinse and repeat!
+# 5. Rinse and repeat!
 #    You will likely run multiple tests before doing the actual migration.
 #    To remove all Data from the Mailbox but not deleting the Accounts you can
 #    run the following command. GROMOX-MBOP(8)
@@ -130,6 +138,10 @@
 #
 #    (the "XXX" where placed on purpose as a safe option)
 #
+# 6. After migration you may want to uninstall the cifs-utils package
+#    SUSE: `zypper remove -y cifs-utils`
+#    Debian / Ubuntu: `apt remove --purge cifs-utils`
+#    EL: `yum remove cifs-utils`
 #
 
 #>
@@ -437,6 +449,42 @@ function Linux-Umount
 	}
 }
 
+# Test if the Windows share can be accessed via Linux.
+#
+function Test-Share
+{
+	$TestFile = "Test_File_08x15_wh.tst"
+	Write-MLog "" white
+	# Create the $TestFile on the Windows share.
+	echo $TestFile > $WinSharedFolder\$TestFile
+	#
+	# Test for the existence of the file '$TestFile' on the Linux side.
+	if ($PowerShellOld) {
+		.\plink.exe @PLINKARGS "test -f $LinuxSharedFolder/$TestFile"
+		$CMDExitCode = $lastexitcode
+	} else {
+		.\plink.exe @PLINKARGS "test -f $LinuxSharedFolder/$TestFile"  2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
+		$CMDExitCode = $lastexitcode
+		# Save plink output to $LogFile
+		Write-MLog "---" none
+		Add-Content -Path $LogFile -Value $TeeVar
+		Write-MLog "---" none
+	}
+	# Remove the $TestFile.
+	Remove-Item -ErrorAction SilentlyContinue -Path $WinSharedFolder\$TestFile -Force
+	#
+	# Now, checkt if we have found the $TestFile in the $WinSharedFolder?
+	if ($CMDExitCode -eq 0) {
+		Write-MLog "Success: we are able to access the Windows share '$WinSharedFolder' and the Linux mount '$LinuxSharedFolder'." green
+	} else {
+		Write-MLog "Error: we can't access the Windows share '$WinSharedFolder' or the Linux mount '$LinuxSharedFolder'." red
+		Write-MLog "Fix the error and try again." red
+		Linux-Umount
+		exit 1
+	}
+	Write-MLog "" white
+}
+
 # Test if plink.exe exists in $PSScriptRoot
 #
 function Test-Plink
@@ -591,6 +639,7 @@ if ($UsePageant) {
 }
 Test-Exchange
 Linux-Mount
+Test-Share
 
 # If we get a create error, do not import the mailbox.
 #
