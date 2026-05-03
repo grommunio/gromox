@@ -903,6 +903,7 @@ generic_connection &generic_connection::operator=(generic_connection &&o)
 {
 	if (this == &o)
 		return *this;
+	reset();
 	memcpy(client_addr, o.client_addr, sizeof(client_addr));
 	memcpy(server_addr, o.server_addr, sizeof(server_addr));
 	memcpy(proxy_addr, o.proxy_addr, sizeof(proxy_addr));
