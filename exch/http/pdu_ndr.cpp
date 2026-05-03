@@ -839,9 +839,11 @@ dcerpc_ncacn_packet::~dcerpc_ncacn_packet()
 	case DCERPC_PKT_PING:
 	case DCERPC_PKT_WORKING:
 	case DCERPC_PKT_ACK:
-	case DCERPC_PKT_CANCEL_ACK:
 	case DCERPC_PKT_SHUTDOWN:
 		/* do nothing */
+		break;
+	case DCERPC_PKT_CANCEL_ACK:
+		delete static_cast<dcerpc_cancel_ack *>(payload);
 		break;
 	case DCERPC_PKT_RESPONSE:
 		delete static_cast<dcerpc_response *>(payload);
