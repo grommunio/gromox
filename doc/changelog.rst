@@ -1,12 +1,12 @@
-Milestone 3.6.63
-================
+Gromox 3.7 (2026-04-30)
+=======================
 
 Fixes:
 
 * Outlook no longer loses appointsments when a shared calendar is opened
 * The "percentage complete" of an appointment was mangled when passing through
   EWS, which has been fixed. (EWS uses [0, 100], but MAPI uses [0, 1.0])
-* EWS now synthesizes a value for the "Received Time" field
+* EWS now synthesizes a value for the "Received Time" field.
 * AutoDiscover no longer erroneously advertises OWA API support.
   This had made it impossible for Thunderbird to connect.
 * EWS: Setting the read flag on a message no longer generates the
@@ -22,9 +22,9 @@ Fixes:
   in a recurring series, which has been fixed.
 * Reading iCal timezone definitions mangled the daylightbias, which was fixed.
 * Logins with Outlook 2010 now work when Gromox is running with OpenSSL 3.
-  (OpenSSL 1.1 & LibreSSL were fine, but OSSL3 changed behavior. / Hyrum's law)
+  (OpenSSL 1.1 & LibreSSL were fine, but OSSL3 changed behavior.)
 * SMIME messages signed multiple times are unwrapped recursively
-  and will now show the body (applies to just g-web; OL worked previously)
+  and will now show the body. (Applies to just g-web; OL worked previously.)
 
 Enhancements:
 

@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 	} else if (!(cfg->get_ll("istore_standalone") & ISTORE_SPLIT_DIRECTOR)) {
 		mlog(LV_NOTICE, "istore↔http separation not enabled (gromox.cfg:istore_standalone). Quitting.");
-		return EXIT_FAILURE;
+		return 6; /* EXIT_NOTCONFIGURED */
 	} else {
 		unsetenv("ISTORE_USER");
 	}
