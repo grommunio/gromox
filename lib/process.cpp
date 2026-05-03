@@ -54,6 +54,7 @@
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <gromox/clock.hpp>
+#include <gromox/fileio.h>
 #include <gromox/generic_connection.hpp>
 #include <gromox/listener_ctx.hpp>
 #include <gromox/poll_ctx.hpp>
@@ -835,6 +836,7 @@ errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 	msg.msg_control    = cbuf;
 	msg.msg_controllen = std::size(cbuf);
 
+	client_fd = -1;
 	auto read_len = recvmsg(channel, &msg, 0);
 	if (read_len == 0)
 		return ENOENT; /* eof */
@@ -844,18 +846,22 @@ errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 			mlog(LV_ERR, "%s: recvmsg.1: %s", __PRETTY_FUNCTION__, strerror(se));
 		return se;
 	}
+
+	wrapfd received_fd;
 	for (auto cmsg = CMSG_FIRSTHDR(&msg); cmsg != nullptr;
 	     cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 		if (cmsg->cmsg_level != SOL_SOCKET ||
 		    cmsg->cmsg_type != SCM_RIGHTS ||
 		    cmsg->cmsg_len != CMSG_LEN(sizeof(client_fd)))
 			continue;
-		memcpy(&client_fd, CMSG_DATA(cmsg), sizeof(client_fd));
+		int fd = -1;
+		memcpy(&fd, CMSG_DATA(cmsg), sizeof(fd));
+		received_fd = wrapfd(fd);
 		break;
 	}
 	msg.msg_control = nullptr;
 	msg.msg_controllen = 0;
-	if (client_fd < 0) {
+	if (received_fd.get() < 0) {
 		/* No fd received, ditch rest */
 		if (recvmsg(channel, &msg, 0) < 0) {
 			errno_t se = errno;
@@ -878,6 +884,7 @@ errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 		return se;
 	}
 	pkt.resize(read_len);
+	client_fd = received_fd.release();
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
