@@ -466,26 +466,25 @@ errno_t message_dequeue_save(MESSAGE *pmessage)
 			return errno;
 		return 0;
 	}
-	int fd = open(new_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, FMODE_PRIVATE);
-	if (fd < 0) {
+	wrapfd fd = open(new_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, FMODE_PRIVATE);
+	if (fd.get() < 0) {
 		int se = errno;
 		mlog(LV_ERR, "mdq: opening %s for write: %s",
 		       new_file.c_str(), strerror(se));
 		return errno = se;
 	}
 	auto z = pmessage->mail_length + 4 * sizeof(uint32_t);
-	if (HXio_fullwrite(fd, pmessage->begin_address, z) < 0)
+	if (HXio_fullwrite(fd.get(), pmessage->begin_address, z) < 0)
 		return -9999;
 	auto len = strlen(pmessage->envelope_from);
-	if (HXio_fullwrite(fd, pmessage->envelope_from, len + 1) < 0)
+	if (HXio_fullwrite(fd.get(), pmessage->envelope_from, len + 1) < 0)
 		return -9999;
 	ptr = pmessage->envelope_rcpt;
 	while ((len = strlen(ptr)) != 0) {
 		len++;
-		if (HXio_fullwrite(fd, ptr, len) < 0)
+		if (HXio_fullwrite(fd.get(), ptr, len) < 0)
 			return -9999;
 		ptr += len;
 	}
-	close(fd);
 	return 0;
 }
