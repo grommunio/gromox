@@ -1127,9 +1127,8 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 				return {};
 			if (plist1->size() != 2)
 				return {};
-			auto &ln = plist1->back();
-			ln.conjunction = midb_conj::c_or;
-			ln.pbranch = plist1.release();
+			plist1->back().conjunction = midb_conj::c_or;
+			ptree_node->pbranch = plist1.release();
 			i += tmp_argc1 - 1;
 		} else if (array_find_istr(kwlist3, argv[i])) {
 			ptree_node->condition = cond_str_to_cond(argv[i]);
