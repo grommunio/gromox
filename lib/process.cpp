@@ -888,11 +888,13 @@ errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 
 generic_connection::generic_connection(generic_connection &&o) :
 	client_port(o.client_port), server_port(o.server_port),
+	proxy_port(o.proxy_port),
 	sockd(std::move(o.sockd)), mark(std::move(o.mark)), ssl(std::move(o.ssl)),
 	last_timestamp(o.last_timestamp)
 {
 	memcpy(client_addr, o.client_addr, sizeof(client_addr));
 	memcpy(server_addr, o.server_addr, sizeof(server_addr));
+	memcpy(proxy_addr, o.proxy_addr, sizeof(proxy_addr));
 	o.sockd = -1;
 	o.ssl = nullptr;
 }
@@ -903,8 +905,10 @@ generic_connection &generic_connection::operator=(generic_connection &&o)
 		return *this;
 	memcpy(client_addr, o.client_addr, sizeof(client_addr));
 	memcpy(server_addr, o.server_addr, sizeof(server_addr));
+	memcpy(proxy_addr, o.proxy_addr, sizeof(proxy_addr));
 	client_port = o.client_port;
 	server_port = o.server_port;
+	proxy_port = o.proxy_port;
 	sockd = std::move(o.sockd);
 	o.sockd = -1;
 	mark = std::move(o.mark);
