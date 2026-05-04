@@ -6,6 +6,7 @@
 #endif
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <chrono>
 #include <climits>
 #include <csignal>
@@ -418,24 +419,40 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
     sqlite3_stmt *pstmt_message, const char *mid_string, int id, int total_mail,
     uint32_t uidnext, const CONDITION_TREE *ptree) try
 {
-	int sp = 0;
-	bool b_loaded, b_result, b_result1, results[1024];
+	size_t sp = 0;
+	bool b_loaded, b_result, b_result1;
 	midb_conj conjunction;
 	time_t tmp_time;
 	size_t temp_len;
 	char temp_buff[1024];
 	char temp_buff1[1024];
-	midb_conj conjunctions[1024];
 	KEYWORD_ENUM keyword_enum;
-	const CONDITION_TREE *trees[1024];
-	CONDITION_TREE::const_iterator pnode, nodes[1024];
+	std::vector<const CONDITION_TREE *> trees;
+	std::vector<CONDITION_TREE::const_iterator> nodes;
+	std::vector<midb_conj> conjunctions;
+	std::vector<bool> results;
+	CONDITION_TREE::const_iterator pnode;
 	Json::Value digest;
 	
-#define PUSH_MATCH(TREE, NODE, CONJUNCTION, RESULT) \
-		{trees[sp]=TREE;nodes[sp]=NODE;conjunctions[sp]=CONJUNCTION;results[sp]=RESULT;sp++;}
+#define PUSH_MATCH(TREE, NODE, CONJUNCTION, RESULT) do { \
+	trees.push_back(TREE); \
+	nodes.push_back(NODE); \
+	conjunctions.push_back(CONJUNCTION); \
+	results.push_back(RESULT); \
+	++sp; \
+} while (false);
 	
-#define POP_MATCH(TREE, NODE, CONJUNCTION, RESULT) \
-		{sp--;TREE=trees[sp];NODE=nodes[sp];CONJUNCTION=conjunctions[sp];RESULT=results[sp];}
+#define POP_MATCH(TREE, NODE, CONJUNCTION, RESULT) do { \
+	assert(trees.size() == sp); \
+	assert(nodes.size() == sp); \
+	assert(conjunctions.size() == sp); \
+	assert(results.size() == sp); \
+	TREE = trees.back(); trees.pop_back(); \
+	NODE = nodes.back(); nodes.pop_back(); \
+	CONJUNCTION = conjunctions.back(); conjunctions.pop_back(); \
+	RESULT = results.back(); results.pop_back(); \
+	--sp; \
+} while (false);
 
 /* begin of recursion procedure */
 	while (true) {
