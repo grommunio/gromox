@@ -163,8 +163,10 @@ $LinuxSharedFolder = "/mnt/<shared folder name>"
 # Login for the grommunio side shell
 $LinuxUser = "root"
 
-# For cleartext password authentication
-# set the $LinuxUser's password
+# For cleartext password authentication, set the $LinuxUser's password.
+# If the $LinuxUserPWD contains a ($) sign, escape it with a backtick character (`) like `$.
+# Alternatively, use single quotes instead of double quotes. "abc`$123" and 'abc$123' are both valid.
+# If the $LinuxUserPWD contains a backtick (`), escape it with a second backtick (`) like `` or use single quotes.
 # $LinuxUserPWD = "Secret_root_Password"
 # For pubkey authentication without a passphrse set
 # $LinuxUserSSHKey = "C:\grommunio\exch.ppk"
@@ -223,8 +225,10 @@ $AutoMount = $true
 # permissions on $WinSharedFolder.
 $WindowsUser = "<Windows user>"
 
-# Password for $WindowsUser. The password must not contain the characters "$"
-# or "!", both of which cause problems in the Linux shell.
+# Password for $WindowsUser.
+# If the $WindowsPassword contains a ($) sign, escape it with a backtick character (`) like `$.
+# Alternatively, use single quotes instead of double quotes. "abc`$123" and 'abc$123' are both valid.
+# If the $WindowsPassword contains a backtick (`), escape it with a second backtick (`) like `` or use single quotes.
 $WindowsPassword = "<Windows user password>"
 
 # Create the grommunio mailbox
@@ -284,7 +288,7 @@ $MigrationPriority = "Normal"
 #$CreateGrommunioMailbox = $false
 #$OnlyCreateGrommunioMailbox = $false
 #$MailboxLanguage = "de_DE"
-#$Organization = "-o 1"
+#$Organization = ""
 #$StopMarker = "exchange2grommunio.STOP"
 #$LogFile = "exchange2grommunio.log"
 #$MigrationPriority = "Normal"
