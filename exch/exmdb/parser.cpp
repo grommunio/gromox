@@ -131,7 +131,7 @@ void router_connection::push_and_wake(BINARY &&b) try
 	std::unique_ptr<uint8_t[], stdlib_delete> blob(std::move(b.pb));
 	b.pb = nullptr;
 	{
-		std::lock_guard lk(lock);
+		std::lock_guard dg_hold(dg_lock);
 		datagram_list.emplace_back(std::move(blob), b.cb);
 	}
 	waken_cond.notify_one();
@@ -141,7 +141,7 @@ void router_connection::push_and_wake(BINARY &&b) try
 void router_connection::signal_stop()
 {
 	b_stop = true;
-	std::lock_guard lk(lock);
+	std::lock_guard fd_hold(base_lock);
 	if (sockd >= 0)
 		shutdown(sockd, SHUT_RDWR);
 	if (!pthread_equal(thr_id, {}))
@@ -150,7 +150,7 @@ void router_connection::signal_stop()
 
 void router_connection::close_fd()
 {
-	std::lock_guard lk(lock);
+	std::lock_guard fd_hold(base_lock);
 	generic_connection::reset();
 }
 

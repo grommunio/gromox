@@ -45,7 +45,7 @@ static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> 
 	pfd_read.fd = prouter->sockd;
 	pfd_read.events = POLLIN|POLLPRI;
 	if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1 ||
-		1 != read(prouter->sockd, &resp_code, 1) ||
+	    read(prouter->sockd, &resp_code, 1) != 1 ||
 	    resp_code != exmdb_response::success)
 		return FALSE;
 	return TRUE;
@@ -63,28 +63,43 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 	});
 	
 	while (!prouter->b_stop) {
-		std::unique_lock cn_hold(prouter->lock);
-		static_assert(SOCKET_TIMEOUT >= 3, "integer underflow");
-		bool got = prouter->waken_cond.wait_for(cn_hold, std::chrono::seconds(SOCKET_TIMEOUT - 3),
-			   [&]() { return prouter->b_stop || prouter->datagram_list.size() > 0; });
+		bool got = false;
+		{
+			std::unique_lock dg_hold(prouter->dg_lock);
+			static_assert(SOCKET_TIMEOUT >= 3, "integer underflow");
+			got = prouter->waken_cond.wait_for(dg_hold, std::chrono::seconds(SOCKET_TIMEOUT - 3),
+			      [&]() { return prouter->b_stop || prouter->datagram_list.size() > 0; });
+		}
 		if (prouter->b_stop)
 			break;
 		if (!got) {
+			/* We had nothing to write out since quite a while... */
+			std::unique_lock fd_hold(prouter->base_lock);
 			ping_buff = 0;
 			if (write(prouter->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t) ||
 			    !notification_agent_read_response(prouter))
 				return -1;
 			continue;
 		}
-		while (prouter->datagram_list.size() > 0) {
-			auto dg = std::move(prouter->datagram_list.front());
-			prouter->datagram_list.pop_front();
+		while (got) {
+			router_connection::xbinary dg;
+			{
+				std::unique_lock dg_hold(prouter->dg_lock);
+				if (prouter->datagram_list.empty())
+					goto EO1;
+				dg = std::move(prouter->datagram_list.front());
+				prouter->datagram_list.pop_front();
+				got = prouter->datagram_list.size() > 0;
+			}
+			std::unique_lock fd_hold(prouter->base_lock);
 			auto bytes_written = HXio_fullwrite(prouter->sockd, dg.pb.get(), dg.cb);
 			if (bytes_written < 0 ||
 			    static_cast<size_t>(bytes_written) != dg.cb ||
 			    !notification_agent_read_response(prouter))
 				return -1;
 		}
+ EO1:
+		;
 	}
 	return -1;
 }
