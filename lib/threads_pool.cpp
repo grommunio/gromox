@@ -24,26 +24,59 @@
 using namespace gromox;
 
 namespace {
+
+/**
+ * @nid: Trivial numeric ID for debugging with ps/gdb/etc.
+ *       -1 is used for a thread spawned dynamically in response to contention.
+ *       "Normal" values >= 0 indicate static threads that are always present.
+ */
 struct THR_DATA {
-	DOUBLE_LIST_NODE node;
-	BOOL notify_stop;
-	pthread_t id;
+	~THR_DATA();
+	void signal_stop();
+
+	gromox::atomic_bool notify_stop;
+	pthread_t thr_id{};
+	long nid = ~0ULL;
+	std::mutex m_mtx; /* protects thr_id */
 };
+
+struct tpw_param {
+	std::shared_ptr<THR_DATA> sp;
+};
+
 }
 
 static pthread_t g_scan_id;
 static gromox::atomic_bool g_thrpool_stop{true};
 static unsigned int g_threads_pool_min_num, g_threads_pool_max_num;
-static std::atomic<unsigned int> g_threads_pool_cur_thr_num;
-static DOUBLE_LIST g_threads_data_list;
+static std::vector<std::shared_ptr<THR_DATA>> g_threads_data_list;
 static THREADS_EVENT_PROC g_threads_event_proc;
-static std::mutex g_threads_pool_data_lock, g_threads_pool_cond_mutex;
+static std::mutex g_threads_pool_data_lock; /* protects g_threads_data_list */
+static std::mutex g_threads_pool_cond_mutex;
 static std::condition_variable g_threads_pool_waken_cond;
 
 static void *tpol_thrwork(void *);
 static void *tpol_scanwork(void *);
 
 static tproc_status (*threads_pool_process_func)(schedule_context *);
+
+THR_DATA::~THR_DATA()
+{
+	if (pthread_equal(thr_id, {}))
+		return;
+	if (pthread_equal(thr_id, pthread_self()))
+		pthread_detach(thr_id);
+	else
+		pthread_join(thr_id, nullptr);
+}
+
+void THR_DATA::signal_stop()
+{
+	notify_stop = true;
+	std::lock_guard lk(m_mtx);
+	if (!pthread_equal(thr_id, {}))
+		pthread_kill(thr_id, SIGALRM);
+}
 
 void threads_pool_init(unsigned int init_pool_num,
     tproc_status (*process_func)(schedule_context *))
@@ -61,82 +94,67 @@ void threads_pool_init(unsigned int init_pool_num,
 		contexts_per_thr - 1)/ contexts_per_thr; 
 	if (g_threads_pool_min_num > g_threads_pool_max_num)
 		g_threads_pool_min_num = g_threads_pool_max_num;
-	g_threads_pool_cur_thr_num = 0;
 	g_threads_event_proc = NULL;
-	double_list_init(&g_threads_data_list);
 }
 
 int threads_pool_run(const char *hint) try
 {
-	int created_thr_num;
-	
-	/* list is protected by g_threads_pool_data_lock */
 	g_thrpool_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, tpol_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "threads_pool: failed to create scan thread: %s", strerror(ret));
+		threads_pool_stop();
 		return -2;
 	}
 
-	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
-		auto pdata = new THR_DATA;
-		pdata->node.pdata = pdata;
-		pdata->id = (pthread_t)-1;
-		pdata->notify_stop = FALSE;
-		ret = pthread_create4(&pdata->id, nullptr, tpol_thrwork, pdata);
+		auto up = std::make_unique<tpw_param>();
+		auto sp = up->sp = std::make_shared<THR_DATA>();
+		sp->nid = i;
+		g_threads_data_list.push_back(sp);
+		{
+			std::lock_guard tpd_hold(g_threads_pool_data_lock);
+			g_threads_data_list.push_back(sp);
+		}
+		ret = pthread_create4(&sp->thr_id, nullptr, tpol_thrwork, up.get());
 		if (ret != 0) {
 			mlog(LV_ERR, "threads_pool: failed to create a pool thread: %s", strerror(ret));
+			threads_pool_stop();
 			return -1;
-		} else {
-			char buf[32];
-			snprintf(buf, sizeof(buf), "ep_pool/%zu", i);
-			pthread_setname_np(pdata->id, buf);
-			created_thr_num ++;
-			double_list_append_as_tail(&g_threads_data_list, &pdata->node);
 		}
+		/* thread should be vivid now */
+		up.release();
 	}
-	g_threads_pool_cur_thr_num = created_thr_num;
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	threads_pool_stop();
 	return -1;
 }
 
 void threads_pool_stop()
 {
-	THR_DATA *pthr;
-	pthread_t thr_id;
-	DOUBLE_LIST_NODE *pnode;
-	BOOL b_should_exit = FALSE;
-	
 	g_thrpool_stop = true;
 	if (!pthread_equal(g_scan_id, {})) {
 		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
+		g_scan_id = {};
 	}
-	while (true) {
-		/* get a thread from list */
+	{
 		std::unique_lock tpd_hold(g_threads_pool_data_lock);
-		pnode = double_list_get_head(&g_threads_data_list);
-		if (double_list_get_nodes_num(&g_threads_data_list) == 1)
-			b_should_exit = TRUE;
-		tpd_hold.unlock();
-		pthr = (THR_DATA*)pnode->pdata;
-		thr_id = pthr->id;
-		/* notify this thread to exit */
-		pthr->notify_stop = TRUE;
-		/* wake up all thread waiting on the event */
-		g_threads_pool_waken_cond.notify_all();
-		pthread_kill(thr_id, SIGALRM); /* may be in nanosleep */
-		pthread_join(thr_id, NULL);
-		if (b_should_exit)
-			break;
+		for (auto &t : g_threads_data_list)
+			t->signal_stop();
+		g_threads_data_list.clear();
 	}
 	g_threads_pool_min_num = 0;
 	g_threads_pool_max_num = 0;
-	g_threads_pool_cur_thr_num = 0;
 	g_threads_event_proc = NULL;
+}
+
+static size_t get_threads_pool_cur_thr_num()
+{
+	std::lock_guard lk(g_threads_pool_data_lock);
+	return g_threads_data_list.size();
 }
 
 int threads_pool_get_param(int type)
@@ -147,22 +165,45 @@ int threads_pool_get_param(int type)
 	case THREADS_POOL_MAX_NUM:
 		return g_threads_pool_max_num;
 	case THREADS_POOL_CUR_THR_NUM:
-		return g_threads_pool_cur_thr_num;
+		return get_threads_pool_cur_thr_num();
 	default:
 		return -1;
 	}
 }
 
+static bool should_ditch_worker(THR_DATA &self)
+{
+	std::unique_lock tpd_hold(g_threads_pool_data_lock);
+	/*
+	 * See if some worker threads can be dropped (logic similar to PHP-FPM
+	 * min_spare_servers).
+	 */
+	if (self.nid >= 0)
+		return false; /* we are a static thread */
+	auto gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS);
+	if (gpr < 0)
+		return false;
+	auto max_contexts_per_thr = contexts_pool_get_param(CONTEXTS_PER_THR);
+	auto contexts_per_threads = max_contexts_per_thr / 4;
+	if (get_threads_pool_cur_thr_num() * contexts_per_threads <= static_cast<size_t>(gpr))
+		return false;
+	return true;
+}
+
 static void *tpol_thrwork(void *pparam)
 {
-	THR_DATA *pdata;
+	std::unique_ptr<tpw_param> xup(static_cast<tpw_param *>(pparam));
+	auto &pdata = xup->sp;
 	int cannot_served_times;
-	int max_contexts_per_thr;
-	int contexts_per_threads;
-	
-	pdata = (THR_DATA*)pparam;
-	max_contexts_per_thr = contexts_pool_get_param(CONTEXTS_PER_THR);
-	contexts_per_threads = max_contexts_per_thr / 4;
+
+	if (pdata->nid >= 0) {
+		char buf[16];
+		snprintf(buf, std::size(buf), "ep_pool/%ld", pdata->nid);
+		pthread_setname_np(pthread_self(), buf);
+	} else {
+		pthread_setname_np(pthread_self(), "ep_pool/+");
+	}
+
 	if (g_threads_event_proc != nullptr)
 		g_threads_event_proc(THREAD_CREATE);
 	
@@ -171,25 +212,8 @@ static void *tpol_thrwork(void *pparam)
 		auto pcontext = contexts_pool_get_context(sctx_status::turning);
 		if (NULL == pcontext) {
 			if (MAX_TIMES_NOT_SERVED == cannot_served_times) {
-				std::unique_lock tpd_hold(g_threads_pool_data_lock);
-				int gpr;
-				/*
-				 * See if some worker threads can be dropped
-				 * (logic similar to PHP-FPM
-				 * min_spare_servers).
-				 */
-				if (g_threads_pool_cur_thr_num > g_threads_pool_min_num &&
-				    (gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS)) >= 0 &&
-				    g_threads_pool_cur_thr_num * contexts_per_threads > static_cast<size_t>(gpr)) {
-					double_list_remove(&g_threads_data_list, &pdata->node);
-					delete pdata;
-					g_threads_pool_cur_thr_num --;
-					tpd_hold.unlock();
-					if (g_threads_event_proc != nullptr)
-						g_threads_event_proc(THREAD_DESTROY);
-					pthread_detach(pthread_self());
-					return nullptr;
-				}
+				if (should_ditch_worker(*pdata))
+					break;
 			} else {
 				cannot_served_times ++;
 			}
@@ -225,13 +249,13 @@ static void *tpol_thrwork(void *pparam)
 		}
 	}
 	
-	std::unique_lock tpd_hold(g_threads_pool_data_lock);
-	double_list_remove(&g_threads_data_list, &pdata->node);
-	delete pdata;
-	g_threads_pool_cur_thr_num --;
-	tpd_hold.unlock();
 	if (g_threads_event_proc != nullptr)
 		g_threads_event_proc(THREAD_DESTROY);
+
+	{
+		std::lock_guard tpd_hold(g_threads_pool_data_lock);
+		gromox::erase_first(g_threads_data_list, pdata);
+	}
 	return NULL;
 }
 
@@ -257,38 +281,33 @@ void threads_pool_wakeup_all_threads()
 static void *tpol_scanwork(void *pparam)
 {
 	pthread_setname_np(pthread_self(), "tpol_scan");
-	while (!g_thrpool_stop) {
+	while (!g_thrpool_stop) try {
 		if (contexts_pool_get_param(CUR_SCHEDULING_CONTEXTS) <= 1) {
 			sleep(1);
 			continue;
 		}
-		if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num) {
+		if (get_threads_pool_cur_thr_num() >= g_threads_pool_max_num) {
 			sleep(1);
 			continue;
 		}
-		std::lock_guard tpd_hold(g_threads_pool_data_lock);
-		THR_DATA *pdata;
-		try {
-			pdata = new THR_DATA;
-		} catch (const std::bad_alloc &) {
-			mlog(LV_DEBUG, "E-2368: ENOMEM");
-			continue;
+
+		auto up = std::make_unique<tpw_param>();
+		auto sp = up->sp = std::make_shared<THR_DATA>();
+		{
+			std::lock_guard tpd_hold(g_threads_pool_data_lock);
+			g_threads_data_list.push_back(sp);
 		}
-		pdata->node.pdata = pdata;
-		pdata->id = (pthread_t)-1;
-		pdata->notify_stop = FALSE;
-		auto ret = pthread_create4(&pdata->id, nullptr, tpol_thrwork, pdata);
+		auto ret = pthread_create4(&sp->thr_id, nullptr, tpol_thrwork, up.get());
 		if (ret != 0) {
 			mlog(LV_WARN, "W-1445: failed to increase pool threads: %s", strerror(ret));
-			delete pdata;
 			sleep(1);
 			continue;
 		}
-		pthread_setname_np(pdata->id, "ep_pool/+");
-		double_list_append_as_tail(
-			&g_threads_data_list, &pdata->node);
-		g_threads_pool_cur_thr_num++;
+		/* Thread seems to be vivid */
+		up.release();
 		usleep(500);
+	} catch (const std::bad_alloc &) {
+		mlog(LV_DEBUG, "E-2368: ENOMEM");
 	}
 	return nullptr;
 }
