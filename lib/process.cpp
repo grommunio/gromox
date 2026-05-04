@@ -857,7 +857,11 @@ errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 		int fd = -1;
 		memcpy(&fd, CMSG_DATA(cmsg), sizeof(fd));
 		received_fd = wrapfd(fd);
-		break;
+		/*
+		 * Keep looping, we need to process all control messages.
+		 * Just on the odd chance someone is sending more than one fd.
+		 * (The use of wrapfd ensures all the unused ones get closed.)
+		 */
 	}
 	msg.msg_control = nullptr;
 	msg.msg_controllen = 0;
