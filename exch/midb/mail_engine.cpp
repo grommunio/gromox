@@ -112,22 +112,16 @@ using syncmessage_list = std::unordered_map<uint64_t /* message_id */, syncmessa
 struct ct_node;
 using CONDITION_TREE = std::vector<ct_node>;
 struct ct_node {
-	ct_node() = default;
-	ct_node(ct_node &&);
-	~ct_node();
-	void operator=(ct_node &&) = delete;
-
-	CONDITION_TREE *pbranch = nullptr;
+	std::optional<CONDITION_TREE> pbranch;
 	enum midb_conj conjunction = midb_conj::c_and;
 	enum midb_cond condition = midb_cond::x_none;
 
 	union {
-		char *ct_headers[2]{};
 		time_t ct_time;
 		size_t ct_size;
-		imap_seq_list *ct_seq;
 	};
-	std::string ct_keyword;
+	std::string ct_headers[2], ct_keyword;
+	imap_seq_list ct_seq;
 };
 using CONDITION_TREE_NODE = ct_node;
 
@@ -386,7 +380,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 }
 
 static bool me_ct_search_head(const char *charset, const char *mid_string,
-    const char *tag, const char *value)
+    const std::string &tag, const std::string &value)
 {
 	std::string content;
 	if (!exmdb_client->imapfile_read(cu_get_maildir(), "eml",
@@ -398,12 +392,12 @@ static bool me_ct_search_head(const char *charset, const char *mid_string,
 
 	for (const auto &hf : hdr.getFieldList()) {
 		auto hk = hf->getName();
-		if (strcasecmp(hk.c_str(), tag) != 0)
+		if (strcasecmp(hk.c_str(), tag.c_str()) != 0)
 			continue;
 		vmime::text txt;
 		txt.parse(hf->getValue()->generate());
 		auto tdec = txt.getConvertedText(vmime::charsets::UTF_8);
-		if (strcasestr(tdec.c_str(), value) != nullptr)
+		if (strcasestr(tdec.c_str(), value.c_str()) != nullptr)
 			return true;
 	}
 	return false;
@@ -467,9 +461,9 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 		    (!b_result && conjunction == midb_conj::c_and))
 			continue;
 		b_result1 = false;
-		if (NULL != ptree_node->pbranch) {
+		if (ptree_node->pbranch.has_value()) {
 			PUSH_MATCH(ptree, pnode, conjunction, b_result)
-			ptree = ptree_node->pbranch;
+			ptree = &*ptree_node->pbranch;
 			goto PROC_BEGIN;
 		} else {
 			switch (ptree_node->condition) {
@@ -590,7 +584,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					ptree_node->ct_headers[1]);
 				break;
 			case midb_cond::id:
-				b_result1 = ct_hint_seq(*ptree_node->ct_seq, id, total_mail);
+				b_result1 = ct_hint_seq(ptree_node->ct_seq, id, total_mail);
 				break;
 			case midb_cond::larger:
 				sqlite3_reset(pstmt_message);
@@ -819,7 +813,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
-				b_result1 = ct_hint_seq(*ptree_node->ct_seq,
+				b_result1 = ct_hint_seq(ptree_node->ct_seq,
 					sqlite3_column_int64(pstmt_message, CTM_UID),
 					uidnext);
 				break;
@@ -959,54 +953,6 @@ static int me_ct_compile_criteria(int argc,
 	}
 }
 
-ct_node::ct_node(ct_node &&o) :
-	pbranch(o.pbranch), conjunction(o.conjunction), condition(o.condition)
-{
-	o.pbranch = nullptr;
-	switch (condition) {
-	case midb_cond::id ... midb_cond::uid:
-		ct_seq = o.ct_seq;
-		o.ct_seq = nullptr;
-		break;
-	case midb_cond::bcc ... midb_cond::unkeyword:
-		ct_keyword = std::move(o.ct_keyword);
-		break;
-	case midb_cond::header:
-		ct_headers[0] = o.ct_headers[0];
-		ct_headers[1] = o.ct_headers[1];
-		o.ct_headers[0] = o.ct_headers[1] = nullptr;
-		break;
-	case midb_cond::before ... midb_cond::since:
-		ct_time = o.ct_time;
-		break;
-	case midb_cond::larger ... midb_cond::smaller:
-		ct_size = o.ct_size;
-		break;
-	default:
-		break;
-	}
-	o.condition = midb_cond::x_none;
-}
-
-ct_node::~ct_node()
-{
-	if (pbranch != nullptr) {
-		delete pbranch;
-		return;
-	}
-	switch (condition) {
-	case midb_cond::id ... midb_cond::uid:
-		delete ct_seq;
-		break;
-	case midb_cond::header:
-		free(ct_headers[0]);
-		free(ct_headers[1]);
-		break;
-	default:
-		break;
-	}
-}
-
 static enum midb_cond cond_str_to_cond(const char *s)
 {
 #define E(kw) if (strcasecmp(s, #kw) == 0) return midb_cond::kw
@@ -1050,7 +996,7 @@ static enum midb_cond cond_str_to_cond(const char *s)
 	return midb_cond::x_none;
 }
 
-static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
+static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
     int argc, char **argv) try
 {
 	static constexpr const char *kwlist1[] =
@@ -1067,11 +1013,10 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 	int tmp_argc1;
 	struct tm tmp_tm;
 	char* tmp_argv[256];
-	auto plist = std::make_unique<CONDITION_TREE>();
+	auto plist = std::make_optional<CONDITION_TREE>();
 
 	for (i=0; i<argc; i++) {
 		ct_node ctn, *ptree_node = &ctn;
-		ptree_node->pbranch = NULL;
 		if (0 == strcasecmp(argv[i], "NOT")) {
 			ptree_node->conjunction = midb_conj::c_not;
 			i ++;
@@ -1107,10 +1052,9 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 				len - 2, tmp_argv, sizeof(tmp_argv));
 			if (tmp_argc == -1)
 				return {};
-			auto plist1 = me_ct_build_internal(charset, tmp_argc, tmp_argv);
-			if (plist1 == nullptr)
+			ptree_node->pbranch = me_ct_build_internal(charset, tmp_argc, tmp_argv);
+			if (!ptree_node->pbranch.has_value())
 				return {};
-			ptree_node->pbranch = plist1.release();
 		} else if (0 == strcasecmp(argv[i], "OR")) {
 			i ++;
 			if (i + 1 > argc)
@@ -1125,12 +1069,12 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			if (tmp_argc1 == -1)
 				return {};
 			auto plist1 = me_ct_build_internal(charset, tmp_argc + tmp_argc1, tmp_argv);
-			if (plist1 == nullptr)
+			if (!plist1.has_value())
 				return {};
 			if (plist1->size() != 2)
 				return {};
 			plist1->back().conjunction = midb_conj::c_or;
-			ptree_node->pbranch = plist1.release();
+			ptree_node->pbranch = std::move(plist1);
 			i += tmp_argc1 - 1;
 		} else if (array_find_istr(kwlist3, argv[i])) {
 			ptree_node->condition = cond_str_to_cond(argv[i]);
@@ -1139,11 +1083,11 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			ptree_node->ct_headers[0] = strdup(argv[i]);
+			ptree_node->ct_headers[0] = argv[i];
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			ptree_node->ct_headers[1] = strdup(argv[i]);
+			ptree_node->ct_headers[1] = argv[i];
 		} else if (0 == strcasecmp(argv[i], "LARGER") ||
 			0 == strcasecmp(argv[i], "SMALLER")) {
 			ptree_node->condition = strcasecmp(argv[i], "LARGER") == 0 ?
@@ -1157,16 +1101,16 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			auto r = std::make_unique<imap_seq_list>();
-			if (parse_imap_seq(*r, argv[i]) != 0)
+			imap_seq_list r;
+			if (parse_imap_seq(r, argv[i]) != 0)
 				return {};
-			ptree_node->ct_seq = r.release();
+			ptree_node->ct_seq = std::move(r);
 		} else {
-			auto r = std::make_unique<imap_seq_list>();
-			if (parse_imap_seq(*r, argv[i]) != 0)
+			imap_seq_list r;
+			if (parse_imap_seq(r, argv[i]) != 0)
 				return {};
 			ptree_node->condition = midb_cond::id;
-			ptree_node->ct_seq = r.release();
+			ptree_node->ct_seq = std::move(r);
 		}
 		plist->push_back(std::move(ctn));
 	}
@@ -1176,7 +1120,7 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 	return {};
 }
 
-static std::unique_ptr<CONDITION_TREE> me_ct_build(int argc, char **argv)
+static std::optional<CONDITION_TREE> me_ct_build(int argc, char **argv)
 {
 	if (strcasecmp(argv[0], "CHARSET") != 0)
 		return me_ct_build_internal("UTF-8", argc, argv);
@@ -1207,7 +1151,7 @@ static bool ct_hint_seq(const imap_seq_list &list,
 
 static std::optional<std::vector<int>> me_ct_match(const char *charset,
     sqlite3 *psqlite, uint64_t folder_id, const CONDITION_TREE *ptree,
-    BOOL b_uid) try
+    bool b_uid) try
 {
 	uint32_t uid;
 	uint32_t uidnext;
@@ -3388,7 +3332,7 @@ static int me_psrhl(int argc, char **argv, int sockd) try
 	if (tmp_argc == 0)
 		return MIDB_E_PARAMETER_ERROR;
 	auto ptree = me_ct_build(tmp_argc, tmp_argv);
-	if (ptree == nullptr)
+	if (!ptree.has_value())
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3404,7 +3348,7 @@ static int me_psrhl(int argc, char **argv, int sockd) try
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	sqlite3_busy_timeout(psqlite, g_midb_busy_timeout_ns / 1000000);
-	auto presult = me_ct_match(argv[3], psqlite, folder_id, ptree.get(), false);
+	auto presult = me_ct_match(argv[3], psqlite, folder_id, &*ptree, false);
 	if (!presult.has_value()) {
 		sqlite3_close_v2(psqlite);
 		return MIDB_E_MNG_CTMATCH;
@@ -3466,7 +3410,7 @@ static int me_psrhu(int argc, char **argv, int sockd) try
 	if (tmp_argc == 0)
 		return MIDB_E_PARAMETER_ERROR;
 	auto ptree = me_ct_build(tmp_argc, tmp_argv);
-	if (ptree == nullptr)
+	if (!ptree.has_value())
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3482,7 +3426,7 @@ static int me_psrhu(int argc, char **argv, int sockd) try
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	sqlite3_busy_timeout(psqlite, g_midb_busy_timeout_ns / 1000000);
-	auto presult = me_ct_match(argv[3], psqlite, folder_id, ptree.get(), TRUE);
+	auto presult = me_ct_match(argv[3], psqlite, folder_id, &*ptree, true);
 	if (!presult.has_value()) {
 		sqlite3_close_v2(psqlite);
 		return MIDB_E_MNG_CTMATCH;
