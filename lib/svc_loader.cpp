@@ -206,13 +206,14 @@ int svc_mgr::run_library_internal(std::list<SVC_PLUG_ENTITY>::iterator citer)
 	    cur.init_state != generic_module::state::early_done)
 		return 0;
 	cur.init_state = generic_module::state::init_start;
+	auto saved_plug = g_cur_plug;
 	g_cur_plug = citer;
 	if (!cur.lib_main(PLUGIN_INIT, server_funcs)) {
 		g_cur_plug.reset();
 		mlog(LV_ERR, "service: init of %s not successful", znul(cur.file_name));
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	g_cur_plug.reset();
+	g_cur_plug = std::move(saved_plug);
 	cur.init_state = generic_module::state::init_done;
 	return PLUGIN_LOAD_OK;
 }
@@ -366,11 +367,12 @@ void svc_mgr::symput(const char *service_name, const char *module)
 
 void svc_mgr::trigger_all(enum plugin_op ev)
 {
+	auto saved_plug = g_cur_plug;
 	for (auto it = g_list_plug.begin(); it != g_list_plug.end(); ++it) {
 		g_cur_plug = it;
 		it->lib_main(ev, server_funcs);
 	}
-	g_cur_plug.reset();
+	g_cur_plug = std::move(saved_plug);
 }
 
 generic_module::generic_module(generic_module &&o) noexcept :
