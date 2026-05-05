@@ -218,18 +218,19 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 
 int gx_sql_step(sqlite3_stmt *stm, unsigned int flags)
 {
+	struct xfree { void operator()(char *x) const { sqlite3_free(x); } };
 	auto ret = sqlite3_step(stm);
-	char *exp = nullptr;
+	std::unique_ptr<char[], xfree> exp;
 	if (gx_sqlite_debug >= 1) {
-		exp = sqlite3_expanded_sql(stm);
-		mlog(LV_DEBUG, "[T%lu] > sqlite3_step(%p, %s)", gx_gettid(), stm, exp);
+		exp.reset(sqlite3_expanded_sql(stm));
+		mlog(LV_DEBUG, "[T%lu] > sqlite3_step(%p, %s)", gx_gettid(), stm, exp.get());
 	}
 	if (ret == SQLITE_OK || ret == SQLITE_ROW || ret == SQLITE_DONE)
 		return ret;
 	else if (ret == SQLITE_CONSTRAINT && (flags & SQLEXEC_SILENT_CONSTRAINT))
 		return ret;
 	if (exp == nullptr)
-		exp = sqlite3_expanded_sql(stm);
+		exp.reset(sqlite3_expanded_sql(stm));
 	auto db  = sqlite3_db_handle(stm);
 	auto fn  = sqlite_unique_name(db);
 	auto msg = sqlite3_errmsg(db);
@@ -237,8 +238,7 @@ int gx_sql_step(sqlite3_stmt *stm, unsigned int flags)
 		msg = sqlite3_errstr(ret);
 	mlog(LV_ERR, "[T%lu] sqlite3_step(%p, %s) \"%s\": %s (%d)",
 		gx_gettid(), stm, fn.c_str(), exp != nullptr ?
-		exp : sqlite3_sql(stm), znul(msg), ret);
-	sqlite3_free(exp);
+		exp.get() : znul(sqlite3_sql(stm)), znul(msg), ret);
 	return ret;
 }
 
