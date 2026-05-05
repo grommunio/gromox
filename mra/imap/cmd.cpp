@@ -401,10 +401,10 @@ static int icp_match_field(mjson_io &io, const char *cmd_tag,
 	gx_strlcpy(temp_buff, tags, std::size(temp_buff));
 	if (tags[0] == '(')
 		tmp_argc = parse_imap_args(temp_buff + 1,
-			strlen(tags) - 2, tmp_argv, sizeof(tmp_argv));
+		           strlen(tags) - 2, tmp_argv, std::size(tmp_argv));
 	else
 		tmp_argc = parse_imap_args(temp_buff,
-			strlen(tags), tmp_argv, sizeof(tmp_argv));
+		           strlen(tags), tmp_argv, std::size(tmp_argv));
 
 	size_t len, buff_len = 0;
 	std::string buff1;
@@ -1819,7 +1819,7 @@ int icp_status(int argc, char **argv, imap_context &ctx) try
 	    argv[3][0] != '(' || argv[3][strlen(argv[3])-1] != ')')
 		return 1800;
 	temp_argc = parse_imap_args(argv[3] + 1,
-		strlen(argv[3]) - 2, temp_argv, sizeof(temp_argv));
+	            strlen(argv[3]) - 2, temp_argv, std::size(temp_argv));
 	if (temp_argc == -1)
 		return 1800;
 
@@ -1895,7 +1895,7 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 		    flags_string[strlen(flags_string)-1] != ')')
 			return 1800;
 		temp_argc = parse_imap_args(flags_string + 1, strlen(flags_string) - 2,
-		            temp_argv, sizeof(temp_argv));
+		            temp_argv, std::size(temp_argv));
 		if (temp_argc == -1)
 			return 1800;
 		flag_buff = flagbits_to_s(
