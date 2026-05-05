@@ -245,7 +245,7 @@ static constexpr DCERPC_INTERFACE interface = {
 	1, exchange_rfr_ndr_pull, exchange_rfr_dispatch, exchange_rfr_ndr_push,
 };
 
-BOOL PROC_exchange_rfr(enum plugin_op reason, const struct dlfuncs &ppdata)
+bool PROC_exchange_rfr(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	/* path contains the config files directory */
 	switch (reason) {

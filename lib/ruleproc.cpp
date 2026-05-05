@@ -1531,7 +1531,7 @@ static constexpr cfg_directive rp_config_defaults[] = {
 	CFG_TABLE_END,
 };
 
-BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
+bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 {
 	if (reason != PLUGIN_INIT)
 		return TRUE;

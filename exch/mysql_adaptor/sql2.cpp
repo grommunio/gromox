@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -727,7 +727,7 @@ bool mysql_plugin::get_user_props(const char *username,
 	return false;
 }
 
-BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data) try
+bool SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data) try
 {
 	if (reason == PLUGIN_FREE) {
 		le_mysql_plugin.reset();

@@ -62,8 +62,7 @@ void hpm_processor_init(int context_num, std::span<const generic_module> names)
 	g_plugin_names = std::move(names);
 }
 
-static BOOL hpm_processor_register_interface(
-	HPM_INTERFACE *pinterface)
+static bool hpm_processor_register_interface(HPM_INTERFACE *pinterface)
 {
 	auto fn = g_cur_plugin->file_name;
 	if (NULL == pinterface->preproc) {

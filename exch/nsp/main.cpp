@@ -60,7 +60,7 @@ static constexpr DCERPC_INTERFACE interface = {
 	exchange_nsp_unbind,
 };
 
-BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
+bool PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	const char *org_name;
 	int cache_interval;

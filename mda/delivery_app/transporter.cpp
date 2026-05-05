@@ -105,12 +105,12 @@ static HOOK_PLUG_ENTITY *g_cur_lib;
 
 static void *dxp_thrwork(void *);
 static void *dxp_scanwork(void *);
-static BOOL transporter_register_hook(HOOK_FUNCTION func);
-static BOOL transporter_register_local(HOOK_FUNCTION func);
+static bool transporter_register_hook(HOOK_FUNCTION func);
+static bool transporter_register_local(HOOK_FUNCTION func);
 static hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *, THREAD_DATA *);
 static MESSAGE_CONTEXT *transporter_get_context();
 static void transporter_insert_ctx(MESSAGE_CONTEXT *);
-static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext); 
+static bool transporter_throw_context(MESSAGE_CONTEXT *);
 
 static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext);
 static MESSAGE_CONTEXT *transporter_dequeue_context();
@@ -628,7 +628,7 @@ static MESSAGE_CONTEXT* transporter_dequeue_context()
  *		TRUE					OK
  *		FALSE					fail
  */
-static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
+static bool transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 {
 	BOOL ret_val;
 
@@ -685,7 +685,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
     return ret_val;
 }
 
-static BOOL transporter_register_hook(HOOK_FUNCTION func)
+static bool transporter_register_hook(HOOK_FUNCTION func)
 {
     if (NULL == func) {
         return FALSE;
@@ -705,7 +705,7 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     return TRUE;
 }
 
-static BOOL transporter_register_local(HOOK_FUNCTION func)
+static bool transporter_register_local(HOOK_FUNCTION func)
 {
 	if (!g_local_path.empty()) {
 		mlog(LV_ERR, "A local hook is already registered (%s), cannot load another",

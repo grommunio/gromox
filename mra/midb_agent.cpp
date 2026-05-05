@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -155,7 +155,7 @@ static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> &&cfg)
 	return true;
 }
 
-BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
+bool SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	switch(reason) {
 	case PLUGIN_RELOAD:

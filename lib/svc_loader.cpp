@@ -62,7 +62,7 @@ struct svc_mgr final {
 	~svc_mgr();
 	int run_early();
 	int run();
-	BOOL symreg(const char *, void *, const std::type_info &);
+	bool symreg(const char *, void *, const std::type_info &);
 	void *symget(const char *, const char *, const std::type_info &);
 	void symput(const char *, const char *);
 	void trigger_all(enum plugin_op);
@@ -262,7 +262,7 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
  * @addr:	function address
  * @ti:		typeinfo for function
  */
-BOOL svc_mgr::symreg(const char *func_name, void *addr,
+bool svc_mgr::symreg(const char *func_name, void *addr,
     const std::type_info &ti) try
 {
 	if (func_name == nullptr)
@@ -413,7 +413,7 @@ int service_run_library(const generic_module &mod)
 	return le_svc_mgr->run_library(mod);
 }
 
-BOOL service_register_service(const char *fun, void *addr,
+bool service_register_service(const char *fun, void *addr,
     const std::type_info &ti)
 {
 	return le_svc_mgr->symreg(fun, addr, ti);

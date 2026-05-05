@@ -300,7 +300,7 @@ static bool authmgr_init()
 	return true;
 }
 
-BOOL SVC_authmgr(enum plugin_op reason, const struct dlfuncs &datap) try
+bool SVC_authmgr(enum plugin_op reason, const struct dlfuncs &datap) try
 {
 	if (reason == PLUGIN_RELOAD) {
 		authmgr_reload();
@@ -312,7 +312,7 @@ BOOL SVC_authmgr(enum plugin_op reason, const struct dlfuncs &datap) try
 	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK ||
 	    service_run_library({"libgromox_auth.so/ldap", SVC_ldap_adaptor}) != PLUGIN_LOAD_OK)
 		return false;
-	return authmgr_init() ? TRUE : false;
+	return authmgr_init();
 } catch (...) {
 	return false;
 }

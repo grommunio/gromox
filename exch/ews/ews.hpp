@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #pragma once
 #include <cstdint>
@@ -93,7 +93,7 @@ class EWSPlugin {
 	EWSPlugin();
 	~EWSPlugin();
 	http_status proc(detail::ContextKey, const void*, uint64_t);
-	static BOOL preproc(detail::ContextKey);
+	static bool preproc(detail::ContextKey);
 	bool logEnabled(const std::string_view) const;
 
 	struct _exmdb {

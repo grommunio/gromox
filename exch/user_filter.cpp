@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -150,7 +150,7 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-BOOL SVC_user_filter(enum plugin_op reason, const struct dlfuncs &fptrs) try
+bool SVC_user_filter(enum plugin_op reason, const struct dlfuncs &fptrs) try
 {
 	if (reason == PLUGIN_FREE)
 		g_userfilter_impl.reset();

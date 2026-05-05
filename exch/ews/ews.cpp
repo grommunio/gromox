@@ -292,10 +292,10 @@ static void ews_event_proc(const char*, BOOL table, uint32_t, const DB_NOTIFY*);
  *
  * @return     TRUE if the request is to be processed by this plugin, false otherwise
  */
-BOOL EWSPlugin::preproc(detail::ContextKey ctx_id)
+bool EWSPlugin::preproc(detail::ContextKey ctx_id)
 {
 	auto req = get_request(ctx_id);
-	return strcasecmp(req->f_request_uri.c_str(), "/EWS/Exchange.asmx") == 0 ? TRUE : false;
+	return strcasecmp(req->f_request_uri.c_str(), "/EWS/Exchange.asmx") == 0;
 }
 
 http_status EWSPlugin::fault(detail::ContextKey ctx_id, http_status code,
@@ -601,7 +601,7 @@ static BOOL ews_init(const struct dlfuncs &apidata)
  *
  * @return     TRUE if successful, false otherwise
  */
-BOOL HPM_ews(enum plugin_op reason, const struct dlfuncs &data)
+bool HPM_ews(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_INIT)
 		return ews_init(data);

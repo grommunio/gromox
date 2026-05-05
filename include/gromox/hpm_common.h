@@ -21,10 +21,10 @@
 #define HPM_RETRIEVE_DONE			4
 
 struct HPM_INTERFACE {
-	BOOL (*preproc)(int);
+	bool (*preproc)(int);
 	http_status (*proc)(int, const void*, uint64_t);
 	int (*retr)(int);
-	BOOL (*send)(int, const void*, int);
+	bool (*send)(int, const void*, int);
 	int (*receive)(int, void*, int length);
 	void (*term)(int);
 };

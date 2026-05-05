@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 
 /*
@@ -333,7 +333,7 @@ bool ldap_plugin::load() try
 	return false;
 }
 
-BOOL SVC_ldap_adaptor(enum plugin_op reason, const struct dlfuncs &ppdata) try
+bool SVC_ldap_adaptor(enum plugin_op reason, const struct dlfuncs &ppdata) try
 {
 	if (reason == PLUGIN_FREE) {
 		le_ldap_plugin.reset();

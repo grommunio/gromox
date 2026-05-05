@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <csignal>
@@ -77,7 +77,7 @@ BACK_CONN::~BACK_CONN()
 	}
 }
 
-BOOL SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
+bool SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	int i, conn_num;
 	

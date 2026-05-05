@@ -143,7 +143,7 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	return true;
 }
 
-BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
+bool SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	switch(reason) {
 	case PLUGIN_RELOAD:

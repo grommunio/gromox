@@ -130,7 +130,7 @@ static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
 };
 
 extern void emsmdb_report();
-BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
+bool PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	int max_rcpt;
 	int async_num;

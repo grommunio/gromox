@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -105,7 +105,7 @@ static uint64_t pdu_processor_get_binding_handle();
 static void *pdu_processor_queryservice(const char *, const char *, const std::type_info &);
 
 unsigned int g_msrpc_debug;
-static BOOL g_bigendian;
+static bool g_bigendian;
 static unsigned int g_connection_num;
 static char g_dns_name[128];
 static BOOL g_header_signing;
@@ -186,7 +186,7 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
     } e;
 
 	e.i = 0xFF000000;
-	g_bigendian = e.c[0] != 0 ? TRUE : false;
+	g_bigendian = e.c[0] != 0;
 	g_last_async_id = 0;
 	g_connection_ratio = connection_ratio;
 	g_connection_num = connection_num;
@@ -1595,7 +1595,7 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 
 /* to check if the async_id is still available and
    then lock the async_id in async hash table */
-static BOOL pdu_processor_rpc_build_environment(int async_id)
+static bool pdu_processor_rpc_build_environment(int async_id)
 {
  BUILD_BEGIN:
 	std::unique_lock as_hold(g_async_lock);
@@ -1621,7 +1621,7 @@ static BOOL pdu_processor_rpc_build_environment(int async_id)
 }
 
 /* only can be invoked in non-rpc thread */
-BOOL pdu_processor_rpc_new_stack()
+bool pdu_processor_rpc_new_stack()
 {
 	NDR_STACK_ROOT *pstack_root;
 	
@@ -2810,7 +2810,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 	return nullptr;
 }
 
-static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
+static bool pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
     const DCERPC_INTERFACE *pinterface)
 {
 	if (NULL == pinterface->ndr_pull) {
@@ -2874,7 +2874,7 @@ static constexpr struct dlfuncs server_funcs = {
 	pdu_processor_unregister_interface,
 	pdu_processor_get_binding_handle,
 	pdu_processor_get_rpc_info,
-	/* .rpc_is_bigendian = */ []() -> BOOL {
+	/* .rpc_is_bigendian = */ []() -> bool {
 		auto c = pdu_processor_get_call();
 		return c != nullptr ? c->b_bigendian : g_bigendian;
 	},

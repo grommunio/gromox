@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <chrono>
@@ -218,7 +218,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> &&acfg)
 	return true;
 }
 
-BOOL HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
+bool HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_RELOAD) {
 		xa_reload_config(nullptr);

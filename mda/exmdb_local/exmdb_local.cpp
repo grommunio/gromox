@@ -470,7 +470,7 @@ static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
+bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	char org_name[256], temp_buff[45], cache_path[256];
 	int cache_interval, retrying_times;

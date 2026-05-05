@@ -101,7 +101,7 @@ static constexpr size_t	AVERAGE_SESSION_PER_CONTEXT = 10,
 	DISPATCH_PENDING = 2,
 	FLAG_NOTIFICATION_PENDING = 1;
 
-static BOOL emsmdb_preproc(int context_id);
+static bool emsmdb_preproc(int context_id);
 static http_status emsmdb_proc(int ctx_id, const void *content, uint64_t len);
 static int emsmdb_retr(int context_id);
 static void emsmdb_term(int context_id);
@@ -402,7 +402,7 @@ static std::unique_ptr<MhEmsmdbPlugin> g_mhems_plugin;
  *
  * @return	TRUE if successful, false otherwise
  */
-BOOL HPM_mh_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
+bool HPM_mh_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	HPM_INTERFACE interface;
 
@@ -875,7 +875,7 @@ static void asyncemsmdb_wakeup_proc(int context_id, BOOL b_pending)
 static void emsmdb_term(int context_id)
 { return g_mhems_plugin->term(context_id); }
 
-static BOOL emsmdb_preproc(int context_id)
+static bool emsmdb_preproc(int context_id)
 {
 	auto prequest = get_request(context_id);
 	if (prequest->imethod != http_method::post)

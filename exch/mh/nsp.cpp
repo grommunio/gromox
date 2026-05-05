@@ -242,7 +242,7 @@ MhNspPlugin::SessionIterator MhNspPlugin::removeSession(const char* sessionID)
 
 static std::unique_ptr<MhNspPlugin> g_mhnsp_plugin; ///< Global plugin
 
-static BOOL nsp_preproc(int);
+static bool nsp_preproc(int);
 static int nsp_retr(int);
 static http_status nsp_proc(int, const void*, uint64_t);
 
@@ -254,7 +254,7 @@ static http_status nsp_proc(int, const void*, uint64_t);
  *
  * @return	TRUE if successful, false otherwise
  */
-BOOL HPM_mh_nsp(enum plugin_op reason, const struct dlfuncs &plugdata)
+bool HPM_mh_nsp(enum plugin_op reason, const struct dlfuncs &plugdata)
 {
 	HPM_INTERFACE interface;
 
@@ -300,7 +300,7 @@ BOOL HPM_mh_nsp(enum plugin_op reason, const struct dlfuncs &plugdata)
  *
  * @return	TRUE if request is valid, false on error
  */
-static BOOL nsp_preproc(int context_id)
+static bool nsp_preproc(int context_id)
 {
 	auto prequest = get_request(context_id);
 	if (prequest->imethod != http_method::post)

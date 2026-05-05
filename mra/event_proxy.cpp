@@ -56,7 +56,7 @@ static void broadcast_event(const char *event);
 static void broadcast_select(const char *username, const std::string &folder);
 static void broadcast_unselect(const char *username, const std::string &folder);
 
-BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
+bool SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	int i, conn_num;
 	

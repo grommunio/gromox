@@ -1136,7 +1136,7 @@ class OabPlugin {
 	public:
 	OabPlugin();
 	http_status proc(int, const void *, uint64_t);
-	static BOOL preproc(int);
+	static bool preproc(int);
 	void clear_cache();
 
 	private:
@@ -1181,10 +1181,10 @@ OabPlugin::OabPlugin()
 		m_org_name = "Gromox default";
 }
 
-BOOL OabPlugin::preproc(int ctx_id)
+bool OabPlugin::preproc(int ctx_id)
 {
 	auto req = get_request(ctx_id);
-	return strncasecmp(req->f_request_uri.c_str(), "/OAB/", 5) == 0 ? TRUE : false;
+	return strncasecmp(req->f_request_uri.c_str(), "/OAB/", 5) == 0;
 }
 
 /**
@@ -1642,7 +1642,7 @@ static BOOL oab_init(const struct dlfuncs &apidata)
 	return TRUE;
 }
 
-BOOL HPM_oab(enum plugin_op reason, const struct dlfuncs &data)
+bool HPM_oab(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_INIT) {
 		return oab_init(data);

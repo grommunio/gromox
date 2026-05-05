@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2026 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
@@ -53,7 +53,7 @@ class OxdiscoPlugin {
 
 	http_status proc(int, const void *, uint64_t);
 	std::pair<unsigned int, std::string> access_ok(int, const char *, const char *);
-	static BOOL preproc(int);
+	static bool preproc(int);
 
 	struct _exmdb {
 		_exmdb();
@@ -194,7 +194,7 @@ template<typename T> static inline size_t umatch(const char *uri, T &&val)
  *
  * @return     TRUE if the request is to be processed by this plugin, false otherwise
  */
-BOOL OxdiscoPlugin::preproc(int ctx_id)
+bool OxdiscoPlugin::preproc(int ctx_id)
 {
 	auto req = get_request(ctx_id);
 // In some cases the clients may issue unauthed GET requests
@@ -1229,7 +1229,7 @@ static BOOL oxdisco_init(const struct dlfuncs &apidata)
  *
  * @return     TRUE if successful, false otherwise
  */
-BOOL HPM_oxdisco(enum plugin_op reason, const struct dlfuncs &data)
+bool HPM_oxdisco(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_INIT)
 		return oxdisco_init(data);

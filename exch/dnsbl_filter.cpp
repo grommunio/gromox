@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -216,7 +216,7 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 	return false;
 }
 
-BOOL SVC_dnsbl_filter(enum plugin_op reason, const struct dlfuncs &data)
+bool SVC_dnsbl_filter(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_FREE) {
 #ifdef HAVE_CARES

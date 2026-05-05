@@ -58,33 +58,33 @@ using rpc_response = gromox::universal_base;
 
 struct dlfuncs {
 	void *(*symget)(const char *service, const char *requestor, const std::type_info &);
-	BOOL (*symreg)(const char *, void *, const std::type_info &);
+	bool (*symreg)(const char *, void *, const std::type_info &);
 	const char *(*get_config_path)();
 	const char *(*get_data_path)();
 	unsigned int (*get_context_num)();
 	const char *(*get_host_ID)();
 	void *(*ndr_stack_alloc)(int, size_t);
-	BOOL (*rpc_new_stack)();
+	bool (*rpc_new_stack)();
 	void (*rpc_free_stack)();
 
 	// PROC_
 	struct {
 		DCERPC_ENDPOINT *(*reg_ep)(const char *, uint16_t);
-		BOOL (*reg_intf)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *);
+		bool (*reg_intf)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *);
 		void (*unreg_intf)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *);
 		uint64_t (*get_binding_handle)();
 		DCERPC_INFO (*get_rpc_info)();
-		BOOL (*is_rpc_bigendian)();
+		bool (*is_rpc_bigendian)();
 		uint32_t (*apply_async_id)();
 		void (*activate_async_id)(uint32_t);
 		void (*cancel_async_id)(uint32_t);
-		BOOL (*rpc_build_env)(int);
+		bool (*rpc_build_env)(int);
 		void (*async_reply)(uint32_t, const rpc_response *);
 	} proc;
 
 	// HPM_
 	struct {
-		BOOL (*reg_intf)(HPM_INTERFACE *);
+		bool (*reg_intf)(HPM_INTERFACE *);
 		http_request *(*get_req)(unsigned int);
 		HTTP_AUTH_INFO (*get_auth_info)(unsigned int);
 		generic_connection *(*get_conn)(unsigned int);
@@ -97,20 +97,20 @@ struct dlfuncs {
 
 	// HOOK_
 	struct {
-		BOOL (*register_hook)(HOOK_FUNCTION);
-		BOOL (*register_local)(HOOK_FUNCTION);
+		bool (*register_hook)(HOOK_FUNCTION);
+		bool (*register_local)(HOOK_FUNCTION);
 		const char *(*get_admin_mailbox)();
 		const char *(*get_queue_path)();
 		unsigned int (*get_threads_num)();
 		MESSAGE_CONTEXT *(*get_ctx)();
 		void (*put_ctx)(MESSAGE_CONTEXT *);
 		void (*enqueue_ctx)(MESSAGE_CONTEXT *);
-		BOOL (*throw_ctx)(MESSAGE_CONTEXT *);
+		bool (*throw_ctx)(MESSAGE_CONTEXT *);
 	} hook;
 };
 
-using PLUGIN_MAIN = BOOL (*)(enum plugin_op, const struct dlfuncs &);
-using PLUGIN_DMAIN = BOOL (enum plugin_op, const struct dlfuncs &);
+using PLUGIN_MAIN = bool (*)(enum plugin_op, const struct dlfuncs &);
+using PLUGIN_DMAIN = bool (enum plugin_op, const struct dlfuncs &);
 
 extern "C" GX_EXPORT PLUGIN_DMAIN
 	HOOK_alias_resolve, HOOK_exmdb_local,
