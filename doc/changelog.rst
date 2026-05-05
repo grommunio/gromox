@@ -1,3 +1,23 @@
+Milestone 3.7.129
+=================
+
+Enhancements:
+
+* The Information Store now supports a per-store split-process model.
+  The gromox.cfg:istore_standalone config directive has turned into a bitmask.
+* emsmdb(Outlook): fnevObjectModified notifications for folders now convey
+  the new counts of read/unread messages.
+* Conversions between HTML and RTF now support and prefer the use of the
+  external converter Pandoc, if installed.
+* Conversions from HTML to plaintext now support the use of Pandoc as a
+  fallback if chawan/w3m is not present.
+
+Behavioral changes:
+
+* The default value for exmdb_provider.cfg:cache_interval has been reduced from
+  15min to 1min, closing sqlite handles earlier when they are idle.
+
+
 Gromox 3.7 (2026-04-30)
 =======================
 
@@ -65,7 +85,7 @@ Enhancements:
 * The eml2mt conversion utility now emits messages sooner (previously it
   collected all messages first before outputting)
 * Conversions from HTML to plaintext now support and prefer the use of the
-  external converter Chawan
+  external converter Chawan (if installed)
 
 Fixes:
 
