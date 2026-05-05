@@ -2851,7 +2851,7 @@ static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
 	lst.remove_if(interface_eq(tp->uuid, tp->version));
 }
 
-static constexpr struct dlfuncs server_funcs = {
+static constexpr struct dlfuncs pdu_funcs = {
 	/* .symget = */ pdu_processor_queryservice,
 	/* .symreg = */ service_register_service,
 	/* .get_config_path = */ []() {
@@ -2896,7 +2896,7 @@ PROC_PLUGIN::~PROC_PLUGIN()
 			mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name);
 		func = (PLUGIN_MAIN)pplugin->lib_main;
 		if (func != nullptr)
-			func(PLUGIN_FREE, server_funcs);
+			func(PLUGIN_FREE, pdu_funcs);
 	}
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), pplugin->file_name);
@@ -3000,7 +3000,7 @@ static int pdu_processor_load_library(const generic_module &mod)
 	/* append the pendpoint node into endpoint list */
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	g_cur_plugin->init_state = generic_module::state::init_start;
-	if (!g_cur_plugin->lib_main(PLUGIN_INIT, server_funcs)) {
+	if (!g_cur_plugin->lib_main(PLUGIN_INIT, pdu_funcs)) {
 		mlog(LV_ERR, "pdu_processor: error executing the plugin's init "
 			"function in %s", g_cur_plugin->file_name);
 		g_plugin_list.pop_back();
@@ -3016,7 +3016,7 @@ void pdu_processor_trigger(enum plugin_op ev)
 {
 	for (auto &p : g_plugin_list) {
 		g_cur_plugin = &p;
-		p.lib_main(ev, server_funcs);
+		p.lib_main(ev, pdu_funcs);
 	}
 	g_cur_plugin = nullptr;
 }

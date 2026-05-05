@@ -153,7 +153,7 @@ static void *hpm_processor_queryservice(const char *service, const char *rq,
 	return ret_addr;
 }
 
-static constexpr struct dlfuncs server_funcs = {
+static constexpr struct dlfuncs hpm_funcs = {
 	/* .symget = */ hpm_processor_queryservice,
 	/* .symreg = */ service_register_service,
 	/* .get_config_path = */ []() {
@@ -202,7 +202,7 @@ HPM_PLUGIN::~HPM_PLUGIN()
 			mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name);
 		func = (PLUGIN_MAIN)pplugin->lib_main;
 		if (func != nullptr)
-			func(PLUGIN_FREE, server_funcs);
+			func(PLUGIN_FREE, hpm_funcs);
 	}
 
 	/* free the reference list */
@@ -220,7 +220,7 @@ static int hpm_processor_load_library(const generic_module &mod)
 	g_cur_plugin = &g_plugin_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	g_cur_plugin->init_state = generic_module::state::init_start;
-	if (!g_cur_plugin->lib_main(PLUGIN_INIT, server_funcs) ||
+	if (!g_cur_plugin->lib_main(PLUGIN_INIT, hpm_funcs) ||
 	    g_cur_plugin->interface.preproc == nullptr ||
 	    g_cur_plugin->interface.proc == nullptr ||
 	    g_cur_plugin->interface.retr == nullptr) {
@@ -513,7 +513,7 @@ void hpm_processor_trigger(enum plugin_op ev)
 {
 	for (auto &p : g_plugin_list) {
 		g_cur_plugin = &p;
-		p.lib_main(ev, server_funcs);
+		p.lib_main(ev, hpm_funcs);
 	}
 	g_cur_plugin = nullptr;
 }

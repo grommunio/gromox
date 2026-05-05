@@ -124,7 +124,7 @@ hook_plug_entity::hook_plug_entity(hook_plug_entity &&o) noexcept :
 	o.completed_init = false;
 }
 
-static constexpr struct dlfuncs server_funcs = {
+static constexpr struct dlfuncs mda_funcs = {
 	/* .symget = */ transporter_queryservice,
 	/* .symreg = */ nullptr,
 	/* .get_config_path = */ []() {
@@ -161,7 +161,7 @@ hook_plug_entity::~hook_plug_entity()
 {
 	mlog(LV_INFO, "transporter: unloading %s", file_name);
 	if (lib_main != nullptr && completed_init)
-		lib_main(PLUGIN_FREE, server_funcs);
+		lib_main(PLUGIN_FREE, mda_funcs);
 	std::erase_if(g_hook_list,
 		[this](const hook_entry *e) { return e->plib == this; });
 	for (const auto &nd : list_reference)
@@ -344,7 +344,7 @@ static void *dxp_thrwork(void *arg)
 	auto pthr_data = static_cast<THREAD_DATA *>(arg);
 	g_tls_key = pthr_data;
 	for (const auto &plug : g_lib_list)
-		plug.lib_main(PLUGIN_THREAD_CREATE, server_funcs);
+		plug.lib_main(PLUGIN_THREAD_CREATE, mda_funcs);
 	cannot_served_times = 0;
 	if (pthr_data->wait_on_event) {
 		std::unique_lock cm_hold(g_cond_mutex);
@@ -367,7 +367,7 @@ static void *dxp_thrwork(void *arg)
 						double_list_remove(&g_threads_list, &pthr_data->node);
 						tl_hold.unlock();
 						for (auto &plug : g_lib_list)
-							plug.lib_main(PLUGIN_THREAD_DESTROY, server_funcs);
+							plug.lib_main(PLUGIN_THREAD_DESTROY, mda_funcs);
 						std::unique_lock ft_hold(g_free_threads_mutex);
 						double_list_append_as_tail(&g_free_threads,
 							&pthr_data->node);
@@ -434,7 +434,7 @@ static void *dxp_thrwork(void *arg)
 		}
 	}
 	for (auto &plug : g_lib_list)
-		plug.lib_main(PLUGIN_THREAD_DESTROY, server_funcs);
+		plug.lib_main(PLUGIN_THREAD_DESTROY, mda_funcs);
 	return NULL;
 }
 
@@ -508,7 +508,7 @@ int transporter_load_library(const generic_module &mod) try
 	g_lib_list.push_back(std::move(plug));
 	g_cur_lib = &g_lib_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!g_cur_lib->lib_main(PLUGIN_INIT, server_funcs)) {
+	if (!g_cur_lib->lib_main(PLUGIN_INIT, mda_funcs)) {
 		mlog(LV_ERR, "transporter: error executing the plugin's init function "
 			"in %s", g_cur_lib->file_name);
 		g_cur_lib = NULL;
@@ -767,7 +767,7 @@ void transporter_trigger_all(enum plugin_op ev)
 {
 	for (auto &plug : g_lib_list) {
 		g_cur_lib = &plug;
-		plug.lib_main(ev, server_funcs);
+		plug.lib_main(ev, mda_funcs);
 	}
 	g_cur_lib = nullptr;
 }
