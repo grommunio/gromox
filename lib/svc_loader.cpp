@@ -60,8 +60,10 @@ struct svc_mgr final {
 	public:
 	svc_mgr(service_init_param &&);
 	~svc_mgr();
+	/* Two-phase construction and also two-phase destruction */
 	int run_early();
 	int run();
+	void stop();
 	bool symreg(const char *, void *, const std::type_info &);
 	void *symget(const char *, const char *, const std::type_info &);
 	void symput(const char *, const char *);
@@ -154,9 +156,14 @@ int svc_mgr::run()
 
 svc_mgr::~svc_mgr()
 {
+	stop();
+}
+
+void svc_mgr::stop()
+{
 	while (!g_list_plug.empty())
 		/*
-		 * PLUGIN_FREE handlers an invoke service_release, so clear
+		 * PLUGIN_FREE handlers can invoke service_release, so clear
 		 * list_service after the loop.
 		 */
 		g_list_plug.pop_back();
@@ -397,6 +404,11 @@ void service_init(service_init_param &&parm)
 
 void service_stop()
 {
+	le_svc_mgr->stop();
+	/*
+	 * Some components' SVC_entrypoint functions call back into service_*.
+	 * Only reset le_svc_mgr after we know everything is halted.
+	 */
 	le_svc_mgr.reset();
 }
 
