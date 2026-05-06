@@ -456,9 +456,13 @@ BOOL idset::deserialize(const BINARY &bin) try
 		repl_node repl_node;
 
 		if (pset->repl_type == idset::type::id_packed) {
+			if (offset + sizeof(uint16_t) > pbin->cb)
+				return false;
 			repl_node.replid = le16p_to_cpu(&pbin->pb[offset]);
 			offset += sizeof(uint16_t);
 		} else {
+			if (offset + 16 > pbin->cb)
+				return false;
 			idset_read_guid(pbin->pb, offset, &repl_node.replguid);
 			offset += 16;
 		}
