@@ -512,7 +512,7 @@ int delete_mail(const char *path, const std::string &folder,
 }
 
 int search(const char *path, const std::string &folder,
-    const char *charset, int argc, char **argv, std::string &ret_buff,
+    const char *charset, std::span<char *> argv, std::string &ret_buff,
     int *perrno) try
 {
 	size_t encode_len;
@@ -526,9 +526,9 @@ int search(const char *path, const std::string &folder,
 	auto length = gx_snprintf(buff.get(), cbufsize,
 	              "P-SRHL %s %s %s ", path, folder.c_str(), charset);
 	int length1 = 0;
-	for (int i = 0; i < argc; ++i)
+	for (const auto &elem : argv)
 		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
-					"%s", argv[i]) + 1;
+					"%s", elem) + 1;
 	buff1[length1++] = '\0';
 	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
 		&encode_len);
@@ -561,7 +561,7 @@ int search(const char *path, const std::string &folder,
 }
 
 int search_uid(const char *path, const std::string &folder,
-   const char *charset, int argc, char **argv, std::string &ret_buff,
+   const char *charset, std::span<char *> argv, std::string &ret_buff,
    int *perrno) try
 {
 	size_t encode_len;
@@ -575,9 +575,9 @@ int search_uid(const char *path, const std::string &folder,
 	auto length = gx_snprintf(buff.get(), cbufsize,
 	              "P-SRHU %s %s %s ", path, folder.c_str(), charset);
 	int length1 = 0;
-	for (int i = 0; i < argc; ++i)
+	for (const auto &elem : argv)
 		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
-					"%s", argv[i]) + 1;
+					"%s", elem) + 1;
 	buff1[length1++] = '\0';
 	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
 		&encode_len);

@@ -59,7 +59,7 @@ static void *imps_scanwork(void *);
 static void imap_parser_event_proc(char *event);
 static void imap_parser_event_touch(const char *user, const char *folder);
 static void imap_parser_event_flag(const char *username, const char *folder, uint32_t uid);
-static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context &);
+static int imap_parser_dispatch_cmd(std::span<char *> argv, imap_context &);
 static void imap_parser_context_clear(imap_context *);
 static int imap_parser_wrdat_retrieve(imap_context &);
 
@@ -503,7 +503,7 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 			    argv, std::size(argv));
 		if (argc >= 3 && 0 == strcasecmp(argv[1], "APPEND")) {
 			/* Special handling for APPEND with potentially huge literals */
-			switch (icp_long_append_begin(argc, argv, ctx)) {
+			switch (icp_long_append_begin({argv, size_t(argc)}, ctx)) {
 			case DISPATCH_CONTINUE: {
 				ctx.current_len = &ctx.read_buffer[ctx.read_offset] - &ctx.literal_ptr[nl_len];
 				if (pcontext->current_len < 0) {
@@ -637,6 +637,8 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 
 		auto argc = parse_imap_args(pcontext->command_buffer,
 			    pcontext->command_len, argv, std::size(argv));
+		/* XXX: what if... argc < 0? */
+
 		if (pcontext->sched_stat == isched_stat::appended) {
 			if (0 != argc) {
 				/* Clears pcontext->mid; is this wanted here? */
@@ -648,7 +650,7 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 				pcontext->connection.write(" ", 1);
 				pcontext->connection.write(imap_reply_str, string_length);
 			} else {
-				icp_long_append_end(argc, argv, ctx);
+				icp_long_append_end({argv, size_t(argc)}, ctx);
 			}
 			pcontext->sched_stat = isched_stat::rdcmd;
 			pcontext->literal_ptr = nullptr;
@@ -692,7 +694,7 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 			return tproc_status::literal_checking;
 		}
 
-		switch (imap_parser_dispatch_cmd(argc, argv, ctx)) {
+		switch (imap_parser_dispatch_cmd({argv, size_t(argc)}, ctx)) {
 		case DISPATCH_CONTINUE:
 			pcontext->command_len = 0;
 			return tproc_status::literal_processing;
@@ -1396,13 +1398,13 @@ SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-static int imap_parser_dispatch_cmd2(int argc, char **argv,
+static int imap_parser_dispatch_cmd2(std::span<char *> argv,
     imap_context &ctx)
 {
-	assert(argc >= 2);
+	assert(argv.size() >= 2);
 	auto pcontext = &ctx;
 	char reply_buff[1024];
-	static constexpr std::pair<const char *, int (*)(int, char **, imap_context &)> proc[] = {
+	static constexpr std::pair<const char *, int (*)(std::span<char *>, imap_context &)> proc[] = {
 		{"APPEND", icp_append},
 		{"AUTHENTICATE", icp_authenticate},
 		{"CAPABILITY", icp_capability},
@@ -1443,11 +1445,11 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv,
 	if (strcasecmp(argv[1], "UID") == 0) {
 		auto it = std::lower_bound(std::begin(proc_uid), std::end(proc_uid), argv[2], scmp);
 		if (it != std::end(proc_uid) && strcasecmp(argv[2], it->first) == 0)
-			return it->second(argc, argv, *pcontext);
+			return it->second(argv, *pcontext);
 	} else {
 		auto it = std::lower_bound(std::begin(proc), std::end(proc), argv[1], scmp);
 		if (it != std::end(proc) && strcasecmp(argv[1], it->first) == 0)
-			return it->second(argc, argv, *pcontext);
+			return it->second(argv, *pcontext);
 	}
 
 	auto imap_reply_str = resource_get_imap_code(1800, 1);
@@ -1456,9 +1458,9 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv,
 	return DISPATCH_CONTINUE;
 }
 
-static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context &ctx) try
+static int imap_parser_dispatch_cmd(std::span<char *> argv, imap_context &ctx) try
 {
-	assert(argc >= 2);
+	assert(argv.size() >= 2);
 	/*
 	 * cmd2 can/will further tokenize the argv[n] strings, e.g. replacing
 	 * spaces with \0. That would impact our debug printing. Make a copy.
@@ -1469,8 +1471,8 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context &ctx) tr
 			safe_memset(argv_copy[i].data(), 0, argv_copy[i].size());
 	});
 	if (g_imapcmd_debug != 0)
-		argv_copy.assign(&argv[0], &argv[argc]);
-	auto ret = imap_parser_dispatch_cmd2(argc, argv, ctx);
+		argv_copy.assign(argv.begin(), argv.end());
+	auto ret = imap_parser_dispatch_cmd2(argv, ctx);
 	auto code = ret & DISPATCH_VALMASK;
 	if (g_imapcmd_debug >= 2 || (g_imapcmd_debug >= 1 && code != 0 && code != 1700)) {
 		/*

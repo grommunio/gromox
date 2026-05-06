@@ -1047,7 +1047,7 @@ static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft,
 	return s;
 }
 
-int icp_capability(int argc, char **argv, imap_context &ctx) try
+int icp_capability(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	if (pcontext->proto_stat == iproto_stat::select)
@@ -1063,7 +1063,7 @@ int icp_capability(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_id(int argc, char **argv, imap_context &ctx) try
+int icp_id(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	if (pcontext->proto_stat == iproto_stat::select)
@@ -1082,7 +1082,7 @@ int icp_id(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_noop(int argc, char **argv, imap_context &ctx)
+int icp_noop(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	if (pcontext->proto_stat == iproto_stat::select)
@@ -1090,7 +1090,7 @@ int icp_noop(int argc, char **argv, imap_context &ctx)
 	return 1702;
 }
 
-int icp_logout(int argc, char **argv, imap_context &ctx) try
+int icp_logout(std::span<char *> argv, imap_context &ctx) try
 {
 	/* IMAP_CODE_2160001: BYE logging out */
 	/* IMAP_CODE_2170003: OK LOGOUT completed */
@@ -1102,7 +1102,7 @@ int icp_logout(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_starttls(int argc, char **argv, imap_context &ctx)
+int icp_starttls(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	if (pcontext->connection.ssl != nullptr)
@@ -1115,12 +1115,12 @@ int icp_starttls(int argc, char **argv, imap_context &ctx)
 	return 1704;
 }
 
-int icp_authenticate(int argc, char **argv, imap_context &ctx)
+int icp_authenticate(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1802;
-	if (argc != 3 || strcasecmp(argv[2], "LOGIN") != 0)
+	if (argv.size() != 3 || strcasecmp(argv[2], "LOGIN") != 0)
 		return 1800;
 	if (pcontext->is_authed())
 		return 1803;
@@ -1244,14 +1244,14 @@ int icp_password(const char *cmdbuf, imap_context &ctx)
 	return icp_dval(cmdbuf, ctx, icp_password2(cmdbuf, ctx));
 }
 
-int icp_login(int argc, char **argv, imap_context &ctx)
+int icp_login(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	char temp_password[256];
     
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1802;
-	if (argc != 4 || strlen(argv[2]) >= std::size(pcontext->username) ||
+	if (argv.size() != 4 || strlen(argv[2]) >= std::size(pcontext->username) ||
 	    strlen(argv[3]) > 255)
 		return 1800;
 	if (pcontext->is_authed())
@@ -1311,12 +1311,12 @@ int icp_login(int argc, char **argv, imap_context &ctx)
 	return 1705;
 }
 
-int icp_idle(int argc, char **argv, imap_context &ctx)
+int icp_idle(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc != 2)
+	if (argv.size() != 2)
 		return 1800;
 	gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));
 	pcontext->sched_stat = isched_stat::idling;
@@ -1385,7 +1385,7 @@ int content_array::refresh(imap_context &ctx, const std::string &folder,
 	return 0;
 }
 
-static int icp_selex(int argc, char **argv, imap_context &ctx, bool readonly) try
+static int icp_selex(std::span<char *> argv, imap_context &ctx, bool readonly) try
 {
 	auto pcontext = &ctx;
 	int errnum;
@@ -1393,7 +1393,7 @@ static int icp_selex(int argc, char **argv, imap_context &ctx, bool readonly) tr
     
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
+	if (argv.size() < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	if (iproto_stat::select == pcontext->proto_stat) {
@@ -1443,24 +1443,24 @@ static int icp_selex(int argc, char **argv, imap_context &ctx, bool readonly) tr
 	return 1915;
 }
 
-int icp_select(int argc, char **argv, imap_context &ctx)
+int icp_select(std::span<char *> argv, imap_context &ctx)
 {
-	return icp_selex(argc, argv, ctx, false);
+	return icp_selex(argv, ctx, false);
 }
 
-int icp_examine(int argc, char **argv, imap_context &ctx)
+int icp_examine(std::span<char *> argv, imap_context &ctx)
 {
-	return icp_selex(argc, argv, ctx, true);
+	return icp_selex(argv, ctx, true);
 }
 
-int icp_create(int argc, char **argv, imap_context &ctx)
+int icp_create(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int errnum;
 
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 3 || strlen(argv[2]) == 0)
+	if (argv.size() < 3 || strlen(argv[2]) == 0)
 		return 1800;
 	std::vector<enum_folder_t> folder_list;
 	auto ssr = midb_agent::enum_folders(pcontext->maildir, folder_list, &errnum);
@@ -1499,7 +1499,7 @@ int icp_create(int argc, char **argv, imap_context &ctx)
 	return 1706;
 }
 
-int icp_delete(int argc, char **argv, imap_context &ctx)
+int icp_delete(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int errnum;
@@ -1507,7 +1507,7 @@ int icp_delete(int argc, char **argv, imap_context &ctx)
 
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
+	if (argv.size() < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[2], encoded_name))
 		return 1800;
 
@@ -1538,7 +1538,7 @@ int icp_delete(int argc, char **argv, imap_context &ctx)
 	return 1707;
 }
 
-int icp_rename(int argc, char **argv, imap_context &ctx)
+int icp_rename(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int errnum;
@@ -1546,7 +1546,7 @@ int icp_rename(int argc, char **argv, imap_context &ctx)
 
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 4 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
+	if (argv.size() < 4 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024
 		|| 0 == strlen(argv[3]) || strlen(argv[3]) >= 1024)
 		return 1800;
 	if (!icp_imapfolder_to_sysfolder(argv[2], encoded_name) ||
@@ -1564,7 +1564,7 @@ int icp_rename(int argc, char **argv, imap_context &ctx)
 	return 1708;
 }
 
-int icp_subscribe(int argc, char **argv, imap_context &ctx)
+int icp_subscribe(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int errnum;
@@ -1572,7 +1572,7 @@ int icp_subscribe(int argc, char **argv, imap_context &ctx)
 
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
+	if (argv.size() < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	auto ssr = midb_agent::subscribe_folder(pcontext->maildir,
@@ -1585,7 +1585,7 @@ int icp_subscribe(int argc, char **argv, imap_context &ctx)
 	return 1709;
 }
 
-int icp_unsubscribe(int argc, char **argv, imap_context &ctx)
+int icp_unsubscribe(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int errnum;
@@ -1593,7 +1593,7 @@ int icp_unsubscribe(int argc, char **argv, imap_context &ctx)
 
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
+	if (argv.size() < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	auto ssr = midb_agent::unsubscribe_folder(pcontext->maildir,
@@ -1606,7 +1606,7 @@ int icp_unsubscribe(int argc, char **argv, imap_context &ctx)
 	return 1710;
 }
 
-int icp_list(int argc, char **argv, imap_context &ctx) try
+int icp_list(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int errnum;
@@ -1620,18 +1620,18 @@ int icp_list(int argc, char **argv, imap_context &ctx) try
 	 * Selection option (list only special use folders):
 	 * 	LIST (SPECIAL-USE) "" %
 	 */
-	if (argc < 3)
+	if (argv.size() < 3)
 		return 1800;
-	int apos = 2;
+	size_t apos = 2;
 	auto filter_special = strcasecmp(argv[2], "(SPECIAL-USE)") == 0;
 	if (filter_special)
 		++apos;
-	if (argc < apos + 2)
+	if (argv.size() < apos + 2)
 		return 1800;
 	auto reference = argv[apos++];
 	auto mboxname = argv[apos++];
 	bool return_special = filter_special;
-	if (argc >= apos + 2 && strcasecmp(argv[apos], "RETURN") == 0 &&
+	if (argv.size() >= apos + 2 && strcasecmp(argv[apos], "RETURN") == 0 &&
 	    strcasecmp(argv[apos+1], "(SPECIAL-USE)") == 0)
 		return_special = true;
 	if (strlen(reference) + strlen(mboxname) >= 1024)
@@ -1689,14 +1689,14 @@ int icp_list(int argc, char **argv, imap_context &ctx) try
 	return 1915;
 }
 
-int icp_xlist(int argc, char **argv, imap_context &ctx) try
+int icp_xlist(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int errnum;
 	
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 4)
+	if (argv.size() < 4)
 		return 1800;
 	if (strlen(argv[2]) + strlen(argv[3]) >= 1024)
 		return 1800;
@@ -1742,14 +1742,14 @@ int icp_xlist(int argc, char **argv, imap_context &ctx) try
 	return 1915;
 }
 
-int icp_lsub(int argc, char **argv, imap_context &ctx) try
+int icp_lsub(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int errnum;
 	
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 4)
+	if (argv.size() < 4)
 		return 1800;
 	if (strlen(argv[2]) + strlen(argv[3]) >= 1024)
 		return 1800;
@@ -1803,7 +1803,7 @@ int icp_lsub(int argc, char **argv, imap_context &ctx) try
 	return 1915;
 }
 
-int icp_status(int argc, char **argv, imap_context &ctx) try
+int icp_status(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int i;
@@ -1815,7 +1815,7 @@ int icp_status(int argc, char **argv, imap_context &ctx) try
     
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 4 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
+	if (argv.size() < 4 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[2], sys_name) ||
 	    argv[3][0] != '(' || argv[3][strlen(argv[3])-1] != ')')
 		return 1800;
@@ -1868,7 +1868,7 @@ int icp_status(int argc, char **argv, imap_context &ctx) try
 	return 1915;
 }
 
-int icp_append(int argc, char **argv, imap_context &ctx) try
+int icp_append(std::span<char *> argv, imap_context &ctx) try
 {
 	if (!ctx.is_authed())
 		return 1804;
@@ -1879,13 +1879,14 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	char *str_received = nullptr, *flags_string = nullptr;
 	std::string sys_name;
 	
-	if (argc < 4 || argc > 6 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
+	if (argv.size() < 4 || argv.size() > 6 ||
+	    strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
-	if (6 == argc) {
+	if (argv.size() == 6) {
 		flags_string = argv[3];
 		str_received = argv[4];
-	} else if (5 == argc) {
+	} else if (argv.size() == 5) {
 		if (argv[3][0] == '(')
 			flags_string = argv[3];
 		else
@@ -1927,7 +1928,7 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	imrpc_build_env();
 	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 	if (!exmdb_client->imapfile_write(ctx.maildir, "eml",
-	    mid_string, argv[argc-1])) {
+	    mid_string, argv.back())) {
 		mlog(LV_ERR, "E-1763: write %s/eml/%s failed", ctx.maildir, mid_string.c_str());
 		return 1909;
 	}
@@ -1979,7 +1980,7 @@ static inline bool append_allowed_flag_name(const char *flag)
 	return false;
 }
 
-static int icp_long_append_begin2(int argc, char **argv, imap_context &ctx) try
+static int icp_long_append_begin2(std::span<char *> argv, imap_context &ctx) try
 {
 	if (!ctx.is_authed())
 		return 1804 | DISPATCH_BREAK;
@@ -1988,13 +1989,14 @@ static int icp_long_append_begin2(int argc, char **argv, imap_context &ctx) try
 	char str_flags[128];
 	std::string sys_name;
 	
-	if (argc < 3 || argc > 5 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
+	if (argv.size() < 3 || argv.size() > 5 ||
+	    strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800 | DISPATCH_BREAK;
-	if (5 == argc) {
+	if (argv.size() == 5) {
 		flags_string = argv[3];
 		str_received = argv[4];
-	} else if (4 == argc) {
+	} else if (argv.size() == 4) {
 		if (argv[3][0] == '(')
 			flags_string = argv[3];
 		else
@@ -2037,12 +2039,12 @@ static int icp_long_append_begin2(int argc, char **argv, imap_context &ctx) try
 	return 1918 | DISPATCH_BREAK;
 }
 
-int icp_long_append_begin(int argc, char **argv, imap_context &ctx)
+int icp_long_append_begin(std::span<char *> argv, imap_context &ctx)
 {
-	return icp_dval(argv[0], ctx, icp_long_append_begin2(argc, argv, ctx));
+	return icp_dval(argv[0], ctx, icp_long_append_begin2(argv, ctx));
 }
 
-static int icp_long_append_end2(int argc, char **argv, imap_context &ctx) try
+static int icp_long_append_end2(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	std::string content;
@@ -2107,12 +2109,12 @@ static int icp_long_append_end2(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_long_append_end(int argc, char **argv, imap_context &ctx)
+int icp_long_append_end(std::span<char *> argv, imap_context &ctx)
 {
-	return icp_dval(argv[0], ctx, icp_long_append_end2(argc, argv, ctx));
+	return icp_dval(argv[0], ctx, icp_long_append_end2(argv, ctx));
 }
 
-int icp_check(int argc, char **argv, imap_context &ctx)
+int icp_check(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	if (pcontext->proto_stat != iproto_stat::select)
@@ -2121,7 +2123,7 @@ int icp_check(int argc, char **argv, imap_context &ctx)
 	return 1716;
 }
 
-int icp_close(int argc, char **argv, imap_context &ctx)
+int icp_close(std::span<char *> argv, imap_context &ctx)
 {
 	if (ctx.proto_stat != iproto_stat::select)
 		return 1805;
@@ -2134,7 +2136,7 @@ static bool zero_uid_bit(const MITEM &i)
 	return i.uid == 0 || !(i.flag_bits & FLAG_DELETED);
 }
 
-int icp_expunge(int argc, char **argv, imap_context &ctx) try
+int icp_expunge(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	if (pcontext->proto_stat != iproto_stat::select)
@@ -2201,7 +2203,7 @@ int icp_expunge(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_unselect(int argc, char **argv, imap_context &ctx)
+int icp_unselect(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	if (pcontext->proto_stat != iproto_stat::select)
@@ -2212,19 +2214,19 @@ int icp_unselect(int argc, char **argv, imap_context &ctx)
 	return 1718;
 }
 
-int icp_search(int argc, char **argv, imap_context &ctx)
+int icp_search(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int errnum;
 	
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argc < 3 || argc > 1024)
+	if (argv.size() < 3 || argv.size() > 1024)
 		return 1800;
 	std::string buff;
 	auto ssr = midb_agent::search(pcontext->maildir,
 	           pcontext->selected_folder, pcontext->defcharset,
-	            argc - 2, &argv[2], buff, &errnum);
+	           argv.subspan(2), buff, &errnum);
 	buff.insert(0, "* SEARCH ");
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
@@ -2297,7 +2299,7 @@ static int fetch_trivial_uid(imap_context &ctx, const imap_seq_list &range_list,
 	return MIDB_LOCAL_ENOMEM;
 }
 
-int icp_fetch(int argc, char **argv, imap_context &ctx)
+int icp_fetch(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int i, num, errnum = 0;
@@ -2309,7 +2311,7 @@ int icp_fetch(int argc, char **argv, imap_context &ctx)
 	
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0)
+	if (argv.size() < 4 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0)
 		return 1800;
 	if (!icp_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[3], tmp_argv, std::size(tmp_argv)))
@@ -2369,7 +2371,7 @@ static bool store_flagkeyword(const char *str)
 	return false;
 }
 
-int icp_store(int argc, char **argv, imap_context &ctx)
+int icp_store(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int errnum, i;
@@ -2380,7 +2382,7 @@ int icp_store(int argc, char **argv, imap_context &ctx)
 
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argc < 5 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0 ||
+	if (argv.size() < 5 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0 ||
 	    !store_flagkeyword(argv[3]))
 		return 1800;
 	if ('(' == argv[4][0] && ')' == argv[4][strlen(argv[4]) - 1]) {
@@ -2434,7 +2436,7 @@ int icp_store(int argc, char **argv, imap_context &ctx)
 	return 1721;
 }
 
-int icp_copy(int argc, char **argv, imap_context &ctx) try
+int icp_copy(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	unsigned int uid;
@@ -2447,7 +2449,7 @@ int icp_copy(int argc, char **argv, imap_context &ctx) try
     
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0 ||
+	if (argv.size() < 4 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0 ||
 	    strlen(argv[3]) == 0 || strlen(argv[3]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[3], sys_name))
 		return 1800;
@@ -2537,19 +2539,19 @@ int icp_copy(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_uid_search(int argc, char **argv, imap_context &ctx) try
+int icp_uid_search(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int errnum;
 	
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argc < 3 || argc > 1024)
+	if (argv.size() < 3 || argv.size() > 1024)
 		return 1800;
 	std::string buff;
 	auto ssr = midb_agent::search_uid(pcontext->maildir,
 	           pcontext->selected_folder, pcontext->defcharset,
-	           argc - 3, &argv[3], buff, &errnum);
+	           argv.subspan(3), buff, &errnum);
 	buff.insert(0, "* SEARCH ");
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -2571,7 +2573,7 @@ int icp_uid_search(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_uid_fetch(int argc, char **argv, imap_context &ctx) try
+int icp_uid_fetch(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int num;
@@ -2585,7 +2587,7 @@ int icp_uid_fetch(int argc, char **argv, imap_context &ctx) try
 	
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argc < 5 || parse_imap_seq(list_seq, argv[3]) != 0)
+	if (argv.size() < 5 || parse_imap_seq(list_seq, argv[3]) != 0)
 		return 1800;
 	if (!icp_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[4], tmp_argv, std::size(tmp_argv)))
@@ -2637,7 +2639,7 @@ int icp_uid_fetch(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_uid_store(int argc, char **argv, imap_context &ctx)
+int icp_uid_store(std::span<char *> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int errnum, i, flag_bits, temp_argc;
@@ -2646,7 +2648,7 @@ int icp_uid_store(int argc, char **argv, imap_context &ctx)
 
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argc < 6 || parse_imap_seq(list_seq, argv[3]) != 0 ||
+	if (argv.size() < 6 || parse_imap_seq(list_seq, argv[3]) != 0 ||
 	    !store_flagkeyword(argv[4]))
 		return 1800;
 	if ('(' == argv[5][0] && ')' == argv[5][strlen(argv[5]) - 1]) {
@@ -2700,7 +2702,7 @@ int icp_uid_store(int argc, char **argv, imap_context &ctx)
 	return 1724;
 }
 
-int icp_uid_copy(int argc, char **argv, imap_context &ctx) try
+int icp_uid_copy(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	unsigned int uid;
@@ -2713,7 +2715,7 @@ int icp_uid_copy(int argc, char **argv, imap_context &ctx) try
 	
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argc < 5 || parse_imap_seq(list_seq, argv[3]) != 0 ||
+	if (argv.size() < 5 || parse_imap_seq(list_seq, argv[3]) != 0 ||
 	    strlen(argv[4]) == 0 || strlen(argv[4]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[4], sys_name))
 		return 1800;
@@ -2797,7 +2799,7 @@ int icp_uid_copy(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_uid_expunge(int argc, char **argv, imap_context &ctx) try
+int icp_uid_expunge(std::span<char *> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int errnum;
@@ -2808,7 +2810,7 @@ int icp_uid_expunge(int argc, char **argv, imap_context &ctx) try
 		return 1805;
 	if (pcontext->b_readonly)
 		return 1806;
-	if (argc < 4 || parse_imap_seq(list_seq, argv[3]) != 0)
+	if (argv.size() < 4 || parse_imap_seq(list_seq, argv[3]) != 0)
 		return 1800;
 	XARRAY xarray;
 	auto ssr = midb_agent::list_deleted(pcontext->maildir,
