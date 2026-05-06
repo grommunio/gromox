@@ -2767,7 +2767,7 @@ BOOL exmdb_server::get_message_instance_rcpts(const char *dir,
 			sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
 
 		auto &srecip = *prcpts->pparray[begin_pos+i];
-		auto drecip = *pset->pparray[i];
+		auto &drecip = *pset->pparray[i];
 		if (!srecip.has(PR_RECIPIENT_TYPE))
 			drecip.emplace_back(PR_RECIPIENT_TYPE, &dummy_rcpttype);
 		if (!srecip.has(PR_DISPLAY_NAME))
