@@ -792,6 +792,8 @@ static int icp_process_fetch_item(imap_context &ctx,
 			}
 			auto len = pend - (pbody + 1);
 			char temp_buff[1024];
+			if (static_cast<size_t>(len) >= sizeof(temp_buff))
+				return 1800;
 			memcpy(temp_buff, pbody + 1, len);
 			temp_buff[len] = '\0';
 			char *ptr = nullptr;
