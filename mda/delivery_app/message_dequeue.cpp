@@ -360,7 +360,20 @@ static void message_dequeue_load_from_mess(int mess) try
 	/* check if it is an incomplete message */
 	if (le64p_to_cpu(ptr.get()) == 0) {
 		message_dequeue_put_to_free(pmessage);
-		return;	
+		return;
+	}
+	/*
+	 * mail_length comes from the spool file. Validate that the
+	 * subsequent flush_ID/bound_type/envelope offsets stay within
+	 * the bytes we actually read.
+	 */
+	size_t mail_length;
+	memcpy(&mail_length, ptr.get(), sizeof(mail_length));
+	if (mail_length > static_cast<size_t>(rdret) ||
+	    sizeof(size_t) + mail_length + 3 * sizeof(uint32_t) >
+	    static_cast<size_t>(rdret)) {
+		message_dequeue_put_to_free(pmessage);
+		return;
 	}
 	message_dequeue_retrieve_to_message(pmessage, std::move(ptr));
 	message_dequeue_put_to_used(pmessage);
