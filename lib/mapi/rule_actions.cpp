@@ -186,6 +186,9 @@ static BOOL action_block_dup_internal(
 		}
 		return TRUE;
 	case OP_DEFER_ACTION:
+		if (paction->length < sizeof(uint8_t) +
+		    sizeof(uint32_t) + sizeof(uint32_t))
+			return FALSE;
 		tmp_len = paction->length - sizeof(uint8_t) -
 					sizeof(uint32_t) - sizeof(uint32_t);
 		pblock->pdata = malloc(tmp_len);
