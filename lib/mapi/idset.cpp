@@ -406,7 +406,8 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 					"stack should be less than 5");
 				return 0;
 			}
-			if (offset + 6 - stack_length >= pbin->cb) {
+			/* Two reads of (6 - stack_length) follow */
+			if (offset + 2 * (6 - stack_length) > pbin->cb) {
 				mlog(LV_DEBUG, "D-1653: not enough bytes left");
 				return 0;
 			}
