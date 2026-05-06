@@ -1459,7 +1459,10 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv,
 static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context &ctx) try
 {
 	assert(argc >= 2);
-	/* cmd2 can/will further tokenize and thus modify argv */
+	/*
+	 * cmd2 can/will further tokenize the argv[n] strings, e.g. replacing
+	 * spaces with \0. That would impact our debug printing. Make a copy.
+	 */
 	std::vector<std::string> argv_copy;
 	auto ac_clean = HX::make_scope_exit([&]() {
 		for (size_t i = 0; i < argv_copy.size(); ++i)
@@ -1476,13 +1479,12 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context &ctx) tr
 		 */
 		fprintf(stderr, "[%s]:%hu %s ", ctx.connection.client_addr,
 			ctx.connection.client_port, ctx.username);
-		if (strcasecmp(argv[1], "LOGIN") == 0) {
+		if (strcasecmp(argv_copy[1].c_str(), "LOGIN") == 0) {
 			fprintf(stderr, "< LOGIN ****: ret=%xh code=%u\n", ret, code);
 		} else {
 			fprintf(stderr, "<");
-			for (int i = 0; i < argc; ++i)
-				fprintf(stderr, " %s", argv_copy[i].empty() ?
-				        "\"\"" : argv_copy[i].c_str());
+			for (const auto &a : argv_copy)
+				fprintf(stderr, " %s", a.empty() ? "\"\"" : a.c_str());
 			fprintf(stderr, ": ret=%xh code=%u\n", ret, code);
 		}
 	}
