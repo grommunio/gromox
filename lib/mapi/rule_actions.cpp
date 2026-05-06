@@ -102,7 +102,7 @@ static BOOL recipient_block_dup_internal(
 	precipient->reserved = pblock->reserved;
 	precipient->count = pblock->count;
 	precipient->ppropval = me_alloc<TAGGED_PROPVAL>(pblock->count);
-	if (pblock->ppropval == nullptr)
+	if (precipient->ppropval == nullptr)
 		return FALSE;
 	for (int i = 0; i < pblock->count; ++i) {
 		precipient->ppropval[i].proptag = pblock->ppropval[i].proptag;
