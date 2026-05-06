@@ -315,17 +315,21 @@ static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail, BOOL *pb_data
 	*pb_data = FALSE;
 	for (size_t i = 0; i < plist.size(); ++i) {
 		auto kw = plist[i].c_str();
-		if (strcasecmp(kw, "ALL") == 0 || strcasecmp(kw, "FAST") == 0 ||
-		    strcasecmp(kw, "FULL") == 0) {
+		bool is_all  = strcasecmp(kw, "ALL") == 0;
+		bool is_full = strcasecmp(kw, "FULL") == 0;
+		if (is_all || is_full || strcasecmp(kw, "FAST") == 0) {
+			/*
+			 * emplace_back may realloc plist and invalidate kw, so
+			 * decide everything off the local bools below.
+			 */
 			plist.emplace_back("INTERNALDATE");
 			plist.emplace_back("RFC822.SIZE");
-			if (strcasecmp(kw, "ALL") == 0 || strcasecmp(kw, "FULL") == 0) {
+			if (is_all || is_full) {
 				plist.emplace_back("ENVELOPE");
-				if (strcasecmp(kw, "FULL") == 0)
+				if (is_full)
 					plist.emplace_back("BODY");
 			}
 			*pb_detail = TRUE;
-			kw = "FLAGS";
 		} else if (strcasecmp(kw, "RFC822") == 0 ||
 		    strcasecmp(kw, "RFC822.HEADER") == 0 ||
 		    strcasecmp(kw, "RFC822.TEXT") == 0) {
