@@ -155,7 +155,7 @@ static void cmd_rcpt(lmtp_context &ctx, std::vector<std::string> &argv)
 	std::vector<std::string> exp;
 	if (mysql_adaptor_mda_group_expand(r.addr, exp) != 0)
 		return rsp_rcpt_unknown();
-	if (exp.size() == 1 && exp[1] == r.addr) {
+	if (exp.size() == 1 && exp[0] == r.addr) {
 		/* Not a group */
 		ctx.envl_to.emplace_back(std::move(r));
 	} else {
