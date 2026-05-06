@@ -89,17 +89,20 @@ errno_t archive::open(const char *file)
 	mapped_area = static_cast<char *>(mmap(nullptr, mapped_size, PROT_READ, MAP_SHARED, fd.get(), 0));
 	if (mapped_area == (void *)-1)
 		return errno;
-	if (memcmp(mapped_area, "PACK", 4) != 0 || mapped_size < 12)
+	if (mapped_size < 12 || memcmp(mapped_area, "PACK", 4) != 0)
 		return EINVAL;
-	auto dirofs  = le32p_to_cpu(&mapped_area[4]);
-	auto dirsize = le32p_to_cpu(&mapped_area[8]) / 64;
-	if (dirofs + dirsize > mapped_size)
+	auto dirofs   = le32p_to_cpu(&mapped_area[4]);
+	auto dirbytes = le32p_to_cpu(&mapped_area[8]);
+	auto dirsize  = dirbytes / 64;
+	if (dirofs > mapped_size || dirbytes > mapped_size - dirofs)
 		return EINVAL;
 	entries.clear();
 	for (unsigned int i = 0; i < dirsize; ++i) {
 		auto deofs = dirofs + 64 * i;
-		auto entryofs = std::min(le32p_to_cpu(&mapped_area[deofs+56]), static_cast<uint32_t>(UINT32_MAX));
-		auto entrysz  = std::min(le32p_to_cpu(&mapped_area[deofs+60]), static_cast<uint32_t>(UINT32_MAX));
+		auto entryofs = le32p_to_cpu(&mapped_area[deofs+56]);
+		auto entrysz  = le32p_to_cpu(&mapped_area[deofs+60]);
+		if (entryofs > mapped_size || entrysz > mapped_size - entryofs)
+			return EINVAL;
 		std::string_view name(&mapped_area[deofs], strnlen(&mapped_area[deofs], 56));
 		std::string_view data(&mapped_area[entryofs], entrysz);
 		entries.emplace(std::move(name), std::move(data));
