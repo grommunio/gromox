@@ -309,7 +309,33 @@ static bool rqi_handoff(EXMDB_CONNECTION &conn, const char *dir,
 		mlog(LV_ERR, "spworker_start %s: %s", prog.c_str(), strerror(-err));
 		return false;
 	}
-	return worker.pass(input_buf, conn.sockd) == 0;
+	auto pass_err = worker.pass(input_buf, conn.sockd);
+	if (pass_err == 0)
+		return true;
+	if (err > 0) {
+		/* Newly-launched process failed outright */
+		mlog(LV_ERR, "spworker_pass %s: %s", prog.c_str(), strerror(pass_err));
+		return false;
+	}
+	/*
+	 * Process is a bit "older" and might have shutdown due to inactivity
+	 * timer, try to revive and retry once. We still hold spwork_lock, so
+	 * no other thread can create a third spawn for this dir between these
+	 * calls.
+	 */
+	if (pass_err == EPIPE || pass_err == ECONNRESET) {
+		err = worker.restart(prog.c_str(), const_cast<char **>(args));
+		if (err < 0) {
+			mlog(LV_ERR, "spworker_start (retry) %s: %s",
+				prog.c_str(), strerror(-err));
+			return false;
+		}
+		pass_err = worker.pass(input_buf, conn.sockd);
+		if (pass_err == 0)
+			return true;
+	}
+	mlog(LV_ERR, "spworker_pass %s: %s", prog.c_str(), strerror(pass_err));
+	return false;
 }
 
 static int rqi_terminate(EXMDB_CONNECTION &conn, exmdb_response resp_code)
