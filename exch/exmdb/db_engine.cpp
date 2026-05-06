@@ -260,7 +260,7 @@ std::optional<db_conn> db_engine_get_db(const char *path)
 	if (it != g_hash_table.end()) {
 		pdb = &it->second;
 		std::optional<db_conn> conn(*pdb);
-		hhold.unlock();
+		hhold.unlock(); /* The iterator is potentially invalid now */
 		if (!conn->open(path))
 			return std::nullopt;
 		if (getenv("SQLITE_WORKER") == nullptr)
@@ -271,7 +271,7 @@ std::optional<db_conn> db_engine_get_db(const char *path)
 			return conn;
 		conn.reset();
 		hhold.lock();
-		g_hash_table.erase(it);
+		g_hash_table.erase(path);
 	}
 	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
