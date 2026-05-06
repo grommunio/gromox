@@ -85,7 +85,7 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
 	const char *uri_end;
 	const char *args_start;
 	int state, quoted_state;
-    char c, ch, decoded, *u;
+	char c, decoded, *u;
     
 	decoded = '\0';
 	quoted_state = SW_USUAL;
@@ -94,7 +94,7 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
 	uri_end = uri_buff + strlen(uri_buff);
 	u = parsed_uri;
 	args_start = NULL;
-	ch = *p ++;
+	unsigned char ch = *p++;
 	while (p <= uri_end) {
 		switch (state) {
 		case SW_USUAL:
