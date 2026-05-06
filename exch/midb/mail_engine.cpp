@@ -281,10 +281,9 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
 		if (-1 == begin_pos && '=' == in_buff[i] && '?' == in_buff[i + 1]) {
 			begin_pos = i;
 			if (i > last_pos) {
-				memcpy(temp_buff, in_buff + last_pos, begin_pos - last_pos);
-				temp_buff[begin_pos - last_pos] = '\0';
-				HX_strltrim(temp_buff);
-				auto tmp_string = me_ct_to_utf8(charset, temp_buff);
+				std::string scratch(&in_buff[last_pos], begin_pos - last_pos);
+				HX_strltrim(scratch.data());
+				auto tmp_string = me_ct_to_utf8(charset, scratch.c_str());
 				memcpy(&out_buff[offset], tmp_string.c_str(), tmp_string.size());
 				offset += tmp_string.size();
 				last_pos = i;
