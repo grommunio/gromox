@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 /* 
  * collection of functions for handling the imap command
@@ -1130,12 +1130,12 @@ int icp_authenticate(int argc, char **argv, imap_context &ctx)
     return DISPATCH_CONTINUE;
 }
 
-static int icp_username2(int argc, char **argv, imap_context &ctx)
+static int icp_username2(const char *cmdbuf, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	size_t temp_len;
 	
-	if (decode64_ex(argv[0], strlen(argv[0]),
+	if (decode64_ex(cmdbuf, strlen(cmdbuf),
 	    pcontext->username, std::size(pcontext->username),
 	    &temp_len) != 0) {
 		pcontext->proto_stat = iproto_stat::noauth;
@@ -1147,9 +1147,9 @@ static int icp_username2(int argc, char **argv, imap_context &ctx)
     return DISPATCH_CONTINUE;
 }
 
-int icp_username(int argc, char **argv, imap_context &ctx)
+int icp_username(const char *cmdbuf, imap_context &ctx)
 {
-	return icp_dval(argc, argv, ctx, icp_username2(argc, argv, ctx));
+	return icp_dval(cmdbuf, ctx, icp_username2(cmdbuf, ctx));
 }
 
 static inline const char *tag_or_bug(const char *s)
@@ -1171,14 +1171,14 @@ static bool store_owner_over(const char *actor, const char *mbox, const char *mb
 	return ok;
 }
 
-static int icp_password2(int argc, char **argv, imap_context &ctx) try
+static int icp_password2(const char *cmdbuf, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	size_t temp_len;
 	char temp_password[256];
 	
 	pcontext->proto_stat = iproto_stat::noauth;
-	if (decode64_ex(argv[0], strlen(argv[0]),
+	if (decode64_ex(cmdbuf, strlen(cmdbuf),
 	    temp_password, std::size(temp_password), &temp_len) != 0)
 		return 1820 | DISPATCH_TAG;
 
@@ -1238,9 +1238,9 @@ static int icp_password2(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_password(int argc, char **argv, imap_context &ctx)
+int icp_password(const char *cmdbuf, imap_context &ctx)
 {
-	return icp_dval(argc, argv, ctx, icp_password2(argc, argv, ctx));
+	return icp_dval(cmdbuf, ctx, icp_password2(cmdbuf, ctx));
 }
 
 int icp_login(int argc, char **argv, imap_context &ctx)
@@ -2037,7 +2037,7 @@ static int icp_long_append_begin2(int argc, char **argv, imap_context &ctx) try
 
 int icp_long_append_begin(int argc, char **argv, imap_context &ctx)
 {
-	return icp_dval(argc, argv, ctx, icp_long_append_begin2(argc, argv, ctx));
+	return icp_dval(argv[0], ctx, icp_long_append_begin2(argc, argv, ctx));
 }
 
 static int icp_long_append_end2(int argc, char **argv, imap_context &ctx) try
@@ -2107,7 +2107,7 @@ static int icp_long_append_end2(int argc, char **argv, imap_context &ctx) try
 
 int icp_long_append_end(int argc, char **argv, imap_context &ctx)
 {
-	return icp_dval(argc, argv, ctx, icp_long_append_end2(argc, argv, ctx));
+	return icp_dval(argv[0], ctx, icp_long_append_end2(argc, argv, ctx));
 }
 
 int icp_check(int argc, char **argv, imap_context &ctx)
@@ -2975,7 +2975,7 @@ void icp_clsfld(imap_context &ctx) try
  * (imap_cmd_parser.h), "unpacks" it, possibly sends a response line to the
  * client before yielding the unpacked dispatch action.
  */
-int icp_dval(int argc, char **argv, imap_context &ctx, unsigned int ret)
+int icp_dval(const char *tag, imap_context &ctx, unsigned int ret)
 {
 	auto code = ret & DISPATCH_VALMASK;
 	if (code == 0)
@@ -2986,8 +2986,7 @@ int icp_dval(int argc, char **argv, imap_context &ctx, unsigned int ret)
 		code = 1907;
 	auto str = resource_get_imap_code(code, 1);
 	char buff[1024];
-	const char *tag = (ret & DISPATCH_TAG) ? tag_or_bug(ctx.tag_string) :
-	                  argc == 0 ? "*" : tag_or_bug(argv[0]);
+	tag = tag_or_bug((ret & DISPATCH_TAG) ? ctx.tag_string : tag);
 	if (trycreate && strncmp(str, "NO ", 3) == 0)
 		str += 2; /* avoid double NO */
 	auto len = gx_snprintf(buff, std::size(buff), "%s%s %s%s", tag,

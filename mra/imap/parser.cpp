@@ -6,6 +6,7 @@
  * commands and then does the corresponding action.
  */
 #include <algorithm>
+#include <cassert>
 #include <cerrno>
 #include <climits>
 #include <csignal>
@@ -623,15 +624,11 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 
 		char *argv[128];
 		if (iproto_stat::username == pcontext->proto_stat) {
-			argv[0] = pcontext->command_buffer;
-			argv[1] = nullptr;
-			icp_username(1, argv, ctx);
+			icp_username(pcontext->command_buffer, ctx);
 			pcontext->command_len = 0;
 			return tproc_status::literal_processing;
 		} else if (iproto_stat::password == pcontext->proto_stat) {
-			argv[0] = pcontext->command_buffer;
-			argv[1] = nullptr;
-			if (icp_password(1, argv, ctx) == DISPATCH_SHOULD_CLOSE)
+			if (icp_password(pcontext->command_buffer, ctx) == DISPATCH_SHOULD_CLOSE)
 				return ps_end_processing(pcontext);
 			pcontext->command_len = 0;
 			safe_memset(pcontext->command_buffer, 0, std::size(pcontext->command_buffer));
@@ -1402,6 +1399,7 @@ SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
 static int imap_parser_dispatch_cmd2(int argc, char **argv,
     imap_context &ctx)
 {
+	assert(argc >= 2);
 	auto pcontext = &ctx;
 	char reply_buff[1024];
 	static constexpr std::pair<const char *, int (*)(int, char **, imap_context &)> proc[] = {
@@ -1460,6 +1458,7 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv,
 
 static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context &ctx) try
 {
+	assert(argc >= 2);
 	/* cmd2 can/will further tokenize and thus modify argv */
 	std::vector<std::string> argv_copy;
 	auto ac_clean = HX::make_scope_exit([&]() {
@@ -1487,9 +1486,9 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context &ctx) tr
 			fprintf(stderr, ": ret=%xh code=%u\n", ret, code);
 		}
 	}
-	return icp_dval(argc, argv, ctx, ret);
+	return icp_dval(argv[0], ctx, ret);
 } catch (const std::bad_alloc &) {
-	return icp_dval(argc, argv, ctx, 1915);
+	return icp_dval(argv[0], ctx, 1915);
 }
 
 imap_context::imap_context()

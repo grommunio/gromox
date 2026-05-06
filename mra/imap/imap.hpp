@@ -154,8 +154,8 @@ extern int icp_noop(int argc, char **argv, imap_context &);
 extern int icp_logout(int argc, char **argv, imap_context &);
 extern int icp_starttls(int argc, char **argv, imap_context &);
 extern int icp_authenticate(int argc, char **argv, imap_context &);
-extern int icp_username(int argc, char **argv, imap_context &);
-extern int icp_password(int argc, char **argv, imap_context &);
+extern int icp_username(const char *cmdbuf, imap_context &);
+extern int icp_password(const char *cmdbuf, imap_context &);
 extern int icp_login(int argc, char **argv, imap_context &);
 extern int icp_idle(int argc, char **argv, imap_context &);
 extern int icp_select(int argc, char **argv, imap_context &);
@@ -185,7 +185,7 @@ extern int icp_uid_fetch(int argc, char **argv, imap_context &);
 extern int icp_uid_store(int argc, char **argv, imap_context &);
 extern int icp_uid_copy(int argc, char **argv, imap_context &);
 extern int icp_uid_expunge(int argc, char **argv, imap_context &);
-extern int icp_dval(int argc, char **argv, imap_context &, unsigned int res);
+extern int icp_dval(const char *tag, imap_context &, unsigned int res);
 
 extern char *capability_list(char *, size_t, imap_context *);
 
