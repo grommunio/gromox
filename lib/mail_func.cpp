@@ -1092,6 +1092,10 @@ int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 
 	if (inbuf.size() == SIZE_MAX)
 		inbuf.remove_suffix(1);
+	if (inbuf.empty()) {
+		outbuf.clear();
+		return 1;
+	}
 	std::string rp;
 	const char *const buf = inbuf.data();
 	const char *p = buf;
@@ -1143,8 +1147,9 @@ int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 			if (state != st::NONE)
 				break;
 			linebegin = false;
-			auto semi = strchr(p, ';');
-			size_t ilen = semi != nullptr ? semi - p : strlen(p);
+			auto remaining = inbuf.size() - i;
+			auto semi = static_cast<const char *>(memchr(p, ';', remaining));
+			size_t ilen = semi != nullptr ? semi - p : remaining;
 			// there is a ++p after the switch() // ilen thus one short
 			if (p[1] == '#') {
 				char *end;
