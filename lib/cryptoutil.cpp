@@ -76,7 +76,7 @@ std::string sss_obf_reverse(std::string_view x)
 	if (cipher == nullptr ||
 	    !EVP_DecryptInit_ex(ctx.get(), cipher, nullptr, CU(&x[4]), CU(&x[36])))
 		return out;
-	out.resize(x.size() - 56);
+	out.resize(x.size() - 56 + EVP_MAX_BLOCK_LENGTH);
 	int plainlen = 0, digestlen = 0;
 	if (!EVP_DecryptUpdate(ctx.get(), U(&out[0]), &plainlen,
 	    CU(&x[52]), x.size() - 56) ||
