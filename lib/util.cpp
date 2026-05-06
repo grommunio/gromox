@@ -1158,6 +1158,8 @@ BOOL decode_hex_binary(const char *src, void *vdst, int dstlen)
 	int i, j, len;
 
 	len = strlen(src);
+	if (len % 2 != 0)
+		return false;
 	if (len / 2 > dstlen)
 		return FALSE;
 	for (i=0,j=0; i<len; i+=2,j++) {
