@@ -175,7 +175,18 @@ static std::string quote_encode(const std::string &u7)
 static BOOL icp_parse_fetch_args(mdi_list &plist,
     BOOL *pb_detail, BOOL *pb_data, char *string, char **argv, int argc) try
 {
+	static constexpr const char *kw1[] = {"ALL", "FAST", "FULL"};
+	static constexpr const char *kw2[] = {
+		"BODY", "BODYSTRUCTURE", "ENVELOPE", "FLAGS", "INTERNALDATE",
+		"RFC822", "RFC822.HEADER", "RFC822.SIZE", "RFC822.TEXT", "UID",
+	};
+	auto contained_in = +[](const char *kw, std::span<const char * const> list) {
+		return std::binary_search(list.begin(), list.end(), kw, [](const char *a, const char *b) {
+			return strcasecmp(a, b) < 0;
+		});
+	};
 	int tmp_argc;
+
 	if ('(' == string[0]) {
 		if (string[strlen(string)-1] != ')')
 			return FALSE;
@@ -194,21 +205,10 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 		    [&](const std::string &e) { return strcasecmp(e.c_str(), argv[i]) == 0; }))
 			/* weed out duplicates */
 			continue;
-		if (0 == strcasecmp(argv[i], "ALL") ||
-			0 == strcasecmp(argv[i], "FAST") ||
-			0 == strcasecmp(argv[i], "FULL")) {
+		if (contained_in(argv[i], {kw1, std::size(kw1)})) {
 			b_macro = TRUE;
 			plist.emplace_back(argv[i]);
-		} else if (0 == strcasecmp(argv[i], "BODY") ||
-			0 == strcasecmp(argv[i], "BODYSTRUCTURE") ||
-			0 == strcasecmp(argv[i], "ENVELOPE") ||
-			0 == strcasecmp(argv[i], "FLAGS") ||
-			0 == strcasecmp(argv[i], "INTERNALDATE") ||
-			0 == strcasecmp(argv[i], "RFC822") ||
-			0 == strcasecmp(argv[i], "RFC822.HEADER") ||
-			0 == strcasecmp(argv[i], "RFC822.SIZE") ||
-			0 == strcasecmp(argv[i], "RFC822.TEXT") ||
-			0 == strcasecmp(argv[i], "UID")) {
+		} else if (contained_in(argv[i], {kw2, std::size(kw2)})) {
 			plist.emplace_back(argv[i]);
 		} else if (0 == strncasecmp(argv[i], "BODY[", 5) ||
 			0 == strncasecmp(argv[i], "BODY.PEEK[", 10)) {
