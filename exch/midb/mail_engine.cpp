@@ -888,8 +888,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	return false;
 }
 
-static int me_ct_compile_criteria(int argc,
-	char **argv, int offset, char **argv_out)
+static int me_ct_compile_criteria(std::span<char *> argv,
+    size_t offset, char **argv_out)
 {
 	static constexpr const char *kwlist1[] =
 		{"ALL", "ANSWERED", "DELETED", "DRAFT", "FLAGGED", "NEW",
@@ -899,26 +899,25 @@ static int me_ct_compile_criteria(int argc,
 		{"BCC", "BEFORE", "BODY", "CC", "FROM", "KEYWORD", "LARGER",
 		"ON", "SENTBEFORE", "SENTON", "SENTSINCE", "SINCE", "SMALLER",
 		"SUBJECT", "TEXT", "TO", "UID", "UNKEYWORD"};
-	int i;
 	int tmp_argc;
 	int tmp_argc1;
 	
-	i = offset;
-	if (argc < i + 1)
+	auto i = offset;
+	if (argv.size() < i + 1)
 		return -1;
 	auto keyword = argv[i];
 	argv_out[0] = keyword;
 	if (strcasecmp(keyword, "OR") == 0) {
 		i ++;
-		if (argc < i + 1)
+		if (argv.size() < i + 1)
 			return -1;
-		tmp_argc = me_ct_compile_criteria(argc, argv, i, &argv_out[1]);
+		tmp_argc = me_ct_compile_criteria(argv, i, &argv_out[1]);
 		if (tmp_argc == -1)
 			return -1;
 		i += tmp_argc;
-		if (argc < i + 1)
+		if (argv.size() < i + 1)
 			return -1;
-		tmp_argc1 = me_ct_compile_criteria(argc, argv, i, &argv_out[1+tmp_argc]);
+		tmp_argc1 = me_ct_compile_criteria(argv, i, &argv_out[1+tmp_argc]);
 		if (tmp_argc1 == -1)
 			return -1;
 		return tmp_argc + tmp_argc1 + 1;
@@ -926,25 +925,25 @@ static int me_ct_compile_criteria(int argc,
 		return 1;
 	} else if (array_find_istr(kwlist2, keyword)) {
 		i ++;
-		if (argc < i + 1)
+		if (argv.size() < i + 1)
 			return -1;
 		argv_out[1] = argv[i];
 		return 2;
 	} else if (strcasecmp(keyword, "HEADER") == 0) {
 		i ++;
-		if (argc < i + 1)
+		if (argv.size() < i + 1)
 			return -1;
 		argv_out[1] = argv[i];
 		i++;
-		if (argc < i + 1)
+		if (argv.size() < i + 1)
 			return -1;
 		argv_out[2] = argv[i];
 		return 3;
 	} else if (strcasecmp(keyword, "NOT") == 0) {
 		i ++;
-		if (argc < i + 1)
+		if (argv.size() < i + 1)
 			return -1;
-		tmp_argc = me_ct_compile_criteria(argc, argv, i, &argv_out[1]);
+		tmp_argc = me_ct_compile_criteria(argv, i, &argv_out[1]);
 		if (-1 == tmp_argc)
 			return -1;
 		return tmp_argc + 1;
@@ -998,7 +997,7 @@ static enum midb_cond cond_str_to_cond(const char *s)
 }
 
 static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
-    int argc, char **argv) try
+    std::span<char *> argv) try
 {
 	static constexpr const char *kwlist1[] =
 		{"BCC", "BODY", "CC", "FROM", "KEYWORD", "SUBJECT", "TEXT",
@@ -1009,20 +1008,18 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 		{"ALL", "ANSWERED", "DELETED", "DRAFT", "FLAGGED", "NEW",
 		"OLD", "RECENT", "SEEN", "UNANSWERED", "UNDELETED", "UNDRAFT",
 		"UNFLAGGED", "UNSEEN"};
-	int i, len;
-	int tmp_argc;
-	int tmp_argc1;
+	int len, tmp_argc, tmp_argc1;
 	struct tm tmp_tm;
 	char* tmp_argv[256];
 	auto plist = std::make_optional<CONDITION_TREE>();
 
-	for (i=0; i<argc; i++) {
-		char *keyword = argv[i];
+	for (size_t i = 0; i < argv.size(); ++i) {
+		auto &keyword = argv[i];
 		ct_node ctn, *ptree_node = &ctn;
 		if (strcasecmp(keyword, "NOT") == 0) {
 			ptree_node->conjunction = midb_conj::c_not;
 			i ++;
-			if (i >= argc)
+			if (i >= argv.size())
 				return {};
 		} else {
 			ptree_node->conjunction = midb_conj::c_and;
@@ -1030,15 +1027,15 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 		if (array_find_istr(kwlist1, keyword)) {
 			ptree_node->condition = cond_str_to_cond(keyword);
 			i ++;
-			if (i + 1 > argc)
+			if (i + 1 > argv.size())
 				return {};
 			ptree_node->ct_keyword = me_ct_to_utf8(charset, keyword);
 		} else if (array_find_istr(kwlist2, keyword)) {
-			if (i + 1 > argc)
+			if (i + 1 > argv.size())
 				return {};
 			ptree_node->condition = cond_str_to_cond(keyword);
 			i ++;
-			if (i + 1 > argc)
+			if (i + 1 > argv.size())
 				return {};
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (strptime(keyword, "%d-%b-%Y", &tmp_tm) == nullptr)
@@ -1053,23 +1050,23 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			tmp_argc = parse_imap_args(&keyword[1], len - 2, tmp_argv, sizeof(tmp_argv));
 			if (tmp_argc == -1)
 				return {};
-			ptree_node->pbranch = me_ct_build_internal(charset, tmp_argc, tmp_argv);
+			ptree_node->pbranch = me_ct_build_internal(charset, {tmp_argv, size_t(tmp_argc)});
 			if (!ptree_node->pbranch.has_value())
 				return {};
 		} else if (strcasecmp(keyword, "OR") == 0) {
 			i ++;
-			if (i + 1 > argc)
+			if (i + 1 > argv.size())
 				return {};
-			tmp_argc = me_ct_compile_criteria(argc, argv, i, tmp_argv);
+			tmp_argc = me_ct_compile_criteria(argv, i, tmp_argv);
 			if (tmp_argc == -1)
 				return {};
 			i += tmp_argc;
-			if (i + 1 > argc)
+			if (i + 1 > argv.size())
 				return {};
-			tmp_argc1 = me_ct_compile_criteria(argc, argv, i, &tmp_argv[tmp_argc]);
+			tmp_argc1 = me_ct_compile_criteria(argv, i, &tmp_argv[tmp_argc]);
 			if (tmp_argc1 == -1)
 				return {};
-			auto plist1 = me_ct_build_internal(charset, tmp_argc + tmp_argc1, tmp_argv);
+			auto plist1 = me_ct_build_internal(charset, {tmp_argv, size_t(tmp_argc + tmp_argc1)});
 			if (!plist1.has_value())
 				return {};
 			if (plist1->size() != 2)
@@ -1082,11 +1079,11 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 		} else if (strcasecmp(keyword, "HEADER") == 0) {
 			ptree_node->condition = midb_cond::header;
 			i ++;
-			if (i + 1 > argc)
+			if (i + 1 > argv.size())
 				return {};
 			ptree_node->ct_headers[0] = keyword;
 			i ++;
-			if (i + 1 > argc)
+			if (i + 1 > argv.size())
 				return {};
 			ptree_node->ct_headers[1] = keyword;
 		} else if (strcasecmp(keyword, "LARGER") == 0 ||
@@ -1094,13 +1091,13 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			ptree_node->condition = strcasecmp(keyword, "LARGER") == 0 ?
 			                        midb_cond::larger : midb_cond::smaller;
 			i ++;
-			if (i + 1 > argc)
+			if (i + 1 > argv.size())
 				return {};
 			ptree_node->ct_size = strtol(keyword, nullptr, 0);
 		} else if (strcasecmp(keyword, "UID") == 0) {
 			ptree_node->condition = midb_cond::uid;
 			i ++;
-			if (i + 1 > argc)
+			if (i + 1 > argv.size())
 				return {};
 			imap_seq_list r;
 			if (parse_imap_seq(r, keyword) != 0)
@@ -1121,13 +1118,13 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 	return {};
 }
 
-static std::optional<CONDITION_TREE> me_ct_build(int argc, char **argv)
+static std::optional<CONDITION_TREE> me_ct_build(std::span<char *> argv)
 {
 	if (strcasecmp(argv[0], "CHARSET") != 0)
-		return me_ct_build_internal("UTF-8", argc, argv);
-	if (argc < 3)
+		return me_ct_build_internal("UTF-8", argv);
+	if (argv.size() < 3)
 		return {};
-	return me_ct_build_internal(argv[1], argc - 2, argv + 2);
+	return me_ct_build_internal(argv[1], argv.subspan(2));
 }
 
 static bool ct_hint_seq(const imap_seq_list &list,
@@ -2021,7 +2018,7 @@ static void *midbme_scanwork(void *param)
  * Response:
  * 	TRUE
  */
-static int me_mping(int argc, char **argv, int sockd)
+static int me_mping(std::span<char *> argv, int sockd)
 {
 	me_get_idb(argv[1]);
 	exmdb_client->ping_store(argv[1]);
@@ -2038,7 +2035,7 @@ static int me_mping(int argc, char **argv, int sockd)
  * 	TRUE <#folders>
  * 	<folder-id> <folder-name>  // repeat x #folders
  */
-static int me_menum(int argc, char **argv, int sockd) try
+static int me_menum(std::span<char *> argv, int sockd) try
 {
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -2074,7 +2071,7 @@ static int me_menum(int argc, char **argv, int sockd) try
  * Response:
  * 	TRUE
  */
-static int me_minst(int argc, char **argv, int sockd) try
+static int me_minst(std::span<char *> argv, int sockd) try
 {
 	uint32_t tmp_flags;
 	uint64_t change_num;
@@ -2203,13 +2200,13 @@ static int me_minst(int argc, char **argv, int sockd) try
  * Response:
  * 	TRUE
  */
-static int me_mdele(int argc, char **argv, int sockd)
+static int me_mdele(std::span<char *> argv, int sockd)
 {
 	BOOL b_partial;
 	EID_ARRAY message_ids;
 
 	message_ids.count = 0;
-	message_ids.pids = cu_alloc<eid_t>(argc - 3);
+	message_ids.pids = cu_alloc<eid_t>(argv.size() - 3);
 	if (message_ids.pids == nullptr)
 		return MIDB_E_NO_MEMORY;
 	auto pidb = me_get_idb(argv[1]);
@@ -2227,7 +2224,7 @@ static int me_mdele(int argc, char **argv, int sockd)
 		return MIDB_E_SQLPREP;
 
 	/* Translate midb-MIDs into Exch-MIDs. */
-	for (int i = 3; i < argc; ++i) {
+	for (size_t i = 3; i < argv.size(); ++i) {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_text(pstmt, 1, argv[i], -1, SQLITE_STATIC);
 		if (SQLITE_ROW != pstmt.step() ||
@@ -2263,7 +2260,7 @@ static int me_mdele(int argc, char **argv, int sockd)
 	pstmt = gx_sql_prep(pidb->psqlite, "DELETE FROM messages WHERE mid_string=?");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	for (int i = 3; i < argc; ++i) {
+	for (size_t i = 3; i < argv.size(); ++i) {
 		pstmt.reset();
 		pstmt.bind_text(1, argv[i]);
 		if (pstmt.step() != SQLITE_DONE)
@@ -2285,7 +2282,7 @@ static int me_mdele(int argc, char **argv, int sockd)
  * Response:
  * 	TRUE <new-mid>
  */
-static int me_mcopy(int argc, char **argv, int sockd) try
+static int me_mcopy(std::span<char *> argv, int sockd) try
 {
 	if (strlen(argv[4]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
@@ -2359,7 +2356,7 @@ static int me_mcopy(int argc, char **argv, int sockd) try
  * Response:
  * 	TRUE
  */
-static int me_mrenf(int argc, char **argv, int sockd)
+static int me_mrenf(std::span<char *> argv, int sockd)
 {
 	if (strlen(argv[3]) >= 1024 || strcmp(argv[2], argv[3]) == 0)
 		return MIDB_E_PARAMETER_ERROR;
@@ -2469,7 +2466,7 @@ static int me_mrenf(int argc, char **argv, int sockd)
  * Response:
  * 	TRUE
  */
-static int me_mmakf(int argc, char **argv, int sockd)
+static int me_mmakf(std::span<char *> argv, int sockd)
 {
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -2523,7 +2520,7 @@ static int me_mmakf(int argc, char **argv, int sockd)
  * Response:
  * 	TRUE
  */
-static int me_mremf(int argc, char **argv, int sockd)
+static int me_mremf(std::span<char *> argv, int sockd)
 {
 	BOOL b_result;
 	BOOL b_partial;
@@ -2558,7 +2555,7 @@ static int me_mremf(int argc, char **argv, int sockd)
  * Response:
  * 	TRUE <uid>
  */
-static int me_punid(int argc, char **argv, int sockd)
+static int me_punid(std::span<char *> argv, int sockd)
 {
 	int temp_len;
 	uint32_t uid;
@@ -2593,7 +2590,7 @@ static int me_punid(int argc, char **argv, int sockd)
  * Response:
  * 	TRUE <#messages> <#recents> <#unreads> <uidvalidity> <uidnext>
  */
-static int me_pfddt(int argc, char **argv, int sockd)
+static int me_pfddt(std::span<char *> argv, int sockd)
 {
 	char temp_buff[1024];
 	char sql_string[1024];
@@ -2652,7 +2649,7 @@ static int me_pfddt(int argc, char **argv, int sockd)
  * Response:
  * 	TRUE
  */
-static int me_psubf(int argc, char **argv, int sockd)
+static int me_psubf(std::span<char *> argv, int sockd)
 {
 	char sql_string[1024];
 
@@ -2677,7 +2674,7 @@ static int me_psubf(int argc, char **argv, int sockd)
  * Response:
  * 	TRUE
  */
-static int me_punsf(int argc, char **argv, int sockd)
+static int me_punsf(std::span<char *> argv, int sockd)
 {
 	char sql_string[1024];
 
@@ -2703,7 +2700,7 @@ static int me_punsf(int argc, char **argv, int sockd)
  * 	TRUE <#folders>
  * 	<folder-id> <folder-name>  // repeat x #folders
  */
-static int me_psubl(int argc, char **argv, int sockd) try
+static int me_psubl(std::span<char *> argv, int sockd) try
 {
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -2783,7 +2780,7 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
  * midb_agent:list_mail [POP3 logic] uses midstr and size.
  * midb_agent:fetch_simple_uid [IMAP logic] uses midstr, uid, flags.
  */
-static int me_psimu(int argc, char **argv, int sockd) try
+static int me_psimu(std::span<char *> argv, int sockd) try
 {
 	int total_mail = 0;
 	
@@ -2874,7 +2871,7 @@ static int me_psimu(int argc, char **argv, int sockd) try
  * 	TRUE <#messages>
  * 	- <mid> <uid>  // repeat x #messages
  */
-static int me_pdell(int argc, char **argv, int sockd) try
+static int me_pdell(std::span<char *> argv, int sockd) try
 {
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -2939,7 +2936,7 @@ static int dtlu_query(IDB_ITEM *pidb, const char *sql_string,
  * 	TRUE <#messages>
  * 	- <digest>  // repeat x #messages
  */
-static int me_pdtlu(int argc, char **argv, int sockd) try
+static int me_pdtlu(std::span<char *> argv, int sockd) try
 {
 	int total_mail = 0;
 	char sql_string[1024];
@@ -3047,7 +3044,7 @@ static std::string flags_rn(sqlite3 *db, uint64_t gcv)
  * Response:
  * 	TRUE
  */
-static int me_psflg(int argc, char **argv, int sockd) try
+static int me_psflg(std::span<char *> argv, int sockd) try
 {
 	uint64_t read_cn;
 	uint64_t message_id;
@@ -3155,7 +3152,7 @@ static int me_psflg(int argc, char **argv, int sockd) try
  * Response:
  * 	TRUE
  */
-static int me_prflg(int argc, char **argv, int sockd) try
+static int me_prflg(std::span<char *> argv, int sockd) try
 {
 	uint64_t read_cn;
 	uint64_t message_id;
@@ -3263,7 +3260,7 @@ static int me_prflg(int argc, char **argv, int sockd) try
  * Flags: e.g. Answered(A), Unsent(U), Flagged(F), Deleted(D), Read/Seen(S),
  * Recent(R), Forwarded(W)
  */
-static int me_pgflg(int argc, char **argv, int sockd) try
+static int me_pgflg(std::span<char *> argv, int sockd) try
 {
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3308,7 +3305,7 @@ static int me_pgflg(int argc, char **argv, int sockd) try
  * Response:
  * 	TRUE <uid>...
  */
-static int me_psrhl(int argc, char **argv, int sockd) try
+static int me_psrhl(std::span<char *> argv, int sockd) try
 {
 	char *parg;
 	int tmp_argc;
@@ -3332,7 +3329,7 @@ static int me_psrhl(int argc, char **argv, int sockd) try
 	}
 	if (tmp_argc == 0)
 		return MIDB_E_PARAMETER_ERROR;
-	auto ptree = me_ct_build(tmp_argc, tmp_argv);
+	auto ptree = me_ct_build({tmp_argv, size_t(tmp_argc)});
 	if (!ptree.has_value())
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = me_get_idb(argv[1]);
@@ -3386,7 +3383,7 @@ static int me_psrhl(int argc, char **argv, int sockd) try
  * 	TRUE <uid-list>
  * uid-list: space-separated IDs
  */
-static int me_psrhu(int argc, char **argv, int sockd) try
+static int me_psrhu(std::span<char *> argv, int sockd) try
 {
 	char *parg;
 	int tmp_argc;
@@ -3410,7 +3407,7 @@ static int me_psrhu(int argc, char **argv, int sockd) try
 	}
 	if (tmp_argc == 0)
 		return MIDB_E_PARAMETER_ERROR;
-	auto ptree = me_ct_build(tmp_argc, tmp_argv);
+	auto ptree = me_ct_build({tmp_argv, size_t(tmp_argc)});
 	if (!ptree.has_value())
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = me_get_idb(argv[1]);
@@ -3460,7 +3457,7 @@ static int me_psrhu(int argc, char **argv, int sockd) try
  * Response:
  * 	TRUE 1
  */
-static int me_xunld(int argc, char **argv, int sockd)
+static int me_xunld(std::span<char *> argv, int sockd)
 {
 	std::lock_guard hhold(g_hash_lock);
 	auto it = g_hash_table.find(argv[1]);
@@ -3485,7 +3482,7 @@ static int me_xunld(int argc, char **argv, int sockd)
  * 	TRUE 1: was loaded before (tracking changes live), now is synchronized
  * 	TRUE 2: was unloaded before (not tracking), now is synchronized
  */
-static int me_xrsym(int argc, char **argv, int sockd)
+static int me_xrsym(std::span<char *> argv, int sockd)
 {
 	auto idb = me_peek_idb(argv[1]);
 	if (idb == nullptr) {
@@ -3514,7 +3511,7 @@ static int me_xrsym(int argc, char **argv, int sockd)
  * 	FALSE 1
  * 	(also the regular FALSE 0 by way of midb core)
  */
-static int me_xrsyf(int argc, char **argv, int sockd)
+static int me_xrsyf(std::span<char *> argv, int sockd)
 {
 	auto idb = me_get_idb(argv[1]);
 	if (idb == nullptr)

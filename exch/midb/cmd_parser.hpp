@@ -11,11 +11,11 @@ struct midb_conn : public generic_connection {
 };
 using MIDB_CONNECTION = midb_conn;
 
-using MIDB_CMD_HANDLER = int (*)(int argc, char **argv, int sockd);
+using MIDB_CMD_HANDLER = int (*)(std::span<char *>, int sockd);
 
 struct midb_cmd {
 	MIDB_CMD_HANDLER func = nullptr;
-	int min_args = 1, max_args = 0;
+	size_t min_args = 1, max_args = 0;
 };
 
 extern void cmd_parser_init(unsigned int threads_num, int timeout, unsigned int debug);

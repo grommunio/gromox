@@ -49,7 +49,7 @@ unsigned int g_cmd_debug;
 static void *midcp_thrwork(void *);
 static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv);
 
-static int cmd_parser_ping(int argc, char **argv, int sockd);
+static int cmd_parser_ping(std::span<char *> argv, int sockd);
 
 void cmd_parser_init(unsigned int threads_num, int timeout, unsigned int debug)
 {
@@ -139,14 +139,13 @@ void cmd_parser_register_command(const char *command, const midb_cmd &info)
 		mlog(LV_ERR, "midb_cmd::min_args must be at least 2, even for %s", command);
 }
 
-static thread_local int dbg_current_argc;
-static thread_local char **dbg_current_argv;
+static thread_local std::span<char *const> dbg_current_argv;
 
-static void cmd_dump_argv(int argc, char **argv)
+static void cmd_dump_argv(std::span<char *const> argv)
 {
 	fprintf(stderr, "<");
-	for (int i = 0; i < argc; ++i)
-		fprintf(stderr, " %s", argv[i]);
+	for (const auto &s : argv)
+		fprintf(stderr, " %s", s);
 	fprintf(stderr, "\n");
 }
 
@@ -156,9 +155,9 @@ cmd_write_x(unsigned int level, int fd, const char *buf, size_t z)
 	auto ret = HXio_fullwrite(fd, buf, z);
 	if (g_cmd_debug < level)
 		return ret;
-	if (dbg_current_argv != nullptr) {
-		cmd_dump_argv(dbg_current_argc, dbg_current_argv);
-		dbg_current_argv = nullptr;
+	if (dbg_current_argv.size() > 0) {
+		cmd_dump_argv(dbg_current_argv);
+		dbg_current_argv = {};
 	}
 	if (z >= 1 && buf[z-1] == '\n')
 		--z;
@@ -178,7 +177,7 @@ int cmd_write(int fd, const char *sbuf, size_t z)
 	return cmd_write_x(2, fd, sbuf, z) < 0 ? MIDB_E_NETIO : 0;
 }
 
-static std::pair<bool, int> midcp_exec1(int argc, char **argv, MIDB_CONNECTION *conn)
+static std::pair<bool, int> midcp_exec1(std::span<char *> argv, MIDB_CONNECTION *conn)
 {
 	if (g_midbcmd_stop)
 		return {false, 0};
@@ -190,25 +189,24 @@ static std::pair<bool, int> midcp_exec1(int argc, char **argv, MIDB_CONNECTION *
 	 * [1] is always the store-dir for length checking.
 	 * [2], if present, is a folder-name for length checking (X-RSYF has a GCV, but strlen doesn't hurt)
 	 */
-	if (argc < info.min_args || argc > info.max_args ||
+	if (argv.size() < info.min_args || argv.size() > info.max_args ||
 	    strlen(argv[1]) >= 256)
 		return {false, MIDB_E_PARAMETER_ERROR};
-	if (argc >= 3 && strlen(argv[1]) >= 1024)
+	if (argv.size() >= 3 && strlen(argv[1]) >= 1024)
 		return {false, MIDB_E_PARAMETER_ERROR};
 	if (!cu_build_environment(argv[1]))
 		return {false, 0};
-	auto err = info.func(argc, argv, conn->sockd);
+	auto err = info.func(argv, conn->sockd);
 	cu_free_environment();
 	if (err == 0)
 		return {true, 0};
 	return {false, err};
 }
 
-static int midcp_exec(int argc, char **argv, MIDB_CONNECTION *conn)
+static int midcp_exec(std::span<char *> argv, MIDB_CONNECTION *conn)
 {
-	dbg_current_argc = argc;
 	dbg_current_argv = argv;
-	auto [replied, result] = midcp_exec1(argc, argv, conn);
+	auto [replied, result] = midcp_exec1(argv, conn);
 	if (replied)
 		return 0;
 	if (result == MIDB_E_NETIO)
@@ -305,7 +303,7 @@ static void *midcp_thrwork(void *param)
 				}
 
 				HX_strupper(argv[0]);
-				if (midcp_exec(argc, argv, &*pconnection) == MIDB_E_NETIO) {
+				if (midcp_exec({argv, size_t(argc)}, &*pconnection) == MIDB_E_NETIO) {
 					std::unique_lock co_hold(g_connection_lock);
 					gc.splice(gc.end(), g_connlist_active, pconnection);
 					goto NEXT_CONN;
@@ -327,7 +325,7 @@ static void *midcp_thrwork(void *param)
 	return nullptr;
 }
 
-static int cmd_parser_ping(int argc, char **argv, int sockd)
+static int cmd_parser_ping(std::span<char *> argv, int sockd)
 {
 	return HXio_fullwrite(sockd, "TRUE\r\n", 6) < 0 ? MIDB_E_NETIO : 0;
 }
