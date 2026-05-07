@@ -906,8 +906,9 @@ static int me_ct_compile_criteria(int argc,
 	i = offset;
 	if (argc < i + 1)
 		return -1;
-	argv_out[0] = argv[i];
-	if (0 == strcasecmp(argv[i], "OR")) {
+	auto keyword = argv[i];
+	argv_out[0] = keyword;
+	if (strcasecmp(keyword, "OR") == 0) {
 		i ++;
 		if (argc < i + 1)
 			return -1;
@@ -921,15 +922,15 @@ static int me_ct_compile_criteria(int argc,
 		if (tmp_argc1 == -1)
 			return -1;
 		return tmp_argc + tmp_argc1 + 1;
-	} else if (array_find_istr(kwlist1, argv[i])) {
+	} else if (array_find_istr(kwlist1, keyword)) {
 		return 1;
-	} else if (array_find_istr(kwlist2, argv[i])) {
+	} else if (array_find_istr(kwlist2, keyword)) {
 		i ++;
 		if (argc < i + 1)
 			return -1;
 		argv_out[1] = argv[i];
 		return 2;
-	} else if (0 == strcasecmp(argv[i], "HEADER")) {
+	} else if (strcasecmp(keyword, "HEADER") == 0) {
 		i ++;
 		if (argc < i + 1)
 			return -1;
@@ -939,7 +940,7 @@ static int me_ct_compile_criteria(int argc,
 			return -1;
 		argv_out[2] = argv[i];
 		return 3;
-	} else if (0 == strcasecmp(argv[i], "NOT")) {
+	} else if (strcasecmp(keyword, "NOT") == 0) {
 		i ++;
 		if (argc < i + 1)
 			return -1;
@@ -1016,8 +1017,9 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 	auto plist = std::make_optional<CONDITION_TREE>();
 
 	for (i=0; i<argc; i++) {
+		char *keyword = argv[i];
 		ct_node ctn, *ptree_node = &ctn;
-		if (0 == strcasecmp(argv[i], "NOT")) {
+		if (strcasecmp(keyword, "NOT") == 0) {
 			ptree_node->conjunction = midb_conj::c_not;
 			i ++;
 			if (i >= argc)
@@ -1025,37 +1027,36 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 		} else {
 			ptree_node->conjunction = midb_conj::c_and;
 		}
-		if (array_find_istr(kwlist1, argv[i])) {
-			ptree_node->condition = cond_str_to_cond(argv[i]);
+		if (array_find_istr(kwlist1, keyword)) {
+			ptree_node->condition = cond_str_to_cond(keyword);
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			ptree_node->ct_keyword = me_ct_to_utf8(charset, argv[i]);
-		} else if (array_find_istr(kwlist2, argv[i])) {
+			ptree_node->ct_keyword = me_ct_to_utf8(charset, keyword);
+		} else if (array_find_istr(kwlist2, keyword)) {
 			if (i + 1 > argc)
 				return {};
-			ptree_node->condition = cond_str_to_cond(argv[i]);
+			ptree_node->condition = cond_str_to_cond(keyword);
 			i ++;
 			if (i + 1 > argc)
 				return {};
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
-			if (strptime(argv[i], "%d-%b-%Y", &tmp_tm) == nullptr)
+			if (strptime(keyword, "%d-%b-%Y", &tmp_tm) == nullptr)
 				return {};
 			tmp_tm.tm_wday = -1;
 			ptree_node->ct_time = timegm(&tmp_tm);
 			if (ptree_node->ct_time == -1 && tmp_tm.tm_wday == -1)
 				return {};
-		} else if ('(' == argv[i][0]) {
-			len = strlen(argv[i]);
-			argv[i][len - 1] = '\0';
-			tmp_argc = parse_imap_args(argv[i] + 1,
-				len - 2, tmp_argv, sizeof(tmp_argv));
+		} else if (keyword[0] == '(') {
+			len = strlen(keyword);
+			keyword[len-1] = '\0';
+			tmp_argc = parse_imap_args(&keyword[1], len - 2, tmp_argv, sizeof(tmp_argv));
 			if (tmp_argc == -1)
 				return {};
 			ptree_node->pbranch = me_ct_build_internal(charset, tmp_argc, tmp_argv);
 			if (!ptree_node->pbranch.has_value())
 				return {};
-		} else if (0 == strcasecmp(argv[i], "OR")) {
+		} else if (strcasecmp(keyword, "OR") == 0) {
 			i ++;
 			if (i + 1 > argc)
 				return {};
@@ -1076,38 +1077,38 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			plist1->back().conjunction = midb_conj::c_or;
 			ptree_node->pbranch = std::move(plist1);
 			i += tmp_argc1 - 1;
-		} else if (array_find_istr(kwlist3, argv[i])) {
-			ptree_node->condition = cond_str_to_cond(argv[i]);
-		} else if (0 == strcasecmp(argv[i], "HEADER")) {
+		} else if (array_find_istr(kwlist3, keyword)) {
+			ptree_node->condition = cond_str_to_cond(keyword);
+		} else if (strcasecmp(keyword, "HEADER") == 0) {
 			ptree_node->condition = midb_cond::header;
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			ptree_node->ct_headers[0] = argv[i];
+			ptree_node->ct_headers[0] = keyword;
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			ptree_node->ct_headers[1] = argv[i];
-		} else if (0 == strcasecmp(argv[i], "LARGER") ||
-			0 == strcasecmp(argv[i], "SMALLER")) {
-			ptree_node->condition = strcasecmp(argv[i], "LARGER") == 0 ?
+			ptree_node->ct_headers[1] = keyword;
+		} else if (strcasecmp(keyword, "LARGER") == 0 ||
+		    strcasecmp(keyword, "SMALLER") == 0) {
+			ptree_node->condition = strcasecmp(keyword, "LARGER") == 0 ?
 			                        midb_cond::larger : midb_cond::smaller;
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			ptree_node->ct_size = strtol(argv[i], nullptr, 0);
-		} else if (0 == strcasecmp(argv[i], "UID")) {
+			ptree_node->ct_size = strtol(keyword, nullptr, 0);
+		} else if (strcasecmp(keyword, "UID") == 0) {
 			ptree_node->condition = midb_cond::uid;
 			i ++;
 			if (i + 1 > argc)
 				return {};
 			imap_seq_list r;
-			if (parse_imap_seq(r, argv[i]) != 0)
+			if (parse_imap_seq(r, keyword) != 0)
 				return {};
 			ptree_node->ct_seq = std::move(r);
 		} else {
 			imap_seq_list r;
-			if (parse_imap_seq(r, argv[i]) != 0)
+			if (parse_imap_seq(r, keyword) != 0)
 				return {};
 			ptree_node->condition = midb_cond::id;
 			ptree_node->ct_seq = std::move(r);

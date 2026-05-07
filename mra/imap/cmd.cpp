@@ -201,21 +201,22 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 	bool b_macro = false;
 	plist.emplace_back("UID");
 	for (int i = 0; i < tmp_argc; ++i) {
+		auto arg = argv[i];
 		if (std::any_of(plist.cbegin(), plist.cend(),
-		    [&](const std::string &e) { return strcasecmp(e.c_str(), argv[i]) == 0; }))
+		    [&](const std::string &e) { return strcasecmp(e.c_str(), arg) == 0; }))
 			/* weed out duplicates */
 			continue;
-		if (contained_in(argv[i], {kw1, std::size(kw1)})) {
+		if (contained_in(arg, {kw1, std::size(kw1)})) {
 			b_macro = TRUE;
-			plist.emplace_back(argv[i]);
-		} else if (contained_in(argv[i], {kw2, std::size(kw2)})) {
-			plist.emplace_back(argv[i]);
-		} else if (0 == strncasecmp(argv[i], "BODY[", 5) ||
-			0 == strncasecmp(argv[i], "BODY.PEEK[", 10)) {
-			const char *pend = strchr(argv[i], ']');
+			plist.emplace_back(arg);
+		} else if (contained_in(arg, {kw2, std::size(kw2)})) {
+			plist.emplace_back(arg);
+		} else if (strncasecmp(arg, "BODY[", 5) == 0 ||
+		    strncasecmp(arg, "BODY.PEEK[", 10) == 0) {
+			const char *pend = strchr(arg, ']');
 			if (pend == nullptr)
 				return FALSE;
-			const char *ptr = strchr(argv[i], '[') + 1;
+			const char *ptr = strchr(arg, '[') + 1;
 			const char *last_ptr = ptr;
 			if (strncasecmp(ptr, "MIME", 4) == 0)
 				return FALSE;
@@ -303,7 +304,7 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 				if ((count == 1 && ptr1 == last_ptr) || ptr1 == pend - 1)
 					return FALSE;
 			}
-			plist.emplace_back(argv[i]);
+			plist.emplace_back(arg);
 		} else {
 			return FALSE;
 		}
@@ -1834,19 +1835,20 @@ int icp_status(int argc, char **argv, imap_context &ctx) try
 	auto buf = fmt::format("* STATUS {} (", quote_encode(argv[2]));
 	b_first = TRUE;
 	for (i=0; i<temp_argc; i++) {
+		auto keyword = temp_argv[i];
 		if (!b_first)
 			buf += ' ';
 		else
 			b_first = FALSE;
-		if (strcasecmp(temp_argv[i], "MESSAGES") == 0)
+		if (strcasecmp(keyword, "MESSAGES") == 0)
 			buf += fmt::format("MESSAGES {}", exists);
-		else if (strcasecmp(temp_argv[i], "RECENT") == 0)
+		else if (strcasecmp(keyword, "RECENT") == 0)
 			buf += fmt::format("RECENT {}", recent);
-		else if (strcasecmp(temp_argv[i], "UIDNEXT") == 0)
+		else if (strcasecmp(keyword, "UIDNEXT") == 0)
 			buf += fmt::format("UIDNEXT {}", uidnext);
-		else if (strcasecmp(temp_argv[i], "UIDVALIDITY") == 0)
+		else if (strcasecmp(keyword, "UIDVALIDITY") == 0)
 			buf += fmt::format("UIDVALIDITY {}", uidvalid);
-		else if (strcasecmp(temp_argv[i], "UNSEEN") == 0)
+		else if (strcasecmp(keyword, "UNSEEN") == 0)
 			buf += fmt::format("UNSEEN {}", unseen);
 		else
 			return 1800;
@@ -2394,19 +2396,20 @@ int icp_store(int argc, char **argv, imap_context &ctx)
 		return 1806;
 	flag_bits = 0;
 	for (i=0; i<temp_argc; i++) {
-		if (strcasecmp(temp_argv[i], "\\Answered") == 0)
+		auto keyword = temp_argv[i];
+		if (strcasecmp(keyword, "\\Answered") == 0)
 			flag_bits |= FLAG_ANSWERED;
-		else if (strcasecmp(temp_argv[i], "\\Flagged") == 0)
+		else if (strcasecmp(keyword, "\\Flagged") == 0)
 			flag_bits |= FLAG_FLAGGED;
-		else if (strcasecmp(temp_argv[i], "\\Deleted") == 0)
+		else if (strcasecmp(keyword, "\\Deleted") == 0)
 			flag_bits |= FLAG_DELETED;
-		else if (strcasecmp(temp_argv[i], "\\Seen") == 0)
+		else if (strcasecmp(keyword, "\\Seen") == 0)
 			flag_bits |= FLAG_SEEN;
-		else if (strcasecmp(temp_argv[i], "\\Draft") == 0)
+		else if (strcasecmp(keyword, "\\Draft") == 0)
 			flag_bits |= FLAG_DRAFT;
-		else if (strcasecmp(temp_argv[i], "\\Recent") == 0)
+		else if (strcasecmp(keyword, "\\Recent") == 0)
 			flag_bits |= FLAG_RECENT;			
-		else if (strcasecmp(temp_argv[i], "$Forwarded") == 0)
+		else if (strcasecmp(keyword, "$Forwarded") == 0)
 			flag_bits |= FLAG_FORWARDED;
 		else
 			return 1807;
@@ -2659,19 +2662,20 @@ int icp_uid_store(int argc, char **argv, imap_context &ctx)
 		return 1806;
 	flag_bits = 0;
 	for (i=0; i<temp_argc; i++) {
-		if (strcasecmp(temp_argv[i], "\\Answered") == 0)
+		auto keyword = temp_argv[i];
+		if (strcasecmp(keyword, "\\Answered") == 0)
 			flag_bits |= FLAG_ANSWERED;
-		else if (strcasecmp(temp_argv[i], "\\Flagged") == 0)
+		else if (strcasecmp(keyword, "\\Flagged") == 0)
 			flag_bits |= FLAG_FLAGGED;
-		else if (strcasecmp(temp_argv[i], "\\Deleted") == 0)
+		else if (strcasecmp(keyword, "\\Deleted") == 0)
 			flag_bits |= FLAG_DELETED;
-		else if (strcasecmp(temp_argv[i], "\\Seen") == 0)
+		else if (strcasecmp(keyword, "\\Seen") == 0)
 			flag_bits |= FLAG_SEEN;
-		else if (strcasecmp(temp_argv[i], "\\Draft") == 0)
+		else if (strcasecmp(keyword, "\\Draft") == 0)
 			flag_bits |= FLAG_DRAFT;
-		else if (strcasecmp(temp_argv[i], "\\Recent") == 0)
+		else if (strcasecmp(keyword, "\\Recent") == 0)
 			flag_bits |= FLAG_RECENT;			
-		else if (strcasecmp(temp_argv[i], "$Forwarded") == 0)
+		else if (strcasecmp(keyword, "$Forwarded") == 0)
 			flag_bits |= FLAG_FORWARDED;
 		else
 			return 1807;
