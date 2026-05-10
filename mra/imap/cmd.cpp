@@ -443,7 +443,7 @@ static int icp_match_field(mjson_io &io, const char *cmd_tag,
 
 static int pstruct_null(MJSON *pjson,
     const std::string &cmd_tag, std::string &buf, const char *pbody,
-    const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+    const char *temp_id, size_t offset, ssize_t length,
     const char *storage_path)
 {
 	auto pmime = pjson->get_mime(temp_id);
@@ -490,8 +490,8 @@ static int pstruct_mime(MJSON *pjson,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
-	if ((strcasecmp(&data_item[1], "MIME") == 0 && *temp_id == '\0') ||
-	    (strcasecmp(&data_item[1], "HEADER") == 0 && *temp_id != '\0')) {
+	if ((strcasecmp(data_item, "MIME") == 0 && *temp_id == '\0') ||
+	    (strcasecmp(data_item, "HEADER") == 0 && *temp_id != '\0')) {
 		buf += "BODY"s + pbody + " NIL";
 		return 0;
 	}
@@ -523,7 +523,7 @@ static int pstruct_mime(MJSON *pjson,
 
 static int pstruct_text(MJSON *pjson,
     const std::string &cmd_tag, std::string &buf, const char *pbody,
-    const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+    const char *temp_id, size_t offset, ssize_t length,
     const char *storage_path)
 {
 	if (*temp_id != '\0') {
@@ -561,8 +561,8 @@ static int pstruct_else(imap_context &ctx, MJSON *pjson,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
-	auto b_not = strncasecmp(&data_item[1], "HEADER.FIELDS ", 14) != 0;
-	data_item += b_not ? 19 : 15;
+	auto b_not = strncasecmp(data_item, "HEADER.FIELDS ", 14) != 0;
+	data_item += b_not ? 18 : 14;
 	auto pmime = pjson->get_mime(temp_id);
 	if (pmime == nullptr) {
 		buf += "BODY"s + pbody + " NIL";
@@ -598,14 +598,14 @@ static int icp_print_structure(imap_context &ctx, MJSON *pjson,
 {
 	if (data_item == nullptr)
 		return pstruct_null(pjson, cmd_tag, buf,
-		       pbody, temp_id, data_item, offset, length, storage_path);
-	if (strcasecmp(&data_item[1], "MIME") == 0 ||
-	    strcasecmp(&data_item[1], "HEADER") == 0)
+		       pbody, temp_id, offset, length, storage_path);
+	if (strcasecmp(data_item, "MIME") == 0 ||
+	    strcasecmp(data_item, "HEADER") == 0)
 		return pstruct_mime(pjson, cmd_tag, buf,
 		       pbody, temp_id, data_item, offset, length, storage_path);
-	if (strcasecmp(&data_item[1], "TEXT") == 0)
+	if (strcasecmp(data_item, "TEXT") == 0)
 		return pstruct_text(pjson, cmd_tag, buf,
-		       pbody, temp_id, data_item, offset, length, storage_path);
+		       pbody, temp_id, offset, length, storage_path);
 	if (strcmp(temp_id, "") != 0) {
 		buf += "BODY"s + pbody + " NIL";
 		return 0;
@@ -800,9 +800,9 @@ static int icp_process_fetch_item(imap_context &ctx,
 			for (decltype(len) i = 0; i < len; ++i) {
 				if (temp_buff[i] == '.' || HX_isdigit(temp_buff[i]))
 					continue;
-				ptr = temp_buff + i - 1;
+				ptr = &temp_buff[i];
 				if (i > 0)
-					*ptr = '\0';
+					ptr[-1] = '\0';
 				break;
 			}
 			const char *temp_id;
