@@ -51,7 +51,6 @@ struct SVC_PLUG_ENTITY : public gromox::generic_module {
 	~SVC_PLUG_ENTITY();
 	void operator=(SVC_PLUG_ENTITY &&) noexcept = delete;
 
-	std::vector<std::shared_ptr<service_entry>> list_service;
 	std::atomic<int> ref_count = 0;
 	std::vector<std::string> ref_holders;
 };
@@ -226,8 +225,7 @@ int svc_mgr::run_library_internal(std::list<SVC_PLUG_ENTITY>::iterator citer)
 }
 
 SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) noexcept :
-	generic_module(std::move(o)),
-	list_service(std::move(o.list_service)), ref_count(o.ref_count.load()),
+	generic_module(std::move(o)), ref_count(o.ref_count.load()),
 	ref_holders(std::move(o.ref_holders))
 {
 	o.ref_count = 0;
@@ -288,7 +286,6 @@ bool svc_mgr::symreg(const char *func_name, void *addr,
 	e->type_info = &ti;
 	e->plib = plug;
 	g_list_service.push_back(e);
-	plug->list_service.push_back(std::move(e));
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
