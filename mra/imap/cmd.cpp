@@ -617,6 +617,28 @@ static int icp_print_structure(imap_context &ctx, MJSON *pjson,
 	return -1;
 }
 
+/***
+ * @s: the part that is within square brackets in e.g.
+ *     "BODY[1234.HEADER]" "BODY[HEADER.FIELDS]" etc.
+ *
+ * Returns that data item split by MIME part ID (if any) and inner item.
+ */
+static std::pair<std::string, const char *> split_DI(std::string_view sv)
+{
+	std::pair<std::string, const char *> ret{};
+	ret.first = sv;
+	auto &s = ret.first;
+	for (size_t i = 0; i < s.size(); ++i) {
+		if (s[i] == '.' || HX_isdigit(s[i]))
+			continue;
+		ret.second = &s[i];
+		if (i > 0 && s[i-1] == '.')
+			s[i-1] = '\0';
+		break;
+	}
+	return ret;
+}
+
 static int icp_process_fetch_item(imap_context &ctx,
     BOOL b_data, MITEM *pitem, std::string_view digest_str,
     int item_id, mdi_list &pitem_list) try
@@ -791,33 +813,8 @@ static int icp_process_fetch_item(imap_context &ctx,
 				}
 			}
 			auto len = pend - (pbody + 1);
-			char temp_buff[1024];
-			if (static_cast<size_t>(len) >= sizeof(temp_buff))
-				return 1800;
-			memcpy(temp_buff, pbody + 1, len);
-			temp_buff[len] = '\0';
-			char *ptr = nullptr;
-			for (decltype(len) i = 0; i < len; ++i) {
-				if (temp_buff[i] == '.' || HX_isdigit(temp_buff[i]))
-					continue;
-				ptr = &temp_buff[i];
-				if (i > 0)
-					ptr[-1] = '\0';
-				break;
-			}
-			const char *temp_id;
-			if (ptr == nullptr)
-				temp_id = temp_buff;
-			else if (ptr < temp_buff)
-				/*
-				 * This is still crap, @ptr is invalid, the
-				 * comparison is undefined (pointers must point
-				 * into the object)
-				 */
-				temp_id = "";
-			else
-				temp_id = temp_buff;
-			if (*temp_id != '\0' && mjson.has_rfc822_part()) {
+			auto [temp_id, ptr] = split_DI(std::string_view(&pbody[1], len));
+			if (temp_id.size() > 0 && mjson.has_rfc822_part()) {
 				deferred_eml_load();
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() > 0 &&
@@ -826,22 +823,23 @@ static int icp_process_fetch_item(imap_context &ctx,
 					char mjson_id[64], final_id[64];
 					if (mjson.rfc822_get(ctx.io_actor,
 					    &temp_mjson, rfc_path.c_str(),
-					    temp_id, mjson_id, final_id))
+					    temp_id.c_str(), mjson_id, final_id))
 						len = icp_print_structure(ctx,
 						      &temp_mjson, kwss.c_str(), buf,
-							pbody, final_id, ptr, offset, length,
+						      pbody, final_id, ptr, offset, length,
 						      mjson.get_mail_filename());
 					else
 						len = icp_print_structure(ctx,
 						      &mjson, kwss.c_str(), buf,
-						      pbody, temp_id, ptr, offset, length, nullptr);
+						      pbody, temp_id.c_str(), ptr, offset, length, nullptr);
 				} else {
 					len = icp_print_structure(ctx, &mjson, kwss, buf,
-					      pbody, temp_id, ptr, offset, length, nullptr);
+					      pbody, temp_id.c_str(), ptr, offset, length, nullptr);
 				}
 			} else {
 				len = icp_print_structure(ctx, &mjson, kwss, buf,
-				      pbody, temp_id, ptr, offset, length, nullptr);
+				      pbody, temp_id.c_str(), ptr,
+				      offset, length, nullptr);
 			}
 			if (len < 0)
 				return 1918;
