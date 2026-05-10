@@ -80,7 +80,7 @@ struct svc_mgr final {
 	int run_library_internal(std::list<SVC_PLUG_ENTITY>::iterator);
 
 	std::list<SVC_PLUG_ENTITY> g_list_plug;
-	std::vector<std::shared_ptr<service_entry>> g_list_service;
+	std::vector<service_entry> g_list_service;
 	SVC_PLUG_ENTITY g_system_image;
 };
 
@@ -278,14 +278,9 @@ bool svc_mgr::symreg(const char *func_name, void *addr,
 
 	/* check if the service is already registered in service list */
 	if (std::any_of(g_list_service.begin(), g_list_service.end(),
-	    [&](const std::shared_ptr<service_entry> &e) { return e->service_name == func_name; }))
+	    [&](const service_entry &e) { return e.service_name == func_name; }))
 		return FALSE;
-	auto e = std::make_shared<service_entry>();
-	e->service_name = func_name;
-	e->service_addr = addr;
-	e->type_info = &ti;
-	e->plib = plug;
-	g_list_service.push_back(e);
+	g_list_service.emplace_back(func_name, addr, plug, &ti);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
@@ -308,10 +303,10 @@ void *svc_mgr::symget(const char *service_name, const char *module,
 {
 	/* first find out the service node in global service list */
 	auto node = std::find_if(g_list_service.begin(), g_list_service.end(),
-	                [&](const std::shared_ptr<service_entry> &e) { return e->service_name == service_name; });
+	                [&](const service_entry &e) { return e.service_name == service_name; });
 	if (node == g_list_service.end())
 		return NULL;
-	auto &pservice = *node;
+	auto pservice = &*node;
 	if (strcmp(ti.name(), pservice->type_info->name()) != 0)
 		mlog(LV_ERR, "service: type mismatch on dlname \"%s\" (%s VS %s)",
 			service_name, pservice->type_info->name(), ti.name());
@@ -348,10 +343,10 @@ void *svc_mgr::symget(const char *service_name, const char *module,
 void svc_mgr::symput(const char *service_name, const char *module)
 {
 	auto node = std::find_if(g_list_service.begin(), g_list_service.end(),
-	            [&](const std::shared_ptr<service_entry> &e) { return e->service_name == service_name; });
+	            [&](const service_entry &e) { return e.service_name == service_name; });
 	if (node == g_list_service.end())
 		return;
-	auto &pservice = *node;
+	auto pservice = &*node;
 	/* find out the module node in service's reference list */
 	auto pmodule = std::find_if(pservice->list_reference.begin(),
 	               pservice->list_reference.end(),
