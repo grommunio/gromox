@@ -47,8 +47,7 @@ static std::unordered_map<std::string, midb_cmd> g_cmd_entry;
 unsigned int g_cmd_debug;
 
 static void *midcp_thrwork(void *);
-static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv);
-
+static size_t cmd_parser_generate_args(char *cmd_line, size_t len, std::vector<char *> &out_argv);
 static int cmd_parser_ping(std::span<char *> argv, int sockd);
 
 void cmd_parser_init(unsigned int threads_num, int timeout, unsigned int debug)
@@ -225,7 +224,6 @@ static size_t connlist_idle_size()
 static void *midcp_thrwork(void *param)
 {
 	int i, argc, offset, tv_msec, read_len;
-	char *argv[MAX_ARGS];
 	struct pollfd pfd_read;
 	char buffer[CONN_BUFFLEN];
 
@@ -288,6 +286,7 @@ static void *midcp_thrwork(void *param)
 					goto NEXT_CONN;
 				}
 
+				std::vector<char *> argv;
 				argc = cmd_parser_generate_args(buffer, i, argv);
 				if (argc < 2) {
 					if (HXio_fullwrite(pconnection->sockd, "FALSE 1\r\n", 9) < 0) {
@@ -303,7 +302,7 @@ static void *midcp_thrwork(void *param)
 				}
 
 				HX_strupper(argv[0]);
-				if (midcp_exec({argv, size_t(argc)}, &*pconnection) == MIDB_E_NETIO) {
+				if (midcp_exec(argv, &*pconnection) == MIDB_E_NETIO) {
 					std::unique_lock co_hold(g_connection_lock);
 					gc.splice(gc.end(), g_connlist_active, pconnection);
 					goto NEXT_CONN;
@@ -330,9 +329,9 @@ static int cmd_parser_ping(std::span<char *> argv, int sockd)
 	return HXio_fullwrite(sockd, "TRUE\r\n", 6) < 0 ? MIDB_E_NETIO : 0;
 }
 
-static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv)
+static size_t cmd_parser_generate_args(char *cmd_line, size_t cmd_len,
+    std::vector<char *> &argv)
 {
-	int argc;                    /* number of args */
 	char *ptr;                   /* ptr that traverses command line  */
 	char *last_space;
 	
@@ -340,15 +339,14 @@ static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv)
 	cmd_line[cmd_len + 1] = '\0';
 	ptr = cmd_line;
 	/* Build the argv list */
-	argc = 0;
+	argv.clear();
 	last_space = cmd_line;
 	while (*ptr != '\0') {
 		if ('{' == *ptr) {
 			if (cmd_line[cmd_len-1] != '}')
 				return 0;
-			argv[argc] = ptr;
 			cmd_line[cmd_len] = '\0';
-			argc ++;
+			argv.emplace_back(ptr);
 			break;
 		}
 
@@ -357,16 +355,12 @@ static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv)
 			if (ptr == last_space) {
 				last_space ++;
 			} else {
-				argv[argc] = last_space;
 				*ptr = '\0';
+				argv.emplace_back(last_space);
 				last_space = ptr + 1;
-				argc ++;
 			}
 		}
 		ptr ++;
 	}
-	
-	argv[argc] = NULL;
-	return argc;
-}	
-
+	return argv.size();
+}
