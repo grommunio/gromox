@@ -299,6 +299,19 @@ static void *tpol_scanwork(void *pparam)
 		auto ret = pthread_create4(&sp->thr_id, nullptr, tpol_thrwork, up.get());
 		if (ret != 0) {
 			mlog(LV_WARN, "W-1445: failed to increase pool threads: %s", strerror(ret));
+			/*
+			 * Roll back the push_back. Only tpol_thrwork removes
+			 * its own entry from the list on exit, and it never
+			 * ran. Without this, every pthread_create failure
+			 * (typically from a transient TasksMax / RLIMIT_NPROC
+			 * hit) permanently inflates the thread count, and
+			 * once it reaches g_threads_pool_max_num the
+			 * "contention -> spawn" path stops firing entirely.
+			 * That is the slow drift to an unresponsive
+			 * gromox-http / gromox-zcore.
+			 */
+			std::lock_guard tpd_hold(g_threads_pool_data_lock);
+			gromox::erase_first(g_threads_data_list, sp);
 			sleep(1);
 			continue;
 		}
