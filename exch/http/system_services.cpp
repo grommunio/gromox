@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <gromox/authmgr.hpp>
@@ -18,7 +18,7 @@ decltype(system_services_auth_login) system_services_auth_login;
 int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), typeid(decltype(*(f))))); \
 	if ((f) == nullptr) { \
 		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \
@@ -31,12 +31,4 @@ int system_services_run()
 	E(system_services_auth_login, "auth_login_gen");
 	return 0;
 #undef E
-}
-
-void system_services_stop()
-{
-	service_release("ip_filter_judge", "system");
-	service_release("user_filter_judge", "system");
-	service_release("user_filter_ban", "system");
-	service_release("auth_login_gen", "system");
 }

@@ -4,6 +4,7 @@
 #include <gromox/defs.h>
 #include <gromox/mail.hpp>
 #include <gromox/plugin.hpp>
+#include <gromox/svc_loader.hpp>
 #define SYS_THREAD_CREATE           2
 #define SYS_THREAD_DESTROY          3
 
@@ -27,7 +28,6 @@ struct GX_EXPORT MESSAGE_CONTEXT {
 
 /* Plugin is expected to use `using namespace ns;` too */
 #define DECLARE_HOOK_API(ns, x) namespace ns { \
-	x decltype(dlfuncs::symget) imp__symget; \
 	x decltype(dlfuncs::hook.register_hook) register_hook; \
 	x decltype(dlfuncs::hook.register_local) register_local; \
 	x decltype(dlfuncs::get_host_ID) get_host_ID; \
@@ -42,11 +42,10 @@ struct GX_EXPORT MESSAGE_CONTEXT {
 	x decltype(dlfuncs::hook.enqueue_ctx) enqueue_context; \
 	x decltype(dlfuncs::hook.throw_ctx) throw_context; \
 }
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(imp__symget((n), nullptr, typeid(decltype(*(f))))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 
 #define LINK_HOOK_API(param) \
-	imp__symget = param.symget; \
 	register_hook = param.hook.register_hook; \
 	register_local = param.hook.register_local; \
 	get_host_ID = param.get_host_ID; \

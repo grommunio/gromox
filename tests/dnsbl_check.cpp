@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	bool (*judge)(const char *host, std::string &reason);
-	judge = reinterpret_cast<decltype(judge)>(service_query("ip_filter_judge", "system", typeid(*judge)));
+	judge = reinterpret_cast<decltype(judge)>(service_query("ip_filter_judge", typeid(*judge)));
 	for (int i = 1; i < argc; ++i) {
 		if (strchr(argv[i], ':') == nullptr) {
 			fprintf(stderr, "\"%s\" not recognized. Must use IPv6 address format (RFC 4291 §2.2)\n", argv[i]);
@@ -37,6 +37,5 @@ int main(int argc, char **argv)
 		else
 			printf("REJECTED: %s\n", reason.c_str());
 	}
-	service_release("ip_filter_judge", "system");
 	return EXIT_SUCCESS;
 }

@@ -149,7 +149,7 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 static int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), typeid(*(f)))); \
 	if ((f) == nullptr) { \
 		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \
@@ -159,15 +159,6 @@ static int system_services_run()
 	E(system_services_auth_login_token, "auth_login_token");
 	E(system_services_add_timer, "add_timer");
 	return 0;
-#undef E
-}
-
-static void system_services_stop()
-{
-#define E(b) service_release(b, "system")
-	E("auth_login_gen");	
-	E("auth_login_token");
-	E("add_timer");
 #undef E
 }
 
@@ -346,7 +337,6 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start system services");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = HX::make_scope_exit(system_services_stop);
 
 	zserver_init(table_size, cache_interval, ping_interval);
 	exmdb_client.emplace(proxy_num);

@@ -137,7 +137,7 @@ static int exmdb_client_run_front(const char *dir)
 static int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), typeid(*(f)))); \
 	if ((f) == nullptr) { \
 		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \
@@ -146,11 +146,6 @@ static int system_services_run()
 	E(system_services_broadcast_event, "broadcast_event");
 	return 0;
 #undef E
-}
-
-static void system_services_stop()
-{
-	service_release("broadcast_event", "system");
 }
 
 static int midls_thrwork(generic_connection &&gco)
@@ -321,7 +316,6 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = HX::make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
 		mlog(LV_ERR, "system: failed to start system services");
 		return EXIT_FAILURE;

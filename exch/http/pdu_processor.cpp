@@ -99,10 +99,8 @@ class interface_eq {
 
 }
 
-static void *pdu_processor_queryservice(const char *, const char *, const std::type_info &);
 static DCERPC_INFO pdu_processor_get_rpc_info();
 static uint64_t pdu_processor_get_binding_handle();
-static void *pdu_processor_queryservice(const char *, const char *, const std::type_info &);
 
 unsigned int g_msrpc_debug;
 static bool g_bigendian;
@@ -2852,8 +2850,6 @@ static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
 }
 
 static constexpr struct dlfuncs pdu_funcs = {
-	/* .symget = */ pdu_processor_queryservice,
-	/* .symreg = */ service_register_service,
 	/* .get_config_path = */ []() {
 		auto r = g_config_file->get_value("config_file_path");
 		return r != nullptr ? r : PKGSYSCONFDIR;
@@ -2892,14 +2888,10 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	auto pplugin = this;
 	
 	if (pplugin->init_state == generic_module::state::init_done) {
-		if (pplugin->file_name != nullptr)
-			mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name);
 		func = (PLUGIN_MAIN)pplugin->lib_main;
 		if (func != nullptr)
 			func(PLUGIN_FREE, pdu_funcs);
 	}
-	for (const auto &nd : list_reference)
-		service_release(nd.service_name.c_str(), pplugin->file_name);
 }
 
 /* this function can also be invoked from hpm_plugins,
@@ -2950,30 +2942,6 @@ static uint64_t pdu_processor_get_binding_handle()
 		return handle;
 	}
 	return 0;
-}
-
-static void *pdu_processor_queryservice(const char *service, const char *rq,
-    const std::type_info &ti)
-{
-	void *ret_addr;
-
-	if (g_cur_plugin == nullptr)
-		return NULL;
-	/* check if already exists in the reference list */
-	for (const auto &nd : g_cur_plugin->list_reference)
-		if (nd.service_name == service)
-			return nd.service_addr;
-	auto fn = g_cur_plugin->file_name;
-	ret_addr = service_query(service, fn, ti);
-	if (ret_addr == nullptr)
-		return NULL;
-	try {
-		g_cur_plugin->list_reference.emplace_back(service_node{ret_addr, service});
-	} catch (const std::bad_alloc &) {
-		service_release(service, fn);
-		return NULL;
-	}
-	return ret_addr;
 }
 
 /*

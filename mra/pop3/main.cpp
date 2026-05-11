@@ -146,7 +146,7 @@ static bool pop3_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 static int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), typeid(*(f)))); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
 		return -1; \
@@ -160,15 +160,6 @@ static int system_services_run()
 	E(system_services_broadcast_event, "broadcast_event");
 	return 0;
 #undef E
-}
-
-static void system_services_stop()
-{
-	service_release("ip_filter_judge", "system");
-	service_release("user_filter_judge", "system");
-	service_release("user_filter_ban", "system");
-	service_release("auth_login_gen", "system");
-	service_release("broadcast_event", "system");
 }
 
 static int p3ls_thrwork(generic_connection &&conn)
@@ -445,7 +436,6 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_8 = HX::make_scope_exit(system_services_stop);
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_tls,
 		pop3_force_tls, certificate_path, cb_passwd,

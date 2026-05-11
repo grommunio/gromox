@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 	int (*exmdb_pickup)(int) = nullptr;
 	if (is_worker) {
 		exmdb_pickup = reinterpret_cast<decltype(exmdb_pickup)>(service_query("exmdb_pickup",
-		               "system", typeid(*exmdb_pickup)));
+		               typeid(*exmdb_pickup)));
 		if (exmdb_pickup == nullptr) {
 			mlog(LV_ERR, "exmdb_pickup not found");
 			return EXIT_FAILURE;
@@ -174,7 +174,5 @@ int main(int argc, char **argv)
 			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}
-	if (is_worker)
-		service_release("exmdb_pickup", "system");
 	return retcode;
 }
