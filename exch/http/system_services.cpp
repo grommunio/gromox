@@ -18,7 +18,7 @@ decltype(system_services_auth_login) system_services_auth_login;
 int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), typeid(decltype(*(f))))); \
 	if ((f) == nullptr) { \
 		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \

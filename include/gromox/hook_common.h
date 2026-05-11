@@ -42,7 +42,7 @@ struct GX_EXPORT MESSAGE_CONTEXT {
 	x decltype(dlfuncs::hook.enqueue_ctx) enqueue_context; \
 	x decltype(dlfuncs::hook.throw_ctx) throw_context; \
 }
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), nullptr, typeid(decltype(*(f))))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 
 #define LINK_HOOK_API(param) \

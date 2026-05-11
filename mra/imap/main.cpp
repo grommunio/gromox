@@ -147,7 +147,7 @@ static bool imap_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 static int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), typeid(decltype(*(f))))); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
 		return -1; \

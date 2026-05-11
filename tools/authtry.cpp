@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "service_run failed\n");
 		return EXIT_FAILURE;
 	}
-	authmgr_login_t alogin = reinterpret_cast<authmgr_login_t>(service_query("auth_login_gen", "system", typeid(decltype(*alogin))));
+	authmgr_login_t alogin = reinterpret_cast<authmgr_login_t>(service_query("auth_login_gen", typeid(decltype(*alogin))));
 	if (alogin == nullptr) {
 		fprintf(stderr, "auth_login_gen missing\n");
 		return EXIT_FAILURE;

@@ -120,7 +120,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 	authmgr_login_t fptr_login;
 	fptr_login = reinterpret_cast<authmgr_login_t>(service_query("auth_login_gen",
-	             "system", typeid(decltype(*fptr_login))));
+	             typeid(decltype(*fptr_login))));
 	if (fptr_login == nullptr)
 		return PAM_AUTH_ERR;
 	sql_meta_result mres;

@@ -54,7 +54,7 @@ struct svc_mgr final {
 	int run();
 	void stop();
 	bool symreg(const char *, void *, const std::type_info &);
-	void *symget(const char *, const char *, const std::type_info &);
+	void *symget(const char *, const std::type_info &);
 	void trigger_all(enum plugin_op);
 	int run_library(const generic_module &);
 
@@ -263,8 +263,7 @@ bool svc_mgr::symreg(const char *func_name, void *addr,
  * @module:		name of requesting module
  * @ti:			typeinfo for cross-checking expectations
  */
-void *svc_mgr::symget(const char *service_name, const char *module,
-    const std::type_info &ti)
+void *svc_mgr::symget(const char *service_name, const std::type_info &ti)
 {
 	/* first find out the service node in global service list */
 	auto node = std::find_if(g_list_service.begin(), g_list_service.end(),
@@ -275,9 +274,6 @@ void *svc_mgr::symget(const char *service_name, const char *module,
 	if (strcmp(ti.name(), pservice->type_info->name()) != 0)
 		mlog(LV_ERR, "service: type mismatch on dlname \"%s\" (%s VS %s)",
 			service_name, pservice->type_info->name(), ti.name());
-	if (module == nullptr)
-		/* untracked user */
-		return pservice->service_addr;
 	return pservice->service_addr;
 
 }
@@ -343,9 +339,9 @@ bool service_register_service(const char *fun, void *addr,
 	return le_svc_mgr->symreg(fun, addr, ti);
 }
 
-void *service_query(const char *fun, const char *caller, const std::type_info &ti)
+void *service_query(const char *fun, const std::type_info &ti)
 {
-	return le_svc_mgr->symget(fun, caller, ti);
+	return le_svc_mgr->symget(fun, ti);
 }
 
 void service_trigger_all(enum plugin_op ev)

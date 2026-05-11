@@ -137,7 +137,7 @@ static int exmdb_client_run_front(const char *dir)
 static int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), typeid(*(f)))); \
 	if ((f) == nullptr) { \
 		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \

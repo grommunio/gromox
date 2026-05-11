@@ -36,7 +36,7 @@
 	x decltype(dlfuncs::proc.async_reply) async_reply; \
 }
 #define register_service(n, f) service_register_service((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), nullptr, typeid(decltype(*(f))))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 
 #define LINK_PROC_API(param) \

@@ -79,7 +79,7 @@ struct GX_EXPORT HTTP_AUTH_INFO {
 	x decltype(dlfuncs::rpc_new_stack) rpc_new_stack; \
 	x decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
 }
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), nullptr, typeid(decltype(*(f))))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 	
 #define LINK_HPM_API(param) \

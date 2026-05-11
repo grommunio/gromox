@@ -490,7 +490,7 @@ eid_t gi_lookup_eid_any_way(const char *dir, const char *name)
 int gi_startup_client(unsigned int maxconn)
 {
 	exmdb_local_rules_execute = reinterpret_cast<decltype(exmdb_local_rules_execute)>(service_query("rules_execute",
-	                            "system", typeid(*exmdb_local_rules_execute)));
+	                            typeid(*exmdb_local_rules_execute)));
 	exmdb_rpc_alloc = gi_alloc;
 	exmdb_rpc_free = gi_free;
 	exmdb_client.emplace(maxconn);
