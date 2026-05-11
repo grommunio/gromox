@@ -148,11 +148,6 @@ static int system_services_run()
 #undef E
 }
 
-static void system_services_stop()
-{
-	service_release("broadcast_event", "system");
-}
-
 static int midls_thrwork(generic_connection &&gco)
 {
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
@@ -321,7 +316,6 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = HX::make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
 		mlog(LV_ERR, "system: failed to start system services");
 		return EXIT_FAILURE;

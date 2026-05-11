@@ -132,7 +132,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "auth_login_gen missing\n");
 		return EXIT_FAILURE;
 	}
-	auto cl_2 = HX::make_scope_exit([&]() { service_release("auth_login_gen", "system"); });
 	sql_meta_result mres;
 	if (!alogin(g_auth_user, password, WANTPRIV_BASIC, mres)) {
 		fprintf(stderr, "Auth failed: %s\n", mres.errstr.c_str());

@@ -174,7 +174,5 @@ int main(int argc, char **argv)
 			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}
-	if (is_worker)
-		service_release("exmdb_pickup", "system");
 	return retcode;
 }

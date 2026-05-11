@@ -18,7 +18,6 @@ struct HPM_PLUGIN : public gromox::generic_module {
 	void operator=(HPM_PLUGIN &&) noexcept = delete;
 
 	HPM_INTERFACE interface{};
-	std::vector<gromox::service_node> list_reference;
 };
 
 extern void hpm_processor_init(int context_num, std::span<const gromox::generic_module> names);

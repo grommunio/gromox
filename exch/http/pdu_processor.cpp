@@ -2898,8 +2898,6 @@ PROC_PLUGIN::~PROC_PLUGIN()
 		if (func != nullptr)
 			func(PLUGIN_FREE, pdu_funcs);
 	}
-	for (const auto &nd : list_reference)
-		service_release(nd.service_name.c_str(), pplugin->file_name);
 }
 
 /* this function can also be invoked from hpm_plugins,
@@ -2959,20 +2957,10 @@ static void *pdu_processor_queryservice(const char *service, const char *rq,
 
 	if (g_cur_plugin == nullptr)
 		return NULL;
-	/* check if already exists in the reference list */
-	for (const auto &nd : g_cur_plugin->list_reference)
-		if (nd.service_name == service)
-			return nd.service_addr;
 	auto fn = g_cur_plugin->file_name;
 	ret_addr = service_query(service, fn, ti);
 	if (ret_addr == nullptr)
 		return NULL;
-	try {
-		g_cur_plugin->list_reference.emplace_back(service_node{ret_addr, service});
-	} catch (const std::bad_alloc &) {
-		service_release(service, fn);
-		return NULL;
-	}
 	return ret_addr;
 }
 

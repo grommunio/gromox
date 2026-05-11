@@ -21,7 +21,6 @@ extern GX_EXPORT int service_run();
 extern GX_EXPORT int service_run_library(const gromox::generic_module &);
 extern GX_EXPORT void service_stop();
 extern GX_EXPORT void *service_query(const char *service_name, const char *module, const std::type_info &);
-extern GX_EXPORT void service_release(const char *service_name, const char *module);
 extern GX_EXPORT bool service_register_service(const char *func_name, void *addr, const std::type_info &);
 extern GX_EXPORT void service_trigger_all(enum plugin_op);
 extern GX_EXPORT const char *service_get_prog_id();

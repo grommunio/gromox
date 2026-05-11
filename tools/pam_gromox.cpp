@@ -125,7 +125,6 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		return PAM_AUTH_ERR;
 	sql_meta_result mres;
 	ret = fptr_login(username, authtok.get(), wantpriv, mres) ? PAM_SUCCESS : PAM_AUTH_ERR;
-	service_release("auth_login_gen", "system");
 	return ret;
 }
 

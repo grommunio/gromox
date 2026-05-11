@@ -506,7 +506,6 @@ void gi_shutdown()
 {
 	g_alloc_mgr.clear();
 	exmdb_client.reset();
-	service_release("rules_execute", "system");
 }
 
 /**

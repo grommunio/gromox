@@ -5,7 +5,6 @@
 #	include "config.h"
 #endif
 #include <algorithm>
-#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -31,18 +30,12 @@ using namespace gromox;
 
 namespace {
 
-struct reference_node {
-	std::string module_name;
-	int ref_count;
-};
-
 struct SVC_PLUG_ENTITY;
 struct service_entry {
 	std::string service_name;
 	void *service_addr;
 	SVC_PLUG_ENTITY *plib;
 	const std::type_info *type_info;
-	std::vector<reference_node> list_reference;
 };
 
 struct SVC_PLUG_ENTITY : public gromox::generic_module {
@@ -50,9 +43,6 @@ struct SVC_PLUG_ENTITY : public gromox::generic_module {
 	SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&) noexcept;
 	~SVC_PLUG_ENTITY();
 	void operator=(SVC_PLUG_ENTITY &&) noexcept = delete;
-
-	std::atomic<int> ref_count = 0;
-	std::vector<std::string> ref_holders;
 };
 
 struct svc_mgr final {
@@ -65,7 +55,6 @@ struct svc_mgr final {
 	void stop();
 	bool symreg(const char *, void *, const std::type_info &);
 	void *symget(const char *, const char *, const std::type_info &);
-	void symput(const char *, const char *);
 	void trigger_all(enum plugin_op);
 	int run_library(const generic_module &);
 
@@ -161,10 +150,6 @@ svc_mgr::~svc_mgr()
 void svc_mgr::stop()
 {
 	while (!g_list_plug.empty())
-		/*
-		 * PLUGIN_FREE handlers can invoke service_release, so clear
-		 * list_service after the loop.
-		 */
 		g_list_plug.pop_back();
 
 	g_list_service.clear();
@@ -225,28 +210,12 @@ int svc_mgr::run_library_internal(std::list<SVC_PLUG_ENTITY>::iterator citer)
 }
 
 SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) noexcept :
-	generic_module(std::move(o)), ref_count(o.ref_count.load()),
-	ref_holders(std::move(o.ref_holders))
-{
-	o.ref_count = 0;
-}
+	generic_module(std::move(o))
+{}
 
 SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 {
 	auto plib = this;
-	if (plib->ref_count > 0) try {
-		auto tx = "Unbalanced refcount on "s + znul(plib->file_name) + ", still held by {";
-		for (auto &&s : plib->ref_holders) {
-			tx += std::move(s);
-			tx += ", ";
-		}
-		tx += "}";
-		mlog(LV_NOTICE, "%s", tx.c_str());
-		return;
-	} catch (const std::bad_alloc &) {
-		mlog(LV_NOTICE, "Unbalanced refcount on %s + ENOMEM", znul(plib->file_name));
-		return;
-	}
 	if (plib->init_state != generic_module::state::init_done)
 		return;
 	if (plib->file_name != nullptr)
@@ -313,55 +282,8 @@ void *svc_mgr::symget(const char *service_name, const char *module,
 	if (module == nullptr)
 		/* untracked user */
 		return pservice->service_addr;
-	/* iterate the service node's reference list and try to find out 
-	 * the module name, if the module already exists in the list, just add
-	 *  reference cout of module
-	 */
-	auto pmodule = std::find_if(pservice->list_reference.begin(),
-	               pservice->list_reference.end(),
-	               [&](const reference_node &m) { return m.module_name == module; });
-	if (pmodule == pservice->list_reference.end()) {
-		pservice->list_reference.push_back(reference_node{module});
-		pmodule = std::prev(pservice->list_reference.end());
-	}
-	/*
-	 * whatever add one reference to ref_count of PLUG_ENTITY
-	 */
-	pmodule->ref_count ++;
-	pservice->plib->ref_count ++;
-	pservice->plib->ref_holders.emplace_back(service_name + "@"s + znul(module));
 	return pservice->service_addr;
 
-}
-
-/*
- * Drop reference to a symbol
- *
- * @service_name:	symbol name
- * @module:		name of requesting module
- */
-void svc_mgr::symput(const char *service_name, const char *module)
-{
-	auto node = std::find_if(g_list_service.begin(), g_list_service.end(),
-	            [&](const service_entry &e) { return e.service_name == service_name; });
-	if (node == g_list_service.end())
-		return;
-	auto pservice = &*node;
-	/* find out the module node in service's reference list */
-	auto pmodule = std::find_if(pservice->list_reference.begin(),
-	               pservice->list_reference.end(),
-	               [&](const reference_node &m) { return m.module_name == module; });
-	if (pmodule == pservice->list_reference.end())
-		return;
-	pmodule->ref_count --;
-	/* if reference count of module node is 0, free this node */ 
-	if (pmodule->ref_count == 0)
-		pservice->list_reference.erase(pmodule);
-	pservice->plib->ref_count --;
-	auto &rh = pservice->plib->ref_holders;
-	auto i = std::find(rh.begin(), rh.end(), service_name + "@"s + znul(module));
-	if (i != rh.end())
-		rh.erase(i);
 }
 
 void svc_mgr::trigger_all(enum plugin_op ev)
@@ -428,11 +350,6 @@ bool service_register_service(const char *fun, void *addr,
 void *service_query(const char *fun, const char *caller, const std::type_info &ti)
 {
 	return le_svc_mgr->symget(fun, caller, ti);
-}
-
-void service_release(const char *fun, const char *caller)
-{
-	return le_svc_mgr->symput(fun, caller);
 }
 
 void service_trigger_all(enum plugin_op ev)

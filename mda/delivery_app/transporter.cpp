@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <condition_variable>
@@ -59,7 +59,6 @@ struct hook_plug_entity {
 	~hook_plug_entity();
 	void operator=(hook_plug_entity &&) noexcept = delete;
 
-	std::vector<hook_service_node> list_reference;
 	std::vector<hook_entry> list_hook;
 	PLUGIN_MAIN lib_main = nullptr;
 	const char *file_name = nullptr;
@@ -117,7 +116,6 @@ static MESSAGE_CONTEXT *transporter_dequeue_context();
 static void transporter_log_info(const CONTROL_INFO &, int level, const char *format, ...);
 
 hook_plug_entity::hook_plug_entity(hook_plug_entity &&o) noexcept :
-	list_reference(std::move(o.list_reference)),
 	lib_main(std::move(o.lib_main)), file_name(std::move(o.file_name)),
 	completed_init(std::move(o.completed_init))
 {
@@ -164,8 +162,6 @@ hook_plug_entity::~hook_plug_entity()
 		lib_main(PLUGIN_FREE, mda_funcs);
 	std::erase_if(g_hook_list,
 		[this](const hook_entry *e) { return e->plib == this; });
-	for (const auto &nd : list_reference)
-		service_release(nd.service_name.c_str(), file_name);
 }
 
 /*
@@ -529,21 +525,11 @@ static void *transporter_queryservice(const char *service,
     if (NULL == g_cur_lib) {
         return NULL;
     }
-	/* check if already exists in the reference list */
-	for (auto &nd : g_cur_lib->list_reference)
-		if (nd.service_name == service)
-			return nd.service_addr;
 	auto fn = g_cur_lib->file_name;
 	auto ret_addr = service_query(service, fn, ti);
     if (NULL == ret_addr) {
         return NULL;
     }
-	try {
-		g_cur_lib->list_reference.emplace_back(hook_service_node{deconst(ret_addr), service});
-	} catch (const std::bad_alloc &) {
-		service_release(service, fn);
-		return nullptr;
-	}
     return ret_addr;
 }
 

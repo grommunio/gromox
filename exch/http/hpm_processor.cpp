@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -135,21 +135,10 @@ static void *hpm_processor_queryservice(const char *service, const char *rq,
 
 	if (g_cur_plugin == nullptr)
 		return NULL;
-	/* check if already exists in the reference list */
-	for (const auto &nd : g_cur_plugin->list_reference)
-		if (nd.service_name == service)
-			return nd.service_addr;
 	auto fn = g_cur_plugin->file_name;
 	ret_addr = service_query(service, fn, ti);
 	if (ret_addr == nullptr)
 		return NULL;
-	try {
-		g_cur_plugin->list_reference.emplace_back(service_node{ret_addr, service});
-	} catch (const std::bad_alloc &) {
-		service_release(service, fn);
-		mlog(LV_ERR, "E-1636: ENOMEM");
-		return nullptr;
-	}
 	return ret_addr;
 }
 
@@ -204,10 +193,6 @@ HPM_PLUGIN::~HPM_PLUGIN()
 		if (func != nullptr)
 			func(PLUGIN_FREE, hpm_funcs);
 	}
-
-	/* free the reference list */
-	for (const auto &nd : list_reference)
-		service_release(nd.service_name.c_str(), pplugin->file_name);
 }
 
 static int hpm_processor_load_library(const generic_module &mod)

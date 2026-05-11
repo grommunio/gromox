@@ -37,6 +37,5 @@ int main(int argc, char **argv)
 		else
 			printf("REJECTED: %s\n", reason.c_str());
 	}
-	service_release("ip_filter_judge", "system");
 	return EXIT_SUCCESS;
 }

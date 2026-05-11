@@ -162,15 +162,6 @@ static int system_services_run()
 #undef E
 }
 
-static void system_services_stop()
-{
-	service_release("ip_filter_judge", "system");
-	service_release("user_filter_judge", "system");
-	service_release("user_filter_ban", "system");
-	service_release("auth_login_gen", "system");
-	service_release("broadcast_event", "system");
-}
-
 static int p3ls_thrwork(generic_connection &&conn)
 {
 	const bool use_tls = conn.mark == M_TLS_CONN;
@@ -445,7 +436,6 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_8 = HX::make_scope_exit(system_services_stop);
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_tls,
 		pop3_force_tls, certificate_path, cb_passwd,

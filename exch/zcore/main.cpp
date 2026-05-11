@@ -162,15 +162,6 @@ static int system_services_run()
 #undef E
 }
 
-static void system_services_stop()
-{
-#define E(b) service_release(b, "system")
-	E("auth_login_gen");	
-	E("auth_login_token");
-	E("add_timer");
-#undef E
-}
-
 static void *zcls_thrwork(void *param)
 {
 	pthread_setname_np(pthread_self(), "accept");
@@ -346,7 +337,6 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start system services");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = HX::make_scope_exit(system_services_stop);
 
 	zserver_init(table_size, cache_interval, ping_interval);
 	exmdb_client.emplace(proxy_num);
