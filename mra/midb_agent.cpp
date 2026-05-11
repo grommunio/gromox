@@ -15,6 +15,7 @@
 #include <mutex>
 #include <poll.h>
 #include <pthread.h>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unistd.h>

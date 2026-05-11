@@ -1,6 +1,7 @@
 #pragma once
 #include <list>
 #include <pthread.h>
+#include <span>
 #include <gromox/double_list.hpp>
 #include <gromox/generic_connection.hpp>
 

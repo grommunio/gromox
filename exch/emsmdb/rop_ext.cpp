@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
+#include <span>
 #include <libHX/endian.h>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>

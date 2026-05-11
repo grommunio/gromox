@@ -17,6 +17,7 @@
 #include <memory>
 #include <mutex>
 #include <pthread.h>
+#include <span>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>

@@ -20,6 +20,7 @@
 #include <mutex>
 #include <optional>
 #include <pthread.h>
+#include <span>
 #include <sqlite3.h>
 #include <string>
 #include <unistd.h>

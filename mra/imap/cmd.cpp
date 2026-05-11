@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <map>
 #include <memory>
+#include <span>
 #include <string>
 #include <unistd.h>
 #include <utility>
