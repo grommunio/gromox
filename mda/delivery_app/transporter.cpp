@@ -80,8 +80,6 @@ struct THREAD_DATA {
 
 }
 
-static void *transporter_queryservice(const char *service, const char *rq, const std::type_info &);
-
 static char				g_path[256];
 static std::span<const generic_module> g_plugin_names;
 static std::string g_local_path;
@@ -123,8 +121,6 @@ hook_plug_entity::hook_plug_entity(hook_plug_entity &&o) noexcept :
 }
 
 static constexpr struct dlfuncs mda_funcs = {
-	/* .symget = */ transporter_queryservice,
-	/* .symreg = */ nullptr,
 	/* .get_config_path = */ []() {
 		auto r = g_config_file->get_value("config_file_path");
 		return r != nullptr ? r : PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR;
@@ -517,20 +513,6 @@ int transporter_load_library(const generic_module &mod) try
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1473: ENOMEM");
 	return PLUGIN_FAIL_OPEN;
-}
-
-static void *transporter_queryservice(const char *service,
-    const char *requestor, const std::type_info &ti)
-{
-    if (NULL == g_cur_lib) {
-        return NULL;
-    }
-	auto fn = g_cur_lib->file_name;
-	auto ret_addr = service_query(service, fn, ti);
-    if (NULL == ret_addr) {
-        return NULL;
-    }
-    return ret_addr;
 }
 
 /*

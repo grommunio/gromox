@@ -6,6 +6,7 @@
 #include <gromox/ndr.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/rpc_types.hpp>
+#include <gromox/svc_loader.hpp>
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
 
@@ -15,8 +16,6 @@
 
 /* Plugin is expected to use `using namespace ns;` too */
 #define DECLARE_PROC_API(ns, x) namespace ns { \
-	x decltype(dlfuncs::symget) imp__symget; \
-	x decltype(dlfuncs::symreg) imp__symreg; \
 	x decltype(dlfuncs::proc.reg_ep) register_endpoint; \
 	x decltype(dlfuncs::proc.reg_intf) register_interface; \
 	x decltype(dlfuncs::proc.unreg_intf) unregister_interface; \
@@ -36,13 +35,11 @@
 	x decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
 	x decltype(dlfuncs::proc.async_reply) async_reply; \
 }
-#define register_service(n, f) imp__symreg((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(imp__symget((n), nullptr, typeid(decltype(*(f))))))
+#define register_service(n, f) service_register_service((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), nullptr, typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 
 #define LINK_PROC_API(param) \
-	imp__symget = param.symget; \
-	imp__symreg = param.symreg; \
 	register_endpoint = param.proc.reg_ep; \
 	register_interface = param.proc.reg_intf; \
 	unregister_interface = param.proc.unreg_intf; \

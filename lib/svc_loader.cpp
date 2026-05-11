@@ -104,8 +104,6 @@ svc_mgr::svc_mgr(service_init_param &&parm) :
 
 /* See commentary of service_query() why it's done */
 static constexpr struct dlfuncs server_funcs = {
-	/* .symget = */ service_query,
-	/* .symreg = */ service_register_service,
 	/* .get_config_path = */ []() { return le_svc_mgr->g_config_dir.c_str(); },
 	/* .get_data_path = */ []() { return le_svc_mgr->g_data_dir.c_str(); },
 	/* .get_context_num = */ []() { return le_svc_mgr->g_context_num; },

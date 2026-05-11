@@ -99,10 +99,8 @@ class interface_eq {
 
 }
 
-static void *pdu_processor_queryservice(const char *, const char *, const std::type_info &);
 static DCERPC_INFO pdu_processor_get_rpc_info();
 static uint64_t pdu_processor_get_binding_handle();
-static void *pdu_processor_queryservice(const char *, const char *, const std::type_info &);
 
 unsigned int g_msrpc_debug;
 static bool g_bigendian;
@@ -2852,8 +2850,6 @@ static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
 }
 
 static constexpr struct dlfuncs pdu_funcs = {
-	/* .symget = */ pdu_processor_queryservice,
-	/* .symreg = */ service_register_service,
 	/* .get_config_path = */ []() {
 		auto r = g_config_file->get_value("config_file_path");
 		return r != nullptr ? r : PKGSYSCONFDIR;
@@ -2948,20 +2944,6 @@ static uint64_t pdu_processor_get_binding_handle()
 		return handle;
 	}
 	return 0;
-}
-
-static void *pdu_processor_queryservice(const char *service, const char *rq,
-    const std::type_info &ti)
-{
-	void *ret_addr;
-
-	if (g_cur_plugin == nullptr)
-		return NULL;
-	auto fn = g_cur_plugin->file_name;
-	ret_addr = service_query(service, fn, ti);
-	if (ret_addr == nullptr)
-		return NULL;
-	return ret_addr;
 }
 
 /*

@@ -3,26 +3,23 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/plugin.hpp>
+#include <gromox/svc_loader.hpp>
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
 
 /* Plugin is expected to use `using namespace ns;` too */
 #define	DECLARE_SVC_API(ns, x) namespace ns { \
-	x decltype(dlfuncs::symget) imp__symget; \
-	x decltype(dlfuncs::symreg) imp__symreg; \
 	x decltype(dlfuncs::get_config_path) get_config_path; \
 	x decltype(dlfuncs::get_data_path) get_data_path; \
 	x decltype(dlfuncs::get_context_num) get_context_num; \
 	x decltype(dlfuncs::get_host_ID) get_host_ID; \
 	x decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
 }
-#define register_service(n, f) imp__symreg((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(imp__symget((n), nullptr, typeid(decltype(*(f))))))
+#define register_service(n, f) service_register_service((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), nullptr, typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 
 #define LINK_SVC_API(param) \
-	imp__symget = param.symget; \
-	imp__symreg = param.symreg; \
 	get_config_path = param.get_config_path ;\
 	get_data_path = param.get_data_path; \
 	get_context_num = param.get_context_num; \

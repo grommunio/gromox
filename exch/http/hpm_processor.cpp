@@ -128,23 +128,7 @@ static void hpm_processor_wakeup_context(unsigned int context_id)
 	contexts_pool_signal(phttp);
 }
 
-static void *hpm_processor_queryservice(const char *service, const char *rq,
-    const std::type_info &ti)
-{
-	void *ret_addr;
-
-	if (g_cur_plugin == nullptr)
-		return NULL;
-	auto fn = g_cur_plugin->file_name;
-	ret_addr = service_query(service, fn, ti);
-	if (ret_addr == nullptr)
-		return NULL;
-	return ret_addr;
-}
-
 static constexpr struct dlfuncs hpm_funcs = {
-	/* .symget = */ hpm_processor_queryservice,
-	/* .symreg = */ service_register_service,
 	/* .get_config_path = */ []() {
 		auto r = g_config_file->get_value("config_file_path");
 		return r != nullptr ? r : PKGSYSCONFDIR;

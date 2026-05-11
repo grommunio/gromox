@@ -57,8 +57,6 @@ using HOOK_FUNCTION = gromox::hook_result (*)(MESSAGE_CONTEXT *);
 using rpc_response = gromox::universal_base;
 
 struct dlfuncs {
-	void *(*symget)(const char *service, const char *requestor, const std::type_info &);
-	bool (*symreg)(const char *, void *, const std::type_info &);
 	const char *(*get_config_path)();
 	const char *(*get_data_path)();
 	unsigned int (*get_context_num)();

@@ -10,6 +10,7 @@
 #include <gromox/http.hpp>
 #include <gromox/icase.hpp>
 #include <gromox/plugin.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
@@ -61,7 +62,6 @@ struct GX_EXPORT HTTP_AUTH_INFO {
 
 /* Plugin is expected to use `using namespace ns;` too */
 #define DECLARE_HPM_API(ns, x) namespace ns { \
-	x decltype(dlfuncs::symget) imp__symget; \
 	x decltype(dlfuncs::hpm.reg_intf) register_interface; \
 	x decltype(dlfuncs::hpm.get_conn) get_connection; \
 	x decltype(dlfuncs::hpm.get_req) get_request; \
@@ -79,11 +79,10 @@ struct GX_EXPORT HTTP_AUTH_INFO {
 	x decltype(dlfuncs::rpc_new_stack) rpc_new_stack; \
 	x decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
 }
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(imp__symget((n), nullptr, typeid(decltype(*(f))))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), nullptr, typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 	
 #define LINK_HPM_API(param) \
-	imp__symget = param.symget; \
 	register_interface = param.hpm.reg_intf; \
 	get_connection = param.hpm.get_conn; \
 	get_request = param.hpm.get_req; \
