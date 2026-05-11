@@ -8,6 +8,8 @@ Type=simple
 ExecStart=@libexecdir@/gromox/http
 ExecReload=/bin/kill -HUP $MAINPID
 ProtectSystem=yes
+TasksMax=infinity
+LimitNPROC=infinity
 
 [Install]
 WantedBy=multi-user.target
