@@ -216,8 +216,6 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 	auto plib = this;
 	if (plib->init_state != generic_module::state::init_done)
 		return;
-	if (plib->file_name != nullptr)
-		mlog(LV_INFO, "service: unloading %s", plib->file_name);
 	auto func = (PLUGIN_MAIN)plib->lib_main;
 	if (func != nullptr)
 		func(PLUGIN_FREE, server_funcs);

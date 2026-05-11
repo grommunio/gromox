@@ -171,8 +171,6 @@ HPM_PLUGIN::~HPM_PLUGIN()
 	PLUGIN_MAIN func;
 	auto pplugin = this;
 	if (pplugin->init_state == generic_module::state::init_done) {
-		if (pplugin->file_name != nullptr)
-			mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name);
 		func = (PLUGIN_MAIN)pplugin->lib_main;
 		if (func != nullptr)
 			func(PLUGIN_FREE, hpm_funcs);

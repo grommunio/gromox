@@ -2888,8 +2888,6 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	auto pplugin = this;
 	
 	if (pplugin->init_state == generic_module::state::init_done) {
-		if (pplugin->file_name != nullptr)
-			mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name);
 		func = (PLUGIN_MAIN)pplugin->lib_main;
 		if (func != nullptr)
 			func(PLUGIN_FREE, pdu_funcs);

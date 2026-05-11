@@ -153,7 +153,6 @@ static constexpr struct dlfuncs mda_funcs = {
 
 hook_plug_entity::~hook_plug_entity()
 {
-	mlog(LV_INFO, "transporter: unloading %s", file_name);
 	if (lib_main != nullptr && completed_init)
 		lib_main(PLUGIN_FREE, mda_funcs);
 	std::erase_if(g_hook_list,
