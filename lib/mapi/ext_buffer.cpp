@@ -2169,14 +2169,22 @@ pack_result EXT_PUSH::p_rpchdr(const RPC_HEADER_EXT &r)
 /* FALSE: overflow, TRUE: not overflow */
 bool EXT_PUSH::make_room(uint32_t extra_size)
 {
+	if (extra_size > UINT32_MAX - m_offset)
+		return false;
 	auto alloc_size = extra_size + m_offset;
 	if (m_alloc_size >= alloc_size)
 		return TRUE;
 	if (!(m_flags & EXT_FLAG_DYNAMIC))
 		return FALSE;
-	if (alloc_size < m_alloc_size * 2)
-		/* Exponential growth policy, needed to reach amortized linear time (like std::string) */
-		alloc_size = m_alloc_size * 2;
+	/*
+	 * If we can still double the capacity, do so. Exponential growth
+	 * policy is needed to reach amortized linear time (like std::string).
+	 */
+	if (m_alloc_size < UINT32_MAX / 2) {
+		auto doubled = m_alloc_size * 2;
+		if (alloc_size < doubled)
+			alloc_size = doubled;
+	}
 	auto pdata = static_cast<uint8_t *>(m_mgt.realloc(m_udata, alloc_size));
 	if (pdata == nullptr)
 		return FALSE;

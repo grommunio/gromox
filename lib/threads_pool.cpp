@@ -111,7 +111,6 @@ int threads_pool_run(const char *hint) try
 		auto up = std::make_unique<tpw_param>();
 		auto sp = up->sp = std::make_shared<THR_DATA>();
 		sp->nid = i;
-		g_threads_data_list.push_back(sp);
 		{
 			std::lock_guard tpd_hold(g_threads_pool_data_lock);
 			g_threads_data_list.push_back(sp);

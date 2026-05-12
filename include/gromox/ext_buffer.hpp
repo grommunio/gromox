@@ -215,7 +215,7 @@ struct GX_EXPORT EXT_PULL {
 		auto r = static_cast<T *>(m_alloc(sizeof(T) * elem));
 		if (r != nullptr)
 			for (size_t i = 0; i < elem; ++i)
-				new(r) T[i];
+				new(&r[i]) T;
 		return r;
 	}
 	union {

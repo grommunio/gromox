@@ -254,8 +254,10 @@ void *propval_dup(uint16_t type, const void *pvi)
 			return NULL;
 		}
 		for (size_t i = 0; i < psrc->count; ++i) {
-			preturn->ppstr[i] = strdup(psrc->ppstr[i]);
-			if (preturn->ppstr[i] != nullptr)
+			preturn->ppstr[i] = psrc->ppstr[i] != nullptr ?
+			                    strdup(psrc->ppstr[i]) : nullptr;
+			if (psrc->ppstr[i] == nullptr ||
+			    preturn->ppstr[i] != nullptr)
 				continue;
 			while (i-- > 0)
 				free(preturn->ppstr[i]);
@@ -465,7 +467,8 @@ uint32_t propval_size(uint16_t type, const void *pvalue)
 		length = 0;
 		auto sa = static_cast<const STRING_ARRAY *>(pvalue);
 		for (size_t i = 0; i < sa->count; ++i)
-			length += strlen(sa->ppstr[i]);
+			if (sa->ppstr[i] != nullptr)
+				length += strlen(sa->ppstr[i]);
 		return length;
 	}
 	case PT_MV_CLSID:
@@ -663,7 +666,9 @@ std::strong_ordering propval_compare(const void *pvalue1, const void *pvalue2,
 		if (cmp != 0)
 			break;
 		for (size_t i = 0; i < sa1->count; ++i) {
-			cmp = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]) <=> 0;
+			auto a = sa1->ppstr[i] != nullptr ? sa1->ppstr[i] : "";
+			auto b = sa2->ppstr[i] != nullptr ? sa2->ppstr[i] : "";
+			cmp = strcasecmp(a, b) <=> 0;
 			if (cmp != 0)
 				break;
 		}

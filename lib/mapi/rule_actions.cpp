@@ -15,16 +15,22 @@ static STORE_ENTRYID* store_entryid_dup(STORE_ENTRYID *peid)
 	if (pstore == nullptr)
 		return NULL;
 	*pstore = *peid;
-	pstore->pserver_name = strdup(peid->pserver_name);
-	if (NULL == pstore->pserver_name) {
-		free(pstore);
-		return NULL;
+	pstore->pserver_name = nullptr;
+	pstore->pmailbox_dn = nullptr;
+	if (peid->pserver_name != nullptr) {
+		pstore->pserver_name = strdup(peid->pserver_name);
+		if (pstore->pserver_name == nullptr) {
+			free(pstore);
+			return nullptr;
+		}
 	}
-	pstore->pmailbox_dn = strdup(peid->pmailbox_dn);
-	if (NULL == pstore->pmailbox_dn) {
-		free(pstore->pserver_name);
-		free(pstore);
-		return NULL;
+	if (peid->pmailbox_dn != nullptr) {
+		pstore->pmailbox_dn = strdup(peid->pmailbox_dn);
+		if (pstore->pmailbox_dn == nullptr) {
+			free(pstore->pserver_name);
+			free(pstore);
+			return nullptr;
+		}
 	}
 	return pstore;
 }
@@ -102,7 +108,7 @@ static BOOL recipient_block_dup_internal(
 	precipient->reserved = pblock->reserved;
 	precipient->count = pblock->count;
 	precipient->ppropval = me_alloc<TAGGED_PROPVAL>(pblock->count);
-	if (pblock->ppropval == nullptr)
+	if (precipient->ppropval == nullptr)
 		return FALSE;
 	for (int i = 0; i < pblock->count; ++i) {
 		precipient->ppropval[i].proptag = pblock->ppropval[i].proptag;
@@ -186,6 +192,9 @@ static BOOL action_block_dup_internal(
 		}
 		return TRUE;
 	case OP_DEFER_ACTION:
+		if (paction->length < sizeof(uint8_t) +
+		    sizeof(uint32_t) + sizeof(uint32_t))
+			return FALSE;
 		tmp_len = paction->length - sizeof(uint8_t) -
 					sizeof(uint32_t) - sizeof(uint32_t);
 		pblock->pdata = malloc(tmp_len);

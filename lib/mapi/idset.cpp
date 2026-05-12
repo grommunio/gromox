@@ -406,7 +406,8 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 					"stack should be less than 5");
 				return 0;
 			}
-			if (offset + 6 - stack_length >= pbin->cb) {
+			/* Two reads of (6 - stack_length) follow */
+			if (offset + 2 * (6 - stack_length) > pbin->cb) {
 				mlog(LV_DEBUG, "D-1653: not enough bytes left");
 				return 0;
 			}
@@ -455,9 +456,13 @@ BOOL idset::deserialize(const BINARY &bin) try
 		repl_node repl_node;
 
 		if (pset->repl_type == idset::type::id_packed) {
+			if (offset + sizeof(uint16_t) > pbin->cb)
+				return false;
 			repl_node.replid = le16p_to_cpu(&pbin->pb[offset]);
 			offset += sizeof(uint16_t);
 		} else {
+			if (offset + 16 > pbin->cb)
+				return false;
 			idset_read_guid(pbin->pb, offset, &repl_node.replguid);
 			offset += 16;
 		}
