@@ -92,6 +92,21 @@ extern GX_EXPORT const char *mapi_errname_r(unsigned int, char *, size_t);
 extern GX_EXPORT const char *mapi_strerror(ec_error_t);
 
 template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }
+
+/**
+ * Computes the next multiple of x on a scale of y.
+ *
+ * Background info: std:: containers track their capacity, and generally expand
+ * in an exponential fashion to reach armortized O(1) time complexity. But a
+ * number of old-style data types in Gromox do not track. Instead, capacity is
+ * implicit in the allocation logic, governed by (hopefully consistent) calls
+ * to strange_roundup. [Because of that, expansion is only linear and bounded by
+ * O(n^2).]
+ *
+ * Returns 0 when the range of x would be exceeded. Most callers do not cope
+ * with getting anything less than next_multiple_of(x), so it does not even
+ * matter if this function tried to detect overflow :-/
+ */
 template<typename T, typename U> constexpr auto strange_roundup(T x, U y) -> decltype(x / y) { return (x / y + 1) * y; }
 #define SR_GROW_ATTACHMENT_CONTENT 20U
 #define SR_GROW_EID_ARRAY 100U
