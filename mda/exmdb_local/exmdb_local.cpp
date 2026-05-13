@@ -472,7 +472,7 @@ static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 
 bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
-	char org_name[256], temp_buff[45], cache_path[256];
+	char org_name[256], temp_buff[45];
 	int cache_interval, retrying_times;
 	int response_capacity, response_interval, conn_num;
 
@@ -500,7 +500,6 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 			return FALSE;
 		}
 
-		sprintf(cache_path, "%s/cache", get_queue_path());
 		auto str_value = pfile->get_value("X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value != nullptr ? str_value : "Gromox default", std::size(org_name));
 		mlog(LV_INFO, "exmdb_local: x500 org name is \"%s\"", org_name);
@@ -551,7 +550,7 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		g_lda_mrautoproc = parse_bool(pfile->get_value("lda_mrautoproc"));
 
 		bounce_audit_init(response_capacity, response_interval);
-		cache_queue_init(cache_path, cache_interval, retrying_times);
+		cache_queue_init(get_queue_path() + std::string("/cache"), cache_interval, retrying_times);
 		exmdb_client.emplace(conn_num);
 		exmdb_rpc_alloc = exmdb_local_alloc;
 		exmdb_rpc_free  = [](void *) {};
