@@ -944,10 +944,12 @@ static pack_result ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLO
 static pack_result ext_buffer_pull_forwarddelegate_action(EXT_PULL *pext,
     FORWARDDELEGATE_ACTION *r)
 {
-	TRY(pext->g_uint16(&r->count));
-	if (r->count == 0)
+	uint16_t count = 0;
+	TRY(pext->g_uint16(&count));
+	CLAMP16(count);
+	if (count == 0)
 		return pack_result::format;
-	CLAMP16(r->count);
+	r->count = count;
 	r->pblock = pext->anew<RECIPIENT_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
@@ -1395,7 +1397,7 @@ static pack_result ext_buffer_pull_ext_recipient_block(EXT_PULL *pext,
 }
 
 static pack_result ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
-	EXT_FORWARDDELEGATE_ACTION *r)
+    FORWARDDELEGATE_ACTION *r)
 {
 	TRY(pext->g_uint32(&r->count));
 	if (r->count == 0)
@@ -1446,10 +1448,10 @@ static pack_result ext_buffer_pull_ext_action_block(EXT_PULL *pext, EXT_ACTION_B
 		return pext->g_uint32(static_cast<uint32_t *>(r->pdata));
 	case OP_FORWARD:
 	case OP_DELEGATE:
-		r->pdata = pext->anew<EXT_FORWARDDELEGATE_ACTION>();
+		r->pdata = pext->anew<FORWARDDELEGATE_ACTION>();
 		if (r->pdata == nullptr)
 			return pack_result::alloc;
-		return ext_buffer_pull_ext_forwarddelegate_action(pext, static_cast<EXT_FORWARDDELEGATE_ACTION *>(r->pdata));
+		return ext_buffer_pull_ext_forwarddelegate_action(pext, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
 	case OP_TAG:
 		r->pdata = pext->anew<TAGGED_PROPVAL>();
 		if (r->pdata == nullptr)
@@ -2610,7 +2612,7 @@ static pack_result ext_buffer_push_recipient_block(EXT_PUSH *pext,
 static pack_result ext_buffer_push_forwarddelegate_action(EXT_PUSH *pext,
     const FORWARDDELEGATE_ACTION *r)
 {
-	if (r->count == 0)
+	if (r->count == 0 || r->count > UINT16_MAX)
 		return pack_result::format;
 	TRY(pext->p_uint16(r->count));
 	for (const auto &rcpt : *r)

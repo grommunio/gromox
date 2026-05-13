@@ -1479,7 +1479,7 @@ struct GX_EXPORT RULE_LIST {
 };
 
 struct GX_EXPORT FORWARDDELEGATE_ACTION {
-	uint16_t count = 0;
+	uint32_t count = 0;
 	RECIPIENT_BLOCK *pblock = nullptr;
 
 	std::string repr() const;
