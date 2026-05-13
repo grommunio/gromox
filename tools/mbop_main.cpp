@@ -625,8 +625,10 @@ int cmd_parser(int argc, char **argv)
 		return cgkreset::main(argc, argv);
 	} else if (strcmp(argv[0], "freeze") == 0) {
 		return set_maint::freeze_main(argc, argv);
+	} else if (strcmp(argv[0], "exaddrxlat") == 0) {
+		return addrxlat::main(argc, argv, "EX");
 	} else if (strcmp(argv[0], "zaddrxlat") == 0) {
-		return zaddrxlat::main(argc, argv);
+		return addrxlat::main(argc, argv, "ZARAFA");
 	}
 	return simple_rpc::main(argc, argv);
 }

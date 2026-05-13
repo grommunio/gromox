@@ -36,6 +36,8 @@ more attributes; these can be:
 forms, including, but not limited to, "user", "user@domain", "domain_user",
 "domain\\user"; see "loginname_format" line of /etc/kopano/server.cfg)
 .IP \(bu 4
+"dn": X.500 Legacy DN associated with an Exchange account
+.IP \(bu 4
 "sv": server GUID, represented as 16 ASCII characters, case-insensitive
 .IP \(bu 4
 "st": store GUID, represented as 16 ASCII characters, case-insensitive
@@ -52,6 +54,9 @@ kopano-server databases, and with generally \fBdifferent\fP user IDs.
 .PP
 For sender/recipient address substitution (done by kdb2mt, or mbop-zaddrxlat):
 The "to" attribute is needed. One (or both) of "na" and "em" is also needed.
+.PP
+For sender/recipient address substitution (done by mbop-exaddrxlat),
+the "to" and "dn" attributes are needed.
 .PP
 For ACL substitution (done by kdb2mt), the "id", "sv" and "to" attributes are
 needed.
@@ -74,6 +79,15 @@ needed.
 
 ]
 .fi
+.RE
+.SH Example Exchange user map
+.RS 4
+.PP
+.nf
+[
+ {"dn": "/o=foobar/ou=Gobbledygook/cn=00000000-boss",
+  "to": "boss@domain.example"}
+]
 .RE
 .SH See also
 \fPgromox\fP(7), \fBgromox\-kdb2mt\fP(8), \fBkdb\-uidextract\-limited\fP(8)
