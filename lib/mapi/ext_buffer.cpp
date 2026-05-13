@@ -923,11 +923,14 @@ static pack_result ext_buffer_pull_reply_action(EXT_PULL *pext, REPLY_ACTION *r)
 
 static pack_result ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLOCK *r)
 {
-	TRY(pext->g_uint8(&r->reserved));
-	TRY(pext->g_uint16(&r->count));
-	if (r->count == 0)
+	uint8_t resv = 0;
+	uint16_t count = 0;
+	TRY(pext->g_uint8(&resv));
+	TRY(pext->g_uint16(&count));
+	CLAMP16(count);
+	if (count == 0)
 		return pack_result::format;
-	CLAMP16(r->count);
+	r->count = count;
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (r->ppropval == nullptr) {
 		r->count = 0;
@@ -1373,9 +1376,10 @@ static pack_result ext_buffer_pull_ext_reply_action(EXT_PULL *pext,
 
 
 static pack_result ext_buffer_pull_ext_recipient_block(EXT_PULL *pext,
-    EXT_RECIPIENT_BLOCK *r)
+    RECIPIENT_BLOCK *r)
 {
-	TRY(pext->g_uint8(&r->reserved));
+	uint8_t resv = 0;
+	TRY(pext->g_uint8(&resv));
 	TRY(pext->g_uint32(&r->count));
 	if (r->count == 0)
 		return pack_result::format;
@@ -1397,7 +1401,7 @@ static pack_result ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 	if (r->count == 0)
 		return pack_result::format;
 	CLAMP32(r->count);
-	r->pblock = pext->anew<EXT_RECIPIENT_BLOCK>(r->count);
+	r->pblock = pext->anew<RECIPIENT_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
 		return pack_result::alloc;
@@ -2594,9 +2598,9 @@ static pack_result ext_buffer_push_reply_action(EXT_PUSH *pext,
 static pack_result ext_buffer_push_recipient_block(EXT_PUSH *pext,
     const RECIPIENT_BLOCK *r)
 {
-	if (r->count == 0)
+	if (r->count == 0 || r->count > UINT16_MAX)
 		return pack_result::format;
-	TRY(pext->p_uint8(r->reserved));
+	TRY(pext->p_uint8(0));
 	TRY(pext->p_uint16(r->count));
 	for (const auto &p : *r)
 		TRY(pext->p_tagged_pv(p));

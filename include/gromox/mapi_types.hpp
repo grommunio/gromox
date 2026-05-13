@@ -75,15 +75,9 @@ struct GX_EXPORT EXT_REPLY_ACTION {
 #define BOUNCE_CODE_MESSAGE_NOT_DISPLAYED			0x0000001f
 #define BOUNCE_CODE_MESSAGE_DENIED					0x00000026
 
-struct GX_EXPORT EXT_RECIPIENT_BLOCK {
-	uint8_t reserved = 0;
-	uint32_t count = 0;
-	TAGGED_PROPVAL *ppropval = nullptr;
-};
-
 struct GX_EXPORT EXT_FORWARDDELEGATE_ACTION {
 	uint32_t count = 0;
-	EXT_RECIPIENT_BLOCK *pblock = nullptr;
+	RECIPIENT_BLOCK *pblock = nullptr;
 	I_BEGIN_END(pblock, count);
 };
 
