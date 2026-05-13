@@ -16,7 +16,7 @@ extern BOOL bounce_audit_check(const char *audit_string);
 
 extern bool exml_bouncer_make(const char *from, const char *rcpt, MAIL *orig, time_t orig_time, const char *bounce_type, MAIL *cur);
 
-extern void cache_queue_init(const char *path, int scan_interval, int retrying_times);
+extern void cache_queue_init(std::string &&path, int scan_interval, int retrying_times);
 extern int cache_queue_run();
 extern void cache_queue_stop();
 extern void cache_queue_free();

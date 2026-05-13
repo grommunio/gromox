@@ -106,13 +106,16 @@ static void cmd_mail(lmtp_context &ctx, std::vector<std::string> &argv)
 {
 	if (argv.size() < 2 || strncasecmp(argv[1].c_str(), "FROM:", 5) != 0)
 		return rsp_syntax_err();
-	if (argv[1][6] == '<') {
+	if (argv[1].size() >= 6 && argv[1][5] == '<') {
 		if (argv[1].back() != '>')
 			return rsp_syntax_err();
+		argv[1].pop_back();
+		/* FROM:<foo@bar.at>, FROM:<> */
+		ctx.envl_from = vmime::mailbox(&argv[1].c_str()[6]);
 	} else {
+		/* FROM:foo@bar.at */
 		ctx.envl_from = vmime::mailbox(&argv[1].c_str()[5]);
 	}
-	/* FROM:<> is legit */
 	ctx.have_from = true;
 
 	for (size_t argc = 2; argc < argv.size(); ++argc) {
@@ -155,7 +158,7 @@ static void cmd_rcpt(lmtp_context &ctx, std::vector<std::string> &argv)
 	std::vector<std::string> exp;
 	if (mysql_adaptor_mda_group_expand(r.addr, exp) != 0)
 		return rsp_rcpt_unknown();
-	if (exp.size() == 1 && exp[1] == r.addr) {
+	if (exp.size() == 1 && exp[0] == r.addr) {
 		/* Not a group */
 		ctx.envl_to.emplace_back(std::move(r));
 	} else {

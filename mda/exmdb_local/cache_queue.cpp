@@ -30,7 +30,7 @@ using namespace gromox;
 DECLARE_HOOK_API(exmdb_local, extern);
 using namespace exmdb_local;
 
-static char g_path[256];
+static std::string g_path;
 static std::atomic<unsigned long> g_mess_id;
 static int g_scan_interval;
 static int g_retrying_times;
@@ -47,9 +47,9 @@ static void *mdl_thrwork(void *);
  *		scan_interval			interval of queue scanning
  *		retrying_times			retrying times of delivery
  */
-void cache_queue_init(const char *path, int scan_interval, int retrying_times)
+void cache_queue_init(std::string &&path, int scan_interval, int retrying_times)
 {
-	gx_strlcpy(g_path, path, std::size(g_path));
+	g_path = std::move(path);
 	g_scan_interval = scan_interval;
 	g_retrying_times = retrying_times;
 	g_cachequeue_stop = true;
@@ -65,12 +65,12 @@ int cache_queue_run()
 	struct stat node_stat;
 
 	/* check the directory */
-    if (0 != stat(g_path, &node_stat)) {
-		mlog(LV_ERR, "exmdb_local: can not find %s directory", g_path);
+	if (stat(g_path.c_str(), &node_stat) != 0) {
+		mlog(LV_ERR, "exmdb_local: can not find %s directory", g_path.c_str());
         return -1;
     }
-    if (0 == S_ISDIR(node_stat.st_mode)) {
-		mlog(LV_ERR, "exmdb_local: %s is not a directory", g_path);
+	if (!S_ISDIR(node_stat.st_mode)) {
+		mlog(LV_ERR, "exmdb_local: %s is not a directory", g_path.c_str());
         return -2;
     }
 	{ /* silence cov-scan, take locks even in single-thread scenarios */
@@ -101,7 +101,7 @@ void cache_queue_stop()
 
 void cache_queue_free()
 {
-	g_path[0] = '\0';
+	g_path.clear();
 	g_scan_interval = 0;
 	g_retrying_times = 0;
 }
@@ -219,7 +219,7 @@ static unsigned long cache_queue_retrieve_mess_ID()
 {
 	struct dirent *direntp;
 	unsigned long max_ID = 0;
-	auto dirp = opendir_sd(g_path, nullptr);
+	auto dirp = opendir_sd(g_path.c_str(), nullptr);
 	if (dirp.m_dir != nullptr) while ((direntp = readdir(dirp.m_dir.get())) != nullptr) {
 		if (strcmp(direntp->d_name, ".") == 0 ||
 		    strcmp(direntp->d_name, "..") == 0)
@@ -247,10 +247,10 @@ static void *mdl_thrwork(void *arg)
 		mlog(LV_ERR, "exmdb_local: failed to get context in cache queue thread");
 		return nullptr;
 	}
-	auto dirp = opendir_sd(g_path, nullptr);
+	auto dirp = opendir_sd(g_path.c_str(), nullptr);
 	if (dirp.m_dir == nullptr) {
 		mlog(LV_ERR, "exmdb_local: failed to open cache directory %s: %s",
-			g_path, strerror(errno));
+			g_path.c_str(), strerror(errno));
 		return nullptr;
 	}
 	i = 0;
@@ -271,7 +271,7 @@ static void *mdl_thrwork(void *arg)
 				continue;
 			std::string temp_path;
 			try {
-				temp_path = std::string(g_path) + "/" + direntp->d_name;
+				temp_path = g_path + "/" + direntp->d_name;
 			} catch (const std::bad_alloc &) {
 				mlog(LV_ERR, "E-1475: ENOMEM");
 			}
