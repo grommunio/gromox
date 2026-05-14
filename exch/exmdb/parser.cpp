@@ -147,6 +147,20 @@ void parser_thread::close_fd()
 	generic_connection::reset();
 }
 
+void parser_thread::join()
+{
+	/*
+	 * When T1 issues join, T1 has a shared_ptr reference, therefore T2
+	 * cannot be executing in ~exmdb_connection, so pthread_detach won't
+	 * interfere.
+	 */
+	std::lock_guard lk(thr_lock);
+	if (!pthread_equal(thr_id, {})) {
+		pthread_join(thr_id, nullptr);
+		thr_id = {};
+	}
+}
+
 void exmdb_parser_init(size_t max_threads, size_t max_routers)
 {
 	g_max_threads = max_threads;
@@ -583,17 +597,36 @@ BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &pconnec
 
 void exmdb_parser_stop()
 {
+	/*
+	 * At the end of this function, we want all threads be gone for sure,
+	 * so they must be joined and cannot be let to detach themselves.
+	 * Therefore, this function needs to be the last holder of the
+	 * shared_ptr<>s.
+	 *
+	 * To do that, the connection lists are copied. [Detail: it can be moved,
+	 * which will make rqi_listen :: `g_connection_list.erase(param.conn)`
+	 * a no-op, which is good enough.].
+	 */
+	decltype(g_connection_list) conn_list;
+	decltype(g_router_list) rt_list;
 	{
 		std::lock_guard chold(g_connection_lock);
-		for (auto &c : g_connection_list)
-			c->signal_stop();
+		conn_list = std::move(g_connection_list);
 		g_connection_list.clear();
 	}
-
-	std::lock_guard rhold(g_router_lock);
-	for (auto &rt : g_router_list)
+	{
+		std::lock_guard rhold(g_router_lock);
+		rt_list = std::move(g_router_list);
+		g_router_list.clear();
+	}
+	for (auto &c : conn_list)
+		c->signal_stop();
+	for (auto &rt : rt_list)
 		rt->signal_stop();
-	g_router_list.clear();
+	for (auto &c : conn_list)
+		c->join();
+	for (auto &rt : rt_list)
+		rt->join();
 }
 
 static int sockaccept_thread(generic_connection &&conn)

@@ -21,6 +21,7 @@ class parser_thread : public generic_connection {
 	~parser_thread();
 	void signal_stop();
 	void close_fd();
+	void join();
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
