@@ -3,7 +3,6 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
-#include <deque>
 #include <shared_mutex>
 #include <string>
 #include <thread>
@@ -305,7 +304,6 @@ class GX_EXPORT ab {
 
 	const_base_ref get(int32_t base_id);
 	inline const_base_ref get(const GUID &guid) { return get(base_id(guid)); }
-	void drop(int32_t base_id);
 
 	bool run();
 	void stop();
@@ -325,7 +323,6 @@ class GX_EXPORT ab {
 	std::unordered_map<int32_t, std::shared_ptr<ab_base>> m_base_hash;
 
 	std::thread worker; ///< Worker thread removing expired bases
-	std::deque<int> worker_queue; ///< Queue of base IDs to be flushed
 	std::condition_variable worker_signal; ///< Wake-up signal for the worker thread
 	std::atomic<int> running = 0; ///< Number of plugins that are using the address book
 

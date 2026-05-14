@@ -30,15 +30,6 @@ int32_t ab::base_id(const GUID& guid)
 }
 
 /**
- * @brief      Remove base from registry, causing it to reload on next access
- */
-void ab::drop(int32_t id)
-{
-	std::unique_lock lock(m_lock);
-	m_base_hash.erase(id);
-}
-
-/**
  * @brief      Initialize address book
  *
  * Initializes address book with given parameters. Only effective on first
@@ -134,24 +125,23 @@ void ab::stop()
  */
 void ab::work()
 {
-	std::chrono::seconds wait_time;
 	std::mutex notify_lock;
 	std::unique_lock notify_guard(notify_lock);
 	while (running) {
-		std::unique_lock lock_guard(m_lock);
-		if (worker_queue.empty())
-			wait_time = m_cache_interval;
-		else {
-			auto root = get(worker_queue.front());
-			if (root == nullptr || root->age() >= m_cache_interval) {
-				drop(worker_queue.front());
-				worker_queue.pop_front();
-				continue;
+		std::vector<std::shared_ptr<ab_base>> defer_list;
+		{
+			std::unique_lock lock_guard(m_lock);
+			for (auto iter = m_base_hash.begin(); iter != m_base_hash.end(); ) {
+				if (iter->second->age() >= m_cache_interval) {
+					defer_list.emplace_back(std::move(iter->second));
+					iter = m_base_hash.erase(iter);
+				} else {
+					++iter;
+				}
 			}
-			wait_time = m_cache_interval - root->age();
 		}
-		lock_guard.unlock();
-		worker_signal.wait_for(notify_guard, wait_time);
+		if (defer_list.empty())
+			worker_signal.wait_for(notify_guard, m_cache_interval, [&]() { return !running; });
 	}
 }
 
