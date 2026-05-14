@@ -151,7 +151,10 @@ void router_connection::signal_stop()
 	}
 	std::lock_guard lk(thr_lock);
 	if (!pthread_equal(thr_id, {}))
+		/* kick calls like read,write */
 		pthread_kill(thr_id, SIGALRM);
+	/* but for condition_variables we really need this instead */
+	waken_cond.notify_one();
 }
 
 void router_connection::close_fd()
