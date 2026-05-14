@@ -59,9 +59,9 @@ to \fB\-p\fP, \fB\-t\fP or \fB\-v\fP). 1=crit, 2=error, 3=warn, 4=notice,
 Default: \fI4\fP (notice)
 .TP
 \fB\-\-user\-map\fP \fIfile\fP
-Use the given file to perform ACL mapping. See section "ACL Extraction" below
-for details. The file is also used for translating ZARAFA-type addresses to
-SMTP. See section "ZARAFA Address Type" below for details.
+Use the given file to perform ACL mapping and ZARAFA Address Type rewriting.
+See sections "ACL Extraction" and "ZARAFA Address Type" below for details.
+The file format is described in kdb\-uidextract(8).
 .TP
 \fB\-\-sql\-host\fP \fIhostname\fP
 Hostname for the source SQL connection.
@@ -105,7 +105,7 @@ related to this lookup; see the section "Store lookup by name" further below.
 .TP
 \fB\-\-l1\fP \fIx\fP, \fB\-\-l2\fP \fIy\fP
 If you are using "attachment_storage=files_v1-\fIx\fP-\fIy\fP" in
-kopano-server.cfg, call kdb2mt with the L1 and L2 options.
+/etc/kopano/server.cfg, call kdb2mt with the L1 and L2 options.
 .TP
 \fB\-\-only\-obj\fP \fIhid\fP
 Extract just the object with the given hierarchy id. This option may be
@@ -275,17 +275,12 @@ kdb\-uidextract(8) or the kdb\-uidextract\-limited(8) helper programs on the
 original, live Kopano system. (With some effort, the file can also be manually
 constructed. See that manpage for format details.)
 .SH ZARAFA Address Type
-MAPI as a system supports referencing a message's participants by arbitrary
-target descriptors. These include, but are not limited to, SMTP e-mail
-addresses, usernames, LDAP RDNs, X.400 address, or even a fax number.
-For example, the "EX" address type employed by Exchange uses the ESSDN
-(Enterprise/Site/Server Distinguished Name) of the user, which is sort of a
-LDAP Relative Distinguished Name (RDN).
+MAPI as a system supports referencing message participants with arbitrary
+address types, including, but not limited to, SMTP, EX (Exchange 4.0 Directory
+Service identifier), FAX numbers, etc.
 .PP
 Zarafa/Kopano systems define a "ZARAFA" address type, and the identifiers
-contain the username (possibly in other forms such as company\\username or
-company@username) or the (SMTP) email address; it is not entirely consistent.
-With the help of a user map file, the ZARAFA-type addresses can be converted to
-SMTP addresses.
+contain the username. How exactly it is formatted is system-dependent, cf.
+/etc/kopano/server.cfg:loginname_format.
 .SH See also
 \fBgromox\fP(7), \fBgromox\-import\fP(8)

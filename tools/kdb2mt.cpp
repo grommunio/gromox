@@ -345,7 +345,7 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 	}
 
 	if (g_user_map_file != nullptr)
-		subst_addrs_entryids(g_user_map, ar);
+		subst_addrs_entryids(g_user_map, "ZARAFA", ar);
 }
 
 static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)

@@ -51,6 +51,7 @@ errno_t kdb_user_map::read(const char *file)
 		HX_strlower(srv_guid.data());
 		auto f_na = !row["na"].isNull() ? row["na"].asCString() : "";
 		auto f_em = !row["em"].isNull() ? row["em"].asCString() : "";
+		auto f_dn = !row["dn"].isNull() ? row["dn"].asCString() : "";
 		auto f_to = !row["to"].isNull() ? row["to"].asCString() : "";
 		if (kuid.size() > 0 && srv_guid.size() > 0 &&
 		    *f_to != '\0' && strchr(f_to, '@') != nullptr)
@@ -65,6 +66,8 @@ errno_t kdb_user_map::read(const char *file)
 			login_to_email.emplace(f_na, f_to);
 		if (*f_em != '\0' && *f_to != '\0')
 			login_to_email.emplace(f_em, f_to);
+		if (*f_dn != '\0' && *f_to != '\0')
+			login_to_email.emplace(f_dn, f_to);
 	}
 	fprintf(stderr, "usermap %s: %zu x kuid -> (new) emailaddr\n", file, uid_to_email.size());
 	fprintf(stderr, "usermap %s: %zu x name -> storeguid\n", file, login_to_guid.size());
@@ -73,10 +76,13 @@ errno_t kdb_user_map::read(const char *file)
 }
 
 /**
+ * @match_addrtype: the addrtype an item is required to have for it to be processed
+ *
  * Returns 0 when no property was changed, >0 when any property was changed,
  * or <0 on error.
  */
-static int subst_addrs_entryids(const kdb_user_map &umap, TPROPVAL_ARRAY *ar)
+static int subst_addrs_entryids(const kdb_user_map &umap,
+    const char *match_addrtype, TPROPVAL_ARRAY *ar)
 {
 	bool changed_anything = false;
 	static constexpr struct {
@@ -99,7 +105,7 @@ static int subst_addrs_entryids(const kdb_user_map &umap, TPROPVAL_ARRAY *ar)
 			smtpaddr = ar->get<const char>(tags.smtpaddr);
 		if (smtpaddr == nullptr) {
 			auto at = ar->get<const char>(tags.addrtype);
-			if (at == nullptr || strcasecmp(at, "ZARAFA") != 0)
+			if (at == nullptr || strcasecmp(at, match_addrtype) != 0)
 				continue;
 			auto em = ar->get<const char>(tags.emaddr);
 			if (em == nullptr)

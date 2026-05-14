@@ -49,6 +49,8 @@ echo\-username: return username (for use with foreach.*)
 .IP \(bu 4
 emptyfld: remove objects from folders
 .IP \(bu 4
+exaddrxlat: replace all "EX" type addresss in the mailbox's contents
+.IP \(bu 4
 foreach.*: iterate over security objects
 .IP \(bu 4
 freeze: halt all operations on a mailbox
@@ -223,6 +225,31 @@ gromox\-mbop \-u a@b.de emptyfld \-\-soft \-\-nuke\-folders DELETED
 .IP \(bu 4
 Deletion of objects in trash only if untouched for a while:
 gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
+.SH exaddrxlat
+.SS Synopsis
+\fBexaddrxlat \-m\fP \fIfile\fP [\fB\-r\fP] \fIfolder_spec\fP[...]
+.SS Description
+Scans messages in the given folders and replaces PR_ADDRTYPE="EX" and
+related properties by SMTP addresses.
+.PP
+MAPI as a system supports referencing message participants with arbitrary
+address types, including, but not limited to, SMTP, EX
+(Exchange/ActiveDirectory DN), FAX numbers, etc.
+.PP
+Contemporary Exchange systems (>= 2010) and/or Outlook versions should be
+adding secondary metadata when receiving/sending messages such that EX-typed
+participants become a EX+SMTP hybrid. Really old messages may lack the
+properties, and GUIs may fail to fill the To: line when replying to old
+messages. exaddrxlat will replace EX and EX+SMTP hybrids by pure SMTP ones,
+removing most historic Exchange Directory and ActiveDirectory information.
+.SS Options
+.TP
+\fB\-m\fP \fIfile\fP
+User map to utilize for translation. See kdb\-uidextract(8) for a format
+description.
+.TP
+\fB\-r\fP
+Process folders recursively.
 .SH foreach.*
 .SS Synopsis
 \fBforeach.\fP\fIfilter\fP[\fB\.\fP\fIfilter\fP]* [\fB\-j\fP \fIjobs\fP]
@@ -430,14 +457,15 @@ Issue the SQLite ".vacuum" command on the user's exchange.sqlite3 file in an
 attempt to reclaim unused disk space and shrink it. This operation can
 potentially run for quite some time, during which the mailbox is inaccessible.
 .SH zaddrxlat
+.SS Synopsis
+\fBzaddrxlat \-m\fP \fIfile\fP [\fB\-r\fP] \fIfolder_spec\fP[...]
+.SS Description
 Scans messages in the given folders and replaces PR_ADDRTYPE="ZARAFA" and
 related properties by normal SMTP addresses. See gromox\-kdb2mt(8) section
 "ZARAFA Address Type" for some details. The use case for zaddrxlat is for
 fixing up addresses after the fact, i.e. when the administrator forgot to
 employ a user map at the time of running kdb2mt. zaddrxlat does not change
 ACLs.
-.SS Synopsis
-\fBzaddrxlat \-m\fP \fIfile\fP [\fB\-r\fP] \fIfolder_spec\fP[...]
 .SS Options
 .TP
 \fB\-m\fP \fIfile\fP

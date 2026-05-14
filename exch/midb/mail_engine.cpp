@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
@@ -197,12 +198,12 @@ static std::string make_midb_path(const char *d)
 	return d + "/exmdb/midb.sqlite3"s;
 }
 
-static std::string me_ct_to_utf8(const char *charset, const char *string)
+static std::string me_ct_to_utf8(const char *charset, std::string_view sv)
 {
 	if (strcasecmp(charset, "UTF-8") == 0||
 	    strcasecmp(charset, "US-ASCII") == 0)
-		return string;
-	return iconvtext(string, charset, "UTF-8");
+		return std::string(sv);
+	return iconvtext(sv, charset, "UTF-8");
 }
 
 static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
@@ -282,9 +283,10 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
 		if (-1 == begin_pos && '=' == in_buff[i] && '?' == in_buff[i + 1]) {
 			begin_pos = i;
 			if (i > last_pos) {
-				std::string scratch(&in_buff[last_pos], begin_pos - last_pos);
-				HX_strltrim(scratch.data());
-				auto tmp_string = me_ct_to_utf8(charset, scratch.c_str());
+				std::string_view scratch(&in_buff[last_pos], begin_pos - last_pos);
+				while (scratch.size() > 0 && HX_isspace(scratch[0]))
+					scratch.remove_prefix(1);
+				auto tmp_string = me_ct_to_utf8(charset, scratch);
 				memcpy(&out_buff[offset], tmp_string.c_str(), tmp_string.size());
 				offset += tmp_string.size();
 				last_pos = i;
@@ -371,8 +373,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	}
 
 	auto charset = pmime->get_charset();
-	auto rs = me_ct_to_utf8(*charset != '\0' ?
-	          charset : penum->charset, content.c_str());
+	auto rs = me_ct_to_utf8(*charset != '\0' ? charset : penum->charset, content);
 	if (strcasestr(rs.c_str(), penum->keyword) != nullptr)
 		penum->b_result = TRUE;
 } catch (const std::bad_alloc &) {

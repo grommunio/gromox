@@ -1,4 +1,4 @@
-Milestone 3.7.129
+Milestone 3.7.193
 =================
 
 Enhancements:
@@ -11,6 +11,7 @@ Enhancements:
   external converter Pandoc, if installed.
 * Conversions from HTML to plaintext now support the use of Pandoc as a
   fallback if chawan/w3m is not present.
+* mbop: new "exaddrxlat" command
 
 Behavioral changes:
 

@@ -25,13 +25,18 @@ This program offers no command-line options.
 .SH Files
 By way of the \fIkopano\fP Python module, /etc/kopano/admin.cfg is sourced for
 TLS certificate parameters. Confer with the kopano-admin.cfg(5) manpage.
-.SH Format
-The output is a JSON file containing an array of user objects. Each user object
-is a dictionary with zero or more attributes; these can be:
+.SH User map format
+The output of kdb\-uidextract is a JSON file containing an array of user
+objects. If running uidextract is not possible, or not applicable (e.g. in case
+of Exchange user translation), the JSON file can also be constructed by other
+means, including manual input. Each user object is a dictionary with zero or
+more attributes; these can be:
 .IP \(bu 4
-"na": username (this can have many forms, including, but not limited to,
-"user", "user@domain", "domain_user", "domain\\user"; see "loginname_format"
-line of /etc/kopano/server.cfg)
+"na": original username associated with the Kopano account (this can have many
+forms, including, but not limited to, "user", "user@domain", "domain_user",
+"domain\\user"; see "loginname_format" line of /etc/kopano/server.cfg)
+.IP \(bu 4
+"dn": X.500 Legacy DN associated with an Exchange account
 .IP \(bu 4
 "sv": server GUID, represented as 16 ASCII characters, case-insensitive
 .IP \(bu 4
@@ -39,28 +44,50 @@ line of /etc/kopano/server.cfg)
 .IP \(bu 4
 "id": per-database(!) numeric user ID
 .IP \(bu 4
-"em": e-mail address associated with the Kopano account
+"em": original e-mail address associated with the Kopano account
 .IP \(bu 4
-"to": e-mail address that gromox\-kdb2mt(8) should map the Kopano user to
+"to": target e-mail address in the Gromox system
 .PP
 null values and empty strings are allowed. Take note that in multi-server
 Kopano installations, every LDAP user will appear in \fBall\fP the
 kopano-server databases, and with generally \fBdifferent\fP user IDs.
+.PP
+For sender/recipient address substitution (done by kdb2mt, or mbop-zaddrxlat):
+The "to" attribute is needed. One (or both) of "na" and "em" is also needed.
+.PP
+For sender/recipient address substitution (done by mbop-exaddrxlat),
+the "to" and "dn" attributes are needed.
+.PP
+For ACL substitution (done by kdb2mt), the "id", "sv" and "to" attributes are
+needed.
+.PP
+For kdb2mt \-\-mbox\-user lookup, the "sv", "id" and "st" attributes are
+needed.
+.SH Example Kopano user map
 .RS 4
 .PP
 .nf
 [
 
  {"em": "boss@example.domain", "na": "boss", "sv":
-"0123456789abcdef0123456789abcdef", "st": "0123456789abcdef0123456789abcdef",
-"to": "boss@domain.example", "id": 3},
+  "0123456789abcdef0123456789abcdef", "st": "0123456789abcdef0123456789abcdef",
+  "to": "boss@domain.example", "id": 3},
 
  {"em": "boss@domain.example", "na": "boss", "sv":
-"123456789abcdef0123456789abcdef0", "st": "0123456789abcdef0123456789abcdef",
-"to": "boss@domain.example", "id": 91}
+  "123456789abcdef0123456789abcdef0", "st": "0123456789abcdef0123456789abcdef",
+  "to": "boss@domain.example", "id": 91}
 
 ]
 .fi
+.RE
+.SH Example Exchange user map
+.RS 4
+.PP
+.nf
+[
+ {"dn": "/o=foobar/ou=Gobbledygook/cn=00000000-boss",
+  "to": "boss@domain.example"}
+]
 .RE
 .SH See also
 \fPgromox\fP(7), \fBgromox\-kdb2mt\fP(8), \fBkdb\-uidextract\-limited\fP(8)

@@ -12,12 +12,13 @@
 #include "kdbsub.cpp"
 #include "mbop.hpp"
 
-namespace zaddrxlat {
+namespace addrxlat {
 
 using LLU = unsigned long long;
 using namespace gromox;
 
 static unsigned int g_recursive;
+static const char *g_match_addrtype;
 static constexpr HXoption g_options_table[] = {
 	{{}, 'm', HXTYPE_STRING, {}, {}, {}, 'm', "User map"},
 	{{}, 'r', HXTYPE_NONE, &g_recursive, {}, {}, 0, "Operate recursively"},
@@ -39,7 +40,7 @@ static ec_error_t do_message(const kdb_user_map &map, eid_t folder_id, eid_t msg
 	}
 
 	std::unique_ptr<message_content, mc_delete> ctnt(ict->dup());
-	if (subst_addrs_entryids(map, &ctnt->proplist) == 0)
+	if (subst_addrs_entryids(map, g_match_addrtype, &ctnt->proplist) == 0)
 		return ecSuccess; /* nothing to do */
 
 	uint64_t change_num = 0;
@@ -88,9 +89,10 @@ static ec_error_t do_folder(const kdb_user_map &umap, eid_t base_folder_id)
 	return ecSuccess;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char **argv, const char *addrtype)
 {
 	HXopt6_auto_result result;
+	g_match_addrtype = addrtype;
 	if (HX_getopt6(g_options_table, argc, argv, &result, HXOPT_USAGEONERR |
 	    HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
@@ -100,7 +102,7 @@ int main(int argc, char **argv)
 		if (result.desc[i]->sh == 'm')
 			umap_file = result.oarg[i];
 	if (umap_file == nullptr) {
-		fprintf(stderr, "zaddrxlat must be used with a user map (-m)\n");
+		fprintf(stderr, "Address translation must be used with a user map (-m)\n");
 		return EXIT_FAILURE;
 	}
 	kdb_user_map umap;
