@@ -74,7 +74,7 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 			break;
 		if (!got) {
 			/* We had nothing to write out since quite a while... */
-			std::unique_lock fd_hold(prouter->base_lock);
+			std::unique_lock fd_hold(prouter->fd_lock);
 			ping_buff = 0;
 			if (write(prouter->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t) ||
 			    !notification_agent_read_response(prouter))
@@ -91,7 +91,7 @@ int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 				prouter->datagram_list.pop_front();
 				got = prouter->datagram_list.size() > 0;
 			}
-			std::unique_lock fd_hold(prouter->base_lock);
+			std::unique_lock fd_hold(prouter->fd_lock);
 			auto bytes_written = HXio_fullwrite(prouter->sockd, dg.pb.get(), dg.cb);
 			if (bytes_written < 0 ||
 			    static_cast<size_t>(bytes_written) != dg.cb ||

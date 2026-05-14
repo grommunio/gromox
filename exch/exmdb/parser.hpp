@@ -25,7 +25,8 @@ class exmdb_connection : public generic_connection {
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
 	std::string remote_id;
-	std::mutex m_mtx; /* protects thr_id */
+	std::mutex thr_lock; /* protects thr_id */
+	std::mutex fd_lock; /* protects generic_connection::* */
 };
 using EXMDB_CONNECTION = exmdb_connection;
 
@@ -50,7 +51,8 @@ struct router_connection final : public generic_connection {
 	pthread_t thr_id{};
 	std::string remote_id;
 	time_t last_time = 0;
-	std::mutex base_lock; /* protects thr_id, generic_connection::* */
+	std::mutex thr_lock; /* protects thr_id */
+	std::mutex fd_lock; /* protects generic_connection::* */
 	std::mutex dg_lock; /* protects datagram_list */
 	std::condition_variable waken_cond;
 	std::list<xbinary> datagram_list;

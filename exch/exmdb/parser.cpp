@@ -88,16 +88,19 @@ exmdb_connection::~exmdb_connection()
 
 void exmdb_connection::signal_stop()
 {
-	std::lock_guard lk(m_mtx);
-	if (sockd >= 0)
-		shutdown(sockd, SHUT_RDWR);
+	{
+		std::lock_guard lk(fd_lock);
+		if (sockd >= 0)
+			shutdown(sockd, SHUT_RDWR);
+	}
+	std::lock_guard lk(thr_lock);
 	if (!pthread_equal(thr_id, {}))
 		pthread_kill(thr_id, SIGALRM);
 }
 
 void exmdb_connection::close_fd()
 {
-	std::lock_guard lk(m_mtx);
+	std::lock_guard lk(fd_lock);
 	generic_connection::reset();
 }
 
@@ -141,16 +144,19 @@ void router_connection::push_and_wake(BINARY &&b) try
 void router_connection::signal_stop()
 {
 	b_stop = true;
-	std::lock_guard fd_hold(base_lock);
-	if (sockd >= 0)
-		shutdown(sockd, SHUT_RDWR);
+	{
+		std::lock_guard lk(fd_lock);
+		if (sockd >= 0)
+			shutdown(sockd, SHUT_RDWR);
+	}
+	std::lock_guard lk(thr_lock);
 	if (!pthread_equal(thr_id, {}))
 		pthread_kill(thr_id, SIGALRM);
 }
 
 void router_connection::close_fd()
 {
-	std::lock_guard fd_hold(base_lock);
+	std::lock_guard lk(fd_lock);
 	generic_connection::reset();
 }
 
