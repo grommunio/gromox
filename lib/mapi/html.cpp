@@ -1148,7 +1148,7 @@ static ec_error_t html_to_rtf_boring(std::string_view inbuf, cpid_t cpid, std::s
 	            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
 	if (hdoc == nullptr && inbuf.size() == 0)
 		/* Old libxml (prior to v2.13.0) has problems with 0-sized documents */
-		hdoc = htmlReadMemory("<!-- -->", 7, nullptr, "utf-8",
+		hdoc = htmlReadMemory("<!-- -->", 8, nullptr, "utf-8",
 		            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
 	if (hdoc == nullptr)
 		return ecError;
