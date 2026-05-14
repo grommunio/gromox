@@ -2773,7 +2773,7 @@ BOOL exmdb_server::get_message_instance_rcpts(const char *dir,
 		if (!srecip.has(PR_DISPLAY_NAME))
 			drecip.emplace_back(PR_DISPLAY_NAME, dummy_string);
 		if (!srecip.has(PR_ADDRTYPE))
-			drecip.emplace_back(PR_ADDRTYPE, &dummy_addrtype);
+			drecip.emplace_back(PR_ADDRTYPE, dummy_addrtype);
 		if (!srecip.has(PR_EMAIL_ADDRESS))
 			drecip.emplace_back(PR_EMAIL_ADDRESS, dummy_string);
 	}
