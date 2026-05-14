@@ -7,26 +7,32 @@
 #include <mutex>
 #include <pthread.h>
 #include <string>
+#include <utility>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/generic_connection.hpp>
 
 class config_file;
 
-/* Represents a connection from an exmdb_client */
-class exmdb_connection : public generic_connection {
+class parser_thread : public generic_connection {
 	public:
-	exmdb_connection(generic_connection &&);
-	~exmdb_connection();
-	NOMOVE(exmdb_connection);
+	parser_thread(parser_thread &&);
+	parser_thread(generic_connection &&);
+	~parser_thread();
 	void signal_stop();
 	void close_fd();
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
-	std::string remote_id;
 	std::mutex thr_lock; /* protects thr_id */
 	std::mutex fd_lock; /* protects generic_connection::* */
+	std::string remote_id;
+};
+
+/* Represents a connection from an exmdb_client */
+class exmdb_connection final : public parser_thread {
+	public:
+	exmdb_connection(generic_connection &&co) : parser_thread(std::move(co)) {}
 };
 using EXMDB_CONNECTION = exmdb_connection;
 
@@ -34,25 +40,17 @@ using EXMDB_CONNECTION = exmdb_connection;
  * Represents a connection from an exmdb_client which has been switched to
  * notification listening mode.
  */
-struct router_connection final : public generic_connection {
+struct router_connection final : public parser_thread {
 	struct xbinary {
 		std::unique_ptr<uint8_t[], gromox::stdlib_delete> pb;
 		size_t cb = 0;
 	};
 
-	router_connection(generic_connection &&, pthread_t &&, std::string_view);
-	NOMOVE(router_connection);
-	~router_connection();
+	router_connection(parser_thread &&, std::string_view);
 	void push_and_wake(BINARY &&);
 	void signal_stop();
-	void close_fd();
 
-	gromox::atomic_bool b_stop{false};
-	pthread_t thr_id{};
-	std::string remote_id;
 	time_t last_time = 0;
-	std::mutex thr_lock; /* protects thr_id */
-	std::mutex fd_lock; /* protects generic_connection::* */
 	std::mutex dg_lock; /* protects datagram_list */
 	std::condition_variable waken_cond;
 	std::list<xbinary> datagram_list;

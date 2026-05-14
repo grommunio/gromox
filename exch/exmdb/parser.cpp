@@ -72,50 +72,23 @@ static listener_ctx exmdb_listen_ctx;
 std::atomic<unsigned int> g_enable_dam, g_istore_standalone;
 std::string g_host_id;
 
-exmdb_connection::exmdb_connection(generic_connection &&co) :
+parser_thread::parser_thread(generic_connection &&co) :
 	generic_connection(std::move(co))
 {}
 
-exmdb_connection::~exmdb_connection()
+parser_thread::parser_thread(parser_thread &&o) :
+	generic_connection(std::move(o))
 {
-	if (pthread_equal(thr_id, {}))
-		return;
-	if (pthread_equal(thr_id, pthread_self()))
-		pthread_detach(thr_id);
-	else
-		pthread_join(thr_id, nullptr);
+	thr_id = std::move(o.thr_id);
+	o.thr_id = {};
 }
 
-void exmdb_connection::signal_stop()
+parser_thread::~parser_thread()
 {
-	{
-		std::lock_guard lk(fd_lock);
-		if (sockd >= 0)
-			shutdown(sockd, SHUT_RDWR);
-	}
-	std::lock_guard lk(thr_lock);
-	if (!pthread_equal(thr_id, {}))
-		pthread_kill(thr_id, SIGALRM);
-}
-
-void exmdb_connection::close_fd()
-{
-	std::lock_guard lk(fd_lock);
-	generic_connection::reset();
-}
-
-router_connection::router_connection(generic_connection &&o, pthread_t &&tid,
-    std::string_view rid) :
-	generic_connection(std::move(o)), remote_id(rid),
-	last_time(time(nullptr))
-{
-	thr_id = std::move(tid);
-	tid = {};
-}
-
-router_connection::~router_connection()
-{
-	/* When the dtor runs, no thread should be in the notification_agent_thread_work inner loop anymore */
+	/*
+	 * When the dtor runs, no thread should be in the work function's loop
+	 * anymore
+	 */
 	if (pthread_equal(thr_id, {}))
 		return;
 	/*
@@ -127,6 +100,12 @@ router_connection::~router_connection()
 		pthread_detach(thr_id);
 	else
 		pthread_join(thr_id, nullptr);
+}
+
+router_connection::router_connection(parser_thread &&o, std::string_view rid) :
+	parser_thread(std::move(o)), last_time(time(nullptr))
+{
+	remote_id = rid;
 }
 
 void router_connection::push_and_wake(BINARY &&b) try
@@ -141,7 +120,7 @@ void router_connection::push_and_wake(BINARY &&b) try
 } catch (const std::bad_alloc &) {
 }
 
-void router_connection::signal_stop()
+void parser_thread::signal_stop()
 {
 	b_stop = true;
 	{
@@ -153,11 +132,16 @@ void router_connection::signal_stop()
 	if (!pthread_equal(thr_id, {}))
 		/* kick calls like read,write */
 		pthread_kill(thr_id, SIGALRM);
+}
+
+void router_connection::signal_stop()
+{
+	parser_thread::signal_stop();
 	/* but for condition_variables we really need this instead */
 	waken_cond.notify_one();
 }
 
-void router_connection::close_fd()
+void parser_thread::close_fd()
 {
 	std::lock_guard lk(fd_lock);
 	generic_connection::reset();
@@ -371,8 +355,7 @@ static int rqi_listen(parser_params &param, const exreq_listen_notification &q,
 	if (param.use_workers && handoff_just_one(q.dir))
 		return rqi_handoff(conn, q.dir, input_buf);
 
-	auto router = std::make_shared<router_connection>(std::move(static_cast<generic_connection &>(conn)),
-	              std::move(conn.thr_id), q.remote_id);
+	auto router = std::make_shared<router_connection>(std::move(static_cast<parser_thread &>(conn)), q.remote_id);
 	static constexpr char success[5]{};
 	auto wrret = write(router->sockd, success, std::size(success));
 	if (wrret < 0 || static_cast<size_t>(wrret) != std::size(success))
