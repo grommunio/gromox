@@ -105,17 +105,16 @@ static BOOL recipient_block_dup_internal(
 {
 	if (pblock->count == 0)
 		return FALSE;
-	precipient->reserved = pblock->reserved;
 	precipient->count = pblock->count;
 	precipient->ppropval = me_alloc<TAGGED_PROPVAL>(pblock->count);
 	if (precipient->ppropval == nullptr)
 		return FALSE;
-	for (int i = 0; i < pblock->count; ++i) {
+	for (unsigned int i = 0; i < pblock->count; ++i) {
 		precipient->ppropval[i].proptag = pblock->ppropval[i].proptag;
 		precipient->ppropval[i].pvalue = propval_dup(PROP_TYPE(pblock->ppropval[i].proptag),
 								pblock->ppropval[i].pvalue);
 		if (NULL == precipient->ppropval[i].pvalue) {
-			for (i -= 1; i >= 0; --i)
+			for (; i > 0; --i)
 				propval_free(PROP_TYPE(precipient->ppropval[i].proptag),
 					precipient->ppropval[i].pvalue);
 			free(precipient->ppropval);

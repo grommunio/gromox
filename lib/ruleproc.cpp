@@ -17,6 +17,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/mail.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
 #include <gromox/mapitags.hpp>
@@ -140,7 +141,7 @@ struct rxparam {
 }
 
 unsigned int g_ruleproc_debug;
-static std::string rp_smtp_url;
+static std::string rp_smtp_url, rp_org_name;
 static thread_local alloc_context rp_alloc_ctx;
 static thread_local const char *rp_storedir;
 
@@ -847,6 +848,115 @@ static ec_error_t op_read(rxparam &par, const rule_node &rule)
 	return ecSuccess;
 }
 
+static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
+    const FORWARDDELEGATE_ACTION &blk, uint32_t flavor) try
+{
+	std::vector<std::string> rcpt_list;
+	for (const auto &rcptprops : blk) {
+		TPROPVAL_ARRAY pv;
+		pv.count = rcptprops.count;
+		pv.ppropval = rcptprops.ppropval;
+		if (cu_rcpt_to_list(std::move(pv), rp_org_name.c_str(),
+		    rcpt_list, mysql_adaptor_userid_to_name, false) != ecSuccess)
+			return ecError;
+	}
+	if (rcpt_list.empty())
+		return ecSuccess;
+
+	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
+	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
+	MAIL imail;
+	rp_storedir = par.cur.dirc();
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = cu_alloc;
+	cvt.get_propids = cu_get_propids;
+	cvt.get_propname = cu_get_propname;
+	cvt.use_format_override(*par.ctnt);
+	if (!cvt.mapi_to_inet(*par.ctnt, imail)) {
+		mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed");
+		rp_alloc_ctx.clear();
+		rp_storedir = nullptr;
+		return ecError;
+	}
+	rp_alloc_ctx.clear();
+	rp_storedir = nullptr;
+
+	ec_error_t ret = ecSuccess;
+	if (flavor & FWD_AS_ATTACHMENT) {
+		MAIL imail1;
+		auto pmime = imail1.add_head();
+		if (pmime == nullptr)
+			return ecServerOOM;
+		if (!pmime->set_content_type("message/rfc822"))
+			mlog(LV_WARN, "W-2729: set_content_type not successful");
+		char tmp_buff[64*1024];
+		snprintf(tmp_buff, std::size(tmp_buff), "<%s>", par.ev_to);
+		pmime->set_field("From", tmp_buff);
+		int offset = 0;
+		for (const auto &eaddr : rcpt_list) {
+			if (offset == 0)
+				offset = gx_snprintf(tmp_buff, std::size(tmp_buff),
+				         "<%s>", eaddr.c_str());
+			else
+				offset += gx_snprintf(tmp_buff + offset,
+				          std::size(tmp_buff) - offset, ", <%s>",
+				          eaddr.c_str());
+			pmime->append_field("Delivered-To", eaddr.c_str());
+		}
+		pmime->set_field("To", tmp_buff);
+		const std::string *old_subject = nullptr;
+		if (auto pmime_old = imail.get_head())
+			old_subject = pmime_old->get_field("Subject");
+		if (old_subject != nullptr)
+			pmime->set_field("Subject", "Fwd: " + *old_subject);
+		else
+			pmime->set_field("Subject", "Fwd: (no subject)");
+		struct tm time_buff;
+		auto cur_time = time(nullptr);
+		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
+			localtime_r(&cur_time, &time_buff));
+		pmime->set_field("Date", tmp_buff);
+		pmime->write_mail(&imail);
+		auto env_from = (flavor & FWD_PRESERVE_SENDER) ?
+		                par.ev_from : par.ev_to;
+		ret = cu_send_mail(imail1, rp_smtp_url.c_str(), env_from, rcpt_list);
+	} else {
+		auto pmime = imail.get_head();
+		if (pmime == nullptr)
+			return ecError;
+		for (const auto &eaddr : rcpt_list)
+			pmime->append_field("Delivered-To", eaddr.c_str());
+		auto env_from = (flavor & FWD_PRESERVE_SENDER) ?
+		                par.ev_from : par.ev_to;
+		ret = cu_send_mail(imail, rp_smtp_url.c_str(), env_from, rcpt_list);
+	}
+	if (ret != ecSuccess)
+		mlog(LV_ERR, "ruleproc: OP_FORWARD cu_send_mail: %s",
+			mapi_strerror(ret));
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
+}
+
+static ec_error_t op_forward(rxparam &par, const rule_node &rule,
+    const ACTION_BLOCK &act)
+{
+	auto fwd = static_cast<const FORWARDDELEGATE_ACTION *>(act.pdata);
+	if (fwd == nullptr)
+		return ecSuccess;
+	return op_forward2(par, rule, *fwd, act.flavor);
+}
+
+static ec_error_t opx_forward(rxparam &par, const rule_node &rule,
+    const EXT_ACTION_BLOCK &act)
+{
+	auto fwd = static_cast<const FORWARDDELEGATE_ACTION *>(act.pdata);
+	if (fwd == nullptr)
+		return ecSuccess;
+	return op_forward2(par, rule, *fwd, act.flavor);
+}
+
 static ec_error_t op_switch(rxparam &par, const rule_node &rule,
     const ACTION_BLOCK &act, size_t act_idx)
 {
@@ -864,6 +974,8 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 		return op_read(par, rule);
 	case OP_TAG:
 		return op_tag(par, rule, static_cast<TAGGED_PROPVAL *>(act.pdata));
+	case OP_FORWARD:
+		return op_forward(par, rule, act);
 	case OP_DELETE:
 		par.del = true;
 		return ecSuccess;
@@ -903,6 +1015,8 @@ static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
 		return op_read(par, rule);
 	case OP_TAG:
 		return op_tag(par, rule, static_cast<TAGGED_PROPVAL *>(act.pdata));
+	case OP_FORWARD:
+		return opx_forward(par, rule, act);
 	case OP_DELETE:
 		par.del = true;
 		return ecSuccess;
@@ -1526,8 +1640,9 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 }
 
 static constexpr cfg_directive rp_config_defaults[] = {
-	{"ruleproc_debug", "0", CFG_BOOL},
 	{"outgoing_smtp_url", "sendmail://localhost"},
+	{"ruleproc_debug", "0", CFG_BOOL},
+	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
 
@@ -1543,6 +1658,7 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 		/* e.g. permission error */
 		return false;
 	g_ruleproc_debug = parse_bool(cfg->get_value("ruleproc_debug"));
+	rp_org_name = znul(cfg->get_value("x500_org_name"));
 	auto str = cfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {

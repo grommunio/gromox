@@ -706,7 +706,6 @@ static void *php_to_propval(zval *entry, proptype_t proptype)
 					if (err != ecSuccess)
 						return NULL;
 					prcpt_block = &xq->pblock[k];
-					prcpt_block->reserved = 0;
 					prcpt_block->count = tmp_propvals.count;
 					prcpt_block->ppropval = tmp_propvals.ppropval;
 					++k;

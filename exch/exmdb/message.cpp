@@ -3205,7 +3205,7 @@ static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
 static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
     const EXT_ACTION_BLOCK &block) try
 {
-	auto pextfwddlgt = static_cast<const EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
+	auto pextfwddlgt = static_cast<const FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (!exmdb_server::is_private() || !rp.digest.has_value() ||
 	    pextfwddlgt->count == 0)
 		return ecSuccess;
@@ -3338,7 +3338,7 @@ static ec_error_t opx_switch(const rulexec_in &rp,
 		break;
 	}
 	case OP_FORWARD: {
-		auto pextfwddlgt = static_cast<const EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
+		auto pextfwddlgt = static_cast<const FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
 			return message_disable_rule(rp.db, true, rule.id);
 		std::vector<std::string> rcpt_list;

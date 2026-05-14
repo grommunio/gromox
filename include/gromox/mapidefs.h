@@ -1301,8 +1301,7 @@ struct GX_EXPORT tarray_set {
 using TARRAY_SET = tarray_set;
 
 struct GX_EXPORT RECIPIENT_BLOCK {
-	uint8_t reserved = 0;
-	uint16_t count = 0;
+	uint32_t count = 0;
 	TAGGED_PROPVAL *ppropval = nullptr;
 
 	std::string repr() const;
@@ -1480,7 +1479,7 @@ struct GX_EXPORT RULE_LIST {
 };
 
 struct GX_EXPORT FORWARDDELEGATE_ACTION {
-	uint16_t count = 0;
+	uint32_t count = 0;
 	RECIPIENT_BLOCK *pblock = nullptr;
 
 	std::string repr() const;
