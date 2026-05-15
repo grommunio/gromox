@@ -690,17 +690,23 @@ int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
 	return -1;
 }
 
-errno_t socketpass_worker::start_raw(const char *prog, char **argv)
+/**
+ * Returns >0 if the process was started.
+ * 0 is not returned.
+ * Returns <0 to signal an error. (Negative errno returned. /
+ * Global errno itself is not guaranteed to be set.)
+ */
+int socketpass_worker::start_raw(const char *prog, char **argv)
 {
 	posix_spawn_file_actions_t fa{};
 	auto ret = posix_spawn_file_actions_init(&fa);
 	if (ret != 0)
-		return ret;
+		return -ret;
 	auto cl_actions = HX::make_scope_exit([&]() { posix_spawn_file_actions_destroy(&fa); });
 
 	int skfd[2]{-1, -1};
 	if (socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, skfd) != 0)
-		return errno;
+		return -errno;
 	auto cl_pair = HX::make_scope_exit([&]() {
 		if (skfd[0] >= 0)
 			close(skfd[0]);
@@ -710,26 +716,31 @@ errno_t socketpass_worker::start_raw(const char *prog, char **argv)
 
 	ret = posix_spawn_file_actions_addclose(&fa, skfd[1]);
 	if (ret != 0)
-		return ret;
+		return -ret;
 	if (skfd[0] != STDIN_FILENO) {
 		ret = posix_spawn_file_actions_adddup2(&fa, skfd[0], STDIN_FILENO);
 		if (ret != 0)
-			return ret;
+			return -ret;
 		ret = posix_spawn_file_actions_addclose(&fa, skfd[0]);
 		if (ret != 0)
-			return ret;
+			return -ret;
 	}
 
 	ret = posix_spawnp(&m_pid, prog, &fa, nullptr, argv, environ);
 	if (ret != 0)
-		return ret;
+		return -ret;
 	cl_pair.release();
 	close(skfd[0]);
 	m_channel = skfd[1];
-	return 0;
+	return 1;
 }
 
-errno_t socketpass_worker::start(const char *prog, char **argv)
+/**
+ * Returns >0 if the process was started.
+ * Returns 0 if the process was already alive.
+ * Returns <0 to signal an error.
+ */
+int socketpass_worker::start(const char *prog, char **argv)
 {
 	if (running())
 		return 0;
@@ -737,7 +748,7 @@ errno_t socketpass_worker::start(const char *prog, char **argv)
 	return start_raw(prog, argv);
 }
 
-errno_t socketpass_worker::restart(const char *prog, char **argv)
+int socketpass_worker::restart(const char *prog, char **argv)
 {
 	stop();
 	return start_raw(prog, argv);
@@ -759,6 +770,10 @@ int socketpass_worker::stop()
 	return 0;
 }
 
+/**
+ * Returns an indication whether the subprocess is still considered running
+ * after attempting its potential collection.
+ */
 bool socketpass_worker::running()
 {
 	if (m_pid < 0)

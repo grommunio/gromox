@@ -305,8 +305,8 @@ static bool rqi_handoff(EXMDB_CONNECTION &conn, const char *dir,
 	auto [iter, added] = spworkers.try_emplace(dir);
 	auto &worker = iter->second;
 	auto err = worker.start(prog.c_str(), const_cast<char **>(args));
-	if (err != 0) {
-		mlog(LV_ERR, "spworker_start %s: %s", prog.c_str(), strerror(err));
+	if (err < 0) {
+		mlog(LV_ERR, "spworker_start %s: %s", prog.c_str(), strerror(-err));
 		return false;
 	}
 	return worker.pass(input_buf, conn.sockd) == 0;

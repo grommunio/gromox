@@ -9,13 +9,13 @@ class GX_EXPORT socketpass_worker {
 	public:
 	~socketpass_worker() { stop(); }
 	bool running();
-	errno_t start(const char *prog, char **argv);
-	errno_t restart(const char *prog, char **argv);
+	int start(const char *prog, char **argv);
+	int restart(const char *prog, char **argv);
 	errno_t pass(std::string_view, int fd) const;
 	int stop();
 
 	private:
-	errno_t start_raw(const char *prog, char **argv);
+	int start_raw(const char *prog, char **argv);
 
 	int m_channel = -1;
 	pid_t m_pid = -1;
