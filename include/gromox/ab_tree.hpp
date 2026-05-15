@@ -1,12 +1,10 @@
 #pragma once
-#include <algorithm>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
 #include <shared_mutex>
 #include <string>
 #include <thread>
-#include <type_traits>
 #include <unordered_map>
 #include <variant>
 #include <gromox/clock.hpp>
@@ -378,7 +376,6 @@ struct GX_EXPORT ab_node {
 	using iterator = decltype(ab_domain::userref)::const_iterator;
 	iterator begin() const;
 	iterator end() const;
-	inline iterator find(minid) const { return mid.type() == minid::address ? std::find(begin(), end(), mid) : end(); }
 	inline minid at(uint32_t idx) const { return idx < children_count() ? this->operator[](idx) : minid(); }
 	minid operator[](uint32_t) const;
 };
