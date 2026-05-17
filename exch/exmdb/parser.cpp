@@ -657,26 +657,25 @@ void exmdb_parser_stop()
 
 static int sockaccept_thread(generic_connection &&conn)
 {
-		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    conn.client_addr) == g_acl_list.cend()) {
-			static std::atomic<time_t> g_lastwarn_time;
-			auto prev = g_lastwarn_time.load();
-			auto next = prev + 60;
-			auto now = time(nullptr);
-			if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-				mlog(LV_INFO, "I-1666: Rejecting %s: not allowed by exmdb_acl", conn.client_addr);
-			auto tmp_byte = exmdb_response::access_deny;
-			if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
-				/* ignore */;
-			return 0;
-		}
-		if (!exmdb_parser_insert_conn(std::move(conn))) {
-			auto tmp_byte = exmdb_response::max_reached;
-			if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
-				/* ignore */;
-			return 0;
-		}
-
+	if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
+	    conn.client_addr) == g_acl_list.cend()) {
+		static std::atomic<time_t> g_lastwarn_time;
+		auto prev = g_lastwarn_time.load();
+		auto next = prev + 60;
+		auto now = time(nullptr);
+		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
+			mlog(LV_INFO, "I-1666: Rejecting %s: not allowed by exmdb_acl", conn.client_addr);
+		auto tmp_byte = exmdb_response::access_deny;
+		if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
+			/* ignore */;
+		return 0;
+	}
+	if (!exmdb_parser_insert_conn(std::move(conn))) {
+		auto tmp_byte = exmdb_response::max_reached;
+		if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
+			/* ignore */;
+		return 0;
+	}
 	return 0;
 }
 
