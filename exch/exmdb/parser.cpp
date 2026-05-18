@@ -684,6 +684,8 @@ int exmdb_pickup(int control_fd)
 	auto par = std::make_unique<parser_params>();
 	int client_fd = -1;
 	auto ern = socketpass_receive(control_fd, par->injected_pkt, client_fd);
+	if (ern == EINTR || ern == EAGAIN)
+		return 0;
 	if (ern != 0)
 		return -1;
 	par->conn = std::make_shared<exmdb_connection>(generic_connection::takeover(std::move(client_fd)));
