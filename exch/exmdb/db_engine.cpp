@@ -831,8 +831,6 @@ static void *db_expiry_thread(void *param)
 		});
 		if (z > 0 && g_istore_standalone & ISTORE_SPLIT_WORKERS &&
 		    !once && g_hash_table.empty()) {
-			mlog(LV_INFO, "Ending istore worker since db was closed by inactivity");
-			once = true;
 			raise(SIGTERM);
 		}
 	}

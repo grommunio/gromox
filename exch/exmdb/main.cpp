@@ -298,7 +298,9 @@ bool SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 #undef IDLOUT
 		register_service("exmdb_client_register_proc", exmdb_server::register_proc);
 		register_service("pass_service", common_util_pass_service);
-		register_service("exmdb_pickup", exmdb_pickup);
+		register_service("exmdb_pickup_run", exmdb_pickup_run);
+		register_service("exmdb_pickup_running", exmdb_pickup_running);
+		register_service("exmdb_pickup_stop", exmdb_pickup_stop);
 		return TRUE;
 	}
 	case PLUGIN_FREE:

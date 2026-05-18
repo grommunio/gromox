@@ -61,16 +61,22 @@ struct parser_params {
 	std::string_view input_buf;
 };
 
+struct pickup_params {
+	wrapfd fd;
+};
+
 static size_t g_max_threads, g_max_routers;
 static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
 /* used for counting and for setting c->b_stop on exit from main thread */
 static std::unordered_set<std::shared_ptr<EXMDB_CONNECTION>> g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
-static gromox::atomic_bool g_exmdblisten_stop;
+static gromox::atomic_bool g_exmdblisten_stop, g_exmdbpickup_running;
 static std::vector<std::string> g_acl_list;
 static listener_ctx exmdb_listen_ctx;
 std::atomic<unsigned int> g_enable_dam, g_istore_standalone;
 std::string g_host_id;
+static pthread_t g_exmdbpickup_tid;
+static std::mutex g_exmdbpickup_tlock;
 
 parser_thread::parser_thread(generic_connection &&co) :
 	generic_connection(std::move(co))
@@ -679,30 +685,6 @@ static int sockaccept_thread(generic_connection &&conn)
 	return 0;
 }
 
-int exmdb_pickup(int control_fd)
-{
-	auto par = std::make_unique<parser_params>();
-	int client_fd = -1;
-	auto ern = socketpass_receive(control_fd, par->injected_pkt, client_fd);
-	if (ern == EINTR || ern == EAGAIN)
-		return 0;
-	if (ern != 0)
-		return -1;
-	par->conn = std::make_shared<exmdb_connection>(generic_connection::takeover(std::move(client_fd)));
-	if (par->conn->sockd < 0)
-		return 0;
-
-	/* reprise of exmdb_parser_insert_conn */
-	par->single_user = znul(getenv("ISTORE_USER"));
-	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
-	           request_parser_thread, par.get());
-	if (ret != 0)
-		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
-	else
-		par.release(); /* thread should be vivid now */
-	return 0;
-}
-
 static int exmdb_acl_read(const char *config_path, const char *hosts_allow)
 {
 	auto &acl = g_acl_list;
@@ -769,4 +751,81 @@ void exmdb_listener_stop()
 {
 	g_exmdblisten_stop = true;
 	exmdb_listen_ctx.reset();
+}
+
+static int exmdb_pickup_one(int control_fd)
+{
+	auto par = std::make_unique<parser_params>();
+	int client_fd = -1;
+	auto ern = socketpass_receive(control_fd, par->injected_pkt, client_fd);
+	if (ern == EINTR || ern == EAGAIN)
+		return 0;
+	if (ern != 0)
+		return -1;
+	par->conn = std::make_shared<exmdb_connection>(generic_connection::takeover(std::move(client_fd)));
+	if (par->conn->sockd < 0)
+		return 0;
+
+	/* reprise of exmdb_parser_insert_conn */
+	par->single_user = znul(getenv("ISTORE_USER"));
+	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
+	           request_parser_thread, par.get());
+	if (ret != 0)
+		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
+	else
+		par.release(); /* thread should be vivid now */
+	return 0;
+}
+
+static void *exmdb_pickup_loop(void *arg)
+{
+	pthread_setname_np(pthread_self(), "exmdb_pickup");
+	std::unique_ptr<pickup_params> par(static_cast<pickup_params *>(arg));
+	while (!g_exmdblisten_stop) {
+		auto status = exmdb_pickup_one(STDIN_FILENO);
+		if (status < 0)
+			break; /* havetoend */
+	}
+	g_exmdbpickup_running = false;
+	return nullptr;
+}
+
+bool exmdb_pickup_running()
+{
+	return g_exmdbpickup_running.load();
+}
+
+int exmdb_pickup_run(int fd) try
+{
+	g_exmdblisten_stop = false;
+	wrapfd wfd = fd;
+	auto par = std::make_unique<pickup_params>(std::move(wfd));
+	g_exmdbpickup_running = true;
+	int ret = 0;
+	{
+		std::unique_lock lk(g_exmdbpickup_tlock);
+		ret = pthread_create(&g_exmdbpickup_tid, nullptr,
+		      exmdb_pickup_loop, par.get());
+	}
+	if (ret != 0) {
+		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
+		g_exmdbpickup_running = false;
+		return -1;
+	}
+	par.release(); /* thread should be vivid now */
+	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	g_exmdbpickup_running = false;
+	return ENOMEM;
+}
+
+void exmdb_pickup_stop()
+{
+	g_exmdblisten_stop = true;
+	std::unique_lock lk(g_exmdbpickup_tlock);
+	if (!pthread_equal(g_exmdbpickup_tid, {})) {
+		pthread_kill(g_exmdbpickup_tid, SIGALRM);
+		pthread_join(g_exmdbpickup_tid, nullptr);
+	}
 }

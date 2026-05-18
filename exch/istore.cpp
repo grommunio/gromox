@@ -151,28 +151,38 @@ int main(int argc, char **argv)
 	if (service_run() != 0)
 		return EXIT_FAILURE;
 	retcode = EXIT_SUCCESS;
-	mlog(LV_INFO, "Information Store is running");
+
 	bool is_worker = getenv("ISTORE_USER");
-	int (*exmdb_pickup)(int) = nullptr;
+	int (*exmdb_pickup_run)(int) = nullptr;
+	bool (*exmdb_pickup_running)() = nullptr;
+	void (*exmdb_pickup_stop)(void) = nullptr;
 	if (is_worker) {
-		exmdb_pickup = reinterpret_cast<decltype(exmdb_pickup)>(service_query("exmdb_pickup",
-		               typeid(*exmdb_pickup)));
-		if (exmdb_pickup == nullptr) {
-			mlog(LV_ERR, "exmdb_pickup not found");
+		exmdb_pickup_run     = reinterpret_cast<decltype(exmdb_pickup_run)>(service_query("exmdb_pickup_run", typeid(*exmdb_pickup_run)));
+		exmdb_pickup_running = reinterpret_cast<decltype(exmdb_pickup_running)>(service_query("exmdb_pickup_running", typeid(*exmdb_pickup_running)));
+		exmdb_pickup_stop    = reinterpret_cast<decltype(exmdb_pickup_stop)>(service_query("exmdb_pickup_stop", typeid(*exmdb_pickup_stop)));
+		if (exmdb_pickup_run == nullptr ||
+		    exmdb_pickup_running == nullptr ||
+		    exmdb_pickup_stop == nullptr) {
+			mlog(LV_ERR, "exmdb_pickup routines not found");
 			return EXIT_FAILURE;
 		}
+		if (exmdb_pickup_run(STDIN_FILENO) < 0)
+			return EXIT_FAILURE;
 	}
+	auto cl_1 = HX::make_scope_exit([&]() {
+		if (is_worker && exmdb_pickup_stop != nullptr)
+			exmdb_pickup_stop();
+	});
+
+	mlog(LV_INFO, "Information Store is running");
 	while (!g_istore_stop) {
-		if (is_worker) {
-			if (exmdb_pickup(STDIN_FILENO) < 0)
-				break;
-		} else {
-			sleep(1);
-		}
+		sleep(1);
 		if (g_hup_signalled.exchange(false)) {
 			istore_reload_config();
 			service_trigger_all(PLUGIN_RELOAD);
 		}
+		if (is_worker && !exmdb_pickup_running())
+			break;
 	}
 	return retcode;
 }

@@ -68,6 +68,9 @@ extern int exmdb_pickup(int control_fd);
 extern int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg);
 extern int exmdb_listener_run(const char *config_path, const config_file &gxcfg);
 extern void exmdb_listener_stop();
+extern int exmdb_pickup_run(int fd);
+extern bool exmdb_pickup_running();
+extern void exmdb_pickup_stop();
 
 extern std::atomic<unsigned int> g_exrpc_debug, g_enable_dam, g_istore_standalone;
 extern std::string g_host_id;
