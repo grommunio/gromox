@@ -719,7 +719,7 @@ enum {
 	PR_SENDER_SMTP_ADDRESS = PROP_TAG(PT_UNICODE, 0x5D01), /* PidTagSenderSmtpAddress */
 	PR_SENT_REPRESENTING_SMTP_ADDRESS = PROP_TAG(PT_UNICODE, 0x5D02), /* PidTagSentRepresentingSmtpAddress */
 	PidTagReadReceiptSmtpAddress = PROP_TAG(PT_UNICODE, 0x5D05),
-	// PidTagReceivedBySmtpAddress = PROP_TAG(PT_UNICODE, 0x5D07),
+	PR_RECEIVED_BY_SMTP_ADDRESS = PROP_TAG(PT_UNICODE, 0x5D07), /* PidTagReceivedBySmtpAddress */
 	// PidTagReceivedRepresentingSmtpAddress = PROP_TAG(PT_UNICODE, 0x5D08),
 	// PR_RECIPIENT_ORDER = PROP_TAG(PT_LONG, 0x5FDF), /* PidTagRecipientOrder */
 	// PR_RECIPIENT_PROPOSED = PROP_TAG(PT_BOOLEAN, 0x5FE1), /* PidTagRecipientProposed */
