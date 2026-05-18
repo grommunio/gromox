@@ -174,7 +174,7 @@ $LinuxUser = "root"
 # Alternatively, use single quotes instead of double quotes. "abc`$123" and 'abc$123' are both valid.
 # If the $LinuxUserPWD contains a backtick (`), escape it with a second backtick (`) like `` or use single quotes.
 # $LinuxUserPWD = "Secret_root_Password"
-# For pubkey authentication without a passphrse set
+# For pubkey authentication without a Passphrase set
 # $LinuxUserSSHKey = "C:\grommunio\exch.ppk"
 # For pubkey authentication which needs a password set
 # $UsePageant = $true
@@ -186,7 +186,7 @@ $LinuxUser = "root"
 # Import only these mailboxes, an array of mail addresses, case insensitive,
 # $IgnoreMboxes will be honored.
 # To import all mailboxes leave empty, to import only some mailboxes, populate
-# $ImportMboxes or leave emtpy if you use the file below instead.
+# $ImportMboxes or leave empty if you use the file below instead.
 #[string] $ImportMboxes = 'TestI1@example.com','Testi2@example.com'
 [string] $ImportMboxes = ''
 
@@ -194,9 +194,9 @@ $LinuxUser = "root"
 # To populate a list of users present on the grommunio-host:
 #  gromox-mbop foreach.mb echo-username > /mnt/pst/exchange2grommunio.import
 
-# Also note that we will write the names of successfull imports into the
-# file called 'exchange2grommunio.done' as with failed attempts the file
-# 'exchange2grommunio.failed'. That allows you to do something like:
+# Also note that we write the names of successful imports to the 'exchange2grommunio.done'
+# file and the names of failed attempts to the 'exchange2grommunio.failed' file.
+# This allows you to do something like:
 # % cp exchange2grommunio.{done,ignore}; cp exchange2grommunio.{failed,import}
 
 # This file will only be processed if $ImportMboxes is empty, the file exists
@@ -208,7 +208,7 @@ $ImportFile = "exchange2grommunio.import"
 [string] $IgnoreMboxes = ''
 
 # The same rules will apply for $IgnoreFile
-# To populate this file with alread imported Mailboxes:
+# To populate this file with already imported Mailboxes:
 #  awk '/Import of mailbox.*done./ {print $7}' /mnt/pst/exchange2grommunio.log > /mnt/pst/exchange2grommunio.ignore
 $IgnoreFile = "exchange2grommunio.ignore"
 
@@ -259,17 +259,22 @@ $Organization = ""
 $StopMarker = "exchange2grommunio.STOP"
 
 # Write timestamps and summary to this log file.
-#
+# Note that we write individual export and import logs to the '$WinSharedFolder\logs\' directory.
 $LogFile = "exchange2grommunio.log"
 
 # New-MailboxExportRequest accepts the -Priority parameter.
 # Use "Normal" or "High" for Exchange 2010. We found "Normal" is much faster
 # than "High".
-#
 $MigrationPriority = "Normal"
 
-# From here on, no code or variables need changing by the user of this script.
+# If you receive the following error: TooManyBadItemsPermanentException, you should either increase the BadItemLimit or set it to "unlimited".
+# The $BadItemLimit variable controls how many bad items are ignored before canceling the export.
+$BadItemLimit = 0
+#$BadItemLimit = "unlimited"
 
+#
+# From here on, no code or variables need changing by the user of this script.
+#
 <# SKEL exchange2grommunio.config.ps1
 #$GrommunioServer = "grommunio.example.com"
 #$WinSharedFolder = "\\<server FQDN>\<shared folder name>"
@@ -298,6 +303,8 @@ $MigrationPriority = "Normal"
 #$StopMarker = "exchange2grommunio.STOP"
 #$LogFile = "exchange2grommunio.log"
 #$MigrationPriority = "Normal"
+#$BadItemLimit = 0
+#$BadItemLimit = "unlimited"
 #>
 # Use configuration file named "exchange2grommunio.config.ps1" to override the
 # configuration values above instead of changing the values in this script.
@@ -629,6 +636,8 @@ Write-MLog "`$StopMarker ................: $StopMarker" none
 
 Write-MLog "`$LogFile ...................: $LogFile" none
 Write-MLog "`$MigrationPriority .........: $MigrationPriority" none
+Write-MLog "`$Organization ..............: $Organization" none
+Write-MLog "`$BadItemLimit ..............: $BadItemLimit" none
 Write-MLog "" none
 Write-MLog "`$PowerShellOld .............: $PowerShellOld" none
 Write-MLog "`$PSScriptRoot ..............: $PSScriptRoot" none
@@ -739,7 +748,7 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 			$Mailbox = $Mailbox.Alias
 		}
 
-		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority -ExcludeDumpster | Format-Table -HideTableHeaders
+		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority -ExcludeDumpster -BadItemLimit $BadItemLimit | Format-Table -HideTableHeaders
 		Write-Host -NoNewline "[Wait] " -fore yellow
 		$MailboxesTotal++
 
