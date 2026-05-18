@@ -73,10 +73,10 @@ static std::mutex g_router_lock, g_connection_lock;
 static gromox::atomic_bool g_exmdblisten_stop, g_exmdbpickup_running;
 static std::vector<std::string> g_acl_list;
 static listener_ctx exmdb_listen_ctx;
-std::atomic<unsigned int> g_enable_dam, g_istore_standalone;
+std::atomic<unsigned int> g_enable_dam, g_istore_standalone, g_exmdbpickup_wanttoend;
 std::string g_host_id;
-static pthread_t g_exmdbpickup_tid;
-static std::mutex g_exmdbpickup_tlock;
+pthread_t g_exmdbpickup_tid;
+std::mutex g_exmdbpickup_tlock;
 
 parser_thread::parser_thread(generic_connection &&co) :
 	generic_connection(std::move(co))
@@ -762,6 +762,7 @@ static int exmdb_pickup_one(int control_fd)
 		return 0;
 	if (ern != 0)
 		return -1;
+	g_exmdbpickup_wanttoend = false;
 	par->conn = std::make_shared<exmdb_connection>(generic_connection::takeover(std::move(client_fd)));
 	if (par->conn->sockd < 0)
 		return 0;
@@ -785,6 +786,8 @@ static void *exmdb_pickup_loop(void *arg)
 		auto status = exmdb_pickup_one(STDIN_FILENO);
 		if (status < 0)
 			break; /* havetoend */
+		if (status == 0 && g_exmdbpickup_wanttoend)
+			break;
 	}
 	g_exmdbpickup_running = false;
 	return nullptr;

@@ -805,7 +805,6 @@ static bool dbase_is_purgable(const db_base &pdb, time_point now)
 
 static void *db_expiry_thread(void *param)
 {
-	bool once = false;
 	pthread_setname_np(pthread_self(), "db_expiry");
 	int count;
 
@@ -830,8 +829,10 @@ static void *db_expiry_thread(void *param)
 			return dbase_is_purgable(iter.second, now_time);
 		});
 		if (z > 0 && g_istore_standalone & ISTORE_SPLIT_WORKERS &&
-		    !once && g_hash_table.empty()) {
-			raise(SIGTERM);
+		    g_hash_table.empty()) {
+			g_exmdbpickup_wanttoend = true;
+			std::unique_lock lk(g_exmdbpickup_tlock);
+			pthread_kill(g_exmdbpickup_tid, SIGALRM);
 		}
 	}
 	return nullptr;
