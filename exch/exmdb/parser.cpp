@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <netdb.h>
@@ -42,6 +43,7 @@
 #include <gromox/socketpass.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
+#include "db_engine.hpp"
 #include "notification_agent.hpp"
 #include "parser.hpp"
 #ifndef AI_V4MAPPED
@@ -747,10 +749,24 @@ int exmdb_listener_run(const char *config_path, const config_file &oldcfg)
 	return 0;
 }
 
+static void spw_clean()
+{
+	while (true) {
+		decltype(spworkers.extract(spworkers.begin())) wnode;
+		std::lock_guard lk(spwork_lock);
+		if (spworkers.empty())
+			return;
+		wnode = spworkers.extract(spworkers.begin());
+	}
+}
+
 void exmdb_listener_stop()
 {
 	g_exmdblisten_stop = true;
 	exmdb_listen_ctx.reset();
+	std::vector<std::future<void>> futs;
+	for (size_t i = 0; i < g_exmdb_par_shutdown; ++i)
+		futs.emplace_back(std::async(spw_clean));
 }
 
 static int exmdb_pickup_one(int control_fd)

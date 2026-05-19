@@ -264,3 +264,4 @@ extern std::string g_exmdb_ics_log_file, exmdb_eph_prefix;
 /* Max number of cached DB connections per store, 0 = unlimited */
 extern std::atomic<unsigned int> g_exmdb_max_sqlite_spares;
 extern std::atomic<unsigned long long> g_sqlite_busy_timeout_ns;
+extern unsigned int g_exmdb_par_shutdown;

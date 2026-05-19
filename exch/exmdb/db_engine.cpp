@@ -93,7 +93,8 @@ struct rowdel_node {
 }
 
 static size_t g_table_size; /* hash table size */
-static unsigned int g_sfpop_thrmax, g_exmdb_par_shutdown;
+static unsigned int g_sfpop_thrmax;
+unsigned int g_exmdb_par_shutdown;
 static gromox::atomic_bool g_dbeng_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static gromox::time_duration g_cache_interval; /* maximum living interval in table */
