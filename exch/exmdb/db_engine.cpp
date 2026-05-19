@@ -260,6 +260,7 @@ std::optional<db_conn> db_engine_get_db(const char *path)
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
 		pdb = &it->second;
+		pdb->last_time = tp_now();
 		std::optional<db_conn> conn(*pdb);
 		hhold.unlock(); /* The iterator is potentially invalid now */
 		if (!conn->open(path))
