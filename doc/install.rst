@@ -335,7 +335,6 @@ Service start
 ``systemctl start <...>``
 
 * ``gromox-http`` — at the very least, the main process needs to be started. This is sufficient for e.g. Outlook to open and browse mailboxes.
-* ``gromox-adaptor`` — caches SQL data and generates work files used by other daemons
 * ``gromox-zcore`` — the zcore process is needed by anything using php-mapi (grommunio-web, grommunio-sync, ...)
 * ``gromox-delivery-queue`` — LMTP/SMTP frontend of the local delivery agent (for incoming mail)
 * ``gromox-delivery`` — Dequeueing backend of the local delivery agent
