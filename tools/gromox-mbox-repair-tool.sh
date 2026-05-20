@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_BUILD=2025050204
+SCRIPT_BUILD=2026052001
 
 LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
 
@@ -39,7 +39,13 @@ log() {
 
 
 get_maildirs() {
-        command gromox-mbop foreach.mb.here echo-maildir
+	local username="${1:-false}"
+
+	if [ "${username}" != false ]; then
+	    command gromox-mbop -u "${username}" echo-maildir
+	else
+            command gromox-mbop foreach.mb.here echo-maildir
+	fi
 }
 
 cleanup() {
@@ -189,7 +195,8 @@ Usage() {
         echo "--check-sql              Checks sqlite database"
         echo "--repair-sql             Checks and tries to repair sqlite database. Will stop gromox-http temporarily"
         echo "--dryrun                 Actually don't run any modifications"
-        echo "--maildir=all|path       When set to \"all\", will run over all maildirs. Can take mailbox path, eg /var/lib/gromox/user/1/2"
+        echo "--maildir=all|[path]     Specify which maildir to run for, takes mailbox path, eg /var/lib/gromox/user/1/2 or \"all\""
+	echo "--username=[username]    Spcify a single username for which to run the repair script, overrides --maildir"	
 
         exit 1
 }
@@ -232,6 +239,9 @@ function GetCommandlineArguments {
                         # Also strip trailing slashes
                         TARGET_MAILDIRS="${TARGET_MAILDIRS%/}"
                         ;;
+			--username=*)
+			USERNAME="${i##*=}"
+			;;
                         *)
                         log "Unknown option '$i'" "CRITICAL"
                         Usage
@@ -249,20 +259,25 @@ set -o pipefail
 set -o errtrace
 SCRIPT_GOOD=true
 
-echo "Gromox mbox repair tool v${SCRIPT_BUILD}"
-
 GetCommandlineArguments "${@}"
 
-if [ "${TARGET_MAILDIRS}" != "all" ]; then
-        if [ ! -d "${TARGET_MAILDIRS}" ]; then
-                log "No valid mailbox \"${TARGET_MAILDIRS}\" specified" "ERROR"
-                exit 1
-        fi
-else
-        TARGET_MAILDIRS="$(get_maildirs)"
+if [ "${TARGET_MAILDIRS}" = "" ] && [ "${USERNAME}" = "" ]; then
+	log "Script needs either valid mailbox or username" "CRITICAL"
+	exit 1
 fi
+if [ "${USERNAME}" != "" ]; then
+    TARGET_MAILDIRS="$(get_maildirs "${USERNAME}")"
+elif [ "${TARGET_MAILDIRS}" != "all" ]; then
+    if [ ! -d "${TARGET_MAILDIRS}" ]; then
+        log "No valid mailbox \"${TARGET_MAILDIRS}\" specified" "ERROR"
+        exit 1
+    fi
+else
+    TARGET_MAILDIRS="$(get_maildirs)"
+fi
+      
 
-log "$0 invoked on $(date)"
+log "$0 $SCRIPT_BUILD invoked on $(date)"
 
 if [ "${_CHECK_MAILBOX}" = true ] || [ "${_REPAIR_MAILBOX}" = true ]; then
         repair_mbox
