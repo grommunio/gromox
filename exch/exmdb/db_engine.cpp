@@ -282,6 +282,7 @@ std::optional<db_conn> db_engine_get_db(const char *path)
 	}
 	try {
 		auto xp = g_hash_table.try_emplace(path);
+		g_dbengine_wanttoend = false;
 		pdb = &xp.first->second;
 	} catch (const std::bad_alloc &) {
 		hhold.unlock();
@@ -832,9 +833,10 @@ static void *db_expiry_thread(void *param)
 		});
 		if (z > 0 && g_istore_standalone & ISTORE_SPLIT_WORKERS &&
 		    g_hash_table.empty()) {
-			g_exmdbpickup_wanttoend = true;
+			g_dbengine_wanttoend = true;
 			std::unique_lock lk(g_exmdbpickup_tlock);
-			pthread_kill(g_exmdbpickup_tid, SIGALRM);
+			if (!pthread_equal(g_exmdbpickup_tid, {}))
+				pthread_kill(g_exmdbpickup_tid, SIGALRM);
 		}
 	}
 	return nullptr;

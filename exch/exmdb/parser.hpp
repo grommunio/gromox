@@ -75,5 +75,5 @@ extern void exmdb_pickup_stop();
 extern std::mutex g_exmdbpickup_tlock;
 extern pthread_t g_exmdbpickup_tid;
 extern std::atomic<unsigned int> g_exrpc_debug, g_enable_dam, g_istore_standalone;
-extern std::atomic<unsigned int> g_exmdbpickup_wanttoend;
+extern std::atomic<unsigned int> g_dbengine_wanttoend;
 extern std::string g_host_id;
