@@ -229,6 +229,8 @@ function GetCommandlineArguments {
                         ;;
                         --maildir=*)
                         TARGET_MAILDIRS="${i##*=}"
+                        # Also strip trailing slashes
+                        TARGET_MAILDIRS="${TARGET_MAILDIRS%/}"
                         ;;
                         *)
                         log "Unknown option '$i'" "CRITICAL"
