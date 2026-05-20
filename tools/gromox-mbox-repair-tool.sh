@@ -6,10 +6,10 @@ LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
 
 SOFTDELETE_TIMESTAMP=${SOFTDELETE_TIMESTAMP:-30d20h}
 
-function TrapQuit {
+TrapQuit() {
         local exitcode=0
 
-        if [ "$SCRIPT_GOOD" == true ]; then
+        if [ "$SCRIPT_GOOD" = true ]; then
                 log "Operation finished with success after ${SECONDS} seconds"
                 exitcode=0
         else
@@ -20,7 +20,7 @@ function TrapQuit {
 }
 
 
-function log {
+log() {
         local log_line="${1}"
         local level="${2}"
 
@@ -28,7 +28,7 @@ function log {
                 log_line="${level}: ${log_line}"
         fi
 
-        if [ "${level}" == "ERROR" ]; then
+        if [ "${level}" = "ERROR" ]; then
                 SCRIPT_GOOD=false
                 (>&2 echo -e "$log_line")
         else
@@ -38,11 +38,11 @@ function log {
 }
 
 
-function get_maildirs {
+get_maildirs() {
         command gromox-mbop foreach.mb.here echo-maildir
 }
 
-function cleanup {
+cleanup() {
         for maildir in $TARGET_MAILDIRS; do
                 if [ ! -d "${maildir}" ]; then
                         log "Maildir ${maildir} does not exist" "ERROR"
@@ -50,7 +50,7 @@ function cleanup {
                 fi
                 if [ "$SOFTDELETE_TIMESTAMP" != "" ]; then
                         start_time=${SECONDS}
-                        if [ "${_DRYRUN}" == false ]; then
+                        if [ "${_DRYRUN}" = false ]; then
                                 log "Purging soft deletions for ${maildir}"
                                 if command gromox-mbop -d "${maildir}" purge-softdelete -r -t "$SOFTDELETE_TIMESTAMP" IPM_SUBTREE ; then
                                         log "Operation took $((SECONDS-start_time)) seconds for $maildir"
@@ -62,7 +62,7 @@ function cleanup {
                         fi
                 fi
                 start_time=${SECONDS}
-                if [ "${_DRYRUN}" == false ]; then
+                if [ "${_DRYRUN}" = false ]; then
                         log "Purging datafiles for ${maildir}"
                         if command gromox-mbop -d "${maildir}" purge-datafiles ; then
                                 log "Operation took $((SECONDS-start_time)) seconds for ${maildir}"
@@ -76,7 +76,7 @@ function cleanup {
         done
 }
 
-function repair_mbox {
+repair_mbox() {
         log "Running mailbox checks"
 
         for maildir in $TARGET_MAILDIRS; do
@@ -89,9 +89,9 @@ function repair_mbox {
                 # gromox-mbck returns 0 regardless of mailbox state
                 if command gromox-mbck "${maildir}/exmdb/exchange.sqlite3" | grep "\[0 issues\]"; then
                         log "Check successful on ${maildir}"
-                elif [ "${_REPAIR_MAILBOX}" == true ]; then
+                elif [ "${_REPAIR_MAILBOX}" = true ]; then
                         log "Check failed for ${maildir}" "ERROR"
-                        if [ "${_DRYRUN}" == false ]; then
+                        if [ "${_DRYRUN}" = false ]; then
                                 log "Repairing maildir with gromox-mbck"
                                 if ! command gromox-mbck -p "${maildir}/exmdb/exchange.sqlite3" ; then
                                         log "Repairing ${maildir}/exmdb/exchange.sqlite3 failed. stoppting operations" "ERROR"
@@ -104,7 +104,7 @@ function repair_mbox {
         done
 }
 
-function repair_sql {
+repair_sql() {
         log "Running mailbox sql checks"
 
 
@@ -126,14 +126,14 @@ function repair_sql {
                 # This expects sqlite to output "ok"
                 if [ "$(sqlite3 -readonly "${maildir}/exmdb/exchange.sqlite3" 'pragma integrity_check;')" != "ok" ]; then
                         log "Maildir ${maildir} has errors according to sqlite3" "ERROR"
-                        if [ "${_DRYRUN}" == false ] && [ "${_REPAIR_SQL}" == true ]; then
+                        if [ "${_DRYRUN}" = false ] && [ "${_REPAIR_SQL}" = true ]; then
                                 log "Repairing sqlite database. This will shutdown gromox-http"
                                 systemctl stop gromox-http.service
                                 if systemctl is-active gromox-http.service > /dev/null; then
                                         log "Cannot stop gromox-http, stopping operations" "ERROR"
                                         break
                                 else
-                                        if [ "${gromox_http_is_active}" == true ]; then
+                                        if [ "${gromox_http_is_active}" = true ]; then
                                                 gromox_http_needs_restart=true
                                         fi
                                         log "Trying to create a recovery database"
@@ -167,13 +167,13 @@ function repair_sql {
                         log "SQL database in ${maildir}/exmdb is okay"
                 fi
         done
-        if [ "${gromox_http_is_active}" == true ] && [ ${gromox_http_needs_restart} == true ]; then
+        if [ "${gromox_http_is_active}" = true ] && [ ${gromox_http_needs_restart} = true ]; then
                 log "Restarting gromox-http"
                 systemctl start gromox-http.service
         fi
 }
 
-function Usage {
+Usage() {
 
         echo "$0 $PROGRAM_BUILD"
         echo ""
@@ -264,10 +264,10 @@ fi
 
 log "$0 invoked on $(date)"
 
-if [ "${_CHECK_MAILBOX}" == true ] || [ "${_REPAIR_MAILBOX}" == true ]; then
+if [ "${_CHECK_MAILBOX}" = true ] || [ "${_REPAIR_MAILBOX}" = true ]; then
         repair_mbox
 fi
-if [ "${_CHECK_SQL}" == true ] || [ "${_REPAIR_SQL}" == true ]; then
+if [ "${_CHECK_SQL}" = true ] || [ "${_REPAIR_SQL}" = true ]; then
         repair_sql
 fi
-[ "${_RUN_CLEANUP}" == true ] && cleanup
+[ "${_RUN_CLEANUP}" = true ] && cleanup
