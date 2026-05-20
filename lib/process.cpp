@@ -754,7 +754,7 @@ int socketpass_worker::restart(const char *prog, char **argv)
 	return start_raw(prog, argv);
 }
 
-int socketpass_worker::stop()
+void socketpass_worker::stop()
 {
 	if (m_channel >= 0) {
 		close(m_channel);
@@ -765,9 +765,7 @@ int socketpass_worker::stop()
 		int status = 0;
 		waitpid(m_pid, &status, 0);
 		m_pid = -1;
-		return status;
 	}
-	return 0;
 }
 
 /**
