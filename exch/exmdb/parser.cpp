@@ -79,6 +79,7 @@ std::atomic<unsigned int> g_enable_dam, g_istore_standalone, g_dbengine_wanttoen
 std::string g_host_id;
 pthread_t g_exmdbpickup_tid;
 std::mutex g_exmdbpickup_tlock;
+static pthread_t g_spzclean_tid;
 
 parser_thread::parser_thread(generic_connection &&co) :
 	generic_connection(std::move(co))
@@ -733,6 +734,26 @@ int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg)
 	return 0;
 }
 
+static void *spwz_cleaner(void *)
+{
+	/*
+	 * SIGCHLD is not guaranteed to be queued; i.e. there may be coalescing
+	 * and multiple children exiting might only lead to generation of a
+	 * single signal event. One approach would be to drain the waiting
+	 * queue `while(waitpid(-1, nullptr, WNOHANG) > 0){}`, but that runs
+	 * afoul of collecting unrelated children [e.g. from rtftohtml]. So we
+	 * will have to periodically loop over a list of PIDs known to us.
+	 */
+	pthread_setname_np(pthread_self(), "spwz_clean");
+	while (!g_exmdblisten_stop) {
+		sleep(60);
+		std::lock_guard lk(spwork_lock);
+		for (auto &e : spworkers)
+			e.second.maybe_reap();
+	}
+	return nullptr;
+}
+
 int exmdb_listener_run(const char *config_path, const config_file &oldcfg)
 {
 	auto ret = exmdb_acl_read(config_path, oldcfg.get_value("exmdb_hosts_allow"));
@@ -744,6 +765,12 @@ int exmdb_listener_run(const char *config_path, const config_file &oldcfg)
 	auto err = exmdb_listen_ctx.watch_start(g_exmdblisten_stop, sockaccept_thread);
 	if (err != 0) {
 		mlog(LV_ERR, "exmdb_provider: failed to create exmdb listener thread: %s", strerror(err));
+		return -1;
+	}
+	err = pthread_create(&g_spzclean_tid, nullptr, spwz_cleaner, nullptr);
+	if (err != 0) {
+		mlog(LV_ERR, "pthread_create spzclean: %s", strerror(err));
+		exmdb_listen_ctx.reset();
 		return -1;
 	}
 	return 0;
@@ -762,6 +789,8 @@ static void spw_clean()
 
 void exmdb_listener_stop()
 {
+	if (!pthread_equal(g_spzclean_tid, {}))
+		pthread_join(g_spzclean_tid, nullptr);
 	g_exmdblisten_stop = true;
 	exmdb_listen_ctx.reset();
 	std::vector<std::future<void>> futs;

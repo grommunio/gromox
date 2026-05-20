@@ -754,6 +754,7 @@ int socketpass_worker::restart(const char *prog, char **argv)
 	return start_raw(prog, argv);
 }
 
+/* Definitely terminate the worker (and then cleanup the process) */
 void socketpass_worker::stop()
 {
 	if (m_channel >= 0) {
@@ -765,6 +766,21 @@ void socketpass_worker::stop()
 		int status = 0;
 		waitpid(m_pid, &status, 0);
 		m_pid = -1;
+	}
+}
+
+/* Cleanup the process (if it exited on its own) */
+void socketpass_worker::maybe_reap()
+{
+	if (m_pid <= 0)
+		return;
+	int status = 0;
+	if (waitpid(m_pid, &status, WNOHANG) != m_pid)
+		return;
+	m_pid = -1;
+	if (m_channel >= 0) {
+		close(m_channel);
+		m_channel = -1;
 	}
 }
 

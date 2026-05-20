@@ -13,6 +13,7 @@ class GX_EXPORT socketpass_worker {
 	int restart(const char *prog, char **argv);
 	errno_t pass(std::string_view, int fd) const;
 	void stop();
+	void maybe_reap();
 
 	private:
 	int start_raw(const char *prog, char **argv);
