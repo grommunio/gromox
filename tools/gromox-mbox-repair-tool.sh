@@ -97,10 +97,12 @@ repair_mbox() {
                 fi
 
                 # gromox-mbck returns 0 regardless of mailbox state
-                if command gromox-mbck "${maildir}/exmdb/exchange.sqlite3" | grep "\[0 issues\]"; then
+                result="$(command gromox-mbck "${maildir}/exmdb/exchange.sqlite3")"
+		if echo "$result" | grep "\[0 issues\]" >/dev/null 2>&1; then
                     log "Check successful on ${maildir}"
 		else
 		    log "Check failed for ${maildir}" "ERROR"
+		    log "Result: $result"
                     if [ "${_REPAIR_MAILBOX}" = true ]; then
                         if [ "${_DRYRUN}" = false ]; then
                                 log "Repairing maildir with gromox-mbck"
