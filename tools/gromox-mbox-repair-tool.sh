@@ -37,6 +37,10 @@ log() {
         echo "${log_line}" >> "${LOG_FILE}"
 }
 
+log_quit() {
+	log "${1}" "${2}"
+	exit 1
+}
 
 get_maildirs() {
 	local username="${1:-false}"
@@ -94,9 +98,10 @@ repair_mbox() {
 
                 # gromox-mbck returns 0 regardless of mailbox state
                 if command gromox-mbck "${maildir}/exmdb/exchange.sqlite3" | grep "\[0 issues\]"; then
-                        log "Check successful on ${maildir}"
-                elif [ "${_REPAIR_MAILBOX}" = true ]; then
-                        log "Check failed for ${maildir}" "ERROR"
+                    log "Check successful on ${maildir}"
+		else
+		    log "Check failed for ${maildir}" "ERROR"
+                    if [ "${_REPAIR_MAILBOX}" = true ]; then
                         if [ "${_DRYRUN}" = false ]; then
                                 log "Repairing maildir with gromox-mbck"
                                 if ! command gromox-mbck -p "${maildir}/exmdb/exchange.sqlite3" ; then
@@ -106,7 +111,8 @@ repair_mbox() {
                         else
                                 log "Would repair maildir ${maildir} if not dryrun"
                         fi
-                fi
+                    fi
+		fi
         done
 }
 
@@ -267,6 +273,7 @@ if [ "${TARGET_MAILDIRS}" = "" ] && [ "${USERNAME}" = "" ]; then
 fi
 if [ "${USERNAME}" != "" ]; then
     TARGET_MAILDIRS="$(get_maildirs "${USERNAME}")"
+    [ $? -ne 0 ] && log_quit "Cannot get maildir for user ${username}" "ERROR"
 elif [ "${TARGET_MAILDIRS}" != "all" ]; then
     if [ ! -d "${TARGET_MAILDIRS}" ]; then
         log "No valid mailbox \"${TARGET_MAILDIRS}\" specified" "ERROR"
@@ -274,6 +281,7 @@ elif [ "${TARGET_MAILDIRS}" != "all" ]; then
     fi
 else
     TARGET_MAILDIRS="$(get_maildirs)"
+    [ $? -ne 0 ] && log_quit "Cannot get maildirs" "ERROR"
 fi
       
 
