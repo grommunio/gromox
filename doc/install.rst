@@ -1,6 +1,6 @@
 ..
 	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-	SPDX-FileCopyrightText: 2025 grommunio GmbH
+	SPDX-FileCopyrightText: 2026 grommunio GmbH
 
 Dependency installation
 =======================
@@ -303,9 +303,11 @@ following notes.
 
 Gromox daemons switch to unprivileged mode, and after doing so, will still need
 access to the build directory to access shared libraries. If any path component
-of the build directory is missing search (execute) permission, the
-daemon may be unable to start up. This happens predominantly when someone tries
-to build Gromox as root (not a great idea) in ``/root`` (has mode 0700).
+of the build directory is missing search (execute) permission, the daemon may
+be unable to start up. This happens predominantly when someone tries to build
+Gromox as root (not a great idea) in a subdirectory of ``/root`` (which often
+has mode 0700). For that scenario to succeed, ``/root`` would have to be made
+0711 at least.
 
 Gromox programs default to look for files in the installed system, i.e.
 ``/etc/gromox`` and ``/usr/share/gromox``. If nothing else is needed,
