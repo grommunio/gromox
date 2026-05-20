@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -28,8 +28,7 @@ static uint32_t propid_elist(const char *dir)
 static int askfor(const char *dir, uint64_t folder_id, uint32_t elist_tag,
     uint16_t sort_count)
 {
-	const uint32_t letags[] = {PR_NORMALIZED_SUBJECT, elist_tag};
-	const PROPTAG_ARRAY tagarr = {std::size(letags), deconst(letags)};
+	const proptag_t letags[] = {PR_NORMALIZED_SUBJECT, elist_tag};
 	const SORT_ORDER sort_spec[] = {
 		{PROP_TYPE(letags[0]), PROP_ID(letags[0]), 0},
 		{PROP_TYPE(letags[1]), PROP_ID(letags[1]), 0},
@@ -46,7 +45,7 @@ static int askfor(const char *dir, uint64_t folder_id, uint32_t elist_tag,
 	}
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 	TARRAY_SET rowset{};
-	if (!exmdb_client->query_table(dir, nullptr, CP_UTF8, table_id, &tagarr,
+	if (!exmdb_client->query_table(dir, nullptr, CP_UTF8, table_id, letags,
 	    0, 25, &rowset)) {
 		printf("QueryTable failed\n");
 		return -1;
@@ -68,7 +67,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	exmdb_client.emplace(1, 0);
+	exmdb_client.emplace();
 	exmdb_client_run(PKGSYSCONFDIR);
 
 	auto dir = argv[1];

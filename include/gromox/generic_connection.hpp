@@ -11,6 +11,7 @@ struct GX_EXPORT generic_connection {
 	~generic_connection() { reset(); }
 	generic_connection &operator=(generic_connection &&);
 
+	static generic_connection takeover(int client_fd);
 	static generic_connection accept(int listen_fd, int haproxy_level, gromox::atomic_bool *stop_accept);
 
 	void reset(bool slp = 0) noexcept
@@ -34,9 +35,10 @@ struct GX_EXPORT generic_connection {
 		       ::write(sockd, buf, z);
 	}
 
-	char client_addr[40]{}, server_addr[40]{};
-	uint16_t client_port = 0, server_port = 0;
+	char client_addr[40]{}, server_addr[40]{}, proxy_addr[40]{};
+	uint16_t client_port = 0, server_port = 0, proxy_port = 0;
 	int sockd = -1; /* context's socket file description */
+	unsigned int mark = 0;
 	SSL *ssl = nullptr;
 	gromox::time_point last_timestamp; /* last time when system got data from */
 };

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -31,9 +31,7 @@
 using namespace gromox;
 
 static std::mutex g_svc_once;
-static constexpr static_module g_dfl_svc_plugins[] = {
-	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
+static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgromox_auth.so/mgr", SVC_authmgr},
 };
 
@@ -100,8 +98,6 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 	std::lock_guard<std::mutex> holder(g_svc_once);
 	service_init({std::move(cfg), g_dfl_svc_plugins, 1});
-	if (service_run_early() != 0)
-		return PAM_AUTH_ERR;
 	if (service_run() != 0)
 		return PAM_AUTH_ERR;
 	auto cleanup_1 = HX::make_scope_exit(service_stop);

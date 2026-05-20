@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -15,6 +15,7 @@
 #include "logon_object.hpp"
 #include "message_object.hpp"
 #include "processor_types.hpp"
+#include "rop_ext.hpp"
 #include "rop_funcs.hpp"
 #include "rop_ids.hpp"
 #include "rop_processor.hpp"
@@ -48,12 +49,12 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 			return ecError;
 		cpid = pinfo->cpid;
 	}
-	if (!verify_cpid(cpid))
+	if (!acceptable_cpid_for_mapi(cpid))
 		return MAPI_E_UNKNOWN_CPID;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
@@ -111,11 +112,11 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	                &folder_id, tag_access, open_mode_flags, nullptr);
 	if (pmessage == nullptr)
 		return ecServerOOM;
-	static constexpr proptag_t proptag_buff[] =
+	static constexpr proptag_t proptags[] =
 		{PR_HAS_NAMED_PROPERTIES, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pmessage->get_properties(0, &proptags, &propvals))
-		return ecError;
+	auto err = pmessage->get_properties(0, proptags, &propvals);
+	if (err != ecSuccess)
+		return err;
 	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
 	*phas_named_properties = flag != nullptr && *flag != 0;
 	auto str = propvals.get<const char>(PR_SUBJECT_PREFIX);
@@ -134,14 +135,16 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		pnormalized_subject->string_type = STRING_TYPE_UNICODE;
 		pnormalized_subject->pstring = deconst(str);
 	}
-	if (!pmessage->get_recipient_num(precipient_count))
-		return ecError;
+	err = pmessage->get_recipient_num(precipient_count);
+	if (err != ecSuccess)
+		return err;
 	auto pcolumns = pmessage->get_rcpt_columns();
 	*precipient_columns = *pcolumns;
 	emsmdb_interface_get_rop_num(&rop_num);
 	uint8_t rcpt_num = rop_num == 1 ? 0xFE : 5;
-	if (!pmessage->read_recipients(0, rcpt_num, &rcpts))
-		return ecError;
+	err = pmessage->read_recipients(0, rcpt_num, &rcpts);
+	if (err != ecSuccess)
+		return err;
 	*prow_count = rcpts.count;
 	if (rcpts.count > 0) {
 		*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
@@ -149,12 +152,12 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 			return ecServerOOM;
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
-		if (!common_util_propvals_to_openrecipient(cpid,
-		    rcpts.pparray[i], pcolumns, &(*pprecipient_row)[i]))
+		if (!cu_propvals_to_openrecipient(cpid, rcpts.pparray[i],
+		    *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	}
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -177,12 +180,12 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 			return ecError;
 		cpid = pinfo->cpid;
 	}
-	if (!verify_cpid(cpid))
+	if (!acceptable_cpid_for_mapi(cpid))
 		return MAPI_E_UNKNOWN_CPID;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
@@ -199,12 +202,10 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	} else {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
-	static constexpr proptag_t proptag_buff[] =
+	static constexpr proptag_t tmp_proptags[] =
 		{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
-	static constexpr PROPTAG_ARRAY tmp_proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
-	if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
+	if (!plogon->get_properties(tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 	uint64_t max_quota = ULLONG_MAX;
@@ -215,13 +216,6 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	auto lnum = tmp_propvals.get<const uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	uint64_t total_size = lnum != nullptr ? *lnum : 0;
 	if (total_size > max_quota)
-		return ecQuotaExceeded;
-	num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
-	uint32_t total_mail = num != nullptr ? *num : 0;
-	num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
-	if (num != nullptr)
-		total_mail += *num;
-	if (total_mail > g_max_message)
 		return ecQuotaExceeded;
 	*ppmessage_id = cu_alloc<uint64_t>();
 	if (*ppmessage_id == nullptr)
@@ -235,10 +229,11 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	if (pmessage == nullptr)
 		return ecServerOOM;
 	BOOL b_fai = associated_flag == 0 ? false : TRUE;
-	if (pmessage->init_message(b_fai, cpid) != 0)
-		return ecError;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
+	auto err = pmessage->init_message(b_fai, cpid);
+	if (err != ecSuccess)
+		return err;
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -249,13 +244,12 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
 	ems_objtype object_type;
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	
 	save_flags &= SAVE_FLAG_KEEPOPENREADONLY |
 					SAVE_FLAG_KEEPOPENREADWRITE |
 					SAVE_FLAG_FORCESAVE;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -272,16 +266,15 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 		if (ret != ecSuccess)
 			return ret;
 	}
-	uint32_t tmp_proptag = PidTagMid;
-	proptags.count = 1;
-	proptags.pproptag = &tmp_proptag;
-	if (!pmessage->get_properties(0, &proptags, &propvals))
-		return ecError;
+	static constexpr proptag_t tmp_proptag[] = {PidTagMid};
+	auto err = pmessage->get_properties(0, tmp_proptag, &propvals);
+	if (err != ecSuccess)
+		return err;
 	auto pvalue = propvals.get<uint64_t>(PidTagMid);
 	if (pvalue == nullptr)
 		return ecError;
 	*pmessage_id = *pvalue;
-	auto err = pmessage->save();
+	err = pmessage->save();
 	if (err != ecSuccess)
 		return err;
 	switch (save_flags) {
@@ -298,26 +291,25 @@ ec_error_t rop_removeallrecipients(uint32_t reserved, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
 		return ecNotSupported;
-	pmessage->empty_rcpts();
-	return ecSuccess;
+	return pmessage->empty_rcpts();
 }
 
-ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
+ec_error_t rop_modifyrecipients(proptag_cspan pproptags, uint16_t count,
     const MODIFYRECIPIENT_ROW *prow, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin)
 {
 	ems_objtype object_type;
 	TARRAY_SET tmp_set;
 	
-	if (pproptags->count >= 0x7FEF || count >= 0x7FEF)
+	if (pproptags.size() >= 0x7FEF || count >= 0x7FEF)
 		return ecInvalidParam;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		switch (pproptags->pproptag[i]) {
+	for (const auto tag : pproptags) {
+		switch (tag) {
 		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
 		case PR_EMAIL_ADDRESS:
@@ -330,7 +322,7 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 			return ecInvalidParam;
 		}
 	}
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -354,15 +346,13 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 			ppropvals->ppropval->proptag = PR_ROWID;
 			ppropvals->ppropval->pvalue = deconst(&prow[i].row_id);
 		} else {
-			if (!common_util_modifyrecipient_to_propvals(pinfo->cpid,
+			if (!cu_modifyrecipient_to_propvals(pinfo->cpid,
 			    &prow[i], pproptags, ppropvals))
 				return ecServerOOM;
 		}
 		tmp_set.pparray[i] = ppropvals;
 	}
-	if (!pmessage->set_rcpts(&tmp_set))
-		return ecError;
-	return ecSuccess;
+	return pmessage->set_rcpts(&tmp_set);
 }
 
 ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcount,
@@ -374,22 +364,23 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 	TARRAY_SET tmp_set;
 	READRECIPIENT_ROW tmp_row;
 	
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
 		return ecNotSupported;
-	if (!pmessage->read_recipients(row_id, 0xFE, &tmp_set))
-		return ecError;
+	auto err = pmessage->read_recipients(row_id, 0xFE, &tmp_set);
+	if (err != ecSuccess)
+		return err;
 	if (tmp_set.count == 0)
 		return ecNotFound;
 	for (i = 0; i < tmp_set.count; ++i) {
-		if (!common_util_propvals_to_readrecipient(pmessage->get_cpid(),
-		    tmp_set.pparray[i], pmessage->get_rcpt_columns(), &tmp_row))
+		if (!cu_propvals_to_readrecipient(pmessage->get_cpid(),
+		    tmp_set.pparray[i], *pmessage->get_rcpt_columns(), &tmp_row))
 			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
-		if (pext->p_readrecipient_row(*pmessage->get_rcpt_columns(),
-		    tmp_row) != EXT_ERR_SUCCESS) {
+		if (rop_push_ext(*pext, *pmessage->get_rcpt_columns(),
+		    tmp_row) != pack_result::ok) {
 			ext.m_offset = last_offset;
 			break;
 		}
@@ -411,17 +402,16 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 	TARRAY_SET rcpts;
 	TPROPVAL_ARRAY propvals;
 	
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
 		return ecNotSupported;
-	static constexpr proptag_t proptag_buff[] =
+	static constexpr proptag_t proptags[] =
 		{PR_HAS_NAMED_PROPERTIES, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
-	static constexpr PROPTAG_ARRAY proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pmessage->get_properties(0, &proptags, &propvals))
-		return ecError;
+	auto err = pmessage->get_properties(0, proptags, &propvals);
+	if (err != ecSuccess)
+		return err;
 	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
 	*phas_named_properties = flag != nullptr && *flag != 0;
 	auto str = propvals.get<const char>(PR_SUBJECT_PREFIX);
@@ -440,19 +430,21 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 		pnormalized_subject->string_type = STRING_TYPE_UNICODE;
 		pnormalized_subject->pstring = deconst(str);
 	}
-	if (!pmessage->get_recipient_num(precipient_count))
-		return ecError;
+	err = pmessage->get_recipient_num(precipient_count);
+	if (err != ecSuccess)
+		return err;
 	auto pcolumns = pmessage->get_rcpt_columns();
 	*precipient_columns = *pcolumns;
-	if (!pmessage->read_recipients(0, 0xFE, &rcpts))
-		return ecError;
+	err = pmessage->read_recipients(0, 0xFE, &rcpts);
+	if (err != ecSuccess)
+		return err;
 	*prow_count = rcpts.count;
 	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
 	if (*pprecipient_row == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < rcpts.count; ++i)
-		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
-		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
+		if (!cu_propvals_to_openrecipient(pmessage->get_cpid(),
+		    rcpts.pparray[i], *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	return ecSuccess;
 }
@@ -467,10 +459,10 @@ ec_error_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	uint32_t new_status;
 	TAGGED_PROPVAL propval;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
@@ -502,10 +494,10 @@ ec_error_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
 	void *pvalue;
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
@@ -615,23 +607,23 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 }
 
 ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
-    const LONGLONG_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
+    const EID_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_partial;
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto fld = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto fld = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (fld == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	b_partial = FALSE;
 
-	LONGLONG_ARRAY alt_msgs{};
+	EID_ARRAY alt_msgs{};
 	if (pmessage_ids->count == 0) {
 		/* OXCMSG is missing documentation */
 		static constexpr uint8_t fake_false = false;
@@ -646,29 +638,27 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		    fld->folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 		    &res_top, nullptr, &table_id, &row_count))
 			return ecError;
-		static constexpr uint32_t one_proptag = PidTagMid;
-		static constexpr PROPTAG_ARRAY proptags = {1, deconst(&one_proptag)};
+		static constexpr proptag_t one_proptag = PidTagMid;
 		TARRAY_SET result_set;
 		if (!exmdb_client->query_table(plogon->dir, username,
-		    CP_ACP, table_id, &proptags, 0, row_count, &result_set)) {
+		    CP_ACP, table_id, {&one_proptag, 1},
+		    0, row_count, &result_set)) {
 			exmdb_client->unload_table(plogon->dir, table_id);
 			return ecError;
 		}
 		exmdb_client->unload_table(plogon->dir, table_id);
 		if (result_set.count > 0) {
-			alt_msgs.pll = cu_alloc<uint64_t>(result_set.count);
-			if (alt_msgs.pll == nullptr)
+			alt_msgs.pids = cu_alloc<eid_t>(result_set.count);
+			if (alt_msgs.pids == nullptr)
 				return ecServerOOM;
-			for (unsigned int i = 0; i < result_set.count; ++i) {
-				if (result_set.pparray[i]->count != 1)
-					continue;
-				alt_msgs.pll[alt_msgs.count++] = *static_cast<uint64_t *>(result_set.pparray[i]->ppropval[0].pvalue);
-			}
+			for (const auto &row : result_set)
+				if (row.count == 1)
+					alt_msgs.emplace_back(*static_cast<uint64_t *>(row.ppropval[0].pvalue));
 			pmessage_ids = &alt_msgs;
 		}
 	}
-	for (size_t i = 0; i < pmessage_ids->count; ++i)
-		if (!oxcmsg_setreadflag(plogon, pmessage_ids->pll[i], read_flags))
+	for (const auto msgid : *pmessage_ids)
+		if (!oxcmsg_setreadflag(plogon, msgid, read_flags))
 			b_partial = TRUE;	
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;
@@ -681,18 +671,19 @@ ec_error_t rop_setmessagereadflag(uint8_t read_flags,
 	BOOL b_changed;
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hresponse, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hresponse, &object_type) == nullptr)
 		return ecNullObject;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
 		return ecNotSupported;
-	if (!pmessage->set_readflag(read_flags, &b_changed))
-		return ecError;
+	auto err = pmessage->set_readflag(read_flags, &b_changed);
+	if (err != ecSuccess)
+		return err;
 	*pread_change = !b_changed;
 	return ecSuccess;
 }
@@ -702,10 +693,10 @@ ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -724,8 +715,8 @@ ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 		return ecError;
 	if (pattachment->get_instance_id() == 0)
 		return ecNotFound;
-	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
-	           hin, {ems_objtype::attach, std::move(pattachment)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::attach, std::move(pattachment)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -737,10 +728,10 @@ ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -757,8 +748,8 @@ ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 		return ecMaxAttachmentExceeded;
 	if (!pattachment->init_attachment())
 		return ecError;
-	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
-	           hin, {ems_objtype::attach, std::move(pattachment)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::attach, std::move(pattachment)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -769,7 +760,7 @@ ec_error_t rop_deleteattachment(uint32_t attachment_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -777,9 +768,7 @@ ec_error_t rop_deleteattachment(uint32_t attachment_id, LOGMAP *plogmap,
 	auto tag_access = pmessage->get_tag_access();
 	if (!(tag_access & MAPI_ACCESS_MODIFY & tag_access))
 		return ecAccessDenied;
-	if (!pmessage->delete_attachment(attachment_id))
-		return ecError;
-	return ecSuccess;
+	return pmessage->delete_attachment(attachment_id);
 }
 
 ec_error_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
@@ -790,11 +779,11 @@ ec_error_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
 	save_flags &= SAVE_FLAG_KEEPOPENREADONLY |
 					SAVE_FLAG_KEEPOPENREADWRITE |
 					SAVE_FLAG_FORCESAVE;
-	if (rop_processor_get_object(plogmap, logon_id, hresponse, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hresponse, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
 		return ecNotSupported;
-	auto pattachment = rop_proc_get_obj<attachment_object>(plogmap, logon_id, hin, &object_type);
+	auto pattachment = plogmap->get_obj<attachment_object>(logon_id, hin, &object_type);
 	if (pattachment == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::attach)
@@ -838,12 +827,12 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 			return ecError;
 		cpid = pinfo->cpid;
 	}
-	if (!verify_cpid(cpid))
+	if (!acceptable_cpid_for_mapi(cpid))
 		return MAPI_E_UNKNOWN_CPID;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pattachment = rop_proc_get_obj<attachment_object>(plogmap, logon_id, hin, &object_type);
+	auto pattachment = plogmap->get_obj<attachment_object>(logon_id, hin, &object_type);
 	if (pattachment == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::attach)
@@ -866,19 +855,20 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		           nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		if (pmessage->init_message(false, cpid) != 0)
-			return ecError;
+		auto err = pmessage->init_message(false, cpid);
+		if (err != ecSuccess)
+			return err;
 
-		static constexpr proptag_t proptag_buff[] = {PidTagMid};
-		static constexpr PROPTAG_ARRAY proptags = {1, deconst(proptag_buff)};
-		if (!pmessage->get_properties(0, &proptags, &propvals))
-			return ecError;
+		static constexpr proptag_t proptags[] = {PidTagMid};
+		err = pmessage->get_properties(0, proptags, &propvals);
+		if (err != ecSuccess)
+			return err;
 		auto mid_p = propvals.get<const eid_t>(PidTagMid);
 		if (mid_p == nullptr)
 			return ecError;
 		*pmessage_id = *mid_p;
-		auto hnd = rop_processor_add_object_handle(plogmap,
-		           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
+		auto hnd = plogmap->add_object_handle(logon_id, hin,
+		           {ems_objtype::message, std::move(pmessage)});
 		if (hnd < 0)
 			return aoh_to_error(hnd);
 		*phout = hnd;
@@ -895,13 +885,12 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		return ecSuccess;
 	}
 
-	static constexpr proptag_t proptag_buff[] =
+	static constexpr proptag_t proptags[] =
 		{PidTagMid, PR_HAS_NAMED_PROPERTIES,
 		PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
-	static constexpr PROPTAG_ARRAY proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pmessage->get_properties(0, &proptags, &propvals))
-		return ecError;
+	auto err = pmessage->get_properties(0, proptags, &propvals);
+	if (err != ecSuccess)
+		return err;
 	auto mid_p = propvals.get<const eid_t>(PidTagMid);
 	if (mid_p == nullptr)
 		return ecError;
@@ -924,22 +913,24 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		pnormalized_subject->string_type = STRING_TYPE_UNICODE;
 		pnormalized_subject->pstring = deconst(str);
 	}
-	if (!pmessage->get_recipient_num(precipient_count))
-		return ecError;
+	err = pmessage->get_recipient_num(precipient_count);
+	if (err != ecSuccess)
+		return err;
 	auto pcolumns = pmessage->get_rcpt_columns();
 	*precipient_columns = *pcolumns;
-	if (!pmessage->read_recipients(0, 0xFE, &rcpts))
-		return ecError;
+	err = pmessage->read_recipients(0, 0xFE, &rcpts);
+	if (err != ecSuccess)
+		return err;
 	*prow_count = rcpts.count;
 	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
 	if (*pprecipient_row == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < rcpts.count; ++i)
-		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
-		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
+		if (!cu_propvals_to_openrecipient(pmessage->get_cpid(),
+		    rcpts.pparray[i], *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -951,10 +942,10 @@ ec_error_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -964,8 +955,8 @@ ec_error_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
 	if (ptable == nullptr)
 		return ecServerOOM;
 	auto rtable = ptable.get();
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);

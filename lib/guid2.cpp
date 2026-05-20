@@ -17,6 +17,7 @@
 #endif
 #include <libHX/endian.h>
 #include <gromox/mapidefs.h>
+#include <gromox/process.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -77,6 +78,14 @@ const FLATUID pbExchangeProviderDelegateGuid =
 	/* {0077b49e-e474-ce11-8c5e-00aa004254e2}, 9eb4770074e411ce8c5e00aa004254e2 */
 	{0x9E, 0xB4, 0x77, 0x00, 0x74, 0xE4, 0x11, 0xCE,
 	0x8C, 0x5E, 0x00, 0xAA, 0x00, 0x42, 0x54, 0xE2};
+const FLATUID shared_calendar_store_guid =
+	/* {e9c1d90b-6430-ce42-a56e-db2c1e4ab6e6}, 0bd9c1e9306442cea56edb2c1e4ab6e6 */
+	{0x0B, 0xD9, 0xC1, 0xE9, 0x30, 0x64, 0x42, 0xCE,
+	 0xA5, 0x6E, 0xDB, 0x2C, 0x1E, 0x4A, 0xB6, 0xE6};
+const FLATUID shared_calendar_provider_guid =
+	/* {dcbe8a8d-f279-ee4e-af29-71d40606bd41}, 8d8abedc79f24eeeaf2971d40606bd41 */
+	{0x8D, 0x8A, 0xBE, 0xDC, 0x79, 0xF2, 0x4E, 0xEE,
+	 0xAF, 0x29, 0x71, 0xD4, 0x06, 0x06, 0xBD, 0x41};
 const FLATUID muidOOP =
 	/* {a41f2b81-a3be-1910-9d6e-00dd010f5402}, 812b1fa4bea310199d6e00dd010f5402 */
 	{0x81, 0x2B, 0x1F, 0xA4, 0xBE, 0xA3, 0x10, 0x19,
@@ -196,6 +205,7 @@ const uint8_t OLE_TAG[11] =
 const uint8_t ThirdPartyGlobalId[12] =
 	/* pg 68 // 7643616C2D55696401000000 */
 	{0x76, 0x43, 0x61, 0x6c, 0x2d, 0x55, 0x69, 0x64, 0x01, 0x00, 0x00, 0x00};
+const char IPM_Appointment_Exception[] = "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}";
 static GUID machine_guid;
 static std::once_flag machine_guid_loaded;
 
@@ -209,11 +219,11 @@ static uint32_t gromox_rng_seed()
 	ret = getrandom(&seed, sizeof(seed), 0);
 #endif
 	if (ret < 0 || static_cast<size_t>(ret) != sizeof(seed))
-		seed = std::chrono::steady_clock::now().time_since_epoch().count() ^ getpid();
+		seed = std::chrono::steady_clock::now().time_since_epoch().count() ^ gx_gettid();
 	return seed;
 }
 
-static std::mt19937 gromox_rng(gromox_rng_seed());
+static thread_local std::mt19937 gromox_rng(gromox_rng_seed());
 
 uint32_t rand()
 {
@@ -300,6 +310,13 @@ void GUID::to_str(char *buf, size_t z, unsigned int type) const
 	         node[3], node[4], node[5]);
 }
 
+std::string GUID::repr(unsigned int type) const
+{
+	char txt[GUIDSTR_SIZE];
+	to_str(txt, std::size(txt), type);
+	return txt;
+}
+
 /**
  * NOTE! GUID::from_str only supports host32/36/38 forms, not flatlsb32.
  */
@@ -344,16 +361,4 @@ int GUID::compare_4_12(const GUID &o) const
 		return time_hi_and_version > o.time_hi_and_version ? 1 : -1;
 	auto r = memcmp(clock_seq, o.clock_seq, std::size(clock_seq));
 	return r != 0 ? r : memcmp(node, o.node, std::size(node));
-}
-
-int GUID::compare(const GUID &o) const
-{
-	/*
-	 * EXC2019 also evaluates restrictions (should be the same as the
-	 * outcome of a sort operation) such that GUID fields are compared in
-	 * broken-out fashion, host-order.
-	 */
-	if (time_low != o.time_low)
-		return time_low > o.time_low ? 1 : -1;
-	return compare_4_12(o);
 }

@@ -45,14 +45,14 @@ enum sql_schema_upgrade : uint8_t {
 	SSU_NOT_ENABLED, SSU_NOT_ME, SSU_AUTOUPGRADE,
 };
 
-struct mysql_adaptor_init_param {
+struct GX_EXPORT mysql_adaptor_init_param {
 	std::string host, user, pass, dbname, certfile, keyfile;
 	int port = 0, conn_num = 0, timeout = 0;
 	enum sql_schema_upgrade schema_upgrade = SSU_NOT_ENABLED;
 	bool enable_firsttimepw = false;
 };
 
-struct sql_domain {
+struct GX_EXPORT sql_domain {
 	std::string name, title, address;
 
 	std::weak_ordering operator<=>(const sql_domain&) const;
@@ -63,7 +63,6 @@ struct sql_domain {
  * %AB_HIDE_FROM_AL:	hide from Address Lists, EXC style (container != 0)
  * %AB_HIDE_DELEGATE:	hide from Delegate List
  * %AB_HIDE_RESOLVE:	hide from name resolution ("Check Names" in g-web)
- * %AB_HIDE_MINID:	disable resolution via MINID (experimental)
  *
  * %AB_HIDE__DEFAULT:	default action if AB encounters PR_ATTR_HIDDEN
  */
@@ -78,7 +77,8 @@ enum { /* for PR_ATTR_HIDDEN_*GROMOX* */
 
 /**
  * @dtypx:      %DT_* type as specified for PR_DISPLAY_TYPE_EX
- * @hidden:     hide bits for the address book
+ * @cloak_bits: various forms of invisibility of this object
+ *              in the address book provider
  * @list_type:	mlist_type value; only interpret field when
  * 		addr_type==ADDRESS_TYPE_MLIST.
  *
@@ -91,7 +91,7 @@ struct GX_EXPORT sql_user {
 	unsigned int addr_status = AF_USER_DELETED;
 	unsigned int domain_id = 0;
 	enum mlist_type list_type = mlist_type::normal;
-	uint32_t hidden = 0;
+	uint32_t cloak_bits = 0;
 	unsigned int list_priv = 0, homeserver_id = 0;
 	std::string username, homeserver, maildir;
 	std::vector<std::string> aliases; /* email addresses */
@@ -100,12 +100,12 @@ struct GX_EXPORT sql_user {
 	std::weak_ordering operator<=>(const sql_user &o) const;
 };
 
-struct sql_group {
+struct GX_EXPORT sql_group {
 	unsigned int id;
 	std::string name, title;
 };
 
-struct sql_class {
+struct GX_EXPORT sql_class {
 	unsigned int child_id;
 	std::string name;
 };
@@ -142,11 +142,15 @@ extern GX_EXPORT bool mysql_adaptor_check_mlist_include(const char *mlist_name, 
 extern GX_EXPORT bool mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
 extern GX_EXPORT bool mysql_adaptor_get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_get_homeserver_for_dir(const char *dir, bool *is_pvt, std::string &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
 extern GX_EXPORT int mysql_adaptor_domain_list_query(const char *dom);
 extern GX_EXPORT int mysql_adaptor_mbop_userlist(std::vector<sql_user> &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_alias_list(gromox::sql_alias_map &, size_t &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_domain_list(gromox::sql_domain_set &);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_get_user_groups_rec(const char *, std::vector<std::string> &);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_alias_resolve(std::string &addr_inplace);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_group_expand(const std::string &addr, std::vector<std::string> &exp);
 
 /**
  * Determines whether an arbitrary actor can generally open/read the primary

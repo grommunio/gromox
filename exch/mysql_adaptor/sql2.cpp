@@ -12,6 +12,7 @@
 #include <cstring>
 #include <errmsg.h>
 #include <map>
+#include <mutex>
 #include <mysql.h>
 #include <optional>
 #include <set>
@@ -31,9 +32,11 @@
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/flat_set.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "sql2.hpp"
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
@@ -54,12 +57,19 @@ static std::string crypt_estar(const char *a, const char *b)
 	auto r = crypt(a, b); /* uses thread-local storage */
 	return r != nullptr ? r : "*0";
 }
-#else
+#elif defined(HAVE_CRYPT_H)
 static std::string crypt_estar(const char *a, const char *b)
 {
 	struct crypt_data cd{};
 	auto r = crypt_r(a, b, &cd);
 	return r != nullptr ? r : "*0";
+}
+#else
+static std::string crypt_estar(const char *a, const char *b)
+{
+	static std::once_flag of;
+	std::call_once(of, []() { mlog(LV_ERR, "Gromox is built without crypt_r support, thus cannot evaluate such password hashes"); });
+	return "*0";
 }
 #endif
 
@@ -167,6 +177,8 @@ MYSQL *mysql_plugin::sql_make_conn()
 
 sqlconn &sqlconn::operator=(sqlconn &&o) noexcept
 {
+	if (this == &o)
+		return *this;
 	mysql_close(m_conn);
 	m_conn = o.m_conn;
 	o.m_conn = nullptr;
@@ -319,11 +331,11 @@ static ssize_t userlist_parse(sqlconn &conn, const char *query,
 		u.maildir = row[4];
 		auto it = u.propvals.find(PR_ATTR_HIDDEN_GROMOX);
 		if (it != u.propvals.end()) {
-			u.hidden = strtoul(it->second.c_str(), nullptr, 0);
+			u.cloak_bits = strtoul(it->second.c_str(), nullptr, 0);
 		} else {
 			it = u.propvals.find(PR_ATTR_HIDDEN);
 			if (it != u.propvals.end())
-				u.hidden = strtoul(it->second.c_str(), nullptr, 0) ? AB_HIDE__DEFAULT : 0;
+				u.cloak_bits = strtoul(it->second.c_str(), nullptr, 0) ? AB_HIDE__DEFAULT : 0;
 		}
 		if (u.dtypx == DT_DISTLIST) {
 			u.list_type = static_cast<enum mlist_type>(strtoul(znul(row[5]), nullptr, 0));
@@ -420,6 +432,11 @@ int mysql_plugin::domain_list_query(const char *domain) try
 	return -ENOMEM;
 }
 
+/**
+ * @entity:  username/domainname
+ * @is_pvt:  whether lookup is for a private or public store
+ * @servers: hostname & extname output
+ */
 errno_t mysql_plugin::get_homeserver(const char *entity, bool is_pvt,
     std::pair<std::string, std::string> &servers) try
 {
@@ -451,6 +468,57 @@ errno_t mysql_plugin::get_homeserver(const char *entity, bool is_pvt,
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2132: ENOMEM");
+	return ENOMEM;
+}
+
+/**
+ * Support function for exmdb_client_get_connection().
+ *
+ * @dir:      directory to look up
+ * @is_pvt:   output whether found entity is a private/public store
+ * @hostname: output homeserver hostname
+ *
+ * Returns 0 on success.
+ * Returns ENOENT if the directory is not in the user list.
+ * Returns ELOOP if the database is wonky.
+ *
+ * A zero-length hostname may be returned if the user has an invalid server
+ * entry, or the special homeserver 0 (globally-concurrently-served userdir).
+ */
+errno_t mysql_plugin::get_homeserver_for_dir(const char *dir, bool *is_pvt,
+    std::string &hostname) try
+{
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return EIO;
+	auto qent = conn->quote(dir);
+	/*
+	 * The port 5000 protocol is not externally visible by definition, so
+	 * we won't bother with sv.extname.
+	 */
+	auto qstr = "SELECT sv.hostname, 1 AS pvt FROM users AS u "
+	            "LEFT JOIN servers AS sv ON u.homeserver=sv.id "
+	            "WHERE u.maildir='"s + dir + "' UNION "
+	            "SELECT sv.hostname, 0 AS pvt FROM domains AS d "
+	            "LEFT JOIN servers AS sv ON d.homeserver=sv.id "
+	            "WHERE d.homedir='" + qent + "' LIMIT 2";
+	if (!conn->query(qstr))
+		return EIO;
+	auto res = conn->store_result();
+	if (res == nullptr)
+		return ENOMEM;
+	conn.finish();
+	auto nrows = res.num_rows();
+	if (nrows == 0)
+		return ENOENT;
+	else if (nrows > 1)
+		return ELOOP;
+	auto row = res.fetch_row();
+	hostname = znul(row[0]);
+	*is_pvt = *row[1] == '1';
+	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2141: ENOMEM");
 	return -ENOMEM;
 }
 
@@ -525,9 +593,9 @@ bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&cfg)
 	if (v == nullptr)
 		v = cfg->get_value("schema_upgrades");
 	par.schema_upgrade = SSU_NOT_ENABLED;
-	auto prog_id = get_prog_id();
+	auto prog_id = service_get_prog_id();
 	auto host_id = get_host_ID();
-	if (prog_id == nullptr || strcmp(prog_id, "http") != 0)
+	if (prog_id == nullptr || strcmp(prog_id, "istore-director") != 0)
 		par.schema_upgrade = SSU_NOT_ME;
 	else if (v != nullptr && strncmp(v, "host:", 5) == 0 &&
 	    prog_id != nullptr && strcmp(&v[5], host_id) == 0)
@@ -562,7 +630,7 @@ bool mysql_plugin::get_user_aliases(const char *username,
 
 	aliases.clear();
 	aliases.reserve(res.num_rows());
-	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
+	for (DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
 		aliases.emplace_back(row[0]);
 	return true;
 } catch (const std::exception &e) {
@@ -597,31 +665,29 @@ bool mysql_plugin::get_user_props(const char *username,
 	if (!conn->query(qstr) || !(res = conn->store_result()))
 		return false;
 
-	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
-	{
+	for (DB_ROW row = res.fetch_row(); row; row = res.fetch_row()) {
 		uint32_t tag = strtoul(row[1], nullptr, 0);
 		const char* strval = row[3];
 		if(!strval) // Binary values are currently not supported
 			continue;
 
-		switch(PROP_TYPE(tag))
-		{
+		switch (PROP_TYPE(tag)) {
 		case PT_BOOLEAN: {
 			uint8_t converted = strtoul(strval, nullptr, 0);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
 		case PT_SHORT: {
 			uint16_t converted = strtoul(strval, nullptr, 0);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
 		case PT_LONG:
 		case PT_ERROR: {
 			uint32_t converted = strtoul(strval, nullptr, 0);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
@@ -629,20 +695,20 @@ bool mysql_plugin::get_user_props(const char *username,
 		case PT_CURRENCY:
 		case PT_SYSTIME: {
 			uint64_t converted = strtoull(strval, nullptr, 0);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
 		case PT_FLOAT: {
 			float converted = strtof(strval, nullptr);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
 		case PT_DOUBLE:
 		case PT_APPTIME: {
 			double converted = strtod(strval, nullptr);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
@@ -650,7 +716,7 @@ bool mysql_plugin::get_user_props(const char *username,
 		case PT_UNICODE:
 			if(!row[3])
 				continue;
-			if (properties.set(tag, strval) != 0)
+			if (properties.set(tag, strval) != ecSuccess)
 				return false;
 			break;
 		}
@@ -789,6 +855,98 @@ errno_t mysql_plugin::mda_domain_list(sql_domain_set &newdom) try
 	return ENOMEM;
 }
 
+errno_t mysql_plugin::mda_alias_resolve(std::string &addr /* inplace */) try
+{
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return ENOMEM;
+	auto qstr =
+		"SELECT uv.propval_str AS mainname"
+		" FROM users AS u INNER JOIN user_properties AS up"
+		" ON u.id=up.user_id AND u.address_status=" + std::to_string(AF_USER_CONTACT) +
+		" AND up.proptag=" + std::to_string(PR_DISPLAY_TYPE_EX) +
+		" AND up.propval_str=" + std::to_string(DT_REMOTE_MAILUSER) +
+		" INNER JOIN user_properties AS uv"
+		" ON u.id=uv.user_id AND uv.proptag=" + std::to_string(PR_SMTP_ADDRESS) +
+		" WHERE username='" + conn->quote(addr) + "' UNION "
+		"SELECT a.mainname FROM aliases AS a INNER JOIN users AS u"
+		" ON u.address_status IN (" + std::to_string(AF_USER_NORMAL) + "," +
+		std::to_string(AF_USER_SHAREDMBOX) +
+		" AND u.username=a.mainname AND a.aliasname='" + conn->quote(addr) + "' LIMIT 2";
+	if (!conn->query(qstr))
+		return EIO;
+	auto result = conn->store_result();
+	if (result == nullptr)
+		return EIO;
+	if (result.num_rows() == 0)
+		return 0; /* No alias */
+	if (result.num_rows() > 1)
+		return ELOOP; /* Too many results */
+	auto row = result.fetch_row();
+	if (row == nullptr)
+		return EIO;
+	addr = znul(row[0]);
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
+errno_t mysql_plugin::mda_group_expand(sqlconn &conn, const std::string &group,
+    std::vector<std::string> &exp, std::set<std::string> &seen,
+    unsigned int depth)
+{
+	if (depth >= 8)
+		return ELOOP; /* too many groups nested */
+	seen.emplace(group);
+	auto qstr = "SELECT list_id FROM mlists WHERE listname='" + conn.quote(group) + "'";
+	if (!conn.query(qstr))
+		return EIO;
+	auto result = conn.store_result();
+	if (result == nullptr)
+		return EIO;
+	auto row = result.fetch_row();
+	if (row == nullptr)
+		return ENOENT; /* not a group */
+	auto list_id = strtoul(row[0], nullptr, 0);
+
+	qstr = "SELECT username FROM associations WHERE list_id=" + std::to_string(list_id);
+	if (!conn.query(qstr))
+		return EIO;
+	result = conn.store_result();
+	if (result == nullptr)
+		return EIO;
+	while ((row = result.fetch_row()) != nullptr) {
+		std::string member = znul(row[0]);
+		if (member.empty())
+			continue;
+		auto err = mda_alias_resolve(member);
+		if (err != 0)
+			continue; /* problem with user */
+		err = mda_group_expand(conn, member, exp, seen, depth + 1);
+		if (err == ENOENT) {
+			/* not a group */
+			exp.emplace_back(member);
+			continue;
+		}
+		if (seen.find(member) != seen.end())
+			return ELOOP; /* very bad */
+		seen.emplace(member);
+	}
+	return 0;
+}
+
+errno_t mysql_plugin::mda_group_expand(const std::string &group,
+    std::vector<std::string> &exp) try
+{
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return ENOMEM;
+	std::set<std::string> seen;
+	return mda_group_expand(*conn, group, exp, seen, 0);
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
 /**
  * @brief     Compare domains based on (case-insensitive) domain name
  *
@@ -904,6 +1062,42 @@ bool mysql_plugin::check_mlist_include(const char *mlist_name,
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1729", e.what());
 	return false;
+}
+
+errno_t mysql_plugin::get_user_groups_rec(const char *username, std::vector<std::string> &groups) try
+{
+	gromox::maybe_flat_set<uint32_t> seen_ml;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return EIO;
+	groups.clear();
+	groups.emplace_back(username);
+	size_t rescan_begin = 0, rescan_end = 1;
+	for (size_t i = rescan_begin; i < rescan_end; ++i) {
+		auto qstr = "SELECT DISTINCT m.id, m.listname FROM associations AS a "
+			    "INNER JOIN mlists AS m ON a.list_id=m.id "
+			    "WHERE a.username='" + conn->quote(groups[i]) + "'";
+		if (!conn->query(qstr))
+			return EIO;
+		auto result = conn->store_result();
+		DB_ROW row;
+		++rescan_begin;
+		while ((row = result.fetch_row()) != nullptr) {
+			if (row[1] == nullptr)
+				continue;
+			auto list_id = strtoul(row[0], nullptr, 0);
+			if (seen_ml.contains(list_id))
+				continue;
+			seen_ml.emplace(list_id);
+			groups.emplace_back(row[1]);
+			++rescan_end;
+		}
+	}
+	groups.erase(groups.begin());
+	return 0;
+} catch (const std::bad_alloc &e) {
+	mlog(LV_ERR, "E-1731: ENOMEM");
+	return ENOMEM;
 }
 
 errno_t mysql_adaptor_meta(const char *u, unsigned int p, sql_meta_result &r)
@@ -1033,6 +1227,12 @@ gromox::errno_t mysql_adaptor_get_homeserver(const char *e, bool p,
 	return le_mysql_plugin->get_homeserver(e, p, v);
 }
 
+gromox::errno_t mysql_adaptor_get_homeserver_for_dir(const char *d,
+    bool *p, std::string &v)
+{
+	return le_mysql_plugin->get_homeserver_for_dir(d, p, v);
+}
+
 gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints)
 {
 	return le_mysql_plugin->scndstore_hints(pri, hints);
@@ -1056,4 +1256,19 @@ errno_t mysql_adaptor_mda_alias_list(sql_alias_map &v, size_t &a)
 errno_t mysql_adaptor_mda_domain_list(sql_domain_set &v)
 {
 	return le_mysql_plugin->mda_domain_list(v);
+}
+
+errno_t mysql_adaptor_get_user_groups_rec(const char *user, std::vector<std::string> &groups)
+{
+	return le_mysql_plugin->get_user_groups_rec(user, groups);
+}
+
+errno_t mysql_adaptor_mda_alias_resolve(std::string &addr)
+{
+	return le_mysql_plugin->mda_alias_resolve(addr);
+}
+
+errno_t mysql_adaptor_mda_group_expand(const std::string &addr, std::vector<std::string> &exp)
+{
+	return le_mysql_plugin->mda_group_expand(addr, exp);
 }

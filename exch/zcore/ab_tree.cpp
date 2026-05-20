@@ -39,12 +39,14 @@ static ec_error_t ab_tree_fetchprop(const ab_tree::ab_node& node,
 		*static_cast<int64_t *>(*prop) = strtoll(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_STRING8:
-	case PT_UNICODE:
-		*prop = common_util_alloc(strlen(it->second.c_str()) + 1);
+	case PT_UNICODE: {
+		size_t tgs = it->second.size() + 1;
+		*prop = common_util_alloc(tgs);
 		if (*prop == nullptr)
 			return ecServerOOM;
-		strcpy(static_cast<char *>(*prop), it->second.c_str());
+		memcpy(static_cast<char *>(*prop), it->second.c_str(), tgs);
 		return ecSuccess;
+	}
 	case PT_BINARY: {
 		*prop = cu_alloc<BINARY>();
 		if (*prop == nullptr)
@@ -66,10 +68,11 @@ static ec_error_t ab_tree_fetchprop(const ab_tree::ab_node& node,
 		sa->ppstr = cu_alloc<char *>();
 		if (sa->ppstr == nullptr)
 			return ecServerOOM;
-		sa->ppstr[0] = cu_alloc<char>(it->second.size() + 1);
+		auto tgs = it->second.size() + 1;
+		sa->ppstr[0] = cu_alloc<char>(tgs);
 		if (sa->ppstr[0] == nullptr)
 			return ecServerOOM;
-		strcpy(sa->ppstr[0], it->second.c_str());
+		memcpy(sa->ppstr[0], it->second.c_str(), tgs);
 		return ecSuccess;
 	}
 	}
@@ -77,7 +80,8 @@ static ec_error_t ab_tree_fetchprop(const ab_tree::ab_node& node,
 }
 
 /* Returns: TRUE (success or notfound), FALSE (fatal error/enomem/etc.) */
-static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t proptag, void **ppvalue)
+static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
+    proptag_t proptag, void **ppvalue)
 {
 	EXT_PUSH ext_push;
 	
@@ -100,7 +104,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 		auto pvalue = cu_alloc<uint32_t>();
 		if (pvalue == nullptr)
 			return FALSE;
-		*static_cast<uint32_t *>(pvalue) = !pnode.children() ?
+		*static_cast<uint32_t *>(pvalue) = pnode.children_count() == 0 ?
 			ab_tree::CF_RECIPIENTS | ab_tree::CF_UNMODIFIABLE : ab_tree::CF_ALL;
 		*ppvalue = pvalue;
 		return TRUE;
@@ -224,13 +228,11 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 		EMSAB_ENTRYID ab_entryid;
 		ab_entryid.flags = 0;
 		ab_entryid.type = pnode.etyp();
-		std::string dn;
-		if (!pnode.dn(dn))
+		if (!pnode.dn(ab_entryid.x500dn))
 			return FALSE;
-		ab_entryid.px500dn = dn.data();
 		bv->pv = common_util_alloc(1280);
 		if (bv->pv == nullptr || !ext_push.init(bv->pv, 1280, 0) ||
-		    ext_push.p_abk_eid(ab_entryid) != EXT_ERR_SUCCESS)
+		    ext_push.p_abk_eid(ab_entryid) != pack_result::ok)
 			return FALSE;
 		bv->cb = ext_push.m_offset;
 		*ppvalue = pvalue;
@@ -250,7 +252,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 		bv->pv = common_util_alloc(bv->cb);
 		if (bv->pv == nullptr)
 			return FALSE;
-		sprintf(bv->pc, "EX:%s", dn.c_str());
+		snprintf(bv->pc, bv->cb, "EX:%s", dn.c_str());
 		HX_strupper(bv->pc);
 		*ppvalue = pvalue;
 		return TRUE;
@@ -287,7 +289,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 		if (node_type >= ab_tree::abnode_type::containers)
 			return TRUE;
 		std::string dn;
-		pnode.company_info(&dn, nullptr);
+		pnode.company_name(dn);
 		if (dn.empty())
 			return TRUE;
 		auto pvalue = common_util_dup(dn);
@@ -331,17 +333,18 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 		sa->ppstr = cu_alloc<char *>(sa->count);
 		if (sa->ppstr == nullptr)
 			return FALSE;
-		sa->ppstr[0] = cu_alloc<char>(dn.size() + 6);
+		size_t tgs = dn.size() + 6;
+		sa->ppstr[0] = cu_alloc<char>(tgs);
 		if (sa->ppstr[0] == nullptr)
 			return FALSE;
-		sprintf(sa->ppstr[0], "SMTP:%s", dn.c_str());
+		snprintf(sa->ppstr[0], tgs, "SMTP:%s", dn.c_str());
 		size_t i = 1;
 		for (const auto &a : alias_list) {
-			sa->ppstr[i] = cu_alloc<char>(a.size() + 6);
+			tgs = a.size() + 6;
+			sa->ppstr[i] = cu_alloc<char>(tgs);
 			if (sa->ppstr[i] == nullptr)
 				return false;
-			strcpy(sa->ppstr[i], "SMTP:");
-			strcat(sa->ppstr[i++], a.c_str());
+			snprintf(sa->ppstr[i++], tgs, "SMTP:%s", a.c_str());
 		}
 		*ppvalue = sa;
 		return TRUE;
@@ -394,16 +397,15 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 	return TRUE;
 }
 
-BOOL ab_tree_fetch_node_properties(const ab_tree::ab_node& pnode,
-                                    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+bool ab_tree_fetch_node_properties(const ab_tree::ab_node &pnode,
+    proptag_cspan tags, TPROPVAL_ARRAY *ppropvals)
 {
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(tags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : tags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!ab_tree_fetch_node_property(pnode, tag, &pvalue))
 			return FALSE;	
 		if (pvalue == nullptr)
@@ -461,7 +463,7 @@ bool ab_tree_resolvename(const ab_tree::ab_base* base, const char *pstr,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1678: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -547,20 +549,21 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 	if (container_id == ab_tree::minid::SC_GAL) {
 		for (auto it = pbase->ubegin(); it != pbase->uend(); ++it) {
 			ab_tree::ab_node node(it);
-			if (node.hidden() & AB_HIDE_FROM_GAL || !ab_tree_match_node(node, pfilter))
+			if (node.hidden() & AB_HIDE_FROM_GAL ||
+			    !ab_tree_match_node(node, pfilter))
 				continue;
 			tlist.push_back(*it);
 		}
 	} else {
 		ab_tree::ab_node node(pbase, container_id);
-		if (!node.exists() || !node.children()) {
+		if (!node.exists() || node.children_count() == 0) {
 			pminids->count = 0;
 			pminids->pl = NULL;
 			return TRUE;
 		}
-		for(ab_tree::minid mid : node) {
+		for (ab_tree::minid mid : node) {
 			ab_tree::ab_node child(pbase, mid);
-			if(child.type() >= ab_tree::abnode_type::containers ||
+			if (child.type() >= ab_tree::abnode_type::containers ||
 			    child.hidden() & AB_HIDE_FROM_AL ||
 			    !ab_tree_match_node(child, pfilter))
 				continue;
@@ -582,6 +585,6 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1247: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }

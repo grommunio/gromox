@@ -8,11 +8,11 @@ namespace gromox {
 using DB_LENGTHS = unsigned long *;
 using DB_ROW = char **;
 
-struct mysql_delete {
+struct GX_EXPORT mysql_delete {
 	inline void operator()(MYSQL *x) const { mysql_close(x); }
 };
 
-class GX_EXPORT DB_RESULT final {
+class GX_EXPORT DB_RESULT {
 	public:
 	DB_RESULT() = default;
 	DB_RESULT(MYSQL_RES *r) noexcept : m_res(r) {}
@@ -21,6 +21,8 @@ class GX_EXPORT DB_RESULT final {
 
 	DB_RESULT &operator=(DB_RESULT &&o) noexcept
 	{
+		if (this == &o)
+			return *this;
 		clear();
 		m_res = o.m_res;
 		o.m_res = nullptr;
@@ -33,7 +35,6 @@ class GX_EXPORT DB_RESULT final {
 	}
 	operator bool() const noexcept { return m_res != nullptr; }
 	bool operator==(std::nullptr_t) const noexcept { return m_res == nullptr; }
-	bool operator!=(std::nullptr_t) const noexcept { return m_res != nullptr; }
 	MYSQL_RES *get() const noexcept { return m_res; }
 	void *release() noexcept
 	{

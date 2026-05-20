@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <csignal>
@@ -35,7 +35,6 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
@@ -58,23 +57,22 @@ int (*system_services_add_timer)(const char *, int);
 
 gromox::atomic_bool g_main_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static char *opt_config_file;
+static const char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
 static gromox::atomic_bool g_listener_notify_stop;
 static int g_listen_sockd;
 static pthread_t g_listener_id;
 
-static constexpr struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
-static constexpr static_module g_dfl_svc_plugins[] = {
+static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},
 	{"libgxs_timer_agent.so", SVC_timer_agent},
 };
@@ -93,16 +91,12 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"address_table_size", "3000", CFG_SIZE, "1"},
 	{"config_file_path", PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR},
 	{"data_file_path", PKGDATADIR "/zcore:" PKGDATADIR},
-	{"default_charset", "utf-8"},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
-	{"max_mail_num", "1000000", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
-	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
-	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
-	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
+	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
 	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"x500_org_name", "Gromox default"},
@@ -130,6 +124,8 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (gxcfg == nullptr)
+		return false;
 	zcore_backfill_transporthdr = gxcfg->get_ll("backfill_transport_headers");
 
 	if (pconfig == nullptr)
@@ -140,11 +136,12 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 		       opt_config_file, strerror(errno));
 		return false;
 	}
+	if (pconfig == nullptr)
+		return false;
 	mlog_init("gromox-zcore", pconfig->get_value("zcore_log_file"),
 		pconfig->get_ll("zcore_log_level"),
 		pconfig->get_value("running_identity"));
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
-	g_oxcical_allday_ymd = pconfig->get_ll("oxcical_allday_ymd");
 	zcore_max_obh_per_session = pconfig->get_ll("zcore_max_obh_per_session");
 	return true;
 }
@@ -176,6 +173,7 @@ static void system_services_stop()
 
 static void *zcls_thrwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "accept");
 	struct sockaddr_storage unix_addr;
 
 	while (!g_listener_notify_stop) {
@@ -213,11 +211,11 @@ static int listener_run(const char *sockpath)
 	g_listener_notify_stop = false;
 	auto ret = pthread_create4(&g_listener_id, nullptr, zcls_thrwork, nullptr);
 	if (ret != 0) {
+		g_listener_notify_stop = true;
 		close(g_listen_sockd);
 		mlog(LV_ERR, "listener: failed to create accept thread: %s", strerror(ret));
 		return -5;
 	}
-	pthread_setname_np(g_listener_id, "accept");
 	return 0;
 }
 
@@ -239,13 +237,17 @@ int main(int argc, char **argv)
 {
 	char temp_buff[45];
 	std::shared_ptr<CONFIG_FILE> pconfig;
+	HXopt6_auto_result argp;
 	
 	exmdb_rpc_alloc = common_util_alloc;
 	exmdb_rpc_free = [](void *) {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-zcore");
 	if (opt_show_version)
@@ -263,20 +265,21 @@ int main(int argc, char **argv)
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		mlog(LV_ERR, "system: config_file_init %s: %s",
 			opt_config_file, strerror(errno));
-	if (pconfig == nullptr)
-		return EXIT_FAILURE;
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", zcore_gxcfg_dflt);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (pconfig == nullptr || gxconfig == nullptr)
+		/* e.g. permission error */
+		return EXIT_FAILURE;
 	if (!zcore_reload_config(gxconfig, pconfig))
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 
 	unsigned int threads_num = pconfig->get_ll("zcore_threads_num");
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
 	filedes_limit_bump(gxconfig->get_ll("zcore_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
-	auto cl_0 = HX::make_scope_exit(service_stop);
 	
 	unsigned int table_size = pconfig->get_ll("address_table_size");
 	mlog(LV_INFO, "system: address table size is %d", table_size);
@@ -286,14 +289,11 @@ int main(int argc, char **argv)
 	mlog(LV_INFO, "system: address book tree item"
 		" cache interval is %s", temp_buff);
 
-	ab_tree::AB.init(g_config_file->get_value("x500_org_name"), cache_interval);
-	auto cl_5 = HX::make_scope_exit([]{ab_tree::AB.stop();});
+	if (ab_tree::AB.init(g_config_file->get_value("x500_org_name"), cache_interval) != 0)
+		return EXIT_FAILURE;
 
 	auto max_rcpt = pconfig->get_ll("max_rcpt_num");
 	mlog(LV_INFO, "system: maximum rcpt number is %lld", max_rcpt);
-	
-	auto max_mail = pconfig->get_ll("max_mail_num");
-	mlog(LV_INFO, "system: maximum mail number is %lld", max_mail);
 	
 	auto max_length = pconfig->get_ll("mail_max_length");
 	HX_unit_size(temp_buff, std::size(temp_buff), max_length, 1024, 0);
@@ -315,15 +315,11 @@ int main(int argc, char **argv)
 	mlog(LV_NOTICE, "system: SMTP server is %s", smtp_url.c_str());
 	
 	common_util_init(g_config_file->get_value("x500_org_name"),
-		g_config_file->get_value("default_charset"),
-		max_rcpt, max_mail, max_length, max_rule_len, std::move(smtp_url),
+		max_rcpt, max_length, max_rule_len, std::move(smtp_url),
 		g_config_file->get_value("submit_command"));
 	
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	mlog(LV_INFO, "system: exmdb proxy connection number is %d", proxy_num);
-	
-	int stub_num = pconfig->get_ll("notify_stub_threads_num");
-	mlog(LV_INFO, "system: exmdb notify stub threads number is %d", stub_num);
 	
 	table_size = pconfig->get_ll("user_table_size");
 	mlog(LV_INFO, "system: hash table size is %d", table_size);
@@ -336,39 +332,35 @@ int main(int argc, char **argv)
 	HX_unit_seconds(temp_buff, std::size(temp_buff), ping_interval, 0);
 	mlog(LV_INFO, "system: mailbox ping interval is %s", temp_buff);
 
-	if (service_run_early() != 0) {
-		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
-		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	if (iconv_validate() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	textmaps_init();
+	auto cl_0 = HX::make_scope_exit(service_stop);
 	if (0 != service_run()) {
 		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = HX::make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
 		mlog(LV_ERR, "system: failed to start system services");
 		return EXIT_FAILURE;
 	}
+	auto cl_1 = HX::make_scope_exit(system_services_stop);
 
 	zserver_init(table_size, cache_interval, ping_interval);
-	auto cl_7 = HX::make_scope_exit(zserver_stop);
-	exmdb_client.emplace(proxy_num, stub_num);
+	exmdb_client.emplace(proxy_num);
+	exmdb_client->set_async_notif(zs_notification_proc);
 	auto cl_8 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	/* parser after zserver: dependency on session table */
 	/* parser after service: dependency on mysql_adaptor */
 	rpc_parser_init(threads_num);
-	auto cl_6 = HX::make_scope_exit(rpc_parser_stop);
 	listener_init();
-	auto cl_10 = HX::make_scope_exit(listener_stop);
 	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
 		mlog(LV_ERR, "system: failed to start listener");
 		return EXIT_FAILURE;
 	}
+	auto cl_10 = HX::make_scope_exit(listener_stop);
 	if (common_util_run(g_config_file->get_value("data_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start common util");
 		return EXIT_FAILURE;
@@ -378,22 +370,21 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start bounce producer");
 		return EXIT_FAILURE;
 	}
-	if (msgchg_grouping_run(g_config_file->get_value("data_file_path")) != 0) {
-		mlog(LV_ERR, "system: failed to start msgchg grouping");
-		return EXIT_FAILURE;
-	}
 	if (!ab_tree::AB.run()) {
 		mlog(LV_ERR, "system: failed to start address book tree");
 		return EXIT_FAILURE;
 	}
+	auto cl_5 = HX::make_scope_exit([]() { ab_tree::AB.stop(); });
 	if (0 != rpc_parser_run()) {
 		mlog(LV_ERR, "system: failed to start ZRPC parser");
 		return EXIT_FAILURE;
 	}
+	auto cl_6 = HX::make_scope_exit(rpc_parser_stop);
 	if (zserver_run() != 0) {
 		mlog(LV_ERR, "system: failed to run zserver");
 		return EXIT_FAILURE;
 	}
+	auto cl_7 = HX::make_scope_exit(zserver_stop);
 	if (exmdb_client_run_front(g_config_file->get_value("config_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start exmdb client");
 		return EXIT_FAILURE;

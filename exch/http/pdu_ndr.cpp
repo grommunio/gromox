@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -91,6 +93,7 @@ static pack_result pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr, DCERPC_BIND_NAK 
 	
 	if (DECRPC_BIND_REASON_VERSION_NOT_SUPPORTED == r->reject_reason) {
 		TRY(pndr->g_uint32(&r->num_versions));
+		r->num_versions = std::min(r->num_versions, static_cast<uint32_t>(UINT8_MAX)); /* C706 p. 592 */
 		if (r->num_versions > 0) {
 			r->versions = me_alloc<uint32_t>(r->num_versions);
 			if (NULL == r->versions) {
@@ -249,6 +252,7 @@ static pack_result pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, DCERPC_FACK *r)
 	TRY(pndr->g_uint32(&r->max_frag_size));
 	TRY(pndr->g_uint16(&r->serial_no));
 	TRY(pndr->g_uint16(&r->selack_size));
+	r->selack_size = std::min(r->selack_size, static_cast<uint16_t>(UINT16_MAX));
 	if (r->selack_size > 0) {
 		r->selack = me_alloc<uint32_t>(r->selack_size);
 		if (NULL == r->selack) {
@@ -599,7 +603,7 @@ static pack_result pdu_ndr_pull_ipv6address(NDR_PULL *pndr,
     char *address, size_t asz)
 {
 	struct in6_addr in6;
-	TRY(pndr->g_uint8_a(in6.s6_addr, std::size(in6.s6_addr)));
+	TRY(pndr->g_bytes(in6.s6_addr, std::size(in6.s6_addr)));
 	inet_ntop(AF_INET6, &in6, address, asz);
 	return pack_result::ok;
 }
@@ -700,6 +704,7 @@ static pack_result pdu_ndr_pull_dcerpc_rts(NDR_PULL *pndr, DCERPC_RTS *r)
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint16(&r->flags));
 	TRY(pndr->g_uint16(&r->num));
+	r->num = std::min(r->num, static_cast<uint16_t>(r->num));
 	if (r->num > 0) {
 		r->commands = me_alloc<RTS_CMD>(r->num);
 		if (NULL == r->commands) {
@@ -882,7 +887,7 @@ pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt)
 	TRY(pndr->g_uint8(&pkt->rpc_vers_minor));
 	TRY(pndr->g_uint8(&pkt->pkt_type));
 	TRY(pndr->g_uint8(&pkt->pfc_flags));
-	TRY(pndr->g_uint8_a(pkt->drep, 4));
+	TRY(pndr->g_bytes(pkt->drep, 4));
 	TRY(pndr->g_uint16(&pkt->frag_length));
 	TRY(pndr->g_uint16(&pkt->auth_length));
 	TRY(pndr->g_uint32(&pkt->call_id));
@@ -1155,7 +1160,7 @@ static pack_result pdu_ndr_push_rts_padding(NDR_PUSH *pndr, uint32_t v)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(v));
-	TRY(pndr->p_uint8_a(nullptr, v));
+	TRY(pndr->p_bytes(nullptr, v));
 	return pndr->trailer_align(4);
 	
 }
@@ -1176,7 +1181,7 @@ static pack_result pdu_ndr_push_ipv6address(NDR_PUSH *pndr, const char *address)
 	auto ret = inet_pton(AF_INET6, address, &in6);
 	if (ret <= 0)
 		return pack_result::ipv6addr;
-	TRY(pndr->p_uint8_a(in6.s6_addr, std::size(in6.s6_addr)));
+	TRY(pndr->p_bytes(in6.s6_addr, std::size(in6.s6_addr)));
 	return pndr->trailer_align(4);
 }
 
@@ -1196,7 +1201,7 @@ static pack_result pdu_ndr_push_rts_clientaddress(NDR_PUSH *pndr,
 	default:
 		return pack_result::bad_switch;
 	}
-	TRY(pndr->p_uint8_a(nullptr, 12));
+	TRY(pndr->p_bytes(nullptr, 12));
 	return pndr->trailer_align(4);
 }
 
@@ -1352,7 +1357,7 @@ pack_result pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt)
 	TRY(pndr->p_uint8(pkt->rpc_vers_minor));
 	TRY(pndr->p_uint8(pkt->pkt_type));
 	TRY(pndr->p_uint8(pkt->pfc_flags));
-	TRY(pndr->p_uint8_a(pkt->drep, 4));
+	TRY(pndr->p_bytes(pkt->drep, 4));
 	TRY(pndr->p_uint16(pkt->frag_length));
 	TRY(pndr->p_uint16(pkt->auth_length));
 	TRY(pndr->p_uint32(pkt->call_id));

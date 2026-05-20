@@ -41,7 +41,7 @@ struct session_data {
 
 enum class resp_code {
 	success, invalid_verb, invalid_ctx_cookie, missing_header, no_priv,
-	invalid_rq_body, missing_cookie, invalid_seq, invalid_rq_type,
+	invalid_rq_body, missing_cookie, invalid_seq, invalid_rq_type, enomem,
 };
 
 static constexpr const char *g_error_text[] = {
@@ -55,6 +55,7 @@ static constexpr const char *g_error_text[] = {
     "The request has violated the sequencing requirement"
         " of one request at a time per Session Context.",
     "Invalid request type for this endpoint.",
+	"Out of memory.",
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

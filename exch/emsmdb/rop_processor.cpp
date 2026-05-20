@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <climits>
@@ -41,13 +41,10 @@
 using namespace gromox;
 
 static int g_scan_interval;
-static pthread_t g_scan_id;
-static gromox::atomic_bool g_notify_stop{true};
-static std::mutex g_hash_lock;
-static std::unordered_map<std::string, uint32_t> g_logon_hash;
 static unsigned int g_emsmdb_full_parenting;
 static unsigned int g_max_rop_payloads = 96;
 
+size_t emsmdb_compress_threshold;
 unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
 unsigned int emsmdb_pvt_folder_softdel, emsmdb_rop_chaining;
@@ -72,13 +69,8 @@ void object_node::clear() noexcept
 	switch (type) {
 	case ems_objtype::logon: {
 		auto logon = static_cast<logon_object *>(pobject);
-		{
-			/* Remove from pinger list */
-			std::lock_guard hl_hold(g_hash_lock);
-			auto ref = g_logon_hash.find(logon->get_dir());
-			if (ref != g_logon_hash.end() && --ref->second == 0)
-				g_logon_hash.erase(ref);
-		}
+		if (g_logon_debug)
+			mlog(LV_DEBUG, "E-DBG: object_node(%p)::clear: logon=%p", this, pobject);
 		delete logon;
 		break;
 	}
@@ -86,6 +78,7 @@ void object_node::clear() noexcept
 		delete static_cast<folder_object *>(pobject);
 		break;
 	case ems_objtype::message:
+		mlog(LV_DEBUG, "E-DBG: object_node(%p)::clear: msg=%p", this, pobject);
 		delete static_cast<message_object *>(pobject);
 		break;
 	case ems_objtype::attach:
@@ -121,6 +114,8 @@ void object_node::clear() noexcept
 
 void object_node::operator=(object_node &&o) noexcept
 {
+	if (this == &o)
+		return;
 	clear();
 	type = std::move(o.type);
 	pobject = std::move(o.pobject);
@@ -128,25 +123,17 @@ void object_node::operator=(object_node &&o) noexcept
 	o.pobject = nullptr;
 }
 
-int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
-    uint8_t logon_id, std::unique_ptr<logon_object> &&plogon) try
+int32_t LOGMAP::insert_logon_item(uint8_t logon_id,
+    std::unique_ptr<logon_object> &&plogon) try
 {
 	/* MS-OXCROPS 3.1.4.2 */
+	auto plogmap = this;
 	plogmap->p[logon_id] = std::make_unique<LOGON_ITEM>();
-	auto rlogon = plogon.get();
-	auto handle = rop_processor_add_object_handle(plogmap, logon_id, -1,
-	              {ems_objtype::logon, std::move(plogon)});
-	if (handle < 0)
-		return handle;
-	std::lock_guard hl_hold(g_hash_lock);
-	auto pref = g_logon_hash.find(rlogon->get_dir());
-	if (pref != g_logon_hash.end())
-		++pref->second;
-	else
-		g_logon_hash.emplace(rlogon->get_dir(), 1);
-	return handle;
+	plogmap->username = username;
+	return plogmap->add_object_handle(logon_id, -1,
+	       {ems_objtype::logon, std::move(plogon)});
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1974: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return -ENOMEM;
 }
 
@@ -191,13 +178,11 @@ ec_error_t aoh_to_error(int x)
 	}
 }
 
-int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
-    int32_t parent_handle, object_node &&in_object) try
+int32_t LOGON_ITEM::add_object_handle(int32_t parent_handle,
+    object_node &&in_object) try
 {
-	auto eiuser = znul(emsmdb_interface_get_username());
-	auto plogitem = plogmap->p[logon_id].get();
-	if (plogitem == nullptr)
-		return -EINVAL;
+	auto plogitem = this;
+	auto eiuser = username.c_str();
 	auto root = plogitem->root.get();
 	const char *target = "";
 	if (root != nullptr && root->type == ems_objtype::logon) {
@@ -245,18 +230,25 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	}
 	return pobjnode->handle;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1975: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return -ENOMEM;
 }
 
-void *rop_processor_get_object(LOGMAP *plogmap, uint8_t logon_id,
-    uint32_t obj_handle, ems_objtype *ptype)
+int32_t LOGMAP::add_object_handle(uint8_t logon_id,
+    int32_t parent_handle, object_node &&in_object)
+{
+	auto plogmap = this;
+	auto plogitem = plogmap->p[logon_id].get();
+	if (plogitem == nullptr)
+		return -EINVAL;
+	return plogitem->add_object_handle(parent_handle, std::move(in_object));
+}
+
+void *LOGON_ITEM::get_object(uint32_t obj_handle, ems_objtype *ptype)
 {
 	if (obj_handle >= INT32_MAX)
 		return NULL;
-	auto &plogitem = plogmap->p[logon_id];
-	if (plogitem == nullptr)
-		return NULL;
+	auto plogitem = this;
 	if (g_rop_debug >= 1 && plogitem->root != nullptr) {
 		auto lo = static_cast<logon_object *>(plogitem->root->pobject);
 		if (lo != nullptr)
@@ -269,14 +261,20 @@ void *rop_processor_get_object(LOGMAP *plogmap, uint8_t logon_id,
 	return i->second->pobject;
 }
 
-void rop_processor_release_object_handle(LOGMAP *plogmap,
-	uint8_t logon_id, uint32_t obj_handle)
+void *LOGMAP::get_object(uint8_t logon_id, uint32_t obj_handle,
+    ems_objtype *ptype)
+{
+	auto plogitem = p[logon_id].get();
+	if (plogitem == nullptr)
+		return NULL;
+	return plogitem->get_object(obj_handle, ptype);
+}
+
+void LOGON_ITEM::release_object_handle(uint32_t obj_handle)
 {
 	if (obj_handle >= INT32_MAX)
 		return;
-	auto &plogitem = plogmap->p[logon_id];
-	if (plogitem == nullptr)
-		return;
+	auto plogitem = this;
 	if (g_rop_debug > 0) {
 		auto root = plogitem->root;
 		if (root != nullptr) {
@@ -298,11 +296,17 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 	plogitem->phash.erase(objnode->handle);
 }
 
-logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
+void LOGMAP::release_object_handle(uint8_t logon_id, uint32_t obj_handle)
 {
-	auto &plogitem = plogmap->p[logon_id];
+	auto plogitem = p[logon_id].get();
 	if (plogitem == nullptr)
-		return nullptr;
+		return;
+	return plogitem->release_object_handle(obj_handle);
+}
+
+logon_object *LOGON_ITEM::get_logon_object()
+{
+	auto plogitem = this;
 	auto proot = plogitem->root;
 	if (proot == nullptr)
 		return nullptr;
@@ -311,66 +315,17 @@ logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 	return obj;
 }
 
-static void *emsrop_scanwork(void *param)
+logon_object *LOGMAP::get_logon_object(uint8_t logon_id)
 {
-	int count;
-	
-	count = 0;
-	while (!g_notify_stop) try {
-		sleep(1);
-		count ++;
-		if (count < g_scan_interval) {
-			count ++;
-			continue;
-		}
-		count = 0;
-		std::unique_lock hl_hold(g_hash_lock);
-		std::vector<std::string> dirs;
-		for (const auto &pair : g_logon_hash)
-			dirs.push_back(pair.first);
-		hl_hold.unlock();
-		while (dirs.size() > 0) {
-			exmdb_client->ping_store(dirs.back().c_str());
-			dirs.pop_back();
-		}
-	} catch (const std::bad_alloc &) {
-		sleep(1);
-	}
-	return nullptr;
+	auto plogitem = p[logon_id].get();
+	if (plogitem == nullptr)
+		return nullptr;
+	return plogitem->get_logon_object();
 }
 
 void rop_processor_init(int scan_interval)
 {
 	g_scan_interval = scan_interval;
-}
-
-int rop_processor_run()
-{
-	g_notify_stop = false;
-	auto ret = pthread_create4(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
-	if (ret != 0) {
-		g_notify_stop = true;
-		mlog(LV_ERR, "emsmdb: failed to create scanning thread "
-		       "for logon hash table: %s", strerror(ret));
-		return -5;
-	}
-	pthread_setname_np(g_scan_id, "rop_scan");
-	return 0;
-}
-
-void rop_processor_stop()
-{
-	if (!g_notify_stop) {
-		g_notify_stop = true;
-		if (!pthread_equal(g_scan_id, {})) {
-			pthread_kill(g_scan_id, SIGALRM);
-			pthread_join(g_scan_id, NULL);
-		}
-	}
-	{ /* silence cov-scan, take locks even in single-thread scenarios */
-		std::lock_guard lk(g_hash_lock);
-		g_logon_hash.clear();
-	}
 }
 
 static uint32_t rpcext_cutoff = 32U << 10; /* OXCRPC v23 3.1.4.2.1.2.2 */
@@ -390,8 +345,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	auto ext_buff = std::make_unique<uint8_t[]>(ext_buff_size);
 	auto ext_buff1 = std::make_unique<uint8_t[]>(ext_buff_size);
 	TPROPVAL_ARRAY propvals;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST *pnotify_list;
 	PENDING_RESPONSE tmp_pending;
 	
 	/* ms-oxcrpc 3.1.4.2.1.2 */
@@ -478,14 +431,14 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		uint32_t last_offset = ext_push.m_offset;
 		auto status = rop_ext_push(ext_push, req->logon_id, *rsp);
 		switch (status) {
-		case EXT_ERR_SUCCESS:
+		case pack_result::ok:
 			try {
 				response_list.push_back(std::move(rsp));
 			} catch (const std::bad_alloc &) {
 				return ecServerOOM;
 			}
 			break;
-		case EXT_ERR_BUFSIZE: {
+		case pack_result::bufsize: {
 			/* MS-OXCPRPT 3.2.5.2, fail the whole RPC */
 			if (req->rop_id == ropGetPropertiesAll &&
 			    req_iter == prop_buff->rop_list.begin())
@@ -499,7 +452,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				return ecBufferTooSmall;
 			goto MAKE_RPC_EXT;
 		}
-		case EXT_ERR_ALLOC:
+		case pack_result::alloc:
 			return ecServerOOM;
 		default:
 			return ecRpcFailed;
@@ -509,66 +462,76 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	if (!b_notify || b_icsup)
 		goto MAKE_RPC_EXT;
 	while (true) {
-		pnotify_list = emsmdb_interface_get_notify_list();
-		if (pnotify_list == nullptr)
-			return ecRpcFailed;
-		pnode = double_list_pop_front(pnotify_list);
-		emsmdb_interface_put_notify_list();
-		if (pnode == nullptr)
-			break;
+		std::unique_ptr<notify_response> pnotify;
+		{
+			auto emsh = emsmdb_interface_get_handle_data_SP();
+			if (emsh == nullptr)
+				return ecRpcFailed;
+			std::lock_guard lk_occupied(emsh->notify_lock);
+			if (emsh->notify_list.empty())
+				break;
+			pnotify = pop_front_v(emsh->notify_list);
+		}
 		uint32_t last_offset = ext_push.m_offset;
-		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		ems_objtype type;
-		auto pobject = rop_processor_get_object(&pemsmdb_info->logmap, pnotify->logon_id, pnotify->handle, &type);
+		auto pobject = pemsmdb_info->logmap.get_object(pnotify->logon_id,
+		               pnotify->handle, &type);
 		if (NULL != pobject) {
 			if (type == ems_objtype::table &&
-			    pnotify->nflags & NF_TABLE_MODIFIED &&
+			    pnotify->nflags & fnevTableModified &&
 			    (pnotify->table_event == TABLE_EVENT_ROW_ADDED ||
 			    pnotify->table_event == TABLE_EVENT_ROW_MODIFIED)) {
 				auto tbl = static_cast<table_object *>(pobject);
 				auto pcolumns = tbl->get_columns();
 				if (!ext_push1.init(ext_buff1.get(), ext_buff_size, EXT_FLAG_UTF16))
-					goto NEXT_NOTIFY;
+					continue;
 				if (pnotify->nflags & NF_BY_MESSAGE) {
-					if (!tbl->read_row(pnotify->row_message_id,
+					if (tbl->read_row(pnotify->row_message_id,
 					    pnotify->row_instance,
-					    &propvals) || propvals.count == 0)
+					    &propvals) != ecSuccess ||
+					    propvals.count == 0)
 						goto NEXT_NOTIFY;
 					
 				} else {
-					if (!tbl->read_row(pnotify->row_folder_id,
-					    0, &propvals) || propvals.count == 0)
+					if (tbl->read_row(pnotify->row_folder_id,
+					    0, &propvals) != ecSuccess ||
+					    propvals.count == 0)
 						goto NEXT_NOTIFY;
 				}
-				if (!common_util_propvals_to_row(&propvals, pcolumns, &tmp_row) ||
-				    ext_push1.p_proprow(*pcolumns, tmp_row) != EXT_ERR_SUCCESS)
-					goto NEXT_NOTIFY;
+				if (!cu_propvals_to_row(&propvals, *pcolumns, &tmp_row) ||
+				    ext_push1.p_proprow(*pcolumns, tmp_row) != pack_result::ok)
+					continue;
 				tmp_bin.cb = ext_push1.m_offset;
 				tmp_bin.pb = ext_push1.m_udata;
 				pnotify->row_data = &tmp_bin;
 			}
 			if (rop_ext_push(ext_push, *pnotify) != pack_result::success) {
 				ext_push.m_offset = last_offset;
-				double_list_insert_as_head(pnotify_list, pnode);
+				{
+					auto emsh = emsmdb_interface_get_handle_data_SP();
+					if (emsh == nullptr)
+						goto NEXT_NOTIFY;
+					std::lock_guard lk_occupied(emsh->notify_lock);
+					emsh->notify_list.emplace_back(std::move(pnotify));
+				}
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
 				auto status = rop_ext_push(ext_push, tmp_pending);
-				if (status != EXT_ERR_SUCCESS)
+				if (status != pack_result::ok)
 					ext_push.m_offset = last_offset;
 				break;
 			}
 		}
  NEXT_NOTIFY:
-		delete static_cast<notify_response *>(pnode->pdata);
-		free(pnode);
+		;
 	}
 	
  MAKE_RPC_EXT:
 	if (rop_ext_make_rpc_ext(ext_buff.get(), ext_push.m_offset, prop_buff,
-	    pbuff, pbuff_len) != EXT_ERR_SUCCESS)
+	    pbuff, pbuff_len) != pack_result::ok)
 		return ecError;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1173: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -590,9 +553,9 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	
 	ext_pull.init(pin, cb_in, common_util_alloc, EXT_FLAG_UTF16);
 	switch (rop_ext_pull(ext_pull, rop_buff)) {
-	case EXT_ERR_SUCCESS:
+	case pack_result::ok:
 		break;
-	case EXT_ERR_ALLOC:
+	case pack_result::alloc:
 		return ecServerOOM;
 	default:
 		return ecRpcFormat;
@@ -745,4 +708,14 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	rop_ext_set_rhe_flag_last(pout, last_offset);
 	*pcb_out = offset;
 	return ecSuccess;
+}
+
+LOGON_ITEM::~LOGON_ITEM()
+{
+	if (!g_logon_debug)
+		return;
+	mlog(LV_DEBUG, "E-DBG: ~LOGON_ITEM(%p)", this);
+	for (const auto &e : phash)
+		mlog(LV_DEBUG, "E-DBG: LOGON_ITEM::phash entry %u -> %p ty%u",
+			e.first, e.second.get(), static_cast<unsigned int>(e.second->type));
 }

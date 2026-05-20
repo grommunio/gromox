@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdlib>
@@ -55,7 +55,7 @@ attachment_content *attachment_content::dup() const
 	if (dst == nullptr)
 		return NULL;
 	for (unsigned int i = 0; i < src->proplist.count; ++i) {
-		if (dst->proplist.set(src->proplist.ppropval[i]) != 0) {
+		if (dst->proplist.set(src->proplist.ppropval[i]) != ecSuccess) {
 			attachment_content_free(dst);
 			return NULL;
 		}
@@ -153,13 +153,13 @@ attachment_list *attachment_list::dup() const
 	return dst;
 }
 
-FOLDER_CONTENT::FOLDER_CONTENT()
+folder_content::folder_content()
 {
 	if (!tpropval_array_init_internal(&proplist))
 		throw std::bad_alloc();
 }
 
-FOLDER_CONTENT::FOLDER_CONTENT(FOLDER_CONTENT &&o) noexcept :
+folder_content::folder_content(folder_content &&o) noexcept :
 	proplist(std::move(o.proplist)), fldmsgs(std::move(o.fldmsgs)),
 	psubflds(std::move(o.psubflds))
 {
@@ -167,14 +167,14 @@ FOLDER_CONTENT::FOLDER_CONTENT(FOLDER_CONTENT &&o) noexcept :
 	o.fldmsgs = {}; // FOLDER_MESSAGES yet without move
 }
 
-std::unique_ptr<FOLDER_CONTENT> folder_content_init() try
+std::unique_ptr<folder_content> folder_content_init() try
 {
-	return std::make_unique<FOLDER_CONTENT>();
+	return std::make_unique<folder_content>();
 } catch (const std::bad_alloc &) {
 	return nullptr;
 }
 
-BOOL FOLDER_CONTENT::append_subfolder_internal(FOLDER_CONTENT &&psubfld) try
+bool folder_content::append_subfolder_internal(folder_content &&psubfld) try
 {
 	auto pfldctnt = this;
 	pfldctnt->psubflds.push_back(std::move(psubfld));
@@ -183,7 +183,7 @@ BOOL FOLDER_CONTENT::append_subfolder_internal(FOLDER_CONTENT &&psubfld) try
 	return false;
 }
 
-FOLDER_CONTENT::~FOLDER_CONTENT()
+folder_content::~folder_content()
 {
 	auto pfldctnt = this;
 	tpropval_array_free_internal(&pfldctnt->proplist);
@@ -195,7 +195,7 @@ FOLDER_CONTENT::~FOLDER_CONTENT()
 	}
 }
 
-void FOLDER_CONTENT::append_failist_internal(EID_ARRAY *plist)
+void folder_content::append_failist_internal(EID_ARRAY *plist)
 {
 	auto pfldctnt = this;
 	if (NULL != pfldctnt->fldmsgs.pfai_msglst) {
@@ -204,7 +204,7 @@ void FOLDER_CONTENT::append_failist_internal(EID_ARRAY *plist)
 	pfldctnt->fldmsgs.pfai_msglst = plist;
 }
 
-void FOLDER_CONTENT::append_normallist_internal(EID_ARRAY *plist)
+void folder_content::append_normallist_internal(EID_ARRAY *plist)
 {
 	auto pfldctnt = this;
 	if (NULL != pfldctnt->fldmsgs.pnormal_msglst) {
@@ -277,7 +277,7 @@ message_content *message_content::dup() const
 	if (dst == nullptr)
 		return NULL;
 	for (unsigned int i = 0; i < src->proplist.count; ++i) {
-		if (dst->proplist.set(src->proplist.ppropval[i]) != 0) {
+		if (dst->proplist.set(src->proplist.ppropval[i]) != ecSuccess) {
 			message_content_free(dst);
 			return NULL;
 		}
@@ -299,61 +299,6 @@ message_content *message_content::dup() const
 	return dst;
 }
 
-property_groupinfo::property_groupinfo(uint32_t gid) :
-	group_id(gid)
-{
-	auto z = strange_roundup(0, SR_GROW_PROPTAG_ARRAY);
-	pgroups = me_alloc<PROPTAG_ARRAY>(z);
-	if (pgroups == nullptr)
-		throw std::bad_alloc();
-}
-
-property_groupinfo::property_groupinfo(property_groupinfo &&o) noexcept :
-	group_id(o.group_id), reserved(o.reserved), count(o.count),
-	pgroups(std::move(o.pgroups))
-{
-	o.pgroups = nullptr;
-}
-
-bool property_groupinfo::append_internal(PROPTAG_ARRAY *pgroup)
-{
-	auto pgpinfo = this;
-	/* allocate like proptag_array.cpp does */
-	auto z = strange_roundup(pgpinfo->count, SR_GROW_PROPTAG_ARRAY);
-	if (pgpinfo->count + 1 >= z) {
-		z += SR_GROW_PROPTAG_ARRAY;
-		auto list = re_alloc<PROPTAG_ARRAY>(pgpinfo->pgroups, z);
-		if (list == nullptr)
-			return FALSE;
-		pgpinfo->pgroups = list;
-	}
-	pgpinfo->pgroups[pgpinfo->count].count = pgroup->count;
-	pgpinfo->pgroups[pgpinfo->count++].pproptag = pgroup->pproptag;
-	free(pgroup);
-	return TRUE;
-}
-
-bool property_groupinfo::get_partial_index(uint32_t proptag,
-    uint32_t *pindex) const
-{
-	auto pgpinfo = this;
-	for (size_t i = 0; i < pgpinfo->count; ++i)
-		for (size_t j = 0; j < pgpinfo->pgroups[i].count; ++j)
-			if (proptag == pgpinfo->pgroups[i].pproptag[j]) {
-				*pindex = i;
-				return true;
-			}
-	return false;
-}
-
-property_groupinfo::~property_groupinfo()
-{
-	auto pgpinfo = this;
-	for (size_t i = 0; i < pgpinfo->count; ++i)
-		proptag_array_free_internal(pgpinfo->pgroups + i);
-	free(pgpinfo->pgroups);
-}
-
 PROPERTY_XNAME::PROPERTY_XNAME(const PROPERTY_NAME &o) :
 	kind(o.kind), lid(o.lid), guid(o.guid)
 {
@@ -371,10 +316,10 @@ PROPERTY_XNAME::operator PROPERTY_NAME() const
 	return z;
 }
 
-size_t PROPTAG_ARRAY::indexof(uint32_t tag) const
+size_t proptag_cspan::indexof(uint32_t tag) const
 {
-	for (size_t i = 0; i < count; ++i)
-		if (pproptag[i] == tag)
+	for (size_t i = 0; i < size(); ++i)
+		if ((*this)[i] == tag)
 			return i;
 	return npos;
 }
@@ -397,6 +342,8 @@ bool PROBLEM_ARRAY::have_index(unsigned int i) const
 
 PROBLEM_ARRAY &PROBLEM_ARRAY::operator+=(PROBLEM_ARRAY &&other)
 {
+	if (this == &other)
+		return *this;
 	std::move(other.pproblem, other.pproblem + other.count, pproblem + count);
 	count += other.count;
 	other.count = 0;

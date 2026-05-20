@@ -153,14 +153,14 @@ static bool add_folderprop_sv(sqlite3_stmt *stmt, const char *dispname,
 
 static bool add_folderprop_tv(sqlite3_stmt *stmt)
 {
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PR_HIER_REV,
 		PR_LOCAL_COMMIT_TIME_MAX,
 	};
 	uint64_t nt_time = rop_util_unix_to_nttime(time(nullptr));
 	for (const auto proptag : tags) {
 		sqlite3_bind_int64(stmt, 1, proptag);
-		sqlite3_bind_int64(stmt, 2, nt_time);
+		sqlite3_bind_int64(stmt, 2, static_cast<int64_t>(nt_time));
 		if (gx_sql_step(stmt) != SQLITE_DONE)
 			return false;
 		sqlite3_reset(stmt);
@@ -176,7 +176,7 @@ static bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng,
 	uint8_t tmp_buff[24];
 	EXT_PUSH ext_push;
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return false;
 	sqlite3_bind_int64(stmt, 1, PR_CHANGE_KEY);
 	sqlite3_bind_blob(stmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
@@ -238,7 +238,7 @@ int mbop_truncate_chown(const char *tool, const char *file, bool force_overwrite
 int mbop_insert_namedprops(sqlite3 *sdb, const char *datadir)
 {
 	std::vector<std::string> nplist;
-	auto err = list_file_read_fixedstrings("propnames.txt", datadir, nplist);
+	auto err = read_file_by_line("propnames.txt", datadir, nplist);
 	if (err == ENOENT) {
 		return 0;
 	} else if (err != 0) {
@@ -251,7 +251,7 @@ int mbop_insert_namedprops(sqlite3 *sdb, const char *datadir)
 
 	size_t i = 0;
 	for (const auto &name : nplist) {
-		uint16_t propid = 0x8001 + i++;
+		propid_t propid = 0x8001 + i++;
 		if (propid >= 0xFFFF) {
 			fprintf(stderr, "insert_namedprop: exhausted namedprop space\n");
 			return -EIO;
@@ -283,23 +283,6 @@ int mbop_insert_storeprops(sqlite3 *sdb, const std::pair<uint32_t, uint64_t> *pr
 			return -EIO;
 		}
 		stm.reset();
-	}
-	return 0;
-}
-
-int mbop_slurp(const char *datadir, const char *file, std::string &sql_string)
-{
-	auto fp = fopen_sd(file, datadir);
-	if (fp == nullptr) {
-		int se = errno;
-		fprintf(stderr, "fopen_sd %s: %s\n", file, strerror(errno));
-		return -(errno = se);
-	}
-	size_t len = 0;
-	auto data = HX_slurp_fd(fileno(fp.get()), &len);
-	if (data != nullptr) {
-		sql_string.append(data, len);
-		free(data);
 	}
 	return 0;
 }
@@ -396,7 +379,7 @@ int mbop_upgrade(const char *file, sqlite_kind kind, unsigned int dbop_flags)
 {
 	sqlite3 *db = nullptr;
 	auto ret = sqlite3_open_v2(file, &db, SQLITE_OPEN_READWRITE, nullptr);
-	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(db); });
+	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close_v2(db); });
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "sqlite3_open_v2: %s\n", sqlite3_errstr(ret));
 		return EXIT_FAILURE;

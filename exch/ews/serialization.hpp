@@ -6,22 +6,22 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <functional>
 #include <optional>
 #include <string>
-#include <variant>
-#include <vector>
-
-#include <gromox/clock.hpp>
-
 #include <tinyxml2.h>
+#include <variant>
 #include <vector>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <gromox/clock.hpp>
+#include <gromox/util.hpp>
 #include "exceptions.hpp"
 #include "structures.hpp"
+
+extern void utf8_sanitize_codepoints(std::string &);
 
 namespace gromox::EWS::Serialization {
 
@@ -32,14 +32,14 @@ using SetterFunc = const std::function<void(const char*)>&;
 
 static constexpr uint8_t EC_IN = 0x1U; ///< Needs explicit conversion on import
 static constexpr uint8_t EC_OUT = 0x2U; ///< Needs explicit conversion on export
-static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitely by SetText
+static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitly by SetText
 
 /**
  * @brief      Explicit conversion information
  *
  * Assumes by default that
- * - `T(const tinyxml2::XMLElement*)` can be used for imports
- * - `T().serialize(tinyxml2::XMLElement*)` can be used for exports
+ * - `T(const tinyxml2::XMLElement *)` can be used for imports
+ * - `T().serialize(tinyxml2::XMLElement *)` can be used for exports
  *
  * This behavior should be implemented for every EWS structure, however
  * built-in data types and those provided by the standard library must be
@@ -47,8 +47,8 @@ static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitely by 
  *
  * A template specialization must contain
  * - `constexpr uint8t value` with a combination of `EC_IN` and `EC_OUT` or `EC_IMP_OUT`
- * - `tinyxml2::XMLError deserialize(const tinyxml2::XMLElement*, T&)` (`EC_IN` set)
- * - `tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute*, T&)` (`EC_IN` set)
+ * - `tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *, T &)` (`EC_IN` set)
+ * - `tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute *, T &)` (`EC_IN` set)
  * - `void serialize(const T&, SetterFunc)` (`EC_OUT` set)
  *
  * SetterFunc is a function with signature `void(const char*)` that is to be
@@ -66,10 +66,10 @@ template<typename T> struct ExplicitConvert {
 template<> struct ExplicitConvert<bool> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, bool& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, bool &value)
 	{return xml->QueryBoolText(&value);}
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, bool& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute *xml, bool &value)
 	{return xml->QueryBoolValue(&value);}
 };
 
@@ -79,10 +79,10 @@ template<> struct ExplicitConvert<bool> {
 template<> struct ExplicitConvert<int32_t> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, int32_t& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, int32_t &value)
 	{return xml->QueryIntText(&value);}
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, int32_t& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute *xml, int32_t &value)
 	{return xml->QueryIntValue(&value);}
 };
 
@@ -92,10 +92,10 @@ template<> struct ExplicitConvert<int32_t> {
 template<> struct ExplicitConvert<uint32_t> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, uint32_t& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, uint32_t &value)
 	{return xml->QueryUnsignedText(&value);}
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, uint32_t& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute *xml, uint32_t &value)
 	{return xml->QueryUnsignedValue(&value);}
 };
 
@@ -105,10 +105,10 @@ template<> struct ExplicitConvert<uint32_t> {
 template<> struct ExplicitConvert<uint64_t> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, uint64_t& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, uint64_t &value)
 	{return xml->QueryUnsigned64Text(&value);}
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, uint64_t& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute *xml, uint64_t &value)
 	{return xml->QueryUnsigned64Value(&value);}
 };
 
@@ -133,8 +133,14 @@ template<> struct ExplicitConvert<std::string> {
 
 	static void serialize(const std::string &value, SetterFunc setter)
 	{
-		if (value.length())
-			setter(value.c_str());
+		if (value.empty())
+			return;
+		auto filtered = value;
+		utf8_filter(filtered.data());
+		filtered.resize(strlen(filtered.c_str()));
+		utf8_sanitize_codepoints(filtered);
+		if (!filtered.empty())
+			setter(filtered.c_str());
 	}
 };
 
@@ -203,10 +209,10 @@ struct ExplicitConvert<gromox::EWS::Structures::StrEnum<Cs...>> {
 template<> struct ExplicitConvert<double> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, double& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, double &value)
 	{return xml->QueryDoubleText(&value);}
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, double& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute *xml, double &value)
 	{return xml->QueryDoubleValue(&value);}
 };
 
@@ -369,7 +375,7 @@ constexpr bool explicit_convert(uint8_t dir)
 ///////////////////////////////////////////////////////////////////////////////
 //Deserialization
 
-template<typename T> static T fromXMLNodeDispatch(const tinyxml2::XMLElement*);
+template<typename T> static T fromXMLNodeDispatch(const tinyxml2::XMLElement *);
 
 /**
  * @brief      Construct type from XMLElement
@@ -383,7 +389,7 @@ template<typename T> static T fromXMLNodeDispatch(const tinyxml2::XMLElement*);
  * @return     Instance of the type
  */
 template<typename T, std::enable_if_t<!explicit_convert<T>(EC_IN), bool> = true>
-static T fromXMLNode(const tinyxml2::XMLElement* child)
+static T fromXMLNode(const tinyxml2::XMLElement *child)
 {
 	return T(child);
 }
@@ -400,7 +406,7 @@ static T fromXMLNode(const tinyxml2::XMLElement* child)
  * @return     Instance of the type
  */
 template<typename T, std::enable_if_t<explicit_convert<T>(EC_IN), bool> = true>
-static T fromXMLNode(const tinyxml2::XMLElement* child)
+static T fromXMLNode(const tinyxml2::XMLElement *child)
 {
 	using namespace std::string_literals;
 	using gromox::EWS::Exceptions::DeserializationError;
@@ -423,7 +429,7 @@ static T fromXMLNode(const tinyxml2::XMLElement* child)
  * @return     Data if present or empty optional otherwise
  */
 template<typename T>
-static T fromXMLNodeOpt(const tinyxml2::XMLElement* child)
+static T fromXMLNodeOpt(const tinyxml2::XMLElement *child)
 {
 	if (child == nullptr)
 		return std::nullopt;
@@ -443,7 +449,7 @@ static T fromXMLNodeOpt(const tinyxml2::XMLElement* child)
  * @return     List of values
  */
 template<typename T>
-static T fromXMLNodeList(const tinyxml2::XMLElement* child)
+static T fromXMLNodeList(const tinyxml2::XMLElement *child)
 {
 	T values;
 	size_t count = 1;
@@ -470,7 +476,7 @@ static T fromXMLNodeList(const tinyxml2::XMLElement* child)
  * @return    Variant containing the object
  */
 template<typename T, size_t I=0>
-static T fromXMLNodeVariant(const tinyxml2::XMLElement* child)
+static T fromXMLNodeVariant(const tinyxml2::XMLElement *child)
 {
 	using namespace std::string_literals;
 	if constexpr (I >= std::variant_size_v<T>) {
@@ -499,14 +505,14 @@ static T fromXMLNodeVariant(const tinyxml2::XMLElement* child)
  * @return     Variant containing the object
  */
 template<typename T, size_t I=0>
-T fromXMLNodeVariantFind(const tinyxml2::XMLElement* parent)
+T fromXMLNodeVariantFind(const tinyxml2::XMLElement *parent)
 {
 	if constexpr (I >= std::variant_size_v<T>) {
 		throw Exceptions::DeserializationError(Exceptions::E3098);
 	} else {
 		using Contained = std::variant_alternative_t<I, T>;
 		const char* tname = getName<Contained>();
-		const tinyxml2::XMLElement* child;
+		const tinyxml2::XMLElement *child = nullptr;
 		if (!tname || !(child = parent->FirstChildElement(tname)))
 			return fromXMLNodeVariantFind<T, I + 1>(parent);
 		return T(std::in_place_index_t<I>(), fromXMLNodeDispatch<Contained>(child));
@@ -523,7 +529,7 @@ T fromXMLNodeVariantFind(const tinyxml2::XMLElement* parent)
  * @return     Instance of type to construct
  */
 template<typename T>
-static T fromXMLNodeDispatch(const tinyxml2::XMLElement* child)
+static T fromXMLNodeDispatch(const tinyxml2::XMLElement *child)
 {
 	if constexpr(BaseType<T>::container == LIST)
 		return fromXMLNodeList<T>(child);
@@ -546,11 +552,11 @@ static T fromXMLNodeDispatch(const tinyxml2::XMLElement* child)
  * @return     New instance of the type
  */
 template<typename T>
-static T fromXMLNode(const tinyxml2::XMLElement* xml, const char* name)
+static T fromXMLNode(const tinyxml2::XMLElement *xml, const char *name)
 {
 	using namespace std::string_literals;
 	using gromox::EWS::Exceptions::DeserializationError;
-	const tinyxml2::XMLElement* child = xml->FirstChildElement(name);
+	const tinyxml2::XMLElement *child = xml->FirstChildElement(name);
 	if constexpr(BaseType<T>::container == OPTIONAL)
 	    return fromXMLNodeOpt<T>(child);
 	else if (!child)
@@ -573,13 +579,13 @@ static T fromXMLNode(const tinyxml2::XMLElement* xml, const char* name)
  * @return     New instance of the type
  */
 template<typename T>
-static T fromXMLAttr(const tinyxml2::XMLElement* xml, const char* name)
+static T fromXMLAttr(const tinyxml2::XMLElement *xml, const char *name)
 {
 	static_assert(BaseType<T>::container != LIST, "Cannot read list from attribute");
 
 	using namespace std::string_literals;
 	using gromox::EWS::Exceptions::DeserializationError;
-	const tinyxml2::XMLAttribute* attr = xml->FindAttribute(name);
+	const tinyxml2::XMLAttribute *attr = xml->FindAttribute(name);
 	if (!attr) {
 		if constexpr(BaseType<T>::container == OPTIONAL)
 		    return std::nullopt;
@@ -599,8 +605,8 @@ static T fromXMLAttr(const tinyxml2::XMLElement* xml, const char* name)
 ///////////////////////////////////////////////////////////////////////////////
 //Serialization
 
-template<typename T> static void toXMLNodeDispatch(tinyxml2::XMLElement*, const T&);
-template<typename T> static tinyxml2::XMLElement* toXMLNode(tinyxml2::XMLElement*, const char*, const T&);
+template<typename T> static void toXMLNodeDispatch(tinyxml2::XMLElement *, const T &);
+template<typename T> static tinyxml2::XMLElement *toXMLNode(tinyxml2::XMLElement *, const char *, const T &);
 
 /**
  * @brief      Fill XMLElement with serialized data
@@ -611,7 +617,7 @@ template<typename T> static tinyxml2::XMLElement* toXMLNode(tinyxml2::XMLElement
  * @tparam     T      Data type to store
  */
 template<typename T>
-static void toXMLNode(tinyxml2::XMLElement* xml, const T& value)
+static void toXMLNode(tinyxml2::XMLElement *xml, const T &value)
 {
 	if constexpr(explicit_convert<T>(EC_IMP_OUT))
 		xml->SetText(value);
@@ -627,7 +633,7 @@ static void toXMLNode(tinyxml2::XMLElement* xml, const T& value)
  * Helper function as direct recursion is not possible with template functions.
  */
 template<typename T>
-static void toXmlNodeOpt(tinyxml2::XMLElement* xml, const T& value)
+static void toXmlNodeOpt(tinyxml2::XMLElement *xml, const T &value)
 {
 	toXMLNodeDispatch<BaseType_t<T>>(xml, value.value());
 }
@@ -641,7 +647,7 @@ static void toXmlNodeOpt(tinyxml2::XMLElement* xml, const T& value)
  * @tparam     T      List type
  */
 template<typename T>
-static void toXMLNodeList(tinyxml2::XMLElement* xml, const T& value)
+static void toXMLNodeList(tinyxml2::XMLElement *xml, const T &value)
 {
 	using BT = BaseType_t<T>;
 	for (const BT &element : value) {
@@ -663,7 +669,7 @@ static void toXMLNodeList(tinyxml2::XMLElement* xml, const T& value)
  * @tparam     T      Variant type
  */
 template<typename T>
-static void toXMLNodeVariant(tinyxml2::XMLElement* xml, const T& value)
+static void toXMLNodeVariant(tinyxml2::XMLElement *xml, const T &value)
 {
 	std::visit([xml](auto&& v){toXMLNodeDispatch(xml, v);}, value);
 }
@@ -677,7 +683,7 @@ static void toXMLNodeVariant(tinyxml2::XMLElement* xml, const T& value)
  * @tparam     T      Type to serialize
  */
 template<typename T>
-static void toXMLNodeDispatch(tinyxml2::XMLElement* xml, const T& value)
+static void toXMLNodeDispatch(tinyxml2::XMLElement *xml, const T &value)
 {
 	if constexpr(BaseType<T>::container == OPTIONAL)
 		toXmlNodeOpt<T>(xml, value);
@@ -699,12 +705,12 @@ static void toXMLNodeDispatch(tinyxml2::XMLElement* xml, const T& value)
  * @tparam     T       Type to store
  */
 template<typename T>
-static tinyxml2::XMLElement* toXMLNode(tinyxml2::XMLElement* parent, const char* name, const T& value)
+static tinyxml2::XMLElement *toXMLNode(tinyxml2::XMLElement *parent, const char *name, const T &value)
 {
 	if constexpr(BaseType<T>::container == OPTIONAL)
 		if (!value)
 			return nullptr;
-	tinyxml2::XMLElement* xml;
+	tinyxml2::XMLElement *xml = nullptr;
 	if constexpr (BaseType<T>::container == VARIANT) {
 		name = getName(value, name);
 		const char* ns = getNSPrefix(value);
@@ -726,7 +732,7 @@ static tinyxml2::XMLElement* toXMLNode(tinyxml2::XMLElement* parent, const char*
  * @tparam     T       Type to store
  */
 template<typename T>
-static void toXMLAttr(tinyxml2::XMLElement* parent, const char* name, const T& value)
+static void toXMLAttr(tinyxml2::XMLElement *parent, const char *name, const T &value)
 {
 	static_assert(BaseType<T>::container != LIST, "Cannot store list in attribute");
 	if constexpr (BaseType<T>::container == OPTIONAL) {

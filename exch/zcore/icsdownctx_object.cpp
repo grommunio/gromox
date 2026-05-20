@@ -264,11 +264,11 @@ BOOL icsdownctx_object::sync_message_change(BOOL *pb_found, BOOL *pb_new,
 	if (pproplist->ppropval == nullptr)
 		return FALSE;
 	pproplist->ppropval[0].proptag = PR_SOURCE_KEY;
-	pproplist->ppropval[0].pvalue = cu_mid_to_sk(pctx->pstore, message_id);
+	pproplist->ppropval[0].pvalue = cu_mid_to_sk(*pctx->pstore, message_id);
 	if (pproplist->ppropval[0].pvalue == nullptr)
 		return FALSE;
 	pproplist->ppropval[1].proptag = PR_PARENT_SOURCE_KEY;
-	pproplist->ppropval[1].pvalue = cu_fid_to_sk(pctx->pstore, pctx->folder_id);
+	pproplist->ppropval[1].pvalue = cu_fid_to_sk(*pctx->pstore, pctx->folder_id);
 	if (pproplist->ppropval[1].pvalue == nullptr)
 		return FALSE;
 	*pb_found = TRUE;
@@ -298,21 +298,20 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (pproplist->ppropval == nullptr)
 		return FALSE;
-	void *pvalue = cu_fid_to_sk(pctx->pstore, fid);
+	void *pvalue = cu_fid_to_sk(*pctx->pstore, fid);
 	if (pvalue == nullptr)
 		return FALSE;
 	pproplist->emplace_back(PR_SOURCE_KEY, pvalue);
 
-	pvalue = cu_fid_to_entryid(pctx->pstore, fid);
+	pvalue = cu_fid_to_entryid(*pctx->pstore, fid);
 	if (pvalue == nullptr)
 		return FALSE;
 	pproplist->emplace_back(PR_ENTRYID, pvalue);
 	static constexpr gromox::proptag_t proptag_buff[] =
 		{PidTagParentFolderId, PR_DISPLAY_NAME, PR_CONTAINER_CLASS,
 		PR_ATTR_HIDDEN, PR_EXTENDED_FOLDER_FLAGS, PidTagChangeNumber};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client->get_folder_properties(pctx->pstore->get_dir(), CP_ACP,
-	    fid, &proptags, &tmp_propvals))
+	    fid, proptag_buff, &tmp_propvals))
 		return FALSE;
 	auto lnum = tmp_propvals.get<const uint64_t>(PidTagChangeNumber);
 	if (lnum == nullptr) {
@@ -323,12 +322,12 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	lnum = tmp_propvals.get<uint64_t>(PidTagParentFolderId);
 	if (lnum != nullptr) {
 		auto parent_fid = *lnum;
-		pvalue = cu_fid_to_sk(pctx->pstore, parent_fid);
+		pvalue = cu_fid_to_sk(*pctx->pstore, parent_fid);
 		if (pvalue == nullptr)
 			return FALSE;
 		pproplist->emplace_back(PR_PARENT_SOURCE_KEY, pvalue);
 
-		pvalue = cu_fid_to_entryid(pctx->pstore, parent_fid);
+		pvalue = cu_fid_to_entryid(*pctx->pstore, parent_fid);
 		if (pvalue == nullptr)
 			return FALSE;
 		pproplist->emplace_back(PR_PARENT_ENTRYID, pvalue);
@@ -375,8 +374,8 @@ BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 			return FALSE;
 		for (size_t i = 0; i < pctx->pdeleted_eids->count; ++i) {
 			auto pbin = pctx->sync_type == SYNC_TYPE_CONTENTS ?
-			            cu_mid_to_sk(pctx->pstore, pctx->pdeleted_eids->pids[i]) :
-			            cu_fid_to_sk(pctx->pstore, pctx->pdeleted_eids->pids[i]);
+			            cu_mid_to_sk(*pctx->pstore, pctx->pdeleted_eids->pids[i]) :
+			            cu_fid_to_sk(*pctx->pstore, pctx->pdeleted_eids->pids[i]);
 			if (pbin == nullptr)
 				return FALSE;
 			pbins->pbin[i] = *pbin;
@@ -405,7 +404,7 @@ BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 	if (pbins->pbin == nullptr)
 		return FALSE;
 	for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
-		auto pbin = cu_mid_to_sk(pctx->pstore, pctx->pnolonger_messages->pids[i]);
+		auto pbin = cu_mid_to_sk(*pctx->pstore, pctx->pnolonger_messages->pids[i]);
 		if (pbin == nullptr)
 			return FALSE;
 		pbins->pbin[i] = *pbin;
@@ -440,14 +439,14 @@ BOOL icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 		}
 		pstates->count = 0;
 		for (auto mid : *pctx->pread_messages) {
-			auto pbin = cu_mid_to_sk(pctx->pstore, mid);
+			auto pbin = cu_mid_to_sk(*pctx->pstore, mid);
 			if (pbin == nullptr)
 				return FALSE;
 			pstates->pstate[pstates->count].source_key = *pbin;
 			pstates->pstate[pstates->count++].message_flags = MSGFLAG_READ;
 		}
 		for (auto mid : *pctx->punread_messages) {
-			auto pbin = cu_mid_to_sk(pctx->pstore, mid);
+			auto pbin = cu_mid_to_sk(*pctx->pstore, mid);
 			if (pbin == nullptr)
 				return FALSE;
 			pstates->pstate[pstates->count].source_key = *pbin;

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2026 grommunio GmbH
+// This file is part of Gromox.
 /*	
  *	double list's operating functions, including inserting, appending, pop,
  *	push ... Caution: double_list is not thread-safe, use mutex to control
@@ -12,24 +14,12 @@ using namespace gromox;
 
 void double_list_init(DOUBLE_LIST* plist)
 {
-#ifdef _DEBUG_UMTA	  
-	if (NULL == plist) {
-		mlog(LV_DEBUG, "double_list: double_list_init, param NULL");
-		return;
-	}
-#endif
 	plist->phead = NULL;
 	plist->nodes_num = 0;
 }
 
 void double_list_free(DOUBLE_LIST* plist)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == plist) {
-		mlog(LV_DEBUG, "double_list: double_list_free, param NULL");
-		return;
-	}
-#endif	  
 	plist->phead = NULL;
 	plist->nodes_num = 0;
 }
@@ -43,12 +33,6 @@ void double_list_free(DOUBLE_LIST* plist)
 void double_list_insert_as_head(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode)
 {
 	DOUBLE_LIST_NODE *phead, *ptail;
-#ifdef _DEBUG_UMTA	  
-	if (NULL == plist || NULL == pnode) {
-		mlog(LV_DEBUG, "double_list: double_list_insert_as_head, param NULL");
-		return;
-	}
-#endif	  
 	if (NULL == plist->phead) {
 		plist->phead = pnode;
 		pnode->pprev = pnode;
@@ -80,12 +64,6 @@ void double_list_insert_as_head(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode)
 void double_list_append_as_tail(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode)
 {
 	DOUBLE_LIST_NODE *phead, *ptail;
-#ifdef _DEBUG_UMTA	  
-	if (NULL == plist || NULL == pnode) {
-		mlog(LV_DEBUG, "double_list: double_list_append_as_tail, param NULL");
-		return;
-	}
-#endif
 	if (NULL == plist->phead) {
 		plist->phead = pnode;
 		pnode->pprev = pnode;
@@ -118,12 +96,6 @@ void double_list_insert_before(DOUBLE_LIST *plist,
 	DOUBLE_LIST_NODE *pbase_node, DOUBLE_LIST_NODE *pnode)
 {	 
 	DOUBLE_LIST_NODE *ptemp;
-#ifdef _DEBUG_UMTA	  
-	if (NULL == plist || NULL == pbase_node || pnode == NULL) {
-		mlog(LV_DEBUG, "double_list: double_list_insert_before, param NULL");
-		return;
-	}
-#endif
 	if (pbase_node == plist->phead) {
 		double_list_insert_as_head(plist, pnode);
 		return;
@@ -147,12 +119,6 @@ void double_list_append_after(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pbase_node,
 	DOUBLE_LIST_NODE *pnode)
 {	 
 	DOUBLE_LIST_NODE *ptemp;
-#ifdef _DEBUG_UMTA
-	if (NULL == plist || NULL == pbase_node || NULL == pnode) {
-		mlog(LV_DEBUG, "double_list: double_list_append_after, param NULL");
-		return ;
-	}
-#endif
 	if (pbase_node == plist->phead->pprev) {
 		double_list_append_as_tail(plist, pnode);
 		return;
@@ -174,12 +140,6 @@ void double_list_append_after(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pbase_node,
 void double_list_remove(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode)
 {
 	DOUBLE_LIST_NODE *phead, *ptail;
-#ifdef _DEBUG_UMTA	  
-	if (NULL == plist || NULL == pnode) {
-		mlog(LV_DEBUG, "double_list: double_list_remove, param NULL");
-		return;
-	}
-#endif		  
 	phead = plist->phead;
 	ptail = phead->pprev;
 	if (phead == pnode) {
@@ -227,12 +187,6 @@ void double_list_remove(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode)
 DOUBLE_LIST_NODE *double_list_pop_front(DOUBLE_LIST *plist)
 {
 	DOUBLE_LIST_NODE* pnode;
-#ifdef _DEBUG_UMTA
-	if (NULL == plist) {
-		mlog(LV_DEBUG, "double_list: double_list_pop_front, param NULL");
-		return NULL;
-	}
-#endif
 	pnode = plist->phead;
 	if (NULL == pnode) {
 		return NULL;
@@ -253,13 +207,6 @@ void double_list_append_list(DOUBLE_LIST *plist_des, DOUBLE_LIST *plist)
 	DOUBLE_LIST_NODE* ptail_des;
 	DOUBLE_LIST_NODE* phead;
 	DOUBLE_LIST_NODE* ptail;
-#ifdef _DEBUG_UMTA
-	if (NULL == plist_des || NULL == plist) {
-		mlog(LV_DEBUG, "double_list: double_list_append_list, param NULL");
-		return;
-	}
-#endif
-
 	if(NULL == plist_des->phead) {
 		plist_des->phead = plist->phead;
 		plist_des->nodes_num = plist->nodes_num;
@@ -319,16 +266,9 @@ void double_list_append_list(DOUBLE_LIST *plist_des, DOUBLE_LIST *plist)
 DOUBLE_LIST_NODE* double_list_get_before(DOUBLE_LIST *plist, 
 	DOUBLE_LIST_NODE *pbase_node)
 {
-#ifdef _DEBUG_UMTA	  
-	if (NULL == plist || NULL == pbase_node) {
-		mlog(LV_DEBUG, "double_list: double_list_get_before, param NULL");
-		return NULL;
-	}
-#endif
 	if (NULL == plist->phead) {
 		return NULL;
 	}
-
 	if (plist->phead == pbase_node) {
 		return NULL;
 	}
@@ -346,12 +286,6 @@ DOUBLE_LIST_NODE* double_list_get_before(DOUBLE_LIST *plist,
 DOUBLE_LIST_NODE* double_list_get_after(DOUBLE_LIST *plist, 
 	DOUBLE_LIST_NODE *pbase_node)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == plist || NULL == pbase_node) {
-		mlog(LV_DEBUG, "double_list: double_list_get_after, param NULL");
-		return NULL;
-	}
-#endif
 	if (NULL == plist->phead) {
 		return NULL;
 	}
@@ -370,12 +304,6 @@ DOUBLE_LIST_NODE* double_list_get_after(DOUBLE_LIST *plist,
  */
 size_t double_list_get_nodes_num(const DOUBLE_LIST *plist)
 {
-#ifndef _DEBUG_UMTA
-	if (NULL == plist) {
-		mlog(LV_DEBUG, "double_list: double_list_get_nodes_num, param NULL");
-		return 0;
-	}
-#endif
 	return plist->nodes_num;
 }
 
@@ -388,12 +316,6 @@ size_t double_list_get_nodes_num(const DOUBLE_LIST *plist)
  */
 DOUBLE_LIST_NODE* double_list_get_head(DOUBLE_LIST *plist)
 {
-#ifdef _DEBUG_UMTA	  
-	if (NULL == plist) {
-		mlog(LV_DEBUG, "double_list: double_list_get_head, param NULL");
-		return NULL;
-	}
-#endif
 	return plist->phead;
 }
 
@@ -406,12 +328,6 @@ DOUBLE_LIST_NODE* double_list_get_head(DOUBLE_LIST *plist)
  */
 DOUBLE_LIST_NODE* double_list_get_tail(DOUBLE_LIST *plist)
 {	 
-#ifdef _DEBUG_UMTA
-	if(NULL == plist) {
-		mlog(LV_DEBUG, "double_list: double_list_get_tail, param NULL");
-		return NULL;
-	}
-#endif
 	if (NULL == plist->phead) {
 		return NULL;
 	}

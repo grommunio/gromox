@@ -1,8 +1,6 @@
 #pragma once
 #include <ctime>
 #include <vector>
-#include <fmt/core.h>
-#include <fmt/format.h>
 #include <gromox/defs.h>
 #include <gromox/ical.hpp>
 #include <gromox/mapidefs.h>
@@ -10,24 +8,5 @@
 
 using namespace gromox;
 
-template<> struct fmt::formatter<ical_time> {
-	constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
-	format_context::iterator format(const ical_time &t, format_context &ctx) const
-	{
-		return t.type == ICT_FLOAT_DAY ?
-		       fmt::format_to(ctx.out(), "{:04}{:02}{:02}",
-		       t.year, t.month, t.day) :
-		       fmt::format_to(ctx.out(), "{:04}{:02}{:02}T{:02}{:02}{:02}{}",
-		       t.year, t.month, t.day, t.hour, t.minute, t.second,
-		       t.type == ICT_UTC ? "Z" : "");
-	}
-};
-
-struct event
-{
-	time_t start_time = 0, end_time = 0;
-	EXCEPTIONINFO *ei = nullptr;
-	EXTENDEDEXCEPTION *xe = nullptr;
-};
-
-extern GX_EXPORT bool get_freebusy(const char *, const char *, time_t, time_t, std::vector<freebusy_event> &);
+extern GX_EXPORT unsigned int freebusy_perms(const char *actor, const char *target);
+extern GX_EXPORT ec_error_t get_freebusy(const char *, const char *, time_t, time_t, std::vector<freebusy_event> &);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 /* collection of functions for handling the smtp command
  */ 
@@ -22,7 +22,7 @@ using namespace gromox;
 
 static BOOL cmdh_check_onlycmd(std::string_view cmd_line, smtp_context &);
 
-int cmdh_helo(std::string_view cmd_line, smtp_context &ctx)
+int cmdh_helo(std::string_view cmd_line, smtp_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int line_length = cmd_line.size();
@@ -33,8 +33,8 @@ int cmdh_helo(std::string_view cmd_line, smtp_context &ctx)
 			/* 502 Command not implemented */
 			return 506;
 		/* copy parameter to hello_domain */
-		strncpy(pcontext->menv.hello_domain, &cmd_line[5], line_length - 5);
-		pcontext->menv.hello_domain[line_length-5] = '\0';
+		cmd_line.remove_prefix(5);
+		pcontext->menv.hello_domain = cmd_line;
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
 		return 502;
@@ -43,13 +43,14 @@ int cmdh_helo(std::string_view cmd_line, smtp_context &ctx)
 	pcontext->menv.clear();
     pcontext->last_cmd = T_HELO_CMD;
 	return 205;
-}    
+} catch (const std::bad_alloc &) {
+	return 416; /* ENOMEM */
+}
 
-static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx)
+static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int line_length = cmd_line.size();
-	size_t string_length = 0;
     char buff[1024];
             
 	/* SAME AS HELO [begin] */
@@ -58,8 +59,8 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx)
 		if (cmd_line[4] != ' ')
 			return 506;
 		/* copy parameter to hello_domain */
-		strncpy(pcontext->menv.hello_domain, &cmd_line[5], line_length - 5);
-		pcontext->menv.hello_domain[line_length-5] = '\0';
+		cmd_line.remove_prefix(5);
+		pcontext->menv.hello_domain = cmd_line;
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
 		return 202;
@@ -69,7 +70,7 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx)
 
     /* inform client side the esmtp type*/
     pcontext->last_cmd = T_EHLO_CMD;
-	string_length = sprintf(buff, "250-%s\r\n", znul(g_config_file->get_value("host_id")));
+	size_t string_length = gx_snprintf(buff, std::size(buff), "250-%s\r\n", znul(g_config_file->get_value("host_id")));
 	if (g_param.support_pipeline)
 		string_length += sprintf(buff + string_length,
                              "250-PIPELINING\r\n");
@@ -77,7 +78,7 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx)
 		string_length += sprintf(buff + string_length,
 							"250-STARTTLS\r\n");
     
-    string_length += sprintf(buff + string_length, 
+	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
         "250-HELP\r\n"
 		"250-SIZE %zu\r\n"
         "250 8BITMIME\r\n",
@@ -86,6 +87,8 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx)
 
 	pcontext->connection.write(buff, string_length);
     return DISPATCH_CONTINUE;
+} catch (const std::bad_alloc &) {
+	return 416; /* ENOMEM */
 }
 
 int cmdh_lhlo(std::string_view cmd_line, smtp_context &ctx)
@@ -108,7 +111,7 @@ int cmdh_starttls(std::string_view cmd_line, smtp_context &ctx)
 	if (!g_param.support_starttls)
 		return 506;
 	pcontext->last_cmd = T_STARTTLS_CMD;
-	memset(pcontext->menv.hello_domain, '\0', std::size(pcontext->menv.hello_domain));
+	pcontext->menv.hello_domain.clear();
 	pcontext->menv.clear();
 	return 210;
 }
@@ -148,7 +151,7 @@ int cmdh_mail(std::string_view cmd_line, smtp_context &ctx)
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
 		smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
-        string_length = sprintf(buff2, "%s%s%s", smtp_reply_str, buff,
+		string_length = gx_snprintf(buff2, std::size(buff2), "%s%s%s", smtp_reply_str, buff,
                         smtp_reply_str2);
 		pcontext->connection.write(buff2, string_length);
         return DISPATCH_CONTINUE;
@@ -191,7 +194,7 @@ int cmdh_rcpt(std::string_view cmd_line, smtp_context &ctx) try
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
 		smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
-        string_length = sprintf(reason, "%s%s%s", smtp_reply_str, buff,
+		string_length = gx_snprintf(reason, std::size(reason), "%s%s%s", smtp_reply_str, buff,
                         smtp_reply_str2);
 		pcontext->connection.write(reason, string_length);
         return DISPATCH_CONTINUE;
@@ -310,7 +313,7 @@ int cmdh_quit(std::string_view cmd_line, smtp_context &ctx)
 	if (!cmdh_check_onlycmd(cmd_line, ctx))
 		return DISPATCH_CONTINUE;
     /* 221 <domain> Good-bye */
-	sprintf(buff, "%s%s%s",
+	snprintf(buff, std::size(buff), "%s%s%s",
 		resource_get_smtp_code(203, 1, &string_length),
 		znul(g_config_file->get_value("host_id")),
 		resource_get_smtp_code(203, 2, &string_length));

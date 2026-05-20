@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
@@ -22,13 +22,24 @@
 #include <gromox/element_data.hpp> /* MESSAGE_CONTENT alias */
 #include <gromox/fileio.h>
 #include <gromox/hpm_common.h>
+#include <gromox/idset.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/usercvt.hpp>
+#include <gromox/util.hpp>
 
 using namespace std::string_literals;
 using namespace gromox;
 using namespace tinyxml2;
+
+static constexpr char
+	uri_autod_xml[] = "/autodiscover/autodiscover.xml",
+	uri_autod_json[] = "/autodiscover/autodiscover.json",
+	uri_wkmc11_xml[] = "/.well-known/autoconfig/mail/config-v1.1.xml",
+	uri_wkcaldav[] = "/.well-known/caldav",
+	uri_wkcarddav[] = "/.well-known/carddav",
+	uri_mc11_xml[] = "/mail/config-v1.1.xml";
 
 namespace {
 
@@ -76,6 +87,7 @@ class OxdiscoPlugin {
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &ews_url, const std::string &oab_url, const std::string &ecp_url, std::string &&serverdn, std::string &&mdbdn, const std::string &mailboxid, bool is_pvt) const;
 	http_status resp_autocfg(int, const char *) const;
+	http_status resp_dav(int) const;
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	static const char *gtx(tinyxml2::XMLElement &, const char *);
@@ -121,17 +133,8 @@ static constexpr char
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: application/json\r\n"
 		"Content-Length: {}\r\n\r\n",
-	error_templ[] =
-		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-		"<Autodiscover xmlns=\"http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006\">"
-			"<Response>"
-				"<Error Time=\"{}\" Id=\"{}\">"
-					"<ErrorCode>{}</ErrorCode>"
-					"<Message>{}</Message>"
-					"<DebugData />"
-				"</Error>"
-			"</Response>"
-		"</Autodiscover>";
+	autodiscover_error_xmlns[] =
+		"http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006";
 
 static const std::pair<const char *, const char *> protocol_list[] = {
 	{"Actions", ""}, // outlook.office365.com/actionsb2netcore
@@ -178,6 +181,12 @@ static bool brkp(char c)
 	return c == '\0' || c == '/' || c == '?';
 }
 
+template<typename T> static inline size_t umatch(const char *uri, T &&val)
+{
+	auto z = sizeof(val) - 1;
+	return strncasecmp(uri, val, z) == 0 && brkp(uri[z]) ? z : SIZE_MAX;
+}
+
 /**
  * @brief      Preprocess request
  *
@@ -194,15 +203,12 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 //		/* emit("All requests must be POST"); */
 //		return false;
 	auto uri = req->f_request_uri.c_str();
-	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") == 0 && brkp(uri[30]))
-		return TRUE;
-	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44]))
-		return TRUE;
-	if (strncasecmp(uri, "/mail/config-v1.1.xml", 21) == 0 && brkp(uri[21]))
-		return TRUE;
-	if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31]))
-		return TRUE;
-	return false;
+	return umatch(uri, uri_autod_xml) != SIZE_MAX ||
+	       umatch(uri, uri_autod_json) != SIZE_MAX ||
+	       umatch(uri, uri_wkmc11_xml) != SIZE_MAX ||
+	       umatch(uri, uri_wkcaldav) != SIZE_MAX ||
+	       umatch(uri, uri_wkcarddav) != SIZE_MAX ||
+	       umatch(uri, uri_mc11_xml) != SIZE_MAX;
 }
 
 static std::string extract_qparam(const char *qstr, const char *srkey)
@@ -224,7 +230,7 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
 			if (*v == '+') {
 				*bg++ = ' ';
 			} else if (v[0] == '%' && v[1] != '\0' && v[2] != '\0') {
-				uint8_t a = toupper(v[1]), b = toupper(v[2]);
+				uint8_t a = HX_toupper(v[1]), b = HX_toupper(v[2]);
 				uint8_t c = a >= '0' && a <= '9' ? a - '0' : a - 'A' + 10;
 				c <<= 4;
 				c |=        b >= '0' && b <= '9' ? b - '0' : b - 'A' + 10;
@@ -234,6 +240,7 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
 				*bg++ = *v;
 			}
 		}
+		*bg = '\0';
 	}
 	return ret;
 }
@@ -250,7 +257,8 @@ std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
 	    strncasecmp(target, public_folder_email, 19) == 0)
 		return {ok_code, {}};
 	unsigned int auth_user_id = 0, auth_domain_id = 0;
-	mysql_adaptor_get_user_ids(actor, &auth_user_id, &auth_domain_id, nullptr);
+	if (!mysql_adaptor_get_user_ids(actor, &auth_user_id, &auth_domain_id, nullptr))
+		return {server_error_code, server_error_msg};
 	std::vector<sql_user> hints;
 	auto err = mysql_adaptor_scndstore_hints(auth_user_id, hints);
 	if (err != 0) {
@@ -298,19 +306,27 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	if (l == 0)
 		return http_status::none;
 	auto uri = req->f_request_uri.c_str();
-	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44])) {
-		if (uri[44] == '/' || uri[44] == '\0')
+	if (auto z0 = umatch(uri, uri_wkmc11_xml); z0 != SIZE_MAX) {
+		if (uri[z0] != '?')
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = extract_qparam(&uri[45], "emailaddress");
 		return resp_autocfg(ctx_id, username.c_str());
-	} else if (strncasecmp(uri, "/mail/config-v1.1.xml", 21) == 0 && brkp(uri[21])) {
-		if (uri[21] == '/' || uri[21] == '\0')
+	} else if (auto z1 = umatch(uri, uri_wkcaldav); z1 != SIZE_MAX && uri[z1] != '/') {
+		/* Not using mod_rewrite: Silent rewrite disallowed by RFC */
+		return resp_dav(ctx_id);
+	} else if (auto z2 = umatch(uri, uri_wkcarddav); z2 != SIZE_MAX && uri[z2] != '/') {
+		return resp_dav(ctx_id);
+	} else if (auto z3 = umatch(uri, uri_mc11_xml); z3 != SIZE_MAX) {
+		if (uri[z3] != '?')
 			return resp_autocfg(ctx_id, auth_info.username);
-		auto username = extract_qparam(&uri[22], "emailaddress");
+		auto username = extract_qparam(&uri[45], "emailaddress");
 		return resp_autocfg(ctx_id, username.c_str());
-	} else if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31])) {
+	} else if (umatch(uri, uri_autod_json) != SIZE_MAX) {
 		return resp_json(ctx_id, uri);
+	} else if (umatch(uri, uri_autod_xml) == SIZE_MAX) {
+		return http_status::not_found;
 	}
+
 	if (auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	XMLDocument doc;
@@ -334,26 +350,55 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	auto email = gtx(*req_node, "EMailAddress");
 	if (email == nullptr || strchr(email, '@') == nullptr)
 		return die(ctx_id, invalid_request_code, invalid_request_msg);
-
-	sql_meta_result mres{};
-	if (strncasecmp(email, public_folder_email, 19) != 0) {
-		auto err = mysql_adaptor_meta(email, WANTPRIV_METAONLY, mres);
-		if (err != 0) {
-			mlog(LV_DEBUG, "oxdisco: unknown mailbox \"%s\": %s", email, strerror(err));
-			return die(ctx_id, 404, "Not Found");
-		}
-		email = mres.username.c_str();
-	}
-
 	auto ars = gtx(*req_node, "AcceptableResponseSchema");
 	if (ars == nullptr)
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
-	auto [err_code, reason] = access_ok(ctx_id, email, auth_info.username);
-	if (err_code != ok_code)
+	bool eas_schema = strcasecmp(ars, response_mobile_xmlns) == 0;
+
+	std::string auth_actor = auth_info.username;
+	std::string target_email = email;
+	bool eas_impersonation = false;
+	if (eas_schema && !parse_impersonation_address(email, target_email,
+	    auth_actor, eas_impersonation))
+		return die(ctx_id, invalid_request_code, invalid_request_msg);
+	if (eas_impersonation) {
+		unsigned int auth_uid = 0, auth_did = 0;
+		unsigned int conn_uid = 0, conn_did = 0;
+		if (!mysql_adaptor_get_user_ids(auth_actor.c_str(), &auth_uid, &auth_did, nullptr) ||
+		    !mysql_adaptor_get_user_ids(auth_info.username, &conn_uid, &conn_did, nullptr) ||
+		    auth_uid != conn_uid || auth_did != conn_did)
+			return http_status::unauthorized;
+	}
+
+	sql_meta_result mres{};
+	if (strncasecmp(target_email.c_str(), public_folder_email, 19) != 0) {
+		auto err = mysql_adaptor_meta(target_email.c_str(), WANTPRIV_METAONLY, mres);
+		if (err != 0) {
+			mlog(LV_DEBUG, "oxdisco: unknown mailbox \"%s\": %s", target_email.c_str(), strerror(err));
+			return die(ctx_id, 404, "Not Found");
+		}
+		target_email = mres.username;
+		if (eas_impersonation) {
+			uint32_t perm = rightsNone;
+			if (!exmdb.get_mbox_perm(mres.maildir.c_str(), auth_actor.c_str(), &perm))
+				return http_status::unauthorized;
+			if (!(perm & frightsGromoxStoreOwner)) {
+				mlog(LV_DEBUG, "oxdisco: autodiscover impersonation denied: actor \"%s\" lacks frightsGromoxStoreOwner on \"%s\" (perm=0x%x)",
+					auth_actor.c_str(), target_email.c_str(), perm);
+				return http_status::unauthorized;
+			}
+		}
+	}
+
+	auto [err_code, reason] = access_ok(ctx_id, target_email.c_str(), auth_actor.c_str());
+	if (err_code != ok_code) {
+		if (eas_impersonation)
+			return http_status::unauthorized;
 		return die(ctx_id, err_code, reason.c_str());
+	}
 	if (!RedirectAddr.empty() || !RedirectUrl.empty())
 		mlog(LV_DEBUG, "[oxdisco] send redirect response");
-	return resp(ctx_id, auth_info.username, email, ars);
+	return resp(ctx_id, auth_actor.c_str(), target_email.c_str(), ars);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1700: ENOMEM\n");
 	return die(ctx_id, server_error_code, server_error_msg);
@@ -494,7 +539,24 @@ http_status OxdiscoPlugin::die(int ctx_id, unsigned int error_code,
 	auto timeinfo = localtime_r(&rawtime, &timebuf);
 	strftime(error_time, std::size(error_time), "%T", timeinfo);
 
-	auto data = fmt::format(error_templ, error_time, server_id, error_code, error_msg);
+	XMLDocument doc;
+	doc.InsertEndChild(doc.NewDeclaration());
+	auto root = doc.NewElement("Autodiscover");
+	doc.InsertEndChild(root);
+	root->SetAttribute("xmlns", autodiscover_error_xmlns);
+	auto resp = root->InsertNewChildElement("Response");
+	auto err = resp->InsertNewChildElement("Error");
+	err->SetAttribute("Time", error_time);
+	err->SetAttribute("Id", server_id);
+	auto ec = err->InsertNewChildElement("ErrorCode");
+	ec->SetText(error_code);
+	auto msg = err->InsertNewChildElement("Message");
+	msg->SetText(error_msg);
+	err->InsertNewChildElement("DebugData");
+	XMLPrinter printer(nullptr, true);
+	doc.Print(&printer);
+	std::string data = printer.CStr();
+
 	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
 	writeheader(ctx_id, 200, data.size());
 	return write_response(ctx_id, data.c_str(), data.size());
@@ -651,7 +713,8 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 			mlog(LV_ERR, "oxdisco: could not obtain PR_DISPLAY_NAME for \"%s\"", email);
 			return -1;
 		}
-		mysql_adaptor_get_user_ids(email, &user_id, &domain_id, nullptr);
+		if (!mysql_adaptor_get_user_ids(email, &user_id, &domain_id, nullptr))
+			return -1;
 		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
@@ -668,6 +731,9 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	}
 	else {
 		DisplayName = public_folder;
+		unsigned int org_id = 0;
+		if (!mysql_adaptor_get_domain_ids(domain, &domain_id, &org_id))
+			return -1;
 		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
@@ -938,8 +1004,12 @@ http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) co
 /**
  * RFC draft proposal:
  * https://datatracker.ietf.org/doc/html/draft-ietf-mailmaint-autoconfig-00
+ *
+ * config-v1.1.xml MUST be available without authorization. This also means we
+ * should not output anything that is dependent on the username, but there is
+ * only so much that is optional.
  */
-http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
+http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 {
 	tinyxml2::XMLDocument respdoc;
 	auto decl = respdoc.NewDeclaration();
@@ -949,80 +1019,128 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	resproot->SetAttribute("version", "1.1");
 	respdoc.InsertEndChild(resproot);
 
-	auto t_host_id = host_id.c_str();
+	auto domain = strchr(email, '@');
+	if (domain == nullptr)
+		return http_status::not_found;
+	++domain;
+	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
+	std::pair<std::string, std::string> homesrv_buf;
+	if (mysql_adaptor_get_homeserver(is_private ? email : domain,
+	    is_private, homesrv_buf) != 0) {
+		mlog(LV_ERR, "oxdisco: no homeserver for \"%s\", does that user even exist?!",
+			is_private ? email : domain);
+		return http_status::not_found;
+	}
+	const char *t_host_id = homesrv_buf.second.c_str();
+	if (*t_host_id == '\0')
+		t_host_id = host_id.c_str();
+
 	auto resp_prov = add_child(resproot, "emailProvider");
-	resp_prov->SetAttribute("id", t_host_id);
+	resp_prov->SetAttribute("id", domain);
 
 	// TODO get all domains?
-	add_child(resp_prov, "domain", t_host_id);
-	add_child(resp_prov, "displayName", "Gromox Mail");
-	add_child(resp_prov, "displayShortName", "Gromox");
+	add_child(resp_prov, "domain", domain);
+	add_child(resp_prov, "displayName", "Gromox Mail ("s + domain + ")");
+	add_child(resp_prov, "displayShortName", "Gromox/"s + domain);
 
-	auto resp_imap = add_child(resp_prov, "incomingServer");
-	add_child(resp_imap, "type", "imap");
-	add_child(resp_imap, "hostname", t_host_id);
-	add_child(resp_imap, "port", "143");
-	add_child(resp_imap, "socketType", "STARTTLS");
-	add_child(resp_imap, "authentication", "password-cleartext");
-	add_child(resp_imap, "username", username);
+	/*
+	 * <https://wiki.mozilla.org/Thunderbird:Autoconfiguration:ConfigFileFormat> is not
+	 * complete, and also lacks a formal specification by means of an XSD file.
+	 *
+	 * Which means you have to read the source code at
+	 * https://hg-edge.mozilla.org/comm-central/file/tip/mail/components/accountcreation/modules/readFromXML.sys.mjs
+	 * https://github.com/mozilla/releases-comm-central/blob/master/mail/components/accountcreation/modules/readFromXML.sys.mjs
+	 *
+	 * The first incomingServer is the one that will be highlighted as the
+	 * preferred choice in the TB UI.
+	 */
+	auto srv = add_child(resp_prov, "incomingServer");
+	srv->SetAttribute("type", "imap");
+	add_child(srv, "hostname", t_host_id);
+	add_child(srv, "port", "143");
+	add_child(srv, "socketType", "STARTTLS");
+	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "username", "%EMAILADDRESS%");
 
-	auto resp_imaps = add_child(resp_prov, "incomingServer");
-	add_child(resp_imaps, "type", "imap");
-	add_child(resp_imaps, "hostname", t_host_id);
-	add_child(resp_imaps, "port", "993");
-	add_child(resp_imaps, "socketType", "SSL/TLS");
-	add_child(resp_imaps, "authentication", "password-cleartext");
-	add_child(resp_imaps, "username", username);
+	srv = add_child(resp_prov, "incomingServer");
+	srv->SetAttribute("type", "imap");
+	add_child(srv, "hostname", t_host_id);
+	add_child(srv, "port", "993");
+	add_child(srv, "socketType", "SSL");
+	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "username", "%EMAILADDRESS%");
 
-	auto resp_pop = add_child(resp_prov, "incomingServer");
-	add_child(resp_pop, "type", "pop3");
-	add_child(resp_pop, "hostname", t_host_id);
-	add_child(resp_pop, "port", "110");
-	add_child(resp_pop, "socketType", "STARTTLS");
-	add_child(resp_pop, "authentication", "password-cleartext");
-	add_child(resp_pop, "username", username);
+	srv = add_child(resp_prov, "incomingServer");
+	srv->SetAttribute("type", "pop3");
+	add_child(srv, "hostname", t_host_id);
+	add_child(srv, "port", "110");
+	add_child(srv, "socketType", "STARTTLS");
+	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "username", "%EMAILADDRESS%");
 
-	auto resp_pops = add_child(resp_prov, "incomingServer");
-	add_child(resp_pops, "type", "pop3");
-	add_child(resp_pops, "hostname", t_host_id);
-	add_child(resp_pops, "port", "995");
-	add_child(resp_pops, "socketType", "SSL/TLS");
-	add_child(resp_pops, "authentication", "password-cleartext");
-	add_child(resp_pops, "username", username);
+	srv = add_child(resp_prov, "incomingServer");
+	srv->SetAttribute("type", "pop3");
+	add_child(srv, "hostname", t_host_id);
+	add_child(srv, "port", "995");
+	add_child(srv, "socketType", "SSL");
+	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "username", "%EMAILADDRESS%");
 
-	auto resp_smtp = add_child(resp_prov, "outgoingServer");
-	add_child(resp_smtp, "type", "smtp");
-	add_child(resp_smtp, "hostname", t_host_id);
-	add_child(resp_smtp, "port", "25");
-	add_child(resp_smtp, "socketType", "none");
-	add_child(resp_smtp, "authentication", "password-cleartext");
-	add_child(resp_smtp, "username", username);
+	/*
+	 * Because EWS/EAS requires an additional TB plugin (Owl), put Exchange
+	 * at the end.
+	 */
+	srv = add_child(resp_prov, "incomingServer");
+	srv->SetAttribute("type", "exchange");
+	add_child(srv, "hostname", t_host_id);
+	add_child(srv, "port", "443");
+	add_child(srv, "socketType", "SSL");
+	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "username", "%EMAILADDRESS%");
+	add_child(srv, "ewsURL", fmt::format(ews_base_url, t_host_id, exchange_asmx));
+	add_child(srv, "easURL", fmt::format(msas_base_url, t_host_id));
 
-	auto resp_submission = add_child(resp_prov, "outgoingServer");
-	add_child(resp_submission, "type", "submission");
-	add_child(resp_submission, "hostname", t_host_id);
-	add_child(resp_submission, "port", "587");
-	add_child(resp_submission, "socketType", "STARTTLS");
-	add_child(resp_submission, "authentication", "password-cleartext");
-	add_child(resp_submission, "username", username);
+	/* Bug in TB: no outgoing server may be something else than SMTP. */
+	srv = add_child(resp_prov, "outgoingServer");
+	srv->SetAttribute("type", "smtp");
+	add_child(srv, "hostname", t_host_id);
+	add_child(srv, "port", "25");
+	add_child(srv, "socketType", "none");
+	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "username", "%EMAILADDRESS%");
 
-	auto resp_caldav = add_child(resp_prov, "calendarServer");
-	add_child(resp_caldav, "type", "caldav");
-	add_child(resp_caldav, "hostname", t_host_id);
-	add_child(resp_caldav, "port", "443");
-	add_child(resp_caldav, "socketType", "SSL/TLS");
-	add_child(resp_caldav, "authentication", "password-cleartext");
-	add_child(resp_caldav, "username", username);
-	add_child(resp_caldav, "path", "/dav/");
+	srv = add_child(resp_prov, "outgoingServer");
+	srv->SetAttribute("type", "smtp");
+	add_child(srv, "hostname", t_host_id);
+	add_child(srv, "port", "587");
+	add_child(srv, "socketType", "STARTTLS");
+	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "username", "%EMAILADDRESS%");
 
-	auto resp_carddav = add_child(resp_prov, "contactsServer");
-	add_child(resp_carddav, "type", "carddav");
-	add_child(resp_carddav, "hostname", t_host_id);
-	add_child(resp_carddav, "port", "443");
-	add_child(resp_carddav, "socketType", "SSL/TLS");
-	add_child(resp_carddav, "authentication", "password-cleartext");
-	add_child(resp_carddav, "username", username);
-	add_child(resp_carddav, "path", "/dav/");
+	srv = add_child(resproot, "calendar");
+	srv->SetAttribute("type", "caldav");
+	add_child(srv, "serverURL", "https://"s + t_host_id + "/dav/");
+	add_child(srv, "authentication", "http-basic");
+	add_child(srv, "username", "%EMAILADDRESS%");
+
+	srv = add_child(resproot, "addressBook");
+	srv->SetAttribute("type", "carddav");
+	add_child(srv, "serverURL", "https://"s + t_host_id + "/dav/");
+	add_child(srv, "authentication", "http-basic");
+	add_child(srv, "username", "%EMAILADDRESS%");
+
+	srv = add_child(resproot, "webMail");
+	auto el = add_child(srv, "loginPage");
+	el->SetAttribute("url", ("https://"s + t_host_id + "/web/").c_str());
+	el = add_child(srv, "loginPageInfo");
+	el->SetAttribute("url", ("https://"s + t_host_id + "/web/").c_str());
+	add_child(el, "username", "%EMAILADDRESS%");
+	el = add_child(srv, "usernameField");
+	el->SetAttribute("id", "username");
+	el = add_child(srv, "passwordField");
+	el->SetAttribute("id", "password");
+	el = add_child(srv, "loginButton");
+	el->SetAttribute("id", "kc-login");
 
 	int code = 200;
 	XMLPrinter printer(nullptr, !pretty_response);
@@ -1034,6 +1152,17 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 
 	writeheader(ctx_id, code, strlen(response));
 	return write_response(ctx_id, response, strlen(response));
+}
+
+/**
+ * RFC 6764 §5
+ */
+http_status OxdiscoPlugin::resp_dav(int ctx_id) const
+{
+	auto r = fmt::format("HTTP/1.1 307 Redirect\r\n"
+			"Content-Length: 0\r\n"
+			"Location: /dav/\r\n\r\n");
+	return write_response(ctx_id, r.c_str(), r.size());
 }
 
 std::string OxdiscoPlugin::get_redirect_addr(const char *email) const
@@ -1072,6 +1201,8 @@ static std::unique_ptr<OxdiscoPlugin> g_oxdisco_plugin;
 static BOOL oxdisco_init(const struct dlfuncs &apidata)
 {
 	LINK_HPM_API(apidata)
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return false;
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &OxdiscoPlugin::preproc;
 	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_oxdisco_plugin->proc(ctx, cont, len); };

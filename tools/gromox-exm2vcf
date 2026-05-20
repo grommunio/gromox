@@ -1,2 +1,2 @@
 #!/bin/sh
-exec gromox-exm2eml --vcard "$@"
+exec gromox-export --vcard "$@"

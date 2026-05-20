@@ -1,31 +1,44 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cerrno>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
+#include <list>
 #include <memory>
 #include <string>
+#include <unistd.h>
 #include <utility>
+#include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
+#include <vmime/utility/url.hpp>
+#include <gromox/atomic.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_provider_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>
+#include <gromox/list_file.hpp>
+#include <gromox/listener_ctx.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
 #include <gromox/svc_common.h>
+#include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 #include "db_engine.hpp"
-#include "listener.hpp"
 #include "parser.hpp"
 
 using namespace std::string_literals;
@@ -33,45 +46,47 @@ using namespace gromox;
 DECLARE_SVC_API(exmdb, );
 using namespace exmdb;
 
-static std::shared_ptr<CONFIG_FILE> g_config_during_init;
+static std::shared_ptr<CONFIG_FILE> g_config_during_init, g_config_during_init2;
 
 static constexpr cfg_directive exmdb_gromox_cfg_defaults[] = {
 	{"exmdb_deep_backtrace", "0", CFG_BOOL},
 	{"exmdb_force_write_txn", "0", CFG_BOOL},
 	{"exmdb_ics_log_file", ""},
+	{"exmdb_optimize_stm", "1", CFG_BOOL},
+	{"exmdb_parallelize_schemaup", "4"},
+	{"exmdb_parallelize_sqliteshut", "4"},
+	{"outgoing_smtp_url", "sendmail://localhost"},
 	CFG_TABLE_END,
 };
 
 static constexpr cfg_directive exmdb_cfg_defaults[] = {
-	{"cache_interval", "15min", CFG_TIME, "1s"},
+	{"cache_interval", "1min", CFG_TIME, "1s"},
 	{"dbg_synthesize_content", "0"},
 	{"enable_dam", "1", CFG_BOOL},
 	{"exmdb_body_autosynthesis", "1", CFG_BOOL},
+	{"exmdb_eph_prefix", ""},
 	{"exmdb_file_compression", "zstd-6"},
 	{"exmdb_hosts_allow", ""}, /* ::1 default set later during startup */
-	{"exmdb_listen_port", "5000"},
 	{"exmdb_max_sqlite_spares", "3", CFG_SIZE},
 	{"exmdb_pf_read_per_user", "1"},
 	{"exmdb_pf_read_states", "2"},
-	{"exmdb_private_folder_softdelete", "0", CFG_BOOL},
+	{"exmdb_private_folder_softdelete", "1", CFG_BOOL},
 	{"exmdb_schema_upgrades", "auto"},
 	{"exmdb_search_nice", "0"},
 	{"exmdb_search_pacing", "250", CFG_SIZE},
 	{"exmdb_search_pacing_time", "0.5s", CFG_TIME_NS},
 	{"exmdb_search_yield", "0", CFG_BOOL},
 	{"exrpc_debug", "0"},
-	{"listen_ip", "::1"},
 	{"listen_port", "exmdb_listen_port", CFG_ALIAS},
 	{"max_ext_rule_number", "20", CFG_SIZE, "1", "100"},
 	{"max_router_connections", "4095M", CFG_SIZE},
 	{"max_rpc_stub_threads", "4095M", CFG_SIZE},
 	{"max_rule_number", "1000", CFG_SIZE, "1", "2000"},
 	{"max_store_message_count", "0", CFG_SIZE},
-	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
 	{"populating_threads_num", "4", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
-	{"sqlite_debug", "0"},
 	{"sqlite_busy_timeout", "60s", CFG_TIME_NS, "0s", "1h"},
+	{"sqlite_debug", "0"},
 	{"table_size", "5000", CFG_SIZE, "100"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
@@ -112,6 +127,7 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	g_exmdb_search_pacing_time = pconfig->get_ll("exmdb_search_pacing_time");
 	g_exmdb_max_sqlite_spares = pconfig->get_ll("exmdb_max_sqlite_spares");
 	g_sqlite_busy_timeout_ns = pconfig->get_ll("sqlite_busy_timeout");
+	exmdb_eph_prefix = pconfig->get_value("exmdb_eph_prefix");
 	gx_sql_deep_backtrace = gxcfg->get_ll("exmdb_deep_backtrace");
 	gx_force_write_txn = gxcfg->get_ll("exmdb_force_write_txn");
 	auto s = gxcfg->get_value("exmdb_ics_log_file");
@@ -145,27 +161,43 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 				strerror(errno));
 			return FALSE;
 		}
-		if (!exmdb_provider_reload(nullptr, pconfig))
-			return false;
-
-		auto listen_ip = pconfig->get_value("listen_ip");
-		uint16_t listen_port = pconfig->get_ll("exmdb_listen_port");
-		mlog(LV_INFO, "exmdb_provider: listen address is [%s]:%hu",
-		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
-
-		exmdb_listener_init(listen_ip, listen_port);
-		if (exmdb_listener_run(get_config_path(),
-		    pconfig->get_value("exmdb_hosts_allow")) != 0) {
-			mlog(LV_ERR, "exmdb_provider: failed to run exmdb listener");
+		auto gxcfg = g_config_during_init2 = config_file_initd("gromox.cfg",
+		             get_config_path(), exmdb_gromox_cfg_defaults);
+		if (gxcfg == nullptr) {
+			mlog(LV_ERR, "exmdb_provider: config_file_initd exmdb_provider.cfg: %s",
+				strerror(errno));
 			return FALSE;
 		}
+		if (!exmdb_provider_reload(gxcfg, pconfig))
+			return false;
+		/*
+		 * Looking at the config does not tell us [libgxs_exmdb_provider.so]
+		 * what process we are in; hence the use of get_prog_id() instead.
+		 * But we do need istore_standalone for other purposes.
+		 */
+		g_istore_standalone = gxcfg->get_ll("istore_standalone");
+		auto prog_id = service_get_prog_id();
+		if (strncmp(prog_id, "istore-worker:", 14) == 0)
+			return TRUE; /* worker role; no listening socket */
+		if (strcmp(prog_id, "istore-director") != 0)
+			return TRUE; /* client role; no listening socket */
+		/* Director role */
+		if (exmdb_listener_init(*gxcfg, *pconfig) != 0)
+			return FALSE;
 		return TRUE;
 	}
 	case PLUGIN_INIT: {
+		if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+        		return false;
 		auto pconfig = std::move(g_config_during_init);
+		auto gxcfg = std::move(g_config_during_init2);
+		if (gxcfg == nullptr) {
+			mlog(LV_ERR, "emsmdb: config_file_initd gromox.cfg: %s",
+			       strerror(errno));
+			return false;
+		}
 		auto org_name = pconfig->get_value("x500_org_name");
 		int connection_num = pconfig->get_ll("rpc_proxy_connection_num");
-		int threads_num = pconfig->get_ll("notify_stub_threads_num");
 		size_t max_threads = pconfig->get_ll("max_rpc_stub_threads");
 		size_t max_routers = pconfig->get_ll("max_router_connections");
 		int table_size = pconfig->get_ll("table_size");
@@ -175,14 +207,9 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		int max_msg_count = pconfig->get_ll("max_store_message_count");
 		int max_rule = pconfig->get_ll("max_rule_number");
 		int max_ext_rule = pconfig->get_ll("max_ext_rule_number");
-		int populating_num = pconfig->get_ll("populating_threads_num");
-		mlog(LV_INFO, "exmdb_provider: x500=\"%s\", "
-		        "rpc_proxyconn_num=%d, notify_stub_threads_num=%d, "
-		        "db_hash_table_size=%d, cache_interval=%s, max_msgs_per_store=%d, "
-		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, popul_num=%d",
-		        org_name, connection_num, threads_num, table_size,
-		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
-		        populating_num);
+		int sfpop_max = pconfig->get_ll("populating_threads_num");
+		int par_upg = gxcfg->get_ll("exmdb_parallelize_schemaup");
+		int par_shut = gxcfg->get_ll("exmdb_parallelize_sqliteshut");
 		auto str = pconfig->get_value("exmdb_file_compression");
 		if (str == nullptr || !parse_bool(str))
 			g_cid_compression = 0;
@@ -198,16 +225,40 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		else
 			mlog(LV_INFO, "Content File Compression: zstd-%d", g_cid_compression);
 
-		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
-		db_engine_init(table_size, cache_interval, populating_num);
-		uint16_t listen_port = pconfig->get_ll("exmdb_listen_port");
-		if (0 == listen_port) {
-			exmdb_parser_init(0, 0);
-		} else {
-			exmdb_parser_init(max_threads, max_routers);
+		g_exmdb_enable_optim_stm = gxcfg->get_ll("exmdb_optimize_stm");
+		str = gxcfg->get_value("outgoing_smtp_url");
+		std::string smtp_url;
+		try {
+			smtp_url = vmime::utility::url(str);
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
+				str, e.what());
+			return false;
 		}
-		exmdb_client.emplace(connection_num, threads_num);
-		
+
+		mlog(LV_INFO, "exmdb_provider: x500=\"%s\", "
+		        "rpc_proxyconn_num=%d, "
+		        "db_hash_table_size=%d, cache_interval=%s, max_msgs_per_store=%d, "
+		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, "
+		        "popul_num=%d, smtp=%s, getprop_optimize_stm=%u",
+		        org_name, connection_num, table_size,
+		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
+		        sfpop_max, smtp_url.c_str(), g_exmdb_enable_optim_stm);
+
+		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule, std::move(smtp_url));
+		db_engine_init(table_size, cache_interval, sfpop_max, par_upg, par_shut);
+		auto prog_id = service_get_prog_id();
+		bool run_parser = strncmp(prog_id, "istore-", 7) == 0;
+		if (run_parser)
+			/* Director or worker */
+			exmdb_parser_init(max_threads, max_routers);
+		else
+			/* This process seems to be a client */
+			exmdb_parser_init(0, 0);
+
+		exmdb_client.emplace(connection_num);
+		exmdb_client->set_async_notif(exmdb_server::event_proc);
+		exmdb_client->m_allow_lpc = run_parser && g_istore_standalone == 0;
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "mail_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
@@ -218,12 +269,14 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 			db_engine_stop();
 			return FALSE;
 		}
-		if (exmdb_parser_run(get_config_path()) != 0) {
-			mlog(LV_ERR, "exmdb_provider: failed to start exmdb parser");
-			db_engine_stop();
-			return FALSE;
-		}
-		if (0 != exmdb_listener_trigger_accept()) {
+		g_host_id = znul(get_host_ID());
+		/*
+		 * If LPC is allowed, there has to be exmdb_provider in this
+		 * process image, which means we are authoritative and should
+		 * launch the socket.
+		 */
+		if (run_parser &&
+		    exmdb_listener_run(get_config_path(), *pconfig) != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start exmdb listener");
 			exmdb_listener_stop();
 			exmdb_parser_stop();
@@ -245,15 +298,192 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 #undef IDLOUT
 		register_service("exmdb_client_register_proc", exmdb_server::register_proc);
 		register_service("pass_service", common_util_pass_service);
+		register_service("exmdb_pickup", exmdb_pickup);
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		exmdb_client.reset();
 		exmdb_listener_stop();
+		exmdb_client.reset();
 		exmdb_parser_stop();
 		db_engine_stop();
 		return TRUE;
 	default:
 		return TRUE;
 	}
+}
+
+/* ex server.cpp */
+namespace {
+
+struct env_context {
+	alloc_context alloc_ctx;
+	const char *dir = nullptr;
+	unsigned int account_id = 0;
+	bool b_local = false, b_private = false;
+};
+
+}
+
+static thread_local const char *g_id_key;
+static thread_local const char *g_public_username_key;
+
+namespace exmdb_server {
+
+using evproc_t = void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
+static thread_local std::unique_ptr<env_context> g_env_key;
+static std::vector<evproc_t> event_proc_handlers;
+
+void build_env(unsigned int flags, const char *dir) try
+{
+	common_util_build_tls();
+	auto pctx = std::make_unique<env_context>();
+	pctx->b_local = flags & EM_LOCAL;
+	pctx->b_private = flags & EM_PRIVATE;
+	pctx->dir = dir;
+	pctx->account_id = 0;
+	g_env_key = std::move(pctx);
+} catch (const std::bad_alloc &) {
+	gromox::mlog(LV_ERR, "%s: ENOMEM", __func__);
+}
+
+void free_env()
+{
+	g_env_key.reset();
+}
+
+void set_remote_id(const char *remote_id)
+{
+	g_id_key = remote_id;
+}
+
+ALLOC_CONTEXT *get_alloc_context()
+{
+	auto pctx = g_env_key.get();
+	if (pctx == nullptr || pctx->b_local)
+		return NULL;
+	return &pctx->alloc_ctx;
+}
+
+const char *get_remote_id()
+{
+	return g_id_key;
+}
+
+void set_public_username(const char *username)
+{
+	g_public_username_key = username;
+}
+
+const char *get_public_username()
+{
+	/* Only ever used by readstate tracking */
+	return g_public_username_key;
+}
+
+/* can not be called in local rpc thread without
+	invoking exmdb_server::build_environment before! */
+bool is_private()
+{
+	return g_env_key->b_private;
+}
+
+/* can not be called in local rpc thread without invoking exmdb_server::build_env before! */
+const char *get_dir()
+{
+	return g_env_key->dir;
+}
+
+/* can not be called in local rpc thread without invoking exmdb_server::build_env before! */
+void set_dir(const char *dir)
+{
+	g_env_key->dir = dir;
+}
+
+unsigned int get_account_id()
+{
+	unsigned int account_id = 0;
+	auto pctx = g_env_key.get();
+	if (pctx->account_id == 0) {
+		if (pctx->b_private) {
+			if (mysql_adaptor_get_id_from_maildir(pctx->dir, &account_id))
+				pctx->account_id = account_id;
+		} else {
+			if (mysql_adaptor_get_id_from_homedir(pctx->dir, &account_id))
+				pctx->account_id = account_id;
+		}
+	}
+	return pctx->account_id;
+}
+
+const GUID *get_handle()
+{
+	auto pctx = g_env_key.get();
+	if (pctx == nullptr || !pctx->b_local)
+		return NULL;
+	return common_util_get_handle();
+}
+
+void register_proc(void *f)
+{
+	event_proc_handlers.emplace_back(reinterpret_cast<evproc_t>(f));
+	/*
+	 * All modifications of event_proc_handlers happen during process startup,
+	 * so exmdb_server::event_proc can run lock-free.
+	 */
+}
+
+void event_proc(const char *dir, BOOL is_table,
+    uint32_t notify_id, const DB_NOTIFY *datagram)
+{
+	for (auto f : event_proc_handlers)
+		f(dir, is_table, notify_id, datagram);
+}
+
+}
+
+/* ex client.cpp */
+static void buildenv(bool pvt)
+{
+	exmdb_server::build_env(pvt ? EM_PRIVATE : 0, nullptr);
+}
+
+int exmdb_client_run_front(const char *dir)
+{
+	return exmdb_client_run(dir, buildenv, exmdb_server::free_env);
+}
+
+/*
+ * Caution. This function is not a common exmdb service, it only can be called
+ * by message_rule_new_message to pass a message to the delegate's mailbox.
+ */
+BOOL exmdb_client_relay_delivery(const char *dir, const char *from_address,
+    const char *account, cpid_t cpid, const MESSAGE_CONTENT *pmsg,
+	const char *pdigest, uint32_t *presult)
+{
+	bool b_private;
+
+	if (exmdb_client_can_use_lpc(dir, g_host_id.c_str(), &b_private)) {
+		auto original_dir = exmdb_server::get_dir();
+		exmdb_server::set_dir(dir);
+		uint64_t folder_id = 0, msg_id = 0;
+		auto b_result = exmdb_server::deliver_message(dir, from_address,
+		                account, cpid,
+		                DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV,
+		                pmsg, pdigest, &folder_id, &msg_id, presult);
+		exmdb_server::set_dir(original_dir);
+		return b_result;
+	}
+	exreq_deliver_message q{};
+	exresp_deliver_message r{};
+	q.call_id = exmdb_callid::deliver_message;
+	q.dir = deconst(dir);
+	q.from_address = deconst(from_address);
+	q.account = deconst(account);
+	q.cpid = cpid;
+	q.pmsg = deconst(pmsg);
+	q.pdigest = deconst(pdigest);
+	if (!exmdb_client_do_rpc(&q, &r))
+		return FALSE;
+	*presult = r.result;
+	return TRUE;
 }

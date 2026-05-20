@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -55,7 +55,8 @@ unsigned int emsmdb_backfill_transporthdr;
 
 namespace emsmdb {
 
-unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+size_t g_max_mail_len;
+unsigned int g_max_rcpt;
 unsigned int g_max_rule_len, g_max_extrule_len;
 static std::string g_smtp_url;
 char g_emsmdb_org_name[256];
@@ -85,76 +86,41 @@ char *cu_strdup(std::string_view sv)
 	return out;
 }
 
-ssize_t cu_utf8_to_mb(cpid_t cpid, const char *src,
-    char *dst, size_t len)
+static const char *cu_resolve_cpid(cpid_t cpid)
 {
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-	char temp_charset[256];
-	
-	auto charset = cpid_to_cset(cpid);
-	if (charset == nullptr)
-		return -1;
-	sprintf(temp_charset, "%s//IGNORE",
-		replace_iconv_charset(charset));
-	conv_id = iconv_open(temp_charset, "UTF-8");
-	if (conv_id == (iconv_t)-1)
-		return -1;
-	auto pin = deconst(src);
-	auto pout = dst;
-	in_len = strlen(src) + 1;
-	memset(dst, 0, len);
-	out_len = len;
-	iconv(conv_id, &pin, &in_len, &pout, &len);
-	iconv_close(conv_id);
-	return out_len - len;
+	if (cpid == CP_OEMCP) {
+		/* only valid when invoked under rop environment */
+		auto e = emsmdb_interface_get_emsmdb_info();
+		if (e == nullptr)
+			return nullptr;
+		cpid = e->cpid;
+	}
+	return cpid_to_cset(cpid);
 }
 
-ssize_t cu_mb_to_utf8(cpid_t cpid, const char *src,
-    char *dst, size_t len)
+std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8) try
 {
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-
-	cpid_cstr_compatible(cpid);
-	auto charset = cpid_to_cset(cpid);
-	if (charset == nullptr)
-		return -1;
-	conv_id = iconv_open("UTF-8//IGNORE",
-		replace_iconv_charset(charset));
-	if (conv_id == (iconv_t)-1)
-		return -1;
-	auto pin = deconst(src);
-	auto pout = dst;
-	in_len = strlen(src) + 1;
-	memset(dst, 0, len);
-	out_len = len;
-	iconv(conv_id, &pin, &in_len, &pout, &len);	
-	iconv_close(conv_id);
-	return out_len - len;
+	auto cset = cu_resolve_cpid(cpid);
+	if (cset == nullptr) {
+		errno = EINVAL;
+		return {};
+	}
+	return iconvtext(sv, to_utf8 ? cset : "UTF-8", to_utf8 ? "UTF-8" : cset);
+} catch (const std::bad_alloc &) {
+	errno = ENOMEM;
+	return {};
 }
 
-static char *common_util_dup_mb_to_utf8(cpid_t cpid, const char *src)
+char *cu_mb_to_utf8_dup(cpid_t cpid, std::string_view sv)
 {
-	cpid_cstr_compatible(cpid);
-	auto len = mb_to_utf8_len(src);
-	auto pdst = cu_alloc<char>(len);
-	if (pdst == nullptr)
-		return NULL;
-	return cu_mb_to_utf8(cpid, src, pdst, len) >= 0 ? pdst : nullptr;
+	auto cvt = cu_cvt_str(std::move(sv), cpid, true);
+	return errno == 0 ? cu_strdup(cvt) : nullptr;
 }
 
-/* only for being invoked under rop environment */
-ssize_t common_util_convert_string(bool to_utf8, const char *src,
-    char *dst, size_t len)
+char *cu_utf8_to_mb_dup(cpid_t cpid, std::string_view sv)
 {
-	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (pinfo == nullptr)
-		return -1;
-	return to_utf8 ? cu_mb_to_utf8(pinfo->cpid, src, dst, len) :
-	       cu_utf8_to_mb(pinfo->cpid, src, dst, len);
+	auto cvt = cu_cvt_str(std::move(sv), cpid, false);
+	return errno == 0 ? cu_strdup(cvt) : nullptr;
 }
 
 void common_util_obfuscate_data(uint8_t *data, uint32_t size)
@@ -175,6 +141,18 @@ BINARY *cu_username_to_oneoff(const char *username, const char *dispname)
 	auto bin = cu_alloc<BINARY>();
 	if (bin == nullptr)
 		return nullptr;
+	/*
+	 * Normative reference: MS-OXCDATA v19 §2.2.5.1.
+	 *
+	 * Unlimited by spec, but a sensible buffer size goes like so: 24 bytes
+	 * initial part, 255 chars display name plus \0 (usually Unicode),
+	 * L"SMTP", 319 chars email address (SMTP:319, EX:256) and \0
+	 * (Unicode).
+	 *
+	 * So roughly 1186. In the future, we should make EXT_PUSH use a
+	 * std::string, and let it dynamic-size itself (currently precluded due
+	 * to cu_alloc).
+	 */
 	bin->pv = common_util_alloc(1280);
 	if (bin->pv == nullptr)
 		return nullptr;
@@ -185,6 +163,33 @@ BINARY *cu_username_to_oneoff(const char *username, const char *dispname)
 		return nullptr;
 	bin->cb = push.m_offset;
 	return bin;
+}
+
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_username_to_oneoff_s(const char *username, const char *dispname) try
+{
+	ONEOFF_ENTRYID e{};
+
+	e.ctrl_flags    = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
+	e.pdisplay_name = dispname != nullptr && *dispname != '\0' ?
+	                  deconst(dispname) : deconst(username);
+	e.paddress_type = deconst("SMTP");
+	e.pmail_address = deconst(username);
+
+	std::string out;
+	out.resize(1280);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), out.size(), EXT_FLAG_UTF16) ||
+	    ep.p_oneoff_eid(e) != pack_result::success)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
 }
 
 BINARY* common_util_username_to_addressbook_entryid(const char *username)
@@ -206,62 +211,58 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	return pbin;
 }
 
-static void *cu_fid_to_entryid_1(const logon_object *plogon,
-    uint64_t folder_id, void *output, size_t *outmax)
+BINARY *cu_fid_to_entryid(const logon_object &logon, uint64_t folder_id)
 {
-	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	tmp_bin.cb = 0;
-	tmp_bin.pv = &tmp_entryid.provider_uid;
-	rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
-	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
-	    tmp_entryid.database_guid) != ecSuccess)
+	tmp_entryid.provider_uid = logon.mailbox_guid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
-	tmp_entryid.folder_type = plogon->is_private() ?
-	                          EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
-	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.pad[0] = 0;
-	tmp_entryid.pad[1] = 0;
-	if (!ext_push.init(output, *outmax, 0) ||
-	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
-		return nullptr;
-	*outmax = ext_push.m_offset;
-	return output;
-}
-
-BINARY *cu_fid_to_entryid(const logon_object *plogon, uint64_t folder_id)
-{
+	tmp_entryid.eid_type  = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
+	tmp_entryid.folder_gc = rop_util_get_gc_array(folder_id);
+	tmp_entryid.pad1[0] = 0;
+	tmp_entryid.pad1[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	size_t z = 256;
-	pbin->pv = common_util_alloc(z);
-	if (pbin->pv == nullptr ||
-	    cu_fid_to_entryid_1(plogon, folder_id, pbin->pv, &z) == nullptr)
+	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
+	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
-	pbin->cb = z;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
-/* The caller can check for .size() < 4 to detect errors */
-std::string cu_fid_to_entryid_s(const logon_object *plogon, uint64_t folder_id) try
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_fid_to_entryid_s(const logon_object &logon, uint64_t folder_id) try
 {
-	std::string out;
-	size_t z = 256;
-	out.resize(z);
-	if (cu_fid_to_entryid_1(plogon, folder_id, out.data(), &z) == nullptr)
+	FOLDER_ENTRYID eid{};
+	eid.provider_uid = logon.mailbox_guid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	    eid.folder_dbguid) != ecSuccess)
 		return {};
-	out.resize(z);
+	eid.eid_type  = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
+	eid.folder_gc = rop_util_get_gc_array(folder_id);
+
+	std::string out;
+	out.resize(46); /* MS-OXCDATA v19 §2.2.4.1 */
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), 46, 0) ||
+	    ep.p_folder_eid(eid) != pack_result::ok)
+		return {};
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2246: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
-BINARY *cu_fid_to_sk(const logon_object *plogon, uint64_t folder_id)
+BINARY *cu_fid_to_sk(const logon_object &logon, uint64_t folder_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -273,38 +274,59 @@ BINARY *cu_fid_to_sk(const logon_object *plogon, uint64_t folder_id)
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
 	    longid.guid) != ecSuccess)
 		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(longid.guid) != pack_result::ok ||
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
 		return NULL;
 	return pbin;
 }
 
-BINARY *cu_mid_to_entryid(const logon_object *plogon,
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_fid_to_sk_s(const logon_object &logon, uint64_t folder_id) try
+{
+	LONG_TERM_ID longid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	    longid.guid) != ecSuccess)
+		return {};
+	longid.global_counter = rop_util_get_gc_array(folder_id);
+
+	std::string out;
+	out.resize(22);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), out.size(), 0) ||
+	    ep.p_guid(longid.guid) != pack_result::ok ||
+	    ep.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
+		return {};
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
+}
+
+BINARY *cu_mid_to_entryid(const logon_object &logon,
 	uint64_t folder_id, uint64_t message_id)
 {
-	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	tmp_bin.cb = 0;
-	tmp_bin.pv = &tmp_entryid.provider_uid;
-	rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
-	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
-	    tmp_entryid.folder_database_guid) != ecSuccess)
+	tmp_entryid.provider_uid = logon.mailbox_guid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
-	if (replid_to_replguid(*plogon, rop_util_get_replid(message_id),
-	    tmp_entryid.message_database_guid) != ecSuccess)
+	if (replid_to_replguid(logon, rop_util_get_replid(message_id),
+	    tmp_entryid.message_dbguid) != ecSuccess)
 		return nullptr;
-	tmp_entryid.message_type = plogon->is_private() ?
-	                           EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
-	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
+	tmp_entryid.eid_type   = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
+	tmp_entryid.folder_gc  = rop_util_get_gc_array(folder_id);
+	tmp_entryid.message_gc = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
@@ -312,15 +334,46 @@ BINARY *cu_mid_to_entryid(const logon_object *plogon,
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
-	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
+	    ext_push.p_msg_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
-BINARY *cu_mid_to_sk(const logon_object *plogon, uint64_t message_id)
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_mid_to_entryid_s(const logon_object &logon, uint64_t folder_id,
+    uint64_t msg_id) try
+{
+	MESSAGE_ENTRYID eid{};
+	eid.provider_uid = logon.mailbox_guid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	    eid.folder_dbguid) != ecSuccess)
+		return {};
+	if (replid_to_replguid(logon, rop_util_get_replid(msg_id),
+	    eid.message_dbguid) != ecSuccess)
+		return {};
+	eid.eid_type   = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
+	eid.folder_gc  = rop_util_get_gc_array(folder_id);
+	eid.message_gc = rop_util_get_gc_array(msg_id);
+
+	std::string out;
+	out.resize(70); /* MS-OXCDATA v19 §2.2.4.2 */
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), 70, 0) || ep.p_msg_eid(eid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
+}
+
+BINARY *cu_mid_to_sk(const logon_object &logon, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -332,16 +385,39 @@ BINARY *cu_mid_to_sk(const logon_object *plogon, uint64_t message_id)
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	longid.guid = plogon->guid();
+	longid.guid = logon.guid();
 	longid.global_counter = rop_util_get_gc_array(message_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(longid.guid) != pack_result::ok ||
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
 		return NULL;
 	return pbin;
 }
 
-BOOL cu_entryid_to_fid(const logon_object *plogon, const BINARY *pbin,
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_mid_to_sk_s(const logon_object &logon, uint64_t message_id) try
+{
+	LONG_TERM_ID longid;
+	longid.guid = logon.guid();
+	longid.global_counter = rop_util_get_gc_array(message_id);
+
+	std::string out;
+	out.resize(22);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), 22, 0) ||
+	    ep.p_guid(longid.guid) != pack_result::ok ||
+	    ep.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
+		return {};
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
+}
+
+BOOL cu_entryid_to_fid(const logon_object &logon, const BINARY *pbin,
     uint64_t *pfolder_id)
 {
 	uint16_t replid;
@@ -349,22 +425,21 @@ BOOL cu_entryid_to_fid(const logon_object *plogon, const BINARY *pbin,
 	FOLDER_ENTRYID tmp_entryid;
 	
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (ext_pull.g_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_folder_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
-	if (replguid_to_replid(*plogon, tmp_entryid.database_guid,
-	    replid) != ecSuccess)
+	if (replguid_to_replid(logon, tmp_entryid.folder_dbguid, replid) != ecSuccess)
 		return false;
-	switch (tmp_entryid.folder_type) {
+	switch (tmp_entryid.eid_type) {
 	case EITLT_PRIVATE_FOLDER:
 	case EITLT_PUBLIC_FOLDER:
-		*pfolder_id = rop_util_make_eid(replid, tmp_entryid.global_counter);
+		*pfolder_id = rop_util_make_eid(replid, tmp_entryid.folder_gc);
 		return TRUE;
 	default:
 		return FALSE;
 	}
 }
 
-BOOL cu_entryid_to_mid(const logon_object *plogon, const BINARY *pbin,
+BOOL cu_entryid_to_mid(const logon_object &logon, const BINARY *pbin,
     uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
 	uint16_t freplid, mreplid;
@@ -372,19 +447,17 @@ BOOL cu_entryid_to_mid(const logon_object *plogon, const BINARY *pbin,
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (ext_pull.g_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_msg_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
-	if (replguid_to_replid(*plogon, tmp_entryid.folder_database_guid,
-	    freplid) != ecSuccess)
+	if (replguid_to_replid(logon, tmp_entryid.folder_dbguid, freplid) != ecSuccess)
 		return false;
-	if (replguid_to_replid(*plogon, tmp_entryid.message_database_guid,
-	    mreplid) != ecSuccess)
+	if (replguid_to_replid(logon, tmp_entryid.message_dbguid, mreplid) != ecSuccess)
 		return false;
-	switch (tmp_entryid.message_type) {
+	switch (tmp_entryid.eid_type) {
 	case EITLT_PRIVATE_MESSAGE:
 	case EITLT_PUBLIC_MESSAGE:
-		*pfolder_id  = rop_util_make_eid(freplid, tmp_entryid.folder_global_counter);
-		*pmessage_id = rop_util_make_eid(mreplid, tmp_entryid.message_global_counter);
+		*pfolder_id  = rop_util_make_eid(freplid, tmp_entryid.folder_gc);
+		*pmessage_id = rop_util_make_eid(mreplid, tmp_entryid.message_gc);
 		return TRUE;
 	default:
 		return FALSE;
@@ -400,10 +473,29 @@ BINARY *cu_xid_to_bin(const XID &xid)
 		return NULL;
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
+}
+
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_xid_to_bin_s(const XID &xid) try
+{
+	std::string out;
+	out.resize(24);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), out.size(), 0) ||
+	    ep.p_xid(xid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
 }
 
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
@@ -413,7 +505,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
+	return ext_pull.g_xid(pbin->cb, pxid) == pack_result::ok ? TRUE : false;
 }
 
 BINARY* common_util_guid_to_binary(GUID guid)
@@ -421,11 +513,12 @@ BINARY* common_util_guid_to_binary(GUID guid)
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->cb = 0;
+	pbin->cb = 16;
 	pbin->pv = common_util_alloc(16);
 	if (pbin->pv == nullptr)
 		return NULL;
-	rop_util_guid_to_binary(guid, pbin);
+	FLATUID f = guid;
+	memcpy(pbin->pv, &f, sizeof(f));
 	return pbin;
 }
 
@@ -580,9 +673,9 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 
 ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
-	for (unsigned int i = 0; i < parray->count; ++i) {
-		if (parray->ppropval[i].proptag == tag) {
-			parray->ppropval[i].pvalue = deconst(data);
+	for (auto &e : *parray) {
+		if (e.proptag == tag) {
+			e.pvalue = deconst(data);
 			return ecSuccess;
 		}
 	}
@@ -599,8 +692,7 @@ ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *dat
 	return ecSuccess;
 }
 
-void common_util_remove_propvals(
-	TPROPVAL_ARRAY *parray, uint32_t proptag)
+void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 {
 	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (proptag != parray->ppropval[i].proptag)
@@ -614,65 +706,63 @@ void common_util_remove_propvals(
 }
 
 BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
-    uint32_t original_proptag, uint32_t new_proptag)
+    proptag_t original_proptag, proptag_t new_proptag)
 {
-	for (unsigned int i = 0; i < parray->count; ++i) {
-		if (parray->ppropval[i].proptag == original_proptag) {
-			parray->ppropval[i].proptag = new_proptag;
+	for (auto &e : *parray) {
+		if (e.proptag == original_proptag) {
+			e.proptag = new_proptag;
 			return TRUE;
 		}
 	}
 	return FALSE;
 }
 
-void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
-	const PROPTAG_ARRAY *pproptags_subtractor)
+void cu_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend, proptag_cspan pproptags_subtractor)
 {
-	for (unsigned int j = 0; j < pproptags_subtractor->count; ++j) {
+	for (const auto subtag : pproptags_subtractor) {
 		for (unsigned int i = 0; i < pproptags_minuend->count; ++i) {
-			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
+			if (subtag != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;
 			if (i < pproptags_minuend->count)
 				memmove(pproptags_minuend->pproptag + i,
 					pproptags_minuend->pproptag + i + 1,
 					(pproptags_minuend->count - i) *
-					sizeof(uint32_t));
+					sizeof(proptag_t));
 			break;
 		}
 	}
 }
 
-PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
+PROPTAG_ARRAY *cu_trim_proptags(proptag_cspan pproptags)
 {
 	auto ptmp_proptags = cu_alloc<PROPTAG_ARRAY>();
 	if (ptmp_proptags == nullptr)
 		return NULL;
-	ptmp_proptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+	ptmp_proptags->pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (ptmp_proptags->pproptag == nullptr)
 		return NULL;
 	ptmp_proptags->count = 0;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
+		const auto tag = pproptags[i];
 		if (PROP_TYPE(tag) == PT_OBJECT)
 			continue;
-		ptmp_proptags->pproptag[ptmp_proptags->count++] = tag;
+		ptmp_proptags->emplace_back(tag);
 	}
 	return ptmp_proptags;
 }
 
-BOOL common_util_propvals_to_row(
-	const TPROPVAL_ARRAY *ppropvals,
-	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
+bool cu_propvals_to_row(const TPROPVAL_ARRAY *ppropvals, proptag_cspan pcolumns,
+    PROPERTY_ROW *prow)
 {
 	unsigned int i;
 	static constexpr uint32_t errcode = ecNotFound;
 	
-	for (i = 0; i < pcolumns->count; ++i)
-		if (!ppropvals->has(pcolumns->pproptag[i]))
+	for (i = 0; i < pcolumns.size(); ++i)
+		if (!ppropvals->has(pcolumns[i]))
 			break;	
-	prow->flag = i < pcolumns->count ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
-	prow->pppropval = cu_alloc<void *>(pcolumns->count);
+	prow->flag = i < pcolumns.size() ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
+	prow->pppropval = cu_alloc<void *>(pcolumns.size());
 	if (prow->pppropval == nullptr)
 		return FALSE;
 	/*
@@ -698,8 +788,8 @@ BOOL common_util_propvals_to_row(
 	 *   QueryRows throws MAPI_E_NO_SUPPORT
 	 *   [Gromox: this is where W-2270 would be logged]
 	 */
-	for (i=0; i<pcolumns->count; i++) {
-		const auto tag = pcolumns->pproptag[i];
+	for (i = 0; i < pcolumns.size(); i++) {
+		const auto tag = pcolumns[i];
 		auto val = ppropvals->getval(tag);
 		prow->pppropval[i] = deconst(val);
 		if (prow->flag != PROPERTY_ROW_FLAG_FLAGGED)
@@ -744,47 +834,38 @@ BOOL common_util_convert_unspecified(cpid_t cpid,
 	if (b_unicode) {
 		if (ptyped->type != PT_STRING8)
 			return TRUE;
-		auto tmp_len = mb_to_utf8_len(static_cast<char *>(ptyped->pvalue));
-		auto pvalue = common_util_alloc(tmp_len);
+		auto pvalue = cu_mb_to_utf8_dup(cpid, static_cast<char *>(ptyped->pvalue));
 		if (pvalue == nullptr)
 			return FALSE;
-		if (cu_mb_to_utf8(cpid, static_cast<char *>(ptyped->pvalue),
-		    static_cast<char *>(pvalue), tmp_len) < 0)
-			return FALSE;	
-		ptyped->pvalue = pvalue;
+		ptyped->pvalue = std::move(pvalue);
 		return TRUE;
 	}
 	if (ptyped->type != PT_UNICODE)
 		return TRUE;
-	auto tmp_len = utf8_to_mb_len(static_cast<char *>(ptyped->pvalue));
-	auto pvalue = common_util_alloc(tmp_len);
+	auto pvalue = cu_utf8_to_mb_dup(cpid, static_cast<char *>(ptyped->pvalue));
 	if (pvalue == nullptr)
 		return FALSE;
-	if (cu_utf8_to_mb(cpid, static_cast<char *>(ptyped->pvalue),
-	    static_cast<char *>(pvalue), tmp_len) < 0)
-		return FALSE;
-	ptyped->pvalue = pvalue;
+	ptyped->pvalue = std::move(pvalue);
 	return TRUE;
 }
 
-BOOL common_util_propvals_to_row_ex(cpid_t cpid,
-	BOOL b_unicode, const TPROPVAL_ARRAY *ppropvals,
-	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
+bool cu_propvals_to_row_ex(cpid_t cpid, bool b_unicode,
+    const TPROPVAL_ARRAY *ppropvals, proptag_cspan pcolumns, PROPERTY_ROW *prow)
 {
 	static const uint32_t errcode = ecNotFound;
 	unsigned int i;
 	
-	for (i = 0; i < pcolumns->count; ++i)
-		if (!ppropvals->has(pcolumns->pproptag[i]))
+	for (i = 0; i < pcolumns.size(); ++i)
+		if (!ppropvals->has(pcolumns[i]))
 			break;	
-	prow->flag = i < pcolumns->count ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
-	prow->pppropval = cu_alloc<void *>(pcolumns->count);
+	prow->flag = i < pcolumns.size() ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
+	prow->pppropval = cu_alloc<void *>(pcolumns.size());
 	if (prow->pppropval == nullptr)
 		return FALSE;
-	for (i=0; i<pcolumns->count; i++) {
-		prow->pppropval[i] = deconst(ppropvals->getval(pcolumns->pproptag[i]));
+	for (i = 0; i < pcolumns.size(); ++i) {
+		prow->pppropval[i] = deconst(ppropvals->getval(pcolumns[i]));
 		if (prow->pppropval[i] != nullptr &&
-		    PROP_TYPE(pcolumns->pproptag[i]) == PT_UNSPECIFIED &&
+		    PROP_TYPE(pcolumns[i]) == PT_UNSPECIFIED &&
 		    !common_util_convert_unspecified(cpid, b_unicode,
 		    static_cast<TYPED_PROPVAL *>(prow->pppropval[i])))
 			return FALSE;
@@ -795,7 +876,7 @@ BOOL common_util_propvals_to_row_ex(cpid_t cpid,
 			return FALSE;
 		if (NULL == prow->pppropval[i]) {
 			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
-			pflagged_val->pvalue = deconst(ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR)));
+			pflagged_val->pvalue = deconst(ppropvals->getval(CHANGE_PROP_TYPE(pcolumns[i], PT_ERROR)));
 			if (pflagged_val->pvalue == nullptr)
 				pflagged_val->pvalue = deconst(&errcode);
 		} else {
@@ -807,11 +888,10 @@ BOOL common_util_propvals_to_row_ex(cpid_t cpid,
 	return TRUE;
 }
 
-BOOL common_util_row_to_propvals(
-	const PROPERTY_ROW *prow, const PROPTAG_ARRAY *pcolumns,
+static bool cu_row_to_propvals(const PROPERTY_ROW *prow, proptag_cspan pcolumns,
 	TPROPVAL_ARRAY *ppropvals)
 {
-	for (unsigned int i = 0; i < pcolumns->count; ++i) {
+	for (unsigned int i = 0; i < pcolumns.size(); ++i) {
 		void *pvalue;
 		if (PROPERTY_ROW_FLAG_NONE == prow->flag) {
 			pvalue = prow->pppropval[i];
@@ -821,17 +901,16 @@ BOOL common_util_row_to_propvals(
 				continue;	
 			pvalue = p->pvalue;
 		}
-		if (cu_set_propval(ppropvals, pcolumns->pproptag[i], pvalue) != ecSuccess)
+		if (cu_set_propval(ppropvals, pcolumns[i], pvalue) != ecSuccess)
 			return false;
 	}
 	return TRUE;
 }
 
-static BOOL common_util_propvals_to_recipient(cpid_t cpid,
-	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
-	RECIPIENT_ROW *prow)
+static bool cu_propvals_to_recipient(cpid_t cpid, TPROPVAL_ARRAY *ppropvals,
+    proptag_cspan pcolumns, RECIPIENT_ROW *prow)
 {
-	memset(prow, 0, sizeof(RECIPIENT_ROW));
+	*prow = {};
 	prow->flags |= RECIPIENT_ROW_FLAG_UNICODE;
 	auto flag = ppropvals->get<const uint8_t>(PR_RESPONSIBILITY);
 	if (flag != nullptr && *flag != 0)
@@ -843,13 +922,13 @@ static BOOL common_util_propvals_to_recipient(cpid_t cpid,
 	if (NULL == prow->ptransmittable_name) {
 		auto name = ppropvals->get<const char>(PR_TRANSMITABLE_DISPLAY_NAME_A);
 		if (name != nullptr)
-			prow->ptransmittable_name = common_util_dup_mb_to_utf8(cpid, name);
+			prow->ptransmittable_name = cu_mb_to_utf8_dup(cpid, name);
 	}
 	prow->pdisplay_name = ppropvals->get<char>(PR_DISPLAY_NAME);
 	if (NULL == prow->pdisplay_name) {
 		auto name = ppropvals->get<const char>(PR_DISPLAY_NAME_A);
 		if (name != nullptr)
-			prow->pdisplay_name = common_util_dup_mb_to_utf8(cpid, name);
+			prow->pdisplay_name = cu_mb_to_utf8_dup(cpid, name);
 	}
 	if (NULL != prow->ptransmittable_name && NULL != prow->pdisplay_name &&
 		0 == strcasecmp(prow->pdisplay_name, prow->ptransmittable_name)) {
@@ -864,7 +943,7 @@ static BOOL common_util_propvals_to_recipient(cpid_t cpid,
 	if (NULL == prow->psimple_name) {
 		auto name = ppropvals->get<const char>(PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A);
 		if (name != nullptr)
-			prow->psimple_name = common_util_dup_mb_to_utf8(cpid, name);
+			prow->psimple_name = cu_mb_to_utf8_dup(cpid, name);
 	}
 	if (prow->psimple_name != nullptr)
 		prow->flags |= RECIPIENT_ROW_FLAG_SIMPLE;
@@ -904,13 +983,12 @@ static BOOL common_util_propvals_to_recipient(cpid_t cpid,
 				return FALSE;
 		}
 	}
-	prow->count = pcolumns->count;
-	return common_util_propvals_to_row(ppropvals, pcolumns, &prow->properties);
+	prow->count = pcolumns.size();
+	return cu_propvals_to_row(ppropvals, pcolumns, &prow->properties);
 }
 
-static BOOL common_util_recipient_to_propvals(cpid_t cpid,
-	RECIPIENT_ROW *prow, const PROPTAG_ARRAY *pcolumns,
-	TPROPVAL_ARRAY *ppropvals)
+static bool cu_recipient_to_propvals(cpid_t cpid, RECIPIENT_ROW *prow,
+    proptag_cspan pcolumns, TPROPVAL_ARRAY *ppropvals)
 {
 	static constexpr uint8_t persist_true = true, persist_false = false;
 	BOOL b_unicode = (prow->flags & RECIPIENT_ROW_FLAG_UNICODE) ? TRUE : false;
@@ -927,7 +1005,7 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 		if (b_unicode) {
 			pvalue = prow->ptransmittable_name;
 		} else {
-			pvalue = common_util_dup_mb_to_utf8(cpid, prow->ptransmittable_name);
+			pvalue = cu_mb_to_utf8_dup(cpid, prow->ptransmittable_name);
 			if (pvalue == nullptr)
 				return FALSE;
 		}
@@ -937,17 +1015,16 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 	}
 	if (NULL != prow->pdisplay_name) {
 		auto pvalue = b_unicode ? prow->pdisplay_name :
-		              common_util_dup_mb_to_utf8(cpid, prow->pdisplay_name);
-		if (pvalue != nullptr && cu_set_propval(ppropvals,
-		    PR_DISPLAY_NAME, pvalue) != ecSuccess)
-			return false;
+		              cu_mb_to_utf8_dup(cpid, prow->pdisplay_name);
+		if (pvalue != nullptr)
+			cu_set_propval(ppropvals, PR_DISPLAY_NAME, pvalue);
 	}
 	if (NULL != prow->pmail_address) {
 		void *pvalue;
 		if (b_unicode) {
 			pvalue = prow->pmail_address;
 		} else {
-			pvalue = common_util_dup_mb_to_utf8(cpid, prow->pmail_address);
+			pvalue = cu_mb_to_utf8_dup(cpid, prow->pmail_address);
 			if (pvalue == nullptr)
 				return FALSE;
 		}
@@ -976,8 +1053,8 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 		return FALSE;
 	}
 
-	const PROPTAG_ARRAY tmp_columns = {prow->count, pcolumns->pproptag};
-	if (!common_util_row_to_propvals(&prow->properties, &tmp_columns, ppropvals))
+	const PROPTAG_ARRAY tmp_columns = {prow->count, deconst(pcolumns.data())};
+	if (!cu_row_to_propvals(&prow->properties, tmp_columns, ppropvals))
 		return FALSE;	
 	auto str = ppropvals->get<const char>(PR_DISPLAY_NAME);
 	if (str != nullptr && *str != '\0' && strcmp(str, "''") != 0 &&
@@ -993,21 +1070,18 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 	return TRUE;
 }
 
-BOOL common_util_propvals_to_openrecipient(cpid_t cpid,
-	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
-	OPENRECIPIENT_ROW *prow)
+bool cu_propvals_to_openrecipient(cpid_t cpid, TPROPVAL_ARRAY *ppropvals,
+    proptag_cspan pcolumns, OPENRECIPIENT_ROW *prow)
 {
 	auto pvalue = ppropvals->get<uint32_t>(PR_RECIPIENT_TYPE);
 	prow->recipient_type = pvalue == nullptr ? MAPI_ORIG : *pvalue;
 	prow->reserved = 0;
 	prow->cpid = cpid;
-	return common_util_propvals_to_recipient(cpid,
-		ppropvals, pcolumns, &prow->recipient_row);
+	return cu_propvals_to_recipient(cpid, ppropvals, pcolumns, &prow->recipient_row);
 }
 
-BOOL common_util_propvals_to_readrecipient(cpid_t cpid,
-	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
-	READRECIPIENT_ROW *prow)
+bool cu_propvals_to_readrecipient(cpid_t cpid, TPROPVAL_ARRAY *ppropvals,
+    proptag_cspan cols, READRECIPIENT_ROW *prow)
 {
 	auto pvalue = ppropvals->get<uint32_t>(PR_ROWID);
 	if (pvalue == nullptr)
@@ -1017,16 +1091,14 @@ BOOL common_util_propvals_to_readrecipient(cpid_t cpid,
 	prow->recipient_type = pvalue == nullptr ? MAPI_ORIG : *pvalue;
 	prow->reserved = 0;
 	prow->cpid = cpid;
-	return common_util_propvals_to_recipient(cpid,
-		ppropvals, pcolumns, &prow->recipient_row);
+	return cu_propvals_to_recipient(cpid, ppropvals, cols, &prow->recipient_row);
 }
 
-BOOL common_util_modifyrecipient_to_propvals(cpid_t cpid,
-    const MODIFYRECIPIENT_ROW *prow, const PROPTAG_ARRAY *pcolumns,
-    TPROPVAL_ARRAY *ppropvals)
+bool cu_modifyrecipient_to_propvals(cpid_t cpid, const MODIFYRECIPIENT_ROW *prow,
+    proptag_cspan pcolumns, TPROPVAL_ARRAY *ppropvals)
 {
 	ppropvals->count = 0;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(16 + pcolumns->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(16 + pcolumns.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	if (cu_set_propval(ppropvals, PR_ROWID, deconst(&prow->row_id)) != ecSuccess)
@@ -1039,11 +1111,10 @@ BOOL common_util_modifyrecipient_to_propvals(cpid_t cpid,
 		return false;
 	if (prow->precipient_row == nullptr)
 		return TRUE;
-	return common_util_recipient_to_propvals(cpid,
-			prow->precipient_row, pcolumns, ppropvals);
+	return cu_recipient_to_propvals(cpid, prow->precipient_row, pcolumns, ppropvals);
 }
 
-static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
+static void common_util_convert_proptag(BOOL to_unicode, proptag_t *pproptag)
 {
 	if (to_unicode) {
 		if (PROP_TYPE(*pproptag) == PT_STRING8)
@@ -1065,28 +1136,19 @@ BOOL common_util_convert_tagged_propval(
 	if (to_unicode) {
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_STRING8: {
-			auto len = mb_to_utf8_len(static_cast<char *>(ppropval->pvalue));
-			auto pstring = cu_alloc<char>(len);
+			auto pstring = cu_mb_to_utf8_dup(CP_OEMCP, static_cast<char *>(ppropval->pvalue));
 			if (pstring == nullptr)
 				return FALSE;
-			if (common_util_convert_string(true,
-			    static_cast<char *>(ppropval->pvalue), pstring, len) < 0)
-				return FALSE;	
-			ppropval->pvalue = pstring;
+			ppropval->pvalue = std::move(pstring);
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
 		}
 		case PT_MV_STRING8: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (size_t i = 0; i < sa->count; ++i) {
-				auto len = mb_to_utf8_len(sa->ppstr[i]);
-				auto pstring = cu_alloc<char>(len);
-				if (pstring == nullptr)
+			for (auto &entry : *sa) {
+				entry = cu_mb_to_utf8_dup(CP_OEMCP, entry);
+				if (entry == nullptr)
 					return FALSE;
-				if (common_util_convert_string(true,
-				    sa->ppstr[i], pstring, len) < 0)
-					return FALSE;	
-				sa->ppstr[i] = pstring;
 			}
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
@@ -1105,28 +1167,19 @@ BOOL common_util_convert_tagged_propval(
 	} else {
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_UNICODE: {
-			auto len = utf8_to_mb_len(static_cast<char *>(ppropval->pvalue));
-			auto pstring = cu_alloc<char>(len);
+			auto pstring = cu_utf8_to_mb_dup(CP_OEMCP, static_cast<char *>(ppropval->pvalue));
 			if (pstring == nullptr)
 				return FALSE;
-			if (common_util_convert_string(false,
-			    static_cast<char *>(ppropval->pvalue), pstring, len) < 0)
-				return FALSE;	
-			ppropval->pvalue = pstring;
+			ppropval->pvalue = std::move(pstring);
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
 		}
 		case PT_MV_UNICODE: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (size_t i = 0; i < sa->count; ++i) {
-				auto len = utf8_to_mb_len(sa->ppstr[i]);
-				auto pstring = cu_alloc<char>(len);
-				if (pstring == nullptr)
+			for (auto &entry : *sa) {
+				entry = cu_utf8_to_mb_dup(CP_OEMCP, entry);
+				if (entry == nullptr)
 					return FALSE;
-				if (common_util_convert_string(false,
-				    sa->ppstr[i], pstring, len) < 0)
-					return FALSE;	
-				sa->ppstr[i] = pstring;
 			}
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
@@ -1152,8 +1205,8 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 	switch (pres->rt) {
 	case RES_AND:
 	case RES_OR:
-		for (size_t i = 0; i < pres->andor->count; ++i)
-			if (!common_util_convert_restriction(to_unicode, &pres->andor->pres[i]))
+		for (auto &expr : *pres->andor)
+			if (!common_util_convert_restriction(to_unicode, &expr))
 				return FALSE;	
 		break;
 	case RES_NOT:
@@ -1298,74 +1351,7 @@ void common_util_notify_receipt(const char *username, int type,
 	if (ret != ecSuccess)
 		mlog2(LV_ERR, "E-1189: ems_send_mail: %s", mapi_strerror(ret));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2035: ENOMEM");
-}
-
-BOOL common_util_save_message_ics(logon_object *plogon,
-	uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags)
-{
-	uint32_t tmp_index;
-	uint32_t *pgroup_id;
-	uint64_t change_num;
-	PROBLEM_ARRAY tmp_problems;
-	auto dir = plogon->get_dir();
-	
-	if (!exmdb_client->allocate_cn(dir, &change_num))
-		return FALSE;	
-	const TAGGED_PROPVAL propval_buff[] = {
-		{PidTagChangeNumber, &change_num},
-		{PR_CHANGE_KEY, cu_xid_to_bin({plogon->guid(), change_num})},
-	};
-	if (propval_buff[1].pvalue == nullptr)
-		return FALSE;
-	const TPROPVAL_ARRAY tmp_propvals = {std::size(propval_buff), deconst(propval_buff)};
-	if (!exmdb_client->set_message_properties(dir, nullptr, CP_ACP,
-	    message_id, &tmp_propvals, &tmp_problems))
-		return FALSE;	
-	if (!exmdb_client->get_message_group_id(dir, message_id, &pgroup_id))
-		return FALSE;	
-	const property_groupinfo *pgpinfo;
-	if (NULL == pgroup_id) {
-		pgpinfo = plogon->get_last_property_groupinfo();
-		if (pgpinfo == nullptr)
-			return FALSE;
-		if (!exmdb_client->set_message_group_id(dir,
-		    message_id, pgpinfo->group_id))
-			return FALSE;	
-	}  else {
-		pgpinfo = plogon->get_property_groupinfo(*pgroup_id);
-		if (pgpinfo == nullptr)
-			return FALSE;
-	}
-	/* memory format of PROPTAG_ARRAY is identical to LONG_ARRAY */
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pindices(proptag_array_init());
-	if (pindices == nullptr)
-		return FALSE;
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
-	if (pungroup_proptags == nullptr)
-		return FALSE;
-	if (!pgpinfo->get_partial_index(PR_CHANGE_KEY, &tmp_index)) {
-		if (!proptag_array_append(pungroup_proptags.get(), PR_CHANGE_KEY))
-			return FALSE;
-	} else {
-		if (!proptag_array_append(pindices.get(), tmp_index))
-			return FALSE;
-	}
-	if (NULL != pchanged_proptags) {
-		for (unsigned int i = 0; i < pchanged_proptags->count; ++i) {
-			const auto tag = pchanged_proptags->pproptag[i];
-			if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
-				if (!proptag_array_append(pungroup_proptags.get(), tag))
-					return FALSE;
-			} else {
-				if (!proptag_array_append(pindices.get(), tmp_index))
-					return FALSE;
-			}
-		}
-		
-	}
-	return exmdb_client->save_change_indices(dir, message_id,
-	       change_num, pindices.get(), pungroup_proptags.get());
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static void common_util_set_dir(const char *dir)
@@ -1386,8 +1372,7 @@ static BOOL common_util_get_propids(
 	       ppropnames, ppropids);
 }
 
-static BOOL common_util_get_propname(
-	uint16_t propid, PROPERTY_NAME **pppropname) try
+static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname) try
 {
 	PROPNAME_ARRAY propnames;
 	
@@ -1397,67 +1382,17 @@ static BOOL common_util_get_propname(
 	*pppropname = propnames.ppropname;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2234: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
-static bool mapi_p1(const TPROPVAL_ARRAY &props)
-{
-	auto t = props.get<const uint32_t>(PR_RECIPIENT_TYPE);
-	return t != nullptr && *t & MAPI_P1;
-}
-
-#if 0
-static bool xp_is_in_charge(const TPROPVAL_ARRAY &props)
-{
-	auto v = props.get<const uint32_t>(PR_RESPONSIBILITY);
-	return v == nullptr || *v != 0;
-}
-#endif
-
-static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
-    std::vector<std::string> &list, bool resend) try
-{
-	if (resend && !mapi_p1(props))
-		return ecSuccess;
-	/*
-	if (!b_submit && xp_is_in_charge(rcpt))
-		return ecSuccess;
-	*/
-	auto str = props.get<const char>(PR_SMTP_ADDRESS);
-	if (str != nullptr && *str != '\0') {
-		list.emplace_back(str);
-		return ecSuccess;
-	}
-	auto addrtype = props.get<const char>(PR_ADDRTYPE);
-	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
-	std::string es_result;
-	if (addrtype != nullptr) {
-		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
-		           g_emsmdb_org_name, cu_id2user, es_result);
-		if (ret == ecSuccess) {
-			list.emplace_back(std::move(es_result));
-			return ecSuccess;
-		} else if (ret != ecNullObject) {
-			return ret;
-		}
-	}
-	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
-	           g_emsmdb_org_name, cu_id2user, es_result);
-	if (ret == ecSuccess)
-		list.emplace_back(std::move(es_result));
-	if (ret == ecNullObject || ret == ecUnknownUser)
-		return ecInvalidRecips;
-	return ret;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1123: ENOMEM");
-	return ecServerOOM;
-}
-
+/**
+ * @ev_from: address to use for Envelope-From
+ */
 ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
-    bool b_submit) try
+    const char *ev_from) try
 {
-	uint64_t message_id = msg->get_id();
+	auto message_id = msg->get_id();
 	MAIL imail;
 	void *pvalue;
 	BOOL b_result;
@@ -1491,41 +1426,42 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
-	auto message_flags = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
-	if (message_flags == nullptr) {
-		mlog2(LV_ERR, "E-1287: no PR_MESSAGE_FLAGS in %s", log_id.c_str());
-		return ecError;
-	}
-	bool b_resend = *message_flags & MSGFLAG_RESEND;
+	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	bool b_resend = num != nullptr && *num & MSGFLAG_RESEND;
 	const tarray_set *prcpts = pmsgctnt->children.prcpts;
-	if (NULL == prcpts) {
+	if (prcpts == nullptr || prcpts->count == 0) {
 		mlog2(LV_ERR, "E-1286: Tried to send %s but message has 0 recipients", log_id.c_str());
 		return MAPI_E_NO_RECIPIENTS;
 	}
 
 	std::vector<std::string> rcpt_list;
 	for (const auto &rcpt : *prcpts) {
-		auto ret = cu_rcpt_to_list(message_id, rcpt, rcpt_list, b_resend);
+		auto ret = cu_rcpt_to_list(rcpt, g_emsmdb_org_name, rcpt_list,
+		           mysql_adaptor_userid_to_name, b_resend);
 		if (ret != ecSuccess)
 			return ret;
 	}
 	if (rcpt_list.size() == 0) {
-		mlog2(LV_ERR, "E-1282: Empty converted recipients list attempting to send %s", log_id.c_str());
+		/* What would EXC do? */
+		mlog2(LV_ERR, "E-1282: Empty converted recipients list attempting to send %s",
+			log_id.c_str());
 		return MAPI_E_NO_RECIPIENTS;
 	}
-	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(dir);
-	/* try to avoid TNEF message */
-	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type, &imail,
-	    common_util_alloc, common_util_get_propids, common_util_get_propname)) {
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids;
+	cvt.get_propname = common_util_get_propname;
+	cvt.use_format_override(*pmsgctnt);
+	if (!cvt.mapi_to_inet(*pmsgctnt, imail)) {
 		mlog2(LV_ERR, "E-1281: oxcmail_export %s failed", log_id.c_str());
 		return ecError;	
 	}
 
 	imail.set_header("X-Mailer", EMSMDB_UA);
 	if (emsmdb_backfill_transporthdr) {
-		std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import("utf-8",
-			"UTC", &imail, common_util_alloc, common_util_get_propids));
+		auto rmsg = cvt.inet_to_mapi(imail);
 		if (rmsg != nullptr) {
 			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
 				auto th = rmsg->proplist.get<const char>(tag);
@@ -1534,7 +1470,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 				TAGGED_PROPVAL tp  = {tag, deconst(th)};
 				TPROPVAL_ARRAY tpa = {1, &tp};
 				PROBLEM_ARRAY pa{};
-				if (!msg->set_properties(&tpa, &pa))
+				if (msg->set_properties(&tpa, &pa) != ecSuccess)
 					break;
 				/* Unclear if permitted to save (specs say nothing) */
 				msg->save();
@@ -1543,7 +1479,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		}
 	}
 
-	auto ret = ems_send_mail(&imail, plogon->get_account(), rcpt_list);
+	auto ret = ems_send_mail(&imail, ev_from, rcpt_list);
 	if (ret != ecSuccess) {
 		mlog2(LV_ERR, "E-1280: failed to send %s via SMTP: %s",
 			log_id.c_str(), mapi_strerror(ret));
@@ -1561,18 +1497,20 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
-		if (!cu_entryid_to_mid(plogon,
-		    ptarget, &folder_id, &new_id)) {
-			mlog2(LV_WARN, "W-1279: PR_TARGET_ENTRYID inconvertible in %s", log_id.c_str());
+		if (!cu_entryid_to_mid(*plogon, ptarget, &folder_id, &new_id)) {
+			mlog2(LV_WARN, "W-1279: PR_TARGET_ENTRYID inconvertible in %s",
+				log_id.c_str());
 			return ecWarnWithErrors;	
 		}
 		if (!exmdb_client->clear_submit(dir, message_id, false)) {
-			mlog2(LV_WARN, "W-1278: exrpc clear_submit %s failed", log_id.c_str());
+			mlog2(LV_WARN, "W-1278: exrpc clear_submit %s failed",
+				log_id.c_str());
 			return ecWarnWithErrors;
 		}
 		if (!exmdb_client->movecopy_message(dir, cpid, message_id,
 		    folder_id, new_id, TRUE, &b_result)) {
-			mlog2(LV_WARN, "W-1277: exrpc movecopy_message %s failed", log_id.c_str());
+			mlog2(LV_WARN, "W-1277: exrpc movecopy_message %s failed",
+				log_id.c_str());
 			return ecWarnWithErrors;
 		}
 		return ecSuccess;
@@ -1582,36 +1520,36 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		return ecSuccess;
 	}
 	if (!exmdb_client->clear_submit(dir, message_id, false)) {
-		mlog2(LV_WARN, "W-1276: exrpc clear_submit %s failed", log_id.c_str());
+		mlog2(LV_WARN, "W-1276: exrpc clear_submit %s failed",
+			log_id.c_str());
 		return ecWarnWithErrors;
 	}
 
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	if (ptarget == nullptr ||
-	    !cu_entryid_to_fid(plogon, ptarget, &folder_id))
+	    !cu_entryid_to_fid(*plogon, ptarget, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 
 	const EID_ARRAY ids = {1, &message_id};
 	if (!exmdb_client->movecopy_messages(dir, cpid,
 	    false, STORE_OWNER_GRANTED, parent_id, folder_id, false,
 	    &ids, &b_partial)) {
-		mlog2(LV_WARN, "W-1275: exrpc movecopy_message %s failed", log_id.c_str());
+		mlog2(LV_WARN, "W-1275: exrpc movecopy_message %s failed",
+			log_id.c_str());
 		return ecWarnWithErrors;
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2553: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
 void common_util_init(const char *org_name, unsigned int max_rcpt,
-    unsigned int max_message, unsigned int max_mail_len,
-    unsigned int max_rule_len, std::string &&smtp_url,
+    size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url,
     const char *submit_command)
 {
 	gx_strlcpy(g_emsmdb_org_name, org_name, std::size(g_emsmdb_org_name));
 	g_max_rcpt = max_rcpt;
-	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
 	g_smtp_url = std::move(smtp_url);
@@ -1658,11 +1596,6 @@ static void mlog2(unsigned int level, const char *format, ...)
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	mlog(level, "user=%s host=[%s]  %s",
 		rpc_info.username, rpc_info.client_addr, log_buf);
-}
-
-ec_error_t cu_id2user(int id, std::string &user)
-{
-	return mysql_adaptor_userid_to_name(id, user);
 }
 
 }

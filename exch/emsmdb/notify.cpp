@@ -8,6 +8,7 @@
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/notify_types.hpp>
 #include <gromox/rop_util.hpp>
 #include "common_util.hpp"
 #include "emsmdb_interface.hpp"
@@ -54,13 +55,15 @@ void subscription_object::set_handle(uint32_t h)
 subscription_object::~subscription_object()
 {
 	auto psub = this;
-	exmdb_client->unsubscribe_notification(psub->plogon->get_dir(), psub->sub_id);
+	if (exmdb_client.has_value())
+		exmdb_client->unsubscribe_notification(psub->plogon->get_dir(), psub->sub_id);
 	emsmdb_interface_remove_subscription_notify(psub->plogon->get_dir(), psub->sub_id);
 }
 
-notify_response *notify_response::create(uint32_t handle, uint8_t logon_id) try
+std::unique_ptr<notify_response>
+notify_response::create(uint32_t handle, uint8_t logon_id) try
 {
-	auto r = new notify_response{};
+	auto r = std::make_unique<notify_response>();
 	r->handle = handle;
 	r->logon_id = logon_id;
 	return r;
@@ -96,14 +99,14 @@ void notify_response::clear()
 }
 
 static ec_error_t cvt_new_mail(notify_response &n,
-    const DB_NOTIFY_NEW_MAIL &x, BOOL b_unicode)
+    const DB_NOTIFY &x, BOOL b_unicode)
 {
-	n.nflags       = NF_NEW_MAIL | NF_BY_MESSAGE;
+	n.nflags       = fnevNewMail | NF_BY_MESSAGE;
 	n.folder_id    = rop_util_make_eid_ex(1, x.folder_id);
 	n.message_id   = rop_util_make_eid_ex(1, x.message_id);
 	n.msg_flags    = x.message_flags;
 	n.unicode_flag = !!b_unicode;
-	n.msg_class    = strdup(x.pmessage_class);
+	n.msg_class    = strdup(x.pmessage_class.c_str());
 	if (n.msg_class == nullptr)
 		return ecServerOOM;
 	return ecSuccess;
@@ -114,35 +117,35 @@ static ec_error_t copy_tags(notify_response &m, const PROPTAG_ARRAY &tags)
 	m.proptags.count = tags.count;
 	if (m.proptags.count == 0)
 		return ecSuccess;
-	m.proptags.pproptag = me_alloc<uint32_t>(tags.count);
+	m.proptags.pproptag = me_alloc<proptag_t>(tags.count);
 	if (m.proptags.pproptag == nullptr)
 		return ecServerOOM;
-	memcpy(m.proptags.pproptag, tags.pproptag, sizeof(uint32_t) * tags.count);
+	memcpy(m.proptags.pproptag, tags.pproptag, sizeof(proptag_t) * tags.count);
 	return ecSuccess;
 }
 
 static ec_error_t cvt_fld_created(notify_response &n,
-    const DB_NOTIFY_FOLDER_CREATED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags    = NF_OBJECT_CREATED;
+	n.nflags    = fnevObjectCreated;
 	n.folder_id = rop_util_nfid_to_eid(x.folder_id);
 	n.parent_id = rop_util_make_eid_ex(1, x.parent_id);
 	return copy_tags(n, x.proptags);
 }
 
 static ec_error_t cvt_msg_created(notify_response &n,
-    const DB_NOTIFY_MESSAGE_CREATED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags     = NF_OBJECT_CREATED | NF_BY_MESSAGE;
+	n.nflags     = fnevObjectCreated | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
 	n.message_id = rop_util_make_eid_ex(1, x.message_id);
 	return copy_tags(n, x.proptags);
 }
 
 static ec_error_t cvt_link_created(notify_response &n,
-    const DB_NOTIFY_LINK_CREATED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags     = NF_OBJECT_CREATED | NF_BY_SEARCH | NF_BY_MESSAGE;
+	n.nflags     = fnevObjectCreated | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
 	n.message_id = rop_util_make_eid_ex(1, x.message_id);
 	n.parent_id  = rop_util_make_eid_ex(1, x.parent_id);
@@ -150,27 +153,27 @@ static ec_error_t cvt_link_created(notify_response &n,
 }
 
 static ec_error_t cvt_fld_deleted(notify_response &n,
-    const DB_NOTIFY_FOLDER_DELETED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags    = NF_OBJECT_DELETED;
+	n.nflags    = fnevObjectDeleted;
 	n.folder_id = rop_util_nfid_to_eid(x.folder_id);
 	n.parent_id = rop_util_make_eid_ex(1, x.parent_id);
 	return ecSuccess;
 }
 
 static ec_error_t cvt_msg_deleted(notify_response &n,
-    const DB_NOTIFY_MESSAGE_DELETED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags     = NF_OBJECT_DELETED | NF_BY_MESSAGE;
+	n.nflags     = fnevObjectDeleted | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
 	n.message_id = rop_util_make_eid_ex(1, x.message_id);
 	return ecSuccess;
 }
 
 static ec_error_t cvt_link_deleted(notify_response &n,
-    const DB_NOTIFY_LINK_DELETED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags     = NF_OBJECT_DELETED | NF_BY_SEARCH | NF_BY_MESSAGE;
+	n.nflags     = fnevObjectDeleted | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
 	n.message_id = rop_util_make_eid_ex(1, x.message_id);
 	n.parent_id  = rop_util_make_eid_ex(1, x.parent_id);
@@ -178,32 +181,32 @@ static ec_error_t cvt_link_deleted(notify_response &n,
 }
 
 static ec_error_t cvt_fld_modified(notify_response &n,
-    const DB_NOTIFY_FOLDER_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags    = NF_OBJECT_MODIFIED;
+	n.nflags    = fnevObjectModified;
 	n.folder_id = rop_util_nfid_to_eid(x.folder_id);
-	if (x.ptotal != nullptr) {
+	if (x.have_total) {
 		n.nflags |= NF_HAS_TOTAL;
-		n.total_count = *x.ptotal;
+		n.total_count = x.total;
 	}
-	if (x.punread != nullptr) {
+	if (x.have_unread) {
 		n.nflags |= NF_HAS_UNREAD;
-		n.unread_count = *x.punread;
+		n.unread_count = x.unread;
 	}
 	return copy_tags(n, x.proptags);
 }
 
 static ec_error_t cvt_msg_modified(notify_response &n,
-    const DB_NOTIFY_MESSAGE_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags     = NF_OBJECT_MODIFIED | NF_BY_MESSAGE;
+	n.nflags     = fnevObjectModified | NF_BY_MESSAGE;
 	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
 	n.message_id = rop_util_make_eid_ex(1, x.message_id);
 	return copy_tags(n, x.proptags);
 }
 
 static ec_error_t cvt_fld_mvcp(notify_response &n, uint8_t nflags,
-    const DB_NOTIFY_FOLDER_MVCP &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags        = nflags;
 	n.folder_id     = rop_util_nfid_to_eid(x.folder_id);
@@ -214,7 +217,7 @@ static ec_error_t cvt_fld_mvcp(notify_response &n, uint8_t nflags,
 }
 
 static ec_error_t cvt_msg_mvcp(notify_response &n, uint8_t nflags,
-    const DB_NOTIFY_MESSAGE_MVCP &x)
+    const DB_NOTIFY &x)
 {
 	n.nflags         = nflags | NF_BY_MESSAGE;
 	n.folder_id      = rop_util_make_eid_ex(1, x.folder_id);
@@ -225,38 +228,38 @@ static ec_error_t cvt_msg_mvcp(notify_response &n, uint8_t nflags,
 }
 
 static ec_error_t cvt_fld_search_completed(notify_response &n,
-    const DB_NOTIFY_SEARCH_COMPLETED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags    = NF_SEARCH_COMPLETE;
+	n.nflags    = fnevSearchComplete;
 	n.folder_id = rop_util_make_eid_ex(1, x.folder_id);
 	return ecSuccess;
 }
 
 static ec_error_t cvt_hiertbl_changed(notify_response &n)
 {
-	n.nflags      = NF_TABLE_MODIFIED;
+	n.nflags      = fnevTableModified;
 	n.table_event = TABLE_EVENT_TABLE_CHANGED;
 	return ecSuccess;
 }
 
 static ec_error_t cvt_cttbl_changed(notify_response &n)
 {
-	n.nflags      = NF_TABLE_MODIFIED | NF_BY_MESSAGE;
+	n.nflags      = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event = TABLE_EVENT_TABLE_CHANGED;
 	return ecSuccess;
 }
 
 static ec_error_t cvt_srchtbl_changed(notify_response &n)
 {
-	n.nflags      = NF_TABLE_MODIFIED | NF_BY_SEARCH | NF_BY_MESSAGE;
+	n.nflags      = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event = TABLE_EVENT_TABLE_CHANGED;
 	return ecSuccess;
 }
 
 static ec_error_t cvt_hierrow_added(notify_response &n,
-    const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags          = NF_TABLE_MODIFIED;
+	n.nflags          = fnevTableModified;
 	n.table_event     = TABLE_EVENT_ROW_ADDED;
 	n.row_folder_id   = rop_util_nfid_to_eid(x.row_folder_id);
 	n.after_folder_id = x.after_folder_id == 0 ? eid_t(0) :
@@ -265,9 +268,9 @@ static ec_error_t cvt_hierrow_added(notify_response &n,
 }
 
 static ec_error_t cvt_ctrow_added(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags          = NF_TABLE_MODIFIED | NF_BY_MESSAGE;
+	n.nflags          = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_ADDED;
 	n.row_folder_id   = rop_util_make_eid_ex(1, x.row_folder_id);
 	n.row_message_id  = rop_util_nfid_to_eid2(x.row_message_id);
@@ -281,9 +284,9 @@ static ec_error_t cvt_ctrow_added(notify_response &n,
 }
 
 static ec_error_t cvt_srchrow_added(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags          = NF_TABLE_MODIFIED | NF_BY_SEARCH | NF_BY_MESSAGE;
+	n.nflags          = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_ADDED;
 	n.row_folder_id   = rop_util_make_eid_ex(1, x.row_folder_id);
 	n.row_message_id  = rop_util_nfid_to_eid2(x.row_message_id);
@@ -297,18 +300,18 @@ static ec_error_t cvt_srchrow_added(notify_response &n,
 }
 
 static ec_error_t cvt_hierrow_deleted(notify_response &n,
-    const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags        = NF_TABLE_MODIFIED;
+	n.nflags        = fnevTableModified;
 	n.table_event   = TABLE_EVENT_ROW_DELETED;
 	n.row_folder_id = rop_util_nfid_to_eid(x.row_folder_id);
 	return ecSuccess;
 }
 
 static ec_error_t cvt_ctrow_deleted(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags         = NF_TABLE_MODIFIED | NF_BY_MESSAGE;
+	n.nflags         = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event    = TABLE_EVENT_ROW_DELETED;
 	n.row_folder_id  = rop_util_make_eid_ex(1, x.row_folder_id);
 	n.row_message_id = rop_util_nfid_to_eid2(x.row_message_id);
@@ -317,9 +320,9 @@ static ec_error_t cvt_ctrow_deleted(notify_response &n,
 }
 
 static ec_error_t cvt_srchrow_deleted(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags         = NF_TABLE_MODIFIED | NF_BY_SEARCH | NF_BY_MESSAGE;
+	n.nflags         = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event    = TABLE_EVENT_ROW_DELETED;
 	n.row_folder_id  = rop_util_make_eid_ex(1, x.row_folder_id);
 	n.row_message_id = rop_util_nfid_to_eid2(x.row_message_id);
@@ -328,9 +331,9 @@ static ec_error_t cvt_srchrow_deleted(notify_response &n,
 }
 
 static ec_error_t cvt_hierrow_modified(notify_response &n,
-    const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags          = NF_TABLE_MODIFIED;
+	n.nflags          = fnevTableModified;
 	n.table_event     = TABLE_EVENT_ROW_MODIFIED;
 	n.row_folder_id   = rop_util_nfid_to_eid(x.row_folder_id);
 	n.after_folder_id = x.after_folder_id == 0 ? eid_t(0) :
@@ -339,9 +342,9 @@ static ec_error_t cvt_hierrow_modified(notify_response &n,
 }
 
 static ec_error_t cvt_ctrow_modified(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags          = NF_TABLE_MODIFIED | NF_BY_MESSAGE;
+	n.nflags          = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_MODIFIED;
 	n.row_folder_id   = rop_util_make_eid_ex(1, x.row_folder_id);
 	n.row_message_id  = rop_util_nfid_to_eid2(x.row_message_id);
@@ -355,9 +358,9 @@ static ec_error_t cvt_ctrow_modified(notify_response &n,
 }
 
 static ec_error_t cvt_srchrow_modified(notify_response &n,
-    const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED &x)
+    const DB_NOTIFY &x)
 {
-	n.nflags          = NF_TABLE_MODIFIED | NF_BY_SEARCH | NF_BY_MESSAGE;
+	n.nflags          = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_MODIFIED;
 	n.row_folder_id   = rop_util_make_eid_ex(1, x.row_folder_id);
 	n.row_message_id  = rop_util_nfid_to_eid2(x.row_message_id);
@@ -377,37 +380,37 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 	switch (dbn.type) {
 	using enum db_notify_type;
 	case new_mail:
-		return cvt_new_mail(n, *static_cast<const DB_NOTIFY_NEW_MAIL *>(dbn.pdata), b_cache);
+		return cvt_new_mail(n, dbn, b_cache);
 	case folder_created:
-		return cvt_fld_created(n, *static_cast<const DB_NOTIFY_FOLDER_CREATED *>(dbn.pdata));
+		return cvt_fld_created(n, dbn);
 	case message_created:
-		return cvt_msg_created(n, *static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(dbn.pdata));
+		return cvt_msg_created(n, dbn);
 	case link_created:
-		return cvt_link_created(n, *static_cast<const DB_NOTIFY_LINK_CREATED *>(dbn.pdata));
+		return cvt_link_created(n, dbn);
 	case folder_deleted:
-		return cvt_fld_deleted(n, *static_cast<const DB_NOTIFY_FOLDER_DELETED *>(dbn.pdata));
+		return cvt_fld_deleted(n, dbn);
 	case message_deleted:
-		return cvt_msg_deleted(n, *static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(dbn.pdata));
+		return cvt_msg_deleted(n, dbn);
 	case link_deleted:
-		return cvt_link_deleted(n, *static_cast<const DB_NOTIFY_LINK_DELETED *>(dbn.pdata));
+		return cvt_link_deleted(n, dbn);
 	case folder_modified:
-		return cvt_fld_modified(n, *static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(dbn.pdata));
+		return cvt_fld_modified(n, dbn);
 	case message_modified:
-		return cvt_msg_modified(n, *static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(dbn.pdata));
+		return cvt_msg_modified(n, dbn);
 	case folder_moved:
 	case folder_copied: {
 		auto nf = dbn.type == folder_moved ?
-		          NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		return cvt_fld_mvcp(n, nf, *static_cast<const DB_NOTIFY_FOLDER_MVCP *>(dbn.pdata));
+		          fnevObjectMoved : fnevObjectCopied;
+		return cvt_fld_mvcp(n, nf, dbn);
 	}
 	case message_moved:
 	case message_copied: {
 		auto nf = dbn.type == message_moved ?
-		          NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		return cvt_msg_mvcp(n, nf, *static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(dbn.pdata));
+		          fnevObjectMoved : fnevObjectCopied;
+		return cvt_msg_mvcp(n, nf, dbn);
 	}
 	case search_completed:
-		return cvt_fld_search_completed(n, *static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(dbn.pdata));
+		return cvt_fld_search_completed(n, dbn);
 	case hiertbl_changed:
 		return cvt_hiertbl_changed(n);
 	case cttbl_changed:
@@ -415,23 +418,23 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 	case srchtbl_changed:
 		return cvt_srchtbl_changed(n);
 	case hiertbl_row_added:
-		return cvt_hierrow_added(n, *static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *>(dbn.pdata));
+		return cvt_hierrow_added(n, dbn);
 	case cttbl_row_added:
-		return cvt_ctrow_added(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(dbn.pdata));
+		return cvt_ctrow_added(n, dbn);
 	case srchtbl_row_added:
-		return cvt_srchrow_added(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(dbn.pdata));
+		return cvt_srchrow_added(n, dbn);
 	case hiertbl_row_deleted:
-		return cvt_hierrow_deleted(n, *static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *>(dbn.pdata));
+		return cvt_hierrow_deleted(n, dbn);
 	case cttbl_row_deleted:
-		return cvt_ctrow_deleted(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(dbn.pdata));
+		return cvt_ctrow_deleted(n, dbn);
 	case srchtbl_row_deleted:
-		return cvt_srchrow_deleted(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(dbn.pdata));
+		return cvt_srchrow_deleted(n, dbn);
 	case hiertbl_row_modified:
-		return cvt_hierrow_modified(n, *static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(dbn.pdata));
+		return cvt_hierrow_modified(n, dbn);
 	case cttbl_row_modified:
-		return cvt_ctrow_modified(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(dbn.pdata));
+		return cvt_ctrow_modified(n, dbn);
 	case srchtbl_row_modified:
-		return cvt_srchrow_modified(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(dbn.pdata));
+		return cvt_srchrow_modified(n, dbn);
 	default:
 		return ecInvalidParam;
 	}
@@ -444,11 +447,11 @@ void notify_response::ctrow_event_to_change()
 	clear();
 	handle      = saved_handle;
 	logon_id    = saved_logon;
-	nflags      = NF_TABLE_MODIFIED | NF_BY_MESSAGE;
+	nflags      = fnevTableModified | NF_BY_MESSAGE;
 	table_event = TABLE_EVENT_TABLE_CHANGED;
 }
 
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 pack_result rop_ext_push(EXT_PUSH &x, const notify_response &n)
 {
 	TRY(x.p_uint8(ropNotify));
@@ -458,7 +461,7 @@ pack_result rop_ext_push(EXT_PUSH &x, const notify_response &n)
 	TRY(x.p_uint16(n.nflags));
 	if (__builtin_popcount(n.nflags & 0xfff) != 1)
 		return pack_result::format;
-	if (n.nflags & NF_TABLE_MODIFIED) {
+	if (n.nflags & fnevTableModified) {
 		TRY(x.p_uint16(n.table_event));
 		auto am  = n.table_event == TABLE_EVENT_ROW_ADDED ||
 		           n.table_event == TABLE_EVENT_ROW_MODIFIED;
@@ -480,23 +483,23 @@ pack_result rop_ext_push(EXT_PUSH &x, const notify_response &n)
 			TRY(x.p_bin_s(*n.row_data));
 		}
 	}
-	if ((n.nflags & (NF_TABLE_MODIFIED | NF_EXTENDED)) == 0)
+	if ((n.nflags & (fnevTableModified | NF_EXTENDED)) == 0)
 		TRY(x.p_uint64(n.folder_id));
-	if ((n.nflags & (NF_TABLE_MODIFIED | NF_EXTENDED | NF_BY_MESSAGE)) == NF_BY_MESSAGE)
+	if ((n.nflags & (fnevTableModified | NF_EXTENDED | NF_BY_MESSAGE)) == NF_BY_MESSAGE)
 		TRY(x.p_uint64(n.message_id));
-	if (n.nflags & (NF_OBJECT_CREATED | NF_OBJECT_DELETED |
-	    NF_OBJECT_MOVED | NF_OBJECT_COPIED) &&
+	if (n.nflags & (fnevObjectCreated | fnevObjectDeleted |
+	    fnevObjectMoved | fnevObjectCopied) &&
 	    (n.nflags & NF_BY_SEARCH) == !!(n.nflags & NF_BY_MESSAGE))
 		TRY(x.p_uint64(n.parent_id));
-	if (n.nflags & (NF_OBJECT_MOVED | NF_OBJECT_COPIED))
+	if (n.nflags & (fnevObjectMoved | fnevObjectCopied))
 		TRY(x.p_uint64(n.old_folder_id));
-	if (n.nflags & (NF_OBJECT_MOVED | NF_OBJECT_COPIED) &&
+	if (n.nflags & (fnevObjectMoved | fnevObjectCopied) &&
 	    n.nflags & NF_BY_MESSAGE)
 		TRY(x.p_uint64(n.old_message_id));
-	if (n.nflags & (NF_OBJECT_MOVED | NF_OBJECT_COPIED) &&
+	if (n.nflags & (fnevObjectMoved | fnevObjectCopied) &&
 	    !(n.nflags & NF_BY_MESSAGE))
 		TRY(x.p_uint64(n.old_parent_id));
-	if (n.nflags & (NF_OBJECT_CREATED | NF_OBJECT_MODIFIED)) {
+	if (n.nflags & (fnevObjectCreated | fnevObjectModified)) {
 		assert(n.proptags.count == 0 || n.proptags.pproptag != nullptr);
 		TRY(x.p_proptag_a(n.proptags));
 	}
@@ -504,7 +507,7 @@ pack_result rop_ext_push(EXT_PUSH &x, const notify_response &n)
 		TRY(x.p_uint32(n.total_count));
 	if (n.nflags & NF_HAS_UNREAD)
 		TRY(x.p_uint32(n.unread_count));
-	if (n.nflags & NF_NEW_MAIL) {
+	if (n.nflags & fnevNewMail) {
 		TRY(x.p_uint32(n.msg_flags));
 		TRY(x.p_uint8(!!n.unicode_flag));
 		if (!n.unicode_flag)
@@ -526,10 +529,10 @@ ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved
 	uint64_t folder_id;
 	uint64_t message_id;
 
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecNullObject;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (0 == want_whole_store) {
 		b_whole = FALSE;
@@ -545,8 +548,8 @@ ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved
 	if (psub == nullptr)
 		return ecServerOOM;
 	auto rsub = psub.get();
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::subscription, std::move(psub)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::subscription, std::move(psub)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	rsub->set_handle(hnd);
@@ -556,5 +559,5 @@ ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved
 
 void rop_release(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	rop_processor_release_object_handle(plogmap, logon_id, hin);
+	plogmap->release_object_handle(logon_id, hin);
 }

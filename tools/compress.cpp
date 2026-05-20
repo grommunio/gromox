@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
@@ -66,7 +66,7 @@ static void cid_read_dir(const char *dir, std::vector<std::string> &files)
 static std::vector<std::string> cid_read_args(int argc, const char *const *argv)
 {
 	std::vector<std::string> files;
-	while (*++argv != nullptr) {
+	for (; argc-- > 0; ++argv) {
 		struct stat sb;
 		if (lstat(*argv, &sb) != 0) {
 			mlog(LV_ERR, "stat %s: %s", *argv, strerror(errno));
@@ -124,15 +124,15 @@ static int do_file(const std::string &file)
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	std::vector<std::string> filelist;
 	if (g_arg_type == ARG_CIDS) {
-		filelist = cid_read_args(argc, const_cast<const char *const *>(argv));
+		filelist = cid_read_args(argp.nargs, argp.uarg);
 	} else {
 		mlog(LV_ERR, "A mode of operation must be specified. Available: --cid.");
 		return EXIT_FAILURE;

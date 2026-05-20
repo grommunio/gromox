@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdlib>
@@ -112,12 +112,6 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 	int i, num = 0, distance;
 	char temp_buf[64];
 	
-#ifdef _DEBUG_UMTA
-	if (NULL == list_file) {
-		mlog(LV_DEBUG, "list_file: list_file_analyse_format, param NULL");
-		return FALSE;
-	}
-#endif
 	auto ptr = format;
 	while ('\0' != *ptr) {
 		if ('%' == *ptr) {
@@ -192,12 +186,6 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 	char line[MAX_LINE];
 	int table_size;
 
-#ifdef _DEBUG_UMTA
-	if (NULL == list_file) {
-		mlog(LV_DEBUG, "list_file: list_file_construct_list, param NULL");
-		return FALSE;
-	}
-#endif
 	/* calculate the line number in file */
 	for (table_size = 0; fgets(line, MAX_LINE, list_file->file_ptr.get()); ++table_size) {
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
@@ -234,13 +222,6 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 	int i, j;
 	BOOL b_terminate = FALSE;
 
-#ifdef _DEBUG_UMTA
-	if (NULL == list_file || NULL == pfile || NULL == line) {
-		mlog(LV_DEBUG, "list_file: list_file_parse_line, param NULL");
-		return FALSE;
-	}
-#endif
-	
 	for (i=0; i<list_file->type_num; i++) {
 		switch (list_file->format[i]) {
 		case 'l':
@@ -330,66 +311,4 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 			return FALSE;
 	}
 	return b_terminate;
-}
-
-errno_t list_file_read_fixedstrings(const char *filename, const char *sdlist,
-    std::vector<std::string> &out)
-{
-	struct item { char data[256]; };
-	auto plist = list_file_initd(filename, sdlist, "%s:256", ERROR_ON_ABSENCE);
-	if (plist == nullptr)
-		return errno;
-	auto num = plist->get_size();
-	auto pitem = static_cast<const item *>(plist->get_list());
-	for (decltype(num) i = 0; i < num; ++i) {
-		try {
-			out.emplace_back(pitem[i].data);
-		} catch (const std::bad_alloc &) {
-			return ENOMEM;
-		}
-	}
-	return 0;
-}
-
-errno_t list_file_read_exmdb(const char *filename, const char *sdlist,
-    std::vector<EXMDB_ITEM> &out)
-{
-	struct raw {
-		char prefix[256], type[16], host[40];
-		int port;
-	};
-	auto plist = list_file_initd(filename, sdlist, "%s:256%s:16%s:40%d", ERROR_ON_ABSENCE);
-	if (plist == nullptr && errno == ENOENT) {
-		EXMDB_ITEM e;
-		e.prefix = PKGSTATEDIR "/user/";
-		e.host   = "::1";
-		e.port   = 5000;
-		e.type   = EXMDB_ITEM::EXMDB_PRIVATE;
-		out.push_back(e);
-		e.prefix = PKGSTATEDIR "/domain/";
-		e.type   = EXMDB_ITEM::EXMDB_PUBLIC;
-		out.push_back(std::move(e));
-		return 0;
-	} else if (plist == nullptr) {
-		return errno;
-	}
-	auto num = plist->get_size();
-	auto item = static_cast<const raw *>(plist->get_list());
-	for (decltype(num) i = 0; i < num; ++i) {
-		EXMDB_ITEM e;
-		if (strcmp(item[i].type, "public") == 0) {
-			e.type = EXMDB_ITEM::EXMDB_PUBLIC;
-		} else if (strcmp(item[i].type, "private") == 0) {
-			e.type = EXMDB_ITEM::EXMDB_PRIVATE;
-		} else {
-			mlog(LV_ERR, "list_file_read_exmdb:%s: skipping line with illegal type \"%s\"",
-			        filename, item[i].type);
-			continue;
-		}
-		e.prefix = item[i].prefix;
-		e.host   = item[i].host;
-		e.port   = item[i].port;
-		out.push_back(std::move(e));
-	}
-	return 0;
 }

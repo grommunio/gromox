@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <chrono>
@@ -19,6 +19,7 @@
 #include <gromox/database_mysql.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "mdabounce.hpp"
@@ -67,10 +68,8 @@ static void xa_refresh_once()
 		return;
 	auto n_contacts = newmap->size() - n_aliases;
 	std::unique_lock lk(xa_alias_lock);
-	if (newmap != nullptr)
-		xa_alias_map = std::move(newmap);
-	if (newdom != nullptr)
-		xa_domain_set = std::move(newdom);
+	xa_alias_map  = std::move(newmap);
+	xa_domain_set = std::move(newdom);
 	mlog(LV_INFO, "I-1612: refreshed alias_resolve map with %zu aliases and %zu contact objects",
 		n_aliases, n_contacts);
 }
@@ -237,6 +236,8 @@ BOOL HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
 		return TRUE;
 	LINK_HOOK_API(data);
 	textmaps_init();
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return false;
 	if (mlex_bounce_init(get_config_path(), get_data_path(),
 	    "mlist_bounce") != 0) {
 		mlog(LV_ERR, "mlist_expand: failed to run bounce producer");

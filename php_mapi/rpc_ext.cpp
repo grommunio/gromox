@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
+#include <string_view>
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
 #include "ext.hpp"
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
+
+static inline pack_result zrpc_pull(PULL_CTX &x, zcresp &d)
+{
+	return pack_result::ok;
+}
 
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_logon_token &d)
 {
@@ -440,7 +448,7 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_notifdequeue &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_queryrows &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_queryrows_v &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
@@ -452,14 +460,13 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_queryrows &d)
 		TRY(x.p_uint8(1));
 		TRY(x.p_restriction(*d.prestriction));
 	}
-	if (d.pproptags == nullptr) {
+	if (!d.pproptags.has_value()) {
 		TRY(x.p_uint8(0));
-	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_proptag_a(*d.pproptags));
-	return pack_result::ok;
 	}
+	return pack_result::ok;
 }
 
 static pack_result zrpc_pull(PULL_CTX &x, zcresp_queryrows &d)
@@ -468,11 +475,11 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_queryrows &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setcolumns &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setcolumns_v &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	TRY(x.p_uint32(d.flags));
 	return pack_result::ok;
 }
@@ -646,18 +653,17 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setpropvals &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getpropvals &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getpropvals_v &d)
 {	
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
-	if (d.pproptags == nullptr) {
+	if (!d.pproptags.has_value()) {
 		TRY(x.p_uint8(0));
-	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_proptag_a(*d.pproptags));
-		return pack_result::ok;
 	}
+	return pack_result::ok;
 }
 
 static pack_result zrpc_pull(PULL_CTX &x, zcresp_getpropvals &d)
@@ -666,11 +672,11 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_getpropvals &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletepropvals &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletepropvals_v &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	return pack_result::ok;
 }
 
@@ -724,11 +730,11 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_getpropnames &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copyto &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copyto_v &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hsrcobject));
-	TRY(x.p_proptag_a(*d.pexclude_proptags));
+	TRY(x.p_proptag_a(d.pexclude_proptags));
 	TRY(x.p_uint32(d.hdstobject));
 	TRY(x.p_uint32(d.flags));
 	return pack_result::ok;
@@ -1134,100 +1140,21 @@ pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 		return pack_result::alloc;
 	TRY(push_ctx.advance(sizeof(uint32_t)));
 	TRY(push_ctx.p_uint8(static_cast<uint8_t>(prequest->call_id)));
+
+#define EDEF(t, id) case zcore_callid::t: b_result = zrpc_push(push_ctx, *static_cast<const zcreq_ ## t ::view_t *>(prequest)); break;
+#define EOBSOL(t, id)
+#define EUNDEF(id)
+
 	switch (prequest->call_id) {
-#define E(t) case zcore_callid::t: b_result = zrpc_push(push_ctx, *static_cast<const zcreq_ ## t *>(prequest)); break;
-	E(logon)
-	E(checksession)
-	E(uinfo)
-	E(unloadobject)
-	E(openentry)
-	E(openstoreentry)
-	E(openabentry)
-	E(resolvename)
-	E(getpermissions)
-	E(modifypermissions)
-	E(modifyrules)
-	E(getabgal)
-	E(loadstoretable)
-	E(openstore)
-	E(openprofilesec)
-	E(loadhierarchytable)
-	E(loadcontenttable)
-	E(loadrecipienttable)
-	E(loadruletable)
-	E(createmessage)
-	E(deletemessages)
-	E(copymessages)
-	E(setreadflags)
-	E(createfolder)
-	E(deletefolder)
-	E(emptyfolder)
-	E(copyfolder)
-	E(getstoreentryid)
-	E(entryidfromsourcekey)
-	E(storeadvise)
-	E(unadvise)
-	E(notifdequeue)
-	E(queryrows)
-	E(setcolumns)
-	E(seekrow)
-	E(sorttable)
-	E(getrowcount)
-	E(restricttable)
-	E(findrow)
-	E(createbookmark)
-	E(freebookmark)
-	E(getreceivefolder)
-	E(modifyrecipients)
-	E(submitmessage)
-	E(loadattachmenttable)
-	E(openattachment)
-	E(createattachment)
-	E(deleteattachment)
-	E(setpropvals)
-	E(getpropvals)
-	E(deletepropvals)
-	E(setmessagereadflag)
-	E(openembedded)
-	E(getnamedpropids)
-	E(getpropnames)
-	E(copyto)
-	E(savechanges)
-	E(hierarchysync)
-	E(contentsync)
-	E(configsync)
-	E(statesync)
-	E(syncmessagechange)
-	E(syncfolderchange)
-	E(syncreadstatechanges)
-	E(syncdeletions)
-	E(hierarchyimport)
-	E(contentimport)
-	E(configimport)
-	E(stateimport)
-	E(importmessage)
-	E(importfolder)
-	E(importdeletion)
-	E(importreadstates)
-	E(getsearchcriteria)
-	E(setsearchcriteria)
-	E(messagetorfc822)
-	E(rfc822tomessage)
-	E(messagetoical)
-	E(icaltomessage)
-	E(messagetovcf)
-	E(vcftomessage)
-	E(setpasswd)
-	E(linkmessage)
-	E(imtomessage2)
-	E(essdn_to_username)
-	E(logon_token)
-	E(getuserfreebusy)
-	E(getuserfreebusyical)
-#undef E
+	#include <gromox/zcore_allcalls.hpp>
 	default:
 		return pack_result::bad_switch;
 	}
+
+#undef EDEF
+#undef EOBSOL
+#undef EUNDEF
+
 	if (b_result != pack_result::ok)
 		return b_result;
 	pbin_out->cb = push_ctx.m_offset;
@@ -1237,109 +1164,28 @@ pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 	return pack_result::ok;
 }
 
-pack_result rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
+pack_result rpc_ext_pull_response(std::string_view pbin_in, zcresp *presponse)
 {
 	PULL_CTX pull_ctx;
 	
-	pull_ctx.init(pbin_in->pb, pbin_in->cb);
+	pull_ctx.init(pbin_in.data(), pbin_in.size());
 	uint32_t v;
 	TRY(pull_ctx.g_uint32(&v));
 	presponse->result = static_cast<ec_error_t>(v);
 	if (presponse->result != ecSuccess)
 		return pack_result::ok;
+
+#define EDEF(t, id) case zcore_callid::t: return zrpc_pull(pull_ctx, *static_cast<zcresp_ ## t *>(presponse));
+#define EOBSOL(t, id)
+#define EUNDEF(t)
+
 	switch (presponse->call_id) {
-	case zcore_callid::checksession:
-	case zcore_callid::unloadobject:
-	case zcore_callid::modifypermissions:
-	case zcore_callid::modifyrules:
-	case zcore_callid::deletemessages:
-	case zcore_callid::copymessages:
-	case zcore_callid::setreadflags:
-	case zcore_callid::deletefolder:
-	case zcore_callid::emptyfolder:
-	case zcore_callid::copyfolder:
-	case zcore_callid::unadvise:
-	case zcore_callid::setcolumns:
-	case zcore_callid::seekrow:
-	case zcore_callid::sorttable:
-	case zcore_callid::restricttable:
-	case zcore_callid::freebookmark:
-	case zcore_callid::modifyrecipients:
-	case zcore_callid::submitmessage:
-	case zcore_callid::deleteattachment:
-	case zcore_callid::setpropvals:
-	case zcore_callid::deletepropvals:
-	case zcore_callid::setmessagereadflag:
-	case zcore_callid::copyto:
-	case zcore_callid::savechanges:
-	case zcore_callid::configimport:
-	case zcore_callid::importfolder:
-	case zcore_callid::importdeletion:
-	case zcore_callid::importreadstates:
-	case zcore_callid::setsearchcriteria:
-	case zcore_callid::rfc822tomessage:
-	case zcore_callid::icaltomessage:
-	case zcore_callid::vcftomessage:
-	case zcore_callid::setpasswd:
-	case zcore_callid::linkmessage:
-		return pack_result::ok;
-#define E(t) case zcore_callid::t: return zrpc_pull(pull_ctx, *static_cast<zcresp_ ## t *>(presponse));
-	E(logon)
-	E(uinfo)
-	E(openentry)
-	E(openstoreentry)
-	E(openabentry)
-	E(resolvename)
-	E(getpermissions)
-	E(getabgal)
-	E(loadstoretable)
-	E(openstore)
-	E(openprofilesec)
-	E(loadhierarchytable)
-	E(loadcontenttable)
-	E(loadrecipienttable)
-	E(loadruletable)
-	E(createmessage)
-	E(createfolder)
-	E(getstoreentryid)
-	E(entryidfromsourcekey)
-	E(storeadvise)
-	E(notifdequeue)
-	E(queryrows)
-	E(getrowcount)
-	E(findrow)
-	E(createbookmark)
-	E(getreceivefolder)
-	E(loadattachmenttable)
-	E(openattachment)
-	E(createattachment)
-	E(getpropvals)
-	E(openembedded)
-	E(getnamedpropids)
-	E(getpropnames)
-	E(hierarchysync)
-	E(contentsync)
-	E(configsync)
-	E(statesync)
-	E(syncmessagechange)
-	E(syncfolderchange)
-	E(syncreadstatechanges)
-	E(syncdeletions)
-	E(hierarchyimport)
-	E(contentimport)
-	E(stateimport)
-	E(importmessage)
-	E(getsearchcriteria)
-	E(messagetorfc822)
-	E(messagetoical)
-	E(messagetovcf)
-	E(imtomessage2)
-	E(essdn_to_username)
-	E(logon_token)
-	E(getuserfreebusy)
-	E(getuserfreebusyical)
-#undef E
+	#include <gromox/zcore_allcalls.hpp>
 	default:
 		return pack_result::bad_switch;
 	}
+
+#undef EDEF
+#undef EOBSOL
+#undef EUNDEF
 }

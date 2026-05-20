@@ -28,13 +28,14 @@
 
 using namespace gromox;
 
-static BOOL message_object_set_properties_internal(message_object *, BOOL check, const TPROPVAL_ARRAY *);
+static ec_error_t message_object_set_properties_internal(message_object *, bool check, const TPROPVAL_ARRAY *);
 
-BOOL message_object::get_recipient_all_proptags(PROPTAG_ARRAY *pproptags)
+ec_error_t message_object::get_recipient_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_rcpts_all_proptags(
-	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags);
+	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags) ?
+	       ecSuccess : ecRpcFailed;
 }
 
 std::unique_ptr<message_object> message_object::create(store_object *pstore,
@@ -51,7 +52,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 	pmessage->pstore = pstore;
 	pmessage->b_new = b_new;
 	pmessage->cpid = cpid;
-	pmessage->message_id = message_id;
+	pmessage->message_id = eid_t{message_id};
 	pmessage->tag_access = tag_access;
 	pmessage->b_writable = b_writable;
 	pmessage->pstate = std::move(pstate);
@@ -67,7 +68,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 		if (!b_new && pmessage->instance_id == 0)
 			return pmessage;
 	} else {
-		pmessage->folder_id = *static_cast<uint64_t *>(pparent);
+		pmessage->folder_id = *static_cast<eid_t *>(pparent);
 		if (pmessage->pstore->b_private) {
 			if (!exmdb_client->load_message_instance(pstore->get_dir(),
 			    nullptr, cpid, b_new, pmessage->folder_id, message_id,
@@ -100,34 +101,34 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 	return pmessage;
 }
 
-BOOL message_object::check_original_touched(BOOL *pb_touched)
+ec_error_t message_object::check_original_touched(BOOL *pb_touched)
 {
 	auto pmessage = this;
 	uint64_t *pchange_num;
 	
 	if (pmessage->b_new) {
 		*pb_touched = FALSE;
-		return TRUE;
+		return ecSuccess;
 	}
 	if (0 != pmessage->message_id) {
 		if (!exmdb_client_get_message_property(pmessage->pstore->get_dir(),
 		    nullptr, CP_ACP, pmessage->message_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)))
-			return FALSE;
+			return ecRpcFailed;
 	} else {
 		if (!exmdb_client->get_embedded_cn(pmessage->pstore->get_dir(),
 		    pmessage->instance_id, &pchange_num))
-			return FALSE;	
+			return ecRpcFailed;
 	}
 	/* if it cannot find PidTagChangeNumber, it means message does not exist any more */
 	*pb_touched = pchange_num == nullptr || *pchange_num != pmessage->change_num ? TRUE : false;
-	return TRUE;
+	return ecSuccess;
 }
 
 message_object::~message_object()
 {	
 	auto pmessage = this;
-	if (pmessage->instance_id != 0)
+	if (pmessage->instance_id != 0 && exmdb_client.has_value())
 		exmdb_client->unload_instance(pmessage->pstore->get_dir(),
 			pmessage->instance_id);
 	if (pmessage->pchanged_proptags != nullptr)
@@ -136,7 +137,7 @@ message_object::~message_object()
 		proptag_array_free(pmessage->premoved_proptags);
 }
 
-errno_t message_object::init_message(bool fai, cpid_t new_cpid)
+ec_error_t message_object::init_message(bool fai, cpid_t new_cpid)
 {
 	auto pmessage = this;
 	EXT_PUSH ext_push;
@@ -144,28 +145,28 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	TPROPVAL_ARRAY propvals;
 	
 	if (!pmessage->b_new)
-		return EINVAL;
+		return ecInvalidParam;
 	propvals.count = 0;
 	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(20);
 	if (propvals.ppropval == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	
 	auto msgcpid = cu_alloc<uint32_t>();
 	if (msgcpid == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	*msgcpid = new_cpid;
 	propvals.emplace_back(PR_MESSAGE_CODEPAGE, msgcpid);
 
 	auto importance = cu_alloc<uint32_t>();
 	if (importance == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	*importance = IMPORTANCE_NORMAL;
 	propvals.emplace_back(PR_IMPORTANCE, importance);
 	propvals.emplace_back(PR_MESSAGE_CLASS, "IPM.Note");
 
 	auto sens = cu_alloc<uint32_t>();
 	if (sens == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	*sens = SENSITIVITY_NONE;
 	propvals.emplace_back(PR_SENSITIVITY, sens);
 	for (auto t : {PR_ORIGINAL_DISPLAY_TO, PR_ORIGINAL_DISPLAY_CC, PR_ORIGINAL_DISPLAY_BCC})
@@ -173,42 +174,42 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 
 	auto msgflags = cu_alloc<uint32_t>();
 	if (msgflags == nullptr)
-		return ENOMEM;
-	*msgflags = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
+		return ecServerOOM;
+	*msgflags = MSGFLAG_READ | MSGFLAG_UNSENT | MSGFLAG_EVERREAD | MSGFLAG_UNMODIFIED;
 	propvals.emplace_back(PR_MESSAGE_FLAGS, msgflags);
 
 	auto readflag = cu_alloc<uint8_t>();
 	if (readflag == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	*readflag = 1;
 	propvals.emplace_back(PR_READ, readflag);
 
 	auto assocflag = cu_alloc<uint8_t>();
 	if (assocflag == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	*assocflag = fai;
 	propvals.emplace_back(PR_ASSOCIATED, assocflag);
 
 	auto trustsender = cu_alloc<uint32_t>();
 	if (trustsender == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	*trustsender = 1;
 	propvals.emplace_back(PR_TRUST_SENDER, trustsender);
 
 	auto crtime = cu_alloc<uint64_t>();
 	if (crtime == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	*crtime = rop_util_current_nttime();
 	propvals.emplace_back(PR_CREATION_TIME, crtime);
 
 	auto search_key = common_util_guid_to_binary(GUID::random_new());
 	if (search_key == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	propvals.emplace_back(PR_SEARCH_KEY, search_key);
 
 	auto msglcid = cu_alloc<uint32_t>();
 	if (msglcid == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	*msglcid = 0x409; /* en-US */
 	propvals.emplace_back(PR_MESSAGE_LOCALE_ID, msglcid);
 	propvals.emplace_back(PR_LOCALE_ID, msglcid);
@@ -219,34 +220,32 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	             !dispname.empty() ? common_util_dup(dispname) :
 	             common_util_dup(pinfo->get_username());
 	if (dnptr == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	propvals.emplace_back(PR_CREATOR_NAME, std::move(dnptr));
 
 	auto abk_eid = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (abk_eid == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	propvals.emplace_back(PR_CREATOR_ENTRYID, abk_eid);
 
 	char id_string[UADDR_SIZE+2];
-	auto ret = make_inet_msgid(id_string, std::size(id_string), 0x5a54);
-	if (ret != 0)
-		return ret;
+	auto err = make_inet_msgid(id_string, std::size(id_string), 0x5a54);
+	if (err != ecSuccess)
+		return err;
 	propvals.emplace_back(PR_INTERNET_MESSAGE_ID, id_string);
 
 	if (!exmdb_client->set_instance_properties(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &propvals, &problems))
-		return EIO;
+		return ecRpcFailed;
 	pmessage->b_touched = TRUE;
-	return 0;
+	return ecSuccess;
 }
 
-ec_error_t message_object::save()
+ec_error_t message_object::save() try
 {
 	auto pmessage = this;
 	uint32_t result;
 	BINARY *pbin_pcl;
-	uint32_t *pgroup_id;
-	INDEX_ARRAY tmp_indices;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -308,8 +307,9 @@ ec_error_t message_object::save()
 		tmp_propvals.emplace_back(PR_PREDECESSOR_CHANGE_LIST, pbin_pcl);
 	}
 	
-	if (!message_object_set_properties_internal(pmessage, false, &tmp_propvals))
-		return ecError;
+	auto err = message_object_set_properties_internal(pmessage, false, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	
 	/* change number of embedding message is used for message
 		modification's check when the rop_savechangesmessage
@@ -347,76 +347,13 @@ ec_error_t message_object::save()
 		proptag_array_clear(pmessage->premoved_proptags);
 		return ecSuccess;
 	}
-	const property_groupinfo *pgpinfo = nullptr;
 	if (is_new)
 		goto SAVE_FULL_CHANGE;
-	if (!exmdb_client->get_message_group_id(dir,
-	    pmessage->message_id, &pgroup_id))
-		return ecError;
-	if (NULL == pgroup_id) {
-		pgpinfo = pmessage->pstore->get_last_property_groupinfo();
-		if (pgpinfo == nullptr)
-			return ecError;
-		if (!exmdb_client->set_message_group_id(dir,
-		    pmessage->message_id, pgpinfo->group_id))
-			return ecError;
-	}  else {
-		pgpinfo = pmessage->pstore->get_property_groupinfo(*pgroup_id);
-		if (pgpinfo == nullptr)
-			return ecError;
-	}
-	
 	if (!exmdb_client->mark_modified(dir, pmessage->message_id))
 		return ecError;
-	
-	{
-	std::unique_ptr<INDEX_ARRAY, pta_delete> pindices(proptag_array_init());
-	if (pindices == nullptr)
-		return ecServerOOM;
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
-	if (pungroup_proptags == nullptr)
-		return ecServerOOM;
-	/* always mark PR_MESSAGE_FLAGS as changed */
-	if (!proptag_array_append(pmessage->pchanged_proptags,
-	    PR_MESSAGE_FLAGS))
-		return ecError;
-	for (unsigned int i = 0; i < pmessage->pchanged_proptags->count; ++i) {
-		const auto tag = pmessage->pchanged_proptags->pproptag[i];
-		uint32_t tmp_index = 0;
-		if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
-			if (!proptag_array_append(pungroup_proptags.get(), tag))
-				return ecError;
-		} else {
-			if (!proptag_array_append(pindices.get(), tmp_index))
-				return ecError;
-		}
-	}
-	for (unsigned int i = 0; i < pmessage->premoved_proptags->count; ++i) {
-		const auto tag = pmessage->premoved_proptags->pproptag[i];
-		uint32_t tmp_index = 0;
-		if (!pgpinfo->get_partial_index(tag, &tmp_index))
-			goto SAVE_FULL_CHANGE;
-		else if (!proptag_array_append(pindices.get(), tmp_index))
-			return ecError;
-	}
-	if (!exmdb_client->save_change_indices(
-		dir, pmessage->message_id, pmessage->change_num,
-	    pindices.get(), pungroup_proptags.get()))
-		return ecError;
-	proptag_array_clear(pmessage->pchanged_proptags);
-	proptag_array_clear(pmessage->premoved_proptags);
-	return ecSuccess;
-	}
-	
  SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
-	tmp_indices.count = 0;
-	tmp_indices.pproptag = NULL;
-	if (!exmdb_client->save_change_indices(
-		dir, pmessage->message_id, pmessage->change_num,
-	    &tmp_indices, static_cast<PROPTAG_ARRAY *>(&tmp_indices)))
-		return ecError;
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
@@ -424,78 +361,82 @@ ec_error_t message_object::save()
 		exmdb_client->rule_new_message(dir, pinfo->get_username(),
 			pmessage->cpid, pmessage->folder_id, pmessage->message_id);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
-BOOL message_object::reload()
+ec_error_t message_object::reload()
 {
 	auto pmessage = this;
 	BOOL b_result;
 	uint64_t *pchange_num;
 	
 	if (pmessage->b_new)
-		return TRUE;
+		return ecSuccess;
 	if (!exmdb_client->reload_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &b_result) || !b_result)
-		return FALSE;	
+		return ecRpcFailed;
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	pmessage->b_touched = FALSE;
 	pmessage->change_num = 0;
 	if (pmessage->b_new)
-		return TRUE;
+		return ecSuccess;
 	if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, PidTagChangeNumber,
 	    reinterpret_cast<void **>(&pchange_num)) ||
 	    pchange_num == nullptr)
-		return FALSE;
+		return ecRpcFailed;
 	pmessage->change_num = *pchange_num;
-	return TRUE;
+	return ecSuccess;
 }
 
-static constexpr uint32_t trimtags[] = {
+static constexpr proptag_t trimtags[] = {
 	PidTagMid, PR_DISPLAY_TO, PR_DISPLAY_CC,
 	PR_DISPLAY_BCC, PR_MESSAGE_SIZE, PR_HASATTACH,
 	PR_CHANGE_KEY, PidTagChangeNumber,
 	PR_PREDECESSOR_CHANGE_LIST,
 };
 
-BOOL message_object::write_message(const MESSAGE_CONTENT *pmsgctnt)
+ec_error_t message_object::write_message(const MESSAGE_CONTENT &content)
 {
+	auto pmsgctnt = &content;
 	auto pmessage = this;
 	PROPTAG_ARRAY proptags;
-	MESSAGE_CONTENT msgctnt;
 	PROBLEM_ARRAY tmp_problems;
 	
-	msgctnt = *pmsgctnt;
+	auto msgctnt = content;
 	msgctnt.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count);
 	if (msgctnt.proplist.ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	memcpy(msgctnt.proplist.ppropval, pmsgctnt->proplist.ppropval,
 				sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
 	if (!exmdb_client->clear_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id))
-		return FALSE;
+		return ecRpcFailed;
 	if (!exmdb_client->write_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &msgctnt, TRUE, &proptags, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	pmessage->b_new = TRUE;
 	pmessage->b_touched = TRUE;
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL message_object::read_recipients(uint32_t row_id, uint16_t need_count,
+ec_error_t message_object::read_recipients(uint32_t row_id, uint16_t need_count,
     TARRAY_SET *pset)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_rcpts(pmessage->pstore->get_dir(),
-		pmessage->instance_id, row_id, need_count, pset);
+	       pmessage->instance_id, row_id, need_count, pset) ?
+	       ecSuccess : ecRpcFailed;
 }
 
-BOOL message_object::get_rowid_begin(uint32_t *pbegin_id)
+ec_error_t message_object::get_rowid_begin(uint32_t *pbegin_id)
 {
 	auto pmessage = this;
 	int last_rowid;
@@ -503,7 +444,7 @@ BOOL message_object::get_rowid_begin(uint32_t *pbegin_id)
 	
 	if (!exmdb_client->get_message_instance_rcpts(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, 0, 0xFFFF, &tmp_set))
-		return FALSE;	
+		return ecRpcFailed;
 	last_rowid = -1;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto prow_id = tmp_set.pparray[i]->get<int32_t>(PR_ROWID);
@@ -511,79 +452,83 @@ BOOL message_object::get_rowid_begin(uint32_t *pbegin_id)
 			last_rowid = *prow_id;
 	}
 	*pbegin_id = last_rowid + 1;
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL message_object::get_recipient_num(uint16_t *pnum)
+ec_error_t message_object::get_recipient_num(uint16_t *pnum)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_rcpts_num(pmessage->pstore->get_dir(),
-			pmessage->instance_id, pnum);
+	       pmessage->instance_id, pnum) ? ecSuccess : ecRpcFailed;
 }
 
-BOOL message_object::empty_rcpts()
+ec_error_t message_object::empty_rcpts()
 {
 	auto pmessage = this;
 	if (!exmdb_client->empty_message_instance_rcpts(pmessage->pstore->get_dir(),
 	    pmessage->instance_id))
-		return FALSE;	
+		return ecRpcFailed;
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
-		return TRUE;
-	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
-	return TRUE;
+		return ecSuccess;
+	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS))
+		return ecServerOOM;
+	return ecSuccess;
 }
 
-BOOL message_object::set_rcpts(const TARRAY_SET *pset)
+ec_error_t message_object::set_rcpts(const TARRAY_SET *pset)
 {
 	auto pmessage = this;
 	if (!exmdb_client->update_message_instance_rcpts(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, pset))
-		return FALSE;	
+		return ecRpcFailed;
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
-		return TRUE;
-	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
-	return TRUE;
+		return ecSuccess;
+	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS))
+		return ecServerOOM;
+	return ecSuccess;
 }
 
-BOOL message_object::get_attachments_num(uint16_t *pnum)
+ec_error_t message_object::get_attachments_num(uint16_t *pnum)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_attachments_num(pmessage->pstore->get_dir(),
-	       pmessage->instance_id, pnum);
+	       pmessage->instance_id, pnum) ? ecSuccess : ecRpcFailed;
 }
 
-BOOL message_object::delete_attachment(uint32_t attachment_num)
+ec_error_t message_object::delete_attachment(uint32_t attachment_num)
 {
 	auto pmessage = this;
 	if (!exmdb_client->delete_message_instance_attachment(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, attachment_num))
-		return FALSE;
+		return ecRpcFailed;
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
-		return TRUE;
-	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
-	return TRUE;
+		return ecSuccess;
+	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS))
+		return ecServerOOM;
+	return ecSuccess;
 }
 
-BOOL message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
+ec_error_t message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
 	return exmdb_client->get_message_instance_attachment_table_all_proptags(
-	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags);
+	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags) ?
+	       ecSuccess : ecRpcFailed;
 }
 
-BOOL message_object::query_attachment_table(const PROPTAG_ARRAY *pproptags,
+ec_error_t message_object::query_attachment_table(proptag_cspan pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	auto pmessage = this;
 	return exmdb_client->query_message_instance_attachment_table(
 	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags,
-	       start_pos, row_needed, pset);
+	       start_pos, row_needed, pset) ? ecSuccess : ecRpcFailed;
 }
 
-BOOL message_object::clear_unsent()
+ec_error_t message_object::clear_unsent()
 {
 	auto pmessage = this;
 	uint32_t result;
@@ -591,31 +536,33 @@ BOOL message_object::clear_unsent()
 	TAGGED_PROPVAL tmp_propval;
 	
 	if (pmessage->message_id == 0)
-		return FALSE;
+		return ecInvalidParam;
 	if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, PR_MESSAGE_FLAGS, reinterpret_cast<void **>(&pmessage_flags)))
-		return FALSE;	
+		return ecRpcFailed;
 	if (pmessage_flags == nullptr)
-		return TRUE;
+		return ecSuccess;
 	*pmessage_flags &= ~MSGFLAG_UNSENT;
 	tmp_propval.proptag = PR_MESSAGE_FLAGS;
 	tmp_propval.pvalue = pmessage_flags;
 	return exmdb_client_set_instance_property(pmessage->pstore->get_dir(),
-		pmessage->instance_id, &tmp_propval, &result);
+	       pmessage->instance_id, &tmp_propval, &result) ?
+	       ecSuccess : ecRpcFailed;
 }
 
-BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
+ec_error_t message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client->get_instance_all_proptags(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &tmp_proptags))
-		return FALSE;	
+		return ecRpcFailed;
 	pproptags->count = 0;
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 15);
 	if (pproptags->pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
+
 	for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
 		const auto tag = tmp_proptags.pproptag[i];
 		switch (tag) {
@@ -624,31 +571,25 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		case PidTagChangeNumber:
 			continue;
 		default:
-			pproptags->pproptag[pproptags->count++] = tag;
+			pproptags->emplace_back(tag);
 			break;
 		}
 	}
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
-	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
-	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
-	if (pmessage->pembedding == nullptr && !pproptags->has(PR_SOURCE_KEY))
-		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	if (!pproptags->has(PR_MESSAGE_LOCALE_ID))
-		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_LOCALE_ID;
-	if (!pproptags->has(PR_MESSAGE_CODEPAGE))
-		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_CODEPAGE;
-	return TRUE;
+	static constexpr proptag_t tags1[] = {
+		PR_ACCESS, PR_ENTRYID, PR_ACCESS_LEVEL, PR_OBJECT_TYPE,
+		PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY, PR_RECORD_KEY,
+		PR_STORE_RECORD_KEY, PR_MAPPING_SIGNATURE, PR_STORE_ENTRYID,
+		PR_MESSAGE_LOCALE_ID, PR_MESSAGE_CODEPAGE,
+	};
+	for (auto t : tags1)
+		pproptags->emplace_back_nd(t);
+	if (pmessage->pembedding == nullptr)
+		pproptags->emplace_back_nd(PR_SOURCE_KEY);
+	return ecSuccess;
 }
 
 static BOOL msgo_is_readonly_prop(const message_object *pmessage,
-   uint32_t proptag)
+   proptag_t proptag)
 { 
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
@@ -694,77 +635,78 @@ static BOOL msgo_is_readonly_prop(const message_object *pmessage,
 	return FALSE;
 }
 
-static BOOL message_object_get_calculated_property(message_object *pmessage,
-    uint32_t proptag, void **ppvalue)
+static ec_error_t message_object_get_calculated_property(message_object *pmessage,
+    proptag_t proptag, void **ppvalue)
 {
 	switch (proptag) {
 	case PR_ACCESS:
 		*ppvalue = &pmessage->tag_access;
-		return TRUE;
-	case PR_ACCESS_LEVEL:
-		*ppvalue = cu_alloc<uint32_t>();
+		return ecSuccess;
+	case PR_ACCESS_LEVEL: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (*ppvalue == nullptr)
-			return FALSE;
-		*static_cast<uint32_t *>(*ppvalue) = pmessage->b_writable ?
-			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
-		return TRUE;
+			return ecServerOOM;
+		*static_cast<uint32_t *>(*ppvalue) = pmessage->b_writable ? MAPI_MODIFY : 0;
+		return ecSuccess;
+	}
 	case PR_ENTRYID:
 		if (pmessage->message_id == 0)
-			return FALSE;
-		*ppvalue = cu_mid_to_entryid(pmessage->pstore,
+			return ecNotFound;
+		*ppvalue = cu_mid_to_entryid(*pmessage->pstore,
 						pmessage->folder_id, pmessage->message_id);
-		return TRUE;
+		return ecSuccess;
 	case PR_SOURCE_KEY:
 		if (pmessage->pembedding != nullptr)
-			return false;
-		*ppvalue = cu_mid_to_sk(pmessage->pstore, pmessage->message_id);
-		return TRUE;
+			return ecNotFound;
+		*ppvalue = cu_mid_to_sk(*pmessage->pstore, pmessage->message_id);
+		return ecSuccess;
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (v == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = static_cast<uint32_t>(MAPI_MESSAGE);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_PARENT_ENTRYID:
 		if (pmessage->message_id == 0)
-			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pmessage->pstore, pmessage->folder_id);
-		return TRUE;
+			return ecNotFound;
+		*ppvalue = cu_fid_to_entryid(*pmessage->pstore, pmessage->folder_id);
+		return ecSuccess;
 	case PidTagFolderId:
 	case PidTagParentFolderId:
 		if (pmessage->message_id == 0)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = &pmessage->folder_id;
-		return TRUE;
+		return ecSuccess;
 	case PR_PARENT_SOURCE_KEY:
-		*ppvalue = cu_fid_to_sk(pmessage->pstore, pmessage->folder_id);
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		*ppvalue = cu_fid_to_sk(*pmessage->pstore, pmessage->folder_id);
+		return *ppvalue != nullptr ? ecSuccess : ecNotFound;
 	case PidTagMid:
 		if (pmessage->message_id == 0)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = &pmessage->message_id;
-		return TRUE;
+		return ecSuccess;
 	case PR_RECORD_KEY:
 		if (pmessage->message_id == 0)
-			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pmessage->pstore, pmessage->message_id);
-		return TRUE;
+			return ecNotFound;
+		*ppvalue = cu_fid_to_entryid(*pmessage->pstore, pmessage->message_id);
+		return ecSuccess;
 	case PR_STORE_RECORD_KEY:
-	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pmessage->pstore->mailbox_guid);
-		return TRUE;
+		return ecSuccess;
+	case PR_MAPPING_SIGNATURE:
+		*ppvalue = common_util_guid_to_binary(pmessage->pstore->mapping_signature);
+		return ecSuccess;
 	case PR_STORE_ENTRYID:
-		*ppvalue = common_util_to_store_entryid(pmessage->pstore);
-		return *ppvalue != nullptr ? TRUE : false;
+		*ppvalue = cu_to_store_entryid(*pmessage->pstore);
+		return *ppvalue != nullptr ? ecSuccess : ecNotFound;
 	}
-	return FALSE;
+	return ecNotFound;
 }
 
-BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
+ec_error_t message_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto pmessage = this;
@@ -772,46 +714,53 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t lcid_default = 0x409; /* en-US */
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropvals->count = 0;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
+		static constexpr proptag_t err_memory = ecMAPIOOM, err_generic = ecError;
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
-		if (!message_object_get_calculated_property(pmessage, tag, &pvalue))
+		auto err = message_object_get_calculated_property(pmessage, tag, &pvalue);
+		if (err == ecNotFound)
 			tmp_proptags.emplace_back(tag);
+		else if (err == ecServerOOM || err == ecMAPIOOM)
+			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_memory);
+		else if (err != ecSuccess)
+			/* never executed, so just here as a placeholder */
+			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_generic);
 		else if (pvalue != nullptr)
 			ppropvals->emplace_back(tag, pvalue);
 		else
-			return false;
+			return ecNotFound;
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	if (!exmdb_client->get_instance_properties(pmessage->pstore->get_dir(),
-	    pmessage->cpid, pmessage->instance_id, &tmp_proptags, &tmp_propvals))
-		return FALSE;	
+	    pmessage->cpid, pmessage->instance_id, tmp_proptags, &tmp_propvals))
+		return ecRpcFailed;
 	if (tmp_propvals.count > 0) {
 		memcpy(ppropvals->ppropval +
 			ppropvals->count, tmp_propvals.ppropval,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
 	}
-	if (pproptags->has(PR_MESSAGE_LOCALE_ID) &&
+	if (pproptags.has(PR_MESSAGE_LOCALE_ID) &&
 	    !ppropvals->has(PR_MESSAGE_LOCALE_ID))
 		ppropvals->emplace_back(PR_MESSAGE_LOCALE_ID, &lcid_default);
-	if (pproptags->has(PR_MESSAGE_CODEPAGE) &&
+	if (pproptags.has(PR_MESSAGE_CODEPAGE) &&
 	    !ppropvals->has(PR_MESSAGE_CODEPAGE))
 		ppropvals->emplace_back(PR_MESSAGE_CODEPAGE, &pmessage->cpid);
-	return TRUE;	
+	return ecSuccess;
 }
 
-static BOOL message_object_set_properties_internal(message_object *pmessage,
-    BOOL b_check, const TPROPVAL_ARRAY *ppropvals) try
+static ec_error_t message_object_set_properties_internal(message_object *pmessage,
+    bool b_check, const TPROPVAL_ARRAY *ppropvals) try
 {
 	uint8_t tmp_bytes[3];
 	PROBLEM_ARRAY problems;
@@ -821,15 +770,15 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	TAGGED_PROPVAL propval_buff[3];
 	
 	if (!pmessage->b_writable)
-		return FALSE;
+		return ecAccessDenied;
 	problems.count = 0;
 	problems.pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (problems.pproblem == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (tmp_propvals.ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	std::vector<uint16_t> poriginal_indices;
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
@@ -841,7 +790,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 				void *pvalue = nullptr;
 				if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
-					return FALSE;	
+					return ecRpcFailed;
 				if (pvb_disabled(pvalue)) {
 					problems.pproblem[problems.count++].index = i;
 					continue;
@@ -864,23 +813,25 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 				tmp_bytes[2] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_NRN_PENDING);
 				if (!exmdb_client->set_instance_properties(pmessage->pstore->get_dir(),
 				    pmessage->instance_id, &tmp_propvals1, &tmp_problems))
-					return FALSE;	
+					return ecRpcFailed;	
 			}
 		}
 		tmp_propvals.ppropval[tmp_propvals.count++] = pv;
 		poriginal_indices.push_back(i);
 	}
 	if (tmp_propvals.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	if (!exmdb_client->set_instance_properties(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &tmp_propvals, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	if (tmp_problems.count > 0) {
 		tmp_problems.transform(poriginal_indices);
 		problems += std::move(tmp_problems);
 	}
 	if (pmessage->b_new || pmessage->message_id == 0)
-		return TRUE;
+		return ecSuccess;
+
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		if (problems.have_index(i))
 			continue;
@@ -889,22 +840,20 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		proptag_array_remove(
 			pmessage->premoved_proptags, proptag);
 		if (!proptag_array_append(pmessage->pchanged_proptags, proptag))
-			return FALSE;	
+			return ecServerOOM;
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1748: ENOMEM");
-	return false;
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
-BOOL message_object::set_properties(TPROPVAL_ARRAY *ppropvals)
+ec_error_t message_object::set_properties(TPROPVAL_ARRAY *ppropvals)
 {
-	auto pmessage = this;
-	return message_object_set_properties_internal(
-						pmessage, TRUE, ppropvals);
+	return message_object_set_properties_internal(this, true, ppropvals);
 }
 
-BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags) try
+ec_error_t message_object::remove_properties(proptag_cspan pproptags) try
 {
 	auto pmessage = this;
 	PROBLEM_ARRAY problems;
@@ -912,54 +861,56 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags) try
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!pmessage->b_writable)
-		return FALSE;
+		return ecAccessDenied;
 	problems.count = 0;
-	problems.pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
+	problems.pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags.size());
 	if (problems.pproblem == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	std::vector<uint16_t> poriginal_indices;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
+		const auto tag = pproptags[i];
 		if (msgo_is_readonly_prop(pmessage, tag)) {
 			problems.pproblem[problems.count++].index = i;
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] = tag;
+		tmp_proptags.emplace_back(tag);
 		poriginal_indices.push_back(i);
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	if (!exmdb_client->remove_instance_properties(pmessage->pstore->get_dir(),
-	    pmessage->instance_id, &tmp_proptags, &tmp_problems))
-		return FALSE;	
+	    pmessage->instance_id, tmp_proptags, &tmp_problems))
+		return ecRpcFailed;
 	if (tmp_problems.count > 0) {
 		tmp_problems.transform(poriginal_indices);
 		problems += std::move(tmp_problems);
 	}
 	if (pmessage->b_new || pmessage->message_id == 0)
-		return TRUE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		return ecSuccess;
+
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
 		if (problems.have_index(i))
 			continue;
 		pmessage->b_touched = TRUE;
-		const auto proptag = pproptags->pproptag[i];
+		const auto proptag = pproptags[i];
 		proptag_array_remove(
 			pmessage->pchanged_proptags, proptag);
 		if (!proptag_array_append(pmessage->premoved_proptags, proptag))
-			return FALSE;	
+			return ecServerOOM;
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1749: ENOMEM");
-	return false;
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
-BOOL message_object::copy_to(message_object *pmessage_src,
-    const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force, BOOL *pb_cycle)
+ec_error_t message_object::copy_to(message_object *pmessage_src,
+    proptag_cspan pexcluded_proptags, BOOL b_force, BOOL *pb_cycle)
 {
 	auto pmessage = this;
 	PROPTAG_ARRAY proptags;
@@ -970,38 +921,39 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	if (strcmp(pstore->get_dir(), pmessage_src->pstore->get_dir()) == 0 &&
 	    !exmdb_client->is_descendant_instance(pmessage->pstore->get_dir(),
 	    pmessage_src->instance_id, pmessage->instance_id, pb_cycle))
-		return FALSE;	
+		return ecRpcFailed;
 	if (*pb_cycle)
-		return TRUE;
+		return ecSuccess;
 	if (!exmdb_client->read_message_instance(pmessage_src->pstore->get_dir(),
 	    pmessage_src->instance_id, &msgctnt))
-		return FALSE;
+		return ecRpcFailed;
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
 	for (unsigned int i = 0; i < msgctnt.proplist.count; ) {
-		if (pexcluded_proptags->has(msgctnt.proplist.ppropval[i].proptag)) {
+		if (pexcluded_proptags.has(msgctnt.proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&msgctnt.proplist,
 					msgctnt.proplist.ppropval[i].proptag);
 			continue;
 		}
 		i ++;
 	}
-	if (pexcluded_proptags->has(PR_MESSAGE_RECIPIENTS))
+	if (pexcluded_proptags.has(PR_MESSAGE_RECIPIENTS))
 		msgctnt.children.prcpts = NULL;
-	if (pexcluded_proptags->has(PR_MESSAGE_ATTACHMENTS))
+	if (pexcluded_proptags.has(PR_MESSAGE_ATTACHMENTS))
 		msgctnt.children.pattachments = NULL;
 	if (!exmdb_client->write_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &msgctnt, b_force, &proptags, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	if (pmessage->b_new || pmessage->message_id == 0)
-		return TRUE;
+		return ecSuccess;
 	for (unsigned int i = 0; i < proptags.count; ++i)
-		proptag_array_append(pmessage->pchanged_proptags,
-			proptags.pproptag[i]);
-	return TRUE;
+		if (!proptag_array_append(pmessage->pchanged_proptags,
+		    proptags.pproptag[i]))
+			return ecServerOOM;
+	return ecSuccess;
 }
 
-BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
+ec_error_t message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 {
 	auto pmessage = this;
 	void *pvalue;
@@ -1030,7 +982,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	case rfSuppressReceipt:
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_READ, &pvalue))
-			return FALSE;	
+			return ecRpcFailed;
 		if (pvb_enabled(pvalue))
 			break;
 		tmp_byte = 1;
@@ -1040,7 +992,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id,
 		    PR_READ_RECEIPT_REQUESTED, &pvalue))
-			return FALSE;
+			return ecRpcFailed;
 		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
 		break;
@@ -1048,7 +1000,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	case rfClearReadFlag | rfSuppressReceipt:
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_READ, &pvalue))
-			return FALSE;
+			return ecRpcFailed;
 		if (!pvb_enabled(pvalue))
 			break;
 		tmp_byte = 0;
@@ -1058,7 +1010,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED,
 		    &pvalue))
-			return FALSE;
+			return ecRpcFailed;
 		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
 		break;
@@ -1069,64 +1021,64 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			if (!exmdb_client_remove_instance_property(dir,
 			    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED,
 			    &result))
-				return FALSE;	
+				return ecRpcFailed;
 			if (exmdb_client_get_message_property(dir, username, CP_ACP,
 			    pmessage->message_id, PR_READ_RECEIPT_REQUESTED,
 			    &pvalue) && pvb_enabled(pvalue) &&
 			    !exmdb_client_remove_message_property(dir,
 			    pmessage->cpid, pmessage->message_id,
 			    PR_READ_RECEIPT_REQUESTED))
-				return FALSE;
+				return ecRpcFailed;
 		}
 		if (read_flag & rfClearNotifyUnread) {
 			if (!exmdb_client_remove_instance_property(dir,
 			    pmessage->instance_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED,
 			    &result))
-				return FALSE;	
+				return ecRpcFailed;
 			if (exmdb_client_get_message_property(dir, username, CP_ACP,
 			    pmessage->message_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED,
 			    &pvalue) && pvb_enabled(pvalue) &&
 			    !exmdb_client_remove_message_property(dir,
 			    pmessage->cpid, pmessage->message_id,
 			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED))
-				return FALSE;
+				return ecRpcFailed;
 		}
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_MESSAGE_FLAGS,
 		    &pvalue) || pvalue == nullptr)
-			return FALSE;	
+			return ecRpcFailed;
 		auto v = static_cast<uint32_t *>(pvalue);
 		if (!(*v & MSGFLAG_UNMODIFIED))
-			return TRUE;
+			return ecSuccess;
 		*v &= ~MSGFLAG_UNMODIFIED;
 		propval.proptag = PR_MESSAGE_FLAGS;
 		propval.pvalue = v;
 		if (!exmdb_client_set_instance_property(dir,
 		    pmessage->instance_id, &propval, &result))
-			return FALSE;
+			return ecRpcFailed;
 		if (!exmdb_client->mark_modified(dir, pmessage->message_id))
-			return FALSE;
-		return TRUE;
+			return ecRpcFailed;
+		return ecSuccess;
 	}
 	default:
-		return TRUE;
+		return ecSuccess;
 	}
 	if (*pb_changed) {
 		if (!exmdb_client->set_message_read_state(dir, username,
 		    pmessage->message_id, tmp_byte, &read_cn))
-			return FALSE;
+			return ecRpcFailed;
 		propval.proptag = PR_READ;
 		propval.pvalue = &tmp_byte;
 		if (!exmdb_client_set_instance_property(dir,
 		    pmessage->instance_id, &propval, &result))
-			return FALSE;	
+			return ecRpcFailed;
 		if (result != 0)
-			return TRUE;
+			return ecSuccess;
 	}
 	if (b_notify) {
 		if (!exmdb_client->get_message_brief(dir, pmessage->cpid,
 		    pmessage->message_id, &pbrief))
-			return FALSE;	
+			return ecRpcFailed;
 		if (pbrief != nullptr)
 			common_util_notify_receipt(pmessage->pstore->get_account(),
 				NOTIFY_RECEIPT_READ, pbrief);
@@ -1136,10 +1088,12 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		propval_buff[0].pvalue = deconst(&fake_false);
 		propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		propval_buff[1].pvalue = deconst(&fake_false);
-		exmdb_client->set_instance_properties(dir,
-			pmessage->instance_id, &propvals, &problems);
-		exmdb_client->set_message_properties(dir, username,
-			CP_ACP, pmessage->message_id, &propvals, &problems);
+		if (!exmdb_client->set_instance_properties(dir,
+		    pmessage->instance_id, &propvals, &problems))
+			return ecRpcFailed;
+		if (!exmdb_client->set_message_properties(dir, username,
+		    CP_ACP, pmessage->message_id, &propvals, &problems))
+			return ecRpcFailed;
 	}
-	return TRUE;
+	return ecSuccess;
 }

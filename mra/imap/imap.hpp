@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <ctime>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -36,6 +37,10 @@ enum {
 	DISPATCH_ACTMASK = 0xFF000000U,
 };
 
+enum {
+	M_UNSPECIFIED_CONN, M_UNENCRYPTED_CONN, M_TLS_CONN,
+};
+
 enum class iproto_stat {
 	none = 0, noauth, username, password, auth, select,
 };
@@ -62,12 +67,6 @@ enum {
 struct MJSON_MIME;
 struct XARRAY;
 struct XARRAY_UNIT;
-
-struct DIR_NODE {
-	SIMPLE_TREE_NODE stree;
-	BOOL b_loaded;
-	char name[256];
-};
 
 struct imap_context;
 struct content_array final : public XARRAY {
@@ -105,7 +104,7 @@ struct imap_context final : public schedule_context {
 	time_t selected_time = 0;
 	std::string selected_folder;
 	content_array contents;
-	std::string wrdat_backing;
+	std::optional<std::string> wrdat_backing;
 	const std::string *wrdat_content = nullptr;
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	std::atomic<unsigned int> async_change_mask{0};
@@ -146,7 +145,6 @@ extern void imap_parser_add_select(imap_context *);
 extern void imap_parser_bcast_expunge(const imap_context &, const std::vector<MITEM *> &);
 extern void imap_parser_remove_select(imap_context *);
 extern  void imap_parser_safe_write(imap_context *, const void *pbuff, size_t count);
-extern int imap_parser_get_sequence_ID();
 extern void imap_parser_log_info(imap_context *, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
 extern void icp_clsfld(imap_context &);
@@ -172,8 +170,8 @@ extern int icp_xlist(int argc, char **argv, imap_context &);
 extern int icp_lsub(int argc, char **argv, imap_context &);
 extern int icp_status(int argc, char **argv, imap_context &);
 extern int icp_append(int argc, char **argv, imap_context &);
-extern int icp_append_begin(int argc, char **argv, imap_context &);
-extern int icp_append_end(int argc, char **argv, imap_context &);
+extern int icp_long_append_begin(int argc, char **argv, imap_context &);
+extern int icp_long_append_end(int argc, char **argv, imap_context &);
 extern int icp_check(int argc, char **argv, imap_context &);
 extern int icp_close(int argc, char **argv, imap_context &);
 extern int icp_expunge(int argc, char **argv, imap_context &);
@@ -211,7 +209,6 @@ extern void (*system_services_broadcast_select)(const char *, const std::string 
 extern void (*system_services_broadcast_unselect)(const char *, const std::string &fld);
 
 extern std::shared_ptr<CONFIG_FILE> g_config_file;
-extern uint16_t g_listener_ssl_port;
 extern unsigned int g_imapcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
 extern bool g_support_tls, g_force_tls, g_rfc9051_enable;

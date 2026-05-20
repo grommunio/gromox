@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 .TH gromox.cfg 5 "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox.cfg \(em Central configuration file for Gromox services
@@ -27,7 +27,7 @@ Try to fill the PR_TRANSPORT_MESSAGE_HEADERS property when messages are
 submitted.
 Turning this option on requires extra storage (usually between 0.5KB and 1KB
 per sent message). Transport headers for sent messages can be generated on the
-fly from the regular MAPI message data structures e.g. via gromox-exm2eml(8)
+fly from the regular MAPI message data structures e.g. via gromox\-export(8)
 for analysis, so unless there is a need to retain the results from older
 generator versions, you should leave this off.
 .br
@@ -47,12 +47,68 @@ unqualified hostname in /etc/hosts that many system installations use).
 .br
 Default: \fIpostmaster@\fP
 .TP
+\fBlda_junk_rules\fP
+A semicolon-separated list of header/value matches that make delivery(8) place
+incoming messages into the junk folder rather than Inbox. Each entry in this
+list has the form \fIHeader=val\fP (`:` may be used in place of `=`).
+Header names and values are compared case-insensitively. Values are checked
+both against the full header value and individual comma/semicolon separated
+tokens; use \fB*\fP or an empty value to match any header value.
+.br
+Default: (empty)
+.br
+Example: \fIX-Spam-Flag=YES; X-Spam=yes; X-Spam=1\fP
+.TP
 \fBexmdb_client_rpc_timeout\fP
 If the execution of an RPC takes longer than the specified time, the client
 will sever the connection and return an error to the calling program. The value
 cannot be lower than 4s. The special value 0 disabled RPC timeout checking.
 .br
 Default: \fI0\fP
+.TP
+\fBoutgoing_smtp_url\fP
+A string which selects how outgoing messages are handed to a mail transfer
+agent. The syntax follows the Common Internet Scheme for URIs (RFC 1738 section
+3.1), so something like "sendmail://localhost" or "smtp://[::1]:25/" can be
+used.
+.br
+The sendmail:// transport selects the local maildrop queue (hostname is
+ignored). Maildrop is perhaps best known to administrators by the command
+/usr/sbin/sendmail. This transport is the most robust one, because local
+maildrop implementations generally accept messages even if the MTA is not
+running (assuming everything else is fine, e.g. there is enough free disk
+space). Partial Delivery Failure handling then is also the MTA's
+responsibility, and the MTA will consistently emit NDR/DSN for unreachable
+recipients.
+.br
+Other recognized schemes are smtp:, smtp+tls: (STARTTLS), smtp+unverifiedtls:
+(STARTTLS but ignore validation issues) and smtps: (always-on/implicit TLS).
+These are only meant for developers who want to avoid running an MTA for having
+faster turnarounds. All SMTP transport drivers are \fBlocally unqueued\fP,
+which means that, if the SMTP server is unavailable due to network issues,
+pressing the "Send" button will immediately produce an error in always-online
+MUAs, and the user has to save the message as a draft and try again later on
+their own accord. MAPI also has no way to be conveyed Partial Delivery Failure
+occuring in SMTP conversations, so a multi-recipient message with one bad
+recipient can lead to three bad characteristics all at once: valid recipients
+will receive a message copy; the sender got the Send button error; no
+Non-Delivery Report is generated for users in the local mail system. The proper
+way to use a custom outgoing SMTP server is to configre the localhost MTA to
+perform relaying.
+.br
+Default: \fIsendmail://localhost\fP
+.TP
+\fBruleproc_debug\fP
+Make the "TWOSTEP" Client-Side Inbox Rule Processor emit information about the
+conditions it is evaluating and the actions it is carrying out. The surrounding
+process also needs to have log level set to at least 6 (debug) to see anything,
+i.e. delivery.cfg:lda_log_level=6 in case of delivery(8gx), or \-\-loglevel=6
+in case of command-line tools like case of gromox\-import(8). [The Rule
+Processor implementation inside exmdb_provider(8gx) logs unconditionally, and
+its log messages will be seen, provided level 6 is set with
+http.cfg:http_log_level=6.]
+.br
+Default: \fIoff\fP
 .TP
 \fBreported_server_version\fP
 .br

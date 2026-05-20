@@ -29,7 +29,7 @@ enum class tproc_status {
 };
 
 /* enumeration for indicating events of threads e.g. thread create or destroy */
-enum{
+enum {
 	THREAD_CREATE,
 	THREAD_DESTROY
 };

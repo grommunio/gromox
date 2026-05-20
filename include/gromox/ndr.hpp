@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <optional>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -37,6 +38,7 @@ struct GX_EXPORT NDR_PULL {
 	pack_result union_align(size_t);
 	pack_result trailer_align(size_t);
 	pack_result g_str(char *v, uint32_t z);
+	pack_result g_str(std::string *v, size_t z);
 	pack_result g_uint8(uint8_t *);
 	pack_result g_uint16(uint16_t *);
 	pack_result g_int32(int32_t *);
@@ -46,7 +48,7 @@ struct GX_EXPORT NDR_PULL {
 	pack_result g_float(float *);
 	pack_result g_double(double *);
 	pack_result g_ulong(uint32_t *);
-	pack_result g_uint8_a(uint8_t *v, uint32_t z);
+	pack_result g_bytes(void *v, uint32_t z) __attribute__((nonnull(2)));
 	pack_result g_guid(GUID *);
 	pack_result g_syntax(SYNTAX_ID *);
 	pack_result g_blob(DATA_BLOB *);
@@ -59,9 +61,11 @@ struct GX_EXPORT NDR_PULL {
 };
 
 struct GX_EXPORT NDR_PUSH {
-	void init(void *d, uint32_t asize, uint32_t fl);
+	NDR_PUSH() = default;
+	~NDR_PUSH();
+	NOMOVE(NDR_PUSH);
+	bool init(void *d, uint32_t asize, uint32_t fl, const EXT_BUFFER_MGT * = nullptr);
 	void set_ptrcnt(uint32_t c) { ptr_count = c; }
-	void destroy();
 	pack_result align(size_t);
 	pack_result union_align(size_t);
 	pack_result trailer_align(size_t);
@@ -76,15 +80,21 @@ struct GX_EXPORT NDR_PUSH {
 	pack_result p_float(float);
 	pack_result p_double(double);
 	pack_result p_ulong(uint32_t);
-	pack_result p_uint8_a(const uint8_t *v, uint32_t z);
+	pack_result p_bytes(const void *v, uint32_t z); /* nullptr is allowed */
+	pack_result p_bytes(std::string_view);
 	pack_result p_guid(const GUID &);
 	pack_result p_syntax(const SYNTAX_ID &);
 	pack_result p_blob(DATA_BLOB);
 	pack_result p_zero(uint32_t z);
 	pack_result p_unique_ptr(const void *v);
+	template<typename T> pack_result p_unique_ptr(const std::optional<T> &x)
+	{
+		return p_unique_ptr(x.has_value() ? &*x : nullptr);
+	}
 	pack_result p_ctx_handle(const CONTEXT_HANDLE &);
 
 	uint8_t *data = nullptr;
 	uint32_t flags = 0, alloc_size = 0, offset = 0, ptr_count = 0;
 	DOUBLE_LIST full_ptr_list{};
+	EXT_BUFFER_MGT m_mgt{};
 };

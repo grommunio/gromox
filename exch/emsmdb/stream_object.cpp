@@ -19,7 +19,7 @@
 using namespace gromox;
 
 std::unique_ptr<stream_object> stream_object::create(void *pparent,
-    ems_objtype object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length)
+    ems_objtype object_type, uint32_t open_flags, proptag_t proptag, uint32_t max_length)
 {
 	TPROPVAL_ARRAY propvals;
 	std::unique_ptr<stream_object> pstream;
@@ -36,9 +36,9 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	pstream->max_length = max_length;
 	switch (object_type) {
 	case ems_objtype::message: {
-		const proptag_t proptag_buff[] = {proptag, PR_MESSAGE_SIZE};
-		const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-		if (!static_cast<message_object *>(pparent)->get_properties(0, &proptags, &propvals))
+		const proptag_t proptags[] = {proptag, PR_MESSAGE_SIZE};
+		auto msg = static_cast<message_object *>(pparent);
+		if (msg->get_properties(0, proptags, &propvals) != ecSuccess)
 			return NULL;
 		auto psize = propvals.get<uint32_t>(PR_MESSAGE_SIZE);
 		if (psize != nullptr && *psize >= g_max_mail_len)
@@ -46,9 +46,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		break;
 	}
 	case ems_objtype::attach: {
-		const proptag_t proptag_buff[] = {proptag, PR_ATTACH_SIZE};
-		const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-		if (!static_cast<attachment_object *>(pparent)->get_properties(0, &proptags, &propvals))
+		const proptag_t proptags[] = {proptag, PR_ATTACH_SIZE};
+		if (!static_cast<attachment_object *>(pparent)->get_properties(0, proptags, &propvals))
 			return NULL;
 		auto psize = propvals.get<uint32_t>(PR_ATTACH_SIZE);
 		if (psize != nullptr && *psize >= g_max_mail_len)
@@ -56,27 +55,28 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		break;
 	}
 	case ems_objtype::folder: {
-		const PROPTAG_ARRAY proptags = {1, &proptag};
-		if (!static_cast<const folder_object *>(pparent)->get_properties(&proptags, &propvals))
+		const proptag_cspan proptags = {&proptag, 1};
+		if (!static_cast<const folder_object *>(pparent)->get_properties(proptags, &propvals))
 			return NULL;
 		break;
 	}
 	default:
 		return NULL;
 	}
-	auto pvalue = propvals.getval(proptag);
-	if (NULL == pvalue) {
-		if (!(open_flags & MAPI_CREATE)) {
+	void *pvalue = nullptr;
+	if (open_flags & MAPI_CREATE) {
+		pstream->content_bin.cb = 0;
+		pstream->content_bin.pv = malloc(1);
+		if (pstream->content_bin.pv == nullptr)
+			return NULL;
+		return pstream;
+	} else {
+		pvalue = propvals.getval(proptag);
+		if (pvalue == nullptr) {
 			/* cannot find proptag, return immediately to
 			caller and the caller check the result by
 			calling stream_object_check */
 			pstream->content_bin.pb = NULL;
-			return pstream;
-		} else {
-			pstream->content_bin.cb = 0;
-			pstream->content_bin.pv = malloc(1);
-			if (pstream->content_bin.pv == nullptr)
-				return NULL;
 			return pstream;
 		}
 	}
@@ -154,8 +154,10 @@ std::pair<uint16_t, ec_error_t> stream_object::write(void *pbuff, uint16_t buf_l
 		if (!static_cast<attachment_object *>(pstream->pparent)->append_stream_object(pstream))
 			return {0, ecServerOOM};
 	} else if (pstream->object_type == ems_objtype::message) {
-		if (!static_cast<message_object *>(pstream->pparent)->append_stream_object(pstream))
-			return {0, ecServerOOM};
+		auto msg = static_cast<message_object *>(pstream->pparent);
+		auto err = msg->append_stream_object(pstream);
+		if (err != ecSuccess)
+			return {0, err};
 	}
 	memcpy(pstream->content_bin.pb +
 		pstream->seek_ptr, pbuff, buf_len);
@@ -172,6 +174,7 @@ const void *stream_object::get_content() const
 	
 	switch (PROP_TYPE(pstream->proptag)) {
 	case PT_BINARY:
+	case PT_OBJECT:
 		return &pstream->content_bin;
 	case PT_STRING8:
 		return pstream->content_bin.pb;

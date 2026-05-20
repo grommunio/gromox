@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cstdint>
@@ -101,7 +101,9 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	repr_srch.cb = repr_skb.size() + 1;
 	repr_srch.pv = deconst(repr_skb.c_str());
 	char msgid[UADDR_SIZE+2];
-	make_inet_msgid(msgid, std::size(msgid), 0x4553);
+	auto err = make_inet_msgid(msgid, std::size(msgid), 0x4553);
+	if (err != ecSuccess)
+		return err;
 	TAGGED_PROPVAL pv[] = {
 		{PR_READ, &tmp_byte},
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
@@ -122,67 +124,69 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
-	if (!pmessage->set_properties(&tmp_propvals, &tmp_problems))
-		return ecRpcFailed;
+	err = pmessage->set_properties(&tmp_propvals, &tmp_problems);
+	if (err != ecSuccess)
+		return err;
 	return pmessage->save();
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1166: ENOMEM");
-	return ecRpcFailed;
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 /**
+ * Inspects a message that a delegate (secretary) wants to submit.
+ *
  * Returns:
- * - %true and @username is empty: no delegation was requested
- * - %true and @username is set: delegation with given identity;
+ * - ecSuccess and @username is empty: no delegation
+ * - ecSuccess and @username is set: delegator ("boss") extracted and
  *   identity guaranteed to exist; caller still needs to perform a
  *   permission check.
- * - %false: unable to contact server,
- *   or requested identity not present in the system
+ * - other error codes: unable to contact server,
+ *   or requested identity (boss) not present in the system
  */
-static bool oxomsg_extract_delegate(message_object *pmessage,
-    std::string &username)
+static ec_error_t oxomsg_extract_delegator(message_object *pmessage,
+    std::string &username) try
 {
-	static constexpr proptag_t proptag_buff[] =
+	static constexpr proptag_t tmp_proptags[] =
 		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
-	static constexpr PROPTAG_ARRAY tmp_proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
-		return FALSE;	
+	auto err = pmessage->get_properties(0, tmp_proptags, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	if (0 == tmp_propvals.count) {
 		username.clear();
-		return TRUE;
+		return ecSuccess;
 	}
 	auto addrtype = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
 	auto emaddr   = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (addrtype != nullptr) {
-		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
-		           g_emsmdb_org_name, cu_id2user, username);
-		if (ret == ecSuccess)
-			return true;
-		else if (ret != ecNullObject)
-			return false;
+		err = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
+		      g_emsmdb_org_name, mysql_adaptor_userid_to_name, username);
+		if (err != ecNullObject)
+			return err;
 	}
 	auto str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr && *str != '\0') {
 		username = str;
-		return TRUE;
+		return ecSuccess;
 	}
-	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
-	           g_emsmdb_org_name, cu_id2user, username);
-	if (ret == ecSuccess)
-		return TRUE;
-	if (ret == ecNullObject) {
+	err = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
+	      g_emsmdb_org_name, mysql_adaptor_userid_to_name, username);
+	if (err == ecSuccess)
+		return ecSuccess;
+	if (err == ecNullObject) {
 		username.clear();
-		return TRUE;
+		return ecSuccess;
 	}
 	mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because "
 		"its PR_SENT_REPRESENTING_ENTRYID does not reference "
 		"a user in the local system",
 		static_cast<unsigned long long>(pmessage->message_id));
-	return false;
+	return ecAccessDenied;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 /**
@@ -190,21 +194,17 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
  */
 static int oxomsg_test_perm(const char *account, const char *maildir, bool send_as) try
 {
-	auto dlg_path = maildir + std::string(send_as ? "/config/sendas.txt" : "/config/delegates.txt");
 	std::vector<std::string> delegate_list;
-	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
-	if (ret != 0 && ret != ENOENT) {
-		mlog(LV_ERR, "E-2064: %s: %s", dlg_path.c_str(), strerror(ret));
-		return ret;
-	}
+	if (!exmdb_client->read_delegates(maildir, send_as, &delegate_list))
+		return -1;
 	for (const auto &deleg : delegate_list)
 		if (strcasecmp(deleg.c_str(), account) == 0 ||
 		    mysql_adaptor_check_mlist_include(deleg.c_str(), account))
 			return 1;
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1500: ENOMEM");
-	return false;
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return -1;
 }
 
 /**
@@ -218,6 +218,8 @@ static repr_grant oxomsg_get_perm(const char *account, const char *repr)
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(repr, WANTPRIV_METAONLY, mres) != 0)
 		return repr_grant::error;
+	if (strcasecmp(account, mres.username.c_str()) == 0)
+		return repr_grant::send_as;
 	auto repdir = mres.maildir.c_str();
 	auto ret = oxomsg_test_perm(account, repdir, true);
 	if (ret < 0)
@@ -264,7 +266,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return ecError;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -274,7 +276,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecAccessDenied;
 	}
 
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -295,15 +297,16 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
-	if (!pmessage->get_recipient_num(&rcpt_num))
-		return ecError;
+	auto err = pmessage->get_recipient_num(&rcpt_num);
+	if (err != ecSuccess)
+		return err;
 	if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
 
-	static constexpr proptag_t ptbuf_one[] = {PR_ASSOCIATED, PR_MESSAGE_CLASS};
-	static constexpr PROPTAG_ARRAY ptags_one = {std::size(ptbuf_one), deconst(ptbuf_one)};
-	if (!pmessage->get_properties(0, &ptags_one, &tmp_propvals))
-		return ecError;
+	static constexpr proptag_t ptags_one[] = {PR_ASSOCIATED, PR_MESSAGE_CLASS};
+	err = pmessage->get_properties(0, ptags_one, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0) {
@@ -312,34 +315,33 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
-	std::string username;
-	if (!oxomsg_extract_delegate(pmessage, username))
-		return ecError;
-	auto account = plogon->get_account();
+	std::string delegator;
+	err = oxomsg_extract_delegator(pmessage, delegator);
+	if (err != ecSuccess)
+		return err;
+	auto actor = plogon->get_account();
 	repr_grant repr_grant;
-	if (username.empty()) {
+	if (delegator.empty()) {
 		/* "No impersonation requested" is modeled as {impersonate yourself}. */
-		username = account;
+		delegator = actor;
 		repr_grant = repr_grant::send_as;
 	} else {
-		repr_grant = oxomsg_get_perm(account, username.c_str());
+		repr_grant = oxomsg_get_perm(actor, delegator.c_str());
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
-		auto ret = pass_scheduling("E-2081", account, username.c_str(), *pmessage,
+		auto ret = pass_scheduling("E-2081", actor, delegator.c_str(), *pmessage,
 		           tmp_propvals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
 	}
-	auto ret = oxomsg_rectify_message(pmessage, username.c_str(),
+	auto ret = oxomsg_rectify_message(pmessage, delegator.c_str(),
 	           repr_grant >= repr_grant::send_as);
 	if (ret != ecSuccess)
 		return ret;
 	
-	static constexpr proptag_t ptbuf_two[] =
+	static constexpr proptag_t ptags_two[] =
 		{PR_MAX_SUBMIT_MESSAGE_SIZE, PR_PROHIBIT_SEND_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
-	static constexpr PROPTAG_ARRAY ptags_two =
-		{std::size(ptbuf_two), deconst(ptbuf_two)};
-	if (!plogon->get_properties(&ptags_two, &tmp_propvals))
+	if (!plogon->get_properties(ptags_two, &tmp_propvals))
 		return ecError;
 
 	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
@@ -349,22 +351,22 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize)
 		return ecQuotaExceeded;
 
-	auto inum = tmp_propvals.get<const int32_t>(PR_MAX_SUBMIT_MESSAGE_SIZE);
-	int32_t max_length = inum != nullptr ? *inum : -1;
+	auto num = tmp_propvals.get<const uint32_t>(PR_MAX_SUBMIT_MESSAGE_SIZE);
+	uint64_t max_length = UINT64_MAX;
+	if (num != nullptr)
+		max_length = static_cast<uint64_t>(*num) << 10;
 	static constexpr proptag_t ptbuf_three[] =
 		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS,
 		PR_DEFERRED_SEND_TIME, PR_DEFERRED_SEND_NUMBER,
 		PR_DEFERRED_SEND_UNITS, PR_DELETE_AFTER_SUBMIT};
-	PROPTAG_ARRAY tmp_proptags;
-	tmp_proptags.count = (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ?
-	                     2 : std::size(ptbuf_three);
-	tmp_proptags.pproptag = deconst(ptbuf_three);
-	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
-		return ecError;
-	auto num = tmp_propvals.get<const uint32_t>(PR_MESSAGE_SIZE);
+	proptag_cspan tmp_proptags = {ptbuf_three, (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : std::size(ptbuf_three)};
+	err = pmessage->get_properties(0, tmp_proptags, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
+	num = tmp_propvals.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (num == nullptr)
 		return ecError;
-	if (max_length > 0 && *num > static_cast<uint32_t>(max_length))
+	if (max_length != UINT64_MAX && *num > max_length)
 		return EC_EXCEEDED_SIZE;
 	auto message_flags = tmp_propvals.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (message_flags == nullptr)
@@ -421,8 +423,9 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		pmessage->reload();
 		return ecSuccess;
 	}
-	
-	ret = cu_send_message(plogon, pmessage, true);
+
+	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
+	ret = cu_send_message(plogon, pmessage, ev_from);
 	if (ret != ecSuccess && ret != ecWarnWithErrors)
 		exmdb_client->clear_submit(dir, pmessage->get_id(), b_unsent);
 	else if (!b_delete)
@@ -431,7 +434,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		pmessage->clear_unsent();
 	return ret;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2353: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -446,7 +449,7 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return ecError;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -472,8 +475,6 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 			return ecUnableToAbort;
 		if (!exmdb_client->clear_submit(plogon->get_dir(), message_id, TRUE))
 			return ecError;
-		if (!common_util_save_message_ics(plogon, message_id, nullptr))
-			return ecError;
 		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
@@ -494,7 +495,7 @@ ec_error_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
 {
 	static constexpr const char *address_types[] = {"SMTP", "EX"};
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -506,7 +507,7 @@ ec_error_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
 
 ec_error_t rop_setspooler(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	return plogon->is_private() ? ecSuccess : ecNotSupported;
@@ -526,7 +527,7 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return ecError;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -548,10 +549,8 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 
 	static constexpr proptag_t proptag_buff[] =
 		{PR_DELETE_AFTER_SUBMIT, PR_TARGET_ENTRYID, PR_PARENT_ENTRYID};
-	static constexpr PROPTAG_ARRAY tmp_proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-	    message_id, &tmp_proptags, &tmp_propvals))
+	    message_id, proptag_cspan{proptag_buff}, &tmp_propvals))
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
@@ -559,10 +558,10 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	auto bin = tmp_propvals.get<const BINARY>(PR_PARENT_ENTRYID);
 	if (bin == nullptr)
 		return ecError;
-	if (!cu_entryid_to_fid(plogon, bin, &parent_id))
+	if (!cu_entryid_to_fid(*plogon, bin, &parent_id))
 		return ecError;
 	if (NULL != ptarget) {
-		if (!cu_entryid_to_mid(plogon, ptarget, &folder_id, &new_id))
+		if (!cu_entryid_to_mid(*plogon, ptarget, &folder_id, &new_id))
 			return ecError;
 		if (!exmdb_client->movecopy_message(dir, pinfo->cpid,
 		    message_id, folder_id, new_id, b_delete, &b_result))
@@ -580,7 +579,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
@@ -589,7 +588,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		mlog(LV_INFO, "I-2143: transportsend disallowed because %s is guest", plogon->account);
 		return ecAccessDenied;
 	}
-	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
+	auto pmessage = plogmap->get_obj<message_object>(logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
@@ -603,13 +602,11 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecAccessDenied;
 	}
 
-	static constexpr uint32_t rq_tags1[] = {PR_MESSAGE_FLAGS};
-	static constexpr uint32_t cls_tags1[] = {PR_MESSAGE_CLASS};
-	static constexpr PROPTAG_ARRAY rq_tags = {1, deconst(rq_tags1)};
-	static constexpr PROPTAG_ARRAY cls_tags = {1, deconst(cls_tags1)};
+	static constexpr proptag_t rq_tags1[] = {PR_MESSAGE_FLAGS};
+	static constexpr proptag_t cls_tags[] = {PR_MESSAGE_CLASS};
 	TPROPVAL_ARRAY outvalues{};
 	if (!exmdb_client->get_message_properties(plogon->get_dir(), nullptr,
-	    CP_ACP, pmessage->get_id(), &rq_tags, &outvalues))
+	    CP_ACP, pmessage->get_id(), proptag_cspan{rq_tags1}, &outvalues))
 		return ecError;
 	auto msgflags = outvalues.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED) {
@@ -618,53 +615,56 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
-	std::string username;
-	if (!oxomsg_extract_delegate(pmessage, username))
-		return ecError;
-	auto account = plogon->get_account();
+	std::string delegator;
+	auto err = oxomsg_extract_delegator(pmessage, delegator);
+	if (err != ecSuccess)
+		return err;
+	auto actor = plogon->get_account();
 	repr_grant repr_grant;
-	if (username.empty()) {
-		username = account;
+	if (delegator.empty()) {
+		delegator = actor;
 		repr_grant = repr_grant::send_as;
 	} else {
-		repr_grant = oxomsg_get_perm(account, username.c_str());
+		repr_grant = oxomsg_get_perm(actor, delegator.c_str());
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		TPROPVAL_ARRAY cls_vals{};
-		if (pmessage->get_properties(0, &cls_tags, &cls_vals) != 0)
-			/* ignore, since we can test for cls_vals fill */;
-		auto ret = pass_scheduling("E-2080", account, username.c_str(), *pmessage,
+		err = pmessage->get_properties(0, cls_tags, &cls_vals);
+		if (err != ecSuccess)
+			return err;
+		auto ret = pass_scheduling("E-2080", actor, delegator.c_str(), *pmessage,
 		           cls_vals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
 	}
-	auto ret = oxomsg_rectify_message(pmessage, username.c_str(),
+	auto ret = oxomsg_rectify_message(pmessage, delegator.c_str(),
 	           repr_grant >= repr_grant::send_as);
 	if (ret != ecSuccess)
 		return ret;
 	*pppropvals = cu_alloc<TPROPVAL_ARRAY>();
 	if (NULL != *pppropvals) {
-		static constexpr proptag_t proptag_buff[] =
+		static constexpr proptag_t proptags[] =
 			{PR_SENDER_NAME, PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY,
 			PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ENTRYID,
 			PR_SENT_REPRESENTING_SEARCH_KEY, PR_PROVIDER_SUBMIT_TIME};
-		static constexpr PROPTAG_ARRAY proptags =
-			{std::size(proptag_buff), deconst(proptag_buff)};
-		if (!pmessage->get_properties(0, &proptags, *pppropvals)) {
+		err = pmessage->get_properties(0, proptags, *pppropvals);
+		if (err != ecSuccess) {
 			*pppropvals = NULL;
 		} else if (!(**pppropvals).has(PR_PROVIDER_SUBMIT_TIME)) {
 			auto nt = cu_alloc<uint64_t>();
 			if (nt != nullptr) {
 				*nt = rop_util_current_nttime();
-				auto err = cu_set_propval(*pppropvals, PR_PROVIDER_SUBMIT_TIME, nt);
+				err = cu_set_propval(*pppropvals, PR_PROVIDER_SUBMIT_TIME, nt);
 				if (err != ecSuccess)
 					return err;
 			}
 		}
 	}
-	return cu_send_message(plogon, pmessage, false);
+
+	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
+	return cu_send_message(plogon, pmessage, ev_from);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2352: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -672,7 +672,7 @@ ec_error_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
     const char *pstr_class, uint32_t message_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!exmdb_client->transport_new_mail(plogon->get_dir(), message_id,
@@ -684,7 +684,7 @@ ec_error_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
 ec_error_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (!plogon->is_private())

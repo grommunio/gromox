@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2026 grommunio GmbH
+// This file is part of Gromox.
 #include <cstring>
 #include <gromox/defs.h>
 #include <gromox/simple_tree.hpp>
@@ -10,12 +12,6 @@ static void simple_tree_destroy_group(SIMPLE_TREE *ptree,
 BOOL mtree::set_root(SIMPLE_TREE_NODE *pnode)
 {
 	auto ptree = this;
-#ifdef _DEBUG_UMTA
-	if (pnode == nullptr) {
-		mlog(LV_DEBUG, "simple_tree: NULL pointer in mtree::set_root");
-		return FALSE;
-	}
-#endif
 	if (NULL != ptree->root) {
 		return FALSE;
 	}
@@ -47,12 +43,6 @@ BOOL mtree::insert_sibling(tree_node *pnode_base, tree_node *pnode, int opt)
 	auto ptree = this;
 	SIMPLE_TREE_NODE *pnode_temp;
 
-#ifdef _DEBUG_UMTA
-	if (pnode == nullptr || pnode_base == nullptr) {
-		mlog(LV_DEBUG, "simple_tree: NULL pointer in simple_tree_add_sibling");
-		return FALSE;
-	}
-#endif
 	/* can not insert a sibling node into root node! */
 	if (pnode_base == ptree->root) {
 		return FALSE;
@@ -107,12 +97,6 @@ BOOL mtree::add_child(tree_node *pnode_base, tree_node *pnode, int opt)
 	SIMPLE_TREE_NODE *pnode_temp;
 	SIMPLE_TREE_NODE *pnode_last;
 
-#ifdef _DEBUG_UMTA
-	if (pnode == nullptr || pnode_base == nullptr) {
-		mlog(LV_DEBUG, "simple_tree: NULL pointer in mtree::add_child");
-		return FALSE;
-	}
-#endif
 	if (0 == pnode_base->node_children) {
 		pnode->pnode_sibling = nullptr;
 		pnode->pnode_parent		  = pnode_base;
@@ -166,12 +150,6 @@ void mtree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
 	SIMPLE_TREE_NODE *pnode_temp;
 	SIMPLE_TREE_NODE *pnode_parent;
 
-#ifdef _DEBUG_UMTA
-	if (pnode == nullptr || del_func == nullptr) {
-		mlog(LV_DEBUG, "simple_tree: NULL pointer in mtree::destroy_node");
-		return;
-	}
-#endif
 	if (NULL != pnode->pnode_child) {
 		simple_tree_destroy_group(ptree, pnode->pnode_child, del_func);
 	}
@@ -180,12 +158,6 @@ void mtree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
 		pnode->node_children = 0;
 		del_func(pnode);
 		ptree->nodes_num --;
-#ifdef _DEBUG_UMTA
-		if (0 != ptree->nodes_num) {
-			mlog(LV_DEBUG, "simple_tree: fatal error "
-					"in simple_tree_destroy_node");
-		}
-#endif
 		ptree->root = NULL;
 		return;
 	}
@@ -237,13 +209,6 @@ static void simple_tree_destroy_group(SIMPLE_TREE *ptree,
 {
 	SIMPLE_TREE_NODE *pnode_temp;
 
-#ifdef _DEBUG_UMTA
-	if (NULL == ptree || NULL == pnode || NULL == del_func) {	
-		mlog(LV_DEBUG, "simple_tree: NULL pointer in "
-					"simple_tree_destroy_group");
-		return;
-	}
-#endif
 	do {
 		if (NULL != pnode->pnode_child) {
 			simple_tree_destroy_group(ptree, pnode->pnode_child, del_func);

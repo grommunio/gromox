@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
-#include <atomic>
 #include <cerrno>
 #include <climits>
 #include <cstdarg>
@@ -14,6 +13,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/bounce_gen.hpp>
@@ -32,6 +32,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
+#include "../junk.cpp"
 #define MAX_DIGLEN				256*1024
 
 using namespace gromox;
@@ -42,26 +43,13 @@ static bool g_lda_twostep, g_lda_mrautoproc;
 static char g_org_name[256];
 static thread_local alloc_context g_alloc_ctx;
 static thread_local const char *g_storedir;
-static char g_default_charset[32];
-static std::atomic<int> g_sequence_id;
 
 static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int flags);
+static junk_rule_list g_junk_rules;
 
-static int exmdb_local_sequence_ID()
-{
-	int old = 0, nu = 0;
-	do {
-		old = g_sequence_id.load(std::memory_order_relaxed);
-		nu  = old != INT_MAX ? old + 1 : 1;
-	} while (!g_sequence_id.compare_exchange_weak(old, nu));
-	return nu;
-}
-
-
-void exmdb_local_init(const char *org_name, const char *default_charset)
+void exmdb_local_init(const char *org_name)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
-	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 }
 
 int exmdb_local_run() try
@@ -243,30 +231,47 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 }
 
 static void lq_report(unsigned int qid, unsigned long long mid, const char *txt,
-    const message_content *ct)
+    const message_content &ct)
 {
-	auto &props = ct->proplist;
+	auto &props = ct.proplist;
 	auto from = props.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto subj = props.get<const char>(PR_SUBJECT);
-	auto abox = ct->children.pattachments;
+	auto abox = ct.children.pattachments;
 	auto acount = abox != nullptr ? abox->count : 0;
 	mlog(LV_DEBUG, "QID %u/MID %llu/%s: from=<%s> subj=<%s> attachments=%u",
 		qid, mid, txt, znul(from), znul(subj), acount);
 }
 
+static bool should_move_to_junk(const MAIL &mail)
+{
+	const auto &rlist = g_junk_rules;
+	if (rlist.empty())
+		return false;
+	auto mhead = mail.get_head();
+	if (mhead == nullptr)
+		return false;
+	for (const auto &[eml_hdr, eml_val] : mhead->f_other_fields)
+		if (junk_rlist_matches(rlist, eml_hdr, eml_val))
+			return true;
+	return false;
+}
+
 delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
     const char *address) try
 {
-	size_t mess_len;
-	int sequence_ID;
 	uint64_t nt_time;
-	char tmzone[64], hostname[UDOM_SIZE];
+	char hostname[UDOM_SIZE];
 	uint32_t tmp_int32;
 	uint32_t suppress_mask = 0;
 	BOOL b_bounce_delivered = false;
 	sql_meta_result mres{};
 
-	if (mysql_adaptor_meta(address, WANTPRIV_METAONLY, mres) != 0) {
+	auto err = mysql_adaptor_meta(address, WANTPRIV_METAONLY, mres);
+	if (err == ENOENT) {
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
+			"<%s> has no mailbox here", address);
+		return delivery_status::no_user;
+	} else if (err != 0) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return delivery_status::temp_fail;
@@ -276,14 +281,8 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::no_user;
 	}
 	auto home_dir = mres.maildir.c_str();
-	auto charset = lang_to_charset(mres.lang.c_str());
-	if (*znul(charset) == '\0')
-		charset = g_default_charset;
-	if (*znul(tmzone) == '\0')
-		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
-	
 	auto pmail = &pcontext->mail;
-	sequence_ID = exmdb_local_sequence_ID();
+	bool deliver_to_junk = should_move_to_junk(*pmail);
 	gx_strlcpy(hostname, get_host_ID(), std::size(hostname));
 	if ('\0' == hostname[0]) {
 		if (gethostname(hostname, std::size(hostname)) < 0)
@@ -291,39 +290,30 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		else
 			hostname[std::size(hostname)-1] = '\0';
 	}
-	auto mid_string = std::to_string(time(nullptr)) + "." +
-	                  std::to_string(sequence_ID) + "." + hostname;
-	auto eml_path = mres.maildir + "/eml/" + mid_string;
-	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	if (fd.get() < 0) {
-		auto se = errno;
-		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
-			"open WR %s: %s", eml_path.c_str(), strerror(se));
-		errno = se;
-		return delivery_status::temp_fail;
+	char guidtxt[GUIDSTR_SIZE]{};
+	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+	auto mid_string = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
+
+	{
+		std::string eml_content;
+		auto syserr = pmail->to_str(eml_content);
+		if (syserr != 0) {
+			exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
+				"%s: pmail->to_str failed: %s",
+				mid_string.c_str(), strerror(syserr));
+			return delivery_status::temp_fail;
+		}
+		if (!exmdb_client_remote::imapfile_write(home_dir, "eml", mid_string,
+		    std::move(eml_content))) {
+			mlog(LV_ERR, "E-1765: write %s/eml/%s failed",
+				home_dir, mid_string.c_str());
+			return delivery_status::perm_fail;
+		}
 	}
-	
-	auto syserr = pmail->to_fd(fd.get());
-	if (syserr != 0) {
-		fd.close_rd();
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1386: remove %s: %s",
-			        eml_path.c_str(), strerror(errno));
-		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
-			"%s: pmail->to_fd failed: %s",
-			eml_path.c_str(), strerror(syserr));
-		return delivery_status::temp_fail;
-	}
-	auto ret = fd.close_wr();
-	if (ret < 0)
-		mlog(LV_ERR, "E-1120: close %s: %s", eml_path.c_str(), strerror(ret));
 
 	Json::Value digest;
-	auto result = pmail->make_digest(&mess_len, digest);
+	auto result = pmail->make_digest(digest);
 	if (result <= 0) {
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1387: remove %s: %s",
-			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"permanent failure getting mail digest");
 		return delivery_status::perm_fail;
@@ -331,38 +321,43 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	digest["file"] = std::move(mid_string);
 	auto djson = json_to_str(digest);
 	g_storedir = mres.maildir.c_str();
-	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
-	            exmdb_local_get_propids);
+
+	oxcmail_converter cvt;
+	cvt.alloc = exmdb_local_alloc;
+	cvt.get_propids = exmdb_local_get_propids;
+	auto pmsg = cvt.inet_to_mapi(*pmail);
 	g_storedir = nullptr;
 	if (NULL == pmsg) {
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1388: remove %s: %s",
-			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail "
 			"to convert rfc5322 into MAPI message object");
 		return delivery_status::perm_fail;
 	}
-	lq_report(pcontext->ctrl.queue_ID, 0, "before_delivery", pmsg);
+	lq_report(pcontext->ctrl.queue_ID, 0, "before_delivery", *pmsg);
 
 	nt_time = rop_util_current_nttime();
-	if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
+	if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != ecSuccess)
 		/* ignore */;
 	if (!pcontext->ctrl.need_bounce) {
 		tmp_int32 = UINT32_MAX;
-		if (pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) != 0)
+		if (pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) != ecSuccess)
 			/* ignore */;
 	}
 	
 	pmsg->proplist.erase(PidTagChangeNumber);
 	uint64_t folder_id, message_id = 0;
 	uint32_t r32 = 0;
-	unsigned int flags = DELIVERY_DO_RULES | DELIVERY_DO_NOTIF;
+	unsigned int flags = DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV;
 	if (g_lda_twostep)
-		flags = 0;
+		flags = DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
+	if (deliver_to_junk)
+		flags |= DELIVERY_FORCE_JUNK;
 	if (!exmdb_client_remote::deliver_message(home_dir,
 	    pcontext->ctrl.from, address, CP_ACP, flags,
-	    pmsg, djson.c_str(), &folder_id, &message_id, &r32))
+	    pmsg.get(), djson.c_str(), &folder_id, &message_id, &r32)) {
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
+			"exmdb.deliver_message to %s failed (see gxhttp log for more)", home_dir);
 		return delivery_status::perm_fail;
+	}
 
 	auto dm_status = static_cast<deliver_message_result>(r32);
 	if (dm_status == deliver_message_result::result_ok) {
@@ -370,6 +365,20 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		auto num = pmsg->proplist.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
 		if (num != nullptr)
 			suppress_mask = *num;
+		auto str = pmsg->proplist.get<const char>(PR_INTERNET_PRECEDENCE);
+		if (str != nullptr) {
+			if (strcasecmp(str, "bulk") == 0)
+				suppress_mask |= AUTO_RESPONSE_SUPPRESS_AUTOREPLY | AUTO_RESPONSE_SUPPRESS_OOF;
+			if (strcasecmp(str, "list") == 0)
+				suppress_mask |= AUTO_RESPONSE_SUPPRESS_ALL;
+		}
+		if (pmsg->proplist.has(PR_LIST_HELP) ||
+		    pmsg->proplist.has(PR_LIST_HELP_A) ||
+		    pmsg->proplist.has(PR_LIST_SUBSCRIBE) ||
+		    pmsg->proplist.has(PR_LIST_SUBSCRIBE_A) ||
+		    pmsg->proplist.has(PR_LIST_UNSUBSCRIBE) ||
+		    pmsg->proplist.has(PR_LIST_UNSUBSCRIBE_A))
+			suppress_mask |= AUTO_RESPONSE_SUPPRESS_ALL;
 		auto flag = pmsg->proplist.get<const uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 		if (flag != nullptr && *flag != 0) {
 			b_bounce_delivered = TRUE;
@@ -383,13 +392,14 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		if (exmdb_client_remote::read_message(home_dir, nullptr, CP_ACP,
 		    message_id, &rbct) && rbct != nullptr)
 			lq_report(pcontext->ctrl.queue_ID, rop_util_get_gc_value(message_id),
-				"after_delivery", rbct);
+				"after_delivery", *rbct);
 	}
-	message_content_free(pmsg);
+	pmsg.reset();
+
 	switch (dm_status) {
 	case deliver_message_result::result_ok:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_DEBUG,
-			"message %s was delivered OK", eml_path.c_str());
+			"message %s was delivered OK", mid_string.c_str());
 		if (pcontext->ctrl.need_bounce &&
 		    strcmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) != 0&&
 		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
@@ -416,17 +426,16 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::temp_fail;
 	}
 
-	if (!g_lda_twostep) {
-		if (b_bounce_delivered)
-			return delivery_status::bounce_sent;
-		return delivery_status::ok;
+	if (g_lda_twostep) {
+		if (g_lda_mrautoproc)
+			flags |= DELIVERY_DO_MRAUTOPROC;
+		auto ec_err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
+		            address, folder_id, message_id, flags);
+		if (ec_err != ecSuccess)
+			mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(ec_err));
 	}
-	if (g_lda_mrautoproc)
-		flags |= DELIVERY_DO_MRAUTOPROC;
-	auto err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
-	           address, folder_id, message_id, flags);
-	if (err != ecSuccess)
-		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(err));
+	if (b_bounce_delivered)
+		return delivery_status::bounce_sent;
 	return delivery_status::ok;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1472: ENOMEM");
@@ -463,7 +472,7 @@ static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 
 BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
-	char charset[32], org_name[256], temp_buff[45], cache_path[256];
+	char org_name[256], temp_buff[45], cache_path[256];
 	int cache_interval, retrying_times;
 	int response_capacity, response_interval, conn_num;
 
@@ -478,8 +487,10 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		textmaps_init();
 		auto cfg = config_file_initd("gromox.cfg", get_config_path(), mdlgx_cfg_defaults);
-		if (cfg != nullptr)
+		if (cfg != nullptr) {
 			autoreply_silence_window = cfg->get_ll("autoreply_silence_window");
+			g_junk_rules = parse_junk_rules(cfg->get_value("lda_junk_rules"));
+		}
 
 		auto pfile = config_file_initd("exmdb_local.cfg",
 		             get_config_path(), nullptr);
@@ -493,10 +504,6 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		auto str_value = pfile->get_value("X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value != nullptr ? str_value : "Gromox default", std::size(org_name));
 		mlog(LV_INFO, "exmdb_local: x500 org name is \"%s\"", org_name);
-
-		str_value = pfile->get_value("DEFAULT_CHARSET");
-		gx_strlcpy(charset, str_value != nullptr ? str_value : "windows-1252", std::size(charset));
-		mlog(LV_INFO, "exmdb_local: default charset is \"%s\"", charset);
 
 		str_value = pfile->get_value("EXMDB_CONNECTION_NUM");
 		conn_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 5;
@@ -545,10 +552,10 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
-		exmdb_client.emplace(conn_num, 0);
+		exmdb_client.emplace(conn_num);
 		exmdb_rpc_alloc = exmdb_local_alloc;
 		exmdb_rpc_free  = [](void *) {};
-		exmdb_local_init(org_name, charset);
+		exmdb_local_init(org_name);
 
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "local_bounce") != 0) {
@@ -559,7 +566,7 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "exmdb_local: failed to start cache queue");
 			return FALSE;
 		}
-		if (exmdb_client_run(get_config_path(), EXMDB_CLIENT_ASYNC_CONNECT) != 0) {
+		if (exmdb_client_run(get_config_path()) != 0) {
 			mlog(LV_ERR, "exmdb_local: failed to start exmdb_client");
 			return FALSE;
 		}

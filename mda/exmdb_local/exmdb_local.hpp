@@ -22,7 +22,7 @@ extern void cache_queue_stop();
 extern void cache_queue_free();
 extern int cache_queue_put(MESSAGE_CONTEXT *, const char *rcpt, time_t orig_time);
 
-extern void exmdb_local_init(const char *org_name, const char *default_charset);
+extern void exmdb_local_init(const char *org_name);
 extern int exmdb_local_run();
 extern gromox::hook_result exmdb_local_hook(MESSAGE_CONTEXT *);
 extern delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address);

@@ -1,7 +1,12 @@
 #pragma once
+#include <optional>
+#include <string>
+#include <vector>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include "../nsp/nsp_types.hpp"
+
+using minid_t = uint32_t;
 
 struct nsp_propname2 {
 	GUID guid{};
@@ -9,7 +14,7 @@ struct nsp_propname2 {
 };
 
 struct nsp_rowset2 {
-	LPROPTAG_ARRAY columns{};
+	proptag_vector columns;
 	uint32_t row_count = 0;
 	PROPERTY_ROW *rows = nullptr;
 };
@@ -33,7 +38,7 @@ struct nsp_entryids {
 
 struct bind_request {
 	uint32_t flags = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	uint8_t *auxin = nullptr;
 };
 
@@ -44,7 +49,7 @@ struct bind_response {
 };
 
 struct unbind_request {
-	uint32_t reserved = 0, cb_auxin = 0;
+	uint32_t cb_auxin = 0;
 	uint8_t *auxin = nullptr;
 };
 
@@ -54,8 +59,8 @@ struct unbind_response {
 };
 
 struct comparemids_request {
-	uint32_t reserved = 0, mid1 = 0, mid2 = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	uint32_t mid1 = 0, mid2 = 0, cb_auxin = 0;
+	STAT stat;
 	uint8_t *auxin = nullptr;
 };
 
@@ -66,32 +71,31 @@ struct comparemids_response {
 };
 
 struct dntomid_request {
-	uint32_t reserved = 0, cb_auxin = 0;
-	STRING_ARRAY *names = nullptr;
+	uint32_t cb_auxin = 0;
+	std::vector<std::string> names;
 	uint8_t *auxin = nullptr;
 };
 
 struct dntomid_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	MID_ARRAY *outmids = nullptr;
+	std::vector<minid_t> outmids;
 };
 
 struct getmatches_request {
-	uint32_t reserved1 = 0, reserved2 = 0, row_count = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
-	MID_ARRAY *inmids = nullptr;
+	uint32_t reserved1 = 0, row_count = 0, cb_auxin = 0;
+	STAT stat;
 	RESTRICTION *filter = nullptr;
 	nsp_propname2 *propname = nullptr;
-	LPROPTAG_ARRAY *columns = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> columns;
 	uint8_t *auxin = nullptr;
 };
 
 struct getmatches_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
-	MID_ARRAY *mids = nullptr;
+	STAT stat;
+	std::vector<minid_t> mids;
 	nsp_rowset2 column_rows{};
 };
 
@@ -104,13 +108,13 @@ struct getproplist_request {
 struct getproplist_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	LPROPTAG_ARRAY *proptags = nullptr;
+	std::vector<minid_t> proptags;
 };
 
 struct getprops_request {
 	uint32_t flags = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
-	LPROPTAG_ARRAY *proptags = nullptr;
+	STAT stat;
+	std::optional<std::vector<gromox::proptag_t>> proptags;
 	uint8_t *auxin = nullptr;
 };
 
@@ -123,7 +127,7 @@ struct getprops_response {
 
 struct getspecialtable_request {
 	uint32_t flags = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	uint32_t *version = nullptr;
 	uint8_t *auxin = nullptr;
 };
@@ -163,9 +167,9 @@ struct modlinkatt_response {
 };
 
 struct modprops_request {
-	uint32_t reserved = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
-	LPROPTAG_ARRAY *proptags = nullptr;
+	uint32_t cb_auxin = 0;
+	STAT stat;
+	std::optional<std::vector<gromox::proptag_t>> proptags;
 	LTPROPVAL_ARRAY *values = nullptr;
 	uint8_t *auxin = nullptr;
 };
@@ -177,35 +181,35 @@ struct modprops_response {
 
 struct queryrows_request {
 	uint32_t flags = 0, count = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
-	LPROPTAG_ARRAY *columns = nullptr;
-	MID_ARRAY explicit_table{};
+	STAT stat;
+	std::vector<minid_t> explicit_table; /* nullable in OXNSPI, but not in MH */
+	std::optional<std::vector<gromox::proptag_t>> columns;
 	uint8_t *auxin = nullptr;
 };
 
 struct queryrows_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
+	STAT stat;
 	nsp_rowset2 column_rows{};
 };
 
 struct querycolumns_request {
-	uint32_t reserved = 0, flags = 0, cb_auxin = 0;
+	uint32_t flags = 0, cb_auxin = 0;
 	uint8_t *auxin = nullptr;
 };
 
 struct querycolumns_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	LPROPTAG_ARRAY *columns = nullptr;
+	std::vector<gromox::proptag_t> columns;
 };
 
 struct resolvenames_request {
 	uint32_t reserved = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
-	LPROPTAG_ARRAY *proptags = nullptr;
-	STRING_ARRAY *names = nullptr;
+	STAT stat;
+	std::optional<std::vector<gromox::proptag_t>> proptags;
+	std::vector<std::string> names;
 	uint8_t *auxin = nullptr;
 };
 
@@ -213,52 +217,52 @@ struct resolvenames_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
 	cpid_t codepage = CP_UTF16;
-	MID_ARRAY *mids = nullptr;
+	std::vector<minid_t> mids;
 	nsp_rowset2 column_rows{};
 };
 
 struct resortrestriction_request {
-	uint32_t reserved = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
-	MID_ARRAY *inmids = nullptr;
+	uint32_t cb_auxin = 0;
+	STAT stat;
+	std::vector<minid_t> inmids;
 	uint8_t *auxin = nullptr;
 };
 
 struct resortrestriction_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
-	MID_ARRAY *outmids = nullptr;
+	STAT stat;
+	std::vector<minid_t> outmids;
 };
 
 struct seekentries_request {
 	uint32_t reserved = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
-	TAGGED_PROPVAL *target = nullptr;
-	MID_ARRAY *explicit_table = nullptr;
-	LPROPTAG_ARRAY *columns = nullptr;
+	STAT stat;
+	TAGGED_PROPVAL target{};
+	std::optional<std::vector<minid_t>> explicit_table;
+	std::optional<std::vector<gromox::proptag_t>> columns;
 	uint8_t *auxin = nullptr;
 };
 
 struct seekentries_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
+	STAT stat;
 	nsp_rowset2 column_rows{};
 };
 
 struct updatestat_request {
-	uint32_t reserved = 0, cb_auxin = 0;
+	uint32_t cb_auxin = 0;
 	uint8_t delta_requested = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	uint8_t *auxin = nullptr;
 };
 
 struct updatestat_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
-	int32_t *delta = nullptr;
+	STAT stat;
+	std::optional<int32_t> delta;
 };
 
 struct getmailboxurl_request {

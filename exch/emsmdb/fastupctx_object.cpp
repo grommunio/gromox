@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -23,15 +23,9 @@
 using namespace gromox;
 
 std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
-    void *pobject, int root_element)
+    void *pobject, int root_element) try
 {
-	std::unique_ptr<fastupctx_object> pctx;
-	try {
-		pctx.reset(new fastupctx_object);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1451: ENOMEM");
-		return NULL;
-	}
+	std::unique_ptr<fastupctx_object> pctx(new fastupctx_object);
 	pctx->pobject = pobject;
 	pctx->root_element = root_element;
 	pctx->pstream = fxstream_parser::create(plogon);
@@ -52,6 +46,9 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 		return NULL;
 	}
 	return pctx;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return nullptr;
 }
 
 fastupctx_object::~fastupctx_object()
@@ -95,7 +92,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	uint32_t tmp_type;
 	uint64_t change_num;
 	
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_ACCESS, PR_ACCESS_LEVEL, PR_ADDRESS_BOOK_ENTRYID,
 		PR_ASSOC_CONTENT_COUNT, PR_ATTR_READONLY,
 		PR_CONTENT_COUNT, PR_CONTENT_UNREAD,
@@ -115,25 +112,24 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	if (!pproplist->has(PR_DISPLAY_NAME))
 		return FALSE;
 	tmp_type = FOLDER_GENERIC;
-	if (pproplist->set(PR_FOLDER_TYPE, &tmp_type) != 0)
-		return FALSE;
-	if (pproplist->set(PidTagParentFolderId, &parent_id) != 0)
+	if (pproplist->set(PR_FOLDER_TYPE, &tmp_type) != ecSuccess ||
+	    pproplist->set(PidTagParentFolderId, &parent_id) != ecSuccess)
 		return FALSE;
 	auto dir = pctx->pstream->plogon->get_dir();
 	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return FALSE;
-	if (pproplist->set(PidTagChangeNumber, &change_num) != 0)
+	if (pproplist->set(PidTagChangeNumber, &change_num) != ecSuccess)
 		return FALSE;
 	auto pbin = cu_xid_to_bin({pctx->pstream->plogon->guid(), change_num});
 	if (pbin == nullptr)
 		return FALSE;
-	if (pproplist->set(PR_CHANGE_KEY, pbin) != 0)
+	if (pproplist->set(PR_CHANGE_KEY, pbin) != ecSuccess)
 		return FALSE;
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	auto newval = common_util_pcl_append(pbin1, pbin);
 	if (newval == nullptr)
 		return FALSE;
-	if (pproplist->set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
+	if (pproplist->set(PR_PREDECESSOR_CHANGE_LIST, newval) != ecSuccess)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	ec_error_t err = ecSuccess;
@@ -182,7 +178,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 {
 	uint64_t change_num;
 	auto pproplist = pctx->m_content->get_proplist();
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_CONVERSATION_ID, PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A, PR_DISPLAY_BCC,
 		PR_DISPLAY_BCC_A, PidTagMid, PR_MESSAGE_SIZE,
@@ -196,28 +192,33 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	auto dir = plogon->get_dir();
 	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return ecRpcFailed;
-	if (pproplist->set(PidTagChangeNumber, &change_num) != 0)
-		return ecRpcFailed;
+	auto err = pproplist->set(PidTagChangeNumber, &change_num);
+	if (err != ecSuccess)
+		return err;
 	auto pbin = cu_xid_to_bin({plogon->guid(), change_num});
 	if (pbin == nullptr)
 		return ecRpcFailed;
-	if (pproplist->set(PR_CHANGE_KEY, pbin) != 0)
-		return ecRpcFailed;
+	err = pproplist->set(PR_CHANGE_KEY, pbin);
+	if (err != ecSuccess)
+		return err;
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	auto pvalue = common_util_pcl_append(pbin1, pbin);
 	if (pvalue == nullptr)
 		return ecRpcFailed;
-	if (pproplist->set(PR_PREDECESSOR_CHANGE_LIST, pvalue) != 0)
-		return ecRpcFailed;
+	err = pproplist->set(PR_PREDECESSOR_CHANGE_LIST, pvalue);
+	if (err != ecSuccess)
+		return err;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	ec_error_t e_result = ecRpcFailed;
+	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(dir, pinfo->cpid, folder_id,
-	    pctx->m_content, &e_result) || e_result != ecSuccess)
+	    pctx->m_content, {}, &outmid, &outcn, &e_result) ||
+	    e_result != ecSuccess)
 		return e_result;
 	return ecSuccess;
 }
 
-ec_error_t fastupctx_object::record_marker(uint32_t marker)
+ec_error_t fastupctx_object::record_marker(uint32_t marker) try
 {
 	auto pctx = this;
 	uint32_t tmp_id;
@@ -345,8 +346,9 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		m_content->set_attachments_internal(pattachments);
 		pproplist = m_content->get_proplist();
 		uint8_t tmp_byte = marker == STARTFAIMSG;
-		if (pproplist->set(PR_ASSOCIATED, &tmp_byte) != 0)
-			return ecRpcFailed;
+		auto err = pproplist->set(PR_ASSOCIATED, &tmp_byte);
+		if (err != ecSuccess)
+			return err;
 		pmarker->marker = marker;
 		pmarker->msg = m_content;
 		break;
@@ -540,13 +542,11 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 	default:
 		return ecRpcFailed;
 	}
-	try {
-		pctx->marker_stack.emplace_back(std::move(new_mark));
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1600: ENOMEM");
-		return ecRpcFailed;
-	}
+	pctx->marker_stack.emplace_back(std::move(new_mark));
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
 static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
@@ -698,13 +698,12 @@ ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 	case 0:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_FOLDERCONTENT:
-			return m_props->set(*ppropval) == 0 ?
-			       ecSuccess : ecRpcFailed;
+			return m_props->set(*ppropval);
 		case ROOT_ELEMENT_MESSAGECONTENT: {
 			auto msg = static_cast<message_object *>(pctx->pobject);
 			const TPROPVAL_ARRAY av = {1, deconst(ppropval)};
 			PROBLEM_ARRAY pa;
-			return msg->set_properties(&av, &pa) == TRUE ? ecSuccess : ecRpcFailed;
+			return msg->set_properties(&av, &pa);
 		}
 		case ROOT_ELEMENT_ATTACHMENTCONTENT: {
 			auto atx = static_cast<attachment_object *>(pctx->pobject);
@@ -719,10 +718,10 @@ ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 		return ecRpcFailed;
 	case STARTTOPFLD:
 	case STARTSUBFLD:
-		return m_props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
+		return m_props->set(*ppropval);
 	case STARTMESSAGE:
 	case STARTFAIMSG:
-		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
+		return pnode->props->set(*ppropval);
 	case STARTEMBED:
 	case NEWATTACH:
 		if (pctx->root_element == ROOT_ELEMENT_ATTACHMENTCONTENT ||
@@ -730,13 +729,12 @@ ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 			return exmdb_client->set_instance_property(pctx->pstream->plogon->get_dir(),
 			       pnode->instance_id, ppropval, &b_result) == TRUE ?
 			       ecSuccess : ecRpcFailed;
-		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
+		return pnode->props->set(*ppropval);
 	case STARTRECIP:
 		if (pctx->root_element == ROOT_ELEMENT_ATTACHMENTCONTENT ||
 		    pctx->root_element == ROOT_ELEMENT_MESSAGECONTENT)
-			return m_props->set(*ppropval) == 0 ?
-			       ecSuccess : ecRpcFailed;
-		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
+			return m_props->set(*ppropval);
+		return pnode->props->set(*ppropval);
 	default:
 		return ecRpcFailed;
 	}

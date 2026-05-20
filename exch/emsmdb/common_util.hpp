@@ -11,7 +11,6 @@
 #include <gromox/util.hpp>
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
-#define MINIMUM_COMPRESS_SIZE						0x100
 #define STORE_OWNER_GRANTED nullptr
 
 DECLARE_PROC_API(emsmdb, extern);
@@ -21,6 +20,50 @@ struct logon_object;
 struct MAIL;
 struct message_content;
 struct message_object;
+
+struct RECIPIENT_ROW {
+	uint8_t *pprefix_used = nullptr;
+	char *px500dn = nullptr;
+	BINARY *pentry_id = nullptr, *psearch_key = nullptr;
+	char *paddress_type = nullptr, *pmail_address = nullptr;
+	char *pdisplay_name = nullptr, *psimple_name = nullptr;
+	char *ptransmittable_name = nullptr;
+	uint8_t have_display_type = false, display_type = 0;
+	uint16_t flags = 0, count = 0;
+	PROPERTY_ROW properties{};
+};
+
+struct OPENRECIPIENT_ROW {
+	uint8_t recipient_type = 0;
+	uint16_t cpid = 0, reserved = 0;
+	RECIPIENT_ROW recipient_row{};
+};
+
+struct MODIFYRECIPIENT_ROW {
+	uint32_t row_id = 0;
+	uint8_t recipient_type = 0;
+	RECIPIENT_ROW *precipient_row{};
+};
+
+struct READRECIPIENT_ROW {
+	uint32_t row_id = 0;
+	uint8_t recipient_type = 0;
+	uint16_t cpid = 0, reserved = 0;
+	RECIPIENT_ROW recipient_row{};
+};
+
+struct LOGON_TIME {
+	uint8_t second = 0, minute = 0, hour = 0, day_of_week = 0, day = 0, month = 0;
+	uint16_t year = 0;
+
+	LOGON_TIME &operator=(const LOGON_TIME &) = default;
+	LOGON_TIME &operator=(const struct tm &);
+};
+
+struct GHOST_SERVER {
+	uint16_t server_count = 0, cheap_server_count = 0;
+	char **ppservers = nullptr;
+};
 
 namespace emsmdb {
 
@@ -36,21 +79,28 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-extern ssize_t cu_utf8_to_mb(cpid_t cpid, const char *src, char *dst, size_t len);
-extern ssize_t cu_mb_to_utf8(cpid_t cpid, const char *src, char *dst, size_t len);
-extern ssize_t common_util_convert_string(bool to_utf8, const char *src, char *dst, size_t len);
+extern std::string cu_cvt_str(std::string_view, cpid_t, bool dir);
+static inline std::string cu_mb_to_utf8(cpid_t cpid, std::string_view sv) { return cu_cvt_str(std::move(sv), cpid, true); }
+static inline std::string cu_utf8_to_mb(cpid_t cpid, std::string_view sv) { return cu_cvt_str(std::move(sv), cpid, false); }
+extern char *cu_mb_to_utf8_dup(cpid_t, std::string_view);
+extern char *cu_utf8_to_mb_dup(cpid_t, std::string_view);
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
 extern BINARY *cu_username_to_oneoff(const char *username, const char *dispname);
+extern std::string cu_username_to_oneoff_s(const char *username, const char *dispname);
 BINARY* common_util_username_to_addressbook_entryid(const char *username);
-extern BINARY *cu_fid_to_entryid(const logon_object *, uint64_t folder_id);
-extern std::string cu_fid_to_entryid_s(const logon_object *, uint64_t folder_id);
-extern BINARY *cu_fid_to_sk(const logon_object *, uint64_t folder_id);
-extern BINARY *cu_mid_to_entryid(const logon_object *, uint64_t folder_id, uint64_t msg_id);
-extern BOOL cu_entryid_to_fid(const logon_object *, const BINARY *, uint64_t *folder_id);
-extern BOOL cu_entryid_to_mid(const logon_object *, const BINARY *, uint64_t *folder_id, uint64_t *msg_id);
-extern BINARY *cu_mid_to_sk(const logon_object *, uint64_t msg_id);
+extern BINARY *cu_fid_to_entryid(const logon_object &, uint64_t folder_id);
+extern std::string cu_fid_to_entryid_s(const logon_object &, uint64_t folder_id);
+extern BINARY *cu_fid_to_sk(const logon_object &, uint64_t folder_id);
+extern std::string cu_fid_to_sk_s(const logon_object &, uint64_t folder_id);
+extern BINARY *cu_mid_to_entryid(const logon_object &, uint64_t folder_id, uint64_t msg_id);
+extern std::string cu_mid_to_entryid_s(const logon_object &, uint64_t folder_id, uint64_t msg_id);
+extern BOOL cu_entryid_to_fid(const logon_object &, const BINARY *, uint64_t *folder_id);
+extern BOOL cu_entryid_to_mid(const logon_object &, const BINARY *, uint64_t *folder_id, uint64_t *msg_id);
+extern BINARY *cu_mid_to_sk(const logon_object &, uint64_t msg_id);
+extern std::string cu_mid_to_sk_s(const logon_object &, uint64_t msg_id);
 extern BINARY *cu_xid_to_bin(const XID &);
+extern std::string cu_xid_to_bin_s(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_guid_to_binary(GUID guid);
 BOOL common_util_pcl_compare(const BINARY *pbin_pcl1,
@@ -62,39 +112,30 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 BOOL common_util_mapping_replica(BOOL to_guid,
 	void *pparam, uint16_t *preplid, GUID *pguid);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *, gromox::proptag_t, const void *data);
-void common_util_remove_propvals(
-	TPROPVAL_ARRAY *parray, uint32_t proptag);
-extern BOOL common_util_retag_propvals(TPROPVAL_ARRAY *, uint32_t orig_tag, uint32_t new_tag);
-void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
-	const PROPTAG_ARRAY *pproptags_subtractor);
-PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags);
-BOOL common_util_propvals_to_row(
-	const TPROPVAL_ARRAY *ppropvals,
-	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow);
+extern void common_util_remove_propvals(TPROPVAL_ARRAY *, gromox::proptag_t);
+extern BOOL common_util_retag_propvals(TPROPVAL_ARRAY *, gromox::proptag_t orig_tag, gromox::proptag_t new_tag);
+extern void cu_reduce_proptags(PROPTAG_ARRAY *minuend, proptag_cspan subtractor);
+extern PROPTAG_ARRAY *cu_trim_proptags(proptag_cspan tags);
+extern bool cu_propvals_to_row(const TPROPVAL_ARRAY *, proptag_cspan cols, PROPERTY_ROW *row);
+extern bool cu_propvals_to_row_ex(cpid_t, bool unicode, const TPROPVAL_ARRAY *, proptag_cspan cols, PROPERTY_ROW *row);
 extern BOOL common_util_convert_unspecified(cpid_t, BOOL unicode, TYPED_PROPVAL *);
-extern BOOL common_util_propvals_to_row_ex(cpid_t, BOOL unicode, const TPROPVAL_ARRAY *, const PROPTAG_ARRAY *cols, PROPERTY_ROW *row);
-extern BOOL common_util_propvals_to_openrecipient(cpid_t, TPROPVAL_ARRAY *, const PROPTAG_ARRAY *cols, OPENRECIPIENT_ROW *row);
-extern BOOL common_util_propvals_to_readrecipient(cpid_t, TPROPVAL_ARRAY *, const PROPTAG_ARRAY *cols, READRECIPIENT_ROW *row);
-BOOL common_util_row_to_propvals(
-	const PROPERTY_ROW *prow, const PROPTAG_ARRAY *pcolumns,
-	TPROPVAL_ARRAY *ppropvals);
-extern BOOL common_util_modifyrecipient_to_propvals(cpid_t, const MODIFYRECIPIENT_ROW *, const PROPTAG_ARRAY *cols, TPROPVAL_ARRAY *vals);
+extern bool cu_propvals_to_openrecipient(cpid_t, TPROPVAL_ARRAY *vals, proptag_cspan cols, OPENRECIPIENT_ROW *row);
+extern bool cu_propvals_to_readrecipient(cpid_t, TPROPVAL_ARRAY *vals, proptag_cspan cols, READRECIPIENT_ROW *row);
+extern bool cu_modifyrecipient_to_propvals(cpid_t, const MODIFYRECIPIENT_ROW *, proptag_cspan cols, TPROPVAL_ARRAY *vals);
 BOOL common_util_convert_tagged_propval(
 	BOOL to_unicode, TAGGED_PROPVAL *ppropval);
 BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres);
 BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions);
 extern void common_util_notify_receipt(const char *username, int type, message_content *brief);
-extern BOOL common_util_save_message_ics(logon_object *plogon, uint64_t msg_id, PROPTAG_ARRAY *changed_tags);
 extern ec_error_t ems_send_mail(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t ems_send_vmail(vmime::shared_ptr<vmime::message>, const char *sender, const std::vector<std::string> &rcpts);
-extern ec_error_t cu_send_message(logon_object *, message_object *, bool submit);
-extern ec_error_t cu_id2user(int, std::string &);
+extern ec_error_t cu_send_message(logon_object *, message_object *, const char *ev_from);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, message_content *, const char *bounce_type, MAIL *);
 
 extern int (*common_util_add_timer)(const char *command, int interval);
 extern BOOL (*common_util_cancel_timer)(int timer_id);
 
-extern void common_util_init(const char *org_name, unsigned int max_rcpt, unsigned int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
+extern void common_util_init(const char *org_name, unsigned int max_rcpt, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
 extern int common_util_run();
 extern const char *common_util_get_submit_command();
 extern uint32_t common_util_get_ftstream_id();
@@ -102,7 +143,8 @@ extern void fxs_propsort(message_content &);
 extern ec_error_t replid_to_replguid(const logon_object &, uint16_t, GUID &);
 extern ec_error_t replguid_to_replid(const logon_object &, const GUID &, uint16_t &);
 
-extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+extern size_t g_max_mail_len;
+extern unsigned int g_logon_debug, g_max_rcpt;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
 extern char g_emsmdb_org_name[256];
 

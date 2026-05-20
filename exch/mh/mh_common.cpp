@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <fmt/core.h>
@@ -113,7 +113,7 @@ http_status MhContext::error_responsecode(resp_code response_code) const
 {
 	char dstring[128], text_buff[512];
 
-	auto text_len = snprintf(text_buff, sizeof(text_buff),
+	auto text_len = gx_snprintf(text_buff, sizeof(text_buff),
 		"<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\r\n"
 		"<html><head>\r\n"
 		"<title>MAPI OVER HTTP ERROR</title>\r\n"

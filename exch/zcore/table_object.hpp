@@ -36,32 +36,32 @@ struct table_object {
 	public:
 	~table_object();
 	static std::unique_ptr<table_object> create(store_object *, void *parent, zcore_tbltype, uint32_t table_flags);
-	const PROPTAG_ARRAY *get_columns() const { return pcolumns; }
-	BOOL set_columns(const PROPTAG_ARRAY *);
-	BOOL set_sorts(const SORTORDER_SET *);
-	BOOL load();
+	const proptag_vector *get_columns() const { return m_colset ? &m_columns : nullptr; }
+	ec_error_t set_columns(proptag_cspan);
+	ec_error_t set_sorts(const SORTORDER_SET *);
+	ec_error_t load();
 	void unload();
-	BOOL query_rows(const PROPTAG_ARRAY *cols, uint32_t row_count, TARRAY_SET *);
-	BOOL set_restriction(const RESTRICTION *);
+	ec_error_t query_rows(const proptag_cspan *cols, uint32_t row_count, TARRAY_SET *);
+	ec_error_t set_restriction(const RESTRICTION *);
 	void seek_current(BOOL forward, uint32_t row_count);
 	uint32_t get_position() const { return position; }
 	void set_position(uint32_t pos);
 	void clear_position() { position = 0; }
 	uint32_t get_total();
-	BOOL create_bookmark(uint32_t *index);
+	ec_error_t create_bookmark(uint32_t *index);
 	void remove_bookmark(uint32_t index);
 	void clear_bookmarks() { bookmark_list.clear(); }
-	BOOL retrieve_bookmark(uint32_t index, BOOL *exist);
-	BOOL filter_rows(uint32_t count, const RESTRICTION *, const PROPTAG_ARRAY *cols, TARRAY_SET *);
-	BOOL match_row(BOOL forward, const RESTRICTION *, int32_t *pos);
+	ec_error_t retrieve_bookmark(uint32_t index, BOOL *exist);
+	ec_error_t filter_rows(uint32_t count, const RESTRICTION *, TARRAY_SET *);
+	ec_error_t match_row(BOOL forward, const RESTRICTION *, int32_t *pos);
 
 	store_object *pstore = nullptr;
 	uint32_t handle = 0, table_flags = 0;
 	void *pparent_obj = nullptr;
 	zcore_tbltype table_type{};
-	bool m_loaded = false;
+	bool m_loaded = false, m_colset = false;
 	tarray_set *fixed_data = nullptr;
-	PROPTAG_ARRAY *pcolumns = nullptr;
+	proptag_vector m_columns;
 	SORTORDER_SET *psorts = nullptr;
 	RESTRICTION *prestriction = nullptr;
 	uint32_t position = 0, table_id = 0, bookmark_index = 0;

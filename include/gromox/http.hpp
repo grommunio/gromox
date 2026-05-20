@@ -1,5 +1,17 @@
 #pragma once
 
+/**
+ * Mnemonics for HTTP status codes (with internal extensions)
+ *
+ * Negative codes indicate the server shall close the HTTP connection, hence
+ * the _CL suffix. This is used when it does not make sense to continue the
+ * connection, or when we want to stop the client uploading a (potentially
+ * large) request body, or when we are unsure of our own state.
+ *
+ * Codes >= 1000 (after normalization to positive number) are divided by 10;
+ * this hack is used to send different error strings for different situations,
+ * but the same HTTP code.
+ */
 enum class http_status {
 	none = 0,
 	ok = 200,

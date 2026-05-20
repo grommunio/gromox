@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -41,6 +42,7 @@
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
+#include <gromox/zcore_types.hpp>
 #include "bounce_producer.hpp"
 #include "common_util.hpp"
 #include "exmdb_client.hpp"
@@ -79,24 +81,20 @@ struct LANGMAP_ITEM {
 
 }
 
-unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+size_t g_max_mail_len;
+unsigned int g_max_rcpt;
 unsigned int g_max_rule_len, g_max_extrule_len, zcore_backfill_transporthdr;
 static std::string g_smtp_url;
 char g_org_name[256];
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
 static thread_local std::unique_ptr<env_context> g_env_key;
-static char g_default_charset[32];
 static char g_submit_command[1024];
 static constexpr char ZCORE_UA[] = PACKAGE_NAME "-zcore " PACKAGE_VERSION;
 
-BOOL common_util_verify_columns_and_sorts(
-	const PROPTAG_ARRAY *pcolumns,
-	const SORTORDER_SET *psort_criteria)
+bool cu_verify_columns_and_sorts(proptag_cspan cols, const SORTORDER_SET *psort_criteria)
 {
-	uint32_t proptag;
-	
-	proptag = 0;
+	proptag_t proptag = 0;
 	for (size_t i = 0; i < psort_criteria->count; ++i) {
 		if (!(psort_criteria->psort[i].type & MV_INSTANCE))
 			continue;
@@ -105,22 +103,21 @@ BOOL common_util_verify_columns_and_sorts(
 		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
-	for (size_t i = 0; i < pcolumns->count; ++i)
-		if (pcolumns->pproptag[i] & MV_INSTANCE &&
-		    proptag != pcolumns->pproptag[i])
+	for (const auto t : cols)
+		if (t & MV_INSTANCE && proptag != t)
 			return FALSE;
 	return TRUE;
 }
 
 /* Cf. oxomsg_extract_delegate for comments */
-bool cu_extract_delegate(message_object *pmessage, std::string &username)
+bool cu_extract_delegator(message_object *pmessage, std::string &username)
 {
 	TPROPVAL_ARRAY tmp_propvals;
 	static constexpr proptag_t proptag_buff[] =
 		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
-	static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
+	auto err = pmessage->get_properties(proptag_buff, &tmp_propvals);
+	if (err != ecSuccess)
 		return FALSE;	
 	if (0 == tmp_propvals.count) {
 		username.clear();
@@ -130,7 +127,7 @@ bool cu_extract_delegate(message_object *pmessage, std::string &username)
 	auto emaddr   = tmp_propvals.get<const char>(PR_EMAIL_ADDRESS);
 	if (addrtype != nullptr) {
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
-		           cu_id2user, username);
+		           mysql_adaptor_userid_to_name, username);
 		if (ret == ecSuccess)
 			return true;
 		else if (ret != ecNullObject)
@@ -142,7 +139,7 @@ bool cu_extract_delegate(message_object *pmessage, std::string &username)
 		return TRUE;
 	}
 	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
-		   g_org_name, cu_id2user, username);
+		   g_org_name, mysql_adaptor_userid_to_name, username);
 	if (ret == ecSuccess)
 		return TRUE;
 	if (ret == ecNullObject) {
@@ -164,18 +161,14 @@ static int cu_test_delegate_perm_MD(const char *account,
     const char *maildir, bool send_as) try
 {
 	std::vector<std::string> delegate_list;
-	auto path = maildir + std::string(send_as ? "/config/sendas.txt" : "/config/delegates.txt");
-	auto ret = read_file_by_line(path.c_str(), delegate_list);
-	if (ret != 0 && ret != ENOENT) {
-		mlog(LV_WARN, "W-2057: %s: %s", path.c_str(), strerror(ret));
-		return ret;
-	}
+	if (!exmdb_client->read_delegates(maildir, send_as, &delegate_list))
+		return -1;
 	for (const auto &d : delegate_list)
 		if (strcasecmp(d.c_str(), account) == 0)
 			return 1;
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2056: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -205,6 +198,8 @@ repr_grant cu_get_delegate_perm_AA(const char *account, const char *repr)
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(repr, WANTPRIV_METAONLY, mres) != 0)
 		return repr_grant::error;
+	if (strcasecmp(account, mres.username.c_str()) == 0)
+		return repr_grant::send_as;
 	return cu_get_delegate_perm_MD(account, mres.maildir.c_str());
 }
 
@@ -231,8 +226,7 @@ ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *dat
 	return ecSuccess;
 }
 
-void common_util_remove_propvals(
-	TPROPVAL_ARRAY *parray, uint32_t proptag)
+void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 {
 	int i;
 	
@@ -247,12 +241,12 @@ void common_util_remove_propvals(
 	}
 }
 
-void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
-	const PROPTAG_ARRAY *pproptags_subtractor)
+void cu_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
+    proptag_cspan pproptags_subtractor)
 {
-	for (unsigned int j = 0; j < pproptags_subtractor->count; ++j) {
+	for (const auto t : pproptags_subtractor) {
 		for (unsigned int i = 0; i < pproptags_minuend->count; ++i) {
-			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
+			if (t != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;
 			if (i < pproptags_minuend->count)
@@ -268,12 +262,12 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 {
 	char tmp_essdn[1024];
-	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
+	auto tmp_len = gx_snprintf(tmp_essdn, std::size(tmp_essdn),
 	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
 		return FALSE;
-	*puid = decode_hex_int(pessdn + tmp_len + 8);
+	*puid = eight_LE_hexchars_to_int(&pessdn[tmp_len+8]);
 	return TRUE;
 }
 
@@ -281,19 +275,18 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id)
 {
 	char tmp_essdn[1024];
-	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
+	auto tmp_len = gx_snprintf(tmp_essdn, std::size(tmp_essdn),
 	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
 		return FALSE;
-	*pdomain_id = decode_hex_int(pessdn + tmp_len);
-	*puser_id = decode_hex_int(pessdn + tmp_len + 8);
+	*pdomain_id = eight_LE_hexchars_to_int(&pessdn[tmp_len]);
+	*puser_id   = eight_LE_hexchars_to_int(&pessdn[tmp_len+8]);
 	return TRUE;	
 }
 
-BOOL common_util_exmdb_locinfo_from_string(
-	const char *loc_string, uint8_t *ptype,
-	int *pdb_id, uint64_t *peid)
+bool common_util_exmdb_locinfo_from_string(const char *loc_string,
+    uint8_t *ptype, int *pdb_id, eid_t *peid)
 {
 	int tmp_len;
 	uint64_t tmp_val;
@@ -328,14 +321,12 @@ BOOL common_util_exmdb_locinfo_from_string(
 	return TRUE;
 }
 
-void common_util_init(const char *org_name, const char *default_charset,
-    unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
+void common_util_init(const char *org_name,
+    unsigned int max_rcpt, size_t max_mail_len,
     unsigned int max_rule_len, std::string &&smtp_url, const char *submit_command)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
-	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 	g_max_rcpt = max_rcpt;
-	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
 	g_smtp_url = std::move(smtp_url);
@@ -359,7 +350,7 @@ BOOL common_util_build_environment() try
 	g_env_key = std::make_unique<env_context>();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1977: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -411,222 +402,16 @@ char *common_util_dup(std::string_view sv)
 	return out;
 }
 
-static BINARY *common_util_dup_binary(const BINARY *src)
-{
-	auto dst = cu_alloc<BINARY>();
-	if (dst == nullptr)
-		return NULL;
-	dst->cb = src->cb;
-	if (src->cb == 0) {
-		dst->pb = nullptr;
-		return dst;
-	}
-	dst->pv = common_util_alloc(src->cb);
-	if (dst->pv == nullptr)
-		return NULL;
-	memcpy(dst->pv, src->pv, src->cb);
-	return dst;
-}
-
-ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *src, BOOL b_temp)
-{
-	auto dst = !b_temp ? me_alloc<ZNOTIFICATION>() : cu_alloc<ZNOTIFICATION>();
-	
-	if (dst == nullptr)
-		return NULL;
-	dst->event_type = src->event_type;
-	if (src->event_type == NF_NEW_MAIL) {
-		auto src_nm = static_cast<const NEWMAIL_ZNOTIFICATION *>(src->pnotification_data);
-		NEWMAIL_ZNOTIFICATION *dst_nm;
-		if (!b_temp) {
-			dst_nm = me_alloc<NEWMAIL_ZNOTIFICATION>();
-			if (dst_nm == nullptr) {
-				free(dst);
-				return NULL;
-			}
-		} else {
-			dst_nm = cu_alloc<NEWMAIL_ZNOTIFICATION>();
-			if (dst_nm == nullptr)
-				return NULL;
-		}
-		memset(dst_nm, 0, sizeof(*dst_nm));
-		dst->pnotification_data = dst_nm;
-		dst_nm->entryid.cb = src_nm->entryid.cb;
-		if (!b_temp) {
-			dst_nm->entryid.pv = malloc(dst_nm->entryid.cb);
-			if (dst_nm->entryid.pv == nullptr) {
-				dst_nm->entryid.cb = 0;
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_nm->entryid.pv = common_util_alloc(dst_nm->entryid.cb);
-			if (dst_nm->entryid.pv == nullptr) {
-				dst_nm->entryid.cb = 0;
-				return NULL;
-			}
-		}
-		memcpy(dst_nm->entryid.pv, src_nm->entryid.pv, dst_nm->entryid.cb);
-		dst_nm->parentid.cb = src_nm->parentid.cb;
-		if (!b_temp) {
-			dst_nm->parentid.pv = malloc(dst_nm->parentid.cb);
-			if (dst_nm->parentid.pv == nullptr) {
-				dst_nm->parentid.cb = 0;
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_nm->parentid.pv = common_util_alloc(dst_nm->parentid.cb);
-			if (dst_nm->parentid.pv == nullptr) {
-				dst_nm->parentid.cb = 0;
-				return NULL;
-			}
-		}
-		memcpy(dst_nm->parentid.pv, src_nm->parentid.pv, dst_nm->parentid.cb);
-		dst_nm->flags = src_nm->flags;
-		if (!b_temp) {
-			dst_nm->message_class = strdup(src_nm->message_class);
-			if (dst_nm->message_class == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_nm->message_class = common_util_dup(src_nm->message_class);
-			if (dst_nm->message_class == nullptr)
-				return NULL;
-		}
-		dst_nm->message_flags = src_nm->message_flags;
-		return dst;
-	}
-
-	auto src_ob = static_cast<OBJECT_ZNOTIFICATION *>(src->pnotification_data);
-	OBJECT_ZNOTIFICATION *dst_ob;
-	if (!b_temp) {
-		dst_ob = me_alloc<OBJECT_ZNOTIFICATION>();
-		if (dst_ob == nullptr) {
-			free(dst);
-			return NULL;
-		}
-	} else {
-		dst_ob = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (dst_ob == nullptr)
-			return NULL;
-	}
-	memset(dst_ob, 0, sizeof(*dst_ob));
-	dst->pnotification_data = dst_ob;
-	dst_ob->object_type = src_ob->object_type;
-	if (src_ob->pentryid != nullptr) {
-		if (!b_temp) {
-			dst_ob->pentryid = static_cast<BINARY *>(propval_dup(PT_BINARY, src_ob->pentryid));
-			if (dst_ob->pentryid == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pentryid = common_util_dup_binary(src_ob->pentryid);
-			if (dst_ob->pentryid == nullptr)
-				return NULL;
-		}
-	}
-	if (src_ob->pparentid != nullptr) {
-		if (!b_temp) {
-			dst_ob->pparentid = static_cast<BINARY *>(propval_dup(PT_BINARY, src_ob->pparentid));
-			if (dst_ob->pparentid == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pparentid = common_util_dup_binary(src_ob->pparentid);
-			if (dst_ob->pparentid == nullptr)
-				return NULL;
-		}
-	}
-	if (src_ob->pold_entryid != nullptr) {
-		if (!b_temp) {
-			dst_ob->pold_entryid = static_cast<BINARY *>(propval_dup(PT_BINARY, src_ob->pold_entryid));
-			if (dst_ob->pold_entryid == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pold_entryid = common_util_dup_binary(src_ob->pold_entryid);
-			if (dst_ob->pold_entryid == nullptr)
-				return NULL;
-		}
-	}
-	if (src_ob->pold_parentid != nullptr) {
-		if (!b_temp) {
-			dst_ob->pold_parentid = static_cast<BINARY *>(propval_dup(PT_BINARY, src_ob->pold_parentid));
-			if (dst_ob->pold_parentid == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pold_parentid = common_util_dup_binary(src_ob->pold_parentid);
-			if (dst_ob->pold_parentid == nullptr)
-				return NULL;
-		}
-	}
-	if (src_ob->pproptags != nullptr) {
-		if (!b_temp) {
-			dst_ob->pproptags = proptag_array_dup(src_ob->pproptags);
-			if (dst_ob->pproptags == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pproptags = cu_alloc<PROPTAG_ARRAY>();
-			if (dst_ob->pproptags == nullptr)
-				return NULL;
-			dst_ob->pproptags->count = src_ob->pproptags->count;
-			dst_ob->pproptags->pproptag = cu_alloc<uint32_t>(src_ob->pproptags->count);
-			if (dst_ob->pproptags->pproptag == nullptr)
-				return NULL;
-			memcpy(dst_ob->pproptags->pproptag, src_ob->pproptags->pproptag,
-			       sizeof(uint32_t) * src_ob->pproptags->count);
-		}
-	}
-	return dst;
-}
-
-void common_util_free_znotification(ZNOTIFICATION *pnotification)
-{
-	if (pnotification->event_type == NF_NEW_MAIL) {
-		auto pnew_notify = static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification->pnotification_data);
-		if (pnew_notify->entryid.pb != nullptr)
-			free(pnew_notify->entryid.pb);
-		if (pnew_notify->parentid.pb != nullptr)
-			free(pnew_notify->parentid.pb);
-		if (pnew_notify->message_class != nullptr)
-			free(pnew_notify->message_class);
-		free(pnew_notify);
-	} else {
-		auto pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(pnotification->pnotification_data);
-		if (pobj_notify->pentryid != nullptr)
-			rop_util_free_binary(pobj_notify->pentryid);
-		if (pobj_notify->pparentid != nullptr)
-			rop_util_free_binary(pobj_notify->pparentid);
-		if (pobj_notify->pold_entryid != nullptr)
-			rop_util_free_binary(pobj_notify->pold_entryid);
-		if (pobj_notify->pold_parentid != nullptr)
-			rop_util_free_binary(pobj_notify->pold_parentid);
-		if (pobj_notify->pproptags != nullptr)
-			proptag_array_free(pobj_notify->pproptags);
-	}
-	free(pnotification);
-}
-
-BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
-    char *pessdn, size_t dsize)
+bool cu_parse_abkeid(BINARY entryid_bin, uint32_t *ptype, std::string &essdn)
 {
 	EXT_PULL ext_pull;
 	EMSAB_ENTRYID tmp_entryid;
 
 	ext_pull.init(entryid_bin.pb, entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_abk_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;
 	*ptype = tmp_entryid.type;
-	gx_strlcpy(pessdn, tmp_entryid.px500dn, dsize);
+	essdn = std::move(tmp_entryid.x500dn);
 	return TRUE;
 }
 
@@ -654,17 +439,17 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin,
     unsigned int etyp)
 {
 	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID_view tmp_entryid;
 	
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr)
 		return FALSE;
 	tmp_entryid.flags = 0;
 	tmp_entryid.type = etyp;
-	tmp_entryid.px500dn = deconst(essdn);
+	tmp_entryid.px500dn = essdn;
 
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != pack_result::ok)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return TRUE;
@@ -710,11 +495,11 @@ static BOOL common_util_username_to_entryid(const char *username,
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return false;
 	auto status = ext_push.p_oneoff_eid(oneoff_entry);
-	if (EXT_ERR_CHARCNV == status) {
+	if (status == pack_result::charconv) {
 		oneoff_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 		status = ext_push.p_oneoff_eid(oneoff_entry);
 	}
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return FALSE;
 	pbin->cb = ext_push.m_offset;
 	if (dtpp != nullptr)
@@ -730,8 +515,8 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	FLATUID provider_uid;
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS ||
-	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_uint32(&flags) != pack_result::ok ||
+	    ext_pull.g_guid(&provider_uid) != pack_result::ok)
 		return 0;
 	/*
 	 * The GUID determines how things look after byte 20. Without
@@ -739,36 +524,33 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	 * by specification. I suppose the caller ought to ensure it is only
 	 * used with FOLDER_ENTRYIDs and MESSAGE_ENTRYIDs.
          */
-	if (ext_pull.g_uint16(&folder_type) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_uint16(&folder_type) != pack_result::ok)
 		return 0;
 	return folder_type;
 }
 
-BOOL cu_entryid_to_fid(BINARY bin,
-	BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id)
+bool cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, eid_t *pfolder_id)
 {
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	FOLDER_ENTRYID tmp_entryid;
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
-	if (ext_pull.g_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_folder_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
-	switch (tmp_entryid.folder_type) {
+	switch (tmp_entryid.eid_type) {
 	case EITLT_PRIVATE_FOLDER:
 		*pb_private = TRUE;
-		*pdb_id = rop_util_get_user_id(tmp_entryid.database_guid);
+		*pdb_id = rop_util_get_user_id(tmp_entryid.folder_dbguid);
 		if (*pdb_id == -1)
 			return FALSE;
-		*pfolder_id = rop_util_make_eid(1,
-				tmp_entryid.global_counter);
+		*pfolder_id = rop_util_make_eid(1, tmp_entryid.folder_gc);
 		return TRUE;
 	case EITLT_PUBLIC_FOLDER: {
 		*pb_private = FALSE;
-		*pdb_id = rop_util_get_domain_id(tmp_entryid.database_guid);
+		*pdb_id = rop_util_get_domain_id(tmp_entryid.folder_dbguid);
 		if (*pdb_id > 0) {
-			*pfolder_id = rop_util_make_eid(1,
-					tmp_entryid.global_counter);
+			*pfolder_id = rop_util_make_eid(1, tmp_entryid.folder_gc);
 			return TRUE;
 		}
 		auto pinfo = zs_get_info();
@@ -776,10 +558,9 @@ BOOL cu_entryid_to_fid(BINARY bin,
 			return FALSE;
 		ec_error_t ret = ecSuccess;
 		if (!exmdb_client->get_mapping_replid(pinfo->get_homedir(),
-		    tmp_entryid.database_guid, &replid, &ret) || ret != ecSuccess)
+		    tmp_entryid.folder_dbguid, &replid, &ret) || ret != ecSuccess)
 			return FALSE;
-		*pfolder_id = rop_util_make_eid(replid,
-					tmp_entryid.global_counter);
+		*pfolder_id = rop_util_make_eid(replid, tmp_entryid.folder_gc);
 		return TRUE;
 	}
 	default:
@@ -787,37 +568,33 @@ BOOL cu_entryid_to_fid(BINARY bin,
 	}
 }
 
-BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
-	int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id)
+bool cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
+    int *pdb_id, eid_t *pfolder_id, eid_t *pmessage_id)
 {
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
-	if (ext_pull.g_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_msg_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
-	if (tmp_entryid.folder_database_guid != tmp_entryid.message_database_guid)
+	if (tmp_entryid.folder_dbguid != tmp_entryid.message_dbguid)
 		return FALSE;
-	switch (tmp_entryid.message_type) {
+	switch (tmp_entryid.eid_type) {
 	case EITLT_PRIVATE_MESSAGE:
 		*pb_private = TRUE;
-		*pdb_id = rop_util_get_user_id(tmp_entryid.folder_database_guid);
+		*pdb_id = rop_util_get_user_id(tmp_entryid.folder_dbguid);
 		if (*pdb_id == -1)
 			return FALSE;
-		*pfolder_id = rop_util_make_eid(1,
-			tmp_entryid.folder_global_counter);
-		*pmessage_id = rop_util_make_eid(1,
-			tmp_entryid.message_global_counter);
+		*pfolder_id  = rop_util_make_eid(1, tmp_entryid.folder_gc);
+		*pmessage_id = rop_util_make_eid(1, tmp_entryid.message_gc);
 		return TRUE;
 	case EITLT_PUBLIC_MESSAGE: {
 		*pb_private = FALSE;
-		*pdb_id = rop_util_get_domain_id(tmp_entryid.folder_database_guid);
+		*pdb_id = rop_util_get_domain_id(tmp_entryid.folder_dbguid);
 		if (*pdb_id > 0) {
-			*pfolder_id = rop_util_make_eid(1,
-				tmp_entryid.folder_global_counter);
-			*pmessage_id = rop_util_make_eid(1,
-				tmp_entryid.message_global_counter);
+			*pfolder_id  = rop_util_make_eid(1, tmp_entryid.folder_gc);
+			*pmessage_id = rop_util_make_eid(1, tmp_entryid.message_gc);
 			return TRUE;
 		}
 		auto pinfo = zs_get_info();
@@ -825,13 +602,11 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 			return FALSE;
 		ec_error_t ret = ecSuccess;
 		if (!exmdb_client->get_mapping_replid(pinfo->get_homedir(),
-		    tmp_entryid.folder_database_guid, &replid, &ret) ||
+		    tmp_entryid.folder_dbguid, &replid, &ret) ||
 		    ret != ecSuccess)
 			return FALSE;
-		*pfolder_id = rop_util_make_eid(replid,
-			tmp_entryid.folder_global_counter);
-		*pmessage_id = rop_util_make_eid(replid,
-			tmp_entryid.message_global_counter);
+		*pfolder_id  = rop_util_make_eid(replid, tmp_entryid.folder_gc);
+		*pmessage_id = rop_util_make_eid(replid, tmp_entryid.message_gc);
 		return TRUE;
 	}
 	default:
@@ -863,67 +638,69 @@ static ec_error_t replid_to_replguid(const store_object &logon,
 	return ecSuccess;
 }
 
-static void *cu_fid_to_entryid_1(const store_object *pstore, uint64_t folder_id,
-    void *output, size_t *outmax)
+BINARY *cu_fid_to_entryid(const store_object &store, uint64_t folder_id)
 {
-	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
-	    tmp_entryid.database_guid) != ecSuccess)
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
-	if (pstore->b_private) {
-		tmp_bin.cb = 0;
-		tmp_bin.pv = &tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
-		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
+	if (store.b_private) {
+		tmp_entryid.provider_uid = store.mailbox_guid;
+		tmp_entryid.eid_type     = EITLT_PRIVATE_FOLDER;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
-		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
+		tmp_entryid.eid_type     = EITLT_PUBLIC_FOLDER;
 	}
-	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.pad[0] = 0;
-	tmp_entryid.pad[1] = 0;
-	if (!ext_push.init(output, *outmax, 0) ||
-	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
-		return nullptr;
-	*outmax = ext_push.m_offset;
-	return output;
-}
-
-BINARY *cu_fid_to_entryid(const store_object *pstore, uint64_t folder_id)
-{
+	tmp_entryid.folder_gc = rop_util_get_gc_array(folder_id);
+	tmp_entryid.pad1[0] = 0;
+	tmp_entryid.pad1[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	size_t z = 256;
-	pbin->pv = common_util_alloc(z);
-	if (pbin->pv == nullptr ||
-	    cu_fid_to_entryid_1(pstore, folder_id, pbin->pv, &z) == nullptr)
+	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
+	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
-	pbin->cb = z;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
-/* The caller can check for .size() < 4 to detect errors */
-std::string cu_fid_to_entryid_s(const store_object *pstore, uint64_t folder_id) try
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_fid_to_entryid_s(const store_object &store, uint64_t folder_id) try
 {
-	std::string out;
-	size_t z = 256;
-	out.resize(z);
-	if (cu_fid_to_entryid_1(pstore, folder_id, out.data(), &z) == nullptr)
+	FOLDER_ENTRYID eid{};
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	    eid.folder_dbguid) != ecSuccess)
 		return {};
-	out.resize(z);
+	if (store.b_private) {
+		eid.provider_uid = store.mailbox_guid;
+		eid.eid_type     = EITLT_PRIVATE_FOLDER;
+	} else {
+		eid.provider_uid = pbLongTermNonPrivateGuid;
+		eid.eid_type     = EITLT_PUBLIC_FOLDER;
+	}
+	eid.folder_gc = rop_util_get_gc_array(folder_id);
+
+	std::string out;
+	out.resize(46); /* MS-OXCDATA v19 §2.2.4.1 */
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), 46, 0) ||
+	    ep.p_folder_eid(eid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2247: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
-BINARY *cu_fid_to_sk(store_object *pstore,
-    uint64_t folder_id)
+BINARY *cu_fid_to_sk(const store_object &store, uint64_t folder_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -935,42 +712,65 @@ BINARY *cu_fid_to_sk(store_object *pstore,
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
 	    longid.guid) != ecSuccess)
 		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(longid.guid) != pack_result::ok ||
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
 		return NULL;
 	return pbin;
 }
 
-BINARY *cu_mid_to_entryid(store_object *pstore,
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_fid_to_sk_s(const store_object &store, uint64_t folder_id) try
+{
+	LONG_TERM_ID longid;
+	longid.global_counter = rop_util_get_gc_array(folder_id);
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	    longid.guid) != ecSuccess)
+		return {};
+
+	std::string out;
+	out.resize(22);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), 22, 0) ||
+	    ep.p_guid(longid.guid) != pack_result::ok ||
+	    ep.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
+}
+
+BINARY *cu_mid_to_entryid(const store_object &store,
 	uint64_t folder_id, uint64_t message_id)
 {
-	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
-	    tmp_entryid.folder_database_guid) != ecSuccess)
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
-	if (replid_to_replguid(*pstore, rop_util_get_replid(message_id),
-	    tmp_entryid.message_database_guid) != ecSuccess)
+	if (replid_to_replguid(store, rop_util_get_replid(message_id),
+	    tmp_entryid.message_dbguid) != ecSuccess)
 		return nullptr;
-	if (pstore->b_private) {
-		tmp_bin.cb = 0;
-		tmp_bin.pv = &tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
-		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
+	if (store.b_private) {
+		tmp_entryid.provider_uid = store.mailbox_guid;
+		tmp_entryid.eid_type     = EITLT_PRIVATE_MESSAGE;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
-		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
+		tmp_entryid.eid_type     = EITLT_PUBLIC_MESSAGE;
 	}
-	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
+	tmp_entryid.folder_gc  = rop_util_get_gc_array(folder_id);
+	tmp_entryid.message_gc = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
@@ -978,26 +778,64 @@ BINARY *cu_mid_to_entryid(store_object *pstore,
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
-	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
+	    ext_push.p_msg_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
-ec_error_t cu_calc_msg_access(store_object *pstore, const char *user,
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_mid_to_entryid_s(const store_object &store, uint64_t folder_id,
+    uint64_t msg_id) try
+{
+	EXT_PUSH ep;
+	MESSAGE_ENTRYID eid{};
+
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	    eid.folder_dbguid) != ecSuccess)
+		return {};
+	if (replid_to_replguid(store, rop_util_get_replid(msg_id),
+	    eid.message_dbguid) != ecSuccess)
+		return {};
+	if (store.b_private) {
+		eid.provider_uid = store.mailbox_guid;
+		eid.eid_type     = EITLT_PRIVATE_MESSAGE;
+	} else {
+		eid.provider_uid = pbLongTermNonPrivateGuid;
+		eid.eid_type     = EITLT_PUBLIC_MESSAGE;
+	}
+	eid.folder_gc  = rop_util_get_gc_array(folder_id);
+	eid.message_gc = rop_util_get_gc_array(msg_id);
+
+	std::string out;
+	out.resize(255);
+	if (!ep.init(out.data(), 255, 0) ||
+	    ep.p_msg_eid(eid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
+}
+
+ec_error_t cu_calc_msg_access(const store_object &store, const char *user,
     uint64_t folder_id, uint64_t message_id, uint32_t &tag_access)
 {
 	BOOL b_owner = false;
 	uint32_t permission = 0;
 
 	tag_access = 0;
-	if (pstore->owner_mode()) {
+	if (store.owner_mode()) {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client->get_folder_perm(pstore->get_dir(),
+	if (!exmdb_client->get_folder_perm(store.get_dir(),
 	    folder_id, user, &permission))
 		return ecError;
 	if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
@@ -1006,7 +844,7 @@ ec_error_t cu_calc_msg_access(store_object *pstore, const char *user,
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client_check_message_owner(pstore->get_dir(),
+	if (!exmdb_client_check_message_owner(store.get_dir(),
 	    message_id, user, &b_owner))
 		return ecError;
 	if (b_owner || (permission & frightsReadAny))
@@ -1023,8 +861,7 @@ ec_error_t cu_calc_msg_access(store_object *pstore, const char *user,
 	return ecSuccess;
 }
 
-BINARY *cu_mid_to_sk(store_object *pstore,
-    uint64_t message_id)
+BINARY *cu_mid_to_sk(const store_object &store, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -1036,13 +873,37 @@ BINARY *cu_mid_to_sk(store_object *pstore,
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	longid.guid = pstore->guid();
+	longid.guid = store.guid();
 	longid.global_counter = rop_util_get_gc_array(message_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(longid.guid) != pack_result::ok ||
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
 		return NULL;
 	return pbin;
+}
+
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_mid_to_sk_s(const store_object &store, uint64_t msg_id) try
+{
+	std::string out;
+	EXT_PUSH ep;
+	LONG_TERM_ID longid;
+
+	out.resize(22);
+	longid.guid = store.guid();
+	longid.global_counter = rop_util_get_gc_array(msg_id);
+	if (!ep.init(out.data(), 22, 0) ||
+	    ep.p_guid(longid.guid) != pack_result::ok ||
+	    ep.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
 }
 
 BINARY *cu_xid_to_bin(const XID &xid)
@@ -1054,10 +915,26 @@ BINARY *cu_xid_to_bin(const XID &xid)
 		return NULL;
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
+}
+
+std::string cu_xid_to_bin_s(const XID &xid) try
+{
+	std::string out;
+	EXT_PUSH ep;
+
+	out.resize(24);
+	if (!ep.init(out.data(), 24, 0) ||
+	    ep.p_xid(xid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
 }
 
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
@@ -1067,19 +944,19 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
+	return ext_pull.g_xid(pbin->cb, pxid) == pack_result::ok ? TRUE : false;
 }
 
-BINARY* common_util_guid_to_binary(GUID guid)
+BINARY *common_util_guid_to_binary(FLATUID guid)
 {
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->cb = 0;
+	pbin->cb = 16;
 	pbin->pv = common_util_alloc(16);
 	if (pbin->pv == nullptr)
 		return NULL;
-	rop_util_guid_to_binary(guid, pbin);
+	memcpy(pbin->pv, &guid, sizeof(guid));
 	return pbin;
 }
 
@@ -1161,7 +1038,7 @@ static BOOL common_util_get_propids_create(const PROPNAME_ARRAY *names,
 	       TRUE, names, ids);
 }
 
-static BOOL common_util_get_propname(uint16_t propid, PROPERTY_NAME **pppropname) try
+static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname) try
 {
 	PROPNAME_ARRAY propnames;
 	
@@ -1171,74 +1048,17 @@ static BOOL common_util_get_propname(uint16_t propid, PROPERTY_NAME **pppropname
 	*pppropname = propnames.ppropname;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2230: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
-static bool mapi_p1(const TPROPVAL_ARRAY &props)
+ec_error_t cu_send_message(store_object *pstore, message_object *msg,
+    const char *ev_from) try
 {
-	auto v = props.get<const uint32_t>(PR_RECIPIENT_TYPE);
-	return v != nullptr && *v & MAPI_P1;
-}
-
-#if 0
-static bool xp_is_in_charge(const TPROPVAL_ARRAY &props)
-{
-	auto v = props.get<const uint32_t>(PR_RESPONSIBILITY);
-	return v == nullptr || *v != 0;
-}
-#endif
-
-static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
-    std::vector<std::string> &list, bool resend) try
-{
-	if (resend && !mapi_p1(props))
-		return ecSuccess;
-	/*
-	if (!b_submit && xp_is_in_charge(rcpt))
-		return ecSuccess;
-	*/
-	auto str = props.get<const char>(PR_SMTP_ADDRESS);
-	if (str != nullptr && *str != '\0') {
-		list.emplace_back(str);
-		return ecSuccess;
-	}
-	auto addrtype = props.get<const char>(PR_ADDRTYPE);
-	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
-	std::string es_result;
-	if (addrtype != nullptr) {
-		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
-		           cu_id2user, es_result);
-		if (ret == ecSuccess) {
-			list.emplace_back(std::move(es_result));
-			return ecSuccess;
-		} else if (ret != ecNullObject) {
-			return ret;
-		}
-	}
-	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
-	           g_org_name, cu_id2user, es_result);
-	if (ret == ecSuccess)
-		list.emplace_back(std::move(es_result));
-	if (ret == ecNullObject || ret == ecUnknownUser)
-		return ecInvalidRecips;
-	return ret;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1122: ENOMEM");
-	return ecServerOOM;
-}
-
-BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) try
-{
-	uint64_t message_id = msg->get_id();
+	eid_t message_id = msg->get_id();
 	void *pvalue;
-	BOOL b_result;
-	EID_ARRAY ids;
-	BOOL b_private;
-	BOOL b_partial;
+	BOOL b_private, b_partial = false;
 	int account_id;
-	uint64_t new_id;
-	uint64_t folder_id;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -1246,15 +1066,15 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) t
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
-		return FALSE;
+		return ecNotFound;
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (!exmdb_client->read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
-		return FALSE;
+		return ecRpcFailed;
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (ppropval == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
@@ -1262,93 +1082,102 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) t
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
 	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
-	if (num == nullptr)
-		return FALSE;
-	bool b_resend = *num & MSGFLAG_RESEND;
-	const tarray_set *prcpts = pmsgctnt->children.prcpts;
-	if (prcpts == nullptr)
-		return FALSE;
+	bool b_resend = num != nullptr && *num & MSGFLAG_RESEND;
 	auto log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
-	if (prcpts->count == 0)
-		mlog(LV_INFO, "I-1504: Tried to send %s but message has 0 recipients", log_id.c_str());
-
+	const tarray_set *prcpts = pmsgctnt->children.prcpts;
+	if (prcpts == nullptr || prcpts->count == 0) {
+		mlog(LV_ERR, "E-1504: Tried to send %s but message has 0 recipients", log_id.c_str());
+		return MAPI_E_NO_RECIPIENTS;
+	}
 	std::vector<std::string> rcpt_list;
-	for (auto &rcpt : *prcpts)
-		if (cu_rcpt_to_list(message_id, rcpt, rcpt_list,
-		    b_resend) != ecSuccess)
-			return false;
+	for (auto &rcpt : *prcpts) {
+		auto ret = cu_rcpt_to_list(rcpt, g_org_name, rcpt_list,
+		           mysql_adaptor_userid_to_name, b_resend);
+		if (ret != ecSuccess)
+			return ret;
+	}
+	if (rcpt_list.size() == 0) {
+		mlog(LV_ERR, "E-1750: Empty converted recipients list attempting to send %s", log_id.c_str());
+		return MAPI_E_NO_RECIPIENTS;
+	}
 
-	if (rcpt_list.size() > 0) {
-		auto body_type = get_override_format(*pmsgctnt);
-		common_util_set_dir(pstore->get_dir());
-		/* try to avoid TNEF message */
-		MAIL imail;
-		if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type,
-		    &imail, common_util_alloc, common_util_get_propids,
-		    common_util_get_propname))
-			return FALSE;	
+	common_util_set_dir(pstore->get_dir());
+	MAIL imail;
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids;
+	cvt.get_propname = common_util_get_propname;
+	cvt.use_format_override(*pmsgctnt);
+	if (!cvt.mapi_to_inet(*pmsgctnt, imail))
+		return ecError;
 
-		imail.set_header("X-Mailer", ZCORE_UA);
-		if (zcore_backfill_transporthdr) {
-			std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import(nullptr,
-				"UTC", &imail, common_util_alloc, common_util_get_propids));
-			if (rmsg != nullptr) {
-				for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
-					auto th = rmsg->proplist.get<const char>(tag);
-					if (th == nullptr)
-						continue;
-					TAGGED_PROPVAL tp  = {tag, deconst(th)};
-					TPROPVAL_ARRAY tpa = {1, &tp};
-					if (!msg->set_properties(&tpa))
-						break;
-					/* Unclear if permitted to save (specs say nothing) */
-					msg->save();
+	imail.set_header("X-Mailer", ZCORE_UA);
+	if (zcore_backfill_transporthdr) {
+		auto rmsg = cvt.inet_to_mapi(imail);
+		if (rmsg != nullptr) {
+			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
+				auto th = rmsg->proplist.get<const char>(tag);
+				if (th == nullptr)
+					continue;
+				TAGGED_PROPVAL tp  = {tag, deconst(th)};
+				TPROPVAL_ARRAY tpa = {1, &tp};
+				auto err = msg->set_properties(&tpa);
+				if (err != ecSuccess)
 					break;
-				}
+				/* Unclear if permitted to save (specs say nothing) */
+				msg->save();
+				break;
 			}
 		}
-
-		auto ret = cu_send_mail(imail, g_smtp_url.c_str(),
-		           pstore->get_account(), rcpt_list);
-		if (ret != ecSuccess) {
-			mlog(LV_ERR, "E-1194: failed to send %s via SMTP: %s",
-				log_id.c_str(), mapi_strerror(ret));
-			return FALSE;
-		}
 	}
+
+	auto ret = cu_send_mail(imail, g_smtp_url.c_str(), ev_from, rcpt_list);
+	if (ret != ecSuccess) {
+		mlog(LV_ERR, "E-1194: failed to send %s via SMTP: %s",
+			log_id.c_str(), mapi_strerror(ret));
+		return ret;
+	}
+	imail.clear();
+
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
+		eid_t folder_id{}, new_id{};
 		if (!cu_entryid_to_mid(*ptarget,
 		    &b_private, &account_id, &folder_id, &new_id))
-			return FALSE;	
+			return ecWarnWithErrors;
 		if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
-			return FALSE;
+			return ecWarnWithErrors;
 		if (!exmdb_client->movecopy_message(pstore->get_dir(), cpid,
-		    message_id, folder_id, new_id, TRUE, &b_result))
-			return FALSE;
-		return TRUE;
+		    message_id, folder_id, new_id, TRUE, &b_partial) || b_partial)
+			return ecWarnWithErrors;
+		return ecSuccess;
 	} else if (b_delete) {
-		exmdb_client_delete_message(pstore->get_dir(),
-			pstore->account_id, cpid, parent_id, message_id,
-			TRUE, &b_result);
-		return TRUE;
+		const EID_ARRAY ids = {1, &message_id};
+		if (!exmdb_client->delete_messages(pstore->get_dir(), cpid,
+		    nullptr, parent_id, &ids, TRUE, &b_partial) || b_partial)
+			/* ignore */;
+		return ecSuccess;
 	}
 	if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
-		return FALSE;
-	ids.count = 1;
-	ids.pids = &message_id;
+		return ecWarnWithErrors;
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
+	eid_t folder_id{};
 	if (ptarget == nullptr || !cu_entryid_to_fid(*ptarget,
 	    &b_private, &account_id, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
-	return exmdb_client->movecopy_messages(pstore->get_dir(), cpid, false,
-	       STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial);
+
+	const EID_ARRAY ids = {1, &message_id};
+	if (!exmdb_client->movecopy_messages(pstore->get_dir(), cpid, false,
+	    STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial) || b_partial)
+		return ecWarnWithErrors;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2549: ENOMEM");
-	return false;
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 void common_util_notify_receipt(const char *username, int type,
@@ -1370,7 +1199,7 @@ void common_util_notify_receipt(const char *username, int type,
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "E-1193: cu_send_mail: %xh", static_cast<unsigned int>(ret));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2038: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
@@ -1389,7 +1218,7 @@ static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
 		return NULL;
 	ext_pull.init(src.store_eid.pb, src.store_eid.cb,
 		common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_store_eid(pstore_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_store_eid(pstore_entryid) != pack_result::ok)
 		return NULL;
 	bool tgt_public = pstore_entryid->wrapped_provider_uid == g_muidStorePublic;
 	if (tgt_public) {
@@ -1416,7 +1245,7 @@ static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
 	if (!cu_entryid_to_fid(src.folder_eid,
 	    &b_private, &db_id, &psvreid->folder_id))
 		return NULL;
-	psvreid->message_id = 0;
+	psvreid->message_id = eid_t(0);
 	psvreid->instance = 0;
 	dst->pfolder_eid = psvreid;
 	return dst;
@@ -1461,17 +1290,17 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BINARY *common_util_to_store_entryid(store_object *pstore)
+BINARY *cu_to_store_entryid(const store_object &store)
 {
 	EXT_PUSH ext_push;
 	std::string essdn;
 	STORE_ENTRYID store_entryid = {};
 	
-	store_entryid.pserver_name = deconst(pstore->get_account());
-	if (pstore->b_private) {
+	store_entryid.pserver_name = deconst(store.get_account());
+	if (store.b_private) {
 		store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
-		if (cvt_username_to_essdn(pstore->get_account(), g_org_name,
+		if (cvt_username_to_essdn(store.get_account(), g_org_name,
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
 			return NULL;	
@@ -1488,13 +1317,62 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(1024);
+	/*
+	 * The anecdotal DN length limit in MSAD & OpenLDAP is 255. MS-OXOAB
+	 * v15 §2.7 says ESSDNs are limited to 256.
+	 *
+	 * 60 bytes leading part (MS-OXCDATA v19 §2.2.4.3), 254 bytes
+	 * servername/FQDN (always ASCII AFAICT), \0, 256 bytes ESSDN (always
+	 * ASCII AFAICT), \0, 16 bytes V3 header, 319 chars SmtpAddress
+	 * (possibly Unicode), \0 (possibly Unicode).
+	 *
+	 * In zcore we do not output V3 store entryids (as seen in MFCMAPI), so
+	 * 572 bytes shall be our more-than-generous buffer size.
+	 */
+	pbin->pv = common_util_alloc(572);
 	if (pbin->pb == nullptr ||
-	    !ext_push.init(pbin->pv, 1024, EXT_FLAG_UTF16) ||
-	    ext_push.p_store_eid(store_entryid) != EXT_ERR_SUCCESS)
+	    !ext_push.init(pbin->pv, 572, EXT_FLAG_UTF16) ||
+	    ext_push.p_store_eid(store_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
+}
+
+std::string cu_to_store_entryid_s(const store_object &store) try
+{
+	std::string essdn;
+	STORE_ENTRYID store_entryid{};
+
+	store_entryid.pserver_name = deconst(store.get_account());
+	if (store.b_private) {
+		store_entryid.wrapped_provider_uid = g_muidStorePrivate;
+		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
+		if (cvt_username_to_essdn(store.get_account(), g_org_name,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+		    essdn) != ecSuccess)
+			return {};
+	} else {
+		store_entryid.wrapped_provider_uid = g_muidStorePublic;
+		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_PUBLIC;
+		auto pinfo = zs_get_info();
+		if (cvt_username_to_essdn(pinfo->get_username(), g_org_name,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+		    essdn) != ecSuccess)
+			return {};
+	}
+	store_entryid.pmailbox_dn = deconst(essdn.c_str());
+
+	std::string out;
+	out.resize(572);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), out.size(), EXT_FLAG_UTF16) ||
+	    ep.p_store_eid(store_entryid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
 }
 
 static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOPY_ACTION &src)
@@ -1508,16 +1386,16 @@ static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOP
 		dst->store_eid.pv = common_util_alloc(1024);
 		if (dst->store_eid.pv == nullptr ||
 		    !ext_push.init(dst->store_eid.pv, 1024, EXT_FLAG_UTF16) ||
-		    ext_push.p_store_eid(*src.pstore_eid) != EXT_ERR_SUCCESS)
+		    ext_push.p_store_eid(*src.pstore_eid) != pack_result::ok)
 			return NULL;	
 		dst->store_eid.cb = ext_push.m_offset;
 		dst->folder_eid = *static_cast<BINARY *>(src.pfolder_eid);
 	} else {
-		auto pbin = common_util_to_store_entryid(pstore);
+		auto pbin = cu_to_store_entryid(*pstore);
 		if (pbin == nullptr)
 			return NULL;
 		dst->store_eid = *pbin;
-		pbin = cu_fid_to_entryid(pstore, static_cast<SVREID *>(src.pfolder_eid)->folder_id);
+		pbin = cu_fid_to_entryid(*pstore, static_cast<SVREID *>(src.pfolder_eid)->folder_id);
 		if (pbin == nullptr)
 			return NULL;
 		dst->folder_eid = *pbin;
@@ -1530,7 +1408,7 @@ static ZREPLY_ACTION *cu_cvt_to_zreply(store_object *pstore, const REPLY_ACTION 
 	auto dst = cu_alloc<ZREPLY_ACTION>();
 	if (dst == nullptr)
 		return NULL;
-	if (cu_mid_to_entryid(pstore, src.template_folder_id,
+	if (cu_mid_to_entryid(*pstore, src.template_folder_id,
 	    src.template_message_id) == nullptr)
 		return NULL;	
 	dst->template_guid = src.template_guid;
@@ -1574,7 +1452,7 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 		return ecError;
 	if (pmsgctnt == nullptr)
 		return ecSuccess;
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_CONVERSATION_ID, PR_DISPLAY_TO,
 		PR_DISPLAY_TO_A, PR_DISPLAY_CC,
 		PR_DISPLAY_CC_A, PR_DISPLAY_BCC, PR_DISPLAY_BCC_A, PidTagMid,
@@ -1604,8 +1482,10 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 	if (err != ecSuccess)
 		return err;
 	err = ecError;
+	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(dst_store->get_dir(), pinfo->cpid,
-	    folder_id1, pmsgctnt, &err) || err != ecSuccess)
+	    folder_id1, pmsgctnt, {}, &outmid, &outcn, &err) ||
+	    err != ecSuccess)
 		return err;
 	return ecSuccess;
 }
@@ -1621,7 +1501,7 @@ static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
 	PERMISSION_DATA permission_row;
 	TAGGED_PROPVAL propval_buff[10];
 
-	static constexpr uint32_t tags[] = {	
+	static constexpr proptag_t tags[] = {	
 		PR_ACCESS, PR_ACCESS_LEVEL, PR_ADDRESS_BOOK_ENTRYID,
 		PR_ASSOC_CONTENT_COUNT, PR_ATTR_READONLY,
 		PR_CONTENT_COUNT, PR_CONTENT_UNREAD,
@@ -1708,20 +1588,19 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	    nullptr, nullptr, &table_id, &row_count))
 		return NULL;	
 	static constexpr proptag_t tmp_proptag[] = {PidTagMid};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client->query_table(pstore->get_dir(), nullptr, CP_ACP,
-	    table_id, &proptags, 0, row_count, &tmp_set))
+	    table_id, tmp_proptag, 0, row_count, &tmp_set))
 		return NULL;	
 	exmdb_client->unload_table(pstore->get_dir(), table_id);
 	pmessage_ids = cu_alloc<EID_ARRAY>();
 	if (pmessage_ids == nullptr)
 		return NULL;
 	pmessage_ids->count = 0;
-	pmessage_ids->pids = cu_alloc<uint64_t>(tmp_set.count);
+	pmessage_ids->pids = cu_alloc<eid_t>(tmp_set.count);
 	if (pmessage_ids->pids == nullptr)
 		return NULL;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
+		auto pmid = tmp_set.pparray[i]->get<eid_t>(PidTagMid);
 		if (pmid == nullptr)
 			return NULL;
 		pmessage_ids->pids[pmessage_ids->count++] = *pmid;
@@ -1745,7 +1624,7 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	    folder_id, &tmp_proptags))
 		return ecError;
 	if (!exmdb_client->get_folder_properties(src_store->get_dir(), CP_ACP,
-	    folder_id, &tmp_proptags, &tmp_propvals))
+	    folder_id, tmp_proptags, &tmp_propvals))
 		return ecError;
 	if (new_name != nullptr) {
 		auto err = cu_set_propval(&tmp_propvals, PR_DISPLAY_NAME, new_name);
@@ -1781,9 +1660,8 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 		return ecError;
 
 	static constexpr proptag_t xb_proptag[] = {PidTagFolderId};
-	static constexpr PROPTAG_ARRAY xb_proptags = {std::size(xb_proptag), deconst(xb_proptag)};
 	if (!exmdb_client->query_table(src_store->get_dir(), nullptr, CP_ACP,
-	    table_id, &xb_proptags, 0, row_count, &tmp_set))
+	    table_id, xb_proptag, 0, row_count, &tmp_set))
 		return ecError;
 	exmdb_client->unload_table(src_store->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
@@ -1821,13 +1699,16 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
-	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(pstore->get_dir());
-	/* try to avoid TNEF message */
 	auto log_id = pstore->get_dir() + ":i"s + std::to_string(inst_id);
 	MAIL imail;
-	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type, &imail,
-	    common_util_alloc, common_util_get_propids, common_util_get_propname))
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids;
+	cvt.get_propname = common_util_get_propname;
+	cvt.use_format_override(*pmsgctnt);
+	if (!cvt.mapi_to_inet(*pmsgctnt, imail))
 		return FALSE;	
 	auto mail_len = imail.get_length();
 	if (mail_len < 0)
@@ -1849,49 +1730,25 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2548: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
-static void zc_unwrap_clearsigned(MAIL &ma) try
-{
-	auto part = ma.get_head();
-	if (part == nullptr ||
-	    strcasecmp(part->content_type, "multipart/signed") != 0)
-		return;
-	part = part->get_child();
-	if (part == nullptr)
-		return;
-	ma.load_from_str(part->head_begin, part->content_begin + part->content_length - part->head_begin);
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1996: ENOMEM");
-}
-
-MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
+std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object *pstore,
     unsigned int mxf_flags, /* effective-moved-from */ BINARY *peml_bin)
 {
-	char charset[32];
-	auto pinfo = zs_get_info();
 	MAIL imail;
-	if (!imail.load_from_str(peml_bin->pc, peml_bin->cb))
+	if (!imail.refonly_parse(peml_bin->pc, peml_bin->cb))
 		return NULL;
-	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
-		zc_unwrap_clearsigned(imail);
-	auto c = lang_to_charset(pinfo->get_lang());
-	if (c != nullptr && *c != '\0')
-		gx_strlcpy(charset, c, std::size(charset));
-	else
-		strcpy(charset, g_default_charset);
-	sql_meta_result mres;
-	auto tmzone = mysql_adaptor_meta(pinfo->get_username(),
-	              WANTPRIV_METAONLY, mres) == 0 ?
-	              mres.timezone.c_str() : nullptr;
-	if (*znul(tmzone) == '\0')
-		tmzone = common_util_get_default_timezone();
 	common_util_set_dir(pstore->get_dir());
-	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
-	                common_util_alloc, common_util_get_propids_create);
-	return pmsgctnt;
+	oxcmail_converter cvt;
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids_create;
+	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
+		cvt.unwrap_smime_clearsigned = true;
+	if (mxf_flags & MXF_ADD_RCVD_TIMESTAMP)
+		cvt.add_rcvd_timestamp = true;
+	return cvt.inet_to_mapi(imail);
 }
 
 BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
@@ -1907,9 +1764,14 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	common_util_set_dir(dir);
-	auto log_id = dir + ":m"s + std::to_string(message_id);
-	if (!oxcical_export(pmsgctnt, log_id.c_str(), ical, g_org_name,
-	    common_util_alloc, common_util_get_propids, cu_id2user)) {
+	auto log_id = dir + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+	oxcical_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.org_name = g_org_name;
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids;
+	cvt.id2user = mysql_adaptor_userid_to_name;
+	if (!cvt.mapi_to_ical(*pmsgctnt, ical)) {
 		mlog(LV_ERR, "E-2202: oxcical_export %s failed", log_id.c_str());
 		return FALSE;
 	}
@@ -1922,20 +1784,13 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	pical_bin->pc = common_util_dup(tmp_buff);
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2183: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
 message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) try
 {
 	ical ical;
-	auto pinfo = zs_get_info();
-	sql_meta_result mres;
-	auto tmzone = mysql_adaptor_meta(pinfo->get_username(),
-	              WANTPRIV_METAONLY, mres) == 0 ?
-	              mres.timezone.c_str() : nullptr;
-	if (*znul(tmzone) == '\0')
-		tmzone = common_util_get_default_timezone();
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
 	if (pbuff == nullptr)
 		return nullptr;
@@ -1944,33 +1799,32 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	if (!ical.load_from_str_move(pbuff))
 		return NULL;
 	common_util_set_dir(pstore->get_dir());
-	return oxcical_import_single(tmzone, ical, common_util_alloc,
-	       common_util_get_propids_create, common_util_username_to_entryid);
+
+	oxcical_converter cvt;
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids_create;
+	cvt.username_to_entryid = common_util_username_to_entryid;
+	return cvt.ical_to_mapi_single(ical);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2184: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 
 ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
     std::vector<message_ptr> &msgvec) try
 {
-	auto info = zs_get_info();
-	sql_meta_result mres;
-	auto tmzone = mysql_adaptor_meta(info->get_username(),
-	              WANTPRIV_METAONLY, mres) == 0 ?
-	              mres.timezone.c_str() : nullptr;
-	if (*znul(tmzone) == '\0')
-		tmzone = common_util_get_default_timezone();
-
 	ical icobj;
 	if (!icobj.load_from_str_move(ical_data))
 		return ecError;
 	common_util_set_dir(store->get_dir());
-	return oxcical_import_multi(tmzone, icobj, common_util_alloc,
-	       common_util_get_propids_create,
-	       common_util_username_to_entryid, msgvec);
+
+	oxcical_converter cvt;
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids_create;
+	cvt.username_to_entryid = common_util_username_to_entryid;
+	return cvt.ical_to_mapi_multi(icobj, msgvec);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2185: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -1986,26 +1840,58 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	common_util_set_dir(pstore->get_dir());
-	auto log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+
+	std::string cvt_log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+	oxvcard_converter cvt;
+	cvt.log_id = cvt_log_id.c_str();
+	cvt.get_propids = common_util_get_propids;
 	vcard vcard;
-	if (!oxvcard_export(pmsgctnt, log_id.c_str(), vcard, common_util_get_propids))
+	if (!cvt.mapi_to_vcard(*pmsgctnt, vcard))
 		return FALSE;
-	pvcf_bin->pv = common_util_alloc(VCARD_MAX_BUFFER_LEN);
+	std::string vcf_out;
+	if (!vcard.serialize(vcf_out))
+		return FALSE;	
+	pvcf_bin->cb = vcf_out.size();
+	pvcf_bin->pv = common_util_alloc(pvcf_bin->cb);
 	if (pvcf_bin->pv == nullptr)
 		return FALSE;
-	if (!vcard.serialize(pvcf_bin->pc, VCARD_MAX_BUFFER_LEN))
-		return FALSE;	
-	pvcf_bin->cb = strlen(pvcf_bin->pc);
-	if (!pmessage->write_message(pmsgctnt))
+	memcpy(pvcf_bin->pv, vcf_out.c_str(), vcf_out.size());
+	auto err = pmessage->write_message(*pmsgctnt);
+	if (err != ecSuccess)
 		/* ignore */;
 	return TRUE;
 }
-	
-MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
-    const BINARY *pvcf_bin)
+
+bool cu_abentry_to_vcf(user_object *puser, bool is_group, BINARY *pvcf_bin)
 {
-	MESSAGE_CONTENT *pmsgctnt;
+	PROPTAG_ARRAY tags{};
+	TPROPVAL_ARRAY props{};
+	std::string vcf_out;
+	vcard card;
+	auto pinfo = zs_get_info();
+
+	if (pinfo == nullptr)
+		return false;
+	oxvcard_get_abentry_proptags(&tags);
+	if (!puser->get_properties(tags, &props))
+		return false;
+	common_util_set_dir(pinfo->get_homedir());
+	oxvcard_converter cvt;
+	cvt.get_propids = common_util_get_propids_create;
+	if (!cvt.abentry_to_vcard(props, is_group, card))
+		return false;
+	if (!card.serialize(vcf_out))
+		return false;
+	pvcf_bin->cb = vcf_out.size();
+	pvcf_bin->pv = common_util_alloc(pvcf_bin->cb);
+	if (pvcf_bin->pv == nullptr)
+		return false;
+	memcpy(pvcf_bin->pv, vcf_out.c_str(), vcf_out.size());
+	return true;
+}
 	
+message_ptr common_util_vcf_to_message(store_object *pstore, const BINARY *pvcf_bin)
+{
 	auto pbuff = cu_alloc<char>(pvcf_bin->cb + 1);
 	if (pbuff == nullptr)
 		return nullptr;
@@ -2016,8 +1902,10 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	if (ret != ecSuccess)
 		return nullptr;
 	common_util_set_dir(pstore->get_dir());
-	pmsgctnt = oxvcard_import(&vcard, common_util_get_propids_create);
-	return pmsgctnt;
+
+	oxvcard_converter cvt;
+	cvt.get_propids = common_util_get_propids_create;
+	return cvt.vcard_to_mapi(vcard);
 }
 
 ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
@@ -2028,15 +1916,18 @@ ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
 	if (ret != ecSuccess)
 		return ret;
 	common_util_set_dir(store->get_dir());
+
+	oxvcard_converter cvt;
+	cvt.get_propids = common_util_get_propids_create;
 	for (const auto &vcard : cardvec) {
-		message_ptr mc(oxvcard_import(&vcard, common_util_get_propids_create));
+		auto mc = cvt.vcard_to_mapi(vcard);
 		if (mc == nullptr)
 			return ecError;
 		msgvec.push_back(std::move(mc));
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2048: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -2051,7 +1942,7 @@ const char* common_util_get_submit_command()
 }
 
 void *cu_read_storenamedprop(const char *dir, const GUID &guid,
-    const char *name, uint16_t proptype)
+    const char *name, proptype_t proptype)
 {
 	if (*dir == '\0')
 		return nullptr;
@@ -2061,16 +1952,16 @@ void *cu_read_storenamedprop(const char *dir, const GUID &guid,
 	if (!exmdb_client->get_named_propids(dir, false, &name_req, &name_rsp) ||
 	    name_rsp.size() != name_req.size() || name_rsp[0] == 0)
 		return nullptr;
-	uint32_t proptag = PROP_TAG(proptype, name_rsp[0]);
-	const PROPTAG_ARRAY tags = {1, deconst(&proptag)};
+	auto proptag = PROP_TAG(proptype, name_rsp[0]);
 	TPROPVAL_ARRAY values{};
-	if (!exmdb_client->get_store_properties(dir, CP_ACP, &tags, &values))
+	if (!exmdb_client->get_store_properties(dir, CP_ACP,
+	    {&proptag, 1}, &values))
 		return nullptr;
 	return values.getval(proptag);
 }
 
 errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
-    const char *name, uint16_t proptype, const void *buf, size_t size)
+    const char *name, proptype_t proptype, const void *buf, size_t size)
 {
 	if (*dir == '\0')
 		return EINVAL;
@@ -2098,11 +1989,6 @@ errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
 	return 0;
 }
 
-ec_error_t cu_id2user(int id, std::string &user)
-{
-	return mysql_adaptor_userid_to_name(id, user);
-}
-
 ec_error_t cu_fbdata_to_ical(const char *user, const char *fbuser,
     time_t starttime, time_t endtime, const std::vector<freebusy_event> &fbdata,
     BINARY *bin) try
@@ -2122,7 +2008,7 @@ ec_error_t cu_fbdata_to_ical(const char *user, const char *fbuser,
 		return ecServerOOM;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2188: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

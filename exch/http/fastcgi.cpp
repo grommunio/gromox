@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <atomic>
 #include <cerrno>
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -34,8 +36,8 @@
 #include "http_parser.hpp"
 #include "fastcgi.hpp"
 #include "resource.hpp"
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
-#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != pack_result::ok) return false; } while (false)
 
 #define POLL_MILLISECONDS_FOR_CHECK				50
 
@@ -161,9 +163,9 @@ static int mod_fastcgi_defaults()
 	node.sock_path = FPMSOCKDIR "/php-grommunio-web-fpm.sock";
 	g_fastcgi_list.push_back(node);
 	node.path = "/dav";
-	node.dir = DATADIR "/grommunio-dav";
+	node.dir = DATADIR "/grommunio-dav/server.php";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-dav-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.push_back(std::move(node));
 	return 0;
 }
 
@@ -242,8 +244,8 @@ static pack_result mod_fastcgi_push_name_value(NDR_PUSH *pndr,
 		tmp_len = val_len | 0x80000000;
 		TRY(pndr->p_uint32(tmp_len));
 	}
-	TRY(pndr->p_uint8_a(reinterpret_cast<const uint8_t *>(pname), name_len));
-	return pndr->p_uint8_a(reinterpret_cast<const uint8_t *>(pvalue), val_len);
+	TRY(pndr->p_bytes(reinterpret_cast<const uint8_t *>(pname), name_len));
+	return pndr->p_bytes(reinterpret_cast<const uint8_t *>(pvalue), val_len);
 }
 
 static pack_result mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
@@ -296,7 +298,7 @@ static pack_result mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 	
 	offset = pndr->offset;
 	len = offset - 8;
-	if (len > 0xFFFF)
+	if (offset > 0xFFFF)
 		return pack_result::failure;
 	pndr->offset = 4;
 	TRY(pndr->p_uint16(len));
@@ -315,7 +317,7 @@ static pack_result mod_fastcgi_push_stdin(NDR_PUSH *pndr,
 	TRY(pndr->p_uint8(0));
 	/* reserved */
 	TRY(pndr->p_uint8(0));
-	TRY(pndr->p_uint8_a(static_cast<const uint8_t *>(pbuff), length));
+	TRY(pndr->p_bytes(static_cast<const uint8_t *>(pbuff), length));
 	return mod_fastcgi_push_align_record(pndr);
 }
 
@@ -324,14 +326,14 @@ static pack_result mod_fastcgi_pull_end_request(NDR_PULL *pndr,
 {
 	TRY(pndr->g_uint32(&pend_request->app_status));
 	TRY(pndr->g_uint8(&pend_request->protocol_status));
-	TRY(pndr->g_uint8_a(pend_request->reserved, 3));
+	TRY(pndr->g_bytes(pend_request->reserved, 3));
 	return pndr->advance(padding_len);
 }
 
 static pack_result mod_fastcgi_pull_stdstream(NDR_PULL *pndr,
 	uint8_t padding_len, FCGI_STDSTREAM *pstd_stream)
 {
-	TRY(pndr->g_uint8_a(pstd_stream->buffer, pstd_stream->length));
+	TRY(pndr->g_bytes(pstd_stream->buffer, pstd_stream->length));
 	return pndr->advance(padding_len);
 }
 
@@ -343,6 +345,8 @@ static pack_result mod_fastcgi_pull_record_header(
 	TRY(pndr->g_uint16(&pheader->request_id));
 	TRY(pndr->g_uint16(&pheader->content_len));
 	TRY(pndr->g_uint8(&pheader->padding_len));
+	pheader->content_len = std::min(pheader->content_len, static_cast<uint16_t>(UINT16_MAX));
+	pheader->padding_len = std::min(pheader->padding_len, static_cast<uint8_t>(UINT8_MAX));
 	return pndr->g_uint8(&pheader->reserved);
 }
 
@@ -399,12 +403,12 @@ http_status mod_fastcgi_take_request(http_context *phttp)
 		if (ptoken1 != nullptr)
 			*ptoken1 = '\0';
 		auto tmp_len = strlen(ptoken);
-		if (tmp_len >= 16) {
+		if (tmp_len >= std::size(suffix)) {
 			phttp->log(LV_DEBUG, "suffix in"
 				" request uri error for mod_fastcgi");
 			return http_status::none;
 		}
-		strcpy(suffix, ptoken);
+		gx_strlcpy(suffix, ptoken, std::size(suffix));
 	} else {
 		suffix[0] = '\0';
 	}
@@ -911,7 +915,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					return FALSE;
 				}
 				if (rq.b_chunked) {
-					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+					tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					          "%x\r\n", std_stream.length);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(std_stream.buffer, std_stream.length) != STREAM_WRITE_OK ||
@@ -1015,7 +1019,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			response_offset = response_buff + response_offset - pbody;
 			if (response_offset > 0) {
 				if (rq.b_chunked) {
-					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+					tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					          "%x\r\n", response_offset);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(pbody, response_offset) != STREAM_WRITE_OK ||

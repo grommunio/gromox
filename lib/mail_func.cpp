@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  *	  Addr_kids, for parse the email addr
@@ -18,6 +18,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -29,6 +30,33 @@ enum {
 	SW_DOT_DOT,
 	SW_QUOTED,
 	SW_QUOTED_SECOND
+};
+
+struct htmlent {
+	char input[9];
+	char output[4];
+	uint8_t olen;
+};
+
+static constexpr struct htmlent html_entities[] = {
+#define E(s,d) {(s), (d), sizeof(d)-1}
+	E("&amp;", "&"),
+	E("&bull;", "•"),
+	E("&emsp14;", " "),
+	E("&emsp;", " "),
+	E("&ensp;", " "),
+	E("&gt;", ">"),
+	E("&ldquo;", "“"),
+	E("&lsquo;", "‘"),
+	E("&lt;", "<"),
+	E("&mdash;", "—"),
+	E("&nbsp;", " "),
+	E("&ndash;", "–"),
+	E("&quot;", "\""),
+	E("&rdquo;", "”"),
+	E("&rsquo;", "’"),
+	E("&shy;", "­"),
+#undef E
 };
 
 static constexpr uint32_t g_uri_usual[] = {
@@ -385,7 +413,7 @@ size_t parse_mime_field(const char *in_buff, size_t buff_len,
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2025: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return 0;
 }
 
@@ -410,7 +438,7 @@ void parse_mime_encode_string(const char *in_buff, long ibuff_len,
 	if (in_buff[i] != '=' || in_buff[i+1] != '?') {
 		strcpy(pencode_string->charset, "default");
 		strcpy(pencode_string->encoding, "none");
-		auto title_len = std::max(buff_len, sizeof(pencode_string->title) - 1);
+		auto title_len = std::min(buff_len, sizeof(pencode_string->title) - 1);
 		memcpy(pencode_string->title, in_buff, title_len);
 		pencode_string->title[title_len] = '\0';
 		return;
@@ -544,7 +572,7 @@ void parse_field_value(const char *in_buff, long buff_len, char *value,
 	if (paratag_len != 0 || paraval_len != 0)
 		pfile.emplace_back(MIME_FIELD{param_tag, param_value});
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1095: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return;
 }
 
@@ -800,7 +828,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 			last_brace = static_cast<char *>(memchr(ptr + 1, '}', 16));
 			if (last_brace != nullptr) {
 				*last_brace = '\0';
-				int length = strtol(ptr + 1, nullptr, 0);
+				size_t length = strtoul(&ptr[1], nullptr, 10);
 				memmove(ptr, last_brace + 1, cmdline + cmdlen - 1 - last_brace);
 				cmdlen -= last_brace + 1 - ptr;
 				ptr += length;
@@ -877,12 +905,6 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 
 BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 {
-	int hour;
-	int minute;
-	int factor;
-	int zone_len;
-	time_t tmp_time;
-	char tmp_buff[3];
 	struct tm tmp_tm;
 	const char *str_zone;
 	
@@ -895,247 +917,11 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		str_zone = strptime(str_time, "%d %b %Y %H:%M:%S ", &tmp_tm);
 	if (str_zone == nullptr)
 		return FALSE;
-	
-	zone_len = strlen(str_zone);
-	if (zone_len >= 5) {
-		if (*str_zone == '-')
-			factor = 1;
-		else if (*str_zone == '+')
-			factor = -1;
-		else
-			return FALSE;
-		if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
-		    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
-			return FALSE;
-
-		tmp_buff[0] = str_zone[1];
-		tmp_buff[1] = str_zone[2];
-		tmp_buff[2] = '\0';
-		hour = strtol(tmp_buff, nullptr, 0);
-		if (hour < 0 || hour > 23)
-			return FALSE;
-
-		tmp_buff[0] = str_zone[3];
-		tmp_buff[1] = str_zone[4];
-		tmp_buff[2] = '\0';
-		minute = strtol(tmp_buff, nullptr, 0);
-		if (minute < 0 || minute > 59)
-			return FALSE;
-	} else if (1 == zone_len) {
-		if ('A' <= str_zone[0] && 'J' > str_zone[0]) {
-			factor = 1;
-			hour = str_zone[0] - 'A' + 1;
-			minute = 0;
-		} else if ('J' < str_zone[0] && 'M' >= str_zone[0]) {
-			factor = 1;
-			hour = str_zone[0] - 'A';
-			minute = 0;
-		} else if ('N' <= str_zone[0] && 'Y' >= str_zone[0]) {
-			factor = -1;
-			hour = str_zone[0] - 'N' + 1;
-			minute = 0;
-		} else if ('Z' == str_zone[0]) {
-			factor = 1;
-			hour = 0;
-			minute = 0;
-		} else {
-			return FALSE;
-		}
-	} else if (2 == zone_len || 3 == zone_len) {
-		if (0 == strcmp("UT", str_zone) ||
-			0 == strcmp("GMT", str_zone)) {
-			factor = 1;
-			hour = 0;
-			minute = 0;
-		} else if (0 == strcmp("EDT", str_zone)) {
-			factor = 1;
-			hour = 4;
-			minute = 0;
-		} else if (0 == strcmp("EST", str_zone) ||
-			0 == strcmp("CDT", str_zone)) {
-			factor = 1;
-			hour = 5;
-			minute = 0;
-		} else if (0 == strcmp("CST", str_zone) ||
-			0 == strcmp("MDT", str_zone)) {
-			factor = 1;
-			hour = 6;
-			minute = 0;
-		} else if (0 == strcmp("MST",  str_zone) ||
-			0 == strcmp("PDT", str_zone)) {
-			factor = 1;
-			hour = 7;
-			minute = 0;
-		} else if (0 == strcmp("PST", str_zone)) {
-			factor = 1;
-			hour = 8;
-			minute = 0;
-		} else {
-			return FALSE;
-		}
-	} else {
+	int west = 0;
+	if (!rfc822_zone_to_minwest(str_zone, &west, nullptr))
 		return FALSE;
-	}
-	
-	tmp_time = timegm(&tmp_tm);
-	tmp_time += factor*(60*60*hour + 60*minute);
-	*ptime = tmp_time;
+	*ptime = timegm(&tmp_tm) + 60 * west;
 	return TRUE;
-}
-
-static BOOL encode_strings_to_utf8(const char *mime_string, char *out_string,
-    size_t out_len)
-{
-	int i, buff_len;
-	char last_charset[32];
-	ENCODE_STRING encode_string;
-	char temp_buff[MIME_FIELD_LEN];
-	int last_pos, begin_pos, end_pos;
-	size_t buff_offset, decode_len, tmp_len;
-		
-	buff_len = strlen(mime_string);
-	auto in_buff = deconst(mime_string);
-	begin_pos = -1;
-	end_pos = -1;
-	last_pos = 0;
-	buff_offset = 0;
-	last_charset[0] = '\0';
-	for (i=0; i<buff_len-1; i++) {
-		if (-1 == begin_pos && '=' == in_buff[i] && '?' == in_buff[i + 1]) {
-			begin_pos = i;
-			if (i > last_pos) {
-				if (begin_pos - last_pos != -1 ||
-				    in_buff[last_pos] != ' ')
-					return FALSE;
-				last_pos = i;
-			}
-		}
-		if (end_pos == -1 && begin_pos != -1 && in_buff[i] == '?' &&
-		    in_buff[i+1] == '=' && ((in_buff[i-1] != 'q' &&
-		    in_buff[i-1] != 'Q' && in_buff[i-1] != 'b' &&
-		    in_buff[i-1] != 'B') || in_buff[i-2] != '?'))
-			end_pos = i + 1;
-		if (-1 != begin_pos && -1 != end_pos) {
-			parse_mime_encode_string(in_buff + begin_pos, 
-				end_pos - begin_pos + 1, &encode_string);
-			if ('\0' == last_charset[0]) {
-				strcpy(last_charset, encode_string.charset);
-			} else if (0 != strcasecmp(
-				encode_string.charset, last_charset)) {
-				return FALSE;
-			}
-			tmp_len = strlen(encode_string.title);
-			if (0 == strcmp(encode_string.encoding, "base64")) {
-				decode_len = 0;
-				decode64(encode_string.title, tmp_len,
-				         temp_buff + buff_offset,
-				         std::size(temp_buff) - buff_offset, &decode_len);
-				buff_offset += decode_len;
-			} else if (0 == strcmp(encode_string.encoding,
-				"quoted-printable")){
-				auto xl = qp_decode_ex(temp_buff, std::size(temp_buff),
-				          encode_string.title, tmp_len);
-				if (xl < 0)
-					return false;
-				buff_offset += xl;
-			} else {
-				return FALSE;
-			}
-			last_pos = end_pos + 1;
-			i = end_pos;
-			begin_pos = -1;
-			end_pos = -1;
-			continue;
-		}
-	}
-	if (i > last_pos)
-		return FALSE;
-	temp_buff[buff_offset] = '\0';
-	if (!string_mb_to_utf8(last_charset, temp_buff, out_string, out_len))
-		return FALSE;	
-	return utf8_valid(out_string);
-}
-
-BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
-    char *out_string, size_t out_len)
-{
-	size_t i;
-	ENCODE_STRING encode_string;
-	char temp_buff[MIME_FIELD_LEN];
-	ssize_t begin_pos = -1, end_pos = -1;
-	size_t offset, decode_len, tmp_len, last_pos = 0;
-	auto buff_len = strlen(mime_string);
-	auto in_buff = deconst(mime_string);
-	auto out_buff = out_string;
-	offset = 0;
-
-	for (i = 0; buff_len > 0 && i < buff_len - 1 && offset < 2 * buff_len + 1; ++i) {
-		if (-1 == begin_pos && '=' == in_buff[i] && '?' == in_buff[i + 1]) {
-			begin_pos = i;
-			if (i > last_pos) {
-				memcpy(temp_buff, in_buff + last_pos, begin_pos - last_pos);
-				temp_buff[begin_pos - last_pos] = '\0';
-				HX_strltrim(temp_buff);
-				if (!string_mb_to_utf8(charset, temp_buff,
-				    out_buff + offset, out_len - offset))
-					return FALSE;
-				offset += strlen(out_buff + offset);
-				last_pos = i;
-			}
-		}
-		if (end_pos == -1 && begin_pos != -1 && in_buff[i] == '?' &&
-		    in_buff[i+1] == '=' && ((in_buff[i-1] != 'q' &&
-		    in_buff[i-1] != 'Q' && in_buff[i-1] != 'b' &&
-		    in_buff[i-1] != 'B') || in_buff[i-2] != '?'))
-			end_pos = i + 1;
-		if (-1 != begin_pos && -1 != end_pos) {
-			parse_mime_encode_string(in_buff + begin_pos, 
-				end_pos - begin_pos + 1, &encode_string);
-			tmp_len = strlen(encode_string.title);
-			if (0 == strcmp(encode_string.encoding, "base64")) {
-				decode_len = 0;
-				decode64(encode_string.title, tmp_len, temp_buff,
-				         std::size(temp_buff), &decode_len);
-				temp_buff[decode_len] = '\0';
-				if (!string_mb_to_utf8(encode_string.charset, temp_buff,
-				    out_buff + offset, out_len - offset))
-					return encode_strings_to_utf8(mime_string,
-					       out_string, out_len);
-			} else if (0 == strcmp(encode_string.encoding,
-				"quoted-printable")){
-				auto xl = qp_decode_ex(temp_buff, std::size(temp_buff),
-				          encode_string.title, tmp_len, QP_MIME_HEADER);
-				if (xl < 0)
-					return false;
-				decode_len = xl;
-				temp_buff[decode_len] = '\0';
-				if (!string_mb_to_utf8(encode_string.charset, temp_buff,
-				    out_buff + offset, out_len - offset))
-					return encode_strings_to_utf8(mime_string,
-					       out_string, out_len);
-			} else {
-				if (!string_mb_to_utf8(charset, encode_string.title,
-				    out_buff + offset, out_len - offset))
-					return FALSE;
-			}
-			
-			offset += strlen(out_buff + offset);
-			
-			last_pos = end_pos + 1;
-			i = end_pos;
-			begin_pos = -1;
-			end_pos = -1;
-			continue;
-		}
-	}
-	if (i > last_pos || 1 == buff_len) {
-		if (!string_mb_to_utf8(charset, in_buff + last_pos,
-		    out_buff + offset, out_len - offset))
-			return FALSE;
-		offset += strlen(out_buff + offset);
-	} 
-	out_buff[offset] = '\0';
-	return utf8_valid(out_buff);
 }
 
 void enriched_to_html(const char *enriched_txt,
@@ -1286,30 +1072,27 @@ void enriched_to_html(const char *enriched_txt,
 	html[offset] = '\0';
 }
 
-static std::unique_ptr<char[]> htp_memdup(const void *src, size_t len)
-{
-	auto dst = std::make_unique<char[]>(len + 1);
-	memcpy(dst.get(), src, len);
-	dst[len] = '\0';
-	return dst;
-}
-
-static int html_to_plain_boring(const void *inbuf, size_t len,
-    std::string &outbuf) try
+/**
+ * Rather trivial and uninspiring HTML-to-plaintext conversion.
+ * @inbuf:  HTML input; must be ASCII-compatible.
+ * @outbuf: Plaintext goes here. Codepage of @inbuf is retained.
+ *
+ * Returns 1 for success and negative numbers to indicate error.
+ */
+int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 {
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	bool linebegin = true;
 	char is_xml = 0, lc = 0;
 	int depth = 0, in_q = 0;
 
-	if (len == SIZE_MAX)
-		--len;
-	auto rbuf = htp_memdup(inbuf, len);
-	auto buf = htp_memdup(inbuf, len);
+	if (inbuf.size() == SIZE_MAX)
+		inbuf.remove_suffix(1);
+	std::string rp;
+	const char *const buf = inbuf.data();
+	const char *p = buf;
 	char c = buf[0];
-	char *p = buf.get();
-	char *rp = rbuf.get();
-	for (size_t i = 0; i < len; ++i) {
+	for (size_t i = 0; i < inbuf.size(); ++i) {
 		switch (c) {
 		case '\0':
 			break;
@@ -1321,8 +1104,7 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 			if (state == st::NONE) {
 				if (0 == strncasecmp(p, "<br>", 4) ||
 					0 == strncasecmp(p, "</p>", 4)) {
-					*(rp ++) = '\r';
-					*(rp ++) = '\n';
+					rp += "\r\n";
 					linebegin = true;
 					i += 3;
 					p += 3;
@@ -1353,36 +1135,39 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 				}
 			}
 			break;
-		case '&':
-			if (state == st::NONE) {
-				if (0 == strncasecmp(p, "&quot;", 6)) {
-					*(rp ++) = '"';
-					i += 5;
-					p += 5;
-				} else if (0 == strncasecmp(p, "&amp;", 5)) {
-					*(rp ++) = '&';
-					i += 4;
-					p += 4;
-				} else if (0 == strncasecmp(p, "&lt;", 4)) {
-					*(rp ++) = '<';
-					i += 3;
-					p += 3;
-				} else if (0 == strncasecmp(p, "&gt;", 4)) {
-					*(rp ++) = '>';
-					i += 3;
-					p += 3;
-				} else if (0 == strncasecmp(p, "&nbsp;", 6)) {
-					*(rp ++) = ' ';
-					i += 5;
-					p += 5;
+		case '&': {
+			if (state != st::NONE)
+				break;
+			linebegin = false;
+			auto semi = strchr(p, ';');
+			size_t ilen = semi != nullptr ? semi - p : strlen(p);
+			// there is a ++p after the switch() // ilen thus one short
+			if (p[1] == '#') {
+				char *end;
+				auto uc = strtoul(&p[2], &end, 10);
+				if (end != &p[2] && end != nullptr && *end == ';') {
+					rp += wchar_to_utf8(uc);
+					i += ilen;
+					p += ilen;
+					break;
 				}
-				linebegin = false;
 			}
+			auto it = std::lower_bound(std::cbegin(html_entities), std::cend(html_entities), p,
+				  [&](const htmlent &entry, const char *given) {
+				  	return strncasecmp(entry.input, given, ilen + 1) < 0;
+				  });
+			if (it != std::cend(html_entities) && strncasecmp(p, it->input, ilen + 1) == 0)
+				rp += std::string_view(it->output, it->olen);
+			else
+				rp += wchar_to_utf8(0xfffd);
+			i += ilen;
+			p += ilen;
 			break;
+		}
 		case '(':
 		case ')':
 			if (state == st::NONE) {
-				*(rp ++) = c;
+				rp += c;
 				linebegin = false;
 			}
 			break;
@@ -1407,13 +1192,13 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 				in_q = 0;
 				break;
 			case st::COMMENT:
-				if (p >= buf.get() + 2 && p[-1] == '-' && p[-2] == '-') {
+				if (p >= buf + 2 && p[-1] == '-' && p[-2] == '-') {
 					state = st::NONE;
 					in_q = 0;
 				}
 				break;
 			default:
-				*(rp ++) = c;
+				rp += c;
 				linebegin = false;
 				break;
 			}
@@ -1424,10 +1209,10 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 				/* Inside <!-- comment --> */
 				break;
 			} else if (state == st::NONE) {
-				*(rp ++) = c;
+				rp += c;
 				linebegin = false;
 			}
-			if (state != st::NONE && p != buf.get() &&
+			if (state != st::NONE && p != buf &&
 			    (state == st::TAG || p[-1] != '\\') && (!in_q || *p == in_q))
 				in_q = in_q ? 0 : *p;
 			break;
@@ -1438,12 +1223,12 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 				break;
 			}
 			if (state == st::NONE) {
-				*(rp ++) = c;
+				rp += c;
 				linebegin = false;
 			}
 			break;
 		case '-':
-			if (state == st::QUOTE && p >= buf.get() + 2 && p[-1] == '-' && p[-2] == '!')
+			if (state == st::QUOTE && p >= buf + 2 && p[-1] == '-' && p[-2] == '!')
 				state = st::COMMENT;
 			else
 				goto REG_CHAR;
@@ -1451,10 +1236,10 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		case 'E':
 		case 'e':
 			/* !DOCTYPE exception */
-			if (state == st::QUOTE && p > buf.get() + 6 &&
-			    tolower(p[-6]) == 'd' && tolower(p[-5]) == 'o' &&
-			    tolower(p[-4]) == 'c' && tolower(p[-3]) == 't' &&
-			    tolower(p[-2]) == 'y' && tolower(p[-1]) == 'p') {
+			if (state == st::QUOTE && p > buf + 6 &&
+			    HX_tolower(p[-6]) == 'd' && HX_tolower(p[-5]) == 'o' &&
+			    HX_tolower(p[-4]) == 'c' && HX_tolower(p[-3]) == 't' &&
+			    HX_tolower(p[-2]) == 'y' && HX_tolower(p[-1]) == 'p') {
 				state = st::TAG;
 				break;
 			}
@@ -1462,53 +1247,15 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		default:
  REG_CHAR:
 			if (state == st::NONE && (!HX_isspace(c) || !linebegin)) {
-				*rp++ = c;
+				rp += c;
 				linebegin = false;
 			}
 			break;
 		}
 		c = *(++ p);
 	}
-	if (rp < rbuf.get() + len)
-		*rp = '\0';
-	outbuf = rbuf.get();
+	outbuf = std::move(rp);
 	return 1;
 } catch (...) {
 	return -1;
-}
-
-int html_to_plain(const void *inbuf, size_t len, std::string &outbuf)
-{
-	auto ret = feed_w3m(inbuf, len, outbuf);
-	if (ret >= 0)
-		return CP_UTF8;
-	ret = html_to_plain_boring(inbuf, len, outbuf);
-	if (ret <= 0)
-		return ret;
-	return 1;
-}
-
-/*
- * Always outputs UTF-8. The caller must ensure that this is conveyed properly
- * (e.g. via PR_INTERNET_CPID=65001 [CP_UTF8]).
- */
-char *plain_to_html(const char *rbuf)
-{
-	const char head[] =
-		"<html><head><meta name=\"Generator\" content=\"gromox-texttohtml"
-		"\">\r\n</head>\r\n<body>\r\n<pre>";
-	const char footer[] = "</pre>\r\n</body>\r\n</html>";
-
-	char *body = HX_strquote(rbuf, HXQUOTE_HTML, nullptr);
-	if (body == nullptr)
-		return nullptr;
-	auto out = gromox::me_alloc<char>(strlen(head) + strlen(body) +
-	           strlen(footer) + 1);
-	if (out != nullptr) {
-		strcpy(out, head);
-		strcat(out, body);
-		strcat(out, footer);
-	}
-	free(body);
-	return out;
 }

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -18,7 +20,8 @@ bool DSN::load_from_str(const char *in_buff, size_t length)
 	clear();
 	auto pfields = &pdsn->message_fields;
 	while (current_offset < length) {
-		if (0 == strncmp(in_buff + current_offset, "\r\n", 2)) {
+		auto nl_len = newline_size(&in_buff[current_offset], length - current_offset);
+		if (nl_len > 0) {
 			if (pfields->size() > 0) {
 				pfields = new_rcpt_fields();
 				if (NULL == pfields) {
@@ -26,7 +29,7 @@ bool DSN::load_from_str(const char *in_buff, size_t length)
 					return false;
 				}
 			}
-			current_offset += 2;
+			current_offset += nl_len;
 			continue;
 		}
 		auto parsed_length = parse_mime_field(in_buff + current_offset,
@@ -49,7 +52,7 @@ std::vector<dsn_field> *DSN::new_rcpt_fields() try
 {
 	return &rcpts_fields.emplace_back().fields;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1213: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return nullptr;
 }
 
@@ -59,7 +62,7 @@ bool DSN::append_field(std::vector<dsn_field> *pfields, std::string_view tag,
 	pfields->emplace_back(std::string(tag), std::string(value));
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1212: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

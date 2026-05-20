@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -8,7 +10,7 @@
 #include <optional>
 #include <vector>
 #include <libHX/endian.h>
-#include <gromox/mapi_types.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 
@@ -65,7 +67,7 @@ BOOL idset::append_range(uint16_t replid,
 	prepl_node->range_list.insert(low_value, high_value);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1614: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -81,7 +83,7 @@ void idset::remove(uint64_t eid) try
 		return;
 	prepl_node->range_list.erase(value);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1615: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 BOOL idset::concatenate(const idset *pset_src)
@@ -276,6 +278,11 @@ BINARY *idset::serialize_replid() const
 	return pbin.release();
 }
 
+/*
+ * Not a this-const function, because the replid table can get
+ * updated (which is a publicly visible change in the object, and so
+ * employing the `mutable` keyword is not a logical thing to do).
+ */
 BINARY *idset::serialize_replguid()
 {
 	auto pset = this;
@@ -340,13 +347,8 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 			}
 			if (stack_length != 6)
 				break;
-			try {
-				auto x = rop_util_gc_to_value(common_bytes);
-				globset.vec().emplace_back(x, x);
-			} catch (const std::bad_alloc &) {
-				mlog(LV_ERR, "E-1616: ENOMEM");
-				return 0;
-			}
+			auto x = rop_util_gc_to_value(common_bytes);
+			globset.vec().emplace_back(x, x);
 			/* MS-OXCFXICS 3.1.5.4.3.1.1 */
 			/* pop the stack without pop command */
 			if (bytes_stack.size() > 0)
@@ -423,7 +425,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1618: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return 0;
 }
 
@@ -472,7 +474,7 @@ BOOL idset::deserialize(const BINARY &bin) try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1617: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -505,7 +507,7 @@ BOOL idset::convert() try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1619: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

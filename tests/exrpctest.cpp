@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <climits>
 #include <cstdint>
 #include <cstdlib>
+#include <cstdlib>
+#include <unistd.h>
 #include <vector>
 #include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
@@ -56,7 +59,7 @@ int main(int argc, char **argv)
 {
 	exmdb_rpc_alloc = [](size_t z) { return g_alloc_mgr.alloc(z); };
 	exmdb_rpc_free = [](void *) {};
-	exmdb_client.emplace(1, 0);
+	exmdb_client.emplace();
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	if (exmdb_client_run(PKGSYSCONFDIR) != 0)
 		return EXIT_FAILURE;
@@ -66,20 +69,26 @@ int main(int argc, char **argv)
 	char *newdir = nullptr;
 	unsigned int user_id = 0, domain_id = 0;
 
-	printf("req 1\n");
 	if (!exmdb_client->store_eid_to_user(g_storedir, &other_store, &newdir,
 	    &user_id, &domain_id))
 		mlog(LV_DEBUG, "store_eid_to_user failed as expected");
 	else
 		mlog(LV_ERR, "store_eid_to_user unexpectedly succeeded");
-	// Connection should have died by now
-	printf("req 2\n");
 
-	static constexpr uint32_t tags[] = {PR_STORE_RECORD_KEY};
-	static constexpr PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
+	// Connection should have died (reset by client due to failed RPC)
+
+	static constexpr proptag_t tags[] = {PR_STORE_RECORD_KEY};
+	// set SOCKET_TIMEOUT to a low value in source
+	::srand(time(nullptr));
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client->get_store_properties(g_storedir, CP_UTF8, &ptags, &props))
-		mlog(LV_ERR, "get_store_properties failed unexpectedly");
+	for (size_t reqnum = 1; reqnum < 100; ++reqnum) {
+		printf("req %zu\n", reqnum);
+		if (!exmdb_client->get_store_properties(g_storedir, CP_UTF8, tags, &props))
+			mlog(LV_ERR, "get_store_properties failed unexpectedly");
+		int waitx = ::rand() * 10.0 / INT_MAX;
+		printf("sleeping %u sec\n", waitx);
+		sleep(waitx);
+	}
 
 	return t_2209(g_storedir);
 }

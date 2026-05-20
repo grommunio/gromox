@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <cassert>
 #include <cerrno>
+#include <climits>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -28,7 +30,6 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
-#include <gromox/paths.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -129,7 +130,7 @@ enum {
 
 static std::vector<uint32_t> g_only_objs;
 static gi_folder_map_t g_folder_map;
-static unsigned int g_splice;
+static unsigned int g_splice, g_mlog_level = MLOG_DEFAULT_LEVEL;
 static int g_with_hidden = -1, g_with_assoc;
 static const char *g_ascii_charset;
 static size_t g_msg_count;
@@ -143,6 +144,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice PFF objects into existing store hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
+	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	{"with-assoc", 0, HXTYPE_VAL, &g_with_assoc, nullptr, nullptr, 1, "Do import FAI messages"},
 	{"without-assoc", 0, HXTYPE_VAL, &g_with_assoc, nullptr, nullptr, 0, "Skip FAI messages [default]"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
@@ -248,7 +250,7 @@ static const char *az_special_ident(uint32_t nid)
 }
 
 /* Lookup the pff record entry for the given propid */
-static bool az_item_get_propv(libpff_item_t *item, uint32_t proptag,
+static bool az_item_get_propv(libpff_item_t *item, proptag_t proptag,
     libpff_record_entry_t **rent)
 {
 	libpff_record_set_ptr rset;
@@ -315,7 +317,10 @@ static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc,
 			return ret;
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_REFERENCE) {
 		tlog("[attachment type=%c]\n", atype);
-		throw YError("PF-1005: EOPNOTSUPP");
+		/*
+		 * Has no actual content. The parent function (do_attach)
+		 * already transferred all needed properties.
+		 */
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_UNDEFINED) {
 		tlog("[attachment type=0]\n");
 	} else {
@@ -338,42 +343,25 @@ static bool tpropval_subject_handler(TPROPVAL_ARRAY *ar, const TAGGED_PROPVAL &p
 	if (buf[0] != 0x01 || buf[1] == 0x00 || strnlen(s, buf[1]) < buf[1])
 		return false;
 	TAGGED_PROPVAL pv2 = {pv.proptag, deconst(buf) + buf[1] + 1};
-	if (ar->set(pv2) != 0)
+	if (ar->set(pv2) == ecServerOOM)
 		throw std::bad_alloc();
 	if (buf[1] == 0x01)
 		return true;
 	std::string prefix(s + 2, buf[1] - 1);
 	TAGGED_PROPVAL pv3 = {PR_SUBJECT_PREFIX, deconst(prefix.c_str())};
-	if (ar->set(pv3) != 0)
+	if (ar->set(pv3) == ecServerOOM)
 		throw std::bad_alloc();
 	return true;
 }
 
-static char *u16convert(const uint8_t *data, size_t inbytes)
+static char *u16convert(std::string_view sv)
 {
-	size_t bytes = inbytes * 3 / 2 + 1;
-	auto outbuf = me_alloc<char>(bytes);
-	if (outbuf == nullptr)
-		return nullptr;
-	auto cd = iconv_open("UTF-8", "UTF-16LE");
-	if (cd == iconv_t(-1)) {
-		free(outbuf);
-		return nullptr;
-	}
-	auto icv_in = reinterpret_cast<char *>(const_cast<uint8_t *>(data));
-	auto icv_out = outbuf;
-	auto icv_obytes = bytes;
-	iconv(cd, &icv_in, &inbytes, &icv_out, &icv_obytes);
-	iconv_close(cd);
-	if (icv_obytes > 0)
-		*icv_out = '\0';
-	else
-		outbuf[bytes-1] = '\0';
-	return outbuf;
+	auto s = iconvtext(sv, "UTF-16LE", "UTF-8");
+	return strndup(s.c_str(), s.size());
 }
 
 static std::unique_ptr<TPROPVAL_ARRAY, gi_delete>
-mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
+mv_decode_str(proptag_t proptag, const uint8_t *data, size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
@@ -391,7 +379,7 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 	pv->proptag = proptag;
 	pv->pvalue = ba;
 	/* PST v9 §2.3.3.4.2 */
-	auto nelem = le32p_to_cpu(data);
+	auto nelem = std::min(le32p_to_cpu(data), static_cast<uint32_t>(UINT32_MAX));
 	ba->count = 0;
 	ba->ppstr = static_cast<char **>(calloc(nelem, sizeof(char *)));
 	if (ba->ppstr == nullptr)
@@ -427,7 +415,7 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 		if (PROP_TYPE(proptag) == PT_MV_STRING8)
 			ba->ppstr[i] = strndup(reinterpret_cast<const char *>(&data[ofs]), next_ofs - ofs);
 		else
-			ba->ppstr[i] = u16convert(&data[ofs], next_ofs - ofs);
+			ba->ppstr[i] = u16convert({reinterpret_cast<const char *>(&data[ofs]), next_ofs - ofs});
 		if (ba->ppstr[i] == nullptr)
 			throw std::bad_alloc();
 	}
@@ -435,7 +423,7 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 }
 
 static std::unique_ptr<TPROPVAL_ARRAY, gi_delete>
-mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
+mv_decode_bin(proptag_t proptag, const uint8_t *data, size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
@@ -452,7 +440,7 @@ mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
 		throw std::bad_alloc();
 	pv->proptag = proptag;
 	pv->pvalue = ba;
-	auto nelem = le32p_to_cpu(data);
+	auto nelem = std::min(le32p_to_cpu(data), static_cast<uint32_t>(UINT32_MAX));
 	ba->count = 0;
 	ba->pbin = static_cast<BINARY *>(calloc(nelem, sizeof(BINARY)));
 	if (ba->pbin == nullptr)
@@ -495,9 +483,9 @@ mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
 }
 
 static void emit_namedprop(namedprop_bimap &name_map, libpff_record_entry_t *rent,
-    uint32_t proptag)
+    proptag_t proptag)
 {
-	uint16_t propid = PROP_ID(proptag);
+	auto propid = PROP_ID(proptag);
 	if (name_map.fwd.find(propid) != name_map.fwd.cend())
 		return; /* already sent */
 	libpff_nti_entry_ptr nti_entry;
@@ -537,7 +525,7 @@ static void emit_namedprop(namedprop_bimap &name_map, libpff_record_entry_t *ren
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
 	if (ep.p_uint32(GXMT_NAMEDPROP) != pack_result::success ||
-	    ep.p_uint32(proptag) != pack_result::success ||
+	    ep.p_uint64(proptag) != pack_result::success ||
 	    ep.p_uint32(0) != pack_result::success ||
 	    ep.p_uint64(0) != pack_result::success ||
 	    ep.p_propname(static_cast<PROPERTY_NAME>(pn_req)) != pack_result::success)
@@ -587,10 +575,6 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 	union {
 		BINARY bin;
 		GUID guid;
-		struct {
-			BINARY svbin;
-			SVREID svreid;
-		};
 		SHORT_ARRAY sa;
 		LONG_ARRAY la;
 		LONGLONG_ARRAY lla;
@@ -598,6 +582,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 		DOUBLE_ARRAY da;
 		GUID_ARRAY ga;
 	} u;
+	SVREID svreid;
 	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> uextra;
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
@@ -643,8 +628,8 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 				throw az_error("PF-1036", err);
 		} else if (vtype == PT_UNICODE) {
 			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
-			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
-			         "UTF-16", "UTF-8//IGNORE");
+			auto s = iconvtext({reinterpret_cast<char *>(buf.get()), dsize},
+			         "UTF-16", "UTF-8");
 			if (errno != 0)
 				throw YError("PF-1140: "s + strerror(errno));
 			dsize = s.size() + 1;
@@ -652,8 +637,8 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 			memcpy(buf.get(), s.data(), dsize);
 		} else if (vtype == PT_STRING8) {
 			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
-			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
-			         g_ascii_charset, "UTF-8//IGNORE");
+			auto s = iconvtext({reinterpret_cast<char *>(buf.get()), dsize},
+			         g_ascii_charset, "UTF-8");
 			if (errno != 0)
 				throw YError("PF-1141: "s + strerror(errno));
 			dsize = s.size() * 3 + 1;
@@ -679,13 +664,13 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 		pv.pvalue = &u.guid;
 		break;
 	case PT_SVREID:
-		pv.pvalue = &u.svreid;
-		u.svbin.cb = dsize;
-		u.svbin.pv = buf.get();
-		u.svreid.pbin = &u.svbin;
-		u.svreid.folder_id = 0;
-		u.svreid.message_id = 0;
-		u.svreid.instance = 0;
+		u.bin.cb = dsize;
+		u.bin.pv = buf.get();
+		svreid.pbin = &u.bin;
+		svreid.folder_id = eid_t{};
+		svreid.message_id = eid_t{};
+		svreid.instance = 0;
+		pv.pvalue = &svreid;
 		break;
 	case PT_MV_SHORT:
 		u.sa.count = dsize / sizeof(uint16_t);
@@ -741,7 +726,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 	bool done = false;
 	if (pv.proptag == PR_SUBJECT)
 		done = tpropval_subject_handler(ar, pv);
-	if (!done && ar->set(pv) != 0)
+	if (!done && ar->set(pv) == ecServerOOM)
 		throw std::bad_alloc();
 }
 
@@ -805,7 +790,7 @@ static tarray_set_ptr item_to_tarray_set(libpff_item_t *item,
 			throw std::bad_alloc();
 		recordset_to_tpropval_a(rset.get(), tprops.get(), name_map);
 		auto ret = tset->append_move(std::move(tprops));
-		if (ret == ENOMEM)
+		if (ret == ecMAPIOOM)
 			throw std::bad_alloc();
 	}
 	return tset;
@@ -859,7 +844,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
 	ep.p_uint32(static_cast<uint32_t>(MAPI_FOLDER));
-	ep.p_uint32(ident);
+	ep.p_uint64(ident);
 	ep.p_uint32(static_cast<uint32_t>(parent.type));
 	ep.p_uint64(parent.folder_id);
 	ep.p_tpropval_a(*props);
@@ -929,11 +914,13 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
 	++g_msg_count;
-	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(ident) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
-	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS)
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+	    ep.p_uint64(ident) != pack_result::ok ||
+	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
+	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
+	    ep.p_msgctnt(*ctnt) != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok)
 		throw YError("PF-1058");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
@@ -958,7 +945,7 @@ static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_
 		if (props == nullptr)
 			throw std::bad_alloc();
 		recordset_to_tpropval_a(rset.get(), props.get(), parent.names);
-		if (parent.message->children.prcpts->append_move(std::move(props)) == ENOMEM)
+		if (parent.message->children.prcpts->append_move(std::move(props)) == ecMAPIOOM)
 			throw std::bad_alloc();
 	}
 	return 0;
@@ -1061,7 +1048,7 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	return 0;
 }
 
-static uint32_t az_nid_from_mst(libpff_item_t *item, uint32_t proptag)
+static uint32_t az_nid_from_mst(libpff_item_t *item, proptag_t proptag)
 {
 	libpff_record_entry_ptr rent;
 	if (az_item_get_propv(item, proptag, &~unique_tie(rent)) < 1)
@@ -1204,7 +1191,7 @@ static errno_t do_file(const char *filename) try
 	}
 
 	uint8_t xsplice = g_splice;
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0005", 8) < 0)
 		throw YError("PF-1132: %s", strerror(errno));
 	if (HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice)) < 0)
 		throw YError("PF-1133: %s", strerror(errno));
@@ -1230,7 +1217,7 @@ static errno_t do_file(const char *filename) try
 	libpff_item_ptr root;
 	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1)
 		throw az_error("PF-1025", err);
-	gi_name_map_write({}); /* required by GXMT0003 format */
+	gi_name_map_write({}); /* required by GXMT format */
 
 	if (g_show_tree)
 		fprintf(stderr, "Object tree:\n");
@@ -1276,14 +1263,15 @@ static void terse_help()
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
+
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
-	if (argc != 2) {
+	if (argp.nargs != 1) {
 		terse_help();
 		return EXIT_FAILURE;
 	}
@@ -1292,14 +1280,16 @@ int main(int argc, char **argv)
 			"You probably wanted to redirect output into a file or pipe.\n");
 		return EXIT_FAILURE;
 	}
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
+	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
-	auto ret = do_file(argv[1]);
+	textmaps_init();
+	auto ret = do_file(argp.uarg[0]);
 	if (ret != 0) {
 		fprintf(stderr, "pff: Import unsuccessful.\n");
 		return EXIT_FAILURE;
 	}
-	fprintf(stderr, "pff: emitted %zu messages\n", g_msg_count);
+	fprintf(stderr, "pff: emitted %zu message(s)\n", g_msg_count);
 	return EXIT_SUCCESS;
 }

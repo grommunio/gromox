@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  *  mail queue have three parts, tape, mess, message queue.when a mail
@@ -61,7 +61,7 @@ static std::unordered_map<int, MESSAGE *> g_mess_hash;
 static std::vector<MESSAGE *> g_free_list, g_used_list;
 static std::mutex g_hash_mutex, g_used_mutex, g_free_mutex, g_mess_mutex;
 static pthread_t		g_thread_id;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_dequeue_stop;
 static int				g_dequeued_num;
 
 static BOOL message_dequeue_check();
@@ -88,7 +88,7 @@ void message_dequeue_init(const char *path, size_t max_memory)
 	g_current_mem = 0;
 	g_msg_id = -1;
 	g_message_ptr.reset();
-	g_notify_stop = false;
+	g_dequeue_stop = false;
 	g_dequeued_num = 0;
 }
 
@@ -136,6 +136,7 @@ static BOOL message_dequeue_check()
 static void message_dequeue_collect_resource()
 {
 	g_message_ptr.reset();
+	std::lock_guard lk(g_hash_mutex);
 	g_mess_hash.clear();
 }
 
@@ -178,7 +179,6 @@ int message_dequeue_run()
 		message_dequeue_collect_resource();
 		return -9;
 	}
-	pthread_setname_np(g_thread_id, "msg_dequeue");
 	return 0;
 }
 
@@ -220,7 +220,7 @@ void message_dequeue_put(MESSAGE *pmessage) try
 
 void message_dequeue_stop()
 {
-	g_notify_stop = true;
+	g_dequeue_stop = true;
 	if (!pthread_equal(g_thread_id, {})) {
 		pthread_kill(g_thread_id, SIGALRM);
 		pthread_join(g_thread_id, NULL);
@@ -229,7 +229,7 @@ void message_dequeue_stop()
     g_max_memory = 0;
 	g_current_mem  = 0;
     g_msg_id = -1;
-	g_notify_stop = true;
+	g_dequeue_stop = true;
 }
 
 /*
@@ -378,6 +378,7 @@ static void message_dequeue_load_from_mess(int mess) try
 
 static void *mdq_thrwork(void *arg)
 {
+	pthread_setname_np(pthread_self(), "msg_dequeue");
 	MSG_BUFF msg;
     DIR *dirp;
     struct dirent *direntp;
@@ -388,7 +389,7 @@ static void *mdq_thrwork(void *arg)
         sleep(1);
     }
 
-	while (!g_notify_stop) {
+	while (!g_dequeue_stop) {
 		if (msgrcv(g_msg_id, &msg, sizeof(uint32_t), 0, IPC_NOWAIT) != -1) {
 			switch(msg.msg_type) {
 			case MESSAGE_MESS:

@@ -17,6 +17,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -59,47 +60,31 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	if (!exmdb_client->get_folder_all_proptags(pfolder->pstore->get_dir(),
 	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;		
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 30);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 30);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-		sizeof(uint32_t)*tmp_proptags.count);
+	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
-	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
-	pproptags->pproptag[pproptags->count++] = PR_RIGHTS;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	if (!tmp_proptags.has(PR_SOURCE_KEY))
-		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-		return TRUE;
-	if (!tmp_proptags.has(PR_IPM_DRAFTS_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_CONTACT_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_APPOINTMENT_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_JOURNAL_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_NOTE_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_TASK_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
-	if (!tmp_proptags.has(PR_FREEBUSY_ENTRYIDS))
-		pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
-	if (!tmp_proptags.has(PR_ADDITIONAL_REN_ENTRYIDS))
-		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
-	if (!tmp_proptags.has(PR_ADDITIONAL_REN_ENTRYIDS_EX))
-		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
+	static constexpr proptag_t tags1[] = {
+		PR_ACCESS, PR_ENTRYID, PR_OBJECT_TYPE, PR_MAPPING_SIGNATURE,
+		PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY,
+		PR_STORE_ENTRYID, PR_STORE_RECORD_KEY, PR_SOURCE_KEY,
+	};
+	for (auto t : tags1)
+		pproptags->emplace_back_nd(t);
+	static constexpr proptag_t tags2[] = {
+		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
+		PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_JOURNAL_ENTRYID,
+		PR_IPM_NOTE_ENTRYID, PR_IPM_TASK_ENTRYID, PR_FREEBUSY_ENTRYIDS,
+		PR_ADDITIONAL_REN_ENTRYIDS, PR_ADDITIONAL_REN_ENTRYIDS_EX,
+	};
+	if (pfolder->pstore->b_private && toplevel(pfolder->folder_id))
+		for (auto t : tags2)
+			pproptags->emplace_back_nd(t);
 	return TRUE;
 }
 
-bool folder_object::is_readonly_prop(uint32_t proptag) const
+bool folder_object::is_readonly_prop(proptag_t proptag) const
 {
 	auto pfolder = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT)
@@ -156,7 +141,7 @@ bool folder_object::is_readonly_prop(uint32_t proptag) const
 }
 
 static BOOL folder_object_get_calculated_property(folder_object *pfolder,
-    uint32_t proptag, void **ppvalue)
+    proptag_t proptag, void **ppvalue)
 {
 	BINARY *pbin;
 	void *pvalue;
@@ -202,18 +187,18 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	}
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore, pfolder->folder_id);
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_SOURCE_KEY:
-		*ppvalue = cu_fid_to_sk(pfolder->pstore, pfolder->folder_id);
+		*ppvalue = cu_fid_to_sk(*pfolder->pstore, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
 		if (pfolder->pstore->b_private) {
@@ -233,15 +218,17 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*ppvalue = cu_fid_to_sk(pfolder->pstore,
+		*ppvalue = cu_fid_to_sk(*pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
-	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mailbox_guid);
 		return TRUE;
+	case PR_MAPPING_SIGNATURE:
+		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mapping_signature);
+		return TRUE;
 	case PR_STORE_ENTRYID:
-		*ppvalue = common_util_to_store_entryid(pfolder->pstore);
+		*ppvalue = cu_to_store_entryid(*pfolder->pstore);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_DELETED_FOLDER_COUNT:
 		/* just like Exchange 2013, always return 0 */
@@ -250,37 +237,37 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	case PR_IPM_DRAFTS_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;	
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
 	case PR_IPM_CONTACT_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
 	case PR_IPM_APPOINTMENT_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
 	case PR_IPM_JOURNAL_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
 	case PR_IPM_NOTE_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
 	case PR_IPM_TASK_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
 	case PR_REM_ONLINE_ENTRYID:
@@ -317,27 +304,27 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			ba->count = 0;
 			return FALSE;
 		}
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[0] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[1] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[2] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[3] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
 		if (pbin == nullptr)
 			return FALSE;
@@ -356,9 +343,9 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return TRUE;
 		}
 		const PERSISTDATA pd[] = {
-			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
-			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
-			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
+			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
+			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
+			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
 		};
 		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 		    ext_push.p_persistdata_a(pd) != pack_result::ok)
@@ -403,7 +390,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		ba->pbin[1].pb = NULL;
 		ba->pbin[2].cb = 0;
 		ba->pbin[2].pb = NULL;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
 		if (pbin == nullptr)
 			return FALSE;
@@ -422,24 +409,23 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	return FALSE;
 }
 
-BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
+bool folder_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
 	auto pfolder = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue))
 			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
@@ -451,7 +437,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	auto pinfo = zs_get_info();
 	if (!exmdb_client->get_folder_properties(pfolder->pstore->get_dir(),
-	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
+	    pinfo->cpid, pfolder->folder_id, tmp_proptags, &tmp_propvals))
 		return FALSE;
 	if (tmp_propvals.count == 0)
 		return TRUE;
@@ -509,7 +495,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
+bool folder_object::remove_properties(proptag_cspan pproptags)
 {
 	BINARY *pbin_pcl;
 	uint64_t last_time;
@@ -520,20 +506,17 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	TAGGED_PROPVAL propval_buff[4];
 	
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto pfolder = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
-		if (pfolder->is_readonly_prop(tag))
-			continue;
-		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
-	}
+	for (const auto tag : pproptags)
+		if (!pfolder->is_readonly_prop(tag))
+			tmp_proptags.emplace_back(tag);
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->remove_folder_properties(pfolder->pstore->get_dir(),
-	    pfolder->folder_id, &tmp_proptags))
+	    pfolder->folder_id, tmp_proptags))
 		return FALSE;	
 	tmp_propvals.count = 4;
 	tmp_propvals.ppropval = propval_buff;
@@ -568,8 +551,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	uint32_t row_num;
 	uint32_t table_id;
 	TARRAY_SET permission_set;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
+	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
@@ -581,7 +563,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 		return FALSE;
 	}
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
-		table_id, &proptags, 0, row_num, &permission_set)) {
+	    table_id, proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(dir, table_id);
 		return FALSE;
 	}
@@ -619,9 +601,8 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	    pfolder->folder_id, 0, &table_id, &row_num))
 		return FALSE;
 	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_ID};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
-		table_id, &proptags, 0, row_num, &permission_set)) {
+	    table_id, proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(dir, table_id);
 		return FALSE;
 	}
@@ -701,8 +682,8 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		pfolder->folder_id, b_freebusy, count, pperm_data);
 }
 
-static int folder_object_flush_delegates(int fd,
-    const FORWARDDELEGATE_ACTION &action)
+static int folder_object_flush_delegates(std::vector<std::string> &dlist,
+    const FORWARDDELEGATE_ACTION &action) try
 {
 	for (const auto &dlgt : action) {
 		const char *ptype = nullptr, *paddress = nullptr;
@@ -723,7 +704,7 @@ static int folder_object_flush_delegates(int fd,
 		std::string address_buff;
 		if (ptype != nullptr) {
 			auto ret = cvt_genaddr_to_smtpaddr(ptype, paddress,
-			           g_org_name, cu_id2user, address_buff);
+			           g_org_name, mysql_adaptor_userid_to_name, address_buff);
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)
@@ -731,20 +712,19 @@ static int folder_object_flush_delegates(int fd,
 		}
 		if (address_buff.empty() && pentryid != nullptr) {
 			auto ret = cvt_entryid_to_smtpaddr(pentryid, g_org_name,
-			           cu_id2user, address_buff);
+			           mysql_adaptor_userid_to_name, address_buff);
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)
 				return -1;
 		}
-		if (address_buff.size() > 0) {
-			address_buff += '\n';
-			auto ret = HXio_fullwrite(fd, address_buff.c_str(), address_buff.size());
-			if (ret < 0 || static_cast<size_t>(ret) != address_buff.size())
-				return -2;
-		}
+		if (address_buff.size() > 0)
+			dlist.emplace_back(std::move(address_buff));
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return -1;
 }
 
 BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
@@ -774,30 +754,24 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 	if (pfolder->pstore->b_private &&
 	    rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_INBOX &&
 	    ((flags & MODIFY_RULES_FLAG_REPLACE) || b_delegate)) {
-		auto dlg_dir  = pfolder->pstore->get_dir() + "/config"s;
-		auto dlg_path = dlg_dir + "/delegates.txt";
-		gromox::tmpfile fd;
-		if (fd.open_linkable(dlg_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC) >= 0 &&
-		    b_delegate)
+		std::vector<std::string> dlist;
+		if (b_delegate) {
 			for (const auto &a : *pactions) {
 				if (a.type != OP_DELEGATE)
 					continue;
-				auto ret = folder_object_flush_delegates(fd,
-				           *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata));
-				if (ret == -2)
-					mlog(LV_ERR, "E-2330: write %s: %s",
-						fd.m_path.c_str(), strerror(errno));
+				auto ret = folder_object_flush_delegates(dlist,
+					   *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata));
 				if (ret < 0)
 					return false;
 			}
-		if (fd.link_to(dlg_path.c_str()) != 0)
-			mlog(LV_ERR, "E-2350: link %s %s: %s", fd.m_path.c_str(),
-				dlg_path.c_str(), strerror(errno));
+		}
+		if (!exmdb_client->write_delegates(pfolder->pstore->get_dir(), 0, dlist))
+			/* unclear */;
 	}
 	return exmdb_client->update_folder_rule(pfolder->pstore->get_dir(),
 		pfolder->folder_id, plist->count,
 		plist->prule, &b_exceed);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1491: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }

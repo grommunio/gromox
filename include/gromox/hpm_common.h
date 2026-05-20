@@ -51,7 +51,7 @@ struct http_request {
 };
 using HTTP_REQUEST = http_request;
 
-struct HTTP_AUTH_INFO {
+struct GX_EXPORT HTTP_AUTH_INFO {
 	http_status auth_status;
 	const char* username;
 	const char* password;

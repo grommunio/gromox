@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <cerrno>
@@ -42,11 +42,11 @@ struct BACK_CONN {
 
 }
 
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_timeragent_stop;
 static char g_timer_ip[40];
 static uint16_t g_timer_port;
 static pthread_t g_scan_id;
-static std::mutex g_back_lock;
+static std::mutex g_back_lock; /* protects g_back_list & g_lost_list */
 static std::list<BACK_CONN> g_back_list, g_lost_list;
 
 static constexpr cfg_directive timer_agent_cfg_defaults[] = {
@@ -69,7 +69,7 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
-		g_notify_stop = true;
+		g_timeragent_stop = true;
 		auto pfile = config_file_initd("timer_agent.cfg",
 		             get_config_path(), timer_agent_cfg_defaults);
 		if (NULL == pfile) {
@@ -86,22 +86,23 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		mlog(LV_INFO, "timer_agent: timer address is [%s]:%hu",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
 
+		std::unique_lock bk_hold(g_back_lock);
 		for (size_t i = 0; i < conn_num; ++i) try {
 			g_lost_list.emplace_back();
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1655: ENOMEM");
 		}
-
-		g_notify_stop = false;
+		bk_hold.unlock();
+		g_timeragent_stop = false;
 		auto ret = pthread_create4(&g_scan_id, nullptr, tmrag_scanwork, nullptr);
 		if (ret != 0) {
-			g_notify_stop = true;
+			g_timeragent_stop = true;
+			bk_hold.lock();
 			g_back_list.clear();
 			mlog(LV_ERR, "timer_agent: failed to create scan thread: %s",
 			        strerror(ret));
 			return FALSE;
 		}
-		pthread_setname_np(g_scan_id, "timer_agent");
 		if (!register_service("add_timer", add_timer)) {
 			mlog(LV_ERR, "timer_agent: failed to register add_timer");
 			return false;
@@ -112,13 +113,14 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		return TRUE;
 	}
-	case PLUGIN_FREE:
-		if (!g_notify_stop) {
-			g_notify_stop = true;
+	case PLUGIN_FREE: {
+		if (!g_timeragent_stop) {
+			g_timeragent_stop = true;
 			if (!pthread_equal(g_scan_id, {})) {
 				pthread_kill(g_scan_id, SIGALRM);
 				pthread_join(g_scan_id, NULL);
 			}
+			std::unique_lock bk_hold(g_back_lock);
 			g_lost_list.clear();
 			while (g_back_list.size() > 0) {
 				auto pback = &g_back_list.front();
@@ -128,8 +130,10 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 				g_back_list.pop_front();
 			}
 		}
+		std::unique_lock bk_hold(g_back_lock);
 		g_back_list.clear();
 		return TRUE;
+	}
 	default:
 		return TRUE;
 	}
@@ -137,11 +141,12 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 static void *tmrag_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "timer_agent");
 	char temp_buff[1024];
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;
 
-	while (!g_notify_stop) {
+	while (!g_timeragent_stop) {
 		std::unique_lock bk_hold(g_back_lock);
 		auto now_time = time(nullptr);
 		auto tail = g_back_list.size() > 0 ? &g_back_list.back() : nullptr;

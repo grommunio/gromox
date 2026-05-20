@@ -24,7 +24,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
@@ -62,7 +61,7 @@ static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 }
 
 static BOOL store_object_cache_propname(store_object *pstore,
-    uint16_t propid, const PROPERTY_NAME *ppropname) try
+    propid_t propid, const PROPERTY_NAME *ppropname) try
 {
 	char s[NP_STRBUF_SIZE];
 	if (!propname_to_packed(*ppropname, s, std::size(s)))
@@ -71,7 +70,7 @@ static BOOL store_object_cache_propname(store_object *pstore,
 	pstore->propname_hash.emplace(s, propid);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1634: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -79,11 +78,10 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	int account_id, const char *account, const char *dir)
 {
 	static constexpr proptag_t proptag = PR_STORE_RECORD_KEY;
-	const PROPTAG_ARRAY proptags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY propvals;
 	
 	if (!exmdb_client->get_store_properties(dir, CP_ACP,
-	    &proptags, &propvals)) {
+	    {&proptag, 1}, &propvals)) {
 		mlog(LV_ERR, "get_store_properties %s: failed", dir);
 		return NULL;	
 	}
@@ -199,35 +197,8 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY &propids,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2231: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
-}
-
-static BOOL store_object_get_named_propid(store_object *pstore,
-	BOOL b_create, const PROPERTY_NAME *ppropname,
-	uint16_t *ppropid)
-{
-	if (ppropname->guid == PS_MAPI) {
-		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
-		return TRUE;
-	}
-	char ps[NP_STRBUF_SIZE];
-	if (!propname_to_packed(*ppropname, ps, std::size(ps))) {
-		*ppropid = 0;
-		return TRUE;
-	}
-	auto iter = pstore->propname_hash.find(ps);
-	if (iter != pstore->propname_hash.end()) {
-		*ppropid = iter->second;
-		return TRUE;
-	}
-	if (!exmdb_client_get_named_propid(pstore->dir,
-	    b_create, ppropname, ppropid))
-		return FALSE;
-	if (*ppropid == 0)
-		return TRUE;
-	store_object_cache_propname(pstore, *ppropid, ppropname);
-	return TRUE;
 }
 
 BOOL store_object::get_named_propids(BOOL b_create,
@@ -288,46 +259,11 @@ BOOL store_object::get_named_propids(BOOL b_create,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2233: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
-static BOOL gnpwrap(void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)
-{
-	return store_object_get_named_propid(static_cast<store_object *>(store), create, pn, pid);
-}
-
-const property_groupinfo *store_object::get_last_property_groupinfo()
-{
-	auto pstore = this;
-	if (m_gpinfo == nullptr)
-		m_gpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
-		           pstore, msgchg_grouping_get_last_group_id());
-	return m_gpinfo.get();
-}
-
-const property_groupinfo *
-store_object::get_property_groupinfo(uint32_t group_id) try
-{
-	auto pstore = this;
-	
-	if (group_id == msgchg_grouping_get_last_group_id())
-		return get_last_property_groupinfo();
-	auto node = std::find_if(group_list.begin(), group_list.end(),
-	            [&](const property_groupinfo &p) { return p.group_id == group_id; });
-	if (node != group_list.end())
-		return &*node;
-	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, pstore, group_id);
-	if (pgpinfo == nullptr)
-		return NULL;
-	group_list.push_back(std::move(*pgpinfo));
-	return &group_list.back();
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1630: ENOMEM");
-	return nullptr;
-}
-
-static BOOL store_object_is_readonly_prop(store_object *pstore, uint32_t proptag)
+static BOOL store_object_is_readonly_prop(store_object *pstore, proptag_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
@@ -411,183 +347,63 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	
 	if (!exmdb_client->get_store_all_proptags(pstore->dir, &tmp_proptags))
 		return FALSE;	
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 56);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 56);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-				sizeof(uint32_t)*tmp_proptags.count);
+	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	if (pstore->b_private) {
-		pproptags->pproptag[pproptags->count++] = PidTagXSpoolerQueueEntryId;
-		pproptags->pproptag[pproptags->count++] = PR_COMMON_VIEWS_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_EC_ALLOW_EXTERNAL;
-		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_AUDIENCE;
-		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_REPLY;
-		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_SUBJECT;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_FROM;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_MSG;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_SUBJECT;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_UNTIL;
-		pproptags->pproptag[pproptags->count++] = PR_EMAIL_ADDRESS;
-		pproptags->pproptag[pproptags->count++] = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
-		pproptags->pproptag[pproptags->count++] = PR_FINDER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_DAF_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_INBOX_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_OUTBOX_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_SENTMAIL_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_WASTEBASKET_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_NAME;
-		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-		pproptags->pproptag[pproptags->count++] = PR_SCHEDULE_FOLDER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_VIEWS_ENTRYID;
+		static constexpr proptag_t ntags[] = {
+			PidTagXSpoolerQueueEntryId, PR_COMMON_VIEWS_ENTRYID,
+			PR_EC_ALLOW_EXTERNAL, PR_EC_EXTERNAL_AUDIENCE,
+			PR_EC_EXTERNAL_REPLY, PR_EC_EXTERNAL_SUBJECT,
+			PR_EC_OUTOFOFFICE, PR_EC_OUTOFOFFICE_FROM,
+			PR_EC_OUTOFOFFICE_MSG, PR_EC_OUTOFOFFICE_SUBJECT,
+			PR_EC_OUTOFOFFICE_UNTIL, PR_EMAIL_ADDRESS,
+			PR_EMS_AB_DISPLAY_NAME_PRINTABLE, PR_FINDER_ENTRYID,
+			PR_IPM_DAF_ENTRYID, PR_IPM_INBOX_ENTRYID,
+			PR_IPM_OUTBOX_ENTRYID, PR_IPM_SENTMAIL_ENTRYID,
+			PR_IPM_WASTEBASKET_ENTRYID, PR_MAILBOX_OWNER_ENTRYID,
+			PR_MAILBOX_OWNER_NAME, PR_MAX_SUBMIT_MESSAGE_SIZE,
+			PR_SCHEDULE_FOLDER_ENTRYID, PR_VIEWS_ENTRYID,
+		};
+		for (auto t : ntags)
+			pproptags->emplace_back(t);
 	} else {
-		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_NON_IPM_SUBTREE_ENTRYID;
+		static constexpr proptag_t ntags[] = {
+			PR_EFORMS_REGISTRY_ENTRYID, PR_IPM_PUBLIC_FOLDERS_ENTRYID,
+			PR_NON_IPM_SUBTREE_ENTRYID,
+		};
+		for (auto t : ntags)
+			pproptags->emplace_back(t);
 	}
-	pproptags->pproptag[pproptags->count++] = PR_CONTENT_COUNT;
-	pproptags->pproptag[pproptags->count++] = PR_DEFAULT_STORE;
-	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_NAME;
-	pproptags->pproptag[pproptags->count++] = PR_EC_SERVER_VERSION;
-	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_EXTENDED_RULE_SIZE_LIMIT;
-	pproptags->pproptag[pproptags->count++] = PR_INSTANCE_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_IPM_FAVORITES_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_IPM_SUBTREE_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
-	pproptags->pproptag[pproptags->count++] = PR_MDB_PROVIDER;
-	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_PROVIDER_DISPLAY;
-	pproptags->pproptag[pproptags->count++] = PR_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_FLAGS;
-	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_ROOT_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_SUPPORT_MASK;
-	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
+	static constexpr proptag_t ntags[] = {
+		PR_CONTENT_COUNT, PR_DEFAULT_STORE, PR_DISPLAY_NAME,
+		PR_EC_SERVER_VERSION, PR_ENTRYID, PR_EXTENDED_RULE_SIZE_LIMIT,
+		PR_INSTANCE_KEY, PR_IPM_FAVORITES_ENTRYID,
+		PR_IPM_SUBTREE_ENTRYID, PR_MAPPING_SIGNATURE, PR_MDB_PROVIDER,
+		PR_OBJECT_TYPE, PR_PROVIDER_DISPLAY, PR_RECORD_KEY,
+		PR_RESOURCE_FLAGS, PR_RESOURCE_TYPE, PR_ROOT_ENTRYID,
+		PR_STORE_ENTRYID, PR_STORE_RECORD_KEY, PR_STORE_SUPPORT_MASK,
+		PR_USER_ENTRYID,
+	};
+	for (auto t : ntags)
+		pproptags->emplace_back(t);
 	return TRUE;
 }
 
-static constexpr struct cfg_directive oof_defaults[] = {
-	{"allow_external_oof", "0", CFG_BOOL},
-	{"external_audience", "0", CFG_BOOL},
-	{"oof_state", "0"},
-	CFG_TABLE_END,
-};
-
 static void *store_object_get_oof_property(const char *maildir,
-    uint32_t proptag) try
+    proptag_t proptag)
 {
-	int offset;
-	char *pbuff;
-	int buff_len;
-	void *pvalue;
-	const char *str_value;
-	char subject[1024];
-	MIME_FIELD mime_field;
-	struct stat node_stat;
-	static constexpr uint8_t fake_true = true;
-	static constexpr uint8_t fake_false = false;
-	std::string path;
-
-	switch (proptag) {
-	case PR_EC_OUTOFOFFICE:
-	case PR_EC_OUTOFOFFICE_FROM:
-	case PR_EC_OUTOFOFFICE_UNTIL:
-	case PR_EC_ALLOW_EXTERNAL:
-	case PR_EC_EXTERNAL_AUDIENCE:
-		path = maildir + "/config/autoreply.cfg"s;
-		break;
-	case PR_EC_OUTOFOFFICE_MSG:
-	case PR_EC_OUTOFOFFICE_SUBJECT:
-		path = maildir + "/config/internal-reply"s;
-		break;
-	case PR_EC_EXTERNAL_REPLY:
-	case PR_EC_EXTERNAL_SUBJECT:
-		path = maildir + "/config/external-reply"s;
-		break;
-	}
-
-	switch (proptag) {
-	case PR_EC_OUTOFOFFICE: {
-		auto oofstate = cu_alloc<uint32_t>();
-		if (oofstate == nullptr)
-			return NULL;
-		pvalue = oofstate;
-		auto pconfig = config_file_init(path.c_str(), oof_defaults);
-		*oofstate = pconfig != nullptr ? pconfig->get_ll("oof_state") : 0;
-		return pvalue;
-	}
-	case PR_EC_OUTOFOFFICE_MSG:
-	case PR_EC_EXTERNAL_REPLY: {
-		wrapfd fd = open(path.c_str(), O_RDONLY);
-		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
-			return nullptr;
-		buff_len = node_stat.st_size;
-		pbuff = cu_alloc<char>(buff_len + 1);
-		if (pbuff == nullptr || read(fd.get(), pbuff, buff_len) != buff_len)
-			return NULL;
-		pbuff[buff_len] = '\0';
-		auto ptr = strstr(pbuff, "\r\n\r\n");
-		return ptr != nullptr ? ptr + 4 : nullptr;
-	}
-	case PR_EC_OUTOFOFFICE_SUBJECT:
-	case PR_EC_EXTERNAL_SUBJECT: {
-		wrapfd fd = open(path.c_str(), O_RDONLY);
-		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
-			return NULL;
-		buff_len = node_stat.st_size;
-		pbuff = cu_alloc<char>(buff_len);
-		if (pbuff == nullptr || read(fd.get(), pbuff, buff_len) != buff_len)
-			return NULL;
-		offset = 0;
-		size_t parsed_length;
-		while ((parsed_length = parse_mime_field(pbuff + offset, buff_len - offset, &mime_field)) != 0) {
-			offset += parsed_length;
-			if (strcasecmp(mime_field.name.c_str(), "Subject") == 0 &&
-			    mime_field.value.size() < std::size(subject) &&
-			    mime_string_to_utf8("utf-8", mime_field.value.c_str(), subject,
-			    std::size(subject)))
-					return common_util_dup(subject);
-			if (pbuff[offset] == '\r' && pbuff[offset+1] == '\n')
-				return NULL;
-		}
-		return NULL;
-	}
-	case PR_EC_OUTOFOFFICE_FROM:
-	case PR_EC_OUTOFOFFICE_UNTIL: {
-		auto pconfig = config_file_init(path.c_str(), oof_defaults);
-		if (pconfig == nullptr)
-			return NULL;
-		pvalue = cu_alloc<uint64_t>();
-		if (pvalue == nullptr)
-			return NULL;
-		str_value = pconfig->get_value(proptag == PR_EC_OUTOFOFFICE_FROM ? "START_TIME" : "END_TIME");
-		if (str_value == nullptr)
-			return NULL;
-		*static_cast<uint64_t *>(pvalue) = rop_util_unix_to_nttime(strtoll(str_value, nullptr, 0));
-		return pvalue;
-	}
-	case PR_EC_ALLOW_EXTERNAL:
-	case PR_EC_EXTERNAL_AUDIENCE: {
-		auto pconfig = config_file_init(path.c_str(), oof_defaults);
-		if (pconfig == nullptr)
-			return deconst(&fake_false);
-		auto key = proptag == PR_EC_ALLOW_EXTERNAL ? "allow_external_oof" : "external_audience";
-		pvalue = deconst(pconfig->get_ll(key) == 0 ? &fake_false : &fake_true);
-		return pvalue;
-	}
-	}
-	return NULL;
-} catch (const std::bad_alloc &) {
-	return nullptr;
+	TPROPVAL_ARRAY props{};
+	if (!exmdb_client->autoreply_getprop(maildir, CP_UTF8, {&proptag, 1}, &props) ||
+	    props.count == 0 || props[0].proptag != proptag)
+		return nullptr;
+	return props[0].pvalue;
 }
 
 static BOOL store_object_get_calculated_property(store_object *pstore,
-    uint32_t proptag, void **ppvalue)
+    proptag_t proptag, void **ppvalue)
 {
 	uint32_t permission;
 	
@@ -728,7 +544,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*ppvalue = r;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		*r = g_max_mail_len;
+		*r = std::min(static_cast<size_t>(INT32_MAX), g_max_mail_len >> 10);
 		return TRUE;
 	}
 	case PR_OBJECT_TYPE: {
@@ -783,12 +599,14 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_RECORD_KEY:
 	case PR_INSTANCE_KEY:
 	case PR_STORE_RECORD_KEY:
-	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pstore->mailbox_guid);
+		return TRUE;
+	case PR_MAPPING_SIGNATURE:
+		*ppvalue = common_util_guid_to_binary(pstore->mapping_signature);
 		return TRUE;
 	case PR_ENTRYID:
 	case PR_STORE_ENTRYID:
-		*ppvalue = common_util_to_store_entryid(pstore);
+		*ppvalue = cu_to_store_entryid(*pstore);
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
@@ -805,13 +623,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	}
 	case PR_ROOT_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1, pstore->b_private ?
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1, pstore->b_private ?
 		           PRIVATE_FID_ROOT : PUBLIC_FID_ROOT));
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_FINDER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_FINDER));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -821,7 +639,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		 * Our PR_IPM_FAVORITES_ENTRYID for public stores is not
 		 * replicating the behavior exhibited by MSMAPI.
 		 */
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 		           rop_util_make_eid_ex(1, pstore->b_private ?
 		           PRIVATE_FID_SHORTCUTS : PUBLIC_FID_IPMSUBTREE));
 		if (*ppvalue == nullptr)
@@ -829,13 +647,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	case PR_IPM_SUBTREE_ENTRYID:
 		/* else case:: different from native MAPI */
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE));
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
 	case PR_IPM_INBOX_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE));
 		if (*ppvalue == nullptr)
 			return false;
@@ -843,7 +661,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_IPM_OUTBOX_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -851,7 +669,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_IPM_SENTMAIL_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -859,7 +677,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_IPM_WASTEBASKET_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -867,13 +685,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_IPM_DAF_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           PRIVATE_FID_DEFERRED_ACTION));
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_SCHEDULE_FOLDER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SCHEDULE));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -881,12 +699,12 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_VIEWS_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS));
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS));
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_COMMON_VIEWS_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -899,7 +717,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_NON_IPM_SUBTREE_ENTRYID:
 		if (pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_NONIPMSUBTREE));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -907,13 +725,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_EFORMS_REGISTRY_ENTRYID:
 		if (pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_EFORMSREGISTRY));
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
 	case PidTagXSpoolerQueueEntryId:
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_SPOOLER_QUEUE : PUBLIC_FID_NONIPMSUBTREE));
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_EC_SERVER_VERSION:
@@ -951,7 +769,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		sql_meta_result mres;
 		auto tmzone = mysql_adaptor_meta(pstore->account, WANTPRIV_METAONLY, mres) == 0 ?
 		              mres.timezone.c_str() : nullptr;
-		if (*znul(tmzone) == '\0') {
+		if (znoval(tmzone)) {
 			*ppvalue = deconst(common_util_get_default_timezone());
 			return TRUE;
 		}
@@ -998,24 +816,22 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	return FALSE;
 }
 
-BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
-    TPROPVAL_ARRAY *ppropvals)
+bool store_object::get_properties(proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
 	auto pstore = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!store_object_get_calculated_property(this, tag, &pvalue))
 			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
@@ -1036,15 +852,14 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			if (i < tmp_proptags.count) {
 				memmove(tmp_proptags.pproptag + i,
 					tmp_proptags.pproptag + i + 1,
-					sizeof(uint32_t) * (tmp_proptags.count - i));
+					sizeof(proptag_t) * (tmp_proptags.count - i));
 			}
 		}	
 		if (tmp_proptags.count == 0)
 			return TRUE;
 	}
-	if (!exmdb_client->get_store_properties(
-		pstore->dir, pinfo->cpid, &tmp_proptags,
-	    &tmp_propvals))
+	if (!exmdb_client->get_store_properties(pstore->dir, pinfo->cpid,
+	    tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
 		return TRUE;
@@ -1056,142 +871,12 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 }
 
 static BOOL store_object_set_oof_property(const char *maildir,
-	uint32_t proptag, const void *pvalue)
+    proptag_t proptag, const void *pvalue)
 {
-	char *pbuff;
-	int buff_len;
-	char *ptoken;
-	std::string autoreply_path;
-	
-	try {
-		autoreply_path = maildir + "/config/autoreply.cfg"s;
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1483: ENOMEM");
-		return false;
-	}
-	/* Ensure file exists for config_file_prg */
-	auto fdtest = open(autoreply_path.c_str(), O_CREAT | O_WRONLY, FMODE_PUBLIC);
-	if (fdtest < 0)
-		return false;
-	close(fdtest);
-	switch (proptag) {
-	case PR_EC_OUTOFOFFICE: {
-		auto pconfig = config_file_init(autoreply_path.c_str(), oof_defaults);
-		if (pconfig == nullptr)
-			return FALSE;
-		auto v = *static_cast<const uint32_t *>(pvalue);
-		pconfig->set_value("OOF_STATE", v == 1 ? "1" : v == 2 ? "2" : "0");
-		return pconfig->save();
-	}
-	case PR_EC_OUTOFOFFICE_FROM:
-	case PR_EC_OUTOFOFFICE_UNTIL: {
-		auto pconfig = config_file_init(autoreply_path.c_str(), oof_defaults);
-		if (pconfig == nullptr)
-			return FALSE;
-		long long t = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(pvalue));
-		pconfig->set_value(proptag == PR_EC_OUTOFOFFICE_FROM ?
-			"START_TIME" : "END_TIME", std::to_string(t).c_str());
-		return pconfig->save();
-	}
-	case PR_EC_OUTOFOFFICE_MSG:
-	case PR_EC_EXTERNAL_REPLY: {
-		try {
-			autoreply_path = maildir;
-			autoreply_path += proptag == PR_EC_OUTOFOFFICE_MSG ?
-			             "/config/internal-reply" : "/config/external-reply";
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1484: ENOMEM");
-			return false;
-		}
-		wrapfd fd = open(autoreply_path.c_str(), O_RDONLY);
-		struct stat node_stat;
-		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
-			buff_len = strlen(static_cast<const char *>(pvalue));
-			pbuff = cu_alloc<char>(buff_len + 256);
-			if (pbuff == nullptr)
-				return FALSE;
-			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
-			           "\tcharset=\"utf-8\"\r\n\r\n%s",
-			           static_cast<const char *>(pvalue));
-		} else {
-			buff_len = node_stat.st_size;
-			pbuff = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pvalue)) + 1);
-			if (pbuff == nullptr || read(fd.get(), pbuff, buff_len) != buff_len)
-				return FALSE;
-			pbuff[buff_len] = '\0';
-			ptoken = strstr(pbuff, "\r\n\r\n");
-			if (NULL != ptoken) {
-				strcpy(ptoken + 4, static_cast<const char *>(pvalue));
-				buff_len = strlen(pbuff);
-			} else {
-				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
-				           "\tcharset=\"utf-8\"\r\n\r\n%s",
-				           static_cast<const char *>(pvalue));
-			}
-		}
-		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
-		if (fd.get() < 0 || write(fd.get(), pbuff, buff_len) != buff_len)
-			return FALSE;
-		return TRUE;
-	}
-	case PR_EC_OUTOFOFFICE_SUBJECT:
-	case PR_EC_EXTERNAL_SUBJECT: {
-		try {
-			autoreply_path = maildir;
-			autoreply_path += proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
-			             "/config/internal-reply" : "/config/external-reply";
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1485: ENOMEM");
-			return false;
-		}
-		struct stat node_stat;
-		wrapfd fd = open(autoreply_path.c_str(), O_RDONLY);
-		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
-			buff_len = strlen(static_cast<const char *>(pvalue));
-			pbuff = cu_alloc<char>(buff_len + 256);
-			if (pbuff == nullptr)
-				return FALSE;
-			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
-			           "charset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
-			           static_cast<const char *>(pvalue));
-		} else {
-			buff_len = node_stat.st_size;
-			pbuff = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pvalue)) + 16);
-			if (pbuff == nullptr)
-				return FALSE;
-			ptoken = cu_alloc<char>(buff_len + 1);
-			if (ptoken == nullptr)
-				return FALSE;
-			if (read(fd.get(), ptoken, buff_len) != buff_len)
-				return FALSE;
-			ptoken[buff_len] = '\0';
-			ptoken = strstr(ptoken, "\r\n\r\n");
-			if (ptoken == nullptr)
-				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
-				           "charset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
-				           static_cast<const char *>(pvalue));
-			else
-				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
-				           "charset=\"utf-8\"\r\nSubject: %s%s",
-				           static_cast<const char *>(pvalue), ptoken);
-		}
-		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
-		if (fd.get() < 0 || write(fd.get(), pbuff, buff_len) != buff_len)
-			return FALSE;
-		return TRUE;
-	}
-	case PR_EC_ALLOW_EXTERNAL:
-	case PR_EC_EXTERNAL_AUDIENCE: {
-		auto pconfig = config_file_init(autoreply_path.c_str(), oof_defaults);
-		if (pconfig == nullptr)
-			return FALSE;
-		pconfig->set_value(proptag == PR_EC_ALLOW_EXTERNAL ?
-		                      "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE",
-		                      *static_cast<const uint8_t *>(pvalue) == 0 ? "0" : "1");
-		return pconfig->save();
-	}
-	}
-	return FALSE;
+	const TAGGED_PROPVAL pv = {proptag, deconst(pvalue)};
+	const TPROPVAL_ARRAY vals = {1, deconst(&pv)};
+	PROBLEM_ARRAY status{};
+	return exmdb_client->autoreply_setprop(maildir, CP_UTF8, &vals, &status);
 }
 
 static BOOL store_object_set_folder_name(store_object *pstore,
@@ -1364,12 +1049,11 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
+bool store_object::remove_properties(proptag_cspan pproptags)
 {
 	auto pstore = this;
 	auto pinfo = zs_get_info();
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : pproptags) {
 		if (store_object_is_readonly_prop(pstore, tag))
 			continue;
 		pinfo->ptree->remove_zstore_propval(tag);
@@ -1385,14 +1069,13 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	uint32_t max_count;
 	TARRAY_SET permission_set;
 	PERMISSION_ROW *pperm_row;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
+	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
 	
 	if (!exmdb_client->load_permission_table(
 	    pstore->dir, folder_id, 0, &table_id, &row_num))
 		return FALSE;
 	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
-	    &proptags, 0, row_num, &permission_set)) {
+	    proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(pstore->dir, table_id);
 		return FALSE;
 	}
@@ -1447,9 +1130,8 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	    NULL, &table_id, &row_num))
 		return FALSE;
 	static constexpr proptag_t tmp_proptag[] = {PidTagFolderId};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
-	    &proptags, 0, row_num, &tmp_set))
+	    tmp_proptag, 0, row_num, &tmp_set))
 		return FALSE;
 	pperm_set->count = 0;
 	pperm_set->prows = NULL;

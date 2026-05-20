@@ -6,7 +6,8 @@
 
 using namespace gromox;
 
-#define E(s) #s
+//define E(s) static_cast<unsigned int>(s)] = #s
+#define E(s) (static_cast<void>(s), #s)
 static constexpr const char *rop_names[256] = {
 	{},
 	E(ropRelease),

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -37,7 +37,6 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
-	PROPTAG_ARRAY proptags;
 	RESTRICTION restriction;
 	EID_ARRAY *pmessage_ids;
 	RESTRICTION_PROPERTY res_prop;
@@ -53,18 +52,16 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	    username, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
 		return NULL;	
-	uint32_t tmp_proptag = PidTagMid;
-	proptags.count = 1;
-	proptags.pproptag = &tmp_proptag;
+	proptag_t tmp_proptag = PidTagMid;
 	if (!exmdb_client->query_table(plogon->get_dir(), nullptr, CP_ACP,
-	    table_id, &proptags, 0, row_count, &tmp_set))
+	    table_id, {&tmp_proptag, 1}, 0, row_count, &tmp_set))
 		return NULL;	
 	exmdb_client->unload_table(plogon->get_dir(), table_id);
 	pmessage_ids = eid_array_init();
 	if (pmessage_ids == nullptr)
 		return NULL;
-	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
+	for (const auto &row : tmp_set) {
+		auto pmid = row.get<uint64_t>(PidTagMid);
 		if (NULL == pmid) {
 			eid_array_free(pmessage_ids);
 			return NULL;
@@ -103,11 +100,11 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		return NULL;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client->get_folder_properties(plogon->get_dir(), pinfo->cpid,
-	    folder_id, &tmp_proptags, &tmp_propvals))
+	    folder_id, tmp_proptags, &tmp_propvals))
 		return NULL;
 	auto pproplist = pfldctnt->get_proplist();
-	for (size_t i = 0; i < tmp_propvals.count; ++i)
-		if (pproplist->set(tmp_propvals.ppropval[i]) != 0)
+	for (const auto &pv : tmp_propvals)
+		if (pproplist->set(pv) != ecSuccess)
 			return NULL;
 	/*
 	 * Gromox does not have split public folders, so no need to emit
@@ -135,15 +132,13 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	    folder_id, username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
 		return NULL;
-	uint32_t tmp_proptag = PidTagFolderId;
-	tmp_proptags.count = 1;
-	tmp_proptags.pproptag = &tmp_proptag;
+	proptag_t tmp_proptag = PidTagFolderId;
 	if (!exmdb_client->query_table(plogon->get_dir(), nullptr, CP_ACP,
-	    table_id, &tmp_proptags, 0, row_count, &tmp_set))
+	    table_id, {&tmp_proptag, 1}, 0, row_count, &tmp_set))
 		return NULL;
 	exmdb_client->unload_table(plogon->get_dir(), table_id);
-	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
+	for (const auto &row : tmp_set) {
+		auto pfolder_id = row.get<uint64_t>(PidTagFolderId);
 		if (pfolder_id == nullptr)
 			return NULL;
 		auto psubfldctnt = oxcfxics_load_folder_content(
@@ -164,10 +159,10 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 	
 	if (flags & ~FAST_DEST_CONFIG_FLAG_MOVE)
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pobject = plogmap->get_object(logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (source_operation) {
@@ -203,13 +198,11 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 	if (ROOT_ELEMENT_TOPFOLDER == root_element ||
 		ROOT_ELEMENT_MESSAGELIST == root_element ||
 		ROOT_ELEMENT_FOLDERCONTENT == root_element) {
-		static constexpr proptag_t proptag_buff[] =
+		static constexpr proptag_t tmp_proptags[] =
 			{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 			PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
-		static constexpr PROPTAG_ARRAY tmp_proptags =
-			{std::size(proptag_buff), deconst(proptag_buff)};
 		TPROPVAL_ARRAY tmp_propvals;
-		if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
+		if (!plogon->get_properties(tmp_proptags, &tmp_propvals))
 			return ecError;
 
 		auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
@@ -222,19 +215,12 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 		uint64_t total_size = lnum != nullptr ? *lnum : 0;
 		if (total_size > max_quota)
 			return ecQuotaExceeded;
-		num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
-		uint32_t total_mail = num != nullptr ? *num : 0;
-		num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
-		if (num != nullptr)
-			total_mail += *num;
-		if (total_mail > g_max_message)
-			return ecQuotaExceeded;
 	}
 	auto pctx = fastupctx_object::create(plogon, pobject, root_element);
 	if (pctx == nullptr)
 		return ecError;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::fastupctx, std::move(pctx)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::fastupctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -253,7 +239,7 @@ ec_error_t rop_fasttransferdestputbuffer(const BINARY *ptransfer_data,
 	*ptotal_step_count = 1;
 	*preserved = 0;
 	*pused_size = 0;
-	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pobject = plogmap->get_object(logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::fastupctx)
@@ -280,7 +266,7 @@ ec_error_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	*ptotal_step_count = 1;
 	*preserved = 0;
 	ptransfer_data->cb = 0;
-	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pobject = plogmap->get_object(logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::icsdownctx &&
@@ -337,10 +323,10 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	
 	if (!send_options_ok(send_options))
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -356,15 +342,15 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 		return ecError;
 	if (!pctx->make_topfolder(std::move(pfldctnt)))
 		return ecError;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
 
-ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids,
+ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *pmessage_ids,
     uint8_t flags, uint8_t send_options, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
@@ -375,10 +361,10 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 		return ecInvalidParam;
 	/* we ignore the FAST_COPY_MESSAGE_FLAG_MOVE
 	   in flags just like exchange 2010 or later */
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -390,9 +376,9 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 		    pfolder->folder_id, username, &permission))
 			return ecError;
 		if (!(permission & (frightsReadAny | frightsOwner))) {
-			for (size_t i = 0; i < pmessage_ids->count; ++i) {
+			for (const auto msgid : *pmessage_ids) {
 				if (!exmdb_client->is_message_owner(plogon->get_dir(),
-				    pmessage_ids->pll[i], username, &b_owner))
+				    msgid, username, &b_owner))
 					return ecError;
 				if (!b_owner)
 					return ecAccessDenied;
@@ -403,7 +389,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 	if (pmids == nullptr)
 		return ecServerOOM;
 	if (!eid_array_batch_append(pmids, pmessage_ids->count,
-	    pmessage_ids->pll)) {
+	    pmessage_ids->pids)) {
 		eid_array_free(pmids);
 		return ecServerOOM;
 	}
@@ -413,13 +399,13 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 		eid_array_free(pmids);
 		return ecError;
 	}
-	if (!pctx->make_messagelist(b_chginfo, pmids)) {
+	if (!pctx->make_messagelist(b_chginfo, std::move(pmids))) {
 		pctx.reset();
 		eid_array_free(pmids);
 		return ecError;
 	}
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -444,7 +430,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
  * CopyMessages cannot do that.
  */
 ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
-    uint8_t send_options, const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
+    uint8_t send_options, proptag_cspan pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	ems_objtype object_type;
@@ -456,10 +442,10 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	/* just like exchange 2010 or later */
 	if (flags & FAST_COPY_TO_FLAG_MOVE)
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pobject = plogmap->get_object(logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder &&
@@ -471,7 +457,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		return ecError;
 	switch (object_type) {
 	case ems_objtype::folder: {
-		auto bg = pproptags->begin(), end = pproptags->end();
+		auto bg = pproptags.begin(), end = pproptags.end();
 		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) == end;
 		auto b_fai    = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) == end;
 		auto b_normal = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) == end;
@@ -481,19 +467,21 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (pfldctnt == nullptr)
 			return ecError;
 		auto pproplist = pfldctnt->get_proplist();
-		for (const auto tag : *pproptags)
+		for (const auto tag : pproptags)
 			pproplist->erase(tag);
 		if (!pctx->make_foldercontent(b_sub, std::move(pfldctnt)))
 			return ecError;
 		break;
 	}
-	case ems_objtype::message:
-		if (!static_cast<message_object *>(pobject)->flush_streams())
-			return ecError;
+	case ems_objtype::message: {
+		auto msg = static_cast<message_object *>(pobject);
+		auto err = msg->flush_streams();
+		if (err != ecSuccess)
+			return err;
 		if (!exmdb_client->read_message_instance(plogon->get_dir(),
-		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
-			return ecError;
-		for (const auto tag : *pproptags) {
+		    msg->get_instance_id(), &msgctnt))
+			return ecRpcFailed;
+		for (const auto tag : pproptags) {
 			switch (tag) {
 			case PR_MESSAGE_RECIPIENTS:	
 				msgctnt.children.prcpts = NULL;
@@ -510,16 +498,17 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			msgctnt.children.prcpts = NULL;
 			msgctnt.children.pattachments = NULL;
 		}
-		if (!pctx->make_messagecontent(&msgctnt))
+		if (!pctx->make_messagecontent(msgctnt))
 			return ecError;
 		break;
+	}
 	case ems_objtype::attach:
 		if (!static_cast<attachment_object *>(pobject)->flush_streams())
 			return ecError;
 		if (!exmdb_client->read_attachment_instance(plogon->get_dir(),
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
-		for (const auto tag : *pproptags) {
+		for (const auto tag : pproptags) {
 			switch (tag) {
 			case PR_ATTACH_DATA_OBJ:
 				attctnt.pembedded = NULL;
@@ -529,14 +518,14 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 				break;
 			}
 		}
-		if (!pctx->make_attachmentcontent(&attctnt))
+		if (!pctx->make_attachmentcontent(attctnt))
 			return ecError;
 		break;
 	default:
 		break;
 	}
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -544,7 +533,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 }
 
 ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
-    uint8_t send_options, const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
+    uint8_t send_options, proptag_cspan pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	ems_objtype object_type;
@@ -556,10 +545,10 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	/* just like exchange 2010 or later */
 	if (flags & FAST_COPY_PROPERTIES_FLAG_MOVE)
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pobject = plogmap->get_object(logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder &&
@@ -576,7 +565,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		 * properties and subobjects to include, as opposed to
 		 * exclude""" [like rop_fasttransfersourcecopyproperties]
 		 */
-		auto bg = pproptags->begin(), end = pproptags->end();
+		auto bg = pproptags.begin(), end = pproptags.end();
 		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) != end;
 		auto b_normal = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) != end;
 		auto b_fai    = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) != end;
@@ -588,7 +577,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		auto pproplist = pfldctnt->get_proplist();
 		for (unsigned int i = 0; i < pproplist->count; ) {
 			if (pproplist->ppropval[i].proptag != MetaTagNewFXFolder) {
-				if (!pproptags->has(pproplist->ppropval[i].proptag)) {
+				if (!pproptags.has(pproplist->ppropval[i].proptag)) {
 					pproplist->erase(pproplist->ppropval[i].proptag);
 					continue;
 				}
@@ -599,31 +588,34 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		break;
 	}
-	case ems_objtype::message:
-		if (!static_cast<message_object *>(pobject)->flush_streams())
-			return ecError;
+	case ems_objtype::message: {
+		auto msg = static_cast<message_object *>(pobject);
+		auto err = msg->flush_streams();
+		if (err != ecSuccess)
+			return err;
 		if (!exmdb_client->read_message_instance(plogon->get_dir(),
-		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
-			return ecError;
+		    msg->get_instance_id(), &msgctnt))
+			return ecRpcFailed;
 		for (unsigned int i = 0; i < msgctnt.proplist.count; ) {
-			if (!pproptags->has(msgctnt.proplist.ppropval[i].proptag)) {
+			if (!pproptags.has(msgctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&msgctnt.proplist,
 						msgctnt.proplist.ppropval[i].proptag);
 				continue;
 			}
 			i ++;
 		}
-		if (!pproptags->has(PR_MESSAGE_RECIPIENTS))
+		if (!pproptags.has(PR_MESSAGE_RECIPIENTS))
 			msgctnt.children.prcpts = NULL;
-		if (!pproptags->has(PR_MESSAGE_ATTACHMENTS))
+		if (!pproptags.has(PR_MESSAGE_ATTACHMENTS))
 			msgctnt.children.pattachments = NULL;
 		if (0 != level) {
 			msgctnt.children.prcpts = NULL;
 			msgctnt.children.pattachments = NULL;
 		}
-		if (!pctx->make_messagecontent(&msgctnt))
+		if (!pctx->make_messagecontent(msgctnt))
 			return ecError;
 		break;
+	}
 	case ems_objtype::attach:
 		if (!static_cast<attachment_object *>(pobject)->flush_streams())
 			return ecError;
@@ -631,23 +623,23 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
 		for (unsigned int i = 0; i < attctnt.proplist.count; ) {
-			if (!pproptags->has(attctnt.proplist.ppropval[i].proptag)) {
+			if (!pproptags.has(attctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&attctnt.proplist,
 						attctnt.proplist.ppropval[i].proptag);
 				continue;
 			}
 			i ++;
 		}
-		if (!pproptags->has(PR_ATTACH_DATA_OBJ))
+		if (!pproptags.has(PR_ATTACH_DATA_OBJ))
 			attctnt.pembedded = NULL;
-		if (!pctx->make_attachmentcontent(&attctnt))
+		if (!pctx->make_attachmentcontent(attctnt))
 			return ecError;
 		break;
 	default:
 		break;
 	}
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -662,8 +654,8 @@ ec_error_t rop_tellversion(const uint16_t *pversion, LOGMAP *plogmap,
 
 ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
     uint16_t sync_flags, const RESTRICTION *pres, uint32_t extra_flags,
-    const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap, uint8_t logon_id,
-    uint32_t hin, uint32_t *phout)
+    proptag_cspan pproptags, LOGMAP *plogmap, uint8_t logon_id,
+    uint32_t hin, uint32_t *phout) try
 {
 	ems_objtype object_type;
 	uint32_t permission;
@@ -675,10 +667,10 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		return ecInvalidParam;
 	if (sync_type == SYNC_TYPE_HIERARCHY && pres != nullptr)
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	auto username = plogon->eff_user();
@@ -693,35 +685,28 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	    const_cast<RESTRICTION *>(pres)))
 			return ecError;
 
-	std::vector<uint32_t> new_tags;
-	PROPTAG_ARRAY new_pta;
-	auto bodyof = pproptags->indexof(PR_BODY);
+	proptag_vector new_tags{pproptags.begin(), pproptags.end()};
+	auto bodyit = std::find(new_tags.begin(), new_tags.end(), PR_BODY);
 	if (!(sync_flags & SYNC_ONLY_SPECIFIED_PROPS) &&
-	    bodyof != pproptags->npos && !pproptags->has(PR_HTML)) try {
+	    bodyit != new_tags.end() && !new_tags.has(PR_HTML))
 		/*
 		 * Ignore Outlook's request to exclude PR_BODY.
 		 * PR_BODY may be the only format some message has.
 		 * Send at least one body format. (Ignoring RTF presence
 		 * altogether here; that is another consideration.)
 		 */
-		auto p = pproptags->pproptag;
-		new_tags.insert(new_tags.end(), p, p + bodyof);
-		new_tags.insert(new_tags.end(), p + bodyof + 1, p + pproptags->count - 1);
-		new_pta.count = new_tags.size();
-		new_pta.pproptag = new_tags.data();
-		pproptags = &new_pta;
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1610: ENOMEM");
-		return ecServerOOM;
-	}
+		new_tags.erase(bodyit);
 	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
-	            send_options, sync_flags, pres, extra_flags, pproptags);
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::icsdownctx, std::move(pctx)});
+	            send_options, sync_flags, pres, extra_flags, std::move(new_tags));
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::icsdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 /**
@@ -741,7 +726,7 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
     const TPROPVAL_ARRAY *props, uint64_t *msg_idp,
     uint32_t hnd_in, uint32_t *hnd_out)
 {
-	auto logon = rop_processor_get_logon_object(logmap, logon_id);
+	auto logon = logmap->get_logon_object(logon_id);
 	if (logon == nullptr)
 		return ecError;
 	auto folder = ctx->get_parent_object();
@@ -787,8 +772,9 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 		return ecServerOOM;
 
 	BOOL b_fai = (import_flags & IMPORT_FLAG_ASSOCIATED) ? TRUE : false;
-	if (msg->init_message(b_fai, info->cpid) != 0)
-		return ecError;
+	auto err = msg->init_message(b_fai, info->cpid);
+	if (err != ecSuccess)
+		return err;
 
 	TAGGED_PROPVAL nupropd[2];
 	nupropd[0].proptag = PR_CHANGE_KEY;
@@ -800,7 +786,7 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 	if (!exmdb_client->set_instance_properties(dir,
 	    msg->get_instance_id(), &nuprops, &problems))
 		return ecError;
-	auto hnd = rop_processor_add_object_handle(logmap, logon_id, hnd_in,
+	auto hnd = logmap->add_object_handle(logon_id, hnd_in,
 	           {ems_objtype::message, std::move(msg)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
@@ -825,8 +811,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	void *pvalue;
 	uint32_t result;
 	ems_objtype object_type;
-	uint32_t permission = rightsNone, tag_access = 0, tmp_proptag;
-	PROPTAG_ARRAY proptags;
+	uint32_t permission = rightsNone, tag_access = 0;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -838,10 +823,10 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	    ppropvals->ppropval[2].proptag != PR_CHANGE_KEY ||
 	    ppropvals->ppropval[3].proptag != PR_PREDECESSOR_CHANGE_LIST)
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
+	auto pctx = plogmap->get_obj<icsupctx_object>(logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::icsupctx)
@@ -915,11 +900,10 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (pmessage == nullptr)
 		return ecError;
 	if (!b_new) {
-		proptags.count = 1;
-		proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
-		if (!pmessage->get_properties(0, &proptags, &tmp_propvals))
-			return ecError;
+		static constexpr proptag_t tags[] = {PR_PREDECESSOR_CHANGE_LIST};
+		auto err = pmessage->get_properties(0, tags, &tmp_propvals);
+		if (err != ecSuccess)
+			return err;
 		auto bin = tmp_propvals.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 		if (bin == nullptr)
 			return ecError;
@@ -936,19 +920,20 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (!b_new) {
 		if (!exmdb_client->clear_message_instance(dir,
 		    pmessage->get_instance_id()))
-			return ecError;
+			return ecRpcFailed;
 	} else {
 		BOOL b_fai = (import_flags & IMPORT_FLAG_ASSOCIATED) ? TRUE : false;
-		if (pmessage->init_message(b_fai, pinfo->cpid) != 0)
-			return ecError;
+		auto err = pmessage->init_message(b_fai, pinfo->cpid);
+		if (err != ecSuccess)
+			return err;
 	}
 	tmp_propvals.count = 3;
 	tmp_propvals.ppropval = ppropvals->ppropval + 1;
 	if (!exmdb_client->set_instance_properties(dir,
 	    pmessage->get_instance_id(), &tmp_propvals, &tmp_problems))
-		return ecError;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
+		return ecRpcFailed;
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -967,10 +952,10 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 	uint32_t permission;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
+	auto pctx = plogmap->get_obj<icsupctx_object>(logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::icsupctx)
@@ -991,7 +976,8 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 	}
 	auto rds_user = plogon->readstate_user();
 	for (unsigned int i = 0; i < count; ++i) {
-		if (!common_util_binary_to_xid(&pread_stat[i].message_xid, &tmp_xid))
+		const auto &rds = pread_stat[i];
+		if (!common_util_binary_to_xid(&rds.message_xid, &tmp_xid))
 			return ecError;
 		auto tmp_guid = plogon->guid();
 		if (tmp_guid != tmp_xid.guid)
@@ -1005,19 +991,17 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 				continue;
 		}
 		static constexpr proptag_t proptag_buff[] = {PR_ASSOCIATED, PR_READ};
-		static constexpr PROPTAG_ARRAY tmp_proptags =
-			{std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-		    message_id, &tmp_proptags, &tmp_propvals))
+		    message_id, proptag_cspan{proptag_buff}, &tmp_propvals))
 			return ecError;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 		if (flag != nullptr && *flag != 0)
 			continue;
 		flag = tmp_propvals.get<uint8_t>(PR_READ);
-		if ((flag == nullptr || *flag == 0) == (pread_stat[i].mark_as_read == 0))
+		if ((flag == nullptr || *flag == 0) == (rds.mark_as_read == 0))
 			continue;
 		if (!exmdb_client->set_message_read_state(dir, rds_user,
-		    message_id, pread_stat[i].mark_as_read, &read_cn))
+		    message_id, rds.mark_as_read, &read_cn))
 			return ecError;
 		pctx->pstate->pread->append(read_cn);
 	}
@@ -1054,10 +1038,10 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	    phichyvals->ppropval[4].proptag != PR_PREDECESSOR_CHANGE_LIST ||
 	    phichyvals->ppropval[5].proptag != PR_DISPLAY_NAME)
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
+	auto pctx = plogmap->get_obj<icsupctx_object>(logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::icsupctx)
@@ -1156,8 +1140,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.emplace_back(PR_PREDECESSOR_CHANGE_LIST, phichyvals->ppropval[4].pvalue);
 		tmp_propvals.emplace_back(PR_DISPLAY_NAME, phichyvals->ppropval[5].pvalue);
 		tmp_propvals.emplace_back(PidTagChangeNumber, &change_num);
-		for (unsigned int i = 0; i < ppropvals->count; ++i)
-			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
+		for (const auto &pv : *ppropvals)
+			tmp_propvals.ppropval[tmp_propvals.count++] = pv;
 		if (!tmp_propvals.has(PR_FOLDER_TYPE)) {
 			tmp_type = FOLDER_GENERIC;
 			tmp_propvals.emplace_back(PR_FOLDER_TYPE, &tmp_type);
@@ -1238,8 +1222,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	tmp_propvals.ppropval[4].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[4].pvalue = &change_num;
 	tmp_propvals.count = 5;
-	for (unsigned int i = 0; i < ppropvals->count; ++i)
-		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
+	for (const auto &pv : *ppropvals)
+		tmp_propvals.ppropval[tmp_propvals.count++] = pv;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client->set_folder_properties(dir,
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
@@ -1254,7 +1238,6 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	XID tmp_xid;
 	void *pvalue;
 	BOOL b_exist;
-	uint64_t eid;
 	BOOL b_owner;
 	BOOL b_result;
 	BOOL b_partial;
@@ -1269,10 +1252,10 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		        ppropvals->ppropval[0].proptag);
 		return ecInvalidParam;
 	}
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
+	auto pctx = plogmap->get_obj<icsupctx_object>(logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::icsupctx)
@@ -1299,23 +1282,25 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	auto pbins = static_cast<BINARY_ARRAY *>(ppropvals->ppropval[0].pvalue);
 	if (SYNC_TYPE_CONTENTS == sync_type) {
 		message_ids.count = 0;
-		message_ids.pids = cu_alloc<uint64_t>(pbins->count);
+		message_ids.pids  = cu_alloc<eid_t>(pbins->count);
 		if (message_ids.pids == nullptr)
 			return ecServerOOM;
 	}
-	for (size_t i = 0; i < pbins->count; ++i) {
-		if (22 != pbins->pbin[i].cb) {
+	for (const auto &bxid : *pbins) {
+		if (bxid.cb != 22) {
 			mlog(LV_WARN, "W-2151: importdeletes expected 22-byte XID, "
- 			        "but got a %u-long object instead", pbins->pbin[i].cb);
+				"but got a %u-byte thing instead", bxid.cb);
 			return ecInvalidParam;
 		}
-		if (!common_util_binary_to_xid(&pbins->pbin[i], &tmp_xid))
+		if (!common_util_binary_to_xid(&bxid, &tmp_xid))
 			return ecError;
+
+		eid_t eid;
 		if (plogon->is_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 			if (tmp_guid != tmp_xid.guid) {
 				mlog(LV_WARN, "W-2152: importdeletes expected store %s but got store+XID %s",
-				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
+				        bin2hex(tmp_guid).c_str(),
 				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
 				return ecInvalidParam;
 			}
@@ -1324,7 +1309,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 			if (tmp_guid != tmp_xid.guid) {
 				mlog(LV_WARN, "W-2153: importdeletes expected store %s but got store+XID %s",
-				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
+				        bin2hex(tmp_guid).c_str(),
 				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
 				return ecInvalidParam;
 			}
@@ -1372,7 +1357,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
-			message_ids.pids[message_ids.count++] = eid;
+			message_ids.emplace_back(eid);
 		} else {
 			unsigned int empty_flags = DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS;
 			empty_flags |= b_hard ? DELETE_HARD_DELETE : 0;
@@ -1425,10 +1410,10 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 		return ecInvalidParam;
 	if (pchange_number->cb < 17 || pchange_number->cb > 24)
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
+	auto pctx = plogmap->get_obj<icsupctx_object>(logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::icsupctx)
@@ -1525,18 +1510,18 @@ ec_error_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	uint8_t sync_type = is_content_collector == 0 ? SYNC_TYPE_HIERARCHY : SYNC_TYPE_CONTENTS;
 	auto pctx = icsupctx_object::create(plogon, pfolder, sync_type);
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::icsupctx, std::move(pctx)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::icsupctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -1549,10 +1534,10 @@ ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	ems_objtype object_type;
 	ics_state *pstate;
 
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pobject = plogmap->get_object(logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	if (object_type == ems_objtype::icsdownctx)
@@ -1566,21 +1551,21 @@ ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	auto pctx = fastdownctx_object::create(plogon, 0);
 	if (pctx == nullptr)
 		return ecError;
-	if (!pctx->make_state(pstate))
+	if (!pctx->make_state(*pstate))
 		return ecError;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
 
-ec_error_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
+ec_error_t rop_syncuploadstatestreambegin(proptag_t proptag_state,
     uint32_t buffer_size, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pctx = plogmap->get_object(logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (object_type == ems_objtype::icsdownctx) {
@@ -1599,7 +1584,7 @@ ec_error_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pctx = plogmap->get_object(logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (object_type == ems_objtype::icsdownctx) {
@@ -1618,7 +1603,7 @@ ec_error_t rop_syncuploadstatestreamend(LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pctx = plogmap->get_object(logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (object_type == ems_objtype::icsdownctx) {
@@ -1645,7 +1630,7 @@ ec_error_t rop_getlocalreplicaids(uint32_t count, GUID *pguid,
 {
 	ems_objtype object_type;
 	uint64_t begin_eid;
-	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
+	auto plogon = plogmap->get_obj<logon_object>(logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)

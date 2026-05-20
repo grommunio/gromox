@@ -1,22 +1,23 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH zcore 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 zcore \(em Bridge for PHP-MAPI requests
 .SH Synopsis
 \fBzcore\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
-zcore is a bridge process (proxy) between mapi(4gx) and exmdb_provider(4gx). It
+zcore is a bridge process (proxy) between PHP-MAPI and the Information Store
+(see manpages mapi(4gx) and exmdb_provider(4gx), respectively). It
 listens on /run/gromox/zcore.sock (hardcoded) for zcore RPCs, a Gromox-specific
 protocol and issues exmdb RPCs to exmdb_provider(4gx). As exmdb_provider connections
 have no state to speak of, zcore is the process that defines the logins sessions.
-zcore needs to run on the same server as the program that uses the Z-MAPI
-PHP functions.
+zcore needs to run on the same server as the program that uses the PHP-MAPI
+functions.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
-specified, /etc/gromox/zcore.cfg will be read if it exists.
+specified, /etc/gromox/gromox.cfg and /etc/gromox/zcore.cfg will be read.
 .TP
 \fB\-\-version\fP
 Output version information and exit.
@@ -36,12 +37,7 @@ custom file:
 In gromox-zcore, this is treated as an alias for zcore_fd_limit.
 .TP
 \fBoutgoing_smtp_url\fP
-The SMTP server to use for outgoing mails. To use the local maildrop queue, set
-the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
-SMTP server is offline, submissions will be rejected (and mails stick around in
-Outbox or whatever folder they were submitted from).
-.br
-Default: \fIsendmail://localhost\fP
+See gromox.cfg(5):outgoing_smtp_url.
 .TP
 \fBzcore_fd_limit\fP
 Request that the file descriptor table be at least this large. The magic value
@@ -61,7 +57,9 @@ Default: \fI3000\fP
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
-configuration files, especially those used by plugin instances.
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/zcore/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/zcore:/etc/gromox\fP
 .TP
@@ -70,9 +68,6 @@ Colon-separated list of directories which will be scanned when locating data
 files.
 .br
 Default: \fI/usr/share/gromox/zcore\fP
-.TP
-\fBdefault_charset\fP
-Default: \fIutf-8\fP
 .TP
 \fBhost_id\fP
 A unique identifier for this system. It is used for the HELO line of outgoing
@@ -90,28 +85,19 @@ Default: \fI64M\fP
 \fBmax_ext_rule_length\fP
 Default: \fI510K\fP
 .TP
-\fBmax_mail_num\fP
-Default: \fI1000000\fP
-.TP
 \fBmax_rcpt_num\fP
 The maximum number of recipients that an e-mail is allowed to have.
 .br
 Default: \fI256\fP
 .TP
-\fBnotify_stub_threads_num\fP
-For every exmdb server in exmdb_list.txt, establish and keep this many number
-of outbound connections for receiving notification RPCs.
-.br
-Default: \fI10\fP
-.TP
 \fBrpc_proxy_connection_num\fP
-For every exmdb server in exmdb_list.txt, establish and keep this many number
-of outbound connections for sending commands.
+The maximum number of (idle) connections towards Information Store homeservers
+that are kept alive for rapid re-use.
 .br
 Default: \fI10\fP
 .TP
 \fBsubmit_command\fP
-Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
+Default: \fI/usr/bin/php /usr/share/gromox/submit.php\fP
 .TP
 \fBuser_cache_interval\fP
 Sets the time how long the MAPI profile is cached before it is written to disk.
@@ -182,12 +168,8 @@ pdu := {
 	}
 }
 .SH Store lookup
-zcore determines the store path for a user from the user database, which may be
-provided by a service plugin like mysql_adaptor(4gx).
-.PP
-The filemap that specifies how paths are handled is located at
-\fIdata_file_path\fP/exmdb_list.txt, whereby data_file_path is the eponymous
-directive from the config file.
+zcore determines the homeserver and store path for a user from the user
+database, which is provided by mysql_adaptor(4gx).
 .PP
 Each line in this file consists of 4 columns separated by whitespace:
 .IP \(bu 4
@@ -196,23 +178,22 @@ A portion of the store path to match on
 The type of store ("private" or "public")
 .IP \(bu 4
 The IPv6 socket address of the server running exmdb_provider(4gx). The address
-must conform to gromox(7) \sc "Host addresses".
+must conform to gromox(7) \(sc "Host addresses".
 .IP \(bu 4
 The TCP port number of the server
+.SH Signals
+Upon receipt of SIGHUP, configuration files are re-read, but only a few select
+directives can be changed this way, as many parts do not implement reload.
+.PP
+Upon receipt of SIGHUP, the address book cache will be dropped; the next
+regular request for the AB will cause it to be reloaded.
 .SH Files
-.IP \(bu 4
-\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
-exmdb_provider(4gx) for details.
 .IP \(bu 4
 \fIdata_file_path\fP/folder_names.txt: Translations for essential folders in a
 message store.
 .IP \(bu 4
-\fIdata_file_path\fP/msgchg_grouping/: Data files for exchange_emsmdb(4gx)
-.IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification
 mails sent to originators
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH Notes
 Behavior for the address book generally mirrors exchange_nsp(4gx), so see that
 manpage for additional notes.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  * normally, MIME object does'n maintain its own content buffer, it just take
@@ -8,6 +8,7 @@
  * will then maintain its own buffer.
  */
 #include <algorithm>
+#include <cassert>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
@@ -18,6 +19,7 @@
 #include <fmt/core.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
+#include <vmime/parameterizedHeaderField.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
@@ -72,13 +74,6 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 	auto pmime = this;
 	size_t current_offset = 0;
 
-#ifdef _DEBUG_UMTA
-	if (in_buff == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
-	
 	pmime->clear();
 	if (0 == length) {
 		/* No content: syntactically same as implied plaintext */
@@ -89,6 +84,9 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 		strcpy(pmime->content_type, "text/plain");
 		return true;
 	}
+
+	pmime->head_begin = in_buff;
+	pmime->head_length = 0;
 	while (current_offset <= length) {
 		MIME_FIELD mime_field;
 		auto parsed_length = parse_mime_field(in_buff + current_offset,
@@ -111,7 +109,6 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 			auto nl_size = newline_size(&in_buff[current_offset], length);
 			if (nl_size == 0)
 				continue;
-			pmime->head_begin = in_buff;
 			pmime->head_length = current_offset;
 			/*
 			 * If an empty line is met, end the parse of mail head
@@ -159,7 +156,6 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 			pmime->mime_type = mime_type::single;
 			return true;
 		}
-		pmime->head_begin = in_buff;
 		pmime->head_length = current_offset;
 
 		if (current_offset > length) {
@@ -193,7 +189,7 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 	pmime->clear();
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1090: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -232,12 +228,6 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	auto pmime = this;
 	/* align the buffer with 64K */
 	
-#ifdef _DEBUG_UMTA
-	if (pcontent == nullptr && length != 0) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (pmime->mime_type != mime_type::single &&
 	    pmime->mime_type != mime_type::single_obj)
 		return false;
@@ -284,7 +274,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		content_begin = content_buf.get();
 		if (pmime->content_begin == nullptr)
 			return false;
-		auto qdlen = qp_encode_ex(pbuff.get(), buff_length, pcontent, length);
+		auto qdlen = qpnl_encode_sized({pcontent, length}, pbuff.get(), buff_length);
 		if (qdlen < 0)
 			return false;
 		length = qdlen;
@@ -313,7 +303,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1966: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -329,12 +319,6 @@ bool MIME::write_content(const char *pcontent, size_t length,
 bool MIME::write_mail(MAIL *pmail)
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (pmail == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-    }
-#endif
 	if (pmime->mime_type != mime_type::single &&
 	    pmime->mime_type != mime_type::single_obj)
 		return false;
@@ -342,7 +326,8 @@ bool MIME::write_mail(MAIL *pmail)
 	pmime->content_begin = reinterpret_cast<char *>(pmail);
 	pmime->content_length = 0;
 	content_buf.reset();
-	pmime->set_field("Content-Transfer-Encoding", "8bit");
+	if (!pmime->set_field("Content-Transfer-Encoding", "8bit"))
+		return false;
 	return true;
 }
 
@@ -357,13 +342,6 @@ bool MIME::set_content_type(const char *newtype)
 	auto pmime = this;
 	BOOL b_multiple;
 
-#ifdef _DEBUG_UMTA
-	if (newtype == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
-	
 	b_multiple = FALSE;
 	if (strncasecmp(newtype, "multipart/", 10) == 0)
 		b_multiple = TRUE;
@@ -432,6 +410,20 @@ static bool mime_get_content_type_field(const MIME *pmime, char *value, size_t l
 	return true;
 }
 
+static bool mime_get_content_type_field(const MIME *pmime, std::string &out)
+{
+	out = pmime->content_type;
+	for (const auto &[k, v] : pmime->f_type_params) {
+		out += "; ";
+		out += k;
+		if (!v.empty()) {
+			out += '=';
+			out += v;
+		}
+	}
+	return true;
+}
+
 /*
  *	get the field of MIME object
  *	@param
@@ -446,12 +438,6 @@ static bool mime_get_content_type_field(const MIME *pmime, char *value, size_t l
 bool MIME::get_field(const char *tag, char *value, size_t length) const
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (strcasecmp(tag, "Content-Type") == 0)
 		return mime_get_content_type_field(pmime, value, length);
 	for (const auto &[k, v] : f_other_fields) {
@@ -461,6 +447,35 @@ bool MIME::get_field(const char *tag, char *value, size_t length) const
 		} 
 	}
 	return false;
+}
+
+bool MIME::get_field(const char *tag, std::string &value) const
+{
+	auto pmime = this;
+#ifdef _DEBUG_UMTA
+	if (tag == nullptr) {
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
+		return false;
+	}
+#endif
+	if (strcasecmp(tag, "Content-Type") == 0)
+		return mime_get_content_type_field(pmime, value);
+	for (const auto &[k, v] : f_other_fields) {
+		if (strcasecmp(tag, k.c_str()) == 0) {
+			value = v;
+			return true;
+		}
+	}
+	return false;
+}
+
+const std::string *MIME::get_field(const char *tag) const
+{
+	assert(strcasecmp(tag, "Content-Type") != 0); /* not supported here */
+	for (const auto &[k, v] : f_other_fields)
+		if (strcasecmp(tag, k.c_str()) == 0)
+			return &v;
+	return nullptr;
 }
 
 /*
@@ -473,12 +488,6 @@ bool MIME::get_field(const char *tag, char *value, size_t length) const
  */
 int MIME::get_field_num(const char *tag) const
 {
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return 0;
-	}
-#endif
 	if (strcasecmp(tag, "Content-Type") == 0)
 		return 1;
 	size_t i = 0;
@@ -506,12 +515,6 @@ bool MIME::search_field(const char *tag, int order, std::string &value) const tr
 	auto pmime = this;
 	int i;
 	
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (order < 0)
 		return false;
 	if (0 == strcasecmp(tag, "Content-Type")) {
@@ -532,7 +535,7 @@ bool MIME::search_field(const char *tag, int order, std::string &value) const tr
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1739: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -552,12 +555,6 @@ bool MIME::set_field(const char *tag, const char *value) try
 	auto pmime = this;
 	char	tmp_buff[MIME_FIELD_LEN];
 	
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (0 == strcasecmp(tag, "Content-Type")) {
 		pmime->f_type_params.clear();
 		parse_field_value(value, strlen(value), tmp_buff, 256,
@@ -578,7 +575,33 @@ bool MIME::set_field(const char *tag, const char *value) try
 	pmime->head_touched = TRUE;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1091: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
+}
+
+bool MIME::set_field(const char *tag, std::string &&value) try
+{
+	if (strcasecmp(tag, "Content-Type") == 0) {
+		char tmp_buff[256];
+		f_type_params.clear();
+		parse_field_value(value.c_str(), value.size(),
+			tmp_buff, std::size(tmp_buff), f_type_params);
+		if (!set_content_type(tmp_buff)) {
+			f_type_params.clear();
+			return false;
+		}
+		return true;
+	}
+	auto it = std::find_if(f_other_fields.begin(), f_other_fields.end(),
+	          [&](const MIME_FIELD &mf) { return strcasecmp(tag, mf.name.c_str()) == 0; });
+	if (it == f_other_fields.end())
+		f_other_fields.emplace_back(tag, std::move(value));
+	else
+		it->value = std::move(value);
+	head_touched = true;
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -597,19 +620,13 @@ bool MIME::append_field(const char *tag, const char *value) try
 {
 	auto pmime = this;
 	
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (strcasecmp(tag, "Content-Type") == 0)
 		return false;
 	f_other_fields.emplace_back(MIME_FIELD{tag, value});
 	pmime->head_touched = TRUE;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1092: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -622,15 +639,12 @@ bool MIME::append_field(const char *tag, const char *value) try
  *		TRUE				OK
  *		FALSE				not found
  */
-bool MIME::remove_field(const char *tag)
+void MIME::remove_field(const char *tag)
 {
 	if (strcasecmp(tag, "Content-Type") == 0)
-		return false;
-	auto mid = std::remove_if(f_other_fields.begin(), f_other_fields.end(),
+		return;
+	std::erase_if(f_other_fields,
 	           [&](const MIME_FIELD &mf) { return strcasecmp(tag, mf.name.c_str()) == 0; });
-	auto found = mid != f_other_fields.end();
-	f_other_fields.erase(mid, f_other_fields.end());
-	return found;
 }
 
 /*
@@ -642,12 +656,6 @@ bool MIME::remove_field(const char *tag)
  */
 bool MIME::get_content_param(const char *tag, std::string &value) const try
 {
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	for (const auto &[k, v] : f_type_params) {
 		if (strcasecmp(tag, k.c_str()) == 0) {
 			value = v;
@@ -669,12 +677,6 @@ bool MIME::get_content_param(const char *tag, std::string &value) const try
 bool MIME::set_content_param(const char *tag, const char *value) try
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (tag == nullptr || value == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (0 == strcasecmp(tag, "boundary")) {
 		auto bdlen = strlen(value);
 		if (bdlen > VALUE_LEN - 3 || bdlen < 3)
@@ -698,7 +700,7 @@ bool MIME::set_content_param(const char *tag, const char *value) try
 	pmime->head_touched = TRUE;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1094: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -717,12 +719,6 @@ bool MIME::serialize(STREAM *pstream) const
 	long	len, tmp_len;
 	BOOL	has_submime;
 	
-#ifdef _DEBUG_UMTA
-	if (pstream == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (pmime->mime_type == mime_type::none)
 		return false;
 	if (!pmime->head_touched) {
@@ -890,9 +886,6 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 	char	tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
 	if (pmime->mime_type == mime_type::none) {
-#ifdef _DEBUG_UMTA
-		mlog(LV_DEBUG, "mime: mime content type is not set");
-#endif
 		return false;
 	}
 	if (!pmime->head_touched){
@@ -983,12 +976,6 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	size_t offset, max_length;
 	unsigned int buff_size;
 	
-#ifdef _DEBUG_UMTA
-	if (out_buff == nullptr || plength == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	max_length = *plength;
 	if (max_length > 0)
 		*out_buff = '\0';
@@ -1072,7 +1059,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 		}
 		return true;
 	case mime_encoding::qp: {
-		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff.get(), size);
+		auto qdlen = qpnl_decode_sized({pbuff.get(), size}, out_buff, max_length);
 		if (qdlen < 0)
 			goto COPY_RAW_DATA;
 		*plength = qdlen;
@@ -1179,37 +1166,40 @@ ssize_t MIME::get_length() const
 	return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 }
 
-bool MIME::get_filename(std::string &file_name) const
+bool MIME::get_filename(std::string &file_name) const try
 {
-	static constexpr size_t fnsize = 1024;
-	char cdname[fnsize];
-	auto pmime = this;
-	
-	if (pmime->get_content_param("name", file_name)) {
-		;
-	} else if (pmime->get_field("Content-Disposition", cdname, fnsize)) {
-		const char *pbegin = strcasestr(cdname, "filename=");
-		if (pbegin == nullptr)
-			return false;
-		pbegin += 9;
-		const char *pend = strchr(pbegin, ';');
-		if (pend == nullptr)
-			file_name.assign(pbegin);
-		else
-			file_name.assign(pbegin, pend - pbegin);
-	} else {
-		return false;
+	auto vpctx = vmail_default_parsectx();
+	vmime::header vhdr;
+	std::string raw_val, selector;
+
+	/* RFC 2231 */
+	if (get_field("Content-Disposition", raw_val)) {
+		raw_val.insert(0, "Content-Disposition: ");
+		vhdr.parse(raw_val);
+		auto phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(vhdr.ContentDisposition());
+		if (phf != nullptr) {
+			if (auto par = phf->findParameter("filename")) {
+				file_name = par->getValue().getConvertedText(vmime::charsets::UTF_8);
+				return true;
+			}
+		}
 	}
-	
-	HX_strrtrim(file_name.data());
-	HX_strltrim(file_name.data());
-	auto tmp_len = file_name.size();
-	if (('"' == file_name[0] && '"' == file_name[tmp_len - 1]) ||
-		('\'' == file_name[0] && '\'' == file_name[tmp_len - 1])) {
-		file_name.pop_back();
-		file_name.erase(0, 1);
+	/* RFC 2184 */
+	if (get_field("Content-Type", raw_val)) {
+		raw_val.insert(0, "Content-Type: ");
+		vhdr.parse(raw_val);
+		auto phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(vhdr.ContentType());
+		if (phf != nullptr) {
+			if (auto par = phf->findParameter("name")) {
+				file_name = par->getValue().getConvertedText(vmime::charsets::UTF_8);
+				return true;
+			}
+		}
 	}
-	return !file_name.empty();
+	return false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 static int make_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
@@ -1228,12 +1218,6 @@ int MIME::make_mimes_digest(const char *id_string, size_t *poffset,
     Json::Value &dsarray) const try
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (poffset == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return -1;
-	}
-#endif
 	if (pmime->mime_type == mime_type::none)
 		return -1;
 	/* This function must produce *exactly* the same bytecount as MIME::emit */
@@ -1265,7 +1249,7 @@ int MIME::make_mimes_digest(const char *id_string, size_t *poffset,
 	       make_digest_single(this, id_string, poffset, head_offset, dsarray) :
 	       make_digest_multi(this, id_string, poffset, dsarray);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1132: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 
@@ -1280,9 +1264,7 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
 	size_t content_len = 0;
-	char content_type[256], encoding_buff[128];
-	char temp_buff[512], content_ID[128];
-	char content_location[256], content_disposition[256], *ptoken;
+	char content_type[256], encoding_buff[128], content_disposition[256], *ptoken;
 
 	strcpy(content_type, pmime->content_type);
 	if (!str_isasciipr(content_type))
@@ -1349,16 +1331,10 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 			digest["cntdspn"] = content_disposition;
 		}
 	}
-	if (pmime->get_field("Content-ID", content_ID, 128)) {
-		auto tmp_len = strlen(content_ID);
-		encode64(content_ID, tmp_len, temp_buff, 256, &tmp_len);
-		digest["cid"] = temp_buff;
-	}
-	if (pmime->get_field("Content-Location", content_location, 256)) {
-		auto tmp_len = strlen(content_location);
-		encode64(content_location, tmp_len, temp_buff, 512, &tmp_len);
-		digest["cntl"] = temp_buff;
-	}
+	if (auto hval = pmime->get_field("Content-ID"))
+		digest["cid"] = base64_encode(*hval);
+	if (auto hval = pmime->get_field("Content-Location"))
+		digest["cntl"] = base64_encode(*hval);
 	dsarray.append(std::move(digest));
 	return 0;
 }
@@ -1417,12 +1393,6 @@ int MIME::make_structure_digest(const char *id_string, size_t *poffset,
     Json::Value &dsarray) const try
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (poffset == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return -1;
-	}
-#endif
 	if (pmime->mime_type == mime_type::none)
 		return -1;
 	size_t head_offset = *poffset;
@@ -1466,7 +1436,7 @@ int MIME::make_structure_digest(const char *id_string, size_t *poffset,
 	*poffset += mgl;
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1333: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 
@@ -1528,12 +1498,6 @@ static bool mime_parse_multiple(MIME *pmime)
 	BOOL b_match;
 	int boundary_len;
 
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
 	if (pmime->content_begin == nullptr)
 		return false;
 	boundary_len = strlen(pmime->boundary_string);
@@ -1596,14 +1560,6 @@ static void mime_produce_boundary(MIME *pmime)
 	char *begin, *end, *ptr;
 	char temp_boundary[VALUE_LEN];
     int boundary_len;
-
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return;
-	}
-#endif
 	int depth = pmime->stree.get_depth();
 	strcpy(pmime->boundary_string, "----=_NextPart_");
 	auto length = sprintf(pmime->boundary_string + 15, "00%d_000%d_",

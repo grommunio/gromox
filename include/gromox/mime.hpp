@@ -34,11 +34,14 @@ struct GX_EXPORT MIME {
 	bool set_content_type(const char *);
 	bool enum_field(MIME_FIELD_ENUM, void *) const;
 	bool get_field(const char *tag, char *value, size_t len) const;
+	bool get_field(const char *tag, std::string &value) const;
+	const std::string *get_field(const char *tag) const;
 	int get_field_num(const char *tag) const;
 	bool search_field(const char *tag, int order, std::string &value) const;
 	bool set_field(const char *tag, const char *value);
+	bool set_field(const char *tag, std::string &&value);
 	bool append_field(const char *tag, const char *value);
-	bool remove_field(const char *tag);
+	void remove_field(const char *tag);
 	bool get_content_param(const char *tag, std::string &value) const;
 	bool set_content_param(const char *tag, const char *value);
 	int make_mimes_digest(const char *, size_t *, Json::Value &) const;
@@ -58,11 +61,11 @@ struct GX_EXPORT MIME {
 	SIMPLE_TREE_NODE stree{};
 	enum mime_type mime_type = mime_type::none;
 	int boundary_len = 0;
+	bool head_touched = false;
 	char content_type[VALUE_LEN]{}, boundary_string[VALUE_LEN]{};
 	std::vector<kvpair> f_type_params;
 	/* For @f_other_fields, we want (need?) some container that retains insertion order. */
 	std::vector<MIME_FIELD> f_other_fields;
-	BOOL head_touched = false;
 	const char *head_begin = nullptr;
 	std::unique_ptr<char[], gromox::stdlib_delete> content_buf;
 	const char *content_begin = nullptr;

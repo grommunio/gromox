@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1
 #include <algorithm>
@@ -48,7 +48,7 @@ const char *g_storedir;
 unsigned int g_user_id, g_wet_run = 1;
 unsigned int g_public_folder, g_verbose_create;
 static thread_local alloc_context g_alloc_mgr;
-static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int);
+ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int);
 
 YError::YError(const std::string &s) : m_str(s)
 {}
@@ -77,7 +77,7 @@ void gi_dump_folder_map(const gi_folder_map_t &map)
 	fprintf(stderr, "Folder map (%zu entries):\n", map.size());
 	fprintf(stderr, "\t# HierID (hex) -> Target name\n");
 	for (const auto &[nid, tgt] : map)
-		fprintf(stderr, "\t%xh -> %s (%s %llxh)\n", nid, tgt.create_name.c_str(),
+		fprintf(stderr, "\t%llxh -> %s (%s %llxh)\n", LLU{nid}, tgt.create_name.c_str(),
 		        tgt.create ? "create under" : "splice into", LLU{tgt.fid_to});
 }
 
@@ -85,7 +85,7 @@ void gi_dump_name_map(const gi_name_map &map)
 {
 	if (!g_show_props)
 		return;
-	fprintf(stderr, "Preamble's named property map (%zu entries):\n", map.size());
+	fprintf(stderr, "Prologue's named property map (%zu entries):\n", map.size());
 	fprintf(stderr, "\t# proptag (hex) -> MAPINAMEID definition:\n");
 	for (const auto &[proptag, propname] : map) {
 		char g[40];
@@ -104,17 +104,17 @@ void gi_folder_map_read(const void *buf, size_t bufsize, gi_folder_map_t &map)
 	EXT_PULL ep;
 	ep.init(buf, bufsize, zalloc, EXT_FLAG_WCOUNT);
 	uint64_t max = 0;
-	if (ep.g_uint64(&max) != EXT_ERR_SUCCESS)
+	if (ep.g_uint64(&max) != pack_result::ok)
 		throw YError("PG-1100");
 	for (size_t n = 0; n < max; ++n) {
-		uint32_t nid;
+		uint64_t nid;
 		uint8_t create;
 		uint64_t fidto;
 		std::unique_ptr<char[], gi_delete> name;
-		if (ep.g_uint32(&nid) != EXT_ERR_SUCCESS ||
-		    ep.g_uint8(&create) != EXT_ERR_SUCCESS ||
-		    ep.g_uint64(&fidto) != EXT_ERR_SUCCESS ||
-		    ep.g_str(&unique_tie(name)) != EXT_ERR_SUCCESS)
+		if (ep.g_uint64(&nid) != pack_result::ok ||
+		    ep.g_uint8(&create) != pack_result::ok ||
+		    ep.g_uint64(&fidto) != pack_result::ok ||
+		    ep.g_str(&unique_tie(name)) != pack_result::ok)
 			throw YError("PG-1101");
 		map.insert_or_assign(nid, tgt_folder{static_cast<bool>(create), fidto, name != nullptr ? name.get() : ""});
 	}
@@ -125,13 +125,13 @@ void gi_folder_map_write(const gi_folder_map_t &map)
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
-	if (ep.p_uint64(map.size()) != EXT_ERR_SUCCESS)
+	if (ep.p_uint64(map.size()) != pack_result::ok)
 		throw YError("PG-1102");
 	for (const auto &[nid, tgt] : map)
-		if (ep.p_uint32(nid) != EXT_ERR_SUCCESS ||
-		    ep.p_uint8(!!tgt.create) != EXT_ERR_SUCCESS ||
-		    ep.p_uint64(tgt.fid_to) != EXT_ERR_SUCCESS ||
-		    ep.p_str(tgt.create_name.c_str()) != EXT_ERR_SUCCESS)
+		if (ep.p_uint64(nid) != pack_result::ok ||
+		    ep.p_uint8(!!tgt.create) != pack_result::ok ||
+		    ep.p_uint64(tgt.fid_to) != pack_result::ok ||
+		    ep.p_str(tgt.create_name.c_str()) != pack_result::ok)
 			throw YError("PG-1103");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
@@ -145,13 +145,13 @@ void gi_name_map_read(const void *buf, size_t bufsize, gi_name_map &map)
 	EXT_PULL ep;
 	ep.init(buf, bufsize, zalloc, EXT_FLAG_WCOUNT);
 	uint64_t max = 0;
-	if (ep.g_uint64(&max) != EXT_ERR_SUCCESS)
+	if (ep.g_uint64(&max) != pack_result::ok)
 		throw YError("PG-1108");
 	for (size_t n = 0; n < max; ++n) {
-		uint32_t proptag;
+		proptag_t proptag;
 		PROPERTY_NAME propname{};
-		if (ep.g_uint32(&proptag) != EXT_ERR_SUCCESS ||
-		    ep.g_propname(&propname) != EXT_ERR_SUCCESS)
+		if (ep.g_uint32(&proptag) != pack_result::ok ||
+		    ep.g_propname(&propname) != pack_result::ok)
 			throw YError("PG-1109");
 		try {
 			map.insert_or_assign(proptag, propname);
@@ -168,13 +168,13 @@ void gi_name_map_write(const gi_name_map &map)
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
-	if (ep.p_uint64(map.size()) != EXT_ERR_SUCCESS)
+	if (ep.p_uint64(map.size()) != pack_result::ok)
 		throw YError("PG-1110");
 	for (const auto &[proptag, xn] : map) {
 		static_assert(sizeof(gi_name_map::key_type) == sizeof(uint32_t),
 			"Something is fishy with the definition of gi_name_map");
 		if (ep.p_uint32(proptag) != pack_result::ok ||
-		    ep.p_propname(static_cast<PROPERTY_NAME>(xn)) != EXT_ERR_SUCCESS)
+		    ep.p_propname(static_cast<PROPERTY_NAME>(xn)) != pack_result::ok)
 			throw YError("PG-1111");
 	}
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
@@ -199,7 +199,8 @@ uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)
 	return pid_rsp[0];
 }
 
-int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num)
+int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num,
+    const BINARY *oldpcl)
 {
 	/* Set the change key and initial PCL for the object */
 	XID zxid{g_public_folder ? rop_util_make_domain_guid(g_user_id) :
@@ -208,83 +209,30 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num)
 	BINARY bxid;
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, std::size(tmp_buff), 0) ||
-	    ep.p_xid(zxid) != EXT_ERR_SUCCESS) {
+	    ep.p_xid(zxid) != pack_result::ok) {
 		fprintf(stderr, "exm: ext_push: ENOMEM\n");
 		return -ENOMEM;
 	}
 	bxid.pv = tmp_buff;
 	bxid.cb = ep.m_offset;
 	PCL pcl;
-	if (!pcl.append(zxid)) {
+	if (oldpcl != nullptr)
+		pcl.deserialize(oldpcl);
+	if (!pcl.replace(zxid)) {
 		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
 	std::unique_ptr<BINARY, gi_delete> pclbin(pcl.serialize());
-	if (pclbin == nullptr){
+	if (pclbin == nullptr) {
 		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
-	int ret;
-	if ((ret = props->set(PidTagChangeNumber, &change_num)) != 0 ||
-	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != 0 ||
-	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != 0) {
-		fprintf(stderr, "%s: %s\n", __func__, strerror(-ret));
-		return ret;
-	}
-	return 0;
-}
-
-/**
- * @o_excl:	Enforce that we are the first to create the folder, just like
- * 		open(2)'s %O_EXCL flag.
- */
-int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
-    uint64_t *new_fld_id)
-{
-	uint64_t change_num = 0;
-	if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
-		fprintf(stderr, "exm: allocate_cn(fld) RPC failed\n");
-		return -EIO;
-	}
-	if (!props->has(PR_LAST_MODIFICATION_TIME)) {
-		auto last_time = rop_util_current_nttime();
-		auto ret = props->set(PR_LAST_MODIFICATION_TIME, &last_time);
-		if (ret != 0)
-			return ret;
-	}
-	int ret;
-	if ((ret = props->set(PidTagParentFolderId, &parent_fld)) != 0 ||
-	    (ret = exm_set_change_keys(props, change_num)) != 0) {
-		fprintf(stderr, "exm: tpropval: %s\n", strerror(-ret));
-		return ret;
-	}
-	auto dn = props->get<const char>(PR_DISPLAY_NAME);
-	if (!o_excl && dn != nullptr) {
-		if (!exmdb_client->get_folder_by_name(g_storedir,
-		    parent_fld, dn, new_fld_id)) {
-			fprintf(stderr, "exm: get_folder_by_name \"%s\" RPC/network failed\n", dn);
-			return -EIO;
-		}
-		if (*new_fld_id != 0)
-			return 0;
-	}
-	if (dn == nullptr)
-		dn = "";
-	ec_error_t err = ecSuccess;
-	if (!exmdb_client->create_folder(g_storedir, CP_ACP, props, new_fld_id, &err)) {
-		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed\n", dn);
-		return -EIO;
-	} else if (err != ecSuccess) {
-		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed: %s\n",
-			dn, mapi_strerror(err));
-		return -EIO;
-	} else if (*new_fld_id == 0) {
-		fprintf(stderr, "exm: Could not create folder \"%s\". "
-			"Either it already existed or some there was some other unspecified problem.\n", dn);
-		return -EEXIST;
-	} else if (g_verbose_create) {
-		fprintf(stderr, "exm: Created folder \"%s\" (fid=0x%llx)\n", dn,
-			LLU{rop_util_get_gc_value(*new_fld_id)});
+	ec_error_t ret;
+	if ((ret = props->set(PidTagChangeNumber, &change_num)) != ecSuccess ||
+	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != ecSuccess ||
+	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess) {
+		fprintf(stderr, "%s: %s\n", __func__, mapi_strerror(ret));
+		return ece2nerrno(ret);
 	}
 	return 0;
 }
@@ -297,121 +245,6 @@ int exm_permissions(eid_t fid, const std::vector<PERMISSION_DATA> &perms)
 	    perms.size(), perms.data())) {
 		fprintf(stderr, "exm: update_folder_perm(%llxh) RPC failed\n", LLU{fid});
 		return -EIO;
-	}
-	return 0;
-}
-
-int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
-{
-	ct->proplist.erase(PidTagChangeNumber);
-	auto ts = rop_util_current_nttime();
-	if (ct->proplist.set(PR_MESSAGE_DELIVERY_TIME, &ts) != 0)
-		/* ignore */;
-	uint64_t folder_id = 0, msg_id = 0;
-	uint32_t r32 = 0;
-	if (mode & DELIVERY_TWOSTEP)
-		mode &= ~(DELIVERY_DO_RULES | DELIVERY_DO_NOTIF);
-	if (!exmdb_client->deliver_message(g_storedir, ENVELOPE_FROM_NULL,
-	    target, CP_ACP, mode, ct, "", &folder_id, &msg_id, &r32)) {
-		fprintf(stderr, "exm: deliver_message RPC failed: code %u\n",
-		        r32);
-		return -EIO;
-	}
-	auto dm_status = static_cast<deliver_message_result>(r32);
-	switch (dm_status) {
-	case deliver_message_result::result_ok:
-		if (g_verbose_create)
-			fprintf(stderr, "Created/delivered new message 0x%llx:0x%llx\n",
-				LLU{rop_util_get_gc_value(folder_id)},
-				LLU{rop_util_get_gc_value(msg_id)});
-		break;
-	case deliver_message_result::result_error:
-		fprintf(stderr, "Message rejected - unspecified reason\n");
-		return EXIT_FAILURE;
-	case deliver_message_result::mailbox_full_bysize:
-		fprintf(stderr, "Message rejected - mailbox has reached quota limit");
-		return EXIT_FAILURE;
-	case deliver_message_result::mailbox_full_bymsg:
-		fprintf(stderr, "Message rejected - mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
-		return EXIT_FAILURE;
-	case deliver_message_result::partial_completion:
-		fprintf(stderr, "Partial completion - The server could not save all of the message (wrong permissions/disk full/...)\n");
-		return EXIT_FAILURE;
-	}
-	if (!(mode & DELIVERY_TWOSTEP))
-		return EXIT_SUCCESS;
-	if (exmdb_local_rules_execute == nullptr) {
-		fprintf(stderr, "Programmer's error: libgxs_ruleproc.so was not activated, cannot perform rule processing");
-		return EXIT_FAILURE;
-	}
-	fprintf(stderr, "Exercising TWOSTEP ruleprocessor:\n");
-	if (msg_id == 0) {
-		fprintf(stderr, "deliver_message RPC did not give us a message_id -- not executing any rules.\n");
-		return EXIT_SUCCESS;
-	}
-	auto err = exmdb_local_rules_execute(g_storedir, ENVELOPE_FROM_NULL,
-	           target, folder_id, msg_id, mode);
-	if (err != ecSuccess) {
-		fprintf(stderr, "Rule execution not successful: %s\n", mapi_strerror(err));
-		return EXIT_FAILURE;
-	}
-	return EXIT_SUCCESS;
-}
-
-int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
-{
-	uint64_t msg_id = 0, change_num = 0;
-	if (!exmdb_client->allocate_message_id(g_storedir, parent_fld, &msg_id)) {
-		fprintf(stderr, "exm: allocate_message_id RPC failed (timeout?)\n");
-		return -EIO;
-	} else if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
-		fprintf(stderr, "exm: allocate_cn(msg) RPC failed\n");
-		return -EIO;
-	}
-
-	XID zxid{g_public_folder ? rop_util_make_domain_guid(g_user_id) :
-	         rop_util_make_user_guid(g_user_id), change_num};
-	char tmp_buff[22];
-	BINARY bxid;
-	EXT_PUSH ep;
-	if (!ep.init(tmp_buff, std::size(tmp_buff), 0) ||
-	    ep.p_xid(zxid) != EXT_ERR_SUCCESS) {
-		fprintf(stderr, "exm: ext_push: ENOMEM\n");
-		return -ENOMEM;
-	}
-	bxid.pv = tmp_buff;
-	bxid.cb = ep.m_offset;
-	PCL pcl;
-	if (!pcl.append(zxid)) {
-		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
-		return -ENOMEM;
-	}
-	std::unique_ptr<BINARY, gi_delete> pclbin(pcl.serialize());
-	if (pclbin == nullptr){
-		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
-		return -ENOMEM;
-	}
-	auto props = &ctnt->proplist;
-	int ret;
-	if ((ret = props->set(PidTagMid, &msg_id)) != 0 ||
-	    (ret = props->set(PidTagChangeNumber, &change_num)) != 0 ||
-	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != 0 ||
-	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != 0) {
-		fprintf(stderr, "exm: tpropval: %s\n", strerror(-ret));
-		return ret;
-	}
-	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld, ctnt,
-	    &e_result)) {
-		fprintf(stderr, "exm: write_message RPC failed\n");
-		return -EIO;
-	} else if (e_result != ecSuccess) {
-		fprintf(stderr, "exm: write_message: %s\n", mapi_strerror(e_result));
-		return -EIO;
-	} else if (g_verbose_create) {
-		fprintf(stderr, "Created new message 0x%llx:0x%llx\n",
-			LLU{rop_util_get_gc_value(parent_fld)},
-			LLU{rop_util_get_gc_value(msg_id)});
 	}
 	return 0;
 }
@@ -593,7 +426,10 @@ static constexpr std::pair<const char *, uint8_t> fld_special_names[] = {
 
 eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 {
-	auto pathcomp = gx_split(name, '/');
+	const char *sep = strpbrk(name, "/\\"); /* CONST-STRCHR-MARKER */
+	if (sep == nullptr)
+		sep = "/";
+	auto pathcomp = gx_split(name, *sep);
 	if (pathcomp.size() == 0)
 		return 0;
 	auto ptr = std::lower_bound(std::begin(fld_special_names), std::end(fld_special_names),
@@ -621,11 +457,10 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 		}
 		auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 
-		static constexpr uint32_t qtags[] = {PidTagFolderId};
-		static constexpr PROPTAG_ARRAY qtaginfo = {std::size(qtags), deconst(qtags)};
+		static constexpr proptag_t qtags[] = {PidTagFolderId};
 		tarray_set rowset;
 		if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
-		    &qtaginfo, 0, rowcount, &rowset)) {
+		    qtags, 0, rowcount, &rowset)) {
 			mlog(LV_ERR, "query_table RPC rejected");
 			return 0;
 		}
@@ -643,14 +478,28 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 	return fid;
 }
 
+eid_t gi_lookup_eid_any_way(const char *dir, const char *name)
+{
+	char *end = nullptr;
+	auto pure_id = strtoull(name, &end, 0);
+	if (end != name && *znul(end) == '\0')
+		return rop_util_make_eid_ex(1, pure_id);
+	return gi_lookup_eid_by_name(dir, name);
+}
+
 int gi_startup_client(unsigned int maxconn)
 {
 	exmdb_local_rules_execute = reinterpret_cast<decltype(exmdb_local_rules_execute)>(service_query("rules_execute",
 	                            "system", typeid(*exmdb_local_rules_execute)));
 	exmdb_rpc_alloc = gi_alloc;
 	exmdb_rpc_free = gi_free;
-	exmdb_client.emplace(maxconn, 0);
+	exmdb_client.emplace(maxconn);
 	return exmdb_client_run(PKGSYSCONFDIR);
+}
+
+void gi_purge_alloc()
+{
+	g_alloc_mgr.clear();
 }
 
 void gi_shutdown()

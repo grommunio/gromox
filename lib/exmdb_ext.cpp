@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -16,7 +18,9 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
+#define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
+#define CLAMP32(v) ((v) = std::min((v), static_cast<uint32_t>(UINT32_MAX)))
 
 using namespace gromox;
 
@@ -33,16 +37,19 @@ template<typename T> T *cu_alloc(size_t elem)
 	return static_cast<T *>(exmdb_rpc_alloc(sizeof(T) * elem));
 }
 
+static inline pack_result exmdb_pull(EXT_PULL &, exreq &) { return pack_result::ok; }
+static inline pack_result exmdb_push(EXT_PUSH &, const exreq &) { return pack_result::ok; }
+static inline pack_result exmdb_pull(EXT_PULL &, exresp &) { return pack_result::ok; }
+static inline pack_result exmdb_push(EXT_PUSH &, const exresp &) { return pack_result::ok; }
+
 static pack_result exmdb_pull(EXT_PULL &x, exreq_connect &d)
 {
-	TRY(x.g_str(&d.prefix));
 	TRY(x.g_str(&d.remote_id));
 	return x.g_bool(&d.b_private);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_connect &d)
 {
-	TRY(x.p_str(d.prefix));
 	TRY(x.p_str(d.remote_id));
 	return x.p_bool(d.b_private);
 }
@@ -62,7 +69,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_named_propids &d)
 	TRY(x.g_bool(&d.b_create));
 	d.ppropnames = cu_alloc<PROPNAME_ARRAY>();
 	if (d.ppropnames == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_propname_a(d.ppropnames);
 }
 
@@ -105,16 +112,13 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_mapping_replid &d)
 static pack_result exmdb_pull(EXT_PULL &x, exreq_get_store_properties &d)
 {
 	TRY(x.g_nlscp(&d.cpid));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_store_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_store_properties_v &d)
 {
 	TRY(x.p_uint32(d.cpid));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_set_store_properties &d)
@@ -122,7 +126,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_set_store_properties &d)
 	TRY(x.g_nlscp(&d.cpid));
 	d.ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 	if (d.ppropvals == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_tpropval_a(d.ppropvals);
 }
 
@@ -134,15 +138,12 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_store_properties &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_remove_store_properties &d)
 {
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_store_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_store_properties_v &d)
 {
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_get_mbox_perm &d)
@@ -226,7 +227,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_create_folder &d)
 	TRY(x.g_nlscp(&d.cpid));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
 	if (d.pproperties == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_tpropval_a(d.pproperties);
 }
 
@@ -250,17 +251,14 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_folder_properties &d)
 {
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_folder_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_folder_properties_v &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_set_folder_properties &d)
@@ -269,7 +267,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_set_folder_properties &d)
 	TRY(x.g_uint64(&d.folder_id));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
 	if (d.pproperties == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_tpropval_a(d.pproperties);
 }
 
@@ -283,16 +281,13 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_folder_properties &d)
 static pack_result exmdb_pull(EXT_PULL &x, exreq_remove_folder_properties &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_folder_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_folder_properties_v &d)
 {
 	TRY(x.p_uint64(d.folder_id));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_delete_folder &d)
@@ -435,13 +430,13 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_set_search_criteria &d)
 	} else {
 		d.prestriction = cu_alloc<RESTRICTION>();
 		if (d.prestriction == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(x.g_restriction(d.prestriction));
 	}
-	d.pfolder_ids = cu_alloc<LONGLONG_ARRAY>();
+	d.pfolder_ids = cu_alloc<EID_ARRAY>();
 	if (d.pfolder_ids == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_uint64_a(d.pfolder_ids);
+		return pack_result::alloc;
+	return x.g_eid_a(d.pfolder_ids);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_search_criteria &d)
@@ -455,7 +450,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_search_criteria &d)
 		TRY(x.p_uint8(1));
 		TRY(x.p_restriction(*d.prestriction));
 	}
-	return x.p_uint64_a(*d.pfolder_ids);
+	return x.p_eid_a(*d.pfolder_ids);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_message &d)
@@ -497,7 +492,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_messages &d)
 	TRY(x.g_bool(&d.b_copy));
 	d.pmessage_ids = cu_alloc<EID_ARRAY>();
 	if (d.pmessage_ids == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_eid_a(d.pmessage_ids);
 }
 
@@ -571,7 +566,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_delete_messages &d)
 	TRY(x.g_uint64(&d.folder_id));
 	d.pmessage_ids = cu_alloc<EID_ARRAY>();
 	if (d.pmessage_ids == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(x.g_eid_a(d.pmessage_ids));
 	return x.g_bool(&d.b_hard);
 }
@@ -645,10 +640,10 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_load_hierarchy_table &d)
 	} else {
 		d.prestriction = cu_alloc<RESTRICTION>();
 		if (d.prestriction == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(x.g_restriction(d.prestriction));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_load_hierarchy_table &d)
@@ -699,17 +694,17 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_load_content_table &d)
 	} else {
 		d.prestriction = cu_alloc<RESTRICTION>();
 		if (d.prestriction == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(x.g_restriction(d.prestriction));
 	}
 	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		d.psorts = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	d.psorts = cu_alloc<SORTORDER_SET>();
 	if (d.psorts == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_sortorder_set(d.psorts);
 }
 
@@ -767,11 +762,11 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_load_rule_table &d)
 	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		d.prestriction = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	d.prestriction = cu_alloc<RESTRICTION>();
 	if (d.prestriction == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_restriction(d.prestriction);
 }
 
@@ -816,15 +811,12 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_query_table &d)
 		TRY(x.g_str(&d.username));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint32(&d.table_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	TRY(x.g_proptag_a(d.pproptags));
+	TRY(x.g_proptag_a(&d.pproptags));
 	TRY(x.g_uint32(&d.start_pos));
 	return x.g_int32(&d.row_needed);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_table &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_table_v &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -834,7 +826,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_table &d)
 	}
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint32(d.table_id));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	TRY(x.p_uint32(d.start_pos));
 	return x.p_int32(d.row_needed);
 }
@@ -854,15 +846,12 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_match_table &d)
 	TRY(x.g_uint32(&d.start_pos));
 	d.pres = cu_alloc<RESTRICTION>();
 	if (d.pres == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(x.g_restriction(d.pres));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_match_table &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_match_table_v &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -875,7 +864,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_match_table &d)
 	TRY(x.p_bool(d.b_forward));
 	TRY(x.p_uint32(d.start_pos));
 	TRY(x.p_restriction(*d.pres));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_locate_table &d)
@@ -903,15 +892,12 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_read_table_row &d)
 		TRY(x.g_str(&d.username));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint32(&d.table_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	TRY(x.g_proptag_a(d.pproptags));
+	TRY(x.g_proptag_a(&d.pproptags));
 	TRY(x.g_uint64(&d.inst_id));
 	return x.g_uint32(&d.inst_num);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_read_table_row &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_read_table_row_v &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -921,7 +907,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_read_table_row &d)
 	}
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint32(d.table_id));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	TRY(x.p_uint64(d.inst_id));
 	return x.p_uint32(d.inst_num);
 }
@@ -1106,7 +1092,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_write_message_instance &d)
 	TRY(x.g_uint32(&d.instance_id));
 	d.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pmsgctnt == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(x.g_msgctnt(d.pmsgctnt));
 	return x.g_bool(&d.b_force);
 }
@@ -1157,13 +1143,13 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_write_attachment_instance &d)
 	TRY(x.g_uint32(&d.instance_id));
 	d.pattctnt = cu_alloc<ATTACHMENT_CONTENT>();
 	if (d.pattctnt == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(x.g_tpropval_a(&d.pattctnt->proplist));
 	TRY(x.g_uint8(&tmp_byte));
 	if (0 != tmp_byte) {
 		d.pattctnt->pembedded = cu_alloc<MESSAGE_CONTENT>();
 		if (d.pattctnt->pembedded == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(x.g_msgctnt(d.pattctnt->pembedded));
 	} else {
 		d.pattctnt->pembedded = nullptr;
@@ -1203,7 +1189,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_flush_instance &d)
 	TRY(x.g_uint32(&d.instance_id));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	char *unused = nullptr;
 	return x.g_str(&unused);
 }
@@ -1238,17 +1224,14 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_instance_properties &d)
 {
 	TRY(x.g_uint32(&d.size_limit));
 	TRY(x.g_uint32(&d.instance_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_instance_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_instance_properties_v &d)
 {
 	TRY(x.p_uint32(d.size_limit));
 	TRY(x.p_uint32(d.instance_id));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_set_instance_properties &d)
@@ -1256,7 +1239,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_set_instance_properties &d)
 	TRY(x.g_uint32(&d.instance_id));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
 	if (d.pproperties == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_tpropval_a(d.pproperties);
 }
 
@@ -1269,16 +1252,13 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_instance_properties &
 static pack_result exmdb_pull(EXT_PULL &x, exreq_remove_instance_properties &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_instance_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_instance_properties_v &d)
 {
 	TRY(x.p_uint32(d.instance_id));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_is_descendant_instance &d)
@@ -1342,7 +1322,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_update_message_instance_rcpts &
 	TRY(x.g_uint32(&d.instance_id));
 	d.pset = cu_alloc<TARRAY_SET>();
 	if (d.pset == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_tarray_set(d.pset);
 }
 
@@ -1399,18 +1379,15 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_message_instance_atta
 static pack_result exmdb_pull(EXT_PULL &x, exreq_query_message_instance_attachment_table &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	TRY(x.g_proptag_a(d.pproptags));
+	TRY(x.g_proptag_a(&d.pproptags));
 	TRY(x.g_uint32(&d.start_pos));
 	return x.g_int32(&d.row_needed);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_message_instance_attachment_table &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_message_instance_attachment_table_v &d)
 {
 	TRY(x.p_uint32(d.instance_id));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	TRY(x.p_uint32(d.start_pos));
 	return x.p_int32(d.row_needed);
 }
@@ -1434,7 +1411,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_set_message_instance_conflict &
 	TRY(x.g_uint32(&d.instance_id));
 	d.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pmsgctnt == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_msgctnt(d.pmsgctnt);
 }
 
@@ -1465,13 +1442,10 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_message_properties &d)
 		TRY(x.g_str(&d.username));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.message_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_message_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_message_properties_v &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -1481,7 +1455,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_message_properties &d
 	}
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.message_id));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_set_message_properties &d)
@@ -1497,7 +1471,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_set_message_properties &d)
 	TRY(x.g_uint64(&d.message_id));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
 	if (d.pproperties == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_tpropval_a(d.pproperties);
 }
 
@@ -1543,17 +1517,14 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_remove_message_properties &d)
 {
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.message_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_message_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_message_properties_v &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.message_id));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_allocate_message_id &d)
@@ -1564,62 +1535,6 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_allocate_message_id &d)
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_allocate_message_id &d)
 {
 	return x.p_uint64(d.folder_id);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exreq_get_message_group_id &d)
-{
-	return x.g_uint64(&d.message_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_message_group_id &d)
-{
-	return x.p_uint64(d.message_id);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exreq_set_message_group_id &d)
-{
-	TRY(x.g_uint64(&d.message_id));
-	return x.g_uint32(&d.group_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_message_group_id &d)
-{
-	TRY(x.p_uint64(d.message_id));
-	return x.p_uint32(d.group_id);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exreq_save_change_indices &d)
-{
-	TRY(x.g_uint64(&d.message_id));
-	TRY(x.g_uint64(&d.cn));
-	d.pindices = cu_alloc<INDEX_ARRAY>();
-	if (d.pindices == nullptr)
-		return EXT_ERR_ALLOC;
-	TRY(x.g_proptag_a(d.pindices));
-	d.pungroup_proptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pungroup_proptags == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_proptag_a(d.pungroup_proptags);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_save_change_indices &d)
-{
-	TRY(x.p_uint64(d.message_id));
-	TRY(x.p_uint64(d.cn));
-	TRY(x.p_proptag_a(*d.pindices));
-	return x.p_proptag_a(*d.pungroup_proptags);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exreq_get_change_indices &d)
-{
-	TRY(x.g_uint64(&d.message_id));
-	return x.g_uint64(&d.cn);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_change_indices &d)
-{
-	TRY(x.p_uint64(d.message_id));
-	return x.p_uint64(d.cn);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_mark_modified &d)
@@ -1751,16 +1666,17 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_update_folder_permission &d)
 	TRY(x.g_uint16(&d.count));
 	if (0 == d.count) {
 		d.prow = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
+	CLAMP16(d.count);
 	d.prow = cu_alloc<PERMISSION_DATA>(d.count);
 	if (d.prow == nullptr) {
 		d.count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < d.count; ++i)
 		TRY(x.g_permission_data(&d.prow[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_update_folder_permission &d)
@@ -1770,7 +1686,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_update_folder_permission 
 	TRY(x.p_uint16(d.count));
 	for (size_t i = 0; i < d.count; ++i)
 		TRY(x.p_permission_data(d.prow[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_empty_folder_rule &d)
@@ -1789,16 +1705,17 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_update_folder_rule &d)
 	TRY(x.g_uint16(&d.count));
 	if (0 == d.count) {
 		d.prow = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
+	CLAMP16(d.count);
 	d.prow = cu_alloc<RULE_DATA>(d.count);
 	if (d.prow == nullptr) {
 		d.count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < d.count; ++i)
 		TRY(x.g_rule_data(&d.prow[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_update_folder_rule &d)
@@ -1807,7 +1724,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_update_folder_rule &d)
 	TRY(x.p_uint16(d.count));
 	for (size_t i = 0; i < d.count; ++i)
 		TRY(x.p_rule_data(d.prow[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_deliver_message &d)
@@ -1818,7 +1735,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_deliver_message &d)
 	TRY(x.g_uint32(&d.dlflags));
 	d.pmsg = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pmsg == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(x.g_msgctnt(d.pmsg));
 	return x.g_str(&d.pdigest);
 }
@@ -1835,24 +1752,23 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_deliver_message &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_write_message &d)
 {
-	char *unused = nullptr;
-	TRY(x.g_str(&unused));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	d.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pmsgctnt == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_msgctnt(d.pmsgctnt);
+		return pack_result::alloc;
+	TRY(x.g_msgctnt(d.pmsgctnt));
+	return x.g_str(&d.digest);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_write_message &d)
 {
-	TRY(x.p_str("unused@localhost"));
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
-	return x.p_msgctnt(*d.pmsgctnt);
+	TRY(x.p_msgctnt(*d.pmsgctnt));
+	return x.p_str(d.digest);
 }
-	
+
 static pack_result exmdb_pull(EXT_PULL &x, exreq_read_message &d)
 {
 	uint8_t tmp_byte;
@@ -1900,68 +1816,68 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 	TRY(x.g_bin_ex(&tmp_bin));
 	d.pgiven = idset::create(idset::type::id_packed).release();
 	if (d.pgiven == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	if (!d.pgiven->deserialize(tmp_bin)) {
 		delete d.pgiven;
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	}
 	auto status = x.g_uint8(&tmp_byte);
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return gcsr_failure(status, d);
 	if (0 != tmp_byte) {
 		status = x.g_bin_ex(&tmp_bin);
-		if (status != EXT_ERR_SUCCESS)
+		if (status != pack_result::ok)
 			return gcsr_failure(status, d);
 		d.pseen = idset::create(idset::type::id_packed).release();
 		if (d.pseen == nullptr)
-			return gcsr_failure(EXT_ERR_ALLOC, d);
+			return gcsr_failure(pack_result::alloc, d);
 		if (!d.pseen->deserialize(tmp_bin))
-			return gcsr_failure(EXT_ERR_FORMAT, d);
+			return gcsr_failure(pack_result::format, d);
 	}
 	status = x.g_uint8(&tmp_byte);
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return gcsr_failure(status, d);
 	if (0 != tmp_byte) {
 		status = x.g_bin_ex(&tmp_bin);
-		if (status != EXT_ERR_SUCCESS)
+		if (status != pack_result::ok)
 			return gcsr_failure(status, d);
 		d.pseen_fai = idset::create(idset::type::id_packed).release();
 		if (d.pseen_fai == nullptr)
-			return gcsr_failure(EXT_ERR_ALLOC, d);
+			return gcsr_failure(pack_result::alloc, d);
 		if (!d.pseen_fai->deserialize(tmp_bin))
-			return gcsr_failure(EXT_ERR_FORMAT, d);
+			return gcsr_failure(pack_result::format, d);
 	}
 	status = x.g_uint8(&tmp_byte);
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return gcsr_failure(status, d);
 	if (0 != tmp_byte) {
 		status = x.g_bin_ex(&tmp_bin);
-		if (status != EXT_ERR_SUCCESS)
+		if (status != pack_result::ok)
 			return gcsr_failure(status, d);
 		d.pread = idset::create(idset::type::id_packed).release();
 		if (d.pread == nullptr)
-			return gcsr_failure(EXT_ERR_ALLOC, d);
+			return gcsr_failure(pack_result::alloc, d);
 		if (!d.pread->deserialize(tmp_bin))
-			return gcsr_failure(EXT_ERR_FORMAT, d);
+			return gcsr_failure(pack_result::format, d);
 	}
 	status = x.g_nlscp(&d.cpid);
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return gcsr_failure(status, d);
 	status = x.g_uint8(&tmp_byte);
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return gcsr_failure(status, d);
 	if (0 != tmp_byte) {
 		d.prestriction = cu_alloc<RESTRICTION>();
 		if (d.prestriction == nullptr)
-			return gcsr_failure(EXT_ERR_ALLOC, d);
+			return gcsr_failure(pack_result::alloc, d);
 		status = x.g_restriction(d.prestriction);
-		if (status != EXT_ERR_SUCCESS)
+		if (status != pack_result::ok)
 			return gcsr_failure(status, d);
 	}
 	status = x.g_bool(&d.b_ordered);
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return gcsr_failure(status, d);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_content_sync &d)
@@ -1975,9 +1891,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_content_sync &d)
 	}
 	auto pbin = d.pgiven->serialize_replid();
 	if (pbin == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	auto status = x.p_bin_ex(*pbin);
-	if (EXT_ERR_SUCCESS != status) {
+	if (pack_result::ok != status) {
 		rop_util_free_binary(pbin);
 		return status;
 	}
@@ -1988,9 +1904,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_content_sync &d)
 		TRY(x.p_uint8(1));
 		pbin = d.pseen->serialize_replid();
 		if (pbin == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		status = x.p_bin_ex(*pbin);
-		if (EXT_ERR_SUCCESS != status) {
+		if (pack_result::ok != status) {
 			rop_util_free_binary(pbin);
 			return status;
 		}
@@ -2002,9 +1918,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_content_sync &d)
 		TRY(x.p_uint8(1));
 		pbin = d.pseen_fai->serialize_replid();
 		if (pbin == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		status = x.p_bin_ex(*pbin);
-		if (EXT_ERR_SUCCESS != status) {
+		if (pack_result::ok != status) {
 			rop_util_free_binary(pbin);
 			return status;
 		}
@@ -2016,9 +1932,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_content_sync &d)
 		TRY(x.p_uint8(1));
 		pbin = d.pread->serialize_replid();
 		if (pbin == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		status = x.p_bin_ex(*pbin);
-		if (EXT_ERR_SUCCESS != status) {
+		if (pack_result::ok != status) {
 			rop_util_free_binary(pbin);
 			return status;
 		}
@@ -2047,34 +1963,34 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_hierarchy_sync &d)
 	TRY(x.g_bin_ex(&tmp_bin));
 	d.pgiven = idset::create(idset::type::id_packed).release();
 	if (d.pgiven == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	if (!d.pgiven->deserialize(tmp_bin)) {
 		delete d.pgiven;
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	}
 	auto status = x.g_uint8(&tmp_byte);
-	if (EXT_ERR_SUCCESS != status) {
+	if (pack_result::ok != status) {
 		delete d.pgiven;
 		return status;
 	}
 	if (0 != tmp_byte) {
 		status = x.g_bin_ex(&tmp_bin);
-		if (EXT_ERR_SUCCESS != status) {
+		if (pack_result::ok != status) {
 			delete d.pgiven;
 			return status;
 		}
 		d.pseen = idset::create(idset::type::id_packed).release();
 		if (d.pseen == nullptr) {
 			delete d.pgiven;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		if (!d.pseen->deserialize(tmp_bin)) {
 			delete d.pseen;
 			delete d.pgiven;
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		}
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_hierarchy_sync &d)
@@ -2088,9 +2004,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_hierarchy_sync &d)
 	}
 	auto pbin = d.pgiven->serialize_replid();
 	if (pbin == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	auto status = x.p_bin_ex(*pbin);
-	if (EXT_ERR_SUCCESS != status) {
+	if (pack_result::ok != status) {
 		rop_util_free_binary(pbin);
 		return status;
 	}
@@ -2101,15 +2017,15 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_hierarchy_sync &d)
 		TRY(x.p_uint8(1));
 		pbin = d.pseen->serialize_replid();
 		if (pbin == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		status = x.p_bin_ex(*pbin);
-		if (EXT_ERR_SUCCESS != status) {
+		if (pack_result::ok != status) {
 			rop_util_free_binary(pbin);
 			return status;
 		}
 		rop_util_free_binary(pbin);
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_allocate_ids &d)
@@ -2162,18 +2078,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_transport_new_mail &d)
 	TRY(x.p_uint64(d.message_id));
 	TRY(x.p_uint32(d.message_flags));
 	return x.p_str(d.pstr_class);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exreq_notify_new_mail &d)
-{
-	TRY(x.g_uint64(&d.folder_id));
-	return x.g_uint64(&d.message_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_notify_new_mail &d)
-{
-	TRY(x.p_uint64(d.folder_id));
-	return x.p_uint64(d.message_id);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_check_contact_address &d)
@@ -2261,6 +2165,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_imapfile_write &d) try
 	TRY(x.g_str(&d.mid));
 	uint32_t z = 0;
 	TRY(x.g_uint32(&z));
+	CLAMP32(z);
 	d.data.resize(z);
 	return x.g_bytes(d.data.data(), z);
 } catch (const std::bad_alloc &) {
@@ -2276,190 +2181,73 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_imapfile_write &d)
 	return x.p_bytes(d.data.data(), z);
 }
 
-#define RQ_WITH_ARGS \
-	E(get_named_propids) \
-	E(get_named_propnames) \
-	E(get_mapping_guid) \
-	E(get_mapping_replid) \
-	E(get_store_properties) \
-	E(set_store_properties) \
-	E(remove_store_properties) \
-	E(get_mbox_perm) \
-	E(get_folder_by_class) \
-	E(set_folder_by_class) \
-	E(is_folder_present) \
-	E(is_folder_deleted) \
-	E(get_folder_by_name) \
-	E(get_folder_perm) \
-	E(create_folder_v1) \
-	E(create_folder) \
-	E(get_folder_all_proptags) \
-	E(get_folder_properties) \
-	E(set_folder_properties) \
-	E(remove_folder_properties) \
-	E(delete_folder) \
-	E(empty_folder) \
-	E(is_descendant_folder) \
-	E(copy_folder_internal) \
-	E(get_search_criteria) \
-	E(set_search_criteria) \
-	E(movecopy_message) \
-	E(movecopy_messages) \
-	E(movecopy_folder) \
-	E(delete_messages) \
-	E(get_message_brief) \
-	E(sum_hierarchy) \
-	E(load_hierarchy_table) \
-	E(sum_content) \
-	E(load_content_table) \
-	E(reload_content_table) \
-	E(load_permission_table) \
-	E(load_rule_table) \
-	E(unload_table) \
-	E(sum_table) \
-	E(query_table) \
-	E(match_table) \
-	E(locate_table) \
-	E(read_table_row) \
-	E(mark_table) \
-	E(get_table_all_proptags) \
-	E(expand_table) \
-	E(collapse_table) \
-	E(store_table_state) \
-	E(restore_table_state) \
-	E(is_msg_present) \
-	E(is_msg_deleted) \
-	E(load_message_instance) \
-	E(load_embedded_instance) \
-	E(get_embedded_cn) \
-	E(reload_message_instance) \
-	E(clear_message_instance) \
-	E(read_message_instance) \
-	E(write_message_instance) \
-	E(load_attachment_instance) \
-	E(create_attachment_instance) \
-	E(read_attachment_instance) \
-	E(write_attachment_instance) \
-	E(delete_message_instance_attachment) \
-	E(flush_instance) \
-	E(unload_instance) \
-	E(get_instance_all_proptags) \
-	E(get_instance_properties) \
-	E(set_instance_properties) \
-	E(remove_instance_properties) \
-	E(is_descendant_instance) \
-	E(empty_message_instance_rcpts) \
-	E(get_message_instance_rcpts_num) \
-	E(get_message_instance_rcpts_all_proptags) \
-	E(get_message_instance_rcpts) \
-	E(update_message_instance_rcpts) \
-	E(copy_instance_rcpts) \
-	E(empty_message_instance_attachments) \
-	E(get_message_instance_attachments_num) \
-	E(get_message_instance_attachment_table_all_proptags) \
-	E(query_message_instance_attachment_table) \
-	E(copy_instance_attachments) \
-	E(set_message_instance_conflict) \
-	E(get_message_rcpts) \
-	E(get_message_properties) \
-	E(set_message_properties) \
-	E(set_message_read_state) \
-	E(remove_message_properties) \
-	E(allocate_message_id) \
-	E(get_message_group_id) \
-	E(set_message_group_id) \
-	E(save_change_indices) \
-	E(get_change_indices) \
-	E(mark_modified) \
-	E(try_mark_submit) \
-	E(clear_submit) \
-	E(link_message) \
-	E(unlink_message) \
-	E(rule_new_message) \
-	E(set_message_timer) \
-	E(get_message_timer) \
-	E(empty_folder_permission) \
-	E(update_folder_permission) \
-	E(empty_folder_rule) \
-	E(update_folder_rule) \
-	E(deliver_message) \
-	E(write_message) \
-	E(read_message) \
-	E(get_content_sync) \
-	E(get_hierarchy_sync) \
-	E(allocate_ids) \
-	E(subscribe_notification) \
-	E(unsubscribe_notification) \
-	E(transport_new_mail) \
-	E(check_contact_address) \
-	E(get_public_folder_unread_count) \
-	E(notify_new_mail) \
-	E(store_eid_to_user) \
-	E(purge_softdelete) \
-	E(autoreply_tsquery) \
-	E(autoreply_tsupdate) \
-	E(recalc_store_size) \
-	E(write_message_v2) \
-	E(imapfile_read) \
-	E(imapfile_write) \
-	E(imapfile_delete)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_set_maintenance &d)
+{
+	return x.g_uint32(&d.mode);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_maintenance &d)
+{
+	return x.p_uint32(d.mode);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_read_delegates &d)
+{
+	return x.p_str_a(d.userlist);
+}
+
+static pack_result exmdb_pull(EXT_PULL &x, exresp_read_delegates &d)
+{
+	return x.g_str_a(&d.userlist);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_write_delegates &d)
+{
+	TRY(x.p_uint32(d.mode));
+	return x.p_str_a(d.userlist);
+}
+
+static pack_result exmdb_pull(EXT_PULL &x, exreq_write_delegates &d)
+{
+	TRY(x.g_uint32(&d.mode));
+	return x.g_str_a(&d.userlist);
+}
 
 /**
  * This uses *& because we do not know which request type we are going to get
  * (cf. exmdb_ext_pull_response).
  */
-pack_result exmdb_ext_pull_request(const BINARY *pbin_in,
+pack_result exmdb_ext_pull_request(std::string_view pbin_in,
     std::unique_ptr<exreq> &prequest) try
 {
 	EXT_PULL ext_pull;
 	uint8_t raw_call_id;
+	char *dir = nullptr;
 	
-	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in.data(), pbin_in.size(), exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_pull.g_uint8(&raw_call_id));
 	auto call_id = static_cast<exmdb_callid>(raw_call_id);
-	if (call_id == exmdb_callid::connect) {
-		auto r = std::make_unique<exreq_connect>();
-		auto xret = exmdb_pull(ext_pull, *r);
-		prequest = std::move(r);
-		prequest->call_id = call_id;
-		return xret;
-	} else if (call_id == exmdb_callid::listen_notification) {
-		auto r = std::make_unique<exreq_listen_notification>();
-		auto xret = exmdb_pull(ext_pull, *r);
-		prequest = std::move(r);
-		prequest->call_id = call_id;
-		return xret;
-	}
-
-	char *dir = nullptr;
 	TRY(ext_pull.g_str(&dir));
-	pack_result xret;
-	xret = pack_result::bad_callid;
-	switch (call_id) {
-	case exmdb_callid::connect:
-	case exmdb_callid::listen_notification:
-		break;
-	case exmdb_callid::ping_store:
-	case exmdb_callid::get_all_named_propids:
-	case exmdb_callid::get_store_all_proptags:
-	case exmdb_callid::get_folder_class_table:
-	case exmdb_callid::allocate_cn:
-	case exmdb_callid::vacuum:
-	case exmdb_callid::unload_store:
-	case exmdb_callid::purge_datafiles: {
-		prequest = std::make_unique<exreq>();
-		xret = EXT_ERR_SUCCESS;
-		break;
-	}
-#define E(t) case exmdb_callid::t: { \
+	pack_result xret = pack_result::bad_callid;
+
+#define EDEF(t, id) case exmdb_callid::t: { \
 		auto r = std::make_unique<exreq_ ## t >(); \
 		xret = exmdb_pull(ext_pull, *r); \
 		prequest = std::move(r); \
 		break; \
 	}
-	RQ_WITH_ARGS
-#undef E
+#define EOBSOL(t, id)
+
+	switch (call_id) {
+	#include <gromox/exmdb_allcalls.hpp>
+	default:
+		xret = pack_result::bad_callid;
+		break;
 	}
+
+#undef EDEF
+#undef EOBSOL
+
 	prequest->call_id = call_id;
 	prequest->dir = dir;
 	return xret;
@@ -2472,51 +2260,40 @@ pack_result exmdb_ext_push_request(const exreq *prequest, BINARY *pbin_out)
 	EXT_PUSH ext_push;
 	
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	auto status = ext_push.advance(sizeof(uint32_t));
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return status;
 	status = ext_push.p_uint8(static_cast<uint8_t>(prequest->call_id));
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return status;
-	if (prequest->call_id == exmdb_callid::connect) {
-		status = exmdb_push(ext_push, *static_cast<const exreq_connect *>(prequest));
-	} else if (prequest->call_id == exmdb_callid::listen_notification) {
-		status = exmdb_push(ext_push, *static_cast<const exreq_listen_notification *>(prequest));
-	} else {
 	status = ext_push.p_str(prequest->dir);
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return status;
-	status = pack_result::bad_callid;
-	switch (prequest->call_id) {
-	case exmdb_callid::connect:
-	case exmdb_callid::listen_notification:
-		break;
-	case exmdb_callid::ping_store:
-	case exmdb_callid::get_all_named_propids:
-	case exmdb_callid::get_store_all_proptags:
-	case exmdb_callid::get_folder_class_table:
-	case exmdb_callid::allocate_cn:
-	case exmdb_callid::vacuum:
-	case exmdb_callid::unload_store:
-	case exmdb_callid::purge_datafiles:
-		status = EXT_ERR_SUCCESS;
-		break;
-#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exreq_ ## t *>(prequest)); break;
-	RQ_WITH_ARGS
-#undef E
-	}
-	}
-	if (status != EXT_ERR_SUCCESS)
+
+#define EDEF(t, id) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exreq_ ## t::view_t *>(prequest)); break;
+#define EOBSOL(t, id)
+
+		switch (prequest->call_id) {
+		#include <gromox/exmdb_allcalls.hpp>
+		default:
+			status = pack_result::bad_callid;
+			break;
+		}
+
+#undef EDEF
+#undef EOBSOL
+
+	if (status != pack_result::ok)
 		return status;
 	pbin_out->cb = ext_push.m_offset;
 	ext_push.m_offset = 0;
 	status = ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t));
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return status;
 	/* memory referenced by ext_push.data will be freed outside */
 	pbin_out->pb = ext_push.release();
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_get_all_named_propids &d)
@@ -2790,10 +2567,10 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_get_search_criteria &d)
 	} else {
 		d.prestriction = cu_alloc<RESTRICTION>();
 		if (d.prestriction == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(x.g_restriction(d.prestriction));
 	}
-	return x.g_uint64_a(&d.folder_ids);
+	return x.g_eid_a(&d.folder_ids);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_search_criteria &d)
@@ -2805,7 +2582,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_search_criteria &d)
 		TRY(x.p_uint8(1));
 		TRY(x.p_restriction(*d.prestriction));
 	}
-	return x.p_uint64_a(d.folder_ids);
+	return x.p_eid_a(d.folder_ids);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_set_search_criteria &d)
@@ -2853,13 +2630,13 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_get_message_brief &d)
 	uint8_t tmp_byte;
 	
 	auto status = x.g_uint8(&tmp_byte);
-	if (status != EXT_ERR_SUCCESS || tmp_byte == 0) {
+	if (status != pack_result::ok || tmp_byte == 0) {
 		d.pbrief = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	d.pbrief = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pbrief == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_msgctnt(d.pbrief);
 }
 
@@ -3112,11 +2889,11 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_get_embedded_cn &d)
 	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		d.pcn = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	d.pcn = cu_alloc<uint64_t>();
 	if (d.pcn == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_uint64(d.pcn);
 }
 
@@ -3190,11 +2967,11 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_read_attachment_instance &d)
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
 		d.attctnt.pembedded = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	d.attctnt.pembedded = cu_alloc<MESSAGE_CONTENT>();
 	if (d.attctnt.pembedded == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_msgctnt(d.attctnt.pembedded);
 }
 
@@ -3417,41 +3194,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_allocate_cn &d)
 	return x.p_uint64(d.cn);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_get_message_group_id &d)
-{
-	uint8_t tmp_byte;
-	
-	TRY(x.g_uint8(&tmp_byte));
-	if (0 == tmp_byte) {
-		d.pgroup_id = nullptr;
-		return EXT_ERR_SUCCESS;
-	}
-	d.pgroup_id = cu_alloc<uint32_t>();
-	if (d.pgroup_id == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_uint32(d.pgroup_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_message_group_id &d)
-{
-	if (d.pgroup_id == nullptr)
-		return x.p_uint8(0);
-	TRY(x.p_uint8(1));
-	return x.p_uint32(*d.pgroup_id);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exresp_get_change_indices &d)
-{
-	TRY(x.g_proptag_a(&d.indices));
-	return x.g_proptag_a(&d.ungroup_proptags);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_change_indices &d)
-{
-	TRY(x.p_proptag_a(d.indices));
-	return x.p_proptag_a(d.ungroup_proptags);
-}
-
 static pack_result exmdb_pull(EXT_PULL &x, exresp_try_mark_submit &d)
 {
 	return x.g_bool(&d.b_marked);
@@ -3479,11 +3221,11 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_get_message_timer &d)
 	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		d.ptimer_id = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	d.ptimer_id = cu_alloc<uint32_t>();
 	if (d.ptimer_id == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_uint32(d.ptimer_id);
 }
 
@@ -3526,11 +3268,11 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_read_message &d)
 	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		d.pmsgctnt = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	d.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pmsgctnt == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_msgctnt(d.pmsgctnt);
 }
 
@@ -3583,10 +3325,11 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_get_hierarchy_sync &d)
 	if (0 == d.fldchgs.count) {
 		d.fldchgs.pfldchgs = nullptr;
 	} else {
+		CLAMP32(d.fldchgs.count);
 		d.fldchgs.pfldchgs = cu_alloc<TPROPVAL_ARRAY>(d.fldchgs.count);
 		if (d.fldchgs.pfldchgs == nullptr) {
 			d.fldchgs.count = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		for (size_t i = 0; i < d.fldchgs.count; ++i)
 			TRY(x.g_tpropval_a(&d.fldchgs.pfldchgs[i]));
@@ -3670,14 +3413,14 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	return x.p_uint64(d.tdiff);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_write_message_v2 &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_write_message &d)
 {
 	TRY(x.g_uint64(&d.outmid));
 	TRY(x.g_uint64(&d.outcn));
 	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_message_v2 &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_message &d)
 {
 	TRY(x.p_uint64(d.outmid));
 	TRY(x.p_uint64(d.outcn));
@@ -3688,6 +3431,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_imapfile_read &d) try
 {
 	uint32_t z;
 	TRY(x.g_uint32(&z));
+	CLAMP32(z);
 	d.data.resize(z);
 	return x.g_bytes(d.data.data(), z);
 } catch (const std::bad_alloc &) {
@@ -3701,166 +3445,44 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_imapfile_read &d)
 	return x.p_bytes(d.data.data(), d.data.size());
 }
 
-#define RSP_WITHOUT_ARGS \
-	E(ping_store) \
-	E(remove_store_properties) \
-	E(remove_folder_properties) \
-	E(reload_content_table) \
-	E(unload_table) \
-	E(clear_message_instance) \
-	E(delete_message_instance_attachment) \
-	E(unload_instance) \
-	E(empty_message_instance_rcpts) \
-	E(update_message_instance_rcpts) \
-	E(empty_message_instance_attachments) \
-	E(set_message_instance_conflict) \
-	E(remove_message_properties) \
-	E(set_message_group_id) \
-	E(save_change_indices) \
-	E(mark_modified) \
-	E(clear_submit) \
-	E(unlink_message) \
-	E(rule_new_message) \
-	E(set_message_timer) \
-	E(empty_folder_permission) \
-	E(update_folder_permission) \
-	E(empty_folder_rule) \
-	E(unsubscribe_notification) \
-	E(transport_new_mail) \
-	E(vacuum) \
-	E(unload_store) \
-	E(notify_new_mail) \
-	E(purge_softdelete) \
-	E(purge_datafiles) \
-	E(autoreply_tsupdate) \
-	E(recalc_store_size) \
-	E(imapfile_write) \
-	E(imapfile_delete)
-#define RSP_WITH_ARGS \
-	E(get_all_named_propids) \
-	E(get_named_propids) \
-	E(get_named_propnames) \
-	E(get_mapping_guid) \
-	E(get_mapping_replid) \
-	E(get_store_all_proptags) \
-	E(get_store_properties) \
-	E(set_store_properties) \
-	E(get_mbox_perm) \
-	E(get_folder_by_class) \
-	E(set_folder_by_class) \
-	E(get_folder_class_table) \
-	E(is_folder_present) \
-	E(is_folder_deleted) \
-	E(get_folder_by_name) \
-	E(get_folder_perm) \
-	E(create_folder_v1) \
-	E(create_folder) \
-	E(get_folder_all_proptags) \
-	E(get_folder_properties) \
-	E(set_folder_properties) \
-	E(delete_folder) \
-	E(empty_folder) \
-	E(is_descendant_folder) \
-	E(copy_folder_internal) \
-	E(get_search_criteria) \
-	E(set_search_criteria) \
-	E(movecopy_message) \
-	E(movecopy_messages) \
-	E(movecopy_folder) \
-	E(delete_messages) \
-	E(get_message_brief) \
-	E(sum_hierarchy) \
-	E(load_hierarchy_table) \
-	E(sum_content) \
-	E(load_content_table) \
-	E(load_permission_table) \
-	E(load_rule_table) \
-	E(sum_table) \
-	E(query_table) \
-	E(match_table) \
-	E(locate_table) \
-	E(read_table_row) \
-	E(mark_table) \
-	E(get_table_all_proptags) \
-	E(expand_table) \
-	E(collapse_table) \
-	E(store_table_state) \
-	E(restore_table_state) \
-	E(is_msg_present) \
-	E(is_msg_deleted) \
-	E(load_message_instance) \
-	E(load_embedded_instance) \
-	E(get_embedded_cn) \
-	E(reload_message_instance) \
-	E(read_message_instance) \
-	E(write_message_instance) \
-	E(load_attachment_instance) \
-	E(create_attachment_instance) \
-	E(read_attachment_instance) \
-	E(write_attachment_instance) \
-	E(flush_instance) \
-	E(get_instance_all_proptags) \
-	E(get_instance_properties) \
-	E(set_instance_properties) \
-	E(remove_instance_properties) \
-	E(is_descendant_instance) \
-	E(get_message_instance_rcpts_num) \
-	E(get_message_instance_rcpts_all_proptags) \
-	E(get_message_instance_rcpts) \
-	E(copy_instance_rcpts) \
-	E(get_message_instance_attachments_num) \
-	E(get_message_instance_attachment_table_all_proptags) \
-	E(query_message_instance_attachment_table) \
-	E(copy_instance_attachments) \
-	E(get_message_rcpts) \
-	E(get_message_properties) \
-	E(set_message_properties) \
-	E(set_message_read_state) \
-	E(allocate_message_id) \
-	E(allocate_cn) \
-	E(get_message_group_id) \
-	E(get_change_indices) \
-	E(try_mark_submit) \
-	E(link_message) \
-	E(get_message_timer) \
-	E(update_folder_rule) \
-	E(deliver_message) \
-	E(write_message) \
-	E(read_message) \
-	E(get_content_sync) \
-	E(get_hierarchy_sync) \
-	E(allocate_ids) \
-	E(subscribe_notification) \
-	E(check_contact_address) \
-	E(get_public_folder_unread_count) \
-	E(store_eid_to_user) \
-	E(autoreply_tsquery) \
-	E(write_message_v2) \
-	E(imapfile_read)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_purge_softdelete &d)
+{
+	TRY(x.g_uint32(&d.cnt_folders));
+	TRY(x.g_uint32(&d.cnt_messages));
+	TRY(x.g_uint64(&d.sz_normal));
+	return x.g_uint64(&d.sz_fai);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
+{
+	TRY(x.p_uint32(d.cnt_folders));
+	TRY(x.p_uint32(d.cnt_messages));
+	TRY(x.p_uint64(d.sz_normal));
+	return x.p_uint64(d.sz_fai);
+}
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 /*
  * This uses just *presponse, because the caller expects to receive the
  * same response type as the request type.
  */
-pack_result exmdb_ext_pull_response(const BINARY *pbin_in, exresp *presponse)
+pack_result exmdb_ext_pull_response(std::string_view pbin_in, exresp *presponse)
 {
 	EXT_PULL ext_pull;
 	
-	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in.data(), pbin_in.size(), exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+
+#define EDEF(t, id) case exmdb_callid::t: return exmdb_pull(ext_pull, *static_cast<exresp_ ## t *>(presponse));
+#define EOBSOL(t, id)
+
 	switch (presponse->call_id) {
-	case exmdb_callid::connect:
-	case exmdb_callid::listen_notification:
-		break;
-#define E(t) case exmdb_callid::t:
-	RSP_WITHOUT_ARGS
-		return EXT_ERR_SUCCESS;
-#undef E
-#define E(t) case exmdb_callid::t: return exmdb_pull(ext_pull, *static_cast<exresp_ ## t *>(presponse));
-	RSP_WITH_ARGS
-#undef E
+	#include <gromox/exmdb_allcalls.hpp>
+	default:
+		return pack_result::bad_callid;
 	}
-	return pack_result::bad_callid;
+
+#undef EDEF
+#undef EOBSOL
 }
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
@@ -3869,246 +3491,84 @@ pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *pbin_out)
 	EXT_PUSH ext_push;
 	
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	auto status = ext_push.p_uint8(static_cast<uint8_t>(exmdb_response::success));
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return status;
 	status = ext_push.advance(sizeof(uint32_t));
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return status;
 
-	status = pack_result::bad_callid;
+#define EDEF(t, idx) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exresp_ ## t::view_t *>(presponse)); break;
+#define EOBSOL(t, idx)
+
 	switch (presponse->call_id) {
-	case exmdb_callid::connect:
-	case exmdb_callid::listen_notification:
+	#include <gromox/exmdb_allcalls.hpp>
+	default:
+		status = pack_result::bad_callid;
 		break;
-#define E(t) case exmdb_callid::t:
-	RSP_WITHOUT_ARGS
-		status = EXT_ERR_SUCCESS;
-		break;
-#undef E
-#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exresp_ ## t *>(presponse)); break;
-	RSP_WITH_ARGS
-#undef E
 	}
-	if (status != EXT_ERR_SUCCESS)
+
+#undef EDEF
+#undef EOBSOL
+
+	if (status != pack_result::ok)
 		return status;
 	pbin_out->cb = ext_push.m_offset;
 	ext_push.m_offset = 1;
 	status = ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t) - 1);
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return status;
 	/* memory referenced by ext_push.data will be freed outside */
 	pbin_out->pb = ext_push.release();
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
-pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
-	DB_NOTIFY_DATAGRAM *pnotify)
+pack_result exmdb_ext_pull_db_notify(std::string_view pbin_in,
+    DB_NOTIFY_DATAGRAM *pnotify) try
 {
 	uint8_t tmp_byte;
 	EXT_PULL ext_pull;
 	
-	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in.data(), pbin_in.size(), exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_pull.g_str(&pnotify->dir));
 	TRY(ext_pull.g_bool(&pnotify->b_table));
 	TRY(ext_pull.g_uint32_a(&pnotify->id_array));
 	TRY(ext_pull.g_uint8(&tmp_byte));
-	pnotify->db_notify.type = static_cast<db_notify_type>(tmp_byte);
-	switch (pnotify->db_notify.type) {
+	auto &n = pnotify->db_notify;
+	n.type = static_cast<db_notify_type>(tmp_byte);
+	switch (n.type) {
 	case db_notify_type::srchtbl_changed:
 	case db_notify_type::srchtbl_row_added:
 	case db_notify_type::srchtbl_row_deleted:
 	case db_notify_type::srchtbl_row_modified:
 		break;
-	case db_notify_type::new_mail: {
-		auto n = cu_alloc<DB_NOTIFY_NEW_MAIL>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint64(&n->message_id));
-		TRY(ext_pull.g_uint32(&n->message_flags));
-		return ext_pull.g_str(const_cast<char **>(&n->pmessage_class));
-	}
-	case db_notify_type::folder_created: {
-		auto n = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint64(&n->parent_id));
-		return ext_pull.g_proptag_a(&n->proptags);
-	}
-	case db_notify_type::message_created: {
-		auto n = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint64(&n->message_id));
-		return ext_pull.g_proptag_a(&n->proptags);
-	}
-	case db_notify_type::link_created: {
-		auto n = cu_alloc<DB_NOTIFY_LINK_CREATED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint64(&n->message_id));
-		TRY(ext_pull.g_uint64(&n->parent_id));
-		return ext_pull.g_proptag_a(&n->proptags);
-	}
-	case db_notify_type::folder_deleted: {
-		auto n = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		return ext_pull.g_uint64(&n->parent_id);
-	}
-	case db_notify_type::message_deleted: {
-		auto n = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		return ext_pull.g_uint64(&n->message_id);
-	}
-	case db_notify_type::link_deleted: {
-		auto n = cu_alloc<DB_NOTIFY_LINK_DELETED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint64(&n->message_id));
-		return ext_pull.g_uint64(&n->parent_id);
-	}
-	case db_notify_type::folder_modified: {
-		auto n = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint8(&tmp_byte));
-		if (0 == tmp_byte) {
-			n->ptotal = nullptr;
-		} else {
-			n->ptotal = cu_alloc<uint32_t>();
-			if (n->ptotal == nullptr)
-				return EXT_ERR_ALLOC;	
-			TRY(ext_pull.g_uint32(n->ptotal));
-		}
-		TRY(ext_pull.g_uint8(&tmp_byte));
-		if (0 == tmp_byte) {
-			n->punread = nullptr;
-		} else {
-			n->punread = cu_alloc<uint32_t>();
-			if (n->punread == nullptr)
-				return EXT_ERR_ALLOC;	
-			TRY(ext_pull.g_uint32(n->punread));
-		}
-		return ext_pull.g_proptag_a(&n->proptags);
-	}
-	case db_notify_type::message_modified: {
-		auto n = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint64(&n->message_id));
-		return ext_pull.g_proptag_a(&n->proptags);
-	}
-	case db_notify_type::folder_moved:
-	case db_notify_type::folder_copied: {
-		auto n = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint64(&n->parent_id));
-		TRY(ext_pull.g_uint64(&n->old_folder_id));
-		return ext_pull.g_uint64(&n->old_parent_id);
-	}
-	case db_notify_type::message_moved:
-	case db_notify_type::message_copied: {
-		auto n = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->folder_id));
-		TRY(ext_pull.g_uint64(&n->message_id));
-		TRY(ext_pull.g_uint64(&n->old_folder_id));
-		return ext_pull.g_uint64(&n->old_message_id);
-	}
-	case db_notify_type::search_completed: {
-		auto n = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		return ext_pull.g_uint64(&n->folder_id);
-	}
-	case db_notify_type::hiertbl_changed:
-	case db_notify_type::cttbl_changed:
-		return EXT_ERR_SUCCESS;
-	case db_notify_type::hiertbl_row_added: {
-		auto n = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->row_folder_id));
-		return ext_pull.g_uint64(&n->after_folder_id);
-	}
-	case db_notify_type::cttbl_row_added: {
-		auto n = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->row_folder_id));
-		TRY(ext_pull.g_uint64(&n->row_message_id));
-		TRY(ext_pull.g_uint64(&n->row_instance));
-		TRY(ext_pull.g_uint64(&n->after_folder_id));
-		TRY(ext_pull.g_uint64(&n->after_row_id));
-		return ext_pull.g_uint64(&n->after_instance);
-	}
-	case db_notify_type::hiertbl_row_deleted: {
-		auto n = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		return ext_pull.g_uint64(&n->row_folder_id);
-	}
-	case db_notify_type::cttbl_row_deleted: {
-		auto n = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->row_folder_id));
-		TRY(ext_pull.g_uint64(&n->row_message_id));
-		return ext_pull.g_uint64(&n->row_instance);
-	}
-	case db_notify_type::hiertbl_row_modified: {
-		auto n = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->row_folder_id));
-		return ext_pull.g_uint64(&n->after_folder_id);
-	}
-	case db_notify_type::cttbl_row_modified: {
-		auto n = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
-		if (n == nullptr)
-			return EXT_ERR_ALLOC;
-		pnotify->db_notify.pdata = n;
-		TRY(ext_pull.g_uint64(&n->row_folder_id));
-		TRY(ext_pull.g_uint64(&n->row_message_id));
-		TRY(ext_pull.g_uint64(&n->row_instance));
-		TRY(ext_pull.g_uint64(&n->after_folder_id));
-		TRY(ext_pull.g_uint64(&n->after_row_id));
-		return ext_pull.g_uint64(&n->after_instance);
-	}
+	default:
+		TRY(ext_pull.g_uint64(&n.parent_id));
+		TRY(ext_pull.g_uint64(&n.folder_id));
+		TRY(ext_pull.g_uint64(&n.message_id));
+		TRY(ext_pull.g_uint64(&n.old_parent_id));
+		TRY(ext_pull.g_uint64(&n.old_folder_id));
+		TRY(ext_pull.g_uint64(&n.old_message_id));
+		TRY(ext_pull.g_uint64(&n.row_folder_id));
+		TRY(ext_pull.g_uint64(&n.row_message_id));
+		TRY(ext_pull.g_uint64(&n.row_instance));
+		TRY(ext_pull.g_uint64(&n.after_folder_id));
+		TRY(ext_pull.g_uint64(&n.after_row_id));
+		TRY(ext_pull.g_uint64(&n.after_instance));
+		TRY(ext_pull.g_uint32(&n.message_flags));
+		TRY(ext_pull.g_uint32(&n.total));
+		TRY(ext_pull.g_uint32(&n.unread));
+		TRY(ext_pull.g_uint8(&n.have_total));
+		TRY(ext_pull.g_uint8(&n.have_unread));
+		TRY(ext_pull.g_str(&n.pmessage_class));
+		TRY(ext_pull.g_proptag_a(&n.proptags));
+		return pack_result::success;
 	}
 	return pack_result::bad_callid;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }
 
 static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
@@ -4118,159 +3578,38 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 	TRY(ext_push.p_str(pnotify->dir));
 	TRY(ext_push.p_bool(pnotify->b_table));
 	TRY(ext_push.p_uint32_a(pnotify->id_array));
-	TRY(ext_push.p_uint8(static_cast<uint8_t>(pnotify->db_notify.type)));
 	auto ret = pack_result::success;
-	switch (pnotify->db_notify.type) {
+	auto &n = pnotify->db_notify;
+	TRY(ext_push.p_uint8(static_cast<uint8_t>(n.type)));
+
+	switch (n.type) {
 	case db_notify_type::srchtbl_changed:
 	case db_notify_type::srchtbl_row_added:
 	case db_notify_type::srchtbl_row_modified:
 	case db_notify_type::srchtbl_row_deleted:
 		ret = pack_result::bad_callid;
 		break;
-	case db_notify_type::new_mail: {
-		auto n = static_cast<const DB_NOTIFY_NEW_MAIL *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->message_id));
-		TRY(ext_push.p_uint32(n->message_flags));
-		TRY(ext_push.p_str(n->pmessage_class));
+	default:
+		TRY(ext_push.p_uint64(n.parent_id));
+		TRY(ext_push.p_uint64(n.folder_id));
+		TRY(ext_push.p_uint64(n.message_id));
+		TRY(ext_push.p_uint64(n.old_parent_id));
+		TRY(ext_push.p_uint64(n.old_folder_id));
+		TRY(ext_push.p_uint64(n.old_message_id));
+		TRY(ext_push.p_uint64(n.row_folder_id));
+		TRY(ext_push.p_uint64(n.row_message_id));
+		TRY(ext_push.p_uint64(n.row_instance));
+		TRY(ext_push.p_uint64(n.after_folder_id));
+		TRY(ext_push.p_uint64(n.after_row_id));
+		TRY(ext_push.p_uint64(n.after_instance));
+		TRY(ext_push.p_uint32(n.message_flags));
+		TRY(ext_push.p_uint32(n.total));
+		TRY(ext_push.p_uint32(n.unread));
+		TRY(ext_push.p_uint8(n.have_total));
+		TRY(ext_push.p_uint8(n.have_unread));
+		TRY(ext_push.p_str(n.pmessage_class));
+		TRY(ext_push.p_proptag_a(n.proptags));
 		break;
-	}
-	case db_notify_type::folder_created: {
-		auto n = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->parent_id));
-		TRY(ext_push.p_proptag_a(n->proptags));
-		break;
-	}
-	case db_notify_type::message_created: {
-		auto n = static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->message_id));
-		TRY(ext_push.p_proptag_a(n->proptags));
-		break;
-	}
-	case db_notify_type::link_created: {
-		auto n = static_cast<const DB_NOTIFY_LINK_CREATED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->message_id));
-		TRY(ext_push.p_uint64(n->parent_id));
-		TRY(ext_push.p_proptag_a(n->proptags));
-		break;
-	}
-	case db_notify_type::folder_deleted: {
-		auto n = static_cast<const DB_NOTIFY_FOLDER_DELETED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->parent_id));
-		break;
-	}
-	case db_notify_type::message_deleted: {
-		auto n = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->message_id));
-		break;
-	}
-	case db_notify_type::link_deleted: {
-		auto n = static_cast<const DB_NOTIFY_LINK_DELETED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->message_id));
-		TRY(ext_push.p_uint64(n->parent_id));
-		break;
-	}
-	case db_notify_type::folder_modified: {
-		auto n = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		if (n->ptotal != nullptr) {
-			TRY(ext_push.p_uint8(1));
-			TRY(ext_push.p_uint32(*n->ptotal));
-		} else {
-			TRY(ext_push.p_uint8(0));
-		}
-		if (n->punread != nullptr) {
-			TRY(ext_push.p_uint8(1));
-			TRY(ext_push.p_uint32(*n->punread));
-		} else {
-			TRY(ext_push.p_uint8(0));
-		}
-		TRY(ext_push.p_proptag_a(n->proptags));
-		break;
-	}
-	case db_notify_type::message_modified: {
-		auto n = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->message_id));
-		TRY(ext_push.p_proptag_a(n->proptags));
-		break;
-	}
-	case db_notify_type::folder_moved:
-	case db_notify_type::folder_copied: {
-		auto n = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->parent_id));
-		TRY(ext_push.p_uint64(n->old_folder_id));
-		TRY(ext_push.p_uint64(n->old_parent_id));
-		break;
-	}
-	case db_notify_type::message_moved:
-	case db_notify_type::message_copied: {
-		auto n = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		TRY(ext_push.p_uint64(n->message_id));
-		TRY(ext_push.p_uint64(n->old_folder_id));
-		TRY(ext_push.p_uint64(n->old_message_id));
-		break;
-	}
-	case db_notify_type::search_completed: {
-		auto n = static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->folder_id));
-		break;
-	}
-	case db_notify_type::hiertbl_changed:
-	case db_notify_type::cttbl_changed:
-		break;
-	case db_notify_type::hiertbl_row_added: {
-		auto n = static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->row_folder_id));
-		TRY(ext_push.p_uint64(n->after_folder_id));
-		break;
-	}
-	case db_notify_type::cttbl_row_added: {
-		auto n = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->row_folder_id));
-		TRY(ext_push.p_uint64(n->row_message_id));
-		TRY(ext_push.p_uint64(n->row_instance));
-		TRY(ext_push.p_uint64(n->after_folder_id));
-		TRY(ext_push.p_uint64(n->after_row_id));
-		TRY(ext_push.p_uint64(n->after_instance));
-		break;
-	}
-	case db_notify_type::hiertbl_row_deleted: {
-		auto n = static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->row_folder_id));
-		break;
-	}
-	case db_notify_type::cttbl_row_deleted: {
-		auto n = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->row_folder_id));
-		TRY(ext_push.p_uint64(n->row_message_id));
-		TRY(ext_push.p_uint64(n->row_instance));
-		break;
-	}
-	case db_notify_type::hiertbl_row_modified: {
-		auto n = static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->row_folder_id));
-		TRY(ext_push.p_uint64(n->after_folder_id));
-		break;
-	}
-	case db_notify_type::cttbl_row_modified: {
-		auto n = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(pnotify->db_notify.pdata);
-		TRY(ext_push.p_uint64(n->row_folder_id));
-		TRY(ext_push.p_uint64(n->row_message_id));
-		TRY(ext_push.p_uint64(n->row_instance));
-		TRY(ext_push.p_uint64(n->after_folder_id));
-		TRY(ext_push.p_uint64(n->after_row_id));
-		TRY(ext_push.p_uint64(n->after_instance));
-		break;
-	}
 	}
 	if (ret != pack_result::success)
 		return ret;
@@ -4278,7 +3617,7 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 	ext_push.m_offset = 0;
 	TRY(ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t)));
 	pbin_out->pb = ext_push.release();
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *pnotify,
@@ -4286,7 +3625,7 @@ pack_result exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *pnotify,
 {
 	EXT_PUSH ext_push;
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return exmdb_ext_push_db_notify2(ext_push, pnotify, pbin_out);
 }
 
@@ -4297,8 +3636,8 @@ const char *exmdb_rpc_strerror(exmdb_response v)
 	case access_deny: return "Access denied";
 	case max_reached: return "Server reached maximum number of connections";
 	case lack_memory: return "Out of memory";
-	case misconfig_prefix: return "Prefix is not served";
-	case misconfig_mode: return "Prefix has type mismatch";
+	case misconfig_prefix: return "Server is not responsible for this mailbox (as identified by its directory path)";
+	case misconfig_mode: return "Client-server disagreement about the mailbox type";
 	case connect_incomplete: return "No prior CONNECT RPC made";
 	case pull_error: return "Invalid request/Server-side deserializing error";
 	case dispatch_error: return "Dispatch error/Request rejected/DB error (check gromox-http log)";
@@ -4310,87 +3649,74 @@ const char *exmdb_rpc_strerror(exmdb_response v)
 	return xbuf;
 }
 
-BOOL exmdb_client_read_socket(int fd, BINARY &bin, long timeout_ms)
+bool exmdb_client_read_socket(int fd, std::string &bin, long timeout_ms) try
 {
 	if (fd < 0) {
 		errno = EBADF;
 		return false;
 	}
-	uint32_t offset = 0;
+	size_t offset = 0;
 	struct pollfd pfd;
 
-	bin.cb = 0;
-	bin.pb = nullptr;
+	bin.clear();
 	pfd.fd = fd;
 	pfd.events = POLLIN | POLLPRI;
 
 	while (true) {
-		if (timeout_ms >= 0 && poll(&pfd, 1, timeout_ms) != 1) {
-			exmdb_rpc_free(bin.pb);
-			bin.pb = nullptr;
+		if (timeout_ms >= 0 && poll(&pfd, 1, timeout_ms) != 1)
 			return false;
-		}
 
-		if (bin.cb == 0) {
+		if (bin.size() == 0) {
 			uint8_t resp_buff[5];
 			ssize_t read_len = read(fd, resp_buff, 5);
 			if (read_len == 1) {
-				bin.cb = 1;
-				bin.pb = static_cast<uint8_t *>(exmdb_rpc_alloc(1));
-				if (bin.pb == nullptr)
-					return false;
-				*bin.pb = resp_buff[0];
+				bin.resize(1);
+				bin[0] = resp_buff[0];
 				return TRUE;
 			} else if (read_len == 5) {
-				bin.cb = le32p_to_cpu(resp_buff + 1) + 5;
-				bin.pb = static_cast<uint8_t *>(exmdb_rpc_alloc(bin.cb));
-				if (bin.pb == nullptr) {
-					bin.cb = 0;
-					return false;
-				}
-				memcpy(bin.pv, resp_buff, 5);
+				uint32_t cb = le32p_to_cpu(resp_buff + 1) + 5;
+				CLAMP32(cb);
+				bin.resize(cb);
+				memcpy(bin.data(), resp_buff, 5);
 				offset = 5;
-				if (offset == bin.cb)
+				if (offset == bin.size())
 					return TRUE;
 				continue;
 			} else {
-				exmdb_rpc_free(bin.pb);
-				bin.pb = nullptr;
+				bin.clear();
 				return false;
 			}
 		}
-		ssize_t read_len = read(fd, bin.pb + offset, bin.cb - offset);
+		ssize_t read_len = read(fd, &bin[offset], bin.size() - offset);
 		if (read_len <= 0) {
-			exmdb_rpc_free(bin.pb);
-			bin.pb = nullptr;
+			bin.clear();
 			return false;
 		}
 		offset += read_len;
-		if (offset == bin.cb)
+		if (offset == bin.size())
 			return TRUE;
 	}
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-BOOL exmdb_client_write_socket(int fd, const BINARY &bin, long timeout_ms)
+BOOL exmdb_client_write_socket(int fd, std::string_view sv, long timeout_ms)
 {
 	if (fd < 0) {
 		errno = EBADF;
 		return false;
 	}
-	uint32_t offset = 0;
 	struct pollfd pfd;
-
 	pfd.fd = fd;
 	pfd.events = POLLOUT | POLLWRBAND;
 
-	while (true) {
+	while (sv.size() > 0) {
 		if (timeout_ms >= 0 && poll(&pfd, 1, timeout_ms) != 1)
 			return false;
-		ssize_t written_len = write(fd, bin.pb + offset, bin.cb - offset);
+		ssize_t written_len = write(fd, sv.data(), sv.size());
 		if (written_len <= 0)
 			return false;
-		offset += written_len;
-		if (offset == bin.cb)
-			return TRUE;
+		sv.remove_prefix(written_len);
 	}
+	return TRUE;
 }

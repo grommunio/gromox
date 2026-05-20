@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/pcl.hpp>
@@ -20,7 +21,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
-#include "exmdb_client.hpp"
 
 using namespace gromox;
 
@@ -133,7 +133,7 @@ BINARY *cu_xid_to_bin(const XID &xid)
 		return NULL;
 	pbin->pv = cu_alloc_bytes(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -146,7 +146,7 @@ static BOOL cu_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
 	ext_pull.init(pbin->pb, pbin->cb, cu_alloc_bytes, 0);
-	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
+	return ext_pull.g_xid(pbin->cb, pxid) == pack_result::ok ? TRUE : false;
 }
 
 BINARY *cu_pcl_append(const BINARY *pbin_pcl, const BINARY *pchange_key)
@@ -212,7 +212,7 @@ BOOL cu_create_folder(const char *dir, int user_id,
 	propval_buff[6].pvalue = &change_num;
 	XID xid{rop_util_make_user_guid(user_id), change_num};
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return false;
 	tmp_bin.pv = tmp_buff;
 	tmp_bin.cb = ext_push.m_offset;
@@ -249,7 +249,7 @@ BOOL cu_get_propids_create(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 	       TRUE, names, ids);
 }
 
-BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **pppropname) try
+BOOL cu_get_propname(propid_t propid, PROPERTY_NAME **pppropname) try
 {
 	PROPNAME_ARRAY propnames;
 	

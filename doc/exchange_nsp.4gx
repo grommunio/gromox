@@ -1,13 +1,13 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH exchange_nsp 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-exchange_nsp \(em http(8gx) processing plugin for the Exchange Server Name
-Service Provider Interface Protocol.
+exchange_nsp \(em Handler for the Name
+Service Provider Interface Protocol
 .SH Description
-exchange_nsp is a processing plugin for http(8gx) which handles the Exchange
-Server Name Service Provider Interface Protocol, in essence providing the
-Address Book for the EMSMDB connector.
+exchange_nsp is a component for http(8gx) which handles the
+Name Service Provider Interface Protocol, in essence providing the
+Address Book for Outlook's EMSMDB32.DLL connector.
 .SH Configuration directives
 The usual config file location is /etc/gromox/exchange_nsp.cfg.
 .TP
@@ -24,9 +24,6 @@ Dump more data.
 .br
 Default: \fI0\fP
 .TP
-\fBsession_check\fP
-Default: \fIfalse\fP
-.TP
 \fBx500_org_name\fP
 Default: (unspecified)
 .SH Notes
@@ -39,7 +36,9 @@ For user-attached properties that are read from SQL (cf. table
 handles a subset of property types: PT_BOOLEAN, PT_SHORT, PT_LONG,
 PT_I8, PT_SYSTIME, PT_BINARY, PT_UNICODE/STRING8 and
 PT_MV_UNICODE/STRING8.
-.SH Normative references
+.SH Signals
+Upon receipt of SIGHUP, the address book cache will be dropped; the next
+regular request for the AB will cause it to be reloaded.
 .IP \(bu 4
 MS-OXNSPI: Exchange Server Name Service Provider Interface (NSPI) Protocol
 .SH See also

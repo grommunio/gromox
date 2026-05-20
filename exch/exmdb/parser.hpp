@@ -1,5 +1,7 @@
 #pragma once
+#include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -9,38 +11,62 @@
 #include <gromox/common_types.hpp>
 #include <gromox/generic_connection.hpp>
 
-class EXMDB_CONNECTION : public GENERIC_CONNECTION {
+class config_file;
+
+/* Represents a connection from an exmdb_client */
+class exmdb_connection : public generic_connection {
 	public:
-	EXMDB_CONNECTION() = default;
-	NOMOVE(EXMDB_CONNECTION);
+	exmdb_connection(generic_connection &&);
+	~exmdb_connection();
+	NOMOVE(exmdb_connection);
+	void signal_stop();
+	void close_fd();
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
 	std::string remote_id;
+	std::mutex m_mtx; /* protects thr_id */
 };
+using EXMDB_CONNECTION = exmdb_connection;
 
-struct ROUTER_CONNECTION {
-	ROUTER_CONNECTION() = default;
-	NOMOVE(ROUTER_CONNECTION);
-	~ROUTER_CONNECTION();
+/**
+ * Represents a connection from an exmdb_client which has been switched to
+ * notification listening mode.
+ */
+struct router_connection final : public generic_connection {
+	struct xbinary {
+		std::unique_ptr<uint8_t[], gromox::stdlib_delete> pb;
+		size_t cb = 0;
+	};
+
+	router_connection(generic_connection &&, pthread_t &&, std::string_view);
+	NOMOVE(router_connection);
+	~router_connection();
+	void push_and_wake(BINARY &&);
+	void signal_stop();
+	void close_fd();
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
 	std::string remote_id;
-	int sockd = -1;
 	time_t last_time = 0;
-	std::mutex lock, cond_mutex;
+	std::mutex base_lock; /* protects thr_id, generic_connection::* */
+	std::mutex dg_lock; /* protects datagram_list */
 	std::condition_variable waken_cond;
-	std::list<BINARY> datagram_list; /* manual (de)allocation of .pb */
+	std::list<xbinary> datagram_list;
 };
+using ROUTER_CONNECTION = router_connection;
 
 extern void exmdb_parser_init(size_t max_threads, size_t max_routers);
-extern int exmdb_parser_run(const char *config_path);
 extern void exmdb_parser_stop();
-extern std::unique_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn();
-extern void exmdb_parser_insert_conn(std::unique_ptr<EXMDB_CONNECTION> &&);
-extern std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_extract_router(const char *remote_id);
+extern bool exmdb_parser_insert_conn(generic_connection &&);
+extern std::shared_ptr<router_connection> exmdb_parser_get_router(const char *remote_id);
 extern void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&);
 extern BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &);
+extern int exmdb_pickup(int control_fd);
+extern int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg);
+extern int exmdb_listener_run(const char *config_path, const config_file &gxcfg);
+extern void exmdb_listener_stop();
 
-extern unsigned int g_exrpc_debug, g_enable_dam;
+extern std::atomic<unsigned int> g_exrpc_debug, g_enable_dam, g_istore_standalone;
+extern std::string g_host_id;

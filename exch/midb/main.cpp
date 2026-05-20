@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -8,10 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fcntl.h>
 #include <memory>
-#include <netdb.h>
-#include <pthread.h>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -21,9 +18,7 @@
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
-#include <libHX/socket.h>
 #include <libHX/string.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
@@ -35,6 +30,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
@@ -43,7 +39,6 @@
 #include <gromox/util.hpp>
 #include "cmd_parser.hpp"
 #include "common_util.hpp"
-#include "exmdb_client.hpp"
 #include "mail_engine.hpp"
 #include "system_services.hpp"
 
@@ -51,53 +46,45 @@ using namespace gromox;
 
 void (*system_services_broadcast_event)(const char*);
 
-static gromox::atomic_bool g_main_notify_stop, g_listener_notify_stop;
+static gromox::atomic_bool g_main_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static char *opt_config_file;
+std::string g_host_id;
+static const char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
-static uint16_t g_listen_port;
-static char g_listen_ip[40];
-static int g_listen_sockd = -1;
 static std::vector<std::string> g_acl_list;
-static void (*exmdb_client_event_proc)(const char *dir, BOOL table, uint32_t notify_id, const DB_NOTIFY *);
 
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
-static constexpr static_module g_dfl_svc_plugins[] = {
+static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_event_proxy.so", SVC_event_proxy},
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
-	{"libgromox_auth.so/mgr", SVC_authmgr},
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "midb_fd_limit", CFG_ALIAS},
 	{"midb_fd_limit", "0", CFG_SIZE},
+	{"midb_sqlite_busy_timeout", "60s", CFG_TIME_NS, "0s", "1h"},
 	CFG_TABLE_END,
 };
 
 static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
 	{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
-	{"default_charset", "windows-1252"},
 	{"midb_cache_interval", "30min", CFG_TIME, "1min", "1year"},
 	{"midb_cmd_debug", "0"},
 	{"midb_hosts_allow", ""}, /* ::1 default set later during startup */
-	{"midb_listen_ip", "::1"},
-	{"midb_listen_port", "5555"},
 	{"midb_log_file", "-"},
 	{"midb_log_level", "4" /* LV_NOTICE */},
 	{"midb_reload_interval", "60min", CFG_TIME, "1min", "1year"},
 	{"midb_schema_upgrades", "auto"},
 	{"midb_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"midb_threads_num", "100", CFG_SIZE, "20", "1000"},
-	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
 	{"sqlite_debug", "0"},
 	{"x500_org_name", "Gromox default"},
@@ -119,6 +106,8 @@ static bool midb_reload_config(std::shared_ptr<config_file> gxconfig = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (pconfig == nullptr)
+		return false;
 	mlog_init("gromox-midb", pconfig->get_value("midb_log_file"),
 		pconfig->get_ll("midb_log_level"),
 		pconfig->get_value("running_identity"));
@@ -135,28 +124,14 @@ static bool midb_reload_config(std::shared_ptr<config_file> gxconfig = nullptr,
 	return true;
 }
 
-static void buildenv(const remote_svr &)
+static void buildenv(bool pvt)
 {
 	cu_build_environment("");
 }
 
-static void event_proc(const char *dir, BOOL thing,
-    uint32_t notify_id, const DB_NOTIFY *notify)
-{
-	cu_set_maildir(dir);
-	exmdb_client_event_proc(dir, thing, notify_id, notify);
-}
-
 static int exmdb_client_run_front(const char *dir)
 {
-	return exmdb_client_run(dir, EXMDB_CLIENT_SKIP_PUBLIC |
-	       EXMDB_CLIENT_SKIP_REMOTE | EXMDB_CLIENT_ASYNC_CONNECT, buildenv,
-	       cu_free_environment, event_proc);
-}
-
-void exmdb_client_register_proc(void *pproc)
-{
-	exmdb_client_event_proc = reinterpret_cast<decltype(exmdb_client_event_proc)>(pproc);
+	return exmdb_client_run(dir, buildenv, cu_free_environment);
 }
 
 static int system_services_run()
@@ -178,67 +153,44 @@ static void system_services_stop()
 	service_release("broadcast_event", "system");
 }
 
-static void *midls_thrwork(void *param)
+static int midls_thrwork(generic_connection &&gco)
 {
-	while (!g_listener_notify_stop) {
-		auto gco = generic_connection::accept(g_listen_sockd, false, &g_listener_notify_stop);
-		if (gco.sockd == -2)
-			break;
-		else if (gco.sockd < 0)
-			continue;
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    gco.client_addr) == g_acl_list.cend()) {
 			if (HXio_fullwrite(gco.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 		auto holder = cmd_parser_make_conn();
 		if (holder.size() == 0) {
+			mlog(LV_NOTICE, "Maximum connection count reached (cf. midb.cfg:threads_num)\n");
 			if (HXio_fullwrite(gco.sockd, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 		auto &conn = holder.front();
 		static_cast<generic_connection &>(conn) = std::move(gco);
 		conn.is_selecting = FALSE;
 		if (HXio_fullwrite(conn.sockd, "OK\r\n", 4) < 0)
-			continue;
+			return 0;
 		cmd_parser_insert_conn(std::move(holder));
-	}
-	return nullptr;
+
+	return 0;
 }
 
-static void listener_init(const char *ip, uint16_t port)
+static int midb_acl_read(const char *configdir, const char *hosts_allow)
 {
-	if (*ip != '\0')
-		gx_strlcpy(g_listen_ip, ip, std::size(g_listen_ip));
-	else
-		g_listen_ip[0] = '\0';
-	g_listen_port = port;
-	g_listen_sockd = -1;
-	g_listener_notify_stop = true;
-}
-
-static int listener_run(const char *configdir, const char *hosts_allow)
-{
-	g_listen_sockd = HX_inet_listen(g_listen_ip, g_listen_port);
-	if (g_listen_sockd < 0) {
-		mlog(LV_ERR, "listener: failed to create listen socket: %s", strerror(-g_listen_sockd));
-		return -1;
-	}
-	gx_reexec_record(g_listen_sockd);
 	auto &acl = g_acl_list;
 	if (hosts_allow != nullptr)
 		acl = gx_split(hosts_allow, ' ');
-	auto ret = list_file_read_fixedstrings("midb_acl.txt", configdir, acl);
+	auto ret = read_file_by_line("midb_acl.txt", configdir, acl);
 	if (ret == ENOENT) {
 	} else if (ret != 0) {
 		mlog(LV_ERR, "listener: list_file_initd \"midb_acl.txt\": %s", strerror(errno));
-		close(g_listen_sockd);
 		return -5;
 	}
 	std::sort(acl.begin(), acl.end());
-	acl.erase(std::remove(acl.begin(), acl.end(), ""), acl.end());
+	std::erase(acl, "");
 	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
 	if (acl.size() == 0) {
 		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
@@ -247,40 +199,50 @@ static int listener_run(const char *configdir, const char *hosts_allow)
 	return 0;
 }
 
-static int listener_trigger_accept()
+static int listener_init(listener_ctx &ctx, const config_file &gxcfg,
+    const config_file &oldcfg)
 {
-	pthread_t thr_id;
-
-	g_listener_notify_stop = false;
-	auto ret = pthread_create4(&thr_id, nullptr, midls_thrwork, nullptr);
-	if (ret != 0) {
-		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
+	ctx.m_thread_name = "accept";
+	auto ret = midb_acl_read(oldcfg.get_value("config_file_path"),
+	           oldcfg.get_value("midb_hosts_allow"));
+	if (ret != 0)
+		return ret;
+	auto line = gxcfg.get_value("midb_listen");
+	if (line != nullptr)
+		return ctx.add_bunch(line);
+	auto host = oldcfg.get_value("midb_listen_ip");
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:listen_ip is deprecated in favor of %s:midb_listen",
+			oldcfg.m_filename.c_str(), gxcfg.m_filename.c_str());
+	else
+		host = "::1";
+	auto ps = oldcfg.get_value("midb_listen_port");
+	uint16_t port = 5555;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:listen_port is deprecated in favor of %s:midb_listen",
+			oldcfg.m_filename.c_str(), gxcfg.m_filename.c_str());
+		port = strtoul(znul(ps), nullptr, 0);
+	}
+	if (port != 0 && ctx.add_inet(host, port) != 0)
 		return -1;
-	}
-	pthread_setname_np(thr_id, "listener");
 	return 0;
-}
-
-static void listener_stop()
-{
-	g_listener_notify_stop = true;
-	if (g_listen_sockd >= 0) {
-		close(g_listen_sockd);
-		g_listen_sockd = -1;
-	}
 }
 
 int main(int argc, char **argv)
 {
 	char temp_buff[45];
 	std::shared_ptr<CONFIG_FILE> pconfig;
+	HXopt6_auto_result argp;
 	
 	exmdb_rpc_alloc = cu_alloc_bytes;
 	exmdb_rpc_free = [](void *) {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-midb");
 	if (opt_show_version)
@@ -297,25 +259,30 @@ int main(int argc, char **argv)
 	                midb_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		mlog(LV_ERR, "system: config_file_init %s: %s", opt_config_file, strerror(errno));
-	if (pconfig == nullptr)
-		return EXIT_FAILURE;
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (pconfig == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
 	if (!midb_reload_config(gxconfig, pconfig))
 		return EXIT_FAILURE;
+	setup_utf8_locale();
+
+	auto str_val = g_config_file->get_value("host_id");
+	if (str_val == nullptr) {
+		std::string hn;
+		auto ret = canonical_hostname(hn);
+		if (ret != 0)
+			return EXIT_FAILURE;
+		g_config_file->set_value("host_id", hn.c_str());
+		g_host_id = std::move(hn);
+	} else {
+		g_host_id = str_val;
+	}
 
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	mlog(LV_INFO, "system: exmdb proxy connection number is %d", proxy_num);
 	
-	int stub_num = pconfig->get_ll("notify_stub_threads_num");
-	mlog(LV_INFO, "system: exmdb notify stub threads number is %d", stub_num);
-	
-	auto listen_ip = pconfig->get_value("midb_listen_ip");
-	uint16_t listen_port = pconfig->get_ll("midb_listen_port");
-	mlog(LV_INFO, "system: listen address is [%s]:%hu",
-	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
-
 	unsigned int threads_num = pconfig->get_ll("midb_threads_num");
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
@@ -328,30 +295,23 @@ int main(int argc, char **argv)
 	
 	filedes_limit_bump(gxconfig->get_ll("midb_fd_limit"));
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
+	g_midb_busy_timeout_ns = gxconfig->get_ll("midb_sqlite_busy_timeout");
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
 	auto cl_0 = HX::make_scope_exit(service_stop);
 	
-	exmdb_client.emplace(proxy_num, stub_num);
+	exmdb_client.emplace(proxy_num);
+	exmdb_client->set_async_notif(midb_notif_handler);
 	auto cl_6 = HX::make_scope_exit([]() { exmdb_client.reset(); });
-	listener_init(listen_ip, listen_port);
-	auto cl_3 = HX::make_scope_exit(listener_stop);
-	me_init(g_config_file->get_value("default_charset"),
-		g_config_file->get_value("x500_org_name"), table_size);
+	me_init(g_config_file->get_value("x500_org_name"), table_size);
 	auto cl_5 = HX::make_scope_exit(me_stop);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);
 	auto cl_4 = HX::make_scope_exit(cmd_parser_stop);
 
-	if (service_run_early() != 0) {
-		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
+	listener_ctx listen_ctx;
+	if (listener_init(listen_ctx, *gxconfig, *g_config_file) != 0)
 		return EXIT_FAILURE;
-	}
-	if (listener_run(g_config_file->get_value("config_file_path"),
-	    g_config_file->get_value("midb_hosts_allow")) != 0) {
-		mlog(LV_ERR, "system: failed to start TCP listener");
-		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
 	if (iconv_validate() != 0)
@@ -378,8 +338,9 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start exmdb client");
 		return EXIT_FAILURE;
 	}
-	if (0 != listener_trigger_accept()) {
-		mlog(LV_ERR, "system: failed to start TCP listener");
+	auto ret = listen_ctx.watch_start(g_main_notify_stop, midls_thrwork);
+	if (ret != 0) {
+		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 		return EXIT_FAILURE;
 	}
 	sact.sa_handler = term_handler;

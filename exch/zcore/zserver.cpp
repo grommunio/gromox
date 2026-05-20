@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <climits>
@@ -28,6 +28,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/notify_types.hpp>
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
@@ -35,6 +36,7 @@
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>
+#include <gromox/zcore_types.hpp>
 #include "ab_tree.hpp"
 #include "common_util.hpp"
 #include "exmdb_client.hpp"
@@ -56,11 +58,11 @@ using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 namespace {
 
 struct NOTIFY_ITEM {
-	NOTIFY_ITEM(const GUID &session, uint32_t store);
-	~NOTIFY_ITEM();
-	NOMOVE(NOTIFY_ITEM);
+	NOTIFY_ITEM(const GUID &ses, uint32_t store) :
+		hsession(ses), hstore(store), last_time(time(nullptr))
+	{}
 
-	DOUBLE_LIST notify_list{};
+	std::vector<ZNOTIFICATION> notify_list;
 	GUID hsession{};
 	uint32_t hstore = 0;
 	time_t last_time = 0;
@@ -69,7 +71,7 @@ struct NOTIFY_ITEM {
 }
 
 static size_t g_table_size;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_zserver_stop;
 static int g_ping_interval;
 static pthread_t g_scan_id;
 static int g_cache_interval;
@@ -147,24 +149,9 @@ void user_info_del::operator()(USER_INFO *pinfo)
 	g_info_key = nullptr;
 }
 
-NOTIFY_ITEM::NOTIFY_ITEM(const GUID &ses, uint32_t store) :
-	hsession(ses), hstore(store), last_time(time(nullptr))
-{
-	double_list_init(&notify_list);
-}
-
-NOTIFY_ITEM::~NOTIFY_ITEM()
-{
-	DOUBLE_LIST_NODE *pnode;
-	while ((pnode = double_list_pop_front(&notify_list)) != nullptr) {
-		common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
-		free(pnode);
-	}
-	double_list_free(&notify_list);
-}
-
 static void *zcorezs_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "zs_scan");
 	int count;
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
@@ -174,12 +161,11 @@ static void *zcorezs_scanwork(void *param)
 	zcresp_notifdequeue response{};
 	response.call_id = zcore_callid::notifdequeue;
 	response.result = ecSuccess;
-	while (!g_notify_stop) {
+	while (!g_zserver_stop) {
 		sleep(1);
 		count ++;
 		if (count >= g_ping_interval)
 			count = 0;
-		std::vector<std::string> maildir_list;
 		std::list<sink_node> expired_list;
 		std::unique_lock tl_hold(g_table_lock);
 		auto cur_time = time(nullptr);
@@ -215,13 +201,6 @@ static void *zcorezs_scanwork(void *param)
 					++iter;
 					continue;
 				}
-				try {
-					maildir_list.push_back(pinfo->get_maildir());
-				} catch (const std::bad_alloc &) {
-					mlog(LV_ERR, "E-2178: ENOMEM");
-					++iter;
-					continue;
-				}
 				++iter;
 			} else {
 				if (pinfo->sink_list.size() != 0) {
@@ -237,12 +216,6 @@ static void *zcorezs_scanwork(void *param)
 			}
 		}
 		tl_hold.unlock();
-		for (const auto &dir : maildir_list) {
-			common_util_build_environment();
-			exmdb_client->ping_store(dir.c_str());
-			common_util_free_environment();
-		}
-		maildir_list.clear();
 		while (expired_list.size() > 0) {
 			std::list<sink_node> holder;
 			holder.splice(holder.end(), expired_list, expired_list.begin());
@@ -274,7 +247,7 @@ static void *zcorezs_scanwork(void *param)
 }
 
 void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
-    const DB_NOTIFY *pdb_notify)
+    const DB_NOTIFY *pdb_notify) try
 {
 	int i;
 	GUID hsession;
@@ -289,10 +262,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	struct pollfd fdpoll;
 	uint64_t old_parentid;
 	TPROPVAL_ARRAY propvals;
-	DOUBLE_LIST_NODE *pnode;
-	ZNOTIFICATION *pnotification;
-	NEWMAIL_ZNOTIFICATION *pnew_mail;
-	OBJECT_ZNOTIFICATION *pobj_notify;
 	
 	if (b_table)
 		return;
@@ -312,31 +281,23 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	if (pstore == nullptr || mapi_type != zs_objtype::store ||
 	    strcmp(dir, pstore->get_dir()) != 0)
 		return;
-	pnotification = cu_alloc<ZNOTIFICATION>();
-	if (pnotification == nullptr)
-		return;
+
+	ZNOTIFICATION zn, *pnotification = &zn, *pnew_mail = &zn, *oz = &zn;
+	auto nt = pdb_notify;
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
-		pnotification->event_type = NF_NEW_MAIL;
-		pnew_mail = cu_alloc<NEWMAIL_ZNOTIFICATION>();
-		if (pnew_mail == nullptr)
-			return;
-		pnotification->pnotification_data = pnew_mail;
-		auto nt = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
+		pnotification->event_type = fnevNewMail;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
-		if (pbin == nullptr)
+		pnew_mail->pentryid = cu_mid_to_entryid_s(*pstore, folder_id, message_id);
+		if (pnew_mail->pentryid->empty())
 			return;
-		pnew_mail->entryid = *pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		pnew_mail->pparentid = cu_fid_to_entryid_s(*pstore, folder_id);
+		if (pnew_mail->pparentid->empty())
 			return;
-		pnew_mail->parentid = *pbin;
 		static constexpr proptag_t proptag_buff[] = {PR_MESSAGE_CLASS, PR_MESSAGE_FLAGS};
-		static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-		    message_id, &proptags, &propvals))
+		    message_id, proptag_buff, &propvals))
 			return;
 		auto str = propvals.get<char>(PR_MESSAGE_CLASS);
 		if (str == nullptr)
@@ -349,209 +310,138 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		break;
 	}
 	case db_notify_type::folder_created: {
-		pnotification->event_type = NF_OBJECT_CREATED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
-		auto nt = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
+		pnotification->event_type = fnevObjectCreated;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, parent_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, parent_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
 		break;
 	}
 	case db_notify_type::message_created: {
-		pnotification->event_type = NF_OBJECT_CREATED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
-		auto nt = static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
+		pnotification->event_type = fnevObjectCreated;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_MESSAGE;
+		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pparentid->empty())
+			return;
 		break;
 	}
 	case db_notify_type::folder_deleted: {
-		pnotification->event_type = NF_OBJECT_DELETED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
-		auto nt = static_cast<const DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
+		pnotification->event_type = fnevObjectDeleted;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, parent_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, parent_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
 		break;
 	}
 	case db_notify_type::message_deleted: {
-		pnotification->event_type = NF_OBJECT_DELETED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
-		auto nt = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
+		pnotification->event_type = fnevObjectDeleted;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_MESSAGE;
+		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
 		break;
 	}
 	case db_notify_type::folder_modified: {
-		pnotification->event_type = NF_OBJECT_MODIFIED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
-		auto nt = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
+		pnotification->event_type = fnevObjectModified;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
 		break;
 	}
 	case db_notify_type::message_modified: {
-		pnotification->event_type = NF_OBJECT_MODIFIED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
-		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
+		pnotification->event_type = fnevObjectModified;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_MESSAGE;
+		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
 		break;
 	}
 	case db_notify_type::folder_moved:
 	case db_notify_type::folder_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::folder_moved ?
-		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
-		auto nt = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
+		                            fnevObjectMoved : fnevObjectCopied;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
 		old_eid = rop_util_nfid_to_eid(nt->old_folder_id);
 		old_parentid = rop_util_nfid_to_eid(nt->old_parent_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, parent_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, parent_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
-		pbin = cu_fid_to_entryid(pstore, old_eid);
-		if (pbin == nullptr)
+		oz->pold_entryid.emplace(cu_fid_to_entryid_s(*pstore, old_eid));
+		if (oz->pold_entryid->empty())
 			return;
-		pobj_notify->pold_entryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, old_parentid);
-		if (pbin == nullptr)
+		oz->pold_parentid.emplace(cu_fid_to_entryid_s(*pstore, old_parentid));
+		if (oz->pold_parentid->empty())
 			return;
-		pobj_notify->pold_parentid = pbin;
 		break;
 	}
 	case db_notify_type::message_moved:
 	case db_notify_type::message_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
-		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
-		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
+		                            fnevObjectMoved : fnevObjectCopied;
 		old_parentid = rop_util_nfid_to_eid(nt->old_folder_id);
 		old_eid = rop_util_make_eid_ex(1, nt->old_message_id);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_MESSAGE;
+		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
-		pbin = cu_mid_to_entryid(pstore, old_parentid, old_eid);
-		if (pbin == nullptr)
+		oz->pold_entryid.emplace(cu_mid_to_entryid_s(*pstore, old_parentid, old_eid));
+		if (oz->pold_entryid->empty())
 			return;
-		pobj_notify->pold_entryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, old_parentid);
-		if (pbin == nullptr)
+		oz->pold_parentid.emplace(cu_fid_to_entryid_s(*pstore, old_parentid));
+		if (oz->pold_parentid->empty())
 			return;
-		pobj_notify->pold_parentid = pbin;
 		break;
 	}
 	case db_notify_type::search_completed: {
-		pnotification->event_type = NF_SEARCH_COMPLETE;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
-		auto nt = static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);
+		pnotification->event_type = fnevSearchComplete;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
 		break;
 	}
 	default:
 		return;
 	}
+
 	for (auto psink_node = pinfo->sink_list.begin();
 	     psink_node != pinfo->sink_list.end(); ++psink_node) {
 		for (i=0; i<psink_node->sink.count; i++) {
@@ -563,8 +453,8 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 			zcresp_notifdequeue response{};
 			response.call_id = zcore_callid::notifdequeue;
 			response.result  = ecSuccess;
-			response.notifications.count = 1;
-			response.notifications.ppnotification = &pnotification;
+			response.notifications.emplace_back(std::move(zn));
+
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT | POLLWRBAND;
 			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok) {
@@ -584,24 +474,11 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 			return;
 		}
 	}
-	pnode = me_alloc<DOUBLE_LIST_NODE>();
-	if (pnode == nullptr)
-		return;
-	pnode->pdata = common_util_dup_znotification(pnotification, FALSE);
-	if (NULL == pnode->pdata) {
-		free(pnode);
-		return;
-	}
 	nl_hold.lock();
 	iter = g_notify_table.find(tmp_buff);
-	pitem = iter != g_notify_table.end() ? &iter->second : nullptr;
-	if (pitem != nullptr)
-		double_list_append_as_tail(&pitem->notify_list, pnode);
-	nl_hold.unlock();
-	if (NULL == pitem) {
-		common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
-		free(pnode);
-	}
+	if (iter != g_notify_table.end())
+		iter->second.notify_list.push_back(std::move(zn));
+} catch (const std::bad_alloc &) {
 }
 
 void zserver_init(size_t table_size, int cache_interval, int ping_interval)
@@ -613,19 +490,18 @@ void zserver_init(size_t table_size, int cache_interval, int ping_interval)
 
 int zserver_run()
 {
-	g_notify_stop = false;
+	g_zserver_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "E-1443: pthread_create: %s", strerror(ret));
 		return -4;
 	}
-	pthread_setname_np(g_scan_id, "zarafa");
 	return 0;
 }
 
 void zserver_stop()
 {
-	g_notify_stop = true;
+	g_zserver_stop = true;
 	if (!pthread_equal(g_scan_id, {})) {
 		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
@@ -737,6 +613,19 @@ ec_error_t zs_logon(const char *username, const char *password,
 	return zs_logon_phase2(std::move(mres), phsession);
 }
 
+ec_error_t zs_logon_np(const char *username, const char *password,
+    const char *rhost, uint32_t flags, GUID *phsession)
+{
+	sql_meta_result mres{};
+	auto ret = mysql_adaptor_meta(username, WANTPRIV_METAONLY, mres);
+	if (ret != 0) {
+		mlog(LV_WARN, "rhost=[%s]:0 user=%s zs_logon_np rejected: %s",
+			znul(rhost), username, mres.errstr.c_str());
+		return ecLoginFailure;
+	}
+	return zs_logon_phase2(std::move(mres), phsession);
+}
+
 ec_error_t zs_logon_token(const char *token, const char *rhost, GUID *phsession)
 {
 	sql_meta_result mres{};
@@ -757,33 +646,29 @@ ec_error_t zs_checksession(GUID hsession)
 }
 
 ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
-    char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits) try
+    std::string *dispname, std::string *essdn, uint32_t *pprivilege_bits) try
 {
-	std::string essdn, dispname;
 	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID_view tmp_entryid;
 	
-	if (!mysql_adaptor_get_user_displayname(username, dispname) ||
+	if (!mysql_adaptor_get_user_displayname(username, *dispname) ||
 	    !mysql_adaptor_get_user_privilege_bits(username, pprivilege_bits))
 		return ecNotFound;
 	auto err = cvt_username_to_essdn(username, g_org_name,
 	           mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
-	           essdn);
+	           *essdn);
 	if (err != ecSuccess)
 		return err;
 	tmp_entryid.flags = 0;
 	tmp_entryid.type = DT_MAILUSER;
-	tmp_entryid.px500dn = deconst(essdn.c_str());
+	tmp_entryid.px500dn = essdn->c_str();
 	pentryid->pv = common_util_alloc(1280);
 	if (pentryid->pv == nullptr ||
 	    !ext_push.init(pentryid->pb, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != pack_result::ok)
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
-	*ppdisplay_name = common_util_dup(dispname);
-	*ppx500dn = common_util_dup(essdn);
-	return *ppdisplay_name == nullptr || *ppx500dn == nullptr ?
-	       ecServerOOM : ecSuccess;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
 }
@@ -805,23 +690,18 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 {
 	BOOL b_private;
 	int account_id;
-	char essdn[1024];
-	uint64_t folder_id;
-	uint64_t message_id;
+	std::string essdn;
 	uint32_t address_type;
-	uint16_t type;
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
 	if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
 		/* Stupid GUID-less entryid from submit.php */
-		gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
-		return zs_openentry_emsab(hsession, entryid, flags, essdn,
+		return zs_openentry_emsab(hsession, entryid, flags, entryid.pc,
 		       DT_REMOTE_MAILUSER, pmapi_type, phobject);
-	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
-	    essdn, std::size(essdn))) {
-		return zs_openentry_emsab(hsession, entryid, flags, essdn,
+	} else if (cu_parse_abkeid(entryid, &address_type, essdn)) {
+		return zs_openentry_emsab(hsession, entryid, flags, essdn.c_str(),
 		       address_type, pmapi_type, phobject);
 	} else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB) {
 		return zs_openentry_zcsab(hsession, entryid, flags,
@@ -829,7 +709,8 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 	}
 
 	/* Arbitrary GUID, it's probably a FOLDER_ENTRYID/MESSAGE_ENTRYID. */
-	type = common_util_get_messaging_entryid_type(entryid);
+	auto type = common_util_get_messaging_entryid_type(entryid);
+	eid_t folder_id{}, message_id{};
 	switch (type) {
 	case EITLT_PRIVATE_FOLDER:
 	case EITLT_PUBLIC_FOLDER: {
@@ -874,7 +755,7 @@ static ec_error_t zs_openentry_emsab(GUID hsession, BINARY entryid,
 
 	BOOL b_private;
 	int user_id;
-	uint64_t eid;
+	eid_t eid{};
 	uint8_t loc_type;
 	if (!common_util_exmdb_locinfo_from_string(essdn + 7,
 	    &loc_type, &user_id, &eid))
@@ -916,16 +797,11 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 	BOOL b_del;
 	BOOL b_exist;
 	void *pvalue;
-	uint64_t eid;
-	uint16_t type;
 	BOOL b_private;
 	int account_id;
-	char essdn[1024];
 	uint64_t fid_val;
 	uint8_t loc_type;
 	zs_objtype mapi_type;
-	uint64_t folder_id;
-	uint64_t message_id;
 	uint32_t tag_access;
 	uint32_t permission;
 	uint32_t address_type;
@@ -938,18 +814,24 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::store)
 		return ecNotSupported;
+
+	eid_t folder_id{}, message_id{};
 	if (0 == entryid.cb) {
 		folder_id = rop_util_make_eid_ex(1, pstore->b_private ?
 		            PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
-		message_id = 0;
+		message_id = eid_t(0);
 	} else {
-		type = common_util_get_messaging_entryid_type(entryid);
+		eid_t eid{};
+		std::string essdn_s;
+		const char *essdn = essdn_s.c_str();
+
+		auto type = common_util_get_messaging_entryid_type(entryid);
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
 		case EITLT_PUBLIC_FOLDER:
 			if (cu_entryid_to_fid(entryid,
 			    &b_private, &account_id, &folder_id)) {
-				message_id = 0;
+				message_id = eid_t(0);
 				goto CHECK_LOC;
 			}
 			break;
@@ -961,12 +843,11 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			break;
 		}
 		if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
-			gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
-		} else if (common_util_parse_addressbook_entryid(entryid,
-		     &address_type, essdn, std::size(essdn)) &&
-		     strncmp(essdn, "/exmdb=", 7) == 0 &&
+			essdn = entryid.pc;
+		} else if (cu_parse_abkeid(entryid, &address_type, essdn_s) &&
+		     strncmp(essdn_s.c_str(), "/exmdb=", 7) == 0 &&
 		     address_type == DT_REMOTE_MAILUSER) {
-			/* do nothing */	
+			essdn = essdn_s.c_str();
 		} else {
 			return ecInvalidParam;
 		}
@@ -977,7 +858,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		case LOC_TYPE_PRIVATE_FOLDER:
 			b_private = TRUE;
 			folder_id = eid;
-			message_id = 0;
+			message_id = eid_t(0);
 			break;
 		case LOC_TYPE_PRIVATE_MESSAGE:
 			b_private = TRUE;
@@ -986,7 +867,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		case LOC_TYPE_PUBLIC_FOLDER:
 			b_private = FALSE;
 			folder_id = eid;
-			message_id = 0;
+			message_id = eid_t(0);
 			break;
 		case LOC_TYPE_PUBLIC_MESSAGE:
 			b_private = FALSE;
@@ -1001,7 +882,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			    nullptr, CP_ACP, message_id, PidTagParentFolderId,
 			    &pvalue) || pvalue == nullptr)
 				return ecError;
-			folder_id = *static_cast<uint64_t *>(pvalue);
+			folder_id = *static_cast<eid_t *>(pvalue);
 		}
  CHECK_LOC:
 		if (b_private != pstore->b_private ||
@@ -1014,7 +895,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			return ecError;
 		if (b_del && !(flags & SHOW_SOFT_DELETES))
 			return ecNotFound;
-		auto ret = cu_calc_msg_access(pstore, pinfo->get_username(),
+		auto ret = cu_calc_msg_access(*pstore, pinfo->get_username(),
 		           folder_id, message_id, tag_access);
 		if (ret != ecSuccess)
 			return ret;
@@ -1095,9 +976,9 @@ static ec_error_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
 	ONEOFF_ENTRYID eid;
 	EXT_PULL ep;
 	ep.init(bin.pv, bin.cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-	if (ep.g_oneoff_eid(&eid) != EXT_ERR_SUCCESS)
+	if (ep.g_oneoff_eid(&eid) != pack_result::ok)
 		return ecInvalidParam;
-	auto u = oneoff_object::create(eid);
+	auto u = oneoff_object::create(std::move(eid));
 	if (u == nullptr)
 		return ecServerOOM;
 	*zmg_type = zs_objtype::oneoff;
@@ -1115,7 +996,7 @@ ec_error_t zs_openabentry(GUID hsession,
 	if (0 == entryid.cb) {
 		CONTAINER_ID container_id;
 		container_id.abtree_id.base_id = base_id;
-		container_id.abtree_id.minid = SPECIAL_CONTAINER_ROOT;
+		container_id.abtree_id.minid = ab_tree::minid::SC_ROOT;
 		auto contobj = container_object::create(CONTAINER_TYPE_ABTREE, container_id);
 		if (contobj == nullptr)
 			return ecError;
@@ -1141,13 +1022,13 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
     int base_id, zs_objtype *pmapi_type, uint32_t *phobject)
 {
 	int user_id, domain_id;
-	char essdn[1024];
+	std::string essdn_s;
 	uint32_t address_type;
 
-	if (!common_util_parse_addressbook_entryid(entryid, &address_type,
-	    essdn, std::size(essdn)))
+	if (!cu_parse_abkeid(entryid, &address_type, essdn_s))
 		return ecInvalidParam;
 
+	auto essdn = essdn_s.data();
 	if (address_type == DT_CONTAINER) {
 		CONTAINER_ID container_id;
 		uint8_t type;
@@ -1156,11 +1037,11 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 		if (strcmp(essdn, "/") == 0) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = SPECIAL_CONTAINER_GAL;
+			container_id.abtree_id.minid = ab_tree::minid::SC_GAL;
 		} else if (strcmp(essdn, "/exmdb") == 0) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = SPECIAL_CONTAINER_EMPTY;
+			container_id.abtree_id.minid = ab_tree::minid::SC_EMPTY;
 		} else {
 			if (strncmp(essdn, "/guid=", 6) != 0 || strlen(essdn) != 38)
 				return ecNotFound;
@@ -1245,16 +1126,16 @@ static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
 	uint32_t mapi_type = 0;
 	ep.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
 	ep.m_offset += 20;
-	if (ep.g_uint32(&mapi_type) != EXT_ERR_SUCCESS ||
+	if (ep.g_uint32(&mapi_type) != pack_result::ok ||
 	    static_cast<mapi_object_type>(mapi_type) != MAPI_ABCONT ||
-	    ep.advance(4) != EXT_ERR_SUCCESS ||
-	    ep.g_folder_eid(&fe) != EXT_ERR_SUCCESS ||
-	    fe.folder_type != EITLT_PRIVATE_FOLDER)
+	    ep.advance(4) != pack_result::ok ||
+	    ep.g_folder_eid(&fe) != pack_result::ok ||
+	    fe.eid_type != EITLT_PRIVATE_FOLDER)
 		return ecInvalidParam;
 
 	CONTAINER_ID ctid;
 	ctid.exmdb_id.b_private = TRUE;
-	ctid.exmdb_id.folder_id = rop_util_make_eid(1, fe.global_counter);
+	ctid.exmdb_id.folder_id = rop_util_make_eid(1, fe.folder_gc);
 	auto contobj = container_object::create(CONTAINER_TYPE_FOLDER, ctid);
 	if (contobj == nullptr)
 		return ecError;
@@ -1312,13 +1193,14 @@ ec_error_t zs_resolvename(GUID hsession,
 	}
 	presult_set->pparray = cu_alloc<TPROPVAL_ARRAY *>(result_list.size());
 	if (presult_set->pparray == nullptr)
-		return ecError;
+		return ecServerOOM;
 	container_object_get_user_table_all_proptags(&proptags);
 	for (auto mid : result_list) {
 		presult_set->pparray[presult_set->count] = cu_alloc<TPROPVAL_ARRAY>();
-		if (NULL == presult_set->pparray[presult_set->count] ||
-		    !ab_tree_fetch_node_properties({pbase, mid},
-		    &proptags, presult_set->pparray[presult_set->count]))
+		if (presult_set->pparray[presult_set->count] == nullptr)
+			return ecServerOOM;
+		if (!ab_tree_fetch_node_properties({pbase, mid},
+		    proptags, presult_set->pparray[presult_set->count]))
 			return ecError;
 		presult_set->count ++;
 	}
@@ -1408,7 +1290,7 @@ ec_error_t zs_getabgal(GUID hsession, BINARY *pentryid)
 {
 	void *pvalue;
 	
-	if (!container_object_fetch_special_property(SPECIAL_CONTAINER_GAL,
+	if (!container_object_fetch_special_property(ab_tree::minid::SC_GAL,
 	    PR_ENTRYID, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
@@ -1436,7 +1318,7 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	STORE_ENTRYID store_entryid = {};
 	
 	ext_pull.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_store_eid(&store_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_store_eid(&store_entryid) != pack_result::ok)
 		return ecError;
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -1652,21 +1534,13 @@ ec_error_t zs_createmessage(GUID hsession,
 	static constexpr proptag_t proptag_buff[] =
 		{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
-	static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
+	if (!pstore->get_properties(proptag_buff, &tmp_propvals))
 		return ecError;
 	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 	int64_t max_quota = num == nullptr ? -1 : static_cast<int64_t>(*num) * 1024;
 	auto lnum = tmp_propvals.get<const uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	uint64_t total_size = lnum != nullptr ? *lnum : 0;
 	if (max_quota > 0 && total_size > static_cast<uint64_t>(max_quota))
-		return ecQuotaExceeded;
-	num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
-	uint32_t total_mail = num != nullptr ? *num : 0;
-	num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
-	if (num != nullptr)
-		total_mail += *num;
-	if (total_mail > g_max_message)
 		return ecQuotaExceeded;
 	if (!exmdb_client->allocate_message_id(pstore->get_dir(),
 	    folder_id, &message_id))
@@ -1677,8 +1551,9 @@ ec_error_t zs_createmessage(GUID hsession,
 	if (pmessage == nullptr)
 		return ecError;
 	BOOL b_fai = (flags & MAPI_ASSOCIATED) ? TRUE : false;
-	if (pmessage->init_message(b_fai, pinfo->cpid) != 0)
-		return ecError;
+	auto err = pmessage->init_message(b_fai, pinfo->cpid);
+	if (err != ecSuccess)
+		return err;
 	/* add the store handle as the parent object handle
 		because the caller normally will not keep the
 		handle of folder */
@@ -1696,9 +1571,8 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	BOOL b_private;
 	BOOL b_partial;
 	zs_objtype mapi_type;
-	uint64_t folder_id;
+	eid_t folder_id{}, message_id{};
 	uint32_t permission;
-	uint64_t message_id;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY tmp_propvals;
 	bool notify_non_read = flags & GX_DELMSG_NOTIFY_UNREAD;
@@ -1725,9 +1599,9 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 			return ecNotFound;
 	}
 	ids.count = 0;
-	ids.pids = cu_alloc<uint64_t>(pentryids->count);
+	ids.pids  = cu_alloc<eid_t>(pentryids->count);
 	if (ids.pids == nullptr)
-		return ecError;
+		return ecServerOOM;
 	for (size_t i = 0; i < pentryids->count; ++i) {
 		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
@@ -1747,9 +1621,9 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 		return ecSuccess;
 	}
 	ids1.count = 0;
-	ids1.pids  = cu_alloc<uint64_t>(ids.count);
+	ids1.pids  = cu_alloc<eid_t>(ids.count);
 	if (ids1.pids == nullptr)
-		return ecError;
+		return ecServerOOM;
 	for (auto i_eid : ids) {
 		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client_check_message_owner(pstore->get_dir(),
@@ -1760,10 +1634,8 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 		}
 		static constexpr proptag_t proptag_buff[] =
 			{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, PR_READ};
-		static constexpr PROPTAG_ARRAY tmp_proptags =
-			{std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client->get_message_properties(pstore->get_dir(),
-		    nullptr, CP_ACP, i_eid, &tmp_proptags, &tmp_propvals))
+		    nullptr, CP_ACP, i_eid, proptag_buff, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
@@ -1787,14 +1659,10 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
     uint32_t hdstfolder, const BINARY_ARRAY *pentryids, uint32_t flags)
 {
-	BOOL b_done, b_guest = TRUE, b_owner;
-	EID_ARRAY ids;
-	BOOL b_partial;
+	BOOL b_guest = TRUE, b_owner;
 	BOOL b_private;
 	int account_id;
 	zs_objtype mapi_type;
-	uint64_t folder_id;
-	uint64_t message_id;
 	uint32_t permission;
 	
 	if (pentryids->count == 0)
@@ -1838,6 +1706,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 				return ecAccessDenied;
 		}
 		for (size_t i = 0; i < pentryids->count; ++i) {
+			eid_t folder_id{}, message_id{};
 			if (!cu_entryid_to_mid(pentryids->pbin[i],
 			    &b_private, &account_id, &folder_id, &message_id))
 				return ecError;
@@ -1857,19 +1726,24 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 					if (!b_owner)
 						continue;
 				}
-				if (!exmdb_client_delete_message(src_store->get_dir(),
-				    src_store->account_id, pinfo->cpid,
-				    psrc_folder->folder_id, message_id, false, &b_done))
+				BOOL b_partial = false;
+				const EID_ARRAY ids = {1, &message_id};
+				if (!exmdb_client->delete_messages(src_store->get_dir(),
+				    pinfo->cpid, nullptr, psrc_folder->folder_id,
+				    &ids, false, &b_partial))
 					return ecError;
 			}
 		}
 		return ecSuccess;
 	}
+
+	EID_ARRAY ids;
 	ids.count = 0;
-	ids.pids = cu_alloc<uint64_t>(pentryids->count);
+	ids.pids  = cu_alloc<eid_t>(pentryids->count);
 	if (ids.pids == nullptr)
-		return ecError;
+		return ecServerOOM;
 	for (size_t i = 0; i < pentryids->count; ++i) {
+		eid_t folder_id{}, message_id{};
 		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
@@ -1889,6 +1763,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	} else {
 		b_guest = FALSE;
 	}
+	BOOL b_partial = false;
 	return exmdb_client->movecopy_messages(src_store->get_dir(),
 	       pinfo->cpid, b_guest, pinfo->get_username(),
 	       psrc_folder->folder_id, pdst_folder->folder_id, b_copy, &ids,
@@ -1907,9 +1782,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 	uint32_t table_id;
 	zs_objtype mapi_type;
 	uint32_t row_count;
-	uint64_t folder_id;
 	TARRAY_SET tmp_set;
-	uint64_t message_id;
 	BOOL b_notify = TRUE; /* TODO: Read from config or USER_INFO. */
 	BINARY_ARRAY tmp_bins;
 	PROBLEM_ARRAY problems;
@@ -1943,9 +1816,8 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 			return ecError;
 
 		static constexpr proptag_t tmp_proptag[] = {PR_ENTRYID};
-		static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 		if (!exmdb_client->query_table(pstore->get_dir(), username,
-		    CP_ACP, table_id, &proptags, 0, row_count, &tmp_set)) {
+		    CP_ACP, table_id, tmp_proptag, 0, row_count, &tmp_set)) {
 			exmdb_client->unload_table(pstore->get_dir(), table_id);
 			return ecError;
 		}
@@ -1954,7 +1826,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 			tmp_bins.count = 0;
 			tmp_bins.pbin = cu_alloc<BINARY>(tmp_set.count);
 			if (tmp_bins.pbin == nullptr)
-				return ecError;
+				return ecServerOOM;
 			for (size_t i = 0; i < tmp_set.count; ++i) {
 				if (tmp_set.pparray[i]->count != 1)
 					continue;
@@ -1964,6 +1836,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		}
 	}
 	for (size_t i = 0; i < pentryids->count; ++i) {
+		eid_t folder_id{}, message_id{};
 		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
@@ -2156,7 +2029,6 @@ ec_error_t zs_deletefolder(GUID hsession,
 	BOOL b_private;
 	int account_id;
 	zs_objtype mapi_type;
-	uint64_t folder_id;
 	uint32_t permission;
 	
 	auto pinfo = zs_query_session(hsession);
@@ -2168,6 +2040,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
+	eid_t folder_id{};
 	if (!cu_entryid_to_fid(entryid,
 	    &b_private, &account_id, &folder_id))
 		return ecError;
@@ -2271,7 +2144,6 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 	BOOL b_partial;
 	int account_id;
 	zs_objtype mapi_type;
-	uint64_t folder_id;
 	uint32_t permission;
 	
 	auto pinfo = zs_query_session(hsession);
@@ -2286,6 +2158,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto src_store = psrc_parent->pstore;
+	eid_t folder_id{};
 	if (!cu_entryid_to_fid(entryid,
 	    &b_private, &account_id, &folder_id))
 		return ecError;
@@ -2364,7 +2237,7 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 	
 	if (0 == strncasecmp(mailbox_dn, "/o=", 3)) {
 		auto ret = cvt_essdn_to_username(mailbox_dn, g_org_name,
-		           cu_id2user, username);
+		           mysql_adaptor_userid_to_name, username);
 		if (ret == ecUnknownUser)
 			return ecNotFound;
 		else if (ret != ecSuccess)
@@ -2385,7 +2258,7 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 	pentryid->pv = common_util_alloc(1024);
 	if (pentryid->pv == nullptr ||
 	    !ext_push.init(pentryid->pb, 1024, EXT_FLAG_UTF16) ||
-	    ext_push.p_store_eid(store_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_store_eid(store_entryid) != pack_result::ok)
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
 	return ecSuccess;
@@ -2454,9 +2327,9 @@ ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
 				return ecInvalidParam;
 			message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
-		pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
+		pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
 	} else {
-		pbin = cu_fid_to_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(*pstore, folder_id);
 	}
 	if (pbin == nullptr)
 		return ecError;
@@ -2468,12 +2341,9 @@ ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
     const BINARY *pentryid, uint32_t event_mask, uint32_t *psub_id)
 {
 	char dir[256];
-	uint16_t type;
 	BOOL b_private;
 	int account_id;
 	zs_objtype mapi_type;
-	uint64_t folder_id;
-	uint64_t message_id;
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -2483,10 +2353,9 @@ ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::store)
 		return ecNotSupported;
-	folder_id = 0;
-	message_id = 0;
+	eid_t folder_id{}, message_id{};
 	if (NULL != pentryid) {
-		type = common_util_get_messaging_entryid_type(*pentryid);
+		auto type = common_util_get_messaging_entryid_type(*pentryid);
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
 		case EITLT_PUBLIC_FOLDER:
@@ -2548,23 +2417,20 @@ ec_error_t zs_unadvise(GUID hsession, uint32_t hstore,
 	g_notify_table.erase(std::move(tmp_buf));
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1498: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
-ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
-	uint32_t timeval, ZNOTIFICATION_ARRAY *pnotifications)
+ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
+    std::vector<ZNOTIFICATION> *pnotifications)
 {
 	int i;
-	int count;
 	zs_objtype mapi_type;
-	DOUBLE_LIST_NODE *pnode;
-	ZNOTIFICATION* ppnotifications[1024];
+	std::vector<ZNOTIFICATION> ppnotifications;
 	
 	auto pinfo = zs_query_session(psink->hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	count = 0;
 	for (i=0; i<psink->count; i++) {
 		auto pstore = pinfo->ptree->get_object<store_object>(psink->padvise[i].hstore, &mapi_type);
 		if (pstore == nullptr || mapi_type != zs_objtype::store)
@@ -2583,27 +2449,20 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
 			continue;
 		auto pnitem = &iter->second;
 		pnitem->last_time = time(nullptr);
-		while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
-			ppnotifications[count] = common_util_dup_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata), true);
-			common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
-			free(pnode);
-			if (ppnotifications[count] != nullptr)
-				count ++;
-			if (count == 1024)
-				break;
-		}
+
+		size_t limit = 1024 - std::min(ppnotifications.size(), static_cast<size_t>(1024));
+		limit = std::min(limit, pnitem->notify_list.size());
+		ppnotifications.insert(ppnotifications.end(),
+			std::make_move_iterator(pnitem->notify_list.begin()),
+			std::make_move_iterator(pnitem->notify_list.end()));
+		pnitem->notify_list.erase(pnitem->notify_list.begin(), pnitem->notify_list.begin() + limit);
 		nl_hold.unlock();
-		if (count == 1024)
+		if (ppnotifications.size() >= 1024)
 			break;
 	}
-	if (count > 0) {
+	if (ppnotifications.size() > 0) {
 		pinfo.reset();
-		pnotifications->count = count;
-		pnotifications->ppnotification = cu_alloc<ZNOTIFICATION *>(count);
-		if (pnotifications->ppnotification == nullptr)
-			return ecError;
-		memcpy(pnotifications->ppnotification,
-			ppnotifications, sizeof(void*)*count);
+		*pnotifications = std::move(ppnotifications);
 		return ecSuccess;
 	}
 	std::list<sink_node> holder;
@@ -2621,7 +2480,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
 	psink_node->sink.count = psink->count;
 	psink_node->sink.padvise = me_alloc<ADVISE_INFO>(psink->count);
 	if (psink_node->sink.padvise == nullptr)
-		return ecError;
+		return ecServerOOM;
 	memcpy(psink_node->sink.padvise, psink->padvise,
 				psink->count*sizeof(ADVISE_INFO));
 	pinfo->sink_list.splice(pinfo->sink_list.end(), holder, holder.begin());
@@ -2630,7 +2489,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
 
 ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	uint32_t count, const RESTRICTION *prestriction,
-	const PROPTAG_ARRAY *pproptags, TARRAY_SET *prowset)
+    const std::vector<proptag_t> *itags, TARRAY_SET *prowset)
 {
 	uint32_t row_num;
 	int32_t position;
@@ -2649,11 +2508,18 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	if (!ptable->load())
+	auto err = ptable->load();
+	if (err != ecSuccess)
 		return ecError;
 	auto table_type = ptable->table_type;
 	if (start != UINT32_MAX)
 		ptable->set_position(start);
+
+	proptag_cspan wtags, *pproptags = nullptr;
+	if (itags != nullptr) {
+		wtags = *itags;
+		pproptags = &wtags;
+	}
 	if (NULL != prestriction) {
 		switch (ptable->table_type) {
 		case zcore_tbltype::hierarchy:
@@ -2665,15 +2531,17 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 			prowset->count = 0;
 			prowset->pparray = cu_alloc<TPROPVAL_ARRAY *>(row_num);
 			if (prowset->pparray == nullptr)
-				return ecError;
+				return ecServerOOM;
 			while (true) {
-				if (!ptable->match_row(TRUE, prestriction, &position))
-					return ecError;
+				err = ptable->match_row(TRUE, prestriction, &position);
+				if (err != ecSuccess)
+					return err;
 				if (position < 0)
 					break;
 				ptable->set_position(position);
-				if (!ptable->query_rows(pproptags, 1, &tmp_set))
-					return ecError;
+				err = ptable->query_rows(pproptags, 1, &tmp_set);
+				if (err != ecSuccess)
+					return err;
 				if (tmp_set.count != 1)
 					break;
 				ptable->seek_current(TRUE, 1);
@@ -2685,16 +2553,19 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 		case zcore_tbltype::attachment:
 		case zcore_tbltype::recipient:
 		case zcore_tbltype::store:
-		case zcore_tbltype::abcontusr:
-			if (!ptable->filter_rows(count, prestriction, pproptags, prowset))
-				return ecError;
+		case zcore_tbltype::abcontusr: {
+			err = ptable->filter_rows(count, prestriction, prowset);
+			if (err != ecSuccess)
+				return err;
 			break;
+		}
 		default:
 			return ecNotSupported;
 		}
 	} else {
-		if (!ptable->query_rows(pproptags, count, prowset))
-			return ecError;
+		err = ptable->query_rows(pproptags, count, prowset);
+		if (err != ecSuccess)
+			return err;
 		ptable->seek_current(TRUE, prowset->count);
 	}
 	pinfo.reset();
@@ -2727,7 +2598,7 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	for (size_t i = 0; i < prowset->count; ++i) {
 		ppropvals = cu_alloc<TAGGED_PROPVAL>(prowset->pparray[i]->count + 1);
 		if (ppropvals == nullptr)
-			return ecError;
+			return ecServerOOM;
 		memcpy(ppropvals, prowset->pparray[i]->ppropval,
 			sizeof(TAGGED_PROPVAL)*prowset->pparray[i]->count);
 		ppropvals[prowset->pparray[i]->count].proptag = PR_OBJECT_TYPE;
@@ -2738,7 +2609,7 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 }
 	
 ec_error_t zs_setcolumns(GUID hsession, uint32_t htable,
-	const PROPTAG_ARRAY *pproptags, uint32_t flags)
+    proptag_cspan pproptags, uint32_t flags)
 {
 	zs_objtype mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -2749,7 +2620,7 @@ ec_error_t zs_setcolumns(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	return ptable->set_columns(pproptags) ? ecSuccess : ecError;
+	return ptable->set_columns(pproptags);
 }
 
 ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
@@ -2767,8 +2638,10 @@ ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	if (!ptable->load())
-		return ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
+
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
 		if (seek_rows < 0)
@@ -2788,8 +2661,9 @@ ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 		break;
 	default: {
 		original_position = ptable->get_position();
-		if (!ptable->retrieve_bookmark(bookmark, &b_exist))
-			return ecError;
+		err = ptable->retrieve_bookmark(bookmark, &b_exist);
+		if (err != ecSuccess)
+			return err;
 		if (!b_exist)
 			return ecNotFound;
 		auto original_position1 = ptable->get_position();
@@ -2801,7 +2675,7 @@ ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	return ecSuccess;
 }
 
-static bool table_acceptable_type(uint16_t type)
+static bool table_acceptable_type(proptype_t type)
 {
 	switch (type) {
 	case PT_SHORT:
@@ -2845,10 +2719,8 @@ ec_error_t zs_sorttable(GUID hsession,
 	uint32_t htable, const SORTORDER_SET *psortset)
 {
 	BOOL b_max;
-	uint16_t type;
 	zs_objtype mapi_type;
 	BOOL b_multi_inst;
-	uint32_t tmp_proptag;
 	
 	if (psortset->count > MAXIMUM_SORT_COUNT)
 		return ecTooComplex;
@@ -2865,7 +2737,7 @@ ec_error_t zs_sorttable(GUID hsession,
 	b_max = FALSE;
 	b_multi_inst = FALSE;
 	for (unsigned int i = 0; i < psortset->count; ++i) {
-		tmp_proptag = PROP_TAG(psortset->psort[i].type, psortset->psort[i].propid);
+		auto tmp_proptag = PROP_TAG(psortset->psort[i].type, psortset->psort[i].propid);
 		if (tmp_proptag == PR_DEPTH || tmp_proptag == PidTagInstID ||
 		    tmp_proptag == PidTagInstanceNum ||
 		    tmp_proptag == PR_CONTENT_COUNT ||
@@ -2884,7 +2756,7 @@ ec_error_t zs_sorttable(GUID hsession,
 		default:
 			return ecInvalidParam;
 		}
-		type = psortset->psort[i].type;
+		auto type = psortset->psort[i].type;
 		if (type & MV_FLAG) {
 			/* we do not support multivalue property
 				without multivalue instances */
@@ -2909,10 +2781,11 @@ ec_error_t zs_sorttable(GUID hsession,
 	}
 	auto pcolumns = ptable->get_columns();
 	if (b_multi_inst && pcolumns != nullptr &&
-	    !common_util_verify_columns_and_sorts(pcolumns, psortset))
+	    !cu_verify_columns_and_sorts(*pcolumns, psortset))
 		return ecNotSupported;
-	if (!ptable->set_sorts(psortset))
-		return ecError;
+	auto err = ptable->set_sorts(psortset);
+	if (err != ecSuccess)
+		return err;
 	ptable->unload();
 	ptable->clear_bookmarks();
 	ptable->clear_position();
@@ -2930,8 +2803,9 @@ ec_error_t zs_getrowcount(GUID hsession, uint32_t htable, uint32_t *pcount)
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	if (!ptable->load())
-		return ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
 	*pcount = ptable->get_total();
 	return ecSuccess;
 }
@@ -2958,8 +2832,9 @@ ec_error_t zs_restricttable(GUID hsession, uint32_t htable,
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->set_restriction(prestriction))
-		return ecError;
+	auto err = ptable->set_restriction(prestriction);
+	if (err != ecSuccess)
+		return err;
 	ptable->unload();
 	ptable->clear_bookmarks();
 	ptable->clear_position();
@@ -2989,8 +2864,10 @@ ec_error_t zs_findrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->load())
-		return ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
+
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
 		ptable->set_position(0);
@@ -3003,12 +2880,14 @@ ec_error_t zs_findrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	default:
 		if (ptable->table_type == zcore_tbltype::rule)
 			return ecNotSupported;
-		if (!ptable->retrieve_bookmark(bookmark, &b_exist))
-			return ecInvalidBookmark;
+		err = ptable->retrieve_bookmark(bookmark, &b_exist);
+		if (err != ecSuccess)
+			return err;
 		break;
 	}
-	if (ptable->match_row(TRUE, prestriction, &position))
-		return ecError;
+	err = ptable->match_row(TRUE, prestriction, &position);
+	if (err != ecSuccess)
+		return err;
 	if (position < 0)
 		return ecNotFound;
 	ptable->set_position(position);
@@ -3034,9 +2913,10 @@ ec_error_t zs_createbookmark(GUID hsession, uint32_t htable, uint32_t *pbookmark
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->load())
-		return ecError;
-	return ptable->create_bookmark(pbookmark) ? ecSuccess : ecError;
+	auto err = ptable->load();
+	if (err != ecSuccess)
+		return err;
+	return ptable->create_bookmark(pbookmark);
 }
 
 ec_error_t zs_freebookmark(GUID hsession, uint32_t htable, uint32_t bookmark)
@@ -3061,6 +2941,10 @@ ec_error_t zs_freebookmark(GUID hsession, uint32_t htable, uint32_t bookmark)
 	return ecSuccess;
 }
 
+/*
+ * Seeing [ZRPC 80040102h getreceivefolder] is legit; public stores
+ * just do not implement this function.
+ */
 ec_error_t zs_getreceivefolder(GUID hsession,
 	uint32_t hstore, const char *pstrclass, BINARY *pentryid)
 {
@@ -3087,7 +2971,7 @@ ec_error_t zs_getreceivefolder(GUID hsession,
 	if (!exmdb_client->get_folder_by_class(pstore->get_dir(), pstrclass,
 	    &folder_id, &temp_class))
 		return ecError;
-	pbin = cu_fid_to_entryid(pstore, folder_id);
+	pbin = cu_fid_to_entryid(*pstore, folder_id);
 	if (pbin == nullptr)
 		return ecError;
 	*pentryid = *pbin;
@@ -3100,15 +2984,12 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	static constexpr uint8_t persist_true = true, persist_false = false;
 	BOOL b_found;
 	zs_objtype mapi_type;
-	EXT_PULL ext_pull;
 	uint32_t tmp_flags;
 	char tmp_buff[256];
 	uint32_t last_rowid;
 	TPROPVAL_ARRAY *prcpt;
 	FLATUID provider_uid;
 	TAGGED_PROPVAL *ppropval;
-	ONEOFF_ENTRYID oneoff_entry;
-	EMSAB_ENTRYID ab_entryid;
 	
 	if (prcpt_list->count >= 0x7fef || (flags != MODRECIP_ADD &&
 	    flags != MODRECIP_MODIFY && flags != MODRECIP_REMOVE))
@@ -3122,7 +3003,9 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	if (MODRECIP_MODIFY == flags) {
-		pmessage->empty_rcpts();
+		auto err = pmessage->empty_rcpts();
+		if (err != ecSuccess)
+			return err;
 	} else if (MODRECIP_REMOVE == flags) {
 		for (size_t i = 0; i < prcpt_list->count; ++i) {
 			prcpt = prcpt_list->pparray[i];
@@ -3138,12 +3021,12 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			if (!b_found)
 				return ecInvalidParam;
 		}
-		if (!pmessage->set_rcpts(prcpt_list))
-			return ecError;
-		return ecSuccess;
+		return pmessage->set_rcpts(prcpt_list);
 	}
-	if (!pmessage->get_rowid_begin(&last_rowid))
-		return ecError;
+	auto err = pmessage->get_rowid_begin(&last_rowid);
+	if (err != ecSuccess)
+		return err;
+
 	for (size_t i = 0; i < prcpt_list->count; ++i, ++last_rowid) {
 		if (!prcpt_list->pparray[i]->has(PR_ENTRYID) &&
 		    !prcpt_list->pparray[i]->has(PR_EMAIL_ADDRESS) &&
@@ -3155,94 +3038,98 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				*prowid = last_rowid;
 			else
 				last_rowid = *prowid;
-		} else {
-			prcpt = prcpt_list->pparray[i];
-			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 1);
+			continue;
+		}
+		prcpt = prcpt_list->pparray[i];
+		ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 1);
+		if (ppropval == nullptr)
+			return ecServerOOM;
+		memcpy(ppropval, prcpt->ppropval,
+			sizeof(TAGGED_PROPVAL)*prcpt->count);
+		ppropval[prcpt->count].proptag = PR_ROWID;
+		ppropval[prcpt->count].pvalue  = cu_alloc<eid_t>();
+		if (ppropval[prcpt->count].pvalue == nullptr)
+			return ecServerOOM;
+		*static_cast<uint32_t *>(ppropval[prcpt->count++].pvalue) = last_rowid;
+		prcpt->ppropval = ppropval;
+		auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
+		if (pbin == nullptr ||
+		    (prcpt->has(PR_EMAIL_ADDRESS) &&
+		    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
+			continue;
+
+		EXT_PULL ext_pull;
+		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
+		if (ext_pull.g_uint32(&tmp_flags) != pack_result::ok ||
+		    tmp_flags != 0)
+			continue;
+		if (ext_pull.g_guid(&provider_uid) != pack_result::ok)
+			continue;
+		if (provider_uid == muidEMSAB) {
+			EMSAB_ENTRYID ab_entryid;
+
+			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok ||
+			    ab_entryid.type != DT_MAILUSER)
+				continue;
+			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
 			if (ppropval == nullptr)
-				return ecError;
+				return ecServerOOM;
 			memcpy(ppropval, prcpt->ppropval,
-				sizeof(TAGGED_PROPVAL)*prcpt->count);
-			ppropval[prcpt->count].proptag = PR_ROWID;
-			ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
-			if (ppropval[prcpt->count].pvalue == nullptr)
-				return ecError;
-			*static_cast<uint32_t *>(ppropval[prcpt->count++].pvalue) = last_rowid;
+				prcpt->count*sizeof(TAGGED_PROPVAL));
 			prcpt->ppropval = ppropval;
-			auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
-			if (pbin == nullptr ||
-			    (prcpt->has(PR_EMAIL_ADDRESS) &&
-			    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
+			err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
+			if (err != ecSuccess)
+				return err;
+			auto dupval = common_util_dup(ab_entryid.x500dn.c_str());
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
+			std::string es_result;
+			auto ret = cvt_essdn_to_username(ab_entryid.x500dn.c_str(),
+				   g_org_name, mysql_adaptor_userid_to_name, es_result);
+			if (ret != ecSuccess)
 				continue;
-			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-			if (ext_pull.g_uint32(&tmp_flags) != EXT_ERR_SUCCESS ||
-			    tmp_flags != 0)
+			dupval = common_util_dup(es_result);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			es_result.clear();
+			cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
+			if (!mysql_adaptor_get_user_displayname(tmp_buff, es_result))
 				continue;
-			if (ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
+			dupval = common_util_dup(es_result);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
+		} else if (provider_uid == muidOOP) {
+			ONEOFF_ENTRYID oneoff_entry;
+
+			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_oneoff_eid(&oneoff_entry) != pack_result::ok ||
+			    strcasecmp(oneoff_entry.paddress_type.c_str(), "SMTP") != 0)
 				continue;
-			if (provider_uid == muidEMSAB) {
-				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS ||
-				    ab_entryid.type != DT_MAILUSER)
-					continue;
-				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
-				if (ppropval == nullptr)
-					return ecError;
-				memcpy(ppropval, prcpt->ppropval,
-					prcpt->count*sizeof(TAGGED_PROPVAL));
-				prcpt->ppropval = ppropval;
-				auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
-				if (err != ecSuccess)
-					return err;
-				auto dupval = common_util_dup(ab_entryid.px500dn);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
-				std::string es_result;
-				auto ret = cvt_essdn_to_username(ab_entryid.px500dn,
-				           g_org_name, cu_id2user, es_result);
-				if (ret != ecSuccess)
-					continue;
-				dupval = common_util_dup(es_result);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				es_result.clear();
-				cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
-				if (!mysql_adaptor_get_user_displayname(tmp_buff, es_result))
-					continue;	
-				dupval = common_util_dup(es_result);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
-				continue;
-			}
-			if (provider_uid == muidOOP) {
-				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS ||
-				    strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)
-					continue;
-				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
-				if (ppropval == nullptr)
-					return ecError;
-				memcpy(ppropval, prcpt->ppropval,
-					prcpt->count*sizeof(TAGGED_PROPVAL));
-				prcpt->ppropval = ppropval;
-				cu_set_propval(prcpt, PR_ADDRTYPE, "SMTP");
-				auto dupval = common_util_dup(oneoff_entry.pmail_address);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
-				cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
-				dupval = common_util_dup(oneoff_entry.pdisplay_name);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
-				cu_set_propval(prcpt, PR_SEND_RICH_INFO,
-					oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO ?
-					&persist_false : &persist_true);
-			}
+			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
+			if (ppropval == nullptr)
+				return ecServerOOM;
+			memcpy(ppropval, prcpt->ppropval,
+				prcpt->count*sizeof(TAGGED_PROPVAL));
+			prcpt->ppropval = ppropval;
+			cu_set_propval(prcpt, PR_ADDRTYPE, "SMTP");
+			auto dupval = common_util_dup(oneoff_entry.pmail_address);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
+			cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
+			dupval = common_util_dup(oneoff_entry.pdisplay_name);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
+			cu_set_propval(prcpt, PR_SEND_RICH_INFO,
+				oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO ?
+				&persist_false : &persist_true);
 		}
 	}
-	return pmessage->set_rcpts(prcpt_list) ? ecSuccess : ecError;
+	return pmessage->set_rcpts(prcpt_list);
 }
 
 /**
@@ -3293,7 +3180,9 @@ static ec_error_t rectify_message(message_object *pmessage,
 	repr_srch.cb = repr_skb.size() + 1;
 	repr_srch.pv = deconst(repr_skb.c_str());
 	char msgid[UADDR_SIZE+2];
-	make_inet_msgid(msgid, std::size(msgid), 0x5a53);
+	err = make_inet_msgid(msgid, std::size(msgid), 0x5a53);
+	if (err != ecSuccess)
+		return err;
 	TAGGED_PROPVAL pv[] = {
 		{PR_READ, &tmp_byte},
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
@@ -3314,8 +3203,9 @@ static ec_error_t rectify_message(message_object *pmessage,
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
-	if (!pmessage->set_properties(&tmp_propvals))
-		return ecError;
+	err = pmessage->set_properties(&tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	return pmessage->save();
 }
 
@@ -3351,44 +3241,45 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return ecNotSupported;
 	if (pmessage->importing() || !pmessage->writable())
 		return ecAccessDenied;
-	if (pmessage->get_recipient_num(&rcpt_num) == 0)
+	auto err = pmessage->get_recipient_num(&rcpt_num);
+	if (err != ecSuccess)
+		return err;
+	else if (rcpt_num == 0)
 		return MAPI_E_NO_RECIPIENTS;
-	if (rcpt_num > g_max_rcpt)
+	else if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
 
 	static constexpr proptag_t proptag_buff1[] = {PR_ASSOCIATED};
-	static constexpr PROPTAG_ARRAY tmp_proptags1 = {std::size(proptag_buff1), deconst(proptag_buff1)};
-	if (!pmessage->get_properties(&tmp_proptags1, &tmp_propvals))
-		return ecError;
+	err = pmessage->get_properties(proptag_buff1, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
-	std::string username;
-	if (!cu_extract_delegate(pmessage, username))
+	std::string delegator;
+	if (!cu_extract_delegator(pmessage, delegator))
 		return ecSendAsDenied;
-	auto account = pstore->get_account();
+	auto actor = pstore->get_account();
 	repr_grant repr_grant;
-	if (username.empty()) {
-		username = account;
+	if (delegator.empty()) {
+		delegator = actor;
 		repr_grant = repr_grant::send_as;
 	} else {
-		repr_grant = cu_get_delegate_perm_AA(account, username.c_str());
+		repr_grant = cu_get_delegate_perm_AA(actor, delegator.c_str());
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		mlog(LV_INFO, "I-1334: uid %s tried to submit %s:%llxh with from=<%s>, but no impersonation permission given.",
-		        account, pstore->dir, LLU{pmessage->get_id()}, username.c_str());
+		        actor, pstore->dir, LLU{pmessage->get_id()}, delegator.c_str());
 		return ecAccessDenied;
 	}
-	auto err = rectify_message(pmessage, username.c_str(),
-	           repr_grant >= repr_grant::send_as);
+	err = rectify_message(pmessage, delegator.c_str(),
+	      repr_grant >= repr_grant::send_as);
 	if (err != ecSuccess)
 		return err;
 	static constexpr proptag_t proptag_buff2[] =
 		{PR_MAX_SUBMIT_MESSAGE_SIZE, PR_PROHIBIT_SEND_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
-	static const PROPTAG_ARRAY tmp_proptags2 =
-		{std::size(proptag_buff2), deconst(proptag_buff2)};
-	if (!pstore->get_properties(&tmp_proptags2, &tmp_propvals))
+	if (!pstore->get_properties(proptag_buff2, &tmp_propvals))
 		return ecError;
 
 	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
@@ -3399,23 +3290,22 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return ecQuotaExceeded;
 
 	auto num = tmp_propvals.get<const uint32_t>(PR_MAX_SUBMIT_MESSAGE_SIZE);
-	ssize_t max_length = -1;
+	uint64_t max_length = UINT64_MAX;
 	if (num != nullptr)
-		max_length = *num;
+		max_length = static_cast<uint64_t>(*num) << 10;
 
 	static constexpr proptag_t proptag_buff3[] =
 		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS, PR_DEFERRED_SEND_TIME,
 		PR_DEFERRED_SEND_NUMBER, PR_DEFERRED_SEND_UNITS,
 		PR_DELETE_AFTER_SUBMIT};
-	static constexpr PROPTAG_ARRAY tmp_proptags3 =
-		{std::size(proptag_buff3), deconst(proptag_buff3)};
-	if (!pmessage->get_properties(&tmp_proptags3, &tmp_propvals))
-		return ecError;
+	err = pmessage->get_properties(proptag_buff3, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	num = tmp_propvals.get<uint32_t>(PR_MESSAGE_SIZE);
 	if (num == nullptr)
 		return ecError;
 	auto mail_length = *num;
-	if (max_length > 0 && mail_length > static_cast<size_t>(max_length))
+	if (max_length != UINT64_MAX && mail_length > max_length)
 		return EC_EXCEEDED_SIZE;
 	num = tmp_propvals.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (num == nullptr)
@@ -3437,8 +3327,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		auto deferred_time = props_to_defer_interval(tmp_propvals);
 		if (deferred_time > 0) {
 			snprintf(command_buff, 1024, "%s %s %llu",
-				common_util_get_submit_command(),
-			         pstore->get_account(),
+			         common_util_get_submit_command(), actor,
 			         LLU{rop_util_get_gc_value(pmessage->get_id())});
 			timer_id = system_services_add_timer(
 					command_buff, deferred_time);
@@ -3453,10 +3342,12 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			return ecSuccess;
 		}
 	}
-	if (!cu_send_message(pstore, pmessage, TRUE)) {
+	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
+	auto ret = cu_send_message(pstore, pmessage, ev_from);
+	if (ret != ecSuccess) {
 		exmdb_client->clear_submit(pstore->get_dir(),
 			pmessage->get_id(), b_unsent);
-		return ecRpcFailed;
+		return ret;
 	}
 	if (!b_delete)
 		pmessage->reload();
@@ -3464,7 +3355,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		pmessage->clear_unsent();
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2351: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -3548,7 +3439,7 @@ ec_error_t zs_deleteattachment(GUID hsession,
 		return ecNotSupported;
 	if (!pmessage->writable())
 		return ecAccessDenied;
-	return pmessage->delete_attachment(attach_id) ? ecSuccess : ecError;
+	return pmessage->delete_attachment(attach_id);
 }
 
 ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
@@ -3565,9 +3456,11 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		return ecNullObject;
 	switch (mapi_type) {
 	case zs_objtype::profproperty:
-		for (size_t i = 0; i < ppropvals->count; ++i)
-			if (static_cast<TPROPVAL_ARRAY *>(pobject)->set(ppropvals->ppropval[i]) != 0)
-				return ecError;
+		for (size_t i = 0; i < ppropvals->count; ++i) {
+			auto err = static_cast<TPROPVAL_ARRAY *>(pobject)->set(ppropvals->ppropval[i]);
+			if (err != ecSuccess)
+				return err;
+		}
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case zs_objtype::store: {
@@ -3596,9 +3489,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->set_properties(ppropvals))
-			return ecError;
-		return ecSuccess;
+		return msg->set_properties(ppropvals);
 	}
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -3614,7 +3505,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 }
 
 ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
-    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+    const proptag_vector *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	zs_objtype mapi_type;
 	PROPTAG_ARRAY proptags;
@@ -3625,6 +3516,10 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	auto pobject = pinfo->ptree->get_object<void>(hobject, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
+
+	proptag_cspan wtags;
+	if (pproptags != nullptr)
+		wtags = *pproptags;
 	switch (mapi_type) {
 	case zs_objtype::profproperty:
 		if (NULL == pproptags) {
@@ -3632,11 +3527,10 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 			return ecSuccess;
 		}
 		ppropvals->count = 0;
-		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->size());
 		if (ppropvals->ppropval == nullptr)
-			return ecError;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
-			const auto tag = pproptags->pproptag[i];
+			return ecServerOOM;
+		for (const auto tag : wtags) {
 			auto v = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(tag);
 			if (v != nullptr)
 				ppropvals->emplace_back(tag, v);
@@ -3647,9 +3541,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (NULL == pproptags) {
 			if (!store->get_all_proptags(&proptags))
 				return ecError;
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!store->get_properties(pproptags, ppropvals))
+		if (!store->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3658,31 +3552,30 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (NULL == pproptags) {
 			if (!folder->get_all_proptags(&proptags))
 				return ecError;
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!folder->get_properties(pproptags, ppropvals))
+		if (!folder->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
 	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
 		if (NULL == pproptags) {
-			if (!msg->get_all_proptags(&proptags))
-				return ecError;
-			pproptags = &proptags;
+			auto err = msg->get_all_proptags(&proptags);
+			if (err != ecSuccess)
+				return err;
+			wtags = proptags;
 		}
-		if (!msg->get_properties(pproptags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return msg->get_properties(wtags, ppropvals);
 	}
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (NULL == pproptags) {
 			if (!atx->get_all_proptags(&proptags))
 				return ecError;
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!atx->get_properties(pproptags, ppropvals))
+		if (!atx->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3690,31 +3583,31 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (NULL == pproptags) {
 			container_object_get_container_table_all_proptags(
 				&proptags);
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!static_cast<container_object *>(pobject)->get_properties(pproptags, ppropvals))
+		if (!static_cast<container_object *>(pobject)->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	case zs_objtype::mailuser:
 	case zs_objtype::distlist:
 		if (NULL == pproptags) {
 			container_object_get_user_table_all_proptags(&proptags);
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!static_cast<user_object *>(pobject)->get_properties(pproptags, ppropvals))
+		if (!static_cast<user_object *>(pobject)->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	case zs_objtype::oneoff:
 		if (pproptags == nullptr)
-			pproptags = &oneoff_object::all_tags;
-		return static_cast<oneoff_object *>(pobject)->get_props(pproptags, ppropvals);
+			wtags = oneoff_object::all_tags;
+		return static_cast<oneoff_object *>(pobject)->get_props(wtags, ppropvals);
 	default:
 		return ecNotSupported;
 	}
 }
 
 ec_error_t zs_deletepropvals(GUID hsession,
-	uint32_t hobject, const PROPTAG_ARRAY *pproptags)
+    uint32_t hobject, proptag_cspan pproptags)
 {
 	zs_objtype mapi_type;
 	uint32_t permission;
@@ -3727,8 +3620,8 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		return ecNullObject;
 	switch (mapi_type) {
 	case zs_objtype::profproperty:
-		for (size_t i = 0; i < pproptags->count; ++i)
-			static_cast<TPROPVAL_ARRAY *>(pobject)->erase(pproptags->pproptag[i]);
+		for (const auto tag : pproptags)
+			static_cast<TPROPVAL_ARRAY *>(pobject)->erase(tag);
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case zs_objtype::store: {
@@ -3757,9 +3650,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->remove_properties(pproptags))
-			return ecError;
-		return ecSuccess;
+		return msg->remove_properties(pproptags);
 	}
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -3787,7 +3678,7 @@ ec_error_t zs_setmessagereadflag(GUID hsession, uint32_t hmessage,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	return pmessage->set_readflag(flags, &b_changed) ? ecSuccess : ecError;
+	return pmessage->set_readflag(flags, &b_changed);
 }
 
 ec_error_t zs_openembedded(GUID hsession,
@@ -3809,8 +3700,16 @@ ec_error_t zs_openembedded(GUID hsession,
 		return zh_error(hstore);
 	auto b_writable = pattachment->writable();
 	auto tag_access = pattachment->get_tag_access();
-	if ((flags & MAPI_CREATE) && !b_writable)
-		return ecAccessDenied;
+	if (!b_writable && (flags & MAPI_CREATE)) {
+		/*
+		 * MAPI_BEST_ACCESS is supposed to imply a fallback to readonly,
+		 * so downgrade MAPI_BEST_ACCESS to read-only when lacking
+		 * write permissions instead of returning ecAccessDenied.
+		 */
+		if ((flags & MAPI_BEST_ACCESS) != MAPI_BEST_ACCESS)
+			return ecAccessDenied;
+		flags &= ~MAPI_BEST_ACCESS;
+	}
 	auto pmessage = message_object::create(pstore, false, pinfo->cpid, 0,
 	                pattachment, tag_access, b_writable ? TRUE : false, nullptr);
 	if (pmessage == nullptr)
@@ -3824,8 +3723,9 @@ ec_error_t zs_openembedded(GUID hsession,
 		           pattachment, tag_access, TRUE, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		if (pmessage->init_message(false, pinfo->cpid) != 0)
-			return ecError;
+		auto err = pmessage->init_message(false, pinfo->cpid);
+		if (err != ecSuccess)
+			return err;
 	}
 	/* add the store handle as the parent object handle
 		because the caller normally will not keep the
@@ -3885,7 +3785,7 @@ ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
 }
 
 ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
-    const PROPTAG_ARRAY *pexclude_proptags, uint32_t hdstobject, uint32_t flags)
+    proptag_cspan pexclude_proptags, uint32_t hdstobject, uint32_t flags)
 {
 	BOOL b_cycle;
 	BOOL b_collid;
@@ -3939,7 +3839,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 				return ecAccessDenied;
 		}
 		BOOL b_sub;
-		if (!pexclude_proptags->has(PR_CONTAINER_HIERARCHY)) {
+		if (!pexclude_proptags.has(PR_CONTAINER_HIERARCHY)) {
 			if (!exmdb_client->is_descendant_folder(pstore->get_dir(),
 			    folder->folder_id, fdst->folder_id, &b_cycle))
 				return ecError;
@@ -3949,15 +3849,15 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		} else {
 			b_sub = FALSE;
 		}
-		BOOL b_normal = !pexclude_proptags->has(PR_CONTAINER_CONTENTS) ? TRUE : false;
-		BOOL b_fai    = !pexclude_proptags->has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
+		BOOL b_normal = !pexclude_proptags.has(PR_CONTAINER_CONTENTS) ? TRUE : false;
+		BOOL b_fai    = !pexclude_proptags.has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
 		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
-		common_util_reduce_proptags(&proptags, pexclude_proptags);
+		cu_reduce_proptags(&proptags, pexclude_proptags);
 		tmp_proptags.count = 0;
-		tmp_proptags.pproptag = cu_alloc<uint32_t>(proptags.count);
+		tmp_proptags.pproptag = cu_alloc<proptag_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)
-			return ecError;
+			return ecServerOOM;
 		if (!b_force && !fdst->get_all_proptags(&proptags1))
 			return ecError;
 		for (unsigned int i = 0; i < proptags.count; ++i) {
@@ -3966,9 +3866,9 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 				continue;
 			if (!b_force && proptags1.has(tag))
 				continue;
-			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+			tmp_proptags.emplace_back(tag);
 		}
-		if (!folder->get_properties(&tmp_proptags, &propvals))
+		if (!folder->get_properties(tmp_proptags, &propvals))
 			return ecError;
 		if (b_sub || b_normal || b_fai) {
 			BOOL b_guest = username == STORE_OWNER_GRANTED ? false : TRUE;
@@ -3991,9 +3891,10 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		auto mdst = static_cast<message_object *>(pobject_dst);
 		if (!mdst->writable())
 			return ecAccessDenied;
-		if (!mdst->copy_to(static_cast<message_object *>(pobject),
-		    pexclude_proptags, b_force, &b_cycle))
-			return ecError;
+		auto err = mdst->copy_to(static_cast<message_object *>(pobject),
+		           pexclude_proptags, b_force, &b_cycle);
+		if (err != ecSuccess)
+			return err;
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}
 	case zs_objtype::attach: {
@@ -4024,8 +3925,9 @@ ec_error_t zs_savechanges(GUID hsession, uint32_t hobject)
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->check_original_touched(&b_touched))
-			return ecError;
+		auto err = msg->check_original_touched(&b_touched);
+		if (err != ecSuccess)
+			return err;
 		if (b_touched)
 			return ecObjectModified;
 		return msg->save();
@@ -4374,8 +4276,11 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 	                MAPI_MODIFY, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
-	if (b_new && pmessage->init_message(b_fai, pinfo->cpid) != 0)
-		return ecError;
+	if (b_new) {
+		auto err = pmessage->init_message(b_fai, pinfo->cpid);
+		if (err != ecSuccess)
+			return err;
+	}
 	*phobject = pinfo->ptree->add_object_handle(hctx, {zs_objtype::message, std::move(pmessage)});
 	return zh_error(*phobject);
 }
@@ -4514,7 +4419,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		tmp_propvals.count = 0;
 		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
 		if (tmp_propvals.ppropval == nullptr)
-			return ecError;
+			return ecServerOOM;
 		tmp_propvals.ppropval[0].proptag = PidTagFolderId;
 		tmp_propvals.ppropval[0].pvalue = &folder_id;
 		tmp_propvals.ppropval[1].proptag = PidTagParentFolderId;
@@ -4587,7 +4492,7 @@ ec_error_t zs_importfolder(GUID hsession,
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5 + ppropvals->count);
 	if (tmp_propvals.ppropval == nullptr)
-		return ecError;
+		return ecServerOOM;
 	tmp_propvals.ppropval[0].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[0].pvalue = pproplist->ppropval[2].pvalue;
 	tmp_propvals.ppropval[1].proptag = PR_DISPLAY_NAME;
@@ -4610,7 +4515,6 @@ ec_error_t zs_importdeletion(GUID hsession,
 	XID tmp_xid;
 	void *pvalue;
 	BOOL b_exist;
-	uint64_t eid;
 	BOOL b_owner;
 	BOOL b_result;
 	BOOL b_partial;
@@ -4647,15 +4551,16 @@ ec_error_t zs_importdeletion(GUID hsession,
 	}
 	if (SYNC_TYPE_CONTENTS == sync_type) {
 		message_ids.count = 0;
-		message_ids.pids = cu_alloc<uint64_t>(pbins->count);
+		message_ids.pids  = cu_alloc<eid_t>(pbins->count);
 		if (message_ids.pids == nullptr)
-			return ecError;
+			return ecServerOOM;
 	}
 	for (size_t i = 0; i < pbins->count; ++i) {
 		if (pbins->pbin[i].cb != 22)
 			return ecInvalidParam;
 		if (!common_util_binary_to_xid(&pbins->pbin[i], &tmp_xid))
 			return ecError;
+		eid_t eid{};
 		if (pstore->b_private) {
 			auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
 			if (tmp_guid != tmp_xid.guid)
@@ -4790,9 +4695,8 @@ ec_error_t zs_importreadstates(GUID hsession,
 				continue;
 		}
 		static constexpr proptag_t proptag_buff[] = {PR_ASSOCIATED, PR_READ};
-		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client->get_message_properties(pstore->get_dir(),
-		    nullptr, CP_ACP, message_id, &tmp_proptags, &tmp_propvals))
+		    nullptr, CP_ACP, message_id, proptag_buff, &tmp_propvals))
 			return ecError;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 		if (flag != nullptr && *flag != 0)
@@ -4815,7 +4719,7 @@ ec_error_t zs_getsearchcriteria(GUID hsession,
 	RESTRICTION **pprestriction, uint32_t *psearch_stat)
 {
 	zs_objtype mapi_type;
-	LONGLONG_ARRAY folder_ids;
+	EID_ARRAY folder_ids;
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -4838,9 +4742,9 @@ ec_error_t zs_getsearchcriteria(GUID hsession,
 	}
 	pfolder_array->pbin = cu_alloc<BINARY>(folder_ids.count);
 	if (pfolder_array->pbin == nullptr)
-		return ecError;
+		return ecServerOOM;
 	for (size_t i = 0; i < folder_ids.count; ++i) {
-		auto pbin = cu_fid_to_entryid(pstore, folder_ids.pll[i]);
+		auto pbin = cu_fid_to_entryid(*pstore, folder_ids.pids[i]);
 		if (pbin == nullptr)
 			return ecError;
 		pfolder_array->pbin[i] = *pbin;
@@ -4857,7 +4761,7 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 	zs_objtype mapi_type;
 	uint32_t permission;
 	uint32_t search_status;
-	LONGLONG_ARRAY folder_ids;
+	EID_ARRAY folder_ids;
 	
 	if (!(flags & (RESTART_SEARCH | STOP_SEARCH)))
 		/* make the default search_flags */
@@ -4894,18 +4798,18 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 			return ecSuccess;
 	}
 	folder_ids.count = pfolder_array->count;
-	folder_ids.pll   = cu_alloc<uint64_t>(folder_ids.count);
-	if (folder_ids.pll == nullptr)
-		return ecError;
+	folder_ids.pids  = cu_alloc<eid_t>(folder_ids.count);
+	if (folder_ids.pids == nullptr)
+		return ecServerOOM;
 	for (size_t i = 0; i < pfolder_array->count; ++i) {
 		if (!cu_entryid_to_fid(pfolder_array->pbin[i],
-		    &b_private, &db_id, &folder_ids.pll[i]))
+		    &b_private, &db_id, &folder_ids.pids[i]))
 			return ecError;
 		if (!b_private || db_id != pstore->account_id)
 			return ecSearchFolderScopeViolation;
 		if (!pstore->owner_mode()) {
 			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
-			    folder_ids.pll[i], pinfo->get_username(), &permission))
+			    folder_ids.pids[i], pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & (frightsOwner | frightsReadAny)))
 				return ecAccessDenied;
@@ -4944,10 +4848,10 @@ ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	std::unique_ptr<MESSAGE_CONTENT, mc_delete> pmsgctnt(cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin));
+	auto pmsgctnt = cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(pmsgctnt.get()) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt);
 }
 
 ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
@@ -4980,7 +4884,7 @@ ec_error_t zs_icaltomessage(GUID hsession,
 	auto pmsgctnt = cu_ical_to_message(pmessage->get_store(), pical_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(pmsgctnt.get()) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt);
 }
 
 ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
@@ -5019,9 +4923,11 @@ ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 		if (rt2 != ecSuccess)
 			return rt2;
 		auto zmo = info->ptree->get_object<message_object>(msg_handle, &mapi_type);
-		if (zmo == nullptr || mapi_type != zs_objtype::message ||
-		    !zmo->write_message(msgctnt.get()))
+		if (zmo == nullptr || mapi_type != zs_objtype::message)
 			return ecError;
+		auto err = zmo->write_message(*msgctnt);
+		if (err != ecSuccess)
+			return err;
 		outhandles->pl[outhandles->count++] = msg_handle;
 	}
 	cl_0.release();
@@ -5034,12 +4940,16 @@ ec_error_t zs_messagetovcf(GUID hsession, uint32_t hmessage, BINARY *pvcf_bin)
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
-	if (pmessage == nullptr)
+	auto obj = pinfo->ptree->get_object<void>(hmessage, &mapi_type);
+	if (obj == nullptr)
 		return ecNullObject;
-	if (mapi_type != zs_objtype::message)
-		return ecNotSupported;
-	return common_util_message_to_vcf(pmessage, pvcf_bin) ? ecSuccess : ecError;
+	if (mapi_type == zs_objtype::message)
+		return common_util_message_to_vcf(static_cast<message_object *>(obj), pvcf_bin) ?
+			ecSuccess : ecError;
+	if (mapi_type == zs_objtype::mailuser || mapi_type == zs_objtype::distlist)
+		return cu_abentry_to_vcf(static_cast<user_object *>(obj),
+		       mapi_type == zs_objtype::distlist, pvcf_bin) ? ecSuccess : ecError;
+	return ecNotSupported;
 }
 
 ec_error_t zs_vcftomessage(GUID hsession,
@@ -5057,7 +4967,7 @@ ec_error_t zs_vcftomessage(GUID hsession,
 	auto pmsgctnt = common_util_vcf_to_message(pmessage->get_store(), pvcf_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt);
 }
 
 ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
@@ -5069,11 +4979,14 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 	std::string username;
 	sql_meta_result mres;
 	if (cvt_entryid_to_smtpaddr(&entryid, g_org_name,
-	    cu_id2user, username) != ecSuccess ||
+	    mysql_adaptor_userid_to_name, username) != ecSuccess ||
 	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
-	return get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
-	       starttime, endtime, *fb_data) ? ecSuccess : ecError;
+	auto actor = pinfo->get_username();
+	if (strcmp(actor, mres.username.c_str()) == 0)
+		actor = nullptr;
+	return get_freebusy(actor, mres.maildir.c_str(),
+	       starttime, endtime, *fb_data);
 }
 
 ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
@@ -5085,13 +4998,14 @@ ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
 	std::string username;
 	sql_meta_result mres;
 	if (cvt_entryid_to_smtpaddr(&entryid, g_org_name,
-	    cu_id2user, username) != ecSuccess ||
+	    mysql_adaptor_userid_to_name, username) != ecSuccess ||
 	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	std::vector<freebusy_event> fb_data;
-	if (!get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
-	    starttime, endtime, fb_data))
-		return ecError;
+	auto err = get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
+	           starttime, endtime, fb_data);
+	if (err != ecSuccess)
+		return err;
 	return cu_fbdata_to_ical(pinfo->get_username(), username.c_str(),
 	       starttime, endtime, fb_data, bin);
 }
@@ -5111,9 +5025,7 @@ ec_error_t zs_linkmessage(GUID hsession,
 	BOOL b_private1;
 	char maildir[256];
 	zs_objtype mapi_type;
-	uint64_t folder_id;
-	uint64_t folder_id1;
-	uint64_t message_id;
+	eid_t folder_id{}, folder_id1{}, message_id{};
 	uint32_t account_id;
 	uint32_t account_id1;
 	
@@ -5156,7 +5068,7 @@ ec_error_t zs_linkmessage(GUID hsession,
 ec_error_t zs_essdn_to_username(const char *essdn, char **username)
 {
 	std::string es_result;
-	auto ret = cvt_essdn_to_username(essdn, g_org_name, cu_id2user, es_result);
+	auto ret = cvt_essdn_to_username(essdn, g_org_name, mysql_adaptor_userid_to_name, es_result);
 	if (ret != ecSuccess)
 		return ret;
 	*username = common_util_dup(es_result);

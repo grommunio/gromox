@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
-
 #pragma once
 #include <cstdint>
 #include <list>
@@ -21,6 +20,8 @@
 #include "soaputil.hpp"
 #include "structures.hpp"
 
+struct DB_NOTIFY;
+
 namespace gromox::EWS::detail {
 
 /**
@@ -30,7 +31,6 @@ namespace gromox::EWS::detail {
  */
 struct Cleaner {
 	void operator()(BINARY*);
-	void operator()(MESSAGE_CONTENT*);
 };
 
 struct AttachmentInstanceKey {
@@ -51,15 +51,14 @@ struct MessageInstanceKey {
 };
 
 using ExmdbSubscriptionKey = std::pair<std::string, uint32_t>;
-using SubscriptionKey = uint32_t;
-using ContextWakeupKey = int;
+using ContextKey = int;
 
 struct EmbeddedInstanceKey {
 	std::string dir;
 	uint32_t aid;
 
 	inline bool operator==(const EmbeddedInstanceKey& o) const
-	{return dir == o.dir && aid == o.aid;}
+	{ return aid == o.aid && dir == o.dir; }
 };
 
 } // namespace gromox::EWS::detail
@@ -93,10 +92,9 @@ class EWSPlugin {
 
 	EWSPlugin();
 	~EWSPlugin();
-	http_status proc(int, const void*, uint64_t);
-	static BOOL preproc(int);
-
-	bool logEnabled(const std::string_view&) const;
+	http_status proc(detail::ContextKey, const void*, uint64_t);
+	static BOOL preproc(detail::ContextKey);
+	bool logEnabled(const std::string_view) const;
 
 	struct _exmdb {
 		_exmdb();
@@ -134,8 +132,8 @@ class EWSPlugin {
 		Structures::sMailboxInfo mailboxInfo; ///< Target mailbox metadata
 		std::mutex lock; ///< I/O mutex
 		std::vector<detail::ExmdbSubscriptionKey> inner_subs; ///< Exmdb subscription keys
-		std::list<Structures::sNotificationEvent> events; ///< Events that occured since last check
-		std::optional<int> waitingContext; ///< ID of context waiting for events
+		std::list<Structures::sNotificationEvent> events; ///< Events that occurred since last check
+		detail::ContextKey waitingContext = -1; ///< ID of context waiting for events
 	};
 
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;
@@ -149,7 +147,7 @@ class EWSPlugin {
 	detail::ExmdbSubscriptionKey subscribe(const std::string&, uint16_t, bool, uint64_t, detail::SubscriptionKey) const;
 	std::shared_ptr<SubManager> get_submgr(detail::SubscriptionKey, uint32_t) const;
 	std::string timestamp() const;
-	void unlinkSubscription(int) const;
+	void unlinkSubscription(detail::ContextKey) const;
 	bool unsubscribe(detail::SubscriptionKey, const char*) const;
 	void unsubscribe(const detail::ExmdbSubscriptionKey&) const;
 	void wakeContext(int, std::chrono::milliseconds) const;
@@ -166,12 +164,12 @@ class EWSPlugin {
 	size_t max_user_photo_size = 5 << 20; ///< Maximum user photo file size (5 MiB)
 	std::chrono::milliseconds cache_interval{5'000}; ///< Interval for cache cleanup
 	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; ///< Lifetime of attachment instances
-	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; /// Lifetime of embedded instances
+	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; ///< Lifetime of embedded instances
 	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; ///< Lifetime of message instances
 	std::chrono::milliseconds event_stream_interval{45'000}; ///< How often to send updates for GetStreamingEvents
 
-	int retr(int);
-	void term(int);
+	int retr(detail::ContextKey);
+	void term(detail::ContextKey);
 
 	private:
 	template<typename T> using sptr = std::shared_ptr<T>;
@@ -179,23 +177,79 @@ class EWSPlugin {
 	struct DebugCtx;
 
 	struct WakeupNotify {
-		inline explicit WakeupNotify(int id) : ID(id) {}
-		int ID;
+		inline explicit WakeupNotify(detail::ContextKey id) : ctx_id(id) {}
+		detail::ContextKey ctx_id;
 		~WakeupNotify();
 	};
 
-	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey, detail::ContextWakeupKey, detail::EmbeddedInstanceKey>;
+	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey, detail::ContextKey, detail::EmbeddedInstanceKey>;
 	using CacheObj = std::variant<sptr<ExmdbInstance>, sptr<SubManager>, sptr<WakeupNotify>>;
 
 	static const std::unordered_map<std::string, Handler> requestMap;
 
-	static http_status fault(int, http_status, const std::string_view&);
+	static http_status fault(detail::ContextKey, http_status, const std::string_view);
 
 	mutable std::mutex subscriptionLock;
 	mutable std::unordered_map<detail::ExmdbSubscriptionKey, detail::SubscriptionKey> subscriptions;
 
 	std::vector<std::unique_ptr<EWSContext>> contexts;
-	mutable ObjectCache<CacheKey, CacheObj> cache;
+
+	/**
+	 * @brief      Timed object cache
+	 *
+	 * Objects are stored for a limited time and automatically removed once they
+	 * expire.
+	 *
+	 * Once stored, only copies of the stored elements can be retrieved to avoid
+	 * asynchronous destruction during access (use std::shared_ptr).
+	 */
+	class ObjectCache {
+		private:
+		mutable std::mutex objectLock; ///< Mutex to protect object map
+		using Container = std::pair<gromox::time_point, CacheObj>;
+		std::unordered_map<CacheKey, Container> objects; ///< Stored objects
+		using node_t = typename decltype(objects)::node_type;
+
+		std::condition_variable notify; ///< CV to signal stopping
+		std::thread scanThread; ///< Thread used for periodic scanning
+		gromox::atomic_bool running{false}; ///< Whether the scanner is running
+
+		public:
+		/**
+		 * @brief      Clear cache and stop scanner
+		 */
+		~ObjectCache() { stop(); }
+		void run(std::chrono::milliseconds);
+		void stop();
+
+		/**
+		 * @brief      Add object to cache
+		 *
+		 * @param      lifespan  Object life span
+		 * @param      key       Object key
+		 * @param      args      Object constructor arguments
+		 *
+		 * @tparam     KeyArg    Type to derive key from
+		 * @tparam     Args      Object constructor arguments
+		 *
+		 * @return     true if emplaced, false if already present
+		 */
+		template<typename K, typename... Args>
+		bool emplace(std::chrono::milliseconds lifespan, K &&key, Args &&...args)
+		{
+			std::lock_guard guard(objectLock);
+			auto res = objects.try_emplace(CacheKey(key), tp_now() + lifespan, std::forward<Args...>(args)...);
+			return res.second;
+		}
+
+		CacheObj get(const CacheKey &) const;
+		CacheObj get(const CacheKey &, std::chrono::milliseconds);
+		void evict(const CacheKey &);
+		void scan();
+		void periodicScan(std::chrono::milliseconds);
+	};
+
+	mutable ObjectCache cache;
 
 	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;
@@ -203,7 +257,7 @@ class EWSPlugin {
 	bool invertFilter = true;
 	bool teardown = false;
 
-	http_status dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t);
+	http_status dispatch(detail::ContextKey, HTTP_AUTH_INFO &, const void *, uint64_t);
 	void loadConfig();
 };
 
@@ -212,38 +266,38 @@ class EWSPlugin {
  */
 class EWSContext {
 	public:
-	using MCONT_PTR = std::unique_ptr<MESSAGE_CONTENT, detail::Cleaner>; ///< Unique pointer to MESSAGE_CONTENT
+	using MCONT_PTR = std::unique_ptr<message_content, gromox::mc_delete>;
 
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 
-	EWSContext(int, HTTP_AUTH_INFO, const char *, uint64_t, EWSPlugin &);
+	EWSContext(detail::ContextKey, const HTTP_AUTH_INFO &, const char *, uint64_t, EWSPlugin &);
 	~EWSContext();
-
-	EWSContext(const EWSContext&) = delete;
-	EWSContext(EWSContext&&) = delete;
+	NOMOVE(EWSContext);
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
+	void createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
 	void disableEventStream();
 	const char* effectiveUser(const Structures::sFolderSpec&) const;
 	void enableEventStream(int);
 	std::string essdn_to_username(const std::string&) const;
+	std::string exportContent(const std::string&, const MESSAGE_CONTENT&, const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
 	uint32_t getAccountId(const std::string&, bool) const;
 	std::string getDir(const Structures::sFolderSpec&) const;
 	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
-	template<typename T> const T* getFolderProp(const std::string&, uint64_t, uint32_t) const;
-	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
+	template<typename T> const T *getFolderProp(const std::string &, uint64_t, proptag_t) const;
+	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, proptag_cspan) const;
 	std::pair<std::list<Structures::sNotificationEvent>, bool> getEvents(const Structures::tSubscriptionId&) const;
 	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
-	template<typename T> const T* getItemProp(const std::string&, uint64_t, uint32_t) const;
-	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
+	template<typename T> const T *getItemProp(const std::string &, uint64_t, proptag_t) const;
+	TPROPVAL_ARRAY getItemProps(const std::string &, uint64_t, proptag_cspan) const;
 	GUID getMailboxGuid(const std::string&) const;
 	Structures::sMailboxInfo getMailboxInfo(const std::string&, bool) const;
-	uint16_t getNamedPropId(const std::string&, const PROPERTY_NAME&, bool=false) const;
+	propid_t getNamedPropId(const std::string &, const PROPERTY_NAME &, bool = false) const;
 	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&, bool=false) const;
 	void getNamedTags(const std::string&, Structures::sShape&, bool=false) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
@@ -251,41 +305,55 @@ class EWSContext {
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	TARRAY_SET loadPermissions(const std::string&, uint64_t) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
+	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
+	void deleteOccurrence(const std::string &, uint64_t, uint32_t) const;
+	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
+	void applyRecurrence(const std::string &, uint64_t, const tinyxml2::XMLElement *, Structures::sShape &) const;
+	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tContactsFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingMessage &, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingRequestMessage &, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
 	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&, PCL=PCL()) const;
 	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
 	uint64_t moveCopyItem(const std::string&, const Structures::sMessageEntryId&, uint64_t, bool) const;
 	void normalize(Structures::tEmailAddressType&) const;
+	void notifyReadReceipt(const std::string&, uint64_t) const;
 	void normalize(Structures::tMailbox&) const;
 	int notify();
 	uint32_t permissions(const std::string&, uint64_t) const;
+	Structures::tDelegatePermissions readDelegatePermissions(const std::string&, const std::string&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
+	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool) const;
+	void sendMeetingResponse(const Structures::tItemId&, const MESSAGE_CONTENT&) const;
 	BINARY serialize(const XID&) const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
+	void rcpt_add_unique(TARRAY_SET *, gromox::EWS::Structures::tEmailAddressType, uint32_t) const;
 	MCONT_PTR toContent(const std::string&, std::string&) const;
 	MCONT_PTR toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPullSubscriptionRequest&) const;
+	Structures::tSubscriptionId subscribe(const Structures::tPushSubscriptionRequest &) const;
 	Structures::tSubscriptionId subscribe(const Structures::tStreamingSubscriptionRequest&) const;
 	bool unsubscribe(const Structures::tSubscriptionId&) const;
 	void updated(const std::string&, const Structures::sFolderSpec&) const;
 	void updated(const std::string&, const Structures::sMessageEntryId&, Structures::sShape&) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
+	void writeDelegatePermissions(const std::string&, const std::string&, const Structures::tDelegatePermissions&) const;
 	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
 
 	gromox::time_duration age() const { return tp_now() - m_created; }
 	void experimental(const char*) const;
 
-	inline int ID() const {return m_ID;}
+	inline detail::ContextKey context_id() const { return m_ctx_id; }
 	inline const HTTP_AUTH_INFO& auth_info() const {return m_auth_info;}
 	inline const EWSPlugin& plugin() const {return m_plugin;}
 	inline const SOAP::Envelope& request() const {return m_request;}
@@ -301,7 +369,7 @@ class EWSContext {
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
-	static char* cpystr(const std::string_view&);
+	static char *cpystr(const std::string_view);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);
 	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);
@@ -309,10 +377,13 @@ class EWSContext {
 private:
 	const void* getFolderProp(const std::string&, uint64_t, uint32_t) const;
 	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
+	int32_t recurTzOffset(const std::string &, uint64_t, const APPOINTMENT_RECUR_PAT &) const;
+	bool saveRecurBlob(const std::string &, uint64_t, proptag_t, const APPOINTMENT_RECUR_PAT &) const;
+	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
 
 	struct NotificationContext {
 		enum State : uint8_t {
-			S_INIT, ///< Just initalized, flush data and wait
+			S_INIT, ///< Just initialized, flush data and wait
 			S_SLEEP, ///< Waiting for next wakeup
 			S_WRITE, ///< Just wrote data, proceed with sleeping
 			S_CLOSING, ///< All subscriptions died so we might as well
@@ -334,13 +405,18 @@ private:
 	void toContent(const std::string&, Structures::tContact&, Structures::sShape&, MCONT_PTR&) const;
 	void toContent(const std::string&, Structures::tItem&, Structures::sShape&, MCONT_PTR&) const;
 	void toContent(const std::string&, Structures::tMessage&, Structures::sShape&, MCONT_PTR&) const;
+	void toContent(const std::string &, Structures::tTask &, Structures::sShape &, MCONT_PTR &) const;
+	void toContent(const std::string &, Structures::tAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
+	void toContent(const std::string &, Structures::tTentativelyAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
+	void toContent(const std::string &, Structures::tDeclineItem &, Structures::sShape &, MCONT_PTR &) const;
+	std::optional<uint64_t> findExistingByGoid(const Structures::sFolderSpec&, const std::string&, const MESSAGE_CONTENT&) const;
 
 	inline void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {}
 	void updateProps(Structures::tCalendarItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const;
 
-	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
+	PROPERTY_NAME *getPropertyName(const std::string &, propid_t) const;
 
-	int m_ID = 0;
+	detail::ContextKey m_ctx_id = -1;
 	http_status m_code = http_status::ok;
 	State m_state = S_DEFAULT;
 	bool m_log = false;
@@ -366,8 +442,8 @@ private:
  *
  * @return     Pointer to property or nullptr if not found.
  */
-template<typename T>
-const T* EWSContext::getFolderProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+template<typename T> const T *
+EWSContext::getFolderProp(const std::string &dir, uint64_t mid, proptag_t tag) const
 {
 	return static_cast<const T *>(getFolderProp(dir, mid, tag));
 }
@@ -383,8 +459,8 @@ const T* EWSContext::getFolderProp(const std::string& dir, uint64_t mid, uint32_
  *
  * @return     Pointer to property or nullptr if not found.
  */
-template<typename T>
-const T* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+template<typename T> const T *
+EWSContext::getItemProp(const std::string &dir, uint64_t mid, proptag_t tag) const
 {
 	return static_cast<const T*>(getItemProp(dir, mid, tag));
 }

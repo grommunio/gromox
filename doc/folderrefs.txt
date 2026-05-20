@@ -64,10 +64,10 @@ but points to an invalid folder (GUID_NULL dbguid).
 Root/Inbox properties
 =====================
 
-==  ==  ==  ===  ======  ===========================
+==  ==  ==  ===  ======  ======================================
 EX  GH  GZ  KDB  propid  mnemonic
-==  ==  ==  ===  ======  ===========================
-ri  -   -   -    120D    entryid to Calendar\Birthdays folder
+==  ==  ==  ===  ======  ======================================
+ri  -   -   -    120D    BirthdayCalendarFolderEntryIdWellKnown
 -   -   -   -    35EB    PR_VOICEMAIL_FOLDER_ENTRYID
 ri  -   -   -    35EE    AllItemsFolderEntryId
 ri  -   -   -    35EF    IpmSharingEntryId
@@ -82,6 +82,6 @@ ri  ri  -   ri   36D7    PR_IPM_DRAFTS_ENTRYID
 ri  ri  -   -    36D8    PR_ADDITIONAL_REN_ENTRYIDS
 ri  ri  -   ri   36D9    PR_ADDITIONAL_REN_ENTRYIDS_EX
 ri  ri  -   -    36E4    PR_FREEBUSY_ENTRYIDS
-==  ==  ==  ===  ======  ===========================
+==  ==  ==  ===  ======  ======================================
 
 Indeed none of those are generated for public store folders.

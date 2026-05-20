@@ -16,7 +16,7 @@ namespace gromox {
  * Functionality like this has found its way into C++ standards proposal
  * P1132R0 and then C++23, as std::out_ptr and std::inout_ptr.
  */
-template<typename T, typename D> class unique_proxy {
+template<typename T, typename D> class GX_EXPORT unique_proxy {
 	public:
 	unique_proxy(std::unique_ptr<T, D> &a) : u(a), p(u.get()) {}
 	~unique_proxy() { u.reset(p); }

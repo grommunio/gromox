@@ -5,7 +5,7 @@
 Protocols
 =========
 
-When there "protocols" are being talked about, many readers will first and
+When talking about "protocols", many readers will first and
 foremost think of data formats (e.g. for data transferred over network, or at
 rest in files) and state transitions (what clients and servers ought to do and
 when).
@@ -70,7 +70,7 @@ OXCROPS defines a binary protocol for mailbox actions, such as "Create Folder",
 also stand for just "remote operation" (i.e. one), and this is the main
 colloquial use; the protocol instead is generally talked about using "OXCROPS".
 
-At Gromox, we have come to known of the *existence* of 172 ROPs so far, though
+As for Gromox, we have come to know of the *existence* of 172 ROPs so far, though
 a fair amount have fallen out of use long before Gromox existed, and those
 historic ones are not present in official Microsoft documentation. Gromox only
 handles 125 request types, and a few of those are just stub functions without
@@ -93,7 +93,7 @@ function that converts its arguments to another representation for
 transmission over a network, then waiting for an answer and unpacking
 that back.
 
-At Gromox, we have come to known of the *existence* of 15 RPCs so far, though
+At Gromox, we have come to know of the *existence* of 15 RPCs so far, though
 many have fallen out of use already. Gromox handles 6 request types only, which
 seems sufficient for contemporary interaction with the groupware server.
 
@@ -126,7 +126,7 @@ Normative references: [MS-RPCH].
 
 For reasons of LAN security, those ports are often firewalled off. To
 nevertheless enable Outlook clients on arbitrary machines to contact the
-groupware server, Outlook 2010 comes with the RPC-over-HTTP protcol, marketed
+groupware server, Outlook 2010 comes with the RPC-over-HTTP protocol, marketed
 as "Outlook Anywhere", which encapsulates MSRPC into HTTP. This uses two
 concurrently active HTTP connections, and two unusual custom HTTP method names
 that may not be understood by all proxies.

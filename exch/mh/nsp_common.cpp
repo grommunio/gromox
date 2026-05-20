@@ -64,6 +64,9 @@ BOOL cu_propname_to_nsp(const nsp_propname2 &a, NSP_PROPNAME &p)
 static BOOL cu_propval_to_valunion(uint16_t type, const void *x, PROP_VAL_UNION &u)
 {
 	switch (type) {
+	case PT_UNSPECIFIED:
+	case PT_NULL:
+		return TRUE;
 	case PT_SHORT:
 		u.s = *static_cast<const uint16_t *>(x);
 		return TRUE;
@@ -276,7 +279,7 @@ BOOL cu_proplist_to_nsp_proprow(const LTPROPVAL_ARRAY &proplist, NSP_PROPROW &ro
 	return TRUE;
 }
 
-static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
+static bool cu_nsp_proprow_to_proprow(const std::vector<proptag_t> &cols,
     const NSP_PROPROW &nsprow, PROPERTY_ROW &abrow)
 {
 	if (nsprow.cvalues == 0) {
@@ -286,12 +289,8 @@ static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
 		if (abrow.pppropval == nullptr)
 			return false;
 	}
-	size_t i;
-	for (i = 0; i < nsprow.cvalues; ++i)
-		if (PROP_TYPE(nsprow.pprops[i].proptag) == PT_ERROR)
-			break;
-	abrow.flag = i < nsprow.cvalues ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
-	for (i = 0; i < nsprow.cvalues; ++i) {
+	abrow.flag = nsprow.has_properror() ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
+	for (size_t i = 0; i < nsprow.cvalues; ++i) {
 		auto &nsprop = nsprow.pprops[i];
 		if (PROP_TYPE(nsprop.proptag) == PT_ERROR) {
 			auto ap = cu_alloc<FLAGGED_PROPVAL>();
@@ -305,7 +304,7 @@ static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
 				return false;
 			*static_cast<uint32_t *>(ap->pvalue) = nsprop.value.err;
 		} else if (abrow.flag == PROPERTY_ROW_FLAG_NONE) {
-			if (i < cols.cvalues && PROP_TYPE(cols.pproptag[i]) == PT_UNSPECIFIED) {
+			if (i < cols.size() && PROP_TYPE(cols[i]) == PT_UNSPECIFIED) {
 				auto ap = cu_alloc<TYPED_PROPVAL>();
 				if (ap == nullptr)
 					return false;
@@ -318,7 +317,7 @@ static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
 			    &nsprop.value, &abrow.pppropval[i])) {
 				return false;
 			}
-		} else if (i < cols.cvalues && PROP_TYPE(cols.pproptag[i]) == PT_UNSPECIFIED) {
+		} else if (i < cols.size() && PROP_TYPE(cols[i]) == PT_UNSPECIFIED) {
 			auto tp = cu_alloc<TYPED_PROPVAL>();
 			if (tp == nullptr)
 				return false;
@@ -346,13 +345,10 @@ static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
 	return TRUE;
 }
 
-BOOL cu_nsp_rowset_to_colrow(const LPROPTAG_ARRAY *cols,
-    const NSP_ROWSET &set, nsp_rowset2 &row)
+bool cu_nsp_rowset_to_colrow(proptag_cspan cols, const NSP_ROWSET &set,
+    nsp_rowset2 &row) try
 {
-	if (cols != nullptr)
-		row.columns = *cols;
-	else
-		row.columns = {};
+	row.columns.assign(cols.begin(), cols.end());
 	row.row_count = set.crows;
 	row.rows = cu_alloc<PROPERTY_ROW>(set.crows);
 	if (row.rows == nullptr)
@@ -361,6 +357,9 @@ BOOL cu_nsp_rowset_to_colrow(const LPROPTAG_ARRAY *cols,
 		if (!cu_nsp_proprow_to_proprow(row.columns, set.prows[i], row.rows[i]))
 			return false;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static BOOL cu_to_nspres_and_or(const RESTRICTION_AND_OR &r, NSPRES_AND_OR &nr)
@@ -474,6 +473,8 @@ BOOL cu_restriction_to_nspres(const RESTRICTION &r, NSPRES &nr)
 	case RES_SUBRESTRICTION:
 		return cu_to_nspres_subobj(*static_cast<RESTRICTION_SUBOBJ *>(r.pres), nr.res.res_sub);
 	default:
+		mlog(LV_WARN, "W-2270: restriction type %u unhandled",
+			static_cast<unsigned int>(r.rt));
 		return false;
 	}
 	return false;

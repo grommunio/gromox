@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -33,7 +33,6 @@
 #include <gromox/util.hpp>
 #include "hpm_processor.hpp"
 #include "http_parser.hpp"
-#include "listener.hpp"
 #include "cache.hpp"
 #include "fastcgi.hpp"
 #include "rewrite.hpp"
@@ -43,32 +42,31 @@
 
 using namespace gromox;
 
-gromox::atomic_bool g_notify_stop;
+gromox::atomic_bool g_httpmain_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static char *opt_config_file;
+static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled, g_usr_signalled;
 
-static struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
-static constexpr static_module g_dfl_hpm_plugins[] = {
-	{"libgxh_ews.so", HPM_ews},
-	{"libgxh_mh_emsmdb.so", HPM_mh_emsmdb},
-	{"libgxh_mh_nsp.so", HPM_mh_nsp},
-	{"libgxh_oxdisco.so", HPM_oxdisco},
-	{"libgxh_oab.so", HPM_oab},
+static constexpr generic_module g_dfl_hpm_plugins[] = {
+	{"libgromox_ews.so", HPM_ews},
+	{"libgromox_mh_emsmdb.so", HPM_mh_emsmdb},
+	{"libgromox_mh_nsp.so", HPM_mh_nsp},
+	{"libgromox_oxdisco.so", HPM_oxdisco},
+	{"libgromox_oab.so", HPM_oab},
 };
-static constexpr static_module g_dfl_proc_plugins[] = {
-	{"libgxp_exchange_emsmdb.so", PROC_exchange_emsmdb},
-	{"libgxp_exchange_nsp.so", PROC_exchange_nsp},
-	{"libgxp_exchange_rfr.so", PROC_exchange_rfr},
+static constexpr generic_module g_dfl_proc_plugins[] = {
+	{"libgromox_emsmdb.so", PROC_exchange_emsmdb},
+	{"libgromox_nsp.so", PROC_exchange_nsp},
+	{"libgromox_rfr.so", PROC_exchange_rfr},
 };
-static constexpr static_module g_dfl_svc_plugins[] = {
+static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},
 	{"libgromox_authz.so/dnsbl", SVC_dnsbl_filter},
 	{"libgromox_authz.so/user", SVC_user_filter},
@@ -83,6 +81,7 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"http_basic_auth_cred_caching", "1min", CFG_TIME_NS},
 	{"http_fd_limit", "0", CFG_SIZE},
 	{"http_remote_host_hdr", ""},
+	{"istore_standalone", "0"},
 	CFG_TABLE_END,
 };
 
@@ -101,9 +100,6 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_debug", "0"},
 	{"http_enforce_auth", "0", CFG_BOOL},
 	{"http_krb_service_principal", ""},
-	{"http_listen_addr", "::"},
-	{"http_listen_port", "80"},
-	{"http_listen_tls_port", "0"},
 	{"http_log_file", "-"},
 	{"http_log_level", "4" /* LV_NOTICE */},
 	{"http_rqbody_flush_size", "512K", CFG_SIZE, "0"},
@@ -116,10 +112,8 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"listen_ssl_port", "http_listen_tls_port", CFG_ALIAS},
 	{"msrpc_debug", "0"},
 	{"ntlmssp_program", "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp"},
-	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"request_max_mem", "4M", CFG_SIZE, "1M"},
 	{"running_identity", RUNNING_IDENTITY},
-	{"tcp_max_segment", "0", CFG_SIZE},
 	{"thread_charge_num", "http_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "http_thread_init_num", CFG_ALIAS},
 	{"tls_min_proto", "tls1.2"},
@@ -136,12 +130,13 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (cfg == nullptr)
+		return false;
 	mlog_init("gromox-http", cfg->get_value("http_log_file"),
 		cfg->get_ll("http_log_level"), cfg->get_value("running_identity"));
 	g_http_debug = cfg->get_ll("http_debug");
 	g_enforce_auth = cfg->get_ll("http_enforce_auth");
 	g_msrpc_debug = cfg->get_ll("msrpc_debug");
-	g_oxcical_allday_ymd = cfg->get_ll("oxcical_allday_ymd");
 
 	if (xcfg == nullptr)
 		xcfg = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
@@ -149,6 +144,8 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (xcfg == nullptr)
+		return false;
 	g_http_remote_host_hdr = znul(xcfg->get_value("http_remote_host_hdr"));
 	g_http_basic_auth_validity = std::chrono::duration_cast<time_duration>(std::chrono::nanoseconds(xcfg->get_ll("http_basic_auth_cred_caching")));
 	return true;
@@ -156,14 +153,17 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 
 int main(int argc, char **argv)
 {
-	int retcode = EXIT_FAILURE;
 	char host_name[UDOM_SIZE], *ptoken;
 	const char *dns_name, *dns_domain, *netbios_name;
+	HXopt6_auto_result argp;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-http");
 	setup_signal_defaults();
@@ -187,8 +187,11 @@ int main(int argc, char **argv)
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr || !http_reload_config(gxconfig, g_config_file))
+	if (g_config_file == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
+	if (!http_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
@@ -269,12 +272,6 @@ int main(int argc, char **argv)
 		mlog(LV_NOTICE, "http: TLS support deactivated via config");
 	}
 
-	uint16_t listen_tls_port = g_config_file->get_ll("http_listen_tls_port");
-	if (!http_support_tls && listen_tls_port > 0)
-		listen_tls_port = 0;
-	if (listen_tls_port > 0)
-		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
-	
 	size_t max_request_mem = g_config_file->get_ll("request_max_mem");
 	HX_unit_size(temp_buff, std::size(temp_buff), max_request_mem, 1024, 0);
 	mlog(LV_INFO, "pdu_processor: maximum request memory is %s", temp_buff);
@@ -292,19 +289,26 @@ int main(int argc, char **argv)
 	std::chrono::seconds fastcgi_exec_timeout{g_config_file->get_ll("fastcgi_exec_timeout")};
 	HX_unit_seconds(temp_buff, std::size(temp_buff), fastcgi_exec_timeout.count(), 0);
 	mlog(LV_INFO, "http: fastcgi execution timeout is %s", temp_buff);
-	uint16_t listen_port = g_config_file->get_ll("http_listen_port");
-	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
-	listener_init(g_config_file->get_value("http_listen_addr"),
-		listen_port, listen_tls_port, mss_size);
-	auto cleanup_4 = HX::make_scope_exit(listener_stop);
-	if (0 != listener_run()) {
-		mlog(LV_ERR, "system: failed to start listener");
+	if (listener_init(*gxconfig, *g_config_file, http_support_tls) != 0)
 		return EXIT_FAILURE;
+	auto cleanup_4 = HX::make_scope_exit(listener_stop);
+
+	const char *program_identifier = "http";
+	auto istore_standalone = gxconfig->get_ll("istore_standalone");
+	if (istore_standalone & ISTORE_SPLIT_DIRECTOR) {
+		/*
+		 * The module is loaded in both cases, because http still needs
+		 * the exmdb_client portion of libgxs_exmdb_provider.
+		 */
+		mlog(LV_INFO, "Information Store is in another process; using RPCs");
+	} else {
+		program_identifier = "istore-director";
+		mlog(LV_INFO, "Information Store is set to run in this process image with LPC");
 	}
 
 	filedes_limit_bump(gxconfig->get_ll("http_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins,
-		context_num, "http"});
+		context_num, program_identifier, argv[0]});
 	auto cleanup_6 = HX::make_scope_exit(service_stop);
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),
@@ -394,16 +398,17 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	/* accept the connection */
+	/*
+	 * Connection acceptance thread comes last. The htls_thrwork function
+	 * needs an initialized contexts_pool object.
+	 */
 	if (listener_trigger_accept() != 0) {
 		mlog(LV_ERR, "system: failed listening socket setup");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_29 = HX::make_scope_exit(listener_stop_accept);
 	
-	retcode = EXIT_SUCCESS;
 	mlog(LV_INFO, "system: HTTP daemon is now running");
-	while (!g_notify_stop) {
+	while (!g_httpmain_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {
 			http_reload_config();
@@ -419,11 +424,12 @@ int main(int argc, char **argv)
 			pdu_processor_trigger(PLUGIN_REPORT);
 		}
 	}
-	return retcode;
+	service_trigger_all(PLUGIN_QUENCH_ASYNC);
+	pdu_processor_trigger(PLUGIN_QUENCH_ASYNC);
+	return EXIT_SUCCESS;
 }
 
 static void term_handler(int signo)
 {
-	http_parser_shutdown_async();
-	g_notify_stop = true;
+	g_httpmain_stop = true;
 }

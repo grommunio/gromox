@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <libHX/string.h>
 #include <gromox/ical.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mime.hpp>
@@ -106,50 +107,49 @@ static void t_card()
 	v.append_subval("DO2");
 	l.append_value(std::move(v));
 
-	char buf[128000];
-	if (!C.serialize(buf, std::size(buf)))
+	std::string buf;
+	if (!C.serialize(buf))
 		printf("ERROR\n");
 	else
-		printf("%s\n", buf);
+		printf("%s\n", buf.c_str());
 	C.clear();
-	C.load_single_from_str_move(buf);
-	if (!C.serialize(buf, std::size(buf)))
+	C.load_single_from_str_move(buf.data());
+	if (!C.serialize(buf))
 		printf("ERROR\n");
 	else
-		printf("%s\n", buf);
+		printf("%s\n", buf.c_str());
 
-	strcpy(buf, "BEGIN:VCARD\n\nEND:VCARD\n");
-	C.load_single_from_str_move(buf);
+	char tb[] = "BEGIN:VCARD\n\nEND:VCARD\n";
+	C.load_single_from_str_move(tb);
 }
 
 static int t_ical_api()
 {
-	int hour = -99, min = -99;
-	assert(ical_parse_utc_offset("+0100", &hour, &min));
-	assert(hour == -1 && min == 0);
-	assert(ical_parse_utc_offset("-0100", &hour, &min));
-	assert(hour == 1 && min == 0);
-	assert(!ical_parse_utc_offset("0100", &hour, &min));
-	assert(hour == 0 && min == 0);
+	int west = 0;
+	assert(simple_zone_to_minwest("+0100", &west, nullptr));
+	assert(west == -60);
+	assert(simple_zone_to_minwest("-0100", &west, nullptr));
+	assert(west == 60);
+	assert(!simple_zone_to_minwest("0100", &west, nullptr));
 
 	ical_time it;
-	assert(ical_parse_datetime("20231224T123456Z", &it));
+	assert(it.assign_datetime("20231224T123456Z"));
 	assert(it.year == 2023 && it.month == 12 && it.day == 24 &&
 	       it.hour == 12 && it.minute == 34 && it.second == 56 &&
-	       it.type == ICT_UTC);
-	assert(ical_parse_datetime("20101010T101010", &it));
+	       it.type == itime_type::utc);
+	assert(it.assign_datetime("20101010T101010"));
 	assert(it.year == 2010 && it.month == 10 && it.day == 10 &&
 	       it.hour == 10 && it.minute == 10 && it.second == 10 &&
-	       it.type == ICT_FLOAT);
-	assert(!ical_parse_datetime("20231224T1234567", &it));
-	assert(!ical_parse_datetime("20231224X123456", &it));
-	assert(!ical_parse_datetime("20231224T12345", &it));
+	       it.type == itime_type::floating);
+	assert(!it.assign_datetime("20231224T1234567"));
+	assert(!it.assign_datetime("20231224X123456"));
+	assert(!it.assign_datetime("20231224T12345"));
 
-	assert(ical_parse_date("20211221", &it));
+	assert(it.assign_date("20211221"));
 	assert(it.year == 2021 && it.month == 12 && it.day == 21 &&
 	       it.hour == 0 && it.minute == 0 && it.second == 0 &&
-	       it.type == ICT_FLOAT_DAY);
-	assert(!ical_parse_date("202112211", &it));
+	       it.type == itime_type::floating_day);
+	assert(!it.assign_date("202112211"));
 
 	int dow = -99, weekord = -99;
 	assert(ical_parse_byday("MO", &dow, &weekord));
@@ -174,8 +174,10 @@ static int t_ical_api()
 	assert(sec == 0);
 	assert(ical_parse_duration("-P9DT3H4M5S", &sec));
 	assert(sec == -(86400 * 9 + 3600 * 3 + 4 * 60 + 5));
-	assert(!ical_parse_duration("P1M", &sec));
-	assert(!ical_parse_duration("P1Y", &sec));
+	assert(ical_parse_duration("P1M", &sec));
+	assert(sec >= 28 * 86400 && sec <= 86400 * 366 / 12);
+	assert(ical_parse_duration("P1Y", &sec));
+	assert(sec >= 86400 * 365 && sec <= 86400 * 366);
 	/*
 	 * Parser is too lax.
 	//assert(!ical_parse_duration("P", &sec));
@@ -185,7 +187,7 @@ static int t_ical_api()
 	//assert(!ical_parse_duration("PT1W2D", &sec));
 	 */
 
-	assert(ical_parse_datetime("20231229T090000", &it));
+	assert(it.assign_datetime("20231229T090000"));
 	time_t uxtime = 0;
 	assert(ical_itime_to_utc(&tzsel.lineisl, it, &uxtime));
 	assert(uxtime == 1703790000U);
@@ -238,15 +240,20 @@ static int t_ical_dt()
 			fprintf(stderr, "ical_parse unsuccessful\n");
 			return EXIT_FAILURE;
 		}
-		auto mc = oxcical_import_single("UTC", ical, zalloc,
-		          ee_get_propids, oxcmail_username_to_entryid);
+		oxcical_converter cvt;
+		cvt.log_id = "-";
+		cvt.org_name = "x500";
+		cvt.alloc = zalloc;
+		cvt.get_propids = ee_get_propids;
+		cvt.username_to_entryid = oxcmail_username_to_entryid;
+		cvt.id2user = [](unsigned int, std::string &) -> ec_error_t { return ecNotFound; };
+		auto mc = cvt.ical_to_mapi_single(ical);
 		if (mc == nullptr) {
 			fprintf(stderr, "oxcical_import unsuccessful\n");
 			return EXIT_FAILURE;
 		}
 		ical = {};
-		auto id2user = [](int, std::string &) -> ec_error_t { return ecNotFound; };
-		if (!oxcical_export(mc.get(), "-", ical, "x500", zalloc, ee_get_propids, id2user)) {
+		if (!cvt.mapi_to_ical(*mc, ical)) {
 			fprintf(stderr, "oxcical_export unsuccessful\n");
 			return EXIT_FAILURE;
 		}
@@ -266,6 +273,54 @@ static int t_ical_dt()
 	return EXIT_SUCCESS;
 }
 
+static int t_rrule()
+{
+	std::string head =
+		"BEGIN:VCALENDAR\n"
+		"VERSION:2.0\n"
+		"BEGIN:VEVENT\n"
+		"CREATED:20170427T181700Z\n"
+		"LAST-MODIFIED:20250609T051307Z\n"
+		"DTSTAMP:20250609T051307Z\n"
+		"UID:74d6b21d-d73c-4cac-af61-6925d1882b30\n"
+		"SUMMARY:x\n";
+	static constexpr char foot[] =
+		"DTSTART;TZID=Europe/Berlin:20150830T110000\n"
+		"DTEND;TZID=Europe/Berlin:20150830T180000\n"
+		"CLASS:PUBLIC\n"
+		"TRANSP:OPAQUE\n"
+		"X-MICROSOFT-CDO-INTENDEDSTATUS:BUSY\n"
+		"LOCATION:Irgendwo\n"
+		"SEQUENCE:0\n"
+		"X-MICROSOFT-CDO-OWNER-CRITICAL-CHANGE:20160104T085628Z\n"
+		"X-MICROSOFT-CDO-ATTENDEE-CRITICAL-CHANGE:20160104T085628Z\n"
+		"X-MICROSOFT-CDO-APPT-SEQUENCE:0\n"
+		"X-MICROSOFT-CDO-OWNERAPPTID:-1\n"
+		"X-MICROSOFT-CDO-ALLDAYEVENT:FALSE\n"
+		"END:VEVENT\n"
+		"END:VCALENDAR\n";
+
+	ical icalin;
+	auto input = head + "RRULE:FREQ=MONTHLY;BYDAY=2MO\n" + foot;
+	bool succ = icalin.load_from_str_move(input.data());
+	if (!succ)
+		return EXIT_FAILURE;
+	oxcical_converter cvt;
+	cvt.alloc = zalloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.username_to_entryid = oxcmail_username_to_entryid;
+	auto msg = cvt.ical_to_mapi_single(icalin);
+	assert(msg != nullptr);
+
+	input = head + "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=8\n" + foot;
+	succ = icalin.load_from_str_move(input.data());
+	if (!succ)
+		return EXIT_FAILURE;
+	msg = cvt.ical_to_mapi_single(icalin);
+	assert(msg != nullptr);
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	auto ret = t_ical_api();
@@ -276,6 +331,9 @@ int main()
 	t_card();
 	t_ical();
 	ret = t_ical_dt();
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = t_rrule();
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	return EXIT_SUCCESS;

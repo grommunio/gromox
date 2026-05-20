@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -18,19 +18,17 @@
 
 using namespace gromox;
 
-static char *g_auth_user, *g_ldap_uri;
+static const char *g_auth_user, *g_ldap_uri;
 static unsigned int g_direct_ldap, g_ldap_tls;
 static constexpr struct HXoption g_options_table[] = {
-	{nullptr, 'H', HXTYPE_STRING, &g_ldap_uri, {}, {}, 0, "LDAP server", "URI"},
+	{nullptr, 'H', HXTYPE_STRING, {}, {}, {}, 0, "LDAP server", "URI"},
 	{nullptr, 'L', HXTYPE_NONE, &g_direct_ldap, {}, {}, 0, "Pure LDAP bind without gromox-authmgr"},
 	{nullptr, 'Z', HXTYPE_NONE, &g_ldap_tls, {}, {}, 0, "Enable LDAP TLS (only for -L)"},
-	{nullptr, 'u', HXTYPE_STRING, &g_auth_user, {}, {}, 0, "User for authentication", "USERNAME"},
+	{nullptr, 'u', HXTYPE_STRING, {}, {}, {}, 0, "User for authentication", "USERNAME"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
-static constexpr static_module g_dfl_svc_plugins[] = {
-	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
+static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgromox_auth.so/mgr", SVC_authmgr},
 };
 static constexpr cfg_directive no_defaults[] = {
@@ -50,7 +48,7 @@ static int direct_ldap(const char *uri, const char *bind_user,
     const char *bind_pass)
 {
 	std::unique_ptr<LDAP, ldapfree> ld;
-	auto ret = ldap_initialize(&unique_tie(ld), *znul(uri) == '\0' ? nullptr : uri);
+	auto ret = ldap_initialize(&unique_tie(ld), zhasval(uri) ? uri : nullptr);
 	if (ret != LDAP_SUCCESS) {
 		fprintf(stderr, "ldap_initialize failed: %s\n", ldap_err2string(ret));
 		return EXIT_FAILURE;
@@ -98,13 +96,21 @@ static int direct_ldap(const char *uri, const char *bind_user,
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i) {
+		switch (argp.desc[i]->sh) {
+		case 'H': g_ldap_uri  = argp.oarg[i]; break;
+		case 'u': g_auth_user = argp.oarg[i]; break;
+		}
+	}
 	if (g_auth_user == nullptr) {
 		fprintf(stderr, "The -u option is mandatory\n");
 		return EXIT_FAILURE;
 	}
+
 	auto password = getenv("PASS");
 	if (password == nullptr)
 		fprintf(stderr, "To convey a password, use the PASS environment variable. "
@@ -113,12 +119,11 @@ int main(int argc, char **argv)
 		return direct_ldap(g_ldap_uri, g_auth_user, password);
 
 	auto cfg = config_file_prg(nullptr, "http.cfg", no_defaults);
+	if (cfg == nullptr)
+		return EXIT_FAILURE; /* permission error */
 	service_init({std::move(cfg), g_dfl_svc_plugins, 0, "authtest"});
 	auto cl_1 = HX::make_scope_exit(service_stop);
-	if (service_run_early() != 0) {
-		fprintf(stderr, "service_run_early failed\n");
-		return EXIT_FAILURE;
-	} else if (service_run() != 0) { 
+	if (service_run() != 0) {
 		fprintf(stderr, "service_run failed\n");
 		return EXIT_FAILURE;
 	}

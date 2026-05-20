@@ -1,6 +1,11 @@
 #pragma once
+/*
+ * - Overflow-safe addition with signalling
+ * - Helpers for comparing signed types against unsigned and vice-versa
+ */
 #include <climits>
 #include <cstdint>
+#include <utility>
 #include <type_traits>
 
 static inline uint32_t safe_add_u(uint64_t x, uint64_t y, int8_t *c = nullptr)

@@ -26,7 +26,6 @@ Makefile.in
 /libtool
 /stamp-h1
 
-/cgkrepair
 /delivery
 /delivery-queue
 /dldcheck
@@ -41,7 +40,8 @@ Makefile.in
 /gromox-edb2mt
 /gromox-eml2mbox
 /gromox-eml2mt
-/gromox-exm2eml
+/gromox-export
+/gromox-import
 /gromox-kdb2mt
 /gromox-mailq
 /gromox-mbck
@@ -50,13 +50,16 @@ Makefile.in
 /gromox-mkmidb
 /gromox-mkprivate
 /gromox-mkpublic
-/gromox-mt2exm
 /gromox-oxm2mt
 /gromox-pff2mt
 /gromox-snapshot
 /http
 /imap
+/istore
+/lda
 /midb
+/oab
+/oxdisco
 /pop3
 /timer
 /zcore
@@ -70,18 +73,19 @@ Makefile.in
 /lib/exmdb_rpc.cpp
 /php_mapi/zrpc.cpp
 /system/*.service
-/tests/bdump
 /tests/bodyconv
 /tests/compress
 /tests/dnsbl_check
 /tests/epv_unpack
 /tests/exrpctest
+/tests/gssauth
 /tests/gxl-383
 /tests/jsontest
 /tests/lzxpress
 /tests/oxcmail_ie
 /tests/ucvttest
 /tests/udb
+/tests/utf8filter
 /tests/utiltest
 /tests/vcard
 /tests/zendfake
@@ -89,6 +93,6 @@ Makefile.in
 /tests/*.trs
 /test-suite.log
 /tools/authtry
-/tools/eidprint
+/tools/ddbg
 /tools/textmapquery
 /tools/tzdump

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -25,15 +25,22 @@
 #include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mysql_adaptor.hpp>
+#include <gromox/paths.h>
 #include <gromox/process.hpp>
+#include <gromox/socketpass.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "notification_agent.hpp"
 #include "parser.hpp"
@@ -43,19 +50,108 @@
 
 using namespace gromox;
 
+struct parser_params {
+	/* worker state */
+	std::shared_ptr<EXMDB_CONNECTION> conn;
+	std::string single_user, injected_pkt;
+	bool is_connected = false, b_private = false;
+
+	/* set only when director role */
+	bool use_workers = false;
+	std::string_view input_buf;
+};
+
 static size_t g_max_threads, g_max_routers;
-static std::vector<EXMDB_ITEM> g_local_list;
 static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
+/* used for counting and for setting c->b_stop on exit from main thread */
 static std::unordered_set<std::shared_ptr<EXMDB_CONNECTION>> g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
-unsigned int g_enable_dam;
+static gromox::atomic_bool g_exmdblisten_stop;
+static std::vector<std::string> g_acl_list;
+static listener_ctx exmdb_listen_ctx;
+std::atomic<unsigned int> g_enable_dam, g_istore_standalone;
+std::string g_host_id;
 
-ROUTER_CONNECTION::~ROUTER_CONNECTION()
+exmdb_connection::exmdb_connection(generic_connection &&co) :
+	generic_connection(std::move(co))
+{}
+
+exmdb_connection::~exmdb_connection()
 {
+	if (pthread_equal(thr_id, {}))
+		return;
+	if (pthread_equal(thr_id, pthread_self()))
+		pthread_detach(thr_id);
+	else
+		pthread_join(thr_id, nullptr);
+}
+
+void exmdb_connection::signal_stop()
+{
+	std::lock_guard lk(m_mtx);
 	if (sockd >= 0)
-		close(sockd);
-	for (auto &&bin : datagram_list)
-		free(bin.pb);
+		shutdown(sockd, SHUT_RDWR);
+	if (!pthread_equal(thr_id, {}))
+		pthread_kill(thr_id, SIGALRM);
+}
+
+void exmdb_connection::close_fd()
+{
+	std::lock_guard lk(m_mtx);
+	generic_connection::reset();
+}
+
+router_connection::router_connection(generic_connection &&o, pthread_t &&tid,
+    std::string_view rid) :
+	generic_connection(std::move(o)), remote_id(rid),
+	last_time(time(nullptr))
+{
+	thr_id = std::move(tid);
+	tid = {};
+}
+
+router_connection::~router_connection()
+{
+	/* When the dtor runs, no thread should be in the notification_agent_thread_work inner loop anymore */
+	if (pthread_equal(thr_id, {}))
+		return;
+	/*
+	 * XXX: This is not great, but the logic has existed for
+	 * practically forever (it used to test b_stop rather than
+	 * thr_id, but that's even worse).
+	 */
+	if (pthread_equal(thr_id, pthread_self()))
+		pthread_detach(thr_id);
+	else
+		pthread_join(thr_id, nullptr);
+}
+
+void router_connection::push_and_wake(BINARY &&b) try
+{
+	std::unique_ptr<uint8_t[], stdlib_delete> blob(std::move(b.pb));
+	b.pb = nullptr;
+	{
+		std::lock_guard dg_hold(dg_lock);
+		datagram_list.emplace_back(std::move(blob), b.cb);
+	}
+	waken_cond.notify_one();
+} catch (const std::bad_alloc &) {
+}
+
+void router_connection::signal_stop()
+{
+	b_stop = true;
+	std::lock_guard fd_hold(base_lock);
+	if (sockd >= 0)
+		shutdown(sockd, SHUT_RDWR);
+	if (!pthread_equal(thr_id, {}))
+		pthread_kill(thr_id, SIGALRM);
+}
+
+void router_connection::close_fd()
+{
+	std::lock_guard fd_hold(base_lock);
+	generic_connection::reset();
 }
 
 void exmdb_parser_init(size_t max_threads, size_t max_routers)
@@ -64,30 +160,29 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 	g_max_routers = max_routers;
 }
 
-std::unique_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
-{
-	if (g_max_threads != 0) {
-		std::lock_guard lk(g_connection_lock);
-		if (g_connection_list.size() >= g_max_threads)
-			return nullptr;
-	}
-	try {
-		return std::make_unique<EXMDB_CONNECTION>();
-	} catch (const std::bad_alloc &) {
-	}
-	return nullptr;
-}
-
-static bool exmdb_parser_is_local(const char *prefix, BOOL *pb_private)
+/**
+ * Indicate whether this machine is responsible for serving a mailbox
+ *
+ * @prefix:  a mailbox directory
+ * @pvt:     returns whether the directory refers to a private or public store
+ */
+static bool exmdb_parser_is_local(const char *prefix, bool *pvt)
 {
 	if (*prefix == '\0')
 		return true;
-	auto i = std::find_if(g_local_list.cbegin(), g_local_list.cend(),
-	         [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
-	if (i == g_local_list.cend())
+	std::string hostname;
+	auto err = mysql_adaptor_get_homeserver_for_dir(prefix, pvt, hostname);
+	if (err == ENOENT)
 		return false;
-	*pb_private = i->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
-	return true;
+	if (err != 0) {
+		mlog(LV_ERR, "%s: %s: %s", __func__, prefix, strerror(err));
+		return false;
+	}
+	if (hostname == g_host_id || hostname.empty())
+		return true;
+	mlog(LV_ERR, "exmdb: is_local: %s not served here (%s) (but by %s)",
+		prefix, g_host_id.c_str(), hostname.c_str());
+	return false;
 }
 
 static BOOL exmdb_parser_dispatch3(const exreq *q0, std::unique_ptr<exresp> &r0)
@@ -152,10 +247,11 @@ static BOOL exmdb_parser_dispatch(const exreq *prequest, std::unique_ptr<exresp>
 	auto ret = exmdb_parser_dispatch2(prequest, presponse);
 	if (ret)
 		presponse->call_id = prequest->call_id;
-	if (g_exrpc_debug == 0)
+	auto dbg = g_exrpc_debug.load();
+	if (dbg == 0)
 		return ret;
 	auto tend = tp_now();
-	if (!ret || g_exrpc_debug == 2)
+	if (!ret || dbg == 2)
 		mlog(LV_DEBUG, "EXRPC %s %s %5luµs %s", znul(prequest->dir),
 		        ret == 0 ? "ERR" : "ok ",
 		        static_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()),
@@ -169,66 +265,240 @@ static inline void stripslash(char *s)
 		s[z-1] = '\0';
 }
 
+static bool max_routers_reached()
+{
+	std::unique_lock r_hold(g_router_lock);
+	return g_router_list.size() >= g_max_routers;
+}
+
+static std::mutex spwork_lock;
+static std::map<std::string, socketpass_worker> spworkers;
+static bool rqi_handoff(EXMDB_CONNECTION &conn, const char *dir,
+    std::string_view input_buf)
+{
+	if (*dir == '\0') {
+		mlog(LV_ERR, "Tried to call rqi_handoff with empty dir\n");
+		raise(SIGABRT);
+	}
+	/* End the connection in any case once we return */
+	conn.b_stop = true;
+
+	std::string prog;
+	if (auto s = getenv("ISTORE_WORKER")) {
+		prog = s;
+	} else {
+		prog = znul(service_get_prog_arg0());
+		if (!prog.empty())
+			prog = std::unique_ptr<char[], stdlib_delete>(HX_dirname(prog.c_str())).get();
+		prog += "/istore";
+	}
+	const char *args[] = {prog.c_str(), "-x", dir, nullptr};
+
+	std::lock_guard lk(spwork_lock);
+	auto [iter, added] = spworkers.try_emplace(dir);
+	auto &worker = iter->second;
+	auto err = worker.start(prog.c_str(), const_cast<char **>(args));
+	if (err != 0) {
+		mlog(LV_ERR, "spworker_start %s: %s", prog.c_str(), strerror(err));
+		return false;
+	}
+	return worker.pass(input_buf, conn.sockd) == 0;
+}
+
+static int rqi_terminate(EXMDB_CONNECTION &conn, exmdb_response resp_code)
+{
+	if (HXio_fullwrite(conn.sockd, &resp_code, 1) != 1)
+		/* ignore */;
+	return -1;
+}
+
+static bool handoff_just_one(const char *rq_dir)
+{
+	auto allow_dir = getenv("ISTORE_JUST_ONE");
+	if (allow_dir == nullptr)
+		return true; /* split all */
+
+	/* split just this one */
+	return rq_dir != nullptr && strcmp(rq_dir, allow_dir) == 0;
+}
+
+static int rqi_connect(parser_params &param, const exreq_connect &q,
+    std::string_view input_buf, BINARY &output_buf)
+{
+	auto &conn = *param.conn;
+
+	if (!param.single_user.empty() &&
+	    strcmp(param.single_user.c_str(), q.dir) != 0)
+		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
+	if (!exmdb_parser_is_local(q.dir, &param.b_private))
+		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
+	else if (!!param.b_private != !!q.b_private)
+		return rqi_terminate(conn, exmdb_response::misconfig_mode);
+	if (param.use_workers && handoff_just_one(q.dir))
+		return rqi_handoff(conn, q.dir, input_buf);
+
+	/* q.remote_id is going away, copy it */
+	conn.remote_id = q.remote_id;
+	exmdb_server::set_remote_id(conn.remote_id.c_str());
+	param.is_connected = true;
+	free(output_buf.pb);
+	output_buf.pb = static_cast<uint8_t *>(calloc(1, 5));
+	if (output_buf.pb == nullptr)
+		return rqi_terminate(conn, exmdb_response::lack_memory);
+	output_buf.pb[0] = static_cast<uint8_t>(exmdb_response::success);
+	output_buf.cb = 5;
+	return 0;
+}
+
+static int rqi_listen(parser_params &param, const exreq_listen_notification &q,
+    std::string_view input_buf) try
+{
+	auto &conn = *param.conn;
+	if (!param.single_user.empty() &&
+	    strcmp(param.single_user.c_str(), q.dir) != 0)
+		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
+	if (g_max_routers != 0 && max_routers_reached())
+		return rqi_terminate(conn, exmdb_response::max_reached);
+	if (param.use_workers && handoff_just_one(q.dir))
+		return rqi_handoff(conn, q.dir, input_buf);
+
+	auto router = std::make_shared<router_connection>(std::move(static_cast<generic_connection &>(conn)),
+	              std::move(conn.thr_id), q.remote_id);
+	static constexpr char success[5]{};
+	auto wrret = write(router->sockd, success, std::size(success));
+	if (wrret < 0 || static_cast<size_t>(wrret) != std::size(success))
+		return -1; /* OS error */
+	router->last_time = time(nullptr);
+	{
+		std::unique_lock r_hold(g_router_lock);
+		g_router_list.insert(router);
+	}
+	{
+		std::unique_lock chold(g_connection_lock);
+		g_connection_list.erase(param.conn);
+	}
+	/*
+	 * This function runs practically forever;
+	 * thus we close the connection when that is all done.
+	 */
+	return notification_agent_thread_work(std::move(router));
+} catch (const std::bad_alloc &) {
+	return rqi_terminate(*param.conn, exmdb_response::lack_memory);
+}
+
+static int rqi_unconnected(parser_params &param, const exreq &request,
+    std::string_view input_buf, BINARY &output_buf)
+{
+	switch (request.call_id) {
+	case exmdb_callid::connect:
+		return rqi_connect(param, static_cast<const exreq_connect &>(request),
+		       input_buf, output_buf);
+	case exmdb_callid::listen_notification:
+		return rqi_listen(param, static_cast<const exreq_listen_notification &>(request),
+		       input_buf);
+	default:
+		return rqi_terminate(*param.conn, exmdb_response::connect_incomplete);
+	}
+}
+
+/**
+ * On success, sets output_buf to something to send to the network and returns
+ * 0. On error when the connection should be immediately closed, -1 is
+ * returned. (In the error case, writing the error packet to the network is
+ * done by rqp_io itself.)
+ */
+static int rqi_handle_buffer(parser_params &param, std::string_view input_buf,
+    BINARY &output_buf)
+{
+	auto &conn = *param.conn;
+	exmdb_server::build_env(param.b_private ? EM_PRIVATE : 0, nullptr);
+	auto cl_env = HX::make_scope_exit(exmdb_server::free_env);
+
+	std::unique_ptr<exreq> request;
+	auto status = exmdb_ext_pull_request(input_buf, request);
+	if (status != pack_result::ok)
+		return rqi_terminate(conn, exmdb_response::pull_error);
+	if (request == nullptr)
+		return rqi_terminate(conn, exmdb_response::lack_memory);
+	if (request->dir != nullptr)
+		stripslash(request->dir);
+
+	std::unique_ptr<exresp> response;
+	if (!param.is_connected)
+		return rqi_unconnected(param, *request, input_buf, output_buf);
+	if (request->dir != nullptr && !param.single_user.empty() &&
+	    param.single_user != request->dir)
+		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
+	if (!exmdb_parser_dispatch(request.get(), response))
+		return rqi_terminate(conn, exmdb_response::dispatch_error);
+	if (exmdb_ext_push_response(response.get(), &output_buf) != pack_result::success)
+		return rqi_terminate(conn, exmdb_response::push_error);
+	return 0;
+}
+
 static void *request_parser_thread(void *pparam)
 {
-	void *pbuff;
-	int read_len;
-	BOOL b_private;
-	BINARY tmp_bin;
-	uint32_t offset;
-	int written_len;
-	BOOL is_writing;
-	BOOL is_connected;
-	uint32_t buff_len;
 	uint8_t resp_buff[5]{};
 	struct pollfd pfd_read;
 	
-	b_private = FALSE; /* whatever for connect request */
-	auto connraw = static_cast<EXMDB_CONNECTION *>(pparam);
-	std::shared_ptr<EXMDB_CONNECTION> pconnection;
+	std::unique_ptr<parser_params> param(static_cast<parser_params *>(pparam));
+	auto &pconnection = param->conn;
+	auto cl_conn = HX::make_scope_exit([&]() {
+		{ /* No new holders */
+			std::lock_guard lk(g_connection_lock);
+			g_connection_list.erase(pconnection);
+		}
+		/* Force remaining holders into a wall */
+		pconnection->close_fd();
+	});
+	param->use_workers = strcmp(service_get_prog_id(), "istore-director") == 0 &&
+	                     g_istore_standalone & ISTORE_SPLIT_WORKERS;
 	try {
-		pconnection.reset(connraw);
-	} catch (...) {
-		/* reset() implies deletion of connraw */
-		return nullptr;
-	}
-	try {
-		char txt[52];
-		snprintf(txt, std::size(txt), "exmdb/%s:%hu",
-			pconnection->client_addr, pconnection->client_port);
+		char txt[16];
+		snprintf(txt, std::size(txt), "exrq/%hu", pconnection->client_port);
 		pthread_setname_np(pthread_self(), txt);
 		std::unique_lock chold(g_connection_lock);
 		g_connection_list.insert(pconnection);
 	} catch (...) {
 		return nullptr;
 	}
-	pbuff = NULL;
-	offset = 0;
-	buff_len = 0;
-	is_writing = FALSE;
-	is_connected = FALSE;
+	size_t offset = 0;
+	bool is_writing = false, is_connected = false;
+	BINARY output_buf{};
+	auto cl_0 = HX::make_scope_exit([&]() { free(output_buf.pb); });
+	std::string input_buf;
+
 	while (!pconnection->b_stop) {
 		if (is_writing) {
-			written_len = write(pconnection->sockd,
-			              static_cast<char *>(pbuff) + offset, buff_len - offset);
-			if (written_len <= 0)
+			auto wlen = write(pconnection->sockd, &output_buf.pb[offset],
+			            output_buf.cb - offset);
+			if (wlen <= 0)
 				break;
-			offset += written_len;
-			if (offset == buff_len) {
-				free(pbuff);
-				pbuff = NULL;
-				buff_len = 0;
-				offset = 0;
-				is_writing = FALSE;
-			}
+			offset += wlen;
+			if (offset < output_buf.cb)
+				continue; /* keep writing if necessary */
+			free(output_buf.pb);
+			output_buf.pb = nullptr;
+			output_buf.cb = 0;
+			offset = 0;
+			is_writing = false;
+			continue;
+		}
+		if (!param->injected_pkt.empty()) {
+			if (rqi_handle_buffer(*param, param->injected_pkt, output_buf) < 0)
+				break;
+			param->injected_pkt.clear();
+			offset = 0;
+			is_writing = true;
 			continue;
 		}
 		pfd_read.fd = pconnection->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			break;
-		if (NULL == pbuff) {
-			read_len = read(pconnection->sockd,
+		if (input_buf.empty()) {
+			uint32_t buff_len = 0;
+			auto read_len = read(pconnection->sockd,
 					&buff_len, sizeof(uint32_t));
 			if (read_len != sizeof(uint32_t))
 				break;
@@ -241,138 +511,63 @@ static void *request_parser_thread(void *pparam)
 				/* make cov-scan happy that we tested for buff_len */
 				break;
 			}
-			pbuff = malloc(buff_len);
-			if (NULL == pbuff) {
+			try {
+				input_buf.resize(buff_len);
+			} catch (const std::bad_alloc &) {
 				auto tmp_byte = exmdb_response::lack_memory;
 				if (HXio_fullwrite(pconnection->sockd, &tmp_byte, 1) != 1 ||
 				    !is_connected)
 					break;
-				buff_len = 0;
 			}
 			offset = 0;
 			continue;
 		}
-		read_len = read(pconnection->sockd,
-		           static_cast<char *>(pbuff) + offset, buff_len - offset);
+		auto read_len = read(pconnection->sockd, &input_buf[offset],
+		                input_buf.size() - offset);
 		if (read_len <= 0)
 			break;
 		offset += read_len;
-		if (offset < buff_len)
-			continue;
-		exmdb_server::build_env(b_private ? EM_PRIVATE : 0, nullptr);
-		tmp_bin.pv = pbuff;
-		tmp_bin.cb = buff_len;
-		std::unique_ptr<exreq> request;
-		auto status = exmdb_ext_pull_request(&tmp_bin, request);
-		free(pbuff);
-		pbuff = NULL;
-		if (request != nullptr && request->dir != nullptr)
-			stripslash(request->dir);
-		exmdb_response tmp_byte;
-		std::unique_ptr<exresp> response;
-		if (status != pack_result::ok ||
-		    request == nullptr /* [cov-scan] same as status==pack_result::alloc */) {
-			tmp_byte = exmdb_response::pull_error;
-		} else if (!is_connected) {
-			if (request->call_id == exmdb_callid::connect) {
-				auto &q = *static_cast<const exreq_connect *>(request.get());
-				if (!exmdb_parser_is_local(q.prefix, &b_private)) {
-					tmp_byte = exmdb_response::misconfig_prefix;
-				} else if (b_private != q.b_private) {
-					tmp_byte = exmdb_response::misconfig_mode;
-				} else {
-					pconnection->remote_id = q.remote_id;
-					exmdb_server::free_env();
-					exmdb_server::set_remote_id(pconnection->remote_id.c_str());
-					is_connected = TRUE;
-					if (HXio_fullwrite(pconnection->sockd, resp_buff, 5) != 5)
-						break;
-					offset = 0;
-					buff_len = 0;
-					continue;
-				}
-			} else if (request->call_id == exmdb_callid::listen_notification) {
-				auto &q = *static_cast<const exreq_listen_notification *>(request.get());
-				std::shared_ptr<ROUTER_CONNECTION> prouter;
-				try {
-					prouter = std::make_shared<ROUTER_CONNECTION>();
-					prouter->remote_id.reserve(strlen(q.remote_id));
-				} catch (const std::bad_alloc &) {
-				}
-				if (NULL == prouter) {
-					tmp_byte = exmdb_response::lack_memory;
-				} else if (g_max_routers != 0 && g_router_list.size() >= g_max_routers) {
-					tmp_byte = exmdb_response::max_reached;
-				} else {
-					prouter->remote_id = q.remote_id;
-					exmdb_server::free_env();
-					if (5 != write(pconnection->sockd, resp_buff, 5)) {
-						break;
-					} else {
-						prouter->thr_id = pconnection->thr_id;
-						prouter->sockd = pconnection->sockd;
-						pconnection->thr_id = {};
-						pconnection->sockd = -1;
-						prouter->last_time = time(nullptr);
-						std::unique_lock r_hold(g_router_lock);
-						g_router_list.insert(prouter);
-						r_hold.unlock();
-						std::unique_lock chold(g_connection_lock);
-						g_connection_list.erase(pconnection);
-						chold.unlock();
-						notification_agent_thread_work(std::move(prouter));
-					}
-				}
-			} else {
-				tmp_byte = exmdb_response::connect_incomplete;
-			}
-		} else if (!exmdb_parser_dispatch(request.get(), response)) {
-			tmp_byte = exmdb_response::dispatch_error;
-		} else if (exmdb_ext_push_response(response.get(), &tmp_bin) != pack_result::success) {
-			tmp_byte = exmdb_response::push_error;
-		} else {
-			exmdb_server::free_env();
-			offset = 0;
-			pbuff = tmp_bin.pb;
-			buff_len = tmp_bin.cb;
-			is_writing = TRUE;
-			continue;
-		}
-		exmdb_server::free_env();
-		if (HXio_fullwrite(pconnection->sockd, &tmp_byte, 1) != 1)
-			/* ignore */;
-		break;
-	}
-	close(pconnection->sockd);
-	pconnection->sockd = -1;
-	free(pbuff);
-	if (!pconnection->b_stop) {
-		pconnection->thr_id = {};
-		pthread_detach(pthread_self());
+		if (offset < input_buf.size())
+			continue; /* keep reading as necessary */
+		if (rqi_handle_buffer(*param, input_buf, output_buf) < 0)
+			break;
+		input_buf.clear();
+		offset = 0;
+		is_writing = true;
 	}
 	return nullptr;
 }
 
-void exmdb_parser_insert_conn(std::unique_ptr<EXMDB_CONNECTION> &&pconnection)
+bool exmdb_parser_insert_conn(generic_connection &&co) try
 {
-	auto ret = pthread_create4(&pconnection->thr_id, nullptr,
-	           request_parser_thread, pconnection.get());
-	if (ret != 0)
+	if (g_max_threads != 0) {
+		std::lock_guard lk(g_connection_lock);
+		if (g_connection_list.size() >= g_max_threads)
+			return false;
+	}
+
+	auto par = std::make_unique<parser_params>();
+	par->conn = std::make_shared<exmdb_connection>(std::move(co));
+	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
+	           request_parser_thread, par.get());
+	if (ret != 0) {
 		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
-	else
-		pconnection.release(); /* thread should be vivid now */
+		return false;
+	} else {
+		par.release(); /* thread should be vivid now */
+		return true;
+	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
-std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_extract_router(const char *remote_id)
+std::shared_ptr<router_connection> exmdb_parser_get_router(const char *remote_id)
 {
 	std::lock_guard rhold(g_router_lock);
 	auto it = std::find_if(g_router_list.begin(), g_router_list.end(),
 	          [&](const auto &r) { return r->remote_id == remote_id; });
-	if (it == g_router_list.end())
-		return nullptr;
-	auto rt = *it;
-	g_router_list.erase(it);
-	return rt;
+	return it != g_router_list.end() ? *it : nullptr;
 }
 
 void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&pconnection)
@@ -394,54 +589,132 @@ BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &pconnec
 	return TRUE;
 }
 
-int exmdb_parser_run(const char *config_path)
+void exmdb_parser_stop()
 {
-	auto ret = list_file_read_exmdb("exmdb_list.txt", config_path, g_local_list);
-	if (ret != 0) {
-		mlog(LV_ERR, "exmdb_provider: list_file_read_exmdb: %s", strerror(ret));
-		return 1;
+	{
+		std::lock_guard chold(g_connection_lock);
+		for (auto &c : g_connection_list)
+			c->signal_stop();
+		g_connection_list.clear();
 	}
-	std::erase_if(g_local_list,
-		[&](const EXMDB_ITEM &s) { return !HX_ipaddr_is_local(s.host.c_str(), AI_V4MAPPED); });
+
+	std::lock_guard rhold(g_router_lock);
+	for (auto &rt : g_router_list)
+		rt->signal_stop();
+	g_router_list.clear();
+}
+
+static int sockaccept_thread(generic_connection &&conn)
+{
+		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
+		    conn.client_addr) == g_acl_list.cend()) {
+			static std::atomic<time_t> g_lastwarn_time;
+			auto prev = g_lastwarn_time.load();
+			auto next = prev + 60;
+			auto now = time(nullptr);
+			if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
+				mlog(LV_INFO, "I-1666: Rejecting %s: not allowed by exmdb_acl", conn.client_addr);
+			auto tmp_byte = exmdb_response::access_deny;
+			if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
+				/* ignore */;
+			return 0;
+		}
+		if (!exmdb_parser_insert_conn(std::move(conn))) {
+			auto tmp_byte = exmdb_response::max_reached;
+			if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
+				/* ignore */;
+			return 0;
+		}
+
 	return 0;
 }
 
-void exmdb_parser_stop()
+int exmdb_pickup(int control_fd)
 {
-	std::vector<pthread_t> pthr_ids;
-	
-	std::unique_lock chold(g_connection_lock);
-	size_t num = g_connection_list.size();
-	pthr_ids.reserve(num);
-	if (num > 0) {
-	for (auto &pconnection : g_connection_list) {
-		pconnection->b_stop = true;
-		if (pconnection->sockd >= 0)
-			shutdown(pconnection->sockd, SHUT_RDWR); /* closed in ~EXMDB_CONNECTION */
-		if (!pthread_equal(pconnection->thr_id, {})) {
-			pthr_ids.push_back(pconnection->thr_id);
-			pthread_kill(pconnection->thr_id, SIGALRM);
-		}
+	auto par = std::make_unique<parser_params>();
+	int client_fd = -1;
+	auto ern = socketpass_receive(control_fd, par->injected_pkt, client_fd);
+	if (ern != 0)
+		return -1;
+	par->conn = std::make_shared<exmdb_connection>(generic_connection::takeover(std::move(client_fd)));
+	if (par->conn->sockd < 0)
+		return 0;
+
+	/* reprise of exmdb_parser_insert_conn */
+	par->single_user = znul(getenv("ISTORE_USER"));
+	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
+	           request_parser_thread, par.get());
+	if (ret != 0)
+		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
+	else
+		par.release(); /* thread should be vivid now */
+	return 0;
+}
+
+static int exmdb_acl_read(const char *config_path, const char *hosts_allow)
+{
+	auto &acl = g_acl_list;
+	if (hosts_allow != nullptr)
+		acl = gx_split(hosts_allow, ' ');
+	auto ret = read_file_by_line("exmdb_acl.txt", config_path, acl);
+	if (ret == ENOENT) {
+	} else if (ret != 0) {
+		mlog(LV_ERR, "exmdb_provider: Failed to read ACLs from exmdb_acl.txt: %s", strerror(errno));
+		return -5;
 	}
-	chold.unlock();
-		for (auto tid : pthr_ids)
-			pthread_join(tid, nullptr);
+	std::sort(acl.begin(), acl.end());
+	std::erase(acl, "");
+	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
+	if (acl.size() == 0) {
+		mlog(LV_NOTICE, "exmdb_provider: defaulting to implicit access ACL containing ::1.");
+		acl = {"::1"};
 	}
-	std::unique_lock rhold(g_router_lock);
-	num = g_router_list.size();
-	pthr_ids.clear();
-	pthr_ids.reserve(num);
-	if (num > 0) {
-	for (auto &rt : g_router_list) {
-		rt->b_stop = true;
-		rt->waken_cond.notify_one();
-		if (!pthread_equal(rt->thr_id, {})) {
-			pthr_ids.emplace_back(rt->thr_id);
-			pthread_kill(rt->thr_id, SIGALRM);
-		}
+	return 0;
+}
+
+int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg)
+{
+	auto &ctx = exmdb_listen_ctx;
+	ctx.m_thread_name = "exmdb_accept";
+	auto line = gxcfg.get_value("exmdb_listen");
+	if (line != nullptr)
+		return ctx.add_bunch(line);
+	auto host = oldcfg.get_value("listen_ip");
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:listen_ip is deprecated in favor of %s:exmdb_listen",
+			oldcfg.m_filename.c_str(), gxcfg.m_filename.c_str());
+	else
+		host = "::1";
+	auto ps = oldcfg.get_value("exmdb_listen_port");
+	uint16_t port = 5000;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:exmdb_listen_port is deprecated in favor of %s:exmdb_listen",
+			oldcfg.m_filename.c_str(), gxcfg.m_filename.c_str());
+		port = strtoul(znul(ps), nullptr, 0);
 	}
-	rhold.unlock();
-		for (auto tid : pthr_ids)
-			pthread_join(tid, nullptr);
+	if (port != 0 && ctx.add_inet(host, port) != 0)
+		return -1;
+	return 0;
+}
+
+int exmdb_listener_run(const char *config_path, const config_file &oldcfg)
+{
+	auto ret = exmdb_acl_read(config_path, oldcfg.get_value("exmdb_hosts_allow"));
+	if (ret != 0)
+		return ret;
+	if (exmdb_listen_ctx.empty())
+		return 0;
+	g_exmdblisten_stop = false;
+	auto err = exmdb_listen_ctx.watch_start(g_exmdblisten_stop, sockaccept_thread);
+	if (err != 0) {
+		mlog(LV_ERR, "exmdb_provider: failed to create exmdb listener thread: %s", strerror(err));
+		return -1;
 	}
+	return 0;
+}
+
+void exmdb_listener_stop()
+{
+	g_exmdblisten_stop = true;
+	exmdb_listen_ctx.reset();
 }

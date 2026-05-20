@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdio>
@@ -22,9 +22,15 @@ using namespace gromox;
 namespace {
 
 struct ENUM_PARAM {
+	~ENUM_PARAM() {
+		if (pnolonger_mids != nullptr)
+			eid_array_free(pnolonger_mids);
+		if (pdeleted_eids != nullptr)
+			eid_array_free(pdeleted_eids);
+	}
+
 	xstmt stm_exist, stm_msg;
-	EID_ARRAY *pdeleted_eids;
-	EID_ARRAY *pnolonger_mids;
+	EID_ARRAY *pdeleted_eids = nullptr, *pnolonger_mids = nullptr;
 	BOOL b_result;
 };
 
@@ -121,7 +127,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (sqlite3_open_v2(":memory:", &psqlite,
 	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close_v2(psqlite); });
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
@@ -227,7 +233,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 				continue;
 		}
 		if (prestriction != nullptr &&
-		    !cu_eval_msg_restriction(pdb->psqlite,
+		    !cu_eval_msg_restriction(*pdb,
 		    cpid, mid_val, prestriction))
 			continue;	
 		sqlite3_reset(stm_insert_exist);
@@ -338,8 +344,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	pchg_mids->count = 0;
 	pupdated_mids->count = 0;
 	if (count > 0) {
-		pupdated_mids->pids = cu_alloc<uint64_t>(count);
-		pchg_mids->pids = cu_alloc<uint64_t>(count);
+		pupdated_mids->pids = cu_alloc<eid_t>(count);
+		pchg_mids->pids = cu_alloc<eid_t>(count);
 		if (pupdated_mids->pids == nullptr || pchg_mids->pids == nullptr)
 			return FALSE;
 	} else {
@@ -388,27 +394,20 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (enum_param.pdeleted_eids == nullptr)
 		return FALSE;
 	enum_param.pnolonger_mids = eid_array_init();
-	if (NULL == enum_param.pnolonger_mids) {
-		eid_array_free(enum_param.pdeleted_eids);
+	if (enum_param.pnolonger_mids == nullptr)
 		return FALSE;
-	}
 	if (delete_impossible_mids(*pgiven, *enum_param.pdeleted_eids) != ecSuccess)
 		return false;
 	if (!const_cast<idset *>(pgiven)->enum_repl(1, &enum_param,
-	    ics_enum_content_idset)) {
-		eid_array_free(enum_param.pdeleted_eids);
-		eid_array_free(enum_param.pnolonger_mids);
+	    ics_enum_content_idset))
 		return FALSE;	
-	}
 	enum_param.stm_exist.finalize();
 	enum_param.stm_msg.finalize();
 	pdeleted_mids->count = enum_param.pdeleted_eids->count;
 	if (0 != enum_param.pdeleted_eids->count) {
-		pdeleted_mids->pids = cu_alloc<uint64_t>(pdeleted_mids->count);
+		pdeleted_mids->pids = cu_alloc<eid_t>(pdeleted_mids->count);
 		if (NULL == pdeleted_mids->pids) {
 			pdeleted_mids->count = 0;
-			eid_array_free(enum_param.pdeleted_eids);
-			eid_array_free(enum_param.pnolonger_mids);
 			return FALSE;
 		}
 		memcpy(pdeleted_mids->pids,
@@ -417,13 +416,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	} else {
 		pdeleted_mids->pids = NULL;
 	}
-	eid_array_free(enum_param.pdeleted_eids);
 	pnolonger_mids->count = enum_param.pnolonger_mids->count;
 	if (0 != enum_param.pnolonger_mids->count) {
-		pnolonger_mids->pids = cu_alloc<uint64_t>(pnolonger_mids->count);
+		pnolonger_mids->pids = cu_alloc<eid_t>(pnolonger_mids->count);
 		if (NULL == pnolonger_mids->pids) {
 			pnolonger_mids->count = 0;
-			eid_array_free(enum_param.pnolonger_mids);
 			return FALSE;
 		}
 		memcpy(pnolonger_mids->pids,
@@ -432,7 +429,6 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	} else {
 		pnolonger_mids->pids = NULL;
 	}
-	eid_array_free(enum_param.pnolonger_mids);
 	} /* section 3 */
 
 	/* Rollback transaction (no changes were made anyway) */
@@ -451,7 +447,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (count <= 0) {
 		pgiven_mids->pids = NULL;
 	} else {
-		pgiven_mids->pids = cu_alloc<uint64_t>(count);
+		pgiven_mids->pids = cu_alloc<eid_t>(count);
 		if (pgiven_mids->pids == nullptr)
 			return FALSE;
 		auto stm_select_ex = gx_sql_prep(psqlite, "SELECT message_id"
@@ -479,10 +475,10 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			pread_mids->pids = NULL;
 			punread_mids->pids = NULL;
 		} else {
-			pread_mids->pids = cu_alloc<uint64_t>(count);
+			pread_mids->pids = cu_alloc<eid_t>(count);
 			if (pread_mids->pids == nullptr)
 				return FALSE;
-			punread_mids->pids = cu_alloc<uint64_t>(count);
+			punread_mids->pids = cu_alloc<eid_t>(count);
 			if (punread_mids->pids == nullptr)
 				return FALSE;
 			stm_select_rd = gx_sql_prep(psqlite,
@@ -621,7 +617,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 			return FALSE;	
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1141: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -639,7 +635,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	if (sqlite3_open_v2(":memory:", &psqlite,
 	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close_v2(psqlite); });
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(folder_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
@@ -712,22 +708,19 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		if (stm_select_chg.step() != SQLITE_ROW)
 			return FALSE;
 		auto fid_val1 = sqlite3_column_int64(stm_select_chg, 0);
-		PROPTAG_ARRAY proptags;
-		std::vector<uint32_t> tags;
+		std::vector<proptag_t> tags;
 		if (!cu_get_proptags(MAPI_FOLDER, fid_val1,
 		    pdb->psqlite, tags))
 			return FALSE;
-		tags.erase(std::remove_if(tags.begin(), tags.end(), [](uint32_t t) {
+		std::erase_if(tags, [](proptag_t t) {
 			return t == PR_HAS_RULES || t == PidTagChangeNumber ||
 			       t == PR_LOCAL_COMMIT_TIME || t == PR_DELETED_COUNT_TOTAL ||
 			       t == PR_NORMAL_MESSAGE_SIZE || t == PR_LOCAL_COMMIT_TIME_MAX ||
 			       t == PR_HIERARCHY_CHANGE_NUM;
-		}), tags.end());
+		});
 		tags.push_back(PidTagParentFolderId);
-		proptags.count = tags.size();
-		proptags.pproptag = tags.data();
 		if (!cu_get_properties(MAPI_FOLDER, fid_val1, CP_ACP,
-		    pdb->psqlite, &proptags, &pfldchgs->pfldchgs[i]))
+		    *pdb, tags, &pfldchgs->pfldchgs[i]))
 			return FALSE;
 	}
 	stm_select_chg.finalize();
@@ -748,7 +741,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	if (count <= 0) {
 		pgiven_fids->pids = NULL;
 	} else {
-		pgiven_fids->pids = cu_alloc<uint64_t>(count);
+		pgiven_fids->pids = cu_alloc<eid_t>(count);
 		if (pgiven_fids->pids == nullptr)
 			return FALSE;
 		auto stm_select_ex = gx_sql_prep(psqlite, "SELECT folder_id"
@@ -779,25 +772,20 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	enum_param.pdeleted_eids = eid_array_init();
 	if (enum_param.pdeleted_eids == nullptr)
 		return FALSE;
-	for (size_t i = 0; i < replids.count; ++i) {
+	for (size_t i = 0; i < replids.count; ++i)
 		if (!const_cast<idset *>(pgiven)->enum_repl(replids.replids[i],
-		    &enum_param, ics_enum_hierarchy_idset)) {
-			eid_array_free(enum_param.pdeleted_eids);
+		    &enum_param, ics_enum_hierarchy_idset))
 			return FALSE;	
-		}
-	}
 
 	pdeleted_fids->count = enum_param.pdeleted_eids->count;
-	pdeleted_fids->pids = cu_alloc<uint64_t>(pdeleted_fids->count);
+	pdeleted_fids->pids = cu_alloc<eid_t>(pdeleted_fids->count);
 	if (NULL == pdeleted_fids->pids) {
 		pdeleted_fids->count = 0;
-		eid_array_free(enum_param.pdeleted_eids);
 		return FALSE;
 	}
 	memcpy(pdeleted_fids->pids,
 		enum_param.pdeleted_eids->pids,
 		sizeof(uint64_t)*pdeleted_fids->count);
-	eid_array_free(enum_param.pdeleted_eids);
 	} /* section 5 */
 
 	if (g_exmdb_ics_log_file.empty())

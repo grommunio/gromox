@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <dirent.h>
 #include <map>
@@ -78,6 +78,10 @@ static constexpr cfg_directive bounce_gen_dflt[] = {
 errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
     const char *bounce_grp) try
 {
+	/*
+	 * NOTE: bounce_gen_init may get called multiple times within a process
+	 * image (e.g. ews_init, PROC_exchange_emsmdb, SVC_exmdb_provider).
+	 */
 	auto cfg = config_file_initd("gromox.cfg", cfgdir, bounce_gen_dflt);
 	if (cfg == nullptr) {
 		mlog(LV_ERR, "exmdb_provider: config_file_initd gromox.cfg: %s",
@@ -119,7 +123,7 @@ errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1501: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ENOMEM;
 }
 

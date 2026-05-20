@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <string_view>
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
 #include <gromox/defs.h>
@@ -12,21 +13,8 @@ struct GX_EXPORT sslfree {
 	inline void operator()(EVP_MD_CTX *x) const { EVP_MD_CTX_free(x); }
 };
 
-struct GX_EXPORT HMACMD5_CTX {
-	HMACMD5_CTX() = default;
-	HMACMD5_CTX(const void *key, size_t len);
-	bool update(const void *text, size_t len);
-	bool finish(void *output);
-	bool is_valid() const { return valid_flag; }
-
-	protected:
-	std::unique_ptr<EVP_MD_CTX, sslfree> osslctx;
-	uint8_t k_ipad[65]{}, k_opad[65]{};
-	bool valid_flag = false;
-};
-
 extern GX_EXPORT int tls_set_min_proto(SSL_CTX *, const char *);
 extern GX_EXPORT void tls_set_renego(SSL_CTX *);
-extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
+extern GX_EXPORT std::string sss_obf_reverse(std::string_view);
 
 }

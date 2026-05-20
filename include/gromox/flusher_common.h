@@ -28,16 +28,16 @@ struct STREAM;
 /**
  * @parsed_domain:	parsed domain according to connection
  */
-struct envelope_info {
+struct GX_EXPORT envelope_info {
 	void clear();
 
 	char parsed_domain[UDOM_SIZE]{"unknown"};
-	char hello_domain[UDOM_SIZE]{}; /* domain name after helo */
+	std::string hello_domain; /* domain name after helo */
 	char from[UADDR_SIZE]{}; /* envelope's from message */
 	std::vector<std::string> rcpt_to; /* envelope's rcpt to message */
 };
 
-struct FLUSH_INFO {
+struct GX_EXPORT FLUSH_INFO {
     int           flush_action; /* indicate flushing whole or part of mail */
     int           flush_result;
     int           flush_ID;
@@ -46,7 +46,7 @@ struct FLUSH_INFO {
 
 struct smtp_context;
 using SMTP_CONTEXT = smtp_context;
-struct FLUSH_ENTITY final {
+struct GX_EXPORT FLUSH_ENTITY {
 	STREAM *pstream = nullptr;
 	GENERIC_CONNECTION *pconnection = nullptr;
 	FLUSH_INFO *pflusher = nullptr; /* the flusher for saving mail information */

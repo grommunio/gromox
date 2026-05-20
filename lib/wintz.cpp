@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2026 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1 /* strcasestr */
 #include <atomic>
@@ -100,7 +100,13 @@ const std::string_view *wintz_to_tzdef(const char *izone)
 {
 	if (wintz_load_once() != 0)
 		return nullptr;
-	return tzd_archive.find(izone + std::string(".tzd"));
+	std::string name = izone;
+	if (class_match_suffix(izone, " Standard Time") == 0 ||
+	    class_match_suffix(izone, " Daylight Time") == 0)
+		name.erase(name.size() - 14);
+	replace_unsafe_basename(name.data());
+	name.resize(strlen(name.c_str()));
+	return tzd_archive.find(name + ".tzd");
 }
 
 const std::string_view *ianatz_to_tzdef(const char *izone)

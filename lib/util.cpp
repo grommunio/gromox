@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 /*
  *	this file includes some utility functions that will be used by many 
  *	programs
@@ -20,6 +22,7 @@
 #include <unistd.h>
 #include <json/reader.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -42,6 +45,43 @@ const uint8_t utf8_byte_num[256] = {
 	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,0,0,
 	/* 0x80-0xBF,0xFE,0xFF cannot start a sequence, hence 0 */
 };
+
+bool parse_impersonation_address(const char *address, std::string &store_user,
+    std::string &auth_user, bool &is_impersonation)
+{
+	store_user = address != nullptr ? address : "";
+	is_impersonation = false;
+	if (address == nullptr)
+		return false;
+	auto p1 = strchr(address, '!');
+	if (p1 == nullptr)
+		return true;
+	auto p2 = strchr(p1 + 1, '!');
+	if (p2 != nullptr && strchr(p2 + 1, '!') != nullptr)
+		return false;
+	std::string imp_user(address, p1 - address);
+	if (imp_user.empty())
+		return false;
+	auth_user.clear();
+	if (p2 == nullptr) {
+		auth_user = p1 + 1;
+		auto at = strchr(auth_user.c_str(), '@');
+		if (at == nullptr || at[1] == '\0')
+			return false;
+		store_user = imp_user + "@" + (at + 1);
+	} else {
+		std::string imp_domain(p1 + 1, p2 - p1 - 1);
+		auth_user = p2 + 1;
+		if (imp_domain.empty())
+			return false;
+		auto at = strchr(auth_user.c_str(), '@');
+		if (at == nullptr || at[1] == '\0')
+			return false;
+		store_user = imp_user + "@" + imp_domain;
+	}
+	is_impersonation = true;
+	return true;
+}
 }
 
 /* check for invalid UTF-8 */
@@ -93,7 +133,10 @@ BOOL utf8_truncate(char *str, int length)
 	return TRUE;
 }
 
-/* Strip invalid UTF-8 and replace by '?' */
+/**
+ * Strip invalid UTF-8 and also most C0 control characters (not valid
+ * in XML 1.0), and replace by '?'.
+ */
 void utf8_filter(char *string)  
 {
 	int m;
@@ -184,45 +227,6 @@ void utf8_filter(char *string)
 	}
 }
 
-void wchar_to_utf8(uint32_t wchar, char *zstring)
-{
-	auto string = reinterpret_cast<unsigned char *>(zstring);
-	if (wchar < 0x7f) {
-		string[0] = wchar;
-		string[1] = '\0';
-	} else if (wchar < 0x7ff) {
-		string[0] = 192 + (wchar/64);
-		string[1] = 128 + (wchar%64);
-		string[2] = '\0';
-	} else if (wchar < 0xffff) {
-		string[0] = 224 + wchar/(64*64);
-		string[1] = 128 + (wchar/64)%64;
-		string[2] = 128 + wchar%64;
-		string[3] = '\0';
-	} else if (wchar < 0x1FFFFF) {
-		string[0] = 240 + wchar/(64*64*64);
-		string[1] = 128 + (wchar/(64*64))%64;
-		string[2] = 128 + (wchar/64)%64;
-		string[3] = 128 + wchar % 64;
-		string[4] = '\0';
-	} else if (wchar < 0x3FFFFFF) {
-		string[0] = 248 + wchar/(64*64*64*64);
-		string[1] = 128 + (wchar/(64*64*64))%64;
-		string[2] = 128 + (wchar/(64*64))%64;
-		string[3] = 128 + (wchar/64)%64;
-		string[4] = 128 + wchar % 64;
-		string[5] = '\0';
-	} else if (wchar < 0x7FFFFFFF) {
-		string[0] = 252 + wchar/(64*64*64*64*64);
-		string[1] = 128 + (wchar/(64*64*64*64))%64;
-		string[2] = 128 + (wchar/(64*64*64))%64;
-		string[3] = 128 + (wchar/(64*64))%64;
-		string[4] = 128 + (wchar/64)%64;
-		string[5] = 128 + wchar % 64;
-		string[6] = '\0';
-	}
-}
-
 static bool have_jpms()
 {
 	auto cd = iconv_open("UTF-8", "iso-2022-jp-ms");
@@ -270,10 +274,6 @@ const char* replace_iconv_charset(const char *charset)
 BOOL string_mb_to_utf8(const char *charset, const char *in_string,
     char *out_string, size_t out_len)
 {
-	iconv_t conv_id;
-	char *pin, *pout;
-	char tmp_charset[64];
-	
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
 		0 == strcasecmp(charset, "US-ASCII")) {
@@ -291,20 +291,37 @@ BOOL string_mb_to_utf8(const char *charset, const char *in_string,
 	if (out_len > 0)
 		/* Leave room for \0 */
 		--out_len;
-	snprintf(tmp_charset, std::size(tmp_charset), "%s//IGNORE", replace_iconv_charset(charset));
-	conv_id = iconv_open("UTF-8", tmp_charset);
+	auto cs = replace_iconv_charset(charset);
+	auto conv_id = iconv_open("UTF-8", cs);
 	if (conv_id == iconv_t(-1)) {
 		/* EINVAL could happen as a result of EMFILE... */
-		mlog(LV_ERR, "E-2108: iconv_open %s: %s",
-		        tmp_charset, strerror(errno));
+		mlog(LV_ERR, "E-2108: iconv_open %s: %s", cs, strerror(errno));
 		return FALSE;
 	}
-	pin = (char*)in_string;
-	pout = out_string;
+	auto pin  = deconst(in_string);
+	auto pout = out_string;
 	auto in_len = length;
-	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
+	while (in_len > 0) {
+		auto ret = iconv(conv_id, &pin, &in_len, &pout, &out_len);
+		if (ret != static_cast<size_t>(-1))
+			continue;
+		if (errno == E2BIG)
+			break;
+		if (errno == EILSEQ || errno == EINVAL) {
+			if (in_len > 0) {
+				++pin;
+				--in_len;
+			}
+			continue;
+		}
 		iconv_close(conv_id);
 		return FALSE;
+	}
+	auto ret = iconv(conv_id, nullptr, nullptr, &pout, &out_len);
+	if (ret == static_cast<size_t>(-1) && errno != E2BIG &&
+	    errno != EILSEQ && errno != EINVAL) {
+		iconv_close(conv_id);
+		return false;
 	}
 	iconv_close(conv_id);
 	if (orig_outlen > 0)
@@ -338,12 +355,30 @@ BOOL string_utf8_to_mb(const char *charset, const char *in_string,
 		mlog(LV_ERR, "E-2109: iconv_open %s: %s", cs, strerror(errno));
 		return FALSE;
 	}
-	auto pin = const_cast<char *>(in_string);
-	auto pout = out_string;
+	auto pin    = deconst(in_string);
+	auto pout   = out_string;
 	auto in_len = length;
-	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
+	while (in_len > 0) {
+		auto ret = iconv(conv_id, &pin, &in_len, &pout, &out_len);
+		if (ret != static_cast<size_t>(-1))
+			continue;
+		if (errno == E2BIG)
+			break;
+		if (errno == EILSEQ || errno == EINVAL) {
+			if (in_len > 0) {
+				++pin;
+				--in_len;
+			}
+			continue;
+		}
 		iconv_close(conv_id);
 		return FALSE;
+	}
+	auto ret = iconv(conv_id, nullptr, nullptr, &pout, &out_len);
+	if (ret == static_cast<size_t>(-1) && errno != E2BIG &&
+	    errno != EILSEQ && errno != EINVAL) {
+		iconv_close(conv_id);
+		return false;
 	}
 	iconv_close(conv_id);
 	if (orig_outlen > 0)
@@ -353,50 +388,83 @@ BOOL string_utf8_to_mb(const char *charset, const char *in_string,
 
 ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len)
 {
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-
 	len = std::min(len, static_cast<size_t>(SSIZE_MAX));
-	conv_id = iconv_open("UTF-16LE", "UTF-8");
+	auto conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if (conv_id == (iconv_t)-1) {
 		mlog(LV_ERR, "E-2110: iconv_open: %s", strerror(errno));
 		return -1;
 	}
 	auto pin  = deconst(src);
 	auto pout = static_cast<char *>(dst);
-	in_len = strlen(src) + 1;
+	auto in_len = strlen(src) + 1;
 	memset(dst, 0, len);
-	out_len = len;
-	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
+	auto out_len = len;
+	while (in_len > 0) {
+		auto ret = iconv(conv_id, &pin, &in_len, &pout, &out_len);
+		if (ret != static_cast<size_t>(-1))
+			continue;
+		if (errno == E2BIG)
+			break;
+		if (errno == EILSEQ || errno == EINVAL) {
+			if (in_len > 0) {
+				++pin;
+				--in_len;
+			}
+			continue;
+		}
 		iconv_close(conv_id);
 		return -1;
-	} else {
-		iconv_close(conv_id);
-		return out_len - len;
 	}
+	auto ret = iconv(conv_id, nullptr, nullptr, &pout, &out_len);
+	if (ret == static_cast<size_t>(-1) && errno != E2BIG &&
+	    errno != EILSEQ && errno != EINVAL) {
+		iconv_close(conv_id);
+		return -1;
+	}
+	iconv_close(conv_id);
+	return len - out_len;
 }
 
 BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 {
-	char *pin, *pout;
-	iconv_t conv_id;
-	
-	conv_id = iconv_open("UTF-8", "UTF-16LE");
+	auto conv_id = iconv_open("UTF-8", "UTF-16LE");
 	if (conv_id == (iconv_t)-1) {
 		mlog(LV_ERR, "E-2111: iconv_open: %s", strerror(errno));
 		return false;
 	}
-	pin = (char*)src;
-	pout = dst;
+	auto pin  = static_cast<char *>(deconst(src));
+	auto pout = dst;
+	auto out_len = len;
 	memset(dst, 0, len);
-	if (iconv(conv_id, &pin, &src_len, &pout, &len) == static_cast<size_t>(-1)) {
+	static const char unul[2]{};
+	while (src_len > 0) {
+		auto ret = iconv(conv_id, &pin, &src_len, &pout, &out_len);
+		if (ret != static_cast<size_t>(-1))
+			continue;
+		if (errno == E2BIG)
+			break;
+		if (errno == EILSEQ || errno == EINVAL) {
+			if (src_len >= 2) {
+				pin += 2;
+				src_len -= 2;
+				continue;
+			} else if (pin != unul) {
+				pin = deconst(unul);
+				src_len = 2;
+				continue;
+			}
+		}
 		iconv_close(conv_id);
 		return FALSE;
-	} else {
-		iconv_close(conv_id);
-		return TRUE;
 	}
+	auto ret = iconv(conv_id, nullptr, nullptr, &pout, &out_len);
+	if (ret == static_cast<size_t>(-1) && errno != E2BIG &&
+	    errno != EILSEQ && errno != EINVAL) {
+		iconv_close(conv_id);
+		return false;
+	}
+	iconv_close(conv_id);
+	return TRUE;
 }
 
 /*
@@ -818,8 +886,10 @@ void replace_unsafe_basename(char *s)
 /*
  * The resulting QP data is not suitable as encoded-words, only bodytext.
  */
-ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t length)
+ssize_t qpnl_encode_sized(std::string_view sv_in, void *voutput, size_t outlen)
 {
+	auto input = sv_in.data();
+	auto length = sv_in.size();
 	auto output = static_cast<uint8_t *>(voutput);
 	size_t inpos, outpos, linelen;
 
@@ -1014,9 +1084,11 @@ static size_t qp_decode(void *voutput, const char *input, size_t length,
 	return cnt;
 }
 
-ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
-    size_t length, unsigned int qp_flags)
+ssize_t qpnl_decode_sized(std::string_view sv_in, void *voutput, size_t out_len,
+    unsigned int qp_flags)
 {
+	auto input = sv_in.data();
+	auto length = sv_in.size();
 	auto output = static_cast<uint8_t *>(voutput);
 	int c;
 	size_t i, cnt = 0;
@@ -1058,38 +1130,6 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 	if (cnt >= out_len)
 		return -1;
 	return qp_decode(output, input, length, qp_flags);
-}
-
-void encode_hex_int(int id, char *out)
-{
-	static const char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-							'8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-	char t_char;
-	size_t i, j;
-	
-	for (i=0,j=0; i<sizeof(int); i++,j+=2) {
-		t_char = (id >> i*8) & 0xFF;
-		out[j+1] = codes[t_char&0x0f];
-		out[j] = codes[(t_char&0xf0)>>4];
-	}
-	out[j] = '\0';
-}
-
-int decode_hex_int(const char *in)
-{
-	int retval;
-	char t_buff[3];
-	
-	if (strlen(in) < 2 * sizeof(int))
-		return 0;
-	retval = 0;
-	for (size_t i = 0; i < sizeof(int); ++i) {
-		t_buff[0] = in[2*i];
-		t_buff[1] = in[2*i+1];
-		t_buff[2] = '\0';
-		retval |= strtol(t_buff, NULL, 16) << i*8;
-	}
-	return retval;
 }
 
 BOOL encode_hex_binary(const void *vsrc, int srclen, char *dst, int dstlen)

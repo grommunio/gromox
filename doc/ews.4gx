@@ -1,24 +1,17 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2023 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH ews 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-ews \(em http(8gx) processing plugin for EWS requests
+ews \(em Handler for Exchange Web Services requests
 .SH Description
-The ews(4gx) plugin handles all requests to the \fB/EWS/Exchange.asmx\fP
+The ews(4gx) component handles requests to the \fB/EWS/Exchange.asmx\fP
 URI path.
 .SH Configuration directives (gromox.cfg)
 The following directives are recognized when they appear in
-/etc/gromox/gromox.cfg.
-.TP
-\fBoutgoing_smtp_url\fP
-The SMTP server to use for outgoing mails. To use the local maildrop queue, set
-the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
-SMTP server is offline, submissions will be rejected (and mails stick around in
-Outbox or whatever folder they were submitted from).
-.br
-Default: \fIsendmail://localhost\fP
+/etc/gromox/gromox.cfg: outgoing_smtp_url. See the gromox.cfg(5) manpage.
 .SH Configuration directives (ews.cfg)
-The following directives are recognized when they appear in etc/gromox/ews.cfg.
+The following directives are recognized when they appear in
+/etc/gromox/ews.cfg.
 .TP
 \fBews_experimental\fP
 Default: \fI0\fP
@@ -33,9 +26,17 @@ Controls whether SOAP/XML responses produced by ews(4gx) are emitted normally
 Default: \fIno\fP
 .TP
 \fBews_request_logging\fP
-Log all requests (further restricted by log_filter).
+When set to 1 or higher, requests are logged (subject to restriction by
+log_filter). When set to 2 or higher, the XML input is dumped as well. The log
+messages are emitted with "debug" (6) priority, so you may also need to raise
+http.cfg:http_log_level and/or gromox.cfg:istore_log_level.
 .br
-Default: \fIno\fP
+Default: \fI0\fP
+.TP
+\fBews_response_logging\fP
+When set to 1 or higher, responses are logged. When set to 2 or higher, the XML
+output is dumped as well. Like requests, these are logged at "debug" priority
+level.
 .SH Normative references
 .IP \(bu 4
 OXWAVLS, OXWOOF, OXWSPHOTO

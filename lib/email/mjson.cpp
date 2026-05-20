@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <climits>
@@ -179,14 +179,17 @@ BOOL MJSON::load_from_json(const Json::Value &root) try
 		pjson->flag         = root["flag"].asBool();
 		pjson->priority     = root["priority"].asUInt();
 		pjson->ref          = base64_decode(root["ref"].asString());
-		if (!mjson_parse_array(pjson, root["structure"], TYPE_STRUCTURE) ||
+		if (root.isMember("structure") &&
+		    !mjson_parse_array(pjson, root["structure"], TYPE_STRUCTURE))
+			return false;
+		if (root.isMember("mimes") &&
 		    !mjson_parse_array(pjson, root["mimes"], TYPE_MIMES))
 			return false;
 		pjson->size         = root["size"].asUInt();
 	}
 	return m_root.has_value() && !m_root->contains_none_type();
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2743: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -251,7 +254,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2062: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -282,7 +285,7 @@ int MJSON::fetch_structure(mjson_io &io, const char *cset, BOOL b_ext,
 	return mjson_fetch_mime_structure(io, &*m_root, nullptr, nullptr, cset,
 	       charset.c_str(), b_ext, buf);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2061: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 
@@ -290,12 +293,6 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
     const char *storage_path, const char *msg_filename, const char *charset,
     const char *email_charset, BOOL b_ext, std::string &buf) try
 {
-#ifdef _DEBUG_UMTA
-	if (pmime == nullptr) {
-		mlog(LV_DEBUG, "mail: NULL pointer in mjson_fetch_mime_structure");
-		return -1;
-	}
-#endif
 	auto ctype = pmime->ctype;
 	HX_strupper(ctype.data());
 	auto pos = ctype.find('/');
@@ -395,7 +392,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 			if (eml_content == nullptr)
 				goto RFC822_FAILURE;
 			Json::Value digest;
-			if (!json_from_str(*eml_content, digest))
+			if (!str_to_json(*eml_content, digest))
 				goto RFC822_FAILURE;
 			MJSON temp_mjson;
 			if (!temp_mjson.load_from_json(digest))
@@ -450,7 +447,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1322: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 
@@ -463,8 +460,9 @@ static std::string mjson_cvt_addr(const EMAIL_ADDR &email_addr)
 		buf += "(\"" + mjson_add_backslash(email_addr.display_name) + "\"";
 	else
 		/*
-		 * qp_encode_ex is only suitable for bodytext but not
-		 * encoded-words, so just pick base64
+		 * qpnl_encode is only suitable for bodytext but not
+		 * encoded-words (because of the newlines), so just pick
+		 * base64.
 		 */
 		buf += "(\"=?utf-8?b?" + base64_encode(email_addr.display_name) + "?=\"";
 
@@ -528,7 +526,7 @@ int MJSON::fetch_envelope(const char *cset, std::string &buf) const try
 	       " NIL)";
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1755: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 
@@ -576,7 +574,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	} else if (pmime->encoding_is_q()) {
 		std::string qpout;
 		qpout.resize(eml.size());
-		auto qdlen = qp_decode_ex(qpout.data(), qpout.size(), eml.c_str(), eml.size());
+		auto qdlen = qpnl_decode_sized(eml, qpout.data(), qpout.size());
 		if (qdlen < 0) {
 			pbuild->build_result = false;
 			return;
@@ -586,11 +584,10 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	
 	MJSON temp_mjson;
 	MAIL imail;
-	if (!imail.load_from_str(eml.c_str(), eml.size())) {
+	if (!imail.refonly_parse(eml.c_str(), eml.size())) {
 		pbuild->build_result = FALSE;
 		return;
 	}
-	size_t mess_len;
 	std::string regurg;
 	auto err = imail.to_str(regurg);
 	if (err != 0) {
@@ -600,7 +597,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	}
 	pbuild->io.place(msg_path, std::move(regurg));
 	Json::Value digest;
-	auto result = imail.make_digest(&mess_len, digest);
+	auto result = imail.make_digest(digest);
 	imail.clear();
 	if (result <= 0) {
 		pbuild->build_result = FALSE;
@@ -631,7 +628,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 		pbuild->build_result = FALSE;
 } catch (const std::bad_alloc &) {
 	pbuild->build_result = false;
-	mlog(LV_ERR, "E-1138: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }}
 
 BOOL MJSON::rfc822_build(mjson_io &io, const char *storage_path) const
@@ -675,7 +672,7 @@ BOOL MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 			continue;
 		pjson->clear();
 		Json::Value digest;
-		if (!json_from_str(*eml_content, digest) ||
+		if (!str_to_json(*eml_content, digest) ||
 		    !pjson->load_from_json(digest))
 			return false;
 		pjson->path = temp_path;
@@ -684,7 +681,7 @@ BOOL MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 	}
 	return FALSE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1321: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 	
@@ -692,12 +689,6 @@ int MJSON::rfc822_fetch(mjson_io &io, const char *storage_path,
     const char *cset, BOOL b_ext, std::string &buf) const
 {
 	auto pjson = this;
-#ifdef _DEBUG_UMTA
-	if (storage_path == nullptr) {
-		mlog(LV_DEBUG, "mail: NULL pointer in mjson_rfc822_fetch");
-		return -1;
-	}
-#endif
 	if (!has_rfc822_part())
 		return -1;
 	auto temp_path = storage_path + "/"s + get_mail_filename();
@@ -710,12 +701,6 @@ int MJSON::rfc822_fetch(mjson_io &io, const char *storage_path,
 static int mjson_rfc822_fetch_internal(mjson_io &io, const MJSON *pjson,
     const char *storage_path, const char *charset, BOOL b_ext, std::string &buf)
 {
-#ifdef _DEBUG_UMTA
-	if (pjson == nullptr || storage_path == nullptr) {
-		mlog(LV_DEBUG, "mail: NULL pointer in mjson_rfc822_fetch_internal");
-		return -1;
-	}
-#endif
 	if (!pjson->m_root.has_value())
 		return -1;
 	return mjson_fetch_mime_structure(io, &*pjson->m_root, storage_path,

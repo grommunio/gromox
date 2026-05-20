@@ -1,2 +1,2 @@
 #!/bin/sh
-exec gromox-exm2eml --mt "$@"
+exec gromox-export --mt "$@"

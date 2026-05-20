@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -59,15 +59,15 @@ enum {
 	RES_TOTAL_NUM
 };
 
-static char *opt_config_file, *opt_datadir;
+static const char *opt_config_file, *opt_datadir;
 static const char *g_lang;
 static unsigned int opt_force, opt_create_old, opt_upgrade;
 static unsigned int opt_verbose, opt_integ;
 
 static constexpr HXoption g_options_table[] = {
 	{"integrity", 0, HXTYPE_NONE, &opt_integ, nullptr, nullptr, 0, "Perform integrity SQLite check"},
-	{nullptr, 'T', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{nullptr, 'T', HXTYPE_STRING, {}, {}, {}, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
 	{nullptr, 'U', HXTYPE_NONE, &opt_upgrade, nullptr, nullptr, 0, "Perform schema upgrade"},
 	{nullptr, 'v', HXTYPE_NONE, &opt_verbose, nullptr, nullptr, 0, "Bump verbosity"},
@@ -191,28 +191,45 @@ static int mk_folders(sqlite3 *psqlite, uint32_t user_id)
 	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%llu, 'default', %u)",
 		static_cast<unsigned long long>(PRIVATE_FID_CALENDAR), frightsFreeBusySimple | frightsVisible);
-	gx_sql_exec(psqlite, tmp_sql);
+	if (gx_sql_exec(psqlite, tmp_sql) != SQLITE_OK)
+		return EXIT_FAILURE;
 	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%llu, 'default', %u)",
 		static_cast<unsigned long long>(PRIVATE_FID_LOCAL_FREEBUSY), frightsFreeBusySimple);
-	gx_sql_exec(psqlite, tmp_sql);
+	if (gx_sql_exec(psqlite, tmp_sql) != SQLITE_OK)
+		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
 
 static int mk_options(sqlite3 *psqlite, time_t ux_time)
 {
+	auto record_key  = GUID::random_new();
+	auto mapping_sig = GUID::random_new();
+	char rgtxt[5][GUIDSTR_SIZE];
+	record_key.to_str(rgtxt[0], sizeof(rgtxt[0]));
+	exc_replid2.to_str(rgtxt[1], sizeof(rgtxt[1]));
+	exc_replid3.to_str(rgtxt[2], sizeof(rgtxt[2]));
+	exc_replid4.to_str(rgtxt[3], sizeof(rgtxt[3]));
+	mapping_sig.to_str(rgtxt[4], sizeof(rgtxt[4]));
+
 	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return EXIT_FAILURE;
-	char tmp_bguid[GUIDSTR_SIZE];
-	GUID::random_new().to_str(tmp_bguid, std::size(tmp_bguid));
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
-	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
+	pstmt.bind_int64(1, CONFIG_ID_MAILBOX_GUID);
+	pstmt.bind_text(2, rgtxt[0]);
 	if (pstmt.step() != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return EXIT_FAILURE;
 	}
-	sqlite3_reset(pstmt);
+	pstmt.reset();
+	if (!opt_create_old) {
+		pstmt.bind_int64(1, CONFIG_ID_MAPPING_SIGNATURE);
+		pstmt.bind_text(2, rgtxt[4]);
+		if (pstmt.step() != SQLITE_DONE)
+			return EXIT_FAILURE;
+		pstmt.reset();
+	}
+
 	/*
 	 * By now, we have already created some built-in folders,
 	 * given them message reservation ranges,
@@ -259,17 +276,24 @@ static int mk_options(sqlite3 *psqlite, time_t ux_time)
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
 	sqlite3 *psqlite;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (2 != argc) {
+	if (argp.nargs != 1) {
 		printf("usage: %s <username>\n", argv[0]);
 		return EXIT_FAILURE;
 	}
+	for (int i = 0; i < argp.nopts; ++i) {
+		switch (argp.desc[i]->sh) {
+		case 'c': opt_config_file = argp.oarg[i]; break;
+		case 'T': opt_datadir = argp.oarg[i]; break;
+		}
+	}
+	auto le_username = argp.uarg[0];
 	auto pconfig = config_file_prg(opt_config_file, "mysql_adaptor.cfg",
 	               mkprivate_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
@@ -277,7 +301,7 @@ int main(int argc, char **argv)
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
 	std::string mysql_host = znul(pconfig->get_value("mysql_host"));
-	uint16_t mysql_port = pconfig->get_ll("mysql_port");
+	uint16_t sql_port = pconfig->get_ll("mysql_port");
 	std::string mysql_user = znul(pconfig->get_value("mysql_username"));
 	std::optional<std::string> mysql_pass;
 	if (auto s = pconfig->get_value("mysql_password"))
@@ -285,7 +309,7 @@ int main(int argc, char **argv)
 	std::string db_name = znul(pconfig->get_value("mysql_dbname"));
 
 	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
-	textmaps_init(datadir);
+	textmaps_init();
 	std::unique_ptr<MYSQL, mysql_delete> conn(mysql_init(nullptr));
 	if (conn == nullptr) {
 		printf("Failed to init mysql object\n");
@@ -294,7 +318,7 @@ int main(int argc, char **argv)
 
 	if (mysql_real_connect(conn.get(), mysql_host.c_str(), mysql_user.c_str(),
 	    mysql_pass.has_value() ? mysql_pass->c_str() : nullptr,
-	    db_name.c_str(), mysql_port, nullptr, 0) == nullptr) {
+	    db_name.c_str(), sql_port, nullptr, 0) == nullptr) {
 		printf("Failed to connect to the MariaDB/MySQL database %s@%s/%s\n",
 		       mysql_user.c_str(), mysql_host.c_str(), db_name.c_str());
 		return EXIT_FAILURE;
@@ -307,7 +331,7 @@ int main(int argc, char **argv)
 	auto qstr = "SELECT 0, u.maildir, u.lang, up.propval_str AS dtypx, u.address_status, u.id "
 	            "FROM users AS u "
 	            "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
-	            "WHERE u.username='"s + argv[1] + "'";
+	            "WHERE u.username='"s + le_username + "'";
 	if (mysql_query(conn.get(), qstr.c_str()) != 0) {
 		fprintf(stderr, "%s: %s\n", qstr.c_str(), mysql_error(conn.get()));
 		return EXIT_FAILURE;
@@ -320,7 +344,7 @@ int main(int argc, char **argv)
 	auto myrow = myres.fetch_row();
 	if (myrow == nullptr || myres.num_rows() > 1) {
 		printf("cannot find information from database "
-				"for username %s\n", argv[1]);
+				"for username %s\n", le_username);
 		return EXIT_FAILURE;
 	}
 	auto dtypx = DT_MAILUSER;
@@ -366,7 +390,7 @@ int main(int argc, char **argv)
 		printf("fail to create store database\n");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_1 = HX::make_scope_exit([&]() { sqlite3_close_v2(psqlite); });
 	if (gx_sql_exec(psqlite, "PRAGMA journal_mode=WAL") != SQLITE_OK)
 		return EXIT_FAILURE;
 	if (opt_integ)

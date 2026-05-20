@@ -1,12 +1,12 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH event_stub 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-event_stub \(em event receiver service plugin
+event_stub \(em Event receiver
 .SH Description
 event_stub connects to the event(8gx) daemon and sets itself up to receive
 notifications asynchronously with the help of an extra thread. (No
-notifications are sent towards event(8gx) by this service plugin.)
+notifications are sent towards event(8gx) by this component.)
 .PP
 event_stub installs one service function, "install_event_stub", with which
 imap(8gx) registers a callback function that, in turn, is invoked whenever a

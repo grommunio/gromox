@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <gromox/defs.h>
+#include <gromox/idset.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
 
@@ -42,7 +43,7 @@ extern void event_proc(const char *dir, BOOL is_table, uint32_t notify_id, const
 
 }
 
-extern void *instance_read_cid_content(const char *cid, uint32_t *plen, uint32_t tag);
+extern void *instance_read_cid_content(const char *cid, uint32_t *plen, gromox::proptag_t);
 extern int instance_get_message_body(message_content *, unsigned int tag, cpid_t, TPROPVAL_ARRAY *);
 
 extern unsigned int g_dbg_synth_content;

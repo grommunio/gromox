@@ -16,7 +16,7 @@ gromox\-eml2mt \(em Utility for analysis/importing various formats
 .SH Description
 gromox\-eml2mt reads one or more RFC5322-formatted e-mail messages and
 re-exports the data in a Gromox-specific mailbox transfer format to stdout for
-consumption by pipe by the gromox-mt2exm(8gx) program. Each file must contain
+consumption by pipe by the gromox\-import(8) program. Each file must contain
 at most one RFC5322 message.
 .PP
 When called as gromox\-mbox2mt, the input is treated as RFC4155-formatted Unix
@@ -31,8 +31,12 @@ vCard objects (.vcf).
 When called as gromox\-tnef2mt, the input is treated as a MS-OXTNEF object.
 .PP
 eml2mt will resolve email addresses to Gromox objects already, so the emitted
-data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
-cluster.
+data stream should be consumed by a gromox-import invocation on the \fIsame\fP
+Gromox cluster.
+.PP
+All objects in the output stream are unanchored so that the \-B option of
+gromox-import can be used to select placement. (Prior to Gromox 2.46,
+some modes like \-\-ical and \-\-vcard emitted an anchor.)
 .SH Options
 .TP
 \fB\-\-decap\fP=\fIn\fP
@@ -42,18 +46,21 @@ message. \fIn\fP is 1-based.
 .TP
 \fB\-\-ical\fP
 Treat all file arguments as iCalendar input. This is the default if the program
-was invoked as gromox\-ical2mt. Messages will be anchored to the calendar
-folder.
+was invoked as gromox\-ical2mt.
+.TP
+\fB\-\-loglevel\fP \fIn\fP Maximum verbosity of general logging (not connected
+to \fB\-p\fP, \fB\-t\fP or \fB\-v\fP). 1=crit, 2=error, 3=warn, 4=notice,
+5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
 .TP
 \fB\-\-mail\fP
 Treat all file arguments as Internet Mail input. This is the default if the
-program was invoked as gromox\-eml2mt. Messages remain unanchored, and you can
-use the mt2exm \-B option.
+program was invoked as gromox\-eml2mt.
 .TP
 \fB\-\-mbox\fP
 Treat all file arguments as Unix mboxes. This is the default if the program was
-invoked as gromox\-mbox2mt. Messages remain unanchored, and you can use the
-mt2exm \-B option.
+invoked as gromox\-mbox2mt.
 .TP
 \fB\-\-oneoff\fP
 Do not resolve email addresses to EX addresses, but to ONEOFF instead. This
@@ -62,12 +69,11 @@ clusters that do not have the same user set.
 .TP
 \fB\-\-tnef\fP
 Treat all file arguments as Transport Neutral Encapsulation Format objects.
-This is the default if the program was invoked as gromox\-tnef2mt. Messages
-remain unanchored, and you can use the mt2exm \-B option.
+This is the default if the program was invoked as gromox\-tnef2mt.
 .TP
 \fB\-\-vcard\fP
 Treat all file arguments as vCard input. This is the default if the program was
-invoked as gromox\-vcf2mt. Messages will be anchored to the contacts folder.
+invoked as gromox\-vcf2mt.
 .TP
 \fB\-P\fP
 Enable super-pedantic mode when parsing VCARDs and reject everything that is
@@ -75,17 +81,21 @@ not recognized. (Not recommended)
 .TP
 \fB\-p\fP
 Show properties in detail (enhances \fB\-t\fP). Using \-p twice prints
-properties with human-readable mnemonic names.
+properties with human-readable mnemonic names. The BIN2TXT_MODE environment
+variable can be set to control how binary properties are presented; possible
+values are "co" (C string representation with octal escapes), "cstr" (C string
+representation, any form) and "hex" (two-hex-nibble representation), "txt"
+(compact representation for light-binary text-heavy content).
 .TP
 \fB\-t\fP
 Show a diagnostic tree view of the source data as it is being read.
 .SH Examples
 Import of an RFC5322 message (sometimes with .eml file extension) to drafts:
 .PP
-gromox\-eml2mt msg.eml | gromox\-mt2exm \-u recipient@domain.example \-B drafts
+gromox\-eml2mt msg.eml | gromox\-import \-u recipient@domain.example \-B drafts
 .PP
 Import of calendar objects:
 .PP
-gromox\-ical2mt meeting.ics | gromox\-mt2exm \-u recipient@domain.example
+gromox\-ical2mt meeting.ics | gromox\-import \-u recipient@domain.example
 .SH See also
-\fBgromox\fP(7), \fBgromox\-exm2eml\fP(8), \fBgromox\-mt2exm\fP(8)
+\fBgromox\fP(7), \fBgromox\-export\fP(8), \fBgromox\-import\fP(8)

@@ -1,14 +1,12 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH mod_rewrite 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-mod_rewrite \(em http(8gx) component for altering HTTP request URIs
+mod_rewrite \(em http(8gx) handler for altering HTTP request URIs
 before processing
 .SH Description
 mod_rewrite can alter request URIs. It runs before any of the other built-in or
 HTTP processing modules.
-.PP
-mod_rewrite is built into http(8gx) and not a separate module/plugin.
 .SH Configuration directives
 This component shares \fBhttp.cfg\fP. See http(8gx).
 .SH Rewrite map
@@ -19,22 +17,28 @@ which is searched for in \fIconfig_file_path\fP. The usual location is
 Each line in this file consists of 3 columns separated by whitespace:
 .IP \(bu 4
 A POSIX Basic Regular Expression (cf. regcomp(3)) for matching the original URI.
+For safety, this should always be anchored with the beginning-of-line
+metacharacter (^; circumflex).
 .IP \(bu 4
 The fixed sequence "=>".
 .IP \(bu 4
-Replacement string. Captures can be spliced using \fB\\1\fP, \fB\\2\fP, .. up
-to a maximum of \fB\\9\fP. The sequence \fB\\0\fP splices the entire string
-(equivalent of Perl's \fB$&\fP).
+Replacement string. Captures can be spliced using \fB\\1\fP, \fB\\2\fP, etc.
+The sequence \fB\\0\fP splices the entire string
+(equivalent of Perl's \fB$&\fP). If a particular pattern has successfully
+matched, no other rewrite rules are processed.
 .PP
 If the file has no lines, no paths will be rewritten.
 If the file is absent however, a set of default entries will be used.
 .SH Default rules
 .nf
-\\(/Microsoft-Server-ActiveSync\\) => \\1/grommunio-sync/index.php
+^/Microsoft-Server-ActiveSync\\(/\\|$\\) => /sync/index.php
+.fi
+.SH Examples
+.nf
+^/\\([a-z+]\\)/\\([a-z]+\\).txt$ => /\\2/\\1.txt
 .fi
 .SH Files
 .IP \(bu 4
-\fIconfig_file_path\fP/rewrite.txt: Rewrite map specifying which paths this
-plugin shall handle.
+\fIconfig_file_path\fP/rewrite.txt: Map specifying how to rewrite URIs
 .SH See also
 \fBgromox\fP(7), \fBhttp\fP(8gx)

@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <atomic>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -112,17 +113,18 @@ static int g_connection_ratio;
 static char g_dns_domain[128];
 static char g_netbios_name[128];
 static size_t g_max_request_mem;
-static uint32_t g_last_async_id;
+static std::atomic<uint32_t> g_last_async_id;
 static thread_local DCERPC_CALL *g_call_key;
 static thread_local NDR_STACK_ROOT *g_stack_key;
 static thread_local PROC_PLUGIN *g_cur_plugin;
 static std::list<PROC_PLUGIN> g_plugin_list;
-static std::mutex g_list_lock, g_async_lock;
+static std::mutex g_list_lock; /* protects g_processor_list */
+static std::mutex g_async_lock; /* protects g_async_hash */
 static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static std::span<const static_module> g_plugin_names;
+static std::span<const generic_module> g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
 	{{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60}}, 2};
@@ -131,7 +133,7 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 	/* {71710533-beba-4937-8319-b5dbef9ccc36} */
 	{{0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36}}, 1};
 
-static int pdu_processor_load_library(const static_module &);
+static int pdu_processor_load_library(const generic_module &);
 
 dcerpc_call::dcerpc_call() :
 	pkt(b_bigendian)
@@ -173,18 +175,9 @@ static void pdu_processor_free_stack_root(NDR_STACK_ROOT *pstack_root)
 	delete pstack_root;
 }
 
-static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type)
-{
-	if (type == NDR_STACK_IN)
-		return pstack_root->in_stack.get_total();
-	else if (type == NDR_STACK_OUT)
-		return pstack_root->out_stack.get_total();
-	return 0;
-}
-
 void pdu_processor_init(int connection_num, const char *netbios_name,
     const char *dns_name, const char *dns_domain, BOOL header_signing,
-    size_t max_request_mem, const std::span<const static_module> &names)
+    size_t max_request_mem, std::span<const generic_module> &&names)
 {
 	static constexpr unsigned int connection_ratio = 10;
 	union {
@@ -700,6 +693,11 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 			&pauth_ctx->node);
 		return TRUE;
 	} else if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NTLMSSP) {
+		/*
+		 * Outlook 2010 performs a weird double authentication: it
+		 * sends HTTP Authorization headers, but then *also* performs
+		 * NTLMSSP inside the MSRPC channel.
+		 */
 		if (pauth_ctx->auth_info.auth_level <= RPC_C_AUTHN_LEVEL_CONNECT)
 			pauth_ctx->pntlmssp = ntlmssp_ctx::create(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,
@@ -965,7 +963,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		auto &u = pbind->ctx_list[1].transfer_syntaxes[0].uuid;
 		char bitmap = pcall->b_bigendian ? u.node[5] : u.clock_seq[0];
 		bind_ack->ctx_list[1].reason = bitmap & DCERPC_SECURITY_CONTEXT_MULTIPLEXING;;
-		memset(&bind_ack->ctx_list[1].syntax, 0, sizeof(SYNTAX_ID));
+		bind_ack->ctx_list[1].syntax = {};
 	}
 	bind_ack->ctx_list[0].result = result;
 	bind_ack->ctx_list[0].reason = reason;
@@ -1371,12 +1369,11 @@ static DCERPC_CALL* pdu_processor_get_call()
 }
 
 static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
-	NDR_STACK_ROOT *pstack_root, void *pout)
+    NDR_STACK_ROOT *pstack_root, const rpc_response *pout)
 {
 	uint32_t flags;
 	uint32_t length;
 	size_t sig_size;
-	size_t alloc_size;
 	uint32_t chunk_size;
 	uint32_t total_length;
 	
@@ -1386,30 +1383,26 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	if (pcall->pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
 	auto prequest = static_cast<dcerpc_request *>(pcall->pkt.payload);
-	alloc_size = pdu_processor_ndr_stack_size(pstack_root, NDR_STACK_OUT);
-	alloc_size = 2 * alloc_size + 1024;
-	std::unique_ptr<uint8_t, stdlib_delete> pdata(me_alloc<uint8_t>(alloc_size));
-	if (NULL == pdata) {
-		pdu_processor_free_stack_root(pstack_root);
-		mlog(LV_DEBUG, "pdu_processor: push fail on RPC call %u on %s",
-			prequest->opnum, pcall->pcontext->pinterface->name);
-		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
-	}
 	NDR_PUSH ndr_push;
-	ndr_push.init(pdata.get(), alloc_size, flags);
+	if (!ndr_push.init(nullptr, 0, flags)) {
+		pdu_processor_free_stack_root(pstack_root);
+		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
+	}
 	ndr_push.set_ptrcnt(pcall->ptr_cnt);
 	
 	/* marshaling the NDR out param data */
 	auto ret = pcall->pcontext->pinterface->ndr_push(prequest->opnum, ndr_push, pout);
-	if (ret != EXT_ERR_SUCCESS) {
-		mlog(LV_ERR, "E-1918: ndr_push failed with result code %u",
+	if (ret != pack_result::ok) {
+		mlog(LV_ERR, "E-1918: ndr_push(%s,%u) failed with pack_result::%u",
+			pcall->pcontext->pinterface->name,
+			prequest->opnum,
 			static_cast<unsigned int>(ret));
 		pdu_processor_free_stack_root(pstack_root);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
 	}
 	pdu_processor_free_stack_root(pstack_root);
 	DATA_BLOB stub;
-	stub.pb = pdata.get();
+	stub.pb = ndr_push.data;
 	stub.cb = ndr_push.offset;
 	total_length = stub.cb;
 	sig_size = 0;
@@ -1476,9 +1469,20 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
+static uint32_t get_next_async_id()
+{
+	do {
+		uint32_t curr = g_last_async_id;
+		uint32_t next = curr + 1;
+		if (next >= INT32_MAX)
+			next = 0;
+		if (g_last_async_id.compare_exchange_weak(curr, next))
+			return next;
+	} while (true);
+}
+
 static uint32_t pdu_processor_apply_async_id()
 {
-	int async_id;
 	DCERPC_CALL *pcall;
 	HTTP_CONTEXT *pcontext;
 	
@@ -1511,14 +1515,11 @@ static uint32_t pdu_processor_apply_async_id()
 	pasync_node->pstack_root = pstack_root;
 	gx_strlcpy(pasync_node->vconn_host, pcontext->host, std::size(pasync_node->vconn_host));
 	pasync_node->vconn_port = pcontext->port;
-	strcpy(pasync_node->vconn_cookie, pchannel_in->connection_cookie);
+	gx_strlcpy(pasync_node->vconn_cookie, pchannel_in->connection_cookie, std::size(pasync_node->vconn_cookie));
 	
-	std::unique_lock as_hold(g_async_lock);
-	g_last_async_id ++;
-	async_id = g_last_async_id;
-	if (g_last_async_id >= INT32_MAX)
-		g_last_async_id = 0;
 	auto ctx_num = g_connection_num * g_connection_ratio;
+	auto async_id = get_next_async_id();
+	std::unique_lock as_hold(g_async_lock);
 	if (g_async_hash.size() >= 2 * ctx_num) {
 		as_hold.unlock();
 		delete pasync_node;
@@ -1641,7 +1642,7 @@ void pdu_processor_rpc_free_stack()
 	}
 }
 
-static void pdu_processor_async_reply(uint32_t async_id, void *pout)
+static void pdu_processor_async_reply(uint32_t async_id, const rpc_response *pout)
 {
 	DCERPC_CALL *pcall;
 	DOUBLE_LIST_NODE *pnode;
@@ -1692,7 +1693,6 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	GUID *pobject;
 	uint32_t flags;
 	uint64_t handle;
-	void *pin, *pout;
 	NDR_PULL ndr_pull;
 	DCERPC_CONTEXT *pcontext;
 	PDU_PROCESSOR *pprocessor;
@@ -1726,7 +1726,8 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	pcall->pcontext	= pcontext;
 	
 	/* unmarshaling the NDR in param data */
-	if (pcontext->pinterface->ndr_pull(prequest->opnum, ndr_pull, &pin) != pack_result::ok) {
+	std::unique_ptr<rpc_request> pin;
+	if (pcontext->pinterface->ndr_pull(prequest->opnum, ndr_pull, pin) != pack_result::ok) {
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: pull fail on RPC call %u on %s",
 			prequest->opnum, pcontext->pinterface->name);
@@ -1742,8 +1743,9 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	*pb_async = false;
 	/* call the dispatch function */
 	ec_error_t ecode = ecSuccess;
+	std::unique_ptr<rpc_response> pout;
 	auto ret = pcontext->pinterface->dispatch(prequest->opnum,
-	           pobject, handle, pin, &pout, &ecode);
+	           pobject, handle, pin.get(), pout, &ecode);
 	bool dbg = g_msrpc_debug >= 2;
 	if (g_msrpc_debug >= 1 &&
 	    (ret != DISPATCH_SUCCESS || ecode != ecSuccess))
@@ -1765,7 +1767,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		*pb_async = TRUE;
 		return TRUE;
 	case DISPATCH_SUCCESS:
-		return pdu_processor_reply_request(pcall, pstack_root, pout);
+		return pdu_processor_reply_request(pcall, pstack_root, pout.get());
 	default:
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: unknown return value by %s:%02x",
@@ -1831,7 +1833,6 @@ static void pdu_processor_process_orphaned(DCERPC_CALL *pcall)
 void pdu_processor_rts_echo(char *pbuff)
 {
 	int flags;
-	NDR_PUSH ndr;
 	dcerpc_ncacn_packet pkt(g_bigendian);
 	
 	pkt.pkt_type = DCERPC_PKT_RTS;
@@ -1846,9 +1847,9 @@ void pdu_processor_rts_echo(char *pbuff)
 		flags = NDR_FLAG_BIGENDIAN;
 	else
 		flags = 0;
+	NDR_PUSH ndr;
 	ndr.init(pbuff, 20, flags);
 	pdu_ndr_push_ncacnpkt(&ndr, &pkt);
-	ndr.destroy();
 }
 
 BOOL dcerpc_call::rts_ping() try
@@ -2351,7 +2352,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	auto rts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (pcontext->channel_type == hchannel_type::out) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		if (76 == length) {
+		if (length == 76) {
 			if (pchannel_out->channel_stat != hchannel_stat::openstart) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
@@ -2378,7 +2379,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			*ppcall = pcall;
 			return PDU_PROCESSOR_OUTPUT;
-		} else if (96 == length) {
+		} else if (length == 96) {
 			if (pchannel_out->channel_stat != hchannel_stat::openstart) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
@@ -2404,7 +2405,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			pchannel_out->channel_stat = hchannel_stat::recycling;
 			return PDU_PROCESSOR_INPUT;
-		} else if (24 == length) {
+		} else if (length == 24) {
 			if (pchannel_out->channel_stat != hchannel_stat::recycling) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
@@ -2422,7 +2423,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 		}
 	} else if (pcontext->channel_type == hchannel_type::in) {
 		auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-		if (104 == length) {
+		if (length == 104) {
 			if (pchannel_in->channel_stat != hchannel_stat::openstart) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
@@ -2447,7 +2448,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			pchannel_in->channel_stat = hchannel_stat::opened;
 			return PDU_PROCESSOR_INPUT;
-		} else if (88 == length) {
+		} else if (length == 88) {
 			if (pchannel_in->channel_stat != hchannel_stat::openstart) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
@@ -2474,7 +2475,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			pdu_processor_rts_inr2_a4(pcall);
 			*ppcall = pcall;
 			return PDU_PROCESSOR_OUTPUT;
-		} else if (28 == length) {
+		} else if (length == 28) {
 			/*
 			if (pchannel_in->channel_stat != hchannel_stat::opened) {
 				delete pcall;
@@ -2501,7 +2502,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			pcontext->set_keep_alive(keep_alive);
 			delete pcall;
 			return PDU_PROCESSOR_INPUT;
-		} else if (40 == length) {
+		} else if (length == 40) {
 			if (pchannel_in->channel_stat != hchannel_stat::opened) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
@@ -2521,7 +2522,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			if (pcontext->activate_inrecycling(channel_cookie))
 				return PDU_PROCESSOR_TERMINATE;
 			return PDU_PROCESSOR_INPUT;
-		} else if (56 == length) {
+		} else if (length == 56) {
 			if (pchannel_in->channel_stat != hchannel_stat::opened) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
@@ -2550,7 +2551,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-		} else if (20 == length) {
+		} else if (length == 20) {
 			if (rts->flags == RTS_FLAG_PING && rts->num == 0) {
 				delete pcall;
 				return PDU_PROCESSOR_INPUT;
@@ -2863,7 +2864,6 @@ static constexpr struct dlfuncs server_funcs = {
 	},
 	/* .get_context_num = */ []() { return g_connection_num; },
 	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
-	/* .get_prog_id = */ nullptr,
 	/* .ndr_stack_alloc = */ pdu_processor_ndr_stack_alloc,
 	/* .rpc_new_stack = */ pdu_processor_rpc_new_stack,
 	/* .rpc_free_stack = */ pdu_processor_rpc_free_stack,
@@ -2891,11 +2891,13 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	PLUGIN_MAIN func;
 	auto pplugin = this;
 	
-	mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name);
-	func = (PLUGIN_MAIN)pplugin->lib_main;
-	if (func != nullptr && pplugin->completed_init)
-		/* notify the plugin that it willbe unloaded */
-		func(PLUGIN_FREE, server_funcs);
+	if (pplugin->init_state == generic_module::state::init_done) {
+		if (pplugin->file_name != nullptr)
+			mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name);
+		func = (PLUGIN_MAIN)pplugin->lib_main;
+		if (func != nullptr)
+			func(PLUGIN_FREE, server_funcs);
+	}
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), pplugin->file_name);
 }
@@ -2986,17 +2988,18 @@ static void *pdu_processor_queryservice(const char *service, const char *rq,
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
  *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
-static int pdu_processor_load_library(const static_module &mod)
+static int pdu_processor_load_library(const generic_module &mod)
 {
 	PROC_PLUGIN plug;
 
-	plug.lib_main = mod.efunc;
-	plug.file_name = std::move(mod.path);
+	plug.lib_main = mod.lib_main;
+	plug.file_name = std::move(mod.file_name);
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
 	
 	/* append the pendpoint node into endpoint list */
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
+	g_cur_plugin->init_state = generic_module::state::init_start;
 	if (!g_cur_plugin->lib_main(PLUGIN_INIT, server_funcs)) {
 		mlog(LV_ERR, "pdu_processor: error executing the plugin's init "
 			"function in %s", g_cur_plugin->file_name);
@@ -3004,7 +3007,7 @@ static int pdu_processor_load_library(const static_module &mod)
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	g_cur_plugin->completed_init = true;
+	g_cur_plugin->init_state = generic_module::state::init_done;
 	g_cur_plugin = NULL;
 	return PLUGIN_LOAD_OK;
 }

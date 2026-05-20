@@ -73,7 +73,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	}
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	auto mcharset = bounce_gen_charset(*pmail_original);
-	if (*znul(charset) == '\0')
+	if (znoval(charset))
 		charset = mcharset.c_str();
 	auto tpptr = bounce_gen_lookup(charset, bounce_type);
 	if (tpptr == nullptr)

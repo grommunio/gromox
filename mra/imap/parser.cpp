@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  * imap parser is a module, which first read data from socket, parses the imap
  * commands and then does the corresponding action.
  */
 #include <algorithm>
-#include <atomic>
 #include <cerrno>
 #include <climits>
 #include <csignal>
@@ -66,13 +65,12 @@ static int imap_parser_wrdat_retrieve(imap_context &);
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
-static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num;
 static time_duration g_timeout, g_autologout_time;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_parser_stop;
 static std::unique_ptr<imap_context[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
@@ -95,8 +93,7 @@ void imap_parser_init(int context_num, int average_num,
 	g_block_auth_fail       = block_auth_fail;
 	g_support_tls       = support_tls;
 	g_ssl_mutex_buf = nullptr;
-	g_notify_stop = true;
-	g_sequence_id = 0;
+	g_parser_stop = true;
 	if (!support_tls)
 		return;
 	g_force_tls = force_tls;
@@ -191,18 +188,17 @@ int imap_parser_run()
         return -10;
     }
 
-	g_notify_stop = false;
+	g_parser_stop = false;
 	auto ret = pthread_create4(&g_thr_id, nullptr, imps_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "imap_parser: failed to create sleeping list scanning thread: %s", strerror(ret));
-		g_notify_stop = true;
+		g_parser_stop = true;
 		return -11;
 	}
-	pthread_setname_np(g_thr_id, "parser/worker");
 	ret = pthread_create4(&g_scan_id, nullptr, imps_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "Failed to create select hash scanning thread: %s", strerror(ret));
-		g_notify_stop = true;
+		g_parser_stop = true;
 		if (!pthread_equal(g_thr_id, {})) {
 			pthread_kill(g_thr_id, SIGALRM);
 			pthread_join(g_thr_id, nullptr);
@@ -217,8 +213,8 @@ int imap_parser_run()
 void imap_parser_stop()
 {
 	system_services_install_event_stub(nullptr);
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_parser_stop) {
+		g_parser_stop = true;
 		if (!pthread_equal(g_thr_id, {}))
 			pthread_kill(g_thr_id, SIGALRM);
 		if (!pthread_equal(g_scan_id, {}))
@@ -304,7 +300,7 @@ static tproc_status ps_stat_stls(imap_context &ctx)
 
 	if (SSL_accept(pcontext->connection.ssl) != -1) {
 		pcontext->sched_stat = isched_stat::rdcmd;
-		if (pcontext->connection.server_port == g_listener_ssl_port) {
+		if (pcontext->connection.mark == M_TLS_CONN) {
 			char caps[128];
 			capability_list(caps, std::size(caps), pcontext);
 			SSL_write(pcontext->connection.ssl, "* OK [CAPABILITY ", 17);
@@ -506,7 +502,7 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 			    argv, std::size(argv));
 		if (argc >= 3 && 0 == strcasecmp(argv[1], "APPEND")) {
 			/* Special handling for APPEND with potentially huge literals */
-			switch (icp_append_begin(argc, argv, ctx)) {
+			switch (icp_long_append_begin(argc, argv, ctx)) {
 			case DISPATCH_CONTINUE: {
 				ctx.current_len = &ctx.read_buffer[ctx.read_offset] - &ctx.literal_ptr[nl_len];
 				if (pcontext->current_len < 0) {
@@ -566,9 +562,27 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 }
 
 /**
+ * Returns a pair consisting of:
+ * - the position of the newline (unspecified value if not found),
+ * - number of bytes representing the newline (0 if none found)
+ */
+static std::pair<uint32_t, uint8_t> nl_detect(const char *base, uint32_t size)
+{
+	auto ptr = static_cast<const char *>(memchr(base, '\n', size));
+	if (ptr == nullptr)
+		return {0, 0};
+	size_t pos = ptr - base;
+	if (pos >= size)
+		return {0, 0};
+	if (pos == 0 || base[pos-1] != '\r')
+		return {pos, 1};
+	return {pos - 1, 2};
+}
+
+/**
  * This function tries to mark off a whole line (i.e. find the newline). If
  * none is there yet, ps_cmd_processing will soon be invoked again, with a
- * read_buffer that has been _appended_ to -- so we will see the same leading
+ * read_buffer that has been _appended_ to – so we will see the same leading
  * string in pcontext->read_buffer.
  *
  * The maximum line length is sizeof(read_buffer), i.e. 64K.
@@ -577,23 +591,31 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 static tproc_status ps_cmd_processing(imap_context &ctx)
 {
 	auto pcontext = &ctx;
-	for (ssize_t i = 0; i < pcontext->read_offset; ++i) {
-		auto nl_len = newline_size(&pcontext->read_buffer[i], pcontext->read_offset - i);
+	while (true) {
+		auto [i, nl_len] = nl_detect(ctx.read_buffer, ctx.read_offset);
 		if (nl_len == 0)
-			continue;
-		if (i >= 64 * 1024 || pcontext->command_len + i >= 64 * 1024) {
+			break;
+		if (ctx.command_len + i >= std::size(ctx.command_buffer)) {
 			imap_parser_log_info(pcontext, LV_WARN, "error in command buffer length");
 			/* IMAP_CODE_2180017: BAD literal size too large */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
+
+		/* Copy line to Command Buffer */
 		memcpy(pcontext->command_buffer + pcontext->command_len,
 		       pcontext->read_buffer, i);
 		pcontext->command_len += i;
 		pcontext->command_buffer[pcontext->command_len] = '\0';
+
+		/* Pop front off read_buffer for the sake of the next iteration. */
 		pcontext->read_offset -= i + nl_len;
 		if (pcontext->read_offset > 0 && pcontext->read_offset < 64 * 1024)
+			/*
+			 * i=65535,nl_len=2 is impossible, but cov-scan does
+			 * not know that and complains about memmove.
+			 */
 			memmove(pcontext->read_buffer, &pcontext->read_buffer[i+nl_len],
 			        pcontext->read_offset);
 		else
@@ -621,15 +643,15 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 		if (pcontext->sched_stat == isched_stat::appended) {
 			if (0 != argc) {
 				/* Clears pcontext->mid; is this wanted here? */
-				ctx.wrdat_backing = {};
 				ctx.wrdat_content = nullptr;
+				ctx.wrdat_backing.reset();
 				size_t string_length = 0;
 				auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 				pcontext->connection.write(pcontext->tag_string, strlen(pcontext->tag_string));
 				pcontext->connection.write(" ", 1);
 				pcontext->connection.write(imap_reply_str, string_length);
 			} else {
-				icp_append_end(argc, argv, ctx);
+				icp_long_append_end(argc, argv, ctx);
 			}
 			pcontext->sched_stat = isched_stat::rdcmd;
 			pcontext->literal_ptr = nullptr;
@@ -818,8 +840,8 @@ static tproc_status ps_stat_wrdat(imap_context &ctx)
 	pcontext->write_offset = 0;
 	if (pcontext->literal_len != pcontext->current_len)
 		return tproc_status::cont;
-	ctx.wrdat_backing = {};
 	ctx.wrdat_content = nullptr;
+	ctx.wrdat_backing.reset();
 	pcontext->literal_len = 0;
 	pcontext->current_len = 0;
 	if (imap_parser_wrdat_retrieve(ctx) != IMAP_RETRIEVE_ERROR)
@@ -928,8 +950,8 @@ static tproc_status ps_end_processing(imap_context *pcontext,
 		pcontext->proto_stat = iproto_stat::auth;
 		pcontext->selected_folder[0] = '\0';
 	}
-	ctx.wrdat_backing = {};
 	ctx.wrdat_content = nullptr;
+	ctx.wrdat_backing.reset();
 	imap_parser_context_clear(pcontext);
 	return tproc_status::close;
 }
@@ -958,6 +980,22 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 		case scopy_result::term:
 			return IMAP_RETRIEVE_ERROR;
 		case scopy_result::part:
+			/*
+			 * copyline may have cut the line at any byte, including
+			 * inside (or before) a <<{file}…/<<{rfc822}… marker. The
+			 * ok-branch below only recognizes a marker when the full
+			 * `<<{` prefix is present at a known position, so any
+			 * truncation — be it `<`, `<<`, `<<{f`, or within the
+			 * filename/length — would leak the raw marker onto the
+			 * wire. Whenever there is already buffered content to
+			 * flush, rewind the stream and hand that content to the
+			 * caller; the next retrieve call starts from an empty
+			 * buffer large enough to hold the full line.
+			 */
+			if (pcontext->write_length > 0) {
+				pcontext->stream.rewind_read_ptr(line_length);
+				return IMAP_RETRIEVE_OK;
+			}
 			pcontext->write_length += line_length;
 			return IMAP_RETRIEVE_OK;
 		case scopy_result::ok:
@@ -980,18 +1018,18 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 			} else {
 				*ptr = '\0';
 				*ptr1 = '\0';
-				ctx.wrdat_backing = {};
 				ctx.wrdat_content = nullptr;
+				ctx.wrdat_backing.reset();
 				try {
 					auto eml_path = ctx.maildir + "/eml/"s + (last_line + 8);
 					ctx.wrdat_content = ctx.io_actor.get_full(eml_path);
 					if (ctx.wrdat_content == nullptr) {
-						ctx.wrdat_backing = {};
+						ctx.wrdat_backing.emplace();
 						imrpc_build_env();
 						auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 						if (exmdb_client->imapfile_read(ctx.maildir, "eml",
-						    &last_line[8], &ctx.wrdat_backing))
-							ctx.wrdat_content = &ctx.wrdat_backing;
+						    &last_line[8], &*ctx.wrdat_backing))
+							ctx.wrdat_content = &*ctx.wrdat_backing;
 					}
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1466: ENOMEM");
@@ -1003,8 +1041,8 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 					ctx.wrdat_offset = strtoul(&ptr[1], nullptr, 0);
 					if (ctx.wrdat_offset > ctx.wrdat_content->size()) {
 						mlog(LV_ERR, "E-1758");
-						ctx.wrdat_backing = {};
 						ctx.wrdat_content = nullptr;
+						ctx.wrdat_backing.reset();
 						return IMAP_RETRIEVE_ERROR;
 					}
 					ctx.literal_len = std::min(static_cast<size_t>(strtoul(&ptr1[1], nullptr, 0)),
@@ -1019,8 +1057,8 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 					pcontext->current_len += len;
 					pcontext->write_length += len;
 					if (pcontext->literal_len == len) {
-						ctx.wrdat_backing = {};
 						ctx.wrdat_content = nullptr;
+						ctx.wrdat_backing.reset();
 						pcontext->literal_len = 0;
 						pcontext->current_len = 0;
 					}
@@ -1035,8 +1073,8 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 			} else {
 				*ptr = '\0';
 				*ptr1 = '\0';
-				ctx.wrdat_backing = {};
 				ctx.wrdat_content = nullptr;
+				ctx.wrdat_backing.reset();
 				try {
 					auto eml_path = pcontext->maildir + "/tmp/imap.rfc822/"s + (last_line + 10);
 					ctx.wrdat_content = ctx.io_actor.get_full(eml_path);
@@ -1050,8 +1088,8 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 					ctx.wrdat_offset = strtoul(&ptr[1], nullptr, 0);
 					if (ctx.wrdat_offset > ctx.wrdat_content->size()) {
 						mlog(LV_ERR, "E-1757");
-						ctx.wrdat_backing = {};
 						ctx.wrdat_content = nullptr;
+						ctx.wrdat_backing.reset();
 						return IMAP_RETRIEVE_ERROR;
 					}
 					ctx.literal_len = std::min(static_cast<size_t>(strtoul(&ptr1[1], nullptr, 0)),
@@ -1066,8 +1104,8 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 					pcontext->current_len += len;
 					pcontext->write_length += len;
 					if (pcontext->literal_len == len) {
-						ctx.wrdat_backing = {};
 						ctx.wrdat_content = nullptr;
+						ctx.wrdat_backing.reset();
 						pcontext->literal_len = 0;
 						pcontext->current_len = 0;
 					}
@@ -1281,6 +1319,11 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
 	hl_hold.unlock();
 
 	imap_parser_echo_expunges(*pcontext, pstream, f_expunged);
+	/*
+	 * 3501 §7: "the server checks the mailbox for new messages as part of
+	 * command execution. […] If new messages are found, the server sends
+	 * untagged EXISTS and RECENT responses."
+	 */
 	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder,
 	    f_expunged.size() > 0) == 0) {
 		auto outlen = gx_snprintf(buff, std::size(buff),
@@ -1337,6 +1380,11 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
 			if (b_first)
 				buff[outlen++] = ' ';
 			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Draft");
+		}
+		if (flag_bits & FLAG_FORWARDED) {
+			if (b_first)
+				buff[outlen++] = ' ';
+			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "$Forwarded");
 		}
 		outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "))\r\n");
 		if (pstream == nullptr)
@@ -1459,8 +1507,8 @@ static void imap_parser_context_clear(imap_context *pcontext)
 	pcontext->connection.reset();
 	pcontext->proto_stat = iproto_stat::none;
 	pcontext->sched_stat = isched_stat::none;
-	ctx.wrdat_backing = {};
 	ctx.wrdat_content = nullptr;
+	ctx.wrdat_backing.reset();
 	pcontext->mid.clear();
 	pcontext->write_buff = nullptr;
 	pcontext->write_length = 0;
@@ -1486,10 +1534,11 @@ static void imap_parser_context_clear(imap_context *pcontext)
 
 static void *imps_thrwork(void *argp)
 {
+	pthread_setname_np(pthread_self(), "imps_thrwork");
 	int peek_len;
 	char tmp_buff;
 
-	while (!g_notify_stop) {
+	while (!g_parser_stop) {
 		std::unique_lock ll_hold(g_list_lock);
 		imap_context *ptail = nullptr, *pcontext = nullptr;
 		if (g_sleeping_list.size() > 0)
@@ -1619,7 +1668,7 @@ void imap_parser_remove_select(imap_context *pcontext)
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(temp_string);
 	if (plist != nullptr) {
-		plist->erase(std::remove(plist->begin(), plist->end(), pcontext), plist->end());
+		std::erase(*plist, pcontext);
 		if (plist->size() == 0) {
 			g_select_hash.erase(temp_string);
 		} else {
@@ -1647,7 +1696,7 @@ static void *imps_scanwork(void *argp)
 	int i = 0;
 	int err_num;
 
-	while (!g_notify_stop) {
+	while (!g_parser_stop) {
 		i ++;
 		sleep(1);
 		if (i < SCAN_INTERVAL)
@@ -1678,16 +1727,6 @@ static void *imps_scanwork(void *argp)
 		}
 	}
 	return nullptr;
-}
-
-int imap_parser_get_sequence_ID()
-{
-	int old = 0, nu = 0;
-	do {
-		old = g_sequence_id.load(std::memory_order_relaxed);
-		nu  = old != INT_MAX ? old + 1 : 1;
-	} while (!g_sequence_id.compare_exchange_weak(old, nu));
-	return nu;
 }
 
 void imap_parser_safe_write(imap_context *pcontext, const void *pbuff, size_t count)

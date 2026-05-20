@@ -1,0 +1,92 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
+.TH ddbg 1 "" "Gromox" "Gromox admin reference"
+.SH Name
+ddbg \(em MAPI data debugger
+.SH Synopsis
+\fB/usr/libexec/gromox/ddbg\fP [options...] command [args...]
+.SH Description
+ddbg can be used to analyze various binary blobs. If no arguments are given,
+input is read from stdin. If arguments are given, they are treated as immediate
+values (i.e. content, never the name of a file to read).
+.SH Options
+.TP
+\fB\-p\fP, \fB\-\-pack\fP
+Employ hex2bin before main action.
+.SH Commands
+.TP
+\fB\-\-bin2hex\fP
+Convert all bytes to hexnibble representation.
+.TP
+\fB\-\-bin2txt\fP
+Convert all bytes to a textual representation. The environment variable
+BIN2TXT_MODE can be used to influence the output. Possible values are
+\fBcstr\fP (output as a C string literal without surrounding quotes), \fBhex\fP
+(hex nibbles like bin2hex), \fBtxt\fP (custom compact encoding).
+.TP
+\fB\-d\fP, \fB\-\-decode\fP
+Try all decoders.
+.TP
+\fB\-A\fP, \fB\-\-decode\-action\fP
+Decode rule action blob.
+.TP
+\fB\-e\fP, \fB\-\-decode\-entryid\fP
+Decode entryid.
+.TP
+\fB\-\-decode\-guid\fP
+Lookup GUID.
+.TP
+\fB\-\-decode\-nttime\fP
+Decode an NT timestamp and show the equivalent Unix time and calendar-based
+date.
+.TP
+\fB\-\-decode\-restrict\fP
+Decode restriction blob (e.g. rule condition).
+.TP
+\fB\-\-decode\-unixtime\fP
+Decode an Unix timestamp and show the equivalent NT time and calendar-based
+date.
+.TP
+\fB\-\-htmltortf\fP
+Convert a HTML document to RTF.
+.TP
+\fB\-\-htmltotext\fP
+Convert a HTML document to plaintext.
+.TP
+\fB\-\-lzxdec\fP
+Uncompress an lzxpress data stream.
+.TP
+\fB\-\-lzxenc\fP
+Compress data stream with lzxpress.
+.TP
+\fB\-\-rtfcp\fP
+Convert RTF to the RTFCP format, particularly the uncompressed "MELA"
+subformat.
+.TP
+\fB\-\-rtftohtml\fP
+Convert RTF to HTML.
+.TP
+\fB\-\-texttohtml\fP
+Convert plaintext to HTML.
+.TP
+\fB\-\-unrtfcp\fP
+Decompress RTFCP (either "MELA" or "LZFU") to RTF.
+.SH Environment variables
+GROMOX_HTMLTOPLAIN can be set to "chawan", "pandoc", "w3m", "internal" to pick
+one particular htmltoplain implementation. If unset or set to "auto", all of
+these converters are tried until a working one is found.
+.PP
+GROMOX_HTMLTORTF can be set to "pandoc" or "internal" to pick a particular
+htmltortf implementation. If unset or set to "auto", all of these converters
+are tried until a working one is found.
+.PP
+GROMOX_RTFTOHTML can be set to "pandoc" or "internal" to pick a particular
+htmltortf implementation. If unset or set to "auto", all of these converters
+are tried until a working one is found.
+.SH Examples
+.IP \(bu 4
+ddbg \-p \-\-decode\-guid 38a1bb1005e5101aa1bb08002b2a56c2
+.IP \(bu 4
+ddbg \-\-unrtfcp <body.bin >body.rtf
+.SH See also
+\fBgromox\fP(7)

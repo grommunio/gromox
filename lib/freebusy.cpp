@@ -22,6 +22,12 @@ using namespace gromox;
 
 namespace {
 
+struct ievent {
+	time_t start_time = 0, end_time = 0;
+	EXCEPTIONINFO *ei = nullptr;
+	EXTENDEDEXCEPTION *xe = nullptr;
+};
+
 struct freebusy_tags {
 	freebusy_tags(const char *);
 
@@ -81,11 +87,9 @@ static bool fill_tzcom(ical_component &tzcom, const SYSTEMTIME &sys, int year,
 		str = "16010101T000000";
 	} else if (sys.year == 0) {
 		int day = ical_get_dayofmonth(year, sys.month, sys.day,	sys.dayofweek);
-		str = fmt::format("{}", ical_time{year, sys.month, day,
-		      sys.hour, sys.minute, sys.second});
+		str = ical_time{year, sys.month, day, sys.hour, sys.minute, sys.second}.fmt();
 	} else if (sys.year == 1) {
-		str = fmt::format("{}", ical_time{year, sys.month, sys.day,
-		      sys.hour, sys.minute, sys.second});
+		str = ical_time{year, sys.month, sys.day, sys.hour, sys.minute, sys.second}.fmt();
 	} else {
 		return false;
 	}
@@ -119,7 +123,7 @@ static bool fill_tzcom(ical_component &tzcom, const SYSTEMTIME &sys, int year,
 }
 
 static std::optional<ical_component> tz_to_vtimezone(int year,
-    const char *tzid, const TIMEZONESTRUCT &tz)
+    const char *tzid, const TZSTRUCT &tz)
 {
 	std::optional<ical_component> com("VTIMEZONE");
 	com->append_line("TZID", tzid);
@@ -204,7 +208,7 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 	} else if (rpat.endtype == IDC_RCEV_PAT_ERB_END) {
 		auto ut = rop_util_rtime_to_unix(rpat.enddate + apr.starttimeoffset);
 		ical_utc_to_datetime(tzcom, ut, &itime);
-		line.append_value("UNTIL", fmt::format("{}Z", itime));
+		line.append_value("UNTIL", itime.fmt());
 	}
 	if (rpat.patterntype == rptWeek) {
 		auto wd = weekday_to_str(rpat.firstdow);
@@ -212,12 +216,16 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 			return false;
 		line.append_value("WKST", wd);
 	}
-	return ical_parse_rrule(tzcom, start_whole, &line.value_list, irrule);
+	auto err = ical_parse_rrule(tzcom, start_whole, &line.value_list, irrule);
+	if (err == nullptr)
+		return true;
+	mlog(LV_ERR, "%s: RRULE parse: %s", __func__, err);
+	return false;
 }
 
 static bool find_recur_times(const ical_component *tzcom,
     time_t start_whole, const APPOINTMENT_RECUR_PAT &apr,
-    time_t start_time, time_t end_time, std::vector<event> &evlist)
+    time_t start_time, time_t end_time, std::vector<ievent> &evlist)
 {
 	ical_rrule irrule{};
 
@@ -237,7 +245,7 @@ static bool find_recur_times(const ical_component *tzcom,
 		};
 		if (std::any_of(apr.exceptions_cbegin(), apr.exceptions_cend(), time_test))
 			continue;
-		evlist.push_back(event{ut, ut + static_cast<long>((apr.endtimeoffset - apr.starttimeoffset) * 60)});
+		evlist.push_back(ievent{ut, ut + static_cast<long>((apr.endtimeoffset - apr.starttimeoffset) * 60)});
 		if (ut >= end_time)
 			break;
 	} while (irrule.iterate());
@@ -248,7 +256,7 @@ static bool find_recur_times(const ical_component *tzcom,
 		    !ical_itime_to_utc(tzcom, itime, &ut) ||
 		    ut < start_time || ut > end_time)
 			continue;
-		event event = {ut};
+		ievent event = {ut};
 		ut = rop_util_rtime_to_unix(apr.pexceptioninfo[i].enddatetime);
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
 		    !ical_itime_to_utc(tzcom, itime, &ut))
@@ -269,7 +277,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 
 	if (gobj == nullptr) {
 		if (!ext_push.init(guidbuf, std::size(guidbuf), 0) ||
-		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(GUID::random_new()) != pack_result::ok)
 			return -EIO;
 		ngid.arrayid = EncodedGlobalId;
 		ngid.creationtime = rop_util_unix_to_nttime(time(nullptr));
@@ -277,7 +285,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 		ngid.data.pc = guidbuf;
 		uid_buf.resize(std::size(ngidbuf) * 2 + 1);
 		if (!ext_push.init(ngidbuf, std::size(ngidbuf), 0) ||
-		    ext_push.p_goid(ngid) != EXT_ERR_SUCCESS ||
+		    ext_push.p_goid(ngid) != pack_result::ok ||
 		    !encode_hex_binary(ngidbuf, ext_push.m_offset,
 		    uid_buf.data(), uid_buf.size()))
 			return -EIO;
@@ -287,7 +295,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 	EXT_PULL ext_pull;
 	auto cl_0 = HX::make_scope_exit([&]() { free(ngid.data.pc); });
 	ext_pull.init(gobj->pb, gobj->cb, malloc, 0);
-	if (ext_pull.g_goid(&ngid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_goid(&ngid) != pack_result::ok)
 		return -EIO;
 	static_assert(sizeof(ThirdPartyGlobalId) == 12);
 	if (ngid.data.cb >= 12 && memcmp(ngid.data.pc, ThirdPartyGlobalId, 12) == 0) {
@@ -301,7 +309,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 	uid_buf.resize(56*2+1);
 	ngid.year = ngid.month = ngid.day = 0;
 	if (!ext_push.init(ngidbuf, std::size(ngidbuf), 0) ||
-	    ext_push.p_goid(ngid) != EXT_ERR_SUCCESS ||
+	    ext_push.p_goid(ngid) != pack_result::ok ||
 	    !encode_hex_binary(ngidbuf, ext_push.m_offset, uid_buf.data(), uid_buf.size()))
 		return -EIO;
 	return 2;
@@ -317,24 +325,32 @@ static bool goid_to_icaluid(BINARY *gobj, std::string &uid_buf)
 	return true;
 }
 
-bool get_freebusy(const char *username, const char *dir, time_t start_time,
+unsigned int freebusy_perms(const char *actor, const char *target)
+{
+	auto cal_eid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	uint32_t perm = 0;
+	if (!exmdb_client->get_folder_perm(target, cal_eid, actor, &perm))
+		return 0;
+	return perm & (frightsFreeBusySimple | frightsFreeBusyDetailed | frightsReadAny);
+}
+
+ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time,
     time_t end_time, std::vector<freebusy_event> &fb_data)
 {
 	uint32_t permission = 0;
 	auto cal_eid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
 
 	if (username != nullptr) {
-		if (!exmdb_client->get_folder_perm(dir, cal_eid, username, &permission))
-			return false;
-		if (!(permission & (frightsFreeBusySimple | frightsFreeBusyDetailed | frightsReadAny)))
-			return false;
+		permission = freebusy_perms(username, dir);
+		if (permission == 0)
+			return ecAccessDenied;
 	} else {
 		permission = frightsFreeBusyDetailed | frightsReadAny;
 	}
 
 	freebusy_tags ptag(dir);
 	if (!ptag.init_ok)
-		return false;
+		return ecRpcFailed;
 	auto start_nttime = rop_util_unix_to_nttime(start_time < 0 ? 0 : start_time);
 	auto end_nttime   = end_time < 0 ?
 	                    SYSTEMTIME::maxyear * 31557600ULL * 10000000 :
@@ -383,28 +399,27 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	uint32_t table_id = 0, row_count = 0;
 	if (!exmdb_client->load_content_table(dir, CP_ACP, cal_eid, nullptr,
 	    TABLE_FLAG_NONOTIFICATIONS, &rst_26, nullptr, &table_id, &row_count))
-		return false;
+		return ecRpcFailed;
 
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id);});
 
-	uint32_t proptag_buff[] = {
+	proptag_t proptags[] = {
 		ptag.apptstartwhole, ptag.apptendwhole, ptag.busystatus,
 		ptag.recurring, ptag.apptsubtype, ptag.private_flag,
 		ptag.apptstateflags, ptag.location, ptag.reminderset,
 		PR_SUBJECT, PidTagMid,
 	};
-	const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	TARRAY_SET rows;
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
-	    &proptags, 0, row_count, &rows))
-		return false;
+	    proptags, 0, row_count, &rows))
+		return ecRpcFailed;
 
 	for (size_t i = 0; i < rows.count; ++i) {
 		message_content *ctnt = nullptr;
 		auto msgid = rows.pparray[i]->get<const uint64_t>(PidTagMid);
-		if (msgid == nullptr)
-			continue;
-		if (!exmdb_client->read_message(dir, nullptr, CP_ACP, *msgid, &ctnt))
+		if (msgid == nullptr ||
+		    !exmdb_client->read_message(dir, nullptr, CP_ACP, *msgid, &ctnt) ||
+		    ctnt == nullptr)
 			continue;
 		std::string uid_buf;
 		if (!goid_to_icaluid(ctnt->proplist.get<BINARY>(ptag.globalobjectid), uid_buf))
@@ -440,9 +455,9 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 		std::optional<ical_component> tzcom;
 		auto bin = ctnt->proplist.get<BINARY>(ptag.timezonestruct);
 		if (bin != nullptr) {
-			TIMEZONESTRUCT tz;
+			TZSTRUCT tz;
 			ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
-			if (ext_pull.g_tzstruct(&tz) != EXT_ERR_SUCCESS)
+			if (ext_pull.g_tzstruct(&tz) != pack_result::ok)
 				continue;
 			tzcom = tz_to_vtimezone(1600, "timezone", tz);
 			if (!tzcom.has_value())
@@ -454,10 +469,10 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 			continue;
 		APPOINTMENT_RECUR_PAT apprecurr;
 		ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
-		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 			continue;
 
-		std::vector<event> event_list;
+		std::vector<ievent> event_list;
 		if (!find_recur_times(tzcom.has_value() ? &*tzcom : nullptr,
 		    start_whole, apprecurr, start_time, end_time, event_list))
 			continue;
@@ -484,8 +499,8 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 
 	cl_0.release();
 	if (!exmdb_client->unload_table(dir, table_id))
-		return false;
+		/* ignore, there is nothing we could realistically do other than to pass up the error */;
 
-	return true;
+	return ecSuccess;
 }
 

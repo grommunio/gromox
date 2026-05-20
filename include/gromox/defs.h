@@ -8,7 +8,6 @@
 #endif
 #include <string>
 #include <type_traits>
-#include <gromox/mapierr.hpp>
 #define FMODE_PRIVATE 0660U
 #define FMODE_PUBLIC 0666U
 #define SOCKET_TIMEOUT 60
@@ -24,13 +23,17 @@
 	using const_iterator = std::add_pointer_t<const value_type>; \
 	inline iterator begin() { return (memb); } \
 	inline const_iterator begin() const { return (memb); } \
+	inline const_iterator cbegin() const { return (memb); } \
 	inline iterator end() { return (memb) + (count); } \
 	inline const_iterator end() const { return (memb) + (count); } \
+	inline const_iterator cend() const { return (memb) + (count); } \
 	inline const value_type &operator[](size_t i) const { return (memb)[i]; } \
 	inline value_type &operator[](size_t i) { return (memb)[i]; } \
 	inline size_t size() const { return (count); } \
 	inline bool empty() const { return (count) == 0; } \
 	inline void push_back(const value_type &v) { (memb)[(count)++] = v; }
+
+#include <gromox/mapierr.hpp>
 
 /*
  * The timezone column in the user database ought to be never empty. Having an
@@ -50,6 +53,7 @@ enum gx_loglevel {
 	LV_NOTICE = 4,
 	LV_INFO = 5,
 	LV_DEBUG = 6,
+	MLOG_DEFAULT_LEVEL = LV_NOTICE,
 };
 
 enum {
@@ -111,23 +115,48 @@ static inline constexpr bool is_nameprop_id(unsigned int i) { return i >= 0x8000
 
 namespace gromox {
 
+struct GX_EXPORT universal_base {
+	virtual ~universal_base() = default;
+};
+
 static constexpr uint32_t SEQ_STAR = -1;
 
-struct seq_node {
+struct GX_EXPORT seq_node {
 	using value_type = unsigned int;
 	value_type min = SEQ_STAR, max = SEQ_STAR;
 };
 
-struct stdlib_delete {
+struct GX_EXPORT stdlib_delete {
 	inline void operator()(void *x) const { free(x); }
 };
-template<typename T> static inline T *me_alloc() {
-	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
-	return static_cast<T *>(malloc(sizeof(T)));
+template<typename T> static inline T *me_alloc()
+{
+	static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
+	auto t = static_cast<T *>(malloc(sizeof(T)));
+	if (t == nullptr)
+		return nullptr;
+	try {
+		new(t) T;
+	} catch (...) {
+		free(t);
+		throw;
+	}
+	return t;
 }
-template<typename T> static inline T *me_alloc(size_t elem) {
-	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
-	return static_cast<T *>(malloc(sizeof(T) * elem));
+template<typename T> static inline T *me_alloc(size_t elem)
+{
+	static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
+	auto t = static_cast<T *>(malloc(sizeof(T) * elem));
+	if (t == nullptr)
+		return nullptr;
+	try {
+		for (size_t i = 0; i < elem; ++i)
+			new(&t[i]) T;
+	} catch (...) {
+		free(t);
+		throw;
+	}
+	return t;
 }
 template<typename T> static inline T *re_alloc(void *x) {
 	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
@@ -137,16 +166,12 @@ template<typename T> static inline T *re_alloc(void *x, size_t elem) {
 	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(realloc(x, sizeof(T) * elem));
 }
-static inline const char *snul(const std::string &s) { return s.size() != 0 ? s.c_str() : nullptr; }
 static inline const char *znul(const char *s) { return s != nullptr ? s : ""; }
-
-template<typename U, typename V> static int three_way_compare(U &&a, V &&b)
-{
-	return (a < b) ? -1 : (a == b) ? 0 : 1;
-}
+static inline bool zhasval(const char *s) { return s != nullptr && *s != '\0'; }
+static inline bool znoval(const char *s) { return s == nullptr || *s == '\0'; }
 
 #if defined(COMPILE_DIAG) && !defined(__clang__)
-struct errno_t {
+struct GX_EXPORT errno_t {
 	constexpr errno_t(int x) : m_value(x) {
 #ifdef COVERITY
 		assert(x >= 0);
@@ -156,8 +181,10 @@ struct errno_t {
 #endif
 	}
 	constexpr operator int() const { return m_value; }
+#ifndef COVERITY
 	constexpr operator bool() const = delete;
 	constexpr void operator!() const = delete;
+#endif
 	private:
 	int m_value = 0;
 };
@@ -195,12 +222,23 @@ template<typename Container, typename Pred> void erase_first_if(Container &c, Pr
 	}
 }
 
+template<typename Container> void pop_front(Container &c)
+{
+	c.erase(c.begin());
+}
+
+template<typename Container> auto pop_front_v(Container &c) -> decltype(auto)
+{
+	auto v = std::move(c.front());
+	pop_front(c);
+	return v;
+}
+
 template<typename T> struct deref_iterator {
 	T **ptr = nullptr;
 	constexpr deref_iterator(T **p = nullptr) : ptr(p) {}
 	constexpr T &operator*() { return **ptr; }
 	constexpr bool operator==(const deref_iterator o) const { return ptr == o.ptr; }
-	constexpr bool operator!=(const deref_iterator o) const { return ptr != o.ptr; }
 	constexpr deref_iterator &operator--() { --ptr; return *this; }
 	constexpr deref_iterator &operator++() { ++ptr; return *this; }
 };
@@ -210,7 +248,6 @@ template<typename T> struct const_deref_iterator {
 	constexpr const_deref_iterator(T **p = nullptr) : ptr(p) {}
 	constexpr const T &operator*() { return **ptr; }
 	constexpr bool operator==(const const_deref_iterator &o) const { return ptr == o.ptr; }
-	constexpr bool operator!=(const const_deref_iterator &o) const { return ptr != o.ptr; }
 	constexpr const_deref_iterator &operator--() { --ptr; return *this; }
 	constexpr const_deref_iterator &operator++() { ++ptr; return *this; }
 };

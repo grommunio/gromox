@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -123,14 +123,18 @@ struct rxparam {
 	rxparam(message_node &&in);
 	NOMOVE(rxparam);
 	ec_error_t run();
+	ec_error_t run_rules();
 	ec_error_t is_oof(bool *out) const;
 	ec_error_t load_std_rules(bool oof, std::vector<rule_node> &out) const;
 	ec_error_t load_ext_rules(bool oof, std::vector<rule_node> &out) const;
+	void notify();
 
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
 	message_content *ctnt = nullptr;
-	bool del = false, exit = false, do_autoproc = true;
+	std::string orig_dir; /* rule table origin */
+	unsigned int m_flags = ~0U;
+	bool del = false, exit = false;
 };
 
 }
@@ -197,7 +201,7 @@ static BOOL cu_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 	return exmdb_client->get_named_propids(rp_storedir, false, names, ids);
 }
 
-static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name) try
+static BOOL cu_get_propname(propid_t propid, PROPERTY_NAME **name) try
 {
 	PROPNAME_ARRAY names = {};
 	if (!exmdb_client_remote::get_named_propnames(rp_storedir,
@@ -222,6 +226,8 @@ rule_node::rule_node(rule_node &&o) :
 
 rule_node &rule_node::operator=(rule_node &&o)
 {
+	if (this == &o)
+		return *this;
 	seq = o.seq;
 	state = o.state;
 	extended = o.extended;
@@ -340,10 +346,9 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 
 ec_error_t rxparam::is_oof(bool *oof) const
 {
-	static constexpr uint32_t tags[] = {PR_OOF_STATE};
-	static constexpr PROPTAG_ARRAY pt = {std::size(tags), deconst(tags)};
+	static constexpr proptag_t tags[] = {PR_OOF_STATE};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client->get_store_properties(cur.dirc(), CP_UTF8, &pt, &props))
+	if (!exmdb_client->get_store_properties(cur.dirc(), CP_UTF8, tags, &props))
 		return ecError;
 	auto flag = props.get<uint8_t>(PR_OOF_STATE);
 	*oof = flag != nullptr ? *flag : 0;
@@ -374,13 +379,12 @@ ec_error_t rxparam::load_std_rules(bool oof,
 	    &table_id, &row_count))
 		return ecError;
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_RULE_STATE, PR_RULE_ID, PR_RULE_SEQUENCE, PR_RULE_NAME,
 		PR_RULE_PROVIDER, PR_RULE_CONDITION, PR_RULE_ACTIONS,
 	};
-	const PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
 	tarray_set output_rows{};
-	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, &ptags,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, tags,
 	    0, row_count, &output_rows))
 		return ecError;
 
@@ -435,17 +439,15 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		return ecError;
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_RULE_MSG_STATE, PidTagMid, PR_RULE_MSG_SEQUENCE,
 		PR_RULE_MSG_PROVIDER,
 	};
-	static constexpr uint32_t tags2[] = {
+	static constexpr proptag_t tags2[] = {
 		PR_EXTENDED_RULE_MSG_CONDITION, PR_EXTENDED_RULE_MSG_ACTIONS,
 	};
-	const PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
-	const PROPTAG_ARRAY ptags2 = {std::size(tags2), deconst(tags2)};
 	tarray_set output_rows{};
-	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, &ptags,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, tags,
 	    0, row_count, &output_rows))
 		return ecError;
 
@@ -468,7 +470,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		rule.provider = znul(row->get<const char>(PR_RULE_MSG_PROVIDER));
 		TPROPVAL_ARRAY vals2{};
 		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-		    *mid, &ptags2, &vals2))
+		    *mid, tags2, &vals2))
 			continue;
 		auto cond = vals2.get<const BINARY>(PR_EXTENDED_RULE_MSG_CONDITION);
 		auto act  = vals2.get<const BINARY>(PR_EXTENDED_RULE_MSG_ACTIONS);
@@ -478,18 +480,18 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		if (cond != nullptr && cond->cb != 0) {
 			ep.init(cond->pb, cond->cb, exmdb_rpc_alloc,
 				EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-			if (ep.g_namedprop_info(&rule.xcnames) != EXT_ERR_SUCCESS ||
-			    ep.g_restriction(&rule.xcond) != EXT_ERR_SUCCESS)
+			if (ep.g_namedprop_info(&rule.xcnames) != pack_result::ok ||
+			    ep.g_restriction(&rule.xcond) != pack_result::ok)
 				return ecError;
 			rule.cond = &rule.xcond;
 		}
 		uint32_t version = 0;
 		ep.init(act->pb, act->cb, exmdb_rpc_alloc,
 			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-		if (ep.g_namedprop_info(&rule.xanames) != EXT_ERR_SUCCESS ||
-		    ep.g_uint32(&version) != EXT_ERR_SUCCESS ||
+		if (ep.g_namedprop_info(&rule.xanames) != pack_result::ok ||
+		    ep.g_uint32(&version) != pack_result::ok ||
 		    version != 1 ||
-		    ep.g_ext_rule_actions(&rule.xact) != EXT_ERR_SUCCESS)
+		    ep.g_ext_rule_actions(&rule.xact) != pack_result::ok)
 			return ecError;
 		rule_list.emplace_back(std::move(rule));
 	}
@@ -557,6 +559,8 @@ static bool rx_eval_sub(const MESSAGE_CONTENT *ct, uint32_t tag, const RESTRICTI
 		return rx_eval_msgsub(ch, tag, res);
 	}
 	default:
+		mlog(LV_WARN, "W-2271: restriction type %u unevaluated",
+                        static_cast<unsigned int>(res.rt));
 		return false;
 	}
 }
@@ -629,6 +633,10 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	}
 	case RES_NULL:
 		return true;
+	default:
+		mlog(LV_WARN, "W-2272: restriction type %u unevaluated",
+			static_cast<unsigned int>(res.rt));
+		return false;
 	}
 	return false;
 }
@@ -667,11 +675,11 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		ep.init(fid_bin.pb, fid_bin.cb, malloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 		if (ep.g_folder_eid(&folder_eid) != pack_result::success)
 			return ecNotFound;
-		else if (folder_eid.folder_type == EITLT_PUBLIC_FOLDER && !tgt_public)
+		else if (folder_eid.eid_type == EITLT_PUBLIC_FOLDER && !tgt_public)
 			return ecNotFound;
-		else if (folder_eid.folder_type == EITLT_PRIVATE_FOLDER && tgt_public)
+		else if (folder_eid.eid_type == EITLT_PRIVATE_FOLDER && tgt_public)
 			return ecNotFound;
-		dst_fid = rop_util_make_eid_ex(1, rop_util_gc_to_value(folder_eid.global_counter));
+		dst_fid = rop_util_make_eid_ex(1, rop_util_gc_to_value(folder_eid.folder_gc));
 	}
 
 	/*
@@ -679,11 +687,15 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	 * loop. However, as we only ever load one rule table, namely from the
 	 * Envelope-To INBOX folder, we know the execution is finite.
 	 */
-	uint32_t permission = 0;
-	if (!exmdb_client->get_folder_perm(newdir, dst_fid, par.ev_to, &permission))
-		return ecRpcFailed;
-	if (!(permission & (frightsOwner | frightsCreate)))
-		return ecAccessDenied;
+
+	bool owner_mode = par.orig_dir == newdir;
+	if (!owner_mode) {
+		uint32_t permission = 0;
+		if (!exmdb_client->get_folder_perm(newdir, dst_fid, par.ev_to, &permission))
+			return ecRpcFailed;
+		if (!(permission & (frightsOwner | frightsCreate)))
+			return ecAccessDenied;
+	}
 
 	/* Prepare write */
 	message_content_ptr dst(par.ctnt->dup());
@@ -714,27 +726,21 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	auto &props = dst->proplist;
 	if (!props.has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
-		auto ern = props.set(PR_LAST_MODIFICATION_TIME, &last_time);
-		if (ern != 0)
-			return ecServerOOM;
+		err = props.set(PR_LAST_MODIFICATION_TIME, &last_time);
+		if (err != ecSuccess)
+			return err;
 	}
-	auto ern = props.set(PidTagMid, &dst_mid);
-	if (ern != 0)
-		return ecServerOOM;
-	ern = props.set(PidTagChangeNumber, &dst_cn);
-	if (ern != 0)
-		return ecServerOOM;
-	ern = props.set(PR_CHANGE_KEY, &xidbin);
-	if (ern != 0)
-		return ecServerOOM;
-	ern = props.set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get());
-	if (ern != 0)
-		return ecServerOOM;
+	if ((err = props.set(PidTagMid, &dst_mid)) != ecSuccess ||
+	    (err = props.set(PidTagChangeNumber, &dst_cn)) != ecSuccess ||
+	    (err = props.set(PR_CHANGE_KEY, &xidbin)) != ecSuccess ||
+	    (err = props.set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess)
+		return err;
 
 	/* Writeout */
 	ec_error_t e_result = ecRpcFailed;
+	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(newdir, CP_UTF8, dst_fid,
-	    dst.get(), &e_result)) {
+	    dst.get(), {}, &outmid, &outcn, &e_result)) {
 		mlog(LV_DEBUG, "ruleproc: write_message failed");
 		return ecRpcFailed;
 	} else if (e_result != ecSuccess) {
@@ -742,14 +748,15 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		return ecRpcFailed;
 	}
 	if (g_ruleproc_debug)
-		mlog(LV_DEBUG, "ruleproc: OP_COPY/MOVE to %s:%llxh", newdir, LLU{dst_fid});
+		mlog(LV_DEBUG, "ruleproc: OP_COPY/MOVE to %s:f%llxh:m%llxh",
+			newdir, LLU{dst_fid}, LLU{rop_util_get_gc_value(outmid)});
 	if (act_type != OP_MOVE)
 		return ecSuccess;
 
 	/* Copy done, delete original message object */
 	EID_ARRAY del_mids{};
 	del_mids.count = 1;
-	del_mids.pids = reinterpret_cast<uint64_t *>(&par.cur.mid);
+	del_mids.pids  = &par.cur.mid;
 	BOOL partial = false;
 	if (!exmdb_client->delete_messages(par.cur.dirc(), CP_UTF8, nullptr,
 	    par.cur.fid, &del_mids, true, &partial))
@@ -796,7 +803,7 @@ static BINARY *xid_to_bin(const XID &xid)
 	if (bin->pv == nullptr)
 		return nullptr;
 	if (!ext_push.init(bin->pv, 24, 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return nullptr;
 	bin->cb = ext_push.m_offset;
 	return bin;
@@ -923,17 +930,23 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 
 static ec_error_t mr_get_policy(const char *ev_to, mr_policy &pol)
 {
-	TPROPVAL_ARRAY uprop{};
+	tpropval_array_ptr props(tpropval_array_init());
+	if (props == nullptr)
+		return ecServerOOM;
+	auto &uprop = *props;
 	if (!mysql_adaptor_get_user_properties(ev_to, uprop))
 		return ecError;
+	auto value = uprop.get<uint32_t>(PR_DISPLAY_TYPE_EX);
+	pol.dtyp = value == nullptr ? 0 : *value & DTE_MASK_LOCAL;
 	auto flag = uprop.get<const uint8_t>(PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS);
-	pol.decline_overlap = flag != nullptr && *flag != 0;
+	if (flag != nullptr)
+		pol.decline_overlap = *flag != 0;
+	else
+		pol.decline_overlap = pol.dtyp == DT_ROOM || pol.dtyp == DT_EQUIPMENT;
 	flag = uprop.get<uint8_t>(PR_SCHDINFO_DISALLOW_RECURRING_APPTS);
 	pol.decline_recurring = flag != nullptr && *flag != 0;
-	auto value = uprop.get<uint32_t>(PR_EMS_AB_ROOM_CAPACITY);
+	value = uprop.get<uint32_t>(PR_EMS_AB_ROOM_CAPACITY);
 	pol.capacity = value != nullptr ? *value : 0;
-	value = uprop.get<uint32_t>(PR_DISPLAY_TYPE_EX);
-	pol.dtyp = value == nullptr ? 0 : *value & DTE_MASK_LOCAL;
 	flag = uprop.get<uint8_t>(PR_SCHDINFO_AUTO_ACCEPT_APPTS);
 	if (flag != nullptr)
 		pol.accept_appts = !!*flag;
@@ -968,8 +981,8 @@ static ec_error_t mr_mark_done(rxparam &par)
 		return err;
 	uint64_t cal_mid = par.cur.mid, cal_cn = 0;
 	err = ecSuccess;
-	if (!exmdb_client->write_message_v2(par.cur.dir.c_str(), CP_ACP,
-	    par.cur.fid, par.ctnt, &cal_mid, &cal_cn, &err))
+	if (!exmdb_client->write_message(par.cur.dir.c_str(), CP_ACP,
+	    par.cur.fid, par.ctnt, {}, &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
 	return err;
 }
@@ -981,7 +994,7 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	if (msg == nullptr)
 		return ecServerOOM;
 	auto &prop = msg->proplist;
-	static constexpr uint32_t rmprops[] = {
+	static constexpr proptag_t rmprops[] = {
 		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
 		PR_PREDECESSOR_CHANGE_LIST,
 		PR_RECEIVED_BY_ENTRYID, PR_RECEIVED_BY_NAME,
@@ -994,15 +1007,22 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	};
 	for (auto t : rmprops)
 		prop.erase(t);
-	static constexpr uint32_t v_busy = olBusy;
-	if (prop.set(PROP_TAG(PT_LONG, propids[l_response_status]), deconst(&accept_type)) != 0 ||
-	    prop.set(PROP_TAG(PT_LONG, propids[l_busy_status]), deconst(&v_busy)) != 0 ||
-	    prop.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
-		return ecError;
+	static constexpr uint32_t v_busy = olBusy, stateflags = asfMeeting | asfReceived;
+	static constexpr uint8_t v_false = false;
+	ec_error_t err;
+	if ((err = prop.set(PROP_TAG(PT_LONG, propids[l_response_status]), &accept_type)) != ecSuccess ||
+	    (err = prop.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_busy)) != ecSuccess ||
+	    (err = prop.set(PROP_TAG(PT_LONG, propids[l_appt_state_flags]), &stateflags)) != ecSuccess ||
+	    (err = prop.set(PR_MESSAGE_CLASS, "IPM.Appointment")) != ecSuccess)
+		return err;
+	if (!prop.has(propids[l_recurring])) {
+		err = prop.set(PROP_TAG(PT_LONG, propids[l_recurring]), &v_false);
+		if (err != ecSuccess)
+			return err;
+	}
 	uint64_t cal_mid = 0, cal_cn = 0;
-	ec_error_t err = ecSuccess;
-	if (!exmdb_client->write_message_v2(par.cur.dir.c_str(), CP_ACP,
-	    cal_fid, msg.get(), &cal_mid, &cal_cn, &err))
+	if (!exmdb_client->write_message(par.cur.dir.c_str(), CP_ACP,
+	    cal_fid, msg.get(), std::string(), &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
 	return err;
 }
@@ -1027,7 +1047,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	if (rsp_ctnt == nullptr)
 		return ecMAPIOOM;
 	auto &rsp_prop = rsp_ctnt->proplist;
-	static const uint32_t copytags_1[] = {
+	const proptag_t copytags_1[] = {
 		/* OXOCAL §3.1.4.8.4 */
 		PROP_TAG(PT_UNICODE, propids[l_location]),
 		PROP_TAG(PT_UNICODE, propids[l_where]),
@@ -1043,7 +1063,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT,
 		PR_CONVERSATION_INDEX_TRACKING,
 	};
-	static const uint32_t copytags_2[] = {
+	const proptag_t copytags_2[] = {
 		/* OXOCAL §3.1.4.8.4 */
 		PROP_TAG(PT_BINARY, propids[l_tzstruct]),
 		PROP_TAG(PT_BINARY, propids[l_apptrecur]),
@@ -1052,19 +1072,19 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		PROP_TAG(PT_LONG, propids[l_tz]),
 		PROP_TAG(PT_UNICODE, propids[l_tzdesc]),
 	};
-	for (const auto propid : copytags_1) {
-		auto v = rq_prop.getval(propid);
+	for (const auto tag : copytags_1) {
+		auto v = rq_prop.getval(tag);
 		if (v != nullptr) {
-			auto err = cu_set_propval(rsp_prop, propid, v);
+			auto err = rsp_prop.set(tag, v);
 			if (err != ecSuccess)
 				return err;
 		}
 	}
 	if (recurring_flg)
-		for (const auto propid : copytags_2) {
-			auto v = rq_prop.getval(propid);
+		for (const auto tag : copytags_2) {
+			auto v = rq_prop.getval(tag);
 			if (v != nullptr) {
-				auto err = cu_set_propval(rsp_prop, propid, v);
+				auto err = rsp_prop.set(tag, v);
 				if (err != ecSuccess)
 					return err;
 			}
@@ -1082,20 +1102,20 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		newprefix = "Declined: ";
 	}
 	if (newclass != nullptr) {
-		auto err = cu_set_propval(rsp_prop, PR_MESSAGE_CLASS, newclass);
+		auto err = rsp_prop.set(PR_MESSAGE_CLASS, newclass);
 		if (err != ecSuccess)
 			return err;
 	}
 	if (newprefix != nullptr) {
-		auto err = cu_set_propval(rsp_prop, PR_SUBJECT_PREFIX, newprefix);
+		auto err = rsp_prop.set(PR_SUBJECT_PREFIX, newprefix);
 		if (err != ecSuccess)
 			return err;
 	}
 	auto nt_time = rop_util_current_nttime();
-	auto err = cu_set_propval(rsp_prop, PROP_TAG(PT_SYSTIME, propids[l_attendeecritchg]), &nt_time);
+	auto err = rsp_prop.set(PROP_TAG(PT_SYSTIME, propids[l_attendeecritchg]), &nt_time);
 	if (err != ecSuccess)
 		return err;
-	auto rcpts = tarray_set_init();
+	auto rcpts = rsp_ctnt->children.prcpts = tarray_set_init();
 	if (rcpts == nullptr)
 		return ecMAPIOOM;
 	auto row = rcpts->emplace();
@@ -1105,15 +1125,19 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	if (txt == nullptr) {
 		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_ADDRTYPE available", __func__);
 		return ecInvalidParam;
-	} else if (row->set(PR_ADDRTYPE, txt) != 0) {
-		return ecMAPIOOM;
+	} else {
+		err = row->set(PR_ADDRTYPE, txt);
+		if (err != ecSuccess)
+			return err;
 	}
 	txt = rq_prop.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (txt == nullptr) {
 		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_EMAIL_ADDRESS available", __func__);
 		return ecInvalidParam;
-	} else if (row->set(PR_EMAIL_ADDRESS, txt) != 0) {
-		return ecMAPIOOM;
+	} else {
+		err = row->set(PR_EMAIL_ADDRESS, txt);
+		if (err != ecSuccess)
+			return err;
 	}
 	txt = rq_prop.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (txt == nullptr) {
@@ -1131,15 +1155,22 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		BINARY cvbin;
 		cvbin.cb = bin->cb + 5;
 		cvbin.pc = cvidx.get();
-		err = cu_set_propval(rsp_prop, PR_CONVERSATION_INDEX, &cvbin);
+		err = rsp_prop.set(PR_CONVERSATION_INDEX, &cvbin);
 		if (err != ecSuccess)
 			return err;
 	}
 
+	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
+	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
 	MAIL imail;
 	rp_storedir = par.cur.dirc();
-	if (!oxcmail_export(rsp_ctnt.get(), "-", false, oxcmail_body::plain_and_html,
-	    &imail, cu_alloc, cu_get_propids, cu_get_propname)) {
+
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = cu_alloc;
+	cvt.get_propids = cu_get_propids;
+	cvt.get_propname = cu_get_propname;
+	if (!cvt.mapi_to_inet(*rsp_ctnt, imail)) {
 		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.\n");
 		return ecError;
 	}
@@ -1166,22 +1197,29 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	}
 
 	/* Lookup conflict state */
-	bool res_in_use = false;
-	auto start_nt = rq_prop.get<uint64_t>(PR_START_DATE);
-	auto end_nt   = rq_prop.get<uint64_t>(PR_END_DATE);
+	bool res_in_use = false, response_allowed = false;
+	auto start_nt = rq_prop.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
+	auto end_nt   = rq_prop.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_end_whole]));
+	if (start_nt == nullptr || end_nt == nullptr) {
+		start_nt = rq_prop.get<uint64_t>(PR_START_DATE);
+		end_nt   = rq_prop.get<uint64_t>(PR_END_DATE);
+	}
 	if (start_nt != nullptr && end_nt != nullptr) {
 		std::vector<freebusy_event> fbdata;
 		auto start_ts = rop_util_nttime_to_unix(*start_nt);
 		auto end_ts   = rop_util_nttime_to_unix(*end_nt);
 		/* XXX: May need PR_SENDER rather than Envelope-From */
-		if (!get_freebusy(par.ev_from, par.cur.dirc(), start_ts, end_ts, fbdata))
-			mlog(LV_ERR, "W-PREC: cannot retrieve freebusy %s", par.cur.dirc());
+		response_allowed = freebusy_perms(par.ev_from, par.cur.dirc()) != 0;
+		auto err = get_freebusy(nullptr, par.cur.dirc(), start_ts, end_ts, fbdata);
+		if (err != ecSuccess)
+			mlog(LV_ERR, "W-PREC: cannot retrieve freebusy %s: %s",
+				par.cur.dirc(), mapi_strerror(err));
 
 		for (const freebusy_event &event : fbdata)
 			if ((event.start_time >= start_ts && event.start_time <= end_ts) ||
 			    (event.end_time   >= start_ts && event.end_time <= end_ts) ||
 			    (event.start_time < start_ts  && event.end_time > end_ts))
-				if (event.busy_status == olBusy) {
+				if (event.busy_status != olFree) {
 					res_in_use = true;
 					break;
 				}
@@ -1189,14 +1227,16 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 
 	/* Decline double-booking if so configured */
 	if (res_in_use && policy.decline_overlap) {
-		auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
-		if (err != ecSuccess)
-			return err;
+		if (response_allowed) {
+			auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
+			if (err != ecSuccess)
+				return err;
+		}
 		return mr_mark_done(par);
 	}
 
 	/* Enter meeting into calendar */
-	auto tent = policy.accept_appts ? respAccepted : respTentative;
+	auto tent = policy.accept_appts ? respAccepted : respNotResponded;
 	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
 	auto err = mr_insert_to_cal(par, propids, cal_fid, tent);
 	if (err != ecSuccess)
@@ -1204,12 +1244,125 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	if (policy.is_resource())
 		return mr_mark_done(par);
 	if (tent == respAccepted) {
-		err = mr_send_response(par, recurring_flg, propids, tent);
-		if (err != ecSuccess)
-			return err;
+		if (response_allowed) {
+			err = mr_send_response(par, recurring_flg, propids, tent);
+			if (err != ecSuccess)
+				return err;
+		}
 		return mr_mark_done(par);
 	}
 	return ecSuccess;
+}
+
+/**
+ * Process an incoming meeting response (Resp.Pos/Tent/Neg) by updating the
+ * matching recipient's track status on the organizer's calendar item.
+ */
+static ec_error_t mr_do_response(rxparam &par, const PROPID_ARRAY &propids)
+{
+	auto &rsp_prop = par.ctnt->proplist;
+	auto rsp_class = mr_get_class(rsp_prop);
+
+	/* Determine response type from message class */
+	uint32_t track_status;
+	if (class_match_prefix(rsp_class, "IPM.Schedule.Meeting.Resp.Pos") == 0)
+		track_status = respAccepted;
+	else if (class_match_prefix(rsp_class, "IPM.Schedule.Meeting.Resp.Tent") == 0)
+		track_status = respTentative;
+	else if (class_match_prefix(rsp_class, "IPM.Schedule.Meeting.Resp.Neg") == 0)
+		track_status = respDeclined;
+	else
+		return ecSuccess;
+
+	/* Get responder's SMTP address */
+	auto responder = rsp_prop.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	if (responder == nullptr)
+		responder = rsp_prop.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (responder == nullptr) {
+		mlog(LV_WARN, "mr_do_response: no sender SMTP address on response");
+		return ecSuccess;
+	}
+
+	/* Look up calendar item by CleanGlobalObjectId */
+	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
+	auto cgoid = rsp_prop.get<const BINARY>(cgoid_tag);
+	if (cgoid == nullptr || cgoid->cb == 0) {
+		mlog(LV_WARN, "mr_do_response: no CleanGlobalObjectId on response");
+		return ecSuccess;
+	}
+
+	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	const RESTRICTION_PROPERTY rprop = {RELOP_EQ, cgoid_tag, {cgoid_tag, deconst(cgoid)}};
+	const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
+	uint32_t table_id = 0, row_count = 0;
+	if (!exmdb_client->load_content_table(par.cur.dirc(), CP_ACP,
+	    cal_fid, nullptr, TABLE_FLAG_NONOTIFICATIONS,
+	    &rst, nullptr, &table_id, &row_count))
+		return ecRpcFailed;
+	auto cl_tbl = HX::make_scope_exit([&]() {
+		exmdb_client->unload_table(par.cur.dirc(), table_id);
+	});
+	if (row_count == 0) {
+		mlog(LV_DEBUG, "mr_do_response: no matching calendar item for response from %s", responder);
+		return ecSuccess;
+	}
+	static constexpr proptag_t mid_tag = PidTagMid;
+	TARRAY_SET rows{};
+	if (!exmdb_client->query_table(par.cur.dirc(), nullptr, CP_ACP,
+	    table_id, {&mid_tag, 1}, 0, 1, &rows))
+		return ecRpcFailed;
+	if (rows.count == 0 || rows.pparray[0] == nullptr)
+		return ecSuccess;
+	auto cal_mid_p = rows.pparray[0]->get<const uint64_t>(PidTagMid);
+	if (cal_mid_p == nullptr)
+		return ecSuccess;
+	auto cal_mid = *cal_mid_p;
+
+	/* Read the calendar item and duplicate it so we own the memory */
+	MESSAGE_CONTENT *cal_raw = nullptr;
+	if (!exmdb_client->read_message(par.cur.dirc(), nullptr, CP_ACP,
+	    cal_mid, &cal_raw) || cal_raw == nullptr)
+		return ecSuccess;
+	message_content_ptr cal_ctnt(cal_raw->dup());
+	if (cal_ctnt == nullptr)
+		return ecServerOOM;
+
+	/* Find matching recipient by SMTP address and update track status */
+	bool updated = false;
+	if (cal_ctnt->children.prcpts != nullptr) {
+		auto nt_time = rop_util_current_nttime();
+		for (auto &rcpt : *cal_ctnt->children.prcpts) {
+			auto smtp = rcpt.get<const char>(PR_SMTP_ADDRESS);
+			if (smtp == nullptr) {
+				auto atype = rcpt.get<const char>(PR_ADDRTYPE);
+				if (atype != nullptr && strcasecmp(atype, "SMTP") == 0)
+					smtp = rcpt.get<const char>(PR_EMAIL_ADDRESS);
+			}
+			if (smtp == nullptr || strcasecmp(smtp, responder) != 0)
+				continue;
+			rcpt.set(PR_RECIPIENT_TRACKSTATUS, &track_status);
+			rcpt.set(PR_RECIPIENT_TRACKSTATUS_TIME, &nt_time);
+			updated = true;
+			break;
+		}
+	}
+	if (!updated) {
+		mlog(LV_DEBUG, "mr_do_response: recipient %s not found on calendar item", responder);
+		return ecSuccess;
+	}
+
+	/* Write back the modified calendar item */
+	auto &props = cal_ctnt->proplist;
+	props.erase(PidTagChangeNumber);
+	props.erase(PR_CHANGE_KEY);
+	props.erase(PR_PREDECESSOR_CHANGE_LIST);
+	props.set(PidTagMid, &cal_mid);
+	ec_error_t err = ecSuccess;
+	uint64_t out_mid = cal_mid, out_cn = 0;
+	if (!exmdb_client->write_message(par.cur.dirc(), CP_ACP,
+	    cal_fid, cal_ctnt.get(), {}, &out_mid, &out_cn, &err))
+		return ecRpcFailed;
+	return err;
 }
 
 /**
@@ -1262,18 +1415,25 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 	auto rq_class = mr_get_class(rq_prop);
 	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Request") == 0)
 		return mr_do_request(par, propids, policy);
+	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Resp") == 0) {
+		auto err = mr_do_response(par, propids);
+		if (err != ecSuccess)
+			return err;
+		return mr_mark_done(par);
+	}
 	return ecSuccess;
 }
 
 rxparam::rxparam(message_node &&x) : cur(std::move(x))
 {}
 
-ec_error_t rxparam::run()
+ec_error_t rxparam::run_rules()
 {
 	bool oof = false;
 	auto err = is_oof(&oof);
 	if (err != ecSuccess)
 		return err;
+	orig_dir = cur.dir; /* remember where the rule table came from */
 	std::vector<rule_node> rule_list;
 	err = load_std_rules(oof, rule_list);
 	if (err != ecSuccess)
@@ -1301,17 +1461,26 @@ ec_error_t rxparam::run()
 			break;
 	}
 	if (del) {
-		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&cur.mid)};
+		const EID_ARRAY ids = {1, &cur.mid};
 		BOOL partial;
 		if (!exmdb_client->delete_messages(cur.dirc(), CP_ACP, nullptr,
 		    cur.fid, &ids, true/*hard*/, &partial))
 			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
-		return ecSuccess;
+	}
+	return ecSuccess;
+}
+
+ec_error_t rxparam::run()
+{
+	if (m_flags & DELIVERY_DO_RULES_CL) {
+		auto err = run_rules();
+		if (err != ecSuccess)
+			return err;
 	}
 
-	if (do_autoproc) {
+	if (m_flags & DELIVERY_DO_MRAUTOPROC) {
 		mr_policy res_policy;
-		err = mr_get_policy(ev_to, res_policy);
+		auto err = mr_get_policy(ev_to, res_policy);
 		if (err != ecSuccess)
 			return err;
 		err = mr_start(*this, res_policy);
@@ -1319,9 +1488,28 @@ ec_error_t rxparam::run()
 			return err;
 	}
 
-	if (!exmdb_client->notify_new_mail(cur.dirc(), cur.fid, cur.mid))
-		mlog(LV_ERR, "ruleproc: newmail notification unsuccessful");
+	if (m_flags & DELIVERY_DO_NOTIF_CL)
+		notify();
 	return ecSuccess;
+}
+
+void rxparam::notify()
+{
+	static constexpr proptag_t tagdata[] = {PR_MESSAGE_FLAGS, PR_MESSAGE_CLASS};
+	TPROPVAL_ARRAY vals{};
+	if (!exmdb_client->get_message_properties(cur.dirc(), nullptr, CP_UTF8,
+	    cur.mid, tagdata, &vals)) {
+		mlog(LV_ERR, "ruleproc: getprops FL/C failed");
+		return;
+	}
+	auto cls   = vals.get<const char>(PR_MESSAGE_CLASS);
+	auto Tflags = vals.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	if (cls == nullptr || Tflags == nullptr) {
+		mlog(LV_ERR, "ruleproc: msg %llxh oddly missing FL/C", static_cast<unsigned long long>(cur.mid));
+		return;
+	}
+	if (!exmdb_client->transport_new_mail(cur.dirc(), cur.fid, cur.mid, *Tflags, cls))
+		mlog(LV_ERR, "ruleproc: tnewmail notification unsuccessful");
 }
 
 static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
@@ -1330,14 +1518,15 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 	rxparam p({dir, folder_id, msg_id});
 	p.ev_from = ev_from;
 	p.ev_to   = ev_to;
-	p.do_autoproc = flags & DELIVERY_DO_MRAUTOPROC;
+	p.m_flags = flags;
 	return std::move(p).run();
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1121: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
 static constexpr cfg_directive rp_config_defaults[] = {
+	{"ruleproc_debug", "0", CFG_BOOL},
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	CFG_TABLE_END,
 };
@@ -1350,6 +1539,10 @@ BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	if (!register_service("rules_execute", exmdb_local_rules_execute))
 		return false;
 	auto cfg = config_file_prg(nullptr, "gromox.cfg", rp_config_defaults);
+	if (cfg == nullptr)
+		/* e.g. permission error */
+		return false;
+	g_ruleproc_debug = parse_bool(cfg->get_value("ruleproc_debug"));
 	auto str = cfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {
@@ -1357,7 +1550,7 @@ BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 		} catch (const vmime::exceptions::malformed_url &e) {
 			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
 				str, e.what());
-			return EXIT_FAILURE;
+			return false;
 		}
 	}
 	return TRUE;

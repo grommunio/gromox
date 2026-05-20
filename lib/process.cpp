@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1 /* linux: gettid */
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
+#include <cassert>
 #include <cerrno>
 #include <csignal>
 #include <cstdlib>
@@ -10,18 +14,28 @@
 #include <memory>
 #include <pthread.h>
 #include <sched.h>
+#include <spawn.h>
 #include <string>
 #include <thread>
 #include <unistd.h>
 #ifdef __GLIBC__
 #	include <execinfo.h>
 #endif
+#include <netinet/in.h>
 #if defined(__linux__) && defined(__GLIBC__) && __GLIBC__ == 2 && __GLIBC_MINOR__ >= 30
 #	define HAVE_GLIBC_GETTID 1
+#endif
+#ifdef HAVE_SYS_EPOLL_H
+#	include <sys/epoll.h>
+#endif
+#ifdef HAVE_SYS_EVENT_H
+#	include <sys/event.h>
 #endif
 #include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/un.h>
+#include <sys/wait.h>
 #ifdef __sun
 #	include <sys/lwp.h>
 #endif
@@ -33,11 +47,25 @@
 #	include <sys/thr.h>
 #	include <sys/types.h>
 #endif
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/proc.h>
+#include <libHX/scope.hpp>
+#include <libHX/socket.h>
 #include <libHX/string.h>
+#include <gromox/clock.hpp>
+#include <gromox/generic_connection.hpp>
+#include <gromox/listener_ctx.hpp>
+#include <gromox/poll_ctx.hpp>
 #include <gromox/process.hpp>
+#include <gromox/socketpass.hpp>
 #include <gromox/util.hpp>
+
+using namespace gromox;
+
+extern "C" {
+extern char **environ;
+}
 
 namespace gromox {
 
@@ -310,4 +338,674 @@ errno_t switch_user_exec(const char *user, char *const *argv)
 	return se;
 }
 
+poll_ctx::~poll_ctx()
+{
+	if (m_epfd >= 0)
+		close(m_epfd);
+}
+
+void poll_ctx::reset()
+{
+	if (m_epfd >= 0) {
+		close(m_epfd);
+		m_epfd = -1;
+	}
+	m_events = {};
+}
+
+errno_t poll_ctx::init(int max_ev)
+{
+	if (m_epfd >= 0) {
+		close(m_epfd);
+		m_epfd = -1;
+	}
+	try {
+#ifdef HAVE_SYS_EPOLL_H
+		m_events.resize(max_ev);
+#elif defined(HAVE_SYS_EVENT_H)
+		/* READ-ready and WRITE-ready seems to be separately notified */
+		m_events.resize(max_ev * 2);
+#endif
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+		return ENOMEM;
+	}
+#ifdef HAVE_SYS_EPOLL_H
+	m_epfd = epoll_create1(EPOLL_CLOEXEC);
+	if (m_epfd < 0) {
+		errno_t se = errno;
+		mlog(LV_ERR, "poll_ctx::setup: epoll_create: %s", strerror(se));
+		return se;
+	}
+#elif defined(HAVE_SYS_EVENT_H)
+	m_epfd = kqueue();
+	if (m_epfd < 0) {
+		errno_t se = errno;
+		mlog(LV_ERR, "poll_ctx::setup: kqueue: %s", strerror(se));
+		return se;
+	}
+#endif
+	return 0;
+}
+
+errno_t poll_ctx::addmod(unsigned int mask, int fd, void *ctx, bool add)
+{
+#ifdef HAVE_SYS_EPOLL_H
+	struct epoll_event ev{};
+	ev.data.ptr = ctx;
+	if (mask & polling_read)
+		ev.events |= EPOLLIN;
+	if (mask & polling_write)
+		ev.events |= EPOLLOUT;
+	if (!(mask & level_trigger))
+		ev.events |= EPOLLET | EPOLLONESHOT;
+	auto ret = epoll_ctl(m_epfd, add ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, fd, &ev);
+#elif defined(HAVE_SYS_EVENT_H)
+	unsigned int flags = (mask & level_trigger) ? EV_CLEAR : EV_ONESHOT;
+	struct kevent ev[2]{};
+	ev[0].ident = ev[1].ident = fd;
+	ev[0].flags = ev[1].flags = EV_ADD | EV_ENABLE | flags;
+	ev[0].udata = ev[1].udata = ctx;
+	unsigned int nev = 0;
+	if (mask & polling_read)
+		ev[nev++].filter = EVFILT_READ;
+	if (mask & polling_write)
+		ev[nev++].filter = EVFILT_WRITE;
+	auto ret = kevent(m_epfd, ev, nev, nullptr, 0, nullptr);
+#endif
+	if (ret == 0)
+		return 0;
+	errno_t se = errno;
+	mlog(LV_ERR, "poll_ctx::%s: %s\n", add ? "add" : "mod", strerror(se));
+	return se;
+}
+
+errno_t poll_ctx::del(int fd)
+{
+#ifdef HAVE_SYS_EPOLL_H
+	auto ret = epoll_ctl(m_epfd, EPOLL_CTL_DEL, fd, nullptr);
+#elif defined(HAVE_SYS_EVENT_H)
+	struct kevent ev[2]{};
+	EV_SET(&ev[0], fd, EVFILT_READ, EV_DELETE, 0, 0, nullptr);
+	EV_SET(&ev[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
+	auto ret = kevent(m_epfd, ev, std::size(ev), nullptr, 0, nullptr);
+#endif
+	if (ret == 0)
+		return 0;
+	errno_t se = errno;
+	mlog(LV_ERR, "poll_ctx::del: %s\n", strerror(se));
+	return se;
+}
+
+int poll_ctx::wait(const struct timespec *timeout, int max_ev)
+{
+	if (max_ev < 0 || static_cast<size_t>(max_ev) > m_events.size())
+		max_ev = m_events.size();
+#ifdef HAVE_SYS_EPOLL_H
+#ifdef HAVE_EPOLL_PWAIT2
+	return epoll_pwait2(m_epfd, m_events.data(), max_ev, timeout, nullptr);
+#else
+	return epoll_wait(m_epfd, m_events.data(), max_ev, timeout->tv_nsec / 1000000 + timeout->tv_sec);
+#endif
+#elif defined(HAVE_SYS_EVENT_H)
+	return kevent(m_epfd, nullptr, 0, m_events.data(), max_ev, timeout);
+#endif
+}
+
+void *poll_ctx::data(unsigned int idx) const
+{
+#ifdef HAVE_SYS_EPOLL_H
+	return idx < m_events.size() ? m_events[idx].data.ptr : nullptr;
+#elif defined(HAVE_SYS_EVENT_H)
+	return idx < m_events.size() ? m_events[idx].udata : nullptr;
+#endif
+}
+
+void listener_ctx::reset()
+{
+	watch_stop();
+	for (auto &e : m_sockets)
+		close(e.fd);
+	m_sockets.clear();
+}
+
+/**
+ * @mark: an integer the caller can use to later recognize certain sockets again
+ *        (e.g. unencrypted vs. Implicit TLS)
+ */
+errno_t listener_ctx::add_inet(const char *addr, uint16_t port, uint32_t mark)
+{
+	auto fd = HX_inet_listen(addr, port);
+	if (fd < 0) {
+		auto se = errno;
+		mlog(LV_ERR, "%s([%s]:%hu): %s", __PRETTY_FUNCTION__, addr, port, strerror(se));
+		return se;
+	}
+	try {
+		m_sockets.emplace_back(fd, mark);
+	} catch (const std::bad_alloc &) {
+		close(fd);
+		mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+		return ENOMEM;
+	}
+	gx_reexec_record(fd);
+	return 0;
+}
+
+errno_t listener_ctx::add_local(const char *path, uint32_t mark)
+{
+	auto fd = HX_local_listen(path);
+	if (fd < 0) {
+		auto se = errno;
+		mlog(LV_ERR, "%s(%s): %s", __PRETTY_FUNCTION__, path, strerror(se));
+		return se;
+	}
+	try {
+		m_sockets.emplace_back(fd, mark);
+	} catch (const std::bad_alloc &) {
+		close(fd);
+		mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+		return ENOMEM;
+	}
+	gx_reexec_record(fd);
+	return 0;
+}
+
+errno_t listener_ctx::add_bunch(const char *line, uint32_t mark)
+{
+	for (auto &&spec : gx_split_ws(line)) {
+		if (strncmp(spec.c_str(), "unix:", 5) == 0) {
+			auto err = add_local(&spec[5]);
+			if (err != 0)
+				return err;
+			continue;
+		}
+		std::string host;
+		host.resize(spec.size());
+		uint16_t port = 0;
+		auto ret = HX_addrport_split(spec.c_str(), host.data(), host.size(), &port);
+		if (ret != 2) {
+			mlog(LV_ERR, "%s: syntax near \"%s\": need both host and port",
+				__PRETTY_FUNCTION__, spec.c_str());
+			return EINVAL;
+		}
+		host.resize(strlen(host.data()));
+		auto err = add_inet(host.c_str(), port, mark);
+		if (err != 0)
+			return err;
+	}
+	return 0;
+}
+
+/**
+ * Wait on sockets and invoke a callback on new incoming connections.
+ *
+ * @stop: an extern variable to also evaluate when to stop accepting
+ * @cb:   callback when a connection has been accept()ed
+ *
+ * @cb shall return 0 if processing should continue normally. Any other value
+ * causes loop_fptr to return with that value. This way, @cb too can induce a
+ * temporary exit from the loop.
+ *
+ * loop_f returns 0 when stopping normally, -1 on error, and otherwise whatever
+ * @cb returned.
+ *
+ * NOTE: Because the signal handler for e.g. SIGINT may run in a completely
+ * unrelated thread, epoll_wait may not get interrupted at all. For this
+ * reason, most main() functions have a sleeping loop that evaluates @stop and
+ * then specifically pthread_kill()s any children [such as listener_thread],
+ * which then also stops epoll_wait.
+ */
+void *listener_ctx::listener_thread(void *thread_arg)
+{
+	auto &lctx = *static_cast<listener_ctx *>(thread_arg);
+	if (lctx.m_thread_name.size() > 0)
+		pthread_setname_np(pthread_self(), lctx.m_thread_name.c_str());
+
+	while (!*lctx.m_stop) {
+		auto ready = lctx.m_poller.wait();
+		if (ready < 0) {
+			if (errno == EINTR)
+				continue;
+			return nullptr;
+		}
+		for (int i = 0; i < ready; ++i) {
+			auto sd = static_cast<socket_desc *>(lctx.m_poller.data(i));
+			assert(sd != nullptr);
+			auto conn = generic_connection::accept(sd->fd, lctx.m_haproxy_level, lctx.m_stop);
+			if (conn.sockd == -2)
+				return 0; /* stop signalled */
+			if (conn.sockd < 0)
+				continue;
+			conn.mark = sd->mark;
+			lctx.m_callback(std::move(conn));
+		}
+	}
+	return nullptr;
+}
+
+errno_t listener_ctx::watch_start(gromox::atomic_bool &stop,
+    int (*cb)(generic_connection &&)) try
+{
+	watch_stop();
+	if (m_sockets.size() == 0)
+		return 0;
+	m_stop = &stop;
+	m_callback = cb;
+	auto err = m_poller.init(m_sockets.size());
+	if (err != 0)
+		return err;
+	for (auto &entry : m_sockets) {
+		err = m_poller.add(poll_ctx::polling_read | poll_ctx::level_trigger,
+		      entry.fd, &entry);
+		if (err != 0) {
+			m_poller.reset();
+			return err;
+		}
+	}
+	auto ret = pthread_create4(&m_thr_id, nullptr, listener_thread, this);
+	if (ret != 0) {
+		m_poller.reset();
+		mlog(LV_ERR, "%s: pthread_create: %s", __PRETTY_FUNCTION__, strerror(ret));
+		return ret;
+	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ENOMEM;
+}
+
+void listener_ctx::watch_stop()
+{
+	if (!pthread_equal(m_thr_id, {})) {
+		pthread_kill(m_thr_id, SIGALRM);
+		pthread_join(m_thr_id, nullptr);
+		m_thr_id = {};
+	}
+	m_poller.reset();
+}
+
+int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
+{
+	if (level == 0)
+		return 0;
+	if (level != 2)
+		return -1;
+	static constexpr uint8_t sig[12] = {0xd, 0xa, 0xd, 0xa, 0x0, 0xd, 0xa, 0x51, 0x55, 0x49, 0x54, 0xa};
+	uint8_t buf[4096];
+	if (HXio_fullread(fd, buf, 16) != 16)
+		return -1;
+	if (memcmp(buf, sig, sizeof(sig)) != 0)
+		return -1;
+	if (static_cast<unsigned int>((buf[12] & 0xF0) >> 4) != level || level != 2)
+		return -1;
+	if ((buf[12] & 0xF) == 0)
+		return 0;
+	if ((buf[12] & 0xF) != 1)
+		return -1;
+	uint16_t hlen = static_cast<uint16_t>(buf[14] << 8) | buf[15];
+	switch (buf[13] & 0xF0) {
+	case 0x10: {
+		if (hlen != 12 || HXio_fullread(fd, buf, 12) != 12)
+			return -1;
+		auto peer = reinterpret_cast<sockaddr_in *>(ss);
+		*peer = {};
+		peer->sin_family = AF_INET;
+		memcpy(&peer->sin_addr, &buf[0], sizeof(peer->sin_addr));
+		memcpy(&peer->sin_port, &buf[8], sizeof(peer->sin_port));
+		static_assert(sizeof(peer->sin_addr) == 4 && sizeof(peer->sin_port) == 2);
+		return 0;
+	}
+	case 0x20: {
+		if (hlen != 36 || HXio_fullread(fd, buf, 36) != 36)
+			return -1;
+		auto peer = reinterpret_cast<sockaddr_in6 *>(ss);
+		*peer = {};
+		peer->sin6_family = AF_INET6;
+		memcpy(&peer->sin6_addr, &buf[0], sizeof(peer->sin6_addr));
+		memcpy(&peer->sin6_port, &buf[32], sizeof(peer->sin6_port));
+		static_assert(sizeof(peer->sin6_addr) == 16 && sizeof(peer->sin6_port) == 2);
+		return 0;
+	}
+	case 0x30: {
+		if (hlen != 216 || HXio_fullread(fd, buf, 216) != 216)
+			return -1;
+		auto peer = reinterpret_cast<sockaddr_un *>(ss);
+		*peer = {};
+		peer->sun_family = AF_LOCAL;
+		memcpy(&peer->sun_path, &buf[0], std::min(static_cast<size_t>(108), sizeof(peer->sun_path)));
+		return 0;
+	}
+	default:
+		while (hlen > 0) {
+			auto toread = std::min(static_cast<size_t>(hlen), sizeof(buf));
+			auto ret = HXio_fullread(fd, buf, toread);
+			if (ret < 0 || static_cast<size_t>(ret) != toread)
+				return -1;
+			hlen -= toread;
+		}
+		return 0;
+	}
+	return -1;
+}
+
+errno_t socketpass_worker::start_raw(const char *prog, char **argv)
+{
+	posix_spawn_file_actions_t fa{};
+	auto ret = posix_spawn_file_actions_init(&fa);
+	if (ret != 0)
+		return ret;
+	auto cl_actions = HX::make_scope_exit([&]() { posix_spawn_file_actions_destroy(&fa); });
+
+	int skfd[2]{-1, -1};
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, skfd) != 0)
+		return errno;
+	auto cl_pair = HX::make_scope_exit([&]() {
+		if (skfd[0] >= 0)
+			close(skfd[0]);
+		if (skfd[1] >= 0)
+			close(skfd[1]);
+	});
+
+	ret = posix_spawn_file_actions_addclose(&fa, skfd[1]);
+	if (ret != 0)
+		return ret;
+	if (skfd[0] != STDIN_FILENO) {
+		ret = posix_spawn_file_actions_adddup2(&fa, skfd[0], STDIN_FILENO);
+		if (ret != 0)
+			return ret;
+		ret = posix_spawn_file_actions_addclose(&fa, skfd[0]);
+		if (ret != 0)
+			return ret;
+	}
+
+	ret = posix_spawnp(&m_pid, prog, &fa, nullptr, argv, environ);
+	if (ret != 0)
+		return ret;
+	cl_pair.release();
+	close(skfd[0]);
+	m_channel = skfd[1];
+	return 0;
+}
+
+errno_t socketpass_worker::start(const char *prog, char **argv)
+{
+	if (running())
+		return 0;
+	stop();
+	return start_raw(prog, argv);
+}
+
+errno_t socketpass_worker::restart(const char *prog, char **argv)
+{
+	stop();
+	return start_raw(prog, argv);
+}
+
+int socketpass_worker::stop()
+{
+	if (m_channel >= 0) {
+		close(m_channel);
+		m_channel = -1;
+	}
+	if (m_pid > 0) {
+		kill(m_pid, SIGTERM);
+		int status = 0;
+		waitpid(m_pid, &status, 0);
+		m_pid = -1;
+		return status;
+	}
+	return 0;
+}
+
+bool socketpass_worker::running()
+{
+	if (m_pid < 0)
+		return false;
+	int status = 0;
+	/* 0: still alive, <0: no child, >0: just reaped */
+	auto pid = waitpid(m_pid, &status, WNOHANG);
+	if (pid == 0)
+		return true;
+	if (pid < 0)
+		return false; /* no child */
+	/* just reaped */
+	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+		mlog(LV_NOTICE, "socketpass worker %d terminated with exit status %d",
+			m_pid, WEXITSTATUS(status));
+	if (WIFSIGNALED(status))
+		mlog(LV_NOTICE, "socketpass worker %d terminated by signal %d",
+			m_pid, WTERMSIG(status));
+	m_pid = -1;
+	return false;
+}
+
+errno_t socketpass_worker::pass(std::string_view buffer, int fd_pass) const
+{
+	/*
+	 * SEQPACKET sockets have a caveat that the payload can't be overly
+	 * large else sendmsg() will return EMSGSIZE. For our usecases that
+	 * should be ok, because socketpass is only used with exmdb and that
+	 * only passes a buffer with a exmdb_callid::{connect,
+	 * listen_notification}, never e.g. exmdb_callid::write_message.
+	 */
+	uint32_t pktlen = buffer.size();
+	struct iovec iov;
+	iov.iov_base = &pktlen;
+	iov.iov_len  = sizeof(pktlen);
+	alignas(struct cmsghdr) char cbuf[CMSG_SPACE(sizeof(fd_pass))];
+	struct msghdr msg{};
+	msg.msg_iov        = &iov;
+	msg.msg_iovlen     = 1;
+	msg.msg_control    = cbuf;
+	msg.msg_controllen = std::size(cbuf);
+	auto cmsg        = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type  = SCM_RIGHTS;
+	cmsg->cmsg_len   = CMSG_LEN(sizeof(fd_pass));
+	memcpy(CMSG_DATA(cmsg), &fd_pass, sizeof(fd_pass));
+	if (sendmsg(m_channel, &msg, MSG_NOSIGNAL) < 0)
+		return errno;
+
+	iov.iov_base = deconst(buffer.data());
+	iov.iov_len  = pktlen;
+	msg.msg_control    = nullptr;
+	msg.msg_controllen = 0;
+	if (sendmsg(m_channel, &msg, MSG_NOSIGNAL) < 0)
+		return errno;
+
+	return 0;
+}
+
+/**
+ * @channel:   AF_UNIX contorl channel
+ * @pkt:       replay of the first packet (e.g. a CONNECT or LISTEN_NOTIFICATION)
+ * @client_fd: the client file descriptor
+ */
+errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
+{
+	uint32_t pktlen = 0;
+	struct iovec iov;
+	iov.iov_base    = &pktlen;
+	iov.iov_len     = sizeof(pktlen);
+	char cbuf[CMSG_SPACE(sizeof(int))]{};
+	struct msghdr msg{};
+	msg.msg_iov        = &iov;
+	msg.msg_iovlen     = 1;
+	msg.msg_control    = cbuf;
+	msg.msg_controllen = std::size(cbuf);
+
+	auto read_len = recvmsg(channel, &msg, 0);
+	if (read_len == 0)
+		return ENOENT; /* eof */
+	if (read_len < 0) {
+		errno_t se = errno;
+		if (se != EINTR && se != EAGAIN)
+			mlog(LV_ERR, "%s: recvmsg.1: %s", __PRETTY_FUNCTION__, strerror(se));
+		return se;
+	}
+	for (auto cmsg = CMSG_FIRSTHDR(&msg); cmsg != nullptr;
+	     cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+		if (cmsg->cmsg_level != SOL_SOCKET ||
+		    cmsg->cmsg_type != SCM_RIGHTS ||
+		    cmsg->cmsg_len != CMSG_LEN(sizeof(client_fd)))
+			continue;
+		memcpy(&client_fd, CMSG_DATA(cmsg), sizeof(client_fd));
+		break;
+	}
+	msg.msg_control = nullptr;
+	msg.msg_controllen = 0;
+	if (client_fd < 0) {
+		/* No fd received, ditch rest */
+		if (recvmsg(channel, &msg, 0) < 0) {
+			errno_t se = errno;
+			mlog(LV_ERR, "%s: recvmsg.2: %s", __PRETTY_FUNCTION__, strerror(se));
+			return se;
+		}
+		return 0;
+	}
+
+	read_len = std::min(le32p_to_cpu(&pktlen), UINT32_MAX);
+	pkt.resize(read_len);
+	iov.iov_base = pkt.data();
+	iov.iov_len  = pkt.size();
+	read_len = recvmsg(channel, &msg, 0);
+	if (read_len == 0)
+		return ENOENT; /* eof */
+	if (read_len < 0) {
+		errno_t se = errno;
+		mlog(LV_ERR, "%s: recvmsg.3: %s", __PRETTY_FUNCTION__, strerror(se));
+		return se;
+	}
+	pkt.resize(read_len);
+	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ENOMEM;
+}
+
+} /* namespace gromox */
+
+generic_connection::generic_connection(generic_connection &&o) :
+	client_port(o.client_port), server_port(o.server_port),
+	sockd(std::move(o.sockd)), mark(std::move(o.mark)), ssl(std::move(o.ssl)),
+	last_timestamp(o.last_timestamp)
+{
+	memcpy(client_addr, o.client_addr, sizeof(client_addr));
+	memcpy(server_addr, o.server_addr, sizeof(server_addr));
+	o.sockd = -1;
+	o.ssl = nullptr;
+}
+
+generic_connection &generic_connection::operator=(generic_connection &&o)
+{
+	if (this == &o)
+		return *this;
+	memcpy(client_addr, o.client_addr, sizeof(client_addr));
+	memcpy(server_addr, o.server_addr, sizeof(server_addr));
+	client_port = o.client_port;
+	server_port = o.server_port;
+	sockd = std::move(o.sockd);
+	o.sockd = -1;
+	mark = std::move(o.mark);
+	ssl = std::move(o.ssl);
+	o.ssl = nullptr;
+	last_timestamp = o.last_timestamp;
+	return *this;
+}
+
+generic_connection generic_connection::takeover(int cl_sock)
+{
+	generic_connection conn;
+	conn.sockd = std::move(cl_sock);
+	struct sockaddr_storage sv_addr, cl_addr;
+	socklen_t addrlen = sizeof(cl_addr);
+	auto ret = getpeername(conn.sockd, reinterpret_cast<sockaddr *>(&cl_addr),
+	           &addrlen);
+	if (ret != 0) {
+		mlog(LV_WARN, "getpeername: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	/* no call to haproxy — the socket may already be through all those init stages */
+
+	char txtport[40];
+	ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
+	      conn.client_addr, sizeof(conn.client_addr), txtport,
+	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.client_port = strtoul(txtport, nullptr, 0);
+	addrlen = sizeof(sv_addr);
+	ret = getsockname(conn.sockd, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
+	if (ret != 0) {
+		mlog(LV_WARN, "getsockname: %s\n", strerror(errno));
+		conn.reset();
+		return conn;
+	}
+	ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
+	      conn.server_addr, sizeof(conn.server_addr), txtport,
+	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.server_port = strtoul(txtport, nullptr, 0);
+	conn.last_timestamp = tp_now();
+	return conn;
+}
+
+generic_connection generic_connection::accept(int sv_sock,
+    int haproxy, gromox::atomic_bool *stop_accept)
+{
+	generic_connection conn;
+	struct sockaddr_storage sv_addr, cl_addr;
+	socklen_t addrlen = sizeof(cl_addr);
+	auto cl_sock = accept4(sv_sock, reinterpret_cast<struct sockaddr *>(&cl_addr),
+	               &addrlen, SOCK_CLOEXEC);
+	conn.sockd = cl_sock;
+	if (*stop_accept) {
+		conn.reset();
+		conn.sockd = -2;
+		return conn;
+	} else if (cl_sock < 0) {
+		conn.reset();
+		return conn;
+	}
+	if (haproxy_intervene(cl_sock, haproxy, &cl_addr) < 0) {
+		conn.reset();
+		return conn;
+	}
+	char txtport[40];
+	auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
+		   conn.client_addr, sizeof(conn.client_addr), txtport,
+		   sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.client_port = strtoul(txtport, nullptr, 0);
+	addrlen = sizeof(sv_addr);
+	ret = getsockname(cl_sock, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
+	if (ret != 0) {
+		mlog(LV_WARN, "getsockname: %s\n", strerror(errno));
+		conn.reset();
+		return conn;
+	}
+	ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
+	      conn.server_addr, sizeof(conn.server_addr), txtport,
+	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.server_port = strtoul(txtport, nullptr, 0);
+	conn.last_timestamp = tp_now();
+	return conn;
 }

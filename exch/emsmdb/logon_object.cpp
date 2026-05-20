@@ -15,7 +15,6 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
@@ -44,7 +43,7 @@ static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 }
 
 static BOOL logon_object_cache_propname(logon_object *plogon,
-    uint16_t propid, const PROPERTY_NAME *ppropname) try
+    propid_t propid, const PROPERTY_NAME *ppropname) try
 {
 	char s[NP_STRBUF_SIZE];
 	if (!propname_to_packed(*ppropname, s, std::size(s)))
@@ -53,13 +52,14 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	plogon->propname_hash.emplace(s, propid);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1633: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
 std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
     uint32_t open_flags, enum logon_mode logon_mode, int account_id,
-    int dom_id, const char *account, const char *dir, GUID mailbox_guid)
+    int dom_id, const char *account, const char *dir, GUID record_key,
+    GUID mapping_sig)
 {
 	std::unique_ptr<logon_object> plogon;
 	try {
@@ -74,8 +74,17 @@ std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 	plogon->domain_id = dom_id;
 	gx_strlcpy(plogon->account, account, std::size(plogon->account));
 	gx_strlcpy(plogon->dir, dir, std::size(plogon->dir));
-	plogon->mailbox_guid = mailbox_guid;
+	plogon->mailbox_guid = std::move(record_key);
+	plogon->mapping_signature = std::move(mapping_sig);
+	if (g_logon_debug)
+		mlog(LV_DEBUG, "E-DBG: logon_object(%p, dir=%s)", plogon.get(), dir);
 	return plogon;
+}
+
+logon_object::~logon_object()
+{
+	if (g_logon_debug)
+		mlog(LV_DEBUG, "E-DBG: ~logon_object(%p)", this);
 }
 
 GUID logon_object::guid() const
@@ -84,7 +93,7 @@ GUID logon_object::guid() const
 	       rop_util_make_domain_guid(account_id);
 }
 
-BOOL logon_object::get_named_propname(uint16_t propid,
+BOOL logon_object::get_named_propname(propid_t propid,
     PROPERTY_NAME *ppropname)
 {
 	if (!is_nameprop_id(propid)) {
@@ -156,12 +165,12 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY &propids,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2236: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
 BOOL logon_object::get_named_propid(BOOL b_create,
-    const PROPERTY_NAME *ppropname, uint16_t *ppropid)
+    const PROPERTY_NAME *ppropname, propid_t *ppropid)
 {
 	if (ppropname->guid == PS_MAPI) {
 		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
@@ -243,43 +252,8 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2177: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
-}
-
-static BOOL gnpwrap(void *obj, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)
-{
-	return static_cast<logon_object *>(obj)->get_named_propid(create, pn, pid);
-}
-
-const property_groupinfo *logon_object::get_last_property_groupinfo()
-{
-	auto plogon = this;
-	if (m_gpinfo == nullptr)
-		m_gpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
-		           plogon, msgchg_grouping_get_last_group_id());
-	return m_gpinfo.get();
-}
-
-const property_groupinfo *
-logon_object::get_property_groupinfo(uint32_t group_id) try
-{
-	auto plogon = this;
-	
-	if (group_id == msgchg_grouping_get_last_group_id())
-		return get_last_property_groupinfo();
-	auto node = std::find_if(group_list.begin(), group_list.end(),
-	            [&](const property_groupinfo &p) { return p.group_id == group_id; });
-	if (node != group_list.end())
-		return &*node;
-	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, plogon, group_id);
-	if (pgpinfo == nullptr)
-		return NULL;
-	group_list.push_back(std::move(*pgpinfo));
-	return &group_list.back();
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1631: ENOMEM");
-	return nullptr;
 }
 
 BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
@@ -289,19 +263,18 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	
 	if (!exmdb_client->get_store_all_proptags(plogon->dir, &tmp_proptags))
 		return FALSE;	
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 25);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 25);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-				sizeof(uint32_t)*tmp_proptags.count);
+	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 
-	static constexpr uint32_t pvt_tags[] = {
+	static constexpr proptag_t pvt_tags[] = {
 		PR_MAILBOX_OWNER_NAME, PR_MAILBOX_OWNER_ENTRYID,
 		PR_MAX_SUBMIT_MESSAGE_SIZE, PR_EXTENDED_RULE_SIZE_LIMIT,
 		PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
 	};
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_DELETED_ASSOC_MESSAGE_SIZE,
 		PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED,
 		PR_DELETED_ASSOC_MSG_COUNT, PR_DELETED_MESSAGE_SIZE,
@@ -323,7 +296,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	return TRUE;
 }
 
-static bool lo_is_readonly_prop(const logon_object *plogon, uint32_t proptag)
+static bool lo_is_readonly_prop(const logon_object *plogon, proptag_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return true;
@@ -392,7 +365,7 @@ static inline const char *account_to_domain(const char *u)
 }
 
 static BOOL logon_object_get_calculated_property(const logon_object *plogon,
-    uint32_t proptag, void **ppvalue)
+    proptag_t proptag, void **ppvalue)
 {
 	void *pvalue;
 	static constexpr uint64_t tmp_ll = 0;
@@ -513,24 +486,16 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		std::string dispname;
 		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname))
 			return FALSE;	
-		auto temp_len = utf8_to_mb_len(dispname.c_str());
-		auto tstr = cu_alloc<char>(std::max(temp_len, strlen(plogon->account) + 1));
-		*ppvalue = tstr;
-		if (*ppvalue == nullptr)
-			return FALSE;
-		if (common_util_convert_string(false, dispname.c_str(),
-		    tstr, temp_len) < 0)
-			return FALSE;	
-		if (*tstr == '\0')
-			strcpy(tstr, plogon->account);
-		return TRUE;
+		*ppvalue = !dispname.empty() ? cu_utf8_to_mb_dup(CP_OEMCP, dispname) :
+		           cu_utf8_to_mb_dup(CP_OEMCP, plogon->account);
+		return *ppvalue != nullptr ? TRUE : false;
 	}
 	case PR_MAX_SUBMIT_MESSAGE_SIZE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		*v = g_max_mail_len;
+		*v = std::min(static_cast<size_t>(INT32_MAX), g_max_mail_len >> 10);
 		return TRUE;
 	}
 	case PR_SORT_LOCALE_ID: {
@@ -549,24 +514,26 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		return TRUE;
 	}
 	case PR_ROOT_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(plogon, plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
+		*ppvalue = cu_fid_to_entryid(*plogon, plogon->is_private() ?
+		           PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_IPM_INBOX_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(plogon, plogon->is_private() ? PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE);
+		*ppvalue = cu_fid_to_entryid(*plogon, plogon->is_private() ?
+		           PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PidTagXSpoolerQueueEntryId:
-		*ppvalue = cu_fid_to_entryid(plogon, plogon->is_private() ?
+		*ppvalue = cu_fid_to_entryid(*plogon, plogon->is_private() ?
 		           PRIVATE_FID_SPOOLER_QUEUE : PUBLIC_FID_NONIPMSUBTREE);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_NON_IPM_SUBTREE_ENTRYID:
 		if (plogon->is_private())
 			return false;
-		*ppvalue = cu_fid_to_entryid(plogon, PUBLIC_FID_NONIPMSUBTREE);
+		*ppvalue = cu_fid_to_entryid(*plogon, PUBLIC_FID_NONIPMSUBTREE);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_EFORMS_REGISTRY_ENTRYID:
 		if (plogon->is_private())
 			return false;
-		*ppvalue = cu_fid_to_entryid(plogon, PUBLIC_FID_EFORMSREGISTRY);
+		*ppvalue = cu_fid_to_entryid(*plogon, PUBLIC_FID_EFORMSREGISTRY);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_TEST_LINE_SPEED:
 		*ppvalue = deconst(&test_bin);
@@ -596,7 +563,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
  * PR_HIERARCHY_SERVER property on the store visible with MFCMAPI, which means
  * EXC2019 also does not synthesize anything server-side in any way.
  */
-BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
+bool logon_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals) const
 {
 	static const uint32_t err_code = ecError, invalid_code = ecInvalidParam;
@@ -604,17 +571,16 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return FALSE;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
 	auto plogon = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 
 		if (PROP_ID(tag) == PROP_ID(PR_HIERARCHY_SERVER))
 			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &invalid_code);
@@ -630,7 +596,7 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_store_properties(plogon->dir,
-	    pinfo->cpid, &tmp_proptags, &tmp_propvals))
+	    pinfo->cpid, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
 		return TRUE;
@@ -677,23 +643,23 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	*pproblems += std::move(tmp_problems);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1744: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
-BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
+bool logon_object::remove_properties(proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	pproblems->count = 0;
-	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags.size());
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto plogon = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
+		const auto tag = pproptags[i];
 		if (lo_is_readonly_prop(plogon, tag))
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 		else
@@ -701,7 +667,7 @@ BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
-	return exmdb_client->remove_store_properties(plogon->dir, &tmp_proptags);
+	return exmdb_client->remove_store_properties(plogon->dir, tmp_proptags);
 }
 
 /**

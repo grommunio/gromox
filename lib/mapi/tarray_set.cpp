@@ -47,23 +47,22 @@ void tarray_set::erase(uint32_t index)
 	tpropval_array_free(parray);
 }
 
-gromox::errno_t tarray_set::append_move(tpropval_array_ptr &&pproplist)
+ec_error_t tarray_set::append_move(tpropval_array_ptr &&pproplist)
 {
 	auto pset = this;
 	
-	if (pset->count >= 0xFF00) {
-		return ENOSPC;
-	}
+	if (pset->count >= 0xFF00)
+		return ecInsufficientResrc;
 	auto z = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
 	if (pset->count + 1 >= z) {
 		z += SR_GROW_TPROPVAL_ARRAY;
 		auto list = gromox::re_alloc<TPROPVAL_ARRAY *>(pset->pparray, z);
 		if (list == nullptr)
-			return ENOMEM;
+			return ecMAPIOOM;
 		pset->pparray = list;
 	}
 	pset->pparray[pset->count++] = pproplist.release();
-	return 0;
+	return ecSuccess;
 }
 
 TPROPVAL_ARRAY *tarray_set::emplace()
@@ -71,10 +70,15 @@ TPROPVAL_ARRAY *tarray_set::emplace()
 	tpropval_array_ptr p(tpropval_array_init());
 	if (p == nullptr)
 		return nullptr;
-	auto ret = append_move(std::move(p));
-	if (ret == 0)
+	auto err = append_move(std::move(p));
+	if (err == ecSuccess)
 		return back();
-	errno = ret;
+	else if (err == ecInsufficientResrc)
+		errno = ENOSPC;
+	else if (err == ecMAPIOOM)
+		errno = ENOMEM;
+	else
+		errno = EIO;
 	return nullptr;
 }
 
@@ -93,10 +97,15 @@ tarray_set *tarray_set::dup() const
 			tarray_set_free(pset1);
 			return NULL;
 		}
-		auto ret = pset1->append_move(std::move(pproplist));
-		if (ret != 0) {
+		auto err = pset1->append_move(std::move(pproplist));
+		if (err != ecSuccess) {
 			tarray_set_free(pset1);
-			errno = ret;
+			if (err == ecInsufficientResrc)
+				errno = ENOSPC;
+			else if (err == ecMAPIOOM)
+				errno = ENOMEM;
+			else
+				errno = EIO;
 			return NULL;
 		}
 	}

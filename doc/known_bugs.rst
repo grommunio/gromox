@@ -10,6 +10,19 @@ Noteworthy issues for administrators and packagers
   change <o:p> to <p>, which causes the insertion of extraneous empty lines
   upon reception of e-mail.
 
+* Due to "optimizations" in various `malloc` implementations – and thus nothing
+  that Gromox can control directly – certain allocations are not always
+  returned back to the operating system. This makes gromox-imap appear to have
+  high memory consumption (and possibly dying when not enough system memory is
+  installed) after obtaining the listview for a folder with 70000 messages.
+  https://github.com/grommunio/gromox/issues/214
+
+* Some C++ shared libraries can not be unloaded
+  (when `readelf -aW` outputs "UNIQUE"-type symbols). Components like
+  libgromox_common.so.0, once loaded into a process, stay resident across
+  dlclose-dlopen calls. This generally affects programs that use pam_gromox.so.
+  These programs (e.g. keycloak) need to be restarted after a Gromox update.
+
 
 Noteworthy issues for developers
 ================================

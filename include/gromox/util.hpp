@@ -1,5 +1,5 @@
 #pragma once
-#include <atomic>
+#include <cstdarg>
 #include <cstdint>
 #include <cstring>
 #include <ctime>
@@ -17,10 +17,28 @@ enum {
 	QP_MIME_HEADER = 1U << 0,
 };
 
+enum {
+	ICONVTEXT_TRANSLIT = 0x1U,
+};
+
 enum class mime_type {
 	none, single, single_obj, multiple,
 };
 
+/*
+ * A custom memory allocator that hands out memory in a stack-like (LIFO) fashion
+ * and where deallocation happens in a single operation and nukes all objects.
+ *
+ * It's full of drawbacks.
+ * - You can’t easily return memory early
+ * - Memory usage spikes silently
+ * - Tools like Valgrind often won’t flag leaks /
+ *   Memory is freed eventually, just very late.
+ * - Not suitable for long-lived objects (objects supposed to outlive the
+ *   allocator instance lifetime or a .clear call)
+ * - Anything with ownership transfer (e.g transferring to another scope which
+ *   outlives the allocator)
+ */
 struct GX_EXPORT alloc_context {
 	alloc_context() = default;
 	NOMOVE(alloc_context);
@@ -43,7 +61,7 @@ using ALLOC_CONTEXT = alloc_context;
 extern GX_EXPORT bool utf8_valid(const char *str);
 extern GX_EXPORT BOOL utf8_truncate(char *str, int length);
 extern GX_EXPORT void utf8_filter(char *string);
-extern GX_EXPORT void wchar_to_utf8(uint32_t wchar, char *string);
+extern GX_EXPORT std::string wchar_to_utf8(uint32_t wchar);
 extern GX_EXPORT const char *replace_iconv_charset(const char *charset);
 extern GX_EXPORT BOOL string_mb_to_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
 extern GX_EXPORT BOOL string_utf8_to_mb(const char *charset, const char *in_string, char *out_string, size_t out_len);
@@ -57,12 +75,22 @@ extern GX_EXPORT int encode64(const void *in, size_t inlen, char *out, size_t ou
 extern GX_EXPORT int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
 #define decode64 decode64_ex
 extern GX_EXPORT int decode64_ex(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
-extern GX_EXPORT ssize_t qp_decode_ex(void *output, size_t out_len, const char *input, size_t length, unsigned int qp_flags = 0);
-extern GX_EXPORT ssize_t qp_encode_ex(void *output, size_t outlen, const char *input, size_t length);
-extern GX_EXPORT void encode_hex_int(int id, char *out);
-extern GX_EXPORT int decode_hex_int(const char *in);
+extern GX_EXPORT ssize_t qpnl_decode_sized(std::string_view, void *output, size_t outlen, unsigned int qp_flags = 0);
+extern GX_EXPORT ssize_t qpnl_encode_sized(std::string_view, void *output, size_t outlen);
+extern GX_EXPORT uint32_t eight_LE_hexchars_to_int(const char *in);
 extern GX_EXPORT BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
 extern GX_EXPORT BOOL decode_hex_binary(const char *src, void *dst, int dstlen);
+
+#ifdef COMPILE_DIAG
+/* Compiler generates important -Wformat-truncation diagnostics */
+#define gx_snprintf snprintf
+#define gx_vsnprintf vsnprintf
+#else
+#define gx_snprintf(buf, size, fmt, ...) gx_snprintf1((buf), (size), __FILE__, __LINE__, (fmt), ## __VA_ARGS__)
+#define gx_vsnprintf(buf, size, fmt, ...) gx_vsnprintf1((buf), (size), __FILE__, __LINE__, (fmt), ## __VA_ARGS__)
+#endif
+extern GX_EXPORT int gx_snprintf1(char *, size_t, const char *, unsigned int, const char *, ...) __attribute__((format(printf, 5, 6)));
+extern GX_EXPORT int gx_vsnprintf1(char *, size_t, const char *, unsigned int, const char *, va_list);
 
 namespace gromox {
 
@@ -82,6 +110,8 @@ extern GX_EXPORT bool parse_bool(const char *s);
 extern GX_EXPORT std::string bin2cstr(const void *, size_t);
 extern GX_EXPORT std::string bin2txt(const void *, size_t);
 extern GX_EXPORT std::string bin2hex(const void *, size_t);
+inline std::string bin2hex(const std::string_view s) { return bin2hex(s.data(), s.size()); }
+inline std::string bin2hex(const std::string &s) { return bin2hex(s.data(), s.size()); }
 template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }
 extern GX_EXPORT std::string hex2bin(std::string_view, hex2bin_mode = HEX2BIN_EMPTY);
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
@@ -92,12 +122,12 @@ extern GX_EXPORT unsigned int newline_size(const char *, size_t);
 extern GX_EXPORT ec_error_t cu_validate_msgclass(const char *);
 extern GX_EXPORT bool cpid_cstr_compatible(cpid_t);
 extern GX_EXPORT bool cset_cstr_compatible(const char *);
+extern GX_EXPORT bool setup_utf8_locale();
 extern GX_EXPORT int iconv_validate();
 extern GX_EXPORT const std::string_view *ianatz_to_tzdef(const char *);
 extern GX_EXPORT const std::string_view *wintz_to_tzdef(const char *);
 extern GX_EXPORT bool get_digest(const char *src, const char *tag, char *out, size_t outmax);
-extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, const char *v);
-extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, uint64_t v);
+extern GX_EXPORT bool parse_impersonation_address(const char *address, std::string &store_user, std::string &auth_user, bool &is_impersonation);
 extern GX_EXPORT void mlog_init(const char *ident, const char *file, unsigned int level, const char *user = nullptr);
 extern GX_EXPORT void mlog(unsigned int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 extern GX_EXPORT int ssllog(const char *s, size_t len, void *);
@@ -109,7 +139,15 @@ extern GX_EXPORT uint64_t apptime_to_nttime_approx(double);
 extern GX_EXPORT std::string gx_utf8_to_punycode(const char *);
 extern GX_EXPORT bool str_isascii(const char *);
 extern GX_EXPORT bool str_isasciipr(const char *);
-extern GX_EXPORT gromox::errno_t canonical_hostname(std::string &);
+extern GX_EXPORT int ece2nerrno(ec_error_t);
+extern GX_EXPORT std::string iconvtext(std::string_view, const char *from, const char *to, unsigned int flags = 0);
+extern GX_EXPORT std::vector<std::string> gx_split(std::string_view, char sep);
+extern GX_EXPORT std::vector<std::string> gx_split_ws(std::string_view);
+extern GX_EXPORT std::string resource_parse_stcode_line(const char *);
+extern GX_EXPORT void startup_banner(const char *);
+extern GX_EXPORT std::string base64_encode(std::string_view);
+extern GX_EXPORT std::string base64_decode(std::string_view);
+extern GX_EXPORT std::string sss_obf_reverse(std::string_view);
 
 /* _xlen - exact length (chars); _len - allocation size, i.e. \0-terminated */
 /* All the classic 8-bit charsets map to within the Unicode Basic Multilingual Plane */
@@ -133,5 +171,7 @@ static inline size_t utf16_to_utf8_xlen(size_t z) { return z / 2 * 3 + 1; }
 static inline size_t utf16_to_utf8_len(size_t z) { return utf16_to_utf8_xlen(z) + 1; }
 
 extern GX_EXPORT const uint8_t utf8_byte_num[256];
+extern GX_EXPORT bool simple_zone_to_minwest(const char *s, int *west, char **end);
+extern GX_EXPORT bool rfc822_zone_to_minwest(const char *s, int *west, char **end);
 
 }

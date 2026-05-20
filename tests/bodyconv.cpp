@@ -1,104 +1,136 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 grommunio GmbH
 // This file is part of Gromox.
+#include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <string_view>
-#include <unistd.h>
-#include <utility>
-#include <libHX/io.h>
-#include <gromox/defs.h>
+#include <libHX/scope.hpp>
+#include <libHX/string.h>
+#include <gromox/element_data.hpp>
 #include <gromox/mail_func.hpp>
-#include <gromox/oxcmail.hpp>
-#include <gromox/tie.hpp>
+#include <gromox/textmaps.hpp>
+#include <gromox/util.hpp>
 
 using namespace gromox;
 
-static int ts()
-{
-	uint8_t b1[] = {0xf0, 0x9f, 0x93, 0xb1, 0x00};
-	size_t fmlen = 0;
-	std::unique_ptr<char, stdlib_delete> fm;
+static const std::string lortf_head =
+"\x7b\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fswiss\\fprq0\\fcharset128 Arial;}{\\f1\\fswiss\\fprq0\\fcharset0 Arial;}}\\plain ";
+static const std::string lortf_foot = "\x7d";
 
-	if (html_to_rtf(b1, sizeof(b1), CP_UTF8, &unique_tie(fm), &fmlen) != ecSuccess)
+static int rp_thtml(const std::string &complete, const char *expout)
+{
+	std::string outdoc;
+	auto at = attachment_list_init();
+	auto cl_0 = HX::make_scope_exit([&]() { attachment_list_free(at); });
+	if (rtf_to_html(complete, "utf-8", outdoc, at) != ecSuccess) {
+		fprintf(stderr, "rtf_to_html failed on:\n%s\n", complete.c_str());
+		return -1;
+	} else if (*expout == '\0') {
+		fprintf(stderr, "expout cannot be empty\n");
+		return -1;
+	} else if (strstr(outdoc.c_str(), expout) == nullptr) {
+		fprintf(stderr, "== Input ==\n%s\n\n== Expected needle ==\n%s\n\n== Actual output ==\n%s\n",
+			complete.c_str(), expout, outdoc.c_str());
+		return 1;
+	}
+	return 0;
+}
+
+static int rp_test(const std::string &complete, const char *expout)
+{
+	std::string outdoc;
+	auto at = attachment_list_init();
+	auto cl_0 = HX::make_scope_exit([&]() { attachment_list_free(at); });
+	if (rtf_to_html(complete, "utf-8", outdoc, at) != ecSuccess) {
+		fprintf(stderr, "rtf_to_html failed on:\n%s\n", complete.c_str());
+		return -1;
+	} else if (html_to_plain(outdoc, CP_UTF8, outdoc) < 0) {
+		fprintf(stderr, "rtf+html_to_plain failed on:\n%s\n", complete.c_str());
+		return -1;
+	}
+	HX_chomp(outdoc.data());
+	if (strcmp(outdoc.c_str(), expout) != 0) {
+		fprintf(stderr, "== Input ==\n%s\n\n== Expected ==\n%s\n\n== Actual output ==\n%s\n",
+			complete.c_str(), expout, outdoc.c_str());
+		return 1;
+	}
+	return 0;
+}
+
+#define rp_assert(x, y) do { auto kldfgv = rp_test((x), (y)); if (kldfgv != 0) return kldfgv; } while (false)
+static int t_rtf_reader()
+{
+	std::string uncomp;
+
+	rp_assert(lortf_head + "\\dbch\\'89\\'bd" + lortf_foot, "何");
+	rp_assert(lortf_head + "\\ansicpg932\\dbch \x89\xbd" + lortf_foot, "何");
+
+	/*
+	 * Multi-byte sequences that span an RTF group are handled differently
+	 * by various implementations.
+	 */
+	rp_assert(lortf_head + "\\dbch{\\'89}{\\'bd}" + lortf_foot, "何"); // MSWord
+	// rp_assert(lortf_head + "\\dbch{\\'89}{\\'bd}" + lortf_foot, "�ｽ"); // SvxRTF
+
+	/* Character set switch */
+	rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f0\\'bd}" + lortf_foot, "何"); // MSWord
+	// rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f0\\'bd}" + lortf_foot, "�ｽ"); // SvxRTF
+	// rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f1\\f0\\'bd}" + lortf_foot, "何"); // MSWord
+	rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f1\\f0\\'bd}" + lortf_foot, "ｽ");
+
+	rp_assert(lortf_head + "A\\emspace\\enspace\\qmspace B\\_C\\zwj\\zwnj D\\rtlmark\\ltrmark E" + lortf_foot,
+		"A   B‑C‍‌D‏‎E");
+	/*
+	 * w3m is a formatter (renderer), and thus does not necessarily
+	 * preserve controlling characters verbatim. So we need to test the
+	 * pre-w3m output for some of the RTF control words.
+	 */
+	auto ret = rp_thtml(lortf_head + "A\\-\\emspace\\enspace\\qmspace B\\zwbo\\zwnbo C" + lortf_foot,
+	           "A&shy;&emsp;&ensp;&emsp14;B​﻿C");
+	if (ret != 0)
+		return ret;
+	ret = rp_thtml(lortf_head + "@@\\u127\\'3f@@\\u2047\\'3f@@\\u32767\\'3f@@\\u-1\\'3f@@" + lortf_foot,
+	      "@@\x7f@@߿@@翿@@￿@@");
+	if (ret != 0)
+		return ret;
+	return 0;
+}
+
+static int t_html_plain()
+{
+	std::string obuf;
+	if (html_to_plain("&lt;&gt;&quot;&amp;&#33;", CP_UTF8, obuf) != CP_UTF8)
+		return -1;
+	if (strncmp(obuf.c_str(), "<>\"&!", 5) != 0) {
+		fprintf(stderr, "output: >%s<\n", obuf.c_str());
+		return -1;
+	}
+	return 0;
+}
+
+static int t_htmltortf()
+{
+	std::string out;
+	auto err = html_to_rtf("", static_cast<cpid_t>(1252), out);
+	if (err != ecSuccess) {
+		fprintf(stderr, "html_to_rtf failed\n");
 		return EXIT_FAILURE;
+	}
+	err = html_to_rtf("1", static_cast<cpid_t>(1252), out);
+	if (err != ecSuccess) {
+		fprintf(stderr, "html_to_rtf failed\n");
+		return EXIT_FAILURE;
+	}
 	return EXIT_SUCCESS;
 }
 
-static void help()
+int main()
 {
-	std::cout << "Usage: bodyconv {texttohtml|htmltortf|rtfcp|unrtfcp|rtftohtml|htmltotext}" << std::endl;
-	std::cout << "       Will read from stdin and output to stdout" << std::endl;
-}
-
-int main(int argc, const char **argv)
-{
-	if (argc < 2) {
-		help();
+	textmaps_init(getenv("TEST_PATH"));
+	if (t_html_plain() != 0)
 		return EXIT_FAILURE;
-	}
-	html_init_library();
-	rtf_init_library();
-	std::string all;
-	char buf[4096];
-	ssize_t have_read;
-
-	if (strcmp(argv[1], "ts") != 0)
-		while ((have_read = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
-			all += std::string_view(buf, have_read);
-
-	if (strcmp(argv[1], "texttohtml") == 0) {
-		std::unique_ptr<char[], stdlib_delete> out(plain_to_html(all.c_str()));
-		if (out != nullptr)
-			std::cout << out.get() << std::endl;
-	} else if (strcmp(argv[1], "htmltotext") == 0) {
-		std::string out;
-		if (html_to_plain(all.c_str(), all.size(), out) >= 0)
-			std::cout << out << std::endl;
-	} else if (strcmp(argv[1], "htmltortf") == 0) {
-		std::unique_ptr<char[], stdlib_delete> out;
-		size_t outlen = 0;
-		if (html_to_rtf(all.c_str(), all.size(), CP_UTF8, &unique_tie(out), &outlen) == ecSuccess)
-			std::cout << std::string_view(out.get(), outlen) << std::endl;
-	} else if (strcmp(argv[1], "rtftohtml") == 0) {
-		auto at = attachment_list_init();
-		std::string out;
-		if (rtf_to_html(all.c_str(), all.size(), "utf-8", out, at))
-			std::cout << out << std::endl;
-	} else if (strcmp(argv[1], "rtfcp") == 0) {
-		auto rtf_comp = rtfcp_compress(all.c_str(), all.size());
-		if (rtf_comp != nullptr) {
-			auto wrret = HXio_fullwrite(STDOUT_FILENO, rtf_comp->pv, rtf_comp->cb);
-			free(rtf_comp);
-			if (wrret < 0)
-				return EXIT_FAILURE;
-		}
-	} else if (strcmp(argv[1], "unrtfcp") == 0) {
-		BINARY rtf_comp;
-		rtf_comp.cb = all.size();
-		rtf_comp.pv = deconst(all.c_str());
-		auto unc_size = rtfcp_uncompressed_size(&rtf_comp);
-		if (unc_size == -1) {
-			fprintf(stderr, "Bad header magic, or data stream is shorter than the header says it should be.\n");
-			return EXIT_FAILURE;
-		}
-		if (unc_size > 0) {
-			std::string unc_data;
-			unc_data.resize(unc_size);
-			size_t unc_size2 = unc_size;
-			if (rtfcp_uncompress(&rtf_comp, &unc_data[0], &unc_size2)) {
-				unc_data.resize(unc_size2);
-				std::cout << std::move(unc_data) << std::endl;
-			}
-		}
-	} else if (strcmp(argv[1], "ts") == 0) {
-		return ts();
-	} else {
-		help();
+	if (t_rtf_reader() != 0)
 		return EXIT_FAILURE;
-	}
+	if (t_htmltortf() != 0)
+		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }

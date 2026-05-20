@@ -7,6 +7,7 @@
 #endif
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <utility>
 #include <vector>
 #include <gromox/defs.h>
@@ -46,6 +47,7 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 	using base::cend;
 	using base::front;
 	using base::back;
+	using base::empty;
 	using base::size;
 	using base::clear;
 	using base::erase;
@@ -129,6 +131,57 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 		auto i = std::lower_bound(cbegin(), cend(), v,
 		         [&](const gromox::range_node<T> &rn, T vv) { return rn.hi < vv; });
 		return i != cend() ? i->contains(v) : false;
+	}
+
+	/**
+	 * Find next unused number e.
+	 * @def: first valid regular number
+	 * @ill: magic value for indicating "invalid/unused"
+	 *
+	 * There are two modes of operation.
+	 *
+	 * 1. e.g. for file descriptors where @ill < @def.
+	 *
+	 *      range_set<int> v; v.alloc_next_unused(0, -1);
+	 *
+	 *    Returns the next unused number e such that @def <= @e <= T_max.
+	 *    Returns @ill when no free number is found.
+	 *
+	 * 2. for something like zcore handles where @ill >= @def.
+	 *
+	 *      range_set<uint32_t> v; v.alloc_next_unused(0, UINT32_MAX);
+	 *
+	 *    Returns the next unused number e such that @def <= @e < ill.
+	 *    Returns @ill when no free number is found.
+	 *
+	 * Prerequisite: The set must not contain any number less than @def.
+	 *
+	 * If you cannot spare a value of T as the magic value, you have to use
+	 * a T with a larger range, e.g. use range_set<uint32_t> if you want to
+	 * hand out all 64K numbers from {0..UINT16_MAX}.
+	 */
+	T alloc_next_unused(T def, T ill)
+	{
+		if (empty()) {
+			base::emplace(begin(), def, def);
+			return def;
+		} else if (def < front().lo) {
+			insert(def);
+			return def;
+		}
+		T n = front().hi;
+		if (ill < def) {
+			/* fd scenario */
+			if (n >= std::numeric_limits<T>::max())
+				return ill;
+		} else {
+			/* zcore handle scenario */
+			if (n >= ill)
+				return ill;
+		}
+		++n;
+		insert(n);
+		return n;
 	}
 
 #ifdef COMPILE_DIAG

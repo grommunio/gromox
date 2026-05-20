@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
@@ -10,6 +10,8 @@
 #include <gromox/rop_util.hpp>
 #include "common_util.hpp"
 #include "ics_state.hpp"
+
+using namespace gromox;
 
 static void ics_state_clear(ics_state *pstate)
 {
@@ -81,27 +83,27 @@ BINARY *ics_state::serialize()
 	if (pproplist == nullptr)
 		return NULL;
 	std::unique_ptr<BINARY, mdel> ser(pstate->pgiven->serialize());
-	if (ser == nullptr || pproplist->set(MetaTagIdsetGiven1, ser.get()) != 0)
+	if (ser == nullptr || pproplist->set(MetaTagIdsetGiven1, ser.get()) != ecSuccess)
 		return NULL;
 	ser.reset(pstate->pseen->serialize());
-	if (ser == nullptr || pproplist->set(MetaTagCnsetSeen, ser.get()) != 0)
+	if (ser == nullptr || pproplist->set(MetaTagCnsetSeen, ser.get()) != ecSuccess)
 		return NULL;
 	ser.reset();
 	
 	if (ICS_TYPE_CONTENTS == pstate->type) {
 		decltype(ser) s(pstate->pseen_fai->serialize());
-		if (s == nullptr || pproplist->set(MetaTagCnsetSeenFAI, s.get()) != 0)
+		if (s == nullptr || pproplist->set(MetaTagCnsetSeenFAI, s.get()) != ecSuccess)
 			return NULL;
 	}
 	
 	if (ICS_TYPE_CONTENTS == pstate->type &&
 	    !pstate->pread->empty()) {
 		decltype(ser) s(pstate->pread->serialize());
-		if (s == nullptr || pproplist->set(MetaTagCnsetRead, s.get()) != 0)
+		if (s == nullptr || pproplist->set(MetaTagCnsetRead, s.get()) != ecSuccess)
 			return NULL;
 	}
 	if (!ext_push.init(nullptr, 0, 0) ||
-	    ext_push.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
+	    ext_push.p_tpropval_a(*pproplist) != pack_result::ok)
 		return NULL;
 	pproplist.reset();
 	auto pbin = cu_alloc<BINARY>();
@@ -127,7 +129,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 	if (pbin->cb <= 16)
 		return TRUE;
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_tpropval_a(&propvals) != pack_result::ok)
 		return FALSE;	
 	for (unsigned int i = 0; i < propvals.count; ++i) {
 		const auto &pv = propvals.ppropval[i];

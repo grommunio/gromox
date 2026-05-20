@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <csignal>
@@ -29,25 +29,23 @@
 
 using namespace gromox;
 
-gromox::atomic_bool g_notify_stop;
+gromox::atomic_bool g_mda_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 std::string g_outgoing_smtp_url;
-static char *opt_config_file;
+static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
-static constexpr static_module g_dfl_mpc_plugins[] = {
+static constexpr generic_module g_dfl_mpc_plugins[] = {
 	{"libgxm_alias_resolve.so", HOOK_alias_resolve},
 	{"libgxm_exmdb_local.so", HOOK_exmdb_local},
 };
-static constexpr static_module g_dfl_svc_plugins[] = {
+static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
-	{"libgromox_auth.so/mgr", SVC_authmgr},
 	{"libgxs_ruleproc.so", SVC_ruleproc},
 };
 
@@ -83,6 +81,8 @@ static bool delivery_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (cfg == nullptr)
+		return false;
 	mlog_init("gromox-delivery", cfg->get_value("lda_log_file"),
 		cfg->get_ll("lda_log_level"), cfg->get_value("running_identity"));
 	return true;
@@ -92,11 +92,15 @@ int main(int argc, char **argv)
 { 
 	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
+	HXopt6_auto_result argp;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-delivery");
 	setup_signal_defaults();
@@ -118,7 +122,9 @@ int main(int argc, char **argv)
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr || !delivery_reload_config(g_config_file))
+	if (g_config_file == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
+	if (!delivery_reload_config(g_config_file))
 		return EXIT_FAILURE;
 
 	auto str_val = g_config_file->get_value("host_id");
@@ -186,10 +192,6 @@ int main(int argc, char **argv)
 
 	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, threads_max + free_contexts});
-	if (service_run_early() != 0) {
-		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
-		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
     if (0 != service_run()) {
@@ -202,7 +204,12 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	auto dummy_sk = HX_local_listen(PKGRUNDIR "/da-runcheck");
 	if (dummy_sk < 0) {
-		mlog(LV_ERR, "gromox-delivery is already running");
+		errno = EPERM;
+		if (errno == EADDRINUSE)
+			mlog(LV_ERR, "gromox-delivery is already running");
+		else
+			mlog(LV_ERR, "Impossible to determine if gromox-delivery is (or is not) already running. "
+			     "Creating the %s/da-runcheck socket yielded: %s", PKGRUNDIR, strerror(errno));
 		return EXIT_FAILURE;
 	}
 
@@ -223,7 +230,7 @@ int main(int argc, char **argv)
 
 	retcode = EXIT_SUCCESS;
 	mlog(LV_INFO, "system: LDA is now running");
-	while (!g_notify_stop) {
+	while (!g_mda_stop) {
         sleep(3);
 		if (g_hup_signalled.exchange(false)) {
 			delivery_reload_config(nullptr);
@@ -236,5 +243,5 @@ int main(int argc, char **argv)
 
 static void term_handler(int signo)
 {
-	g_notify_stop = true;
+	g_mda_stop = true;
 }

@@ -40,16 +40,15 @@ extern GX_EXPORT uint32_t rop_util_unix_to_rtime(time_t);
 extern GX_EXPORT time_t rop_util_rtime_to_unix(uint32_t);
 extern GX_EXPORT uint64_t rop_util_current_nttime();
 extern GX_EXPORT GUID rop_util_binary_to_guid(const BINARY *pbin);
-extern GX_EXPORT void rop_util_guid_to_binary(GUID guid, BINARY *pbin);
 extern GX_EXPORT void rop_util_free_binary(BINARY *pbin);
 
 namespace gromox {
 
 extern GX_EXPORT uint64_t apptime_to_nttime_approx(double);
-extern GX_EXPORT uint32_t props_to_defer_interval(const TPROPVAL_ARRAY &);
-extern GX_EXPORT errno_t make_inet_msgid(char *, size_t, uint32_t);
-extern GX_EXPORT const TZRULE *active_rule_for_year(const TIMEZONEDEFINITION *, int);
+extern GX_EXPORT uint64_t props_to_defer_interval(const TPROPVAL_ARRAY &);
+extern GX_EXPORT ec_error_t make_inet_msgid(char *, size_t, uint32_t);
+extern GX_EXPORT const TZRULE *active_rule_for_year(const TZDEF *, int);
 extern GX_EXPORT time_t timegm_dststd_start(const int, const SYSTEMTIME *);
-extern GX_EXPORT bool offset_from_tz(const TIMEZONEDEFINITION *, time_t, int64_t &);
+extern GX_EXPORT bool offset_from_tz(const TZDEF *, time_t, int64_t &);
 
 }

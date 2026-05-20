@@ -15,6 +15,7 @@ enum plugin_op {
 	PLUGIN_RELOAD,
 	PLUGIN_EARLY_INIT,
 	PLUGIN_REPORT,
+	PLUGIN_QUENCH_ASYNC, /* stop async operations */
 };
 
 /* enumeration for the return value of xxx_load_library */
@@ -53,6 +54,7 @@ struct HPM_INTERFACE;
 struct http_request;
 struct HTTP_AUTH_INFO;
 using HOOK_FUNCTION = gromox::hook_result (*)(MESSAGE_CONTEXT *);
+using rpc_response = gromox::universal_base;
 
 struct dlfuncs {
 	void *(*symget)(const char *service, const char *requestor, const std::type_info &);
@@ -61,7 +63,6 @@ struct dlfuncs {
 	const char *(*get_data_path)();
 	unsigned int (*get_context_num)();
 	const char *(*get_host_ID)();
-	const char *(*get_prog_id)();
 	void *(*ndr_stack_alloc)(int, size_t);
 	BOOL (*rpc_new_stack)();
 	void (*rpc_free_stack)();
@@ -78,7 +79,7 @@ struct dlfuncs {
 		void (*activate_async_id)(uint32_t);
 		void (*cancel_async_id)(uint32_t);
 		BOOL (*rpc_build_env)(int);
-		void (*async_reply)(uint32_t, void *);
+		void (*async_reply)(uint32_t, const rpc_response *);
 	} proc;
 
 	// HPM_
@@ -121,30 +122,28 @@ extern "C" GX_EXPORT PLUGIN_DMAIN
 
 namespace gromox {
 
-struct service_node {
+struct GX_EXPORT service_node {
 	void *service_addr = nullptr;
 	std::string service_name;
-};
-
-/**
- * @path: can be nullptr in case of g_system_image
- */
-struct GX_EXPORT static_module {
-	const char *path = nullptr;
-	PLUGIN_MAIN efunc = nullptr;
 };
 
 /**
  * @file_name: can be nullptr in case of g_system_image
  */
 struct GX_EXPORT generic_module {
-	generic_module() = default;
+	enum class state : uint8_t {
+		uninit = 0, early_start, early_done, init_start, init_done,
+	};
+
+	constexpr generic_module() = default;
+	constexpr generic_module(const char *a, PLUGIN_MAIN b) : file_name(a), lib_main(b) {}
 	generic_module(generic_module &&) noexcept;
 	void operator=(generic_module &&) noexcept = delete;
+	bool operator==(const generic_module &) const noexcept;
 
 	const char *file_name = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
-	bool completed_init = false;
+	state init_state = state::uninit;
 };
 
 }

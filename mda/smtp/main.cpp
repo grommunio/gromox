@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <chrono>
@@ -11,7 +11,6 @@
 #include <fcntl.h>
 #include <memory>
 #include <netdb.h>
-#include <pthread.h>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -21,7 +20,6 @@
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
-#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -32,6 +30,7 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
 #include <gromox/svc_loader.hpp>
@@ -45,25 +44,18 @@ using namespace gromox;
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 std::string g_rcpt_delimiter;
-static char *opt_config_file;
+static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
-static pthread_t g_thr_id;
-static gromox::atomic_bool g_stop_accept;
-static std::string g_listener_addr;
-static int g_listener_sock = -1, g_listener_ssl_sock = -1;
 static unsigned int g_haproxy_level;
-uint16_t g_listener_port, g_listener_ssl_port;
-static pthread_t g_ssl_thr_id;
 
-static struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
-static constexpr static_module g_dfl_svc_plugins[] = {
+static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},
 	{"libgromox_authz.so/dnsbl", SVC_dnsbl_filter},
 	{"libgromox_authz.so/user", SVC_user_filter},
@@ -84,9 +76,6 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"context_max_mem", "2M", CFG_SIZE},
 	{"context_num", "0", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
-	{"lda_listen_addr", "::"},
-	{"lda_listen_port", "25"},
-	{"lda_listen_tls_port", "0"},
 	{"lda_log_file", "-"},
 	{"lda_log_level", "4" /* LV_NOTICE */},
 	{"lda_thread_charge_num", "400", CFG_SIZE, "4"},
@@ -116,6 +105,8 @@ static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (gxcfg == nullptr)
+		return false;
 	g_rcpt_delimiter = znul(gxcfg->get_value("lda_recipient_delimiter"));
 	g_haproxy_level = gxcfg->get_ll("lda_accept_haproxy");
 	if (g_haproxy_level > 0)
@@ -123,22 +114,15 @@ static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 	return true;
 }
 
-static void *smls_thrwork(void *arg)
+static int smls_thrwork(generic_connection &&conn)
 {
-	const bool use_tls = reinterpret_cast<uintptr_t>(arg);
-	auto sv_sock = use_tls ? g_listener_ssl_sock : g_listener_sock;
+	const bool use_tls = conn.mark == M_TLS_CONN;
 	
-	while (true) {
-		auto conn = generic_connection::accept(sv_sock, g_haproxy_level, &g_stop_accept);
-		if (conn.sockd == -2)
-			break;
-		else if (conn.sockd < 0)
-			continue;
 		if (fcntl(conn.sockd, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1412: fcntl: %s", strerror(errno));
 		static constexpr int flag = 1;
 		if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			mlog(LV_WARN, "W-1413: setsockopt: %s", strerror(errno));
+			/* ignore */;
 		auto ctx = static_cast<smtp_context *>(contexts_pool_get_context(sctx_status::free));
 		/* there's no context available in contexts pool, close the connection*/
 		if (ctx == nullptr) {
@@ -148,11 +132,11 @@ static void *smls_thrwork(void *arg)
 			auto str2 = resource_get_smtp_code(401, 2, &sl);
 			auto host_ID = znul(g_config_file->get_value("host_id"));
 			char buff[1024];
-			auto len = snprintf(buff, std::size(buff), "%s%s%s",
+			auto len = gx_snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 		ctx->type = sctx_status::constructing;
 		if (!use_tls) {
@@ -162,7 +146,7 @@ static void *smls_thrwork(void *arg)
 			auto str2 = resource_get_smtp_code(202, 2, &sl);
 			auto host_ID = znul(g_config_file->get_value("host_id"));
 			char buff[1024];
-			auto len = snprintf(buff, std::size(buff), "%s%s%s",
+			auto len = gx_snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
@@ -175,99 +159,51 @@ static void *smls_thrwork(void *arg)
 		 */
 		ctx->polling_mask = POLLING_READ;
 		contexts_pool_insert(ctx, sctx_status::polling);
-	}
-	return nullptr;
-}
 
-static void listener_init(const char *addr, uint16_t port, uint16_t ssl_port)
-{
-	g_listener_addr = addr;
-	g_listener_port = port;
-	g_listener_ssl_port = ssl_port;
-	g_stop_accept = false;
-}
-
-static int listener_run()
-{
-	g_listener_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_port);
-	if (g_listener_sock < 0) {
-		mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
-		       g_listener_port, strerror(-g_listener_sock));
-		return -1;
-	}
-	gx_reexec_record(g_listener_sock);
-	if (g_listener_ssl_port > 0) {
-		g_listener_ssl_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_ssl_port);
-		if (g_listener_ssl_sock < 0) {
-			mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
-			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
-			return -1;
-		}
-		gx_reexec_record(g_listener_ssl_sock);
-	}
 	return 0;
 }
 
-static int listener_trigger_accept()
+static int smtp_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
+    const char *gxkey, const config_file &oldcfg, const char *oldkey,
+    const char *oldportkey, unsigned int mark)
 {
-	auto ret = pthread_create4(&g_thr_id, nullptr, smls_thrwork,
-	           reinterpret_cast<void *>(uintptr_t(false)));
-	if (ret != 0) {
-		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
+	auto line = gxcfg.get_value(gxkey);
+	if (line != nullptr)
+		return ctx.add_bunch(line, mark);
+	auto host = oldcfg.get_value(oldkey);
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldkey,
+			gxcfg.m_filename.c_str(), gxkey);
+	else
+		host = "::";
+	auto ps = oldcfg.get_value(oldportkey);
+	uint16_t port = mark == M_UNENCRYPTED_CONN ? 25 : 465;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldportkey,
+			gxcfg.m_filename.c_str(), gxkey);
+		port = strtoul(ps, nullptr, 0);
+	}
+	if (port != 0 &&
+	    ctx.add_inet(host, port, mark) != 0)
 		return -1;
-	}
-	pthread_setname_np(g_thr_id, "accept");
-	if (g_listener_ssl_port > 0) {
-		ret = pthread_create4(&g_ssl_thr_id, nullptr, smls_thrwork,
-		      reinterpret_cast<void *>(uintptr_t(true)));
-		if (ret != 0) {
-			mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
-			return -2;
-		}
-		pthread_setname_np(g_ssl_thr_id, "tls_accept");
-	}
 	return 0;
-}
-
-static void listener_stop_accept()
-{
-	g_stop_accept = true;
-	if (g_listener_sock >= 0)
-		shutdown(g_listener_sock, SHUT_RDWR); /* closed in listener_stop */
-	if (!pthread_equal(g_thr_id, {})) {
-		pthread_kill(g_thr_id, SIGALRM);
-		pthread_join(g_thr_id, nullptr);
-	}
-	if (g_listener_ssl_sock >= 0)
-		shutdown(g_listener_ssl_sock, SHUT_RDWR);
-	if (!pthread_equal(g_ssl_thr_id, {})) {
-		pthread_kill(g_ssl_thr_id, SIGALRM);
-		pthread_join(g_ssl_thr_id, nullptr);
-	}
-}
-
-static void listener_stop()
-{
-	if (g_listener_sock >= 0) {
-		close(g_listener_sock);
-		g_listener_sock = -1;
-	}
-	if (g_listener_ssl_sock >= 0) {
-		close(g_listener_ssl_sock);
-		g_listener_ssl_sock = -1;
-	}
 }
 
 int main(int argc, char **argv)
 { 
-	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
 	smtp_param scfg;
+	HXopt6_auto_result argp;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-delivery-queue");
 	setup_signal_defaults();
@@ -290,10 +226,11 @@ int main(int argc, char **argv)
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr)
-		return EXIT_FAILURE;
+	if (g_config_file == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
 	if (!dq_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 
 	mlog_init("gromox-delivery-queue", g_config_file->get_value("lda_log_file"),
 		g_config_file->get_ll("lda_log_level"),
@@ -382,12 +319,6 @@ int main(int argc, char **argv)
 	scfg.force_starttls = parse_bool(g_config_file->get_value("smtp_force_starttls"));
 	if (scfg.support_starttls && scfg.force_starttls)
 		mlog(LV_NOTICE, "dq: clients are required to use STARTTLS");
-	uint16_t listen_port = g_config_file->get_ll("lda_listen_port");
-	uint16_t listen_tls_port = g_config_file->get_ll("lda_listen_tls_port");
-	if (!scfg.support_starttls && listen_tls_port > 0)
-		listen_tls_port = 0;
-	if (listen_tls_port > 0)
-		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
 
 	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");
 	HX_unit_size(temp_buff, std::size(temp_buff), scfg.max_mail_length, 1024, 0);
@@ -403,20 +334,19 @@ int main(int argc, char **argv)
 	else
 		scfg.cmd_prot = 0;
 
-	listener_init(g_config_file->get_value("lda_listen_addr"),
-		listen_port, listen_tls_port);
-	if (0 != listener_run()) {
-		mlog(LV_ERR, "system: failed to start listener");
+	listener_ctx listener;
+	if (smtp_parse_binds(listener, *gxconfig, "lda_listen", *g_config_file,
+	    "lda_listen_addr", "lda_listen_port", M_UNENCRYPTED_CONN) != 0)
 		return EXIT_FAILURE;
-	}
-	auto cleanup_4 = HX::make_scope_exit(listener_stop);
+	if (scfg.support_starttls &&
+	    smtp_parse_binds(listener, *gxconfig, "lda_listen_tls", *g_config_file,
+	    "lda_listen_addr", "lda_listen_tls_port", M_TLS_CONN) != 0)
+		return EXIT_FAILURE;
+	listener.m_haproxy_level = g_haproxy_level;
+	listener.m_thread_name   = "accept";
 
 	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, scfg.context_num});
-	if (service_run_early() != 0) {
-		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
-		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	if (0 != service_run()) { 
@@ -461,12 +391,12 @@ int main(int argc, char **argv)
 	auto cleanup_26 = HX::make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
-	if (listener_trigger_accept() != 0) {
-		mlog(LV_ERR, "system: failed accept()");
+	auto err = listener.watch_start(g_notify_stop, smls_thrwork);
+	if (err != 0) {
+		mlog(LV_ERR, "listener.thread_start: %s", strerror(err));
 		return EXIT_FAILURE;
 	}
 	
-	retcode = EXIT_SUCCESS;
 	mlog(LV_INFO, "system: delivery-queue / SMTP daemon is now running");
 	while (!g_notify_stop) {
 		sleep(3);
@@ -475,8 +405,7 @@ int main(int argc, char **argv)
 			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}
-	listener_stop_accept();
-	return retcode;
+	return EXIT_SUCCESS;
 }
 
 static void term_handler(int signo)

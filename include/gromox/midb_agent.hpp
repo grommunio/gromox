@@ -20,10 +20,16 @@ enum {
 	FLAG_DELETED  = 0x8,
 	FLAG_SEEN     = 0x10,
 	FLAG_DRAFT    = 0x20,
+	FLAG_FORWARDED= 0x40,
+
+	/* mnemonics */
+	FLAG_ALL      = 0x4F,
+
+	/* internal */
 	FLAG_LOADED   = 0x80,
 };
 
-struct MSG_UNIT {
+struct GX_EXPORT MSG_UNIT {
 	std::string file_name;
 	size_t size = 0;
 	bool b_deleted = false;
@@ -40,6 +46,7 @@ extern GX_EXPORT int summary_folder(const char *path, const std::string &folder,
 extern GX_EXPORT int make_folder(const char *path, const std::string &folder, int *perrno);
 extern GX_EXPORT int remove_folder(const char *path, const std::string &folder, int *perrno);
 extern GX_EXPORT int ping_mailbox(const char *path, int *perrno);
+extern GX_EXPORT int sync_mailbox(const char *path, uint64_t folder_id, int *err);
 extern GX_EXPORT int rename_folder(const char *path, const std::string &src_name, const std::string &dst_name, int *perrno);
 extern GX_EXPORT int subscribe_folder(const char *path, const std::string &folder, int *perrno);
 extern GX_EXPORT int unsubscribe_folder(const char *path, const std::string &folder, int *perrno);

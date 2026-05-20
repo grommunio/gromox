@@ -8,63 +8,40 @@
 struct attachment_content;
 struct PROPERTY_XNAME;
 
-struct GX_EXPORT property_groupinfo {
-	property_groupinfo(uint32_t group_id);
-	~property_groupinfo();
-	property_groupinfo(property_groupinfo &&) noexcept;
-	void operator=(property_groupinfo &&) noexcept = delete;
-	bool append_internal(PROPTAG_ARRAY *);
-	bool get_partial_index(uint32_t proptag, uint32_t *idx) const;
-
-	uint32_t group_id = 0, reserved = 0, count = 0;
-	PROPTAG_ARRAY *pgroups = nullptr;
-};
-using PROPERTY_GROUPINFO = property_groupinfo;
-
 struct GX_EXPORT attachment_list {
 	void remove(uint16_t index);
 	BOOL append_internal(attachment_content *);
 	attachment_list *dup() const;
 	gromox::deref_iterator<attachment_content> begin() { return pplist; }
 	gromox::deref_iterator<attachment_content> end() { return pplist + count; }
+	gromox::const_deref_iterator<attachment_content> begin() const { return pplist; }
+	gromox::const_deref_iterator<attachment_content> end() const { return pplist + count; }
+	gromox::const_deref_iterator<attachment_content> cbegin() const { return pplist; }
+	gromox::const_deref_iterator<attachment_content> cend() const { return pplist + count; }
 
-	uint16_t count;
-	attachment_content **pplist;
+	uint16_t count = 0;
+	attachment_content **pplist = nullptr;
 };
 using ATTACHMENT_LIST = attachment_list;
 
-struct MESSAGE_CHILDREN {
-	TARRAY_SET *prcpts;
-	ATTACHMENT_LIST *pattachments;
+struct GX_EXPORT message_children {
+	TARRAY_SET *prcpts = nullptr;
+	ATTACHMENT_LIST *pattachments = nullptr;
 };
+using MESSAGE_CHILDREN = message_children;
 
-struct CHANGE_PART {
-	uint32_t index;
-	TPROPVAL_ARRAY proplist;
-};
-
-struct MSGCHG_PARTIAL {
-	const PROPERTY_GROUPINFO *pgpinfo; /* this memory is only a reference */
-	uint32_t group_id;
-	uint32_t count;
-	CHANGE_PART *pchanges;
-	MESSAGE_CHILDREN children;
-};
-
-struct PROGRESS_MESSAGE {
-	uint32_t message_size;
+struct GX_EXPORT progress_message {
+	uint32_t message_size = 0;
 	BOOL b_fai;
 };
+using PROGRESS_MESSAGE = progress_message;
 
-struct PROGRESS_INFORMATION {
-	uint16_t version;
-	uint16_t padding1;
-	uint32_t fai_count;
-	uint64_t fai_size;
-	uint32_t normal_count;
-	uint32_t padding2;
-	uint64_t normal_size;
+struct GX_EXPORT progress_information {
+	uint16_t version = 0, padding1 = 0, padding2 = 0;
+	uint32_t fai_count = 0, normal_count = 0;
+	uint64_t fai_size = 0, normal_size = 0;
 };
+using PROGRESS_INFORMATION = progress_information;
 
 struct GX_EXPORT message_content {
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
@@ -72,8 +49,8 @@ struct GX_EXPORT message_content {
 	void set_attachments_internal(ATTACHMENT_LIST *);
 	message_content *dup() const;
 
-	TPROPVAL_ARRAY proplist;
-	MESSAGE_CHILDREN children;
+	TPROPVAL_ARRAY proplist{};
+	MESSAGE_CHILDREN children{};
 };
 using MESSAGE_CONTENT = message_content;
 
@@ -81,36 +58,38 @@ struct GX_EXPORT attachment_content {
 	void set_embedded_internal(message_content *);
 	attachment_content *dup() const;
 
-	TPROPVAL_ARRAY proplist; /* PR_ATTACH_NUM must be the first */
-	MESSAGE_CONTENT *pembedded;
+	TPROPVAL_ARRAY proplist{}; /* PR_ATTACH_NUM must be the first */
+	MESSAGE_CONTENT *pembedded = nullptr;
 };
 using ATTACHMENT_CONTENT = attachment_content;
 
-struct FOLDER_MESSAGES {
-	EID_ARRAY *pfai_msglst;
-	EID_ARRAY *pnormal_msglst;
+struct GX_EXPORT folder_messages {
+	EID_ARRAY *pfai_msglst = nullptr, *pnormal_msglst = nullptr;
 };
+using FOLDER_MESSAGES = folder_messages;
 
-struct GX_EXPORT FOLDER_CONTENT {
-	FOLDER_CONTENT();
-	FOLDER_CONTENT(FOLDER_CONTENT &&) noexcept;
-	~FOLDER_CONTENT();
-	void operator=(FOLDER_CONTENT &&) noexcept = delete;
-	BOOL append_subfolder_internal(FOLDER_CONTENT &&);
+struct GX_EXPORT folder_content {
+	folder_content();
+	folder_content(folder_content &&) noexcept;
+	~folder_content();
+	void operator=(folder_content &&) noexcept = delete;
+	bool append_subfolder_internal(folder_content &&);
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
 	void append_failist_internal(EID_ARRAY *);
 	void append_normallist_internal(EID_ARRAY *);
 
 	TPROPVAL_ARRAY proplist{};
 	FOLDER_MESSAGES fldmsgs{};
-	std::vector<FOLDER_CONTENT> psubflds;
+	std::vector<folder_content> psubflds;
 };
+using FOLDER_CONTENT = folder_content;
 
-struct GX_EXPORT FOLDER_CHANGES {
-	uint32_t count;
-	TPROPVAL_ARRAY *pfldchgs;
+struct GX_EXPORT folder_changes {
+	uint32_t count = 0;
+	TPROPVAL_ARRAY *pfldchgs = nullptr;
 	I_BEGIN_END(pfldchgs, count);
 };
+using FOLDER_CHANGES = folder_changes;
 
 extern GX_EXPORT attachment_content *attachment_content_init();
 extern GX_EXPORT void attachment_content_free(attachment_content *);

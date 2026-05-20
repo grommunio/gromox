@@ -20,7 +20,7 @@ enum cfg_flags {
  * 		If %CFG_ALIAS is in effect however, this specifies the actual key.
  * @min,@max:	clamp value to minimum/maximum (only if %CFG_SIZE,%CFG_TIME)
  */
-struct cfg_directive {
+struct GX_EXPORT cfg_directive {
 	const char *key = nullptr, *deflt = nullptr;
 	unsigned int flags = 0;
 	const char *min = nullptr, *max = nullptr;

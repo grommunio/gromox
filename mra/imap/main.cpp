@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <chrono>
@@ -10,8 +10,6 @@
 #include <cstring>
 #include <fcntl.h>
 #include <memory>
-#include <netdb.h>
-#include <pthread.h>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -21,12 +19,10 @@
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
-#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -34,6 +30,7 @@
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
 #include <gromox/svc_loader.hpp>
@@ -43,6 +40,7 @@
 #include "imap.hpp"
 
 using namespace gromox;
+using bind_list = std::vector<std::pair<std::string, uint16_t>>;
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
 E(judge_addr)
@@ -56,32 +54,25 @@ E(broadcast_unselect)
 #undef E
 
 bool g_rfc9051_enable;
-gromox::atomic_bool g_notify_stop;
+gromox::atomic_bool g_imap_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static char *opt_config_file;
+static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
 static thread_local std::unique_ptr<alloc_context> g_alloc_mgr;
 static thread_local unsigned int g_amgr_refcount;
-static pthread_t g_thr_id, g_ssl_thr_id;
-static gromox::atomic_bool g_stop_accept;
-static std::string g_listener_addr;
-static int g_listener_sock = -1, g_listener_ssl_sock = -1;
-static uint16_t g_listener_port;
 static unsigned int g_haproxy_level;
-uint16_t g_listener_ssl_port;
 
-static struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
-static constexpr static_module g_dfl_svc_plugins[] = {
+static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_event_proxy.so", SVC_event_proxy},
 	{"libgxs_event_stub.so", SVC_event_stub},
 	{"libgxs_midb_agent.so", SVC_midb_agent},
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},
 	{"libgromox_authz.so/dnsbl", SVC_dnsbl_filter},
 	{"libgromox_authz.so/user", SVC_user_filter},
@@ -108,9 +99,6 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"imap_force_starttls", "imap_force_tls", CFG_ALIAS},
 	{"imap_force_tls", "false", CFG_BOOL},
-	{"imap_listen_addr", "::"},
-	{"imap_listen_port", "143"},
-	{"imap_listen_tls_port", "0"},
 	{"imap_log_file", "-"},
 	{"imap_log_level", "4" /* LV_NOTICE */},
 	{"imap_rfc9051", "1", CFG_BOOL},
@@ -137,6 +125,8 @@ static bool imap_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 		fprintf(stderr, "config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (cfg == nullptr)
+		return false;
 	mlog_init("gromox-imap", cfg->get_value("imap_log_file"),
 		cfg->get_ll("imap_log_level"), cfg->get_value("running_identity"));
 	g_imapcmd_debug = cfg->get_ll("imap_cmd_debug");
@@ -188,21 +178,15 @@ static void system_services_stop()
 	service_release("broadcast_unselect", "system");
 }
 
-static void *imls_thrwork(void *arg)
+static int imls_thrwork(generic_connection &&conn)
 {
-	const bool use_tls = reinterpret_cast<uintptr_t>(arg);
-	auto sv_sock = use_tls ? g_listener_ssl_sock : g_listener_sock;
-	while (true) {
-		auto conn = generic_connection::accept(sv_sock, g_haproxy_level, &g_stop_accept);
-		if (conn.sockd == -2)
-			break;
-		else if (conn.sockd < 0)
-			continue;
+	const bool use_tls = conn.mark == M_TLS_CONN;
+
 		if (fcntl(conn.sockd, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1416: fcntl: %s", strerror(errno));
 		static constexpr int flag = 1;
 		if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			mlog(LV_WARN, "W-1417: setsockopt: %s", strerror(errno));
+			/* ignore */;
 		auto ctx = static_cast<imap_context *>(contexts_pool_get_context(sctx_status::free));
 		/* there's no context available in contexts pool, close the connection*/
 		if (ctx == nullptr) {
@@ -213,7 +197,7 @@ static void *imls_thrwork(void *arg)
 			    HXio_fullwrite(conn.sockd, imap_reply_str, string_length) < 0 ||
 			    HXio_fullwrite(conn.sockd, "\r\n", 2) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 		ctx->type = sctx_status::constructing;
 		/* pass the client ipaddr into the ipaddr filter */
@@ -223,7 +207,7 @@ static void *imls_thrwork(void *arg)
 			auto imap_reply_str = resource_get_imap_code(1816, 1);
 			auto imap_reply_str2 = resource_get_imap_code(1816, 2);
 			char buff[1024];
-			auto len = snprintf(buff, std::size(buff), "* %s%s%s",
+			auto len = gx_snprintf(buff, std::size(buff), "* %s%s%s",
 			           imap_reply_str, conn.client_addr, imap_reply_str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) != len)
 				/* ignore */;
@@ -231,7 +215,7 @@ static void *imls_thrwork(void *arg)
 				conn.client_addr, reason.c_str());
 			/* release the context */
 			contexts_pool_insert(ctx, sctx_status::free);
-			continue;
+			return 0;
 		}
 		if (!use_tls) {
 			char caps[128];
@@ -249,80 +233,13 @@ static void *imls_thrwork(void *arg)
 		 */
 		ctx->polling_mask = POLLING_READ;
 		contexts_pool_insert(ctx, sctx_status::polling);
-	}
-	return nullptr;
-}
 
-static void listener_init(const char *addr, uint16_t port, uint16_t ssl_port)
-{
-	g_listener_addr = addr;
-	g_listener_port = port;
-	g_listener_ssl_port = ssl_port;
-	g_stop_accept = false;
-}
-
-static int listener_run()
-{
-	g_listener_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_port);
-	if (g_listener_sock < 0) {
-		printf("[listener]: failed to create socket [*]:%hu: %s\n",
-		       g_listener_port, strerror(-g_listener_sock));
-		return -1;
-	}
-	gx_reexec_record(g_listener_sock);
-	if (g_listener_ssl_port > 0) {
-		g_listener_ssl_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_ssl_port);
-		if (g_listener_ssl_sock < 0) {
-			printf("[listener]: failed to create socket [*]:%hu: %s\n",
-			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
-			return -1;
-		}
-		gx_reexec_record(g_listener_ssl_sock);
-	}
 	return 0;
-}
-
-static int listener_trigger_accept()
-{
-	auto ret = pthread_create4(&g_thr_id, nullptr, imls_thrwork,
-	           reinterpret_cast<void *>(uintptr_t(false)));
-	if (ret != 0) {
-		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
-		return -1;
-	}
-	pthread_setname_np(g_thr_id, "accept");
-	if (g_listener_ssl_port > 0) {
-		ret = pthread_create4(&g_ssl_thr_id, nullptr, imls_thrwork,
-		      reinterpret_cast<void *>(uintptr_t(true)));
-		if (ret != 0) {
-			printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
-			return -2;
-		}
-		pthread_setname_np(g_ssl_thr_id, "tls_accept");
-	}
-	return 0;
-}
-
-static void listener_stop_accept()
-{
-	g_stop_accept = true;
-	if (g_listener_sock >= 0)
-		shutdown(g_listener_sock, SHUT_RDWR); /* closed in listener_stop */
-	if (!pthread_equal(g_thr_id, {})) {
-		pthread_kill(g_thr_id, SIGALRM);
-		pthread_join(g_thr_id, nullptr);
-	}
-	if (g_listener_ssl_sock >= 0)
-		shutdown(g_listener_ssl_sock, SHUT_RDWR);
-	if (!pthread_equal(g_ssl_thr_id, {})) {
-		pthread_kill(g_ssl_thr_id, SIGALRM);
-		pthread_join(g_ssl_thr_id, nullptr);
-	}
 }
 
 char *capability_list(char *dst, size_t z, imap_context *ctx)
 {
-	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE AUTH=LOGIN LITERAL+ LITERAL-", z);
+	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE LITERAL+ LITERAL-", z);
 	bool offer_tls = g_support_tls;
 	if (ctx != nullptr) {
 		if (ctx->connection.ssl != nullptr || ctx->is_authed())
@@ -330,21 +247,13 @@ char *capability_list(char *dst, size_t z, imap_context *ctx)
 	}
 	if (offer_tls)
 		HX_strlcat(dst, " STARTTLS", z);
+	if (g_force_tls && (ctx == nullptr || ctx->connection.ssl == nullptr))
+		HX_strlcat(dst, " LOGINDISABLED", z);
+	else
+		HX_strlcat(dst, " AUTH=LOGIN", z);
 	if (parse_bool(g_config_file->get_value("enable_rfc2971_commands")))
 		HX_strlcat(dst, " ID", z);
 	return dst;
-}
-
-static void listener_stop()
-{
-	if (g_listener_sock >= 0) {
-		close(g_listener_sock);
-		g_listener_sock = -1;
-	}
-	if (g_listener_ssl_sock >= 0) {
-		close(g_listener_ssl_sock);
-		g_listener_ssl_sock = -1;
-	}
 }
 
 void imrpc_build_env()
@@ -354,7 +263,7 @@ void imrpc_build_env()
 	++g_amgr_refcount;
 }
 
-static void imrpc_build_env1(const remote_svr &)
+static void imrpc_build_env1(bool pvt)
 {
 	imrpc_build_env();
 }
@@ -370,15 +279,46 @@ static void *imrpc_alloc(size_t z)
 	return g_alloc_mgr->alloc(z);
 }
 
+static int imap_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
+    const char *gxkey, const config_file &oldcfg, const char *oldkey,
+    const char *oldportkey, unsigned int mark)
+{
+	auto line = gxcfg.get_value(gxkey);
+	if (line != nullptr)
+		return ctx.add_bunch(line, mark);
+	auto host = oldcfg.get_value(oldkey);
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldkey,
+			gxcfg.m_filename.c_str(), gxkey);
+	else
+		host = "::";
+	auto ps = oldcfg.get_value(oldportkey);
+	uint16_t port = mark == M_UNENCRYPTED_CONN ? 143 : 993;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldportkey,
+			gxcfg.m_filename.c_str(), gxkey);
+		port = strtoul(ps, nullptr, 0);
+	}
+	if (port != 0 &&
+	    ctx.add_inet(host, port, mark) != 0)
+		return -1;
+	return 0;
+}
+
 int main(int argc, char **argv)
 { 
-	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
+	HXopt6_auto_result argp;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-imap");
 	setup_signal_defaults();
@@ -397,16 +337,15 @@ int main(int argc, char **argv)
 	                imap_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr)
-		return EXIT_FAILURE;
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (g_config_file == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
 	if (!imap_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 
-	uint16_t listen_port = g_config_file->get_ll("imap_listen_port");
-	uint16_t listen_tls_port = g_config_file->get_ll("imap_listen_tls_port");
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
 		std::string hn;
@@ -482,32 +421,34 @@ int main(int argc, char **argv)
 	}
 	
 	auto imap_force_tls = parse_bool(g_config_file->get_value("imap_force_tls"));
-	if (imap_support_tls && imap_force_tls)
-		printf("[imap]: imap MUST be running with TLS\n");
-	if (!imap_support_tls && listen_tls_port > 0)
-		listen_tls_port = 0;
-	if (listen_tls_port > 0)
-		printf("[system]: system TLS listening port %d\n", listen_tls_port);
+	if (imap_force_tls) {
+		if (!imap_support_tls) {
+			fprintf(stderr, "Cannot combine imap_force_tls=yes with imap_support_tls=no.\n");
+			return EXIT_FAILURE;
+		}
+		printf("[imap]: imap connections MUST be using TLS\n");
+	}
 
 	if (resource_run() != 0) {
 		printf("[system]: Failed to load resource\n");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_2 = HX::make_scope_exit(resource_stop);
-	listener_init(g_config_file->get_value("imap_listen_addr"),
-		listen_port, listen_tls_port);
-	if (0 != listener_run()) {
-		printf("[system]: fail to start listener\n");
+
+	listener_ctx listener;
+	if (imap_parse_binds(listener, *gxconfig, "imap_listen", *g_config_file,
+	    "imap_listen_addr", "imap_listen_port", M_UNENCRYPTED_CONN) != 0)
 		return EXIT_FAILURE;
-	}
-	auto cleanup_4 = HX::make_scope_exit(listener_stop);
+	if (imap_support_tls &&
+	    imap_parse_binds(listener, *gxconfig, "imap_listen_tls", *g_config_file,
+	    "imap_listen_addr", "imap_listen_tls_port", M_TLS_CONN) != 0)
+		return EXIT_FAILURE;
+
+	listener.m_haproxy_level = g_haproxy_level;
+	listener.m_thread_name   = "accept";
 
 	filedes_limit_bump(gxconfig->get_ll("imap_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, context_num});
-	if (service_run_early() != 0) {
-		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
-		return EXIT_FAILURE;
-	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	textmaps_init();
@@ -549,10 +490,10 @@ int main(int argc, char **argv)
 
 	exmdb_rpc_alloc = imrpc_alloc;
 	exmdb_rpc_free = [](void *) {};
-	exmdb_client.emplace(1, 0);
+	exmdb_client.emplace(UINT_MAX);
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
-	    EXMDB_CLIENT_ASYNC_CONNECT, imrpc_build_env1, imrpc_free_env, nullptr) != 0) {
+	    imrpc_build_env1, imrpc_free_env) != 0) {
 		mlog(LV_ERR, "Failed to start exmdb_client");
 		return EXIT_FAILURE;
 	}
@@ -566,25 +507,23 @@ int main(int argc, char **argv)
 	auto cleanup_18 = HX::make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
-	if (listener_trigger_accept() != 0) {
-		printf("[system]: fail trigger accept\n");
+	auto err = listener.watch_start(g_imap_stop, imls_thrwork);
+	if (err != 0) {
+		mlog(LV_ERR, "listener.thread_start: %s", strerror(err));
 		return EXIT_FAILURE;
 	}
-	
-	retcode = EXIT_SUCCESS;
 	printf("[system]: IMAP DAEMON is now running\n");
-	while (!g_notify_stop) {
+	while (!g_imap_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {
 			imap_reload_config();
 			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}
-	listener_stop_accept();
-	return retcode;
+	return EXIT_SUCCESS;
 }
 
 static void term_handler(int signo)
 {
-	g_notify_stop = true;
+	g_imap_stop = true;
 }

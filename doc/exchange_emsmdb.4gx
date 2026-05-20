@@ -1,33 +1,38 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH exchange_emsmdb 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-exchange_emsmdb(4gx) \(em http(8gx) processing plugin for the Wire Format
-Protocol (Outlook/Exchange RPCs).
+exchange_emsmdb(4gx) \(em Handler for the Wire Format
+Protocol (Outlook/Exchange RPCs) and Remote Operations Protocol
 .SH Description
-exchange_emsmdb is a processing plugin for http(8gx) which handles the remote
-procedure calls for the EMSMDB v1 and AsyncEMSMDB v1 RPC interfaces, as well as
-OXCROPS as issued by the EcDoRpcExt2 call or the MAPIHTTP EXECUTE call.
+exchange_emsmdb is a component of http(8gx) which handles (1.) the remote
+procedure calls for the EMSMDB v1 and AsyncEMSMDB v1 RPC interfaces, and (2.)
+the Remote Operations encoding protocol that is typically wrapped by EMSMDB's
+EcDoRpcExt2 call or MAPIHTTP's EXECUTE call.
 .PP
 EMSMDB is a DCE/RPC interface with just a few RPC calls (6 are still used
 today). ecDoRpcExt2, a call offered by that interface, takes an opaque byte
 buffer argument not interpreted by DCE/RPC. That byte buffer contains another
 protocol, "Remote Operation(s) Encoding Protocol" [OXCROPS]. No reason for this
 wrapping is given in the OXCRPC spec. MAPIHTTP runs OXCROPS directly without
-the extra EMSMDB framing.
+the extra DCERPC/EMSMDB framing.
 .PP
 OXCROPS consists of 130 calls that make up the mailbox protocol.
 .SH Configuration directives (gromox.cfg)
 The following directives are recognized when they appear in
 /etc/gromox/gromox.cfg.
 .TP
-\fBoutgoing_smtp_url\fP
-The SMTP server to use for outgoing mails. To use the local maildrop queue, set
-the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
-SMTP server is offline, submissions will be rejected (and mails stick around in
-Outbox or whatever folder they were submitted from).
+\fBemsmdb_compress_threshold\fP
+When a ROP response buffer has at least this many bytes, attempt to compress
+with LZXpress. (Use -1 to disable compression.) This format/implementation is
+underperforming in modern contexts: the rate is just about 60 MB/s on a 5950X
+CPU, which is a tenth of what zstd-1.5.7 achieves, and the compression ratio is
+somewhere between Unix compress(1) and gzip level 1.
 .br
-Default: \fIsendmail://localhost\fP
+Default: \fI-1\fP
+.TP
+\fBoutgoing_smtp_url\fP
+See gromox.cfg(5):outgoing_smtp_url.
 .SH Configuration directives (exchange_emsmdb.cfg)
 The following directives are recognized when they appear in
 /etc/gromox/exchange_emsmdb.cfg.
@@ -61,7 +66,7 @@ Maximum number of pending notifications for an EMSMDB session. [Content tables
 on search folders can rack up enormous amounts of notifications, so worry not
 upon seeing W-2305 warnings in the log.]
 .br
-Default: \fI1K\fP
+Default: \fI64K\fP
 .TP
 \fBemsmdb_max_cxh_per_user\fP
 The maximum number of EMSMDB sessions (CXH = RPC context handle) for one user.
@@ -78,14 +83,14 @@ logon (contrary to the name, not EMSMDB session) can have at any one time
 concurrently. Use 0 to indicate unlimited. On average, Outlook creates six ROP
 logons per mailbox that it opens.
 .br
-Default: \fI500\fP
+Default: \fI32768\fP
 .TP
-\fBemsmdb_private_folder_softdel\fP
+\fBemsmdb_private_folder_softdelete\fP
 Enables soft-delete support for folders in private stores. (This feature is
 experimental.) Public folders always have this on. (Take note that
 exmdb_provider.cfg:exmdb_private_folder_softdelete also need to be enabled.)
 .br
-Default: \fIno\fP
+Default: \fIyes\fP
 .TP
 \fBemsmdb_rop_chaining\fP
 0: Deactivate ROP chaining. 1: Enable ROP chaining for OL < 15 and OL >=
@@ -106,11 +111,6 @@ Default: \fI64M\fP
 \fBmax_ext_rule_length\fP
 Default: \fI510K\fP
 .TP
-\fBmax_mail_num\fP
-The maximum number of mails that a mailbox is allowed to have.
-.br
-Default: \fI1000000\fP
-.TP
 \fBmax_rcpt_num\fP
 The maximum number of recipients that an e-mail is allowed to have.
 .br
@@ -124,7 +124,7 @@ all ROPs. Note the daemon log level needs to be "debug" (6), too.
 Default: \fI0\fP
 .TP
 \fBsubmit_command\fP
-Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
+Default: \fI/usr/bin/php /usr/share/gromox/submit.php\fP
 .TP
 \fBx500_org_name\fP
 Default: (unspecified)
@@ -132,18 +132,19 @@ Default: (unspecified)
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification
 mails sent to originators
-.IP \(bu 4
-\fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
 .SH Outlook notes
 Outlook can be started with the \fB/rpcinfo\fP command-line parameter to
 display a status table about the RPC connections it has open. Alternatively,
 one can Ctrl-MouseBtn3 (right button) on the status tray icon to call up a
 context menu, from which "Connection status..." can be selected for the same.
 .SH Signals
-When SIGUSR1 is received by this module, it will dump an overview of current
-EMSMDB sessions to the configured log device (stderr/journal by default).
-EMSMDB sessions are not linked to any one HTTP connection in particular,
-and multiple HTTP connections may exercise one session.
+Upon receipt of SIGHUP, configuration files are re-read, but only a few select
+directives can be changed this way, as many parts do not implement reload.
+.PP
+Upon receipt of SIGUSR1, an overview of current EMSMDB sessions to the
+configured log device (stderr/journal by default). EMSMDB sessions are not
+linked to any one HTTP connection in particular, and multiple HTTP connections
+may exercise one session.
 .SH Normative references
 .IP \(bu 4
 DCERPC / C706: Technical Standard DCE 1.1: Remote Procedure Call by The Open

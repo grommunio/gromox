@@ -12,18 +12,18 @@ our $gen_mode = "";
 );
 
 if ($gen_mode eq "CLN" || $gen_mode eq "SDP") {
-	print "#include <$_>\n" for qw(cstring utility gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
+	print "#include <$_>\n" for qw(atomic cstring utility gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
 	if ($gen_mode eq "SDP") {
 		print "#include <$_>\n" for qw(gromox/clock.hpp gromox/exmdb_common_util.hpp gromox/exmdb_ext.hpp gromox/exmdb_provider_client.hpp gromox/exmdb_server.hpp);
 	}
 	print "using namespace gromox;\n";
 }
 if ($gen_mode eq "SDP") {
-	print "extern unsigned int g_exrpc_debug;\n";
-	print "unsigned int g_exrpc_debug;\n\n";
-	print "static void smlpc_log(bool ok, const char *dir, const char *func, gromox::time_point tstart, gromox::time_point tend)\n{\n";
+	print "extern std::atomic<unsigned int> g_exrpc_debug;\n";
+	print "std::atomic<unsigned int> g_exrpc_debug;\n\n";
+	print "static void lpc_log(bool ok, const char *dir, const char *func, gromox::time_point tstart, gromox::time_point tend)\n{\n";
 	print "\tif (g_exrpc_debug >= 2 || (!ok && g_exrpc_debug == 1))\n";
-	print "\t\tmlog(LV_DEBUG, \"SMLPC %s %s \%5luµs \%s\", dir, !ok ? \"ERR\" : \"ok \",\n";
+	print "\t\tmlog(LV_DEBUG, \"LPC %s %s \%5luµs \%s\", dir, !ok ? \"ERR\" : \"ok \",\n";
 	print "\t\t\tstatic_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()), func);\n";
 	print "}\n\n";
 }
@@ -43,13 +43,13 @@ while (<STDIN>) {
 	if ($gen_mode eq "SDP") {
 		my @anames = ("dir", map { $_->[1] } (@$iargs, @$oargs));
 		print "BOOL exmdb_client_local::$func($rbsig)\n{\n";
-		print "\tBOOL xb_private;\n\n";
-		print "\tif (!exmdb_client_is_local(dir, &xb_private))\n";
+		print "\tbool xb_private = false;\n\n";
+		print "\tif (!exmdb_client_can_use_lpc(dir, get_host_ID(), &xb_private))\n";
 		print "\t\treturn exmdb_client_remote::$func(".join(", ", @anames).");\n";
 		print "\tauto tstart = gromox::tp_now();\n";
 		print "\texmdb_server::build_env(EM_LOCAL | (xb_private ? EM_PRIVATE : 0), dir);\n";
 		print "\tauto xbresult = exmdb_server::$func(".join(", ", @anames).");\n";
-		print "\tsmlpc_log(xbresult, dir, \"$func\", tstart, gromox::tp_now());\n";
+		print "\tlpc_log(xbresult, dir, \"$func\", tstart, gromox::tp_now());\n";
 		print "\texmdb_server::free_env();\n";
 		print "\treturn xbresult;\n";
 		print "}\n\n";
@@ -74,7 +74,7 @@ while (<STDIN>) {
 	}
 
 	print "BOOL exmdb_client_remote::$func($rbsig)\n{\n";
-	print "\texreq_$func q{};\n\texresp_$func r{};\n";
+	print "\texreq_${func}::view_t q{};\n\texresp_$func r{};\n";
 	print "\n";
 	print "\tq.call_id = exmdb_callid::$func;\n";
 	print "\tq.dir = deconst(dir);\n";
@@ -89,8 +89,12 @@ while (<STDIN>) {
 	print "\tif (!exmdb_client_do_rpc(&q, &r))\n\t\treturn false;\n";
 	for (@$oargs) {
 		my($type, $field) = @$_;
-		print "\t", (substr($type, -1, 1) eq "&" ? "" : "*"),
-		      "$field = std::move(r.$field);\n";
+		if (substr($type, -1, 1) eq "&") {
+			print "\t$field = std::move(r.$field);\n";
+		} else {
+			print "\tif ($field != nullptr)\n";
+			print "\t\t*$field = std::move(r.$field);\n";
+		}
 	}
 	print "\treturn TRUE;\n}\n\n";
 }

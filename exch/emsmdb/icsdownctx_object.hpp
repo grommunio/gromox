@@ -36,8 +36,8 @@ struct icsdownctx_object final {
 
 	public:
 	~icsdownctx_object();
-	static std::unique_ptr<icsdownctx_object> create(logon_object *, folder_object *, uint8_t sync_type, uint8_t send_options, uint16_t sync_flags, const RESTRICTION *, uint32_t extra_flags, const PROPTAG_ARRAY *);
-	BOOL begin_state_stream(uint32_t state_property);
+	static std::unique_ptr<icsdownctx_object> create(logon_object *, folder_object *, uint8_t sync_type, uint8_t send_options, uint16_t sync_flags, const RESTRICTION *, uint32_t extra_flags, proptag_cspan);
+	bool begin_state_stream(gromox::proptag_t state);
 	BOOL continue_state_stream(const BINARY *stream_data);
 	BOOL end_state_stream();
 	BOOL check_started() const { return b_started; }
@@ -50,10 +50,9 @@ struct icsdownctx_object final {
 	folder_object *pfolder = nullptr;
 	std::unique_ptr<ics_state> pstate; /* public member */
 	std::string f_state_stream;
-	uint32_t state_property = 0;
+	gromox::proptag_t state_property{};
 	BOOL b_started = false;
 	ics_flow_list flow_list;
-	std::vector<uint32_t> group_list;
 	uint64_t last_readcn = 0, last_changenum = 0;
 	PROGRESS_INFORMATION *pprogtotal = nullptr;
 	EID_ARRAY *pmessages = nullptr, *pdeleted_messages = nullptr;
@@ -62,7 +61,7 @@ struct icsdownctx_object final {
 	uint8_t send_options = 0;
 	uint16_t sync_flags = 0;
 	uint32_t extra_flags = 0, divisor = 1;
-	PROPTAG_ARRAY *pproptags = nullptr;
+	proptag_vector pproptags;
 	RESTRICTION *prestriction = nullptr;
 	uint64_t total_steps = 0, progress_steps = 0, next_progress_steps = 0;
 };

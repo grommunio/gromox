@@ -1,4 +1,4 @@
-AC_INIT([gromox], [2.45])
+AC_INIT([gromox], [3.7])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
@@ -8,6 +8,7 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT([disable-static])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
+AC_PROG_CC
 AC_PROG_CXX
 AM_CONDITIONAL([WITH_GNU_LD], [test "$with_gnu_ld" = yes])
 
@@ -53,6 +54,10 @@ AS_IF([test "$cxxmode" = error], [
 ])
 my_CXXFLAGS="$my_CXXFLAGS${cxxmode}"
 
+AC_ARG_ENABLE([private-headers],
+	[AS_HELP_STRING([--enable-private-headers], [Do copy header files during \`make install\`])],
+	[install_headers="$enableval"], [install_headers=no])
+AM_CONDITIONAL([ENABLE_PRIVATE_HEADERS], [test "$install_headers" = yes])
 AC_ARG_WITH([asan], AS_HELP_STRING([--with-asan], [Activate Address Sanitizer]),
 	[
 	my_CFLAGS="$my_CFLAGS -fsanitize=address"
@@ -66,29 +71,22 @@ NO_VSYM=""
 AC_ARG_WITH([ubsan], AS_HELP_STRING([--with-ubsan], [Activate Undefined Behavior Sanitizer]), [
 	my_CFLAGS="$my_CFLAGS -fsanitize=undefined"
 	my_CXXFLAGS="$my_CXXFLAGS -fsanitize=undefined"
-	my_LDFLAGS="$my_CXXFLAGS -fsanitize=undefined"
+	my_LDFLAGS="$my_LDFLAGS -fsanitize=undefined"
 	NO_VSYM=1
 ])
-AS_IF([test -n "$LD" && $LD -z help >/dev/null 2>/dev/null], [
-	with_sun_ld=yes
+AC_ARG_WITH([tsan], AS_HELP_STRING([--with-tsan], [Activate Undefined Behavior Sanitizer]), [
+	my_CFLAGS="$my_CFLAGS -fsanitize=thread"
+	my_CXXFLAGS="$my_CXXFLAGS -fsanitize=thread"
+	my_LDFLAGS="$my_LDFLAGS -fsanitize=thread"
 	NO_VSYM=1
-], [with_sun_ld=no])
+])
 AS_IF([test -z "$NO_VSYM"], [
 	my_CFLAGS="$my_CFLAGS -fvisibility=hidden"
 	my_CXXFLAGS="$my_CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
 ])
-AM_CONDITIONAL([WITH_SUN_LD], [test "$with_sun_ld" = yes])
+AS_IF([test "$with_gnu_ld" != yes], [NO_VSYM=1])
 AC_SUBST([NO_VSYM])
 
-
-AC_ARG_WITH([unitdir],
-	[AS_HELP_STRING([--with-unitdir=PATH], [Path to systemd service unit directory])],
-	[unitdir="$withval"],
-	[
-		unitdir=$("$PKG_CONFIG" systemd --variable systemdsystemunitdir 2>/dev/null)
-		AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
-	])
-AC_SUBST([unitdir])
 
 dnl
 dnl The cstring header comes from the compiler, but ::strchr comes from the
@@ -124,10 +122,18 @@ PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 ])
 PKG_CHECK_MODULES([gss], [krb5-gssapi], [
 	AC_DEFINE([HAVE_GSSAPI], [1])
-], [:])
-PKG_CHECK_MODULES([libHX], [libHX >= 4.27])
+	have_gssapi=1
+], [
+	PKG_CHECK_MODULES([gss], [libgssglue], [
+		AC_DEFINE([HAVE_GSSAPI], [1])
+		have_gssapi=1
+	], [
+		have_gssapi=0
+	])
+])
+PKG_CHECK_MODULES([libHX], [libHX >= 4.28])
 PKG_CHECK_MODULES([libcrypto], [libcrypto])
-PKG_CHECK_MODULES([libcurl], [libcurl])
+PKG_CHECK_MODULES([libcurl], [libcurl], [have_curl=1], [have_curl=0])
 PKG_CHECK_MODULES([libesedb], [libesedb], [have_esedb=1], [have_esedb=0])
 PKG_CHECK_MODULES([libldap], [ldap], [], [
 	AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
@@ -137,7 +143,7 @@ PKG_CHECK_MODULES([libldap], [ldap], [], [
 PKG_CHECK_MODULES([libolecf], [libolecf], [have_olecf=1], [have_olecf=0])
 PKG_CHECK_MODULES([libpff], [libpff], [have_pff=1], [have_pff=0])
 PKG_CHECK_MODULES([libssl], [libssl])
-PKG_CHECK_MODULES([libxml2], [libxml-2.0])
+PKG_CHECK_MODULES([libxml2], [libxml-2.0 >= 2.7.3])
 PKG_CHECK_MODULES([libxxhash], [libxxhash >= 0.7], [have_xxhash=1], [have_xxhash=0])
 PKG_CHECK_MODULES([libzstd], [libzstd >= 1.4])
 PKG_CHECK_MODULES([sqlite], [sqlite3])
@@ -149,14 +155,16 @@ have_pamheader=""
 AC_CHECK_HEADERS([crypt.h syslog.h])
 AC_CHECK_HEADERS([sys/epoll.h sys/event.h sys/ioctl.h sys/random.h sys/vfs.h sys/xattr.h])
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
+AM_CONDITIONAL([HAVE_CURL], [test "$have_curl" = 1])
 AM_CONDITIONAL([HAVE_ESEDB], [test "$have_esedb" = 1])
+AM_CONDITIONAL([HAVE_GSSAPI], [test "$have_gssapi" = 1])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_OLECF], [test "$have_olecf" = 1])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])
 AM_CONDITIONAL([HAVE_XXHASH], [test "$have_xxhash" = 1])
 AS_IF([test "$have_esedb" = 1], [AC_DEFINE([HAVE_ESEDB], [1], [])])
 AS_IF([test "$have_xxhash" = 1], [AC_DEFINE([HAVE_XXHASH], [1], [])])
-AC_CHECK_FUNCS([fsetxattr posix_fadvise])
+AC_CHECK_FUNCS([epoll_pwait2 fsetxattr posix_fadvise renameat2])
 AC_SEARCH_LIBS([crypt], [crypt], [crypt_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([dlopen], [dl], [dl_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([ns_initparse], [resolv], [resolv_LIBS="$LIBS"; LIBS=""])
@@ -239,8 +247,17 @@ AC_MSG_RESULT([$mysql_CFLAGS])
 AC_MSG_CHECKING([for MySQL libs])
 AC_MSG_RESULT([$mysql_LIBS])
 
-sysusersdir=$("$PKG_CONFIG" systemd --variable sysusersdir 2>/dev/null)
-tmpfilesdir=$("$PKG_CONFIG" systemd --variable tmpfilesdir 2>/dev/null)
+AC_ARG_WITH([unitdir],
+	[AS_HELP_STRING([--with-unitdir=PATH], [Path to systemd service unit directory])],
+	[unitdir="$withval"],
+	[
+		unitdir="$($PKG_CONFIG systemd --variable systemdsystemunitdir 2>/dev/null)"
+		AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
+	])
+AC_SUBST([unitdir])
+
+sysusersdir="$($PKG_CONFIG systemd --variable sysusersdir 2>/dev/null)"
+tmpfilesdir="$($PKG_CONFIG systemd --variable tmpfilesdir 2>/dev/null)"
 AC_ARG_WITH([dcprefix],
 	[AS_HELP_STRING([Extra path inserted for distcheck])],
 	[dcprefix="$withval"])
@@ -259,7 +276,7 @@ AC_ARG_WITH([php], [
 	[PHP_CONFIG="$withval"],
 	[
 	dnl OpenBSD uses php-config-N, Debian php-configN
-	AC_PATH_PROGS([PHP_CONFIG], [php-config php-config-8.3 php-config8.3 php-config83 php-config-8.2 php-config8.2 php-config82 php-config-8.1 php-config8.1 php-config81 php-config-8.0 php-config8.0 php-config80 php-config-7.4 php-config7.4 php-config74])
+	AC_PATH_PROGS([PHP_CONFIG], [php-config php-config-8.7 php-config87 php-config-8.6 php-config86 php-config-8.5 php-config85 php-config-8.4 php-config84 php-config-8.3 php-config8.3 php-config83 php-config-8.2 php-config8.2 php-config82 php-config-8.1 php-config8.1 php-config81 php-config-8.0 php-config8.0 php-config80 php-config-7.4 php-config7.4 php-config74])
 	dnl Set something so the error messages make more sense
 	AS_IF([test -z "$PHP_CONFIG"], [PHP_CONFIG="php-config"])
 ])
@@ -282,3 +299,4 @@ AS_IF([test -z "$cxxmode"], [AC_MSG_RESULT([*** No usable -std= argument was det
 AC_LANG_POP([C++])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
+echo "Install private headers: $install_headers"

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <csignal>
@@ -53,12 +53,16 @@ enum {
 	HANDLE_EXCHANGE_ASYNCEMSMDB = 3,
 };
 
-struct ECDOASYNCWAITEX_IN {
-	CONTEXT_HANDLE acxh;
+using rpc_request = gromox::universal_base;
+using rpc_response = gromox::universal_base;
+
+/* warning: replicated in mh/emsmdb.cpp, definitions must match! */
+struct ECDOASYNCWAITEX_IN final : public rpc_request {
+	ACXH acxh;
 	uint32_t flags_in;
 };
 
-struct ECDOASYNCWAITEX_OUT {
+struct ECDOASYNCWAITEX_OUT final : public rpc_response {
 	uint32_t flags_out; ///< record context_id in the variable for asyncemsmdb_wakeup_proc
 	int32_t result;
 };
@@ -78,10 +82,17 @@ struct EMSMDB_HANDLE2 : public EMSMDB_HANDLE
 };
 
 struct notification_ctx {
-	uint8_t pending_status = 0, notification_status = 0;
+	notification_ctx() = default;
+	notification_ctx(notification_ctx &&o) noexcept;
+	void clear();
+
+	uint8_t pending_status = PENDING_STATUS_NONE;
+	uint8_t notification_status = NOTIFICATION_STATUS_NONE;
 	GUID session_guid{};
 	time_point pending_time{}; ///< Since when the connection is pending
 	wallclock::time_point wall_start_time{};
+
+	std::mutex lock; /* guards all previous members */
 };
 
 }
@@ -96,11 +107,11 @@ static int emsmdb_retr(int context_id);
 static void emsmdb_term(int context_id);
 static void asyncemsmdb_wakeup_proc(int context_id, BOOL b_pending);
 
-static int (*asyncemsmdb_interface_async_wait)(uint32_t async_id, ECDOASYNCWAITEX_IN *, ECDOASYNCWAITEX_OUT *);
+static int (*asyncemsmdb_interface_async_wait)(uint32_t async_id, const ECDOASYNCWAITEX_IN *, ECDOASYNCWAITEX_OUT *);
 static void (*asyncemsmdb_interface_register_active)(void *);
 static void (*asyncemsmdb_interface_remove)(CONTEXT_HANDLE *);
 
-static ec_error_t (*emsmdb_interface_connect_ex)(uint64_t hrpc, CXH *, const char *user_dn, uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t, uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps, uint32_t *max_polls, uint32_t *max_retry, uint32_t *retry_delay, uint16_t *cxr, char *dn_prefix, char *dispname, const uint16_t client_vers[3], uint16_t server_vers[3], uint16_t best_vers[3], uint32_t *timestamp, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout);
+static ec_error_t (*emsmdb_interface_connect_ex)(uint64_t hrpc, CXH *, const char *user_dn, uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t, uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps, uint32_t *max_polls, uint32_t *max_retry, uint32_t *retry_delay, uint16_t *cxr, std::string &dn_prefix, std::string &dispname, const uint16_t client_vers[3], uint16_t server_vers[3], uint16_t best_vers[3], uint32_t *timestamp, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout);
 static ec_error_t (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE &, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
 static void (*emsmdb_interface_remove_handle)(const CONTEXT_HANDLE &);
 static void (*emsmdb_interface_touch_handle)(const CONTEXT_HANDLE &);
@@ -120,7 +131,7 @@ struct connect_request {
 
 struct connect_response {
 	uint32_t status, result, max_polls, max_retry, retry_delay;
-	char dn_prefix[1024], displayname[1024];
+	std::string dn_prefix, displayname;
 	uint32_t cb_auxout;
 	uint8_t auxout[0x1008];
 };
@@ -229,10 +240,12 @@ private:
 	pthread_t scan;
 
 	std::unordered_set<notification_ctx *> pending;
-	std::mutex pending_lock, ses_lock;
+	std::mutex pending_lock; /* protects pending list (and nothing else) */
+	std::mutex ses_lock;
 	std::unordered_map<std::string, int> users;
 	std::unordered_map<std::string, session_data> sessions;
-	std::vector<notification_ctx> status;
+
+	std::vector<notification_ctx> status; /* no locking, cf. hpm_processor_get_request() */
 	std::string m_server_version;
 };
 
@@ -243,6 +256,23 @@ static constexpr struct cfg_directive mhems_gxcfg_deflt[] = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Plugin structure definitions
+
+notification_ctx::notification_ctx(notification_ctx &&o) noexcept :
+	pending_status(std::move(o.pending_status)),
+	notification_status(std::move(o.notification_status)),
+	session_guid(std::move(o.session_guid)),
+	pending_time(std::move(o.pending_time)),
+	wall_start_time(std::move(o.wall_start_time))
+{}
+
+void notification_ctx::clear()
+{
+	pending_status = PENDING_STATUS_NONE;
+	notification_status = NOTIFICATION_STATUS_NONE;
+	session_guid = {};
+	pending_time = {};
+	wall_start_time = {};
+}
 
 /**
  * @brief	Initialize the plugin
@@ -544,17 +574,21 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 		ctx.session = nullptr;
 		return std::nullopt;
 	}
-	auto pparser = cookie_parser_init(ctx.orig.f_cookie.c_str());
-	auto string = cookie_parser_get(pparser, "sid");
+
+	cookie_jar pparser;
+	if (pparser.add(ctx.orig.f_cookie) != ecSuccess)
+		return ctx.error_responsecode(resp_code::enomem);
+	auto string = pparser["sid"];
 	if (string == nullptr || strlen(string) >= std::size(ctx.session_string))
 		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	gx_strlcpy(ctx.session_string, string, std::size(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
-		string = cookie_parser_get(pparser, "sequence");
+		string = pparser["sequence"];
 		if (string == nullptr || !ctx.sequence_guid.from_str(string))
 			return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	}
+
 	std::unique_lock hl_hold(ses_lock);
 	auto it = sessions.find(ctx.session_string);
 	if (it == sessions.end())
@@ -609,12 +643,13 @@ static bool parse_xclientapp(const char *ca, const char *ua, uint16_t clv[3])
 
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 {
-	if (ctx.ext_pull.g_connect_req(ctx.request.connect) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_connect_req(ctx.request.connect) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	uint16_t cxr;
 	GUID old_guid;
 	uint16_t clv[3];
-	parse_xclientapp(ctx.cl_app, ctx.user_agent, clv);
+	if (!parse_xclientapp(ctx.cl_app, ctx.user_agent, clv))
+		memset(clv, 0, sizeof(clv));
 	connect_response cr;
 	cr.status = 0;
 	cr.result = emsmdb_bridge_connect(ctx.request.connect, cr, cxr, ctx.session_guid, clv);
@@ -656,7 +691,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::disconnect(MhEmsmdbContext &ctx)
 {
-	if (ctx.ext_pull.g_disconnect_req(ctx.request.disconnect) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_disconnect_req(ctx.request.disconnect) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	disconnect_response dr;
 	dr.status = 0;
@@ -671,7 +706,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::disconnect(MhEmsmdbContext &ctx)
 
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::execute(MhEmsmdbContext &ctx)
 {
-	if (ctx.ext_pull.g_execute_req(ctx.request.execute) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_execute_req(ctx.request.execute) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	execute_response xr;
 	auto z = std::min(static_cast<size_t>(ctx.request.execute.cb_out), sizeof(xr.out));
@@ -688,7 +723,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 {
 	ECDOASYNCWAITEX_IN wait_in;
 	ECDOASYNCWAITEX_OUT wait_out;
-	if (ctx.ext_pull.g_notificationwait_req(ctx.request.notificationwait) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_notificationwait_req(ctx.request.notificationwait) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	wait_in.acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
 	wait_in.acxh.guid = ctx.session_guid;
@@ -721,7 +756,7 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 	ProcRes result;
 	auto heapctx = std::make_unique<MhEmsmdbContext>(context_id, m_server_version); /* huge object */
 	MhEmsmdbContext &ctx = *heapctx;
-	status[ctx.ID] = {};
+	status[ctx.ID].clear();
 	if (ctx.auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	if (!ctx.loadHeaders())
@@ -761,26 +796,32 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 
 int MhEmsmdbPlugin::retr(int context_id)
 {
-	switch (status[context_id].notification_status) {
+	uint8_t nstat, pstat;
+	wallclock::time_point wst;
+
+	{
+		std::lock_guard lk(status[context_id].lock);
+		nstat = status[context_id].notification_status;
+		pstat = status[context_id].pending_status;
+		wst   = status[context_id].wall_start_time;
+		if (nstat != NOTIFICATION_STATUS_NONE)
+			status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
+		else if (pstat == PENDING_STATUS_KEEPALIVE)
+			status[context_id].pending_status = PENDING_STATUS_WAITING;
+	}
+	switch (nstat) {
 	case NOTIFICATION_STATUS_TIMED:
-		notification_response(context_id,
-			status[context_id].wall_start_time,
-			ecSuccess, 0);
-		status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
+		notification_response(context_id, wst, ecSuccess, 0);
 		return HPM_RETRIEVE_WRITE;
 	case NOTIFICATION_STATUS_PENDING:
-		notification_response(context_id,
-			status[context_id].wall_start_time,
-			ecSuccess, FLAG_NOTIFICATION_PENDING);
-		status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
+		notification_response(context_id, wst, ecSuccess, FLAG_NOTIFICATION_PENDING);
 		return HPM_RETRIEVE_WRITE;
 	}
-	switch (status[context_id].pending_status) {
+	switch (pstat) {
 	case PENDING_STATUS_NONE:
 		return HPM_RETRIEVE_DONE;
 	case PENDING_STATUS_KEEPALIVE:
 		write_response(context_id, "7\r\nPENDING\r\n", 12);
-		status[context_id].pending_status = PENDING_STATUS_WAITING;
 		return HPM_RETRIEVE_WRITE;
 	case PENDING_STATUS_WAITING:
 		return HPM_RETRIEVE_WAIT;
@@ -790,33 +831,33 @@ int MhEmsmdbPlugin::retr(int context_id)
 
 void MhEmsmdbPlugin::term(int context_id)
 {
-	EMSMDB_HANDLE acxh;
-
 	if (status[context_id].pending_status == PENDING_STATUS_NONE)
 		return;
-	acxh.handle_type = 0;
-	std::unique_lock ll_hold(pending_lock);
-	if (status[context_id].pending_status != PENDING_STATUS_NONE) {
-		acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
-		acxh.guid = status[context_id].session_guid;
+	EMSMDB_HANDLE acxh;
+	acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
+	acxh.guid = status[context_id].session_guid;
+	{
+		std::unique_lock ll_hold(pending_lock);
 		pending.erase(&status[context_id]);
-		status[context_id].pending_status = PENDING_STATUS_NONE;
 	}
-	ll_hold.unlock();
-	if (acxh.handle_type == HANDLE_EXCHANGE_ASYNCEMSMDB)
-		asyncemsmdb_interface_remove(&acxh);
+	status[context_id].pending_status = PENDING_STATUS_NONE;
+	asyncemsmdb_interface_remove(&acxh);
 }
 
 void MhEmsmdbPlugin::async_wakeup(int context_id, BOOL b_pending)
 {
-	std::unique_lock ll_hold(pending_lock);
+	{
+	std::unique_lock lk(status[context_id].lock);
 	if (status[context_id].pending_status == PENDING_STATUS_NONE)
 		return;
 	status[context_id].notification_status =
 		b_pending ? NOTIFICATION_STATUS_PENDING : NOTIFICATION_STATUS_TIMED;
-	pending.erase(&status[context_id]);
 	status[context_id].pending_status = PENDING_STATUS_NONE;
-	ll_hold.unlock();
+	}
+	{
+	std::unique_lock lk(pending_lock);
+	pending.erase(&status[context_id]);
+	}
 	wakeup_context(context_id);
 }
 
@@ -847,7 +888,7 @@ static BOOL emsmdb_preproc(int context_id)
 	return TRUE;
 }
 
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 pack_result ems_pull::g_connect_req(connect_request &req)
 {
@@ -859,12 +900,12 @@ pack_result ems_pull::g_connect_req(connect_request &req)
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	req.auxin = static_cast<uint8_t *>(m_alloc(req.cb_auxin));
 	if (req.auxin == nullptr) {
 		req.cb_auxin = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(req.auxin, req.cb_auxin);
 }
@@ -879,7 +920,7 @@ pack_result ems_pull::g_execute_req(execute_request &req)
 		req.in = static_cast<uint8_t *>(m_alloc(req.cb_in));
 		if (req.in == nullptr) {
 			req.cb_in = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		TRY(g_bytes(req.in, req.cb_in));
 	}
@@ -887,12 +928,12 @@ pack_result ems_pull::g_execute_req(execute_request &req)
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	req.auxin = static_cast<uint8_t *>(m_alloc(req.cb_auxin));
 	if (req.auxin == nullptr) {
 		req.cb_auxin = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(req.auxin, req.cb_auxin);
 }
@@ -902,12 +943,12 @@ pack_result ems_pull::g_disconnect_req(disconnect_request &req)
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	req.auxin = static_cast<uint8_t *>(m_alloc(req.cb_auxin));
 	if (req.auxin == nullptr) {
 		req.cb_auxin = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(req.auxin, req.cb_auxin);
 }
@@ -918,12 +959,12 @@ pack_result ems_pull::g_notificationwait_req(notificationwait_request &req)
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	req.auxin = static_cast<uint8_t *>(m_alloc(req.cb_auxin));
 	if (req.auxin == nullptr) {
 		req.cb_auxin = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(req.auxin, req.cb_auxin);
 }
@@ -935,11 +976,11 @@ pack_result ems_push::p_connect_rsp(const connect_response &rsp)
 	TRY(p_uint32(rsp.max_polls));
 	TRY(p_uint32(rsp.max_retry));
 	TRY(p_uint32(rsp.retry_delay));
-	TRY(p_str(rsp.dn_prefix));
-	TRY(p_wstr(rsp.displayname));
+	TRY(p_str(rsp.dn_prefix.c_str()));
+	TRY(p_wstr(rsp.displayname.c_str()));
 	TRY(p_uint32(rsp.cb_auxout));
 	if (rsp.cb_auxout == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	return p_bytes(rsp.auxout, rsp.cb_auxout);
 }
 
@@ -953,7 +994,7 @@ pack_result ems_push::p_execute_rsp(const execute_response &rsp)
 		TRY(p_bytes(rsp.out, rsp.cb_out));
 	TRY(p_uint32(rsp.cb_auxout));
 	if (rsp.cb_auxout == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	return p_bytes(rsp.auxout, rsp.cb_auxout);
 }
 

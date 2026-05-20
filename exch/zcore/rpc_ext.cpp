@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
+#include <climits>
 #include <cstdint>
+#include <string_view>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/zcore_rpc.hpp>
+#include <gromox/zcore_types.hpp>
 #include "common_util.hpp"
 #include "rpc_ext.hpp"
-#define QRF(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define QRF(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
-static pack_result rpc_ext_pull_propval(
-	EXT_PULL *pext, uint16_t type, void **ppval)
+static pack_result rpc_ext_pull_propval(EXT_PULL *pext, gromox::proptype_t type, void **ppval)
 {
 #define CASE(mt, ct, fu) \
 	case (mt): \
@@ -77,6 +80,7 @@ static pack_result rpc_ext_pull_tpropval_array(
 		r->ppropval = NULL;
 		return pack_result::ok;
 	}
+	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		r->count = 0;
@@ -105,6 +109,7 @@ static pack_result rpc_ext_pull_rule_list(
 		r->prule = NULL;
 		return pack_result::ok;
 	}
+	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
 	r->prule = pext->anew<RULE_DATA>(r->count);
 	if (NULL == r->prule) {
 		r->count = 0;
@@ -132,6 +137,7 @@ static pack_result rpc_ext_pull_permission_set(
 	EXT_PULL *pext, PERMISSION_SET *r)
 {
 	QRF(pext->g_uint16(&r->count));
+	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
 	r->prows = pext->anew<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
 		r->count = 0;
@@ -161,6 +167,7 @@ static pack_result rpc_ext_pull_state_array(
 		r->pstate = NULL;
 		return pack_result::ok;
 	}
+	r->count = std::min(r->count, static_cast<uint32_t>(UINT32_MAX));
 	r->pstate = pext->anew<MESSAGE_STATE>(r->count);
 	if (NULL == r->pstate) {
 		r->count = 0;
@@ -174,12 +181,11 @@ static pack_result rpc_ext_pull_state_array(
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_propval(EXT_PUSH *pext,
-	uint16_t type, const void *pval)
+static pack_result rpc_ext_push_propval(EXT_PUSH &x, gromox::proptype_t type, const void *pval)
 {
 #define CASE(mt, ct, fu) \
 	case (mt): \
-		QRF(pext->fu(*static_cast<const ct *>(pval))); \
+		QRF(x.fu(*static_cast<const ct *>(pval))); \
 		return pack_result::ok;
 
 	/* convert multi-value instance into single value */
@@ -197,10 +203,10 @@ static pack_result rpc_ext_push_propval(EXT_PUSH *pext,
 	case PT_SYSTIME:
 	CASE(PT_I8, uint64_t, p_uint64);
 	case PT_STRING8:
-		QRF(pext->p_str(static_cast<const char *>(pval)));
+		QRF(x.p_str(static_cast<const char *>(pval)));
 		return pack_result::ok;
 	case PT_UNICODE:
-		QRF(pext->p_wstr(static_cast<const char *>(pval)));
+		QRF(x.p_wstr(static_cast<const char *>(pval)));
 		return pack_result::ok;
 	CASE(PT_CLSID, GUID, p_guid);
 	CASE(PT_SRESTRICTION, RESTRICTION, p_restriction);
@@ -224,157 +230,153 @@ static pack_result rpc_ext_push_propval(EXT_PUSH *pext,
 #undef CASE
 }
 
-static pack_result rpc_ext_push_tagged_propval(
-	EXT_PUSH *pext, const TAGGED_PROPVAL *r)
+static pack_result rpc_ext_push_tagged_propval(EXT_PUSH &x, const TAGGED_PROPVAL &r)
 {
-	QRF(pext->p_uint32(r->proptag));
-	return rpc_ext_push_propval(pext, PROP_TYPE(r->proptag), r->pvalue);
+	QRF(x.p_uint32(r.proptag));
+	return rpc_ext_push_propval(x, PROP_TYPE(r.proptag), r.pvalue);
 }
 
-static pack_result rpc_ext_push_tpropval_array(
-	EXT_PUSH *pext, const TPROPVAL_ARRAY *r)
+static pack_result rpc_ext_push_tpropval_array(EXT_PUSH &x, const TPROPVAL_ARRAY &r)
 {
-	QRF(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_tagged_propval(pext, &r->ppropval[i]);
+	QRF(x.p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i) {
+		auto ret = rpc_ext_push_tagged_propval(x, r.ppropval[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_tarray_set(
-	EXT_PUSH *pext, const TARRAY_SET *r)
+static pack_result rpc_ext_push_tarray_set(EXT_PUSH &x, const TARRAY_SET &r)
 {
-	QRF(pext->p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_tpropval_array(pext, r->pparray[i]);
+	QRF(x.p_uint32(r.count));
+	for (size_t i = 0; i < r.count; ++i) {
+		auto ret = rpc_ext_push_tpropval_array(x, *r.pparray[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_permission_row(
-	EXT_PUSH *pext, const PERMISSION_ROW *r)
+static pack_result rpc_ext_push_permission_row(EXT_PUSH &x, const PERMISSION_ROW &r)
 {
-	QRF(pext->p_uint32(r->flags));
-	QRF(pext->p_uint32(r->member_id));
-	QRF(pext->p_uint32(r->member_rights));
-	QRF(pext->p_bin(r->entryid));
+	QRF(x.p_uint32(r.flags));
+	QRF(x.p_uint32(r.member_id));
+	QRF(x.p_uint32(r.member_rights));
+	QRF(x.p_bin(r.entryid));
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_permission_set(
-	EXT_PUSH *pext, const PERMISSION_SET *r)
+static pack_result rpc_ext_push_permission_set(EXT_PUSH &x, const PERMISSION_SET &r)
 {
-	QRF(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_permission_row(pext, &r->prows[i]);
+	QRF(x.p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i) {
+		auto ret = rpc_ext_push_permission_row(x, r.prows[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_message_state(
-	EXT_PUSH *pext, const MESSAGE_STATE *r)
+static pack_result rpc_ext_push_message_state(EXT_PUSH &x, const MESSAGE_STATE &r)
 {
-	QRF(pext->p_bin(r->source_key));
-	QRF(pext->p_uint32(r->message_flags));
+	QRF(x.p_bin(r.source_key));
+	QRF(x.p_uint32(r.message_flags));
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_state_array(
-	EXT_PUSH *pext, const STATE_ARRAY *r)
+static pack_result rpc_ext_push_state_array(EXT_PUSH &x, const STATE_ARRAY &r)
 {
-	QRF(pext->p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_message_state(pext, &r->pstate[i]);
+	QRF(x.p_uint32(r.count));
+	for (size_t i = 0; i < r.count; ++i) {
+		auto ret = rpc_ext_push_message_state(x, r.pstate[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_newmail_znotification(
-	EXT_PUSH *pext, const NEWMAIL_ZNOTIFICATION *r)
+static pack_result rpc_ext_push_newmail_znotification(EXT_PUSH &x, const ZNOTIFICATION &r)
 {
-	QRF(pext->p_bin(r->entryid));
-	QRF(pext->p_bin(r->parentid));
-	QRF(pext->p_uint32(r->flags));
-	QRF(pext->p_str(r->message_class));
-	QRF(pext->p_uint32(r->message_flags));
+	std::string empty;
+	QRF(x.p_bin(r.pentryid.has_value() ? *r.pentryid : empty));
+	QRF(x.p_bin(r.pparentid.has_value() ? *r.pparentid : empty));
+	QRF(x.p_uint32(r.flags));
+	QRF(x.p_str(r.message_class));
+	QRF(x.p_uint32(r.message_flags));
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_object_znotification(
-	EXT_PUSH *pext, const OBJECT_ZNOTIFICATION *r)
+static pack_result rpc_ext_push_object_znotification(EXT_PUSH &x, const ZNOTIFICATION &r)
 {	
-	QRF(pext->p_uint32(static_cast<uint32_t>(r->object_type)));
-	if (NULL == r->pentryid) {
-		QRF(pext->p_uint8(0));
+	QRF(x.p_uint32(static_cast<uint32_t>(r.object_type)));
+	if (!r.pentryid.has_value()) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_bin(*r->pentryid));
+		QRF(x.p_uint8(1));
+		QRF(x.p_bin(*r.pentryid));
 	}
-	if (NULL == r->pparentid) {
-		QRF(pext->p_uint8(0));
+	if (!r.pparentid.has_value()) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_bin(*r->pparentid));
+		QRF(x.p_uint8(1));
+		QRF(x.p_bin(*r.pparentid));
 	}
-	if (NULL == r->pold_entryid) {
-		QRF(pext->p_uint8(0));
+	if (!r.pold_entryid.has_value()) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_bin(*r->pold_entryid));
+		QRF(x.p_uint8(1));
+		QRF(x.p_bin(*r.pold_entryid));
 	}
-	if (NULL == r->pold_parentid) {
-		QRF(pext->p_uint8(0));
+	if (!r.pold_parentid.has_value()) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_bin(*r->pold_parentid));
+		QRF(x.p_uint8(1));
+		QRF(x.p_bin(*r.pold_parentid));
 	}
-	if (NULL == r->pproptags) {
-		QRF(pext->p_uint8(0));
+	if (!r.pproptags.has_value()) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_proptag_a(*r->pproptags));
+		QRF(x.p_uint8(1));
+		QRF(x.p_proptag_a(*r.pproptags));
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_znotification(
-	EXT_PUSH *pext, const ZNOTIFICATION *r)
+static pack_result rpc_ext_push_znotification(EXT_PUSH &x, const ZNOTIFICATION &r)
 {
-	QRF(pext->p_uint32(r->event_type));
-	switch (r->event_type) {
-	case NF_NEW_MAIL:
-		return rpc_ext_push_newmail_znotification(pext,
-		       static_cast<NEWMAIL_ZNOTIFICATION *>(r->pnotification_data));
-	case NF_OBJECT_CREATED:
-	case NF_OBJECT_DELETED:
-	case NF_OBJECT_MODIFIED:
-	case NF_OBJECT_MOVED:
-	case NF_OBJECT_COPIED:
-	case NF_SEARCH_COMPLETE:
-		return rpc_ext_push_object_znotification(pext,
-		       static_cast<OBJECT_ZNOTIFICATION *>(r->pnotification_data));
+	QRF(x.p_uint32(r.event_type));
+	switch (r.event_type) {
+	case fnevNewMail:
+		return rpc_ext_push_newmail_znotification(x, r);
+	case fnevObjectCreated:
+	case fnevObjectDeleted:
+	case fnevObjectModified:
+	case fnevObjectMoved:
+	case fnevObjectCopied:
+	case fnevSearchComplete:
+		return rpc_ext_push_object_znotification(x, r);
 	default:
 		return pack_result::ok;
 	}
 }
 
-static pack_result rpc_ext_push_znotification_array(
-	EXT_PUSH *pext, const ZNOTIFICATION_ARRAY *r)
+static pack_result rpc_ext_push_znotification_array(EXT_PUSH &x, const ZNOTIFICATION_ARRAY &r)
 {
-	QRF(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_znotification(pext, r->ppnotification[i]);
+	if (r.size() > UINT16_MAX)
+		return pack_result::format;
+	uint16_t count = r.size();
+	QRF(x.p_uint16(count));
+	for (size_t i = 0; i < count; ++i) {
+		auto ret = rpc_ext_push_znotification(x, r[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
+	return pack_result::ok;
+}
+
+static inline pack_result zrpc_push(EXT_PUSH &, const zcresp &)
+{
 	return pack_result::ok;
 }
 
@@ -508,7 +510,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_getpermissions &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_getpermissions &d)
 {
-	return rpc_ext_push_permission_set(&x, &d.perm_set);
+	return rpc_ext_push_permission_set(x, d.perm_set);
 }
 
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_modifypermissions &d)
@@ -827,6 +829,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_notifdequeue &d)
 		return pack_result::alloc;
 	QRF(x.g_guid(&d.psink->hsession));
 	QRF(x.g_uint16(&d.psink->count));
+	d.psink->count = std::min(d.psink->count, static_cast<uint16_t>(UINT16_MAX));
 	d.psink->padvise = x.anew<ADVISE_INFO>(d.psink->count);
 	if (d.psink->padvise == nullptr) {
 		d.psink->count = 0;
@@ -842,10 +845,10 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_notifdequeue &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_notifdequeue &d)
 {
-	return rpc_ext_push_znotification_array(&x, &d.notifications);
+	return rpc_ext_push_znotification_array(x, d.notifications);
 }
 
-static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d)
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d) try
 {
 	uint8_t tmp_byte;
 	
@@ -864,29 +867,26 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d)
 	}
 	QRF(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		d.pproptags = nullptr;
+		d.pproptags.reset();
 	} else {
-		d.pproptags = x.anew<PROPTAG_ARRAY>();
-		if (d.pproptags == nullptr)
-			return pack_result::alloc;
-		QRF(x.g_proptag_a(d.pproptags));
+		d.pproptags.emplace();
+		QRF(x.g_proptag_a(&*d.pproptags));
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_queryrows &d)
 {
-	return rpc_ext_push_tarray_set(&x, &d.rowset);
+	return rpc_ext_push_tarray_set(x, d.rowset);
 }
 
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_setcolumns &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
-	d.pproptags = x.anew<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_proptag_a(d.pproptags));
+	QRF(x.g_proptag_a(&d.pproptags));
 	QRF(x.g_uint32(&d.flags));
 	return pack_result::ok;
 }
@@ -1080,7 +1080,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_setpropvals &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_pull(EXT_PULL &x, zcreq_getpropvals &d)
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_getpropvals &d) try
 {
 	uint8_t tmp_byte;
 	
@@ -1088,14 +1088,14 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_getpropvals &d)
 	QRF(x.g_uint32(&d.hobject));
 	QRF(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		d.pproptags = nullptr;
+		d.pproptags.reset();
 	} else {
-		d.pproptags = x.anew<PROPTAG_ARRAY>();
-		if (d.pproptags == nullptr)
-			return pack_result::alloc;
-		QRF(x.g_proptag_a(d.pproptags));
+		d.pproptags.emplace();
+		QRF(x.g_proptag_a(&*d.pproptags));
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_getpropvals &d)
@@ -1108,10 +1108,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_deletepropvals &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hobject));
-	d.pproptags = x.anew<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_proptag_a(d.pproptags));
+	QRF(x.g_proptag_a(&d.pproptags));
 	return pack_result::ok;
 }
 
@@ -1172,10 +1169,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_copyto &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hsrcobject));
-	d.pexclude_proptags = x.anew<PROPTAG_ARRAY>();
-	if (d.pexclude_proptags == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_proptag_a(d.pexclude_proptags));
+	QRF(x.g_proptag_a(&d.pexclude_proptags));
 	QRF(x.g_uint32(&d.hdstobject));
 	QRF(x.g_uint32(&d.flags));
 	return pack_result::ok;
@@ -1293,7 +1287,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_syncreadstatechanges &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_syncreadstatechanges &d)
 {
-	return rpc_ext_push_state_array(&x, &d.states);
+	return rpc_ext_push_state_array(x, d.states);
 }
 
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_syncdeletions &d)
@@ -1573,7 +1567,7 @@ static pack_result zrpc_push(EXT_PUSH &x, const zcresp_imtomessage2 &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(EXT_PUSH &x, const zcresp_essdn_to_username&d)
+static pack_result zrpc_push(EXT_PUSH &x, const zcresp_essdn_to_username &d)
 {
 	QRF(x.p_str(d.username));
 	return pack_result::ok;
@@ -1610,114 +1604,35 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_essdn_to_username &d)
 	return pack_result::ok;
 }
 
-pack_result rpc_ext_pull_request(const BINARY *pbin_in,
+pack_result rpc_ext_pull_request(std::string_view pbin_in,
     std::unique_ptr<zcreq> &prequest) try
 {
 	EXT_PULL ext_pull;
 	uint8_t call_id;
 	auto b_ret = pack_result::failure;
 	
-	ext_pull.init(pbin_in->pb, pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
+	ext_pull.init(pbin_in.data(), pbin_in.size(), common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
 	QRF(ext_pull.g_uint8(&call_id));
-	switch (static_cast<zcore_callid>(call_id)) {
-#define E(t) case zcore_callid::t: { \
+
+#define EDEF(t, id) case zcore_callid::t: { \
 		auto r0 = std::make_unique<zcreq_ ## t>(); \
 		b_ret = zrpc_pull(ext_pull, *r0); \
 		prequest = std::move(r0); \
 		break; \
 	}
-	E(logon)
-	E(checksession)
-	E(uinfo)
-	E(unloadobject)
-	E(openentry)
-	E(openstoreentry)
-	E(openabentry)
-	E(resolvename)
-	E(getpermissions)
-	E(modifypermissions)
-	E(modifyrules)
-	E(getabgal)
-	E(loadstoretable)
-	E(openstore)
-	E(openprofilesec)
-	E(loadhierarchytable)
-	E(loadcontenttable)
-	E(loadrecipienttable)
-	E(loadruletable)
-	E(createmessage)
-	E(deletemessages)
-	E(copymessages)
-	E(setreadflags)
-	E(createfolder)
-	E(deletefolder)
-	E(emptyfolder)
-	E(copyfolder)
-	E(getstoreentryid)
-	E(entryidfromsourcekey)
-	E(storeadvise)
-	E(unadvise)
-	E(notifdequeue)
-	E(queryrows)
-	E(setcolumns)
-	E(seekrow)
-	E(sorttable)
-	E(getrowcount)
-	E(restricttable)
-	E(findrow)
-	E(createbookmark)
-	E(freebookmark)
-	E(getreceivefolder)
-	E(modifyrecipients)
-	E(submitmessage)
-	E(loadattachmenttable)
-	E(openattachment)
-	E(createattachment)
-	E(deleteattachment)
-	E(setpropvals)
-	E(getpropvals)
-	E(deletepropvals)
-	E(setmessagereadflag)
-	E(openembedded)
-	E(getnamedpropids)
-	E(getpropnames)
-	E(copyto)
-	E(savechanges)
-	E(hierarchysync)
-	E(contentsync)
-	E(configsync)
-	E(statesync)
-	E(syncmessagechange)
-	E(syncfolderchange)
-	E(syncreadstatechanges)
-	E(syncdeletions)
-	E(hierarchyimport)
-	E(contentimport)
-	E(configimport)
-	E(stateimport)
-	E(importmessage)
-	E(importfolder)
-	E(importdeletion)
-	E(importreadstates)
-	E(getsearchcriteria)
-	E(setsearchcriteria)
-	E(messagetorfc822)
-	E(rfc822tomessage)
-	E(messagetoical)
-	E(icaltomessage)
-	E(messagetovcf)
-	E(vcftomessage)
-	E(setpasswd)
-	E(linkmessage)
-	E(imtomessage2)
-	E(essdn_to_username)
-	E(logon_token)
-	E(getuserfreebusy)
-	E(getuserfreebusyical)
-#undef E
+#define EOBSOL(t, id)
+#define EUNDEF(id)
+
+	switch (static_cast<zcore_callid>(call_id)) {
+	#include <gromox/zcore_allcalls.hpp>
 	default:
 		return pack_result::bad_switch;
 	}
+
+#undef EDEF
+#undef EOBSOL
+#undef EUNDEF
+
 	prequest->call_id = static_cast<zcore_callid>(call_id);
 	return b_ret;
 } catch (const std::bad_alloc &) {
@@ -1741,102 +1656,21 @@ pack_result rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 	}
 	QRF(ext_push.advance(sizeof(uint32_t)));
 	QRF(ext_push.p_uint32(presponse->result));
+
+#define EDEF(t, id) case zcore_callid::t: b_result = zrpc_push(ext_push, *static_cast<const zcresp_ ## t ::view_t *>(presponse)); break;
+#define EOBSOL(t, id)
+#define EUNDEF(t)
+
 	switch (presponse->call_id) {
-	case zcore_callid::checksession:
-	case zcore_callid::unloadobject:
-	case zcore_callid::modifypermissions:
-	case zcore_callid::modifyrules:
-	case zcore_callid::deletemessages:
-	case zcore_callid::copymessages:
-	case zcore_callid::setreadflags:
-	case zcore_callid::deletefolder:
-	case zcore_callid::emptyfolder:
-	case zcore_callid::copyfolder:
-	case zcore_callid::unadvise:
-	case zcore_callid::setcolumns:
-	case zcore_callid::sorttable:
-	case zcore_callid::restricttable:
-	case zcore_callid::freebookmark:
-	case zcore_callid::modifyrecipients:
-	case zcore_callid::submitmessage:
-	case zcore_callid::deleteattachment:
-	case zcore_callid::setpropvals:
-	case zcore_callid::deletepropvals:
-	case zcore_callid::setmessagereadflag:
-	case zcore_callid::copyto:
-	case zcore_callid::savechanges:
-	case zcore_callid::configimport:
-	case zcore_callid::importfolder:
-	case zcore_callid::importdeletion:
-	case zcore_callid::importreadstates:
-	case zcore_callid::setsearchcriteria:
-	case zcore_callid::rfc822tomessage:
-	case zcore_callid::icaltomessage:
-	case zcore_callid::vcftomessage:
-	case zcore_callid::setpasswd:
-	case zcore_callid::linkmessage:
-		b_result = pack_result::ok;
-		break;
-#define E(t) case zcore_callid::t: b_result = zrpc_push(ext_push, *static_cast<const zcresp_ ## t *>(presponse)); break;
-	E(logon)	
-	E(uinfo)
-	E(openentry)
-	E(openstoreentry)
-	E(openabentry)
-	E(resolvename)
-	E(getpermissions)
-	E(getabgal)
-	E(loadstoretable)
-	E(openstore)
-	E(openprofilesec)
-	E(loadhierarchytable)
-	E(loadcontenttable)
-	E(loadrecipienttable)
-	E(loadruletable)
-	E(createmessage)
-	E(createfolder)
-	E(getstoreentryid)
-	E(entryidfromsourcekey)
-	E(storeadvise)
-	E(notifdequeue)
-	E(queryrows)
-	E(seekrow)
-	E(getrowcount)
-	E(findrow)
-	E(createbookmark)
-	E(getreceivefolder)
-	E(loadattachmenttable)
-	E(openattachment)
-	E(createattachment)
-	E(getpropvals)
-	E(openembedded)
-	E(getnamedpropids)
-	E(getpropnames)
-	E(hierarchysync)
-	E(contentsync)
-	E(configsync)
-	E(statesync)
-	E(syncmessagechange)
-	E(syncfolderchange)
-	E(syncreadstatechanges)
-	E(syncdeletions)
-	E(hierarchyimport)
-	E(contentimport)
-	E(stateimport)
-	E(importmessage)
-	E(getsearchcriteria)
-	E(messagetorfc822)
-	E(messagetoical)
-	E(messagetovcf)
-	E(imtomessage2)
-	E(essdn_to_username)
-	E(logon_token)
-	E(getuserfreebusy)
-	E(getuserfreebusyical)
-#undef E
+	#include <gromox/zcore_allcalls.hpp>
 	default:
 		return pack_result::bad_switch;
 	}
+
+#undef EDEF
+#undef EOBSOL
+#undef EUNDEF
+
 	if (b_result != pack_result::ok)
 		return b_result;
 	pbin_out->cb = ext_push.m_offset;

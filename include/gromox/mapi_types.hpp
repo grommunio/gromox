@@ -1,5 +1,5 @@
 #pragma once
-#if defined(COMPILE_DIAG) || defined(DEBUG_UMTA)
+#ifdef COMPILE_DIAG
 #	include <cassert>
 #endif
 #include <cstdint>
@@ -12,18 +12,15 @@
 #include <gromox/common_types.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/range_set.hpp>
 
 /* https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/wrapstoreentryid */
-struct STORE_ENTRYID {
-	uint32_t flags;
-	uint8_t version;
-	uint8_t ivflag;
-	uint32_t wrapped_flags;
-	FLATUID wrapped_provider_uid; /* g_muidStorePrivate / g_muidStorePublic */
-	uint32_t wrapped_type;
-	char *pserver_name;
-	char *pmailbox_dn;
+struct GX_EXPORT STORE_ENTRYID {
+	uint32_t flags = 0;
+	uint8_t version = 0, ivflag = 0;
+	uint32_t wrapped_flags = 0;
+	FLATUID wrapped_provider_uid{}; /* g_muidStorePrivate / g_muidStorePublic */
+	uint32_t wrapped_type = 0;
+	char *pserver_name = nullptr, *pmailbox_dn = nullptr;
 };
 
 #define EITLT_PRIVATE_FOLDER						0x0001
@@ -34,49 +31,42 @@ struct STORE_ENTRYID {
 #define EITLT_WACKY_MESSAGE							0x000b
 #define EITLT_PUBLIC_FOLDER_BY_NAME					0x000c
 
-struct FOLDER_ENTRYID {
-	uint32_t flags;
-	FLATUID provider_uid; /* glossary.rst:Store GUID */
-	uint16_t folder_type;
-	GUID database_guid;
-	GLOBCNT global_counter;
-	uint8_t pad[2];
+struct GX_EXPORT FOLDER_ENTRYID {
+	uint32_t flags = 0;
+	FLATUID provider_uid{}; /* glossary.rst:Store GUID */
+	uint16_t eid_type = 0;
+	GUID folder_dbguid{};
+	GLOBCNT folder_gc{};
+	uint8_t pad1[2]{};
 };
 
-struct MESSAGE_ENTRYID {
-	uint32_t flags;
-	FLATUID provider_uid; /* glossary.rst:Store GUID */
-	uint16_t message_type;
-	GUID folder_database_guid;
-	GLOBCNT folder_global_counter;
-	uint8_t pad1[2];
-	GUID message_database_guid;
-	GLOBCNT message_global_counter;
-	uint8_t pad2[2];
+struct GX_EXPORT MESSAGE_ENTRYID : public FOLDER_ENTRYID {
+	GUID message_dbguid{};
+	GLOBCNT message_gc{};
+	uint8_t pad2[2]{};
 };
 
 struct GX_EXPORT MOVECOPY_ACTION {
-	uint8_t same_store;
-	STORE_ENTRYID *pstore_eid;
-	void *pfolder_eid; /* SVREID or BINARY */
+	uint8_t same_store = 0;
+	STORE_ENTRYID *pstore_eid = nullptr;
+	void *pfolder_eid = nullptr; /* SVREID or BINARY */
 
 	std::string repr() const;
 };
 
-struct EXT_MOVECOPY_ACTION {
+struct GX_EXPORT EXT_MOVECOPY_ACTION {
 	FOLDER_ENTRYID folder_eid;
 };
 
 /* reply or OOF action */
 struct GX_EXPORT REPLY_ACTION {
-	uint64_t template_folder_id;
-	uint64_t template_message_id;
-	GUID template_guid;
+	eid_t template_folder_id{}, template_message_id{};
+	GUID template_guid{};
 
 	std::string repr() const;
 };
 
-struct EXT_REPLY_ACTION {
+struct GX_EXPORT EXT_REPLY_ACTION {
 	MESSAGE_ENTRYID message_eid;
 	GUID template_guid;
 };
@@ -85,15 +75,15 @@ struct EXT_REPLY_ACTION {
 #define BOUNCE_CODE_MESSAGE_NOT_DISPLAYED			0x0000001f
 #define BOUNCE_CODE_MESSAGE_DENIED					0x00000026
 
-struct EXT_RECIPIENT_BLOCK {
-	uint8_t reserved;
-	uint32_t count;
-	TAGGED_PROPVAL *ppropval;
+struct GX_EXPORT EXT_RECIPIENT_BLOCK {
+	uint8_t reserved = 0;
+	uint32_t count = 0;
+	TAGGED_PROPVAL *ppropval = nullptr;
 };
 
 struct GX_EXPORT EXT_FORWARDDELEGATE_ACTION {
-	uint32_t count;
-	EXT_RECIPIENT_BLOCK *pblock;
+	uint32_t count = 0;
+	EXT_RECIPIENT_BLOCK *pblock = nullptr;
 	I_BEGIN_END(pblock, count);
 };
 
@@ -109,17 +99,15 @@ enum { /* ACTION_BLOCK::flavor for OP_REPLY */
 	STOCK_REPLY_TEMPLATE = 0x2U,
 };
 
-struct EXT_ACTION_BLOCK {
-	uint32_t length;
-	uint8_t type;
-	uint32_t flavor;
-	uint32_t flags;
-	void *pdata;
+struct GX_EXPORT EXT_ACTION_BLOCK {
+	uint32_t length = 0, flavor = 0, flags = 0;
+	uint8_t type = 0;
+	void *pdata = nullptr;
 };
 
 struct GX_EXPORT EXT_RULE_ACTIONS {
-	uint32_t count;
-	EXT_ACTION_BLOCK *pblock;
+	uint32_t count = 0;
+	EXT_ACTION_BLOCK *pblock = nullptr;
 	I_BEGIN_END(pblock, count);
 };
 
@@ -148,42 +136,41 @@ enum {
 #define RULE_ERROR_TOO_MANY_RCPTS					0x0000000D
 #define RULE_ERROR_FOLDER_QUOTA						0x0000000E			
 
-struct NAMEDPROPERTY_INFO {
-	uint16_t count;
-	uint16_t *ppropid;
-	PROPERTY_NAME *ppropname;
+struct GX_EXPORT NAMEDPROPERTY_INFO {
+	uint16_t count = 0;
+	uint16_t *ppropid = nullptr;
+	PROPERTY_NAME *ppropname = nullptr;
 };
 
 #define FLAGGED_PROPVAL_FLAG_AVAILABLE				0x0
 #define FLAGGED_PROPVAL_FLAG_UNAVAILABLE			0x1
 #define FLAGGED_PROPVAL_FLAG_ERROR					0xA
 
-struct FLAGGED_PROPVAL {
-	uint8_t flag;
-	void *pvalue;
+struct GX_EXPORT FLAGGED_PROPVAL {
+	uint8_t flag = false;
+	void *pvalue = nullptr;
 };
 
-struct TYPED_PROPVAL {
-	uint16_t type;
-	void *pvalue;
+struct GX_EXPORT TYPED_PROPVAL {
+	uint16_t type = 0;
+	void *pvalue = nullptr;
 };
 
-struct LONG_TERM_ID {
+struct GX_EXPORT LONG_TERM_ID {
 	/* LTIDs are a specific form of XIDs */
-	GUID guid;
-	GLOBCNT global_counter;
-	uint16_t padding;
+	GUID guid{};
+	GLOBCNT global_counter{};
+	uint16_t padding = 0;
 };
 
-struct LONG_TERM_ID_ARRAY {
-	uint16_t count;
-	LONG_TERM_ID *pids;
+struct GX_EXPORT LONG_TERM_ID_ARRAY {
+	uint16_t count = 0;
+	LONG_TERM_ID *pids = nullptr;
 	I_BEGIN_END(pids, count);
 };
 
-struct LONG_TERM_ID_RANGE {
-	LONG_TERM_ID min;
-	LONG_TERM_ID max;
+struct GX_EXPORT LONG_TERM_ID_RANGE {
+	LONG_TERM_ID min, max;
 };
 
 struct GX_EXPORT XID {
@@ -192,8 +179,8 @@ struct GX_EXPORT XID {
 	GLOBCNT local_to_gc() const { GLOBCNT r; memcpy(r.ab, local_id, 6); return r; }
 
 	GUID guid;
-	uint8_t local_id[8];
-	uint8_t size;
+	uint8_t local_id[8]{};
+	uint8_t size = 0;
 };
 
 #define STRING_TYPE_NONE							0x0
@@ -202,9 +189,9 @@ struct GX_EXPORT XID {
 #define STRING_TYPE_UNICODE_REDUCED					0x3
 #define STRING_TYPE_UNICODE							0x4
 
-struct TYPED_STRING {
-	uint8_t string_type;
-	char *pstring;
+struct GX_EXPORT TYPED_STRING {
+	uint8_t string_type = 0;
+	char *pstring = nullptr;
 };
 
 #define PROPERTY_ROW_NO_ERROR						0x00
@@ -213,14 +200,15 @@ struct TYPED_STRING {
 #define PROPERTY_ROW_FLAG_NONE						0x00
 #define PROPERTY_ROW_FLAG_FLAGGED					0x01
 
-struct PROPERTY_ROW {
-	uint8_t flag;
-	void **pppropval;
+struct GX_EXPORT PROPERTY_ROW {
+	uint8_t flag = false;
+	void **pppropval = nullptr;
 };
 
-struct PROPROW_SET {
-	uint16_t count;
-	PROPERTY_ROW *prows;
+struct GX_EXPORT PROPROW_SET {
+	uint16_t count = 0;
+	PROPERTY_ROW *prows = nullptr;
+	I_BEGIN_END(prows, count);
 };
 
 #define TABLE_SORT_ASCEND							0x0
@@ -228,10 +216,10 @@ struct PROPROW_SET {
 #define TABLE_SORT_MAXIMUM_CATEGORY					0x4
 #define TABLE_SORT_MINIMUM_CATEGORY					0x8
 
-struct PROPERTY_PROBLEM {
-	uint16_t index;
-	uint32_t proptag;
-	uint32_t err;
+struct GX_EXPORT PROPERTY_PROBLEM {
+	uint16_t index = 0;
+	gromox::proptag_t proptag{};
+	uint32_t err = 0;
 
 	inline bool operator<(const PROPERTY_PROBLEM &o) const { return index < o.index; }
 };
@@ -243,19 +231,25 @@ struct GX_EXPORT PROBLEM_ARRAY {
 	I_BEGIN_END(pproblem, count);
 	bool have_index(unsigned int) const;
 	PROBLEM_ARRAY &operator+=(PROBLEM_ARRAY &&);
-	inline void emplace_back(unsigned int i, uint32_t tag, uint32_t err) {
+	inline void emplace_back(unsigned int i, gromox::proptag_t tag, uint32_t err) {
 		pproblem[count++] = PROPERTY_PROBLEM{static_cast<uint16_t>(i), tag, err};
 	}
 	void transform(const std::vector<uint16_t> &);
-	size_t indexof(uint32_t tag) const;
-	inline bool has(uint32_t tag) const { return indexof(tag) != npos; }
+	size_t indexof(gromox::proptag_t) const;
+	inline bool has(gromox::proptag_t t) const { return indexof(t) != npos; }
 	static constexpr size_t npos = -1;
 };
 
-struct EMSAB_ENTRYID {
-	uint32_t flags;
-	uint32_t type;
-	char *px500dn;
+struct GX_EXPORT EMSAB_ENTRYID_view {
+	uint32_t flags = 0;
+	uint32_t type = 0;
+	const char *px500dn = nullptr;
+};
+
+struct GX_EXPORT EMSAB_ENTRYID {
+	uint32_t flags = 0, type = 0;
+	std::string x500dn;
+	operator EMSAB_ENTRYID_view() const { return {flags, type, x500dn.c_str()}; }
 };
 
 #define DAYOFWEEK_SUNDAY							0x0
@@ -265,22 +259,6 @@ struct EMSAB_ENTRYID {
 #define DAYOFWEEK_THURSDAY							0x4
 #define DAYOFWEEK_FRIDAY							0x5
 #define DAYOFWEEK_SATURDAY							0x6
-
-struct LOGON_TIME {
-	uint8_t second;
-	uint8_t minute;
-	uint8_t hour;
-	uint8_t day_of_week;
-	uint8_t day;
-	uint8_t month;
-	uint16_t year;
-};
-
-struct GHOST_SERVER {
-	uint16_t server_count;
-	uint16_t cheap_server_count;
-	char **ppservers;
-};
 
 #define RECIPIENT_ROW_FLAG_RESPONSIBLE				0x0080
 #define RECIPIENT_ROW_FLAG_SAME						0x0040
@@ -301,56 +279,20 @@ struct GHOST_SERVER {
 #define RECIPIENT_ROW_TYPE_PERSONAL_DLIST1			0x6
 #define RECIPIENT_ROW_TYPE_PERSONAL_DLIST2			0x7
 
-struct RECIPIENT_ROW {
-	uint8_t *pprefix_used;
-	char *px500dn;
-	BINARY *pentry_id;
-	BINARY *psearch_key;
-	char *paddress_type;
-	char *pmail_address;
-	char *pdisplay_name;
-	char *psimple_name;
-	char *ptransmittable_name;
-	uint8_t have_display_type, display_type;
-	uint16_t flags, count;
-	PROPERTY_ROW properties;
+struct GX_EXPORT PERMISSION_DATA {
+	uint8_t flags = 0;
+	TPROPVAL_ARRAY propvals{};
 };
 
-struct OPENRECIPIENT_ROW {
-	uint8_t recipient_type;
-	uint16_t cpid;
-	uint16_t reserved;
-	RECIPIENT_ROW recipient_row;
+struct GX_EXPORT PROPIDNAME_ARRAY {
+	uint16_t count = 0;
+	uint16_t *ppropid = nullptr;
+	PROPERTY_NAME *ppropname = nullptr;
 };
 
-struct MODIFYRECIPIENT_ROW {
-	uint32_t row_id;
-	uint8_t recipient_type;
-	RECIPIENT_ROW *precipient_row;
-};
-
-struct READRECIPIENT_ROW {
-	uint32_t row_id;
-	uint8_t recipient_type;
-	uint16_t cpid;
-	uint16_t reserved;
-	RECIPIENT_ROW recipient_row;
-};
-
-struct PERMISSION_DATA {
-	uint8_t flags;
-	TPROPVAL_ARRAY propvals;
-};
-
-struct PROPIDNAME_ARRAY {
-	uint16_t count;
-	uint16_t *ppropid;
-	PROPERTY_NAME *ppropname;
-};
-
-struct MESSAGE_READ_STAT {
-	BINARY message_xid;
-	uint8_t mark_as_read;
+struct GX_EXPORT MESSAGE_READ_STAT {
+	BINARY message_xid{};
+	uint8_t mark_as_read = false;
 };
 
 #define FAST_SOURCE_OPERATION_COPYTO				0x1
@@ -401,16 +343,18 @@ struct MESSAGE_READ_STAT {
 #define SYNC_DELETES_FLAG_HARDDELETE				0x02
 
 enum notif_type : unsigned int {
-	NF_NEW_MAIL        = 0x2,
-	NF_OBJECT_CREATED  = 0x4,
-	NF_OBJECT_DELETED  = 0x8,
-	NF_OBJECT_MODIFIED = 0x10,
-	NF_OBJECT_MOVED    = 0x20,
-	NF_OBJECT_COPIED   = 0x40,
-	NF_SEARCH_COMPLETE = 0x80,
+	fnevNewMail        = 0x2,
+	fnevObjectCreated  = 0x4,
+	fnevObjectDeleted  = 0x8,
+	fnevObjectModified = 0x10,
+	fnevObjectMoved    = 0x20,
+	fnevObjectCopied   = 0x40,
+	fnevSearchComplete = 0x80,
 
 	/* Used only by emsmdb */
-	NF_TABLE_MODIFIED  = 0x100,
+	fnevTableModified  = 0x100,
+
+	/* Server-level flags (Client-side fnevExtended has a different value!) */
 	NF_EXTENDED        = 0x400,
 	NF_HAS_TOTAL       = 0x1000,
 	NF_HAS_UNREAD      = 0x2000,
@@ -489,7 +433,7 @@ enum {
 #define RSF_PID_BUDDYLIST_CONTACTS					0x800B
 #define PERSIST_SENTINEL							0x0000
 
-struct PERSISTDATA {
+struct GX_EXPORT PERSISTDATA {
 	uint16_t persist_id = 0, element_id = 0;
 	std::string entryid;
 };
@@ -500,16 +444,11 @@ struct PERSISTDATA {
 #define DELEGATE_PERMISSION_AUTHOR					0x0000001B
 #define DELEGATE_PERMISSION_EDITOR					0x0000007B
 
-struct SYSTEMTIME {
-	int16_t year;
-	int16_t month;
-	int16_t dayofweek;
-	int16_t day;
-	int16_t hour;
-	int16_t minute;
-	int16_t second;
-	int16_t milliseconds;
+struct GX_EXPORT SYSTEMTIME {
+	auto operator<=>(const SYSTEMTIME &) const = default;
 
+	int16_t year = 0, month = 0, dayofweek = 0, day = 0;
+	int16_t hour = 0, minute = 0, second = 0, milliseconds = 0;
 	/*
 	 * 63-bit mapitime limit is sometime in the year 30828. Rather than have an
 	 * incomplete year, the latest acceptable date for a SYSTEMTIME object is
@@ -518,43 +457,32 @@ struct SYSTEMTIME {
 	static constexpr int16_t maxyear = 30828;
 };
 
-/* pidLidTimeZoneStruct */
-struct TIMEZONESTRUCT {
-	int32_t bias;
-	int32_t standardbias;
-	int32_t daylightbias;
-	int16_t standardyear;
-	SYSTEMTIME standarddate;
-	int16_t daylightyear;
-	SYSTEMTIME daylightdate;
+/* pidLidTimeZoneStruct - MS-OXOCAL v21 §2.2.1.39 */
+struct GX_EXPORT TZSTRUCT {
+	int32_t bias = 0, standardbias = 0, daylightbias = 0;
+	int16_t standardyear = 0, daylightyear = 0;
+	SYSTEMTIME standarddate{}, daylightdate{};
 };
 
 #define TZRULE_FLAG_RECUR_CURRENT_TZREG				0x0001
 #define TZRULE_FLAG_EFFECTIVE_TZREG					0x0002
 
-struct TZRULE {
-	uint8_t major; /* 0x02 */
-	uint8_t minor; /* 0x01 */
-	uint16_t reserved; /* must be 0x003E */
-	uint16_t flags;
-	int16_t year;
-	uint8_t x[14]; /* all zeroes */
-	int32_t bias;
-	int32_t standardbias;
-	int32_t daylightbias;
-	SYSTEMTIME standarddate;
-	SYSTEMTIME daylightdate;
+/* MS-OXOCAL v21 §2.2.1.41.1 */
+struct GX_EXPORT TZRULE {
+	uint16_t flags = 0;
+	int16_t year = 0;
+	uint8_t x[14]{};
+	int32_t bias = 0, standardbias = 0, daylightbias = 0;
+	SYSTEMTIME standarddate{}, daylightdate{};
 
-	inline bool operator<(const TZRULE &o) const { return year < o.year; }
+	inline auto operator<=>(const TZRULE &o) const { return year <=> o.year; }
 };
 
-struct TIMEZONEDEFINITION {
-	uint8_t major; /* 0x02 */
-	uint8_t minor; /* 0x01 */
-	uint16_t reserved; /* 0x0002 */
-	char* keyname;
-	uint16_t crules;
-	TZRULE *prules;
+/* MS-OXOCAL v21 §2.2.1.41 */
+struct GX_EXPORT TZDEF {
+	char *keyname = nullptr;
+	uint16_t crules = 0;
+	TZRULE *prules = nullptr;
 };
 
 enum {
@@ -576,7 +504,10 @@ static constexpr unsigned int
 	wed = 1U << 3, /* rdfWed */
 	thu = 1U << 4, /* rdfThu */
 	fri = 1U << 5, /* rdfFri */
-	sat = 1U << 6; /* rdfSat */
+	sat = 1U << 6, /* rdfSat */
+	weekday = mon | tue | wed | thu | fri,
+	weekend = sat | sun,
+	day = weekday | weekend;
 }
 
 #define RECURRENCENUM_FIRST							0x00000001
@@ -588,24 +519,16 @@ static constexpr unsigned int
 union PATTERNTYPE_SPECIFIC {
 	uint32_t weekrecur, dayofmonth;
 	struct {
-		uint32_t weekrecur, recurnum;
-	} monthnth;
+		uint32_t weekrecur = 0, recurnum = 0;
+	} monthnth{};
 };
-
-#define FIRSTDOW_SUNDAY								0x00000000
-#define FIRSTDOW_MONDAY								0x00000001
-#define FIRSTDOW_TUESDAY							0x00000002
-#define FIRSTDOW_WEDNESDAY							0x00000003
-#define FIRSTDOW_THURSDAY							0x00000004
-#define FIRSTDOW_FRIDAY								0x00000005
-#define FIRSTDOW_SATURDAY							0x00000006
 
 enum {
 	ENDDATE_MISSING        = 0x5ae980df,
 	ENDDATE_MISSING_RDELTA = 0x5ae980e1,
 };
 
-struct RECURRENCE_PATTERN {
+struct GX_EXPORT RECURRENCE_PATTERN {
 	uint16_t readerversion; /* 0x3004 */
 	uint16_t writerversion; /* 0x3004 */
 	uint16_t recurfrequency;
@@ -626,7 +549,7 @@ struct RECURRENCE_PATTERN {
 	uint32_t enddate; /* if no enddate, should be set to ENDDATE_MISSING */
 };
 
-struct EXCEPTIONINFO {
+struct GX_EXPORT EXCEPTIONINFO {
 	uint32_t startdatetime;
 	uint32_t enddatetime;
 	uint32_t originalstartdate;
@@ -645,13 +568,13 @@ struct EXCEPTIONINFO {
 		{ return startdatetime < o.startdatetime; }
 };
 
-struct CHANGEHIGHLIGHT {
+struct GX_EXPORT CHANGEHIGHLIGHT {
 	uint32_t size;
 	uint32_t value;
 	uint8_t *preserved;
 };
 
-struct EXTENDEDEXCEPTION {
+struct GX_EXPORT EXTENDEDEXCEPTION {
 	CHANGEHIGHLIGHT changehighlight;
 	uint32_t reservedblockee1size;
 	uint8_t *preservedblockee1;
@@ -667,7 +590,7 @@ struct EXTENDEDEXCEPTION {
 		{ return startdatetime < o.startdatetime; }
 };
 
-struct APPOINTMENT_RECUR_PAT {
+struct GX_EXPORT APPOINTMENT_RECUR_PAT {
 	RECURRENCE_PATTERN recur_pat;
 	uint32_t readerversion2; /* 0x00003006 */
 	uint32_t writerversion2; /* SHOULD be 0x00003009, can be 0x00003008 */
@@ -688,21 +611,21 @@ struct APPOINTMENT_RECUR_PAT {
 };
 
 /* GOID is not to be confused with GID (MS-OXCPRPT v25 §1.1) */
-struct GLOBALOBJECTID {
-	FLATUID arrayid; /* SHOULD be EncodedGlobalId */
-	uint16_t year;
-	uint8_t month;
-	uint8_t day;
-	uint64_t creationtime;
-	uint8_t x[8];
-	BINARY data;
-	bool unparsed;
+struct GX_EXPORT GLOBALOBJECTID {
+	FLATUID arrayid{}; /* SHOULD be EncodedGlobalId */
+	uint16_t year = 0;
+	uint8_t month = 0, day = 0;
+	uint64_t creationtime = 0;
+	uint8_t x[8]{};
+	BINARY data{};
+	bool unparsed = false;
 };
 
 struct GX_EXPORT EID_ARRAY {
-	uint32_t count;
-	uint64_t *pids;
+	uint32_t count = 0;
+	eid_t *pids = nullptr;
 	I_BEGIN_END(pids, count);
+	void emplace_back(eid_t t) { pids[count++] = t; }
 };
 
 using INDEX_ARRAY = PROPTAG_ARRAY;
@@ -713,196 +636,13 @@ using INDEX_ARRAY = PROPTAG_ARRAY;
 
 #define MAX_ATTACHMENT_NUM							200
 
-struct EXTENDED_ERROR {
-	uint16_t version;
-	uint16_t padding;
-	uint32_t errcode;
+struct GX_EXPORT EXTENDED_ERROR {
+	uint16_t version = 0, padding = 0;
+	uint32_t errcode = 0;
 	LONG_TERM_ID folder_gid;
 	LONG_TERM_ID message_gid;
-	uint8_t reserved[24];
-	BINARY *paux_bytes;
-};
-
-using REPLICA_MAPPING = BOOL (*)(BOOL, void *, uint16_t *, GUID *);
-using REPLIST_ENUM = void (*)(void *, uint16_t);
-using REPLICA_ENUM = void (*)(void *, uint64_t);
-
-struct repl_node {
-	repl_node() = default;
-	repl_node(uint16_t r) : replid(r) {}
-	repl_node(const GUID &g) : replguid(g) {}
-
-	union {
-		uint16_t replid;
-		GUID replguid{};
-	};
-	using range_list_t = gromox::range_set<uint64_t>;
-	range_list_t range_list; /* GLOBSET */
-};
-
-class GX_EXPORT idset {
-	public:
-	enum class type : uint8_t {
-		id_packed   = 0x41, id_loose   = 0x42,
-		guid_packed = 0x81, guid_loose = 0x82,
-	};
-
-	idset(idset::type t) : repl_type(t) {}
-	static std::unique_ptr<idset> create(idset::type);
-	bool packed() const { return static_cast<uint8_t>(repl_type) & 0x1; }
-
-	BOOL register_mapping(void *logon_obj, REPLICA_MAPPING);
-	void clear() { repl_list.clear(); }
-	bool empty() const { return repl_list.empty(); }
-	BOOL append(uint64_t eid);
-	BOOL append_range(uint16_t replid, uint64_t low_value, uint64_t high_value);
-	void remove(uint64_t eid);
-	BOOL concatenate(const idset *set_src);
-	bool contains(uint64_t eid) const;
-	BINARY *serialize();
-	BINARY *serialize_replid() const;
-	BINARY *serialize_replguid();
-	BOOL deserialize(const BINARY &);
-	/* convert from deserialize idset into serialize idset */
-	BOOL convert();
-	/* get maximum of first range in idset for specified replid */
-	BOOL get_repl_first_max(uint16_t replid, uint64_t *eid);
-	BOOL enum_replist(void *param, REPLIST_ENUM);
-	BOOL enum_repl(uint16_t replid, void *param, REPLICA_ENUM);
-	inline const std::vector<repl_node> &get_repl_list() const { return repl_list; }
-	void dump(FILE * = nullptr) const;
-#ifdef COMPILE_DIAG
-	inline size_t nelem() const {
-		size_t x = 0;
-		for (const auto &i : repl_list)
-			x += i.range_list.nelem();
-		return x;
-	}
-#endif
-
-	private:
-	std::pair<bool, repl_node::range_list_t *> get_range_by_id(uint16_t);
-
-	void *pparam = nullptr;
-	REPLICA_MAPPING mapping = nullptr;
-	idset::type repl_type = idset::type::id_packed;
-	/* If @repl_type is guid_packed, repl_nodes are REPLGUID_NODE. */
-	std::vector<repl_node> repl_list;
-};
-
-enum class db_notify_type : uint8_t {
-	new_mail = 1, folder_created, message_created, link_created,
-	folder_deleted, message_deleted, link_deleted, folder_modified,
-	message_modified, folder_moved, message_moved, folder_copied,
-	message_copied, search_completed, hiertbl_changed, cttbl_changed,
-	srchtbl_changed, hiertbl_row_added, cttbl_row_added, srchtbl_row_added,
-	hiertbl_row_deleted, cttbl_row_deleted, srchtbl_row_deleted,
-	hiertbl_row_modified, cttbl_row_modified, srchtbl_row_modified,
-};
-
-struct DB_NOTIFY {
-	enum db_notify_type type;
-	void *pdata;
-};
-
-struct DB_NOTIFY_NEW_MAIL {
-	uint64_t folder_id;
-	uint64_t message_id;
-	uint32_t message_flags;
-	const char *pmessage_class;
-};
-
-struct DB_NOTIFY_FOLDER_CREATED {
-	uint64_t folder_id;
-	uint64_t parent_id;
-	PROPTAG_ARRAY proptags;
-};
-
-struct DB_NOTIFY_MESSAGE_CREATED {
-	uint64_t folder_id;
-	uint64_t message_id;
-	PROPTAG_ARRAY proptags;
-};
-
-struct DB_NOTIFY_LINK_CREATED {
-	uint64_t folder_id;
-	uint64_t message_id;
-	uint64_t parent_id;
-	PROPTAG_ARRAY proptags;
-};
-
-struct DB_NOTIFY_FOLDER_DELETED {
-	uint64_t folder_id;
-	uint64_t parent_id;
-};
-
-struct DB_NOTIFY_MESSAGE_DELETED {
-	uint64_t folder_id;
-	uint64_t message_id;
-};
-	
-struct DB_NOTIFY_LINK_DELETED {
-	uint64_t folder_id;
-	uint64_t message_id;
-	uint64_t parent_id;
-};
-
-struct DB_NOTIFY_FOLDER_MODIFIED {
-	uint64_t folder_id;
-	uint64_t parent_id;
-	uint32_t *ptotal;
-	uint32_t *punread;
-	PROPTAG_ARRAY proptags;
-};
-	
-struct DB_NOTIFY_MESSAGE_MODIFIED {
-	uint64_t folder_id;
-	uint64_t message_id;
-	PROPTAG_ARRAY proptags;
-};
-
-struct DB_NOTIFY_FOLDER_MVCP {
-	uint64_t folder_id;
-	uint64_t parent_id;
-	uint64_t old_folder_id;
-	uint64_t old_parent_id;
-};
-
-struct DB_NOTIFY_MESSAGE_MVCP {
-	uint64_t folder_id;
-	uint64_t message_id;
-	uint64_t old_folder_id;
-	uint64_t old_message_id;
-};
-
-struct DB_NOTIFY_SEARCH_COMPLETED {
-	uint64_t folder_id;
-};
-
-struct DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED {
-	uint64_t row_folder_id;
-	uint64_t after_folder_id;
-};
-using DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED = DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED;
-
-struct DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED {
-	uint64_t row_folder_id;
-	uint64_t row_message_id;
-	uint64_t row_instance;
-	uint64_t after_folder_id;
-	uint64_t after_row_id;
-	uint64_t after_instance;
-};
-using DB_NOTIFY_CONTENT_TABLE_ROW_ADDED = DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED;
-
-struct DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED {
-	uint64_t row_folder_id;
-};
-
-struct DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
-	uint64_t row_folder_id;
-	uint64_t row_message_id;
-	uint64_t row_instance;
+	uint8_t reserved[24]{};
+	BINARY *paux_bytes = nullptr;
 };
 
 #define LOGON_FLAG_PRIVATE							0x1
@@ -965,9 +705,6 @@ enum {
 #define FIND_ROW_FLAG_FORWARD						0x0
 #define FIND_ROW_FLAG_BACKWARD						0x1
 
-#define ACCESS_LEVEL_READ_ONLY						0x00000000
-#define ACCESS_LEVEL_MODIFY							0x00000001
-
 #define SAVE_FLAG_KEEPOPENREADONLY					0x01
 #define SAVE_FLAG_KEEPOPENREADWRITE					0x02
 #define SAVE_FLAG_FORCESAVE							0x04
@@ -1029,6 +766,7 @@ enum sqlite_config_id {
 	CONFIG_ID_DEFAULT_PERMISSION = 8,
 	CONFIG_ID_ANONYMOUS_PERMISSION = 9,
 	CONFIG_ID_SCHEMAVERSION = 10,
+	CONFIG_ID_MAPPING_SIGNATURE = 11,
 };
 
 enum {

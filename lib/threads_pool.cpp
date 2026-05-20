@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -30,7 +32,7 @@ struct THR_DATA {
 }
 
 static pthread_t g_scan_id;
-static gromox::atomic_bool g_notify_stop{true};
+static gromox::atomic_bool g_thrpool_stop{true};
 static unsigned int g_threads_pool_min_num, g_threads_pool_max_num;
 static std::atomic<unsigned int> g_threads_pool_cur_thr_num;
 static DOUBLE_LIST g_threads_data_list;
@@ -69,13 +71,12 @@ int threads_pool_run(const char *hint) try
 	int created_thr_num;
 	
 	/* list is protected by g_threads_pool_data_lock */
-	g_notify_stop = false;
+	g_thrpool_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, tpol_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "threads_pool: failed to create scan thread: %s", strerror(ret));
 		return -2;
 	}
-	pthread_setname_np(g_scan_id, "ep_pool/scan");
 
 	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
@@ -98,7 +99,7 @@ int threads_pool_run(const char *hint) try
 	g_threads_pool_cur_thr_num = created_thr_num;
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2369: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return -1;
 }
 
@@ -109,7 +110,7 @@ void threads_pool_stop()
 	DOUBLE_LIST_NODE *pnode;
 	BOOL b_should_exit = FALSE;
 	
-	g_notify_stop = true;
+	g_thrpool_stop = true;
 	if (!pthread_equal(g_scan_id, {})) {
 		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
@@ -236,14 +237,14 @@ static void *tpol_thrwork(void *pparam)
 
 void threads_pool_wakeup_thread()
 {
-	if (g_notify_stop)
+	if (g_thrpool_stop)
 		return;
 	g_threads_pool_waken_cond.notify_one();
 }
 
 void threads_pool_wakeup_all_threads()
 {
-	if (g_notify_stop)
+	if (g_thrpool_stop)
 		return;
 	g_threads_pool_waken_cond.notify_all();
 }
@@ -255,7 +256,8 @@ void threads_pool_wakeup_all_threads()
  */
 static void *tpol_scanwork(void *pparam)
 {
-	while (!g_notify_stop) {
+	pthread_setname_np(pthread_self(), "tpol_scan");
+	while (!g_thrpool_stop) {
 		if (contexts_pool_get_param(CUR_SCHEDULING_CONTEXTS) <= 1) {
 			sleep(1);
 			continue;

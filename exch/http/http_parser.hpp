@@ -52,6 +52,8 @@ struct http_context final : public schedule_context {
 	http_context();
 	~http_context();
 	NOMOVE(http_context);
+	void clear_gss();
+
 	BOOL try_create_vconnection();
 	void set_outchannel_flowcontrol(uint32_t bytes_received, uint32_t available_window);
 	BOOL recycle_inchannel(const char *predecessor_cookie);
@@ -135,14 +137,19 @@ extern SCHEDULE_CONTEXT **http_parser_get_contexts_list();
 int http_parser_threads_event_proc(int action);
 extern bool http_parser_get_password(const char *username, char *password);
 extern HTTP_CONTEXT *http_parser_get_context();
-extern void http_parser_shutdown_async();
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall);
 extern void http_report();
 extern std::string http_make_err_response(const http_context &, http_status);
+
+extern int listener_init(const config_file &gx, const config_file &oldcfg, bool with_tls);
+extern int listener_trigger_accept();
+extern void listener_stop();
+extern int htls_thrwork(generic_connection &&);
 
 extern unsigned int g_http_debug, g_msrpc_debug;
 extern size_t g_rqbody_flush_size, g_rqbody_max_size;
 extern bool g_enforce_auth;
 extern std::string g_http_remote_host_hdr;
 extern gromox::time_duration g_http_basic_auth_validity;
+extern gromox::atomic_bool g_httpmain_stop;

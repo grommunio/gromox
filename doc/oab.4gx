@@ -1,0 +1,15 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2026 grommunio GmbH
+.TH oab 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+oab \(em Handler for the Offline Address Book
+.SH Description
+oab is a component for http(8gx) which handles URIs with the /OAB/ prefix.
+.SH Configuration directives (exchange_nsp.cfg)
+If it exists, /etc/gromox/exchange_nsp.cfg will be read.
+.TP
+\fBcache_interval\fP
+Address book cache invalidation time.
+.br
+Default: \fI5 minutes\fP
+.TP

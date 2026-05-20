@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/mapi_types.hpp>
 
 struct message_content;

@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdint>
+#include <string>
+#include <string_view>
 #include <gromox/common_types.hpp>
 #include <gromox/proc_common.h>
 #include "nsp_types.hpp"
@@ -37,18 +39,6 @@ enum {
 #define	AB_SUBCONTAINERS				0x2
 #define	AB_UNMODIFIABLE					0x8
 
-/* positioning of MID */
-enum {
-	MID_BEGINNING_OF_TABLE = STREAM_SEEK_SET,
-	MID_CURRENT = STREAM_SEEK_CUR,
-	MID_END_OF_TABLE = STREAM_SEEK_END,
-};
-
-/* resolve types of names */
-#define MID_UNRESOLVED					0x0
-#define MID_AMBIGUOUS					0x1
-#define MID_RESOLVED					0x2
-
 enum {
 	SortTypeDisplayName = 0,
 	SortTypePhoneticDisplayName = 0x3,
@@ -56,27 +46,25 @@ enum {
 	SortTypeDisplayName_W = 0x3e9,
 };
 
-#define EPOCH_DIFF 						11644473600LL
-
 extern GUID common_util_get_server_guid();
-void common_util_day_to_filetime(const char *day, FILETIME *pftime);
-extern int cu_utf8_to_mb(cpid_t, const char *src, char *dst, size_t len);
-extern int cu_mb_to_utf8(cpid_t, const char *src, char *dst, size_t len);
-void common_util_guid_to_binary(GUID *pguid, BINARY *pbin);
+void common_util_day_to_filetime(const char *str, FILETIME *pftime);
+extern char *cu_strdup(std::string_view, unsigned int = NDR_STACK_OUT);
+extern char *cu_utf8_to_mb_dup(cpid_t, std::string_view, unsigned int = NDR_STACK_OUT);
+extern char *cu_mb_to_utf8_dup(cpid_t, std::string_view, unsigned int = NDR_STACK_OUT);
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid);
-BOOL common_util_set_permanententryid(uint32_t display_type, const GUID *in, const char *dn, EMSAB_ENTRYID *out);
-BOOL common_util_permanent_entryid_to_binary(const EMSAB_ENTRYID *, BINARY *);
-BOOL common_util_ephemeral_entryid_to_binary(
-	const EPHEMERAL_ENTRYID *pephid, BINARY *pbin);
+extern bool common_util_set_permanententryid(enum display_type dtyp, const GUID *in, const char *dn, EMSAB_ENTRYID *out);
+extern bool cu_permeid_to_bin(const EMSAB_ENTRYID_view &, BINARY *);
+extern bool cu_ephid_to_bin(const EPHEMERAL_ENTRYID &, BINARY *);
 extern NSP_ROWSET *common_util_proprowset_init();
 NSP_PROPROW* common_util_proprowset_enlarge(NSP_ROWSET *pset);
 NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow);
 PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow);
-extern LPROPTAG_ARRAY *common_util_proptagarray_init();
-uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags);
+extern std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8);
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern int common_util_run();
 
 extern BOOL (*get_named_propids)(const char *dir, BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
-extern BOOL (*get_store_properties)(const char *dir, cpid_t, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+extern BOOL (*get_store_properties)(const char *dir, cpid_t, proptag_cspan, TPROPVAL_ARRAY *);
+extern BOOL (*read_delegates)(const char *dir, uint32_t mode, std::vector<std::string> *);
+extern BOOL (*write_delegates)(const char *dir, uint32_t mode, const std::vector<std::string> &);

@@ -8,11 +8,14 @@
 
 using namespace gromox;
 
-static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
+static bool tpropval_array_append(TPROPVAL_ARRAY *parray, proptag_t proptag,
     const void *xpropval)
 {
 	if (xpropval == nullptr) {
-		mlog(LV_DEBUG, "pvalue is NULL in %s", __PRETTY_FUNCTION__);
+		mlog(LV_DEBUG, "%s: pvalue being NULL not allowed", __func__);
+		return true;
+	} else if (PROP_ID(proptag) == 0) {
+		mlog(LV_DEBUG, "%s: propid 0 not allowed", __func__);
 		return true;
 	}
 	if (parray->count == 0 && parray->ppropval == nullptr &&
@@ -33,7 +36,7 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
 	return true;
 }
 
-int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
+ec_error_t TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 {
 	for (size_t i = 0; i < count; ++i) {
 		if (ppropval[i].proptag != tag)
@@ -42,19 +45,19 @@ int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 		ppropval[i].pvalue = propval_dup(PROP_TYPE(tag), xpropval);
 		if (ppropval[i].pvalue == nullptr) {
 			ppropval[i].pvalue = pvalue;
-			return -ENOMEM;
+			return ecServerOOM;
 		}
 		propval_free(PROP_TYPE(tag), pvalue);
-		return 0;
+		return ecSuccess;
 	}
 	/*
 	 * XXX: _dup could bail out because of unrecognized type, so
 	 * ENOMEM is not correct all the time.
 	 */
-	return tpropval_array_append(this, tag, xpropval) ? 0 : -ENOMEM;
+	return tpropval_array_append(this, tag, xpropval) ? ecSuccess : ecServerOOM;
 }
 
-void TPROPVAL_ARRAY::erase(uint32_t proptag)
+void TPROPVAL_ARRAY::erase(proptag_t proptag)
 {
 	static_assert(std::is_trivially_copyable_v<TAGGED_PROPVAL>);
 	for (size_t i = 0; i < count; ++i) {

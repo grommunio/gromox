@@ -1,11 +1,11 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH exmdb_local 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-exmdb_local \(em LDA hook plugin that offers a exmdb_provider(4gx) client
+exmdb_local \(em LDA hook that offers a exmdb_provider(4gx) client
 with a C API
 .SH Description
-An LDA hook plugin for delivery(8gx) which places mail into a store by
+An LDA hook for delivery(8gx) which places mail into a store by
 connecting to a exmdb_provider(4gx) service.
 .SH Configuration directives
 The usual config file location is /etc/gromox/exmdb_local.cfg.
@@ -17,9 +17,6 @@ The usual config file location is /etc/gromox/exmdb_local.cfg.
 Interval in which to scan /var/lib/gromox/queue/cache.
 .br
 Default: 3min
-.TP
-\fBdefault_charset\fP
-Default: \fIwindows-1252\fP
 .TP
 \fBexmdb_connection_num\fP
 Default: \fI5\fP
@@ -35,7 +32,7 @@ If set to \fI1\fP, an alternate rule processor codebase will be used which
 supports cross-store moves and OOF condition but (at this time) no delegation,
 or autoreply.
 .br
-Default: \fI1\fP
+Default: \fI0\fP
 .TP
 \fBresponse_audit_capacity\fP
 Keep track of at most this many {From address, To address} pairs for bounce
@@ -57,9 +54,6 @@ Default: \fI30\fP
 \fBx500_org_name\fP
 Default: (unspecified)
 .SH Files
-.IP \(bu 4
-\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
-exmdb_provider(4gx) for details.
 .IP \(bu 4
 \fIdata_file_path\fP/local_bounce/: response templates for when mail cannot be
 delivered

@@ -13,17 +13,59 @@ enum class ems_objtype : uint8_t {
 struct object_node;
 
 /**
- * We cannot fixate the root to id 0, because alloc_handle_number could
- * yield *any* number for that matter; therefore it is not possible
- * to do without a member indicating the root (whether pointer or integer).
+ * LOGON_ITEM - container for tracking the handles within a ropLogon session
+ *
+ * Within the scope of a ropLogon, the user can e.g. open folders and messages
+ * and get handles, whose handle number is scoped to the logon. The store
+ * object, i.e. the container with a bunch of readable properties, gets a
+ * separate handle in its own right, and it is subordinate to the logon. (This
+ * handle is returned in the ropLogon response. It is often index 0 because it
+ * is the first handle to be given out, but this is not guaranteed, as
+ * alloc_handle_number could yield *any* number for that matter.)
  */
-struct LOGON_ITEM {
+class LOGON_ITEM {
+	public:
+	~LOGON_ITEM();
+	int32_t add_object_handle(int32_t parent_handle, object_node &&);
+	void release_object_handle(uint32_t obj_handle);
+	logon_object *get_logon_object();
+	void *get_object(uint32_t obj_handle, ems_objtype *);
+
 	std::unordered_map<uint32_t, std::shared_ptr<object_node>> phash;
 	std::shared_ptr<object_node> root;
+	std::string username;
 };
 
-struct LOGMAP {
+extern thread_local const char *g_last_rop_dir;
+
+/**
+ * Each emsmdb_session (made with ecDoConnectEx) can have up to 256 "logon" slots that can be used
+ * with ropLogon. More on that in LOGON_ITEM.
+ *
+ * A client like emsmdb32.dll would typically create one ecDoConnectEx session
+ * per logical store (e.g. one's own store, someone else's, a public folder,
+ * etc.) and usually two logons (but sometimes more) on that.
+ */
+class LOGMAP {
+	public:
+	int32_t insert_logon_item(uint8_t logon_id, std::unique_ptr<logon_object> &&);
+	int32_t add_object_handle(uint8_t logon_id, int32_t parent_handle, object_node &&);
+	void release_object_handle(uint8_t logon_id, uint32_t obj_handle);
+	logon_object *get_logon_object(uint8_t logon_id);
+	void *get_object(uint8_t logon_id, uint32_t obj_handle, ems_objtype *);
+	template<typename T> inline T *get_obj(uint8_t id, uint32_t oh, ems_objtype *ty)
+	{
+		return static_cast<T *>(get_object(id, oh, ty));
+	}
+	inline logon_object *get_obj(uint8_t id, uint32_t oh, ems_objtype *ty)
+	{
+		auto ob = static_cast<logon_object *>(get_object(id, oh, ty));
+		g_last_rop_dir = ob->get_dir();
+		return ob;
+	}
+
 	std::unique_ptr<LOGON_ITEM> p[256];
+	std::string username;
 };
 
 struct object_node {
@@ -43,28 +85,12 @@ struct object_node {
 };
 
 extern void rop_processor_init(int scan_interval);
-extern int rop_processor_run();
-extern void rop_processor_stop();
 extern ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *in, uint32_t cb_in, uint8_t *out, uint32_t *cb_out);
-extern int32_t rop_processor_create_logon_item(LOGMAP *, uint8_t logon_id, std::unique_ptr<logon_object> &&);
-extern int32_t rop_processor_add_object_handle(LOGMAP *, uint8_t logon_id, int32_t parent_handle, object_node &&);
-extern void *rop_processor_get_object(LOGMAP *, uint8_t logon_id, uint32_t obj_handle, ems_objtype *);
-template<typename T> T *rop_proc_get_obj(LOGMAP *l, uint8_t id, uint32_t oh, ems_objtype *ty) {
-	return static_cast<T *>(rop_processor_get_object(l, id, oh, ty));
-}
-extern thread_local const char *g_last_rop_dir;
-template<> inline logon_object *rop_proc_get_obj<logon_object>(LOGMAP *l, uint8_t id, uint32_t oh, ems_objtype *ty) {
-	auto ob = static_cast<logon_object *>(rop_processor_get_object(l, id, oh, ty));
-	g_last_rop_dir = ob->get_dir();
-	return ob;
-}
-extern void rop_processor_release_object_handle(LOGMAP *, uint8_t logon_id, uint32_t obj_handle);
-extern logon_object *rop_processor_get_logon_object(LOGMAP *, uint8_t logon_id);
 extern ec_error_t aoh_to_error(int);
 
 extern unsigned int emsmdb_rop_chaining, emsmdb_max_cxh_per_user;
 extern unsigned int emsmdb_max_obh_per_session, emsmdb_pvt_folder_softdel;
 extern unsigned int emsmdb_backfill_transporthdr;
-extern size_t ems_max_active_sessions, ems_max_active_users;
+extern size_t ems_max_active_sessions, ems_max_active_users, emsmdb_compress_threshold;
 extern size_t ems_max_active_notifh, ems_max_pending_sesnotif;
 extern uint16_t server_normal_version[4];

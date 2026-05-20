@@ -37,6 +37,7 @@ enum class mlist_priv {
 #define MLIST_RESULT_PRIVIL_SPECIFIED	4
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995" /* PR_DISPLAY_TYPE_EX */
 #define JOIN_ALTNAMES "LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='{0}'"
+#define JOIN_ALIASES "LEFT JOIN aliases AS als ON u.username=als.mainname AND als.aliasname='{0}'"
 
 /*
  * Terminology you might encounter in this file
@@ -68,11 +69,14 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 	auto q_user = conn->quote(username);
 	std::string q_where = str_isascii(username) ?
 	                      ("u.username='" + q_user + "'") : "0"s;
+	/* Grab basic info, primary domain+org, and LDAP homeserver... */
 	auto qstr =
+		/* ...based on username lookup */
 		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
 		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone, u.id FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		"u.username, u.timezone, u.id, d.id, d.org_id FROM users AS u "
+		JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
 		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
@@ -83,10 +87,13 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
 		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='" +
 		q_user + "' WHERE " + q_where + " LIMIT 2) UNION"
+
+		/* ...by altname lookup */
 		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
 		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone, u.id FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		"u.username, u.timezone, u.id, d.id, d.org_id FROM users AS u "
+		JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
 		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
@@ -96,7 +103,26 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
 		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
 		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='" + q_user + "'"
-		" WHERE alt.altname='" + q_user + "' LIMIT 2) LIMIT 2";
+		" LEFT JOIN aliases AS ali ON u.username=ali.mainname AND ali.aliasname='" + q_user + "'"
+		" WHERE alt.altname='" + q_user + "' LIMIT 2) UNION"
+
+		/* ..by alias lookup */
+		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
+		"u.privilege_bits, u.maildir, u.lang, u.externid, "
+		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
+		"u.username, u.timezone, u.id, d.id, d.org_id FROM users AS u "
+		JOIN_WITH_DISPLAYTYPE
+		" LEFT JOIN domains AS d ON u.domain_id=d.id"
+		" LEFT JOIN orgs ON d.org_id=orgs.id"
+		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
+		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.org_id AND op2.key='ldap_binddn'"
+		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.org_id AND op3.key='ldap_bindpw'"
+		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
+		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
+		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
+		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='" + q_user + "'"
+		" LEFT JOIN aliases AS ali ON u.username=ali.mainname AND ali.aliasname='" + q_user + "'"
+		" WHERE ali.aliasname='" + q_user + "' LIMIT 2) LIMIT 2";
 	if (!conn->query(qstr))
 		return EIO;
 	auto pmyres = conn->store_result();
@@ -158,6 +184,8 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 	mres.username       = znul(myrow[13]);
 	mres.timezone       = znul(myrow[14]);
 	mres.user_id        = strtoul(znul(myrow[15]), nullptr, 0);
+	mres.domain_id      = strtoul(znul(myrow[16]), nullptr, 0);
+	mres.org_id         = strtoul(znul(myrow[17]), nullptr, 0);
 	return 0;
 } catch (const std::bad_alloc &e) {
 	mlog(LV_ERR, "E-2007: ENOMEM");
@@ -317,7 +345,14 @@ bool mysql_plugin::get_user_displayname(const char *username, std::string &out) 
 		"LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 " /* PR_DISPLAY_NAME */
 		"LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 " /* PR_NICKNAME */
 		JOIN_ALTNAMES " "
-		"WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
+		"WHERE alt.altname='{0}' LIMIT 2) UNION"
+		"(SELECT u2.propval_str AS real_name, "
+		"u3.propval_str AS nickname, dt.propval_str AS dtypx FROM users AS u "
+		JOIN_WITH_DISPLAYTYPE " "
+		"LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 " /* PR_DISPLAY_NAME */
+		"LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 " /* PR_NICKNAME */
+		JOIN_ALIASES " "
+		"WHERE als.aliasname='{0}' LIMIT 2) LIMIT 2",
 		q_user);
 	if (!conn->query(qstr))
 		return false;
@@ -494,7 +529,10 @@ bool mysql_plugin::get_user_ids(const char *username, unsigned int *puser_id,
 		" WHERE u.username='{0}' LIMIT 2) UNION"
 		" (SELECT u.id, u.domain_id, dt.propval_str AS dtypx"
 		" FROM users AS u " JOIN_WITH_DISPLAYTYPE " " JOIN_ALTNAMES
-		" WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
+		" WHERE alt.altname='{0}' LIMIT 2) UNION"
+		" (SELECT u.id, u.domain_id, dt.propval_str AS dtypx "
+		" FROM users AS u " JOIN_WITH_DISPLAYTYPE " " JOIN_ALIASES
+		" WHERE als.aliasname='{0}' LIMIT 2) LIMIT 2",
 		q_user);
 	if (!conn->query(qstr))
 		return false;

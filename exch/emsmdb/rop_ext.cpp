@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
@@ -16,7 +16,7 @@
 #include "rop_ext.hpp"
 #include "rop_ids.hpp"
 #include "rop_processor.hpp"
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 using namespace gromox;
 
@@ -34,12 +34,96 @@ static pack_result rop_ext_push(EXT_PUSH &x, const LOGON_TIME &r)
 static pack_result rop_ext_push(EXT_PUSH &x, const GHOST_SERVER &r)
 {
 	if (r.server_count == 0 || r.cheap_server_count > r.server_count)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(x.p_uint16(r.server_count));
 	TRY(x.p_uint16(r.cheap_server_count));
 	for (size_t i = 0; i < r.server_count; ++i)
 		TRY(x.p_str(r.ppservers[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
+}
+
+static pack_result rop_push_ext(EXT_PUSH &x, std::span<const proptag_t> cols,
+    const RECIPIENT_ROW &r)
+{
+	bool b_unicode = false;
+	if (r.flags & RECIPIENT_ROW_FLAG_UNICODE)
+		b_unicode = true;
+	TRY(x.p_uint16(r.flags));
+	if (r.pprefix_used != nullptr)
+		TRY(x.p_uint8(*r.pprefix_used));
+	if (r.have_display_type)
+		TRY(x.p_uint8(r.display_type));
+	if (r.px500dn != nullptr)
+		TRY(x.p_str(r.px500dn));
+	if (r.pentry_id != nullptr)
+		TRY(x.p_bin(*r.pentry_id));
+	if (r.psearch_key != nullptr)
+		TRY(x.p_bin(*r.psearch_key));
+	if (r.paddress_type != nullptr)
+		TRY(x.p_str(r.paddress_type));
+	if (r.pmail_address != nullptr) {
+		if (b_unicode)
+			TRY(x.p_wstr(r.pmail_address));
+		else
+			TRY(x.p_str(r.pmail_address));
+	}
+	if (r.pdisplay_name != nullptr) {
+		if (b_unicode)
+			TRY(x.p_wstr(r.pdisplay_name));
+		else
+			TRY(x.p_str(r.pdisplay_name));
+	}
+	if (r.psimple_name != nullptr) {
+		if (b_unicode)
+			TRY(x.p_wstr(r.psimple_name));
+		else
+			TRY(x.p_str(r.psimple_name));
+	}
+	if (r.ptransmittable_name != nullptr) {
+		if (b_unicode)
+			TRY(x.p_wstr(r.ptransmittable_name));
+		else
+			TRY(x.p_str(r.ptransmittable_name));
+	}
+	TRY(x.p_uint16(r.count));
+	if (r.count > cols.size())
+		return pack_result::format;
+	return x.p_proprow(cols, r.properties);
+}
+
+static pack_result rop_push_ext(EXT_PUSH &x, std::span<const proptag_t> cols,
+    const OPENRECIPIENT_ROW &r)
+{
+	TRY(x.p_uint8(r.recipient_type));
+	TRY(x.p_uint16(r.cpid));
+	TRY(x.p_uint16(r.reserved));
+	uint32_t offset = x.m_offset;
+	TRY(x.advance(sizeof(uint16_t)));
+	TRY(rop_push_ext(x, cols, r.recipient_row));
+	uint16_t row_size = x.m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = x.m_offset;
+	x.m_offset = offset;
+	TRY(x.p_uint16(row_size));
+	x.m_offset = offset1;
+	return pack_result::ok;
+}
+
+pack_result rop_push_ext(EXT_PUSH &x, std::span<const proptag_t> cols,
+    const READRECIPIENT_ROW &r)
+{
+	TRY(x.p_uint32(r.row_id));
+	TRY(x.p_uint8(r.recipient_type));
+	TRY(x.p_uint16(r.cpid));
+	TRY(x.p_uint16(r.reserved));
+	uint32_t offset = x.m_offset;
+	TRY(x.advance(sizeof(uint16_t)));
+	TRY(rop_push_ext(x, cols, r.recipient_row));
+	uint16_t row_size = x.m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = x.m_offset;
+	x.m_offset = offset;
+	TRY(x.p_uint16(row_size));
+	x.m_offset = offset1;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_push(EXT_PUSH &x, const NULL_DST_RESPONSE &r)
@@ -60,7 +144,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const PROBLEM_ARRAY &r)
 	TRY(x.p_uint16(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(rop_ext_push(x, r.pproblem[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_push(EXT_PUSH &x, const PROPIDNAME_ARRAY &r)
@@ -70,7 +154,107 @@ static pack_result rop_ext_push(EXT_PUSH &x, const PROPIDNAME_ARRAY &r)
 		TRY(x.p_uint16(r.ppropid[i]));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(x.p_propname(r.ppropname[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
+}
+
+static pack_result rop_ext_pull(EXT_PULL &x, std::span<const proptag_t> tags,
+    RECIPIENT_ROW *r)
+{
+	TRY(x.g_uint16(&r->flags));
+	uint8_t type = r->flags & 0x0007;
+	bool b_unicode = false;
+	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE)
+		b_unicode = true;
+	r->pprefix_used = nullptr;
+	r->have_display_type = false;
+	r->px500dn = nullptr;
+	if (type == RECIPIENT_ROW_TYPE_X500DN) {
+		r->pprefix_used = x.anew<uint8_t>();
+		if (r->pprefix_used == nullptr)
+			return pack_result::alloc;
+		TRY(x.g_uint8(r->pprefix_used));
+		TRY(x.g_uint8(&r->display_type));
+		r->have_display_type = true;
+		TRY(x.g_str(&r->px500dn));
+	}
+	r->pentry_id = nullptr;
+	r->psearch_key = nullptr;
+	if (type == RECIPIENT_ROW_TYPE_PERSONAL_DLIST1 ||
+	    type == RECIPIENT_ROW_TYPE_PERSONAL_DLIST2) {
+		r->pentry_id = x.anew<BINARY>();
+		if (r->pentry_id == nullptr)
+			return pack_result::alloc;
+		TRY(x.g_bin(r->pentry_id));
+		r->psearch_key = x.anew<BINARY>();
+		if (r->psearch_key == nullptr)
+			return pack_result::alloc;
+		TRY(x.g_bin(r->psearch_key));
+	}
+	r->paddress_type = nullptr;
+	if (type == RECIPIENT_ROW_TYPE_NONE &&
+	    (r->flags & RECIPIENT_ROW_FLAG_OUTOFSTANDARD))
+		TRY(x.g_str(&r->paddress_type));
+	r->pmail_address = nullptr;
+	if (r->flags & RECIPIENT_ROW_FLAG_EMAIL) {
+		if (b_unicode)
+			TRY(x.g_wstr(&r->pmail_address));
+		else
+			TRY(x.g_str(&r->pmail_address));
+	}
+	r->pdisplay_name = nullptr;
+	if (r->flags & RECIPIENT_ROW_FLAG_DISPLAY) {
+		if (b_unicode)
+			TRY(x.g_wstr(&r->pdisplay_name));
+		else
+			TRY(x.g_str(&r->pdisplay_name));
+	}
+	r->psimple_name = NULL;
+	if (r->flags & RECIPIENT_ROW_FLAG_SIMPLE) {
+		if (b_unicode)
+			TRY(x.g_wstr(&r->psimple_name));
+		else
+			TRY(x.g_str(&r->psimple_name));
+	}
+	r->ptransmittable_name = NULL;
+	if (r->flags & RECIPIENT_ROW_FLAG_TRANSMITTABLE) {
+		if (b_unicode)
+			TRY(x.g_wstr(&r->ptransmittable_name));
+		else
+			TRY(x.g_str(&r->ptransmittable_name));
+	}
+	if (r->flags == RECIPIENT_ROW_FLAG_SAME) {
+		if (r->pdisplay_name == nullptr && r->ptransmittable_name != nullptr)
+			r->pdisplay_name = r->ptransmittable_name;
+		else if (r->pdisplay_name != nullptr && r->ptransmittable_name == nullptr)
+			r->ptransmittable_name = r->pdisplay_name;
+	}
+	TRY(x.g_uint16(&r->count));
+	if (r->count > tags.size())
+		return pack_result::format;
+	return x.g_proprow(tags.subspan(0, r->count), &r->properties);
+}
+
+static pack_result rop_ext_pull(EXT_PULL &x, std::span<const proptag_t> tags,
+    MODIFYRECIPIENT_ROW *r)
+{
+	uint16_t row_size;
+
+	TRY(x.g_uint32(&r->row_id));
+	TRY(x.g_uint8(&r->recipient_type));
+	TRY(x.g_uint16(&row_size));
+	if (row_size == 0) {
+		r->precipient_row = NULL;
+		return pack_result::ok;
+	}
+	uint32_t offset = x.m_offset + row_size;
+	r->precipient_row = x.anew<RECIPIENT_ROW>();
+	if (r->precipient_row == nullptr)
+		return pack_result::alloc;
+	TRY(rop_ext_pull(x, tags, r->precipient_row));
+	if (x.m_offset > offset)
+		return pack_result::format;
+	x.m_offset = offset;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, MESSAGE_READ_STAT &r)
@@ -89,15 +273,15 @@ static pack_result rop_ext_pull(EXT_PULL &x, LOGON_REQUEST &r)
 	TRY(x.g_uint16(&size));
 	if (0 == size) {
 		r.pessdn = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r.pessdn = x.anew<char>(size);
 	if (r.pessdn == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(x.g_bytes(r.pessdn, size));
 	if (r.pessdn[size-1] != '\0')
-		return EXT_ERR_FORMAT;
-	return EXT_ERR_SUCCESS;
+		return pack_result::format;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_push(EXT_PUSH &x, const LOGON_PMB_RESPONSE &r)
@@ -158,9 +342,9 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GETRECEIVEFOLDERTABLE_RESPONS
 	static constexpr PROPTAG_ARRAY columns = {std::size(proptags), deconst(proptags)};
 
 	TRY(x.p_uint32(r.rows.count));
-	for (size_t i = 0; i < r.rows.count; ++i)
-		TRY(x.p_proprow(columns, r.rows.prows[i]));
-	return EXT_ERR_SUCCESS;
+	for (const auto &row : r.rows)
+		TRY(x.p_proprow(columns, row));
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_push(EXT_PUSH &x, const GETSTORESTAT_RESPONSE &r)
@@ -256,11 +440,11 @@ static pack_result rop_ext_pull(EXT_PULL &x,
 	if (r.offset == 0 && b_private) {
 		r.pguid = x.anew<GUID>();
 		if (r.pguid == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return x.g_guid(r.pguid);
 	}
 	r.pguid = nullptr;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, OPENFOLDER_REQUEST &r)
@@ -299,7 +483,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const CREATEFOLDER_RESPONSE &r)
 	TRY(x.p_uint64(r.folder_id));
 	TRY(x.p_uint8(r.is_existing));
 	if (r.is_existing == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_uint8(r.has_rules));
 	if (r.pghost == nullptr)
 		return x.p_uint8(0);
@@ -328,14 +512,14 @@ static pack_result rop_ext_pull(EXT_PULL &x, SETSEARCHCRITERIA_REQUEST &r)
 	} else {
 		r.pres = x.anew<RESTRICTION>();
 		if (r.pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		uint32_t offset = x.m_offset + res_size;
 		TRY(x.g_restriction(r.pres));
 		if (x.m_offset > offset)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		x.m_offset = offset;
 	}
-	TRY(x.g_uint64_sa(&r.folder_ids));
+	TRY(x.g_eid_a(&r.folder_ids, 2));
 	return x.g_uint32(&r.search_flags);
 }
 
@@ -361,14 +545,14 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GETSEARCHCRITERIA_RESPONSE &r
 		x.m_offset = offset2;
 	}
 	TRY(x.p_uint8(r.logon_id));
-	TRY(x.p_uint64_sa(r.folder_ids));
+	TRY(x.p_eid_a(r.folder_ids, 2));
 	return x.p_uint32(r.search_status);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, MOVECOPYMESSAGES_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.dhindex));
-	TRY(x.g_uint64_sa(&r.message_ids));
+	TRY(x.g_eid_a(&r.message_ids, 2));
 	TRY(x.g_uint8(&r.want_asynchronous));
 	return x.g_uint8(&r.want_copy);
 }
@@ -409,14 +593,14 @@ static pack_result rop_ext_pull(EXT_PULL &x, DELETEMESSAGES_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.want_asynchronous));
 	TRY(x.g_uint8(&r.notify_non_read));
-	return x.g_uint64_sa(&r.message_ids);
+	return x.g_eid_a(&r.message_ids, 2);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, HARDDELETEMESSAGES_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.want_asynchronous));
 	TRY(x.g_uint8(&r.notify_non_read));
-	return x.g_uint64_sa(&r.message_ids);
+	return x.g_eid_a(&r.message_ids, 2);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, GETHIERARCHYTABLE_REQUEST &r)
@@ -466,17 +650,17 @@ static pack_result rop_ext_pull(EXT_PULL &x, RESTRICT_REQUEST &r)
 	TRY(x.g_uint16(&res_size));
 	if (0 == res_size) {
 		r.pres = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r.pres = x.anew<RESTRICTION>();
 	if (r.pres == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	uint32_t offset = x.m_offset + res_size;
 	TRY(x.g_restriction(r.pres));
 	if (x.m_offset > offset)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	x.m_offset = offset;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, QUERYROWS_REQUEST &r)
@@ -490,7 +674,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const QUERYROWS_RESPONSE &r)
 {
 	TRY(x.p_uint8(r.seek_pos));
 	TRY(x.p_uint16(r.count));
-	return x.p_bytes(r.bin_rows.pb, r.bin_rows.cb);
+	return x.p_bytes(r.bin_rows);
 }
 
 static pack_result rop_ext_push(EXT_PUSH &x, const QUERYPOSITION_RESPONSE &r)
@@ -553,11 +737,11 @@ static pack_result rop_ext_pull(EXT_PULL &x, FINDROW_REQUEST &r)
 	} else {
 		r.pres = x.anew<RESTRICTION>();
 		if (r.pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		uint32_t offset = x.m_offset + res_size;
 		TRY(x.g_restriction(r.pres));
 		if (x.m_offset > offset)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		x.m_offset = offset;
 	}
 	TRY(x.g_uint8(&r.seek_pos));
@@ -570,8 +754,8 @@ static pack_result rop_ext_push(EXT_PUSH &x, const FINDROW_RESPONSE &r)
 	if (r.prow == nullptr)
 		return x.p_uint8(0);
 	TRY(x.p_uint8(1));
-	TRY(x.p_proprow(*r.pcolumns, *r.prow));
-	return EXT_ERR_SUCCESS;
+	TRY(x.p_proprow(r.pcolumns, *r.prow));
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, FREEBOOKMARK_REQUEST &r)
@@ -589,7 +773,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const EXPANDROW_RESPONSE &r)
 {
 	TRY(x.p_uint32(r.expanded_count));
 	TRY(x.p_uint16(r.count));
-	return x.p_bytes(r.bin_rows.pb, r.bin_rows.cb);
+	return x.p_bytes(r.bin_rows);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, COLLAPSEROW_REQUEST &r)
@@ -646,20 +830,20 @@ static pack_result rop_ext_push(EXT_PUSH &x, const OPENMESSAGE_RESPONSE &r)
 	unsigned int i;
 	for (i = 0; i < r.row_count; ++i) {
 		uint32_t last_offset = x.m_offset;
-		auto status = x.p_openrecipient_row(r.recipient_columns, r.precipient_row[i]);
-		if (EXT_ERR_SUCCESS != status ||
+		auto status = rop_push_ext(x, r.recipient_columns, r.precipient_row[i]);
+		if (pack_result::ok != status ||
 		    x.m_alloc_size - x.m_offset < 256) {
 			x.m_offset = last_offset;
 			break;
 		}
 	}
 	if (i == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	uint32_t offset1 = x.m_offset;
 	x.m_offset = offset;
 	TRY(x.p_uint8(i));
 	x.m_offset = offset1;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, CREATEMESSAGE_REQUEST &r)
@@ -702,15 +886,16 @@ static pack_result rop_ext_pull(EXT_PULL &x, MODIFYRECIPIENTS_REQUEST &r)
 	if (r.count == 0) {
 		r.prow = nullptr;
 	} else {
+		r.count = std::min(r.count, static_cast<uint16_t>(UINT16_MAX));
 		r.prow = x.anew<MODIFYRECIPIENT_ROW>(r.count);
 		if (r.prow == nullptr) {
 			r.count = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 	}
 	for (size_t i = 0; i < r.count; ++i)
-		TRY(x.g_modrcpt_row(&r.proptags, &r.prow[i]));
-	return EXT_ERR_SUCCESS;
+		TRY(rop_ext_pull(x, r.proptags, &r.prow[i]));
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, READRECIPIENTS_REQUEST &r)
@@ -722,7 +907,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, READRECIPIENTS_REQUEST &r)
 static pack_result rop_ext_push(EXT_PUSH &x, const READRECIPIENTS_RESPONSE &r)
 {
 	TRY(x.p_uint8(r.count));
-	return x.p_bytes(r.bin_recipients.pb, r.bin_recipients.cb);
+	return x.p_bytes(r.bin_recipients);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, RELOADCACHEDINFORMATION_REQUEST &r)
@@ -744,20 +929,20 @@ static pack_result rop_ext_push(EXT_PUSH &x, const RELOADCACHEDINFORMATION_RESPO
 	unsigned int i;
 	for (i = 0; i < r.row_count; ++i) {
 		uint32_t last_offset = x.m_offset;
-		auto status = x.p_openrecipient_row(r.recipient_columns, r.precipient_row[i]);
-		if (EXT_ERR_SUCCESS != status ||
+		auto status = rop_push_ext(x, r.recipient_columns, r.precipient_row[i]);
+		if (pack_result::ok != status ||
 		    x.m_alloc_size - x.m_offset < 256) {
 			x.m_offset = last_offset;
 			break;
 		}
 	}
 	if (i == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	uint32_t offset1 = x.m_offset;
 	x.m_offset = offset;
 	TRY(x.p_uint8(i));
 	x.m_offset = offset1;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, SETMESSAGESTATUS_REQUEST &r)
@@ -786,7 +971,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, SETREADFLAGS_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.want_asynchronous));
 	TRY(x.g_uint8(&r.read_flags));
-	return x.g_uint64_sa(&r.message_ids);
+	return x.g_eid_a(&r.message_ids, 2);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, SETMESSAGEREADFLAG_REQUEST &r,
@@ -796,11 +981,11 @@ static pack_result rop_ext_pull(EXT_PULL &x, SETMESSAGEREADFLAG_REQUEST &r,
 	TRY(x.g_uint8(&r.flags));
 	if (b_private) {
 		r.pclient_data = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r.pclient_data = x.anew<LONG_TERM_ID>();
 	if (r.pclient_data == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_longterm(r.pclient_data);
 }
 
@@ -864,20 +1049,20 @@ static pack_result rop_ext_push(EXT_PUSH &x, const OPENEMBEDDEDMESSAGE_RESPONSE 
 	unsigned int i;
 	for (i = 0; i < r.row_count; ++i) {
 		uint32_t last_offset = x.m_offset;
-		auto status = x.p_openrecipient_row(r.recipient_columns, r.precipient_row[i]);
-		if (EXT_ERR_SUCCESS != status ||
+		auto status = rop_push_ext(x, r.recipient_columns, r.precipient_row[i]);
+		if (pack_result::ok != status ||
 		    x.m_alloc_size - x.m_offset < 256) {
 			x.m_offset = last_offset;
 			break;
 		}
 	}
 	if (i == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	uint32_t offset1 = x.m_offset;
 	x.m_offset = offset;
 	TRY(x.p_uint8(i));
 	x.m_offset = offset1;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, GETATTACHMENTTABLE_REQUEST &r)
@@ -908,14 +1093,14 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GETADDRESSTYPES_RESPONSE &r)
 	TRY(x.p_uint16(r.address_types.count));
 	uint32_t offset = x.m_offset;
 	TRY(x.advance(sizeof(uint16_t)));
-	for (size_t i = 0; i < r.address_types.count; ++i)
-		TRY(x.p_str(r.address_types.ppstr[i]));
+	for (const auto &atypstr : r.address_types)
+		TRY(x.p_str(atypstr));
 	uint16_t size = x.m_offset - (offset + sizeof(uint16_t));
 	uint32_t offset1 = x.m_offset;
 	x.m_offset = offset;
 	TRY(x.p_uint16(size));
 	x.m_offset = offset1;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, SPOOLERLOCKMESSAGE_REQUEST &r)
@@ -958,7 +1143,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const OPTIONSDATA_RESPONSE &r)
 	TRY(x.p_bin_s(r.help_file));
 	if (r.help_file.cb > 0)
 		return x.p_str(r.pfile_name);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, GETPROPERTYIDSFROMNAMES_REQUEST &r)
@@ -994,7 +1179,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, GETPROPERTIESSPECIFIC_REQUEST &r)
 static pack_result rop_ext_push(EXT_PUSH &x,
     const GETPROPERTIESSPECIFIC_RESPONSE &r)
 {
-	return x.p_proprow(*r.pproptags, r.row);
+	return x.p_proprow(r.pproptags, r.row);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, GETPROPERTIESALL_REQUEST &r)
@@ -1021,9 +1206,9 @@ static pack_result rop_ext_pull(EXT_PULL &x, SETPROPERTIES_REQUEST &r)
 	uint32_t offset = x.m_offset + size;
 	TRY(x.g_tpropval_a(&r.propvals));
 	if (x.m_offset > offset)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	x.m_offset = offset;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_push(EXT_PUSH &x, const PROBLEM_RESPONSE &r)
@@ -1039,9 +1224,9 @@ static pack_result rop_ext_pull(EXT_PULL &x, SETPROPERTIESNOREPLICATE_REQUEST &r
 	uint32_t offset = x.m_offset + size;
 	TRY(x.g_tpropval_a(&r.propvals));
 	if (x.m_offset > offset)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	x.m_offset = offset;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, DELETEPROPERTIES_REQUEST &r)
@@ -1062,11 +1247,11 @@ static pack_result rop_ext_pull(EXT_PULL &x, QUERYNAMEDPROPERTIES_REQUEST &r)
 	TRY(x.g_uint8(&has_guid));
 	if (0 == has_guid) {
 		r.pguid = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r.pguid = x.anew<GUID>();
 	if (r.pguid == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_guid(r.pguid);
 }
 
@@ -1122,7 +1307,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, READSTREAM_REQUEST &r)
 	if (r.byte_count == 0xBABE)
 		return x.g_uint32(&r.max_byte_count);
 	r.max_byte_count = 0;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_push(EXT_PUSH &x, const READSTREAM_RESPONSE &r)
@@ -1216,16 +1401,17 @@ static pack_result rop_ext_pull(EXT_PULL &x, MODIFYPERMISSIONS_REQUEST &r)
 	TRY(x.g_uint16(&r.count));
 	if (r.count == 0) {
 		r.prow = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
+	r.count = std::min(r.count, static_cast<uint16_t>(UINT16_MAX));
 	r.prow = x.anew<PERMISSION_DATA>(r.count);
 	if (r.prow == nullptr) {
 		r.count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(x.g_permission_data(&r.prow[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, GETPERMISSIONSTABLE_REQUEST &r)
@@ -1239,15 +1425,16 @@ static pack_result rop_ext_pull(EXT_PULL &x, MODIFYRULES_REQUEST &r)
 	TRY(x.g_uint8(&r.flags));
 	TRY(x.g_uint16(&r.count));
 	if (r.count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
+	r.count = std::min(r.count, static_cast<uint16_t>(UINT16_MAX));
 	r.prow = x.anew<RULE_DATA>(r.count);
 	if (r.prow == nullptr) {
 		r.count = 0;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(x.g_rule_data(&r.prow[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, GETRULESTABLE_REQUEST &r)
@@ -1292,7 +1479,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, FASTTRANSFERSOURCEGETBUFFER_REQUEST
 	if (r.buffer_size == 0xBABE)
 		return x.g_uint16(&r.max_buffer_size);
 	r.max_buffer_size = 0;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_push(EXT_PUSH &x,
@@ -1317,7 +1504,7 @@ static pack_result rop_ext_pull(EXT_PULL &x,
     FASTTRANSFERSOURCECOPYMESSAGES_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.ohindex));
-	TRY(x.g_uint64_sa(&r.message_ids));
+	TRY(x.g_eid_a(&r.message_ids, 2));
 	TRY(x.g_uint8(&r.flags));
 	return x.g_uint8(&r.send_options);
 }
@@ -1345,7 +1532,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, TELLVERSION_REQUEST &r)
 {
 	for (size_t i = 0; i < 3; ++i)
 		TRY(x.g_uint16(&r.version[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, SYNCCONFIGURE_REQUEST &r)
@@ -1362,11 +1549,11 @@ static pack_result rop_ext_pull(EXT_PULL &x, SYNCCONFIGURE_REQUEST &r)
 	} else {
 		r.pres = x.anew<RESTRICTION>();
 		if (r.pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		uint32_t offset = x.m_offset + res_size;
 		TRY(x.g_restriction(r.pres));
 		if (x.m_offset > offset)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		x.m_offset = offset;
 	}
 	TRY(x.g_uint32(&r.extra_flags));
@@ -1395,23 +1582,23 @@ static pack_result rop_ext_pull(EXT_PULL &x,
 	
 	TRY(x.g_uint16(&size));
 	if (size == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	r.count = 0;
 	uint32_t offset = x.m_offset + size;
 	while (x.m_offset < offset && r.count < ta_size)
 		TRY(rop_ext_pull(x, tmp_array[r.count++]));
 	if (x.m_offset != offset)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	r.pread_stat = x.anew<MESSAGE_READ_STAT>(r.count);
 	if (r.pread_stat == nullptr) {
 		r.count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	memcpy(r.pread_stat, tmp_array.get(), sizeof(tmp_array[0]) * r.count);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1171: ENOMEM");
-	return EXT_ERR_ALLOC;
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return pack_result::alloc;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, SYNCIMPORTHIERARCHYCHANGE_REQUEST &r)
@@ -1480,18 +1667,19 @@ static pack_result rop_ext_pull(EXT_PULL &x,
 	uint32_t offset = x.m_offset + data_size;
 	TRY(x.g_uint32(&r.count));
 	if (r.count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
+	r.count = std::min(r.count, static_cast<uint32_t>(UINT32_MAX));
 	r.prange = x.anew<LONG_TERM_ID_RANGE>(r.count);
 	if (r.prange == nullptr) {
 		r.count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(x.g_longterm_range(&r.prange[i]));
 	if (x.m_offset > offset)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	x.m_offset = offset;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, GETLOCALREPLICAIDS_REQUEST &r)
@@ -1515,15 +1703,15 @@ static pack_result rop_ext_pull(EXT_PULL &x, REGISTERNOTIFICATION_REQUEST &r)
 	if (r.want_whole_store) {
 		r.pfolder_id  = nullptr;
 		r.pmessage_id = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r.pfolder_id = x.anew<uint64_t>();
 	if (r.pfolder_id == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(x.g_uint64(r.pfolder_id));
 	r.pmessage_id = x.anew<uint64_t>();
 	if (r.pmessage_id == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return x.g_uint64(r.pmessage_id);
 }
 
@@ -1566,9 +1754,9 @@ static pack_result rop_ext_pull(EXT_PULL &x, std::unique_ptr<rop_request> &reque
 	case ropWritePerUserInformation: {
 		auto r0 = std::make_unique<WRITEPERUSERINFORMATION_REQUEST>();
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, head.logon_id);
+		auto plogon = pemsmdb_info->logmap.get_logon_object(head.logon_id);
 		if (plogon == nullptr)
-			return EXT_ERR_INVALID_OBJECT;
+			return pack_result::invalid_obj;
 		ret = rop_ext_pull(x, *r0, plogon->is_private());
 		request = std::move(r0);
 		break;
@@ -1613,9 +1801,9 @@ static pack_result rop_ext_pull(EXT_PULL &x, std::unique_ptr<rop_request> &reque
 	case ropSetMessageReadFlag: {
 		auto r0 = std::make_unique<SETMESSAGEREADFLAG_REQUEST>();
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, head.logon_id);
+		auto plogon = pemsmdb_info->logmap.get_logon_object(head.logon_id);
 		if (plogon == nullptr)
-			return EXT_ERR_INVALID_OBJECT;
+			return pack_result::invalid_obj;
 		ret = rop_ext_pull(x, *r0, plogon->is_private());
 		request = std::move(r0);
 		break;
@@ -1701,7 +1889,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, std::unique_ptr<rop_request> &reque
 		break;
 	}
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 	*request = std::move(head);
 	return ret;
@@ -1761,9 +1949,9 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const rop_response &r)
 	switch (r.rop_id) {
 	case ropLogon: {
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, logon_id);
+		auto plogon = pemsmdb_info->logmap.get_logon_object(logon_id);
 		if (plogon == nullptr)
-			return EXT_ERR_INVALID_OBJECT;
+			return pack_result::invalid_obj;
 		return plogon->is_private() ?
 		       rop_ext_push(x, static_cast<const LOGON_PMB_RESPONSE &>(r)) :
 		       rop_ext_push(x, static_cast<const LOGON_PF_RESPONSE &>(r));
@@ -1892,9 +2080,9 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const rop_response &r)
 	case ropSynchronizationUploadStateStreamEnd:
 	case ropSetLocalReplicaMidsetDeleted:
 	case ropRegisterNotification:
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 #undef H
 }
@@ -1904,20 +2092,19 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	int tmp_num;
 	uint16_t size;
 	EXT_PULL subext;
-	uint32_t decompressed_len;
 	RPC_HEADER_EXT rpc_header_ext;
 	
 	TRY(x.g_rpc_header_ext(&rpc_header_ext));
 	if (!(rpc_header_ext.flags & RHE_FLAG_LAST))
-		return EXT_ERR_HEADER_FLAGS;
+		return pack_result::header_flags;
 	r.rhe_version = rpc_header_ext.version;
 	r.rhe_flags = rpc_header_ext.flags;
 	r.rop_list.clear();
 	if (rpc_header_ext.size == 0)
-		return EXT_ERR_HEADER_SIZE;
+		return pack_result::header_size;
 	auto pbuff = x.anew<uint8_t>(0x8000);
 	if (pbuff == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	auto pdata = x.m_udata + x.m_offset;
 	/*
 	 * Obfuscation case - modify data in place (devs: ensure callers
@@ -1927,19 +2114,23 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 		common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size);
 	/* lzxpress case */
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
-		decompressed_len = lzxpress_decompress(pdata,
+		auto decompressed_len = lzxpress_decompress(pdata,
 					rpc_header_ext.size, pbuff, 0x8000);
-		if (decompressed_len < rpc_header_ext.size_actual) {
-			mlog(LV_WARN, "W-1097: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)",
+		if (decompressed_len < 0 ||
+		    static_cast<size_t>(decompressed_len) < rpc_header_ext.size_actual) {
+			mlog(LV_WARN, "W-1097: lzxdecompress failed for client input (z=%u, exp=%u, got=%zd)",
 				rpc_header_ext.size, rpc_header_ext.size_actual,
 				decompressed_len);
-			return EXT_ERR_LZXPRESS;
+			return pack_result::compress;
 		}
 	} else {
+		if (rpc_header_ext.size_actual > x.m_data_size - x.m_offset)
+			return pack_result::header_size;
 		memcpy(pbuff, pdata, rpc_header_ext.size_actual);
 	}
 	subext.init(pbuff, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	TRY(subext.g_uint16(&size));
+	size = std::min(size, static_cast<uint16_t>(UINT16_MAX));
 	while (subext.m_offset < size) try {
 		std::unique_ptr<rop_request> rq;
 		TRY(rop_ext_pull(subext, rq));
@@ -1951,19 +2142,19 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	if (0 == tmp_num) {
 		r.hnum = 0;
 		r.phandles = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	if (tmp_num > 255)
-		return EXT_ERR_RANGE;
+		return pack_result::range;
 	r.hnum = tmp_num;
 	r.phandles = x.anew<uint32_t>(r.hnum);
 	if (r.phandles == nullptr) {
 		r.hnum = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r.hnum; ++i)
 		TRY(subext.g_uint32(&r.phandles[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
@@ -1977,7 +2168,7 @@ pack_result rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	RPC_HEADER_EXT rpc_header_ext;
 	
 	if (!subext.init(ext_buff.get(), ext_buff_size, EXT_FLAG_UTF16))
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(subext.p_uint16(in_len + sizeof(uint16_t)));
 	TRY(subext.p_bytes(pbuff_in, in_len));
 	for (size_t i = 0; i < prop_buff->hnum; ++i)
@@ -1987,11 +2178,12 @@ pack_result rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	rpc_header_ext.size_actual = subext.m_offset;
 	rpc_header_ext.size = rpc_header_ext.size_actual;
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
-		if (rpc_header_ext.size_actual < MINIMUM_COMPRESS_SIZE) {
+		if (emsmdb_compress_threshold == static_cast<size_t>(-1) ||
+		    rpc_header_ext.size_actual < emsmdb_compress_threshold) {
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
-			uint32_t compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get());
-			if (compressed_len == 0 || compressed_len >= subext.m_offset) {
+			auto compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get(), ext_buff_size);
+			if (compressed_len <= 0 || static_cast<size_t>(compressed_len) >= subext.m_offset) {
 				/* if we can not get benefit from the
 					compression, unmask the compress bit */
 				rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
@@ -2003,14 +2195,14 @@ pack_result rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	}
 	rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
 	if (!ext_push.init(pbuff_out, *pout_len, EXT_FLAG_UTF16))
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(ext_push.p_rpchdr(rpc_header_ext));
 	TRY(ext_push.p_bytes(ext_buff.get(), rpc_header_ext.size));
 	*pout_len = ext_push.m_offset;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1172: ENOMEM");
-	return EXT_ERR_ALLOC;
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return pack_result::alloc;
 }
 
 void rop_ext_set_rhe_flag_last(uint8_t *pdata, uint32_t last_offset)

@@ -13,14 +13,14 @@ enum {
 	BOUND_SELF, /* message created by hook larger than BOUND_SELF */
 };
 
-struct CONTROL_INFO {
+struct GX_EXPORT CONTROL_INFO {
 	int queue_ID = 0, bound_type = 0;
 	BOOL need_bounce = false;
 	char from[UADDR_SIZE]{};
 	std::vector<std::string> rcpt;
 };
 
-struct MESSAGE_CONTEXT {
+struct GX_EXPORT MESSAGE_CONTEXT {
 	CONTROL_INFO ctrl;
 	MAIL mail; /* Note limitations of MAIL's default ctor */
 };

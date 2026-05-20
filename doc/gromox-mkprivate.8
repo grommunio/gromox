@@ -6,6 +6,19 @@ gromox\-mkprivate \(em Tool for creating a blank private store
 .SH Synopsis
 \fBgromox\-mkprivate\fP [\fB\-Uv\fP] [\fB\-T\fP \fItemplate_dir\fP] [\fB\-c\fP
 \fIconfig\fP] [\fB\-f\fP] \fIusername\fP
+.SH Description
+mkprivate is used to generate the exchange.sqlite3 file for a private store.
+mkprivate directly operates on the filesystem, which has implications. First,
+the program ought to be executed on the correct homeserver in case a
+multi-server Gromox installation is used. Second, there is no coordination with
+exmdb_provider(4gx), and exmdb_provider might continue using file descriptors
+opened earlier, working with the old copy of the mailbox, or get confused
+because e.g. a WAL file no longer matches the sqlite db. Ideally, you would use
+something like `gromox\-mbop \-u ... ( freeze ) ( unload )` to make
+exmdb_provider close the mailbox before resetting it. Even then, services that
+build on top of exmdb, such as exchange_emsmdb(4gx) or zcore(8gx), may also get
+confused when the mailbox (now as an abstract object rather than a concrete
+file descriptor) or any key characteristics like PR_STORE_RECORD_KEY.
 .SH Options
 .TP
 \fB\-T\fP \fIpath\fP

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -12,14 +12,14 @@
 
 using namespace gromox;
 
-static char *g_username, *g_domain;
+static const char *g_username, *g_domain;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'd', HXTYPE_STRING, &g_domain, nullptr, nullptr, 0, "Domain to operate on", "NAME"},
-	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username to operate on", "EMAILADDR"},
+	{nullptr, 'd', HXTYPE_STRING, {}, {}, {}, 0, "Domain to operate on", "NAME"},
+	{nullptr, 'u', HXTYPE_STRING, {}, {}, {}, 0, "Username to operate on", "EMAILADDR"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
-static constexpr static_module g_dfl_svc_plugins[] =
+static constexpr generic_module g_dfl_svc_plugins[] =
 	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 static int t_private()
@@ -175,14 +175,22 @@ static int t_public()
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i) {
+		switch (argp.desc[i]->sh) {
+		case 'd': g_domain   = argp.oarg[i]; break;
+		case 'u': g_username = argp.oarg[i]; break;
+		}
+	}
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 	service_init({nullptr, g_dfl_svc_plugins, 1});
 	auto cl_1 = HX::make_scope_exit(service_stop);
-	if (service_run_early() != 0 || service_run() != 0) {
+	if (service_run() != 0) {
 		fprintf(stderr, "service_run failed\n");
 		return EXIT_FAILURE;
 	}

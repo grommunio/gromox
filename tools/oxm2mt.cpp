@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -17,7 +17,6 @@
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/paths.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -34,7 +33,8 @@ namespace {
  * "proptag entry" - Same size as the structure on-disk, but in host-byte order.
  */
 struct pte {
-	uint32_t proptag, flags;
+	proptag_t proptag;
+	uint32_t flags;
 	union {
 		char data[8];
 		uint16_t v_ui2;
@@ -58,12 +58,13 @@ using bin_ptr       = std::unique_ptr<BINARY, bin_del>;
 
 }
 
-static unsigned int g_attach_decap;
+static unsigned int g_attach_decap, g_mlog_level = MLOG_DEFAULT_LEVEL;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{"decap", 0, HXTYPE_UINT, &g_attach_decap, {}, {}, {}, "Decapsulate embedded message (1-based index)", "IDX"},
+	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -130,12 +131,12 @@ static pack_result read_pte(EXT_PULL &ep, struct pte &pte)
 		 * read_pte won't always read the entire 16 bytes, so perform a
 		 * check now.
 		 */
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	auto ret = ep.g_uint32(&pte.proptag);
-	if (ret != EXT_ERR_SUCCESS)
+	if (ret != pack_result::ok)
 		return ret;
 	ret = ep.g_uint32(&pte.flags);
-	if (ret != EXT_ERR_SUCCESS)
+	if (ret != pack_result::ok)
 		return ret;
 	auto pos = ep.m_offset;
 	switch (PROP_TYPE(pte.proptag)) {
@@ -155,7 +156,7 @@ static pack_result read_pte(EXT_PULL &ep, struct pte &pte)
 	/* For almost everything else, it indicates the size of the indirect block. */
 	default: ret = ep.g_uint32(&pte.v_ui4); break;
 	}
-	if (ret == EXT_ERR_SUCCESS)
+	if (ret == pack_result::ok)
 		ep.m_offset = pos + 8;
 	return ret;
 }
@@ -169,29 +170,27 @@ static int ptesv_to_prop(const struct pte &pte, const char *cset,
 	case PT_STRING8: {
 		if (pte.v_ui4 != blob->cb + 1)
 			return -EIO;
-		auto s = iconvtext(blob->pc, blob->cb, cset, "UTF-8//IGNORE");
-		if (errno != 0)
-			return -errno;
-		return proplist.set(pte.proptag, s.data());
+		auto s = iconvtext(*blob, cset, "UTF-8");
+		return ece2nerrno(proplist.set(pte.proptag, s.data()));
 	}
 	case PT_UNICODE: {
 		if (pte.v_ui4 != blob->cb + 2)
 			return -EIO;
-		auto s = iconvtext(blob->pc, blob->cb, "UTF-16", "UTF-8//IGNORE");
+		auto s = iconvtext(*blob, "UTF-16", "UTF-8");
 		if (errno != 0)
 			return -errno;
-		return proplist.set(pte.proptag, s.data());
+		return ece2nerrno(proplist.set(pte.proptag, s.data()));
 	}
 	case PT_BINARY:
-		return proplist.set(pte.proptag, blob.get());
+		return ece2nerrno(proplist.set(pte.proptag, blob.get()));
 	case PT_CLSID:
 		if (blob->cb < sizeof(GUID))
 			return -EIO;
-		return proplist.set(pte.proptag, blob->pv);
+		return ece2nerrno(proplist.set(pte.proptag, blob->pv));
 	case PT_OBJECT:
 		if (pte.v_ui4 != 0xffffffff)
 			throw YError(fmt::format("Unsupported PTE with proptag {:08x}", pte.proptag));
-		return proplist.set(pte.proptag, blob.get());
+		return ece2nerrno(proplist.set(pte.proptag, blob.get()));
 	default:
 		if (pte.v_ui4 != blob->cb)
 			return -EIO;
@@ -226,7 +225,7 @@ static int ptemv_to_prop(const struct pte &pte, const char *cset,
 	}
 	if (unitsize != 0) {
 		GEN_ARRAY mv{pte.v_ui4 / unitsize, {blob->pv}};
-		return proplist.set(pte.proptag, &mv);
+		return ece2nerrno(proplist.set(pte.proptag, &mv));
 	}
 	if (pte.v_ui4 != blob->cb)
 		return -EIO;
@@ -242,7 +241,7 @@ static int ptemv_to_prop(const struct pte &pte, const char *cset,
 		bvec[i] = *bdata[i];
 	}
 	GEN_ARRAY mv{static_cast<uint32_t>(bvec.size()), {bvec.data()}};
-	return proplist.set(pte.proptag, &mv);
+	return ece2nerrno(proplist.set(pte.proptag, &mv));
 }
 
 /* PTE multi-value string [array of strings] to property conversion */
@@ -280,10 +279,7 @@ static int ptemvs_to_prop(const struct pte &pte, const char *cset,
 		else if (static_cast<unsigned int>(ret) != strm_size)
 			throw YError("PO-1017");
 
-		if (PROP_TYPE(pte.proptag) == PT_MV_STRING8)
-			rdbuf = iconvtext(rdbuf.c_str(), strm_size, cset, "UTF-8//IGNORE");
-		else
-			rdbuf = iconvtext(rdbuf.c_str(), strm_size, "UTF-16", "UTF-8//IGNORE");
+		rdbuf = iconvtext(rdbuf, PROP_TYPE(pte.proptag) == PT_MV_STRING8 ? cset : "UTF-16", "UTF-8");
 		if (errno != 0)
 			return -errno;
 		strs[i] = std::move(rdbuf);
@@ -291,7 +287,7 @@ static int ptemvs_to_prop(const struct pte &pte, const char *cset,
 	for (uint32_t i = 0; i < sa.count; ++i)
 		strp[i] = strs[i].data();
 	sa.ppstr = strp.data();
-	return proplist.set(pte.proptag, &sa);
+	return ece2nerrno(proplist.set(pte.proptag, &sa));
 }
 
 static int pte_to_prop(const struct pte &pte, const char *cset,
@@ -307,10 +303,10 @@ static int pte_to_prop(const struct pte &pte, const char *cset,
 	case PT_SYSTIME:
 	case PT_I8:
 		/* Because of the union, the pointer for v_ui2, v_ui4, v_ui8 is the same. */
-		return proplist.set(pte.proptag, &pte.v_ui8);
+		return ece2nerrno(proplist.set(pte.proptag, &pte.v_ui8));
 	case PT_BOOLEAN: {
 		BOOL w = !!pte.v_ui4;
-		return proplist.set(pte.proptag, &w);
+		return ece2nerrno(proplist.set(pte.proptag, &w));
 	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
@@ -327,7 +323,7 @@ static errno_t parse_propstrm(EXT_PULL &ep, const char *cset,
 	while (ep.m_offset < ep.m_data_size) {
 		struct pte pte;
 		auto st = read_pte(ep, pte);
-		if (st != EXT_ERR_SUCCESS)
+		if (st != pack_result::ok)
 			return -EIO;
 		auto ret = pte_to_prop(pte, cset, dir, proplist);
 		if (ret != 0)
@@ -342,7 +338,7 @@ static int parse_propstrm_to_cpid(const EXT_PULL &ep1)
 	while (ep.m_offset < ep.m_data_size) {
 		struct pte pte;
 		auto ret = read_pte(ep, pte);
-		if (ret != EXT_ERR_SUCCESS)
+		if (ret != pack_result::ok)
 			return -EIO;
 		if (pte.proptag == PR_MESSAGE_CODEPAGE)
 			return pte.v_ui4;
@@ -365,7 +361,7 @@ static int do_recips(libolecf_item_t *msg_dir, unsigned int nrecips,
 		auto propstrm = slurp_stream(rcpt_dir.get(), S_PROPFILE);
 		EXT_PULL ep;
 		ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
-		if (ep.advance(8) != EXT_ERR_SUCCESS)
+		if (ep.advance(8) != pack_result::ok)
 			return EIO;
 		tpropval_array_ptr props(tpropval_array_init());
 		if (props == nullptr)
@@ -373,8 +369,11 @@ static int do_recips(libolecf_item_t *msg_dir, unsigned int nrecips,
 		auto ret = parse_propstrm(ep, cset, rcpt_dir.get(), *props);
 		if (ret < 0)
 			return -ret;
-		if (rcpts.append_move(std::move(props)) == ENOMEM)
+		auto ece = rcpts.append_move(std::move(props));
+		if (ece == ecMAPIOOM)
 			throw std::bad_alloc();
+		else if (ece != ecSuccess)
+			return -1;
 	}
 	return 0;
 }
@@ -394,7 +393,7 @@ static int do_attachs(libolecf_item_t *msg_dir, unsigned int natx,
 		auto propstrm = slurp_stream(atx_dir.get(), S_PROPFILE);
 		EXT_PULL ep;
 		ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
-		if (ep.advance(8) != EXT_ERR_SUCCESS)
+		if (ep.advance(8) != pack_result::ok)
 			return EIO;
 		tpropval_array_ptr props(tpropval_array_init());
 		if (props == nullptr)
@@ -440,14 +439,14 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt, mapi_
 	auto propstrm = slurp_stream(msg_dir, S_PROPFILE);
 	EXT_PULL ep;
 	ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
-	if (ep.advance(16) != EXT_ERR_SUCCESS)
+	if (ep.advance(16) != pack_result::ok)
 		return EIO;
 	uint32_t recip_count = 0, atx_count = 0;
-	if (ep.g_uint32(&recip_count) != EXT_ERR_SUCCESS)
+	if (ep.g_uint32(&recip_count) != pack_result::ok)
 		return EIO;
-	if (ep.g_uint32(&atx_count) != EXT_ERR_SUCCESS)
+	if (ep.g_uint32(&atx_count) != pack_result::ok)
 		return EIO;
-	if (parent_type == MAPI_FOLDER && ep.advance(8) != EXT_ERR_SUCCESS)
+	if (parent_type == MAPI_FOLDER && ep.advance(8) != pack_result::ok)
 		return EIO;
 	auto cpid = parse_propstrm_to_cpid(ep);
 	if (cpid < 0)
@@ -455,7 +454,6 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt, mapi_
 	auto cset = cpid_to_cset(static_cast<cpid_t>(cpid));
 	if (cset == nullptr)
 		cset = "ascii";
-	fprintf(stderr, "Using codepage %s for 8-bit strings\n", cset);
 	auto ret = parse_propstrm(ep, cset, msg_dir, ctnt.proplist);
 	if (ret < 0)
 		return -ret;
@@ -502,17 +500,17 @@ static int npg_read(libolecf_item_t *root)
 			EXT_PULL sp;
 			uint32_t len = 0;
 			sp.init(strpool->pv, strpool->cb, malloc, 0);
-			if (sp.advance(niso) != EXT_ERR_SUCCESS)
+			if (sp.advance(niso) != pack_result::ok)
 				return -EIO;
-			if (sp.g_uint32(&len) != EXT_ERR_SUCCESS)
+			if (sp.g_uint32(&len) != pack_result::ok)
 				return -EIO;
 			if (len > 510)
 				len = 510;
 			std::string wbuf;
 			wbuf.resize(len);
-			if (sp.g_bytes(wbuf.data(), len) != EXT_ERR_SUCCESS)
+			if (sp.g_bytes(wbuf.data(), len) != pack_result::ok)
 				return -EIO;
-			pn_req.name = iconvtext(wbuf.data(), len, "UTF-16", "UTF-8//IGNORE");
+			pn_req.name = iconvtext(wbuf, "UTF-16", "UTF-8");
 			if (errno != 0)
 				return -errno;
 		}
@@ -526,7 +524,7 @@ static int npg_read(libolecf_item_t *root)
 				return -EIO;
 			EXT_PULL gp;
 			gp.init(&guidpool->pb[ofs], sizeof(GUID), malloc, 0);
-			if (gp.g_guid(&pn_req.guid) != EXT_ERR_SUCCESS)
+			if (gp.g_guid(&pn_req.guid) != pack_result::ok)
 				return -EIO;
 		}
 		if (propidx != current_np) {
@@ -581,7 +579,7 @@ static errno_t do_file(const char *filename) try
 			return ret;
 	}
 
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0005", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;
 	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
@@ -606,11 +604,13 @@ static errno_t do_file(const char *filename) try
 		fprintf(stderr, "E-2012: ENOMEM\n");
 		return EXIT_FAILURE;
 	}
-	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(1) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
-	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS) {
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+	    ep.p_uint64(1) != pack_result::ok ||
+	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
+	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
+	    ep.p_msgctnt(*ctnt) != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok) {
 		fprintf(stderr, "E-2006\n");
 		return EXIT_FAILURE;
 	}
@@ -640,12 +640,12 @@ static void terse_help()
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (argc != 2) {
+	if (argp.nargs != 1) {
 		terse_help();
 		return EXIT_FAILURE;
 	}
@@ -654,11 +654,13 @@ int main(int argc, char **argv)
 			"You probably wanted to redirect output into a file or pipe.\n");
 		return EXIT_FAILURE;
 	}
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
+	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 
-	auto ret = do_file(argv[1]);
+	auto ret = do_file(argp.uarg[0]);
 	if (ret != 0) {
 		fprintf(stderr, "oxm2mt: Import unsuccessful.\n");
 		return EXIT_FAILURE;

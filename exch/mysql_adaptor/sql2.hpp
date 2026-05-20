@@ -14,7 +14,7 @@ enum {
 	SUB_TYPE_EQUIPMENT,
 };
 
-struct config_file;
+class config_file;
 
 namespace gromox {
 
@@ -27,7 +27,6 @@ class sqlconn final {
 	sqlconn &operator=(sqlconn &&o) noexcept;
 	operator bool() const { return m_conn; }
 	bool operator==(std::nullptr_t) const { return m_conn == nullptr; }
-	bool operator!=(std::nullptr_t) const { return m_conn != nullptr; }
 	MYSQL *get() const { return m_conn; }
 	std::string quote(std::string_view);
 	bool query(std::string_view);
@@ -76,11 +75,16 @@ struct mysql_plugin final {
 	bool check_same_org2(const char *domainname1, const char *domainname2);
 	bool get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
 	gromox::errno_t get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
+	gromox::errno_t get_homeserver_for_dir(const char *dir, bool *pvt, std::string &hostname);
 	gromox::errno_t scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
 	int domain_list_query(const char *dom);
 	int mbop_userlist(std::vector<sql_user> &);
 	gromox::errno_t mda_alias_list(gromox::sql_alias_map &, size_t &);
 	gromox::errno_t mda_domain_list(gromox::sql_domain_set &);
+	gromox::errno_t get_user_groups_rec(const char *, std::vector<std::string> &);
+	gromox::errno_t mda_alias_resolve(std::string &addr_inplace);
+	gromox::errno_t mda_group_expand(sqlconn &, const std::string &group, std::vector<std::string> &exp, std::set<std::string> &seen, unsigned int depth);
+	gromox::errno_t mda_group_expand(const std::string &group, std::vector<std::string> &exp);
 
 	protected:
 	bool mlist_domain_contains(sqlconn *, const char *mlist, const char *account);

@@ -30,8 +30,10 @@ restriction_list *restriction_list::dup() const
 		n->pres[i].pres = restriction_dup_by_type(
 			prestriction->pres[i].rt, prestriction->pres[i].pres);
 		if (n->pres[i].pres == nullptr) {
-			while (i-- > 0)
+			while (i > 0) {
+				--i;
 				restriction_free_by_type(n->pres[i].rt, n->pres[i].pres);
+			}
 			free(n->pres);
 			free(n);
 			return NULL;

@@ -1,24 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
-#include <fmt/core.h>
+#include <chrono>
+#include <climits>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <sstream>
+#include <fmt/core.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
-#include <gromox/rop_util.hpp>
+#include <vmime/message.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
+#include <gromox/mail_func.hpp>
+#include <gromox/mapi_types.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
 #include "ews.hpp"
+#include "exceptions.hpp"
 #include "namedtags.hpp"
 #include "structures.hpp"
+#include "../bounce_exch.cpp"
 
 DECLARE_HPM_API(gromox::EWS, extern);
 
@@ -29,6 +41,22 @@ using namespace Structures;
 
 namespace {
 
+struct DelegFolderPerm {
+	uint64_t fid;
+	std::optional<Enum::DelegateFolderPermissionLevelType> tDelegatePermissions::*field;
+
+
+};
+
+constexpr DelegFolderPerm delegFolderMap[] = {
+	{PRIVATE_FID_CALENDAR, &tDelegatePermissions::CalendarFolderPermissionLevel},
+	{PRIVATE_FID_TASKS,    &tDelegatePermissions::TasksFolderPermissionLevel},
+	{PRIVATE_FID_INBOX,    &tDelegatePermissions::InboxFolderPermissionLevel},
+	{PRIVATE_FID_CONTACTS, &tDelegatePermissions::ContactsFolderPermissionLevel},
+	{PRIVATE_FID_NOTES,    &tDelegatePermissions::NotesFolderPermissionLevel},
+	{PRIVATE_FID_JOURNAL,  &tDelegatePermissions::JournalFolderPermissionLevel},
+};
+
 /**
  * @brief      Convert string to lower case
  *
@@ -36,9 +64,9 @@ namespace {
  *
  * @return     Reference to the string
  */
-inline std::string &tolower(std::string &str)
+inline std::string &tolower_inplace(std::string &str)
 {
-	std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+	std::transform(str.begin(), str.end(), str.begin(), HX_tolower);
 	return str;
 }
 
@@ -76,7 +104,7 @@ T& defaulted(std::optional<T>& container, Args&&... args)
  * @param      value   value to write
  * @param      tag     Property tag to use
  */
-void writeProp(sShape& shape, const std::optional<std::string>& value, uint32_t tag)
+static void writeProp(sShape &shape, const std::optional<std::string> &value, proptag_t tag)
 {
 	if (value)
 		shape.write(TAGGED_PROPVAL{tag, const_cast<char *>(value->c_str())});
@@ -89,7 +117,7 @@ void writeProp(sShape& shape, const std::optional<std::string>& value, uint32_t 
  * @param      value   value to write
  * @param      tag     Property tag to use
  */
-void writeProp(sShape& shape, const std::optional<sTimePoint>& value, uint32_t tag)
+static void writeProp(sShape &shape, const std::optional<sTimePoint> &value, proptag_t tag)
 {
 	if (value)
 		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<uint64_t>(value->toNT())});
@@ -103,10 +131,24 @@ void writeProp(sShape& shape, const std::optional<sTimePoint>& value, uint32_t t
  * @param      name    Property name to write to
  * @param      type    Property type to use
  */
-void writeProp(sShape& shape, const std::optional<std::string>& value, const PROPERTY_NAME& name, uint16_t type)
+void writeProp(sShape &shape, const std::optional<std::string> &value,
+    const PROPERTY_NAME &name, proptype_t type)
 {
 	if (value)
 		shape.write(name, TAGGED_PROPVAL{type, const_cast<char *>(value->c_str())});
+}
+
+void writeBoolProp(sShape& shape, const std::optional<bool>& value, uint32_t tag)
+{
+	if (value)
+		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<uint8_t>(*value ? 1 : 0)});
+}
+
+uint64_t toNT(const time_point& tp)
+{
+	using namespace std::chrono;
+	auto secs = duration_cast<seconds>(tp.time_since_epoch());
+	return rop_util_unix_to_nttime(secs.count());
 }
 
 /**
@@ -116,7 +158,7 @@ void writeProp(sShape& shape, const std::optional<std::string>& value, const PRO
  * @param daysOfWeek
  * @param weekrecur
  *
- * PatternTypeSpecific Week/MonthNth
+ * PatternTypeSpecific Week/MonthNth (MS-OXOCAL v22.1 §2.2.1.44.1.4)
  * X  (1 bit): This bit is not used. MUST be zero and MUST be ignored.
  * Sa (1 bit): (0x00000040) The event occurs on Saturday.
  * F  (1 bit): (0x00000020) The event occurs on Friday.
@@ -126,7 +168,7 @@ void writeProp(sShape& shape, const std::optional<std::string>& value, const PRO
  * M  (1 bit): (0x00000002) The event occurs on Monday.
  * Su (1 bit): (0x00000001) The event occurs on Sunday.
  * unused (3 bytes): These bits are not used. MUST be zero and MUST be ignored.
- * Nth Day of month: (bits M, Tu, W, Th, F, SA, Su are set) - only rptMonthNth
+ * Nth Day of month: (bits M, Tu, W, Th, F, Sa, Su are set) - only rptMonthNth
  * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only rptMonthNth
  * Nth Weekend of month: (bits Sa, Su are set) - only rptMonthNth
  */
@@ -136,30 +178,27 @@ void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur)
 	std::string dayOfWeek;
 
 	while (strstream >> dayOfWeek) {
-		tolower(dayOfWeek);
+		tolower_inplace(dayOfWeek);
 		if (dayOfWeek == "day") {
-			weekrecur = 0x7F;
-			break;
+			weekrecur |= week_recur_bit::day;
 		} else if (dayOfWeek == "weekday") {
-			weekrecur = 0x3E;
-			break;
+			weekrecur |= week_recur_bit::weekday;
 		} else if (dayOfWeek == "weekendday") {
-			weekrecur = 0x41;
-			break;
+			weekrecur |= week_recur_bit::weekend;
 		} else if (dayOfWeek == "sunday") {
-			weekrecur |= 1 << FIRSTDOW_SUNDAY;
+			weekrecur |= week_recur_bit::sun;
 		} else if (dayOfWeek == "monday") {
-			weekrecur |= 1 << FIRSTDOW_MONDAY;
-		} else if (dayOfWeek ==  "tuesday") {
-			weekrecur |= 1 << FIRSTDOW_TUESDAY;
+			weekrecur |= week_recur_bit::mon;
+		} else if (dayOfWeek == "tuesday") {
+			weekrecur |= week_recur_bit::tue;
 		} else if (dayOfWeek == "wednesday") {
-			weekrecur |= 1 << FIRSTDOW_WEDNESDAY;
+			weekrecur |= week_recur_bit::wed;
 		} else if (dayOfWeek == "thursday") {
-			weekrecur |= 1 << FIRSTDOW_THURSDAY;
+			weekrecur |= week_recur_bit::thu;
 		} else if (dayOfWeek == "friday") {
-			weekrecur |= 1 << FIRSTDOW_FRIDAY;
+			weekrecur |= week_recur_bit::fri;
 		} else if (dayOfWeek == "saturday") {
-			weekrecur |= 1 << FIRSTDOW_SATURDAY;
+			weekrecur |= week_recur_bit::sat;
 		} else {
 			throw EWSError::CalendarInvalidRecurrence(E3260);
 		}
@@ -179,7 +218,7 @@ void calc_firstdatetime(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		recur_pat.firstdatetime = recur_pat.startdate % recur_pat.period;
 		break;
 	case rptWeek: {
-		// determine the first day of the week in which the first event occurrs
+		// determine the first day of the week in which the first event occurs
 		auto startdate = rop_util_rtime_to_unix(recur_pat.startdate);
 		if (gmtime_r(&startdate, tmp_tm) == nullptr)
 			throw EWSError::CalendarInvalidRecurrence(E3261);
@@ -342,7 +381,7 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 		    goid.day > ical_get_monthdays(goid.year, goid.month)))
 			goid.year = goid.month = goid.day = 0;
 	} else {
-		memset(&goid, 0, sizeof(GLOBALOBJECTID));
+		goid = {};
 		goid.arrayid = EncodedGlobalId;
 		goid.year = goid.month = goid.day = 0;
 		goid.creationtime = 0;
@@ -358,7 +397,206 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 	    ext_push.p_goid(goid) != pack_result::ok)
 		throw EWSError::InternalServerError(E3299);
 	goid_bin.cb = ext_push.m_offset;
-	goid_bin.pb = ext_push.m_udata;
+	goid_bin.pv = EWSContext::alloc(goid_bin.cb);
+	if (goid_bin.pv == nullptr)
+		throw EWSError::NotEnoughMemory(E3321);
+	memcpy(goid_bin.pv, ext_push.m_udata, goid_bin.cb);
+}
+
+/**
+ * @brief      Mark an item's ItemId as an occurrence ID
+ *
+ * Appends the basedate to the entry ID and sets the type to ID_OCCURRENCE
+ * so clients can use this ItemId to address the specific occurrence.
+ */
+void markOccurrenceId(sItem &item, uint32_t basedate)
+{
+	auto setter = [basedate](auto &it) {
+		if (!it.ItemId)
+			return;
+		it.ItemId->Id.append(reinterpret_cast<const char *>(&basedate),
+		                     sizeof(basedate));
+		it.ItemId->type = tBaseItemId::ID_OCCURRENCE;
+	};
+	std::visit(setter, item);
+}
+
+/**
+ * @brief      Test whether a date is truly deleted (not a modified exception)
+ *
+ * @param      rp     Recurrence pattern
+ * @param      date   Date in rtime format
+ *
+ * @return     true if the date is deleted and not modified
+ */
+bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
+{
+	bool deleted = std::any_of(&rp.pdeletedinstancedates[0],
+	               &rp.pdeletedinstancedates[rp.deletedinstancecount],
+	               [date](uint32_t entry) { return entry == date; });
+	if (!deleted)
+		return false;
+	return std::none_of(&rp.pmodifiedinstancedates[0], &rp.pmodifiedinstancedates[rp.modifiedinstancecount],
+	       [date](uint32_t entry) { return entry == date; });
+}
+
+/**
+ * @brief      Compute the Nth non-deleted occurrence date
+ *
+ * EWS InstanceIndex counts only visible (non-deleted) occurrences.
+ * Modified exceptions are still visible and counted.
+ *
+ * @param      rp     Recurrence pattern (includes deleted/modified lists)
+ * @param      index  1-based occurrence index
+ *
+ * @return     Occurrence date in rtime format (minutes since 1601-01-01)
+ */
+uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
+{
+	if (index < 1)
+		throw InputError(E3307);
+
+	uint32_t count = 0;
+	auto check = [&](uint32_t date) -> uint32_t {
+		if (isTrulyDeleted(rp, date))
+			return 0;
+		if (++count == index)
+			return date;
+		return 0;
+	};
+
+	switch (rp.patterntype) {
+	case rptMinute:
+		/* Daily: period is in minutes (day count * 1440) */
+		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
+			auto date = rp.startdate + i * rp.period;
+			if (auto r = check(date); r != 0)
+				return r;
+		}
+		break;
+	case rptWeek: {
+		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+		struct tm tm;
+		if (gmtime_r(&start_unix, &tm) == nullptr)
+			break;
+		int start_wday = tm.tm_wday;
+		int days_back = (start_wday - static_cast<int>(rp.firstdow) + 7) % 7;
+		uint32_t week_start = rp.startdate - days_back * 1440;
+		uint32_t raw = 0;
+		for (uint32_t week = week_start; raw < rp.occurrencecount; week += rp.period * 7 * 1440) {
+			for (int d = 0; d < 7 && raw < rp.occurrencecount; ++d) {
+				int wday = (rp.firstdow + d) % 7;
+				uint32_t date = week + d * 1440;
+				if (date < rp.startdate)
+					continue;
+				if (!(rp.pts.weekrecur & (1 << wday)))
+					continue;
+				++raw;
+				if (auto r = check(date); r != 0)
+					return r;
+			}
+		}
+		break;
+	}
+	case rptMonth:
+	case rptMonthEnd: {
+		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+		struct tm tm;
+		if (gmtime_r(&start_unix, &tm) == nullptr)
+			break;
+		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
+		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
+			if (i > 0) {
+				month += rp.period;
+				while (month > 12) {
+					month -= 12;
+					++year;
+				}
+			}
+			int dom = rp.pts.dayofmonth;
+			int maxdays = ical_get_monthdays(year, month);
+			if (dom > maxdays)
+				dom = maxdays;
+			struct tm occ = {};
+			occ.tm_year = year - 1900;
+			occ.tm_mon  = month - 1;
+			occ.tm_mday = dom;
+			auto date = rop_util_unix_to_rtime(timegm(&occ));
+			if (auto r = check(date); r != 0)
+				return r;
+		}
+		break;
+	}
+	case rptMonthNth:
+	case rptHjMonthNth: {
+		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+		struct tm tm;
+		if (gmtime_r(&start_unix, &tm) == nullptr)
+			break;
+		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
+		int order = rp.pts.monthnth.recurnum;
+		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
+			if (i > 0) {
+				month += rp.period;
+				while (month > 12) {
+					month -= 12;
+					++year;
+				}
+			}
+			for (int wd = 0; wd < 7; ++wd) {
+				if (!(rp.pts.monthnth.weekrecur & (1 << wd)))
+					continue;
+				int day = ical_get_dayofmonth(year, month,
+				          order == 5 ? -1 : order, wd);
+				if (day > 0) {
+					struct tm occ = {};
+					occ.tm_year = year - 1900;
+					occ.tm_mon  = month - 1;
+					occ.tm_mday = day;
+					auto date = rop_util_unix_to_rtime(timegm(&occ));
+					if (auto r = check(date); r != 0)
+						return r;
+				}
+			}
+		}
+		break;
+	}
+	}
+	throw InputError(E3334);
+}
+
+/**
+ * @brief      Map MAPI rights to delegate permission level
+ */
+Enum::DelegateFolderPermissionLevelType rights_to_deleg_level(uint32_t rights)
+{
+	rights &= ~(frightsContact | frightsFreeBusySimple | frightsFreeBusyDetailed);
+	if (rights == 0)
+		return Enum::None;
+	if (rights == rightsEditor)
+		return Enum::Editor;
+	if (rights == rightsReviewer)
+		return Enum::Reviewer;
+	if (rights == rightsAuthor)
+		return Enum::Author;
+	return Enum::Custom;
+}
+
+/**
+ * @brief      Map delegate permission level to MAPI rights
+ *
+ * DelegateFolderPermissionLevelType indices:
+ * 0=None, 1=Editor, 2=Reviewer, 3=Author, 4=Custom
+ */
+uint32_t deleg_level_to_rights(Enum::DelegateFolderPermissionLevelType level)
+{
+	switch (level.index()) {
+	case 0: return 0;
+	case 1: return rightsEditor;
+	case 2: return rightsReviewer;
+	case 3: return rightsAuthor;
+	default: return 0;
+	}
 }
 
 } // Anonymous namespace
@@ -366,20 +604,19 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 namespace detail {
 
 void Cleaner::operator()(BINARY* x) {rop_util_free_binary(x);}
-void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 } // gromox::EWS::detail
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-EWSContext::EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length,
-    EWSPlugin &p) :
-	m_ID(id), m_orig(*get_request(id)), m_auth_info(ai),
+EWSContext::EWSContext(detail::ContextKey id, const HTTP_AUTH_INFO &ai,
+    const char *data, uint64_t length, EWSPlugin &p) :
+	m_ctx_id(id), m_orig(*get_request(id)), m_auth_info(ai),
 	m_request(data, length), m_response(p.server_version()), m_plugin(p),
 	m_created(tp_now())
 {
-	tinyxml2::XMLElement* imp = nullptr;
+	tinyxml2::XMLElement *imp = nullptr;
 	if (m_request.header && (imp = m_request.header->FirstChildElement("ExchangeImpersonation")) &&
 	   (imp = imp->FirstChildElement("ConnectingSID")) && (imp = imp->FirstChildElement()))
 		impersonate(imp->Name(), imp->GetText());
@@ -399,7 +636,7 @@ EWSContext::~EWSContext()
  *
  * @return     Pointer to copied C-string
  */
-char* EWSContext::cpystr(const std::string_view& src)
+char *EWSContext::cpystr(const std::string_view src)
 {
 	char* dst = alloc<char>(src.size()+1);
 	strncpy(dst, src.data(), src.size());
@@ -476,9 +713,9 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 	if (err == ecDuplicateName)
 		throw EWSError::FolderExists(E3155);
 	if (err != ecSuccess)
-		throw EWSError::FolderSave(std::string(E3154) + ": " + mapi_strerror(err));
+		throw EWSError::FolderSave(E3322(err));
 	if (created.folderId == 0)
-		throw EWSError::FolderExists(E3155); // ??
+		throw EWSError::FolderExists(E3323); // ??
 
 	sShape retshape = sShape(tFolderResponseShape());
 	return loadFolder(dir, created.folderId, retshape);
@@ -499,12 +736,187 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 	auto messageId = content.proplist.get<const uint64_t>(PidTagMid);
 	if (!messageId)
 		throw DispatchError(E3112);
-	if (!m_plugin.exmdb.write_message(dir.c_str(), CP_ACP, parent.folderId,
-	    &content, &error) || error != ecSuccess)
+	if (!content.proplist.has(PidTagChangeNumber))
 		throw EWSError::ItemSave(E3254);
+	uint64_t outmid = 0, outcn = 0;
+	if (!m_plugin.exmdb.write_message(dir.c_str(), CP_ACP, parent.folderId,
+	    &content, {}, &outmid, &outcn, &error) || error != ecSuccess)
+		throw EWSError::ItemSave(E3324);
 
 	sShape retshape = sShape(tItemResponseShape());
 	return loadItem(dir, parent.folderId, *messageId, retshape);
+}
+
+/**
+ * @brief Find calendar item using goid and clean goid
+ *
+ * @param calendarFolder The calendar folder
+ * @param calendarDir    Store directory
+ * @param content        Item content
+ *
+ * @return PidTagMid value of item matching goid or clean goid
+ */
+std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calendarFolder, const std::string& calendarDir,
+	const MESSAGE_CONTENT& content) const
+{
+	std::array<RESTRICTION_PROPERTY, 2> propertyRestrictions{};
+	std::array<RESTRICTION, 2> childRestrictions{};
+	size_t restrictionCount = 0;
+
+	auto addRestriction = [&](const BINARY *value, propid_t propId) {
+		if (value == nullptr || value->cb == 0 || value->pb == nullptr || propId == 0 ||
+		    restrictionCount >= propertyRestrictions.size())
+			return;
+		auto tag = PROP_TAG(PT_BINARY, propId);
+		auto &propRestriction = propertyRestrictions[restrictionCount];
+		propRestriction.relop = RELOP_EQ;
+		propRestriction.proptag = tag;
+		propRestriction.propval.proptag = tag;
+		propRestriction.propval.pvalue = deconst(value);
+
+		childRestrictions[restrictionCount].rt = RES_PROPERTY;
+		childRestrictions[restrictionCount].prop = &propRestriction;
+		++restrictionCount;
+	};
+
+	auto pidGlobalId      = getNamedPropId(calendarDir, NtGlobalObjectId, true);
+	auto pidCleanGlobalId = getNamedPropId(calendarDir, NtCleanGlobalObjectId, true);
+	const BINARY* goid = content.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGlobalId));
+	const BINARY* cleanGoid = content.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidCleanGlobalId));
+	addRestriction(goid, pidGlobalId);
+	addRestriction(cleanGoid, pidCleanGlobalId);
+
+	if (restrictionCount == 0)
+		return std::nullopt;
+
+	RESTRICTION restriction{};
+	RESTRICTION_AND_OR orGroup{};
+	if (restrictionCount == 1) {
+		restriction.rt = RES_PROPERTY;
+		restriction.prop = &propertyRestrictions[0];
+	} else {
+		orGroup.count = static_cast<uint32_t>(restrictionCount);
+		orGroup.pres = childRestrictions.data();
+		restriction.rt = RES_OR;
+		restriction.andor = &orGroup;
+	}
+
+	uint32_t tableId = 0, rowCount = 0;
+	const char *calUser = effectiveUser(calendarFolder);
+	if (!m_plugin.exmdb.load_content_table(calendarDir.c_str(), CP_ACP,
+	    calendarFolder.folderId, calUser, TABLE_FLAG_NONOTIFICATIONS,
+	    &restriction, nullptr, &tableId, &rowCount))
+		throw EWSError::ItemPropertyRequestFailed(E3245);
+	auto unloadTable = HX::make_scope_exit([&, tableId]{
+		m_plugin.exmdb.unload_table(calendarDir.c_str(), tableId);
+	});
+	if (rowCount == 0)
+		return std::nullopt;
+
+	static constexpr proptag_t midTagValue = PidTagMid;
+	TARRAY_SET rows{};
+	if (!m_plugin.exmdb.query_table(calendarDir.c_str(), calUser, CP_ACP,
+	    tableId, {&midTagValue, 1}, 0, 1, &rows))
+		throw EWSError::ItemCorrupt(E3284);
+	if (rows.count == 0 || rows.pparray[0] == nullptr)
+		return std::nullopt;
+	auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
+	if (!mid)
+		return std::nullopt;
+	return std::optional<uint64_t>(*mid);
+}
+
+/**
+ * @brief Create a calendar item after accepting a meeting request
+ *
+ * @param refId          Item id
+ * @param response       Response type
+ */
+void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint32_t response) const
+{
+	// Duplicate the original request and persist it as a calendar appointment.
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId requestId(refId.Id.data(), refId.Id.size());
+	sFolderSpec requestFolder = resolveFolder(requestId);
+	std::string dir = getDir(requestFolder);
+	validate(dir, requestId);
+	const char *username = effectiveUser(requestFolder);
+
+	MESSAGE_CONTENT *content = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), username, CP_ACP, requestId.messageId(), &content) ||
+	    content == nullptr)
+		throw EWSError::ItemNotFound(E3143);
+
+	MCONT_PTR calendarItem(content->dup());
+	if (!calendarItem)
+		throw EWSError::ItemSave(E3325);
+
+	auto &props = calendarItem->proplist;
+	/*
+	 * Strip message IDs (so write_message creates/updates rather than
+	 * colliding) and inbox-specific envelope properties that have no
+	 * place on a calendar item. Keep in sync with mr_insert_to_cal().
+	 */
+	static constexpr proptag_t rmProps[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST,
+		PR_RECEIVED_BY_ENTRYID, PR_RECEIVED_BY_NAME,
+		PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS,
+		PR_RECEIVED_BY_SEARCH_KEY, PR_RCVD_REPRESENTING_ENTRYID,
+		PR_RCVD_REPRESENTING_NAME, PR_RCVD_REPRESENTING_ADDRTYPE,
+		PR_RCVD_REPRESENTING_EMAIL_ADDRESS,
+		PR_RCVD_REPRESENTING_SEARCH_KEY, PR_MESSAGE_TO_ME,
+		PR_TRANSPORT_MESSAGE_HEADERS, PR_CONTENT_FILTER_SCL,
+	};
+	for (auto tag : rmProps)
+		props.erase(tag);
+
+	requestFolder.folderId = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	requestFolder.location = sFolderSpec::PRIVATE;
+	if (!requestFolder.target)
+		requestFolder.target = m_auth_info.username;
+	std::string calendarDir = getDir(requestFolder);
+
+	if (!(permissions(calendarDir, requestFolder.folderId) & (frightsOwner | frightsCreate)))
+		throw EWSError::AccessDenied(E3130);
+
+	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
+		throw EWSError::ItemSave(E3326);
+
+	/*
+	 * Copy PidLidTimeZoneDescription to CalendarTimeZone so EWS can expose
+	 * StartTimeZone/EndTimeZone on the calendar item. oxcical sets the
+	 * former; EWS reads the latter.
+	 */
+	auto pidTzDesc = getNamedPropId(calendarDir, NtTimeZoneDescription);
+	auto pidCalTz  = getNamedPropId(calendarDir, NtCalendarTimeZone, true);
+	if (pidTzDesc != 0 && pidCalTz != 0) {
+		auto tz = props.get<const char>(PROP_TAG(PT_UNICODE, pidTzDesc));
+		if (tz != nullptr)
+			props.set(PROP_TAG(PT_UNICODE, pidCalTz), tz);
+	}
+
+	/* Set response/state/busy properties on the calendar item itself. */
+	auto pidResp  = getNamedPropId(calendarDir, NtResponseStatus, true);
+	auto pidState = getNamedPropId(calendarDir, NtAppointmentStateFlags, true);
+	auto pidBusy  = getNamedPropId(calendarDir, NtBusyStatus, true);
+	uint32_t stateFlags = asfMeeting | asfReceived;
+	uint32_t busyValue  = response == respAccepted ? olBusy :
+	                      response == respTentative ? olTentative : olFree;
+	if (props.set(PROP_TAG(PT_LONG, pidResp), construct<uint32_t>(response)) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, pidState), construct<uint32_t>(stateFlags)) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, pidBusy), construct<uint32_t>(busyValue)) != ecSuccess)
+		throw EWSError::ItemSave(E3327);
+
+	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *content);
+	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
+		throw EWSError::ItemSave(E3328);
+
+	ec_error_t err = ecSuccess;
+	uint64_t newMid = 0, newCn = 0;
+	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, requestFolder.folderId,
+	        calendarItem.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3329);
 }
 
 /**
@@ -541,8 +953,54 @@ void EWSContext::enableEventStream(int timeout)
 {
 	m_state = S_STREAM_NOTIFY;
 	auto expire = tp_now() + std::chrono::minutes(timeout);
+	if (m_notify)
+		mlog(LV_DEBUG, "EWSContext::m_notify already populated, programming error");
 	m_notify = std::make_unique<NotificationContext>(expire);
 }
+
+/**
+ * @brief      Export message content to string
+ *
+ * @param      dir       Parent store
+ * @param      content   Content to export
+ * @param      log_id    Log ID
+ *
+ * @return     Serialized content
+ */
+std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONTENT& content, const std::string& log_id) const
+{
+	MAIL mail;
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = alloc;
+	cvt.get_propids = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) {
+	                  	*ids = getNamedPropIds(dir, *names);
+	                  	return TRUE;
+	                  };
+	cvt.get_propname = [&](propid_t id, PROPERTY_NAME **name) {
+	                   	*name = getPropertyName(dir, id);
+	                   	return TRUE;
+	                   };
+	if (!cvt.mapi_to_inet(content, mail))
+		throw EWSError::ItemCorrupt(E3072);
+
+	auto mail_len = mail.get_length();
+	if (mail_len < 0)
+		throw EWSError::ItemCorrupt(E3073);
+	STREAM tempStream;
+	if (!mail.serialize(&tempStream))
+		throw EWSError::ItemCorrupt(E3074);
+	std::string mime;
+	mime.reserve(mail_len);
+	char *data;
+	unsigned int size = STREAM_BLOCK_SIZE;
+	while ((data = static_cast<char *>(tempStream.get_read_buf(&size))) != nullptr) {
+		mime.insert(mime.end(), data, &data[size]);
+		size = STREAM_BLOCK_SIZE;
+	}
+	return mime;
+}
+
 
 /**
  * @brief     Get user or domain ID by name
@@ -575,7 +1033,8 @@ uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
  *
  * @return     Array of property IDs
  */
-uint16_t EWSContext::getNamedPropId(const std::string& dir, const PROPERTY_NAME& propName, bool create) const
+propid_t EWSContext::getNamedPropId(const std::string &dir,
+    const PROPERTY_NAME &propName, bool create) const
 {
 	PROPNAME_ARRAY propNames{1, deconst(&propName)};
 	PROPID_ARRAY namedIds{};
@@ -633,7 +1092,7 @@ void EWSContext::getNamedTags(const std::string& dir, sShape& shape, bool create
  *
  * @return     Property name
  */
-PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) const
+PROPERTY_NAME *EWSContext::getPropertyName(const std::string &dir, propid_t id) const
 {
 	PROPNAME_ARRAY propnames{};
 	if (!m_plugin.exmdb.get_named_propnames(dir.c_str(), {id}, &propnames) ||
@@ -704,7 +1163,8 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 {
 	std::string RoutingType = Mailbox.RoutingType.value_or("smtp");
 	std::string Address = Mailbox.Address;
-	if (tolower(RoutingType) == "ex") {
+	tolower_inplace(RoutingType);
+	if (RoutingType == "ex") {
 		Address = essdn_to_username(Address);
 		RoutingType = "smtp";
 	}
@@ -740,7 +1200,7 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 	}
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(target, WANTPRIV_METAONLY, mres) != 0)
-		throw EWSError::CannotFindUser(E3126);
+		throw EWSError::CannotFindUser(E3331);
 	return std::move(mres.maildir);
 }
 
@@ -756,7 +1216,7 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
  */
 std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubscriptionId& subscriptionId) const
 {
-	auto mgr = m_plugin.get_submgr(subscriptionId.ID, subscriptionId.timeout);
+	auto mgr = m_plugin.get_submgr(subscriptionId.tsub_rawkey, subscriptionId.timeout);
 	if (mgr == nullptr)
 		throw EWSError::InvalidSubscription(E3202);
 	if (mgr->username != m_auth_info.username)
@@ -785,7 +1245,7 @@ std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubs
  */
 TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t folderId) const
 {
-	static constexpr uint32_t propids[] = {PR_ENTRYID};
+	static constexpr proptag_t propids[] = {PR_ENTRYID};
 	static constexpr PROPTAG_ARRAY proptags = {1, deconst(propids)};
 	TPROPVAL_ARRAY props = getFolderProps(dir, folderId, proptags);
 	if (props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
@@ -802,10 +1262,12 @@ TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t fol
  *
  * @return    Property values
  */
-TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string& dir, uint64_t folderId, const PROPTAG_ARRAY& props) const
+TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string &dir,
+    uint64_t folderId, proptag_cspan tags) const
 {
 	TPROPVAL_ARRAY result;
-	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folderId, &props, &result))
+	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP,
+	    folderId, tags, &result))
 		throw EWSError::FolderPropertyRequestFailed(E3023);
 	return result;
 }
@@ -821,7 +1283,7 @@ TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string& dir, uint64_t folde
  */
 TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) const
 {
-	static constexpr uint32_t propids[] = {PR_ENTRYID};
+	static constexpr proptag_t propids[] = {PR_ENTRYID};
 	static constexpr PROPTAG_ARRAY proptags = {1, deconst(propids)};
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
 	if (props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
@@ -838,7 +1300,8 @@ TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) 
  *
  * @return     Pointer to property value or nullptr if not found
  */
-const void* EWSContext::getFolderProp(const std::string& dir, uint64_t fid, uint32_t tag) const
+const void *EWSContext::getFolderProp(const std::string &dir, uint64_t fid,
+    proptag_t tag) const
 {
 	PROPTAG_ARRAY proptags{1, &tag};
 	TPROPVAL_ARRAY props = getFolderProps(dir, fid, proptags);
@@ -856,7 +1319,8 @@ const void* EWSContext::getFolderProp(const std::string& dir, uint64_t fid, uint
  *
  * @return     Pointer to property value or nullptr if not found
  */
-const void* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+const void *EWSContext::getItemProp(const std::string &dir, uint64_t mid,
+    proptag_t tag) const
 {
 	PROPTAG_ARRAY proptags{1, &tag};
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
@@ -874,11 +1338,12 @@ const void* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32
  *
  * @return    Property values
  */
-TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, const PROPTAG_ARRAY& props) const
+TPROPVAL_ARRAY EWSContext::getItemProps(const std::string &dir, uint64_t mid,
+    proptag_cspan props) const
 {
 	TPROPVAL_ARRAY result;
 	if (!m_plugin.exmdb.get_message_properties(dir.c_str(), m_auth_info.username,
-	    CP_ACP, mid, &props, &result))
+	    CP_ACP, mid, props, &result))
 		throw EWSError::ItemPropertyRequestFailed(E3025);
 	return result;
 }
@@ -892,10 +1357,10 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
  */
 GUID EWSContext::getMailboxGuid(const std::string& dir) const
 {
-	static constexpr uint32_t recordKeyTag = PR_STORE_RECORD_KEY;
-	static constexpr PROPTAG_ARRAY recordKeyTags = {1, deconst(&recordKeyTag)};
+	static constexpr proptag_t recordKeyTag = PR_STORE_RECORD_KEY;
 	TPROPVAL_ARRAY recordKeyProp;
-	if (!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP, &recordKeyTags, &recordKeyProp) ||
+	if (!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP,
+	    {&recordKeyTag, 1}, &recordKeyProp) ||
 	   recordKeyProp.count != 1 || recordKeyProp.ppropval->proptag != PR_STORE_RECORD_KEY)
 		throw DispatchError(E3194);
 	const BINARY* recordKeyData = static_cast<const BINARY*>(recordKeyProp.ppropval->pvalue);
@@ -926,19 +1391,34 @@ sMailboxInfo EWSContext::getMailboxInfo(const std::string& dir, bool isDomain) c
 /**
  * @brief      Setup impersonation for user
  *
- * @param      addrtype    Adress type
+ * @param      addrtype    Address type
  * @param      addr        Smtp address of the user to impersonate
  */
 void EWSContext::impersonate(const char* addrtype, const char* addr)
 {
-	if (!addrtype || !addr)
+	if (!addrtype || !addr || *addr == '\0')
 		return;
-	if (strcmp(addrtype, "PrincipalName") && strcmp(addrtype, "PrimarySmtpAddres") && strcmp(addrtype, "SmtpAddress"))
+	if (strcasecmp(addrtype, "sid") == 0)
+		/*
+		 * SID-based impersonation is part of MS-OXWSCDATA but not yet
+		 * implemented. To add support, we need to use ldap to resolve
+		 * SID (objectSid attribute) to username
+		 *
+		 * For now, SID impersonation returns "unsupported ConnectingSID".
+		 */
+		throw EWSError::ImpersonationFailed(E3276);
+	if (strcasecmp(addrtype, "PrincipalName") != 0 &&
+	    strcasecmp(addrtype, "PrimarySmtpAddress") != 0 &&
+	    strcasecmp(addrtype, "SmtpAddress") != 0)
 		throw EWSError::ImpersonationFailed(E3242);
-	impersonationMaildir = get_maildir(addr);
-	if (!(permissions(impersonationMaildir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
+
+	sql_meta_result mres;
+	if (mysql_adaptor_meta(addr, WANTPRIV_METAONLY, mres) != 0)
+		throw EWSError::CannotFindUser(E3330);
+	if (!(permissions(mres.maildir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
 		throw EWSError::ImpersonateUserDenied(E3243);
-	impersonationUser = addr;
+	impersonationUser    = std::move(mres.username);
+	impersonationMaildir = std::move(mres.maildir);
 	m_auth_info.username = impersonationUser.c_str();
 	m_auth_info.maildir = impersonationMaildir.c_str();
 }
@@ -954,13 +1434,28 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
 sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
 {
 	auto aInst = m_plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
-	static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_DATA_BIN,
-	                            PR_ATTACH_CONTENT_ID, PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
+	static constexpr proptag_t tagIDs[] = {
+		PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
+		PR_ATTACH_DATA_BIN, PR_ATTACH_CONTENT_ID,
+		PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS,
+	};
 	TPROPVAL_ARRAY props;
-	PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
-	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
+	    aInst->instanceId, proptag_cspan{tagIDs}, &props))
 		throw DispatchError(E3083);
-	return tAttachment::create(aid, props);
+	sShape shape(props);
+
+	auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
+	if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
+		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		MESSAGE_CONTENT content{};
+		if (!m_plugin.exmdb.read_message_instance(dir.c_str(),
+		    eInst->instanceId, &content))
+			throw DispatchError(E3208);
+		auto log_id = dir + ":a" + std::to_string(aid.attachment_num);
+		shape.mimeContent.emplace(exportContent(dir, content, log_id));
+	}
+	return tAttachment::create(aid, std::move(shape));
 }
 
 /**
@@ -978,11 +1473,11 @@ TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid) con
 	if (!exmdb.load_permission_table(dir.c_str(), fid, 0, &tableId, &rowCount))
 		throw EWSError::ItemCorrupt(E3283);
 	auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
-	static constexpr uint32_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tags), deconst(tags)};
+	static constexpr proptag_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
 	TARRAY_SET propTable;
-	if (!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId, &proptags, 0, rowCount, &propTable))
-		throw EWSError::ItemCorrupt(E3284);
+	if (!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId,
+	    proptag_cspan{tags}, 0, rowCount, &propTable))
+		throw EWSError::ItemCorrupt(E3332);
 	return propTable;
 }
 
@@ -1091,33 +1586,20 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		if (!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &content) ||
 		    content == nullptr)
 			throw EWSError::ItemNotFound(E3071);
-		MAIL mail;
-		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
-		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
-		auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
-		                   {*name = getPropertyName(dir, id); return TRUE;};
 		auto log_id = dir + ":m" + std::to_string(mid);
-		if (!oxcmail_export(content, log_id.c_str(), false,
-		    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
-			throw EWSError::ItemCorrupt(E3072);
-		auto mailLen = mail.get_length();
-		if (mailLen < 0)
-			throw EWSError::ItemCorrupt(E3073);
-		STREAM tempStream;
-		if (!mail.serialize(&tempStream))
-			throw EWSError::ItemCorrupt(E3074);
-		auto& mimeContent = item.MimeContent.emplace();
-		mimeContent.reserve(mailLen);
-		uint8_t* data;
-		unsigned int size = STREAM_BLOCK_SIZE;
-		while ((data = static_cast<uint8_t*>(tempStream.get_read_buf(&size))) != nullptr) {
-			mimeContent.insert(mimeContent.end(), data, data + size);
-			size = STREAM_BLOCK_SIZE;
+		try {
+			item.MimeContent.emplace(exportContent(dir, *content, log_id));
+		} catch (const std::exception &e) {
+			mlog(LV_WARN, "[ews] %s: MIME export failed: %s", log_id.c_str(), e.what());
 		}
 	}
 	if (special & sShape::Attachments) {
-		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_CONTENT_ID,
-			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
+		static constexpr proptag_t tagIDs[] = {
+			PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
+			PR_ATTACH_CONTENT_ID, PR_ATTACH_LONG_FILENAME,
+			PR_ATTACHMENT_FLAGS, PR_ATTACH_SIZE,
+			PR_ATTACHMENT_HIDDEN,
+		};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 		uint16_t count;
 		if (!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
@@ -1127,12 +1609,32 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		for (uint16_t i = 0; i < count; ++i) {
 			auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 			TPROPVAL_ARRAY props;
-			PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
-			if (!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+			if (!exmdb.get_instance_properties(dir.c_str(), 0,
+			    aInst->instanceId, proptag_cspan{tagIDs}, &props))
 				throw DispatchError(E3080);
+			auto hidden = props.get<const uint8_t>(PR_ATTACHMENT_HIDDEN);
+			if (hidden && *hidden)
+				continue;
+			sShape shape(props);
+			auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
+			if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
+				auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+				MESSAGE_CONTENT eInstContent{};
+				if (!exmdb.read_message_instance(dir.c_str(), eInst->instanceId, &eInstContent))
+					throw DispatchError(E3333);
+				auto log_id = dir + ":a" + std::to_string(i);
+				try {
+					shape.mimeContent.emplace(exportContent(dir, eInstContent, log_id));
+				} catch (const std::exception &e) {
+					mlog(LV_WARN, "[ews] %s: MIME export failed, skipping attachment", log_id.c_str());
+					continue;
+				}
+			}
 			aid.attachment_num = i;
-			item.Attachments->emplace_back(tAttachment::create(aid, props));
+			item.Attachments->emplace_back(tAttachment::create(aid, std::move(shape)));
 		}
+		if (item.Attachments->empty())
+			item.Attachments.reset();
 	}
 	if (special & sShape::Rights)
 		item.EffectiveRights.emplace(permissions(dir, fid));
@@ -1152,10 +1654,150 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	loadSpecial(dir, fid, mid, static_cast<tItem&>(message), special);
 	if (!(special & sShape::Recipients))
 		return;
+
+	if (special & (sShape::ToRecipients | sShape::CcRecipients | sShape::BccRecipients)) {
+		TARRAY_SET rcpts;
+		if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
+			mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
+				dir.c_str(), static_cast<unsigned long long>(mid));
+		} else {
+			for (const auto &rcpt : rcpts) {
+				auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+				if (!recipientType)
+					continue;
+				switch (*recipientType) {
+				case MAPI_TO:
+					if (special & sShape::ToRecipients)
+						defaulted(message.ToRecipients).emplace_back(rcpt);
+					break;
+				case MAPI_CC:
+					if (special & sShape::CcRecipients)
+						defaulted(message.CcRecipients).emplace_back(rcpt);
+					break;
+				case MAPI_BCC:
+					if (special & sShape::BccRecipients)
+						defaulted(message.BccRecipients).emplace_back(rcpt);
+					break;
+				}
+			}
+		}
+	}
+
+	if (!(special & sShape::ReplyToRecipients))
+		return;
+
+	void *propval = nullptr;
+	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP, mid,
+	    PR_REPLY_RECIPIENT_ENTRIES, &propval) || propval == nullptr)
+		return;
+	auto replyEntries = static_cast<const BINARY *>(propval);
+	if (replyEntries->pb == nullptr || replyEntries->cb == 0)
+		return;
+
+	EXT_PULL pull;
+	BINARY_ARRAY addressArray{};
+	auto cleanup = HX::make_scope_exit([&]() {
+		for (uint32_t i = 0; i < addressArray.count; ++i)
+			std::free(addressArray.pbin[i].pb);
+		std::free(addressArray.pbin);
+	});
+	pull.init(replyEntries->pb, replyEntries->cb, zalloc, EXT_FLAG_WCOUNT);
+	auto parseResult = pull.g_flatentry_a(&addressArray);
+	if (parseResult != pack_result::ok || addressArray.count == 0)
+		return;
+
+	auto &replyList = defaulted(message.ReplyTo);
+	replyList.reserve(replyList.size() + static_cast<size_t>(addressArray.count));
+	for (uint32_t i = 0; i < addressArray.count; ++i) {
+		EXT_PULL entryPull;
+		entryPull.init(addressArray.pbin[i].pb, addressArray.pbin[i].cb, zalloc, EXT_FLAG_UTF16);
+		ONEOFF_ENTRYID entry{};
+		if (entryPull.g_oneoff_eid(&entry) != pack_result::ok)
+			continue;
+		if (entry.pmail_address.empty())
+			continue;
+		auto &recipient = replyList.emplace_back();
+		recipient.EmailAddress = std::move(entry.pmail_address);
+		if (!entry.pdisplay_name.empty())
+			recipient.Name = std::move(entry.pdisplay_name);
+		if (!entry.paddress_type.empty())
+			recipient.RoutingType = std::move(entry.paddress_type);
+		else
+			recipient.RoutingType = "SMTP";
+	}
+}
+
+/**
+ * @brief     Load meeting request attributes not contained in tags
+ *
+ * Populates attendee lists from the recipient table in addition
+ * to loading standard message attributes.
+ *
+ * @param     dir     Store to load from
+ * @param     fid     Parent folder ID
+ * @param     mid     Message to load
+ * @param     meetReq Meeting request to store data in
+ * @param     special Bit mask of attributes to load
+ */
+void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
+    uint64_t mid, tMeetingMessage &meetMsg, uint64_t special) const
+{
+	loadSpecial(dir, fid, mid, static_cast<tMessage &>(meetMsg), special);
+	if (!meetMsg.UID || meetMsg.AssociatedCalendarItemId)
+		return;
+	/*
+	 * Populate AssociatedCalendarItemId by searching the
+	 * calendar for an item matching the CleanGlobalObjectId.
+	 */
+	auto goid = getItemProp<BINARY>(dir, mid,
+	    PROP_TAG(PT_BINARY, getNamedPropId(dir,
+	    NtCleanGlobalObjectId)));
+	if (goid == nullptr || goid->cb == 0)
+		return;
+	sFolderSpec calFolder;
+	calFolder.folderId = rop_util_make_eid_ex(1,
+	    PRIVATE_FID_CALENDAR);
+	calFolder.location = sFolderSpec::PRIVATE;
+	calFolder.target = m_auth_info.username;
+	std::string calDir = getDir(calFolder);
+	auto pidCgoid  = getNamedPropId(calDir, NtCleanGlobalObjectId);
+	auto cgoid_tag = PROP_TAG(PT_BINARY, pidCgoid);
+	const RESTRICTION_PROPERTY rprop = {RELOP_EQ, cgoid_tag, {cgoid_tag, deconst(goid)}};
+	const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
+	uint32_t table_id = 0, row_count = 0;
+	if (!m_plugin.exmdb.load_content_table(calDir.c_str(),
+	    CP_ACP, calFolder.folderId, nullptr,
+	    TABLE_FLAG_NONOTIFICATIONS, &rst, nullptr,
+	    &table_id, &row_count) || row_count == 0)
+		return;
+	auto cl_tbl = HX::make_scope_exit([&]() {
+		m_plugin.exmdb.unload_table(calDir.c_str(), table_id);
+	});
+	static constexpr proptag_t eid_tag = PR_ENTRYID;
+	TARRAY_SET rows{};
+	if (!m_plugin.exmdb.query_table(calDir.c_str(), nullptr,
+	    CP_ACP, table_id, {&eid_tag, 1}, 0, 1, &rows) ||
+	    rows.count == 0 || rows.pparray[0] == nullptr)
+		return;
+	auto eid = rows.pparray[0]->get<const BINARY>(PR_ENTRYID);
+	if (eid == nullptr || eid->cb == 0)
+		return;
+	meetMsg.AssociatedCalendarItemId.emplace();
+	meetMsg.AssociatedCalendarItemId->Id.assign(*eid);
+}
+
+void EWSContext::loadSpecial(const std::string &dir, uint64_t fid, uint64_t mid,
+    tMeetingRequestMessage &meetReq, uint64_t special) const
+{
+	loadSpecial(dir, fid, mid,
+	            static_cast<tMeetingMessage &>(meetReq), special);
+	if (!(special & sShape::Attendees))
+		return;
 	TARRAY_SET rcpts;
 	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
-		mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
-			dir.c_str(), static_cast<unsigned long long>(mid));
+		mlog(LV_ERR, "[ews] failed to load meeting request "
+		     "attendees (%s:%llu)", dir.c_str(),
+		     static_cast<unsigned long long>(mid));
 		return;
 	}
 	for (const auto &rcpt : rcpts) {
@@ -1164,23 +1806,23 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			continue;
 		switch (*recipientType) {
 		case MAPI_TO:
-			if (special & sShape::ToRecipients)
-				defaulted(message.ToRecipients).emplace_back(rcpt);
+			if (special & sShape::RequiredAttendees)
+				defaulted(meetReq.RequiredAttendees).emplace_back(rcpt);
 			break;
 		case MAPI_CC:
-			if (special & sShape::CcRecipients)
-				defaulted(message.CcRecipients).emplace_back(rcpt);
+			if (special & sShape::OptionalAttendees)
+				defaulted(meetReq.OptionalAttendees).emplace_back(rcpt);
 			break;
 		case MAPI_BCC:
-			if (special & sShape::BccRecipients)
-				defaulted(message.BccRecipients).emplace_back(rcpt);
+			if (special & sShape::Resources)
+				defaulted(meetReq.Resources).emplace_back(rcpt);
 			break;
 		}
 	}
 }
 
 /**
- * @brief     Load message attributes not contained in tags
+ * @brief     Load calendar item attributes not contained in tags
  *
  * @param     dir     Store to load from
  * @param     fid     Parent folder ID
@@ -1193,6 +1835,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	loadSpecial(dir, fid, mid, static_cast<tItem&>(calItem), special);
 	if (!(special & sShape::Attendees))
 		return;
+	if (!calItem.IsMeeting || !*calItem.IsMeeting)
+		return;
 	TARRAY_SET rcpts;
 	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
 		mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%llu)",
@@ -1204,15 +1848,15 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		if (!recipientType)
 			continue;
 		switch (*recipientType) {
-		case 1: //Required attendee
+		case MAPI_TO:
 			if (special & sShape::RequiredAttendees)
 				defaulted(calItem.RequiredAttendees).emplace_back(rcpt);
 			break;
-		case 2: //Optional attendee
+		case MAPI_CC:
 			if (special & sShape::OptionalAttendees)
 				defaulted(calItem.OptionalAttendees).emplace_back(rcpt);
 			break;
-		case 3: //Resource
+		case MAPI_BCC:
 			if (special & sShape::Resources)
 				defaulted(calItem.Resources).emplace_back(rcpt);
 			break;
@@ -1286,17 +1930,63 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
 	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
 	TPROPVAL_ARRAY props;
-	PROPTAG_ARRAY tags = shape.proptags();
-	tags.emplace_back(ex_replace_time_tag);
+	auto tags_1 = shape.proptags_vec();
+	tags_1.emplace_back(ex_replace_time_tag);
+
+	/*
+	 * Compute timezone offset for rtime→UTC conversion. Recurrence blob
+	 * rtimes are "local-as-UTC" – derive the offset from the master's
+	 * PR_START_DATE (real UTC) vs the recurrence pattern's first
+	 * occurrence rtime.
+	 */
+	std::chrono::seconds tz_offset{0};
+	uint32_t start_off = 0, end_off = 1440;
+	APPOINTMENT_RECUR_PAT apr{};
+	bool apr_valid = false;
+	auto recur_prop_tz = shape.get<const BINARY>(NtAppointmentRecur);
+	auto start_prop_tz = shape.get<const uint64_t>(PR_START_DATE);
+	if (!start_prop_tz)
+		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
+	if (start_prop_tz != nullptr && recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
+		EXT_PULL rp;
+		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, alloc, 0);
+		if (rp.g_apptrecpat(&apr) == pack_result::ok) {
+			apr_valid = true;
+			start_off = apr.starttimeoffset;
+			end_off   = apr.endtimeoffset;
+			auto su   = rop_util_nttime_to_unix(*start_prop_tz);
+			auto sl   = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
+			tz_offset = std::chrono::seconds(su - sl);
+		}
+	}
 
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
 	struct tm basedate_local;
 	localtime_r(&basedate_ts, &basedate_local);
 
+	/* Find EXCEPTIONINFO for this basedate from the recurrence blob.
+	 * It has the correct startdatetime/enddatetime for the exception,
+	 * unlike the embedded message which may have the master's dates. */
+	const EXCEPTIONINFO *matching_exc = nullptr;
+	if (apr_valid) {
+		uint32_t bd = basedate / 1440;
+		for (uint16_t ei = 0; ei < apr.exceptioncount; ++ei) {
+			if (apr.pexceptioninfo[ei].originalstartdate / 1440 == bd) {
+				matching_exc = &apr.pexceptioninfo[ei];
+				break;
+			}
+		}
+	}
+
 	for (uint16_t i = 0; i < count; ++i) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
-		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
-		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, &tags, &props))
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		} catch (const DispatchError &) {
+			continue; /* skip non-embedded attachments */
+		}
+		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, tags_1, &props))
 			throw DispatchError(E3211);
 
 		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
@@ -1307,14 +1997,1066 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 		localtime_r(&exstart, &exstart_local);
 		if (is_same_day(basedate_local, exstart_local)) {
 			sItem item = tItem::create(shape);
-			if (shape.special)
-				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
+			/* For exceptions, skip MimeContent from master —
+			 * the embedded msg body is applied via updateProps.
+			 * Attachments and attendees still come from master. */
+			auto exc_special = shape.special & ~sShape::MimeContent;
+			if (exc_special)
+				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, exc_special); }, item);
 			std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
-
+			if (auto cal = std::get_if<tCalendarItem>(&item)) {
+				/* Override Start/End: the embedded message has the
+				 * master's dates; use EXCEPTIONINFO from the blob. */
+				if (matching_exc) {
+					cal->Start.emplace(
+						rop_util_rtime_to_unix2(matching_exc->startdatetime) + tz_offset);
+					cal->End.emplace(
+						rop_util_rtime_to_unix2(matching_exc->enddatetime) + tz_offset);
+				} else {
+					cal->Start.emplace(
+						rop_util_rtime_to_unix2(basedate + start_off) + tz_offset);
+					cal->End.emplace(
+						rop_util_rtime_to_unix2(basedate + end_off) + tz_offset);
+				}
+				cal->CalendarItemType.emplace(Enum::Exception);
+				cal->RecurrenceId.emplace(
+					rop_util_rtime_to_unix2(basedate) + tz_offset);
+				cal->Recurrence.reset();
+				cal->ModifiedOccurrences.reset();
+				cal->DeletedOccurrences.reset();
+			}
+			markOccurrenceId(item, basedate);
 			return item;
 		}
 	}
-	throw EWSError::ItemCorrupt(E3209);
+
+	/* Unmodified occurrence: construct from master properties */
+	sItem item = tItem::create(shape);
+	if (shape.special)
+		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
+	if (auto cal = std::get_if<tCalendarItem>(&item)) {
+		cal->Start.emplace(
+			rop_util_rtime_to_unix2(basedate + start_off) + tz_offset);
+		cal->End.emplace(
+			rop_util_rtime_to_unix2(basedate + end_off) + tz_offset);
+		cal->CalendarItemType.emplace(Enum::Occurrence);
+		cal->RecurrenceId.emplace(
+			rop_util_rtime_to_unix2(basedate) + tz_offset);
+		cal->Recurrence.reset();
+		cal->ModifiedOccurrences.reset();
+		cal->DeletedOccurrences.reset();
+	}
+	markOccurrenceId(item, basedate);
+	return item;
+}
+
+/**
+ * @brief      Resolve an OccurrenceItemId InstanceIndex to a basedate
+ *
+ * @param      dir    Store directory
+ * @param      mid    Message ID of the recurring master
+ * @param      index  1-based occurrence index (InstanceIndex from EWS)
+ *
+ * @return     Basedate in rtime format
+ */
+uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
+    uint64_t mid, uint32_t index) const
+{
+	auto [recur_tag, apr] = loadRecurPat(dir, mid);
+	return nthOccurrenceDate(apr.recur_pat, index);
+}
+
+/**
+ * @brief      Delete a single occurrence from a recurring appointment
+ *
+ * Adds the occurrence date to the deleted instances list in the
+ * recurrence blob and saves it back to the item.
+ *
+ * @param      dir       Store directory
+ * @param      fid       Folder ID
+ * @param      mid       Message ID of the recurring master
+ * @param      basedate  Occurrence date in rtime format
+ */
+void EWSContext::deleteOccurrence(const std::string &dir,
+    uint64_t mid, uint32_t basedate) const
+{
+	auto [recur_tag, apr] = loadRecurPat(dir, mid);
+
+	/* Check if this date is already deleted */
+	auto &rp = apr.recur_pat;
+	if (std::any_of(&rp.pdeletedinstancedates[0], &rp.pdeletedinstancedates[rp.deletedinstancecount],
+	    [=](uint32_t entry) { return entry == basedate; }))
+		return; /* already deleted */
+
+	/* Add the basedate to the deleted instances array */
+	auto new_del = alloc<uint32_t>(rp.deletedinstancecount + 1);
+	memcpy(new_del, rp.pdeletedinstancedates,
+	       rp.deletedinstancecount * sizeof(uint32_t));
+	new_del[rp.deletedinstancecount] = basedate;
+	rp.pdeletedinstancedates = new_del;
+	++rp.deletedinstancecount;
+
+	/* Sort the deleted dates array */
+	std::sort(rp.pdeletedinstancedates,
+	          rp.pdeletedinstancedates + rp.deletedinstancecount);
+
+	if (!saveRecurBlob(dir, mid, recur_tag, apr))
+		throw DispatchError(E3308);
+}
+
+/**
+ * Compute timezone offset (in rtime minutes) from the master appointment's
+ * real UTC start vs the recurrence blob's local-as-UTC startdate.
+ */
+int32_t EWSContext::recurTzOffset(const std::string &dir, uint64_t mid,
+    const APPOINTMENT_RECUR_PAT &apr) const
+{
+	proptag_t tags[] = {PR_START_DATE};
+	TPROPVAL_ARRAY sd_res = getItemProps(dir, mid, tags);
+	if (sd_res.count != 1 || sd_res.ppropval->proptag != PR_START_DATE)
+		return 0;
+	auto su = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(sd_res.ppropval->pvalue));
+	auto sl = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
+	int64_t diff = (su - sl) / 60;
+	if (diff < std::numeric_limits<int32_t>::min() || diff > std::numeric_limits<int32_t>::max())
+		return 0;  // probable data corruption, pretend it does not exist
+	return int32_t(diff);
+}
+
+/**
+ * Apply property changes to an EXCEPTIONINFO/EXTENDEDEXCEPTION pair
+ * in the recurrence blob.
+ */
+static void applyExceptionOverrides(EXCEPTIONINFO &ei, EXTENDEDEXCEPTION &ee,
+    const TPROPVAL_ARRAY &props, propid_t location_id, propid_t busystatus_id,
+    propid_t subtype_id, propid_t reminderdelta_id, propid_t reminderset_id,
+    int32_t tz_min)
+{
+	for (unsigned int j = 0; j < props.count; ++j) {
+		auto tag = props.ppropval[j].proptag;
+		if (tag == PR_SUBJECT || tag == PR_SUBJECT_A ||
+		    tag == PR_NORMALIZED_SUBJECT ||
+		    tag == PR_NORMALIZED_SUBJECT_A) {
+			ei.overrideflags |= ARO_SUBJECT;
+			ei.subject = static_cast<char *>(props.ppropval[j].pvalue);
+			ee.subject = ei.subject;
+		} else if (PROP_ID(tag) == location_id) {
+			ei.overrideflags |= ARO_LOCATION;
+			ei.location = static_cast<char *>(props.ppropval[j].pvalue);
+			ee.location = ei.location;
+		} else if (PROP_ID(tag) == busystatus_id) {
+			ei.overrideflags |= ARO_BUSYSTATUS;
+			ei.busystatus = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
+		} else if (PROP_ID(tag) == subtype_id) {
+			ei.overrideflags |= ARO_SUBTYPE;
+			ei.subtype = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
+		} else if (PROP_ID(tag) == reminderdelta_id) {
+			ei.overrideflags |= ARO_REMINDERDELTA;
+			ei.reminderdelta = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
+		} else if (PROP_ID(tag) == reminderset_id) {
+			ei.overrideflags |= ARO_REMINDER;
+			ei.reminderset = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
+		} else if (tag == PR_START_DATE) {
+			auto nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+			ei.startdatetime = rop_util_nttime_to_rtime(nt) - tz_min;
+			ee.startdatetime = ei.startdatetime;
+		} else if (tag == PR_END_DATE) {
+			auto nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+			ei.enddatetime = rop_util_nttime_to_rtime(nt) - tz_min;
+			ee.enddatetime = ei.enddatetime;
+		} else if (tag == PR_BODY || tag == PR_BODY_W || tag == PR_HTML) {
+			ei.overrideflags |= ARO_EXCEPTIONAL_BODY;
+		}
+	}
+	ei.overrideflags |= ARO_ATTACHMENT;
+	ei.attachment = 1;
+}
+
+/**
+ * Serialize an APPOINTMENT_RECUR_PAT and save it as a property.
+ * Returns false on serialization failure.
+ */
+bool EWSContext::saveRecurBlob(const std::string &dir, uint64_t mid,
+    proptag_t recur_tag, const APPOINTMENT_RECUR_PAT &apr) const
+{
+	EXT_PUSH ext_push;
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ext_push.p_apptrecpat(apr) != pack_result::ok)
+		return false;
+	BINARY new_bin;
+	new_bin.cb = ext_push.m_offset;
+	new_bin.pb = alloc<uint8_t>(new_bin.cb);
+	memcpy(new_bin.pb, ext_push.m_udata, new_bin.cb);
+	const TAGGED_PROPVAL rprop[] = {{recur_tag, &new_bin}};
+	const TPROPVAL_ARRAY rpropvals = {std::size(rprop), deconst(rprop)};
+	PROBLEM_ARRAY rproblems;
+	return m_plugin.exmdb.set_message_properties(dir.c_str(),
+	       nullptr, CP_ACP, mid, &rpropvals, &rproblems) &&
+	       rproblems.count == 0;
+}
+
+/**
+ * Resolve PidLidAppointmentRecur, load the binary, and parse it.
+ * Returns the resolved proptag and the parsed recurrence pattern.
+ */
+std::pair<proptag_t, APPOINTMENT_RECUR_PAT>
+EWSContext::loadRecurPat(const std::string &dir, uint64_t mid) const
+{
+	const PROPERTY_NAME pn[] = {{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur}};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna);
+	auto tag = PROP_TAG(PT_BINARY, ids[0]);
+	auto bin = getItemProp<const BINARY>(dir, mid, tag);
+	if (!bin)
+		throw EWSError::ItemCorrupt(E3305);
+	EXT_PULL ext_pull;
+	ext_pull.init(bin->pb, bin->cb, alloc, 0);
+	APPOINTMENT_RECUR_PAT apr{};
+	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok)
+		throw EWSError::ItemCorrupt(E3306);
+	return {tag, std::move(apr)};
+}
+
+void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
+    uint64_t mid, uint32_t basedate, const TPROPVAL_ARRAY &props,
+    const proptag_cspan &rm_tags) const
+{
+	auto &exmdb = m_plugin.exmdb;
+
+	/* Resolve named property IDs */
+	const PROPERTY_NAME pn_buf[] = {
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
+		{MNID_ID, PSETID_Appointment, PidLidLocation},
+		{MNID_ID, PSETID_Appointment, PidLidBusyStatus},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentSubType},
+		{MNID_ID, PSETID_Common, PidLidReminderDelta},
+		{MNID_ID, PSETID_Common, PidLidReminderSet},
+		{MNID_ID, PSETID_Common, PidLidCommonStart},
+		{MNID_ID, PSETID_Common, PidLidCommonEnd},
+		{MNID_ID, PSETID_Appointment, PidLidRecurring},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+	};
+	const PROPNAME_ARRAY propnames = {std::size(pn_buf), deconst(pn_buf)};
+	auto namedids         = getNamedPropIds(dir, propnames, true);
+	auto ex_replace_tag   = PROP_TAG(PT_SYSTIME, namedids[0]);
+	auto recur_tag        = PROP_TAG(PT_BINARY, namedids[1]);
+	auto location_id      = namedids[2];
+	auto busystatus_id    = namedids[3];
+	auto subtype_id       = namedids[4];
+	auto reminderdelta_id = namedids[5];
+	auto reminderset_id   = namedids[6];
+	auto common_start_tag = PROP_TAG(PT_SYSTIME, namedids[7]);
+	auto common_end_tag   = PROP_TAG(PT_SYSTIME, namedids[8]);
+	auto recurring_tag    = PROP_TAG(PT_BOOLEAN, namedids[9]);
+	auto appt_start_tag   = PROP_TAG(PT_SYSTIME, namedids[10]);
+	auto appt_end_tag     = PROP_TAG(PT_SYSTIME, namedids[11]);
+
+	/* Load message instance and count attachments */
+	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
+	uint16_t att_count = 0;
+	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
+	    mInst->instanceId, &att_count))
+		throw DispatchError(E3335);
+
+	/* Search for an existing exception matching this basedate */
+	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
+	struct tm basedate_local{};
+	localtime_r(&basedate_ts, &basedate_local);
+
+	for (uint16_t i = 0; i < att_count; ++i) {
+		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		} catch (const DispatchError &) {
+			continue; /* skip non-embedded attachments */
+		}
+		TPROPVAL_ARRAY eprops{};
+		proptag_t etags[] = {ex_replace_tag};
+		if (!exmdb.get_instance_properties(dir.c_str(), 0,
+		    eInst->instanceId, proptag_cspan{etags}, &eprops))
+			continue;
+		auto extime = eprops.get<const uint64_t>(ex_replace_tag);
+		if (!extime)
+			continue;
+		auto ex_ts = clock::to_time_t(rop_util_nttime_to_unix2(*extime));
+		struct tm ex_local{};
+		localtime_r(&ex_ts, &ex_local);
+		if (!is_same_day(basedate_local, ex_local))
+			continue;
+
+		/* Found existing exception – update its embedded message */
+		PROBLEM_ARRAY problems;
+		if (rm_tags.size() > 0 &&
+		    !exmdb.remove_instance_properties(dir.c_str(),
+		    eInst->instanceId, rm_tags, &problems))
+			throw EWSError::ItemSave(E3309);
+		if (!exmdb.set_instance_properties(dir.c_str(),
+		    eInst->instanceId, &props, &problems))
+			throw EWSError::ItemSave(E3336);
+
+		/* Scan props once for body changes and start/end times */
+		bool body_upd = false;
+		bool has_html = false, has_text = false;
+		uint64_t upd_start_nt = 0, upd_end_nt = 0;
+		bool has_start = false, has_end = false;
+		for (unsigned int j = 0; j < props.count; ++j) {
+			auto t = props.ppropval[j].proptag;
+			if (t == PR_HTML) {
+				body_upd = true;
+				has_html = true;
+			} else if (t == PR_BODY || t == PR_BODY_W) {
+				body_upd = true;
+				has_text = true;
+			} else if (t == PR_START_DATE) {
+				upd_start_nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+				has_start = true;
+			} else if (t == PR_END_DATE) {
+				upd_end_nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+				has_end = true;
+			}
+		}
+		if (body_upd) {
+			std::vector<proptag_t> body_rm = {PR_RTF_COMPRESSED};
+			if (has_html && !has_text) {
+				body_rm.emplace_back(PR_BODY);
+				body_rm.emplace_back(PR_BODY_W);
+			} else if (has_text && !has_html) {
+				body_rm.emplace_back(PR_HTML);
+			}
+			PROBLEM_ARRAY rtf_problems;
+			if (!exmdb.remove_instance_properties(dir.c_str(),
+			    eInst->instanceId, proptag_cspan{body_rm}, &rtf_problems))
+				throw EWSError::ItemSave(E3337);
+			uint8_t rtf_nosync = 0;
+			const TAGGED_PROPVAL rtf_prop[] = {{PR_RTF_IN_SYNC, &rtf_nosync}};
+			const TPROPVAL_ARRAY rtf_arr = {std::size(rtf_prop), deconst(rtf_prop)};
+			if (!exmdb.set_instance_properties(dir.c_str(),
+			    eInst->instanceId, &rtf_arr, &rtf_problems))
+				throw EWSError::ItemSave(E3338);
+		}
+
+		/*
+		 * Set PidLidRecurring=false and PR_MESSAGE_CLASS to the
+		 * exception class on the embedded message.
+		 */
+		uint8_t recurring_false = 0;
+		const TAGGED_PROPVAL rf_props[] = {
+			{recurring_tag, &recurring_false},
+			{PR_MESSAGE_CLASS, deconst(IPM_Appointment_Exception)},
+		};
+		const TPROPVAL_ARRAY rf_arr = {std::size(rf_props), deconst(rf_props)};
+		if (!exmdb.set_instance_properties(dir.c_str(),
+		    eInst->instanceId, &rf_arr, &problems))
+			throw EWSError::ItemSave(E3339);
+
+		/*
+		 * Ensure the attachment is properly marked as hidden exception
+		 * with all required properties (oxcical layout).
+		 */
+		uint32_t afl = afException;
+		uint8_t ahid = true;
+		uint32_t att_linkid = 0;
+		uint32_t att_fl = 0;
+		uint32_t indet_rendering_pos = UINT32_MAX;
+		std::vector<TAGGED_PROPVAL> afix_vec = {
+			{PR_ATTACHMENT_FLAGS, &afl},
+			{PR_ATTACHMENT_HIDDEN, &ahid},
+			{PR_ATTACHMENT_LINKID, &att_linkid},
+			{PR_ATTACH_FLAGS, &att_fl},
+			{PR_RENDERING_POSITION, &indet_rendering_pos},
+		};
+
+		if (has_start)
+			afix_vec.push_back({PR_EXCEPTION_STARTTIME, &upd_start_nt});
+		if (has_end)
+			afix_vec.push_back({PR_EXCEPTION_ENDTIME, &upd_end_nt});
+		const TPROPVAL_ARRAY afix_arr = {static_cast<uint16_t>(afix_vec.size()), afix_vec.data()};
+		if (!exmdb.set_instance_properties(dir.c_str(),
+		    aInst->instanceId, &afix_arr, &problems))
+			throw EWSError::ItemSave(E3340);
+		ec_error_t err = ecSuccess;
+		if (!exmdb.flush_instance(dir.c_str(),
+		    eInst->instanceId, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3341);
+		if (!exmdb.flush_instance(dir.c_str(),
+		    aInst->instanceId, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3342);
+		if (!exmdb.flush_instance(dir.c_str(),
+		    mInst->instanceId, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3343);
+
+		/* Also update the EXCEPTIONINFO in the recurrence blob */
+		auto recur_bin = getItemProp<const BINARY>(dir, mid, recur_tag);
+		if (recur_bin) {
+			EXT_PULL ext_pull;
+			ext_pull.init(recur_bin->pb, recur_bin->cb, alloc, 0);
+			APPOINTMENT_RECUR_PAT apr{};
+			if (ext_pull.g_apptrecpat(&apr) == pack_result::ok) {
+				int32_t tz_min = recurTzOffset(dir, mid, apr);
+				for (uint16_t k = 0; k < apr.exceptioncount; ++k) {
+					if (apr.pexceptioninfo[k].originalstartdate != basedate)
+						continue;
+					applyExceptionOverrides(apr.pexceptioninfo[k],
+						apr.pextendedexception[k],
+						props, location_id,
+						busystatus_id, subtype_id,
+						reminderdelta_id,
+						reminderset_id, tz_min);
+					break;
+				}
+				saveRecurBlob(dir, mid, recur_tag, apr);
+			}
+		}
+		return;
+	}
+
+	/* No existing exception — create a new one */
+
+	/*
+	 * Read recurrence blob first — needed for timezone offset and
+	 * occurrence time computation before building the embedded msg.
+	 */
+	auto recur_bin = getItemProp<const BINARY>(dir, mid, recur_tag);
+	if (!recur_bin)
+		throw EWSError::ItemCorrupt(E3344);
+	EXT_PULL ext_pull;
+	ext_pull.init(recur_bin->pb, recur_bin->cb, alloc, 0);
+	APPOINTMENT_RECUR_PAT apr{};
+	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok)
+		throw EWSError::ItemCorrupt(E3345);
+
+	int32_t tz_minutes = recurTzOffset(dir, mid, apr);
+
+	/* Compute occurrence start/end as local-as-UTC rtimes */
+	auto start_rtime = basedate + apr.starttimeoffset;
+	auto end_rtime   = basedate + apr.endtimeoffset;
+
+	/*
+	 * Check if the update has explicit start/end times and override
+	 * rtimes. Pick up the subject for the attachment's PR_DISPLAY_NAME,
+	 * too.
+	 */
+	uint64_t start_nttime = 0, end_nttime = 0;
+	bool has_explicit_start = false, has_explicit_end = false;
+	const char *disp_name = nullptr;
+	bool body_changed = false;
+	const BINARY *upd_html = nullptr;
+	const char *upd_text = nullptr;
+	for (unsigned int j = 0; j < props.count; ++j) {
+		auto tag = props.ppropval[j].proptag;
+		if (tag == PR_START_DATE) {
+			start_nttime = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+			start_rtime  = rop_util_nttime_to_rtime(start_nttime) - tz_minutes;
+			has_explicit_start = true;
+		} else if (tag == PR_END_DATE) {
+			end_nttime = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
+			end_rtime  = rop_util_nttime_to_rtime(end_nttime) - tz_minutes;
+			has_explicit_end = true;
+		} else if (!disp_name && (tag == PR_SUBJECT ||
+		    tag == PR_NORMALIZED_SUBJECT)) {
+			disp_name = static_cast<const char *>(props.ppropval[j].pvalue);
+		} else if (tag == PR_HTML) {
+			body_changed = true;
+			upd_html = static_cast<const BINARY *>(props.ppropval[j].pvalue);
+		} else if (tag == PR_BODY || tag == PR_BODY_W) {
+			body_changed = true;
+			upd_text = static_cast<const char *>(props.ppropval[j].pvalue);
+		}
+	}
+
+	/* If no explicit times, compute real UTC NTTIMEs from rtimes */
+	if (!has_explicit_start)
+		start_nttime = rop_util_unix_to_nttime(rop_util_rtime_to_unix(start_rtime) + static_cast<time_t>(tz_minutes) * 60);
+	if (!has_explicit_end)
+		end_nttime = rop_util_unix_to_nttime(rop_util_rtime_to_unix(end_rtime) + static_cast<time_t>(tz_minutes) * 60);
+
+	/* Read master's properties as defaults for the embedded message */
+	auto master_props = getItemProps(dir, mid, proptag_cspan{});
+
+	/* Create new attachment instance */
+	uint32_t aInstId = 0, aNum = 0;
+	if (!exmdb.create_attachment_instance(dir.c_str(),
+	    mInst->instanceId, &aInstId, &aNum))
+		throw EWSError::ItemSave(E3346);
+
+	/* Set attachment properties — match oxcical exception layout */
+	uint32_t method = ATTACH_EMBEDDED_MSG;
+	uint32_t att_flags_val = afException;
+	uint8_t att_hidden = true;
+	uint32_t att_linkid = 0;
+	uint32_t att_fl = 0;
+	BINARY att_enc{};
+	uint32_t indet_rendering_pos = UINT32_MAX;
+	auto att_start_nt = construct<uint64_t>(start_nttime);
+	auto att_end_nt   = construct<uint64_t>(end_nttime);
+	std::vector<TAGGED_PROPVAL> att_pvec = {
+		{PR_ATTACH_METHOD, &method},
+		{PR_ATTACHMENT_FLAGS, &att_flags_val},
+		{PR_ATTACHMENT_HIDDEN, &att_hidden},
+		{PR_ATTACHMENT_LINKID, &att_linkid},
+		{PR_ATTACH_FLAGS, &att_fl},
+		{PR_ATTACH_ENCODING, &att_enc},
+		{PR_RENDERING_POSITION, &indet_rendering_pos},
+		{PR_EXCEPTION_STARTTIME, att_start_nt},
+		{PR_EXCEPTION_ENDTIME, att_end_nt},
+	};
+
+	/* Build embedded message content */
+	MESSAGE_CONTENT content{};
+
+	/*
+	 * Copy relevant properties from the master message.
+	 * Pick up the master subject as disp_name fallback, too.
+	 */
+	std::vector<TAGGED_PROPVAL> emb_props;
+	for (unsigned int j = 0; j < master_props.count; ++j) {
+		auto tag = master_props.ppropval[j].proptag;
+		/* Skip properties that should not be on exceptions */
+		if (tag == PR_ENTRYID || tag == PR_CHANGE_KEY ||
+		    tag == PR_SOURCE_KEY || tag == PR_PREDECESSOR_CHANGE_LIST ||
+		    tag == PidTagMid || tag == PidTagChangeNumber ||
+		    PROP_TAG(0, PROP_ID(tag)) == PROP_TAG(0, PROP_ID(recur_tag)))
+			continue;
+		if (!disp_name && tag == PR_SUBJECT)
+			disp_name = static_cast<const char *>(
+				master_props.ppropval[j].pvalue);
+		emb_props.push_back(master_props.ppropval[j]);
+	}
+
+	if (disp_name)
+		att_pvec.push_back({PR_DISPLAY_NAME, deconst(disp_name)});
+	TPROPVAL_ARRAY att_list = {static_cast<uint16_t>(att_pvec.size()),
+	                           att_pvec.data()};
+
+	/* Apply the update properties (overrides) */
+	for (unsigned int j = 0; j < props.count; ++j) {
+		auto tag = props.ppropval[j].proptag;
+		/* Remove any existing prop with same tag */
+		std::erase_if(emb_props, [tag](const TAGGED_PROPVAL &p) { return p.proptag == tag; });
+		emb_props.push_back(props.ppropval[j]);
+	}
+
+	/*
+	 * If the body was updated, synchronize all body formats on the
+	 * embedded message. write_attachment_instance does *not* run
+	 * sync_message_body_formats, so we must do it here. Remove *all* stale
+	 * body formats from the master copy, then regenerate the missing ones
+	 * from the update's format.
+	 *
+	 * Remove master properties that will be replaced on the exception:
+	 * recurring flag, message class, all date tags, and (if body changed)
+	 * all body format tags.
+	 */
+	auto occ_start_nt = construct<uint64_t>(start_nttime);
+	auto occ_end_nt   = construct<uint64_t>(end_nttime);
+	std::erase_if(emb_props, [&](const TAGGED_PROPVAL &p) {
+			auto t = p.proptag;
+			if (t == recurring_tag ||
+			    t == PR_MESSAGE_CLASS ||
+			    t == PR_START_DATE || t == PR_END_DATE ||
+			    t == common_start_tag ||
+			    t == common_end_tag ||
+			    t == appt_start_tag ||
+			    t == appt_end_tag)
+				return true;
+			if (body_changed &&
+			    (t == PR_BODY || t == PR_BODY_W ||
+			     t == PR_HTML || t == PR_RTF_COMPRESSED ||
+			     t == PR_RTF_IN_SYNC))
+				return true;
+			return false;
+		});
+
+	/* Re-add body formats from the update */
+	if (body_changed) {
+		if (upd_html != nullptr)
+			emb_props.push_back({PR_HTML, deconst(upd_html)});
+		if (upd_text != nullptr)
+			emb_props.push_back({PR_BODY, deconst(upd_text)});
+		if (upd_html != nullptr && upd_text == nullptr) {
+			std::string plain;
+			if (html_to_plain(*upd_html, CP_UTF8, plain) >= 0)
+				emb_props.push_back({PR_BODY, cpystr(plain)});
+		} else if (upd_text != nullptr && upd_html == nullptr) {
+			std::string html;
+			if (plain_to_html(upd_text, html) == ecSuccess) {
+				auto bin = construct<BINARY>(BINARY{
+				           static_cast<uint32_t>(html.size()),
+				           {reinterpret_cast<uint8_t *>(cpystr(html))}});
+				emb_props.push_back({PR_HTML, bin});
+			}
+		}
+		emb_props.push_back({PR_RTF_IN_SYNC, construct<uint8_t>(0)});
+	}
+
+	/* Set exception-specific properties */
+	emb_props.push_back({recurring_tag, construct<uint8_t>(0)});
+	emb_props.push_back({PR_MESSAGE_CLASS, deconst(IPM_Appointment_Exception)});
+	emb_props.push_back({PR_START_DATE, occ_start_nt});
+	emb_props.push_back({PR_END_DATE, occ_end_nt});
+	emb_props.push_back({common_start_tag, occ_start_nt});
+	emb_props.push_back({common_end_tag, occ_end_nt});
+	emb_props.push_back({appt_start_tag, occ_start_nt});
+	emb_props.push_back({appt_end_tag, occ_end_nt});
+
+	/*
+	 * Set PidLidExceptionReplaceTime to the original start time. This must
+	 * be the original date+time (not just date) so Outlook can match the
+	 * embedded message to the exception.
+	 */
+	auto orig_start_utc = rop_util_rtime_to_unix(basedate + apr.starttimeoffset) +
+	                      static_cast<time_t>(tz_minutes) * 60;
+	auto orig_time = construct<uint64_t>(rop_util_unix_to_nttime(orig_start_utc));
+	emb_props.push_back({ex_replace_tag, orig_time});
+
+	content.proplist.count = emb_props.size();
+	content.proplist.ppropval = emb_props.data();
+
+	/* Write attachment with embedded message */
+	ATTACHMENT_CONTENT ac{};
+	ac.proplist = att_list;
+	ac.pembedded = &content;
+	PROBLEM_ARRAY write_problems;
+	if (!exmdb.write_attachment_instance(dir.c_str(),
+	    aInstId, &ac, false, &write_problems))
+		throw EWSError::ItemSave(E3347);
+
+	ec_error_t err = ecSuccess;
+	if (!exmdb.flush_instance(dir.c_str(), aInstId, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3348);
+	if (!exmdb.flush_instance(dir.c_str(), mInst->instanceId, &err) ||
+	    err != ecSuccess)
+		throw EWSError::ItemSave(E3349);
+
+	/* Update the recurrence blob: add to modified+deleted lists */
+	auto &rp = apr.recur_pat;
+
+	/* Add to deleted instances (required for modified occurrences too) */
+	bool in_deleted = false;
+	for (uint32_t i = 0; i < rp.deletedinstancecount; ++i)
+		if (rp.pdeletedinstancedates[i] == basedate)
+			{ in_deleted = true; break; }
+	if (!in_deleted) {
+		auto nd = alloc<uint32_t>(rp.deletedinstancecount + 1);
+		memcpy(nd, rp.pdeletedinstancedates,
+		       rp.deletedinstancecount * sizeof(uint32_t));
+		nd[rp.deletedinstancecount] = basedate;
+		rp.pdeletedinstancedates = nd;
+		++rp.deletedinstancecount;
+		std::sort(rp.pdeletedinstancedates,
+		          rp.pdeletedinstancedates + rp.deletedinstancecount);
+	}
+
+	/* Add to modified instances */
+	bool in_modified = false;
+	for (uint32_t i = 0; i < rp.modifiedinstancecount; ++i)
+		if (rp.pmodifiedinstancedates[i] == basedate)
+			{ in_modified = true; break; }
+	if (!in_modified) {
+		auto nm = alloc<uint32_t>(rp.modifiedinstancecount + 1);
+		memcpy(nm, rp.pmodifiedinstancedates,
+		       rp.modifiedinstancecount * sizeof(uint32_t));
+		nm[rp.modifiedinstancecount] = basedate;
+		rp.pmodifiedinstancedates = nm;
+		++rp.modifiedinstancecount;
+		std::sort(rp.pmodifiedinstancedates,
+		          rp.pmodifiedinstancedates + rp.modifiedinstancecount);
+	}
+
+	/* Build new EXCEPTIONINFO + EXTENDEDEXCEPTION entries */
+	auto new_exc_count = apr.exceptioncount + 1;
+	auto new_exc = alloc<EXCEPTIONINFO>(new_exc_count);
+	auto new_ext = alloc<EXTENDEDEXCEPTION>(new_exc_count);
+	memcpy(new_exc, apr.pexceptioninfo, apr.exceptioncount * sizeof(EXCEPTIONINFO));
+	memcpy(new_ext, apr.pextendedexception, apr.exceptioncount * sizeof(EXTENDEDEXCEPTION));
+
+	auto &ei = new_exc[apr.exceptioncount];
+	memset(&ei, 0, sizeof(ei));
+	ei.startdatetime = start_rtime;
+	ei.enddatetime = end_rtime;
+	ei.originalstartdate = basedate;
+	ei.overrideflags = 0;
+
+	auto &ee = new_ext[apr.exceptioncount];
+	memset(&ee, 0, sizeof(ee));
+	ee.changehighlight.size = sizeof(uint32_t);
+	ee.startdatetime = start_rtime;
+	ee.enddatetime = end_rtime;
+	ee.originalstartdate = basedate;
+
+	applyExceptionOverrides(ei, ee, props, location_id,
+		busystatus_id, subtype_id, reminderdelta_id,
+		reminderset_id, tz_minutes);
+
+	apr.pexceptioninfo = new_exc;
+	apr.pextendedexception = new_ext;
+	apr.exceptioncount = new_exc_count;
+
+	/* Sort exceptions by start time */
+	std::sort(apr.pexceptioninfo,
+	          apr.pexceptioninfo + apr.exceptioncount);
+	std::sort(apr.pextendedexception,
+	          apr.pextendedexception + apr.exceptioncount);
+
+	if (!saveRecurBlob(dir, mid, recur_tag, apr))
+		throw DispatchError(E3350);
+}
+
+/**
+ * @brief      Update attendee recipients on existing calendar item
+ *
+ * Used by UpdateItem when the client sets RequiredAttendees,
+ * OptionalAttendees, or Resources. Replaces all recipients via the
+ * message instance API and sets organizer properties.
+ *
+ * @param      dir     Store directory
+ * @param      parent  Parent folder specification
+ * @param      mid     Message ID of the calendar item
+ * @param      shape   Shape containing attendee XML pointers
+ */
+void EWSContext::updateAttendees(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid,
+    const sShape &shape) const
+{
+	auto &exmdb = plugin().exmdb;
+	auto inst = m_plugin.loadMessageInstance(dir, parent.folderId, mid);
+	if (!exmdb.empty_message_instance_rcpts(dir.c_str(), inst->instanceId))
+		throw EWSError::ItemSave(E3092);
+
+	TARRAY_SET rcpts{};
+	auto parseAttendees = [&](const tinyxml2::XMLElement *xml, uint32_t type) {
+		for (auto entry = xml->FirstChildElement("Attendee");
+		     entry != nullptr;
+		     entry = entry->NextSiblingElement("Attendee")) {
+			tAttendee att(entry);
+			att.Mailbox.mkRecipient(rcpts.emplace(), type);
+		}
+	};
+	if (shape.requiredAttendees)
+		parseAttendees(shape.requiredAttendees, MAPI_TO);
+	if (shape.optionalAttendees)
+		parseAttendees(shape.optionalAttendees, MAPI_CC);
+	if (shape.resourceAttendees)
+		parseAttendees(shape.resourceAttendees, MAPI_TO);
+
+	if (rcpts.count > 0) {
+		if (!exmdb.update_message_instance_rcpts(dir.c_str(),
+		    inst->instanceId, &rcpts))
+			throw EWSError::ItemSave(E3351);
+		/* Set organizer properties when attendees are present */
+		std::string dispName;
+		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
+			throw DispatchError(E3352);
+		const char *username = effectiveUser(parent);
+		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
+		auto meetType   = construct<uint32_t>(mtgRequest);
+		auto apptState  = construct<uint32_t>(asfMeeting);
+		auto respStatus = construct<uint32_t>(respNotResponded);
+		const TAGGED_PROPVAL oprops[] = {
+			{PR_SENT_REPRESENTING_NAME, deconst(dispName.c_str())},
+			{PR_SENDER_NAME, deconst(dispName.c_str())},
+			{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(m_auth_info.username)},
+			{PR_SENDER_SMTP_ADDRESS, deconst(m_auth_info.username)},
+			{PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP")},
+			{PR_SENDER_ADDRTYPE, deconst("SMTP")},
+			{PR_SENT_REPRESENTING_EMAIL_ADDRESS, deconst(m_auth_info.username)},
+			{PR_SENDER_EMAIL_ADDRESS, deconst(m_auth_info.username)},
+		};
+		const TPROPVAL_ARRAY oproplist = {std::size(oprops), deconst(oprops)};
+		PROBLEM_ARRAY problems;
+		if (!exmdb.set_message_properties(dir.c_str(),
+		    username, CP_ACP, mid, &oproplist, &problems))
+			throw EWSError::ItemSave(E3353);
+		const PROPERTY_NAME pnames[] = {
+			NtMeetingType,
+			NtAppointmentStateFlags,
+			NtResponseStatus,
+		};
+		const PROPNAME_ARRAY pnarr = {std::size(pnames), deconst(pnames)};
+		auto ids = getNamedPropIds(dir, pnarr);
+		if (ids.size() == 3 && ids[0] && ids[1] && ids[2]) {
+			const TAGGED_PROPVAL nprops[] = {
+				{PROP_TAG(PT_LONG, ids[0]), meetType},
+				{PROP_TAG(PT_LONG, ids[1]), apptState},
+				{PROP_TAG(PT_LONG, ids[2]), respStatus},
+			};
+			const TPROPVAL_ARRAY nproplist = {std::size(nprops), deconst(nprops)};
+			if (!exmdb.set_message_properties(dir.c_str(), username,
+			    CP_ACP, mid, &nproplist, &problems))
+				throw EWSError::ItemSave(E3354);
+		}
+	}
+
+	ec_error_t err;
+	if (!exmdb.flush_instance(dir.c_str(),
+	    inst->instanceId, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3355);
+}
+
+/**
+ * @brief      Convert EWS Recurrence XML to MAPI properties and write to shape
+ *
+ * Used by UpdateItem when the client modifies the recurrence of an existing
+ * calendar item.  The start/end times needed for blob construction are taken
+ * from the shape if they were also updated, otherwise read from the message.
+ *
+ * @param      dir   Store directory
+ * @param      mid   Message ID of the calendar item
+ * @param      xml   XML element containing the Recurrence child elements
+ * @param      shape Shape to write properties to
+ */
+void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
+    const tinyxml2::XMLElement *xml, sShape &shape) const
+{
+	tRecurrenceType recurrence(xml);
+
+	/* Resolve named property IDs for start/end and all-day flag */
+	const PROPERTY_NAME pn_buf[] = {
+		{MNID_ID, PSETID_Common, PidLidCommonStart},
+		{MNID_ID, PSETID_Common, PidLidCommonEnd},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentSubType},
+	};
+	const PROPNAME_ARRAY propnames = {std::size(pn_buf), deconst(pn_buf)};
+	auto namedids    = getNamedPropIds(dir, propnames, false);
+	auto start_tag   = PROP_TAG(PT_SYSTIME, namedids[0]);
+	auto end_tag     = PROP_TAG(PT_SYSTIME, namedids[1]);
+	auto subtype_tag = PROP_TAG(PT_BOOLEAN, namedids[2]);
+
+	/* Get start/end: prefer values from the shape (co-updated), fall back to message */
+	time_t localStartTime = 0, localEndTime = 0;
+	auto sp = shape.writes(start_tag);
+	auto ep = shape.writes(end_tag);
+	if (sp) {
+		localStartTime = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(sp->pvalue));
+	} else {
+		auto v = getItemProp<const uint64_t>(dir, mid, start_tag);
+		if (v)
+			localStartTime = rop_util_nttime_to_unix(*v);
+	}
+	if (ep) {
+		localEndTime = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(ep->pvalue));
+	} else {
+		auto v = getItemProp<const uint64_t>(dir, mid, end_tag);
+		if (v)
+			localEndTime = rop_util_nttime_to_unix(*v);
+	}
+	if (localStartTime == 0 || localEndTime == 0)
+		throw EWSError::CalendarInvalidRecurrence(E3265);
+
+	/* Check if this is an all-day event */
+	bool isAllDay = false;
+	auto st = shape.writes(subtype_tag);
+	if (st) {
+		isAllDay = *static_cast<const uint32_t *>(st->pvalue) != 0;
+	} else {
+		auto v = getItemProp<const uint32_t>(dir, mid, subtype_tag);
+		if (v)
+			isAllDay = *v != 0;
+	}
+
+	/*
+	 * For all-day events the duration must be a whole number of days.
+	 * Round up to the next day boundary if not.
+	 */
+	if (isAllDay && (localEndTime - localStartTime) % 86400 != 0) {
+		auto days = (localEndTime - localStartTime + 86399) / 86400;
+		localEndTime = localStartTime + days * 86400;
+		auto corrected_end = construct<uint64_t>(rop_util_unix_to_nttime(localEndTime));
+		shape.write(TAGGED_PROPVAL{end_tag, corrected_end});
+	}
+	auto duration = localEndTime - localStartTime;
+	/*
+	 * Use RecurrenceRange StartDate for the recurrence start date. For
+	 * all-day events, the Start time is midnight local in UTC (e.g. 23:00Z
+	 * for CET), but StartDate is the correct date.
+	 */
+	auto &rr = recurrence.RecurrenceRange;
+	auto rangeStart = clock::to_time_t(std::visit([](const auto &r) { return r.StartDate; }, rr));
+	struct tm startdate_tm{};
+	if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
+		throw EWSError::CalendarInvalidRecurrence(E3356);
+
+	APPOINTMENT_RECUR_PAT apr{};
+	uint32_t deleted_dates[1024], modified_dates[1024];
+	EXCEPTIONINFO exceptions[1024];
+	EXTENDEDEXCEPTION ext_exceptions[1024];
+
+	apr.readerversion2 = 0x3006;
+	apr.writerversion2 = 0x3009;
+	apr.exceptioncount = 0;
+	apr.pexceptioninfo = exceptions;
+	apr.pextendedexception = ext_exceptions;
+	if (isAllDay) {
+		apr.starttimeoffset = 0;
+		apr.endtimeoffset = 1440;
+	} else {
+		/* localStartTime is real UTC from NTTIME.  Convert to
+		 * the appointment's local timezone for the blob. */
+		time_t appt_local = localStartTime;
+		auto caltz_tag = shape.tag(NtCalendarTimeZone);
+		if (caltz_tag != 0) {
+			const TAGGED_PROPVAL *caltz = shape.writes(NtCalendarTimeZone);
+			if (caltz) {
+				auto buf = ianatz_to_tzdef(static_cast<char *>(caltz->pvalue));
+				if (!buf)
+					buf = wintz_to_tzdef(static_cast<char *>(caltz->pvalue));
+				if (buf) {
+					EXT_PULL exp;
+					TZDEF tz;
+					exp.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+					int64_t tz_off = 0;
+					if (exp.g_tzdef(&tz) == pack_result::ok &&
+					    offset_from_tz(&tz, localStartTime, tz_off))
+						appt_local = localStartTime -
+							static_cast<time_t>(tz_off) * 60;
+				}
+			}
+		}
+		struct tm start_tm{};
+		gmtime_r(&appt_local, &start_tm);
+		apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
+		apr.endtimeoffset = apr.starttimeoffset + duration / 60;
+	}
+	apr.recur_pat.readerversion = 0x3004;
+	apr.recur_pat.writerversion = 0x3004;
+	apr.recur_pat.calendartype = CAL_DEFAULT;
+	apr.recur_pat.deletedinstancecount = 0;
+	apr.recur_pat.pdeletedinstancedates = deleted_dates;
+	apr.recur_pat.modifiedinstancecount = 0;
+	apr.recur_pat.pmodifiedinstancedates = modified_dates;
+	apr.recur_pat.slidingflag = 0;
+	startdate_tm.tm_hour = 0;
+	startdate_tm.tm_min = 0;
+	startdate_tm.tm_sec = 0;
+	time_t startdate = timegm(&startdate_tm);
+	apr.recur_pat.startdate = rop_util_unix_to_rtime(startdate);
+	uint8_t rectype = rectypeNone;
+	auto &rp = recurrence.RecurrencePattern;
+
+	if (std::holds_alternative<tDailyRecurrencePattern>(rp)) {
+		auto interval = std::get<tDailyRecurrencePattern>(rp).Interval;
+		if (interval < 1 || interval > 999)
+			throw EWSError::CalendarInvalidRecurrence(E3266);
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_DAILY;
+		apr.recur_pat.patterntype = rptMinute;
+		apr.recur_pat.period = interval * 1440;
+		rectype = rectypeDaily;
+	} else if (std::holds_alternative<tWeeklyRecurrencePattern>(rp)) {
+		auto interval = std::get<tWeeklyRecurrencePattern>(rp).Interval;
+		if (interval < 1 || interval > 99)
+			throw EWSError::CalendarInvalidRecurrence(E3267);
+		auto firstdow = 1;
+		if (std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek)
+			firstdow = std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek->index();
+		if (firstdow > 6)
+			throw EWSError::CalendarInvalidRecurrence(E3268);
+		const auto &daysOfWeek = std::get<tWeeklyRecurrencePattern>(rp).DaysOfWeek;
+		apr.recur_pat.pts.weekrecur = 0;
+		daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.weekrecur);
+		if (apr.recur_pat.pts.weekrecur == 0)
+			throw EWSError::CalendarInvalidRecurrence(E3269);
+		apr.recur_pat.recurfrequency = apr.recur_pat.pts.weekrecur != 0x3E ?
+			IDC_RCEV_PAT_ORB_WEEKLY : IDC_RCEV_PAT_ORB_DAILY;
+		apr.recur_pat.patterntype = rptWeek;
+		apr.recur_pat.period = interval;
+		apr.recur_pat.firstdow = firstdow;
+		rectype = rectypeWeekly;
+	} else if (std::holds_alternative<tRelativeMonthlyRecurrencePattern>(rp)) {
+		auto interval = std::get<tRelativeMonthlyRecurrencePattern>(rp).Interval;
+		if (interval < 1 || interval > 99)
+			throw EWSError::CalendarInvalidRecurrence(E3270);
+		const auto &daysOfWeek = std::get<tRelativeMonthlyRecurrencePattern>(rp).DaysOfWeek;
+		apr.recur_pat.pts.monthnth.weekrecur = 0;
+		daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
+		if (apr.recur_pat.pts.monthnth.weekrecur == 0)
+			throw EWSError::CalendarInvalidRecurrence(E3271);
+		auto dayOfWeekIndex = std::get<tRelativeMonthlyRecurrencePattern>(rp).DayOfWeekIndex.index();
+		if (dayOfWeekIndex > 4)
+			throw EWSError::CalendarInvalidRecurrence(E3272);
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
+		apr.recur_pat.patterntype = rptMonthNth;
+		apr.recur_pat.period = interval;
+		apr.recur_pat.pts.monthnth.recurnum = static_cast<uint8_t>(dayOfWeekIndex) + 1;
+		rectype = rectypeMonthly;
+	} else if (std::holds_alternative<tAbsoluteMonthlyRecurrencePattern>(rp)) {
+		auto interval = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).Interval;
+		if (interval < 1 || interval > 99)
+			throw EWSError::CalendarInvalidRecurrence(E3273);
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
+		apr.recur_pat.patterntype = rptMonth;
+		apr.recur_pat.period = interval;
+		apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).DayOfMonth;
+		if (apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
+			throw EWSError::CalendarInvalidRecurrence(E3274);
+		rectype = rectypeMonthly;
+	} else if (std::holds_alternative<tRelativeYearlyRecurrencePattern>(rp)) {
+		const auto &daysOfWeek = std::get<tRelativeYearlyRecurrencePattern>(rp).DaysOfWeek;
+		apr.recur_pat.pts.monthnth.weekrecur = 0;
+		daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
+		if (apr.recur_pat.pts.monthnth.weekrecur == 0)
+			throw EWSError::CalendarInvalidRecurrence(E3275);
+		auto dayOfWeekIndex = std::get<tRelativeYearlyRecurrencePattern>(rp).DayOfWeekIndex.index();
+		auto month = std::get<tRelativeYearlyRecurrencePattern>(rp).Month.index();
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
+		apr.recur_pat.patterntype = rptMonthNth;
+		apr.recur_pat.period = 12;
+		apr.recur_pat.pts.monthnth.recurnum = static_cast<uint8_t>(dayOfWeekIndex) + 1;
+		rectype = rectypeYearly;
+		startdate_tm.tm_mon = month;
+	} else if (std::holds_alternative<tAbsoluteYearlyRecurrencePattern>(rp)) {
+		auto month = std::get<tAbsoluteYearlyRecurrencePattern>(rp).Month.index();
+		apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
+		apr.recur_pat.patterntype = rptMonth;
+		apr.recur_pat.period = 12;
+		apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteYearlyRecurrencePattern>(rp).DayOfMonth;
+		if (apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
+			throw EWSError::CalendarInvalidRecurrence(E3279);
+		rectype = rectypeYearly;
+		startdate_tm.tm_mon = month;
+	} else {
+		throw EWSError::CalendarInvalidRecurrence(E3280);
+	}
+
+	calc_firstdatetime(apr.recur_pat, &startdate_tm);
+	if (std::holds_alternative<tNoEndRecurrenceRange>(rr)) {
+		apr.recur_pat.endtype = IDC_RCEV_PAT_ERB_NOEND;
+		apr.recur_pat.occurrencecount = 0xA;
+		apr.recur_pat.enddate = ENDDATE_MISSING;
+	} else if (std::holds_alternative<tEndDateRecurrenceRange>(rr)) {
+		apr.recur_pat.endtype = IDC_RCEV_PAT_ERB_END;
+		apr.recur_pat.occurrencecount = 0xA;
+		auto ed = std::get<tEndDateRecurrenceRange>(rr).EndDate;
+		auto enddate = clock::to_time_t(ed);
+		apr.recur_pat.enddate = rop_util_unix_to_rtime(enddate);
+	} else if (std::holds_alternative<tNumberedRecurrenceRange>(rr)) {
+		apr.recur_pat.endtype = IDC_RCEV_PAT_ERB_AFTERNOCCUR;
+		apr.recur_pat.occurrencecount = std::get<tNumberedRecurrenceRange>(rr).NumberOfOccurrences;
+		calc_enddate(apr.recur_pat, &startdate_tm);
+	} else {
+		throw EWSError::CalendarInvalidRecurrence(E3281);
+	}
+
+	BINARY tmp_bin;
+	EXT_PUSH ext_push;
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ext_push.p_apptrecpat(apr) != pack_result::ok)
+		throw DispatchError(E3120);
+	tmp_bin.cb = ext_push.m_offset;
+	tmp_bin.pb = ext_push.m_udata;
+
+	uint8_t *recurdata = alloc<uint8_t>(tmp_bin.cb);
+	memcpy(recurdata, tmp_bin.pv, tmp_bin.cb);
+
+	shape.write(NtRecurrenceType, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(rectype)});
+	shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY, construct<BINARY>(BINARY{tmp_bin.cb, {recurdata}})});
+	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(1)});
+	auto clipstart = construct<uint64_t>(rop_util_unix_to_nttime(startdate));
+	shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME, clipstart});
+	auto clipend = construct<uint64_t>(rop_util_rtime_to_nttime(apr.recur_pat.enddate));
+	shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
 }
 
 /**
@@ -1348,10 +3090,10 @@ std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid, PCL p
 uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& folder, uint64_t newParent, uint32_t accountId,
                                     bool copy) const
 {
-	static constexpr uint32_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
-	static constexpr PROPTAG_ARRAY tags = {std::size(tagIds), deconst(tagIds)};
+	static constexpr proptag_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
 	TPROPVAL_ARRAY props;
-	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &tags, &props))
+	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP,
+	    folder.folderId, proptag_cspan{tagIds}, &props))
 		throw DispatchError(E3159);
 	uint64_t* parentFid = props.get<uint64_t>(PidTagParentFolderId);
 	auto folderName = props.get<const char>(PR_DISPLAY_NAME);
@@ -1424,7 +3166,8 @@ void EWSContext::normalize(tEmailAddressType& Mailbox) const
 		return;
 	if (!Mailbox.RoutingType)
 		Mailbox.RoutingType = "smtp";
-	if (tolower(*Mailbox.RoutingType) == "smtp")
+	tolower_inplace(*Mailbox.RoutingType);
+	if (Mailbox.RoutingType == "smtp")
 		return;
 	if (Mailbox.RoutingType != "ex")
 		throw  EWSError::InvalidRoutingType(E3114(*Mailbox.RoutingType));
@@ -1446,7 +3189,8 @@ void EWSContext::normalize(tMailbox& Mailbox) const
 {
 	if (!Mailbox.RoutingType)
 		Mailbox.RoutingType = "smtp";
-	if (tolower(*Mailbox.RoutingType) == "smtp")
+	tolower_inplace(*Mailbox.RoutingType);
+	if (Mailbox.RoutingType == "smtp")
 		return;
 	if (Mailbox.RoutingType != "ex")
 		throw  EWSError::InvalidRoutingType(E3010(*Mailbox.RoutingType));
@@ -1469,8 +3213,30 @@ uint32_t EWSContext::permissions(const std::string& maildir, uint64_t folderId) 
 	if (maildir == m_auth_info.maildir)
 		return 0xFFFFFFFF;
 	uint32_t permissions = 0;
-	m_plugin.exmdb.get_folder_perm(maildir.c_str(), folderId, m_auth_info.username, &permissions);
+	if (m_plugin.exmdb.get_mbox_perm(maildir.c_str(),
+	    m_auth_info.username, &permissions) &&
+	    (permissions & frightsGromoxStoreOwner))
+		return 0xFFFFFFFF;
+	if (!m_plugin.exmdb.get_folder_perm(maildir.c_str(), folderId,
+	    m_auth_info.username, &permissions))
+		return 0;
 	return permissions;
+}
+
+/**
+ * @brief      Read delegate permissions from folder ACLs
+ */
+tDelegatePermissions EWSContext::readDelegatePermissions(const std::string &dir, const std::string &username) const
+{
+	tDelegatePermissions dp;
+	for (const auto &m : delegFolderMap) {
+		uint32_t rights = 0;
+		if (!m_plugin.exmdb.get_folder_perm(dir.c_str(),
+		    rop_util_make_eid_ex(1, m.fid), username.c_str(), &rights))
+			continue; /* ignore error */
+		dp.*(m.field) = rights_to_deleg_level(rights);
+	}
+	return dp;
 }
 
 /**
@@ -1503,7 +3269,7 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	sFolderEntryId eid(fId.Id.data(), fId.Id.size());
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
-	folderSpec.folderId = rop_util_make_eid_ex(1, rop_util_gc_to_value(eid.global_counter));
+	folderSpec.folderId = rop_util_make_eid_ex(1, rop_util_gc_to_value(eid.folder_gc));
 	if (eid.isPrivate()) {
 		std::string ubuf;
 		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
@@ -1568,16 +3334,23 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	if (!content.children.prcpts)
 		throw EWSError::MissingRecipients(E3115);
 	MAIL mail;
-	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
-		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
-	auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
-					   {*name = getPropertyName(dir, id); return TRUE;};
 	std::string log_id;
+	oxcmail_converter cvt;
+	cvt.get_propids = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) {
+	                  	*ids = getNamedPropIds(dir, *names);
+	                  	return TRUE;
+	                  };
+	cvt.get_propname = [&](propid_t id, PROPERTY_NAME **name) {
+	                   	*name = getPropertyName(dir, id);
+	                   	return TRUE;
+	                   };
 	if (log_msg_id != 0)
 		log_id = dir + ":m" + std::to_string(log_msg_id);
-	if (!oxcmail_export(&content, log_id.c_str(), false,
-	    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = alloc;
+	if (!cvt.mapi_to_inet(content, mail))
 		throw EWSError::ItemCorrupt(E3116);
+
 	std::vector<std::string> rcpts;
 	rcpts.reserve(content.children.prcpts->count);
 	for (auto &rcpt : *content.children.prcpts) {
@@ -1591,6 +3364,176 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	           m_auth_info.username, rcpts);
 	if (err != ecSuccess)
 		throw DispatchError(E3117(err));
+}
+
+/**
+ * @brief      Send meeting cancellation to attendees
+ *
+ * Reads the calendar item, stamps it as a cancellation, and
+ * either saves a copy in Sent Items or sends directly.
+ */
+void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageEntryId &meid,
+    const sFolderSpec &parent, bool saveCopy) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	const char *username = effectiveUser(parent);
+	MESSAGE_CONTENT *cancelcontent = nullptr;
+	if (!exmdb.read_message(dir.c_str(), username, CP_ACP, meid.messageId(),
+	    &cancelcontent) || cancelcontent == nullptr)
+		throw EWSError::ItemNotFound(E3389);
+	auto cls = cancelcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr ||
+	    class_match_prefix(cls, "IPM.Appointment") != 0 ||
+	    cancelcontent->children.prcpts == nullptr ||
+	    cancelcontent->children.prcpts->count == 0)
+		return;
+	if (saveCopy) {
+		sFolderSpec sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+		uint64_t newMid = 0;
+		if (!exmdb.allocate_message_id(dir.c_str(), sentitems.folderId, &newMid))
+			throw EWSError::InternalServerError(E3132);
+		BOOL result = false;
+		if (!exmdb.movecopy_message(dir.c_str(), CP_ACP, meid.messageId(),
+		    sentitems.folderId, newMid, false, &result) || !result)
+			throw EWSError::InternalServerError(E3301);
+		const char *sentuser = effectiveUser(sentitems);
+		auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+		const TAGGED_PROPVAL sprops[] = {
+			{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Canceled")},
+			{PR_CLIENT_SUBMIT_TIME, now},
+			{PR_MESSAGE_DELIVERY_TIME, now},
+		};
+		const TPROPVAL_ARRAY sproplist{std::size(sprops), deconst(sprops)};
+		PROBLEM_ARRAY sproblems;
+		if (!exmdb.set_message_properties(dir.c_str(), sentuser, CP_ACP,
+		    newMid, &sproplist, &sproblems))
+			throw EWSError::ItemSave(E3092);
+		MESSAGE_CONTENT *sentcontent = nullptr;
+		if (!exmdb.read_message(dir.c_str(), sentuser, CP_ACP, newMid,
+		    &sentcontent) || sentcontent == nullptr)
+			throw EWSError::ItemNotFound(E3390);
+		send(dir, meid.messageId(), *sentcontent);
+	} else {
+		EWSContext::MCONT_PTR dupcontent(cancelcontent->dup());
+		if (!dupcontent)
+			throw EWSError::NotEnoughMemory(E3407);
+		dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Canceled");
+		auto now = EWSContext::construct<uint64_t>( rop_util_current_nttime());
+		dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
+		dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+		send(dir, meid.messageId(), *dupcontent);
+	}
+}
+/**
+ * @brief      Send a meeting response to the organizer
+ *
+ * Duplicates the original meeting request, stamps the responder's
+ * identity on PR_SENDER_*, preserves PR_SENT_REPRESENTING_* as the
+ * organizer, and sends.
+ */
+void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_CONTENT &respItem) const
+{
+	assertIdType(responseRef.type, tItemId::ID_ITEM);
+	sMessageEntryId refMid(responseRef.Id.data(), responseRef.Id.size());
+	sFolderSpec refFolder = resolveFolder(refMid);
+	std::string refDir = getDir(refFolder);
+	const char *refUser = effectiveUser(refFolder);
+	MESSAGE_CONTENT *reqContent = nullptr;
+	if (!plugin().exmdb.read_message(refDir.c_str(), refUser, CP_ACP,
+	    refMid.messageId(), &reqContent) || reqContent == nullptr)
+		throw EWSError::ItemNotFound(E3143);
+	auto wantResp = reqContent->proplist.get<const uint8_t>(PR_RESPONSE_REQUESTED);
+	auto orgSmtp = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (!orgSmtp)
+		orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	if ((wantResp != nullptr && *wantResp == 0) || orgSmtp == nullptr)
+		return;
+	EWSContext::MCONT_PTR content(reqContent->dup());
+	if (!content)
+		throw EWSError::NotEnoughMemory(E3288);
+	auto respClass = respItem.proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (respClass)
+		content->proplist.set(PR_MESSAGE_CLASS, respClass);
+	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
+	content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+	auto respUser = deconst(m_auth_info.username);
+	std::string respName;
+	mysql_adaptor_get_user_displayname(m_auth_info.username, respName);
+	content->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
+	content->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
+	content->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
+	if(!respName.empty())
+		content->proplist.set(PR_SENDER_NAME, respName.data());
+	/*
+	 * Keep PR_SENT_REPRESENTING_* as the organizer from the
+	 * original request; oxcical uses it for the ORGANIZER
+	 * line in the iCalendar REPLY.
+	 */
+	if (content->children.prcpts)
+		tarray_set_free(content->children.prcpts);
+	content->children.prcpts = tarray_set_init();
+	if (!content->children.prcpts)
+		throw EWSError::NotEnoughMemory(E3406);
+	tEmailAddressType org;
+	org.EmailAddress = orgSmtp;
+	auto orgName = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
+	if (orgName)
+		org.Name = orgName;
+	org.RoutingType = "SMTP";
+	org.mkRecipient(content->children.prcpts->emplace(), MAPI_TO);
+	send(refDir, 0, *content);
+}
+
+/**
+ * @brief      Send read receipt if requested by the sender
+ *
+ * Tests whether the message has PR_READ_RECEIPT_REQUESTED set and, if so,
+ * generates and sends a read receipt (MDN) to the original sender. After
+ * sending, the receipt request flags are cleared to prevent duplicate
+ * notifications.
+ *
+ * @param      dir     Store directory
+ * @param      mid     Message ID
+ */
+void EWSContext::notifyReadReceipt(const std::string &dir,
+    uint64_t mid) const try
+{
+	void *pval = nullptr;
+	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr,
+	    CP_ACP, mid, PR_READ_RECEIPT_REQUESTED, &pval))
+		return;
+	if (!pvb_enabled(pval))
+		return;
+	MESSAGE_CONTENT *pbrief = nullptr;
+	if (!m_plugin.exmdb.get_message_brief(dir.c_str(), CP_ACP,
+	    mid, &pbrief) || pbrief == nullptr)
+		return;
+	auto str = pbrief->proplist.get<const char>(
+	           PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (str == nullptr)
+		return;
+	std::vector<std::string> rcpt_list = {str};
+	vmime::shared_ptr<vmime::message> imail;
+	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
+	    mysql_adaptor_meta, m_auth_info.username, pbrief,
+	    "BOUNCE_NOTIFY_READ", imail))
+		return;
+	auto ret = cu_send_vmail(std::move(imail), m_plugin.smtp_url.c_str(),
+	           m_auth_info.username, rcpt_list);
+	if (ret != ecSuccess)
+		mlog(LV_ERR, "[ews] read receipt send: %s", mapi_strerror(ret));
+	static constexpr uint8_t fake_false = 0;
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PR_READ_RECEIPT_REQUESTED, deconst(&fake_false)},
+		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&fake_false)},
+	};
+	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
+	PROBLEM_ARRAY problems;
+	m_plugin.exmdb.set_message_properties(dir.c_str(), nullptr,
+		CP_ACP, mid, &propvals, &problems);
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "[ews] read receipt: %s", e.what());
 }
 
 /**
@@ -1609,7 +3552,7 @@ BINARY EWSContext::serialize(const XID& xid) const
 	EXT_PUSH ext_push;
 	if (!ext_push.init(buff, xid.size, 0) ||
 	   ext_push.p_xid(xid) != pack_result::ok)
-		throw DispatchError(E3120);
+		throw DispatchError(E3357);
 	return BINARY{ext_push.m_offset, {buff}};
 }
 
@@ -1622,8 +3565,9 @@ BINARY EWSContext::serialize(const XID& xid) const
  */
 bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
 {
-	if (m_notify)
-		m_notify->nct_subs.emplace_back(subscriptionId);
+	if (!m_notify)
+		return false;
+	m_notify->nct_subs.emplace_back(subscriptionId);
 	return m_plugin.linkSubscription(subscriptionId, *this);
 }
 
@@ -1638,11 +3582,15 @@ bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
 EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string& mimeContent) const
 {
 	MAIL mail;
-	if (!mail.load_from_str(mimeContent.data(), mimeContent.size()))
+	if (!mail.refonly_parse(mimeContent.data(), mimeContent.size()))
 		throw EWSError::ItemCorrupt(E3123);
-	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
-	{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
-	MCONT_PTR cnt(oxcmail_import("utf-8", "UTC", &mail, EWSContext::alloc, getPropIds));
+	oxcmail_converter cvt;
+	cvt.alloc = EWSContext::alloc;
+	cvt.get_propids = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) {
+	                  	*ids = getNamedPropIds(dir, *names, true);
+	                  	return TRUE;
+	                  };
+	auto cnt = cvt.inet_to_mapi(mail);
 	if (!cnt)
 		throw EWSError::ItemCorrupt(E3124);
 	return cnt;
@@ -1704,9 +3652,11 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 	}
 	getNamedTags(dir, shape, true);
 
-	for (const TAGGED_PROPVAL &prop : shape.write())
-		if (content->proplist.set(prop) == -ENOMEM)
-			throw EWSError::NotEnoughMemory(E3217);
+	for (const TAGGED_PROPVAL &prop : shape.write()) {
+		auto err = content->proplist.set(prop);
+		if (err == ecServerOOM)
+			throw EWSError::NotEnoughMemory(E3358);
+	}
 	return content;
 }
 
@@ -1727,7 +3677,6 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& shape, MCONT_PTR& content) const
 {
 	toContent(dir, static_cast<tItem&>(item), shape, content);
-	// TODO: goid
 	if (!item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
 	int64_t startOffset = 0, endOffset = 0;
@@ -1740,10 +3689,19 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	}
 	if (item.End) {
 		endTime = clock::to_time_t(item.End.value().time);
-		endOffset = std::chrono::duration_cast<std::chrono::minutes>(item.Start.value().offset).count();
-		calcEndOffset = item.Start.value().needCalcOffset();
+		endOffset = std::chrono::duration_cast<std::chrono::minutes>(item.End.value().offset).count();
+		calcEndOffset = item.End.value().needCalcOffset();
 	}
-	// TODO handle no start and/or end times
+	if (!item.Start || !item.End) {
+		const char* missing = item.Start ? "End" : "Start";
+		throw EWSError::ItemCorrupt(E3046(missing, "CalendarItem"));
+	}
+
+	if (!shape.writes(NtCalendarTimeZone)) {
+		auto tz = item.timezoneId();
+		if(!tz.empty())
+			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(tz)});
+	}
 
 	if (item.IsAllDayEvent)
 		shape.write(NtAppointmentSubType, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(item.IsAllDayEvent.value())});
@@ -1765,10 +3723,32 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	if (item.Recurrence) {
 		auto localStartTime = clock::to_time_t(item.Start.value().time);
 		auto localEndTime = clock::to_time_t(item.End.value().time);
+		bool isAllDay = item.IsAllDayEvent && item.IsAllDayEvent.value();
+		/*
+		 * For all-day events the duration must be a whole number of
+		 * days. Round up to the next day boundary if not. (XXX: what
+		 * about timezone change days that do not have a length of
+		 * 86400s?)
+		 */
+		if (isAllDay && (localEndTime - localStartTime) % 86400 != 0) {
+			auto days = (localEndTime - localStartTime + 86399) / 86400;
+			localEndTime = localStartTime + days * 86400;
+			endTime = localEndTime;
+		}
 		auto duration = localEndTime - localStartTime;
 		struct tm startdate_tm;
-		if (localtime_r(&localStartTime, &startdate_tm) == nullptr)
-			throw EWSError::CalendarInvalidRecurrence(E3265);
+		/*
+		 * Use the RecurrenceRange's StartDate for the recurrence
+		 * start. For all-day events, the Start field is midnight local
+		 * time expressed in UTC (e.g. 23:00Z for CET), but the
+		 * StartDate in the RecurrenceRange is the correct date-only
+		 * value.
+		 */
+		auto &rr = item.Recurrence->RecurrenceRange;
+		auto rangeStart = clock::to_time_t(std::visit(
+		                  [](const auto &r) { return r.StartDate; }, rr));
+		if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
+			throw EWSError::CalendarInvalidRecurrence(E3359);
 		APPOINTMENT_RECUR_PAT apr{};
 		uint32_t deleted_dates[1024], modified_dates[1024];
 		EXCEPTIONINFO exceptions[1024];
@@ -1779,8 +3759,51 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		apr.exceptioncount = 0;
 		apr.pexceptioninfo = exceptions;
 		apr.pextendedexception = ext_exceptions;
-		apr.starttimeoffset = 60 * startdate_tm.tm_hour + startdate_tm.tm_min;
-		apr.endtimeoffset = apr.starttimeoffset + duration / 60;
+		if (isAllDay) {
+			apr.starttimeoffset = 0;
+			apr.endtimeoffset = 1440;
+		} else {
+			/*
+			 * The blob stores times in the appointment's local
+			 * timezone. Compute the local appointment time:
+			 *
+			 * - calcStartOffset=true: client sent time without TZ
+			 *   suffix, so .time already *is* in local time.
+			 * - calcStartOffset=false: client sent explicit TZ,
+			 *   compute real UTC (time+offset), then convert to
+			 *   local via calendar timezone bias.
+			 */
+			time_t appt_local;
+			if (calcStartOffset) {
+				appt_local = localStartTime;
+			} else {
+				int64_t tz_off = 0;
+				/*
+				 * Read timezone name directly from the item
+				 * rather than shape – the shape's named
+				 * property cache has not been resolved yet.
+				 */
+				std::string tz(item.timezoneId());
+				if (!tz.empty()) {
+					auto buf = ianatz_to_tzdef(tz.c_str());
+					if (!buf)
+						buf = wintz_to_tzdef(tz.c_str());
+					if (buf) {
+						EXT_PULL ep;
+						TZDEF tzd;
+						ep.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+						if (ep.g_tzdef(&tzd) == pack_result::ok)
+							offset_from_tz(&tzd, localStartTime, tz_off);
+					}
+				}
+				auto real_utc = localStartTime + static_cast<time_t>(startOffset) * 60;
+				appt_local    = real_utc - static_cast<time_t>(tz_off) * 60;
+			}
+			struct tm start_tm;
+			gmtime_r(&appt_local, &start_tm);
+			apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
+			apr.endtimeoffset   = apr.starttimeoffset + duration / 60;
+		}
 		apr.recur_pat.readerversion = 0x3004;
 		apr.recur_pat.writerversion = 0x3004;
 		apr.recur_pat.calendartype = CAL_DEFAULT;
@@ -1796,12 +3819,11 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		apr.recur_pat.startdate = rop_util_unix_to_rtime(startdate);
 		uint8_t rectype = rectypeNone;
 		auto& rp = item.Recurrence->RecurrencePattern;
-		auto& rr = item.Recurrence->RecurrenceRange;
 
 		if (std::holds_alternative<tDailyRecurrencePattern>(rp)) {
 			auto interval = std::get<tDailyRecurrencePattern>(rp).Interval;
 			if (interval < 1 || interval > 999)
-				throw EWSError::CalendarInvalidRecurrence(E3266);
+				throw EWSError::CalendarInvalidRecurrence(E3360);
 			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_DAILY;
 			apr.recur_pat.patterntype = rptMinute;
 			apr.recur_pat.period = interval * 1440;
@@ -1809,18 +3831,18 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		} else if (std::holds_alternative<tWeeklyRecurrencePattern>(rp)) {
 			auto interval = std::get<tWeeklyRecurrencePattern>(rp).Interval;
 			if (interval < 1 || interval > 99)
-				throw EWSError::CalendarInvalidRecurrence(E3267);
+				throw EWSError::CalendarInvalidRecurrence(E3361);
 			auto firstdow = 1; // TODO get from user settings?
 			if (std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek)
 				firstdow = std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek->index();
 			if (firstdow > 6)
-				throw EWSError::CalendarInvalidRecurrence(E3268);
+				throw EWSError::CalendarInvalidRecurrence(E3362);
 
 			const auto& daysOfWeek = std::get<tWeeklyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.weekrecur = 0;
 			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.weekrecur);
 			if (apr.recur_pat.pts.weekrecur == 0)
-				throw EWSError::CalendarInvalidRecurrence(E3269);
+				throw EWSError::CalendarInvalidRecurrence(E3363);
 
 			// every weekday has daily frequency and weekly pattern type
 			apr.recur_pat.recurfrequency = apr.recur_pat.pts.weekrecur != 0x3E ?
@@ -1832,16 +3854,16 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		} else if (std::holds_alternative<tRelativeMonthlyRecurrencePattern>(rp)) {
 			auto interval = std::get<tRelativeMonthlyRecurrencePattern>(rp).Interval;
 			if (interval < 1 || interval > 99)
-				throw EWSError::CalendarInvalidRecurrence(E3270);
+				throw EWSError::CalendarInvalidRecurrence(E3364);
 
 			const auto& daysOfWeek = std::get<tRelativeMonthlyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.monthnth.weekrecur = 0;
 			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
 			if (apr.recur_pat.pts.monthnth.weekrecur == 0)
-				throw EWSError::CalendarInvalidRecurrence(E3271);
+				throw EWSError::CalendarInvalidRecurrence(E3365);
 			auto dayOfWeekIndex = std::get<tRelativeMonthlyRecurrencePattern>(rp).DayOfWeekIndex.index();
 			if (dayOfWeekIndex > 4)
-				throw EWSError::CalendarInvalidRecurrence(E3272);
+				throw EWSError::CalendarInvalidRecurrence(E3366);
 
 			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
 			apr.recur_pat.patterntype = rptMonthNth;
@@ -1851,20 +3873,20 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		} else if (std::holds_alternative<tAbsoluteMonthlyRecurrencePattern>(rp)) {
 			auto interval = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).Interval;
 			if (interval < 1 || interval > 99)
-				throw EWSError::CalendarInvalidRecurrence(E3273);
+				throw EWSError::CalendarInvalidRecurrence(E3367);
 			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
 			apr.recur_pat.patterntype = rptMonth;
 			apr.recur_pat.period = interval;
 			apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).DayOfMonth;
 			if (apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
-				throw EWSError::CalendarInvalidRecurrence(E3274);
+				throw EWSError::CalendarInvalidRecurrence(E3368);
 			rectype = rectypeMonthly;
 		} else if (std::holds_alternative<tRelativeYearlyRecurrencePattern>(rp)) {
 			const auto& daysOfWeek = std::get<tRelativeYearlyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.monthnth.weekrecur = 0;
 			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
 			if (apr.recur_pat.pts.monthnth.weekrecur == 0)
-				throw EWSError::CalendarInvalidRecurrence(E3275);
+				throw EWSError::CalendarInvalidRecurrence(E3369);
 			auto dayOfWeekIndex = std::get<tRelativeYearlyRecurrencePattern>(rp).DayOfWeekIndex.index();
 			auto month = std::get<tRelativeYearlyRecurrencePattern>(rp).Month.index();
 			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
@@ -1880,11 +3902,11 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			apr.recur_pat.period = 12;
 			apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteYearlyRecurrencePattern>(rp).DayOfMonth;
 			if (apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
-				throw EWSError::CalendarInvalidRecurrence(E3279);
+				throw EWSError::CalendarInvalidRecurrence(E3370);
 			rectype = rectypeYearly;
 			startdate_tm.tm_mon = month;
 		} else {
-			throw EWSError::CalendarInvalidRecurrence(E3280);
+			throw EWSError::CalendarInvalidRecurrence(E3371);
 		}
 
 		calc_firstdatetime(apr.recur_pat, &startdate_tm);
@@ -1903,7 +3925,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			apr.recur_pat.occurrencecount = std::get<tNumberedRecurrenceRange>(rr).NumberOfOccurrences;
 			calc_enddate(apr.recur_pat, &startdate_tm);
 		} else {
-			throw EWSError::CalendarInvalidRecurrence(E3281);
+			throw EWSError::CalendarInvalidRecurrence(E3372);
 		}
 
 		BINARY tmp_bin;
@@ -1911,7 +3933,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 
 		if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
 		    ext_push.p_apptrecpat(apr) != pack_result::ok)
-			throw EWS::DispatchError(E3120);
+			throw EWS::DispatchError(E3373);
 		tmp_bin.cb = ext_push.m_offset;
 		tmp_bin.pb = ext_push.m_udata;
 
@@ -1931,39 +3953,69 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	}
 	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(isrecurring)});
 
-	uint32_t tag;
-	if ((tag = shape.tag(NtCalendarTimeZone))) {
-		const TAGGED_PROPVAL* caltz = shape.writes(NtCalendarTimeZone);
-		if (caltz) {
-			auto buf = ianatz_to_tzdef(static_cast<char*>(caltz->pvalue));
-			if (buf != nullptr) {
-				size_t len = buf->size();
-				if (len > std::numeric_limits<uint32_t>::max())
-					throw InputError(E3293);
-				BINARY *temp_bin = construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
-					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
-				shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
-					TAGGED_PROPVAL{PT_BINARY, temp_bin});
-				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
-					TAGGED_PROPVAL{PT_BINARY, temp_bin});
+	/*
+	 * Read timezone name directly from item rather than shape – the
+	 * shape's named property cache has not been resolved yet at this
+	 * point, so shape.writes(NtCalendarTimeZone) would return nullptr even
+	 * though the value was written above.
+	 */
+	std::string tz(item.timezoneId());
+	if (!tz.empty()) {
+		auto buf = ianatz_to_tzdef(tz.c_str());
+		if (buf == nullptr)
+			buf = wintz_to_tzdef(tz.c_str());
+		if (buf == nullptr)
+			mlog(LV_WARN, "[ews] unknown timezone \"%s\"", tz.c_str());
+		if (buf != nullptr) {
+			size_t len = buf->size();
+			if (len > UINT32_MAX)
+				throw InputError(E3293);
+			BINARY *temp_bin = construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
+			                   {reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
+			shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
+				TAGGED_PROPVAL{PT_BINARY, temp_bin});
+			shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
+				TAGGED_PROPVAL{PT_BINARY, temp_bin});
+			shape.write(NtAppointmentTimeZoneDefinitionRecur,
+				TAGGED_PROPVAL{PT_BINARY, temp_bin});
 
-				// If the offsets of start or end times are 0 and
-				// the client didn't send the offset information in date tags,
-				// try to get the offset from the timezone definition.
-				if ((startOffset == 0 && calcStartOffset) || (endOffset == 0 && calcEndOffset)) {
-					EXT_PULL ext_pull;
-					TIMEZONEDEFINITION tzdef;
-					ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
-					if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
-						throw EWS::DispatchError(E3294);
-					if (calcStartOffset && !offset_from_tz(&tzdef, startTime, startOffset))
-						throw EWSError::TimeZone(E3300);
-					if (calcEndOffset && !offset_from_tz(&tzdef, endTime, endOffset))
-						throw EWSError::TimeZone(E3300);
-				}
-				item.Start.value().offset = std::chrono::minutes(startOffset);
-				item.End.value().offset = std::chrono::minutes(endOffset);
+			EXT_PULL ext_pull;
+			TZDEF tzdef;
+			ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
+				throw EWS::DispatchError(E3294);
+
+			/*
+			 * Write PidLidTimeZoneStruct – the freebusy and
+			 * recurrence expansion code uses this to determine the
+			 * timezone of times in the recurrence blob.
+			 */
+			if (tzdef.crules > 0) {
+				TZSTRUCT tzs{};
+				auto &rule = tzdef.prules[tzdef.crules - 1];
+				tzs.bias = rule.bias;
+				tzs.daylightbias = rule.daylightbias;
+				tzs.standarddate = rule.standarddate;
+				tzs.daylightdate = rule.daylightdate;
+				tzs.standardyear = tzs.standarddate.year;
+				tzs.daylightyear = tzs.daylightdate.year;
+				auto tzdata = alloc<uint8_t>(48);
+				EXT_PUSH ep;
+				if (ep.init(tzdata, 48, 0) &&
+				    ep.p_tzstruct(tzs) == pack_result::ok)
+					shape.write(NtTimeZoneStruct,
+						TAGGED_PROPVAL{PT_BINARY,
+						construct<BINARY>(BINARY{ep.m_offset, {tzdata}})});
 			}
+
+			if ((startOffset == 0 && calcStartOffset) &&
+			    !offset_from_tz(&tzdef, startTime, startOffset))
+				throw EWSError::TimeZone(E3300);
+			if ((endOffset == 0 && calcEndOffset) &&
+			    !offset_from_tz(&tzdef, endTime, endOffset))
+				throw EWSError::TimeZone(E3374);
+			item.Start.value().offset = std::chrono::minutes(startOffset);
+			item.End.value().offset = std::chrono::minutes(endOffset);
 		}
 	}
 	// The named prop tags are not available in the shape at this point, so set
@@ -1987,6 +4039,9 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(
 		rop_util_unix_to_nttime(startTime + (startOffset - reminderdelta) * 60))});
 
+	shape.write(NtPrivate, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint8_t>(
+		item.Sensitivity && item.Sensitivity->index() >= 2 ? 1 : 0)});
+
 	if (item.UID) {
 		BINARY goid_bin;
 		auto uid = item.UID.value().c_str();
@@ -1994,6 +4049,81 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		BINARY* goid = construct<BINARY>(BINARY{goid_bin.cb, {goid_bin.pb}});
 		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
+	} else if (!shape.writes(NtGlobalObjectId)) {
+		GLOBALOBJECTID goid{};
+		goid.arrayid = EncodedGlobalId;
+		goid.creationtime = rop_util_unix_to_nttime(time(nullptr));
+		goid.data.cb = 16;
+		goid.data.pb = alloc<uint8_t>(16);
+		EXT_PUSH ep;
+		char buf[256];
+		if (!ep.init(goid.data.pb, 16, 0) ||
+		    ep.p_guid(GUID::random_new()) != pack_result::ok ||
+		    !ep.init(buf, sizeof(buf), 0) ||
+		    ep.p_goid(goid) != pack_result::ok)
+			throw EWSError::InternalServerError(E3375);
+		auto gb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_udata}});
+		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
+		goid.year = goid.month = goid.day = 0;
+		goid.creationtime = 0;
+		if (!ep.init(buf, sizeof(buf), 0) ||
+		    ep.p_goid(goid) != pack_result::ok)
+			throw EWSError::InternalServerError(E3376);
+		auto cb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_udata}});
+		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, cb});
+	}
+
+	size_t recipients = (item.RequiredAttendees ? item.RequiredAttendees->size() : 0) +
+	                    (item.OptionalAttendees ? item.OptionalAttendees->size() : 0) +
+	                    (item.Resources ? item.Resources->size() : 0);
+	if (recipients) {
+		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
+			throw EWSError::NotEnoughMemory(E3377);
+		TARRAY_SET* rcpts = content->children.prcpts;
+		if (item.RequiredAttendees)
+			for (const auto &att : *item.RequiredAttendees)
+				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+		if (item.OptionalAttendees)
+			for (const auto &att : *item.OptionalAttendees)
+				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_CC);
+		if (item.Resources)
+			for (const auto &att : *item.Resources)
+				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+		std::string dispName;
+		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
+			throw DispatchError(E3378);
+		auto displayName = deconst(dispName.c_str());
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, displayName});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_NAME, displayName});
+		auto username = deconst(m_auth_info.username);
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_SMTP_ADDRESS, username});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_SMTP_ADDRESS, username});
+		auto addrType = deconst("SMTP");
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, addrType});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_ADDRTYPE, addrType});
+		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
+		auto meetType = construct<uint32_t>(mtgRequest);
+		auto apptState = construct<uint32_t>(asfMeeting);
+		auto respStatus = construct<uint32_t>(respNotResponded);
+		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, meetType});
+		shape.write(NtAppointmentStateFlags, TAGGED_PROPVAL{PT_LONG, apptState});
+		shape.write(NtResponseStatus, TAGGED_PROPVAL{PT_LONG, respStatus});
+		std::string essdn;
+		if (cvt_username_to_essdn(m_auth_info.username, m_plugin.x500_org_name.c_str(),
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
+			throw DispatchError(E3379);
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, username});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_EMAIL_ADDRESS, username});
+		EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
+		EXT_PUSH ext_push;
+		static constexpr size_t ABEIDBUFFSIZE = 1280;
+		uint8_t* abEidBuff = alloc<uint8_t>(ABEIDBUFFSIZE);
+		if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
+		    ext_push.p_abk_eid(abEid) != pack_result::ok)
+			throw DispatchError(E3380);
+		BINARY* abEidContainer = construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ENTRYID, abEidContainer});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_ENTRYID, abEidContainer});
 	}
 }
 
@@ -2022,6 +4152,10 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 		writeProp(shape, item.CompleteName->Initials, PR_INITIALS);
 		writeProp(shape, item.CompleteName->FullName, PR_DISPLAY_NAME);
 		writeProp(shape, item.CompleteName->Nickname, PR_NICKNAME);
+		writeProp(shape, item.CompleteName->YomiFirstName,
+		          NtYomiFirstName, PT_UNICODE);
+		writeProp(shape, item.CompleteName->YomiLastName,
+		          NtYomiLastName, PT_UNICODE);
 	}
 
 	writeProp(shape, item.DisplayName, PR_DISPLAY_NAME);
@@ -2036,23 +4170,53 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 	writeProp(shape, item.Department, PR_DEPARTMENT_NAME);
 	writeProp(shape, item.Generation, PR_GENERATION);
 	writeProp(shape, item.JobTitle, PR_TITLE);
-	writeProp(shape, item.CompanyName, PR_COMPANY_NAME);
+	writeProp(shape, item.Manager, PR_MANAGER_NAME);
 	writeProp(shape, item.OfficeLocation, PR_OFFICE_LOCATION);
+	writeProp(shape, item.Profession, PR_PROFESSION);
 	writeProp(shape, item.SpouseName, PR_SPOUSE_NAME);
 	writeProp(shape, item.Surname, PR_SURNAME);
 	writeProp(shape, item.WeddingAnniversary, PR_WEDDING_ANNIVERSARY);
+	writeProp(shape, item.YomiCompanyName, NtYomiCompanyName, PT_UNICODE);
 
-	if (!item.FileAs && item.DisplayName)
+	if (!shape.writes(PR_DISPLAY_NAME)) {
+		std::string dn;
+		if (item.GivenName)
+			dn = *item.GivenName;
+		if (item.Surname) {
+			if (!dn.empty())
+				dn += ' ';
+			dn += *item.Surname;
+		}
+		if (!dn.empty())
+			shape.write(TAGGED_PROPVAL{PR_DISPLAY_NAME, cpystr(dn)});
+	}
+	if (item.FileAs)
+		shape.write(NtFileAs, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.FileAs)});
+	else if (!shape.writes(NtFileAs) && item.DisplayName)
 		shape.write(NtFileAs, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.DisplayName)});
 	if (item.PostalAddressIndex)
 		shape.write(NtPostalAddressIndex, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(item.PostalAddressIndex->index())});
 	if (item.EmailAddresses)
 		for (const tEmailAddressDictionaryEntry &entry : *item.EmailAddresses) {
-			const PROPERTY_NAME &name = entry.Key == Enum::EmailAddress1 ? NtEmailAddress1 :
-			                            entry.Key == Enum::EmailAddress2 ? NtEmailAddress2 :
-			                            NtEmailAddress3;
-			shape.write(name, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(entry.Entry.c_str())});
+			const PROPERTY_NAME &addrName = entry.Key == Enum::EmailAddress1 ? NtEmailAddress1 :
+			                                entry.Key == Enum::EmailAddress2 ? NtEmailAddress2 :
+			                                NtEmailAddress3;
+			const PROPERTY_NAME &dispName = entry.Key == Enum::EmailAddress1 ? NtEmailDisplayName1 :
+			                                entry.Key == Enum::EmailAddress2 ? NtEmailDisplayName2 :
+			                                NtEmailDisplayName3;
+			const PROPERTY_NAME &typeName = entry.Key == Enum::EmailAddress1 ? NtEmailAddressType1 :
+			                                entry.Key == Enum::EmailAddress2 ? NtEmailAddressType2 :
+			                                NtEmailAddressType3;
+			shape.write(addrName, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(entry.Entry.c_str())});
+			const char *addrType = entry.RoutingType ? entry.RoutingType->c_str() : "SMTP";
+			shape.write(typeName, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(addrType)});
+			const char *displayName = entry.Name ? entry.Name->c_str() : entry.Entry.c_str();
+			shape.write(dispName, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(displayName)});
 		}
+	if (item.ImAddresses)
+		for (const tImAddressDictionaryEntry &entry : *item.ImAddresses)
+			if (entry.Key == Enum::ImAddress1)
+				shape.write(NtImAddress1, TAGGED_PROPVAL{PT_UNICODE, const_cast<char *>(entry.Entry.c_str())});
 	if (item.PhysicalAddresses)
 		for (const tPhysicalAddressDictionaryEntry &entry : *item.PhysicalAddresses) {
 			std::string address = item.mkAddress(entry.Street, entry.City, entry.State, entry.PostalCode,
@@ -2082,35 +4246,104 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 		}
 	if (item.PhoneNumbers)
 		for (const tPhoneNumberDictionaryEntry &entry : *item.PhoneNumbers) {
-			uint32_t tag;
+			proptag_t tag;
 			switch(entry.Key) {
 			case 0: tag = PR_ASSISTANT_TELEPHONE_NUMBER; break;
 			case 1: tag = PR_BUSINESS_FAX_NUMBER; break;
 			case 2: tag = PR_BUSINESS_TELEPHONE_NUMBER; break;
 			case 3: tag = PR_BUSINESS2_TELEPHONE_NUMBER; break;
 			case 4: tag = PR_CALLBACK_TELEPHONE_NUMBER; break;
+			case 5: tag = PR_CAR_TELEPHONE_NUMBER; break;
 			case 6: tag = PR_COMPANY_MAIN_PHONE_NUMBER; break;
 			case 7: tag = PR_HOME_FAX_NUMBER; break;
 			case 8: tag = PR_HOME_TELEPHONE_NUMBER; break;
 			case 9: tag = PR_HOME2_TELEPHONE_NUMBER; break;
+			case 10: tag = PR_ISDN_NUMBER; break;
 			case 11: tag = PR_MOBILE_TELEPHONE_NUMBER; break;
+			case 12: tag = PR_PRIMARY_FAX_NUMBER; break;
 			case 13: tag = PR_OTHER_TELEPHONE_NUMBER; break;
 			case 14: tag = PR_PAGER_TELEPHONE_NUMBER; break;
 			case 15: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
 			case 16: tag = PR_RADIO_TELEPHONE_NUMBER; break;
+			case 17: tag = PR_TELEX_NUMBER; break;
+			case 18: tag = PR_TTYTDD_PHONE_NUMBER; break;
 			default: continue;
 			}
 			shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(entry.Entry.c_str())});
 		}
 	if (item.Children) {
-		if (item.Children->size() > std::numeric_limits<uint32_t>::max())
+		if (item.Children->size() > UINT32_MAX)
 			throw InputError(E3258);
 		STRING_ARRAY* sa = construct<STRING_ARRAY>(STRING_ARRAY{static_cast<uint32_t>(item.Children->size()),
 		                                                        alloc<char*>(item.Children->size())});
 		auto it = sa->begin();
 		for (const std::string &child : *item.Children)
 			*it++ = const_cast<char*>(child.c_str());
+		shape.write(TAGGED_PROPVAL{PR_CHILDRENS_NAMES, sa});
 	}
+}
+
+/**
+ * @brief      Write task properties to shape
+ *
+ * @param      dir       Home directory of the target store
+ * @param      item      Task item to create
+ * @param      shape     Shape to store properties in
+ * @param      content   Message content
+ */
+void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
+    MCONT_PTR &content) const
+{
+	toContent(dir, static_cast<tItem &>(item), shape, content);
+	if (!item.ItemClass)
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Task")});
+	if (item.ActualWork)
+		shape.write(NtTaskActualEffort, TAGGED_PROPVAL{PT_LONG,
+		            construct<int32_t>(*item.ActualWork)});
+	writeProp(shape, item.BillingInformation, NtBilling, PT_UNICODE);
+	if (item.Companies && !item.Companies->empty() &&
+	    item.Companies->size() <= UINT32_MAX) {
+		uint32_t count = item.Companies->size();
+		auto sa = construct<STRING_ARRAY>(STRING_ARRAY{count,
+		          alloc<char *>(count)});
+		char **dest = sa->ppstr;
+		for (const std::string &c : *item.Companies)
+			*dest++ = deconst(c.c_str());
+		shape.write(NtCompanies, TAGGED_PROPVAL{PT_MV_UNICODE, sa});
+	}
+	if (item.CompleteDate)
+		shape.write(NtTaskDateCompleted, TAGGED_PROPVAL{PT_SYSTIME,
+		            construct<uint64_t>(toNT(*item.CompleteDate))});
+	if (item.DueDate)
+		shape.write(NtTaskDueDate, TAGGED_PROPVAL{PT_SYSTIME,
+		            construct<uint64_t>(toNT(*item.DueDate))});
+	if (item.StartDate)
+		shape.write(NtTaskStartDate, TAGGED_PROPVAL{PT_SYSTIME,
+		            construct<uint64_t>(toNT(*item.StartDate))});
+	if (item.IsComplete)
+		shape.write(NtTaskComplete, TAGGED_PROPVAL{PT_BOOLEAN,
+		            construct<uint8_t>(*item.IsComplete ? 1 : 0)});
+	writeProp(shape, item.Mileage, NtMileage, PT_UNICODE);
+	writeProp(shape, item.Owner, NtTaskOwner, PT_UNICODE);
+	if (item.PercentComplete)
+		shape.write(NtPercentComplete, TAGGED_PROPVAL{PT_DOUBLE,
+		            construct<double>(*item.PercentComplete / 100.0)});
+	if (item.Status) {
+		uint32_t st = tsvNotStarted;
+		if (*item.Status == Enum::InProgress)
+			st = tsvInProgress;
+		else if (*item.Status == Enum::Completed)
+			st = tsvComplete;
+		else if (*item.Status == Enum::WaitingOnOthers)
+			st = tsvWaiting;
+		else if (*item.Status == Enum::Deferred)
+			st = tsvDeferred;
+		shape.write(NtTaskStatus, TAGGED_PROPVAL{PT_LONG,
+		            construct<uint32_t>(st)});
+	}
+	if (item.TotalWork)
+		shape.write(NtTaskEstimatedEffort, TAGGED_PROPVAL{PT_LONG,
+		            construct<int32_t>(*item.TotalWork)});
 }
 
 /**
@@ -2123,8 +4356,6 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
  * @param      item      Item to create
  * @param      shape     Shape to store properties in
  * @param      content   Message content
- *
- * @todo Map remaining fields
  */
 void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, MCONT_PTR& content) const
 {
@@ -2136,19 +4367,20 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 			shape.write(TAGGED_PROPVAL{PR_BODY, body});
 		} else if (item.Body.value().BodyType == Enum::HTML) {
 			size_t bodylen = strlen(body);
-			if (bodylen > std::numeric_limits<uint32_t>::max())
+			if (bodylen > UINT32_MAX)
 				throw InputError(E3256);
 			BINARY *html = construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(body)),
 			                                       {reinterpret_cast<uint8_t*>(body)}});
 			shape.write(TAGGED_PROPVAL{PR_HTML, html});
 		}
+		shape.write(TAGGED_PROPVAL{PR_INTERNET_CPID, construct<uint32_t>(CP_UTF8)});
 	}
 	if (item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst(item.ItemClass->c_str())});
 	if (item.Sensitivity)
 		shape.write(TAGGED_PROPVAL{PR_SENSITIVITY, construct<uint32_t>(item.Sensitivity->index())});
 	if (item.Categories && item.Categories->size() &&
-	    item.Categories->size() <= std::numeric_limits<uint32_t>::max()) {
+	    item.Categories->size() <= UINT32_MAX) {
 		uint32_t count = item.Categories->size();
 		STRING_ARRAY* categories = construct<STRING_ARRAY>(STRING_ARRAY{count, alloc<char*>(count)});
 		char** dest = categories->ppstr;
@@ -2162,8 +4394,57 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 		shape.write(TAGGED_PROPVAL{PR_IMPORTANCE, construct<uint32_t>(item.Importance->index())});
 	if (item.Subject)
 		shape.write(TAGGED_PROPVAL{PR_SUBJECT, deconst(item.Subject->c_str())});
+	if (item.InReplyTo)
+		shape.write(TAGGED_PROPVAL{PR_IN_REPLY_TO_ID, deconst(item.InReplyTo->c_str())});
+	writeBoolProp(shape, item.IsAssociated, PR_ASSOCIATED);
 
-	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	std::optional<uint32_t> messageFlags;
+	auto applyFlag = [&](const std::optional<bool>& flag, uint32_t mask) {
+		if (!flag)
+			return;
+		if (!messageFlags)
+			messageFlags.emplace(0);
+		if (*flag)
+			*messageFlags |= mask;
+	};
+	applyFlag(item.IsSubmitted, MSGFLAG_SUBMITTED);
+	applyFlag(item.IsDraft, MSGFLAG_UNSENT);
+	applyFlag(item.IsFromMe, MSGFLAG_FROMME);
+	applyFlag(item.IsResend, MSGFLAG_RESEND);
+	applyFlag(item.IsUnmodified, MSGFLAG_UNMODIFIED);
+	if (messageFlags)
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_FLAGS, construct<uint32_t>(*messageFlags)});
+
+	if (item.ReminderDueBy) {
+		auto reminderNt = toNT(*item.ReminderDueBy);
+		shape.write(NtReminderTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(reminderNt)});
+		shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(reminderNt)});
+	}
+	if (item.ReminderIsSet)
+		shape.write(NtReminderSet, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint8_t>(*item.ReminderIsSet ? 1 : 0)});
+	if (item.ReminderMinutesBeforeStart)
+		shape.write(NtReminderDelta, TAGGED_PROPVAL{PT_LONG, construct<int32_t>(*item.ReminderMinutesBeforeStart)});
+	if (item.Flag) {
+		uint32_t status = 0;
+		bool setStatus = false;
+		if (item.Flag->FlagStatus == Enum::Flagged) {
+			status = followupFlagged;
+			setStatus = true;
+		} else if (item.Flag->FlagStatus == Enum::Complete) {
+			status = followupComplete;
+			setStatus = true;
+		}
+		if (setStatus)
+			shape.write(TAGGED_PROPVAL{PR_FLAG_STATUS, construct<uint32_t>(status)});
+		if (item.Flag->StartDate)
+			shape.write(NtTaskStartDate, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(toNT(*item.Flag->StartDate))});
+		if (item.Flag->DueDate)
+			shape.write(NtTaskDueDate, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(toNT(*item.Flag->DueDate))});
+		if (item.Flag->CompleteDate)
+			shape.write(NtTaskDateCompleted, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(toNT(*item.Flag->CompleteDate))});
+	}
+
+	auto now = EWSContext::construct<mapitime_t>(rop_util_current_nttime());
 	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, now});
 	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, now});
 
@@ -2172,6 +4453,39 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 			shape.write(prop.propval);
 		else
 			shape.write(prop.ExtendedFieldURI.name(), prop.propval);
+}
+
+void EWSContext::rcpt_add_unique(TARRAY_SET *rcpts, tEmailAddressType rcpt, uint32_t type) const
+{
+	if (rcpt.EmailAddress)
+		/* Normalize EX->SMTP for comparison */
+		normalize(rcpt);
+	const char *needle = rcpt.EmailAddress ? rcpt.EmailAddress->c_str() : nullptr;
+	if (needle != nullptr) {
+		for (const auto &row : *rcpts) {
+			auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+			if (rtype == nullptr || *rtype != type)
+				continue;
+			/* Prefer PR_SMTP_ADDRESS for comparison; fall back to SMTP PR_EMAIL_ADDRESS */
+			auto smtp = row.get<const char>(PR_SMTP_ADDRESS);
+			if (smtp == nullptr) {
+				auto at = row.get<const char>(PR_ADDRTYPE);
+				auto em = row.get<const char>(PR_EMAIL_ADDRESS);
+				if (at != nullptr && em != nullptr && strcasecmp(at, "SMTP") == 0)
+					smtp = em;
+			}
+			if (smtp != nullptr && strcasecmp(smtp, needle) == 0)
+				return;
+		}
+	}
+	/* Not found: add recipient and record SMTP address if available */
+	auto row = rcpts->emplace();
+	rcpt.mkRecipient(row, type);
+	if (needle != nullptr) {
+		auto err = row->set(PR_SMTP_ADDRESS, needle);
+		if (err == ecServerOOM || err == ecMAPIOOM)
+			throw EWSError::NotEnoughMemory(E3291);
+	}
 }
 
 /**
@@ -2183,28 +4497,32 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
  * @param      item      Message to create
  * @param      shape     Shape to store properties in
  * @param      content   Message content
- *
- * @todo Map remaining fields
  */
 void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape, MCONT_PTR& content) const
 {
+	auto &to = item.ToRecipients, &cc = item.CcRecipients, &bcc = item.BccRecipients;
 	toContent(dir, static_cast<tItem&>(item), shape, content);
-	size_t recipients = (item.ToRecipients ? item.ToRecipients->size() : 0) +
-	                    (item.CcRecipients ? item.CcRecipients->size() : 0) +
-	                    (item.BccRecipients ? item.BccRecipients->size() : 0);
-	if (recipients) {
-		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
-			throw EWSError::NotEnoughMemory(E3288);
-		TARRAY_SET* rcpts = content->children.prcpts;
-		if (item.ToRecipients)
-			for (const auto &rcpt : *item.ToRecipients)
-				rcpt.mkRecipient(rcpts->emplace(), MAPI_TO);
-		if (item.CcRecipients)
-			for (const auto &rcpt : *item.CcRecipients)
-				rcpt.mkRecipient(rcpts->emplace(), MAPI_CC);
-		if (item.BccRecipients)
-			for (const auto &rcpt : *item.BccRecipients)
-				rcpt.mkRecipient(rcpts->emplace(), MAPI_BCC);
+	if (!item.ItemClass)
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Note")});
+	size_t recipients = (to ? to->size() : 0) +
+	                    (cc ? cc->size() : 0) +
+	                    (bcc ? bcc->size() : 0);
+	auto rcpts = content->children.prcpts;
+	if (recipients > 0 && rcpts == nullptr) {
+		rcpts = content->children.prcpts = tarray_set_init();
+		if (rcpts == nullptr)
+			throw EWSError::NotEnoughMemory(E3381);
+	}
+	if (rcpts != nullptr) {
+		if (to)
+			for (const auto &rcpt : *to)
+				rcpt_add_unique(rcpts, rcpt, MAPI_TO);
+		if (cc)
+			for (const auto &rcpt : *cc)
+				rcpt_add_unique(rcpts, rcpt, MAPI_CC);
+		if (bcc)
+			for (const auto &rcpt : *bcc)
+				rcpt_add_unique(rcpts, rcpt, MAPI_BCC);
 	}
 	if (item.From) {
 		if (item.From->Mailbox.RoutingType)
@@ -2214,6 +4532,75 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 		if (item.From->Mailbox.Name)
 			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, item.From->Mailbox.Name->data()});
 	}
+	if (item.Sender) {
+		writeProp(shape, item.Sender->Mailbox.RoutingType, PR_SENDER_ADDRTYPE);
+		writeProp(shape, item.Sender->Mailbox.EmailAddress, PR_SENDER_EMAIL_ADDRESS);
+		writeProp(shape, item.Sender->Mailbox.Name, PR_SENDER_NAME);
+		if (item.Sender->Mailbox.EmailAddress) {
+			auto isSmtp = !item.Sender->Mailbox.RoutingType ||
+				strcasecmp(item.Sender->Mailbox.RoutingType->c_str(), "SMTP") == 0;
+			if (isSmtp)
+				shape.write(TAGGED_PROPVAL{PR_SENDER_SMTP_ADDRESS,
+					deconst(item.Sender->Mailbox.EmailAddress->c_str())});
+		}
+	}
+	if (item.References)
+		shape.write(TAGGED_PROPVAL{PR_INTERNET_REFERENCES, deconst(item.References->c_str())});
+	if (item.ConversationIndex) {
+		auto bin = construct<BINARY>(BINARY{
+		           static_cast<uint32_t>(item.ConversationIndex->size()),
+		           {reinterpret_cast<uint8_t *>(item.ConversationIndex->data())}});
+		shape.write(TAGGED_PROPVAL{PR_CONVERSATION_INDEX, bin});
+	}
+	if (item.ConversationTopic)
+		shape.write(TAGGED_PROPVAL{PR_CONVERSATION_TOPIC, deconst(item.ConversationTopic->c_str())});
+	if (item.IsResponseRequested)
+		writeBoolProp(shape, item.IsResponseRequested, PR_RESPONSE_REQUESTED);
+	if (item.IsDeliveryReceiptRequested)
+		writeBoolProp(shape, item.IsDeliveryReceiptRequested, PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
+	if (item.IsReadReceiptRequested)
+		writeBoolProp(shape, item.IsReadReceiptRequested, PR_READ_RECEIPT_REQUESTED);
+	auto ensureMessageFlags = [&]() -> uint32_t* {
+		const TAGGED_PROPVAL* prop = shape.writes(PR_MESSAGE_FLAGS);
+		if (!prop) {
+			auto flags = construct<uint32_t>(0);
+			shape.write(TAGGED_PROPVAL{PR_MESSAGE_FLAGS, flags});
+			prop = shape.writes(PR_MESSAGE_FLAGS);
+		}
+		return static_cast<uint32_t*>(prop->pvalue);
+	};
+	if (item.IsRead) {
+		writeBoolProp(shape, item.IsRead, PR_READ);
+		uint32_t* flags = ensureMessageFlags();
+		if (*item.IsRead)
+			*flags |= MSGFLAG_READ;
+		else
+			*flags &= ~MSGFLAG_READ;
+	}
+}
+
+void EWSContext::toContent(const std::string &dir, tAcceptItem &item,
+    sShape &shape, MCONT_PTR &content) const
+{
+	if (!item.ItemClass)
+		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Pos");
+	toContent(dir, static_cast<tMessage &>(item), shape, content);
+}
+
+void EWSContext::toContent(const std::string &dir, tTentativelyAcceptItem &item,
+    sShape &shape, MCONT_PTR &content) const
+{
+	if (!item.ItemClass)
+		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Tent");
+	toContent(dir, static_cast<tMessage &>(item), shape, content);
+}
+
+void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
+    sShape &shape, MCONT_PTR &content) const
+{
+	if (!item.ItemClass)
+		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Neg");
+	toContent(dir, static_cast<tMessage &>(item), shape, content);
 }
 
 /**
@@ -2268,10 +4655,9 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 	auto mgr = m_plugin.make_submgr(subscriptionId, m_auth_info.username);
 	if (folderIds.empty()) {
 		mgr->mailboxInfo = getMailboxInfo(m_auth_info.maildir, false);
-		detail::ExmdbSubscriptionKey key =
-			m_plugin.subscribe(m_auth_info.maildir, eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
-		                       subscriptionId.ID);
-		mgr->inner_subs.emplace_back(key);
+		mgr->inner_subs.emplace_back(m_plugin.subscribe(m_auth_info.maildir,
+			eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			subscriptionId.tsub_rawkey));
 		return subscriptionId;
 	}
 	mgr->inner_subs.reserve(folderIds.size());
@@ -2291,7 +4677,7 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 		if (!(permissions(maildir, folderspec.folderId) & frightsReadAny))
 			continue; // TODO: proper error handling
 		mgr->inner_subs.emplace_back(m_plugin.subscribe(maildir,
-			eventMask, all, folderspec.folderId, subscriptionId.ID));
+			eventMask, all, folderspec.folderId, subscriptionId.tsub_rawkey));
 	}
 	return subscriptionId;
 }
@@ -2303,13 +4689,29 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
  *
  * @return     Subscription ID
  */
-tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest& req) const
+tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest &req) const
 {
 	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
 	if (all && req.FolderIds)
 		throw EWSError::InvalidSubscriptionRequest(E3198);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
 	       req.eventMask(), all, req.Timeout);
+}
+
+/**
+ * @brief      Create new push subscription
+ *
+ * @param      req    Push subscription request
+ *
+ * @return     Subscription ID
+ */
+tSubscriptionId EWSContext::subscribe(const tPushSubscriptionRequest& req) const
+{
+	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
+	if (all && req.FolderIds)
+		throw EWSError::InvalidSubscriptionRequest(E3382);
+	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
+	       req.eventMask(), all, req.StatusFrequency);
 }
 
 /**
@@ -2323,7 +4725,7 @@ tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) 
 {
 	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
 	if (all && req.FolderIds)
-		throw EWSError::InvalidSubscriptionRequest(E3198);
+		throw EWSError::InvalidSubscriptionRequest(E3383);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
 	       req.eventMask(), all, 5);
 }
@@ -2335,7 +4737,7 @@ tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) 
  */
 bool EWSContext::unsubscribe(const Structures::tSubscriptionId& subscriptionId) const
 {
-	return m_plugin.unsubscribe(subscriptionId.ID, m_auth_info.username);
+	return m_plugin.unsubscribe(subscriptionId.tsub_rawkey, m_auth_info.username);
 }
 
 /**
@@ -2351,8 +4753,8 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
 		throw DispatchError(E3084);
 	uint64_t localCommitTime = rop_util_current_nttime();
-	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, construct<uint64_t>(localCommitTime)});
-	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, construct<uint64_t>(localCommitTime)});
+	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, construct<mapitime_t>(localCommitTime)});
+	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, construct<mapitime_t>(localCommitTime)});
 
 	std::string displayName;
 	if (mysql_adaptor_get_user_displayname(m_auth_info.username,
@@ -2369,12 +4771,12 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	           m_plugin.x500_org_name.c_str(), mysql_adaptor_get_user_ids,
 	           mysql_adaptor_get_domain_ids, essdn);
 	if (err != ecSuccess)
-		throw DispatchError(E3085);
+		throw DispatchError(E3384);
 	HX_strupper(essdn.data());
 	EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
 	if (!wAbEid.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
 	    wAbEid.p_abk_eid(abEid) != pack_result::ok)
-		throw DispatchError(E3085);
+		throw DispatchError(E3385);
 	BINARY* abEidContainer = construct<BINARY>(BINARY{wAbEid.m_offset, {abEidBuff}});
 	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_ENTRYID, abEidContainer});
 
@@ -2384,7 +4786,8 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	BINARY* changeKeyContainer = construct<BINARY>(serialize(changeKey));
 	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, changeKeyContainer});
 
-	const BINARY* currentPclContainer = getItemProp<BINARY>(dir, mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
+	auto currentPclContainer = getItemProp<const BINARY>(dir,
+	                           mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
 	PCL pcl;
 	if (currentPclContainer != nullptr && !pcl.deserialize(currentPclContainer))
 		throw DispatchError(E3087);
@@ -2396,6 +4799,34 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	shape.write(TAGGED_PROPVAL{PidTagChangeNumber, construct<uint64_t>(changeNum)});
 }
 
+
+/**
+ * @brief      Write delegate permissions to folder ACLs
+ */
+void EWSContext::writeDelegatePermissions(const std::string &dir, const std::string &username,
+    const tDelegatePermissions &dp) const
+{
+	std::string dispname;
+	mysql_adaptor_get_user_displayname(username.c_str(), dispname);
+
+	for (const auto &m : delegFolderMap) {
+		const auto &level = dp.*(m.field);
+		if (!level)
+			continue;
+		uint32_t rights = deleg_level_to_rights(*level);
+		PERMISSION_DATA perm = {ROW_ADD, TPROPVAL_ARRAY{0, EWSContext::alloc<TAGGED_PROPVAL>(4)}};
+		uint16_t &count = perm.propvals.count;
+		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_RIGHTS, EWSContext::construct<uint32_t>(rights)};
+		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_SMTP_ADDRESS, EWSContext::cpystr(username)};
+		if (!dispname.empty())
+			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_NAME, EWSContext::cpystr(dispname)};
+		uint64_t fid = rop_util_make_eid_ex(1, m.fid);
+		if (!m_plugin.exmdb.update_folder_permission(dir.c_str(), fid, false, 1, &perm))
+			/* ignore */;
+	}
+}
+
+
 /**
  * @brief      Write permissions
  *
@@ -2406,7 +4837,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 void EWSContext::writePermissions(const std::string& dir, uint64_t fid, const std::vector<PERMISSION_DATA>& perms) const
 {
 		size_t memberCount = perms.size();
-		if (memberCount > std::numeric_limits<uint16_t>::max())
+		if (memberCount > UINT16_MAX)
 			throw InputError(E3285);
 		const auto& exmdb = m_plugin.exmdb;
 		if (!exmdb.empty_folder_permission(dir.c_str(), fid))

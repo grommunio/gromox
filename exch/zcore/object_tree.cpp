@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -112,7 +112,7 @@ object_tree_init_root(const char *maildir) try
 		return NULL;
 	return prootobj;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1099: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 
@@ -122,8 +122,8 @@ static void object_tree_write_root(root_object *prootobj)
 	
 	if (!prootobj->b_touched ||
 	    !ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT) ||
-	    ext_push.p_tpropval_a(*prootobj->pprivate_proplist) != EXT_ERR_SUCCESS ||
-	    ext_push.p_tarray_set(*prootobj->pprof_set) != EXT_ERR_SUCCESS)
+	    ext_push.p_tpropval_a(*prootobj->pprivate_proplist) != pack_result::ok ||
+	    ext_push.p_tarray_set(*prootobj->pprof_set) != pack_result::ok)
 		return;
 	cu_write_storenamedprop(prootobj->maildir, PSETID_Gromox,
 		"zcore_profsect", PT_BINARY, ext_push.m_udata, ext_push.m_offset);
@@ -292,7 +292,7 @@ void OBJECT_TREE::release_object_handle(uint32_t obj_handle)
 	object_tree_release_objnode(pobjtree, iter->second);
 }
 
-void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
+void *OBJECT_TREE::get_zstore_propval(proptag_t proptag)
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();
@@ -310,8 +310,7 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 		return FALSE;
 	auto prootobj = static_cast<root_object *>(static_cast<object_node *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
-	auto ret = prootobj->pprivate_proplist->set(*ppropval);
-	if (ret != 0)
+	if (prootobj->pprivate_proplist->set(*ppropval) != ecSuccess)
 		return false;
 	/*
 	 * g-web touches PR_EC_WEBACCESS_SETTINGS_JSON every now and then even
@@ -322,7 +321,7 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 	return TRUE;
 }
 
-void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
+void OBJECT_TREE::remove_zstore_propval(proptag_t proptag)
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();
@@ -351,8 +350,8 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 	tpropval_array_ptr pproplist(tpropval_array_init());
 	if (pproplist == nullptr)
 		return NULL;
-	if (pproplist->set(PROP_TAG_PROFILESCLSID, &sec_guid) != 0 ||
-	    prootobj->pprof_set->append_move(std::move(pproplist)) != 0)
+	if (pproplist->set(PROP_TAG_PROFILESCLSID, &sec_guid) != ecSuccess ||
+	    prootobj->pprof_set->append_move(std::move(pproplist)) != ecSuccess)
 		return NULL;
 	return prootobj->pprof_set->back();
 }

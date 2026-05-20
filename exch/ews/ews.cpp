@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -15,11 +15,14 @@
 #include <fmt/core.h>
 #include <libHX/scope.hpp>
 #include <vmime/utility/url.hpp>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/notify_types.hpp>
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/svc_loader.hpp>
 #include "exceptions.hpp"
 #include "hash.hpp"
 #include "requests.hpp"
@@ -83,7 +86,8 @@ GUID replid_to_replguid(const gromox::EWS::Structures::sMailboxInfo& mbinfo, uin
  * @param      code            HTTP response code
  * @param      content_length  Length of the response body
  */
-void writeheader(int ctx_id, http_status code, size_t content_length)
+static void writeheader(detail::ContextKey ctx_id, http_status code,
+    size_t content_length)
 {
 	static constexpr char templ[] =
 	        "HTTP/1.1 {} {}\r\n"
@@ -113,7 +117,8 @@ void writeheader(int ctx_id, http_status code, size_t content_length)
  * @param      log       Whether write data to log
  * @param      loglevel  Log level
  */
-void writecontent(int ctx_id, const std::string_view& data, bool log, gx_loglevel loglevel)
+static void writecontent(detail::ContextKey ctx_id, const std::string_view &data,
+    bool log, gx_loglevel loglevel)
 {
 	write_response(ctx_id, data.data(), static_cast<int>(data.size()));
 	if (log)
@@ -184,13 +189,13 @@ EWSPlugin::DebugCtx::DebugCtx(const std::string_view& opts)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool EWSPlugin::_exmdb::get_message_property(const char *dir, const char *username, cpid_t cpid, uint64_t message_id,
-                                             uint32_t proptag, void **ppval) const
+bool EWSPlugin::_exmdb::get_message_property(const char *dir,
+    const char *username, cpid_t cpid, uint64_t message_id, proptag_t proptag,
+    void **ppval) const
 {
-	PROPTAG_ARRAY tmp_proptags{1, &proptag};
 	TPROPVAL_ARRAY propvals;
-
-	if (!get_message_properties(dir, username, cpid, message_id, &tmp_proptags, &propvals))
+	if (!get_message_properties(dir, username, cpid, message_id,
+	    {&proptag, 1}, &propvals))
 		return false;
 	*ppval = propvals.count == 1 && propvals.ppropval->proptag == proptag ?
 	         propvals.ppropval->pvalue : nullptr;
@@ -217,7 +222,7 @@ void* EWSContext::alloc(size_t count)
  * @tparam     T         Request data type
  */
 template<typename T>
-static void process(const XMLElement* request, XMLElement* response, EWSContext& context)
+static void process(const XMLElement *request, XMLElement *response, EWSContext& context)
 {
 	Requests::process(T(request), response, context);
 }
@@ -226,40 +231,54 @@ static void process(const XMLElement* request, XMLElement* response, EWSContext&
  * Mapping of request names to handler functions.
  */
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap = {
+	{"AddDelegate", process<Structures::mAddDelegateRequest>},
 	{"ConvertId", process<Structures::mConvertIdRequest>},
 	{"CopyFolder", process<Structures::mCopyFolderRequest>},
 	{"CopyItem", process<Structures::mCopyItemRequest>},
+	{"CreateAttachment", process<Structures::mCreateAttachmentRequest>},
 	{"CreateFolder", process<Structures::mCreateFolderRequest>},
 	{"CreateItem", process<Structures::mCreateItemRequest>},
+	{"CreateUserConfiguration", process<Structures::mCreateUserConfigurationRequest>},
+	{"DeleteAttachment", process<Structures::mDeleteAttachmentRequest>},
 	{"DeleteFolder", process<Structures::mDeleteFolderRequest>},
 	{"DeleteItem", process<Structures::mDeleteItemRequest>},
+	{"DeleteUserConfiguration", process<Structures::mDeleteUserConfigurationRequest>},
 	{"EmptyFolder", process<Structures::mEmptyFolderRequest>},
+	{"ExpandDL", process<Structures::mExpandDLRequest>},
 	{"FindFolder", process<Structures::mFindFolderRequest>},
 	{"FindItem", process<Structures::mFindItemRequest>},
+	{"FindPeople", process<Structures::mFindPeopleRequest>},
 	{"GetAppManifests", process<Structures::mGetAppManifestsRequest>},
 	{"GetAttachment", process<Structures::mGetAttachmentRequest>},
+	{"GetDelegate", process<Structures::mGetDelegateRequest>},
 	{"GetEvents", process<Structures::mGetEventsRequest>},
 	{"GetFolder", process<Structures::mGetFolderRequest>},
 	{"GetInboxRules", process<Structures::mGetInboxRulesRequest>},
 	{"GetItem", process<Structures::mGetItemRequest>},
 	{"GetMailTips", process<Structures::mGetMailTipsRequest>},
+	{"GetPersona", process<Structures::mGetPersonaRequest>},
+	{"GetRoomLists", process<Structures::mGetRoomListsRequest>},
+	{"GetRooms", process<Structures::mGetRoomsRequest>},
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetStreamingEvents", process<Structures::mGetStreamingEventsRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
 	{"GetUserConfiguration", process<Structures::mGetUserConfigurationRequest>},
-	{"GetUserPhoto", process<Structures::mGetUserPhotoRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
+	{"GetUserPhoto", process<Structures::mGetUserPhotoRequest>},
 	{"MoveFolder", process<Structures::mMoveFolderRequest>},
 	{"MoveItem", process<Structures::mMoveItemRequest>},
+	{"RemoveDelegate", process<Structures::mRemoveDelegateRequest>},
 	{"ResolveNames", process<Structures::mResolveNamesRequest>},
+	{"UpdateDelegate", process<Structures::mUpdateDelegateRequest>},
 	{"SendItem", process<Structures::mSendItemRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"Subscribe", process<Structures::mSubscribeRequest>},
 	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
 	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
+	{"Unsubscribe", process<Structures::mUnsubscribeRequest>},
 	{"UpdateFolder", process<Structures::mUpdateFolderRequest>},
 	{"UpdateItem", process<Structures::mUpdateItemRequest>},
-	{"Unsubscribe", process<Structures::mUnsubscribeRequest>},
+	{"UpdateUserConfiguration", process<Structures::mUpdateUserConfigurationRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -273,13 +292,14 @@ static void ews_event_proc(const char*, BOOL table, uint32_t, const DB_NOTIFY*);
  *
  * @return     TRUE if the request is to be processed by this plugin, false otherwise
  */
-BOOL EWSPlugin::preproc(int ctx_id)
+BOOL EWSPlugin::preproc(detail::ContextKey ctx_id)
 {
 	auto req = get_request(ctx_id);
 	return strcasecmp(req->f_request_uri.c_str(), "/EWS/Exchange.asmx") == 0 ? TRUE : false;
 }
 
-http_status EWSPlugin::fault(int ctx_id, http_status code, const std::string_view& content)
+http_status EWSPlugin::fault(detail::ContextKey ctx_id, http_status code,
+    const std::string_view content)
 {
 	writeheader(ctx_id, code, content.length());
 	if (content.length())
@@ -288,7 +308,7 @@ http_status EWSPlugin::fault(int ctx_id, http_status code, const std::string_vie
 }
 
 /**
- * @brief      Proccess request
+ * @brief      Process request
  *
  * Checks if an authentication context exists, dispatches the request and
  * writes the response.
@@ -299,7 +319,7 @@ http_status EWSPlugin::fault(int ctx_id, http_status code, const std::string_vie
  *
  * @return     TRUE if request was handled, false otherwise
  */
-http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
+http_status EWSPlugin::proc(detail::ContextKey ctx_id, const void* content, uint64_t len)
 {
 	auto req = get_request(ctx_id);
 	if (req->imethod != http_method::post)
@@ -321,7 +341,8 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
  *
  * @return     Pair of response content and HTTP response code
  */
-http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len) try
+http_status EWSPlugin::dispatch(detail::ContextKey ctx_id, HTTP_AUTH_INFO &auth_info,
+    const void *data, uint64_t len) try
 {
 	if (ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size())
 		return fault(ctx_id, http_status::server_error, "Invalid context ID");
@@ -349,7 +370,7 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 	           std::make_unique<EWSContext>(ctx_id,
 	           auth_info, static_cast<const char *>(data), len, *this);
 	EWSContext& context = *pc;
-	const XMLElement* request = context.request().body->FirstChildElement();
+	const XMLElement *request = context.request().body->FirstChildElement();
 	if (!request)
 		return fault(ctx_id, http_status::bad_request, "Missing request node");
 	if (request->NextSibling())
@@ -362,7 +383,7 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 		mlog(LV_DEBUG, "[ews#%d]%s Incoming data: %.*s", ctx_id, timestamp().c_str(),
 		     len > INT_MAX ? INT_MAX : static_cast<int>(len), static_cast<const char *>(data));
 
-	XMLElement* responseContainer = context.response().body->InsertNewChildElement(request->Name());
+	XMLElement *responseContainer = context.response().body->InsertNewChildElement(request->Name());
 	responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 	responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
 	if (enableLog && request_logging)
@@ -403,7 +424,7 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
  *
  * @return    true if logging is enabled, false otherwise
  */
-bool EWSPlugin::logEnabled(const std::string_view& requestName) const
+bool EWSPlugin::logEnabled(const std::string_view requestName) const
 {
 	return std::binary_search(logFilters.begin(), logFilters.end(), requestName) != invertFilter;
 }
@@ -546,19 +567,26 @@ static std::unique_ptr<EWSPlugin> g_ews_plugin; ///< Current plugin
  */
 static BOOL ews_init(const struct dlfuncs &apidata)
 {
-	auto fail = [](auto&&... args){mlog(LV_ERR, args...); return false;};
 	LINK_HPM_API(apidata)
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return false;
+	if (bounce_gen_init(get_config_path(), get_data_path(),
+	    "notify_bounce") != 0) {
+		mlog(LV_ERR, "[ews] failed to start bounce producer");
+		return false;
+	}
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
-	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
-	ifc.retr    = [](int ctx) { return g_ews_plugin ? g_ews_plugin->retr(ctx) : HPM_RETRIEVE_DONE; };
-	ifc.term    = [](int ctx) { if (g_ews_plugin) g_ews_plugin->term(ctx); };
+	ifc.proc    = [](detail::ContextKey ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
+	ifc.retr    = [](detail::ContextKey ctx) { return g_ews_plugin ? g_ews_plugin->retr(ctx) : HPM_RETRIEVE_DONE; };
+	ifc.term    = [](detail::ContextKey ctx) { if (g_ews_plugin) g_ews_plugin->term(ctx); };
 	if (!register_interface(&ifc))
 		return false;
 	try {
 		g_ews_plugin.reset(new EWSPlugin());
 	} catch (const std::exception &e) {
-		return fail("[ews] failed to initialize plugin: %s", e.what());
+		mlog(LV_ERR, "[ews] failed to initialize plugin: %s", e.what());
+		return false;
 	}
 	return TRUE;
 }
@@ -568,7 +596,7 @@ static BOOL ews_init(const struct dlfuncs &apidata)
  *
  * Used for (de-)initializing the plugin
  *
- * @param      reason  Reason the function is calles
+ * @param      reason  Reason the function is called
  * @param      data    Additional, reason specific data
  *
  * @return     TRUE if successful, false otherwise
@@ -613,7 +641,7 @@ int EWSContext::notify()
 	if (nctx.state == NS::S_WRITE) {
 		/* Just wrote something -> got to sleep and set a wake up timer */
 		nctx.state = NS::S_SLEEP;
-		m_plugin.wakeContext(m_ID, m_plugin.event_stream_interval);
+		m_plugin.wakeContext(m_ctx_id, m_plugin.event_stream_interval);
 		return HPM_RETRIEVE_WAIT;
 	}
 
@@ -624,22 +652,22 @@ int EWSContext::notify()
 	if (nctx.state == NS::S_INIT) {
 		/* First call after initialization -> write context data */
 		m_response.doc.Print(&printer);
-		writeheader(m_ID, m_code, 0);
-		writecontent(m_ID, to_sv(printer), logResponse, loglevel);
+		writeheader(m_ctx_id, m_code, 0);
+		writecontent(m_ctx_id, to_sv(printer), logResponse, loglevel);
 		nctx.state = NS::S_WRITE;
 		return HPM_RETRIEVE_WRITE;
 	}
 
 	mGetStreamingEventsResponse data;
 	mGetStreamingEventsResponseMessage& msg = data.ResponseMessages.emplace_back();
-	SOAP::Envelope envelope(m_plugin.server_version());
-	tinyxml2::XMLElement* response = envelope.body->InsertNewChildElement("m:GetStreamingEventsResponse");
+	SOAP::Envelope envelope(m_plugin.server_version(), SOAP::Envelope::WITHOUT_DECL);
+	tinyxml2::XMLElement *response = envelope.body->InsertNewChildElement("m:GetStreamingEventsResponse");
 	response->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 	response->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
 	auto flush = [&]() {
 		data.serialize(response);
 		envelope.doc.Print(&printer);
-		writecontent(m_ID, to_sv(printer), logResponse, loglevel);
+		writecontent(m_ctx_id, to_sv(printer), logResponse, loglevel);
 		return HPM_RETRIEVE_WRITE;
 	};
 
@@ -668,8 +696,7 @@ int EWSContext::notify()
 		}
 	}
 	for (const tSubscriptionId &subscription : msg.ErrorSubscriptionIds)
-		nctx.nct_subs.erase(std::remove(nctx.nct_subs.begin(), nctx.nct_subs.end(), subscription),
-		                    nctx.nct_subs.end());
+		std::erase(nctx.nct_subs, subscription);
 	msg.success();
 	// If there are no more subscriptions to monitor or the stream expired, close it
 	// If there were more events than we could deliver in one message, proceed with the next chunk right away
@@ -677,11 +704,11 @@ int EWSContext::notify()
 	nctx.state = nctx.nct_subs.empty() || tp_now() > nctx.expire ?
 	             NS::S_CLOSING : moreAny ? NS::S_SLEEP : NS::S_WRITE;
 	if (nctx.state == NS::S_SLEEP)
-		m_plugin.wakeContext(m_ID, m_plugin.event_stream_interval);
+		m_plugin.wakeContext(m_ctx_id, m_plugin.event_stream_interval);
 	return flush();
 }
 
-int EWSPlugin::retr(int ctx_id) try
+int EWSPlugin::retr(detail::ContextKey ctx_id) try
 {
 	if (ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size() || !contexts[ctx_id])
 		return HPM_RETRIEVE_DONE;
@@ -714,7 +741,7 @@ int EWSPlugin::retr(int ctx_id) try
 	return HPM_RETRIEVE_ERROR;
 }
 
-void EWSPlugin::term(int ctx)
+void EWSPlugin::term(detail::ContextKey ctx)
 {
 	if (ctx >= 0 && static_cast<size_t>(ctx) < contexts.size())
 		contexts[ctx].reset();
@@ -758,8 +785,8 @@ EWSPlugin::SubManager::~SubManager()
 {
 	for (const auto &subKey : inner_subs)
 		ews.unsubscribe(subKey);
-	if (waitingContext)
-		ews.unlinkSubscription(*waitingContext);
+	if (waitingContext >= 0)
+		ews.unlinkSubscription(waitingContext);
 }
 
 /**
@@ -768,7 +795,7 @@ EWSPlugin::SubManager::~SubManager()
 EWSPlugin::WakeupNotify::~WakeupNotify()
 {
 	if (g_ews_plugin && !g_ews_plugin->teardown)
-		wakeup_context(ID);
+		wakeup_context(ctx_id);
 }
 
 void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notification) const try
@@ -799,75 +826,89 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		       rop_util_make_eid_ex(1, fid),
 		       rop_util_make_eid_ex(1, mid)).serialize());
 	};
-	switch (notification->type) {
+	const auto &evt = *notification;
+	switch (evt.type) {
 	case db_notify_type::new_mail: {
-		const DB_NOTIFY_NEW_MAIL* evt = static_cast<DB_NOTIFY_NEW_MAIL*>(notification->pdata);
-		mgr->events.emplace_back(aNewMailEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
+		mgr->events.emplace_back(aNewMailEvent(now,
+			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id)));
 		break;
 	}
 	case db_notify_type::folder_created: {
-		const DB_NOTIFY_FOLDER_CREATED* evt = static_cast<DB_NOTIFY_FOLDER_CREATED*>(notification->pdata);
-		mgr->events.emplace_back(aCreatedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id)));
+		mgr->events.emplace_back(aCreatedEvent(now, mkFid(evt.folder_id),
+			mkFid(evt.parent_id)));
 		break;
 	}
 	case db_notify_type::message_created: {
-		const DB_NOTIFY_MESSAGE_CREATED* evt = static_cast<DB_NOTIFY_MESSAGE_CREATED*>(notification->pdata);
-		mgr->events.emplace_back(aCreatedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
+		mgr->events.emplace_back(aCreatedEvent(now,
+			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id)));
 		break;
 	}
 	case db_notify_type::folder_deleted: {
-		const DB_NOTIFY_FOLDER_DELETED* evt = static_cast<DB_NOTIFY_FOLDER_DELETED*>(notification->pdata);
-		mgr->events.emplace_back(aDeletedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id)));
+		mgr->events.emplace_back(aDeletedEvent(now,
+			mkFid(evt.folder_id), mkFid(evt.parent_id)));
 		break;
 	}
 	case db_notify_type::message_deleted: {
-		const DB_NOTIFY_MESSAGE_DELETED* evt = static_cast<DB_NOTIFY_MESSAGE_DELETED*>(notification->pdata);
-		mgr->events.emplace_back(aDeletedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
+		mgr->events.emplace_back(aDeletedEvent(now,
+			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id)));
 		break;
 	}
 	case db_notify_type::folder_modified: {
-		const DB_NOTIFY_FOLDER_MODIFIED* evt = static_cast<DB_NOTIFY_FOLDER_MODIFIED*>(notification->pdata);
-		mgr->events.emplace_back(tModifiedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id)));
+		/*
+		 * Do not call exmdb.get_folder_properties() here to fetch
+		 * PR_CONTENT_UNREAD.  This handler runs on the exmdb parser
+		 * thread inside dg_notify → event_proc, where an env_context
+		 * is already active.  The exmdb_client_local LPC wrapper
+		 * calls build_env/free_env, which destroys the arena owning
+		 * the current request's dir pointer (use-after-free).
+		 * UnreadCount is optional in EWS ModifiedEvent.
+		 * If really required, the count must be included in the event generated by exmdb.
+		 */
+		mgr->events.emplace_back(tModifiedEvent(now,
+			mkFid(evt.folder_id), mkFid(evt.parent_id)));
 		break;
 	}
 	case db_notify_type::message_modified: {
-		const DB_NOTIFY_MESSAGE_MODIFIED* evt = static_cast<DB_NOTIFY_MESSAGE_MODIFIED*>(notification->pdata);
-		mgr->events.emplace_back(tModifiedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
+		mgr->events.emplace_back(tModifiedEvent(now,
+			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id)));
 		break;
 	}
 	case db_notify_type::folder_moved: {
-		const DB_NOTIFY_FOLDER_MVCP* evt = static_cast<DB_NOTIFY_FOLDER_MVCP*>(notification->pdata);
-		mgr->events.emplace_back(aMovedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id), static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id)),
-		                                     static_cast<aOldFolderId&&>(mkFid(evt->old_parent_id))));
+		mgr->events.emplace_back(aMovedEvent(now, mkFid(evt.folder_id),
+			mkFid(evt.parent_id),
+			static_cast<aOldFolderId &&>(mkFid(evt.old_folder_id)),
+			static_cast<aOldFolderId &&>(mkFid(evt.old_parent_id))));
 		break;
 	}
 	case db_notify_type::message_moved: {
-		const DB_NOTIFY_MESSAGE_MVCP* evt = static_cast<DB_NOTIFY_MESSAGE_MVCP*>(notification->pdata);
-		mgr->events.emplace_back(aMovedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id),
-		                                     static_cast<aOldItemId&&>(mkMid(evt->old_folder_id, evt->old_message_id)),
-		                                     static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id))));
+		mgr->events.emplace_back(aMovedEvent(now,
+			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id),
+			static_cast<aOldItemId &&>(mkMid(evt.old_folder_id, evt.old_message_id)),
+			static_cast<aOldFolderId &&>(mkFid(evt.old_folder_id))));
 		break;
 	}
 	case db_notify_type::folder_copied: {
-		const DB_NOTIFY_FOLDER_MVCP* evt = static_cast<DB_NOTIFY_FOLDER_MVCP*>(notification->pdata);
-		mgr->events.emplace_back(aCopiedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id), static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id)),
-		                                      static_cast<aOldFolderId&&>(mkFid(evt->old_parent_id))));
+		mgr->events.emplace_back(aCopiedEvent(now, mkFid(evt.folder_id),
+			mkFid(evt.parent_id),
+			static_cast<aOldFolderId &&>(mkFid(evt.old_folder_id)),
+			static_cast<aOldFolderId &&>(mkFid(evt.old_parent_id))));
 		break;
 	}
 	case db_notify_type::message_copied: {
-		const DB_NOTIFY_MESSAGE_MVCP* evt = static_cast<DB_NOTIFY_MESSAGE_MVCP*>(notification->pdata);
-		mgr->events.emplace_back(aCopiedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id),
-		                                      static_cast<aOldItemId&&>(mkMid(evt->old_folder_id, evt->old_message_id)),
-		                                      static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id))));
+		mgr->events.emplace_back(aCopiedEvent(now,
+			mkMid(evt.folder_id, evt.message_id),
+			mkFid(evt.folder_id),
+			static_cast<aOldItemId &&>(mkMid(evt.old_folder_id, evt.old_message_id)),
+			static_cast<aOldFolderId &&>(mkFid(evt.old_folder_id))));
 		break;
 	}
 	default:
 		break;
 	}
-	if (mgr->waitingContext)
+	if (mgr->waitingContext >= 0)
 		// Reschedule next wakeup 0.1 seconds. Should be enough to gather related events.
 		// Is still bound to the ObjectCache cleanup cycle and might take significantly longer than that.
-		cache.get(*mgr->waitingContext, std::chrono::milliseconds(100));
+		cache.get(mgr->waitingContext, std::chrono::milliseconds(100));
 } catch (const std::exception &err) {
 	mlog(LV_ERR, "[ews#evt] %s: Failed to process notification: %s",
 		err.what(), timestamp().c_str());
@@ -914,13 +955,13 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
  */
 bool EWSPlugin::linkSubscription(const Structures::tSubscriptionId& subscriptionId, const EWSContext& ctx) const
 {
-	auto mgr = get_submgr(subscriptionId.ID, subscriptionId.timeout);
+	auto mgr = get_submgr(subscriptionId.tsub_rawkey, subscriptionId.timeout);
 	if (mgr == nullptr || mgr->username != ctx.auth_info().username)
 		return false;
 	std::lock_guard subLock(mgr->lock);
-	if (mgr->waitingContext)
-		unlinkSubscription(*mgr->waitingContext);
-	mgr->waitingContext = ctx.ID();
+	if (mgr->waitingContext >= 0)
+		unlinkSubscription(mgr->waitingContext);
+	mgr->waitingContext = ctx.context_id();
 	return true;
 }
 
@@ -965,7 +1006,7 @@ EWSPlugin::make_submgr(const Structures::tSubscriptionId &ID,
     const char *username) const
 {
 	auto mgr = std::make_shared<SubManager>(username, *this);
-	cache.emplace(std::chrono::milliseconds(ID.timeout * 60'000), ID.ID, mgr);
+	cache.emplace(std::chrono::milliseconds(ID.timeout * 60'000), ID.tsub_rawkey, mgr);
 	return mgr;
 }
 
@@ -1035,7 +1076,7 @@ std::string EWSPlugin::timestamp() const try
  *
  * @param      ctx_id  Context to unlink
  */
-void EWSPlugin::unlinkSubscription(int ctx_id) const
+void EWSPlugin::unlinkSubscription(detail::ContextKey ctx_id) const
 {
 	auto& pOldCtx = contexts[ctx_id];
 	if (pOldCtx) {
@@ -1075,8 +1116,13 @@ bool EWSPlugin::unsubscribe(detail::SubscriptionKey subscriptionKey,
  */
 void EWSPlugin::unsubscribe(const detail::ExmdbSubscriptionKey& key) const
 {
-	subscriptions.erase(key);
-	exmdb.unsubscribe_notification(key.first.c_str(), key.second);
+	bool del = false;
+	{
+		std::unique_lock lk(subscriptionLock);
+		del = subscriptions.erase(key) > 0;
+	}
+	if (del)
+		exmdb.unsubscribe_notification(key.first.c_str(), key.second);
 }
 
 /**
@@ -1085,7 +1131,7 @@ void EWSPlugin::unsubscribe(const detail::ExmdbSubscriptionKey& key) const
  * @param     ID       Context ID
  * @param     timeout  Time until wake up
  */
-void EWSPlugin::wakeContext(int ID, std::chrono::milliseconds timeout) const
+void EWSPlugin::wakeContext(detail::ContextKey ID, std::chrono::milliseconds timeout) const
 {
 	cache.emplace(timeout, ID, std::make_shared<WakeupNotify>(ID));
 }
@@ -1104,11 +1150,10 @@ void EWSPlugin::wakeContext(int ID, std::chrono::milliseconds timeout) const
 gromox::EWS::Structures::sFolderEntryId EWSPlugin::mkFolderEntryId(const Structures::sMailboxInfo& mbinfo, uint64_t fid) const
 {
 	Structures::sFolderEntryId feid{};
-	BINARY tmp_bin{0, {.pv = &feid.provider_uid}};
-	rop_util_guid_to_binary(mbinfo.mailboxGuid, &tmp_bin);
-	feid.folder_type = mbinfo.isPublic ? EITLT_PUBLIC_FOLDER : EITLT_PRIVATE_FOLDER;
-	feid.database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
-	feid.global_counter = rop_util_get_gc_array(fid);
+	feid.provider_uid  = mbinfo.mailboxGuid;
+	feid.eid_type      = mbinfo.isPublic ? EITLT_PUBLIC_FOLDER : EITLT_PRIVATE_FOLDER;
+	feid.folder_dbguid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
+	feid.folder_gc     = rop_util_get_gc_array(fid);
 	return feid;
 }
 
@@ -1124,13 +1169,12 @@ gromox::EWS::Structures::sFolderEntryId EWSPlugin::mkFolderEntryId(const Structu
 Structures::sMessageEntryId EWSPlugin::mkMessageEntryId(const Structures::sMailboxInfo& mbinfo, uint64_t fid, uint64_t mid) const
 {
 	Structures::sMessageEntryId meid{};
-	BINARY tmp_bin{0, {.pv = &meid.provider_uid}};
-	rop_util_guid_to_binary(mbinfo.mailboxGuid, &tmp_bin);
-	meid.message_type = mbinfo.isPublic ? EITLT_PUBLIC_MESSAGE : EITLT_PRIVATE_MESSAGE;
-	meid.folder_database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
-	meid.folder_global_counter = rop_util_get_gc_array(fid);
-	meid.message_database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(mid));
-	meid.message_global_counter = rop_util_get_gc_array(mid);
+	meid.provider_uid   = mbinfo.mailboxGuid;
+	meid.eid_type       = mbinfo.isPublic ? EITLT_PUBLIC_MESSAGE : EITLT_PRIVATE_MESSAGE;
+	meid.folder_dbguid  = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
+	meid.folder_gc      = rop_util_get_gc_array(fid);
+	meid.message_dbguid = replid_to_replguid(mbinfo, rop_util_get_replid(mid));
+	meid.message_gc     = rop_util_get_gc_array(mid);
 	return meid;
 }
 
@@ -1155,6 +1199,109 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const 
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_embedded_instance_lifetime, ekey, instance);
 	return instance;
+}
+
+/**
+ * @brief      Start clean up thread
+ *
+ * @param      interval  Scan interval
+ */
+void EWSPlugin::ObjectCache::run(std::chrono::milliseconds interval)
+{
+	if (running)
+		return;
+	running = true;
+	scanThread = std::thread([this, interval]() { periodicScan(interval); });
+}
+
+/**
+ * @brief      Stop clean up thread
+ */
+void EWSPlugin::ObjectCache::stop()
+{
+	if (!running)
+		return;
+	running = false;
+	notify.notify_all();
+	scanThread.join();
+}
+
+/**
+ * @brief      Get cached object
+ *
+ * Throws std::out_of_range if object does not exist.
+ *
+ * @param      key     Object key
+ *
+ * @return     Copy of the cached object
+ */
+EWSPlugin::CacheObj EWSPlugin::ObjectCache::get(const CacheKey &key) const
+{
+	std::lock_guard guard(objectLock);
+	return objects.at(key).second;
+}
+
+/**
+ * @brief      Get cached object and bump lifespan
+ *
+ * Throws std::out_of_range if object does not exist.
+ *
+ * @param      key       Object key
+ * @param      lifespan  New lifespan
+ *
+ * @return     Copy of the cached object
+ */
+EWSPlugin::CacheObj EWSPlugin::ObjectCache::get(const CacheKey &key,
+    std::chrono::milliseconds lifespan)
+{
+	std::lock_guard guard(objectLock);
+	Container &cont = objects.at(key);
+	cont.first = tp_now() + lifespan;
+	return cont.second;
+}
+
+/**
+ * @brief      Remove object from cache
+ *
+ * @param      key       Object key
+ */
+void EWSPlugin::ObjectCache::evict(const CacheKey &key) try
+{
+	node_t del; // delete object after releasing lock to avoid deadlocks
+	std::lock_guard guard(objectLock);
+	del = objects.extract(key);
+} catch (const std::bad_variant_access &) {
+	/* Shut up cov-scan. Getting here is contrived and mostly theoretical. */
+}
+
+/**
+ * @brief      Scan cache for expired objects
+ */
+void EWSPlugin::ObjectCache::scan()
+{
+	std::vector<node_t> del; // delete objects after releasing lock to avoid deadlocks
+	std::lock_guard guard(objectLock);
+	auto now = std::chrono::steady_clock::now();
+	for (auto it = objects.begin(); it != objects.end(); )
+		if (it->second.first < now)
+			del.emplace_back(objects.extract(it++));
+		else
+			++it;
+}
+
+/**
+ * @brief      Periodically invoke scan
+ *
+ * @param sleepTime
+ */
+void EWSPlugin::ObjectCache::periodicScan(std::chrono::milliseconds sleepTime)
+{
+	std::mutex notifyLock;
+	std::unique_lock notifyGuard(notifyLock);
+	while (running) {
+		scan();
+		notify.wait_for(notifyGuard, sleepTime);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

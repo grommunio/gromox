@@ -84,11 +84,11 @@ struct THREAD_DATA {
 static void *transporter_queryservice(const char *service, const char *rq, const std::type_info &);
 
 static char				g_path[256];
-static std::span<const static_module> g_plugin_names;
+static std::span<const generic_module> g_plugin_names;
 static std::string g_local_path;
 static HOOK_FUNCTION g_local_hook;
 static unsigned int g_threads_max, g_threads_min, g_free_num;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_transporter_stop;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
 static std::vector<MESSAGE_CONTEXT *> g_free_list, g_queue_list; /* ctx for generating new messages */
@@ -137,7 +137,6 @@ static constexpr struct dlfuncs server_funcs = {
 	},
 	/* .get_context_num = */ []() { return g_threads_max + g_free_num; },
 	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
-	/* .get_prog_id = */ nullptr,
 	/* .ndr_stack_alloc = */ nullptr,
 	/* .rpc_new_stack = */ nullptr,
 	/* .rpc_free_stack = */ nullptr,
@@ -163,8 +162,8 @@ hook_plug_entity::~hook_plug_entity()
 	mlog(LV_INFO, "transporter: unloading %s", file_name);
 	if (lib_main != nullptr && completed_init)
 		lib_main(PLUGIN_FREE, server_funcs);
-	g_hook_list.erase(std::remove_if(g_hook_list.begin(), g_hook_list.end(),
-		[this](const hook_entry *e) { return e->plib == this; }), g_hook_list.end());
+	std::erase_if(g_hook_list,
+		[this](const hook_entry *e) { return e->plib == this; });
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), file_name);
 }
@@ -176,14 +175,14 @@ hook_plug_entity::~hook_plug_entity()
  *		threads_num				threads number to be created
  *		free_num				free contexts number for hooks to throw out
  */
-void transporter_init(const char *path, const std::span<const static_module> &names,
+void transporter_init(const char *path, const std::span<const generic_module> &names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
     bool ignerr)
 {
 	gx_strlcpy(g_path, path, std::size(g_path));
 	g_plugin_names = names;
 	g_local_path.clear();
-	g_notify_stop = false;
+	g_transporter_stop = false;
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
 	g_free_num = free_num;
@@ -250,7 +249,7 @@ int transporter_run()
 	/* create the scanning thread */
 	auto ret = pthread_create4(&g_scan_id, nullptr, dxp_scanwork, nullptr);
 	if (ret != 0) {
-		g_notify_stop = true;
+		g_transporter_stop = true;
 		mlog(LV_ERR, "transporter: failed to create scanner thread: %s", strerror(ret));
 		return -11;
 	}
@@ -264,7 +263,7 @@ void transporter_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 
-	g_notify_stop = true;
+	g_transporter_stop = true;
 	std::unique_lock tl_hold(g_threads_list_mutex);
 	g_waken_cond.notify_all();
 	while ((pnode = double_list_pop_front(&g_threads_list)) != nullptr) {
@@ -352,7 +351,7 @@ static void *dxp_thrwork(void *arg)
 		g_waken_cond.wait(cm_hold);
 	}
 	
-	while (!g_notify_stop) {
+	while (!g_transporter_stop) {
 		pmessage = message_dequeue_get();
 		if (NULL == pmessage) {
 			pcontext = transporter_dequeue_context();	
@@ -386,7 +385,7 @@ static void *dxp_thrwork(void *arg)
 		} else {
 			cannot_served_times = 0;
 			pcontext = &pthr_data->mctx;
-			if (!pcontext->mail.load_from_str(static_cast<char *>(pmessage->mail_begin),
+			if (!pcontext->mail.refonly_parse(static_cast<char *>(pmessage->mail_begin),
 			    pmessage->mail_length)) {
 				mlog(LV_ERR, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);
@@ -443,7 +442,7 @@ static void *dxp_scanwork(void *arg)
 {
 	DOUBLE_LIST_NODE *pnode;
 
-	while (!g_notify_stop) {
+	while (!g_transporter_stop) {
 		sleep(SCAN_INTERVAL);
 		if (message_dequeue_get_param(MESSAGE_DEQUEUE_HOLDING) == 0)
 			continue;
@@ -488,24 +487,24 @@ static void *dxp_scanwork(void *arg)
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
  *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
-int transporter_load_library(const static_module &mod) try
+int transporter_load_library(const generic_module &mod) try
 {
 	/* check whether the plugin is same as local or remote plugin */
-	if (g_local_path == mod.path) {
-		mlog(LV_ERR, "transporter: %s is already loaded", mod.path);
+	if (g_local_path == mod.file_name) {
+		mlog(LV_ERR, "transporter: %s is already loaded", mod.file_name);
 		return PLUGIN_ALREADY_LOADED;
 	}
 	
     /* check whether the library is already loaded */
 	if (std::any_of(g_lib_list.cbegin(), g_lib_list.cend(),
-	    [&](const hook_plug_entity &p) { return p.file_name == mod.path; })) {
-		mlog(LV_ERR, "transporter: %s is already loaded", mod.path);
+	    [&](const hook_plug_entity &p) { return p.file_name == mod.file_name; })) {
+		mlog(LV_ERR, "transporter: %s is already loaded", mod.file_name);
 		return PLUGIN_ALREADY_LOADED;
 	}
 
 	hook_plug_entity plug;
-	plug.lib_main = mod.efunc;
-	plug.file_name = mod.path;
+	plug.lib_main = mod.lib_main;
+	plug.file_name = mod.file_name;
 	g_lib_list.push_back(std::move(plug));
 	g_cur_lib = &g_lib_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */

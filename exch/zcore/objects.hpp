@@ -7,13 +7,6 @@
 #include "ics_state.hpp"
 
 enum {
-	SPECIAL_CONTAINER_ROOT = 0xc,
-	SPECIAL_CONTAINER_EMPTY = 0xd,
-	SPECIAL_CONTAINER_PROVIDER = 0xe,
-	SPECIAL_CONTAINER_GAL = 0xf,
-};
-
-enum {
 	CONTAINER_TYPE_FOLDER = 1,
 	CONTAINER_TYPE_ABTREE = 2,
 };
@@ -44,12 +37,12 @@ struct container_object {
 	~container_object() { clear(); }
 	static std::unique_ptr<container_object> create(uint8_t type, CONTAINER_ID);
 	void clear();
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	BOOL load_user_table(const RESTRICTION *);
 	BOOL get_container_table_num(BOOL depth, uint32_t *num);
-	BOOL query_container_table(const PROPTAG_ARRAY *, BOOL depth, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	bool query_container_table(proptag_cspan, BOOL depth, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 	BOOL get_user_table_num(uint32_t *);
-	BOOL query_user_table(const PROPTAG_ARRAY *, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	bool query_user_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 
 	uint8_t type = 0;
 	CONTAINER_ID id{};
@@ -66,10 +59,10 @@ struct folder_object {
 	public:
 	static std::unique_ptr<folder_object> create(store_object *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
-	bool is_readonly_prop(uint32_t proptag) const;
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool is_readonly_prop(gromox::proptag_t) const;
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *);
-	BOOL remove_properties(const PROPTAG_ARRAY *);
+	bool remove_properties(proptag_cspan);
 	BOOL get_permissions(PERMISSION_SET *);
 	BOOL set_permissions(const PERMISSION_SET *);
 	BOOL updaterules(uint32_t flags, RULE_LIST *);
@@ -139,36 +132,37 @@ struct message_object {
 	~message_object();
 	static std::unique_ptr<message_object> create(store_object *, BOOL b_new, cpid_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, BOOL b_writable, std::shared_ptr<ics_state>);
 	uint32_t get_instance_id() const { return instance_id; }
-	BOOL check_original_touched(BOOL *touched);
+	ec_error_t check_original_touched(BOOL *touched);
 	bool importing() const { return message_id != 0 && pstate != nullptr; }
 	bool writable() const { return b_writable; }
-	gromox::errno_t init_message(bool fai, cpid_t);
-	uint64_t get_id() const { return message_id; }
+	ec_error_t init_message(bool fai, cpid_t);
+	eid_t get_id() const { return message_id; }
 	store_object *get_store() const { return pstore; }
 	ec_error_t save();
-	BOOL reload();
-	BOOL write_message(const message_content *);
-	BOOL get_recipient_all_proptags(PROPTAG_ARRAY *);
-	BOOL read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *);
-	BOOL get_rowid_begin(uint32_t *begin_id);
-	BOOL get_recipient_num(uint16_t *);
-	BOOL set_rcpts(const TARRAY_SET *);
-	BOOL empty_rcpts();
-	BOOL get_attachments_num(uint16_t *);
-	BOOL delete_attachment(uint32_t attachment_num);
-	BOOL get_attachment_table_all_proptags(PROPTAG_ARRAY *);
-	BOOL query_attachment_table(const PROPTAG_ARRAY *, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
-	BOOL clear_unsent();
-	BOOL get_all_proptags(PROPTAG_ARRAY *);
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
-	BOOL set_properties(TPROPVAL_ARRAY *);
-	BOOL remove_properties(const PROPTAG_ARRAY *);
-	BOOL copy_to(message_object *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle);
-	BOOL set_readflag(uint8_t read_flag, BOOL *changed);
+	ec_error_t reload();
+	ec_error_t write_message(const message_content &);
+	ec_error_t get_recipient_all_proptags(PROPTAG_ARRAY *);
+	ec_error_t read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *);
+	ec_error_t get_rowid_begin(uint32_t *begin_id);
+	ec_error_t get_recipient_num(uint16_t *);
+	ec_error_t set_rcpts(const TARRAY_SET *);
+	ec_error_t empty_rcpts();
+	ec_error_t get_attachments_num(uint16_t *);
+	ec_error_t delete_attachment(uint32_t attachment_num);
+	ec_error_t get_attachment_table_all_proptags(PROPTAG_ARRAY *);
+	ec_error_t query_attachment_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	ec_error_t clear_unsent();
+	ec_error_t get_all_proptags(PROPTAG_ARRAY *);
+	ec_error_t get_properties(proptag_cspan, TPROPVAL_ARRAY *);
+	ec_error_t set_properties(TPROPVAL_ARRAY *);
+	ec_error_t remove_properties(proptag_cspan);
+	ec_error_t copy_to(message_object *src, proptag_cspan exclprop, BOOL force, BOOL *cycle);
+	ec_error_t set_readflag(uint8_t read_flag, BOOL *changed);
 
 	store_object *pstore = nullptr;
 	BOOL b_new = false, b_writable = false, b_touched = false;
-	uint64_t change_num = 0, message_id = 0, folder_id = 0;
+	uint64_t change_num = 0;
+	eid_t message_id{}, folder_id{};
 	cpid_t cpid = CP_ACP;
 	uint32_t instance_id = 0, tag_access = 0;
 	attachment_object *pembedding = nullptr;
@@ -192,10 +186,10 @@ struct attachment_object {
 	uint32_t get_tag_access() const { return pparent->tag_access; }
 	ec_error_t save();
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *);
-	BOOL remove_properties(const PROPTAG_ARRAY *);
-	BOOL copy_properties(attachment_object *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle);
+	bool remove_properties(proptag_cspan);
+	bool copy_properties(attachment_object *src, proptag_cspan exclprop, BOOL force, BOOL *cycle);
 	store_object *get_store() const { return pparent->pstore; }
 	bool writable() const { return b_writable; }
 
@@ -211,9 +205,9 @@ struct user_object {
 	public:
 	static std::unique_ptr<user_object> create(int base_id, uint32_t minid);
 	bool valid();
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	ec_error_t load_list_members(const RESTRICTION *);
-	ec_error_t query_member_table(const PROPTAG_ARRAY *, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	ec_error_t query_member_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 
 	int base_id = 0;
 	uint32_t minid = 0;
@@ -222,13 +216,13 @@ struct user_object {
 
 struct oneoff_object {
 	protected:
-	oneoff_object(const ONEOFF_ENTRYID &);
+	oneoff_object(ONEOFF_ENTRYID &&);
 
 	public:
-	static std::unique_ptr<oneoff_object> create(const ONEOFF_ENTRYID &);
-	ec_error_t get_props(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	static std::unique_ptr<oneoff_object> create(ONEOFF_ENTRYID &&);
+	ec_error_t get_props(proptag_cspan, TPROPVAL_ARRAY *);
 
-	static const uint32_t all_tags_raw[];
+	static const gromox::proptag_t all_tags_raw[];
 	static const PROPTAG_ARRAY all_tags;
 
 	private:
@@ -236,6 +230,6 @@ struct oneoff_object {
 	std::string m_dispname, m_addrtype, m_emaddr;
 };
 
-extern BOOL container_object_fetch_special_property(uint8_t special_type, uint32_t proptag, void **value);
+extern BOOL container_object_fetch_special_property(uint8_t special_type, gromox::proptag_t, void **value);
 extern void container_object_get_container_table_all_proptags(PROPTAG_ARRAY *);
 extern void container_object_get_user_table_all_proptags(PROPTAG_ARRAY *);

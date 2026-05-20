@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request
@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <poll.h>
 #include <string>
 #include <string_view>
@@ -36,7 +37,13 @@
 #include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <openssl/err.h>
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
+#	define WITH_SSLPROV 1
+#	include <openssl/provider.h>
+#endif
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -49,6 +56,7 @@
 #include <gromox/fileio.h>
 #include <gromox/hpm_common.h>
 #include <gromox/http.hpp>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/threads_pool.hpp>
@@ -88,18 +96,81 @@ struct VIRTUAL_CONNECTION {
 };
 }
 
+enum {
+	M_UNSPECIFIED_CONN, M_UNENCRYPTED_CONN, M_TLS_CONN,
+};
+
 static constexpr time_duration OUT_CHANNEL_MAX_WAIT = std::chrono::seconds(10);
-static std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
+static constexpr char uri_autod_xml[] = "/autodiscover/autodiscover.xml";
+
+static bool is_autodiscover_xml(const char *uri)
+{
+	auto z = sizeof(uri_autod_xml) - 1;
+	return strncasecmp(uri, uri_autod_xml, z) == 0 &&
+	       (uri[z] == '\0' || uri[z] == '/' || uri[z] == '?');
+}
 
 namespace {
+
+class VCONN_REF;
+
+struct http_parser {
+	http_parser(size_t context_num, time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
+	~http_parser();
+	int run();
+	VCONN_REF get_vconnection(const char *host, int port, const char *cookie);
+	ssize_t readsock(http_context *, const char *tag, void *buf, unsigned int size);
+
+	int auth_finalize(http_context &, const char *);
+	int auth_krb(http_context &ctx, std::string_view input, std::string &output);
+	int auth_exthelper(http_context &, const std::string &proc, const char *input, std::string &output);
+	tproc_status auth_spnego(http_context &ctx, const char *past_method);
+	tproc_status auth_basic(http_context *, const char *);
+	tproc_status auth(http_context &ctx);
+
+	tproc_status http_end(http_context *);
+	tproc_status initssl(http_context *);
+	tproc_status rdhead_no(http_context *, char *, unsigned int);
+	tproc_status rdhead_mt(http_context *, char *, unsigned int);
+	tproc_status rdhead_st(http_context *, ssize_t);
+	tproc_status rdhead(http_context *);
+	tproc_status rdbody_nochan2(http_context *);
+	tproc_status rdbody_nochan(http_context *);
+	tproc_status rdbody(http_context *);
+	tproc_status wrrep(http_context *);
+	tproc_status wrrep_nobuf(http_context *);
+	tproc_status waitinchannel(http_context *, RPC_OUT_CHANNEL *);
+	tproc_status waitrecycled(http_context *, RPC_OUT_CHANNEL *);
+	tproc_status wait(http_context *);
+	void vconnection_async_reply(const char *, int, const char *, DCERPC_CALL *);
+
+#ifdef WITH_SSLPROV
+	struct provfree { inline void operator()(OSSL_PROVIDER *x) const { OSSL_PROVIDER_unload(x); }};
+	std::unique_ptr<OSSL_PROVIDER, provfree> sslprov_default, sslprov_legacy;
+#endif
+	size_t g_context_num = 0;
+	gromox::atomic_bool g_async_stop{false};
+	bool g_support_tls = false;
+	SSL_CTX *g_ssl_ctx = nullptr;
+	int g_max_auth_times = 0;
+	int g_block_auth_fail = 0;
+	time_duration g_timeout;
+	std::unique_ptr<http_context[]> g_context_list;
+	std::vector<schedule_context *> g_context_list2;
+	std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
+	std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
+	std::mutex g_vconnection_lock; /* protects g_vconnection_hash */
+	std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
+	std::string gss_helper_program;
+};
+
 class VCONN_REF {
 	public:
 	VCONN_REF() = default;
-	explicit VCONN_REF(VIRTUAL_CONNECTION *p, decltype(g_vconnection_hash)::iterator i) :
+	explicit VCONN_REF(VIRTUAL_CONNECTION *p, decltype(http_parser::g_vconnection_hash)::iterator i) :
 		pvconnection(p), m_hold(p->lock), m_iter(std::move(i)) {}
 	~VCONN_REF() { put(); }
 	NOMOVE(VCONN_REF);
-	bool operator!=(std::nullptr_t) const { return pvconnection != nullptr; }
 	bool operator==(std::nullptr_t) const { return pvconnection == nullptr; }
 	void put();
 	VIRTUAL_CONNECTION *operator->() { return pvconnection; }
@@ -107,28 +178,19 @@ class VCONN_REF {
 	private:
 	VIRTUAL_CONNECTION *pvconnection = nullptr;
 	std::unique_lock<std::mutex> m_hold;
-	decltype(g_vconnection_hash)::iterator m_iter;
+	decltype(http_parser::g_vconnection_hash)::iterator m_iter;
 };
+
 }
 
-static size_t g_context_num;
-static gromox::atomic_bool g_async_stop;
-static bool g_support_tls;
-static SSL_CTX *g_ssl_ctx;
-static int g_max_auth_times;
-static int g_block_auth_fail;
-static time_duration g_timeout;
 std::string g_http_remote_host_hdr;
 unsigned int g_http_debug;
 size_t g_rqbody_flush_size, g_rqbody_max_size;
 bool g_enforce_auth;
-static thread_local HTTP_CONTEXT *g_context_key;
-static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
-static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
-static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
-static std::mutex g_vconnection_lock;
 time_duration g_http_basic_auth_validity;
+static thread_local HTTP_CONTEXT *g_context_key;
+static std::optional<http_parser> g_parser;
+static listener_ctx http_listen_ctx;
 
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
 
@@ -158,11 +220,20 @@ void http_report()
 	mlog(LV_INFO, "Ctx  fd  src->host");
 	mlog(LV_INFO, "   ChTy  RPCEndpoint, Username");
 	mlog(LV_INFO, "-------------------------------------------------------------------------------");
-	for (size_t i = 0; i < g_context_num; ++i)
-		httpctx_report(g_context_list[i], i);
+	for (size_t i = 0; i < g_parser->g_context_num; ++i)
+		httpctx_report(g_parser->g_context_list[i], i);
 }
 
 void http_parser_init(size_t context_num, time_duration timeout,
+	int max_auth_times, int block_auth_fail, bool support_tls,
+	const char *certificate_path, const char *cb_passwd,
+	const char *key_path)
+{
+	g_parser.emplace(context_num, timeout, max_auth_times, block_auth_fail,
+		support_tls, certificate_path, cb_passwd, key_path);
+}
+
+http_parser::http_parser(size_t context_num, time_duration timeout,
 	int max_auth_times, int block_auth_fail, bool support_tls,
 	const char *certificate_path, const char *cb_passwd,
 	const char *key_path)
@@ -182,6 +253,7 @@ void http_parser_init(size_t context_num, time_duration timeout,
 	else
 		g_certificate_passwd.clear();
 	g_private_key_path = key_path;
+	gss_helper_program = g_config_file->get_value("gss_program");
 }
 
 #ifdef OLD_SSL
@@ -205,16 +277,22 @@ VIRTUAL_CONNECTION::~VIRTUAL_CONNECTION()
 		pdu_processor_destroy(std::move(pprocessor));
 }
 
-/* 
- *    @return
- *         0    success
- *        <>0    fail    
- */
 int http_parser_run()
 {
+	return g_parser->run();
+}
+
+int http_parser::run()
+{
+	SSL_library_init();
+	OpenSSL_add_all_algorithms();
+#ifdef WITH_SSLPROV
+	sslprov_default.reset(OSSL_PROVIDER_load(nullptr, "default"));
+	sslprov_legacy.reset(OSSL_PROVIDER_load(nullptr, "legacy"));
+	if (sslprov_legacy == nullptr)
+		mlog(LV_ERR, "openssl \"legacy\" provider not available; Outlook 2010 won't be able to login");
+#endif
 	if (g_support_tls) {
-		SSL_library_init();
-		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {
@@ -279,17 +357,23 @@ int http_parser_run()
 
 void http_parser_stop()
 {
+	g_parser->g_async_stop = true;
+	g_parser.reset();
+}
+
+http_parser::~http_parser()
+{
 	g_context_list2.clear();
 	g_context_list.reset();
-	g_vconnection_hash.clear();
-	if (g_support_tls && g_ssl_ctx != nullptr) {
-		SSL_CTX_free(g_ssl_ctx);
-		g_ssl_ctx = NULL;
+	{
+		std::lock_guard lk(g_vconnection_lock); /* shut up cov-scan */
+		g_vconnection_hash.clear();
 	}
+	if (g_support_tls && g_ssl_ctx != nullptr)
+		SSL_CTX_free(g_ssl_ctx);
 	if (g_support_tls && g_ssl_mutex_buf != nullptr) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
-		g_ssl_mutex_buf.reset();
 	}
 }
 
@@ -308,7 +392,7 @@ time_point http_parser_get_context_timestamp(const schedule_context *ctx)
 	return static_cast<const http_context *>(ctx)->connection.last_timestamp;
 }
 
-static VCONN_REF http_parser_get_vconnection(const char *host,
+VCONN_REF http_parser::get_vconnection(const char *host,
     int port, const char *conn_cookie)
 {
 	char tmp_buff[384];
@@ -333,12 +417,12 @@ void VCONN_REF::put()
 	if (pvconnection == nullptr)
 		return;
 	m_hold.unlock();
-	std::unique_lock vc_hold(g_vconnection_lock);
+	std::unique_lock vc_hold(g_parser->g_vconnection_lock);
 	pvconnection->reference --;
-	if (0 == pvconnection->reference &&
-		NULL == pvconnection->pcontext_in &&
-		NULL == pvconnection->pcontext_out) {
-		auto nd = g_vconnection_hash.extract(m_iter);
+	if (pvconnection->reference == 0 &&
+	    pvconnection->pcontext_in == nullptr &&
+	    pvconnection->pcontext_out == nullptr) {
+		auto nd = g_parser->g_vconnection_hash.extract(m_iter);
 		vc_hold.unlock();
 		/* end locked region before running ~nd (~VCONN_REF, pdu_processor_destroy) */
 	}
@@ -426,6 +510,7 @@ static const char *status_text(http_status s)
 std::string http_make_err_response(const http_context &ctx, http_status code)
 {
 	if (static_cast<int>(code) < 0)
+		/* see http.hpp for meaning */
 		code = static_cast<http_status>(-static_cast<int>(code));
 	auto msg = status_text(code);
 	if (static_cast<int>(code) >= 1000)
@@ -441,7 +526,7 @@ std::string http_make_err_response(const http_context &ctx, http_status code)
 		static_cast<int>(code), msg, dstring, strlen(msg) + 2,
 		ctx.b_close ? "close" : "keep-alive");
 	if (!ctx.b_close)
-		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
+		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_parser->g_timeout));
 	if (code == http_status::unauthorized) {
 		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\", charset=\"utf-8\"\r\n";
 		if (g_config_file->get_ll("http_auth_spnego")) {
@@ -486,7 +571,7 @@ static tproc_status http_done(http_context *ctx, http_status code) try
 	return tproc_status::loop;
 }
 
-static tproc_status http_end(http_context *ctx)
+tproc_status http_parser::http_end(http_context *ctx)
 {
 	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_insert_ctx(ctx);
@@ -498,7 +583,7 @@ static tproc_status http_end(http_context *ctx)
 	if (ctx->pchannel != nullptr) {
 		if (ctx->channel_type == hchannel_type::in) {
 			auto chan = static_cast<RPC_IN_CHANNEL *>(ctx->pchannel);
-			auto conn = http_parser_get_vconnection(ctx->host,
+			auto conn = get_vconnection(ctx->host,
 			            ctx->port, chan->connection_cookie);
 			if (conn != nullptr) {
 				if (conn->pcontext_in == ctx)
@@ -508,7 +593,7 @@ static tproc_status http_end(http_context *ctx)
 			delete chan;
 		} else {
 			auto chan = static_cast<RPC_OUT_CHANNEL *>(ctx->pchannel);
-			auto conn = http_parser_get_vconnection(ctx->host,
+			auto conn = get_vconnection(ctx->host,
 			            ctx->port, chan->connection_cookie);
 			if (conn != nullptr) {
 				if (conn->pcontext_out == ctx)
@@ -534,7 +619,7 @@ static tproc_status http_end(http_context *ctx)
  * %sleeping:		need to sleep the context
  * %close:		need to cose the context
  */
-static tproc_status htparse_initssl(http_context *pcontext)
+tproc_status http_parser::initssl(http_context *pcontext)
 {
 	if (NULL == pcontext->connection.ssl) {
 		pcontext->connection.ssl = SSL_new(g_ssl_ctx);
@@ -582,7 +667,10 @@ static enum http_method http_method_lookup(const char *s)
 #undef E
 }
 
-static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
+/**
+ * (No request line with method has been seen yet) - Read a HTTP request line.
+ */
+tproc_status http_parser::rdhead_no(http_context *pcontext, char *line,
     unsigned int line_length)
 {
 	auto &ctx = *pcontext;
@@ -638,7 +726,10 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
+/**
+ * (A HTTP request line with method has been seen) - Read header line(s)
+ */
+tproc_status http_parser::rdhead_mt(http_context *pcontext, char *line,
     unsigned int line_length) try
 {
 	auto &ctx = *pcontext;
@@ -704,11 +795,13 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	} else if (0 == strcasecmp(field_name, "Cookie")) {
 		auto &j = pcontext->request.f_cookie;
 		if (!j.empty())
-			j += ", ";
+			j += "; ";
 		j.append(ptoken, tmp_len);
 	} else if (g_http_remote_host_hdr.size() > 0 &&
 	    strcasecmp(field_name, g_http_remote_host_hdr.c_str()) == 0) {
 		auto &cn = pcontext->connection;
+		gx_strlcpy(cn.proxy_addr, cn.client_addr, std::size(cn.proxy_addr));
+		cn.proxy_port = cn.client_port;
 		snprintf(cn.client_addr, std::size(cn.client_addr), "%.*s", static_cast<int>(tmp_len), ptoken);
 		cn.client_port = 0;
 	} else {
@@ -728,7 +821,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	return http_done(pcontext, http_status::enomem_CL);
 }
 
-static tproc_status htp_auth_basic(http_context *pcontext, const char *token) try
+tproc_status http_parser::auth_basic(http_context *pcontext, const char *token) try
 {
 	auto &ctx = *pcontext;
 	auto now = tp_now();
@@ -746,27 +839,31 @@ static tproc_status htp_auth_basic(http_context *pcontext, const char *token) tr
 		return tproc_status::runoff;
 	}
 
-	char decoded[1024];
-	size_t decode_len = 0;
-	if (decode64(token, strlen(token), decoded, std::size(decoded), &decode_len) != 0)
-		return tproc_status::runoff;
-	auto p = strchr(decoded, ':');
+	auto decoded = base64_decode(token);
+	auto p = strchr(decoded.data(), ':');
 	if (p == nullptr)
 		return tproc_status::runoff;
 	*p++ = '\0';
-	gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
+	gx_strlcpy(ctx.username, decoded.data(), std::size(ctx.username));
 	gx_strlcpy(ctx.password, p, std::size(ctx.password));
 	pcontext->auth_method = auth_method::basic;
-	if (!system_services_judge_user(pcontext->username)) {
+	const char *auth_user = pcontext->username;
+	std::string imp_store, imp_auth;
+	bool is_impersonation = false;
+	if (is_autodiscover_xml(pcontext->request.f_request_uri.c_str()) &&
+	    parse_impersonation_address(pcontext->username, imp_store, imp_auth,
+	    is_impersonation) && is_impersonation)
+		auth_user = imp_auth.c_str();
+	if (!system_services_judge_user(auth_user)) {
 		pcontext->log(LV_DEBUG,
 			"user %s is denied by user filter",
-			pcontext->username);
+			auth_user);
 		pcontext->auth_status = http_status::service_unavailable;
 		return tproc_status::runoff;
 	}
 
 	sql_meta_result mres;
-	if (system_services_auth_login(pcontext->username, pcontext->password,
+	if (system_services_auth_login(auth_user, pcontext->password,
 	    WANTPRIV_BASIC, mres)) {
 		/* Success */
 		gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
@@ -792,7 +889,7 @@ static tproc_status htp_auth_basic(http_context *pcontext, const char *token) tr
 	pcontext->log(LV_WARN, "HTTP auth rejected: %s", mres.errstr.c_str());
 	pcontext->auth_times ++;
 	if (pcontext->auth_times >= g_max_auth_times)
-		system_services_ban_user(pcontext->username, g_block_auth_fail);
+		system_services_ban_user(auth_user, g_block_auth_fail);
 	return tproc_status::runoff;
 } catch (const std::bad_alloc &) {
 	pcontext->b_close = TRUE;
@@ -812,13 +909,12 @@ static void ntlm_stop(struct HXproc &pi)
 		close(pi.p_stdout);
 	if (pi.p_stderr >= 0)
 		close(pi.p_stderr);
-	mlog(LV_DEBUG, "NTLM(%ld) terminating the ntlm_auth worker", static_cast<long>(pi.p_pid));
 	kill(pi.p_pid, SIGKILL);
 	waitpid(pi.p_pid, nullptr, 0);
 	pi.p_pid = 0;
 }
 
-static int htp_auth_finalize(http_context &ctx, const char *user)
+int http_parser::auth_finalize(http_context &ctx, const char *user)
 {
 	sql_meta_result mres;
 	auto err = mysql_adaptor_meta(user, 0, mres);
@@ -840,17 +936,15 @@ static int htp_auth_finalize(http_context &ctx, const char *user)
 	return 1;
 }
 
-static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
-    const char *encinput, std::string &output)
+int http_parser::auth_exthelper(http_context &ctx, const std::string &prog,
+    const char *encinput, std::string &gss_output)
 {
 	auto encsize = strlen(encinput);
 	auto &pinfo = ctx.ntlm_proc;
-	output.clear();
+	gss_output.clear();
 
 	if (pinfo.p_pid <= 0) {
-		if (prog == nullptr || *prog == '\0')
-			prog = "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp";
-		auto args = HX_split(prog, " ", nullptr, 0);
+		auto args = HX_split(prog.c_str(), " ", nullptr, 0);
 		auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(args); });
 		pinfo.p_flags = HXPROC_STDIN | HXPROC_STDOUT | HXPROC_STDERR;
 		auto ret = HXproc_run_async(&args[0], &pinfo);
@@ -858,18 +952,15 @@ static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
 			mlog(LV_ERR, "execv ntlm_auth: %s", strerror(-ret));
 			return -1;
 		}
-		mlog(LV_DEBUG, "ntlm_auth is pid %d", pinfo.p_pid);
 		if (HXio_fullwrite(pinfo.p_stdin, "YR ", 3) < 0) {
 			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
 			return -1;
 		}
-		mlog(LV_DEBUG, "NTLM> YR %s", encinput);
 	} else {
 		if (HXio_fullwrite(pinfo.p_stdin, "KK ", 3) < 0) {
 			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
 			return -1;
 		}
-		mlog(LV_DEBUG, "NTLM> KK %s", encinput);
 	}
 	if (HXio_fullwrite(pinfo.p_stdin, encinput, encsize) < 0 ||
 	    HXio_fullwrite(pinfo.p_stdin, "\n", 1) < 0) {
@@ -878,61 +969,82 @@ static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
 	}
 
 	struct pollfd pfd[] = {{pinfo.p_stdout, POLLIN}, {pinfo.p_stderr, POLLIN}};
+	std::string output, errbuf;
+	gss_output.clear();
  retry:
-	auto ret = poll(pfd, std::size(pfd), 10 * 1000);
-	if (ret < 0) {
-		if (errno == EINTR)
-			goto retry;
-		mlog(LV_INFO, "ntlm_auth poll: %s", strerror(errno));
-		return -1;
-	} else if (ret == 0) {
-		mlog(LV_INFO, "ntlm_auth poll timeout");
-		return -1;
+	auto nl_pos = errbuf.rfind('\n');
+	if (nl_pos != errbuf.npos) {
+		mlog(LV_DEBUG, "ntlm_auth(stderr): %.*s", static_cast<int>(nl_pos), errbuf.c_str());
+		errbuf.erase(0, nl_pos + 1);
+		goto retry;
 	}
-
-	output.clear();
-	output.resize(8192);
-	if (pfd[1].revents & POLLIN) {
-		/* Drain stderr first */
-		auto bytes = read(pinfo.p_stderr, output.data(), output.size());
-		if (bytes > 0) {
-			output[bytes] = '\0';
-			HX_chomp(output.data());
-			output.resize(strlen(output.c_str()));
-			mlog(LV_DEBUG, "ntlm_auth(stderr):%c%s",
-				output.find('\n') != output.npos ? '\n' : ' ',
-				output.c_str());
-			goto retry;
+	nl_pos = output.find('\n');
+	if (nl_pos == output.npos) {
+		/* Line on stdout not complete yet, read more */
+		auto ret = poll(pfd, std::size(pfd), 10 * 1000);
+		if (ret < 0) {
+			if (errno == EINTR)
+				goto retry;
+			mlog(LV_INFO, "ntlm_auth poll: %s", strerror(errno));
+			return -1;
+		} else if (ret == 0) {
+			mlog(LV_INFO, "ntlm_auth poll timeout");
+			return -1;
 		}
-	}
-	auto bytes = read(pinfo.p_stdout, output.data(), output.size());
-	if (bytes < 0) {
-		mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
-		return -1;
-	} else if (bytes == 0) {
-		mlog(LV_ERR, "ntlm_auth(stdout) EOF");
-		return -1;
-	}
-	output[bytes] = '\0';
-	HX_chomp(output.data());
-	output.resize(strlen(output.c_str()));
-	mlog(LV_DEBUG, "NTLM(%d)< %s", static_cast<int>(pinfo.p_pid), output.c_str());
 
-	if (output[0] == 'T' && output[1] == 'T') { // TT
-		output.erase(0, 3);
+		char buf[4096];
+		if (pfd[1].revents & POLLIN) {
+			/* Drain stderr first */
+			auto bytes = read(pinfo.p_stderr, buf, std::size(buf) - 1);
+			if (bytes > 0)
+				errbuf.append(buf, bytes);
+		}
+		if (pfd[0].revents & POLLIN) {
+			auto bytes = read(pinfo.p_stdout, buf, std::size(buf) - 1);
+			if (bytes < 0) {
+				mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
+				return -1;
+			} else if (bytes == 0) {
+				mlog(LV_ERR, "ntlm_auth(stdout) EOF");
+				return -1;
+			}
+			output.append(buf, bytes);
+		}
+		goto retry;
+	}
+
+	if (output[0] == 'T' && output[1] == 'T' && HX_isspace(output[2])) { // TT
+		gss_output.assign(&output[3], &output[nl_pos]);
 		return -99; /* MOAR */
 	}
-	output.clear();
-	if (output[0] == 'A' && output[1] == 'F') // AF
+	std::string_view thisline(&output[0], &output[nl_pos]);
+	if (output[0] == 'A' && output[1] == 'F' && HX_isspace(output[2])) { // AF
 		/*
+		 * squid-2.5-style
+		 *
 		 * The AF response contains the winbind (Unix-side) username.
 		 * Depending on smb.conf "winbind use default domain", this can
 		 * be just "user5", or it can be "DOMAIN\user5". Either way, an
 		 * altnames entry is needed for this.
+		 *
+		 * samba's ntlm_auth returns "AF username".
+		 * squid's negotiate_wrapper_auth returns "AF = username".
 		 */
-		return htp_auth_finalize(ctx, output.c_str());
-	else if (output[0] == 'N' && output[1] == 'A')
+		auto v = gx_split(thisline, ' ');
+		if (v.size() == 0)
+			return -1;
+		return auth_finalize(ctx, v.back().c_str());
+	} else if (output[0] == 'O' && output[1] == 'K' && HX_isspace(output[2])) {
+		/* squid-3.4-style */
+		auto v = gx_split(thisline, ' ');
+		for (auto &&elem : v)
+			if (strncmp(elem.c_str(), "user=", 5) == 0)
+				return auth_finalize(ctx, &elem[5]);
+		mlog(LV_DEBUG, "ext_helper(%d): no user= parameter found in response", static_cast<int>(pinfo.p_pid));
+		return -1;
+	} else if (output[0] == 'N' && output[1] == 'A') {
 		return 0;
+	}
 	return -1;
 }
 
@@ -968,13 +1080,14 @@ static void krblog(const char* msg, OM_uint32 major, OM_uint32 minor)
  * returns negative for complete failure, returns 0 for auth-unsuccesful, 1 for
  * auth-success, 99 for GSS continue.
  */
-static int auth_krb(http_context &ctx, const char *input, size_t isize,
+int http_parser::auth_krb(http_context &ctx, std::string_view input,
     std::string &output)
 {
 	OM_uint32 status{};
 	gss_name_t gss_srv_name{}, gss_username{};
 	gss_buffer_desc gss_input_buf{}, gss_user_buf{}, gss_output_token{};
-	auto cl_0 = HX::make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() { ctx.clear_gss(); });
+	auto cl_1 = HX::make_scope_exit([&]() {
 		if (gss_output_token.length != 0)
 			gss_release_buffer(&status, &gss_output_token);
 		if (gss_user_buf.length != 0)
@@ -988,31 +1101,29 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 	if (ctx.m_gss_srv_creds == GSS_C_NO_CREDENTIAL) {
 		ctx.m_gss_ctx = GSS_C_NO_CONTEXT;
 		auto p = g_config_file->get_value("http_krb_service_principal");
-		std::string principal;
-		if (p != nullptr && *p != '\0')
-			principal = p;
-		else
-			principal = "gromox@"s + p;
-		mlog(LV_DEBUG, "krb service principal = \"%s\"", principal.c_str());
-		gss_input_buf.value  = principal.data();
-		gss_input_buf.length = principal.length() + 1;
-		auto ret = gss_import_name(&status, &gss_input_buf,
-		           GSS_C_NT_HOSTBASED_SERVICE, &gss_srv_name);
-		if (ret != GSS_S_COMPLETE) {
-			krblog("Unable to import server name", ret, status);
-			return 0;
+		if (p != nullptr && *p != '\0') {
+			gss_input_buf.value  = deconst(p);
+			gss_input_buf.length = strlen(p);
+			auto ret = gss_import_name(&status, &gss_input_buf,
+				   GSS_C_NT_HOSTBASED_SERVICE, &gss_srv_name);
+			if (ret != GSS_S_COMPLETE) {
+				krblog("Unable to import server name", ret, status);
+				return 0;
+			}
+		} else {
+			gss_srv_name = GSS_C_NO_NAME;
 		}
-		ret = gss_acquire_cred(&status, gss_srv_name, GSS_C_INDEFINITE,
-		      GSS_C_NO_OID_SET, GSS_C_ACCEPT, &ctx.m_gss_srv_creds,
-		      nullptr, nullptr);
+		auto ret = gss_acquire_cred(&status, gss_srv_name,
+		           GSS_C_INDEFINITE, GSS_C_NO_OID_SET, GSS_C_ACCEPT,
+		           &ctx.m_gss_srv_creds, nullptr, nullptr);
 		if (ret != GSS_S_COMPLETE) {
 			krblog("Unable to acquire credentials handle", ret, status);
 			return 0;
 		}
 	}
 
-	gss_input_buf.value  = deconst(input);
-	gss_input_buf.length = isize;
+	gss_input_buf.value  = deconst(input.data());
+	gss_input_buf.length = input.size();
 	auto ret = gss_accept_sec_context(&status, &ctx.m_gss_ctx,
 	           ctx.m_gss_srv_creds, &gss_input_buf, GSS_C_NO_CHANNEL_BINDINGS,
 	           &gss_username, nullptr, &gss_output_token, nullptr, nullptr, nullptr);
@@ -1021,8 +1132,10 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 	else
 		output.clear();
 
-	if (ret == GSS_S_CONTINUE_NEEDED)
+	if (ret == GSS_S_CONTINUE_NEEDED) {
+		cl_0.release(); /* keep state for next round */
 		return -99; /* MOAR */
+	}
 	output.clear();
 	if (ret != GSS_S_COMPLETE) {
 		krblog("Unable to accept security context", ret, status);
@@ -1035,40 +1148,36 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 		return 0;
 	}
 	std::string ub(static_cast<const char *>(gss_user_buf.value), gss_user_buf.length);
-	mlog(LV_DEBUG, "Kerberos username: %s", ub.c_str());
-	return htp_auth_finalize(ctx, ub.c_str());
+	return auth_finalize(ctx, ub.c_str());
 }
 #endif
 
-static tproc_status htp_auth_spnego(http_context &ctx, const char *past_method)
+tproc_status http_parser::auth_spnego(http_context &ctx,
+    const char *past_method) try
 {
-	bool rq_ntlmssp = strncmp(past_method, "TlRMTVNT", 8) == 0;
-	auto the_helper = g_config_file->get_value(rq_ntlmssp ? "ntlmssp_program" : "gss_program");
-
-	if (strcmp(the_helper, "internal-gss") != 0) {
-		auto ret = htp_auth_ntlmssp(ctx, the_helper, past_method,
-		           ctx.last_gss_output);
+	if (gss_helper_program != "internal-gss") {
+		auto ret = auth_exthelper(ctx, gss_helper_program, past_method, ctx.last_gss_output);
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
 		ctx.auth_method = auth_method::negotiate_b64;
 		if (ret <= 0 && ret != -99)
 			ntlm_stop(ctx.ntlm_proc);
-	} else {
-#ifdef HAVE_GSSAPI
-		char decoded[4096];
-		size_t decode_len = 0;
-		if (decode64(past_method, strlen(past_method), decoded,
-		    std::size(decoded), &decode_len) != 0)
-			return tproc_status::runoff;
-		auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
-		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
-		ctx.auth_method = auth_method::negotiate;
-#else
-		static bool y = false;
-		if (!y)
-			mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
-		y = true;
-#endif
+		return tproc_status::runoff;
 	}
+
+#ifdef HAVE_GSSAPI
+	auto decoded = base64_decode(past_method);
+	auto ret = auth_krb(ctx, decoded, ctx.last_gss_output);
+	ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
+	ctx.auth_method = auth_method::negotiate;
+#else
+	static bool y = false;
+	if (!y)
+		mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
+	y = true;
+#endif
+	return tproc_status::runoff;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return tproc_status::runoff;
 }
 
@@ -1083,7 +1192,7 @@ static tproc_status htp_auth_spnego(http_context &ctx, const char *past_method)
  * Only if the request is to be hard-aborted can htp_auth return with a
  * different status from http_done().
  */
-static tproc_status htp_auth(http_context &ctx)
+tproc_status http_parser::auth(http_context &ctx)
 {
 	auto line = http_parser_request_head(ctx.request.f_others, "Authorization");
 	if (line == nullptr && ctx.auth_status == http_status::ok &&
@@ -1116,12 +1225,12 @@ static tproc_status htp_auth(http_context &ctx)
 	}
 	if (strcasecmp(method, "Basic") == 0 &&
 	    g_config_file->get_ll("http_auth_basic")) {
-		auto ret = htp_auth_basic(&ctx, past_method);
+		auto ret = auth_basic(&ctx, past_method);
 		if (ret != tproc_status::runoff)
 			return ret;
-	} else if (strcasecmp(method, "Negotiate") == 0 &&
+	} else if ((strcasecmp(method, "Negotiate") == 0 || strcasecmp(method, "NTLM") == 0) &&
 	    g_config_file->get_ll("http_auth_spnego")) {
-		auto ret = htp_auth_spnego(ctx, past_method);
+		auto ret = auth_spnego(ctx, past_method);
 		if (ret != tproc_status::runoff)
 			return ret;
 	}
@@ -1272,7 +1381,7 @@ static tproc_status http_done_soft(http_context &ctx, enum http_status status) t
 	return tproc_status::loop;
 }
 
-static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_read)
+tproc_status http_parser::rdhead_st(http_context *pcontext, ssize_t actual_read)
 {
 	while (true) {
 		pcontext->stream_in.try_mark_line();
@@ -1294,8 +1403,8 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		auto line_length = pcontext->stream_in.readline(&line);
 		if (0 != line_length) {
 			auto ret = *pcontext->request.method == '\0' ?
-			           htparse_rdhead_no(pcontext, line, line_length) :
-			           htparse_rdhead_mt(pcontext, line, line_length);
+			           rdhead_no(pcontext, line, line_length) :
+			           rdhead_mt(pcontext, line, line_length);
 			if (ret != tproc_status::runoff)
 				return ret;
 			continue;
@@ -1313,7 +1422,7 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 			return http_done(pcontext, http_status::enomem_CL);
 		}
 		auto stream_1_written = pcontext->stream_in.get_total_length();
-		auto ret = htp_auth(*pcontext);
+		auto ret = auth(*pcontext);
 		if (ret != tproc_status::runoff)
 			return ret;
 		if (pcontext->auth_status >= http_status::bad_request)
@@ -1354,7 +1463,7 @@ static char *now_str(char *buf, size_t bufsize)
 	return buf;
 }
 
-static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
+ssize_t http_parser::readsock(HTTP_CONTEXT *pcontext, const char *tag,
     void *pbuff, unsigned int size)
 {
 	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
@@ -1366,9 +1475,12 @@ static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
 		auto &co = pcontext->connection;
 		char tbuf[24];
 		now_str(tbuf, std::size(tbuf));
-		fprintf(stderr, "\e[1m<< %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
+		fprintf(stderr, "\e[1m<< %s [%s]:%hu",
 		        now_str(tbuf, std::size(tbuf)),
-		        co.client_addr, co.client_port,
+		        co.client_addr, co.client_port);
+		if (co.proxy_port != 0)
+			fprintf(stderr, "->[%s]:%hu", co.proxy_addr, co.proxy_port);
+		fprintf(stderr, "->[%s]:%hu %zd bytes\e[0m\n",
 		        co.server_addr, co.server_port, actual_read);
 		auto pfx = utf8_printable_prefix(pbuff, actual_read);
 		if (pfx == static_cast<size_t>(actual_read)) {
@@ -1386,7 +1498,7 @@ static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
 	return actual_read;
 }
 
-static tproc_status htparse_rdhead(http_context *pcontext)
+tproc_status http_parser::rdhead(http_context *pcontext)
 {
 	unsigned int size = STREAM_BLOCK_SIZE;
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
@@ -1394,7 +1506,7 @@ static tproc_status htparse_rdhead(http_context *pcontext)
 		mlog(LV_ERR, "E-1180: ENOMEM");
 		return http_done(pcontext, http_status::enomem_CL);
 	}
-	auto actual_read = htparse_readsock(pcontext, "EOH", pbuff, size);
+	auto actual_read = readsock(pcontext, "EOH", pbuff, size);
 	auto current_time = tp_now();
 	if (0 == actual_read) {
 		pcontext->log(LV_DEBUG, "connection lost");
@@ -1402,7 +1514,7 @@ static tproc_status htparse_rdhead(http_context *pcontext)
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
-		return htparse_rdhead_st(pcontext, actual_read);
+		return rdhead_st(pcontext, actual_read);
 	}
 	if (EAGAIN != errno) {
 		pcontext->log(LV_DEBUG, "connection lost");
@@ -1410,12 +1522,12 @@ static tproc_status htparse_rdhead(http_context *pcontext)
 	}
 	/* check if context is timed out */
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
-		return htparse_rdhead_st(pcontext, actual_read);
+		return rdhead_st(pcontext, actual_read);
 	pcontext->log(LV_DEBUG, "I-1934: timeout");
 	return http_done(pcontext, http_status::timeout);
 }
 
-static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
+tproc_status http_parser::wrrep_nobuf(http_context *pcontext)
 {
 	if (hpm_processor_is_in_charge(pcontext)) {
 		switch (hpm_processor_retrieve_response(pcontext)) {
@@ -1490,7 +1602,7 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
 		auto chan = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		auto pvconnection = http_parser_get_vconnection(pcontext->host,
+		auto pvconnection = get_vconnection(pcontext->host,
 		                    pcontext->port, chan->connection_cookie);
 		if (pvconnection == nullptr) {
 			pcontext->log(LV_DEBUG,
@@ -1518,10 +1630,13 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_wrrep(http_context *pcontext)
+/**
+ * Writeout the response.
+ */
+tproc_status http_parser::wrrep(http_context *pcontext)
 {
 	if (NULL == pcontext->write_buff) {
-		auto ret = htparse_wrrep_nobuf(pcontext);
+		auto ret = wrrep_nobuf(pcontext);
 		if (ret != tproc_status::runoff)
 			return ret;
 	}
@@ -1545,9 +1660,12 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 	if (g_http_debug) {
 		auto &co = pcontext->connection;
 		char tbuf[24];
-		fprintf(stderr, "\e[1m>> %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
+		fprintf(stderr, "\e[1m>> %s [%s]:%hu",
 		        now_str(tbuf, std::size(tbuf)),
-		        co.server_addr, co.server_port,
+		        co.server_addr, co.server_port);
+		if (co.proxy_port != 0)
+			fprintf(stderr, "->[%s]:%hu", co.proxy_addr, co.proxy_port);
+		fprintf(stderr, "->[%s]:%hu %zd bytes\e[0m\n",
 		        co.client_addr, co.client_port, written_len);
 		auto pfx = utf8_printable_prefix(pcontext->write_buff, written_len);
 		if (pfx == static_cast<size_t>(written_len)) {
@@ -1556,15 +1674,17 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 				/* ignore */;
 		} else {
 			/*
-			 * Unlike in htparse_readsock, here the write buffer
+			 * Unlike in ::readsock, here the write buffer
 			 * contains both HTTP headers, MH chunks and ROP
 			 * response buffer. Try to separate them so that the
 			 * hexdump starts at the ROP part.
 			 */
 			auto b = static_cast<const uint8_t *>(pcontext->write_buff);
-			if (HXio_fullwrite(STDERR_FILENO, b, pfx) < 0)
-				/* ignore */;
-			HX_hexdump(stderr, &b[pfx], written_len - pfx);
+			if (b != nullptr) {
+				if (HXio_fullwrite(STDERR_FILENO, b, pfx) < 0)
+					/* ignore */;
+				HX_hexdump(stderr, &b[pfx], written_len - pfx);
+			}
 		}
 		fprintf(stderr, ">>-EOP\n");
 	}
@@ -1600,8 +1720,8 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 	if (pcontext->channel_type == hchannel_type::out &&
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		auto pvconnection = http_parser_get_vconnection(pcontext->host,
-				pcontext->port, pchannel_out->connection_cookie);
+		auto pvconnection = get_vconnection(pcontext->host,
+		                    pcontext->port, pchannel_out->connection_cookie);
 		auto pnode = double_list_get_head(&pchannel_out->pdu_list);
 		if (pnode != nullptr && !static_cast<BLOB_NODE *>(pnode->pdata)->b_rts) {
 			pchannel_out->available_window -= written_len;
@@ -1619,7 +1739,7 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
 		auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		auto pvconnection = http_parser_get_vconnection(pcontext->host,
+		auto pvconnection = get_vconnection(pcontext->host,
 		                    pcontext->port, hch->connection_cookie);
 		if (pvconnection == nullptr) {
 			pcontext->log(LV_DEBUG,
@@ -1675,7 +1795,7 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 	return tproc_status::cont;
 }
 
-static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
+tproc_status http_parser::rdbody_nochan2(http_context *pcontext)
 {
 	unsigned int size = STREAM_BLOCK_SIZE;
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
@@ -1683,7 +1803,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 		mlog(LV_ERR, "E-1179: ENOMEM");
 		return http_done(pcontext, http_status::enomem_CL);
 	}
-	auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
+	auto actual_read = readsock(pcontext, "EOB", pbuff, size);
 	auto current_time = tp_now();
 	if (0 == actual_read) {
 		pcontext->log(LV_DEBUG, "connection lost");
@@ -1743,11 +1863,11 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 	return http_done(pcontext, http_status::timeout);
 }
 
-static tproc_status htparse_rdbody_nochan(http_context *pcontext)
+tproc_status http_parser::rdbody_nochan(http_context *pcontext)
 {
 	if (0 == pcontext->total_length ||
 	    pcontext->bytes_rw < pcontext->total_length) {
-		auto ret = htparse_rdbody_nochan2(pcontext);
+		auto ret = rdbody_nochan2(pcontext);
 		if (ret == tproc_status::endproc)
 			return tproc_status::runoff;
 		if (ret != tproc_status::runoff)
@@ -1782,12 +1902,12 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 	return tproc_status::cont;
 }
 
-static tproc_status htparse_rdbody(http_context *pcontext)
+tproc_status http_parser::rdbody(http_context *pcontext)
 {
 	if (pcontext->pchannel == nullptr ||
 	    (pcontext->channel_type != hchannel_type::in &&
 	    pcontext->channel_type != hchannel_type::out))
-		return htparse_rdbody_nochan(pcontext);
+		return rdbody_nochan(pcontext);
 
 	auto pchannel_in  = pcontext->channel_type == hchannel_type::in ?
 	                    static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel)  : nullptr;
@@ -1805,7 +1925,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 			return http_done(pcontext, http_status::enomem_CL);
 		}
 
-		auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
+		auto actual_read = readsock(pcontext, "EOB", pbuff, size);
 		auto current_time = tp_now();
 		if (0 == actual_read) {
 			pcontext->log(LV_DEBUG, "connection lost");
@@ -1867,8 +1987,8 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		} else if (PDU_PROCESSOR_FORWARD == result) {
 			/* only under this condition, we can
 			forward pdu to pdu processor */
-			auto pvconnection = http_parser_get_vconnection(pcontext->host,
-				pcontext->port, pchannel_in->connection_cookie);
+			auto pvconnection = get_vconnection(pcontext->host,
+			                    pcontext->port, pchannel_in->connection_cookie);
 			if (pvconnection == nullptr) {
 				pcontext->log(LV_DEBUG,
 					"virtual connection error in hash table");
@@ -1959,8 +2079,8 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 			return tproc_status::loop;
 		}
 		/* in channel here, find the corresponding out channel first! */
-		auto pvconnection = http_parser_get_vconnection(pcontext->host,
-			pcontext->port, pchannel_in->connection_cookie);
+		auto pvconnection = get_vconnection(pcontext->host,
+		                    pcontext->port, pchannel_in->connection_cookie);
 		if (pvconnection == nullptr) {
 			delete pcall;
 			pcontext->log(LV_DEBUG,
@@ -1998,11 +2118,11 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_waitinchannel(http_context *pcontext,
+tproc_status http_parser::waitinchannel(http_context *pcontext,
     RPC_OUT_CHANNEL *pchannel_out)
 {
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
-		pcontext->port, pchannel_out->connection_cookie);
+	auto pvconnection = get_vconnection(pcontext->host,
+	                    pcontext->port, pchannel_out->connection_cookie);
 	if (pvconnection != nullptr) {
 		if (pvconnection->pcontext_out == pcontext
 		    && NULL != pvconnection->pcontext_in) {
@@ -2035,11 +2155,11 @@ static tproc_status htparse_waitinchannel(http_context *pcontext,
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_waitrecycled(http_context *pcontext,
+tproc_status http_parser::waitrecycled(http_context *pcontext,
     RPC_OUT_CHANNEL *pchannel_out)
 {
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
-		pcontext->port, pchannel_out->connection_cookie);
+	auto pvconnection = get_vconnection(pcontext->host, pcontext->port,
+	                    pchannel_out->connection_cookie);
 	if (pvconnection != nullptr) {
 		if (pvconnection->pcontext_out == pcontext
 		    && NULL != pvconnection->pcontext_in) {
@@ -2067,7 +2187,7 @@ static tproc_status htparse_waitrecycled(http_context *pcontext,
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_wait(http_context *pcontext)
+tproc_status http_parser::wait(http_context *pcontext)
 {
 	if (hpm_processor_is_in_charge(pcontext))
 		return tproc_status::idle;
@@ -2075,9 +2195,9 @@ static tproc_status htparse_wait(http_context *pcontext)
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 	switch (pchannel_out->channel_stat) {
 	case hchannel_stat::waitinchannel:
-		return htparse_waitinchannel(pcontext, pchannel_out);
+		return waitinchannel(pcontext, pchannel_out);
 	case hchannel_stat::waitrecycled:
-		return htparse_waitrecycled(pcontext, pchannel_out);
+		return waitrecycled(pcontext, pchannel_out);
 	case hchannel_stat::recycled:
 		return tproc_status::runoff;
 	default:
@@ -2100,7 +2220,7 @@ static tproc_status htparse_wait(http_context *pcontext)
 	/* stream_out is shared resource of vconnection,
 		lock it first before operating */
 	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	pchannel_out->pcall->move_pdus(pchannel_out->pdu_list);
 	pcontext->sched_stat = hsched_stat::wrrep;
@@ -2113,25 +2233,27 @@ tproc_status http_parser_process(schedule_context *vcontext)
 	auto ret = tproc_status::runoff;
 	do {
 		switch (pcontext->sched_stat) {
-		case hsched_stat::initssl: ret = htparse_initssl(pcontext); break;
-		case hsched_stat::rdhead:  ret = htparse_rdhead(pcontext);  break;
-		case hsched_stat::rdbody:  ret = htparse_rdbody(pcontext);  break;
-		case hsched_stat::wrrep:   ret = htparse_wrrep(pcontext);   break;
-		case hsched_stat::wait:    ret = htparse_wait(pcontext);    break;
+		case hsched_stat::initssl: ret = g_parser->initssl(pcontext); break;
+		case hsched_stat::rdhead:  ret = g_parser->rdhead(pcontext);  break;
+		case hsched_stat::rdbody:  ret = g_parser->rdbody(pcontext);  break;
+		case hsched_stat::wrrep:   ret = g_parser->wrrep(pcontext);   break;
+		case hsched_stat::wait:    ret = g_parser->wait(pcontext);    break;
 		default: continue;
 		}
 	} while (ret == tproc_status::loop);
 	if (ret != tproc_status::runoff)
 		return ret;
-	return http_end(pcontext);
-}
-
-void http_parser_shutdown_async()
-{
-	g_async_stop = true;
+	return g_parser->http_end(pcontext);
 }
 
 void http_parser_vconnection_async_reply(const char *host,
+	int port, const char *connection_cookie, DCERPC_CALL *pcall)
+{
+	/* called from aemsi_thrwork */
+	g_parser->vconnection_async_reply(host, port, connection_cookie, pcall);
+}
+
+void http_parser::vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall)
 {
 	/* system is going to stop now */
@@ -2139,7 +2261,7 @@ void http_parser_vconnection_async_reply(const char *host,
 		mlog(LV_DEBUG, "noticed async_stop");
 		return;
 	}
-	auto pvconnection = http_parser_get_vconnection(host, port, connection_cookie);
+	auto pvconnection = get_vconnection(host, port, connection_cookie);
 	if (pvconnection == nullptr)
 		return;
 	if (pvconnection->pcontext_out == nullptr)
@@ -2160,23 +2282,19 @@ void http_parser_vconnection_async_reply(const char *host,
 
 int http_parser_get_param(int param)
 {
-    switch (param) {
-    case MAX_AUTH_TIMES:
-        return g_max_auth_times;
-    case BLOCK_AUTH_FAIL:
-        return g_block_auth_fail;
-    case HTTP_SESSION_TIMEOUT:
-		return std::chrono::duration_cast<std::chrono::seconds>(g_timeout).count();
-	case HTTP_SUPPORT_TLS:
-		return g_support_tls;
-    default:
-        return 0;
-    }
+	switch (param) {
+	case MAX_AUTH_TIMES: return g_parser->g_max_auth_times;
+	case BLOCK_AUTH_FAIL: return g_parser->g_block_auth_fail;
+	case HTTP_SESSION_TIMEOUT:
+		return std::chrono::duration_cast<std::chrono::seconds>(g_parser->g_timeout).count();
+	case HTTP_SUPPORT_TLS: return g_parser->g_support_tls;
+	default: return 0;
+	}
 }
 
 SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 {
-	return g_context_list2.data();
+	return g_parser->g_context_list2.data();
 }
 
 http_context::http_context()
@@ -2217,16 +2335,25 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 		mod_fastcgi_insert_ctx(pcontext);
 }
 
+void http_context::clear_gss()
+{
+#ifdef HAVE_GSSAPI
+	OM_uint32 st;
+	if (m_gss_srv_creds != nullptr) {
+		gss_release_cred(&st, &m_gss_srv_creds);
+		m_gss_srv_creds = GSS_C_NO_CREDENTIAL;
+	}
+	if (m_gss_ctx != nullptr) {
+		gss_delete_sec_context(&st, &m_gss_ctx, GSS_C_NO_BUFFER);
+		m_gss_ctx = GSS_C_NO_CONTEXT;
+	}
+#endif
+}
+
 http_context::~http_context()
 {
 	auto pcontext = this;
-#ifdef HAVE_GSSAPI
-	OM_uint32 st;
-	if (m_gss_srv_creds != nullptr)
-		gss_release_cred(&st, &m_gss_srv_creds);
-	if (m_gss_ctx != nullptr)
-		gss_delete_sec_context(&st, &m_gss_ctx, GSS_C_NO_BUFFER);
-#endif
+	clear_gss();
 	if (hpm_processor_is_in_charge(pcontext))
 		hpm_processor_insert_ctx(pcontext);
 	else if (mod_fastcgi_is_in_charge(pcontext))
@@ -2264,11 +2391,10 @@ HTTP_CONTEXT* http_parser_get_context()
 
 void http_parser_set_context(int context_id)
 {
-	if (context_id < 0 ||
-	    static_cast<size_t>(context_id) >= g_context_num)
+	if (context_id < 0 || static_cast<size_t>(context_id) >= g_parser->g_context_num)
 		g_context_key = nullptr;
 	else
-		g_context_key = &g_context_list[context_id];
+		g_context_key = &g_parser->g_context_list[context_id];
 }
 
 bool http_parser_get_password(const char *username, char *password)
@@ -2299,8 +2425,8 @@ BOOL http_context::try_create_vconnection()
 		return FALSE;
 	}
  RETRY_QUERY:
-	auto pvconnection = http_parser_get_vconnection(
-		pcontext->host, pcontext->port, conn_cookie);
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
+	                    pcontext->port, conn_cookie);
 	if (pvconnection != nullptr) {
 		if (pcontext->channel_type == hchannel_type::out) {
 			pvconnection->pcontext_out = pcontext;
@@ -2312,18 +2438,18 @@ BOOL http_context::try_create_vconnection()
 		return TRUE;
 	}
 
-	std::unique_lock vc_hold(g_vconnection_lock);
-	if (g_vconnection_hash.size() >= g_context_num + 1) {
+	std::unique_lock vc_hold(g_parser->g_vconnection_lock);
+	if (g_parser->g_vconnection_hash.size() >= g_parser->g_context_num + 1) {
 		pcontext->log(LV_DEBUG, "W-1293: vconn hash full");
 		return false;
 	}
-	decltype(g_vconnection_hash.try_emplace(""s)) xp;
+	decltype(g_parser->g_vconnection_hash.try_emplace(""s)) xp;
 	try {
 		auto hash_key = conn_cookie + ":"s +
 				std::to_string(pcontext->port) + ":" +
 				pcontext->host;
 		HX_strlower(hash_key.data());
-		xp = g_vconnection_hash.try_emplace(std::move(hash_key));
+		xp = g_parser->g_vconnection_hash.try_emplace(std::move(hash_key));
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1292: ENOMEM");
 		return false;
@@ -2335,7 +2461,7 @@ BOOL http_context::try_create_vconnection()
 	auto nc = &xp.first->second;
 	nc->pprocessor = pdu_processor_create(pcontext->host, pcontext->port);
 	if (nc->pprocessor == nullptr) {
-		g_vconnection_hash.erase(xp.first);
+		g_parser->g_vconnection_hash.erase(xp.first);
 		pcontext->log(LV_DEBUG,
 			"fail to create processor on %s:%d",
 			pcontext->host, pcontext->port);
@@ -2356,7 +2482,7 @@ void http_context::set_outchannel_flowcontrol(uint32_t bytes_received,
 	if (pcontext->channel_type != hchannel_type::in)
 		return;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr)
 		return;
@@ -2378,7 +2504,7 @@ BOOL http_context::recycle_inchannel(const char *predecessor_cookie)
 	if (pcontext->channel_type != hchannel_type::in)
 		return FALSE;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr ||
 	    pvconnection->pcontext_in == nullptr ||
@@ -2389,7 +2515,7 @@ BOOL http_context::recycle_inchannel(const char *predecessor_cookie)
 	hch->client_keepalive = ich->client_keepalive;
 	hch->available_window = ich->available_window;
 	hch->bytes_received = ich->bytes_received;
-	strcpy(hch->assoc_group_id, ich->assoc_group_id);
+	gx_strlcpy(hch->assoc_group_id, ich->assoc_group_id, std::size(hch->assoc_group_id));
 	pvconnection->pcontext_insucc = pcontext;
 	return TRUE;
 }
@@ -2400,7 +2526,7 @@ BOOL http_context::recycle_outchannel(const char *predecessor_cookie)
 	if (pcontext->channel_type != hchannel_type::out)
 		return FALSE;
 	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr ||
 	    pvconnection->pcontext_out == nullptr ||
@@ -2428,7 +2554,7 @@ BOOL http_context::activate_inrecycling(const char *successor_cookie)
 	if (pcontext->channel_type != hchannel_type::in)
 		return FALSE;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr ||
 	    pvconnection->pcontext_insucc != pcontext ||
@@ -2450,7 +2576,7 @@ BOOL http_context::activate_outrecycling(const char *successor_cookie)
 	if (pcontext->channel_type != hchannel_type::in)
 		return FALSE;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr ||
 	    pvconnection->pcontext_in != pcontext ||
@@ -2478,7 +2604,7 @@ void http_context::set_keep_alive(time_duration keepalive)
 {
 	auto pcontext = this;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr || pvconnection->pcontext_in != pcontext)
 		return;
@@ -2526,4 +2652,120 @@ RPC_OUT_CHANNEL::~RPC_OUT_CHANNEL()
 		pdu_processor_free_blob(bnode);
 	}
 	double_list_free(&pdu_list);
+}
+
+int htls_thrwork(generic_connection &&conn)
+{
+	const bool use_tls = conn.mark == M_TLS_CONN;
+	char buff[1024];
+
+	if (fcntl(conn.sockd, F_SETFL, O_NONBLOCK) < 0)
+		mlog(LV_WARN, "W-1408: fcntl: %s", strerror(errno));
+	static const int flag = 1;
+	if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+		/* ignore */;
+	auto ctx = static_cast<HTTP_CONTEXT *>(contexts_pool_get_context(sctx_status::free));
+	/* there's no context available in contexts pool, close the connection*/
+	if (ctx == nullptr) {
+		mlog(LV_NOTICE, "Rejecting connection from [%s]:%hu: "
+			"reached %d connections (http.cfg:context_num)",
+			conn.client_addr, conn.client_port,
+			contexts_pool_get_param(MAX_CONTEXTS_NUM));
+		auto len = gx_snprintf(buff, std::size(buff),
+		           "HTTP/1.1 503 L-202 Service Unavailable\r\n"
+		           "Content-Length: 0\r\n"
+		           "Connection: close\r\n"
+		           "\r\n");
+		if (HXio_fullwrite(conn.sockd, buff, len) < 0)
+			mlog(LV_WARN, "W-1984: write: %s", strerror(errno));
+		return 0;
+	}
+	ctx->type = sctx_status::constructing;
+	/* pass the client ipaddr into the ipaddr filter */
+	std::string reason;
+	if (!system_services_judge_addr(conn.client_addr, reason)) {
+		auto len = gx_snprintf(buff, std::size(buff),
+		           "HTTP/1.1 503 L-216 Service Unavailable\r\n"
+		           "Content-Length: 0\r\n"
+		           "Connection: close\r\n"
+		           "\r\n");
+		if (HXio_fullwrite(conn.sockd, buff, len) < 0)
+			mlog(LV_WARN, "W-1983: write: %s", strerror(errno));
+		mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter: %s",
+			conn.client_addr, reason.c_str());
+		/* release the context */
+		contexts_pool_insert(ctx, sctx_status::free);
+		return 0;
+	}
+
+	/* construct the context object */
+	ctx->connection = std::move(conn);
+	ctx->sched_stat = use_tls ? hsched_stat::initssl : hsched_stat::rdhead;
+	/*
+	 * Valid the context and wake up one thread if there are some threads
+	 * block on the condition variable
+	 */
+	ctx->polling_mask = POLLING_READ;
+	contexts_pool_insert(ctx, sctx_status::polling);
+	return 0;
+}
+
+static int http_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
+    const char *gxkey, const config_file &oldcfg, const char *oldkey,
+    const char *oldportkey, unsigned int mark)
+{
+	auto line = gxcfg.get_value(gxkey);
+	if (line != nullptr)
+		return ctx.add_bunch(line, mark);
+	auto host = oldcfg.get_value(oldkey);
+	if (host != nullptr)
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldkey,
+			gxcfg.m_filename.c_str(), gxkey);
+	else
+		host = "::";
+	auto ps = oldcfg.get_value(oldportkey);
+	uint16_t port = mark == M_UNENCRYPTED_CONN ? 80 : 443;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			oldcfg.m_filename.c_str(), oldportkey,
+			gxcfg.m_filename.c_str(), gxkey);
+		port = strtoul(ps, nullptr, 0);
+	}
+	if (port != 0 &&
+	    ctx.add_inet(host, port, mark) != 0)
+		return -1;
+	return 0;
+}
+
+int listener_init(const config_file &gxcfg, const config_file &oldcfg,
+    bool with_tls)
+{
+	auto &ctx = http_listen_ctx;
+	ctx.m_thread_name = "http_accept";
+	if (http_parse_binds(ctx, gxcfg, "http_listen", oldcfg,
+	    "http_listen_addr", "http_listen_port", M_UNENCRYPTED_CONN) != 0)
+		return EXIT_FAILURE;
+	if (with_tls &&
+	    http_parse_binds(ctx, gxcfg, "http_listen_tls", oldcfg,
+	    "http_listen_addr", "http_listen_tls_port", M_TLS_CONN) != 0)
+		return EXIT_FAILURE;
+	return 0;
+}
+
+int listener_trigger_accept()
+{
+	if (http_listen_ctx.empty())
+		return 0;
+	auto ret = http_listen_ctx.watch_start(g_httpmain_stop, htls_thrwork);
+	if (ret != 0) {
+		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
+		return -1;
+	}
+	return 0;
+}
+
+void listener_stop()
+{
+	http_listen_ctx.reset();
 }

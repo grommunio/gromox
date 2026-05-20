@@ -8,12 +8,12 @@
 #	include "config.h"
 #endif
 #include <algorithm>
-#include <atomic>
 #include <cassert>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
+#include <map>
 #include <memory>
 #include <string>
 #include <unistd.h>
@@ -62,18 +62,38 @@ using mdi_list = std::vector<std::string>; /* message data item (RFC 3501 §6.4.
 namespace {
 
 struct dir_tree {
+	struct cmp {
+		inline bool operator()(const std::string &a, const std::string &b) const { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+	};
+
 	dir_tree() = default;
-	~dir_tree();
-	NOMOVE(dir_tree);
 
-	void load_from_memfile(const std::vector<enum_folder_t> &);
-	DIR_NODE *match(const char *path);
-	static DIR_NODE *get_child(DIR_NODE *);
+	template<typename Vec> void load_from_memfile(Vec &&pfile) try
+	{
+		for (auto &&[id, orig] : std::forward<Vec>(pfile)) {
+			auto curr = this;
+			constexpr bool inplace_edit = std::is_rvalue_reference<Vec>::value;
+			using ref_or_copy = typename std::conditional<inplace_edit, std::string &, std::string>::type;
+			ref_or_copy name{orig};
+			char *saveptr = nullptr;
 
-	SIMPLE_TREE stree{};
+			for (auto token = strtok_r(name.data(), "/", &saveptr);
+			     token != nullptr;
+			     token = strtok_r(nullptr, "/", &saveptr)) {
+				auto [it, added] = curr->entries.try_emplace(token);
+				curr = &it->second;
+			}
+		}
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2903: ENOMEM");
+	}
+
+	const dir_tree *match(const char *path) const;
+	dir_tree *match(const char *path) { return const_cast<dir_tree *>(const_cast<const dir_tree *>(this)->match(path)); }
+	bool has_children() const { return entries.size() > 0; }
+
+	std::map<std::string, dir_tree, cmp> entries;
 };
-using DIR_TREE = dir_tree;
-using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
 
 enum {
 	TYPE_WILDS = 1,
@@ -97,121 +117,25 @@ static constexpr const builtin_folder g_folder_list[] = {
 	{PRIVATE_FID_JUNK, "\\Junk \\Spam"},
 };
 
-void dir_tree::load_from_memfile(const std::vector<enum_folder_t> &pfile) try
+const dir_tree *dir_tree::match(const char *path) const
 {
-	auto ptree = this;
-	char *ptr1, *ptr2;
-	char temp_path[4096 + 1];
-	SIMPLE_TREE_NODE *pnode, *pnode_parent;
-
-	auto proot = ptree->stree.get_root();
-	if (NULL == proot) {
-		auto pdir = std::make_unique<DIR_NODE>();
-		pdir->stree.pdata = pdir.get();
-		pdir->name[0] = '\0';
-		pdir->b_loaded = TRUE;
-		proot = &pdir->stree;
-		ptree->stree.set_root(std::move(pdir));
-	}
-
-	for (const auto &pfile_path : pfile) {
-		gx_strlcpy(temp_path, pfile_path.second.c_str(), std::size(temp_path));
-		auto len = strlen(temp_path);
-		pnode = proot;
-		if (len == 0 || temp_path[len-1] != '/') {
-			temp_path[len++] = '/';
-			temp_path[len] = '\0';
-		}
-		ptr1 = temp_path;
-		while ((ptr2 = strchr(ptr1, '/')) != NULL) {
-			*ptr2 = '\0';
-			pnode_parent = pnode;
-			pnode = pnode->get_child();
-			if (NULL != pnode) {
-				do {
-					auto pdir = static_cast<DIR_NODE *>(pnode->pdata);
-					if (strcasecmp(pdir->name, ptr1) == 0)
-						break;
-				} while ((pnode = pnode->get_sibling()) != nullptr);
-			}
-
-			if (NULL == pnode) {
-				auto pdir = std::make_unique<DIR_NODE>();
-				pdir->stree.pdata = pdir.get();
-				gx_strlcpy(pdir->name, ptr1, std::size(pdir->name));
-				pdir->b_loaded = FALSE;
-				pnode = &pdir->stree;
-				ptree->stree.add_child(pnode_parent,
-					std::move(pdir), SIMPLE_TREE_ADD_LAST);
-			}
-			ptr1 = ptr2 + 1;
-		}
-		static_cast<DIR_NODE *>(pnode->pdata)->b_loaded = TRUE;
-	}
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2903: ENOMEM");
-}
-
-static void dir_tree_clear(DIR_TREE *ptree)
-{
-	auto pnode = ptree->stree.get_root();
-	if (pnode != nullptr)
-		ptree->stree.destroy_node(pnode, [](tree_node *p) { delete static_cast<DIR_NODE *>(p->pdata); });
-}
-
-DIR_NODE *dir_tree::match(const char *path)
-{
-	auto ptree = this;
-	int len;
-	DIR_NODE *pdir = nullptr;
-	char *ptr1, *ptr2;
-	char temp_path[4096 + 1];
-
-	auto pnode = ptree->stree.get_root();
-	if (pnode == nullptr)
-		return NULL;
+	auto curr = this;
 	if (*path == '\0')
-		return static_cast<DIR_NODE *>(pnode->pdata);
-	len = strlen(path);
+		return curr;
+	auto len = strlen(path);
 	if (len >= 4096)
 		return NULL;
-	memcpy(temp_path, path, len);
-	if (temp_path[len-1] != '/')
-		temp_path[len++] = '/';
-	temp_path[len] = '\0';
-	
-	ptr1 = temp_path;
-	for (unsigned int level = 0; (ptr2 = strchr(ptr1, '/')) != nullptr; ++level) {
-		*ptr2 = '\0';
-		pnode = pnode->get_child();
-		if (pnode == nullptr)
+	std::string temp_path(path, len);
+	char *saveptr = nullptr;
+	for (auto token = strtok_r(temp_path.data(), "/", &saveptr);
+	     token != nullptr;
+	     token = strtok_r(nullptr, "/", &saveptr)) {
+		auto it = curr->entries.find(token);
+		if (it == curr->entries.cend())
 			return NULL;
-		do {
-			pdir = static_cast<DIR_NODE *>(pnode->pdata);
-			if (strcasecmp(pdir->name, ptr1) == 0)
-				break;
-			if (level == 0 && strcasecmp(pdir->name, "INBOX") == 0 &&
-			    strcasecmp(ptr1, "inbox") == 0)
-				break;
-		} while ((pnode = pnode->get_sibling()) != nullptr);
-		if (pnode == nullptr)
-			return NULL;
-		ptr1 = ptr2 + 1;
+		curr = &it->second;
 	}
-	return pdir;
-}
-
-DIR_NODE *dir_tree::get_child(DIR_NODE* pdir)
-{
-	auto pnode = pdir->stree.get_child();
-	return pnode != nullptr ? static_cast<DIR_NODE *>(pnode->pdata) : nullptr;
-}
-
-dir_tree::~dir_tree()
-{
-	auto ptree = this;
-	dir_tree_clear(ptree);
-	ptree->stree.clear();
+	return curr;
 }
 
 static const builtin_folder *special_folder(uint64_t fid)
@@ -435,52 +359,29 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 	return false;
 }
 
-static void icp_convert_flags_string(int flag_bits, char *flags_string)
+static std::string icp_convert_flags_string(int flag_bits)
 {
-	flags_string[0] = '(';
-	bool b_first = false;
-	int len = 1;
-	if (flag_bits & FLAG_RECENT) {
-		len += sprintf(flags_string + len, "\\Recent");
-		b_first = TRUE;
-	}
-	if (flag_bits & FLAG_ANSWERED) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Answered");
-	}
-	if (flag_bits & FLAG_FLAGGED) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Flagged");
-	}
-	if (flag_bits & FLAG_DELETED) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Deleted");
-	}
-	if (flag_bits & FLAG_SEEN) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Seen");
-	}
-	if (flag_bits & FLAG_DRAFT) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Draft");
-	}
-	flags_string[len] = ')';
-	flags_string[len + 1] = '\0';
+	std::string out = "(";
+	if (flag_bits & FLAG_RECENT)
+		out += "\\Recent ";
+	if (flag_bits & FLAG_ANSWERED)
+		out += "\\Answered ";
+	if (flag_bits & FLAG_FLAGGED)
+		out += "\\Flagged ";
+	if (flag_bits & FLAG_DELETED)
+		out += "\\Deleted ";
+	if (flag_bits & FLAG_SEEN)
+		out += "\\Seen ";
+	if (flag_bits & FLAG_DRAFT)
+		out += "\\Draft ";
+	if (flag_bits & FLAG_FORWARDED)
+		out += "$Forwarded ";
+	if (out.size() > 1)
+		/* There is more than just the opening parenthesis, so there must be a space */
+		out.back() = ')';
+	else
+		out += ")";
+	return out;
 }
 
 static int icp_match_field(mjson_io &io, const char *cmd_tag,
@@ -720,17 +621,22 @@ static int icp_print_structure(imap_context &ctx, MJSON *pjson,
 }
 
 static int icp_process_fetch_item(imap_context &ctx,
-    BOOL b_data, MITEM *pitem, int item_id, mdi_list &pitem_list) try
+    BOOL b_data, MITEM *pitem, std::string_view digest_str,
+    int item_id, mdi_list &pitem_list) try
 {
 	auto pcontext = &ctx;
 	int errnum;
 	MJSON mjson;
 	std::string buf;
-	
+
 	if (pitem->flag_bits & FLAG_LOADED) {
 		auto eml_path = std::string(pcontext->maildir) + "/eml";
-		if (!mjson.load_from_json(pitem->digest)) {
-			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied", ctx.maildir, ctx.mid.c_str());
+		Json::Value digest;
+		if (!str_to_json(digest_str, digest)) {
+			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied1", ctx.maildir, ctx.mid.c_str());
+			return 1923;
+		} else if (!mjson.load_from_json(digest)) {
+			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied2", ctx.maildir, ctx.mid.c_str());
 			return 1923;
 		}
 		mjson.path = std::move(eml_path);
@@ -811,10 +717,9 @@ static int icp_process_fetch_item(imap_context &ctx,
 			else
 				buf += std::move(b2);
 		} else if (strcasecmp(kw, "FLAGS") == 0) {
-			char flags_string[128];
-			icp_convert_flags_string(pitem->flag_bits, flags_string);
+			auto fs = icp_convert_flags_string(pitem->flag_bits);
 			buf += "FLAGS ";
-			buf += flags_string;
+			buf += std::move(fs);
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
 			time_t tmp_time;
 			struct tm tmp_tm;
@@ -822,9 +727,9 @@ static int icp_process_fetch_item(imap_context &ctx,
 			if (!parse_rfc822_timestamp(mjson.get_mail_received(), &tmp_time))
 				tmp_time = strtol(mjson.get_mail_filename(), nullptr, 0);
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
-			localtime_r(&tmp_time, &tmp_tm);
+			gmtime_r(&tmp_time, &tmp_tm);
 			char b2[80];
-			strftime(b2, std::size(b2), "INTERNALDATE \"%d-%b-%Y %T %z\"", &tmp_tm);
+			strftime(b2, std::size(b2), "INTERNALDATE \"%d-%b-%Y %T +0000\"", &tmp_tm);
 			buf += b2;
 		} else if (strcasecmp(kw, "RFC822") == 0) {
 			buf += fmt::format("RFC822 <<{{file}}{}|0|{}\r\n",
@@ -977,26 +882,24 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 	int errnum;
 	char buff[1024];
 	int string_length;
-	char flags_string[128];
 	
 	string_length = 0;
 	if (0 == strcasecmp(cmd, "FLAGS") ||
 		0 == strcasecmp(cmd, "FLAGS.SILENT")) {
 		midb_agent::unset_flags(pcontext->maildir, pcontext->selected_folder,
-			mid, FLAG_ANSWERED | FLAG_FLAGGED | FLAG_DELETED |
-			FLAG_SEEN | FLAG_DRAFT | FLAG_RECENT, nullptr, &errnum);
+			mid, FLAG_ALL, nullptr, &errnum);
 		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
-			icp_convert_flags_string(flag_bits, flags_string);
+			auto fs = icp_convert_flags_string(flag_bits);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
-					id, flags_string, uid);
+					id, fs.c_str(), uid);
 			else
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s)\r\n",
-					id, flags_string);
+					id, fs.c_str());
 		}
 	} else if (0 == strcasecmp(cmd, "+FLAGS") ||
 		0 == strcasecmp(cmd, "+FLAGS.SILENT")) {
@@ -1005,15 +908,15 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		if (0 == strcasecmp(cmd, "+FLAGS") && 
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
-			icp_convert_flags_string(flag_bits, flags_string);
+			auto fs = icp_convert_flags_string(flag_bits);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
-					id, flags_string, uid);
+					id, fs.c_str(), uid);
 			else
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s)\r\n",
-					id, flags_string);
+					id, fs.c_str());
 		}
 	} else if (0 == strcasecmp(cmd, "-FLAGS") ||
 		0 == strcasecmp(cmd, "-FLAGS.SILENT")) {
@@ -1022,15 +925,15 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		if (0 == strcasecmp(cmd, "-FLAGS") &&
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
-			icp_convert_flags_string(flag_bits, flags_string);
+			auto fs = icp_convert_flags_string(flag_bits);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
-					id, flags_string, uid);
+					id, fs.c_str(), uid);
 			else
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s)\r\n",
-					id, flags_string);
+					id, fs.c_str());
 		}
 	}
 	if (string_length != 0)
@@ -1039,40 +942,14 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 
 static BOOL icp_convert_imaptime(const char *str_time, time_t *ptime)
 {
-	time_t tmp_time;
-	char tmp_buff[3];
 	struct tm tmp_tm{};
 	auto str_zone = strptime(str_time, "%d-%b-%Y %T ", &tmp_tm);
 	if (str_zone == nullptr)
 		return FALSE;
-	if (strlen(str_zone) < 5)
-		return FALSE;
-
-	int factor;
-	if (*str_zone == '-')
-		factor = 1;
-	else if (*str_zone == '+')
-		factor = -1;
-	else
-		return FALSE;
-	if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
-	    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
-		return FALSE;
-	tmp_buff[0] = str_zone[1];
-	tmp_buff[1] = str_zone[2];
-	tmp_buff[2] = '\0';
-	int hour = strtol(tmp_buff, nullptr, 0);
-	if (hour < 0 || hour > 23)
-		return FALSE;
-	tmp_buff[0] = str_zone[3];
-	tmp_buff[1] = str_zone[4];
-	tmp_buff[2] = '\0';
-	int minute = strtol(tmp_buff, nullptr, 0);
-	if (minute < 0 || minute > 59)
-		return FALSE;
-	tmp_time = timegm(&tmp_tm);
-	tmp_time += factor*(60*60*hour + 60*minute);
-	*ptime = tmp_time;
+	int min_west = 0;
+	if (!simple_zone_to_minwest(str_zone, &min_west, nullptr))
+		return false;
+	*ptime = timegm(&tmp_tm) + 60 * min_west;
 	return TRUE;
 }
 
@@ -1155,13 +1032,16 @@ static void icp_convert_folderlist(std::vector<enum_folder_t> &pfile) try
 	mlog(LV_ERR, "E-1814: ENOMEM");
 }
 
-static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft)
+static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft,
+    bool del, bool fwd)
 {
 	std::string s = "(";
-	if (seen)    s += 'S';
-	if (answ)    s += 'A';
-	if (flagged) s += 'F';
-	if (draft)   s += 'U';
+	if (seen)    s += midb_flag::seen;
+	if (answ)    s += midb_flag::answered;
+	if (flagged) s += midb_flag::flagged;
+	if (draft)   s += midb_flag::unsent;
+	if (del)     s += midb_flag::deleted;
+	if (fwd)     s += midb_flag::forwarded;
 	s += ')';
 	return s;
 }
@@ -1385,7 +1265,7 @@ int icp_login(int argc, char **argv, imap_context &ctx)
 			pcontext->username);
 		return 1901 | DISPATCH_SHOULD_CLOSE;
     }
-	strcpy(temp_password, argv[3]);
+	gx_strlcpy(temp_password, argv[3], std::size(temp_password));
 	HX_strltrim(temp_password);
 
 	sql_meta_result mres_auth, mres /* target */;
@@ -1530,7 +1410,7 @@ static int icp_selex(int argc, char **argv, imap_context &ctx, bool readonly) tr
 	ret = pcontext->contents.refresh(*pcontext, sys_name, true);
 	if (ret != 0)
 		return ret;
-	pcontext->selected_folder = sys_name;
+	pcontext->selected_folder = std::move(sys_name);
 	pcontext->proto_stat = iproto_stat::select;
 	pcontext->b_readonly = readonly;
 	imap_parser_add_select(pcontext);
@@ -1538,12 +1418,12 @@ static int icp_selex(int argc, char **argv, imap_context &ctx, bool readonly) tr
 	auto buf = fmt::format(
 		"* {} EXISTS\r\n"
 		"* {} RECENT\r\n"
-		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
+		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded)\r\n"
 		"* OK {}\r\n",
 		pcontext->contents.n_exists(),
 		pcontext->contents.n_recent, readonly ?
 		"[PERMANENTFLAGS ()] no permanent flags permitted" :
-		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited");
+		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded)] limited");
 	if (pcontext->contents.firstunseen != 0)
 		buf += fmt::format("* OK [UNSEEN {}] message {} is first unseen\r\n",
 			pcontext->contents.firstunseen,
@@ -1581,8 +1461,6 @@ int icp_create(int argc, char **argv, imap_context &ctx)
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0)
 		return 1800;
-	if (strpbrk(argv[2], "%*?") != nullptr)
-		return 1910;
 	std::vector<enum_folder_t> folder_list;
 	auto ssr = midb_agent::enum_folders(pcontext->maildir, folder_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
@@ -1645,7 +1523,7 @@ int icp_delete(int argc, char **argv, imap_context &ctx)
 		auto dh = folder_tree.match(argv[2]);
 		if (dh == nullptr)
 			return 1925;
-		if (folder_tree.get_child(dh) != nullptr)
+		if (dh->has_children())
 			return 1924;
 	}
 
@@ -1787,7 +1665,7 @@ int icp_list(int argc, char **argv, imap_context &ctx) try
 		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have_cld = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
+		auto have_cld = pdir != nullptr && pdir->has_children();
 		auto buf = fmt::format("* LIST (\\Has{}Children{}{}) \"/\" {}\r\n",
 		           have_cld ? "" : "No",
 		           return_special && special != nullptr ? " " : "",
@@ -1840,7 +1718,7 @@ int icp_xlist(int argc, char **argv, imap_context &ctx) try
 			continue;
 		auto special = special_folder(fentry.first);
 		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
+		auto have = pdir != nullptr && pdir->has_children();
 		auto buf  = fmt::format("* XLIST (\\Has{}Children{}{}) \"/\" {}\r\n",
 		            have ? "" : "No",
 		            special != nullptr ? " " : "",
@@ -1904,7 +1782,7 @@ int icp_lsub(int argc, char **argv, imap_context &ctx) try
 		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
+		auto have = pdir != nullptr && pdir->has_children();
 		auto buf  = fmt::format("* LSUB (\\Has{}Children) \"/\" {}\r\n",
 		            have ? "" : "No", quote_encode(sys_name));
 		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
@@ -2022,26 +1900,27 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 			return 1800;
 		flag_buff = flagbits_to_s(
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
+		            [](const char *s) { return strcasecmp(s, "\\Seen") == 0; }),
+		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
 		            [](const char *s) { return strcasecmp(s, "\\Answered") == 0; }),
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
 		            [](const char *s) { return strcasecmp(s, "\\Flagged") == 0; }),
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
-		            [](const char *s) { return strcasecmp(s, "\\Seen") == 0; }),
+		            [](const char *s) { return strcasecmp(s, "\\Draft") == 0; }),
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
-		            [](const char *s) { return strcasecmp(s, "\\Draft") == 0; }));
+		            [](const char *s) { return strcasecmp(s, "\\Deleted") == 0; }),
+		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
+		            [](const char *s) { return strcasecmp(s, "$Forwarded") == 0; }));
 	}
 	std::string mid_string;
 	time_t tmp_time = time(nullptr);
 	if (str_received != nullptr &&
-	    icp_convert_imaptime(str_received, &tmp_time)) {
-		char txt[GUIDSTR_SIZE];
-		GUID::random_new().to_str(txt, std::size(txt), 32);
-		mid_string = fmt::format("{}.g{}", tmp_time, txt);
-	} else {
-		mid_string = fmt::format("{}.n{}", tmp_time,
-			     imap_parser_get_sequence_ID());
-	}
-	mid_string += "."s + znul(g_config_file->get_value("host_id"));
+	    icp_convert_imaptime(str_received, &tmp_time))
+		/* good */;
+	char txt[GUIDSTR_SIZE]{};
+	GUID::random_new().to_str(txt, std::size(txt), 32);
+	mid_string = fmt::format("R-{}/{}", &txt[30], txt);
+
 	auto pcontext = &ctx;
 	imrpc_build_env();
 	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
@@ -2089,16 +1968,16 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-static inline bool is_flag_name(const char *flag)
+static inline bool append_allowed_flag_name(const char *flag)
 {
-	static constexpr const char *names[] = {"\\Answered", "\\Flagged", "\\Seen", "\\Draft"};
+	static constexpr const char *names[] = {"\\Answered", "\\Flagged", "\\Seen", "\\Draft", "\\Deleted", "$Forwarded"};
 	for (auto s : names)
 		if (strcasecmp(flag, s) == 0)
 			return true;
 	return false;
 }
 
-static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
+static int icp_long_append_begin2(int argc, char **argv, imap_context &ctx) try
 {
 	if (!ctx.is_authed())
 		return 1804 | DISPATCH_BREAK;
@@ -2130,20 +2009,22 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 		if (temp_argc == -1)
 			return 1800 | DISPATCH_BREAK;
 		for (int i = 0; i < temp_argc; ++i)
-			if (!is_flag_name(temp_argv[i]))
+			if (!append_allowed_flag_name(temp_argv[i]))
 				return 1800 | DISPATCH_BREAK;
 	}
 	auto pcontext = &ctx;
-	pcontext->mid = fmt::format("{}.{}.{}",
-	                time(nullptr), imap_parser_get_sequence_ID(),
-	                znul(g_config_file->get_value("host_id")));
+	char guidtxt[GUIDSTR_SIZE]{};
+	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+	pcontext->mid = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
 	ctx.append_stream.clear();
-	ctx.append_folder = sys_name;
+	ctx.append_folder = std::move(sys_name);
 	ctx.append_flags  = flagbits_to_s(
 	                    strcasestr(str_flags, "\\Seen") != nullptr,
 	                    strcasestr(str_flags, "\\Answered") != nullptr,
 	                    strcasestr(str_flags, "\\Flagged") != nullptr,
-	                    strcasestr(str_flags, "\\Draft") != nullptr);
+	                    strcasestr(str_flags, "\\Draft") != nullptr,
+	                    strcasestr(str_flags, "\\Deleted") != nullptr,
+	                    strcasestr(str_flags, "$Forwarded") != nullptr);
 	if (str_received == nullptr || *str_received == '\0' ||
 	    !icp_convert_imaptime(str_received, &ctx.append_time))
 		ctx.append_time = time(nullptr);
@@ -2154,12 +2035,12 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 	return 1918 | DISPATCH_BREAK;
 }
 
-int icp_append_begin(int argc, char **argv, imap_context &ctx)
+int icp_long_append_begin(int argc, char **argv, imap_context &ctx)
 {
-	return icp_dval(argc, argv, ctx, icp_append_begin2(argc, argv, ctx));
+	return icp_dval(argc, argv, ctx, icp_long_append_begin2(argc, argv, ctx));
 }
 
-static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
+static int icp_long_append_end2(int argc, char **argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	std::string content;
@@ -2170,6 +2051,7 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 		content.append(static_cast<char *>(strb), strb_size);
 		strb_size = STREAM_BLOCK_SIZE;
 	}
+	ctx.append_stream.clear();
 	imrpc_build_env();
 	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 	if (!exmdb_client->imapfile_write(ctx.maildir, "eml",
@@ -2223,9 +2105,9 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_append_end(int argc, char **argv, imap_context &ctx)
+int icp_long_append_end(int argc, char **argv, imap_context &ctx)
 {
-	return icp_dval(argc, argv, ctx, icp_append_end2(argc, argv, ctx));
+	return icp_dval(argc, argv, ctx, icp_long_append_end2(argc, argv, ctx));
 }
 
 int icp_check(int argc, char **argv, imap_context &ctx)
@@ -2452,10 +2334,12 @@ int icp_fetch(int argc, char **argv, imap_context &ctx)
 		if (ct_item == nullptr)
 			continue;
 		result = icp_process_fetch_item(ctx, b_data,
-		         pitem, ct_item->id, list_data);
+		         pitem, xarray.get_digest(*pitem),
+		         ct_item->id, list_data);
 		if (result != 0)
 			return result;
 	}
+	xarray.clear();
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170020: OK FETCH completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1720, 1));
@@ -2522,6 +2406,8 @@ int icp_store(int argc, char **argv, imap_context &ctx)
 			flag_bits |= FLAG_DRAFT;
 		else if (strcasecmp(temp_argv[i], "\\Recent") == 0)
 			flag_bits |= FLAG_RECENT;			
+		else if (strcasecmp(temp_argv[i], "$Forwarded") == 0)
+			flag_bits |= FLAG_FORWARDED;
 		else
 			return 1807;
 	}
@@ -2723,10 +2609,12 @@ int icp_uid_fetch(int argc, char **argv, imap_context &ctx) try
 		if (ct_item == nullptr)
 			continue;
 		ret = icp_process_fetch_item(ctx, b_data,
-		      pitem, ct_item->id, list_data);
+		      pitem, xarray.get_digest(*pitem),
+		      ct_item->id, list_data);
 		if (ret != 0)
 			return ret;
 	}
+	xarray.clear();
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170028: OK UID FETCH completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1728, 1));
@@ -2783,6 +2671,8 @@ int icp_uid_store(int argc, char **argv, imap_context &ctx)
 			flag_bits |= FLAG_DRAFT;
 		else if (strcasecmp(temp_argv[i], "\\Recent") == 0)
 			flag_bits |= FLAG_RECENT;			
+		else if (strcasecmp(temp_argv[i], "$Forwarded") == 0)
+			flag_bits |= FLAG_FORWARDED;
 		else
 			return 1807;
 	}

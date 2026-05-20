@@ -1,6 +1,6 @@
 ..
 	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-	SPDX-FileCopyrightText: 2024 grommunio GmbH
+	SPDX-FileCopyrightText: 2025 grommunio GmbH
 
 Dependency installation
 =======================
@@ -10,13 +10,12 @@ distribution. If you choose to build from source nevertheless, a number of
 dependencies are needed:
 
 * autotools
-* C++20 compiler
-* cURL library
+* C and C++20 compiler
 * fmt >= 8
 * jsoncpp
-* libHX >= 4.27
+* libHX >= 4.28
 * libiconv (OpenBSD)
-* libxml2 (we use this for HTML parsing)
+* libxml2 >= 2.7.3 (used for HTML parsing)
 * libzstd >= 1.4
 * MariaDB Connector/C or mariadb-client or compatible API
 * OpenLDAP
@@ -34,6 +33,14 @@ Optional deps:
 * A resolver library
   * libc/libresolv with interface "res_nquery" & "ns_initparse" functions
   * c-ares
+* cURL library
+* GSSAPI library
+  * mit-krb5-gssapi or
+  * heimdal-gssapi or
+  * libgssglue
+  * (even if built with any, you can still use external helpers like
+    ``/usr/libexec/squid/negotiate_wrapper_auth`` from Gromox)
+* mit-krb5-gssapi
 * libesedb
 * libolecf
 * libpff
@@ -78,7 +85,17 @@ FreeBSD/OpenBSD
 
 .. code-block::
 
-	./configure CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib --with-php-config=/usr/local/bin/php-config-8.2
+	PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure CC=cc CXX=c++ CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib --with-php=/usr/local/bin/php-config-8.4
+
+* FreeBSD uses /usr/local/libdata/pkgconfig, but some software packages might,
+  when built from source, install to /usr/local/lib/pkgconfig instead. (wmime
+  does this.) Therefore, specifying PKG_CONFIG_PATH may become necessary.
+* Existing C++ libraries in /usr were built with clang and use (clang-libc++'s)
+  ``std::__1::basic_string``. If g++ is installed in the system, configure will
+  use g++, but g++ will use GNU stdlibc++, which leads to references to
+  ``std::__cxx11::basic_string`` instead. Therefore, specifying
+  ``CC=``/``CXX=`` may become necessary to avoid link failures with undefined
+  reference errors.
 
 Solaris/OmniOSce
 ----------------
@@ -89,7 +106,7 @@ for everything to come together:
 .. code-block::
 
 	./configure LDFLAGS="-L/opt/ooce/lib/amd64"
-	LD_LIBRARY_PATH=/opt/ooce/lib/amd64:/opt/ooce/mariadb-10.11/lib/amd64 make
+	LD_LIBRARY_PATH=/opt/ooce/lib/amd64:/opt/ooce/mariadb-10.11/lib/amd64:/usr/local/lib make
 
 wmime notes
 -----------
@@ -133,7 +150,11 @@ Optional runtime components
   messages to, remote SMTP servers on the Internet. Spam handling should also
   occur in the MTA chain.
 
-* w3m, for improved HTML-to-text conversion.
+* For improved conversion from HTML to plaintext (in order of preference):
+  * chawan, or pandoc, or w3m
+
+* For improved conversion between HTML and RTF:
+  * pandoc
 
 * If tinkering with databases, the ``sqlite3`` and ``mysql``
   command-line clients may prove useful.
@@ -158,14 +179,14 @@ SQL database
 A MariaDB/MySQL database is used to store (and replicate, if so needed later)
 users and other objects like groups/distribution lists, organizations, etc.
 The default database
-name Gromox's mysql_adaptor plugin will use is ``email``, hence you would
+name Gromox's mysql_adaptor component will use is ``email``, hence you would
 create that as a blank database. The default database access users is root with
 no password, which fits the default installation of MariaDB too. Any deviations
 will have to be specified in ``/etc/gromox/mysql_adaptor.cfg``; the
 corresponding manpage is mysql_adaptor(4gx) and autodiscover(4gx). The database
 can then be populated using ``gromox-dbop -C``.
 
-Gromox only requires SELECT,UPDATE permissions on this database as it does not
+Gromox only requires ``SELECT,UPDATE`` permissions on this database as it does not
 create or delete users. The grommunio Administration Backend is in charge of user
 management, and this role will need more permissions.
 
@@ -175,7 +196,7 @@ TLS certificates
 
 Have a PEM-encoded certificate and key ready. The cert file should contain any
 necessary sections of the certificate chain (in case those CAs are not already
-available by way of ``/etc/ssl/certs``). openSSL generally allows having the
+available by way of ``/etc/ssl/certs``). OpenSSL generally allows having the
 cert and the key in the same file, if you wish to do so. Add to
 ``/etc/gromox/http.cfg``::
 
@@ -264,9 +285,9 @@ SMTP
 
 exchange_emsmdb.cfg and zcore.cfg implicitly default to using localhost:25 as
 outgoing SMTP. At the same time, gromox-delivery-queue listens on port 25 by
-default, but it is only the local delivery agent (LDA). Therefore, running with
-implied defaults only gets you a system that can send mail to itself. To enable
-Internet mail or to add spam filtration, you will have reconfigure
+default, but it is only the local delivery agent (LDA). Therefore, the implied
+defaults only get you a system that can send mail to itself. To enable
+Internet mail or to add spam filtration, you will have to reconfigure
 gromox-delivery-queue (edit smtp.cfg) to listen on port 24 rather than 25, and
 install a full MTA like Postfix with configuration directives similar to::
 
@@ -295,7 +316,7 @@ with no edits to configuration, e.g.::
 	./http
 
 To test updates to data files such as ``folder_names.txt``, the
-modifications will either have to be copied to corresponding path in
+modifications will either have to be copied to the corresponding path in
 ``/usr/share/gromox``; else, you can set up and run the daemon with
 an alternate config, e.g.:
 
@@ -313,7 +334,7 @@ Service start
 
 * ``gromox-http`` — at the very least, the main process needs to be started. This is sufficient for e.g. Outlook to open and browse mailboxes.
 * ``gromox-adaptor`` — caches SQL data and generates work files used by other daemons
-* ``gromox-zcore`` — the zcore process is needed by anything using php-mapi (grommuniom-web, grommunio-sync, ...)
+* ``gromox-zcore`` — the zcore process is needed by anything using php-mapi (grommunio-web, grommunio-sync, ...)
 * ``gromox-delivery-queue`` — LMTP/SMTP frontend of the local delivery agent (for incoming mail)
 * ``gromox-delivery`` — Dequeueing backend of the local delivery agent
 * ``gromox-imap`` — for ye Thunderbird

@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdarg>
 #include <cstdio>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -12,6 +11,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/notify_types.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
@@ -25,7 +25,9 @@
 using namespace std::string_view_literals;
 using namespace gromox;
 
-static inline const char *relop_repr(relop r)
+namespace gromox {
+
+const char *relop_repr(enum relop r)
 {
 	switch (r) {
 	case RELOP_LT: return "<";
@@ -38,6 +40,8 @@ static inline const char *relop_repr(relop r)
 	case RELOP_MEMBER_OF_DL: return "DL";
 	default: return "??";
 	}
+}
+
 }
 
 static std::string apptime_repr(double v)
@@ -83,7 +87,7 @@ std::string SVREID::repr(bool verbose) const
 {
 	if (pbin == nullptr)
 		return fmt::format("fid=0x{:x},mid=0x{:x},ins=0x{:x}",
-		       folder_id, message_id, instance);
+		       folder_id.m_value, message_id.m_value, instance);
 	else if (verbose)
 		return bin2hex(pbin->pv, pbin->cb);
 	return fmt::format("[{} bytes]", pbin->cb);
@@ -92,7 +96,7 @@ std::string SVREID::repr(bool verbose) const
 std::string TAGGED_PROPVAL::value_repr(bool verbose) const
 {
 	char guidstr[GUIDSTR_SIZE];
-	if (proptag & MV_FLAG) {
+	if ((proptag & MVI_FLAG) == MV_FLAG) {
 		auto &xl = *static_cast<const GEN_ARRAY *>(pvalue);
 		auto r = fmt::format("[{}]", xl.count);
 		if (!verbose)
@@ -173,13 +177,14 @@ std::string TAGGED_PROPVAL::value_repr(bool verbose) const
 		r += "}";
 		return r;
 	}
-	switch (PROP_TYPE(proptag)) {
+
+	switch (PROP_TYPE(proptag) & ~MVI_FLAG) {
 	case PT_UNSPECIFIED:
 	case PT_NULL:
 		return {};
 	case PT_SHORT: {
 		auto v = *static_cast<int16_t *>(pvalue);
-		return fmt::format("{}/0x{:x}", v, static_cast<uint64_t>(v));
+		return fmt::format("{}/0x{:x}", v, static_cast<uint16_t>(v));
 	}
 	case PT_LONG: {
 		auto v = *static_cast<int32_t *>(pvalue);
@@ -199,7 +204,7 @@ std::string TAGGED_PROPVAL::value_repr(bool verbose) const
 		break;
 	case PT_I8: {
 		auto v = *static_cast<int64_t *>(pvalue);
-		return fmt::format("{}/0x{:x}", v, v);
+		return fmt::format("{}/0x{:x}", v, static_cast<uint64_t>(v));
 	}
 	case PT_STRING8:
 	case PT_UNICODE:
@@ -250,17 +255,8 @@ std::string TAGGED_PROPVAL::repr(bool verbose) const
 std::string RESTRICTION::repr() const
 {
 	switch (rt) {
-	case RES_AND: {
-		auto s = andor->repr();
-		s[5] = 'N';
-		s[6] = 'D';
-		return s;
-	}
-	case RES_OR: {
-		auto s = andor->repr();
-		s[4] = '_';
-		return s;
-	}
+	case RES_AND:            return "RES_AND" + andor->repr(" && ");
+	case RES_OR:             return "RES_OR" + andor->repr(" || ");
 	case RES_NOT:            return xnot->repr();
 	case RES_CONTENT:        return cont->repr();
 	case RES_PROPERTY:       return prop->repr();
@@ -277,12 +273,15 @@ std::string RESTRICTION::repr() const
 	}
 }
 
-std::string RESTRICTION_AND_OR::repr() const
+std::string restriction_list::repr(const char *sep) const
 {
-	auto s = std::to_string(count);
+	std::string s;
 	for (size_t i = 0; i < count; ++i)
-		s += "," + pres[i].repr();
-	return "RES_AOR[" + std::to_string(count) + "]{" + std::move(s) + "}";
+		if (i == 0)
+			s = pres[i].repr();
+		else
+			s += sep + pres[i].repr();
+	return "[" + std::to_string(count) + "]{" + std::move(s) + "}";
 }
 
 std::string RESTRICTION_NOT::repr() const
@@ -336,27 +335,26 @@ bool RESTRICTION_CONTENT::eval(const void *dbval) const
 
 std::string RESTRICTION_CONTENT::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_CONTENT{";
+	std::string ss = "RES_CONTENT{";
 	switch (fuzzy_level & 0xffff) {
-	case FL_FULLSTRING: ss << "FL_FULLSTRING,"; break;
-	case FL_SUBSTRING: ss << "FL_SUBSTRING,"; break;
-	case FL_PREFIX: ss << "FL_PREFIX,"; break;
-	default: ss << "part??,"; break;
+	case FL_FULLSTRING: ss += "FL_FULLSTRING,"; break;
+	case FL_SUBSTRING: ss += "FL_SUBSTRING,"; break;
+	case FL_PREFIX: ss += "FL_PREFIX,"; break;
+	default: ss += "part??,"; break;
 	}
 	if (fuzzy_level & FL_PREFIX_ON_ANY_WORD)
-		ss << "FL_PREFIX_ON_ANY_WORD,";
+		ss += "FL_PREFIX_ON_ANY_WORD,";
 	if (fuzzy_level & FL_PHRASE_MATCH)
-		ss << "FL_PHRASE_MATCH,";
+		ss += "FL_PHRASE_MATCH,";
 	if (fuzzy_level & FL_IGNORECASE)
-		ss << "FL_IGNORECASE,";
+		ss += "FL_IGNORECASE,";
 	if (fuzzy_level & FL_IGNORENONSPACE)
-		ss << "FL_IGNORE_NON_SPACE,";
+		ss += "FL_IGNORE_NON_SPACE,";
 	if (fuzzy_level & FL_LOOSE)
-		ss << "FL_LOOSE,";
+		ss += "FL_LOOSE,";
 	TAGGED_PROPVAL p2{PROP_TYPE(propval.proptag), propval.pvalue};
-	ss << std::hex << proptag << "h," << p2.repr() << "}";
-	return std::move(ss).str();
+	ss += fmt::format("{:x}h,{}", proptag, p2.repr());
+	return ss;
 }
 
 bool RESTRICTION_PROPERTY::comparable() const
@@ -385,11 +383,9 @@ bool RESTRICTION_PROPERTY::eval(const void *dbval) const
 
 std::string RESTRICTION_PROPERTY::repr() const
 {
-	std::stringstream ss;
 	TAGGED_PROPVAL p2{PROP_TYPE(propval.proptag), propval.pvalue};
-	ss << "RES_PROP{val(" << std::hex << proptag << "h) " <<
-	      relop_repr(relop) << " " << p2.repr() << "}";
-	return std::move(ss).str();
+	return fmt::format("RES_PROP{{val({:x}h) {} {}}}",
+	       proptag, relop_repr(relop), p2.repr());
 }
 
 bool RESTRICTION_PROPCOMPARE::comparable() const
@@ -405,10 +401,8 @@ bool RESTRICTION_PROPCOMPARE::comparable() const
 
 std::string RESTRICTION_PROPCOMPARE::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_PROPCMP{val(" << std::hex << proptag1 << "h) " <<
-	      relop_repr(relop) << " val(" << proptag2 << ")}";
-	return std::move(ss).str();
+	return fmt::format("RES_PROPCMP{{val({:x}h) {} val({})}}",
+	       proptag1, relop_repr(relop), proptag2);
 }
 
 bool RESTRICTION_BITMASK::eval(const void *v) const
@@ -423,15 +417,13 @@ bool RESTRICTION_BITMASK::eval(const void *v) const
 
 std::string RESTRICTION_BITMASK::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_BITMASK{val(" << std::hex << proptag <<
-	      "h)&" << mask;
+	std::string ss = fmt::format("RES_BITMASK{{val({:x}h & {:x}", proptag, mask);
 	switch (bitmask_relop) {
-	case BMR_EQZ: ss << "h==0}"; break;
-	case BMR_NEZ: ss << "h!=0}"; break;
-	default: ss << "h..op?}"; break;
+	case BMR_EQZ: ss += "h == 0}"; break;
+	case BMR_NEZ: ss += "h != 0}"; break;
+	default: ss += "h ..op?}"; break;
 	}
-	return std::move(ss).str();
+	return ss;
 }
 
 bool RESTRICTION_SIZE::eval(const void *v) const
@@ -442,24 +434,17 @@ bool RESTRICTION_SIZE::eval(const void *v) const
 
 std::string RESTRICTION_SIZE::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_SIZE{" << relop_repr(relop) << "," << std::hex << proptag <<
-	      "h," << std::dec << size << "}";
-	return std::move(ss).str();
+	return fmt::format("RES_SIZE{{{},{:x}h,{}}}", relop_repr(relop), proptag, size);
 }
 
 std::string RESTRICTION_EXIST::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_EXIST{" << std::hex << proptag << "h}";
-	return std::move(ss).str();
+	return fmt::format("RES_EXIST{{{:x}h}}", proptag);
 }
 
 std::string RESTRICTION_SUBOBJ::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_SUBOBJ{" << std::hex << subobject << "h," << res.repr() << "}";
-	return std::move(ss).str();
+	return fmt::format("RES_SUBOBJ{{{:x}h,{}}}", subobject, res.repr());
 }
 
 std::string RESTRICTION_COMMENT::repr() const
@@ -604,11 +589,11 @@ std::string SORTORDER_SET::repr() const
 	return s;
 }
 
-std::string PROPTAG_ARRAY::repr() const
+std::string proptag_cspan::repr() const
 {
 	std::string s = "PROPTAG_ARRAY{";
-	for (unsigned int i = 0; i < count; ++i)
-		s += fmt::format("0x{:x},", pproptag[i]);
+	for (auto tag : *this)
+		s += fmt::format("0x{:x},", tag);
 	s += "}";
 	return s;
 }
@@ -622,6 +607,67 @@ std::string TPROPVAL_ARRAY::repr() const
 	return s;
 }
 
+std::string tarray_set::repr() const
+{
+	std::string s = "rowset{\n";
+	for (const auto &e : *this)
+		s += e.repr() + "\n";
+	s += "}";
+	return s;
+}
+
+const char *DB_NOTIFY::type_repr() const
+{
+	switch (type) {
+	using enum db_notify_type;
+#define E(s) case s: return #s;
+	E(new_mail)
+	E(folder_created)
+	E(message_created)
+	E(link_created)
+	E(folder_deleted)
+	E(message_deleted)
+	E(link_deleted)
+	E(folder_modified)
+	E(message_modified)
+	E(folder_moved)
+	E(message_moved)
+	E(folder_copied)
+	E(message_copied)
+	E(search_completed)
+	E(hiertbl_changed)
+	E(cttbl_changed)
+	E(srchtbl_changed)
+	E(hiertbl_row_added)
+	E(cttbl_row_added)
+	E(srchtbl_row_added)
+	E(hiertbl_row_deleted)
+	E(cttbl_row_deleted)
+	E(srchtbl_row_deleted)
+	E(hiertbl_row_modified)
+	E(cttbl_row_modified)
+	E(srchtbl_row_modified)
+#undef E
+	default: return "?";
+	}
+}
+
+std::string DB_NOTIFY::repr() const
+{
+	return fmt::format("{{type={}, parent_id={:x}h, folder_id={:x}h, "
+		"message_id={:x}h, old_parent_id={:x}h, old_folder_id={:x}h, "
+		"old_message_id={:x}h, row_folder_id={:x}h, "
+		"row_message_id={:x}h, row_instance={}, "
+		"after_folder_id={:x}h, after_row_id={:x}h, "
+		"after_instance={}, mflags={:x}h, mclass={}, "
+		"{}}}",
+		type_repr(), parent_id, folder_id, message_id,
+		old_parent_id, old_folder_id, old_message_id,
+		row_folder_id, row_message_id, row_instance,
+		after_folder_id, after_row_id, after_instance,
+		message_flags, pmessage_class, proptags.repr());
+}
+
 namespace gromox {
 
 std::string guid2name(const FLATUID le)
@@ -631,7 +677,10 @@ std::string guid2name(const FLATUID le)
 #define GN(v) if (he == v) return #v;
 	FN(muidStoreWrap);
 	FN(muidEMSAB);
+	FN(muidContabDLL);
 	FN(pbLongTermNonPrivateGuid);
+	FN(shared_calendar_store_guid);
+	FN(shared_calendar_provider_guid);
 	FN(g_muidStorePrivate);
 	FN(g_muidStorePublic);
 	FN(muidOOP);

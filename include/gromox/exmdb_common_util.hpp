@@ -40,6 +40,7 @@ enum {
 };
 
 struct MAIL;
+struct db_conn;
 
 namespace exmdb {
 
@@ -49,13 +50,10 @@ extern const GUID *(*common_util_get_handle)();
 
 extern bool cu_rebuild_subjects(const char *&, const char *&, const char *&);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *, gromox::proptag_t, const void *data);
-void common_util_remove_propvals(
-	TPROPVAL_ARRAY *parray, uint32_t proptag);
+extern void common_util_remove_propvals(TPROPVAL_ARRAY *, gromox::proptag_t);
 extern void common_util_pass_service(const char *name, void *func);
-void common_util_init(const char *org_name, unsigned int max_msg,
-	unsigned int max_rule_num, unsigned int max_ext_rule_num);
+extern void common_util_init(const char *org_name, unsigned int max_msg, unsigned int max_rule_num, unsigned int max_ext_rule_num, std::string &&smtp_url);
 extern void common_util_build_tls();
-extern unsigned int common_util_sequence_ID();
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc()
 {
@@ -68,7 +66,12 @@ template<typename T> T *cu_alloc(size_t elem)
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
 extern char *common_util_dup(std::string_view);
-extern char *common_util_convert_copy(BOOL to_utf8, cpid_t, const char *s);
+extern std::string cu_cvt_str(std::string_view, cpid_t, bool to_utf8);
+extern char *cu_cvt_str_dup(std::string_view, cpid_t, bool to_utf8);
+static inline std::string cu_mb_to_utf8(cpid_t cpid, std::string_view sv) { return cu_cvt_str(std::move(sv), cpid, true); }
+static inline std::string cu_utf8_to_mb(cpid_t cpid, std::string_view sv) { return cu_cvt_str(std::move(sv), cpid, false); }
+extern char *cu_mb_to_utf8_dup(cpid_t, std::string_view);
+extern char *cu_utf8_to_mb_dup(cpid_t, std::string_view);
 extern STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8, cpid_t, const STRING_ARRAY *);
 BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid);
 BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
@@ -77,21 +80,18 @@ extern ec_error_t cu_allocate_cn(sqlite3 *, uint64_t *new_cn);
 BOOL common_util_allocate_folder_art(sqlite3 *psqlite, uint32_t *part);
 BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	uint64_t eid_val, BOOL *pb_result);
-BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid);
-extern BOOL cu_get_proptags(mapi_object_type, uint64_t id, sqlite3 *, std::vector<uint32_t> &);
+extern bool cu_get_proptags(mapi_object_type, uint64_t id, sqlite3 *, std::vector<gromox::proptag_t> &);
 BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
-extern BOOL cu_get_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, uint32_t proptag, void **out);
-extern BOOL cu_get_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
-extern BOOL cu_set_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, uint32_t tag, const void *data, BOOL *result);
+extern bool cu_get_property(mapi_object_type, uint64_t id, cpid_t, const db_conn &, gromox::proptag_t, void **out);
+extern bool cu_get_properties(mapi_object_type, uint64_t id, cpid_t, const db_conn &, proptag_cspan, TPROPVAL_ARRAY *);
+extern BOOL cu_set_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, gromox::proptag_t, const void *data, BOOL *result);
 extern BOOL cu_set_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
-extern BOOL cu_remove_property(mapi_object_type, uint64_t id, sqlite3 *, uint32_t proptag);
-extern BOOL cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, const PROPTAG_ARRAY *);
-BOOL common_util_get_rule_property(uint64_t rule_id,
-	sqlite3 *psqlite, uint32_t proptag, void **ppvalue);
-extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, uint32_t proptag, void **outval);
+extern bool cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, proptag_cspan);
+extern BOOL common_util_get_rule_property(uint64_t rule_id, sqlite3 *, gromox::proptag_t, void **val);
+extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, gromox::proptag_t, void **outval);
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
-extern BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag);
+extern bool cu_check_msgsize_overflow(const db_conn &, gromox::proptag_t);
 extern uint32_t cu_folder_unread_count(sqlite3 *psqlite, uint64_t folder_id, unsigned int flags = 0);
 extern BOOL common_util_get_folder_type(sqlite3 *, uint64_t folder_id, uint32_t *type, const char *dir = nullptr);
 uint64_t common_util_get_folder_parent_fid(
@@ -101,15 +101,12 @@ BOOL common_util_get_folder_by_name(
 	const char *str_name, uint64_t *pfolder_id);
 BOOL common_util_check_message_associated(
 	sqlite3 *psqlite, uint64_t message_id);
-BOOL common_util_get_message_flags(sqlite3 *psqlite,
-	uint64_t message_id, BOOL b_native,
-	uint32_t **ppmessage_flags);
+extern bool cu_get_msg_flags(const db_conn &, uint64_t msg_id, bool b_native, uint32_t **out);
 extern std::string cu_cid_path(const char *dir, const char *cid, unsigned int type);
-void common_util_set_message_read(sqlite3 *psqlite,
-	uint64_t message_id, uint8_t is_read);
+extern int cu_set_message_read(sqlite3 *, uint64_t msg_id, bool is_read);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
-extern BOOL common_util_parse_addressbook_entryid(const BINARY *, char *address_type, size_t atsize, char *email_address, size_t emsize);
+extern bool cu_parse_abkeid(const BINARY *, std::string &type, std::string &addr);
 BINARY* common_util_to_private_folder_entryid(
 	sqlite3 *psqlite, const char *username,
 	uint64_t folder_id);
@@ -120,19 +117,17 @@ extern BOOL cu_get_folder_permission(sqlite3 *, uint64_t folder_id, const char *
 extern BOOL cu_is_descendant_folder(sqlite3 *, uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included);
 BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 	uint64_t message_id, uint64_t *pfolder_id);
-BOOL common_util_load_search_scopes(sqlite3 *psqlite,
-	uint64_t folder_id, LONGLONG_ARRAY *pfolder_ids);
-extern bool cu_eval_folder_restriction(sqlite3 *, uint64_t folder_id, const RESTRICTION *);
-extern bool cu_eval_msg_restriction(sqlite3 *, cpid_t, uint64_t msgid, const RESTRICTION *);
+extern bool cu_load_search_scopes(sqlite3 *, uint64_t folder_id, std::vector<uint64_t> &src_fo);
+extern bool cu_eval_folder_restriction(const db_conn &, uint64_t folder_id, const RESTRICTION *);
+extern bool cu_eval_msg_restriction(const db_conn &, cpid_t, uint64_t msgid, const RESTRICTION *);
 BOOL common_util_check_search_result(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t message_id, BOOL *pb_exist);
 BOOL common_util_get_mid_string(sqlite3 *psqlite,
 	uint64_t message_id, char **ppmid_string);
 BOOL common_util_set_mid_string(sqlite3 *psqlite,
 	uint64_t message_id, const char *pmid_string);
-BOOL common_util_check_message_owner(sqlite3 *psqlite,
-	uint64_t message_id, const char *username, BOOL *pb_owner);
-extern BOOL cu_copy_message(sqlite3 *, uint64_t msg_id, uint64_t folder_id, uint64_t *dst_mid, BOOL *result, uint32_t *msg_size);
+extern bool cu_msg_test_owner(const db_conn &, uint64_t msg_id, const char *username, BOOL *status);
+extern bool cu_copy_message(const db_conn &, uint64_t msg_id, uint64_t folder_id, uint64_t *dst_mid, BOOL *result, uint32_t *msg_size);
 BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids);
@@ -145,9 +140,8 @@ extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
-extern BOOL common_util_bind_sqlite_statement(sqlite3_stmt *, int bind_index, uint16_t proptype, const void *val);
-void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
-	int column_index, uint16_t proptype);
+extern BOOL common_util_bind_sqlite_statement(sqlite3_stmt *, int bind_index, gromox::proptype_t, const void *val);
+extern void *common_util_column_sqlite_statement(sqlite3_stmt *, int col_idx, gromox::proptype_t);
 BOOL common_util_indexing_sub_contents(
 	uint32_t step, sqlite3_stmt *pstmt,
 	sqlite3_stmt *pstmt1, uint32_t *pidx);
@@ -155,12 +149,17 @@ extern uint32_t common_util_calculate_message_size(const message_content *);
 extern uint32_t common_util_calculate_attachment_size(const attachment_content *);
 extern const char *exmdb_rpc_idtoname(exmdb_callid);
 extern int need_msg_perm_check(sqlite3 *, const char *user, uint64_t fid);
-extern int have_delete_perm(sqlite3 *, const char *user, uint64_t fid, uint64_t mid = 0);
-extern ec_error_t cu_id2user(int, std::string &);
+extern int have_delete_perm(const db_conn &, const char *user, uint64_t fid, uint64_t mid = 0);
+extern bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid);
+extern bool timeindex_insert(sqlite3 *db, uint64_t fid, uint64_t mid);
+extern bool timeindex_refresh(sqlite3 *db, uint64_t fid, uint64_t mid);
+extern ec_error_t autoreply_make_oofstate(const char *dir, void *&outptr);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num, g_cid_compression;
+extern unsigned int g_exmdb_enable_optim_stm;
 extern thread_local unsigned int g_inside_flush_instance;
 extern thread_local sqlite3 *g_sqlite_for_oxcmail;
 extern char g_exmdb_org_name[];
+extern std::string g_exmdb_smtp_url;
 
 }

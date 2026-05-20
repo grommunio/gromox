@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -17,7 +17,6 @@
 #include <libHX/scope.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapitags.hpp>
-#include <gromox/paths.h>
 #include <gromox/propval.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -83,14 +82,15 @@ struct edb_folder {
 
 }
 
-static unsigned int g_list_mbox;
-static char *g_extract_mbox;
+static unsigned int g_list_mbox, g_mlog_level = MLOG_DEFAULT_LEVEL;
+static const char *g_extract_mbox;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'l', HXTYPE_NONE, &g_list_mbox, nullptr, nullptr, 0, "Show available mailboxes in database"},
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
-	{nullptr, 'x', HXTYPE_STRING, &g_extract_mbox, nullptr, nullptr, 0, "Extract the given mailbox", "ID/RK/GUID"},
+	{nullptr, 'x', HXTYPE_STRING, {}, {}, {}, 0, "Extract the given mailbox", "ID/RK/GUID"},
+	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -215,7 +215,7 @@ static void read_col(libesedb_record_t *row, unsigned int x,
 			throw az_error("EE-1019", err);
 		if (dsize64 == 0)
 			return;
-		dsize = std::max(dsize64, static_cast<uint64_t>(UINT32_MAX));
+		dsize = std::min(dsize64, static_cast<uint64_t>(UINT32_MAX));
 		udata.resize(dsize);
 		if (libesedb_long_value_get_data(lv.get(),
 		    TOU8(udata.data()), dsize, &~unique_tie(err)) < 1)
@@ -344,7 +344,7 @@ static void do_namedprops(mbox_state &mbs)
 		throw az_error("EE-1039", err);
 	for (int y = 0; y < nrows; ++y) {
 		PROPERTY_XNAME pn_req{};
-		uint16_t propid = 0;
+		propid_t propid = 0;
 		foreach_col(table.get(), y, ix2na, [&](const std::string &key, std::string &&val) {
 			if (key == "PropNumber") {
 				propid = le32p_to_cpu(val.data());
@@ -370,7 +370,7 @@ static void do_namedprops(mbox_state &mbs)
 static void do_propblob(TPROPVAL_ARRAY &props, const std::string &blob)
 {
 	if (blob.size() < 6 || memcmp(&blob[0], "ProP\x00\x04", 6) != 0) {
-		fprintf(stderr, "Unrecognized propblob content: %s\n", bin2hex(blob.data(), blob.size()).c_str());
+		fprintf(stderr, "Unrecognized propblob content: %s\n", bin2hex(blob).c_str());
 		return;
 	}
 	TPROPVAL_ARRAY new_props;
@@ -463,14 +463,14 @@ static void folder_prop_handler(edb_folder &f, const std::string &key,
 	case PT_SYSTIME:
 	case PT_STRING8:
 	case PT_UNICODE:
-		if (f.props.set(proptag, val.c_str()) != 0)
+		if (f.props.set(proptag, val.c_str()) == ecServerOOM)
 			throw std::bad_alloc();
 		return;
 	case PT_BINARY: {
 		BINARY bv;
 		bv.pv = val.data();
 		bv.cb = val.size();
-		if (f.props.set(proptag, &bv) != 0)
+		if (f.props.set(proptag, &bv) == ecServerOOM)
 			throw std::bad_alloc();
 		return;
 	}
@@ -524,7 +524,7 @@ static void do_folder(mbox_state &mbs, const edb_folder &folder)
 {
 	tree(mbs.depth);
 	if (g_show_tree)
-		tlog("[fld=%s]\n", bin2hex(folder.fid.data(), folder.fid.size()).c_str());
+		tlog("[fld=%s]\n", bin2hex(folder.fid).c_str());
 	++mbs.depth;
 	gi_print(mbs.depth, folder.props, ee_get_propname);
 	for (const auto &child_id : folder.children)
@@ -537,7 +537,7 @@ static void do_folder(mbox_state &mbs, const edb_folder &folder)
  */
 static errno_t do_mbox(mbox_state &mbs)
 {
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0005", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;
 	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
@@ -624,11 +624,13 @@ static errno_t do_file(const char *filename) try
 		fprintf(stderr, "E-2020: ENOMEM\n");
 		return EXIT_FAILURE;
 	}
-	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(1) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
-	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS) {
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+	    ep.p_uint64(1) != pack_result::ok ||
+	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
+	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
+	    ep.p_msgctnt(*ctnt) != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok) {
 		fprintf(stderr, "E-2021\n");
 		return EXIT_FAILURE;
 	}
@@ -660,15 +662,20 @@ static void terse_help()
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (argc != 2) {
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'x')
+			g_extract_mbox = argp.oarg[i];
+	if (argp.nargs != 1) {
+		fprintf(stderr, "Need exactly one edb file as argument.\n");
 		terse_help();
 		return EXIT_FAILURE;
 	}
+
 #if 0
 	if (isatty(STDOUT_FILENO)) {
 		fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
@@ -676,11 +683,13 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 #endif
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
+	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 
-	auto ret = do_file(argv[1]);
+	auto ret = do_file(argp.uarg[0]);
 	if (ret != 0) {
 		fprintf(stderr, "edb2mt: Import unsuccessful.\n");
 		return EXIT_FAILURE;

@@ -2,8 +2,12 @@
 #include <map>
 #include <string>
 #include <gromox/defs.h>
-using cookie_jar = std::map<std::string, std::string, std::less<>>;
+
 namespace gromox {
-extern GX_EXPORT cookie_jar cookie_parser_init(const char *cookie_string);
-extern GX_EXPORT const char *cookie_parser_get(const cookie_jar &jar, const char *name);
+
+struct GX_EXPORT cookie_jar : public std::map<std::string, std::string, std::less<>> {
+	ec_error_t add(std::string_view);
+	const char *operator[](const char *name) const;
+};
+
 }

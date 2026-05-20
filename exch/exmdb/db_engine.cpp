@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <climits>
+#include <compare>
 #include <condition_variable>
 #include <csignal>
 #include <cstdint>
@@ -12,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <fcntl.h>
 #include <future>
 #include <list>
 #include <mutex>
@@ -25,6 +27,7 @@
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
+#include <sys/stat.h>
 #include <libHX/scope.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
@@ -32,6 +35,7 @@
 #include <gromox/dbop.h>
 #include <gromox/double_list.hpp>
 #include <gromox/eid_array.hpp>
+#include <gromox/fileio.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
@@ -44,12 +48,14 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>
+#include <gromox/fileio.h>
 #include "db_engine.hpp"
 #include "notification_agent.hpp"
 #define MAX_DYNAMIC_NODES				100
 
 using LLD = long long;
 using LLU = unsigned long long;
+using GCV_ARRAY = LONGLONG_ARRAY;
 using namespace gromox;
 
 struct db_close {
@@ -68,56 +74,52 @@ struct POPULATING_NODE {
 	cpid_t cpid = CP_ACP;
 	BOOL b_recursive = false;
 	RESTRICTION *prestriction = nullptr;
-	LONGLONG_ARRAY folder_ids{};
+	std::vector<uint64_t> scope_list;
 };
 
-struct ROWINFO_NODE {
-	DOUBLE_LIST_NODE node;
-	BOOL b_added;
-	uint64_t row_id;
+struct rowinfo_node {
+	bool b_added = false;
+	uint64_t row_id = 0;
 };
 
-struct ROWDEL_NODE {
-	DOUBLE_LIST_NODE node;
-	uint64_t row_id;
-	uint32_t idx;
-	int64_t prev_id;
-	uint64_t inst_id;
-	uint64_t parent_id;
-	uint32_t depth;
-	uint32_t inst_num;
-	BOOL b_read;
+struct rowdel_node {
+	uint64_t row_id = 0;
+	int64_t prev_id = 0;
+	uint64_t inst_id = 0, parent_id = 0;
+	uint32_t depth, inst_num = 0, idx = 0;
+	bool b_read = false;
 };
 
 }
 
 static size_t g_table_size; /* hash table size */
-static unsigned int g_threads_num;
-static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
+static unsigned int g_sfpop_thrmax, g_exmdb_par_shutdown;
+static gromox::atomic_bool g_dbeng_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static gromox::time_duration g_cache_interval; /* maximum living interval in table */
-static std::vector<pthread_t> g_thread_ids;
-static std::mutex g_list_lock, g_hash_lock;
-static std::condition_variable g_waken_cond;
-static std::unordered_map<std::string, db_base> g_hash_table;
+static std::vector<pthread_t> g_sfpop_thrids;
+static std::mutex g_list_lock, g_hash_lock, g_maint_lock;
+static std::condition_variable g_waken_cond, g_maint_cv, g_maint_ref_cv;
+static std::unordered_map<std::string, db_base> g_hash_table; /* protected by g_hash_lock */
+static std::unordered_map<std::string, db_maint_mode> g_maint_table; /* protected by g_maint_lock */
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
-static std::optional<std::counting_semaphore<1>> g_autoupg_limiter;
-unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
-unsigned long long g_exmdb_search_pacing_time = 2000000000;
-unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
-unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
-unsigned long long g_sqlite_busy_timeout_ns;
+static std::optional<std::counting_semaphore<>> g_autoupg_limiter;
+std::atomic<unsigned int> g_exmdb_schema_upgrades, g_exmdb_search_pacing;
+std::atomic<unsigned long long> g_exmdb_search_pacing_time = 2000000000;
+std::atomic<unsigned int> g_exmdb_search_yield, g_exmdb_search_nice;
+std::atomic<unsigned int> g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
+std::atomic<unsigned long long> g_sqlite_busy_timeout_ns;
+std::string exmdb_eph_prefix;
 
-static bool remove_from_hash(const db_base &, time_point);
-static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id, db_base &) __attribute__((nonnull(1)));
+static bool dbase_is_purgable(const db_base &, time_point);
+static void dbeng_notify_cttbl_modify_row(db_conn &, uint64_t folder_id, uint64_t message_id, db_base &, db_conn::NOTIFQ &);
 
 static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 {
 	EXT_PULL ext_pull;
 	char sql_string[256];
 	uint32_t search_flags;
-	LONGLONG_ARRAY tmp_fids;
 	RESTRICTION tmp_restriction;
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id,"
@@ -137,24 +139,18 @@ static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 		pdynamic->search_flags = search_flags;
 		ext_pull.init(sqlite3_column_blob(pstmt, 2),
 			sqlite3_column_bytes(pstmt, 2), common_util_alloc, 0);
-		if (ext_pull.g_restriction(&tmp_restriction) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_restriction(&tmp_restriction) != pack_result::ok)
 			continue;
 		pdynamic->prestriction = tmp_restriction.dup();
 		if (pdynamic->prestriction == nullptr)
 			break;
-		if (!common_util_load_search_scopes(psqlite,
-		    pdynamic->folder_id, &tmp_fids))
+		if (!cu_load_search_scopes(psqlite,
+		    pdynamic->folder_id, dn.scope_list))
 			continue;
-		pdynamic->folder_ids.count = tmp_fids.count;
-		pdynamic->folder_ids.pll = me_alloc<uint64_t>(tmp_fids.count);
-		if (pdynamic->folder_ids.pll == nullptr)
-			break;
-		memcpy(pdynamic->folder_ids.pll, tmp_fids.pll,
-					sizeof(uint64_t)*tmp_fids.count);
 		dbase->dynamic_list.push_back(std::move(dn));
 	}
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2137: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
@@ -197,27 +193,85 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	return 0;
 }
 
+bool db_engine_set_maint(const char *path, enum db_maint_mode mode) try
+{
+	if (mode == db_maint_mode::usable) {
+		std::lock_guard mhold(g_maint_lock);
+		g_maint_table.erase(path);
+		g_maint_cv.notify_all();
+		mlog(LV_INFO, "I-2510: Mailbox %s set to maintenance mode %u",
+			path, static_cast<unsigned int>(mode));
+		return true;
+	}
+	bool wait = false;
+	if (mode == db_maint_mode::hold_waitforexcl) {
+		wait = true;
+		mode = db_maint_mode::hold;
+	} else if (mode == db_maint_mode::reject_waitforexcl) {
+		wait = true;
+		mode = db_maint_mode::reject;
+	}
+
+	{
+		std::lock_guard mhold(g_maint_lock);
+		g_maint_table.try_emplace(path).first->second = mode;
+	}
+	g_maint_cv.notify_all();
+	mlog(LV_INFO, "I-2510: Mailbox %s set to maintenance mode %u",
+		path, static_cast<unsigned int>(mode));
+	if (!wait)
+		return true;
+	std::unique_lock hhold(g_hash_lock);
+	g_maint_ref_cv.wait(hhold, [&]() {
+		auto it = g_hash_table.find(path);
+		return it == g_hash_table.end() || it->second.reference == 0;
+	});
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
+}
+
 /**
  * Query or create db_conn in hash table.
  *
  * Iff this function returns a non-null pointer, then pdb->psqlite and
  * pdb->m_sqlite_eph are also guaranteed to be viable.
  */
-db_conn_ptr db_engine_get_db(const char *path)
+std::optional<db_conn> db_engine_get_db(const char *path)
 {
-	db_base *pdb;
-	
 	if (*path == '\0')
 		return std::nullopt;
+
+	{
+		std::unique_lock mhold(g_maint_lock);
+		g_maint_cv.wait(mhold, [&]() {
+			auto i = g_maint_table.find(path);
+			return i == g_maint_table.cend() || i->second != db_maint_mode::hold;
+		});
+		auto m_iter = g_maint_table.find(path);
+		if (m_iter != g_maint_table.cend() && m_iter->second == db_maint_mode::reject)
+			return std::nullopt;
+	}
+
+	db_base *pdb;
 	std::unique_lock hhold(g_hash_lock);
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
 		pdb = &it->second;
-		db_conn_ptr conn(*pdb);
+		std::optional<db_conn> conn(*pdb);
 		hhold.unlock();
 		if (!conn->open(path))
 			return std::nullopt;
-		return conn;
+		if (getenv("SQLITE_WORKER") == nullptr)
+			return conn;
+		bool alive = gx_sql_exec(conn->psqlite, "PRAGMA zzz") == SQLITE_OK &&
+		             gx_sql_exec(conn->m_sqlite_eph, "PRAGMA zzz") == SQLITE_OK;
+		if (alive)
+			return conn;
+		conn.reset();
+		hhold.lock();
+		g_hash_table.erase(it);
 	}
 	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
@@ -235,21 +289,22 @@ db_conn_ptr db_engine_get_db(const char *path)
 
 	/*
 	 * Release central map lock (g_hash_lock) early to unblock map read
-	 * access looking for DBs of other dirs.
+	 * access looking for DBs of other dirs. Other threads can now see this
+	 * db_base instance. If ctor2_and_open has not completed yet, those
+	 * other threads will be waiting on sqlite_lock and thus be safely
+	 * serialized.
 	 */
 	hhold.unlock();
 	try {
-		pdb->open(path);
+		pdb->ctor2_and_open(path);
 	} catch (const std::runtime_error& err) {
 		mlog(LV_ERR, "%s", err.what());
 		return std::nullopt;
 	}
 
-	/* Wait for another thread's costly postconstruct_init (or any EXRPC) to finish. */
-	db_conn_ptr conn(*pdb);
-	if (!conn->open(path)) {
+	std::optional<db_conn> conn(*pdb);
+	if (!conn->open(path))
 		return std::nullopt;
-	}
 	return conn;
 }
 
@@ -272,34 +327,180 @@ BOOL db_engine_unload_db(const char *path)
 		auto it = g_hash_table.find(path);
 		if (it == g_hash_table.end())
 			return TRUE;
-		auto now = tp_now();
-		auto &dbase = it->second;
-		std::unique_lock dhold(dbase.giant_lock);
-		if (remove_from_hash(dbase, now + g_cache_interval)) {
+		if (dbase_is_purgable(it->second, tp_now() + g_cache_interval)) {
 			g_hash_table.erase(it);
 			return TRUE;
 		}
-		dhold.unlock();
 		hhold.unlock();
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
 	return FALSE;
 }
 
+/**
+ * @db:      sqlite handle
+ * @last_cn: counter for most recently assigned CN (GCV)
+ * @q_list:  query for obtaining some objects
+ *           (shall return 2 columns; id and eligibility)
+ * @q_cn:    query for updating per-object CN
+ * @q_prop:  query for updating per-object CK & PCL
+ *
+ * Iterate over an object set and assign new Change Numbers, Change Keys and
+ * Predecessor Change Lists.
+ */
+static bool cgkreset_3(sqlite3 *db, uint64_t &last_cn, const GUID &store_guid,
+    const char *q_list, const char *q_cn, const char *q_prop)
+{
+	std::vector<std::pair<uint64_t, uint64_t>> gcv_list;
+	auto stm = gx_sql_prep(db, q_list);
+	if (stm == nullptr)
+		return false;
+	while (stm.step() == SQLITE_ROW)
+		gcv_list.emplace_back(stm.col_uint64(0), stm.col_uint64(1));
+	stm = gx_sql_prep(db, q_cn);
+	if (stm == nullptr)
+		return false;
+	auto stm_prop = gx_sql_prep(db, q_prop);
+	if (stm_prop == nullptr)
+		return false;
+
+	for (auto [objid, parent_attid] : gcv_list) {
+		auto next_cn = last_cn + 1;
+		stm.reset();
+		stm.bind_int64(1, next_cn);
+		stm.bind_int64(2, objid);
+		if (stm.step() != SQLITE_DONE)
+			return false;
+		++last_cn;
+		if (parent_attid != 0)
+			/* CK/PCL on attachments makes no sense */
+			continue;
+
+		char buf[23];
+		XID xid{store_guid, rop_util_make_eid_ex(1, last_cn)};
+		EXT_PUSH ep;
+		if (!ep.init(&buf[1], sizeof(buf) - 1, 0))
+			return false;
+		ep.p_xid(xid);
+		stm_prop.reset();
+		stm_prop.bind_blob(1, &buf[1], ep.m_offset);
+		stm_prop.bind_int64(2, objid);
+		stm_prop.bind_int64(3, PR_CHANGE_KEY);
+		if (stm_prop.step() != SQLITE_DONE)
+			return false;
+
+		stm_prop.reset();
+		buf[0] = 22;
+		stm_prop.bind_blob(1, buf, 23);
+		stm_prop.bind_int64(2, objid);
+		stm_prop.bind_int64(3, PR_PREDECESSOR_CHANGE_LIST);
+		if (stm_prop.step() != SQLITE_DONE)
+			return false;
+	}
+	return true;
+}
+
+static bool cgkreset_2(sqlite3 *db, uint64_t &last_cn, const GUID &store_guid,
+    unsigned int flags)
+{
+	if (flags & CGKRESET_FOLDERS) {
+		auto succ = cgkreset_3(db, last_cn, store_guid,
+		            "SELECT folder_id, NULL FROM folders",
+		            "UPDATE folders SET change_number=? WHERE folder_id=?",
+		            "UPDATE folder_properties SET propval=? WHERE folder_id=? AND proptag=?");
+		if (!succ)
+			return false;
+	}
+	if (flags & CGKRESET_MESSAGES) {
+		auto succ = cgkreset_3(db, last_cn, store_guid,
+		            "SELECT message_id, parent_attid FROM messages",
+		            "UPDATE messages SET change_number=? WHERE message_id=?",
+		            "UPDATE message_properties SET propval=? WHERE message_id=? AND proptag=?");
+		if (!succ)
+			return false;
+	}
+	return true;
+}
+
+/**
+ * Obtain essential parameters for a global CN/CK reassignment. In doing so, it
+ * performs the first sanity check and returns a bumped last_cn if necessary.
+ */
+static bool cgkreset_load_param(sqlite3 *db, uint64_t &last_cn, GUID &store_guid)
+{
+	auto stm = gx_sql_prep(db, "SELECT config_value FROM configurations WHERE config_id=?");
+	if (stm == nullptr)
+		return false;
+	stm.bind_int64(1, CONFIG_ID_MAILBOX_GUID);
+	if (stm.step() != SQLITE_ROW)
+		return false;
+	if (!store_guid.from_str(stm.col_text(0)))
+		return false;
+	stm.reset();
+	stm.bind_int64(1, CONFIG_ID_LAST_CHANGE_NUMBER);
+	if (stm.step() != SQLITE_ROW)
+		return false;
+	last_cn = stm.col_uint64(0);
+
+	stm = gx_sql_prep(db, "SELECT MAX(change_number) FROM folders");
+	if (stm == nullptr)
+		return false;
+	if (stm.step() == SQLITE_ROW)
+		last_cn = std::max(last_cn, stm.col_uint64(0));
+	stm = gx_sql_prep(db, "SELECT MAX(change_number) FROM messages");
+	if (stm == nullptr)
+		return false;
+	if (stm.step() == SQLITE_ROW)
+		last_cn = std::max(last_cn, stm.col_uint64(0));
+	return true;
+}
+
+static bool cgkreset_save_param(sqlite3 *db, uint64_t last_cn)
+{
+	auto stm = gx_sql_prep(db, "UPDATE configurations SET config_value=? WHERE config_id=?");
+	if (stm == nullptr)
+		return false;
+	stm.bind_int64(1, last_cn);
+	stm.bind_int64(2, CONFIG_ID_LAST_CHANGE_NUMBER);
+	return stm.step() == SQLITE_DONE;
+}
+
+BOOL db_engine_cgkreset(const char *dir, uint32_t flags)
+{
+	auto db = db_engine_get_db(dir);
+	if (!db)
+		return false;
+	auto xact = gx_sql_begin(db->psqlite, txn_mode::write);
+	if (!xact)
+		return false;
+	uint64_t last_cn = 0;
+	GUID store_guid;
+	if (!cgkreset_load_param(db->psqlite, last_cn, store_guid))
+		return false;
+	if (flags & CGKRESET_ZERO_LASTCN)
+		last_cn = 0;
+	if (flags & (CGKRESET_ZERO_LASTCN | CGKRESET_FOLDERS | CGKRESET_MESSAGES)) {
+		auto succ = cgkreset_2(db->psqlite, last_cn, store_guid, flags);
+		if (!succ)
+			return false;
+	}
+	auto succ = cgkreset_save_param(db->psqlite, last_cn);
+	if (!succ)
+		return false;
+	return xact.commit() == SQLITE_OK;
+}
+
 dynamic_node::dynamic_node(dynamic_node &&o) noexcept :
 	folder_id(o.folder_id), search_flags(o.search_flags),
-	prestriction(o.prestriction), folder_ids(o.folder_ids)
+	prestriction(o.prestriction), scope_list(std::move(o.scope_list))
 {
 	o.prestriction = nullptr;
-	o.folder_ids = {};
 }
 
 dynamic_node::~dynamic_node()
 {
 	if (prestriction != nullptr)
 		restriction_free(prestriction);
-	if (folder_ids.pll != nullptr)
-		free(folder_ids.pll);
 }
 
 dynamic_node &dynamic_node::operator=(dynamic_node &&o) noexcept
@@ -307,9 +508,7 @@ dynamic_node &dynamic_node::operator=(dynamic_node &&o) noexcept
 	folder_id = o.folder_id;
 	search_flags = o.search_flags;
 	std::swap(prestriction, o.prestriction);
-	folder_ids.count = o.folder_ids.count;
-	o.folder_ids.count = 0;
-	std::swap(folder_ids.pll, o.folder_ids.pll);
+	scope_list = std::move(o.scope_list);
 	return *this;
 }
 
@@ -355,34 +554,42 @@ db_base::db_base() :
 db_handle db_base::get_db(const char* dir, DB_TYPE type)
 {
 	auto& spares = type == DB_MAIN? mx_sqlite : mx_sqlite_eph;
-	if(!spares.empty()) {
+	if (!spares.empty()) {
 		db_handle handle = std::move(spares.back());
 		spares.pop_back();
 		return handle;
 	}
 	const auto &path = type == DB_MAIN ? fmt::format("{}/exmdb/exchange.sqlite3", dir) :
-	                   fmt::format("{}/tables.sqlite3", dir);
+			   fmt::format("{}/{}/tables.sqlite3", exmdb_eph_prefix, dir);
 	int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX;
 	flags |= type == DB_MAIN? 0 : SQLITE_OPEN_CREATE;
 	sqlite3 *db = nullptr;
+	int ret = gx_mkbasedir(path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-2710: mkbasedir %s: %s", path.c_str(), strerror(-ret));
+		return nullptr;
+	}
 	if (access(path.c_str(), W_OK) != 0 && errno != ENOENT)
 		mlog(LV_ERR, "E-1734: %s is not writable (%s), there may be more errors later",
 			path.c_str(), strerror(errno));
-	int ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
+	ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
 	db_handle hdb(db); /* automatically close connection if something goes wrong */
-	if(ret != SQLITE_OK) {
+	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1350: sqlite_open_v2(%s): %s (%d)",
 			path.c_str(), sqlite3_errstr(ret), ret);
 		return nullptr;
 	}
-	if((ret = gx_sql_exec(db, "PRAGMA foreign_keys=ON")) != SQLITE_OK) {
+	ret = gx_sql_exec(db, "PRAGMA foreign_keys=ON");
+	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-2101: enable foreign keys %s: %s (%d)", dir, sqlite3_errstr(ret), ret);
 		return nullptr;
 	}
-	gx_sql_exec(db, "PRAGMA journal_mode=WAL");
+	if (gx_sql_exec(db, "PRAGMA journal_mode=WAL") != SQLITE_OK)
+		/* keep going with existing mode */;
 	sqlite3_busy_timeout(db, int(g_sqlite_busy_timeout_ns / 1000000)); // ns -> ms
-	if(type == DB_EPH)
-		gx_sql_exec(db, "PRAGMA	synchronous=OFF"); /* completely disable disk synchronization for eph db */
+	ret = gx_sql_exec(db, type == DB_MAIN ? "PRAGMA synchronous=FULL" : "PRAGMA synchronous=OFF");
+	if (ret != SQLITE_OK)
+		/* keep going with existing mode */;
 	return hdb;
 }
 
@@ -399,36 +606,56 @@ void db_base::get_dbs(const char* dir, sqlite3 *&main, sqlite3 *&eph)
 /**
  * @brief      Initialize and unlock database
  *
- * Perform database initializations that should not be run for each connection:
- * - Remove residue ephemeral db
+ * Perform one-time database operations; operations that should not be run for
+ * each connection:
+ *
+ * - Remove residual ephemeral tables db from last process
  * - Perform schema upgrade
  *
  * @param      dir     User or domain base directory
  *
  * @throws     std::runtime_error  if any initialization step fails
  */
-void db_base::open(const char* dir)
+void db_base::ctor2_and_open(const char *dir)
 {
 	auto unlock = HX::make_scope_exit([this] { sqlite_lock.unlock(); --reference; }); /* unlock whenever we're done */
-	auto db_path = fmt::format("{}/tables.sqlite3", dir);
+	auto db_path = fmt::format("{}/{}/tables.sqlite3", exmdb_eph_prefix, dir);
 	auto ret = ::unlink(db_path.c_str());
 	if (ret != 0 && errno != ENOENT)
 		throw std::runtime_error(fmt::format("E-1351: unlink {}: {}", db_path.c_str(), strerror(errno)));
 
+	/* We need a handle for the upgrade check... */
 	db_handle hdb(get_db(dir, DB_MAIN));
 	if (!hdb)
 		throw std::runtime_error(fmt::format("E-1434: get_db({}) failed", dir));
 	ret = db_engine_autoupgrade(hdb.get(), dir);
-	if(ret != 0)
+	if (ret != 0)
 		throw std::runtime_error(fmt::format("E-2105: autoupgrade {}: {}", dir, ret));
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(this, hdb.get());
+
+	/* ...don't let it go to waste */
 	mx_sqlite.emplace_back(std::move(hdb));
+}
+
+static void rollback_leaked_txn(sqlite3 *db)
+{
+	if (db == nullptr)
+		return;
+	auto state = sqlite3_txn_state(db, "main");
+	if (state == SQLITE_TXN_NONE)
+		return;
+	mlog(LV_ERR, "E-2765: handle %s returned to pool with active transaction (state=%d), "
+		"forcing rollback", znul(sqlite3_db_filename(db, nullptr)), state);
+	if (gx_sql_exec(db, "ROLLBACK") != SQLITE_OK)
+		/* nothing more we can do */;
 }
 
 void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 {
 	static constexpr size_t unlimited = 0;
+	rollback_leaked_txn(main);
+	rollback_leaked_txn(eph);
 	std::unique_lock lock(sqlite_lock);
 	try {
 		if (eph != nullptr && g_exmdb_max_sqlite_spares != unlimited &&
@@ -445,9 +672,9 @@ void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 	}
 	lock.unlock();
 	if (eph != nullptr)
-		sqlite3_close(eph);
+		sqlite3_close_v2(eph);
 	if (main != nullptr)
-		sqlite3_close(main);
+		sqlite3_close_v2(main);
 }
 
 db_conn::db_conn(db_base &base) :
@@ -456,9 +683,10 @@ db_conn::db_conn(db_base &base) :
 	++base.reference;
 }
 
-db_conn::db_conn(db_conn &&o) :
+db_conn::db_conn(db_conn &&o) noexcept :
 	psqlite(std::move(o.psqlite)),
 	m_sqlite_eph(std::move(o.m_sqlite_eph)),
+	m_prepstm(std::move(o.m_prepstm)),
 	m_base(std::move(o.m_base))
 {
 	o.psqlite = o.m_sqlite_eph = nullptr;
@@ -469,14 +697,32 @@ db_conn::~db_conn()
 {
 	if (m_base == nullptr)
 		return;
+	/*
+	 * Finalize any cached prepared statements while the
+	 * sqlite3 handles are still ours, before returning them
+	 * to the connection pool where another thread could
+	 * pick them up immediately.
+	 */
+	m_prepstm.reset();
 	m_base->handle_spares(std::move(psqlite), std::move(m_sqlite_eph));
 	--m_base->reference;
+	g_maint_ref_cv.notify_all();
 }
 
-db_conn &db_conn::operator=(db_conn &&o)
+db_conn &db_conn::operator=(db_conn &&o) noexcept
 {
+	if (this == &o)
+		return *this;
+	/* Clean up our own state first. */
+	m_prepstm.reset();
+	if (m_base != nullptr) {
+		m_base->handle_spares(std::move(psqlite), std::move(m_sqlite_eph));
+		--m_base->reference;
+		g_maint_ref_cv.notify_all();
+	}
 	psqlite = std::move(o.psqlite);
 	m_sqlite_eph = std::move(o.m_sqlite_eph);
+	m_prepstm = std::move(o.m_prepstm);
 	o.psqlite = o.m_sqlite_eph = nullptr;
 	m_base = std::move(o.m_base);
 	o.m_base = nullptr;
@@ -495,7 +741,7 @@ bool db_conn::open(const char *dir) try
 	m_base->get_dbs(dir, psqlite, m_sqlite_eph);
 	return psqlite && m_sqlite_eph;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1349: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -542,8 +788,10 @@ void db_base::drop_all()
 /**
  * Check if this db_base object is ripe for deletion.
  */
-static bool remove_from_hash(const db_base &pdb, time_point now)
+static bool dbase_is_purgable(const db_base &pdb, time_point now)
 {
+	/* Guard against writers that might interfere with reads. */
+	std::lock_guard hold(pdb.giant_lock);
 	if (pdb.tables.table_list.size() > 0)
 		/* emsmdb still references in-memory tables */
 		return false;
@@ -557,10 +805,12 @@ static bool remove_from_hash(const db_base &pdb, time_point now)
 
 static void *db_expiry_thread(void *param)
 {
+	bool once = false;
+	pthread_setname_np(pthread_self(), "db_expiry");
 	int count;
 
 	count = 0;
-	while (!g_notify_stop) {
+	while (!g_dbeng_stop) {
 		sleep(1);
 		if (count < 10) {
 			count ++;
@@ -570,17 +820,20 @@ static void *db_expiry_thread(void *param)
 		/* Exclusive ownership over the list is needed, obviously, since we modify it */
 		std::lock_guard hhold(g_hash_lock);
 		auto now_time = tp_now();
-		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
-			auto &dbase = it->second;
-			/*
-			 * There must be no readers nor writers if we destroy it.
-			 * Hence another lock.
-			 */
-			std::unique_lock dhold(dbase.giant_lock);
-			if (remove_from_hash(dbase, now_time))
-				it = g_hash_table.erase(it);
-			else
-				++it;
+		/*
+		 * There must be no readers nor writers when we destroy it.
+		 * dbase_is_purgable is taking dbase.giant_lock, which is good
+		 * enough to establish absence of other readers (and there
+		 * ought to be no new ones, since we also hold g_hash_lock).
+		 */
+		auto z = std::erase_if(g_hash_table, [=](const decltype(g_hash_table)::value_type &iter) {
+			return dbase_is_purgable(iter.second, now_time);
+		});
+		if (z > 0 && g_istore_standalone & ISTORE_SPLIT_WORKERS &&
+		    !once && g_hash_table.empty()) {
+			mlog(LV_INFO, "Ending istore worker since db was closed by inactivity");
+			once = true;
+			raise(SIGTERM);
 		}
 	}
 	return nullptr;
@@ -597,17 +850,17 @@ void dg_notify(db_conn::NOTIFQ &&notifq)
 	notifq.clear();
 }
 
-static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
+static bool db_engine_search_folder(const char *dir, cpid_t cpid,
     uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction,
-    db_conn_ptr &pdb)
+    db_conn &db)
 {
 	char sql_string[128];
-	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read); // ends before writes take place
+	auto sql_transact = gx_sql_begin(db.psqlite, txn_mode::read); // ends before writes take place
 	if (!sql_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search "
 	          "FROM folders WHERE folder_id=%llu", LLU{scope_fid});
-	auto pstmt = pdb->prep(sql_string);
+	auto pstmt = db.prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW)
@@ -621,7 +874,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		          " search_result WHERE folder_id=%llu",
 		          static_cast<unsigned long long>(scope_fid));
 	pstmt.finalize();
-	pstmt = pdb->prep(sql_string);
+	pstmt = db.prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	auto pmessage_ids = eid_array_init();
@@ -642,19 +895,19 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 				pmessage_ids->count, t_diff);
 	});
 	sql_transact = xtransaction();
-	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
-		if (g_notify_stop)
+	for (size_t i = 0; i < pmessage_ids->count; ++i) {
+		if (g_dbeng_stop)
 			break;
-		auto sql_transact1 = gx_sql_begin(pdb->psqlite, txn_mode::write);
+		auto sql_transact1 = gx_sql_begin(db.psqlite, txn_mode::write);
 		if (!sql_transact1)
 			return false;
-		if (!cu_eval_msg_restriction(pdb->psqlite,
+		if (!cu_eval_msg_restriction(db,
 		    cpid, pmessage_ids->pids[i], prestriction))
 			continue;
 		snprintf(sql_string, std::size(sql_string), "REPLACE INTO search_result "
 		         "(folder_id, message_id) VALUES (%llu, %llu)",
 		         LLU{search_fid}, LLU{pmessage_ids->pids[i]});
-		auto ret = pdb->exec(sql_string, SQLEXEC_SILENT_CONSTRAINT);
+		auto ret = db.exec(sql_string, SQLEXEC_SILENT_CONSTRAINT);
 		if (ret == SQLITE_CONSTRAINT)
 			/*
 			 * Search folder is closed (deleted) already, INSERT
@@ -671,21 +924,21 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		 * folder; exmdb_provider only does a descendant check).
 		 */
 		db_conn::NOTIFQ notifq;
-		auto dbase = pdb->lock_base_wr();
-		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
+		auto dbase = db.lock_base_wr();
+		db.proc_dynamic_event(cpid, dynamic_event::new_msg,
 			search_fid, pmessage_ids->pids[i], 0, *dbase, notifq);
 		/*
 		 * Regular notifications
 		 */
-		pdb->notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq);
+		db.notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq);
 		dg_notify(std::move(notifq));
 		dbase.reset();
 	}
 	return TRUE;
 }
 
-static BOOL db_engine_load_folder_descendant(const char *dir,
-	BOOL b_recursive, uint64_t folder_id, EID_ARRAY *pfolder_ids)
+static bool db_engine_load_folder_descendant(const char *dir,
+    bool b_recursive, uint64_t folder_id, EID_ARRAY *pfolder_ids)
 {
 	char sql_string[128];
 	
@@ -707,7 +960,6 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 POPULATING_NODE::~POPULATING_NODE()
 {
 	restriction_free(prestriction);
-	free(folder_ids.pll);
 }
 
 /**
@@ -730,7 +982,7 @@ static db_conn::ID_ARRAYS db_engine_classify_id_array(const db_base &db,
 	}
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1228: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	throw;
 }
 
@@ -740,19 +992,16 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_SEARCH_COMPLETE, folder_id, 0);
+	               fnevSearchComplete, folder_id, 0);
 	if (parrays.size() == 0)
 		return;
 	datagram.dir = deconst(dir);
 	datagram.db_notify.type = db_notify_type::search_completed;
-	auto psearch_completed = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
-	if (psearch_completed == nullptr)
-		return;
-	datagram.db_notify.pdata = psearch_completed;
+	auto psearch_completed = &datagram.db_notify;
 	psearch_completed->folder_id = folder_id;
 	notifq.emplace_back(std::move(datagram), std::move(parrays));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2118: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 /**
@@ -764,11 +1013,11 @@ static void *sf_popul_thread(void *param)
 	if (nice(g_exmdb_search_nice) < 0)
 		/* ignore */;
 	
-	while (!g_notify_stop) {
+	while (!g_dbeng_stop) {
  NEXT_SEARCH:
 		std::unique_lock lhold(g_list_lock);
-		g_waken_cond.wait(lhold, []() { return g_notify_stop || g_populating_list.size() > 0; });
-		if (g_notify_stop)
+		g_waken_cond.wait(lhold, []() { return g_dbeng_stop || g_populating_list.size() > 0; });
+		if (g_dbeng_stop)
 			break;
 		if (g_populating_list.size() == 0)
 			continue;
@@ -780,34 +1029,33 @@ static void *sf_popul_thread(void *param)
 			g_populating_list_active.erase(psearch);
 			lhold.unlock();
 		});
-		auto pfolder_ids = eid_array_init();
+		auto pfolder_ids = eid_array_init(); /* Actually it's just GCVs */
 		if (pfolder_ids == nullptr)
 			goto NEXT_SEARCH;	
 		auto cl_1 = HX::make_scope_exit([&]() { eid_array_free(pfolder_ids); });
 		exmdb_server::build_env(EM_PRIVATE, psearch->dir.c_str());
 		auto cl_2 = HX::make_scope_exit(exmdb_server::free_env);
-		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
-			if (!eid_array_append(pfolder_ids,
-			    psearch->folder_ids.pll[i]))
+		for (auto le_folder : psearch->scope_list) {
+			if (!eid_array_append(pfolder_ids, le_folder))
 				goto NEXT_SEARCH;	
 			if (!psearch->b_recursive)
 				continue;
 			if (!db_engine_load_folder_descendant(psearch->dir.c_str(),
-			    psearch->b_recursive, psearch->folder_ids.pll[i], pfolder_ids))
+			    psearch->b_recursive, le_folder, pfolder_ids))
 				goto NEXT_SEARCH;
 		}
 		auto pdb = db_engine_get_db(psearch->dir.c_str());
 		if (!pdb)
 			goto NEXT_SEARCH;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
-			if (g_notify_stop)
+			if (g_dbeng_stop)
 				break;
 			if (!db_engine_search_folder(psearch->dir.c_str(),
 			    psearch->cpid, psearch->folder_id,
-			    pfolder_ids->pids[i], psearch->prestriction, pdb))
+			    pfolder_ids->pids[i], psearch->prestriction, *pdb))
 				break;
 		}
-		if (g_notify_stop)
+		if (g_dbeng_stop)
 			break;
 		db_conn::NOTIFQ notifq;
 		auto dbase = pdb->lock_base_wr();
@@ -844,14 +1092,16 @@ static void *sf_popul_thread(void *param)
 	return nullptr;
 }
 
-void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num)
+void db_engine_init(size_t table_size, int cache_interval, unsigned int sfpop_max,
+    unsigned int par_upg, unsigned int par_shut)
 {
-	g_notify_stop = true;
+	g_dbeng_stop = true;
 	g_table_size = table_size;
 	g_cache_interval = std::chrono::seconds{cache_interval};
-	g_threads_num = threads_num;
-	g_thread_ids.reserve(g_threads_num);
-	g_autoupg_limiter.emplace(threads_num);
+	g_sfpop_thrmax = sfpop_max;
+	g_sfpop_thrids.reserve(sfpop_max);
+	g_exmdb_par_shutdown = par_shut;
+	g_autoupg_limiter.emplace(par_upg);
 }
 
 int db_engine_run()
@@ -866,15 +1116,14 @@ int db_engine_run()
 		mlog(LV_ERR, "exmdb_provider: Failed to initialize sqlite engine");
 		return -2;
 	}
-	g_notify_stop = false;
+	g_dbeng_stop = false;
 	auto ret = pthread_create4(&g_scan_tid, nullptr,
 	           db_expiry_thread, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "exmdb_provider: failed to create db scan thread: %s", strerror(ret));
 		return -4;
 	}
-	pthread_setname_np(g_scan_tid, "db_expiry");
-	for (unsigned int i = 0; i < g_threads_num; ++i) {
+	for (unsigned int i = 0; i < g_sfpop_thrmax; ++i) {
 		pthread_t tid;
 		ret = pthread_create4(&tid, nullptr, sf_popul_thread, nullptr);
 		if (ret != 0) {
@@ -885,17 +1134,26 @@ int db_engine_run()
 		char buf[32];
 		snprintf(buf, sizeof(buf), "sfpop/%u", i);
 		pthread_setname_np(tid, buf);
-		g_thread_ids.push_back(tid);
+		g_sfpop_thrids.push_back(tid);
 	}
 	return 0;
 }
 
+static void async_db_clean(size_t tid, decltype(g_hash_table)::iterator iter, size_t skip)
+{
+	while (iter != g_hash_table.end()) {
+		iter->second.drop_all();
+		for (size_t i = 0; i < skip && iter != g_hash_table.end(); ++i)
+			++iter;
+	}
+}
+
 void db_engine_stop()
 {
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_dbeng_stop) {
+		g_dbeng_stop = true;
 		g_waken_cond.notify_all();
-		for (auto tid : g_thread_ids) {
+		for (auto tid : g_sfpop_thrids) {
 			pthread_kill(tid, SIGALRM);
 			pthread_join(tid, nullptr);
 		}
@@ -904,26 +1162,31 @@ void db_engine_stop()
 			pthread_join(g_scan_tid, NULL);
 		}
 	}
-	g_thread_ids.clear();
-	{ /* silence cov-scan, take locks even in single-thread scenarios */
+	g_sfpop_thrids.clear();
+	/*
+	 * This is db_engine_stop. We know we are single threaded and do not
+	 * really need to hold any locks.
+	 *
+	 * And though we are temporarily multithreading again with std::async,
+	 * it is a readonly operation as far as g_hash_table is concerned.
+	 */
+	{
 		auto t_start = tp_now();
-		size_t conc = std::min(gx_concurrency(), g_threads_num);
+		size_t conc = std::min(gx_concurrency(), g_exmdb_par_shutdown);
 		std::vector<std::future<void>> futs;
+		/*
+		 * cov-scan may complain here about missing locks, but this is
+		 * a paralellized section that only reads data structures.
+		 */
 		auto iter = g_hash_table.begin();
 		for (size_t tid = 0; tid < conc; ++tid) {
 			if (iter == g_hash_table.end())
 				break;
-			futs.emplace_back(std::async([](size_t tid, decltype(g_hash_table)::iterator iter, size_t skip) -> void {
-				while (iter != g_hash_table.end()) {
-					iter->second.drop_all();
-					for (size_t i = 0; i < skip && iter != g_hash_table.end(); ++i)
-						++iter;
-				}
-			}, tid, iter, conc));
+			futs.emplace_back(std::async(async_db_clean, tid, iter, conc));
 			++iter;
 		}
 		futs.clear();
-		std::lock_guard lk(g_hash_lock);
+		/* Single-threaded write section */
 		g_hash_table.clear();
 		mlog(LV_INFO, "Database shutdown took %llu ms",
 			LLU(std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - t_start).count()));
@@ -935,9 +1198,9 @@ void db_engine_stop()
 	sqlite3_shutdown();
 }
 
-BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
-    uint64_t folder_id, BOOL b_recursive, const RESTRICTION *prestriction,
-    const LONGLONG_ARRAY *pfolder_ids) try
+bool db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
+    uint64_t folder_id, bool b_recursive, const RESTRICTION *prestriction,
+    std::vector<uint64_t> &&scope_list) try
 {
 	std::list<POPULATING_NODE> holder;
 	holder.emplace_back();
@@ -946,22 +1209,17 @@ BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
 	psearch->prestriction = prestriction->dup();
 	if (psearch->prestriction == nullptr)
 		return FALSE;
-	psearch->folder_ids.pll = me_alloc<uint64_t>(pfolder_ids->count);
-	if (psearch->folder_ids.pll == nullptr)
-		return FALSE;
-	memcpy(psearch->folder_ids.pll, pfolder_ids->pll,
-		sizeof(uint64_t)*pfolder_ids->count);
+	psearch->scope_list = std::move(scope_list);
 	psearch->cpid = cpid;
 	psearch->folder_id = folder_id;
 	psearch->b_recursive = b_recursive;
-	psearch->folder_ids.count = pfolder_ids->count;
 	std::unique_lock lhold(g_list_lock);
 	g_populating_list.splice(g_populating_list.end(), std::move(holder));
 	lhold.unlock();
 	g_waken_cond.notify_one();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1962: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -978,7 +1236,7 @@ bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 }
 
 void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
-    const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids,
+    const RESTRICTION *prestriction, const std::vector<uint64_t> &scope_list,
     db_base &dbase) try
 {
 	dynamic_node dn;
@@ -988,11 +1246,7 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	dn.prestriction = prestriction->dup();
 	if (dn.prestriction == nullptr)
 		return;
-	dn.folder_ids.count = pfolder_ids->count;
-	dn.folder_ids.pll   = me_alloc<uint64_t>(pfolder_ids->count);
-	if (dn.folder_ids.pll == nullptr)
-		return;
-	memcpy(dn.folder_ids.pll, pfolder_ids->pll, sizeof(*pfolder_ids->pll) * pfolder_ids->count);
+	dn.scope_list = scope_list;
 	auto i = std::find_if(dbase.dynamic_list.begin(), dbase.dynamic_list.end(),
 	         [=](const dynamic_node &n) { return n.folder_id == folder_id; });
 	if (i == dbase.dynamic_list.end())
@@ -1000,7 +1254,7 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	else
 		*i = std::move(dn);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2136: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::delete_dynamic(uint64_t folder_id, db_base *dbase)
@@ -1009,10 +1263,11 @@ void db_conn::delete_dynamic(uint64_t folder_id, db_base *dbase)
 		[=](const dynamic_node &n) { return n.folder_id == folder_id; });
 }
 
-static void dbeng_dynevt_1(db_conn *pdb, cpid_t cpid, uint64_t id1,
+static void dbeng_dynevt_1(db_conn &db, cpid_t cpid, uint64_t id1,
     uint64_t id2, uint64_t id3, uint32_t folder_type,
     const dynamic_node *pdynamic, size_t i, db_base &dbase, db_conn::NOTIFQ &notifq)
 {
+	auto pdb = &db;
 	BOOL b_exist, b_included, b_included1;
 	uint64_t message_id;
 	char sql_string[128];
@@ -1021,9 +1276,9 @@ static void dbeng_dynevt_1(db_conn *pdb, cpid_t cpid, uint64_t id1,
 		return;
 
 	if (!cu_is_descendant_folder(pdb->psqlite,
-	    id1, pdynamic->folder_ids.pll[i], &b_included) ||
+	    id1, pdynamic->scope_list[i], &b_included) ||
 	    !cu_is_descendant_folder(pdb->psqlite,
-	    id2, pdynamic->folder_ids.pll[i], &b_included1)) {
+	    id2, pdynamic->scope_list[i], &b_included1)) {
 		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
@@ -1055,7 +1310,7 @@ static void dbeng_dynevt_1(db_conn *pdb, cpid_t cpid, uint64_t id1,
 				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 			continue;
 		}
-		if (!cu_eval_msg_restriction(pdb->psqlite,
+		if (!cu_eval_msg_restriction(db,
 		    cpid, message_id, pdynamic->prestriction))
 			return;
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result "
@@ -1069,24 +1324,25 @@ static void dbeng_dynevt_1(db_conn *pdb, cpid_t cpid, uint64_t id1,
 	}
 }
 
-static void dbeng_dynevt_2(db_conn *pdb, cpid_t cpid, dynamic_event event_type,
+static void dbeng_dynevt_2(db_conn &db, cpid_t cpid, dynamic_event event_type,
     uint64_t id1, uint64_t id2, const dynamic_node *pdynamic, size_t i,
     db_base &dbase, db_conn::NOTIFQ &notifq)
 {
+	auto pdb = &db;
 	BOOL b_exist;
 	BOOL b_included;
 	char sql_string[128];
 
 	if (pdynamic->search_flags & RECURSIVE_SEARCH) {
 		if (!cu_is_descendant_folder(pdb->psqlite,
-		    id1, pdynamic->folder_ids.pll[i], &b_included)) {
+		    id1, pdynamic->scope_list[i], &b_included)) {
 			mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 			return;
 		}
 		if (!b_included)
 			return;
 	} else {
-		if (id1 != pdynamic->folder_ids.pll[i])
+		if (id1 != pdynamic->scope_list[i])
 			return;
 	}
 	switch (event_type) {
@@ -1098,7 +1354,7 @@ static void dbeng_dynevt_2(db_conn *pdb, cpid_t cpid, dynamic_event event_type,
 		}
 		if (b_exist)
 			return;
-		if (!cu_eval_msg_restriction(pdb->psqlite,
+		if (!cu_eval_msg_restriction(db,
 		    cpid, id2, pdynamic->prestriction))
 			return;
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result "
@@ -1136,10 +1392,9 @@ static void dbeng_dynevt_2(db_conn *pdb, cpid_t cpid, dynamic_event event_type,
 			return;
 		}
 		if (cu_eval_msg_restriction(
-			pdb->psqlite, cpid, id2, pdynamic->prestriction)) {
+		    db, cpid, id2, pdynamic->prestriction)) {
 			if (b_exist) {
-				dbeng_notify_cttbl_modify_row(
-					pdb, pdynamic->folder_id, id2, dbase);
+				dbeng_notify_cttbl_modify_row(db, pdynamic->folder_id, id2, dbase, notifq);
 				pdb->notify_folder_modification(
 					common_util_get_folder_parent_fid(
 					pdb->psqlite, pdynamic->folder_id),
@@ -1206,36 +1461,41 @@ void db_conn::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
 		 * [In conjunction with dynevt_1/2] if id1 is within the scope,
 		 * pdynamic gets the event.
 		 */
-		for (size_t i = 0; i < pdynamic->folder_ids.count; ++i) {
+		for (size_t i = 0; i < pdynamic->scope_list.size(); ++i) {
 			if (dynamic_event::move_folder == event_type) {
-				dbeng_dynevt_1(pdb, cpid, id1, id2, id3,
+				dbeng_dynevt_1(*pdb, cpid, id1, id2, id3,
 					folder_type, pdynamic, i, dbase, notifq);
 				continue;
 			}
-			dbeng_dynevt_2(pdb, cpid, event_type, id1, id2,
+			dbeng_dynevt_2(*pdb, cpid, event_type, id1, id2,
 				pdynamic, i, dbase, notifq);
 		}
 	}
 }
 
-static int db_engine_compare_propval(
-	uint16_t proptype, void *pvalue1, void *pvalue2)
+static std::strong_ordering db_engine_compare_propval(proptype_t proptype,
+    void *pvalue1, void *pvalue2)
 {
+	/*
+	 * EXC2019-compatible behavior: absent values sort before anything
+	 * else, and compare equal to another absent property.
+	 * (See also: propval_compare_relop_nullok)
+	 */
 	if (pvalue1 == nullptr && pvalue2 == nullptr)
-		return 0;
+		return std::strong_ordering::equal;
 	if (pvalue1 == nullptr && pvalue2 != nullptr)
-		return -1;
+		return std::strong_ordering::less;
 	if (pvalue1 != nullptr && pvalue2 == nullptr)
-		return 1;
+		return std::strong_ordering::greater;
 	return propval_compare(pvalue1, pvalue2, proptype);
 }
 
-static BOOL db_engine_insert_categories(sqlite3 *psqlite,
-	int depth, uint64_t parent_id, uint64_t after_row_id,
-	uint64_t before_row_id, SORTORDER_SET *psorts,
-	TAGGED_PROPVAL *ppropvals, sqlite3_stmt *pstmt_insert,
-	sqlite3_stmt *pstmt_update, uint32_t *pheader_id,
-	DOUBLE_LIST *pnotify_list, uint64_t *plast_row_id)
+static bool db_engine_insert_categories(sqlite3 *psqlite, int depth,
+    uint64_t parent_id, uint64_t after_row_id, uint64_t before_row_id,
+    const SORTORDER_SET *psorts, const TAGGED_PROPVAL *ppropvals,
+    sqlite3_stmt *pstmt_insert, sqlite3_stmt *pstmt_update,
+    uint32_t *pheader_id, std::vector<rowinfo_node> &notify_list,
+    uint64_t *plast_row_id) try
 {
 	int i;
 	uint16_t type;
@@ -1273,14 +1533,8 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 		if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
 			return FALSE;
 		sqlite3_reset(pstmt_insert);
-		auto prnode = cu_alloc<ROWINFO_NODE>();
-		if (prnode == nullptr)
-			return FALSE;
 		row_id = sqlite3_last_insert_rowid(psqlite);
-		prnode->node.pdata = prnode;
-		prnode->b_added = TRUE;
-		prnode->row_id = row_id;
-		double_list_append_as_tail(pnotify_list, &prnode->node);
+		notify_list.emplace_back(true, row_id);
 		if (i == depth)
 			prev_id = row_id;
 		parent_id = row_id;
@@ -1294,15 +1548,15 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 	}
 	*plast_row_id = row_id;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-static BOOL db_engine_insert_message(sqlite3 *psqlite,
-	uint64_t message_id, BOOL b_read, int depth,
-	uint32_t inst_num, uint16_t type, void *pvalue,
-	uint64_t parent_id, uint64_t after_row_id,
-	uint64_t before_row_id, sqlite3_stmt *pstmt_insert,
-	sqlite3_stmt *pstmt_update, DOUBLE_LIST *pnotify_list,
-	uint64_t *plast_row_id)
+static bool db_engine_insert_message(sqlite3 *psqlite, uint64_t message_id,
+    bool b_read, int depth, uint32_t inst_num, uint16_t type, void *pvalue,
+    uint64_t parent_id, uint64_t after_row_id, uint64_t before_row_id,
+    sqlite3_stmt *pstmt_insert, sqlite3_stmt *pstmt_update,
+    std::vector<rowinfo_node> &notify_list, uint64_t *plast_row_id) try
 {
 	uint64_t row_id;
 	
@@ -1338,49 +1592,30 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 		sqlite3_reset(pstmt_update);
 	}
 	sqlite3_reset(pstmt_insert);
-	auto prnode = cu_alloc<ROWINFO_NODE>();
-	if (prnode == nullptr)
-		return FALSE;
-	prnode->node.pdata = prnode;
-	prnode->b_added = TRUE;
-	prnode->row_id = row_id;
-	double_list_append_as_tail(pnotify_list, &prnode->node);
+	notify_list.emplace_back(true, row_id);
 	*plast_row_id = row_id;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-static void db_engine_append_rowinfo_node(
-	DOUBLE_LIST *pnotify_list, uint64_t row_id)
+static void db_engine_append_rowinfo_node(std::vector<rowinfo_node> &notify_list,
+    uint64_t row_id) try
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
-		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto prnode = static_cast<const ROWINFO_NODE *>(pnode->pdata);
-		if (row_id == prnode->row_id)
-			return;
-	}
-	auto prnode = cu_alloc<ROWINFO_NODE>();
-	if (NULL != prnode) {
-		prnode->node.pdata = prnode;
-		prnode->b_added = FALSE;
-		prnode->row_id = row_id;
-		double_list_append_as_tail(pnotify_list, &prnode->node);
-	}
+	auto it = std::find_if(notify_list.begin(), notify_list.end(), [&](const rowinfo_node &e) {
+	          	return e.row_id == row_id;
+	          });
+	if (it == notify_list.end())
+		notify_list.emplace_back(false, row_id);
+} catch (const std::bad_alloc &) {
 }
 
-static BOOL db_engine_check_new_header(
-	DOUBLE_LIST *pnotify_list, uint64_t row_id)
+static bool db_engine_check_new_header(const std::vector<rowinfo_node> &notify_list,
+    uint64_t row_id)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
-		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto prnode = static_cast<const ROWINFO_NODE *>(pnode->pdata);
-		if (row_id == prnode->row_id && prnode->b_added)
-			return TRUE;
-	}
-	return FALSE;
+	return std::find_if(notify_list.cbegin(), notify_list.cend(), [&](const rowinfo_node &e) {
+	       	return e.b_added && e.row_id == row_id;
+	       }) != notify_list.cend();
 }
 
 static inline size_t det_multi_num(uint16_t type, const void *mv)
@@ -1437,21 +1672,36 @@ static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
 	return mv;
 }
 
-static void dbeng_notify_cttbl_add_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id, db_base &dbase) try
+static db_conn::ID_ARRAYS table_to_idarray(const table_node &o)
 {
+	return db_conn::ID_ARRAYS{{o.remote_id, {o.table_id}}};
+}
+
+static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
+    uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
+{
+	auto pdb = &db;
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	BOOL b_read = false;
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
-	DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *padded_row = nullptr, *padded_row1 = nullptr;
+	DB_NOTIFY *padded_row = nullptr, *padded_row1 = nullptr;
 	
 	uint8_t *pread_byte = nullptr;
 	void *pvalue0;
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-	    pdb->psqlite, PR_ASSOCIATED, &pvalue0))
+	    db, PR_ASSOCIATED, &pvalue0))
 		return;	
-	std::unique_ptr<prepared_statements> optim;
+	char qstr[256];
+	snprintf(qstr, std::size(qstr), "SELECT is_deleted FROM messages WHERE message_id=%llu", LLU{message_id});
+	auto stm = pdb->prep(qstr);
+	if (stm == nullptr)
+		return;
+	auto b_del = stm.step() != SQLITE_ROW || stm.col_uint64(0) != 0;
+	stm.finalize();
+
+	bool did_optim = false;
+	auto cl_0 = HX::make_scope_exit([&]() { if (did_optim) db.end_optim(); });
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
@@ -1465,10 +1715,12 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			continue;
 		if (!!(ptable->table_flags & TABLE_FLAG_ASSOCIATED) == !b_fai)
 			continue;
+		if (!!(ptable->table_flags & TABLE_FLAG_SOFTDELETES) == !b_del)
+			continue;
 		if (dbase.tables.b_batch && ptable->b_hint)
 			continue;
 		if (ptable->prestriction != nullptr &&
-		    !cu_eval_msg_restriction(pdb->psqlite,
+		    !cu_eval_msg_restriction(db,
 		    ptable->cpid, message_id, ptable->prestriction))
 			continue;
 		if (dbase.tables.b_batch) {
@@ -1476,19 +1728,15 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			continue;
 		}
 		if (NULL == padded_row) {
-			padded_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>(2);
-			if (padded_row == nullptr)
-				return;
+			padded_row = &datagram.db_notify;
 			padded_row->row_folder_id = folder_id;
 			padded_row->row_message_id = message_id;
-			datagram.db_notify.pdata = padded_row;
-			padded_row1 = padded_row + 1;
+			padded_row1 = &datagram1.db_notify;
 			padded_row1->row_folder_id = folder_id;
 			padded_row1->row_instance = 0;
-			datagram1.db_notify.pdata = padded_row1;
-			optim = pdb->begin_optim();
-			if (optim == nullptr)
+			if (!pdb->begin_optim())
 				return;
+			did_optim = true;
 		}
 		datagram.id_array[0] = datagram1.id_array[0] =
 			ptable->table_id; // reserved earlier
@@ -1538,14 +1786,13 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_added :
 			                          db_notify_type::cttbl_row_added;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		} else if (0 == ptable->psorts->ccategories) {
 			for (size_t i = 0; i < ptable->psorts->count; ++i) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (!cu_get_property(MAPI_MESSAGE, message_id,
-				    ptable->cpid, pdb->psqlite, propvals[i].proptag,
+				    ptable->cpid, db, propvals[i].proptag,
 				    &propvals[i].pvalue))
 					return;
 			}
@@ -1567,7 +1814,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				for (size_t i = 0; i < ptable->psorts->count; ++i) {
 					void *pvalue = nullptr;
 					if (!cu_get_property(MAPI_MESSAGE, inst_id1,
-					    ptable->cpid, pdb->psqlite,
+					    ptable->cpid, db,
 					    propvals[i].proptag, &pvalue))
 						return;
 					auto result = db_engine_compare_propval(ptable->psorts->psort[i].type, propvals[i].pvalue, pvalue);
@@ -1643,13 +1890,12 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_added :
 			                          db_notify_type::cttbl_row_added;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		}
 		if (NULL == pread_byte) {
 			if (!cu_get_property(MAPI_MESSAGE,
-			    message_id, ptable->cpid, pdb->psqlite, PR_READ,
+			    message_id, ptable->cpid, db, PR_READ,
 			    reinterpret_cast<void **>(&pread_byte)) ||
 			    pread_byte == nullptr)
 				return;
@@ -1663,11 +1909,11 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				multi_index = i;
 				if (!cu_get_property(
 				    MAPI_MESSAGE, message_id, ptable->cpid,
-				    pdb->psqlite, propvals[i].proptag & ~MV_INSTANCE,
+				    db, propvals[i].proptag & ~MV_INSTANCE,
 				    &propvals[i].pvalue))
 					return;
 			} else if (!cu_get_property(MAPI_MESSAGE, message_id,
-			    ptable->cpid, pdb->psqlite, propvals[i].proptag,
+			    ptable->cpid, db, propvals[i].proptag,
 			    &propvals[i].pvalue)) {
 				return;
 			}
@@ -1722,8 +1968,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				continue;
 		}
 		BOOL b_resorted = FALSE;
-		DOUBLE_LIST notify_list;
-		double_list_init(&notify_list);
+		std::vector<rowinfo_node> notify_list;
 		for (size_t j = 0; j < multi_num; ++j) {
 			uint64_t parent_id = 0, inst_num = 0, row_id = 0, row_id1 = 0;
 			if (NULL != pmultival) {
@@ -1768,7 +2013,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			if (b_break && !db_engine_insert_categories(pdb->m_sqlite_eph,
 			    i, parent_id, row_id, row_id1, ptable->psorts,
 			    propvals, pstmt1, pstmt2, &ptable->header_id,
-			    &notify_list, &parent_id))
+			    notify_list, &parent_id))
 				return;
 			row_id = 0;
 			row_id1 = 0;
@@ -1783,7 +2028,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				     i < ptable->psorts->count; i++) {
 					void *pvalue = nullptr;
 					if (!cu_get_property(MAPI_MESSAGE, inst_id,
-					    ptable->cpid, pdb->psqlite,
+					    ptable->cpid, db,
 					    propvals[i].proptag, &pvalue))
 						return;
 					auto result = db_engine_compare_propval(ptable->psorts->psort[i].type, propvals[i].pvalue, pvalue);
@@ -1812,7 +2057,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			    pdb->m_sqlite_eph, message_id, b_read,
 			    ptable->psorts->ccategories, inst_num,
 			    type, pvalue, parent_id, row_id, row_id1,
-			    pstmt1, pstmt2, &notify_list, &row_id))
+			    pstmt1, pstmt2, notify_list, &row_id))
 				return;
 			parent_id = 0;
 			while (true) {
@@ -1831,7 +2076,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				         ptable->table_id, LLU{row_id});
 				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					return;
-				db_engine_append_rowinfo_node(&notify_list, row_id);
+				db_engine_append_rowinfo_node(notify_list, row_id);
 			}
 			if (ptable->extremum_tag == 0)
 				continue;
@@ -1854,7 +2099,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 					continue;
 			} else if (pvalue == nullptr &&
 			    propvals[ptable->psorts->ccategories].pvalue != nullptr &&
-			    db_engine_check_new_header(&notify_list, row_id)) {
+			    db_engine_check_new_header(notify_list, row_id)) {
 				/* extremum should be written */
 			} else if (result <= 0) {
 				continue;
@@ -1909,7 +2154,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			if (prev_id == prev_id1)
 				continue;
 			/* position within the list has been changed */
-			if (!db_engine_check_new_header(&notify_list, row_id))
+			if (!db_engine_check_new_header(notify_list, row_id))
 				b_resorted = TRUE;
 			if (0 != row_id1) {
 				sqlite3_bind_null(pstmt2, 1);
@@ -1969,8 +2214,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			datagram1.db_notify.type = ptable->b_search ?
 						   db_notify_type::srchtbl_changed :
 						   db_notify_type::cttbl_changed;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram1);
+			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			continue;
 		}
 
@@ -1979,9 +2223,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
-		DOUBLE_LIST_NODE *pnode1;
-		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
-			auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
+		for (const auto &[b_added, row_id] : notify_list) {
 			stm_sel_tx.bind_int64(1, row_id);
 			if (stm_sel_tx.step() != SQLITE_ROW ||
 			    sqlite3_column_type(stm_sel_tx, 1) == SQLITE_NULL) {
@@ -2011,7 +2253,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				}
 				sqlite3_reset(pstmt);
 			}
-			if (!static_cast<ROWINFO_NODE *>(pnode1->pdata)->b_added) {
+			if (!b_added) {
 				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
 				padded_row1->after_row_id = inst_id;
 				padded_row1->after_folder_id = inst_folder_id;
@@ -2019,8 +2261,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				datagram1.db_notify.type = ptable->b_search ?
 							   db_notify_type::srchtbl_row_modified :
 							   db_notify_type::cttbl_row_modified;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram1);
+				notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			} else if (stm_sel_tx.col_int64(4) == CONTENT_ROW_HEADER) {
 				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
 				padded_row1->after_row_id = inst_id;
@@ -2029,8 +2270,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				datagram1.db_notify.type = ptable->b_search ?
 				                           db_notify_type::srchtbl_row_added :
 				                           db_notify_type::cttbl_row_added;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram1);
+				notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			} else {
 				padded_row->row_instance = stm_sel_tx.col_int64(10);
 				padded_row->after_row_id = inst_id;
@@ -2039,8 +2279,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				datagram.db_notify.type = ptable->b_search ?
 				                          db_notify_type::srchtbl_row_added :
 				                          db_notify_type::cttbl_row_added;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram);
+				notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			}
 			stm_sel_tx.reset();
 		}
@@ -2048,7 +2287,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2161: failed to commit cttbl_add_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2405: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 /*
@@ -2062,22 +2301,19 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_NEW_MAIL, folder_id, 0);
+	               fnevNewMail, folder_id, 0);
 	if (parrays.size() == 0)
 		return;
 	datagram.dir = deconst(dir);
 	datagram.db_notify.type = db_notify_type::new_mail;
-	auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
-	if (pnew_mail == nullptr)
-		return;
-	datagram.db_notify.pdata = pnew_mail;
+	auto pnew_mail = &datagram.db_notify;
 	pnew_mail->folder_id = folder_id;
 	pnew_mail->message_id = message_id;
 	pnew_mail->message_flags = message_flags;
-	pnew_mail->pmessage_class = pstr_class;
+	pnew_mail->pmessage_class = znul(pstr_class);
 	notifq.emplace_back(std::move(datagram), std::move(parrays));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2119: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 	
 void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
@@ -2085,61 +2321,52 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 {
 	auto pdb = this;
 	void *pvalue;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_NEW_MAIL, folder_id, 0);
+	               fnevNewMail, folder_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::new_mail;
-		auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
-		if (pnew_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pnew_mail;
+		auto pnew_mail = &datagram.db_notify;
 		pnew_mail->folder_id = folder_id;
 		pnew_mail->message_id = message_id;
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-		    pdb->psqlite, PR_MESSAGE_FLAGS, &pvalue) || pvalue == nullptr)
+		    *pdb, PR_MESSAGE_FLAGS, &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->message_flags = *static_cast<uint32_t *>(pvalue);
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-		    pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) || pvalue == nullptr)
+		    *pdb, PR_MESSAGE_CLASS, &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
-	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
-		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2120: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_message_creation(uint64_t folder_id,
     uint64_t message_id, db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_CREATED, folder_id, 0);
+	               fnevObjectCreated, folder_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_created;
-		auto pcreated_mail = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
-		if (pcreated_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pcreated_mail;
+		auto pcreated_mail = &datagram.db_notify;
 		pcreated_mail->folder_id = folder_id;
 		pcreated_mail->message_id = message_id;
 		pcreated_mail->proptags.count = 0;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
+	dbeng_notify_cttbl_add_row(*pdb, folder_id, message_id, dbase, notifq);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2121: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
@@ -2147,37 +2374,35 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 {
 	auto pdb = this;
 	uint64_t anchor_fld;
-	DB_NOTIFY_DATAGRAM datagram;
 	
 	if (!common_util_get_message_parent_folder(pdb->psqlite, message_id, &anchor_fld))
 		return;
 
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_CREATED, anchor_fld, 0);
+	               fnevObjectCreated, anchor_fld, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_created;
-		auto plinked_mail = cu_alloc<DB_NOTIFY_LINK_CREATED>();
-		if (plinked_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = plinked_mail;
+		auto plinked_mail = &datagram.db_notify;
 		plinked_mail->folder_id = anchor_fld;
 		plinked_mail->message_id = message_id;
 		plinked_mail->parent_id = srch_fld;
 		plinked_mail->proptags.count = 0;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_cttbl_add_row(pdb, srch_fld, message_id, dbase);
+	dbeng_notify_cttbl_add_row(*pdb, srch_fld, message_id, dbase, notifq);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, srch_fld), srch_fld, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2122: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
-static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
-    uint64_t parent_id, uint64_t folder_id, const db_base &dbase) try
+static void dbeng_notify_hiertbl_add_row(db_conn &db, uint64_t parent_id,
+    uint64_t folder_id, const db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
+	auto pdb = &db;
 	uint32_t idx;
 	uint32_t depth;
 	BOOL b_included;
@@ -2185,9 +2410,8 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 	xstmt pstmt;
 	char sql_string[256];
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
+	DB_NOTIFY *padded_row = nullptr;
 	
-	padded_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2166: failed to start transaction in hiertbl_add_row");
@@ -2208,15 +2432,12 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 				continue;
 		}
 		if (ptable->prestriction != nullptr &&
-		    !cu_eval_folder_restriction(pdb->psqlite,
+		    !cu_eval_folder_restriction(db,
 		    folder_id, ptable->prestriction))
 			continue;
 		if (NULL == padded_row) {
 			datagram.db_notify.type = db_notify_type::hiertbl_row_added;
-			padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
-			if (padded_row == nullptr)
-				return;
-			datagram.db_notify.pdata = padded_row;
+			padded_row = &datagram.db_notify;
 		}
 		datagram.id_array[0] = ptable->table_id; // reserved earlier
 		if ((ptable->table_flags & TABLE_FLAG_DEPTH) &&
@@ -2321,62 +2542,53 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 			}
 		}
 		padded_row->row_folder_id = folder_id;
-		notification_agent_backward_notify(
-			ptable->remote_id, &datagram);
+		notifq.emplace_back(datagram, table_to_idarray(*ptable));
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2167: failed to commit hiertbl_add_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2406: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
     const db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_CREATED, parent_id, 0);
+	               fnevObjectCreated, parent_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_created;
-		auto pcreated_folder = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
-		if (pcreated_folder == nullptr)
-			return;
-		datagram.db_notify.pdata = pcreated_folder;
+		auto pcreated_folder = &datagram.db_notify;
 		pcreated_folder->folder_id = folder_id;
 		pcreated_folder->parent_id = parent_id;
 		pcreated_folder->proptags.count = 0;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_hiertbl_add_row(pdb, parent_id, folder_id, dbase);
+	dbeng_notify_hiertbl_add_row(*pdb, parent_id, folder_id, dbase, notifq);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2123: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
-static void db_engine_update_prev_id(DOUBLE_LIST *plist,
-	int64_t prev_id, uint64_t original_prev_id)
+static void db_engine_update_prev_id(std::vector<rowdel_node> &list,
+    int64_t prev_id, uint64_t original_prev_id)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pdelnode = static_cast<ROWDEL_NODE *>(pnode->pdata);
-		if (original_prev_id == static_cast<uint64_t>(pdelnode->prev_id)) {
-			pdelnode->prev_id = prev_id;
-			break;
-		}
-	}
+	auto it = std::find_if(list.begin(), list.end(), [&](const rowdel_node &e) {
+	          	return static_cast<uint64_t>(e.prev_id) == original_prev_id;
+	          });
+	if (it != list.end())
+		it->prev_id = prev_id;
 }
 
-static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
+static void *db_engine_get_extremum_value(db_conn &db, cpid_t cpid,
     uint32_t table_id, uint32_t extremum_tag, uint64_t parent_id,
     uint8_t table_sort)
 {
-	int result;
+	auto pdb = &db;
 	BOOL b_first;
 	void *pvalue;
 	void *pvalue1;
@@ -2393,14 +2605,14 @@ static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
 	while (pstmt.step() == SQLITE_ROW) {
 		message_id = sqlite3_column_int64(pstmt, 0);
 		if (!cu_get_property(MAPI_MESSAGE, message_id,
-		    cpid, pdb->psqlite, extremum_tag, &pvalue1))
+		    cpid, db, extremum_tag, &pvalue1))
 			continue;	
 		if (!b_first) {
 			pvalue = pvalue1;
 			b_first = TRUE;
 			continue;
 		}
-		result = db_engine_compare_propval(PROP_TYPE(extremum_tag), pvalue, pvalue1);
+		auto result = db_engine_compare_propval(PROP_TYPE(extremum_tag), pvalue, pvalue1);
 		if (TABLE_SORT_MAXIMUM_CATEGORY == table_sort) {
 			if (result < 0)
 				pvalue = pvalue1;
@@ -2412,34 +2624,21 @@ static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
 	return pvalue;
 }
 
-static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id, db_base &dbase) try
+static void dbeng_notify_cttbl_delete_row(db_conn &db, uint64_t folder_id,
+    uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
-	int result;
-	BOOL b_index;
-	BOOL b_break;
-	uint32_t idx;
+	auto pdb = &db;
 	uint8_t type;
 	void *pvalue;
 	void *pvalue1;
-	BOOL b_resorted;
 	int64_t prev_id;
 	int64_t prev_id1;
-	uint64_t inst_id;
-	uint32_t inst_num;
 	uint8_t table_sort;
 	uint64_t parent_id;
-	DOUBLE_LIST tmp_list;
-	ROWINFO_NODE *prnode;
-	char sql_string[1024];
-	DOUBLE_LIST notify_list;
-	DOUBLE_LIST_NODE *pnode1;
-	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
-	DB_NOTIFY_DATAGRAM datagram1 = datagram;
-	DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *pdeleted_row;
-	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
-	
-	pdeleted_row = NULL;
+	DB_NOTIFY_DATAGRAM dg_del = {deconst(exmdb_server::get_dir()), TRUE, {0}};
+	DB_NOTIFY_DATAGRAM dg_mod = dg_del;
+	DB_NOTIFY *pdeleted_row = nullptr, *pmodified_row = nullptr;
+
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2162: failed to start transaction in cttbl_delete_row");
@@ -2452,6 +2651,10 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			continue;
 		if (dbase.tables.b_batch && ptable->b_hint)
 			continue;
+
+		/* Part 1 */
+		{
+		char sql_string[1024];
 		if (ptable->instance_tag == 0)
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id "
 				"FROM t%u WHERE inst_id=%llu AND inst_num=0",
@@ -2469,19 +2672,13 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			continue;
 		}
 		if (NULL == pdeleted_row) {
-			pdeleted_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
-			if (pdeleted_row == nullptr)
-				return;
-			datagram.db_notify.pdata = pdeleted_row;
-			pmodified_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
-			if (pmodified_row == nullptr)
-				return;
+			pdeleted_row  = &dg_del.db_notify;
+			pmodified_row = &dg_mod.db_notify;
 			pmodified_row->row_folder_id = folder_id;
 			pmodified_row->row_instance = 0;
 			pmodified_row->after_folder_id = folder_id;
-			datagram1.db_notify.pdata = pmodified_row;
 		}
-		datagram.id_array[0] = datagram1.id_array[0] =
+		dg_del.id_array[0] = dg_mod.id_array[0] =
 			ptable->table_id; // reserved earlier
 		if (NULL == ptable->psorts || 0 == ptable->psorts->ccategories) {
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, idx,"
@@ -2491,7 +2688,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			uint64_t row_id = sqlite3_column_int64(pstmt, 0);
-			idx = sqlite3_column_int64(pstmt, 1);
+			uint32_t idx = sqlite3_column_int64(pstmt, 1);
 			prev_id = sqlite3_column_int64(pstmt, 2);
 			pstmt.finalize();
 			xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp1");
@@ -2524,16 +2721,19 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 				continue;
 			pdeleted_row->row_message_id = message_id;
 			pdeleted_row->row_instance = 0;
-			datagram.db_notify.type = ptable->b_search ?
+			dg_del.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_deleted :
 			                          db_notify_type::cttbl_row_deleted;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(dg_del, table_to_idarray(*ptable));
 			continue;
 		}
-		b_index = FALSE;
-		b_resorted = FALSE;
-		double_list_init(&tmp_list);
+		}
+
+		bool b_index = false;
+		std::vector<rowdel_node> del_list;
+		/* Part 2 */
+		{
+		char sql_string[1024];
 		if (ptable->instance_tag == 0)
 			snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u"
 						" WHERE inst_id=%llu AND inst_num=0",
@@ -2542,47 +2742,53 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u "
 						"WHERE inst_id=%llu", ptable->table_id,
 						LLU{message_id});
-		pstmt = pdb->eph_prep(sql_string);
-		if (pstmt == nullptr)
+		auto stm_sel = pdb->eph_prep(sql_string);
+		if (stm_sel == nullptr)
 			continue;
-		while (pstmt.step() == SQLITE_ROW) {
-			auto pdelnode = cu_alloc<ROWDEL_NODE>();
-			if (pdelnode == nullptr)
-				return;
-			pdelnode->node.pdata = pdelnode;
-			pdelnode->row_id = sqlite3_column_int64(pstmt, 0);
+
+		while (stm_sel.step() == SQLITE_ROW) {
+			rowdel_node dn;
+			dn.row_id    = stm_sel.col_int64(0);
 			/* will get 0 if SQLITE_NULL in 'idx' field */ 
-			pdelnode->idx = sqlite3_column_int64(pstmt, 1);
-			if (pdelnode->idx != 0)
+			dn.idx       = stm_sel.col_int64(1);
+			if (dn.idx != 0)
 				b_index = TRUE;
-			pdelnode->prev_id = sqlite3_column_int64(pstmt, 2);
-			pdelnode->inst_id = sqlite3_column_int64(pstmt, 3);
-			pdelnode->parent_id = sqlite3_column_int64(pstmt, 6);
-			pdelnode->depth = sqlite3_column_int64(pstmt, 7);
-			pdelnode->inst_num = sqlite3_column_int64(pstmt, 10);
-			pdelnode->b_read = sqlite3_column_int64(pstmt, 12) == 0 ? false : TRUE;
-			double_list_append_as_tail(&tmp_list, &pdelnode->node);
+			dn.prev_id   = stm_sel.col_int64(2);
+			dn.inst_id   = stm_sel.col_int64(3);
+			dn.parent_id = stm_sel.col_int64(6);
+			dn.depth     = stm_sel.col_int64(7);
+			dn.inst_num  = stm_sel.col_int64(10);
+			dn.b_read    = stm_sel.col_int64(12) != 0;
+			del_list.push_back(std::move(dn));
 		}
-		pstmt.finalize();
+		}
+
+		std::vector<rowinfo_node> notify_list;
 		xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp2");
 			if (!sql_savepoint)
 				continue;
+
+		bool b_resorted = false;
+		/* Part 3 */
+		{
+		char sql_string[1024];
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
-		pstmt = pdb->eph_prep(sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u "
 					"WHERE row_id=?", ptable->table_id);
-		auto pstmt1 = pdb->eph_prep(sql_string);
-		if (pstmt1 == nullptr)
+		auto stm_del_tblrow = pdb->eph_prep(sql_string);
+		if (stm_del_tblrow == nullptr)
 			continue;
-		xstmt pstmt2, stm_upd_previd, stm_sel_ex;
+
+		xstmt stm_set_extremum, stm_upd_previd, stm_sel_ex;
 		if (0 != ptable->extremum_tag) {
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 				"extremum=? WHERE row_id=?", ptable->table_id);
-			pstmt2 = pdb->eph_prep(sql_string);
-			if (pstmt2 == nullptr)
+			stm_set_extremum = pdb->eph_prep(sql_string);
+			if (stm_set_extremum == nullptr)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 				"prev_id=? WHERE row_id=?", ptable->table_id);
@@ -2595,18 +2801,19 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			if (stm_sel_ex == nullptr)
 				continue;
 		}
-		double_list_init(&notify_list);
-		for (pnode1=double_list_get_head(&tmp_list); NULL!=pnode1;
-			pnode1=double_list_get_after(&tmp_list, pnode1)) {
-			auto pdelnode = static_cast<ROWDEL_NODE *>(pnode1->pdata);
+
+		size_t del_iter = 0;
+		for (; del_iter != del_list.size(); ++del_iter) {
+			auto &delnode = del_list[del_iter];
+			auto pdelnode = &delnode;
 			if (ptable->extremum_tag != 0 &&
 			    pdelnode->depth == ptable->psorts->ccategories)
 				/* historically no-op for some reason */;
 			/* delete the row first */
-			sqlite3_bind_int64(pstmt1, 1, pdelnode->row_id);
-			if (pstmt1.step() != SQLITE_DONE)
+			sqlite3_bind_int64(stm_del_tblrow, 1, pdelnode->row_id);
+			if (stm_del_tblrow.step() != SQLITE_DONE)
 				break;
-			sqlite3_reset(pstmt1);
+			sqlite3_reset(stm_del_tblrow);
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=%lld"
 				" WHERE prev_id=%llu", ptable->table_id,
 				LLD{pdelnode->prev_id}, LLU{pdelnode->row_id});
@@ -2614,7 +2821,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 				break;
 			if (pdelnode->depth == ptable->psorts->ccategories &&
 			    ptable->instance_tag != 0)
-				db_engine_update_prev_id(&tmp_list,
+				db_engine_update_prev_id(del_list,
 					pdelnode->prev_id, pdelnode->row_id);
 			if (pdelnode->parent_id == 0)
 				continue;
@@ -2622,21 +2829,18 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			if (pstmt.step() != SQLITE_ROW)
 				break;
 			if (1 == sqlite3_column_int64(pstmt, 8)) {
-				pdelnode = cu_alloc<ROWDEL_NODE>();
-				if (pdelnode == nullptr)
-					break;
-				pdelnode->node.pdata = pdelnode;
-				pdelnode->row_id = sqlite3_column_int64(pstmt, 0);
-				pdelnode->idx = sqlite3_column_int64(pstmt, 1);
-				if (pdelnode->idx != 0)
+				rowdel_node nn;
+				nn.row_id = pstmt.col_int64(0);
+				nn.idx    = pstmt.col_int64(1);
+				if (nn.idx != 0)
 					b_index = TRUE;
-				pdelnode->prev_id = sqlite3_column_int64(pstmt, 2);
-				pdelnode->inst_id = sqlite3_column_int64(pstmt, 3);
-				pdelnode->parent_id = sqlite3_column_int64(pstmt, 6);
-				pdelnode->depth = sqlite3_column_int64(pstmt, 7);
-				pdelnode->inst_num = 0;
-				pdelnode->b_read = static_cast<ROWDEL_NODE *>(pnode1->pdata)->b_read;
-				double_list_append_as_tail(&tmp_list, &pdelnode->node);
+				nn.prev_id   = pstmt.col_int64(2);
+				nn.inst_id   = pstmt.col_int64(3);
+				nn.parent_id = pstmt.col_int64(6);
+				nn.depth     = pstmt.col_int64(7);
+				nn.inst_num  = 0;
+				nn.b_read    = delnode.b_read;
+				del_list.push_back(std::move(nn));
 				sqlite3_reset(pstmt);
 				continue;
 			}
@@ -2646,13 +2850,11 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			         ptable->table_id, LLU{pdelnode->parent_id});
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				break;
-			prnode = cu_alloc<ROWINFO_NODE>();
-			if (prnode == nullptr)
+			try {
+				notify_list.emplace_back(false, delnode.parent_id);
+			} catch (const std::bad_alloc &) {
 				break;
-			prnode->node.pdata = prnode;
-			prnode->b_added = FALSE;
-			prnode->row_id = pdelnode->parent_id;
-			double_list_append_as_tail(&notify_list, &prnode->node);
+			}
 			if (0 == ptable->extremum_tag ||
 				pdelnode->depth != ptable->psorts->ccategories) {
 				sqlite3_reset(pstmt);
@@ -2668,25 +2870,27 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			sqlite3_reset(pstmt);
 			table_sort = ptable->psorts->psort[
 				ptable->psorts->ccategories].table_sort;
-			pvalue1 = db_engine_get_extremum_value(pdb, ptable->cpid,
+			pvalue1 = db_engine_get_extremum_value(db, ptable->cpid,
 							ptable->table_id, ptable->extremum_tag,
 							pdelnode->parent_id, table_sort);
 			if (db_engine_compare_propval(type, pvalue, pvalue1) == 0)
 				continue;
 			if (pvalue1 == nullptr)
-				sqlite3_bind_null(pstmt2, 1);
-			else if (!common_util_bind_sqlite_statement(pstmt2, 1, type, pvalue1))
+				sqlite3_bind_null(stm_set_extremum, 1);
+			else if (!common_util_bind_sqlite_statement(stm_set_extremum, 1, type, pvalue1))
 				break;
-			sqlite3_bind_int64(pstmt2, 2, row_id);
-			if (pstmt2.step() != SQLITE_DONE)
+			sqlite3_bind_int64(stm_set_extremum, 2, row_id);
+			if (stm_set_extremum.step() != SQLITE_DONE)
 				break;
-			sqlite3_reset(pstmt2);
+			sqlite3_reset(stm_set_extremum);
 			table_sort = ptable->psorts->psort[
 				ptable->psorts->ccategories - 1].table_sort;
 			prev_id = -parent_id;
+
 			uint64_t row_id1 = 0;
-			b_break = FALSE;
+			bool b_break = false;
 			stm_sel_ex.bind_int64(1, prev_id);
+
 			while (stm_sel_ex.step() == SQLITE_ROW) {
 				if (stm_sel_ex.col_uint64(0) != row_id &&
 				    row_id1 != 0 && row_id != row_id1)
@@ -2694,7 +2898,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 				row_id1 = stm_sel_ex.col_int64(0);
 				if (row_id1 != row_id) {
 					pvalue = common_util_column_sqlite_statement(stm_sel_ex, 2, type);
-					result = db_engine_compare_propval(type, pvalue, pvalue1);
+					auto result = db_engine_compare_propval(type, pvalue, pvalue1);
 					auto asc = table_sort == TABLE_SORT_ASCEND;
 					if ((asc && result > 0) || (!asc && result < 0)) {
 						b_break = TRUE;
@@ -2746,52 +2950,58 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			}
 		}
 		pstmt.finalize();
-		pstmt1.finalize();
+		stm_del_tblrow.finalize();
 		if (0 != ptable->extremum_tag) {
-			pstmt2.finalize();
+			stm_set_extremum.finalize();
 			stm_upd_previd.finalize();
 			stm_sel_ex.finalize();
 		}
-		if (pnode1 != nullptr)
+		if (del_iter != del_list.size())
+			/* Iteration through del_list stopped half-way */
 			continue;
+		}
+
+		/* Part 4 */
+		{
 		if (b_index) {
+			char sql_string[1024];
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=NULL", ptable->table_id);
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, row_stat"
 					" FROM t%u WHERE prev_id=?", ptable->table_id);
-			pstmt = pdb->eph_prep(sql_string);
-			if (pstmt == nullptr)
+			auto stm_sel = pdb->eph_prep(sql_string);
+			if (stm_sel == nullptr)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET"
 				" idx=? WHERE row_id=?", ptable->table_id);
-			pstmt1 = pdb->eph_prep(sql_string);
-			if (pstmt1 == nullptr)
+			auto stm_upd = pdb->eph_prep(sql_string);
+			if (stm_upd == nullptr)
 				continue;
-			idx = 0;
-			sqlite3_bind_int64(pstmt, 1, 0);
-			if (pstmt.step() == SQLITE_ROW &&
+			uint32_t idx = 0;
+			sqlite3_bind_int64(stm_sel, 1, 0);
+			if (stm_sel.step() == SQLITE_ROW &&
 			    !common_util_indexing_sub_contents(ptable->psorts->ccategories,
-			    pstmt, pstmt1, &idx))
+			    stm_sel, stm_upd, &idx))
 				continue;
-			pstmt.finalize();
-			pstmt1.finalize();
 		}
 		if (sql_savepoint.commit() != SQLITE_OK)
 			continue;
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;
 		if (b_resorted) {
-			datagram1.db_notify.type = ptable->b_search ?
+			dg_mod.db_notify.type = ptable->b_search ?
 			                           db_notify_type::srchtbl_changed :
 			                           db_notify_type::cttbl_changed;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram1);
+			notifq.emplace_back(dg_mod, table_to_idarray(*ptable));
 			continue;
 		}
-		for (pnode1 = double_list_get_head(&tmp_list); NULL != pnode1;
-		     pnode1 = double_list_get_after(&tmp_list, pnode1)) {
-			auto pdelnode = static_cast<const ROWDEL_NODE *>(pnode1->pdata);
+		}
+
+		/* Part 5 */
+		{
+		for (const auto &delnode : del_list) {
+			auto pdelnode = &delnode;
 			if (pdelnode->idx == 0)
 				continue;
 			if (!ptable->b_search) {
@@ -2806,100 +3016,96 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			}
 			pdeleted_row->row_message_id = pdelnode->inst_id;
 			pdeleted_row->row_instance = pdelnode->inst_num;
-			datagram.db_notify.type = ptable->b_search ?
+			dg_del.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_deleted :
 			                          db_notify_type::cttbl_row_deleted;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(dg_del, table_to_idarray(*ptable));
 		}
-		if (double_list_get_nodes_num(&notify_list) == 0)
+		if (notify_list.empty())
 			continue;
+		}
+
+		/* Part 6 */
+		{
+		char sql_string[1024];
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 		         " t%u WHERE idx=?", ptable->table_id);
-		pstmt = pdb->eph_prep(sql_string);
-		if (pstmt == nullptr)
+		auto sel_by_idx = pdb->eph_prep(sql_string);
+		if (sel_by_idx == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM "
 		         "t%u WHERE row_id=?", ptable->table_id);
-		pstmt1 = pdb->eph_prep(sql_string);
-		if (pstmt1 == nullptr)
+		auto sel_by_row = pdb->eph_prep(sql_string);
+		if (sel_by_row == nullptr)
 			continue;
-		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
-			auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
-			sqlite3_bind_int64(pstmt1, 1, row_id);
-			if (pstmt1.step() != SQLITE_ROW) {
-				sqlite3_reset(pstmt1);
+		for (const auto &[_, row_id] : notify_list) {
+			sel_by_row.bind_int64(1, row_id);
+			if (sel_by_row.step() != SQLITE_ROW) {
+				sel_by_row.reset();
+				continue;
+			} else if (sqlite3_column_type(sel_by_row, 1) == SQLITE_NULL) {
+				sel_by_row.reset();
 				continue;
 			}
-			if (SQLITE_NULL == sqlite3_column_type(pstmt1, 1)) {
-				sqlite3_reset(pstmt1);
-				continue;
-			}
-			idx = sqlite3_column_int64(pstmt1, 1);
-			if (1 == idx) {
-				inst_id = 0;
-				inst_num = 0;
-			} else {
-				sqlite3_bind_int64(pstmt, 1, idx - 1);
-				if (pstmt.step() != SQLITE_ROW) {
-					sqlite3_reset(pstmt);
-					sqlite3_reset(pstmt1);
+			uint32_t idx = sel_by_row.col_int64(1);
+			uint64_t inst_id = 0;
+			uint32_t inst_num = 0;
+			if (idx != 1) {
+				sel_by_idx.bind_int64(1, idx - 1);
+				if (sel_by_idx.step() != SQLITE_ROW) {
+					sel_by_idx.reset();
+					sel_by_row.reset();
 					continue;
 				}
-				inst_id = sqlite3_column_int64(pstmt, 3);
-				inst_num = sqlite3_column_int64(pstmt, 10);
-				sqlite3_reset(pstmt);
+				inst_id  = sel_by_idx.col_int64(3);
+				inst_num = sel_by_idx.col_int64(10);
+				sel_by_idx.reset();
 			}
-			pmodified_row->row_message_id =
-				sqlite3_column_int64(pstmt1, 3);
+			pmodified_row->row_message_id = sel_by_row.col_int64(3);
 			pmodified_row->after_row_id = inst_id;
 			pmodified_row->after_instance = inst_num;
-			datagram1.db_notify.type = ptable->b_search ?
+			dg_mod.db_notify.type = ptable->b_search ?
 			                           db_notify_type::srchtbl_row_modified :
 			                           db_notify_type::cttbl_row_modified;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram1);
-			sqlite3_reset(pstmt1);
+			notifq.emplace_back(dg_mod, table_to_idarray(*ptable));
+			sel_by_row.reset();
+		}
 		}
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2163: failed to commit cttbl_delete_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2407: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
-    db_base &dbase, NOTIFQ &notifq) try
+    db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_DELETED, folder_id, message_id);
+	               fnevObjectDeleted, folder_id, message_id);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_deleted;
-		auto pdeleted_mail = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
-		if (pdeleted_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pdeleted_mail;
+		auto pdeleted_mail = &datagram.db_notify;
 		pdeleted_mail->folder_id = folder_id;
 		pdeleted_mail->message_id = message_id;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id, dbase);
+	dbeng_notify_cttbl_delete_row(*pdb, folder_id, message_id, dbase, notifq);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2124: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
-    db_base &dbase, NOTIFQ &notifq) try
+    db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
 	auto pdb = this;
 	uint64_t folder_id;
-	DB_NOTIFY_DATAGRAM datagram;
 	
 	if (!common_util_get_message_parent_folder(pdb->psqlite,
 	    message_id, &folder_id))
@@ -2907,36 +3113,34 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_DELETED, folder_id, message_id);
+	               fnevObjectDeleted, folder_id, message_id);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_deleted;
-		auto punlinked_mail = cu_alloc<DB_NOTIFY_LINK_DELETED>();
-		if (punlinked_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = punlinked_mail;
+		auto punlinked_mail = &datagram.db_notify;
 		punlinked_mail->folder_id = folder_id;
 		punlinked_mail->message_id = message_id;
 		punlinked_mail->parent_id = parent_id;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_cttbl_delete_row(pdb, parent_id, message_id, dbase);
+	dbeng_notify_cttbl_delete_row(*pdb, parent_id, message_id, dbase, notifq);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2125: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
-static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
-    uint64_t parent_id, uint64_t folder_id, const db_base &dbase) try
+static void dbeng_notify_hiertbl_delete_row(db_conn &db, uint64_t parent_id,
+    uint64_t folder_id, const db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
+	auto pdb = &db;
 	int idx;
 	BOOL b_included;
 	char sql_string[256];
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
+	DB_NOTIFY *pdeleted_row = nullptr;
 	
-	pdeleted_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2168: failed to start transaction in hiertbl_delete_row");
@@ -2985,50 +3189,43 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
 		}
 		if (NULL == pdeleted_row) {
 			datagram.db_notify.type = db_notify_type::hiertbl_row_deleted;
-			pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
-			if (pdeleted_row == nullptr)
-				return;
-			datagram.db_notify.pdata = pdeleted_row;
+			pdeleted_row = &datagram.db_notify;
 			pdeleted_row->row_folder_id = folder_id;
 		}
 		datagram.id_array[0] = ptable->table_id; // reserved earlier
-		notification_agent_backward_notify(
-			ptable->remote_id, &datagram);
+		notifq.emplace_back(datagram, table_to_idarray(*ptable));
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2169: failed to commit hiertbl_delete_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2408: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
     const db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_DELETED, parent_id, 0);
+	               fnevObjectDeleted, parent_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_deleted;
-		auto pdeleted_folder = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
-		if (pdeleted_folder == nullptr)
-			return;
-		datagram.db_notify.pdata = pdeleted_folder;
+		auto pdeleted_folder = &datagram.db_notify;
 		pdeleted_folder->parent_id = parent_id;
 		pdeleted_folder->folder_id = folder_id;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_hiertbl_delete_row(pdb, parent_id, folder_id, dbase);
+	dbeng_notify_hiertbl_delete_row(*pdb, parent_id, folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2126: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
-static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id, db_base &dbase) try
+static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
+    uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
-	int result;
+	auto pdb = &db;
 	int row_type;
 	BOOL b_error;
 	uint32_t idx;
@@ -3044,13 +3241,10 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 	std::list<table_node> tmp_list;
 	char sql_string[1024];
 	uint64_t row_folder_id;
-	DOUBLE_LIST notify_list;
-	DOUBLE_LIST_NODE *pnode1;
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
-	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row;
+	DB_NOTIFY *pmodified_row = nullptr;
 	
-	pmodified_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2164: failed to start transaction in cttbl_modify_row");
@@ -3075,10 +3269,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 			continue;
 		pstmt.finalize();
 		if (NULL == pmodified_row) {
-			pmodified_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
-			if (pmodified_row == nullptr)
-				return;
-			datagram.db_notify.pdata = pmodified_row;
+			pmodified_row = &datagram.db_notify;
 			if (!common_util_get_message_parent_folder(pdb->psqlite,
 			    message_id, &row_folder_id))
 				return;
@@ -3118,15 +3309,14 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_modified :
 			                          db_notify_type::cttbl_row_modified;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		} else if (0 == ptable->psorts->ccategories) {
 			size_t i;
 			for (i=0; i<ptable->psorts->count; i++) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (!cu_get_property(MAPI_MESSAGE, message_id,
-				    ptable->cpid, pdb->psqlite, propvals[i].proptag,
+				    ptable->cpid, db, propvals[i].proptag,
 				    &propvals[i].pvalue))
 					break;
 			}
@@ -3163,12 +3353,12 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 				if (inst_id == 0)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id,
-					ptable->cpid, pdb->psqlite,
+					ptable->cpid, db,
 					propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
 					break;
 				}
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 					ptable->psorts->psort[i].type,
 					propvals[i].pvalue, pvalue);
 				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
@@ -3183,12 +3373,12 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 				if (inst_id1 == 0)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id1,
-					ptable->cpid, pdb->psqlite,
+					ptable->cpid, db,
 					propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
 					break;
 				}
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 					ptable->psorts->psort[i].type,
 					propvals[i].pvalue, pvalue);
 				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
@@ -3212,8 +3402,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_modified :
 			                          db_notify_type::cttbl_row_modified;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		}
 		{
@@ -3221,7 +3410,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 		if (0 != ptable->instance_tag) {
 			type = PROP_TYPE(ptable->instance_tag) & ~MVI_FLAG;
 			if (!cu_get_property(MAPI_MESSAGE,
-			    message_id, ptable->cpid, pdb->psqlite,
+			    message_id, ptable->cpid, db,
 			    ptable->instance_tag & ~MV_INSTANCE, &pmultival))
 				continue;
 			if (NULL != pmultival) {
@@ -3276,7 +3465,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 			if (propvals[i].proptag == ptable->instance_tag)
 				propvals[i].pvalue = NULL;
 			else if (!cu_get_property(MAPI_MESSAGE, message_id,
-			    ptable->cpid, pdb->psqlite, propvals[i].proptag,
+			    ptable->cpid, db, propvals[i].proptag,
 			    &propvals[i].pvalue))
 				break;
 		}
@@ -3294,7 +3483,8 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 		if (pstmt1 == nullptr)
 			continue;
 		b_error = FALSE;
-		double_list_init(&notify_list);
+
+		std::vector<rowinfo_node> notify_list;
 		for (i = 0; i < multi_num; i++) {
 			inst_num = ptable->instance_tag == 0 || pmultival == nullptr ? 0 : i + 1;
 			sqlite3_bind_int64(pstmt1, 1, inst_num);
@@ -3350,7 +3540,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 				pvalue = common_util_column_sqlite_statement(
 				         pstmt2, 0, PROP_TYPE(ptable->extremum_tag));
 				pstmt2.finalize();
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 				         PROP_TYPE(ptable->extremum_tag), pvalue,
 				         propvals[ptable->psorts->ccategories].pvalue);
 				if (TABLE_SORT_MAXIMUM_CATEGORY == ptable->psorts->psort[
@@ -3396,12 +3586,12 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 				if (inst_id == 0)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id,
-				    ptable->cpid, pdb->psqlite,
+				    ptable->cpid, db,
 				    propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
 					break;
 				}
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 				         ptable->psorts->psort[i].type,
 				         propvals[i].pvalue, pvalue);
 				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
@@ -3422,12 +3612,12 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 				if (inst_id1 == 0)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id1,
-				    ptable->cpid, pdb->psqlite,
+				    ptable->cpid, db,
 				    propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
 					break;
 				}
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 				         ptable->psorts->psort[i].type,
 				         propvals[i].pvalue, pvalue);
 				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
@@ -3442,7 +3632,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 			if (b_error)
 				break;
 			if (!cu_get_property(MAPI_MESSAGE, message_id,
-			    CP_ACP, pdb->psqlite, PR_READ, &pvalue) ||
+			    CP_ACP, db, PR_READ, &pvalue) ||
 			    pvalue == nullptr) {
 				b_error = TRUE;
 				break;
@@ -3484,23 +3674,11 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 					b_error = TRUE;
 					break;
 				}
-				auto prnode = cu_alloc<ROWINFO_NODE>();
-				if (prnode == nullptr)
-					return;
-				prnode->node.pdata = prnode;
-				prnode->b_added = FALSE;
-				prnode->row_id = row_id;
-				double_list_append_as_tail(&notify_list, &prnode->node);
+				notify_list.emplace_back(false, row_id);
 			}
 			if (b_error)
 				break;
-			auto prnode = cu_alloc<ROWINFO_NODE>();
-			if (prnode == nullptr)
-				return;
-			prnode->node.pdata = prnode;
-			prnode->b_added = FALSE;
-			prnode->row_id = row_id1;
-			double_list_append_as_tail(&notify_list, &prnode->node);
+			notify_list.emplace_back(false, row_id1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
@@ -3517,8 +3695,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 		if (pstmt1 == nullptr)
 			continue;
 
-		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
-			auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
+		for (const auto &[_, row_id] : notify_list) {
 			sqlite3_bind_int64(pstmt1, 1, row_id);
 			if (pstmt1.step() != SQLITE_ROW) {
 				sqlite3_reset(pstmt1);
@@ -3568,8 +3745,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_modified :
 			                          db_notify_type::cttbl_row_modified;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			sqlite3_reset(pstmt1);
 		}
 		continue;
@@ -3590,8 +3766,8 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 	if (tmp_list.empty())
 		return;
 	std::swap(dbase.tables.table_list, tmp_list);
-	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id, dbase);
-	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
+	dbeng_notify_cttbl_delete_row(db, folder_id, message_id, dbase, notifq);
+	dbeng_notify_cttbl_add_row(db, folder_id, message_id, dbase, notifq);
 	std::swap(dbase.tables.table_list, tmp_list);
 	for (const auto &tnode : tmp_list) {
 		auto ptable = &tnode;
@@ -3607,58 +3783,51 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 			datagram.db_notify.type = ptnode->b_search ?
 			                          db_notify_type::srchtbl_changed :
 			                          db_notify_type::cttbl_changed;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			break;
 		}
 	}
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2409: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_id,
     db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_MODIFIED, folder_id, message_id);
+	               fnevObjectModified, folder_id, message_id);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_modified;
-		auto pmodified_mail = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
-		if (pmodified_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pmodified_mail;
+		auto pmodified_mail = &datagram.db_notify;
 		pmodified_mail->folder_id = folder_id;
 		pmodified_mail->message_id = message_id;
 		pmodified_mail->proptags.count = 0;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_cttbl_modify_row(pdb, folder_id, message_id, dbase);
+	dbeng_notify_cttbl_modify_row(*pdb, folder_id, message_id, dbase, notifq);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2127: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
-static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
-    uint64_t parent_id, uint64_t folder_id, const db_base &dbase) try
+static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
+    uint64_t parent_id, uint64_t folder_id, const db_base &dbase,
+    db_conn::NOTIFQ &notifq) try
 {
+	auto pdb = &db;
 	int idx;
 	BOOL b_included;
 	char sql_string[256];
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	DB_NOTIFY_DATAGRAM datagram2 = datagram;
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
-	DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *pmodified_row;
+	DB_NOTIFY *padded_row = nullptr, *pdeleted_row = nullptr, *pmodified_row = nullptr;
 	
-	padded_row = NULL;
-	pdeleted_row = NULL;
-	pmodified_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2170: failed to start transaction in hiertbl_modify_row");
@@ -3689,13 +3858,10 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 			pstmt.finalize();
 			if (NULL != ptable->prestriction &&
 			    cu_eval_folder_restriction(
-				pdb->psqlite, folder_id, ptable->prestriction)) {
+			    db, folder_id, ptable->prestriction)) {
 				if (NULL == padded_row) {
 					datagram2.db_notify.type = db_notify_type::hiertbl_row_added;
-					padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
-					if (padded_row == nullptr)
-						return;
-					datagram2.db_notify.pdata = padded_row;
+					padded_row = &datagram2.db_notify;
 				}
 				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (folder_id)"
 				        " VALUES (%llu)", ptable->table_id, LLU{folder_id});
@@ -3723,15 +3889,14 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 					pstmt.finalize();
 				}
 				padded_row->row_folder_id = folder_id;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram2);
+				notifq.emplace_back(datagram2, table_to_idarray(*ptable));
 			}
 			continue;
 		}
 		idx = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		if (NULL != ptable->prestriction &&
-		    !cu_eval_folder_restriction(pdb->psqlite,
+		    !cu_eval_folder_restriction(db,
 		    folder_id, ptable->prestriction)) {
 			xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp1");
 			if (!sql_savepoint)
@@ -3760,14 +3925,10 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 			}
 			if (NULL == pdeleted_row) {
 				datagram1.db_notify.type = db_notify_type::hiertbl_row_deleted;
-				pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
-				if (pdeleted_row == nullptr)
-					return;
-				datagram1.db_notify.pdata = pdeleted_row;
+				pdeleted_row = &datagram1.db_notify;
 				pdeleted_row->row_folder_id = folder_id;
 			}
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram1);
+			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			continue;
 		}
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
@@ -3779,10 +3940,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 		}
 		if (NULL == pmodified_row) {
 			datagram.db_notify.type = db_notify_type::hiertbl_row_modified;
-			pmodified_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
-			if (pmodified_row == nullptr)
-				return;
-			datagram.db_notify.pdata = pmodified_row;
+			pmodified_row = &datagram.db_notify;
 			pmodified_row->row_folder_id = folder_id;
 		}
 		if (1 == idx) {
@@ -3797,40 +3955,49 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 				sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
 		}
-		notification_agent_backward_notify(
-			ptable->remote_id, &datagram);
+		notifq.emplace_back(datagram, table_to_idarray(*ptable));
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2171: failed to commit hiertbl_modify_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2410: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
     const db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_MODIFIED, folder_id, 0);
+	               fnevObjectModified, folder_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_modified;
-		auto pmodified_folder = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
-		if (pmodified_folder == nullptr)
-			return;
-		datagram.db_notify.pdata = pmodified_folder;
+		auto pmodified_folder = &datagram.db_notify;
 		pmodified_folder->folder_id = folder_id;
 		pmodified_folder->parent_id = parent_id;
-		pmodified_folder->ptotal = NULL;
-		pmodified_folder->punread = NULL;
+		pmodified_folder->have_total = false;
+		pmodified_folder->have_unread = false;
 		pmodified_folder->proptags.count = 0;
+
+		void *val = nullptr;
+		if (cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, *pdb,
+		    PR_CONTENT_COUNT, &val) && val != nullptr) {
+			pmodified_folder->total = *static_cast<const uint32_t *>(val);
+			pmodified_folder->have_total = true;
+		}
+		val = nullptr;
+		if (cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, *pdb,
+		    PR_CONTENT_UNREAD, &val) && val != nullptr) {
+			pmodified_folder->unread = *static_cast<const uint32_t *>(val);
+			pmodified_folder->have_unread = true;
+		}
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
-	dbeng_notify_hiertbl_modify_row(pdb, parent_id, folder_id, dbase);
+	dbeng_notify_hiertbl_modify_row(*pdb, parent_id, folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2128: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
@@ -3838,7 +4005,6 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
     db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 
 	/* open-coded db_engine_classify_id_array(4-arg) */
@@ -3846,10 +4012,10 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
-			if (!(pnsub->notification_type & NF_OBJECT_COPIED))
+			if (!(pnsub->notification_type & fnevObjectCopied))
 				continue;
 		} else {
-			if (!(pnsub->notification_type & NF_OBJECT_MOVED))
+			if (!(pnsub->notification_type & fnevObjectMoved))
 				continue;
 		}
 		if (pnsub->b_whole || (pnsub->folder_id == old_fid &&
@@ -3859,13 +4025,11 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		}
 	}
 	if (recv_list.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::message_copied :
 		                          db_notify_type::message_moved;
-		auto pmvcp_mail = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
-		if (pmvcp_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pmvcp_mail;
+		auto pmvcp_mail = &datagram.db_notify;
 		pmvcp_mail->folder_id = folder_id;
 		pmvcp_mail->message_id = message_id;
 		pmvcp_mail->old_folder_id = old_fid;
@@ -3873,16 +4037,15 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		notifq.emplace_back(std::move(datagram), std::move(recv_list));
 	}
 	if (!b_copy) {
-		dbeng_notify_cttbl_delete_row(pdb, old_fid, old_mid, dbase);
+		dbeng_notify_cttbl_delete_row(*pdb, old_fid, old_mid, dbase, notifq);
 		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, old_fid), old_fid, dbase, notifq);
 	}
-	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
+	dbeng_notify_cttbl_add_row(*pdb, folder_id, message_id, dbase, notifq);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1521: ENOMEM");
-	return;
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
@@ -3890,7 +4053,6 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
     const db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 
 	/* open-coded db_engine_classify_id_array(4-arg) */
@@ -3898,10 +4060,10 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
-			if (!(pnsub->notification_type & NF_OBJECT_COPIED))
+			if (!(pnsub->notification_type & fnevObjectCopied))
 				continue;
 		} else {
-			if (!(pnsub->notification_type & NF_OBJECT_MOVED))
+			if (!(pnsub->notification_type & fnevObjectMoved))
 				continue;
 		}
 		if (pnsub->b_whole ||
@@ -3912,13 +4074,11 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		}
 	}
 	if (recv_list.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::folder_copied :
 		                          db_notify_type::folder_moved;
-		auto pmvcp_folder = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
-		if (pmvcp_folder == nullptr)
-			return;
-		datagram.db_notify.pdata = pmvcp_folder;
+		auto pmvcp_folder = &datagram.db_notify;
 		pmvcp_folder->folder_id = folder_id;
 		pmvcp_folder->parent_id = parent_id;
 		pmvcp_folder->old_folder_id = old_fid;
@@ -3926,16 +4086,15 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		notifq.emplace_back(std::move(datagram), std::move(recv_list));
 	}
 	if (!b_copy) {
-		dbeng_notify_hiertbl_delete_row(pdb, old_pid, old_fid, dbase);
+		dbeng_notify_hiertbl_delete_row(*pdb, old_pid, old_fid, dbase, notifq);
 		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, old_pid), old_pid, dbase, notifq);
 	}
-	dbeng_notify_hiertbl_add_row(pdb, parent_id, folder_id, dbase);
+	dbeng_notify_hiertbl_add_row(*pdb, parent_id, folder_id, dbase, notifq);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1522: ENOMEM");
-	return;
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase,
@@ -3951,13 +4110,11 @@ void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase,
 	datagram.db_notify.type = !ptable->b_search ?
 		db_notify_type::cttbl_changed :
 		db_notify_type::srchtbl_changed;
-	datagram.db_notify.pdata = NULL;
 	datagram.b_table = TRUE;
 	datagram.id_array.push_back(table_id);
-	notification_agent_backward_notify(
-		ptable->remote_id, &datagram);
+	notifq.emplace_back(datagram, table_to_idarray(*ptable));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2411: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::begin_batch_mode(db_base &dbase)
@@ -3965,7 +4122,8 @@ void db_conn::begin_batch_mode(db_base &dbase)
 	dbase.tables.b_batch = true;
 }
 
-void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb, db_base_wr_ptr &&dbase)
+void db_conn::commit_batch_mode_release(std::optional<db_conn> &&pdb,
+    db_base_wr_ptr &&dbase)
 {
 	auto table_num = dbase->tables.table_list.size();
 	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;

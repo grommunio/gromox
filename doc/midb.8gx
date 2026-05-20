@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH midb 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 midb \(em Message Index database daemon
@@ -15,7 +15,7 @@ sender to facilitate IMAP listings.
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
-specified, /etc/gromox/midb.cfg will be read if it exists.
+specified, /etc/gromox/gromox.cfg and /etc/gromox/midb.cfg will be read.
 .TP
 \fB\-\-version\fP
 Output version information and exit.
@@ -40,13 +40,21 @@ Request that the file descriptor table be at least this large. The magic value
 should be used.
 .br
 Default: \fI0\fP
+.TP
+\fBmidb_listen\fP
+A space-separated list of bind address specifiers to expose the MIDB service
+on.
+.br
+Default: \fB[::1]:5555\fP
 .SH Configuration directives (midb.cfg)
 The following directives are recognized when reading from /etc/gromox/midb.cfg,
 or when the \fB\-c\fP option is used to specify a custom file:
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
-configuration files, especially those used by plugin instances.
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/midb/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/midb:/etc/gromox\fP
 .TP
@@ -55,9 +63,6 @@ Colon-separated list of directories which will be scanned when locating data
 files.
 .br
 Default: \fI/usr/share/gromox/midb\fP
-.TP
-\fBdefault_charset\fP
-Default: \fIwindows-1252\fP
 .TP
 \fBmidb_cache_interval\fP
 The time after the last use of a particular midb.sqlite3 that the sqlite gets
@@ -75,21 +80,17 @@ Default: \fI0\fP
 .TP
 \fBmidb_hosts_allow\fP
 A space-separated list of individual host addresses that are allowed to
-converse with the midb service. The addresses must conform to gromox(7) \sc
+converse with the midb service. The addresses must conform to gromox(7) \(sc
 "Host addresses". No networks and no CIDR notations are permitted. This option
 deprecates the /etc/gromox/midb_acl.txt file used before Gromox 2.8.
 .br
 Default: \fI::1\fP
 .TP
 \fBmidb_listen_ip\fP
-An IPv6 address (or v4-mapped address) for exposing the event service on.
-.br
-Default: \fI::1\fP
+Deprecated in favor of gromox.cfg:midb_listen.
 .TP
 \fBmidb_listen_port\fP
-The TCP port number for exposing the event service on.
-.br
-Default: \fI5555\fP
+Deprecated in favor of gromox.cfg:midb_listen.
 .TP
 \fBmidb_log_file\fP
 Target for log messages here. Special values: "\fI-\fP" (stderr/syslog
@@ -120,14 +121,15 @@ Default: \fIyes\fP
 Default: \fI5000\fP
 .TP
 \fBmidb_threads_num\fP
-The minimum number of client processing threads to keep around.
+The exact number of client processing threads to keep around. This also
+controls the maximum number of concurrent connections by external clients
+towards midb.
 .br
 Default: \fI100\fP
 .TP
-\fBnotify_stub_threads_num\fP
-Default: \fI10\fP
-.TP
 \fBrpc_proxy_connection_num\fP
+The maximum number of (idle) connections towards Information Store homeservers
+that are kept alive for rapid re-use.
 .br
 Default: \fI10\fP
 .TP
@@ -140,10 +142,5 @@ Default: \fI0\fP
 .TP
 \fBx500_org_name\fP
 Default: (unspecified)
-.SH Files
-.IP \(bu 4
-\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 \fBgromox\fP(7)

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <climits>
@@ -113,6 +113,17 @@ static constexpr char tbl_perms_0[] =
 "CREATE INDEX fid_permissions_index ON permissions(folder_id);"
 "CREATE UNIQUE INDEX folder_username_index ON permissions(folder_id, username);";
 
+static constexpr char tbl_perms_24[] =
+"CREATE TABLE permissions ("
+"  member_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+"  folder_id INTEGER NOT NULL,"
+"  username TEXT COLLATE NOCASE NOT NULL,"
+"  permission INTEGER NOT NULL,"
+"  FOREIGN KEY (folder_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX fid_permissions_index ON permissions(folder_id);"
+"CREATE UNIQUE INDEX folder_username_index ON permissions(folder_id, username);"
+"CREATE UNIQUE INDEX folder_username_index2 ON permissions(username, folder_id);";
+
 static constexpr char tbl_rules_0[] =
 "CREATE TABLE rules ("
 "  rule_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -151,6 +162,15 @@ static constexpr char tbl_msgprops_4[] =
 
 static constexpr char tbl_msgprops_move4[] =
 "INSERT INTO message_properties SELECT message_id, proptag, propval FROM u0";
+
+static constexpr char tbl_msgprops_25[] =
+"CREATE TABLE message_properties ("
+"  message_id INTEGER NOT NULL,"
+"  proptag INTEGER NOT NULL,"
+"  propval BLOB NOT NULL,"
+"  FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX mid_properties_index4 ON message_properties(message_id);"
+"CREATE UNIQUE INDEX message_property_index4 ON message_properties(message_id, proptag);";
 
 static constexpr char tbl_msgchgs_0[] =
 "CREATE TABLE message_changes ("
@@ -345,6 +365,39 @@ static constexpr char tbl_fixsyseidalloc_16[] =
 static constexpr char tbl_fixsyseidalloc_17[] =
 "UPDATE configurations SET config_value=(SELECT MAX(range_end) FROM allocated_eids) WHERE config_id=3"; // CONIFG_ID_MAXIMUM_EID
 
+static constexpr char tbl_addmappingsig_18[] =
+"INSERT INTO configurations VALUES (11, (SELECT config_value FROM configurations WHERE config_id=1))";
+
+static constexpr char tbl_mtimeindex_19[] =
+"CREATE TABLE mtime_index (ignore INTEGER)",
+tbl_mtimeindex_21[] =
+"DROP TABLE mtime_index",
+tbl_msgtimeindex_22[] =
+"CREATE TABLE msgtime_index ("
+"  folder_id INTEGER NOT NULL,"
+"  message_id INTEGER NOT NULL,"
+"  mtime INTEGER,"
+"  rcvtime INTEGER,"
+"  sndtime INTEGER,"
+"  PRIMARY KEY (folder_id, message_id),"
+"  FOREIGN KEY (folder_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE,"
+"  FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE UNIQUE INDEX msgtime_mt_idx ON msgtime_index (folder_id, mtime, message_id);"
+"CREATE UNIQUE INDEX msgtime_rt_idx ON msgtime_index (folder_id, rcvtime, message_id);"
+"CREATE UNIQUE INDEX msgtime_st_idx ON msgtime_index (folder_id, sndtime, message_id);",
+tbl_addmsgtimeindex_23[] =
+"INSERT INTO msgtime_index "
+"SELECT m.parent_fid, m.message_id, mt.propval, rt.propval, st.propval FROM messages AS m "
+"LEFT JOIN message_properties AS mt ON m.message_id=mt.message_id AND mt.proptag=0x30080040 " /* PR_LAST_MODIFICATION_TIME */
+"LEFT JOIN message_properties AS rt ON m.message_id=rt.message_id AND rt.proptag=0xe060040 " /* PR_MESSAGE_DELIVERY_TIME */
+"LEFT JOIN message_properties AS st ON m.message_id=st.message_id AND st.proptag=0x390040 " /* PR_CLIENT_SUBMIT_TIME */
+"WHERE m.parent_fid IS NOT NULL AND m.is_associated=0 AND m.is_deleted=0";
+static constexpr char tbl_mboxpermissionindex_24[] =
+/* this helps determining mbox perm (bitwise-OR of all folders) */
+"CREATE UNIQUE INDEX folder_username_index2 ON permissions(username, folder_id);";
+static constexpr char tbl_droppropvalindex_25[] =
+"DROP INDEX proptag_propval_index4";
+
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
@@ -372,6 +425,27 @@ static constexpr char tbl_pub_msgs_0[] =
 "CREATE INDEX attid_messages_index ON messages(parent_attid);"
 "CREATE INDEX assoc_index ON messages(is_associated);"
 "CREATE INDEX parent_assoc_delete_index ON messages(parent_fid, is_associated, is_deleted);";
+
+static constexpr char tbl_pub_msgs_26[] =
+"CREATE TABLE messages ("
+"  message_id INTEGER PRIMARY KEY,"
+"  parent_fid INTEGER,"
+"  parent_attid INTEGER,"
+"  is_deleted INTEGER DEFAULT 0,"
+"  is_associated INTEGER,"
+"  change_number INTEGER UNIQUE NOT NULL,"
+"  message_size INTEGER NOT NULL,"
+"  group_id INTEGER DEFAULT NULL,"
+"  mid_string TEXT DEFAULT NULL,"
+"  FOREIGN KEY (parent_fid) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE,"
+"  FOREIGN KEY (parent_attid) REFERENCES attachments (attachment_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX pid_messages_index ON messages(parent_fid);"
+"CREATE INDEX attid_messages_index ON messages(parent_attid);"
+"CREATE INDEX assoc_index ON messages(is_associated);"
+"CREATE INDEX parent_assoc_delete_index ON messages(parent_fid, is_associated, is_deleted);";
+
+static constexpr char tbl_pub_msgs_upgrade26[] =
+"ALTER TABLE messages ADD COLUMN mid_string TEXT DEFAULT NULL";
 
 static constexpr char tbl_pub_readst_0[] =
 "CREATE TABLE read_states ("
@@ -423,9 +497,9 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"named_properties", tbl_namedprops_12},
 	{"store_properties", tbl_storeprops_2},
 	{"folder_properties", tbl_fldprops_3},
-	{"permissions", tbl_perms_0},
+	{"permissions", tbl_perms_24},
 	{"rules", tbl_rules_0},
-	{"message_properties", tbl_msgprops_4},
+	{"message_properties", tbl_msgprops_25},
 	{"message_changes", tbl_msgchgs_0},
 	{"recipients", tbl_rcpts_0},
 	{"recipients_properties", tbl_rcptprops_5},
@@ -438,6 +512,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"search_scopes", tbl_pvt_searchscopes_0},
 	{"search_result", tbl_pvt_searchresult_0},
 	{"autoreply_ts", tbl_pvt_autoreply_ts_11},
+	{"msgtime_index", tbl_msgtimeindex_22},
 	TABLE_END,
 };
 
@@ -469,19 +544,20 @@ static constexpr tbl_init tbl_pub_init_top[] = {
 	{"named_properties", tbl_namedprops_0},
 	{"store_properties", tbl_storeprops_2},
 	{"folder_properties", tbl_fldprops_3},
-	{"permissions", tbl_perms_0},
+	{"permissions", tbl_perms_24},
 	{"rules", tbl_rules_0},
-	{"message_properties", tbl_msgprops_4},
+	{"message_properties", tbl_msgprops_25},
 	{"message_changes", tbl_msgchgs_0},
 	{"recipients", tbl_rcpts_0},
 	{"recipients_properties", tbl_rcptprops_5},
 	{"attachments", tbl_attach_0},
 	{"attachment_properties", tbl_atxprops_6},
 	{"folders", tbl_pub_folders_0},
-	{"messages", tbl_pub_msgs_0},
+	{"messages", tbl_pub_msgs_26},
 	{"read_states", tbl_pub_readst_0},
 	{"read_cns", tbl_pub_readcn_0},
 	{"replguidmap", tbl_replguidmap_14},
+	{"msgtime_index", tbl_msgtimeindex_22},
 	TABLE_END,
 };
 
@@ -605,6 +681,13 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{15, tbl_fixsyseidalloc_15},
 	{16, tbl_fixsyseidalloc_16},
 	{17, tbl_fixsyseidalloc_17},
+	{18, tbl_addmappingsig_18},
+	{19, tbl_mtimeindex_19},
+	{21, tbl_mtimeindex_21},
+	{22, tbl_msgtimeindex_22},
+	{23, tbl_addmsgtimeindex_23},
+	{24, tbl_mboxpermissionindex_24},
+	{25, tbl_droppropvalindex_25},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -620,6 +703,14 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{15, tbl_fixsyseidalloc_15},
 	{16, tbl_fixsyseidalloc_16},
 	{17, tbl_fixsyseidalloc_17},
+	{18, tbl_addmappingsig_18},
+	{19, tbl_mtimeindex_19},
+	{21, tbl_mtimeindex_21},
+	{22, tbl_msgtimeindex_22},
+	{23, tbl_addmsgtimeindex_23},
+	{24, tbl_mboxpermissionindex_24},
+	{25, tbl_droppropvalindex_25},
+	{26, tbl_pub_msgs_upgrade26},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2025–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <chrono>
 #include <cstdint>
@@ -11,6 +11,8 @@
 #include <gromox/proc_common.h>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
+#include <gromox/process.hpp>
+#include <gromox/svc_loader.hpp>
 
 namespace gromox::ab_tree
 {
@@ -45,15 +47,15 @@ void ab::drop(int32_t id)
  * @param      org               x500 organization name
  * @param      cache_interval    Lifespan of ab_tree in seconds
  */
-void ab::init(std::string_view org, int cache_interval)
+int ab::init(std::string_view org, int cache_interval)
 {
-	std::unique_lock ul(m_lock);
-	if (m_initialized)
-		return;
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return -1;
 	m_org_name = org;
 	m_cache_interval = std::chrono::seconds(cache_interval);
 	m_essdn_server_prefix = fmt::format("/o={}/" EAG_SERVERS "/cn=", m_org_name);
 	m_essdn_rcpts_prefix = fmt::format("/o={}/" EAG_RCPTS "/cn=", m_org_name);
+	return 0;
 }
 
 /**
@@ -140,13 +142,13 @@ void ab::work()
 		if (worker_queue.empty())
 			wait_time = m_cache_interval;
 		else {
-			auto base = get(worker_queue.front());
-			if (!base || base->age() >= m_cache_interval) {
+			auto root = get(worker_queue.front());
+			if (root == nullptr || root->age() >= m_cache_interval) {
 				drop(worker_queue.front());
 				worker_queue.pop_front();
 				continue;
 			}
-			wait_time = m_cache_interval-base->age();
+			wait_time = m_cache_interval - root->age();
 		}
 		lock_guard.unlock();
 		worker_signal.wait_for(notify_guard, wait_time);
@@ -154,9 +156,10 @@ void ab::work()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// ab_base organistational member functions
+// ab_base organizational member functions
 
-const std::vector<std::string> ab_base::vs_empty{};
+/* Used to return empty alias list in case of invalid minid */
+static const std::vector<std::string> vs_empty;
 
 /**
  * @brief      Initialize base and lock until loaded
@@ -189,38 +192,42 @@ bool ab_base::await_load() const
 bool ab_base::load()
 {
 	std::lock_guard lock(m_lock, std::adopt_lock);
-	std::vector<unsigned int> domain_ids;
+	std::vector<unsigned int> dmemb;
 	if (m_base_id <= 0)
-		domain_ids.emplace_back(-m_base_id);
-	else if (!mysql_adaptor_get_org_domains(m_base_id, domain_ids))
+		dmemb.emplace_back(-m_base_id);
+	else if (!mysql_adaptor_get_org_domains(m_base_id, dmemb))
 		return false;
-	if (domain_ids.size() > minid::MAXVAL) // cannot reference more nodes
-		domain_ids.resize(minid::MAXVAL);
-	std::unordered_map<unsigned int, unsigned int> domain_map;
-	domains.reserve(domain_ids.size());
-	sql_domain domain;
-	for (unsigned int domain_id : domain_ids) try {
-		if (!mysql_adaptor_get_domain_users(domain_id, m_users))
+	if (dmemb.size() > minid::MAXVAL) // cannot reference more nodes
+		dmemb.resize(minid::MAXVAL);
+
+	std::unordered_map<unsigned int, unsigned int> domid_to_listidx;
+	m_domains.reserve(dmemb.size());
+	for (unsigned int domid : dmemb) try {
+		/* appends to m_users */
+		if (!mysql_adaptor_get_domain_users(domid, m_users))
 			return false;
-		domain_map[domain_id] = uint32_t(domains.size());
-		ab_domain &domain = domains.emplace_back();
-		domain.id = domain_id;
-		mysql_adaptor_get_domain_info(domain_id, domain.info);
+		domid_to_listidx[domid] = static_cast<uint32_t>(m_domains.size());
+		ab_domain &domain = m_domains.emplace_back();
+		domain.id = domid;
+		mysql_adaptor_get_domain_info(domid, domain.info);
 	} catch (std::exception &) {
 		return false;
 	}
 	if (m_users.size() > minid::MAXVAL)
 		m_users.resize(minid::MAXVAL);
 	std::sort(m_users.begin(), m_users.end());
-	minid_idx_map.reserve(m_users.size() + domain_ids.size());
-	std::unordered_map<unsigned int, unsigned int> domainMap;
+	minid_idx_map.reserve(m_users.size() + dmemb.size());
 	for (size_t i = 0; i < m_users.size(); ++i) {
 		const sql_user &u = m_users[i];
-		domains[domain_map[u.domain_id]].userref.emplace_back(minid(minid::address, u.id));
-		minid_idx_map.emplace(minid(minid::address, u.id), i);
+		minid mid(minid::address, u.id);
+		if (!(u.cloak_bits & AB_HIDE_FROM_GAL)) {
+			filtered_gal.emplace_back(mid);
+			m_domains[domid_to_listidx[u.domain_id]].userref.emplace_back(mid);
+		}
+		minid_idx_map.emplace(mid, i);
 	}
-	for (size_t i = 0; i < domains.size(); ++i)
-		minid_idx_map.emplace(minid(minid::domain, domains[i].id), i);
+	for (size_t i = 0; i < m_domains.size(); ++i)
+		minid_idx_map.emplace(minid(minid::domain, m_domains[i].id), i);
 	m_status = Status::LIVING;
 	return true;
 }
@@ -250,31 +257,34 @@ const std::vector<std::string> &ab_base::aliases(minid mid) const
  */
 minid ab_base::at(uint32_t idx) const
 {
-	return idx < domains.size() ? minid(minid::domain, domains[idx].id) :
-	       idx - domains.size() < m_users.size() ? minid(minid::address, m_users[idx-domains.size()].id) : minid();
+	if (idx < m_domains.size())
+		return minid(minid::domain, m_domains[idx].id);
+	idx -= m_domains.size();
+	return idx < m_users.size() ? minid(minid::address, m_users[idx].id) : minid();
+}
+
+minid ab_base::at_filtered(uint32_t idx) const
+{
+	return idx < filtered_gal.size() ? filtered_gal[idx] : minid();
 }
 
 /**
- * @brief      Write company info to target strings
+ * @brief      Write company name to target string
  *
  * @param      mid           Mid of the node
  * @param      str_name      String to write company name to, or nullptr to ignore
- * @param      str_address   String to write company address to, or nullptr to ignore
  *
  * @return     true if successful, false otherwise
  */
-bool ab_base::company_info(minid mid, std::string *str_name, std::string *str_address) const
+bool ab_base::company_name(minid mid, std::string &str_name) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
 		return false;
-	const ab_domain *domain = find_domain(user->domain_id);
-	if (!domain)
+	auto it = user->propvals.find(PR_COMPANY_NAME);
+	if(it == user->propvals.end())
 		return false;
-	if (str_name != nullptr)
-		*str_name = domain->info.title;
-	if (str_address != nullptr)
-		*str_address = domain->info.address;
+	str_name = it->second;
 	return true;
 }
 
@@ -318,7 +328,7 @@ bool ab_base::dn(minid mid, std::string& essdn) const
 	const sql_user *user = fetch_user(mid);
 	if(!user) {
 		char guid_str[33];
-		GUID(mid).to_str(guid_str, std::size(guid_str));
+		mid.to_guid().to_str(guid_str, std::size(guid_str));
 		essdn = "/guid=";
 		essdn += guid_str;
 		return true;
@@ -370,7 +380,7 @@ std::optional<uint32_t> ab_base::dtypx(minid mid) const
 void ab_base::dump() const
 {
 	fmt::print(stderr, "AB Base {}#{}\n", m_base_id < 0? "D" : "O", abs(m_base_id));
-	fmt::print(stderr, "  Domains ({}):\n", domains.size());
+	fmt::print(stderr, "  Domains ({}):\n", m_domains.size());
 	for (auto it = dbegin(); it != dend(); ++it) {
 		const ab_domain *domain = fetch_domain(*it);
 		if (domain == nullptr) {
@@ -430,7 +440,7 @@ display_type ab_base::dtypx_to_etyp(display_type dt)
  *
  * @return     Entry ID type of the node
  */
-uint32_t ab_base::etyp(minid mid) const
+enum display_type ab_base::etyp(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
@@ -459,7 +469,7 @@ bool ab_base::exists(minid mid) const
  *
  * @return     Exchange error code indicating success or failure
  */
-ec_error_t ab_base::fetch_prop(minid mid, uint32_t tag, std::string &prop) const
+ec_error_t ab_base::fetch_prop(minid mid, proptag_t tag, std::string &prop) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
@@ -480,12 +490,13 @@ ec_error_t ab_base::fetch_prop(minid mid, uint32_t tag, std::string &prop) const
  *
  * @return     true if user object was found, false otherwise
  */
-bool ab_base::fetch_props(minid mid, const PROPTAG_ARRAY &tags, std::unordered_map<uint32_t, std::string> &props) const
+bool ab_base::fetch_props(minid mid, proptag_cspan tags,
+    std::unordered_map<proptag_t, std::string> &props) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
 		return false;
-	for (auto tag  : tags) {
+	for (auto tag : tags) {
 		auto it = user->propvals.find(tag);
 		if (it == user->propvals.end())
 			continue;
@@ -516,7 +527,7 @@ uint32_t ab_base::get_leaves_num(minid mid) const
  *
  * @return     Number of users of a domain node or 0 for user nodes
  */
-size_t ab_base::children(minid mid) const
+size_t ab_base::children_count(minid mid) const
 {
 	const ab_domain *domain = fetch_domain(mid);
 	return domain ? domain->userref.size() : 0;
@@ -527,10 +538,10 @@ size_t ab_base::children(minid mid) const
  *
  * @return     Number of users with AB_HIDE_FROM_GAL flag set
  */
-size_t ab_base::hidden() const
+size_t ab_base::hidden_count() const
 {
-	return uint32_t(std::count_if(m_users.begin(), m_users.end(),
-	                              [](const sql_user& u) {return u.hidden & AB_HIDE_FROM_GAL;}));
+	return std::count_if(m_users.cbegin(), m_users.cend(),
+	       [](const sql_user &u) { return u.cloak_bits & AB_HIDE_FROM_GAL; });
 }
 
 /**
@@ -543,7 +554,7 @@ size_t ab_base::hidden() const
 uint32_t ab_base::hidden(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
-	return user ? user->hidden : 0;
+	return user != nullptr ? user->cloak_bits : 0;
 }
 
 /**
@@ -590,6 +601,26 @@ bool ab_base::mlist_info(minid mid, std::string *mail_address, std::string *crea
 }
 
 /**
+ * @brief      Write office location to target string
+ *
+ * @param      mid           Mid of the node
+ * @param      str_address   String to write company address to, or nullptr to ignore
+ *
+ * @return     true if successful, false otherwise
+ */
+bool ab_base::office_location(minid mid, std::string &str_address) const
+{
+	const sql_user *user = fetch_user(mid);
+	if (!user)
+		return false;
+	auto it = user->propvals.find(PR_OFFICE_LOCATION);
+	if(it == user->propvals.end())
+		return false;
+	str_address = it->second;
+	return true;
+}
+
+/**
  * @brief      Get list of properties of a user
  *
  * @param      mid   Mid of the node
@@ -597,7 +628,7 @@ bool ab_base::mlist_info(minid mid, std::string *mail_address, std::string *crea
  *
  * @return     Exchange error code indicating success or failure
  */
-ec_error_t ab_base::proplist(minid mid, std::vector<uint32_t> &tags) const
+ec_error_t ab_base::proplist(minid mid, std::vector<proptag_t> &tags) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
@@ -624,14 +655,14 @@ minid ab_base::resolve(const char* dn) const
 	if (strncasecmp(dn, server_prefix.c_str(), server_prefix.size()) == 0 &&
 	    z >= server_prefix.size() + 60) {
 		/* Reason for 60: see DN format in ab_tree_get_mdbdn */
-		auto id = decode_hex_int(dn + server_prefix.size() + 60);
+		auto id = eight_LE_hexchars_to_int(&dn[server_prefix.size()+60]);
 		return minid(minid::address, id);
 	}
 	const std::string &rcpts_prefix = AB.essdn_rcpts_prefix();
 	if (strncasecmp(dn, rcpts_prefix.c_str(), rcpts_prefix.size()) != 0 ||
 	    z < rcpts_prefix.size() + 8)
 		return {};
-	auto id = decode_hex_int(dn + rcpts_prefix.size() + 8);
+	auto id = eight_LE_hexchars_to_int(&dn[rcpts_prefix.size()+8]);
 	return minid(minid::address, id);
 }
 
@@ -706,7 +737,7 @@ const ab_domain *ab_base::fetch_domain(minid mid) const
 	if (it == minid_idx_map.end())
 		return nullptr;
 	size_t idx = it->second;
-	return idx >= domains.size() ? nullptr : &domains[idx];
+	return idx >= m_domains.size() ? nullptr : &m_domains[idx];
 }
 
 /**
@@ -739,8 +770,14 @@ ab_base::iterator ab_base::find(minid mid) const
 	auto it = minid_idx_map.find(mid);
 	if (it == minid_idx_map.end())
 		return end();
-	return mid.type() == minid::domain ? iterator(this, domains.begin() + it->second) :
+	return mid.type() == minid::domain ? iterator(this, m_domains.begin() + it->second) :
 	       iterator(this, m_users.begin() + it->second);
+}
+
+uint32_t ab_base::pos_in_filtered_users(minid mid) const
+{
+	auto it = std::find(filtered_gal.cbegin(), filtered_gal.cend(), mid);
+	return it != filtered_gal.cend() ? it - filtered_gal.cbegin() : 0;
 }
 
 /**
@@ -752,7 +789,7 @@ ab_base::iterator ab_base::find(minid mid) const
  */
 const ab_domain *ab_base::find_domain(uint32_t id) const
 {
-	for (auto &domain : domains)
+	for (auto &domain : m_domains)
 		if (domain.id == id)
 			return &domain;
 	return nullptr;
@@ -775,35 +812,35 @@ ab_base::iterator &ab_base::iterator::operator+=(difference_type offset)
 
 	if (it.index() == 0) {
 		auto &i = std::get<0>(it);
-		ssize_t dist = std::distance(i, m_base->domains.cend());
+		ssize_t dist = std::distance(i, m_root->m_domains.cend());
 		if (offset < 0 || offset < dist) {
 			i += offset;
 			mid = minid(minid::domain, i->id);
 			return *this;
 		}
 		/* Wrap forwards over to users */
-		auto i2 = m_base->m_users.cbegin() + (offset - dist);
+		auto i2 = m_root->m_users.cbegin() + (offset - dist);
 		it = i2;
-		if (i2 != m_base->m_users.cend())
+		if (i2 != m_root->m_users.cend())
 			mid = minid(minid::address, i2->id);
 		else
 			mid = 0;
 		return *this;
 	} else if (it.index() == 1) {
 		auto &i = std::get<1>(it);
-		ssize_t dist = std::distance(m_base->m_users.cbegin(), i);
+		ssize_t dist = std::distance(m_root->m_users.cbegin(), i);
 		if (offset > 0 || -offset <= dist) {
 			i += offset;
-			if (i != m_base->m_users.cend())
+			if (i != m_root->m_users.cend())
 				mid = minid(minid::address, i->id);
 			else
 				mid = 0;
 			return *this;
 		}
 		/* Wrap backwards over to domains */
-		auto i2 = m_base->domains.cend() + (dist + offset);
+		auto i2 = m_root->m_domains.cend() + (dist + offset);
 		it = i2;
-		if (i2 != m_base->domains.cend())
+		if (i2 != m_root->m_domains.cend())
 			mid = minid(minid::domain, i2->id);
 		else
 			mid = 0;
@@ -819,8 +856,8 @@ ab_base::iterator &ab_base::iterator::operator+=(difference_type offset)
  */
 size_t ab_base::iterator::pos() const
 {
-	return it.index() == 0 ? std::distance(m_base->domains.cbegin(), std::get<0>(it)) :
-	                         std::distance(m_base->m_users.cbegin(), std::get<1>(it)) + m_base->domains.size();
+	return it.index() == 0 ? std::distance(m_root->m_domains.cbegin(), std::get<0>(it)) :
+	                         std::distance(m_root->m_users.cbegin(), std::get<1>(it)) + m_root->m_domains.size();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -828,19 +865,19 @@ size_t ab_base::iterator::pos() const
 
 ab_node::iterator ab_node::begin() const
 {
-	const ab_domain *domain = base->fetch_domain(mid);
+	const ab_domain *domain = root->fetch_domain(mid);
 	return domain ? domain->userref.cbegin() : iterator();
 }
 
 ab_node::iterator ab_node::end() const
 {
-	const ab_domain *domain = base->fetch_domain(mid);
+	const ab_domain *domain = root->fetch_domain(mid);
 	return domain ? domain->userref.cend() : iterator();
 }
 
 minid ab_node::operator[](uint32_t idx) const
 {
-	const ab_domain *domain = base->fetch_domain(mid);
+	const ab_domain *domain = root->fetch_domain(mid);
 	return domain && idx < domain->userref.size() ? domain->userref[idx] : minid();
 }
 

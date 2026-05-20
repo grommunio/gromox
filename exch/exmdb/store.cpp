@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdio>
@@ -12,6 +12,7 @@
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
+#include <gromox/flat_set.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
@@ -62,7 +63,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 		ppropids->push_back(pstmt.col_int64(0));
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2209: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -156,10 +157,10 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
-	std::vector<uint32_t> tags;
+	std::vector<proptag_t> tags;
 	if (!cu_get_proptags(MAPI_STORE, 0, pdb->psqlite, tags))
 		return FALSE;
-	pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
+	pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 	if (pproptags->pproptag == nullptr)
 		return false;
 	pproptags->count = tags.size();
@@ -168,13 +169,13 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 }
 
 BOOL exmdb_server::get_store_properties(const char *dir, cpid_t cpid,
-    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
-	return cu_get_properties(MAPI_STORE, 0, cpid, pdb->psqlite,
+	return cu_get_properties(MAPI_STORE, 0, cpid, *pdb,
 	       pproptags, ppropvals);
 }
 
@@ -192,7 +193,7 @@ BOOL exmdb_server::set_store_properties(const char *dir, cpid_t cpid,
 }
 
 BOOL exmdb_server::remove_store_properties(const char *dir,
-    const PROPTAG_ARRAY *pproptags)
+    proptag_cspan pproptags)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -218,8 +219,6 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 BOOL exmdb_server::get_mbox_perm(const char *dir,
     const char *username, uint32_t *ppermission) try
 {
-	char sql_string[128];
-	
 	if (!exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
@@ -231,18 +230,16 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	*ppermission = rightsNone;
 
 	/* Store permission := union of folder permissions */
+	gromox::maybe_flat_set<uint64_t> seen_fid;
 	auto pstmt = gx_sql_prep(pdb->psqlite,
-	             "SELECT p1.folder_id, p2.permission, p3.permission "
-	             "FROM permissions AS p1 LEFT JOIN permissions AS p2 "
-	             "ON p1.folder_id=p2.folder_id AND p2.username=? "
-	             "LEFT JOIN permissions AS p3 "
-	             "ON p1.folder_id=p3.folder_id AND p3.username='default'");
+	             "SELECT folder_id, permission FROM permissions WHERE username=?");
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 	while (pstmt.step() == SQLITE_ROW) {
 		auto fid  = pstmt.col_uint64(0);
-		auto perm = pstmt.col_uint64(sqlite3_column_type(pstmt, 1) != SQLITE_NULL ? 1 : 2);
+		auto perm = pstmt.col_uint64(1);
+		seen_fid.emplace(fid);
 		*ppermission |= perm;
 	/*
 	 * Outlook and g-web only expose IPM_SUBTREE and below, so permissions
@@ -262,25 +259,38 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
 			*ppermission |= frightsGromoxStoreOwner;
 	}
-	pstmt.finalize();
-
-	/* add in mlist permissions(?) */
-	snprintf(sql_string, std::size(sql_string), "SELECT "
-		"username, permission FROM permissions");
-	pstmt = pdb->prep(sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
+	pstmt.reset();
+	pstmt.bind_text(1, "default");
 	while (pstmt.step() == SQLITE_ROW) {
-		auto ben = pstmt.col_text(0);
-		if (!mysql_adaptor_check_mlist_include(ben, username))
+		auto fid = pstmt.col_uint64(0);
+		if (seen_fid.find(fid) != seen_fid.end())
 			continue;
 		auto perm = pstmt.col_uint64(1);
-		auto fid  = pstmt.col_uint64(2);
 		*ppermission |= perm;
 		if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
 			*ppermission |= frightsGromoxStoreOwner;
 	}
+
+	/* add in mlist permissions(?) */
+	std::vector<std::string> group_memberships;
+	auto err = mysql_adaptor_get_user_groups_rec(username, group_memberships);
+	if (err != 0)
+		return false;
+	for (auto &&group : group_memberships) {
+		pstmt.reset();
+		pstmt.bind_text(1, group.c_str());
+		while (pstmt.step() == SQLITE_ROW) {
+			auto fid = pstmt.col_uint64(0);
+			if (seen_fid.find(fid) != seen_fid.end())
+				continue;
+			auto perm = pstmt.col_uint64(1);
+			*ppermission |= perm;
+			if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
+				*ppermission |= frightsGromoxStoreOwner;
+		}
+	}
 	pstmt.finalize();
+	sql_transact = xtransaction();
 	pdb.reset();
 
 	/* Delegate bit */
@@ -298,7 +308,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2066: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -400,7 +410,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	*psub_id = last_id + 1;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2130: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -415,22 +425,6 @@ BOOL exmdb_server::unsubscribe_notification(const char *dir, uint32_t sub_id)
 		[&](const nsub_node &n) { return n.sub_id == sub_id; });
 	if (i != dbase->nsub_list.end())
 		dbase->nsub_list.erase(i);
-	return TRUE;
-}
-
-BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
-	uint64_t message_id, uint32_t message_flags, const char *pstr_class)
-{
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* No database access, so no transaction. */
-	auto dbase = pdb->lock_base_rd();
-	db_conn::NOTIFQ notifq;
-	pdb->transport_new_mail(rop_util_get_gc_value(folder_id),
-		rop_util_get_gc_value(message_id), message_flags, pstr_class,
-		*dbase, notifq);
-	dg_notify(std::move(notifq));
 	return TRUE;
 }
 
@@ -460,7 +454,7 @@ static BOOL table_check_address_in_contact_folder(
 	*pb_found = FALSE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2089: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

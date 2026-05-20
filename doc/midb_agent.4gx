@@ -1,8 +1,8 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH midb_agent 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-midb_agent \(em Service plugin for conversing with midb(8gx)
+midb_agent \(em Client for midb(8gx)
 .SH Configuration directives
 The usual config file location is /etc/gromox/midb_agent.cfg.
 .TP
@@ -40,7 +40,7 @@ almost always end in a '/' character, otherwise a prefix of "/home" is able to
 match a userdir of "/home2/username" as well, which may be undesired.
 .IP \(bu 4
 The IPv6 address of the midb server to connect to for all requests involving
-this prefix. The address must conform to gromox(7) \sc "Host addresses".
+this prefix. The address must conform to gromox(7) \(sc "Host addresses".
 .IP \(bu 4
 The port number.
 .PP
@@ -60,6 +60,9 @@ in loading midb_agent twice.)
 \fIconfig_file_path\fP/midb_list.txt: midb multiserver map
 .PP
 \fIconfig_file_path\fP is determined by the configuration of the program that
-loaded the midb_agent plugin.
+loaded the midb_agent component.
+.SH Signals
+Upon receipt of SIGHUP, configuration files are re-read, but only a few select
+directives can be changed this way, as many parts do not implement reload.
 .SH See also
 \fBgromox\fP(7)

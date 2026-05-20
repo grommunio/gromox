@@ -10,31 +10,9 @@
 #include <type_traits>
 #include <unordered_map>
 #include <variant>
-#include <gromox/mysql_adaptor.hpp>
 #include <gromox/clock.hpp>
-
-namespace gromox {
-
-enum class abnode_type : uint8_t {
-	remote = 0,
-	user = 1, /* person, room, equipment */
-	mlist = 2,
-	folder = 5,
-	domain = 0x81,
-	group = 0x82,
-	abclass = 0x83,
-	containers = 0x81, /* for >= */
-};
-
-enum class minid_type : uint8_t {
-	address = 0,
-	domain = 4,
-	group = 5,
-	abclass = 6,
-	reserved = 7, /* NSPI reserves minids 0..0x10 */
-};
-
-}
+#include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 
 namespace gromox::ab_tree {
 
@@ -42,8 +20,7 @@ struct minid;
 
 }
 
-template<> struct std::hash<gromox::ab_tree::minid>
-{
+template<> struct std::hash<gromox::ab_tree::minid> {
 	inline size_t operator()(gromox::ab_tree::minid minid) const;
 };
 
@@ -60,10 +37,7 @@ enum class abnode_type : uint8_t {
 	remote = 0,
 	user = 1, /* person, room, equipment */
 	mlist = 2,
-	// folder = 5, /* currently unused */
 	domain = 0x81,
-	// group = 0x82, /* currently unused */
-	// abclass = 0x83, /* currently unused */
 	containers = 0x81, /* for >= */
 };
 
@@ -80,43 +54,59 @@ enum class userinfo {
 };
 
 /**
- * @brief      Minimal entry ID ofaddress book entries
+ * @brief      Minimal entry ID of address book entries
  *
- * Wrapper for 32 bit unsigned integer to encode type information (high bits)
+ * Wrapper for 32-bit unsigned integer to encode type information (high bits)
  * and ID (low bits) of an entry.
  * The ID of the (user or domain) object is used with an offset of 0x10, since
  * the lower minid values are reserved for special purposes.
  */
-struct minid {
+struct GX_EXPORT minid {
 	enum Type : uint32_t {
 		address = 0,
 		domain = 1,
 	};
 
-	static constexpr uint32_t TYPEMASK = 0x80000000; ///< Bits used for minid type information
-	static constexpr uint32_t VALMASK = 0x7FFFFFFF; ///< Bits used for minid value information
-	static constexpr uint32_t TYPEOFFSET = 31; ///< Offset for type information bits
+	static constexpr uint32_t TYPEMASK = 0x40000000; ///< Bits used for minid type information
+	static constexpr uint32_t VALMASK = 0x3FFFFFFF; ///< Bits used for minid value information
+	static constexpr uint32_t TYPEOFFSET = 30; ///< Offset for type information bits
 	static constexpr uint32_t MAXVAL = VALMASK - 0x10; ///< Maximum value that can be stored in a minid
 
 	// Positioning ID as per MS-OXNSPI 2.2.1.8
-	static constexpr uint32_t BEGINNING_OF_TABLE = 0x00000000;
-	static constexpr uint32_t END_OF_TABLE = 0x00000002;
-	static constexpr uint32_t CURRENT = 0x00000001;
+	static constexpr uint32_t BEGINNING_OF_TABLE = STREAM_SEEK_SET;
+	static constexpr uint32_t CURRENT = STREAM_SEEK_CUR;
+	static constexpr uint32_t END_OF_TABLE = STREAM_SEEK_END;
 
 	// Ambiguous name resolution IDs, as per MS-OXNSPI 2.2.1.9
 	static constexpr uint32_t UNRESOLVED = 0x00000000;
 	static constexpr uint32_t AMBIGUOUS = 0x0000001;
 	static constexpr uint32_t RESOLVED = 0x0000002;
 
-	// Special container IDs used by zcore
+	/*
+	 * The ab_tree.hpp implementation indexes its data with minids and
+	 * exposes these record numbers in its programming API. It was
+	 * convenient for zcore to make its special containers have a minid and
+	 * thus a muidEMSAB-based entryid.
+	 *
+	 * It's all different in MSMAPI, where the SCs have their own random
+	 * provider UID and do not leech from muidEMSAB.
+	 *
+	 * ab_tree.cpp functions shall never receive SC_ values.
+	 */
 	static constexpr uint32_t SC_ROOT = 0xC;
 	static constexpr uint32_t SC_EMPTY = 0xD;
 	static constexpr uint32_t SC_PROVIDER = 0xE;
-	static constexpr uint32_t SC_GAL= 0xF;
+	static constexpr uint32_t SC_GAL = 0xF;
 
+	/*
+	 * NSPI special containers (must not collide with minids for
+	 * users/domains / cf. VALMASK and TYPEMASK): everything PR_EMS_AB_*
+	 * with PT_OBJECT, e.g. PR_EMS_AB_MEMBER = 0x8009000d.
+	 */
 
 	constexpr minid(uint32_t i = 0) : id(i) {}
 	constexpr explicit minid(const GUID &guid) : id(guid.time_low) {}
+
 	/**
 	 * @brief      Construct minid from type and ID
 	 *
@@ -125,7 +115,7 @@ struct minid {
 	 */
 	constexpr minid(Type t, uint32_t v) : id((uint32_t(t) << TYPEOFFSET) | ((v + 0x10) & VALMASK)) {}
 	constexpr operator uint32_t() const { return id; }
-	constexpr explicit operator GUID() const { return GUID{id, 0, 0, {0, 0}, {0, 0, 0, 0, 0, 0}}; }
+	constexpr GUID to_guid() const { return GUID{id, 0, 0, {0, 0}, {0, 0, 0, 0, 0, 0}}; }
 
 	constexpr Type type() const { return Type(id >> TYPEOFFSET); } ///< Extract type from minid
 	constexpr uint32_t value() const { return (id & VALMASK) - 0x10; } ///< Extract object ID from minid
@@ -138,7 +128,7 @@ struct minid {
 /**
  * @brief      Address book domain node
  */
-struct ab_domain {
+struct GX_EXPORT ab_domain {
 	uint32_t id;
 	sql_domain info;
 	std::vector<minid> userref; ///< List of minids of contained objects
@@ -147,10 +137,10 @@ struct ab_domain {
 /**
  * @brief      Address book base
  *
- * Contains all domain and user nodes from an organization an provides a common
+ * Contains all domain and user nodes from an organization. Provides a common
  * interface to access node properties.
  */
-class ab_base {
+class GX_EXPORT ab_base {
 	public:
 	/**
 	 * @brief     Address book iterator
@@ -169,26 +159,26 @@ class ab_base {
 		iterator() = default;
 
 		iterator(const ab_base *b, const std::vector<ab_domain>::const_iterator &i) :
-			m_base(b), it(i)
+			m_root(b), it(i)
 		{
-			if (i != m_base->domains.cend())
+			if (i != m_root->m_domains.cend())
 				mid = minid(minid::domain, i->id);
 			else
 				mid = 0;
 		}
 
 		iterator(const ab_base *b, const std::vector<sql_user>::const_iterator &i) :
-			m_base(b), it(i)
+			m_root(b), it(i)
 		{
-			if (i != m_base->m_users.cend())
+			if (i != m_root->m_users.cend())
 				mid = minid(minid::address, i->id);
 			else
 				mid = 0;
 		}
 
-		constexpr bool operator==(const iterator &o) const { return m_base == o.m_base && it == o.it; }
+		constexpr bool operator==(const iterator &o) const { return m_root == o.m_root && it == o.it; }
 		constexpr auto operator<=>(const iterator &o) const {
-			auto c = m_base <=> o.m_base;
+			auto c = m_root <=> o.m_root;
 			if (c != 0)
 				return c;
 			c = it.index() <=> o.it.index();
@@ -215,14 +205,14 @@ class ab_base {
 		inline const minid &operator*() const { return mid; }
 		inline const minid *operator->() const { return &mid; }
 
-		inline const ab_base *base() const { return m_base; }
+		inline const ab_base *root() const { return m_root; }
 		size_t pos() const;
 
 		private:
 		using domain_it = std::vector<ab_domain>::const_iterator;
 		using user_it = std::vector<sql_user>::const_iterator;
 
-		const ab_base *m_base = nullptr;
+		const ab_base *m_root = nullptr;
 		std::variant<domain_it, user_it> it;
 		minid mid; ///< cached minid to allow returning references and pointers
 	};
@@ -238,46 +228,51 @@ class ab_base {
 
 	minid at(uint32_t) const;
 	const std::vector<std::string> &aliases(minid) const;
-	size_t children(minid) const;
-	bool company_info(minid, std::string *, std::string *) const;
+	size_t children_count(minid) const;
+	bool company_name(minid, std::string &) const;
 	std::string displayname(minid) const;
 	bool dn(minid, std::string &) const;
 	uint32_t dtyp(minid) const;
 	std::optional<uint32_t> dtypx(minid) const;
 	void dump() const;
-	uint32_t etyp(minid) const;
+	enum display_type etyp(minid) const;
 	bool exists(minid) const;
 	const ab_domain *fetch_domain(minid) const;
-	ec_error_t fetch_prop(minid, uint32_t, std::string &) const;
-	bool fetch_props(minid, const PROPTAG_ARRAY &, std::unordered_map<uint32_t, std::string> &) const;
+	ec_error_t fetch_prop(minid, gromox::proptag_t, std::string &) const;
+	bool fetch_props(minid, proptag_cspan, std::unordered_map<gromox::proptag_t, std::string> &) const;
 	const sql_user *fetch_user(minid) const;
 	uint32_t get_leaves_num(minid) const;
 	inline const GUID &guid() const { return m_guid; }
-	size_t hidden() const;
+	size_t hidden_count() const;
 	uint32_t hidden(minid) const;
 	ec_error_t mdbdn(minid, std::string &) const;
 	bool mlist_info(minid, std::string *, std::string *, int *) const;
-	ec_error_t proplist(minid, std::vector<uint32_t> &) const;
+	bool office_location(minid, std::string &) const;
+	ec_error_t proplist(minid, std::vector<gromox::proptag_t> &) const;
 	minid resolve(const char *) const;
-	inline size_t size() const { return m_users.size() + domains.size(); }
+	inline size_t size() const { return m_users.size() + m_domains.size(); }
 	abnode_type type(minid) const;
-	inline size_t users() const { return m_users.size(); }
+	inline size_t user_count() const { return m_users.size(); }
 	const char *user_info(minid, userinfo) const;
 
-	inline iterator begin() const { return iterator(this, domains.cbegin()); } ///< Iterator to beginning of address book
+	inline iterator begin() const { return iterator(this, m_domains.cbegin()); } ///< Iterator to beginning of address book
 	inline iterator end() const { return iterator(this, m_users.cend()); } ///< Iterator to end of address book
-	inline iterator dbegin() const { return iterator(this, domains.cbegin()); } ///< Iterator to beginning of domain list
+	inline iterator dbegin() const { return iterator(this, m_domains.cbegin()); } ///< Iterator to beginning of domain list
 	inline iterator dend() const { return iterator(this, m_users.cbegin()); } ///< Iterator to end of domain list
 	inline iterator ubegin() const { return iterator(this, m_users.cbegin()); } ///< Iterator to beginning of user list
 	inline iterator uend() const { return iterator(this, m_users.cend()); } ///< Iterator to end of user list
 	iterator find(minid) const;
 
+	inline auto ufbegin() const { return filtered_gal.cbegin(); }
+	inline auto ufend() const { return filtered_gal.cend(); }
+	inline size_t filtered_user_count() const { return filtered_gal.size(); }
+	minid at_filtered(uint32_t pos) const;
+	uint32_t pos_in_filtered_users(minid) const;
+
 	static display_type dtypx_to_etyp(display_type);
 
 	private:
 	const ab_domain *find_domain(uint32_t) const;
-
-	static const std::vector<std::string> vs_empty; ///< used to return empty alias list in case of invalid minid
 
 	GUID m_guid; ///< GUID of the base
 	gromox::time_point m_load_time{}; ///< Load time
@@ -285,11 +280,12 @@ class ab_base {
 	 * base_id==0: not permitted (contains e.g. the AAPI administrator)
 	 * base_id >0: Base is for an organization (multiple domains)
 	 * base_id <0: Base is for one domain (base_id == -domain_id);
-	 *             @domain_list will have exactly one entry.
+	 *             @domains will have exactly one entry.
 	 */
 	int m_base_id = 0;
-	std::vector<ab_domain> domains; ///< list of domains belonging to the base
-	std::vector<sql_user> m_users; ///< list of users from all domains, sorted by displayname
+	std::vector<ab_domain> m_domains; ///< list of domains belonging to the base
+	std::vector<sql_user> m_users; ///< list of users from all those domains, sorted by displayname
+	std::vector<minid> filtered_gal;
 	std::unordered_map<minid, uint32_t> minid_idx_map; ///< map from minid to index in domain/user list
 	mutable std::mutex m_lock;
 	std::atomic<Status> m_status{Status::CONSTRUCTING};
@@ -300,12 +296,12 @@ class ab_base {
  *
  * Manages ab_bases. There should only exist one instance.
  */
-class ab {
+class GX_EXPORT ab {
 	public:
 	using base_ref = std::shared_ptr<ab_base>;
 	using const_base_ref = std::shared_ptr<const ab_base>;
 
-	void init(std::string_view org, int cache_interval);
+	int init(std::string_view org, int cache_interval);
 
 	const_base_ref get(int32_t base_id);
 	inline const_base_ref get(const GUID &guid) { return get(base_id(guid)); }
@@ -327,7 +323,6 @@ class ab {
 	std::shared_mutex m_lock;
 	std::chrono::seconds m_cache_interval;
 	std::unordered_map<int32_t, std::shared_ptr<ab_base>> m_base_hash;
-	bool m_initialized = false;
 
 	std::thread worker; ///< Worker thread removing expired bases
 	std::deque<int> worker_queue; ///< Queue of base IDs to be flushed
@@ -336,31 +331,31 @@ class ab {
 
 	void work();
 };
-extern class ab AB;
+extern GX_EXPORT class ab AB;
 
 /**
  * @brief      Node proxy, bundling minid with ab_base
  *
  * Provides easy access to a specific node in an ab_tree.
  */
-struct ab_node {
+struct GX_EXPORT ab_node {
 	public:
 	ab_node() = default;
-	ab_node(const ab::const_base_ref &br, minid m) : base(br.get()), mid(m) {}
-	ab_node(const ab_base *b, minid m) : base(b), mid(m) {}
-	ab_node(const ab_base::iterator &it) : base(it.base()), mid(*it) {}
+	ab_node(const ab::const_base_ref &br, minid m) : root(br.get()), mid(m) {}
+	ab_node(const ab_base *b, minid m) : root(b), mid(m) {}
+	ab_node(const ab_base::iterator &it) : root(it.root()), mid(*it) {}
 
-	const ab_base *base = nullptr;
+	const ab_base *root = nullptr;
 	minid mid{};
 
 	#define WRAP(FUNC) \
 		template<typename... Args> \
 		inline auto FUNC(Args &&...args) const \
-		{ return base->FUNC(mid, std::forward<Args>(args)...); }
+		{ return root->FUNC(mid, std::forward<Args>(args)...); }
 
 	WRAP(aliases)
-	WRAP(children)
-	WRAP(company_info)
+	WRAP(children_count)
+	WRAP(company_name)
 	WRAP(displayname)
 	WRAP(dn)
 	WRAP(dtyp)
@@ -372,6 +367,7 @@ struct ab_node {
 	WRAP(get_leaves_num)
 	WRAP(mdbdn)
 	WRAP(mlist_info)
+	WRAP(office_location)
 	WRAP(proplist)
 	WRAP(type)
 	WRAP(user_info)
@@ -379,14 +375,14 @@ struct ab_node {
 	#undef WRAP
 
 	inline GUID guid() const { return GUID(mid); }
-	inline uint32_t hidden() const { return base->hidden(mid); }
-	inline bool valid() const { return base && base->exists(mid); }
+	inline uint32_t hidden() const { return root->hidden(mid); }
+	inline bool valid() const { return root != nullptr && root->exists(mid); }
 
 	using iterator = decltype(ab_domain::userref)::const_iterator;
 	iterator begin() const;
 	iterator end() const;
 	inline iterator find(minid) const { return mid.type() == minid::address ? std::find(begin(), end(), mid) : end(); }
-	inline minid at(uint32_t idx) const { return idx < children() ? this->operator[](idx) : minid(); }
+	inline minid at(uint32_t idx) const { return idx < children_count() ? this->operator[](idx) : minid(); }
 	minid operator[](uint32_t) const;
 };
 

@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH gromox 7 "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox \(em Overview of the Gromox groupware server
@@ -24,44 +24,47 @@ gromox(7) \(em This page, an overview of the Gromox groupware server.
 mapi(7gx) \(em Definition for "Messaging Application Programming Interface"
 .IP \(bu 4
 gromox\-selinux(5) \(em SELinux policy for Gromox
-.SS Exchange subsystem and its components
+.SS Information Store subsystem
 .IP \(bu 4
-autodiscover(4gx) \(em Autodiscover HTTP Service Protocol handler (AutoDiscover
-responder).
+autoconfig(7) \(em AutoConfig protocols
+.IP \(bu 4
+autodiscover(4gx) \(em AutoDiscover HTTP Service Protocol handler (responder).
 .IP \(bu 4
 autodiscover(7) \(em AutoDiscover protocols
-responder).
-.IP \(bu 4
-exchange_emsmdb(4gx) \(em http(8gx) processing plugin for the Wire Format
-Protocol (Outlook/Exchange RPCs).
-.IP \(bu 4
-exchange_nsp(4gx) \(em http(8gx) processing plugin for the Exchange Server Name
-Service Provider Interface Protocol.
-.IP \(bu 4
-exchange_rfr(4gx) \(em http(8gx) processing plugin for the Address Book Name
-Service Provider Interface Referral Protocol.
 .IP \(bu 4
 exmdb_provider(4gx) \(em Gromox Information Store
 .IP \(bu 4
-ews(4gx) \(em http(8gx) processing plugin for EWS requests
+http(8gx) \(em Protocol handler for HTTP and RPCH
 .IP \(bu 4
-http(8gx)
+istore(8gx) \(em Information Store launcher
 .IP \(bu 4
-mod_cache(4gx) \(em http(8gx) processing plugin for serving objects from a
+mod_cache(4gx) \(em Handler for serving objects from a
 local filesystem
 .IP \(bu 4
-mod_fastcgi(4gx) \(em http(8gx) processing plugin for proxying requests to
+mod_fastcgi(4gx) \(em Handler for proxying requests to
 FastCGI servers
 .IP \(bu 4
-mod_rewrite(4gx) \(em http(8gx) processing plugin for altering HTTP request
+mod_rewrite(4gx) \(em Handler for altering HTTP request
 URIs before processing
 .IP \(bu 4
-mh_emsmdb(4gx) \(em http(8gx) processing plugin for MAPIHTTP-wrapped EMSMDB
+timer(8gx) \(em deferred command executor
+.SS Exchange subsystem and its components
+.IP \(bu 4
+exchange_emsmdb(4gx) \(em Handler for the Wire Format
+Protocol (Outlook/Exchange RPCs) and Remote Operations Protocol
+.IP \(bu 4
+exchange_nsp(4gx) \(em Handler for the Name
+Service Provider Interface Protocol
+.IP \(bu 4
+exchange_rfr(4gx) \(em Handler for the Address Book Name
+Service Provider Interface Referral Protocol
+.IP \(bu 4
+ews(4gx) \(em Handler for Exchange Web Services requests
+.IP \(bu 4
+mh_emsmdb(4gx) \(em Handler for MAPIHTTP-wrapped EMSMDB
 requests
 .IP \(bu 4
-mh_nsp(4gx) \(em http(8gx) processing plugin for MAPIHTTP-wrapped NSPI requests
-.IP \(bu 4
-timer(8gx) \(em deferred command executor
+mh_nsp(4gx) \(em Handler for MAPIHTTP-wrapped NSPI requests
 .SS PHP-MAPI subsystem
 .IP \(bu 4
 zcore(8gx) \(em Bridge for PHP-MAPI requests
@@ -69,11 +72,11 @@ zcore(8gx) \(em Bridge for PHP-MAPI requests
 .IP \(bu 4
 imap(8gx) \(em IMAP server
 .IP \(bu 4
-event_proxy(4gx) \(em Event sender service plugin
+event_proxy(4gx) \(em Event sender
 .IP \(bu 4
-event_stub(4gx) \(em Event receiver service plugin
+event_stub(4gx) \(em Event receiver
 .IP \(bu 4
-midb_agent(4gx) \(em Service plugin for conversing with midb(8gx)
+midb_agent(4gx) \(em Client for midb(8gx)
 .IP \(bu 4
 pop3(8gx) \(em POP3 server
 .SS Local delivery agent (LDA)
@@ -84,7 +87,7 @@ delivery(8gx) \(em Backend for local delivery
 .IP \(bu 4
 delivery-queue(8gx) \(em LMTP/SMTP frontend for local delivery
 .IP \(bu 4
-user_filter(4gx) \(em Service plugin for application of user login limits
+user_filter(4gx) \(em User logon limiter
 .SS Auxiliary services
 .IP \(bu 4
 gromox\-cleaner.service(8) \(em Soft-deleted message/attachment removal
@@ -124,29 +127,30 @@ gromox\-mkpublic(8) \(em Tool for creating a blank public store
 gromox\-eml2mbox(8) \(em Utility for converting RFC5322 Internet Mail messages
 into a RFC4155 mbox-format mailbox
 .IP \(bu 4
-gromox\-eml2mt(8) \(em Utility for analysis of/importing RFC5322 Internet Mail
-messages
+gromox\-import(8) \(em Utility for analysis of/importing messages from a Gromox
+Message Transfer datastream
 .IP \(bu 4
-gromox\-exm2eml(8) \(em Utility for exporting messages as RFC5322 Internet Mail
+gromox\-export(8) \(em Utility for exporting messages
 .IP \(bu 4
-gromox\-exm2ical(8) \(em Utility for exporting messages as RFC5545 iCalendar
-objects
+gromox\-exm2eml(8) \(em Wrapper for gromox\-export selecting RFC5322 Internet
+Mail output
 .IP \(bu 4
-gromox\-exm2mt(8) \(em Utility for exporting messages as a Gromox Mailbox
-Transfer stream
+gromox\-exm2ical(8) \(em Wrapper for gromox\-export selecting RFC5545 iCalendar
+output
 .IP \(bu 4
-gromox\-exm2tnef(8) \(em Utility for exporting messages as TNEF objects
+gromox\-exm2mt(8) \(em Wrapper for gromox\-export selecting Gromox Mailbox
+Transfer stream output
 .IP \(bu 4
-gromox\-exm2vcf(8) \(em Utility for exporting messages as RFC6540 vCard objects
+gromox\-exm2tnef(8) \(em Wrapper for gromox\-export selecting TNEF output
+.IP \(bu 4
+gromox\-exm2vcf(8) \(em Wrapper for gromox\-export selecting RFC6540 vCard
+output
 .IP \(bu 4
 gromox\-ical2mt(8) \(em Utility for analysis of/importing RFC5545 iCalendar
 objects
 .IP \(bu 4
 gromox\-kdb2mt(8) \(em Utility for analysis of/importing Zarafa/Kopano
 SQL-stored mailboxes
-.IP \(bu 4
-gromox\-mt2exm(8) \(em Utility for bulk-importing mail items into a Gromox
-store
 .IP \(bu 4
 gromox\-oxm2mt(8) \(em Utility for analysis and import of Outlook .msg files
 .IP \(bu 4
@@ -161,9 +165,7 @@ gromox\-vcf2mt(8) \(em Utility for analysis/import of vCard objects
 kdb\-uidextract(8) \(em Helper for creating a gromox\-kdb2mt ACL map
 .IP \(bu 4
 kdb\-uidextract\-limited(8) \(em Helper for creating a gromox\-kdb2mt ACL map
-.SS Service plugins
-Service plugins can be used by various processes (i.e. from different
-subsystems), as such, we have put them in this general category.
+.SS Components
 .IP \(bu 4
 authmgr(4gx) \(em Demultiplexer for authentication requests
 .IP \(bu 4
@@ -174,8 +176,12 @@ ldap_adaptor(4gx) \(em LDAP connector for authentication
 mysql_adaptor(4gx) \(em MySQL/MariaDB connector for user metadata and
 authentication
 .IP \(bu 4
-timer_agent(4gx) \(em Service plugin for deferred command execution with
-timer(8gx)
+timer_agent(4gx) \(em Client for timer(8gx)
+.SS Historic commands that have been removed
+The following is a list of programs that no longer exist. It is intended solely
+to capture keyword searches within the documentation for said obsolete/removed commands.
+.IP \(bu 4
+gromox\-mt2exm: renamed to gromox\-import
 .SS Language bindings
 .IP \(bu 4
 mapi(4gx) \(em PHP module providing MAPI functions
@@ -193,7 +199,7 @@ ignored, as are lines beginning with a ';' character.
 Many programs have a \fBconfig_file_path\fP directive with which the search
 path for further config files can be specified. For example, http(8gx) defaults
 to config_file_path=/etc/gromox/http:/etc/gromox, so the mysql_adaptor(4gx)
-plugin as loaded by http will first try
+component as loaded by http will first try
 /etc/gromox/http/mysql_adaptor.cfg, then /etc/gromox/mysql_adaptor.cfg. This
 allows having one file that is shared between multiple programs as well as
 being able to override on a per program-basis.
@@ -265,10 +271,10 @@ zcore(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/zcore.cfg,
 /etc/gromox/mysql_adaptor.cfg, /etc/gromox/timer_agent.cfg
 .SS Listing of components per config file
 .IP \(bu 4
-/etc/gromox/alias_resolve.cfg: used by the alias_resolve(4gx) plugin, accessed
+/etc/gromox/alias_resolve.cfg: used by the alias_resolve(4gx) component, accessed
 process-wise by the delivery(8gx) process.
 .IP \(bu 4
-/etc/gromox/authmgr.cfg: used by the authmgr(4gx) and pam_gromox(4gx) plugin,
+/etc/gromox/authmgr.cfg: used by the authmgr(4gx) and pam_gromox(4gx) components,
 accessed process-wise by delivery(8gx), delivery-queue(8gx), http(8gx),
 imap(8gx), midb(8gx), pop3(8gx), zcore(8gx), and arbitrary PAM applications.
 .IP \(bu 4
@@ -277,22 +283,22 @@ process-wise by php-fpm(8).
 .IP \(bu 4
 /etc/gromox/event.cfg: used by the event(8gx) process.
 .IP \(bu 4
-/etc/gromox/event_proxy.cfg: used by the event_proxy(4gx) plugin, accessed
+/etc/gromox/event_proxy.cfg: used by the event_proxy(4gx) component, accessed
 process-wise by imap(8gx), midb(8gx), pop3(8gx).
 .IP \(bu 4
-/etc/gromox/event_stub.cfg: used by the event_stub(4gx) plugin, accessed
+/etc/gromox/event_stub.cfg: used by the event_stub(4gx) component, accessed
 process-wise by imap(8gx).
 .IP \(bu 4
-/etc/gromox/exchange_emsmdb.cfg: used by the exchange_emsmdb(4gx) plugin,
+/etc/gromox/exchange_emsmdb.cfg: used by the exchange_emsmdb(4gx) component,
 accessed process-wise by http(8gx).
 .IP \(bu 4
-/etc/gromox/exchange_nsp.cfg: used by the exchange_nsp(4gx) plugin, accessed
+/etc/gromox/exchange_nsp.cfg: used by the exchange_nsp(4gx) component, accessed
 process-wise by http(8gx).
 .IP \(bu 4
-/etc/gromox/exmdb_local.cfg: used by the exmdb_local(4gx) plugin, accessed
+/etc/gromox/exmdb_local.cfg: used by the exmdb_local(4gx) component, accessed
 process-wise by delivery(8gx).
 .IP \(bu 4
-/etc/gromox/exmdb_provider.cfg: used by the exmdb_provider(4gx) plugin,
+/etc/gromox/exmdb_provider.cfg: used by the exmdb_provider(4gx) component,
 accessed process-wise by http(8gx).
 .IP \(bu 4
 /etc/gromox/gromox.cfg: An effort to consolidate all the invididual .cfg
@@ -300,47 +306,47 @@ files you see around here. This is a work-in-progress. See the gromox.cfg(5)
 manpage.
 .IP \(bu 4
 /etc/gromox/http.cfg: used by the mod_cache(4gx), mod_fastcgi(4gx),
-mod_rewrite(4gx) plugins, and the http(8gx) process.
+mod_rewrite(4gx) components, and the http(8gx) process.
 .IP \(bu 4
 /etc/gromox/imap.cfg: used by the imap(8gx) process.
 .IP \(bu 4
-/etc/gromox/ldap_adaptor.cfg: used by the ldap_adaptor(4gx) plugin, accessed
+/etc/gromox/ldap_adaptor.cfg: used by the ldap_adaptor(4gx) component, accessed
 process-wise by delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),
 midb(8gx), pop3(8gx), zcore(8gx), and arbitrary PAM applications.
 .IP \(bu 4
-/etc/gromox/midb_agent.cfg: used by the midb_agent(4gx) plugin, accessed
+/etc/gromox/midb_agent.cfg: used by the midb_agent(4gx) component, accessed
 process-wise by delivery-queue(8gx), imap(8gx), pop3(8gx).
 .IP \(bu 4
-/etc/gromox/mlist_expand.cfg: used by the mlist_expand(4gx) plugin,
+/etc/gromox/mlist_expand.cfg: used by the mlist_expand(4gx) component,
 accessed process-wise by delivery(8gx).
 .IP \(bu 4
 /etc/gromox/mysql_adaptor.cfg: used by the alias_resolve(4gx),
-mysql_adaptor(4gx) plugins, accessed process-wise by delivery(8gx),
+mysql_adaptor(4gx) components, accessed process-wise by delivery(8gx),
 delivery-queue(8gx), http(8gx), imap(8gx), midb(8gx), pop3(8gx), zcore(8gx),
 and arbitrary PAM applications.
 .IP \(bu 4
 /etc/gromox/midb.cfg: used by the midb(8gx) process.
 .IP \(bu 4
-/etc/gromox/mod_cache.txt: used by the mod_cache(4gx) plugin, accessed
+/etc/gromox/mod_cache.txt: used by the mod_cache(4gx) component, accessed
 process-wise by http(8gx).
 .IP \(bu 4
-/etc/gromox/mod_fastcgi.txt: used by the mod_fastcgi(4gx) plugin, accessed
+/etc/gromox/mod_fastcgi.txt: used by the mod_fastcgi(4gx) component, accessed
 process-wise by http(8gx).
 .IP \(bu 4
-/etc/gromox/mod_rewrite.txt: used by the mod_rewrite(4gx) plugin, accessed
+/etc/gromox/mod_rewrite.txt: used by the mod_rewrite(4gx) component, accessed
 process-wise by http(8gx).
 .IP \(bu 4
-/etc/gromox/mysql_adaptor.cfg: used by the autodiscover(4gx) plugin, http(8gx),
+/etc/gromox/mysql_adaptor.cfg: used by the autodiscover(4gx) component, http(8gx),
 imap(8gx), pop3(8gx), zcore(8gx) processes.
 .IP \(bu 4
-/etc/gromox/pam.cfg: used by the pam_gromox(4gx) plugin, accessed process-wise
+/etc/gromox/pam.cfg: used by the pam_gromox(4gx) component, accessed process-wise
 by arbitrary PAM applications.
 .IP \(bu 4
 /etc/gromox/pop3.cfg: used by the pop3(8gx) process.
 .IP \(bu 4
 /etc/gromox/timer.cfg: used by the timer(8gx) process.
 .IP \(bu 4
-/etc/gromox/timer_agent.cfg: used by the timer_agent(4gx) plugin, accessed
+/etc/gromox/timer_agent.cfg: used by the timer_agent(4gx) component, accessed
 process-wise by http(8gx), zcore(8gx).
 .IP \(bu 4
 /etc/gromox/zcore.cfg: used by the zcore(8gx) process.
@@ -361,7 +367,7 @@ host.
 .SH Host addresses
 Gromox exclusively uses the AF_INET6 socket family with the Berkeley/BSD/POSIX
 socket API. What this means is that, whenever an IP address is logged, it will
-have the form specified in RFC 4291 §2.2/§2.5.5. Furthermore, whenever some
+have the form specified in RFC 4291 \(sc2.2/\(sc2.5.5. Furthermore, whenever some
 configuration file directive (field) requires an IP address (i.e. you cannot or
 do not want to use a hostname), the RFC 4291 form \fBmust\fP be used for both
 IPv6 and IPv4.
@@ -387,7 +393,7 @@ cut and skip Postfix/etc. to get a simpler test setup.
 .IP \(bu 4
 *:995 \(em pop3(8gx) POP3 over implicit TLS
 .IP \(bu 4
-[::1]:5000 \(em exmdb_provider(4gx) plugin inside http(8gx)
+[::1]:5000 \(em exmdb_provider(4gx) component inside http(8gx)
 .IP \(bu 4
 [::1]:5555 \(em midb(8gx) service
 .IP \(bu 4
@@ -395,18 +401,6 @@ cut and skip Postfix/etc. to get a simpler test setup.
 .IP \(bu 4
 [::1]:33333 \(em event(8gx) service
 .SH Files
-The exact paths depend on the options used when Gromox's build was configured.
-Especially the path for libraries, represented in this documentation as
-/usr/lib/gromox, may for example actually be /usr/lib64/gromox or
-/usr/lib/riscv64-linux-gnu, depending on the platform.
-.IP \(bu 4
-/usr/lib/gromox/libgxh_*.so: HTTP processing plugins for http(8gx)
-.IP \(bu 4
-/usr/lib/gromox/libgxm_*.so: hook plugins for delivery(8gx)
-.IP \(bu 4
-/usr/lib/gromox/libgxp_*.so: PDU processing plugins for http(8gx)
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .IP \(bu 4
 /usr/share/gromox/cpid.txt: mapping between character set IDs and names
 .IP \(bu 4
@@ -425,20 +419,11 @@ MIME types
 .IP \(bu 4
 /var/lib/gromox/queue: directory for delivery-queue(8) temporary files
 .IP \(bu 4
-/var/lib/gromox/user: default directory hierarchy for private mailboxes
-.IP \(bu 4
-/var/lib/gromox/domain: default directory hierarchy for public mailboxes
-(public folders)
+/var/lib/gromox/user/account@domain: individual mailbox container
 .br
-Additional hierarchies for private and public can be added to exmdb_list.txt.
-.IP \(bu 4
-\&.../user/account@domain: individual mailbox container
-.br
-The directory name/path has only few requirements. It needs to be within one of
-the exmdb_list.txt-specified hierarchies for private/public hierarchies, and
-the users.maildir column in MySQL needs to reflect that location. Some user
+The directory name/path has only few requirements. The users.maildir column in
+the gromox MariaDB/MySQL database needs to reflect that location. Some user
 management tools generate extra directory levels, e.g. /user/m1/1/0.
-.
 .IP \(bu 4
 \&.../a@d/exmdb/exchange.sqlite3: mail store with almost everything (no mail bodies)
 .IP \(bu 4

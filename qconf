@@ -13,6 +13,7 @@ case "$(uname -s)" in
 OpenBSD)
 	set -x
 	"$topdir/configure" --sysconfdir=/etc --prefix=/usr/local --localstatedir=/var \
+		--enable-private-headers \
 		CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
 	set +x
 	ncpus=$(sysctl hw.ncpuonline 2>/dev/zero | cut -b15-)
@@ -29,6 +30,7 @@ OpenBSD)
 	fi
 	set -x
 	"$topdir/configure" --sysconfdir=/etc --localstatedir=/var $libdir \
+		--enable-private-headers \
 		CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
 	set +x
 	ncpus=$(nproc)

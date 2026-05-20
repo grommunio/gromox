@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -54,9 +54,9 @@ static unsigned int g_context_num;
 static thread_local HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
 static std::unique_ptr<HPM_CONTEXT[]> g_context_list;
-static std::span<const static_module> g_plugin_names;
+static std::span<const generic_module> g_plugin_names;
 
-void hpm_processor_init(int context_num, std::span<const static_module> names)
+void hpm_processor_init(int context_num, std::span<const generic_module> names)
 {
 	g_context_num = context_num;
 	g_plugin_names = std::move(names);
@@ -90,6 +90,11 @@ static BOOL hpm_processor_register_interface(
 
 static HTTP_REQUEST *hpm_processor_get_request(unsigned int context_id)
 {
+	/*
+	 * `context_id` is an index-based handle. Every `whatever[context_id]`
+	 * is de-jure owned by a different thread. A particular thread can
+	 * access the members of its HTTP_CONTEXT without locking.
+	 */
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
 	return &phttp->request;
 }
@@ -162,7 +167,6 @@ static constexpr struct dlfuncs server_funcs = {
 	},
 	/* .get_context_num = */ []() { return g_context_num; },
 	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
-	/* .get_prog_id = */ nullptr,
 	/* .ndr_stack_alloc = */ pdu_processor_ndr_stack_alloc,
 	/* .rpc_new_stack = */ pdu_processor_rpc_new_stack,
 	/* .rpc_free_stack = */ pdu_processor_rpc_free_stack,
@@ -194,26 +198,29 @@ HPM_PLUGIN::~HPM_PLUGIN()
 {
 	PLUGIN_MAIN func;
 	auto pplugin = this;
-	mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name);
-	func = (PLUGIN_MAIN)pplugin->lib_main;
-	if (func != nullptr && pplugin->completed_init)
-		/* notify the plugin that it willbe unloaded */
-		func(PLUGIN_FREE, server_funcs);
+	if (pplugin->init_state == generic_module::state::init_done) {
+		if (pplugin->file_name != nullptr)
+			mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name);
+		func = (PLUGIN_MAIN)pplugin->lib_main;
+		if (func != nullptr)
+			func(PLUGIN_FREE, server_funcs);
+	}
 
 	/* free the reference list */
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), pplugin->file_name);
 }
 
-static int hpm_processor_load_library(const static_module &mod)
+static int hpm_processor_load_library(const generic_module &mod)
 {
 	HPM_PLUGIN plug;
 
-	plug.lib_main = mod.efunc;
-	plug.file_name = mod.path;
+	plug.lib_main = mod.lib_main;
+	plug.file_name = mod.file_name;
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
+	g_cur_plugin->init_state = generic_module::state::init_start;
 	if (!g_cur_plugin->lib_main(PLUGIN_INIT, server_funcs) ||
 	    g_cur_plugin->interface.preproc == nullptr ||
 	    g_cur_plugin->interface.proc == nullptr ||
@@ -224,7 +231,7 @@ static int hpm_processor_load_library(const static_module &mod)
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	g_cur_plugin->completed_init = true;
+	g_cur_plugin->init_state = generic_module::state::init_done;
 	g_cur_plugin = NULL;
 	return PLUGIN_LOAD_OK;
 }

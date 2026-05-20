@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -23,6 +23,7 @@
 #include <gromox/zcore_client.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "php.h"
+#include "SAPI.h"
 #include "ext/standard/info.h"
 #include "Zend/zend_exceptions.h"
 #include "Zend/zend_builtin_functions.h"
@@ -86,7 +87,7 @@ struct MAPI_RESOURCE {
 struct STREAM_OBJECT {
 	GUID hsession;
 	uint32_t hparent;
-	uint32_t proptag;
+	proptag_t proptag;
 	uint32_t seek_offset;
 	BINARY content_bin;
 };
@@ -103,7 +104,7 @@ struct ICS_EXPORT_CTX {
 	uint32_t hobject;
 	uint8_t ics_type;
 	zval pztarget_obj;
-	zend_bool b_changed;
+	uint8_t b_changed;
 	uint32_t progress;
 	uint32_t sync_steps;
 	uint32_t total_steps;
@@ -256,7 +257,7 @@ static uint32_t stream_object_write(STREAM_OBJECT *pstream,
 }
 
 static void stream_object_set_parent(STREAM_OBJECT *pstream,
-	GUID hsession, uint32_t hparent, uint32_t proptag)
+	GUID hsession, uint32_t hparent, proptag_t proptag)
 {
 	pstream->hsession = hsession;
 	pstream->hparent = hparent;
@@ -340,8 +341,7 @@ static ec_error_t notif_sink_timedwait(NOTIF_SINK *psink,
 	uint32_t timeval, ZNOTIFICATION_ARRAY *pnotifications)
 {
 	if (0 == psink->count) {
-		pnotifications->count = 0;
-		pnotifications->ppnotification = NULL;
+		pnotifications->clear();
 		return ecSuccess;
 	}
 	return zclient_notifdequeue(
@@ -419,10 +419,6 @@ PHP_INI_END()
 
 static PHP_MINIT_FUNCTION(mapi)
 {
-	if (!rtf_init_library()) {
-		fprintf(stderr, "rtf_init_library failed\n");
-		return FAILURE;
-	}
 	le_mapi_session = zend_register_list_destructors_ex(
 		mapi_resource_dtor, NULL, name_mapi_session, module_number);
 	le_mapi_addressbook = zend_register_list_destructors_ex(
@@ -480,11 +476,52 @@ static PHP_MSHUTDOWN_FUNCTION(mapi)
 	return SUCCESS;
 }
 
+static bool opcache_is_interfering()
+{
+	const char sz_fname[] = "opcache_get_configuration";
+	if (!zend_hash_str_exists(CG(function_table), sz_fname, std::size(sz_fname) - 1))
+		return false;
+
+	/* look up directive['opcache.x'] */
+	zval zfunc, zconfig;
+	zstrplus zstr_fname(zend_string_init(ZEND_STRL(sz_fname), 0));
+	ZVAL_STR(&zfunc, zstr_fname.get());
+	if (call_user_function(EG(function_table), nullptr, &zfunc, &zconfig,
+	    0, nullptr) != SUCCESS)
+		return false;
+
+	auto cl_0 = HX::make_scope_exit([&]() { zval_ptr_dtor(&zconfig); });
+	const char sz_directives[] = "directives";
+	zval *pdirectives = zend_hash_str_find(Z_ARRVAL(zconfig),
+	                          sz_directives, std::size(sz_directives) - 1);
+	if (pdirectives == nullptr || Z_TYPE_P(pdirectives) != IS_ARRAY)
+		return false;
+
+	/* look up directive['opcache.enable'] */
+	const char sz_enabled[] = "opcache.enable";
+	zval *penabled = zend_hash_str_find(Z_ARRVAL_P(pdirectives),
+	                       sz_enabled, std::size(sz_enabled) - 1);
+	if (penabled == nullptr || !zval_get_long(penabled))
+		return false;
+	if (sapi_module.name == nullptr || strcasecmp(sapi_module.name, "cli") != 0)
+		return true;
+
+	/* look up directive['opcache.enable_cli'] */
+	const char sz_ecli[] = "opcache.enable_cli";
+	penabled = zend_hash_str_find(Z_ARRVAL_P(pdirectives),
+	           sz_ecli, std::size(sz_ecli) - 1);
+	return penabled != nullptr && zval_get_long(penabled);
+}
+
 static PHP_RINIT_FUNCTION(mapi)
 {
 	zstrplus str_opcache(zend_string_init(ZEND_STRL("zend opcache"), 0));
-	if (zend_hash_exists(&module_registry, str_opcache.get())) {
-		php_error_docref(nullptr, E_ERROR, "mapi: MAPI cannot execute while opcache is present. You must deactivate opcache in PHP (`phpdismod` command on some systems), or remove opcache entirely with the package manager. <https://docs.grommunio.com/kb/php.html>");
+
+	if (zend_hash_exists(&module_registry, str_opcache.get()) &&
+	    opcache_is_interfering()) {
+		php_error_docref(nullptr, E_ERROR, "mapi: MAPI cannot execute while opcache is present and enabled. "
+			"You must deactivate opcache in PHP (opcache.enable=0 or `phpdismod` command on some systems), "
+			"or remove opcache entirely with the package manager. <https://docs.grommunio.com/kb/php.html>");
 		return FAILURE;
 	}
 
@@ -632,7 +669,7 @@ static ZEND_FUNCTION(mapi_createoneoff)
 	tmp_entry.paddress_type = ptype;
 	tmp_entry.pmail_address = paddress;
 	if (!push_ctx.init() ||
-	    push_ctx.p_oneoff_eid(tmp_entry) != EXT_ERR_SUCCESS)
+	    push_ctx.p_oneoff_eid(tmp_entry) != pack_result::ok)
 		pthrow(ecError);
 	RETVAL_STRINGL(reinterpret_cast<const char *>(push_ctx.m_vdata), push_ctx.m_offset);
 	MAPI_G(hr) = ecSuccess;
@@ -650,12 +687,12 @@ static ZEND_FUNCTION(mapi_parseoneoff)
 		pthrow(ecInvalidParam);
 	pull_ctx.init(pentryid, cbentryid, ext_pack_alloc,
 		EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
-	if (pull_ctx.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
+	if (pull_ctx.g_oneoff_eid(&oneoff_entry) != pack_result::ok)
 		pthrow(ecError);
 	zarray_init(return_value);
-	add_assoc_string(return_value, "name", oneoff_entry.pdisplay_name);
-	add_assoc_string(return_value, "type", oneoff_entry.paddress_type);
-	add_assoc_string(return_value, "address", oneoff_entry.pmail_address);
+	add_assoc_string(return_value, "name", oneoff_entry.pdisplay_name.c_str());
+	add_assoc_string(return_value, "type", oneoff_entry.paddress_type.c_str());
+	add_assoc_string(return_value, "address", oneoff_entry.pmail_address.c_str());
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -751,6 +788,44 @@ static ZEND_FUNCTION(mapi_logon_ex)
 	presource->type = zs_objtype::session;
 	presource->hobject = 0;
 	RETVAL_RG(presource, le_mapi_session);
+	MAPI_G(hr) = ecSuccess;
+}
+
+static ZEND_FUNCTION(mapi_logon_np)
+{
+	ZCL_MEMORY;
+	zend_long flags = 0;
+	char *username;
+	size_t username_len = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "sl", &username,
+	    &username_len, &flags) == FAILURE ||
+	    username == nullptr || *username == '\0')
+		pthrow(ecInvalidParam);
+
+	/* enforce CLI mode */
+	if (sapi_module.name != nullptr) {
+		if (strcasecmp(sapi_module.name, "cli") != 0)
+			pthrow(ecAccessDenied);
+	} else {
+		zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
+		auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
+		zstrplus str_reqm(zend_string_init(ZEND_STRL("REQUEST_METHOD"), 0));
+		if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
+			auto method = zend_hash_find(Z_ARRVAL_P(server_vars), str_reqm.get());
+			if (method != nullptr)
+				pthrow(ecAccessDenied);
+		}
+	}
+	auto res = st_malloc<MAPI_RESOURCE>();
+	if (res == nullptr)
+		pthrow(ecMAPIOOM);
+	auto result = zclient_logon_np(username, "", "", flags, &res->hsession);
+	if (result != ecSuccess)
+		pthrow(result);
+	res->type = zs_objtype::session;
+	res->hobject = 0;
+	RETVAL_RG(res, le_mapi_session);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -925,7 +1000,7 @@ static ZEND_FUNCTION(mapi_ab_resolvename)
 		&result_set);
 	if (result != ecSuccess)
 		pthrow(result);
-	err = tarray_set_to_php(&result_set, &pzrowset);
+	err = tarray_set_to_php(result_set, &pzrowset);
 	if (err != ecSuccess)
 		pthrow(err);
 	RETVAL_ZVAL(&pzrowset, 0, 0);
@@ -1557,8 +1632,7 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 	ZEND_FETCH_RESOURCE(psink, pzressink, le_mapi_advisesink);
 	if (0 == psink->count) {
 		usleep(tmp_time*1000);
-		notifications.count = 0;
-		notifications.ppnotification = NULL;
+		notifications.clear();
 	} else {
 		tmp_time /= 1000;
 		if (tmp_time < 1)
@@ -1570,7 +1644,7 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 			goto RETURN_EXCEPTION;
 		}
 	}
-	auto err = znotification_array_to_php(&notifications, &pznotifications);
+	auto err = znotification_array_to_php(notifications, &pznotifications);
 	MAPI_G(hr) = err;
 	if (err != ecSuccess)
 		goto RETURN_EXCEPTION;
@@ -1587,7 +1661,7 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 	zval pzrowset, *pzresource, *pzproptags = nullptr, *pzrestriction = nullptr;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags, *pproptags = nullptr;
+	std::optional<std::vector<proptag_t>> pproptags;
 	RESTRICTION restriction, *prestriction = nullptr;
 	
 	ZVAL_NULL(&pzrowset);
@@ -1605,16 +1679,15 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 		prestriction = &restriction;
 	}
 	if (NULL != pzproptags) {
-		auto err = php_to_proptag_array(pzproptags, &proptags);
+		auto err = php_to_proptag_array(pzproptags, pproptags);
 		if (err != ecSuccess)
 			pthrow(err);
-		pproptags = &proptags;
 	}
 	auto result = zclient_queryrows(ptable->hsession, ptable->hobject, 0,
 	         INT32_MAX, prestriction, pproptags, &rowset);
 	if (result != ecSuccess)
 		pthrow(result);
-	auto err = tarray_set_to_php(&rowset, &pzrowset);
+	auto err = tarray_set_to_php(rowset, &pzrowset);
 	if (err != ecSuccess)
 		pthrow(err);
 	RETVAL_ZVAL(&pzrowset, 0, 0);
@@ -1627,7 +1700,7 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 	zval pzrowset, *pzresource, *pzproptags = nullptr;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags, *pproptags = nullptr;
+	std::optional<std::vector<proptag_t>> pproptags;
 	
 	ZVAL_NULL(&pzrowset);
 	zend_long start = UINT32_MAX, row_count = UINT32_MAX;
@@ -1638,18 +1711,18 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 	ZEND_FETCH_RESOURCE(ptable, pzresource, le_mapi_table);
 	if (ptable->type != zs_objtype::table)
 		pthrow(ecInvalidObject);
+
 	if (NULL != pzproptags) {
-		auto err = php_to_proptag_array(pzproptags, &proptags);
+		auto err = php_to_proptag_array(pzproptags, pproptags);
 		if (err != ecSuccess)
 			pthrow(err);
-		pproptags = &proptags;
 	}
 	auto result = zclient_queryrows(ptable->hsession,
 			ptable->hobject, start, row_count, NULL,
 			pproptags, &rowset);
 	if (result != ecSuccess)
 		pthrow(result);
-	auto err = tarray_set_to_php(&rowset, &pzrowset);
+	auto err = tarray_set_to_php(rowset, &pzrowset);
 	if (err != ecSuccess)
 		pthrow(err);
 	RETVAL_ZVAL(&pzrowset, 0, 0);
@@ -1676,7 +1749,7 @@ static ZEND_FUNCTION(mapi_table_setcolumns)
 		pthrow(err);
 	auto result = zclient_setcolumns(
 		ptable->hsession, ptable->hobject,
-		&proptags, flags);
+		proptags, flags);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_TRUE;
@@ -2356,7 +2429,7 @@ static ZEND_FUNCTION(mapi_copyto)
 	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzsrc, *pzdst, *pzexcludeiids, *pzexcludeprops;
-	PROPTAG_ARRAY exclude_proptags, *pexclude_proptags = nullptr;
+	PROPTAG_ARRAY exclude_proptags{};
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raar|l",
 		&pzsrc, &pzexcludeiids, &pzexcludeprops, &pzdst, &flags)
@@ -2374,15 +2447,14 @@ static ZEND_FUNCTION(mapi_copyto)
 		pthrow(ecInvalidObject);
 	else if (pdstobject == nullptr)
 		pthrow(ecInvalidParam);
-
-	if (pzexcludeprops != nullptr) {
-		auto err = php_to_proptag_array(pzexcludeprops, &exclude_proptags);
-		if (err != ecSuccess)
-			pthrow(err);
-		pexclude_proptags = &exclude_proptags;
-	}
+	if (pzexcludeprops == nullptr)
+		/* can't happen because parse_param always fills non-optional zvals */
+		pthrow(ecInvalidParam);
+	auto err = php_to_proptag_array(pzexcludeprops, &exclude_proptags);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_copyto(psrcobject->hsession,
-				psrcobject->hobject, pexclude_proptags,
+				psrcobject->hobject, exclude_proptags,
 				pdstobject->hobject, flags);
 	if (result != ecSuccess)
 		pthrow(result);
@@ -2439,7 +2511,7 @@ static ZEND_FUNCTION(mapi_deleteprops)
 	if (err != ecSuccess)
 		pthrow(err);
 	auto result = zclient_deletepropvals(probject->hsession,
-	              probject->hobject, &proptags);
+	              probject->hobject, proptags);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_TRUE;
@@ -2473,7 +2545,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 			NULL == pzresource || NULL == guidstr)
 			pthrow(ecInvalidParam);
 		pull_ctx.init(guidstr, sizeof(GUID));
-		if (pull_ctx.g_guid(&iid_guid) != EXT_ERR_SUCCESS)
+		if (pull_ctx.g_guid(&iid_guid) != pack_result::ok)
 			pthrow(ecInvalidParam);
 	}
 	auto type = Z_RES_TYPE_P(pzresource);
@@ -2604,7 +2676,7 @@ static ZEND_FUNCTION(mapi_getprops)
 {
 	ZCL_MEMORY;
 	zval pzpropvals, *pzresource, *pztagarray = nullptr;
-	PROPTAG_ARRAY proptags, *pproptags = nullptr;
+	std::optional<std::vector<proptag_t>> pproptags;
 	TPROPVAL_ARRAY propvals;
 	
 	ZVAL_NULL(&pzpropvals);
@@ -2621,16 +2693,15 @@ static ZEND_FUNCTION(mapi_getprops)
 	else if (probject == nullptr)
 		pthrow(ecNotSupported);
 	if(NULL != pztagarray) {
-		auto err = php_to_proptag_array(pztagarray, &proptags);
+		auto err = php_to_proptag_array(pztagarray, pproptags);
 		if (err != ecSuccess)
 			pthrow(err);
-		pproptags = &proptags;
 	}
 	auto result = zclient_getpropvals(probject->hsession,
 				probject->hobject, pproptags, &propvals);
 	if (result != ecSuccess)
 		pthrow(result);
-	auto err = tpropval_array_to_php(&propvals, &pzpropvals);
+	auto err = tpropval_array_to_php(propvals, &pzpropvals);
 	if (err != ecSuccess)
 		pthrow(err);
 	RETVAL_ZVAL(&pzpropvals, 0, 0);
@@ -2714,27 +2785,17 @@ static ZEND_FUNCTION(mapi_decompressrtf)
 		return;
 	}
 
-	BINARY rtf_bin;
-	rtf_bin.cb = Z_STRLEN_P(deref);
-	rtf_bin.pc = Z_STRVAL_P(deref);
-	ssize_t unc_size = rtfcp_uncompressed_size(&rtf_bin);
-	if (unc_size < 0)
-		/* Input does not look like RTFCP (MELA or LZFU) */
-		pthrow(ecInvalidParam);
-	auto rtf_blob = sta_malloc<char>(unc_size);
-	if (rtf_blob == nullptr)
-		pthrow(ecMAPIOOM);
-	auto cl_0 = HX::make_scope_exit([&]() { efree(rtf_blob); });
-	size_t rtf_len = unc_size;
-	if (!rtfcp_uncompress(&rtf_bin, rtf_blob, &rtf_len))
-		pthrow(ecError);
+	std::string blob;
+	auto err = rtfcp_uncompress({Z_STRVAL_P(deref), Z_STRLEN_P(deref)}, blob);
+	if (err != ecSuccess)
+		pthrow(err);
 	std::unique_ptr<ATTACHMENT_LIST, mc_delete> atxlist(attachment_list_init());
 	if (atxlist == nullptr)
 		pthrow(ecMAPIOOM);
-	std::string htmlout;
-	if (!rtf_to_html(rtf_blob, rtf_len, "utf-8", htmlout, atxlist.get()))
-		pthrow(ecError);
-	RETVAL_STRINGL(htmlout.data(), htmlout.size());
+	err = rtf_to_html(blob, "utf-8", blob, atxlist.get());
+	if (err != ecSuccess)
+		pthrow(err);
+	RETVAL_STRINGL(blob.data(), blob.size());
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -2792,9 +2853,9 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 		pthrow(result);
 	if (prestriction == nullptr)
 		ZVAL_NULL(&pzrestriction);
-	else if (auto err = restriction_to_php(prestriction, &pzrestriction); err != ecSuccess)
+	else if (auto err = restriction_to_php(*prestriction, &pzrestriction); err != ecSuccess)
 		pthrow(err);
-	else if (auto er2 = binary_array_to_php(&entryid_array, &pzfolderlist); er2 != ecSuccess)
+	else if (auto er2 = binary_array_to_php(entryid_array, &pzfolderlist); er2 != ecSuccess)
 		pthrow(er2);
 	zarray_init(return_value);
 	add_assoc_zval(return_value, "restriction", &pzrestriction);
@@ -3104,7 +3165,7 @@ static ZEND_FUNCTION(mapi_exportchanges_config)
 }
 
 static zend_bool import_message_change(zval *pztarget_obj,
-	const TPROPVAL_ARRAY *pproplist, uint32_t flags)
+    const TPROPVAL_ARRAY &pproplist, uint32_t flags)
 {
 	zval pzvalreturn, pzvalargs[3], pzvalfuncname;
 
@@ -3130,7 +3191,7 @@ static zend_bool import_message_change(zval *pztarget_obj,
 }
 
 static zend_bool import_message_deletion(zval *pztarget_obj,
-	uint32_t flags, const BINARY_ARRAY *pbins)
+    uint32_t flags, const BINARY_ARRAY &pbins)
 {
 	zval pzvalreturn, pzvalargs[2], pzvalfuncname;
 
@@ -3161,8 +3222,8 @@ static zend_bool import_message_deletion(zval *pztarget_obj,
 	return 1;
 }
 
-static zend_bool import_readstate_change(
-	zval *pztarget_obj, const STATE_ARRAY *pstates)
+static zend_bool import_readstate_change(zval *pztarget_obj,
+    const STATE_ARRAY &pstates)
 {
 	zval pzvalargs, pzvalreturn, pzvalfuncname;
     
@@ -3186,7 +3247,7 @@ static zend_bool import_readstate_change(
 }
 
 static zend_bool import_folder_change(zval *pztarget_obj,
-	TPROPVAL_ARRAY *pproplist)
+    const TPROPVAL_ARRAY &pproplist)
 {
 	zval pzvalargs, pzvalreturn, pzvalfuncname;
 
@@ -3213,7 +3274,7 @@ static zend_bool import_folder_change(zval *pztarget_obj,
 }
 
 static zend_bool import_folder_deletion(zval *pztarget_obj,
-	BINARY_ARRAY *pentryid_array)
+    const BINARY_ARRAY &pentryid_array)
 {
 	zval pzvalreturn, pzvalargs[2], pzvalfuncname;
 
@@ -3248,7 +3309,6 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 {
 	ZCL_MEMORY;
 	uint32_t flags;
-	zend_bool b_new;
 	zval *pzresource;
 	BINARY_ARRAY bins;
 	STATE_ARRAY states;
@@ -3270,31 +3330,32 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				pctx->hsession, pctx->hobject, 0, &bins);
 			if (result != ecSuccess)
 				pthrow(result);
-			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, 0, &bins))
+			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, 0, bins))
 				pthrow(ecError);
 			result = zclient_syncdeletions(pctx->hsession,
 						pctx->hobject, SYNC_SOFT_DELETE, &bins);
 			if (result != ecSuccess)
 				pthrow(result);
-			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, SYNC_SOFT_DELETE, &bins))
+			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, SYNC_SOFT_DELETE, bins))
 				pthrow(ecError);
 			result = zclient_syncreadstatechanges(
 				pctx->hsession, pctx->hobject, &states);
 			if (result != ecSuccess)
 				pthrow(result);
-			if (states.count > 0 && !import_readstate_change(&pctx->pztarget_obj, &states))
+			if (states.count > 0 && !import_readstate_change(&pctx->pztarget_obj, states))
 				pthrow(ecError);
 		} else {
 			auto result = zclient_syncdeletions(
 				pctx->hsession, pctx->hobject, 0, &bins);
 			if (result != ecSuccess)
 				pthrow(result);
-			if (bins.count > 0 && !import_folder_deletion(&pctx->pztarget_obj, &bins))
+			if (bins.count > 0 && !import_folder_deletion(&pctx->pztarget_obj, bins))
 				pthrow(ecError);
 		}
 	}
 	for (size_t i = 0; i < pctx->sync_steps; ++i, ++pctx->progress) {
 		if (ICS_TYPE_CONTENTS == pctx->ics_type) {
+			uint8_t b_new = false;
 			auto result = zclient_syncmessagechange(
 				pctx->hsession, pctx->hobject, &b_new,
 				&propvals);
@@ -3304,7 +3365,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				pthrow(result);
 			flags = b_new ? SYNC_NEW_MESSAGE : 0;
 			if (!import_message_change(&pctx->pztarget_obj,
-				&propvals, flags))
+			    propvals, flags))
 				pthrow(ecError);
 		} else {
 			auto result = zclient_syncfolderchange(
@@ -3314,8 +3375,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				continue;
 			if (result != ecSuccess)
 				pthrow(result);
-			if (!import_folder_change(&pctx->pztarget_obj,
-				&propvals))
+			if (!import_folder_change(&pctx->pztarget_obj, propvals))
 				pthrow(ecError);
 		}
 	}
@@ -3703,6 +3763,8 @@ static ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 				php_error_docref(nullptr, E_WARNING, "imtomapi: options array ought to use string keys");
 			else if (strcmp(key->val, "parse_smime_signed") == 0)
 				mxf_flags |= MXF_UNWRAP_SMIME_CLEARSIGNED;
+			else if (strcmp(key->val, "add_rcvd_timestamp") == 0)
+				mxf_flags |= MXF_ADD_RCVD_TIMESTAMP;
 			else
 				php_error_docref(nullptr, E_WARNING, "Unknown imtomapi option: \"%s\"", key->val);
 		} ZEND_HASH_FOREACH_END();
@@ -3887,18 +3949,17 @@ static ZEND_FUNCTION(mapi_mapitovcf)
 	ZCL_MEMORY;
 	BINARY vcf_bin;
 	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
-	MAPI_RESOURCE *pmessage;
-	
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rrra", &pzressession, &pzresaddrbook, &pzresmessage,
 		&pzresoptions) == FAILURE || NULL == pzresmessage)
 		pthrow(ecInvalidParam);
-	ZEND_FETCH_RESOURCE(pmessage, pzresmessage, le_mapi_message);
-	if (pmessage->type != zs_objtype::message)
+	auto obj = resolve_resource(pzresmessage, {le_mapi_message, le_mapi_mailuser, le_mapi_distlist});
+	if (obj == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (obj == nullptr)
 		pthrow(ecInvalidParam);
-	auto result = zclient_messagetovcf(
-		pmessage->hsession, pmessage->hobject,
-		&vcf_bin);
+	auto result = zclient_messagetovcf(obj->hsession, obj->hobject, &vcf_bin);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_STRINGL(reinterpret_cast<const char *>(vcf_bin.pb), vcf_bin.cb);
@@ -3969,7 +4030,7 @@ static ZEND_FUNCTION(kc_session_save)
 		return;	
 	}
 	if (!push_ctx.init() ||
-	    push_ctx.p_guid(psession->hsession) != EXT_ERR_SUCCESS) {
+	    push_ctx.p_guid(psession->hsession) != pack_result::ok) {
 		RETVAL_LONG(ecMAPIOOM);
 		return;	
 	}
@@ -3994,7 +4055,7 @@ static ZEND_FUNCTION(kc_session_restore)
 	data_bin.pb = reinterpret_cast<uint8_t *>(Z_STRVAL_P(pzdata));
 	data_bin.cb = Z_STRLEN_P(pzdata);
 	pull_ctx.init(data_bin.pb, data_bin.cb);
-	if (pull_ctx.g_guid(&hsession) != EXT_ERR_SUCCESS) {
+	if (pull_ctx.g_guid(&hsession) != pack_result::ok) {
 		RETVAL_LONG(ecInvalidParam);
 		return;
 	}
@@ -4019,7 +4080,8 @@ static ZEND_FUNCTION(kc_session_restore)
 static ZEND_FUNCTION(nsp_getuserinfo)
 {
 	ZCL_MEMORY;
-	char *px500dn, *username, *pdisplay_name;
+	std::string pdisplay_name, px500dn;
+	char *username;
 	BINARY entryid;
 	size_t username_len = 0;
 	uint32_t privilege_bits;
@@ -4035,8 +4097,8 @@ static ZEND_FUNCTION(nsp_getuserinfo)
 	add_assoc_stringl(return_value, "userid", reinterpret_cast<const char *>(entryid.pb), entryid.cb);
 	add_assoc_string(return_value, "username", username);
 	add_assoc_string(return_value, "primary_email", username);
-	add_assoc_string(return_value, "fullname", pdisplay_name);
-	add_assoc_string(return_value, "essdn", px500dn);
+	add_assoc_string(return_value, "fullname", pdisplay_name.c_str());
+	add_assoc_string(return_value, "essdn", px500dn.c_str());
 	add_assoc_long(return_value, "privilege", privilege_bits);
 	MAPI_G(hr) = ecSuccess;
 }
@@ -4100,7 +4162,7 @@ static ZEND_FUNCTION(mapi_linkmessage)
  *
  * @tz:		Timezone name within IANA tzdb
  *
- * Returns a TIMEZONEDEFINITION blob for the timezone. This can be put into
+ * Returns a TZDEF blob for the timezone. This can be put into
  * PidLidAppointmentTimeZoneDefinition{Start,End}Display.
  */
 static ZEND_FUNCTION(mapi_ianatz_to_tzdef)
@@ -4160,6 +4222,7 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_logon_token)
 	F(mapi_logon_zarafa)
 	F(mapi_logon_ex)
+	F(mapi_logon_np)
 	F(mapi_getmsgstorestable)
 	F(mapi_openmsgstore)
 	F(mapi_openprofilesection)

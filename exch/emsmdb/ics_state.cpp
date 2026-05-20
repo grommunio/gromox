@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <gromox/mapi_types.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/rop_util.hpp>
 #include "common_util.hpp"
 #include "ics_state.hpp"
+
+using namespace gromox;
 
 static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int type)
 {
@@ -145,7 +149,7 @@ TPROPVAL_ARRAY *ics_state::serialize()
 		auto pbin = pstate->pgiven->serialize();
 		if (pbin == nullptr)
 			return NULL;
-		if (pproplist->set(MetaTagIdsetGiven1, pbin) != 0) {
+		if (pproplist->set(MetaTagIdsetGiven1, pbin) != ecSuccess) {
 			rop_util_free_binary(pbin);
 			return NULL;
 		}
@@ -153,14 +157,14 @@ TPROPVAL_ARRAY *ics_state::serialize()
 	}
 	
 	std::unique_ptr<BINARY, mdel> ser(pstate->pseen->serialize());
-	if (ser == nullptr || pproplist->set(MetaTagCnsetSeen, ser.get()) != 0)
+	if (ser == nullptr || pproplist->set(MetaTagCnsetSeen, ser.get()) != ecSuccess)
 		return NULL;
 	
 	if (ICS_STATE_CONTENTS_DOWN == pstate->type ||
 		ICS_STATE_CONTENTS_UP == pstate->type) {
 		decltype(ser) s(pstate->pseen_fai->serialize());
 		if (s == nullptr ||
-		    pproplist->set(MetaTagCnsetSeenFAI, s.get()) != 0)
+		    pproplist->set(MetaTagCnsetSeenFAI, s.get()) != ecSuccess)
 			return NULL;
 	}
 	
@@ -169,7 +173,7 @@ TPROPVAL_ARRAY *ics_state::serialize()
 	    !pstate->pread->empty())) {
 		decltype(ser) s(pstate->pread->serialize());
 		if (s == nullptr ||
-		    pproplist->set(MetaTagCnsetRead, s.get()) != 0)
+		    pproplist->set(MetaTagCnsetRead, s.get()) != ecSuccess)
 			return NULL;
 	}
 	return pproplist.release();

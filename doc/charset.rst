@@ -21,9 +21,15 @@ subsequent RTF data. Under cp437, a 0x80 byte means U+00C7; under cp1252, a
 0x80 byte means U+20AC. It is possible to write literal bytes using an escape
 code instead, e.g. ``\'80`` to the same effect.
 
-The usefulness of ``\ansicpg1252`` is in question, since the "cousin" command
-``\ansicpg1251`` appears not to have changed the rendition of a document with
-extended chars in a smoketest.
+Files may contain markers like ``\ansicpg1252`` and/or ``\ansicpg932``
+(Japanese), but the actual encoding is often specified by a font table entry
+instead, e.g.
+
+	.. code-block:: text
+
+	\fonttbl{\f35 \fcharset128;}
+	{\f35 <0x82><0xAA> actual raw bytes}
+	{\f35 \'82\'aa or using apostrophe encodes}
 
 Characters outside the ASCII and/or codepage can be expressed with Unicode
 codepoints like so: ``\u199 ?`` (U+00C7) and ``\u8364 ?`` (U+20AC). ``?`` is a
@@ -32,10 +38,17 @@ narrower set of characters. The subtituend can literally be the question mark
 (and often is), but other characters work too. ``\u225 a`` would offer ``a`` as
 a substitution for ``á``.
 
-It has been observed that Outlook would also generate the sequence
-``\uc2\u28450\'f9\'d3``. The origin of the F9D3 sequence is unknown, and it is
-different across documents for the same Unicode codepoint, which suggests it
-may be a per-document custom "character set".
+For mixed single-byte and double-byte text (common in CJK documents), RTF uses:
+
+* ``\loch`` – subsequent text is low-byte (ASCII/Latin) characters
+* ``\hich`` – subsequent text is high-byte characters (chars with high bit set)
+* ``\dbch`` – subsequent text is double-byte characters (CJK)
+* ``\af`` – associated font number for double-byte characters
+* ``\lang`` / ``\langfe`` – language tags that can hint at encoding
+* ``\cpg`` – code page switch within document body
+
+When switching between these modes, the converter flushes any pending
+multi-byte sequences before changing the character interpretation.
 
 
 HTML

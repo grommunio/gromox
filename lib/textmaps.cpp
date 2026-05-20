@@ -138,7 +138,7 @@ static void folder_namedb_read(const char *file, const char *dirs, folder_name_m
 	}
 }
 
-bool verify_cpid(uint32_t id)
+bool acceptable_cpid_for_mapi(uint32_t id)
 {
 	return g_cpid2name_map.find(id) != g_cpid2name_map.cend() &&
 	       id != CP_UTF16 && id != CP_UTF16BE &&
@@ -219,7 +219,7 @@ const char *folder_namedb_resolve(const char *xpg_loc) try
 		return iter->first.c_str();
 	return nullptr;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1560: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 
@@ -310,20 +310,20 @@ void textmaps_init(const char *datapath)
 		datapath = PKGDATADIR;
 	std::call_once(g_textmaps_done, [=]() {
 		xmap_read("cpid.txt", datapath, g_cpid2name_map, g_cpname2id_map);
-		mlog(LV_INFO, "textmaps: cpid: %zu IDs, %zu names",
+		mlog(LV_DEBUG, "textmaps: cpid: %zu IDs, %zu names",
 		        g_cpid2name_map.size(), g_cpname2id_map.size());
 		xmap_read("lcid.txt", datapath, g_lcid2tag_map, g_lctag2id_map);
-		mlog(LV_INFO, "textmaps: lcid: %zu IDs, %zu names",
+		mlog(LV_DEBUG, "textmaps: lcid: %zu IDs, %zu names",
 		        g_lcid2tag_map.size(), g_lctag2id_map.size());
 		smap_read("lang_charset.txt", datapath, g_lang2cset_map, g_ignore_map);
-		mlog(LV_INFO, "textmaps: lang_charset: %zu mappings",
+		mlog(LV_DEBUG, "textmaps: lang_charset: %zu mappings",
 		        g_lang2cset_map.size());
 		smap_read("mime_extension.txt", datapath, g_ext2mime_map, g_mime2ext_map);
 		smap_read("/etc/mime.types", datapath, g_mime2ext_map, g_ext2mime_map);
-		mlog(LV_INFO, "textmaps: mime_extension: %zu exts, %zu mimetypes",
+		mlog(LV_DEBUG, "textmaps: mime_extension: %zu exts, %zu mimetypes",
 		        g_ext2mime_map.size(), g_mime2ext_map.size());
 		folder_namedb_read("folder_names.txt", datapath, folder_name_map);
-		mlog(LV_INFO, "textmaps: %zu translations in folder namedb", folder_name_map.size());
+		mlog(LV_DEBUG, "textmaps: %zu translations in folder namedb", folder_name_map.size());
 		mapitags_read(DATADIR "/mapitags/mapitags.txt", g_mapitags);
 		mapitags_read(DATADIR "/mapitags/gromox.txt", g_mapitags);
 	});

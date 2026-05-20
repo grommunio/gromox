@@ -30,7 +30,15 @@ int main(int argc, char **argv)
 			fprintf(stderr, "dlopen %s: %s\n", file.c_str(), dlerror());
 			return EXIT_FAILURE;
 		}
+#if !defined(__sun)
+		/*
+		 * Crash on Solaris ld.so: It does not know STB_GNU_UNIQUE,
+		 * so libraries get unloaded even in the face of registered
+		 * global destructors.  That triggers a crash at the end of
+		 * main().
+		 */
 		dlclose(h);
+#endif
 	}
 	auto fd = open(stamp, O_CREAT | O_WRONLY | O_TRUNC, S_IRUGO | S_IWUGO);
 	if (fd < 0)

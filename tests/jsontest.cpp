@@ -63,8 +63,6 @@ static int t_digest()
 	if (strcmp(out, "15") != 0)
 		printf("test failure\n");
 
-	if (!set_digest(line, std::size(line), "bar", "YA"))
-		return EXIT_FAILURE;
 	if (!get_digest(line, "bar", out, std::size(out)))
 		return EXIT_FAILURE;
 	printf("digest test >%s<\n", out);
@@ -76,7 +74,7 @@ static int t_digest()
 static int t_extparse(const char *s)
 {
 	Json::Value json;
-	if (!json_from_str(s, json))
+	if (!str_to_json(s, json))
 		return EXIT_FAILURE;
 	MJSON m;
 	if (!m.load_from_json(json)) {

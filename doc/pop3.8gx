@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH pop3 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 pop3 \(em Gromox POP3 server
@@ -11,7 +11,7 @@ The POP3 server supports impersonation; see imap(8gx) for details.
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
-specified, /etc/gromox/pop3.cfg will be read if it exists.
+specified, /etc/gromox/gromox.cfg and /etc/gromox/pop3.cfg will be read.
 .TP
 \fB\-\-version\fP
 Output version information and exit.
@@ -46,6 +46,18 @@ extension to convey the actual client address, and gxpop3 can pick this up for
 its own reporting, which in turn is useful for e.g. fail2ban setups.
 .br
 Default: \fI0\fP
+.TP
+\fBpop3_listen\fP
+A space-separated list of bind address specifiers to expose standard POP3
+(unencrypted and/or explicit STARTTLS) on.
+.br
+Default: \fB[::]:110\fP
+.TP
+\fBpop3_listen_tls\fP
+A space-separated list of bind address specifiers to expose implicit-TLS POP3
+(POP3S) on.
+.br
+Default: \fB[::]:995\fP
 .SH Configuration directives (pop3.cfg)
 The following directives are recognized when reading from /etc/gromox/pop3.cfg,
 or when the \fB\-c\fP option is used to specify a custom file:
@@ -57,8 +69,10 @@ many failed logins.
 Default: \fI1 minute\fP
 .TP
 \fBconfig_file_path\fP
-Colon-separated list of directories in which further configuration files,
-especially those used by plugin instances, will be searched.
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/pop3/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/pop3:/etc/gromox\fP
 .TP
@@ -86,7 +100,7 @@ Default: \fI/usr/share/gromox/pop3\fP
 .TP
 \fBenable_capa_implementation\fP
 When enabled, the server will include an "IMPLEMENTATION" line in the CAPA
-response (RFC 2449 §6.9). This is disabled by default, as it can facilitate
+response (RFC 2449 \(sc6.9). This is disabled by default, as it can facilitate
 potential attackers' information gathering.
 .br
 Default: \fIno\fP
@@ -130,26 +144,18 @@ Default: \fI3 minutes\fP
 .TP
 \fBpop3_force_tls\fP
 This flag controls whether clients must utilize TLS, either by way of implicit
-TLS (cf. \fBpop3_listen_tls_port\fP), or through the STLS command.
+TLS, or through the STLS command.
 .br
 Default: \fIfalse\fP
 .TP
 \fBpop3_listen_addr\fP
-AF_INET6 socket address to bind the POP3 service to.
-.br
-Default: \fI::\fP
+Deprecated in favor of gromox.cfg:pop3_listen / gromox.cfg:pop3_listen_tls.
 .TP
 \fBpop3_listen_port\fP
-The TCP port to expose the POP3 protocol service on. (The IP address is fixed
-to the wildcard address.)
-.br
-Default: \fI110\fP
+Deprecated in favor of gromox.cfg:pop3_listen.
 .TP
 \fBpop3_listen_tls_port\fP
-The TCP port to expose implicit-TLS POP3 protocol service (POP3S) on. (The IP
-address is fixed to the wildcard address.)
-.br
-Default: (unset)
+Deprecated in favor of gromox.cfg:pop3_listen_tls.
 .TP
 \fBpop3_log_file\fP
 Target for log messages here. Special values: "\fI-\fP" (stderr/syslog
@@ -198,11 +204,12 @@ The lowest TLS version to offer. Possible values are: \fBtls1.0\fP,
 \fBtls1.1\fP, \fBtls1.2\fP, and, if supported by the system, \fBtls1.3\fP.
 .br
 Default: \fItls1.2\fP
+.SH Signals
+Upon receipt of SIGHUP, configuration files are re-read, but only a few select
+directives can be changed this way, as many parts do not implement reload.
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/pop3_code.txt: Mapping from internal POP3 error codes to
 textual descriptions.
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 \fBgromox\fP(7), \fBmidb_agent\fP(4gx)

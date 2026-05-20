@@ -65,7 +65,6 @@ struct BACK_CONN_floating {
 	void operator=(BACK_CONN_floating &&) = delete;
 	BACK_CONN *operator->() { return tmplist.size() != 0 ? &tmplist.front() : nullptr; }
 	bool operator==(std::nullptr_t) const { return tmplist.size() == 0; }
-	bool operator!=(std::nullptr_t) const { return tmplist.size() != 0; }
 	void reset(bool lost = false);
 
 	std::list<BACK_CONN> tmplist;
@@ -86,7 +85,7 @@ static int connect_midb(const char *host, uint16_t port);
 
 std::atomic<size_t> g_midb_command_buffer_size{256 * 1024};
 static int g_conn_num;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_midbagent_stop;
 static pthread_t g_scan_id;
 static std::list<BACK_CONN> g_lost_list;
 static std::list<BACK_SVR> g_server_list;
@@ -164,7 +163,7 @@ BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
-		g_notify_stop = true;
+		g_midbagent_stop = true;
 		auto pconfig = config_file_initd("midb_agent.cfg",
 		               get_config_path(), midb_agent_cfg_defaults);
 		if (NULL == pconfig) {
@@ -177,7 +176,7 @@ BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		if (!list_file_read_midb("midb_list.txt"))
 			return false;
 
-		g_notify_stop = false;
+		g_midbagent_stop = false;
 		auto ret = pthread_create4(&g_scan_id, nullptr, midbag_scanwork, nullptr);
 		if (ret != 0) {
 			printf("[midb_agent]: failed to create scan thread: %s\n", strerror(ret));
@@ -187,8 +186,8 @@ BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		if (!g_notify_stop) {
-			g_notify_stop = true;
+		if (!g_midbagent_stop) {
+			g_midbagent_stop = true;
 			if (!pthread_equal(g_scan_id, {})) {
 				pthread_kill(g_scan_id, SIGALRM);
 				pthread_join(g_scan_id, NULL);
@@ -216,7 +215,7 @@ static void *midbag_scanwork(void *param)
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;
 
-	while (!g_notify_stop) {
+	while (!g_midbagent_stop) {
 		std::unique_lock sv_hold(g_server_lock);
 		auto now_time = time(nullptr);
 		for (auto &srv : g_server_list) {
@@ -292,7 +291,7 @@ static BACK_CONN_floating get_connection(const char *prefix)
 		return fc;
 	}
 	sv_hold.unlock();
-	for (size_t j = 0; j < SOCKET_TIMEOUT && !g_notify_stop; ++j) {
+	for (size_t j = 0; j < SOCKET_TIMEOUT && !g_midbagent_stop; ++j) {
 		sleep(1);
 		sv_hold.lock();
 		if (i->conn_list.size() > 0) {
@@ -746,6 +745,33 @@ int ping_mailbox(const char *path, int *perrno)
 	return MIDB_RDWR_ERROR;
 }
 
+int sync_mailbox(const char *path, uint64_t folder_id, int *err)
+{
+	auto conn = get_connection(path);
+	if (conn == nullptr)
+		return MIDB_NO_SERVER;
+	char buf[1024];
+	int len;
+	if (folder_id == 0)
+		len = gx_snprintf(buf, std::size(buf), "X-RSYM %s\r\n", path);
+	else
+		len = gx_snprintf(buf, std::size(buf), "X-RSYF %s %llu\r\n",
+		      path, static_cast<unsigned long long>(folder_id));
+	auto ret = rw_command(conn->sockd, buf, len, std::size(buf));
+	if (ret != 0)
+		return ret;
+	if (strncmp(buf, "TRUE", 4) == 0) {
+		conn.reset();
+		return MIDB_RESULT_OK;
+	} else if (strncmp(buf, "FALSE ", 6) == 0) {
+		conn.reset();
+		if (err != nullptr)
+			*err = strtol(&buf[6], nullptr, 0);
+		return MIDB_RESULT_ERROR;
+	}
+	return MIDB_RDWR_ERROR;
+}
+
 int rename_folder(const char *path, const std::string &src_name,
     const std::string &dst_name, int *perrno)
 {
@@ -1091,6 +1117,7 @@ static unsigned int s_to_flagbits(std::string_view s)
 	if (s.find(midb_flag::deleted) != s.npos)  fl |= FLAG_DELETED;
 	if (s.find(midb_flag::seen) != s.npos)     fl |= FLAG_SEEN;
 	if (s.find(midb_flag::recent) != s.npos)   fl |= FLAG_RECENT;
+	if (s.find(midb_flag::forwarded) != s.npos)fl |= FLAG_FORWARDED;
 	return fl;
 }
 
@@ -1103,15 +1130,8 @@ static std::string flagbits_to_s(unsigned int v)
 	if (v & FLAG_DELETED)  s += midb_flag::deleted;
 	if (v & FLAG_SEEN)     s += midb_flag::seen;
 	if (v & FLAG_RECENT)   s += midb_flag::recent;
+	if (v & FLAG_FORWARDED)s += midb_flag::forwarded;
 	return s;
-}
-
-static bool get_digest_string(const Json::Value &jv, const char *tag, std::string &buff)
-{
-	if (jv.type() != Json::ValueType::objectValue || !jv.isMember(tag))
-		return false;
-	buff = jv[tag].asString();
-	return true;
 }
 
 static bool get_digest_integer(const Json::Value &jv, const char *tag, int &i)
@@ -1139,6 +1159,8 @@ static unsigned int di_to_flagbits(const Json::Value &jv)
 		fl |= FLAG_SEEN;
 	if (jv.isMember("recent") && (v = jv["recent"].asUInt()) != 0)
 		fl |= FLAG_RECENT;
+	if (jv.isMember("forwarded") && (v = jv["forwarded"].asUInt()) != 0)
+		fl |= FLAG_FORWARDED;
 	return fl;
 }
 
@@ -1438,6 +1460,9 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 							return MIDB_RDWR_ERROR;
 						last_pos = i + 2;
 						line_pos = 0;
+						pxarray->m_vec.reserve(pxarray->m_vec.size() + lines);
+						pxarray->m_hash.reserve(pxarray->m_hash.size() + lines);
+						pxarray->m_dpool.reserve(pxarray->m_dpool.size() + static_cast<size_t>(lines) * 1024);
 						break;
 					} else if (strncmp(buff.c_str(), "FALSE ", 6) == 0) {
 						pback.reset();
@@ -1457,21 +1482,29 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 					pspace = strchr(temp_line, ' ');
-					int temp_len = pspace == nullptr ? 0 :
-					           line_pos - (pspace + 1 - temp_line);
-					MITEM mitem;
-					if (pspace == nullptr ||
-					    !json_from_str(std::string_view(&pspace[1], temp_len), mitem.digest)) {
+					if (pspace == nullptr) {
 						b_format_error = TRUE;
-					} else if (get_digest_string(mitem.digest, "file", mitem.mid) &&
-					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {
-						*pspace++ = '\0';
-						auto mitem_uid = mitem.uid;
-						if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
-							auto num = pxarray->get_capacity();
-							assert(num > 0);
-							auto pitem = pxarray->get_item(num - 1);
-							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pitem->digest);
+						line_pos = 0;
+						continue;
+					}
+					std::string_view digest_sv(&pspace[1], line_pos - (pspace + 1 - temp_line));
+					Json::Value digest;
+					if (!str_to_json(digest_sv, digest)) {
+						b_format_error = TRUE;
+					} else {
+						MITEM mitem;
+						if (get_digest(digest, "file", mitem.mid) &&
+						    get_digest_integer(digest, "uid", mitem.uid)) {
+							mitem.digest_off = pxarray->m_dpool.size();
+							mitem.digest_len = digest_sv.size();
+							pxarray->m_dpool.append(digest_sv);
+							auto mitem_uid = mitem.uid;
+							if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
+								auto num = pxarray->get_capacity();
+								assert(num > 0);
+								auto pitem = pxarray->get_item(num - 1);
+								pitem->flag_bits = FLAG_LOADED | di_to_flagbits(digest);
+							}
 						}
 					}
 					line_pos = 0;

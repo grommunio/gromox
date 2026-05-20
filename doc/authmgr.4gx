@@ -1,13 +1,11 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH authmgr 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 authmgr \(em Demultiplexer for authentication requests
 .SH Description
-authmgr is a service plugin that, for mail account authentication, dynamically
-selects the authentication backend per user account. The
-libgxs_mysql_adaptor.so and/or libgxs_ldap_adaptor.so plugins need to be
-loaded in advance (this is the case by default).
+authmgr is a component that, for mail account authentication, dynamically
+selects the authentication backend per user account.
 .SH Configuration directives
 The usual config file location is /etc/gromox/authmgr.cfg.
 .TP
@@ -36,5 +34,8 @@ only meaningful to the importer.
 \fIpam\fP: authmgr will selectively pick PAM/MySQL. The PAM service name will
 be "gromox". Be sure that pam_gromox.so is \fBnot\fP invoked as part of that
 PAM service stack, or it will lead to infinite recursion.
+.SH Signals
+Upon receipt of SIGHUP, configuration files are re-read, but only a few select
+directives can be changed this way, as many parts do not implement reload.
 .SH See also
 \fBgromox\fP(7), \fBldap_adaptor\fP(4gx), \fBmysql_adaptor\fP(4gx)

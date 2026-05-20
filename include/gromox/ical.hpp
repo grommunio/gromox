@@ -1,4 +1,5 @@
 #pragma once
+#include <compare>
 #include <ctime>
 #include <list>
 #include <memory>
@@ -10,7 +11,7 @@
 #define ICAL_NAME_LEN					64
 
 enum class ical_frequency {
-	second, minute, hour, day, week, month, year,
+	second, minute, hour, day, week, month, year, invalid,
 };
 
 enum class rrule_by {
@@ -81,20 +82,18 @@ struct GX_EXPORT ical : public ical_component {
 	ec_error_t serialize(std::string &out) const;
 };
 
-enum { /* for ical_time::type */
-	ICT_UNSPEC,
-	ICT_UTC,
-	ICT_FLOAT,
-	ICT_FLOAT_DAY,
-	ICT_LOCAL,
+enum itime_type : uint8_t {
+	floating, floating_day, utc,
 };
 
 struct GX_EXPORT ical_time {
-	int twcompare(const ical_time &other) const;
-	inline bool operator<(const ical_time &o) const { return twcompare(o) < 0; }
-	inline bool operator<=(const ical_time &o) const { return twcompare(o) <= 0; }
-	inline bool operator>(const ical_time &o) const { return twcompare(o) > 0; }
-	inline bool operator>=(const ical_time &o) const { return twcompare(o) >= 0; }
+	constexpr ical_time() = default;
+	constexpr ical_time(int y, int m, int d, int hr, int min, int sec) :
+		year(y), month(m), day(d), hour(hr), minute(min), second(sec)
+	{}
+
+	std::strong_ordering operator<=>(const ical_time &other) const;
+	inline bool operator==(const ical_time &o) const { return (*this <=> o) == 0; }
 	void add_year(int ys);
 	void add_month(int ms);
 	void add_day(int ds);
@@ -103,15 +102,13 @@ struct GX_EXPORT ical_time {
 	void add_minute(int);
 	void add_second(int);
 	int delta_day(ical_time) const;
+	std::string fmt() const;
+	bool assign_date(const char *);
+	bool assign_datetime(const char *);
+	void clear_time() { hour = minute = second = leap_second = 0; }
 
-	int year;
-	int month;
-	int day;
-	int hour;
-	int minute;
-	int second;
-	int leap_second;
-	uint8_t type;
+	int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, leap_second = 0;
+	itime_type type = itime_type::floating;
 };
 
 struct GX_EXPORT ical_rrule {
@@ -148,9 +145,6 @@ struct GX_EXPORT ical_rrule {
 	unsigned char nsetpos_bitmap[46];
 };
 
-extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
-extern GX_EXPORT bool ical_parse_date(const char *in, ical_time *out);
-extern GX_EXPORT bool ical_parse_datetime(const char *in, ical_time *out);
 extern GX_EXPORT unsigned int ical_get_dayofweek(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_dayofyear(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_monthdays(unsigned int year, unsigned int month);
@@ -162,6 +156,6 @@ extern GX_EXPORT bool ical_parse_duration(const char *str_duration, long *psecon
 extern GX_EXPORT bool ical_itime_to_utc(const ical_component *, ical_time, time_t *);
 extern GX_EXPORT bool ical_datetime_to_utc(const ical_component *, const char *datetime, time_t *);
 extern GX_EXPORT bool ical_utc_to_datetime(const ical_component *, time_t utc_time, ical_time *);
-extern GX_EXPORT bool ical_parse_rrule(const ical_component *, time_t start, const std::vector<ical_value> *, ical_rrule *);
+extern GX_EXPORT const char *ical_parse_rrule(const ical_component *, time_t start, const std::vector<ical_value> *, ical_rrule *);
 extern GX_EXPORT int weekday_to_int(const char *);
 extern GX_EXPORT const char *weekday_to_str(unsigned int);

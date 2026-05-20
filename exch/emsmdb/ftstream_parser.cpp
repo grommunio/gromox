@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -50,6 +52,7 @@ static BOOL ftstream_parser_read_uint32(fxstream_parser *pstream, uint32_t *pv)
 	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
 	*pv = le32_to_cpu(*pv);
+	*pv = std::min(*pv, static_cast<uint32_t>(UINT32_MAX));
 	pstream->offset += sizeof(uint32_t);
 	return TRUE;
 }
@@ -198,57 +201,6 @@ static BOOL ftstream_parser_read_guid(fxstream_parser *pstream, GUID *pguid)
 	return TRUE;
 }
 
-static BOOL ftstream_parser_read_svreid(fxstream_parser *pstream,
-	SVREID *psvreid, BOOL *pb_continue)
-{
-	uint32_t len;
-	uint8_t ours;
-	uint32_t origin_offset;
-	
-	*pb_continue = FALSE;
-	origin_offset = pstream->offset;
-	if (!ftstream_parser_read_uint32(pstream, &len))
-		return FALSE;
-	if (origin_offset + sizeof(uint32_t) + len >
-		pstream->st_size) {
-		*pb_continue = TRUE;
-		return FALSE;
-	}
-	if (len == 0)
-		abort(); /* if this ever happens, make cb=0,pb=NULL */
-	if (read(pstream->fd, &ours, sizeof(uint8_t)) != sizeof(uint8_t))
-		return FALSE;
-	pstream->offset += sizeof(uint8_t);
-	if (0 == ours) {
-		psvreid->pbin = cu_alloc<BINARY>();
-		if (psvreid->pbin == nullptr)
-			return FALSE;
-		psvreid->pbin->cb = len - 1;
-		if (0 == psvreid->pbin->cb) {
-			psvreid->pbin->pb = NULL;
-		} else {
-			psvreid->pbin->pv = common_util_alloc(psvreid->pbin->cb);
-			if (psvreid->pbin->pv == nullptr)
-				return FALSE;
-			auto ret = read(pstream->fd, psvreid->pbin->pv, psvreid->pbin->cb);
-			if (ret < 0 || static_cast<size_t>(ret) != psvreid->pbin->cb)
-				return FALSE;
-			pstream->offset += psvreid->pbin->cb;
-		}
-		return TRUE;
-	}
-	if (len != 21)
-		return FALSE;
-	psvreid->pbin = NULL;
-	if (!ftstream_parser_read_uint64(pstream, &psvreid->folder_id))
-		return FALSE;
-	if (!ftstream_parser_read_uint64(pstream, &psvreid->message_id))
-		return FALSE;
-	if (!ftstream_parser_read_uint32(pstream, &psvreid->instance))
-		return FALSE;
-	return TRUE;
-}
-
 static BOOL ftstream_parser_read_binary(fxstream_parser *pstream, BINARY *pbin,
 	BOOL *pb_continue)
 {
@@ -348,8 +300,8 @@ static int ftstream_parser_read_element(fxstream_parser &stream,
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	marker = 0;
-	uint16_t proptype = PROP_TYPE(atom_element);
-	uint16_t propid = PROP_ID(atom_element);
+	auto proptype = PROP_TYPE(atom_element);
+	auto propid = PROP_ID(atom_element);
 	/* OXCFXICS v24 3.2.5.2.1 */
 	if (atom_element == MetaTagIdsetGiven)
 		proptype = PT_BINARY;
@@ -459,17 +411,16 @@ static int ftstream_parser_read_element(fxstream_parser &stream,
 		propval.pvalue = v;
 		return ftstream_parser_read_guid(pstream, v) ? FTSTREAM_PARSER_READ_OK : FTSTREAM_PARSER_READ_FAIL;
 	}
-	case PT_SVREID: {
-		auto v = cu_alloc<SVREID>();
-		if (v == nullptr)
-			return FTSTREAM_PARSER_READ_FAIL;
-		propval.pvalue = v;
-		if (ftstream_parser_read_svreid(pstream, v, &b_continue))
-			return FTSTREAM_PARSER_READ_OK;
-		if (b_continue)
-			goto CONTINUE_WAITING;
+	case PT_SVREID:
+		/*
+		 * You cannot create these property types in MSMAPI. This
+		 * precludes them from truly existing on the client side, and
+		 * so they have never been observed of being transferred in
+		 * either direction.
+		 * PT_SVREID only seems to show up in restrictions.
+		 */
+		mlog(LV_ERR, "E-2273: Reception of PT_SVREID in fxstream is unsupported");
 		return FTSTREAM_PARSER_READ_FAIL;
-	}
 	case PT_OBJECT:
 	case PT_BINARY: {
 		auto v = cu_alloc<BINARY>();
@@ -780,7 +731,7 @@ static BOOL ftstream_parser_truncate_fd(fxstream_parser *pstream) try
 	pstream->offset = 0;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1170: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -803,16 +754,13 @@ ec_error_t fxstream_parser::process(fastupctx_object &upctx)
 			}
 			auto proptype = PROP_TYPE(propval.proptag);
 			if (proptype & FXICS_CODEPAGE_FLAG) {
-				auto codepage = proptype & ~FXICS_CODEPAGE_FLAG;
-				auto len = mb_to_utf8_len(static_cast<char *>(propval.pvalue));
-				auto pvalue = common_util_alloc(len);
-				if (pvalue == nullptr || cu_mb_to_utf8(static_cast<cpid_t>(codepage),
-				    static_cast<char *>(propval.pvalue),
-				    static_cast<char *>(pvalue), len) <= 0) {
+				auto cpid = static_cast<cpid_t>(proptype & ~FXICS_CODEPAGE_FLAG);
+				auto cvt_name = cu_mb_to_utf8_dup(cpid, static_cast<char *>(propval.pvalue));
+				if (cvt_name == nullptr) {
 					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_STRING8);
 				} else {
 					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_UNICODE);
-					propval.pvalue = pvalue;
+					propval.pvalue = std::move(cvt_name);
 				}
 			}
 			auto err = upctx.record_propval(&propval);
@@ -846,6 +794,6 @@ std::unique_ptr<fxstream_parser> fxstream_parser::create(logon_object *plogon) t
 	pstream->plogon = plogon;
 	return pstream;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1450: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return nullptr;
 }

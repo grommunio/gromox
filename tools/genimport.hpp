@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <json/value.h>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/pcl.hpp>
@@ -14,7 +15,7 @@
 enum {
 	GXMT_FOLDER = static_cast<unsigned int>(MAPI_FOLDER),
 	GXMT_MESSAGE = static_cast<unsigned int>(MAPI_MESSAGE),
-	GXMT_NAMEDPROP = 250,
+	GXMT_NAMEDPROP = 250U,
 };
 
 struct PERMISSION_DATA;
@@ -77,7 +78,7 @@ struct tgt_folder {
 };
 
 using attachment_content_ptr = std::unique_ptr<ATTACHMENT_CONTENT, gi_delete>;
-using gi_folder_map_t = std::unordered_map<uint32_t, tgt_folder>;
+using gi_folder_map_t = std::unordered_map<uint64_t, tgt_folder>;
 using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>;
 using propname_array_ptr = std::unique_ptr<PROPNAME_ARRAY, gi_delete>;
 using tarray_set_ptr = std::unique_ptr<TARRAY_SET, gi_delete>;
@@ -91,6 +92,7 @@ extern std::string g_dstuser, g_storedir_s;
 extern const char *g_storedir;
 extern unsigned int g_user_id, g_wet_run;
 extern unsigned int g_public_folder, g_verbose_create;
+extern ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int);
 
 extern void gi_dump_folder_map(const gi_folder_map_t &);
 extern void gi_dump_name_map(const gi_name_map &);
@@ -99,14 +101,13 @@ extern void gi_folder_map_write(const gi_folder_map_t &);
 extern void gi_name_map_read(const void *, size_t, gi_name_map &);
 extern void gi_name_map_write(const gi_name_map &);
 extern gromox::propid_t gi_resolve_namedprop(const PROPERTY_XNAME &);
-extern int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t cn);
-extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
+extern int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t cn, const BINARY *oldpcl = nullptr);
 extern int exm_permissions(eid_t, const std::vector<PERMISSION_DATA> &);
-extern int exm_deliver_msg(const char *target, MESSAGE_CONTENT *, unsigned int flags = 0);
-extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);
 extern int gi_setup_from_user(const char *);
 extern int gi_setup_from_dir(const char *);
 extern int gi_startup_client(unsigned int maxconn = 1);
 extern eid_t gi_lookup_eid_by_name(const char *dir, const char *name);
+extern eid_t gi_lookup_eid_any_way(const char *dir, const char *name); /* also accepts numeric folder ID */
+extern void gi_purge_alloc();
 extern void gi_shutdown();
 extern gromox::errno_t gi_decapsulate_attachment(message_content_ptr &, unsigned int);

@@ -33,7 +33,7 @@ X-ClientApplication: Outlook/16.0.15928.20006
 #include "aux_types.hpp"
 #include "common_util.hpp"
 #define AUX_ALIGN_SIZE									4
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 using namespace gromox;
 
@@ -55,7 +55,7 @@ static pack_result aux_ext_push_aux_header_type_union1(EXT_PUSH &x, const AUX_HE
 	case AUX_TYPE_ENDPOINT_CAPABILITIES:
 		return x.p_uint32(r.immed);
 	default:
-		return EXT_CTRL_SKIP;
+		return pack_result::ctrl_skip;
 	}
 }
 
@@ -68,18 +68,18 @@ static pack_result aux_ext_push_aux_header(EXT_PUSH &x, const AUX_HEADER &r) try
 	uint8_t paddings[AUX_ALIGN_SIZE]{};
 	
 	if (!subext.init(tmp_buff.get(), tmp_buff_size, EXT_FLAG_UTF16))
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	switch (r.version) {
 	case AUX_VERSION_1: {
 		auto ret = aux_ext_push_aux_header_type_union1(subext, r);
-		if (ret == EXT_CTRL_SKIP)
-			return EXT_ERR_SUCCESS;
-		else if (ret != EXT_ERR_SUCCESS)
+		if (ret == pack_result::ctrl_skip)
+			return pack_result::ok;
+		else if (ret != pack_result::ok)
 			return ret;
 		break;
 	}
 	default:
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	uint16_t actual_size = subext.m_offset + sizeof(uint16_t) + 2 * sizeof(uint8_t);
 	size = (actual_size + (AUX_ALIGN_SIZE - 1)) & ~(AUX_ALIGN_SIZE - 1);
@@ -89,8 +89,8 @@ static pack_result aux_ext_push_aux_header(EXT_PUSH &x, const AUX_HEADER &r) try
 	TRY(x.p_bytes(subext.m_udata, subext.m_offset));
 	return x.p_bytes(paddings, size - actual_size);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1169: ENOMEM");
-	return EXT_ERR_ALLOC;
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }
 
 pack_result aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
@@ -102,9 +102,9 @@ pack_result aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
 	RPC_HEADER_EXT rpc_header_ext;
 
 	if (!(r.rhe_flags & RHE_FLAG_LAST))
-		return EXT_ERR_HEADER_FLAGS;
+		return pack_result::header_flags;
 	if (!subext.init(ext_buff.get(), ext_buff_size, EXT_FLAG_UTF16))
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	for (const auto &ah : r.aux_list)
 		TRY(aux_ext_push_aux_header(subext, ah));
 	rpc_header_ext.version = r.rhe_version;
@@ -112,11 +112,12 @@ pack_result aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
 	rpc_header_ext.size_actual = subext.m_offset;
 	rpc_header_ext.size = rpc_header_ext.size_actual;
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
-		if (rpc_header_ext.size_actual < MINIMUM_COMPRESS_SIZE) {
+		if (emsmdb_compress_threshold == static_cast<size_t>(-1) ||
+		    rpc_header_ext.size_actual < emsmdb_compress_threshold) {
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
-			auto compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get());
-			if (compressed_len == 0 || compressed_len >= subext.m_offset) {
+			auto compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get(), ext_buff_size);
+			if (compressed_len <= 0 || static_cast<size_t>(compressed_len) >= subext.m_offset) {
 				/* if we can not get benefit from the
 					compression, unmask the compress bit */
 				rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
@@ -131,6 +132,6 @@ pack_result aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
 	TRY(pext->p_rpchdr(rpc_header_ext));
 	return pext->p_bytes(ext_buff.get(), rpc_header_ext.size);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1167: ENOMEM");
-	return EXT_ERR_ALLOC;
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include "php.h"
+#include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -60,7 +62,7 @@ static zend_bool zclient_read_socket(int sockd, BINARY &pbin)
 	} else if (read_len != 5) {
 		return 0;
 	}
-	pbin.cb = le32p_to_cpu(resp_buff + 1) + 5;
+	pbin.cb = std::min(le32p_to_cpu(resp_buff + 1) + 5, static_cast<uint32_t>(UINT32_MAX));
 	pbin.pb = sta_malloc<uint8_t>(pbin.cb);
 	if (pbin.pb == nullptr) {
 		pbin.cb = 0;
@@ -98,7 +100,7 @@ static zend_bool zclient_write_socket(int sockd, const BINARY &pbin)
 	}
 }
 
-zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
+bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 {
 	BINARY tmp_bin;
 	
@@ -115,6 +117,7 @@ zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 		return 0;
 	}
 	ext_pack_free(tmp_bin.pb);
+	tmp_bin.pb = nullptr;
 	if (!zclient_read_socket(sockd, tmp_bin)) {
 		close(sockd);
 		return 0;
@@ -122,19 +125,18 @@ zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 	close(sockd);
 	if (tmp_bin.cb < 5 ||
 	    static_cast<zcore_response>(tmp_bin.pb[0]) != zcore_response::success) {
-		if (NULL != tmp_bin.pb) {
+		if (tmp_bin.pb != nullptr)
 			ext_pack_free(tmp_bin.pb);
-		}
 		return 0;
 	}
 	presponse->call_id = prequest->call_id;
-	tmp_bin.cb -= 5;
-	tmp_bin.pb += 5;
-	if (rpc_ext_pull_response(&tmp_bin, presponse) != pack_result::ok) {
-		ext_pack_free(tmp_bin.pb - 5);
+	std::string_view input = tmp_bin;
+	input.remove_prefix(5);
+	if (rpc_ext_pull_response(input, presponse) != pack_result::ok) {
+		ext_pack_free(tmp_bin.pb);
 		return 0;
 	}
-	ext_pack_free(tmp_bin.pb - 5);
+	ext_pack_free(tmp_bin.pb);
 	return 1;
 }
 
@@ -154,12 +156,9 @@ ec_error_t zclient_setpropval(GUID hsession, uint32_t hobject,
 ec_error_t zclient_getpropval(GUID hsession, uint32_t hobject,
     gromox::proptag_t proptag, void **ppvalue)
 {
-	PROPTAG_ARRAY proptags;
+	const gromox::proptag_t proptags[] = {proptag};
 	TPROPVAL_ARRAY propvals;
-	
-	proptags.count = 1;
-	proptags.pproptag = &proptag;
-	auto result = zclient_getpropvals(hsession, hobject, &proptags, &propvals);
+	auto result = zclient_getpropvals(hsession, hobject, proptags, &propvals);
 	if (result != ecSuccess)
 		return result;
 	*ppvalue = propvals.count == 0 ? nullptr : propvals.ppropval[0].pvalue;

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <string_view>
 #include <vector>
 #include <gromox/ext_buffer.hpp>
 #include "php.h"
@@ -28,7 +29,7 @@ extern void *ext_pack_alloc(size_t);
 extern const struct EXT_BUFFER_MGT ext_buffer_mgt;
 
 struct PULL_CTX : public EXT_PULL {
-	inline void init(void *d, uint32_t s) {
+	inline void init(const void *d, uint32_t s) {
 		return EXT_PULL::init(d, s, ext_pack_alloc,
 		       EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
 	}
@@ -63,7 +64,7 @@ extern void palloc_tls_init();
 extern void palloc_tls_free();
 extern void ext_pack_free(void *);
 extern pack_result rpc_ext_push_request(const zcreq *, BINARY *);
-extern pack_result rpc_ext_pull_response(const BINARY *, zcresp *);
+extern pack_result rpc_ext_pull_response(std::string_view, zcresp *);
 
 template<typename T> T *st_malloc() { return static_cast<T *>(emalloc(sizeof(T))); }
 template<typename T> T *sta_malloc(size_t elem) { return static_cast<T *>(emalloc(sizeof(T) * elem)); }

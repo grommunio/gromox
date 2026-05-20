@@ -27,7 +27,7 @@ static constexpr int MB = 1048576, BLOCKUNIT = 512;
 namespace {
 
 struct deleter {
-	void operator()(sqlite3 *x) const { sqlite3_close(x); }
+	void operator()(sqlite3 *x) const { sqlite3_close_v2(x); }
 };
 
 struct ustat {
@@ -88,6 +88,18 @@ static double ratio_sav(double old, double nu)
 	return 100 * (1 - nu / old);
 }
 
+static bool looks_like_midb_generated(const char *name)
+{
+	auto dot = strchr(name, '.');
+	if (dot == nullptr)
+		return false;
+	if (dot[1] == 'm' && strtoul(&dot[2], nullptr, 10) != 0)
+		return true;
+	if (class_match_suffix(name, ".midb") == 0)
+		return true;
+	return false;
+}
+
 static struct rfc_stat rfc_count(const std::string &dirname)
 {
 	struct rfc_stat out;
@@ -111,7 +123,7 @@ static struct rfc_stat rfc_count(const std::string &dirname)
 		if (fstatat(dfd, name, &sb, 0) != 0 ||
 		    !S_ISREG(sb.st_mode))
 			continue;
-		if (class_match_suffix(name, ".midb") == 0)
+		if (looks_like_midb_generated(name))
 			out.sent += sb;
 		else
 			out.recv += sb;
@@ -275,6 +287,11 @@ static ustat count_dirs(const std::string &path)
 	return out;
 }
 
+static uint64_t subabs(uint64_t a, uint64_t b)
+{
+	return a >= b ? a - b : b - a;
+}
+
 int main(int argc, char **argv) try
 {
 	if (argc < 2) {
@@ -333,9 +350,9 @@ int main(int argc, char **argv) try
 	printf("%-30s  %6llu MB  %6llu MB\n", "... Bodies", msg_ic.du.mb(), msg_ic.du.pmb());
 	printf("%-30s  %6llu MB  %6llu MB\n", "... Attachments", atx_ic.du.mb(), atx_ic.du.pmb());
 	printf("%-30s  %6llu MB  %6llu MB\n", "... FS directories", cid_dirs.mb(), cid_dirs.pmb());
-	printf("%-30s  %6.1f %%   %6.1f %%\n\n", "NTS deviation",
-		100 * ratio(nts - du.size, du.size),
-		100 * ratio(nts - du.pad, du.pad));
+	printf("%-30s  %6.1f %%   %6.1f %%\n\n", "NTS error",
+		100 * ratio(subabs(nts, du.size), du.size),
+		100 * ratio(subabs(nts, du.pad), du.pad));
 
 	du += rfc.total;
 	printf("%-30s  %6llu MB   %6llu MB\n", "Total MAPI+RFC", du.mb(), du.pmb());

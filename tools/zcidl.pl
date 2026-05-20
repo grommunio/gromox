@@ -43,7 +43,7 @@ while (<STDIN>) {
 			print "\tauto &r = *r1;\n";
 		}
 		print "\tr1->result = zs_$func(", join(", ",
-			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
+			(map { my($type, $field) = @$_; $type =~ m{::optional<} ? "optional_ptr(q.$field)" : "q.$field"; } @$iargs),
 			(map { my($type, $field) = @$_; (substr($type, -1, 1) eq "&" ? "" : "&")."r.$field"; } @$oargs),
 		), ");\n";
 		print "\tr0 = std::move(r1);\n";
@@ -52,7 +52,7 @@ while (<STDIN>) {
 	}
 
 	print "ec_error_t zclient_$func($rbsig)\n{\n";
-	print "\tzcreq_$func q{};\n\tzcresp_$func r{};\n\n";
+	print "\tzcreq_${func}::view_t q{};\n\tzcresp_$func r{};\n\n";
 	print "\tq.call_id = zcore_callid::$func;\n";
 	for (@$iargs) {
 		my($type, $field) = @$_;

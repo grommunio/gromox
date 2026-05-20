@@ -6,6 +6,17 @@ gromox\-mkmidb \(em Tool for creating a blank message index database
 .SH Synopsis
 \fBgromox\-mkmidb\fP [\fB\-Uv\fP] [\fB\-c\fP \fIconfig\fP] [\fB\-fP\fP]
 \fIusername\fP
+.SH Description
+mkmidb is used to generate the midb.sqlite3 file for a private or public store,
+which is used by midb(8gx) to keep additional IMAP/POP3-specific state about
+the mailbox and its contents. mkmidb directly operates on the filesystem, which
+has implications. First, the program ought to be executed on the correct
+homeserver in case a multi-server Gromox installation is used. Second, there is
+no coordination with midb(8gx), and midb might continue using file descriptors
+opened earlier, working with the old copy of the mailbox, or get confused
+because e.g. a WAL file no longer matches the sqlite db. Ideally, you would use
+something like `gromox\-mbop \-u ... midb-unload` to make midb close the
+mailbox before resetting it.
 .SH Options
 .TP
 \fB\-U\fP

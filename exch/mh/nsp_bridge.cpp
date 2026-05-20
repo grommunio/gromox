@@ -1,3 +1,6 @@
+#include <span>
+#include <optional>
+#include <vector>
 #include <gromox/rpc_types.hpp>
 #include "nsp_bridge.hpp"
 #include "nsp_common.hpp"
@@ -29,10 +32,14 @@ static inline bool Failed(ec_error_t hresult)
 	return hresult != ecSuccess && hresult != ecWarnWithErrors;
 }
 
-ec_error_t nsp_bridge_unbind(GUID session_guid, uint32_t reserved)
+template<typename T> static inline auto optional_ptr(std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(const std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(const std::vector<T> &p) { return p.size() != 0 ? &p : nullptr; }
+
+ec_error_t nsp_bridge_unbind(GUID session_guid)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_unbind(&ses, reserved);
+	return nsp_interface_unbind(&ses);
 }
 
 ec_error_t nsp_bridge_run(GUID& session_guid, const bind_request &request,
@@ -56,14 +63,20 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
     const comparemids_request &request, comparemids_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_compare_mids(ses, request.reserved, request.stat, request.mid1, request.mid2, &response.cmp);
+	return nsp_interface_compare_mids(ses, request.stat,
+	       request.mid1, request.mid2, &response.cmp);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
     const dntomid_request &request, dntomid_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_dntomid(ses, request.reserved, request.names, &response.outmids);
+	return nsp_interface_dntomid(ses, request.names, response.outmids);
+}
+
+static inline proptag_cspan optional_columns(const std::optional<std::vector<gromox::proptag_t>> &a)
+{
+	return a.has_value() ? proptag_cspan(*a) : proptag_cspan();
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
@@ -76,26 +89,24 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	if (request.filter != nullptr) {
 		nspres = cu_alloc<NSPRES>();
 		if (nspres == nullptr ||
-		    !cu_restriction_to_nspres(*request.filter, *nspres)) {
-			response.mids = nullptr;
+		    !cu_restriction_to_nspres(*request.filter, *nspres))
 			return ecRpcFailed;
-		}
 	}
 	if (request.propname != nullptr) {
 		nspname = cu_alloc<NSP_PROPNAME>();
 		if (nspname == nullptr ||
-		    !cu_propname_to_nsp(*request.propname, *nspname)) {
-			response.mids = nullptr;
+		    !cu_propname_to_nsp(*request.propname, *nspname))
 			return ecRpcFailed;
-		}
 	}
-	auto result = nsp_interface_get_matches(ses, request.reserved1, request.stat,
-	              request.inmids, request.reserved2, nspres, nspname, request.row_count,
-	              &response.mids, request.columns, &outrows);
+	response.stat = request.stat;
+	auto result = nsp_interface_get_matches(ses, request.reserved1, response.stat,
+	              nspres, nspname, request.row_count,
+	              response.mids, optional_ptr(request.columns), &outrows);
 	if (Failed(result))
 		return result;
 	if (outrows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(request.columns, *outrows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(optional_columns(request.columns),
+	    *outrows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
@@ -105,7 +116,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	return nsp_interface_get_proplist(ses, request.flags, request.mid,
-	       request.codepage, &response.proptags);
+	       request.codepage, response.proptags);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
@@ -113,7 +124,8 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 {
 	NSP_PROPROW *row;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	auto result = nsp_interface_get_props(ses, request.flags, request.stat, request.proptags, &row);
+	auto result = nsp_interface_get_props(ses, request.flags,
+	              request.stat, optional_ptr(request.proptags), &row);
 	if (Failed(result)) {
 		response.row = nullptr;
 		return result;
@@ -128,7 +140,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 			return ecRpcFailed;
 		}
 	}
-	response.codepage = request.stat->codepage;
+	response.codepage = request.stat.codepage;
 	return result;
 }
 
@@ -140,7 +152,8 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	if (request.version != nullptr)
 		version = *request.version;
-	auto result = nsp_interface_get_specialtable(ses, request.flags, request.stat, &version, &rows);
+	auto result = nsp_interface_get_specialtable(ses, request.flags,
+	              request.stat, &version, &rows);
 	if (Failed(result)) {
 		response.version = nullptr;
 		response.count = 0;
@@ -168,7 +181,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 			return ecRpcFailed;
 		}
 	}
-	response.codepage = request.stat->codepage;
+	response.codepage = request.stat.codepage;
 	return result;
 }
 
@@ -216,15 +229,15 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 		    !cu_proplist_to_nsp_proprow(*request.values, *row))
 			return ecRpcFailed;
 	}
-	return nsp_interface_mod_props(ses, request.reserved, request.stat,
-	       request.proptags, row);
+	return nsp_interface_mod_props(ses, request.stat,
+	       optional_ptr(request.proptags), row);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
     const querycolumns_request &request, querycolumns_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_query_columns(ses, request.reserved, request.flags, &response.columns);
+	return nsp_interface_query_columns(ses, request.flags, response.columns);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
@@ -232,13 +245,15 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 {
 	NSP_ROWSET *rows = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	auto result = nsp_interface_query_rows(ses, request.flags, request.stat,
-	              request.explicit_table.cvalues, request.explicit_table.pproptag,
-	               request.count, request.columns, &rows);
+	response.stat = request.stat;
+	auto result = nsp_interface_query_rows(ses, request.flags, response.stat,
+	              optional_ptr(request.explicit_table), request.count,
+	              optional_ptr(request.columns), &rows);
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(request.columns, *rows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(optional_columns(request.columns),
+	    *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
@@ -248,13 +263,14 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 {
 	NSP_ROWSET *rows = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	auto tags = request.proptags;
 	auto result = nsp_interface_resolve_namesw(ses, request.reserved, request.stat,
-	              tags, request.names, &response.mids, &rows);
+	              optional_ptr(request.proptags), request.names,
+	              response.mids, &rows);
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(request.proptags, *rows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(optional_columns(request.proptags),
+	    *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
@@ -263,29 +279,29 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
     const resortrestriction_request &request, resortrestriction_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_resort_restriction(ses, request.reserved,
-	       request.stat, request.inmids, &response.outmids);
+	response.stat = request.stat;
+	return nsp_interface_resort_restriction(ses, response.stat,
+	       request.inmids, response.outmids);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
     const seekentries_request &request, seekentries_response &response)
 {
 	NSP_ROWSET *rows = nullptr;
-	PROPERTY_VALUE *target_val = nullptr;
+	PROPERTY_VALUE target_val{};
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 
-	if (request.target != nullptr) {
-		target_val = cu_alloc<PROPERTY_VALUE>();
-		if (target_val == nullptr ||
-		    !cu_tpropval_to_propval(*request.target, *target_val))
-			return ecRpcFailed;
-	}
-	auto result = nsp_interface_seek_entries(ses, request.reserved, request.stat,
-	              target_val, request.explicit_table, request.columns, &rows);
+	if (!cu_tpropval_to_propval(request.target, target_val))
+		return ecRpcFailed;
+	response.stat = request.stat;
+	auto result = nsp_interface_seek_entries(ses, request.reserved, response.stat,
+	              target_val, optional_ptr(request.explicit_table),
+	              optional_ptr(request.columns), &rows);
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(request.columns, *rows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(optional_columns(request.columns),
+	    *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
@@ -293,19 +309,12 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 ec_error_t nsp_bridge_run(const GUID &session_guid,
     const updatestat_request &request, updatestat_response &response)
 {
-	int32_t delta;
+	int32_t delta = 0;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	if (request.delta_requested != 0) {
-		response.delta = cu_alloc<int32_t>();
-		if (response.delta == nullptr)
-			return ecRpcFailed;
-	} else {
-		response.delta = nullptr;
-	}
-	auto result = nsp_interface_update_stat(ses, request.reserved,
-	              request.stat, &delta);
+	response.stat = request.stat;
+	auto result = nsp_interface_update_stat(ses, response.stat, &delta);
 	if (request.delta_requested != 0)
-		*response.delta = delta;
+		response.delta.emplace(delta);
 	return result;
 }
 

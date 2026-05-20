@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -14,7 +14,6 @@
 #include <list>
 #include <memory>
 #include <mutex>
-#include <netdb.h>
 #include <optional>
 #include <poll.h>
 #include <pthread.h>
@@ -29,7 +28,6 @@
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
-#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -38,6 +36,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/generic_connection.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/listener_ctx.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
@@ -109,11 +108,11 @@ static std::mutex g_enqueue_lock /*(g_enqueue_list0/1)*/;
 static std::mutex g_dequeue_lock /*(g_dequeue_list0/1)*/;
 static std::mutex g_host_lock /*(g_host_list)*/;
 static std::condition_variable g_enqueue_waken_cond, g_dequeue_waken_cond;
-static char *opt_config_file;
+static const char *opt_config_file;
 static unsigned int opt_show_version;
 
-static struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -130,7 +129,7 @@ static constexpr cfg_directive event_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static void *ev_acceptwork(void *);
+static int ev_acceptwork(generic_connection &&);
 static void *ev_enqwork(void *);
 static void *ev_deqwork(void *);
 static void *ev_scanwork(void *);
@@ -177,10 +176,15 @@ ssize_t qsock::sk_write(const std::string_view &sv)
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
+
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-event");
 	if (opt_show_version)
@@ -195,6 +199,7 @@ int main(int argc, char **argv)
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
+		/* e.g. permission denied */
 		return EXIT_FAILURE;
 
 	mlog_init("gromox-event", pconfig->get_value("event_log_file"),
@@ -208,13 +213,11 @@ int main(int argc, char **argv)
 	g_threads_num = pconfig->get_ll("event_threads_num");
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
 
-	auto sockd = HX_inet_listen(listen_ip, listen_port);
-	if (sockd < 0) {
-		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
+	listener_ctx listener;
+	if (listen_port != 0 &&
+	    listener.add_inet(listen_ip, listen_port) != 0)
 		return EXIT_FAILURE;
-	}
-	gx_reexec_record(sockd);
-	auto cl_2 = HX::make_scope_exit([&]() { close(sockd); });
+	listener.m_thread_name = "accept";
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
 	
@@ -258,36 +261,16 @@ int main(int argc, char **argv)
 	auto hosts_allow = pconfig->get_value("event_hosts_allow");
 	if (hosts_allow != nullptr)
 		g_acl_list = gx_split(hosts_allow, ' ');
-	auto err = list_file_read_fixedstrings("event_acl.txt",
-	           pconfig->get_value("config_file_path"), g_acl_list);
-	if (err == ENOENT) {
-	} else if (err != 0) {
-		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(err));
-		g_notify_stop = true;
-		return EXIT_FAILURE;
-	}
 	std::sort(g_acl_list.begin(), g_acl_list.end());
-	g_acl_list.erase(std::remove(g_acl_list.begin(), g_acl_list.end(), ""), g_acl_list.end());
+	std::erase(g_acl_list, "");
 	g_acl_list.erase(std::unique(g_acl_list.begin(), g_acl_list.end()), g_acl_list.end());
 	if (g_acl_list.size() == 0) {
 		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
 		g_acl_list = {"::1"};
 	}
 
-	pthread_t acc_thr{}, scan_thr{};
-	auto ret = pthread_create4(&acc_thr, nullptr, ev_acceptwork,
-	           reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
-	if (ret != 0) {
-		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
-		g_notify_stop = true;
-		return EXIT_FAILURE;
-	}
-	auto cl_5 = HX::make_scope_exit([&]() {
-		pthread_kill(acc_thr, SIGALRM); /* kick accept() */
-		pthread_join(acc_thr, nullptr);
-	});
-	pthread_setname_np(acc_thr, "accept");
-	ret = pthread_create4(&scan_thr, nullptr, ev_scanwork, nullptr);
+	pthread_t scan_thr{};
+	auto ret = pthread_create4(&scan_thr, nullptr, ev_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[system]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -297,7 +280,11 @@ int main(int argc, char **argv)
 		pthread_kill(scan_thr, SIGALRM); /* kick sleep() */
 		pthread_join(scan_thr, nullptr);
 	});
-	pthread_setname_np(scan_thr, "scan");
+	auto err = listener.watch_start(g_notify_stop, ev_acceptwork);
+	if (err != 0) {
+		mlog(LV_ERR, "listener.thread_start: %s", strerror(err));
+		return EXIT_FAILURE;
+	}
 	setup_signal_defaults();
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
@@ -312,6 +299,7 @@ int main(int argc, char **argv)
 
 static void *ev_scanwork(void *param)
 {
+	pthread_setname_np(pthread_self(), "scan");
 	int i = 0;
 	
 	while (!g_notify_stop) {
@@ -347,22 +335,15 @@ static void *ev_scanwork(void *param)
 	return NULL;
 }
 
-static void *ev_acceptwork(void *param)
+static int ev_acceptwork(generic_connection &&conn)
 {
 	ENQUEUE_NODE *penqueue;
 
-	int sockd = reinterpret_cast<intptr_t>(param);
-	while (!g_notify_stop) {
-		auto conn = generic_connection::accept(sockd, false, &g_notify_stop);
-		if (conn.sockd == -2)
-			break;
-		else if (conn.sockd < 0)
-			continue;
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    conn.client_addr) == g_acl_list.cend()) {
 			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 
 		std::unique_lock eq_hold(g_enqueue_lock);
@@ -370,7 +351,7 @@ static void *ev_acceptwork(void *param)
 			eq_hold.unlock();
 			if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 		try {
 			g_enqueue_list1.emplace_back();
@@ -379,7 +360,7 @@ static void *ev_acceptwork(void *param)
 			eq_hold.unlock();
 			if (HXio_fullwrite(conn.sockd, "FALSE Not enough memory\r\n", 25) < 0)
 				/* ignore */;
-			continue;
+			return 0;
 		}
 
 		static_cast<generic_connection &>(*penqueue) = std::move(conn);
@@ -387,8 +368,8 @@ static void *ev_acceptwork(void *param)
 		if (HXio_fullwrite(penqueue->sockd, "OK\r\n", 4) < 0)
 			penqueue->reset();
 		g_enqueue_waken_cond.notify_one();
-	}
-	return nullptr;
+
+	return 0;
 }
 
 using eq_iter_t = std::list<ENQUEUE_NODE>::iterator;
@@ -455,7 +436,7 @@ static int q_listen(eq_iter_t eq_node, std::unique_lock<std::mutex> &eq_hold)
 	return 2;
 }
 
-static void q_select(eq_iter_t eq_node)
+static void q_select(eq_iter_t eq_node) try
 {
 	auto penqueue = &*eq_node;
 	auto pspace = strchr(penqueue->line + 7, ' ');
@@ -464,12 +445,9 @@ static void q_select(eq_iter_t eq_node)
 		penqueue->sk_write("FALSE\r\n");
 		return;
 	}
-	char temp_string[256];
-	memcpy(temp_string, penqueue->line + 7, temp_len);
-	temp_string[temp_len++] = ':';
-	temp_string[temp_len] = '\0';
-	HX_strlower(temp_string);
-	strcat(temp_string, pspace + 1);
+	auto temp_string = std::string(&penqueue->line[7], temp_len) + ":";
+	HX_strlower(temp_string.data());
+	temp_string += &pspace[1];
 
 	bool b_result = false;
 	std::unique_lock hl_hold(g_host_lock);
@@ -478,21 +456,21 @@ static void q_select(eq_iter_t eq_node)
 		if (0 == strcmp(penqueue->res_id, phost->res_id)) {
 			time_t cur_time = time(nullptr);
 			auto time_it = phost->hash.find(temp_string);
-			if (time_it != phost->hash.end()) {
+			if (time_it != phost->hash.end())
 				time_it->second = cur_time;
-			} else try {
-				phost->hash.emplace(temp_string, cur_time);
-			} catch (const std::bad_alloc &) {
-			}
+			else
+				phost->hash.emplace(std::move(temp_string), cur_time);
 			b_result = true;
 			break;
 		}
 	}
 	hl_hold.unlock();
 	penqueue->sk_write(b_result ? "TRUE\r\n" : "FALSE\r\n");
+} catch (const std::bad_alloc &) {
+	eq_node->sk_write("FALSE\r\n");
 }
 
-static void q_unselect(eq_iter_t eq_node)
+static void q_unselect(eq_iter_t eq_node) try
 {
 	auto penqueue = &*eq_node;
 	auto pspace = strchr(penqueue->line + 9, ' ');
@@ -501,12 +479,9 @@ static void q_unselect(eq_iter_t eq_node)
 		penqueue->sk_write("FALSE\r\n");
 		return;
 	}
-	char temp_string[256];
-	memcpy(temp_string, penqueue->line + 9, temp_len);
-	temp_string[temp_len++] = ':';
-	temp_string[temp_len] = '\0';
-	HX_strlower(temp_string);
-	strcat(temp_string, pspace + 1);
+	auto temp_string = std::string(&penqueue->line[9], temp_len) + ":";
+	HX_strlower(temp_string.data());
+	temp_string += &pspace[1];
 
 	std::unique_lock hl_hold(g_host_lock);
 	auto phost = std::find_if(g_host_list.begin(), g_host_list.end(),
@@ -515,6 +490,8 @@ static void q_unselect(eq_iter_t eq_node)
 		phost->hash.erase(temp_string);
 	hl_hold.unlock();
 	penqueue->sk_write("TRUE\r\n");
+} catch (const std::bad_alloc &) {
+	eq_node->sk_write("FALSE\r\n");
 }
 
 static int q_quit(eq_iter_t eq_node, eq_lock_t &eq_hold)
@@ -576,7 +553,7 @@ static void q_else(eq_iter_t eq_node)
 			dl_hold.unlock();
 			if (b_result)
 				pdequeue->waken_cond.notify_one();
-			phost->list.push_back(pdequeue);
+			phost->list.push_back(std::move(pdequeue));
 		}
 	}
 	hl_hold.unlock();

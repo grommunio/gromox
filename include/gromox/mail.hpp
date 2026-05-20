@@ -19,7 +19,7 @@ struct GX_EXPORT MAIL {
 	MAIL &operator=(MAIL &&);
 
 	void clear();
-	bool load_from_str(const char *in_buff, size_t length);
+	bool refonly_parse(const char *in_buff, size_t length);
 	bool serialize(STREAM *) const;
 	gromox::errno_t to_fd(int) const;
 	gromox::errno_t to_str(std::string &) const;
@@ -27,13 +27,12 @@ struct GX_EXPORT MAIL {
 	MIME *add_head();
 	MIME *get_head();
 	const MIME *get_head() const;
-	bool get_charset(std::string &out) const;
-	int make_digest(size_t *offset, Json::Value &) const;
+	int make_digest(Json::Value &) const;
 	MIME *add_child(MIME *base, int opt);
 	void enum_mime(MAIL_MIME_ENUM, void *) const;
 	bool dup(MAIL *dst);
 	bool set_header(const char *hdr, const char *val);
 
 	SIMPLE_TREE tree{};
-	char *buffer = nullptr;
+	std::unique_ptr<char[]> buffer;
 };

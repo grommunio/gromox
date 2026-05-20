@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -36,6 +36,18 @@ using namespace gromox;
 using namespace gi_dump;
 using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
+/**
+ * @content: MAPI representation with broken-down fields
+ * @im_std:  Original RFC5322, stored in a std::string
+ * @im_raw:  Original RFC5322, stored in a malloc buffer
+ */
+struct fat_message {
+	message_ptr content;
+	std::string im_std;
+	std::unique_ptr<char[], stdlib_delete> im_raw;
+	size_t im_len = 0;
+};
+
 enum {
 	IMPORT_MAIL,
 	IMPORT_ICAL,
@@ -45,13 +57,14 @@ enum {
 };
 
 static unsigned int g_import_mode = IMPORT_MAIL;
-static unsigned int g_oneoff, g_attach_decap;
+static unsigned int g_oneoff, g_attach_decap, g_mlog_level = MLOG_DEFAULT_LEVEL;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'P', HXTYPE_NONE, &g_oxvcard_pedantic, nullptr, nullptr, 0, "Enable pedantic import mode"},
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{"decap", 0, HXTYPE_UINT, &g_attach_decap, {}, {}, {}, "Decapsulate embedded message (1-based index)", "IDX"},
 	{"ical", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_ICAL, "Treat input as iCalendar"},
+	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	{"mail", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_MAIL, "Treat input as Internet Mail"},
 	{"mbox", 0, HXTYPE_VAL, &g_import_mode, {}, {}, IMPORT_MBOX, "Treat input as Unix mbox"},
 	{"oneoff", 0, HXTYPE_NONE, &g_oneoff, nullptr, nullptr, 0, "Resolve addresses to ONEOFF rather than EX addresses"},
@@ -61,7 +74,7 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr static_module g_dfl_svc_plugins[] =
+static constexpr generic_module g_dfl_svc_plugins[] =
 	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 static constexpr cfg_directive eml2mt_cfg_defaults[] = {
@@ -84,45 +97,120 @@ static void terse_help()
 	fprintf(stderr, "Documentation: man gromox-eml2mt\n");
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, mc_delete>
-do_mail(const char *file, char *data, size_t dsize)
+static BOOL do_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) try
+{
+	ids->resize(names->count);
+	for (size_t i = 0; i < names->count; ++i) {
+		auto [le_id, added] = static_namedprop_map.emplace_2(0, names->ppropname[i]);
+		(*ids)[i] = le_id;
+		if (!added)
+			continue;
+
+		EXT_PUSH ep;
+		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+			throw YError("ENOMEM");
+		auto proptag = PROP_TAG(PT_UNSPECIFIED, le_id);
+		if (ep.p_uint32(GXMT_NAMEDPROP) != pack_result::success ||
+		    ep.p_uint64(proptag) != pack_result::success ||
+		    ep.p_uint32(0) != pack_result::success ||
+		    ep.p_uint64(0) != pack_result::success ||
+		    ep.p_propname(names->ppropname[i]) != pack_result::success)
+			throw YError("PG-1150");
+		uint64_t xsize = cpu_to_le64(ep.m_offset);
+		if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+			throw YError("PG-1151: %s", strerror(errno));
+		if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+			throw YError("PG-1152: %s", strerror(errno));
+	}
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	gromox::mlog(LV_ERR, "E-2237: ENOMEM");
+	return false;
+}
+
+static size_t g_msgcount = 0;
+static int do_emit(const parent_desc &parent, fat_message &&msg)
+{
+	if (g_attach_decap > 0) {
+		auto ret = gi_decapsulate_attachment(msg.content, g_attach_decap - 1);
+		if (ret != 0)
+			return 0;
+	}
+	if (g_show_tree) {
+		fprintf(stderr, "Message %zu\n", g_msgcount + 1);
+		gi_print(0, *msg.content, ee_get_propname);
+	}
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+		throw YError("E-2013: ENOMEM\n");
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+	    ep.p_uint64(g_msgcount + 1) != pack_result::ok ||
+	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
+	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
+	    ep.p_msgctnt(*msg.content) != pack_result::ok) {
+		fprintf(stderr, "E-2004\n");
+		return -1;
+	}
+	pack_result pr2 =
+		msg.im_std.size() > 0 ? ep.p_str(msg.im_std) :
+		msg.im_raw != nullptr ? ep.p_str(msg.im_raw.get()) :
+		ep.p_str("");
+	if (pr2 != pack_result::ok || ep.p_str("") != pack_result::ok) {
+		fprintf(stderr, "E-2014\n");
+		return -1;
+	}
+
+	uint64_t xsize = cpu_to_le64(ep.m_offset);
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+		throw YError("PG-1017: %s", strerror(errno));
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+		throw YError("PG-1018: %s", strerror(errno));
+	++g_msgcount;
+	return 1;
+}
+
+static message_ptr do_mail(const char *file, const char *data, size_t dsize)
 {
 	MAIL imail;
-	if (!imail.load_from_str(data, dsize)) {
+	if (!imail.refonly_parse(data, dsize)) {
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
 	}
-	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxcmail_import(nullptr,
-		"UTC", &imail, gi_alloc, ee_get_propids));
+	oxcmail_converter cvt;
+	cvt.alloc = gi_alloc;
+	cvt.get_propids = do_get_propids;
+	auto msg = cvt.inet_to_mapi(imail);
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 	return msg;
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_eml(const char *file)
+static int do_eml(const char *file, const parent_desc &pd)
 {
-	size_t slurp_len = 0;
-	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
-		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
 	static constexpr uint64_t olecf_sig = 0xd0cf11e0a1b11ae1, olecf_beta = 0x0e11fc0dd0cf110e;
-	if (slurp_data == nullptr) {
+	fat_message mo;
+
+	mo.im_raw.reset(strcmp(file, "-") == 0 ? HX_slurp_fd(STDIN_FILENO, &mo.im_len) :
+		HX_slurp_file(file, &mo.im_len));
+	auto raw = mo.im_raw.get();
+	if (raw == nullptr) {
 		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
-		return nullptr;
-	} else if (slurp_len >= 8 &&
-	    (be64p_to_cpu(slurp_data.get()) == olecf_sig ||
-	    be64p_to_cpu(slurp_data.get()) == olecf_beta)) {
+		return -1;
+	} else if (mo.im_len >= 8 && (be64p_to_cpu(raw) == olecf_sig ||
+	    be64p_to_cpu(raw) == olecf_beta)) {
 		fprintf(stderr, "Input file %s looks like an OLECF file; "
 			"you should use gromox-oxm2mt, not gromox-eml2mt "
 			"(which is for Internet/RFC5322 mail).\n", file);
 	}
-	return do_mail(file, slurp_data.get(), slurp_len);
+	mo.content = do_mail(file, raw, mo.im_len);
+	return do_emit(pd, std::move(mo));
 }
 
 enum class mbox_rid { start, envelope_from, msghdr, msgbody, emit };
 
 struct mbox_rdstate {
-	std::vector<message_ptr> &msgvec;
 	std::string filename;
+	const parent_desc *pd = nullptr;
 	size_t fncut = 0;
 	unsigned int mail_count = 0;
 	enum mbox_rid rid = mbox_rid::start;
@@ -130,32 +218,32 @@ struct mbox_rdstate {
 	std::string cbuf;
 };
 
-static void mbox_line(mbox_rdstate &rs, const char *line)
+static int mbox_line(mbox_rdstate &rs, const char *line)
 {
 	switch (rs.rid) {
 	case mbox_rid::start:
 		if (line[0] == '\n' || (line[0] == '\r' && line[1] == '\n'))
-			return;
+			return 0;
 		rs.rid = mbox_rid::envelope_from;
 		[[fallthrough]];
 	case mbox_rid::envelope_from:
 		rs.rid = mbox_rid::msghdr;
 		if (strncmp(line, "From ", 5) == 0)
-			return;
+			return 0;
 		[[fallthrough]];
 	case mbox_rid::msghdr:
 		rs.cbuf += line;
 		if (line[0] == '\n' || (line[0] == '\r' && line[1] == '\n')) {
 			rs.rid = mbox_rid::msgbody;
-			return;
+			return 0;
 		}
 		if (strncmp(line, "X-IMAP: ", 8) == 0)
 			rs.alpine_pseudo_msg = true;
-		return;
+		return 0;
 	case mbox_rid::msgbody:
 		if (strncmp(line, "From ", 5) != 0) {
 			rs.cbuf += line;
-			return;
+			return 0;
 		}
 		[[fallthrough]];
 	case mbox_rid::emit: {
@@ -164,24 +252,28 @@ static void mbox_line(mbox_rdstate &rs, const char *line)
 			rs.alpine_pseudo_msg = false;
 			rs.cbuf = std::string();
 			rs.rid  = mbox_rid::msghdr;
-			return;
+			return 0;
 		}
 		rs.filename.erase(rs.fncut);
 		rs.filename += std::to_string(++rs.mail_count);
-		auto mo = do_mail(rs.filename.c_str(), rs.cbuf.data(), rs.cbuf.size());
-		if (mo == nullptr)
+
+		fat_message mo;
+		mo.im_std  = std::move(rs.cbuf);
+		mo.content = do_mail(rs.filename.c_str(), mo.im_std.data(), mo.im_std.size());
+		if (mo.content == nullptr)
 			throw std::bad_alloc();
-		rs.msgvec.push_back(std::move(mo));
+		if (do_emit(*rs.pd, std::move(mo)) < 0)
+			return -1;
 		rs.cbuf = std::string();
 		rs.rid  = mbox_rid::msghdr;
-		return;
+		return 0;
 	}
 	default:
-		return;
+		return 0;
 	}
 }
 
-static errno_t do_mbox(const char *file, std::vector<message_ptr> &msgvec)
+static errno_t do_mbox(const char *file, const parent_desc &pd)
 {
 	std::unique_ptr<FILE, stdlib_delete> extra_fp;
 	FILE *fp = nullptr;
@@ -198,12 +290,16 @@ static errno_t do_mbox(const char *file, std::vector<message_ptr> &msgvec)
 	}
 	hxmc_t *line = nullptr;
 	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
-	mbox_rdstate rs{msgvec};
+	mbox_rdstate rs;
 	rs.filename = file;
 	rs.filename += ":";
+	rs.pd       = &pd;
 	rs.fncut    = rs.filename.size();
-	while (HX_getl(&line, fp) != nullptr)
-		mbox_line(rs, line);
+	while (HX_getl(&line, fp) != nullptr) {
+		auto ret = mbox_line(rs, line);
+		if (ret < 0)
+			return EIO;
+	}
 	rs.rid = mbox_rid::emit;
 	mbox_line(rs, nullptr);
 	return 0;
@@ -223,8 +319,12 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;
 	}
-	auto err = oxcical_import_multi("UTC", ical, zalloc, ee_get_propids,
-	           oxcmail_username_to_entryid, mv);
+
+	oxcical_converter cvt;
+	cvt.alloc = zalloc;
+	cvt.get_propids = do_get_propids;
+	cvt.username_to_entryid = oxcmail_username_to_entryid;
+	auto err = cvt.ical_to_mapi_multi(ical, mv);
 	if (err == ecNotFound) {
 		fprintf(stderr, "%s: Not an iCalendar object, or an incomplete one.\n", file);
 		return EIO;
@@ -251,8 +351,10 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 			file, static_cast<unsigned int>(ret));
 		return EIO;
 	}
+	oxvcard_converter cvt;
+	cvt.get_propids = do_get_propids;
 	for (const auto &card : cardvec) {
-		message_ptr mc(oxvcard_import(&card, ee_get_propids));
+		auto mc = cvt.vcard_to_mapi(card);
 		if (mc == nullptr) {
 			fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 			return EIO;
@@ -272,7 +374,7 @@ static errno_t do_tnef(const char *file, std::vector<message_ptr> &mv)
 		return EIO;
 	}
 	message_content_ptr mc(tnef_deserialize(slurp_data.get(), slurp_size,
-		zalloc, ee_get_propids, oxcmail_username_to_entryid));
+		zalloc, do_get_propids, oxcmail_username_to_entryid));
 	if (mc == nullptr) {
 		fprintf(stderr, "tnef: %s: import rejected\n", file);
 		return EIO;
@@ -301,25 +403,28 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (argc < 2) {
+	if (argp.nargs < 1) {
 		terse_help();
 		return EXIT_FAILURE;
 	}
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
+	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 	g_config_file = config_file_prg(nullptr, "midb.cfg", eml2mt_cfg_defaults);
 	if (g_config_file == nullptr) {
-		fprintf(stderr, "Something went wrong with config files\n");
+		fprintf(stderr, "Something went wrong with config files (e.g. permission denied)\n");
 		return EXIT_FAILURE;
 	}
 	service_init({g_config_file, g_dfl_svc_plugins, 1});
 	auto cl_0 = HX::make_scope_exit(service_stop);
-	if (service_run_early() != 0 || service_run() != 0) {
+	if (service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;
 	}
@@ -345,41 +450,10 @@ int main(int argc, char **argv) try
 	}
 
 	auto cfg = config_file_prg(nullptr, "delivery.cfg", delivery_cfg_defaults);
-	std::vector<message_ptr> msgs;
+	if (cfg == nullptr)
+		return EXIT_FAILURE;
 
-	for (int i = 1; i < argc; ++i) {
-		if (g_import_mode == IMPORT_MAIL) {
-			auto msg = do_eml(argv[i]);
-			if (msg == nullptr)
-				continue;
-			msgs.push_back(std::move(msg));
-		} else if (g_import_mode == IMPORT_MBOX) {
-			if (do_mbox(argv[i], msgs) != 0)
-				continue;
-		} else if (g_import_mode == IMPORT_ICAL) {
-			if (do_ical(argv[i], msgs) != 0)
-				continue;
-		} else if (g_import_mode == IMPORT_VCARD) {
-			if (do_vcard(argv[i], msgs) != 0)
-				continue;
-		} else if (g_import_mode == IMPORT_TNEF) {
-			if (do_tnef(argv[i], msgs) != 0)
-				continue;
-		}
-	}
-	if (g_attach_decap > 0) {
-		auto osize = msgs.size();
-		for (auto &msg : msgs) {
-			auto ret = gi_decapsulate_attachment(msg, g_attach_decap - 1);
-			if (ret != 0)
-				msg.reset();
-		}
-		std::erase_if(msgs, [](const message_ptr &x) { return x == nullptr; });
-		fprintf(stderr, "Attachment decapsulation filter: %zu MAPI messages have been turned into %zu\n",
-			osize, msgs.size());
-	}
-
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0005", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;
 	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
@@ -387,38 +461,46 @@ int main(int argc, char **argv) try
 	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* public store flag */
 		throw YError("PG-1016: %s", strerror(errno));
 	gi_folder_map_t fmap;
-	if (g_import_mode == IMPORT_ICAL)
-		fmap.emplace(MAILBOX_FID_UNANCHORED, tgt_folder{false, PRIVATE_FID_CALENDAR, ""});
-	else if (g_import_mode == IMPORT_VCARD)
-		fmap.emplace(MAILBOX_FID_UNANCHORED, tgt_folder{false, PRIVATE_FID_CONTACTS, ""});
 	gi_folder_map_write(fmap);
 	gi_dump_name_map(static_namedprop_map.fwd);
 	gi_name_map_write(static_namedprop_map.fwd);
 
 	auto parent = parent_desc::as_folder(MAILBOX_FID_UNANCHORED);
-	for (size_t i = 0; i < msgs.size(); ++i) {
-		if (g_show_tree) {
-			fprintf(stderr, "Message %zu\n", i + 1);
-			gi_print(0, *msgs[i], ee_get_propname);
+	for (int i = 0; i < argp.nargs; ++i) {
+		auto le_file = argp.uarg[i];
+		/* These emit as we go */
+		if (g_import_mode == IMPORT_MAIL) {
+			auto ret = do_eml(le_file, parent);
+			if (ret < 0)
+				return EXIT_FAILURE;
+			continue;
+		} else if (g_import_mode == IMPORT_MBOX) {
+			auto err = do_mbox(le_file, parent);
+			if (err != 0)
+				return EXIT_FAILURE;
+			continue;
 		}
-		EXT_PUSH ep;
-		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
-			fprintf(stderr, "E-2013: ENOMEM\n");
+
+		/*
+		 * These converters process the input completely first before
+		 * yielding messages.
+		 */
+		std::vector<message_ptr> content_vec;
+		errno_t err = 0;
+		if (g_import_mode == IMPORT_ICAL)
+			err = do_ical(le_file, content_vec);
+		else if (g_import_mode == IMPORT_VCARD)
+			err = do_vcard(le_file, content_vec);
+		else if (g_import_mode == IMPORT_TNEF)
+			err = do_tnef(le_file, content_vec);
+		if (err != 0)
 			return EXIT_FAILURE;
+		for (auto &&ct : std::move(content_vec)) {
+			auto ret = do_emit(parent, fat_message{std::move(ct)});
+			if (ret < 0)
+				return EXIT_FAILURE;
+			ct.reset();
 		}
-		if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
-		    ep.p_uint32(i + 1) != EXT_ERR_SUCCESS ||
-		    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
-		    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
-		    ep.p_msgctnt(*msgs[i]) != EXT_ERR_SUCCESS) {
-			fprintf(stderr, "E-2004\n");
-			return EXIT_FAILURE;
-		}
-		uint64_t xsize = cpu_to_le64(ep.m_offset);
-		if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
-			throw YError("PG-1017: %s", strerror(errno));
-		if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
-			throw YError("PG-1018: %s", strerror(errno));
 	}
 	return EXIT_SUCCESS;
 } catch (const std::exception &e) {

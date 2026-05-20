@@ -1,41 +1,11 @@
 #pragma once
-
 /*
- * Reserved:                          0x0000
- * Tagged props:                      0x0001..0x7FFF
- *  \_ MAPI-defined props:            0x0001..0x3FFF
- *      \_ Envelope props:            0x0001..0x0BFF
- *      \_ Recipient props:           0x0C00..0x0DFF
- *      \_ Non-transmittable props:   0x0E00..0x0FFF (non-transmittable)
- *      \_ Message content props:     0x1000..0x2FFF
- *      \_ Others:                    0x3000..0x3FFF
- *          \_ Common props:          0x3000..0x32FF
- *          \_ Form props:            0x3300..0x33FF
- *          \_ Message store:         0x3400..0x35FF
- *          \_ Container (folder/AB): 0x3600..0x36FF
- *          \_ Attachment:            0x3700..0x38FF
- *          \_ Address book:          0x3900..0x39FF
- *          \_ Mail user:             0x3A00..0x3BFF
- *          \_ Distribution list:     0x3C00..0x3CFF
- *          \_ Profsect:              0x3D00..0x3DFF
- *          \_ Status object:         0x3E00..0x3EFF
- *          \_ Display table:         0x3F00..0x3FFF
- *  \_ Transport-specific props:      0x4000..0x5FFF
- *      \_ Envelope props:            0x4000..0x57FF
- *      \_ Recipient props:           0x5800..0x5FFF
- *  \_ Client-specific props:         0x6000..0x65FF (non-transmittable)
- *  \_ Provider-specific props:       0x6600..0x67FF (non-transmittable)
- *      \_ Secure profile props:      0x67F0..0x67FF
- *  \_ Message class-specific props:  0x6800..0x7FFF
- *      \_ Content props:             0x6800..0x7BFF
- *      \_ Non-transmittable:         0x7C00..0x7FFF (non-transmittable)
- * Mapping range for named props:     0x8000..0xFFFE
- * Reserved:                          0xFFFF
- *
- * There are some more reserved ranges, but we need not bother with it.
- * NSP does not have named properties, so...
- *
- *  More properties!                  0x8000..0xFFFE
+ * See <https://codeberg.org/jengelh/mapitags> for a thorough list.
+ * mapitags.hpp only contains a subset:
+ * - those needed by Gromox C++ sources
+ * - additionally, those we want to expose as constants in php_mapi for
+ *   mapi-header-php/g-web/g-sync/g-dav (these are commented out because we do
+ *   not use them yet in C++).
  */
 namespace {
 enum {
@@ -121,7 +91,7 @@ enum {
 	// PR_DISC_VAL = PROP_TAG(PT_BOOLEAN, 0x004A),
 	PR_ORIG_MESSAGE_CLASS = PROP_TAG(PT_UNICODE, 0x004B), /* PidTagOriginalMessageClass */
 	PR_ORIG_MESSAGE_CLASS_A = PROP_TAG(PT_STRING8, 0x004B),
-	// PR_ORIGINAL_AUTHOR_ENTRYID = PROP_TAG(PT_BINARY, 0x004C), /* PidTagOriginalAuthorEntryId */
+	PR_ORIGINAL_AUTHOR_ENTRYID = PROP_TAG(PT_BINARY, 0x004C), /* PidTagOriginalAuthorEntryId */
 	// PR_ORIGINAL_AUTHOR_NAME = PROP_TAG(PT_UNICODE, 0x004D), /* PidTagOriginalAuthorName */
 	// PR_ORIGINAL_SUBMIT_TIME = PROP_TAG(PT_SYSTIME, 0x004E), /* PidTagOriginalSubmitTime */
 	PR_REPLY_RECIPIENT_ENTRIES = PROP_TAG(PT_BINARY, 0x004F), /* PidTagReplyRecipientEntries */
@@ -131,16 +101,16 @@ enum {
 	PR_READ_RECEIPT_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x0053), /* PidTagReadReceiptSearchKey */
 	// PR_REPORT_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x0054), /* PidTagReportSearchKey */
 	PR_ORIGINAL_DELIVERY_TIME = PROP_TAG(PT_SYSTIME, 0x0055), /* PidTagOriginalDeliveryTime */
-	// PR_ORIGINAL_AUTHOR_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x0056), /* PidTagOriginalAuthorSearchKey */
+	PR_ORIGINAL_AUTHOR_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x0056), /* PidTagOriginalAuthorSearchKey */
 	PR_MESSAGE_TO_ME = PROP_TAG(PT_BOOLEAN, 0x0057), /* PidTagMessageToMe */
 	PR_MESSAGE_CC_ME = PROP_TAG(PT_BOOLEAN, 0x0058), /* PidTagMessageCcMe */
-	// PR_MESSAGE_RECIP_ME = PROP_TAG(PT_BOOLEAN, 0x0059), /* PidTagMessageRecipientMe */
+	PR_MESSAGE_RECIP_ME = PROP_TAG(PT_BOOLEAN, 0x0059), /* PidTagMessageRecipientMe */
 	// PR_ORIGINAL_SENDER_NAME = PROP_TAG(PT_UNICODE, 0x005A), /* PidTagOriginalSenderName */
-	// PR_ORIGINAL_SENDER_ENTRYID = PROP_TAG(PT_BINARY, 0x005B), /* PidTagOriginalSenderEntryId */
-	// PR_ORIGINAL_SENDER_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x005C), /* PidTagOriginalSenderSearchKey */
+	PR_ORIGINAL_SENDER_ENTRYID = PROP_TAG(PT_BINARY, 0x005B), /* PidTagOriginalSenderEntryId */
+	PR_ORIGINAL_SENDER_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x005C), /* PidTagOriginalSenderSearchKey */
 	// PR_ORIGINAL_SENT_REPRESENTING_NAME = PROP_TAG(PT_UNICODE, 0x005D), /* PidTagOriginalSentRepresentingName */
-	// PR_ORIGINAL_SENT_REPRESENTING_ENTRYID = PROP_TAG(PT_BINARY, 0x005E), /* PidTagOriginalSentRepresentingEntryId */
-	// PR_ORIGINAL_SENT_REPRESENTING_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x005F), /* PidTagOriginalSentRepresentingSearchKey */
+	PR_ORIGINAL_SENT_REPRESENTING_ENTRYID = PROP_TAG(PT_BINARY, 0x005E), /* PidTagOriginalSentRepresentingEntryId */
+	PR_ORIGINAL_SENT_REPRESENTING_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x005F), /* PidTagOriginalSentRepresentingSearchKey */
 	PR_START_DATE = PROP_TAG(PT_SYSTIME, 0x0060), /* PidTagStartDate */
 	PR_END_DATE = PROP_TAG(PT_SYSTIME, 0x0061), /* PidTagEndDate */
 	PR_OWNER_APPT_ID = PROP_TAG(PT_LONG, 0x0062), /* PidTagOwnerAppointmentId */
@@ -273,6 +243,7 @@ enum {
 	// PR_REPL_COPIEDFROM_ITEMID = PROP_TAG(PT_BINARY, 0x0E3D), /* PidTagReplCopiedfromItemid */
 	PR_CREATOR_SID = PROP_TAG(PT_BINARY, 0x0E58),
 	PR_LAST_MODIFIER_SID = PROP_TAG(PT_BINARY, 0x0E59),
+	PR_CI_SEARCH_ENABLED = PROP_TAG(PT_BOOLEAN, 0x0E5C),
 	PR_READ = PROP_TAG(PT_BOOLEAN, 0x0E69), /* PidTagRead */
 	PR_NT_SECURITY_DESCRIPTOR_AS_XML = PROP_TAG(PT_UNICODE, 0x0E6A), /* PidTagSecurityDescriptorAsXml */
 	PR_TRUST_SENDER = PROP_TAG(PT_LONG, 0x0E79), /* PidTagTrustSender */
@@ -311,7 +282,7 @@ enum {
 	PR_RTF_COMPRESSED = PROP_TAG(PT_BINARY, 0x1009), /* PidTagRtfCompressed */
 	// PR_RTF_SYNC_PREFIX_COUNT = PROP_TAG(PT_LONG, 0x1010), /* PidTagRtfSyncPrefixCount */
 	// PR_RTF_SYNC_TRAILING_COUNT = PROP_TAG(PT_LONG, 0x1011), /* PidTagRtfSyncTrailingCount */
-	// PR_ORIGINALLY_INTENDED_RECIP_ENTRYID = PROP_TAG(PT_BINARY, 0x1012), /* PidTagOriginallyIntendedRecipEntryId */
+	PR_ORIGINALLY_INTENDED_RECIP_ENTRYID = PROP_TAG(PT_BINARY, 0x1012), /* PidTagOriginallyIntendedRecipEntryId */
 	PR_BODY_HTML = PROP_TAG(PT_UNICODE, 0x1013), /* PidTagBodyHtml */
 	PR_BODY_HTML_A = PROP_TAG(PT_STRING8, 0x1013),
 	PR_HTML = PROP_TAG(PT_BINARY, 0x1013), /* PidTagHtml */
@@ -339,7 +310,7 @@ enum {
 	// PR_POST_REPLY_FOLDER_NAMES = PROP_TAG(PT_UNICODE, 0x103E),
 	// PR_POST_REPLY_DENIED = PROP_TAG(PT_BINARY, 0x103F),
 	// PR_NNTP_XREF = PROP_TAG(PT_UNICODE, 0x1040),
-	// PR_INTERNET_PRECEDENCE = PROP_TAG(PT_UNICODE, 0x1041),
+	PR_INTERNET_PRECEDENCE = PROP_TAG(PT_UNICODE, 0x1041),
 	PR_IN_REPLY_TO_ID = PROP_TAG(PT_UNICODE, 0x1042), /* PidTagInReplyToId */
 	PR_IN_REPLY_TO_ID_A = PROP_TAG(PT_STRING8, 0x1042),
 	PR_LIST_HELP = PROP_TAG(PT_UNICODE, 0x1043), /* PidTagListHelp */
@@ -583,7 +554,7 @@ enum {
 	// PR_BUSINESS_ADDRESS_POSTAL_CODE = PROP_TAG(PT_UNICODE, 0x3A2A), /* PR_POSTAL_CODE */
 	// PR_POST_OFFICE_BOX = PROP_TAG(PT_UNICODE, 0x3A2B), /* PidTagPostOfficeBox */
 	// PR_BUSINESS_ADDRESS_POST_OFFICE_BOX = PROP_TAG(PT_UNICODE, 0x3A2B), /* PR_POST_OFFICE_BOX */
-	// PR_TELEX_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2C), /* PidTagTelexNumber */
+	PR_TELEX_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2C), /* PidTagTelexNumber */
 	PR_ISDN_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2D), /* PidTagIsdnNumber */
 	PR_ASSISTANT_TELEPHONE_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2E), /* PidTagAssistantTelephoneNumber */
 	PR_HOME2_TELEPHONE_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2F), /* PidTagHome2TelephoneNumber */
@@ -650,6 +621,7 @@ enum {
 	// PR_EMSMDB_LEGACY = PROP_TAG(PT_BOOLEAN, 0x3D18),
 	// PR_EMSABP_USER_UID = PROP_TAG(PT_BINARY, 0x3D1A),
 	// PR_AB_CHOOSE_DIRECTORY_AUTOMATICALLY = PROP_TAG(PT_BOOLEAN, 0x3D1C), /* PidTagAddressBookChooseDirectoryAutomatically */
+	PR_CORRELATION_ID = PROP_TAG(PT_CLSID, 0x3DD1),
 	// PR_IDENTITY_DISPLAY = PROP_TAG(PT_UNICODE, 0x3E00), /* PidTagIdentityDisplay */
 	// PR_IDENTITY_ENTRYID = PROP_TAG(PT_BINARY, 0x3E01), /* PidTagIdentityEntryId */
 	// PR_RESOURCE_METHODS = PROP_TAG(PT_LONG, 0x3E02), /* PidTagResourceMethods */
@@ -755,9 +727,9 @@ enum {
 	// PR_RECIPIENT_PROPOSEDENDTIME = PROP_TAG(PT_SYSTIME, 0x5FE4), /* PidTagRecipientProposedEndTime */
 	PR_RECIPIENT_DISPLAY_NAME = PROP_TAG(PT_UNICODE, 0x5FF6), /* PidTagRecipientDisplayName */
 	PR_RECIPIENT_ENTRYID = PROP_TAG(PT_BINARY, 0x5FF7), /* PidTagRecipientEntryId */
-	// PR_RECIPIENT_TRACKSTATUS_TIME = PROP_TAG(PT_SYSTIME, 0x5FFB), /* PidTagRecipientTrackStatusTime */
+	PR_RECIPIENT_TRACKSTATUS_TIME = PROP_TAG(PT_SYSTIME, 0x5FFB), /* PidTagRecipientTrackStatusTime */
 	PR_RECIPIENT_FLAGS = PROP_TAG(PT_LONG, 0x5FFD), /* PidTagRecipientFlags */
-	// PR_RECIPIENT_TRACKSTATUS = PROP_TAG(PT_LONG, 0x5FFF), /* PidTagRecipientTrackStatus */
+	PR_RECIPIENT_TRACKSTATUS = PROP_TAG(PT_LONG, 0x5FFF), /* PidTagRecipientTrackStatus */
 	// PR_JUNK_INCLUDE_CONTACTS = PROP_TAG(PT_LONG, 0x6100), /* PidTagJunkIncludeContacts */
 	// PR_JUNK_THRESHOLD = PROP_TAG(PT_LONG, 0x6101), /* PidTagJunkThreshold */
 	// PR_JUNK_PERMANENTLY_DELETE = PROP_TAG(PT_LONG, 0x6102), /* PidTagJunkPermanentlyDelete */
@@ -939,21 +911,21 @@ enum {
 	// PR_LTP_ROW_VER = PROP_TAG(PT_LONG, 0x67F3), /* PidTagLtpRowVer */
 	// ? = PROP_TAG(PT_I8, 0x67F4), /* PFF/OST: EXCH-side FID (0x6748-style) of this folder */
 	// PR_PST_PASSWORD = PROP_TAG(PT_LONG, 0x67FF), /* PidTagPstPassword */
-	// PR_OAB_NAME = PROP_TAG(PT_UNICODE, 0x6800), /* PidTagOfflineAddressBookName */
+	PR_OAB_NAME = PROP_TAG(PT_UNICODE, 0x6800), /* PidTagOfflineAddressBookName */
 	PidTagVoiceMessageDuration = PROP_TAG(PT_LONG, 0x6801),
-	// PR_OAB_SEQUENCE = PROP_TAG(PT_LONG, 0x6801), /* PidTagOfflineAddressBookSequence */
+	PR_OAB_SEQUENCE = PROP_TAG(PT_LONG, 0x6801), /* PidTagOfflineAddressBookSequence */
 	PR_RW_RULES_STREAM = PROP_TAG(PT_BINARY, 0x6802), /* PidTagRwRulesStream */
 	PR_SENDER_TELEPHONE_NUMBER = PROP_TAG(PT_UNICODE, 0x6802), /* PidTagSenderTelephoneNumber */
 	PR_SENDER_TELEPHONE_NUMBER_A = PROP_TAG(PT_STRING8, 0x6802),
-	// PR_OAB_CONTAINER_GUID = PROP_TAG(PT_STRING8, 0x6802), /* PidTagOfflineAddressBookContainerGuid */
+	PR_OAB_CONTAINER_GUID = PROP_TAG(PT_STRING8, 0x6802), /* PidTagOfflineAddressBookContainerGuid */
 	PidTagVoiceMessageSenderName = PROP_TAG(PT_UNICODE, 0x6803),
 	PidTagVoiceMessageSenderName_A = PROP_TAG(PT_STRING8, 0x6803),
 	// PR_OAB_MESSAGE_CLASS = PROP_TAG(PT_LONG, 0x6803), /* PidTagOfflineAddressBookMessageClass */
 	PidTagFaxNumberOfPages = PROP_TAG(PT_LONG, 0x6804),
-	// PR_OAB_DN = PROP_TAG(PT_STRING8, 0x6804), /* PidTagOfflineAddressBookDistinguishedName */
+	PR_OAB_DN = PROP_TAG(PT_STRING8, 0x6804), /* PidTagOfflineAddressBookDistinguishedName */
 	PidTagVoiceMessageAttachmentOrder = PROP_TAG(PT_UNICODE, 0x6805),
 	PidTagVoiceMessageAttachmentOrder_A = PROP_TAG(PT_STRING8, 0x6805),
-	// PR_OAB_TRUNCATED_PROPS = PROP_TAG(PT_MV_LONG, 0x6805), /* PidTagOfflineAddressBookTruncatedProperties */
+	PR_OAB_TRUNCATED_PROPS = PROP_TAG(PT_MV_LONG, 0x6805), /* PidTagOfflineAddressBookTruncatedProperties */
 	PidTagCallId = PROP_TAG(PT_UNICODE, 0x6806),
 	PidTagCallId_A = PROP_TAG(PT_STRING8, 0x6806),
 	// ? = PROP_TAG(PT_BINARY, 0x6814), /* entryid to IPM.Microsoft.OOF.UserOofSettings message */
@@ -1020,8 +992,8 @@ enum {
 	// PR_OFFLINE_FOLDER = PROP_TAG(PT_BINARY, 0x7C05),
 	// PR_ROAMING_DATATYPES = PROP_TAG(PT_LONG, 0x7C06), /* PidTagRoamingDatatypes */
 	// PR_ROAMING_DICTIONARY = PROP_TAG(PT_BINARY, 0x7C07), /* PidTagRoamingDictionary */
-	// PR_ROAMING_XMLSTREAM  = PROP_TAG(PT_BINARY, 0x7C08), /* PidTagRoamingXmlStream */
-	// PR_ROAMING_BINARYSTREAM = PROP_TAG(PT_BINARY, 0x7C09), /* PidTagRoamingBinary */
+	PR_ROAMING_XMLSTREAM  = PROP_TAG(PT_BINARY, 0x7C08), /* PidTagRoamingXmlStream */
+	PR_ROAMING_BINARYSTREAM = PROP_TAG(PT_BINARY, 0x7C09), /* PidTagRoamingBinary */
 	// PR_STORE_SLOWLINK = PROP_TAG(PT_BOOLEAN, 0x7C0A),
 	// PR_OSC_SYNC_ENABLEDONSERVER = PROP_TAG(PT_BOOLEAN, 0x7C24), /* PidTagOscSyncEnabled */
 	// PR_FORCE_USE_ENTRYID_SERVER = PROP_TAG(PT_BOOLEAN, 0x7CFE),
@@ -1120,12 +1092,16 @@ enum {
 
 	/* PSETID_Address */
 	PidLidFileAs = 0x8005,
+	PidLidHasPicture = 0x8015,
 	PidLidHomeAddress = 0x801a,
 	PidLidBusinessAddress = 0x801b,
 	PidLidOtherAddress = 0x801c,
 	PidLidMailingAdress = 0x8022,  // PT_UNICODE
 	PidLidPostalAddressIndex = 0x8022, // PT_LONG
 	dispidEmailList = 0x8027,
+	PidLidYomiFirstName = 0x802C,
+	PidLidYomiLastName = 0x802D,
+	PidLidYomiCompanyName = 0x802E,
 	PidLidBusinessCardDisplayDefinition = 0x8040,
 	PidLidWorkAddressStreet = 0x8045,
 	PidLidWorkAddressCity = 0x8046,
@@ -1165,8 +1141,10 @@ enum {
 	/* PSETID_Appointment */
 	PidLidSendMeetingAsIcal = 0x8200,
 	PidLidAppointmentSequence = 0x8201,
+	PidLidChangeHighlight = 0x8204,
 	PidLidBusyStatus = 0x8205,
 	PidLidLocation = 0x8208,
+	PidLidMeetingWorkspaceUrl = 0x8209,
 	PidLidAppointmentStartWhole = 0x820D,
 	PidLidAppointmentEndWhole = 0x820E,
 	PidLidAppointmentDuration = 0x8213,
@@ -1189,6 +1167,9 @@ enum {
 	PidLidAllAttendeesString = 0x8238,
 	PidLidToAttendeesString = 0x823B,
 	PidLidCcAttendeesString = 0x823C,
+	PidLidConferencingCheck = 0x8240,
+	PidLidConferencingType = 0x8241,
+	PidLidNetShowUrl = 0x8248,
 	PidLidAppointmentProposedStartWhole = 0x8250,
 	PidLidAppointmentProposedEndWhole = 0x8251,
 	PidLidAppointmentCounterProposal = 0x8257,
@@ -1209,6 +1190,7 @@ enum {
 	PidLidMonthOfYearMask = 0x0017,
 	PidLidOwnerCriticalChange = 0x001A,
 	PidLidCleanGlobalObjectId = 0x0023,
+	PidLidAppointmentMessageClass = 0x0024,
 	PidLidMeetingType = 0x0026,
 
 	/* PSETID_Common */
@@ -1234,5 +1216,6 @@ enum {
 	PidLidClassificationDescription = 0x85B7,
 	PidLidClassificationGuid = 0x85B8,
 	PidLidClassificationKeep = 0x85BA,
+	PidLidCommon85D8 = 0x85D8, /* undocumented */
 	PROP_ID_INVALID = 0xFFFF,
 };

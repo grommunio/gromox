@@ -203,13 +203,14 @@ ESSDN.MailboxServer
 	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=<mailboxid>@<emaildomain>``.
 	Exchange and Gromox can generate this ESSDN kind for the ``<Server>``
 	element in Autodiscover responses. Practical use has to do with Public
-	Folders, but is only exercised in obscure ROPs.
+	Folders, but is only exercised in obscure ROPs (ropGetOwningServers,
+	ropPublicFolderIsGhosted).
 
 ESSDN.MdbDN
 	Typical form:
-	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=<mailboxid>@<emaildomain>``.
-	Exchange and Gromox can generate this ESSDN kind for the ``<MdbDN>``
-	element, but no practical use has been seen.
+	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=<mailboxid>@<emaildomain>/cn=Microsoft
+	Private MDB``. Exchange and Gromox can generate this ESSDN kind for the
+	``<MdbDN>`` element, but no practical use has been seen.
 
 Database GUID
 	Randomly-generated value on mailbox creation.
@@ -240,7 +241,6 @@ Mapping Signature
 	propid<->propname map.
 	It is unspecified whether this also declares the validity scope for
 	ReplIDs.
-	In Gromox, the Mapping Signature has the same value as the Store GUID.
 
 IID_
 	A prefix in source code for "interface identifier", related to the
@@ -279,6 +279,14 @@ GLOBCNT / GCV
 	  the upper 48 bits of the logical value, and reversed per groups of 8
 	  bits
 	* otherwise, a ``uint64_t`` holds the GCV in host-endian
+
+Minimal Entry ID, MINID
+	A unique identifier for objects in an address book.
+	Scope: one address book provider. Limit: 2^32 - 16.
+	The first 16 values are reserved for special values like
+	minid::BEGINNING_OF_TABLE, minid::UNRESOLVED, etc.
+	NSPI also implicitly reserves >= 0x80000000, e.g. PR_EMS_AB_MEMBER
+	makes for a special container, too.
 
 Change number / CN
 	Scope: one mailbox replica. Limit: 2^48. Every time a folder or message
@@ -319,6 +327,11 @@ Folder Identifier, FID
 	(see above) or the (host-endian) GCV. ``fid_val`` is almost exclusively
 	the host-endian GCV form.
 
+Correlation ID
+	Property 0x3dd10048 on Exchange folders. The GUID::time_low field
+	contains the Exchange user id, and the GUID::node fields contains the
+	GLOBCNT, other fields being zero.
+
 Message Identifier, MID
 	Name for *internal identifier* when talking about a message object. The
 	MID can be observed in *EX entryids* (with conditions) at bytes 62–70.
@@ -327,24 +340,38 @@ Message Identifier, MID
 	(see above) or the (host-endian) GCV. ``mid_val`` is almost exclusively
 	the host-endian GCV form.
 
+Instance key
+	Property 0x0ff60102 on table entries (computed, client-side-only
+	property). MSEMS provider message store hierarchy table row instance
+	keys are 20 bytes long: FID + 8 zero bytes + 4 bytes instance number.
+	MSEMS provider message store content table row instance keys are 20
+	bytes long: FID + MID + 4 bytes instance number. MSEMS provider address
+	book table row instance keys can be 8 bytes long: 4 bytes AB provider
+	counter, plus 4 byte MINID. CONTAB provider address book table row
+	instance keys can vary; either they are 8 bytes or 4 + muidContabDLL
+	entryid.
+
+External Identifier, XID
+	The aggregation of a 128-bit "namespace GUID" plus a storage-specific
+	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
+	because aggregate. Total size: minimum 17 bytes, maximum 24 bytes.
+	[MS-OXCFXICS v25 §2.2.2.2] XIDs make an apperance in PR_CHANGE_KEY
+	and PR_PREDECESSOR_CHANGE_LIST (PCL).
+
+	EX: *Database GUID* + GCV/CN (6 bytes, MSB) = 22 bytes
+	OST: *Database GUID* + GCV/CN (4 bytes, MSB) = 20 bytes
+
 Global Identifier, GID
 	The aggregation of the 128-bit *Database GUID* plus the 48-bit
 	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
-	because aggregate. Total size: 22 octets.
-
-External Identifier, XID
-	The aggregation of a 128-bit namespace GUID plus a storage-specific
-	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
-	because aggregate. Total size: varies, but at most 255 bytes.
-
-	EX: 16-byte *Database GUID* + GCV/CN (6 bytes, MSB)
-	OST: 16-byte *Database GUID* + GCV/CN (4 bytes, MSB)
+	because aggregate. Total size: 22 octets. [MS-OXCDATA v19 §2.2.1.3]
+	Only XIDs with size 22 are GIDs. [MS-OXCFXICS v25 p.13]
 
 LongTermID
 	The aggregation of a *GID* (22 bytes) plus 2 NUL pad bytes. Total size:
-	24 octets. The pad bytes do not indicate a replid 0, because the
-	replica is already identified by the 16-byte GUID that is part of the
-	GID.
+	24 octets. [MS-OXCDATA v19 §2.2.1.3.1] The pad bytes do not indicate a
+	replid 0, because the replica is already identified by the 16-byte GUID
+	that is part of the GID.
 
 Entryid
 	A variable-length identifier which refers to a folder or message in a
@@ -359,11 +386,13 @@ EMSAB entryid
 
 EX entryid
 	If the MAPI Provider UID refers to an Exchange-like store, the
-	remainder from byte 22 onwards specifies an Exchange-style entryid.
+	entryid as a whole conforms to an Exchange-style entryid.
 	If byte 22-24 is {0x01,0x00}, read bytes 0-n as an EX Folder Entryid
 	(gromox: `struct FOLDER_ENTRYID`).
 	If byte 22-24 is {0x07,0x00}, read bytes 0-n as an EX Message Entryid
 	(gromox: `struct MESSAGE_ENTRYID`).
+	In entryids, the replid portions of FID/MID are just padding, ignored
+	by readers, and filled by writers with value 0.
 
 GABUID
 	16-byte GUID value composed of 4 bytes Gromox user ID plus

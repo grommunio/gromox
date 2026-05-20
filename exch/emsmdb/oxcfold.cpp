@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <libHX/string.h>
@@ -32,10 +32,10 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	uint32_t tag_access;
 	uint32_t permission;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	if (plogmap->get_object(logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
@@ -58,6 +58,11 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		return ecError;
 	if (!b_exist)
 		return ecNotFound;
+	/*
+	 * Even if "register for notifications" is disabled in MFCMAPI,
+	 * emsmdb32.dll still uses notifications towards the server and does
+	 * not pass TABLE_FLAG_NONOTIFICATIONS to OpenFolder/GHT/GCT.
+	 */
 	if (!plogon->is_private()) {
 		if (!exmdb_client->is_folder_deleted(dir, folder_id, &b_del))
 			return ecError;
@@ -106,8 +111,8 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	auto pfolder = folder_object::create(plogon, folder_id, type, tag_access);
 	if (pfolder == nullptr)
 		return ecServerOOM;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::folder, std::move(pfolder)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::folder, std::move(pfolder)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -126,8 +131,6 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	uint64_t parent_id;
 	uint64_t folder_id;
 	uint64_t change_num;
-	char folder_name[256];
-	char folder_comment[1024];
 	
 	switch (folder_type) {
 	case FOLDER_GENERIC:
@@ -136,7 +139,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	default:
 		return ecInvalidParam;
 	}
-	auto pparent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pparent = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pparent == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -145,23 +148,26 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		return ecAccessDenied;
 	if (pparent->type == FOLDER_SEARCH)
 		return ecNotSupported;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private() && folder_type == FOLDER_SEARCH)
 		return ecNotSupported;
+
+	std::string cvt_folder_name, cvt_folder_comment;
 	if (0 == use_unicode) {
-		if (common_util_convert_string(true, pfolder_name,
-		    folder_name, sizeof(folder_name)) < 0)
+		cvt_folder_name = cu_mb_to_utf8(CP_OEMCP, pfolder_name);
+		if (errno == EINVAL)
 			return ecInvalidParam;
-		if (common_util_convert_string(true, pfolder_comment,
-		    folder_comment, sizeof(folder_comment)) < 0)
+		else if (errno == ENOMEM)
+			return ecServerOOM;
+		pfolder_name = cvt_folder_name.c_str();
+		cvt_folder_comment = cu_mb_to_utf8(CP_OEMCP, pfolder_comment);
+		if (errno == EINVAL)
 			return ecInvalidParam;
-	} else {
-		if (strlen(pfolder_name) >= sizeof(folder_name))
-			return ecInvalidParam;
-		strcpy(folder_name, pfolder_name);
-		gx_strlcpy(folder_comment, pfolder_comment, std::size(folder_comment));
+		else if (errno == ENOMEM)
+			return ecServerOOM;
+		pfolder_comment = cvt_folder_comment.c_str();
 	}
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED) {
@@ -173,7 +179,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 			return ecAccessDenied;
 	}
 	if (!exmdb_client->get_folder_by_name(plogon->get_dir(),
-	    pparent->folder_id, folder_name, &folder_id))
+	    pparent->folder_id, pfolder_name, &folder_id))
 		return ecError;
 	if (0 != folder_id) {
 		if (!exmdb_client->get_folder_property(plogon->get_dir(), CP_ACP,
@@ -191,8 +197,8 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		TAGGED_PROPVAL propval_buff[] = {
 			{PidTagParentFolderId, &parent_id},
 			{PR_FOLDER_TYPE, &tmp_type},
-			{PR_DISPLAY_NAME, folder_name},
-			{PR_COMMENT, folder_comment},
+			{PR_DISPLAY_NAME, deconst(pfolder_name)},
+			{PR_COMMENT, deconst(pfolder_comment)},
 			{PR_CREATION_TIME, &last_time},
 			{PR_LAST_MODIFICATION_TIME, &last_time},
 			{PidTagChangeNumber, &change_num},
@@ -240,8 +246,8 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	auto pfolder = folder_object::create(plogon, folder_id, folder_type, tag_access);
 	if (pfolder == nullptr)
 		return ecServerOOM;
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::folder, std::move(pfolder)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::folder, std::move(pfolder)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
@@ -264,12 +270,12 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	
 	*ppartial_completion = 1;
 	flags &= ~GX_DELMSG_NOTIFY_UNREAD;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	 if (plogon->is_private()) {
@@ -335,7 +341,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 }
 
 ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
-    const LONGLONG_ARRAY *pfolder_ids, uint32_t search_flags, LOGMAP *plogmap,
+    const EID_ARRAY *pfolder_ids, uint32_t search_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_result;
@@ -349,12 +355,12 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 	if (!(search_flags & (RECURSIVE_SEARCH | SHALLOW_SEARCH)))
 		/* make the default search_flags */
 		search_flags |= SHALLOW_SEARCH;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -382,12 +388,12 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 				cannot be changed */
 			return ecSuccess;
 	}
-	for (size_t i = 0; i < pfolder_ids->count; ++i) {
-		if (rop_util_get_replid(pfolder_ids->pll[i]) != 1)
+	for (const auto folder_id : *pfolder_ids) {
+		if (rop_util_get_replid(folder_id) != 1)
 			return ecSearchFolderScopeViolation;
 		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client->get_folder_perm(plogon->get_dir(),
-			    pfolder_ids->pll[i], username, &permission))
+			    folder_id, username, &permission))
 				return ecError;
 			if (!(permission & (frightsOwner | frightsReadAny)))
 				return ecAccessDenied;
@@ -405,17 +411,17 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 }
 
 ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction,
-    uint8_t include_folders, RESTRICTION **ppres, LONGLONG_ARRAY *pfolder_ids,
+    uint8_t include_folders, RESTRICTION **ppres, EID_ARRAY *pfolder_ids,
     uint32_t *psearch_flags, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -439,7 +445,7 @@ ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restrictio
 	return ecSuccess;
 }
 
-ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
+ec_error_t rop_movecopymessages(const EID_ARRAY *pmessage_ids,
     uint8_t want_asynchronous, uint8_t want_copy, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
@@ -452,19 +458,19 @@ ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 		return ecSuccess;
 	}
 	*ppartial_completion = 1;
-	auto psrc_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
+	auto psrc_folder = plogmap->get_obj<folder_object>(logon_id, hsrc, &object_type);
 	if (psrc_folder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto pdst_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hdst, &object_type);
+	auto pdst_folder = plogmap->get_obj<folder_object>(logon_id, hdst, &object_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	if (pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	BOOL b_copy = want_copy == 0 ? false : TRUE;
@@ -479,7 +485,7 @@ ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pll};
+	const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pids};
 	if (!exmdb_client->movecopy_messages(plogon->get_dir(), pinfo->cpid,
 	    b_guest, rpc_user, psrc_folder->folder_id, pdst_folder->folder_id,
 	    b_copy, &ids, &b_partial))
@@ -493,31 +499,21 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
 	ems_objtype object_type;
-	char new_name[128];
 	
 	*ppartial_completion = 1;
-	auto psrc_parent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
+	auto psrc_parent = plogmap->get_obj<folder_object>(logon_id, hsrc, &object_type);
 	if (psrc_parent == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto pdst_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hdst, &object_type);
+	auto pdst_folder = plogmap->get_obj<folder_object>(logon_id, hdst, &object_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (0 == use_unicode) {
-		if (common_util_convert_string(true, pnew_name,
-		    new_name, sizeof(new_name)) < 0)
-			return ecInvalidParam;
-	} else {
-		if (strlen(pnew_name) >= sizeof(new_name))
-			return ecInvalidParam;
-		strcpy(new_name, pnew_name);
-	}
 	if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 		return ecAccessDenied;
 	auto dir = plogon->get_dir();
@@ -559,9 +555,18 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	if (pbin_pcl == nullptr)
 		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
+	std::string new_name;
+	if (!use_unicode) {
+		new_name = cu_mb_to_utf8(pinfo->cpid, pnew_name);
+		if (errno == EINVAL)
+			return ecInvalidParam;
+		else if (errno == ENOMEM)
+			return ecServerOOM;
+		pnew_name = new_name.c_str();
+	}
 	ec_error_t err = ecSuccess;
 	if (!exmdb_client->movecopy_folder(dir, pinfo->cpid, b_guest, rpc_user,
-	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, new_name,
+	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, pnew_name,
 	    false, &err))
 		return ecError;
 	if (err == ecDuplicateName)
@@ -590,32 +595,22 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 {
 	BOOL b_cycle;
 	ems_objtype object_type;
-	char new_name[128];
 	uint32_t permission;
 	
 	*ppartial_completion = 1;
-	auto psrc_parent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
+	auto psrc_parent = plogmap->get_obj<folder_object>(logon_id, hsrc, &object_type);
 	if (psrc_parent == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto pdst_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hdst, &object_type);
+	auto pdst_folder = plogmap->get_obj<folder_object>(logon_id, hdst, &object_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (0 == use_unicode) {
-		if (common_util_convert_string(true, pnew_name,
-		    new_name, sizeof(new_name)) < 0)
-			return ecInvalidParam;
-	} else {
-		if (strlen(pnew_name) >= sizeof(new_name))
-			return ecInvalidParam;
-		strcpy(new_name, pnew_name);
-	}
 	if (rop_util_get_gc_value(folder_id) ==
 	    (plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT))
 		return ecAccessDenied;
@@ -641,9 +636,18 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	if (b_cycle)
 		return ecRootFolder;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
+	std::string new_name;
+	if (!use_unicode) {
+		new_name = cu_mb_to_utf8(pinfo->cpid, pnew_name);
+		if (errno == EINVAL)
+			return ecInvalidParam;
+		else if (errno == ENOMEM)
+			return ecServerOOM;
+		pnew_name = new_name.c_str();
+	}
 	ec_error_t err = ecSuccess;
 	if (!exmdb_client->movecopy_folder(dir, pinfo->cpid, b_guest, rpc_user,
-	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, new_name,
+	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, pnew_name,
 	    TRUE, &err))
 		return ecError;
 	if (err == ecDuplicateName)
@@ -660,12 +664,12 @@ static ec_error_t oxcfold_emptyfolder(unsigned int flags,
 	uint32_t permission;
 	
 	*ppartial_completion = 1;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	auto dir = plogon->get_dir();
@@ -702,7 +706,7 @@ ec_error_t rop_harddeletemessagesandsubfolders(uint8_t want_asynchronous,
 }
 
 static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
-    uint8_t notify_non_read, const LONGLONG_ARRAY *pmessage_ids,
+    uint8_t notify_non_read, const EID_ARRAY *pmessage_ids,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_owner;
@@ -714,12 +718,12 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	
 	*ppartial_completion = 1;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
 	auto dir = plogon->get_dir();
@@ -736,7 +740,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	else
 		return ecAccessDenied;
 	if (0 == notify_non_read) {
-		const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pll};
+		const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pids};
 		if (!exmdb_client->delete_messages(dir, pinfo->cpid,
 		    username, pfolder->folder_id, &ids, b_hard, &b_partial))
 			return ecError;
@@ -744,13 +748,12 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		return ecSuccess;
 	}
 	b_partial = FALSE;
-	EID_ARRAY ids = {0, cu_alloc<uint64_t>(pmessage_ids->count)};
+	EID_ARRAY ids = {0, cu_alloc<eid_t>(pmessage_ids->count)};
 	if (ids.pids == nullptr)
 		return ecError;
-	for (size_t i = 0; i < pmessage_ids->count; ++i) {
+	for (const auto msgid : *pmessage_ids) {
 		if (username != STORE_OWNER_GRANTED) {
-			if (!exmdb_client->is_message_owner(dir,
-			    pmessage_ids->pll[i], username, &b_owner))
+			if (!exmdb_client->is_message_owner(dir, msgid, username, &b_owner))
 				return ecError;
 			if (!b_owner) {
 				b_partial = TRUE;
@@ -758,10 +761,9 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 			}
 		}
 		static constexpr proptag_t proptag_buff[] = {PR_NON_RECEIPT_NOTIFICATION_REQUESTED, PR_READ};
-		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		TPROPVAL_ARRAY tmp_propvals;
 		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-		    pmessage_ids->pll[i], &tmp_proptags, &tmp_propvals))
+		    msgid, proptag_cspan{proptag_buff}, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
 		auto pvalue = tmp_propvals.get<uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
@@ -769,10 +771,10 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 			pvalue = tmp_propvals.get<uint8_t>(PR_READ);
 			if ((pvalue == nullptr || *pvalue == 0) &&
 			    !exmdb_client->get_message_brief(dir,
-			     pinfo->cpid, pmessage_ids->pll[i], &pbrief))
+			     pinfo->cpid, msgid, &pbrief))
 				return ecError;
 		}
-		ids.pids[ids.count++] = pmessage_ids->pll[i];
+		ids.pids[ids.count++] = msgid;
 		if (pbrief != nullptr)
 			common_util_notify_receipt(dir,
 				NOTIFY_RECEIPT_NON_READ, pbrief);
@@ -785,16 +787,16 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 }
 
 ec_error_t rop_deletemessages(uint8_t want_asynchronous, uint8_t notify_non_read,
-    const LONGLONG_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
+    const EID_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	return oxcfold_deletemessages(FALSE, want_asynchronous,
+	return oxcfold_deletemessages(!emsmdb_pvt_folder_softdel, want_asynchronous,
 			notify_non_read, pmessage_ids, ppartial_completion,
 			plogmap, logon_id, hin);
 }
 
 ec_error_t rop_harddeletemessages(uint8_t want_asynchronous,
-    uint8_t notify_non_read, const LONGLONG_ARRAY *pmessage_ids,
+    uint8_t notify_non_read, const EID_ARRAY *pmessage_ids,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	return oxcfold_deletemessages(TRUE, want_asynchronous,
@@ -811,10 +813,10 @@ ec_error_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 	    TABLE_FLAG_NONOTIFICATIONS | TABLE_FLAG_SOFTDELETES |
 	    TABLE_FLAG_USEUNICODE | TABLE_FLAG_SUPPRESSNOTIFICATIONS)))
 		return ecInvalidParam;
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -828,8 +830,8 @@ ec_error_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 	if (ptable == nullptr)
 		return ecServerOOM;
 	auto rtable = ptable.get();
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
@@ -845,10 +847,10 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	uint32_t permission;
 	BOOL b_conversation;
 	
-	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	auto pfolder = plogmap->get_obj<folder_object>(logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
@@ -892,8 +894,8 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	if (ptable == nullptr)
 		return ecServerOOM;
 	auto rtable = ptable.get();
-	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
+	auto hnd = plogmap->add_object_handle(logon_id, hin,
+	           {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
@@ -905,8 +907,9 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	 * Inaccurate rowcounts crash OL's "Recover Deleted Items" dialog.
 	 * Perform the hard work early on, then.
 	 */
-	if (!rtable->load())
-		return ecError;
+	auto err = rtable->load();
+	if (err != ecSuccess)
+		return err;
 	*prow_count = rtable->get_total();
 	return ecSuccess;
 }

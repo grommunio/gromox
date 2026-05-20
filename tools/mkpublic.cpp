@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -38,14 +38,14 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-static char *opt_config_file, *opt_datadir;
+static const char *opt_config_file, *opt_datadir;
 static unsigned int opt_force, opt_create_old, opt_upgrade;
 static unsigned int opt_verbose, opt_integ;
 
 static constexpr HXoption g_options_table[] = {
 	{"integrity", 0, HXTYPE_NONE, &opt_integ, nullptr, nullptr, 0, "Perform integrity SQLite check"},
-	{nullptr, 'T', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{nullptr, 'T', HXTYPE_STRING, {}, {}, {}, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
 	{nullptr, 'U', HXTYPE_NONE, &opt_upgrade, nullptr, nullptr, 0, "Perform schema upgrade"},
 	{nullptr, 'v', HXTYPE_NONE, &opt_verbose, nullptr, nullptr, 0, "Bump verbosity"},
@@ -101,18 +101,33 @@ static int mk_folders(sqlite3 *psqlite, uint32_t domain_id)
 
 static int mk_options(sqlite3 *psqlite, time_t ux_time)
 {
+	auto record_key  = GUID::random_new();
+	auto mapping_sig = GUID::random_new();
+	char rgtxt[5][GUIDSTR_SIZE];
+	record_key.to_str(rgtxt[0], sizeof(rgtxt[0]));
+	exc_replid2.to_str(rgtxt[1], sizeof(rgtxt[1]));
+	exc_replid3.to_str(rgtxt[2], sizeof(rgtxt[2]));
+	exc_replid4.to_str(rgtxt[3], sizeof(rgtxt[3]));
+	mapping_sig.to_str(rgtxt[4], sizeof(rgtxt[4]));
+
 	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return EXIT_FAILURE;
-	char tmp_bguid[GUIDSTR_SIZE];
-	GUID::random_new().to_str(tmp_bguid, std::size(tmp_bguid));
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
-	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
+	pstmt.bind_int64(1, CONFIG_ID_MAILBOX_GUID);
+	pstmt.bind_text(2, rgtxt[0]);
 	if (pstmt.step() != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return EXIT_FAILURE;
 	}
-	sqlite3_reset(pstmt);
+	pstmt.reset();
+	if (!opt_create_old) {
+		pstmt.bind_int64(1, CONFIG_ID_MAPPING_SIGNATURE);
+		pstmt.bind_text(2, rgtxt[4]);
+		if (pstmt.step() != SQLITE_DONE)
+			return EXIT_FAILURE;
+		pstmt.reset();
+	}
+
 	std::pair<uint32_t, uint64_t> confprops[] = {
 		{CONFIG_ID_CURRENT_EID, CUSTOM_EID_BEGIN},
 		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE - 1},
@@ -141,18 +156,25 @@ static int mk_options(sqlite3 *psqlite, time_t ux_time)
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
 	sqlite3 *psqlite;
 	char mysql_string[1024];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (2 != argc) {
-		printf("usage: %s <domainname>\n", argv[0]);
+	if (argp.nargs != 1) {
+		printf("usage: %s <username>\n", argv[0]);
 		return EXIT_FAILURE;
 	}
+	for (int i = 0; i < argp.nopts; ++i) {
+		switch (argp.desc[i]->sh) {
+		case 'c': opt_config_file = argp.oarg[i]; break;
+		case 'T': opt_datadir = argp.oarg[i]; break;
+		}
+	}
+	auto le_username = argp.uarg[0];
 	auto pconfig = config_file_prg(opt_config_file, "mysql_adaptor.cfg",
 	               mkpublic_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
@@ -160,7 +182,7 @@ int main(int argc, char **argv)
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
 	std::string mysql_host = znul(pconfig->get_value("mysql_host"));
-	uint16_t mysql_port = pconfig->get_ll("mysql_port");
+	uint16_t sql_port = pconfig->get_ll("mysql_port");
 	std::string mysql_user = znul(pconfig->get_value("mysql_username"));
 	std::optional<std::string> mysql_pass;
 	if (auto s = pconfig->get_value("mysql_password"))
@@ -176,7 +198,7 @@ int main(int argc, char **argv)
 
 	if (mysql_real_connect(conn.get(), mysql_host.c_str(), mysql_user.c_str(),
 	    mysql_pass.has_value() ? mysql_pass->c_str() : nullptr,
-	    db_name.c_str(), mysql_port, nullptr, 0) == nullptr) {
+	    db_name.c_str(), sql_port, nullptr, 0) == nullptr) {
 		printf("Failed to connect to the MariaDB/MySQL database %s@%s/%s\n",
 		       mysql_user.c_str(), mysql_host.c_str(), db_name.c_str());
 		return EXIT_FAILURE;
@@ -187,7 +209,7 @@ int main(int argc, char **argv)
 	}
 	
 	snprintf(mysql_string, std::size(mysql_string), "SELECT 0, homedir, 0, "
-		"domain_status, id FROM domains WHERE domainname='%s'", argv[1]);
+		"domain_status, id FROM domains WHERE domainname='%s'", le_username);
 	if (mysql_query(conn.get(), mysql_string) != 0) {
 		fprintf(stderr, "%s: %s\n", mysql_string, mysql_error(conn.get()));
 		return EXIT_FAILURE;
@@ -200,7 +222,7 @@ int main(int argc, char **argv)
 	auto myrow = myres.fetch_row();
 	if (myrow == nullptr || myres.num_rows() > 1) {
 		printf("cannot find information from database "
-				"for username %s\n", argv[1]);
+				"for username %s\n", le_username);
 		return EXIT_FAILURE;
 	} else if (myres.num_rows() > 1) {
 		fprintf(stderr, "Ambiguous result from database\n");
@@ -238,7 +260,7 @@ int main(int argc, char **argv)
 		printf("fail to create store database\n");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_1 = HX::make_scope_exit([&]() { sqlite3_close_v2(psqlite); });
 	if (gx_sql_exec(psqlite, "PRAGMA journal_mode=WAL") != SQLITE_OK)
 		return EXIT_FAILURE;
 	if (opt_integ)

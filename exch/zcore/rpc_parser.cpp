@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
+#include <climits>
 #include <chrono>
 #include <climits>
 #include <condition_variable>
@@ -43,16 +45,20 @@ struct CLIENT_NODE {
 }
 
 static unsigned int g_thread_num;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_zrpc_stop;
 static std::vector<pthread_t> g_thread_ids;
 static DOUBLE_LIST g_conn_list;
 static std::condition_variable g_waken_cond;
-static std::mutex g_conn_lock, g_cond_mutex;
+static std::mutex g_conn_lock;
 unsigned int g_zrpc_debug;
+
+template<typename T> static inline auto optional_ptr(std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(const std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(const std::vector<T> &p) { return p.size() != 0 ? &p : nullptr; }
 
 void rpc_parser_init(unsigned int thread_num)
 {
-	g_notify_stop = true;
+	g_zrpc_stop = true;
 	g_thread_num = thread_num;
 	g_thread_ids.reserve(thread_num);
 }
@@ -102,76 +108,77 @@ static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
 
 static void *zcrp_thrwork(void *param)
 {
-	void *pbuff;
-	int read_len;
-	BINARY tmp_bin;
 	uint32_t offset;
-	uint32_t buff_len;
 	struct pollfd fdpoll;
 	DOUBLE_LIST_NODE *pnode;
 
- WAIT_CLIFD:
-	std::unique_lock cm_hold(g_cond_mutex);
-	g_waken_cond.wait(cm_hold);
-	cm_hold.unlock();
- NEXT_CLIFD:
-	std::unique_lock cl_hold(g_conn_lock);
-	pnode = double_list_pop_front(&g_conn_list);
-	cl_hold.unlock();
-	if (NULL == pnode) {
-		if (g_notify_stop)
+	while (true) {
+	/* Wait for work items */
+	{
+		std::unique_lock cm_hold(g_conn_lock);
+		g_waken_cond.wait(cm_hold, []() { return g_zrpc_stop || double_list_get_nodes_num(&g_conn_list) > 0; });
+		if (g_zrpc_stop)
 			return nullptr;
-		goto WAIT_CLIFD;
+		pnode = double_list_pop_front(&g_conn_list);
 	}
+	if (pnode == nullptr)
+		continue;
+
 	auto clifd = static_cast<CLIENT_NODE *>(pnode->pdata)->clifd;
 	free(pnode->pdata);
 	
 	offset = 0;
-	buff_len = 0;
-	
 	fdpoll.fd = clifd;
 	fdpoll.events = POLLIN|POLLPRI;
 	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
-	read_len = read(clifd, &buff_len, sizeof(uint32_t));
-	if (read_len != sizeof(uint32_t) || buff_len >= UINT_MAX) {
-		close(clifd);
-		goto NEXT_CLIFD;
-	}
-	pbuff = malloc(buff_len);
-	if (NULL == pbuff) {
+
+	std::string pbuff;
+	try {
+		uint32_t buff_len = 0;
+		auto read_len = read(clifd, &buff_len, sizeof(uint32_t));
+		if (read_len < 0 || static_cast<size_t>(read_len) != sizeof(uint32_t) ||
+		    buff_len >= UINT_MAX) {
+			close(clifd);
+			continue;
+		}
+		buff_len = std::min(buff_len, UINT32_MAX);
+		pbuff.resize(buff_len);
+	} catch (const std::bad_alloc &) {
 		auto tmp_byte = zcore_response::lack_memory;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
 	while (true) {
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
 			close(clifd);
-			free(pbuff);
-			goto NEXT_CLIFD;
+			break;
 		}
-		read_len = read(clifd, static_cast<char *>(pbuff) + offset, buff_len - offset);
+		auto read_len = read(clifd, &pbuff[offset], pbuff.size() - offset);
 		if (read_len <= 0) {
 			close(clifd);
-			free(pbuff);
-			goto NEXT_CLIFD;
+			break;
 		}
 		offset += read_len;
-		if (offset == buff_len)
+		if (offset == pbuff.size())
 			break;
 	}
+	/*
+	 * Interrupt the read loop and, if the entire buffer has not
+	 * been read, we go back to waiting.
+	 */
+	if (offset != pbuff.size())
+		continue;
+
 	common_util_build_environment();
-	tmp_bin.pv = pbuff;
-	tmp_bin.cb = buff_len;
 	std::unique_ptr<zcreq> request;
-	if (rpc_ext_pull_request(&tmp_bin, request) != pack_result::ok) {
-		free(pbuff);
+	if (rpc_ext_pull_request(pbuff, request) != pack_result::ok) {
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::pull_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
@@ -179,9 +186,9 @@ static void *zcrp_thrwork(void *param)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
-	free(pbuff);
+	pbuff = {};
 	if (request->call_id == zcore_callid::notifdequeue)
 		common_util_set_clifd(clifd);
 	std::unique_ptr<zcresp> response;
@@ -194,13 +201,15 @@ static void *zcrp_thrwork(void *param)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
 	case DISPATCH_CONTINUE:
 		common_util_free_environment();
-		/* clifd will be maintained by zarafa_server */
-		goto NEXT_CLIFD;
+		// Connection stays active, handled elsewhere
+		continue;
 	}
+
+	BINARY tmp_bin{};
 	if (rpc_ext_push_response(response.get(), &tmp_bin) != pack_result::ok) {
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::push_error;
@@ -209,7 +218,7 @@ static void *zcrp_thrwork(void *param)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
 	common_util_free_environment();
 	fdpoll.events = POLLOUT|POLLWRBAND;
@@ -223,12 +232,13 @@ static void *zcrp_thrwork(void *param)
 	close(clifd);
 	free(tmp_bin.pb);
 	tmp_bin.pb = nullptr;
-	goto NEXT_CLIFD;
+	}
+	return nullptr;
 }
 
-int rpc_parser_run()
+int rpc_parser_run() try
 {
-	g_notify_stop = false;
+	g_zrpc_stop = false;
 	int ret = 0;
 	for (unsigned int i = 0; i < g_thread_num; ++i) {
 		pthread_t tid;
@@ -236,7 +246,7 @@ int rpc_parser_run()
 		if (ret != 0) {
 			mlog(LV_ERR, "rpc_parser: failed to create pool thread: %s", strerror(ret));
 			rpc_parser_stop();
-			return -2;
+			return -1;
 		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "rpc/%u", i);
@@ -244,11 +254,14 @@ int rpc_parser_run()
 		g_thread_ids.push_back(tid);
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	rpc_parser_stop();
+	return -1;
 }
 
 void rpc_parser_stop()
 {
-	g_notify_stop = true;
+	g_zrpc_stop = true;
 	g_waken_cond.notify_all();
 	for (auto tid : g_thread_ids) {
 		pthread_kill(tid, SIGALRM);
