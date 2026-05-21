@@ -2534,6 +2534,7 @@ void mUnsubscribeResponse::serialize(tinyxml2::XMLElement *xml) const
 
 mUpdateItemRequest::mUpdateItemRequest(const XMLElement *xml) :
 	XMLINIT(ItemChanges),
+	XMLINITA(MessageDisposition),
 	XMLINITA(SendMeetingInvitationsOrCancellations),
 	XMLINITA(SuppressReadReceipts)
 {}
