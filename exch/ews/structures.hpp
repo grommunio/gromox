@@ -396,6 +396,9 @@ class sShape {
 	const tinyxml2::XMLElement *requiredAttendees = nullptr; ///< RequiredAttendees for update
 	const tinyxml2::XMLElement *optionalAttendees = nullptr; ///< OptionalAttendees for update
 	const tinyxml2::XMLElement *resourceAttendees = nullptr; ///< Resources for update
+	const tinyxml2::XMLElement *toRecipients = nullptr; ///< ToRecipients for update
+	const tinyxml2::XMLElement *ccRecipients = nullptr; ///< CcRecipients for update
+	const tinyxml2::XMLElement *bccRecipients = nullptr; ///< BccRecipients for update
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 

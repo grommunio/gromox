@@ -3029,6 +3029,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    shape.resourceAttendees)
 				ctx.updateAttendees(dir, parentFolder,
 				    mid.messageId(), shape);
+			if (shape.toRecipients || shape.ccRecipients ||
+			    shape.bccRecipients)
+				ctx.updateMessageRecipients(dir, parentFolder,
+				    mid.messageId(), shape);
 		}
 		if (occ_basedate != 0)
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));

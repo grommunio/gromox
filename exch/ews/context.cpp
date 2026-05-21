@@ -2806,6 +2806,87 @@ void EWSContext::updateAttendees(const std::string &dir,
 }
 
 /**
+ * @brief      Update mail recipients on existing message
+ *
+ * Used by UpdateItem when the client sets ToRecipients, CcRecipients,
+ * or BccRecipients. Only recipient types present in the update are
+ * replaced, rows of other types are kept.
+ *
+ * @param      dir     Store directory
+ * @param      parent  Parent folder specification
+ * @param      mid     Message ID of the mail item
+ * @param      shape   Shape containing recipient XML pointers
+ */
+void EWSContext::updateMessageRecipients(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid, const sShape &shape) const
+{
+	auto &exmdb = plugin().exmdb;
+	auto inst = m_plugin.loadMessageInstance(dir, parent.folderId, mid);
+	uint16_t old_count = 0;
+	if (!exmdb.get_message_instance_rcpts_num(dir.c_str(),
+	    inst->instanceId, &old_count))
+		throw EWSError::ItemSave(E3457);
+	TARRAY_SET old_rcpts{};
+	if (old_count > 0 && !exmdb.get_message_instance_rcpts(dir.c_str(),
+	    inst->instanceId, 0, old_count, &old_rcpts))
+		throw EWSError::ItemSave(E3458);
+
+	auto rcpts = tarray_set_init();
+	if (rcpts == nullptr)
+		throw EWSError::NotEnoughMemory(E3460);
+	auto cl_rcpts = HX::make_scope_exit([&]() { tarray_set_free(rcpts); });
+	uint32_t nextRow = 0;
+	for (const auto &old : old_rcpts) {
+		auto rowId = old.get<const uint32_t>(PR_ROWID);
+		if (rowId == nullptr)
+			continue;
+		if (*rowId >= nextRow)
+			nextRow = *rowId + 1;
+		auto rtype = old.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		bool replace = rtype != nullptr &&
+		               ((*rtype == MAPI_TO && shape.toRecipients != nullptr) ||
+		                (*rtype == MAPI_CC && shape.ccRecipients != nullptr) ||
+		                (*rtype == MAPI_BCC && shape.bccRecipients != nullptr));
+		if (!replace)
+			continue;
+		/* A row containing only PR_ROWID removes that recipient */
+		auto rcpt = rcpts->emplace();
+		if (rcpt == nullptr)
+			throw EWSError::NotEnoughMemory(E3459);
+		if (rcpt->set(PR_ROWID, rowId) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3461);
+	}
+	auto parseRcpts = [&](const tinyxml2::XMLElement *xml, uint32_t type) {
+		if (xml == nullptr)
+			return;
+		for (auto entry = xml->FirstChildElement("Mailbox");
+		     entry != nullptr;
+		     entry = entry->NextSiblingElement("Mailbox")) {
+			tEmailAddressType addr(entry);
+			auto rcpt = rcpts->emplace();
+			addr.mkRecipient(rcpt, type);
+			/* update_message_instance_rcpts wants PR_ROWID */
+			if (rcpt->set(PR_ROWID, &nextRow) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3461);
+			++nextRow;
+		}
+	};
+	parseRcpts(shape.toRecipients, MAPI_TO);
+	parseRcpts(shape.ccRecipients, MAPI_CC);
+	parseRcpts(shape.bccRecipients, MAPI_BCC);
+
+	if (rcpts->count == 0)
+		return;
+	if (!exmdb.update_message_instance_rcpts(dir.c_str(),
+	    inst->instanceId, rcpts))
+		throw EWSError::ItemSave(E3462);
+	ec_error_t err;
+	if (!exmdb.flush_instance(dir.c_str(),
+	    inst->instanceId, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3463);
+}
+
+/**
  * @brief      Convert EWS Recurrence XML to MAPI properties and write to shape
  *
  * Used by UpdateItem when the client modifies the recurrence of an existing
