@@ -313,7 +313,7 @@ class EWSContext {
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
 	void applyRecurrence(const std::string &, uint64_t, const tinyxml2::XMLElement *, Structures::sShape &) const;
 	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
-	void updateMessageRecipients(const std::string&, const Structures::sFolderSpec&, uint64_t, const tinyxml2::XMLElement*) const;
+	void updateMessageRecipients(const std::string&, const Structures::sFolderSpec&, uint64_t, const tinyxml2::XMLElement*, const tinyxml2::XMLElement*, const tinyxml2::XMLElement*) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tContactsFolderType&, uint64_t) const;
@@ -336,7 +336,7 @@ class EWSContext {
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
-	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
+	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &, const TARRAY_SET *override_rcpts = nullptr) const;
 	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool) const;
 	void sendMeetingResponse(const Structures::tItemId&, const MESSAGE_CONTENT&) const;
 	BINARY serialize(const XID&) const;

@@ -2947,64 +2947,38 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtPrivate, PT_BOOLEAN);
 		ctx.getNamedTags(dir, shape, true);
 
+		const tinyxml2::XMLElement *toRecipients = nullptr;
+		const tinyxml2::XMLElement *ccRecipients = nullptr;
+		const tinyxml2::XMLElement *bccRecipients = nullptr;
+		bool messageRecipientsChanged = false;
+
 		for (const auto &update : change.Updates) {
-    		    if (std::holds_alternative<tSetItemField>(update)) {
-        		const auto &f = std::get<tSetItemField>(update);
-        		bool skip_put = false;
+			if (std::holds_alternative<tSetItemField>(update)) {
+				const auto &f = std::get<tSetItemField>(update);
+				bool skip_put = false;
 
-        		if (std::holds_alternative<tFieldURI>(f.fieldURI.asVariant())) {
-            		    const auto &uri = std::get<tFieldURI>(f.fieldURI.asVariant());
-            		    mlog(LV_ERR, "EWS RCPT XML: FieldURI=%s", uri.FieldURI.c_str());
+				if (std::holds_alternative<tFieldURI>(f.fieldURI.asVariant())) {
+					const auto &uri = std::get<tFieldURI>(f.fieldURI.asVariant());
 
-            		    if (f.item) {
-                		const char *top = f.item->Name();
-                		mlog(LV_ERR, "EWS RCPT XML: Item top node=%s",
-                    		    top ? top : "(null)");
+					if (uri.FieldURI == "message:ToRecipients" ||
+					    uri.FieldURI == "message:CcRecipients" ||
+					    uri.FieldURI == "message:BccRecipients") {
+						messageRecipientsChanged = true;
+						skip_put = true;
 
-                		for (auto child = f.item->FirstChildElement();
-                     		     child != nullptr;
-                     		     child = child->NextSiblingElement()) {
-                    		    const char *name = child->Name();
-                    		    mlog(LV_ERR, "EWS RCPT XML: child node=%s",
-                        		name ? name : "(null)");
+						if (uri.FieldURI == "message:ToRecipients")
+							toRecipients = f.item ? f.item->FirstChildElement("ToRecipients") : nullptr;
+						else if (uri.FieldURI == "message:CcRecipients")
+							ccRecipients = f.item ? f.item->FirstChildElement("CcRecipients") : nullptr;
+						else if (uri.FieldURI == "message:BccRecipients")
+							bccRecipients = f.item ? f.item->FirstChildElement("BccRecipients") : nullptr;
+					}
+				}
 
-                    		    if (name && strcmp(name, "ToRecipients") == 0) {
-                        		size_t n = 0;
-                        		for (auto mb = child->FirstChildElement("Mailbox");
-                             		     mb != nullptr;
-                             		     mb = mb->NextSiblingElement("Mailbox")) {
-                            		    ++n;
-                            		    auto ea = mb->FirstChildElement("EmailAddress");
-                            		    auto nm = mb->FirstChildElement("Name");
-                            		    mlog(LV_ERR,
-                                	        "EWS RCPT XML: To[%zu] email=%s name=%s",
-                                		n,
-                                		ea && ea->GetText() ? ea->GetText() : "(null)",
-                                		nm && nm->GetText() ? nm->GetText() : "(null)");
-                        		}
-                        		mlog(LV_ERR,
-                            		    "EWS RCPT XML: ToRecipients mailbox_count=%zu", n);
-                    		    }
-                		}
-            		    } else {
-                		mlog(LV_ERR, "EWS RCPT XML: item=(null)");
-            		    }
-
-            		    if (uri.FieldURI == "message:ToRecipients") {
-                		const tinyxml2::XMLElement *xml =
-                    		    f.item ? f.item->FirstChildElement("ToRecipients") : nullptr;
-                		ctx.updateMessageRecipients(dir, parentFolder,
-                    		    mid.messageId(), xml);
-                		mlog(LV_ERR, "EWS RCPT XML: bypass put(shape) for ToRecipients");
-                		skip_put = true;
-            		    }
-        		}
-
-        		if (!skip_put)
-            		    f.put(shape);
-    		}
-	}
-
+				if (!skip_put)
+					f.put(shape);
+			}
+		}
 
 		tContact::genFields(shape);
 		tCalendarItem::setDatetimeFields(shape);
@@ -3050,9 +3024,33 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemSave(E3446);
 		} else {
 			ctx.updated(dir, mid, shape);
-			
 			TPROPVAL_ARRAY props = shape.write();
 			const auto &tagsRm = shape.remove_vec();
+
+			auto ensure_prop = [](sShape &shape, const TPROPVAL_ARRAY &props,
+			                      proptag_t tag, const char *value) {
+			        for (unsigned int i = 0; i < props.count; ++i)
+			                if (props.ppropval[i].proptag == tag)
+			                        return;
+			        shape.write(TAGGED_PROPVAL{tag, deconst(value)});
+			};
+
+			const char *sender = username ? username : ctx.auth_info().username;
+
+			ensure_prop(shape, props, PR_MESSAGE_CLASS, "IPM.Note");
+
+			if (sender && *sender) {
+			        ensure_prop(shape, props, PR_SENT_REPRESENTING_ADDRTYPE, "SMTP");
+			        ensure_prop(shape, props, PR_SENDER_ADDRTYPE, "SMTP");
+			        ensure_prop(shape, props, PR_SENT_REPRESENTING_EMAIL_ADDRESS, sender);
+			        ensure_prop(shape, props, PR_SENDER_EMAIL_ADDRESS, sender);
+			        ensure_prop(shape, props, PR_SENT_REPRESENTING_SMTP_ADDRESS, sender);
+			        ensure_prop(shape, props, PR_SENDER_SMTP_ADDRESS, sender);
+			        ensure_prop(shape, props, PR_SENT_REPRESENTING_NAME, sender);
+			        ensure_prop(shape, props, PR_SENDER_NAME, sender);
+			}
+
+			props = shape.write();
 			PROBLEM_ARRAY problems;
 			if (!ctx.plugin().exmdb.remove_message_properties(dir.c_str(),
 			    CP_ACP, mid.messageId(), tagsRm))
@@ -3087,6 +3085,15 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				ctx.updateAttendees(dir, parentFolder,
 				    mid.messageId(), shape);
 		}
+		if (messageRecipientsChanged)
+			ctx.updateMessageRecipients(
+				dir,
+				parentFolder,
+				mid.messageId(),
+				toRecipients,
+				ccRecipients,
+				bccRecipients);
+
 		if (occ_basedate != 0)
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
 		else
@@ -3152,6 +3159,94 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				}
 			}
 		}
+		if (occ_basedate == 0 &&
+		    request.MessageDisposition &&
+		    *request.MessageDisposition == Enum::SendAndSaveCopy) {
+			MESSAGE_CONTENT *sendcontent = nullptr;
+		        if (!ctx.plugin().exmdb.read_message(dir.c_str(),
+		            username, CP_ACP, mid.messageId(), &sendcontent) ||
+		            sendcontent == nullptr)
+		                throw EWSError::ItemNotFound(E3404);
+
+		        auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+		        std::string dispName;
+		        if (!mysql_adaptor_get_user_displayname(ctx.auth_info().username, dispName))
+		                throw DispatchError(E3378);
+		        auto displayName = deconst(dispName.c_str());
+		        auto smtpAddr = deconst(ctx.auth_info().username);
+		        auto addrType = deconst("SMTP");
+		        const TAGGED_PROPVAL sprops[] = {
+		                {PR_CLIENT_SUBMIT_TIME, now},
+		                {PR_MESSAGE_DELIVERY_TIME, now},
+		                {PR_SENT_REPRESENTING_NAME, displayName},
+		                {PR_SENDER_NAME, displayName},
+		                {PR_SENT_REPRESENTING_SMTP_ADDRESS, smtpAddr},
+		                {PR_SENDER_SMTP_ADDRESS, smtpAddr},
+		                {PR_SENT_REPRESENTING_EMAIL_ADDRESS, smtpAddr},
+		                {PR_SENDER_EMAIL_ADDRESS, smtpAddr},
+		                {PR_SENT_REPRESENTING_ADDRTYPE, addrType},
+		                {PR_SENDER_ADDRTYPE, addrType},
+		        };
+
+		        const TPROPVAL_ARRAY sproplist = {std::size(sprops), deconst(sprops)};
+		        PROBLEM_ARRAY sproblems;
+		        if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+		            username, CP_ACP, mid.messageId(), &sproplist, &sproblems))
+		                throw EWSError::ItemSave(E3419);
+
+		        if (!ctx.plugin().exmdb.read_message(dir.c_str(),
+		            username, CP_ACP, mid.messageId(), &sendcontent) ||
+		            sendcontent == nullptr)
+		                throw EWSError::ItemNotFound(E3405);
+
+		        TARRAY_SET *override_rcpts = nullptr;
+		        if (sendcontent->children.prcpts == nullptr ||
+		            sendcontent->children.prcpts->count == 0) {
+
+		                auto sendInst = ctx.plugin().loadMessageInstance(
+		                    dir, parentFolder.folderId, mid.messageId());
+
+		                uint16_t rcpt_num = 0;
+
+		                if (!ctx.plugin().exmdb.get_message_instance_rcpts_num(
+		                    dir.c_str(), sendInst->instanceId, &rcpt_num))
+		                        throw EWSError::ItemSave(E3035);
+
+		                if (rcpt_num == 0)
+		                        throw EWSError::MissingRecipients(E3115);
+
+		                override_rcpts = tarray_set_init();
+		                if (override_rcpts == nullptr)
+		                        throw EWSError::NotEnoughMemory(E3381);
+
+		                if (!ctx.plugin().exmdb.get_message_instance_rcpts(
+		                    dir.c_str(),
+		                    sendInst->instanceId,
+		                    0,
+		                    rcpt_num,
+		                    override_rcpts))
+		                        throw EWSError::ItemSave(E3035);
+
+		                if (override_rcpts->count == 0)
+		                        throw EWSError::MissingRecipients(E3115);
+		        }
+
+		        ctx.send(dir, mid.messageId(), *sendcontent, override_rcpts);
+
+		        sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+
+			uint64_t newMid = 0;
+		        if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
+		            sentitems.folderId, &newMid))
+		                throw EWSError::InternalServerError(E3424);
+
+		        BOOL result = false;
+		        if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(), CP_ACP,
+		            mid.messageId(), sentitems.folderId, newMid, true, &result) ||
+		            !result)
+		                throw EWSError::InternalServerError(E3427);
+		}
+
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
@@ -3160,5 +3255,4 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 
 	data.serialize(response);
 }
-
 }

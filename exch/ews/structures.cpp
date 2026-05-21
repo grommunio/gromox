@@ -1690,24 +1690,23 @@ sFolder tBaseFolderType::create(const sShape& shape)
 	if (folderType == NORMAL) {
 		if (frType && *frType == FOLDER_SEARCH) {
 			folderType = SEARCH;
-		}else if (frClass) {
-   			 const char* dn = shape.get<char>(PR_DISPLAY_NAME);
+		} else if (frClass) {
+			const char *dn = shape.get<char>(PR_DISPLAY_NAME);
 
-    			if (class_match_prefix(frClass, "IPF.Appointment") == 0)
-        			folderType = CALENDAR;
-    			else if (
-        			class_match_prefix(frClass, "IPF.Contact") == 0 ||
-        			(dn && (
-            				strcmp(dn, "Cache des destinataires") == 0 ||
-            				strcmp(dn, "Recipient Cache") == 0
-        			))
-    			)
-        			folderType = CONTACTS;
-    			else if (class_match_prefix(frClass, "IPF.Task") == 0)
-        			folderType = TASKS;
+			if (class_match_prefix(frClass, "IPF.Appointment") == 0)
+				folderType = CALENDAR;
+			else if (
+				class_match_prefix(frClass, "IPF.Contact") == 0 ||
+					(dn && (
+						strcmp(dn, "Cache des destinataires") == 0 ||
+						strcmp(dn, "Recipient Cache") == 0
+					))
+			)
+				folderType = CONTACTS;
+			else if (class_match_prefix(frClass, "IPF.Task") == 0)
+				folderType = TASKS;
 		}
 	}
-
 	switch (folderType) {
 	case CALENDAR:
 		return tCalendarFolderType(shape);
