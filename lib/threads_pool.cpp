@@ -18,6 +18,7 @@
 #include <gromox/process.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
+#include <libHX/defs.h>
 
 #define MAX_TIMES_NOT_SERVED			100
 
@@ -196,8 +197,9 @@ static void *tpol_thrwork(void *pparam)
 	int cannot_served_times;
 
 	if (pdata->nid >= 0) {
-		char buf[16];
+		char buf[16+HXSIZEOF_Z64];
 		snprintf(buf, std::size(buf), "ep_pool/%ld", pdata->nid);
+		buf[15] = '\0';
 		pthread_setname_np(pthread_self(), buf);
 	} else {
 		pthread_setname_np(pthread_self(), "ep_pool/+");
