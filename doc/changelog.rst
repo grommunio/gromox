@@ -1,4 +1,4 @@
-Milestone 3.7.193
+Milestone 3.7.225
 =================
 
 Enhancements:
@@ -12,6 +12,11 @@ Enhancements:
 * Conversions from HTML to plaintext now support the use of Pandoc as a
   fallback if chawan/w3m is not present.
 * mbop: new "exaddrxlat" command
+* ruleproc: implemented OP_FORWARD handling for TwoStep processor
+
+Fixes:
+
+* ab_tree: restore/implement time-based purging of the cache
 
 Behavioral changes:
 
