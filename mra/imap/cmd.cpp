@@ -623,25 +623,25 @@ static int icp_print_structure(imap_context &ctx, MJSON *pjson,
 }
 
 /***
- * @s: the part that is within square brackets in e.g.
+ * @sv: the part that is within square brackets in e.g.
  *     "BODY[1234.HEADER]" "BODY[HEADER.FIELDS]" etc.
  *
- * Returns that data item split by MIME part ID (if any) and inner item.
+ * Splits @sv into the MIME part ID (the leading run of digits and dots, e.g.
+ * "1.2"; empty for the top-level message) and the inner data item (e.g.
+ * "HEADER", "TEXT", "HEADER.FIELDS (...)"). The data item comes back empty
+ * when @sv denotes a whole part ("" or "1").
  */
-static std::pair<std::string, const char *> split_DI(std::string_view sv)
+static std::pair<std::string, std::string> split_DI(std::string_view sv)
 {
-	std::pair<std::string, const char *> ret{};
-	ret.first = sv;
-	auto &s = ret.first;
-	for (size_t i = 0; i < s.size(); ++i) {
-		if (s[i] == '.' || HX_isdigit(s[i]))
-			continue;
-		ret.second = &s[i];
-		if (i > 0 && s[i-1] == '.')
-			s[i-1] = '\0';
-		break;
-	}
-	return ret;
+	size_t i = 0;
+	while (i < sv.size() && (sv[i] == '.' || HX_isdigit(sv[i])))
+		++i;
+	if (i >= sv.size())
+		/* no data item, just a part path (e.g. "" or "1") */
+		return {std::string(sv), std::string()};
+	/* @i is at the data item; drop the '.' separating it from the part ID */
+	size_t idlen = i > 0 && sv[i-1] == '.' ? i - 1 : i;
+	return {std::string(sv.substr(0, idlen)), std::string(sv.substr(i))};
 }
 
 static int icp_process_fetch_item(imap_context &ctx,
@@ -818,7 +818,8 @@ static int icp_process_fetch_item(imap_context &ctx,
 				}
 			}
 			auto len = pend - (pbody + 1);
-			auto [temp_id, ptr] = split_DI(std::string_view(&pbody[1], len));
+			auto [temp_id, data_item] = split_DI(std::string_view(&pbody[1], len));
+			const char *ptr = data_item.empty() ? nullptr : data_item.c_str();
 			if (temp_id.size() > 0 && mjson.has_rfc822_part()) {
 				deferred_eml_load();
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
