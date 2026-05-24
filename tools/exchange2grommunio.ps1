@@ -77,6 +77,8 @@
 #       2. Wait for PowerShell to connect to the Exchange server.
 #       3. Change directory to the folder where the script is stored, e.g. 'cd -d c:\grommunio'
 #       4. Launch the script with execution policy bypass: '.\exchange2grommunio.ps1 -ExecutionPolicy bypass'.
+#       5. If the above command does not work, set the Execution Policy to Bypass using the
+#          command 'Set-ExecutionPolicy Bypass', and then launch the script as '.\exchange2grommunio.ps1'.
 #
 # 7. Test the migration.
 #
@@ -109,8 +111,8 @@
 #    mkdir /mnt/<shared folder name>
 #
 # 4. Mount the Windows share. This needs the Windows user and password.
-#    # mount.cifs "//<SERVER FQDN>/<shared folder name>" /mnt/<shared folder name>
-#      -v -o ro,username=<Windows user>,password=<Windows password>
+#    # mount.cifs "//<SERVER FQDN>/<shared folder name>" /mnt/<shared folder name> \
+#        -v -o ro,username=<Windows user>,password=<Windows password>
 #
 #    Test the mount from the Linux command line and then unmount the Windows share
 #    using 'umount /mnt/<shared folder name>'.
@@ -272,8 +274,18 @@ $MigrationPriority = "Normal"
 $BadItemLimit = 0
 #$BadItemLimit = "unlimited"
 
+# Note: there is no detection in this code for EX_2016_CU6.
+$Exchange_Newer_2016_CU6 = $true
+
 #
 # From here on, no code or variables need changing by the user of this script.
+#
+
+#
+# Use the template below to create the exchange2grommunio.config.ps1 configuration file.
+# Place exchange2grommunio.config.ps1 in the same directory as exchange2grommunio.ps1.
+# Edit this file to enter your configuration details.
+# Then the main script, exchange2grommunio.ps1, can be updated without destroying your configuration.
 #
 <# SKEL exchange2grommunio.config.ps1
 #$GrommunioServer = "grommunio.example.com"
@@ -507,7 +519,7 @@ function Test-Share
 function Test-Plink
 {
 	Write-MLog "" white
-	# does plink.exe exist?
+	# Does plink.exe exist?
 	if (!(Test-Path -Path $PSScriptRoot\plink.exe)) {
 		Write-MLog "Error: plink.exe not found, need plink.exe in $PSScriptRoot." red
 		exit 1
@@ -519,16 +531,15 @@ function Test-Plink
 function Test-Pageant
 {
 	Write-MLog "" white
-	# does pageant.exe exist?
-	if (Test-Path -Path $PSScriptRoot\pageant.exe) {
-		Write-MLog "Error: paegeant.exe not found, need paegeant.exe in $PSScriptRoot." red
+	# Does pageant.exe exist?
+	if (!(Test-Path -Path $PSScriptRoot\pageant.exe)) {
+		Write-MLog "Error: pageant.exe not found, need pageant.exe in $PSScriptRoot." red
 		exit 1
 	}
 }
 
 # Test if the Exchange cmdlets are loaded
 #
-$Exchange_Newer_2016_CU6 = $true
 function Test-Exchange
 {
 	$Exchange_Cmdlets = $false
@@ -547,6 +558,63 @@ function Test-Exchange
 	if (!$Exchange_Cmdlets) {
 		Write-MLog "Error: the Exchange cmdlets are not loaded. Launch this script from an Exchange Admin shell." red
 		exit 1
+	}
+}
+
+# Check if there are any logs / status files from a previous migration in the $WinSharedFolder.
+# Currently, we do not have an active logger; write to the console instead.
+#
+function Test-Previous-Status
+{
+	$LogPath = (Join-Path -Path $WinSharedFolder -ChildPath logs)
+	#
+	Write-Host ""
+	# Does $LogPath exist? It may contain old status files.
+	if (Test-Path -Path $LogPath) {
+		Write-Host "Warning: $LogPath found from previous migration." -fore yellow
+		$global:PreviousLogsExists = $true
+	}
+	# Does $LogFile exist?
+	if (Test-Path -Path $LogFile) {
+		Write-Host "Warning: $LogFile found from previous migration." -fore yellow
+		$global:PreviousLogsExists = $true
+	}
+	# Does $WinSharedFolder\exchange2grommunio.done exist? It may contain old state.
+	if (Test-Path -Path $WinSharedFolder\exchange2grommunio.done) {
+		Write-Host "Warning: $WinSharedFolder\exchange2grommunio.done found from previous migration." -fore yellow
+		$global:PreviousLogsExists = $true
+	}
+	# Does $WinSharedFolder\exchange2grommunio.failed exist? It may contain old state.
+	if (Test-Path -Path $WinSharedFolder\exchange2grommunio.failed) {
+		Write-Host "Warning: $WinSharedFolder\exchange2grommunio.failed found from previous migration." -fore yellow
+		$global:PreviousLogsExists = $true
+	}
+	if ($global:PreviousLogsExists) {
+		Write-Host ""
+		Write-Host "Note: Log and / or status files from an previous migration exist. See the messages above." -fore yellow
+		Write-Host "Decide to remove / rename this files and directory to get a fresh migration state." -fore yellow
+		Write-Host ""
+		$OK = $false
+	} else {
+		$OK = $true
+	}
+	while (!$OK) {
+		$decision = $(Write-Host "Do you want to proceed with with the migration [Y]es [A]bort " -NoNewLine; Read-Host)
+		$decision = $decision.ToUpper()
+		switch ($decision) {
+		"Y" {
+			Write-Host "Continue with the migration process." -fore green
+			$OK = $true
+			}
+		"A" {
+			Write-Host ""
+			Write-Host "1. To get a fresh migration state, remove or rename the old files and directory."
+			Write-Host "2. After the clean-up, start the migration process again."
+			Write-Host "   Exiting upon request." -fore yellow
+			Write-Host ""
+			exit 2
+			}
+		}
 	}
 }
 
@@ -569,6 +637,10 @@ if (!( $(Try { Test-Path $WinSharedFolder.trim() } Catch { $false }) )) {  #Retu
 	Write-Host "'$WinSharedFolder' is not a valid path, please update variable `$WinSharedFolder and try again." -fore red
 	exit 1
 }
+
+# Raise a warning if logs / status files from previous migrations exist.
+$global:PreviousLogsExists = $false
+Test-Previous-Status
 
 # Initialize variables for statistics
 #
@@ -642,6 +714,7 @@ Write-MLog "" none
 Write-MLog "`$PowerShellOld .............: $PowerShellOld" none
 Write-MLog "`$PSScriptRoot ..............: $PSScriptRoot" none
 Write-MLog "`$Exchange_Newer_2016_CU6....: $Exchange_Newer_2016_CU6" none
+Write-MLog "`$PreviousLogsExists ........: $global:PreviousLogsExists" none
 Write-MLog "" none
 
 # Check for prerequisites
@@ -699,12 +772,12 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 	}
 
 	# This is experimental, ignore all internal/system mailboxes on this Exchange system.
-		if ($MigMBox -match 'healthmailbox|systemmailbox|federatedemail|msexchdiscovery|msexchapproval') {
-			$MailboxesSkipped++
-			$MailboxesTotal++
-			$MailboxesExSystem++
-			$SkipExSystemMBX += $MigMBox + ", "
-			Write-MLog "Ignoring mailbox: $MigMBox, it is an Exchange system mailbox." green
+	if ($MigMBox -match 'healthmailbox|systemmailbox|federatedemail|msexchdiscovery|msexchapproval') {
+		$MailboxesSkipped++
+		$MailboxesTotal++
+		$MailboxesExSystem++
+		$SkipExSystemMBX += $MigMBox + ", "
+		Write-MLog "Ignoring mailbox: $MigMBox, it is an Exchange system mailbox." green
 		continue
 	}
 
