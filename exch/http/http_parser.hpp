@@ -11,6 +11,7 @@
 #	include <gssapi/gssapi.h>
 #endif
 #include <libHX/proc.h>
+#include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -67,6 +68,14 @@ struct http_context final : public schedule_context {
 	http_request request;
 	uint64_t total_length = 0, bytes_rw = 0;
 	hsched_stat sched_stat = hsched_stat::initssl;
+	/*
+	 * Set by hpm_processor_wakeup_context() to record a wakeup that may
+	 * have raced with this context entering hsched_stat::wait (a window in
+	 * which contexts_pool_signal() is a no-op). Consumed by the wrrep
+	 * parking path so the wakeup is not lost and the context does not idle
+	 * forever holding a context_num slot. See exch/http/http_parser.cpp.
+	 */
+	gromox::atomic_bool hpm_wakeup_pending{false};
 	STREAM stream_in, stream_out;
 	void *write_buff = nullptr;
 	int write_offset = 0, write_length = 0;

@@ -122,6 +122,19 @@ static void hpm_processor_set_ep_info(unsigned int context_id,
 static void hpm_processor_wakeup_context(unsigned int context_id)
 {
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
+	/*
+	 * Latch the wakeup *before* inspecting sched_stat. If the context is
+	 * mid-park (its plugin's retr() already returned HPM_RETRIEVE_WAIT, but
+	 * the worker has not set sched_stat to hsched_stat::wait yet), the
+	 * contexts_pool_signal() below is a no-op and the wakeup would be
+	 * lost – the context would then idle forever with an undelivered
+	 * response and never release its context_num slot. The wrrep parking
+	 * path consumes this latch (exchange) and re-polls instead of
+	 * sleeping. Writing the latch before reading sched_stat (and the park
+	 * path writing sched_stat before reading the latch) ensures at least
+	 * one side observes the other.
+	 */
+	phttp->hpm_wakeup_pending = true;
 	if (phttp->sched_stat != hsched_stat::wait)
 		return;
 	phttp->sched_stat = hsched_stat::wrrep;
