@@ -693,6 +693,14 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		if (!hasAccess)
 			throw EWSError::AccessDenied(E3130);
 
+		if (auto srr = std::get_if<tSuppressReadReceipt>(&item)) {
+			/* Response object, nothing is stored or sent */
+			if (srr->ReferenceItemId)
+				ctx.suppressReadReceipt(*srr->ReferenceItemId);
+			data.ResponseMessages.emplace_back().success();
+			continue;
+		}
+
 		mCreateItemResponseMessage msg;
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);

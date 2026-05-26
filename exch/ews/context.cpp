@@ -3627,6 +3627,32 @@ void EWSContext::notifyReadReceipt(const std::string &dir,
 }
 
 /**
+ * @brief      Clear the receipt request of a message
+ *
+ * Makes notifyReadReceipt() a no-op for the message from now on.
+ *
+ * @param      refId   Item to suppress the read receipt for
+ */
+void EWSContext::suppressReadReceipt(const tItemId &refId) const
+{
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId mid(refId.Id.data(), refId.Id.size());
+	sFolderSpec parent = resolveFolder(mid);
+	std::string dir = getDir(parent);
+	validate(dir, mid);
+	static constexpr uint8_t fake_false = 0;
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PR_READ_RECEIPT_REQUESTED, deconst(&fake_false)},
+		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&fake_false)},
+	};
+	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
+	PROBLEM_ARRAY problems;
+	if (!m_plugin.exmdb.set_message_properties(dir.c_str(),
+	    effectiveUser(parent), CP_ACP, mid.messageId(), &propvals, &problems))
+		throw EWSError::ItemSave(E3409);
+}
+
+/**
  * @brief      Serialize XID to BINARY
  *
  * The internal buffer of the BINARY is stack allocated and must not be

@@ -1558,6 +1558,17 @@ void tDeclineItem::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(ReferenceItemId);
 }
 
+tSuppressReadReceipt::tSuppressReadReceipt(const tinyxml2::XMLElement *xml) :
+	tMessage(xml),
+	XMLINIT(ReferenceItemId)
+{}
+
+void tSuppressReadReceipt::serialize(tinyxml2::XMLElement *xml) const
+{
+	tMessage::serialize(xml);
+	XMLDUMPT(ReferenceItemId);
+}
+
 void tModifiedEvent::serialize(tinyxml2::XMLElement *xml) const
 {
 	tBaseObjectChangedEvent::serialize(xml);
