@@ -3853,7 +3853,9 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
 			continue;
 		datagram.id_array[0] = datagram1.id_array[0] =
 			datagram2.id_array[0] = ptable->table_id; // reserved earlier
+
 		if (pstmt.step() != SQLITE_ROW) {
+			/* The modified folder was not yet in the view (the MAPI table) */
 			pstmt.finalize();
 			if (NULL != ptable->prestriction &&
 			    cu_eval_folder_restriction(
@@ -3862,8 +3864,33 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
 					datagram2.db_notify.type = db_notify_type::hiertbl_row_added;
 					padded_row = &datagram2.db_notify;
 				}
-				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (folder_id)"
-				        " VALUES (%llu)", ptable->table_id, LLU{folder_id});
+				/*
+				 * t%u.depth is NOT NULL, so it must be supplied.
+				 * Direct children sit at depth 1; for DEPTH tables
+				 * walk up to the table's root folder to count.
+				 */
+				uint32_t depth = 1;
+				if (ptable->table_flags & TABLE_FLAG_DEPTH) {
+					auto pstmt1 = pdb->prep("SELECT parent_id FROM folders WHERE folder_id=?");
+					if (pstmt1 == nullptr)
+						continue;
+					uint64_t folder_id1 = parent_id;
+					while (folder_id1 != ptable->folder_id) {
+						pstmt1.bind_int64(1, folder_id1);
+						if (pstmt1.step() != SQLITE_ROW) {
+							depth = 0;
+							break;
+						}
+						++depth;
+						folder_id1 = pstmt1.col_int64(0);
+						pstmt1.reset();
+					}
+					if (depth == 0)
+						continue;
+				}
+				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u "
+				        "(folder_id, depth) VALUES (%llu, %u)",
+				        ptable->table_id, LLU{folder_id}, depth);
 				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
 				if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
@@ -3892,6 +3919,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
 			}
 			continue;
 		}
+
 		idx = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		if (NULL != ptable->prestriction &&
