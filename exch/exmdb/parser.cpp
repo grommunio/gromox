@@ -789,9 +789,11 @@ static void spw_clean()
 
 void exmdb_listener_stop()
 {
-	if (!pthread_equal(g_spzclean_tid, {}))
-		pthread_join(g_spzclean_tid, nullptr);
 	g_exmdblisten_stop = true;
+	if (!pthread_equal(g_spzclean_tid, {})) {
+		pthread_kill(g_spzclean_tid, SIGALRM);
+		pthread_join(g_spzclean_tid, nullptr);
+	}
 	exmdb_listen_ctx.reset();
 	std::vector<std::future<void>> futs;
 	for (size_t i = 0; i < g_exmdb_par_shutdown; ++i)
