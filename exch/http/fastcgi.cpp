@@ -388,6 +388,7 @@ http_status mod_fastcgi_take_request(http_context *phttp)
 	char file_name[256];
 	char request_uri[http_request::uri_limit];
 	
+	/* Log messages in response to malformed/inacceptable user input should just stay LV_DEBUG */
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
@@ -680,14 +681,14 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			if (mod_fastcgi_push_stdin(&ndr_push, pbuff,
 			    tmp_len) != pack_result::ok) {
 				close(cli_sockd);
-				phttp->log(LV_DEBUG, "failed to "
+				phttp->log(LV_ERR, "failed to "
 					"push stdin record for mod_fastcgi");
 				return FALSE;
 			}
 			auto ret = write(cli_sockd, ndr_buff, ndr_push.offset);
 			if (ret < 0 || static_cast<size_t>(ret) != ndr_push.offset) {
 				close(cli_sockd);
-				phttp->log(LV_DEBUG, "failed to "
+				phttp->log(LV_ERR, "failed to "
 					"write record to fastcgi back-end %s (ret=%zd, %s)",
 					fctx.pfnode->sock_path.c_str(),
 					ret, strerror(errno));
@@ -703,7 +704,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			auto tmp_len = read(rq.body_fd, tmp_buff, sizeof(tmp_buff));
 			if (tmp_len < 0) {
 				close(cli_sockd);
-				phttp->log(LV_DEBUG, "failed to"
+				phttp->log(LV_ERR, "failed to"
 					" read cache file for mod_fastcgi");
 				return FALSE;
 			} else if (0 == tmp_len) {
@@ -714,14 +715,14 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			if (mod_fastcgi_push_stdin(&ndr_push, tmp_buff,
 			    tmp_len) != pack_result::ok) {
 				close(cli_sockd);
-				phttp->log(LV_DEBUG, "failed to "
+				phttp->log(LV_ERR, "failed to "
 					"push stdin record for mod_fastcgi");
 				return FALSE;
 			}
 			auto ret = write(cli_sockd, ndr_buff, ndr_push.offset);
 			if (ret < 0 || static_cast<size_t>(ret) != ndr_push.offset) {
 				close(cli_sockd);
-				phttp->log(LV_DEBUG, "failed to "
+				phttp->log(LV_ERR, "failed to "
 					"write record to fastcgi back-end %s (ret=%zd, %s)",
 					fctx.pfnode->sock_path.c_str(),
 					ret, strerror(errno));
@@ -733,14 +734,14 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	ndr_push.init(ndr_buff, sizeof(ndr_buff), NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 	if (mod_fastcgi_push_stdin(&ndr_push, nullptr, 0) != pack_result::ok) {
 		close(cli_sockd);
-		phttp->log(LV_DEBUG, "failed to push "
+		phttp->log(LV_ERR, "failed to push "
 			"last empty stdin record for mod_fastcgi");
 		return FALSE;
 	}
 	auto ret = write(cli_sockd, ndr_buff, ndr_push.offset);
 	if (ret < 0 || static_cast<size_t>(ret) != ndr_push.offset) {
 		close(cli_sockd);
-		phttp->log(LV_DEBUG, "failed to write"
+		phttp->log(LV_ERR, "failed to write"
 			" last empty stdin to fastcgi back-end %s (ret=%zd, %s)",
 			fctx.pfnode->sock_path.c_str(),
 			ret, strerror(errno));
@@ -833,7 +834,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 	response_offset = 0;
 	while (true) {
 		if (!mod_fastcgi_safe_read(&fctx, header_buff, std::size(header_buff))) {
-			phttp->log(LV_DEBUG, "failed to read"
+			phttp->log(LV_ERR, "failed to read"
 				" record header from fastcgi back-end %s",
 				fctx.pfnode->sock_path.c_str());
 			mod_fastcgi_insert_ctx(phttp);
@@ -841,7 +842,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 		}
 		ndr_pull.init(header_buff, 8, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 		if (mod_fastcgi_pull_record_header(&ndr_pull, &header) != pack_result::ok) {
-			phttp->log(LV_DEBUG, "failed to "
+			phttp->log(LV_ERR, "failed to "
 				"pull record header in mod_fastcgi");
 			mod_fastcgi_insert_ctx(phttp);
 			return FALSE;
@@ -849,7 +850,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 		switch (header.type) {
 		case RECORD_TYPE_END_REQUEST:
 			if (8 != header.content_len) {
-				phttp->log(LV_DEBUG, "record header"
+				phttp->log(LV_ERR, "record header"
 					" format error from fastcgi back-end %s",
 					fctx.pfnode->sock_path.c_str());
 				mod_fastcgi_insert_ctx(phttp);
@@ -858,7 +859,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			tmp_len = header.padding_len + 8;
 			if (!mod_fastcgi_safe_read(&fctx,
 			    tmp_buff, tmp_len)) {
-				phttp->log(LV_DEBUG, "failed to read"
+				phttp->log(LV_ERR, "failed to read"
 				" record header from fastcgi back-end %s",
 				fctx.pfnode->sock_path.c_str());
 				mod_fastcgi_insert_ctx(phttp);
@@ -867,7 +868,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			ndr_pull.init(tmp_buff, tmp_len, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 			if (mod_fastcgi_pull_end_request(&ndr_pull,
 			    header.padding_len, &end_request) != pack_result::ok)
-				phttp->log(LV_DEBUG, "failed to"
+				phttp->log(LV_ERR, "failed to"
 					" pull record body in mod_fastcgi");
 			else
 				phttp->log(LV_DEBUG, "app_status %u, "
@@ -884,7 +885,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			tmp_len = header.content_len + header.padding_len;
 			if (!mod_fastcgi_safe_read(&fctx,
 			    tmp_buff, tmp_len)) {
-				phttp->log(LV_DEBUG, "failed to read"
+				phttp->log(LV_ERR, "failed to read"
 					" record header from fastcgi back-end %s",
 					fctx.pfnode->sock_path.c_str());
 				mod_fastcgi_insert_ctx(phttp);
@@ -894,7 +895,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			std_stream.length = header.content_len;
 			if (mod_fastcgi_pull_stdstream(&ndr_pull, header.padding_len,
 			    &std_stream) != pack_result::ok) {
-				phttp->log(LV_DEBUG, "failed to"
+				phttp->log(LV_ERR, "failed to"
 					" pull record body in mod_fastcgi");
 				mod_fastcgi_insert_ctx(phttp);
 				return FALSE;	
@@ -902,14 +903,14 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			if (RECORD_TYPE_STDERR == header.type) {
 				memcpy(tmp_buff, std_stream.buffer, std_stream.length);
 				tmp_buff[std_stream.length] = '\0';
-				phttp->log(LV_DEBUG, "stderr message "
+				phttp->log(LV_NOTICE, "stderr message "
 					"\"%s\" from fastcgi back-end %s", tmp_buff,
 					fctx.pfnode->sock_path.c_str());
 				continue;
 			}
 			if (fctx.b_header) {
 				if (0 == std_stream.length) {
-					phttp->log(LV_DEBUG, "empty stdout "
+					phttp->log(LV_ERR, "empty stdout "
 						"record is not supported by mod_fastcgi");
 					mod_fastcgi_insert_ctx(phttp);
 					return FALSE;
@@ -920,7 +921,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(std_stream.buffer, std_stream.length) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write("\r\n", 2) != STREAM_WRITE_OK) {
-						phttp->log(LV_DEBUG, "failed to write"
+						phttp->log(LV_ERR, "failed to write"
 								" stdin into stream in mod_fastcgi");
 						mod_fastcgi_insert_ctx(phttp);
 						return FALSE;
@@ -928,7 +929,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				} else {
 					if (phttp->stream_out.write(std_stream.buffer,
 					    std_stream.length) != STREAM_WRITE_OK) {
-						phttp->log(LV_DEBUG, "failed to write"
+						phttp->log(LV_ERR, "failed to write"
 								" stdin into stream in mod_fastcgi");
 						mod_fastcgi_insert_ctx(phttp);
 						return FALSE;
@@ -937,7 +938,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				return TRUE;
 			}
 			if (response_offset + std_stream.length > sizeof(response_buff)) {
-				phttp->log(LV_DEBUG, "response "
+				phttp->log(LV_NOTICE, "response "
 					"header too long from fastcgi back-end %s",
 					fctx.pfnode->sock_path.c_str());
 				mod_fastcgi_insert_ctx(phttp);
@@ -965,7 +966,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				ptoken1 = static_cast<char *>(memmem(ptoken, tmp_len, "\r\n", 2));
 				if (NULL == ptoken1 || (tmp_len = ptoken1
 					- ptoken) >= sizeof(status_line)) {
-					phttp->log(LV_DEBUG, "response header"
+					phttp->log(LV_NOTICE, "response header"
 						"format error from fastcgi back-end %s",
 						fctx.pfnode->sock_path.c_str());
 					mod_fastcgi_insert_ctx(phttp);
@@ -1008,7 +1009,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				          "%s\r\n", status_line,
 				          dstring, response_buff);
 			if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK) {
-				phttp->log(LV_DEBUG, "failed to write "
+				phttp->log(LV_ERR, "failed to write "
 					"response header into stream in mod_fastcgi");
 				mod_fastcgi_insert_ctx(phttp);
 				return FALSE;
@@ -1024,14 +1025,14 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(pbody, response_offset) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write("\r\n", 2) != STREAM_WRITE_OK) {
-						phttp->log(LV_DEBUG, "failed to write"
+						phttp->log(LV_ERR, "failed to write"
 								" stdin into stream in mod_fastcgi");
 						mod_fastcgi_insert_ctx(phttp);
 						return FALSE;
 					}
 				} else {
 					if (phttp->stream_out.write(pbody, response_offset) != STREAM_WRITE_OK) {
-						phttp->log(LV_DEBUG, "failed to write"
+						phttp->log(LV_ERR, "failed to write"
 								" stdin into stream in mod_fastcgi");
 						mod_fastcgi_insert_ctx(phttp);
 						return FALSE;	
@@ -1043,7 +1044,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			tmp_len = header.content_len + header.padding_len;
 			if (!mod_fastcgi_safe_read(&fctx,
 			    tmp_buff, tmp_len)) {
-				phttp->log(LV_DEBUG, "failed to read"
+				phttp->log(LV_ERR, "failed to read"
 				" record header from fastcgi back-end %s",
 				fctx.pfnode->sock_path.c_str());
 				mod_fastcgi_insert_ctx(phttp);
