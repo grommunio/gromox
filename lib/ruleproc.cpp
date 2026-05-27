@@ -1300,12 +1300,15 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
  * Look up calendar item(s) previously entered for this meeting, matched by
  * PidLidGlobalObjectId (which stays constant across reschedules/updates of the
  * same meeting). All matches are returned so that the caller can clean any
- * duplicates left over from earlier processing.
+ * duplicates left over from earlier processing. @max_seq will be set to the
+ * highest PidLidAppointmentSequence found.
  */
 static ec_error_t mr_find_cal_items(rxparam &par, proptag_t goid_tag,
-    const BINARY *goid, std::vector<eid_t> &mids)
+    proptag_t seq_tag, const BINARY *goid, std::vector<eid_t> &mids,
+    uint32_t &max_seq)
 {
 	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	max_seq = 0;
 	if (goid == nullptr || goid->cb == 0)
 		return ecSuccess;
 	const RESTRICTION_PROPERTY rprop = {RELOP_EQ, goid_tag, {goid_tag, deconst(goid)}};
@@ -1320,17 +1323,21 @@ static ec_error_t mr_find_cal_items(rxparam &par, proptag_t goid_tag,
 	});
 	if (row_count == 0)
 		return ecSuccess;
-	static constexpr proptag_t mid_tag = PidTagMid;
+	const proptag_t qtags[] = {PidTagMid, seq_tag};
 	TARRAY_SET rows{};
 	if (!exmdb_client->query_table(par.cur.dirc(), nullptr, CP_ACP,
-	    table_id, {&mid_tag, 1}, 0, row_count, &rows))
+	    table_id, {qtags, std::size(qtags)}, 0, row_count, &rows))
 		return ecRpcFailed;
 	for (size_t i = 0; i < rows.count; ++i) {
 		if (rows.pparray[i] == nullptr)
 			continue;
 		auto mid = rows.pparray[i]->get<const uint64_t>(PidTagMid);
-		if (mid != nullptr)
-			mids.emplace_back(*mid);
+		if (mid == nullptr)
+			continue;
+		mids.emplace_back(*mid);
+		auto seq = rows.pparray[i]->get<const uint32_t>(seq_tag);
+		if (seq != nullptr && *seq > max_seq)
+			max_seq = *seq;
 	}
 	return ecSuccess;
 }
@@ -1351,11 +1358,19 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	{
 		auto goid_tag = PROP_TAG(PT_BINARY, propids[l_goid]);
 		auto goid = rq_prop.get<const BINARY>(goid_tag);
+		auto seq_tag  = PROP_TAG(PT_LONG, propids[l_appt_seq]);
 		std::vector<eid_t> existing;
-		auto err = mr_find_cal_items(par, goid_tag, goid, existing);
+		uint32_t newest_seq = 0;
+
+		auto err = mr_find_cal_items(par, goid_tag, seq_tag, goid,
+		           existing, newest_seq);
 		if (err != ecSuccess)
 			return err;
 		if (!existing.empty()) {
+			/* Ignore stale out-of-order updates that predate what we already have. */
+			auto seq = rq_prop.get<const uint32_t>(seq_tag);
+			if (seq != nullptr && *seq < newest_seq)
+				return mr_mark_done(par);
 			EID_ARRAY ids = {static_cast<uint32_t>(existing.size()), existing.data()};
 			BOOL partial = false;
 			if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
