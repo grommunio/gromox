@@ -637,10 +637,9 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 		std::vector<std::string> argv;
 		auto argc = parse_imap_args(pcontext->command_buffer,
 			    pcontext->command_len, argv);
-		/* XXX: what if... argc < 0? */
 
 		if (pcontext->sched_stat == isched_stat::appended) {
-			if (0 != argc) {
+			if (argc > 0) {
 				/* Clears pcontext->mid; is this wanted here? */
 				ctx.wrdat_content = nullptr;
 				ctx.wrdat_backing.reset();
@@ -1490,9 +1489,9 @@ static int imap_parser_dispatch_cmd(std::span<std::string> argv, imap_context &c
 			fprintf(stderr, ": ret=%xh code=%u\n", ret, code);
 		}
 	}
-	return icp_dval(argv[0].c_str(), ctx, ret);
+	return icp_dval(argv.size() > 0 ? argv[0].c_str() : nullptr, ctx, ret);
 } catch (const std::bad_alloc &) {
-	return icp_dval(argv[0].c_str(), ctx, 1915);
+	return icp_dval(argv.size() > 0 ? argv[0].c_str() : nullptr, ctx, 1915);
 }
 
 imap_context::imap_context()

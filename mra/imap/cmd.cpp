@@ -2032,10 +2032,11 @@ static int icp_long_append_begin2(std::span<std::string> argv, imap_context &ctx
 
 int icp_long_append_begin(std::span<std::string> argv, imap_context &ctx)
 {
-	return icp_dval(argv[0].c_str(), ctx, icp_long_append_begin2(argv, ctx));
+	return icp_dval(argv.size() > 0 ? argv[0].c_str() : nullptr,
+	       ctx, icp_long_append_begin2(argv, ctx));
 }
 
-static int icp_long_append_end2(std::span<std::string> argv, imap_context &ctx) try
+static int icp_long_append_end2(imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	std::string content;
@@ -2102,7 +2103,8 @@ static int icp_long_append_end2(std::span<std::string> argv, imap_context &ctx) 
 
 int icp_long_append_end(std::span<std::string> argv, imap_context &ctx)
 {
-	return icp_dval(argv[0].c_str(), ctx, icp_long_append_end2(argv, ctx));
+	return icp_dval(argv.size() > 0 ? argv[0].c_str() : nullptr,
+	       ctx, icp_long_append_end2(ctx));
 }
 
 int icp_check(std::span<std::string> argv, imap_context &ctx)
