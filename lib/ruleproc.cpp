@@ -1296,11 +1296,75 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	return ecMAPIOOM;
 }
 
+/**
+ * Look up calendar item(s) previously entered for this meeting, matched by
+ * PidLidGlobalObjectId (which stays constant across reschedules/updates of the
+ * same meeting). All matches are returned so that the caller can clean any
+ * duplicates left over from earlier processing.
+ */
+static ec_error_t mr_find_cal_items(rxparam &par, proptag_t goid_tag,
+    const BINARY *goid, std::vector<eid_t> &mids)
+{
+	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	if (goid == nullptr || goid->cb == 0)
+		return ecSuccess;
+	const RESTRICTION_PROPERTY rprop = {RELOP_EQ, goid_tag, {goid_tag, deconst(goid)}};
+	const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
+	uint32_t table_id = 0, row_count = 0;
+	if (!exmdb_client->load_content_table(par.cur.dirc(), CP_ACP,
+	    cal_fid, nullptr, TABLE_FLAG_NONOTIFICATIONS,
+	    &rst, nullptr, &table_id, &row_count))
+		return ecRpcFailed;
+	auto cl_tbl = HX::make_scope_exit([&]() {
+		exmdb_client->unload_table(par.cur.dirc(), table_id);
+	});
+	if (row_count == 0)
+		return ecSuccess;
+	static constexpr proptag_t mid_tag = PidTagMid;
+	TARRAY_SET rows{};
+	if (!exmdb_client->query_table(par.cur.dirc(), nullptr, CP_ACP,
+	    table_id, {&mid_tag, 1}, 0, row_count, &rows))
+		return ecRpcFailed;
+	for (size_t i = 0; i < rows.count; ++i) {
+		if (rows.pparray[i] == nullptr)
+			continue;
+		auto mid = rows.pparray[i]->get<const uint64_t>(PidTagMid);
+		if (mid != nullptr)
+			mids.emplace_back(*mid);
+	}
+	return ecSuccess;
+}
+
 static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
     const mr_policy &policy)
 {
-	/* Reject recurring requests right away if so configured */
 	auto &rq_prop = par.ctnt->proplist;
+	auto cal_fid  = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	/*
+	 * Correlate this request with any calendar item(s) previously entered
+	 * for the same meeting (same PidLidGlobalObjectId) and drop them, so
+	 * that an updated/rescheduled request replaces the prior booking
+	 * action instead of adding a second entry. Doing this before the
+	 * freebusy check also keeps a meeting from conflicting with its own
+	 * earlier time slot.
+	 */
+	{
+		auto goid_tag = PROP_TAG(PT_BINARY, propids[l_goid]);
+		auto goid = rq_prop.get<const BINARY>(goid_tag);
+		std::vector<eid_t> existing;
+		auto err = mr_find_cal_items(par, goid_tag, goid, existing);
+		if (err != ecSuccess)
+			return err;
+		if (!existing.empty()) {
+			EID_ARRAY ids = {static_cast<uint32_t>(existing.size()), existing.data()};
+			BOOL partial = false;
+			if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
+			    nullptr, cal_fid, &ids, true /* hard */, &partial))
+				return ecRpcFailed;
+		}
+	}
+
+	/* Reject recurring requests right away if so configured */
 	auto recurring_ptr = rq_prop.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_recurring]));
 	auto recurring_flg = recurring_ptr != nullptr && *recurring_ptr != 0;
 	if (recurring_flg && policy.decline_recurring) {
@@ -1351,7 +1415,6 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 
 	/* Enter meeting into calendar */
 	auto tent = policy.accept_appts ? respAccepted : respNotResponded;
-	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
 	auto err = mr_insert_to_cal(par, propids, cal_fid, tent);
 	if (err != ecSuccess)
 		return err;
