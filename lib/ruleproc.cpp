@@ -1348,38 +1348,34 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	auto &rq_prop = par.ctnt->proplist;
 	auto cal_fid  = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
 	/*
-	 * Correlate this request with any calendar item(s) previously entered
-	 * for the same meeting (same PidLidGlobalObjectId) and drop them, so
-	 * that an updated/rescheduled request replaces the prior booking
-	 * action instead of adding a second entry. Doing this before the
-	 * freebusy check also keeps a meeting from conflicting with its own
-	 * earlier time slot.
+	 * Locate any calendar item(s) previously entered for this meeting (same
+	 * PidLidGlobalObjectId); an update or reschedule carries the same GOID,
+	 * so these are the prior bookings the request supersedes.
 	 */
+	std::vector<eid_t> existing;
 	{
 		auto goid_tag = PROP_TAG(PT_BINARY, propids[l_goid]);
 		auto goid = rq_prop.get<const BINARY>(goid_tag);
 		auto seq_tag  = PROP_TAG(PT_LONG, propids[l_appt_seq]);
-		std::vector<eid_t> existing;
 		uint32_t newest_seq = 0;
-
 		auto err = mr_find_cal_items(par, goid_tag, seq_tag, goid,
 		           existing, newest_seq);
 		if (err != ecSuccess)
 			return err;
+		/* Ignore stale out-of-order updates that predate what we already have. */
 		if (!existing.empty()) {
-			/* Ignore stale out-of-order updates that predate what we already have. */
 			auto seq = rq_prop.get<const uint32_t>(seq_tag);
 			if (seq != nullptr && *seq < newest_seq)
 				return mr_mark_done(par);
-			EID_ARRAY ids = {static_cast<uint32_t>(existing.size()), existing.data()};
-			BOOL partial = false;
-			if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
-			    nullptr, cal_fid, &ids, true /* hard */, &partial))
-				return ecRpcFailed;
 		}
 	}
 
-	/* Reject recurring requests right away if so configured */
+	/*
+	 * Reject recurring requests right away if so configured. This is a
+	 * policy decision independent of any existing booking, so it must run
+	 * before the cleanup below: a rejected recurrence must not delete a
+	 * single instance the room had already accepted under the same GOID.
+	 */
 	auto recurring_ptr = rq_prop.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_recurring]));
 	auto recurring_flg = recurring_ptr != nullptr && *recurring_ptr != 0;
 	if (recurring_flg && policy.decline_recurring) {
@@ -1387,6 +1383,20 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 		if (err != ecSuccess)
 			return err;
 		return mr_mark_done(par);
+	}
+
+	/*
+	 * Drop the prior booking(s) before the free/busy check, so a rescheduled
+	 * meeting does not clash with its own earlier slot. The request
+	 * supersedes them: replaced by the new entry below, or released if the
+	 * new time now conflicts with another booking.
+	 */
+	if (!existing.empty()) {
+		EID_ARRAY ids = {static_cast<uint32_t>(existing.size()), existing.data()};
+		BOOL partial = false;
+		if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
+		    nullptr, cal_fid, &ids, true /* hard */, &partial))
+			return ecRpcFailed;
 	}
 
 	/* Lookup conflict state */
