@@ -2202,8 +2202,27 @@ tproc_status http_parser::waitrecycled(http_context *pcontext,
 
 tproc_status http_parser::wait(http_context *pcontext)
 {
-	if (hpm_processor_is_in_charge(pcontext))
+	if (hpm_processor_is_in_charge(pcontext)) {
+		/*
+		 * HPM contexts (EWS GetStreamingEvents, MH-emsmdb
+		 * NotificationWait) park here with no pool-level timeout: the
+		 * contexts-pool scan thread re-queues `idling` contexts every
+		 * second without applying g_time_out (only `polling` contexts
+		 * are timed out). Their sole wakeup is
+		 * hpm_processor_wakeup_context(). Detect a peer that closed
+		 * the connection so the context (and its context_num slot) is
+		 * reclaimed even if such a wakeup was lost; without this,
+		 * parked contexts accumulate until context_num is exhausted
+		 * and gromox-http rejects all new connections until restarted.
+		 */
+		char tmp_buff;
+		if (recv(pcontext->connection.sockd, &tmp_buff,
+		    sizeof(tmp_buff), MSG_PEEK) == 0) {
+			pcontext->log(LV_DEBUG, "connection lost (hpm wait)");
+			return tproc_status::runoff;
+		}
 		return tproc_status::idle;
+	}
 	/* only hpm_processor or out channel can be set to hsched_stat::wait */
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 	switch (pchannel_out->channel_stat) {
