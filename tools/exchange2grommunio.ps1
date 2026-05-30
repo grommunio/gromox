@@ -76,8 +76,12 @@
 #       1. Right-click the Exchange Management Shell on the desktop and select 'Run as administrator'.
 #       2. Wait for PowerShell to connect to the Exchange server.
 #       3. Change directory to the folder where the script is stored, e.g. 'cd -d c:\grommunio'
-#       4. Launch the script with execution policy bypass: '.\exchange2grommunio.ps1 -ExecutionPolicy bypass'.
-#       5. If the above command does not work, set the Execution Policy to Bypass using the
+#       4. The 'Mark of the Web' (MotW) flag is usually set when the script is downloaded.
+#          This flag can be removed in File Explorer by right-clicking and selecting 'Properties' > 'Allow',
+#          or in PowerShell using the command: 'Unblock-File .exchange2grommunio.ps1'.
+#          Running a PowerShell script with the MotW flag set results in an error message.
+#       5. Launch the script with execution policy bypass: '.\exchange2grommunio.ps1 -ExecutionPolicy bypass'.
+#       6. If the above command does not work, set the Execution Policy to Bypass using the
 #          command 'Set-ExecutionPolicy Bypass', and then launch the script as '.\exchange2grommunio.ps1'.
 #
 # 7. Test the migration.
