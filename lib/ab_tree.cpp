@@ -219,6 +219,7 @@ bool ab_base::load()
 	}
 	for (size_t i = 0; i < m_domains.size(); ++i)
 		minid_idx_map.emplace(minid(minid::domain, m_domains[i].id), i);
+	m_load_time = gromox::tp_now();
 	m_status = Status::LIVING;
 	return true;
 }
