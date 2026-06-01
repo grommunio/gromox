@@ -478,6 +478,16 @@ static ec_error_t hierconttbl_query_rows(const table_object *ptable,
 	                 pcolumns.indexof(PR_RIGHTS) : pcolumns.npos;
 	TARRAY_SET temp_set;
 
+	/*
+	 * Some columns are only generatable in e.g. emsmdb or zcore; exmdb
+	 * will not answer to PR_SOURCE_KEY/PR_RIGHTS/etc. So those columns are
+	 * replaced with PidTagFolderId/etc. for the query_table call, and we
+	 * take note that PR_SOURCE_KEY was there. Afterwards, one
+	 * PidTagFolderId is chopped and substitutes with PR_SOURCE_KEY again.
+	 * The implementation does _not_ keep the column order, but that is ok,
+	 * because when php_mapi uses `tpropval_array_to_php` later on, the
+	 * order is lost anyway.
+	 */
 	if (idx_sk != pcolumns.npos || idx_acc != pcolumns.npos ||
 	    idx_rig != pcolumns.npos) {
 		tmp_columns.pproptag = cu_alloc<proptag_t>(pcolumns.size());
@@ -485,14 +495,6 @@ static ec_error_t hierconttbl_query_rows(const table_object *ptable,
 			return ecServerOOM;
 		tmp_columns.count = pcolumns.size();
 		memcpy(tmp_columns.pproptag, pcolumns.data(), sizeof(proptag_t) * pcolumns.size());
-		/*
-		 * For source_key/access/rights, we need the MID/FID,
-		 * so do some substitution (which will be "undone")
-		 * in {hier,cont}tbl_{sourcekey,access,right}.
-		 *
-		 * We may be requesting PidTagFolderId more than once from
-		 * exmdb, which is intentional.
-		 */
 		if (idx_sk != pcolumns.npos)
 			tmp_columns.pproptag[idx_sk] = ptable->table_type == zcore_tbltype::content ?
 			                            PidTagMid : PidTagFolderId;
