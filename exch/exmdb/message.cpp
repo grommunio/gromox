@@ -1222,10 +1222,19 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	          "messages WHERE message_id=%llu", LLU{mid_val});
 	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
-		return FALSE;
+		return false;
 	if (pstmt.step() != SQLITE_ROW)
 		return TRUE;
 	pstmt.finalize();
+	BOOL b_exist = false;
+	if (!common_util_check_search_result(pdb->psqlite, fid_val,
+	    mid_val, &b_exist))
+		return FALSE;
+	if (b_exist) {
+		/* Already linked; treat re-link as an idempotent success. */
+		*pb_result = TRUE;
+		return TRUE;
+	}
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result"
 	        " VALUES (%llu, %llu)", LLU{fid_val}, LLU{mid_val});
 	if (pdb->exec(sql_string) != SQLITE_OK)
