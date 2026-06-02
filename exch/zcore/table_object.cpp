@@ -404,6 +404,23 @@ static bool conttbl_access(const table_object *table,
 	return true;
 }
 
+static bool hierconttbl_psrckey(const table_object &table, TARRAY_SET &temp_set)
+{
+	for (size_t i = 0; i < temp_set.count; ++i) {
+		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+			auto &r = temp_set.pparray[i]->ppropval[j];
+			if (r.proptag != PidTagParentFolderId)
+				continue;
+			r.pvalue = cu_fid_to_sk(*table.pstore, *static_cast<eid_t *>(r.pvalue));
+			if (r.pvalue == nullptr)
+				return false;
+			r.proptag = PR_PARENT_SOURCE_KEY;
+			break;
+		}
+	}
+	return true;
+}
+
 static bool hiertbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
@@ -473,6 +490,7 @@ static ec_error_t hierconttbl_query_rows(const table_object *ptable,
 {
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	size_t idx_sk  = pcolumns.indexof(PR_SOURCE_KEY);
+	size_t idx_psk = pcolumns.indexof(PR_PARENT_SOURCE_KEY);
 	size_t idx_acc = pcolumns.indexof(PR_ACCESS);
 	size_t idx_rig = ptable->table_type == zcore_tbltype::hierarchy ?
 	                 pcolumns.indexof(PR_RIGHTS) : pcolumns.npos;
@@ -488,8 +506,8 @@ static ec_error_t hierconttbl_query_rows(const table_object *ptable,
 	 * because when php_mapi uses `tpropval_array_to_php` later on, the
 	 * order is lost anyway.
 	 */
-	if (idx_sk != pcolumns.npos || idx_acc != pcolumns.npos ||
-	    idx_rig != pcolumns.npos) {
+	if (idx_sk != pcolumns.npos || idx_psk != pcolumns.npos ||
+	    idx_acc != pcolumns.npos || idx_rig != pcolumns.npos) {
 		tmp_columns.pproptag = cu_alloc<proptag_t>(pcolumns.size());
 		if (tmp_columns.pproptag == nullptr)
 			return ecServerOOM;
@@ -498,6 +516,8 @@ static ec_error_t hierconttbl_query_rows(const table_object *ptable,
 		if (idx_sk != pcolumns.npos)
 			tmp_columns.pproptag[idx_sk] = ptable->table_type == zcore_tbltype::content ?
 			                            PidTagMid : PidTagFolderId;
+		if (idx_psk != pcolumns.npos)
+			tmp_columns.pproptag[idx_psk] = PidTagParentFolderId;
 		if (idx_acc != pcolumns.npos)
 			tmp_columns.pproptag[idx_acc] = ptable->table_type == zcore_tbltype::content ?
 			                                PidTagMid : PidTagFolderId;
@@ -507,6 +527,9 @@ static ec_error_t hierconttbl_query_rows(const table_object *ptable,
 		    username, pinfo->cpid, ptable->table_id, tmp_columns,
 		    ptable->position, row_needed, &temp_set))
 			return ecRpcFailed;
+		if (idx_psk != pcolumns.npos &&
+		    !hierconttbl_psrckey(*ptable, temp_set))
+			return ecError;
 		if (ptable->table_type == zcore_tbltype::content) {
 			if (idx_sk != pcolumns.npos &&
 			    !conttbl_srckey(ptable, temp_set))
