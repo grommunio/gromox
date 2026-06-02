@@ -75,21 +75,30 @@ ab::const_base_ref ab::get(int32_t base_id)
 		lock.unlock();
 		return base->await_load() ? base : nullptr;
 	}
+	/* iterator invalidated by try_emplace (and generally, unlock) */
+	base_ref base;
 	try {
 		auto res = m_base_hash.try_emplace(base_id, std::make_shared<ab_base>(base_id));
 		if (!res.second)
 			return nullptr;
-		it = res.first;
+		base = res.first->second;
 	} catch (std::bad_alloc &) {
 		return nullptr;
 	}
 	lock.unlock();
-	if (!it->second->load()) {
+	if (!base->load()) {
 		lock.lock();
-		m_base_hash.erase(it);
+		/*
+		 * Only drop the slot if it still refers to *our* base; a
+		 * concurrent invalidate_cache()/purge may have removed or
+		 * replaced it while we were loading.
+		 */
+		it = m_base_hash.find(base_id);
+		if (it != m_base_hash.end() && it->second == base)
+			m_base_hash.erase(it);
 		return nullptr;
 	}
-	return std::const_pointer_cast<const ab_base>(it->second);
+	return std::const_pointer_cast<const ab_base>(base);
 }
 
 /**
