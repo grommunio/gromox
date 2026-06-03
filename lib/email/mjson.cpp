@@ -153,6 +153,7 @@ void MJSON::clear()
 	pjson->reply.clear();
 	pjson->to.clear();
 	pjson->cc.clear();
+	pjson->bcc.clear();
 	pjson->inreply.clear();
 	pjson->subject.clear();
 	pjson->received.clear();
@@ -182,6 +183,7 @@ BOOL MJSON::load_from_json(const Json::Value &root) try
 		pjson->reply        = base64_decode(root["reply"].asString());
 		pjson->to           = base64_decode(root["to"].asString());
 		pjson->cc           = base64_decode(root["cc"].asString());
+		pjson->bcc          = base64_decode(root["bcc"].asString());
 		pjson->inreply      = base64_decode(root["inreply"].asString());
 		pjson->subject      = base64_decode(root["subject"].asString());
 		pjson->received     = base64_decode(root["received"].asString());
@@ -533,7 +535,7 @@ int MJSON::fetch_envelope(const char *cset, std::string &buf) const try
 	       mjson_cvt_addr(reply.size() > 0 ? reply.c_str() : from.c_str()));
 	mjson_emit_adrlist(to, buf);
 	mjson_emit_adrlist(cc, buf);
-	buf += " NIL"; /* bcc */
+	mjson_emit_adrlist(bcc, buf);
 	buf += inreply.size() > 0 && str_isasciipr(inreply.c_str()) ?
 	       " \"" + mjson_add_backslash(inreply.c_str()) + "\"" :
 	       " NIL";

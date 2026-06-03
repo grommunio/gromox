@@ -335,6 +335,8 @@ int MAIL::make_digest(Json::Value &digest) const try
 		digest["to"] = base64_encode(*hval);
 	if (auto hval = pmime->get_field("Cc"))
 		digest["cc"] = base64_encode(*hval);
+	if (auto hval = pmime->get_field("Bcc"))
+		digest["bcc"] = base64_encode(*hval);
 	if (auto hval = pmime->get_field("In-Reply-To")) {
 		auto s = base64_encode(*hval);
 		if (!s.empty())

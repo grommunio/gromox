@@ -86,7 +86,7 @@ struct GX_EXPORT MJSON {
 	bool flag = false;
 	unsigned int priority = 0, uid = 0;
 	size_t size = 0;
-	std::string path, filename, charset, msgid, from, sender, reply, to, cc;
+	std::string path, filename, charset, msgid, from, sender, reply, to, cc, bcc;
 	std::string inreply, subject, received, date, ref, notification;
 
 	template<typename... Args> void enum_mime(Args &&...args) {
