@@ -682,7 +682,19 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 			if (argc <= 0 || argv[0].size() >= 32) {
-				pcontext->connection.write("* ", 2);
+				/*
+				 * Argument parsing failed and cleared argv. Recover
+				 * the tag from the raw line so the client still gets
+				 * a tagged BAD it can match (RFC 3501 7.1.3) rather
+				 * than an untagged one that leaves it waiting.
+				 */
+				size_t taglen = strcspn(pcontext->command_buffer, " ");
+				if (taglen > 0 && taglen < 32) {
+					pcontext->connection.write(pcontext->command_buffer, taglen);
+					pcontext->connection.write(" ", 1);
+				} else {
+					pcontext->connection.write("* ", 2);
+				}
 				pcontext->connection.write(imap_reply_str, string_length);
 			} else {
 				pcontext->connection.write(argv[0].c_str(), argv[0].size());
