@@ -2412,8 +2412,10 @@ int icp_store(std::span<std::string> argv, imap_context &ctx)
 			flag_bits |= FLAG_RECENT;			
 		else if (strcasecmp(keyword, "$Forwarded") == 0)
 			flag_bits |= FLAG_FORWARDED;
-		else
-			return 1807;
+		/*
+		 * Custom keywords and NIL are not persisted (no \* is
+		 * advertised), so ignore them rather than failing the STORE.
+		 */
 	}
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
@@ -2676,8 +2678,10 @@ int icp_uid_store(std::span<std::string> argv, imap_context &ctx)
 			flag_bits |= FLAG_RECENT;			
 		else if (strcasecmp(keyword, "$Forwarded") == 0)
 			flag_bits |= FLAG_FORWARDED;
-		else
-			return 1807;
+		/*
+		 * Custom keywords and NIL are not persisted (no \* is
+		 * advertised), so ignore them rather than failing the STORE.
+		 */
 	}
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
