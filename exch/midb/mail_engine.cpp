@@ -1019,6 +1019,7 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			i ++;
 			if (i >= argv.size())
 				return {};
+			keyword = argv[i].data();
 		} else {
 			ptree_node->conjunction = midb_conj::c_and;
 		}
@@ -1027,7 +1028,7 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			i ++;
 			if (i + 1 > argv.size())
 				return {};
-			ptree_node->ct_keyword = me_ct_to_utf8(charset, keyword);
+			ptree_node->ct_keyword = me_ct_to_utf8(charset, argv[i].data());
 		} else if (array_find_istr(kwlist2, keyword)) {
 			if (i + 1 > argv.size())
 				return {};
@@ -1036,7 +1037,7 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			if (i + 1 > argv.size())
 				return {};
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
-			if (strptime(keyword, "%d-%b-%Y", &tmp_tm) == nullptr)
+			if (strptime(argv[i].data(), "%d-%b-%Y", &tmp_tm) == nullptr)
 				return {};
 			tmp_tm.tm_wday = -1;
 			ptree_node->ct_time = timegm(&tmp_tm);
@@ -1079,11 +1080,11 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			i ++;
 			if (i + 1 > argv.size())
 				return {};
-			ptree_node->ct_headers[0] = keyword;
+			ptree_node->ct_headers[0] = argv[i];
 			i ++;
 			if (i + 1 > argv.size())
 				return {};
-			ptree_node->ct_headers[1] = keyword;
+			ptree_node->ct_headers[1] = argv[i];
 		} else if (strcasecmp(keyword, "LARGER") == 0 ||
 		    strcasecmp(keyword, "SMALLER") == 0) {
 			ptree_node->condition = strcasecmp(keyword, "LARGER") == 0 ?
@@ -1091,14 +1092,14 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			i ++;
 			if (i + 1 > argv.size())
 				return {};
-			ptree_node->ct_size = strtol(keyword, nullptr, 0);
+			ptree_node->ct_size = strtol(argv[i].data(), nullptr, 0);
 		} else if (strcasecmp(keyword, "UID") == 0) {
 			ptree_node->condition = midb_cond::uid;
 			i ++;
 			if (i + 1 > argv.size())
 				return {};
 			imap_seq_list r;
-			if (parse_imap_seq(r, keyword) != 0)
+			if (parse_imap_seq(r, argv[i].data()) != 0)
 				return {};
 			ptree_node->ct_seq = std::move(r);
 		} else {
