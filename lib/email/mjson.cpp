@@ -573,13 +573,16 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 		eml = base64_decode(*std::move(eml_content));
 	} else if (pmime->encoding_is_q()) {
 		std::string qpout;
-		qpout.resize(eml.size());
-		auto qdlen = qpnl_decode_sized(eml, qpout.data(), qpout.size());
+		qpout.resize(eml_content->size());
+		auto qdlen = qpnl_decode_sized(*std::move(eml_content), qpout.data(), qpout.size());
 		if (qdlen < 0) {
 			pbuild->build_result = false;
 			return;
 		}
+		qpout.resize(qdlen);
 		eml = std::move(qpout);
+	} else {
+		eml = std::move(*eml_content);
 	}
 	
 	MJSON temp_mjson;
