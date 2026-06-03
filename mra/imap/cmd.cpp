@@ -580,7 +580,7 @@ static int pstruct_else(imap_context &ctx, MJSON *pjson,
 			std::string content;
 			if (exmdb_client->imapfile_read(ctx.maildir, "eml",
 			    pjson->get_mail_filename(), &content))
-				ctx.io_actor.place(eml_path, std::move(content));
+				ctx.io_actor.place(eml_path, std::move(content), true);
 		}
 	} else {
 		eml_path = ctx.maildir + "/tmp/imap.rfc822/"s + storage_path + "/" + pjson->get_mail_filename();
@@ -672,7 +672,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 		if (!ctx.io_actor.exists(eml_file)) {
 			std::string content;
 			if (exmdb_client->imapfile_read(ctx.maildir, "eml", pitem->mid, &content))
-				ctx.io_actor.place(eml_file, std::move(content));
+				ctx.io_actor.place(eml_file, std::move(content), true);
 		}
 	};
 
@@ -863,6 +863,16 @@ static int icp_process_fetch_item(imap_context &ctx,
 	buf += ")\r\n";
 	if (pcontext->stream.write(buf.data(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
+	/*
+	 * The response for this message is now buffered in ctx.stream (message
+	 * bodies as <<{file}>>/<<{rfc822}>> placeholders). The top-level .eml
+	 * scratch copies cached while assembling it are no longer needed — the
+	 * wrdat writer re-reads them from storage — so drop them before moving
+	 * to the next message. Without this, "FETCH 1:* ..." over a large
+	 * folder would hold every message body resident until the whole
+	 * response had been streamed out.
+	 */
+	ctx.io_actor.drop_reconstructible();
 	if (!pcontext->b_readonly && pitem->flag_bits & FLAG_RECENT) {
 		pitem->flag_bits &= ~FLAG_RECENT;
 		if (!(pitem->flag_bits & FLAG_SEEN)) {
