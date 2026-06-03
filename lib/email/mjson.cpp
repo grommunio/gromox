@@ -313,7 +313,6 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
     const char *email_charset, BOOL b_ext, std::string &buf) try
 {
 	auto ctype = pmime->ctype;
-	HX_strupper(ctype.data());
 	auto pos = ctype.find('/');
 	std::string psubtype;
 	if (pos != ctype.npos) {
