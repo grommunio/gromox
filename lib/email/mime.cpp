@@ -1280,7 +1280,8 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 	digest["begin"] = Json::Value::UInt64(*poffset);
 	if (!pmime->get_field("Content-Transfer-Encoding", encoding_buff, 128) ||
 	    !str_isasciipr(encoding_buff)) {
-		digest["encoding"] = "8bit";
+		/* RFC 2045 §6.1: absent Content-Transfer-Encoding means 7bit. */
+		digest["encoding"] = "7bit";
 	} else {
 		replace_qb(encoding_buff);
 		HX_strrtrim(encoding_buff);
