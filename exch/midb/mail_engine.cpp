@@ -470,10 +470,21 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_column_int64(pstmt_message, CTM_REPLIED) != 0)
 					b_result1 = true;
 				break;
-			case midb_cond::bcc:
-				/* we do not support BCC field in mail digest,
-					BCC should not recorded in mail head */
+			case midb_cond::bcc: {
+				if (!b_loaded) {
+					if (me_get_digest(psqlite, mid_string, digest) == 0)
+						break;
+					b_loaded = true;
+				}
+				std::string val;
+				if (!get_digest(digest, "bcc", val))
+					break;
+				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
+				if (rs != nullptr && strcasestr(rs.get(),
+				    ptree_node->ct_keyword.c_str()) != nullptr)
+					b_result1 = true;
 				break;
+			}
 			case midb_cond::before:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
