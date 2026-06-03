@@ -64,9 +64,26 @@ bool mjson_io::exists(const std::string &path) const
 	return m_cache.find(path) != m_cache.cend();
 }
 
-void mjson_io::place(const std::string &path, std::string &&content)
+void mjson_io::place(const std::string &path, std::string &&content, bool easy)
 {
 	m_cache[path] = std::move(content);
+	if (easy)
+		m_reconstructible.emplace(path);
+	else
+		m_reconstructible.erase(path);
+}
+
+/**
+ * Release the cache entries that were marked evictable by place() — i.e. the
+ * top-level .eml scratch copies that the wrdat writer can re-read from
+ * storage. Called once per processed FETCH item so that a wide "FETCH 1:* ..."
+ * does not accumulate every message body of the folder in memory at once.
+ */
+void mjson_io::drop_reconstructible()
+{
+	for (const auto &key : m_reconstructible)
+		m_cache.erase(key);
+	m_reconstructible.clear();
 }
 
 const std::string *mjson_io::get_full(const std::string &path) const

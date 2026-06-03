@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <json/value.h>
 #include <gromox/util.hpp>
@@ -12,14 +13,21 @@ using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
 
 struct GX_EXPORT mjson_io {
 	std::unordered_map<std::string, std::string> m_cache;
+	/*
+	 * Subset of m_cache keys that are cheaply reconstructible and safe to
+	 * drop between FETCH items (e.g. top-level .eml bodies, which the
+	 * wrdat writer re-reads from storage on demand).
+	 */
+	std::unordered_set<std::string> m_reconstructible;
 	using c_iter = decltype(m_cache)::const_iterator;
 
 	bool exists(const std::string &path) const;
 	const std::string *get_full(const std::string &path) const;
 	std::optional<std::string> get_substr(const std::string &path, size_t of, size_t ln) const;
 	ssize_t get_size(const std::string &path) const;
-	void place(const std::string &path, std::string &&ctnt);
-	void clear() { m_cache.clear(); }
+	void place(const std::string &path, std::string &&ctnt, bool evictable = false);
+	void drop_reconstructible();
+	void clear() { m_reconstructible.clear(); m_cache.clear(); }
 	bool valid(c_iter it) const { return it != m_cache.cend(); }
 	bool invalid(c_iter it) const { return it == m_cache.cend(); }
 };
