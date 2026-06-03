@@ -147,6 +147,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{2000 | MIDB_E_MDB_PARTIAL, "exmdb: RPC completed with partial result"},
 	{2000 | MIDB_E_MDB_SETFOLDERPROPS, "exmdb: set_folder_props RPC failed"},
 	{2000 | MIDB_E_MDB_SETMSGPROPS, "exmdb: set_msg_props RPC failed"},
+	{2000 | MIDB_E_MDB_SETMSGRD, "exmdb: set_message_read_state RPC failed"},
 	{2000 | MIDB_E_MDB_WRITEMESSAGE, "exmdb: write_message RPC failed"},
 	{2000 | MIDB_E_MNG_CTMATCH, "midb: ct_match failed"},
 	{2000 | MIDB_E_MNG_SORTFOLDER, "midb: sort_folder failed"},
@@ -157,6 +158,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{2000 | MIDB_E_SSGETID, "User unresolvable"},
 	{2000 | MIDB_E_ACCESS_DENIED, "Access denied"},
 	{2000 | MIDB_E_NOTPERMITTED, "Operation not permitted"},
+	{2000 | MIDB_E_NO_FOLDER_TRYCREATE, "folder does not exist"},
 };
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;
