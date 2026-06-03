@@ -3317,8 +3317,8 @@ static int me_psrhl(std::span<char *> argv, int sockd) try
 	    decode64(argv[4], tmp_len, tmp_buff, std::size(tmp_buff), &decode_len) != 0)
 		return MIDB_E_PARAMETER_ERROR;
 	parg = tmp_buff;
-	while (*parg != '\0' && parg - tmp_buff >= 0 &&
-	       static_cast<size_t>(parg - tmp_buff) < decode_len) {
+	while (parg - tmp_buff >= 0 &&
+	       static_cast<size_t>(parg - tmp_buff) + 1 < decode_len) {
 		tmp_argv.emplace_back(parg);
 		parg += strlen(parg) + 1;
 	}
@@ -3391,8 +3391,8 @@ static int me_psrhu(std::span<char *> argv, int sockd) try
 	    decode64(argv[4], tmp_len, tmp_buff, std::size(tmp_buff), &decode_len) != 0)
 		return MIDB_E_PARAMETER_ERROR;
 	parg = tmp_buff;
-	while (*parg != '\0' && parg - tmp_buff >= 0 &&
-	       static_cast<size_t>(parg - tmp_buff) < decode_len) {
+	while (parg - tmp_buff >= 0 &&
+	       static_cast<size_t>(parg - tmp_buff) + 1 < decode_len) {
 		tmp_argv.emplace_back(parg);
 		parg += strlen(parg) + 1;
 	}
