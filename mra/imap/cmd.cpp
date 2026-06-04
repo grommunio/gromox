@@ -2890,6 +2890,17 @@ void icp_clsfld(imap_context &ctx) try
 	pcontext->selected_folder.clear();
 	if (pcontext->b_readonly)
 		return;
+	/*
+	 * RFC3501 §7.4.2: a read-write SELECT consumes \Recent. Clear it for the
+	 * folder's messages as the session leaves it so a later STATUS/SELECT
+	 * reports RECENT 0. (read-only EXAMINE returned above without clearing.)
+	 */
+	for (size_t ri = 0; ri < pcontext->contents.get_capacity(); ++ri) {
+		auto pitem = pcontext->contents.get_item(ri);
+		if (pitem != nullptr && pitem->flag_bits & FLAG_RECENT)
+			midb_agent::unset_flags(pcontext->maildir, prev_selected,
+				pitem->mid, FLAG_RECENT, nullptr, &errnum);
+	}
 	XARRAY xarray;
 	result = midb_agent::list_deleted(pcontext->maildir,
 	         prev_selected, &xarray, &errnum);

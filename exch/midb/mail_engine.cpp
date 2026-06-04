@@ -2688,7 +2688,7 @@ static int me_pfddt(std::span<char *> argv, int sockd)
 	size_t unreads = pstmt.step() == SQLITE_ROW ? pstmt.col_uint64(0) : 0;
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT count(message_id) FROM"
-	          " messages WHERE folder_id=%llu AND recent=0", LLU{folder_id});
+	          " messages WHERE folder_id=%llu AND recent!=0", LLU{folder_id});
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
