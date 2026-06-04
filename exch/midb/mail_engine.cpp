@@ -434,6 +434,26 @@ static bool me_ct_match_addr(const char *charset, const char *raw,
 	return false;
 }
 
+/**
+ * Converts a date string to unixtime, truncating/ignoring time and zone and
+ * normalizing to midnight UTC. This is for facilitating
+ * SENTBEFORE/SENTON/SENTSINCE comparisons (RFC 3501 §6.4.4) that ignore those
+ * parts of the date. (This lines up with the code in `me_ct_build_internal`,
+ * which also turns dates into a TZ-less midnight via timegm).
+ */
+static bool me_ct_sent_date(const char *date_str, time_t *out)
+{
+	struct tm tmp_tm{};
+	auto p = strptime(date_str, "%a, %d %b %Y", &tmp_tm);
+	if (p == nullptr)
+		p = strptime(date_str, "%d %b %Y", &tmp_tm);
+	if (p == nullptr)
+		return false;
+	tmp_tm.tm_hour = tmp_tm.tm_min = tmp_tm.tm_sec = 0;
+	*out = timegm(&tmp_tm);
+	return *out != static_cast<time_t>(-1);
+}
+
 static bool me_ct_search_head(const char *charset, const char *mid_string,
     const std::string &tag, const std::string &value)
 {
@@ -715,7 +735,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "date", val))
 					break;
-				if (parse_rfc822_timestamp(base64_decode(val).c_str(), &tmp_time) &&
+				if (me_ct_sent_date(base64_decode(val).c_str(), &tmp_time) &&
 				    tmp_time < ptree_node->ct_time)
 					b_result1 = true;
 				break;
@@ -729,7 +749,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "date", val))
 					break;
-				if (parse_rfc822_timestamp(base64_decode(val).c_str(), &tmp_time) &&
+				if (me_ct_sent_date(base64_decode(val).c_str(), &tmp_time) &&
 				    tmp_time >= ptree_node->ct_time &&
 				    tmp_time < ptree_node->ct_time + 86400)
 					b_result1 = true;
@@ -744,7 +764,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "date", val))
 					break;
-				if (parse_rfc822_timestamp(base64_decode(val).c_str(), &tmp_time) &&
+				if (me_ct_sent_date(base64_decode(val).c_str(), &tmp_time) &&
 				    tmp_time >= ptree_node->ct_time)
 					b_result1 = true;
 				break;
