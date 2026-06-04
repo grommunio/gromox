@@ -14,7 +14,8 @@
 #include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
-#include <vmime/mailboxList.hpp>
+#include <vmime/addressList.hpp>
+#include <vmime/mailboxGroup.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
@@ -497,7 +498,7 @@ static std::string mjson_cvt_addr(const EMAIL_ADDR &email_addr)
 
 static void mjson_emit_adrlist(const std::string &al, std::string &buf)
 {
-	vmime::mailboxList vmlist;
+	vmime::addressList vmlist;
 	vmlist.parse(al);
 	if (vmlist.isEmpty()) {
 		buf += " NIL";
@@ -505,11 +506,35 @@ static void mjson_emit_adrlist(const std::string &al, std::string &buf)
 	}
 	buf += " (";
 	bool second = false;
-	for (auto entry : vmlist.getMailboxList()) {
+	for (const auto &addr : vmlist.getAddressList()) {
+		auto grp = vmime::dynamicCast<vmime::mailboxGroup>(addr);
+		if (grp != nullptr) {
+			/* RFC 3501: group start = (NIL NIL "groupname" NIL) */
+			EMAIL_ADDR ema;
+			gx_strlcpy(ema.local_part,
+				grp->getName().getConvertedText(vmime::charsets::UTF_8).c_str(),
+				std::size(ema.local_part));
+			if (second)
+				buf += ' ';
+			second = true;
+			buf += mjson_cvt_addr(ema);
+			for (const auto &mb : grp->getMailboxList()) {
+				buf += ' ';
+				buf += mjson_cvt_addr(EMAIL_ADDR(*mb));
+			}
+			/* group end = (NIL NIL NIL NIL) */
+			ema.clear();
+			buf += ' ';
+			buf += mjson_cvt_addr(ema);
+			continue;
+		}
+		auto mb = vmime::dynamicCast<vmime::mailbox>(addr);
+		if (mb == nullptr)
+			continue;
 		if (second)
 			buf += ' ';
 		second = true;
-		buf += mjson_cvt_addr(*entry);
+		buf += mjson_cvt_addr(EMAIL_ADDR(*mb));
 	}
 	buf += ')';
 }
