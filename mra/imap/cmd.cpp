@@ -900,7 +900,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 	if (0 == strcasecmp(cmd, "FLAGS") ||
 		0 == strcasecmp(cmd, "FLAGS.SILENT")) {
 		midb_agent::unset_flags(pcontext->maildir, pcontext->selected_folder,
-			mid, FLAG_ALL, nullptr, &errnum);
+			mid, FLAG_SETTABLE, nullptr, &errnum);
 		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {

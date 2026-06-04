@@ -24,7 +24,12 @@ enum {
 	FLAG_FORWARDED= 0x40,
 
 	/* mnemonics */
-	FLAG_ALL      = 0x4F,
+	/*
+	 * Flags that a client may set/clear via the STORE command.
+	 * \Recent is server-managed and thus not included.
+	 */
+	FLAG_SETTABLE = FLAG_ANSWERED | FLAG_FLAGGED | FLAG_DELETED | FLAG_SEEN |
+	                FLAG_DRAFT | FLAG_FORWARDED,
 
 	/* internal */
 	FLAG_LOADED   = 0x80,
