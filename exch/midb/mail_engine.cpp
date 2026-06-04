@@ -700,40 +700,55 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_column_int64(pstmt_message, CTM_READ) != 0)
 					b_result1 = true;
 				break;
-			case midb_cond::sent_before:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+			case midb_cond::sent_before: {
+				/*
+				 * Surely this could be optimized by adding
+				 * dedicated recv_time/snd_time columns to
+				 * midb.sqlite3(?) in addition to the existing
+				 * mod_time.
+				 */
+				if (!b_loaded) {
+					if (me_get_digest(psqlite, mid_string, digest) == 0)
+						break;
+					b_loaded = true;
+				}
+				std::string val;
+				if (!get_digest(digest, "date", val))
 					break;
-				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, CTM_MODTIME));
-				if (tmp_time < ptree_node->ct_time)
+				if (parse_rfc822_timestamp(base64_decode(val).c_str(), &tmp_time) &&
+				    tmp_time < ptree_node->ct_time)
 					b_result1 = true;
 				break;
-			case midb_cond::sent_on:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+			}
+			case midb_cond::sent_on: {
+				if (!b_loaded) {
+					if (me_get_digest(psqlite, mid_string, digest) == 0)
+						break;
+					b_loaded = true;
+				}
+				std::string val;
+				if (!get_digest(digest, "date", val))
 					break;
-				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, CTM_MODTIME));
-				if (tmp_time >= ptree_node->ct_time &&
+				if (parse_rfc822_timestamp(base64_decode(val).c_str(), &tmp_time) &&
+				    tmp_time >= ptree_node->ct_time &&
 				    tmp_time < ptree_node->ct_time + 86400)
 					b_result1 = true;
 				break;
-			case midb_cond::sent_since:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+			}
+			case midb_cond::sent_since: {
+				if (!b_loaded) {
+					if (me_get_digest(psqlite, mid_string, digest) == 0)
+						break;
+					b_loaded = true;
+				}
+				std::string val;
+				if (!get_digest(digest, "date", val))
 					break;
-				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, CTM_MODTIME));
-				if (tmp_time >= ptree_node->ct_time)
+				if (parse_rfc822_timestamp(base64_decode(val).c_str(), &tmp_time) &&
+				    tmp_time >= ptree_node->ct_time)
 					b_result1 = true;
 				break;
+			}
 			case midb_cond::since:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
