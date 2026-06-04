@@ -130,6 +130,7 @@ using CONDITION_TREE_NODE = ct_node;
 struct KEYWORD_ENUM {
 	MJSON *pjson = nullptr;
 	BOOL b_result = false;
+	bool b_body_only = false;
 	const char *charset = nullptr;
 	const char *keyword = nullptr;
 };
@@ -361,6 +362,8 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 		if (xl < 0)
 			return;
 		content.resize(xl);
+	} else if (penum->b_body_only) {
+		content = std::string(ctview);
 	}
 
 	auto charset = pmime->get_charset();
@@ -510,6 +513,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				keyword_enum.b_result = FALSE;
 				keyword_enum.charset = charset;
 				keyword_enum.keyword = ptree_node->ct_keyword.c_str();
+				keyword_enum.b_body_only = true;
 				temp_mjson.enum_mime(me_ct_enum_mime, &keyword_enum);
 				if (keyword_enum.b_result)
 					b_result1 = true;
@@ -755,6 +759,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				keyword_enum.b_result = FALSE;
 				keyword_enum.charset = charset;
 				keyword_enum.keyword = ptree_node->ct_keyword.c_str();
+				keyword_enum.b_body_only = false;
 				temp_mjson.enum_mime(me_ct_enum_mime, &keyword_enum);
 				if (keyword_enum.b_result)
 					b_result1 = true;
