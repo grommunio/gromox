@@ -2192,7 +2192,7 @@ int icp_expunge(std::span<std::string> argv, imap_context &ctx) try
 				pitem->mid.c_str());
 	}
 	if (!exp_list.empty())
-		imap_parser_bcast_expunge(*pcontext, exp_list);
+		imap_parser_bcast_expunge(*pcontext, exp_list, pcontext->selected_folder);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170026: OK EXPUNGE completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1726, 1));
@@ -2859,7 +2859,7 @@ int icp_uid_expunge(std::span<std::string> argv, imap_context &ctx) try
 				pitem->mid.c_str());
 	}
 	if (!exp_list.empty())
-		imap_parser_bcast_expunge(*pcontext, exp_list);
+		imap_parser_bcast_expunge(*pcontext, exp_list, pcontext->selected_folder);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1726, 1));
@@ -2971,8 +2971,7 @@ void icp_clsfld(imap_context &ctx) try
 		return;
 	}
 	if (b_deleted)
-		imap_parser_bcast_touch(pcontext,
-			pcontext->username, prev_selected);
+		imap_parser_bcast_expunge(*pcontext, exp_list, prev_selected);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1242: ENOMEM");
 }

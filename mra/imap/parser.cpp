@@ -1238,7 +1238,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 }
 
 void imap_parser_bcast_expunge(const imap_context &current,
-    const std::vector<MITEM *> &exp_list) try
+    const std::vector<MITEM *> &exp_list, const std::string &folder) try
 {
 	char user_lo[UADDR_SIZE];
 	gx_strlcpy(user_lo, current.username, std::size(user_lo));
@@ -1250,7 +1250,7 @@ void imap_parser_bcast_expunge(const imap_context &current,
 	if (ctx_list == nullptr)
 		return;
 	for (auto &other : *ctx_list) {
-		if (current.selected_folder != other->selected_folder)
+		if (folder != other->selected_folder)
 			continue;
 		for (auto p : exp_list)
 			other->f_expunged_uids.emplace_back(p->uid);
@@ -1258,7 +1258,7 @@ void imap_parser_bcast_expunge(const imap_context &current,
 	}
 	hl_hold.unlock();
 	/* Bcast to other bus listeners (IOW, pop3) */
-	auto cmd = "MESSAGE-EXPUNGE "s + user_lo + " " + current.selected_folder + " ";
+	auto cmd = "MESSAGE-EXPUNGE "s + user_lo + " " + folder + " ";
 	auto csize = cmd.size();
 	for (auto p : exp_list) {
 		cmd.resize(csize);

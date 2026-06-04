@@ -144,7 +144,7 @@ enum echomod : bool { normal = false, suppress_expunge = true };
 extern void imap_parser_echo_modify(imap_context *, STREAM *, echomod sup_expu = echomod::suppress_expunge);
 extern void imap_parser_bcast_flags(const imap_context &, uint32_t uid);
 extern void imap_parser_add_select(imap_context *);
-extern void imap_parser_bcast_expunge(const imap_context &, const std::vector<MITEM *> &);
+extern void imap_parser_bcast_expunge(const imap_context &, const std::vector<MITEM *> &, const std::string &folder);
 extern void imap_parser_remove_select(imap_context *);
 extern  void imap_parser_safe_write(imap_context *, const void *pbuff, size_t count);
 extern void imap_parser_log_info(imap_context *, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));
