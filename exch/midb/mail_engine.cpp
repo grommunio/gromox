@@ -33,7 +33,9 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vmime/addressList.hpp>
 #include <vmime/header.hpp>
+#include <vmime/mailboxGroup.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
@@ -374,6 +376,53 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	mlog(LV_ERR, "E-1970: ENOMEM");
 }
 
+static bool match_addr_vmime(const vmime::mailbox &m, const char *keyword)
+{
+	EMAIL_ADDR ea(m);
+	if (*ea.display_name != '\0' &&
+	    strcasestr(ea.display_name, keyword) != nullptr)
+		return true;
+	if (*ea.addr != '\0' && strcasestr(ea.addr, keyword) != nullptr)
+		return true;
+	return false;
+}
+
+/**
+ * From/To/Cc/Bcc keywords should match against the envelope address structure,
+ * not the raw header octets (RFC 3501 §6.4.4). Try the existing raw RFC
+ * 2047-decoded substring match first (keeps display-name / comment-as-name /
+ * substring hits), then a vmime-parsed form so that commented/folded addresses
+ * like "<u (c)@ (c) d.org>" still match the contiguous "u@d.org".
+ */
+static bool me_ct_match_addr(const char *charset, const char *raw,
+    const char *keyword) try
+{
+	auto rs = me_ct_decode_mime(charset, raw);
+	if (rs != nullptr && strcasestr(rs.get(), keyword) != nullptr)
+		return true;
+	vmime::addressList al;
+	try {
+		al.parse(raw);
+	} catch (const vmime::exception &) {
+		return false;
+	}
+	for (const auto &a : al.getAddressList()) {
+		auto grp = vmime::dynamicCast<vmime::mailboxGroup>(a);
+		if (grp != nullptr) {
+			for (const auto &m : grp->getMailboxList())
+				if (match_addr_vmime(*m, keyword))
+					return true;
+			continue;
+		}
+		auto mb = vmime::dynamicCast<vmime::mailbox>(a);
+		if (mb != nullptr && match_addr_vmime(*mb, keyword))
+			return true;
+	}
+	return false;
+} catch (const std::bad_alloc &) {
+	return false;
+}
+
 static bool me_ct_search_head(const char *charset, const char *mid_string,
     const std::string &tag, const std::string &value)
 {
@@ -482,9 +531,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "bcc", val))
 					break;
-				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
-				if (rs != nullptr && strcasestr(rs.get(),
-				    ptree_node->ct_keyword.c_str()) != nullptr)
+				if (me_ct_match_addr(charset, base64_decode(val).c_str(),
+				    ptree_node->ct_keyword.c_str()))
 					b_result1 = true;
 				break;
 			}
@@ -528,9 +576,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "cc", val))
 					break;
-				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
-				if (rs != nullptr && strcasestr(rs.get(),
-				    ptree_node->ct_keyword.c_str()) != nullptr)
+				if (me_ct_match_addr(charset, base64_decode(val).c_str(),
+				    ptree_node->ct_keyword.c_str()))
 					b_result1 = true;
 				break;
 			}
@@ -570,9 +617,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "from", val))
 					break;
-				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
-				if (rs != nullptr && strcasestr(rs.get(),
-				    ptree_node->ct_keyword.c_str()) != nullptr)
+				if (me_ct_match_addr(charset, base64_decode(val).c_str(),
+				    ptree_node->ct_keyword.c_str()))
 					b_result1 = true;
 				break;
 			}
@@ -774,9 +820,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "to", val))
 					break;
-				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
-				if (rs != nullptr && strcasestr(rs.get(),
-				    ptree_node->ct_keyword.c_str()) != nullptr)
+				if (me_ct_match_addr(charset, base64_decode(val).c_str(),
+				    ptree_node->ct_keyword.c_str()))
 					b_result1 = true;
 				break;
 			}
