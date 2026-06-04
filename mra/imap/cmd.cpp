@@ -1405,9 +1405,11 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
     
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argv.size() < 3 || argv[2].size() == 0 || argv[2].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name))
+	if (argv.size() < 3 || argv[2].size() == 0 || argv[2].size() >= 1024)
 		return 1800;
+	if (!icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name))
+		/* Undecodable (e.g. bad modified-UTF-7) name: no such mailbox. */
+		return 1925;
 	if (iproto_stat::select == pcontext->proto_stat) {
 		imap_parser_remove_select(pcontext);
 		pcontext->proto_stat = iproto_stat::auth;
