@@ -765,7 +765,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, nullptr, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
-				imap_parser_bcast_flags(*pcontext, pitem->uid);
+				imap_parser_bcast_flags(*pcontext, pitem->uid, bcastfl::include_self);
 			}
 		} else if (strcasecmp(kw, "RFC822.HEADER") == 0) {
 			auto pmime = mjson.get_mime("");
@@ -794,7 +794,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, nullptr, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
-				imap_parser_bcast_flags(*pcontext, pitem->uid);
+				imap_parser_bcast_flags(*pcontext, pitem->uid, bcastfl::include_self);
 			}
 		} else if (strcasecmp(kw, "UID") == 0) {
 			buf += "UID ";
@@ -856,7 +856,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, nullptr, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
-				imap_parser_bcast_flags(*pcontext, pitem->uid);
+				imap_parser_bcast_flags(*pcontext, pitem->uid, bcastfl::include_self);
 			}
 		}
 	}

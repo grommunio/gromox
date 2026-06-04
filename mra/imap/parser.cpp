@@ -1192,7 +1192,8 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 			other->async_change_mask |= REPORT_NEWMAIL;
 }
 
-void imap_parser_bcast_flags(const imap_context &current, uint32_t uid) try
+void imap_parser_bcast_flags(const imap_context &current, uint32_t uid,
+    bcastfl is_flag) try
 {
 	char buff[1024];
 
@@ -1203,8 +1204,9 @@ void imap_parser_bcast_flags(const imap_context &current, uint32_t uid) try
 	if (plist == nullptr)
 		return;
 	for (auto other : *plist) {
-		if (&current == other ||
-		    current.selected_folder != other->selected_folder)
+		if (&current == other && is_flag == bcastfl::include_self)
+			continue;
+		if (current.selected_folder != other->selected_folder)
 			continue;
 		other->f_flags.emplace(uid);
 		other->async_change_mask |= REPORT_FLAGS;
