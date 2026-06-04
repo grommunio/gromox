@@ -1312,7 +1312,8 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 } catch (const std::bad_alloc &) {
 }
 
-void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
+void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
+    echomod suppress_expunge)
 {
 	if (pcontext->async_change_mask == 0)
 		return;
@@ -1322,8 +1323,15 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
 	decltype(pcontext->f_expunged_uids) f_expunged;
 
 	std::unique_lock hl_hold(g_hash_lock);
-	f_expunged = std::move(pcontext->f_expunged_uids);
-	pcontext->async_change_mask &= ~REPORT_EXPUNGE;
+	/*
+	 * RFC 3501 §7.4.1: an EXPUNGE response MUST NOT be sent while responding
+	 * to FETCH/STORE/SEARCH. Leave the queued expunges (and the seq-number
+	 * renumbering) pending for the next NOOP/CHECK/EXPUNGE/IDLE.
+	 */
+	if (!suppress_expunge) {
+		f_expunged = std::move(pcontext->f_expunged_uids);
+		pcontext->async_change_mask &= ~REPORT_EXPUNGE;
+	}
 	auto f_flags = std::move(pcontext->f_flags);
 	pcontext->async_change_mask &= ~(REPORT_FLAGS | REPORT_NEWMAIL);
 	hl_hold.unlock();

@@ -2239,7 +2239,7 @@ int icp_search(std::span<std::string> argv, imap_context &ctx)
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
 		return 1922;
 	if (pcontext->proto_stat == iproto_stat::select)
-		imap_parser_echo_modify(pcontext, &pcontext->stream);
+		imap_parser_echo_modify(pcontext, &pcontext->stream, echomod::suppress_expunge);
 	/* IMAP_CODE_2170019: OK SEARCH completed */
 	buff = fmt::format("{} {}", argv[0], resource_get_imap_code(1719, 1));
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
@@ -2346,7 +2346,7 @@ int icp_fetch(std::span<std::string> argv, imap_context &ctx)
 			return result;
 	}
 	xarray.clear();
-	imap_parser_echo_modify(pcontext, &pcontext->stream);
+	imap_parser_echo_modify(pcontext, &pcontext->stream, echomod::suppress_expunge);
 	/* IMAP_CODE_2170020: OK FETCH completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1720, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
@@ -2433,7 +2433,7 @@ int icp_store(std::span<std::string> argv, imap_context &ctx)
 			ct_item->id, 0, flag_bits, ctx);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
-	imap_parser_echo_modify(pcontext, NULL);
+	imap_parser_echo_modify(pcontext, nullptr, echomod::suppress_expunge);
 	return 1721;
 }
 
@@ -2561,7 +2561,7 @@ int icp_uid_search(std::span<std::string> argv, imap_context &ctx) try
 	pcontext->stream.clear();
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
 		return 1922;
-	imap_parser_echo_modify(pcontext, &pcontext->stream);
+	imap_parser_echo_modify(pcontext, &pcontext->stream, echomod::suppress_expunge);
 	/* IMAP_CODE_2170023: OK UID SEARCH completed */
 	buff = fmt::format("{} {}", argv[0], resource_get_imap_code(1723, 1));
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
@@ -2621,7 +2621,7 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 			return ret;
 	}
 	xarray.clear();
-	imap_parser_echo_modify(pcontext, &pcontext->stream);
+	imap_parser_echo_modify(pcontext, &pcontext->stream, echomod::suppress_expunge);
 	/* IMAP_CODE_2170028: OK UID FETCH completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1728, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
@@ -2699,7 +2699,7 @@ int icp_uid_store(std::span<std::string> argv, imap_context &ctx)
 			ct_item->id, pitem->uid, flag_bits, ctx);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
-	imap_parser_echo_modify(pcontext, NULL);
+	imap_parser_echo_modify(pcontext, nullptr, echomod::suppress_expunge);
 	return 1724;
 }
 
