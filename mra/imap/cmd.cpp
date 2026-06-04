@@ -554,7 +554,7 @@ static int pstruct_text(MJSON *pjson,
 		       pbody, pjson->get_mail_filename(),
 		       pmime->get_content_offset() + offset, length);
 	else
-		buf += fmt::format("BODY{} <<{{rfc822}}{}|{}|{}\r\n",
+		buf += fmt::format("BODY{} <<{{rfc822}}{}/{}|{}|{}\r\n",
 		       pbody, storage_path,
 		       pjson->get_mail_filename(),
 		       pmime->get_content_offset() + offset, length);
