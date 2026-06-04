@@ -1970,6 +1970,14 @@ int icp_append(std::span<std::string> argv, imap_context &ctx) try
 	if (i == 10)
 		buf = fmt::format("{} {} {}", argv[0], imap_reply_str,
 		      imap_reply_str1);
+	else if (pcontext->proto_stat == iproto_stat::select &&
+	    pcontext->selected_folder == sys_name)
+		/*
+		 * This connection "sees" the very message it added,
+		 * so it is not recent to anyone else.
+		 */
+		midb_agent::unset_flags(pcontext->maildir, sys_name,
+			mid_string.c_str(), FLAG_RECENT, nullptr, &errnum);
 	imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
 	return DISPATCH_CONTINUE;
 } catch (const std::bad_alloc &) {
