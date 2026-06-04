@@ -36,7 +36,7 @@ struct GX_EXPORT MJSON_MIME {
 	std::vector<MJSON_MIME> children;
 	enum mime_type mime_type = mime_type::none;
 	std::string id, ctype, encoding, charset, filename, cid, cntl, cntdspn;
-	size_t head = 0, begin = 0, length = 0;
+	size_t head = 0, begin = 0, length = 0, lines = 0;
 
 	bool contains_none_type() const;
 	const MJSON_MIME *find_by_id(const char *) const;

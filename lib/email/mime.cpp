@@ -1263,7 +1263,7 @@ static void replace_qb(char *s)
 static int make_digest_single(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
-	size_t content_len = 0;
+	size_t content_len = 0, content_lines = 0;
 	char content_type[256], encoding_buff[128], content_disposition[256], *ptoken;
 
 	strcpy(content_type, pmime->content_type);
@@ -1293,6 +1293,28 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 		if (pmime->mime_type == mime_type::single) {
 			*poffset += pmime->content_length;
 			content_len = pmime->content_length;
+			/*
+			 * RFC 2046 §5.1.1: the CRLF preceding a boundary
+			 * delimiter belongs to the delimiter, not the body.
+			 * Strip exactly one trailing newline from the
+			 * *reported* length for a part inside a multipart (cf.
+			 * the same treatment in MIME::read_content). *poffset
+			 * keeps the full length so sibling offsets stay
+			 * correct.
+			 */
+			auto parent = pmime->get_parent();
+			if (parent != nullptr &&
+			    parent->mime_type == mime_type::multiple) {
+				if (content_len >= 2 && newline_size(
+				    &pmime->content_begin[content_len-2], 2) == 2)
+					content_len -= 2;
+				else if (content_len >= 1 && newline_size(
+				    &pmime->content_begin[content_len-1], 1) == 1)
+					content_len -= 1;
+			}
+			for (size_t i = 0; i < content_len; ++i)
+				if (pmime->content_begin[i] == '\n')
+					++content_lines;
 		} else if (pmime->mime_type == mime_type::single_obj) {
 			auto mgl = pmime->get_mail_ptr()->get_length();
 			if (mgl < 0)
@@ -1307,6 +1329,7 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 	}
 
 	digest["length"] = Json::Value::UInt64(content_len);
+	digest["lines"] = Json::Value::UInt64(content_lines);
 	std::string charset;
 	if (pmime->get_content_param("charset", charset) &&
 	    str_isasciipr(charset.c_str())) {

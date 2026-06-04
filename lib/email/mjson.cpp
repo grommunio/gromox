@@ -234,6 +234,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	m.head     = jv["head"].asUInt();
 	m.begin    = jv["begin"].asUInt();
 	m.length   = jv["length"].asUInt();
+	m.lines    = jv["lines"].asUInt();
 	if (m.ctype.empty())
 		m.ctype = "application/octet-stream";
 
@@ -394,7 +395,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 					
 		if (strcasecmp(ctype.c_str(), "TEXT") == 0)
 			/* body lines */
-			buf += " 0";
+			buf += " " + std::to_string(pmime->lines);
 		
 		if (NULL != storage_path && NULL != msg_filename &&
 		    pmime->ctype_is_rfc822()) {
