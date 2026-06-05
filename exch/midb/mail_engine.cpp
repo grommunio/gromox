@@ -2860,7 +2860,7 @@ namespace {
 struct simu_node {
 	uint32_t uid;
 	unsigned int size;
-	std::string flags, mid_string;
+	std::string flags, mid_string, keywords;
 };
 
 }
@@ -2892,6 +2892,7 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 			sn.flags += midb_flag::forwarded;
 		sn.flags += ')';
 		sn.size = pstmt.col_uint64(10);
+		sn.keywords = znul(pstmt.col_text(11));
 		temp_list.push_back(std::move(sn));
 	}
 	return 0;
@@ -2904,7 +2905,7 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
  * Give summary of messages present in folder (via IMAP UID)
  *
  * Request:
- * 	P-SIMU <store-dir> <folder-name> <uid(min)> <uid(max)>
+ * 	P-SIMU <store-dir> <folder-name> <uid(min)> <uid(max)> [<request-keywords>]
  * Response:
  * 	TRUE <#msgcount>
  * 	- <midstr> <uid> <flags> <size>  // repeat x #msgcount
@@ -2915,6 +2916,7 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 static int me_psimu(std::span<char *> argv, int sockd) try
 {
 	int total_mail = 0;
+	bool want_kw = argv.size() >= 6;
 	
 	seq_node::value_type first = strtol(argv[3], nullptr, 0), last = strtol(argv[4], nullptr, 0);
 	if (first < 1 && first != SEQ_STAR)
@@ -2934,24 +2936,24 @@ static int me_psimu(std::span<char *> argv, int sockd) try
 	if (first == SEQ_STAR && last == SEQ_STAR)
 		/* "MAX:MAX" */
 		qstr = "SELECT 0, mid_string, uid, replied, unsent, flagged,"
-		       " deleted, read, recent, forwarded, size"
+		       " deleted, read, recent, forwarded, size, keywords"
 		       " FROM messages WHERE folder_id=" + std::to_string(folder_id) +
 		       " ORDER BY uid DESC LIMIT 1";
 	else if (first == SEQ_STAR)
 		/* "MAX:99" */
 		qstr = fmt::format("SELECT 0, mid_string, uid, replied, unsent, "
-		       "flagged, deleted, read, recent, forwarded, size "
+		       "flagged, deleted, read, recent, forwarded, size, keywords "
 		       "FROM messages WHERE folder_id={} AND uid<={} "
 		       "ORDER BY uid DESC LIMIT 1", folder_id, last);
 	else if (last == SEQ_STAR)
 		/* "99:MAX" */
 		qstr = fmt::format("SELECT 0, mid_string, uid, replied, unsent, "
-		       "flagged, deleted, read, recent, forwarded, size "
+		       "flagged, deleted, read, recent, forwarded, size, keywords "
 		       "FROM messages WHERE folder_id={} AND uid>={} ORDER BY uid",
 		       folder_id, first);
 	else
 		qstr = fmt::format("SELECT 0, mid_string, uid, replied, unsent, "
-		       "flagged, deleted, read, recent, forwarded, size "
+		       "flagged, deleted, read, recent, forwarded, size, keywords "
 		       "FROM messages WHERE folder_id={} AND uid>={} AND uid<={} "
 		       "ORDER BY uid", folder_id, first, last);
 
@@ -2966,7 +2968,7 @@ static int me_psimu(std::span<char *> argv, int sockd) try
 		 * any assigned UID value".
 		 */
 		qstr = "SELECT 0, mid_string, uid, replied, unsent, flagged,"
-		       " deleted, read, recent, forwarded, size"
+		       " deleted, read, recent, forwarded, size, keywords"
 		       " FROM messages WHERE folder_id=" + std::to_string(folder_id) +
 		       " ORDER BY uid DESC LIMIT 1";
 		iret = simu_query(pidb.get(), qstr.c_str(), total_mail, temp_list);
@@ -2978,8 +2980,11 @@ static int me_psimu(std::span<char *> argv, int sockd) try
 	rsp.reserve(65536);
 	rsp += "TRUE " + std::to_string(temp_list.size()) + "\r\n";
 	for (const auto &sn : temp_list) {
-		rsp += fmt::format("- {} {} {} {}\r\n", sn.mid_string, sn.uid,
+		rsp += fmt::format("- {} {} {} {}", sn.mid_string, sn.uid,
 		       sn.flags, sn.size);
+		if (want_kw && !sn.keywords.empty())
+			rsp += " " + base64_encode(sn.keywords);
+		rsp += "\r\n";
 		if (rsp.size() < rsp.capacity() / 2)
 			continue;
 		auto ret = cmd_write(sockd, rsp.c_str(), rsp.size());
@@ -4379,7 +4384,7 @@ static constexpr struct {
 	{"P-SUBF", {me_psubf, 3}},
 	{"P-UNSF", {me_punsf, 3}},
 	{"P-SUBL", {me_psubl, 2}},
-	{"P-SIMU", {me_psimu, 5}},
+	{"P-SIMU", {me_psimu, 5, 6}},
 	{"P-DELL", {me_pdell, 3}},
 	{"P-DTLU", {me_pdtlu, 5}},
 	{"P-SFLG", {me_psflg, 5}},
