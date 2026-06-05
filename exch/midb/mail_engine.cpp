@@ -3539,6 +3539,63 @@ static int me_pgflg(std::span<char *> argv, int sockd) try
 }
 
 /**
+ * List the distinct custom keywords present across all messages in a folder.
+ *
+ * Request:
+ * 	P-KWLS <store-dir> <folder-name>
+ * Response:
+ * 	TRUE[ <base64(keyword)>]...
+ */
+static int me_pkwls(std::span<char *> argv, int sockd) try
+{
+	auto pidb = me_get_idb(argv[1]);
+	if (pidb == nullptr)
+		return MIDB_E_HASHTABLE_FULL;
+	auto folder_id = me_get_folder_id(pidb.get(), argv[2]);
+	if (folder_id == 0)
+		return MIDB_E_NO_FOLDER;
+	auto stm = gx_sql_prep(pidb->psqlite, "SELECT DISTINCT keywords "
+	           "FROM messages WHERE folder_id=? AND keywords IS NOT NULL "
+	           "AND keywords!=''");
+	if (stm == nullptr)
+		return MIDB_E_SQLPREP;
+	stm.bind_int64(1, folder_id);
+	std::vector<std::string> kwset;
+	while (stm.step() == SQLITE_ROW) {
+		std::string_view row = znul(stm.col_text(0));
+		for (size_t pos = 0; pos < row.size(); ) {
+			auto sp = row.find(' ', pos);
+			if (sp == std::string_view::npos)
+				sp = row.size();
+			if (sp > pos) {
+				std::string tok(row.substr(pos, sp - pos));
+				if (std::find(kwset.cbegin(), kwset.cend(), tok) == kwset.cend())
+					kwset.push_back(std::move(tok));
+			}
+			pos = sp + 1;
+		}
+	}
+	stm.finalize();
+	pidb.reset();
+	std::string rsp = "TRUE";
+	rsp.reserve(4096);
+	for (const auto &kw : kwset) {
+		rsp += " " + base64_encode(kw);
+		if (rsp.size() < 32 * 1024)
+			continue;
+		auto wr = cmd_write(sockd, rsp.c_str(), rsp.size());
+		if (wr != 0)
+			return wr;
+		rsp.clear();
+	}
+	rsp += "\r\n";
+	return cmd_write(sockd, rsp.c_str(), rsp.size());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2536: ENOMEM");
+	return MIDB_E_NO_MEMORY;
+}
+
+/**
  * Search and list messages
  *
  * Request:
@@ -4329,6 +4386,7 @@ static constexpr struct {
 	{"P-RFLG", {me_prflg, 5}},
 	{"M-SKWD", {me_mskwd, 4, 5}},
 	{"P-GFLG", {me_pgflg, 4}},
+	{"P-KWLS", {me_pkwls, 3}},
 	{"P-SRHL", {me_psrhl, 5}},
 	{"P-SRHU", {me_psrhu, 5}},
 	{"X-UNLD", {me_xunld, 2}},
