@@ -197,6 +197,8 @@ extern int icp_search(std::span<std::string> argv, imap_context &);
 extern int icp_fetch(std::span<std::string> argv, imap_context &);
 extern int icp_store(std::span<std::string> argv, imap_context &);
 extern int icp_copy(std::span<std::string> argv, imap_context &);
+extern int icp_move(std::span<std::string> argv, imap_context &);
+extern int icp_uid_move(std::span<std::string> argv, imap_context &);
 extern int icp_uid_search(std::span<std::string> argv, imap_context &);
 extern int icp_uid_fetch(std::span<std::string> argv, imap_context &);
 extern int icp_uid_store(std::span<std::string> argv, imap_context &);

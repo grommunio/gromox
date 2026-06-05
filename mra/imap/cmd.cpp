@@ -3231,6 +3231,240 @@ int icp_uid_copy(std::span<std::string> argv, imap_context &ctx) try
 	return 1918;
 }
 
+/**
+ * MOVE support (RFC 6851 / RFC 9051 §6.4.8). Copy the messages to the target,
+ * then expunge them from the (currently selected) source. Per RFC 6851 the
+ * COPYUID is sent in an untagged "* OK [COPYUID ...]" before the EXPUNGE
+ * responses, and the tagged reply carries no COPYUID. On a copy failure the
+ * partial target copies are rolled back and the source is left untouched.
+ */
+int icp_move(std::span<std::string> argv, imap_context &ctx) try
+{
+	unsigned int uid;
+	int errnum;
+	std::string sys_name;
+	imap_seq_list list_uid;
+
+	if (ctx.proto_stat != iproto_stat::select)
+		return 1805;
+	if (ctx.b_readonly)
+		return 1806;
+	if (argv.size() < 4 || parse_imap_seqx(ctx, argv[2].c_str(), list_uid) != 0 ||
+	    argv[3].size() == 0 || argv[3].size() >= 1024 ||
+	    !icp_imapfolder_to_sysfolder(argv[3].c_str(), sys_name))
+		return 1800;
+	XARRAY xarray;
+	auto ssr = midb_agent::fetch_simple_uid(ctx.maildir,
+	           ctx.selected_folder, list_uid, &xarray, &errnum);
+	auto result = m2icode(ssr, errnum);
+	if (result != 0)
+		return result;
+	uint32_t uidvalidity = 0;
+	if (midb_agent::summary_folder(ctx.maildir,
+	    sys_name, nullptr, nullptr, nullptr, &uidvalidity, nullptr,
+	    &errnum) != MIDB_RESULT_OK)
+		uidvalidity = 0;
+
+	bool b_copied = true, b_first = false;
+	auto num = xarray.get_capacity();
+	std::string uid_string, uid_string1;
+	std::vector<MITEM *> moved;
+	size_t i;
+	for (i = 0; i < num; ++i) {
+		auto xi = xarray.get_item(i);
+		auto pitem = ctx.contents.get_itemx(xi->uid);
+		if (pitem == nullptr)
+			continue;
+		std::string dst_mid = pitem->mid;
+		if (midb_agent::copy_mail(ctx.maildir,
+		    ctx.selected_folder, pitem->mid, sys_name,
+		    dst_mid, &errnum) != MIDB_RESULT_OK) {
+			b_copied = FALSE;
+			break;
+		}
+		moved.push_back(xi);
+		if (uidvalidity == 0)
+			continue;
+		unsigned int j;
+		for (j = 0; j < 10; j++) {
+			if (midb_agent::get_uid(ctx.maildir,
+			    sys_name, dst_mid, &uid) != MIDB_RESULT_OK) {
+				usleep(500000);
+				continue;
+			}
+			if (b_first) {
+				uid_string += ',';
+				uid_string1 += ',';
+			} else {
+				b_first = TRUE;
+			}
+			uid_string += std::to_string(xi->uid);
+			uid_string1 += std::to_string(uid);
+			break;
+		}
+		if (j == 10)
+			uidvalidity = 0;
+	}
+	if (!b_copied) {
+		/* roll back the copies already made to the target */
+		std::vector<MITEM *> exp_list;
+		while (i > 0) {
+			auto pitem = xarray.get_item(--i);
+			if (pitem->uid != 0)
+				exp_list.push_back(pitem);
+		}
+		midb_agent::remove_mail(ctx.maildir, sys_name, exp_list, &errnum);
+		ctx.stream.clear();
+		/* IMAP_CODE_2190027: NO MOVE failed */
+		auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1927, 1));
+		if (ctx.stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+			return 1922;
+		ctx.write_offset = 0;
+		ctx.sched_stat = isched_stat::wrlst;
+		return DISPATCH_BREAK;
+	}
+	imrpc_build_env();
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
+	midb_agent::remove_mail(ctx.maildir, ctx.selected_folder,
+		moved, &errnum);
+	for (auto pitem : moved)
+		if (!exmdb_client->imapfile_delete(ctx.maildir, "eml", pitem->mid))
+			mlog(LV_WARN, "W-2031: remove %s/eml/%s failed",
+				ctx.maildir, pitem->mid.c_str());
+	if (!moved.empty())
+		imap_parser_bcast_expunge(ctx, moved, ctx.selected_folder);
+	ctx.stream.clear();
+	std::string buf;
+	if (uidvalidity != 0) {
+		buf = fmt::format("* OK [COPYUID {} {} {}] moved\r\n",
+		      uidvalidity, uid_string, uid_string1);
+		if (ctx.stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+			return 1922;
+	}
+	imap_parser_echo_modify(&ctx, &ctx.stream);
+	/* IMAP_CODE_2170033: OK MOVE completed */
+	buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1733, 1));
+	if (ctx.stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+		return 1922;
+	ctx.write_offset = 0;
+	ctx.sched_stat = isched_stat::wrlst;
+	return DISPATCH_BREAK;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2701: ENOMEM");
+	return 1918;
+}
+
+int icp_uid_move(std::span<std::string> argv, imap_context &ctx) try
+{
+	auto pcontext = &ctx;
+	unsigned int uid;
+	int errnum;
+	BOOL b_first, b_copied;
+	int i, j;
+	std::string sys_name;
+	imap_seq_list list_seq;
+
+	if (pcontext->proto_stat != iproto_stat::select)
+		return 1805;
+	if (pcontext->b_readonly)
+		return 1806;
+	if (argv.size() < 5 || parse_imap_seq(list_seq, argv[3].c_str()) != 0 ||
+	    argv[4].size() == 0 || argv[4].size() >= 1024 ||
+	    !icp_imapfolder_to_sysfolder(argv[4].c_str(), sys_name))
+		return 1800;
+	XARRAY xarray;
+	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
+	           pcontext->selected_folder, list_seq, &xarray, &errnum);
+	auto ret = m2icode(ssr, errnum);
+	if (ret != 0)
+		return ret;
+	uint32_t uidvalidity = 0;
+	if (midb_agent::summary_folder(pcontext->maildir,
+	    sys_name, nullptr, nullptr, nullptr, &uidvalidity,
+	    nullptr, &errnum) != MIDB_RESULT_OK)
+		uidvalidity = 0;
+	b_copied = TRUE;
+	b_first = FALSE;
+	int num = xarray.get_capacity();
+	std::string uid_string;
+	std::vector<MITEM *> moved;
+	for (i = 0; i < num; i++) {
+		auto pitem = xarray.get_item(i);
+		std::string dst_mid = pitem->mid;
+		if (midb_agent::copy_mail(pcontext->maildir,
+		    pcontext->selected_folder, pitem->mid, sys_name,
+		    dst_mid, &errnum) != MIDB_RESULT_OK) {
+			b_copied = FALSE;
+			break;
+		}
+		moved.push_back(pitem);
+		if (uidvalidity == 0)
+			continue;
+		for (j = 0; j < 10; j++) {
+			if (midb_agent::get_uid(pcontext->maildir,
+			    sys_name, dst_mid, &uid) != MIDB_RESULT_OK) {
+				usleep(500000);
+				continue;
+			}
+			if (b_first)
+				uid_string += ',';
+			else
+				b_first = TRUE;
+			uid_string += std::to_string(uid);
+			break;
+		}
+		if (j == 10)
+			uidvalidity = 0;
+	}
+	if (!b_copied) {
+		std::vector<MITEM *> exp_list;
+		for (; i > 0; i--) {
+			auto pitem = xarray.get_item(i - 1);
+			if (pitem->uid == 0)
+				continue;
+			exp_list.push_back(pitem);
+		}
+		midb_agent::remove_mail(pcontext->maildir, sys_name, exp_list, &errnum);
+		pcontext->stream.clear();
+		/* IMAP_CODE_2190028: NO UID MOVE failed */
+		auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1928, 1));
+		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+			return 1922;
+		pcontext->write_offset = 0;
+		pcontext->sched_stat = isched_stat::wrlst;
+		return DISPATCH_BREAK;
+	}
+	imrpc_build_env();
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
+	midb_agent::remove_mail(pcontext->maildir, pcontext->selected_folder,
+		moved, &errnum);
+	for (auto pitem : moved)
+		if (!exmdb_client->imapfile_delete(ctx.maildir, "eml", pitem->mid))
+			mlog(LV_WARN, "W-2032: remove %s/eml/%s failed",
+				ctx.maildir, pitem->mid.c_str());
+	if (!moved.empty())
+		imap_parser_bcast_expunge(*pcontext, moved, pcontext->selected_folder);
+	pcontext->stream.clear();
+	std::string buf;
+	if (uidvalidity != 0) {
+		buf = fmt::format("* OK [COPYUID {} {} {}] moved\r\n",
+		      uidvalidity, argv[3], uid_string);
+		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+			return 1922;
+	}
+	imap_parser_echo_modify(pcontext, &pcontext->stream);
+	/* IMAP_CODE_2170034: OK UID MOVE completed */
+	buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1734, 1));
+	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+		return 1922;
+	pcontext->write_offset = 0;
+	pcontext->sched_stat = isched_stat::wrlst;
+	return DISPATCH_BREAK;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2702: ENOMEM");
+	return 1918;
+}
+
 int icp_uid_expunge(std::span<std::string> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
