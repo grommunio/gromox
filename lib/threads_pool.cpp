@@ -185,7 +185,8 @@ static bool should_ditch_worker(THR_DATA &self)
 		return false;
 	auto max_contexts_per_thr = contexts_pool_get_param(CONTEXTS_PER_THR);
 	auto contexts_per_threads = max_contexts_per_thr / 4;
-	if (get_threads_pool_cur_thr_num() * contexts_per_threads <= static_cast<size_t>(gpr))
+	/* unlocked access to list; mutex is already held */
+	if (g_threads_data_list.size() * contexts_per_threads <= static_cast<size_t>(gpr))
 		return false;
 	return true;
 }
