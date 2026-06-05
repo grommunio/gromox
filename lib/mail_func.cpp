@@ -788,7 +788,16 @@ int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len)
   return p - buf;
 }
 
-int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv) try
+/**
+ * Tokenize an IMAP input command buffer.
+ *
+ * @keep_nil: Retain "NIL" literally. Callers use this in substring parses
+ *            when there is no ambiguity what a NIL should mean, e.in
+ *            flag-list. (See RFC 9051 §4.5 ¶2 for some info.)
+ *
+ */
+int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv,
+    bool keep_nil) try
 {
 	char *ptr;
 	int b_count = 0;
@@ -870,7 +879,7 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv) t
 				last_space ++;
 			} else {
 				*ptr = '\0';
-				if (!is_quoted && strcasecmp(last_space, "NIL") == 0)
+				if (!keep_nil && !is_quoted && strcasecmp(last_space, "NIL") == 0)
 					argv.emplace_back();
 				else
 					argv.emplace_back(last_space);

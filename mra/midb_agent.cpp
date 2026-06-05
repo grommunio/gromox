@@ -1497,6 +1497,7 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 						MITEM mitem;
 						if (get_digest(digest, "file", mitem.mid) &&
 						    get_digest_integer(digest, "uid", mitem.uid)) {
+							mitem.keywords = digest.isMember("keywords") ? digest["keywords"].asString() : "";
 							mitem.digest_off = pxarray->m_dpool.size();
 							mitem.digest_len = digest_sv.size();
 							pxarray->m_dpool.append(digest_sv);

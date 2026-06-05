@@ -342,6 +342,14 @@ static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail, BOOL *pb_data
 		    strcasecmp(kw, "INTERNALDATE") == 0 ||
 		    strcasecmp(kw, "RFC822.SIZE") == 0) {
 			*pb_detail = TRUE;
+		} else if (strcasecmp(kw, "FLAGS") == 0) {
+			/*
+			 * Custom keywords are only conveyed in the detailed
+			 * digest (P-DTLU response), not the simple (P-SIMU)
+			 * listing. A bare FETCH FLAGS thus needs the detail
+			 * code path.
+			 */
+			*pb_detail = TRUE;
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
 			if (strcasestr(kw, "FIELDS") == nullptr)
@@ -363,7 +371,8 @@ static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail, BOOL *pb_data
 	return false;
 }
 
-static std::string icp_convert_flags_string(int flag_bits)
+static std::string icp_convert_flags_string(int flag_bits,
+    const std::string &keywords = "")
 {
 	std::string out = "(";
 	if (flag_bits & FLAG_RECENT)
@@ -380,6 +389,11 @@ static std::string icp_convert_flags_string(int flag_bits)
 		out += "\\Draft ";
 	if (flag_bits & FLAG_FORWARDED)
 		out += "$Forwarded ";
+	if (!keywords.empty()) {
+		/* keywords is a space-separated list of custom IMAP atoms */
+		out += keywords;
+		out += ' ';
+	}
 	if (out.size() > 1)
 		/* There is more than just the opening parenthesis, so there must be a space */
 		out.back() = ')';
@@ -741,7 +755,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			else
 				buf += std::move(b2);
 		} else if (strcasecmp(kw, "FLAGS") == 0) {
-			auto fs = icp_convert_flags_string(pitem->flag_bits);
+			auto fs = icp_convert_flags_string(pitem->flag_bits, pitem->keywords);
 			buf += "FLAGS ";
 			buf += std::move(fs);
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
@@ -913,21 +927,57 @@ static bool icp_classify_store_flags(const std::vector<std::string> &atoms,
 			flag_bits |= FLAG_RECENT;
 		else if (strcasecmp(keyword, "$Forwarded") == 0)
 			flag_bits |= FLAG_FORWARDED;
-		/*
-		 * Custom keywords and NIL are not persisted (no \* is
-		 * advertised), so ignore them rather than failing the STORE.
-		 */
+		else if (strcmp(keyword, "\\*") == 0)
+			/* "\*" denotes "any keyword permitted", not settable */
+			return false;
+		else if (keyword[0] == '\\')
+			/* unknown system flag */
+			return false;
+		else if (!kw_s.empty())
+			/* custom keyword (e.g. $keyword1, NIL, ...) */
+			kw_list.emplace_back(kw_s);
 	}
 	return true;
 }
 
+static std::string icp_join_keywords(const std::vector<std::string> &kw_list)
+{
+	std::string out;
+	for (const auto &k : kw_list) {
+		if (!out.empty())
+			out += ' ';
+		out += k;
+	}
+	return out;
+}
+
+/**
+ * Retrieve the current custom keyword set for a single message (by seqid) from
+ * midb. Used to compute the resulting set for +FLAGS/-FLAGS, since the simple
+ * fetch path does not carry keywords.
+ */
+static std::string icp_get_keywords(imap_context &ctx, int id)
+{
+	imap_seq_list seq;
+	seq.insert(id, id);
+	XARRAY xa;
+	int errnum = 0;
+	if (midb_agent::fetch_detail_uid(ctx.maildir, ctx.selected_folder,
+	    seq, &xa, &errnum) != MIDB_RESULT_OK)
+		return "";
+	auto item = xa.get_item(0);
+	return item != nullptr ? item->keywords : "";
+}
+
 static void icp_store_flags(const char *cmd, const std::string &mid,
-    int id, unsigned int uid, unsigned int flag_bits, imap_context &ctx)
+    int id, unsigned int uid, unsigned int flag_bits,
+    const std::vector<std::string> &kw_list, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int errnum;
 	char buff[1024];
 	int string_length;
+	std::string kw_result; /* the resulting keyword set, for the FETCH echo */
 	
 	string_length = 0;
 	if (0 == strcasecmp(cmd, "FLAGS") ||
@@ -936,8 +986,12 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 			mid, FLAG_SETTABLE, nullptr, &errnum);
 		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
+		/* FLAGS replaces the keyword set wholesale (empty clears it). */
+		kw_result = icp_join_keywords(kw_list);
+		midb_agent::set_keywords(pcontext->maildir, pcontext->selected_folder,
+			mid, kw_result, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
-			auto fs = icp_convert_flags_string(flag_bits);
+			auto fs = icp_convert_flags_string(flag_bits, kw_result);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
@@ -951,10 +1005,31 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		0 == strcasecmp(cmd, "+FLAGS.SILENT")) {
 		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
+		if (!kw_list.empty()) {
+			/* union of current and requested keywords */
+			auto cur = icp_get_keywords(ctx, id);
+			std::vector<std::string> merged;
+			for (size_t pos = 0; pos < cur.size(); ) {
+				auto sp = cur.find(' ', pos);
+				if (sp == std::string::npos)
+					sp = cur.size();
+				if (sp > pos)
+					merged.emplace_back(cur.substr(pos, sp - pos));
+				pos = sp + 1;
+			}
+			for (const auto &k : kw_list)
+				if (std::find(merged.cbegin(), merged.cend(), k) == merged.cend())
+					merged.emplace_back(k);
+			kw_result = icp_join_keywords(merged);
+			midb_agent::set_keywords(pcontext->maildir,
+				pcontext->selected_folder, mid, kw_result, &errnum);
+		}
 		if (0 == strcasecmp(cmd, "+FLAGS") && 
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
-			auto fs = icp_convert_flags_string(flag_bits);
+			if (kw_result.empty())
+				kw_result = icp_get_keywords(ctx, id);
+			auto fs = icp_convert_flags_string(flag_bits, kw_result);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
@@ -968,10 +1043,31 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		0 == strcasecmp(cmd, "-FLAGS.SILENT")) {
 		midb_agent::unset_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
+		if (!kw_list.empty()) {
+			/* current minus requested keywords */
+			auto cur = icp_get_keywords(ctx, id);
+			std::vector<std::string> kept;
+			for (size_t pos = 0; pos < cur.size(); ) {
+				auto sp = cur.find(' ', pos);
+				if (sp == std::string::npos)
+					sp = cur.size();
+				if (sp > pos) {
+					auto tok = cur.substr(pos, sp - pos);
+					if (std::find(kw_list.cbegin(), kw_list.cend(), tok) == kw_list.cend())
+						kept.emplace_back(std::move(tok));
+				}
+				pos = sp + 1;
+			}
+			kw_result = icp_join_keywords(kept);
+			midb_agent::set_keywords(pcontext->maildir,
+				pcontext->selected_folder, mid, kw_result, &errnum);
+		}
 		if (0 == strcasecmp(cmd, "-FLAGS") &&
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
-			auto fs = icp_convert_flags_string(flag_bits);
+			if (kw_result.empty() && kw_list.empty())
+				kw_result = icp_get_keywords(ctx, id);
+			auto fs = icp_convert_flags_string(flag_bits, kw_result);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
@@ -1471,7 +1567,7 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
 		pcontext->contents.n_exists(),
 		pcontext->contents.n_recent, readonly ?
 		"[PERMANENTFLAGS ()] no permanent flags permitted" :
-		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded)] limited");
+		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded \\*)] limited");
 	if (pcontext->contents.firstunseen != 0)
 		buf += fmt::format("* OK [UNSEEN {}] message {} is first unseen\r\n",
 			pcontext->contents.firstunseen,
@@ -2430,7 +2526,7 @@ int icp_store(std::span<std::string> argv, imap_context &ctx)
 	    !store_flagkeyword(argv[3].c_str()))
 		return 1800;
 	if (argv[4].front() == '(' && argv[4].back() == ')') {
-		auto temp_argc = parse_imap_args(&argv[4][1], argv[4].size() - 2, temp_argv);
+		auto temp_argc = parse_imap_args(&argv[4][1], argv[4].size() - 2, temp_argv, true);
 		if (temp_argc == -1)
 			return 1800;
 	} else {
@@ -2455,7 +2551,7 @@ int icp_store(std::span<std::string> argv, imap_context &ctx)
 		if (ct_item == nullptr)
 			continue;
 		icp_store_flags(argv[3].c_str(), pitem->mid,
-			ct_item->id, 0, flag_bits, ctx);
+			ct_item->id, 0, flag_bits, kw_list, ctx);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
 	imap_parser_echo_modify(pcontext, nullptr, echomod::suppress_expunge);
@@ -2678,7 +2774,7 @@ int icp_uid_store(std::span<std::string> argv, imap_context &ctx)
 		return 1800;
 	std::vector<std::string> temp_argv;
 	if (argv[5].front() == '(' && argv[5].back() == ')') {
-		auto temp_argc = parse_imap_args(&argv[5][1], argv[5].size() - 2, temp_argv);
+		auto temp_argc = parse_imap_args(&argv[5][1], argv[5].size() - 2, temp_argv, true);
 		if (temp_argc == -1)
 			return 1800;
 	} else {
@@ -2703,7 +2799,7 @@ int icp_uid_store(std::span<std::string> argv, imap_context &ctx)
 		if (ct_item == nullptr)
 			continue;
 		icp_store_flags(argv[4].c_str(), pitem->mid,
-			ct_item->id, pitem->uid, flag_bits, ctx);
+			ct_item->id, pitem->uid, flag_bits, kw_list, ctx);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
 	imap_parser_echo_modify(pcontext, nullptr, echomod::suppress_expunge);

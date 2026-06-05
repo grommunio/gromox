@@ -1362,9 +1362,10 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 		if (item == nullptr)
 			continue;
 		unsigned int flag_bits = 0;
+		std::string keywords;
 		if (midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, item->mid, &flag_bits,
-		    &err) != MIDB_RESULT_OK)
+		    &err, &keywords) != MIDB_RESULT_OK)
 			continue;
 		auto outlen = gx_snprintf(buff, std::size(buff), "* %d FETCH (FLAGS (", item->id);
 		b_first = false;
@@ -1405,6 +1406,12 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 			if (b_first)
 				buff[outlen++] = ' ';
 			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "$Forwarded");
+			b_first = true;
+		}
+		if (!keywords.empty()) {
+			if (b_first)
+				buff[outlen++] = ' ';
+			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "%s", keywords.c_str());
 		}
 		outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "))\r\n");
 		if (pstream == nullptr)

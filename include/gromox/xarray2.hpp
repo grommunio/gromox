@@ -13,6 +13,7 @@ struct GX_EXPORT MITEM {
 	std::string mid;
 	int id = 0, uid = 0;
 	char flag_bits = 0;
+	std::string keywords;
 	uint32_t digest_off = 0, digest_len = 0;
 };
 
