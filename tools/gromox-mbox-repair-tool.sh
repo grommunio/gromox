@@ -1,5 +1,7 @@
 #!/bin/bash
 
+shopt -s extglob
+
 SCRIPT_BUILD=2026060501
 
 LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
@@ -124,16 +126,23 @@ repair_mbox() {
 repair_sql() {
         log "Running mailbox sql checks"
 
+        # Simulate bash arrays
+        readonly gromox_http_service=0
+        readonly grommunio_index_service=1
+        services_to_monitor=(gromox-http.service grommunio-index.service)
+        service_is_active=()
+        for service in ${services_to_monitor[@]}; do
+                if systemctl is-active "${service}" > /dev/null; then
+                        log "${service} is active currently."
+                        service_is_active[${service//[.-]/_}]=true
+                else
+                        log "${service} is inactive currently."
+                        service_is_active[${service//[.-]/_}]=true
+                fi
+        done
 
-        if systemctl is-active gromox-http.service > /dev/null; then
-                log "gromox-http is active currently."
-                gromox_http_is_active=true
-        else
-                log "gromox-http is inactive currently."
-                gromox_http_is_active=false
-        fi
-        gromox_http_needs_restart=false
-
+        repairs_were_done=false
+        do_repairs=false
         for maildir in $TARGET_MAILDIRS; do
                 if [ ! -d "${maildir}" ]; then
                         log "Maildir ${maildir} does not exist" "ERROR"
@@ -143,16 +152,21 @@ repair_sql() {
                 # This expects sqlite to output "ok"
                 if [ "$(sqlite3 -readonly "${maildir}/exmdb/exchange.sqlite3" 'pragma integrity_check;')" != "ok" ]; then
                         if [ "${_DRYRUN}" = false ] && [ "${_REPAIR_SQL}" = true ]; then
-                                log "Repairing sqlite database. This will shutdown gromox-http"
-                                systemctl stop gromox-http.service
-                                if systemctl is-active gromox-http.service > /dev/null; then
-                                        log "Cannot stop gromox-http, stopping operations" "ERROR"
-                                        break
-                                else
-                                        if [ "${gromox_http_is_active}" = true ]; then
-                                                gromox_http_needs_restart=true
-                                        fi
+                                if [ "${do_repairs}" == false ]; then
+                                        log "Repairing sqlite database. This will shutdown ${services_to_monitor[*]}"
+                                        do_repairs=true
+                                        for service in ${services_to_monitor[@]}; do
+                                                systemctl stop "${service}"
+                                                if systemctl is-active "${service}" > /dev/null; then
+                                                        log "Cannot stop ${service}, stopping operations" "ERROR"
+                                                        do_repairs=false
+                                                fi
+                                        done
+                                fi
+                                if [ "${do_repairs}" == true ]; then
+                                        repairs_were_done=true
                                         log "Trying to create a recovery database"
+                                        continue
                                         if ! sqlite3 -readonly -cmd 'PRAGMA foreign_keys=0;' "${maildir}"/exmdb/exchange.sqlite3 '.recover' | sqlite3 "${maildir}"/exmdb/new.db ; then
                                                 log "sqlite recovery of db in ${maildir} failed, stoping operations" "ERROR"
                                                 break
@@ -175,6 +189,8 @@ repair_sql() {
                                         fi
                                         log "Finished repairing ${maildir}/exmdb/exchange.sqlite3"
                                         log "A security copy has been created as ${maildir}/exmdb/exchange.sqlite3.old"
+                                else
+                                        log "No repairs were attempted"
                                 fi
                         else
                                 if [ "${_DRYRUN}" = false ]; then
@@ -187,9 +203,14 @@ repair_sql() {
                         log "SQL database in ${maildir}/exmdb is okay"
                 fi
         done
-        if [ "${gromox_http_is_active}" = true ] && [ ${gromox_http_needs_restart} = true ]; then
-                log "Restarting gromox-http"
-                systemctl start gromox-http.service
+
+        if [ "${repairs_were_done}" == true ]; then
+                for service in ${services_to_monitor[@]}; do
+                        if [ "${service_is_active[${service//[.-]/_}]}" == true ]; then
+                                log "Restarting ${service}"
+                                systemctl start "${service}" || log "Cannot start ${service}" "ERROR"
+                        fi
+                done
         fi
 }
 
