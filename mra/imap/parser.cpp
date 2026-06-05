@@ -500,7 +500,14 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 		       pcontext->read_buffer, i);
 		pcontext->command_len += i;
 		std::vector<std::string> argv;
-		auto argc = parse_imap_args(pcontext->command_buffer, pcontext->command_len, argv);
+		/*
+		 * Choice of keep_nil here: In a client command, the atom "NIL"
+		 * is always a literal (e.g. a mailbox name, search string or
+		 * flag keyword), never the IMAP null. The latter only appears
+		 * in server responses.
+		 */
+		auto argc = parse_imap_args(pcontext->command_buffer,
+		            pcontext->command_len, argv, true);
 		if (argc >= 3 && strcasecmp(argv[1].c_str(), "APPEND") == 0) {
 			/* Special handling for APPEND with potentially huge literals */
 			switch (icp_long_append_begin(argv, ctx)) {
@@ -635,8 +642,9 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 		}
 
 		std::vector<std::string> argv;
+		/* "NIL" is a literal atom in commands, not the null. Keep NIL. */
 		auto argc = parse_imap_args(pcontext->command_buffer,
-			    pcontext->command_len, argv);
+			    pcontext->command_len, argv, true);
 
 		if (pcontext->sched_stat == isched_stat::appended) {
 			if (argc > 0) {
