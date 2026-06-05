@@ -1361,7 +1361,10 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 	 */
 	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder,
 	    f_expunged.size() > 0) == 0) {
-		auto outlen = gx_snprintf(buff, std::size(buff),
+		auto outlen = pcontext->enabled_rev2 ?
+		          gx_snprintf(buff, std::size(buff), "* %zu EXISTS\r\n",
+		          ctx.contents.n_exists()) :
+		          gx_snprintf(buff, std::size(buff),
 		          "* %zu EXISTS\r\n"
 		          "* %u RECENT\r\n",
 		          pcontext->contents.n_exists(),

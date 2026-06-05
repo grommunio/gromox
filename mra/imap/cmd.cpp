@@ -1689,7 +1689,7 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
 	auto s_command  = readonly ? "EXAMINE" : "SELECT";
 	buf += fmt::format("* OK [UIDVALIDITY {}] UIDs valid\r\n"
 	       "* OK [UIDNEXT {}] predicted next UID\r\n", uidvalid, uidnext);
-	if (g_rfc9051_enable)
+	if (ctx.enabled_rev2)
 		buf += fmt::format("* LIST () \"/\" {}\r\n", quote_encode(argv[2]));
 	buf += fmt::format("{} OK [{}] {} completed\r\n",
 		argv[0], s_readonly, s_command);
