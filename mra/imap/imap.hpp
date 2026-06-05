@@ -165,6 +165,7 @@ extern void icp_clsfld(imap_context &);
 extern std::string icp_make_kwannounce_line(imap_context &, std::string_view);
 extern int icp_capability(std::span<std::string>, imap_context &);
 extern int icp_enable(std::span<std::string>, imap_context &);
+extern int icp_namespace(std::span<std::string>, imap_context &);
 extern int icp_id(std::span<std::string>, imap_context &);
 extern int icp_noop(std::span<std::string>, imap_context &);
 extern int icp_logout(std::span<std::string>, imap_context &);

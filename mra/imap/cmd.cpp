@@ -1298,6 +1298,23 @@ int icp_enable(std::span<std::string> argv, imap_context &ctx) try
 	return 1918;
 }
 
+/**
+ * NAMESPACE (RFC 2342, part of the IMAP4rev2 capability set). Gromox exposes a
+ * single personal namespace rooted at "" with a "/" hierarchy delimiter and no
+ * "other users" or shared namespaces. Valid once authenticated.
+ */
+int icp_namespace(std::span<std::string> argv, imap_context &ctx) try
+{
+	if (!ctx.is_authed())
+		return 1804;
+	auto buf = fmt::format("* NAMESPACE ((\"\" \"/\")) NIL NIL\r\n{} {}",
+	           argv[0], resource_get_imap_code(1732, 1));
+	imap_parser_safe_write(&ctx, buf.c_str(), buf.size());
+	return DISPATCH_CONTINUE;
+} catch (const std::bad_alloc &) {
+	return 1918;
+}
+
 int icp_id(std::span<std::string> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
