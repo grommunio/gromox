@@ -3450,7 +3450,7 @@ static int me_pgflg(std::span<char *> argv, int sockd) try
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id, recent, "
-	             "read, unsent, flagged, replied, forwarded, deleted "
+	             "read, unsent, flagged, replied, forwarded, deleted, keywords "
 	             "FROM messages WHERE mid_string=?");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
@@ -3466,9 +3466,19 @@ static int me_pgflg(std::span<char *> argv, int sockd) try
 	if (pstmt.col_int64(7) != 0) ans += midb_flag::deleted;
 	if (pstmt.col_int64(2) != 0) ans += midb_flag::seen;
 	if (pstmt.col_int64(1) != 0) ans += midb_flag::recent;
+	ans += ")";
+	/*
+	 * Append the custom keywords base64-encoded after the flag group so
+	 * the caller can report a consistent flag set (incl. keywords) in
+	 * async FETCH notifications. base64 may contain flag letters, so it
+	 * must stay outside the parentheses the flag parser scans.
+	 */
+	std::string kw = znul(pstmt.col_text(8));
+	if (!kw.empty())
+		ans += " " + base64_encode(kw);
 	pstmt.finalize();
 	pidb.reset();
-	ans += ")\r\n";
+	ans += "\r\n";
 	return cmd_write(sockd, ans.c_str(), ans.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2419: ENOMEM");
