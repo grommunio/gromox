@@ -2545,6 +2545,116 @@ int icp_unselect(std::span<std::string> argv, imap_context &ctx)
 	return 1718;
 }
 
+/* SEARCH RETURN options (RFC 4731 / RFC 9051 §6.4.4) */
+enum {
+	ESR_MIN = 0x1U,
+	ESR_MAX = 0x2U,
+	ESR_COUNT = 0x4U,
+	ESR_ALL = 0x8U,
+	ESR_SAVE = 0x10U,
+};
+
+/**
+ * Parse a "(MIN MAX COUNT ALL SAVE)" RETURN token into a flag set.
+ */
+static bool icp_parse_search_return(const std::string &tok, unsigned int &flags)
+{
+	if (tok.size() < 2 || tok.front() != '(' || tok.back() != ')')
+		return false;
+	flags = 0;
+	std::string inner = tok.substr(1, tok.size() - 2);
+	size_t i = 0;
+	while (i < inner.size()) {
+		while (i < inner.size() && inner[i] == ' ')
+			++i;
+		size_t s = i;
+		while (i < inner.size() && inner[i] != ' ')
+			++i;
+		if (i == s)
+			break;
+		auto w = inner.substr(s, i - s);
+		if (strcasecmp(w.c_str(), "MIN") == 0)
+			flags |= ESR_MIN;
+		else if (strcasecmp(w.c_str(), "MAX") == 0)
+			flags |= ESR_MAX;
+		else if (strcasecmp(w.c_str(), "COUNT") == 0)
+			flags |= ESR_COUNT;
+		else if (strcasecmp(w.c_str(), "ALL") == 0)
+			flags |= ESR_ALL;
+		else if (strcasecmp(w.c_str(), "SAVE") == 0)
+			flags |= ESR_SAVE; /* SEARCHRES deferred: parsed, not stored */
+		else
+			return false; /* unknown return option */
+	}
+	return true;
+}
+
+/**
+ * Collapse an ascending id list into RFC sequence-set form, e.g. "1:3,5,7:9".
+ */
+static std::string icp_seqset(const std::vector<uint32_t> &ids)
+{
+	std::string out;
+	for (size_t i = 0; i < ids.size(); ) {
+		size_t j = i;
+		while (j + 1 < ids.size() && ids[j+1] == ids[j] + 1)
+			++j;
+		if (!out.empty())
+			out += ',';
+		if (j == i)
+			out += std::to_string(ids[i]);
+		else
+			out += fmt::format("{}:{}", ids[i], ids[j]);
+		i = j + 1;
+	}
+	return out;
+}
+
+/**
+ * Build the untagged SEARCH response. rev2 (or any RETURN clause) gets an
+ * ESEARCH line: `* ESEARCH (TAG "<tag>") [UID] [MIN n] [MAX n] [COUNT n] [ALL
+ * seq-set]`. MIN/MAX/ALL are omitted on an empty result. COUNT reports 0.
+ * @id_list is midb's space-separated match list.
+ */
+static std::string icp_esearch_line(const char *tag, bool uid_mode,
+    const std::string &id_list, unsigned int flags)
+{
+	std::vector<uint32_t> ids; /* XXX: this should be a range_set<> */
+	const char *p = id_list.c_str();
+	while (*p != '\0') {
+		while (*p == ' ')
+			++p;
+		if (*p == '\0')
+			break;
+		char *end = nullptr;
+		auto v = strtoul(p, &end, 10);
+		if (end == p)
+			break;
+		ids.push_back(v);
+		p = end;
+	}
+	std::sort(ids.begin(), ids.end());
+	ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
+	std::string out = fmt::format("* ESEARCH (TAG \"{}\")", tag);
+	if (uid_mode)
+		out += " UID";
+	if (!ids.empty()) {
+		if (flags & ESR_MIN)
+			out += fmt::format(" MIN {}", ids.front());
+		if (flags & ESR_MAX)
+			out += fmt::format(" MAX {}", ids.back());
+		if (flags & ESR_COUNT)
+			out += fmt::format(" COUNT {}", ids.size());
+		if (flags & ESR_ALL) {
+			out += " ALL ";
+			out += icp_seqset(ids);
+		}
+	} else if (flags & ESR_COUNT) {
+		out += " COUNT 0";
+	}
+	return out;
+}
+
 int icp_search(std::span<std::string> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
@@ -2554,17 +2664,31 @@ int icp_search(std::span<std::string> argv, imap_context &ctx)
 		return 1805;
 	if (argv.size() < 3 || argv.size() > 1024)
 		return 1800;
+	unsigned int ret_flags = 0;
+	bool has_return = false;
+	size_t crit_off = 2;
+	if (argv.size() >= 4 && strcasecmp(argv[2].c_str(), "RETURN") == 0) {
+		if (!icp_parse_search_return(argv[3], ret_flags))
+			return 1800;
+		has_return = true;
+		crit_off = 4;
+	}
+	if ((ret_flags & (ESR_MIN | ESR_MAX | ESR_COUNT | ESR_ALL)) == 0)
+		ret_flags |= ESR_ALL; /* default / RETURN () -> ALL */
+	auto esearch = ctx.enabled_rev2 || has_return;
 	std::string buff;
 	auto ssr = midb_agent::search(pcontext->maildir,
 	           pcontext->selected_folder, pcontext->defcharset,
-	           argv.subspan(2), buff, &errnum);
-	buff.insert(0, "* SEARCH ");
+	           argv.subspan(crit_off), buff, &errnum);
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
-	buff.append("\r\n");
+	std::string resp = esearch ?
+		icp_esearch_line(argv[0].c_str(), false, buff, ret_flags) :
+		"* SEARCH " + buff;
+	resp.append("\r\n");
 	pcontext->stream.clear();
-	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
+	if (ctx.stream.write(resp.c_str(), resp.size()) != STREAM_WRITE_OK)
 		return 1922;
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, &pcontext->stream, echomod::suppress_expunge);
@@ -2859,17 +2983,32 @@ int icp_uid_search(std::span<std::string> argv, imap_context &ctx) try
 		return 1805;
 	if (argv.size() < 3 || argv.size() > 1024)
 		return 1800;
+	unsigned int ret_flags = 0;
+	bool has_return = false;
+	size_t crit_off = 3;
+	if (argv.size() >= 5 && strcasecmp(argv[3].c_str(), "RETURN") == 0) {
+		if (!icp_parse_search_return(argv[4], ret_flags))
+			return 1800;
+		has_return = true;
+		crit_off = 5;
+	}
+	if ((ret_flags & (ESR_MIN | ESR_MAX | ESR_COUNT | ESR_ALL)) == 0)
+		ret_flags |= ESR_ALL;
+	auto esearch = ctx.enabled_rev2 || has_return;
 	std::string buff;
 	auto ssr = midb_agent::search_uid(pcontext->maildir,
 	           pcontext->selected_folder, pcontext->defcharset,
-	           argv.subspan(3), buff, &errnum);
-	buff.insert(0, "* SEARCH ");
+	           argv.subspan(crit_off), buff, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
+	std::string resp = esearch ?
+		icp_esearch_line(argv[0].c_str(), true, buff, ret_flags) :
+		"* SEARCH " + buff;
+	buff = std::move(resp);
 	buff.append("\r\n");
 	pcontext->stream.clear();
-	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
+	if (ctx.stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
 		return 1922;
 	imap_parser_echo_modify(pcontext, &pcontext->stream, echomod::suppress_expunge);
 	/* IMAP_CODE_2170023: OK UID SEARCH completed */
