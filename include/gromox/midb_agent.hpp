@@ -49,6 +49,7 @@ extern GX_EXPORT int list_mail(const char *path, const std::string &folder, std:
 extern GX_EXPORT int delete_mail(const char *path, const std::string &folder, const std::vector<MSG_UNIT *> &);
 extern GX_EXPORT int get_uid(const char *path, const std::string &folder, const std::string &mid, unsigned int *uid);
 extern GX_EXPORT int summary_folder(const char *path, const std::string &folder, size_t *exists, size_t *recent, size_t *unseen, uint32_t *uidvalid, uint32_t *uidnext, int *perrno);
+extern GX_EXPORT int folder_sizes(const char *path, const std::string &folder, size_t *size, size_t *deleted, int *perrno);
 extern GX_EXPORT int make_folder(const char *path, const std::string &folder, int *perrno);
 extern GX_EXPORT int remove_folder(const char *path, const std::string &folder, int *perrno);
 extern GX_EXPORT int ping_mailbox(const char *path, int *perrno);

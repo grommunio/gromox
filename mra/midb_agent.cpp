@@ -679,6 +679,40 @@ int summary_folder(const char *path, const std::string &folder, size_t *pexists,
 	return MIDB_RESULT_OK;
 }
 	
+int folder_sizes(const char *path, const std::string &folder, size_t *psize,
+    size_t *pdeleted, int *perrno)
+{
+	char buff[1024];
+	size_t size, deleted;
+
+	auto back = get_connection(path);
+	if (back == nullptr)
+		return MIDB_NO_SERVER;
+	auto length = gx_snprintf(buff, std::size(buff), "P-FDSZ %s %s\r\n",
+	              path, folder.c_str());
+	auto ret = rw_command(back->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
+	if (strncmp(buff, "FALSE ", 6) == 0) {
+		back.reset();
+		*perrno = strtol(buff + 6, nullptr, 0);
+		return MIDB_RESULT_ERROR;
+	} else if (strncmp(buff, "TRUE", 4) != 0) {
+		return MIDB_RDWR_ERROR;
+	}
+	if (sscanf(buff, "TRUE %zu %zu", &size, &deleted) != 2) {
+		*perrno = -1;
+		back.reset();
+		return MIDB_RESULT_ERROR;
+	}
+	if (psize != nullptr)
+		*psize = size;
+	if (pdeleted != nullptr)
+		*pdeleted = deleted;
+	back.reset();
+	return MIDB_RESULT_OK;
+}
+
 int make_folder(const char *path, const std::string &folder, int *perrno)
 {
 	char buff[1024];
