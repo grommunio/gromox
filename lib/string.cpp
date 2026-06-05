@@ -876,6 +876,8 @@ errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 		auto min = *s == '*' ? ULONG_MAX : strtoul(s, &end, 0);
 		if (*s == '*')
 			end = const_cast<char *>(&s[1]);
+		else if (min >= SEQ_STAR)
+			min = SEQ_STAR - 1; /* keep a literal distinct from '*' */
 		if (*end == '\0') {
 			r.insert(min, min);
 			break;
@@ -889,6 +891,8 @@ errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 		auto max = *s == '*' ? ULONG_MAX : strtoul(s, &end, 0);
 		if (*s == '*')
 			end = const_cast<char *>(&s[1]);
+		else if (max >= SEQ_STAR)
+			max = SEQ_STAR - 1; /* keep a literal distinct from '*' */
 		if (max < min)
 			std::swap(min, max);
 		if (*end == '\0') {
