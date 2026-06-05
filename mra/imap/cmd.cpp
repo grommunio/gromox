@@ -15,14 +15,15 @@
 #include <fcntl.h>
 #include <map>
 #include <memory>
+#include <set>
 #include <span>
 #include <string>
 #include <unistd.h>
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
-#include <libHX/io.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/io.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
@@ -137,6 +138,20 @@ const dir_tree *dir_tree::match(const char *path) const
 		curr = &it->second;
 	}
 	return curr;
+}
+
+/**
+ * Collect (full_name, has_children) for every node in the subtree, so a tree
+ * built from subscribed names exposes the synthesized intermediate ancestors.
+ */
+static void dir_tree_collect(const dir_tree &node, const std::string &prefix,
+    std::vector<std::pair<std::string, bool>> &out)
+{
+	for (const auto &[token, child] : node.entries) {
+		auto full = prefix.empty() ? token : prefix + "/" + token;
+		out.emplace_back(full, child.has_children());
+		dir_tree_collect(child, full, out);
+	}
 }
 
 static const builtin_folder *special_folder(uint64_t fid)
@@ -1986,26 +2001,39 @@ int icp_lsub(std::span<std::string> argv, imap_context &ctx) try
 	if (ret != 0)
 		return ret;
 	icp_convert_folderlist(sub_list);
-	std::vector<enum_folder_t> folder_list;
-	midb_agent::enum_folders(pcontext->maildir, folder_list, &errnum);
-	icp_convert_folderlist(folder_list);
-	dir_tree folder_tree;
-	folder_tree.load_from_memfile(folder_list);
-	folder_list.clear();
-	pcontext->stream.clear();
 
-	for (const auto &fentry : sub_list) {
-		const auto &sys_name = fentry.second;
+	/*
+	 * Membership set of exactly-subscribed names, folded the same way as
+	 * dir_tree so the \Noselect test matches the tree's own comparisons.
+	 */
+	std::set<std::string, dir_tree::cmp> subscribed;
+	for (const auto &fentry : sub_list)
+		subscribed.insert(fentry.second);
+	/*
+	 * The tree is built from subscriptions, so a non-subscribed
+	 * intermediate ancestor of a subscribed child materializes as a node
+	 * and can be reported with \Noselect (RFC 3501 §6.3.9).
+	 */
+	dir_tree sub_tree;
+	sub_tree.load_from_memfile(sub_list);
+	sub_list.clear();
+	std::vector<std::pair<std::string, bool>> nodes; /* full_name, has_children */
+	dir_tree_collect(sub_tree, "", nodes);
+
+	ctx.stream.clear();
+	for (const auto &[sys_name, have] : nodes) {
 		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
-		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have = pdir != nullptr && pdir->has_children();
-		auto buf  = fmt::format("* LSUB (\\Has{}Children) \"/\" {}\r\n",
-		            have ? "" : "No", quote_encode(sys_name));
+		std::string flags;
+		if (subscribed.find(sys_name) == subscribed.cend())
+			flags = "\\Noselect"; /* synthesized ancestor, not itself subscribed */
+		else
+			flags = have ? "\\HasChildren" : "\\HasNoChildren";
+		auto buf = fmt::format("* LSUB ({}) \"/\" {}\r\n",
+		           flags, quote_encode(sys_name));
 		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 			return 1922;
 	}
-	sub_list.clear();
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170013: OK LSUB completed */
