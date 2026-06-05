@@ -1295,10 +1295,35 @@ static void me_extract_digest_fields(const Json::Value &digest,
 		*psize = strtoull(val.c_str(), nullptr, 0);
 }
 
+/**
+ * Obtain message object categories and turn it into a single space-separated
+ * string.
+ */
+static std::string me_get_categories(const char *dir, message_content &mct)
+{
+	std::string kw;
+	const PROPERTY_NAME name = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
+	const PROPNAME_ARRAY req = {1, deconst(&name)};
+	PROPID_ARRAY rsp{};
+	if (!exmdb_client->get_named_propids(dir, false, &req, &rsp) ||
+	    rsp.size() != 1 || rsp[0] == 0)
+		return kw;
+	auto sa = mct.proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, rsp[0]));
+	if (sa == nullptr)
+		return kw;
+	for (const auto &cat : *sa) {
+		if (!kw.empty())
+			kw += ' ';
+		kw += znul(cat);
+	}
+	return kw;
+}
+
 static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
     uint64_t message_id, sqlite3 *db, syncmessage_entry e) try
 {
 	MESSAGE_CONTENT *pmsgctnt;
+	std::string keywords;
 	
 	auto dir = cu_get_maildir();
 	std::string djson;
@@ -1329,6 +1354,11 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 				dir, LLU{message_id});
 			return false;
 		}
+		/*
+		 * Obtain message object categories and turn it into a single
+		 * space-separated string.
+		 */
+		keywords = me_get_categories(dir, *pmsgctnt);
 		auto log_id = dir + ":m"s + std::to_string(message_id);
 		MAIL imail;
 		oxcmail_converter cvt;
@@ -1383,6 +1413,7 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	stm_insert.bind_text(9, rcpt);
 	stm_insert.bind_int64(10, size);
 	stm_insert.bind_int64(11, e.recv_time);
+	stm_insert.bind_text(12, keywords);
 	if (stm_insert.step() != SQLITE_DONE)
 		mlog(LV_ERR, "E-2075: sqlite_step not finished");
 	auto qstr = "UPDATE messages SET flagged=" + std::to_string(e.flagged);
@@ -1506,8 +1537,8 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO messages (message_id, "
 		"folder_id, mid_string, mod_time, uid, unsent, read, subject,"
-		" sender, rcpt, size, received) VALUES (?, %llu, ?, ?, ?, ?, "
-		"?, ?, ?, ?, ?, ?)", LLU{folder_id});
+		" sender, rcpt, size, received, keywords) VALUES (?, %llu, ?, ?, ?, ?, "
+		"?, ?, ?, ?, ?, ?, ?)", LLU{folder_id});
 	auto stm_insert_msg = gx_sql_prep(pidb->psqlite, sql_string);
 	if (stm_insert_msg == nullptr)
 		return FALSE;
@@ -3622,8 +3653,8 @@ static void notif_msg_added(IDB_ITEM *pidb,
 		return;
 	qstr = fmt::format("INSERT INTO messages ("
 		"message_id, folder_id, mid_string, mod_time, uid, "
-		"unsent, read, subject, sender, rcpt, size, received)"
-		" VALUES (?, {}, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", folder_id);
+		"unsent, read, subject, sender, rcpt, size, received, keywords)"
+		" VALUES (?, {}, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", folder_id);
 	pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return;	
