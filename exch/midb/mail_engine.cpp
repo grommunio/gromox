@@ -3332,6 +3332,95 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 }
 
 /**
+ * Set the custom IMAP keywords (MAPI categories, PidNameKeywords) on a
+ * message. The keyword set passed in fully replaces any prior set. The caller
+ * is responsible for computing the result set for any +/- operations it
+ * effectively wants to do.
+ *
+ * Request:
+ * 	M-SKWD <store-dir> <folder-name> <mid> <base64(keywords)>
+ * Response:
+ * 	TRUE
+ */
+static int me_mskwd(std::span<char *> argv, int sockd) try
+{
+	/*
+	 * An empty keyword set can be used to clear the set. Because
+	 * base64_encode("") is a zero-length string, the parser rightfully
+	 * sees the line as 4 args and some excess whitespace.
+	 */
+	auto keywords = argv.size() >= 5 ? base64_decode(argv[4]) : std::string();
+	auto pidb = me_get_idb(argv[1]);
+	if (pidb == nullptr)
+		return MIDB_E_HASHTABLE_FULL;
+	auto folder_id = me_get_folder_id(pidb.get(), argv[2]);
+	if (folder_id == 0)
+		return MIDB_E_NO_FOLDER;
+
+	/* This exists to save a roundtrip to istore when the value does not change */
+	auto stm = gx_sql_prep(pidb->psqlite, "SELECT message_id,"
+	           " folder_id, keywords FROM messages WHERE mid_string=?");
+	if (stm == nullptr)
+		return MIDB_E_SQLPREP;
+	stm.bind_text(1, argv[3]);
+	if (stm.step() != SQLITE_ROW || stm.col_uint64(1) != folder_id)
+		return MIDB_E_NO_MESSAGE;
+	uint64_t msg_id = stm.col_uint64(0);
+	std::string old_kw = znul(stm.col_text(2));
+	stm.finalize();
+	if (old_kw == keywords)
+		return cmd_write(sockd, "TRUE\r\n");
+
+	auto kwords = gx_split(old_kw, ' ');
+
+	/*
+	 * Send changes to the information store first. It is the "source of
+	 * truth". Only once that succeeds is the midb column refreshed, so
+	 * that a change notification re-syncing from exmdb in between cannot
+	 * resurrect the prior keyword set.
+	 */
+	const PROPERTY_NAME kw_name = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
+	const PROPNAME_ARRAY kw_req = {1, deconst(&kw_name)};
+	PROPID_ARRAY kw_rsp{};
+	if (!exmdb_client->get_named_propids(argv[1], TRUE, &kw_req, &kw_rsp) ||
+	    kw_rsp.size() != 1 || kw_rsp[0] == 0)
+		return MIDB_E_MDB_SETMSGPROPS;
+	const proptag_t tags[] = {PROP_TAG(PT_MV_UNICODE, kw_rsp[0])};
+	if (kwords.empty()) {
+		if (!exmdb_client->remove_message_properties(argv[1], CP_ACP,
+		    rop_util_make_eid_ex(1, msg_id), tags))
+			return MIDB_E_MDB_SETMSGPROPS;
+	} else {
+		std::vector<char *> ptrs;
+		for (auto &k : kwords)
+			ptrs.push_back(k.data());
+		STRING_ARRAY sa = {static_cast<uint32_t>(ptrs.size()), ptrs.data()};
+		const TAGGED_PROPVAL tp[] = {{tags[0], deconst(&sa)}};
+		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
+		PROBLEM_ARRAY problems;
+		if (!exmdb_client->set_message_properties(argv[1], nullptr,
+		    CP_ACP, rop_util_make_eid_ex(1, msg_id), &ta, &problems))
+			return MIDB_E_MDB_SETMSGPROPS;
+	}
+
+	/* exmdb committed; now refresh the midb cache column. */
+	stm = gx_sql_prep(pidb->psqlite, "UPDATE messages"
+	      " SET keywords=? WHERE mid_string=?");
+	if (stm == nullptr)
+		return MIDB_E_SQLPREP;
+	stm.bind_text(1, keywords);
+	stm.bind_text(2, argv[3]);
+	if (stm.step() != SQLITE_DONE)
+		return MIDB_E_DISK_ERROR;
+	stm.finalize();
+	pidb.reset();
+	return cmd_write(sockd, "TRUE\r\n");
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2172: ENOMEM");
+	return MIDB_E_NO_MEMORY;
+}
+
+/**
  * Get flags on message from midb.sqlite without contacting exmdb.
  * You better hope that the change notification socket is working,
  * because otherwise changes from SFLG/RFLG won't be visible.
@@ -4167,6 +4256,7 @@ static constexpr struct {
 	{"P-DTLU", {me_pdtlu, 5}},
 	{"P-SFLG", {me_psflg, 5}},
 	{"P-RFLG", {me_prflg, 5}},
+	{"M-SKWD", {me_mskwd, 4, 5}},
 	{"P-GFLG", {me_pgflg, 4}},
 	{"P-SRHL", {me_psrhl, 5}},
 	{"P-SRHU", {me_psrhu, 5}},
