@@ -206,7 +206,7 @@ static int imls_thrwork(generic_connection &&conn)
 			return 0;
 		}
 		if (!use_tls) {
-			char caps[128];
+			char caps[256];
 			capability_list(caps, std::size(caps), ctx);
 			if (HXio_fullwrite(conn.sockd, "* OK [CAPABILITY ", 17) < 0 ||
 			    HXio_fullwrite(conn.sockd, caps, strlen(caps)) < 0 ||
@@ -227,7 +227,16 @@ static int imls_thrwork(generic_connection &&conn)
 
 char *capability_list(char *dst, size_t z, imap_context *ctx)
 {
-	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE LITERAL+ ENABLE", z);
+	/*
+	 * The bundled rev2 extensions are rev1-compatible (a rev1 client may
+	 * use MOVE/ESEARCH/etc. without ENABLE), so advertise them
+	 * unconditionally.
+	 */
+	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE "
+	           "LITERAL+ ENABLE MOVE ESEARCH LIST-EXTENDED "
+	           "LIST-STATUS STATUS=SIZE NAMESPACE", z);
+	if (g_rfc9051_enable)
+		HX_strlcat(dst, " IMAP4rev2", z);
 	bool offer_tls = g_support_tls;
 	if (ctx != nullptr) {
 		if (ctx->connection.ssl != nullptr || ctx->is_authed())

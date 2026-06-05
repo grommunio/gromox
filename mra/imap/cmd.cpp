@@ -1258,7 +1258,7 @@ int icp_capability(std::span<std::string> argv, imap_context &ctx) try
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
-	char ext_str[128];
+	char ext_str[256];
 	capability_list(ext_str, std::size(ext_str), pcontext);
 	auto buf = fmt::format("* CAPABILITY {}\r\n{} {}",
 	           ext_str, argv[0], resource_get_imap_code(1701, 1));
@@ -1481,7 +1481,7 @@ static int icp_password2(const char *cmdbuf, imap_context &ctx) try
 		std::size(pcontext->defcharset));
 	pcontext->proto_stat = iproto_stat::auth;
 	imap_parser_log_info(pcontext, LV_DEBUG, "LOGIN ok");
-	char caps[128];
+	char caps[256];
 	capability_list(caps, std::size(caps), pcontext);
 	auto buf = fmt::format("{} OK [CAPABILITY {}] Logged in\r\n",
 		   tag_or_bug(pcontext->tag_string), caps);
