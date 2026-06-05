@@ -138,6 +138,8 @@ struct imap_context final : public schedule_context {
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, maildir[256]{}, defcharset[32]{};
 	bool synchronizing_literal = true;
+	/* client sent ENABLE IMAP4rev2 (RFC 9051); gates rev2-only behavior. */
+	bool enabled_rev2 = false;
 };
 
 extern void imap_parser_init(int context_num, int average_num, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
@@ -162,6 +164,7 @@ extern void imap_parser_log_info(imap_context *, int level, const char *format, 
 extern void icp_clsfld(imap_context &);
 extern std::string icp_make_kwannounce_line(imap_context &, std::string_view);
 extern int icp_capability(std::span<std::string>, imap_context &);
+extern int icp_enable(std::span<std::string>, imap_context &);
 extern int icp_id(std::span<std::string>, imap_context &);
 extern int icp_noop(std::span<std::string>, imap_context &);
 extern int icp_logout(std::span<std::string>, imap_context &);

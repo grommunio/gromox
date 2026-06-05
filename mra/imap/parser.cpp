@@ -1465,6 +1465,7 @@ static int imap_parser_dispatch_cmd2(std::span<std::string> argv,
 		{"COPY", icp_copy},
 		{"CREATE", icp_create},
 		{"DELETE", icp_delete},
+		{"ENABLE", icp_enable},
 		{"EXAMINE", icp_examine},
 		{"EXPUNGE", icp_expunge},
 		{"FETCH", icp_fetch},
@@ -1560,6 +1561,7 @@ void imap_context::clear()
 	pcontext->connection.reset();
 	pcontext->proto_stat = iproto_stat::none;
 	pcontext->sched_stat = isched_stat::none;
+	ctx.enabled_rev2 = false;
 	ctx.wrdat_content = nullptr;
 	ctx.wrdat_backing.reset();
 	pcontext->mid.clear();

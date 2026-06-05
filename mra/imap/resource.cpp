@@ -72,6 +72,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1728, "OK UID FETCH completed"},
 	{1729, "OK ID completed"},
 	{1730, "OK UID EXPUNGE completed"},
+	{1731, "OK ENABLE completed"},
 	{1800, "BAD command not supported or parameter error"},
 	{1801, "BAD TLS negotiation only begin in not authenticated state"},
 	{1802, "BAD must issue a STARTTLS command first"},

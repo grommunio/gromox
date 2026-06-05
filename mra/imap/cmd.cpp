@@ -1265,6 +1265,36 @@ int icp_capability(std::span<std::string> argv, imap_context &ctx) try
 	imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
 	return DISPATCH_CONTINUE;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2425: ENOMEM");
+	return 1918;
+}
+
+/**
+ * This is for the ENABLE command (RFC 5161/9051), which is only valid once
+ * authenticated. It enables the capabilities the server recognises and
+ * silently ignores the rest. (An `ENABLE QRESYNC` against a server without
+ * QRESYNC still succeeds with an empty `* ENABLED` line.) The only capability
+ * Gromox acts on is IMAP4rev2.
+ */
+int icp_enable(std::span<std::string> argv, imap_context &ctx) try
+{
+	if (!ctx.is_authed())
+		return 1804;
+	if (argv.size() < 3)
+		return 1800;
+	std::string enabled;
+	for (size_t i = 2; i < argv.size(); ++i) {
+		if (strcasecmp(argv[i].c_str(), "IMAP4REV2") == 0) {
+			ctx.enabled_rev2 = true;
+			enabled += " IMAP4rev2";
+		}
+		/* unrecognised capabilities are ignored, never an error */
+	}
+	auto buf = fmt::format("* ENABLED{}\r\n{} {}", enabled,
+	           argv[0], resource_get_imap_code(1731, 1));
+	imap_parser_safe_write(&ctx, buf.c_str(), buf.size());
+	return DISPATCH_CONTINUE;
+} catch (const std::bad_alloc &) {
 	return 1918;
 }
 
