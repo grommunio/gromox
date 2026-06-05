@@ -1661,6 +1661,35 @@ int get_flags(const char *path, const std::string &folder,
 	return MIDB_RDWR_ERROR;
 }
 	
+int set_keywords(const char *path, const std::string &folder,
+    const std::string &mid_string, const std::string &keywords, int *perrno) try
+{
+	auto pback = get_connection(path);
+	if (pback == nullptr)
+		return MIDB_NO_SERVER;
+	auto cbufsize = g_midb_command_buffer_size.load();
+	auto buff = std::make_unique<char[]>(cbufsize);
+	/* keywords are arbitrary atoms, so transmit them base64-encoded */
+	auto length = gx_snprintf(buff.get(), cbufsize, "M-SKWD %s %s %s %s\r\n",
+	              path, folder.c_str(), mid_string.c_str(),
+	              base64_encode(keywords).c_str());
+	auto ret = rw_command(pback->sockd, buff.get(), length, cbufsize);
+	if (ret != 0)
+		return ret;
+	if (strncmp(buff.get(), "TRUE", 4) == 0) {
+		pback.reset();
+		return MIDB_RESULT_OK;
+	} else if (strncmp(buff.get(), "FALSE ", 6) == 0) {
+		pback.reset();
+		*perrno = strtol(&buff[6], nullptr, 0);
+		return MIDB_RESULT_ERROR;
+	}
+	return MIDB_RDWR_ERROR;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1922: ENOMEM");
+	return MIDB_RDWR_ERROR;
+}
+
 int copy_mail(const char *path, const std::string &src_folder,
     const std::string &mid_string, const std::string &dst_folder,
     std::string &dst_mid, int *perrno) try
