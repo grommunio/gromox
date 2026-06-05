@@ -2411,7 +2411,7 @@ static int me_mcopy(std::span<char *> argv, int sockd) try
 	/* Match this column list to ctm_field */
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT message_id, mod_time, "
 	             "uid, recent, read, unsent, flagged, replied, forwarded,"
-	             "deleted, received, folder_id, size FROM messages "
+	             "deleted, received, folder_id, size, keywords FROM messages "
 	             "WHERE mid_string=?");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
@@ -2420,6 +2420,7 @@ static int me_mcopy(std::span<char *> argv, int sockd) try
 	    pstmt.col_uint64(CTM_FOLDERID) != src_fid)
 		return MIDB_E_NO_MESSAGE;
 	uint64_t src_mid = pstmt.col_uint64(CTM_MSGID), message_id = 0;
+	std::string src_kw = znul(pstmt.col_text(CTM_KEYWORDS));
 	pstmt.finalize();
 	if (!exmdb_client->allocate_message_id(argv[1],
 	    rop_util_make_eid_ex(1, dst_fid), &message_id))
@@ -2447,6 +2448,24 @@ static int me_mcopy(std::span<char *> argv, int sockd) try
 		pstmt.bind_int64(1, rop_util_get_gc_value(message_id));
 		if (pstmt.step() == SQLITE_ROW) {
 			mid_string = "TRUE "s + pstmt.col_text(0) + "\r\n";
+			pstmt.finalize();
+			/*
+			 * exmdb carried PidNameKeywords to the copied message,
+			 * but the async midb insert took the cached-digest path
+			 * (the source ext file is hardlinked) and left the midb
+			 * keywords column empty. Mirror the source row's value
+			 * onto the dst row while we still hold the lock; no exmdb
+			 * round-trip is needed since the store already agrees.
+			 */
+			if (!src_kw.empty()) {
+				auto stm_kw = gx_sql_prep(pidb->psqlite, "UPDATE messages "
+				              "SET keywords=? WHERE message_id=?");
+				if (stm_kw != nullptr) {
+					stm_kw.bind_text(1, src_kw);
+					stm_kw.bind_int64(2, rop_util_get_gc_value(message_id));
+					stm_kw.step();
+				}
+			}
 			break;
 		}
 		pstmt.reset();
