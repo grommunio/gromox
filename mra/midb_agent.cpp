@@ -1300,7 +1300,8 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		auto cbuf = fmt::format("P-SIMU {} {} {} {}\r\n",
+		/* K: ask for keywords to be reported */
+		auto cbuf = fmt::format("P-SIMU {} {} {} {} K\r\n",
 		            path, folder, pseq->lo, pseq->hi);
 		auto wrret = write(pback->sockd, cbuf.c_str(), cbuf.size());
 		if (wrret < 0 || static_cast<size_t>(wrret) != cbuf.size())
@@ -1358,6 +1359,19 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 								*pspace++ = '\0';
 								*pspace1++ = '\0';
 								*pspace2++ = '\0';
+								/*
+								 * Terminate the "(flags)" group so s_to_flagbits does
+								 * not scan size or the optional trailing base64
+								 * keyword blob. The 5th token is the keywords.
+								 */
+								std::string kw;
+								char *pspace3 = strchr(pspace2, ' ');
+								if (pspace3 != nullptr) {
+									*pspace3++ = '\0';
+									char *pspace4 = strchr(pspace3, ' ');
+									if (pspace4 != nullptr)
+										kw = base64_decode(pspace4 + 1);
+								}
 								int uid = strtol(pspace1, nullptr, 0);
 								if (pxarray->append(MITEM{}, uid) >= 0) {
 									auto num = pxarray->get_capacity();
@@ -1366,6 +1380,7 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 									pitem->uid = uid;
 									try {
 										pitem->mid = pspace;
+										pitem->keywords = std::move(kw);
 									} catch (const std::bad_alloc &) {
 										b_format_error = TRUE;
 									}
@@ -1383,7 +1398,7 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 					line_pos = 0;
 				} else if (buff[i] != '\r' || i != offset - 1) {
 					temp_line[line_pos++] = buff[i];
-					if (line_pos >= 128)
+					if (line_pos >= 1000)
 						return MIDB_RDWR_ERROR;
 				}
 			}
