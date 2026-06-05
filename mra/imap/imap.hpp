@@ -125,6 +125,7 @@ struct imap_context final : public schedule_context {
 	 * on (re)select and cleared on close.
 	 */
 	std::vector<std::string> announced_keywords;
+	std::vector<uint32_t> saved_uids; /* UIDs saved by SEARCH/UID SEARCH RETURN */
 	char tag_string[32]{};
 	int command_len = 0;
 	char command_buffer[64*1024]{};

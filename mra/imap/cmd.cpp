@@ -1688,6 +1688,7 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
 	midb_agent::get_folder_keywords(pcontext->maildir,
 		pcontext->selected_folder, kw, &kwerr);
 	pcontext->announced_keywords = kw;
+	ctx.saved_uids.clear();
 	std::string kw_join;
 	for (const auto &k : kw)
 		kw_join += " " + k;
@@ -2765,6 +2766,7 @@ int icp_unselect(std::span<std::string> argv, imap_context &ctx)
 	pcontext->proto_stat = iproto_stat::auth;
 	pcontext->selected_folder.clear();
 	pcontext->announced_keywords.clear();
+	ctx.saved_uids.clear();
 	return 1718;
 }
 
@@ -2878,6 +2880,94 @@ static std::string icp_esearch_line(const char *tag, bool uid_mode,
 	return out;
 }
 
+/**
+ * Parse midb's space-separated id list into a vector.
+ * XXX: This should produce a range_set<> instead.
+ */
+static std::vector<uint32_t> icp_parse_idlist(const std::string &s)
+{
+	std::vector<uint32_t> v;
+	const char *p = s.c_str();
+	while (*p != '\0') {
+		while (*p == ' ')
+			++p;
+		if (*p == '\0')
+			break;
+		char *end = nullptr;
+		auto n = strtoul(p, &end, 10);
+		if (end == p)
+			break;
+		v.emplace_back(n);
+		p = end;
+	}
+	return v;
+}
+
+/**
+ * Render the saved SEARCH result ($, RFC 5182) as a sequence set string, i.e.
+ * UIDs when in @uid_mode, otherwise the current sequence numbers, with absent
+ * messages getting skipped.
+ */
+static std::string icp_searchres_set(imap_context &ctx, bool uid_mode)
+{
+	std::string out;
+	for (auto uid : ctx.saved_uids) {
+		unsigned int v;
+		if (uid_mode) {
+			v = uid;
+		} else {
+			auto it = ctx.contents.get_itemx(uid);
+			if (it == nullptr)
+				continue;
+			v = it->id;
+		}
+		if (!out.empty())
+			out += ',';
+		out += std::to_string(v);
+	}
+	return out;
+}
+
+/**
+ * Expand any `$` element of a sequence set @set in place with the saved SEARCH
+ * result. This is a no-op when `$` is absent, so ordinary sets are untouched.
+ * An empty saved result drops the `$` element, yielding an empty set, i.e. no
+ * matches.
+ */
+static void icp_subst_searchres(imap_context &ctx, std::string &set, bool uid_mode)
+{
+	if (set.find('$') == std::string::npos)
+		return;
+	auto repl = icp_searchres_set(ctx, uid_mode);
+	std::string out;
+	size_t i = 0;
+	while (i <= set.size()) {
+		auto c = set.find(',', i);
+		auto end = c == std::string::npos ? set.size() : c;
+		auto tok = set.substr(i, end - i);
+		const std::string &add = tok == "$" ? repl : tok;
+		if (!add.empty()) {
+			if (!out.empty())
+				out += ',';
+			out += add;
+		}
+		if (c == std::string::npos)
+			break;
+		i = c + 1;
+	}
+	set = std::move(out);
+}
+
+/**
+ * SEARCHRES helper function for UID commands. Expands "$" in @set (UID mode)
+ * in place, so that later uses like COPYUID see real UIDs.
+ */
+static const char *icp_uidseq(imap_context &ctx, std::string &set)
+{
+	icp_subst_searchres(ctx, set, true);
+	return set.c_str();
+}
+
 int icp_search(std::span<std::string> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
@@ -2896,8 +2986,11 @@ int icp_search(std::span<std::string> argv, imap_context &ctx)
 		has_return = true;
 		crit_off = 4;
 	}
-	if ((ret_flags & (ESR_MIN | ESR_MAX | ESR_COUNT | ESR_ALL)) == 0)
-		ret_flags |= ESR_ALL; /* default / RETURN () -> ALL */
+	if ((ret_flags & (ESR_MIN | ESR_MAX | ESR_COUNT | ESR_ALL)) == 0 &&
+	    !(ret_flags & ESR_SAVE))
+		/* default / RETURN () -> ALL; SAVE-only -> none */
+		ret_flags |= ESR_ALL;
+
 	auto esearch = ctx.enabled_rev2 || has_return;
 	std::string buff;
 	auto ssr = midb_agent::search(pcontext->maildir,
@@ -2906,6 +2999,15 @@ int icp_search(std::span<std::string> argv, imap_context &ctx)
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
+	if (ret_flags & ESR_SAVE) {
+		/* SEARCHRES: save the matched UIDs (mapped from seq numbers). */
+		ctx.saved_uids.clear();
+		for (auto seq : icp_parse_idlist(buff)) {
+			auto it = ctx.contents.get_item(seq - 1);
+			if (it != nullptr)
+				ctx.saved_uids.push_back(it->uid);
+		}
+	}
 	std::string resp = esearch ?
 		icp_esearch_line(argv[0].c_str(), false, buff, ret_flags) :
 		"* SEARCH " + buff;
@@ -2930,9 +3032,16 @@ int icp_search(std::span<std::string> argv, imap_context &ctx)
  * @range_string:	sequence numbers, e.g. "1,2:3,4:*,*:5,*:*,*"
  * @uid_list:		split-up range
  */
-static errno_t parse_imap_seqx(const imap_context &ctx, const char *range_string,
+static errno_t parse_imap_seqx(imap_context &ctx, const char *range_string,
     imap_seq_list &uid_list) try
 {
+	/* SEARCHRES: expand "$" against the saved result (sequence numbers). */
+	std::string subst;
+	if (range_string != nullptr && strchr(range_string, '$') != nullptr) {
+		subst = range_string;
+		icp_subst_searchres(ctx, subst, false);
+		range_string = subst.c_str();
+	}
 	imap_seq_list seq_list;
 	auto err = parse_imap_seq(seq_list, range_string);
 	if (err != 0)
@@ -3215,7 +3324,8 @@ int icp_uid_search(std::span<std::string> argv, imap_context &ctx) try
 		has_return = true;
 		crit_off = 5;
 	}
-	if ((ret_flags & (ESR_MIN | ESR_MAX | ESR_COUNT | ESR_ALL)) == 0)
+	if ((ret_flags & (ESR_MIN | ESR_MAX | ESR_COUNT | ESR_ALL)) == 0 &&
+	    !(ret_flags & ESR_SAVE))
 		ret_flags |= ESR_ALL;
 	auto esearch = ctx.enabled_rev2 || has_return;
 	std::string buff;
@@ -3225,6 +3335,9 @@ int icp_uid_search(std::span<std::string> argv, imap_context &ctx) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
+	if (ret_flags & ESR_SAVE)
+		/* SEARCHRES: UID SEARCH already yields UIDs. */
+		ctx.saved_uids = icp_parse_idlist(buff);
 	std::string resp = esearch ?
 		icp_esearch_line(argv[0].c_str(), true, buff, ret_flags) :
 		"* SEARCH " + buff;
@@ -3259,7 +3372,7 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 	
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argv.size() < 5 || parse_imap_seq(list_seq, argv[3].c_str()) != 0)
+	if (argv.size() < 5 || parse_imap_seq(list_seq, icp_uidseq(ctx, argv[3])) != 0)
 		return 1800;
 	std::vector<std::string> temp_argv;
 	if (!icp_parse_fetch_args(list_data, &b_detail,
@@ -3320,7 +3433,7 @@ int icp_uid_store(std::span<std::string> argv, imap_context &ctx)
 
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argv.size() < 6 || parse_imap_seq(list_seq, argv[3].c_str()) != 0 ||
+	if (argv.size() < 6 || parse_imap_seq(list_seq, icp_uidseq(ctx, argv[3])) != 0 ||
 	    !store_flagkeyword(argv[4].c_str()))
 		return 1800;
 	std::vector<std::string> temp_argv;
@@ -3370,7 +3483,7 @@ int icp_uid_copy(std::span<std::string> argv, imap_context &ctx) try
 	
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	if (argv.size() < 5 || parse_imap_seq(list_seq, argv[3].c_str()) != 0 ||
+	if (argv.size() < 5 || parse_imap_seq(list_seq, icp_uidseq(ctx, argv[3])) != 0 ||
 	    argv[4].size() == 0 || argv[4].size() >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[4].c_str(), sys_name))
 		return 1800;
@@ -3591,7 +3704,7 @@ int icp_uid_move(std::span<std::string> argv, imap_context &ctx) try
 		return 1805;
 	if (pcontext->b_readonly)
 		return 1806;
-	if (argv.size() < 5 || parse_imap_seq(list_seq, argv[3].c_str()) != 0 ||
+	if (argv.size() < 5 || parse_imap_seq(list_seq, icp_uidseq(ctx, argv[3])) != 0 ||
 	    argv[4].size() == 0 || argv[4].size() >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[4].c_str(), sys_name))
 		return 1800;
@@ -3699,7 +3812,7 @@ int icp_uid_expunge(std::span<std::string> argv, imap_context &ctx) try
 		return 1805;
 	if (pcontext->b_readonly)
 		return 1806;
-	if (argv.size() < 4 || parse_imap_seq(list_seq, argv[3].c_str()) != 0)
+	if (argv.size() < 4 || parse_imap_seq(list_seq, icp_uidseq(ctx, argv[3])) != 0)
 		return 1800;
 	XARRAY xarray;
 	auto ssr = midb_agent::list_deleted(pcontext->maildir,
@@ -3775,6 +3888,7 @@ void icp_clsfld(imap_context &ctx) try
 	prev_selected = std::move(pcontext->selected_folder);
 	pcontext->selected_folder.clear();
 	pcontext->announced_keywords.clear();
+	ctx.saved_uids.clear();
 	if (pcontext->b_readonly)
 		return;
 	/*

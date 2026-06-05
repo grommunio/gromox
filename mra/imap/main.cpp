@@ -233,8 +233,8 @@ char *capability_list(char *dst, size_t z, imap_context *ctx)
 	 * unconditionally.
 	 */
 	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE "
-	           "LITERAL+ ENABLE MOVE ESEARCH LIST-EXTENDED "
-	           "LIST-STATUS STATUS=SIZE NAMESPACE", z);
+	           "LITERAL+ ENABLE MOVE ESEARCH SEARCHRES "
+	           "LIST-EXTENDED LIST-STATUS STATUS=SIZE NAMESPACE", z);
 	if (g_rfc9051_enable)
 		HX_strlcat(dst, " IMAP4rev2", z);
 	bool offer_tls = g_support_tls;
