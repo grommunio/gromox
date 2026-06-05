@@ -1895,6 +1895,162 @@ int icp_unsubscribe(std::span<std::string> argv, imap_context &ctx)
 	return 1710;
 }
 
+/**
+ * Build a ``* STATUS <display> (<items>)\r\n`` line for one folder. The output
+ * is shared by the STATUS command and LIST-STATUS (RFC 9051 §6.3.10).
+ * @sys_name is the base64 midb folder name; @display is the already-quoted
+ * name for the wire. SIZE and DELETED (RFC 8438) are fetched lazily; RECENT is
+ * rejected once rev2 is on. Returns an IMAP code (0 = ok).
+ */
+static int icp_status_line(imap_context &ctx, const std::string &sys_name,
+    const std::string &display, std::span<std::string> items,
+    std::string &out) try
+{
+	int errnum;
+	size_t exists = 0, recent = 0, unseen = 0;
+	uint32_t uidvalid = 0, uidnext = 0;
+	auto ssr = midb_agent::summary_folder(ctx.maildir, sys_name,
+	           &exists, &recent, &unseen, &uidvalid, &uidnext, &errnum);
+	auto ret = m2icode(ssr, errnum);
+	if (ret != 0)
+		return ret;
+	size_t fsize = 0, fdeleted = 0;
+	bool have_sizes = false;
+	auto obtain_sizes = [&]() -> int {
+		if (have_sizes)
+			return 0;
+		auto sr = midb_agent::folder_sizes(ctx.maildir, sys_name,
+		          &fsize, &fdeleted, &errnum);
+		auto ic = m2icode(sr, errnum);
+		if (ic == 0)
+			have_sizes = true;
+		return ic;
+	};
+	out = fmt::format("* STATUS {} (", display);
+	bool b_first = true;
+	for (const auto &arg_s : items) {
+		auto keyword = arg_s.c_str();
+		if (!b_first)
+			out += ' ';
+		else
+			b_first = false;
+		if (strcasecmp(keyword, "MESSAGES") == 0) {
+			out += fmt::format("MESSAGES {}", exists);
+		} else if (strcasecmp(keyword, "RECENT") == 0) {
+			if (ctx.enabled_rev2)
+				return 1800; /* RFC 9051 removed RECENT */
+			out += fmt::format("RECENT {}", recent);
+		} else if (strcasecmp(keyword, "UIDNEXT") == 0) {
+			out += fmt::format("UIDNEXT {}", uidnext);
+		} else if (strcasecmp(keyword, "UIDVALIDITY") == 0) {
+			out += fmt::format("UIDVALIDITY {}", uidvalid);
+		} else if (strcasecmp(keyword, "UNSEEN") == 0) {
+			out += fmt::format("UNSEEN {}", unseen);
+		} else if (strcasecmp(keyword, "SIZE") == 0) {
+			auto ic = obtain_sizes();
+			if (ic != 0)
+				return ic;
+			out += fmt::format("SIZE {}", fsize);
+		} else if (strcasecmp(keyword, "DELETED") == 0) {
+			auto ic = obtain_sizes();
+			if (ic != 0)
+				return ic;
+			out += fmt::format("DELETED {}", fdeleted);
+		} else {
+			return 1800;
+		}
+	}
+	out += ")\r\n";
+	return 0;
+} catch (const std::bad_alloc &) {
+	return 1915;
+}
+
+/* LIST selection options (RFC 9051 §6.3.9 / RFC 5258 §3.1) */
+enum { LSEL_SUBSCRIBED = 1, LSEL_REMOTE = 2, LSEL_RECURSIVE = 4, LSEL_SPECIALUSE = 8 };
+
+/* LIST return options (RFC 9051 §6.3.9 / RFC 5258 §3.2, RFC 5819 LIST-STATUS) */
+enum { LRET_SUBSCRIBED = 1, LRET_CHILDREN = 2, LRET_SPECIALUSE = 4, LRET_STATUS = 8 };
+
+/**
+ * Parse a "(...)" LIST option list into flags. is_return selects the return
+ * option vocabulary (SUBSCRIBED CHILDREN SPECIAL-USE STATUS(...)) vs. the
+ * selection vocabulary (SUBSCRIBED REMOTE RECURSIVEMATCH SPECIAL-USE).
+ * STATUS's own "(...)" item list is captured into @status_items. Unknown
+ * options will led to false being returned.
+ */
+static bool icp_parse_list_opts(const std::string &tok, bool is_return,
+    unsigned int &flags, std::vector<std::string> &status_items)
+{
+	if (tok.size() < 2 || tok.front() != '(' || tok.back() != ')')
+		return false;
+	auto in = tok.substr(1, tok.size() - 2);
+	size_t i = 0;
+	while (i < in.size()) {
+		while (i < in.size() && in[i] == ' ')
+			++i;
+		if (i >= in.size())
+			break;
+		size_t s = i;
+		while (i < in.size() && in[i] != ' ' && in[i] != '(')
+			++i;
+		auto w = in.substr(s, i - s);
+		if (w.empty())
+			continue;
+		if (is_return && strcasecmp(w.c_str(), "STATUS") == 0) {
+			flags |= LRET_STATUS;
+			while (i < in.size() && in[i] == ' ')
+				++i;
+			if (i >= in.size() || in[i] != '(')
+				return false;
+			int depth = 0;
+			size_t st = i;
+			for (; i < in.size(); ++i) {
+				if (in[i] == '(')
+					++depth;
+				else if (in[i] == ')' && --depth == 0) {
+					++i;
+					break;
+				}
+			}
+			if (depth != 0)
+				return false;
+			auto sp = in.substr(st + 1, i - st - 2);
+			size_t k = 0;
+			while (k < sp.size()) {
+				while (k < sp.size() && sp[k] == ' ')
+					++k;
+				size_t ks = k;
+				while (k < sp.size() && sp[k] != ' ')
+					++k;
+				if (k > ks)
+					status_items.push_back(sp.substr(ks, k - ks));
+			}
+			continue;
+		}
+		if (strcasecmp(w.c_str(), "SUBSCRIBED") == 0) {
+			if (is_return)
+				flags |= LRET_SUBSCRIBED;
+			else
+				flags |= LSEL_SUBSCRIBED;
+		} else if (strcasecmp(w.c_str(), "SPECIAL-USE") == 0) {
+			if (is_return)
+				flags |= LRET_SPECIALUSE;
+			else
+				flags |= LSEL_SPECIALUSE;
+		} else if (is_return && strcasecmp(w.c_str(), "CHILDREN") == 0) {
+			flags |= LRET_CHILDREN;
+		} else if (!is_return && strcasecmp(w.c_str(), "REMOTE") == 0) {
+			flags |= LSEL_REMOTE;
+		} else if (!is_return && strcasecmp(w.c_str(), "RECURSIVEMATCH") == 0) {
+			flags |= LSEL_RECURSIVE;
+		} else {
+			return false;
+		}
+	}
+	return true;
+}
+
 int icp_list(std::span<std::string> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
@@ -1903,29 +2059,62 @@ int icp_list(std::span<std::string> argv, imap_context &ctx) try
 	if (!pcontext->is_authed())
 		return 1804;
 	/*
-	 * Return option (list all folder and in doing so, yield special-use flags):
-	 * 	LIST "" % RETURN (SPECIAL-USE)
-	 *
-	 * Selection option (list only special use folders):
-	 * 	LIST (SPECIAL-USE) "" %
+	 * LIST-EXTENDED (RFC 9051 §6.3.9 / RFC 5258, RFC 5819, RFC 6154):
+	 * 	LIST (SUBSCRIBED RECURSIVEMATCH SPECIAL-USE) "" "*"
+	 * 	LIST "" ("INBOX" "Work/%") RETURN (SUBSCRIBED CHILDREN
+	 * 	         SPECIAL-USE STATUS (MESSAGES UNSEEN))
+	 * The classic forms (LIST "" "*", LIST "" % RETURN (SPECIAL-USE),
+	 * LIST (SPECIAL-USE) "" %) keep their exact rev1 wire output.
 	 */
 	if (argv.size() < 3)
 		return 1800;
 	size_t apos = 2;
-	auto filter_special = strcasecmp(argv[2].c_str(), "(SPECIAL-USE)") == 0;
-	if (filter_special)
+	unsigned int sel = 0, ret_opt = 0;
+	std::vector<std::string> status_items, dummy;
+	if (!argv[2].empty() && argv[2].front() == '(') {
+		if (!icp_parse_list_opts(argv[2], false, sel, dummy))
+			return 1800;
 		++apos;
+	}
 	if (argv.size() < apos + 2)
 		return 1800;
 	const auto &reference = argv[apos++];
-	const auto &mboxname  = argv[apos++];
-	bool return_special = filter_special;
-	if (argv.size() >= apos + 2 && strcasecmp(argv[apos].c_str(), "RETURN") == 0 &&
-	    strcasecmp(argv[apos+1].c_str(), "(SPECIAL-USE)") == 0)
-		return_special = true;
-	if (reference.size() + mboxname.size() >= 1024)
+	/* Mailbox pattern: a single string, or "(pat1 pat2 ...)". */
+	std::vector<std::string> patterns;
+	const auto &mp = argv[apos++];
+	if (mp.size() >= 2 && mp.front() == '(' && mp.back() == ')') {
+		std::string in = mp.substr(1, mp.size() - 2);
+		size_t k = 0;
+		while (k < in.size()) {
+			while (k < in.size() && in[k] == ' ')
+				++k;
+			size_t ks = k;
+			while (k < in.size() && in[k] != ' ')
+				++k;
+			if (k > ks)
+				patterns.emplace_back(in.substr(ks, k - ks));
+		}
+	} else {
+		patterns.emplace_back(mp);
+	}
+	if (argv.size() >= apos + 2 && strcasecmp(argv[apos].c_str(), "RETURN") == 0) {
+		if (!icp_parse_list_opts(argv[apos + 1], true, ret_opt, status_items))
+			return 1800;
+		apos += 2;
+	}
+	bool want_special  = (sel & LSEL_SPECIALUSE) || (ret_opt & LRET_SPECIALUSE);
+	bool only_special  = sel & LSEL_SPECIALUSE;
+	bool want_sub_attr = (sel & LSEL_SUBSCRIBED) || (ret_opt & LRET_SUBSCRIBED);
+	bool only_sub      = sel & LSEL_SUBSCRIBED;
+	bool recursive     = sel & LSEL_RECURSIVE;
+	if (reference.size() >= 1024)
 		return 1800;
-	if (mboxname.empty()) {
+	for (const auto &p : patterns)
+		if (reference.size() + p.size() >= 1024)
+			return 1800;
+
+	/* Lone empty pattern: hierarchy delimiter probe (RFC 3501 §6.3.9). */
+	if (patterns.size() == 1 && patterns[0].empty()) {
 		if (pcontext->proto_stat == iproto_stat::select)
 			imap_parser_echo_modify(pcontext, NULL);
 		/* IMAP_CODE_2170011: OK LIST completed */
@@ -1935,35 +2124,125 @@ int icp_list(std::span<std::string> argv, imap_context &ctx) try
 		return DISPATCH_CONTINUE;
 	}
 
-	auto search_pattern = std::string(reference) + mboxname;
 	std::vector<enum_folder_t> folder_list;
 	auto ssr = midb_agent::enum_folders(pcontext->maildir,
 	           folder_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-
+	/*
+	 * Capture the midb (base64) names before icp_convert_folderlist
+	 * rewrites folder_list to the mutf7 display form, so LIST-STATUS can
+	 * query midb.
+	 */
+	std::map<uint64_t, std::string> midb_name;
+	if (ret_opt & LRET_STATUS)
+		for (const auto &e : folder_list)
+			midb_name.emplace(e.first, e.second);
 	icp_convert_folderlist(folder_list);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
-	pcontext->stream.clear();
-	for (const auto &enf_entry : folder_list) {
-		const auto &sys_name = enf_entry.second;
-		auto special = special_folder(enf_entry.first);
-		if (filter_special && !special)
-			continue;
-		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
-			continue;
-		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have_cld = pdir != nullptr && pdir->has_children();
-		auto buf = fmt::format("* LIST (\\Has{}Children{}{}) \"/\" {}\r\n",
-		           have_cld ? "" : "No",
-		           return_special && special != nullptr ? " " : "",
-		           return_special && special != nullptr ? special->use_flags : "",
-		           quote_encode(sys_name));
-		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
-			return 1922;
+
+	std::set<std::string, dir_tree::cmp> subscribed;
+	if (want_sub_attr || only_sub || recursive) {
+		std::vector<enum_folder_t> sub_list;
+		if (midb_agent::enum_subscriptions(ctx.maildir, sub_list,
+		    &errnum) == MIDB_RESULT_OK) {
+			icp_convert_folderlist(sub_list);
+			for (const auto &e : sub_list)
+				subscribed.insert(e.second);
+		}
 	}
+
+	auto match_any = [&](const std::string &name) {
+		for (const auto &p : patterns)
+			if (!p.empty() && icp_wildcard_match(name.c_str(),
+			    (std::string(reference) + p).c_str()))
+				return true;
+		return false;
+	};
+	std::set<std::string, dir_tree::cmp> emitted;
+	auto write_entry = [&](const std::string &sys_name, uint64_t fid, bool subbed,
+	    const builtin_folder *sp, const char *childinfo) -> int {
+		auto dir = folder_tree.match(sys_name.c_str());
+		auto have_cld = dir != nullptr && dir->has_children();
+		std::string attrs = have_cld ? "\\HasChildren" : "\\HasNoChildren";
+		if (want_sub_attr && subbed)
+			attrs += " \\Subscribed";
+		if (want_special && sp != nullptr) {
+			attrs += ' ';
+			attrs += sp->use_flags;
+		}
+		auto line = fmt::format("* LIST ({}) \"/\" {}{}\r\n", attrs,
+		            quote_encode(sys_name), childinfo != nullptr ? childinfo : "");
+		if (ctx.stream.write(line.c_str(), line.size()) != STREAM_WRITE_OK)
+			return 1922;
+		if (ret_opt & LRET_STATUS) {
+			/*
+			 * LIST-STATUS: a per-mailbox STATUS reply follows the
+			 * LIST line, queried against the midb (base64) name. A
+			 * STATUS failure for one mailbox is not fatal.
+			 */
+			auto it = midb_name.find(fid);
+			std::string sline;
+			if (it != midb_name.end() &&
+			    icp_status_line(ctx, it->second, quote_encode(sys_name),
+			    status_items, sline) == 0 &&
+			    ctx.stream.write(sline.c_str(), sline.size()) != STREAM_WRITE_OK)
+				return 1922;
+		}
+		return 0;
+	};
+
+	ctx.stream.clear();
+	std::set<std::string, dir_tree::cmp> matched_sub;
+	for (const auto &enf : folder_list) {
+		const auto &sys_name = enf.second;
+		auto sp = special_folder(enf.first);
+		bool subbed = subscribed.find(sys_name) != subscribed.cend();
+		if (!match_any(sys_name))
+			continue;
+		if (only_special && sp == nullptr)
+			continue;
+		if (only_sub && !subbed)
+			continue;
+		if (!emitted.insert(sys_name).second)
+			continue;
+		if (only_sub && subbed)
+			matched_sub.insert(sys_name);
+		auto rc = write_entry(sys_name, enf.first, subbed, sp, nullptr);
+		if (rc != 0)
+			return rc;
+	}
+
+	/*
+	 * RECURSIVEMATCH (RFC 5258 §3.5): Report ancestors that match the
+	 * pattern but not the SUBSCRIBED selection, yet have a subscribed
+	 * descendant; tag them with CHILDINFO.
+	 */
+	if (recursive && only_sub && !matched_sub.empty()) {
+		std::set<std::string, dir_tree::cmp> ancestors;
+		for (const auto &name : matched_sub) {
+			size_t pos = 0;
+			for (auto sl = name.find('/'); sl != std::string::npos;
+			     sl = name.find('/', pos)) {
+				ancestors.insert(name.substr(0, sl));
+				pos = sl + 1;
+			}
+		}
+		for (const auto &enf : folder_list) {
+			const auto &sys_name = enf.second;
+			if (ancestors.count(sys_name) == 0 || !match_any(sys_name))
+				continue;
+			if (!emitted.insert(sys_name).second)
+				continue;
+			auto rc = write_entry(sys_name, enf.first, false,
+			          special_folder(enf.first), " (CHILDINFO (\"SUBSCRIBED\"))");
+			if (rc != 0)
+				return rc;
+		}
+	}
+
 	folder_list.clear();
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
@@ -2111,8 +2390,6 @@ int icp_lsub(std::span<std::string> argv, imap_context &ctx) try
 int icp_status(std::span<std::string> argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
-	int errnum;
-	BOOL b_first;
 	std::vector<std::string> temp_argv;
 	std::string sys_name;
     
@@ -2125,65 +2402,11 @@ int icp_status(std::span<std::string> argv, imap_context &ctx) try
 	if (parse_imap_args(&argv[3][1], argv[3].size() - 2, temp_argv) < 0)
 		return 1800;
 
-	size_t exists = 0, recent = 0, unseen = 0;
-	uint32_t uidvalid = 0, uidnext = 0;
-	auto ssr = midb_agent::summary_folder(pcontext->maildir, sys_name,
-	           &exists, &recent, &unseen, &uidvalid, &uidnext, &errnum);
-	auto ret = m2icode(ssr, errnum);
-	if (ret != 0)
-		return ret;
-	/*
-	 * SIZE/DELETED (RFC 8438/9051) are fetched lazily so the common STATUS
-	 * without them does not pay for the SUM(size) aggregation.
-	 */
-	size_t fsize = 0, fdeleted = 0;
-	bool have_sizes = false;
-	auto obtain_sizes = [&]() -> int {
-		if (have_sizes)
-			return 0;
-		auto sr = midb_agent::folder_sizes(ctx.maildir, sys_name,
-		          &fsize, &fdeleted, &errnum);
-		auto ic = m2icode(sr, errnum);
-		if (ic == 0)
-			have_sizes = true;
-		return ic;
-	};
+	std::string buf;
+	auto rc = icp_status_line(ctx, sys_name, quote_encode(argv[2]), temp_argv, buf);
+	if (rc != 0)
+		return rc;
 	/* IMAP_CODE_2170014: OK STATUS completed */
-	auto buf = fmt::format("* STATUS {} (", quote_encode(argv[2]));
-	b_first = TRUE;
-	for (const auto &arg_s : temp_argv) {
-		auto keyword = arg_s.c_str();
-		if (!b_first)
-			buf += ' ';
-		else
-			b_first = FALSE;
-		if (strcasecmp(keyword, "MESSAGES") == 0) {
-			buf += fmt::format("MESSAGES {}", exists);
-		} else if (strcasecmp(keyword, "RECENT") == 0) {
-			if (ctx.enabled_rev2)
-				return 1800;
-			buf += fmt::format("RECENT {}", recent);
-		} else if (strcasecmp(keyword, "UIDNEXT") == 0) {
-			buf += fmt::format("UIDNEXT {}", uidnext);
-		} else if (strcasecmp(keyword, "UIDVALIDITY") == 0) {
-			buf += fmt::format("UIDVALIDITY {}", uidvalid);
-		} else if (strcasecmp(keyword, "UNSEEN") == 0) {
-			buf += fmt::format("UNSEEN {}", unseen);
-		} else if (strcasecmp(keyword, "SIZE") == 0) {
-			auto ic = obtain_sizes();
-			if (ic != 0)
-				return ic;
-			buf += fmt::format("SIZE {}", fsize);
-		} else if (strcasecmp(keyword, "DELETED") == 0) {
-			auto ic = obtain_sizes();
-			if (ic != 0)
-				return ic;
-			buf += fmt::format("DELETED {}", fdeleted);
-		} else {
-			return 1800;
-		}
-	}
-	buf += ")\r\n";
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
 	if (pcontext->proto_stat == iproto_stat::select)
