@@ -1325,14 +1325,21 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
     echomod se_flag)
 {
-	if (pcontext->async_change_mask == 0)
-		return;
 	int err;
 	bool b_first;
 	char buff[1024];
 	decltype(pcontext->f_expunged_uids) f_expunged;
 
 	std::unique_lock hl_hold(g_hash_lock);
+	/*
+	 * Test the mask under the lock. The event thread raises these bits
+	 * while holding g_hash_lock (imap_parser_bcast_flags / event_expunge),
+	 * so an unlocked pre-check could observe 0 and return in the window
+	 * after the change was queued but before the bit became visible to
+	 * this thread, dropping the notification for this command cycle.
+	 */
+	if (pcontext->async_change_mask == 0)
+		return;
 	/*
 	 * RFC 3501 §7.4.1: an EXPUNGE response MUST NOT be sent while responding
 	 * to FETCH/STORE/SEARCH. Leave the queued expunges (and the seq-number
@@ -1576,6 +1583,11 @@ static void imap_parser_context_clear(imap_context *pcontext)
 	pcontext->stream.clear();
 	pcontext->f_flags.clear();
 	pcontext->f_expunged_uids.clear();
+	/*
+	 * Drop any pending async bits so a freshly pooled context does not
+	 * start out flagged for a notification it has no queued changes for.
+	 */
+	pcontext->async_change_mask.store(0, std::memory_order_relaxed);
 	pcontext->auth_times = 0;
 	pcontext->username[0] = '\0';
 	pcontext->maildir[0] = '\0';
