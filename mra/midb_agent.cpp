@@ -1635,7 +1635,8 @@ int unset_flags(const char *path, const std::string &folder,
 }
 	
 int get_flags(const char *path, const std::string &folder,
-    const std::string &mid_string, unsigned int *pflag_bits, int *perrno)
+    const std::string &mid_string, unsigned int *pflag_bits, int *perrno,
+    std::string *keywords)
 {
 	char buff[1024];
 
@@ -1650,8 +1651,24 @@ int get_flags(const char *path, const std::string &folder,
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		*pflag_bits = 0;
-		if (buff[4] == ' ')
+		/*
+		 * Response: TRUE (<flags>)[ <base64-keywords>]. Bound the flag
+		 * scan at ')' because the base64 keyword blob may contain flag
+		 * letters, then decode any trailing keyword field.
+		 */
+		auto close = buff[4] == ' ' ? strchr(buff + 5, ')') : nullptr;
+		if (close != nullptr) {
+			*pflag_bits = s_to_flagbits(std::string_view(buff + 5, close - (buff + 5)));
+			if (keywords != nullptr && close[1] == ' ') {
+				auto kw_beg = close + 2;
+				auto kw_end = kw_beg;
+				while (*kw_end != '\0' && *kw_end != '\r' && *kw_end != '\n')
+					++kw_end;
+				*keywords = base64_decode(std::string_view(kw_beg, kw_end - kw_beg));
+			}
+		} else if (buff[4] == ' ') {
 			*pflag_bits = s_to_flagbits(buff + 5);
+		}
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		pback.reset();
