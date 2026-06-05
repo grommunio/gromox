@@ -2774,6 +2774,44 @@ static int me_pfddt(std::span<char *> argv, int sockd)
 }
 
 /**
+ * Folder aggregate octet size and \Deleted count, for the IMAP4rev2 STATUS
+ * SIZE and DELETED items (computed on demand, so the common P-FDDT summary
+ * path is unaffected).
+ *
+ * Request:
+ * 	P-FDSZ <store-dir> <folder-name>
+ * Response:
+ * 	TRUE <total-octets> <#deleted>
+ */
+static int me_pfdsz(std::span<char *> argv, int sockd)
+{
+	char temp_buff[256], sql_string[1024];
+
+	auto pidb = me_get_idb(argv[1]);
+	if (pidb == nullptr)
+		return MIDB_E_HASHTABLE_FULL;
+	auto folder_id = me_get_folder_id(pidb.get(), argv[2]);
+	if (folder_id == 0)
+		return MIDB_E_NO_FOLDER_TRYCREATE;
+	snprintf(sql_string, std::size(sql_string),
+	         "SELECT COALESCE(SUM(size), 0), "
+	         "COUNT(CASE WHEN deleted!=0 THEN 1 END) "
+	         "FROM messages WHERE folder_id=%llu", LLU{folder_id});
+	auto stm = gx_sql_prep(pidb->psqlite, sql_string);
+	if (stm == nullptr)
+		return MIDB_E_SQLPREP;
+	if (stm.step() != SQLITE_ROW)
+		return MIDB_E_NO_FOLDER;
+	uint64_t total_size = stm.col_uint64(0);
+	size_t deleted = stm.col_uint64(1);
+	stm.finalize();
+	pidb.reset();
+	auto temp_len = gx_snprintf(temp_buff, std::size(temp_buff),
+	                "TRUE %llu %zu\r\n", LLU{total_size}, deleted);
+	return cmd_write(sockd, temp_buff, temp_len);
+}
+
+/**
  * Subscribe to a folder.
  *
  * Request:
@@ -4381,6 +4419,7 @@ static constexpr struct {
 	{"M-PING", {me_mping, 2}},
 	{"P-UNID", {me_punid, 4}},
 	{"P-FDDT", {me_pfddt, 3}},
+	{"P-FDSZ", {me_pfdsz, 3}},
 	{"P-SUBF", {me_psubf, 3}},
 	{"P-UNSF", {me_punsf, 3}},
 	{"P-SUBL", {me_psubl, 2}},
