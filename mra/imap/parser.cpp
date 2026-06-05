@@ -1324,6 +1324,7 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
     echomod se_flag)
 {
+	auto &ctx = *pcontext;
 	int err;
 	bool b_first;
 	char buff[1024];
@@ -1393,7 +1394,7 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 		}
 		auto outlen = gx_snprintf(buff, std::size(buff), "* %d FETCH (FLAGS (", item->id);
 		b_first = false;
-		if (flag_bits & FLAG_RECENT) {
+		if (!ctx.enabled_rev2 && flag_bits & FLAG_RECENT) {
 			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Recent");
 			b_first = true;
 		}

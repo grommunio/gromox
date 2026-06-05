@@ -387,10 +387,10 @@ static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail, BOOL *pb_data
 }
 
 static std::string icp_convert_flags_string(int flag_bits,
-    const std::string &keywords = "")
+    const std::string &keywords = "", bool rev2 = false)
 {
 	std::string out = "(";
-	if (flag_bits & FLAG_RECENT)
+	if (!rev2 && flag_bits & FLAG_RECENT)
 		out += "\\Recent ";
 	if (flag_bits & FLAG_ANSWERED)
 		out += "\\Answered ";
@@ -815,7 +815,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			auto line = icp_make_kwannounce_line(ctx, pitem->keywords);
 			if (line.size() > 0)
 				ctx.stream.write(line.c_str(), line.size());
-			auto fs = icp_convert_flags_string(pitem->flag_bits, pitem->keywords);
+			auto fs = icp_convert_flags_string(pitem->flag_bits, pitem->keywords, ctx.enabled_rev2);
 			buf += "FLAGS ";
 			buf += std::move(fs);
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
@@ -1051,7 +1051,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		midb_agent::set_keywords(pcontext->maildir, pcontext->selected_folder,
 			mid, kw_result, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
-			auto fs = icp_convert_flags_string(flag_bits, kw_result);
+			auto fs = icp_convert_flags_string(flag_bits, kw_result, ctx.enabled_rev2);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
@@ -1089,7 +1089,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			if (kw_result.empty())
 				kw_result = icp_get_keywords(ctx, id);
-			auto fs = icp_convert_flags_string(flag_bits, kw_result);
+			auto fs = icp_convert_flags_string(flag_bits, kw_result, ctx.enabled_rev2);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
@@ -1127,7 +1127,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			if (kw_result.empty() && kw_list.empty())
 				kw_result = icp_get_keywords(ctx, id);
-			auto fs = icp_convert_flags_string(flag_bits, kw_result);
+			auto fs = icp_convert_flags_string(flag_bits, kw_result, ctx.enabled_rev2);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
@@ -1669,13 +1669,16 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
 	for (const auto &k : kw)
 		kw_join += " " + k;
 
+	std::string recent_line;
+	if (!ctx.enabled_rev2)
+		recent_line = fmt::format("* {} RECENT\r\n", ctx.contents.n_recent);
 	auto buf = fmt::format(
 		"* {} EXISTS\r\n"
-		"* {} RECENT\r\n"
+		"{}\r\n"
 		"* FLAGS ({}{})\r\n"
 		"* OK {}\r\n",
 		pcontext->contents.n_exists(),
-		pcontext->contents.n_recent, IMAP_FLAGS_SYSTEM, kw_join, readonly ?
+		recent_line, IMAP_FLAGS_SYSTEM, kw_join, readonly ?
 		"[PERMANENTFLAGS ()] no permanent flags permitted" :
 		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded \\*)] limited");
 	if (pcontext->contents.firstunseen != 0)
