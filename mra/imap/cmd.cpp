@@ -1732,10 +1732,15 @@ int icp_delete(std::span<std::string> argv, imap_context &ctx)
 		auto dh = folder_tree.match(argv[2].c_str());
 		if (dh == nullptr)
 			return 1925;
+		/*
+		 * Disallow deleting names with inferior hierarchical names
+		 * (RFC 3501 §6.3.4).
+		 */
 		if (dh->has_children())
 			return 1924;
 	}
 
+	/* This call is a recursive hard-delete */
 	auto ssr = midb_agent::remove_folder(pcontext->maildir,
 	           encoded_name, &errnum);
 	auto ret = m2icode(ssr, errnum);
