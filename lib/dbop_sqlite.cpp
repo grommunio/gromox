@@ -597,6 +597,9 @@ static constexpr char tbl_midb_folders_3[] =
 static constexpr char tbl_midb_folders_move2_3[] =
 "INSERT INTO folders SELECT folder_id, parent_fid, commit_max, name, uidnext, unsub, sort_field FROM u0";
 
+static constexpr char tbl_midb_msgs_upgrade4[] =
+"ALTER TABLE messages ADD COLUMN keywords TEXT DEFAULT NULL";
+
 static constexpr char tbl_midb_msgs_0[] =
 "CREATE TABLE messages ("
 "  message_id INTEGER PRIMARY KEY,"
@@ -634,6 +637,44 @@ static constexpr char tbl_midb_msgs_0[] =
 "CREATE INDEX fid_rcpt_index ON messages(folder_id, rcpt);"
 "CREATE INDEX fid_size_index ON messages(folder_id, size);";
 
+static constexpr char tbl_midb_msgs_4[] =
+"CREATE TABLE messages ("
+"  message_id INTEGER PRIMARY KEY,"
+"  folder_id INTEGER NOT NULL,"
+"  mid_string TEXT NOT NULL UNIQUE,"
+"  idx INTEGER DEFAULT NULL,"
+"  mod_time INTEGER DEFAULT 0,"
+"  uid INTEGER NOT NULL,"
+"  unsent INTEGER DEFAULT 0,"
+"  recent INTEGER DEFAULT 1,"
+"  read INTEGER DEFAULT 0,"
+"  flagged INTEGER DEFAULT 0,"
+"  replied INTEGER DEFAULT 0,"
+"  forwarded INTEGER DEFAULT 0,"
+"  deleted INTEGER DEFAULT 0,"
+"  subject TEXT NOT NULL,"
+"  sender TEXT NOT NULL,"
+"  rcpt TEXT NOT NULL,"
+"  size INTEGER NOT NULL,"
+"  ext TEXT DEFAULT NULL," /* unused */
+"  received INTEGER NOT NULL,"
+"  keywords TEXT DEFAULT NULL,"
+"  FOREIGN KEY (folder_id)"
+"  	REFERENCES folders (folder_id)"
+"  	ON DELETE CASCADE"
+"  	ON UPDATE CASCADE);"
+"CREATE INDEX folder_id_index ON messages(folder_id);"
+"CREATE INDEX fid_idx_index ON messages(folder_id, idx);"
+"CREATE INDEX fid_recent_index ON messages(folder_id, recent);"
+"CREATE INDEX fid_read_index ON messages(folder_id, read);"
+"CREATE INDEX fid_received_index ON messages(folder_id, received);"
+"CREATE INDEX fid_uid_index ON messages(folder_id, uid);"
+"CREATE INDEX fid_flagged_index ON messages(folder_id, flagged);"
+"CREATE INDEX fid_subject_index ON messages(folder_id, subject);"
+"CREATE INDEX fid_from_index ON messages(folder_id, sender);"
+"CREATE INDEX fid_rcpt_index ON messages(folder_id, rcpt);"
+"CREATE INDEX fid_size_index ON messages(folder_id, size);";
+
 static constexpr char tbl_midb_mapping_0[] =
 "CREATE TABLE mapping ("
 "  message_id INTEGER PRIMARY KEY,"
@@ -651,7 +692,7 @@ static constexpr tbl_init tbl_midb_init_0[] = {
 static constexpr tbl_init tbl_midb_init_top[] = {
 	{"configurations", tbl_config_1},
 	{"folders", tbl_midb_folders_3},
-	{"messages", tbl_midb_msgs_0},
+	{"messages", tbl_midb_msgs_4},
 	{"mapping", tbl_midb_mapping_0},
 	TABLE_END,
 };
@@ -719,6 +760,7 @@ static constexpr tblite_upgradefn tbl_midb_upgrade_list[] = {
 	{1, nullptr, "configurations", tbl_config_1, tbl_config_move1},
 	{2, nullptr, "folders", tbl_midb_folders_2, tbl_midb_folders_move2_3},
 	{3, nullptr, "folders", tbl_midb_folders_3, tbl_midb_folders_move2_3},
+	{4, tbl_midb_msgs_upgrade4},
 	TABLE_END,
 };
 
