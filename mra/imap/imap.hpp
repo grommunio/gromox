@@ -116,6 +116,12 @@ struct imap_context final : public schedule_context {
 	 */
 	std::unordered_set<uint32_t> f_flags;
 	std::vector<uint32_t> f_expunged_uids;
+	/*
+	 * Custom keyword atoms already advertised to this session via an
+	 * untagged `* FLAGS` since the most-recent SELECT/EXAMINE. It is reset
+	 * on (re)select and cleared on close.
+	 */
+	std::vector<std::string> announced_keywords;
 	char tag_string[32]{};
 	int command_len = 0;
 	char command_buffer[64*1024]{};
@@ -151,6 +157,7 @@ extern  void imap_parser_safe_write(imap_context *, const void *pbuff, size_t co
 extern void imap_parser_log_info(imap_context *, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
 extern void icp_clsfld(imap_context &);
+extern std::string icp_make_kwannounce_line(imap_context &, std::string_view);
 extern int icp_capability(std::span<std::string>, imap_context &);
 extern int icp_id(std::span<std::string>, imap_context &);
 extern int icp_noop(std::span<std::string>, imap_context &);

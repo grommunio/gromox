@@ -402,6 +402,48 @@ static std::string icp_convert_flags_string(int flag_bits,
 	return out;
 }
 
+/*
+ * System flags advertised in untagged `* FLAGS` lines. Keep this identical to
+ * the SELECT/EXAMINE response in icp_selex().
+ */
+#define IMAP_FLAGS_SYSTEM "\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded"
+
+/**
+ * Produce a keyword pre-announcement line (RFC 3501 §7.2.6).
+ *
+ * @kw_space: string with space-separated atoms
+ *
+ * Tokenizes @kw_space and records any token not yet announced to this session.
+ * If the announced set grew, emit one `* FLAGS (system flags + the full
+ * announced set)` line. The line only contains plain atoms, never "\*".
+ */
+std::string icp_make_kwannounce_line(imap_context &ctx, std::string_view kw_space)
+{
+	bool grew = false;
+	for (size_t pos = 0; pos < kw_space.size(); ) {
+		auto sp = kw_space.find(' ', pos);
+		if (sp == std::string_view::npos)
+			sp = kw_space.size();
+		if (sp > pos) {
+			std::string tok(kw_space.substr(pos, sp - pos));
+			if (std::find(ctx.announced_keywords.cbegin(),
+			    ctx.announced_keywords.cend(), tok) ==
+			    ctx.announced_keywords.cend()) {
+				ctx.announced_keywords.emplace_back(std::move(tok));
+				grew = true;
+			}
+		}
+		pos = sp + 1;
+	}
+	if (!grew)
+		return "";
+	std::string line = "* FLAGS (" IMAP_FLAGS_SYSTEM;
+	for (const auto &k : ctx.announced_keywords)
+		line += " " + k;
+	line += ")\r\n";
+	return line;
+}
+
 static int icp_match_field(mjson_io &io, const char *cmd_tag,
     const char *file_path, size_t offset, size_t length, BOOL b_not,
     const char *tags, size_t offset1, ssize_t length1, std::string &value) try
@@ -755,6 +797,9 @@ static int icp_process_fetch_item(imap_context &ctx,
 			else
 				buf += std::move(b2);
 		} else if (strcasecmp(kw, "FLAGS") == 0) {
+			auto line = icp_make_kwannounce_line(ctx, pitem->keywords);
+			if (line.size() > 0)
+				ctx.stream.write(line.c_str(), line.size());
 			auto fs = icp_convert_flags_string(pitem->flag_bits, pitem->keywords);
 			buf += "FLAGS ";
 			buf += std::move(fs);
@@ -1078,8 +1123,12 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 					id, fs.c_str());
 		}
 	}
-	if (string_length != 0)
+	if (string_length != 0) {
+		auto line = icp_make_kwannounce_line(*pcontext, kw_result);
+		if (line.size() > 0)
+			imap_parser_safe_write(pcontext, line.c_str(), line.size());
 		imap_parser_safe_write(pcontext, buff, string_length);
+	}
 }
 
 static BOOL icp_convert_imaptime(const char *str_time, time_t *ptime)
@@ -1559,13 +1608,29 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
 	pcontext->b_readonly = readonly;
 	imap_parser_add_select(pcontext);
 
+	/*
+	 * Seed this session's announced keyword list from the folder's
+	 * distinct custom keywords. RFC 3501 §7.2.6: Only plain keyword atoms
+	 * are allowed here. "\*" is PERMANENTFLAGS-only and emitting it could
+	 * make strict clients disconnect. A failure to query keywords degrades
+	 * gracefully and will just emit the usual built-in keywords.
+	 */
+	std::vector<std::string> kw;
+	int kwerr = 0;
+	midb_agent::get_folder_keywords(pcontext->maildir,
+		pcontext->selected_folder, kw, &kwerr);
+	pcontext->announced_keywords = kw;
+	std::string kw_join;
+	for (const auto &k : kw)
+		kw_join += " " + k;
+
 	auto buf = fmt::format(
 		"* {} EXISTS\r\n"
 		"* {} RECENT\r\n"
-		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded)\r\n"
+		"* FLAGS ({}{})\r\n"
 		"* OK {}\r\n",
 		pcontext->contents.n_exists(),
-		pcontext->contents.n_recent, readonly ?
+		pcontext->contents.n_recent, IMAP_FLAGS_SYSTEM, kw_join, readonly ?
 		"[PERMANENTFLAGS ()] no permanent flags permitted" :
 		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded \\*)] limited");
 	if (pcontext->contents.firstunseen != 0)
@@ -2353,6 +2418,7 @@ int icp_unselect(std::span<std::string> argv, imap_context &ctx)
 	imap_parser_remove_select(pcontext);
 	pcontext->proto_stat = iproto_stat::auth;
 	pcontext->selected_folder.clear();
+	pcontext->announced_keywords.clear();
 	return 1718;
 }
 
@@ -2989,6 +3055,7 @@ void icp_clsfld(imap_context &ctx) try
 	pcontext->proto_stat = iproto_stat::auth;
 	prev_selected = std::move(pcontext->selected_folder);
 	pcontext->selected_folder.clear();
+	pcontext->announced_keywords.clear();
 	if (pcontext->b_readonly)
 		return;
 	/*

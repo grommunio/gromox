@@ -1375,6 +1375,16 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 		    pcontext->selected_folder, item->mid, &flag_bits,
 		    &err, &keywords) != MIDB_RESULT_OK)
 			continue;
+		/*
+		 * Announce a keyword to the _receiving_ session before this
+		 * async FETCH shows it (covers the cross-session case where
+		 * another connection introduced it).
+		 */
+		if (!keywords.empty()) {
+			auto line = icp_make_kwannounce_line(*pcontext, keywords);
+			if (line.size() > 0)
+				pstream->write(line.c_str(), line.size());
+		}
 		auto outlen = gx_snprintf(buff, std::size(buff), "* %d FETCH (FLAGS (", item->id);
 		b_first = false;
 		if (flag_bits & FLAG_RECENT) {
