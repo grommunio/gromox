@@ -70,5 +70,6 @@ extern GX_EXPORT int copy_mail(const char *path, const std::string &src_folder, 
 extern GX_EXPORT int search(const char *path, const std::string &folder, const char *charset, std::span<std::string> argv, std::string &ret_buff, int *perrno);
 extern GX_EXPORT int search_uid(const char *path, const std::string &folder, const char *charset, std::span<std::string> argv, std::string &ret_buff, int *perrno);
 extern GX_EXPORT int set_keywords(const char *path, const std::string &folder, const std::string &mid, const std::string &keywords, int *perrno);
+extern GX_EXPORT int get_folder_keywords(const char *path, const std::string &folder, std::vector<std::string> &out, int *perrno);
 
 }

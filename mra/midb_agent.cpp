@@ -1708,6 +1708,46 @@ int set_keywords(const char *path, const std::string &folder,
 	return MIDB_RDWR_ERROR;
 }
 
+int get_folder_keywords(const char *path, const std::string &folder,
+    std::vector<std::string> &out, int *perrno) try
+{
+	auto pback = get_connection(path);
+	if (pback == nullptr)
+		return MIDB_NO_SERVER;
+	auto cbufsize = g_midb_command_buffer_size.load();
+	auto buff = std::make_unique<char[]>(cbufsize);
+	/* folder is already base64 (selected_folder); pass raw like get_flags() */
+	auto length = gx_snprintf(buff.get(), cbufsize, "P-KWLS %s %s\r\n",
+	              path, folder.c_str());
+	auto ret = rw_command(pback->sockd, buff.get(), length, cbufsize);
+	if (ret != 0)
+		return ret;
+	if (strncmp(buff.get(), "TRUE", 4) == 0) {
+		pback.reset();
+		out.clear();
+		/* TRUE[ <base64>]...  split trailing tokens, base64-decode each */
+		char *p = buff.get() + 4;
+		while (*p == ' ') {
+			++p;
+			char *e = p;
+			while (*e != '\0' && *e != ' ' && *e != '\r' && *e != '\n')
+				++e;
+			if (e != p)
+				out.emplace_back(base64_decode(std::string_view(p, e - p)));
+			p = e;
+		}
+		return MIDB_RESULT_OK;
+	} else if (strncmp(buff.get(), "FALSE ", 6) == 0) {
+		pback.reset();
+		*perrno = strtol(&buff[6], nullptr, 0);
+		return MIDB_RESULT_ERROR;
+	}
+	return MIDB_RDWR_ERROR;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2155: ENOMEM");
+	return MIDB_LOCAL_ENOMEM;
+}
+
 int copy_mail(const char *path, const std::string &src_folder,
     const std::string &mid_string, const std::string &dst_folder,
     std::string &dst_mid, int *perrno) try
