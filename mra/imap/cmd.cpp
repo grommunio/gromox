@@ -1650,6 +1650,12 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
 	if (!icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name))
 		/* Undecodable (e.g. bad modified-UTF-7) name: no such mailbox. */
 		return 1925;
+	/*
+	 * RFC 9051 §6.3.2: Switching mailboxes closes the prior one and the
+	 * client gets a `* OK [CLOSED]` before the new mailbox's data. Capture
+	 * the state before the deselect below clears proto_stat.
+	 */
+	bool was_selected = ctx.proto_stat == iproto_stat::select;
 	if (iproto_stat::select == pcontext->proto_stat) {
 		imap_parser_remove_select(pcontext);
 		pcontext->proto_stat = iproto_stat::auth;
@@ -1689,16 +1695,21 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
 	std::string recent_line;
 	if (!ctx.enabled_rev2)
 		recent_line = fmt::format("* {} RECENT\r\n", ctx.contents.n_recent);
+	/* RFC 9051 §6.3.2: announce the prior mailbox is closed when switching. */
+	auto closed_line = ctx.enabled_rev2 && was_selected ?
+	                   "* OK [CLOSED] previous mailbox closed\r\n" : "";
 	auto buf = fmt::format(
+		"{}"
 		"* {} EXISTS\r\n"
 		"{}\r\n"
 		"* FLAGS ({}{})\r\n"
 		"* OK {}\r\n",
-		pcontext->contents.n_exists(),
+		closed_line, pcontext->contents.n_exists(),
 		recent_line, IMAP_FLAGS_SYSTEM, kw_join, readonly ?
 		"[PERMANENTFLAGS ()] no permanent flags permitted" :
 		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded \\*)] limited");
-	if (pcontext->contents.firstunseen != 0)
+	/* RFC 9051 §6.3.2 removed the [UNSEEN] response code from SELECT/EXAMINE. */
+	if (!ctx.enabled_rev2 && ctx.contents.firstunseen != 0)
 		buf += fmt::format("* OK [UNSEEN {}] message {} is first unseen\r\n",
 			pcontext->contents.firstunseen,
 			pcontext->contents.firstunseen);
