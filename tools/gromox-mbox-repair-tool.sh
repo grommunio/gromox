@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_BUILD=2026052001
+SCRIPT_BUILD=2026060501
 
 LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
 
@@ -38,18 +38,18 @@ log() {
 }
 
 log_quit() {
-	log "${1}" "${2}"
-	exit 1
+        log "${1}" "${2}"
+        exit 1
 }
 
 get_maildirs() {
-	local username="${1:-false}"
+        local username="${1:-false}"
 
-	if [ "${username}" != false ]; then
-	    command gromox-mbop -u "${username}" echo-maildir
-	else
+        if [ "${username}" != false ]; then
+            command gromox-mbop -u "${username}" echo-maildir
+        else
             command gromox-mbop foreach.mb.here echo-maildir
-	fi
+        fi
 }
 
 cleanup() {
@@ -98,23 +98,26 @@ repair_mbox() {
 
                 # gromox-mbck returns 0 regardless of mailbox state
                 result="$(command gromox-mbck "${maildir}/exmdb/exchange.sqlite3")"
-		if echo "$result" | grep "\[0 issues\]" >/dev/null 2>&1; then
+                if echo "$result" | grep "\[0 issues\]" >/dev/null 2>&1; then
                     log "Check successful on ${maildir}"
-		else
-		    log "Check failed for ${maildir}" "ERROR"
-		    log "Result: $result"
+                else
+                    log "Result: $result"
                     if [ "${_REPAIR_MAILBOX}" = true ]; then
                         if [ "${_DRYRUN}" = false ]; then
                                 log "Repairing maildir with gromox-mbck"
                                 if ! command gromox-mbck -p "${maildir}/exmdb/exchange.sqlite3" ; then
                                         log "Repairing ${maildir}/exmdb/exchange.sqlite3 failed. stoppting operations" "ERROR"
                                         break
+                                else
+                                        log "Finished repairing maildir ${maildir}/exmdb/exchange.sqlite3"
                                 fi
                         else
                                 log "Would repair maildir ${maildir} if not dryrun"
                         fi
+                    else
+                            log "Check failed for ${maildir}" "ERROR"
                     fi
-		fi
+                fi
         done
 }
 
@@ -139,7 +142,6 @@ repair_sql() {
                 log "Checking sql database in ${maildir}/exmdb"
                 # This expects sqlite to output "ok"
                 if [ "$(sqlite3 -readonly "${maildir}/exmdb/exchange.sqlite3" 'pragma integrity_check;')" != "ok" ]; then
-                        log "Maildir ${maildir} has errors according to sqlite3" "ERROR"
                         if [ "${_DRYRUN}" = false ] && [ "${_REPAIR_SQL}" = true ]; then
                                 log "Repairing sqlite database. This will shutdown gromox-http"
                                 systemctl stop gromox-http.service
@@ -175,7 +177,11 @@ repair_sql() {
                                         log "A security copy has been created as ${maildir}/exmdb/exchange.sqlite3.old"
                                 fi
                         else
-                                log "Would reapir sql database in ${maildir}/exmdb if not dryrun"
+                                if [ "${_DRYRUN}" = false ]; then
+                                        log "Maildir ${maildir} has errors according to sqlite3" "ERROR"
+                                else
+                                        log "Would repair sql database in ${maildir}/exmdb if not dryrun"
+                                fi
                         fi
                 else
                         log "SQL database in ${maildir}/exmdb is okay"
@@ -204,7 +210,7 @@ Usage() {
         echo "--repair-sql             Checks and tries to repair sqlite database. Will stop gromox-http temporarily"
         echo "--dryrun                 Actually don't run any modifications"
         echo "--maildir=all|[path]     Specify which maildir to run for, takes mailbox path, eg /var/lib/gromox/user/1/2 or \"all\""
-	echo "--username=[username]    Spcify a single username for which to run the repair script, overrides --maildir"	
+        echo "--username=[username]    Spcify a single username for which to run the repair script, overrides --maildir"
 
         exit 1
 }
@@ -247,9 +253,9 @@ function GetCommandlineArguments {
                         # Also strip trailing slashes
                         TARGET_MAILDIRS="${TARGET_MAILDIRS%/}"
                         ;;
-			--username=*)
-			USERNAME="${i##*=}"
-			;;
+                        --username=*)
+                        USERNAME="${i##*=}"
+                        ;;
                         *)
                         log "Unknown option '$i'" "CRITICAL"
                         Usage
@@ -270,8 +276,8 @@ SCRIPT_GOOD=true
 GetCommandlineArguments "${@}"
 
 if [ "${TARGET_MAILDIRS}" = "" ] && [ "${USERNAME}" = "" ]; then
-	log "Script needs either valid mailbox or username" "CRITICAL"
-	exit 1
+        log "Script needs either valid mailbox or username" "CRITICAL"
+        exit 1
 fi
 if [ "${USERNAME}" != "" ]; then
     TARGET_MAILDIRS="$(get_maildirs "${USERNAME}")"
@@ -285,7 +291,7 @@ else
     TARGET_MAILDIRS="$(get_maildirs)"
     [ $? -ne 0 ] && log_quit "Cannot get maildirs" "ERROR"
 fi
-      
+
 
 log "$0 $SCRIPT_BUILD invoked on $(date)"
 
