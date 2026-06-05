@@ -888,6 +888,39 @@ static int icp_process_fetch_item(imap_context &ctx,
 	return 1918;
 }
 
+/**
+ * Split STORE flag atoms into the standard IMAP system flags (returned as a
+ * bitmask) and custom keywords (returned verbatim). The pseudo-keyword "\*" is
+ * not settable and is rejected. Returns false on an unparsable system flag
+ * (e.g. some unknown '\'-prefixed atom).
+ */
+static bool icp_classify_store_flags(const std::vector<std::string> &atoms,
+    int &flag_bits, std::vector<std::string> &kw_list)
+{
+	for (const auto &kw_s : atoms) {
+		auto keyword = kw_s.c_str();
+		if (strcasecmp(keyword, "\\Answered") == 0)
+			flag_bits |= FLAG_ANSWERED;
+		else if (strcasecmp(keyword, "\\Flagged") == 0)
+			flag_bits |= FLAG_FLAGGED;
+		else if (strcasecmp(keyword, "\\Deleted") == 0)
+			flag_bits |= FLAG_DELETED;
+		else if (strcasecmp(keyword, "\\Seen") == 0)
+			flag_bits |= FLAG_SEEN;
+		else if (strcasecmp(keyword, "\\Draft") == 0)
+			flag_bits |= FLAG_DRAFT;
+		else if (strcasecmp(keyword, "\\Recent") == 0)
+			flag_bits |= FLAG_RECENT;
+		else if (strcasecmp(keyword, "$Forwarded") == 0)
+			flag_bits |= FLAG_FORWARDED;
+		/*
+		 * Custom keywords and NIL are not persisted (no \* is
+		 * advertised), so ignore them rather than failing the STORE.
+		 */
+	}
+	return true;
+}
+
 static void icp_store_flags(const char *cmd, const std::string &mid,
     int id, unsigned int uid, unsigned int flag_bits, imap_context &ctx)
 {
@@ -2406,27 +2439,9 @@ int icp_store(std::span<std::string> argv, imap_context &ctx)
 	if (pcontext->b_readonly)
 		return 1806;
 	flag_bits = 0;
-	for (const auto &kw_s : temp_argv) {
-		auto keyword = kw_s.c_str();
-		if (strcasecmp(keyword, "\\Answered") == 0)
-			flag_bits |= FLAG_ANSWERED;
-		else if (strcasecmp(keyword, "\\Flagged") == 0)
-			flag_bits |= FLAG_FLAGGED;
-		else if (strcasecmp(keyword, "\\Deleted") == 0)
-			flag_bits |= FLAG_DELETED;
-		else if (strcasecmp(keyword, "\\Seen") == 0)
-			flag_bits |= FLAG_SEEN;
-		else if (strcasecmp(keyword, "\\Draft") == 0)
-			flag_bits |= FLAG_DRAFT;
-		else if (strcasecmp(keyword, "\\Recent") == 0)
-			flag_bits |= FLAG_RECENT;			
-		else if (strcasecmp(keyword, "$Forwarded") == 0)
-			flag_bits |= FLAG_FORWARDED;
-		/*
-		 * Custom keywords and NIL are not persisted (no \* is
-		 * advertised), so ignore them rather than failing the STORE.
-		 */
-	}
+	std::vector<std::string> kw_list;
+	if (!icp_classify_store_flags(temp_argv, flag_bits, kw_list))
+		return 1807;
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_uid, &xarray, &errnum);
@@ -2672,27 +2687,9 @@ int icp_uid_store(std::span<std::string> argv, imap_context &ctx)
 	if (pcontext->b_readonly)
 		return 1806;
 	flag_bits = 0;
-	for (const auto &kw_s : temp_argv) {
-		auto keyword = kw_s.c_str();
-		if (strcasecmp(keyword, "\\Answered") == 0)
-			flag_bits |= FLAG_ANSWERED;
-		else if (strcasecmp(keyword, "\\Flagged") == 0)
-			flag_bits |= FLAG_FLAGGED;
-		else if (strcasecmp(keyword, "\\Deleted") == 0)
-			flag_bits |= FLAG_DELETED;
-		else if (strcasecmp(keyword, "\\Seen") == 0)
-			flag_bits |= FLAG_SEEN;
-		else if (strcasecmp(keyword, "\\Draft") == 0)
-			flag_bits |= FLAG_DRAFT;
-		else if (strcasecmp(keyword, "\\Recent") == 0)
-			flag_bits |= FLAG_RECENT;			
-		else if (strcasecmp(keyword, "$Forwarded") == 0)
-			flag_bits |= FLAG_FORWARDED;
-		/*
-		 * Custom keywords and NIL are not persisted (no \* is
-		 * advertised), so ignore them rather than failing the STORE.
-		 */
-	}
+	std::vector<std::string> kw_list;
+	if (!icp_classify_store_flags(temp_argv, flag_bits, kw_list))
+		return 1807;
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum);
