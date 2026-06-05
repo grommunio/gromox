@@ -244,7 +244,7 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 	}
 	auto pstmt = gx_sql_prep(psqlite, "SELECT uid, recent, read,"
 	             " unsent, flagged, replied, forwarded, deleted,"
-	             " folder_id FROM messages WHERE mid_string=?");
+	             " folder_id, keywords FROM messages WHERE mid_string=?");
 	if (pstmt == nullptr)
 		return 0;
 	sqlite3_bind_text(pstmt, 1, mid_string, -1, SQLITE_STATIC);
@@ -260,6 +260,7 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 	digest["replied"]   = Json::Value::UInt64(pstmt.col_int64(5));
 	digest["forwarded"] = Json::Value::UInt64(pstmt.col_int64(6));
 	digest["deleted"]   = Json::Value::UInt64(pstmt.col_int64(7));
+	digest["keywords"]  = pstmt.col_text(9);
 	return folder_id;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1139: ENOMEM");
@@ -482,7 +483,7 @@ static bool me_ct_search_head(const char *charset, const char *mid_string,
 enum ctm_field {
 	CTM_MSGID, CTM_MODTIME, CTM_UID, CTM_RECENT, CTM_READ, CTM_UNSENT,
 	CTM_FLAGGED, CTM_REPLIED, CTM_FWD, CTM_DELETED, CTM_RCVDTIME,
-	CTM_FOLDERID, CTM_SIZE,
+	CTM_FOLDERID, CTM_SIZE, CTM_KEYWORDS,
 };
 
 static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
@@ -540,10 +541,35 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 		} else {
 			switch (ptree_node->condition) {
 			case midb_cond::all:
-			case midb_cond::keyword:
-			case midb_cond::unkeyword:
 				b_result1 = true;
 				break;
+			case midb_cond::keyword:
+			case midb_cond::unkeyword: {
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
+					break;
+				auto kw = stm.col_text(CTM_KEYWORDS);
+				bool found = false;
+				if (kw != nullptr) {
+					std::string_view sv = kw;
+					const std::string_view want = ptree_node->ct_keyword;
+					for (size_t pos = 0; pos < sv.size(); ) {
+						auto sp = sv.find(' ', pos);
+						if (sp == sv.npos)
+							sp = sv.size();
+						auto tok = sv.substr(pos, sp - pos);
+						if (tok.size() == want.size() &&
+						    strncasecmp(tok.data(), want.data(), tok.size()) == 0) {
+							found = true;
+							break;
+						}
+						pos = sp + 1;
+					}
+				}
+				b_result1 = ptree_node->condition == midb_cond::keyword ? found : !found;
+				break;
+			}
 			case midb_cond::answered:
 				stm.reset();
 				stm.bind_text(1, mid_string);
@@ -1225,7 +1251,7 @@ static std::optional<std::vector<int>> me_ct_match(const char *charset,
 	/* Match this column list to ctm_field */
 	auto pstmt_message = gx_sql_prep(psqlite, "SELECT message_id, mod_time, "
 	                     "uid, recent, read, unsent, flagged, replied, forwarded,"
-	                     "deleted, received, folder_id, size FROM messages "
+	                     "deleted, received, folder_id, size, keywords FROM messages "
 	                     "WHERE mid_string=?");
 	if (pstmt_message == nullptr)
 		return {};
