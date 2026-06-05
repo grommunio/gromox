@@ -2132,6 +2132,22 @@ int icp_status(std::span<std::string> argv, imap_context &ctx) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
+	/*
+	 * SIZE/DELETED (RFC 8438/9051) are fetched lazily so the common STATUS
+	 * without them does not pay for the SUM(size) aggregation.
+	 */
+	size_t fsize = 0, fdeleted = 0;
+	bool have_sizes = false;
+	auto obtain_sizes = [&]() -> int {
+		if (have_sizes)
+			return 0;
+		auto sr = midb_agent::folder_sizes(ctx.maildir, sys_name,
+		          &fsize, &fdeleted, &errnum);
+		auto ic = m2icode(sr, errnum);
+		if (ic == 0)
+			have_sizes = true;
+		return ic;
+	};
 	/* IMAP_CODE_2170014: OK STATUS completed */
 	auto buf = fmt::format("* STATUS {} (", quote_encode(argv[2]));
 	b_first = TRUE;
@@ -2141,18 +2157,31 @@ int icp_status(std::span<std::string> argv, imap_context &ctx) try
 			buf += ' ';
 		else
 			b_first = FALSE;
-		if (strcasecmp(keyword, "MESSAGES") == 0)
+		if (strcasecmp(keyword, "MESSAGES") == 0) {
 			buf += fmt::format("MESSAGES {}", exists);
-		else if (strcasecmp(keyword, "RECENT") == 0)
+		} else if (strcasecmp(keyword, "RECENT") == 0) {
+			if (ctx.enabled_rev2)
+				return 1800;
 			buf += fmt::format("RECENT {}", recent);
-		else if (strcasecmp(keyword, "UIDNEXT") == 0)
+		} else if (strcasecmp(keyword, "UIDNEXT") == 0) {
 			buf += fmt::format("UIDNEXT {}", uidnext);
-		else if (strcasecmp(keyword, "UIDVALIDITY") == 0)
+		} else if (strcasecmp(keyword, "UIDVALIDITY") == 0) {
 			buf += fmt::format("UIDVALIDITY {}", uidvalid);
-		else if (strcasecmp(keyword, "UNSEEN") == 0)
+		} else if (strcasecmp(keyword, "UNSEEN") == 0) {
 			buf += fmt::format("UNSEEN {}", unseen);
-		else
+		} else if (strcasecmp(keyword, "SIZE") == 0) {
+			auto ic = obtain_sizes();
+			if (ic != 0)
+				return ic;
+			buf += fmt::format("SIZE {}", fsize);
+		} else if (strcasecmp(keyword, "DELETED") == 0) {
+			auto ic = obtain_sizes();
+			if (ic != 0)
+				return ic;
+			buf += fmt::format("DELETED {}", fdeleted);
+		} else {
 			return 1800;
+		}
 	}
 	buf += ")\r\n";
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
