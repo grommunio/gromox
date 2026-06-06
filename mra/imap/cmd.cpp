@@ -1188,13 +1188,19 @@ static BOOL icp_wildcard_match(const char *folder, const char *mask)
  * See sysfolder_to_imapfolder for some notes.
  */
 static BOOL icp_imapfolder_to_sysfolder(const char *imap_folder,
-    std::string &sys_folder) try
+    std::string &sys_folder, bool utf8) try
 {
 	std::string t;
-	t.resize(strlen(imap_folder));
-	if (mutf7_to_utf8(imap_folder, strlen(imap_folder), t.data(), t.size() + 1) < 0)
-		return FALSE;
-	t.resize(strlen(t.c_str()));
+	if (utf8) {
+		/* rev2 mailbox names are UTF-8 */
+		t = imap_folder;
+	} else {
+		t.resize(strlen(imap_folder));
+		if (mutf7_to_utf8(imap_folder, strlen(imap_folder), t.data(),
+		    t.size() + 1) < 0)
+			return false;
+		t.resize(strlen(t.c_str()));
+	}
 	if (t.size() > 0 && t.back() == '/')
 		t.pop_back();
 	if (strncasecmp(t.c_str(), "inbox", 5) == 0 &&
@@ -1208,7 +1214,7 @@ static BOOL icp_imapfolder_to_sysfolder(const char *imap_folder,
 }
 
 static BOOL icp_sysfolder_to_imapfolder(const enum_folder_t &sys_folder,
-    std::string &imap_folder) try
+    std::string &imap_folder, bool utf8) try
 {
 	if (sys_folder.first == PRIVATE_FID_INBOX) {
 		imap_folder = "INBOX";
@@ -1217,6 +1223,10 @@ static BOOL icp_sysfolder_to_imapfolder(const enum_folder_t &sys_folder,
 	auto t = base64_decode(sys_folder.second);
 	if (t.empty())
 		return FALSE;
+	if (utf8) {
+		imap_folder = std::move(t);
+		return TRUE;
+	}
 	imap_folder.resize(utf8_to_mb_len(t.c_str()));
 	if (utf8_to_mutf7(t.c_str(), t.size(), imap_folder.data(), imap_folder.size() + 1) <= 0)
 		return FALSE;
@@ -1227,12 +1237,12 @@ static BOOL icp_sysfolder_to_imapfolder(const enum_folder_t &sys_folder,
 	return false;
 }
 
-static void icp_convert_folderlist(std::vector<enum_folder_t> &pfile) try
+static void icp_convert_folderlist(std::vector<enum_folder_t> &pfile, bool utf8) try
 {
 	std::string o;
-	
+
 	for (auto &e : pfile)
-		if (icp_sysfolder_to_imapfolder(e, o))
+		if (icp_sysfolder_to_imapfolder(e, o, utf8))
 			e.second = std::move(o);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1814: ENOMEM");
@@ -1647,7 +1657,8 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
 		return 1804;
 	if (argv.size() < 3 || argv[2].size() == 0 || argv[2].size() >= 1024)
 		return 1800;
-	if (!icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name))
+	if (!icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name,
+	    ctx.enabled_rev2))
 		/* Undecodable (e.g. bad modified-UTF-7) name: no such mailbox. */
 		return 1925;
 	/*
@@ -1752,7 +1763,7 @@ int icp_create(std::span<std::string> argv, imap_context &ctx)
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	icp_convert_folderlist(folder_list);
+	icp_convert_folderlist(folder_list, ctx.enabled_rev2);
 	std::string sys_name = argv[2]; // Go back to non-encoded string
 	if (sys_name.size() > 0 && sys_name.back() == '/')
 		sys_name.pop_back();
@@ -1770,7 +1781,8 @@ int icp_create(std::span<std::string> argv, imap_context &ctx)
 			continue;
 		}
 		std::string converted_name;
-		if (!icp_imapfolder_to_sysfolder(sys_name.c_str(), converted_name))
+		if (!icp_imapfolder_to_sysfolder(sys_name.c_str(),
+		    converted_name, ctx.enabled_rev2))
 			return 1800;
 		ssr = midb_agent::make_folder(pcontext->maildir,
 		      converted_name, &errnum);
@@ -1793,7 +1805,8 @@ int icp_delete(std::span<std::string> argv, imap_context &ctx)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argv.size() < 3 || argv[2].size() == 0 || argv[2].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), encoded_name))
+	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), encoded_name,
+	    ctx.enabled_rev2))
 		return 1800;
 
 	{
@@ -1803,7 +1816,7 @@ int icp_delete(std::span<std::string> argv, imap_context &ctx)
 		auto ret = m2icode(ssr, errnum);
 		if (ret != 0)
 			return ret;
-		icp_convert_folderlist(folder_list);
+		icp_convert_folderlist(folder_list, ctx.enabled_rev2);
 		dir_tree folder_tree;
 		folder_tree.load_from_memfile(std::move(folder_list));
 		auto dh = folder_tree.match(argv[2].c_str());
@@ -1839,8 +1852,8 @@ int icp_rename(std::span<std::string> argv, imap_context &ctx)
 	if (argv.size() < 4 || argv[2].size() == 0 || argv[2].size() >= 1024 ||
 	    argv[3].size() == 0 || argv[3].size() >= 1024)
 		return 1800;
-	if (!icp_imapfolder_to_sysfolder(argv[2].c_str(), encoded_name) ||
-	    !icp_imapfolder_to_sysfolder(argv[3].c_str(), encoded_name1))
+	if (!icp_imapfolder_to_sysfolder(argv[2].c_str(), encoded_name, ctx.enabled_rev2) ||
+	    !icp_imapfolder_to_sysfolder(argv[3].c_str(), encoded_name1, ctx.enabled_rev2))
 		return 1800;
 	if (strpbrk(argv[3].c_str(), "%*?") != nullptr)
 		return 1910;
@@ -1863,7 +1876,7 @@ int icp_subscribe(std::span<std::string> argv, imap_context &ctx)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argv.size() < 3 || argv[2].size() == 0 || argv[2].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name, ctx.enabled_rev2))
 		return 1800;
 	auto ssr = midb_agent::subscribe_folder(pcontext->maildir,
 	           sys_name, &errnum);
@@ -1884,7 +1897,7 @@ int icp_unsubscribe(std::span<std::string> argv, imap_context &ctx)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argv.size() < 3 || argv[2].size() == 0 || argv[2].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name, ctx.enabled_rev2))
 		return 1800;
 	auto ssr = midb_agent::unsubscribe_folder(pcontext->maildir,
 	           sys_name, &errnum);
@@ -2140,16 +2153,16 @@ int icp_list(std::span<std::string> argv, imap_context &ctx) try
 	if (ret_opt & LRET_STATUS)
 		for (const auto &e : folder_list)
 			midb_name.emplace(e.first, e.second);
-	icp_convert_folderlist(folder_list);
+	icp_convert_folderlist(folder_list, ctx.enabled_rev2);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
 
 	std::set<std::string, dir_tree::cmp> subscribed;
 	if (want_sub_attr || only_sub || recursive) {
 		std::vector<enum_folder_t> sub_list;
-		if (midb_agent::enum_subscriptions(ctx.maildir, sub_list,
-		    &errnum) == MIDB_RESULT_OK) {
-			icp_convert_folderlist(sub_list);
+		if (midb_agent::enum_subscriptions(ctx.maildir,
+		    sub_list, &errnum) == MIDB_RESULT_OK) {
+			icp_convert_folderlist(sub_list, ctx.enabled_rev2);
 			for (const auto &e : sub_list)
 				subscribed.insert(e.second);
 		}
@@ -2280,7 +2293,7 @@ int icp_xlist(std::span<std::string> argv, imap_context &ctx) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	icp_convert_folderlist(folder_list);
+	icp_convert_folderlist(folder_list, ctx.enabled_rev2);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
 	pcontext->stream.clear();
@@ -2341,7 +2354,7 @@ int icp_lsub(std::span<std::string> argv, imap_context &ctx) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	icp_convert_folderlist(sub_list);
+	icp_convert_folderlist(sub_list, ctx.enabled_rev2);
 
 	/*
 	 * Membership set of exactly-subscribed names, folded the same way as
@@ -2397,7 +2410,7 @@ int icp_status(std::span<std::string> argv, imap_context &ctx) try
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argv.size() < 4 || argv[2].size() == 0 || argv[2].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name) ||
+	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name, ctx.enabled_rev2) ||
 	    argv[3][0] != '(' || argv[3].back() != ')')
 		return 1800;
 	if (parse_imap_args(&argv[3][1], argv[3].size() - 2, temp_argv) < 0)
@@ -2433,7 +2446,7 @@ int icp_append(std::span<std::string> argv, imap_context &ctx) try
 	
 	if (argv.size() < 4 || argv.size() > 6 ||
 	    argv[2].size() == 0 || argv[2].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name, ctx.enabled_rev2))
 		return 1800;
 	if (argv.size() == 6) {
 		flags_string = &argv[3];
@@ -2545,7 +2558,7 @@ static int icp_long_append_begin2(std::span<std::string> argv, imap_context &ctx
 	
 	if (argv.size() < 3 || argv.size() > 5 ||
 	    argv[2].size() == 0 || argv[2].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[2].c_str(), sys_name, ctx.enabled_rev2))
 		return 1800 | DISPATCH_BREAK;
 	if (argv.size() == 5) {
 		flags_string = &argv[3];
@@ -3218,7 +3231,7 @@ int icp_copy(std::span<std::string> argv, imap_context &ctx) try
 		return 1805;
 	if (argv.size() < 4 || parse_imap_seqx(*pcontext, argv[2].c_str(), list_uid) != 0 ||
 	    argv[3].size() == 0 || argv[3].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[3].c_str(), sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[3].c_str(), sys_name, ctx.enabled_rev2))
 		return 1800;
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
@@ -3485,7 +3498,7 @@ int icp_uid_copy(std::span<std::string> argv, imap_context &ctx) try
 		return 1805;
 	if (argv.size() < 5 || parse_imap_seq(list_seq, icp_uidseq(ctx, argv[3])) != 0 ||
 	    argv[4].size() == 0 || argv[4].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[4].c_str(), sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[4].c_str(), sys_name, ctx.enabled_rev2))
 		return 1800;
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
@@ -3587,7 +3600,7 @@ int icp_move(std::span<std::string> argv, imap_context &ctx) try
 		return 1806;
 	if (argv.size() < 4 || parse_imap_seqx(ctx, argv[2].c_str(), list_uid) != 0 ||
 	    argv[3].size() == 0 || argv[3].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[3].c_str(), sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[3].c_str(), sys_name, ctx.enabled_rev2))
 		return 1800;
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(ctx.maildir,
@@ -3706,7 +3719,7 @@ int icp_uid_move(std::span<std::string> argv, imap_context &ctx) try
 		return 1806;
 	if (argv.size() < 5 || parse_imap_seq(list_seq, icp_uidseq(ctx, argv[3])) != 0 ||
 	    argv[4].size() == 0 || argv[4].size() >= 1024 ||
-	    !icp_imapfolder_to_sysfolder(argv[4].c_str(), sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[4].c_str(), sys_name, ctx.enabled_rev2))
 		return 1800;
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
