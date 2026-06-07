@@ -37,7 +37,7 @@ struct THR_DATA {
 
 	gromox::atomic_bool notify_stop;
 	pthread_t thr_id{};
-	long nid = ~0ULL;
+	long nid = -1;
 	std::mutex m_mtx; /* protects thr_id */
 };
 
