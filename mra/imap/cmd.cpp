@@ -671,14 +671,8 @@ static int icp_process_fetch_item(imap_context &ctx,
 		auto eml_file = mjson.path + "/"s + pitem->mid;
 		if (!ctx.io_actor.exists(eml_file)) {
 			std::string content;
-			/*
-			 * deferred_eml might be triggered from `FETCH 1
-			 * BODY[3]`, emitting a {file} marker with offsets,
-			 * which would be beneficial to keep for wrdat_retrieve
-			 * (not marking as evictable).
-			 */
 			if (exmdb_client->imapfile_read(ctx.maildir, "eml", pitem->mid, &content))
-				ctx.io_actor.place(eml_file, std::move(content), false);
+				ctx.io_actor.place(eml_file, std::move(content), true);
 		}
 	};
 
