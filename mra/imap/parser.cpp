@@ -678,10 +678,10 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 			return tproc_status::literal_processing;
 		}
 
-		if (argc < 2 || strlen(argv[0].c_str()) >= 32) {
+		if (argc < 2) {
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-			if (argc <= 0 || argv[0].size() >= 32) {
+			if (argc <= 0) {
 				/*
 				 * Argument parsing failed and cleared argv. Recover
 				 * the tag from the raw line so the client still gets
@@ -689,7 +689,7 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 				 * than an untagged one that leaves it waiting.
 				 */
 				size_t taglen = strcspn(pcontext->command_buffer, " ");
-				if (taglen > 0 && taglen < 32) {
+				if (taglen > 0) {
 					pcontext->connection.write(pcontext->command_buffer, taglen);
 					pcontext->connection.write(" ", 1);
 				} else {
