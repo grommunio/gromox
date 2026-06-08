@@ -101,6 +101,7 @@ class EWSError : public DispatchError {
 	ERR(NameResolutionNoResults) ///< Name resolution failed / no results
 	ERR(NotEnoughMemory) ///< Out of memory
 	ERR(SchemaValidation) ///< XML value is does not confirm to schema
+	ERR(ServerBusy) ///< Server declined to process the request (e.g. batch exceeds a configured limit)
 	ERR(SubscriptionAccessDenied) ///< Trying to access subscription from another user
 	ERR(TimeZone) ///< Invalid or missing time zone
 	ERR(ValueOutOfRange) ///< Value cannot be interpreted correctly (only applied to dates according to official documentation)
@@ -579,6 +580,7 @@ E(3449, "failed to set message id on updated content");
 E(3450, "RecurringMasterId is currently not supported");
 E(3451, "RecurringMasterId is currently not supported");
 E(3452, "RecurringMasterId is currently not supported");
+E(3453, "GetItem batch exceeds ews_max_get_items; resend in smaller batches");
 
 #undef E
 }

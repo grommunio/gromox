@@ -2442,6 +2442,9 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 	sMessageEntryId templId = ctx.plugin().mkMessageEntryId(mbinfo, folder.folderId, rop_util_make_eid_ex(1, 0));
 
 	uint32_t maxItems = request.MaxChangesReturned;
+	uint32_t maxSync = ctx.plugin().max_sync_changes;
+	if (maxSync != 0 && maxItems > maxSync)
+		maxItems = maxSync;
 	bool clipped = false;
 
 	try {
@@ -2531,9 +2534,13 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 	mGetItemResponse data;
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	sShape shape(request.ItemShape);
+	uint32_t max_get = ctx.plugin().max_get_items, gotten = 0;
 	for (const auto &id : request.ItemIds) try {
 		if (id.holds_alternative<tRecurringMasterItemId>())
 			throw EWSError::InvalidId(E3452);
+		if (max_get != 0 && gotten++ >= max_get)
+			throw EWSError::ServerBusy(E3453);
+
 		tItemId itemId = id.itemId();
 		sMessageEntryId eid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);

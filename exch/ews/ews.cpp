@@ -472,6 +472,8 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_event_stream_interval", "45000"},
 	{"ews_log_filter", "!"},
 	{"ews_log_timestamp", ""},
+	{"ews_max_get_items", "0", CFG_SIZE},
+	{"ews_max_sync_changes", "512", CFG_SIZE},
 	{"ews_max_user_photo_size", "5M", CFG_SIZE},
 	{"ews_pretty_response", "0", CFG_BOOL},
 	{"ews_request_logging", "0"},
@@ -519,6 +521,8 @@ void EWSPlugin::loadConfig()
 	event_stream_interval = std::chrono::milliseconds(cfg->get_ll("ews_event_stream_interval"));
 	cache_embedded_instance_lifetime = std::chrono::milliseconds(cfg->get_ll("ews_cache_embedded_instance_lifetime"));
 	max_user_photo_size = cfg->get_ll("ews_max_user_photo_size");
+	max_sync_changes = cfg->get_ll("ews_max_sync_changes");
+	max_get_items = cfg->get_ll("ews_max_get_items");
 	ver.schema = cfg->get_value("ews_schema_version");
 
 	str = gxcfg->get_value("outgoing_smtp_url");
