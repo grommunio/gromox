@@ -2726,13 +2726,22 @@ void EWSContext::updateAttendees(const std::string &dir,
 	if (!exmdb.empty_message_instance_rcpts(dir.c_str(), inst->instanceId))
 		throw EWSError::ItemSave(E3092);
 
-	TARRAY_SET rcpts{};
+	auto rcpts = tarray_set_init();
+	if (rcpts == nullptr)
+		throw EWSError::NotEnoughMemory(E3455);
+	auto cl_rcpts = HX::make_scope_exit([&]() { tarray_set_free(rcpts); });
+	uint32_t row_id = 0;
 	auto parseAttendees = [&](const tinyxml2::XMLElement *xml, uint32_t type) {
 		for (auto entry = xml->FirstChildElement("Attendee");
 		     entry != nullptr;
 		     entry = entry->NextSiblingElement("Attendee")) {
 			tAttendee att(entry);
-			att.Mailbox.mkRecipient(rcpts.emplace(), type);
+			auto rcpt = rcpts->emplace();
+			att.Mailbox.mkRecipient(rcpt, type);
+			/* update_message_instance_rcpts wants PR_ROWID */
+			if (rcpt->set(PR_ROWID, &row_id) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3456);
+			++row_id;
 		}
 	};
 	if (shape.requiredAttendees)
@@ -2742,9 +2751,9 @@ void EWSContext::updateAttendees(const std::string &dir,
 	if (shape.resourceAttendees)
 		parseAttendees(shape.resourceAttendees, MAPI_TO);
 
-	if (rcpts.count > 0) {
+	if (rcpts->count > 0) {
 		if (!exmdb.update_message_instance_rcpts(dir.c_str(),
-		    inst->instanceId, &rcpts))
+		    inst->instanceId, rcpts))
 			throw EWSError::ItemSave(E3351);
 		/* Set organizer properties when attendees are present */
 		std::string dispName;
