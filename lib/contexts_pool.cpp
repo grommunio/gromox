@@ -112,6 +112,8 @@ static void *ctxp_scanwork(void *pparam)
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
 	SCHEDULE_CONTEXT *pcontext;
+	static constexpr unsigned int IDLE_SCAN_SECS = 4;
+	unsigned int idle_tick = 0;
 	
 	double_list_init(&temp_list);
 	while (!g_ctxpool_stop) {
@@ -143,7 +145,9 @@ static void *ctxp_scanwork(void *pparam)
 		}
 		}
 
-		{
+		if (++idle_tick >= IDLE_SCAN_SECS) {
+			idle_tick = 0;
+
 		std::unique_lock idle_hold(g_context_locks[static_cast<int>(sctx_status::idling)]);
 		while ((pnode = double_list_pop_front(&g_context_lists[static_cast<int>(sctx_status::idling)])) != nullptr) {
 			pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
