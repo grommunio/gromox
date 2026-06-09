@@ -473,6 +473,7 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_log_filter", "!"},
 	{"ews_log_timestamp", ""},
 	{"ews_max_get_items", "0", CFG_SIZE},
+	{"ews_max_pending_events", "4000", CFG_SIZE},
 	{"ews_max_sync_changes", "512", CFG_SIZE},
 	{"ews_max_user_photo_size", "5M", CFG_SIZE},
 	{"ews_pretty_response", "0", CFG_BOOL},
@@ -523,6 +524,7 @@ void EWSPlugin::loadConfig()
 	max_user_photo_size = cfg->get_ll("ews_max_user_photo_size");
 	max_sync_changes = cfg->get_ll("ews_max_sync_changes");
 	max_get_items = cfg->get_ll("ews_max_get_items");
+	max_pending_events = cfg->get_ll("ews_max_pending_events");
 	ver.schema = cfg->get_value("ews_schema_version");
 
 	str = gxcfg->get_value("outgoing_smtp_url");
