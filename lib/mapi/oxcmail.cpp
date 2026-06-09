@@ -4065,7 +4065,15 @@ bool oxcmail_converter::do_export(const message_content &imsg,
 		BINARY *pbin = nullptr;
 		if (pmime == nullptr || !pmime->set_content_type("application/ms-tnef"))
 			return exp_false;
-		pbin = tnef_serialize(pmsg, log_id, alloc, std::move(get_propname));
+		/*
+		 * get_propname is a converter member shared across the whole
+		 * recursive export; pass a copy. tnef_serialize takes it by
+		 * value and moves internally, so moving here would empty the
+		 * member for later sibling/embedded parts, and the next
+		 * oxcmail_export_mail_head would invoke an empty std::function
+		 * (bad_function_call).
+		 */
+		pbin = tnef_serialize(pmsg, log_id, alloc, get_propname);
 		if (pbin == nullptr)
 			return exp_false;
 		if (!pmime->write_content(pbin->pc, pbin->cb, mime_encoding::base64)) {
