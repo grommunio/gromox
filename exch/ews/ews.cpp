@@ -819,6 +819,16 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	if (mgr == nullptr)
 		return;
 	lock = std::unique_lock(mgr->lock);
+	if (mgr->overflow)
+		/* Wait for the client to re-subscribe */
+		return;
+	if (max_pending_events != 0 && mgr->events.size() >= max_pending_events) {
+		mgr->overflow = true;
+		mgr->events.clear();
+		mlog(LV_DEBUG, "[ews] %s: streaming event backlog exceeded ews_max_pending_events=%u; signalling resync",
+			mgr->username.c_str(), max_pending_events);
+		return;
+	}
 	sTimePoint now(clock::now());
 	auto mkFid = [&](uint64_t fid) {
 		return tFolderId(mkFolderEntryId(mgr->mailboxInfo,

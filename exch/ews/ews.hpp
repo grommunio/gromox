@@ -134,6 +134,7 @@ class EWSPlugin {
 		std::vector<detail::ExmdbSubscriptionKey> inner_subs; ///< Exmdb subscription keys
 		std::list<Structures::sNotificationEvent> events; ///< Events that occurred since last check
 		detail::ContextKey waitingContext = -1; ///< ID of context waiting for events
+		bool overflow = false; ///< Backlog hit ews_max_pending_events; faulted out so the client re-subscribes and resyncs
 	};
 
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;

@@ -581,6 +581,7 @@ E(3450, "RecurringMasterId is currently not supported");
 E(3451, "RecurringMasterId is currently not supported");
 E(3452, "RecurringMasterId is currently not supported");
 E(3453, "GetItem batch exceeds ews_max_get_items; resend in smaller batches");
+E(3454, "subscription event backlog exceeded ews_max_pending_events; re-subscribe and resync");
 
 #undef E
 }
