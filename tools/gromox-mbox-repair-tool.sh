@@ -2,7 +2,7 @@
 
 shopt -s extglob
 
-SCRIPT_BUILD=2026100101
+SCRIPT_BUILD=2026100102
 
 LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
 
@@ -61,6 +61,8 @@ get_username_from_maildir() {
 }
 
 cleanup() {
+        log "Running mailbox cleanup"
+        counter=1
         for maildir in $TARGET_MAILDIRS; do
                 if [ ! -d "${maildir}" ]; then
                         log "Maildir ${maildir} does not exist" "ERROR"
@@ -91,12 +93,14 @@ cleanup() {
                         log "Would purge datafiles for ${maildir}"
 
                 fi
+                counter=$((counter+1))
         done
+        log "Finished cleanup on ${counter} mailboxes"
 }
 
 repair_mbox() {
         log "Running mailbox checks"
-
+        counter=1
         for maildir in $TARGET_MAILDIRS; do
                 log "Checking maildir ${maildir}"
                 if [ ! -d "${maildir}" ]; then
@@ -126,7 +130,9 @@ repair_mbox() {
                             log "Check failed for ${maildir}" "ERROR"
                     fi
                 fi
+                counter=$((counter+1))
         done
+        log "Finished mbox operation on ${counter} mailboxes"
 }
 
 repair_sql() {
@@ -149,6 +155,7 @@ repair_sql() {
 
         repairs_were_done=false
         do_repairs=false
+        counter=1
         for maildir in $TARGET_MAILDIRS; do
                 if [ ! -d "${maildir}" ]; then
                         log "Maildir ${maildir} does not exist" "ERROR"
@@ -208,6 +215,7 @@ repair_sql() {
                 else
                         log "SQL database in ${maildir}/exmdb is okay"
                 fi
+                counter=$((counter+1))
         done
 
         if [ "${repairs_were_done}" == true ]; then
@@ -218,6 +226,7 @@ repair_sql() {
                         fi
                 done
         fi
+        log "Finished sql operation on ${counter} mailboxes"
 }
 
 repair_midb() {
@@ -241,6 +250,7 @@ repair_midb() {
 
         repairs_were_done=false
         do_repairs=false
+        counter=1
         for maildir in $TARGET_MAILDIRS; do
                 if [ ! -d "${maildir}" ]; then
                         log "Maildir ${maildir} does not exist" "ERROR"
@@ -288,6 +298,7 @@ repair_midb() {
                 else
                         log "Midb database in ${maildir}/exmdb is okay"
                 fi
+                counter=$((counter+1))
         done
 
         if [ "${repairs_were_done}" == true ]; then
@@ -298,6 +309,7 @@ repair_midb() {
                         fi
                 done
         fi
+        log "Finished midb operation on ${counter} mailboxes"
 }
 
 Usage() {
