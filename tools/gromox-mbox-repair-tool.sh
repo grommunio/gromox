@@ -2,7 +2,7 @@
 
 shopt -s extglob
 
-SCRIPT_BUILD=2026060501
+SCRIPT_BUILD=2026100101
 
 LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
 
@@ -52,6 +52,12 @@ get_maildirs() {
         else
             command gromox-mbop foreach.mb.here echo-maildir
         fi
+}
+
+get_username_from_maildir() {
+        local maildir="${1}"
+
+        command grommunio-admin user query username -f maildir=${maildir}
 }
 
 cleanup() {
@@ -214,6 +220,86 @@ repair_sql() {
         fi
 }
 
+repair_midb() {
+        log "Running mailbox midb sql checks"
+
+        # Simulate bash arrays
+        readonly gromox_midb_service=0
+        readonly gromox_imap_service=1
+        readonly gromox_pop3_service=2
+        services_to_monitor=(gromox-midb.service gromox-imap.service gromox-pop3.service)
+        service_is_active=()
+        for service in ${services_to_monitor[@]}; do
+                if systemctl is-active "${service}" > /dev/null; then
+                        log "${service} is active currently."
+                        service_is_active[${service//[.-]/_}]=true
+                else
+                        log "${service} is inactive currently."
+                        service_is_active[${service//[.-]/_}]=true
+                fi
+        done
+
+        repairs_were_done=false
+        do_repairs=false
+        for maildir in $TARGET_MAILDIRS; do
+                if [ ! -d "${maildir}" ]; then
+                        log "Maildir ${maildir} does not exist" "ERROR"
+                        continue
+                else
+                        username="$(get_username_from_maildir "${maildir}")"
+                        if [ -z "${username}" ]; then
+                                log "Username not found for ${maildir}"
+                                continue
+                        fi
+                fi
+                log "Checking midb sql database for user ${username}"
+                # gromox-mimidb --integriry {username} returns 0 on success and 1 if integrity is not good
+                if ! gromox-mkmidb --integrity "${username}" > /dev/null 2>&1; then
+                        if [ "${_DRYRUN}" = false ] && [ "${_REPAIR_MIDB}" = true ]; then
+                                if [ "${do_repairs}" == false ]; then
+                                        log "Regenerating midb database. This will shutdown ${services_to_monitor[*]}"
+                                        do_repairs=true
+                                        for service in ${services_to_monitor[@]}; do
+                                                systemctl stop "${service}"
+                                                if systemctl is-active "${service}" > /dev/null; then
+                                                        log "Cannot stop ${service}, stopping operations" "ERROR"
+                                                        do_repairs=false
+                                                fi
+                                        done
+                                fi
+                                if [ "${do_repairs}" == true ]; then
+                                        repairs_were_done=true
+                                        gromox-mkmidb -fv "${username}"
+                                        if [ $? -eq 0 ]; then
+                                                log "A new midb database has been requested. It will be created on next imap/pop connection"
+                                        else
+                                                log "Midb regeneration command failed" "ERROR"
+                                        fi
+                                else
+                                        log "No repairs were attempted"
+                                fi
+                        else
+                                if [ "${_DRYRUN}" = false ]; then
+                                        log "Maildir ${maildir} has errors according to gromox-mkmidb check" "ERROR"
+                                else
+                                        log "Would repair midb database in ${maildir}/exmdb if not dryrun"
+                                fi
+                        fi
+                else
+                        log "Midb database in ${maildir}/exmdb is okay"
+                fi
+        done
+
+        if [ "${repairs_were_done}" == true ]; then
+                for service in ${services_to_monitor[@]}; do
+                        if [ "${service_is_active[${service//[.-]/_}]}" == true ]; then
+                                log "Restarting ${service}"
+                                systemctl start "${service}" || log "Cannot start ${service}" "ERROR"
+                        fi
+                done
+        fi
+}
+
 Usage() {
 
         echo "$0 $PROGRAM_BUILD"
@@ -229,6 +315,8 @@ Usage() {
         echo "--repair-mbox            Checks and tries to repair mailboxes"
         echo "--check-sql              Checks sqlite database"
         echo "--repair-sql             Checks and tries to repair sqlite database. Will stop gromox-http temporarily"
+        echo "--check-midb             Checks midb sqlite database"
+        echo "--repair-midb            Checks and tries to regenerate midb sqlite database. Will stop gromox-midb, imap and pop3 temporarily"
         echo "--dryrun                 Actually don't run any modifications"
         echo "--maildir=all|[path]     Specify which maildir to run for, takes mailbox path, eg /var/lib/gromox/user/1/2 or \"all\""
         echo "--username=[username]    Spcify a single username for which to run the repair script, overrides --maildir"
@@ -268,6 +356,12 @@ function GetCommandlineArguments {
                         ;;
                         --repair-sql)
                         _REPAIR_SQL=true
+                        ;;
+                        --check-midb)
+                        _CHECK_MIDB=true
+                        ;;
+                        --repair-midb)
+                        _REPAIR_MIDB=true
                         ;;
                         --maildir=*)
                         TARGET_MAILDIRS="${i##*=}"
@@ -321,5 +415,8 @@ if [ "${_CHECK_MAILBOX}" = true ] || [ "${_REPAIR_MAILBOX}" = true ]; then
 fi
 if [ "${_CHECK_SQL}" = true ] || [ "${_REPAIR_SQL}" = true ]; then
         repair_sql
+fi
+if [ "${_CHECK_MIDB}" = true ] || [ "${_REPAIR_MIDB}" = true ]; then
+        repair_midb
 fi
 [ "${_RUN_CLEANUP}" = true ] && cleanup
