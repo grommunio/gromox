@@ -918,10 +918,20 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	default:
 		break;
 	}
-	if (mgr->waitingContext >= 0)
+	if (mgr->waitingContext >= 0) try {
 		// Reschedule next wakeup 0.1 seconds. Should be enough to gather related events.
 		// Is still bound to the ObjectCache cleanup cycle and might take significantly longer than that.
 		cache.get(mgr->waitingContext, std::chrono::milliseconds(100));
+	} catch (const std::out_of_range &) {
+		/*
+		 * The context is linked but not currently parked in the cache
+		 * (between wakeups, or not yet asleep), so there is no wakeup
+		 * entry to bump. The event was already queued above; the 100ms
+		 * fast wake is a best-effort optimisation, so skip it silently
+		 * instead of throwing all the way to the outer handler and
+		 * logging a misleading "Failed to process notification".
+		 */
+	}
 } catch (const std::exception &err) {
 	mlog(LV_ERR, "[ews#evt] %s: Failed to process notification: %s",
 		err.what(), timestamp().c_str());
