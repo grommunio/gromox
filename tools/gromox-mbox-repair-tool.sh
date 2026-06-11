@@ -2,7 +2,7 @@
 
 shopt -s extglob
 
-SCRIPT_BUILD=2026100102
+SCRIPT_BUILD=2026061101
 
 LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
 
@@ -60,9 +60,18 @@ get_username_from_maildir() {
         command grommunio-admin user query username -f maildir=${maildir}
 }
 
+user_has_pop3_imap() {
+        local username="{1}"
+
+        has_pop3_imap="$(command grommunio-admin user query username --filter pop3_imap=True --filter username=${username})"
+        if [ "${has_pop3_imap}" == "${username}" ]; then
+                echo true
+        else
+                echo false
+        fi
+}
+
 cleanup() {
-        log "Running mailbox cleanup"
-        counter=1
         for maildir in $TARGET_MAILDIRS; do
                 if [ ! -d "${maildir}" ]; then
                         log "Maildir ${maildir} does not exist" "ERROR"
@@ -93,14 +102,12 @@ cleanup() {
                         log "Would purge datafiles for ${maildir}"
 
                 fi
-                counter=$((counter+1))
         done
-        log "Finished cleanup on ${counter} mailboxes"
 }
 
 repair_mbox() {
         log "Running mailbox checks"
-        counter=1
+
         for maildir in $TARGET_MAILDIRS; do
                 log "Checking maildir ${maildir}"
                 if [ ! -d "${maildir}" ]; then
@@ -130,9 +137,7 @@ repair_mbox() {
                             log "Check failed for ${maildir}" "ERROR"
                     fi
                 fi
-                counter=$((counter+1))
         done
-        log "Finished mbox operation on ${counter} mailboxes"
 }
 
 repair_sql() {
@@ -155,7 +160,6 @@ repair_sql() {
 
         repairs_were_done=false
         do_repairs=false
-        counter=1
         for maildir in $TARGET_MAILDIRS; do
                 if [ ! -d "${maildir}" ]; then
                         log "Maildir ${maildir} does not exist" "ERROR"
@@ -169,6 +173,7 @@ repair_sql() {
                                         log "Repairing sqlite database. This will shutdown ${services_to_monitor[*]}"
                                         do_repairs=true
                                         for service in ${services_to_monitor[@]}; do
+                                                log "Stopping service "${service}"
                                                 systemctl stop "${service}"
                                                 if systemctl is-active "${service}" > /dev/null; then
                                                         log "Cannot stop ${service}, stopping operations" "ERROR"
@@ -215,7 +220,6 @@ repair_sql() {
                 else
                         log "SQL database in ${maildir}/exmdb is okay"
                 fi
-                counter=$((counter+1))
         done
 
         if [ "${repairs_were_done}" == true ]; then
@@ -226,7 +230,6 @@ repair_sql() {
                         fi
                 done
         fi
-        log "Finished sql operation on ${counter} mailboxes"
 }
 
 repair_midb() {
@@ -250,7 +253,6 @@ repair_midb() {
 
         repairs_were_done=false
         do_repairs=false
-        counter=1
         for maildir in $TARGET_MAILDIRS; do
                 if [ ! -d "${maildir}" ]; then
                         log "Maildir ${maildir} does not exist" "ERROR"
@@ -270,6 +272,7 @@ repair_midb() {
                                         log "Regenerating midb database. This will shutdown ${services_to_monitor[*]}"
                                         do_repairs=true
                                         for service in ${services_to_monitor[@]}; do
+                                                log "Stopping service "${service}"
                                                 systemctl stop "${service}"
                                                 if systemctl is-active "${service}" > /dev/null; then
                                                         log "Cannot stop ${service}, stopping operations" "ERROR"
@@ -281,7 +284,11 @@ repair_midb() {
                                         repairs_were_done=true
                                         gromox-mkmidb -fv "${username}"
                                         if [ $? -eq 0 ]; then
-                                                log "A new midb database has been requested. It will be created on next imap/pop connection"
+                                                log "A new and empty midb database has been created. Cleaning unreferenced files now"
+                                                command gromox-mbop -u "${username}" purge-datafiles
+                                                if [ "$(user_has_pop3_imap "${username}")" == "true" ]; then
+                                                        log "User has pop3 and imap enabled. On next user pop3/imap connection, midb will sync data, which is IO intensive" "WARNING"
+                                                fi
                                         else
                                                 log "Midb regeneration command failed" "ERROR"
                                         fi
@@ -298,7 +305,6 @@ repair_midb() {
                 else
                         log "Midb database in ${maildir}/exmdb is okay"
                 fi
-                counter=$((counter+1))
         done
 
         if [ "${repairs_were_done}" == true ]; then
@@ -309,7 +315,6 @@ repair_midb() {
                         fi
                 done
         fi
-        log "Finished midb operation on ${counter} mailboxes"
 }
 
 Usage() {
