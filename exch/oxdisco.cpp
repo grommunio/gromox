@@ -1019,18 +1019,21 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 	resproot->SetAttribute("version", "1.1");
 	respdoc.InsertEndChild(resproot);
 
+	/*
+	 * Because the HTTP request is unauthenticated anyway,
+	 * produce a result even for non-existing users.
+	 */
 	auto domain = strchr(email, '@');
 	if (domain == nullptr)
-		return http_status::not_found;
-	++domain;
+		domain = "";
+	else
+		++domain;
 	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
 	std::pair<std::string, std::string> homesrv_buf;
 	if (mysql_adaptor_get_homeserver(is_private ? email : domain,
-	    is_private, homesrv_buf) != 0) {
-		mlog(LV_ERR, "oxdisco: no homeserver for \"%s\", does that user even exist?!",
+	    is_private, homesrv_buf) != 0)
+		mlog(LV_INFO, "oxdisco: no homeserver for \"%s\", does that user even exist?!",
 			is_private ? email : domain);
-		return http_status::not_found;
-	}
 	const char *t_host_id = homesrv_buf.second.c_str();
 	if (*t_host_id == '\0')
 		t_host_id = host_id.c_str();
@@ -1100,7 +1103,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 	add_child(srv, "ewsURL", fmt::format(ews_base_url, t_host_id, exchange_asmx));
 	add_child(srv, "easURL", fmt::format(msas_base_url, t_host_id));
 
-	/* Bug in TB: no outgoing server may be something else than SMTP. */
+	/* Bug in TB140: no outgoing server may be something else than SMTP. */
 	srv = add_child(resp_prov, "outgoingServer");
 	srv->SetAttribute("type", "smtp");
 	add_child(srv, "hostname", t_host_id);

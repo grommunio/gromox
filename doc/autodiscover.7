@@ -25,9 +25,10 @@ Note that Autodiscover is not used exclusively by Microsoft Outlook,
 Autodiscover is the main discovery protocol for any EAS-enabled device and
 application, such as Apple iOS, Android and other applications.
 .SH OXDSCLI summary
-Clients collect one or more AutoDiscover URLs and make HTTP POST requests to
-those endpoints to request server configuration. Among the methods that appear
-in the wild:
+The MS-OXDSCLI document is about how clients can collect one or more
+AutoDiscover URLs/endpoints that, in a second step (OXDISCO), they can make
+HTTP POST requests to to retrieve server configuration. Behaviors that have
+been specified in MS-OXDSCLI or have been observed in practice:
 .IP \(bu 4
 Using an URL from a previous successful run.
 .IP \(bu 4
@@ -70,13 +71,15 @@ autodiscover DNS record(s) in the publicly visible set. The AutoDiscover URL
 must equally be reachable from any network segment where access is expected
 from \(em if need be, set up HTTP reverse proxies.
 .SH OXDISCO summary
-When a user sets up a new email account or changes their existing email client
-settings, the email client sends an Autodiscover request to the Autodiscover
-server. The Autodiscover request is an HTTP POST request that contains the
-user's email address. The Autodiscover server then responds with an XML
-response that contains the necessary configuration settings.
+The MS-OXDISCO document specifies what clients should do once they have an URL
+collection obtained from the OXDSCLI mechanism(s).
 .PP
-The Autodiscover XML response contains information such as
+When a user sets up a new email account or changes their existing email client
+settings, the email client sends an authenticated HTTP POST request to an
+Autodiscover URL containing the user's email address. The server then responds
+with an XML document that contains the necessary configuration settings.
+.PP
+The response contains information such as
 .IP \(bu 4
 the list of supported mail protocols and transports (e.g. MSRPC/RPCH/MAPIHTTP,
 IMAP, SMTP, etc.)
@@ -93,7 +96,8 @@ automatically.
 The gromox\-dscli(8) utility can be used to diagnose problems with AutoDiscover
 from a command line prompt.
 .PP
-gromox-dscli's probes and their order is: RootDomain, AutoDiscoverDomain, SRV.
+gromox-dscli performs the following probes and in this order: RootDomain,
+AutoDiscoverDomain, SRV.
 .SH Outlook notes
 When Outlook is running, there is an Outlook icon in the Windows taskbar's
 notification area. By pressing Ctrl+RightMouseBtn, a service menu can be
@@ -110,9 +114,9 @@ responses are cached on disk under `%LOCALAPPDATA%/Microsoft/Outlook/* -
 Autodiscover.xml` and/or `%LOCALAPPDATA%/Microsoft/Outlook/16/AutoD.*.xml` and
 can be deleted/diagnosed as needed.
 .PP
-Outlook's probes and primary order: TXT, LDAP-SCP, RootDomain,
-AutoDiscoverDomain, SRV, Local, Redirect. Secondary order observed: TXT, LDAP,
-RootDomain, AutoDiscoverDomain, Local, Redirect, SRV.
+Outlook performs the following probes in this primary order: TXT, LDAP-SCP,
+RootDomain, AutoDiscoverDomain, SRV, Local, Redirect. Secondary order that was
+observed: TXT, LDAP-SCP, RootDomain, AutoDiscoverDomain, Local, Redirect, SRV.
 .PP
 Individual probes can be disabled via Windows Registry in
 .IP \(bu 4

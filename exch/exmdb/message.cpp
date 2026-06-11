@@ -193,7 +193,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 			        " WHERE message_id=%llu", LLU{mid_val});
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
-			mlog(LV_NOTICE, "exmdb-audit: moved message %s:f%llu:m%llu to f%llu:m%llu",
+			mlog(LV_DEBUG, "exmdb-audit: moved message %s:f%llu:m%llu to f%llu:m%llu",
 				dir, LLU{parent_fid}, LLU{mid_val}, LLU{fid_val}, LLU{dst_val});
 			b_update = FALSE;
 		} else {
@@ -202,7 +202,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
 			timeindex_delete(pdb->psqlite, fid_val, mid_val);
-			mlog(LV_NOTICE, "exmdb-audit: moved(PF) message %s:f%llu:m%llu to f%llu:m%llu",
+			mlog(LV_DEBUG, "exmdb-audit: moved(PF) message %s:f%llu:m%llu to f%llu:m%llu",
 				dir, LLU{parent_fid}, LLU{mid_val}, LLU{fid_val}, LLU{dst_val});
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM "
 			          "read_states message_id=%llu", LLU{mid_val});
@@ -210,7 +210,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 				return FALSE;
 		}
 	} else {
-		mlog(LV_NOTICE, "exmdb-audit: copied message %s:f%llu:m%llu to f%llu:m%llu",
+		mlog(LV_DEBUG, "exmdb-audit: copied message %s:f%llu:m%llu to f%llu:m%llu",
 			dir, LLU{parent_fid}, LLU{mid_val}, LLU{fid_val}, LLU{dst_val});
 	}
 	if (b_update && !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE,
@@ -400,7 +400,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		pdb->notify_message_movecopy(b_copy, dst_val, tmp_val1,
 			src_val, tmp_val, *dbase, notifq);
 		if (b_copy) {
-			mlog(LV_NOTICE, "exmdb-audit: copied(mmv) message %s:f%llu:m%llu to f%llu:m%llu",
+			mlog(LV_DEBUG, "exmdb-audit: copied(mmv) message %s:f%llu:m%llu to f%llu:m%llu",
 				dir, LLU{src_val}, LLU{tmp_val}, LLU{dst_val}, LLU{tmp_val1});
 			continue;
 		}
@@ -413,7 +413,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		stm_del.reset();
 		if (!b_copy && b_softdel)
 			timeindex_delete(pdb->psqlite, parent_fid, tmp_val);
-		mlog(LV_NOTICE, "exmdb-audit: moved(mmv) message %s:f%llu:m%llu to f%llu:m%llu",
+		mlog(LV_DEBUG, "exmdb-audit: moved(mmv) message %s:f%llu:m%llu to f%llu:m%llu",
 			dir, LLU{src_val}, LLU{tmp_val}, LLU{dst_val}, LLU{tmp_val1});
 		if (!exmdb_server::is_private()) {
 			char sql_string[63];
@@ -609,7 +609,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		sqlite3_reset(pstmt1);
 		if (!b_hard && !is_assoc)
 			timeindex_delete(pdb->psqlite, src_val, tmp_val);
-		mlog(LV_NOTICE, "exmdb-audit: %s-deleted message %s:f%llu:m%llu (actor:%s)",
+		mlog(LV_DEBUG, "exmdb-audit: %s-deleted message %s:f%llu:m%llu (actor:%s)",
 			b_hard ? "hard" : "soft", dir, LLU{src_val}, LLU{tmp_val},
 			username != nullptr ? username : "owner");
 		if (!b_hard) {
@@ -1785,7 +1785,7 @@ static bool message_write_message(bool b_internal, const db_conn &db,
 			        " WHERE message_id=%llu", LLU{*pmessage_id});
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			mlog(LV_NOTICE, "exmdb-audit: truncated message %s:f%llu:m%llu (rewrite)",
+			mlog(LV_DEBUG, "exmdb-audit: truncated message %s:f%llu:m%llu (rewrite)",
 				exmdb_server::get_dir(), LLU{parent_id}, LLU{*pmessage_id});
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM message_changes"
 			        "  WHERE message_id=%llu", LLU{*pmessage_id});
@@ -1804,7 +1804,7 @@ static bool message_write_message(bool b_internal, const db_conn &db,
 				is_associated, LLU{change_num}, XUI{message_size});
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			mlog(LV_NOTICE, "exmdb-audit: created message %s:f%llu:m%llu",
+			mlog(LV_DEBUG, "exmdb-audit: created message %s:f%llu:m%llu",
 				exmdb_server::get_dir(), LLU{parent_id}, LLU{*pmessage_id});
 		}
 	} else {
@@ -1835,7 +1835,7 @@ static bool message_write_message(bool b_internal, const db_conn &db,
 			        " WHERE message_id=%llu", LLU{*pmessage_id});
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			mlog(LV_NOTICE, "exmdb-audit: deleted message %s:a%llu:m%llu",
+			mlog(LV_DEBUG, "exmdb-audit: deleted message %s:a%llu:m%llu",
 				exmdb_server::get_dir(), LLU{parent_id}, LLU{*pmessage_id});
 		} else if (!common_util_allocate_eid(psqlite, pmessage_id)) {
 			return FALSE;
@@ -1846,7 +1846,7 @@ static bool message_write_message(bool b_internal, const db_conn &db,
 			LLU{*pmessage_id}, LLU{parent_id}, LLU{change_num}, XUI{message_size});
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		mlog(LV_NOTICE, "exmdb-audit: created message %s:a%llu:m%llu",
+		mlog(LV_DEBUG, "exmdb-audit: created message %s:a%llu:m%llu",
 			exmdb_server::get_dir(), LLU{parent_id}, LLU{*pmessage_id});
 	}
 	if (!cu_set_properties(MAPI_MESSAGE, *pmessage_id, cpid,
@@ -1898,7 +1898,7 @@ static bool message_write_message(bool b_internal, const db_conn &db,
 			if (pstmt.step() != SQLITE_DONE)
 				return FALSE;
 			uint64_t tmp_id = sqlite3_last_insert_rowid(psqlite);
-			mlog(LV_NOTICE, "exmdb-audit: created attachment %s:m%llu:a%llu",
+			mlog(LV_DEBUG, "exmdb-audit: created attachment %s:m%llu:a%llu",
 				exmdb_server::get_dir(), LLU{*pmessage_id}, LLU{tmp_id});
 			auto &atxprops = at.proplist;
 			if (!cu_set_properties(MAPI_ATTACH, tmp_id, cpid, psqlite,
@@ -3470,7 +3470,7 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 		" WHERE message_id=%llu", LLU{rp.message_id});
 	if (gx_sql_exec(rp.sqlite, sql_string) != SQLITE_OK)
 		return ecError;
-	mlog(LV_NOTICE, "exmdb-audit: hard-deleted message %s:f%llu:m%llu (rule:OP_DELETE)",
+	mlog(LV_DEBUG, "exmdb-audit: hard-deleted message %s:f%llu:m%llu (rule:OP_DELETE)",
 		exmdb_server::get_dir(), LLU{rp.folder_id}, LLU{rp.message_id});
 	if (!cu_adjust_store_size(rp.sqlite, ADJ_DECREASE, message_size, 0))
 		return ecError;

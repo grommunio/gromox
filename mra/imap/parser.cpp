@@ -459,7 +459,7 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 		char *end = nullptr;
 		pcontext->literal_len = strtoul(&openbr[1], &end, 10);
 		pcontext->synchronizing_literal = true;
-		if (*end == '+' || (*end == '-' && pcontext->literal_len <= 4096)) {
+		if (*end == '+') {
 			pcontext->synchronizing_literal = false;
 			++end;
 		}

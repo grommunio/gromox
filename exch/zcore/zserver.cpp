@@ -1318,11 +1318,17 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	STORE_ENTRYID store_entryid = {};
 	
 	ext_pull.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_store_eid(&store_entryid) != pack_result::ok)
+	if (ext_pull.g_store_eid(&store_entryid) != pack_result::ok) {
+		mlog(LV_DEBUG, "zs_openstore(%s): invalid store entryid",
+			bin2hex(entryid.pb, entryid.cb).c_str());
 		return ecError;
+	}
 	auto pinfo = zs_query_session(hsession);
-	if (pinfo == nullptr)
+	if (pinfo == nullptr) {
+		mlog(LV_INFO, "zs_openstore: session %s not found anymore (spurious?)",
+			bin2hex(hsession).c_str());
 		return ecError;
+	}
 	if (store_entryid.wrapped_provider_uid == g_muidStorePublic) {
 		/* pserver_name or ESSDN is ignored; can only ever open PF of own domain */
 		*phobject = pinfo->ptree->get_store_handle(false, pinfo->domain_id);
@@ -1332,19 +1338,33 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		return ecNotFound;
 	if (pinfo->user_id == user_id) {
 		*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
-		return zh_error(*phobject);
+		auto err = zh_error(*phobject);
+		if (zh_is_error(err))
+			mlog(LV_DEBUG, "zs_openstore: get_store_handle.1 %u: %s",
+				user_id, mapi_strerror(err));
+		return err;
 	}
 	std::string username;
-	auto ret = mysql_adaptor_userid_to_name(user_id, username);
-	if (ret != ecSuccess)
-		return ret;
+	auto err = mysql_adaptor_userid_to_name(user_id, username);
+	if (err != ecSuccess) {
+		mlog(LV_DEBUG, "zs_openstore: resolving user id %d: %s",
+			user_id, mapi_strerror(err));
+		return err;
+	}
 	sql_meta_result mres;
-	if (mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
+	auto eno = mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres);
+	if (eno != 0) {
+		mlog(LV_DEBUG, "zs_openstore: resolving username %s: %s",
+			username.c_str(), strerror(eno));
 		return ecError;
+	}
 	uint32_t permission = rightsNone;
 	if (!exmdb_client->get_mbox_perm(mres.maildir.c_str(),
-	    pinfo->get_username(), &permission))
-		return ecError;
+	    pinfo->get_username(), &permission)) {
+		mlog(LV_ERR, "zs_openstore: get_mbox_perm %s: %s",
+			mres.maildir.c_str(), mapi_strerror(ecRpcFailed));
+		return ecRpcFailed;
+	}
 	if (permission == rightsNone) {
 		if (g_zrpc_debug >= 1)
 			mlog(LV_ERR, "openstore: \"%s\" has no rights to access \"%s\"",
@@ -1360,7 +1380,11 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	} catch (const std::bad_alloc &) {
 	}
 	*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
-	return zh_error(*phobject);
+	err = zh_error(*phobject);
+	if (zh_is_error(err))
+		mlog(LV_DEBUG, "zs_openstore: get_store_handle.2 %u: %s",
+			user_id, mapi_strerror(err));
+	return err;
 }
 
 ec_error_t zs_openprofilesec(GUID hsession,
