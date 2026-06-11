@@ -289,7 +289,7 @@ repair_midb() {
                                 if [ "${do_repairs}" = true ]; then
                                         user_has_pop3_imap="$(user_has_pop3_imap "${username}")"
                                         if [ "${_REPAIR_MIDB}" = true ] || [ "${_PURGE_MIDB_UNSAFE}" = true ] || ([ "${_PURGE_MIDB_UNSAFE}" != true ] && [ "${user_has_pop3_imap}" = "true" ]); then
-                                                services_need_to_restart=true
+                                                log "Regenerating midb database for ${username}"
                                                 gromox-mkmidb -fv "${username}"
                                                 if [ $? -eq 0 ]; then
                                                         log "A new and empty midb database has been created. Cleaning unreferenced files now"
