@@ -1411,7 +1411,7 @@ unsigned long long config_file::get_ll(const char *key) const
 {
 	auto s = get_value(key);
 	if (s == nullptr) {
-		mlog(LV_ERR, "*** config key \"%s\" has no default and was not set either; yielding 0", key);
+		mlog(LV_ERR, "*** config key \"%s\" has no default (this is a programming error) and was not set either; yielding 0", key);
 		return 0;
 	}
 	return strtoull(s, nullptr, 0);
