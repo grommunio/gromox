@@ -1100,7 +1100,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 	add_child(srv, "ewsURL", fmt::format(ews_base_url, t_host_id, exchange_asmx));
 	add_child(srv, "easURL", fmt::format(msas_base_url, t_host_id));
 
-	/* Bug in TB: no outgoing server may be something else than SMTP. */
+	/* Bug in TB140: no outgoing server may be something else than SMTP. */
 	srv = add_child(resp_prov, "outgoingServer");
 	srv->SetAttribute("type", "smtp");
 	add_child(srv, "hostname", t_host_id);
