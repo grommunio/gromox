@@ -55,6 +55,7 @@ static constexpr cfg_directive exmdb_gromox_cfg_defaults[] = {
 	{"exmdb_optimize_stm", "1", CFG_BOOL},
 	{"exmdb_parallelize_schemaup", "4"},
 	{"exmdb_parallelize_sqliteshut", "4"},
+	{"istore_standalone", "0"},
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	CFG_TABLE_END,
 };
