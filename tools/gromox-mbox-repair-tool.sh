@@ -2,7 +2,7 @@
 
 shopt -s extglob
 
-SCRIPT_BUILD=2026061102
+SCRIPT_BUILD=2026061103
 
 LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
 
@@ -101,6 +101,18 @@ cleanup() {
                 else
                         log "Would purge datafiles for ${maildir}"
 
+                fi
+                if [ "${_RUN_VACUUM}" = true ]; then
+                        if [ "${_DRYRUN}" = false ]; then
+                                log "Vacuum operation for ${maildir}"
+                                if command gromox-mbop -d "${maildir}" vacuum ; then
+                                        log "Operation took $((SECONDS-start_time)) seconds for ${maildir}"
+                                else
+                                        log "Failed to vacuum ${maildir}" "ERROR"
+                                fi
+                        else
+                                log "Would execute vacuum on ${maildir}"
+                     fi
                 fi
         done
 }
@@ -334,11 +346,13 @@ Usage() {
         echo ""
         echo "This script comes without any warranty, use at your own risk"
         echo "It uses various repair techniques for one or all mailboxes of a system"
-        echo "These repair techniques are on the official Grommunio docs"
+        echo "These repair techniques are on the official Grommunio docs, or on community forum"
+        echo "The cleanup/vacuum/purge operations are known to be non destructive"
         echo ""
         echo "$0 options:"
         echo ""
         echo "--cleanup                Runs a clenaup on mailboxes"
+        echo "--cleanup-vacuum         Runs cleanup and vacuum operations on mailboxes"
         echo "--check-mbox             Checks mailboxes"
         echo "--repair-mbox            Checks and tries to repair mailboxes"
         echo "--check-sql              Checks sqlite database"
@@ -374,6 +388,10 @@ function GetCommandlineArguments {
                         ;;
                         --cleanup)
                         _RUN_CLEANUP=true
+                        ;;
+                        --cleanup-vacuum)
+                        _RUN_CLEANUP=true
+                        _RUN_VACUUM=true
                         ;;
                         --check-mbox)
                         _CHECK_MAILBOX=true
