@@ -265,7 +265,7 @@ repair_midb() {
                         fi
                 fi
                 log "Checking midb sql database for user ${username}"
-                # gromox-mimidb --integriry {username} returns 0 on success and 1 if integrity is not good
+                # gromox-mkmidb --integrity {username} returns 0 on success and 1 if integrity is not good
                 if ! gromox-mkmidb --integrity "${username}" > /dev/null 2>&1; then
                         if [ "${_DRYRUN}" = false ] && [ "${_REPAIR_MIDB}" = true ]; then
                                 if [ "${do_repairs}" == false ]; then
