@@ -1019,18 +1019,21 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 	resproot->SetAttribute("version", "1.1");
 	respdoc.InsertEndChild(resproot);
 
+	/*
+	 * Because the HTTP request is unauthenticated anyway,
+	 * produce a result even for non-existing users.
+	 */
 	auto domain = strchr(email, '@');
 	if (domain == nullptr)
-		return http_status::not_found;
-	++domain;
+		domain = "";
+	else
+		++domain;
 	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
 	std::pair<std::string, std::string> homesrv_buf;
 	if (mysql_adaptor_get_homeserver(is_private ? email : domain,
-	    is_private, homesrv_buf) != 0) {
-		mlog(LV_ERR, "oxdisco: no homeserver for \"%s\", does that user even exist?!",
+	    is_private, homesrv_buf) != 0)
+		mlog(LV_INFO, "oxdisco: no homeserver for \"%s\", does that user even exist?!",
 			is_private ? email : domain);
-		return http_status::not_found;
-	}
 	const char *t_host_id = homesrv_buf.second.c_str();
 	if (*t_host_id == '\0')
 		t_host_id = host_id.c_str();
