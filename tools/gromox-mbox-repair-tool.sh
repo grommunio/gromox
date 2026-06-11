@@ -2,7 +2,7 @@
 
 shopt -s extglob
 
-SCRIPT_BUILD=2026061103
+SCRIPT_BUILD=2026061104
 
 LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
 
@@ -65,6 +65,16 @@ user_has_pop3_imap() {
 
         has_pop3_imap="$(command grommunio-admin user query username --filter pop3_imap=True --filter username="${username}")"
         if [ "${has_pop3_imap}" = "${username}" ]; then
+                echo true
+        else
+                echo false
+        fi
+}
+
+user_has_recent_midb() {
+        local maildir="${1}"
+
+        if [ "$(find "${maildir}/exmdb" -iname midb.sqlite3 -mtime +90 | wc -l)" -eq 1 ]; then
                 echo true
         else
                 echo false
@@ -300,13 +310,15 @@ repair_midb() {
                                 fi
                                 if [ "${do_repairs}" = true ]; then
                                         user_has_pop3_imap="$(user_has_pop3_imap "${username}")"
-                                        if [ "${_REPAIR_MIDB}" = true ] || [ "${_PURGE_MIDB_UNSAFE}" = true ] || ([ "${_PURGE_MIDB_UNSAFE}" != true ] && [ "${user_has_pop3_imap}" = "true" ]); then
+                                        user_has_recent_midb="$(user_has_recent_midb "${maildir}")"
+                                        [ "${user_has_recent_midb}" = true ] && log "User ${username} hasn't used midb since 3 months"
+                                        if [ "${_REPAIR_MIDB}" = true ] || [ "${_PURGE_MIDB_UNSAFE}" = true ] || [ "${user_has_pop3_imap}" = false ] || ([ "${_PURGE_MIDB_OLD}" = true ] && [ "${user_has_recent_midb}" = true ]); then
                                                 log "Regenerating midb database for ${username}"
                                                 gromox-mkmidb -fv "${username}"
                                                 if [ $? -eq 0 ]; then
                                                         log "A new and empty midb database has been created. Cleaning unreferenced files now"
                                                         command gromox-mbop -u "${username}" purge-datafiles
-                                                        if [ "${user_has_pop3_imap}" = "true" ] && [ "${_PURGE_MIDB_UNSAFE}" = false ]; then
+                                                        if [ "${user_has_pop3_imap}" = true ] && [ "${_PURGE_MIDB_UNSAFE}" = false ]; then
                                                                 log "User has pop3 and imap enabled. On next user pop3/imap connection, midb will sync data, which is IO intensive" "WARNING"
                                                         fi
                                                 else
@@ -322,7 +334,13 @@ repair_midb() {
                                 if [ "${_DRYRUN}" = false ]; then
                                         log "Maildir ${maildir} has errors according to gromox-mkmidb check" "ERROR"
                                 else
-                                        log "Would repair midb database in ${maildir}/exmdb if not dryrun"
+                                        user_has_recent_midb="$(user_has_recent_midb "${maildir}")"
+                                        [ "${user_has_recent_midb}" = true ] && log "User ${username} hasn't used midb since 3 months"
+                                        if [ "${_REPAIR_MIDB}" = true ] || [ "${_PURGE_MIDB_UNSAFE}" = true ] || [ "${user_has_pop3_imap}" = false ] || ([ "${_PURGE_MIDB_OLD}" = true ] && [ "${user_has_recent_midb}" = true ]); then
+                                                log "Would regenerate midb database in ${maildir}/exmdb if not dryrun"
+                                        else
+                                                log "Midb database in ${maildir}/exmdb would not be touched"
+                                        fi
                                 fi
                         fi
                 else
@@ -360,6 +378,7 @@ Usage() {
         echo "--check-midb             Checks midb sqlite database"
         echo "--repair-midb            Checks and tries to regenerate midb sqlite database. Will stop gromox-midb, imap and pop3 temporarily"
         echo "--purge-midb-safe        Removes all pop3/imap data from mailboxes that don't have pop3/imap access enabled"
+        echo "--purge-midb-old         Removes all pop3/imap data from mailboxes where midb didn't do anything for the last 3 months"
         echo "--purge-midb-unsafe      Removes all pop3/imap data. The data will be regenerated on next user connection. This process is very io intensive"
         echo "--dryrun                 Actually don't run any modifications"
         echo "--maildir=all|[path]     Specify which maildir to run for, takes mailbox path, eg /var/lib/gromox/user/1/2 or \"all\""
@@ -414,6 +433,11 @@ function GetCommandlineArguments {
                         --purge-midb-safe)
                         _PURGE_MIDB=true
                         _PURGE_MIDB_UNSAFE=false
+                        ;;
+                        --purge-midb-old)
+                        _PURGE_MIDB=true
+                        _PURGE_MIDB_UNSAFE=false
+                        _PURGE_MIDB_OLD=true
                         ;;
                         --purge-midb-unsafe)
                         _PURGE_MIDB=true
