@@ -4947,6 +4947,23 @@ mResponseMessageType& mResponseMessageType::success()
 }
 
 /**
+ * @brief      Set response message to warning state
+ *
+ * @param      rcode   EWS Error code
+ * @param      mt      Warning message text
+ *
+ * @return     *this
+ */
+mResponseMessageType& mResponseMessageType::warning(const std::string& rcode, const std::string& mt)
+{
+	ResponseClass = "Warning";
+	MessageText = mt;
+	ResponseCode = rcode;
+	DescriptiveLinkKey = 0;
+	return *this;
+}
+
+/**
  * @brief      Set response message to error state
  *
  * @param      rcode   EWS Error code

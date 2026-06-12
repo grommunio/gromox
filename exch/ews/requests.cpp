@@ -2650,13 +2650,11 @@ void process(mResolveNamesRequest &&request, XMLElement *response, const EWSCont
 		} else {
 			resolutionSet.TotalItemsInView = resolutionSet.Resolution.size();
 			resolutionSet.IncludesLastItemInRange = true;
-			if (resolutionSet.Resolution.size() > 1) {
-				msg.ResponseClass = "Warning";
-				msg.ResponseCode  = "ErrorNameResolutionMultipleResults";
-				msg.MessageText   = "Multiple results were found.";
-			} else {
+			if (resolutionSet.Resolution.size() > 1)
+				msg.warning("ErrorNameResolutionMultipleResults",
+					"Multiple results were found.");
+			else
 				msg.success();
-			}
 			data.serialize(response);
 			return;
 		}

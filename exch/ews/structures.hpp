@@ -3111,6 +3111,7 @@ struct mResponseMessageType : public NS_EWS_Messages {
 	std::optional<int32_t> DescriptiveLinkKey;
 
 	mResponseMessageType& success();
+	mResponseMessageType& warning(const std::string&, const std::string&);
 	mResponseMessageType& error(const std::string&, const std::string&);
 
 	void serialize(tinyxml2::XMLElement *) const;
