@@ -13,9 +13,6 @@ The following directives are recognized when they appear in
 The following directives are recognized when they appear in
 /etc/gromox/ews.cfg.
 .TP
-\fBews_experimental\fP
-Default: \fI0\fP
-.TP
 \fBews_log_filter\fP
 Default: \fI!\fP
 .TP

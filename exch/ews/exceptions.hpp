@@ -149,7 +149,6 @@ E(3017, "failed to get user permissions");
 E(3018, "insufficient access rights");
 E(3019, "failed to load calendar");
 E(3020, "failed to query calendar");
-inline std::string E3021(const char* name) {return fmt::format("request '{}' is marked as beta and can be enabled with 'ews_beta = 1'", name);}
 E(3022, "failed to get folder entry id");
 E(3023, "failed to get folder properties");
 E(3024, "failed to get item entry id");

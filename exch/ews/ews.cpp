@@ -465,13 +465,11 @@ static constexpr cfg_directive x500_defaults[] = {
 };
 
 static constexpr cfg_directive ews_cfg_defaults[] = {
-	{"ews_beta", "0", CFG_BOOL},
 	{"ews_cache_attachment_instance_lifetime", "30000"},
 	{"ews_cache_embedded_instance_lifetime", "30000"},
 	{"ews_cache_interval", "5000"},
 	{"ews_cache_message_instance_lifetime", "30000"},
 	{"ews_event_stream_interval", "45000"},
-	{"ews_experimental", "ews_beta", CFG_ALIAS},
 	{"ews_log_filter", "!"},
 	{"ews_log_timestamp", ""},
 	{"ews_max_user_photo_size", "5M", CFG_SIZE},
@@ -511,7 +509,6 @@ void EWSPlugin::loadConfig()
 	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
 
 	cfg = config_file_initd("ews.cfg", get_config_path(), ews_cfg_defaults);
-	experimental = cfg->get_ll("ews_beta");
 	pretty_response = cfg->get_ll("ews_pretty_response");
 	request_logging = cfg->get_ll("ews_request_logging");
 	response_logging = cfg->get_ll("ews_response_logging");

@@ -1125,15 +1125,6 @@ std::string EWSContext::essdn_to_username(const std::string& essdn) const
 }
 
 /**
- * @brief      Assert that experimental mode is enabled
- */
-void EWSContext::experimental(const char* name) const
-{
-	if (!m_plugin.experimental)
-		throw UnknownRequestError(E3021(name));
-}
-
-/**
  * @brief      Get user maildir from Mailbox speciication
  *
  * @param      Mailbox   Mailbox structure

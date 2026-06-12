@@ -160,7 +160,6 @@ class EWSPlugin {
 	int request_logging = 0; ///< 0 = none, 1 = request names, 2 = request data
 	int response_logging = 0; ///< 0 = none, 1 = response names, 2 = response data
 	int pretty_response = 0; ///< 0 = compact output, 1 = pretty printed response
-	int experimental = 0; ///< Enable experimental requests, 0 = disabled
 	size_t max_user_photo_size = 5 << 20; ///< Maximum user photo file size (5 MiB)
 	std::chrono::milliseconds cache_interval{5'000}; ///< Interval for cache cleanup
 	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; ///< Lifetime of attachment instances
@@ -351,7 +350,6 @@ class EWSContext {
 	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
 
 	gromox::time_duration age() const { return tp_now() - m_created; }
-	void experimental(const char*) const;
 
 	inline detail::ContextKey context_id() const { return m_ctx_id; }
 	inline const HTTP_AUTH_INFO& auth_info() const {return m_auth_info;}
