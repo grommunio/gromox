@@ -1180,51 +1180,41 @@ static uint64_t me_get_folder_id(IDB_ITEM *pidb, std::string_view name)
 	return me_get_folder_id_raw(pidb, base64_decode(name));
 }
 
-static void me_extract_digest_fields(const Json::Value &digest, char *subject,
-    size_t subjsize, char *from, size_t fromsize, char *rcpt, size_t rcptsize,
+static void me_extract_digest_fields(const Json::Value &digest,
+    std::string &subject, std::string &from, std::string &rcpt,
     size_t *psize)
 {
-	size_t out_len;
-	char temp_buff[64*1024];
-	char temp_buff1[64*1024];
+	std::string val;
 	
-	subject[0] = '\0';
-	if (get_digest(digest, "subject", temp_buff, std::size(temp_buff)) &&
-	    base64_decode_sized(temp_buff, subject, subjsize, &out_len) != 0)
-		/* Decode failed */
-		subject[0] = '\0';
-	from[0] = '\0';
-	if (get_digest(digest, "from", temp_buff, std::size(temp_buff)) &&
-	    base64_decode_sized(temp_buff, temp_buff1,
-	    std::size(temp_buff1), &out_len) == 0) {
-		EMAIL_ADDR temp_address(temp_buff1);
-		gx_strlcpy(from, temp_address.addr, fromsize);
+	subject.clear();
+	if (get_digest(digest, "subject", val))
+		subject = base64_decode(val);
+	from.clear();
+	if (get_digest(digest, "from", val)) {
+		EMAIL_ADDR temp_address(base64_decode(val).c_str());
+		from = temp_address.addr;
 	}
-	rcpt[0] = '\0';
-	if (get_digest(digest, "to", temp_buff, std::size(temp_buff)) &&
-	    base64_decode_sized(temp_buff, temp_buff1,
-	    std::size(temp_buff1), &out_len) == 0) {
-		for (size_t i = 0; i < out_len; ++i) {
-			if (',' == temp_buff1[i] ||
-			    ';' == temp_buff1[i]) {
-				temp_buff1[i] = '\0';
+	rcpt.clear();
+	if (get_digest(digest, "to", val)) {
+		val = base64_decode(val);
+		for (size_t i = 0; i < val.size(); ++i) {
+			if (val[i] == ',' || val[i] == ';') {
+				val[i] = '\0';
 				break;
 			}
 		}
-		HX_strrtrim(temp_buff1);
-		EMAIL_ADDR temp_address(temp_buff1);
-		gx_strlcpy(rcpt, temp_address.addr, rcptsize);
+		HX_strrtrim(val.data());
+		EMAIL_ADDR temp_address(val.c_str());
+		rcpt = temp_address.addr;
 	}
 	*psize = 0;
-	if (get_digest(digest, "size", temp_buff, std::size(temp_buff)))
-		*psize = strtoull(temp_buff, nullptr, 0);
+	if (get_digest(digest, "size", val))
+		*psize = strtoull(val.c_str(), nullptr, 0);
 }
 
 static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
     uint64_t message_id, sqlite3 *db, syncmessage_entry e) try
 {
-	char from[UADDR_SIZE], rcpt[UADDR_SIZE];
-	char subject[1024];
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto dir = cu_get_maildir();
@@ -1296,9 +1286,8 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	bool b_read   = e.msg_flags & MSGFLAG_READ;
 	djson.clear();
 	size_t size = 0;
-	me_extract_digest_fields(digest, subject,
-		std::size(subject), from, std::size(from), rcpt,
-		std::size(rcpt), &size);
+	std::string from, rcpt, subject;
+	me_extract_digest_fields(digest, subject, from, rcpt, &size);
 	stm_insert.reset();
 	stm_insert.bind_int64(1, message_id);
 	stm_insert.bind_text(2, e.midstr.c_str());
