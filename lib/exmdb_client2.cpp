@@ -490,7 +490,7 @@ bool srv_entry::drop_one_connection()
 	if (conn_list.empty())
 		return false;
 	/* Pick an old one (in the front) */
-	mlog(LV_DEBUG, "exmdb_client: kicking [%s]:%hu (fd %d) to make room",
+	mlog(LV_DEBUG, "exmdb_client: reducing keepalives, closing [%s]:%hu (fd %d)",
 		ident.host.c_str(), ident.port, conn_list.front().m_fd.get());
 	conn_list.pop_front();
 	return true;
