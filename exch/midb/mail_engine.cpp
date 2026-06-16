@@ -384,6 +384,17 @@ static bool match_addr_vmime(const vmime::mailbox &m, const char *keyword)
 		return true;
 	if (*ea.addr != '\0' && strcasestr(ea.addr, keyword) != nullptr)
 		return true;
+	/*
+	 * Dovecot would always match a `SEARCH FROM <`. That suggests it
+	 * performs some kind of normalization with the header. Something
+	 * similar in vmime would go like this:
+	 *
+	 * auto rg = m.generate();
+	 * return rg.size() > 0 && strcasestr(rg.c_str(), keyword) != nullptr;
+	 *
+	 * except that vmime's normalization will, for a mailbox without a
+	 * displayname, not add <> around the address when there is no need to.
+	 */
 	return false;
 }
 
