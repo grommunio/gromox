@@ -409,7 +409,6 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	bool b_loaded, b_result, b_result1;
 	midb_conj conjunction;
 	time_t tmp_time;
-	char temp_buff[1024];
 	KEYWORD_ENUM keyword_enum;
 	std::vector<const CONDITION_TREE *> trees;
 	std::vector<CONDITION_TREE::const_iterator> nodes;
@@ -493,11 +492,9 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					b_loaded = true;
 				}
 				MJSON temp_mjson;
-				snprintf(temp_buff, 256, "%s/eml",
-						cu_get_maildir());
 				if (!temp_mjson.load_from_json(digest))
 					break;
-				temp_mjson.path = temp_buff;
+				temp_mjson.path = cu_get_maildir() + "/eml"s;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
 				keyword_enum.charset = charset;
@@ -740,11 +737,9 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (b_result1)
 					break;
 				MJSON temp_mjson;
-				snprintf(temp_buff, 256, "%s/eml",
-						cu_get_maildir());
 				if (!temp_mjson.load_from_json(digest))
 					break;
-				temp_mjson.path = temp_buff;
+				temp_mjson.path = cu_get_maildir() + "/eml"s;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
 				keyword_enum.charset = charset;
