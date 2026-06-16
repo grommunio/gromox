@@ -281,23 +281,27 @@ void contexts_pool_insert(schedule_context *pcontext, sctx_status tpraw)
 	pcontext->type = tpraw;
 	if (tpraw == sctx_status::polling) {
 		int fd = contexts_pool_get_context_socket(pcontext);
+		int se = 0;
 		if (original_type == sctx_status::constructing) {
-			if (g_poll_ctx.add(pcontext->polling_mask, fd, pcontext) != 0) {
+			se = g_poll_ctx.add(pcontext->polling_mask, fd, pcontext);
+			if (se != 0) {
 				pcontext->b_waiting = FALSE;
-				mlog(LV_DEBUG, "contexts_pool: failed to add event to epoll");
+				mlog(LV_DEBUG, "contexts_pool: add fd %d: %s", fd, strerror(se));
 			} else {
 				pcontext->b_waiting = TRUE;
 			}
-		} else if (g_poll_ctx.mod(pcontext->polling_mask, fd, pcontext) != 0) {
-			int se = errno;
-			if (errno == ENOENT && g_poll_ctx.add(pcontext->polling_mask, fd, pcontext) == 0) {
-				/* sometimes, fd will be removed by scanning
-				thread because of timeout, add it back
-				into epoll queue again */
+		} else if ((se = g_poll_ctx.mod(pcontext->polling_mask, fd, pcontext)) != 0) {
+			/*
+			 * Sometimes, the fd will be removed by the scanning
+			 * thread because of timeout, and mod() expectedly
+			 * fails. Just catch that and add it back.
+			 */
+			if (se == ENOENT)
+				se = g_poll_ctx.add(pcontext->polling_mask, fd, pcontext);
+			if (se == 0) {
 				pcontext->b_waiting = TRUE;
 			} else {
-				mlog(LV_DEBUG, "contexts_pool: failed to modify event in epoll: %s (T1), %s (T2)",
-					strerror(se), strerror(errno));
+				mlog(LV_DEBUG, "contexts_pool: mod fd %d: %s", fd, strerror(se));
 				shutdown(fd, SHUT_RDWR);
 			}
 		}

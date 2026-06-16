@@ -414,11 +414,7 @@ errno_t poll_ctx::addmod(unsigned int mask, int fd, void *ctx, bool add)
 		ev[nev++].filter = EVFILT_WRITE;
 	auto ret = kevent(m_epfd, ev, nev, nullptr, 0, nullptr);
 #endif
-	if (ret == 0)
-		return 0;
-	errno_t se = errno;
-	mlog(LV_ERR, "poll_ctx::%s: %s\n", add ? "add" : "mod", strerror(se));
-	return se;
+	return ret == 0 ? 0 : errno;
 }
 
 errno_t poll_ctx::del(int fd)
@@ -431,11 +427,7 @@ errno_t poll_ctx::del(int fd)
 	EV_SET(&ev[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
 	auto ret = kevent(m_epfd, ev, std::size(ev), nullptr, 0, nullptr);
 #endif
-	if (ret == 0)
-		return 0;
-	errno_t se = errno;
-	mlog(LV_ERR, "poll_ctx::del: %s\n", strerror(se));
-	return se;
+	return ret == 0 ? 0 : errno;
 }
 
 int poll_ctx::wait(const struct timespec *timeout, int max_ev)
