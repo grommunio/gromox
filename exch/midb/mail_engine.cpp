@@ -409,9 +409,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	bool b_loaded, b_result, b_result1;
 	midb_conj conjunction;
 	time_t tmp_time;
-	size_t temp_len;
 	char temp_buff[1024];
-	char temp_buff1[1024];
 	KEYWORD_ENUM keyword_enum;
 	std::vector<const CONDITION_TREE *> trees;
 	std::vector<CONDITION_TREE::const_iterator> nodes;
@@ -515,9 +513,10 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				if (!get_digest(digest, "cc", temp_buff, std::size(temp_buff)))
+				std::string val;
+				if (!get_digest(digest, "cc", val))
 					break;
-				auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
+				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
 				if (rs != nullptr && strcasestr(rs.get(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
@@ -556,10 +555,10 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				if (!get_digest(digest, "from", temp_buff, std::size(temp_buff)))
+				std::string val;
+				if (!get_digest(digest, "from", val))
 					break;
-				temp_buff1[temp_len] = '\0';
-				auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
+				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
 				if (rs != nullptr && strcasestr(rs.get(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
@@ -692,9 +691,10 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				if (!get_digest(digest, "subject", temp_buff, std::size(temp_buff)))
+				std::string val;
+				if (!get_digest(digest, "subject", val))
 					break;
-				auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
+				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
 				if (rs != nullptr && strcasestr(rs.get(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
@@ -706,32 +706,33 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				if (get_digest(digest, "cc", temp_buff, std::size(temp_buff))) {
-					auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
+				std::string val;
+				if (get_digest(digest, "cc", val)) {
+					auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
 					if (rs != nullptr && strcasestr(rs.get(),
 					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
 					break;
-				if (get_digest(digest, "from", temp_buff, std::size(temp_buff))) {
-					auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
+				if (get_digest(digest, "from", val)) {
+					auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
 					if (rs != nullptr && strcasestr(rs.get(),
 					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
 					break;
-				if (get_digest(digest, "subject", temp_buff, std::size(temp_buff))) {
-					auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
+				if (get_digest(digest, "subject", val)) {
+					auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
 					if (rs != nullptr && strcasestr(rs.get(),
 					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
 					break;
-				if (get_digest(digest, "to", temp_buff, std::size(temp_buff))) {
-					auto rs = me_ct_decode_mime(charset, base64_decode(temp_buff));
+				if (get_digest(digest, "to", val)) {
+					auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
 					if (rs != nullptr && strcasestr(rs.get(),
 					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
@@ -759,12 +760,10 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				if (!get_digest(digest, "to", temp_buff, std::size(temp_buff)) ||
-				    base64_decode_sized(temp_buff,
-				    temp_buff1, std::size(temp_buff1), &temp_len) != 0)
+				std::string val;
+				if (!get_digest(digest, "to", val))
 					break;
-				temp_buff1[temp_len] = '\0';
-				auto rs = me_ct_decode_mime(charset, temp_buff1);
+				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
 				if (rs != nullptr && strcasestr(rs.get(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
