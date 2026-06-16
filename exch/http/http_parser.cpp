@@ -2216,8 +2216,17 @@ tproc_status http_parser::wait(http_context *pcontext)
 		 * and gromox-http rejects all new connections until restarted.
 		 */
 		char tmp_buff;
-		if (recv(pcontext->connection.sockd, &tmp_buff,
-		    sizeof(tmp_buff), MSG_PEEK) == 0) {
+		auto ret = recv(pcontext->connection.sockd, &tmp_buff,
+		           sizeof(tmp_buff), MSG_PEEK);
+		if (ret == 0) {
+			pcontext->log(LV_DEBUG, "connection lost (hpm wait)");
+			return tproc_status::runoff;
+		}
+		if (ret > 0) {
+			pcontext->log(LV_DEBUG, "unexpected input while parked (hpm wait)");
+			return tproc_status::runoff;
+		}
+		if (errno != EAGAIN && errno != EWOULDBLOCK) {
 			pcontext->log(LV_DEBUG, "connection lost (hpm wait)");
 			return tproc_status::runoff;
 		}
