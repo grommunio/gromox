@@ -278,7 +278,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		return false;
 	for (auto &&group : group_memberships) {
 		pstmt.reset();
-		pstmt.bind_text(1, group.c_str());
+		pstmt.bind_text(1, group);
 		while (pstmt.step() == SQLITE_ROW) {
 			auto fid = pstmt.col_uint64(0);
 			if (seen_fid.find(fid) != seen_fid.end())

@@ -1290,7 +1290,7 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	me_extract_digest_fields(digest, subject, from, rcpt, &size);
 	stm_insert.reset();
 	stm_insert.bind_int64(1, message_id);
-	stm_insert.bind_text(2, e.midstr.c_str());
+	stm_insert.bind_text(2, e.midstr);
 	stm_insert.bind_int64(3, e.mod_time);
 	stm_insert.bind_int64(4, *puidnext);
 	stm_insert.bind_int64(5, b_unsent);
