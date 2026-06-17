@@ -791,10 +791,9 @@ int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len)
 int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv) try
 {
 	char *ptr;
-	int b_count = 0, s_count = 0;
+	int b_count = 0;
 	BOOL is_quoted;
 	char *last_space;
-	char *last_square;
 	char *last_quote = nullptr;
 	char *last_brace;
 	char *last_bracket;
@@ -804,7 +803,6 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv) t
 	/* Build the argv list */
 	argv.clear();
 	last_bracket = NULL;
-	last_square = NULL;
 	last_space = cmdline;
 	is_quoted = FALSE;
 	/*
@@ -851,20 +849,6 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv) t
 			}
 			last_quote = nullptr;
 		}
-		if (*ptr == '[' && last_quote == nullptr) {
-			if (NULL == last_square) {
-				last_square = ptr;
-				s_count = 0;
-			} else {
-				s_count ++;
-			}
-		}
-		if (']' == *ptr && NULL != last_square) {
-			if (s_count == 0)
-				last_square = NULL;
-			else
-				s_count --;
-		}
 		if (*ptr == '(' && last_quote == nullptr) {
 			if (NULL == last_bracket) {
 				last_bracket = ptr;
@@ -880,7 +864,7 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv) t
 				b_count --;
 		}
 		if (*ptr == ' ' && last_quote == nullptr &&
-			NULL == last_bracket && NULL == last_square) {
+		    last_bracket == nullptr) {
 			/* ignore leading spaces */
 			if (ptr == last_space && !is_quoted) {
 				last_space ++;
@@ -897,7 +881,7 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv) t
 		ptr ++;
 	}
 	/* only one quote is found, error */
-	if (last_quote != nullptr || last_bracket != nullptr || last_square != nullptr) {
+	if (last_quote != nullptr || last_bracket != nullptr) {
 		argv.clear();
 		return -1;
 	}
