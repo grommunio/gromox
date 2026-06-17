@@ -147,6 +147,7 @@ static void *tmrag_scanwork(void *param)
 	std::list<BACK_CONN> temp_list;
 
 	while (!g_timeragent_stop) {
+		{
 		std::unique_lock bk_hold(g_back_lock);
 		auto now_time = time(nullptr);
 		auto tail = g_back_list.size() > 0 ? &g_back_list.back() : nullptr;
@@ -160,7 +161,7 @@ static void *tmrag_scanwork(void *param)
 			if (pback == tail)
 				break;
 		}
-		bk_hold.unlock();
+		}
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
@@ -171,34 +172,31 @@ static void *tmrag_scanwork(void *param)
 			    read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
-				bk_hold.lock();
+				std::unique_lock bk_hold(g_back_lock);
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
-				bk_hold.unlock();
 			} else {
 				pback->last_time = time(nullptr);
-				bk_hold.lock();
+				std::unique_lock bk_hold(g_back_lock);
 				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
-				bk_hold.unlock();
 			}
 		}
 
-		bk_hold.lock();
+		{
+		std::unique_lock bk_hold(g_back_lock);
 		temp_list = std::move(g_lost_list);
 		g_lost_list.clear();
-		bk_hold.unlock();
+		}
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
 			pback->sockd = connect_timer();
 			if (-1 != pback->sockd) {
 				pback->last_time = time(nullptr);
-				bk_hold.lock();
+				std::unique_lock bk_hold(g_back_lock);
 				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
-				bk_hold.unlock();
 			} else {
-				bk_hold.lock();
+				std::unique_lock bk_hold(g_back_lock);
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
-				bk_hold.unlock();
 			}
 		}
 		sleep(1);

@@ -328,6 +328,7 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 	MhEmsmdbPlugin& plugin = *static_cast<MhEmsmdbPlugin*>(ptr);
 	while (!plugin.stop) {
 		auto now = tp_now();
+		{
 		std::unique_lock hl_hold(plugin.ses_lock);
 		for (auto entry = plugin.sessions.begin(); entry != plugin.sessions.end();) {
 			if (entry->second.expire_time < now)
@@ -335,7 +336,9 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 			else
 				++entry;
 		}
-		hl_hold.unlock();
+		}
+
+		{
 		std::unique_lock ll_hold(plugin.pending_lock);
 		for (auto ctx : plugin.pending) {
 			if (now - ctx->pending_time >=
@@ -345,7 +348,8 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 				wakeup_context(static_cast<int>(ctx-plugin.status.data()));
 			}
 		}
-		ll_hold.unlock();
+		}
+
 		sleep(3);
 	}
 	return nullptr;

@@ -124,6 +124,7 @@ void* MhNspPlugin::scanWork(void* ptr)
 	MhNspPlugin& plugin = *static_cast<MhNspPlugin*>(ptr);
 	while (!plugin.stop) {
 		auto cur_time = tp_now();
+		{
 		std::unique_lock hl_hold(plugin.hashLock);
 		for (auto entry = plugin.sessions.begin(); entry != plugin.sessions.end(); ) {
 			if (entry->second.expire_time < cur_time)
@@ -131,7 +132,7 @@ void* MhNspPlugin::scanWork(void* ptr)
 			else
 				++entry;
 		}
-		hl_hold.unlock();
+		}
 		sleep(3);
 	}
 	return nullptr;

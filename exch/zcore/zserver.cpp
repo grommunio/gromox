@@ -167,8 +167,11 @@ static void *zcorezs_scanwork(void *param)
 		if (count >= g_ping_interval)
 			count = 0;
 		std::list<sink_node> expired_list;
+		time_t cur_time;
+
+		{
 		std::unique_lock tl_hold(g_table_lock);
-		auto cur_time = time(nullptr);
+		cur_time = time(nullptr);
 		for (auto iter = g_session_table.begin(); iter != g_session_table.end(); ) {
 			auto pinfo = &iter->second;
 			if (0 != pinfo->reference) {
@@ -215,7 +218,8 @@ static void *zcorezs_scanwork(void *param)
 				iter = g_session_table.erase(iter);
 			}
 		}
-		tl_hold.unlock();
+		}
+
 		while (expired_list.size() > 0) {
 			std::list<sink_node> holder;
 			holder.splice(holder.end(), expired_list, expired_list.begin());

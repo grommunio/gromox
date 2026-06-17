@@ -1013,6 +1013,8 @@ static void *emsi_scanwork(void *pparam)
 	while (!g_emsi_stop) {
 		std::vector<GUID> temp_list;
 		auto cur_time = tp_now();
+
+		{
 		std::unique_lock gl_hold(g_lock);
 		for (const auto &[guid, phandle] : g_handle_hash) {
 			if (cur_time - phandle->last_time.load(std::memory_order::relaxed) > HANDLE_VALID_INTERVAL) try {
@@ -1022,7 +1024,8 @@ static void *emsi_scanwork(void *pparam)
 				continue;
 			}
 		}
-		gl_hold.unlock();
+		}
+
 		for (auto &&guid : temp_list)
 			emsmdb_interface_remove_handle({HANDLE_EXCHANGE_EMSMDB, std::move(guid)});
 		sleep(3);
