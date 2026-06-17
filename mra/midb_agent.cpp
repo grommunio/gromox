@@ -217,6 +217,7 @@ static void *midbag_scanwork(void *param)
 	std::list<BACK_CONN> temp_list;
 
 	while (!g_midbagent_stop) {
+		{
 		std::unique_lock sv_hold(g_server_lock);
 		auto now_time = time(nullptr);
 		for (auto &srv : g_server_list) {
@@ -231,7 +232,7 @@ static void *midbag_scanwork(void *param)
 					break;
 			}
 		}
-		sv_hold.unlock();
+		}
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
@@ -242,21 +243,20 @@ static void *midbag_scanwork(void *param)
 			    read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
-				sv_hold.lock();
+				std::unique_lock sv_hold(g_server_lock);
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
-				sv_hold.unlock();
 			} else {
 				pback->last_time = time(nullptr);
-				sv_hold.lock();
+				std::unique_lock sv_hold(g_server_lock);
 				pback->psvr->conn_list.splice(pback->psvr->conn_list.end(), temp_list, temp_list.begin());
-				sv_hold.unlock();
 			}
 		}
 
-		sv_hold.lock();
+		{
+		std::unique_lock sv_hold(g_server_lock);
 		temp_list = std::move(g_lost_list);
 		g_lost_list.clear();
-		sv_hold.unlock();
+		}
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
@@ -264,13 +264,11 @@ static void *midbag_scanwork(void *param)
 							pback->psvr->port);
 			if (-1 != pback->sockd) {
 				pback->last_time = time(nullptr);
-				sv_hold.lock();
+				std::unique_lock sv_hold(g_server_lock);
 				pback->psvr->conn_list.splice(pback->psvr->conn_list.end(), temp_list, temp_list.begin());
-				sv_hold.unlock();
 			} else {
-				sv_hold.lock();
+				std::unique_lock sv_hold(g_server_lock);
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
-				sv_hold.unlock();
 			}
 		}
 		sleep(1);
@@ -286,21 +284,22 @@ static BACK_CONN_floating get_connection(const char *prefix)
 	if (i == g_server_list.end())
 		return fc;
 
+	{
 	std::unique_lock sv_hold(g_server_lock);
 	if (i->conn_list.size() > 0) {
 		fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
 		return fc;
 	}
-	sv_hold.unlock();
+	}
+
 	for (size_t j = 0; j < SOCKET_TIMEOUT && !g_midbagent_stop; ++j) {
 		sleep(1);
-		sv_hold.lock();
+		std::unique_lock sv_hold(g_server_lock);
 		if (i->conn_list.size() > 0) {
 			fc.tmplist.splice(fc.tmplist.end(),
 				i->conn_list, i->conn_list.begin());
 			return fc;
 		}
-		sv_hold.unlock();
 	}
 	return fc;
 }

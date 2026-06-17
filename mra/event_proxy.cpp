@@ -147,6 +147,7 @@ static void *evpx_scanwork(void *param)
 	std::list<BACK_CONN> temp_list;
 	
 	while (!g_eventproxy_stop) {
+		{
 		std::unique_lock bl_hold(g_back_lock);
 		auto now_time = time(nullptr);
 		auto tail = g_back_list.size() > 0 ? &g_back_list.back() : nullptr;
@@ -160,7 +161,7 @@ static void *evpx_scanwork(void *param)
 			if (pback == tail)
 				break;
 		}
-		bl_hold.unlock();
+		}
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
@@ -171,34 +172,31 @@ static void *evpx_scanwork(void *param)
 			    read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
-				bl_hold.lock();
+				std::unique_lock bl_hold(g_back_lock);
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
-				bl_hold.unlock();
 			} else {
 				pback->last_time = time(nullptr);
-				bl_hold.lock();
+				std::unique_lock bl_hold(g_back_lock);
 				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
-				bl_hold.unlock();
 			}
 		}
 
-		bl_hold.lock();
+		{
+		std::unique_lock bl_hold(g_back_lock);
 		temp_list = std::move(g_lost_list);
 		g_lost_list.clear();
-		bl_hold.unlock();
+		}
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
 			pback->sockd = connect_event();
 			if (-1 != pback->sockd) {
 				pback->last_time = time(nullptr);
-				bl_hold.lock();
+				std::unique_lock bl_hold(g_back_lock);
 				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
-				bl_hold.unlock();
 			} else {
-				bl_hold.lock();
+				std::unique_lock bl_hold(g_back_lock);
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
-				bl_hold.unlock();
 			}
 		}
 		sleep(1);
@@ -225,23 +223,25 @@ static void broadcast_event(const char *event)
 	char temp_buff[MAX_CMD_LENGTH];
 	std::list<BACK_CONN> hold;
 
+	{
 	std::unique_lock bl_hold(g_back_lock);
 	if (g_back_list.size() == 0)
 		return;
 	hold.splice(hold.end(), g_back_list, g_back_list.begin());
-	bl_hold.unlock();
+	}
+
 	auto pback = &hold.front();
 	auto len = gx_snprintf(temp_buff, std::size(temp_buff), "%s\r\n", event);
 	if (HXio_fullwrite(pback->sockd, temp_buff, len) != len ||
 	    read_line(pback->sockd, temp_buff, 1024) != 0) {
 		close(pback->sockd);
 		pback->sockd = -1;
-		bl_hold.lock();
+		std::unique_lock bl_hold(g_back_lock);
 		g_lost_list.splice(g_lost_list.end(), std::move(hold));
 		return;
 	}
 	pback->last_time = time(nullptr);
-	bl_hold.lock();
+	std::unique_lock bl_hold(g_back_lock);
 	g_back_list.splice(g_back_list.end(), std::move(hold));
 }
 

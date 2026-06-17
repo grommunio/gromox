@@ -327,10 +327,10 @@ static void message_dequeue_put_to_used(MESSAGE *pmessage)
 static void message_dequeue_load_from_mess(int mess) try
 {
 	struct stat node_stat;
-
-	std::unique_lock h(g_hash_mutex);
-	auto msg_iter = g_mess_hash.find(mess);
-	h.unlock();
+	auto msg_iter = [&]() {
+		std::unique_lock h(g_hash_mutex);
+		return g_mess_hash.find(mess);
+	}();
 	if (msg_iter != g_mess_hash.end())
 		return;
 	auto name = g_path_mess + "/"s + std::to_string(mess);
@@ -377,7 +377,8 @@ static void message_dequeue_load_from_mess(int mess) try
 	}
 	message_dequeue_retrieve_to_message(pmessage, std::move(ptr));
 	message_dequeue_put_to_used(pmessage);
-	h.lock();
+
+	std::unique_lock h(g_hash_mutex);
 	if (g_mess_hash.size() >= 2 * g_message_units + 1)
 		mlog(LV_ERR, "E-2043: Too many messages loaded (%zu;"
 		        " derived from delivery.cfg:dequeue_maximum_mem)\n",
