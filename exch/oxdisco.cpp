@@ -1023,7 +1023,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 	 * Because the HTTP request is unauthenticated anyway,
 	 * produce a result even for non-existing users.
 	 */
-	auto domain = strchr(email, '@');
+	const char *domain = strchr(email, '@'); /* CONST-STRCHR-MARKER */
 	if (domain == nullptr)
 		domain = "";
 	else
