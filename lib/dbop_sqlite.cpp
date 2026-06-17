@@ -828,6 +828,10 @@ ssize_t dbop_sqlite_integcheck(sqlite3 *db, int loglevel)
 		else if (loglevel >= 0)
 			mlog(loglevel, "%s", stm.col_text(0));
 	}
+	if (ret != SQLITE_DONE) {
+		mlog(loglevel, "dbop_sqlite_integcheck: step: %s", sqlite3_errstr(ret));
+		++errors;
+	}
 	return errors;
 }
 
