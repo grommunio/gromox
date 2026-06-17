@@ -82,6 +82,7 @@ struct BACK_SVR {
 
 static void *midbag_scanwork(void *);
 static ssize_t read_line(int sockd, char *buff, size_t length);
+static ssize_t read_line_dyn(int sockd, std::string &out);
 static int connect_midb(const char *host, uint16_t port);
 
 std::atomic<size_t> g_midb_command_buffer_size{256 * 1024};
@@ -522,49 +523,53 @@ int delete_mail(const char *path, const std::string &folder,
 	return MIDB_RDWR_ERROR;
 }
 
-int search(const char *path, const std::string &folder,
-    const char *charset, std::span<std::string> argv, std::string &ret_buff,
-    int *perrno) try
+/**
+ * Shared implementation of the SEARCH (P-SRHL) and UID SEARCH (P-SRHU)
+ * commands. The two differ only in the command verb. The matching id set is
+ * read back with read_line_dyn() so that large folders (the midb server emits
+ * the whole set as one line) are not rejected for exceeding a fixed buffer.
+ */
+static int search_common(const char *cmd, const char *path,
+    const std::string &folder, const char *charset,
+    std::span<std::string> argv, std::string &ret_buff, int *perrno) try
 {
-	size_t encode_len;
-
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto cbufsize = g_midb_command_buffer_size.load();
-	auto buff   = std::make_unique<char[]>(cbufsize);
-	auto buff1  = std::make_unique<char[]>(cbufsize);
-	auto length = gx_snprintf(buff.get(), cbufsize,
-	              "P-SRHL %s %s %s ", path, folder.c_str(), charset);
-	int length1 = 0;
-	for (const auto &elem : argv)
-		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
-					"%s", elem.c_str()) + 1;
-	buff1[length1++] = '\0';
-	base64_encode_sized(std::string_view(buff1.get(), length1),
-		&buff[length], cbufsize - length,
-		&encode_len);
-	length += encode_len;
-	buff1.reset();
-	buff[length++] = '\r';
-	buff[length++] = '\n';
-	auto ret = rw_command(pback->sockd, buff.get(), length, cbufsize);
-	if (ret != 0)
-		return ret;
-	if (strncmp(buff.get(), "TRUE", 4) == 0) {
+
+	/* Pack the criteria as a NUL-separated, NUL-terminated list. */
+	std::string crit;
+	for (const auto &elem : argv) {
+		crit.append(elem);
+		crit.push_back('\0');
+	}
+	crit.push_back('\0');
+
+	auto req = fmt::format("{} {} {} {} {}\r\n", cmd, path, folder,
+	           charset, base64_encode(crit));
+	auto wrret = write(pback->sockd, req.c_str(), req.size());
+	if (wrret < 0 || static_cast<size_t>(wrret) != req.size())
+		return MIDB_RDWR_ERROR;
+
+	std::string resp;
+	auto ret = read_line_dyn(pback->sockd, resp);
+	if (ret == -ENOMEM)
+		return MIDB_LOCAL_ENOMEM;
+	if (ret <= 0)
+		return MIDB_RDWR_ERROR;
+	if (strncmp(resp.c_str(), "TRUE", 4) == 0) {
 		pback.reset();
-		length = strlen(&buff[4]);
-		if (0 == length) {
+		if (resp.size() <= 5) {
+			/* "TRUE" or "TRUE " with no ids */
 			ret_buff.clear();
 			return MIDB_RESULT_OK;
 		}
-		/* trim the first space */
-		length--;
-		ret_buff.assign(&buff[5], length);
+		/* skip "TRUE " (verb plus the one trailing space) */
+		ret_buff.assign(resp, 5, std::string::npos);
 		return MIDB_RESULT_OK;
-	} else if (strncmp(buff.get(), "FALSE ", 6) == 0) {
+	} else if (strncmp(resp.c_str(), "FALSE ", 6) == 0) {
 		pback.reset();
-		*perrno = strtol(&buff[6], nullptr, 0);
+		*perrno = strtol(resp.c_str() + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
 	}
 	return MIDB_RDWR_ERROR;
@@ -572,54 +577,20 @@ int search(const char *path, const std::string &folder,
 	return MIDB_LOCAL_ENOMEM;
 }
 
+int search(const char *path, const std::string &folder,
+    const char *charset, std::span<std::string> argv, std::string &ret_buff,
+    int *perrno)
+{
+	return search_common("P-SRHL", path, folder, charset, argv,
+	       ret_buff, perrno);
+}
+
 int search_uid(const char *path, const std::string &folder,
    const char *charset, std::span<std::string> argv, std::string &ret_buff,
-   int *perrno) try
+   int *perrno)
 {
-	size_t encode_len;
-
-	auto pback = get_connection(path);
-	if (pback == nullptr)
-		return MIDB_NO_SERVER;
-	auto cbufsize = g_midb_command_buffer_size.load();
-	auto buff   = std::make_unique<char[]>(cbufsize);
-	auto buff1  = std::make_unique<char[]>(cbufsize);
-	auto length = gx_snprintf(buff.get(), cbufsize,
-	              "P-SRHU %s %s %s ", path, folder.c_str(), charset);
-	int length1 = 0;
-	for (const auto &elem : argv)
-		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
-					"%s", elem.c_str()) + 1;
-	buff1[length1++] = '\0';
-	base64_encode_sized(std::string_view(buff1.get(), length1),
-		&buff[length], cbufsize - length,
-		&encode_len);
-	length += encode_len;
-	buff1.reset();
-	buff[length++] = '\r';
-	buff[length++] = '\n';
-	auto ret = rw_command(pback->sockd, buff.get(), length, cbufsize);
-	if (ret != 0)
-		return ret;
-	if (strncmp(buff.get(), "TRUE", 4) == 0) {
-		pback.reset();
-		length = strlen(&buff[4]);
-		if (0 == length) {
-			ret_buff.clear();
-			return MIDB_RESULT_OK;
-		}
-		/* trim the first space */
-		length--;
-		ret_buff.assign(&buff[5], length);
-		return MIDB_RESULT_OK;
-	} else if (strncmp(buff.get(), "FALSE ", 6) == 0) {
-		pback.reset();
-		*perrno = strtol(&buff[6], nullptr, 0);
-		return MIDB_RESULT_ERROR;
-	}
-	return MIDB_RDWR_ERROR;
-} catch (const std::bad_alloc &) {
-	return MIDB_LOCAL_ENOMEM;
+	return search_common("P-SRHU", path, folder, charset, argv,
+	       ret_buff, perrno);
 }
 
 int get_uid(const char *path, const std::string &folder,
@@ -1867,6 +1838,48 @@ static ssize_t read_line(int sockd, char *buff, size_t length)
 		if (length == offset)
 			return -ENOBUFS;
 	}
+}
+
+/**
+ * Like read_line(), but reads one CRLF-terminated logical line of *unbounded*
+ * length into a growable std::string. Used by the SEARCH path, where the midb
+ * server emits the entire match set (potentially several MB for folders with
+ * hundreds of thousands of messages) as a single line. The fixed-buffer
+ * read_line() rejected such responses with -ENOBUFS, which surfaced to IMAP
+ * clients as error 1921 ("Too many messages in folder ...") and made large
+ * folders unsearchable (and thus unusable in clients like Thunderbird that
+ * SEARCH on folder open). Memory is bounded to one reusable staging buffer
+ * plus the result string the caller needs anyway.
+ *
+ * Returns 1 on a complete line (CRLF stripped, stored in @out), 0 on orderly
+ * peer close before a line terminator, or a negative errno on poll/read error.
+ */
+static ssize_t read_line_dyn(int sockd, std::string &out) try
+{
+	static constexpr size_t stage_size = 64 * 1024;
+	auto stage = std::make_unique<char[]>(stage_size);
+	struct pollfd pfd_read;
+
+	out.clear();
+	while (true) {
+		pfd_read.fd = sockd;
+		pfd_read.events = POLLIN | POLLPRI;
+		if (poll(&pfd_read, 1, MIDB_CMD_TIMEOUT_MS) != 1)
+			return -ETIMEDOUT;
+		auto read_len = read(sockd, stage.get(), stage_size);
+		if (read_len < 0)
+			return read_len;
+		else if (read_len == 0)
+			return 0;
+		out.append(stage.get(), read_len);
+		if (out.size() >= 2 && out[out.size()-2] == '\r' &&
+		    out[out.size()-1] == '\n') {
+			out.resize(out.size() - 2);
+			return 1;
+		}
+	}
+} catch (const std::bad_alloc &) {
+	return -ENOMEM;
 }
 
 static int connect_midb(const char *ip_addr, uint16_t port)
