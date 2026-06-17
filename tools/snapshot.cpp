@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -132,8 +132,9 @@ static int do_purge(const char *grpdir, std::chrono::minutes mmin)
 		return errno == ENOENT ? EXIT_SUCCESS : EXIT_FAILURE;
 	const struct dirent *de = nullptr;
 	auto now = std::chrono::system_clock::now();
-	struct stat grpstat;
-	if (fstat(dirfd(dh.get()), &grpstat) != 0)
+	struct stat grpstat{};
+	auto dfd = dirfd(dh.get());
+	if (dfd >= 0 && fstat(dfd, &grpstat) != 0)
 		return EXIT_FAILURE;
 	while ((de = readdir(dh.get())) != nullptr) {
 		if (*de->d_name == '.')
