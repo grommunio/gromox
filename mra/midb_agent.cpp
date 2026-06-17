@@ -85,6 +85,17 @@ static ssize_t read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
 
 std::atomic<size_t> g_midb_command_buffer_size{256 * 1024};
+/*
+ * Timeout for reading a command response from midb. This must be strictly
+ * greater than midb's own giant_lock wait (mail_engine.cpp:DB_LOCK_TIMEOUT,
+ * typically 60s), because when a command queues behind an in-progress resync,
+ * the server only answers (with an E-2403 FALSE) after its lock wait expires.
+ * If the client's read timeout were equal, it would deterministically give up
+ * first – it starts the clock at write time, before the server thread even
+ * begins waiting – and tear down the connection instead of receiving the
+ * orderly error. The 30s margin keeps the client waiting just past the server.
+ */
+static constexpr int MIDB_CMD_TIMEOUT_MS = 90000;
 static int g_conn_num;
 static gromox::atomic_bool g_midbagent_stop;
 static pthread_t g_scan_id;
@@ -352,7 +363,7 @@ int list_mail(const char *path, const std::string &folder,
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
+		if (poll(&pfd_read, 1, MIDB_CMD_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		auto read_len = read(pback->sockd, &buff[offset], buff.size() - offset);
 		if (read_len <= 0)
@@ -898,7 +909,7 @@ int enum_folders(const char *path, std::vector<enum_folder_t> &pfile,
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
+		if (poll(&pfd_read, 1, MIDB_CMD_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		auto read_len = read(pback->sockd, &buff[offset], buff.size() - offset);
 		if (read_len <= 0)
@@ -990,7 +1001,7 @@ int enum_subscriptions(const char *path, std::vector<enum_folder_t> &pfile,
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
+		if (poll(&pfd_read, 1, MIDB_CMD_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		auto read_len = read(pback->sockd, &buff[offset], buff.size() - offset);
 		if (read_len <= 0)
@@ -1224,7 +1235,7 @@ int list_deleted(const char *path, const std::string &folder, XARRAY *pxarray,
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
+		if (poll(&pfd_read, 1, MIDB_CMD_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		auto read_len = read(pback->sockd, &buff[offset], buff.size() - offset);
 		if (read_len <= 0)
@@ -1347,7 +1358,7 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 		while (true) {
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
-			if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
+			if (poll(&pfd_read, 1, MIDB_CMD_TIMEOUT_MS) != 1)
 				return MIDB_RDWR_ERROR;
 			auto read_len = read(pback->sockd, &buff[offset], buff.size() - offset);
 			if (read_len <= 0)
@@ -1493,7 +1504,7 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 		while (true) {
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
-			if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
+			if (poll(&pfd_read, 1, MIDB_CMD_TIMEOUT_MS) != 1)
 				return MIDB_RDWR_ERROR;
 			auto read_len = read(pback->sockd, &buff[offset], buff.size() - offset);
 			if (read_len <= 0)
@@ -1838,7 +1849,7 @@ static ssize_t read_line(int sockd, char *buff, size_t length)
 	while (true) {
 		pfd_read.fd = sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
+		if (poll(&pfd_read, 1, MIDB_CMD_TIMEOUT_MS) != 1)
 			return -ETIMEDOUT;
 		auto read_len = read(sockd, buff + offset,  length - offset);
 		if (read_len < 0)
