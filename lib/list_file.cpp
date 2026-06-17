@@ -101,12 +101,6 @@ std::unique_ptr<LIST_FILE> list_file_initd(const char *fb, const char *sdlist,
 	return mode == EMPTY_ON_ABSENCE ? list_file_alloc(format) : nullptr;
 }
 
-LIST_FILE::~LIST_FILE()
-{
-	if (pfile != nullptr)
-		free(pfile);
-}
-
 static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 {
 	int i, num = 0, distance;
@@ -194,12 +188,13 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 	}
 	list_file->item_num = 0;
 	rewind(list_file->file_ptr.get());
-	auto ptr = gromox::me_alloc<char>(table_size * list_file->item_size);
-	if (NULL == ptr) {
+	try {
+		list_file->pfile = std::make_unique<char[]>(table_size * list_file->item_size);
+	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "list_file: memory allocation failed");
 		return FALSE;
 	}
-	list_file->pfile = ptr;
+	auto ptr = list_file->pfile.get();
 	while (fgets(line, MAX_LINE, list_file->file_ptr.get())) {
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
 			/* skip empty line or comments */

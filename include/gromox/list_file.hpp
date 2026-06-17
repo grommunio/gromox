@@ -7,10 +7,7 @@
 #include <gromox/fileio.h>
 
 struct GX_EXPORT LIST_FILE {
-	LIST_FILE() = default;
-	~LIST_FILE();
-	NOMOVE(LIST_FILE);
-	void *get_list() { return pfile; }
+	void *get_list() { return pfile.get(); }
 	size_t get_size() const { return item_num; }
 
 	std::unique_ptr<FILE, gromox::file_deleter> file_ptr;
@@ -18,7 +15,7 @@ struct GX_EXPORT LIST_FILE {
     int         type_size[32];
     int         type_num;
 	size_t item_size = 0, item_num = 0;
-    void*       pfile;
+	std::unique_ptr<char[]> pfile;
 };
 
 enum {
