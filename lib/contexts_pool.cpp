@@ -115,6 +115,7 @@ static void *ctxp_scanwork(void *pparam)
 	
 	double_list_init(&temp_list);
 	while (!g_ctxpool_stop) {
+		{
 		std::unique_lock poll_hold(g_context_locks[static_cast<int>(sctx_status::polling)]);
 		auto current_time = tp_now();
 		auto ptail = double_list_get_tail(&g_context_lists[static_cast<int>(sctx_status::polling)]);
@@ -140,22 +141,28 @@ static void *ctxp_scanwork(void *pparam)
 			if (pnode == ptail)
 				break;
 		}
-		poll_hold.unlock();
+		}
+
+		{
 		std::unique_lock idle_hold(g_context_locks[static_cast<int>(sctx_status::idling)]);
 		while ((pnode = double_list_pop_front(&g_context_lists[static_cast<int>(sctx_status::idling)])) != nullptr) {
 			pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
 			pcontext->type = sctx_status::switching;
 			double_list_append_as_tail(&temp_list, pnode);
 		}
-		idle_hold.unlock();
+		}
+
 		num = 0;
+
+		{
 		std::unique_lock turn_hold(g_context_locks[static_cast<int>(sctx_status::turning)]);
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			static_cast<schedule_context *>(pnode->pdata)->type = sctx_status::turning;
 			double_list_append_as_tail(&g_context_lists[static_cast<int>(sctx_status::turning)], pnode);
 			num ++;
 		}
-		turn_hold.unlock();
+		}
+
 		if (num == 1)
 			threads_pool_wakeup_thread();
 		else if (num > 1)
