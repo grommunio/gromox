@@ -298,7 +298,7 @@ static bool oxcical_timezonestruct_to_binary(TZSTRUCT *ptzstruct, BINARY *pbin)
  *
  * On success, returns %nullptr. On error, the error indicator string is returned.
  */
-static const char *oxcical_parse_rrule(const ical_component &tzcom,
+static const char *oxcical_parse_rrule(const ical_component *tzcom,
     const ical_line &iline, uint16_t calendartype, time_t start_time,
     uint32_t duration_minutes, APPOINTMENT_RECUR_PAT *apr)
 {
@@ -329,7 +329,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 		if (pvalue != nullptr && strtol(pvalue, nullptr, 10) != start_time % 60)
 			return "E-2805: MAPI does not support RRULE.BYSECOND";
 	}
-	auto err = ical_parse_rrule(&tzcom, start_time, &piline->value_list, &irrule);
+	auto err = ical_parse_rrule(tzcom, start_time, &piline->value_list, &irrule);
 	if (err != nullptr)
 		return err;
 	auto b_exceptional = irrule.b_start_exceptional;
@@ -438,7 +438,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 				apr->recur_pat.pts.weekrecur |= 1 << wd;
 			}
 		} else {
-			ical_utc_to_datetime(&tzcom, start_time, &itime);
+			ical_utc_to_datetime(tzcom, start_time, &itime);
 			apr->recur_pat.pts.weekrecur = 1U << ical_get_dayofweek(itime.year, itime.month, itime.day);
 		}
 		break;
@@ -512,7 +512,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 			patterntype = rptMonth;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (pvalue == nullptr) {
-				ical_utc_to_datetime(&tzcom, start_time, &itime);
+				ical_utc_to_datetime(tzcom, start_time, &itime);
 				tmp_int = itime.day;
 			} else {
 				tmp_int = strtol(pvalue, nullptr, 10);
@@ -592,7 +592,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 			patterntype = rptMonth;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (pvalue == nullptr) {
-				ical_utc_to_datetime(&tzcom, start_time, &itime);
+				ical_utc_to_datetime(tzcom, start_time, &itime);
 				tmp_int = itime.day;
 			} else {
 				tmp_int = strtol(pvalue, nullptr, 10);
@@ -2342,7 +2342,7 @@ static const char *oxcical_import_internal(const char *method,
 		apr.exceptioncount = 0;
 		apr.pexceptioninfo = exceptions;
 		apr.pextendedexception = ext_exceptions;
-		auto err = oxcical_parse_rrule(*ptz_component, *piline,
+		auto err = oxcical_parse_rrule(ptz_component, *piline,
 		           calendartype, start_time, duration_min, &apr);
 		if (err != nullptr)
 			return err;
