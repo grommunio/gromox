@@ -1969,23 +1969,23 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 	}
 
 	for (auto &prop : {NtCommonStart, NtCommonEnd}) {
-		if (shape.tag(prop) != 0) {
-			switch (prop.lid) {
-			case PidLidCommonStart: {
-				auto start = EWSContext::construct<uint64_t>(startTime.value() + startOffset * 600000000);
-				shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
-				shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
-				shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
-				break;
-			}
-			case PidLidCommonEnd: {
-				auto end = EWSContext::construct<uint64_t>(endTime.value() + endOffset * 600000000);
-				shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
-				shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
-				shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
-				break;
-			}
-			}
+		if (shape.tag(prop) == 0)
+			continue;
+		switch (prop.lid) {
+		case PidLidCommonStart: {
+			auto start = EWSContext::construct<uint64_t>(startTime.value() + startOffset * 600000000);
+			shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
+			shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
+			shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+			break;
+		}
+		case PidLidCommonEnd: {
+			auto end = EWSContext::construct<uint64_t>(endTime.value() + endOffset * 600000000);
+			shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
+			shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
+			shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
+			break;
+		}
 		}
 	}
 }
