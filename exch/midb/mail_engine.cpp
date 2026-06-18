@@ -2003,7 +2003,21 @@ static IDB_REF me_peek_idb(const char *path)
 	auto pidb = &it->second;
 	pidb->reference ++;
 	hhold.unlock();
-	pidb->giant_lock.lock();
+	/*
+	 * Bound the wait like me_get_idb does. The exmdb notification dispatch
+	 * is serial per connection, so an unbounded lock() here would let one
+	 * store stuck in a long resync stall new-mail notifications for every
+	 * other store on that connection. On timeout the caller (X-RSYM /
+	 * midb_notif_handler) treats it as "not peekable right now" and a
+	 * later (re)sync reconciles the missed delta.
+	 */
+	if (!pidb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
+		hhold.lock();
+		pidb->reference --;
+		hhold.unlock();
+		mlog(LV_ERR, "E-2405: mail_engine: timed out peeking a reference on %s", path);
+		return {};
+	}
 	if (pidb->psqlite != nullptr)
 		return IDB_REF(pidb);
 	pidb->last_time = 0;
