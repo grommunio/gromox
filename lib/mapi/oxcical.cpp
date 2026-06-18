@@ -48,7 +48,7 @@ static constexpr char fmt_date[] = "%04d%02d%02d",
 	fmt_datetimelcl[] = "%04d%02d%02dT%02d%02d%02d",  /* needs buf[16] */
 	fmt_datetimeutc[] = "%04d%02d%02dT%02d%02d%02dZ"; /* needs buf[17] */
 
-static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
+static ec_error_t namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
 	/* Avoid uninitialized read when the copy/transfer is made */
 	if (el.kind == MNID_ID)
@@ -56,12 +56,12 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 	else
 		el.lid = 0;
 	if (phash.size() >= namemap_limit)
-		return -ENOSPC;
+		return ecNPQuotaExceeded;
 	if (!phash.emplace(id, std::move(el)).second)
-		return -EEXIST;
-	return 0;
+		return ecDuplicateName;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	return -ENOMEM;
+	return ecMAPIOOM;
 }
 
 static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
@@ -637,7 +637,7 @@ static bool oxcical_take_tzbin(bool b_dtstart, const BINARY &tmp_bin,
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, b_dtstart ?
 		PidLidAppointmentTimeZoneDefinitionStartDisplay :
 		PidLidAppointmentTimeZoneDefinitionEndDisplay};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
@@ -684,7 +684,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	if (ptzid == nullptr)
 		return false;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, PidLidTimeZoneDescription};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), ptzid) != ecSuccess)
 		return false;
@@ -695,7 +695,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	if (!oxcical_timezonestruct_to_binary(tz_struct, &tmp_bin))
 		return false;
 	propname = {MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
@@ -707,7 +707,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	    &tmp_bin) != ecSuccess)
 		return false;
 	propname = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
@@ -720,7 +720,7 @@ static bool oxcical_parse_proposal(namemap &phash,
 {
 	uint8_t tmp_byte;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentCounterProposal};
-	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 		return false;
 	tmp_byte = 1;
 	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
@@ -867,7 +867,7 @@ static bool oxcical_parse_categories(const ical_component &main_event,
 	}
 	if (0 != strings_array.count && strings_array.count < 128) {
 		PROPERTY_NAME pn = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)};
-		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+		if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 			return false;
 		if (pmsg->proplist.set(PROP_TAG(PT_MV_UNICODE, *plast_propid), &strings_array) != ecSuccess)
 			return false;
@@ -969,7 +969,7 @@ static bool oxcical_parse_dtstamp(const ical_component &main_event,
 	propname.lid = (method != nullptr && (strcasecmp(method, "REPLY") == 0 ||
 	                strcasecmp(method, "COUNTER") == 0)) ?
 	               PidLidAttendeeCriticalChange : PidLidOwnerCriticalChange;
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
@@ -991,13 +991,13 @@ static bool oxcical_parse_start_end(bool b_start, bool b_proposal,
 		PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, b_start ?
 			PidLidAppointmentProposedStartWhole :
 			PidLidAppointmentProposedEndWhole};
-		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+		if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 			return false;
 		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
 			return false;
 		(*plast_propid) ++;
 		pn = {MNID_ID, PSETID_Common, comid};
-		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0 ||
+		if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess ||
 		    pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess ||
 		    pmsg->proplist.set(sdtag, &tmp_int64) != ecSuccess)
 			return false;
@@ -1008,13 +1008,13 @@ static bool oxcical_parse_start_end(bool b_start, bool b_proposal,
 	    pmain_event.get_line("X-MS-OLK-ORIGINALSTART") == nullptr)) {
 		PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, b_start ?
 			PidLidAppointmentStartWhole : PidLidAppointmentEndWhole};
-		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+		if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 			return false;
 		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
 			return false;
 		(*plast_propid) ++;
 		pn = {MNID_ID, PSETID_Common, comid};
-		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0 ||
+		if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess ||
 		    pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess ||
 		    pmsg->proplist.set(sdtag, &tmp_int64) != ecSuccess)
 			return false;
@@ -1028,7 +1028,7 @@ static bool oxcical_parse_subtype(namemap &phash, uint16_t *plast_propid,
 {
 	uint8_t tmp_byte;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentSubType};
-	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 		return false;
 	tmp_byte = 1;
 	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
@@ -1052,7 +1052,7 @@ static bool oxcical_set_stateflags(const char *method,
 			val = asfMeeting | asfReceived | asfCanceled;
 	}
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentStateFlags};
-	if (namemap_add(hash, last_propid, std::move(pn)) != 0)
+	if (namemap_add(hash, last_propid, std::move(pn)) != ecSuccess)
 		return false;
 	if (msg.proplist.set(PROP_TAG(PT_LONG, last_propid), &val) != ecSuccess)
 		return false;
@@ -1064,7 +1064,7 @@ static bool oxcical_set_stateflags(const char *method,
 	     strcasecmp(method, "CANCEL") == 0)) {
 		uint32_t rs = respNotResponded;
 		pn = {MNID_ID, PSETID_Appointment, PidLidResponseStatus};
-		if (namemap_add(hash, last_propid, std::move(pn)) != 0)
+		if (namemap_add(hash, last_propid, std::move(pn)) != ecSuccess)
 			return false;
 		if (msg.proplist.set(PROP_TAG(PT_LONG, last_propid), &rs) != ecSuccess)
 			return false;
@@ -1072,7 +1072,7 @@ static bool oxcical_set_stateflags(const char *method,
 
 		rs = mtgRequest | mtgFull;
 		pn = {MNID_ID, PSETID_Meeting, PidLidMeetingType};
-		if (namemap_add(hash, last_propid, std::move(pn)) != 0)
+		if (namemap_add(hash, last_propid, std::move(pn)) != ecSuccess)
 			return false;
 		if (msg.proplist.set(PROP_TAG(PT_LONG, last_propid), &rs) != ecSuccess)
 			return false;
@@ -1143,7 +1143,7 @@ static bool oxcical_parse_duration(uint32_t minutes, namemap &phash,
     uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentDuration};
-	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &minutes) != ecSuccess)
 		return false;
@@ -1244,7 +1244,7 @@ static bool oxcical_parse_uid(const ical_component &main_event,
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pc = tmp_buff;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Meeting, PidLidGlobalObjectId};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
@@ -1258,7 +1258,7 @@ static bool oxcical_parse_uid(const ical_component &main_event,
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pc = tmp_buff;
 	propname = {MNID_ID, PSETID_Meeting, PidLidCleanGlobalObjectId};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
@@ -1297,7 +1297,7 @@ static bool oxcical_parse_location(const ical_component &main_event,
 		}
 	}
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, PidLidLocation};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), tmp_buff) != ecSuccess)
 		return false;
@@ -1306,7 +1306,7 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	if (pvalue == nullptr)
 		return true;
 	propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameLocationUrl)};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), pvalue) != ecSuccess)
 		return false;
@@ -1420,7 +1420,7 @@ static bool oxcical_parse_sequence(const ical_component &main_event,
 		return true;
 	uint32_t tmp_int32 = strtol(pvalue, nullptr, 10);
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentSequence};
-	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &tmp_int32) != ecSuccess)
 		return false;
@@ -1488,7 +1488,7 @@ static bool oxcical_set_busystatus(ol_busy_status busy_status,
 	if (busy_status == olIndeterminate)
 		return true;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, pidlid};
-	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &busy_status) != ecSuccess)
 		return false;
@@ -1571,7 +1571,7 @@ static bool oxcical_parse_recurrence_id(const ical_component *ptz_component,
 	    piline, &itime, &tmp_time))
 		return false;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime};
-	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
@@ -1600,7 +1600,7 @@ static bool oxcical_parse_disallow_counter(const ical_component &main_event,
 		return true;
 
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentNotAllowPropose};
-	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
 		return false;
@@ -1629,7 +1629,7 @@ static bool oxcical_parse_appt_not_recurring(namemap &phash, uint16_t &last_prop
 	 */
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, PidLidRecurring};
 	uint8_t flag = false;
-	if (namemap_add(phash, last_propid, std::move(propname)) != 0 ||
+	if (namemap_add(phash, last_propid, std::move(propname)) != ecSuccess ||
 	    msg.proplist.set(PROP_TAG(PT_BOOLEAN, last_propid), &flag) != ecSuccess)
 		return false;
 	++last_propid;
@@ -1648,20 +1648,20 @@ static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pb = ext_push.m_udata;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, PidLidAppointmentRecur};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	propname = {MNID_ID, PSETID_Appointment, PidLidRecurring};
 	uint8_t flag = 1;
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess ||
 	    pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &flag) != ecSuccess)
 		return false;
 	++*plast_propid;
 	propname = {MNID_ID, PSETID_Appointment, PidLidRecurrenceType};
 	uint32_t num = aptrecur_to_recurtype(*apr);
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess ||
 	    pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &num) != ecSuccess)
 		return false;
 	++*plast_propid;
@@ -1670,14 +1670,14 @@ static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 		apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND1 ?
 		ENDDATE_MISSING : apr->recur_pat.enddate);
 	propname = {MNID_ID, PSETID_Appointment, PidLidClipEnd};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	nt_time = rop_util_rtime_to_nttime(apr->recur_pat.startdate);
 	propname = {MNID_ID, PSETID_Appointment, PidLidClipStart};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != ecSuccess)
 		return false;
@@ -1956,7 +1956,7 @@ static bool oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	uint8_t tmp_byte;
 	uint64_t tmp_int64;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidReminderDelta};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &reminder_delta) != ecSuccess)
 		return false;
@@ -1964,14 +1964,14 @@ static bool oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	propname.guid = PSETID_Common;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidReminderTime;
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(start_time);
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	propname = {MNID_ID, PSETID_Common, PidLidReminderSignalTime};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(
 		start_time - reminder_delta*60);
@@ -1979,7 +1979,7 @@ static bool oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 		return false;
 	(*plast_propid) ++;
 	propname = {MNID_ID, PSETID_Common, PidLidReminderSet};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	tmp_byte = 1;
 	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
