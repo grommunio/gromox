@@ -1909,8 +1909,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 	std::optional<uint64_t> startTime = 0, endTime = 0;
 	fromProp(shape.writes(NtCommonStart), startTime);
 	fromProp(shape.writes(NtCommonEnd), endTime);
-	auto tag = shape.tag(NtCalendarTimeZone);
-	if (tag != 0) {
+	if (shape.tag(NtCalendarTimeZone) != 0) {
 		std::optional<std::string> calTimezone;
 		fromProp(shape.writes(NtCalendarTimeZone), calTimezone);
 		if (calTimezone.has_value()) {
@@ -1957,12 +1956,12 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 							BINARY{ep.m_offset, {tzdata}})});
 				}
 				auto& op = shape.offsetProps;
-				if ((tag = shape.tag(NtCommonStart)) &&
-				    startTime.has_value() &&
+				auto tag = shape.tag(NtCommonStart);
+				if (tag != 0 && startTime.has_value() &&
 				    std::find(op.begin(), op.end(), tag) != op.end())
 					offset_from_tz(&tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
-				if ((tag = shape.tag(NtCommonEnd)) &&
-				    endTime.has_value() &&
+				tag = shape.tag(NtCommonEnd);
+				if (tag != 0 && endTime.has_value() &&
 				    std::find(op.begin(), op.end(), tag) != op.end())
 					offset_from_tz(&tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
 			}
@@ -1970,7 +1969,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 	}
 
 	for (auto &prop : {NtCommonStart, NtCommonEnd}) {
-		if ((tag = shape.tag(prop))) {
+		if (shape.tag(prop) != 0) {
 			switch (prop.lid) {
 			case PidLidCommonStart: {
 				auto start = EWSContext::construct<uint64_t>(startTime.value() + startOffset * 600000000);
@@ -2881,12 +2880,11 @@ void tEmailAddressType::mkRecipient(TPROPVAL_ARRAY* rcpt, uint32_t type) const
 	if (!EmailAddress)
 		throw EWSError::InvalidRecipients(E3290);
 	auto displayname = Name ? Name->c_str() : EmailAddress->c_str();
-	ec_error_t err;
-	if ((err = rcpt->set(PR_DISPLAY_NAME, displayname)) == ecServerOOM ||
-	    (err = rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname)) == ecServerOOM ||
-	    (err = rcpt->set(PR_ADDRTYPE, RoutingType ? RoutingType->c_str() : "SMTP")) == ecServerOOM ||
-	    (err = rcpt->set(PR_EMAIL_ADDRESS, EmailAddress->c_str())) == ecServerOOM ||
-	    (err = rcpt->set(PR_RECIPIENT_TYPE, &type)) == ecServerOOM)
+	if (rcpt->set(PR_DISPLAY_NAME, displayname) == ecServerOOM ||
+	    rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname) == ecServerOOM ||
+	    rcpt->set(PR_ADDRTYPE, RoutingType ? RoutingType->c_str() : "SMTP") == ecServerOOM ||
+	    rcpt->set(PR_EMAIL_ADDRESS, EmailAddress->c_str()) == ecServerOOM ||
+	    rcpt->set(PR_RECIPIENT_TYPE, &type) == ecServerOOM)
 		throw EWSError::NotEnoughMemory(E3291);
 }
 
