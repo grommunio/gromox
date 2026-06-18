@@ -1747,7 +1747,7 @@ std::string tBaseItemId::serializeId() const
 	std::string data;
 	data.reserve(Id.size()+1);
 	data = Id;
-	data.append(1, type);
+	data.append(1, t);
 	return data;
 }
 
