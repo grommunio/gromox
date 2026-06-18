@@ -373,7 +373,6 @@ static int ev_acceptwork(generic_connection &&conn)
 }
 
 using eq_iter_t = std::list<ENQUEUE_NODE>::iterator;
-using eq_lock_t = std::unique_lock<std::mutex>;
 
 static void q_id(eq_iter_t eq_node)
 {
@@ -382,7 +381,7 @@ static void q_id(eq_iter_t eq_node)
 	penqueue->sk_write("TRUE\r\n");
 }
 
-static int q_listen(eq_iter_t eq_node, std::unique_lock<std::mutex> &eq_hold)
+static int q_listen(eq_iter_t eq_node)
 {
 	auto penqueue = &*eq_node;
 	HOST_NODE *phost = nullptr;
@@ -431,7 +430,8 @@ static int q_listen(eq_iter_t eq_node, std::unique_lock<std::mutex> &eq_hold)
 	hl_hold.unlock();
 	pdequeue->sk_write("TRUE\r\n");
 	g_dequeue_waken_cond.notify_one();
-	eq_hold.lock();
+
+	std::unique_lock eq_hold(g_enqueue_lock);
 	g_enqueue_list.erase(eq_node);
 	return 2;
 }
@@ -494,11 +494,11 @@ static void q_unselect(eq_iter_t eq_node) try
 	eq_node->sk_write("FALSE\r\n");
 }
 
-static int q_quit(eq_iter_t eq_node, eq_lock_t &eq_hold)
+static int q_quit(eq_iter_t eq_node)
 {
 	auto penqueue = &*eq_node;
 	penqueue->sk_write("BYE\r\n");
-	eq_hold.lock();
+	std::unique_lock eq_hold(g_enqueue_lock);
 	g_enqueue_list.erase(eq_node);
 	return 2;
 }
@@ -584,7 +584,7 @@ static int ev_enqwork_1()
 		if (strncasecmp(penqueue->line, "ID ", 3) == 0) {
 			q_id(eq_node);
 		} else if (strncasecmp(penqueue->line, "LISTEN ", 7) == 0) {
-			auto ret = q_listen(eq_node, eq_hold);
+			auto ret = q_listen(eq_node);
 			if (ret == 2)
 				return X_LOOP;
 		} else if (strncasecmp(penqueue->line, "SELECT ", 7) == 0) {
@@ -592,7 +592,7 @@ static int ev_enqwork_1()
 		} else if (strncasecmp(penqueue->line, "UNSELECT ", 9) == 0) {
 			q_unselect(eq_node);
 		} else if (strcasecmp(penqueue->line, "QUIT") == 0) {
-			auto ret = q_quit(eq_node, eq_hold);
+			auto ret = q_quit(eq_node);
 			if (ret == 2)
 				return X_LOOP;
 		} else if (strcasecmp(penqueue->line, "PING") == 0) {
