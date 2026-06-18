@@ -1147,22 +1147,22 @@ static bool get_digest_integer(const Json::Value &jv, const char *tag, int &i)
 
 static unsigned int di_to_flagbits(const Json::Value &jv)
 {
-	unsigned int fl = 0, v;
+	unsigned int fl = 0;
 	if (jv.type() != Json::ValueType::objectValue)
 		return fl;
-	if (jv.isMember("replied") && (v = jv["replied"].asUInt()) != 0)
+	if (jv.isMember("replied") && jv["replied"].asUInt() != 0)
 		fl |= FLAG_ANSWERED;
-	if (jv.isMember("unsent") && (v = jv["unsent"].asUInt()) != 0)
+	if (jv.isMember("unsent") && jv["unsent"].asUInt() != 0)
 		fl |= FLAG_DRAFT;
-	if (jv.isMember("flag") && (v = jv["flag"].asUInt()) != 0)
+	if (jv.isMember("flag") && jv["flag"].asUInt() != 0)
 		fl |= FLAG_FLAGGED;
-	if (jv.isMember("deleted") && (v = jv["deleted"].asUInt()) != 0)
+	if (jv.isMember("deleted") && jv["deleted"].asUInt() != 0)
 		fl |= FLAG_DELETED;
-	if (jv.isMember("read") && (v = jv["read"].asUInt()) != 0)
+	if (jv.isMember("read") && jv["read"].asUInt() != 0)
 		fl |= FLAG_SEEN;
-	if (jv.isMember("recent") && (v = jv["recent"].asUInt()) != 0)
+	if (jv.isMember("recent") && jv["recent"].asUInt() != 0)
 		fl |= FLAG_RECENT;
-	if (jv.isMember("forwarded") && (v = jv["forwarded"].asUInt()) != 0)
+	if (jv.isMember("forwarded") && jv["forwarded"].asUInt() != 0)
 		fl |= FLAG_FORWARDED;
 	return fl;
 }
