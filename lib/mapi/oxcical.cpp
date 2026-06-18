@@ -2077,44 +2077,63 @@ static inline unsigned int dfl_alarm_offset(bool allday)
 	return allday ? 1080 : 15;
 }
 
-static const char *oxcical_import_internal(const char *method,
+static ec_error_t oxcical_import_internal(const char *method,
     bool b_proposal, uint16_t calendartype, const ical &pical,
     const event_list_t &pevent_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
     message_content *pmsg, ical_time *pstart_itime, ical_time *pend_itime,
-    EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception)
+    EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception,
+    std::string &errstr) try
 {
 	const char *mev_error;
 	auto pmain_event = oxcical_main_event(pevent_list, &mev_error);
-	if (pmain_event == nullptr)
-		return znul(mev_error);
+	if (pmain_event == nullptr) {
+		errstr = znul(mev_error);
+		return ecInvalidParam;
+	}
 	if (pexception != nullptr && pext_exception != nullptr) {
 		memset(pexception, 0, sizeof(EXCEPTIONINFO));
 		memset(pext_exception, 0, sizeof(EXTENDEDEXCEPTION));
 		pext_exception->changehighlight.size = sizeof(uint32_t);
 	}
-	if (!oxcical_parse_recipients(*pmain_event, username_to_entryid, pmsg))
-		return "E-2189: oxcical_import: parse_recipients returned an unspecified error";
+	if (!oxcical_parse_recipients(*pmain_event, username_to_entryid, pmsg)) {
+		errstr = "E-2189: oxcical_import: parse_recipients returned an unspecified error";
+		return ecInvalidParam;
+	}
 	uint16_t last_propid = 0x8000;
 	namemap phash;
-	if (b_proposal && !oxcical_parse_proposal(phash, &last_propid, pmsg))
-		return "E-2190: oxcical_parse_proposal returned an unspecified error";
-	if (!oxcical_parse_categories(*pmain_event, phash, &last_propid, pmsg))
-		return "E-2191: oxcical_parse_categories returned an unspecified error";
-	if (!oxcical_parse_class(*pmain_event, pmsg))
-		return "E-2192: oxcical_parse_class returned an unspecified error";
-	if (!oxcical_parse_body(*pmain_event, method, pmsg))
-		return "E-2705: oxcical_parse_body returned an unspecified error";
-	if (!oxcical_parse_html(*pmain_event, pmsg))
-		return "E-2193: oxcical_parse_html returned an unspecified error";
+	if (b_proposal && !oxcical_parse_proposal(phash, &last_propid, pmsg)) {
+		errstr = "E-2190: oxcical_parse_proposal returned an unspecified error";
+		return ecInvalidParam;
+	}
+	if (!oxcical_parse_categories(*pmain_event, phash, &last_propid, pmsg)) {
+		errstr = "E-2191: oxcical_parse_categories returned an unspecified error";
+		return ecInvalidParam;
+	}
+	if (!oxcical_parse_class(*pmain_event, pmsg)) {
+		errstr = "E-2192: oxcical_parse_class returned an unspecified error";
+		return ecInvalidParam;
+	}
+	if (!oxcical_parse_body(*pmain_event, method, pmsg)) {
+		errstr = "E-2705: oxcical_parse_body returned an unspecified error";
+		return ecInvalidParam;
+	}
+	if (!oxcical_parse_html(*pmain_event, pmsg)) {
+		errstr = "E-2193: oxcical_parse_html returned an unspecified error";
+		return ecInvalidParam;
+	}
 	bool b_allday = oxcical_parse_allday(*pmain_event);
 	if (!oxcical_parse_dtstamp(*pmain_event, method,
-	    phash, &last_propid, pmsg))
-		return "E-2194: oxcical_parse_dtstamp returned an unspecified error";
+	    phash, &last_propid, pmsg)) {
+		errstr = "E-2194: oxcical_parse_dtstamp returned an unspecified error";
+		return ecInvalidParam;
+	}
 
 	auto piline = pmain_event->get_line("DTSTART");
-	if (piline == nullptr)
-		return "E-2741: oxcical_import_internal: no DTSTART";
+	if (piline == nullptr) {
+		errstr = "E-2741: oxcical_import_internal: no DTSTART";
+		return ecInvalidParam;
+	}
 	auto pvalue1 = piline->get_first_paramval("VALUE");
 	auto ptzid = piline->get_first_paramval("TZID");
 	const ical_component *ptz_component = nullptr;
@@ -2122,8 +2141,10 @@ static const char *oxcical_import_internal(const char *method,
 		ptz_component = oxcical_find_vtimezone(pical, ptzid);
 		if (ptz_component != nullptr) {
 			if (!oxcical_parse_tzdisplay(true, *ptz_component, phash,
-			    &last_propid, pmsg))
-				return "E-2195: oxcical_parse_tzdisplay returned an unspecified error";
+			    &last_propid, pmsg)) {
+				errstr = "E-2195: oxcical_parse_tzdisplay returned an unspecified error";
+				return ecInvalidParam;
+			}
 		} else {
 			/*
 			 * As per RFC 5545 §3.2.19, """An individual "VTIMEZONE" calendar
@@ -2136,15 +2157,17 @@ static const char *oxcical_import_internal(const char *method,
 			if (def == nullptr)
 				def = wintz_to_tzdef(ptzid);
 			if (def == nullptr) {
-				mlog(LV_ERR, "E-2070: %s: timezone \"%s\" not found", __func__, ptzid);
-				return "Used timezone was not declared";
+				errstr = "E-2070: Timezone \""s + ptzid + "\" was not declared";
+				return ecInvalidParam;
 			}
 			mlog(LV_DEBUG, "D-5324: synthesized data for TZID \"%s\" from internal db", ptzid);
 			BINARY bin;
 			bin.cb = def->size();
 			bin.pc = deconst(def->data());
-			if (!oxcical_take_tzbin(true, bin, phash, &last_propid, pmsg))
-				return "E-5323: oxcical_parse_tzdef returned an unspecified error";
+			if (!oxcical_take_tzbin(true, bin, phash, &last_propid, pmsg)) {
+				errstr = "E-5323: oxcical_parse_tzdef returned an unspecified error";
+				return ecInvalidParam;
+			}
 		}
 	}
 
@@ -2155,11 +2178,15 @@ static const char *oxcical_import_internal(const char *method,
 	 * UTC time. As a result, export of such MAPI objects can shift it.
 	 */
 	if (!oxcical_parse_dtvalue(ptz_component,
-	    *piline, &start_itime, &start_time))
-		return "E-2196: oxcical_parse_dtvalue returned an unspecified error";
+	    *piline, &start_itime, &start_time)) {
+		errstr = "E-2196: oxcical_parse_dtvalue returned an unspecified error";
+		return ecInvalidParam;
+	}
 	if (!oxcical_parse_start_end(true, b_proposal,
-	    *pmain_event, start_time, phash, &last_propid, pmsg))
-		return "E-2197: oxcical_parse_start_end returned an unspecified error";
+	    *pmain_event, start_time, phash, &last_propid, pmsg)) {
+		errstr = "E-2197: oxcical_parse_start_end returned an unspecified error";
+		return ecInvalidParam;
+	}
 	if (pstart_itime != nullptr)
 		*pstart_itime = start_itime;
 
@@ -2169,13 +2196,19 @@ static const char *oxcical_import_internal(const char *method,
 		bool parse_dtv = (pvalue == nullptr && ptzid == nullptr) ||
 		                 (pvalue != nullptr && ptzid != nullptr &&
 		                 strcasecmp(pvalue, ptzid) == 0);
-		if (!parse_dtv)
-			return "E-2199: oxcical_import: TZID present but VTIMEZONE not (or vice-versa)";
+		if (!parse_dtv) {
+			errstr = "E-2199: oxcical_import: TZID present but VTIMEZONE not (or vice-versa)";
+			return ecInvalidParam;
+		}
 		if (!oxcical_parse_dtvalue(ptz_component,
-		    *piline, &end_itime, &end_time))
-			return "E-2198: oxcical_parse_dtvalue returned an unspecified error";
-		if (end_time < start_time)
-			return "E-2795: ical not imported due to end_time < start_time";
+		    *piline, &end_itime, &end_time)) {
+			errstr = "E-2198: oxcical_parse_dtvalue returned an unspecified error";
+			return ecInvalidParam;
+		}
+		if (end_time < start_time) {
+			errstr = "E-2795: ical not imported due to end_time < start_time";
+			return ecInvalidParam;
+		}
 	} else {
 		piline = pmain_event->get_line("DURATION");
 		if (piline == nullptr) {
@@ -2192,8 +2225,10 @@ static const char *oxcical_import_internal(const char *method,
 			long duration;
 			auto pvalue = piline->get_first_subvalue();
 			if (pvalue == nullptr ||
-			    !ical_parse_duration(pvalue, &duration) || duration < 0)
-				return "E-2700: ical_parse_duration returned an unspecified error";
+			    !ical_parse_duration(pvalue, &duration) || duration < 0) {
+				errstr = "E-2700: ical_parse_duration returned an unspecified error";
+				return ecInvalidParam;
+			}
 			end_itime = start_itime;
 			end_time = start_time + duration;
 			end_itime.add_second(duration);
@@ -2203,14 +2238,20 @@ static const char *oxcical_import_internal(const char *method,
 	if (pend_itime != nullptr)
 		*pend_itime = end_itime;
 	if (ptz_component != nullptr && !oxcical_parse_tzdisplay(false,
-	    *ptz_component, phash, &last_propid, pmsg))
-		return "E-2701: oxcical_parse_tzdisplay returned an unspecified error";
+	    *ptz_component, phash, &last_propid, pmsg)) {
+		errstr = "E-2701: oxcical_parse_tzdisplay returned an unspecified error";
+		return ecInvalidParam;
+	}
 	if (!oxcical_parse_start_end(false, b_proposal,
-	    *pmain_event, end_time, phash, &last_propid, pmsg))
-		return "E-2702: oxcical_parse_start_end returned an unspecified error";
+	    *pmain_event, end_time, phash, &last_propid, pmsg)) {
+		errstr = "E-2702: oxcical_parse_start_end returned an unspecified error";
+		return ecInvalidParam;
+	}
 	uint32_t duration_min = (end_time - start_time) / 60;
-	if (!oxcical_parse_duration(duration_min, phash, &last_propid, pmsg))
-		return "E-2703: oxcical_parse_duration returned an unspecified error";
+	if (!oxcical_parse_duration(duration_min, phash, &last_propid, pmsg)) {
+		errstr = "E-2703: oxcical_parse_duration returned an unspecified error";
+		return ecInvalidParam;
+	}
 
 	if (!b_allday && start_itime.type != itime_type::utc &&
 	    start_itime.type != itime_type::utc && start_itime.hour == 0 &&
@@ -2218,34 +2259,48 @@ static const char *oxcical_import_internal(const char *method,
 	    end_itime.hour == 0 && end_itime.minute == 0 &&
 	    end_itime.second == 0)
 		b_allday = true;
-	if (b_allday && !oxcical_parse_subtype(phash, &last_propid, pmsg, pexception))
-		return "E-2704: oxcical_parse_subtype returned an unspecified error";
-	if (!oxcical_set_stateflags(method, phash, last_propid, *pmsg))
-		return "E-2739";
+	if (b_allday && !oxcical_parse_subtype(phash, &last_propid, pmsg, pexception)) {
+		errstr = "E-2704: oxcical_parse_subtype returned an unspecified error";
+		return ecInvalidParam;
+	}
+	if (!oxcical_set_stateflags(method, phash, last_propid, *pmsg)) {
+		errstr = "E-2739";
+		return ecInvalidParam;
+	}
 
 	ical_time itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
 	if (piline != nullptr) {
 		if (pexception != nullptr && pext_exception != nullptr &&
 		    !oxcical_parse_recurrence_id(ptz_component, *piline,
-		    phash, &last_propid, pmsg))
-			return "E-2706: oxcical_parse_duration returned an unspecified error";
+		    phash, &last_propid, pmsg)) {
+			errstr = "E-2706: oxcical_parse_duration returned an unspecified error";
+			return ecInvalidParam;
+		}
 		auto pvalue = piline->get_first_paramval("TZID");
 		if (pvalue != nullptr && ptzid != nullptr &&
-		    strcasecmp(pvalue, ptzid) != 0)
-			return "E-2707: Timezone mismatch on RECURRENCE-ID and TZID";
+		    strcasecmp(pvalue, ptzid) != 0) {
+			errstr = "E-2707: Timezone mismatch on RECURRENCE-ID and TZID";
+			return ecInvalidParam;
+		}
 		if (pvalue != nullptr) {
 			if (!oxcical_parse_dtvalue(ptz_component,
-			    *piline, &itime, nullptr))
-				return "E-2708";
+			    *piline, &itime, nullptr)) {
+				errstr = "E-2708";
+				return ecInvalidParam;
+			}
 		} else {
 			if (!oxcical_parse_dtvalue(nullptr,
-			    *piline, &itime, nullptr))
-				return "E-2709";
+			    *piline, &itime, nullptr)) {
+				errstr = "E-2709";
+				return ecInvalidParam;
+			}
 			if (itime.type != itime_type::utc &&
 			    (itime.hour != 0 || itime.minute != 0 ||
-			    itime.second != 0 || itime.leap_second != 0))
-				return "E-2710";
+			    itime.second != 0 || itime.leap_second != 0)) {
+				errstr = "E-2710";
+				return ecInvalidParam;
+			}
 		}
 	}
 
@@ -2254,15 +2309,20 @@ static const char *oxcical_import_internal(const char *method,
 	    !oxcical_parse_location(*pmain_event, phash, &last_propid, alloc,
 	    pmsg, pexception, pext_exception) ||
 	    !oxcical_parse_organizer(*pmain_event, username_to_entryid, pmsg) ||
-	    !oxcical_parse_importance(*pmain_event, pmsg))
-		return "E-2711";
+	    !oxcical_parse_importance(*pmain_event, pmsg)) {
+		errstr = "E-2711";
+		return ecInvalidParam;
+	}
 	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
 		int32_t tmp_int32 = IMPORTANCE_NORMAL;
-		if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != ecSuccess)
-			return "E-2712";
+		auto err = pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32);
+		if (err != ecSuccess)
+			return err;
 	}
-	if (!oxcical_parse_sequence(*pmain_event, phash, &last_propid, pmsg))
-		return "E-2713";
+	if (!oxcical_parse_sequence(*pmain_event, phash, &last_propid, pmsg)) {
+		errstr = "E-2713";
+		return ecInvalidParam;
+	}
 
 	piline = pmain_event->get_line("X-MICROSOFT-CDO-BUSYSTATUS");
 	if (piline == nullptr)
@@ -2291,30 +2351,40 @@ static const char *oxcical_import_internal(const char *method,
 	 * editing the Calendar folder MAPI message (this does not exist yet).
 	 */
 	if (!oxcical_set_busystatus(busy_status, PidLidBusyStatus, phash,
-	    &last_propid, pmsg, pexception))
-		return "E-2714";
+	    &last_propid, pmsg, pexception)) {
+		errstr = "E-2714";
+		return ecInvalidParam;
+	}
 	if (!oxcical_set_busystatus(intent_status, PidLidIntendedBusyStatus, phash,
-	    &last_propid, pmsg, nullptr))
-		return "E-2715";
+	    &last_propid, pmsg, nullptr)) {
+		errstr = "E-2715";
+		return ecInvalidParam;
+	}
 
 	if (!oxcical_parse_ownerapptid(*pmain_event, pmsg) ||
 	    !oxcical_parse_disallow_counter(*pmain_event, phash,
 	    &last_propid, pmsg) ||
 	    !oxcical_parse_summary(*pmain_event, pmsg, alloc,
-	    pexception, pext_exception))
-		return "E-2716";
+	    pexception, pext_exception)) {
+		errstr = "E-2716";
+		return ecInvalidParam;
+	}
 
 	piline = pmain_event->get_line("RRULE");
 	if (piline == nullptr)
 		piline = pmain_event->get_line("X-MICROSOFT-RRULE");
 	if (piline == nullptr) {
-		if (!oxcical_parse_appt_not_recurring(phash, last_propid, *pmsg))
-			return "E-2742";
+		if (!oxcical_parse_appt_not_recurring(phash, last_propid, *pmsg)) {
+			errstr = "E-2742";
+			return ecInvalidParam;
+		}
 	} else {
 		if (ptz_component != nullptr &&
 		    !oxcical_parse_recurring_timezone(*ptz_component,
-		    phash, &last_propid, pmsg))
-			return "E-2717";
+		    phash, &last_propid, pmsg)) {
+			errstr = "E-2717";
+			return ecInvalidParam;
+		}
 
 		uint32_t deleted_dates[1024], modified_dates[1024];
 		EXCEPTIONINFO exceptions[1024];
@@ -2328,23 +2398,31 @@ static const char *oxcical_import_internal(const char *method,
 		apr.exceptioncount = 0;
 		apr.pexceptioninfo = exceptions;
 		apr.pextendedexception = ext_exceptions;
-		auto err = oxcical_parse_rrule(ptz_component, *piline,
+		auto ers = oxcical_parse_rrule(ptz_component, *piline,
 		           calendartype, start_time, duration_min, &apr);
-		if (err != nullptr)
-			return err;
+		if (ers != nullptr) {
+			errstr = ers;
+			return ecInvalidParam;
+		}
 		piline = pmain_event->get_line("EXDATE");
 		if (piline == nullptr)
 			piline = pmain_event->get_line("X-MICROSOFT-EXDATE");
 		if (piline != nullptr && !oxcical_parse_dates(ptz_component,
-		    *piline, &apr.recur_pat.deletedinstancecount, deleted_dates))
-			return "E-2719";
+		    *piline, &apr.recur_pat.deletedinstancecount, deleted_dates)) {
+			errstr = "E-2719";
+			return ecInvalidParam;
+		}
 		piline = pmain_event->get_line("RDATE");
 		if (piline != nullptr) {
 			if (!oxcical_parse_dates(ptz_component, *piline,
-			    &apr.recur_pat.modifiedinstancecount, modified_dates))
-				return "E-2720";
-			if (apr.recur_pat.modifiedinstancecount < apr.recur_pat.deletedinstancecount)
-				return "E-2721: ical object did not meet condition recur_pat.modifiedinstancecount < recur_pat.deletedinstancecount";
+			    &apr.recur_pat.modifiedinstancecount, modified_dates)) {
+				errstr = "E-2720";
+				return ecInvalidParam;
+			}
+			if (apr.recur_pat.modifiedinstancecount < apr.recur_pat.deletedinstancecount) {
+				errstr = "E-2721: ical object did not meet condition recur_pat.modifiedinstancecount < recur_pat.deletedinstancecount";
+				return ecInvalidParam;
+			}
 			apr.exceptioncount = apr.recur_pat.modifiedinstancecount;
 			for (size_t i = 0; i < apr.exceptioncount; ++i) {
 				memset(exceptions + i, 0, sizeof(EXCEPTIONINFO));
@@ -2366,46 +2444,46 @@ static const char *oxcical_import_internal(const char *method,
 			if (pattachments == nullptr) {
 				pattachments = attachment_list_init();
 				if (pattachments == nullptr)
-					return "E-2722: ENOMEM";
+					return ecMAPIOOM;
 				pmsg->set_attachments_internal(pattachments);
 			}
 			auto pattachment = attachment_content_init();
 			if (pattachment == nullptr)
-				return "E-2723: ENOMEM";
+				return ecMAPIOOM;
 			if (!pattachments->append_internal(pattachment)) {
 				attachment_content_free(pattachment);
-				return "E-2724: ENOMEM";
+				return ecMAPIOOM;
 			}
 			auto pembedded = message_content_init();
 			if (pembedded == nullptr)
-				return "E-2725: ENOMEM";
+				return ecMAPIOOM;
 			pattachment->set_embedded_internal(pembedded);
-			if (pembedded->proplist.set(PR_MESSAGE_CLASS, IPM_Appointment_Exception) != ecSuccess)
-				return "E-2726";
+			auto err = pembedded->proplist.set(PR_MESSAGE_CLASS, IPM_Appointment_Exception);
+			if (err != ecSuccess)
+				return err;
 
 			event_list_t tmp_list;
-			try {
-				tmp_list.push_back(event);
-			} catch (...) {
-				return "E-2727: ENOMEM";
-			}
-			mev_error = oxcical_import_internal(method,
-			            false, calendartype, pical, tmp_list, alloc,
-			            get_propids, username_to_entryid, pembedded,
-			            &start_itime, &end_itime,
-			            exceptions + apr.exceptioncount,
-			            ext_exceptions + apr.exceptioncount);
-			if (mev_error != nullptr)
-				return mev_error;
+			tmp_list.push_back(event);
+			err = oxcical_import_internal(method, false,
+			      calendartype, pical, tmp_list, alloc, get_propids,
+			      username_to_entryid, pembedded, &start_itime,
+			      &end_itime, exceptions + apr.exceptioncount,
+			      ext_exceptions + apr.exceptioncount, errstr);
+			if (err != ecSuccess)
+				return err;
 			if (!oxcical_parse_exceptional_attachment(pattachment,
-			    *event, start_itime, end_itime, pmsg))
-				return "E-2729";
+			    *event, start_itime, end_itime, pmsg)) {
+				errstr = "E-2729";
+				return ecInvalidParam;
+			}
 
 			piline = event->get_line("RECURRENCE-ID");
 			time_t tmp_time;
 			if (!oxcical_parse_dtvalue(ptz_component,
-			    *piline, &itime, &tmp_time))
-				return "E-2730";
+			    *piline, &itime, &tmp_time)) {
+				errstr = "E-2730";
+				return ecInvalidParam;
+			}
 			auto minutes = rop_util_unix_to_rtime(tmp_time);
 			size_t i;
 			for (i = 0; i < apr.recur_pat.deletedinstancecount; ++i)
@@ -2414,8 +2492,10 @@ static const char *oxcical_import_internal(const char *method,
 			if (i < apr.recur_pat.deletedinstancecount)
 				continue;
 			deleted_dates[apr.recur_pat.deletedinstancecount++] = minutes;
-			if (apr.recur_pat.deletedinstancecount >= 1024)
-				return "E-2731";
+			if (apr.recur_pat.deletedinstancecount >= 1024) {
+				errstr = "E-2731";
+				return ecInvalidParam;
+			}
 			exceptions[apr.exceptioncount].originalstartdate = minutes;
 			ext_exceptions[apr.exceptioncount].originalstartdate = minutes;
 			ical_itime_to_utc(nullptr, start_itime, &tmp_time);
@@ -2434,8 +2514,10 @@ static const char *oxcical_import_internal(const char *method,
 		std::sort(exceptions, exceptions + apr.exceptioncount);
 		std::sort(ext_exceptions, ext_exceptions + apr.exceptioncount);
 		if (!oxcical_parse_appointment_recurrence(&apr, phash,
-		    &last_propid, pmsg))
-			return "E-2732";
+		    &last_propid, pmsg)) {
+			errstr = "E-2732";
+			return ecInvalidParam;
+		}
 	}
 
 	size_t tmp_count = 0;
@@ -2443,8 +2525,10 @@ static const char *oxcical_import_internal(const char *method,
 		if (strcasecmp(line.m_name.c_str(), "ATTACH") != 0)
 			continue;
 		tmp_count ++;
-		if (!oxcical_parse_attachment(line, tmp_count, pmsg))
-			return "E-2733";
+		if (!oxcical_parse_attachment(line, tmp_count, pmsg)) {
+			errstr = "E-2733";
+			return ecInvalidParam;
+		}
 	}
 
 	bool b_alarm = false;
@@ -2478,8 +2562,10 @@ static const char *oxcical_import_internal(const char *method,
 				}
 			}
 			if (!oxcical_parse_valarm(alarmdelta, start_time,
-			    phash, &last_propid, pmsg))
-				return "E-2734";
+			    phash, &last_propid, pmsg)) {
+				errstr = "E-2734";
+				return ecInvalidParam;
+			}
 		}
 	}
 
@@ -2492,35 +2578,43 @@ static const char *oxcical_import_internal(const char *method,
 			pexception->reminderdelta = alarmdelta;
 		}
 	}
-	if (!oxcical_fetch_propname(pmsg, phash, alloc, get_propids))
-		return "E-2735";
-	return nullptr;
+	if (!oxcical_fetch_propname(pmsg, phash, alloc, get_propids)) {
+		errstr = "E-2735";
+		return ecInvalidParam;
+	}
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2949: ENOMEM");
+	return ecMAPIOOM;
 }
 
-static bool oxcical_import_events(uint16_t calendartype,
+static ec_error_t oxcical_import_events(uint16_t calendartype,
     const ical &pical, const uidxevent_list_t &uid_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
-    std::vector<message_ptr> &msgvec)
+    std::vector<message_ptr> &msgvec, std::string &errstr)
 {
 	for (const auto &listentry : uid_list) {
 		auto &event_list = listentry.second;
 		message_ptr msg(message_content_init());
-		if (msg == nullptr)
-			return false;
+		if (msg == nullptr) {
+			errstr.clear();
+			return ecServerOOM;
+		}
 		msgvec.push_back(std::move(msg));
 		auto pembedded = msgvec.back().get();
-		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
-			return false;
-		auto err = oxcical_import_internal("PUBLISH", false,
-		           calendartype, pical, event_list, alloc, get_propids,
-		           username_to_entryid, pembedded, nullptr, nullptr,
-		           nullptr, nullptr);
-		if (err != nullptr) {
-			mlog(LV_ERR, "%s", err);
-			return false;
+		auto err = pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment");
+		if (err != ecSuccess) {
+			errstr.clear();
+			return err;
 		}
+		err = oxcical_import_internal("PUBLISH", false, calendartype,
+		      pical, event_list, alloc, get_propids,
+		      username_to_entryid, pembedded, nullptr, nullptr,
+		      nullptr, nullptr, errstr);
+		if (err != ecSuccess)
+			return err;
 	}
-	return true;
+	return ecSuccess;
 }
 
 #define E_2201 "E-2201: get_propids failed for an unspecified reason"
@@ -2804,10 +2898,10 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 	}
 	piline = pical.get_line("METHOD");
 	if (piline == nullptr) {
-		if (!oxcical_import_events(calendartype,
-		    pical, uid_list, alloc, get_propids,
-		    username_to_entryid, msgvec))
-			return ecError;
+		auto err = oxcical_import_events(calendartype, pical, uid_list,
+		           alloc, get_propids, username_to_entryid, msgvec, errstr);
+		if (err != ecSuccess)
+			return err;
 		finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
 		return ecSuccess;
 	}
@@ -2816,10 +2910,11 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 	if (pvalue != nullptr) {
 		if (strcasecmp(pvalue, "PUBLISH") == 0) {
 			if (uid_list.size() > 1) {
-				if (!oxcical_import_events(calendartype, pical,
-				    uid_list, alloc, get_propids,
-				    username_to_entryid, msgvec))
-					return ecError;
+				auto err = oxcical_import_events(calendartype,
+				           pical, uid_list, alloc, get_propids,
+				           username_to_entryid, msgvec, errstr);
+				if (err != ecSuccess)
+					return err;
 				finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
 				return ecSuccess;
 			}
@@ -2858,17 +2953,14 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 		return ecMAPIOOM;
 	msgvec.push_back(std::move(msg));
 	auto pmsg = msgvec.back().get();
-	auto ecr = pmsg->proplist.set(PR_MESSAGE_CLASS, mclass);
-	if (ecr != ecSuccess)
-		return ecr;
-	auto err = oxcical_import_internal(pvalue, b_proposal,
-	           calendartype, pical, uid_list.begin()->second, alloc,
-	           get_propids, username_to_entryid, pmsg,
-	           nullptr, nullptr, nullptr, nullptr);
-	if (err != nullptr) {
-		errstr = err;
-		return ecError;
-	}
+	auto err = pmsg->proplist.set(PR_MESSAGE_CLASS, mclass);
+	if (err != ecSuccess)
+		return err;
+	err = oxcical_import_internal(pvalue, b_proposal, calendartype, pical,
+	      uid_list.begin()->second, alloc, get_propids, username_to_entryid,
+	      pmsg, nullptr, nullptr, nullptr, nullptr, errstr);
+	if (err != ecSuccess)
+		return err;
 	finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
