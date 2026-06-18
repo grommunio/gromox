@@ -1926,7 +1926,7 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 	                    static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel)  : nullptr;
 	auto pchannel_out = pcontext->channel_type == hchannel_type::out ?
 	                    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel) : nullptr;
-	auto frag_length  = pcontext->channel_type == hchannel_type::in ?
+	auto frag_length  = pchannel_in != nullptr ?
 	                    pchannel_in->frag_length : pchannel_out->frag_length;
 	auto tmp_len = pcontext->stream_in.get_total_length();
 	if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2 ||
@@ -1980,7 +1980,7 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 		auto pfrag = &pbd[DCERPC_FRAG_LEN_OFFSET];
 		frag_length = (pbd[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE) ?
 			      le16p_to_cpu(pfrag) : be16p_to_cpu(pfrag);
-		if (pcontext->channel_type == hchannel_type::in)
+		if (pchannel_in != nullptr)
 			pchannel_in->frag_length = frag_length;
 		else
 			pchannel_out->frag_length = frag_length;
@@ -1992,7 +1992,7 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 	DCERPC_CALL *pcall = nullptr;
 	auto result = pdu_processor_rts_input(static_cast<char *>(pbuff),
 		 frag_length, &pcall);
-	if (pcontext->channel_type == hchannel_type::in &&
+	if (pchannel_in != nullptr &&
 	    pchannel_in->channel_stat == hchannel_stat::opened) {
 		if (PDU_PROCESSOR_ERROR == result) {
 			/* ignore rts processing error under this condition */
@@ -2039,7 +2039,7 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 	}
 
 	pcontext->stream_in.fwd_read_ptr(frag_length);
-	if (pcontext->channel_type == hchannel_type::in)
+	if (pchannel_in != nullptr)
 		pchannel_in->frag_length = 0;
 	else
 		pchannel_out->frag_length = 0;
@@ -2057,7 +2057,7 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 		/* do nothing */
 		return tproc_status::cont;
 	case PDU_PROCESSOR_OUTPUT: {
-		if (pcontext->channel_type == hchannel_type::out) {
+		if (pchannel_out != nullptr) {
 			/* only under two conditions below, out channel
 			   will produce PDU_PROCESSOR_OUTPUT */
 			if (pchannel_out->channel_stat != hchannel_stat::openstart &&
