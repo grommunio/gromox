@@ -2525,25 +2525,32 @@ static bool oxcical_import_events(uint16_t calendartype,
 
 #define E_2201 "E-2201: get_propids failed for an unspecified reason"
 
-static const char *oxcical_import_todo(const ical &pical,
+static ec_error_t oxcical_import_todo(const ical &pical,
     const ical_component &comp, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids, MESSAGE_CONTENT *pmsg)
+    GET_PROPIDS get_propids, MESSAGE_CONTENT *pmsg, std::string &errstr) try
 {
 	static constexpr uint8_t le_true = 1;
 	namemap phash;
 	uint16_t last_propid = 0x8000;
-	if (!oxcical_parse_categories(comp, phash, &last_propid, pmsg))
-		return "E-2191: oxcical_parse_categories returned an unspecified error";
-	if (!oxcical_parse_class(comp, pmsg))
-		return "E-2192: oxcical_parse_class returned an unspecified error";
-	if (!oxcical_parse_body(comp, "", pmsg))
-		return "E-2705: oxcical_parse_body returned an unspecified error";
-	if (!oxcical_parse_html(comp, pmsg))
-		return "E-2193: oxcical_parse_html returned an unspecified error";
-	if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg))
-		return "E-2194: oxcical_parse_dtstamp returned an unspecified error";
-	if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr))
-		return "E-2706: oxcical_parse_summary returned an unspecified error";
+	if (!oxcical_parse_categories(comp, phash, &last_propid, pmsg)) {
+		errstr = "E-2191: oxcical_parse_categories returned an unspecified error";
+		return ecInvalidParam;
+	} else if (!oxcical_parse_class(comp, pmsg)) {
+		errstr = "E-2192: oxcical_parse_class returned an unspecified error";
+		return ecInvalidParam;
+	} else if (!oxcical_parse_body(comp, "", pmsg)) {
+		errstr = "E-2705: oxcical_parse_body returned an unspecified error";
+		return ecInvalidParam;
+	} else if (!oxcical_parse_html(comp, pmsg)) {
+		errstr = "E-2193: oxcical_parse_html returned an unspecified error";
+		return ecInvalidParam;
+	} else if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg)) {
+		errstr = "E-2194: oxcical_parse_dtstamp returned an unspecified error";
+		return ecInvalidParam;
+	} else if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr)) {
+		errstr = "E-2706: oxcical_parse_summary returned an unspecified error";
+		return ecInvalidParam;
+	}
 
 	const PROPERTY_NAME namequeries[] = {
 		{MNID_ID, PSETID_Task, PidLidTaskStatus},
@@ -2557,8 +2564,10 @@ static const char *oxcical_import_todo(const ical &pical,
 	static_assert(l_completeflag + 1 == std::size(namequeries));
 	const PROPNAME_ARRAY propnames = {std::size(namequeries), deconst(namequeries)};
 	PROPID_ARRAY propids;
-	if (!get_propids(&propnames, &propids) || propids.size() != propnames.size())
-		return E_2201;
+	if (!get_propids(&propnames, &propids) || propids.size() != propnames.size()) {
+		errstr = E_2201;
+		return ecRpcFailed;
+	}
 
 	auto line = comp.get_line("STATUS");
 	if (line != nullptr) {
@@ -2629,7 +2638,10 @@ static const char *oxcical_import_todo(const ical &pical,
 
 	ical_time itime{};
 	oxcical_parse_uid(comp, itime, alloc, phash, &last_propid, pmsg);
-	return nullptr;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2946: ENOMEM");
+	return ecServerOOM;
 }
 
 static const char *oxcical_import_journal(const ical &pical,
@@ -2760,11 +2772,9 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Task") != ecSuccess)
 			return ecError;
 		auto err = oxcical_import_todo(pical, *first_comp, alloc,
-		           get_propids, pmsg);
-		if (err != nullptr) {
-			errstr = err;
-			return ecError;
-		}
+		           get_propids, pmsg, errstr);
+		if (err != ecSuccess)
+			return err;
 		finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
 		return ecSuccess;
 	} else if (strcasecmp(first_comp->m_name.c_str(), "VJOURNAL") == 0) {
