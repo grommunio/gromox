@@ -185,10 +185,10 @@ ec_error_t cvt_username_to_essdn(const char *username, const char *org,
     GET_USER_IDS get_uids, GET_DOMAIN_IDS get_dids, std::string &essdn) try
 {
 	unsigned int user_id = 0, domain_id = 0;
-	const char *ps_domain = nullptr, *at = nullptr;
+	const char *ps_domain = nullptr;
 	if (strncmp(username, "public.folder.root@", 19) == 0)
 		ps_domain = username + 19;
-	else if ((at = strchr(username, '@')) == nullptr)
+	else if (strchr(username, '@') == nullptr)
 		ps_domain = username;
 	if (ps_domain != nullptr) {
 		if (!get_dids(ps_domain, &domain_id, nullptr))
