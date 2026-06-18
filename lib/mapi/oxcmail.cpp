@@ -134,7 +134,7 @@ static GET_USER_IDS oxcmail_get_user_ids;
 static GET_DOMAIN_IDS oxcmail_get_domain_ids;
 static GET_USERNAME oxcmail_get_username;
 
-static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
+static ec_error_t namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
 	/* Avoid uninitialized read when the copy/transfer is made */
 	if (el.kind == MNID_ID)
@@ -142,12 +142,12 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 	else
 		el.lid = 0;
 	if (phash.size() >= namemap_limit)
-		return -ENOSPC;
+		return ecNPQuotaExceeded;
 	if (!phash.emplace(id, std::move(el)).second)
-		return -EEXIST;
-	return 0;
+		return ecDuplicateName;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	return -ENOMEM;
+	return ecMAPIOOM;
 }
 
 BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS get_user_ids,
@@ -769,7 +769,7 @@ static BOOL oxcmail_parse_content_class(const char *field, const MAIL *pmail,
 			if (tmp_guid.from_str(tmp_class)) {
 				PROPERTY_NAME propname = {MNID_ID, PSETID_Common,
 				                         PidLidInfoPathFromName};
-				if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+				if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 					return FALSE;
 				uint32_t tag = PROP_TAG(pick_strtype(ptoken), *plast_propid);
 				if (pproplist->set(tag, ptoken) != ecSuccess)
@@ -782,7 +782,7 @@ static BOOL oxcmail_parse_content_class(const char *field, const MAIL *pmail,
 	} else {
 		PROPERTY_NAME propname = {MNID_STRING, PS_INTERNET_HEADERS,
 		                         0, deconst(PidNameContentClass)};
-		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+		if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 			return FALSE;
 		uint32_t tag = PROP_TAG(pick_strtype(field), *plast_propid);
 		if (pproplist->set(tag, field) != ecSuccess)
@@ -802,7 +802,7 @@ static BOOL oxcmail_parse_message_flag(const char *field,
 	uint32_t tmp_int32;
 	
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidFlagRequest};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return FALSE;
 	uint32_t tag = PROP_TAG(pick_strtype(field), *plast_propid);
 	if (pproplist->set(tag, field) != ecSuccess)
@@ -821,7 +821,7 @@ static BOOL oxcmail_parse_message_flag(const char *field,
 	}
 	if (str != nullptr) {
 		propname = {MNID_ID, PSETID_Common, PidLidFlagRequest};
-		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+		if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 			return FALSE;
 		tag = PROP_TAG(b_unicode ? PT_UNICODE : PT_STRING8, *plast_propid);
 		if (pproplist->set(tag, str) != ecSuccess)
@@ -830,7 +830,7 @@ static BOOL oxcmail_parse_message_flag(const char *field,
 	}
 	
 	propname = {MNID_ID, PSETID_Task, PidLidTaskStatus};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return FALSE;
 	tmp_int32 = 0;
 	if (pproplist->set(PROP_TAG(PT_LONG, *plast_propid), &tmp_int32) != ecSuccess)
@@ -838,7 +838,7 @@ static BOOL oxcmail_parse_message_flag(const char *field,
 	(*plast_propid) ++;
 	
 	propname = {MNID_ID, PSETID_Task, PidLidTaskComplete};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return FALSE;
 	tmp_byte = 0;
 	if (pproplist->set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
@@ -846,7 +846,7 @@ static BOOL oxcmail_parse_message_flag(const char *field,
 	(*plast_propid) ++;
 	
 	propname = {MNID_ID, PSETID_Task, PidLidPercentComplete};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return FALSE;
 	tmp_double = 0.0;
 	if (pproplist->set(PROP_TAG(PT_DOUBLE, *plast_propid), &tmp_double) != ecSuccess)
@@ -864,7 +864,7 @@ static BOOL oxcmail_parse_classified(const char *field, uint16_t *plast_propid,
 	if (strcasecmp(field, "true") != 0 && strcasecmp(field, "false") != 0)
 		return TRUE;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidClassified};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return FALSE;
 	tmp_byte = 1;
 	if (pproplist->set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
@@ -879,7 +879,7 @@ static BOOL oxcmail_parse_classkeep(const char *field, uint16_t *plast_propid,
 	if (strcasecmp(field, "true") != 0 && strcasecmp(field, "false") != 0)
 		return TRUE;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidClassificationKeep};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return FALSE;
 	uint8_t tmp_byte = strcasecmp(field, "true") == 0;
 	if (pproplist->set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
@@ -892,7 +892,7 @@ static BOOL oxcmail_parse_classification(const char *field,
     uint16_t *plast_propid, namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidClassification};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return FALSE;
 	uint32_t tag = PROP_TAG(pick_strtype(field), *plast_propid);
 	if (pproplist->set(tag, field) != ecSuccess)
@@ -905,7 +905,7 @@ static BOOL oxcmail_parse_classdesc(const char *field, uint16_t *plast_propid,
     namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidClassificationDescription};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return FALSE;
 	uint32_t tag = PROP_TAG(pick_strtype(field), *plast_propid);
 	if (pproplist->set(tag, field) != ecSuccess)
@@ -918,7 +918,7 @@ static BOOL oxcmail_parse_classid(const char *field, uint16_t *plast_propid,
     namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidClassificationGuid};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return FALSE;
 	uint32_t tag = PROP_TAG(pick_strtype(field), *plast_propid);
 	if (pproplist->set(tag, field) != ecSuccess)
@@ -1057,7 +1057,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		PROPERTY_NAME propname = {MNID_STRING, PS_INTERNET_HEADERS,
 		                         0, deconst("Accept-Language")};
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
-		    std::move(propname)) != 0)
+		    std::move(propname)) != ecSuccess)
 			return FALSE;
 		uint32_t tag = PROP_TAG(pick_strtype(field), penum_param->last_propid);
 		if (penum_param->pmsg->proplist.set(tag, field) != ecSuccess)
@@ -1067,7 +1067,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		PROPERTY_NAME propname = {MNID_STRING, PS_PUBLIC_STRINGS,
 		                         0, deconst(PidNameKeywords)};
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
-		    std::move(propname)) != 0)
+		    std::move(propname)) != ecSuccess)
 			return FALSE;
 		if (!oxcmail::parse_keywords(field,
 		    penum_param->last_propid, penum_param->pmsg->proplist))
@@ -1218,7 +1218,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		PROPERTY_NAME propname = {MNID_STRING, PS_INTERNET_HEADERS,
 		                         0, deconst("Content-Base")};
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
-		    std::move(propname)) != 0)
+		    std::move(propname)) != ecSuccess)
 			return FALSE;
 		uint32_t tag = PROP_TAG(pick_strtype(field), penum_param->last_propid);
 		if (penum_param->pmsg->proplist.set(tag, field) != ecSuccess)
@@ -1241,7 +1241,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 			return FALSE;
 		strcpy(propname.pname, key);
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
-		    std::move(propname)) != 0)
+		    std::move(propname)) != ecSuccess)
 			return FALSE;
 		uint32_t tag = PROP_TAG(pick_strtype(field), penum_param->last_propid);
 		if (penum_param->pmsg->proplist.set(tag, field) != ecSuccess)
@@ -2212,7 +2212,7 @@ static BOOL oxcmail_parse_encrypted(const MIME *phead, uint16_t *plast_propid,
 	if (!phead->get_field("Content-Type", tmp_buff, std::size(tmp_buff)))
 		return FALSE;
 	PROPERTY_NAME propname = {MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Content-Type")};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess ||
 	    pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), tmp_buff) != ecSuccess)
 		return FALSE;
 	(*plast_propid) ++;
