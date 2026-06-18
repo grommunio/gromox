@@ -3022,13 +3022,12 @@ static int me_pdtlu(std::span<char *> argv, int sockd) try
 	if (ret != 0)
 		return ret;
 	for (const auto &dt : temp_list) {
-		temp_len = gx_snprintf(temp_buff, std::size(temp_buff), "- ");
 		Json::Value digest;
 		if (me_get_digest(pidb->psqlite, dt.c_str(), digest) == 0)
 			digest = Json::objectValue;
 		auto djson = json_to_str(digest);
-		djson.insert(0, temp_buff);
-		djson.append("\r\n");
+		djson.insert(0, "- ", 2);
+		djson.append("\r\n", 2);
 		ret = cmd_write(sockd, djson.c_str(), djson.size());
 		if (ret != 0)
 			return ret;
