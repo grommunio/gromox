@@ -2121,6 +2121,12 @@ int icp_list(std::span<std::string> argv, imap_context &ctx) try
 	bool want_sub_attr = (sel & LSEL_SUBSCRIBED) || (ret_opt & LRET_SUBSCRIBED);
 	bool only_sub      = sel & LSEL_SUBSCRIBED;
 	bool recursive     = sel & LSEL_RECURSIVE;
+	/*
+	 * RFC 5258 §3 / RFC 9051 §6.3.9.1: RECURSIVEMATCH is not a selection
+	 * option in its own right.
+	 */
+	if (recursive && (sel & ~(unsigned(LSEL_RECURSIVE) | unsigned(LSEL_REMOTE))) == 0)
+		return 1800;
 	if (reference.size() >= 1024)
 		return 1800;
 	for (const auto &p : patterns)
