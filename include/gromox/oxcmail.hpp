@@ -69,7 +69,7 @@ class GX_EXPORT oxcmail_converter {
 };
 
 struct GX_EXPORT oxcical_converter {
-	ec_error_t ical_to_mapi_multi(const ical &, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
+	ec_error_t ical_to_mapi_multi(const ical &, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &, std::string &);
 	std::unique_ptr<message_content, gromox::mc_delete> ical_to_mapi_single(const ical &);
 	bool mapi_to_ical(const message_content &, ical &);
 

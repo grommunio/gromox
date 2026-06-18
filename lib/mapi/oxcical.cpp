@@ -2734,7 +2734,7 @@ static uint32_t oxcical_get_calendartype(const ical_line *piline)
  * messages into @finalvec.
  */
 ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
-    std::vector<message_ptr> &finalvec)
+    std::vector<message_ptr> &finalvec, std::string &errstr) try
 {
 	bool b_proposal;
 	const char *pvalue = nullptr, *pvalue1 = nullptr;
@@ -2747,8 +2747,8 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 	uidxevent_list_t uid_list;
 	if (!oxcical_classify_calendar(pical, uid_list) ||
 	    uid_list.size() == 0) {
-		mlog(LV_ERR, "E-2412: iCal import data contained no VEVENTs with UIDs");
-		return ecNotFound;
+		errstr = "E-2412: iCal data contained no VEVENTs with UIDs";
+		return ecInvalidParam;
 	}
 	auto first_comp = uid_list.begin()->second.front();
 	if (strcasecmp(first_comp->m_name.c_str(), "VTODO") == 0) {
@@ -2762,7 +2762,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 		auto err = oxcical_import_todo(pical, *first_comp, alloc,
 		           get_propids, pmsg);
 		if (err != nullptr) {
-			mlog(LV_ERR, "%s", err);
+			errstr = err;
 			return ecError;
 		}
 		finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
@@ -2778,7 +2778,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 		auto err = oxcical_import_journal(pical, *first_comp, alloc,
 			  pmsg);
 		if (err != nullptr) {
-			mlog(LV_ERR, "%s", err);
+			errstr = err;
 			return ecError;
 		}
 		finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
@@ -2848,11 +2848,14 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 	           get_propids, username_to_entryid, pmsg,
 	           nullptr, nullptr, nullptr, nullptr);
 	if (err != nullptr) {
-		mlog(LV_ERR, "%s", err);
+		errstr = err;
 		return ecError;
 	}
 	finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2947: ENOMEM");
+	return ecMAPIOOM;
 }
 
 /**
@@ -2866,7 +2869,13 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 message_ptr oxcical_converter::ical_to_mapi_single(const ical &pical)
 {
 	std::vector<message_ptr> vec;
-	if (ical_to_mapi_multi(pical, vec) != ecSuccess || vec.size() == 0)
+	std::string errstr;
+	auto err = ical_to_mapi_multi(pical, vec, errstr);
+	if (err != ecSuccess) {
+		mlog(LV_ERR, "%s", errstr.c_str());
+		return nullptr;
+	}
+	if (vec.size() == 0)
 		return nullptr;
 	if (vec.size() == 1)
 		return std::move(vec.front());

@@ -1818,11 +1818,16 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 		return ecError;
 	common_util_set_dir(store->get_dir());
 
+	std::string errstr;
 	oxcical_converter cvt;
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids_create;
 	cvt.username_to_entryid = common_util_username_to_entryid;
-	return cvt.ical_to_mapi_multi(icobj, msgvec);
+	auto err = cvt.ical_to_mapi_multi(icobj, msgvec, errstr);
+	if (err != ecSuccess)
+		mlog(LV_ERR, "ical_to_mapi_multi: %s", errstr.size() > 0 ?
+			errstr.c_str() : mapi_strerror(err));
+	return err;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;

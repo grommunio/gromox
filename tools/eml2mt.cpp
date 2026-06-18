@@ -320,19 +320,17 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		return EIO;
 	}
 
+	std::string errstr;
 	oxcical_converter cvt;
 	cvt.alloc = zalloc;
 	cvt.get_propids = do_get_propids;
 	cvt.username_to_entryid = oxcmail_username_to_entryid;
-	auto err = cvt.ical_to_mapi_multi(ical, mv);
-	if (err == ecNotFound) {
-		fprintf(stderr, "%s: Not an iCalendar object, or an incomplete one.\n", file);
-		return EIO;
-	} else if (err != ecSuccess) {
-		fprintf(stderr, "%s: Import rejected for an unspecified reason (usually a too-strict parser).\n", file);
-		return EIO;
-	}
-	return 0;
+	auto err = cvt.ical_to_mapi_multi(ical, mv, errstr);
+	if (err == ecSuccess)
+		return 0;
+	fprintf(stderr, "%s: %s\n", file, errstr.size() > 0 ?
+		errstr.c_str() : mapi_strerror(err));
+	return EIO;
 }
 
 static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
