@@ -2214,8 +2214,27 @@ int icp_list(std::span<std::string> argv, imap_context &ctx) try
 		return 0;
 	};
 
+	/*
+	 * RECURSIVEMATCH (RFC 5258 §3.5): a matching mailbox that does not
+	 * itself satisfy the SUBSCRIBED selection is still reported -- without
+	 * the \Subscribed attribute but tagged with CHILDINFO -- when it has a
+	 * subscribed descendant that is NOT itself returned by this command.
+	 * "Descendant" = any subscribed name strictly below "<name>/". A
+	 * subscribed descendant that also matches the pattern is returned in
+	 * its own right, so it must not additionally induce a CHILDINFO on the
+	 * parent.
+	 */
+	auto has_sub_descendant = [&](const std::string &name) {
+		auto prefix = name + "/";
+		for (const auto &s : subscribed)
+			if (s.size() > prefix.size() &&
+			    s.compare(0, prefix.size(), prefix) == 0 &&
+			    !match_any(s))
+				return true;
+		return false;
+	};
+
 	ctx.stream.clear();
-	std::set<std::string, dir_tree::cmp> matched_sub;
 	for (const auto &enf : folder_list) {
 		const auto &sys_name = enf.second;
 		auto sp = special_folder(enf.first);
@@ -2224,43 +2243,24 @@ int icp_list(std::span<std::string> argv, imap_context &ctx) try
 			continue;
 		if (only_special && sp == nullptr)
 			continue;
-		if (only_sub && !subbed)
-			continue;
+		const char *childinfo = nullptr;
+		if (only_sub && !subbed) {
+			/*
+			 * Not subscribed: only include it under RECURSIVEMATCH, and
+			 * only if a subscribed descendant exists -- in which case it
+			 * is reported via CHILDINFO rather than as \Subscribed.
+			 */
+			if (!recursive || !has_sub_descendant(sys_name))
+				continue;
+			childinfo = " (CHILDINFO (\"SUBSCRIBED\"))";
+		}
 		if (!emitted.insert(sys_name).second)
 			continue;
-		if (only_sub && subbed)
-			matched_sub.insert(sys_name);
-		auto rc = write_entry(sys_name, enf.first, subbed, sp, nullptr);
+		/* subbed only contributes \Subscribed when it is a real match. */
+		auto rc = write_entry(sys_name, enf.first, childinfo == nullptr && subbed,
+		          sp, childinfo);
 		if (rc != 0)
 			return rc;
-	}
-
-	/*
-	 * RECURSIVEMATCH (RFC 5258 §3.5): Report ancestors that match the
-	 * pattern but not the SUBSCRIBED selection, yet have a subscribed
-	 * descendant; tag them with CHILDINFO.
-	 */
-	if (recursive && only_sub && !matched_sub.empty()) {
-		std::set<std::string, dir_tree::cmp> ancestors;
-		for (const auto &name : matched_sub) {
-			size_t pos = 0;
-			for (auto sl = name.find('/'); sl != std::string::npos;
-			     sl = name.find('/', pos)) {
-				ancestors.insert(name.substr(0, sl));
-				pos = sl + 1;
-			}
-		}
-		for (const auto &enf : folder_list) {
-			const auto &sys_name = enf.second;
-			if (ancestors.count(sys_name) == 0 || !match_any(sys_name))
-				continue;
-			if (!emitted.insert(sys_name).second)
-				continue;
-			auto rc = write_entry(sys_name, enf.first, false,
-			          special_folder(enf.first), " (CHILDINFO (\"SUBSCRIBED\"))");
-			if (rc != 0)
-				return rc;
-		}
 	}
 
 	folder_list.clear();
