@@ -335,39 +335,49 @@ static void *ev_scanwork(void *param)
 
 static int ev_acceptwork(generic_connection &&conn)
 {
-	ENQUEUE_NODE *penqueue;
+	enum { EW_OK, EW_ACL, EW_MAXCONN, EW_NOMEM };
+	ENQUEUE_NODE *penqueue = nullptr;
 
+	auto ret = [&]() {
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    conn.client_addr) == g_acl_list.cend()) {
-			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
-				/* ignore */;
-			return 0;
-		}
+		    conn.client_addr) == g_acl_list.cend())
+			return EW_ACL;
 
 		std::unique_lock eq_hold(g_enqueue_lock);
-		if (g_enqueue_list.size() + 1 + g_enqueue_list1.size() >= g_threads_num) {
-			eq_hold.unlock();
-			if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
-				/* ignore */;
-			return 0;
-		}
+		if (g_enqueue_list.size() + 1 + g_enqueue_list1.size() >= g_threads_num)
+			return EW_MAXCONN;
+
 		try {
 			g_enqueue_list1.emplace_back();
 			penqueue = &g_enqueue_list1.back();
 		} catch (const std::bad_alloc &) {
-			eq_hold.unlock();
-			if (HXio_fullwrite(conn.sockd, "FALSE Not enough memory\r\n", 25) < 0)
-				/* ignore */;
-			return 0;
+			return EW_NOMEM;
 		}
 
 		static_cast<generic_connection &>(*penqueue) = std::move(conn);
-		eq_hold.unlock();
+		return EW_OK;
+	}();
+	switch (ret) {
+	case EW_ACL:
+		if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
+			/* ignore */;
+		return 0;
+	case EW_MAXCONN:
+		if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
+			/* ignore */;
+		return 0;
+	case EW_NOMEM:
+		if (HXio_fullwrite(conn.sockd, "FALSE Not enough memory\r\n", 25) < 0)
+			/* ignore */;
+		return 0;
+	case EW_OK:
 		if (HXio_fullwrite(penqueue->sockd, "OK\r\n", 4) < 0)
 			penqueue->reset();
 		g_enqueue_waken_cond.notify_one();
-
-	return 0;
+		return 0;
+	default:
+		return -1;
+	}
 }
 
 using eq_iter_t = std::list<ENQUEUE_NODE>::iterator;
