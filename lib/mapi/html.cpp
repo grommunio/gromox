@@ -338,20 +338,24 @@ static ec_error_t html_init_writer(RTF_WRITER *pwriter)
 	return ecSuccess;
 } 
  
+/**
+ * Convert a single UTF-8 codepoint (may be multiple bytes) in @src
+ * to a UTF-16 codepoint sequence.
+ */
 static std::pair<uint16_t, uint16_t>
 html_utf8_to_utf16(iconv_t cd, const char *src, size_t ilen)
 {
-	std::pair<uint16_t, uint16_t> wchar{};
-	auto pin = deconst(src);
-	auto pout = reinterpret_cast<char *>(&wchar);
-	auto olen = sizeof(wchar);
+	std::pair<uint16_t, uint16_t> seq{};
+	auto pin  = deconst(src);
+	auto pout = reinterpret_cast<char *>(&seq);
+	auto olen = sizeof(seq);
 	iconv(cd, nullptr, nullptr, nullptr, nullptr);
-	auto ret = iconv(cd, &pin, &ilen, &pout, &olen);
+	auto ret  = iconv(cd, &pin, &ilen, &pout, &olen);
 	if (ret == static_cast<size_t>(-1))
-		wchar = {0xFFFD, 0};
+		seq = {0xfffd, 0};
 	else
-		wchar = {le16_to_cpu(wchar.first), le16_to_cpu(wchar.second)};
-	return wchar;
+		seq = {le16_to_cpu(seq.first), le16_to_cpu(seq.second)};
+	return seq;
 }
 
 static ec_error_t html_write_string(RTF_WRITER *pwriter, const char *string)
