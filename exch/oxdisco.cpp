@@ -728,8 +728,9 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 			return -1;
 		err = cvt_username_to_mdbdn(email, x500_org_name.c_str(),
 		      user_id, mdbdn);
-	}
-	else {
+		if (err != ecSuccess)
+			mdbdn.clear();
+	} else {
 		DisplayName = public_folder;
 		unsigned int org_id = 0;
 		if (!mysql_adaptor_get_domain_ids(domain, &domain_id, &org_id))
@@ -747,6 +748,8 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 			return -1;
 		err = cvt_username_to_mdbdn(email, x500_org_name.c_str(),
 		      user_id, mdbdn);
+		if (err != ecSuccess)
+			mdbdn.clear();
 	}
 
 	add_child(resp_user, "DisplayName", DisplayName);
@@ -989,7 +992,6 @@ http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) co
 	if (error == true) {
 		respdoc["ErrorCode"] = missing_parameter;
 		respdoc["ErrorMessage"] = missing_parameter_message;
-		error = false;
 	}
 	int code = 200;
 	Json::StreamWriterBuilder swb;
