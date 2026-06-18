@@ -823,7 +823,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 	} else {
 		eid_t eid{};
 		std::string essdn_s;
-		const char *essdn = essdn_s.c_str();
+		const char *essdn;
 
 		auto type = common_util_get_messaging_entryid_type(entryid);
 		switch (type) {
