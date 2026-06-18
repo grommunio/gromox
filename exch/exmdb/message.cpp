@@ -989,7 +989,6 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 	if (!pdb)
 		return FALSE;
 	auto mid_val = rop_util_get_gc_value(message_id);
-	mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!cu_remove_properties(MAPI_MESSAGE, mid_val,
 	    pdb->psqlite, pproptags))

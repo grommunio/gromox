@@ -1754,8 +1754,6 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			pstmt.finalize();
 			uint64_t inst_id = 0, row_id = 0;
 			if (0 == idx) {
-				row_id = 0;
-				inst_id = 0;
 				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
 					" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
 					"%u, 0, 0, 1)", ptable->table_id, LLU{message_id},
