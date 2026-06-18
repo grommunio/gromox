@@ -936,20 +936,19 @@ static BOOL instance_read_message(const MESSAGE_CONTENT *src,
 		}
 	}
 	size_t i = src->proplist.count;
-	auto wtf = reinterpret_cast<const TPROPVAL_ARRAY *>(src);
-	auto pnormalized_subject = wtf->get<char>(PR_NORMALIZED_SUBJECT);
+	auto pnormalized_subject = src->proplist.get<char>(PR_NORMALIZED_SUBJECT);
 	if (NULL == pnormalized_subject) {
-		pnormalized_subject = wtf->get<char>(PR_NORMALIZED_SUBJECT_A);
+		pnormalized_subject = src->proplist.get<char>(PR_NORMALIZED_SUBJECT_A);
 		if (NULL != pnormalized_subject) {
-			psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX_A);
+			psubject_prefix = src->proplist.get<char>(PR_SUBJECT_PREFIX_A);
 			auto pvalue = std::string(znul(psubject_prefix)) + znul(pnormalized_subject);
 			dst->proplist.ppropval[i].pvalue = common_util_dup(pvalue);
 			dst->proplist.ppropval[i].proptag = PR_SUBJECT_A;
 			++dst->proplist.count;
 		} else {
-			psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX);
+			psubject_prefix = src->proplist.get<char>(PR_SUBJECT_PREFIX);
 			if (NULL == psubject_prefix) {
-				psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX_A);
+				psubject_prefix = src->proplist.get<char>(PR_SUBJECT_PREFIX_A);
 				if (NULL != psubject_prefix) {
 					dst->proplist.ppropval[i].proptag = PR_SUBJECT_A;
 					dst->proplist.ppropval[i].pvalue =
@@ -964,7 +963,7 @@ static BOOL instance_read_message(const MESSAGE_CONTENT *src,
 			}
 		}
 	} else {
-		psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX);
+		psubject_prefix = src->proplist.get<char>(PR_SUBJECT_PREFIX);
 		auto pvalue = std::string(znul(psubject_prefix)) + znul(pnormalized_subject);
 		dst->proplist.ppropval[i].pvalue = common_util_dup(pvalue);
 		dst->proplist.ppropval[i].proptag = PR_SUBJECT;
