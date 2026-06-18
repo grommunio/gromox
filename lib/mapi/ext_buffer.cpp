@@ -845,6 +845,10 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 		/* MS-OXCDATA v19 §2.2.4.3 */
 		char dll[14];
 		TRY(g_bytes(dll, 14));
+		if (strcasecmp(dll, "emsmdb.dll") != 0)
+			/* bail out on e.g. mspst.dll */
+			return pack_result::format;
+		/* EMSMDB-specific portion */
 		TRY(g_uint32(&r->wrapped_flags));
 		TRY(g_guid(&r->wrapped_provider_uid));
 		TRY(g_uint32(&r->wrapped_type));
