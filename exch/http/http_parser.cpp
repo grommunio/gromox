@@ -201,7 +201,7 @@ static void httpctx_report(const HTTP_CONTEXT &ctx, size_t i)
 		return;
 	mlog(LV_INFO, "%-3zu  %-2d  [%s]:%hu->[%s]:%hu", i, cn.sockd,
 	        cn.client_addr, cn.client_port, cn.server_addr, cn.server_port);
-	const char *chtyp = "NONE";
+	const char *chtyp;
 	switch (ctx.channel_type) {
 	using enum hchannel_type;
 	case none: chtyp = "NONE"; break;
