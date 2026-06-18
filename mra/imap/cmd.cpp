@@ -2993,7 +2993,8 @@ int icp_dval(const char *tag, imap_context &ctx, unsigned int ret)
 		code = 1907;
 	auto str = resource_get_imap_code(code, 1);
 	char buff[1024];
-	tag = tag_or_bug((ret & DISPATCH_TAG) ? ctx.tag_string : tag);
+	tag = tag_or_bug((ret & DISPATCH_TAG) ? ctx.tag_string :
+	                 tag != nullptr ? tag : "*");
 	if (trycreate && strncmp(str, "NO ", 3) == 0)
 		str += 2; /* avoid double NO */
 	auto len = gx_snprintf(buff, std::size(buff), "%s%s %s%s", tag,
