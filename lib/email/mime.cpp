@@ -1542,7 +1542,7 @@ static bool mime_parse_multiple(MIME *pmime)
 	begin = pmime->content_begin;
 	auto end = begin + pmime->content_length - boundary_len;
 	auto ptr = begin;
-	for (ptr=begin; ptr < end; ptr++) {
+	for (; ptr < end; ptr++) {
 		if (ptr[0] != '-' || ptr[1] != '-' ||
 		    strncmp(pmime->boundary_string, ptr + 2, boundary_len) != 0)
 			continue;
