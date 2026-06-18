@@ -170,6 +170,7 @@ unsigned int g_midb_cache_interval, g_midb_reload_interval;
 unsigned long long g_midb_busy_timeout_ns;
 
 static constexpr time_duration DB_LOCK_TIMEOUT = std::chrono::seconds(60);
+static constexpr size_t SYNC_COMMIT_CHUNK = 4096; /* multiple sqlite transactions for big operations */
 static size_t g_table_size;
 static gromox::atomic_bool g_midb_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
@@ -1507,7 +1508,37 @@ static bool me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
 	return me_insert_message(stm_insert, puidnext, message_id, pidb->psqlite, e);
 }
 
-static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
+/**
+ * Commit the in-progress resync transaction and start a fresh one. This
+ * function is used to checkpoint a long operation like X-RSYF at chunk
+ * boundaries. The function also distinguishes SQLITE_FULL from other error
+ * codes, so that an operator sees the real cause (disk/WAL exhaustion) rather
+ * than a generic failure. On any commit error, the transaction is left for the
+ * caller's xtransaction dtor to roll back.
+ *
+ * Returns a bool indicating the success of the entire commit—rebegin cycle.
+ */
+static bool me_sync_checkpoint(sqlite3 *db, xtransaction &xact, const char *dir)
+{
+	auto ret = xact.commit();
+	if (ret == SQLITE_FULL) {
+		mlog(LV_ERR, "E-2456: sync_mailbox %s: disk or WAL full while committing resync; aborting", dir);
+		return false;
+	} else if (ret != SQLITE_OK) {
+		mlog(LV_ERR, "E-2457: sync_mailbox %s: commit failed during resync: %s",
+			dir, sqlite3_errstr(ret));
+		return false;
+	}
+	xact = gx_sql_begin(db, txn_mode::write);
+	if (!xact) {
+		mlog(LV_ERR, "E-2458: sync_mailbox %s: could not reopen transaction after checkpoint", dir);
+		return false;
+	}
+	return true;
+}
+
+static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
+    xtransaction *xact = nullptr) try
 {
 	TARRAY_SET rows;
 	uint32_t uidnext;
@@ -1608,6 +1639,47 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		if (++procmsgs % 512 == 0)
 			mlog(LV_NOTICE, "sync_contents %s fld %llu progress: %zu/%zu",
 			        dir, LLU{folder_id}, procmsgs, totalmsgs);
+		/*
+		 * Checkpoint long resyncs so the WAL and the write-lock hold
+		 * stay bounded. The prepared statements survive the
+		 * COMMIT/BEGIN. The folder's commit_max is only advanced once
+		 * the whole folder is done (in me_sync_mailbox), so an
+		 * interrupted resync simply reprocesses this folder next time
+		 * rather than recording it as up to date with partial
+		 * contents.
+		 */
+		if (xact != nullptr && procmsgs % SYNC_COMMIT_CHUNK == 0) {
+			/*
+			 * Reset any statement cursor still positioned on a
+			 * row; SQLite refuses to COMMIT while a statement is
+			 * active.
+			 */
+			stm_select_msg.reset();
+			stm_insert_msg.reset();
+			stm_upd_msg.reset();
+			/*
+			 * Persist folders.uidnext together with this chunk.
+			 * The committed message rows already carry assigned
+			 * uids; if we commit them without advancing the folder
+			 * counter and the resync is then interrupted, the
+			 * rerun would reassign uids starting from the stale
+			 * counter and collide with the retained rows (the
+			 * messages.uid index is not unique, so the collision
+			 * would be silent). Advancing it here keeps the
+			 * durable rows and the counter consistent at every
+			 * commit boundary.
+			 */
+			if (uidnext != uidnext1) {
+				snprintf(sql_string, std::size(sql_string),
+				         "UPDATE folders SET uidnext=%u WHERE folder_id=%llu",
+				         uidnext, LLU{folder_id});
+				if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
+					return false;
+				uidnext1 = uidnext;
+			}
+			if (!me_sync_checkpoint(pidb->psqlite, *xact, dir))
+				return false;
+		}
 	}
 	if (g_midb_stop)
 		return true;
@@ -1856,7 +1928,9 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 			if (stm_select.col_uint64(2) == commit_max && !force_resync)
 				continue;	
 		}
-		if (!me_sync_contents(pidb, folder_id))
+		/* Cleanup so me_sync_contents can end the transaction */
+		stm_select.reset();
+		if (!me_sync_contents(pidb, folder_id, &pidb_transact))
 			return false;
 		if (!b_new) {
 			auto qstr = fmt::format("UPDATE folders SET commit_max={}"
@@ -1898,8 +1972,13 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 		}
 		pstmt.finalize();
 	}
-	if (pidb_transact.commit() != SQLITE_OK)
+	auto cret = pidb_transact.commit();
+	if (cret == SQLITE_FULL) {
+		mlog(LV_ERR, "E-2406: sync_mailbox %s: disk or WAL full while committing resync; aborting", dir);
 		return false;
+	} else if (cret != SQLITE_OK) {
+		return false;
+	}
 	}
 	cl_err.release();
 	if (!exmdb_client->subscribe_notification(dir,
