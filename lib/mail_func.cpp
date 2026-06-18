@@ -1139,7 +1139,7 @@ int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 				char *end;
 				auto uc = strtoul(&p[2], &end, 10);
 				if (end != &p[2] && end != nullptr && *end == ';') {
-					rp += wchar_to_utf8(uc);
+					rp += uchar_to_utf8(uc);
 					i += ilen;
 					p += ilen;
 					break;
@@ -1152,7 +1152,7 @@ int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 			if (it != std::cend(html_entities) && strncasecmp(p, it->input, ilen + 1) == 0)
 				rp += std::string_view(it->output, it->olen);
 			else
-				rp += wchar_to_utf8(0xfffd);
+				rp += uchar_to_utf8(0xfffd);
 			i += ilen;
 			p += ilen;
 			break;

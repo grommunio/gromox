@@ -1514,9 +1514,9 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
 }
 
 /**
- * Convert Unicode code point @wchar to its UTF-8 representation.
+ * Convert Unicode code point @w to its UTF-8 representation.
  */
-std::string wchar_to_utf8(uint32_t w)
+std::string uchar_to_utf8(char32_t w)
 {
 	std::string s;
 	if (w <= 0x7f) {
