@@ -121,7 +121,7 @@ Changes:
   properties with SMTP rather than EX addressing.
 
 
-Gromox 3.5 (2025-02-26)
+Gromox 3.5 (2026-02-26)
 =======================
 
 Enhancements:
