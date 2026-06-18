@@ -2753,13 +2753,22 @@ static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
 }
 
 /**
- * Determine the length of the message prefix, up to three alphanumeric Unicode
- * characters - though we do not recognize combining characters and thus no
- * NFD/NKFD. Returns the number of bytes.
+ * Determine the length of the message prefix, up to three alphanumeric code
+ * points. Combining characters (NFD/NKFD) are not recognized though. Returns
+ * the number of bytes in @s that constitute the prefix.
  */
 static int subj_pfxlen(const char *s) try
 {
-	/* Note we do not recognize NFD/NKFD. Oh well. */
+	/*
+	 * ICU is a large build dependency that we want to do without. NF[K]D
+	 * is not overly prevalent, and iconv & wchar are sufficient in
+	 * practice, e.g. supporting CJK.
+	 *
+	 * iconv to UTF-32 would add a BOM; conversion to UTF-32LE would need a
+	 * subsequent le32_to_cpu call (like what html_utf8_to_utf16 is doing).
+	 * The isw* functions still may not cover the entire Unicode range. So
+	 * we might as well just stay with wchar_t throughout.
+	 */
 	auto ustr = iconvtext(s, "UTF-8", "wchar_t");
 	if (errno != 0)
 		return -1;
