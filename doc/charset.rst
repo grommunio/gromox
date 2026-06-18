@@ -1,6 +1,6 @@
 ..
 	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-	SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+	SPDX-FileCopyrightText: 2025-2026 grommunio GmbH
 
 
 =========================
@@ -28,8 +28,8 @@ instead, e.g.
 	.. code-block:: text
 
 	\fonttbl{\f35 \fcharset128;}
-	{\f35 <0x82><0xAA> actual raw bytes}
-	{\f35 \'82\'aa or using apostrophe encodes}
+	{\f35 <0x82><0xAA> actual raw bytes...}
+	{\f35 \'82\'aa ...or using apostrophe encoding}
 
 Characters outside the ASCII and/or codepage can be expressed with Unicode
 codepoints like so: ``\u199 ?`` (U+00C7) and ``\u8364 ?`` (U+20AC). ``?`` is a
@@ -47,8 +47,10 @@ For mixed single-byte and double-byte text (common in CJK documents), RTF uses:
 * ``\lang`` / ``\langfe`` – language tags that can hint at encoding
 * ``\cpg`` – code page switch within document body
 
-When switching between these modes, the converter flushes any pending
+When switching between these modes, converters may flush any pending
 multi-byte sequences before changing the character interpretation.
+The behavior of the MSWord and the LibreOffice RTF converters differs
+in that regard, and Gromox leans towards the LO-style behavior.
 
 
 HTML
@@ -81,11 +83,11 @@ Plaintext
 The character set for PR_BODY_A data as is given by PR_INTERNET_CPID.
 
 As a consequence, PR_BODY_A and PR_HTML should always have the same character
-set to avoid garbled displaying.
+set to avoid a garbled rendition of the contents.
 
-The character set for PR_BODY_W data is Unicode. The encoding is wchar_t
-in Windows MAPI, UTF-16LE over the network, and Gromox stores it as UTF-8 on
-disk.
+The character set for PR_BODY_W data is context-dependent. The Windows APIs use
+wchar_t (cf. string_props.rst), the Outlook binary network protocols transfer
+it as UTF-16LE, and Gromox stores it within sqlite and on-disk as UTF-8.
 
 
 Rendition
@@ -109,7 +111,5 @@ The ROPs ropOpenMessage, ropCreateMessage, openEmbeddesMessage have a
 codepage argument with which the in-memory message object
 will operate under a possibly different codepage.
 
-The ROP ropGetPropertiesSpecific has a "want_unicode" argument.
-
-For PR_BODY_A, PR_INTERNET_CPID is used. Perhaps the per-connection/per-MO
-codepage only plays a role for other properties like PR_SUBJECT_A?
+The ROP ropGetPropertiesSpecific has a "want_unicode" argument, which can
+influence whether some response properties come out as _A or _W.

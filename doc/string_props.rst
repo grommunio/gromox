@@ -5,12 +5,12 @@ The MSMAPI C API and KGWC mapi4linux API have a ``struct SPropValue`` like so:
 
 .. code-block:: c
 
-   struct SPropValue {
-       union _UPV {
-           char *lpszA;
-           wchar_t *lpszW;
-       };
-   };
+	struct SPropValue {
+		union _UPV {
+			char *lpszA;
+			wchar_t *lpszW;
+		};
+	};
 
 The meaning of the narrow string characters is environment-/locale-dependent
 (LC_CTYPE). This can be a single-byte encoding (e.g. cp1252), multi-byte
@@ -20,7 +20,10 @@ The meaning of the wide string characters is platform-dependent. Under Windows,
 wide chars (``wchar_t``) represent UTF-16 code units (not codepoints). On
 Linux-glibc, wide chars represent UTF-32 code units.
 
-Gromox does not have an MSMAPI/COM-like interface.
+Unlike KGWC, Gromox does not have an MSMAPI/COM-like interface. Command-line
+utilites talking to the Information Store need not deal with functions like
+IMessage::GetProps or the pains of lpszW. Instead, everything is just UTF-8 and
+rather public structs.
 
 
 PHP Application interfaces
