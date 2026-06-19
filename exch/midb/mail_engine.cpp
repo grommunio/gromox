@@ -1873,7 +1873,7 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 	if (stm_select == nullptr)
 		return false;
 	auto stm_insert = gx_sql_prep(pidb->psqlite, "INSERT INTO folders (folder_id, "
-	                  "parent_fid, commit_max, name) VALUES (?, ?, ?, ?)");
+	                  "parent_fid, commit_max, name, unsub) VALUES (?, ?, ?, ?, ?)");
 	if (stm_insert == nullptr)
 		return false;
 	for (const auto &[folder_id, entry] : syncfolderlist) {
@@ -1899,6 +1899,8 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 			stm_insert.bind_int64(2, parent_fid);
 			stm_insert.bind_int64(3, commit_max);
 			stm_insert.bind_text(4, encoded_name);
+			/* Only INBOX gets to be subscribed by default */
+			stm_insert.bind_int64(5, folder_id == PRIVATE_FID_INBOX ? 0 : 1);
 			auto rx = stm_insert.step();
 			if (rx == SQLITE_CONSTRAINT) {
 				mlog(LV_ERR, "E-1224: XXX: Not implemented: midb is unable to cope with folder deletions that occurred while midb was not connected to exmdb");
@@ -4113,12 +4115,14 @@ static BOOL notif_folder_added(IDB_ITEM *pidb,
 		temp_name = std::move(decoded_name) + "/"s + str;
 	}
 	auto stm = gx_sql_prep(pidb->psqlite, "INSERT INTO folders (folder_id, parent_fid, "
-	           "commit_max, name) VALUES (?, ?, ?, ?)");
+	           "commit_max, name, unsub) VALUES (?, ?, ?, ?, ?)");
+	/* Only INBOX gets to be subscribed by default */
 	if (stm == nullptr ||
 	    stm.bind_int64(1, folder_id) != SQLITE_OK ||
 	    stm.bind_int64(2, parent_id) != SQLITE_OK ||
 	    stm.bind_int64(3, commit_max) != SQLITE_OK ||
 	    stm.bind_text(4, temp_name) != SQLITE_OK ||
+	    stm.bind_int64(5, folder_id == PRIVATE_FID_INBOX ? 0 : 1) != SQLITE_OK ||
 	    stm.step() != SQLITE_DONE)
 		return FALSE;
 	return TRUE;
