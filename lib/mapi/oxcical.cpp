@@ -1988,38 +1988,45 @@ static bool oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	return true;
 }
 
-static const ical_component *oxcical_main_event(const event_list_t &evlist, const char **err)
+static const ical_component *oxcical_main_event(const event_list_t &evlist,
+    std::string &errstr) try
 {
-	*err = nullptr;
-	if (evlist.size() == 0)
+	if (evlist.size() == 0) {
+		errstr = "There are no events in this ical object";
 		return nullptr;
-	else if (evlist.size() == 1)
+	} else if (evlist.size() == 1) {
 		return evlist.front();
+	}
+
 	const ical_component *main_event = nullptr;
 	for (const auto &event : evlist) {
 		auto line = event->get_line("RECURRENCE-ID");
 		if (line != nullptr) {
 			if (event->get_line("X-MICROSOFT-RRULE") != nullptr ||
 			    event->get_line("RRULE") != nullptr) {
-				*err = "E-2736: Instance within recurrence set has no RRULE line";
+				errstr = "E-2736: Instance within recurrence set has no RRULE line";
 				return nullptr;
 			}
 			continue;
 		}
 		if (main_event != nullptr) {
-			*err = "E-2737: There is more than one \"main\" event in this calendar object";
+			errstr = "E-2737: There is more than one \"main\" event in this calendar object";
 			return nullptr;
 		}
 		main_event = event;
 		if (main_event->get_line("X-MICROSOFT-RRULE") == nullptr &&
 		    main_event->get_line("RRULE") == nullptr) {
-			*err = "E-2738: Main VEVENT in this calendar object has no RRULE line";
+			errstr = "E-2738: Main VEVENT in this calendar object has no RRULE line";
 			return nullptr;
 		}
 	}
 	if (main_event == nullptr)
-		*err = "E-2739: Some VEVENT.RECURRENCE-ID points to a UID but there was no RRULE line anywhere";
+		errstr = "E-2739: Some VEVENT.RECURRENCE-ID points to a UID but there was no RRULE line anywhere";
 	return main_event;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2948: ENOMEM");
+	errstr = "ENOMEM";
+	return nullptr;
 }
 
 static bool oxcical_parse_allday(const ical_component &main_ev)
@@ -2085,12 +2092,9 @@ static ec_error_t oxcical_import_internal(const char *method,
     EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception,
     std::string &errstr) try
 {
-	const char *mev_error;
-	auto pmain_event = oxcical_main_event(pevent_list, &mev_error);
-	if (pmain_event == nullptr) {
-		errstr = znul(mev_error);
+	auto pmain_event = oxcical_main_event(pevent_list, errstr);
+	if (pmain_event == nullptr)
 		return ecInvalidParam;
-	}
 	if (pexception != nullptr && pext_exception != nullptr) {
 		memset(pexception, 0, sizeof(EXCEPTIONINFO));
 		memset(pext_exception, 0, sizeof(EXTENDEDEXCEPTION));
