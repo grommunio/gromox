@@ -2955,6 +2955,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 	}
 	piline = pical.get_line("METHOD");
 	if (piline == nullptr) {
+		/* Behaves like METHOD:PUBLISH */
 		auto err = oxcical_import_events(calendartype, pical, uid_list,
 		           alloc, get_propids, username_to_entryid, msgvec, errstr);
 		if (err != ecSuccess)
@@ -2965,6 +2966,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 
 	pvalue = piline->get_first_subvalue();
 	if (pvalue != nullptr) {
+		/* RFC 5546 territory */
 		if (strcasecmp(pvalue, "PUBLISH") == 0) {
 			if (uid_list.size() > 1) {
 				auto err = oxcical_import_events(calendartype,

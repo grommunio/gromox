@@ -52,7 +52,7 @@ Generously speaking, Gromox implements parts of at least
   * 1939/2595 (POP3)
   * 2821/2920/3027/5248/5321 (SMTP)
   * 2045/2046/2047/2049/5322 (Internet Mail and MIME)
-  * 5545 (iCalendar)
+  * 5545/5546 (iCalendar, iTIP)
   * 6350 (vCard)
   * 4122 (GUIDs — caveats see doc/glossary.rst)
 

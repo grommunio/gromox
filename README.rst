@@ -133,7 +133,7 @@ Source layout
 * ``lib/``: functions shared on a large scale
 
   * ``lib/email/``: Parser for e-mail, calendar, contacts (RFC 5322,
-    5545, 6350)
+    5545/5546, 6350)
 
   * ``lib/mapi/``: Data structures mostly specific to MAPI
 
