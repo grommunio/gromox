@@ -745,8 +745,8 @@ static unsigned int role_to_rcpttype(const char *r, const char *cu)
 	return MAPI_TO;
 }
 
-static bool oxcical_parse_recipients(const ical_component &main_ev,
-	USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
+static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
+    USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
@@ -766,10 +766,11 @@ static bool oxcical_parse_recipients(const ical_component &main_ev,
 		pmessage_class = "IPM.Note";
 	/* ignore ATTENDEE when METHOD is "PUBLIC" */
 	if (class_match_prefix(pmessage_class, "IPM.Appointment") == 0)
-		return true;
+		return ecSuccess;
+
 	prcpts = tarray_set_init();
 	if (prcpts == nullptr)
-		return false;
+		return ecMAPIOOM;
 	tmp_byte = 0;
 	pmsg->set_rcpts_internal(prcpts);
 	for (const auto &line : main_ev.line_list) {
@@ -795,52 +796,71 @@ static bool oxcical_parse_recipients(const ical_component &main_ev,
 			tmp_byte = 1;
 		pproplist = prcpts->emplace();
 		if (pproplist == nullptr)
-			return false;
-		if (pproplist->set(PR_ADDRTYPE, "SMTP") != ecSuccess ||
-		    pproplist->set(PR_EMAIL_ADDRESS, paddress) != ecSuccess ||
-		    pproplist->set(PR_SMTP_ADDRESS, paddress) != ecSuccess)
-			return false;
+			return ecMAPIOOM;
+		auto err = pproplist->set(PR_ADDRTYPE, "SMTP");
+		if (err != ecSuccess)
+			return err;
+		err = pproplist->set(PR_EMAIL_ADDRESS, paddress);
+		if (err != ecSuccess)
+			return err;
+		err = pproplist->set(PR_SMTP_ADDRESS, paddress);
+		if (err != ecSuccess)
+			return err;
 		if (pdisplay_name == nullptr)
 			pdisplay_name = paddress;
-		if (pproplist->set(PR_DISPLAY_NAME, pdisplay_name) != ecSuccess ||
-		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplay_name) != ecSuccess)
-			return false;
+		err = pproplist->set(PR_DISPLAY_NAME, pdisplay_name);
+		if (err != ecSuccess)
+			return err;
+		err = pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplay_name);
+		if (err != ecSuccess)
+			return err;
 		tmp_bin.pb = tmp_buff;
 		tmp_bin.cb = 0;
 		auto dtypx = DT_MAILUSER;
-		if (!username_to_entryid(paddress, pdisplay_name, &tmp_bin, &dtypx) ||
-		    pproplist->set(PR_ENTRYID, &tmp_bin) != ecSuccess ||
-		    pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin) != ecSuccess ||
-		    pproplist->set(PR_RECORD_KEY, &tmp_bin) != ecSuccess)
-			return false;
+		if (!username_to_entryid(paddress, pdisplay_name, &tmp_bin, &dtypx))
+			return ecError;
+		err = pproplist->set(PR_ENTRYID, &tmp_bin);
+		if (err != ecSuccess)
+			return err;
+		err = pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin);
+		if (err != ecSuccess)
+			return err;
+		err = pproplist->set(PR_RECORD_KEY, &tmp_bin);
+		if (err != ecSuccess)
+			return err;
 		tmp_int32 = role_to_rcpttype(prole, cutype);
-		if (pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32) != ecSuccess)
-			return false;
+		err = pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32);
+		if (err != ecSuccess)
+			return err;
 		tmp_int32 = static_cast<uint32_t>(dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER);
-		if (pproplist->set(PR_OBJECT_TYPE, &tmp_int32) != ecSuccess)
-			return false;
+		err = pproplist->set(PR_OBJECT_TYPE, &tmp_int32);
+		if (err != ecSuccess)
+			return err;
 		tmp_int32 = static_cast<uint32_t>(dtypx);
-		if (pproplist->set(PR_DISPLAY_TYPE, &tmp_int32) != ecSuccess)
-			return false;
+		err = pproplist->set(PR_DISPLAY_TYPE, &tmp_int32);
+		if (err != ecSuccess)
+			return err;
 		tmp_byte = 1;
-		if (pproplist->set(PR_RESPONSIBILITY, &tmp_byte) != ecSuccess)
-			return false;
+		err = pproplist->set(PR_RESPONSIBILITY, &tmp_byte);
+		if (err != ecSuccess)
+			return err;
 		tmp_int32 = recipSendable;
 		if (is_organizer)
 			tmp_int32 |= recipOrganizer | recipOriginal;
 		else
 			tmp_int32 |= recipAddedByOrganizer;
-		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != ecSuccess)
-			return false;
+		err = pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32);
+		if (err != ecSuccess)
+			return err;
 	}
 	/*
 	 * XXX: Value of tmp_byte is unclear, but it appears it coincides with
 	 * the presence of any recipients.
 	 */
-	if (pmsg->proplist.set(PR_RESPONSE_REQUESTED, &tmp_byte) != ecSuccess ||
-	    pmsg->proplist.set(PR_REPLY_REQUESTED, &tmp_byte) != ecSuccess)
-		return false;
-	return true;
+	auto err = pmsg->proplist.set(PR_RESPONSE_REQUESTED, &tmp_byte);
+	if (err != ecSuccess)
+		return err;
+	return pmsg->proplist.set(PR_REPLY_REQUESTED, &tmp_byte);
 }
 
 static bool oxcical_parse_categories(const ical_component &main_event,
@@ -2100,10 +2120,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 		memset(pext_exception, 0, sizeof(EXTENDEDEXCEPTION));
 		pext_exception->changehighlight.size = sizeof(uint32_t);
 	}
-	if (!oxcical_parse_recipients(*pmain_event, username_to_entryid, pmsg)) {
-		errstr = "E-2189: oxcical_import: parse_recipients returned an unspecified error";
-		return ecInvalidParam;
-	}
+	auto err = oxcical_parse_recipients(*pmain_event, username_to_entryid, pmsg);
+	if (err != ecSuccess)
+		return err;
 	uint16_t last_propid = 0x8000;
 	namemap phash;
 	if (b_proposal && !oxcical_parse_proposal(phash, &last_propid, pmsg)) {
