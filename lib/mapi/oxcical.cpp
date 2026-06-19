@@ -2977,12 +2977,22 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 			}
 			mclass = "IPM.Appointment";
 		} else if (strcasecmp(pvalue, "REQUEST") == 0) {
-			if (uid_list.size() != 1)
+			if (uid_list.size() == 0) {
+				errstr = "No event UIDs in ical object";
 				return ecNotFound;
+			} else if (uid_list.size() > 1) {
+				errstr = "iCal/iTIP REQUEST file with multiple UIDs not supported by gromox-oxcical";
+				return ecInvalidParam;
+			}
 			mclass = "IPM.Schedule.Meeting.Request";
 		} else if (strcasecmp(pvalue, "REPLY") == 0) {
-			if (uid_list.size() != 1)
+			if (uid_list.size() == 0) {
+				errstr = "No event UIDs in ical object";
 				return ecNotFound;
+			} else if (uid_list.size() > 1) {
+				errstr = "iCal/iTIP REPLY file with multiple UIDs not supported by gromox-oxcical";
+				return ecInvalidParam;
+			}
 			pvalue1 = oxcical_get_partstat(uid_list);
 			if (pvalue1 != nullptr) {
 				if (strcasecmp(pvalue1, "ACCEPTED") == 0)
@@ -2993,8 +3003,13 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 					mclass = "IPM.Schedule.Meeting.Resp.Neg";
 			}
 		} else if (strcasecmp(pvalue, "COUNTER") == 0) {
-			if (uid_list.size() != 1)
+			if (uid_list.size() == 0) {
+				errstr = "No event UIDs in ical object";
 				return ecNotFound;
+			} else if (uid_list.size() > 1) {
+				errstr = "iCal/iTIP COUNTER file with multiple UIDs not supported by gromox-oxcical";
+				return ecInvalidParam;
+			}
 			pvalue1 = oxcical_get_partstat(uid_list);
 			if (pvalue1 != nullptr && strcasecmp(pvalue1, "TENTATIVE") == 0) {
 				mclass = "IPM.Schedule.Meeting.Resp.Tent";
