@@ -158,15 +158,15 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	return true;
 }
 
-static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF *ptz_definition)
+static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def)
 {
 	auto piline = vt.get_line("TZID");
 	if (piline == nullptr)
 		return false;
-	ptz_definition->keyname = deconst(piline->get_first_subvalue());
-	if (ptz_definition->keyname == nullptr)
+	def.keyname = deconst(piline->get_first_subvalue());
+	if (def.keyname == nullptr)
 		return false;
-	ptz_definition->crules = 0;
+	def.crules = 0;
 	for (const auto &comp : vt.component_list) {
 		auto pcomponent = &comp;
 		bool b_daylight, b_found = false;
@@ -184,65 +184,63 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF *ptz_definition
 			return false;
 
 		size_t i = 0;
-		for (i=0; i<ptz_definition->crules; i++) {
-			if (year == ptz_definition->prules[i].year) {
+		for (i = 0; i < def.crules; ++i) {
+			if (year == def.prules[i].year) {
 				b_found = true;
 				break;
 			}
 		}
 		if (!b_found) {
-			if (ptz_definition->crules >= MAX_TZRULE_NUMBER)
+			if (def.crules >= MAX_TZRULE_NUMBER)
 				return false;
-			ptz_definition->crules ++;
-			ptz_definition->prules[i] = {};
-			ptz_definition->prules[i].year = year;
+			def.crules ++;
+			def.prules[i] = {};
+			def.prules[i].year = year;
 		}
 		if (b_daylight) {
-			ptz_definition->prules[i].daylightbias = dstbias;
-			ptz_definition->prules[i].daylightdate = date;
+			def.prules[i].daylightbias = dstbias;
+			def.prules[i].daylightdate = date;
 		} else {
-			ptz_definition->prules[i].bias = bias;
-			ptz_definition->prules[i].standarddate = date;
+			def.prules[i].bias = bias;
+			def.prules[i].standarddate = date;
 		}
 	}
-	if (ptz_definition->crules == 0)
+	if (def.crules == 0)
 		return false;
-	std::sort(ptz_definition->prules, ptz_definition->prules + ptz_definition->crules);
+	std::sort(def.prules, &def.prules[def.crules]);
 
-	const TZRULE *pstandard_rule = nullptr, *pdaylight_rule = nullptr;
-	for (size_t i = 0; i < ptz_definition->crules; ++i) {
-		if (0 != ptz_definition->prules[i].standarddate.month) {
-			pstandard_rule = ptz_definition->prules + i;
-		} else if (pstandard_rule != nullptr) {
-			ptz_definition->prules[i].standarddate =
-				pstandard_rule->standarddate;
-			ptz_definition->prules[i].bias =
-				pstandard_rule->bias;
+	const TZRULE *std = nullptr, *dlit = nullptr;
+	for (size_t i = 0; i < def.crules; ++i) {
+		auto &r = def.prules[i];
+		if (r.standarddate.month != 0) {
+			std = &r;
+		} else if (std != nullptr) {
+			r.standarddate = std->standarddate;
+			r.bias = std->bias;
 		}
-		if (0 != ptz_definition->prules[i].daylightdate.month) {
-			pdaylight_rule = ptz_definition->prules + i;
-		} else if (pdaylight_rule != nullptr) {
-			ptz_definition->prules[i].daylightdate = pdaylight_rule->daylightdate;
-			ptz_definition->prules[i].daylightbias = pdaylight_rule->daylightbias;
+		if (r.daylightdate.month != 0) {
+			dlit = &r;
+		} else if (dlit != nullptr) {
+			r.daylightdate = dlit->daylightdate;
+			r.daylightbias = dlit->daylightbias;
 		}
 		/* ignore the definition which has only STANDARD component
 			or with the same STANDARD and DAYLIGHT component */
-		if (ptz_definition->prules[i].daylightdate.month == 0 ||
-		    ptz_definition->prules[i].standarddate == ptz_definition->prules[i].daylightdate)
-			ptz_definition->prules[i].daylightdate = {};
+		if (r.daylightdate.month == 0 ||
+		    r.standarddate == r.daylightdate)
+			r.daylightdate = {};
 	}
-	if (ptz_definition->crules > 1 &&
-		(0 == ptz_definition->prules[0].standarddate.month ||
-		0 == ptz_definition->prules[0].daylightdate.month) &&
-		0 != ptz_definition->prules[1].standarddate.month &&
-		0 != ptz_definition->prules[1].daylightdate.month) {
-		ptz_definition->crules --;
-		memmove(ptz_definition->prules, ptz_definition->prules + 1,
-							sizeof(TZRULE)*ptz_definition->crules);
+	if (def.crules > 1 &&
+	    (def.prules[0].standarddate.month == 0 ||
+	    def.prules[0].daylightdate.month == 0) &&
+	    def.prules[1].standarddate.month != 0 &&
+	    def.prules[1].daylightdate.month != 0) {
+		--def.crules;
+		memmove(def.prules, &def.prules[1], sizeof(TZRULE) * def.crules);
 	}
-	ptz_definition->prules[0].year = 1601;
-	ptz_definition->prules[0].x[0] = 1;
-	ptz_definition->prules[0].x[4] = 1;
+	def.prules[0].year = 1601;
+	def.prules[0].x[0] = 1;
+	def.prules[0].x[4] = 1;
 	return true;
 }
 
@@ -660,7 +658,7 @@ static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
 	tz_definition.prules = rules_buff;
-	if (!oxcical_tzcom_to_def(tzcom, &tz_definition))
+	if (!oxcical_tzcom_to_def(tzcom, tz_definition))
 		return false;
 	if (tz_definition.crules == 0) {
 		mlog(LV_DEBUG, "Rejecting conversion of iCal to MAPI object: no sensible TZ rules found (e.g. RFC 5545 §3.6.5 VTIMEZONE without STANDARD/DAYLIGHT not permitted)");
@@ -685,7 +683,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
 	tz_definition.prules = rules_buff;
-	if (!oxcical_tzcom_to_def(tzcom, &tz_definition))
+	if (!oxcical_tzcom_to_def(tzcom, tz_definition))
 		return false;
 	auto piline = tzcom.get_line("TZID");
 	if (piline == nullptr)
