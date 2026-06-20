@@ -865,18 +865,18 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 	return pmsg->proplist.set(PR_REPLY_REQUESTED, &tmp_byte);
 }
 
-static bool oxcical_parse_categories(const ical_component &main_event,
+static ec_error_t oxcical_parse_categories(const ical_component &main_event,
    namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	auto piline = main_event.get_line("CATEGORIES");
 	if (piline == nullptr)
-		return true;
+		return ecSuccess;
 
 	char *tmp_buff[128];
 	STRING_ARRAY strings_array;
 
 	if (piline->value_list.size() == 0)
-		return true;
+		return ecSuccess;
 	auto &pivalue = piline->value_list.front();
 	strings_array.count = 0;
 	strings_array.ppstr = tmp_buff;
@@ -889,13 +889,15 @@ static bool oxcical_parse_categories(const ical_component &main_event,
 	}
 	if (0 != strings_array.count && strings_array.count < 128) {
 		PROPERTY_NAME pn = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)};
-		if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
-			return false;
-		if (pmsg->proplist.set(PROP_TAG(PT_MV_UNICODE, *plast_propid), &strings_array) != ecSuccess)
-			return false;
+		auto err = namemap_add(phash, *plast_propid, std::move(pn));
+		if (err != ecSuccess)
+			return err;
+		err = pmsg->proplist.set(PROP_TAG(PT_MV_UNICODE, *plast_propid), &strings_array);
+		if (err != ecSuccess)
+			return err;
 		(*plast_propid) ++;
 	}
-	return true;
+	return ecSuccess;
 }
 
 static bool oxcical_parse_class(const ical_component &main_event,
@@ -2129,10 +2131,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 	namemap phash;
 	if (b_proposal && (err = oxcical_set_proposal(phash, &last_propid, pmsg)) != ecSuccess)
 		return err;
-	if (!oxcical_parse_categories(*pmain_event, phash, &last_propid, pmsg)) {
-		errstr = "E-2191: oxcical_parse_categories returned an unspecified error";
-		return ecInvalidParam;
-	}
+	err = oxcical_parse_categories(*pmain_event, phash, &last_propid, pmsg);
+	if (err != ecSuccess)
+		return err;
 	if (!oxcical_parse_class(*pmain_event, pmsg)) {
 		errstr = "E-2192: oxcical_parse_class returned an unspecified error";
 		return ecInvalidParam;
@@ -2649,10 +2650,10 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 	static constexpr uint8_t le_true = 1;
 	namemap phash;
 	uint16_t last_propid = 0x8000;
-	if (!oxcical_parse_categories(comp, phash, &last_propid, pmsg)) {
-		errstr = "E-2191: oxcical_parse_categories returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_class(comp, pmsg)) {
+	auto err = oxcical_parse_categories(comp, phash, &last_propid, pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_class(comp, pmsg)) {
 		errstr = "E-2192: oxcical_parse_class returned an unspecified error";
 		return ecInvalidParam;
 	} else if (!oxcical_parse_body(comp, "", pmsg)) {
@@ -2767,10 +2768,10 @@ static ec_error_t oxcical_import_journal(const ical &pical,
 {
 	namemap phash;
 	uint16_t last_propid = 0x8000;
-	if (!oxcical_parse_categories(comp, phash, &last_propid, pmsg)) {
-		errstr = "E-2191: oxcical_parse_categories returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_class(comp, pmsg)) {
+	auto err = oxcical_parse_categories(comp, phash, &last_propid, pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_class(comp, pmsg)) {
 		errstr = "E-2192: oxcical_parse_class returned an unspecified error";
 		return ecInvalidParam;
 	} else if (!oxcical_parse_body(comp, "", pmsg)) {
