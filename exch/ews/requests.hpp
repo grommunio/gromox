@@ -33,6 +33,7 @@ EWSFUNC(mAddDelegateRequest);
 EWSFUNC(mAddEntityFeedbackRequest);
 EWSFUNC(mGetAppManifestsRequest);
 EWSFUNC(mGetAppMarketplaceUrlRequest);
+EWSFUNC(mGetUnifiedGroupsSettingsRequest);
 EWSFUNC(mGetAttachmentRequest);
 EWSFUNC(mGetDelegateRequest);
 EWSFUNC(mGetEventsRequest);
