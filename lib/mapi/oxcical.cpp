@@ -715,18 +715,20 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	return true;
 }
 
-static bool oxcical_parse_proposal(namemap &phash,
-	uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
+static ec_error_t oxcical_set_proposal(namemap &phash, uint16_t *plast_propid,
+    MESSAGE_CONTENT *pmsg)
 {
 	uint8_t tmp_byte;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentCounterProposal};
-	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
-		return false;
+	auto err = namemap_add(phash, *plast_propid, std::move(pn));
+	if (err != ecSuccess)
+		return err;
 	tmp_byte = 1;
-	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
-		return false;
+	err = pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte);
+	if (err != ecSuccess)
+		return err;
 	(*plast_propid) ++;
-	return true;
+	return ecSuccess;
 }
 
 static unsigned int role_to_rcpttype(const char *r, const char *cu)
@@ -2125,10 +2127,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 		return err;
 	uint16_t last_propid = 0x8000;
 	namemap phash;
-	if (b_proposal && !oxcical_parse_proposal(phash, &last_propid, pmsg)) {
-		errstr = "E-2190: oxcical_parse_proposal returned an unspecified error";
-		return ecInvalidParam;
-	}
+	if (b_proposal && (err = oxcical_set_proposal(phash, &last_propid, pmsg)) != ecSuccess)
+		return err;
 	if (!oxcical_parse_categories(*pmain_event, phash, &last_propid, pmsg)) {
 		errstr = "E-2191: oxcical_parse_categories returned an unspecified error";
 		return ecInvalidParam;
