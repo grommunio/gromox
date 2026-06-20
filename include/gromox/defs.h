@@ -27,6 +27,10 @@
 	inline iterator end() { return (memb) + (count); } \
 	inline const_iterator end() const { return (memb) + (count); } \
 	inline const_iterator cend() const { return (memb) + (count); } \
+	inline value_type &front() { return (memb)[0]; } \
+	inline const value_type &front() const { return (memb)[0]; } \
+	inline value_type &back() { return (memb)[(count)-1]; } \
+	inline const value_type &back() const { return (memb)[(count)-1]; } \
 	inline const value_type &operator[](size_t i) const { return (memb)[i]; } \
 	inline value_type &operator[](size_t i) { return (memb)[i]; } \
 	inline size_t size() const { return (count); } \
