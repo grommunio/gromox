@@ -249,20 +249,18 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF *ptz_definition
 	return true;
 }
 
-static void oxcical_convert_to_tzstruct(TZDEF *ptz_definition, TZSTRUCT *ptz_struct)
+static void oxcical_convert_to_tzstruct(const TZDEF &def, TZSTRUCT &s)
 {
-	*ptz_struct = {};
-	if (ptz_definition->crules == 0)
+	s = {};
+	if (def.crules == 0)
 		return;
-	int index;
-
-	index = ptz_definition->crules - 1;
-	ptz_struct->bias = ptz_definition->prules[index].bias;
-	ptz_struct->daylightbias = ptz_definition->prules[index].daylightbias;
-	ptz_struct->standarddate = ptz_definition->prules[index].standarddate;
-	ptz_struct->daylightdate = ptz_definition->prules[index].daylightdate;
-	ptz_struct->standardyear = ptz_struct->standarddate.year;
-	ptz_struct->daylightyear = ptz_struct->daylightdate.year;
+	auto &r        = def.prules[def.crules-1];
+	s.bias         = r.bias;
+	s.daylightbias = r.daylightbias;
+	s.standarddate = r.standarddate;
+	s.daylightdate = r.daylightdate;
+	s.standardyear = s.standarddate.year;
+	s.daylightyear = s.daylightdate.year;
 }
 
 static bool oxcical_tzdefinition_to_binary(const TZDEF *ptz_definition,
@@ -704,7 +702,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), ptzid) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
-	oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
+	oxcical_convert_to_tzstruct(tz_definition, tz_struct);
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
 	if (!oxcical_timezonestruct_to_binary(&tz_struct, &tmp_bin))
@@ -3827,7 +3825,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
 				tzid = tz_definition.keyname;
-				oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
+				oxcical_convert_to_tzstruct(tz_definition, tz_struct);
 				ptz_component = oxcical_export_timezone(
 						pical, year - 1, tzid, &tz_struct);
 				if (ptz_component == nullptr)
@@ -3846,7 +3844,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2209: PidLidAppointmentTimeZoneDefinition{Start/End}Display contents not recognized";
 				tzid = tz_definition.keyname;
-				oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
+				oxcical_convert_to_tzstruct(tz_definition, tz_struct);
 				ptz_component = oxcical_export_timezone(
 						pical, year - 1, tzid, &tz_struct);
 				if (ptz_component == nullptr)
