@@ -970,13 +970,13 @@ static ec_error_t oxcical_parse_html(const ical_component &main_event,
 	return pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32);
 }
 
-static bool oxcical_parse_dtstamp(const ical_component &main_event,
+static ec_error_t oxcical_parse_dtstamp(const ical_component &main_event,
     const char *method, namemap &phash,
 	uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	auto piline = main_event.get_line("DTSTAMP");
 	if (piline == nullptr)
-		return true;
+		return ecSuccess;
 
 	time_t tmp_time;
 	uint64_t tmp_int64;
@@ -984,20 +984,22 @@ static bool oxcical_parse_dtstamp(const ical_component &main_event,
 
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return true;
+		return ecSuccess;
 	if (!ical_datetime_to_utc(nullptr, pvalue, &tmp_time))
-		return true;
+		return ecSuccess;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Meeting};
 	propname.lid = (method != nullptr && (strcasecmp(method, "REPLY") == 0 ||
 	                strcasecmp(method, "COUNTER") == 0)) ?
 	               PidLidAttendeeCriticalChange : PidLidOwnerCriticalChange;
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
-		return false;
+	auto err = namemap_add(phash, *plast_propid, std::move(propname));
+	if (err != ecSuccess)
+		return err;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
-		return false;
+	err = pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64);
+	if (err != ecSuccess)
+		return err;
 	(*plast_propid) ++;
-	return true;
+	return ecSuccess;
 }
 
 static bool oxcical_parse_start_end(bool b_start, bool b_proposal,
@@ -2142,11 +2144,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 	if (err != ecSuccess)
 		return err;
 	bool b_allday = oxcical_parse_allday(*pmain_event);
-	if (!oxcical_parse_dtstamp(*pmain_event, method,
-	    phash, &last_propid, pmsg)) {
-		errstr = "E-2194: oxcical_parse_dtstamp returned an unspecified error";
-		return ecInvalidParam;
-	}
+	err = oxcical_parse_dtstamp(*pmain_event, method, phash, &last_propid, pmsg);
+	if (err != ecSuccess)
+		return err;
 
 	auto piline = pmain_event->get_line("DTSTART");
 	if (piline == nullptr) {
@@ -2657,10 +2657,10 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 	err = oxcical_parse_html(comp, pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg)) {
-		errstr = "E-2194: oxcical_parse_dtstamp returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr)) {
+	err = oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr)) {
 		errstr = "E-2706: oxcical_parse_summary returned an unspecified error";
 		return ecInvalidParam;
 	}
@@ -2775,10 +2775,10 @@ static ec_error_t oxcical_import_journal(const ical &pical,
 	err = oxcical_parse_html(comp, pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg)) {
-		errstr = "E-2194: oxcical_parse_dtstamp returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr)) {
+	err = oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr)) {
 		errstr = "E-2706: oxcical_parse_summary returned an unspecified error";
 		return ecInvalidParam;
 	}
