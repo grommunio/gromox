@@ -253,20 +253,22 @@ static void oxcical_convert_to_tzstruct(const TZDEF &def, TZSTRUCT &s)
 	s.daylightyear = s.daylightdate.year;
 }
 
-static bool oxcical_tzdefinition_to_binary(TZDEF &def,
+static ec_error_t oxcical_tzdefinition_to_binary(TZDEF &def,
 	uint16_t tzrule_flags, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
 
 	if (!ext_push.init(pbin->pb, MAX_TZDEFINITION_LENGTH, 0))
-		return false;
+		return ecMAPIOOM;
 	for (auto &r : def.rules)
 		r.flags = tzrule_flags;
 	auto err = ext_push.p_tzdef(def);
-	if (err != pack_result::ok)
-		return false;
+	if (err == pack_result::alloc)
+		return ecMAPIOOM;
+	else if (err != pack_result::ok)
+		return ecRpcFormat;
 	pbin->cb = ext_push.m_offset;
-	return true;
+	return ecSuccess;
 }
 
 static bool oxcical_timezonestruct_to_binary(const TZSTRUCT &s, BINARY *pbin)
