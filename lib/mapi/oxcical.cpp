@@ -160,14 +160,6 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 
 static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF *ptz_definition)
 {
-	int i;
-	bool b_found;
-	int16_t year;
-	SYSTEMTIME date;
-	bool b_daylight;
-	TZRULE *pstandard_rule;
-	TZRULE *pdaylight_rule;
-
 	auto piline = vt.get_line("TZID");
 	if (piline == nullptr)
 		return false;
@@ -177,16 +169,21 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF *ptz_definition
 	ptz_definition->crules = 0;
 	for (const auto &comp : vt.component_list) {
 		auto pcomponent = &comp;
+		bool b_daylight, b_found = false;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0)
 			b_daylight = false;
 		else if (strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") == 0)
 			b_daylight = true;
 		else
 			continue;
+
 		int32_t bias = 0, dstbias = 0;
+		int16_t year = 0;
+		SYSTEMTIME date{};
 		if (!oxcical_parse_vtsubcomponent(*pcomponent, &bias, &dstbias, &year, &date))
 			return false;
-		b_found = false;
+
+		size_t i = 0;
 		for (i=0; i<ptz_definition->crules; i++) {
 			if (year == ptz_definition->prules[i].year) {
 				b_found = true;
@@ -211,9 +208,9 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF *ptz_definition
 	if (ptz_definition->crules == 0)
 		return false;
 	std::sort(ptz_definition->prules, ptz_definition->prules + ptz_definition->crules);
-	pstandard_rule = nullptr;
-	pdaylight_rule = nullptr;
-	for (i=0; i<ptz_definition->crules; i++) {
+
+	const TZRULE *pstandard_rule = nullptr, *pdaylight_rule = nullptr;
+	for (size_t i = 0; i < ptz_definition->crules; ++i) {
 		if (0 != ptz_definition->prules[i].standarddate.month) {
 			pstandard_rule = ptz_definition->prules + i;
 		} else if (pstandard_rule != nullptr) {
