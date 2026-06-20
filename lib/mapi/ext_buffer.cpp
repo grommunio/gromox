@@ -832,12 +832,12 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 	TRY(g_uint32(&r->flags));
 	TRY(g_guid(&g));
 	if (g != muidStoreWrap) {
-		mlog(LV_INFO, "I-1969: not a wrapuid");
+		mlog(LV_DEBUG, "D-1969: g_store_eid requires a muidStoreWrap entryid");
 		return pack_result::format;
 	}
 	TRY(g_uint8(&r->version));
 	if (r->version != 0) {
-		mlog(LV_INFO, "I-2014: not a recognized wrapuid");
+		mlog(LV_DEBUG, "D-1970: g_store_eid requires a muidStoreWrap v0 entryid");
 		return pack_result::format;
 	}
 	TRY(g_uint8(&r->ivflag));
@@ -845,9 +845,11 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 		/* MS-OXCDATA v19 §2.2.4.3 */
 		char dll[14];
 		TRY(g_bytes(dll, 14));
-		if (strcasecmp(dll, "emsmdb.dll") != 0)
+		if (strcasecmp(dll, "emsmdb.dll") != 0) {
 			/* bail out on e.g. mspst.dll */
+			mlog(LV_INFO, "I-2965: g_store_eid was passed an entryid for a \"%s\" target (unsupported)", dll);
 			return pack_result::format;
+		}
 		/* EMSMDB-specific portion */
 		TRY(g_uint32(&r->wrapped_flags));
 		TRY(g_guid(&r->wrapped_provider_uid));
@@ -872,7 +874,7 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 		*r->pmailbox_dn = '\0';
 		return pack_result::success;
 	}
-	mlog(LV_INFO, "I-2015: not a recognized wrapuid");
+	mlog(LV_DEBUG, "D-2015: g_store_eid was passed an entryid with a unrecognized ivflag");
 	return pack_result::format;
 }
 

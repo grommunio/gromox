@@ -1328,9 +1328,11 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		 * This can happen when a PRIVATE_FID_COMMON_VIEWS favorite has
 		 * a PR_WLINK_STORE_ENTRYID pointing to a PST file.
 		 */
-		mlog(LV_INFO, "zs_openstore(%s): this store entryid is not usable with Gromox",
+		mlog(LV_INFO, "zs_openstore(%s): unsupported entryid format/pointing to a non-Gromox mailbox",
 			bin2hex(entryid.pb, entryid.cb).c_str());
 		return ecInvalidParam;
+	} else if (pkerr == pack_result::alloc) {
+		return ecServerOOM;
 	} else if (pkerr != pack_result::ok) {
 		mlog(LV_DEBUG, "zs_openstore(%s): invalid store entryid",
 			bin2hex(entryid.pb, entryid.cb).c_str());
