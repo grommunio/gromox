@@ -633,18 +633,20 @@ static const ical_component *oxcical_find_vtimezone(const ical &pical, const cha
 	return nullptr;
 }
 
-static bool oxcical_take_tzbin(bool b_dtstart, const BINARY &tmp_bin,
+static ec_error_t oxcical_take_tzbin(bool b_dtstart, const BINARY &tmp_bin,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, b_dtstart ?
 		PidLidAppointmentTimeZoneDefinitionStartDisplay :
 		PidLidAppointmentTimeZoneDefinitionEndDisplay};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
-		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
-		return false;
+	auto err = namemap_add(phash, *plast_propid, std::move(propname));
+	if (err != ecSuccess)
+		return err;
+	err = pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin);
+	if (err != ecSuccess)
+		return err;
 	(*plast_propid) ++;
-	return true;
+	return ecSuccess;
 }
 
 static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
@@ -665,7 +667,7 @@ static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
 	if (oxcical_tzdefinition_to_binary(def,
 	    TZRULE_FLAG_EFFECTIVE_TZREG, &tmp_bin) != ecSuccess)
 		return false;
-	return oxcical_take_tzbin(b_dtstart, tmp_bin, phash, plast_propid, pmsg);
+	return oxcical_take_tzbin(b_dtstart, tmp_bin, phash, plast_propid, pmsg) == ecSuccess;
 }
 
 static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
@@ -2185,10 +2187,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 			BINARY bin;
 			bin.cb = def->size();
 			bin.pc = deconst(def->data());
-			if (!oxcical_take_tzbin(true, bin, phash, &last_propid, pmsg)) {
-				errstr = "E-5323: oxcical_parse_tzdef returned an unspecified error";
-				return ecInvalidParam;
-			}
+			err = oxcical_take_tzbin(true, bin, phash, &last_propid, pmsg);
+			if (err != ecSuccess)
+				return err;
 		}
 	}
 
