@@ -469,8 +469,7 @@ struct GX_EXPORT TZRULE {
 /* MS-OXOCAL v21 §2.2.1.41 */
 struct GX_EXPORT TZDEF {
 	std::string keyname;
-	uint16_t crules = 0;
-	TZRULE *prules = nullptr;
+	std::vector<TZRULE> rules;
 };
 
 enum {

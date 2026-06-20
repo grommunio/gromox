@@ -1937,9 +1937,9 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 				 * Write PidLidTimeZoneStruct for freebusy and
 				 * recurrence expansion code.
 				 */
-				if (tzdef.crules > 0) {
+				if (tzdef.rules.size() > 0) {
 					TZSTRUCT tzs{};
-					auto &rule = tzdef.prules[tzdef.crules-1];
+					auto &rule = tzdef.rules.back();
 					tzs.bias = rule.bias;
 					tzs.daylightbias = rule.daylightbias;
 					tzs.standarddate = rule.standarddate;

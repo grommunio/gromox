@@ -606,12 +606,11 @@ static int t_time()
 
 static int t_tzdef()
 {
-	TZRULE r[2];
 	TZDEF d;
-	d.prules = r;
-	d.crules = std::size(r);
-	r[0].year = 1971;
-	r[1].year = 1972;
+	d.rules.emplace_back();
+	d.rules.emplace_back();
+	d.rules[0].year = 1971;
+	d.rules[1].year = 1972;
 	int64_t ofs;
 	offset_from_tz(d, 369 * 86400, ofs);
 	return EXIT_SUCCESS;

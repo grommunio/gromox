@@ -40,11 +40,12 @@ static void d_tzrule(const TZRULE &r)
 
 static void d_tzdef(const TZDEF &d)
 {
+	auto z = d.rules.size();
 	printf("name = %s\n", d.keyname.c_str());
-	printf("#rules = %xh (%u)\n", d.crules, d.crules);
-	for (unsigned int i = 0; i < d.crules; ++i) {
-		printf("[%u] ", i);
-		d_tzrule(d.prules[i]);
+	printf("#rules = %zxh (%zu)\n", z, z);
+	for (size_t i = 0; i < z; ++i) {
+		printf("[%zu] ", i);
+		d_tzrule(d.rules[i]);
 		printf("\n");
 	}
 }
@@ -60,7 +61,6 @@ static int d_raw(const char *name, const void *data, size_t size)
 	}
 	printf(">>> %s\n", name);
 	d_tzdef(def);
-	free(def.prules);
 	return EXIT_SUCCESS;
 }
 

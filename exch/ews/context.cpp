@@ -3999,9 +3999,9 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			 * recurrence expansion code uses this to determine the
 			 * timezone of times in the recurrence blob.
 			 */
-			if (tzdef.crules > 0) {
+			if (tzdef.rules.size() > 0) {
 				TZSTRUCT tzs{};
-				auto &rule = tzdef.prules[tzdef.crules - 1];
+				auto &rule = tzdef.rules.back();
 				tzs.bias = rule.bias;
 				tzs.daylightbias = rule.daylightbias;
 				tzs.standarddate = rule.standarddate;

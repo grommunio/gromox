@@ -300,12 +300,10 @@ ec_error_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
  */
 static const TZRULE *active_rule_for_year(const TZDEF &def, int year)
 {
-	for (size_t i = def.crules; i > 0; ) {
-		auto &r = def.prules[--i];
-		if ((r.flags & TZRULE_FLAG_EFFECTIVE_TZREG &&
-		    r.year <= year) || r.year == year)
-			return &r;
-	}
+	for (auto iter = def.rules.rbegin(); iter != def.rules.rend(); ++iter)
+		if ((iter->flags & TZRULE_FLAG_EFFECTIVE_TZREG &&
+		    iter->year <= year) || iter->year == year)
+			return &*iter;
 	return nullptr;
 }
 

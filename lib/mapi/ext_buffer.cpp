@@ -1768,15 +1768,12 @@ pack_result EXT_PULL::g_tzdef(TZDEF *r) try
 	if (!utf16le_to_utf8(tmp_buff, cbheader - 4, tmp_buff1, std::size(tmp_buff1)))
 		return pack_result::charconv;
 	r->keyname = tmp_buff1;
-	TRY(g_uint16(&r->crules));
-	CLAMP16(r->crules);
-	r->prules = anew<TZRULE>(r->crules);
-	if (r->prules == nullptr) {
-		r->crules = 0;
-		return pack_result::alloc;
-	}
-	for (size_t i = 0; i < r->crules; ++i)
-		TRY(ext_buffer_pull_tzrule(this, &r->prules[i]));
+	uint16_t crules = 0;
+	TRY(g_uint16(&crules));
+	CLAMP16(crules);
+	r->rules.resize(crules);
+	for (size_t i = 0; i < crules; ++i)
+		TRY(ext_buffer_pull_tzrule(this, &r->rules[i]));
 	return pack_result::ok;
 } catch (const std::bad_alloc &) {
 	return pack_result::alloc;
@@ -2983,8 +2980,9 @@ pack_result EXT_PUSH::p_tzstruct(const TZSTRUCT &r)
 	return p_systime(r.daylightdate);
 }
 
-static pack_result ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
+static pack_result ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE &rr)
 {
+	auto r = &rr;
 	TRY(pext->p_uint8(2));
 	TRY(pext->p_uint8(1));
 	TRY(pext->p_uint16(0x3E));
@@ -3014,9 +3012,11 @@ pack_result EXT_PUSH::p_tzdef(const TZDEF &r)
 	TRY(p_uint16(2));
 	TRY(p_uint16(len / 2));
 	TRY(p_bytes(tmp_buff, len));
-	TRY(p_uint16(r.crules));
-	for (size_t i = 0; i < r.crules; ++i)
-		TRY(ext_buffer_push_tzrule(this, &r.prules[i]));
+	if (r.rules.size() > UINT16_MAX)
+		return pack_result::format;
+	TRY(p_uint16(r.rules.size()));
+	for (const auto &rule : r.rules)
+		TRY(ext_buffer_push_tzrule(this, rule));
 	return pack_result::ok;
 }
 

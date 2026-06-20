@@ -167,10 +167,12 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 	if (keyname == nullptr)
 		return false;
 	def.keyname = keyname;
-	def.crules = 0;
+	auto &rules = def.rules;
+	rules.clear();
+
 	for (const auto &comp : vt.component_list) {
 		auto pcomponent = &comp;
-		bool b_daylight, b_found = false;
+		bool b_daylight;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0)
 			b_daylight = false;
 		else if (strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") == 0)
@@ -184,35 +186,27 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 		if (!oxcical_parse_vtsubcomponent(*pcomponent, &bias, &dstbias, &year, &date))
 			return false;
 
-		size_t i = 0;
-		for (i = 0; i < def.crules; ++i) {
-			if (year == def.prules[i].year) {
-				b_found = true;
-				break;
-			}
-		}
-		if (!b_found) {
-			if (def.crules >= MAX_TZRULE_NUMBER)
-				return false;
-			def.crules ++;
-			def.prules[i] = {};
-			def.prules[i].year = year;
+		auto iter = std::find_if(rules.begin(), rules.end(),
+		            [&](const TZRULE &r) { return r.year == year; });
+		if (iter == rules.end()) {
+			rules.emplace_back();
+			iter = rules.rbegin().base();
+			iter->year = year;
 		}
 		if (b_daylight) {
-			def.prules[i].daylightbias = dstbias;
-			def.prules[i].daylightdate = date;
+			iter->daylightbias = dstbias;
+			iter->daylightdate = date;
 		} else {
-			def.prules[i].bias = bias;
-			def.prules[i].standarddate = date;
+			iter->bias = bias;
+			iter->standarddate = date;
 		}
 	}
-	if (def.crules == 0)
+	if (rules.empty())
 		return false;
-	std::sort(def.prules, &def.prules[def.crules]);
+	std::sort(rules.begin(), rules.end());
 
 	const TZRULE *std = nullptr, *dlit = nullptr;
-	for (size_t i = 0; i < def.crules; ++i) {
-		auto &r = def.prules[i];
+	for (auto &r : rules) {
 		if (r.standarddate.month != 0) {
 			std = &r;
 		} else if (std != nullptr) {
@@ -231,17 +225,15 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 		    r.standarddate == r.daylightdate)
 			r.daylightdate = {};
 	}
-	if (def.crules > 1 &&
-	    (def.prules[0].standarddate.month == 0 ||
-	    def.prules[0].daylightdate.month == 0) &&
-	    def.prules[1].standarddate.month != 0 &&
-	    def.prules[1].daylightdate.month != 0) {
-		--def.crules;
-		memmove(def.prules, &def.prules[1], sizeof(TZRULE) * def.crules);
-	}
-	def.prules[0].year = 1601;
-	def.prules[0].x[0] = 1;
-	def.prules[0].x[4] = 1;
+	if (rules.size() >= 2 &&
+	    (rules[0].standarddate.month == 0 ||
+	    rules[0].daylightdate.month == 0) &&
+	    rules[1].standarddate.month != 0 &&
+	    rules[1].daylightdate.month != 0)
+		rules.erase(rules.begin());
+	rules[0].year = 1601;
+	rules[0].x[0] = 1;
+	rules[0].x[4] = 1;
 	return true;
 } catch (const std::bad_alloc &) {
 	return false;
@@ -250,9 +242,9 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 static void oxcical_convert_to_tzstruct(const TZDEF &def, TZSTRUCT &s)
 {
 	s = {};
-	if (def.crules == 0)
+	if (def.rules.empty())
 		return;
-	auto &r        = def.prules[def.crules-1];
+	auto &r        = def.rules.back();
 	s.bias         = r.bias;
 	s.daylightbias = r.daylightbias;
 	s.standarddate = r.standarddate;
@@ -261,16 +253,17 @@ static void oxcical_convert_to_tzstruct(const TZDEF &def, TZSTRUCT &s)
 	s.daylightyear = s.daylightdate.year;
 }
 
-static bool oxcical_tzdefinition_to_binary(const TZDEF &def,
+static bool oxcical_tzdefinition_to_binary(TZDEF &def,
 	uint16_t tzrule_flags, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
 
 	if (!ext_push.init(pbin->pb, MAX_TZDEFINITION_LENGTH, 0))
 		return false;
-	for (size_t i = 0; i < def.crules; ++i)
-		def.prules[i].flags = tzrule_flags;
-	if (ext_push.p_tzdef(def) != pack_result::ok)
+	for (auto &r : def.rules)
+		r.flags = tzrule_flags;
+	auto err = ext_push.p_tzdef(def);
+	if (err != pack_result::ok)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return true;
@@ -655,22 +648,20 @@ static bool oxcical_take_tzbin(bool b_dtstart, const BINARY &tmp_bin,
 static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
-	TZRULE rules_buff[MAX_TZRULE_NUMBER];
-	TZDEF tz_definition;
+	TZDEF def;
 	BINARY tmp_bin;
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
-	tz_definition.prules = rules_buff;
-	if (!oxcical_tzcom_to_def(tzcom, tz_definition))
+	if (!oxcical_tzcom_to_def(tzcom, def))
 		return false;
-	if (tz_definition.crules == 0) {
+	if (def.rules.empty()) {
 		mlog(LV_DEBUG, "Rejecting conversion of iCal to MAPI object: no sensible TZ rules found (e.g. RFC 5545 §3.6.5 VTIMEZONE without STANDARD/DAYLIGHT not permitted)");
 		return false;
 	}
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
-	if (!oxcical_tzdefinition_to_binary(tz_definition,
-	    TZRULE_FLAG_EFFECTIVE_TZREG, &tmp_bin))
+	if (oxcical_tzdefinition_to_binary(def,
+	    TZRULE_FLAG_EFFECTIVE_TZREG, &tmp_bin) != ecSuccess)
 		return false;
 	return oxcical_take_tzbin(b_dtstart, tmp_bin, phash, plast_propid, pmsg);
 }
@@ -681,12 +672,10 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	BINARY tmp_bin;
 	const char *ptzid;
 	TZSTRUCT tz_struct;
-	TZDEF tz_definition;
-	TZRULE rules_buff[MAX_TZRULE_NUMBER];
+	TZDEF def;
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
-	tz_definition.prules = rules_buff;
-	if (!oxcical_tzcom_to_def(tzcom, tz_definition))
+	if (!oxcical_tzcom_to_def(tzcom, def))
 		return false;
 	auto piline = tzcom.get_line("TZID");
 	if (piline == nullptr)
@@ -700,7 +689,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), ptzid) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
-	oxcical_convert_to_tzstruct(tz_definition, tz_struct);
+	oxcical_convert_to_tzstruct(def, tz_struct);
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
 	if (!oxcical_timezonestruct_to_binary(tz_struct, &tmp_bin))
@@ -713,8 +702,9 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	(*plast_propid) ++;
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
-	if (!oxcical_tzdefinition_to_binary(tz_definition,
-	    TZRULE_FLAG_EFFECTIVE_TZREG | TZRULE_FLAG_RECUR_CURRENT_TZREG, &tmp_bin))
+	if (oxcical_tzdefinition_to_binary(def,
+	    TZRULE_FLAG_EFFECTIVE_TZREG | TZRULE_FLAG_RECUR_CURRENT_TZREG,
+	    &tmp_bin) != ecSuccess)
 		return false;
 	propname = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
