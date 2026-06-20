@@ -468,7 +468,7 @@ struct GX_EXPORT TZRULE {
 
 /* MS-OXOCAL v21 §2.2.1.41 */
 struct GX_EXPORT TZDEF {
-	char *keyname = nullptr;
+	std::string keyname;
 	uint16_t crules = 0;
 	TZRULE *prules = nullptr;
 };

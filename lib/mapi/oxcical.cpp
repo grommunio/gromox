@@ -158,14 +158,15 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	return true;
 }
 
-static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def)
+static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 {
 	auto piline = vt.get_line("TZID");
 	if (piline == nullptr)
 		return false;
-	def.keyname = deconst(piline->get_first_subvalue());
-	if (def.keyname == nullptr)
+	auto keyname = deconst(piline->get_first_subvalue());
+	if (keyname == nullptr)
 		return false;
+	def.keyname = keyname;
 	def.crules = 0;
 	for (const auto &comp : vt.component_list) {
 		auto pcomponent = &comp;
@@ -242,6 +243,8 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def)
 	def.prules[0].x[0] = 1;
 	def.prules[0].x[4] = 1;
 	return true;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static void oxcical_convert_to_tzstruct(const TZDEF &def, TZSTRUCT &s)
@@ -3696,6 +3699,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		l_apptseq, l_location, l_locationurl, l_intendedbusy, l_nopropose,
 	};
 	static_assert(l_nopropose + 1 == std::size(namequeries));
+	std::string new_tzid;
 	PROPID_ARRAY propids;
 	APPOINTMENT_RECUR_PAT apprecurr;
 
@@ -3819,7 +3823,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
-				tzid = tz_definition.keyname;
+				new_tzid = tz_definition.keyname;
+				tzid = new_tzid.c_str();
 				oxcical_convert_to_tzstruct(tz_definition, tz_struct);
 				ptz_component = oxcical_export_timezone(
 						pical, year - 1, tzid, &tz_struct);
@@ -3838,7 +3843,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2209: PidLidAppointmentTimeZoneDefinition{Start/End}Display contents not recognized";
-				tzid = tz_definition.keyname;
+				new_tzid = tz_definition.keyname;
+				tzid = new_tzid.c_str();
 				oxcical_convert_to_tzstruct(tz_definition, tz_struct);
 				ptz_component = oxcical_export_timezone(
 						pical, year - 1, tzid, &tz_struct);

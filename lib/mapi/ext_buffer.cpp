@@ -1746,7 +1746,7 @@ static pack_result ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 	return pext->g_systime(&r->daylightdate);
 }
 
-pack_result EXT_PULL::g_tzdef(TZDEF *r)
+pack_result EXT_PULL::g_tzdef(TZDEF *r) try
 {
 	uint8_t major, minor;
 	uint16_t reserved, cbheader;
@@ -1767,10 +1767,7 @@ pack_result EXT_PULL::g_tzdef(TZDEF *r)
 	TRY(g_bytes(tmp_buff, cbheader - 6));
 	if (!utf16le_to_utf8(tmp_buff, cbheader - 4, tmp_buff1, std::size(tmp_buff1)))
 		return pack_result::charconv;
-	r->keyname = anew<char>(strlen(tmp_buff1) + 1);
-	if (r->keyname == nullptr)
-		return pack_result::alloc;
-	strcpy(r->keyname, tmp_buff1);
+	r->keyname = tmp_buff1;
 	TRY(g_uint16(&r->crules));
 	CLAMP16(r->crules);
 	r->prules = anew<TZRULE>(r->crules);
@@ -1781,6 +1778,8 @@ pack_result EXT_PULL::g_tzdef(TZDEF *r)
 	for (size_t i = 0; i < r->crules; ++i)
 		TRY(ext_buffer_pull_tzrule(this, &r->prules[i]));
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
@@ -3006,7 +3005,7 @@ pack_result EXT_PUSH::p_tzdef(const TZDEF &r)
 	
 	TRY(p_uint8(2));
 	TRY(p_uint8(1));
-	auto len = utf8_to_utf16le(r.keyname, tmp_buff, std::size(tmp_buff));
+	auto len = utf8_to_utf16le(r.keyname.c_str(), tmp_buff, std::size(tmp_buff));
 	if (len < 2)
 		return pack_result::charconv;
 	len -= 2;
