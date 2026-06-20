@@ -900,13 +900,13 @@ static ec_error_t oxcical_parse_categories(const ical_component &main_event,
 	return ecSuccess;
 }
 
-static bool oxcical_parse_class(const ical_component &main_event,
+static ec_error_t oxcical_parse_class(const ical_component &main_event,
     MESSAGE_CONTENT *pmsg)
 {
 	auto piline = main_event.get_line("CLASS");
 	if (piline == nullptr) {
 		uint32_t v = SENSITIVITY_NONE;
-		return pmsg->proplist.set(PR_SENSITIVITY, &v) == ecSuccess;
+		return pmsg->proplist.set(PR_SENSITIVITY, &v);
 	}
 
 	uint32_t tmp_int32;
@@ -914,7 +914,7 @@ static bool oxcical_parse_class(const ical_component &main_event,
 
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return true;
+		return ecSuccess;
 	if (strcasecmp(pvalue, "PERSONAL") == 0 ||
 	    strcasecmp(pvalue, "X-PERSONAL") == 0)
 		tmp_int32 = SENSITIVITY_PERSONAL;
@@ -925,8 +925,8 @@ static bool oxcical_parse_class(const ical_component &main_event,
 	else if (strcasecmp(pvalue, "PUBLIC"))
 		tmp_int32 = SENSITIVITY_NONE;
 	else
-		return true;
-	return pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) == ecSuccess;
+		return ecSuccess;
+	return pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32);
 }
 
 static bool oxcical_parse_body(const ical_component &main_event,
@@ -2134,10 +2134,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 	err = oxcical_parse_categories(*pmain_event, phash, &last_propid, pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_class(*pmain_event, pmsg)) {
-		errstr = "E-2192: oxcical_parse_class returned an unspecified error";
-		return ecInvalidParam;
-	}
+	err = oxcical_parse_class(*pmain_event, pmsg);
+	if (err != ecSuccess)
+		return err;
 	if (!oxcical_parse_body(*pmain_event, method, pmsg)) {
 		errstr = "E-2705: oxcical_parse_body returned an unspecified error";
 		return ecInvalidParam;
@@ -2653,10 +2652,10 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 	auto err = oxcical_parse_categories(comp, phash, &last_propid, pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_class(comp, pmsg)) {
-		errstr = "E-2192: oxcical_parse_class returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_body(comp, "", pmsg)) {
+	err = oxcical_parse_class(comp, pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_body(comp, "", pmsg)) {
 		errstr = "E-2705: oxcical_parse_body returned an unspecified error";
 		return ecInvalidParam;
 	} else if (!oxcical_parse_html(comp, pmsg)) {
@@ -2771,10 +2770,10 @@ static ec_error_t oxcical_import_journal(const ical &pical,
 	auto err = oxcical_parse_categories(comp, phash, &last_propid, pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_class(comp, pmsg)) {
-		errstr = "E-2192: oxcical_parse_class returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_body(comp, "", pmsg)) {
+	err = oxcical_parse_class(comp, pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_body(comp, "", pmsg)) {
 		errstr = "E-2705: oxcical_parse_body returned an unspecified error";
 		return ecInvalidParam;
 	} else if (!oxcical_parse_html(comp, pmsg)) {
