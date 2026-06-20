@@ -263,16 +263,16 @@ static void oxcical_convert_to_tzstruct(const TZDEF &def, TZSTRUCT &s)
 	s.daylightyear = s.daylightdate.year;
 }
 
-static bool oxcical_tzdefinition_to_binary(const TZDEF *ptz_definition,
+static bool oxcical_tzdefinition_to_binary(const TZDEF &def,
 	uint16_t tzrule_flags, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
 
 	if (!ext_push.init(pbin->pb, MAX_TZDEFINITION_LENGTH, 0))
 		return false;
-	for (size_t i = 0; i < ptz_definition->crules; ++i)
-		ptz_definition->prules[i].flags = tzrule_flags;
-	if (ext_push.p_tzdef(*ptz_definition) != pack_result::ok)
+	for (size_t i = 0; i < def.crules; ++i)
+		def.prules[i].flags = tzrule_flags;
+	if (ext_push.p_tzdef(def) != pack_result::ok)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return true;
@@ -671,7 +671,7 @@ static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
 	}
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
-	if (!oxcical_tzdefinition_to_binary(&tz_definition,
+	if (!oxcical_tzdefinition_to_binary(tz_definition,
 	    TZRULE_FLAG_EFFECTIVE_TZREG, &tmp_bin))
 		return false;
 	return oxcical_take_tzbin(b_dtstart, tmp_bin, phash, plast_propid, pmsg);
@@ -715,7 +715,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	(*plast_propid) ++;
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
-	if (!oxcical_tzdefinition_to_binary(&tz_definition,
+	if (!oxcical_tzdefinition_to_binary(tz_definition,
 	    TZRULE_FLAG_EFFECTIVE_TZREG | TZRULE_FLAG_RECUR_CURRENT_TZREG, &tmp_bin))
 		return false;
 	propname = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur};
