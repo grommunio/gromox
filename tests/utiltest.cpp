@@ -604,6 +604,19 @@ static int t_time()
 	return EXIT_SUCCESS;
 }
 
+static int t_tzdef()
+{
+	TZRULE r[2];
+	TZDEF d;
+	d.prules = r;
+	d.crules = std::size(r);
+	r[0].year = 1971;
+	r[1].year = 1972;
+	int64_t ofs;
+	offset_from_tz(d, 369 * 86400, ofs);
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -621,7 +634,7 @@ static int runner()
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_string,
-		t_time,
+		t_time, t_tzdef,
 	};
 	for (auto f : fct) {
 		auto ret = f();

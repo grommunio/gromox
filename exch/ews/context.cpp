@@ -2918,7 +2918,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 					exp.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
 					int64_t tz_off = 0;
 					if (exp.g_tzdef(&tz) == pack_result::ok &&
-					    offset_from_tz(&tz, localStartTime, tz_off))
+					    offset_from_tz(tz, localStartTime, tz_off))
 						appt_local = localStartTime -
 							static_cast<time_t>(tz_off) * 60;
 				}
@@ -3802,7 +3802,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 						TZDEF tzd;
 						ep.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
 						if (ep.g_tzdef(&tzd) == pack_result::ok)
-							offset_from_tz(&tzd, localStartTime, tz_off);
+							offset_from_tz(tzd, localStartTime, tz_off);
 					}
 				}
 				auto real_utc = localStartTime + static_cast<time_t>(startOffset) * 60;
@@ -4018,10 +4018,10 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			}
 
 			if ((startOffset == 0 && calcStartOffset) &&
-			    !offset_from_tz(&tzdef, startTime, startOffset))
+			    !offset_from_tz(tzdef, startTime, startOffset))
 				throw EWSError::TimeZone(E3300);
 			if ((endOffset == 0 && calcEndOffset) &&
-			    !offset_from_tz(&tzdef, endTime, endOffset))
+			    !offset_from_tz(tzdef, endTime, endOffset))
 				throw EWSError::TimeZone(E3374);
 			item.Start.value().offset = std::chrono::minutes(startOffset);
 			item.End.value().offset = std::chrono::minutes(endOffset);

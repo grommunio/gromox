@@ -1959,11 +1959,11 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 				auto tag = shape.tag(NtCommonStart);
 				if (tag != 0 && startTime.has_value() &&
 				    std::find(op.begin(), op.end(), tag) != op.end())
-					offset_from_tz(&tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
+					offset_from_tz(tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
 				tag = shape.tag(NtCommonEnd);
 				if (tag != 0 && endTime.has_value() &&
 				    std::find(op.begin(), op.end(), tag) != op.end())
-					offset_from_tz(&tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
+					offset_from_tz(tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
 			}
 		}
 	}
