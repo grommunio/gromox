@@ -2438,6 +2438,26 @@ void process(mGetAppManifestsRequest&&, XMLElement *response, const EWSContext&)
 }
 
 /**
+ * @brief      Process GetUnifiedGroupsSettings
+ *
+ * Outlook asks for this at startup and prompts for credentials again when
+ * the request fails. Answer like Exchange SE, which reports all groups
+ * features off.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetUnifiedGroupsSettingsRequest &&, XMLElement *response,
+    const EWSContext &)
+{
+	response->SetName("m:GetUnifiedGroupsSettingsResponseMessage");
+	mGetUnifiedGroupsSettingsResponse data;
+	data.success();
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetAppMarketplaceUrl
  *
  * Stub reporting the marketplace as unavailable, like Exchange does
