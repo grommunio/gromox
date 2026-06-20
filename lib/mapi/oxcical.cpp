@@ -945,28 +945,29 @@ static ec_error_t oxcical_parse_body(const ical_component &main_event,
 	return pmsg->proplist.set(PR_BODY, pvalue);
 }
 
-static bool oxcical_parse_html(const ical_component &main_event,
+static ec_error_t oxcical_parse_html(const ical_component &main_event,
     MESSAGE_CONTENT *pmsg)
 {
 	auto piline = main_event.get_line("X-ALT-DESC");
 	if (piline == nullptr)
-		return true;
+		return ecSuccess;
 	auto pvalue = piline->get_first_paramval("FMTTYPE");
 	if (pvalue == nullptr || strcasecmp(pvalue, "text/html") != 0)
-		return true;
+		return ecSuccess;
 
 	BINARY tmp_bin;
 	uint32_t tmp_int32;
 
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return true;
+		return ecSuccess;
 	tmp_bin.cb = strlen(pvalue);
 	tmp_bin.pc = deconst(pvalue);
-	if (pmsg->proplist.set(PR_HTML, &tmp_bin) != ecSuccess)
-		return false;
+	auto err = pmsg->proplist.set(PR_HTML, &tmp_bin);
+	if (err != ecSuccess)
+		return err;
 	tmp_int32 = CP_UTF8;
-	return pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) == ecSuccess;
+	return pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32);
 }
 
 static bool oxcical_parse_dtstamp(const ical_component &main_event,
@@ -2137,10 +2138,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 	err = oxcical_parse_body(*pmain_event, method, pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_html(*pmain_event, pmsg)) {
-		errstr = "E-2193: oxcical_parse_html returned an unspecified error";
-		return ecInvalidParam;
-	}
+	err = oxcical_parse_html(*pmain_event, pmsg);
+	if (err != ecSuccess)
+		return err;
 	bool b_allday = oxcical_parse_allday(*pmain_event);
 	if (!oxcical_parse_dtstamp(*pmain_event, method,
 	    phash, &last_propid, pmsg)) {
@@ -2654,10 +2654,10 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 	err = oxcical_parse_body(comp, "", pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_html(comp, pmsg)) {
-		errstr = "E-2193: oxcical_parse_html returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg)) {
+	err = oxcical_parse_html(comp, pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg)) {
 		errstr = "E-2194: oxcical_parse_dtstamp returned an unspecified error";
 		return ecInvalidParam;
 	} else if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr)) {
@@ -2772,10 +2772,10 @@ static ec_error_t oxcical_import_journal(const ical &pical,
 	err = oxcical_parse_body(comp, "", pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_html(comp, pmsg)) {
-		errstr = "E-2193: oxcical_parse_html returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg)) {
+	err = oxcical_parse_html(comp, pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg)) {
 		errstr = "E-2194: oxcical_parse_dtstamp returned an unspecified error";
 		return ecInvalidParam;
 	} else if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr)) {
