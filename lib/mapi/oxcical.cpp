@@ -929,7 +929,7 @@ static ec_error_t oxcical_parse_class(const ical_component &main_event,
 	return pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32);
 }
 
-static bool oxcical_parse_body(const ical_component &main_event,
+static ec_error_t oxcical_parse_body(const ical_component &main_event,
     const char *method, MESSAGE_CONTENT *pmsg)
 {
 	const char *linetype = "DESCRIPTION";
@@ -938,14 +938,11 @@ static bool oxcical_parse_body(const ical_component &main_event,
 		linetype = "COMMENT";
 	auto piline = main_event.get_line(linetype);
 	if (piline == nullptr)
-		return true;
-
-	const char *pvalue;
-
-	pvalue = piline->get_first_subvalue();
+		return ecSuccess;
+	auto pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return true;
-	return pmsg->proplist.set(PR_BODY, pvalue) == ecSuccess;
+		return ecSuccess;
+	return pmsg->proplist.set(PR_BODY, pvalue);
 }
 
 static bool oxcical_parse_html(const ical_component &main_event,
@@ -2137,10 +2134,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 	err = oxcical_parse_class(*pmain_event, pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_body(*pmain_event, method, pmsg)) {
-		errstr = "E-2705: oxcical_parse_body returned an unspecified error";
-		return ecInvalidParam;
-	}
+	err = oxcical_parse_body(*pmain_event, method, pmsg);
+	if (err != ecSuccess)
+		return err;
 	if (!oxcical_parse_html(*pmain_event, pmsg)) {
 		errstr = "E-2193: oxcical_parse_html returned an unspecified error";
 		return ecInvalidParam;
@@ -2655,10 +2651,10 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 	err = oxcical_parse_class(comp, pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_body(comp, "", pmsg)) {
-		errstr = "E-2705: oxcical_parse_body returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_html(comp, pmsg)) {
+	err = oxcical_parse_body(comp, "", pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_html(comp, pmsg)) {
 		errstr = "E-2193: oxcical_parse_html returned an unspecified error";
 		return ecInvalidParam;
 	} else if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg)) {
@@ -2773,10 +2769,10 @@ static ec_error_t oxcical_import_journal(const ical &pical,
 	err = oxcical_parse_class(comp, pmsg);
 	if (err != ecSuccess)
 		return err;
-	if (!oxcical_parse_body(comp, "", pmsg)) {
-		errstr = "E-2705: oxcical_parse_body returned an unspecified error";
-		return ecInvalidParam;
-	} else if (!oxcical_parse_html(comp, pmsg)) {
+	err = oxcical_parse_body(comp, "", pmsg);
+	if (err != ecSuccess)
+		return err;
+	if (!oxcical_parse_html(comp, pmsg)) {
 		errstr = "E-2193: oxcical_parse_html returned an unspecified error";
 		return ecInvalidParam;
 	} else if (!oxcical_parse_dtstamp(comp, "", phash, &last_propid, pmsg)) {
