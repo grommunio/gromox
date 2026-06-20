@@ -278,12 +278,12 @@ static bool oxcical_tzdefinition_to_binary(const TZDEF &def,
 	return true;
 }
 
-static bool oxcical_timezonestruct_to_binary(TZSTRUCT *ptzstruct, BINARY *pbin)
+static bool oxcical_timezonestruct_to_binary(const TZSTRUCT &s, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
 
 	if (!ext_push.init(pbin->pb, 256, 0) ||
-	    ext_push.p_tzstruct(*ptzstruct) != pack_result::ok)
+	    ext_push.p_tzstruct(s) != pack_result::ok)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return true;
@@ -705,7 +705,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	oxcical_convert_to_tzstruct(tz_definition, tz_struct);
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
-	if (!oxcical_timezonestruct_to_binary(&tz_struct, &tmp_bin))
+	if (!oxcical_timezonestruct_to_binary(tz_struct, &tmp_bin))
 		return false;
 	propname = {MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
