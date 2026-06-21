@@ -157,14 +157,14 @@ static ec_error_t oxcical_parse_vtsubcomponent(const ical_component &sub,
 	return ecSuccess;
 }
 
-static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
+static ec_error_t oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 {
 	auto piline = vt.get_line("TZID");
 	if (piline == nullptr)
-		return false;
+		return ecInvalidParam;
 	auto keyname = deconst(piline->get_first_subvalue());
 	if (keyname == nullptr)
-		return false;
+		return ecInvalidParam;
 	def.keyname = keyname;
 	auto &rules = def.rules;
 	rules.clear();
@@ -182,9 +182,10 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 		int32_t bias = 0, dstbias = 0;
 		int16_t year = 0;
 		SYSTEMTIME date{};
-		if (oxcical_parse_vtsubcomponent(*pcomponent, &bias, &dstbias,
-		    &year, &date) != ecSuccess)
-			return false;
+		auto err = oxcical_parse_vtsubcomponent(*pcomponent, &bias,
+		           &dstbias, &year, &date);
+		if (err != ecSuccess)
+			return err;
 
 		auto iter = std::find_if(rules.begin(), rules.end(),
 		            [&](const TZRULE &r) { return r.year == year; });
@@ -202,7 +203,7 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 		}
 	}
 	if (rules.empty())
-		return false;
+		return ecInvalidParam;
 	std::sort(rules.begin(), rules.end());
 
 	const TZRULE *std = nullptr, *dlit = nullptr;
@@ -234,9 +235,9 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 	rules[0].year = 1601;
 	rules[0].x[0] = 1;
 	rules[0].x[4] = 1;
-	return true;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	return false;
+	return ecMAPIOOM;
 }
 
 static void oxcical_convert_to_tzstruct(const TZDEF &def, TZSTRUCT &s)
@@ -656,7 +657,7 @@ static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
 	BINARY tmp_bin;
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
-	if (!oxcical_tzcom_to_def(tzcom, def))
+	if (oxcical_tzcom_to_def(tzcom, def) != ecSuccess)
 		return false;
 	if (def.rules.empty()) {
 		mlog(LV_DEBUG, "Rejecting conversion of iCal to MAPI object: no sensible TZ rules found (e.g. RFC 5545 §3.6.5 VTIMEZONE without STANDARD/DAYLIGHT not permitted)");
@@ -679,7 +680,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	TZDEF def;
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
-	if (!oxcical_tzcom_to_def(tzcom, def))
+	if (oxcical_tzcom_to_def(tzcom, def) != ecSuccess)
 		return false;
 	auto piline = tzcom.get_line("TZID");
 	if (piline == nullptr)
