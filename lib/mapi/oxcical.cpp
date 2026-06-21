@@ -64,9 +64,8 @@ static ec_error_t namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) t
 	return ecMAPIOOM;
 }
 
-static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
-	int32_t *pbias, int32_t *pdaylightbias, int16_t *pyear,
-	SYSTEMTIME *pdate)
+static ec_error_t oxcical_parse_vtsubcomponent(const ical_component &sub,
+    int32_t *pbias, int32_t *pdaylightbias, int16_t *pyear, SYSTEMTIME *pdate)
 {
 	int dayofweek;
 	int weekorder;
@@ -77,38 +76,38 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	*pdate = {};
 	auto piline = sub.get_line("TZOFFSETTO");
 	if (piline == nullptr)
-		return false;
+		return ecInvalidParam;
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return false;
+		return ecInvalidParam;
 	int west = 0;
 	if (!simple_zone_to_minwest(pvalue, &west, nullptr))
-		return false;
+		return ecInvalidParam;
 	*pbias = west;
 	if (strcasecmp(sub.m_name.c_str(), "DAYLIGHT") == 0) {
 		piline = sub.get_line("TZOFFSETFROM");
 		if (piline == nullptr)
-			return false;
+			return ecInvalidParam;
 		pvalue = piline->get_first_subvalue();
 		if (pvalue == nullptr)
-			return false;
+			return ecInvalidParam;
 		int fromwest = 0;
 		if (!simple_zone_to_minwest(pvalue, &fromwest, nullptr))
-			return false;
+			return ecInvalidParam;
 		*pdaylightbias = west - fromwest;
 	}
 	piline = sub.get_line("DTSTART");
 	if (piline == nullptr)
-		return false;
+		return ecInvalidParam;
 	if (piline->get_first_paramval("TZID") != nullptr)
-		return false;
+		return ecInvalidParam;
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return false;
+		return ecInvalidParam;
 	ical_time itime{};
 	if (!itime.assign_datetime(pvalue) || itime.type == itime_type::utc)
 		/* Z specifier should not be used with VTIMEZONE.DTSTART */
-		return false;
+		return ecInvalidParam;
 	*pyear = itime.year;
 	pdate->hour = itime.hour;
 	pdate->minute = itime.minute;
@@ -120,32 +119,32 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 		pdate->dayofweek = ical_get_dayofweek(
 			itime.year, itime.month, itime.day);
 		pdate->day = ical_get_monthweekorder(itime.day);
-		return true;
+		return ecSuccess;
 	}
 	pvalue = piline->get_first_subvalue_by_name("FREQ");
 	if (pvalue == nullptr || strcasecmp(pvalue, "YEARLY") != 0)
-		return false;
+		return ecInvalidParam;
 	pvalue = piline->get_first_subvalue_by_name("BYDAY");
 	pvalue1 = piline->get_first_subvalue_by_name("BYMONTHDAY");
 	if ((pvalue == nullptr && pvalue1 == nullptr) ||
 	    (pvalue != nullptr && pvalue1 != nullptr))
-		return false;
+		return ecInvalidParam;
 	pvalue2 = piline->get_first_subvalue_by_name("BYMONTH");
 	if (pvalue2 == nullptr) {
 		pdate->month = itime.month;
 	} else {
 		pdate->month = strtol(pvalue2, nullptr, 10);
 		if (pdate->month < 1 || pdate->month > 12)
-			return false;
+			return ecInvalidParam;
 	}
 	if (pvalue != nullptr) {
 		pdate->year = 0;
 		if (!ical_parse_byday(pvalue, &dayofweek, &weekorder))
-			return false;
+			return ecInvalidParam;
 		if (weekorder == -1)
 			weekorder = 5;
 		if (weekorder > 5 || weekorder < 1)
-			return false;
+			return ecInvalidParam;
 		pdate->dayofweek = dayofweek;
 		pdate->day = weekorder;
 	} else {
@@ -153,9 +152,9 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 		pdate->dayofweek = 0;
 		pdate->day = strtol(pvalue1, nullptr, 10);
 		if (abs(pdate->day) < 1 || abs(pdate->day) > 31)
-			return false;
+			return ecInvalidParam;
 	}
-	return true;
+	return ecSuccess;
 }
 
 static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
@@ -183,7 +182,8 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 		int32_t bias = 0, dstbias = 0;
 		int16_t year = 0;
 		SYSTEMTIME date{};
-		if (!oxcical_parse_vtsubcomponent(*pcomponent, &bias, &dstbias, &year, &date))
+		if (oxcical_parse_vtsubcomponent(*pcomponent, &bias, &dstbias,
+		    &year, &date) != ecSuccess)
 			return false;
 
 		auto iter = std::find_if(rules.begin(), rules.end(),
