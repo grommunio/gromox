@@ -650,25 +650,30 @@ static ec_error_t oxcical_take_tzbin(bool b_dtstart, const BINARY &tmp_bin,
 	return ecSuccess;
 }
 
-static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
-    namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
+static ec_error_t oxcical_parse_tzdisplay(bool b_dtstart,
+    const ical_component &tzcom, namemap &phash, uint16_t *plast_propid,
+    message_content *pmsg, std::string &errstr) try
 {
 	TZDEF def;
 	BINARY tmp_bin;
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
-	if (oxcical_tzcom_to_def(tzcom, def) != ecSuccess)
-		return false;
+	auto err = oxcical_tzcom_to_def(tzcom, def);
+	if (err != ecSuccess)
+		return err;
 	if (def.rules.empty()) {
-		mlog(LV_DEBUG, "Rejecting conversion of iCal to MAPI object: no sensible TZ rules found (e.g. RFC 5545 §3.6.5 VTIMEZONE without STANDARD/DAYLIGHT not permitted)");
-		return false;
+		errstr = "No sensible TZ rules found (e.g. RFC 5545 §3.6.5 VTIMEZONE without STANDARD/DAYLIGHT not permitted)";
+		return ecInvalidParam;
 	}
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
-	if (oxcical_tzdefinition_to_binary(def,
-	    TZRULE_FLAG_EFFECTIVE_TZREG, &tmp_bin) != ecSuccess)
-		return false;
-	return oxcical_take_tzbin(b_dtstart, tmp_bin, phash, plast_propid, pmsg) == ecSuccess;
+	err = oxcical_tzdefinition_to_binary(def, TZRULE_FLAG_EFFECTIVE_TZREG,
+	      &tmp_bin);
+	if (err != ecSuccess)
+		return err;
+	return oxcical_take_tzbin(b_dtstart, tmp_bin, phash, plast_propid, pmsg);
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
 }
 
 static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
@@ -2164,11 +2169,10 @@ static ec_error_t oxcical_import_internal(const char *method,
 	if (ptzid != nullptr) {
 		ptz_component = oxcical_find_vtimezone(pical, ptzid);
 		if (ptz_component != nullptr) {
-			if (!oxcical_parse_tzdisplay(true, *ptz_component, phash,
-			    &last_propid, pmsg)) {
-				errstr = "E-2195: oxcical_parse_tzdisplay returned an unspecified error";
-				return ecInvalidParam;
-			}
+			err = oxcical_parse_tzdisplay(true, *ptz_component,
+			      phash, &last_propid, pmsg, errstr);
+			if (err != ecSuccess)
+				return err;
 		} else {
 			/*
 			 * As per RFC 5545 §3.2.19, """An individual "VTIMEZONE" calendar
@@ -2260,10 +2264,11 @@ static ec_error_t oxcical_import_internal(const char *method,
 
 	if (pend_itime != nullptr)
 		*pend_itime = end_itime;
-	if (ptz_component != nullptr && !oxcical_parse_tzdisplay(false,
-	    *ptz_component, phash, &last_propid, pmsg)) {
-		errstr = "E-2701: oxcical_parse_tzdisplay returned an unspecified error";
-		return ecInvalidParam;
+	if (ptz_component != nullptr) {
+		err = oxcical_parse_tzdisplay(false, *ptz_component, phash,
+		      &last_propid, pmsg, errstr);
+		if (err != ecSuccess)
+			return err;
 	}
 	if (!oxcical_parse_start_end(false, b_proposal,
 	    *pmain_event, end_time, phash, &last_propid, pmsg)) {
