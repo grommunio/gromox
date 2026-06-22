@@ -595,18 +595,22 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	if (!pbuild->build_result || pbuild->depth > MAX_RFC822_DEPTH ||
 	    !pmime->ctype_is_rfc822())
 		return;
-	auto temp_path = pbuild->msg_path + "/"s + pbuild->filename;
+	auto pbf_path = pbuild->msg_path + "/"s + pbuild->filename;
+	if (pbf_path.back() == '/')
+		pbf_path.pop_back();
 	std::string msg_path, dgt_path;
-	if (1 == pbuild->depth) {
+	if (pbuild->depth == 1)
 		msg_path = pbuild->storage_path + "/"s + pmime->get_id();
-		dgt_path = msg_path + ".dgt";
+	else
+		msg_path = pbf_path + "/" + pmime->get_id();
+	if (msg_path.back() == '/') {
+		msg_path.pop_back();
+		dgt_path = msg_path + "/.dgt";
 	} else {
-		msg_path = pbuild->storage_path + "/"s + pbuild->filename +
-		           "/" + pmime->get_id();
 		dgt_path = msg_path + ".dgt";
 	}
 		
-	auto eml_content = pbuild->io.get_substr(temp_path, pmime->get_content_offset(),
+	auto eml_content = pbuild->io.get_substr(pbf_path, pmime->get_content_offset(),
 	                   pmime->get_content_length());
 	if (!eml_content.has_value()) {
 		pbuild->build_result = FALSE;
@@ -711,9 +715,10 @@ BOOL MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 	snprintf(mjson_id, 64, "%s.", id);
 	while (NULL != (pdot = strrchr(mjson_id, '.'))) {
 		*pdot = '\0';
-		char dgt_path[256];
-		snprintf(dgt_path, std::size(dgt_path), "%s/%s/%s.dgt", storage_path,
-		         pjson_base->get_mail_filename(), mjson_id);
+		auto dgt_path = storage_path + "/"s + pjson_base->get_mail_filename();
+		if (dgt_path.back() == '/')
+			dgt_path.pop_back();
+		dgt_path += "/"s + mjson_id + ".dgt";
 		auto eml_content = io.get_full(dgt_path);
 		if (eml_content == nullptr)
 			continue;
