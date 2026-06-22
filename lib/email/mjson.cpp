@@ -44,8 +44,7 @@ struct ENUM_PARAM {
 
 struct BUILD_PARAM {
 	mjson_io &io;
-	const char *filename = nullptr, *msg_path = nullptr;
-	const char *storage_path = nullptr;
+	const char *msg_path = nullptr, *storage_path = nullptr;
 	int depth = 0;
 	BOOL build_result = false;
 };
@@ -383,12 +382,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 		if (NULL != storage_path && NULL != msg_filename &&
 		    pmime->ctype_is_rfc822() &&
 		    (pmime->encoding_is_b() || pmime->encoding_is_q())) {
-			std::string temp_path;
-			if (*msg_filename == '\0')
-				temp_path = storage_path + "/"s + pmime->get_id();
-			else
-				temp_path = storage_path + "/"s + msg_filename + "." + pmime->get_id();
-			ssize_t z = io.get_size(temp_path);
+			ssize_t z = io.get_size(storage_path + "/"s + pmime->get_id());
 			buf += z >= 0 ? " " + std::to_string(z) : " NIL";
 		} else {
 			buf += " " + std::to_string(pmime->length);
@@ -400,15 +394,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 		
 		if (NULL != storage_path && NULL != msg_filename &&
 		    pmime->ctype_is_rfc822()) {
-			std::string temp_path;
-			
-			if (*msg_filename == '\0')
-				temp_path = storage_path + "/"s + pmime->get_id() + ".dgt";
-			else
-				temp_path = storage_path + "/"s + msg_filename +
-				            "." + pmime->get_id() + ".dgt";
-
-			auto eml_content = io.get_full(temp_path);
+			auto eml_content = io.get_full(storage_path + "/"s + pmime->get_id() + ".dgt");
 			if (eml_content == nullptr)
 				goto RFC822_FAILURE;
 			Json::Value digest;
@@ -595,14 +581,11 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	if (!pbuild->build_result || pbuild->depth > MAX_RFC822_DEPTH ||
 	    !pmime->ctype_is_rfc822())
 		return;
-	auto pbf_path = pbuild->msg_path + "/"s + pbuild->filename;
-	if (pbf_path.back() == '/')
-		pbf_path.pop_back();
 	std::string msg_path, dgt_path;
 	if (pbuild->depth == 1)
 		msg_path = pbuild->storage_path + "/"s + pmime->get_id();
 	else
-		msg_path = pbf_path + "/" + pmime->get_id();
+		msg_path = pbuild->msg_path + "/"s + pmime->get_id();
 	if (msg_path.back() == '/') {
 		msg_path.pop_back();
 		dgt_path = msg_path + "/.dgt";
@@ -610,7 +593,8 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 		dgt_path = msg_path + ".dgt";
 	}
 		
-	auto eml_content = pbuild->io.get_substr(pbf_path, pmime->get_content_offset(),
+	auto eml_content = pbuild->io.get_substr(pbuild->msg_path,
+	                   pmime->get_content_offset(),
 	                   pmime->get_content_length());
 	if (!eml_content.has_value()) {
 		pbuild->build_result = FALSE;
@@ -654,10 +638,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 		pbuild->build_result = FALSE;
 		return;
 	}
-	if (pbuild->depth == 1)
-		digest["file"] = pmime->get_id();
-	else
-		digest["file"] = std::string(pbuild->filename) + "." + pmime->get_id();
+	digest["file"] = pmime->get_id();
 	pbuild->io.place(dgt_path, json_to_str(digest));
 	if (!temp_mjson.load_from_json(digest)) {
 		pbuild->build_result = FALSE;
@@ -668,7 +649,6 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	if (pbuild->depth >= MAX_RFC822_DEPTH || !temp_mjson.has_rfc822_part())
 		return;
 	BUILD_PARAM build_param{pbuild->io};
-	build_param.filename = temp_mjson.get_mail_filename();
 	build_param.msg_path = temp_mjson.path.c_str();
 	build_param.storage_path = pbuild->storage_path;
 	build_param.depth = pbuild->depth + 1;
@@ -689,11 +669,9 @@ BOOL MJSON::rfc822_build(mjson_io &io, const char *storage_path) const
 		return FALSE;
 	if (pjson->path.empty())
 		return FALSE;
-	auto temp_path = storage_path + "/"s + pjson->get_mail_filename();
 	BUILD_PARAM build_param{io};
-	build_param.filename = pjson->get_mail_filename();
 	build_param.msg_path = pjson->path.c_str();
-	build_param.storage_path = temp_path.c_str();
+	build_param.storage_path = storage_path;
 	build_param.depth = 1;
 	build_param.build_result = TRUE;
 	pjson->enum_mime(mjson_enum_build, &build_param);
