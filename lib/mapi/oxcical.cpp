@@ -2204,7 +2204,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 			if (def == nullptr)
 				def = wintz_to_tzdef(ptzid);
 			if (def == nullptr) {
-				errstr = "E-2070: Timezone \""s + ptzid + "\" was not declared";
+				errstr = fmt::format("E-2070: Timezone \"{}\" was not declared", ptzid);
 				return ecInvalidParam;
 			}
 			mlog(LV_DEBUG, "D-5324: synthesized data for TZID \"%s\" from internal db", ptzid);
@@ -2274,7 +2274,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 			auto pvalue = piline->get_first_subvalue();
 			if (pvalue == nullptr ||
 			    !ical_parse_duration(pvalue, &duration) || duration < 0) {
-				errstr = "E-2700: ical_parse_duration returned an unspecified error";
+				errstr = fmt::format("E-2700: ical_parse_duration rejected \"{}\"", pvalue);
 				return ecInvalidParam;
 			}
 			end_itime = start_itime;
