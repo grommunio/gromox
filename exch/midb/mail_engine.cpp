@@ -486,6 +486,25 @@ enum ctm_field {
 	CTM_FOLDERID, CTM_SIZE, CTM_KEYWORDS,
 };
 
+static bool kw_test(const char *kw, const std::string &ct_keyword)
+{
+	if (kw == nullptr)
+		return false;
+	std::string_view sv = kw;
+	const std::string_view want = ct_keyword;
+	for (size_t pos = 0; pos < sv.size(); ) {
+		auto sp = sv.find(' ', pos);
+		if (sp == sv.npos)
+			sp = sv.size();
+		auto tok = sv.substr(pos, sp - pos);
+		if (tok.size() == want.size() &&
+		    strncasecmp(tok.data(), want.data(), tok.size()) == 0)
+			return true;
+		pos = sp + 1;
+	}
+	return false;
+}
+
 static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
     xstmt &stm, const char *mid_string, int id, int total_mail,
     uint32_t uidnext, const CONDITION_TREE *ptree) try
@@ -550,23 +569,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (stm.step() != SQLITE_ROW)
 					break;
 				auto kw = stm.col_text(CTM_KEYWORDS);
-				bool found = false;
-				if (kw != nullptr) {
-					std::string_view sv = kw;
-					const std::string_view want = ptree_node->ct_keyword;
-					for (size_t pos = 0; pos < sv.size(); ) {
-						auto sp = sv.find(' ', pos);
-						if (sp == sv.npos)
-							sp = sv.size();
-						auto tok = sv.substr(pos, sp - pos);
-						if (tok.size() == want.size() &&
-						    strncasecmp(tok.data(), want.data(), tok.size()) == 0) {
-							found = true;
-							break;
-						}
-						pos = sp + 1;
-					}
-				}
+				bool found = kw_test(kw, ptree_node->ct_keyword);
 				b_result1 = ptree_node->condition == midb_cond::keyword ? found : !found;
 				break;
 			}
