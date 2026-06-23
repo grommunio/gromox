@@ -40,6 +40,7 @@ enum {
 	MIDB_E_ACCESS_DENIED,
 	MIDB_E_NOTPERMITTED,
 	MIDB_E_NO_FOLDER_TRYCREATE,
+	MIDB_I_SUCCESS,
 };
 
 enum midb_flag : char {

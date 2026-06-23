@@ -3331,6 +3331,36 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
+static int me_set_categories(const char *dir, uint64_t msg_id,
+    std::vector<std::string> &&vec)
+{
+	const PROPERTY_NAME kw_name = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
+	const PROPNAME_ARRAY kw_req = {1, deconst(&kw_name)};
+	PROPID_ARRAY kw_rsp{};
+	if (!exmdb_client->get_named_propids(dir, TRUE, &kw_req, &kw_rsp) ||
+	    kw_rsp.size() != 1 || kw_rsp[0] == 0)
+		return MIDB_E_MDB_SETMSGPROPS;
+	const proptag_t tags[] = {PROP_TAG(PT_MV_UNICODE, kw_rsp[0])};
+	if (vec.empty()) {
+		if (!exmdb_client->remove_message_properties(dir, CP_ACP,
+		    rop_util_make_eid_ex(1, msg_id), tags))
+			return MIDB_E_MDB_SETMSGPROPS;
+		return MIDB_I_SUCCESS;
+	}
+
+	std::vector<char *> ptrs;
+	for (auto &k : vec)
+		ptrs.push_back(k.data());
+	STRING_ARRAY sa = {static_cast<uint32_t>(ptrs.size()), ptrs.data()};
+	const TAGGED_PROPVAL tp[] = {{tags[0], deconst(&sa)}};
+	const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
+	PROBLEM_ARRAY problems;
+	if (!exmdb_client->set_message_properties(dir, nullptr,
+	    CP_ACP, rop_util_make_eid_ex(1, msg_id), &ta, &problems))
+		return MIDB_E_MDB_SETMSGPROPS;
+	return MIDB_I_SUCCESS;
+}
+
 /**
  * Set the custom IMAP keywords (MAPI categories, PidNameKeywords) on a
  * message. The keyword set passed in fully replaces any prior set. The caller
@@ -3371,37 +3401,15 @@ static int me_mskwd(std::span<char *> argv, int sockd) try
 	if (old_kw == keywords)
 		return cmd_write(sockd, "TRUE\r\n");
 
-	auto kwords = gx_split(old_kw, ' ');
-
 	/*
 	 * Send changes to the information store first. It is the "source of
 	 * truth". Only once that succeeds is the midb column refreshed, so
 	 * that a change notification re-syncing from exmdb in between cannot
 	 * resurrect the prior keyword set.
 	 */
-	const PROPERTY_NAME kw_name = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
-	const PROPNAME_ARRAY kw_req = {1, deconst(&kw_name)};
-	PROPID_ARRAY kw_rsp{};
-	if (!exmdb_client->get_named_propids(argv[1], TRUE, &kw_req, &kw_rsp) ||
-	    kw_rsp.size() != 1 || kw_rsp[0] == 0)
-		return MIDB_E_MDB_SETMSGPROPS;
-	const proptag_t tags[] = {PROP_TAG(PT_MV_UNICODE, kw_rsp[0])};
-	if (kwords.empty()) {
-		if (!exmdb_client->remove_message_properties(argv[1], CP_ACP,
-		    rop_util_make_eid_ex(1, msg_id), tags))
-			return MIDB_E_MDB_SETMSGPROPS;
-	} else {
-		std::vector<char *> ptrs;
-		for (auto &k : kwords)
-			ptrs.push_back(k.data());
-		STRING_ARRAY sa = {static_cast<uint32_t>(ptrs.size()), ptrs.data()};
-		const TAGGED_PROPVAL tp[] = {{tags[0], deconst(&sa)}};
-		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
-		PROBLEM_ARRAY problems;
-		if (!exmdb_client->set_message_properties(argv[1], nullptr,
-		    CP_ACP, rop_util_make_eid_ex(1, msg_id), &ta, &problems))
-			return MIDB_E_MDB_SETMSGPROPS;
-	}
+	auto err = me_set_categories(argv[1], msg_id, gx_split(old_kw, ' '));
+	if (err != MIDB_I_SUCCESS)
+		return err;
 
 	/* exmdb committed; now refresh the midb cache column. */
 	stm = gx_sql_prep(pidb->psqlite, "UPDATE messages"
