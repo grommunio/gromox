@@ -94,5 +94,6 @@ Makefile.in
 /test-suite.log
 /tools/authtry
 /tools/ddbg
+/tools/shmget
 /tools/textmapquery
 /tools/tzdump
