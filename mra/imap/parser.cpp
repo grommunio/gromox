@@ -1313,7 +1313,7 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 }
 
 void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
-    echomod suppress_expunge)
+    echomod se_flag)
 {
 	if (pcontext->async_change_mask == 0)
 		return;
@@ -1328,7 +1328,7 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 	 * to FETCH/STORE/SEARCH. Leave the queued expunges (and the seq-number
 	 * renumbering) pending for the next NOOP/CHECK/EXPUNGE/IDLE.
 	 */
-	if (!suppress_expunge) {
+	if (se_flag == echomod::suppress_expunge) {
 		f_expunged = std::move(pcontext->f_expunged_uids);
 		pcontext->async_change_mask &= ~REPORT_EXPUNGE;
 	}
