@@ -3476,6 +3476,12 @@ static int me_pgflg(std::span<char *> argv, int sockd) try
 	std::string kw = znul(pstmt.col_text(8));
 	if (!kw.empty())
 		ans += " " + base64_encode(kw);
+	/*
+	 * If the response line is extended in the future by more data items,
+	 * we will have to either shift keywords to the back, or emit `=`
+	 * (illegal encoding that leads to nothing when using error-ignoring
+	 * forms of the decoder).
+	 */
 	pstmt.finalize();
 	pidb.reset();
 	ans += "\r\n";
