@@ -25,6 +25,7 @@
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include <fmt/core.h>
 #include <libHX/ctype_helper.h>
@@ -1295,6 +1296,17 @@ static void me_extract_digest_fields(const Json::Value &digest,
 		*psize = strtoull(val.c_str(), nullptr, 0);
 }
 
+static inline bool atom_special(char c)
+{
+	/*
+	 * For a slightly better user experience reading translated keyword
+	 * names, ban brackets symmetrically.
+	 */
+	return c == '(' || c == ')' || c == '{' || c == '}' || c == ' ' ||
+	       (c >= 0x00 && c <= 0x1F) || c == 0x7F || c == '%' || c == '*' ||
+	       c == '"' || c == '\\' || c == '[' || c == ']';
+}
+
 /**
  * Obtain message object categories and turn it into a single space-separated
  * string.
@@ -1311,10 +1323,11 @@ static std::string me_get_categories(const char *dir, message_content &mct)
 	auto sa = mct.proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, rsp[0]));
 	if (sa == nullptr)
 		return kw;
-	for (const auto &cat : *sa) {
+	for (std::string categ : *sa) {
+		std::replace_if(categ.begin(), categ.end(), [](char c) { return !atom_special(c); }, '_');
 		if (!kw.empty())
 			kw += ' ';
-		kw += znul(cat);
+		kw += std::move(categ);
 	}
 	return kw;
 }
