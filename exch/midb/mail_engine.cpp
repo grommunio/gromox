@@ -485,13 +485,12 @@ enum ctm_field {
 };
 
 static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
-    sqlite3_stmt *pstmt_message, const char *mid_string, int id, int total_mail,
+    xstmt &stm, const char *mid_string, int id, int total_mail,
     uint32_t uidnext, const CONDITION_TREE *ptree) try
 {
 	size_t sp = 0;
 	bool b_loaded, b_result, b_result1;
 	midb_conj conjunction;
-	time_t tmp_time;
 	KEYWORD_ENUM keyword_enum;
 	std::vector<const CONDITION_TREE *> trees;
 	std::vector<CONDITION_TREE::const_iterator> nodes;
@@ -545,12 +544,11 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				b_result1 = true;
 				break;
 			case midb_cond::answered:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_REPLIED) != 0)
+				if (stm.col_int64(CTM_REPLIED) != 0)
 					b_result1 = true;
 				break;
 			case midb_cond::bcc: {
@@ -567,17 +565,16 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					b_result1 = true;
 				break;
 			}
-			case midb_cond::before:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+			case midb_cond::before: {
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, CTM_RCVDTIME));
+				auto tmp_time = rop_util_nttime_to_unix(stm.col_int64(CTM_RCVDTIME));
 				if (tmp_time < ptree_node->ct_time)
 					b_result1 = true;
 				break;
+			}
 			case midb_cond::body: {
 				if (!b_loaded) {
 					if (me_get_digest(psqlite, mid_string, digest) == 0)
@@ -613,30 +610,27 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			}
 			case midb_cond::deleted:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_DELETED) != 0)
+				if (stm.col_int64(CTM_DELETED) != 0)
 					b_result1 = true;
 				break;
 			case midb_cond::draft:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_UNSENT) != 0)
+				if (stm.col_int64(CTM_UNSENT) != 0)
 					b_result1 = true;
 				break;
 			case midb_cond::flagged:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_FLAGGED) != 0)
+				if (stm.col_int64(CTM_FLAGGED) != 0)
 					b_result1 = true;
 				break;
 			case midb_cond::from: {
@@ -662,62 +656,55 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				b_result1 = ct_hint_seq(ptree_node->ct_seq, id, total_mail);
 				break;
 			case midb_cond::larger:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (gx_sql_col_uint64(pstmt_message, 12) >
-				    ptree_node->ct_size)
+				if (stm.col_uint64(CTM_SIZE) > ptree_node->ct_size)
 					b_result1 = true;
 				break;
 			case midb_cond::is_new:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_RECENT) != 0 &&
-				    sqlite3_column_int64(pstmt_message, CTM_READ) == 0)
+				if (stm.col_int64(CTM_RECENT) != 0 &&
+				    stm.col_int64(CTM_READ) == 0)
 					b_result1 = true;
 				break;
 			case midb_cond::old:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_RECENT) == 0)
+				if (stm.col_int64(CTM_RECENT) == 0)
 					b_result1 = true;
 				break;
-			case midb_cond::on:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+			case midb_cond::on: {
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, CTM_RCVDTIME));
+				auto tmp_time = rop_util_nttime_to_unix(stm.col_int64(CTM_RCVDTIME));
 				if (tmp_time >= ptree_node->ct_time &&
 				    tmp_time < ptree_node->ct_time + 86400)
 					b_result1 = true;
 				break;
+			}
 			case midb_cond::recent:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_RECENT) != 0)
+				if (stm.col_int64(CTM_RECENT) != 0)
 					b_result1 = true;
 				break;
 			case midb_cond::seen:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_READ) != 0)
+				if (stm.col_int64(CTM_READ) != 0)
 					b_result1 = true;
 				break;
 			case midb_cond::sent_before: {
@@ -735,6 +722,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "date", val))
 					break;
+				time_t tmp_time{};
 				if (me_ct_sent_date(base64_decode(val).c_str(), &tmp_time) &&
 				    tmp_time < ptree_node->ct_time)
 					b_result1 = true;
@@ -749,6 +737,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "date", val))
 					break;
+				time_t tmp_time{};
 				if (me_ct_sent_date(base64_decode(val).c_str(), &tmp_time) &&
 				    tmp_time >= ptree_node->ct_time &&
 				    tmp_time < ptree_node->ct_time + 86400)
@@ -764,29 +753,28 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				std::string val;
 				if (!get_digest(digest, "date", val))
 					break;
+				time_t tmp_time{};
 				if (me_ct_sent_date(base64_decode(val).c_str(), &tmp_time) &&
 				    tmp_time >= ptree_node->ct_time)
 					b_result1 = true;
 				break;
 			}
-			case midb_cond::since:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+			case midb_cond::since: {
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, CTM_RCVDTIME));
+				auto tmp_time = rop_util_nttime_to_unix(stm.col_int64(CTM_RCVDTIME));
 				if (tmp_time >= ptree_node->ct_time)
 					b_result1 = true;
 				break;
+			}
 			case midb_cond::smaller:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (gx_sql_col_uint64(pstmt_message, 12) < ptree_node->ct_size)
+				if (stm.col_uint64(CTM_SIZE) < ptree_node->ct_size)
 					b_result1 = true;
 				break;
 			case midb_cond::subject: {
@@ -872,58 +860,51 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			}
 			case midb_cond::unanswered:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_REPLIED) == 0)
+				if (stm.col_int64(CTM_REPLIED) == 0)
 					b_result1 = true;
 				break;
 			case midb_cond::uid:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
 				b_result1 = ct_hint_seq(ptree_node->ct_seq,
-					sqlite3_column_int64(pstmt_message, CTM_UID),
-					uidnext);
+				            stm.col_int64(CTM_UID), uidnext);
 				break;
 			case midb_cond::undeleted:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_DELETED) == 0)
+				if (stm.col_int64(CTM_DELETED) == 0)
 					b_result1 = true;
 				break;
 			case midb_cond::undraft:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_UNSENT) == 0)
+				if (stm.col_int64(CTM_UNSENT) == 0)
 					b_result1 = true;
 				break;
 			case midb_cond::unflagged:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_FLAGGED) == 0)
+				if (stm.col_int64(CTM_FLAGGED) == 0)
 					b_result1 = true;
 				break;
 			case midb_cond::unseen:
-				sqlite3_reset(pstmt_message);
-				sqlite3_bind_text(pstmt_message,
-					1, mid_string, -1, SQLITE_STATIC);
-				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
+				stm.reset();
+				stm.bind_text(1, mid_string);
+				if (stm.step() != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, CTM_READ) == 0)
+				if (stm.col_int64(CTM_READ) == 0)
 					b_result1 = true;
 				break;
 			default:
