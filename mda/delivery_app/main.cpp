@@ -52,6 +52,7 @@ static constexpr generic_module g_dfl_svc_plugins[] = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "lda_fd_limit", CFG_ALIAS},
 	{"lda_fd_limit", "0", CFG_SIZE},
+	{"malloc_trim_interval", "30min", CFG_TIME, "0"},
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	CFG_TABLE_END,
 };
@@ -194,6 +195,7 @@ int main(int argc, char **argv)
 	service_init({g_config_file, g_dfl_svc_plugins, threads_max + free_contexts});
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
+	start_heap_reaper(gxconfig->get_ll("malloc_trim_interval"));
     if (0 != service_run()) {
 		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;

@@ -80,6 +80,7 @@ static constexpr generic_module g_dfl_svc_plugins[] = {
 static constexpr cfg_directive zcore_gxcfg_dflt[] = {
 	{"backfill_transport_headers", "0", CFG_BOOL},
 	{"daemons_fd_limit", "zcore_fd_limit", CFG_ALIAS},
+	{"malloc_trim_interval", "30min", CFG_TIME, "0"},
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	{"zcore_fd_limit", "0", CFG_SIZE},
 	CFG_TABLE_END,
@@ -325,6 +326,7 @@ int main(int argc, char **argv)
 
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
+	start_heap_reaper(gxconfig->get_ll("malloc_trim_interval"));
 	if (iconv_validate() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	textmaps_init();

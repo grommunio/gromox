@@ -68,6 +68,7 @@ static constexpr generic_module g_dfl_svc_plugins[] = {
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "midb_fd_limit", CFG_ALIAS},
+	{"malloc_trim_interval", "10min", CFG_TIME, "0"},
 	{"midb_fd_limit", "0", CFG_SIZE},
 	{"midb_sqlite_busy_timeout", "60s", CFG_TIME_NS, "0s", "1h"},
 	CFG_TABLE_END,
@@ -309,6 +310,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
+	start_heap_reaper(gxconfig->get_ll("malloc_trim_interval"));
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init();

@@ -82,6 +82,7 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"http_fd_limit", "0", CFG_SIZE},
 	{"http_remote_host_hdr", ""},
 	{"istore_standalone", "0"},
+	{"malloc_trim_interval", "10min", CFG_TIME, "0"},
 	CFG_TABLE_END,
 };
 
@@ -322,7 +323,8 @@ int main(int argc, char **argv)
 	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
-	if (0 != service_run()) { 
+	start_heap_reaper(gxconfig->get_ll("malloc_trim_interval"));
+	if (0 != service_run()) {
 		mlog(LV_ERR, "system: failed to run services");
 		return EXIT_FAILURE;
 	}

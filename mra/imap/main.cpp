@@ -82,6 +82,7 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "imap_fd_limit", CFG_ALIAS},
 	{"imap_fd_limit", "0", CFG_SIZE},
 	{"imap_accept_haproxy", "0", CFG_SIZE},
+	{"malloc_trim_interval", "10min", CFG_TIME, "0"},
 	CFG_TABLE_END,
 };
 
@@ -448,6 +449,7 @@ int main(int argc, char **argv)
 	service_init({g_config_file, g_dfl_svc_plugins, context_num});
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
+	start_heap_reaper(gxconfig->get_ll("malloc_trim_interval"));
 	textmaps_init();
 	if (0 != service_run()) { 
 		printf("[system]: failed to run service\n");
