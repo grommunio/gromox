@@ -1123,11 +1123,11 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setpasswd &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_linkmessage &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_link_messages &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_bin(d.search_entryid));
-	TRY(x.p_bin(d.message_entryid));
+	TRY(x.p_bin_a(*d.msg_eids));
 	return pack_result::ok;
 }
 

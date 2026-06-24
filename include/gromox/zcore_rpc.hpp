@@ -655,10 +655,11 @@ struct zcreq_setpasswd final : public zcreq {
 	char *username = nullptr, *passwd = nullptr, *new_passwd = nullptr;
 };
 
-struct zcreq_linkmessage final : public zcreq {
-	using view_t = zcreq_linkmessage;
+struct zcreq_link_messages final : public zcreq {
+	using view_t = zcreq_link_messages;
 	GUID hsession{};
-	BINARY search_entryid{}, message_entryid{};
+	BINARY search_entryid{};
+	BINARY_ARRAY *msg_eids = nullptr;
 };
 
 struct zcreq_savesession final : public zcreq {
@@ -1004,7 +1005,7 @@ using zcresp_icaltomessage = zcresp;
 using zcresp_importdeletion = zcresp;
 using zcresp_importfolder = zcresp;
 using zcresp_importreadstates = zcresp;
-using zcresp_linkmessage = zcresp;
+using zcresp_link_messages = zcresp;
 using zcresp_modifypermissions = zcresp;
 using zcresp_modifyrecipients = zcresp;
 using zcresp_modifyrules = zcresp;

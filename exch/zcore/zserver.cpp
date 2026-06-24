@@ -5056,52 +5056,65 @@ ec_error_t zs_setpasswd(const char *username,
 	       ecSuccess : ecAccessDenied;
 }
 
-ec_error_t zs_linkmessage(GUID hsession,
-	BINARY search_entryid, BINARY message_entryid)
+ec_error_t zs_link_messages(GUID hsession, BINARY search_entryid,
+    const BINARY_ARRAY *msg_eids)
 {
-	BOOL b_result;
-	BOOL b_private;
-	BOOL b_private1;
-	char maildir[256];
-	zs_objtype mapi_type;
+	if (msg_eids == nullptr || msg_eids->count == 0)
+		return ecSuccess;
+
 	eid_t folder_id{}, folder_id1{}, message_id{};
-	uint32_t account_id;
-	uint32_t account_id1;
-	
+	uint32_t account_id = 0, account_id1 = 0;
+	BOOL b_private = false, b_private1 = false;
 	if (common_util_get_messaging_entryid_type(search_entryid) != EITLT_PRIVATE_FOLDER ||
 	    !cu_entryid_to_fid(search_entryid, &b_private,
 	    reinterpret_cast<int *>(&account_id), &folder_id) ||
 	    b_private != TRUE)
 		return ecInvalidParam;
-	if (common_util_get_messaging_entryid_type(message_entryid) != EITLT_PRIVATE_MESSAGE ||
-	    !cu_entryid_to_mid(message_entryid, &b_private1,
-	    reinterpret_cast<int *>(&account_id1), &folder_id1, &message_id) ||
-	    b_private1 != TRUE || account_id != account_id1)
-		return ecInvalidParam;
-	auto pinfo = zs_query_session(hsession);
-	if (pinfo == nullptr)
+	auto info = zs_query_session(hsession);
+	if (info == nullptr)
 		return ecError;
-	auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
+	auto handle = info->ptree->get_store_handle(b_private, account_id);
 	if (zh_is_error(handle))
 		return zh_error(handle);
-	if (pinfo->user_id < 0)
+	if (info->user_id < 0)
 		return ecAccessDenied;
-	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
-	if (pstore == nullptr || mapi_type != zs_objtype::store)
+
+	zs_objtype mapi_type{};
+	auto store = info->ptree->get_object<store_object>(handle, &mapi_type);
+	if (store == nullptr || mapi_type != zs_objtype::store)
 		return ecError;
-	if (!pstore->owner_mode()) {
+	if (!store->owner_mode()) {
 		uint32_t permission = rightsNone;
-		if (!exmdb_client->get_folder_perm(pstore->get_dir(), folder_id,
-		    pinfo->get_username(), &permission))
+		if (!exmdb_client->get_folder_perm(store->get_dir(), folder_id,
+		    info->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsCreate))
 			return ecAccessDenied;
 	}
-	gx_strlcpy(maildir, pstore->get_dir(), std::size(maildir));
-	auto cpid = pinfo->cpid;
-	pinfo.reset();
-	return exmdb_client->link_message(maildir, cpid, folder_id, message_id,
-	       &b_result) && b_result ? ecSuccess : ecError;
+
+	EID_ARRAY ids;
+	ids.count = 0;
+	ids.pids  = cu_alloc<eid_t>(msg_eids->count);
+	if (ids.pids == nullptr)
+		return ecServerOOM;
+	for (size_t i = 0; i < msg_eids->count; ++i) {
+		if (common_util_get_messaging_entryid_type(msg_eids->pbin[i]) != EITLT_PRIVATE_MESSAGE ||
+		    !cu_entryid_to_mid(msg_eids->pbin[i], &b_private1,
+		    reinterpret_cast<int *>(&account_id1), &folder_id1, &message_id) ||
+		    b_private1 != TRUE || account_id != account_id1)
+			/* Skip entries that are not private messages of this store. */
+			continue;
+		ids.pids[ids.count++] = message_id;
+	}
+
+	std::string maildir = store->get_dir();
+	auto cpid = info->cpid;
+	info.reset();
+	if (ids.count == 0)
+		return ecSuccess;
+	BOOL b_partial = false;
+	return exmdb_client->link_messages(maildir.c_str(), cpid, folder_id,
+	       &ids, &b_partial) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_essdn_to_username(const char *essdn, char **username)

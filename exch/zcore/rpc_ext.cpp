@@ -1581,11 +1581,14 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_setpasswd &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_pull(EXT_PULL &x, zcreq_linkmessage &d)
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_link_messages &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_bin(&d.search_entryid));
-	QRF(x.g_bin(&d.message_entryid));
+	d.msg_eids = x.anew<BINARY_ARRAY>();
+	if (d.msg_eids == nullptr)
+		return pack_result::alloc;
+	QRF(x.g_bin_a(d.msg_eids));
 	return pack_result::ok;
 }
 

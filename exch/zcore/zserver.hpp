@@ -144,7 +144,7 @@ extern ec_error_t zs_imtomessage2(GUID session, uint32_t folder_handle, uint32_t
 extern ec_error_t zs_messagetovcf(GUID ses, uint32_t msg_handle, BINARY *vcf);
 extern ec_error_t zs_vcftomessage(GUID ses, uint32_t msg_handle, const BINARY *vcf);
 extern ec_error_t zs_setpasswd(const char *username, const char *passwd, const char *new_passwd);
-extern ec_error_t zs_linkmessage(GUID ses, BINARY search_eid, BINARY msg_eid);
+extern ec_error_t zs_link_messages(GUID ses, BINARY search_eid, const BINARY_ARRAY *msg_eids);
 extern ec_error_t zs_essdn_to_username(const char *essdn, char **username);
 extern ec_error_t zs_getuserfreebusy(GUID ses, BINARY entryid, time_t starttime, time_t endtime, std::vector<freebusy_event> *fb_events);
 extern ec_error_t zs_getuserfreebusyical(GUID ses, BINARY entryid, time_t starttime, time_t endtime, BINARY *ical);
