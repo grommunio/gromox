@@ -4158,6 +4158,36 @@ static ZEND_FUNCTION(mapi_linkmessage)
 	MAPI_G(hr) = ecSuccess;
 }
 
+static ZEND_FUNCTION(mapi_linkmessages)
+{
+	ZCL_MEMORY;
+	size_t srcheid_size = 0;
+	zval *res = nullptr, *arr = nullptr;
+	BINARY search_entryid{};
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rsa",
+	    &res, &search_entryid.pb, &srcheid_size, &arr) == FAILURE ||
+	    res == nullptr || search_entryid.pb == nullptr ||
+	    arr == nullptr)
+		pthrow(ecInvalidParam);
+	search_entryid.cb = srcheid_size;
+
+	MAPI_RESOURCE *ses = nullptr;
+	ZEND_FETCH_RESOURCE(ses, res, le_mapi_session);
+	if (ses->type != zs_objtype::session)
+		pthrow(ecInvalidObject);
+
+	BINARY_ARRAY entryid_array{};
+	auto err = php_to_binary_array(arr, &entryid_array);
+	if (err != ecSuccess)
+		pthrow(err);
+	auto result = zclient_link_messages(ses->hsession, search_entryid,
+	              &entryid_array);
+	if (result != ecSuccess)
+		pthrow(result);
+	MAPI_G(hr) = ecSuccess;
+}
+
 /**
  * mapi_ianatz_to_struct(string $tz) : string|false|throw;
  *
@@ -4337,6 +4367,7 @@ static zend_function_entry mapi_functions[] = {
 	F(nsp_setuserpasswd)
 	F(nsp_essdn_to_username)
 	F(mapi_linkmessage)
+	F(mapi_linkmessages)
 	F(mapi_ianatz_to_tzdef)
 	F(mapi_strerror)
 	{NULL, NULL, NULL}

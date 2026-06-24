@@ -116,5 +116,6 @@ function nsp_getuserinfo(string $username) : array|bool {}
 function nsp_setuserpasswd(string $username, string $oldpass, string $newpass) : bool {}
 function nsp_essdn_to_username(string $essdn) : string|bool {}
 function mapi_linkmessage(resource $ses, ?string $srcheid = null, ?string $msgeid = null) : mixed {}
+function mapi_linkmessages(resource $ses, string $srcheid, array $msgeids) : mixed {}
 function mapi_ianatz_to_tzdef(string $tz) : string|bool {}
 function mapi_strerror(int $code) : string {}
