@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cerrno>
 #include <csignal>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
@@ -20,6 +21,7 @@
 #include <unistd.h>
 #ifdef __GLIBC__
 #	include <execinfo.h>
+#	include <malloc.h>
 #endif
 #include <netinet/in.h>
 #if defined(__linux__) && defined(__GLIBC__) && __GLIBC__ == 2 && __GLIBC_MINOR__ >= 30
@@ -100,6 +102,42 @@ errno_t filedes_limit_bump(size_t max)
 	mlog(LV_NOTICE, "system: maximum file descriptors: %zu",
 		static_cast<size_t>(rl.rlim_cur));
 	return 0;
+}
+
+#ifdef __GLIBC__
+/**
+ * Hand free top-of-arena pages back to the OS. glibc only trims the main arena
+ * automatically; the per-thread arenas it spins up under concurrency keep
+ * their freed pages mapped, so RSS otherwise stays at the high-water of the
+ * busiest burst (reusable, not leaked, but resident) until the process exits.
+ */
+static void *heap_reaper_thread(void *arg)
+{
+	pthread_setname_np(pthread_self(), "heap_reaper");
+	auto secs = static_cast<unsigned int>(reinterpret_cast<uintptr_t>(arg));
+	while (true) {
+		sleep(secs);
+		malloc_trim(0);
+	}
+	return nullptr;
+}
+#endif
+
+void start_heap_reaper(unsigned int interval_seconds)
+{
+	/* this function has to die */
+#ifdef __GLIBC__
+	if (interval_seconds == 0)
+		return;
+	pthread_t tid;
+	auto arg = reinterpret_cast<void *>(static_cast<uintptr_t>(interval_seconds));
+	auto ret = pthread_create4(&tid, nullptr, heap_reaper_thread, arg);
+	if (ret != 0) {
+		mlog(LV_WARN, "cannot start heap reaper thread: %s", strerror(ret));
+		return;
+	}
+	pthread_detach(tid);
+#endif
 }
 
 /**
