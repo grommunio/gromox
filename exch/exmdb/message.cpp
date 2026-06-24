@@ -1251,6 +1251,82 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	return TRUE;
 }
 
+/**
+ * Batch variant of link_message which links many messages into a single search
+ * folder in one write transaction and one notification flush. This avoids the
+ * per-message RPC + transaction + notify overhead that a caller would otherwise
+ * incur by calling link_message in a loop (e.g. grommunio-web populating a
+ * full-text search folder).
+ *
+ * @pb_partial: gets set when at least one message could not be linked
+ *              (missing or not present). Messages that are already linked are
+ *              treated as idempotent/silent successes, matching link_message.
+ */
+BOOL exmdb_server::link_messages(const char *dir, cpid_t cpid,
+	uint64_t folder_id, const EID_ARRAY *message_ids, BOOL *pb_partial)
+{
+	uint32_t folder_type;
+
+	*pb_partial = false;
+	if (!exmdb_server::is_private())
+		return false;
+	if (message_ids == nullptr || message_ids->count == 0)
+		return TRUE;
+	auto db = db_engine_get_db(dir);
+	if (!db)
+		return false;
+	auto fid_val = rop_util_get_gc_value(folder_id);
+	if (!common_util_get_folder_type(db->psqlite, fid_val, &folder_type))
+		return false;
+	if (folder_type != FOLDER_SEARCH)
+		return TRUE;
+	auto sql_transact = gx_sql_begin(db->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
+
+	auto dbase = db->lock_base_wr();
+	db_conn::NOTIFQ notifq;
+	bool b_partial = false, b_linked = false;
+	for (size_t i = 0; i < message_ids->count; ++i) {
+		auto mid_val = rop_util_get_gc_value(message_ids->pids[i]);
+		char sql_string[256];
+		snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM "
+		          "messages WHERE message_id=%llu", LLU{mid_val});
+		auto stm = db->prep(sql_string);
+		if (stm == nullptr)
+			return false;
+		if (stm.step() != SQLITE_ROW) {
+			/* Message no longer present; record as partial failure. */
+			b_partial = true;
+			continue;
+		}
+		stm.finalize();
+
+		BOOL b_exist = false;
+		if (!common_util_check_search_result(db->psqlite, fid_val,
+		    mid_val, &b_exist))
+			return FALSE;
+		if (b_exist)
+			/* Already linked */
+			continue;
+		snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result"
+		        " VALUES (%llu, %llu)", LLU{fid_val}, LLU{mid_val});
+		if (db->exec(sql_string) != SQLITE_OK) {
+			b_partial = true;
+			continue;
+		}
+		db->proc_dynamic_event(cpid, dynamic_event::new_msg,
+			fid_val, mid_val, 0, *dbase, notifq);
+		db->notify_link_creation(fid_val, mid_val, *dbase, notifq);
+		b_linked = true;
+	}
+	if (b_linked && sql_transact.commit() != SQLITE_OK)
+		return false;
+	dg_notify(std::move(notifq));
+	*pb_partial = b_partial ? TRUE : false;
+	return TRUE;
+}
+
 /* private only */
 BOOL exmdb_server::unlink_message(const char *dir,
     cpid_t cpid, uint64_t folder_id, uint64_t message_id)

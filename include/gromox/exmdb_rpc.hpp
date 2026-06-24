@@ -767,6 +767,13 @@ struct exreq_link_message final : public exreq {
 	uint64_t folder_id = 0, message_id = 0;
 };
 
+struct exreq_link_messages final : public exreq {
+	using view_t = exreq_link_messages;
+	cpid_t cpid{};
+	uint64_t folder_id = 0;
+	EID_ARRAY *message_ids = nullptr;
+};
+
 struct exreq_unlink_message final : public exreq {
 	using view_t = exreq_unlink_message;
 	cpid_t cpid{};
@@ -1401,6 +1408,11 @@ struct exresp_try_mark_submit final : public exresp {
 struct exresp_link_message final : public exresp {
 	using view_t = exresp_link_message;
 	BOOL b_result = false;
+};
+
+struct exresp_link_messages final : public exresp {
+	using view_t = exresp_link_messages;
+	BOOL b_partial = false;
 };
 
 struct exresp_get_message_timer final : public exresp {
