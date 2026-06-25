@@ -32,6 +32,14 @@ class GX_EXPORT exmdb_client_remote {
 	void stop_async_listeners();
 	exmdb_client_impl::locator *locator() { return m_locator.get(); }
 
+	/*
+	 * Rearm handlers MUST replace subscriptions, i.e. unsubscribe old IDs
+	 * and then resubscribe. The handler may not issue EXRPCs itself,
+	 * though.
+	 */
+	using rearm_handler_t = void (*)(const char *dir);
+	void set_async_rearm(rearm_handler_t h) { m_async_rearm = h; }
+
 #define IDLOUT
 #define EXMIDL(n, p) static EXMIDL_RETTYPE n p;
 #include <gromox/exmdb_idef.hpp>
@@ -44,6 +52,7 @@ class GX_EXPORT exmdb_client_remote {
 	void (*m_build_env)(bool pvt) = nullptr;
 	void (*m_free_env)() = nullptr;
 	std::atomic<void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *)> m_event_proc{};
+	std::atomic<rearm_handler_t> m_async_rearm{};
 	int m_rpc_timeout = -1;
 	bool m_allow_lpc = false;
 };

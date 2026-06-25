@@ -127,6 +127,7 @@ struct async_listener {
 	exmdb_client_remote *m_client = nullptr;
 	std::string m_dir;
 	unsigned int m_reconnect_delay = 1; /* seconds; exponential backoff for reconnect storms */
+	bool m_second_connect = false;
 };
 
 /**
@@ -430,6 +431,35 @@ void async_listener::connect_and_listen()
 		return;
 	}
 	m_reconnect_delay = 1;
+	if (m_second_connect) {
+		/*
+		 * This is the second time this async_listener made a
+		 * connection. The server may have rebooted, so rearm all
+		 * subscriptions. Throttle the log (a mass restart reconnects
+		 * every listener at once). The callback fires per dir and must
+		 * only flag/enqueue work, since an RPC here would block the
+		 * read loop.
+		 */
+		static std::atomic<time_point> last_log;
+		auto prev = last_log.load();
+		auto now = tp_now();
+		bool do_log = prev + std::chrono::minutes(1) <= now &&
+		              last_log.compare_exchange_strong(prev, now);
+		auto rearm = m_client->m_async_rearm.load(std::memory_order_acquire);
+		if (rearm == nullptr) {
+			/* quiesced by stop_async_listeners; no rearm during teardown */
+		} else if (rearm != nullptr) {
+			if (do_log)
+				mlog(LV_DEBUG, "exmdb_client: Notify channel re-established after a drop. "
+					"Re-subscribing affected stores.");
+			rearm(m_dir.c_str());
+		} else if (do_log) {
+			mlog(LV_NOTICE, "exmdb_client: Notify channel re-established after a drop. "
+				"Subscriptions may be stale until clients reconnect "
+				"(no re-arm handler registered for this daemon).");
+		}
+	}
+	m_second_connect = true;
 	startup_wait = false;
 	startup_cv.notify_one();
 	struct pollfd pfd = {fd.get(), POLLIN | POLLPRI};
@@ -822,6 +852,7 @@ exmdb_client_remote::exmdb_client_remote(unsigned int conn_max)
 void exmdb_client_remote::stop_async_listeners()
 {
 	set_async_notif(nullptr);
+	set_async_rearm(nullptr);
 	/* No new m_async assignements from now on */
 	m_locator->stop_async_listeners();
 }
