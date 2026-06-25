@@ -187,13 +187,14 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	return TRUE;
 }
 
-static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
+static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin,
+    enum display_type dtyp = DT_MAILUSER)
 {
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID_view tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	tmp_entryid.type = DT_MAILUSER;
+	tmp_entryid.type = dtyp;
 	tmp_entryid.px500dn = deconst(pessdn);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(tmp_entryid) != pack_result::ok)
@@ -212,7 +213,7 @@ BOOL oxcmail_username_to_entryid(const char *username,
 	    cvt_username_to_essdn(username, g_oxcmail_org_name,
 	    oxcmail_get_user_ids, oxcmail_get_domain_ids,
 	    essdn) == ecSuccess)
-		return oxcmail_essdn_to_entryid(essdn.c_str(), pbin);
+		return oxcmail_essdn_to_entryid(essdn.c_str(), pbin, *dtpp);
 	if (dtpp != nullptr)
 		*dtpp = DT_MAILUSER;
 	return oxcmail_username_to_oneoff(
@@ -357,7 +358,7 @@ static BOOL oxcmail_parse_recipient(const EMAIL_ADDR *paddr,
 			if (!oxcmail_username_to_oneoff(paddr->addr, paddr->display_name, &tmp_bin))
 				return FALSE;
 		} else {
-			if (!oxcmail_essdn_to_entryid(essdn.c_str(), &tmp_bin))
+			if (!oxcmail_essdn_to_entryid(essdn.c_str(), &tmp_bin, dtypx))
 				return FALSE;
 		}
 		if (pproplist->set(PR_ENTRYID, &tmp_bin) != ecSuccess ||
@@ -1973,7 +1974,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 		    dispname.c_str(), &tmp_bin))
 			return false;
 	} else {
-		if (!oxcmail_essdn_to_entryid(essdn.c_str(), &tmp_bin))
+		if (!oxcmail_essdn_to_entryid(essdn.c_str(), &tmp_bin, dtypx))
 			return false;
 	}
 	if (pproplist->set(PR_ENTRYID, &tmp_bin) != ecSuccess ||

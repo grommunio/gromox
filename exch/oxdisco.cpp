@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cassert>
 #include <cctype>
 #include <cerrno>
 #include <chrono>
@@ -1013,9 +1014,19 @@ http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) co
  */
 http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 {
+	static constexpr const char noparam[] =
+		"Hostnames may be incorrect because no user was specified";
 	tinyxml2::XMLDocument respdoc;
 	auto decl = respdoc.NewDeclaration();
 	respdoc.InsertEndChild(decl);
+
+	/*
+	 * One marker at the beginning (e.g. for interactive users that look at
+	 * it with a text editor)
+	 */
+	assert(email != nullptr);
+	if (*email == '\0')
+		respdoc.InsertEndChild(respdoc.NewComment(noparam));
 
 	auto resproot = respdoc.NewElement("clientConfig");
 	resproot->SetAttribute("version", "1.1");
@@ -1025,7 +1036,15 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 	 * Because the HTTP request is unauthenticated anyway,
 	 * produce a result even for non-existing users.
 	 */
-	const char *domain = strchr(email, '@'); /* CONST-STRCHR-MARKER */
+	const char *domain = nullptr;
+	if (*email == '\0')
+		/*
+		 * One marker at the beginning (e.g. for interactive users that
+		 * look at it with a command line utility like curl)
+		 */
+		respdoc.InsertEndChild(respdoc.NewComment(noparam));
+	else
+		domain = strchr(email, '@');
 	if (domain == nullptr)
 		domain = "";
 	else
