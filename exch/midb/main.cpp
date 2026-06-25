@@ -298,6 +298,7 @@ int main(int argc, char **argv)
 	
 	exmdb_client.emplace(proxy_num);
 	exmdb_client->set_async_notif(midb_notif_handler);
+	exmdb_client->set_async_rearm(midb_notif_rearm);
 	auto cl_6 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	me_init(g_config_file->get_value("x500_org_name"), table_size);
 	auto cl_5 = HX::make_scope_exit(me_stop);

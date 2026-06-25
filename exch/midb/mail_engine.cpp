@@ -21,6 +21,7 @@
 #include <mutex>
 #include <optional>
 #include <pthread.h>
+#include <set>
 #include <span>
 #include <sqlite3.h>
 #include <string>
@@ -180,6 +181,9 @@ static pthread_t g_scan_tid;
 static char g_org_name[256];
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
+static std::mutex g_resync_lock; /* guards g_resync_list only */
+/* Stores to re-subscribe after a notify channel reconnect */
+static std::set<std::string> g_resync_list;
 
 static bool ct_hint_seq(const imap_seq_list &plist, unsigned int num, unsigned int max_uid);
 
@@ -1954,11 +1958,18 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 	}
 	}
 	cl_err.release();
+	/*
+	 * Subscribe first, then drop the old id. Ids are scoped to the store.
+	 * An equal id means the peer restarted and reissued it just now.
+	 */
+	auto old_sub = pidb->sub_id;
 	if (!exmdb_client->subscribe_notification(dir,
 	    fnevObjectCreated | fnevObjectDeleted | fnevObjectModified |
 	    fnevObjectMoved | fnevObjectCopied, TRUE,
 	    0, 0, &pidb->sub_id))
-		pidb->sub_id = 0;	
+		pidb->sub_id = 0;
+	if (old_sub != 0 && old_sub != pidb->sub_id)
+		exmdb_client->unsubscribe_notification(dir, old_sub);
 	pidb->load_time = time(nullptr);
 	mlog(LV_NOTICE, "Ended sync_mailbox for %s", dir);
 	return TRUE;
@@ -2128,6 +2139,77 @@ IDB_ITEM::~IDB_ITEM()
 		sqlite3_close_v2(psqlite);
 }
 
+/**
+ * Flag the store for the scan thread to resync. This function runs in the
+ * listener thread, hence no RPCs allowed from here.
+ */
+void midb_notif_rearm(const char *dir) try
+{
+	std::lock_guard rl(g_resync_lock);
+	g_resync_list.emplace(dir);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+}
+
+/**
+ * Evict a bounded batch of flagged stores per scan tick. The next load
+ * re-subscribes and reconciles missed changes through the per-folder
+ * commit_max diff. Stores still in use are retried on a later tick.
+ */
+static void me_drain_resync_queue()
+{
+	constexpr size_t MAX_PER_TICK = 64;
+	std::vector<std::string> batch;
+	{
+		std::lock_guard rl(g_resync_lock);
+		while (!g_resync_list.empty() && batch.size() < MAX_PER_TICK)
+			batch.push_back(std::move(g_resync_list.extract(g_resync_list.begin()).value()));
+	}
+	for (auto &dir : batch) {
+		uint32_t old_sub = 0;
+		bool busy = false, present = false;
+		{
+			std::lock_guard hhold(g_hash_lock);
+			auto it = g_hash_table.find(dir);
+			if (it != g_hash_table.end()) {
+				if (it->second.reference != 0) {
+					busy = true;
+				} else {
+					old_sub = it->second.sub_id;
+					g_hash_table.erase(it);
+					present = true;
+				}
+			}
+		}
+		if (busy) {
+			std::lock_guard rl(g_resync_lock);
+			try {
+				g_resync_list.insert(std::move(dir));
+			} catch (const std::bad_alloc &) {
+			}
+			continue;
+		}
+		if (!present)
+			continue;
+		if (cu_build_environment(dir.c_str())) {
+			me_get_idb(dir.c_str());
+			cu_free_environment();
+		}
+		if (old_sub != 0) {
+			uint32_t new_sub = 0;
+			{
+				std::lock_guard hhold(g_hash_lock);
+				auto it = g_hash_table.find(dir);
+				if (it != g_hash_table.end())
+					new_sub = it->second.sub_id;
+			}
+			/* equal id: reissued by the restarted peer to the reload */
+			if (old_sub != new_sub)
+				exmdb_client->unsubscribe_notification(dir.c_str(), old_sub);
+		}
+	}
+}
+
 static void *midbme_scanwork(void *param)
 {
 	pthread_setname_np(pthread_self(), "mail_engine");
@@ -2137,6 +2219,7 @@ static void *midbme_scanwork(void *param)
 	while (!g_midb_stop) {
 		std::vector<std::pair<std::string, uint32_t>> unsub_list;
 		sleep(1);
+		me_drain_resync_queue();
 		if (count < 10) {
 			count ++;
 			continue;
