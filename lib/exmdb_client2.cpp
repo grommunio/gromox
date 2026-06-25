@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <atomic>
 #include <cerrno>
 #include <chrono>
@@ -118,6 +119,7 @@ struct async_listener {
 	private:
 	int process_packet(wrapfd &, pollfd &, std::string &, size_t &);
 	void connect_and_listen();
+	void backoff();
 
 	pthread_t m_thr_id{};
 	atomic_bool startup_wait{false}, m_stop{false};
@@ -126,8 +128,10 @@ struct async_listener {
 	srv_ident m_ident;
 	exmdb_client_remote *m_client = nullptr;
 	std::string m_dir;
-	unsigned int m_reconnect_delay = 1; /* seconds; exponential backoff for reconnect storms */
+	std::chrono::seconds m_reconnect_delay{1};
 	bool m_second_connect = false;
+	bool m_first_attempt = true;
+	static constexpr std::chrono::seconds m_reconnect_cap{32};
 };
 
 /**
@@ -420,17 +424,31 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 	return 0;
 }
 
+/**
+ * Pace connect attempts. Runs before the attempt, so no fd (dead or new) is
+ * held during the sleep. Every disconnect doubles the delay up to
+ * reconnect_cap, and it never resets, so a peer that accepts and drops
+ * connections in quick succession cannot force a fast retry loop. On teardown,
+ * m_stop is set before SIGALRM is sent. The flag skips a sleep not yet
+ * entered, the signal interrupts one in progress, and a signal landing between
+ * check and sleep costs at most one capped delay.
+ */
+void async_listener::backoff()
+{
+	if (!m_stop)
+		sleep(std::chrono::duration_cast<std::chrono::seconds>(m_reconnect_delay).count());
+	m_reconnect_delay = std::min(m_reconnect_delay * 2, m_reconnect_cap);
+}
+
 void async_listener::connect_and_listen()
 {
+	if (m_first_attempt)
+		m_first_attempt = false;
+	else
+		backoff();
 	auto fd = make_exmdb_connection(m_ident, m_dir.c_str(), true, m_client);
-	if (fd.get() < 0) {
-		/* Exponential backoff with retry interval bounded at 32s */
-		sleep(m_reconnect_delay);
-		if (m_reconnect_delay < 16)
-			m_reconnect_delay *= 2;
+	if (fd.get() < 0)
 		return;
-	}
-	m_reconnect_delay = 1;
 	if (m_second_connect) {
 		/*
 		 * This is the second time this async_listener made a
@@ -467,6 +485,7 @@ void async_listener::connect_and_listen()
 	std::string buff;
 	while (process_packet(fd, pfd, buff, offset) == 0)
 		/* */;
+	/* Return closes @fd right away; the next call paces the reconnect. */
 }
 
 void *async_listener::thread_entry(void *vargs)
