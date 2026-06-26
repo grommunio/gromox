@@ -2351,17 +2351,36 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 {
 	auto pdb = this;
 	auto dir = exmdb_server::get_dir();
+	/*
+	 * delete_messages() can call notify_message_creation() after a soft
+	 * delete so that GCTs opened with the SHOW_SOFTDELETES flag pick up
+	 * the row. dbeng_notify_cttbl_add_row will itself evaulates the
+	 * is_deleted column.
+	 *
+	 * For all other cases, this message_create event is undesired – and we
+	 * too need to evaluate is_deleted. The proper fix is to instead
+	 * implement Exchange-style softdelete.
+	 */
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevObjectCreated, folder_id, 0);
 	if (parrays.size() > 0) {
-		DB_NOTIFY_DATAGRAM datagram;
-		datagram.dir = deconst(dir);
-		datagram.db_notify.type = db_notify_type::message_created;
-		auto pcreated_mail = &datagram.db_notify;
-		pcreated_mail->folder_id = folder_id;
-		pcreated_mail->message_id = message_id;
-		pcreated_mail->proptags.count = 0;
-		notifq.emplace_back(std::move(datagram), std::move(parrays));
+		char qstr[128];
+		snprintf(qstr, std::size(qstr), "SELECT is_deleted FROM "
+		         "messages WHERE message_id=%llu", LLU{message_id});
+		auto stm = pdb->prep(qstr);
+		bool b_del = stm != nullptr && stm.step() == SQLITE_ROW &&
+		             stm.col_uint64(0) != 0;
+		stm.finalize();
+		if (!b_del) {
+			DB_NOTIFY_DATAGRAM datagram;
+			datagram.dir = deconst(dir);
+			datagram.db_notify.type = db_notify_type::message_created;
+			auto pcreated_mail = &datagram.db_notify;
+			pcreated_mail->folder_id = folder_id;
+			pcreated_mail->message_id = message_id;
+			pcreated_mail->proptags.count = 0;
+			notifq.emplace_back(std::move(datagram), std::move(parrays));
+		}
 	}
 	dbeng_notify_cttbl_add_row(*pdb, folder_id, message_id, dbase, notifq);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
