@@ -189,10 +189,10 @@ Recurse into subfolders.
 \fB\-a\fP
 Select associated messages (FAI) for deletion.
 .TP
-\fB\-t\fP \fItimespec\fP
+\fB\-t\fP \fIrelative-age\fP
 Limit deletion to messages which have a last modification timestamp older than
-\fItimespec\fP. See gromox(7), section "Duration specification" for timespec's
-syntax.
+\fIrelative-age\fP. See gromox(7), section "Time span syntax" for details.
+There is currently no option for specifying absolute time.
 .TP
 \fB\-\-delempty\fP
 If, after message deletion, any subfolder is empty, delete it.

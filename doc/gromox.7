@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025—2026 grommunio GmbH
 .TH gromox 7 "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox \(em Overview of the Gromox groupware server
@@ -450,8 +450,9 @@ Operation texts can be "HTTP auth rejected" (http), "zs_logon rejected"
 (zcore), "zs_logon_token rejected" (zcore), "LOGIN phase0 rejected" (imap),
 "LOGIN phase1 rejected" (imap), "LOGIN phase2 rejeceted" (imap), "login
 rejected" (pop3).
-.SH Duration specifications
-Duration strings must be of the form:
+.SH Time span syntax
+The syntax for strings that are to be interpreted as a duration,
+period/interval must be of the form:
 .PP
 duration := quantum [ quantum ]*
 .PP
@@ -467,7 +468,11 @@ unit := "ns" | "nsec" | "µs" | "µsec" | "ms" | "msec" | "s" | "sec" | "second"
 Whitespace is ignored whereever it appears (so use as much as you need). Quanta
 with the same unit may be used; they are simply added together. Per this
 syntax, numbers can be positive or negative, integral or fractional (be mindful
-of precision limits of computers' floating-point math).
+of precision limits of computers' floating-point math). Unit names must be used
+as specified; any other names, especially non-English ones, are not accepted.
+In places where program code does not care about subsecond accuracy, time spans
+will have the subsecond parts truncated, i.e. "1.5s" becomes 1.0 seconds, and
+"1.5min" stays the 90 seconds that it is.
 .PP
 Examples: \fI1d1h1m1s\fP, \fI3.5 hours\fP, \fI1 hour 1 hour\fP (2 hours),
 \fI1 hour 60 minutes\fP (2 hours)
