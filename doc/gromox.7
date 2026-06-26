@@ -450,6 +450,24 @@ Operation texts can be "HTTP auth rejected" (http), "zs_logon rejected"
 (zcore), "zs_logon_token rejected" (zcore), "LOGIN phase0 rejected" (imap),
 "LOGIN phase1 rejected" (imap), "LOGIN phase2 rejeceted" (imap), "login
 rejected" (pop3).
+.SH Quantity syntax
+The syntax for strings that are parsed to obtain some kind of number may have
+one SI unit prefix letter affixed to the number to select a power-of-1024(!)
+multiplier. Formally,
+.PP
+quantum := number [letter]
+.PP
+# "number" can be whatever strtol(3) accepts. If a period is detected, parsing
+switches to strtod(3).
+.PP
+letter := 'k' | 'M' | 'G' | 'T' | 'P' | 'E' | 'Z' | 'Y' | 'R' | 'Q'
+.PP
+Examples: \fI4k\fP is 4*1024^1 = \fI4096\fP, \fI1.5M\fP is 1.5*1024^2 =
+1572864.
+.PP
+Note: This syntax specifies no unit, nor unit symbols. Whether "4k" means 4096
+bytes, 4096 nibbles or 4096 users depends on the enclosing context (e.g.
+configuration directive) that uses this syntax.
 .SH Time span syntax
 The syntax for strings that are to be interpreted as a duration,
 period/interval must be of the form:
