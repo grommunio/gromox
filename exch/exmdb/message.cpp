@@ -1317,9 +1317,13 @@ BOOL exmdb_server::link_messages(const char *dir, cpid_t cpid,
 		}
 		db->proc_dynamic_event(cpid, dynamic_event::new_msg,
 			fid_val, mid_val, 0, *dbase, notifq);
-		db->notify_link_creation(fid_val, mid_val, *dbase, notifq);
+		db->notify_link_creation(fid_val, mid_val, *dbase, notifq, false);
 		b_linked = true;
 	}
+	if (b_linked)
+		db->notify_folder_modification(
+			common_util_get_folder_parent_fid(db->psqlite, fid_val),
+			fid_val, *dbase, notifq);
 	if (b_linked && sql_transact.commit() != SQLITE_OK)
 		return false;
 	dg_notify(std::move(notifq));

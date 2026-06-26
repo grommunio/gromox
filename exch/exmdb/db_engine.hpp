@@ -209,7 +209,7 @@ struct db_conn {
 	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3, db_base &, NOTIFQ &);
 	void notify_new_mail(uint64_t folder_id, uint64_t msg_id, db_base &, NOTIFQ &);
 	void notify_message_creation(uint64_t folder_id, uint64_t msg_id, db_base &, NOTIFQ &);
-	void notify_link_creation(uint64_t parent_id, uint64_t msg_id, db_base &, NOTIFQ &);
+	void notify_link_creation(uint64_t parent_id, uint64_t msg_id, db_base &, NOTIFQ &, bool b_count = true);
 	void notify_folder_creation(uint64_t parent_id, uint64_t folder_id, const db_base &, NOTIFQ &);
 	void notify_message_deletion(uint64_t folder_id, uint64_t msg_id, db_base &, NOTIFQ &);
 	void notify_link_deletion(uint64_t parent_id, uint64_t msg_id, db_base &, NOTIFQ &);

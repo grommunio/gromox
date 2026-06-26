@@ -2390,7 +2390,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 }
 
 void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
-    db_base &dbase, NOTIFQ &notifq) try
+    db_base &dbase, NOTIFQ &notifq, bool b_count) try
 {
 	auto pdb = this;
 	uint64_t anchor_fld;
@@ -2413,8 +2413,9 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_cttbl_add_row(*pdb, srch_fld, message_id, dbase, notifq);
-	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
-		pdb->psqlite, srch_fld), srch_fld, dbase, notifq);
+	if (b_count)
+		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
+			pdb->psqlite, srch_fld), srch_fld, dbase, notifq);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
