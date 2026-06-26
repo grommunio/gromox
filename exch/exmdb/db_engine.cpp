@@ -898,6 +898,7 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 				pmessage_ids->count, t_diff);
 	});
 	sql_transact = xtransaction();
+	bool b_linked = false;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		if (g_dbeng_stop)
 			break;
@@ -933,9 +934,17 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 		/*
 		 * Regular notifications
 		 */
-		db.notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq);
+		db.notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq, false);
 		dg_notify(std::move(notifq));
 		dbase.reset();
+		b_linked = true;
+	}
+	if (b_linked) {
+		db_conn::NOTIFQ notifq;
+		auto dbase = db.lock_base_wr();
+		db.notify_folder_modification(common_util_get_folder_parent_fid(
+			db.psqlite, search_fid), search_fid, *dbase, notifq);
+		dg_notify(std::move(notifq));
 	}
 	return TRUE;
 }
