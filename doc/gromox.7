@@ -191,10 +191,25 @@ files is: one "key=value" pair per line. Empty lines are ignored, as are lines
 beginning with a '#' character. Lines can have a maximum length of 1024. Each
 key=value line is logically split at the equals sign, and whitespace is trimmed
 around key and value. Comments at the end of a value are not supported. Escape
-sequences are not supported.
+sequences are not supported. Each config key is one of four types of how the
+config file reader should apply an early generalized transform:
+.IP \(bu 4
+A quantity, e.g. bytes for a buffer, a limit on the number of users, etc. With
+1-unit granularity. See section "Quantity syntax" below.
+.IP \(bu 4
+A time span, e.g. a duration or maximum lifetime for some object, with 1s or
+1ns granularity (whatever the program code wants for any particular key). See
+section "Time span syntax" below.
+.IP \(bu 4
+Boolean value. The empty string, the strings "no", "off", "false", and a string
+that completely parses as "0" via strtoul, is interpreted as false, with
+everything else considered true.
+.IP \(bu 4
+Untransformed string.
 .PP
 The format for .ini files is: one "key=value" pair per line. Empty lines are
-ignored, as are lines beginning with a ';' character.
+ignored, as are lines beginning with a ';' character. Only used by some ailing
+PHP code. No generalized transforms.
 .PP
 Many programs have a \fBconfig_file_path\fP directive with which the search
 path for further config files can be specified. For example, http(8gx) defaults
