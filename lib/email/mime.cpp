@@ -31,6 +31,13 @@ using namespace gromox;
 static bool mime_parse_multiple(MIME *);
 static bool mime_produce_boundary(MIME *pmime);
 
+/* RFC 2046 §5.1.5: parts of a multipart/digest default to message/rfc822. */
+static bool mime_parent_is_digest(const MIME *parent)
+{
+	return parent != nullptr &&
+	       strcasecmp(parent->content_type, "multipart/digest") == 0;
+}
+
 bool MAIL::set_header(const char *hdr, const char *val)
 {
 	auto mail = this;
@@ -136,8 +143,10 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 				if (!mime_parse_multiple(pmime))
 					pmime->mime_type = mime_type::single;
 			} else if (pmime->mime_type == mime_type::none) {
-				/* old simplest unix style mail */
-				strcpy(pmime->content_type, "text/plain");
+				/* old simplest unix style mail (or empty digest part) */
+				strcpy(pmime->content_type,
+				       mime_parent_is_digest(pmime_parent) ?
+				       "message/rfc822" : "text/plain");
 				pmime->mime_type = mime_type::single;
 			}
 			return true;
@@ -148,6 +157,34 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 		 */
 
 		if (0 == current_offset) {
+			auto nl = newline_size(in_buff, length);
+			if (nl > 0 && mime_parent_is_digest(pmime_parent)) {
+				/*
+				 * Empty part header in a multipart/digest: the
+				 * leading blank line is the (empty) header
+				 * section and the encapsulated message begins
+				 * right after it (RFC 2046 §5.1.5 defaults
+				 * such a part to message/rfc822). Keep
+				 * head_touched at false, because the header
+				 * genuinely is empty (head_length 0), so the
+				 * digest/serializer must emit the original
+				 * blank line, not synthesize a Content-Type. A
+				 * synthesized header would skew BODY[] offsets
+				 * and make BODY[n.MIME] return a phantom
+				 * Content-Type line.
+				 */
+				pmime->head_touched = false;
+				if (nl >= length) {
+					pmime->content_begin  = nullptr;
+					pmime->content_length = 0;
+				} else {
+					pmime->content_begin  = in_buff + nl;
+					pmime->content_length = length - nl;
+				}
+				strcpy(pmime->content_type, "message/rfc822");
+				pmime->mime_type = mime_type::single;
+				return true;
+			}
 			pmime->head_touched = TRUE;
 			pmime->content_begin = in_buff;
 			pmime->content_length = length;
@@ -179,8 +216,7 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 				pmime->mime_type = mime_type::single;
 		} else if (pmime->mime_type == mime_type::none) {
 			strcpy(pmime->content_type,
-			       pmime_parent != nullptr &&
-			       strcasecmp("multipart/digest", pmime->content_type) == 0 ?
+			       mime_parent_is_digest(pmime_parent) ?
 			       "message/rfc822" : "text/plain");
 			pmime->mime_type = mime_type::single;
 		}
