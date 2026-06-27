@@ -894,7 +894,22 @@ static int icp_process_fetch_item(imap_context &ctx,
 			auto len = pend - (pbody + 1);
 			auto [temp_id, data_item] = split_DI(std::string_view(&pbody[1], len));
 			const char *ptr = data_item.empty() ? nullptr : data_item.c_str();
-			if (temp_id.size() > 0 && mjson.has_rfc822_part()) {
+			/*
+			 * The .MIME header of a message/rfc822 sub-part lives
+			 * in the enclosing message, not in the encapsulated
+			 * one. When the outer mjson already has that part
+			 * (e.g. BODY[2.MIME] where part 2 is message/rfc822),
+			 * resolve it against the outer mjson directly.
+			 * Otherwise rfc822_get() is told (want_mime) to
+			 * descend only as far as the message that contains the
+			 * part and leave the part id for the final ".MIME"
+			 * lookup.
+			 */
+			bool want_mime = ptr != nullptr && strcasecmp(ptr, "MIME") == 0;
+			bool flag_mime_on_outer = want_mime &&
+				mjson.get_mime(temp_id.c_str()) != nullptr;
+			if (temp_id.size() > 0 && !flag_mime_on_outer &&
+			    mjson.has_rfc822_part()) {
 				deferred_eml_load();
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() > 0 &&
@@ -903,7 +918,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 					char mjson_id[64], final_id[64];
 					if (mjson.rfc822_get(ctx.io_actor,
 					    &temp_mjson, rfc_path.c_str(),
-					    temp_id.c_str(), mjson_id, final_id))
+					    temp_id.c_str(), mjson_id, final_id, want_mime))
 						len = icp_print_structure(ctx,
 						      &temp_mjson, kwss.c_str(), buf,
 						      pbody, final_id, ptr, offset, length,

@@ -673,7 +673,7 @@ bool MJSON::rfc822_build(mjson_io &io, const char *storage_path) const
 }
 
 bool MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
-    const char *id, char *mjson_id, char *mime_id) const try
+    const char *id, char *mjson_id, char *mime_id, bool for_mime) const try
 {
 	auto pjson_base = this;
 
@@ -710,6 +710,15 @@ bool MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 			wrapper_id = remaining.substr(0, dot);
 			auto part = cur->get_mime(wrapper_id.c_str());
 			if (part == nullptr || !part->ctype_is_rfc822())
+				break;
+			/*
+			 * BODY[..N.MIME]: the .MIME header of part N is part
+			 * of the already-descended (enclosing) message, not of
+			 * the message encapsulated by part N. Stop here so the
+			 * caller resolves "N.MIME" against `cur` instead of
+			 * entering part N.
+			 */
+			if (for_mime && descended && dot == std::string::npos)
 				break;
 			if (dot == std::string::npos)
 				remaining.clear();

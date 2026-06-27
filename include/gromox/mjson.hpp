@@ -111,7 +111,7 @@ struct GX_EXPORT MJSON {
 	int fetch_envelope(const char *cset, std::string &out) const;
 	bool has_rfc822_part() const;
 	bool rfc822_build(mjson_io &, const char *storage_path) const;
-	bool rfc822_get(mjson_io &, MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id) const;
+	bool rfc822_get(mjson_io &, MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id, bool for_mime = false) const;
 	int rfc822_fetch(mjson_io &, const char *storage_path, const char *cset, bool ext, std::string &out) const;
 	const char *get_mail_filename() const { return filename.c_str(); }
 	const char *get_mail_received() const { return received.c_str(); }
