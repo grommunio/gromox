@@ -65,6 +65,7 @@ bool MAIL::refonly_parse(const char *in_buff, size_t length)
 	if (pmime->mime_type != mime_type::multiple)
 		return true;
 	auto fss = &pmime->first_boundary[pmime->boundary_len+2];
+	fss += mail_lwsp_len(fss, pmime->last_boundary);
 	auto nl_len = newline_size(fss, pmime->last_boundary - fss);
 	if (mail_retrieve_to_mime(pmail, pmime, &fss[nl_len], pmime->last_boundary))
 		return true;
@@ -107,10 +108,13 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		    strncmp(&ptr[2], pmime_parent->boundary_string,
 		    pmime_parent->boundary_len) != 0)
 			continue;
-		if (ptr[pmime_parent->boundary_len+2] != '\r' &&
-		    ptr[pmime_parent->boundary_len+2] != '\n' &&
-		    ptr[pmime_parent->boundary_len+2] != '-')
-			continue;
+		auto after = &ptr[pmime_parent->boundary_len+2];
+		if (*after != '-') {
+			/* opening delimiter: tolerate RFC2046 transport padding */
+			auto p = after + mail_lwsp_len(after, ptr_end);
+			if (newline_size(p, 2) == 0)
+				continue;
+		}
 		mime_uq = MIME::create();
 		pmime = mime_uq.get();
 		if (NULL == pmime) {
@@ -132,6 +136,8 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		pmime_last = pmime;
 		if (pmime->mime_type == mime_type::multiple) {
 			auto fss = pmime->first_boundary == nullptr ? nullptr : &pmime->first_boundary[pmime->boundary_len+2];
+			if (fss != nullptr)
+				fss += mail_lwsp_len(fss, pmime->last_boundary);
 			auto nl_len = fss == nullptr ? 0 : newline_size(fss, pmime->last_boundary - fss);
 			if (!mail_retrieve_to_mime(pmail, pmime,
 			    &fss[nl_len], pmime->last_boundary))
@@ -141,6 +147,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		    ptr[3+pmime_parent->boundary_len] == '-')
 			return true;
 		ptr += pmime_parent->boundary_len + 2;
+		ptr += mail_lwsp_len(ptr, ptr_end);
 		auto nl_len = newline_size(ptr, 2);
 		ptr += nl_len;
 		ptr_last = ptr;
@@ -172,6 +179,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	if (pmime->mime_type != mime_type::multiple)
 		return true;
 	auto fss = &pmime->first_boundary[pmime->boundary_len+2];
+	fss += mail_lwsp_len(fss, pmime->last_boundary);
 	auto nl_len = newline_size(fss, pmime->last_boundary - fss);
 	return mail_retrieve_to_mime(pmail, pmime, &fss[nl_len], pmime->last_boundary);
 }

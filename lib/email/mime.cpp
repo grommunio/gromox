@@ -1541,14 +1541,16 @@ static bool mime_parse_multiple(MIME *pmime)
 	pmime->boundary_len = boundary_len;
 	
 	begin = pmime->content_begin;
+	auto cend = begin + pmime->content_length;
 	auto end = begin + pmime->content_length - boundary_len;
 	auto ptr = begin;
 	for (; ptr < end; ptr++) {
 		if (ptr[0] != '-' || ptr[1] != '-' ||
 		    strncmp(pmime->boundary_string, ptr + 2, boundary_len) != 0)
 			continue;
-		auto nl_len = newline_size(&ptr[boundary_len+2], 2);
-		if (nl_len > 0)
+		auto bp = &ptr[boundary_len+2];
+		bp += mail_lwsp_len(bp, cend);
+		if (newline_size(bp, std::min(static_cast<size_t>(2), static_cast<size_t>(cend - bp))) > 0)
 			break;
 	}
 	if (ptr == end)

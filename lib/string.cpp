@@ -1320,6 +1320,19 @@ bool rfc822_zone_to_minwest(const char *s, int *west, char **end)
 	return false;
 }
 
+/**
+ * RFC 2046 §5.1.1 allows "transport padding" (linear whitespace) between a
+ * boundary string and the terminating CRLF. @p points at the first byte after
+ * the "--"<boundary> text. Returns the count of SP/HTAB padding bytes there.
+ */
+size_t mail_lwsp_len(const char *p, const char *end)
+{
+	auto q = p;
+	while (q < end && (*q == ' ' || *q == '\t'))
+		++q;
+	return q - p;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try
