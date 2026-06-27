@@ -61,6 +61,15 @@ struct GX_EXPORT MIME {
 	SIMPLE_TREE_NODE stree{};
 	enum mime_type mime_type = mime_type::none;
 	int boundary_len = 0;
+	/*
+	 * RFC 2046 transport padding (SP/HTAB) that followed the boundary on
+	 * this part's own opening delimiter; points into the source buffer
+	 * (like @first_boundary). Re-emitted on serialize so a body part
+	 * fetched back is byte-identical to what was stored. Padding differs
+	 * per delimiter, so it is recorded per part, not per multipart.
+	 */
+	const char *boundary_pad = nullptr;
+	int boundary_pad_len = 0;
 	bool head_touched = false;
 	char content_type[VALUE_LEN]{}, boundary_string[VALUE_LEN]{};
 	std::vector<kvpair> f_type_params;

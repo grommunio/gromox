@@ -38,6 +38,13 @@ static bool mime_parent_is_digest(const MIME *parent)
 	       strcasecmp(parent->content_type, "multipart/digest") == 0;
 }
 
+/* Re-emit the boundary's transport padding on an opening delimiter line. */
+static inline void mime_emit_bpad(STREAM *s, const MIME *m)
+{
+	if (m->boundary_pad_len > 0)
+		s->write(m->boundary_pad, m->boundary_pad_len);
+}
+
 bool MAIL::set_header(const char *hdr, const char *val)
 {
 	auto mail = this;
@@ -236,6 +243,8 @@ void MIME::clear()
 	pmime->content_type[0]	 = '\0';
 	pmime->boundary_string[0]= '\0';
 	pmime->boundary_len		 = 0;
+	pmime->boundary_pad       = nullptr;
+	pmime->boundary_pad_len   = 0;
 	pmime->head_touched		 = FALSE;
 	pmime->head_begin		 = NULL;
 	pmime->head_length		 = 0;
@@ -818,10 +827,12 @@ bool MIME::serialize(STREAM *pstream) const
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
+		auto child = static_cast<const MIME *>(pnode->pdata);
 		pstream->write("--", 2);
 		pstream->write(pmime->boundary_string, pmime->boundary_len);
+		mime_emit_bpad(pstream, child);
 		pstream->write("\r\n", 2);
-		if (!static_cast<const MIME *>(pnode->pdata)->serialize(pstream))
+		if (!child->serialize(pstream))
 			return false;
 		pnode = pnode->get_sibling();
 	}
@@ -872,6 +883,7 @@ static bool mime_read_multipart_content(const MIME *pmime,
 		has_submime = TRUE;
 		tmp_stream.write("--", 2);
 		tmp_stream.write(pmime->boundary_string, pmime->boundary_len);
+		mime_emit_bpad(&tmp_stream, pmime);
 		tmp_stream.write("\r\n", 2);
 		if (!static_cast<MIME *>(pnode->pdata)->serialize(&tmp_stream))
 			return false;
@@ -880,6 +892,7 @@ static bool mime_read_multipart_content(const MIME *pmime,
 	if (!has_submime) {
 		tmp_stream.write("--", 2);
 		tmp_stream.write(pmime->boundary_string, pmime->boundary_len);
+		mime_emit_bpad(&tmp_stream, pmime);
 		tmp_stream.write("\r\n\r\n", 4);
 	}
 	tmp_stream.write("--", 2);
@@ -1181,8 +1194,9 @@ ssize_t MIME::get_length() const
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
-		mime_len += pmime->boundary_len + 4;
-		auto mgl = static_cast<const MIME *>(pnode->pdata)->get_length();
+		auto child = static_cast<const MIME *>(pnode->pdata);
+		mime_len += pmime->boundary_len + 4 + child->boundary_pad_len;
+		auto mgl = child->get_length();
 		if (mgl < 0)
 			return -1;
 		mime_len += mgl;
@@ -1416,12 +1430,12 @@ static int make_digest_multi(const MIME *pmime, const char *id_string,
 	count = 1;
 	while (NULL != pnode) {
 		has_submime = TRUE;
-		*poffset += pmime->boundary_len + 4;
+		auto mime = static_cast<const MIME *>(pnode->pdata);
+		*poffset += pmime->boundary_len + 4 + mime->boundary_pad_len;
 		if (*id_string == '\0')
 			snprintf(temp_id, 64, "%d", count);
 		else
 			snprintf(temp_id, 64, "%s.%d", id_string, count);
-		auto mime = static_cast<const MIME *>(pnode->pdata);
 		if (mime->make_mimes_digest(temp_id, poffset, dsarray) < 0)
 			return -1;
 		pnode = pnode->get_sibling();
@@ -1532,13 +1546,13 @@ static int make_struct_multi(const MIME *pmime, const char *id_string,
 	count = 1;
 	while (NULL != pnode) {
 		has_submime = TRUE;
-		*poffset += pmime->boundary_len + 4;
+		auto child = static_cast<const MIME *>(pnode->pdata);
+		*poffset += pmime->boundary_len + 4 + child->boundary_pad_len;
 		if (*id_string == '\0')
 			snprintf(temp_id, 64, "%zu", count);
 		else
 			snprintf(temp_id, 64, "%s.%zu", id_string, count);
-		if (static_cast<const MIME *>(pnode->pdata)->make_structure_digest(temp_id,
-		    poffset, dsarray) < 0)
+		if (child->make_structure_digest(temp_id, poffset, dsarray) < 0)
 			return -1;
 		pnode = pnode->get_sibling();
 		count++;

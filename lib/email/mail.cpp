@@ -102,6 +102,18 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	std::unique_ptr<MIME> mime_uq;
 	MIME *pmime, *pmime_last = nullptr;
 	const char *ptr, *ptr_last = ptr_begin;
+	/*
+	 * Transport padding of the delimiter that opened the part currently
+	 * being collected. RFC 2046 §5.1.1 permits it to differ per delimiter,
+	 * so it belongs to the part, not to the multipart. The first part is
+	 * opened by the parent's first_boundary.
+	 */
+	const char *cur_pad = nullptr;
+	int cur_pad_len = 0;
+	if (pmime_parent->first_boundary != nullptr) {
+		cur_pad = &pmime_parent->first_boundary[pmime_parent->boundary_len+2];
+		cur_pad_len = mail_lwsp_len(cur_pad, ptr_end);
+	}
 
 	for (ptr = ptr_begin; ptr < ptr_end; ++ptr) {
 		if (ptr[0] != '-' || ptr[1] != '-' ||
@@ -127,6 +139,10 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
 			return false;
 		}
+		pmime->boundary_pad     = cur_pad;
+		pmime->boundary_pad_len = cur_pad_len;
+		cur_pad     = after;
+		cur_pad_len = *after == '-' ? 0 : mail_lwsp_len(after, ptr_end);
 		if (pmime_last == nullptr)
 			pmail->tree.add_child(&pmime_parent->stree,
 				std::move(mime_uq), SIMPLE_TREE_ADD_LAST);
@@ -170,6 +186,8 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
+	pmime->boundary_pad     = cur_pad;
+	pmime->boundary_pad_len = cur_pad_len;
 	if (pmime_last == nullptr)
 		pmail->tree.add_child(&pmime_parent->stree,
 			std::move(mime_uq), SIMPLE_TREE_ADD_LAST);
