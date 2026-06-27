@@ -676,28 +676,66 @@ bool MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
     const char *id, char *mjson_id, char *mime_id) const try
 {
 	auto pjson_base = this;
-	char *pdot;
 
 	if (!has_rfc822_part())
 		return FALSE;
 	auto ns_key = storage_path + "/"s + pjson_base->get_mail_filename();
 	
-	snprintf(mjson_id, 64, "%s.", id);
-	while (NULL != (pdot = strrchr(mjson_id, '.'))) {
-		*pdot = '\0';
-		auto eml_content = io.get_full(mjson_key(ns_key, mjson_id).digest());
+	/*
+	 * Descend one IMAP component per nesting level. An rfc822-root message
+	 * maps the component "1" onto the message it encapsulates (wrapper id
+	 * ""), a multipart maps the component N onto its MIME part N. Descent
+	 * stops at the deepest rfc822 wrapper, and the leftover components
+	 * form the part id within it.
+	 */
+	const MJSON *cur = pjson_base;
+	mjson_key key(ns_key);
+	std::string remaining = id;
+	bool descended = false;
+	while (!remaining.empty()) {
+		auto root = cur->get_mime("");
+		std::string wrapper_id;
+		if (root != nullptr && root->ctype_is_rfc822()) {
+			/* whole message is rfc822; IMAP "1" -> encapsulated msg */
+			if (remaining == "1")
+				remaining.clear();
+			else if (remaining.compare(0, 2, "1.") == 0)
+				remaining.erase(0, 2);
+			else
+				break;
+			wrapper_id.clear();
+		} else {
+			/* multipart; leading component N must be an rfc822 part */
+			auto dot = remaining.find('.');
+			wrapper_id = remaining.substr(0, dot);
+			auto part = cur->get_mime(wrapper_id.c_str());
+			if (part == nullptr || !part->ctype_is_rfc822())
+				break;
+			if (dot == std::string::npos)
+				remaining.clear();
+			else
+				remaining.erase(0, dot + 1);
+		}
+		key = key.sub(wrapper_id.c_str());
+		auto eml_content = io.get_full(key.digest());
 		if (eml_content == nullptr)
-			continue;
+			return FALSE;
 		pjson->clear();
 		Json::Value digest;
 		if (!str_to_json(*eml_content, digest) ||
 		    !pjson->load_from_json(digest))
 			return false;
 		pjson->path = ns_key;
-		strcpy(mime_id, pdot + 1);
-		return TRUE;
+		cur = pjson;
+		descended = true;
+		if (remaining.empty() || !pjson->has_rfc822_part())
+			break;
 	}
-	return FALSE;
+	if (!descended)
+		return FALSE;
+	HX_strlcpy(mjson_id, key.chain().c_str(), 64);
+	HX_strlcpy(mime_id, remaining.c_str(), 64);
+	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
