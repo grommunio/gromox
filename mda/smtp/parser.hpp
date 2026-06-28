@@ -60,6 +60,8 @@ struct EXT_DATA {
 struct smtp_context final : public schedule_context {
 	smtp_context() = default;
 	NOMOVE(smtp_context);
+	void clear();
+	void reset_ctx_session();
 
 	GENERIC_CONNECTION connection;
 	STREAM stream; /* stream accepted from smtp client */
