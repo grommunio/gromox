@@ -125,6 +125,8 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1926, "NO CREATE: folder already exists"},
 	{1927, "NO MOVE failed"},
 	{1928, "NO UID MOVE failed"},
+	{1929, "NO [UNKNOWN-CTE] unknown content-transfer-encoding"},
+	{1930, "NO BINARY.SIZE: no such part"},
 	{2000 | MIDB_E_UNKNOWN_COMMAND, "midb: unknown command"},
 	{2000 | MIDB_E_PARAMETER_ERROR, "midb: command parameter error"},
 	{2000 | MIDB_E_HASHTABLE_FULL, "Unable to read midb.sqlite, see midb logs"},

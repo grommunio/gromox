@@ -320,6 +320,35 @@ static bool icp_parse_fetch_args(mdi_list &plist, bool *pb_detail,
 					return FALSE;
 			}
 			plist.emplace_back(arg);
+		} else if (strncasecmp(arg, "BINARY[", 7) == 0 ||
+		    strncasecmp(arg, "BINARY.PEEK[", 12) == 0 ||
+		    strncasecmp(arg, "BINARY.SIZE[", 12) == 0) {
+			/*
+			 * FETCH BINARY: section is a part path (digits/dots),
+			 * or empty. An optional <off.len> partial applies to
+			 * BINARY[]/PEEK only.
+			 */
+			auto lb = strchr(arg, '[');
+			auto pend = strchr(lb, ']');
+			if (pend == nullptr)
+				return FALSE;
+			for (auto q = lb + 1; q < pend; ++q)
+				if (!HX_isdigit(*q) && *q != '.')
+					return FALSE;
+			auto after = pend + 1;
+			if (*after == '<') {
+				if (strncasecmp(arg, "BINARY.SIZE[", 12) == 0)
+					return FALSE;
+				auto gt = strchr(after + 1, '>');
+				if (gt == nullptr || gt[1] != '\0')
+					return FALSE;
+				for (auto q = after + 1; q < gt; ++q)
+					if (!HX_isdigit(*q) && *q != '.')
+						return FALSE;
+			} else if (*after != '\0') {
+				return FALSE;
+			}
+			plist.emplace_back(arg);
 		} else {
 			return FALSE;
 		}
@@ -366,6 +395,11 @@ static bool icp_parse_fetch_args(mdi_list &plist, bool *pb_detail,
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
 			if (strcasestr(kw, "FIELDS") == nullptr)
 				*pb_data = TRUE;
+			*pb_detail = TRUE;
+		} else if (strncasecmp(kw, "BINARY[", 7) == 0 ||
+		    strncasecmp(kw, "BINARY.PEEK[", 12) == 0 ||
+		    strncasecmp(kw, "BINARY.SIZE[", 12) == 0) {
+			*pb_data = TRUE;
 			*pb_detail = TRUE;
 		}
 	}
@@ -714,6 +748,44 @@ static std::pair<std::string, std::string> split_DI(std::string_view sv)
 	return {std::string(sv.substr(0, idlen)), std::string(sv.substr(i))};
 }
 
+/**
+ * Decode raw part content for FETCH BINARY (RFC 3516 / RFC 9051 §6.4.5).
+ * @enc is 'b' (base64), 'q' (quoted-printable) or 'i' (identity), as
+ * classified by icp_process_fetch_item. Returns false when the content
+ * cannot be decoded.
+ */
+bool imap_binary_decode(char enc, std::string_view raw, std::string &out) try
+{
+	switch (enc) {
+	case 'b': {
+		/*
+		 * Add one spare byte. The decoder rejects outmax <= 3/4 of the
+		 * input, which for empty input would mean rejecting 0 >= 0.
+		 */
+		out.resize(raw.size() + 1);
+		size_t final_size = 0;
+		if (base64nl_decode_sized(raw, out.data(), out.size(), &final_size) < 0)
+			return false;
+		out.resize(final_size);
+		return true;
+	}
+	case 'q': {
+		/* qpnl_decode_sized wants one byte of slack for its NUL */
+		out.resize(raw.size() + 1);
+		auto n = qpnl_decode_sized(raw, out.data(), out.size());
+		if (n < 0)
+			return false;
+		out.resize(n);
+		return true;
+	}
+	default:
+		out = raw;
+		return true;
+	}
+} catch (const std::bad_alloc &) {
+	return false;
+}
+
 static int icp_process_fetch_item(imap_context &ctx,
     bool b_data, MITEM *pitem, std::string_view digest_str,
     int item_id, mdi_list &pitem_list) try
@@ -940,6 +1012,86 @@ static int icp_process_fetch_item(imap_context &ctx,
 			if (!pcontext->b_readonly &&
 			    !(pitem->flag_bits & FLAG_SEEN) &&
 			    strncasecmp(kw, "BODY[", 5) == 0) {
+				midb_agent::set_flags(pcontext->maildir,
+					pcontext->selected_folder, pitem->mid,
+					FLAG_SEEN, nullptr, &errnum);
+				pitem->flag_bits |= FLAG_SEEN;
+				imap_parser_bcast_flags(*pcontext, pitem->uid, bcastfl::include_self);
+			}
+		} else if (strncasecmp(kw, "BINARY[", 7) == 0 ||
+		    strncasecmp(kw, "BINARY.PEEK[", 12) == 0 ||
+		    strncasecmp(kw, "BINARY.SIZE[", 12) == 0) {
+			bool size_only = strncasecmp(kw, "BINARY.SIZE[", 12) == 0;
+			bool peek = strncasecmp(kw, "BINARY.PEEK[", 12) == 0;
+			const char *bname = size_only ? "BINARY.SIZE" : "BINARY";
+			auto lb = strchr(kw, '[');
+			auto rb = strchr(lb, ']');
+			std::string part(lb + 1, rb - lb - 1);
+			size_t poff = 0;
+			ssize_t plen = -1;
+			std::string ptag;
+			bool partial = !size_only && rb[1] == '<';
+			if (partial) {
+				poff = strtoul(rb + 2, nullptr, 0);
+				auto dot = strchr(rb + 2, '.');
+				if (dot != nullptr)
+					plen = strtol(dot + 1, nullptr, 0);
+				ptag = fmt::format("<{}>", poff);
+			}
+			deferred_eml_load();
+			auto pmime = mjson.get_mime(part.c_str());
+			if (pmime == nullptr && part == "1")
+				pmime = mjson.get_mime("");
+			if (pmime == nullptr) {
+				/* nstring covers BINARY, but .SIZE must be a number */
+				if (size_only)
+					return 1930;
+				buf += fmt::format("{}[{}]{} NIL", bname, part, ptag);
+			} else {
+				/*
+				 * The empty section selects the whole message
+				 * including the header block, which is never
+				 * CTE-encoded (RFC 2045 §6.4).
+				 */
+				char enc;
+				if (part.empty() || (!pmime->encoding_is_b() &&
+				    !pmime->encoding_is_q())) {
+					auto e = pmime->get_encoding();
+					if (!part.empty() && *e != '\0' &&
+					    strcasecmp(e, "7bit") != 0 &&
+					    strcasecmp(e, "8bit") != 0 &&
+					    strcasecmp(e, "binary") != 0)
+						return 1929; /* NO [UNKNOWN-CTE] */
+					enc = 'i';
+				} else {
+					enc = pmime->encoding_is_b() ? 'b' : 'q';
+				}
+				size_t coff = part.empty() ? pmime->get_head_offset() : pmime->get_content_offset();
+				size_t clen = part.empty() ? pmime->get_entire_length() : pmime->get_content_length();
+				if (size_only) {
+					auto eml_path = std::string(pcontext->maildir) + "/eml/" + mjson.get_mail_filename();
+					if (!ctx.io_actor.exists(eml_path)) {
+						std::string content;
+						if (exmdb_client->imapfile_read(ctx.maildir, "eml",
+						    mjson.get_mail_filename(), &content))
+							ctx.io_actor.place(eml_path, std::move(content), true);
+					}
+					auto raw = ctx.io_actor.get_substr(eml_path, coff, clen);
+					std::string dec;
+					/* RFC 3516 has no NIL for the size, so fail instead */
+					if (!raw.has_value())
+						return 1923; /* NO unable to read message file */
+					if (!imap_binary_decode(enc, *raw, dec))
+						return 1929; /* NO [UNKNOWN-CTE] */
+					buf += fmt::format("BINARY.SIZE[{}] {}", part, dec.size());
+				} else {
+					buf += fmt::format("BINARY[{}]{} <<{{bin}}{}|{}|{}|{}|{}|{}\r\n",
+					       part, ptag, mjson.get_mail_filename(),
+					       coff, clen, enc, poff, plen);
+				}
+			}
+			if (!pcontext->b_readonly && !(pitem->flag_bits & FLAG_SEEN) &&
+			    !peek && !size_only) {
 				midb_agent::set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, nullptr, &errnum);
