@@ -41,6 +41,7 @@ class config_file;
 struct pop3_context final : public schedule_context {
 	pop3_context() = default;
 	NOMOVE(pop3_context);
+	void clear();
 
 	GENERIC_CONNECTION connection;
 	char read_buffer[1024]{};

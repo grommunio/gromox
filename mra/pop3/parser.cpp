@@ -36,7 +36,6 @@
 using namespace gromox;
 
 static int pop3_parser_dispatch_cmd(const char *cm, int len, pop3_context *);
-static void pop3_parser_context_clear(pop3_context *);
 
 unsigned int g_popcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
@@ -216,7 +215,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 				pop3_parser_log_info(pcontext, LV_WARN, "out of memory for TLS object");
 				SLEEP_BEFORE_CLOSE;
 				close(pcontext->connection.sockd);
-				pop3_parser_context_clear(pcontext);
+				ctx.clear();
 				return tproc_status::close;
 			}
 			SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
@@ -247,7 +246,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 			SSL_free(pcontext->connection.ssl);
 			pcontext->connection.ssl = NULL;
 			close(pcontext->connection.sockd);
-			pop3_parser_context_clear(pcontext);
+			ctx.clear();
 			return tproc_status::close;
 		} else {
 			pcontext->is_stls = FALSE;
@@ -357,7 +356,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
  LOST_READ:
 		pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		pcontext->connection.reset();
-		pop3_parser_context_clear(pcontext);
+		ctx.clear();
 		return tproc_status::close;
 	} else if (read_len < 0) {
 		if (EAGAIN != errno) {
@@ -369,7 +368,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 			pcontext->connection.write(pop3_reply_str, string_length);
 			pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-			pop3_parser_context_clear(pcontext);
+			ctx.clear();
 			return tproc_status::close;
 		} else {
 			return tproc_status::polling_rdonly;
@@ -396,7 +395,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 			continue;
 		case DISPATCH_SHOULD_CLOSE:
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-			pop3_parser_context_clear(pcontext);
+			ctx.clear();
 			return tproc_status::close;
 		case DISPATCH_DATA:
 			pcontext->data_stat = TRUE;
@@ -427,7 +426,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 	ctx.wrdat_active = false;
 	ctx.wrdat_content.clear();
 	pcontext->connection.reset();
-	pop3_parser_context_clear(pcontext);
+	ctx.clear();
 	return tproc_status::close;
 
 }
@@ -601,11 +600,9 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, pop3_context *ctx
 	return ret & DISPATCH_ACTMASK;
 }
 
-static void pop3_parser_context_clear(pop3_context *pcontext)
+void pop3_context::clear()
 {
-    if (NULL == pcontext) {
-        return;
-    }
+	auto pcontext = this;
 	auto &ctx = *pcontext;
 	pcontext->connection.reset();
 	ctx.wrdat_active = false;
