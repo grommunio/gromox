@@ -369,7 +369,8 @@ namespace midb_agent {
 int list_mail(const char *path, const std::string &folder,
     std::vector<MSG_UNIT> &parray, int *pnum, uint64_t *psize) try
 {
-	char temp_line[512];
+	static constexpr size_t temp_line_size = 64U * 1024;
+	auto temp_line = std::make_unique<char[]>(temp_line_size);
 	struct pollfd pfd_read;
 
 	auto pback = get_connection(path);
@@ -429,8 +430,8 @@ int list_mail(const char *path, const std::string &folder,
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
 				try {
-					auto parts = gx_split(temp_line, ' ');
-					if (parts.size() != 5)
+					auto parts = gx_split(temp_line.get(), ' ');
+					if (parts.size() != 6)
 						throw 0;
 					MSG_UNIT msg{std::move(parts[1])};
 					msg.size = strtoul(parts[4].c_str(), nullptr, 0);
@@ -443,7 +444,7 @@ int list_mail(const char *path, const std::string &folder,
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos++] = buff[i];
-				if (line_pos >= 256)
+				if (line_pos >= temp_line_size - 1)
 					return MIDB_RDWR_ERROR;
 			}
 		}
@@ -1330,7 +1331,8 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 	char *pspace;
 	char *pspace1;
 	char *pspace2;
-	char temp_line[1024];
+	static constexpr size_t temp_line_size = 64U * 1024;
+	auto temp_line = std::make_unique<char[]>(temp_line_size);
 	struct pollfd pfd_read;
 	std::string buff;
 
@@ -1341,8 +1343,7 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		/* K: ask for keywords to be reported */
-		auto cbuf = fmt::format("P-SIMU {} {} {} {} K\r\n",
+		auto cbuf = fmt::format("P-SIMU {} {} {} {}\r\n",
 		            path, folder, pseq->lo, pseq->hi);
 		auto wrret = write(pback->sockd, cbuf.c_str(), cbuf.size());
 		if (wrret < 0 || static_cast<size_t>(wrret) != cbuf.size())
@@ -1391,7 +1392,7 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 					temp_line[line_pos] = '\0';
-					pspace = strchr(temp_line, ' ');
+					pspace = strchr(temp_line.get(), ' ');
 					if (NULL != pspace) {
 						pspace1 = strchr(pspace + 1, ' ');
 						if (NULL != pspace1) {
@@ -1400,20 +1401,22 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 								*pspace++ = '\0';
 								*pspace1++ = '\0';
 								*pspace2++ = '\0';
-								/*
-								 * Terminate the "(flags)" group so s_to_flagbits does
-								 * not scan size or the optional trailing base64
-								 * keyword blob. The 5th token is the keywords.
-								 */
-								std::string kw;
-								char *pspace3 = strchr(pspace2, ' ');
-								if (pspace3 != nullptr) {
-									*pspace3++ = '\0';
-									char *pspace4 = strchr(pspace3, ' ');
-									if (pspace4 != nullptr)
-										kw = kw_sanitize(base64_decode(pspace4 + 1));
-								}
 								int uid = strtol(pspace1, nullptr, 0);
+								/*
+								 * pspace2 now points at "<flags> <size>
+								 * <base64(keywords)>". Bound the flag scan
+								 * at ')' because the base64 keyword field
+								 * may contain flag letters (A/D/F/R/S/U/W).
+								 * The keyword field is the last space-
+								 * separated token (possibly empty).
+								 */
+								auto flag_end = strchr(pspace2, ')');
+								unsigned int flag_bits = flag_end != nullptr ?
+									s_to_flagbits(std::string_view(pspace2, &flag_end[1] - pspace2)) :
+									s_to_flagbits(pspace2);
+								auto kw_beg = strrchr(pspace2, ' ');
+								std::string kw = kw_beg != nullptr ?
+									kw_sanitize(base64_decode(&kw_beg[1])) : std::string();
 								if (pxarray->append(MITEM{}, uid) >= 0) {
 									auto num = pxarray->get_capacity();
 									assert(num > 0);
@@ -1425,7 +1428,7 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 									} catch (const std::bad_alloc &) {
 										b_format_error = TRUE;
 									}
-									pitem->flag_bits = s_to_flagbits(pspace2);
+									pitem->flag_bits = flag_bits;
 								}
 							} else {
 								b_format_error = TRUE;
@@ -1439,7 +1442,7 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 					line_pos = 0;
 				} else if (buff[i] != '\r' || i != offset - 1) {
 					temp_line[line_pos++] = buff[i];
-					if (line_pos >= 1000)
+					if (line_pos >= temp_line_size - 1)
 						return MIDB_RDWR_ERROR;
 				}
 			}

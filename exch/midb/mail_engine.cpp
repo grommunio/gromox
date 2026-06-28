@@ -3092,19 +3092,26 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
  * Give summary of messages present in folder (via IMAP UID)
  *
  * Request:
- * 	P-SIMU <store-dir> <folder-name> <uid(min)> <uid(max)> [<request-keywords>]
+ * 	P-SIMU <store-dir> <folder-name> <uid(min)> <uid(max)>
  * Response:
  * 	TRUE <#msgcount>
- * 	- <midstr> <uid> <flags> <size>  // repeat x #msgcount
+ * 	- <midstr> <uid> <flags> <size> <base64(keywords)>  // repeat x #msgcount
+ *
+ * The keyword field is always present (possibly empty), so each line has a
+ * fixed count of six space-separated fields.
  *
  * midb_agent:list_mail [POP3 logic] uses midstr and size.
- * midb_agent:fetch_simple_uid [IMAP logic] uses midstr, uid, flags.
+ * midb_agent:fetch_simple_uid [IMAP logic] uses midstr, uid, flags, keywords.
  */
 static int me_psimu(std::span<char *> argv, int sockd) try
 {
+	/*
+	 * Avoid generating absurd amounts of kw data. Clients have sanity
+	 * limits of their own and would just reject overly long lines.
+	 */
+	static constexpr size_t MAX_KEYWORD_FIELD = 8U * 1024;
+
 	int total_mail = 0;
-	bool want_kw = argv.size() >= 6;
-	
 	seq_node::value_type first = strtol(argv[3], nullptr, 0), last = strtol(argv[4], nullptr, 0);
 	if (first < 1 && first != SEQ_STAR)
 		return MIDB_E_PARAMETER_ERROR;
@@ -3167,11 +3174,15 @@ static int me_psimu(std::span<char *> argv, int sockd) try
 	rsp.reserve(65536);
 	rsp += "TRUE " + std::to_string(temp_list.size()) + "\r\n";
 	for (const auto &sn : temp_list) {
-		rsp += fmt::format("- {} {} {} {}", sn.mid_string, sn.uid,
-		       sn.flags, sn.size);
-		if (want_kw && !sn.keywords.empty())
-			rsp += " " + base64_encode(sn.keywords);
-		rsp += "\r\n";
+		auto kw = base64_encode(sn.keywords);
+		if (kw.size() > MAX_KEYWORD_FIELD) {
+			mlog(LV_WARN, "W-2408: %s:%s: Keyword set of %zu bytes exceeds "
+				"the P-SIMU line budget. No keywords will be reported.",
+				argv[1], sn.mid_string.c_str(), sn.keywords.size());
+			kw.clear();
+		}
+		rsp += fmt::format("- {} {} {} {} {}\r\n", sn.mid_string, sn.uid,
+		       sn.flags, sn.size, kw);
 		if (rsp.size() < rsp.capacity() / 2)
 			continue;
 		auto ret = cmd_write(sockd, rsp.c_str(), rsp.size());
@@ -4720,7 +4731,7 @@ static constexpr struct {
 	{"P-SUBF", {me_psubf, 3}},
 	{"P-UNSF", {me_punsf, 3}},
 	{"P-SUBL", {me_psubl, 2}},
-	{"P-SIMU", {me_psimu, 5, 6}},
+	{"P-SIMU", {me_psimu, 5}},
 	{"P-DELL", {me_pdell, 3}},
 	{"P-DTLU", {me_pdtlu, 5}},
 	{"P-SFLG", {me_psflg, 5}},

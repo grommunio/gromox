@@ -188,8 +188,9 @@ static std::string quote_encode(const std::string &u7)
 	return quote_encode(u7.c_str());
 }
 
-static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail, BOOL *pb_data,
-    char *string, std::vector<std::string> &argv) try
+static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail,
+    BOOL *pb_simple, BOOL *pb_data, char *string,
+    std::vector<std::string> &argv) try
 {
 	static constexpr const char *kw1[] = {"ALL", "FAST", "FULL"};
 	static constexpr const char *kw2[] = {
@@ -327,6 +328,8 @@ static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail, BOOL *pb_data
 		return FALSE;
 	/* full load the mail digests from MIDB */
 	*pb_detail = FALSE;
+	bool want_flags = false;
+	*pb_simple = FALSE;
 	/* stream object contain file information */
 	*pb_data = FALSE;
 	for (size_t i = 0; i < plist.size(); ++i) {
@@ -358,13 +361,7 @@ static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail, BOOL *pb_data
 		    strcasecmp(kw, "RFC822.SIZE") == 0) {
 			*pb_detail = TRUE;
 		} else if (strcasecmp(kw, "FLAGS") == 0) {
-			/*
-			 * Custom keywords are only conveyed in the detailed
-			 * digest (P-DTLU response), not the simple (P-SIMU)
-			 * listing. A bare FETCH FLAGS thus needs the detail
-			 * code path.
-			 */
-			*pb_detail = TRUE;
+			want_flags = true;
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
 			if (strcasestr(kw, "FIELDS") == nullptr)
@@ -372,6 +369,8 @@ static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail, BOOL *pb_data
 			*pb_detail = TRUE;
 		}
 	}
+	if (want_flags && !*pb_detail)
+		*pb_simple = TRUE;
 	/* move to front (UID goes in front of plist) */
 	for (const auto kw : {"RFC822.TEXT", "RFC822.HEADER", "ENVELOPE", "RFC822.SIZE", "INTERNALDATE", "FLAGS", "UID"})
 		std::stable_partition(plist.begin(), plist.end(),
@@ -3125,7 +3124,7 @@ int icp_fetch(std::span<std::string> argv, imap_context &ctx)
 	auto pcontext = &ctx;
 	int i, num, errnum = 0;
 	BOOL b_data;
-	BOOL b_detail;
+	BOOL b_detail, b_simple;
 	std::vector<std::string> tmp_argv;
 	imap_seq_list list_uid;
 	mdi_list list_data;
@@ -3134,11 +3133,15 @@ int icp_fetch(std::span<std::string> argv, imap_context &ctx)
 		return 1805;
 	if (argv.size() < 4 || parse_imap_seqx(*pcontext, argv[2].c_str(), list_uid) != 0)
 		return 1800;
-	if (!icp_parse_fetch_args(list_data, &b_detail, &b_data, argv[3].data(), tmp_argv))
+	if (!icp_parse_fetch_args(list_data, &b_detail, &b_simple, &b_data,
+	    argv[3].data(), tmp_argv))
 		return 1800;
 	XARRAY xarray;
 	auto ssr = b_detail ?
 	           midb_agent::fetch_detail_uid(pcontext->maildir,
+	           pcontext->selected_folder, list_uid, &xarray, &errnum) :
+	           b_simple ?
+	           midb_agent::fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_uid, &xarray, &errnum) :
 	           fetch_trivial_uid(*pcontext, list_uid, xarray);
 	auto result = m2icode(ssr, errnum);
@@ -3436,7 +3439,7 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 	int errnum;
 	int i;
 	BOOL b_data;
-	BOOL b_detail;
+	BOOL b_detail, b_simple;
 	imap_seq_list list_seq;
 	mdi_list list_data;
 	
@@ -3445,7 +3448,7 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 	if (argv.size() < 5 || parse_imap_seq(list_seq, icp_uidseq(ctx, argv[3])) != 0)
 		return 1800;
 	std::vector<std::string> temp_argv;
-	if (!icp_parse_fetch_args(list_data, &b_detail,
+	if (!icp_parse_fetch_args(list_data, &b_detail, &b_simple,
 	    &b_data, argv[4].data(), temp_argv))
 		return 1800;
 	if (std::none_of(list_data.cbegin(), list_data.cend(),
