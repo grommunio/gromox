@@ -3108,6 +3108,9 @@ static errno_t parse_imap_seqx(imap_context &ctx, const char *range_string,
 	return ENOMEM;
 }
 
+/* Facilitate incremental streaming of the metadata for FETCH responses. */
+static constexpr unsigned int FETCH_STREAM_CHUNK = 256;
+
 static int fetch_trivial_uid(imap_context &ctx, const imap_seq_list &range_list,
     XARRAY &xa) try
 {
@@ -3120,6 +3123,142 @@ static int fetch_trivial_uid(imap_context &ctx, const imap_seq_list &range_list,
 	return 0;
 } catch (const std::bad_alloc &) {
 	return MIDB_LOCAL_ENOMEM;
+}
+
+/**
+ * Emit the next batch of `* n FETCH (...)` lines into ctx.stream. Or, when the
+ * message set is exhausted, emit the final unsolicited responses and the
+ * tagged completion into ctx.stream. Returns 0 to indicate to the caller to
+ * keep draining while in the wrlst state. A nonzero return is an error code
+ * for icp_dval().
+ *
+ * Ranges are cut against ctx.contents, so a batch is bounded by message count,
+ * not by raw UID distance. A UID set like `1:*` on a sparse long-lived mailbox
+ * must not degenerate into thousands of empty midb round trips.
+ */
+int icp_fetch_stream_continue(imap_context &ctx) try
+{
+	auto pcontext = &ctx;
+	auto &fs = ctx.fstream;
+	int errnum = 0;
+	imrpc_build_env();
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
+	pcontext->stream.clear();
+	auto n_msgs = pcontext->contents.get_capacity();
+	uint32_t max_uid = n_msgs > 0 ?
+	                   pcontext->contents.get_item(n_msgs - 1)->uid : 0;
+
+	while (fs.range_idx < fs.ranges.size()) {
+		const auto &range = *std::next(fs.ranges.begin(), fs.range_idx);
+		uint32_t lo = range.lo, hi = range.hi;
+		bool has_star = range.lo == SEQ_STAR || range.hi == SEQ_STAR;
+		if (max_uid == 0) {
+			++fs.range_idx;
+			continue; /* empty folder */
+		}
+		if (hi > max_uid)
+			hi = max_uid;
+		if (lo > max_uid) {
+			if (!has_star) {
+				++fs.range_idx;
+				continue; /* empty range */
+			}
+			lo = max_uid; /* "*": the last message always matches */
+		}
+		auto i0 = fs.mid_range ? fs.next_idx : ctx.contents.lower_bound(lo);
+		/* one past the last message within [lo,hi] */
+		auto i9 = ctx.contents.lower_bound(hi + 1);
+		if (i0 >= i9) {
+			++fs.range_idx;
+			fs.mid_range = false;
+			continue;
+		}
+		auto i1 = std::min(i9 - 1, i0 + FETCH_STREAM_CHUNK - 1);
+		imap_seq_list batch;
+		batch.insert(pcontext->contents.get_item(i0)->uid,
+		             pcontext->contents.get_item(i1)->uid);
+		XARRAY xarray;
+		auto ssr = fs.detail ?
+		           midb_agent::fetch_detail_uid(pcontext->maildir,
+		           pcontext->selected_folder, batch, &xarray, &errnum) :
+		           fs.use_trivial ?
+		           fetch_trivial_uid(*pcontext, batch, xarray) :
+		           midb_agent::fetch_simple_uid(pcontext->maildir,
+		           pcontext->selected_folder, batch, &xarray, &errnum);
+		auto result = m2icode(ssr, errnum);
+		if (result != 0)
+			return result;
+		int num = xarray.get_capacity();
+		for (int i = 0; i < num; ++i) {
+			auto pitem = xarray.get_item(i);
+			/*
+			 * fetch_detail_uid might have yielded new mails, so
+			 * filter with respect to current sequence assignment.
+			 * The `* <id> FETCH` uses the session seqid.
+			 */
+			auto ct_item = pcontext->contents.get_itemx(pitem->uid);
+			if (ct_item == nullptr)
+				continue;
+			result = icp_process_fetch_item(ctx, FALSE,
+			         pitem, xarray.get_digest(*pitem),
+			         ct_item->id, fs.items);
+			if (result != 0)
+				return result;
+		}
+		if (i1 + 1 >= i9) {
+			++fs.range_idx;
+			fs.mid_range = false;
+		} else {
+			fs.next_idx = i1 + 1;
+			fs.mid_range = true;
+		}
+		/*
+		 * Unless every message of it was filtered out, do one batch
+		 * per call. wrlst treats an empty stream as a lost connection,
+		 * so keep going until there is output or the set is exhausted.
+		 */
+		if (pcontext->stream.get_total_length() > 0)
+			return 0;
+	}
+
+	/* The set is exhausted. Finish like the non-streamed path. */
+	fs.active = false;
+	imap_parser_echo_modify(pcontext, &pcontext->stream, echomod::suppress_expunge);
+	auto buf = fmt::format("{} {}", fs.tag,
+	           resource_get_imap_code(fs.uid_cmd ? 1728 : 1720, 1));
+	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+		return 1922;
+	return 0;
+} catch (const std::bad_alloc &) {
+	return 1918;
+}
+
+/**
+ * Arm the continuation and emit its first batch.
+ */
+static int icp_fetch_stream_begin(imap_context &ctx, const std::string &tag,
+    bool uid_cmd, bool b_detail, bool b_simple, imap_seq_list &&ranges,
+    mdi_list &&items)
+{
+	auto &fs = ctx.fstream;
+	fs.reset();
+	fs.detail = b_detail;
+	fs.use_trivial = !uid_cmd && !b_detail && !b_simple;
+	fs.uid_cmd = uid_cmd;
+	fs.ranges = std::move(ranges);
+	fs.items = std::move(items);
+	fs.tag = tag;
+	fs.active = true;
+
+	auto result = icp_fetch_stream_continue(ctx);
+	if (result != 0) {
+		fs.reset();
+		return result;
+	}
+	ctx.write_length = 0;
+	ctx.write_offset = 0;
+	ctx.sched_stat = isched_stat::wrlst;
+	return DISPATCH_BREAK;
 }
 
 int icp_fetch(std::span<std::string> argv, imap_context &ctx)
@@ -3138,6 +3277,15 @@ int icp_fetch(std::span<std::string> argv, imap_context &ctx)
 	if (!icp_parse_fetch_args(list_data, &b_detail, &b_simple, &b_data,
 	    argv[3].data(), tmp_argv))
 		return 1800;
+	/*
+	 * Metadata requests (FLAGS/ENVELOPE/BODY[HEADER.FIELDS]/BODYSTRUCTURE)
+	 * are streamed in batches. Detail leads to full digests (via P-DTLU).
+	 * Simple leads to fresh flags+keywords (via P-SIMU). Otherwise, the
+	 * in-memory cache is enough (UID-only).
+	 */
+	if (!b_data)
+		return icp_fetch_stream_begin(ctx, argv[0], false, b_detail,
+		       b_simple, std::move(list_uid), std::move(list_data));
 	XARRAY xarray;
 	auto ssr = b_detail ?
 	           midb_agent::fetch_detail_uid(pcontext->maildir,
@@ -3176,12 +3324,8 @@ int icp_fetch(std::span<std::string> argv, imap_context &ctx)
 		return 1922;
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
-	if (b_data) {
-		pcontext->write_buff = pcontext->command_buffer;
-		pcontext->sched_stat = isched_stat::wrdat;
-	} else {
-		pcontext->sched_stat = isched_stat::wrlst;
-	}
+	pcontext->write_buff = pcontext->command_buffer;
+	pcontext->sched_stat = isched_stat::wrdat;
 	return DISPATCH_BREAK;
 }
 
@@ -3453,15 +3597,18 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 	if (std::none_of(list_data.cbegin(), list_data.cend(),
 	    [](const std::string &e) { return strcasecmp(e.c_str(), "UID") == 0; }))
 		list_data.emplace_back("UID");
+	if (!b_data)
+		return icp_fetch_stream_begin(ctx, argv[0], true, b_detail,
+		       b_simple, std::move(list_seq), std::move(list_data));
 	XARRAY xarray;
 	auto ssr = b_detail ?
 	           midb_agent::fetch_detail_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum) :
 	           midb_agent::fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum);
-	auto ret = m2icode(ssr, errnum);
-	if (ret != 0)
-		return ret;
+	auto ssr_ret = m2icode(ssr, errnum);
+	if (ssr_ret != 0)
+		return ssr_ret;
 	pcontext->stream.clear();
 	num = xarray.get_capacity();
 	imrpc_build_env();
@@ -3471,9 +3618,9 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		ret = icp_process_fetch_item(ctx, b_data,
-		      pitem, xarray.get_digest(*pitem),
-		      ct_item->id, list_data);
+		auto ret = icp_process_fetch_item(ctx, b_data,
+		           pitem, xarray.get_digest(*pitem),
+		           ct_item->id, list_data);
 		if (ret != 0)
 			return ret;
 	}
@@ -3485,12 +3632,8 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 		return 1922;
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
-	if (b_data) {
-		pcontext->write_buff = pcontext->command_buffer;
-		pcontext->sched_stat = isched_stat::wrdat;
-	} else {
-		pcontext->sched_stat = isched_stat::wrlst;
-	}
+	pcontext->write_buff = pcontext->command_buffer;
+	pcontext->sched_stat = isched_stat::wrdat;
 	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2397: ENOMEM");
