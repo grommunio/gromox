@@ -952,14 +952,27 @@ static int icp_process_fetch_item(imap_context &ctx,
 			if (pend == nullptr)
 				return 1800;
 			size_t offset = 0, length = -1;
+			char *trimmed = nullptr;
+			char trim_save[2] = {0, 0};
 			if (pend[1] == '<') {
 				offset = strtol(pend + 2, nullptr, 0);
 				auto pdot = strchr(pend + 2, '.');
 				if (NULL != pdot) {
 					length = strtol(pdot + 1, nullptr, 0);
-					/* trim the length information for response tag */
+					/*
+					 * Trim the length from the response tag (the reply to
+					 * BODY[]<o.l> is tagged BODY[]<o>). kw points into the
+					 * shared per-command item list, which is replayed for
+					 * every message of a range, so save the two overwritten
+					 * bytes and restore them once this item is emitted --
+					 * otherwise messages 2..n of "FETCH m:n BODY[]<o.l>"
+					 * lose the length and return offset-to-end.
+					 */
+					trim_save[0] = pdot[0];
+					trim_save[1] = pdot[1];
 					pdot[0] = '>';
 					pdot[1] = '\0';
+					trimmed = pdot;
 				}
 			}
 			auto len = pend - (pbody + 1);
@@ -1006,6 +1019,11 @@ static int icp_process_fetch_item(imap_context &ctx,
 				len = icp_print_structure(ctx, &mjson, kwss, buf,
 				      pbody, temp_id.c_str(), ptr,
 				      offset, length, nullptr);
+			}
+			if (trimmed != nullptr) {
+				/* restore the shared item buffer for the next message */
+				trimmed[0] = trim_save[0];
+				trimmed[1] = trim_save[1];
 			}
 			if (len < 0)
 				return 1918;
