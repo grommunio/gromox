@@ -61,7 +61,6 @@ static void imap_parser_event_proc(char *event);
 static void imap_parser_event_touch(const char *user, const char *folder);
 static void imap_parser_event_flag(const char *username, const char *folder, uint32_t uid);
 static int imap_parser_dispatch_cmd(std::span<std::string> argv, imap_context &);
-static void imap_parser_context_clear(imap_context *);
 static int imap_parser_wrdat_retrieve(imap_context &);
 
 unsigned int g_imapcmd_debug;
@@ -294,7 +293,7 @@ static tproc_status ps_stat_stls(imap_context &ctx)
 				/* ignore */;
 			imap_parser_log_info(pcontext, LV_WARN, "out of memory for TLS object");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-			imap_parser_context_clear(pcontext);
+			ctx.clear();
 			return tproc_status::close;
 		}
 		SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
@@ -336,7 +335,7 @@ static tproc_status ps_stat_stls(imap_context &ctx)
 		pcontext->connection.reset();
 		pcontext->connection.reset();
 	}
-	imap_parser_context_clear(pcontext);
+	ctx.clear();
 	return tproc_status::close;
 }
 
@@ -970,7 +969,7 @@ static tproc_status ps_end_processing(imap_context *pcontext,
 	}
 	ctx.wrdat_content = nullptr;
 	ctx.wrdat_backing.reset();
-	imap_parser_context_clear(pcontext);
+	ctx.clear();
 	return tproc_status::close;
 }
 
@@ -1554,11 +1553,9 @@ imap_context::imap_context()
     pcontext->connection.sockd = -1;
 }
 
-static void imap_parser_context_clear(imap_context *pcontext)
+void imap_context::clear()
 {
-    if (pcontext == nullptr) {
-        return;
-    }
+	auto pcontext = this;
 	auto &ctx = *pcontext;
 	pcontext->connection.reset();
 	pcontext->proto_stat = iproto_stat::none;

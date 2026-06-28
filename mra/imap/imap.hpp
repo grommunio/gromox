@@ -87,12 +87,15 @@ struct content_array final : public XARRAY {
  *              and which needs to be conveyed to the client
  * @f_expunged_uids: imapuids that were asynchronously deleted by another thread
  *                   and which needs to be conveyed to the client
+ *
+ * Adding a field here generally requires adding logic to clear().
  */
 struct imap_context final : public schedule_context {
 	imap_context();
 	NOMOVE(imap_context);
 	/* a.k.a. is_login in pop3 */
 	inline bool is_authed() const { return proto_stat >= iproto_stat::auth; }
+	void clear();
 
 	GENERIC_CONNECTION connection;
 	std::string mid, append_folder, append_flags;
