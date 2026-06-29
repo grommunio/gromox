@@ -1213,18 +1213,17 @@ static bool ct_hint_seq(const imap_seq_list &list,
     unsigned int num, unsigned int max_uid)
 {
 	for (const auto &seq : list) {
-		if (seq.hi == SEQ_STAR) {
-			if (seq.lo == SEQ_STAR) {
-				if (num == max_uid)
-					return true;
-			} else {
-				if (num >= seq.lo)
-					return true;
-			}
-		} else {
-			if (seq.hi >= num && seq.lo <= num)
-				return true;
-		}
+		uint32_t lo = seq.lo == SEQ_STAR ? max_uid : seq.lo;
+		uint32_t hi = seq.hi == SEQ_STAR ? max_uid : seq.hi;
+		/*
+		 * Resolution of STAR may reduce @hi to below @lo. Order is
+		 * irrelevant (RFC 3501 §6.4.8/§9) and needs to be reversed for
+		 * the sake of testing for lo<=n<=hi.
+		 */
+		if (lo > hi)
+			std::swap(lo, hi);
+		if (lo <= num && num <= hi)
+			return true;
 	}
 	return false;
 }
