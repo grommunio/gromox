@@ -191,7 +191,7 @@ static ec_error_t oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 		            [&](const TZRULE &r) { return r.year == year; });
 		if (iter == rules.end()) {
 			rules.emplace_back();
-			iter = rules.rbegin().base();
+			iter = std::prev(rules.end());
 			iter->year = year;
 		}
 		if (b_daylight) {
