@@ -898,6 +898,12 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv,
 		}
 		ptr ++;
 	}
+	if (last_square != nullptr) {
+		/* Unterminated '[' is valid in an atom; flush the pending token. */
+		cmdline[cmdlen-1] = '\0';
+		if (*last_space != '\0')
+			argv.emplace_back(last_space);
+	}
 	/* only one quote is found, error */
 	if (last_quote != nullptr || last_bracket != nullptr || last_square != nullptr) {
 		argv.clear();
