@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <pthread.h>
 #ifdef __OpenBSD__
 #	include <pthread_np.h>
@@ -24,6 +25,18 @@ enum {
 	ISTORE_SPLIT_WORKERS  = 0x2U,
 };
 
+struct GX_EXPORT heap_reaper {
+	public:
+	heap_reaper(unsigned int intvl);
+	~heap_reaper();
+
+	private:
+	void *thread_entry();
+
+	pthread_t m_thr_id{};
+	std::atomic<unsigned int> m_intv{60};
+};
+
 #ifdef __OpenBSD__
 static constexpr char RUNNING_IDENTITY[] = "_gromox";
 #else
@@ -31,7 +44,6 @@ static constexpr char RUNNING_IDENTITY[] = "gromox";
 #endif
 
 extern GX_EXPORT errno_t filedes_limit_bump(size_t);
-extern GX_EXPORT void start_heap_reaper(unsigned int interval_seconds);
 extern GX_EXPORT unsigned int gx_concurrency();
 extern GX_EXPORT unsigned long gx_gettid();
 extern GX_EXPORT void gx_reexec_record(int);

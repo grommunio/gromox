@@ -323,7 +323,7 @@ int main(int argc, char **argv)
 	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
-	start_heap_reaper(gxconfig->get_ll("malloc_trim_interval"));
+	heap_reaper trimmer(gxconfig->get_ll("malloc_trim_interval"));
 	if (0 != service_run()) {
 		mlog(LV_ERR, "system: failed to run services");
 		return EXIT_FAILURE;

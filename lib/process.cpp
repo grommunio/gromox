@@ -104,40 +104,48 @@ errno_t filedes_limit_bump(size_t max)
 	return 0;
 }
 
-#ifdef __GLIBC__
 /**
  * Hand free top-of-arena pages back to the OS. glibc only trims the main arena
  * automatically; the per-thread arenas it spins up under concurrency keep
  * their freed pages mapped, so RSS otherwise stays at the high-water of the
  * busiest burst (reusable, not leaked, but resident) until the process exits.
  */
-static void *heap_reaper_thread(void *arg)
+void *heap_reaper::thread_entry()
 {
 	pthread_setname_np(pthread_self(), "heap_reaper");
-	auto secs = static_cast<unsigned int>(reinterpret_cast<uintptr_t>(arg));
-	while (true) {
+	do {
+		auto secs = m_intv.load();
+		if (secs == 0)
+			break;
 		sleep(secs);
+#ifdef __GLIBC__
 		malloc_trim(0);
-	}
+#endif
+	} while (true);
 	return nullptr;
 }
-#endif
 
-void start_heap_reaper(unsigned int interval_seconds)
+heap_reaper::heap_reaper(unsigned int sec) : m_intv(sec)
 {
 	/* this function has to die */
 #ifdef __GLIBC__
-	if (interval_seconds == 0)
+	if (sec == 0)
 		return;
-	pthread_t tid;
-	auto arg = reinterpret_cast<void *>(static_cast<uintptr_t>(interval_seconds));
-	auto ret = pthread_create4(&tid, nullptr, heap_reaper_thread, arg);
-	if (ret != 0) {
+	auto entry = [](void *a) { return static_cast<heap_reaper *>(a)->thread_entry(); };
+	auto ret = pthread_create4(&m_thr_id, nullptr, entry, this);
+	if (ret != 0)
 		mlog(LV_WARN, "cannot start heap reaper thread: %s", strerror(ret));
-		return;
-	}
-	pthread_detach(tid);
 #endif
+}
+
+heap_reaper::~heap_reaper()
+{
+	m_intv = 0;
+	if (!pthread_equal(m_thr_id, {})) {
+		pthread_kill(m_thr_id, SIGALRM);
+		pthread_join(m_thr_id, nullptr);
+		m_thr_id = {};
+	}
 }
 
 /**

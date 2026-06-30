@@ -310,7 +310,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
-	start_heap_reaper(gxconfig->get_ll("malloc_trim_interval"));
+	heap_reaper trimmer(gxconfig->get_ll("malloc_trim_interval"));
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init();

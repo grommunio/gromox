@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 	service_init({g_config_file, g_dfl_svc_plugins, context_num});
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
-	start_heap_reaper(gxconfig->get_ll("malloc_trim_interval"));
+	heap_reaper trimmer(gxconfig->get_ll("malloc_trim_interval"));
 	if (0 != service_run()) { 
 		printf("[system]: failed to run service\n");
 		return EXIT_FAILURE;
