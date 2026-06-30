@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	struct shmid_ds ds;
-	if (shmctl(id, SHM_STAT, &ds) != id) {
+	if (shmctl(id, IPC_STAT, &ds) < 0) {
 		fprintf(stderr, "shmctl(0x%lx): %s\n", g_key, strerror(errno));
 		return EXIT_FAILURE;
 	}
