@@ -1,5 +1,5 @@
-Milestone 3.7.225
-=================
+Gromox 3.8 (2026-06-30)
+=======================
 
 Enhancements:
 
@@ -7,21 +7,44 @@ Enhancements:
   The gromox.cfg:istore_standalone config directive has turned into a bitmask.
 * emsmdb(Outlook): fnevObjectModified notifications for folders now convey
   the new counts of read/unread messages.
+* Support for custom per-message keywords (a.k.a. color categories) in IMAP
+* Partial IMAP4rev2 support (ENABLE, NAMESPACE, SELECT/EXAMINE, STATUS
+  SIZE/DELETED, ESEARCH, (UID) MOVE, LIST-EXTENDED, SEARCHRES)
 * Conversions between HTML and RTF now support and prefer the use of the
   external converter Pandoc, if installed.
 * Conversions from HTML to plaintext now support the use of Pandoc as a
   fallback if chawan/w3m is not present.
 * mbop: new "exaddrxlat" command
 * ruleproc: implemented OP_FORWARD handling for TwoStep processor
+* exmdb, zcore: new link_message RPCs for bulk linking, speeds up
+  external search folder filling agents (e.g. grommunio-web)
 
 Fixes:
 
 * ab_tree: restore/implement time-based purging of the cache
+* imap: fixed BODY[HEADER]/[TEXT]/[HEADER.FIELDS] returning NIL
+* Server side rule and meeting processor: On reception of meeting updates, the
+  prior calendar entry is replaced (rather than left untouched, which caused
+  duplicates).
+* ruleproc now ignores stale meeting updates (e.g. if an older update was held
+  up in SMTP queues and was delivered late past another)
+* imap: searching by Bcc field is now supported
+* imap: STORE commands no longer fail when unrecognized flags are used
+* midb: the SENTBEFORE/SENTON/SENTSINCE imap search keywords now test
+  against the Date header rather than PR_LAST_MODIFICATION_TIME
+* midb: the SENT* keywords now disregard timezone as mandated
+* imap: FETCH/STORE/SEARCH no longer produce EXPUNGE replies
+* ews: no longer loses the attendee list of an appointment when saved
 
 Behavioral changes:
 
 * The default value for exmdb_provider.cfg:cache_interval has been reduced from
   15min to 1min, closing sqlite handles earlier when they are idle.
+* exmdb_client: back off exponentially on notify reconnect
+* ews: the SyncFolderItems and GetItem response sizes are now capped for
+  reasons of memory use (clients should paginate as needed)
+* ews: a limit is imposed on the streaming event backlog size now
+  (clients should reconnect/resync as needed if they get kicked)
 
 
 Gromox 3.7 (2026-04-30)
