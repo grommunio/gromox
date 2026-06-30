@@ -171,7 +171,7 @@ bool exmdb_bouncer_make(const char *from, const char *rcpt, const db_conn &psqli
 
 	auto dsn = vmime::make_shared<vmime::bodyPart>();
 	dsn->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(oss).str()),
-		vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_DISPOSITION_NOTIFICATION));
+		vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_DELIVERY_STATUS));
 	pmail->getBody()->appendPart(std::move(dsn));
 	return TRUE;
 } catch (const std::bad_alloc &) {
