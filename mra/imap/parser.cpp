@@ -1593,6 +1593,9 @@ void imap_context::clear()
 	pcontext->stream.clear();
 	pcontext->f_flags.clear();
 	pcontext->f_expunged_uids.clear();
+	pcontext->contents.clear();
+	pcontext->saved_uids.clear();
+	pcontext->announced_keywords.clear();
 	/*
 	 * Drop any pending async bits so a freshly pooled context does not
 	 * start out flagged for a notification it has no queued changes for.
