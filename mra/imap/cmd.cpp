@@ -1713,7 +1713,7 @@ static int icp_selex(std::span<std::string> argv, imap_context &ctx, bool readon
 	auto buf = fmt::format(
 		"{}"
 		"* {} EXISTS\r\n"
-		"{}\r\n"
+		"{}"
 		"* FLAGS ({}{})\r\n"
 		"* OK {}\r\n",
 		closed_line, pcontext->contents.n_exists(),
