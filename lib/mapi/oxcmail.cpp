@@ -27,6 +27,7 @@
 #include <vmime/contentTypeField.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/mailboxList.hpp>
+#include <vmime/messageId.hpp>
 #include <vmime/stringContentHandler.hpp>
 #include <vmime/text.hpp>
 #include <vmime/utility/outputStreamStringAdapter.hpp>
@@ -1209,18 +1210,15 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (penum_param->pmsg->proplist.set(PidTagFaxNumberOfPages, &tmp_int32) != ecSuccess)
 			return FALSE;
 	} else if (strcasecmp(key, "Content-ID") == 0) {
-		proptag_t tag = str_isascii(field) ?
+		/* MAPI stores the id without the angle brackets */
+		vmime::messageId vmid;
+		vmid.parse(field);
+		auto rw = vmid.getId();
+		proptag_t tag = str_isascii(rw.c_str()) ?
 			       PR_BODY_CONTENT_ID : PR_BODY_CONTENT_ID_A;
-		if (field[0] == '<' && field[1] != '\0') {
-			std::string rw = field + 1;
-			if (rw.back() == '>')
-				rw.pop_back();
-			if (penum_param->pmsg->proplist.set(tag, rw.c_str()) != ecSuccess)
-				return FALSE;
-		} else {
-			if (penum_param->pmsg->proplist.set(tag, field) != ecSuccess)
-				return FALSE;
-		}
+		if (!rw.empty() &&
+		    penum_param->pmsg->proplist.set(tag, rw.c_str()) != ecSuccess)
+			return false;
 	} else if (strcasecmp(key, "Content-Base") == 0) {
 		PROPERTY_NAME propname = {MNID_STRING, PS_INTERNET_HEADERS,
 		                         0, deconst("Content-Base")};
@@ -1436,12 +1434,10 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	    pattachment->proplist.set(PR_LAST_MODIFICATION_TIME, &pmime_enum->nttime_stamp) != ecSuccess)
 		return;
 	if (auto ct_id = pmime->get_field("Content-ID")) {
-		if (ct_id->size() > 0) {
-			auto wid = *ct_id;
-			if (wid.front() == '<' && wid.back() == '>') {
-				wid.pop_back();
-				wid.erase(0, 1);
-			}
+		vmime::messageId vmid;
+		vmid.parse(*ct_id);
+		auto wid = vmid.getId();
+		if (!wid.empty()) {
 			proptag_t tag = str_isascii(wid.c_str()) ?
 			                  PR_ATTACH_CONTENT_ID : PR_ATTACH_CONTENT_ID_A;
 			if (pattachment->proplist.set(tag, wid.c_str()) != ecSuccess)

@@ -11,6 +11,7 @@
 #include <libHX/string.h>
 #include <libxml/HTMLparser.h>
 #include <libxml/HTMLtree.h>
+#include <vmime/messageId.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
@@ -329,14 +330,10 @@ static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
 		GUID::random_new().to_str(&ctid_raw[33], std::size(ctid_raw) - 33, 32);
 		ctid = "cid:"s + ctid_raw;
 		epar.new_ctids.emplace(mime, ctid_raw);
-	} else if (old_ctid->size() >= 2 && old_ctid->front() == '<' && old_ctid->back() == '>') {
-		std::string_view sv(*old_ctid);
-		sv.remove_prefix(1);
-		sv.remove_suffix(1);
-		ctid = "cid:"s;
-		ctid += sv;
 	} else {
-		ctid = "cid:"s + *old_ctid;
+		vmime::messageId vmid;
+		vmid.parse(*old_ctid);
+		ctid = "cid:" + vmid.getId();
 	}
 	auto ag_body = find_element(ag_doc.get(), "body");
 	if (ag_body == nullptr)
