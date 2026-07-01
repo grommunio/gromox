@@ -25,11 +25,14 @@ namespace gromox {
  * @m_list:     reusable objects
  */
 template<typename Tp> class GX_EXPORT resource_pool {
+	protected:
+	using entry = Tp;
+
 	public:
 	class token {
 		/* automatically return connection back to pool when going out of scope */
 		public:
-		token(resource_pool &pool, std::list<Tp> &&holder, unsigned int gen) noexcept :
+		token(resource_pool &pool, std::list<entry> &&holder, unsigned int gen) noexcept :
 			m_pool(pool), m_holder(std::move(holder)), m_gen(gen)
 		{}
 		token(token &&o) noexcept :
@@ -50,13 +53,13 @@ template<typename Tp> class GX_EXPORT resource_pool {
 		void finish() { m_pool.put(std::move(m_holder), m_gen); }
 		protected:
 		resource_pool &m_pool;
-		std::list<Tp> m_holder;
+		std::list<entry> m_holder;
 		unsigned int m_gen = 0;
 	};
 
 	resource_pool(size_t z = 0) : m_numslots(z), m_max(z) {}
 	template<typename... A> std::optional<token> get(A &&...args) {
-		std::list<Tp> holder;
+		std::list<entry> holder;
 		std::unique_lock<std::mutex> lk(m_mtx);
 		if (m_numslots == 0)
 			return {};
@@ -69,7 +72,7 @@ template<typename Tp> class GX_EXPORT resource_pool {
 		return tk;
 	}
 	template<typename... A> token get_wait(A &&...args) {
-		std::list<Tp> holder;
+		std::list<entry> holder;
 		std::unique_lock<std::mutex> lk(m_mtx);
 		m_cv.wait(lk, [this]() { return m_numslots > 0; });
 		if (m_list.size() > 0)
@@ -88,13 +91,13 @@ template<typename Tp> class GX_EXPORT resource_pool {
 		++m_numslots;
 		m_cv.notify_one();
 	}
-	void put(std::list<Tp> &&holder, unsigned int gen) {
+	void put(std::list<entry> &&holder, unsigned int gen) {
 		if (m_numslots >= m_max) {
 			/* Avoid returning object to pool when pool shrank */
 			holder.clear();
 			return;
 		}
-		std::list<Tp> graveyard;
+		std::list<entry> graveyard;
 		{
 			std::lock_guard<std::mutex> lk(m_mtx);
 			if (m_gen == gen && holder.size() >= 1)
@@ -129,7 +132,7 @@ template<typename Tp> class GX_EXPORT resource_pool {
 	std::atomic<size_t> m_numslots{0}, m_max{0};
 	std::mutex m_mtx;
 	std::condition_variable m_cv;
-	std::list<Tp> m_list;
+	std::list<entry> m_list;
 	unsigned int m_gen = 0;
 };
 
