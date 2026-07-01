@@ -1156,6 +1156,10 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	auto want_response = rq_prop.get<const uint8_t>(PR_RESPONSE_REQUESTED);
 	if (want_response == nullptr || *want_response == 0)
 		return ecSuccess;
+	/* OXOCAL v22.1 §3.1.4.8.5: no responses for requests flagged silent */
+	auto silent = rq_prop.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_is_silent]));
+	if (silent != nullptr && *silent != 0)
+		return ecSuccess;
 
 	message_content_ptr rsp_ctnt(message_content_init());
 	if (rsp_ctnt == nullptr)
