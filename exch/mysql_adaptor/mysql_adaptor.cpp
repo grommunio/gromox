@@ -53,6 +53,12 @@ using namespace mysql_adaptor;
 
 int mysql_plugin::run()
 {
+	if (!m_reaper.joinable()) try {
+		m_reaper = std::thread(&mysql_plugin::reaper_main, this);
+	} catch (const std::system_error &e) {
+		mlog(LV_ERR, "E-2015: pthread_create: %s", e.what());
+		return -1;
+	}
 	if (g_parm.schema_upgrade == SSU_NOT_ME)
 		return 0;
 	if (!db_upgrade_check())

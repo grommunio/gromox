@@ -36,6 +36,16 @@ Default: \fIlocalhost\fP
 \fBmysql_password\fP
 Default: (unset)
 .TP
+\fBmysql_pool_idle_timeout\fP
+Pooled SQL connections that have not been used for this long are closed (a
+fresh connection is transparently opened when needed again). This keeps
+long-lived but mostly-idle processes \(em e.g. per-store istore workers when
+istore_standalone is enabled \(em from each holding a connection indefinitely
+and collectively running the SQL server into its max_connections limit. A
+value of 0 disables the reaper.
+.br
+Default: \fI10min\fP
+.TP
 \fBmysql_port\fP
 The TCP port number for contacting the SQL server.
 .br
