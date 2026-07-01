@@ -8,6 +8,7 @@
 #include <mutex>
 #include <optional>
 #include <utility>
+#include <gromox/clock.hpp>
 
 namespace gromox {
 
@@ -26,7 +27,13 @@ namespace gromox {
  */
 template<typename Tp> class GX_EXPORT resource_pool {
 	protected:
-	using entry = Tp;
+	struct entry {
+		template<typename... A> entry(A &&...args) :
+			obj(std::forward<A>(args)...)
+		{}
+		Tp obj;
+		gromox::time_point last_use{};
+	};
 
 	public:
 	class token {
@@ -44,11 +51,11 @@ template<typename Tp> class GX_EXPORT resource_pool {
 				finish();
 		} catch (...) {
 		}
-		inline bool operator!() const { return !m_holder.front(); }
-		inline Tp &operator*() { return m_holder.front(); }
-		inline const Tp &operator*() const { return m_holder.front(); }
-		inline Tp *operator->() { return &m_holder.front(); }
-		inline const Tp *operator->() const { return &m_holder.front(); }
+		inline bool operator!() const { return !m_holder.front().obj; }
+		inline Tp &operator*() { return m_holder.front().obj; }
+		inline const Tp &operator*() const { return m_holder.front().obj; }
+		inline Tp *operator->() { return &m_holder.front().obj; }
+		inline const Tp *operator->() const { return &m_holder.front().obj; }
 		void operator=(token &&) noexcept = delete;
 		void finish() { m_pool.put(std::move(m_holder), m_gen); }
 		protected:
@@ -100,8 +107,11 @@ template<typename Tp> class GX_EXPORT resource_pool {
 		std::list<entry> graveyard;
 		{
 			std::lock_guard<std::mutex> lk(m_mtx);
-			if (m_gen == gen && holder.size() >= 1)
+			if (m_gen == gen && holder.size() >= 1) {
+				/* ..it was used until just before put() */
+				holder.front().last_use = tp_now();
 				m_list.splice(m_list.begin(), holder, holder.begin());
+			}
 			/* Defer cleanup until after critical section */
 			graveyard = std::move(holder);
 			++m_numslots;
@@ -120,6 +130,21 @@ template<typename Tp> class GX_EXPORT resource_pool {
 	void clear() {
 		std::lock_guard lk(m_mtx);
 		m_list.clear();
+	}
+	/**
+	 * Drop objects that have not been used for a while.
+	 */
+	void drop_idle(time_duration ttl)
+	{
+		auto cutoff = tp_now() - ttl;
+		std::list<entry> graveyard;
+		{
+			std::lock_guard lk(m_mtx);
+			auto it = m_list.begin();
+			while (it != m_list.end() && it->last_use < cutoff)
+				++it;
+			graveyard.splice(graveyard.end(), m_list, m_list.begin(), it);
+		}
 	}
 	size_t capacity() const { return m_max; }
 	void bump() {
