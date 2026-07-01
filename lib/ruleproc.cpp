@@ -16,6 +16,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/freebusy.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
@@ -1301,21 +1302,64 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 }
 
 /**
- * Look up calendar item(s) previously entered for this meeting, matched by
- * PidLidGlobalObjectId (which stays constant across reschedules/updates of the
- * same meeting). All matches are returned so that the caller can clean any
- * duplicates left over from earlier processing. @max_seq will be set to the
- * highest PidLidAppointmentSequence found.
+ * A cancellation for a single instance of a recurring series carries the
+ * instance's original date in the year/month/day fields of the GlobalObjectId
+ * (OXOCAL v26 §2.2.1.27). A whole-series or single-meeting cancellation has
+ * zeroes there. Returns the instance date as rtime (midnight, local-as-UTC),
+ * or 0 for a whole-meeting cancellation.
+ *
+ * (Producers that emit Z-timezone-form RECURRENCE-ID lines record the UTC day
+ * here rather than storing the local one. For meetings whose local day differs
+ * from their UTC day, the referenced instance can thus be off by one day.
+ * Gromox reads GOID dates as local days throughout, cf. oxcical_export_recid.)
  */
-static ec_error_t mr_find_cal_items(rxparam &par, proptag_t goid_tag,
-    proptag_t seq_tag, const BINARY *goid, std::vector<eid_t> &mids,
-    uint32_t &max_seq)
+static uint32_t mr_goid_instancedate(const BINARY *goid)
+{
+	if (goid == nullptr || goid->cb == 0)
+		return 0;
+	EXT_PULL ep;
+	ep.init(goid->pv, goid->cb, exmdb_rpc_alloc, 0);
+	GLOBALOBJECTID go{};
+	if (ep.g_goid(&go) != pack_result::success)
+		return 0;
+	if (go.year < 1601 || go.year > 4500 || go.month < 1 || go.month > 12 ||
+	    go.day < 1 || go.day > ical_get_monthdays(go.year, go.month))
+		return 0;
+	time_t ut = 0;
+	if (!ical_itime_to_utc(nullptr, ical_time(go.year, go.month, go.day, 0, 0, 0), &ut))
+		return 0;
+	return rop_util_unix_to_rtime(ut);
+}
+
+/**
+ * @mid:   message id of the calendar item
+ * @seq:   its PidLidAppointmentSequence (0 if absent)
+ * @dated: its GlobalObjectId carries an instance date, i.e. the item is a
+ *         standalone entry for a single occurrence of a series
+ */
+struct mr_calitem {
+	eid_t mid = 0;
+	uint32_t seq = 0;
+	bool dated = false;
+};
+
+/**
+ * Look up calendar item(s) previously entered for this meeting, matched by
+ * @match_tag == @match_val. (PidLidGlobalObjectId stays constant across
+ * reschedules/updates of the same meeting, and PidLidCleanGlobalObjectId
+ * across all messages of a series.) All matches are returned so that the
+ * caller can clean any duplicates left over from earlier processing. @goid_tag
+ * names the PidLidGlobalObjectId column for the mr_calitem::dated
+ * determination.
+ */
+static ec_error_t mr_find_cal_items(rxparam &par, proptag_t match_tag,
+    const BINARY *match_val, proptag_t seq_tag, proptag_t goid_tag,
+    std::vector<mr_calitem> &items)
 {
 	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
-	max_seq = 0;
-	if (goid == nullptr || goid->cb == 0)
+	if (match_val == nullptr || match_val->cb == 0)
 		return ecSuccess;
-	const RESTRICTION_PROPERTY rprop = {RELOP_EQ, goid_tag, {goid_tag, deconst(goid)}};
+	const RESTRICTION_PROPERTY rprop = {RELOP_EQ, match_tag, {match_tag, deconst(match_val)}};
 	const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
 	uint32_t table_id = 0, row_count = 0;
 	if (!exmdb_client->load_content_table(par.cur.dirc(), CP_ACP,
@@ -1327,7 +1371,7 @@ static ec_error_t mr_find_cal_items(rxparam &par, proptag_t goid_tag,
 	});
 	if (row_count == 0)
 		return ecSuccess;
-	const proptag_t qtags[] = {PidTagMid, seq_tag};
+	const proptag_t qtags[] = {PidTagMid, seq_tag, goid_tag};
 	TARRAY_SET rows{};
 	if (!exmdb_client->query_table(par.cur.dirc(), nullptr, CP_ACP,
 	    table_id, {qtags, std::size(qtags)}, 0, row_count, &rows))
@@ -1338,10 +1382,13 @@ static ec_error_t mr_find_cal_items(rxparam &par, proptag_t goid_tag,
 		auto mid = rows.pparray[i]->get<const uint64_t>(PidTagMid);
 		if (mid == nullptr)
 			continue;
-		mids.emplace_back(*mid);
+		mr_calitem item;
+		item.mid = eid_t(*mid);
 		auto seq = rows.pparray[i]->get<const uint32_t>(seq_tag);
-		if (seq != nullptr && *seq > max_seq)
-			max_seq = *seq;
+		if (seq != nullptr)
+			item.seq = *seq;
+		item.dated = mr_goid_instancedate(rows.pparray[i]->get<const BINARY>(goid_tag)) != 0;
+		items.emplace_back(item);
 	}
 	return ecSuccess;
 }
@@ -1409,16 +1456,21 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 		auto goid_tag = PROP_TAG(PT_BINARY, propids[l_goid]);
 		auto goid = rq_prop.get<const BINARY>(goid_tag);
 		auto seq_tag  = PROP_TAG(PT_LONG, propids[l_appt_seq]);
-		uint32_t newest_seq = 0;
-		auto err = mr_find_cal_items(par, goid_tag, seq_tag, goid,
-		           existing, newest_seq);
+		std::vector<mr_calitem> items;
+		auto err = mr_find_cal_items(par, goid_tag, goid, seq_tag,
+		           goid_tag, items);
 		if (err != ecSuccess)
 			return err;
 		/* Ignore stale out-of-order updates that predate what we already have. */
-		if (!existing.empty()) {
+		if (!items.empty()) {
+			uint32_t newest_seq = 0;
+			for (const auto &e : items)
+				newest_seq = std::max(newest_seq, e.seq);
 			auto seq = rq_prop.get<const uint32_t>(seq_tag);
 			if (seq != nullptr && *seq < newest_seq)
 				return mr_mark_done(par);
+			for (const auto &e : items)
+				existing.emplace_back(e.mid);
 		}
 	}
 
