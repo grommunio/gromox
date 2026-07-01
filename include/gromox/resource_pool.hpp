@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH licensing exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #pragma once
 #include <atomic>
@@ -101,6 +101,9 @@ template<typename Tp> class GX_EXPORT resource_pool {
 		std::unique_lock<std::mutex> lk(m_mtx);
 		if (m_gen == gen)
 			m_list.splice(m_list.end(), holder, holder.begin());
+		else
+			/* Avoid returning object to pool when outdated */
+			holder.clear();
 		++m_numslots;
 		lk.unlock();
 		m_cv.notify_one();
