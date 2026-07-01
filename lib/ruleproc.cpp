@@ -1447,8 +1447,6 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	auto err = mr_insert_to_cal(par, propids, cal_fid, tent);
 	if (err != ecSuccess)
 		return err;
-	if (policy.is_resource())
-		return mr_mark_done(par);
 	if (tent == respAccepted) {
 		if (response_allowed) {
 			err = mr_send_response(par, recurring_flg, propids, tent);
@@ -1457,6 +1455,8 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 		}
 		return mr_mark_done(par);
 	}
+	if (policy.is_resource())
+		return mr_mark_done(par);
 	return ecSuccess;
 }
 
