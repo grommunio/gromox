@@ -1346,6 +1346,54 @@ static ec_error_t mr_find_cal_items(rxparam &par, proptag_t goid_tag,
 	return ecSuccess;
 }
 
+/**
+ * Write a modified calendar item back to the store: allocate a new change
+ * number, derive a new change key that keeps the replica GUID of the old one,
+ * and extend the predecessor change list, so that ICS clients pick up the
+ * modification.
+ */
+static ec_error_t mr_rewrite_cal_item(rxparam &par, eid_t cal_fid,
+    uint64_t cal_mid, message_content &cal_ctnt)
+{
+	auto &props = cal_ctnt.proplist;
+	GUID ck_guid{};
+	auto old_ck = props.get<const BINARY>(PR_CHANGE_KEY);
+	if (old_ck != nullptr && old_ck->cb > 0) {
+		EXT_PULL ep;
+		XID old_xid;
+		ep.init(old_ck->pv, old_ck->cb, exmdb_rpc_alloc, 0);
+		if (ep.g_xid(old_ck->cb, &old_xid) == pack_result::success)
+			ck_guid = old_xid.guid;
+	}
+	uint64_t cal_cn = 0;
+	if (!exmdb_client->allocate_cn(par.cur.dirc(), &cal_cn))
+		return ecRpcFailed;
+	XID new_xid{ck_guid, cal_cn};
+	auto new_ck = xid_to_bin(new_xid);
+	if (new_ck == nullptr)
+		return ecServerOOM;
+	PCL pcl;
+	auto old_pcl = props.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+	if (old_pcl != nullptr && !pcl.deserialize(old_pcl))
+		return ecError;
+	if (!pcl.append(new_xid))
+		return ecServerOOM;
+	std::unique_ptr<BINARY, rx_delete> pclbin(pcl.serialize());
+	if (pclbin == nullptr)
+		return ecServerOOM;
+	ec_error_t err;
+	if ((err = props.set(PidTagMid, &cal_mid)) != ecSuccess ||
+	    (err = props.set(PidTagChangeNumber, &cal_cn)) != ecSuccess ||
+	    (err = props.set(PR_CHANGE_KEY, new_ck)) != ecSuccess ||
+	    (err = props.set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess)
+		return err;
+	uint64_t out_mid = cal_mid, out_cn = 0;
+	if (!exmdb_client->write_message(par.cur.dirc(), CP_ACP,
+	    cal_fid, &cal_ctnt, {}, &out_mid, &out_cn, &err))
+		return ecRpcFailed;
+	return err;
+}
+
 static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
     const mr_policy &policy)
 {
@@ -1558,43 +1606,7 @@ static ec_error_t mr_do_response(rxparam &par, const PROPID_ARRAY &propids)
 	}
 
 	/* Write back the modified calendar item */
-	auto &props = cal_ctnt->proplist;
-	GUID ck_guid{};
-	auto old_ck = props.get<const BINARY>(PR_CHANGE_KEY);
-	if (old_ck != nullptr && old_ck->cb > 0) {
-		EXT_PULL ep;
-		XID old_xid;
-		ep.init(old_ck->pv, old_ck->cb, exmdb_rpc_alloc, 0);
-		if (ep.g_xid(old_ck->cb, &old_xid) == pack_result::success)
-			ck_guid = old_xid.guid;
-	}
-	uint64_t cal_cn = 0;
-	if (!exmdb_client->allocate_cn(par.cur.dirc(), &cal_cn))
-		return ecRpcFailed;
-	XID new_xid{ck_guid, cal_cn};
-	auto new_ck = xid_to_bin(new_xid);
-	if (new_ck == nullptr)
-		return ecServerOOM;
-	PCL pcl;
-	auto old_pcl = props.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
-	if (old_pcl != nullptr && !pcl.deserialize(old_pcl))
-		return ecError;
-	if (!pcl.append(new_xid))
-		return ecServerOOM;
-	std::unique_ptr<BINARY, rx_delete> pclbin(pcl.serialize());
-	if (pclbin == nullptr)
-		return ecServerOOM;
-	ec_error_t err;
-	if ((err = props.set(PidTagMid, &cal_mid)) != ecSuccess ||
-	    (err = props.set(PidTagChangeNumber, &cal_cn)) != ecSuccess ||
-	    (err = props.set(PR_CHANGE_KEY, new_ck)) != ecSuccess ||
-	    (err = props.set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess)
-		return err;
-	uint64_t out_mid = cal_mid, out_cn = 0;
-	if (!exmdb_client->write_message(par.cur.dirc(), CP_ACP,
-	    cal_fid, cal_ctnt.get(), {}, &out_mid, &out_cn, &err))
-		return ecRpcFailed;
-	return err;
+	return mr_rewrite_cal_item(par, cal_fid, cal_mid, *cal_ctnt);
 }
 
 /**
