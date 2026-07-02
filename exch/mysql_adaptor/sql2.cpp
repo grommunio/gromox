@@ -153,6 +153,10 @@ MYSQL *mysql_plugin::sql_make_conn()
 	if (g_parm.timeout > 0) {
 		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &g_parm.timeout);
 		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &g_parm.timeout);
+		mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &g_parm.timeout);
+	} else {
+		unsigned int connect_timeout = 20;
+		mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
 	}
 	if (!g_parm.certfile.empty())
 		mysql_options(conn, MYSQL_OPT_SSL_CERT, g_parm.certfile.c_str());
