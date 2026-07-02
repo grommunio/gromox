@@ -16,6 +16,19 @@ See the "Authentication modes" section below for details.
 Available: \fIdeny_all\fP, \fIallow_all\fP, \fIldap\fP, \fIpam\fP
 .br
 Default: \fIldap\fP
+.TP
+\fBauth_fail_delay\fP
+The amount of time a failed authentication attempt (unknown user or rejected
+password) is delayed before the result is returned to the client. The delay
+tarpits password guessing attempts, but it also keeps a worker thread of the
+calling process (http, imap, etc.) occupied for its duration, so a misbehaving
+client stuck in a tight login retry loop, or a login storm after an outage of
+the user database has resolved can amplify the delay into thread pool
+exhaustion. Setting the value to 0 disables the delay. Per-username banning by
+\fBuser_filter\fP(4gx) applies regardless of this setting. Subsecond resolution
+is available.
+.br
+Default: \fI1s\fP
 .SH Authentication modes
 .IP \(bu 4
 \fIdeny_all\fP: every attempt at authentication is rejected. This is at best

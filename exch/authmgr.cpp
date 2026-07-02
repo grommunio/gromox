@@ -5,13 +5,15 @@
 #	include "config.h"
 #endif
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <string>
 #include <string_view>
-#include <unistd.h>
+#include <thread>
 #include <utility>
 #include <libHX/io.h>
 #include <libHX/string.h>
@@ -55,6 +57,12 @@ struct sslfree2 : public sslfree {
 }
 
 static unsigned int am_choice = A_EXTERNID_LDAP;
+static std::atomic<std::chrono::nanoseconds> am_fail_delay;
+
+static constexpr cfg_directive authmgr_cfg_defaults[] = {
+	{"auth_fail_delay", "1s", CFG_TIME_NS},
+	CFG_TABLE_END,
+};
 
 static std::unique_ptr<EVP_PKEY, sslfree2>
 read_pkey(const unsigned char *pk_str, size_t pk_size)
@@ -233,9 +241,11 @@ static bool login_gen(const char *username, const char *password,
 {
 	bool auth = false;
 	auto err = mysql_adaptor_meta(username, wantpriv, mres);
-	if (err != 0 || mres.have_xid == 0xFF)
-		sleep(1);
-	else if (am_choice == A_DENY_ALL)
+	if (err != 0 || mres.have_xid == 0xFF) {
+		if (auto fdelay = am_fail_delay.load(std::memory_order_relaxed);
+		    fdelay != std::chrono::nanoseconds(0))
+			std::this_thread::sleep_for(fdelay);
+	} else if (am_choice == A_DENY_ALL)
 		auth = false;
 	else if (am_choice == A_ALLOW_ALL)
 		auth = true;
@@ -258,12 +268,14 @@ static bool login_gen(const char *username, const char *password,
 
 static bool authmgr_reload()
 {
-	auto pfile = config_file_initd("authmgr.cfg", get_config_path(), nullptr);
+	auto pfile = config_file_initd("authmgr.cfg", get_config_path(),
+	             authmgr_cfg_defaults);
 	if (pfile == nullptr) {
 		mlog(LV_ERR, "authmgr: confing_file_initd authmgr.cfg: %s",
 		        strerror(errno));
 		return false;
 	}
+	am_fail_delay = std::chrono::nanoseconds(pfile->get_ll("auth_fail_delay"));
 
 	auto val = pfile->get_value("auth_backend_selection");
 	if (val == nullptr) {
