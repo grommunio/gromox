@@ -1593,7 +1593,7 @@ static bool oxcical_parse_ownerapptid(const ical_component &main_event,
 	return pmsg->proplist.set(PR_OWNER_APPT_ID, &tmp_int32) == ecSuccess;
 }
 
-static bool oxcical_parse_recurrence_id(const ical_component *ptz_component,
+static ec_error_t oxcical_parse_recurrence_id(const ical_component *ptz_component,
     const ical_line &piline, namemap &phash,
     uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
@@ -1603,15 +1603,17 @@ static bool oxcical_parse_recurrence_id(const ical_component *ptz_component,
 
 	if (!oxcical_parse_dtvalue(ptz_component,
 	    piline, &itime, &tmp_time))
-		return false;
+		return ecInvalidParam;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime};
-	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
-		return false;
+	auto err = namemap_add(phash, *plast_propid, std::move(pn));
+	if (err != ecSuccess)
+		return err;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
-		return false;
+	err = pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64);
+	if (err != ecSuccess)
+		return err;
 	(*plast_propid) ++;
-	return true;
+	return ecSuccess;
 }
 
 static bool oxcical_parse_disallow_counter(const ical_component &main_event,
@@ -2299,11 +2301,13 @@ static ec_error_t oxcical_import_internal(const char *method,
 	ical_time itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
 	if (piline != nullptr) {
-		if (pexception != nullptr && pext_exception != nullptr &&
-		    !oxcical_parse_recurrence_id(ptz_component, *piline,
-		    phash, &last_propid, pmsg)) {
-			errstr = "E-2706: oxcical_parse_duration returned an unspecified error";
-			return ecInvalidParam;
+		if (pexception != nullptr && pext_exception != nullptr) {
+			err = oxcical_parse_recurrence_id(ptz_component,
+			      *piline, phash, &last_propid, pmsg);
+			if (err != ecSuccess) {
+				errstr = fmt::format("E-2706: oxcical_parse_recurrence_id: {}", mapi_strerror(err));
+				return err;
+			}
 		}
 		auto pvalue = piline->get_first_paramval("TZID");
 		if (pvalue != nullptr && ptzid != nullptr &&
