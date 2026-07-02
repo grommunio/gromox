@@ -1803,7 +1803,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	pdb.reset();
 
 	if (pfolder_ids != nullptr) {
-		pfolder_ids->count = 0;
+		pfolder_ids->count = src_fo.size();
 		pfolder_ids->pids = cu_alloc<eid_t>(src_fo.size());
 		if (pfolder_ids->pids == nullptr)
 			return false;
