@@ -14,10 +14,6 @@
 #define STREAM_BLOCK_SIZE 0x10000
 
 enum {
-	QP_MIME_HEADER = 1U << 0,
-};
-
-enum {
 	ICONVTEXT_TRANSLIT = 0x1U,
 };
 
@@ -75,7 +71,7 @@ extern GX_EXPORT int base64_encode_sized(std::string_view, char *out, size_t out
 extern GX_EXPORT int base64nl_encode_sized(std::string_view, char *out, size_t outmax, size_t *outlen);
 #define base64_decode_sized base64nl_decode_sized /* indicates that caller does not strictly need NL decoding */
 extern GX_EXPORT int base64nl_decode_sized(std::string_view, void *out, size_t outmax, size_t *outlen);
-extern GX_EXPORT ssize_t qpnl_decode_sized(std::string_view, void *output, size_t outlen, unsigned int qp_flags = 0);
+extern GX_EXPORT ssize_t qpnl_decode_sized(std::string_view, void *output, size_t outlen);
 extern GX_EXPORT ssize_t qpnl_encode_sized(std::string_view, void *output, size_t outlen);
 extern GX_EXPORT uint32_t eight_LE_hexchars_to_int(const char *in);
 extern GX_EXPORT BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
