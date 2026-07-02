@@ -2023,7 +2023,7 @@ static bool serialize_rcpt(tnef_push &ep, const MESSAGE_CONTENT &msg,
 }
 
 static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
-    BOOL b_embedded, const MESSAGE_CONTENT *pmsg)
+    BOOL b_embedded, const MESSAGE_CONTENT *pmsg) try
 {
 	auto pext = &ext;
 	auto alloc = ext.tnef_alloc;
@@ -2031,7 +2031,6 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 	BOOL b_key;
 	uint8_t tmp_byte;
 	REND_DATA tmp_rend;
-	char tmp_buff[4096];
 	
 	if (pext->p_uint32(0x223e9f78) != pack_result::ok ||
 	    pext->p_uint16(TNEF_LEGACY) != pack_result::ok)
@@ -2125,10 +2124,8 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 	/* ATTRIBUTE_ID_MESSAGEID */
 	auto bv = pmsg->proplist.get<const BINARY>(PR_SEARCH_KEY);
 	if (bv != nullptr) {
-		if (!encode_hex_binary(bv->pb, bv->cb, tmp_buff, std::size(tmp_buff)))
-			return FALSE;
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGEID,
-		    tmp_buff) != pack_result::ok)
+		    bin2hex(*bv).c_str()) != pack_result::ok)
 			return FALSE;
 		tmp_proptags.emplace_back(PR_SEARCH_KEY);
 	}
@@ -2416,6 +2413,9 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 			return FALSE;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2751: ENOMEM");
+	return false;
 }
 
 /* must convert some properties into ansi code before call this function */

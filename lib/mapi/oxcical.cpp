@@ -3569,12 +3569,11 @@ static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
 }
 
 static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
-    ical_component &com, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
+    ical_component &com, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
 	const PROPERTY_NAME propname = {MNID_ID, PSETID_Meeting, PidLidGlobalObjectId};
 	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
 	PROPID_ARRAY propids;
-	char buf[1024], buf1[2048];
 	GLOBALOBJECTID goid;
 
 	if (!get_propids(&propnames, &propids) || propids.size() != 1)
@@ -3588,47 +3587,41 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 			return "E-2215: PidLidGlobalObjectId contents not recognized";
 		if (goid.data.pb != nullptr && goid.data.cb >= 12 &&
 		    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0) {
-			if (goid.data.cb - 12 > sizeof(buf) - 1) {
-				memcpy(buf, &goid.data.pb[12], std::size(buf) - 1);
-				buf[std::size(buf)-1] = '\0';
-			} else {
-				memcpy(buf, &goid.data.pb[12], goid.data.cb - 12);
-				buf[goid.data.cb-12] = '\0';
-			}
-			com.append_line("UID", buf);
+			com.append_line("UID", std::string(&goid.data.pc[12], goid.data.cb - 12));
 		} else {
 			EXT_PUSH ext_push;
 
 			goid.year = 0;
 			goid.month = 0;
 			goid.day = 0;
-			if (!ext_push.init(buf, sizeof(buf), 0) ||
+			std::string buf;
+			buf.resize(40 + goid.data.cb);
+			if (!ext_push.init(buf.data(), buf.size(), 0) ||
 			    ext_push.p_goid(goid) != pack_result::ok)
 				return "E-2223";
-			if (!encode_hex_binary(buf, ext_push.m_offset,
-			    buf1, sizeof(buf1)))
-				return "E-2216";
-			HX_strupper(buf1);
-			com.append_line("UID", buf1);
+			auto buf1 = bin2hex(ext_push.m_cdata, ext_push.m_offset);
+			HX_strupper(buf1.data());
+			com.append_line("UID", std::move(buf1));
 		}
 	} else {
+		char buf[56];
+		FLATUID aguid = GUID::random_new();
 		goid.arrayid = EncodedGlobalId;
 		goid.creationtime = rop_util_unix_to_nttime(time(nullptr));
-		goid.data.cb = 16;
-		goid.data.pc = buf1;
+		goid.data.cb = sizeof(aguid);
+		goid.data.pb = aguid.ab;
 		EXT_PUSH ext_push;
-		if (!ext_push.init(buf1, 16, 0) ||
-		    ext_push.p_guid(GUID::random_new()) != pack_result::ok ||
-		    !ext_push.init(buf, std::size(buf), 0) ||
+		if (!ext_push.init(buf, std::size(buf), 0) ||
 		    ext_push.p_goid(goid) != pack_result::ok)
 			return "E-2224";
-		if (!encode_hex_binary(buf, ext_push.m_offset, buf1,
-		    sizeof(buf1)))
-			return "E-2217";
-		HX_strupper(buf1);
-		com.append_line("UID", buf1);
+		auto buf1 = bin2hex(ext_push.m_cdata, ext_push.m_offset);
+		HX_strupper(buf1.data());
+		com.append_line("UID", std::move(buf1));
 	}
 	return nullptr;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2216: ENOMEM");
+	return strerror(ENOMEM);
 }
 
 static void append_dt(ical_component &com, const char *key,

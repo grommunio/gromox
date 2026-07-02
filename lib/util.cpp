@@ -1135,25 +1135,6 @@ ssize_t qpnl_decode_sized(std::string_view sv_in, void *voutput, size_t out_len,
 	return qp_decode(output, input, length, qp_flags);
 }
 
-BOOL encode_hex_binary(const void *vsrc, int srclen, char *dst, int dstlen)
-{
-	auto src = static_cast<const uint8_t *>(vsrc);
-	static const char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-							 '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-	int i, j;
-	char t_char;
-	
-	if (2 * srclen + 1 > dstlen)
-		return FALSE;
-	for (i=0,j=0; i<srclen; i++,j+=2) {
-		t_char = src[i];
-		dst[j + 1] = codes[t_char&0x0f];
-		dst[j] = codes[(t_char&0xf0)>>4];
-	}
-	dst[j] = '\0';
-	return TRUE;
-}
-
 BOOL decode_hex_binary(const char *src, void *vdst, int dstlen)
 {
 	auto dst = static_cast<uint8_t *>(vdst);

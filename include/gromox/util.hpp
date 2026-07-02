@@ -78,7 +78,6 @@ extern GX_EXPORT int base64nl_decode_sized(std::string_view, void *out, size_t o
 extern GX_EXPORT ssize_t qpnl_decode_sized(std::string_view, void *output, size_t outlen, unsigned int qp_flags = 0);
 extern GX_EXPORT ssize_t qpnl_encode_sized(std::string_view, void *output, size_t outlen);
 extern GX_EXPORT uint32_t eight_LE_hexchars_to_int(const char *in);
-extern GX_EXPORT BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
 extern GX_EXPORT BOOL decode_hex_binary(const char *src, void *dst, int dstlen);
 
 #ifdef COMPILE_DIAG

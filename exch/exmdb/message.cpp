@@ -1525,7 +1525,7 @@ static bool message_md5_string(const char *string, uint8_t *pdgt)
 }
 
 static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
-    MESSAGE_CONTENT *dst)
+    MESSAGE_CONTENT *dst) try
 {
 	EXT_PUSH ext_push;
 	auto &sprop = src->proplist;
@@ -1593,11 +1593,6 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		dprop.emplace_back(PR_SEARCH_KEY, pbin);
 	}
 	if (!sprop.has(PR_BODY_CONTENT_ID)) {
-		char cid_string[33+UDOM_SIZE];
-		FLATUID ctid = GUID::random_new();
-		encode_hex_binary(&ctid, sizeof(ctid), cid_string, 33);
-		cid_string[32] = '@';
-		cid_string[33] = '\0';
 		std::string account;
 		if (mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), account) != ecSuccess)
 			account = "localhost";
@@ -1606,8 +1601,7 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 			pc = account.c_str();
 		else
 			++pc;
-		HX_strlcat(cid_string, pc, std::size(cid_string));
-		auto pvalue = common_util_dup(cid_string);
+		auto pvalue = common_util_dup((bin2hex(FLATUID(GUID::random_new())) + "@" + pc).c_str());
 		if (pvalue == nullptr)
 			return ecServerOOM;
 		dprop.emplace_back(PR_BODY_CONTENT_ID, pvalue);
@@ -1734,6 +1728,9 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		dal->pplist[i]->pembedded = pembedded;
 	}
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2752: ENOMEM");
+	return ecServerOOM;
 }
 	
 /**

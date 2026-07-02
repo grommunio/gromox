@@ -269,30 +269,31 @@ static bool find_recur_times(const ical_component *tzcom,
 	return true;
 }
 
-static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
+static int goid_to_icaluid2(const BINARY *gobj, std::string &uid_buf) try
 {
+	/*
+	 * XXX: This looks to be contain the same logic as oxcical_export_uid.
+	 * Combine the two.
+	 */
 	EXT_PUSH ext_push;
-	char guidbuf[16], ngidbuf[56];
-	GLOBALOBJECTID ngid{};
 
 	if (gobj == nullptr) {
-		if (!ext_push.init(guidbuf, std::size(guidbuf), 0) ||
-		    ext_push.p_guid(GUID::random_new()) != pack_result::ok)
-			return -EIO;
+		FLATUID aguid = GUID::random_new();
+		GLOBALOBJECTID ngid{};
 		ngid.arrayid = EncodedGlobalId;
 		ngid.creationtime = rop_util_unix_to_nttime(time(nullptr));
-		ngid.data.cb = 16;
-		ngid.data.pc = guidbuf;
-		uid_buf.resize(std::size(ngidbuf) * 2 + 1);
+		ngid.data.cb = sizeof(aguid);
+		ngid.data.pv = &aguid;
+		char ngidbuf[56];
 		if (!ext_push.init(ngidbuf, std::size(ngidbuf), 0) ||
-		    ext_push.p_goid(ngid) != pack_result::ok ||
-		    !encode_hex_binary(ngidbuf, ext_push.m_offset,
-		    uid_buf.data(), uid_buf.size()))
+		    ext_push.p_goid(ngid) != pack_result::ok)
 			return -EIO;
+		uid_buf = bin2hex(ngidbuf, ext_push.m_offset);
 		return 2;
 	}
 
 	EXT_PULL ext_pull;
+	GLOBALOBJECTID ngid{};
 	auto cl_0 = HX::make_scope_exit([&]() { free(ngid.data.pc); });
 	ext_pull.init(gobj->pb, gobj->cb, malloc, 0);
 	if (ext_pull.g_goid(&ngid) != pack_result::ok)
@@ -306,13 +307,18 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 		return 1;
 	}
 
-	uid_buf.resize(56*2+1);
+	std::string ngidbuf;
+	ngidbuf.resize(40 + ngid.data.cb);
 	ngid.year = ngid.month = ngid.day = 0;
-	if (!ext_push.init(ngidbuf, std::size(ngidbuf), 0) ||
-	    ext_push.p_goid(ngid) != pack_result::ok ||
-	    !encode_hex_binary(ngidbuf, ext_push.m_offset, uid_buf.data(), uid_buf.size()))
+	if (!ext_push.init(ngidbuf.data(), ngidbuf.size(), 0) ||
+	    ext_push.p_goid(ngid) != pack_result::ok)
 		return -EIO;
+	ngidbuf.resize(ext_push.m_offset);
+	uid_buf = bin2hex(ngidbuf);
 	return 2;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2753: ENOMEM");
+	return -ENOMEM;
 }
 
 static bool goid_to_icaluid(BINARY *gobj, std::string &uid_buf)

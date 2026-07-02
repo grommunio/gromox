@@ -52,12 +52,8 @@ std::string goid_to_uid(const BINARY &goid_bin)
 	if (ep.g_goid(&goid) == pack_result::ok &&
 	    goid.data.cb > 12 &&
 	    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0)
-		return std::string(goid.data.pc + 12,
-		    goid.data.cb - 12);
-	std::string uid(goid_bin.cb * 2, 0);
-	encode_hex_binary(goid_bin.pb, goid_bin.cb,
-	    uid.data(), static_cast<int>(uid.size() + 1));
-	return uid;
+		return std::string(&goid.data.pc[12], goid.data.cb - 12);
+	return bin2hex(goid_bin.pc, goid_bin.cb);
 }
 
 /**
