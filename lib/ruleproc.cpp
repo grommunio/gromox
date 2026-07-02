@@ -1081,8 +1081,11 @@ static const char *mr_get_class(const TPROPVAL_ARRAY &p)
 
 /**
  * Mark the inbox message that it was processed.
+ *
+ * @set_read: Set this to false for messages that a human recipient still needs
+ *            to notice.
  */
-static ec_error_t mr_mark_done(rxparam &par)
+static ec_error_t mr_mark_done(rxparam &par, bool set_read = true)
 {
 	static constexpr uint8_t v_yes = 1;
 	auto &prop = par.ctnt->proplist;
@@ -1091,9 +1094,11 @@ static ec_error_t mr_mark_done(rxparam &par)
 	auto err = cu_set_propval(prop, PR_PROCESSED, &v_yes);
 	if (err != ecSuccess)
 		return err;
-	err = cu_set_propval(prop, PR_READ, &v_yes);
-	if (err != ecSuccess)
-		return err;
+	if (set_read) {
+		err = cu_set_propval(prop, PR_READ, &v_yes);
+		if (err != ecSuccess)
+			return err;
+	}
 	uint64_t cal_mid = par.cur.mid, cal_cn = 0;
 	err = ecSuccess;
 	if (!exmdb_client->write_message(par.cur.dir.c_str(), CP_ACP,
@@ -1662,6 +1667,319 @@ static ec_error_t mr_do_response(rxparam &par, const PROPID_ARRAY &propids)
 }
 
 /**
+ * Flag a calendar item as cancelled without removing it, i.e. what the EXC
+ * Calendar Attendant does for non-resource mailboxes: the item stays visible,
+ * but the slot no longer counts as busy.
+ */
+static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
+    eid_t cal_fid, eid_t cal_mid)
+{
+	message_content *cal_raw = nullptr;
+	if (!exmdb_client->read_message(par.cur.dirc(), nullptr, CP_ACP,
+	    cal_mid, &cal_raw) || cal_raw == nullptr)
+		return ecSuccess;
+	message_content_ptr cal_ctnt(cal_raw->dup());
+	if (cal_ctnt == nullptr)
+		return ecServerOOM;
+
+	auto &props = cal_ctnt->proplist;
+	auto flags_tag = PROP_TAG(PT_LONG, propids[l_appt_state_flags]);
+	auto oldfl = props.get<const uint32_t>(flags_tag);
+	uint32_t stateflags = (oldfl != nullptr ? *oldfl : asfMeeting | asfReceived) | asfCanceled;
+	static constexpr uint32_t v_free = olFree;
+	ec_error_t err;
+	if ((err = props.set(flags_tag, &stateflags)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_free)) != ecSuccess ||
+	    (err = props.set(PR_SUBJECT_PREFIX, "Canceled: ")) != ecSuccess)
+		return err;
+	/*
+	 * The item-level busy status does not cover exceptions carrying an
+	 * ARO_BUSYSTATUS override (freebusy reports those from the blob), so
+	 * release them too.
+	 */
+	auto recur_tag = PROP_TAG(PT_BINARY, propids[l_apptrecur]);
+	auto recur_bin = props.get<const BINARY>(recur_tag);
+	if (recur_bin != nullptr) {
+		EXT_PULL ep;
+		ep.init(recur_bin->pv, recur_bin->cb, exmdb_rpc_alloc, 0);
+		APPOINTMENT_RECUR_PAT apr{};
+		bool changed = false;
+		if (ep.g_apptrecpat(&apr) == pack_result::success) {
+			for (size_t i = 0; i < apr.exceptioncount; ++i) {
+				auto &ei = apr.pexceptioninfo[i];
+				if (!(ei.overrideflags & ARO_BUSYSTATUS) ||
+				    ei.busystatus == olFree)
+					continue;
+				ei.busystatus = olFree;
+				changed = true;
+			}
+		}
+		if (changed) {
+			apr.reservedblock1size = apr.reservedblock2size = 0;
+			EXT_PUSH epu;
+			BINARY new_bin;
+			if (!epu.init(nullptr, 0, EXT_FLAG_UTF16) ||
+			    epu.p_apptrecpat(apr) != pack_result::success)
+				return ecError;
+			new_bin.cb = epu.m_offset;
+			new_bin.pv = epu.m_udata;
+			err = props.set(recur_tag, &new_bin);
+			if (err != ecSuccess)
+				return err;
+		}
+	}
+	return mr_rewrite_cal_item(par, cal_fid, cal_mid, *cal_ctnt);
+}
+
+static inline bool same_day(uint32_t a, uint32_t b)
+{
+	return a - a % 1440 == b - b % 1440;
+}
+
+/**
+ * Remove one occurrence from a recurring master: enter @basedate into the
+ * deleted-instance list of the recurrence blob, and if that instance had been
+ * rescheduled earlier (i.e. has an exception), drop the exception from the
+ * blob as well. A leftover exception attachment is tolerated; clients render
+ * occurrences from the blob.
+ */
+static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids,
+    eid_t cal_fid, eid_t cal_mid, uint32_t basedate) try
+{
+	message_content *cal_raw = nullptr;
+	if (!exmdb_client->read_message(par.cur.dirc(), nullptr, CP_ACP,
+	    cal_mid, &cal_raw) || cal_raw == nullptr)
+		return ecSuccess;
+	message_content_ptr cal_ctnt(cal_raw->dup());
+	if (cal_ctnt == nullptr)
+		return ecServerOOM;
+	auto &props = cal_ctnt->proplist;
+	auto recur_tag = PROP_TAG(PT_BINARY, propids[l_apptrecur]);
+	auto recur_bin = props.get<const BINARY>(recur_tag);
+	if (recur_bin == nullptr)
+		/* not a recurring master (e.g. a standalone occurrence item) */
+		return ecSuccess;
+	EXT_PULL ep;
+	ep.init(recur_bin->pv, recur_bin->cb, exmdb_rpc_alloc, 0);
+	APPOINTMENT_RECUR_PAT apr{};
+	if (ep.g_apptrecpat(&apr) != pack_result::success) {
+		mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: unparsable recurrence blob",
+			par.cur.dirc(), static_cast<unsigned long long>(rop_util_get_gc_value(cal_mid)));
+		return ecSuccess;
+	}
+	/*
+	 * Blob producers disagree on whether instance-date lists and exception
+	 * fields are stored as midnights (OXOCAL) or carry a time of day
+	 * (oxcical import does for override VEVENTs), so all matching here is
+	 * done at day granularity.
+	 */
+	auto &rp = apr.recur_pat;
+	/* Locate an exception previously created for this instance */
+	size_t exi = apr.exceptioncount;
+	for (size_t i = 0; i < apr.exceptioncount; ++i)
+		if (same_day(apr.pexceptioninfo[i].originalstartdate, basedate)) {
+			exi = i;
+			break;
+		}
+	auto dend = rp.pdeletedinstancedates + rp.deletedinstancecount;
+	bool was_deleted = std::any_of(rp.pdeletedinstancedates, dend,
+	                   [&](uint32_t d) { return same_day(d, basedate); });
+	if (was_deleted && exi == apr.exceptioncount)
+		return ecSuccess; /* already gone */
+
+	std::vector<uint32_t> dels(rp.pdeletedinstancedates, dend);
+	if (!was_deleted) {
+		dels.emplace_back(basedate);
+		std::sort(dels.begin(), dels.end());
+		rp.pdeletedinstancedates = dels.data();
+		rp.deletedinstancecount  = static_cast<uint32_t>(dels.size());
+	}
+	if (exi < apr.exceptioncount) {
+		/*
+		 * Modified-instance dates hold the exception's new start day.
+		 * Drop the exception pair and its modified-date entry together,
+		 * or neither, to keep exceptioncount == modifiedinstancecount.
+		 */
+		auto sd   = apr.pexceptioninfo[exi].startdatetime;
+		auto mend = rp.pmodifiedinstancedates + rp.modifiedinstancecount;
+		auto mit  = std::find_if(rp.pmodifiedinstancedates, mend,
+		            [&](uint32_t m) { return same_day(m, sd); });
+		if (mit == mend)
+			/* EWS's updateOccurrence keys the entry by the original
+			   day rather than the new one */
+			mit = std::find_if(rp.pmodifiedinstancedates, mend,
+			      [&](uint32_t m) { return same_day(m, basedate); });
+		if (mit == mend) {
+			mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: no modified-instance "
+				"entry for exception %zu; leaving exception in place",
+				par.cur.dirc(),
+				static_cast<unsigned long long>(cal_mid.gcv()), exi);
+		} else {
+			std::copy(mit + 1, mend, mit);
+			--rp.modifiedinstancecount;
+			std::copy(&apr.pexceptioninfo[exi+1],
+				&apr.pexceptioninfo[apr.exceptioncount],
+				&apr.pexceptioninfo[exi]);
+			std::copy(&apr.pextendedexception[exi+1],
+				&apr.pextendedexception[apr.exceptioncount],
+				&apr.pextendedexception[exi]);
+			--apr.exceptioncount;
+		}
+	}
+	/*
+	 * p_apptrecpat does not emit reserved-block bytes (OXOCAL mandates
+	 * size 0 anyway), so avoid claiming a size for absent data.
+	 */
+	apr.reservedblock1size = apr.reservedblock2size = 0;
+	EXT_PUSH epu;
+	if (!epu.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    epu.p_apptrecpat(apr) != pack_result::success)
+		return ecError;
+	BINARY new_bin;
+	new_bin.cb = epu.m_offset;
+	new_bin.pv = epu.m_udata;
+	auto err = props.set(recur_tag, &new_bin);
+	if (err != ecSuccess)
+		return err;
+	return mr_rewrite_cal_item(par, cal_fid, cal_mid, *cal_ctnt);
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+/**
+ * Process an incoming meeting cancellation. Resource mailboxes have their
+ * booking dropped outright, like the EXC Resource Booking Attendant does;
+ * other mailboxes keep the calendar item, but it is flagged cancelled and
+ * its slot freed.
+ */
+static ec_error_t mr_do_cancel(rxparam &par, const PROPID_ARRAY &propids,
+    const mr_policy &policy) try
+{
+	auto &cn_prop  = par.ctnt->proplist;
+	auto cal_fid   = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	auto goid_tag  = PROP_TAG(PT_BINARY, propids[l_goid]);
+	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
+	auto seq_tag   = PROP_TAG(PT_LONG, propids[l_appt_seq]);
+	auto goid      = cn_prop.get<const BINARY>(goid_tag);
+	auto cgoid     = cn_prop.get<const BINARY>(cgoid_tag);
+	auto basedate  = mr_goid_instancedate(goid);
+	auto seq       = cn_prop.get<const uint32_t>(seq_tag);
+
+	if (basedate == 0) {
+		/*
+		 * Whole meeting/series cancelled. Match by CleanGlobalObjectId
+		 * so that standalone items entered for single-occurrence
+		 * updates are caught along with the master.
+		 */
+		if (cgoid == nullptr || cgoid->cb == 0)
+			cgoid = goid; /* equal when no instance date is set */
+		std::vector<mr_calitem> items;
+		auto err = mr_find_cal_items(par, cgoid_tag, cgoid, seq_tag,
+		           goid_tag, items);
+		if (err != ecSuccess)
+			return err;
+		if (items.empty())
+			return policy.is_resource() ? mr_mark_done(par) : ecSuccess;
+		/*
+		 * Ignore stale out-of-order cancellations. Compare against the
+		 * master's sequence only: per-instance items number their
+		 * sequences independently (per RECURRENCE-ID) and may
+		 * legitimately exceed that of a series cancellation.
+		 */
+		uint32_t master_seq = 0;
+		for (const auto &e : items)
+			if (!e.dated)
+				master_seq = std::max(master_seq, e.seq);
+		if (seq != nullptr && *seq < master_seq)
+			return policy.is_resource() ? mr_mark_done(par) : ecSuccess;
+		if (policy.is_resource()) {
+			std::vector<eid_t> mids;
+			for (const auto &e : items)
+				mids.emplace_back(e.mid);
+			EID_ARRAY ids = {static_cast<uint32_t>(mids.size()), mids.data()};
+			BOOL partial = false;
+			if (!exmdb_client->delete_messages(par.cur.dirc(),
+			    CP_ACP, nullptr, cal_fid, &ids, true /* hard */, &partial))
+				return ecRpcFailed;
+			return mr_mark_done(par);
+		}
+		for (const auto &e : items) {
+			err = mr_cancel_cal_item(par, propids, cal_fid, e.mid);
+			if (err != ecSuccess)
+				return err;
+		}
+		/*
+		 * Flag the message handled so the recipient's client does not
+		 * fold the cancellation in a second time, but leave it unread:
+		 * the recipient still needs to notice it.
+		 */
+		return mr_mark_done(par, false);
+	}
+
+	/*
+	 * Single occurrence cancelled. Only resource calendars are maintained
+	 * server-side here; for user mailboxes, blob surgery is left to the
+	 * recipient's client.
+	 */
+	if (!policy.is_resource())
+		return ecSuccess;
+	/*
+	 * Drop any standalone item previously entered for this instance
+	 * (a single-occurrence update arrives with the same dated GOID).
+	 */
+	std::vector<mr_calitem> items;
+	auto err = mr_find_cal_items(par, goid_tag, goid, seq_tag, goid_tag, items);
+	if (err != ecSuccess)
+		return err;
+	if (!items.empty()) {
+		/* Ignore stale out-of-order cancellations of this instance */
+		uint32_t newest_seq = 0;
+		for (const auto &e : items)
+			newest_seq = std::max(newest_seq, e.seq);
+		if (seq != nullptr && *seq < newest_seq)
+			return mr_mark_done(par);
+		std::vector<eid_t> mids;
+		for (const auto &e : items)
+			mids.emplace_back(e.mid);
+		EID_ARRAY ids = {static_cast<uint32_t>(mids.size()), mids.data()};
+		BOOL partial = false;
+		if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
+		    nullptr, cal_fid, &ids, true /* hard */, &partial))
+			return ecRpcFailed;
+	}
+
+	/* Punch the instance out of the recurring master */
+	if (cgoid != nullptr && cgoid->cb != 0) {
+		std::vector<mr_calitem> masters;
+		err = mr_find_cal_items(par, cgoid_tag, cgoid, seq_tag,
+		      goid_tag, masters);
+		if (err != ecSuccess)
+			return err;
+		for (const auto &e : masters) {
+			if (e.dated)
+				continue; /* another instance's standalone item */
+			/*
+			 * If the instance was never split off into a standalone
+			 * item, its sequence lineage is the master's: a master
+			 * with a higher sequence than the cancellation means the
+			 * series was re-issued after this cancellation was sent,
+			 * i.e. the cancellation is stale. (With a standalone item
+			 * present, per-instance sequences run independently and
+			 * may legitimately trail the master's.)
+			 */
+			if (items.empty() && seq != nullptr && e.seq > *seq)
+				continue;
+			err = mr_remove_occurrence(par, propids, cal_fid, e.mid, basedate);
+			if (err != ecSuccess)
+				return err;
+		}
+	}
+	return mr_mark_done(par);
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+/**
  * @par.mprop:	message properties of meeting request
  * @ev_from:	sender
  * @policy:	metadata of user ev_to
@@ -1711,6 +2029,8 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 	auto rq_class = mr_get_class(rq_prop);
 	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Request") == 0)
 		return mr_do_request(par, propids, policy);
+	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Canceled") == 0)
+		return mr_do_cancel(par, propids, policy);
 	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Resp") == 0) {
 		auto err = mr_do_response(par, propids);
 		if (err != ecSuccess)
