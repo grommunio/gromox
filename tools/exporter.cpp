@@ -142,7 +142,7 @@ static int fetch_message(const char *idstr, std::string &log_id, eid_t &msg_id,
 		fprintf(stderr, "Could not parse \"%s\" as a message ID\n", idstr);
 		return -1;
 	}
-	log_id = g_storedir_s + ":m" + std::to_string(msg_id);
+	log_id = g_storedir_s + ":m" + std::to_string(msg_id.gcv());
 	if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
 	    msg_id, &ctnt)) {
 		fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
