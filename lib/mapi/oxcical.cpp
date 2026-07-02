@@ -1186,11 +1186,14 @@ static bool oxcical_parse_duration(uint32_t minutes, namemap &phash,
 }
 
 static ec_error_t oxcical_parse_dtvalue(const ical_component *ptz_component,
-    const ical_line &piline, ical_time *pitime, time_t *putc_time)
+    const ical_line &piline, ical_time *pitime, time_t *putc_time,
+    std::string &errstr) try
 {
 	auto pvalue = piline.get_first_subvalue();
-	if (pvalue == nullptr)
+	if (pvalue == nullptr) {
+		errstr = "dtvalue without value";
 		return ecInvalidParam;
+	}
 	time_t dummy_time;
 	if (putc_time == nullptr)
 		/* Caller does not care about result */
@@ -1200,27 +1203,38 @@ static ec_error_t oxcical_parse_dtvalue(const ical_component *ptz_component,
 		if (!pitime->assign_datetime(pvalue)) {
 			if (pvalue1 == nullptr)
 				goto PARSE_DATE_VALUE;
+			errstr = fmt::format("DATE-TIME \"{}\": wrong format", pvalue);
 			return ecInvalidParam;
 		}
 		if (pitime->type == itime_type::utc) {
-			if (!ical_itime_to_utc(nullptr, *pitime, putc_time))
+			if (!ical_itime_to_utc(nullptr, *pitime, putc_time)) {
+				errstr = fmt::format("DATE-TIME \"{}\": not enough TZ info", pvalue);
 				return ecInvalidParam;
+			}
 		} else {
-			if (!ical_itime_to_utc(ptz_component,
-			    *pitime, putc_time))
+			if (!ical_itime_to_utc(ptz_component, *pitime, putc_time)) {
+				errstr = fmt::format("DATE-TIME \"{}\": not enough TZ info", pvalue);
 				return ecInvalidParam;
+			}
 		}
 	} else if (0 == strcasecmp(pvalue1, "DATE")) {
  PARSE_DATE_VALUE:
 		*pitime = {};
-		if (!pitime->assign_date(pvalue))
+		if (!pitime->assign_date(pvalue)) {
+			errstr = fmt::format("DATE \"{}\": wrong format", pvalue);
 			return ecInvalidParam;
-		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
+		}
+		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time)) {
+			errstr = fmt::format("DATE \"{}\": not enough TZ info", pvalue);
 			return ecInvalidParam;
+		}
 	} else {
+		errstr = fmt::format("dtvalue of unrecognized type \"{}\"", pvalue1);
 		return ecInvalidParam;
 	}
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 static bool oxcical_parse_uid(const ical_component &main_event,
@@ -1595,13 +1609,14 @@ static bool oxcical_parse_ownerapptid(const ical_component &main_event,
 
 static ec_error_t oxcical_parse_recurrence_id(const ical_component *ptz_component,
     const ical_line &piline, namemap &phash,
-    uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
+    uint16_t *plast_propid, MESSAGE_CONTENT *pmsg, std::string &errstr) try
 {
 	time_t tmp_time;
 	ical_time itime{};
 	uint64_t tmp_int64;
 
-	auto err = oxcical_parse_dtvalue(ptz_component, piline, &itime, &tmp_time);
+	auto err = oxcical_parse_dtvalue(ptz_component, piline, &itime,
+	           &tmp_time, errstr);
 	if (err != ecSuccess)
 		return err;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime};
@@ -1614,6 +1629,8 @@ static ec_error_t oxcical_parse_recurrence_id(const ical_component *ptz_componen
 		return err;
 	(*plast_propid) ++;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 static bool oxcical_parse_disallow_counter(const ical_component &main_event,
@@ -2206,9 +2223,10 @@ static ec_error_t oxcical_import_internal(const char *method,
 	 * EXC2019 treats iCalendar floating time as if it was specified with
 	 * UTC time. As a result, export of such MAPI objects can shift it.
 	 */
-	err = oxcical_parse_dtvalue(ptz_component, *piline, &start_itime, &start_time);
+	err = oxcical_parse_dtvalue(ptz_component, *piline, &start_itime,
+	      &start_time, errstr);
 	if (err != ecSuccess) {
-		errstr = fmt::format("E-2196: parse_dtvalue: {}", mapi_strerror(err));
+		errstr.insert(0, "E-2196: ");
 		return err;
 	}
 	if (!oxcical_parse_start_end(true, b_proposal,
@@ -2229,9 +2247,10 @@ static ec_error_t oxcical_import_internal(const char *method,
 			errstr = "E-2199: oxcical_import: TZID present but VTIMEZONE not (or vice-versa)";
 			return ecInvalidParam;
 		}
-		err = oxcical_parse_dtvalue(ptz_component, *piline, &end_itime, &end_time);
+		err = oxcical_parse_dtvalue(ptz_component, *piline, &end_itime,
+		      &end_time, errstr);
 		if (err != ecSuccess) {
-			errstr = fmt::format("E-2198: parse_dtvalue: {}", mapi_strerror(err));
+			errstr.insert(0, "E-2198: ");
 			return err;
 		}
 		if (end_time < start_time) {
@@ -2303,9 +2322,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 	if (piline != nullptr) {
 		if (pexception != nullptr && pext_exception != nullptr) {
 			err = oxcical_parse_recurrence_id(ptz_component,
-			      *piline, phash, &last_propid, pmsg);
+			      *piline, phash, &last_propid, pmsg, errstr);
 			if (err != ecSuccess) {
-				errstr = fmt::format("E-2706: oxcical_parse_recurrence_id: {}", mapi_strerror(err));
+				errstr.insert(0, "E-2706: ");
 				return err;
 			}
 		}
@@ -2316,15 +2335,17 @@ static ec_error_t oxcical_import_internal(const char *method,
 			return ecInvalidParam;
 		}
 		if (pvalue != nullptr) {
-			err = oxcical_parse_dtvalue(ptz_component, *piline, &itime, nullptr);
+			err = oxcical_parse_dtvalue(ptz_component, *piline,
+			      &itime, nullptr, errstr);
 			if (err != ecSuccess) {
-				errstr = fmt::format("E-2708: parse_dtvalue: {}", mapi_strerror(err));
+				errstr.insert(0, "E-2708: ");
 				return err;
 			}
 		} else {
-			err = oxcical_parse_dtvalue(nullptr, *piline, &itime, nullptr);
+			err = oxcical_parse_dtvalue(nullptr, *piline, &itime,
+			      nullptr, errstr);
 			if (err != ecSuccess) {
-				errstr = fmt::format("E-2709: parse_dtvalue: {}", mapi_strerror(err));
+				errstr.insert(0, "E-2709: ");
 				return err;
 			}
 			if (itime.type != itime_type::utc &&
@@ -2511,9 +2532,10 @@ static ec_error_t oxcical_import_internal(const char *method,
 
 			piline = event->get_line("RECURRENCE-ID");
 			time_t tmp_time;
-			err = oxcical_parse_dtvalue(ptz_component, *piline, &itime, &tmp_time);
+			err = oxcical_parse_dtvalue(ptz_component, *piline,
+			      &itime, &tmp_time, errstr);
 			if (err != ecSuccess) {
-				errstr = fmt::format("E-2730: parse_dtvalue: {}", mapi_strerror(err));
+				errstr.insert(0, "E-2730: ");
 				return err;
 			}
 			auto minutes = rop_util_unix_to_rtime(tmp_time);
@@ -2731,7 +2753,8 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 		const ical_component *tzc = tzid != nullptr ? oxcical_find_vtimezone(pical, tzid) : nullptr;
 		ical_time itime{};
 		time_t utctime;
-		if (oxcical_parse_dtvalue(tzc, *line, &itime, &utctime) == ecSuccess) {
+		if (oxcical_parse_dtvalue(tzc, *line, &itime, &utctime,
+		    errstr) == ecSuccess) {
 			auto ntt = rop_util_unix_to_nttime(utctime);
 			pmsg->proplist.set(PROP_TAG(PT_SYSTIME, propids[l_start]), &ntt);
 		}
@@ -2743,7 +2766,8 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 		const ical_component *tzc = tzid != nullptr ? oxcical_find_vtimezone(pical, tzid) : nullptr;
 		ical_time itime{};
 		time_t utctime;
-		if (oxcical_parse_dtvalue(tzc, *line, &itime, &utctime) == ecSuccess) {
+		if (oxcical_parse_dtvalue(tzc, *line, &itime, &utctime,
+		    errstr) == ecSuccess) {
 			auto ntt = rop_util_unix_to_nttime(utctime);
 			pmsg->proplist.set(PROP_TAG(PT_SYSTIME, propids[l_due]), &ntt);
 		}
@@ -2755,7 +2779,8 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 		const ical_component *tzc = tzid != nullptr ? oxcical_find_vtimezone(pical, tzid) : nullptr;
 		ical_time itime{};
 		time_t utctime;
-		if (oxcical_parse_dtvalue(tzc, *line, &itime, &utctime) == ecSuccess) {
+		if (oxcical_parse_dtvalue(tzc, *line, &itime, &utctime,
+		    errstr) == ecSuccess) {
 			auto ntt = rop_util_unix_to_nttime(utctime);
 			pmsg->proplist.set(PROP_TAG(PT_SYSTIME, propids[l_completed]), &ntt);
 			pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids[l_completeflag]), &le_true);
