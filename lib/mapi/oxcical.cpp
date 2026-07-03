@@ -3568,56 +3568,62 @@ static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
 		line->append_param("CN", str);
 }
 
+static const char *oxcical_export_uidx(ical_component &com)
+{
+	char buf[56];
+	FLATUID aguid = GUID::random_new();
+	GLOBALOBJECTID goid{};
+
+	goid.arrayid = EncodedGlobalId;
+	goid.creationtime = rop_util_unix_to_nttime(time(nullptr));
+	goid.data.cb = sizeof(aguid);
+	goid.data.pb = aguid.ab;
+	EXT_PUSH ext_push;
+	if (!ext_push.init(buf, std::size(buf), 0) ||
+	    ext_push.p_goid(goid) != pack_result::ok)
+		return "E-2224";
+	auto buf1 = bin2hex(ext_push.m_cdata, ext_push.m_offset);
+	HX_strupper(buf1.data());
+	com.append_line("UID", std::move(buf1));
+	return nullptr;
+}
+
 static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
     ical_component &com, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
 	const PROPERTY_NAME propname = {MNID_ID, PSETID_Meeting, PidLidGlobalObjectId};
 	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
 	PROPID_ARRAY propids;
-	GLOBALOBJECTID goid;
 
 	if (!get_propids(&propnames, &propids) || propids.size() != 1)
 		return E_2201;
 	auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[0]));
-	if (bin != nullptr) {
-		EXT_PULL ext_pull;
+	if (bin == nullptr)
+		return oxcical_export_uidx(com);
 
-		ext_pull.init(bin->pb, bin->cb, alloc, 0);
-		if (ext_pull.g_goid(&goid) != pack_result::ok)
-			return "E-2215: PidLidGlobalObjectId contents not recognized";
-		if (goid.data.pb != nullptr && goid.data.cb >= 12 &&
-		    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0) {
-			com.append_line("UID", std::string(&goid.data.pc[12], goid.data.cb - 12));
-		} else {
-			EXT_PUSH ext_push;
-
-			goid.year = 0;
-			goid.month = 0;
-			goid.day = 0;
-			std::string buf;
-			buf.resize(40 + goid.data.cb);
-			if (!ext_push.init(buf.data(), buf.size(), 0) ||
-			    ext_push.p_goid(goid) != pack_result::ok)
-				return "E-2223";
-			auto buf1 = bin2hex(ext_push.m_cdata, ext_push.m_offset);
-			HX_strupper(buf1.data());
-			com.append_line("UID", std::move(buf1));
-		}
-	} else {
-		char buf[56];
-		FLATUID aguid = GUID::random_new();
-		goid.arrayid = EncodedGlobalId;
-		goid.creationtime = rop_util_unix_to_nttime(time(nullptr));
-		goid.data.cb = sizeof(aguid);
-		goid.data.pb = aguid.ab;
-		EXT_PUSH ext_push;
-		if (!ext_push.init(buf, std::size(buf), 0) ||
-		    ext_push.p_goid(goid) != pack_result::ok)
-			return "E-2224";
-		auto buf1 = bin2hex(ext_push.m_cdata, ext_push.m_offset);
-		HX_strupper(buf1.data());
-		com.append_line("UID", std::move(buf1));
+ 	GLOBALOBJECTID goid{};
+	EXT_PULL ext_pull;
+	ext_pull.init(bin->pb, bin->cb, alloc, 0);
+	if (ext_pull.g_goid(&goid) != pack_result::ok)
+		return "E-2215: PidLidGlobalObjectId contents not recognized";
+	if (goid.data.pb != nullptr && goid.data.cb >= 12 &&
+	    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0) {
+		com.append_line("UID", std::string(&goid.data.pc[12], goid.data.cb - 12));
+		return nullptr;
 	}
+
+	std::string buf;
+	buf.resize(40 + goid.data.cb);
+	EXT_PUSH ext_push;
+	goid.year  = 0;
+	goid.month = 0;
+	goid.day   = 0;
+	if (!ext_push.init(buf.data(), buf.size(), 0) ||
+	    ext_push.p_goid(goid) != pack_result::ok)
+		return "E-2223";
+	auto buf1 = bin2hex(ext_push.m_cdata, ext_push.m_offset);
+	HX_strupper(buf1.data());
+	com.append_line("UID", std::move(buf1));
 	return nullptr;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2216: ENOMEM");
