@@ -383,6 +383,14 @@ static constexpr char tbl_altnames_129[] =
 "  CONSTRAINT `altnames_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
+static constexpr char tbl_disabled_plugins_133[] =
+"CREATE TABLE `disabled_plugins` ("
+"  domain_id int(10) unsigned NOT NULL,"
+"  plugin varchar(128) NOT NULL,"
+"  PRIMARY KEY (`domain_id`, `plugin`),"
+"  CONSTRAINT `domain_ibfk_1` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+") DEFAULT CHARSET=utf8mb4";
+
 static constexpr struct tbl_init tbl_init_0[] = {
 	{"aliases", tbl_alias_0},
 	{"associations", tbl_assoc_0},
@@ -600,6 +608,7 @@ static constexpr struct tbl_init tbl_init_top[] = {
 	{"servers", tbl_servers_top},
 	{"orgparam", tbl_orgparam_109},
 	{"altnames", tbl_altnames_129},
+	{"disabled_plugins", tbl_disabled_plugins_133},
 	{nullptr},
 };
 
@@ -780,6 +789,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{130, "INSERT INTO altnames (SELECT id AS user_id, altname, 0 AS magic FROM users WHERE altname IS NOT NULL)"},
 	{131, "UPDATE users SET altname=NULL"},
 	{132, "ALTER TABLE `associations` ADD INDEX `username` (`username`)"},
+	{133, tbl_disabled_plugins_133},
 	{0, nullptr},
 };
 
