@@ -494,7 +494,7 @@ std::string RECIPIENT_BLOCK::repr() const
 {
 	std::string s = "[" + std::to_string(count) + "]={";
 	for (size_t i = 0; i < count; ++i)
-		s += ppropval[i].repr() + ",";
+		s += fmt::format("{:x}h={},", ppropval[i].proptag, ppropval[i].repr());
 	s += "}";
 	return s;
 }
