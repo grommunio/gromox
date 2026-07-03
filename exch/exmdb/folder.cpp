@@ -1685,6 +1685,37 @@ BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
 		         LLU{nt_time}, LLU{parent_val}, PR_HIER_REV);
 		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
+
+		auto account_id = get_account_id();
+		uint64_t change_num = 0;
+		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
+			return false;
+		change_num = rop_util_make_eid_ex(1, change_num);
+		TAGGED_PROPVAL nprop[4];
+		nprop[0].proptag = PidTagChangeNumber;
+		nprop[0].pvalue  = &change_num;
+		nprop[1].proptag = PR_CHANGE_KEY;
+		nprop[1].pvalue  = cu_xid_to_bin({
+			exmdb_server::is_private() ?
+				rop_util_make_user_guid(account_id) :
+				rop_util_make_domain_guid(account_id),
+			change_num});
+		void *pcl_val = nullptr;
+		if (nprop[1].pvalue == nullptr ||
+		    !cu_get_property(MAPI_FOLDER, src_val, CP_ACP, *pdb,
+		    PR_PREDECESSOR_CHANGE_LIST, &pcl_val))
+			return false;
+		nprop[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
+		nprop[2].pvalue  = common_util_pcl_append(static_cast<BINARY *>(pcl_val),
+				   static_cast<const BINARY *>(nprop[1].pvalue));
+		if (nprop[2].pvalue == nullptr)
+			return false;
+		nprop[3].proptag = PR_LAST_MODIFICATION_TIME;
+		nprop[3].pvalue  = &nt_time;
+		PROBLEM_ARRAY problems;
+		const TPROPVAL_ARRAY npropds = {std::size(nprop), nprop};
+		cu_set_properties(MAPI_FOLDER, src_val, CP_ACP, pdb->psqlite,
+			&npropds, &problems);
 		fid_val = src_val;
 		pdb->proc_dynamic_event(cpid, dynamic_event::move_folder,
 			parent_val, dst_val, src_val, *dbase, notifq);
