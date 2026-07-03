@@ -3122,10 +3122,9 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 		throw EWSError::FolderExists(E3162);
 	if (errcode != ecSuccess)
 		throw EWSError::MoveCopyFailed(std::string(E3163) + ": " + mapi_strerror(errcode));
-	if (!copy) {
-		updated(dir, folder);
+	if (!copy)
+		/* movecopy_folder bumps the moved folder's change number itself. */
 		return folder.folderId;
-	}
 	uint64_t newFolderId;
 	if (!m_plugin.exmdb.get_folder_by_name(dir.c_str(), newParent, folderName, &newFolderId))
 		throw DispatchError(E3164);

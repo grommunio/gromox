@@ -535,25 +535,11 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	}
 
 	BOOL b_cycle = false;
-	uint64_t change_num;
-	BINARY *pbin_pcl;
 	if (!exmdb_client->is_descendant_folder(dir, folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
 		return ecRootFolder;
-	if (!exmdb_client->allocate_cn(dir, &change_num))
-		return ecError;
-	if (!exmdb_client->get_folder_property(dir, CP_ACP,
-	    folder_id, PR_PREDECESSOR_CHANGE_LIST,
-	    reinterpret_cast<void **>(&pbin_pcl)))
-		return ecError;
-	auto pbin_changekey = cu_xid_to_bin({plogon->guid(), change_num});
-	if (pbin_changekey == nullptr)
-		return ecError;
-	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
-	if (pbin_pcl == nullptr)
-		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	std::string new_name;
 	if (!use_unicode) {
@@ -572,19 +558,8 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	if (err == ecDuplicateName)
 		return err;
 
+	/* movecopy_folder now bumps the moved folder's change number itself. */
 	*ppartial_completion = err != ecSuccess;
-	auto nt_time = rop_util_current_nttime();
-	const TAGGED_PROPVAL propval_buff[] = {
-		{PidTagChangeNumber, &change_num},
-		{PR_CHANGE_KEY, pbin_changekey},
-		{PR_PREDECESSOR_CHANGE_LIST, pbin_pcl},
-		{PR_LAST_MODIFICATION_TIME, &nt_time},
-	};
-	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
-	PROBLEM_ARRAY problems;
-	if (!exmdb_client->set_folder_properties(dir, CP_ACP,
-	    folder_id, &propvals, &problems))
-		return ecError;
 	return ecSuccess;
 }
 
