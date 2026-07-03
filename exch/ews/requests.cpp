@@ -1050,10 +1050,14 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		if (!(ctx.permissions(dir, parent.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
 
+		if (request.SendMeetingCancellations &&
+		    *request.SendMeetingCancellations != Enum::SendToNone &&
+		    (id.holds_alternative<tOccurrenceItemId>() ||
+		    itemId.type == tItemId::ID_ITEM))
+			ctx.sendMeetingCancellation(dir, meid, parent,
+				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
+
 		if (id.holds_alternative<tOccurrenceItemId>()) {
-			if (request.SendMeetingCancellations && *request.SendMeetingCancellations != Enum::SendToNone)
-				ctx.sendMeetingCancellation(dir, meid, parent,
-					                        *request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
 			/* OccurrenceItemId: delete a single occurrence */
 			tOccurrenceItemId occurrenceId = std::get<tOccurrenceItemId>(id.asVariant());
 			auto mid = meid.messageId();
