@@ -4580,9 +4580,10 @@ ec_error_t zs_importdeletion(GUID hsession,
 	auto username = pinfo->get_username();
 	if (pstore->owner_mode()) {
 		username = NULL;
-	} else if (sync_type == SYNC_TYPE_CONTENTS &&
-	    !exmdb_client->get_folder_perm(pstore->get_dir(),
-	    folder_id, pinfo->get_username(), &permission)) {
+	} else if (sync_type == SYNC_TYPE_CONTENTS) {
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
+		    folder_id, pinfo->get_username(), &permission))
+			return ecRpcFailed;
 		if (permission & (frightsOwner | frightsDeleteAny))
 			username = NULL;
 		else if (!(permission & frightsDeleteOwned))
@@ -4648,9 +4649,12 @@ ec_error_t zs_importdeletion(GUID hsession,
 					return ecError;
 				if (!b_owner)
 					return ecAccessDenied;
-			} else if (!exmdb_client->get_folder_perm(pstore->get_dir(),
-			    eid, username, &permission) && !(permission & frightsOwner)) {
-				return ecAccessDenied;
+			} else {
+				if (!exmdb_client->get_folder_perm(pstore->get_dir(),
+				    eid, username, &permission))
+					return ecRpcFailed;
+				if (!(permission & frightsOwner))
+					return ecAccessDenied;
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
