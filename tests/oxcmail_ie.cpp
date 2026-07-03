@@ -373,7 +373,7 @@ static int select_parts_5()
 	return 0;
 }
 
-static void ical_export_1()
+static int ical_export_1()
 {
 	/*
 	 * DESK-2104: Old Zarafa imports (which lack some TZ fields) shifted by
@@ -410,22 +410,24 @@ static void ical_export_1()
 	cvt.get_propids = get_propids;
 	if (!cvt.mapi_to_ical(msgctnt, icalout)) {
 		fprintf(stderr, "oxcical_export failed\n");
-		return;
+		return EXIT_FAILURE;
 	}
 	std::string icstr;
 	if (icalout.serialize(icstr) != ecSuccess) {
 		fprintf(stderr, "ical_serialize failed\n");
-		return;
+		return EXIT_FAILURE;
 	}
 	constexpr char needle[] = "DTSTART;TZID=Europe/Vienna:20240612T215900";
 	auto ptr = strstr(icstr.c_str(), needle);
 	if (ptr == nullptr) {
 		printf("%s\n", icstr.c_str());
 		fprintf(stderr, "FAILED. Substrings Europe/215900 not found.\n");
+		return EXIT_FAILURE;
 	}
+	return EXIT_SUCCESS;
 }
 
-static void ical_export_2()
+static int ical_export_2()
 {
 	/* GXF-1819 */
 	const ie_name_entry ie_map[] = {
@@ -459,18 +461,20 @@ static void ical_export_2()
 	ical icalout;
 	if (!cvt.mapi_to_ical(msgctnt, icalout)) {
 		fprintf(stderr, "oxcical_export failed\n");
-		return;
+		return EXIT_FAILURE;
 	}
 	std::string icstr;
 	if (icalout.serialize(icstr) != ecSuccess) {
 		fprintf(stderr, "ical_serialize failed\n");
-		return;
+		return EXIT_FAILURE;
 	}
 	if (strstr(icstr.c_str(), "DTSTART;VALUE=DATE;TZID=W. Europe Standard Time:20240926") == nullptr ||
 	    strstr(icstr.c_str(), "DTEND;VALUE=DATE;TZID=W. Europe Standard Time:20240927") == nullptr) {
 		printf("%s\n", icstr.c_str());
 		fprintf(stderr, "FAILED. Substrings DTSTART/20240926 and DTEND/20240927 not found.\n");
+		return EXIT_FAILURE;
 	}
+	return EXIT_SUCCESS;
 }
 
 static int hdrparse_1()
@@ -495,14 +499,11 @@ int main()
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;
 	}
-	excess_attachment();
-	select_parts_1();
-	select_parts_2();
-	select_parts_3();
-	select_parts_4();
-	select_parts_5();
-	ical_export_1();
-	ical_export_2();
-	hdrparse_1();
-	return EXIT_SUCCESS;
+	int ret = EXIT_SUCCESS;
+	for (auto fct : {excess_attachment, select_parts_1, select_parts_2,
+	     select_parts_3, select_parts_4, select_parts_5,
+	     ical_export_1, ical_export_2, hdrparse_1})
+		if (fct() != EXIT_SUCCESS)
+			ret = EXIT_FAILURE;
+	return ret;
 }
