@@ -396,8 +396,12 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 			lo_client->m_free_env();
 	});
 	DB_NOTIFY_DATAGRAM notify;
-	auto resp_code = exmdb_ext_pull_db_notify(bin, &notify) == pack_result::ok ?
+	auto pr = exmdb_ext_pull_db_notify(bin, &notify);
+	auto resp_code = pr == pack_result::ok ?
 	                 exmdb_response::success : exmdb_response::pull_error;
+	if (resp_code != exmdb_response::success)
+		mlog(LV_WARN, "W-2460: async_listener: pull_db_notify failed (%d), notification dropped (len=%u)",
+			static_cast<int>(pr), bin.cb);
 	if (write(fd.get(), &resp_code, 1) != 1)
 		return -1;
 	if (resp_code == exmdb_response::success)
