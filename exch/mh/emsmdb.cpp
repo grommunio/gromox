@@ -735,21 +735,51 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 	auto wr = ctx.notification_response();
 	if (wr != http_status::ok)
 		return wr;
-	if (asyncemsmdb_interface_async_wait(0, &wait_in, &wait_out) == DISPATCH_PENDING) {
-		notification_ctx& nctx = status[ctx.ID];
+	/*
+	 * Set up the pending context before registering the async wait, so
+	 * that async_wakeup() finds pending_status == WAITING if the wakeup
+	 * fires right after g_tag_hash registration. If it were set up only
+	 * after async_wait, such an early wakeup would be silently lost (the
+	 * tag is already gone from g_tag_hash, no timeout would ever fire,
+	 * and the client would be stuck until its own HTTP timeout).
+	 */
+	notification_ctx &nctx = status[ctx.ID];
+	{
+		std::lock_guard nc_hold(nctx.lock);
 		nctx.pending_status = PENDING_STATUS_WAITING;
 		nctx.notification_status = NOTIFICATION_STATUS_NONE;
 		nctx.session_guid = ctx.session_guid;
 		nctx.wall_start_time = ctx.wall_start_time;
 		nctx.pending_time = tp_now();
+	}
+	{
 		std::unique_lock ll_hold(pending_lock);
 		try {
 			pending.emplace(&nctx);
-		}  catch (std::bad_alloc&) {
+		} catch (std::bad_alloc &) {
+			ll_hold.unlock();
+			std::lock_guard nc_hold(nctx.lock);
+			nctx.pending_status = PENDING_STATUS_NONE;
+			nctx.notification_status = NOTIFICATION_STATUS_NONE;
 			return ctx.failure_response(ecServerOOM);
 		}
-		ll_hold.unlock();
+	}
+	if (asyncemsmdb_interface_async_wait(0, &wait_in, &wait_out) == DISPATCH_PENDING)
 		return http_status::ok;
+	/*
+	 * Not pending - a status is already available. Roll the pending
+	 * context back. notification_status is cleared as well, in case a
+	 * stale wakeup for this (reused) context slot fired in the interim;
+	 * otherwise retr() would emit a second NotificationWait response.
+	 */
+	{
+		std::unique_lock ll_hold(pending_lock);
+		pending.erase(&nctx);
+	}
+	{
+		std::lock_guard nc_hold(nctx.lock);
+		nctx.pending_status = PENDING_STATUS_NONE;
+		nctx.notification_status = NOTIFICATION_STATUS_NONE;
 	}
 	return ctx.notification_response(wait_out.result, wait_out.flags_out);
 }
