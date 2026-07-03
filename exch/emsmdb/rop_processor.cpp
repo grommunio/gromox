@@ -375,25 +375,38 @@ static ec_error_t move_notification(EXT_PUSH &ext_push, emsmdb_info &ems_info)
 		EXT_PUSH row_push;
 		PROPERTY_ROW row_data{};
 		TPROPVAL_ARRAY propvals{};
+		bool row_ok = false;
 
-		if (!row_push.init(row_buf.get(), row_buf_size, EXT_FLAG_UTF16))
-			return ecSuccess;
-		if (notif->nflags & NF_BY_MESSAGE) {
-			if (table->read_row(notif->row_message_id,
-			    notif->row_instance, &propvals) != ecSuccess ||
-			    propvals.count == 0)
-				return ecSuccess;
-		} else {
-			if (table->read_row(notif->row_folder_id, 0,
-			    &propvals) != ecSuccess || propvals.count == 0)
-				return ecSuccess;
+		if (row_push.init(row_buf.get(), row_buf_size, EXT_FLAG_UTF16)) {
+			auto err = notif->nflags & NF_BY_MESSAGE ?
+			           table->read_row(notif->row_message_id,
+			           	notif->row_instance, &propvals) :
+			           table->read_row(notif->row_folder_id,
+			           	0, &propvals);
+			/*
+			 * read_row yields ecSuccess with zero propvals when
+			 * the row (or the whole table) is already gone
+			 * server-side, or when not one requested column is
+			 * present on the row; neither makes for a usable row
+			 * notification.
+			 */
+			if (err == ecSuccess && propvals.count > 0 &&
+			    cols != nullptr &&
+			    cu_propvals_to_row(&propvals, *cols, &row_data) &&
+			    row_push.p_proprow(*cols, row_data) == pack_result::ok) {
+				row_bin.cb = row_push.m_offset;
+				row_bin.pb = row_push.m_udata;
+				notif->row_data = &row_bin;
+				row_ok = true;
+			}
 		}
-		if (!cu_propvals_to_row(&propvals, *cols, &row_data) ||
-		    row_push.p_proprow(*cols, row_data) != pack_result::ok)
-			return ecSuccess;
-		row_bin.cb = row_push.m_offset;
-		row_bin.pb = row_push.m_udata;
-		notif->row_data = &row_bin;
+		if (!row_ok)
+			/*
+			 * Row data unreadable; degrade to TABLE_CHANGED so the
+			 * client reloads instead of silently losing the
+			 * notification.
+			 */
+			notif->ctrow_event_to_change();
 	}
 	if (rop_ext_push(ext_push, *notif) == pack_result::success)
 		return ecSuccess;
