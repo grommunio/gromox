@@ -333,6 +333,29 @@ static uint32_t rpcext_cutoff = 32U << 10; /* OXCRPC v23 3.1.4.2.1.2.2 */
 thread_local const char *g_last_rop_dir;
 
 /**
+ * ROPs which are part of an ICS upload or its state handling (the state stream
+ * and checkpoint ROPs also appear in download configuration).
+ */
+static constexpr bool rop_is_icsup(uint8_t rop_id)
+{
+	switch (rop_id) {
+	case ropSynchronizationImportMessageChange:
+	case ropSynchronizationImportHierarchyChange:
+	case ropSynchronizationImportDeletes:
+	case ropSynchronizationUploadStateStreamBegin:
+	case ropSynchronizationUploadStateStreamContinue:
+	case ropSynchronizationUploadStateStreamEnd:
+	case ropSynchronizationImportMessageMove:
+	case ropSynchronizationOpenCollector:
+	case ropSynchronizationImportReadStateChanges:
+	case ropSynchronizationGetTransferState:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
  * Pop a pending notification and serialize into the outgoing network packet.
  * @ext_push: Serializer for the RPC response
  * @ems_info: Current EMSMDB session
@@ -464,6 +487,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	emsmdb_interface_set_rop_num(rop_num);
 	b_icsup = FALSE;
 	auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+	auto initial_upctx_ref = pemsmdb_info->upctx_ref.load();
 	for (auto req_iter = prop_buff->rop_list.cbegin();
 	     req_iter != prop_buff->rop_list.cend(); ++req_iter) {
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
@@ -522,8 +546,9 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		default:
 			return result;
 		}
-		if (pemsmdb_info->upctx_ref != 0)
-			b_icsup = TRUE;	
+		if (rop_is_icsup(req->rop_id) ||
+		    pemsmdb_info->upctx_ref != initial_upctx_ref)
+			b_icsup = TRUE;
 		/* some ROPs do not have response, for example ropRelease */
 		if (rsp == nullptr)
 			continue;
