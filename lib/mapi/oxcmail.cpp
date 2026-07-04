@@ -207,13 +207,17 @@ BOOL oxcmail_username_to_entryid(const char *username,
     const char *pdisplay_name, BINARY *pbin, enum display_type *dtpp)
 {
 	std::string essdn;
+	enum display_type dtype = DT_MAILUSER;
 
 	if (oxcmail_get_user_ids != nullptr &&
-	    oxcmail_get_user_ids(username, nullptr, nullptr, dtpp) &&
+	    oxcmail_get_user_ids(username, nullptr, nullptr, &dtype) &&
 	    cvt_username_to_essdn(username, g_oxcmail_org_name,
 	    oxcmail_get_user_ids, oxcmail_get_domain_ids,
-	    essdn) == ecSuccess)
-		return oxcmail_essdn_to_entryid(essdn.c_str(), pbin, *dtpp);
+	    essdn) == ecSuccess) {
+		if (dtpp != nullptr)
+			*dtpp = dtype;
+		return oxcmail_essdn_to_entryid(essdn.c_str(), pbin, dtype);
+	}
 	if (dtpp != nullptr)
 		*dtpp = DT_MAILUSER;
 	return oxcmail_username_to_oneoff(

@@ -53,11 +53,11 @@ incoming messages into the junk folder rather than Inbox. Each entry in this
 list has the form \fIHeader=val\fP (`:` may be used in place of `=`).
 Header names and values are compared case-insensitively. Values are checked
 both against the full header value and individual comma/semicolon separated
-tokens; use \fB*\fP or an empty value to match any header value.
+tokens; use an empty value to match any header value.
 .br
 Default: (empty)
 .br
-Example: \fIX-Spam-Flag=YES; X-Spam=yes; X-Spam=1\fP
+Example: \fIX-Spam-Flag=YES; X-MC-Relay=; X-SG-EID=\fP
 .TP
 \fBexmdb_client_rpc_timeout\fP
 If the execution of an RPC takes longer than the specified time, the client

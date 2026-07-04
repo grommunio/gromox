@@ -1392,8 +1392,12 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 		 */
 		if (!keywords.empty()) {
 			auto line = icp_make_kwannounce_line(*pcontext, keywords);
-			if (line.size() > 0)
-				pstream->write(line.c_str(), line.size());
+			if (line.size() > 0) {
+				if (pstream == nullptr)
+					pcontext->connection.write(line.c_str(), line.size());
+				else
+					pstream->write(line.c_str(), line.size());
+			}
 		}
 		auto outlen = gx_snprintf(buff, std::size(buff), "* %d FETCH (FLAGS (", item->id);
 		b_first = false;
@@ -1589,6 +1593,9 @@ void imap_context::clear()
 	pcontext->stream.clear();
 	pcontext->f_flags.clear();
 	pcontext->f_expunged_uids.clear();
+	pcontext->contents.clear();
+	pcontext->saved_uids.clear();
+	pcontext->announced_keywords.clear();
 	/*
 	 * Drop any pending async bits so a freshly pooled context does not
 	 * start out flagged for a notification it has no queued changes for.

@@ -493,6 +493,7 @@ bool cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		PidTagMid, PR_MESSAGE_SIZE, PR_ASSOCIATED, PidTagChangeNumber,
 		PR_READ, PR_HASATTACH, PR_MESSAGE_FLAGS, PR_DISPLAY_TO,
 		PR_DISPLAY_CC, PR_DISPLAY_BCC, PR_MESSAGE_CLASS,
+		PR_RTF_IN_SYNC,
 	};
 	static constexpr proptag_t rcpt_tags[] = {
 		PR_RECIPIENT_TYPE, PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
@@ -2035,6 +2036,14 @@ static GP_RESULT gp_msgprop_synth(uint64_t msgid, proptag_t proptag,
 	case PR_MESSAGE_CLASS: {
 		pv.pvalue = common_util_dup("IPM.Note");
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	}
+	case PR_RTF_IN_SYNC: {
+		auto v = cu_alloc<uint8_t>();
+		pv.pvalue = v;
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*v = 0;
+		return GP_ADV;
 	}
 	case PR_SENDER_ADDRTYPE:
 	case PR_SENT_REPRESENTING_ADDRTYPE: {

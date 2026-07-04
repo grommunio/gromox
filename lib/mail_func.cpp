@@ -799,21 +799,16 @@ int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len)
 int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv,
     bool keep_nil) try
 {
-	char *ptr;
-	int b_count = 0;
-	BOOL is_quoted;
-	char *last_space;
-	char *last_quote = nullptr;
-	char *last_brace;
-	char *last_bracket;
+	int b_count = 0, s_count = 0;
+	bool is_quoted = false;
+	char *last_space = nullptr, *last_square = nullptr, *last_quote = nullptr;
+	char *last_brace = nullptr, *last_bracket = nullptr;
 
 	cmdline[cmdlen++] = ' ';
-	ptr = cmdline;
+	auto ptr = cmdline;
 	/* Build the argv list */
 	argv.clear();
-	last_bracket = NULL;
 	last_space = cmdline;
-	is_quoted = FALSE;
 	/*
 	 * XXX: During splitting, both normal arguments and literals get
 	 * converted to strings, and the distinction is lost.
@@ -858,6 +853,20 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv,
 			}
 			last_quote = nullptr;
 		}
+		if (*ptr == '[' && last_quote == nullptr) {
+			if (last_square == nullptr) {
+				last_square = ptr;
+				s_count = 0;
+			} else {
+				++s_count;
+			}
+		}
+		if (']' == *ptr && last_square != nullptr) {
+			if (s_count == 0)
+				last_square = nullptr;
+			else
+				--s_count;
+		}
 		if (*ptr == '(' && last_quote == nullptr) {
 			if (NULL == last_bracket) {
 				last_bracket = ptr;
@@ -873,7 +882,7 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv,
 				b_count --;
 		}
 		if (*ptr == ' ' && last_quote == nullptr &&
-		    last_bracket == nullptr) {
+		    last_bracket == nullptr && last_square == nullptr) {
 			/* ignore leading spaces */
 			if (ptr == last_space && !is_quoted) {
 				last_space ++;
@@ -889,8 +898,14 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv,
 		}
 		ptr ++;
 	}
+	if (last_square != nullptr) {
+		/* Unterminated '[' is valid in an atom; flush the pending token. */
+		cmdline[cmdlen-1] = '\0';
+		if (*last_space != '\0')
+			argv.emplace_back(last_space);
+	}
 	/* only one quote is found, error */
-	if (last_quote != nullptr || last_bracket != nullptr) {
+	if (last_quote != nullptr || last_bracket != nullptr || last_square != nullptr) {
 		argv.clear();
 		return -1;
 	}

@@ -3578,6 +3578,8 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"scaps", &rtf_reader::cmd_scaps},
 	{"sect", &rtf_reader::cmd_sect},
 	{"shad", &rtf_reader::cmd_shad},
+	{"shp", &rtf_reader::cmd_continue},
+	{"shppict", &rtf_reader::cmd_continue},
 	{"shpinst", &rtf_reader::cmd_ignore}, /* shape instructions - properties we cannot render */
 	{"sn", &rtf_reader::cmd_ignore}, /* shape property name */
 	{"sp", &rtf_reader::cmd_ignore}, /* shape property */

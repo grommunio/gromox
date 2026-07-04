@@ -14,7 +14,8 @@ are herein used to avoid ambiguity in the "AD" acronym (ActiveDirectory).
 .PP
 Autodiscover V2 is not an improved version, it is an extra layer that warrants
 a disgruntled remark about questionable protocol design. Locating the
-AutoDiscover server still happens via DNS or AD-SCP query. The V2 request
+AutoDiscover server still happens via DNS or AD-SCP (Service Connection Points
+in Active Directory) query. The V2 request
 contains the user identity and the name of a next-level protocol that the
 client seeks, e.g. "ActiveSync", "EWS" or "AutoDiscoverV1". The response is now
 a JSON document and generally contains just one URL, namely for the service
@@ -38,8 +39,8 @@ Microsoft 365 account identifier and, if found, using the URL
 .IP \(bu 4
 When joined to an NT Domain/ActiveDirectory, performing an LDAP lookup for
 service connection points (SCP), i.e. objects matching
-"(&(objectClass=serviceConnectionPoint)
-(serviceClassName=ms-Exchange-AutoDiscover-Service))", and using the URLs
+`(&(objectClass=serviceConnectionPoint)
+(serviceClassName=ms-Exchange-AutoDiscover-Service))`, and using the URLs
 obtained from "serviceBindingInformation" attributes.
 .IP \(bu 4
 "Root domain" method: Constructing a string based on the user's e-mail address
@@ -76,8 +77,9 @@ collection obtained from the OXDSCLI mechanism(s).
 .PP
 When a user sets up a new email account or changes their existing email client
 settings, the email client sends an authenticated HTTP POST request to an
-Autodiscover URL containing the user's email address. The server then responds
-with an XML document that contains the necessary configuration settings.
+Autodiscover URL and conveying the user's email address in the request body.
+The server then responds with an XML document that contains the necessary
+configuration settings.
 .PP
 The response contains information such as
 .IP \(bu 4

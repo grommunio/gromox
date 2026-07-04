@@ -32,6 +32,13 @@ silently treats it as an unavailable resource.
 TB \fIalso\fP performs AutoDiscover.
 .SH config-v1.1.xml
 .PP
-incomingServers may be of type "imap", "pop3", "nntp" or "exchange".
+The Thunderbird wiki at
+<https://wiki.mozilla.org/Thunderbird:Autoconfiguration> is quite lacking as of
+2026-07-01. It has neither formal ABNF syntax, nor does it mention possible
+values for certain XML attributes. One has to resort to looking at source code,
+<https://github.com/mozilla/releases-comm-central/blob/master/mail/components/accountcreation/modules/readFromXML.sys.mjs#L78>.
+.PP
+In Thunderbird 140, incomingServers may be of type "imap", "pop3", "nntp", "exchange".
+The comm-central master has some more values.
 .SH See also
 \fBgromox\fP(7), \fBautodiscover\fP(7)

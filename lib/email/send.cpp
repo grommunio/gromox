@@ -85,9 +85,9 @@ static vmime::shared_ptr<vmime::net::transport> make_transport(const char *url)
 	if (tls) {
 #if WITH_TLS
 		vurl.setProtocol("smtp");
+#else
 		mlog(LV_ERR, "Unable to create vmime transport for \"%s\": "
 			"vmime/wmime was built without TLS", url);
-#else
 		return nullptr;
 #endif
 	}
@@ -154,6 +154,8 @@ ec_error_t cu_send_mail(const MAIL &mail, const char *smtp_url, const char *send
 	vmime::shared_ptr<vmime::net::transport> xprt;
 	try {
 		xprt = make_transport(smtp_url);
+		if (xprt == nullptr)
+			return MAPI_W_NO_SERVICE;
 		/* vmime default timeout is 30s */
 		xprt->connect();
 	} catch (const vmime::exception &e) {
@@ -197,6 +199,8 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 	vmime::shared_ptr<vmime::net::transport> xprt;
 	try {
 		xprt = make_transport(smtp_url);
+		if (xprt == nullptr)
+			return MAPI_W_NO_SERVICE;
 		/* vmime default timeout is 30s */
 		xprt->connect();
 	} catch (const vmime::exception &e) {

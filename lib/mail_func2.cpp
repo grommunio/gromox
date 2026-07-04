@@ -110,6 +110,9 @@ bool mime_string_to_utf8(std::string_view in, std::string &out) try
 	return true;
 } catch (const std::bad_alloc &) {
 	return false;
+} catch (const vmime::exception &) {
+	/* e.g. charset_conv_error for unconvertible charsets */
+	return false;
 }
 
 namespace gromox {

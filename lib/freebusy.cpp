@@ -240,6 +240,20 @@ static bool find_recur_times(const ical_component *tzcom,
 			continue;
 		if (!ical_itime_to_utc(nullptr, itime, &utnz))
 			break;
+		/*
+		 * Skip deleted instances. This includes the original slots of
+		 * rescheduled instances; those re-enter via the exception loop
+		 * below. Deleted dates are midnights, but tolerate blobs
+		 * carrying a time of day.
+		 */
+		auto del_test = [&](uint32_t d) {
+			auto du = rop_util_rtime_to_unix(d);
+			return du - du % 86400 == utnz - utnz % 86400;
+		};
+		auto &rpat_del = apr.recur_pat;
+		if (std::any_of(rpat_del.pdeletedinstancedates,
+		    rpat_del.pdeletedinstancedates + rpat_del.deletedinstancecount, del_test))
+			continue;
 		auto time_test = [&](const EXCEPTIONINFO &e) {
 			return rop_util_rtime_to_unix(e.originalstartdate) == utnz;
 		};

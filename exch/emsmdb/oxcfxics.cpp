@@ -1125,8 +1125,30 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (!exmdb_client->get_folder_by_name(dir, parent_id1,
 		    static_cast<char *>(phichyvals->ppropval[5].pvalue), &tmp_fid))
 			return ecError;
-		if (tmp_fid != 0)
+		if (tmp_fid != 0) {
+			/*
+			 * Name collision with a server-provisioned folder.
+			 * OXCFXICS mostly talks about (OXCFXICS) special
+			 * folders, so for now, we match that logic and limit
+			 * it to (Gromox) special folders.
+			 */
+			if (plogon->is_private() &&
+			    rop_util_get_gc_value(tmp_fid) < CUSTOM_EID_BEGIN) {
+				if (!exmdb_client->get_folder_property(dir,
+				    CP_ACP, tmp_fid, PR_FOLDER_TYPE, &pvalue) ||
+				    pvalue == nullptr)
+					return ecError;
+				auto pnum = ppropvals->get<const uint32_t>(PR_FOLDER_TYPE);
+				uint32_t req_type = pnum != nullptr ? *pnum : FOLDER_GENERIC;
+				if (*static_cast<uint32_t *>(pvalue) == req_type)
+					return ecSuccess;
+			}
+			/*
+			 * Technically this error code is not permitted per
+			 * OXCFXICS. May want to revise in the future.
+			 */
 			return ecDuplicateName;
+		}
 		if (!exmdb_client->allocate_cn(dir, &change_num))
 			return ecError;
 		tmp_propvals.count = 0;
@@ -1270,9 +1292,10 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	auto dir = plogon->get_dir();
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED &&
-	    sync_type == SYNC_TYPE_CONTENTS &&
-	    !exmdb_client->get_folder_perm(dir,
-	    folder_id, username, &permission)) {
+	    sync_type == SYNC_TYPE_CONTENTS) {
+		if (!exmdb_client->get_folder_perm(dir,
+		    folder_id, username, &permission))
+			return ecRpcFailed;
 		if (permission & (frightsOwner | frightsDeleteAny))
 			username = NULL;
 		else if (!(permission & frightsDeleteOwned))
@@ -1351,9 +1374,12 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 					return ecError;
 				if (!b_owner)
 					return ecAccessDenied;
-			} else if (!exmdb_client->get_folder_perm(dir,
-			    eid, username, &permission) && !(permission & frightsOwner)) {
-				return ecAccessDenied;
+			} else {
+				if (!exmdb_client->get_folder_perm(dir,
+				    eid, username, &permission))
+					return ecRpcFailed;
+				if (!(permission & frightsOwner))
+					return ecAccessDenied;
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
@@ -1446,16 +1472,16 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	 */
 	if (!b_exist)
 		return SYNC_E_OBJECT_DELETED;
-	auto rpc_info = get_rpc_info();
-	if (plogon->logon_mode != logon_mode::owner) {
+	auto username = plogon->eff_user();
+	if (username != STORE_OWNER_GRANTED) {
 		if (!exmdb_client->get_folder_perm(dir,
-		    src_fid, rpc_info.username, &permission))
+		    src_fid, username, &permission))
 			return ecError;
 		if (permission & frightsDeleteAny) {
 			/* do nothing */
 		} else if (permission & frightsDeleteOwned) {
 			if (!exmdb_client->is_message_owner(dir,
-			    src_mid, rpc_info.username, &b_owner))
+			    src_mid, username, &b_owner))
 				return ecError;
 			if (!b_owner)
 				return ecAccessDenied;
@@ -1463,7 +1489,7 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 			return ecAccessDenied;
 		}
 		if (!exmdb_client->get_folder_perm(dir,
-		    folder_id, rpc_info.username, &permission))
+		    folder_id, username, &permission))
 			return ecError;
 		if (!(permission & frightsCreate))
 			return ecAccessDenied;

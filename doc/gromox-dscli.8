@@ -28,12 +28,12 @@ The hostname to use for making the request. From this, the full URL is
 constructed as "https://\fIhost\fP/Autodiscover/Autodiscover.xml". Use of \-h
 disables DNS SRV lookup.
 .br
-Default: derive from \-e argument, otherwise (\-x) \fIlocalhost\fP
+Default: derived from \-e argument, or \fIlocalhost\fP (when \-x is used)
 .TP
 \fB\-u\fP \fIusername\fP
 Use a distinct username for authentication.
 .br
-Default: inherit from \-e option
+Default: inherited from \-e argument
 .TP
 \fB\-v\fP
 Be verbose. Log messages are emitted to stderr, the HTTP/XML request is emitted
