@@ -24,6 +24,7 @@ enum class exmdb_response : uint8_t {
 	pull_error = 0x07,
 	dispatch_error = 0x08,
 	push_error = 0x09,
+	service_unavailable = 0x10,
 	invalid = 0xff,
 };
 

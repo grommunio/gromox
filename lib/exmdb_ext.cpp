@@ -3669,6 +3669,7 @@ const char *exmdb_rpc_strerror(exmdb_response v)
 	case pull_error: return "Invalid request/Server-side deserializing error";
 	case dispatch_error: return "Dispatch error/Request rejected/DB error (check gromox-http log)";
 	case push_error: return "Server-side serialize error";
+	case service_unavailable: return "Service currently unavailable";
 	default: break;
 	}
 	thread_local char xbuf[32];
