@@ -441,7 +441,6 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
     cpid_t cpid, BOOL b_new, uint64_t folder_id, uint64_t message_id,
     uint32_t *pinstance_id) try
 {
-	uint64_t mid_val;
 	uint32_t tmp_int32;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -456,7 +455,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	inode.instance_id = instance_id;
 	pinstance->folder_id = rop_util_get_gc_value(folder_id);
 	pinstance->cpid = cpid;
-	mid_val = rop_util_get_gc_value(message_id);
+	pinstance->orig_msg_gcv = eid_t(message_id).gcv();
 	pinstance->type = instance_type::message;
 	if (!exmdb_server::is_private())
 		pinstance->username = username;
@@ -484,7 +483,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	if (!pdb->begin_optim())
 		return FALSE;
 	auto cl_1 = HX::make_scope_exit([&]() { pdb->end_optim(); });
-	auto ret = instance_load_message(*pdb, mid_val, &pinstance->last_id,
+	auto ret = instance_load_message(*pdb, pinstance->orig_msg_gcv, &pinstance->last_id,
 	           reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent));
 	if (!ret)
 		return FALSE;
@@ -2058,15 +2057,26 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 		case PR_RTF_COMPRESSED: {
 			auto ret = instance_get_message_body(pmsgctnt, tag, pinstance->cpid, ppropvals);
 			if (ret < 0)
-				return false;
+				/*
+				 * Unreadable/damaged source content (e.g. a
+				 * PR_RTF_COMPRESSED reference that does not
+				 * contain RTFCP, as produced by some imports)
+				 * should not fail the whole request; report
+				 * the property as absent instead.
+				 */
+				mlog(LV_INFO, "I-2543: msg %llxh inst %u: could not produce %xh from stored content, treating property as absent",
+					LLU{pinstance->orig_msg_gcv}, instance_id, tag);
 			break;
 		}
 		case PR_TRANSPORT_MESSAGE_HEADERS_U: {
 			auto cidstr = pmsgctnt->proplist.get<const char>(ID_TAG_TRANSPORTMESSAGEHEADERS);
 			if (cidstr != nullptr) {
 				pvalue = instance_read_cid_content(cidstr, nullptr, ID_TAG_BODY);
-				if (pvalue == nullptr)
-					return FALSE;
+				if (pvalue == nullptr) {
+					mlog(LV_INFO, "I-2545: msg %llxh inst %u: unreadable content file \"%s\", treating property as absent",
+						LLU{pinstance->orig_msg_gcv}, instance_id, cidstr);
+					break;
+				}
 				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_U;
 				auto tp = cu_alloc<TYPED_PROPVAL>();
 				vc.pvalue = tp;
@@ -2081,8 +2091,11 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			if (cidstr == nullptr)
 				break;
 			pvalue = instance_read_cid_content(cidstr, nullptr, 0);
-			if (pvalue == nullptr)
-				return FALSE;
+			if (pvalue == nullptr) {
+				mlog(LV_WARN, "I-2544: msg %llxh inst %u: unreadable content file \"%s\", treating property as absent",
+					LLU{pinstance->orig_msg_gcv}, instance_id, cidstr);
+				break;
+			}
 			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_U;
 			auto tp = cu_alloc<TYPED_PROPVAL>();
 			vc.pvalue = tp;
@@ -2108,8 +2121,11 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			auto cidstr = pmsgctnt->proplist.get<const char>(ID_TAG_TRANSPORTMESSAGEHEADERS);
 			if (cidstr != nullptr) {
 				pvalue = instance_read_cid_content(cidstr, nullptr, ID_TAG_BODY);
-				if (pvalue == nullptr)
-					return FALSE;
+				if (pvalue == nullptr) {
+					mlog(LV_INFO, "I-2546: msg %llxh inst %u: unreadable content file \"%s\", treating property as absent",
+						LLU{pinstance->orig_msg_gcv}, instance_id, cidstr);
+					break;
+				}
 				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 				vc.pvalue = static_cast<char *>(pvalue);
 				ppropvals->count ++;
@@ -2119,8 +2135,11 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			if (cidstr == nullptr)
 				break;
 			pvalue = instance_read_cid_content(cidstr, nullptr, 0);
-			if (pvalue == nullptr)
-				return FALSE;
+			if (pvalue == nullptr) {
+				mlog(LV_WARN, "I-2547: msg %llxh inst %u: unreadable content file \"%s\", treating property as absent",
+					LLU{pinstance->orig_msg_gcv}, instance_id, cidstr);
+				break;
+			}
 			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 			vc.pvalue = cu_mb_to_utf8_dup(pinstance->cpid,
 			            static_cast<char *>(pvalue));
