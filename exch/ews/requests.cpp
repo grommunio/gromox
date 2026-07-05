@@ -1326,6 +1326,26 @@ void process(mGetAppManifestsRequest&&, XMLElement *response, const EWSContext&)
 }
 
 /**
+ * @brief      Process GetAppMarketplaceUrl
+ *
+ * Stub reporting the marketplace as unavailable, like Exchange does
+ * when no marketplace is configured.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetAppMarketplaceUrlRequest &&, XMLElement *response, const EWSContext &)
+{
+	response->SetName("m:GetAppMarketplaceUrlResponse");
+
+	mGetAppMarketplaceUrlResponse data;
+	data.error("ErrorMarketplaceWebServicesUrlNotAvailable",
+		"The app marketplace is not available.");
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetAttachment
  *
  * @param      request   Request data

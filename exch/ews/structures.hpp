@@ -3834,6 +3834,27 @@ struct mGetAppManifestsResponse : public mResponseMessageType {
 };
 
 /**
+ * Messages.xsd (GetAppMarketplaceUrlType)
+ */
+struct mGetAppMarketplaceUrlRequest {
+	explicit inline mGetAppMarketplaceUrlRequest(const tinyxml2::XMLElement *) {} // nothing to do here for now
+
+	//<xs:element name="ApiVersionSupported" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="SchemaVersionSupported" type="xs:string" minOccurs="0" maxOccurs="1"/>
+};
+
+/**
+ * Messages.xsd (GetAppMarketplaceUrlResponseMessageType)
+ */
+struct mGetAppMarketplaceUrlResponse : public mResponseMessageType {
+	using mResponseMessageType::mResponseMessageType;
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::optional<std::string> AppMarketplaceUrl;
+};
+
+/**
  * Messages.xsd:2204
  */
 struct mGetUserAvailabilityResponse {

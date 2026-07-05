@@ -1995,6 +1995,12 @@ void mGetAppManifestsResponse::serialize(tinyxml2::XMLElement *xml) const
 	xml->InsertNewChildElement("m:Manifests");
 }
 
+void mGetAppMarketplaceUrlResponse::serialize(tinyxml2::XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(AppMarketplaceUrl);
+}
+
 mCreateAttachmentRequest::mCreateAttachmentRequest(const XMLElement *xml) :
 	XMLINIT(ParentItemId)
 {

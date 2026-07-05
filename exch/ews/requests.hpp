@@ -31,6 +31,7 @@ EWSFUNC(mFindItemRequest);
 EWSFUNC(mFindPeopleRequest);
 EWSFUNC(mAddDelegateRequest);
 EWSFUNC(mGetAppManifestsRequest);
+EWSFUNC(mGetAppMarketplaceUrlRequest);
 EWSFUNC(mGetAttachmentRequest);
 EWSFUNC(mGetDelegateRequest);
 EWSFUNC(mGetEventsRequest);
