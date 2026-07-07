@@ -224,28 +224,25 @@ void mod_fastcgi_stop()
 }
 
 static pack_result mod_fastcgi_push_name_value(NDR_PUSH *pndr,
-    const char *pname, const char *pvalue)
+    std::string_view pname, std::string_view pvalue)
 {
 	uint32_t tmp_len;
-	uint32_t val_len;
-	uint32_t name_len;
-	
-	name_len = strlen(pname);
+	uint32_t name_len = std::min(pname.size(), static_cast<size_t>(UINT32_MAX));
 	if (name_len <= 0x7F) {
 		TRY(pndr->p_uint8(name_len));
 	} else {
 		tmp_len = name_len | 0x80000000;
 		TRY(pndr->p_uint32(tmp_len));
 	}
-	val_len = strlen(pvalue);
+	uint32_t val_len = std::min(pvalue.size(), static_cast<size_t>(UINT32_MAX));
 	if (val_len <= 0x7F) {
 		TRY(pndr->p_uint8(val_len));
 	} else {
 		tmp_len = val_len | 0x80000000;
 		TRY(pndr->p_uint32(tmp_len));
 	}
-	TRY(pndr->p_bytes(reinterpret_cast<const uint8_t *>(pname), name_len));
-	return pndr->p_bytes(reinterpret_cast<const uint8_t *>(pvalue), val_len);
+	TRY(pndr->p_bytes(reinterpret_cast<const uint8_t *>(pname.data()), name_len));
+	return pndr->p_bytes(reinterpret_cast<const uint8_t *>(pvalue.data()), val_len);
 }
 
 static pack_result mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
@@ -498,20 +495,20 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_HOME", phttp->maildir));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_LANG", phttp->lang));
 	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", phttp->request.f_host.c_str()));
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", phttp->request.f_host.c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", phttp->request.f_host));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", phttp->request.f_host));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_ADDR", phttp->connection.server_addr));
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PORT", std::to_string(phttp->connection.server_port).c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PORT", std::to_string(phttp->connection.server_port)));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_ADDR", phttp->connection.client_addr));
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_PORT", std::to_string(phttp->connection.client_port).c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_PORT", std::to_string(phttp->connection.client_port)));
 	snprintf(tmp_buff, std::size(tmp_buff), "HTTP/%s", phttp->request.version);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PROTOCOL", tmp_buff));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_METHOD", phttp->request.method));
-	auto furi = phttp->request.f_request_uri.c_str();
+	const auto &furi = phttp->request.f_request_uri;
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_URI", furi));
-	auto qmark = strchr(furi, '?');
+	const char *qmark = strchr(furi.c_str(), '?'); /* CONST-STRCHR-MARKER */
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "QUERY_STRING", qmark == nullptr ? "" : ++qmark));
-	if (!parse_uri(furi, uri_path)) {
+	if (!parse_uri(furi.c_str(), uri_path)) {
 		phttp->log(LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
 		return FALSE;
@@ -533,22 +530,16 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	}
 	auto &fctx = g_context_list[phttp->context_id];
 	auto pfnode = fctx.pfnode;
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "DOCUMENT_ROOT", pfnode->dir.c_str()));
-	if (NULL != path_info) {
-		snprintf(tmp_buff, std::size(tmp_buff), "%s/%s", pfnode->dir.c_str(), path_info);
-		QRF(mod_fastcgi_push_name_value(&ndr_push, "PATH_TRANSLATED", tmp_buff));
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "DOCUMENT_ROOT", pfnode->dir));
+	if (path_info != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "PATH_TRANSLATED", pfnode->dir + "/" + path_info));
 	auto tmp_len = pfnode->path.size();
 	if (fctx.b_index) {
-		snprintf(tmp_buff, std::size(tmp_buff), "%s%s", uri_path, pfnode->index.c_str());
-		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", tmp_buff));
-		snprintf(tmp_buff, std::size(tmp_buff), "%s%s%s", pfnode->dir.c_str(),
-		         uri_path + tmp_len, pfnode->index.c_str());
-		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", tmp_buff));
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", uri_path + pfnode->index));
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", pfnode->dir + &uri_path[tmp_len] + pfnode->index));
 	} else {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", uri_path));
-		snprintf(tmp_buff, std::size(tmp_buff), "%s%s", pfnode->dir.c_str(), uri_path + tmp_len);
-		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", tmp_buff));
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", pfnode->dir + &uri_path[tmp_len]));
 	}
 	tmp_len = phttp->request.f_accept.size();
 	if (tmp_len > 1024) {
@@ -556,36 +547,36 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 			"accept is too long for mod_fastcgi");
 		return FALSE;
 	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT", phttp->request.f_accept.c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT", phttp->request.f_accept));
 	tmp_len = phttp->request.f_user_agent.size();
 	if (tmp_len > 1024) {
 		phttp->log(LV_DEBUG, "length of "
 			"user-agent is too long for mod_fastcgi");
 		return FALSE;
 	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_USER_AGENT", phttp->request.f_user_agent.c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_USER_AGENT", phttp->request.f_user_agent));
 	tmp_len = phttp->request.f_accept_language.size();
 	if (tmp_len > 1024) {
 		phttp->log(LV_DEBUG, "length of "
 			"accept-language is too long for mod_fastcgi");
 		return FALSE;
 	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_LANGUAGE", phttp->request.f_accept_language.c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_LANGUAGE", phttp->request.f_accept_language));
 	tmp_len = phttp->request.f_accept_encoding.size();
 	if (tmp_len > 1024) {
 		phttp->log(LV_DEBUG, "length of "
 			"accept-encoding is too long for mod_fastcgi");
 		return FALSE;
 	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_ENCODING", phttp->request.f_accept_encoding.c_str()));
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_COOKIE", phttp->request.f_cookie.c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_ENCODING", phttp->request.f_accept_encoding));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_COOKIE", phttp->request.f_cookie));
 	tmp_len = phttp->request.f_content_type.size();
 	if (tmp_len > 128) {
 		phttp->log(LV_DEBUG, "length of "
 			"content-type is too long for mod_fastcgi");
 		return FALSE;
 	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_TYPE", phttp->request.f_content_type.c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_TYPE", phttp->request.f_content_type));
 	if (NULL != phttp->connection.ssl) {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_SCHEME", "https"));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTPS", "on"));
@@ -605,8 +596,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	for (const auto &hdr : pfnode->header_list) {
 		val = mod_fastcgi_get_others_field(phttp->request.f_others, hdr.c_str());
 		if (val != nullptr)
-			QRF(mod_fastcgi_push_name_value(&ndr_push,
-			    hdr.c_str(), val));
+			QRF(mod_fastcgi_push_name_value(&ndr_push, hdr, val));
 	}
 	if (!rq.b_chunked) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
