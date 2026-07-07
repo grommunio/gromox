@@ -593,6 +593,21 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	val = mod_fastcgi_get_others_field(phttp->request.f_others, "Cache-Control");
 	if (val != nullptr)
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CACHE_CONTROL", val));
+	val = mod_fastcgi_get_others_field(phttp->request.f_others, "If-Modified-Since");
+	if (val != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_IF_MODIFIED_SINCE", val));
+	val = mod_fastcgi_get_others_field(phttp->request.f_others, "If-Unmodified-Since");
+	if (val != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_IF_UNMODIFIED_SINCE", val));
+	val = mod_fastcgi_get_others_field(phttp->request.f_others, "If-None-Match");
+	if (val != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_IF_NONE_MATCH", val));
+	val = mod_fastcgi_get_others_field(phttp->request.f_others, "If-Match");
+	if (val != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_IF_MATCH", val));
+	val = mod_fastcgi_get_others_field(phttp->request.f_others, "If-Range");
+	if (val != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_IF_RANGE", val));
 	for (const auto &hdr : pfnode->header_list) {
 		val = mod_fastcgi_get_others_field(phttp->request.f_others, hdr.c_str());
 		if (val != nullptr)
