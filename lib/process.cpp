@@ -852,15 +852,16 @@ errno_t socketpass_worker::pass(std::string_view buffer, int fd_pass) const
 {
 	/*
 	 * SEQPACKET sockets have a caveat that the payload can't be overly
-	 * large else sendmsg() will return EMSGSIZE. For our usecases that
-	 * should be ok, because socketpass is only used with exmdb and that
-	 * only passes a buffer with a exmdb_callid::{connect,
-	 * listen_notification}, never e.g. exmdb_callid::write_message.
+	 * large else sendmsg() will return EMSGSIZE. The limit is sufficiently
+	 * high (should be somewhere around the SO_SNDBUF/SO_RCVBUF size) that
+	 * it won't matter. Only exmdb_callid::{connect, listen_notification}
+	 * are emitted (which have dynamic, but sensible sizes), never
+	 * exmdb_callid::write_message (irresponsibly large sizes possible).
 	 */
 	uint32_t pktlen = buffer.size();
 	struct iovec iov;
-	iov.iov_base = &pktlen;
-	iov.iov_len  = sizeof(pktlen);
+	iov.iov_base = deconst(buffer.data());
+	iov.iov_len  = pktlen;
 	alignas(struct cmsghdr) char cbuf[CMSG_SPACE(sizeof(fd_pass))];
 	struct msghdr msg{};
 	msg.msg_iov        = &iov;
@@ -874,28 +875,34 @@ errno_t socketpass_worker::pass(std::string_view buffer, int fd_pass) const
 	memcpy(CMSG_DATA(cmsg), &fd_pass, sizeof(fd_pass));
 	if (sendmsg(m_channel, &msg, MSG_NOSIGNAL) < 0)
 		return errno;
-
-	iov.iov_base = deconst(buffer.data());
-	iov.iov_len  = pktlen;
-	msg.msg_control    = nullptr;
-	msg.msg_controllen = 0;
-	if (sendmsg(m_channel, &msg, MSG_NOSIGNAL) < 0)
-		return errno;
-
 	return 0;
 }
 
 /**
- * @channel:   AF_UNIX contorl channel
+ * @channel:   AF_UNIX control channel
  * @pkt:       replay of the first packet (e.g. a CONNECT or LISTEN_NOTIFICATION)
  * @client_fd: the client file descriptor
+ *
+ * Returns a value such that the caller can treat socketpass_receive() similar
+ * to as if it were a single syscall. In case of error, client_fd will not be
+ * touched.
+ *
+ * Long, malformed, and proper packets all trigger a return value of 0, and the
+ * caller needs to inspect @client_fd and @pkt to know more.
  */
 errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 {
-	uint32_t pktlen = 0;
+	/*
+	 * 4K should be enough for exmdb_callid::connect/listen_notification.
+	 * If not, something is wrong with the system or the design. (SQL
+	 * users.homedir is just 128 chars, and the remote_id should not occupy
+	 * much more either.)
+	 */
+	pkt.resize(4096);
+
 	struct iovec iov;
-	iov.iov_base    = &pktlen;
-	iov.iov_len     = sizeof(pktlen);
+	iov.iov_base    = pkt.data();
+	iov.iov_len     = pkt.size();
 	char cbuf[CMSG_SPACE(sizeof(int))]{};
 	struct msghdr msg{};
 	msg.msg_iov        = &iov;
@@ -905,14 +912,16 @@ errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 
 	client_fd = -1;
 	auto read_len = recvmsg(channel, &msg, 0);
-	if (read_len == 0)
-		return ENOENT; /* eof */
 	if (read_len < 0) {
+		if (errno == EINTR || errno == EAGAIN)
+			/* give higher-up frames a chance to reevaluate their loop conditions */
+			return 0;
 		errno_t se = errno;
-		if (se != EINTR && se != EAGAIN)
-			mlog(LV_ERR, "%s: recvmsg.1: %s", __PRETTY_FUNCTION__, strerror(se));
+		mlog(LV_ERR, "%s: recvmsg: %s", __func__, strerror(se));
 		return se;
 	}
+	if (read_len == 0)
+		return ENOENT; /* eof on socket */
 
 	wrapfd received_fd;
 	for (auto cmsg = CMSG_FIRSTHDR(&msg); cmsg != nullptr;
@@ -930,29 +939,15 @@ errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 		 * (The use of wrapfd ensures all the unused ones get closed.)
 		 */
 	}
-	msg.msg_control = nullptr;
-	msg.msg_controllen = 0;
-	if (received_fd.get() < 0) {
-		/* No fd received, ditch rest */
-		if (recvmsg(channel, &msg, 0) < 0) {
-			errno_t se = errno;
-			mlog(LV_ERR, "%s: recvmsg.2: %s", __PRETTY_FUNCTION__, strerror(se));
-			return se;
-		}
+	/* This needs to be evaluated after fds have been placed into wrapfd */
+	if (msg.msg_flags & (MSG_TRUNC | MSG_CTRUNC)) {
+		mlog(LV_ERR, "%s: recvmsg: ignoring seqpacket larger than our buffer", __func__);
+		pkt.clear();
 		return 0;
 	}
-
-	read_len = std::min(le32p_to_cpu(&pktlen), UINT32_MAX);
-	pkt.resize(read_len);
-	iov.iov_base = pkt.data();
-	iov.iov_len  = pkt.size();
-	read_len = recvmsg(channel, &msg, 0);
-	if (read_len == 0)
-		return ENOENT; /* eof */
-	if (read_len < 0) {
-		errno_t se = errno;
-		mlog(LV_ERR, "%s: recvmsg.3: %s", __PRETTY_FUNCTION__, strerror(se));
-		return se;
+	if (received_fd.get() < 0) {
+		pkt.clear();
+		return 0; /* No fd received */
 	}
 	pkt.resize(read_len);
 	client_fd = received_fd.release();

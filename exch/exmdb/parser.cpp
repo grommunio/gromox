@@ -807,18 +807,32 @@ void exmdb_listener_stop()
 		futs.emplace_back(std::async(spw_clean));
 }
 
+/**
+ * Returns a negative value to indicate that the caller (exmdb_pickup_loop)
+ * should cease operation (e.g. because the socket peer has ended
+ * transmissions), or 0 to continue.
+ */
 static int exmdb_pickup_one(int control_fd)
 {
 	auto par = std::make_unique<parser_params>();
 	int client_fd = -1;
 	auto ern = socketpass_receive(control_fd, par->injected_pkt, client_fd);
 	if (ern == EINTR || ern == EAGAIN)
+		/*
+		 * Possibly as a result of Ctrl-C-ing the daemon or thread kick
+		 * (SIGALRM)
+		 */
 		return 0;
 	if (ern != 0)
 		return -1;
+	if (client_fd < 0)
+		return 0;
 	g_dbengine_wanttoend = false;
+	/* Bring the fd under management (wrapfd) */
 	par->conn = std::make_shared<exmdb_connection>(generic_connection::takeover(std::move(client_fd)));
 	if (par->conn->sockd < 0)
+		return 0;
+	if (par->injected_pkt.empty())
 		return 0;
 
 	/* reprise of exmdb_parser_insert_conn */
