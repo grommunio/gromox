@@ -137,6 +137,17 @@ static void hpm_processor_wakeup_context(unsigned int context_id)
 	phttp->hpm_wakeup_pending = true;
 	if (phttp->sched_stat != hsched_stat::wait)
 		return;
+	/*
+	 * This wakeup is being delivered through the normal channel right
+	 * below, so clear the latch. Otherwise it stays set (nothing else
+	 * clears it) and gets misread by wrrep_nobuf() as a *new* wakeup
+	 * having raced in during the run that is about to start, forcing an
+	 * immediate re-loop instead of an actual park on every single cycle
+	 * from here on — i.e. a permanent busy loop for any context that
+	 * ever received one wakeup (every EWS streaming/emsmdb-notification
+	 * context, via its own heartbeat timer).
+	 */
+	phttp->hpm_wakeup_pending = false;
 	phttp->sched_stat = hsched_stat::wrrep;
 	contexts_pool_signal(phttp);
 }
