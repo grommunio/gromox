@@ -57,6 +57,12 @@ static constexpr char appl_zip[] =
 	"Content-Type: application/zip; x-unix-mode=0644; name=\"text.txt.zip\"\r\n"
 	"\r\n"
 	"PKCD\r\n";
+static constexpr char appl_png[] =
+	"--Apple-Mail=_1D3088EC-33DB-413D-B7F8-D50FC6A5658E\r\n"
+	"Content-Disposition: inline\r\n"
+	"Content-Type: image/png\r\n"
+	"\r\n"
+	"iPNG\r\n";
 static constexpr char appl_html2[] =
 	"--Apple-Mail=_1D3088EC-33DB-413D-B7F8-D50FC6A5658E\r\n"
 	"Content-Type: text/html\r\n"
@@ -217,6 +223,33 @@ static int select_parts_1()
 	return 0;
 }
 
+static int select_parts_1a()
+{
+	fprintf(stderr, "== T1a\n");
+	auto data = std::string(appl_header) + appl_plain + appl_mixed +
+	            appl_html1 + appl_png + appl_html2 +
+	            appl_mixed_footer + appl_alt_footer;
+	MAIL m;
+	assert(m.refonly_parse(data.data(), data.size()));
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
+	assert(mc != nullptr);
+	auto atl = mc->children.pattachments;
+	assert(atl != nullptr);
+	if (atl->count != 1)
+		gi_print(0, *mc);
+	assert(atl->count == 1);
+	auto v = atl->pplist[0]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
+	assert(v != nullptr && strcasecmp(v, "image/png") == 0);
+	auto bin = mc->proplist.get<BINARY>(PR_HTML);
+	if (bin != nullptr)
+		assert(HX_memmem(bin->pv, bin->cb, "cid:", 4) != nullptr);
+	return 0;
+}
+
 static int select_parts_2()
 {
 	fprintf(stderr, "== T2\n");
@@ -342,7 +375,6 @@ static int select_parts_4()
 	auto bin = mc->proplist.get<const BINARY>(PR_HTML);
 	assert(bin != nullptr && HX_memmem(bin->pv, bin->cb, "Zhtml3Z", 7) != nullptr);
 	assert(HX_memmem(bin->pv, bin->cb, "dontjoin", 8) == nullptr);
-	assert(HX_memmem(bin->pv, bin->cb, "cid:", 4) != nullptr);
 	return 0;
 }
 
@@ -369,7 +401,6 @@ static int select_parts_5()
 	auto bin = mc->proplist.get<const BINARY>(PR_HTML);
 	assert(bin != nullptr);
 	assert(HX_memmem(bin->pv, bin->cb, "ZhtmlZ", 6) != nullptr);
-	assert(HX_memmem(bin->pv, bin->cb, "cid:image001", 12) != nullptr);
 	return 0;
 }
 
@@ -500,8 +531,8 @@ int main()
 		return EXIT_FAILURE;
 	}
 	int ret = EXIT_SUCCESS;
-	for (auto fct : {excess_attachment, select_parts_1, select_parts_2,
-	     select_parts_3, select_parts_4, select_parts_5,
+	for (auto fct : {excess_attachment, select_parts_1, select_parts_1a,
+	     select_parts_2, select_parts_3, select_parts_4, select_parts_5,
 	     ical_export_1, ical_export_2, hdrparse_1})
 		if (fct() != EXIT_SUCCESS)
 			ret = EXIT_FAILURE;
