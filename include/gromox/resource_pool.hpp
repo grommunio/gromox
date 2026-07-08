@@ -12,15 +12,16 @@
 namespace gromox {
 
 /*
- * Resource pool with generational support. Since Tp objects may become
+ * Resource pool with generational support. Because Tp objects may become
  * "outdated" and be purged through the use of bump(), it does not make a lot
- * of sense to construct them a-priori, so the API only supports lazy
- * construction. For this, get_wait() needs to know some ctor args for when a
- * new T needs construction.
+ * of sense to construct objects a-priori and stockpile them. Consequentially.
+ * this API supports only just-in-time construction. As a result, get_wait()
+ * needs to be passed ctor args at all times, in case a new Tp needs
+ * construction.
  *
  * @m_numslots: number of remaining tokens the pool will give
  * @m_max:      maximum number of tokens the pool will give
- *              (used to determine whether putback or discard an object)
+ *              (used to determine whether to putback or retire an object)
  * @m_list:     reusable objects
  */
 template<typename Tp> class GX_EXPORT resource_pool {
