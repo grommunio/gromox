@@ -53,6 +53,11 @@ Default: \fI30\fP
 .TP
 \fBx500_org_name\fP
 Default: (unspecified)
+.SH Notes
+Out-of-office replies are only generated when one of the recipient's
+addresses (primary or alias) appears in the To, Cc or Bcc line of the
+message, cf. RFC 5230 section 4.5. Mail that reaches a mailbox only by way of
+e.g. a distribution group thus produces no OOF reply.
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/local_bounce/: response templates for when mail cannot be
