@@ -250,12 +250,20 @@ static bool login_gen(const char *username, const char *password,
 	else if (am_choice == A_ALLOW_ALL)
 		auth = true;
 	else if (am_choice == A_EXTERNID_LDAP && mres.have_xid > 0)
+		/* Failure delay should already be added by the LDAP server */
 		auth = ldap_adaptor_login3(mres.username.c_str(), password, mres);
 	else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0)
+		/* Failure delay should already be added by the PAM stack */
 		auth = login_pam(mres.username.c_str(), password, mres);
-	else if (am_choice == A_EXTERNID_LDAP)
+	else if (am_choice == A_EXTERNID_LDAP) {
 		auth = mysql_adaptor_login2(mres.username.c_str(), password,
 		       mres.enc_passwd, mres.errstr);
+		if (!auth) {
+			if (auto fdelay = am_fail_delay.load(std::memory_order_relaxed);
+			    fdelay != std::chrono::nanoseconds(0))
+				std::this_thread::sleep_for(fdelay);
+		}
+	}
 	auth = auth && err == 0;
 	if (!auth && mres.errstr.empty())
 		mres.errstr = "Authentication rejected";
