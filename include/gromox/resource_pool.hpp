@@ -98,13 +98,15 @@ template<typename Tp> class GX_EXPORT resource_pool {
 			holder.clear();
 			return;
 		}
-		std::unique_lock<std::mutex> lk(m_mtx);
-		if (m_gen == gen && holder.size() >= 1)
-			m_list.splice(m_list.end(), holder, holder.begin());
-		/* Avoid returning object to pool when outdated */
-		holder.clear();
-		++m_numslots;
-		lk.unlock();
+		std::list<Tp> graveyard;
+		{
+			std::lock_guard<std::mutex> lk(m_mtx);
+			if (m_gen == gen && holder.size() >= 1)
+				m_list.splice(m_list.end(), holder, holder.begin());
+			/* Defer cleanup until after critical section */
+			graveyard = std::move(holder);
+			++m_numslots;
+		}
 		m_cv.notify_one();
 	}
 
