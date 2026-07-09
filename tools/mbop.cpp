@@ -4,6 +4,7 @@
 #include "mbop_foreach.cpp"
 #include "mbop_freebusy.cpp"
 #include "mbop_locale.cpp"
+#include "mbop_movemsg.cpp"
 #include "mbop_main.cpp"
 #include "mbop_purge.cpp"
 #include "mbop_walk.cpp"
