@@ -1048,6 +1048,10 @@ BOOL exmdb_server::read_delegates(const char *dir, uint32_t mode,
 	return false;
 }
 
+/**
+ * This EXRPC only edits the Send-On-Behalf/Send-As list.
+ * The delegator needs to give permissions for folders separately.
+ */
 BOOL exmdb_server::write_delegates(const char *dir, uint32_t mode,
     const std::vector<std::string> &vec)
 {
