@@ -446,7 +446,7 @@ static bool purg_discover_ids(sqlite3 *db, const std::string &query,
 			break;
 		else if (ret != SQLITE_ROW)
 			return false;
-		used.push_back(stm.col_text(0));
+		used.emplace_back(stm.col_text(0));
 	}
 	return true;
 }
@@ -474,23 +474,26 @@ static bool purg_discover_cids(sqlite3 *db, const char *dir,
 	return purg_discover_ids(db, query, used);
 }
 
-static bool purg_discover_mids(const char *dir, std::vector<std::string> &used)
+static bool purg_discover_mids(sqlite3 *db, const char *dir, std::vector<std::string> &used)
 {
 	used.clear();
-	std::unique_ptr<sqlite3, sql_del> db;
+	if (!purg_discover_ids(db, "SELECT mid_string FROM messages", used))
+		return false;
+
+	std::unique_ptr<sqlite3, sql_del> midb;
 	auto dbpath = dir + "/exmdb/midb.sqlite3"s;
 	auto ret = access(dbpath.c_str(), R_OK);
 	if (ret < 0 && errno == ENOENT)
 		/* File is allowed to be absent and is equivalent to used={}. */
 		return true;
-	ret = sqlite3_open_v2(dbpath.c_str(), &unique_tie(db),
+	ret = sqlite3_open_v2(dbpath.c_str(), &unique_tie(midb),
 	      SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-2018: cannot open %s: %s", dbpath.c_str(), sqlite3_errstr(ret));
 		return false;
 	}
-	sqlite3_busy_timeout(db.get(), g_sqlite_busy_timeout_ns / 1000000);
-	return purg_discover_ids(db.get(), "SELECT mid_string FROM messages", used);
+	sqlite3_busy_timeout(midb.get(), g_sqlite_busy_timeout_ns / 1000000);
+	return purg_discover_ids(midb.get(), "SELECT mid_string FROM messages", used);
 }
 
 static std::pair<uint64_t, size_t>
@@ -583,10 +586,10 @@ static bool purg_clean_cid(sqlite3 *db, const char *maildir, time_t upper_bound_
 	       std::move(used), upper_bound_ts) < UINT64_MAX;
 }
 
-static bool purg_clean_mid(const char *maildir, time_t upper_bound_ts)
+static bool purg_clean_mid(sqlite3 *db, const char *maildir, time_t upper_bound_ts)
 {
 	std::vector<std::string> used;
-	if (!purg_discover_mids(maildir, used))
+	if (!purg_discover_mids(db, maildir, used))
 		return false;
 	sort_unique(used);
 	if (purg_delete_unused_files(maildir + "/eml"s, used, upper_bound_ts) == UINT64_MAX)
@@ -606,7 +609,7 @@ BOOL exmdb_server::purge_datafiles(const char *dir)
 		return false;
 	auto upper_bound_ts = time(nullptr) - 60;
 	return purg_clean_cid(db->psqlite, dir, upper_bound_ts) &&
-	       purg_clean_mid(dir, upper_bound_ts) ? TRUE : false;
+	       purg_clean_mid(db->psqlite, dir, upper_bound_ts) ? TRUE : false;
 }
 
 BOOL exmdb_server::autoreply_tsquery(const char *dir, const char *peer,
