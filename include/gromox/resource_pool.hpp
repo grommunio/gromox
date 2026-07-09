@@ -99,11 +99,10 @@ template<typename Tp> class GX_EXPORT resource_pool {
 			return;
 		}
 		std::unique_lock<std::mutex> lk(m_mtx);
-		if (m_gen == gen)
+		if (m_gen == gen && holder.size() >= 1)
 			m_list.splice(m_list.end(), holder, holder.begin());
-		else
-			/* Avoid returning object to pool when outdated */
-			holder.clear();
+		/* Avoid returning object to pool when outdated */
+		holder.clear();
 		++m_numslots;
 		lk.unlock();
 		m_cv.notify_one();
