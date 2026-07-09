@@ -35,9 +35,10 @@ template<typename Tp> class GX_EXPORT resource_pool {
 			m_pool(o.m_pool), m_holder(std::move(o.m_holder)),
 			m_gen(o.m_gen)
 		{}
-		~token() {
+		~token() try {
 			if (m_holder.size() > 0)
 				finish();
+		} catch (...) {
 		}
 		inline bool operator!() const { return !m_holder.front(); }
 		inline Tp &operator*() { return m_holder.front(); }
@@ -45,13 +46,7 @@ template<typename Tp> class GX_EXPORT resource_pool {
 		inline Tp *operator->() { return &m_holder.front(); }
 		inline const Tp *operator->() const { return &m_holder.front(); }
 		void operator=(token &&) noexcept = delete;
-		void finish() noexcept {
-			try {
-				m_pool.put(std::move(m_holder), m_gen);
-			} catch (...) {
-				m_pool.put_slot();
-			}
-		}
+		void finish() { m_pool.put(std::move(m_holder), m_gen); }
 		protected:
 		resource_pool &m_pool;
 		std::list<Tp> m_holder;
