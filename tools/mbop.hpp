@@ -17,6 +17,7 @@ static constexpr int EXIT_PARAM = 2;
 
 namespace cgkreset { extern int main(int, char **); }
 namespace delmsg { extern int main(int, char **); }
+namespace movemsg { extern int main(int, char **); }
 namespace emptyfld { extern int main(int, char **); }
 namespace foreach_wrap { extern int main(int, char **); }
 namespace getfreebusy { extern int main(int, char **); }

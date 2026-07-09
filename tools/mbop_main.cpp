@@ -82,7 +82,7 @@ void command_overview()
 	fprintf(stderr, "Commands:\n\tcgkreset clear-photo clear-profile "
 		"clear-rwz delmsg echo-maildir echo-username emptyfld "
 		"freeze get-freebusy get-photo get-websettings "
-		"get-websettings-persistent get-websettings-recipients ping "
+		"get-websettings-persistent get-websettings-recipients movemsg ping "
 		"purge-datafiles purge-softdelete recalc-sizes set-locale "
 		"set-photo set-websettings set-websettings-persistent "
 		"set-websettings-recipients sync-midb thaw unload vacuum\n");
@@ -575,6 +575,8 @@ int cmd_parser(int argc, char **argv)
 	++g_command_num;
 	if (strcmp(argv[0], "delmsg") == 0)
 		return delmsg::main(argc, argv);
+	else if (strcmp(argv[0], "movemsg") == 0)
+		return movemsg::main(argc, argv);
 	else if (strcmp(argv[0], "emptyfld") == 0)
 		return emptyfld::main(argc, argv);
 	else if (strcmp(argv[0], "clear-photo") == 0)

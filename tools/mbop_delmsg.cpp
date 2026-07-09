@@ -77,3 +77,63 @@ int main(int argc, char **argv)
 }
 
 }
+
+namespace movemsg {
+
+static constexpr HXoption g_options_table[] = {
+	{{}, 'f', HXTYPE_STRING, {}, {}, {}, 0, "Source folder", "NAME/ID"},
+	{{}, 't', HXTYPE_STRING, {}, {}, {}, 0, "Destination folder", "NAME/ID"},
+	{"copy", 'C', HXTYPE_NONE, {}, {}, {}, 0, "Copy instead of move"},
+	MBOP_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int help()
+{
+	fprintf(stderr, "Usage: gromox-mbop -u a@b.de movemsg -f src_folder_id -t dst_folder_id message_id[...]\n");
+	return EXIT_PARAM;
+}
+
+int main(int argc, char **argv)
+{
+	bool g_copy = false;
+	const char *g_srcstr = nullptr, *g_dststr = nullptr;
+	eid_t g_srcfid{}, g_dstfid{};
+
+	HXopt6_auto_result result;
+	if (HX_getopt6(g_options_table, argc, argv, &result, HXOPT_USAGEONERR |
+	    HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
+		return EXIT_PARAM;
+	for (int i = 0; i < result.nopts; ++i) {
+		if (result.desc[i]->sh == 'f')
+			g_srcstr = result.oarg[i];
+		else if (result.desc[i]->sh == 't')
+			g_dststr = result.oarg[i];
+		else if (result.desc[i]->sh == 'c')
+			g_copy = true;
+	}
+	if (g_srcstr != nullptr)
+		g_srcfid = gi_lookup_eid_any_way(g_storedir, g_srcstr);
+	if (g_dststr != nullptr)
+		g_dstfid = gi_lookup_eid_any_way(g_storedir, g_dststr);
+	if (g_srcfid.gcv() == 0 || g_dstfid.gcv() == 0)
+		return help();
+	std::vector<eid_t> eids;
+	for (int uidx = 0; uidx < result.nargs; ++uidx)
+		eids.emplace_back(eid_t{1, strtoul(result.uarg[uidx], nullptr, 0)});
+	EID_ARRAY ea;
+	ea.count = eids.size();
+	ea.pids = eids.data();
+	BOOL partial = false;
+	if (!exmdb_client->movecopy_messages(g_storedir, CP_UTF8, false, nullptr,
+	    g_srcfid, g_dstfid, g_copy, &ea, &partial)) {
+		printf("RPC was rejected.\n");
+		return EXIT_FAILURE;
+	}
+	if (partial)
+		printf("Partial completion! Some of ");
+	printf("%zu message(s) %s\n", eids.size(), g_copy ? "copied" : "moved");
+	return EXIT_SUCCESS;
+}
+
+}
