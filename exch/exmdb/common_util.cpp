@@ -4637,13 +4637,9 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 		mlog(LV_ERR, "E-1493: mkbasedir for %s: %s", new_eml.c_str(), strerror(-ret));
 		return -ret;
 	}
-	/*
-	 * Partial mailboxes (without cid/-like directories) are
-	 * normal for debugging, don't warn in that case.
-	 */
 	if (link(old_eml.c_str(), new_eml.c_str()) < 0) {
 		int se = errno;
-		if (errno != ENOENT || g_dbg_synth_content == 0)
+		if (errno != ENOENT)
 			mlog(LV_ERR, "E-5310: link %s -> %s: %s",
 				old_eml.c_str(), new_eml.c_str(), strerror(errno));
 		return se;
@@ -4657,7 +4653,7 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	}
 	if (link(old_ext.c_str(), new_ext.c_str()) < 0) {
 		int se = errno;
-		if (errno != ENOENT || g_dbg_synth_content == 0)
+		if (errno != ENOENT)
 			mlog(LV_ERR, "E-5311: link %s -> %s: %s",
 				old_ext.c_str(), new_ext.c_str(), strerror(errno));
 		return se;
