@@ -346,6 +346,8 @@ ff=Dansk
 1c=Serverfehler
 80=Öffentliche Ordner
 ff=Deutsch
+Archive=Archiv
+ConversationHistory=Unterhaltungsverlauf
 
 [el]
 06=Προβολές
@@ -402,6 +404,8 @@ ff=Eλληνικά
 1d=Conversation Action Settings
 80=Public Folders
 ff=English
+Archive=Archive
+ConversationHistory=Conversation History
 
 [es]
 06=Vistas
@@ -425,6 +429,8 @@ ff=English
 1c=Errores del servidor
 80=Carpetas públicas
 ff=Español
+Archive=Archivar
+ConversationHistory=Historial de conversaciones
 
 [et]
 06=Vaated
@@ -562,6 +568,8 @@ ff=Filipino
 1c=Échecs du serveur
 80=Dossiers publics
 ff=Français
+Archive=Archive
+ConversationHistory=Historique des conversations
 
 [ga]
 0a=Míreanna seolta
@@ -824,6 +832,8 @@ ff=Íslenska
 1c=Errori del server
 80=Cartelle pubbliche
 ff=Italiano
+Archive=Archivio
+ConversationHistory=Cronologia conversazione
 
 [ja]
 06=ビュー
@@ -847,6 +857,8 @@ ff=Italiano
 1c=サーバーの失敗
 80=パブリック フォルダー
 ff=日本語
+Archive=アーカイブ
+ConversationHistory=会話の履歴
 
 [ka]
 0a=ელემენტების გაგზავნა
@@ -954,6 +966,8 @@ ff=ಕನ್ನಡ
 1c=서버 오류
 80=공용 폴더
 ff=한국어
+Archive=부관
+ConversationHistory=대화 기룩
 
 [kok]
 0a=धाडिल्ले नग
@@ -1383,6 +1397,8 @@ ff=Polski
 1c=Falhas do Servidor
 80=Pastas Públicas
 ff=Português brasileiro
+Archive=Arquivo Morto
+ConversationHistory=Histórico de Conversa
 
 [pt_PT]
 06=Vistas
@@ -1492,6 +1508,8 @@ ff=Română
 1c=Ошибки сервера
 80=Общедоступные папки
 ff=русский
+Archive=Архив
+ConversationHistory=Журнал бецед
 
 [sd]
 0a=موڪليل شئيون
@@ -1969,6 +1987,8 @@ ff=Tiếng Việt
 1c=服务器故障
 80=公用文件夹
 ff=中文(简体)
+Archive=存档
+ConversationHistory=会话历史
 
 [zh_TW]
 07=一般檢視
@@ -1991,3 +2011,5 @@ ff=中文(简体)
 1c=伺服器失敗
 80=公用資料夾
 ff=繁體中文
+Archive=封存
+ConversationHistory=交談歷程記錄
