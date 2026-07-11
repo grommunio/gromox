@@ -330,8 +330,9 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 				persona.PersonaType = "Person";
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
 					persona.DisplayName = std::move(val);
-				if (node.fetch_prop(PR_SMTP_ADDRESS, val) == ecSuccess)
-					persona.EmailAddress = std::move(val);
+				if (auto email = node.user_info(ab_tree::userinfo::mail_address);
+				    email != nullptr && *email != '\0')
+					persona.EmailAddress = email;
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
 				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
