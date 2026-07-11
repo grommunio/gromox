@@ -815,8 +815,8 @@ struct tPersona : public NS_EWS_Types {
 
 	void serialize(tinyxml2::XMLElement *) const;
 
-	std::optional<std::string> DisplayName, EmailAddress, Title, Nickname,
-		BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
+	std::optional<std::string> PersonaType, DisplayName, EmailAddress, Title,
+		Nickname, BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
 };
 
 /**

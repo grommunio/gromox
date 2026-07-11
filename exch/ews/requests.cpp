@@ -320,6 +320,14 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 				ab_tree::ab_node node(base.get(), mid);
 				tPersona persona;
 				std::string val;
+				/*
+				 * Outlook Mac silently discards personas with
+				 * no PersonaType, even when DisplayName/
+				 * EmailAddress are populated - it has no way
+				 * to classify the suggestion, so it never
+				 * offers it in the autocomplete list.
+				 */
+				persona.PersonaType = "Person";
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
 					persona.DisplayName = std::move(val);
 				if (node.fetch_prop(PR_SMTP_ADDRESS, val) == ecSuccess)
