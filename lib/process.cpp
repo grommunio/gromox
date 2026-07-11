@@ -118,42 +118,24 @@ errno_t filedes_limit_bump(size_t max)
  * their freed pages mapped, so RSS otherwise stays at the high-water of the
  * busiest burst (reusable, not leaked, but resident) until the process exits.
  */
-void *heap_reaper::thread_entry()
-{
-	pthread_setname_np(pthread_self(), "heap_reaper");
-	do {
-		auto secs = m_intv.load();
-		if (secs == 0)
-			break;
-		sleep(secs);
-#ifdef __GLIBC__
-		malloc_trim(0);
-#endif
-	} while (true);
-	return nullptr;
-}
-
-heap_reaper::heap_reaper(unsigned int sec) : m_intv(sec)
+heap_reaper::heap_reaper(unsigned int sec)
 {
 	/* this function has to die */
 #ifdef __GLIBC__
 	if (sec == 0)
 		return;
-	auto entry = [](void *a) { return static_cast<heap_reaper *>(a)->thread_entry(); };
-	auto ret = pthread_create4(&m_thr_id, nullptr, entry, this);
+	auto ret = global_workqueue.insert_task("heap_reaper",
+	           std::chrono::seconds(sec), [](std::any &) { malloc_trim(0); });
 	if (ret != 0)
-		mlog(LV_WARN, "cannot start heap reaper thread: %s", strerror(ret));
+		mlog(LV_WARN, "cannot start heap reaper task: %s", strerror(ret));
 #endif
 }
 
 heap_reaper::~heap_reaper()
 {
-	m_intv = 0;
-	if (!pthread_equal(m_thr_id, {})) {
-		pthread_kill(m_thr_id, SIGALRM);
-		pthread_join(m_thr_id, nullptr);
-		m_thr_id = {};
-	}
+#ifdef __GLIBC__
+	global_workqueue.delete_task("heap_reaper");
+#endif
 }
 
 /**
