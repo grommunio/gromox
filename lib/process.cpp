@@ -5,6 +5,8 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
+#include <any>
 #include <cassert>
 #include <cerrno>
 #include <csignal>
@@ -13,12 +15,16 @@
 #include <cstring>
 #include <fcntl.h>
 #include <memory>
+#include <mutex>
 #include <pthread.h>
 #include <sched.h>
 #include <spawn.h>
 #include <string>
 #include <thread>
 #include <unistd.h>
+#ifdef __GNUC__
+#	include <cxxabi.h>
+#endif
 #ifdef __GLIBC__
 #	include <execinfo.h>
 #	include <malloc.h>
@@ -63,6 +69,7 @@
 #include <gromox/process.hpp>
 #include <gromox/socketpass.hpp>
 #include <gromox/util.hpp>
+#include <gromox/workqueue.hpp>
 
 using namespace gromox;
 
@@ -73,6 +80,7 @@ extern char **environ;
 namespace gromox {
 
 static int gx_reexec_top_fd = -1;
+workqueue global_workqueue;
 
 errno_t filedes_limit_bump(size_t max)
 {
@@ -955,6 +963,159 @@ errno_t socketpass_receive(int channel, std::string &pkt, int &client_fd) try
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ENOMEM;
+}
+
+workqueue::~workqueue()
+{
+	if (this == &global_workqueue && !m_tasklist.empty())
+		mlog(LV_WARN, "%s: global_wq ought to be empty at global destruction, but it's not: \"%s\"",
+			__func__, m_tasklist.front().name);
+	stop();
+}
+
+void workqueue::stop()
+{
+	if (pthread_equal(m_thrid, {}))
+		return;
+	m_stop = true;
+	m_cv.notify_one();
+	pthread_join(m_thrid, nullptr);
+	m_thrid = {};
+}
+
+void workqueue::mainloop()
+{
+	while (!m_stop) {
+		/* Wait until the right time */
+		std::unique_lock lk(m_tasklock);
+		if (m_tasklist.empty())
+			m_cv.wait(lk, [this]() { return m_stop || m_tasklist.size() > 0; });
+		else
+			m_cv.wait_until(lk, m_tasklist.front().start_time);
+
+		if (m_stop)
+			break;
+		if (m_tasklist.empty())
+			continue; /* Task got deleted while we slept */
+		auto now = tp_now();
+		auto tsk = m_tasklist.begin();
+		if (now < tsk->start_time)
+			continue; /* Not ready yet */
+
+		/*
+		 * tsk is going invalid with lk.unlock. Move important parts to
+		 * the local scope. The task must stay in the list though, so
+		 * the duplicate name check still works.
+		 */
+		auto func   = std::move(tsk->func);
+		auto obj    = std::move(tsk->obj);
+		auto period = tsk->period;
+		auto name   = tsk->name;
+
+		/* Execute this task now */
+		lk.unlock();
+		try {
+			func(obj);
+		} catch (const std::bad_any_cast &) {
+			mlog(LV_ERR, "%s: Uncaught std::bad_any_cast in wq task %s", __func__, name);
+		} catch (...) {
+#ifdef __GNUC__
+			auto ti = __cxxabiv1::__cxa_current_exception_type();
+			mlog(LV_ERR, "%s: Uncaught exception %s in task %s",
+				__func__, ti->name(), name);
+#else
+			mlog(LV_ERR, "%s: Uncaught exception in task %s", __func__, name);
+#endif
+		}
+		if (period == time_duration{}) {
+			/* That was a run-once task */
+			delete_task(name);
+#ifdef COVERITY
+			/* <https://github.com/llvm/llvm-project/issues/204304> */
+			lk.lock();
+#endif
+			continue;
+		}
+
+		auto next_time = tp_now() + period;
+		lk.lock();
+		/*
+		 * Position in vector may have changed, so a re-lookup is needed.
+		 * Comparing the name by pointer value is sufficient.
+		 */
+		tsk = std::find_if(m_tasklist.begin(), m_tasklist.end(),
+		      [&](const task &t) { return t.name == name; });
+		if (tsk == m_tasklist.end())
+			continue;
+		auto ip = std::upper_bound(m_tasklist.begin(),
+		          m_tasklist.end(), next_time,
+		          [](time_point p, const task &t) { return p < t.start_time; });
+		if (tsk < ip)
+			std::rotate(tsk, tsk + 1, ip);
+		else
+			std::rotate(ip, tsk, tsk + 1);
+		tsk->start_time = std::move(next_time);
+		tsk->func = std::move(func);
+		tsk->obj = std::move(obj);
+	}
+}
+
+errno_t workqueue::launch_ondemand()
+{
+	std::unique_lock lk(m_thrlock);
+	if (!pthread_equal(m_thrid, {}))
+		return 0; /* already running */
+
+	auto raw_entry = [](void *arg) -> void * {
+		pthread_setname_np(pthread_self(), "gl_workqueue");
+		static_cast<workqueue *>(arg)->mainloop();
+		return nullptr;
+	};
+	auto err = pthread_create(&m_thrid, nullptr, raw_entry, this);
+	if (err == 0)
+		return 0;
+	mlog(LV_ERR, "workqueue::launch: pthread_create: %s", strerror(err));
+	return err;
+}
+
+bool workqueue::task_exists(const char *name) const
+{
+	return std::any_of(m_tasklist.cbegin(), m_tasklist.cend(),
+	       [&](const struct task &task) { return strcmp(task.name, name) == 0; });
+}
+
+void workqueue::delete_task(const char *name)
+{
+	bool empty = false;
+	{
+		std::unique_lock lk(m_tasklock);
+		std::erase_if(m_tasklist, [&](const struct task &task) {
+			return strcmp(task.name, name) == 0;
+		});
+		empty = m_tasklist.empty();
+	}
+	if (empty)
+		stop();
+}
+
+errno_t workqueue::insert_task(const char *name, std::chrono::nanoseconds period,
+    void (*func)(std::any &), std::any &&obj)
+{
+	auto start_time = tp_now();
+
+	{
+		std::unique_lock lk(m_tasklock);
+		if (task_exists(name))
+			return EEXIST;
+		auto here = std::upper_bound(m_tasklist.begin(), m_tasklist.end(),
+		            start_time,
+		            [](time_point tp, const struct workqueue::task &task) {
+		            	return tp < task.start_time;
+		            });	
+		m_tasklist.emplace(here, start_time, period, std::move(obj), func, name);
+		m_cv.notify_one();
+	}
+	return launch_ondemand();
 }
 
 } /* namespace gromox */
