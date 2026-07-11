@@ -1119,6 +1119,7 @@ void tImAddressDictionaryEntry::serialize(tinyxml2::XMLElement *xml) const
 
 void tPersona::serialize(XMLElement *xml) const
 {
+	XMLDUMPT(PersonaType);
 	XMLDUMPT(DisplayName);
 	XMLDUMPT(EmailAddress);
 	XMLDUMPT(Title);

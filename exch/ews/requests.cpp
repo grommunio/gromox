@@ -320,10 +320,27 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 				ab_tree::ab_node node(base.get(), mid);
 				tPersona persona;
 				std::string val;
+				/*
+				 * Outlook Mac silently discards personas with
+				 * no PersonaType, even when DisplayName/
+				 * EmailAddress are populated - it has no way
+				 * to classify the suggestion, so it never
+				 * offers it in the autocomplete list.
+				 */
+				persona.PersonaType = "Person";
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
 					persona.DisplayName = std::move(val);
-				if (node.fetch_prop(PR_SMTP_ADDRESS, val) == ecSuccess)
-					persona.EmailAddress = std::move(val);
+				/*
+				 * PR_SMTP_ADDRESS is never present in the
+				 * ab_tree node's generic propvals map (unlike
+				 * ResolveNames, which correctly uses this
+				 * dedicated accessor) - fetch_prop() here
+				 * always missed, leaving personas with no
+				 * usable address for Outlook to autocomplete.
+				 */
+				if (auto email = node.user_info(ab_tree::userinfo::mail_address);
+				    email != nullptr && *email != '\0')
+					persona.EmailAddress = email;
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
 				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
