@@ -1117,10 +1117,18 @@ void tImAddressDictionaryEntry::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPA(Key);
 }
 
+void tPersonaId::serialize(XMLElement *xml) const
+{
+	XMLDUMPA(Id);
+}
+
 void tPersona::serialize(XMLElement *xml) const
 {
+	XMLDUMPT(PersonaId);
 	XMLDUMPT(PersonaType);
 	XMLDUMPT(DisplayName);
+	XMLDUMPT(GivenName);
+	XMLDUMPT(Surname);
 	XMLDUMPT(EmailAddress);
 	XMLDUMPT(Title);
 	XMLDUMPT(Nickname);
@@ -1128,6 +1136,7 @@ void tPersona::serialize(XMLElement *xml) const
 	XMLDUMPT(MobilePhoneNumber);
 	XMLDUMPT(HomeAddress);
 	XMLDUMPT(Comment);
+	XMLDUMPT(RelevanceScore);
 }
 
 tPullSubscriptionRequest::tPullSubscriptionRequest(const tinyxml2::XMLElement *xml) :
@@ -2415,16 +2424,13 @@ mFindPeopleRequest::mFindPeopleRequest(const XMLElement *xml) :
 	XMLINIT(QueryString)
 {}
 
-void mFindPeopleResponseMessage::serialize(XMLElement *xml) const
+void mFindPeopleResponse::serialize(XMLElement *xml) const
 {
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(People);
 	XMLDUMPM(TotalNumberOfPeopleInView);
-}
-
-void mFindPeopleResponse::serialize(XMLElement *xml) const
-{
-	XMLDUMPM(ResponseMessages);
+	XMLDUMPM(FirstMatchingRowIndex);
+	XMLDUMPM(FirstLoadedRowIndex);
 }
 
 mGetPersonaRequest::mGetPersonaRequest(const XMLElement *xml) :
