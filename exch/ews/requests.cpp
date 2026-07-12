@@ -306,7 +306,7 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 	response->SetName("m:FindPeopleResponse");
 
 	mFindPeopleResponse data;
-	auto &msg = data.ResponseMessages.emplace_back();
+	auto &msg = data;
 	const char *user = znul(ctx.auth_info().username);
 	const char *at = strchr(user, '@');
 	std::string domain = at ? at + 1 : user;
@@ -330,9 +330,30 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 				persona.PersonaType = "Person";
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
 					persona.DisplayName = std::move(val);
+				if (node.fetch_prop(PR_GIVEN_NAME, val) == ecSuccess)
+					persona.GivenName = std::move(val);
+				if (node.fetch_prop(PR_SURNAME, val) == ecSuccess)
+					persona.Surname = std::move(val);
 				if (auto email = node.user_info(ab_tree::userinfo::mail_address);
-				    email != nullptr && *email != '\0')
-					persona.EmailAddress = email;
+				    email != nullptr && *email != '\0') {
+					tEmailAddressType addr;
+					addr.Name         = persona.DisplayName;
+					addr.EmailAddress = email;
+					addr.RoutingType  = "SMTP";
+					addr.MailboxType  = Enum::Mailbox;
+					persona.EmailAddress = std::move(addr);
+					/*
+					 * Exchange also always includes a PersonaId.
+					 * This will not be a real MAPI EntryID here,
+					 * just a stable opaque handle derived from the
+					 * address, enough for Outlook to accept the
+					 * entry as resolvable/insertable.
+					 */
+					tPersonaId pid;
+					pid.Id = base64_encode(email);
+					persona.PersonaId = std::move(pid);
+					persona.RelevanceScore = UINT32_MAX;
+				}
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
 				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
@@ -355,13 +376,25 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 					msg.People->emplace_back(std::move(persona));
 				}
 			}
-			if (msg.People)
-				msg.TotalNumberOfPeopleInView = msg.People->size();
+		}
+
+		if (msg.People) {
+			msg.TotalNumberOfPeopleInView = msg.People->size();
+			/*
+			 * Outlook Mac's autocomplete always requests a paged
+			 * view (IndexedPageItemView). Capturing Exchange shows
+			 * EXC always includes FirstMatchingRowIndex/
+			 * FirstLoadedRowIndex alongside
+			 * TotalNumberOfPeopleInView, even for a single-page
+			 * result. We do not implement actual paging, so both
+			 * are always the start of (and only) page.
+			 */
+			msg.FirstMatchingRowIndex = 0;
+			msg.FirstLoadedRowIndex = 0;
 		}
 	} catch (const EWSError &err) {
-		data.ResponseMessages.clear();
-		data.ResponseMessages.emplace_back(err);
-		data.serialize(response);
+		mFindPeopleResponse errdata(err);
+		errdata.serialize(response);
 		return;
 	}
 
@@ -393,15 +426,24 @@ void process(mGetPersonaRequest &&request, XMLElement *response, const EWSContex
 				ab_tree::ab_node node(it);
 				if (node.hidden() & AB_HIDE_RESOLVE)
 					continue;
+				auto email = node.user_info(ab_tree::userinfo::mail_address);
+				if (email == nullptr || *email == '\0' ||
+				    strcasecmp(email, target.c_str()) != 0)
+					continue;
 				std::string val;
-				if (node.fetch_prop(PR_SMTP_ADDRESS, val) != ecSuccess)
-					continue;
-				if (strcasecmp(val.c_str(), target.c_str()) != 0)
-					continue;
 				tPersona persona;
-				persona.EmailAddress = std::move(val);
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
 					persona.DisplayName = std::move(val);
+				tEmailAddressType addr;
+				addr.Name = persona.DisplayName;
+				addr.EmailAddress = email;
+				addr.RoutingType = "SMTP";
+				addr.MailboxType = Enum::Mailbox;
+				persona.EmailAddress = std::move(addr);
+				tPersonaId pid;
+				pid.Id = base64_encode(email);
+				persona.PersonaId = std::move(pid);
+				persona.PersonaType = "Person";
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
 				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
