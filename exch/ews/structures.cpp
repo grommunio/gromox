@@ -1691,17 +1691,29 @@ sFolder tBaseFolderType::create(const sShape& shape)
 		if (frType && *frType == FOLDER_SEARCH) {
 			folderType = SEARCH;
 		} else if (frClass) {
+			/*
+			 * When an existing mailbox predates PRIVATE_FID_RECIPIENT_CACHE
+			 * being provisioned, Outlook creates its own "Recipient Cache"
+			 * folder client-side with a generic frClass (not IPF.Contact*),
+			 * so the PidTagFolderId check above doesn't catch it. Recognize
+			 * it by display name instead - checked against every language
+			 * data/folder_names.txt has a translation for (0x20), not just
+			 * English/French, since Outlook names the folder in the
+			 * mailbox owner's configured language.
+			 */
+			static constexpr const char *recipient_cache_names[] = {
+				"Recipient Cache", "Cache des destinataires",
+				"Empfängercache", "Caché de destinatarios",
+				"Cache destinatari",
+			};
 			const char *dn = shape.get<char>(PR_DISPLAY_NAME);
+			bool is_recipient_cache = dn != nullptr && std::any_of(
+				std::begin(recipient_cache_names), std::end(recipient_cache_names),
+				[&](const char *name) { return strcmp(dn, name) == 0; });
 
 			if (class_match_prefix(frClass, "IPF.Appointment") == 0)
 				folderType = CALENDAR;
-			else if (
-				class_match_prefix(frClass, "IPF.Contact") == 0 ||
-					(dn && (
-						strcmp(dn, "Cache des destinataires") == 0 ||
-						strcmp(dn, "Recipient Cache") == 0
-					))
-			)
+			else if (class_match_prefix(frClass, "IPF.Contact") == 0 || is_recipient_cache)
 				folderType = CONTACTS;
 			else if (class_match_prefix(frClass, "IPF.Task") == 0)
 				folderType = TASKS;
