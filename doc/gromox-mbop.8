@@ -62,6 +62,8 @@ get\-photo: retrieve user image from store and print to stdout
 get\-websettings, get\-websettings\-persistent, get\-websettings\-recipients:
 retrieve settings for grommunio-web
 .IP \(bu 4
+movemsg: move or copy a message between folders
+.IP \(bu 4
 ping: cause a mailbox's sqlite files to be opened
 .IP \(bu 4
 purge\-datafiles: remove orphaned attachments/content files from disk
@@ -350,6 +352,28 @@ a summary will be shown there.
 \fBget\-websettings\-recipients >\fP\fIautocomplete.json\fP
 .SS Description
 Reads various grommunio-web settings from the store and dumps it to stdout.
+.SH movemsg
+.SS Synopsis
+\fBmovemsg \-f\fP \fIfolder_spec\fP \fB\-t\fP \fIfolder_spec\fP
+[\fB\-\-copy\fP] \fImsgid\fP[\fB,\fP...]
+.SS Description
+Moves, or with \fB\-\-copy\fP, copies one or more messages from one folder to
+another within the same store.
+.PP
+The message IDs taken as arguments on the command-line should be
+of the GC-value form, i.e. as they appear in the SQLite database.
+(For details about GCV, see glossary.rst in the source distribution.)
+.SS Subcommand options
+.TP
+\fB-f\fP \fIfolder_spec\fP
+The source folder. See section "Folder specification" below for syntax
+details of \fIfolder_spec\fP.
+.TP
+\fB-t\fP \fIfolder_spec\fP
+The destination folder.
+.TP
+\fB\-\-copy\fP
+Copy the messages instead of moving them.
 .SH ping
 Causes the respective mailbox to be opened by the server. (Any request to the
 information storage server causes the respective mailbox to be opened; and ping
