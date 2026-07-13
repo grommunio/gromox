@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -20,6 +21,7 @@
 #include <typeinfo>
 #include <utility>
 #include <vector>
+#include <gromox/workqueue.hpp>
 #if defined(HAVE_CRYPT_H)
 #	include <crypt.h>
 #endif
@@ -528,13 +530,7 @@ errno_t mysql_plugin::get_homeserver_for_dir(const char *dir, bool *is_pvt,
 
 mysql_plugin::~mysql_plugin()
 {
-	{
-		std::lock_guard lk(m_reaper_mtx);
-		m_reaper_stop = true;
-	}
-	m_reaper_cv.notify_one();
-	if (m_reaper.joinable())
-		m_reaper.join();
+	global_workqueue.delete_task("sqlpool_reap");
 }
 
 /**
@@ -546,21 +542,25 @@ mysql_plugin::~mysql_plugin()
  * otherwise each park an open connection indefinitely and collectively exhaust
  * the SQL server's connection limit.
  */
-void mysql_plugin::reaper_main()
+int mysql_plugin::run()
 {
-	pthread_setname_np(pthread_self(), "sqlpool_reap");
-	std::unique_lock lk(m_reaper_mtx);
-	while (!m_reaper_stop) {
-		m_reaper_cv.wait_for(lk, std::chrono::seconds(60), [&]() { return m_reaper_stop; });
-		if (m_reaper_stop)
-			break;
-		auto ttl = g_parm.pool_idle_timeout;
-		if (ttl <= 0)
-			continue;
-		lk.unlock();
-		g_sqlconn_pool.drop_idle(std::chrono::seconds(ttl));
-		lk.lock();
+	auto ret = gromox::global_workqueue.insert_task("sqlpool_reap",
+	           std::chrono::minutes(1), [](std::any &self1) {
+	           	auto self = std::any_cast<mysql_plugin *>(self1);
+	           	auto ttl = self->g_parm.pool_idle_timeout;
+	           	if (ttl <= 0)
+	           		return;
+	           	self->g_sqlconn_pool.drop_idle(std::chrono::seconds(ttl));
+	           }, this);
+	if (ret != 0) {
+		mlog(LV_ERR, "%s: sqlpool_reap start: %s", __func__, strerror(ret));
+		return -1;
 	}
+	if (g_parm.schema_upgrade == SSU_NOT_ME)
+		return 0;
+	if (!db_upgrade_check())
+		return -1;
+	return 0;
 }
 
 void mysql_plugin::init(mysql_adaptor_init_param &&parm)
