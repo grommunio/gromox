@@ -53,6 +53,12 @@ using namespace mysql_adaptor;
 
 int mysql_plugin::run()
 {
+	if (!m_reaper.joinable()) try {
+		m_reaper = std::thread(&mysql_plugin::reaper_main, this);
+	} catch (const std::system_error &e) {
+		mlog(LV_ERR, "E-2015: pthread_create: %s", e.what());
+		return -1;
+	}
 	if (g_parm.schema_upgrade == SSU_NOT_ME)
 		return 0;
 	if (!db_upgrade_check())
@@ -64,8 +70,10 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
     sql_meta_result &mres) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn)
+	if (!conn) {
+		mres.errstr = "SQL database unavailable";
 		return EIO;
+	}
 	auto q_user = conn->quote(username);
 	std::string q_where = str_isascii(username) ?
 	                      ("u.username='" + q_user + "'") : "0"s;
@@ -123,8 +131,10 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='" + q_user + "'"
 		" LEFT JOIN aliases AS ali ON u.username=ali.mainname AND ali.aliasname='" + q_user + "'"
 		" WHERE ali.aliasname='" + q_user + "' LIMIT 2) LIMIT 2";
-	if (!conn->query(qstr))
+	if (!conn->query(qstr)) {
+		mres.errstr = "SQL query error";
 		return EIO;
+	}
 	auto pmyres = conn->store_result();
 	if (pmyres == nullptr) {
 		mres.errstr = "Could not store SQL result";
@@ -132,10 +142,10 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 	}
 	conn.finish();
 	if (pmyres.num_rows() > 1) {
-		mres.errstr = fmt::format("Login name is ambiguous", username);
+		mres.errstr = fmt::format("Login name \"{}\" is ambiguous", username);
 		return ENOENT;
 	} else if (pmyres.num_rows() != 1) {
-		mres.errstr = fmt::format("No such user", username);
+		mres.errstr = fmt::format("No such user \"{}\"", username);
 		return ENOENT;
 	}
 

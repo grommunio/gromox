@@ -1,7 +1,10 @@
 #pragma once
+#include <condition_variable>
 #include <cstring>
+#include <mutex>
 #include <mysql.h>
 #include <string>
+#include <thread>
 #include <vector>
 #include <gromox/database_mysql.hpp>
 #include <gromox/mysql_adaptor.hpp>
@@ -43,6 +46,7 @@ struct sqlconnpool final : public gromox::resource_pool<sqlconn> {
 
 struct mysql_plugin final {
 	public:
+	~mysql_plugin();
 	void init(mysql_adaptor_init_param &&);
 	int run();
 	bool reload_config(std::shared_ptr<config_file> &&);
@@ -91,6 +95,14 @@ struct mysql_plugin final {
 
 	mysql_adaptor_init_param g_parm;
 	sqlconnpool g_sqlconn_pool;
+
+	private:
+	void reaper_main();
+
+	std::thread m_reaper;
+	std::mutex m_reaper_mtx;
+	std::condition_variable m_reaper_cv;
+	bool m_reaper_stop = false;
 };
 
 }

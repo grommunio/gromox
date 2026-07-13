@@ -91,6 +91,7 @@ struct instance_node {
 
 	uint32_t instance_id = 0, parent_id = 0, folder_id = 0, last_id = 0;
 	cpid_t cpid = CP_ACP;
+	uint64_t orig_msg_gcv = 0; /* for debug printing only */
 	enum instance_type type = instance_type::message;
 	BOOL b_new = false;
 	uint8_t change_mask{};

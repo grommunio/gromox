@@ -181,24 +181,28 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
  *
  * @prefix:  a mailbox directory
  * @pvt:     returns whether the directory refers to a private or public store
+ *
+ * Returns 0 if local, ENOENT if (known to be) served elsewhere, or another
+ * errno for transient infrastructure failures (e.g. SQL unavailable), which
+ * callers should not present as a permanent misconfiguration.
  */
-static bool exmdb_parser_is_local(const char *prefix, bool *pvt)
+static errno_t exmdb_parser_is_local(const char *prefix, bool *pvt)
 {
 	if (*prefix == '\0')
-		return true;
+		return 0;
 	std::string hostname;
 	auto err = mysql_adaptor_get_homeserver_for_dir(prefix, pvt, hostname);
 	if (err == ENOENT)
-		return false;
+		return ENOENT;
 	if (err != 0) {
 		mlog(LV_ERR, "%s: %s: %s", __func__, prefix, strerror(err));
-		return false;
+		return err;
 	}
 	if (hostname == g_host_id || hostname.empty())
-		return true;
+		return 0;
 	mlog(LV_ERR, "exmdb: is_local: %s not served here (%s) (but by %s)",
 		prefix, g_host_id.c_str(), hostname.c_str());
-	return false;
+	return ENOENT;
 }
 
 static BOOL exmdb_parser_dispatch3(const exreq *q0, std::unique_ptr<exresp> &r0)
@@ -372,8 +376,11 @@ static int rqi_connect(parser_params &param, const exreq_connect &q,
 	if (!param.single_user.empty() &&
 	    strcmp(param.single_user.c_str(), q.dir) != 0)
 		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
-	if (!exmdb_parser_is_local(q.dir, &param.b_private))
+	auto lcl = exmdb_parser_is_local(q.dir, &param.b_private);
+	if (lcl == ENOENT)
 		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
+	else if (lcl != 0)
+		return rqi_terminate(conn, exmdb_response::service_unavailable);
 	else if (!!param.b_private != !!q.b_private)
 		return rqi_terminate(conn, exmdb_response::misconfig_mode);
 	if (param.use_workers && handoff_just_one(q.dir))
@@ -800,18 +807,32 @@ void exmdb_listener_stop()
 		futs.emplace_back(std::async(spw_clean));
 }
 
+/**
+ * Returns a negative value to indicate that the caller (exmdb_pickup_loop)
+ * should cease operation (e.g. because the socket peer has ended
+ * transmissions), or 0 to continue.
+ */
 static int exmdb_pickup_one(int control_fd)
 {
 	auto par = std::make_unique<parser_params>();
 	int client_fd = -1;
 	auto ern = socketpass_receive(control_fd, par->injected_pkt, client_fd);
 	if (ern == EINTR || ern == EAGAIN)
+		/*
+		 * Possibly as a result of Ctrl-C-ing the daemon or thread kick
+		 * (SIGALRM)
+		 */
 		return 0;
 	if (ern != 0)
 		return -1;
+	if (client_fd < 0)
+		return 0;
 	g_dbengine_wanttoend = false;
+	/* Bring the fd under management (wrapfd) */
 	par->conn = std::make_shared<exmdb_connection>(generic_connection::takeover(std::move(client_fd)));
 	if (par->conn->sockd < 0)
+		return 0;
+	if (par->injected_pkt.empty())
 		return 0;
 
 	/* reprise of exmdb_parser_insert_conn */

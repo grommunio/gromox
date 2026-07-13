@@ -256,6 +256,51 @@ static bool should_move_to_junk(const MAIL &mail)
 	return false;
 }
 
+/*
+ * RFC 5230 §4.5: respond only when one of the recipient's addresses is
+ * present in To/Cc/Bcc, i.e. not when the message arrived by way of a
+ * distribution group or mailing list.
+ */
+static bool rcpt_directly_addressed(const char *envelope_to,
+    const char *username, const message_content &ct) try
+{
+	auto rcpts = ct.children.prcpts;
+	if (rcpts == nullptr)
+		return false;
+	std::vector<const char *> hdr_addrs;
+	for (const auto &rcpt : *rcpts) {
+		auto rtype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rtype == nullptr || (*rtype != MAPI_TO &&
+		    *rtype != MAPI_CC && *rtype != MAPI_BCC))
+			continue;
+		auto addr = rcpt.get<const char>(PR_SMTP_ADDRESS);
+		if (addr == nullptr) {
+			auto atype = rcpt.get<const char>(PR_ADDRTYPE);
+			if (atype != nullptr && strcasecmp(atype, "SMTP") == 0)
+				addr = rcpt.get<const char>(PR_EMAIL_ADDRESS);
+		}
+		if (addr == nullptr)
+			continue;
+		if (strcasecmp(addr, envelope_to) == 0 ||
+		    strcasecmp(addr, username) == 0)
+			return true;
+		hdr_addrs.push_back(addr);
+	}
+	if (hdr_addrs.empty())
+		return false;
+	std::vector<std::string> aliases;
+	if (!mysql_adaptor_get_user_aliases(username, aliases))
+		return false;
+	for (const auto &alias : aliases)
+		for (auto addr : hdr_addrs)
+			if (strcasecmp(alias.c_str(), addr) == 0)
+				return true;
+	return false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
+}
+
 delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
     const char *address) try
 {
@@ -379,6 +424,12 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		    pmsg->proplist.has(PR_LIST_UNSUBSCRIBE) ||
 		    pmsg->proplist.has(PR_LIST_UNSUBSCRIBE_A))
 			suppress_mask |= AUTO_RESPONSE_SUPPRESS_ALL;
+		if (!(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF) &&
+		    !rcpt_directly_addressed(address, mres.username.c_str(), *pmsg)) {
+			suppress_mask |= AUTO_RESPONSE_SUPPRESS_OOF;
+			exmdb_local_log_info(pcontext->ctrl, address, LV_DEBUG,
+				"OOF reply suppressed: recipient not directly addressed");
+		}
 		auto flag = pmsg->proplist.get<const uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 		if (flag != nullptr && *flag != 0) {
 			b_bounce_delivered = TRUE;

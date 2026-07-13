@@ -245,6 +245,7 @@ class EWSPlugin {
 			return res.second;
 		}
 
+		bool bump(const CacheKey &, std::chrono::milliseconds);
 		CacheObj get(const CacheKey &) const;
 		CacheObj get(const CacheKey &, std::chrono::milliseconds);
 		void evict(const CacheKey &);

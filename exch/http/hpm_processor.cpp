@@ -137,6 +137,12 @@ static void hpm_processor_wakeup_context(unsigned int context_id)
 	phttp->hpm_wakeup_pending = true;
 	if (phttp->sched_stat != hsched_stat::wait)
 		return;
+	/*
+	 * The wakeup is delivered through the wait->wrrep transition below, so
+	 * consume the latch again; otherwise the next park would treat it as a
+	 * missed wakeup and re-poll a second time.
+	 */
+	phttp->hpm_wakeup_pending = false;
 	phttp->sched_stat = hsched_stat::wrrep;
 	contexts_pool_signal(phttp);
 }

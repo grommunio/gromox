@@ -1184,6 +1184,13 @@ void EWSPlugin::unsubscribe(const detail::ExmdbSubscriptionKey& key) const
  */
 void EWSPlugin::wakeContext(detail::ContextKey ID, std::chrono::milliseconds timeout) const
 {
+	/*
+	 * Reschedule an existing timer instead of emplacing a second one:
+	 * emplace would fail and drop the new WakeupNotify, whose destructor
+	 * fires an immediate spurious wakeup.
+	 */
+	if (cache.bump(ID, timeout))
+		return;
 	cache.emplace(timeout, ID, std::make_shared<WakeupNotify>(ID));
 }
 
@@ -1275,6 +1282,30 @@ void EWSPlugin::ObjectCache::stop()
 	running = false;
 	notify.notify_all();
 	scanThread.join();
+}
+
+/**
+ * @brief      Move expiry of a cached object closer
+ *
+ * The new lifespan is only applied if it ends before the current expiry,
+ * i.e. an already scheduled earlier expiry is never delayed.
+ *
+ * @param      key       Object key
+ * @param      lifespan  Maximum remaining lifespan
+ *
+ * @return     true if the object exists, false otherwise
+ */
+bool EWSPlugin::ObjectCache::bump(const CacheKey &key,
+    std::chrono::milliseconds lifespan)
+{
+	std::lock_guard guard(objectLock);
+	auto it = objects.find(key);
+	if (it == objects.end())
+		return false;
+	auto expire = tp_now() + lifespan;
+	if (expire < it->second.first)
+		it->second.first = expire;
+	return true;
 }
 
 /**

@@ -153,6 +153,10 @@ MYSQL *mysql_plugin::sql_make_conn()
 	if (g_parm.timeout > 0) {
 		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &g_parm.timeout);
 		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &g_parm.timeout);
+		mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &g_parm.timeout);
+	} else {
+		unsigned int connect_timeout = 20;
+		mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
 	}
 	if (!g_parm.certfile.empty())
 		mysql_options(conn, MYSQL_OPT_SSL_CERT, g_parm.certfile.c_str());
@@ -522,6 +526,43 @@ errno_t mysql_plugin::get_homeserver_for_dir(const char *dir, bool *is_pvt,
 	return -ENOMEM;
 }
 
+mysql_plugin::~mysql_plugin()
+{
+	{
+		std::lock_guard lk(m_reaper_mtx);
+		m_reaper_stop = true;
+	}
+	m_reaper_cv.notify_one();
+	if (m_reaper.joinable())
+		m_reaper.join();
+}
+
+/**
+ * Close pooled SQL connections that have sat unused for
+ * mysql_pool_idle_timeout. Connections are reopened on demand (cf.
+ * sqlconnpool::get_wait, sqlconn::query), so this only affects processes which
+ * have genuinely stopped talking to the database - important with
+ * istore_standalone, where hundreds of per-store worker processes would
+ * otherwise each park an open connection indefinitely and collectively exhaust
+ * the SQL server's connection limit.
+ */
+void mysql_plugin::reaper_main()
+{
+	pthread_setname_np(pthread_self(), "sqlpool_reap");
+	std::unique_lock lk(m_reaper_mtx);
+	while (!m_reaper_stop) {
+		m_reaper_cv.wait_for(lk, std::chrono::seconds(60), [&]() { return m_reaper_stop; });
+		if (m_reaper_stop)
+			break;
+		auto ttl = g_parm.pool_idle_timeout;
+		if (ttl <= 0)
+			continue;
+		lk.unlock();
+		g_sqlconn_pool.drop_idle(std::chrono::seconds(ttl));
+		lk.lock();
+	}
+}
+
 void mysql_plugin::init(mysql_adaptor_init_param &&parm)
 {
 	g_parm = std::move(parm);
@@ -552,6 +593,7 @@ static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 	{"mysql_dbname", "email"},
 	{"mysql_host", "localhost"},
 	{"mysql_password", ""},
+	{"mysql_pool_idle_timeout", "10min", CFG_TIME},
 	{"mysql_port", "3306"},
 	{"mysql_rdwr_timeout", "0", CFG_TIME},
 	{"mysql_tls_cert", ""},
@@ -586,6 +628,7 @@ bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&cfg)
 		par.pass = sss_obf_reverse(base64_decode(p2));
 	par.dbname = cfg->get_value("mysql_dbname");
 	par.timeout = cfg->get_ll("mysql_rdwr_timeout");
+	par.pool_idle_timeout = cfg->get_ll("mysql_pool_idle_timeout");
 	mlog(LV_INFO, "mysql_adaptor: host [%s]:%d, #conn=%d timeout=%d, db=%s",
 	       par.host.size() == 0 ? "*" : par.host.c_str(), par.port,
 	       par.conn_num, par.timeout, par.dbname.c_str());
