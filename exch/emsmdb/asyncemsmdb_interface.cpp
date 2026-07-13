@@ -310,8 +310,9 @@ static void *aemsi_thrwork(void *param)
 static void aemsi_scanwork(std::any &)
 {
 	std::vector<std::shared_ptr<ASYNC_WAIT>> tl;
+	auto cur_time = time(nullptr);
+
 	{
-		auto cur_time = time(nullptr);
 		std::unique_lock as_hold(g_async_lock);
 		for (auto iter = g_tag_hash.cbegin(); iter != g_tag_hash.end(); ){
 			auto pwait = iter->second;
@@ -324,11 +325,10 @@ static void aemsi_scanwork(std::any &)
 			if (pwait->async_id != 0)
 				g_async_hash.erase(pwait->async_id);
 		}
-		as_hold.unlock();
-		while (tl.size() > 0) {
-			auto pwait = std::move(tl.front());
-			tl.erase(tl.begin());
-			asyncemsmdb_interface_activate(std::move(pwait), false);
-		}
+	}
+	while (tl.size() > 0) {
+		auto pwait = std::move(tl.front());
+		tl.erase(tl.begin());
+		asyncemsmdb_interface_activate(std::move(pwait), false);
 	}
 }
