@@ -21,6 +21,7 @@
 #include <gromox/proc_common.h>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
+#include <gromox/workqueue.hpp>
 #include "asyncemsmdb_interface.hpp"
 #include "common_util.hpp"
 #include "emsmdb_interface.hpp"
@@ -45,7 +46,6 @@ struct ASYNC_WAIT {
 }
 
 static unsigned int g_threads_num;
-static pthread_t g_scan_id;
 static std::vector<pthread_t> g_thread_ids;
 static gromox::atomic_bool g_aemsi_stop{true};
 static std::vector<std::shared_ptr<ASYNC_WAIT>> g_wakeup_list;
@@ -56,7 +56,7 @@ static std::mutex g_async_lock; /* protects g_tag_hash & g_async_hash */
 static std::condition_variable g_waken_cond;
 static std::unordered_map<int, std::shared_ptr<ASYNC_WAIT>> g_async_hash;
 
-static void *aemsi_scanwork(void *);
+static void aemsi_scanwork(std::any &);
 static void *aemsi_thrwork(void *);
 
 static void (*activate_hpm_context)(int context_id, BOOL b_pending);
@@ -80,10 +80,9 @@ int asyncemsmdb_interface_run()
 	context_num = get_context_num();
 	g_tag_hash_max = context_num;
 	g_aemsi_stop = false;
-	auto ret = pthread_create4(&g_scan_id, nullptr, aemsi_scanwork, nullptr);
+	auto ret = global_workqueue.insert_task("aemsi_scan", std::chrono::seconds(1), aemsi_scanwork);
 	if (ret != 0) {
-		mlog(LV_ERR, "emsmdb: failed to create scanning thread "
-		       "for asyncemsmdb: %s", strerror(ret));
+		mlog(LV_ERR, "%s: start aemsi_scan: %s", __func__, strerror(ret));
 		g_aemsi_stop = true;
 		return -5;
 	}
@@ -109,10 +108,7 @@ void asyncemsmdb_interface_stop()
 	if (!g_aemsi_stop) {
 		g_aemsi_stop = true;
 		g_waken_cond.notify_all();
-		if (!pthread_equal(g_scan_id, {})) {
-			pthread_kill(g_scan_id, SIGALRM);
-			pthread_join(g_scan_id, NULL);
-		}
+		global_workqueue.delete_task("aemsi_scan");
 		for (auto tid : g_thread_ids) {
 			pthread_kill(tid, SIGALRM);
 			pthread_join(tid, nullptr);
@@ -311,13 +307,10 @@ static void *aemsi_thrwork(void *param)
 	return nullptr;
 }
 
-static void *aemsi_scanwork(void *param)
+static void aemsi_scanwork(std::any &)
 {
-	pthread_setname_np(pthread_self(), "aemsi_scan");
 	std::vector<std::shared_ptr<ASYNC_WAIT>> tl;
-	
-	while (!g_aemsi_stop) {
-		sleep(1);
+	{
 		auto cur_time = time(nullptr);
 		std::unique_lock as_hold(g_async_lock);
 		for (auto iter = g_tag_hash.cbegin(); iter != g_tag_hash.end(); ){
@@ -338,5 +331,4 @@ static void *aemsi_scanwork(void *param)
 			asyncemsmdb_interface_activate(std::move(pwait), false);
 		}
 	}
-	return nullptr;
 }
