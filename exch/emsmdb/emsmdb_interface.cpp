@@ -1005,10 +1005,10 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 
 static void emsi_scanwork(std::any &)
 {
-		std::vector<GUID> temp_list;
-		auto cur_time = tp_now();
+	std::vector<GUID> temp_list;
+	auto cur_time = tp_now();
 
-		{
+	{
 		std::unique_lock gl_hold(g_lock);
 		for (const auto &[guid, phandle] : g_handle_hash) {
 			if (cur_time - phandle->last_time.load(std::memory_order::relaxed) > HANDLE_VALID_INTERVAL) try {
@@ -1018,8 +1018,7 @@ static void emsi_scanwork(std::any &)
 				continue;
 			}
 		}
-		}
-
-		for (auto &&guid : temp_list)
-			emsmdb_interface_remove_handle({HANDLE_EXCHANGE_EMSMDB, std::move(guid)});
+	}
+	for (auto &&guid : temp_list)
+		emsmdb_interface_remove_handle({HANDLE_EXCHANGE_EMSMDB, std::move(guid)});
 }
