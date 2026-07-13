@@ -121,17 +121,12 @@ static bool stat4_eq(const struct stat &a, const struct stat &b)
 
 static void mod_cache_scanwork(std::any &)
 {
-	struct stat node_stat;
-		std::lock_guard hhold(g_hash_lock);
-		for (auto iter = g_cache_hash.begin(); iter != g_cache_hash.end(); ) {
-			auto &pitem = iter->second;
-			if (stat(iter->first.c_str(), &node_stat) == 0 &&
-			    S_ISREG(node_stat.st_mode) && stat4_eq(node_stat, pitem->sb)) {
-				++iter;
-				continue;
-			}
-			iter = g_cache_hash.erase(iter);
-		}
+	std::lock_guard hhold(g_hash_lock);
+	std::erase_if(g_cache_hash, [](const decltype(g_cache_hash)::value_type &iter) {
+		struct stat sb;
+		return stat(iter.first.c_str(), &sb) != 0 ||
+		       !S_ISREG(sb.st_mode) || !stat4_eq(sb, iter.second->sb);
+	});
 }
 
 void mod_cache_init(int context_num)
