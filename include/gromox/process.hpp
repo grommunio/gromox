@@ -1,5 +1,4 @@
 #pragma once
-#include <atomic>
 #include <pthread.h>
 #ifdef __OpenBSD__
 #	include <pthread_np.h>
@@ -29,12 +28,6 @@ struct GX_EXPORT heap_reaper {
 	public:
 	heap_reaper(unsigned int intvl);
 	~heap_reaper();
-
-	private:
-	void *thread_entry();
-
-	pthread_t m_thr_id{};
-	std::atomic<unsigned int> m_intv{60};
 };
 
 #ifdef __OpenBSD__
