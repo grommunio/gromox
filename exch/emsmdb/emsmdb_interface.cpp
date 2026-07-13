@@ -32,6 +32,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
+#include <gromox/workqueue.hpp>
 #include "asyncemsmdb_interface.hpp"
 #include "aux_types.hpp"
 #include "common_util.hpp"
@@ -81,7 +82,6 @@ struct report_stats {
 
 static constexpr time_duration HANDLE_VALID_INTERVAL = std::chrono::seconds(2000);
 static time_point g_start_time;
-static pthread_t g_scan_id;
 static std::mutex g_cxr_lock, g_lock; /* protects g_handle_hash & g_user_hash */
 static std::mutex g_notify_lock;
 static gromox::atomic_bool g_emsi_stop{true};
@@ -95,7 +95,7 @@ size_t ems_max_pending_sesnotif;
 static size_t ems_high_active_sessions, ems_high_active_users;
 static size_t ems_high_active_notifh, ems_high_pending_sesnotif;
 
-static void *emsi_scanwork(void *);
+static void emsi_scanwork(std::any &);
 
 static void emsmdb_report_one_ses(emsmdb_session &h, report_stats &st)
 {
@@ -352,10 +352,10 @@ void emsmdb_interface_init()
 int emsmdb_interface_run()
 {
 	g_emsi_stop = false;
-	auto ret = pthread_create4(&g_scan_id, nullptr, emsi_scanwork, nullptr);
+	auto ret = global_workqueue.insert_task("emsi_scan", std::chrono::seconds(3), emsi_scanwork);
 	if (ret != 0) {
 		g_emsi_stop = true;
-		mlog(LV_ERR, "E-1447: pthread_create: %s", strerror(ret));
+		mlog(LV_ERR, "%s: start emsi_scan: %s", __func__, strerror(ret));
 		return -4;
 	}
 	return 0;
@@ -363,13 +363,9 @@ int emsmdb_interface_run()
 
 void emsmdb_interface_stop()
 {
-	if (!g_emsi_stop) {
+	if (!g_emsi_stop)
 		g_emsi_stop = true;
-		if (!pthread_equal(g_scan_id, {})) {
-			pthread_kill(g_scan_id, SIGALRM);
-			pthread_join(g_scan_id, NULL);
-		}
-	}
+	global_workqueue.delete_task("emsi_scan");
 	{ /* silence cov-scan, take locks even in single-thread scenarios */
 		std::lock_guard lk(g_notify_lock);
 		g_notify_hash.clear();
@@ -1007,10 +1003,8 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
-static void *emsi_scanwork(void *pparam)
+static void emsi_scanwork(std::any &)
 {
-	pthread_setname_np(pthread_self(), "emsi_scan");
-	while (!g_emsi_stop) {
 		std::vector<GUID> temp_list;
 		auto cur_time = tp_now();
 
@@ -1028,7 +1022,4 @@ static void *emsi_scanwork(void *pparam)
 
 		for (auto &&guid : temp_list)
 			emsmdb_interface_remove_handle({HANDLE_EXCHANGE_EMSMDB, std::move(guid)});
-		sleep(3);
-	}
-	return nullptr;
 }
