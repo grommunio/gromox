@@ -147,12 +147,16 @@ void threads_pool_stop()
 		pthread_join(g_scan_id, NULL);
 		g_scan_id = {};
 	}
+	decltype(g_threads_data_list) doomed;
 	{
 		std::unique_lock tpd_hold(g_threads_pool_data_lock);
-		for (auto &t : g_threads_data_list)
-			t->signal_stop();
+		doomed = std::move(g_threads_data_list);
 		g_threads_data_list.clear();
 	}
+	for (auto &t : doomed)
+		t->signal_stop();
+	for (auto &t : doomed)
+		t->join();
 	g_threads_pool_min_num = 0;
 	g_threads_pool_max_num = 0;
 	g_threads_event_proc = NULL;
