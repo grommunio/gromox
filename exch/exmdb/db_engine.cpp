@@ -936,7 +936,6 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 		 */
 		db.notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq, false);
 		dg_notify(std::move(notifq));
-		dbase.reset();
 		b_linked = true;
 	}
 	if (b_linked) {
