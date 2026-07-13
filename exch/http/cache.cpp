@@ -34,6 +34,7 @@
 #include <gromox/process.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
+#include <gromox/workqueue.hpp>
 #include "http_parser.hpp"
 #include "cache.hpp"
 #include "resource.hpp"
@@ -82,7 +83,6 @@ class directory_list : public std::vector<dir_node> {
 
 static int g_context_num;
 static gromox::atomic_bool g_httpcache_stpo;
-static pthread_t g_scan_tid;
 static std::mutex g_hash_lock;
 static directory_list g_directory_list;
 static std::unordered_map<std::string, std::shared_ptr<cache_item>> g_cache_hash;
@@ -119,19 +119,9 @@ static bool stat4_eq(const struct stat &a, const struct stat &b)
 	       a.st_mtime == b.st_mtime && a.st_size == b.st_size;
 }
 
-static void *mod_cache_scanwork(void *pparam)
+static void mod_cache_scanwork(std::any &)
 {
-	pthread_setname_np(pthread_self(), "mod_cache");
-	int count;
 	struct stat node_stat;
-	
-	count = 0;
-	while (!g_httpcache_stpo) {
-		count ++;
-		if (count < 600) {
-			sleep(1);
-			continue;
-		}
 		std::lock_guard hhold(g_hash_lock);
 		for (auto iter = g_cache_hash.begin(); iter != g_cache_hash.end(); ) {
 			auto &pitem = iter->second;
@@ -142,9 +132,6 @@ static void *mod_cache_scanwork(void *pparam)
 			}
 			iter = g_cache_hash.erase(iter);
 		}
-		count = 0;
-	}
-	return nullptr;
 }
 
 void mod_cache_init(int context_num)
@@ -192,9 +179,10 @@ int mod_cache_run() try
 		return ret;
 	g_context_list = std::make_unique<cache_context[]>(g_context_num);
 	g_httpcache_stpo = false;
-	ret = pthread_create4(&g_scan_tid, nullptr, mod_cache_scanwork, nullptr);
+	ret = global_workqueue.insert_task("mod_cache",
+	      std::chrono::minutes(10), mod_cache_scanwork);
 	if (ret != 0) {
-		mlog(LV_ERR, "mod_cache: failed to create scanning thread: %s", strerror(ret));
+		mlog(LV_ERR, "%s: start side thread: %s", __func__, strerror(ret));
 		g_httpcache_stpo = true;
 		return -4;
 	}
@@ -206,13 +194,9 @@ int mod_cache_run() try
 
 void mod_cache_stop()
 {
-	if (!g_httpcache_stpo) {
+	if (!g_httpcache_stpo)
 		g_httpcache_stpo = true;
-		if (!pthread_equal(g_scan_tid, {})) {
-			pthread_kill(g_scan_tid, SIGALRM);
-			pthread_join(g_scan_tid, NULL);
-		}
-	}
+	global_workqueue.delete_task("mod_cache");
 	g_directory_list.clear();
 	g_context_list.reset();
 	std::unique_lock lock(g_hash_lock);
