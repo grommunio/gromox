@@ -82,7 +82,7 @@ class directory_list : public std::vector<dir_node> {
 }
 
 static int g_context_num;
-static gromox::atomic_bool g_httpcache_stpo;
+static gromox::atomic_bool g_httpcache_stop;
 static std::mutex g_hash_lock;
 static directory_list g_directory_list;
 static std::unordered_map<std::string, std::shared_ptr<cache_item>> g_cache_hash;
@@ -131,7 +131,7 @@ static void mod_cache_scanwork(std::any &)
 
 void mod_cache_init(int context_num)
 {
-	g_httpcache_stpo = true;
+	g_httpcache_stop = true;
 	g_context_num = context_num;
 }
 
@@ -173,12 +173,12 @@ int mod_cache_run() try
 	if (ret < 0)
 		return ret;
 	g_context_list = std::make_unique<cache_context[]>(g_context_num);
-	g_httpcache_stpo = false;
+	g_httpcache_stop = false;
 	ret = global_workqueue.insert_task("mod_cache",
 	      std::chrono::minutes(10), mod_cache_scanwork);
 	if (ret != 0) {
 		mlog(LV_ERR, "%s: start side thread: %s", __func__, strerror(ret));
-		g_httpcache_stpo = true;
+		g_httpcache_stop = true;
 		return -4;
 	}
 	return 0;
@@ -189,8 +189,8 @@ int mod_cache_run() try
 
 void mod_cache_stop()
 {
-	if (!g_httpcache_stpo)
-		g_httpcache_stpo = true;
+	if (!g_httpcache_stop)
+		g_httpcache_stop = true;
 	global_workqueue.delete_task("mod_cache");
 	g_directory_list.clear();
 	g_context_list.reset();
