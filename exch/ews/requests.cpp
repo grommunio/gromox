@@ -2901,6 +2901,77 @@ void process(mUnsubscribeRequest &&request, XMLElement *response, const EWSConte
 	data.serialize(response);
 }
 
+static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx,
+    const std::string &dir, const char *username, sMessageEntryId &mid)
+{
+	MESSAGE_CONTENT *sendcontent = nullptr;
+	if (!ctx.plugin().exmdb.read_message(dir.c_str(),
+	    username, CP_ACP, mid.messageId(), &sendcontent) ||
+	    sendcontent == nullptr)
+		throw EWSError::ItemNotFound(E3464);
+	auto cls = sendcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr || class_match_prefix(cls, "IPM.Note") != 0)
+		return;
+
+	std::vector<TAGGED_PROPVAL> sprops;
+	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	sprops.push_back({PR_CLIENT_SUBMIT_TIME, now});
+	sprops.push_back({PR_MESSAGE_DELIVERY_TIME, now});
+	auto flags = sendcontent->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	if (flags != nullptr && *flags & MSGFLAG_UNSENT)
+		sprops.push_back({PR_MESSAGE_FLAGS,
+			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
+
+	std::string dispname;
+	auto smtpaddr = deconst(ctx.auth_info().username);
+	if (sendcontent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS) == nullptr &&
+	    mysql_adaptor_get_user_displayname(ctx.auth_info().username, dispname)) {
+		auto sName = deconst(dispname.empty() ?
+			     ctx.auth_info().username : dispname.c_str());
+		auto addrtype = deconst("SMTP");
+		sprops.push_back({PR_SENT_REPRESENTING_NAME, sName});
+		sprops.push_back({PR_SENDER_NAME, sName});
+		sprops.push_back({PR_SENT_REPRESENTING_SMTP_ADDRESS, smtpaddr});
+		sprops.push_back({PR_SENDER_SMTP_ADDRESS, smtpaddr});
+		sprops.push_back({PR_SENT_REPRESENTING_EMAIL_ADDRESS, smtpaddr});
+		sprops.push_back({PR_SENDER_EMAIL_ADDRESS, smtpaddr});
+		sprops.push_back({PR_SENT_REPRESENTING_ADDRTYPE, addrtype});
+		sprops.push_back({PR_SENDER_ADDRTYPE, addrtype});
+	}
+
+	const TPROPVAL_ARRAY proplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
+	PROBLEM_ARRAY problems;
+	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+	    username, CP_ACP, mid.messageId(), &proplist, &problems))
+		throw EWSError::ItemSave(E3465);
+	if (!ctx.plugin().exmdb.read_message(dir.c_str(),
+	    username, CP_ACP, mid.messageId(), &sendcontent) ||
+	    sendcontent == nullptr)
+		throw EWSError::ItemNotFound(E3466);
+	ctx.send(dir, rop_util_get_gc_value(mid.messageId()), *sendcontent);
+
+	if (*request.MessageDisposition == Enum::SendAndSaveCopy) {
+		sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+		uint64_t newMid = 0;
+		if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
+		    sentitems.folderId, &newMid))
+			throw EWSError::MoveCopyFailed(E3467);
+		BOOL result = false;
+		if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(),
+		    CP_ACP, mid.messageId(), sentitems.folderId,
+		    newMid, TRUE, &result) || !result)
+			throw EWSError::MoveCopyFailed(E3468);
+	} else {
+		auto eid = mid.messageId();
+		auto fid = rop_util_make_eid_ex(1, mid.folderId());
+		EID_ARRAY eids{1, &eid};
+		BOOL partial = false;
+		if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
+		    CP_ACP, username, fid, &eids, false, &partial) ||
+		    partial)
+			throw EWSError::CannotDeleteObject(E3469);
+	}
+}
 
 /**
  * @brief      Process UpdateItem
@@ -3101,71 +3172,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		if (occ_basedate == 0 && request.MessageDisposition &&
 		    (*request.MessageDisposition == Enum::SendOnly ||
-		    *request.MessageDisposition == Enum::SendAndSaveCopy)) {
-			MESSAGE_CONTENT *sendcontent = nullptr;
-			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-			    username, CP_ACP, mid.messageId(), &sendcontent) ||
-			    sendcontent == nullptr)
-				throw EWSError::ItemNotFound(E3464);
-			auto cls = sendcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
-			if (cls != nullptr && class_match_prefix(cls, "IPM.Note") == 0) {
-				std::vector<TAGGED_PROPVAL> sprops;
-				auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-				sprops.push_back({PR_CLIENT_SUBMIT_TIME, now});
-				sprops.push_back({PR_MESSAGE_DELIVERY_TIME, now});
-				auto flags = sendcontent->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
-				if (flags != nullptr && *flags & MSGFLAG_UNSENT)
-					sprops.push_back({PR_MESSAGE_FLAGS,
-						EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
-				std::string dispname;
-				auto smtpaddr = deconst(ctx.auth_info().username);
-				if (sendcontent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS) == nullptr &&
-				    mysql_adaptor_get_user_displayname(ctx.auth_info().username, dispname)) {
-					auto sname = deconst(dispname.empty() ?
-					             ctx.auth_info().username : dispname.c_str());
-					auto addrtype = deconst("SMTP");
-					sprops.push_back({PR_SENT_REPRESENTING_NAME, sname});
-					sprops.push_back({PR_SENDER_NAME, sname});
-					sprops.push_back({PR_SENT_REPRESENTING_SMTP_ADDRESS, smtpaddr});
-					sprops.push_back({PR_SENDER_SMTP_ADDRESS, smtpaddr});
-					sprops.push_back({PR_SENT_REPRESENTING_EMAIL_ADDRESS, smtpaddr});
-					sprops.push_back({PR_SENDER_EMAIL_ADDRESS, smtpaddr});
-					sprops.push_back({PR_SENT_REPRESENTING_ADDRTYPE, addrtype});
-					sprops.push_back({PR_SENDER_ADDRTYPE, addrtype});
-				}
-				const TPROPVAL_ARRAY proplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
-				PROBLEM_ARRAY problems;
-				if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-				    username, CP_ACP, mid.messageId(), &proplist, &problems))
-					throw EWSError::ItemSave(E3465);
-				if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-				    username, CP_ACP, mid.messageId(), &sendcontent) ||
-				    sendcontent == nullptr)
-					throw EWSError::ItemNotFound(E3466);
-				ctx.send(dir, rop_util_get_gc_value(mid.messageId()), *sendcontent);
-				if (*request.MessageDisposition == Enum::SendAndSaveCopy) {
-					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
-					uint64_t newMid = 0;
-					if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
-					    sentitems.folderId, &newMid))
-						throw EWSError::MoveCopyFailed(E3467);
-					BOOL result = false;
-					if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(),
-					    CP_ACP, mid.messageId(), sentitems.folderId,
-					    newMid, TRUE, &result) || !result)
-						throw EWSError::MoveCopyFailed(E3468);
-				} else {
-					auto eid = mid.messageId();
-					auto fid = rop_util_make_eid_ex(1, mid.folderId());
-					EID_ARRAY eids{1, &eid};
-					BOOL partial = false;
-					if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
-					    CP_ACP, username, fid, &eids, false, &partial) ||
-					    partial)
-						throw EWSError::CannotDeleteObject(E3469);
-				}
-			}
-		}
+		    *request.MessageDisposition == Enum::SendAndSaveCopy))
+			process_upditem_2(request, ctx, dir, username, mid);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
