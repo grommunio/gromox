@@ -2739,7 +2739,9 @@ void EWSContext::updateAttendees(const std::string &dir,
 			auto rcpt = rcpts->emplace();
 			att.Mailbox.mkRecipient(rcpt, type);
 			/* update_message_instance_rcpts wants PR_ROWID */
-			if (rcpt->set(PR_ROWID, &row_id) != ecSuccess)
+			static constexpr uint32_t sendable = recipSendable;
+			if (rcpt->set(PR_ROWID, &row_id) != ecSuccess ||
+			    rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3456);
 			++row_id;
 		}
@@ -2759,7 +2761,6 @@ void EWSContext::updateAttendees(const std::string &dir,
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
 			throw DispatchError(E3352);
-		const char *username = effectiveUser(parent);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType   = construct<uint32_t>(mtgRequest);
 		auto apptState  = construct<uint32_t>(asfMeeting);
@@ -2776,8 +2777,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 		};
 		const TPROPVAL_ARRAY oproplist = {std::size(oprops), deconst(oprops)};
 		PROBLEM_ARRAY problems;
-		if (!exmdb.set_message_properties(dir.c_str(),
-		    username, CP_ACP, mid, &oproplist, &problems))
+		if (!exmdb.set_instance_properties(dir.c_str(),
+		    inst->instanceId, &oproplist, &problems))
 			throw EWSError::ItemSave(E3353);
 		const PROPERTY_NAME pnames[] = {
 			NtMeetingType,
@@ -2793,8 +2794,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 				{PROP_TAG(PT_LONG, ids[2]), respStatus},
 			};
 			const TPROPVAL_ARRAY nproplist = {std::size(nprops), deconst(nprops)};
-			if (!exmdb.set_message_properties(dir.c_str(), username,
-			    CP_ACP, mid, &nproplist, &problems))
+			if (!exmdb.set_instance_properties(dir.c_str(),
+			    inst->instanceId, &nproplist, &problems))
 				throw EWSError::ItemSave(E3354);
 		}
 	}
@@ -4196,15 +4197,21 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3377);
 		TARRAY_SET* rcpts = content->children.prcpts;
+		auto add_attendee = [](TPROPVAL_ARRAY *rcpt, const tAttendee &att, uint32_t type) {
+			att.Mailbox.mkRecipient(rcpt, type);
+			static constexpr uint32_t sendable = recipSendable;
+			if (rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3377);
+		};
 		if (item.RequiredAttendees)
 			for (const auto &att : *item.RequiredAttendees)
-				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+				add_attendee(rcpts->emplace(), att, MAPI_TO);
 		if (item.OptionalAttendees)
 			for (const auto &att : *item.OptionalAttendees)
-				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_CC);
+				add_attendee(rcpts->emplace(), att, MAPI_CC);
 		if (item.Resources)
 			for (const auto &att : *item.Resources)
-				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+				add_attendee(rcpts->emplace(), att, MAPI_TO);
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
 			throw DispatchError(E3378);
