@@ -3554,13 +3554,16 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 	content->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
-	if(!respName.empty())
-		content->proplist.set(PR_SENDER_NAME, respName.data());
-	/*
-	 * Keep PR_SENT_REPRESENTING_* as the organizer from the
-	 * original request; oxcical uses it for the ORGANIZER
-	 * line in the iCalendar REPLY.
-	 */
+	/* oxcical takes the ATTENDEE of a REPLY from PR_SENT_REPRESENTING_* */
+	content->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, respUser);
+	content->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, respUser);
+	content->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP"));
+	content->proplist.erase(PR_SENT_REPRESENTING_ENTRYID);
+	content->proplist.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
+	if (!respName.empty()) {
+		content->proplist.set(PR_SENDER_NAME, respName.c_str());
+		content->proplist.set(PR_SENT_REPRESENTING_NAME, respName.c_str());
+	}
 	if (content->children.prcpts)
 		tarray_set_free(content->children.prcpts);
 	content->children.prcpts = tarray_set_init();
