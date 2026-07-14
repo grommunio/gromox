@@ -460,6 +460,16 @@ int main(int argc, char **argv)
 	}
 	auto cleanup_16 = HX::make_scope_exit(contexts_pool_stop);
 
+	exmdb_rpc_alloc = xrpc_alloc;
+	exmdb_rpc_free = [](void *) {};
+	exmdb_client.emplace(UINT_MAX);
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
+	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
+	    xrpc_build_env1, xrpc_free_env) != 0) {
+		mlog(LV_ERR, "Failed to start exmdb_client");
+		return EXIT_FAILURE;
+	}
+
 	threads_pool_init(thread_init_num, pop3_parser_process);
 	threads_pool_register_event_proc(pop3_parser_threads_event_proc);
 	if (threads_pool_run("pop3.cfg:pop3_thread_init_num") != 0) {
@@ -472,16 +482,6 @@ int main(int argc, char **argv)
 	auto err = listener.watch_start(g_notify_stop, p3ls_thrwork);
 	if (err != 0) {
 		mlog(LV_ERR, "listener.thread_start: %s", strerror(err));
-		return EXIT_FAILURE;
-	}
-	
-	exmdb_rpc_alloc = xrpc_alloc;
-	exmdb_rpc_free = [](void *) {};
-	exmdb_client.emplace(UINT_MAX);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
-	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
-	    xrpc_build_env1, xrpc_free_env) != 0) {
-		mlog(LV_ERR, "Failed to start exmdb_client");
 		return EXIT_FAILURE;
 	}
 

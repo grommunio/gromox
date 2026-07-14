@@ -593,7 +593,7 @@ static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 	{"mysql_dbname", "email"},
 	{"mysql_host", "localhost"},
 	{"mysql_password", ""},
-	{"mysql_pool_idle_timeout", "10min", CFG_TIME},
+	{"mysql_pool_idle_timeout", "1min", CFG_TIME},
 	{"mysql_port", "3306"},
 	{"mysql_rdwr_timeout", "0", CFG_TIME},
 	{"mysql_tls_cert", ""},

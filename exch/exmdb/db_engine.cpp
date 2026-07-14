@@ -898,6 +898,7 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 				pmessage_ids->count, t_diff);
 	});
 	sql_transact = xtransaction();
+	bool b_linked = false;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		if (g_dbeng_stop)
 			break;
@@ -933,9 +934,16 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 		/*
 		 * Regular notifications
 		 */
-		db.notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq);
+		db.notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq, false);
 		dg_notify(std::move(notifq));
-		dbase.reset();
+		b_linked = true;
+	}
+	if (b_linked) {
+		db_conn::NOTIFQ notifq;
+		auto dbase = db.lock_base_wr();
+		db.notify_folder_modification(common_util_get_folder_parent_fid(
+			db.psqlite, search_fid), search_fid, *dbase, notifq);
+		dg_notify(std::move(notifq));
 	}
 	return TRUE;
 }
@@ -2390,7 +2398,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 }
 
 void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
-    db_base &dbase, NOTIFQ &notifq) try
+    db_base &dbase, NOTIFQ &notifq, bool b_count) try
 {
 	auto pdb = this;
 	uint64_t anchor_fld;
@@ -2413,8 +2421,9 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_cttbl_add_row(*pdb, srch_fld, message_id, dbase, notifq);
-	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
-		pdb->psqlite, srch_fld), srch_fld, dbase, notifq);
+	if (b_count)
+		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
+			pdb->psqlite, srch_fld), srch_fld, dbase, notifq);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
@@ -4028,19 +4037,11 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 		pmodified_folder->have_total = false;
 		pmodified_folder->have_unread = false;
 		pmodified_folder->proptags.count = 0;
-
-		void *val = nullptr;
-		if (cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, *pdb,
-		    PR_CONTENT_COUNT, &val) && val != nullptr) {
-			pmodified_folder->total = *static_cast<const uint32_t *>(val);
-			pmodified_folder->have_total = true;
-		}
-		val = nullptr;
-		if (cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, *pdb,
-		    PR_CONTENT_UNREAD, &val) && val != nullptr) {
-			pmodified_folder->unread = *static_cast<const uint32_t *>(val);
-			pmodified_folder->have_unread = true;
-		}
+		auto counts = cu_folder_counts(pdb->psqlite, folder_id);
+		pmodified_folder->total = std::move(counts.first);
+		pmodified_folder->have_total = true;
+		pmodified_folder->unread = std::move(counts.second);
+		pmodified_folder->have_unread = true;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_hiertbl_modify_row(*pdb, parent_id, folder_id, dbase, notifq);

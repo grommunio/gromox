@@ -92,7 +92,7 @@ extern BOOL common_util_get_rule_property(uint64_t rule_id, sqlite3 *, gromox::p
 extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, gromox::proptag_t, void **outval);
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
 extern bool cu_check_msgsize_overflow(const db_conn &, gromox::proptag_t);
-extern uint32_t cu_folder_unread_count(sqlite3 *psqlite, uint64_t folder_id, unsigned int flags = 0);
+extern std::pair<int32_t, int32_t> cu_folder_counts(sqlite3 *psqlite, uint64_t folder_id, unsigned int flags = 0);
 extern BOOL common_util_get_folder_type(sqlite3 *, uint64_t folder_id, uint32_t *type, const char *dir = nullptr);
 uint64_t common_util_get_folder_parent_fid(
 	sqlite3 *psqlite, uint64_t folder_id);

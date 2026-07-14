@@ -108,6 +108,9 @@ static ec_error_t message_rule_new_message(const rulexec_in &, seen_list &);
  */
 static bool gx_collapse_event_storm;
 
+/* SF stacking is an unusual usecase and thus disabled for the time being. */
+static bool gx_stacked_searches;
+
 static constexpr uint8_t fake_true = true;
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
 static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
@@ -1241,8 +1244,9 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
-	pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
-		fid_val, mid_val, 0, *dbase, notifq);
+	if (gx_stacked_searches)
+		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
+			fid_val, mid_val, 0, *dbase, notifq);
 	pdb->notify_link_creation(fid_val, mid_val, *dbase, notifq);
 	if (sql_transact.commit() != SQLITE_OK)
 		return FALSE;
@@ -1315,13 +1319,18 @@ BOOL exmdb_server::link_messages(const char *dir, cpid_t cpid,
 			b_partial = true;
 			continue;
 		}
-		db->proc_dynamic_event(cpid, dynamic_event::new_msg,
-			fid_val, mid_val, 0, *dbase, notifq);
-		db->notify_link_creation(fid_val, mid_val, *dbase, notifq);
+		if (gx_stacked_searches)
+			db->proc_dynamic_event(cpid, dynamic_event::new_msg,
+				fid_val, mid_val, 0, *dbase, notifq);
+		db->notify_link_creation(fid_val, mid_val, *dbase, notifq, false);
 		b_linked = true;
 	}
 	if (b_linked && sql_transact.commit() != SQLITE_OK)
 		return false;
+	if (b_linked)
+		db->notify_folder_modification(
+			common_util_get_folder_parent_fid(db->psqlite, fid_val),
+			fid_val, *dbase, notifq);
 	dg_notify(std::move(notifq));
 	*pb_partial = b_partial ? TRUE : false;
 	return TRUE;

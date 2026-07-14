@@ -144,11 +144,11 @@ and \fIldap_user_search_attrs=cn\fP, etc. in the config file.
 .br
 Default: (empty set)
 .TP
-\fBldap_user_template\fP
+\fBldap_user_templates\fP
 The name(s) of Admin API templates to use. Multi-value directive like
-search_attrs. Pick \fBldap_user_template=common\fP and
-\fBldap_user_template=OpenLDAP\fP for OpenLDAP, or
-\fBldap_user_template=common\fP and \fPldap_user_template=ActiveDirectory\fP
+search_attrs. Pick \fBldap_user_templates=common\fP and
+\fBldap_user_templates=OpenLDAP\fP for OpenLDAP, or
+\fBldap_user_templates=common\fP and \fPldap_user_templates=ActiveDirectory\fP
 for Active Directory.
 .br
 Default: (empty set)

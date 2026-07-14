@@ -32,8 +32,9 @@ namespace {
  *       "Normal" values >= 0 indicate static threads that are always present.
  */
 struct THR_DATA {
-	~THR_DATA();
+	~THR_DATA() { join(); }
 	void signal_stop();
+	void join();
 
 	gromox::atomic_bool notify_stop;
 	pthread_t thr_id{};
@@ -61,14 +62,20 @@ static void *tpol_scanwork(void *);
 
 static tproc_status (*threads_pool_process_func)(schedule_context *);
 
-THR_DATA::~THR_DATA()
+void THR_DATA::join()
 {
-	if (pthread_equal(thr_id, {}))
+	pthread_t tid;
+	{
+		std::lock_guard lk(m_mtx);
+		tid = std::move(thr_id);
+		thr_id = {};
+	}
+	if (pthread_equal(tid, {}))
 		return;
-	if (pthread_equal(thr_id, pthread_self()))
-		pthread_detach(thr_id);
+	if (pthread_equal(tid, pthread_self()))
+		pthread_detach(tid);
 	else
-		pthread_join(thr_id, nullptr);
+		pthread_join(tid, nullptr);
 }
 
 void THR_DATA::signal_stop()
@@ -140,12 +147,16 @@ void threads_pool_stop()
 		pthread_join(g_scan_id, NULL);
 		g_scan_id = {};
 	}
+	decltype(g_threads_data_list) doomed;
 	{
 		std::unique_lock tpd_hold(g_threads_pool_data_lock);
-		for (auto &t : g_threads_data_list)
-			t->signal_stop();
+		doomed = std::move(g_threads_data_list);
 		g_threads_data_list.clear();
 	}
+	for (auto &t : doomed)
+		t->signal_stop();
+	for (auto &t : doomed)
+		t->join();
 	g_threads_pool_min_num = 0;
 	g_threads_pool_max_num = 0;
 	g_threads_event_proc = NULL;

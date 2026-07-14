@@ -2489,14 +2489,14 @@ BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/*
-	 * cu_folder_unread_count may start two queries in some cases, use
+	 * cu_folder_counts may start multiple queries in some cases, use
 	 * transaction to keep them consistent.
 	 */
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	exmdb_server::set_public_username(username);
-	*pcount = cu_folder_unread_count(pdb->psqlite, rop_util_get_gc_value(folder_id));
+	*pcount = cu_folder_counts(pdb->psqlite, rop_util_get_gc_value(folder_id)).second;
 	exmdb_server::set_public_username(nullptr);
 	return TRUE;
 	

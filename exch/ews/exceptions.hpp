@@ -584,6 +584,19 @@ E(3453, "GetItem batch exceeds ews_max_get_items; resend in smaller batches");
 E(3454, "subscription event backlog exceeded ews_max_pending_events; re-subscribe and resync");
 E(3455, "failed to allocate the recipient set while updating attendees");
 E(3456, "failed to set PR_ROWID on an attendee recipient");
+E(3457, "failed to get the recipient count while updating recipients");
+E(3458, "failed to read existing recipients");
+E(3459, "failed to allocate a recipient removal row");
+E(3460, "failed to allocate the recipient set while updating recipients");
+E(3461, "failed to set PR_ROWID on an updated recipient");
+E(3462, "failed to write the updated recipient table");
+E(3463, "failed to flush the instance after updating recipients");
+E(3464, "failed to read message for sending");
+E(3465, "failed to set submit properties on message");
+E(3466, "failed to reread message for sending");
+E(3467, "failed to allocate message id in Sent Items");
+E(3468, "failed to move sent message to Sent Items");
+E(3469, "failed to delete draft after send");
 
 #undef E
 }

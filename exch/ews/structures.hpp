@@ -396,6 +396,9 @@ class sShape {
 	const tinyxml2::XMLElement *requiredAttendees = nullptr; ///< RequiredAttendees for update
 	const tinyxml2::XMLElement *optionalAttendees = nullptr; ///< OptionalAttendees for update
 	const tinyxml2::XMLElement *resourceAttendees = nullptr; ///< Resources for update
+	const tinyxml2::XMLElement *toRecipients = nullptr; ///< ToRecipients for update
+	const tinyxml2::XMLElement *ccRecipients = nullptr; ///< CcRecipients for update
+	const tinyxml2::XMLElement *bccRecipients = nullptr; ///< BccRecipients for update
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 
@@ -3831,6 +3834,27 @@ struct mGetAppManifestsResponse : public mResponseMessageType {
 };
 
 /**
+ * Messages.xsd (GetAppMarketplaceUrlType)
+ */
+struct mGetAppMarketplaceUrlRequest {
+	explicit inline mGetAppMarketplaceUrlRequest(const tinyxml2::XMLElement *) {} // nothing to do here for now
+
+	//<xs:element name="ApiVersionSupported" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="SchemaVersionSupported" type="xs:string" minOccurs="0" maxOccurs="1"/>
+};
+
+/**
+ * Messages.xsd (GetAppMarketplaceUrlResponseMessageType)
+ */
+struct mGetAppMarketplaceUrlResponse : public mResponseMessageType {
+	using mResponseMessageType::mResponseMessageType;
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::optional<std::string> AppMarketplaceUrl;
+};
+
+/**
  * Messages.xsd:2204
  */
 struct mGetUserAvailabilityResponse {
@@ -4318,7 +4342,7 @@ struct mUpdateItemRequest {
 	//<xs:element name="SavedItemFolderId" type="t:TargetFolderIdType" minOccurs="0"/>
 	std::vector<tItemChange> ItemChanges;
 	//<xs:attribute name="ConflictResolution" type="t:ConflictResolutionType" use="required"/>
-	//<xs:attribute name="MessageDisposition" type="t:MessageDispositionType"  use="optional"/>
+	std::optional<Enum::MessageDispositionType> MessageDisposition;
 	std::optional<Enum::CalendarItemUpdateOperationType> SendMeetingInvitationsOrCancellations;
 	std::optional<bool> SuppressReadReceipts;
 };
