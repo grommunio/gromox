@@ -3156,8 +3156,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 						throw EWSError::InternalServerError(E3428);
 					const char *sentuser = ctx.effectiveUser(sentitems);
 					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+					static constexpr uint8_t proptrue = 1;
 					const TAGGED_PROPVAL sprops[] = {
 						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
+						{PR_RESPONSE_REQUESTED, deconst(&proptrue)},
 						{PR_CLIENT_SUBMIT_TIME, now},
 						{PR_MESSAGE_DELIVERY_TIME, now},
 					};
