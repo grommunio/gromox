@@ -2739,7 +2739,9 @@ void EWSContext::updateAttendees(const std::string &dir,
 			auto rcpt = rcpts->emplace();
 			att.Mailbox.mkRecipient(rcpt, type);
 			/* update_message_instance_rcpts wants PR_ROWID */
-			if (rcpt->set(PR_ROWID, &row_id) != ecSuccess)
+			static constexpr uint32_t sendable = recipSendable;
+			if (rcpt->set(PR_ROWID, &row_id) != ecSuccess ||
+			    rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3456);
 			++row_id;
 		}
@@ -4170,15 +4172,21 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3377);
 		TARRAY_SET* rcpts = content->children.prcpts;
+		auto add_attendee = [](TPROPVAL_ARRAY *rcpt, const tAttendee &att, uint32_t type) {
+			att.Mailbox.mkRecipient(rcpt, type);
+			static constexpr uint32_t sendable = recipSendable;
+			if (rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3377);
+		};
 		if (item.RequiredAttendees)
 			for (const auto &att : *item.RequiredAttendees)
-				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+				add_attendee(rcpts->emplace(), att, MAPI_TO);
 		if (item.OptionalAttendees)
 			for (const auto &att : *item.OptionalAttendees)
-				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_CC);
+				add_attendee(rcpts->emplace(), att, MAPI_CC);
 		if (item.Resources)
 			for (const auto &att : *item.Resources)
-				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+				add_attendee(rcpts->emplace(), att, MAPI_TO);
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
 			throw DispatchError(E3378);
