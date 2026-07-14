@@ -30,7 +30,7 @@ struct GX_EXPORT workqueue {
 	bool task_exists(const char *) const __attribute__((nonnull(2)));
 	void mainloop();
 	void stop();
-	int launch_ondemand();
+	errno_t launch_ondemand();
 
 	std::vector<task> m_tasklist;
 	pthread_t m_thrid{};
