@@ -1672,21 +1672,57 @@ sFolder tBaseFolderType::create(const sShape& shape)
 	const char* frClass = shape.get<char>(PR_CONTAINER_CLASS, sShape::FL_ANY);
 	const uint32_t* frType = shape.get<uint32_t>(PR_FOLDER_TYPE, sShape::FL_ANY);
 	Type folderType = NORMAL;
-	if (frType && *frType == FOLDER_SEARCH) {
-		folderType = SEARCH;
-	} else if (frClass) {
-		if (class_match_prefix(frClass, "IPF.Appointment") == 0)
-			folderType = CALENDAR;
-		else if (class_match_prefix(frClass, "IPF.Contact") == 0)
+
+	if (auto v64 = shape.get<uint64_t>(PidTagFolderId)) {
+		if (*v64 == PRIVATE_FID_RECIPIENT_CACHE)
 			folderType = CONTACTS;
-		else if (class_match_prefix(frClass, "IPF.Task") == 0)
-			folderType = TASKS;
+	}
+
+	if (folderType == NORMAL) {
+		if (frType && *frType == FOLDER_SEARCH) {
+			folderType = SEARCH;
+		} else if (frClass) {
+			/*
+			 * When an existing mailbox predates PRIVATE_FID_RECIPIENT_CACHE
+			 * being provisioned, Outlook creates its own "Recipient Cache"
+			 * folder client-side with a generic frClass (not IPF.Contact*),
+			 * so the PidTagFolderId check above doesn't catch it. Recognize
+			 * it by display name instead - checked against every language
+			 * data/folder_names.txt has a translation for (0x20), not just
+			 * English/French, since Outlook names the folder in the
+			 * mailbox owner's configured language.
+			 */
+			static constexpr const char *recipient_cache_names[] = {
+				"Recipient Cache", "Cache des destinataires",
+				"Empfängercache", "Caché de destinatarios",
+				"Cache destinatari",
+			};
+			const char *dn = shape.get<char>(PR_DISPLAY_NAME);
+			bool is_recipient_cache = dn != nullptr && std::any_of(
+				std::begin(recipient_cache_names), std::end(recipient_cache_names),
+				[&](const char *name) { return strcmp(dn, name) == 0; });
+
+			if (class_match_prefix(frClass, "IPF.Appointment") == 0)
+				folderType = CALENDAR;
+			else if (class_match_prefix(frClass, "IPF.Contact") == 0 || is_recipient_cache)
+				folderType = CONTACTS;
+			else if (class_match_prefix(frClass, "IPF.Task") == 0)
+				folderType = TASKS;
+		}
 	}
 	switch (folderType) {
 	case CALENDAR:
 		return tCalendarFolderType(shape);
-	case CONTACTS:
-		return tContactsFolderType(shape);
+	case CONTACTS: {
+		sFolder folder = tContactsFolderType(shape);
+		if (auto* cf = std::get_if<tContactsFolderType>(&folder)) {
+			if (auto v64 = shape.get<uint64_t>(PidTagFolderId)) {
+				if (*v64 == PRIVATE_FID_RECIPIENT_CACHE)
+					cf->FolderClass.emplace("IPF.Contact.RecipientCache");
+			}
+		}
+		return folder;
+	}
 	case SEARCH:
 		return tSearchFolderType(shape);
 	case TASKS:
