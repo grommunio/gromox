@@ -2761,7 +2761,6 @@ void EWSContext::updateAttendees(const std::string &dir,
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
 			throw DispatchError(E3352);
-		const char *username = effectiveUser(parent);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType   = construct<uint32_t>(mtgRequest);
 		auto apptState  = construct<uint32_t>(asfMeeting);
@@ -2778,8 +2777,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 		};
 		const TPROPVAL_ARRAY oproplist = {std::size(oprops), deconst(oprops)};
 		PROBLEM_ARRAY problems;
-		if (!exmdb.set_message_properties(dir.c_str(),
-		    username, CP_ACP, mid, &oproplist, &problems))
+		if (!exmdb.set_instance_properties(dir.c_str(),
+		    inst->instanceId, &oproplist, &problems))
 			throw EWSError::ItemSave(E3353);
 		const PROPERTY_NAME pnames[] = {
 			NtMeetingType,
@@ -2795,8 +2794,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 				{PROP_TAG(PT_LONG, ids[2]), respStatus},
 			};
 			const TPROPVAL_ARRAY nproplist = {std::size(nprops), deconst(nprops)};
-			if (!exmdb.set_message_properties(dir.c_str(), username,
-			    CP_ACP, mid, &nproplist, &problems))
+			if (!exmdb.set_instance_properties(dir.c_str(),
+			    inst->instanceId, &nproplist, &problems))
 				throw EWSError::ItemSave(E3354);
 		}
 	}
