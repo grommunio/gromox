@@ -439,6 +439,10 @@ http_status EWSPlugin::dispatch(detail::ContextKey ctx_id, HTTP_AUTH_INFO &auth_
 
 	context.log(enableLog);
 	return http_status::ok;
+} catch (const Exceptions::EWSError &err) {
+	/* Thrown before the handler runs, e.g. by ExchangeImpersonation */
+	mlog(LV_WARN, "[ews#%d]%s Done, code 200, ews error: '%s'", ctx_id, timestamp().c_str(), err.what());
+	return fault(ctx_id, http_status::ok, SOAP::Envelope::fault(err.type.c_str(), err.what()));
 } catch (const std::exception &err) {
 	mlog(LV_ERR, "[ews#%d]%s Error: %s", ctx_id, timestamp().c_str(), err.what());
 	return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("SOAP:Server", err.what()));
