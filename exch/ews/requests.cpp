@@ -693,6 +693,15 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		if (!hasAccess)
 			throw EWSError::AccessDenied(E3130);
 
+		if (auto ccl = std::get_if<tCancelCalendarItem>(&item)) {
+			/* Response object, the cancellation is built from the meeting */
+			if (ccl->ReferenceItemId)
+				ctx.cancelCalendarItem(*ccl->ReferenceItemId,
+					request.MessageDisposition == Enum::SendAndSaveCopy);
+			data.ResponseMessages.emplace_back().success();
+			continue;
+		}
+
 		mCreateItemResponseMessage msg;
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
