@@ -87,6 +87,7 @@ struct tAcceptItem;
 struct tTentativelyAcceptItem;
 struct tDeclineItem;
 struct tSuppressReadReceipt;
+struct tCancelCalendarItem;
 struct tModifiedEvent;
 struct tReferenceAttachment;
 struct tSearchFolderType;
@@ -268,7 +269,8 @@ using sFolderChangeDescription = std::variant<tAppendToFolderField, tSetFolderFi
 	*/
 using sItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMessage,
 	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact,
-	tTask, tAcceptItem, tTentativelyAcceptItem, tDeclineItem, tSuppressReadReceipt>;
+	tTask, tAcceptItem, tTentativelyAcceptItem, tDeclineItem, tSuppressReadReceipt,
+	tCancelCalendarItem>;
 
 /**
  * c.f. Types.xsd:1502
@@ -2692,6 +2694,20 @@ struct tSuppressReadReceipt : public tMessage {
 	using tMessage::tMessage;
 
 	tSuppressReadReceipt(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::optional<tItemId> ReferenceItemId;
+};
+
+/**
+ * Types.xsd:3947
+ */
+struct tCancelCalendarItem : public tMessage {
+	static constexpr char NAME[] = "CancelCalendarItem";
+
+	using tMessage::tMessage;
+
+	tCancelCalendarItem(const tinyxml2::XMLElement *);
 	void serialize(tinyxml2::XMLElement *) const;
 
 	std::optional<tItemId> ReferenceItemId;

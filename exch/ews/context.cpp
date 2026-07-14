@@ -3656,6 +3656,43 @@ void EWSContext::suppressReadReceipt(const tItemId &refId) const
 }
 
 /**
+ * @brief      Cancel a meeting and remove it from the organizer's calendar
+ *
+ * @param      refId     Calendar item to cancel
+ * @param      saveCopy  Whether to keep a copy in Sent Items
+ */
+void EWSContext::cancelCalendarItem(const tItemId &refId, bool saveCopy) const
+{
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId meid(refId.Id.data(), refId.Id.size());
+	sFolderSpec parent = resolveFolder(meid);
+	std::string dir = getDir(parent);
+	validate(dir, meid);
+	if (!(permissions(dir, parent.folderId) & frightsDeleteAny))
+		throw EWSError::AccessDenied(E3131);
+
+	void *organizer = nullptr;
+	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP,
+	    meid.messageId(), PR_SENT_REPRESENTING_SMTP_ADDRESS, &organizer))
+		throw EWSError::ItemNotFound(E3389);
+	if (organizer != nullptr && m_auth_info.username != nullptr &&
+	    strcasecmp(static_cast<const char *>(organizer),
+	    m_auth_info.username) != 0)
+		throw EWSError::CalendarIsNotOrganizer(E3470);
+
+	sendMeetingCancellation(dir, meid, parent, saveCopy);
+
+	sFolderSpec deleted = resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
+	uint64_t new_mid = 0;
+	if (!m_plugin.exmdb.allocate_message_id(dir.c_str(), deleted.folderId, &new_mid))
+		throw EWSError::MoveCopyFailed(E3425);
+	BOOL result = false;
+	if (!m_plugin.exmdb.movecopy_message(dir.c_str(), CP_ACP, meid.messageId(),
+	    deleted.folderId, new_mid, TRUE, &result) || !result)
+		throw EWSError::CannotDeleteObject(E3471);
+}
+
+/**
  * @brief      Serialize XID to BINARY
  *
  * The internal buffer of the BINARY is stack allocated and must not be
