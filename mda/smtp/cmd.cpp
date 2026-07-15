@@ -81,7 +81,8 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx) try
 	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
         "250-HELP\r\n"
 		"250-SIZE %zu\r\n"
-        "250 8BITMIME\r\n",
+        "250-8BITMIME\r\n"
+        "250 SMTPUTF8\r\n",
         /* send the size of "SIZE" command */
 		g_param.max_mail_length);
 
