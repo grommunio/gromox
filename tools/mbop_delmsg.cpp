@@ -25,7 +25,7 @@ static constexpr HXoption g_options_table[] = {
 
 static int help()
 {
-	fprintf(stderr, "Usage: gromox-mbop -u a@b.de delmsg -f folder_id message_id[,...]\n");
+	fprintf(stderr, "Usage: gromox-mbop -u a@b.de delmsg -f folder_id message_id[...]\n");
 	return EXIT_PARAM;
 }
 
