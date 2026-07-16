@@ -1843,17 +1843,16 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	}
 	*psearch_status = 0;
 	if (db_engine_check_populating(dir, fid_val))
-		*psearch_status |= SEARCH_REBUILD;
+		*psearch_status |= SEARCH_REBUILD | TWIR_TOTALLY;
 	if (search_flags & STATIC_SEARCH) {
 		if (search_flags & RESTART_SEARCH)
-			*psearch_status |= SEARCH_COMPLETE;
+			*psearch_status |= SEARCH_COMPLETE | TWIR_TOTALLY;
 	} else {
 		if (search_flags & RESTART_SEARCH)
-			*psearch_status |= SEARCH_RUNNING;
+			*psearch_status |= SEARCH_RUNNING | TWIR_TOTALLY;
 	}
 	if (search_flags & RECURSIVE_SEARCH)
 		*psearch_status |= SEARCH_RECURSIVE;
-	*psearch_status |= TWIR_TOTALLY;
 	return TRUE;
 }
 
