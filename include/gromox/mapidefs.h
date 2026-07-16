@@ -1490,11 +1490,15 @@ enum { /* for GetSearchCriteria */
 	SEARCH_RUNNING      = 0x1,
 	SEARCH_REBUILD      = 0x2,
 	SEARCH_RECURSIVE    = 0x4,
+	SEARCH_FOREGROUND   = 0x8,
 	SEARCH_COMPLETE     = 0x1000,
 	SEARCH_PARTIAL      = 0x2000,
 	SEARCH_STATIC       = 0x10000,
 	SEARCH_MAYBE_STATIC = 0x20000,
+	// TWIR: table walk including(?) restriction
 	CI_TOTALLY          = 0x1000000,
+	CI_WITH_TWIR_RESIDUAL = 0x2000000,
+	TWIR_MOSTLY         = 0x4000000,
 	TWIR_TOTALLY        = 0x8000000,
 };
 
