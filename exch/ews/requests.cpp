@@ -693,6 +693,22 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		if (!hasAccess)
 			throw EWSError::AccessDenied(E3130);
 
+		if (auto srr = std::get_if<tSuppressReadReceipt>(&item)) {
+			/* Response object, nothing is stored or sent */
+			if (srr->ReferenceItemId)
+				ctx.suppressReadReceipt(*srr->ReferenceItemId);
+			data.ResponseMessages.emplace_back().success();
+			continue;
+		}
+		if (auto ccl = std::get_if<tCancelCalendarItem>(&item)) {
+			/* Response object, the cancellation is built from the meeting */
+			if (ccl->ReferenceItemId)
+				ctx.cancelCalendarItem(*ccl->ReferenceItemId,
+					request.MessageDisposition == Enum::SendAndSaveCopy);
+			data.ResponseMessages.emplace_back().success();
+			continue;
+		}
+
 		mCreateItemResponseMessage msg;
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
@@ -1050,10 +1066,14 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		if (!(ctx.permissions(dir, parent.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
 
+		if (request.SendMeetingCancellations &&
+		    *request.SendMeetingCancellations != Enum::SendToNone &&
+		    (id.holds_alternative<tOccurrenceItemId>() ||
+		    itemId.type == tItemId::ID_ITEM))
+			ctx.sendMeetingCancellation(dir, meid, parent,
+				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
+
 		if (id.holds_alternative<tOccurrenceItemId>()) {
-			if (request.SendMeetingCancellations && *request.SendMeetingCancellations != Enum::SendToNone)
-				ctx.sendMeetingCancellation(dir, meid, parent,
-					                        *request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
 			/* OccurrenceItemId: delete a single occurrence */
 			tOccurrenceItemId occurrenceId = std::get<tOccurrenceItemId>(id.asVariant());
 			auto mid = meid.messageId();
@@ -2650,13 +2670,11 @@ void process(mResolveNamesRequest &&request, XMLElement *response, const EWSCont
 		} else {
 			resolutionSet.TotalItemsInView = resolutionSet.Resolution.size();
 			resolutionSet.IncludesLastItemInRange = true;
-			if (resolutionSet.Resolution.size() > 1) {
-				msg.ResponseClass = "Warning";
-				msg.ResponseCode  = "ErrorNameResolutionMultipleResults";
-				msg.MessageText   = "Multiple results were found.";
-			} else {
+			if (resolutionSet.Resolution.size() > 1)
+				msg.warning("ErrorNameResolutionMultipleResults",
+					"Multiple results were found.");
+			else
 				msg.success();
-			}
 			data.serialize(response);
 			return;
 		}
@@ -3156,8 +3174,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 						throw EWSError::InternalServerError(E3428);
 					const char *sentuser = ctx.effectiveUser(sentitems);
 					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+					static constexpr uint8_t proptrue = 1;
 					const TAGGED_PROPVAL sprops[] = {
 						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
+						{PR_RESPONSE_REQUESTED, deconst(&proptrue)},
 						{PR_CLIENT_SUBMIT_TIME, now},
 						{PR_MESSAGE_DELIVERY_TIME, now},
 					};

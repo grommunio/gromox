@@ -1528,9 +1528,13 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 				par.cur.dirc(), mapi_strerror(err));
 
 		for (const freebusy_event &event : fbdata)
-			if ((event.start_time >= start_ts && event.start_time <= end_ts) ||
-			    (event.end_time   >= start_ts && event.end_time <= end_ts) ||
-			    (event.start_time < start_ts  && event.end_time > end_ts))
+			/*
+			 * Calendar slots are half-open intervals [start, end):
+			 * two ranges conflict iff each starts strictly before the
+			 * other ends. Back-to-back bookings (one ends exactly when
+			 * the next begins) share only the boundary and do not clash.
+			 */
+			if (event.start_time < end_ts && event.end_time > start_ts)
 				if (event.busy_status != olFree) {
 					res_in_use = true;
 					break;

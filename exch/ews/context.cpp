@@ -2739,7 +2739,9 @@ void EWSContext::updateAttendees(const std::string &dir,
 			auto rcpt = rcpts->emplace();
 			att.Mailbox.mkRecipient(rcpt, type);
 			/* update_message_instance_rcpts wants PR_ROWID */
-			if (rcpt->set(PR_ROWID, &row_id) != ecSuccess)
+			static constexpr uint32_t sendable = recipSendable;
+			if (rcpt->set(PR_ROWID, &row_id) != ecSuccess ||
+			    rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3456);
 			++row_id;
 		}
@@ -2759,7 +2761,6 @@ void EWSContext::updateAttendees(const std::string &dir,
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
 			throw DispatchError(E3352);
-		const char *username = effectiveUser(parent);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType   = construct<uint32_t>(mtgRequest);
 		auto apptState  = construct<uint32_t>(asfMeeting);
@@ -2776,8 +2777,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 		};
 		const TPROPVAL_ARRAY oproplist = {std::size(oprops), deconst(oprops)};
 		PROBLEM_ARRAY problems;
-		if (!exmdb.set_message_properties(dir.c_str(),
-		    username, CP_ACP, mid, &oproplist, &problems))
+		if (!exmdb.set_instance_properties(dir.c_str(),
+		    inst->instanceId, &oproplist, &problems))
 			throw EWSError::ItemSave(E3353);
 		const PROPERTY_NAME pnames[] = {
 			NtMeetingType,
@@ -2793,8 +2794,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 				{PROP_TAG(PT_LONG, ids[2]), respStatus},
 			};
 			const TPROPVAL_ARRAY nproplist = {std::size(nprops), deconst(nprops)};
-			if (!exmdb.set_message_properties(dir.c_str(), username,
-			    CP_ACP, mid, &nproplist, &problems))
+			if (!exmdb.set_instance_properties(dir.c_str(),
+			    inst->instanceId, &nproplist, &problems))
 				throw EWSError::ItemSave(E3354);
 		}
 	}
@@ -3203,10 +3204,9 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 		throw EWSError::FolderExists(E3162);
 	if (errcode != ecSuccess)
 		throw EWSError::MoveCopyFailed(std::string(E3163) + ": " + mapi_strerror(errcode));
-	if (!copy) {
-		updated(dir, folder);
+	if (!copy)
+		/* movecopy_folder bumps the moved folder's change number itself. */
 		return folder.folderId;
-	}
 	uint64_t newFolderId;
 	if (!m_plugin.exmdb.get_folder_by_name(dir.c_str(), newParent, folderName, &newFolderId))
 		throw DispatchError(E3164);
@@ -3553,13 +3553,16 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 	content->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
-	if(!respName.empty())
-		content->proplist.set(PR_SENDER_NAME, respName.data());
-	/*
-	 * Keep PR_SENT_REPRESENTING_* as the organizer from the
-	 * original request; oxcical uses it for the ORGANIZER
-	 * line in the iCalendar REPLY.
-	 */
+	/* oxcical takes the ATTENDEE of a REPLY from PR_SENT_REPRESENTING_* */
+	content->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, respUser);
+	content->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, respUser);
+	content->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP"));
+	content->proplist.erase(PR_SENT_REPRESENTING_ENTRYID);
+	content->proplist.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
+	if (!respName.empty()) {
+		content->proplist.set(PR_SENDER_NAME, respName.c_str());
+		content->proplist.set(PR_SENT_REPRESENTING_NAME, respName.c_str());
+	}
 	if (content->children.prcpts)
 		tarray_set_free(content->children.prcpts);
 	content->children.prcpts = tarray_set_init();
@@ -3624,6 +3627,69 @@ void EWSContext::notifyReadReceipt(const std::string &dir,
 		CP_ACP, mid, &propvals, &problems);
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "[ews] read receipt: %s", e.what());
+}
+
+/**
+ * @brief      Clear the receipt request of a message
+ *
+ * Makes notifyReadReceipt() a no-op for the message from now on.
+ *
+ * @param      refId   Item to suppress the read receipt for
+ */
+void EWSContext::suppressReadReceipt(const tItemId &refId) const
+{
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId mid(refId.Id.data(), refId.Id.size());
+	sFolderSpec parent = resolveFolder(mid);
+	std::string dir = getDir(parent);
+	validate(dir, mid);
+	static constexpr uint8_t fake_false = 0;
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PR_READ_RECEIPT_REQUESTED, deconst(&fake_false)},
+		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&fake_false)},
+	};
+	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
+	PROBLEM_ARRAY problems;
+	if (!m_plugin.exmdb.set_message_properties(dir.c_str(),
+	    effectiveUser(parent), CP_ACP, mid.messageId(), &propvals, &problems))
+		throw EWSError::ItemSave(E3409);
+}
+
+/**
+ * @brief      Cancel a meeting and remove it from the organizer's calendar
+ *
+ * @param      refId     Calendar item to cancel
+ * @param      saveCopy  Whether to keep a copy in Sent Items
+ */
+void EWSContext::cancelCalendarItem(const tItemId &refId, bool saveCopy) const
+{
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId meid(refId.Id.data(), refId.Id.size());
+	sFolderSpec parent = resolveFolder(meid);
+	std::string dir = getDir(parent);
+	validate(dir, meid);
+	if (!(permissions(dir, parent.folderId) & frightsDeleteAny))
+		throw EWSError::AccessDenied(E3131);
+
+	void *organizer = nullptr;
+	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP,
+	    meid.messageId(), PR_SENT_REPRESENTING_SMTP_ADDRESS, &organizer))
+		throw EWSError::ItemNotFound(E3389);
+	if (organizer != nullptr && m_auth_info.username != nullptr &&
+	    strcasecmp(static_cast<const char *>(organizer),
+	    m_auth_info.username) != 0)
+		throw EWSError::CalendarIsNotOrganizer(E3470);
+
+	sendMeetingCancellation(dir, meid, parent, saveCopy);
+
+	sFolderSpec deleted = resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
+	uint64_t new_mid = 0;
+	if (!m_plugin.exmdb.allocate_message_id(dir.c_str(), deleted.folderId, &new_mid))
+		throw EWSError::MoveCopyFailed(E3425);
+	BOOL result = false;
+	if (!m_plugin.exmdb.movecopy_message(dir.c_str(), CP_ACP, meid.messageId(),
+	    deleted.folderId, new_mid, TRUE, &result) || !result)
+		throw EWSError::CannotDeleteObject(E3471);
 }
 
 /**
@@ -4170,15 +4236,21 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3377);
 		TARRAY_SET* rcpts = content->children.prcpts;
+		auto add_attendee = [](TPROPVAL_ARRAY *rcpt, const tAttendee &att, uint32_t type) {
+			att.Mailbox.mkRecipient(rcpt, type);
+			static constexpr uint32_t sendable = recipSendable;
+			if (rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3377);
+		};
 		if (item.RequiredAttendees)
 			for (const auto &att : *item.RequiredAttendees)
-				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+				add_attendee(rcpts->emplace(), att, MAPI_TO);
 		if (item.OptionalAttendees)
 			for (const auto &att : *item.OptionalAttendees)
-				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_CC);
+				add_attendee(rcpts->emplace(), att, MAPI_CC);
 		if (item.Resources)
 			for (const auto &att : *item.Resources)
-				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+				add_attendee(rcpts->emplace(), att, MAPI_TO);
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
 			throw DispatchError(E3378);
@@ -4592,7 +4664,7 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 {
 	auto &to = item.ToRecipients, &cc = item.CcRecipients, &bcc = item.BccRecipients;
 	toContent(dir, static_cast<tItem&>(item), shape, content);
-	if (!item.ItemClass)
+	if (!item.ItemClass && !content->proplist.has(PR_MESSAGE_CLASS))
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Note")});
 	size_t recipients = (to ? to->size() : 0) +
 	                    (cc ? cc->size() : 0) +

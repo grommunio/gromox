@@ -61,6 +61,7 @@ class EWSError : public DispatchError {
 #define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
 	ERR(CalendarInvalidRecurrence) ///< Internal structure of the objects that represent the recurrence is invalid.
+	ERR(CalendarIsNotOrganizer) ///< Operation is reserved for the organizer of the meeting
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
 	ERR(CannotEmptyFolder) ///< Failed to empty folder
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
@@ -597,6 +598,8 @@ E(3466, "failed to reread message for sending");
 E(3467, "failed to allocate message id in Sent Items");
 E(3468, "failed to move sent message to Sent Items");
 E(3469, "failed to delete draft after send");
+E(3470, "only the organizer can cancel a meeting");
+E(3471, "failed to delete cancelled meeting");
 
 #undef E
 }
