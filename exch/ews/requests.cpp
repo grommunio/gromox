@@ -1449,6 +1449,21 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 			folder.target = ctx.auth_info().username;
 		folder.normalize();
 		std::string dir = ctx.getDir(folder);
+		if (folder.folderId == rop_util_make_eid_ex(1, PRIVATE_FID_RECIPIENT_CACHE)) {
+			/*
+			 * The reserved ID may not correspond to a real folder
+			 * (e.g. a legacy mailbox, or a client that created its
+			 * own copy elsewhere) - prefer a folder actually
+			 * carrying the well-known container class if one
+			 * exists, and only fall back to the reservation
+			 * otherwise.
+			 */
+			auto realId = ctx.findFolderByClass(dir,
+			              rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+			              "IPF.Contact.RecipientCache");
+			if (realId)
+				folder.folderId = *realId;
+		}
 		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
 			throw EWSError::AccessDenied(E3136);
 		mGetFolderResponseMessage msg;

@@ -3413,6 +3413,38 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 }
 
 /**
+ * @brief      Find a child folder by its PR_CONTAINER_CLASS value
+ *
+ * @param      dir             Home directory
+ * @param      parentFolderId  Parent folder to search under
+ * @param      containerClass  PR_CONTAINER_CLASS value to match
+ *
+ * @return     Folder ID of the first matching child folder, or unset if none found
+ */
+std::optional<uint64_t> EWSContext::findFolderByClass(const std::string &dir,
+    uint64_t parentFolderId, const char *containerClass) const
+{
+	TAGGED_PROPVAL pv{PR_CONTAINER_CLASS, deconst(containerClass)};
+	RESTRICTION_PROPERTY rprop{RELOP_EQ, PR_CONTAINER_CLASS, pv};
+	const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
+	uint32_t tableId = 0, rowCount = 0;
+	if (!m_plugin.exmdb.load_hierarchy_table(dir.c_str(), parentFolderId,
+	    nullptr, 0, &rst, &tableId, &rowCount) || rowCount == 0)
+		return std::nullopt;
+	auto cl_tbl = HX::make_scope_exit([&]() { m_plugin.exmdb.unload_table(dir.c_str(), tableId); });
+	static constexpr proptag_t eid_tag = PR_ENTRYID;
+	TARRAY_SET rows{};
+	if (!m_plugin.exmdb.query_table(dir.c_str(), nullptr, CP_ACP, tableId,
+	    {&eid_tag, 1}, 0, 1, &rows) || rows.count == 0 || rows.pparray[0] == nullptr)
+		return std::nullopt;
+	auto eid = rows.pparray[0]->get<const BINARY>(PR_ENTRYID);
+	if (eid == nullptr || eid->cb == 0)
+		return std::nullopt;
+	sFolderEntryId folderEid(eid->pb, eid->cb);
+	return rop_util_make_eid_ex(1, rop_util_gc_to_value(folderEid.folder_gc));
+}
+
+/**
  * @brief     Send message
  *
  * @param     dir      Home directory the message is associtated with
