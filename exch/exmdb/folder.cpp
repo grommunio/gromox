@@ -1853,10 +1853,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	}
 	if (search_flags & RECURSIVE_SEARCH)
 		*psearch_status |= SEARCH_RECURSIVE;
-	if (search_flags & CONTENT_INDEXED_SEARCH)
-		*psearch_status |= CI_TOTALLY;
-	else
-		*psearch_status |= TWIR_TOTALLY;
+	*psearch_status |= TWIR_TOTALLY;
 	return TRUE;
 }
 
