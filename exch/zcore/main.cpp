@@ -367,16 +367,17 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	auto cl_5 = HX::make_scope_exit([]() { ab_tree::AB.stop(); });
-	if (0 != rpc_parser_run()) {
-		mlog(LV_ERR, "system: failed to start ZRPC parser");
-		return EXIT_FAILURE;
-	}
-	auto cl_6 = HX::make_scope_exit(rpc_parser_stop);
 	if (zserver_run() != 0) {
 		mlog(LV_ERR, "system: failed to run zserver");
 		return EXIT_FAILURE;
 	}
 	auto cl_7 = HX::make_scope_exit(zserver_stop);
+	/* Zserver session management must outlive the threads making use of them */
+	if (0 != rpc_parser_run()) {
+		mlog(LV_ERR, "system: failed to start ZRPC parser");
+		return EXIT_FAILURE;
+	}
+	auto cl_6 = HX::make_scope_exit(rpc_parser_stop);
 	if (exmdb_client_run_front(g_config_file->get_value("config_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start exmdb client");
 		return EXIT_FAILURE;
