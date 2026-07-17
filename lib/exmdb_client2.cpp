@@ -175,6 +175,7 @@ class locator {
 	public:
 	locator(size_t maxconn, exmdb_client_remote *client) : m_maxconn(maxconn), m_client(client) {}
 	srv_conn_ref get_connection(const char *dir);
+	void stop_async_listeners();
 	size_t bump_active_count() { return ++m_active; }
 	size_t drop_active_count();
 
@@ -404,10 +405,13 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 			static_cast<int>(pr), bin.cb);
 	if (write(fd.get(), &resp_code, 1) != 1)
 		return -1;
-	if (resp_code == exmdb_response::success)
-		for (size_t i = 0; i < notify.id_array.size(); ++i)
-			m_client->m_event_proc(notify.dir, notify.b_table,
-				notify.id_array[i], &notify.db_notify);
+	if (resp_code == exmdb_response::success) {
+		auto proc = m_client->m_event_proc.load(std::memory_order_relaxed);
+		if (proc != nullptr)
+			for (size_t i = 0; i < notify.id_array.size(); ++i)
+				proc(notify.dir, notify.b_table,
+					notify.id_array[i], &notify.db_notify);
+	}
 	buff.clear();
 	offset = 0;
 	return 0;
@@ -436,7 +440,7 @@ void async_listener::connect_and_listen()
 void *async_listener::thread_entry(void *vargs)
 {
 	auto asl = static_cast<async_listener *>(vargs);
-	while (!asl->m_stop && !asl->m_client->m_notify_stop)
+	while (!asl->m_stop)
 		asl->connect_and_listen();
 	return nullptr;
 }
@@ -544,13 +548,14 @@ srv_conn_ref srv_entry::extract_one_connection()
 void srv_entry::launch_notify_listener(exmdb_client_remote *bp_client,
     const char *dir) try
 {
-	if (bp_client->m_event_proc == nullptr)
-		return;
-
 	std::shared_ptr<async_listener> asl;
 	{
 		std::lock_guard hold(conn_lock);
 		if (m_async != nullptr)
+			/* this srv_entry already has a listener */
+			return;
+		if (bp_client->m_event_proc.load(std::memory_order_acquire) == nullptr)
+			/* stop_async_listeners was invoked */
 			return;
 		asl = m_async = std::make_shared<async_listener>(ident, bp_client, dir);
 	}
@@ -761,6 +766,34 @@ srv_conn_ref locator::get_connection(const char *dir) try
 	return {};
 }
 
+/**
+ * Stop all async notification listeners.
+ *
+ * The caller has already set m_event_proc=nullptr. No new m_async values will
+ * be assigned to any srv_entry::m_async. Thus, the number of async_listener
+ * pointers is bound, even if name_to_srv itself were to grow after calling
+ * .size(). All m_async can be collected at once.
+ */
+void locator::stop_async_listeners()
+{
+	std::vector<std::shared_ptr<async_listener>> graveyard;
+	size_t z;
+	{
+		std::lock_guard hold(nts_lock);
+		z = name_to_srv.size();
+	}
+	graveyard.reserve(z);
+	std::lock_guard hold(nts_lock);
+	for (auto &e : name_to_srv) {
+		std::lock_guard hold2(e.second->conn_lock);
+		if (e.second->m_async == nullptr)
+			continue;
+		graveyard.emplace_back(std::move(e.second->m_async));
+		if (graveyard.size() >= graveyard.capacity())
+			break; /* should never happen */
+	}
+}
+
 exmdb_client_remote::exmdb_client_remote(unsigned int conn_max)
 {
 	auto cfg = config_file_initd("gromox.cfg", PKGSYSCONFDIR, exmdb_client_dflt);
@@ -778,8 +811,14 @@ exmdb_client_remote::exmdb_client_remote(unsigned int conn_max)
 	char txt[GUIDSTR_SIZE];
 	GUID::machine_id().to_str(txt, std::size(txt), 32);
 	m_client_id = std::to_string(getpid()) + txt;
-	m_notify_stop = true;
 	m_locator = std::make_unique<exmdb_client_impl::locator>(conn_max, this);
+}
+
+void exmdb_client_remote::stop_async_listeners()
+{
+	set_async_notif(nullptr);
+	/* No new m_async assignements from now on */
+	m_locator->stop_async_listeners();
 }
 
 exmdb_client_remote::~exmdb_client_remote()
@@ -791,7 +830,7 @@ exmdb_client_remote::~exmdb_client_remote()
 	 * functions of exmdb_client_remote or other subordinate classes should
 	 * only ever be done with "m_client"-style backpointers.
 	 */
-	m_notify_stop = true;
+	set_async_notif(nullptr);
 }
 
 namespace gromox {
@@ -802,7 +841,6 @@ int exmdb_client_run(const char *cfgdir, void (*build_env)(bool), void (*free_en
 		return -1;
 	exmdb_client->m_build_env = build_env;
 	exmdb_client->m_free_env = free_env;
-	exmdb_client->m_notify_stop = false;
 	return 0;
 }
 
