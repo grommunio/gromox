@@ -38,17 +38,10 @@ enum {
 	DISPATCH_CONTINUE
 };
 
-namespace {
-struct CLIENT_NODE {
-	DOUBLE_LIST_NODE node;
-	int clifd;
-};
-}
-
 static unsigned int g_thread_num;
 static gromox::atomic_bool g_zrpc_stop;
 static std::vector<pthread_t> g_thread_ids;
-static DOUBLE_LIST g_conn_list;
+static std::vector<int> g_conn_list;
 static std::condition_variable g_waken_cond;
 static std::mutex g_conn_lock;
 unsigned int g_zrpc_debug;
@@ -64,18 +57,17 @@ void rpc_parser_init(unsigned int thread_num)
 	g_thread_ids.reserve(thread_num);
 }
 
-BOOL rpc_parser_activate_connection(int clifd)
+bool rpc_parser_activate_connection(int fd) try
 {
-	auto pclient = gromox::me_alloc<CLIENT_NODE>();
-	if (pclient == nullptr)
-		return FALSE;
-	pclient->node.pdata = pclient;
-	pclient->clifd = clifd;
-	std::unique_lock cl_hold(g_conn_lock);
-	double_list_append_as_tail(&g_conn_list, &pclient->node);
-	cl_hold.unlock();
+	{
+		std::unique_lock cl_hold(g_conn_lock);
+		g_conn_list.reserve(g_conn_list.size() + 1);
+		g_conn_list.emplace_back(fd);
+	}
 	g_waken_cond.notify_one();
-	return TRUE;
+	return true;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
@@ -111,21 +103,22 @@ static void *zcrp_thrwork(void *param)
 {
 	uint32_t offset;
 	struct pollfd fdpoll;
-	DOUBLE_LIST_NODE *pnode;
 
 	while (true) {
+	wrapfd clifd;
+
 	/* Wait for work items */
 	{
 		std::unique_lock cm_hold(g_conn_lock);
-		g_waken_cond.wait(cm_hold, []() { return g_zrpc_stop || double_list_get_nodes_num(&g_conn_list) > 0; });
+		g_waken_cond.wait(cm_hold, []() { return g_zrpc_stop || g_conn_list.size() > 0; });
 		if (g_zrpc_stop)
 			return nullptr;
-		pnode = double_list_pop_front(&g_conn_list);
+		if (g_conn_list.empty())
+			continue;
+		clifd = g_conn_list.front();
+		g_conn_list.erase(g_conn_list.begin());
 	}
-	if (pnode == nullptr)
-		continue;
 
-	wrapfd clifd = static_cast<CLIENT_NODE *>(pnode->pdata)->clifd;
 	offset = 0;
 	fdpoll.fd = clifd.get();
 	fdpoll.events = POLLIN|POLLPRI;
