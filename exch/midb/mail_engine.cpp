@@ -109,6 +109,7 @@ struct syncmessage_entry {
 	uint32_t msg_flags = 0;
 	std::string midstr;
 	bool answered = false, forwarded = false, flagged = false;
+	bool delmarked = false;
 };
 
 using syncfolder_list = std::unordered_map<uint64_t /* folder_id */, syncfolder_entry>;
@@ -1462,6 +1463,8 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		qstr += ", replied=1";
 	if (e.forwarded)
 		qstr += ", forwarded=1";
+	if (e.delmarked)
+		qstr += ", deleted=1";
 	qstr += " WHERE message_id=" + std::to_string(message_id);
 	if (gx_sql_exec(db, qstr.c_str()) != SQLITE_OK)
 		return false;
@@ -1597,6 +1600,7 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 		auto num = rows.pparray[i]->get<const uint32_t>(PR_FLAG_STATUS);
 		bool flagged = (num != nullptr && *num == followupFlagged) ||
 		               (msgstatus != nullptr && *msgstatus & MSGSTATUS_TAGGED);
+		bool delmarked = msgstatus != nullptr && *msgstatus & MSGSTATUS_DELMARKED;
 		num = rows.pparray[i]->get<const uint32_t>(PR_ICON_INDEX);
 		bool answered = (num != nullptr && *num == MAIL_ICON_REPLIED) ||
 		                (msgstatus != nullptr && *msgstatus & MSGSTATUS_ANSWERED);
@@ -1604,7 +1608,8 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 		syncmessagelist.emplace(message_id, syncmessage_entry{
 			mod_time != nullptr ? *mod_time : 0,
 			recv_time != nullptr ? *recv_time : 0,
-			*flags, znul(midstr), answered, forwarded, flagged});
+			*flags, znul(midstr), answered, forwarded, flagged,
+			delmarked});
 	}
 
 	size_t totalmsgs = syncmessagelist.size(), procmsgs = 0;
@@ -4055,7 +4060,7 @@ static void notif_msg_added(IDB_ITEM *pidb,
 	static constexpr proptag_t tmp_proptags[] =
 		{PR_MESSAGE_DELIVERY_TIME, PR_LAST_MODIFICATION_TIME,
 		PidTagMidString, PR_MESSAGE_FLAGS, PR_FLAG_STATUS,
-		PR_ICON_INDEX};
+		PR_ICON_INDEX, PR_MSG_STATUS};
 	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client->get_message_properties(cu_get_maildir(),
 	    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
@@ -4073,10 +4078,12 @@ static void notif_msg_added(IDB_ITEM *pidb,
 	num = propvals.get<const uint32_t>(PR_ICON_INDEX);
 	bool set_answered = num != nullptr && *num == MAIL_ICON_REPLIED;
 	bool set_forwarded = num != nullptr && *num == MAIL_ICON_FORWARDED;
+	bool b_delmarked = false;
 	num = propvals.get<const uint32_t>(PR_MSG_STATUS);
 	if (num != nullptr) {
 		set_answered |= *num & MSGSTATUS_ANSWERED;
 		b_flagged    |= *num & MSGSTATUS_TAGGED;
+		b_delmarked  |= *num & MSGSTATUS_DELMARKED;
 	}
 
 	std::string flags_buff;
@@ -4127,7 +4134,7 @@ static void notif_msg_added(IDB_ITEM *pidb,
 		return;	
 	if (!me_insert_message(pstmt, &uidnext, message_id, pidb->psqlite,
 	    syncmessage_entry{mod_time, received_time, message_flags,
-	    znul(str), set_answered, set_forwarded, b_flagged}))
+	    znul(str), set_answered, set_forwarded, b_flagged, b_delmarked}))
 		return;
 	if (flags_buff.find(midb_flag::deleted) == flags_buff.npos)
 		return;
