@@ -1,7 +1,7 @@
 #pragma once
+#include <atomic>
 #include <optional>
 #include <string>
-#include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
@@ -28,7 +28,7 @@ class GX_EXPORT exmdb_client_remote {
 	exmdb_client_remote(unsigned int conn_max = 1);
 	~exmdb_client_remote();
 	using async_handler_t = void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
-	void set_async_notif(async_handler_t h) { m_event_proc = h; }
+	void set_async_notif(async_handler_t h) { m_event_proc.store(h, std::memory_order_release); }
 	exmdb_client_impl::locator *locator() { return m_locator.get(); }
 
 #define IDLOUT
@@ -42,9 +42,8 @@ class GX_EXPORT exmdb_client_remote {
 	std::unique_ptr<exmdb_client_impl::locator> m_locator;
 	void (*m_build_env)(bool pvt) = nullptr;
 	void (*m_free_env)() = nullptr;
-	void (*m_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr;
+	std::atomic<void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *)> m_event_proc{};
 	int m_rpc_timeout = -1;
-	gromox::atomic_bool m_notify_stop;
 	bool m_allow_lpc = false;
 };
 

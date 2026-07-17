@@ -404,10 +404,13 @@ int async_listener::process_packet(wrapfd &fd, pollfd &pfd,
 			static_cast<int>(pr), bin.cb);
 	if (write(fd.get(), &resp_code, 1) != 1)
 		return -1;
-	if (resp_code == exmdb_response::success)
-		for (size_t i = 0; i < notify.id_array.size(); ++i)
-			m_client->m_event_proc(notify.dir, notify.b_table,
-				notify.id_array[i], &notify.db_notify);
+	if (resp_code == exmdb_response::success) {
+		auto proc = m_client->m_event_proc.load(std::memory_order_relaxed);
+		if (proc != nullptr)
+			for (size_t i = 0; i < notify.id_array.size(); ++i)
+				proc(notify.dir, notify.b_table,
+					notify.id_array[i], &notify.db_notify);
+	}
 	buff.clear();
 	offset = 0;
 	return 0;
@@ -436,7 +439,7 @@ void async_listener::connect_and_listen()
 void *async_listener::thread_entry(void *vargs)
 {
 	auto asl = static_cast<async_listener *>(vargs);
-	while (!asl->m_stop && !asl->m_client->m_notify_stop)
+	while (!asl->m_stop)
 		asl->connect_and_listen();
 	return nullptr;
 }
@@ -544,13 +547,14 @@ srv_conn_ref srv_entry::extract_one_connection()
 void srv_entry::launch_notify_listener(exmdb_client_remote *bp_client,
     const char *dir) try
 {
-	if (bp_client->m_event_proc == nullptr)
-		return;
-
 	std::shared_ptr<async_listener> asl;
 	{
 		std::lock_guard hold(conn_lock);
 		if (m_async != nullptr)
+			/* this srv_entry already has a listener */
+			return;
+		if (bp_client->m_event_proc.load(std::memory_order_acquire) == nullptr)
+			/* stop_async_listeners was invoked */
 			return;
 		asl = m_async = std::make_shared<async_listener>(ident, bp_client, dir);
 	}
@@ -778,7 +782,6 @@ exmdb_client_remote::exmdb_client_remote(unsigned int conn_max)
 	char txt[GUIDSTR_SIZE];
 	GUID::machine_id().to_str(txt, std::size(txt), 32);
 	m_client_id = std::to_string(getpid()) + txt;
-	m_notify_stop = true;
 	m_locator = std::make_unique<exmdb_client_impl::locator>(conn_max, this);
 }
 
@@ -791,7 +794,7 @@ exmdb_client_remote::~exmdb_client_remote()
 	 * functions of exmdb_client_remote or other subordinate classes should
 	 * only ever be done with "m_client"-style backpointers.
 	 */
-	m_notify_stop = true;
+	set_async_notif(nullptr);
 }
 
 namespace gromox {
@@ -802,7 +805,6 @@ int exmdb_client_run(const char *cfgdir, void (*build_env)(bool), void (*free_en
 		return -1;
 	exmdb_client->m_build_env = build_env;
 	exmdb_client->m_free_env = free_env;
-	exmdb_client->m_notify_stop = false;
 	return 0;
 }
 
