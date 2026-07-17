@@ -600,6 +600,8 @@ E(3468, "failed to move sent message to Sent Items");
 E(3469, "failed to delete draft after send");
 E(3470, "only the organizer can cancel a meeting");
 E(3471, "failed to delete cancelled meeting");
+E(3472, "cannot read from item's source folder");
+E(3473, "cannot write to destination folder");
 
 #undef E
 }

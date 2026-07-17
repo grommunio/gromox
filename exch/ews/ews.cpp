@@ -292,6 +292,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetUserConfiguration", process<Structures::mGetUserConfigurationRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
 	{"GetUserPhoto", process<Structures::mGetUserPhotoRequest>},
+	{"MarkAsJunk", process<Structures::mMarkAsJunkRequest>},
 	{"MoveFolder", process<Structures::mMoveFolderRequest>},
 	{"MoveItem", process<Structures::mMoveItemRequest>},
 	{"RemoveDelegate", process<Structures::mRemoveDelegateRequest>},

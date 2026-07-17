@@ -1893,6 +1893,23 @@ void mConvertIdResponseMessage::serialize(tinyxml2::XMLElement *xml) const
 		altid->SetAttribute("xsi:type", "t:AlternateIdType");
 }
 
+mMarkAsJunkRequest::mMarkAsJunkRequest(const tinyxml2::XMLElement *xml) :
+	XMLINIT(ItemIds),
+	XMLINITA(IsJunk),
+	XMLINITA(MoveItem)
+{}
+
+void mMarkAsJunkResponse::serialize(tinyxml2::XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
+}
+
+void mMarkAsJunkResponseMessage::serialize(tinyxml2::XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(MovedItemId);
+}
+
 mCopyFolderRequest::mCopyFolderRequest(const tinyxml2::XMLElement *xml) :
 	mBaseMoveCopyFolder(xml, true)
 {}

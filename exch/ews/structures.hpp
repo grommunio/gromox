@@ -3950,6 +3950,39 @@ struct mGetUserOofSettingsResponse {
 };
 
 /**
+ * Messages.xsd:1968
+ */
+struct mMarkAsJunkRequest {
+	explicit mMarkAsJunkRequest(const tinyxml2::XMLElement *);
+
+	std::vector<sBaseItemId> ItemIds;
+	bool IsJunk; //Attribute
+	bool MoveItem; //Attribute
+};
+
+/**
+ * Messages.xsd:1980
+ */
+struct mMarkAsJunkResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "MarkAsJunkResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tItemId> MovedItemId;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * Messages.xsd:1975
+ */
+struct mMarkAsJunkResponse {
+	std::vector<mMarkAsJunkResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd:873
  */
 struct mMoveFolderRequest : public mBaseMoveCopyFolder {
