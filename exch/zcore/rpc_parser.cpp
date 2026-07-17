@@ -20,6 +20,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
@@ -124,45 +125,38 @@ static void *zcrp_thrwork(void *param)
 	if (pnode == nullptr)
 		continue;
 
-	auto clifd = static_cast<CLIENT_NODE *>(pnode->pdata)->clifd;
-	free(pnode->pdata);
-	
+	wrapfd clifd = static_cast<CLIENT_NODE *>(pnode->pdata)->clifd;
 	offset = 0;
-	fdpoll.fd = clifd;
+	fdpoll.fd = clifd.get();
 	fdpoll.events = POLLIN|POLLPRI;
-	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
-		close(clifd);
+	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1)
 		continue;
-	}
 
 	std::string pbuff;
 	try {
 		uint32_t buff_len = 0;
-		auto read_len = read(clifd, &buff_len, sizeof(uint32_t));
+		auto read_len = read(clifd.get(), &buff_len, sizeof(uint32_t));
 		if (read_len < 0 || static_cast<size_t>(read_len) != sizeof(uint32_t) ||
-		    buff_len >= UINT_MAX) {
-			close(clifd);
+		    buff_len >= UINT_MAX)
 			continue;
-		}
 		buff_len = std::min(buff_len, UINT32_MAX);
 		pbuff.resize(buff_len);
 	} catch (const std::bad_alloc &) {
 		auto tmp_byte = zcore_response::lack_memory;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
+			if (write(clifd.get(), &tmp_byte, 1) < 1)
 				/* ignore */;
-		close(clifd);
 		continue;
 	}
 	while (true) {
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
-			close(clifd);
+			clifd.close_rd();
 			break;
 		}
-		auto read_len = read(clifd, &pbuff[offset], pbuff.size() - offset);
+		auto read_len = read(clifd.get(), &pbuff[offset], pbuff.size() - offset);
 		if (read_len <= 0) {
-			close(clifd);
+			clifd.close_rd();
 			break;
 		}
 		offset += read_len;
@@ -183,14 +177,13 @@ static void *zcrp_thrwork(void *param)
 		auto tmp_byte = zcore_response::pull_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
+			if (write(clifd.get(), &tmp_byte, 1) < 1)
 				/* ignore */;
-		close(clifd);
 		continue;
 	}
 	pbuff = {};
 	if (request->call_id == zcore_callid::notifdequeue)
-		common_util_set_clifd(clifd);
+		common_util_set_clifd(clifd.get());
 	std::unique_ptr<zcresp> response;
 	switch (rpc_parser_dispatch(request.get(), response)) {
 	case DISPATCH_FALSE: {
@@ -198,9 +191,8 @@ static void *zcrp_thrwork(void *param)
 		auto tmp_byte = zcore_response::dispatch_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
+			if (write(clifd.get(), &tmp_byte, 1) < 1)
 				/* ignore */;
-		close(clifd);
 		continue;
 	}
 	case DISPATCH_CONTINUE:
@@ -215,21 +207,20 @@ static void *zcrp_thrwork(void *param)
 		auto tmp_byte = zcore_response::push_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
+			if (write(clifd.get(), &tmp_byte, 1) < 1)
 				/* ignore */;
-		close(clifd);
 		continue;
 	}
 	common_util_free_environment();
 	fdpoll.events = POLLOUT|POLLWRBAND;
 	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-		if (write(clifd, tmp_bin.pb, tmp_bin.cb) < 0)
+		if (write(clifd.get(), tmp_bin.pb, tmp_bin.cb) < 0)
 			/* ignore */;
-	shutdown(clifd, SHUT_WR);
+	shutdown(clifd.get(), SHUT_WR);
 	uint8_t tmp_byte;
-	if (read(clifd, &tmp_byte, 1))
+	if (read(clifd.get(), &tmp_byte, 1))
 		/* ignore */;
-	close(clifd);
+	clifd.close_rd();
 	free(tmp_bin.pb);
 	tmp_bin.pb = nullptr;
 	}
