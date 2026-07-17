@@ -348,11 +348,6 @@ int main(int argc, char **argv)
 	/* parser after service: dependency on mysql_adaptor */
 	rpc_parser_init(threads_num);
 	listener_init();
-	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
-		mlog(LV_ERR, "system: failed to start listener");
-		return EXIT_FAILURE;
-	}
-	auto cl_10 = HX::make_scope_exit(listener_stop);
 	if (common_util_run(g_config_file->get_value("data_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start common util");
 		return EXIT_FAILURE;
@@ -382,6 +377,12 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start exmdb client");
 		return EXIT_FAILURE;
 	}
+	/* Listener last: stop accepting new clients before any teardown */
+	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
+		mlog(LV_ERR, "system: failed to start listener");
+		return EXIT_FAILURE;
+	}
+	auto cl_10 = HX::make_scope_exit(listener_stop);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
