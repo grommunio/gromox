@@ -767,29 +767,30 @@ srv_conn_ref locator::get_connection(const char *dir) try
 }
 
 /**
- * Stop and join all async notification listener threads, for use during
- * shutdown before the structures which m_event_proc operates on are
- * dismantled. Connection pools remain serviceable. Listeners are joined one at
- * a time with no locks held, since a listener may itself be inside an RPC that
- * takes locator locks.
+ * Stop all async notification listeners.
+ *
+ * The caller has already set m_event_proc=nullptr. No new m_async values will
+ * be assigned to any srv_entry::m_async. Thus, the number of async_listener
+ * pointers is bound, even if name_to_srv itself were to grow after calling
+ * .size(). All m_async can be collected at once.
  */
 void locator::stop_async_listeners()
 {
-	while (true) {
-		std::shared_ptr<async_listener> asl;
-		{
-			std::lock_guard hold(nts_lock);
-			for (auto &e : name_to_srv) {
-				std::lock_guard hold2(e.second->conn_lock);
-				if (e.second->m_async == nullptr)
-					continue;
-				asl = std::move(e.second->m_async);
-				break;
-			}
-		}
-		if (asl == nullptr)
-			break;
-		/* implied join (~async_listener) at end of scope */
+	std::vector<std::shared_ptr<async_listener>> graveyard;
+	size_t z;
+	{
+		std::lock_guard hold(nts_lock);
+		z = name_to_srv.size();
+	}
+	graveyard.reserve(z);
+	std::lock_guard hold(nts_lock);
+	for (auto &e : name_to_srv) {
+		std::lock_guard hold2(e.second->conn_lock);
+		if (e.second->m_async == nullptr)
+			continue;
+		graveyard.emplace_back(std::move(e.second->m_async));
+		if (graveyard.size() >= graveyard.capacity())
+			break; /* should never happen */
 	}
 }
 
