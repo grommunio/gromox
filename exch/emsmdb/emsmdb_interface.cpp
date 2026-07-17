@@ -623,6 +623,12 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		input_flags |= GROMOX_READSTREAM_NOCHAIN;
 
 	auto result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
+	/*
+	 * rop_processor_proc normally tries to send out notifications. But due
+	 * to response size constraints, nothing is guaranteed, not even
+	 * ropPending. So if there seem to be notifications left, wakeup the
+	 * asyncems connection so the client knows about the situation.
+	 */
 	bool b_wakeup = false;
 	{
 		std::lock_guard lk_occupied(phandle->notify_lock);
