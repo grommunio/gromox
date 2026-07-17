@@ -175,6 +175,7 @@ class locator {
 	public:
 	locator(size_t maxconn, exmdb_client_remote *client) : m_maxconn(maxconn), m_client(client) {}
 	srv_conn_ref get_connection(const char *dir);
+	void stop_async_listeners();
 	size_t bump_active_count() { return ++m_active; }
 	size_t drop_active_count();
 
@@ -765,6 +766,33 @@ srv_conn_ref locator::get_connection(const char *dir) try
 	return {};
 }
 
+/**
+ * Stop and join all async notification listener threads, for use during
+ * shutdown before the structures which m_event_proc operates on are
+ * dismantled. Connection pools remain serviceable. Listeners are joined one at
+ * a time with no locks held, since a listener may itself be inside an RPC that
+ * takes locator locks.
+ */
+void locator::stop_async_listeners()
+{
+	while (true) {
+		std::shared_ptr<async_listener> asl;
+		{
+			std::lock_guard hold(nts_lock);
+			for (auto &e : name_to_srv) {
+				std::lock_guard hold2(e.second->conn_lock);
+				if (e.second->m_async == nullptr)
+					continue;
+				asl = std::move(e.second->m_async);
+				break;
+			}
+		}
+		if (asl == nullptr)
+			break;
+		/* implied join (~async_listener) at end of scope */
+	}
+}
+
 exmdb_client_remote::exmdb_client_remote(unsigned int conn_max)
 {
 	auto cfg = config_file_initd("gromox.cfg", PKGSYSCONFDIR, exmdb_client_dflt);
@@ -783,6 +811,13 @@ exmdb_client_remote::exmdb_client_remote(unsigned int conn_max)
 	GUID::machine_id().to_str(txt, std::size(txt), 32);
 	m_client_id = std::to_string(getpid()) + txt;
 	m_locator = std::make_unique<exmdb_client_impl::locator>(conn_max, this);
+}
+
+void exmdb_client_remote::stop_async_listeners()
+{
+	set_async_notif(nullptr);
+	/* No new m_async assignements from now on */
+	m_locator->stop_async_listeners();
 }
 
 exmdb_client_remote::~exmdb_client_remote()

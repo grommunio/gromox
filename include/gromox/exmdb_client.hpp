@@ -29,6 +29,7 @@ class GX_EXPORT exmdb_client_remote {
 	~exmdb_client_remote();
 	using async_handler_t = void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
 	void set_async_notif(async_handler_t h) { m_event_proc.store(h, std::memory_order_release); }
+	void stop_async_listeners();
 	exmdb_client_impl::locator *locator() { return m_locator.get(); }
 
 #define IDLOUT

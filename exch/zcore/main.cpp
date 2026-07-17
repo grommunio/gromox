@@ -367,6 +367,12 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	auto cl_7 = HX::make_scope_exit(zserver_stop);
+	/*
+	 * exmdb notify threads reference sessions through zs_notification_proc;
+	 * join them before zserver_stop. exmdb_client itself must stay up
+	 * longer (cl_8): session object destructors still issue exmdb RPCs.
+	 */
+	auto cl_9 = HX::make_scope_exit([]() { exmdb_client->stop_async_listeners(); });
 	/* Zserver session management must outlive the threads making use of them */
 	if (0 != rpc_parser_run()) {
 		mlog(LV_ERR, "system: failed to start ZRPC parser");
