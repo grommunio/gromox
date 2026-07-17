@@ -82,7 +82,8 @@ struct report_stats {
 static constexpr time_duration HANDLE_VALID_INTERVAL = std::chrono::seconds(2000);
 static time_point g_start_time;
 static pthread_t g_scan_id;
-static std::mutex g_cxr_lock, g_lock; /* protects g_handle_hash & g_user_hash */
+static std::mutex g_cxr_lock; /* protects g_cxr_bitmap */
+static std::mutex g_lock; /* protects g_handle_hash & g_user_hash */
 static std::mutex g_notify_lock;
 static gromox::atomic_bool g_emsi_stop{true};
 static thread_local std::shared_ptr<emsmdb_session> g_handle_key;
@@ -334,6 +335,7 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 	auto phandle = ei_lookup_session(*pcxh);
 	if (phandle == nullptr)
 		return;
+	std::unique_lock gl_hold(g_lock);
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter != g_user_hash.end()) {
 		auto &uhv = uh_iter->second;
