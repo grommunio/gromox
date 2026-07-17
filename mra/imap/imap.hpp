@@ -231,4 +231,4 @@ extern void (*system_services_broadcast_unselect)(const char *, const std::strin
 extern std::shared_ptr<CONFIG_FILE> g_config_file;
 extern unsigned int g_imapcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
-extern bool g_support_tls, g_force_tls, g_rfc9051_enable;
+extern bool g_support_tls, g_force_tls, g_rfc9051_enable, g_expunge_on_delete;

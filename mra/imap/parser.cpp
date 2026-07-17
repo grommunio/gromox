@@ -65,7 +65,7 @@ static int imap_parser_wrdat_retrieve(imap_context &);
 
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
-bool g_support_tls, g_force_tls;
+bool g_support_tls, g_force_tls, g_expunge_on_delete;
 static int g_average_num;
 static size_t g_context_num;
 static time_duration g_timeout, g_autologout_time;

@@ -3176,6 +3176,39 @@ static bool store_flagkeyword(const char *str)
 	return false;
 }
 
+static void icp_expunge_flagged(imap_context &ctx, XARRAY &xarray) try
+{
+	std::vector<MITEM *> exp_list;
+	auto num = xarray.get_capacity();
+	for (size_t i = 0; i < num; ++i) {
+		auto pitem = xarray.get_item(i);
+		if (pitem->uid == 0 ||
+		    ctx.contents.get_itemx(pitem->uid) == nullptr)
+			continue;
+		exp_list.push_back(pitem);
+	}
+	if (exp_list.empty())
+		return;
+	int errnum;
+	if (midb_agent::remove_mail(ctx.maildir, ctx.selected_folder,
+	    exp_list, &errnum) != MIDB_RESULT_OK)
+		return;
+
+	imrpc_build_env();
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
+	for (auto pitem : exp_list) {
+		if (!exmdb_client->imapfile_delete(ctx.maildir, "eml", pitem->mid))
+			mlog(LV_WARN, "W-2459: remove %s/eml/%s failed",
+				ctx.maildir, pitem->mid.c_str());
+		else
+			imap_parser_log_info(&ctx, LV_DEBUG, "message %s has been deleted",
+				pitem->mid.c_str());
+	}
+	imap_parser_bcast_expunge(ctx, exp_list, ctx.selected_folder);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+}
+
 int icp_store(std::span<std::string> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
@@ -3218,6 +3251,9 @@ int icp_store(std::span<std::string> argv, imap_context &ctx)
 			ct_item->id, 0, flag_bits, kw_list, ctx);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
+	if (g_expunge_on_delete && flag_bits & FLAG_DELETED &&
+	    argv[3].front() != '-')
+		icp_expunge_flagged(ctx, xarray);
 	imap_parser_echo_modify(pcontext, nullptr, echomod::suppress_expunge);
 	return 1721;
 }
@@ -3485,6 +3521,9 @@ int icp_uid_store(std::span<std::string> argv, imap_context &ctx)
 			ct_item->id, pitem->uid, flag_bits, kw_list, ctx);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
+	if (g_expunge_on_delete && flag_bits & FLAG_DELETED &&
+	    argv[4].front() != '-')
+		icp_expunge_flagged(ctx, xarray);
 	imap_parser_echo_modify(pcontext, nullptr, echomod::suppress_expunge);
 	return 1724;
 }
