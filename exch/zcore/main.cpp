@@ -171,12 +171,11 @@ static void *zcls_thrwork(void *param)
 	while (!g_listener_notify_stop) {
 		socklen_t len = sizeof(unix_addr);
 		memset(&unix_addr, 0, sizeof(unix_addr));
-		auto clifd = accept4(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&unix_addr),
-		             &len, SOCK_CLOEXEC);
-		if (clifd == -1)
+		wrapfd fd = accept4(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&unix_addr),
+		            &len, SOCK_CLOEXEC);
+		if (fd.get() < 0)
 			continue;
-		if (!rpc_parser_activate_connection(clifd))
-			close(clifd);
+		rpc_parser_activate_connection(std::move(fd));
 	}
 	return nullptr;
 }

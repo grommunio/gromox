@@ -41,7 +41,7 @@ enum {
 static unsigned int g_thread_num;
 static gromox::atomic_bool g_zrpc_stop;
 static std::vector<pthread_t> g_thread_ids;
-static std::vector<int> g_conn_list;
+static std::vector<wrapfd> g_conn_list;
 static std::condition_variable g_waken_cond;
 static std::mutex g_conn_lock;
 unsigned int g_zrpc_debug;
@@ -57,17 +57,15 @@ void rpc_parser_init(unsigned int thread_num)
 	g_thread_ids.reserve(thread_num);
 }
 
-bool rpc_parser_activate_connection(int fd) try
+void rpc_parser_activate_connection(wrapfd &&fd) try
 {
 	{
 		std::unique_lock cl_hold(g_conn_lock);
-		g_conn_list.reserve(g_conn_list.size() + 1);
-		g_conn_list.emplace_back(fd);
+		g_conn_list.emplace_back(std::move(fd));
 	}
 	g_waken_cond.notify_one();
-	return true;
 } catch (const std::bad_alloc &) {
-	return false;
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
@@ -115,7 +113,7 @@ static void *zcrp_thrwork(void *param)
 			return nullptr;
 		if (g_conn_list.empty())
 			continue;
-		clifd = g_conn_list.front();
+		clifd = std::move(g_conn_list.front());
 		g_conn_list.erase(g_conn_list.begin());
 	}
 
@@ -266,7 +264,5 @@ void rpc_parser_stop()
 	}
 	g_thread_ids.clear();
 	std::unique_lock cl_hold(g_conn_lock);
-	for (auto fd : g_conn_list)
-		close(fd);
 	g_conn_list.clear();
 }
