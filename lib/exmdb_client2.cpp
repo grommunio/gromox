@@ -264,7 +264,8 @@ static wrapfd make_exmdb_connection(const srv_ident &ident, const char *dir,
 	bin.pb = nullptr;
 
 	std::string rsp_bin;
-	if (!exmdb_client_read_socket(fd.get(), rsp_bin, bp_client->m_rpc_timeout) ||
+	/* Bounded read: a mute server must not park the handshake forever */
+	if (!exmdb_client_read_socket(fd.get(), rsp_bin, SOCKET_TIMEOUT * 1000) ||
 	    rsp_bin.empty())
 		return -1;
 	auto response_code = static_cast<exmdb_response>(rsp_bin[0]);
@@ -736,17 +737,19 @@ srv_conn_ref locator::get_connection(const char *dir) try
 		cref.m_pool = srv;
 		return cref;
 	}
-	/*
-	 * Larger-scoped lock so no other thread builds connections
-	 * while we are trying to, as that could increase m_active
-	 * beyond its limit.
-	 */
-	std::lock_guard maker_hold(maker_lock);
-	if (!clean_some_connection(ident)) {
-		mlog(LV_ERR, "exmdb_client: reached global maximum connections (max:%zu)", m_maxconn);
-		return {};
+	{
+		/*
+		 * Reserve the slot under the lock, but do the connect and
+		 * handshake I/O outside of it.
+		 */
+		std::lock_guard maker_hold(maker_lock);
+		if (!clean_some_connection(ident)) {
+			mlog(LV_ERR, "exmdb_client: reached global maximum connections (max:%zu)", m_maxconn);
+			return {};
+		}
+		bump_active_count();
 	}
-
+	auto cl_slot = HX::make_scope_exit([this]() { drop_active_count(); });
 	cref = srv_conn_ref{make_exmdb_connection(ident, dir, false, m_client), srv, this};
 	if (cref->m_fd.get() == -2) {
 		return {};
@@ -755,9 +758,10 @@ srv_conn_ref locator::get_connection(const char *dir) try
 		        ident.host.c_str(), ident.port, dir);
 		return {};
 	}
-	auto h_new = bump_active_count();
+	cl_slot.release();
 	mlog(LV_DEBUG, "exmdb_client: connected to [%s]:%hu (fd %d), hnew=%zu",
-		ident.host.c_str(), ident.port, cref->m_fd.get(), h_new);
+		ident.host.c_str(), ident.port, cref->m_fd.get(),
+		m_active.load());
 
 	srv->launch_notify_listener(m_client, dir);
 	return cref;
