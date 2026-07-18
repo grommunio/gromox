@@ -2512,7 +2512,6 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
 		return ecServerOOM;
 	}
 	auto psink_node = &holder.front();
-	psink_node->clifd = common_util_get_clifd();
 	psink_node->until_time = time(nullptr);
 	psink_node->until_time += timeval;
 	psink_node->sink.hsession = psink->hsession;
@@ -2522,6 +2521,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
 		return ecServerOOM;
 	memcpy(psink_node->sink.padvise, psink->padvise,
 				psink->count*sizeof(ADVISE_INFO));
+	psink_node->clifd = common_util_get_clifd();
 	pinfo->sink_list.splice(pinfo->sink_list.end(), holder, holder.begin());
 	return ecNotFound;
 }
