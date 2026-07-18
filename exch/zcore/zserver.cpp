@@ -234,13 +234,9 @@ static void *zcorezs_scanwork(void *param)
 			free(tmp_bin.pb);
 			tmp_bin.pb = nullptr;
 			shutdown(psink_node->clifd.get(), SHUT_WR);
-			/*
-			 * Courtesy drain so the client sees the response
-			 * before close; must not block the lone scan thread
-			 * on an uncooperative peer.
-			 */
+			/* Bounded drain; the lone scan thread must not stall. */
 			fdpoll.events = POLLIN;
-			if (poll(&fdpoll, 1, 1000) == 1 &&
+			if (poll(&fdpoll, 1, 200) == 1 &&
 			    read(psink_node->clifd.get(), &tmp_byte, 1))
 				/* ignore */;
 		}
