@@ -164,6 +164,7 @@ static void *zcorezs_scanwork(void *param)
 		if (std::chrono::seconds(count) >= g_ping_interval)
 			count = 0;
 		std::list<sink_node> expired_list;
+		std::vector<decltype(g_session_table)::node_type> evicted_list;
 		time_point cur_time;
 
 		{
@@ -195,17 +196,17 @@ static void *zcorezs_scanwork(void *param)
 				continue;
 			}
 
-			/*
-			 * Eliminate session because of age. Dtors could send
-			 * e.g. unsubscribe_notification, unload_instance
-			 * EXRPCs, so we need a temporary env.
-			 */
-			common_util_build_environment();
-			pinfo->ptree.reset();
-			common_util_free_environment();
-			pinfo->sink_list.clear();
-			g_user_table.erase(pinfo->username);
-			iter = g_session_table.erase(iter);
+			/* Carefully extract sessions so as to not cause EXRPCs. */
+			try {
+				evicted_list.emplace_back();
+				common_util_build_environment();
+				auto cl_0 = HX::make_scope_exit(common_util_free_environment);
+				auto nd = g_session_table.extract(iter++);
+				g_user_table.erase(pinfo->username);
+				evicted_list.back() = std::move(nd);
+			} catch (const std::bad_alloc &) {
+				break;
+			}
 		}
 		}
 
@@ -243,6 +244,16 @@ static void *zcorezs_scanwork(void *param)
 			    read(psink_node->clifd.get(), &tmp_byte, 1))
 				/* ignore */;
 		}
+
+		/*
+		 * Eliminate session because of age. Dtors could send
+		 * e.g. unsubscribe_notification, unload_instance
+		 * EXRPCs, so we need a temporary env.
+		 */
+		common_util_build_environment();
+		evicted_list.clear();
+		common_util_free_environment();
+
 		if (count != 0)
 			continue;
 		/*
