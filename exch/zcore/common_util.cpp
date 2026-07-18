@@ -71,7 +71,7 @@ namespace {
 
 struct env_context {
 	alloc_context allocator;
-	int clifd = -1;
+	gromox::wrapfd clifd;
 };
 
 struct LANGMAP_ITEM {
@@ -374,22 +374,22 @@ void* common_util_alloc(size_t size)
 	return pctx->allocator.alloc(size);
 }
 
-void common_util_set_clifd(int clifd)
+void cu_set_clifd(wrapfd &&fd)
 {
 	auto pctx = g_env_key.get();
 	if (pctx == nullptr)
 		mlog(LV_ERR, "E-1810: T%lu: g_env_key is unset, cannot set clifd", gx_gettid());
 	else
-		pctx->clifd = clifd;
+		pctx->clifd = std::move(fd);
 }
 
-int common_util_get_clifd()
+wrapfd *cu_get_clifd()
 {
 	auto pctx = g_env_key.get();
 	if (pctx != nullptr)
-		return pctx->clifd;
+		return &pctx->clifd;
 	mlog(LV_ERR, "E-1811: T%lu: g_env_key is unset, clifd is unset", gx_gettid());
-	return -1;
+	return nullptr;
 }
 
 char *common_util_dup(std::string_view sv)

@@ -83,8 +83,6 @@ static std::unordered_map<int, USER_INFO> g_session_table;
 
 sink_node::~sink_node()
 {
-	if (clifd >= 0)
-		close(clifd);
 	free(sink.padvise);
 }
 
@@ -227,15 +225,15 @@ static void *zcorezs_scanwork(void *param)
 			/* implied ~sink_node at end of scope */
 			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok)
 				continue;
-			fdpoll.fd = psink_node->clifd;
+			fdpoll.fd = psink_node->clifd.get();
 			fdpoll.events = POLLOUT|POLLWRBAND;
 			if (tmp_bin.pb != nullptr &&
 			    poll(&fdpoll, 1, SOCKET_TIMEOUT * 1000) == 1 &&
-			    write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb) < 0)
+			    write(psink_node->clifd.get(), tmp_bin.pb, tmp_bin.cb) < 0)
 				/* ignore */;
 			free(tmp_bin.pb);
 			tmp_bin.pb = nullptr;
-			shutdown(psink_node->clifd, SHUT_WR);
+			shutdown(psink_node->clifd.get(), SHUT_WR);
 			/*
 			 * Courtesy drain so the client sees the response
 			 * before close; must not block the lone scan thread
@@ -243,7 +241,7 @@ static void *zcorezs_scanwork(void *param)
 			 */
 			fdpoll.events = POLLIN;
 			if (poll(&fdpoll, 1, 1000) == 1 &&
-			    read(psink_node->clifd, &tmp_byte, 1))
+			    read(psink_node->clifd.get(), &tmp_byte, 1))
 				/* ignore */;
 		}
 		if (count != 0)
@@ -466,16 +464,16 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 			response.result  = ecSuccess;
 			response.notifications.emplace_back(std::move(zn));
 
-			fdpoll.fd = psink_node->clifd;
+			fdpoll.fd = psink_node->clifd.get();
 			fdpoll.events = POLLOUT | POLLWRBAND;
 			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok) {
 				auto tmp_byte = zcore_response::push_error;
 				if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1 &&
-				    HXio_fullwrite(psink_node->clifd, &tmp_byte, 1) != 1)
+				    HXio_fullwrite(psink_node->clifd.get(), &tmp_byte, 1) != 1)
 					/* ignore */;
 			} else {
 				if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1) {
-					auto ret = HXio_fullwrite(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
+					auto ret = HXio_fullwrite(psink_node->clifd.get(), tmp_bin.pb, tmp_bin.cb);
 					if (ret < 0 || static_cast<size_t>(ret) != tmp_bin.cb)
 						/* ignore */;
 				}
@@ -2528,7 +2526,12 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
 		return ecServerOOM;
 	memcpy(psink_node->sink.padvise, psink->padvise,
 				psink->count*sizeof(ADVISE_INFO));
-	psink_node->clifd = common_util_get_clifd();
+	if (auto p = cu_get_clifd()) {
+		psink_node->clifd = std::move(*p);
+	} else {
+		mlog(LV_ERR, "%s: nobody gave me a file descriptor", __func__);
+		return ecInvalidParam;
+	}
 	pinfo->sink_list.splice(pinfo->sink_list.end(), holder, holder.begin());
 	return ecNotFound;
 }

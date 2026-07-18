@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
 #include <gromox/zcore_rpc.hpp>
@@ -108,8 +109,8 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-void common_util_set_clifd(int clifd);
-extern int common_util_get_clifd();
+extern void cu_set_clifd(gromox::wrapfd &&);
+extern gromox::wrapfd *cu_get_clifd();
 extern char *common_util_dup(std::string_view);
 extern bool cu_parse_abkeid(BINARY, uint32_t *type, std::string &essdn);
 uint16_t common_util_get_messaging_entryid_type(BINARY bin);

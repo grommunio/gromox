@@ -175,27 +175,35 @@ static void *zcrp_thrwork(void *param)
 		continue;
 	}
 	pbuff = {};
-	if (request->call_id == zcore_callid::notifdequeue)
-		common_util_set_clifd(clifd.get());
+
+	/*
+	 * Transfer ownership of the fd to rpc_parser. Afterwards, we try
+	 * taking the fd back from rpc_parser. Either we get it, or it is clear
+	 * that e.g. zs_notifdequeue took it for itself.
+	 */
+	cu_set_clifd(std::move(clifd));
 	std::unique_ptr<zcresp> response;
-	switch (rpc_parser_dispatch(request.get(), response)) {
-	case DISPATCH_FALSE: {
+	auto ds_result = rpc_parser_dispatch(request.get(), response);
+	if (auto p = cu_get_clifd())
+		clifd = std::move(*p);
+
+	if (ds_result == DISPATCH_FALSE) {
 		common_util_free_environment();
+		if (clifd.get() < 0)
+			continue;
 		auto tmp_byte = zcore_response::dispatch_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
 			if (write(clifd.get(), &tmp_byte, 1) < 1)
 				/* ignore */;
 		continue;
-	}
-	case DISPATCH_CONTINUE:
+	} else if (ds_result == DISPATCH_CONTINUE) {
 		common_util_free_environment();
-		/*
-		 * notifdequeue has parked the fd in a sink_node
-		 * (zs_notifdequeue); the notification machinery now owns it
-		 * and will write the response + close it.
-		 */
-		clifd.release();
+		continue;
+	}
+	/* DISPATCH_TRUE: */
+	if (clifd.get() < 0) {
+		common_util_free_environment();
 		continue;
 	}
 
