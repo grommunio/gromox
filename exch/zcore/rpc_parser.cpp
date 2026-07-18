@@ -265,4 +265,8 @@ void rpc_parser_stop()
 		pthread_join(tid, nullptr);
 	}
 	g_thread_ids.clear();
+	std::unique_lock cl_hold(g_conn_lock);
+	for (auto fd : g_conn_list)
+		close(fd);
+	g_conn_list.clear();
 }
