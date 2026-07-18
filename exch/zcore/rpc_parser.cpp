@@ -190,7 +190,12 @@ static void *zcrp_thrwork(void *param)
 	}
 	case DISPATCH_CONTINUE:
 		common_util_free_environment();
-		// Connection stays active, handled elsewhere
+		/*
+		 * notifdequeue has parked the fd in a sink_node
+		 * (zs_notifdequeue); the notification machinery now owns it
+		 * and will write the response + close it.
+		 */
+		clifd.release();
 		continue;
 	}
 
