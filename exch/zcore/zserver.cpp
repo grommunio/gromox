@@ -172,19 +172,34 @@ static void *zcorezs_scanwork(void *param)
 		for (auto iter = g_session_table.begin(); iter != g_session_table.end(); ) {
 			auto pinfo = &iter->second;
 			if (0 != pinfo->reference) {
+				/* There are requests executing right now */
 				++iter;
 				continue;
 			}
+			/*
+			 * Extract connections that have reached their
+			 * zs_notifdequeue timeout.
+			 */
 			expired_list.splice(expired_list.end(),
 				gromox::splice_if(pinfo->sink_list, [&](const sink_node &n) {
 					return cur_time >= n.poll_until;
 				}));
+
 			if (cur_time - pinfo->last_query_at < g_cache_interval ||
 			    pinfo->sink_list.size() > 0) {
+				/*
+				 * The session is not old enough, or there is
+				 * something that still depends on it.
+				 */
 				++iter;
 				continue;
 			}
 
+			/*
+			 * Eliminate session because of age. Dtors could send
+			 * e.g. unsubscribe_notification, unload_instance
+			 * EXRPCs, so we need a temporary env.
+			 */
 			common_util_build_environment();
 			pinfo->ptree.reset();
 			common_util_free_environment();
@@ -194,6 +209,12 @@ static void *zcorezs_scanwork(void *param)
 		}
 		}
 
+		/*
+		 * For every timed out zs_notifdequeue request, send a blank
+		 * zcresp_notifyresponse indicating zero events. The connection
+		 * is shut, because we have no way of returning the fd to
+		 * rpc_parser.
+		 */
 		while (expired_list.size() > 0) {
 			std::list<sink_node> holder;
 			holder.splice(holder.end(), expired_list, expired_list.begin());
@@ -210,6 +231,10 @@ static void *zcorezs_scanwork(void *param)
 				/* ignore */;
 			free(tmp_bin.pb);
 			tmp_bin.pb = nullptr;
+			/*
+			 * Shut the connection. We have no way with the current
+			 * code to pass it back to rpc_parser.
+			 */
 			shutdown(psink_node->clifd.get(), SHUT_WR);
 			/* Bounded drain; the lone scan thread must not stall. */
 			fdpoll.events = POLLIN;
@@ -220,6 +245,11 @@ static void *zcorezs_scanwork(void *param)
 		}
 		if (count != 0)
 			continue;
+		/*
+		 * Ditch queues that have not been touched within
+		 * g_cache_interval. (The check effectively runs every
+		 * g_ping_interval.)
+		 */
 		cur_time = tp_now();
 		std::unique_lock nl_hold(g_notify_lock);
 		std::erase_if(g_notify_table, [&](const decltype(g_notify_table)::value_type &it) {
@@ -2476,6 +2506,9 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK &sink, uint32_t timeout,
 		*pnotifications = std::move(ppnotifications);
 		return ecSuccess;
 	}
+
+	/* No events to report yet */
+
 	std::list<sink_node> holder;
 	auto &sink_node = holder.emplace_back(*psink);
 	sink_node.poll_until = tp_now() + std::chrono::seconds(timeout);
@@ -2485,6 +2518,21 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK &sink, uint32_t timeout,
 		mlog(LV_ERR, "%s: nobody gave me a file descriptor", __func__);
 		return ecInvalidParam;
 	}
+	/*
+	 * The implementation of this ZRPC (in conjunction with the
+	 * corresponding fragment in rpc_parser_dispatch) is a bit unusual.
+	 * When no events are available, zs_notifdequeue will not block,
+	 * instead enlisting the fd for later, dropping the USER_INFO reference
+	 * (important), and returning control to the caller so it can tend to
+	 * do something else until events are available. This is a classical
+	 * non-threaded socket programming paradigm.
+	 *
+	 * zcorezs_scanwork and zs_notification_proc are the functions that
+	 * ultimately write out the zs_notifdequeue response to the fd. The
+	 * fact that both of those functions run in completely different
+	 * threads from rpc_parser is egregious, but it kind of holds together
+	 * for the time being.
+	 */
 	pinfo->sink_list.splice(pinfo->sink_list.end(), holder, holder.begin());
 	return ecNotFound;
 } catch (const std::bad_alloc &) {

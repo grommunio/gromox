@@ -210,6 +210,15 @@ static void *zcrp_thrwork(void *param)
 	/* DISPATCH_TRUE: */
 	if (clifd.get() < 0) {
 		common_util_free_environment();
+		/*
+		 * BUG-1: We jump back to the top of the loop, where this
+		 * thread starts processing the next ZRPC without waiting for
+		 * the zcore_callid::notifdequeue result to be written out,
+		 * breaking the expectation of in-order delivery of responses.
+		 *
+		 * A client that were to pipeline ZRPC requests could trigger
+		 * this. (php_mapi/zclient.cpp is not pipelining.)
+		 */
 		continue;
 	}
 
