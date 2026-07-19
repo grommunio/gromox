@@ -3682,7 +3682,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			mlog(LV_DEBUG, "deliver_message %s: set_propval 2: %s", dir, mapi_strerror(err));
 			return false;
 		}
-		err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_EMAIL_ADDRESS, &essdn_buff[3]);
+		auto rcv_emaddr = &essdn_buff.c_str()[3]; /* picky cov-scan */
+		err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_EMAIL_ADDRESS, rcv_emaddr);
 		if (err != ecSuccess) {
 			mlog(LV_DEBUG, "deliver_message %s: set_propval 3: %s", dir, mapi_strerror(err));
 			return false;
@@ -3714,7 +3715,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 				mlog(LV_DEBUG, "deliver_message %s: set_propval 7: %s", dir, mapi_strerror(err));
 				return false;
 			}
-			err = cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
+			err = cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, rcv_emaddr);
 			if (err != ecSuccess) {
 				mlog(LV_DEBUG, "deliver_message %s: set_propval 8: %s", dir, mapi_strerror(err));
 				return false;
