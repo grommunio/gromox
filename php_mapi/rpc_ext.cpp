@@ -430,13 +430,11 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_unadvise &d)
 
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_notifdequeue &d)
 {
-	int i;
-	
 	TRY(x.p_guid(d.psink->hsession));
 	TRY(x.p_uint16(d.psink->count));
-	for (i=0; i<d.psink->count; i++) {
-		TRY(x.p_uint32(d.psink->padvise[i].hstore));
-		TRY(x.p_uint32(d.psink->padvise[i].sub_id));
+	for (const auto &adv : *d.psink) {
+		TRY(x.p_uint32(adv.hstore));
+		TRY(x.p_uint32(adv.sub_id));
 	}
 	TRY(x.p_uint32(d.timeval));
 	return pack_result::ok;

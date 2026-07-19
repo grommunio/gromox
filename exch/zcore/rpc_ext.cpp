@@ -822,8 +822,6 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_unadvise &d)
 
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_notifdequeue &d)
 {
-	int i;
-	
 	d.psink = x.anew<NOTIF_SINK>();
 	if (d.psink == nullptr)
 		return pack_result::alloc;
@@ -835,9 +833,9 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_notifdequeue &d)
 		d.psink->count = 0;
 		return pack_result::alloc;
 	}
-	for (i=0; i<d.psink->count; i++) {
-		QRF(x.g_uint32(&d.psink->padvise[i].hstore));
-		QRF(x.g_uint32(&d.psink->padvise[i].sub_id));
+	for (auto &adv : *d.psink) {
+		QRF(x.g_uint32(&adv.hstore));
+		QRF(x.g_uint32(&adv.sub_id));
 	}
 	QRF(x.g_uint32(&d.timeval));
 	return pack_result::ok;

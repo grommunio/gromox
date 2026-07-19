@@ -329,9 +329,8 @@ static void notif_sink_free(NOTIF_SINK *psink)
 {
 	if (NULL != psink->padvise) {
 		if (psink->hsession != GUID_NULL)
-			for (unsigned int i = 0; i < psink->count; ++i)
-				zclient_unadvise(psink->hsession,
-					psink->padvise[i].hstore, psink->padvise[i].sub_id);
+			for (const auto &adv : *psink)
+				zclient_unadvise(psink->hsession, adv.hstore, adv.sub_id);
 		efree(psink->padvise);
 	}
 	efree(psink);

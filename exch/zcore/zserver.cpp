@@ -254,7 +254,6 @@ static void *zcorezs_scanwork(void *param)
 void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
     const DB_NOTIFY *pdb_notify) try
 {
-	int i;
 	GUID hsession;
 	BINARY tmp_bin;
 	uint32_t hstore;
@@ -449,9 +448,8 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 
 	for (auto psink_node = pinfo->sink_list.begin();
 	     psink_node != pinfo->sink_list.end(); ++psink_node) {
-		for (i=0; i<psink_node->sink.count; i++) {
-			if (psink_node->sink.padvise[i].sub_id != notify_id ||
-			    hstore != psink_node->sink.padvise[i].hstore)
+		for (const auto &adv : psink_node->sink) {
+			if (adv.sub_id != notify_id || adv.hstore != hstore)
 				continue;
 			std::list<sink_node> holder;
 			holder.splice(holder.end(), pinfo->sink_list, psink_node);
@@ -2464,20 +2462,19 @@ ec_error_t zs_unadvise(GUID hsession, uint32_t hstore,
 ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
     std::vector<ZNOTIFICATION> *pnotifications)
 {
-	int i;
 	zs_objtype mapi_type;
 	std::vector<ZNOTIFICATION> ppnotifications;
 	
 	auto pinfo = zs_query_session(psink->hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	for (i=0; i<psink->count; i++) {
-		auto pstore = pinfo->ptree->get_object<store_object>(psink->padvise[i].hstore, &mapi_type);
+	for (const auto &adv : *psink) {
+		auto pstore = pinfo->ptree->get_object<store_object>(adv.hstore, &mapi_type);
 		if (pstore == nullptr || mapi_type != zs_objtype::store)
 			continue;
 		std::string tmp_buf;
 		try {
-			tmp_buf = std::to_string(psink->padvise[i].sub_id) +
+			tmp_buf = std::to_string(adv.sub_id) +
 			          "|" + pstore->get_dir();
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1496: ENOMEM");
