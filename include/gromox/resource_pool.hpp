@@ -140,6 +140,10 @@ template<typename Tp> class GX_EXPORT resource_pool {
 		std::list<entry> graveyard;
 		{
 			std::lock_guard lk(m_mtx);
+			/*
+			 * m_list is ordered, so only the partition point needs
+			 * to be located, without needing gromox::splice_if.
+			 */
 			auto it = m_list.begin();
 			while (it != m_list.end() && it->last_use < cutoff)
 				++it;

@@ -21,6 +21,7 @@
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>  
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
@@ -150,17 +151,10 @@ static void *evpx_scanwork(void *param)
 		{
 		std::unique_lock bl_hold(g_back_lock);
 		auto now_time = time(nullptr);
-		auto tail = g_back_list.size() > 0 ? &g_back_list.back() : nullptr;
-		while (g_back_list.size() > 0) {
-			auto pback = &g_back_list.front();
-			if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3) {
-				temp_list.splice(temp_list.end(), g_back_list, g_back_list.begin());
-			} else {
-				g_back_list.splice(g_back_list.end(), g_back_list, g_back_list.begin());
-			}
-			if (pback == tail)
-				break;
-		}
+		temp_list.splice(temp_list.end(),
+			gromox::splice_if(g_back_list, [&](const BACK_CONN &conn) {
+				return now_time - conn.last_time >= SOCKET_TIMEOUT - 3;
+			}));
 		}
 
 		while (temp_list.size() > 0) {

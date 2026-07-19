@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <gromox/ab_tree.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
@@ -177,16 +178,11 @@ static void *zcorezs_scanwork(void *param)
 				++iter;
 				continue;
 			}
-			auto ptail = pinfo->sink_list.size() > 0 ? &pinfo->sink_list.back() : nullptr;
-			while (pinfo->sink_list.size() > 0) {
-				auto psink_node = &pinfo->sink_list.front();
-				if (cur_time >= psink_node->until_time)
-					expired_list.splice(expired_list.end(), pinfo->sink_list, pinfo->sink_list.begin());
-				else
-					pinfo->sink_list.splice(pinfo->sink_list.end(), pinfo->sink_list, pinfo->sink_list.begin());
-				if (psink_node == ptail)
-					break;
-			}
+			expired_list.splice(expired_list.end(),
+				gromox::splice_if(pinfo->sink_list, [&](const sink_node &n) {
+					return cur_time >= n.until_time;
+				}));
+
 			if (cur_time - pinfo->reload_time >= g_cache_interval) {
 				common_util_build_environment();
 				auto ptree = object_tree_create(pinfo->get_maildir());

@@ -31,6 +31,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
@@ -232,18 +233,11 @@ static void *midbag_scanwork(void *param)
 		{
 		std::unique_lock sv_hold(g_server_lock);
 		auto now_time = time(nullptr);
-		for (auto &srv : g_server_list) {
-			auto tail = srv.conn_list.size() > 0 ? &srv.conn_list.back() : nullptr;
-			while (srv.conn_list.size() > 0) {
-				auto pback = &srv.conn_list.front();
-				if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3)
-					temp_list.splice(temp_list.end(), srv.conn_list, srv.conn_list.begin());
-				else
-					srv.conn_list.splice(srv.conn_list.end(), srv.conn_list, srv.conn_list.begin());
-				if (pback == tail)
-					break;
-			}
-		}
+		for (auto &srv : g_server_list)
+			temp_list.splice(temp_list.end(),
+				gromox::splice_if(srv.conn_list, [&](const BACK_CONN &conn) {
+					return now_time - conn.last_time >= SOCKET_TIMEOUT - 3;
+				}));
 		}
 
 		while (temp_list.size() > 0) {
