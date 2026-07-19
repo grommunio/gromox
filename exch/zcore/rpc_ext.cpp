@@ -820,25 +820,20 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_unadvise &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_pull(EXT_PULL &x, zcreq_notifdequeue &d)
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_notifdequeue &d) try
 {
-	d.psink = x.anew<NOTIF_SINK>();
-	if (d.psink == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_guid(&d.psink->hsession));
-	QRF(x.g_uint16(&d.psink->count));
-	d.psink->count = std::min(d.psink->count, static_cast<uint16_t>(UINT16_MAX));
-	d.psink->padvise = x.anew<ADVISE_INFO>(d.psink->count);
-	if (d.psink->padvise == nullptr) {
-		d.psink->count = 0;
-		return pack_result::alloc;
-	}
-	for (auto &adv : *d.psink) {
+	uint16_t count = 0;
+	QRF(x.g_guid(&d.sink.hsession));
+	QRF(x.g_uint16(&count));
+	d.sink.advise_list.resize(count);
+	for (auto &adv : d.sink.advise_list) {
 		QRF(x.g_uint32(&adv.hstore));
 		QRF(x.g_uint32(&adv.sub_id));
 	}
 	QRF(x.g_uint32(&d.timeval));
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_notifdequeue &d)

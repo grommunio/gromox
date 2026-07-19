@@ -81,11 +81,6 @@ static std::unordered_map<std::string, int> g_user_table;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_table;
 static std::unordered_map<int, USER_INFO> g_session_table;
 
-sink_node::~sink_node()
-{
-	free(sink.padvise);
-}
-
 USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
 	hsession(o.hsession), user_id(o.user_id), domain_id(o.domain_id),
 	org_id(o.org_id), privbits(o.privbits),
@@ -448,7 +443,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 
 	for (auto psink_node = pinfo->sink_list.begin();
 	     psink_node != pinfo->sink_list.end(); ++psink_node) {
-		for (const auto &adv : psink_node->sink) {
+		for (const auto &adv : psink_node->sink.advise_list) {
 			if (adv.sub_id != notify_id || adv.hstore != hstore)
 				continue;
 			std::list<sink_node> holder;
@@ -2459,16 +2454,17 @@ ec_error_t zs_unadvise(GUID hsession, uint32_t hstore,
 	return ecServerOOM;
 }
 
-ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
-    std::vector<ZNOTIFICATION> *pnotifications)
+ec_error_t zs_notifdequeue(const NOTIF_SINK &sink, uint32_t timeval,
+    std::vector<ZNOTIFICATION> *pnotifications) try
 {
+	auto psink = &sink;
 	zs_objtype mapi_type;
 	std::vector<ZNOTIFICATION> ppnotifications;
 	
 	auto pinfo = zs_query_session(psink->hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	for (const auto &adv : *psink) {
+	for (const auto &adv : sink.advise_list) {
 		auto pstore = pinfo->ptree->get_object<store_object>(adv.hstore, &mapi_type);
 		if (pstore == nullptr || mapi_type != zs_objtype::store)
 			continue;
@@ -2503,30 +2499,18 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
 		return ecSuccess;
 	}
 	std::list<sink_node> holder;
-	try {
-		holder.emplace_back();
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-2179: ENOMEM");
-		return ecServerOOM;
-	}
-	auto psink_node = &holder.front();
-	psink_node->until_time = time(nullptr);
-	psink_node->until_time += timeval;
-	psink_node->sink.hsession = psink->hsession;
-	psink_node->sink.count = psink->count;
-	psink_node->sink.padvise = me_alloc<ADVISE_INFO>(psink->count);
-	if (psink_node->sink.padvise == nullptr)
-		return ecServerOOM;
-	memcpy(psink_node->sink.padvise, psink->padvise,
-				psink->count*sizeof(ADVISE_INFO));
+	auto &sink_node = holder.emplace_back(*psink);
+	sink_node.until_time = time(nullptr) + timeval;
 	if (auto p = cu_get_clifd()) {
-		psink_node->clifd = std::move(*p);
+		sink_node.clifd = std::move(*p);
 	} else {
 		mlog(LV_ERR, "%s: nobody gave me a file descriptor", __func__);
 		return ecInvalidParam;
 	}
 	pinfo->sink_list.splice(pinfo->sink_list.end(), holder, holder.begin());
 	return ecNotFound;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,

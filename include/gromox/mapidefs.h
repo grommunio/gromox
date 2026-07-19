@@ -1036,9 +1036,7 @@ struct GX_EXPORT MESSAGE_STATE {
 
 struct GX_EXPORT NOTIF_SINK {
 	GUID hsession{};
-	uint16_t count = 0;
-	ADVISE_INFO *padvise = nullptr;
-	I_BEGIN_END(padvise, count);
+	std::vector<ADVISE_INFO> advise_list;
 };
 
 struct GX_EXPORT ONEOFF_ENTRYID_view {
