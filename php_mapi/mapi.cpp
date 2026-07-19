@@ -475,8 +475,8 @@ static bool opcache_is_interfering()
 		return false;
 
 	/* look up directive['opcache.x'] */
-	zval zfunc, zconfig;
 	zstrplus zstr_fname(zend_string_init(ZEND_STRL(sz_fname), 0));
+	zval zfunc, zconfig;
 	ZVAL_STR(&zfunc, zstr_fname.get());
 	if (call_user_function(EG(function_table), nullptr, &zfunc, &zconfig,
 	    0, nullptr) != SUCCESS)
