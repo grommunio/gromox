@@ -2,11 +2,13 @@
 // SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
+#include <chrono>
 #include <climits>
 #include <csignal>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <memory>
 #include <mutex>
 #include <poll.h>
@@ -58,28 +60,27 @@ using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 namespace {
 
-struct NOTIFY_ITEM {
-	NOTIFY_ITEM(const GUID &ses, uint32_t store) :
-		hsession(ses), hstore(store), last_time(time(nullptr))
+struct znotifq {
+	znotifq(const GUID &ses, uint32_t store) :
+		hsession(ses), hstore(store), last_mod(tp_now())
 	{}
 
 	std::vector<ZNOTIFICATION> notify_list;
 	GUID hsession{};
 	uint32_t hstore = 0;
-	time_t last_time = 0;
+	time_point last_mod{};
 };
 
 }
 
 static size_t g_table_size;
 static gromox::atomic_bool g_zserver_stop;
-static unsigned int g_ping_interval, g_cache_interval;
+static std::chrono::seconds g_cache_interval, g_ping_interval;
 static pthread_t g_scan_id;
-static int g_cache_interval;
 static thread_local USER_INFO *g_info_key;
 static std::mutex g_table_lock, g_notify_lock;
 static std::unordered_map<std::string, int> g_user_table;
-static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_table;
+static std::unordered_map<std::string, znotifq> g_notify_table;
 static std::unordered_map<int, USER_INFO> g_session_table;
 
 USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
@@ -88,7 +89,7 @@ USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
 	username(std::move(o.username)),
 	lang(std::move(o.lang)), maildir(std::move(o.maildir)),
 	homedir(std::move(o.homedir)), cpid(o.cpid),
-	last_time(o.last_time), reload_time(o.reload_time),
+	last_query_at(o.last_query_at), last_reload_at(o.last_reload_at),
 	ptree(std::move(o.ptree)), sink_list(std::move(o.sink_list))
 {}
 
@@ -122,7 +123,7 @@ USER_INFO_REF zs_query_session(GUID hsession)
 	if (hsession != pinfo->hsession)
 		return nullptr;
 	pinfo->reference ++;
-	pinfo->last_time = time(nullptr);
+	pinfo->last_query_at = tp_now();
 	tl_hold.unlock();
 	g_info_key = pinfo;
 	pinfo->lock.lock();
@@ -160,14 +161,14 @@ static void *zcorezs_scanwork(void *param)
 	while (!g_zserver_stop) {
 		sleep(1);
 		count ++;
-		if (count >= g_ping_interval)
+		if (std::chrono::seconds(count) >= g_ping_interval)
 			count = 0;
 		std::list<sink_node> expired_list;
-		time_t cur_time;
+		time_point cur_time;
 
 		{
 		std::unique_lock tl_hold(g_table_lock);
-		cur_time = time(nullptr);
+		cur_time = tp_now();
 		for (auto iter = g_session_table.begin(); iter != g_session_table.end(); ) {
 			auto pinfo = &iter->second;
 			if (0 != pinfo->reference) {
@@ -176,21 +177,21 @@ static void *zcorezs_scanwork(void *param)
 			}
 			expired_list.splice(expired_list.end(),
 				gromox::splice_if(pinfo->sink_list, [&](const sink_node &n) {
-					return cur_time >= n.until_time;
+					return cur_time >= n.poll_until;
 				}));
 
-			if (cur_time - pinfo->reload_time >= g_cache_interval) {
+			if (cur_time - pinfo->last_reload_at >= g_cache_interval) {
 				common_util_build_environment();
 				auto ptree = object_tree_create(pinfo->get_maildir());
 				if (NULL != ptree) {
 					pinfo->ptree = std::move(ptree);
-					pinfo->reload_time = cur_time;
+					pinfo->last_reload_at = cur_time;
 				}
 				common_util_free_environment();
 				++iter;
 				continue;
 			}
-			if (cur_time - pinfo->last_time < g_cache_interval) {
+			if (cur_time - pinfo->last_query_at < g_cache_interval) {
 				if (0 != count) {
 					++iter;
 					continue;
@@ -237,10 +238,11 @@ static void *zcorezs_scanwork(void *param)
 		}
 		if (count != 0)
 			continue;
-		cur_time = time(nullptr);
+		cur_time = tp_now();
 		std::unique_lock nl_hold(g_notify_lock);
-		std::erase_if(g_notify_table, [=](const auto &it) {
-			return cur_time - it.second.last_time >= g_cache_interval;
+		std::erase_if(g_notify_table, [&](const decltype(g_notify_table)::value_type &it) {
+			const znotifq &q = it.second;
+			return cur_time - q.last_mod >= g_cache_interval;
 		});
 	}
 	return NULL;
@@ -477,8 +479,8 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 void zserver_init(size_t table_size, int cache_interval, int ping_interval)
 {
 	g_table_size = table_size;
-	g_cache_interval = cache_interval;
-	g_ping_interval = ping_interval;
+	g_cache_interval = std::chrono::seconds(cache_interval);
+	g_ping_interval  = std::chrono::seconds(ping_interval);
 }
 
 int zserver_run()
@@ -529,7 +531,7 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 		auto st_iter = g_session_table.find(user_id);
 		if (st_iter != g_session_table.end()) {
 			auto pinfo = &st_iter->second;
-			pinfo->last_time = time(nullptr);
+			pinfo->last_query_at = tp_now();
 			*phsession = pinfo->hsession;
 			return ecSuccess;
 		}
@@ -560,8 +562,7 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 	}
 	auto c = lang_to_charset(tmp_info.lang.c_str());
 	tmp_info.cpid = c != nullptr ? cset_to_cpid(c) : CP_UTF8;
-	tmp_info.last_time = time(nullptr);
-	tmp_info.reload_time = tmp_info.last_time;
+	tmp_info.last_query_at = tmp_info.last_reload_at = tp_now();
 	tmp_info.ptree = object_tree_create(tmp_info.maildir.c_str());
 	if (tmp_info.ptree == nullptr)
 		return ecError;
@@ -2449,7 +2450,7 @@ ec_error_t zs_unadvise(GUID hsession, uint32_t hstore,
 	return ecServerOOM;
 }
 
-ec_error_t zs_notifdequeue(const NOTIF_SINK &sink, uint32_t timeval,
+ec_error_t zs_notifdequeue(const NOTIF_SINK &sink, uint32_t timeout,
     std::vector<ZNOTIFICATION> *pnotifications) try
 {
 	auto psink = &sink;
@@ -2476,7 +2477,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK &sink, uint32_t timeval,
 		if (iter == g_notify_table.end())
 			continue;
 		auto pnitem = &iter->second;
-		pnitem->last_time = time(nullptr);
+		pnitem->last_mod = tp_now();
 
 		size_t limit = 1024 - std::min(ppnotifications.size(), static_cast<size_t>(1024));
 		limit = std::min(limit, pnitem->notify_list.size());
@@ -2495,7 +2496,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK &sink, uint32_t timeval,
 	}
 	std::list<sink_node> holder;
 	auto &sink_node = holder.emplace_back(*psink);
-	sink_node.until_time = time(nullptr) + timeval;
+	sink_node.poll_until = tp_now() + std::chrono::seconds(timeout);
 	if (auto p = cu_get_clifd()) {
 		sink_node.clifd = std::move(*p);
 	} else {

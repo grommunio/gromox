@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <string>
 #include <unordered_map>
+#include <gromox/clock.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 
@@ -16,7 +17,7 @@ struct OBJECT_TREE;
 
 struct sink_node {
 	NOTIF_SINK sink{};
-	time_t until_time = 0;
+	gromox::time_point poll_until{};
 	gromox::wrapfd clifd;
 };
 
@@ -36,7 +37,7 @@ struct USER_INFO {
 	uint32_t privbits = 0;
 	std::string username, lang, maildir, homedir;
 	cpid_t cpid = CP_ACP;
-	time_t last_time = 0, reload_time = 0;
+	gromox::time_point last_query_at{}, last_reload_at{};
 	std::unique_ptr<OBJECT_TREE> ptree;
 	std::list<sink_node> sink_list;
 	std::unordered_map<int, long> extra_owner;
