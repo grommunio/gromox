@@ -43,13 +43,14 @@ enum class srv_type : uint8_t {
 };
 
 /**
- * "Unique key" for a server, i.e. if any paramter (of @host, @port, @type) is
+ * "Unique key" for a server, i.e. if any paramter is
  * different, it constitutes a different server logically, and needs its own
  * set of file descriptors.
  *
- * The member order @host,@port,@type is fine, as we expect the overwhelming
- * amount of srv_ident instances to have the same @port and @type (5000 and
- * private), so that comparing port/type ahead of host would not buy much.
+ * The member order does not matter. @port and @type are fine where they are,
+ * as we expect the overwhelming amount of srv_ident instances to have the same
+ * @port and @type (5000/private), so that comparing port/type ahead of host
+ * would not buy much.
  */
 struct srv_ident {
 	std::string host, dir;
