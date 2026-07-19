@@ -184,6 +184,8 @@ static void *zcrp_thrwork(void *param)
 	auto ds_result = rpc_parser_dispatch(request.get(), response);
 	if (auto p = cu_get_clifd())
 		clifd = std::move(*p);
+	else
+		clifd = {}; /* restore cov-scan happiness */
 
 	if (ds_result == DISPATCH_FALSE) {
 		common_util_free_environment();
