@@ -347,21 +347,21 @@ static ec_error_t notif_sink_timedwait(NOTIF_SINK *psink,
 		psink, timeval, pnotifications);
 }
 
-static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
+static ec_error_t notif_sink_add_subscription(NOTIF_SINK *psink,
 	GUID hsession, uint32_t hstore, uint32_t sub_id)
 {
 	auto padvise = psink->padvise == nullptr ?st_malloc<ADVISE_INFO>() :
 	               sta_realloc<ADVISE_INFO>(psink->padvise, psink->count + 1);
 	if (padvise == nullptr)
-		return 0;
+		return ecMAPIOOM;
 	if (psink->hsession == GUID_NULL)
 		psink->hsession = hsession;
 	else if (psink->hsession != hsession)
-		return 0;
+		return ecInvalidParam;
 	padvise[psink->count].hstore = hstore;
 	padvise[psink->count++].sub_id = sub_id;
 	psink->padvise = padvise;
-	return 1;
+	return ecSuccess;
 }
 
 static void mapi_resource_dtor(zend_resource *rsrc)
@@ -1566,11 +1566,12 @@ static ZEND_FUNCTION(mapi_msgstore_advise)
 		pentryid, event_mask, &sub_id);
 	if (result != ecSuccess)
 		pthrow(result);
-	if (!notif_sink_add_subscription(psink,
-		pstore->hsession, pstore->hobject, sub_id)) {
+	result = notif_sink_add_subscription(psink, pstore->hsession,
+	         pstore->hobject, sub_id);
+	if (result != ecSuccess) {
 		zclient_unadvise(pstore->hsession,
 			pstore->hobject, sub_id);
-		pthrow(ecMAPIOOM);
+		pthrow(result);
 	}
 	RETVAL_LONG(sub_id);
 	MAPI_G(hr) = ecSuccess;
