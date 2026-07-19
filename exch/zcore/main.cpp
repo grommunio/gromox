@@ -171,12 +171,11 @@ static void *zcls_thrwork(void *param)
 	while (!g_listener_notify_stop) {
 		socklen_t len = sizeof(unix_addr);
 		memset(&unix_addr, 0, sizeof(unix_addr));
-		auto clifd = accept4(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&unix_addr),
-		             &len, SOCK_CLOEXEC);
-		if (clifd == -1)
+		wrapfd fd = accept4(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&unix_addr),
+		            &len, SOCK_CLOEXEC);
+		if (fd.get() < 0)
 			continue;
-		if (!rpc_parser_activate_connection(clifd))
-			close(clifd);
+		rpc_parser_activate_connection(std::move(fd));
 	}
 	return nullptr;
 }
@@ -348,11 +347,6 @@ int main(int argc, char **argv)
 	/* parser after service: dependency on mysql_adaptor */
 	rpc_parser_init(threads_num);
 	listener_init();
-	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
-		mlog(LV_ERR, "system: failed to start listener");
-		return EXIT_FAILURE;
-	}
-	auto cl_10 = HX::make_scope_exit(listener_stop);
 	if (common_util_run(g_config_file->get_value("data_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start common util");
 		return EXIT_FAILURE;
@@ -367,20 +361,33 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	auto cl_5 = HX::make_scope_exit([]() { ab_tree::AB.stop(); });
-	if (0 != rpc_parser_run()) {
-		mlog(LV_ERR, "system: failed to start ZRPC parser");
-		return EXIT_FAILURE;
-	}
-	auto cl_6 = HX::make_scope_exit(rpc_parser_stop);
 	if (zserver_run() != 0) {
 		mlog(LV_ERR, "system: failed to run zserver");
 		return EXIT_FAILURE;
 	}
 	auto cl_7 = HX::make_scope_exit(zserver_stop);
+	/*
+	 * exmdb notify threads reference sessions through zs_notification_proc;
+	 * join them before zserver_stop. exmdb_client itself must stay up
+	 * longer (cl_8): session object destructors still issue exmdb RPCs.
+	 */
+	auto cl_9 = HX::make_scope_exit([]() { exmdb_client->stop_async_listeners(); });
+	/* Zserver session management must outlive the threads making use of them */
+	if (0 != rpc_parser_run()) {
+		mlog(LV_ERR, "system: failed to start ZRPC parser");
+		return EXIT_FAILURE;
+	}
+	auto cl_6 = HX::make_scope_exit(rpc_parser_stop);
 	if (exmdb_client_run_front(g_config_file->get_value("config_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start exmdb client");
 		return EXIT_FAILURE;
 	}
+	/* Listener last: stop accepting new clients before any teardown */
+	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
+		mlog(LV_ERR, "system: failed to start listener");
+		return EXIT_FAILURE;
+	}
+	auto cl_10 = HX::make_scope_exit(listener_stop);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);

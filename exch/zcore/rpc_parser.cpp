@@ -20,6 +20,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
@@ -37,17 +38,10 @@ enum {
 	DISPATCH_CONTINUE
 };
 
-namespace {
-struct CLIENT_NODE {
-	DOUBLE_LIST_NODE node;
-	int clifd;
-};
-}
-
 static unsigned int g_thread_num;
 static gromox::atomic_bool g_zrpc_stop;
 static std::vector<pthread_t> g_thread_ids;
-static DOUBLE_LIST g_conn_list;
+static std::vector<wrapfd> g_conn_list;
 static std::condition_variable g_waken_cond;
 static std::mutex g_conn_lock;
 unsigned int g_zrpc_debug;
@@ -63,18 +57,15 @@ void rpc_parser_init(unsigned int thread_num)
 	g_thread_ids.reserve(thread_num);
 }
 
-BOOL rpc_parser_activate_connection(int clifd)
+void rpc_parser_activate_connection(wrapfd &&fd) try
 {
-	auto pclient = gromox::me_alloc<CLIENT_NODE>();
-	if (pclient == nullptr)
-		return FALSE;
-	pclient->node.pdata = pclient;
-	pclient->clifd = clifd;
-	std::unique_lock cl_hold(g_conn_lock);
-	double_list_append_as_tail(&g_conn_list, &pclient->node);
-	cl_hold.unlock();
+	{
+		std::unique_lock cl_hold(g_conn_lock);
+		g_conn_list.emplace_back(std::move(fd));
+	}
 	g_waken_cond.notify_one();
-	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
@@ -110,59 +101,53 @@ static void *zcrp_thrwork(void *param)
 {
 	uint32_t offset;
 	struct pollfd fdpoll;
-	DOUBLE_LIST_NODE *pnode;
 
 	while (true) {
+	wrapfd clifd;
+
 	/* Wait for work items */
 	{
 		std::unique_lock cm_hold(g_conn_lock);
-		g_waken_cond.wait(cm_hold, []() { return g_zrpc_stop || double_list_get_nodes_num(&g_conn_list) > 0; });
+		g_waken_cond.wait(cm_hold, []() { return g_zrpc_stop || g_conn_list.size() > 0; });
 		if (g_zrpc_stop)
 			return nullptr;
-		pnode = double_list_pop_front(&g_conn_list);
+		if (g_conn_list.empty())
+			continue;
+		clifd = std::move(g_conn_list.front());
+		g_conn_list.erase(g_conn_list.begin());
 	}
-	if (pnode == nullptr)
-		continue;
 
-	auto clifd = static_cast<CLIENT_NODE *>(pnode->pdata)->clifd;
-	free(pnode->pdata);
-	
 	offset = 0;
-	fdpoll.fd = clifd;
+	fdpoll.fd = clifd.get();
 	fdpoll.events = POLLIN|POLLPRI;
-	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
-		close(clifd);
+	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1)
 		continue;
-	}
 
 	std::string pbuff;
 	try {
 		uint32_t buff_len = 0;
-		auto read_len = read(clifd, &buff_len, sizeof(uint32_t));
+		auto read_len = read(clifd.get(), &buff_len, sizeof(uint32_t));
 		if (read_len < 0 || static_cast<size_t>(read_len) != sizeof(uint32_t) ||
-		    buff_len >= UINT_MAX) {
-			close(clifd);
+		    buff_len >= UINT_MAX)
 			continue;
-		}
 		buff_len = std::min(buff_len, UINT32_MAX);
 		pbuff.resize(buff_len);
 	} catch (const std::bad_alloc &) {
 		auto tmp_byte = zcore_response::lack_memory;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
+			if (write(clifd.get(), &tmp_byte, 1) < 1)
 				/* ignore */;
-		close(clifd);
 		continue;
 	}
 	while (true) {
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
-			close(clifd);
+			clifd.close_rd();
 			break;
 		}
-		auto read_len = read(clifd, &pbuff[offset], pbuff.size() - offset);
+		auto read_len = read(clifd.get(), &pbuff[offset], pbuff.size() - offset);
 		if (read_len <= 0) {
-			close(clifd);
+			clifd.close_rd();
 			break;
 		}
 		offset += read_len;
@@ -183,29 +168,40 @@ static void *zcrp_thrwork(void *param)
 		auto tmp_byte = zcore_response::pull_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
+			if (write(clifd.get(), &tmp_byte, 1) < 1)
 				/* ignore */;
-		close(clifd);
 		continue;
 	}
 	pbuff = {};
-	if (request->call_id == zcore_callid::notifdequeue)
-		common_util_set_clifd(clifd);
+
+	/*
+	 * Transfer ownership of the fd to rpc_parser. Afterwards, we try
+	 * taking the fd back from rpc_parser. Either we get it, or it is clear
+	 * that e.g. zs_notifdequeue took it for itself.
+	 */
+	cu_set_clifd(std::move(clifd));
 	std::unique_ptr<zcresp> response;
-	switch (rpc_parser_dispatch(request.get(), response)) {
-	case DISPATCH_FALSE: {
+	auto ds_result = rpc_parser_dispatch(request.get(), response);
+	if (auto p = cu_get_clifd())
+		clifd = std::move(*p);
+
+	if (ds_result == DISPATCH_FALSE) {
 		common_util_free_environment();
+		if (clifd.get() < 0)
+			continue;
 		auto tmp_byte = zcore_response::dispatch_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
+			if (write(clifd.get(), &tmp_byte, 1) < 1)
 				/* ignore */;
-		close(clifd);
+		continue;
+	} else if (ds_result == DISPATCH_CONTINUE) {
+		common_util_free_environment();
 		continue;
 	}
-	case DISPATCH_CONTINUE:
+	/* DISPATCH_TRUE: */
+	if (clifd.get() < 0) {
 		common_util_free_environment();
-		// Connection stays active, handled elsewhere
 		continue;
 	}
 
@@ -215,21 +211,20 @@ static void *zcrp_thrwork(void *param)
 		auto tmp_byte = zcore_response::push_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
+			if (write(clifd.get(), &tmp_byte, 1) < 1)
 				/* ignore */;
-		close(clifd);
 		continue;
 	}
 	common_util_free_environment();
 	fdpoll.events = POLLOUT|POLLWRBAND;
 	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-		if (write(clifd, tmp_bin.pb, tmp_bin.cb) < 0)
+		if (write(clifd.get(), tmp_bin.pb, tmp_bin.cb) < 0)
 			/* ignore */;
-	shutdown(clifd, SHUT_WR);
+	shutdown(clifd.get(), SHUT_WR);
 	uint8_t tmp_byte;
-	if (read(clifd, &tmp_byte, 1))
+	if (read(clifd.get(), &tmp_byte, 1))
 		/* ignore */;
-	close(clifd);
+	clifd.close_rd();
 	free(tmp_bin.pb);
 	tmp_bin.pb = nullptr;
 	}
@@ -268,4 +263,6 @@ void rpc_parser_stop()
 		pthread_join(tid, nullptr);
 	}
 	g_thread_ids.clear();
+	std::unique_lock cl_hold(g_conn_lock);
+	g_conn_list.clear();
 }

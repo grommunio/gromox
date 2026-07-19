@@ -132,7 +132,7 @@ while out of office.
 
 Such rules are stored by Outlook all over the place (unfortunately).
 
-* Rules configured in "Files ▶ Manage Rules & Alerts" are stored in a FAI
+* Rules configured in "Files ▶ Manage Rules & Alerts" are stored in a FAI
   message. See section `FAI message: RuleOrganizer`_.
 
   * Of these, specifically those which are enabled and which apply to incoming
@@ -142,7 +142,7 @@ Such rules are stored by Outlook all over the place (unfortunately).
   * Of these, each rule is cloned to another FAI message, see section `FAI
     message: RuleV2`_.
 
-* Rules configured in "Files ▶ Automatic replies" (Out of Office) are stored in
+* Rules configured in "Files ▶ Automatic replies" (Out of Office) are stored in
   ``PR_RULES_TABLE``. See section `Server-side Rules Table`_ and `SSRT: OOF
   rules`_.
 
@@ -170,7 +170,7 @@ In the Inbox's Associated Contents folder, there is one message containing
 distinctive properties:
 
 ``PR_SUBJECT``
-	Static value ``OutlookRulesOrganizer``.
+	Static value ``OutlookRulesOrganizer`` or ``Outlook Rules Organizer``.
 
 ``PR_MESSAGE_CLASS``
 	Static value ``IPM.RuleOrganizer``.
@@ -182,10 +182,26 @@ distinctive properties:
 sending rules, but not OOF rules. See section `Rules stream`_.
 
 
+FAI message: RuleOrganizer.ClientRules
+======================================
+
+In the Inbox's Associated Contents folder, there is another message containing
+exactly the same data. Why Outlook needs two copies of this is beyond
+comprehension. This will be a common theme throughout...
+
+``PR_MESSAGE_CLASS``
+	Static value ``IPM.RuleOrganizer.ClientRules``.
+
+Otherwise the same as the IPM.RuleOrganizer FAI.
+
+
 FAI message: RuleV2
 ===================
 
-In the Inbox's Associated Contents folder, there are a *number* of messages
+This FAI seems to be no longer created with Outlook 2021 (certainly not with
+MSO v2310 b 16.0.16924.20054).
+
+In the Inbox's Associated Contents folder, there may be a number of messages
 that represent each rule from ``PR_RW_RULES_STREAM``. These RuleV2 messages
 have these characteristic properties:
 
@@ -2939,12 +2955,19 @@ table is documented on MSDN, therefore abridged here and limited to notes.
 	must not present this property.
 
 ``PR_RULE_PROVIDER``
-	Observed values:
+	This designates which component/UI wizard created the rule. Observed
+	values:
+
 	* ``RuleOrganizer`` in private store folder standard and extended rules
+	  (File ▶ Manage Rules & Alerts)
 	* ``JunkEmailRule`` in an private store folder extended rule
 	* ``Organizer2``
 	* ``MSFT:TDX Rules`` in public store folder standard rules
-	* ``MSFT:TDX OOF Rules``
+	* ``MSFT:TDX OOF Rules`` in private stores
+	  (File ▶ Automatic replies ▶ Rules...)
+
+	Why Outlook even needs two rule dialogs, particularly RuleOrganizer and
+	TDX OOF, is beyond comprehension.
 
 ``PR_RULE_PROVIDER_DATA``
 	Left undocumented by MSDN, piecewise unraveled in this document.

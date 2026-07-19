@@ -444,10 +444,11 @@ void notify_response::ctrow_event_to_change()
 {
 	auto saved_handle = handle;
 	auto saved_logon  = logon_id;
+	auto saved_nflags = nflags & (fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE);
 	clear();
 	handle      = saved_handle;
 	logon_id    = saved_logon;
-	nflags      = fnevTableModified | NF_BY_MESSAGE;
+	nflags      = saved_nflags;
 	table_event = TABLE_EVENT_TABLE_CHANGED;
 }
 

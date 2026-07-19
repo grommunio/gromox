@@ -82,7 +82,8 @@ struct report_stats {
 
 static constexpr time_duration HANDLE_VALID_INTERVAL = std::chrono::seconds(2000);
 static time_point g_start_time;
-static std::mutex g_cxr_lock, g_lock; /* protects g_handle_hash & g_user_hash */
+static std::mutex g_cxr_lock; /* protects g_cxr_bitmap */
+static std::mutex g_lock; /* protects g_handle_hash & g_user_hash */
 static std::mutex g_notify_lock;
 static gromox::atomic_bool g_emsi_stop{true};
 static thread_local std::shared_ptr<emsmdb_session> g_handle_key;
@@ -334,6 +335,7 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 	auto phandle = ei_lookup_session(*pcxh);
 	if (phandle == nullptr)
 		return;
+	std::unique_lock gl_hold(g_lock);
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter != g_user_hash.end()) {
 		auto &uhv = uh_iter->second;
@@ -619,6 +621,12 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		input_flags |= GROMOX_READSTREAM_NOCHAIN;
 
 	auto result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
+	/*
+	 * rop_processor_proc normally tries to send out notifications. But due
+	 * to response size constraints, nothing is guaranteed, not even
+	 * ropPending. So if there seem to be notifications left, wakeup the
+	 * asyncems connection so the client knows about the situation.
+	 */
 	bool b_wakeup = false;
 	{
 		std::lock_guard lk_occupied(phandle->notify_lock);

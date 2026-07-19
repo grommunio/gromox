@@ -11,6 +11,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/gab.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
@@ -338,24 +339,48 @@ static ec_error_t rcpttable_query_rows(const table_object *ptable,
 	return ecSuccess;
 }
 
+/**
+ * Deep-copy a row into RPC-scoped (cu_alloc) memory by way of a
+ * serialization round trip.
+ */
+static TPROPVAL_ARRAY *storetbl_dup_row(const TPROPVAL_ARRAY &row)
+{
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE) ||
+	    ep.p_tpropval_a({row.ppropval, row.count}) != pack_result::ok)
+		return nullptr;
+	auto out = cu_alloc<TPROPVAL_ARRAY>();
+	if (out == nullptr)
+		return nullptr;
+	EXT_PULL eq;
+	eq.init(ep.m_udata, ep.m_offset, common_util_alloc,
+		EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
+	if (eq.g_tpropval_a(out) != pack_result::ok)
+		return nullptr;
+	return out;
+}
+
 static ec_error_t storetbl_query_rows(const table_object *ptable,
     proptag_cspan pcolumns, TARRAY_SET *pset, const USER_INFO *pinfo,
     uint32_t row_needed)
 {
-	uint32_t end_pos = ptable->position + row_needed;
+	uint32_t start_pos = ptable->position;
+	uint32_t end_pos = start_pos + row_needed;
 	if (ptable->fixed_data == nullptr)
-		end_pos = 0;
+		start_pos = end_pos = 0;
 	else if (end_pos >= ptable->fixed_data->count)
 		end_pos = ptable->fixed_data->count;
+	if (end_pos < start_pos)
+		end_pos = start_pos;
 	pset->count = 0;
-	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position + 1);
+	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - start_pos + 1);
 	if (pset->pparray == nullptr)
 		return ecServerOOM;
-	for (size_t i = ptable->position; i < end_pos; ++i) {
-		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-		if (pset->pparray[pset->count] == nullptr)
+	for (size_t i = start_pos; i < end_pos; ++i) {
+		auto row = storetbl_dup_row(*ptable->fixed_data->pparray[i]);
+		if (row == nullptr)
 			return ecServerOOM;
-		pset->pparray[pset->count++] = ptable->fixed_data->pparray[i];;
+		pset->pparray[pset->count++] = row;
 	}
 	return ecSuccess;
 }

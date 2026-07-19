@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <string>
 #include <unordered_map>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 
 struct DB_NOTIFY;
@@ -18,7 +19,7 @@ struct sink_node {
 	~sink_node();
 	NOMOVE(sink_node);
 
-	int clifd = -1;
+	gromox::wrapfd clifd;
 	time_t until_time = 0;
 	NOTIF_SINK sink{};
 };

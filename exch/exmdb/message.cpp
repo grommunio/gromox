@@ -2080,9 +2080,9 @@ static BOOL message_load_folder_rules(const rulexec_in &rp,
 		uint32_t state = sqlite3_column_int64(pstmt, 0);
 		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
-		if (state & ST_ENABLED) {
-			/* do nothing */
-		} else if (state & ST_ONLY_WHEN_OOF) {
+		if (!(state & ST_ENABLED))
+			continue;
+		if (state & ST_ONLY_WHEN_OOF) {
 			if (!rp.oof)
 				continue;
 		} else {

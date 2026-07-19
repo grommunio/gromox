@@ -107,6 +107,9 @@ enum {
 	ST_EXIT_LEVEL          = 0x10U,
 	ST_SKIP_IF_SCL_IS_SAFE = 0x20U,
 	ST_PARSE_ERROR         = 0x40U,
+	ST_ONLY_WHEN_OOF_EX    = 0x100U, /* EXC15.2 */
+	// TemporarilyDisabled = 0x40000000U,
+	// ClearOOFHistory     = 0x80000000U,
 };
 
 #define RULE_ERROR_GENERIC							0x00000001

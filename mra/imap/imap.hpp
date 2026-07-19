@@ -153,7 +153,7 @@ extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();
 extern int imap_parser_threads_event_proc(int action);
 extern void imap_parser_bcast_touch(const imap_context *, const char *user, const std::string &fld);
 enum class echomod : bool { normal = false, suppress_expunge = true };
-extern void imap_parser_echo_modify(imap_context *, STREAM *, echomod sup_expu = echomod::suppress_expunge);
+extern void imap_parser_echo_modify(imap_context *, STREAM *, echomod sup_expu = echomod::normal);
 enum class bcastfl : bool { exclude_self = false, include_self = true };
 extern void imap_parser_bcast_flags(const imap_context &, uint32_t uid, bcastfl = bcastfl::exclude_self);
 extern void imap_parser_add_select(imap_context *);

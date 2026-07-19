@@ -332,20 +332,142 @@ static uint32_t rpcext_cutoff = 32U << 10; /* OXCRPC v23 3.1.4.2.1.2.2 */
 
 thread_local const char *g_last_rop_dir;
 
+/**
+ * ROPs which are part of an ICS upload or its state handling (the state stream
+ * and checkpoint ROPs also appear in download configuration).
+ */
+static constexpr bool rop_is_icsup(uint8_t rop_id)
+{
+	switch (rop_id) {
+	case ropSynchronizationImportMessageChange:
+	case ropSynchronizationImportHierarchyChange:
+	case ropSynchronizationImportDeletes:
+	case ropSynchronizationUploadStateStreamBegin:
+	case ropSynchronizationUploadStateStreamContinue:
+	case ropSynchronizationUploadStateStreamEnd:
+	case ropSynchronizationImportMessageMove:
+	case ropSynchronizationOpenCollector:
+	case ropSynchronizationImportReadStateChanges:
+	case ropSynchronizationGetTransferState:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
+ * Pop a pending notification and serialize into the outgoing network packet.
+ * @ext_push: Serializer for the RPC response
+ * @ems_info: Current EMSMDB session
+ *
+ * Unreadable/unconvertible notifications will be deleted without serialization.
+ *
+ * Returns:
+ * - ecRpcFailure: hard error that should percolate up the call chain
+ * - ecNullObject: caller shall cease popping notifications
+ * - ecSuccess: caller should pop more notifications
+ */
+static ec_error_t move_notification(EXT_PUSH &ext_push, emsmdb_info &ems_info)
+{
+	std::unique_ptr<notify_response> notif;
+	{
+		auto eh = emsmdb_interface_get_handle_data_SP();
+		if (eh == nullptr)
+			return ecRpcFailed;
+		std::lock_guard lk_occupied(eh->notify_lock);
+		if (eh->notify_list.empty())
+			return ecNullObject;
+		notif = pop_front_v(eh->notify_list);
+	}
+
+	auto orig_offset = ext_push.m_offset;
+	ems_objtype type;
+	auto object = ems_info.logmap.get_object(notif->logon_id, notif->handle, &type);
+	if (object == nullptr)
+		/* Object referenced by notification no longer exists */
+		return ecSuccess;
+
+	static constexpr size_t row_buf_size = 0x8000;
+	auto row_buf = std::make_unique<uint8_t[]>(row_buf_size);
+	BINARY row_bin{};
+	if (type == ems_objtype::table && notif->nflags & fnevTableModified &&
+	    (notif->table_event == TABLE_EVENT_ROW_ADDED ||
+	    notif->table_event == TABLE_EVENT_ROW_MODIFIED)) {
+		auto table = static_cast<table_object *>(object);
+		auto cols  = table->get_columns();
+		EXT_PUSH row_push;
+		PROPERTY_ROW row_data{};
+		TPROPVAL_ARRAY propvals{};
+		bool row_ok = false;
+
+		if (row_push.init(row_buf.get(), row_buf_size, EXT_FLAG_UTF16)) {
+			auto err = notif->nflags & NF_BY_MESSAGE ?
+			           table->read_row(notif->row_message_id,
+			           	notif->row_instance, &propvals) :
+			           table->read_row(notif->row_folder_id,
+			           	0, &propvals);
+			/*
+			 * read_row yields ecSuccess with zero propvals when
+			 * the row (or the whole table) is already gone
+			 * server-side, or when not one requested column is
+			 * present on the row; neither makes for a usable row
+			 * notification.
+			 */
+			if (err == ecSuccess && propvals.count > 0 &&
+			    cols != nullptr &&
+			    cu_propvals_to_row(&propvals, *cols, &row_data) &&
+			    row_push.p_proprow(*cols, row_data) == pack_result::ok) {
+				row_bin.cb = row_push.m_offset;
+				row_bin.pb = row_push.m_udata;
+				notif->row_data = &row_bin;
+				row_ok = true;
+			}
+		}
+		if (!row_ok)
+			/*
+			 * Row data unreadable; degrade to TABLE_CHANGED so the
+			 * client reloads instead of silently losing the
+			 * notification.
+			 */
+			notif->ctrow_event_to_change();
+	}
+	if (rop_ext_push(ext_push, *notif) == pack_result::success)
+		return ecSuccess;
+
+	/*
+	 * Response buffer is full. Truncate the outgoing packet to its
+	 * original size, and put the notification back into the queue.
+	 */
+	ext_push.m_offset = orig_offset;
+	{
+		auto eh = emsmdb_interface_get_handle_data_SP();
+		if (eh == nullptr)
+			return ecSuccess;
+		std::lock_guard lk_occupied(eh->notify_lock);
+		eh->notify_list.emplace_back(std::move(notif));
+	}
+
+	/*
+	 * Append a ropPending block to indicate there are more notifications
+	 * waiting for retrieval.
+	 */
+	PENDING_RESPONSE pending;
+	emsmdb_interface_get_cxr(&pending.session_index);
+	auto status = rop_ext_push(ext_push, pending);
+	if (status != pack_result::ok)
+		ext_push.m_offset = orig_offset;
+
+	return ecNullObject;
+}
+	
 static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
     std::vector<std::unique_ptr<rop_response>> &response_list) try
 {
 	BOOL b_icsup;
-	BINARY tmp_bin;
 	EXT_PUSH ext_push;
-	EXT_PUSH ext_push1;
-	PROPERTY_ROW tmp_row;
 	static constexpr size_t ext_buff_size = 0x8000;
 	auto ext_buff = std::make_unique<uint8_t[]>(ext_buff_size);
-	auto ext_buff1 = std::make_unique<uint8_t[]>(ext_buff_size);
-	TPROPVAL_ARRAY propvals;
-	PENDING_RESPONSE tmp_pending;
 	
 	/* ms-oxcrpc 3.1.4.2.1.2 */
 	if (*pbuff_len > rpcext_cutoff)
@@ -365,6 +487,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	emsmdb_interface_set_rop_num(rop_num);
 	b_icsup = FALSE;
 	auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+	auto initial_upctx_ref = pemsmdb_info->upctx_ref.load();
 	for (auto req_iter = prop_buff->rop_list.cbegin();
 	     req_iter != prop_buff->rop_list.cend(); ++req_iter) {
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
@@ -423,8 +546,9 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		default:
 			return result;
 		}
-		if (pemsmdb_info->upctx_ref != 0)
-			b_icsup = TRUE;	
+		if (rop_is_icsup(req->rop_id) ||
+		    pemsmdb_info->upctx_ref != initial_upctx_ref)
+			b_icsup = TRUE;
 		/* some ROPs do not have response, for example ropRelease */
 		if (rsp == nullptr)
 			continue;
@@ -459,72 +583,14 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		}
 	}
 	
-	if (!b_notify || b_icsup)
-		goto MAKE_RPC_EXT;
-	while (true) {
-		std::unique_ptr<notify_response> pnotify;
-		{
-			auto emsh = emsmdb_interface_get_handle_data_SP();
-			if (emsh == nullptr)
-				return ecRpcFailed;
-			std::lock_guard lk_occupied(emsh->notify_lock);
-			if (emsh->notify_list.empty())
-				break;
-			pnotify = pop_front_v(emsh->notify_list);
-		}
-		uint32_t last_offset = ext_push.m_offset;
-		ems_objtype type;
-		auto pobject = pemsmdb_info->logmap.get_object(pnotify->logon_id,
-		               pnotify->handle, &type);
-		if (NULL != pobject) {
-			if (type == ems_objtype::table &&
-			    pnotify->nflags & fnevTableModified &&
-			    (pnotify->table_event == TABLE_EVENT_ROW_ADDED ||
-			    pnotify->table_event == TABLE_EVENT_ROW_MODIFIED)) {
-				auto tbl = static_cast<table_object *>(pobject);
-				auto pcolumns = tbl->get_columns();
-				if (!ext_push1.init(ext_buff1.get(), ext_buff_size, EXT_FLAG_UTF16))
-					continue;
-				if (pnotify->nflags & NF_BY_MESSAGE) {
-					if (tbl->read_row(pnotify->row_message_id,
-					    pnotify->row_instance,
-					    &propvals) != ecSuccess ||
-					    propvals.count == 0)
-						goto NEXT_NOTIFY;
-					
-				} else {
-					if (tbl->read_row(pnotify->row_folder_id,
-					    0, &propvals) != ecSuccess ||
-					    propvals.count == 0)
-						goto NEXT_NOTIFY;
-				}
-				if (!cu_propvals_to_row(&propvals, *pcolumns, &tmp_row) ||
-				    ext_push1.p_proprow(*pcolumns, tmp_row) != pack_result::ok)
-					continue;
-				tmp_bin.cb = ext_push1.m_offset;
-				tmp_bin.pb = ext_push1.m_udata;
-				pnotify->row_data = &tmp_bin;
-			}
-			if (rop_ext_push(ext_push, *pnotify) != pack_result::success) {
-				ext_push.m_offset = last_offset;
-				{
-					auto emsh = emsmdb_interface_get_handle_data_SP();
-					if (emsh == nullptr)
-						goto NEXT_NOTIFY;
-					std::lock_guard lk_occupied(emsh->notify_lock);
-					emsh->notify_list.emplace_back(std::move(pnotify));
-				}
-				emsmdb_interface_get_cxr(&tmp_pending.session_index);
-				auto status = rop_ext_push(ext_push, tmp_pending);
-				if (status != pack_result::ok)
-					ext_push.m_offset = last_offset;
-				break;
-			}
-		}
- NEXT_NOTIFY:
-		;
+	if (b_notify && !b_icsup) {
+		ec_error_t err;
+		while ((err = move_notification(ext_push, *pemsmdb_info)) == ecSuccess)
+			/* keep looping */;
+		if (err == ecRpcFailed)
+			return err;
 	}
-	
+
  MAKE_RPC_EXT:
 	if (rop_ext_make_rpc_ext(ext_buff.get(), ext_push.m_offset, prop_buff,
 	    pbuff, pbuff_len) != pack_result::ok)
