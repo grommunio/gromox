@@ -556,11 +556,23 @@ tproc_status http_parser::http_end(http_context *ctx)
 			    ctx->port, chan->connection_cookie);
 		if (conn != nullptr) {
 			if (ctx->channel_type == hchannel_type::in &&
-			    conn->pcontext_in == ctx)
+			    conn->pcontext_in == ctx) {
 				conn->pcontext_in = nullptr;
+				/*
+				 * If this context died during a recycle handshake, it
+				 * may (also) be published as the designated successor.
+				 * Leaving that pointer dangling lets a later
+				 * activate_inrecycling dereference a freed context.
+				 */
+				if (conn->pcontext_insucc == ctx)
+					conn->pcontext_insucc = nullptr;
+			}
 			if (ctx->channel_type == hchannel_type::out &&
-			    conn->pcontext_out == ctx)
+			    conn->pcontext_out == ctx) {
 				conn->pcontext_out = nullptr;
+				if (conn->pcontext_outsucc == ctx)
+					conn->pcontext_outsucc = nullptr;
+			}
 			conn.put();
 		}
 		ctx->pchannel.reset();
