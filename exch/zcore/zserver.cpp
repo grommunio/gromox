@@ -142,6 +142,14 @@ void user_info_del::operator()(USER_INFO *pinfo)
 	g_info_key = nullptr;
 }
 
+static constexpr zcresp_notifdequeue empty_notifdequeue_response()
+{
+	zcresp_notifdequeue r;
+	r.call_id = zcore_callid::notifdequeue;
+	r.result  = ecSuccess;
+	return r;
+}
+
 static void *zcorezs_scanwork(void *param)
 {
 	pthread_setname_np(pthread_self(), "zs_scan");
@@ -149,11 +157,9 @@ static void *zcorezs_scanwork(void *param)
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
 	struct pollfd fdpoll;
+	const auto &response = empty_notifdequeue_response();
 	
 	count = 0;
-	zcresp_notifdequeue response{};
-	response.call_id = zcore_callid::notifdequeue;
-	response.result = ecSuccess;
 	while (!g_zserver_stop) {
 		sleep(1);
 		count ++;
@@ -441,6 +447,8 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		return;
 	}
 
+	/* Find _one_ sink to discharge the event into */
+
 	for (auto psink_node = pinfo->sink_list.begin();
 	     psink_node != pinfo->sink_list.end(); ++psink_node) {
 		for (const auto &adv : psink_node->sink.advise_list) {
@@ -448,9 +456,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 				continue;
 			std::list<sink_node> holder;
 			holder.splice(holder.end(), pinfo->sink_list, psink_node);
-			zcresp_notifdequeue response{};
-			response.call_id = zcore_callid::notifdequeue;
-			response.result  = ecSuccess;
+			auto response = empty_notifdequeue_response();
 			response.notifications.emplace_back(std::move(zn));
 
 			fdpoll.fd = psink_node->clifd.get();
