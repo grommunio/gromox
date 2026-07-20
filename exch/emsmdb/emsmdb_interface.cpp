@@ -93,6 +93,7 @@ static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
 static range_set<uint16_t> g_cxr_bitmap; /* Session Index (CXR) that are in use */
 size_t ems_max_active_sessions, ems_max_active_users, ems_max_active_notifh;
 size_t ems_max_pending_sesnotif;
+unsigned int emsmdb_collapse_notif_storm;
 static size_t ems_high_active_sessions, ems_high_active_users;
 static size_t ems_high_active_notifh, ems_high_pending_sesnotif;
 
@@ -964,6 +965,20 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	case db_notify_type::cttbl_row_deleted:
 		if (!emsmdb_interface_merge_content_row_event(obj_handle,
 		    logon_id, phandle->notify_list, TABLE_EVENT_ROW_DELETED))
+			break;
+		return;
+	case db_notify_type::cttbl_row_added:
+		if (!emsmdb_collapse_notif_storm)
+			break;
+		if (!emsmdb_interface_merge_content_row_event(obj_handle,
+		    logon_id, phandle->notify_list, TABLE_EVENT_ROW_ADDED))
+			break;
+		return;
+	case db_notify_type::cttbl_row_modified:
+		if (!emsmdb_collapse_notif_storm)
+			break;
+		if (!emsmdb_interface_merge_content_row_event(obj_handle,
+		    logon_id, phandle->notify_list, TABLE_EVENT_ROW_MODIFIED))
 			break;
 		return;
 	case db_notify_type::hiertbl_row_modified:
