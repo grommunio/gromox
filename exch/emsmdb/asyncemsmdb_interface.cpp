@@ -274,13 +274,18 @@ void asyncemsmdb_interface_wakeup(std::string &&tag, uint16_t cxr) try
 	if (iter == g_tag_hash.cend())
 		return;
 	auto pwait = iter->second;
+	/*
+	 * Exception-safety: The ASYNC_WAIT object must survive in at least
+	 * one list.
+	 */
+	{
+		std::unique_lock ll_hold(g_list_lock);
+		g_wakeup_list.emplace_back(pwait);
+	}
 	g_tag_hash.erase(iter);
 	if (pwait->async_id != 0)
 		g_async_hash.erase(pwait->async_id);
 	as_hold.unlock();
-	std::unique_lock ll_hold(g_list_lock);
-	g_wakeup_list.emplace_back(std::move(pwait));
-	ll_hold.unlock();
 	g_waken_cond.notify_one();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
