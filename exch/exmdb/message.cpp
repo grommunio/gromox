@@ -2085,12 +2085,8 @@ static BOOL message_load_folder_rules(const rulexec_in &rp,
 			continue;
 		if (!(state & ST_ENABLED))
 			continue;
-		if (state & ST_ONLY_WHEN_OOF) {
-			if (!rp.oof)
-				continue;
-		} else {
+		if (state & ST_ONLY_WHEN_OOF && !rp.oof)
 			continue;
-		}
 		uint64_t msg_id = sqlite3_column_int64(pstmt, 1);
 		int32_t seq = pstmt.col_int64(2);
 		plist.push_back(rule_node{seq, state, msg_id, pstmt.col_text(3)});
