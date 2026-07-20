@@ -73,7 +73,7 @@ struct NOTIFY_ITEM {
 
 static size_t g_table_size;
 static gromox::atomic_bool g_zserver_stop;
-static int g_ping_interval;
+static unsigned int g_ping_interval, g_cache_interval;
 static pthread_t g_scan_id;
 static int g_cache_interval;
 static thread_local USER_INFO *g_info_key;
@@ -154,13 +154,9 @@ static constexpr zcresp_notifdequeue empty_notifdequeue_response()
 static void *zcorezs_scanwork(void *param)
 {
 	pthread_setname_np(pthread_self(), "zs_scan");
-	int count;
-	BINARY tmp_bin;
-	uint8_t tmp_byte;
-	struct pollfd fdpoll;
+	unsigned int count = 0;
 	const auto &response = empty_notifdequeue_response();
 	
-	count = 0;
 	while (!g_zserver_stop) {
 		sleep(1);
 		count ++;
@@ -220,10 +216,11 @@ static void *zcorezs_scanwork(void *param)
 			holder.splice(holder.end(), expired_list, expired_list.begin());
 			auto psink_node = &holder.front();
 			/* implied ~sink_node at end of scope */
+			BINARY tmp_bin{};
 			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok)
 				continue;
-			fdpoll.fd = psink_node->clifd.get();
-			fdpoll.events = POLLOUT|POLLWRBAND;
+
+			struct pollfd fdpoll = {psink_node->clifd.get(), POLLOUT | POLLWRBAND};
 			if (tmp_bin.pb != nullptr &&
 			    poll(&fdpoll, 1, SOCKET_TIMEOUT * 1000) == 1 &&
 			    write(psink_node->clifd.get(), tmp_bin.pb, tmp_bin.cb) < 0)
@@ -233,6 +230,7 @@ static void *zcorezs_scanwork(void *param)
 			shutdown(psink_node->clifd.get(), SHUT_WR);
 			/* Bounded drain; the lone scan thread must not stall. */
 			fdpoll.events = POLLIN;
+			uint8_t tmp_byte;
 			if (poll(&fdpoll, 1, 200) == 1 &&
 			    read(psink_node->clifd.get(), &tmp_byte, 1))
 				/* ignore */;
