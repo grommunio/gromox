@@ -89,7 +89,7 @@ USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
 	username(std::move(o.username)),
 	lang(std::move(o.lang)), maildir(std::move(o.maildir)),
 	homedir(std::move(o.homedir)), cpid(o.cpid),
-	last_query_at(o.last_query_at), last_reload_at(o.last_reload_at),
+	last_query_at(o.last_query_at),
 	ptree(std::move(o.ptree)), sink_list(std::move(o.sink_list))
 {}
 
@@ -179,18 +179,6 @@ static void *zcorezs_scanwork(void *param)
 				gromox::splice_if(pinfo->sink_list, [&](const sink_node &n) {
 					return cur_time >= n.poll_until;
 				}));
-
-			if (cur_time - pinfo->last_reload_at >= g_cache_interval) {
-				common_util_build_environment();
-				auto ptree = object_tree_create(pinfo->get_maildir());
-				if (NULL != ptree) {
-					pinfo->ptree = std::move(ptree);
-					pinfo->last_reload_at = cur_time;
-				}
-				common_util_free_environment();
-				++iter;
-				continue;
-			}
 			if (cur_time - pinfo->last_query_at < g_cache_interval ||
 			    pinfo->sink_list.size() > 0) {
 				++iter;
@@ -556,7 +544,7 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 	}
 	auto c = lang_to_charset(tmp_info.lang.c_str());
 	tmp_info.cpid = c != nullptr ? cset_to_cpid(c) : CP_UTF8;
-	tmp_info.last_query_at = tmp_info.last_reload_at = tp_now();
+	tmp_info.last_query_at = tp_now();
 	tmp_info.ptree = object_tree_create(tmp_info.maildir.c_str());
 	if (tmp_info.ptree == nullptr)
 		return ecError;

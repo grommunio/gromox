@@ -37,7 +37,7 @@ struct USER_INFO {
 	uint32_t privbits = 0;
 	std::string username, lang, maildir, homedir;
 	cpid_t cpid = CP_ACP;
-	gromox::time_point last_query_at{}, last_reload_at{};
+	gromox::time_point last_query_at{};
 	std::unique_ptr<OBJECT_TREE> ptree;
 	std::list<sink_node> sink_list;
 	std::unordered_map<int, long> extra_owner;
