@@ -2125,14 +2125,10 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 		uint32_t state = pstmt.col_uint64(1);
 		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
-		if (state & ST_ENABLED) {
-			/* do nothing */
-		} else if (state & ST_ONLY_WHEN_OOF) {
-			if (!rp.oof)
-				continue;
-		} else {
+		if (state & ST_ENABLED)
 			continue;
-		}
+		if (state & ST_ONLY_WHEN_OOF && !rp.oof)
+			continue;
 		int32_t seq = pstmt.col_int64(2);
 		plist.push_back(rule_node{seq, state, message_id, pstmt.col_text(3), true});
 		if (++num_rules >= g_max_extrule_num)
