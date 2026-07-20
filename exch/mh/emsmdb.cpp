@@ -340,13 +340,31 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 
 		{
 		std::unique_lock ll_hold(plugin.pending_lock);
-		for (auto ctx : plugin.pending) {
+		for (auto iter = plugin.pending.begin();
+		     iter != plugin.pending.end(); ) {
+			auto ctx = *iter;
+			/*
+			 * notification_ctx members are guarded by ctx->lock,
+			 * not by pending_lock; mutating them unlocked races
+			 * with async_wakeup/retr/term. Lock order
+			 * pending_lock -> ctx->lock is used consistently
+			 * (async_wakeup/term/wait never hold ctx->lock while
+			 * acquiring pending_lock).
+			 */
+			std::lock_guard ctx_hold(ctx->lock);
+			if (ctx->pending_status == PENDING_STATUS_NONE) {
+				/* stale entry, e.g. left behind by a
+				   teardown race; purge it */
+				iter = plugin.pending.erase(iter);
+				continue;
+			}
 			if (now - ctx->pending_time >=
 			    response_pending_period - std::chrono::seconds(3)) {
 				ctx->pending_time = now;
 				ctx->pending_status = PENDING_STATUS_KEEPALIVE;
 				wakeup_context(static_cast<int>(ctx-plugin.status.data()));
 			}
+			++iter;
 		}
 		}
 
@@ -790,7 +808,10 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 	ProcRes result;
 	auto heapctx = std::make_unique<MhEmsmdbContext>(context_id, m_server_version); /* huge object */
 	MhEmsmdbContext &ctx = *heapctx;
-	status[ctx.ID].clear();
+	{
+		std::lock_guard ctx_hold(status[ctx.ID].lock);
+		status[ctx.ID].clear();
+	}
 	if (ctx.auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	if (!ctx.loadHeaders())
@@ -865,16 +886,19 @@ int MhEmsmdbPlugin::retr(int context_id)
 
 void MhEmsmdbPlugin::term(int context_id)
 {
-	if (status[context_id].pending_status == PENDING_STATUS_NONE)
-		return;
 	EMSMDB_HANDLE acxh;
 	acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
-	acxh.guid = status[context_id].session_guid;
+	{
+		std::lock_guard ctx_hold(status[context_id].lock);
+		if (status[context_id].pending_status == PENDING_STATUS_NONE)
+			return;
+		acxh.guid = status[context_id].session_guid;
+		status[context_id].pending_status = PENDING_STATUS_NONE;
+	}
 	{
 		std::unique_lock ll_hold(pending_lock);
 		pending.erase(&status[context_id]);
 	}
-	status[context_id].pending_status = PENDING_STATUS_NONE;
 	asyncemsmdb_interface_remove(&acxh);
 }
 
