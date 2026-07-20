@@ -377,9 +377,12 @@ void set_public_username(const char *username)
 	g_public_username_key = username;
 }
 
+/**
+ * Function may return, if acting as store owner. Callers must check for this.
+ * In practice, this function is only ever used by readstate tracking.
+ */
 const char *get_public_username()
 {
-	/* Only ever used by readstate tracking */
 	return g_public_username_key;
 }
 

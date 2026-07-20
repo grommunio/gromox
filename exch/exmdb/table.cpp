@@ -739,7 +739,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 	ptnode->table_flags = table_flags;
 	ptnode->b_search = b_search ? TRUE : false;
 	ptnode->cpid = cpid;
-	if (!exmdb_server::is_private()) {
+	if (!exmdb_server::is_private() && username != nullptr) {
 		ptnode->username = strdup(username);
 		if (ptnode->username == nullptr)
 			return false;

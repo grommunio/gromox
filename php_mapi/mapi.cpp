@@ -327,42 +327,34 @@ static BINARY* stream_object_get_content(STREAM_OBJECT *pstream)
 
 static void notif_sink_free(NOTIF_SINK *psink)
 {
-	if (NULL != psink->padvise) {
-		if (psink->hsession != GUID_NULL)
-			for (unsigned int i = 0; i < psink->count; ++i)
-				zclient_unadvise(psink->hsession,
-					psink->padvise[i].hstore, psink->padvise[i].sub_id);
-		efree(psink->padvise);
-	}
-	efree(psink);
+	if (psink->hsession != GUID_NULL)
+		for (const auto &adv : psink->advise_list)
+			zclient_unadvise(psink->hsession, adv.hstore, adv.sub_id);
+	delete psink;
 }
 
-static ec_error_t notif_sink_timedwait(NOTIF_SINK *psink,
+static ec_error_t notif_sink_timedwait(NOTIF_SINK &sink,
 	uint32_t timeval, ZNOTIFICATION_ARRAY *pnotifications)
 {
-	if (0 == psink->count) {
+	if (sink.advise_list.empty()) {
 		pnotifications->clear();
 		return ecSuccess;
 	}
-	return zclient_notifdequeue(
-		psink, timeval, pnotifications);
+	return zclient_notifdequeue(sink, timeval, pnotifications);
 }
 
-static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
-	GUID hsession, uint32_t hstore, uint32_t sub_id)
+static ec_error_t notif_sink_add_subscription(NOTIF_SINK &sink,
+    GUID hsession, uint32_t hstore, uint32_t sub_id) try
 {
-	auto padvise = psink->padvise == nullptr ?st_malloc<ADVISE_INFO>() :
-	               sta_realloc<ADVISE_INFO>(psink->padvise, psink->count + 1);
-	if (padvise == nullptr)
-		return 0;
+	auto psink = &sink;
 	if (psink->hsession == GUID_NULL)
 		psink->hsession = hsession;
 	else if (psink->hsession != hsession)
-		return 0;
-	padvise[psink->count].hstore = hstore;
-	padvise[psink->count++].sub_id = sub_id;
-	psink->padvise = padvise;
-	return 1;
+		return ecInvalidParam;
+	sink.advise_list.emplace_back(hstore, sub_id);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
 }
 
 static void mapi_resource_dtor(zend_resource *rsrc)
@@ -483,8 +475,8 @@ static bool opcache_is_interfering()
 		return false;
 
 	/* look up directive['opcache.x'] */
-	zval zfunc, zconfig;
 	zstrplus zstr_fname(zend_string_init(ZEND_STRL(sz_fname), 0));
+	zval zfunc, zconfig;
 	ZVAL_STR(&zfunc, zstr_fname.get());
 	if (call_user_function(EG(function_table), nullptr, &zfunc, &zconfig,
 	    0, nullptr) != SUCCESS)
@@ -1567,11 +1559,12 @@ static ZEND_FUNCTION(mapi_msgstore_advise)
 		pentryid, event_mask, &sub_id);
 	if (result != ecSuccess)
 		pthrow(result);
-	if (!notif_sink_add_subscription(psink,
-		pstore->hsession, pstore->hobject, sub_id)) {
+	result = notif_sink_add_subscription(*psink, pstore->hsession,
+	         pstore->hobject, sub_id);
+	if (result != ecSuccess) {
 		zclient_unadvise(pstore->hsession,
 			pstore->hobject, sub_id);
-		pthrow(ecMAPIOOM);
+		pthrow(result);
 	}
 	RETVAL_LONG(sub_id);
 	MAPI_G(hr) = ecSuccess;
@@ -1601,17 +1594,19 @@ static ZEND_FUNCTION(mapi_msgstore_unadvise)
 
 static ZEND_FUNCTION(mapi_sink_create)
 {
-	auto psink = st_calloc<NOTIF_SINK>();
-	if (NULL == psink) {
+	std::unique_ptr<NOTIF_SINK> psink;
+	try {
+		psink = std::make_unique<NOTIF_SINK>();
+	} catch (const std::bad_alloc &) {
 		MAPI_G(hr) = ecMAPIOOM;
 		RETVAL_FALSE;
 		if (MAPI_G(exceptions_enabled))
 			zend_throw_exception(MAPI_G(exception_ce),
 				"MAPI error ", static_cast<uint32_t>(MAPI_G(hr)));
-	} else {
-		MAPI_G(hr) = ecSuccess;
-		RETVAL_RG(psink, le_mapi_advisesink);
-	}	
+		return;
+	}
+	MAPI_G(hr) = ecSuccess;
+	RETVAL_RG(psink.release(), le_mapi_advisesink);
 }
 
 static ZEND_FUNCTION(mapi_sink_timedwait)
@@ -1630,14 +1625,14 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 		goto RETURN_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(psink, pzressink, le_mapi_advisesink);
-	if (0 == psink->count) {
+	if (psink->advise_list.empty()) {
 		usleep(tmp_time*1000);
 		notifications.clear();
 	} else {
 		tmp_time /= 1000;
 		if (tmp_time < 1)
 			tmp_time = 1;
-		auto result = notif_sink_timedwait(psink,
+		auto result = notif_sink_timedwait(*psink,
 				tmp_time, &notifications);
 		if (result != ecSuccess) {
 			MAPI_G(hr) = result;

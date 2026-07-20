@@ -2082,12 +2082,8 @@ static BOOL message_load_folder_rules(const rulexec_in &rp,
 			continue;
 		if (!(state & ST_ENABLED))
 			continue;
-		if (state & ST_ONLY_WHEN_OOF) {
-			if (!rp.oof)
-				continue;
-		} else {
+		if (state & ST_ONLY_WHEN_OOF && !rp.oof)
 			continue;
-		}
 		uint64_t msg_id = sqlite3_column_int64(pstmt, 1);
 		int32_t seq = pstmt.col_int64(2);
 		plist.push_back(rule_node{seq, state, msg_id, pstmt.col_text(3)});
@@ -2126,14 +2122,10 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 		uint32_t state = pstmt.col_uint64(1);
 		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
-		if (state & ST_ENABLED) {
-			/* do nothing */
-		} else if (state & ST_ONLY_WHEN_OOF) {
-			if (!rp.oof)
-				continue;
-		} else {
+		if (state & ST_ENABLED)
 			continue;
-		}
+		if (state & ST_ONLY_WHEN_OOF && !rp.oof)
+			continue;
 		int32_t seq = pstmt.col_int64(2);
 		plist.push_back(rule_node{seq, state, message_id, pstmt.col_text(3), true});
 		if (++num_rules >= g_max_extrule_num)
@@ -3679,7 +3671,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			mlog(LV_DEBUG, "deliver_message %s: set_propval 2: %s", dir, mapi_strerror(err));
 			return false;
 		}
-		err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_EMAIL_ADDRESS, &essdn_buff[3]);
+		auto rcv_emaddr = &essdn_buff.c_str()[3]; /* picky cov-scan */
+		err = cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_EMAIL_ADDRESS, rcv_emaddr);
 		if (err != ecSuccess) {
 			mlog(LV_DEBUG, "deliver_message %s: set_propval 3: %s", dir, mapi_strerror(err));
 			return false;
@@ -3711,7 +3704,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 				mlog(LV_DEBUG, "deliver_message %s: set_propval 7: %s", dir, mapi_strerror(err));
 				return false;
 			}
-			err = cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
+			err = cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, rcv_emaddr);
 			if (err != ecSuccess) {
 				mlog(LV_DEBUG, "deliver_message %s: set_propval 8: %s", dir, mapi_strerror(err));
 				return false;

@@ -234,7 +234,7 @@ struct zcreq_unadvise final : public zcreq {
 
 struct zcreq_notifdequeue final : public zcreq {
 	using view_t = zcreq_notifdequeue;
-	NOTIF_SINK *psink = nullptr;
+	NOTIF_SINK sink;
 	uint32_t timeval = 0;
 };
 

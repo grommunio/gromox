@@ -80,8 +80,14 @@ static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
 		return DISPATCH_FALSE;
 	}
 	auto tend = tp_now();
-	if (q0->call_id == zcore_callid::notifdequeue && r0->result == ecNotFound)
+	if (q0->call_id == zcore_callid::notifdequeue && r0->result == ecNotFound) {
+		auto info = zs_query_session(dbg_hsession);
+		mlog(LV_DEBUG, "ZRPC %s %5luµs %8xh %s",
+		        info != nullptr ? info->username.c_str() : "<>",
+		        static_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()),
+		        static_cast<unsigned int>(r0->result), zcore_rpc_idtoname(q0->call_id));
 		return DISPATCH_CONTINUE;
+	}
 	r0->call_id = q0->call_id;
 	if (g_zrpc_debug == 0)
 		return DISPATCH_TRUE;
@@ -184,6 +190,8 @@ static void *zcrp_thrwork(void *param)
 	auto ds_result = rpc_parser_dispatch(request.get(), response);
 	if (auto p = cu_get_clifd())
 		clifd = std::move(*p);
+	else
+		clifd = {}; /* restore cov-scan happiness */
 
 	if (ds_result == DISPATCH_FALSE) {
 		common_util_free_environment();

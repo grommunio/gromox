@@ -105,11 +105,20 @@ static int t_convert()
 	if (strcmp(largeout, "??? foo \xef\xbb\xbf") != 0)
 		return EXIT_FAILURE;
 
+	/*
+	 * Input: {U+0041 U+2603 U+FE0F U+0042}.
+	 *
+	 * Replacing valid input characters that have no representation in
+	 * the target encoding is still conforming to POSIX. (musl-libc's
+	 * iconv produces asterisks.)
+	 */
 	static constexpr char s1[] = "\x41\xe2\x98\x83\xef\xb8\x8f\x42";
 	auto sout = iconvtext(s1, "utf-8", "iso-8859-1");
-	assert(strcmp(sout.c_str(), "AB") == 0);
+	assert(strcmp(sout.c_str(), "AB") == 0 ||
+	       strcmp(sout.c_str(), "A**B") == 0);
 	sout = iconvtext(s1, "utf-8", "iso-8859-1", ICONVTEXT_TRANSLIT);
-	assert(strcmp(sout.c_str(), "A?B") == 0);
+	assert(strcmp(sout.c_str(), "A?B") == 0 ||
+	       strcmp(sout.c_str(), "A**B") == 0);
 
 	std::string s2(4095, 'A');
 	s2 += "\xe4";
@@ -122,7 +131,7 @@ static int t_convert()
 	assert(sout.size() == 0);
 
 	assert(string_utf8_to_mb("windows-1252", "A┌B", largeout, std::size(largeout)));
-	assert(strcmp(largeout, "AB") == 0);
+	assert(strcmp(largeout, "AB") == 0 || strcmp(largeout, "A*B") == 0);
 	assert(string_utf8_to_mb("windows-1252", "A\xed\xa0\x80""B", largeout, std::size(largeout)));
 	assert(strcmp(largeout, "AB") == 0);
 	assert(string_utf8_to_mb("windows-1252", "A\xff""B", largeout, std::size(largeout)));
@@ -658,6 +667,7 @@ int main(int argc, char **argv)
 	static_assert(sizeof(be16_to_cpu(0)) == sizeof(uint16_t));
 	static_assert(sizeof(be32_to_cpu(0)) == sizeof(uint32_t));
 	static_assert(sizeof(be64_to_cpu(0)) == sizeof(uint64_t));
+	setup_utf8_locale();
 	auto ret = runner();
 	if (ret != EXIT_SUCCESS)
 		printf("FAILED\n");
