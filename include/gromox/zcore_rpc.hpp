@@ -105,6 +105,14 @@ struct zcreq_modifyrules final : public zcreq {
 	RULE_LIST *plist = nullptr;
 };
 
+struct zcreq_rulesexecute final : public zcreq {
+	using view_t = zcreq_rulesexecute;
+	GUID hsession{};
+	uint32_t hfolder = 0;
+	BINARY_ARRAY *pentryids = nullptr;
+	uint32_t action_flags = 0;
+};
+
 struct zcreq_getabgal final : public zcreq {
 	using view_t = zcreq_getabgal;
 	GUID hsession{};
@@ -834,6 +842,11 @@ struct zcresp_seekrow final : public zcresp {
 struct zcresp_getrowcount final : public zcresp {
 	using view_t = zcresp_getrowcount;
 	uint32_t count = 0;
+};
+
+struct zcresp_rulesexecute final : public zcresp {
+	using view_t = zcresp_rulesexecute;
+	uint32_t processed = 0, skipped = 0, failed = 0;
 };
 
 struct zcresp_findrow final : public zcresp {

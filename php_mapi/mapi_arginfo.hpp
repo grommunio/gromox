@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: cb97059ea8bf95f516761ebd7bf6629d7d7bf99a */
+ * Stub hash: c7e4b273e8bf99d5ad4896508266fb6c67faef66 */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_load_mapidefs, 0, 1, IS_VOID, 0)
 	ZEND_ARG_TYPE_INFO(0, level, IS_LONG, 1)
@@ -281,6 +281,12 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_folder_modifyrules, 0, 2, _
 	ZEND_ARG_OBJ_INFO(0, fld, resource, 0)
 	ZEND_ARG_TYPE_INFO(0, rows, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_folder_rulesexecute, 0, 2, MAY_BE_ARRAY|MAY_BE_BOOL)
+	ZEND_ARG_OBJ_INFO(0, fld, resource, 0)
+	ZEND_ARG_TYPE_INFO(0, entryids, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, action_flags, IS_LONG, 1, "3")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_message_getattachmenttable, 0, 1, resource, MAY_BE_BOOL)
