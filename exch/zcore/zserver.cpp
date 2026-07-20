@@ -251,40 +251,35 @@ static void *zcorezs_scanwork(void *param)
 void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
     const DB_NOTIFY *pdb_notify) try
 {
-	GUID hsession;
-	BINARY tmp_bin;
-	uint32_t hstore;
-	uint64_t old_eid;
-	zs_objtype mapi_type;
-	char tmp_buff[256];
-	uint64_t folder_id;
-	uint64_t parent_id;
-	uint64_t message_id;
-	struct pollfd fdpoll;
-	uint64_t old_parentid;
-	TPROPVAL_ARRAY propvals;
-	
 	if (b_table)
 		return;
+
+	char tmp_buff[256];
 	snprintf(tmp_buff, std::size(tmp_buff), "%u|%s", notify_id, dir);
+
 	std::unique_lock nl_hold(g_notify_lock);
 	auto iter = g_notify_table.find(tmp_buff);
 	if (iter == g_notify_table.end())
 		return;
 	auto pitem = &iter->second;
-	hsession = pitem->hsession;
-	hstore = pitem->hstore;
+	auto hsession = pitem->hsession;
+	auto hstore = pitem->hstore;
 	nl_hold.unlock();
+
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return;
+	zs_objtype mapi_type;
 	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
 	if (pstore == nullptr || mapi_type != zs_objtype::store ||
 	    strcmp(dir, pstore->get_dir()) != 0)
 		return;
 
 	ZNOTIFICATION zn, *pnotification = &zn, *pnew_mail = &zn, *oz = &zn;
+	eid_t folder_id{}, parent_id{}, message_id{}, old_parentid{}, old_eid{};
+	TPROPVAL_ARRAY propvals{};
 	auto nt = pdb_notify;
+
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
 		pnotification->event_type = fnevNewMail;
@@ -455,8 +450,8 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 			auto response = empty_notifdequeue_response();
 			response.notifications.emplace_back(std::move(zn));
 
-			fdpoll.fd = psink_node->clifd.get();
-			fdpoll.events = POLLOUT | POLLWRBAND;
+			struct pollfd fdpoll = {psink_node->clifd.get(), POLLOUT | POLLWRBAND};
+			BINARY tmp_bin{};
 			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok) {
 				auto tmp_byte = zcore_response::push_error;
 				if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1 &&
