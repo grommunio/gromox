@@ -191,24 +191,18 @@ static void *zcorezs_scanwork(void *param)
 				++iter;
 				continue;
 			}
-			if (cur_time - pinfo->last_query_at < g_cache_interval) {
-				if (0 != count) {
-					++iter;
-					continue;
-				}
+			if (cur_time - pinfo->last_query_at < g_cache_interval ||
+			    pinfo->sink_list.size() > 0) {
 				++iter;
-			} else {
-				if (pinfo->sink_list.size() != 0) {
-					++iter;
-					continue;
-				}
-				common_util_build_environment();
-				pinfo->ptree.reset();
-				common_util_free_environment();
-				pinfo->sink_list.clear();
-				g_user_table.erase(pinfo->username);
-				iter = g_session_table.erase(iter);
+				continue;
 			}
+
+			common_util_build_environment();
+			pinfo->ptree.reset();
+			common_util_free_environment();
+			pinfo->sink_list.clear();
+			g_user_table.erase(pinfo->username);
+			iter = g_session_table.erase(iter);
 		}
 		}
 
