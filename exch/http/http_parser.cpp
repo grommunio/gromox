@@ -1635,10 +1635,48 @@ tproc_status http_parser::wrrep(http_context *pcontext)
 	if (pcontext->channel_type == hchannel_type::out &&
 	    pcontext->pchannel->channel_stat == hchannel_stat::opened) {
 		auto pchannel_out = ctx.pchannel.get();
-		if (pchannel_out->available_window < 1024)
+		if (pchannel_out->available_window < 1024) {
+			/*
+			 * RTS PDUs (keepalive PING, flow control) are not
+			 * subject to RPCH flow control (cf. the accounting
+			 * below, which skips b_rts). Do not gate them,
+			 * otherwise a window-starved channel cannot even ping
+			 * anymore.
+			 */
+			auto pnode = double_list_get_head(&pchannel_out->pdu_list);
+			bool head_is_rts = pnode != nullptr &&
+			                   static_cast<BLOB_NODE *>(pnode->pdata)->b_rts;
+			if (!head_is_rts) {
+			/*
+			 * Returning %dle unconditionally would never
+			 * check the socket and never times out. The
+			 * scan thread requeues idling contexts every
+			 * few seconds without applying g_timeout, so a
+			 * client that stopped sending flow control
+			 * ACKs (killed process, dead network) left the
+			 * context cycling turning<->idling forever and
+			 * its socket parked in CLOSE_WAIT until
+			 * context_num was exhausted. Detect dead peers
+			 * and enforce the regular timeout.
+			 */
+			char tmp_byte;
+			if (recv(pcontext->connection.sockd, &tmp_byte,
+			    1, MSG_PEEK | MSG_DONTWAIT) == 0) {
+				pcontext->log(LV_DEBUG, "connection lost (flow control window starved)");
+				return tproc_status::runoff;
+			}
+			if (tp_now() - pcontext->connection.last_timestamp >= g_timeout) {
+				pcontext->log(LV_DEBUG, "timeout (flow control window starved)");
+				return tproc_status::runoff;
+			}
 			return tproc_status::idle;
-		if (written_len >= 0 && static_cast<size_t>(written_len) >
-		    pchannel_out->available_window)
+			}
+		}
+		auto hnode = double_list_get_head(&pchannel_out->pdu_list);
+		bool rts_head = hnode != nullptr &&
+		                static_cast<BLOB_NODE *>(hnode->pdata)->b_rts;
+		if (!rts_head && written_len >= 0 &&
+		    static_cast<size_t>(written_len) > pchannel_out->available_window)
 			written_len = pchannel_out->available_window;
 	}
 	if (pcontext->write_buff == nullptr && written_len > 0) {
