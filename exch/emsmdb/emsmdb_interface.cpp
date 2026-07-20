@@ -48,7 +48,7 @@
 #define HANDLE_EXCHANGE_EMSMDB			2
 
 #define HANDLE_EXCHANGE_ASYNCEMSMDB		3
-#define MAX_CONTENT_ROW_DELETED			6
+static constexpr unsigned int MAX_CONTENT_ROW_EVENTS = 6;
 
 #define FLAG_PRIVILEGE_ADMIN			0x00000001
 
@@ -851,8 +851,8 @@ void emsmdb_interface_remove_subscription_notify(const char *dir, uint32_t sub_i
 	mlog(LV_WARN, "%s: ENOMEM", __func__);
 }
 
-static bool emsmdb_interface_merge_content_row_deleted(uint32_t obj_handle,
-    uint8_t logon_id, emsmdb_session::notify_list_t &nvec)
+static bool emsmdb_interface_merge_content_row_event(uint32_t obj_handle,
+    uint8_t logon_id, emsmdb_session::notify_list_t &nvec, uint16_t table_event)
 {
 	size_t count = 1;
 	for (auto &pnotify : nvec) {
@@ -860,9 +860,9 @@ static bool emsmdb_interface_merge_content_row_deleted(uint32_t obj_handle,
 			continue;
 		if (!(pnotify->nflags & fnevTableModified))
 			continue;
-		if (pnotify->table_event == TABLE_EVENT_ROW_DELETED) {
+		if (pnotify->table_event == table_event) {
 			count ++;
-			if (MAX_CONTENT_ROW_DELETED == count) {
+			if (count == MAX_CONTENT_ROW_EVENTS) {
 				pnotify->ctrow_event_to_change();
 				return TRUE;
 			}
@@ -962,7 +962,8 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	std::unique_lock lk_occupied(phandle->notify_lock);
 	switch (pdb_notify->type) {
 	case db_notify_type::cttbl_row_deleted:
-		if (!emsmdb_interface_merge_content_row_deleted(obj_handle, logon_id, phandle->notify_list))
+		if (!emsmdb_interface_merge_content_row_event(obj_handle,
+		    logon_id, phandle->notify_list, TABLE_EVENT_ROW_DELETED))
 			break;
 		return;
 	case db_notify_type::hiertbl_row_modified:
