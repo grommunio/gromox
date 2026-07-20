@@ -180,13 +180,21 @@ int ldap_plugin::gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 		   nullptr, nullptr, nullptr);
 	if (ret == LDAP_LOCAL_ERROR && g_edir_workaround)
 		/* try full reconnect */;
-	else if (ret != LDAP_SERVER_DOWN)
+	else if (ret != LDAP_SERVER_DOWN && ret != LDAP_TIMEOUT)
 		return ret;
 	ld = make_conn(g_ldap_host, nullptr, nullptr, g_use_tls, AVOID_BIND);
 	if (ld == nullptr)
 		return ret;
-	return ldap_sasl_bind_s(ld.get(), dn, LDAP_SASL_SIMPLE, bv,
-	       nullptr, nullptr, nullptr);
+	ret = ldap_sasl_bind_s(ld.get(), dn, LDAP_SASL_SIMPLE, bv,
+	      nullptr, nullptr, nullptr);
+	if (ret == LDAP_SERVER_DOWN || ret == LDAP_TIMEOUT)
+		/*
+		 * Do not hand a dead/ambiguous handle back to the pool. Every
+		 * subsequent user of this slot would otherwise run into the
+		 * same timeout again (error bursts in the log).
+		 */
+		ld.reset();
+	return ret;
 }
 
 int ldap_plugin::gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
@@ -201,14 +209,17 @@ int ldap_plugin::gx_ldap_search(ldap_ptr &ld, const char *base, const char *filt
 	           filter, attrs, true, nullptr, nullptr, nullptr, 1, &unique_tie(msg));
 	if (ret == LDAP_LOCAL_ERROR && g_edir_workaround)
 		/* try full reconnect */;
-	else if (ret != LDAP_SERVER_DOWN)
+	else if (ret != LDAP_SERVER_DOWN && ret != LDAP_TIMEOUT)
 		return ret;
 	ld = make_conn(g_ldap_host, g_bind_user.c_str(),
 	     g_bind_pass.c_str(), g_use_tls, DO_BIND);
 	if (ld == nullptr)
 		return ret;
-	return ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
-	       filter, attrs, true, nullptr, nullptr, nullptr, 1, &~unique_tie(msg));
+	ret = ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
+	      filter, attrs, true, nullptr, nullptr, nullptr, 1, &~unique_tie(msg));
+	if (ret == LDAP_SERVER_DOWN || ret == LDAP_TIMEOUT)
+		ld.reset();
+	return ret;
 }
 
 bool ldap_plugin::ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
