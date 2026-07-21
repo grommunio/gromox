@@ -1749,11 +1749,10 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	    (ret != DISPATCH_SUCCESS || ecode != ecSuccess))
 		dbg = true;
 	if (dbg) {
-		char e1[32], e2[32];
-		mlog(LV_DEBUG, "rpc_dispatch(%s, %u) EC=%s RS=%s",
-		        pcontext->pinterface->name, prequest->opnum,
-		        mapi_errname_r(ecode, e1, std::size(e1)),
-		        mapi_errname_r(ret, e2, std::size(e2)));
+		char e1[32];
+		mlog(LV_DEBUG, "rpc_dispatch(%s, %u)=%d EC=%s",
+		        pcontext->pinterface->name, prequest->opnum, ret,
+		        mapi_errname_r(ecode, e1, std::size(e1)));
 	}
 	switch (ret) {
 	case DISPATCH_FAIL:
