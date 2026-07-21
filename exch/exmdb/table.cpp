@@ -378,6 +378,17 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 				qstr += fmt::format(", v{:x} {}", tmp_proptag, ord);
 			}
 		}
+		/*
+		 * For an uncategorized table, break ties on message_id (in the
+		 * primary sort direction) so a reload reproduces the order that the
+		 * live-insert notification path builds; otherwise same-key rows can
+		 * appear reordered/duplicated in online-mode clients.
+		 */
+		if (b_orderby && psorts->ccategories == 0) {
+			auto ord = psorts->psort[0].table_sort == TABLE_SORT_ASCEND ?
+			           " ASC" : " DESC";
+			qstr += fmt::format(", message_id {}", ord);
+		}
 		auto pstmt = gx_sql_prep(psqlite, qstr);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -622,15 +633,24 @@ static std::string gct_makequery(uint64_t fid_val, unsigned int flags,
 	 */
 	static constexpr char order_kw[2][5] = {"DESC", "ASC"};
 	auto adir = order_kw[accel_pair.dir > 0];
+	/*
+	 * The message_id tiebreak matches the (folder_id, <ts>, message_id) index
+	 * and the live-insert notification path (dbeng_notify_cttbl_add_row), so a
+	 * fresh load reproduces exactly what incremental notifications built. Same
+	 * direction as the primary key keeps the ORDER BY index-satisfiable.
+	 */
 	if (accel_pair.tag == PR_LAST_MODIFICATION_TIME)
 		return fmt::format("SELECT message_id FROM msgtime_index "
-		       "WHERE folder_id={} ORDER BY mtime {}", LLU{fid_val}, adir);
+		       "WHERE folder_id={} ORDER BY mtime {}, message_id {}",
+		       LLU{fid_val}, adir, adir);
 	else if (accel_pair.tag == PR_MESSAGE_DELIVERY_TIME)
 		return fmt::format("SELECT message_id FROM msgtime_index "
-		       "WHERE folder_id={} ORDER BY rcvtime {}", LLU{fid_val}, adir);
+		       "WHERE folder_id={} ORDER BY rcvtime {}, message_id {}",
+		       LLU{fid_val}, adir, adir);
 	else if (accel_pair.tag == PR_CLIENT_SUBMIT_TIME)
 		return fmt::format("SELECT message_id FROM msgtime_index "
-		       "WHERE folder_id={} ORDER BY sndtime {}", LLU{fid_val}, adir);
+		       "WHERE folder_id={} ORDER BY sndtime {}, message_id {}",
+		       LLU{fid_val}, adir, adir);
 
 	auto b_del = flags & TABLE_FLAG_SOFTDELETES;
 	if (flags & TABLE_FLAG_CONVERSATIONMEMBERS)
@@ -756,8 +776,16 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 	if ((table_flags & (TABLE_FLAG_CONVERSATIONMEMBERS | TABLE_FLAG_ASSOCIATED | TABLE_FLAG_SOFTDELETES)) == 0 &&
 	    !b_search)
 		accel_pair = accel_sorting(psorts);
-	if (accel_pair.dir != 0)
+	if (accel_pair.dir != 0) {
+		/*
+		 * The accel/msgtime_index path loads without a stored sort order,
+		 * but the live row-insert notification path needs to know the sort
+		 * key to position new rows (rather than append at the bottom).
+		 */
+		ptnode->accel_tag = accel_pair.tag;
+		ptnode->accel_dir = accel_pair.dir;
 		psorts = nullptr;
+	}
 	if (NULL != psorts) {
 		/*
 		 * The propvals of the sort criterion proptags are copied from
