@@ -2299,6 +2299,59 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 }
 
 /**
+ * @brief      Process MarkAsJunk
+ *
+ * Moves item(s) to or from the Junk Email folder (IsJunk selects the
+ * direction, MoveItem gates whether anything is actually moved).
+ *
+ * The blocked/safe sender list update that real Exchange performs as
+ * part of this operation is not implemented - gromox currently has no
+ * data model for such a list, so this only covers the move semantics.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mMarkAsJunkRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:MarkAsJunkResponse");
+
+	mMarkAsJunkResponse data;
+	data.ResponseMessages.reserve(request.ItemIds.size());
+
+	for (const auto &id : request.ItemIds) try {
+		tItemId itemId = id.itemId();
+		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
+		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
+		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
+		std::string dir = ctx.getDir(sourceFolder);
+		ctx.validate(dir, meid);
+		if (!(ctx.permissions(dir, sourceFolder.folderId) & frightsReadAny))
+			throw EWSError::AccessDenied(E3472);
+
+		auto &msg = data.ResponseMessages.emplace_back();
+		if (request.MoveItem) {
+			sFolderSpec dstFolder = ctx.resolveFolder(tDistinguishedFolderId(
+				request.IsJunk ? Enum::junkemail : Enum::inbox));
+			dstFolder.target = sourceFolder.target;
+			dstFolder.normalize();
+			std::string dstDir = ctx.getDir(dstFolder);
+			if (!(ctx.permissions(dstDir, dstFolder.folderId) & frightsCreate))
+				throw EWSError::AccessDenied(E3473);
+			uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, false);
+			sShape idShape{tItemResponseShape()};
+			sItem movedItem = ctx.loadItem(dstDir, dstFolder.folderId, newItemId, idShape);
+			msg.MovedItemId = std::visit([](auto &&i) -> std::optional<tItemId> {return i.ItemId;}, movedItem);
+		}
+		msg.success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process SetUserOofSettingsRequest
  *
  * Provides functionality of SetUserOofSettingsRequest
