@@ -24,10 +24,6 @@ enum {
 };
 
 struct emsmdb_info {
-	emsmdb_info() = default;
-	emsmdb_info(emsmdb_info &&) noexcept;
-	void operator=(emsmdb_info &&) noexcept = delete;
-
 	cpid_t cpid = CP_ACP;
 	uint32_t lcid_string = 0, lcid_sort = 0;
 	uint16_t client_version[4]{}, client_mode = 0;
@@ -40,7 +36,6 @@ struct notify_response;
 struct emsmdb_session {
 	emsmdb_session();
 	~emsmdb_session();
-	NOMOVE(emsmdb_session);
 
 	GUID guid{};
 	char username[UADDR_SIZE]{};

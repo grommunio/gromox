@@ -158,15 +158,6 @@ void emsmdb_report()
 	emsmdb_report_notifs(st);
 }
 
-emsmdb_info::emsmdb_info(emsmdb_info &&o) noexcept :
-	cpid(o.cpid), lcid_string(o.lcid_string), lcid_sort(o.lcid_sort),
-	client_mode(o.client_mode), logmap(std::move(o.logmap)),
-	upctx_ref(o.upctx_ref.load())
-{
-	memcpy(client_version, o.client_version, sizeof(client_version));
-	o.upctx_ref = 0;
-}
-
 static uint32_t emsmdb_interface_get_timestamp()
 {
 	auto d = decltype(g_start_time)::clock::now() - g_start_time;
