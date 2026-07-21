@@ -165,9 +165,17 @@ static int mk_folders(sqlite3 *psqlite, uint32_t user_id)
 		{PRIVATE_FID_CONTACTS, PRIVATE_FID_IMCONTACTLIST, "IPF.Contact.MOC.ImContactList", TRUE},
 		{PRIVATE_FID_CONTACTS, PRIVATE_FID_GALCONTACTS, "IPF.Contact.GalContacts", TRUE},
 		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_JUNK, "IPF.Note"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_ARCHIVE, "IPF.Note"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_CONVERSATION_HISTORY, "IPF.Note"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_RECIPIENT_CACHE, "IPF.Note"},
+		/*
+		 * Archive, Conversation History and Recipient Cache are no
+		 * longer eager-created here: real Exchange provisions them
+		 * lazily, on the first authenticated session touching the
+		 * mailbox, not at mailbox creation time. gromox-ews now
+		 * creates them on demand (see EWSContext::resolveOrCreateSpecialFolder);
+		 * PRIVATE_FID_ARCHIVE/PRIVATE_FID_CONVERSATION_HISTORY/
+		 * PRIVATE_FID_RECIPIENT_CACHE remain defined purely as legacy
+		 * lookup slots for mailboxes provisioned by older gromox
+		 * versions that did create them here.
+		 */
 		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS, "IPF.Configuration", TRUE},
 		{PRIVATE_FID_ROOT, PRIVATE_FID_DEFERRED_ACTION},
 		{PRIVATE_FID_ROOT, PRIVATE_FID_COMMON_VIEWS},

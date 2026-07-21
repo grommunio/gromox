@@ -1449,21 +1449,28 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 			folder.target = ctx.auth_info().username;
 		folder.normalize();
 		std::string dir = ctx.getDir(folder);
-		if (folder.folderId == rop_util_make_eid_ex(1, PRIVATE_FID_RECIPIENT_CACHE)) {
-			/*
-			 * The reserved ID may not correspond to a real folder
-			 * (e.g. a legacy mailbox, or a client that created its
-			 * own copy elsewhere) - prefer a folder actually
-			 * carrying the well-known container class if one
-			 * exists, and only fall back to the reservation
-			 * otherwise.
-			 */
-			auto realId = ctx.findFolderByClass(dir,
-			              rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-			              "IPF.Contact.RecipientCache");
-			if (realId)
-				folder.folderId = *realId;
-		}
+		/*
+		 * These "rich client" folders are not guaranteed to exist -
+		 * real Exchange provisions them lazily on the first
+		 * authenticated session touching the mailbox, not eagerly at
+		 * mailbox creation, so gromox no longer eager-creates them
+		 * either (see mkprivate.cpp). Resolve (or, for a genuinely
+		 * new mailbox, create) them on first request instead of
+		 * letting a missing reserved ID hard-error the whole request.
+		 */
+		if (folder.folderId == rop_util_make_eid_ex(1, PRIVATE_FID_RECIPIENT_CACHE))
+			folder.folderId = ctx.resolveOrCreateSpecialFolder(dir,
+			                  rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+			                  folder.folderId, "IPF.Contact.RecipientCache",
+			                  PRIVATE_FID_RECIPIENT_CACHE);
+		else if (folder.folderId == rop_util_make_eid_ex(1, PRIVATE_FID_ARCHIVE))
+			folder.folderId = ctx.resolveOrCreateSpecialFolder(dir,
+			                  rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			                  folder.folderId, nullptr, PRIVATE_FID_ARCHIVE);
+		else if (folder.folderId == rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_HISTORY))
+			folder.folderId = ctx.resolveOrCreateSpecialFolder(dir,
+			                  rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			                  folder.folderId, nullptr, PRIVATE_FID_CONVERSATION_HISTORY);
 		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
 			throw EWSError::AccessDenied(E3136);
 		mGetFolderResponseMessage msg;

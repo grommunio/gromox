@@ -3445,6 +3445,114 @@ std::optional<uint64_t> EWSContext::findFolderByClass(const std::string &dir,
 }
 
 /**
+ * @brief      Resolve a "rich client" special folder, creating it if necessary
+ *
+ * Real Exchange provisions folders such as Recipient Cache, Archive and
+ * Conversation History lazily, on the first authenticated session touching
+ * the mailbox, rather than eagerly at mailbox creation time - this mirrors
+ * that. Prefers an existing folder carrying the correct PR_CONTAINER_CLASS
+ * (created by gromox itself on a previous call, or by a real client such as
+ * Outlook); falls back to a legacy static FID for mailboxes provisioned by
+ * older gromox versions that created these eagerly with a generic container
+ * class, self-healing the class in place; only creates a fresh folder as a
+ * last resort.
+ *
+ * @param      dir             Home directory
+ * @param      parentFolderId  Parent folder to search/create under
+ * @param      legacyFolderId  Historical static FID to check for a
+ *                              pre-existing folder from an older gromox
+ *                              version (0 = none, skip this step)
+ * @param      containerClass  Desired PR_CONTAINER_CLASS value
+ * @param      dispNameTid     folder_namedb_get() text id for the display
+ *                             name to use if the folder needs creating
+ *
+ * @return     Folder ID
+ */
+uint64_t EWSContext::resolveOrCreateSpecialFolder(const std::string &dir,
+    uint64_t parentFolderId, uint64_t legacyFolderId, const char *containerClass,
+    unsigned int dispNameTid) const
+{
+	if (containerClass) {
+		auto realId = findFolderByClass(dir, parentFolderId, containerClass);
+		if (realId)
+			return *realId;
+	}
+
+	if (legacyFolderId != 0) {
+		BOOL exists = false;
+		if (m_plugin.exmdb.is_folder_present(dir.c_str(), legacyFolderId, &exists) &&
+		    exists) {
+			if (containerClass) {
+				static constexpr proptag_t tag = PR_CONTAINER_CLASS;
+				TPROPVAL_ARRAY props{};
+				const char *cls = nullptr;
+				if (m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP,
+				    legacyFolderId, {&tag, 1}, &props) && props.count)
+					cls = static_cast<const char *>(props.ppropval[0].pvalue);
+				if (cls == nullptr || strcmp(cls, containerClass) != 0) {
+					TAGGED_PROPVAL fix{PR_CONTAINER_CLASS, deconst(containerClass)};
+					TPROPVAL_ARRAY fixProps{1, &fix};
+					PROBLEM_ARRAY problems{};
+					m_plugin.exmdb.set_folder_properties(dir.c_str(), CP_ACP,
+					    legacyFolderId, &fixProps, &problems);
+				}
+			}
+			return legacyFolderId;
+		}
+	}
+
+	auto lang = m_auth_info.lang && *m_auth_info.lang ?
+	            folder_namedb_resolve(m_auth_info.lang) : nullptr;
+	if (lang == nullptr)
+		lang = "en";
+
+	/*
+	 * Deliberately does not go through EWSContext::create() - that helper
+	 * returns a fully loaded sFolder (its EWS-serialized FolderId, not the
+	 * raw numeric one), which would need re-decoding here for no benefit.
+	 * This mirrors just the property-array construction from create()
+	 * directly, so exmdb.create_folder()'s own numeric out-parameter can
+	 * be used as-is.
+	 */
+	uint64_t changeNumber;
+	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNumber))
+		throw DispatchError(E3153);
+
+	const char *fclass = containerClass ? containerClass : "IPF.Note";
+	mapi_folder_type type = FOLDER_GENERIC;
+	auto dispName = folder_namedb_get(lang, dispNameTid);
+	uint64_t now = rop_util_current_nttime();
+	uint32_t accountId = getAccountId(m_auth_info.username, false);
+	XID xid{rop_util_make_user_guid(accountId), changeNumber};
+	BINARY ckey = serialize(xid);
+	auto pcl = mkPCL(xid);
+
+	sShape shape;
+	shape.write(TAGGED_PROPVAL{PidTagParentFolderId, &parentFolderId});
+	shape.write(TAGGED_PROPVAL{PR_FOLDER_TYPE, &type});
+	shape.write(TAGGED_PROPVAL{PR_CONTAINER_CLASS, deconst(fclass)});
+	shape.write(TAGGED_PROPVAL{PR_DISPLAY_NAME, deconst(dispName)});
+	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, &now});
+	shape.write({PR_LAST_MODIFICATION_TIME, &now});
+	shape.write({PidTagChangeNumber, &changeNumber});
+	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, &ckey});
+	shape.write(TAGGED_PROPVAL{PR_PREDECESSOR_CHANGE_LIST, pcl.get()});
+	getNamedTags(dir, shape, true);
+	TPROPVAL_ARRAY props = shape.write();
+
+	uint64_t newFolderId = 0;
+	ec_error_t err = ecSuccess;
+	if (!m_plugin.exmdb.create_folder(dir.c_str(), CP_ACP, &props,
+	    &newFolderId, &err))
+		throw EWSError::FolderSave(E3154);
+	if (err != ecSuccess)
+		throw EWSError::FolderSave(E3322(err));
+	if (newFolderId == 0)
+		throw EWSError::FolderExists(E3323);
+	return newFolderId;
+}
+
+/**
  * @brief     Send message
  *
  * @param     dir      Home directory the message is associtated with
