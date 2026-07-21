@@ -582,22 +582,16 @@ tproc_status http_parser::http_end(http_context *ctx)
 
 	if (ctx->pchannel != nullptr) {
 		auto chan = ctx->pchannel;
-		if (ctx->channel_type == hchannel_type::in) {
-			auto conn = get_vconnection(ctx->host,
-			            ctx->port, chan->connection_cookie);
-			if (conn != nullptr) {
-				if (conn->pcontext_in == ctx)
-					conn->pcontext_in = nullptr;
-				conn.put();
-			}
-		} else {
-			auto conn = get_vconnection(ctx->host,
-			            ctx->port, chan->connection_cookie);
-			if (conn != nullptr) {
-				if (conn->pcontext_out == ctx)
-					conn->pcontext_out = nullptr;
-				conn.put();
-			}
+		auto conn = get_vconnection(ctx->host,
+			    ctx->port, chan->connection_cookie);
+		if (conn != nullptr) {
+			if (ctx->channel_type == hchannel_type::in &&
+			    conn->pcontext_in == ctx)
+				conn->pcontext_in = nullptr;
+			if (ctx->channel_type == hchannel_type::out &&
+			    conn->pcontext_out == ctx)
+				conn->pcontext_out = nullptr;
+			conn.put();
 		}
 		delete ctx->pchannel;
 		ctx->pchannel = nullptr;
