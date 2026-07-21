@@ -66,6 +66,14 @@ struct table_node {
 	RESTRICTION *prestriction = nullptr;
 	SORTORDER_SET *psorts = nullptr;
 	uint32_t instance_tag = 0, extremum_tag = 0, header_id = 0;
+	/*
+	 * accel/msgtime_index-sorted content tables leave psorts null (the
+	 * fast load path in table.cpp), but remember the single sort key here
+	 * so live row-insert notifications can position new rows instead of
+	 * appending them at the bottom. accel_dir==0 means "not accel-sorted".
+	 */
+	gromox::proptag_t accel_tag{};
+	int accel_dir = 0;
 	BOOL b_search = false;
 	BOOL b_hint = false; /* is table touched in batch-mode */
 };
