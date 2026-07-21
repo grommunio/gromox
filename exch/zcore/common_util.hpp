@@ -50,26 +50,6 @@
 #define LOC_TYPE_PRIVATE_MESSAGE					3
 #define LOC_TYPE_PUBLIC_MESSAGE						4
 
-enum {
-	RES_ID_IPM,
-	RES_ID_INBOX,
-	RES_ID_DRAFT,
-	RES_ID_OUTBOX,
-	RES_ID_SENT,
-	RES_ID_DELETED,
-	RES_ID_CONTACTS,
-	RES_ID_CALENDAR,
-	RES_ID_JOURNAL,
-	RES_ID_NOTES,
-	RES_ID_TASKS,
-	RES_ID_JUNK,
-	RES_ID_SYNC,
-	RES_ID_CONFLICT,
-	RES_ID_LOCAL,
-	RES_ID_SERVER,
-	RES_TOTAL_NUM
-};
-
 enum class repr_grant {
 	error = -1, no_impersonation, send_on_behalf, send_as,
 };

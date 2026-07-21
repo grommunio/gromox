@@ -39,26 +39,6 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-enum {
-	RES_ID_IPM,
-	RES_ID_INBOX,
-	RES_ID_DRAFT,
-	RES_ID_OUTBOX,
-	RES_ID_SENT,
-	RES_ID_DELETED,
-	RES_ID_CONTACTS,
-	RES_ID_CALENDAR,
-	RES_ID_JOURNAL,
-	RES_ID_NOTES,
-	RES_ID_TASKS,
-	RES_ID_JUNK,
-	RES_ID_SYNC,
-	RES_ID_CONFLICT,
-	RES_ID_LOCAL,
-	RES_ID_SERVER,
-	RES_TOTAL_NUM
-};
-
 static const char *opt_config_file, *opt_datadir;
 static const char *g_lang;
 static unsigned int opt_force, opt_create_old, opt_upgrade;
