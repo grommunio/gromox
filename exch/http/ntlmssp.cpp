@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2025–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -73,8 +73,10 @@ struct NTLMSSP_VERSION {
 
 struct GX_EXPORT HMACMD5_CTX {
 	HMACMD5_CTX() = default;
-	HMACMD5_CTX(const void *key, size_t len);
-	bool update(const void *text, size_t len);
+	HMACMD5_CTX(const void *p, size_t z);
+	HMACMD5_CTX(std::string_view sv) : HMACMD5_CTX(sv.data(), sv.size()) {}
+	bool update(const void *, size_t);
+	bool update(std::string_view sv) { return update(sv.data(), sv.size()); }
 	bool finish(void *output);
 	bool is_valid() const { return valid_flag; }
 
@@ -133,8 +135,10 @@ static constexpr uint32_t crc32_tab[] = {
 	0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-static uint32_t crc32_calc_buffer(const uint8_t *p, size_t z)
+static uint32_t crc32_calc_buffer(std::string_view sv)
 {
+	auto p = reinterpret_cast<const uint8_t *>(sv.data());
+	auto z = sv.size();
 	/*
 	 * SPDX-License-Identifier: BSD-2-Clause
 	 * COPYRIGHT (C) 1986 Gary S. Brown.  You may use this program, or
@@ -212,6 +216,8 @@ HMACMD5_CTX::HMACMD5_CTX(const void *key, size_t key_len) :
 
 bool HMACMD5_CTX::update(const void *text, size_t text_len)
 {
+	if (text_len == 0)
+		return true;
 	return EVP_DigestUpdate(osslctx.get(), text, text_len) > 0;
 }
 
@@ -971,16 +977,13 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 		return false;
 
 	HMACMD5_CTX hmac_ctx(part_passwd, 16);
-	if (!hmac_ctx.is_valid() ||
-	    !hmac_ctx.update(user_in.data(), user_in.size()) ||
-	    !hmac_ctx.update(domain_in.data(), domain_in.size()) ||
-	    !hmac_ctx.finish(kr))
+	if (!hmac_ctx.is_valid() || !hmac_ctx.update(user_in) ||
+	    !hmac_ctx.update(domain_in) || !hmac_ctx.finish(kr))
 		return false;
 
 	hmac_ctx = HMACMD5_CTX(kr, 16);
-	if (!hmac_ctx.is_valid() ||
-	    !hmac_ctx.update(psec_blob->pb, psec_blob->cb) ||
-	    !hmac_ctx.update(client_key.pb, client_key.cb) ||
+	if (!hmac_ctx.is_valid() || !hmac_ctx.update(*psec_blob) ||
+	    !hmac_ctx.update(client_key) ||
 	    !hmac_ctx.finish(value_from_encryption))
 		return false;
 
@@ -1028,16 +1031,13 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 		return false;
 
 	HMACMD5_CTX hmac_ctx(part_passwd, 16);
-	if (!hmac_ctx.is_valid() ||
-	    !hmac_ctx.update(user_in.data(), user_in.size()) ||
-	    !hmac_ctx.update(domain_in.data(), domain_in.size()) ||
-	    !hmac_ctx.finish(kr))
+	if (!hmac_ctx.is_valid() || !hmac_ctx.update(user_in) ||
+	    !hmac_ctx.update(domain_in) || !hmac_ctx.finish(kr))
 		return false;
 
 	hmac_ctx = HMACMD5_CTX(kr, 16);
-	if (!hmac_ctx.is_valid() ||
-	    !hmac_ctx.update(psec_blob->pb, psec_blob->cb) ||
-	    !hmac_ctx.update(client_key.pb, client_key.cb) ||
+	if (!hmac_ctx.is_valid() || !hmac_ctx.update(*psec_blob) ||
+	    !hmac_ctx.update(client_key) ||
 	    !hmac_ctx.finish(value_from_encryption))
 		return false;
 
@@ -1444,12 +1444,11 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
     const uint8_t *pdata, size_t length, const uint8_t *pwhole_pdu,
     size_t pdu_length, int direction, DATA_BLOB *psig, bool encrypt_sig)
 {
-	uint32_t crc;
 	uint8_t digest[16];
 	uint8_t seq_num[4];
 	
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
-		crc = crc32_calc_buffer(pdata, length);
+		auto crc = crc32_calc_buffer({reinterpret_cast<const char *>(pdata), length});
 		if (!ntlmssp_gen_packet(psig, "dddd", NTLMSSP_SIGN_VERSION,
 		    0, crc, pntlmssp->crypt.ntlm.seq_num))
 			return false;
@@ -1558,7 +1557,6 @@ bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
 	const uint8_t *pwhole_pdu, size_t pdu_length, DATA_BLOB *psig)
 {
 	auto pntlmssp = this;
-	uint32_t crc;
 	
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SEAL))
 		return false;
@@ -1579,7 +1577,7 @@ bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
 		return true;
 	}
 
-	crc = crc32_calc_buffer(pdata, length);
+	auto crc = crc32_calc_buffer({reinterpret_cast<const char *>(pdata), length});
 	if (!ntlmssp_gen_packet(psig, "dddd", NTLMSSP_SIGN_VERSION,
 	    0, crc, pntlmssp->crypt.ntlm.seq_num))
 		return false;
