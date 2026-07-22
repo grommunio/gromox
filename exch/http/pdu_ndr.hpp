@@ -111,8 +111,7 @@ struct dcerpc_bind_nak final : public dcerpc_payload {
 using DCERPC_BIND_NAK = dcerpc_bind_nak;
 
 struct dcerpc_co_cancel final : public dcerpc_payload {
-	~dcerpc_co_cancel();
-	DATA_BLOB auth_info{};
+	std::string auth_info;
 };
 using DCERPC_CO_CANCEL = dcerpc_co_cancel;
 
@@ -127,15 +126,13 @@ struct DCERPC_AUTH {
 };
 
 struct dcerpc_auth3 final : public dcerpc_payload {
-	~dcerpc_auth3();
 	uint32_t pad = 0;
-	DATA_BLOB auth_info{};
+	std::string auth_info;
 };
 using DCERPC_AUTH3 = dcerpc_auth3;
 
 struct dcerpc_orphaned final : public dcerpc_payload {
-	~dcerpc_orphaned();
-	DATA_BLOB auth_info{};
+	std::string auth_info;
 };
 using DCERPC_ORPHANED = dcerpc_orphaned;
 

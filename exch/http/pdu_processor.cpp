@@ -1004,7 +1004,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	if ((pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE &&
 	    pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT) ||
 		NULL == pauth_ctx->pntlmssp ||
-	    auth3.auth_info.cb == 0)
+	    auth3.auth_info.size() == 0)
 		goto AUTH3_FAIL;
 	
 	pauth_ctx->auth_info.clear();

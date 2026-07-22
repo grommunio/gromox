@@ -466,18 +466,7 @@ static pack_result pdu_ndr_pull_dcerpc_co_cancel(NDR_PULL *pndr, DCERPC_CO_CANCE
 	pndr->flags = saved_flags;
 	if (status != pack_result::ok)
 		return status;
-	status = pndr->trailer_align(4);
-	if (status != pack_result::ok) {
-		ndr_free_data_blob(&r->auth_info);
-		return status;
-	}
-	return pack_result::ok;
-}
-
-dcerpc_co_cancel::~dcerpc_co_cancel()
-{
-	auto r = this;
-	ndr_free_data_blob(&r->auth_info);
+	return pndr->trailer_align(4);
 }
 
 static pack_result pdu_ndr_pull_dcerpc_orphaned(NDR_PULL *pndr, DCERPC_ORPHANED *r)
@@ -491,18 +480,7 @@ static pack_result pdu_ndr_pull_dcerpc_orphaned(NDR_PULL *pndr, DCERPC_ORPHANED 
 	pndr->flags = saved_flags;
 	if (status != pack_result::ok)
 		return status;
-	status = pndr->trailer_align(4);
-	if (status != pack_result::ok) {
-		ndr_free_data_blob(&r->auth_info);
-		return status;
-	}
-	return pack_result::ok;
-}
-
-dcerpc_orphaned::~dcerpc_orphaned()
-{
-	auto r = this;
-	ndr_free_data_blob(&r->auth_info);
+	return pndr->trailer_align(4);
 }
 
 static pack_result pdu_ndr_pull_dcerpc_auth3(NDR_PULL *pndr, DCERPC_AUTH3 *r)
@@ -517,18 +495,7 @@ static pack_result pdu_ndr_pull_dcerpc_auth3(NDR_PULL *pndr, DCERPC_AUTH3 *r)
 	pndr->flags = saved_flags;
 	if (status != pack_result::ok)
 		return status;
-	status = pndr->trailer_align(4);
-	if (status != pack_result::ok) {
-		ndr_free_data_blob(&r->auth_info);
-		return status;
-	}
-	return pack_result::ok;
-}
-
-dcerpc_auth3::~dcerpc_auth3()
-{	
-	auto r = this;
-	ndr_free_data_blob(&r->auth_info);
+	return pndr->trailer_align(4);
 }
 
 pack_result pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r)

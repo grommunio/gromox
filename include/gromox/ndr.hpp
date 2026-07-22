@@ -51,6 +51,7 @@ struct GX_EXPORT NDR_PULL {
 	pack_result g_bytes(void *v, uint32_t z) __attribute__((nonnull(2)));
 	pack_result g_guid(GUID *);
 	pack_result g_syntax(SYNTAX_ID *);
+	pack_result g_blob(std::string *);
 	pack_result g_blob(DATA_BLOB *);
 	pack_result check_str(uint32_t c, uint32_t z);
 	pack_result g_genptr(uint32_t *v);
