@@ -713,9 +713,8 @@ static const char *ntlmssp_target_name(NTLMSSP_CTX *pntlmssp,
 {
 	if (!(neg_flags & NTLMSSP_REQUEST_TARGET))
 		return "";
-	*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO;
-	*chal_flags |= NTLMSSP_REQUEST_TARGET;
-	*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
+	*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO | NTLMSSP_REQUEST_TARGET |
+	               NTLMSSP_TARGET_TYPE_SERVER;
 	return pntlmssp->dns_name;
 }
 
@@ -754,7 +753,6 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 	DATA_BLOB version_blob;
 	char cryptkey[9];
 	const char *target_name;
-	const char *parse_string;
 	uint32_t ntlmssp_command;
 	uint8_t struct_blob_buff[1024];
 	
@@ -823,10 +821,7 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 		version_blob.cb = ndr_push.offset;
 	}
 		
-	if (pntlmssp->unicode)
-		parse_string = "CdUdbddBb";
-	else
-		parse_string = "CdAdbddBb";
+	auto parse_string = pntlmssp->unicode ? "CdUdbddBb" : "CdAdbddBb";
 	if (!ntlmssp_gen_packet(preply, parse_string, "NTLMSSP",
 	    NTLMSSP_PROCESS_CHALLENGE, target_name, chal_flags, cryptkey,
 	    8, 0, 0, struct_blob.pb, struct_blob.cb, version_blob.pb,
@@ -840,16 +835,11 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 	NTLMSSP_SERVER_AUTH_STATE *pauth, const DATA_BLOB request)
 {
-	const char *parse_string;
 	char client_netbios_name[1024];
 	uint8_t session_nonce_hash[16];
 	uint32_t ntlmssp_command, auth_flags;
 	
-	if (pntlmssp->unicode)
-		parse_string = "CdBBUUUBd";
-	else
-		parse_string = "CdBBAAABd";
-
+	auto parse_string = pntlmssp->unicode ? "CdBBUUUBd" : "CdBBAAABd";
 	pntlmssp->session_key.pb = pntlmssp->session_key_buff;
 	pntlmssp->session_key.cb = 0;
 	pntlmssp->lm_resp.pb = pntlmssp->lm_resp_buff;
@@ -871,10 +861,7 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 	    pntlmssp->domain, pntlmssp->user, client_netbios_name,
 	    &pauth->encrypted_session_key, &auth_flags)) {
 		/* Try again with a shorter string (Win9X truncates this packet) */
-		if (pntlmssp->unicode)
-			parse_string = "CdBBUUU";
-		else
-			parse_string = "CdBBAAA";
+		parse_string = pntlmssp->unicode ? "CdBBUUU" : "CdBBAAA";
 		pauth->encrypted_session_key.cb = 0;
 		auth_flags = 0;
 		
@@ -1404,9 +1391,7 @@ static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	if (!ntlmssp_server_chkpasswd(pntlmssp, &auth_state.user_session_key,
 	    &auth_state.lm_session_key, plain_passwd))
 		return false;
-	if (!ntlmssp_server_postauth(pntlmssp, &auth_state))
-		return false;
-	return true;
+	return ntlmssp_server_postauth(pntlmssp, &auth_state);
 }
 
 bool ntlmssp_ctx::update(DATA_BLOB *pblob)
@@ -1519,10 +1504,8 @@ bool ntlmssp_ctx::sign_packet(const uint8_t *pdata,
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN) ||
 	    pntlmssp->session_key.cb == 0)
 		return false;
-	if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
-	    pdu_length, NTLMSSP_DIRECTION_SEND, psig, true))
-		return false;
-	return true;
+	return ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
+	       pdu_length, NTLMSSP_DIRECTION_SEND, psig, true);
 }
 
 static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
@@ -1568,10 +1551,8 @@ bool ntlmssp_ctx::check_packet(const uint8_t *pdata,
 {
 	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
-	if (!ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
-	    pdu_length, psig))
-		return false;
-	return true;
+	return ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
+	       pdu_length, psig);
 }
 
 bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
@@ -1624,10 +1605,8 @@ bool ntlmssp_ctx::unseal_packet(uint8_t *pdata,
 		pntlmssp->crypt.ntlm2.receiving.seal_state.crypt_sbox(pdata, length);
 	else
 		pntlmssp->crypt.ntlm.seal_state.crypt_sbox(pdata, length);
-	if (!ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
-	    pdu_length, psig))
-		return false;
-	return true;
+	return ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
+	       pdu_length, psig);
 }
 
 static bool ntlmssp_session_key(NTLMSSP_CTX *pntlmssp, DATA_BLOB *psession_key)
