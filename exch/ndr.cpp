@@ -542,15 +542,15 @@ pack_result NDR_PUSH::p_ulong(uint32_t v)
  * 3) Otherwise, push a uint32 length _and_ a corresponding byte array to the
  *    ndr buffer.
  */
-pack_result NDR_PUSH::p_blob(DATA_BLOB blob)
+pack_result NDR_PUSH::p_blob(std::string_view blob)
 {
 	auto pndr = this;
-	int length = 0;
 	uint8_t buff[8];
 	
 	if (pndr->flags & NDR_FLAG_REMAINING) {
 		/* nothing to do */
 	} else if (pndr->flags & (NDR_ALIGN_FLAGS & ~NDR_FLAG_NOALIGN)) {
+		unsigned int length = 0;
 		if (pndr->flags & NDR_FLAG_ALIGN2)
 			length = ndr_align_size(pndr->offset, 2);
 		else if (pndr->flags & NDR_FLAG_ALIGN4)
@@ -560,9 +560,8 @@ pack_result NDR_PUSH::p_blob(DATA_BLOB blob)
 		memset(buff, 0, length);
 		return pndr->p_bytes(buff, length);
 	} else {
-		TRY(pndr->p_uint32(blob.cb));
+		TRY(p_uint32(blob.size()));
 	}
-	assert(blob.pb != nullptr || blob.cb == 0);
 	TRY(pndr->p_bytes(blob));
 	return pack_result::ok;
 }

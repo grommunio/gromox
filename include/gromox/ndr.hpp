@@ -84,7 +84,7 @@ struct GX_EXPORT NDR_PUSH {
 	pack_result p_bytes(std::string_view);
 	pack_result p_guid(const GUID &);
 	pack_result p_syntax(const SYNTAX_ID &);
-	pack_result p_blob(DATA_BLOB);
+	pack_result p_blob(std::string_view);
 	pack_result p_zero(uint32_t z);
 	pack_result p_unique_ptr(const void *v);
 	template<typename T> pack_result p_unique_ptr(const std::optional<T> &x)
