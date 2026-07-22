@@ -30,33 +30,27 @@ struct dcerpc_payload {
 };
 
 struct dcerpc_request final : public dcerpc_payload {
-	~dcerpc_request();
-
 	uint32_t alloc_hint = 0;
 	uint16_t context_id = 0, opnum = 0;
 	DCERPC_OBJECT object{};
-	DATA_BLOB pad{}, stub_and_verifier{};
+	std::string pad, stub_and_verifier;
 };
 using DCERPC_REQUEST = dcerpc_request;
 
 struct dcerpc_response final : public dcerpc_payload {
-	~dcerpc_response();
-
 	uint32_t alloc_hint = 0;
 	uint16_t context_id = 0;
 	uint8_t cancel_count = 0;
-	DATA_BLOB pad{}, stub_and_verifier{};
+	std::string pad, stub_and_verifier;
 };
 using DCERPC_RESPONSE = dcerpc_response;
 
 struct dcerpc_fault final : public dcerpc_payload {
-	~dcerpc_fault();
-
 	uint32_t alloc_hint = 0;
 	uint16_t context_id = 0;
 	uint8_t cancel_count = 0;
 	int status = 0; /* dcerpc ncacn status */
-	DATA_BLOB pad{};
+	std::string pad;
 };
 using DCERPC_FAULT = dcerpc_fault;
 
@@ -84,7 +78,7 @@ struct dcerpc_bind final : public dcerpc_payload {
 	uint32_t assoc_group_id = 0;
 	uint8_t num_contexts = 0;
 	DCERPC_CTX_LIST *ctx_list = nullptr;
-	DATA_BLOB auth_info{};
+	std::string auth_info;
 };
 using DCERPC_BIND = dcerpc_bind;
 
@@ -95,10 +89,9 @@ struct dcerpc_bind_ack final : public dcerpc_payload {
 	uint32_t assoc_group_id = 0;
 	uint16_t secondary_address_size = 0;
 	char secondary_address[64]{};
-	DATA_BLOB pad{};
 	uint8_t num_contexts = 0;
 	DCERPC_ACK_CTX *ctx_list = nullptr;
-	DATA_BLOB auth_info{};
+	std::string pad, auth_info;
 };
 using DCERPC_BIND_ACK = dcerpc_bind_ack;
 

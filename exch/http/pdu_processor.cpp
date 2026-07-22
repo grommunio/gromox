@@ -557,7 +557,10 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		return FALSE;
 	}
 	
-	prequest->stub_and_verifier.cb -= auth_length;
+	if (prequest->stub_and_verifier.size() >= auth_length)
+		prequest->stub_and_verifier.erase(prequest->stub_and_verifier.size() - auth_length);
+	else
+		prequest->stub_and_verifier.clear();
 
 	/* check signature or unseal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
@@ -565,11 +568,11 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		std::string_view whole_pdu = *pblob;
 		whole_pdu.remove_suffix(auth.credentials.size());
 		if (!pauth_ctx->pntlmssp->unseal_packet(&pblob->pb[hdr_size],
-		    prequest->stub_and_verifier.cb,
+		    prequest->stub_and_verifier.size(),
 		    whole_pdu, auth.credentials))
 			return FALSE;
-		memcpy(prequest->stub_and_verifier.pb, &pblob->pb[hdr_size],
-			prequest->stub_and_verifier.cb);
+		prequest->stub_and_verifier.assign(&pblob->pc[hdr_size],
+			prequest->stub_and_verifier.size());
 		break;
 	}
 	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY: {
@@ -588,10 +591,9 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	}
 	
 	/* remove the indicated amount of padding */
-	if (prequest->stub_and_verifier.cb < auth.auth_pad_length) {
+	if (prequest->stub_and_verifier.size() < auth.auth_pad_length)
 		return FALSE;
-	}
-	prequest->stub_and_verifier.cb -= auth.auth_pad_length;
+	prequest->stub_and_verifier.erase(prequest->stub_and_verifier.size() - auth.auth_pad_length);
 	return TRUE;
 }
 
@@ -628,7 +630,6 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
 {
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
-	static constexpr uint8_t zeros[4] = {};
 	
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_FAULT;
@@ -639,10 +640,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
 	fault->context_id = 0;
 	fault->cancel_count = 0;
 	fault->status = fault_code;
-	fault->pad.pb = deconst(zeros);
-	fault->pad.cb = sizeof(zeros);
-	/* Avoid non-owning pointers from being consumed by ~ncacn_packet */
-	auto cl_0 = HX::make_scope_exit([&]() { *fault = {}; });
+	fault->pad.assign(4, '\0');
 
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
@@ -678,7 +676,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 	auto pauth_ctx = new DCERPC_AUTH_CONTEXT();
 	pauth_ctx->node.pdata = pauth_ctx;
 	
-	if (pbind->auth_info.cb == 0) {
+	if (pbind->auth_info.empty()) {
 		pauth_ctx->auth_info.auth_type = RPC_C_AUTHN_NONE;
 		pauth_ctx->auth_info.auth_level = RPC_C_AUTHN_LEVEL_DEFAULT;
 		double_list_append_as_tail(&pcall->pprocessor->auth_list,
@@ -912,8 +910,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	auto bind_ack = static_cast<dcerpc_bind_ack *>(pkt.payload.get());
 	bind_ack->max_xmit_frag = pcall->pprocessor->cli_max_recv_frag;
 	bind_ack->max_recv_frag = 0x2000;
-	bind_ack->pad.pb = nullptr;
-	bind_ack->pad.cb = 0;
+	bind_ack->pad.clear();
 	bind_ack->assoc_group_id = pcall->pcontext != nullptr ?
 		pcall->pcontext->assoc_group_id : DUMMY_ASSOC_GROUP;
 	if (NULL != pinterface) {
@@ -950,8 +947,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	bind_ack->ctx_list[0].result = result;
 	bind_ack->ctx_list[0].reason = reason;
 	bind_ack->ctx_list[0].syntax = g_transfer_syntax_ndr;
-	bind_ack->auth_info.pb = nullptr;
-	bind_ack->auth_info.cb = 0;
+	bind_ack->auth_info.clear();
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
@@ -1169,8 +1165,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	auto alter_ack = static_cast<dcerpc_bind_ack *>(pkt.payload.get());
 	alter_ack->max_xmit_frag = 0x2000;
 	alter_ack->max_recv_frag = 0x2000;
-	alter_ack->pad.pb = nullptr;
-	alter_ack->pad.cb = 0;
+	alter_ack->pad.clear();
 	alter_ack->assoc_group_id = pcontext != nullptr ?
 		pcall->pcontext->assoc_group_id : DUMMY_ASSOC_GROUP;
 	alter_ack->secondary_address[0] = '\0';
@@ -1185,8 +1180,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	alter_ack->ctx_list[0].result = result;
 	alter_ack->ctx_list[0].reason = reason;
 	alter_ack->ctx_list[0].syntax = g_transfer_syntax_ndr;
-	alter_ack->auth_info.pb = nullptr;
-	alter_ack->auth_info.cb = 0;
+	alter_ack->auth_info.clear();
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
@@ -1262,12 +1256,12 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 		return FALSE;
 	const auto &response = *static_cast<dcerpc_response *>(ppkt->payload.get());
 	pauth_ctx->auth_info.auth_pad_length =
-		(16 - (response.stub_and_verifier.cb & 15)) & 15;
+		(16 - (response.stub_and_verifier.size() & 15)) & 15;
 	if (ndr.p_zero(pauth_ctx->auth_info.auth_pad_length) != pack_result::ok)
 		return FALSE;
 
-	payload_length = response.stub_and_verifier.cb +
-						pauth_ctx->auth_info.auth_pad_length;
+	payload_length = response.stub_and_verifier.size() +
+	                 pauth_ctx->auth_info.auth_pad_length;
 
 	/* start without signature, will be appended later */
 	pauth_ctx->auth_info.credentials.clear();
@@ -1306,10 +1300,10 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 
 	if (creds2.cb != sig_size) {
 		mlog(LV_DEBUG, "pdu_processor: auth_response: creds2.cb[%u] != "
-			"sig_size[%u] pad[%u] stub[%u]", creds2.cb,
-			static_cast<unsigned int>(sig_size),
+			"sig_size[%zu] pad[%u] stub[%zu]", creds2.cb,
+			sig_size,
 			pauth_ctx->auth_info.auth_pad_length,
-			response.stub_and_verifier.cb);
+			response.stub_and_verifier.size());
 		pdu_processor_set_frag_length(pblob, pblob->cb + creds2.cb);
 		pdu_processor_set_auth_length(pblob, creds2.cb);
 	}
@@ -1410,12 +1404,13 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 		response->alloc_hint = stub.cb;
 		response->context_id = prequest->context_id;
 		response->cancel_count = 0;
-		response->pad.pb = prequest->pad.pb;
-		response->pad.cb = prequest->pad.cb;
-		response->stub_and_verifier.pb = stub.pb;
-		response->stub_and_verifier.cb = length;
-		/* Avoid non-owning pointers from being consumed by ~ncacn_packet */
-		auto cl_0 = HX::make_scope_exit([&]() { *response = {}; });
+		try {
+			response->pad = prequest->pad;
+			response->stub_and_verifier.assign(stub.pc, length);
+		} catch (const std::bad_alloc &) {
+			mlog(LV_ERR, "%s:%u: ENOMEM", __func__, __LINE__);
+			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
+		}
 
 		if (!pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
@@ -1682,8 +1677,8 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		flags |= NDR_FLAG_BIGENDIAN;
 	if (pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
-	ndr_pull.init(prequest->stub_and_verifier.pb,
-		prequest->stub_and_verifier.cb, flags);
+	ndr_pull.init(prequest->stub_and_verifier.data(),
+		prequest->stub_and_verifier.size(), flags);
 	pcall->pcontext	= pcontext;
 	
 	/* unmarshaling the NDR in param data */
@@ -2588,8 +2583,8 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 		if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
 			if (!(pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 				alloc_size = prequest->alloc_hint;
-				if (alloc_size < prequest->stub_and_verifier.cb)
-					alloc_size = prequest->stub_and_verifier.cb * 8;
+				if (alloc_size < prequest->stub_and_verifier.size())
+					alloc_size = prequest->stub_and_verifier.size() * 8;
 				if (alloc_size > g_max_request_mem) {
 					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 						delete pcall;
@@ -2599,8 +2594,9 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 					return PDU_PROCESSOR_OUTPUT;
 				}
 				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
-				auto pdata = me_alloc<uint8_t>(alloc_size);
-				if (NULL == pdata) {
+				try {
+					prequest->stub_and_verifier.reserve(alloc_size);
+				} catch (const std::bad_alloc &) {
 					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 						delete pcall;
 						return PDU_PROCESSOR_ERROR;
@@ -2608,14 +2604,10 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 					*ppcall = pcall;
 					return PDU_PROCESSOR_OUTPUT;
 				}
-				
-				memcpy(pdata, prequest->stub_and_verifier.pb,
-					prequest->stub_and_verifier.cb);
-				free(prequest->stub_and_verifier.pb);
-				prequest->stub_and_verifier.pb = pdata;
 				pcall->alloc_size = alloc_size;
 			}
 		} else {
+			/* x = previously existing frame */
 			pcallx = pprocessor->pop_frag_call(pcall->pkt.call_id);
 			if (NULL == pcallx) {
 				if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
@@ -2638,8 +2630,8 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 			}
 			
 			auto prequestx = static_cast<dcerpc_request *>(pcallx->pkt.payload.get());
-			alloc_size = prequestx->stub_and_verifier.cb +
-			             prequest->stub_and_verifier.cb;
+			alloc_size = prequestx->stub_and_verifier.size() +
+			             prequest->stub_and_verifier.size();
 			if (prequestx->alloc_hint > alloc_size) {
 				alloc_size = prequestx->alloc_hint;
 			}
@@ -2655,8 +2647,9 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 					return PDU_PROCESSOR_OUTPUT;
 				}	
 				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
-				auto pdata = me_alloc<uint8_t>(alloc_size);
-				if (NULL == pdata) {
+				try {
+					prequestx->stub_and_verifier.reserve(alloc_size);
+				} catch (const std::bad_alloc &) {
 					delete pcallx;
 					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 						delete pcall;
@@ -2665,18 +2658,11 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 					*ppcall = pcall;
 					return PDU_PROCESSOR_OUTPUT;
 				}
-				memcpy(pdata, prequestx->stub_and_verifier.pb,
-					prequestx->stub_and_verifier.cb);
-				free(prequestx->stub_and_verifier.pb);
-				prequestx->stub_and_verifier.pb = pdata;
 				pcallx->alloc_size = alloc_size;
 			}
 				
-			memcpy(&prequestx->stub_and_verifier.pb[prequestx->stub_and_verifier.cb],
-				prequest->stub_and_verifier.pb,
-				prequest->stub_and_verifier.cb);
-			prequestx->stub_and_verifier.cb +=
-				prequest->stub_and_verifier.cb;
+			/* Merge current fragment into existing */
+			prequestx->stub_and_verifier += prequest->stub_and_verifier;
 			pcallx->pkt.pfc_flags |= pcall->pkt.pfc_flags&DCERPC_PFC_FLAG_LAST;
 			delete pcall;
 			pcall = pcallx;
