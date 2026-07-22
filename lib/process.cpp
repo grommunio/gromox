@@ -484,7 +484,10 @@ int poll_ctx::wait(const struct timespec *timeout, int max_ev)
 #ifdef HAVE_EPOLL_PWAIT2
 	return epoll_pwait2(m_epfd, m_events.data(), max_ev, timeout, nullptr);
 #else
-	return epoll_wait(m_epfd, m_events.data(), max_ev, timeout->tv_nsec / 1000000 + timeout->tv_sec);
+	int ms = -1; /* -1 = epoll_wait's "block indefinitely" */
+	if (timeout != nullptr)
+		ms = timeout->tv_sec * 1000 + timeout->tv_nsec / 1000000;
+	return epoll_wait(m_epfd, m_events.data(), max_ev, ms);
 #endif
 #elif defined(HAVE_SYS_EVENT_H)
 	return kevent(m_epfd, nullptr, 0, m_events.data(), max_ev, timeout);
