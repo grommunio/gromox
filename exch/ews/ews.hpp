@@ -337,6 +337,8 @@ class EWSContext {
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
+	std::optional<uint64_t> findFolderByClass(const std::string &dir, uint64_t parentFolderId, const char *containerClass) const;
+	uint64_t resolveOrCreateSpecialFolder(const std::string &dir, uint64_t parentFolderId, uint64_t legacyFolderId, const char *containerClass, unsigned int dispNameTid) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
 	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool) const;
 	void suppressReadReceipt(const Structures::tItemId&) const;

@@ -1664,10 +1664,20 @@ tBaseFolderType::tBaseFolderType(const sShape& shape)
 
 sFolder tBaseFolderType::create(const sShape& shape)
 {
+	/*
+	 * No longer special-cases PRIVATE_FID_RECIPIENT_CACHE by folder ID or
+	 * by guessing from a hardcoded, language-limited set of display
+	 * names: PR_CONTAINER_CLASS is now always correct at rest (fixed in
+	 * place on first access if it belonged to an older gromox version,
+	 * set correctly at creation otherwise - see
+	 * EWSContext::resolveOrCreateSpecialFolder), so the generic
+	 * class-prefix check below is sufficient on its own.
+	 */
 	enum Type : uint8_t {NORMAL, CALENDAR, TASKS, CONTACTS, SEARCH};
 	const char* frClass = shape.get<char>(PR_CONTAINER_CLASS, sShape::FL_ANY);
 	const uint32_t* frType = shape.get<uint32_t>(PR_FOLDER_TYPE, sShape::FL_ANY);
 	Type folderType = NORMAL;
+
 	if (frType && *frType == FOLDER_SEARCH) {
 		folderType = SEARCH;
 	} else if (frClass) {
