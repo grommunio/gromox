@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <gromox/ndr.hpp>
 #include "pdu_ndr_ids.hpp"
 
@@ -21,7 +22,9 @@ struct DCERPC_ACK_CTX {
 	SYNTAX_ID syntax;
 };
 
-struct dcerpc_payload {};
+struct dcerpc_payload {
+	virtual ~dcerpc_payload() = default;
+};
 
 struct dcerpc_request final : public dcerpc_payload {
 	~dcerpc_request();
@@ -185,8 +188,6 @@ using DCERPC_RTS = dcerpc_rts;
  * C706 §12.6.1 / RPCH v19 §2.2.3.6.1
  */
 struct dcerpc_ncacn_packet {
-	~dcerpc_ncacn_packet();
-
 	constexpr dcerpc_ncacn_packet(bool be)
 	{
 		drep[0] = be ? 0 : DCERPC_DREP_LE;
@@ -205,7 +206,7 @@ struct dcerpc_ncacn_packet {
 	uint16_t auth_length = 0;
 	uint32_t call_id = 0;
 	uint8_t pkt_type = DCERPC_PKT_INVALID;
-	dcerpc_payload *payload = nullptr;
+	std::unique_ptr<dcerpc_payload> payload;
 };
 using DCERPC_NCACN_PACKET = dcerpc_ncacn_packet;
 

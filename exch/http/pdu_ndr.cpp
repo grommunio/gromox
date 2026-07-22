@@ -745,15 +745,17 @@ dcerpc_rts::~dcerpc_rts()
 }
 
 static pack_result pdu_ndr_pull_dcerpc_payload(NDR_PULL *pndr, uint8_t pkt_type,
-    dcerpc_payload **r) try
+    std::unique_ptr<dcerpc_payload> &req) try
 {
+	pack_result ret = pack_result::success;
 	TRY(pndr->union_align(4));
-	*r = nullptr;
+	req = nullptr;
 	switch (pkt_type) {
 	case DCERPC_PKT_REQUEST: {
-		auto r0 = new dcerpc_request{};
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_request(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_request>();
+		ret = pdu_ndr_pull_dcerpc_request(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_PING:
 	case DCERPC_PKT_WORKING:
@@ -762,124 +764,81 @@ static pack_result pdu_ndr_pull_dcerpc_payload(NDR_PULL *pndr, uint8_t pkt_type,
 		/* TRY(pndr->g_uint8(&dummy)); */
 		break;
 	case DCERPC_PKT_RESPONSE: {
-		auto r0 = new dcerpc_response;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_response(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_response>();
+		ret = pdu_ndr_pull_dcerpc_response(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_FAULT:
 	case DCERPC_PKT_REJECT: {
-		auto r0 = new dcerpc_fault;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_fault(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_fault>();
+		ret = pdu_ndr_pull_dcerpc_fault(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_NOCALL:
 	case DCERPC_PKT_FACK: {
-		auto r0 = new dcerpc_fack;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_fack(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_fack>();
+		ret = pdu_ndr_pull_dcerpc_fack(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_CANCEL_ACK: {
-		auto r0 = new dcerpc_cancel_ack;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_cancel_ack(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_cancel_ack>();
+		ret = pdu_ndr_pull_dcerpc_cancel_ack(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_BIND:
 	case DCERPC_PKT_ALTER: {
-		auto r0 = new dcerpc_bind;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_bind(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_bind>();
+		ret = pdu_ndr_pull_dcerpc_bind(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_BIND_ACK:
 	case DCERPC_PKT_ALTER_ACK: {
-		auto r0 = new dcerpc_bind_ack;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_bind_ack(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_bind_ack>();
+		ret = pdu_ndr_pull_dcerpc_bind_ack(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_BIND_NAK: {
-		auto r0 = new dcerpc_bind_nak;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_bind_nak(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_bind_nak>();
+		ret = pdu_ndr_pull_dcerpc_bind_nak(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_CO_CANCEL: {
-		auto r0 = new dcerpc_co_cancel;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_co_cancel(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_co_cancel>();
+		ret = pdu_ndr_pull_dcerpc_co_cancel(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_ORPHANED: {
-		auto r0 = new dcerpc_orphaned;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_orphaned(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_orphaned>();
+		ret = pdu_ndr_pull_dcerpc_orphaned(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_AUTH3: {
-		auto r0 = new dcerpc_auth3;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_auth3(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_auth3>();
+		ret = pdu_ndr_pull_dcerpc_auth3(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	case DCERPC_PKT_RTS: {
-		auto r0 = new dcerpc_rts;
-		*r = r0;
-		return pdu_ndr_pull_dcerpc_rts(pndr, r0);
+		auto r0 = std::make_unique<dcerpc_rts>();
+		ret = pdu_ndr_pull_dcerpc_rts(pndr, r0.get());
+		req = std::move(r0);
+		break;
 	}
 	default:
 		return pack_result::bad_switch;
 	}
-	return pack_result::ok;
+	return ret;
 } catch (const std::bad_alloc &) {
 	return pack_result::alloc;
-}
-
-dcerpc_ncacn_packet::~dcerpc_ncacn_packet()
-{
-	if (payload == nullptr)
-		return;
-	switch (pkt_type) {
-	case DCERPC_PKT_REQUEST:
-		delete static_cast<dcerpc_request *>(payload);
-		break;
-	case DCERPC_PKT_PING:
-	case DCERPC_PKT_WORKING:
-	case DCERPC_PKT_ACK:
-	case DCERPC_PKT_SHUTDOWN:
-		/* do nothing */
-		break;
-	case DCERPC_PKT_CANCEL_ACK:
-		delete static_cast<dcerpc_cancel_ack *>(payload);
-		break;
-	case DCERPC_PKT_RESPONSE:
-		delete static_cast<dcerpc_response *>(payload);
-		break;
-	case DCERPC_PKT_FAULT:
-	case DCERPC_PKT_REJECT:
-		delete static_cast<dcerpc_fault *>(payload);
-		break;
-	case DCERPC_PKT_NOCALL:
-	case DCERPC_PKT_FACK:
-		delete static_cast<dcerpc_fack *>(payload);
-		break;
-	case DCERPC_PKT_BIND:
-	case DCERPC_PKT_ALTER:
-		delete static_cast<dcerpc_bind *>(payload);
-		break;
-	case DCERPC_PKT_BIND_ACK:
-	case DCERPC_PKT_ALTER_ACK:
-		delete static_cast<dcerpc_bind_ack *>(payload);
-		break;
-	case DCERPC_PKT_BIND_NAK:
-		delete static_cast<dcerpc_bind_nak *>(payload);
-		break;
-	case DCERPC_PKT_CO_CANCEL:
-		delete static_cast<dcerpc_co_cancel *>(payload);
-		break;
-	case DCERPC_PKT_ORPHANED:
-		delete static_cast<dcerpc_orphaned *>(payload);
-		break;
-	case DCERPC_PKT_AUTH3:
-		delete static_cast<dcerpc_auth3 *>(payload);
-		break;
-	case DCERPC_PKT_RTS:
-		delete static_cast<dcerpc_rts *>(payload);
-		break;
-	}
 }
 
 pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt)
@@ -893,7 +852,7 @@ pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt)
 	TRY(pndr->g_uint16(&pkt->frag_length));
 	TRY(pndr->g_uint16(&pkt->auth_length));
 	TRY(pndr->g_uint32(&pkt->call_id));
-	TRY(pdu_ndr_pull_dcerpc_payload(pndr, pkt->pkt_type, &pkt->payload));
+	TRY(pdu_ndr_pull_dcerpc_payload(pndr, pkt->pkt_type, pkt->payload));
 	TRY(pndr->trailer_align(4));
 	return pack_result::ok;
 }
@@ -1363,7 +1322,7 @@ pack_result pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt)
 	TRY(pndr->p_uint16(pkt->frag_length));
 	TRY(pndr->p_uint16(pkt->auth_length));
 	TRY(pndr->p_uint32(pkt->call_id));
-	TRY(pdu_ndr_push_dcerpc_payload(pndr, pkt->pkt_type, pkt->payload));
+	TRY(pdu_ndr_push_dcerpc_payload(pndr, pkt->pkt_type, pkt->payload.get()));
 	return pndr->trailer_align(4);
 }
 
