@@ -68,6 +68,13 @@ static void xmap_read(const char *file, const char *dirs,
 	}
 }
 
+/**
+ * @file: name of file to read
+ * @dirs: colon-separated list of directories (like $PATH) to search for @file
+ *        if @file is a relative path
+ * @fm:   forward map to write to
+ * @bm:   backward map to write to
+ */
 static void smap_read(const char *file, const char *dirs,
     str_to_str_t &fm, str_to_str_t &bm)
 {
@@ -319,9 +326,20 @@ void textmaps_init(const char *datapath)
 		mlog(LV_DEBUG, "textmaps: lang_charset: %zu mappings",
 		        g_lang2cset_map.size());
 		smap_read("mime_extension.txt", datapath, g_ext2mime_map, g_mime2ext_map);
+
+		/*
+		 * mime.types is an _optional_ extension. Gromox has its own
+		 * basic file (mime_extensions.txt). Possible distro package
+		 * names that contain mime.types: aaa_base, mailcap,
+		 * media-types.
+		 *
+		 * Only the first two columns are read from mime.types, so not
+		 * all extensions are used.
+		 */
 		smap_read("/etc/mime.types", datapath, g_mime2ext_map, g_ext2mime_map);
 		mlog(LV_DEBUG, "textmaps: mime_extension: %zu exts, %zu mimetypes",
 		        g_ext2mime_map.size(), g_mime2ext_map.size());
+
 		folder_namedb_read("folder_names.txt", datapath, folder_name_map);
 		mlog(LV_DEBUG, "textmaps: %zu translations in folder namedb", folder_name_map.size());
 		mapitags_read(DATADIR "/mapitags/mapitags.txt", g_mapitags);
