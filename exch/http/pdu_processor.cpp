@@ -565,8 +565,8 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		std::string_view whole_pdu = *pblob;
 		whole_pdu.remove_suffix(auth.credentials.cb);
 		if (!pauth_ctx->pntlmssp->unseal_packet(&pblob->pb[hdr_size],
-		    prequest->stub_and_verifier.cb, whole_pdu,
-		    auth.credentials))
+		    prequest->stub_and_verifier.cb,
+		    whole_pdu, auth.credentials))
 			return FALSE;
 		memcpy(prequest->stub_and_verifier.pb, &pblob->pb[hdr_size],
 			prequest->stub_and_verifier.cb);
