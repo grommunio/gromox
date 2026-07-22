@@ -1441,14 +1441,14 @@ bool ntlmssp_ctx::update(DATA_BLOB *pblob)
 }
 
 static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
-    const uint8_t *pdata, size_t length, const uint8_t *pwhole_pdu,
-    size_t pdu_length, int direction, DATA_BLOB *psig, bool encrypt_sig)
+    std::string_view pdata, std::string_view pwhole_pdu,
+    int direction, DATA_BLOB *psig, bool encrypt_sig)
 {
 	uint8_t digest[16];
 	uint8_t seq_num[4];
 	
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
-		auto crc = crc32_calc_buffer({reinterpret_cast<const char *>(pdata), length});
+		auto crc = crc32_calc_buffer(pdata);
 		if (!ntlmssp_gen_packet(psig, "dddd", NTLMSSP_SIGN_VERSION,
 		    0, crc, pntlmssp->crypt.ntlm.seq_num))
 			return false;
@@ -1471,8 +1471,7 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 
 	if (!hmac_ctx.is_valid() ||
 	    !hmac_ctx.update(seq_num, sizeof(seq_num)) ||
-	    !hmac_ctx.update(pwhole_pdu, pdu_length) ||
-	    !hmac_ctx.finish(digest))
+	    !hmac_ctx.update(pwhole_pdu) || !hmac_ctx.finish(digest))
 		return false;
 
 	if (encrypt_sig && (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
@@ -1493,22 +1492,20 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	return true;
 }
 
-bool ntlmssp_ctx::sign_packet(const uint8_t *pdata,
-	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
-	DATA_BLOB *psig)
+bool ntlmssp_ctx::sign_packet(std::string_view pdata,
+    std::string_view pwhole_pdu, DATA_BLOB *psig)
 {
 	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN) ||
 	    pntlmssp->session_key.cb == 0)
 		return false;
-	return ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
-	       pdu_length, NTLMSSP_DIRECTION_SEND, psig, true);
+	return ntlmssp_make_packet_signature(pntlmssp, pdata, pwhole_pdu,
+	       NTLMSSP_DIRECTION_SEND, psig, true);
 }
 
 static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
-	const uint8_t *pdata, size_t length, const uint8_t *pwhole_pdu,
-	size_t pdu_length, const DATA_BLOB *psig)
+    std::string_view pdata, std::string_view pwhole_pdu, std::string_view psig)
 {
 	DATA_BLOB local_sig;
 	uint8_t local_sig_buff[16];
@@ -1520,41 +1517,39 @@ static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
 		mlog(LV_DEBUG, "ntlm: no session key, cannot check packet signature");
 		return false;
 	}
-	if (psig->cb < 8)
+	if (psig.size() < 8)
 		mlog(LV_DEBUG, "ntlmssp:%s: NTLMSSP packet check failed due to short "
-			"signature (%u bytes)", __func__, psig->cb);
-	if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
-	    pdu_length, NTLMSSP_DIRECTION_RECEIVE, &local_sig, true))
+			"signature (%zu bytes)", __func__, psig.size());
+	if (!ntlmssp_make_packet_signature(pntlmssp, pdata, pwhole_pdu,
+	    NTLMSSP_DIRECTION_RECEIVE, &local_sig, true))
 		return false;
 
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		if (local_sig.cb != psig->cb ||
-			memcmp(local_sig.pb, psig->pb, psig->cb) != 0) {
+		if (local_sig.cb != psig.size() ||
+		    memcmp(local_sig.pb, psig.data(), psig.size()) != 0) {
 			mlog(LV_DEBUG, "ntlmssp: NTLMSSP NTLM2 packet check failed due to invalid signature!");
 			return false;
 		}
 		return true;
 	}
-	if (local_sig.cb != psig->cb || memcmp(&local_sig.pb[8],
-	    &psig->pb[8], psig->cb - 8) != 0) {
+	if (local_sig.cb != psig.size() ||
+	    memcmp(&local_sig.pb[8], &psig[8], psig.size() - 8) != 0) {
 		mlog(LV_DEBUG, "ntlmssp: NTLMSSP NTLM1 packet check failed due to invalid signature!");
 		return false;
 	}
 	return true;
 }
 
-bool ntlmssp_ctx::check_packet(const uint8_t *pdata,
-	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
-	const DATA_BLOB *psig)
+bool ntlmssp_ctx::check_packet(std::string_view pdata,
+    std::string_view pwhole_pdu, std::string_view psig)
 {
 	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
-	return ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
-	       pdu_length, psig);
+	return ntlmssp_check_packet_internal(pntlmssp, pdata, pwhole_pdu, psig);
 }
 
 bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
-	const uint8_t *pwhole_pdu, size_t pdu_length, DATA_BLOB *psig)
+    std::string_view pwhole_pdu, DATA_BLOB *psig)
 {
 	auto pntlmssp = this;
 	
@@ -1568,8 +1563,9 @@ bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
 		return false;
 	}
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length,
-		    pwhole_pdu, pdu_length, NTLMSSP_DIRECTION_SEND, psig, false))
+		if (!ntlmssp_make_packet_signature(pntlmssp,
+		    {reinterpret_cast<const char *>(pdata), length},
+		    pwhole_pdu, NTLMSSP_DIRECTION_SEND, psig, false))
 			return false;
 		pntlmssp->crypt.ntlm2.sending.seal_state.crypt_sbox(pdata, length);
 		if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)
@@ -1587,9 +1583,8 @@ bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
 	return true;
 }
 	
-bool ntlmssp_ctx::unseal_packet(uint8_t *pdata,
-	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
-	const DATA_BLOB *psig)
+bool ntlmssp_ctx::unseal_packet(uint8_t *pdata, size_t length,
+    std::string_view pwhole_pdu, std::string_view psig)
 {
 	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
@@ -1602,8 +1597,9 @@ bool ntlmssp_ctx::unseal_packet(uint8_t *pdata,
 		pntlmssp->crypt.ntlm2.receiving.seal_state.crypt_sbox(pdata, length);
 	else
 		pntlmssp->crypt.ntlm.seal_state.crypt_sbox(pdata, length);
-	return ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
-	       pdu_length, psig);
+	return ntlmssp_check_packet_internal(pntlmssp,
+	       {reinterpret_cast<const char *>(pdata), length},
+	       pwhole_pdu, psig);
 }
 
 static bool ntlmssp_session_key(NTLMSSP_CTX *pntlmssp, DATA_BLOB *psession_key)

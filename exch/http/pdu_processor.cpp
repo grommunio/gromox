@@ -478,20 +478,20 @@ dcerpc_auth_context *pdu_processor::find_auth_ctx(uint32_t auth_context_id) cons
 }
 
 static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
-    const DATA_BLOB *ptrailer, DCERPC_AUTH *pauth, uint32_t *pauth_length,
+    std::string_view trailer, DCERPC_AUTH *pauth, uint32_t *pauth_length,
 	BOOL auth_data_only)
 {
 	NDR_PULL ndr;
 	uint32_t flags;
-	uint32_t data_and_pad = ptrailer->cb -
+	uint32_t data_and_pad = trailer.size() -
 	                        (DCERPC_AUTH_TRAILER_LENGTH + ppkt->auth_length);
-	if (data_and_pad > ptrailer->cb)
+	if (data_and_pad > trailer.size())
 		return FALSE;
-	*pauth_length = ptrailer->cb - data_and_pad;
+	*pauth_length = trailer.size() - data_and_pad;
 	flags = 0;
 	if (!(ppkt->drep[0] & DCERPC_DREP_LE))
 		flags = NDR_FLAG_BIGENDIAN;
-	ndr.init(ptrailer->pb, ptrailer->cb, flags);
+	ndr.init(trailer.data(), trailer.size(), flags);
 	if (ndr.advance(data_and_pad) != pack_result::ok)
 		return FALSE;
 	if (pdu_ndr_pull_dcerpc_auth(&ndr, pauth) != pack_result::success)
@@ -533,8 +533,8 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 			return FALSE;
 		}
 	}
-	if (!pdu_processor_pull_auth_trailer(ppkt,
-	    &prequest->stub_and_verifier, &auth, &auth_length, false))
+	if (!pdu_processor_pull_auth_trailer(ppkt, prequest->stub_and_verifier,
+	    &auth, &auth_length, false))
 		return FALSE;
 	pauth_ctx = pcall->pprocessor->find_auth_ctx(auth.auth_context_id);
 	if (NULL == pauth_ctx) {
@@ -561,23 +561,25 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 
 	/* check signature or unseal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
-	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
+	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY: {
+		std::string_view whole_pdu = *pblob;
+		whole_pdu.remove_suffix(auth.credentials.cb);
 		if (!pauth_ctx->pntlmssp->unseal_packet(&pblob->pb[hdr_size],
-		    prequest->stub_and_verifier.cb,
-		    pblob->pb, pblob->cb - auth.credentials.cb,
-		    &auth.credentials)) {
+		    prequest->stub_and_verifier.cb, whole_pdu,
+		    auth.credentials))
 			return FALSE;
-		}
 		memcpy(prequest->stub_and_verifier.pb, &pblob->pb[hdr_size],
 			prequest->stub_and_verifier.cb);
 		break;
-	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
-		if (!pauth_ctx->pntlmssp->check_packet(prequest->stub_and_verifier.pb,
-		    prequest->stub_and_verifier.cb, pblob->pb,
-		    pblob->cb - auth.credentials.cb, &auth.credentials)) {
+	}
+	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY: {
+		std::string_view whole_pdu = *pblob;
+		whole_pdu.remove_suffix(auth.credentials.cb);
+		if (!pauth_ctx->pntlmssp->check_packet(prequest->stub_and_verifier,
+		    whole_pdu, auth.credentials))
 			return FALSE;
-		}
 		break;
+	}
 	case RPC_C_AUTHN_LEVEL_CONNECT:
 		/* ignore possible signatures here */
 		break;
@@ -683,7 +685,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 			&pauth_ctx->node);
 		return TRUE;
 	}
-	if (!pdu_processor_pull_auth_trailer(ppkt, &pbind->auth_info,
+	if (!pdu_processor_pull_auth_trailer(ppkt, pbind->auth_info,
 		&pauth_ctx->auth_info, &auth_length, FALSE)) {
 		delete pauth_ctx;
 		return FALSE;
@@ -1006,9 +1008,8 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 		goto AUTH3_FAIL;
 	
 	pauth_ctx->auth_info.clear();
-	if (!pdu_processor_pull_auth_trailer(ppkt,
-	    &auth3.auth_info, &pauth_ctx->auth_info,
-	    &auth_length, TRUE))
+	if (!pdu_processor_pull_auth_trailer(ppkt, auth3.auth_info,
+	    &pauth_ctx->auth_info, &auth_length, TRUE))
 		goto AUTH3_FAIL;
 	if (!pauth_ctx->pntlmssp->update(&pauth_ctx->auth_info.credentials))
 		goto AUTH3_FAIL;
@@ -1290,16 +1291,18 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 
 	/* sign or seal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
-	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
+	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY: {
 		if (!pauth_ctx->pntlmssp->seal_packet(&ndr.data[DCERPC_REQUEST_LENGTH],
-		    payload_length, pblob->pb, pblob->cb, &creds2))
+		    payload_length, *pblob, &creds2))
 			return FALSE;
 		break;
-	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
-		if (!pauth_ctx->pntlmssp->sign_packet(&ndr.data[DCERPC_REQUEST_LENGTH],
-		    payload_length, pblob->pb, pblob->cb, &creds2))
+	}
+	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY: {
+		std::string_view data(&ndr.cdata[DCERPC_REQUEST_LENGTH], payload_length);
+		if (!pauth_ctx->pntlmssp->sign_packet(data, *pblob, &creds2))
 			return FALSE;
 		break;
+	}
 
 	default:
 		return FALSE;

@@ -56,7 +56,10 @@ struct GX_EXPORT NDR_PULL {
 	pack_result g_genptr(uint32_t *v);
 	pack_result g_ctx_handle(CONTEXT_HANDLE *);
 
-	const uint8_t *data = nullptr;
+	union {
+		const uint8_t *data = nullptr;
+		const char *cdata;
+	};
 	uint32_t flags = 0, data_size = 0, offset = 0, ptr_count = 0;
 };
 
@@ -93,7 +96,10 @@ struct GX_EXPORT NDR_PUSH {
 	}
 	pack_result p_ctx_handle(const CONTEXT_HANDLE &);
 
-	uint8_t *data = nullptr;
+	union {
+		uint8_t *data = nullptr;
+		char *cdata;
+	};
 	uint32_t flags = 0, alloc_size = 0, offset = 0, ptr_count = 0;
 	DOUBLE_LIST full_ptr_list{};
 	EXT_BUFFER_MGT m_mgt{};
