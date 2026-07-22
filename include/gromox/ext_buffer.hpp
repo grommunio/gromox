@@ -248,7 +248,6 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_float(float);
 	pack_result p_double(double);
 	pack_result p_bool(BOOL);
-	pack_result p_blob(DATA_BLOB b) { return p_bytes(b.pv, b.cb); }
 	pack_result p_bin(const BINARY &);
 	pack_result p_bin(std::string_view);
 	pack_result p_bin_s(const BINARY &);
