@@ -901,7 +901,7 @@ struct GX_EXPORT BINARY {
 		void *pv;
 	};
 
-	operator std::string_view() const { return std::string_view(gromox::znul(pc), cb); }
+	operator std::string_view() const { return pc != nullptr ? std::string_view(pc, cb) : std::string_view(); }
 	std::strong_ordering operator<=>(const BINARY &) const;
 	inline bool operator==(const BINARY &o) const { return (*this <=> o) == 0; }
 	std::string repr(bool verbose = true) const;
