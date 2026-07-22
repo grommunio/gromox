@@ -997,16 +997,15 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	    !hmac_ctx.finish(value_from_encryption))
 		return false;
 
-	if (memcmp(value_from_encryption, pntv2_response->pb, 16) == 0) {
-		hmac_ctx = HMACMD5_CTX(kr, 16);
-		if (!hmac_ctx.is_valid() ||
-		    !hmac_ctx.update(value_from_encryption, 16) ||
-		    !hmac_ctx.finish(puser_key->pb))
-			return false;
-		puser_key->cb = 16;
-		return true;
-	}
-	return false;
+	if (memcmp(value_from_encryption, pntv2_response->pb, 16) != 0)
+		return false;
+	hmac_ctx = HMACMD5_CTX(kr, 16);
+	if (!hmac_ctx.is_valid() ||
+	    !hmac_ctx.update(value_from_encryption, 16) ||
+	    !hmac_ctx.finish(puser_key->pb))
+		return false;
+	puser_key->cb = 16;
+	return true;
 } catch (const std::bad_alloc &) {
 	return false;
 }
@@ -1182,20 +1181,17 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 		return true;
 	}
 
-	
-	if (ntlmssp_check_ntlm1(plm_response, nt_p16, pchallenge, nullptr)) {
-		/* The session key for this response is still very odd.  
-		   It not very secure, so use it only if we otherwise 
-		   allow LM authentication */	
-			
-		memset(puser_key->pb, 0, 16);
-		memcpy(puser_key->pb, p16, 8);
-		puser_key->cb = 16;
-		memcpy(plm_key->pb, p16, 8);
-		plm_key->cb = 8;
-		return true;
-	}
-	return false;
+	if (!ntlmssp_check_ntlm1(plm_response, nt_p16, pchallenge, nullptr))
+		return false;
+	/* The session key for this response is still very odd.
+	   It not very secure, so use it only if we otherwise
+	   allow LM authentication */
+	memset(puser_key->pb, 0, 16);
+	memcpy(puser_key->pb, p16, 8);
+	puser_key->cb = 16;
+	memcpy(plm_key->pb, p16, 8);
+	plm_key->cb = 8;
+	return true;
 }
 
 static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
@@ -1219,51 +1215,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 	}
 	pntlmssp->crypt = {};
 	
-	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		weak_key = pntlmssp->session_key;
-		send_seal_blob.pb = send_seal_buff;
-		send_seal_blob.cb = sizeof(send_seal_buff);
-		recv_seal_blob.pb = recv_seal_buff;
-		recv_seal_blob.cb = sizeof(recv_seal_buff);
-		send_sign_const = SRV_SIGN;
-		send_seal_const = SRV_SEAL;
-		recv_sign_const = CLI_SIGN;
-		recv_seal_const = CLI_SEAL;
-
-		if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_128)
-			/* do nothing */;
-		else if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_56)
-			weak_key.cb = 7;
-		else /* forty bits */
-			weak_key.cb = 5;
-		
-		/* SEND: sign key */
-		if (!ntlmssp_calc_ntlm2_key(pntlmssp->crypt.ntlm2.sending.sign_key,
-		    pntlmssp->session_key, send_sign_const))
-			return false;
-		
-		/* SEND: seal ARCFOUR pad */
-		if (!ntlmssp_calc_ntlm2_key(send_seal_buff, weak_key, send_seal_const))
-			return false;
-		pntlmssp->crypt.ntlm2.sending.seal_state.init(send_seal_blob.pb, send_seal_blob.cb);
-
-		/* SEND: seq num */
-		pntlmssp->crypt.ntlm2.sending.seq_num = 0;
-
-		/* RECV: sign key */
-		if (!ntlmssp_calc_ntlm2_key(pntlmssp->crypt.ntlm2.receiving.sign_key,
-		    pntlmssp->session_key, recv_sign_const))
-			return false;
-
-		/* RECV: seal ARCFOUR pad */
-		if (!ntlmssp_calc_ntlm2_key(recv_seal_buff, weak_key, recv_seal_const))
-			return false;
-
-		pntlmssp->crypt.ntlm2.receiving.seal_state.init(recv_seal_blob.pb, recv_seal_blob.cb);
-
-		/* RECV: seq num */
-		pntlmssp->crypt.ntlm2.receiving.seq_num = 0;
-	} else {
+	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
 		seal_key = pntlmssp->session_key;
 		bool do_weak = false;
 		
@@ -1287,7 +1239,52 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 
 		pntlmssp->crypt.ntlm.seal_state.init(seal_key.pb, seal_key.cb);
 		pntlmssp->crypt.ntlm.seq_num = 0;
+		return true;
 	}
+
+	weak_key = pntlmssp->session_key;
+	send_seal_blob.pb = send_seal_buff;
+	send_seal_blob.cb = sizeof(send_seal_buff);
+	recv_seal_blob.pb = recv_seal_buff;
+	recv_seal_blob.cb = sizeof(recv_seal_buff);
+	send_sign_const = SRV_SIGN;
+	send_seal_const = SRV_SEAL;
+	recv_sign_const = CLI_SIGN;
+	recv_seal_const = CLI_SEAL;
+
+	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_128)
+		/* do nothing */;
+	else if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_56)
+		weak_key.cb = 7;
+	else /* forty bits */
+		weak_key.cb = 5;
+	
+	/* SEND: sign key */
+	if (!ntlmssp_calc_ntlm2_key(pntlmssp->crypt.ntlm2.sending.sign_key,
+	    pntlmssp->session_key, send_sign_const))
+		return false;
+	
+	/* SEND: seal ARCFOUR pad */
+	if (!ntlmssp_calc_ntlm2_key(send_seal_buff, weak_key, send_seal_const))
+		return false;
+	pntlmssp->crypt.ntlm2.sending.seal_state.init(send_seal_blob.pb, send_seal_blob.cb);
+
+	/* SEND: seq num */
+	pntlmssp->crypt.ntlm2.sending.seq_num = 0;
+
+	/* RECV: sign key */
+	if (!ntlmssp_calc_ntlm2_key(pntlmssp->crypt.ntlm2.receiving.sign_key,
+	    pntlmssp->session_key, recv_sign_const))
+		return false;
+
+	/* RECV: seal ARCFOUR pad */
+	if (!ntlmssp_calc_ntlm2_key(recv_seal_buff, weak_key, recv_seal_const))
+		return false;
+
+	pntlmssp->crypt.ntlm2.receiving.seal_state.init(recv_seal_blob.pb, recv_seal_blob.cb);
+
+	/* RECV: seq num */
+	pntlmssp->crypt.ntlm2.receiving.seq_num = 0;
 	return true;
 }
 
@@ -1555,12 +1552,12 @@ static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
 			mlog(LV_DEBUG, "ntlmssp: NTLMSSP NTLM2 packet check failed due to invalid signature!");
 			return false;
 		}
-	} else {
-		if (local_sig.cb != psig->cb || memcmp(&local_sig.pb[8],
-		    &psig->pb[8], psig->cb - 8) != 0) {
-			mlog(LV_DEBUG, "ntlmssp: NTLMSSP NTLM1 packet check failed due to invalid signature!");
-			return false;
-		}
+		return true;
+	}
+	if (local_sig.cb != psig->cb || memcmp(&local_sig.pb[8],
+	    &psig->pb[8], psig->cb - 8) != 0) {
+		mlog(LV_DEBUG, "ntlmssp: NTLMSSP NTLM1 packet check failed due to invalid signature!");
+		return false;
 	}
 	return true;
 }
@@ -1599,15 +1596,16 @@ bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
 		pntlmssp->crypt.ntlm2.sending.seal_state.crypt_sbox(pdata, length);
 		if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)
 			pntlmssp->crypt.ntlm2.sending.seal_state.crypt_sbox(&psig->pb[4], 8);
-	} else {
-		crc = crc32_calc_buffer(pdata, length);
-		if (!ntlmssp_gen_packet(psig, "dddd", NTLMSSP_SIGN_VERSION,
-		    0, crc, pntlmssp->crypt.ntlm.seq_num))
-			return false;
-		pntlmssp->crypt.ntlm.seal_state.crypt_sbox(pdata, length);
-		pntlmssp->crypt.ntlm.seal_state.crypt_sbox(&psig->pb[4], psig->cb - 4);
-		pntlmssp->crypt.ntlm.seq_num ++;
+		return true;
 	}
+
+	crc = crc32_calc_buffer(pdata, length);
+	if (!ntlmssp_gen_packet(psig, "dddd", NTLMSSP_SIGN_VERSION,
+	    0, crc, pntlmssp->crypt.ntlm.seq_num))
+		return false;
+	pntlmssp->crypt.ntlm.seal_state.crypt_sbox(pdata, length);
+	pntlmssp->crypt.ntlm.seal_state.crypt_sbox(&psig->pb[4], psig->cb - 4);
+	pntlmssp->crypt.ntlm.seq_num ++;
 	return true;
 }
 	
