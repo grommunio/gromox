@@ -327,6 +327,8 @@ void contexts_pool_insert(schedule_context *pcontext, sctx_status tpraw)
 
 void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext)
 {
+	if (pcontext == nullptr)
+		return;
 	std::unique_lock idle_hold(g_context_locks[static_cast<int>(sctx_status::idling)]);
 	if (pcontext->type != sctx_status::idling)
 		return;
