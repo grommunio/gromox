@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <gromox/ndr.hpp>
 #include "pdu_ndr_ids.hpp"
 
@@ -116,13 +117,12 @@ struct dcerpc_co_cancel final : public dcerpc_payload {
 using DCERPC_CO_CANCEL = dcerpc_co_cancel;
 
 struct DCERPC_AUTH {
-	~DCERPC_AUTH() { clear(); }
-	void clear();
+	void clear() { credentials.clear(); }
 
 	uint8_t auth_type = 0, auth_level = 0, auth_pad_length = 0;
 	uint8_t auth_reserved = 0;
 	uint32_t auth_context_id = 0;
-	DATA_BLOB credentials{};
+	std::string credentials;
 };
 
 struct dcerpc_auth3 final : public dcerpc_payload {

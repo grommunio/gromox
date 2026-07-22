@@ -563,7 +563,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	switch (pauth_ctx->auth_info.auth_level) {
 	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY: {
 		std::string_view whole_pdu = *pblob;
-		whole_pdu.remove_suffix(auth.credentials.cb);
+		whole_pdu.remove_suffix(auth.credentials.size());
 		if (!pauth_ctx->pntlmssp->unseal_packet(&pblob->pb[hdr_size],
 		    prequest->stub_and_verifier.cb,
 		    whole_pdu, auth.credentials))
@@ -574,7 +574,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	}
 	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY: {
 		std::string_view whole_pdu = *pblob;
-		whole_pdu.remove_suffix(auth.credentials.cb);
+		whole_pdu.remove_suffix(auth.credentials.size());
 		if (!pauth_ctx->pntlmssp->check_packet(prequest->stub_and_verifier,
 		    whole_pdu, auth.credentials))
 			return FALSE;
@@ -609,7 +609,7 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	NDR_PUSH ndr;
 	ndr.init(pdata.get(), DCERPC_BASE_MARSHALL_SIZE, flags);
-	ppkt->auth_length = pauth_info != nullptr ? pauth_info->credentials.cb : 0;
+	ppkt->auth_length = pauth_info != nullptr ? pauth_info->credentials.size() : 0;
 	if (pdu_ndr_push_ncacnpkt(&ndr, ppkt) != pack_result::ok)
 		return FALSE;
 	if (NULL != pauth_info) {
@@ -756,7 +756,7 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 		return pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT ||
 		       pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_NONE;
 	case RPC_C_AUTHN_NTLMSSP:
-		if (!pauth_ctx->pntlmssp->update(&pauth_ctx->auth_info.credentials))
+		if (!pauth_ctx->pntlmssp->update(pauth_ctx->auth_info.credentials))
 			return FALSE;
 		if (pauth_ctx->pntlmssp->expected_state == NTLMSSP_PROCESS_AUTH) {
 			pauth_ctx->auth_info.auth_pad_length = 0;
@@ -1011,7 +1011,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	if (!pdu_processor_pull_auth_trailer(ppkt, auth3.auth_info,
 	    &pauth_ctx->auth_info, &auth_length, TRUE))
 		goto AUTH3_FAIL;
-	if (!pauth_ctx->pntlmssp->update(&pauth_ctx->auth_info.credentials))
+	if (!pauth_ctx->pntlmssp->update(pauth_ctx->auth_info.credentials))
 		goto AUTH3_FAIL;
 	if (!pauth_ctx->pntlmssp->session_info(&pauth_ctx->session_info)) {
 		mlog(LV_DEBUG, "pdu_processor: failed to establish session_info");
@@ -1270,11 +1270,7 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 						pauth_ctx->auth_info.auth_pad_length;
 
 	/* start without signature, will be appended later */
-	if (pauth_ctx->auth_info.credentials.pb != nullptr) {
-		free(pauth_ctx->auth_info.credentials.pb);
-		pauth_ctx->auth_info.credentials.pb = nullptr;
-	}
-	pauth_ctx->auth_info.credentials.cb = 0;
+	pauth_ctx->auth_info.credentials.clear();
 	
 	/* change back into NDR */
 	if (pcall->pcontext->b_ndr64)

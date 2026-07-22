@@ -518,18 +518,7 @@ pack_result pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r)
 	pndr->flags = saved_flags;
 	if (status != pack_result::ok)
 		return status;
-	status = pndr->trailer_align(4);
-	if (status != pack_result::ok) {
-		ndr_free_data_blob(&r->credentials);
-		return status;
-	}
-	return pack_result::ok;
-}
-
-void DCERPC_AUTH::clear()
-{
-	auto r = this;
-	ndr_free_data_blob(&r->credentials);
+	return pndr->trailer_align(4);
 }
 
 static pack_result pdu_ndr_pull_rts_flowcontrolack(NDR_PULL *pndr,

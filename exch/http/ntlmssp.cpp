@@ -1380,7 +1380,7 @@ static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	return ntlmssp_server_postauth(pntlmssp, &auth_state);
 }
 
-bool ntlmssp_ctx::update(DATA_BLOB *pblob)
+bool ntlmssp_ctx::update(std::string &blob) try
 {
 	auto pntlmssp = this;
 	DATA_BLOB tmp_blob;
@@ -1389,9 +1389,9 @@ bool ntlmssp_ctx::update(DATA_BLOB *pblob)
 
 	if (pntlmssp->expected_state == NTLMSSP_PROCESS_DONE)
 		return false;
-	if (pblob->cb == 0)
+	if (blob.empty())
 		return false;
-	if (!ntlmssp_parse_packet(*pblob, "Cd", "NTLMSSP", &ntlmssp_command))
+	if (!ntlmssp_parse_packet(blob, "Cd", "NTLMSSP", &ntlmssp_command))
 		return false;
 	if (ntlmssp_command != pntlmssp->expected_state) {
 		mlog(LV_DEBUG, "ntlmssp:%s: got NTLMSSP command %u, expected %u",
@@ -1403,28 +1403,21 @@ bool ntlmssp_ctx::update(DATA_BLOB *pblob)
 	tmp_blob.cb = 0;
 	
 	if (NTLMSSP_PROCESS_NEGOTIATE == ntlmssp_command) {
-		if (!ntlmssp_server_negotiate(pntlmssp, *pblob, &tmp_blob))
+		if (!ntlmssp_server_negotiate(pntlmssp, blob, &tmp_blob))
 			return false;
 	} else if (NTLMSSP_PROCESS_AUTH == ntlmssp_command) {
-		if (!ntlmssp_server_auth(pntlmssp, *pblob, &tmp_blob))
+		if (!ntlmssp_server_auth(pntlmssp, blob, &tmp_blob))
 			return false;
 	} else {
 		mlog(LV_DEBUG, "ntlmssp:%s: unexpected NTLMSSP command %u",
 			__func__, ntlmssp_command);
 		return false;
 	}
-	
-	free(pblob->pb);
-	if (tmp_blob.cb == 0) {
-		pblob->pb = nullptr;
-	} else {
-		pblob->pb = me_alloc<uint8_t>(tmp_blob.cb);
-		if (pblob->pb == nullptr)
-			return false;
-		memcpy(pblob->pb, tmp_blob.pb, tmp_blob.cb);
-	}
-	pblob->cb = tmp_blob.cb;
+	blob.assign(tmp_blob.pc, tmp_blob.cb);
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
