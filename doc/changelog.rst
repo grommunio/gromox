@@ -1,3 +1,46 @@
+Gromox 3.9 (2026-07-24)
+=======================
+
+Enhancements:
+
+* exmdb: The link_messages EXRPC was sped up, which is used by g-web's indexed
+  search to fill the results folder.
+* The meeting processor now sends booking confirmation for auto-accepted
+  requests, now handles incoming cancellations, and permits back-to-back room
+  bookings (previously it wanted a gap of at least 1 second).
+* EWS: meetings are now sent with a fair bit more meeting properties,
+  making them actionable meetings rather than just plain appointments.
+* EWS: support for some more tags and request types that previously
+  had led to warning messages in the log.
+* EWS now sends meeting cancellations when deleting a whole item.
+
+Fixes:
+
+* Synthesize the PR_RTF_IN_SYNC MAPI property, fixing a case where Outlook
+  could show HTML messages (imported from older Exchange/Kopano) as plaintext.
+* Fixed a crash when the `outgoing_smtp_url` directive was used with a
+  `smtp+tls:` target.
+* Fixed a crash when gromox-delivery processed a meeting invitation from a
+  local organizer.
+* Fixed a crash when gromox-imap sent keyword declarations to idle sessions
+* The hierarchy synchronization procedure for OL no longer emits out-of-spec
+  error codes for duplicate folders.
+* Messages without mandatory ICS properties are no longer advertised to OL
+  Cached Mode for download.
+* ruleproc: honor PidLidIsSilent when sending automated meeting responses
+* freebusy: skip deleted instances when expanding recurrences
+* exmdb_local: suppress OOF replies when not directly addressed
+* mbop: make purge-datafiles respect exchange.sqlite3:messages:mid_string
+* daemons: a hang on startup when logfile cannot be opened was resolved
+
+Behavior changes:
+
+* Sooner teardown of idle SQL connections to relieve the mariadb/mysql server.
+* Events in search folders are no longer propagated to other search folders for
+  performance reasons (since search folder stacking seems to be exceedingly
+  rare).
+
+
 Gromox 3.8 (2026-06-30)
 =======================
 
@@ -36,7 +79,7 @@ Fixes:
 * imap: FETCH/STORE/SEARCH no longer produce EXPUNGE replies
 * ews: no longer loses the attendee list of an appointment when saved
 
-Behavioral changes:
+Behavior changes:
 
 * The default value for exmdb_provider.cfg:cache_interval has been reduced from
   15min to 1min, closing sqlite handles earlier when they are idle.
@@ -515,7 +558,7 @@ Fixes:
   Gromox >=2.29.70 <=2.45.161, which has been fixed, and you may want to run
   cgkrepair.
 
-Behavioral changes:
+Behavior changes:
 
 * daemons: the default log destination is now "automatic" (stderr/syslog
   autodetect) rather than "stderr"
@@ -546,7 +589,7 @@ Enhancements:
 * Recognize the IANA Character Set names `utf-16le`, `utf-16be`
   (and 32) when converting from RFC5322 to MAPI.
 
-Behavioral changes:
+Behavior changes:
 
 * MAPI tables now always offer a valid PR_ROW_TYPE value
 * emsmdb: the set of default properties (on blank message objects) has changed
@@ -572,7 +615,7 @@ Fixes:
 * The documented default value `outgoing_smtp_url=sendmail://localhost`
   is now in effect.
 
-Behavioral changes:
+Behavior changes:
 
 * Recognition for the `smtp_server_ip` config directive has been removed.
   Users must upgrade to `outgoing_smtp_url` (added in Gromox 2.21).
