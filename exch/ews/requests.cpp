@@ -689,7 +689,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 	                    request.MessageDisposition == Enum::SendAndSaveCopy;
 
 	data.ResponseMessages.reserve(request.Items.size());
-	for (sItem &item : request.Items) try {
+	for (sCreateItem &item : request.Items) try {
 		if (!hasAccess)
 			throw EWSError::AccessDenied(E3130);
 
@@ -710,8 +710,46 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 
 		mCreateItemResponseMessage msg;
-		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
+		/*
+		 * ReplyToItem/ReplyAllToItem/ForwardItem wrap a plain message
+		 * (see tReplyToItem) and should be treated the same way as a
+		 * regular tMessage for persistence/sender-identity purposes.
+		 */
+		bool isMessageLike = std::holds_alternative<tMessage>(item) ||
+		                     std::holds_alternative<tReplyToItem>(item) ||
+		                     std::holds_alternative<tReplyAllToItem>(item) ||
+		                     std::holds_alternative<tForwardItem>(item);
+		bool persist = !(isMessageLike && request.MessageDisposition == Enum::SendOnly);
+
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
+
+		if (isMessageLike &&
+		    request.MessageDisposition == Enum::SaveOnly &&
+		    !content->proplist.has(PR_SENT_REPRESENTING_EMAIL_ADDRESS)) {
+		   /*
+		    * Only fall back to the mailbox owner's default identity if
+		    * the client didn't already supply one via the item's "From"
+		    * field (mapped to PR_SENT_REPRESENTING_* by toContent()) -
+		    * matches grommunio-web's own PR_SENT_REPRESENTING_* ??=
+		    * PR_SENDER_* pattern (class.operations.php), needed so a
+		    * reply/draft composed from a secondary alias address keeps
+		    * that identity instead of always reverting to the primary one.
+		    */
+		   const char *sender = ctx.effectiveUser(*targetFolder);
+		   if (sender == nullptr || *sender == '\0')
+		      sender = ctx.auth_info().username;
+
+		   if (sender != nullptr && *sender != '\0') {
+		      content->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP");
+		      content->proplist.set(PR_SENDER_ADDRTYPE, "SMTP");
+		      content->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, sender);
+		      content->proplist.set(PR_SENDER_EMAIL_ADDRESS, sender);
+		      content->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, sender);
+		      content->proplist.set(PR_SENDER_SMTP_ADDRESS, sender);
+		      content->proplist.set(PR_SENT_REPRESENTING_NAME, sender);
+		      content->proplist.set(PR_SENDER_NAME, sender);
+		   }
+		}
 
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
 			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
