@@ -278,7 +278,7 @@ static bool login_gen(const char *username, const char *password,
 
 static bool authmgr_reload()
 {
-	auto pfile = config_file_initd("authmgr.cfg", get_config_path(),
+	auto pfile = config_file_initd("gromox.cfg", get_config_path(),
 	             authmgr_cfg_defaults);
 	if (pfile == nullptr) {
 		mlog(LV_ERR, "authmgr: confing_file_initd authmgr.cfg: %s",
@@ -288,6 +288,12 @@ static bool authmgr_reload()
 	am_fail_delay = std::chrono::nanoseconds(pfile->get_ll("auth_fail_delay"));
 
 	auto val = pfile->get_value("auth_backend_selection");
+	if (val == nullptr) {
+		pfile = config_file_initd("authmgr.cfg", get_config_path(), nullptr);
+		if (pfile != nullptr)
+			val = pfile->get_value("auth_backend_selection");
+	}
+
 	if (val == nullptr) {
 	} else if (strcmp(val, "deny_all") == 0) {
 		am_choice = A_DENY_ALL;

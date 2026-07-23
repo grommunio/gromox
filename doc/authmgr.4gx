@@ -7,15 +7,8 @@ authmgr \(em Demultiplexer for authentication requests
 authmgr is a component that, for mail account authentication, dynamically
 selects the authentication backend per user account.
 .SH Configuration directives
-The usual config file location is /etc/gromox/authmgr.cfg.
-.TP
-\fBauth_backend_selection\fP
-This controls how authmgr will verify passwords supplied with login operations.
-See the "Authentication modes" section below for details.
-.br
-Available: \fIdeny_all\fP, \fIallow_all\fP, \fIldap\fP, \fIpam\fP
-.br
-Default: \fIldap\fP
+The following directives are recognized when they are in
+/etc/gromox/gromox.cfg:
 .TP
 \fBauth_fail_delay\fP
 The amount of time a failed authentication attempt (unknown user or rejected
@@ -29,6 +22,14 @@ exhaustion. Setting the value to 0 disables the delay. Per-username banning by
 is available.
 .br
 Default: \fI1s\fP
+.TP
+\fBauth_backend_selection\fP
+This controls how authmgr will verify passwords supplied with login operations.
+See the "Authentication modes" section below for details.
+.br
+Available: \fIdeny_all\fP, \fIallow_all\fP, \fIldap\fP, \fIpam\fP
+.br
+Default: \fIldap\fP
 .SH Authentication modes
 .IP \(bu 4
 \fIdeny_all\fP: every attempt at authentication is rejected. This is at best

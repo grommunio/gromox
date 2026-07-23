@@ -225,7 +225,7 @@ alias_resolve(4gx) inside delivery(8gx): /etc/gromox/alias_resolve.cfg,
 /etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
 authmgr(4gx) inside delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),
-midb(8gx), pam_gromox(4gx), pop3(8gx), zcore(8gx): /etc/gromox/authmgr.cfg
+midb(8gx), pam_gromox(4gx), pop3(8gx), zcore(8gx): /etc/gromox/gromox.cfg
 .IP \(bu 4
 autodiscover(4gx) inside php-fpm(8): /etc/gromox/autodiscover.ini,
 /etc/gromox/mysql_adaptor.cfg
@@ -234,9 +234,8 @@ delivery(8gx): /etc/gromox/alias_resolve.cfg, /etc/gromox/exmdb_local.cfg,
 /etc/gromox/ldap_adaptor.cfg,
 /etc/gromox/mlist_expand.cfg, /etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
-delivery-queue(8gx): /etc/gromox/authmgr.cfg,
-/etc/gromox/midb_agent.cfg, /etc/gromox/ldap_adaptor.cfg,
-/etc/gromox/mysql_adaptor.cfg
+delivery-queue(8gx): /etc/gromox/gromox.cfg, /etc/gromox/midb_agent.cfg,
+/etc/gromox/ldap_adaptor.cfg, etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
 event(8gx): /etc/gromox/event.cfg
 .IP \(bu 4
@@ -252,8 +251,8 @@ http(8gx): /etc/gromox/cache.txt, /etc/gromox/exchange_emsmdb.cfg,
 /etc/gromox/exchange_nsp.cfg, etc/gromox/exmdb_provider.cfg,
 /etc/gromox/fastcgi.txt, /etc/gromox/rewrite.txt
 .IP \(bu 4
-imap(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/event_proxy.cfg,
-/etc/gromox/event_stub.cfg, /etc/gromox/imap.cfg, /etc/gromox/ldap_adaptor.cfg,
+imap(8gx): /etc/gromox/event_proxy.cfg, etc/gromox/event_stub.cfg,
+/etc/gromox/gromox.cfg, /etc/gromox/imap.cfg, etc/gromox/ldap_adaptor.cfg,
 /etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
 midb_agent(4gx) inside delivery-queue(8gx), imap(8gx), pop3(8gx):
