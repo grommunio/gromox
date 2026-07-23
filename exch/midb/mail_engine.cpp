@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <cerrno>
 #include <chrono>
 #include <climits>
 #include <csignal>
@@ -210,7 +211,15 @@ static std::string me_ct_to_utf8(const char *charset, std::string_view sv)
 	if (strcasecmp(charset, "UTF-8") == 0||
 	    strcasecmp(charset, "US-ASCII") == 0)
 		return std::string(sv);
-	return iconvtext(sv, charset, "UTF-8");
+	auto out = iconvtext(sv, charset, "UTF-8");
+	if (out.empty() && errno == EINVAL)
+		/*
+		 * Unresolvable charset: a plainly unknown name, or spam debris
+		 * like an HTML meta fragment in charset=. Match the raw bytes
+		 * rather than nothing.
+		 */
+		return std::string(sv);
+	return out;
 }
 
 static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
