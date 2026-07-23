@@ -962,6 +962,10 @@ static tproc_status ps_end_processing(imap_context *pcontext,
 		pcontext->connection.write(imap_reply_str, string_length);
 	}
 	pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
+	{
+		std::unique_lock ll_hold(g_list_lock);
+		std::erase(g_sleeping_list, pcontext);
+	}
 	if (iproto_stat::select == pcontext->proto_stat) {
 		imap_parser_remove_select(pcontext);
 		pcontext->proto_stat = iproto_stat::auth;
