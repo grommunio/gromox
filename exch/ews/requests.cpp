@@ -724,7 +724,12 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
 
 		if (isMessageLike &&
-		    request.MessageDisposition == Enum::SaveOnly) {
+		    request.MessageDisposition == Enum::SaveOnly &&
+		    !content->proplist.has(PR_SENT_REPRESENTING_EMAIL_ADDRESS)) {
+			/*
+			 * Only fall back to the mailbox owner's default
+			 * identity if the client did not already supply one.
+			 */
 			const char *sender = ctx.effectiveUser(*targetFolder);
 			if (sender == nullptr || *sender == '\0')
 				sender = ctx.auth_info().username;
