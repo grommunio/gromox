@@ -79,6 +79,8 @@ Coding and social style
 
 When in Rome, do as the Romans do.
 
+See `doc/style.rst <doc/style.rst>`_ for a technical dive.
+
 Source layout
 -------------
 
