@@ -76,13 +76,20 @@ enum output_mode {
 	OM_STDERR, /* direct to existing stderr file descriptor */
 	OM_STDERR_COLORS, /* with colors */
 	OM_SYSLOG, /* send to syslog instead */
-	OM_FILE, /* send to a g_logfp */
+	OM_FILE, /* send to a g_log_file.logfp */
 };
 
 static unsigned int g_max_loglevel = MLOG_DEFAULT_LEVEL;
-static std::mutex g_log_mutex;
-static std::unique_ptr<FILE, file_deleter> g_logfp;
 static enum output_mode g_log_mode;
+
+struct log_file
+{
+	std::mutex log_mutex;
+	std::unique_ptr<FILE, file_deleter> logfp;
+
+	~log_file() { if (g_log_mode == OM_FILE) g_log_mode = OM_STDERR; } /* reset log mode when file is closed */
+};
+static log_file g_log_file;
 
 static const char *mapi_errname(unsigned int e)
 {
@@ -767,11 +774,11 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
 		openlog(ident, LOG_PID, LOG_MAIL);
 		setlogmask((1 << (max_level + 2)) - 1);
 		g_log_mode = mode;
-		g_logfp.reset();
+		g_log_file.logfp.reset();
 		return;
 	} else if (mode == OM_STDERR || mode == OM_STDERR_COLORS) {
 		g_log_mode = mode;
-		g_logfp.reset();
+		g_log_file.logfp.reset();
 		setvbuf(stderr, nullptr, _IOLBF, 0);
 		return;
 	}
@@ -787,16 +794,16 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
 			close(fd);
 		}
 	}
-	std::lock_guard hold(g_log_mutex);
-	g_logfp.reset(fopen(filename, "a"));
-	if (g_logfp == nullptr) {
+	std::lock_guard hold(g_log_file.log_mutex);
+	g_log_file.logfp.reset(fopen(filename, "a"));
+	if (g_log_file.logfp == nullptr) {
 		g_log_mode = mode;
 		setvbuf(stderr, nullptr, _IOLBF, 0);
 		mlog(LV_ERR, "Could not open %s for writing: %s. Using stderr.",
 		        filename, strerror(errno));
 	} else {
 		g_log_mode = OM_FILE;
-		setvbuf(g_logfp.get(), nullptr, _IOLBF, 0);
+		setvbuf(g_log_file.logfp.get(), nullptr, _IOLBF, 0);
 	}
 }
 
@@ -835,10 +842,10 @@ void mlog(unsigned int level, const char *fmt, ...)
 	struct tm tmbuf;
 	strftime(buf + 3, std::size(buf) - 3, "%FT%T ", localtime_r(&now, &tmbuf));
 	{
-		std::lock_guard hold(g_log_mutex);
-		fputs(buf, g_logfp.get());
-		vfprintf(g_logfp.get(), fmt, args);
-		fputc('\n', g_logfp.get());
+		std::lock_guard hold(g_log_file.log_mutex);
+		fputs(buf, g_log_file.logfp.get());
+		vfprintf(g_log_file.logfp.get(), fmt, args);
+		fputc('\n', g_log_file.logfp.get());
 	}
 	va_end(args);
 }
