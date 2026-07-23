@@ -970,10 +970,12 @@ void workqueue::mainloop()
 	while (!m_stop) {
 		/* Wait until the right time */
 		std::unique_lock lk(m_tasklock);
-		if (m_tasklist.empty())
+		if (m_tasklist.empty()) {
 			m_cv.wait(lk, [this]() { return m_stop || m_tasklist.size() > 0; });
-		else
-			m_cv.wait_until(lk, m_tasklist.front().start_time);
+		} else {
+			auto ut = m_tasklist.front().start_time;
+			m_cv.wait_until(lk, ut);
+		}
 
 		if (m_stop)
 			break;
