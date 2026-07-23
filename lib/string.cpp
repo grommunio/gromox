@@ -794,17 +794,19 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
 			close(fd);
 		}
 	}
-	std::lock_guard hold(g_log_file.log_mutex);
-	g_log_file.logfp.reset(fopen(filename, "a"));
-	if (g_log_file.logfp == nullptr) {
-		g_log_mode = mode;
-		setvbuf(stderr, nullptr, _IOLBF, 0);
-		mlog(LV_ERR, "Could not open %s for writing: %s. Using stderr.",
-		        filename, strerror(errno));
-	} else {
-		g_log_mode = OM_FILE;
-		setvbuf(g_log_file.logfp.get(), nullptr, _IOLBF, 0);
+	{
+		std::unique_lock hold(g_log_file.log_mutex);
+		g_log_file.logfp.reset(fopen(filename, "a"));
+		if (g_log_file.logfp != nullptr) {
+			g_log_mode = OM_FILE;
+			setvbuf(g_log_file.logfp.get(), nullptr, _IOLBF, 0);
+			return;
+		}
 	}
+	g_log_mode = mlog_typical_mode(nullptr);
+	setvbuf(stderr, nullptr, _IOLBF, 0);
+	mlog(LV_ERR, "Could not open %s for writing: %s. Using stderr.",
+	        filename, strerror(errno));
 }
 
 void mlog(unsigned int level, const char *fmt, ...)
