@@ -1205,8 +1205,18 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		/* Alternative attempt by OL to do resolvenames */
 		uint32_t start_pos, total;
 		nsp_interface_position_in_list(pstat, base.get(), &start_pos, &total);
-		for (auto it = base->ubegin() + start_pos; it != base->uend() &&
-		     static_cast<size_t>(it - base->ubegin()) < total; ++it) {
+		/*
+		 * position_in_list works in GAL-filtered index space (start_pos and
+		 * total both derive from filtered_user_count()), so iterate the
+		 * filtered user set. Previously this walked the *unfiltered* user
+		 * list (ubegin()/uend()) while bounding by the filtered count, which
+		 * truncated the scan once any user was hidden from the GAL: every
+		 * user positioned past filtered_user_count() in the full list was
+		 * never examined and thus never matched by GetMatches (e.g. Outlook
+		 * address-book "search all columns").
+		 */
+		for (auto it = base->ufbegin() + start_pos; it != base->ufend() &&
+		     static_cast<size_t>(it - base->ufbegin()) < total; ++it) {
 			if (outmids.size() >= requested)
 				break;
 			ab_tree::ab_node node(base, *it);
