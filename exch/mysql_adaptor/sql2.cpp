@@ -35,6 +35,7 @@
 #include <gromox/flat_set.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/process.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
