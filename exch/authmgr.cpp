@@ -240,22 +240,24 @@ static bool login_gen(const char *username, const char *password,
     unsigned int wantpriv, sql_meta_result &mres) try
 {
 	bool auth = false;
+	auto fdelay = am_fail_delay.load(std::memory_order_relaxed);
 	auto err = mysql_adaptor_meta(username, wantpriv, mres);
 	if (err != 0 || mres.have_xid == 0xFF) {
-		if (auto fdelay = am_fail_delay.load(std::memory_order_relaxed);
-		    fdelay != std::chrono::nanoseconds(0))
+		if (fdelay != std::chrono::nanoseconds(0))
 			std::this_thread::sleep_for(fdelay);
-	} else if (am_choice == A_DENY_ALL)
+	} else if (am_choice == A_DENY_ALL) {
 		auth = false;
-	else if (am_choice == A_ALLOW_ALL)
+		if (fdelay != std::chrono::nanoseconds(0))
+			std::this_thread::sleep_for(fdelay);
+	} else if (am_choice == A_ALLOW_ALL) {
 		auth = true;
-	else if (am_choice == A_EXTERNID_LDAP && mres.have_xid > 0)
+	} else if (am_choice == A_EXTERNID_LDAP && mres.have_xid > 0) {
 		/* Failure delay should already be added by the LDAP server */
 		auth = ldap_adaptor_login3(mres.username.c_str(), password, mres);
-	else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0)
+	} else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0) {
 		/* Failure delay should already be added by the PAM stack */
 		auth = login_pam(mres.username.c_str(), password, mres);
-	else if (am_choice == A_EXTERNID_LDAP) {
+	} else if (am_choice == A_EXTERNID_LDAP) {
 		auth = mysql_adaptor_login2(mres.username.c_str(), password,
 		       mres.enc_passwd, mres.errstr);
 		if (!auth) {
