@@ -1706,11 +1706,18 @@ void process(mGetStreamingEventsRequest &&request, XMLElement *response, EWSCont
 	for (const tSubscriptionId &subscription : request.SubscriptionIds)
 		if (!ctx.streamEvents(subscription))
 			msg.ErrorSubscriptionIds.emplace_back(subscription);
-	if (msg.ErrorSubscriptionIds.empty())
+	if (msg.ErrorSubscriptionIds.empty()) {
 		msg.success();
-	else
+		msg.ConnectionStatus = Enum::OK;
+	} else {
+		/*
+		 * A faulted subscription (e.g. event backlog overflow, see
+		 * EWSPlugin::event()) never becomes valid again on its own.
+		 * The client must Subscribe anew and resync.
+		 */
 		msg.error("ErrorInvalidSubscription", "Subscription is invalid.");
-	msg.ConnectionStatus = Enum::OK;
+		msg.ConnectionStatus = Enum::Closed;
+	}
 
 	data.serialize(response);
 }
