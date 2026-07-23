@@ -32,6 +32,44 @@ struct GX_EXPORT mjson_io {
 	bool invalid(c_iter it) const { return it == m_cache.cend(); }
 };
 
+/**
+ * Cache key of a message extracted from a message/rfc822 part.
+ *
+ * All extractions of one top-level mail share a namespace, "<storage>/<file>".
+ * Within it, a message is named by the ids of the rfc822 parts leading to it,
+ * joined with dots ("2", "2.3"). The message inside an rfc822-root mail is
+ * named "" after the root MIME's empty id, and deeper names keep the empty
+ * first hop (".2"). A key built from just the namespace stands for the
+ * top-level mail. sub() on that starts the chain, on any other key it extends
+ * the chain.
+ */
+class GX_EXPORT mjson_key {
+	public:
+	mjson_key() = default;
+	explicit mjson_key(std::string_view xns) : m_ns(xns) {}
+	mjson_key(std::string_view xns, std::string_view chain) :
+		m_ns(xns), m_chain(chain), m_sub(true) {}
+
+	/* key of the message extracted from rfc822 part @id of this message */
+	mjson_key sub(const char *id) const
+	{
+		return m_sub ? mjson_key(m_ns, m_chain + "." + id) :
+		       mjson_key(m_ns, id);
+	}
+
+	/* cache slot of the extracted message's text */
+	std::string msg() const { return m_ns + "/" + m_chain; }
+	/* cache slot of the extracted message's digest */
+	std::string digest() const { return msg() + ".dgt"; }
+	/* name relative to the namespace; the digest's "file" field */
+	const std::string &chain() const { return m_chain; }
+	const std::string &ns() const { return m_ns; }
+
+	private:
+	std::string m_ns, m_chain;
+	bool m_sub = false;
+};
+
 struct GX_EXPORT MJSON_MIME {
 	std::vector<MJSON_MIME> children;
 	enum mime_type mime_type = mime_type::none;

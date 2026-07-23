@@ -249,7 +249,7 @@ noinst_PROGRAMS += tests/gssauth
 endif
 dldcheck_SOURCES = tools/dldcheck.cpp
 dldcheck_LDADD = ${dl_LIBS}
-TESTS = tests/bodyconv tests/utiltest
+TESTS = tests/bodyconv tests/jsontest tests/utiltest
 tests_udb_SOURCES = tests/userdb.cpp
 tests_udb_LDADD = ${libHX_LIBS} libgromox_common.la libgxs_mysql_adaptor.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp

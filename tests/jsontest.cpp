@@ -86,12 +86,37 @@ static int t_extparse(const char *s)
 	return EXIT_SUCCESS;
 }
 
+static int t_key()
+{
+	mjson_key top("ns/f1");
+	if (top.sub("2").msg() != "ns/f1/2" ||
+	    top.sub("2").digest() != "ns/f1/2.dgt" ||
+	    top.sub("2").chain() != "2" ||
+	    top.sub("2").sub("3").msg() != "ns/f1/2.3")
+		return EXIT_FAILURE;
+
+	/* the message inside an rfc822-root mail is named by the root's empty id */
+	auto inner = top.sub("");
+	if (inner.msg() != "ns/f1/" || inner.digest() != "ns/f1/.dgt" ||
+	    inner.sub("2").msg() != "ns/f1/.2" ||
+	    inner.sub("2").chain() != ".2")
+		return EXIT_FAILURE;
+
+	/* keys remade from a digest's "file" field match the built ones */
+	if (mjson_key("ns/f1", "2").sub("3").msg() != top.sub("2").sub("3").msg() ||
+	    mjson_key("ns/f1", "").sub("2").msg() != inner.sub("2").msg())
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	MJSON_MIME m1, m2;
 	m1.mime_type = mime_type::single;
 	m2 = std::move(m1);
 
+	if (t_key() != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 	if (t_extparse(tdata1) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (t_extparse(tdata2) != EXIT_SUCCESS)
