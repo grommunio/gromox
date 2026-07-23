@@ -421,8 +421,16 @@ BOOL exmdb_server::unsubscribe_notification(const char *dir, uint32_t sub_id)
 		return FALSE;
 	/* No database access, so no transaction. */
 	auto dbase = pdb->lock_base_wr();
+	auto remote_id = exmdb_server::get_remote_id();
 	auto i = std::find_if(dbase->nsub_list.begin(), dbase->nsub_list.end(),
-		[&](const nsub_node &n) { return n.sub_id == sub_id; });
+	         [&](const nsub_node &n) {
+	         	if (n.sub_id != sub_id)
+	         		return false;
+	         	/* Only the subscription's owner may remove it */
+	         	if (!n.remote_id.has_value())
+	         		return remote_id == nullptr;
+	         	return remote_id != nullptr && remote_id == *n.remote_id;
+	         });
 	if (i != dbase->nsub_list.end())
 		dbase->nsub_list.erase(i);
 	return TRUE;
