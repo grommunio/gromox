@@ -88,6 +88,9 @@ struct tTentativelyAcceptItem;
 struct tDeclineItem;
 struct tSuppressReadReceipt;
 struct tCancelCalendarItem;
+struct tReplyToItem;
+struct tReplyAllToItem;
+struct tForwardItem;
 struct tModifiedEvent;
 struct tReferenceAttachment;
 struct tSearchFolderType;
@@ -271,6 +274,18 @@ using sItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMess
 	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact,
 	tTask, tAcceptItem, tTentativelyAcceptItem, tDeclineItem, tSuppressReadReceipt,
 	tCancelCalendarItem>;
+
+/**
+ * Superset of sItem used only for CreateItem's request body: adds the
+ * smart-reply/forward wrapper types (tReplyToItem/tReplyAllToItem/
+ * tForwardItem), which are request-only constructs that never appear as a
+ * stored/loaded item and therefore don't fit sItem's generic
+ * load/update/serialize machinery used by GetItem, UpdateItem, MarkAsJunk etc.
+ */
+using sCreateItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMessage,
+	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact,
+	tTask, tAcceptItem, tTentativelyAcceptItem, tDeclineItem, tSuppressReadReceipt,
+	tCancelCalendarItem, tReplyToItem, tReplyAllToItem, tForwardItem>;
 
 /**
  * c.f. Types.xsd:1502
@@ -2714,6 +2729,44 @@ struct tCancelCalendarItem : public tMessage {
 };
 
 /**
+ * Smart-reply/forward "wrapper" types (Types.xsd:2262 documents a flat
+ * SmartResponseType instead, but real clients - Outlook for Mac at least -
+ * send a full nested <t:Message> element alongside <t:ReferenceItemId>
+ * rather than flat Subject/Body/ToRecipients fields; this matches the
+ * observed wire format, not the theoretical schema).
+ */
+struct tReplyToItem : public NS_EWS_Types {
+	static constexpr char NAME[] = "ReplyToItem";
+
+	explicit tReplyToItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
+
+	tItemId ReferenceItemId;
+	tMessage Message;
+};
+
+struct tReplyAllToItem : public NS_EWS_Types {
+	static constexpr char NAME[] = "ReplyAllToItem";
+
+	explicit tReplyAllToItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
+
+	tItemId ReferenceItemId;
+	tMessage Message;
+	std::optional<bool> IsSpecificMessageReply;
+};
+
+struct tForwardItem : public NS_EWS_Types {
+	static constexpr char NAME[] = "ForwardItem";
+
+	explicit tForwardItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
+
+	tItemId ReferenceItemId;
+	tMessage Message;
+};
+
+/**
  * Types.xsd:1611
  */
 struct tItemAttachment : public tAttachment {
@@ -3314,7 +3367,7 @@ struct mCreateItemRequest {
 	std::optional<Enum::CalendarItemCreateOrDeleteOperationType> SendMeetingInvitations; //Attribute
 
 	std::optional<tTargetFolderIdType> SavedItemFolderId;
-	std::vector<sItem> Items;
+	std::vector<sCreateItem> Items;
 };
 
 struct mCreateItemResponseMessage : public mItemInfoResponseMessage {

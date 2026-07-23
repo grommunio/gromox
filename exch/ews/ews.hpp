@@ -346,7 +346,7 @@ class EWSContext {
 	bool streamEvents(const Structures::tSubscriptionId&) const;
 	void rcpt_add_unique(TARRAY_SET *, gromox::EWS::Structures::tEmailAddressType, uint32_t) const;
 	MCONT_PTR toContent(const std::string&, std::string&) const;
-	MCONT_PTR toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
+	MCONT_PTR toContent(const std::string&, const Structures::sFolderSpec&, Structures::sCreateItem&, bool) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPullSubscriptionRequest&) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPushSubscriptionRequest &) const;
 	Structures::tSubscriptionId subscribe(const Structures::tStreamingSubscriptionRequest&) const;
@@ -415,6 +415,9 @@ private:
 	void toContent(const std::string &, Structures::tAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
 	void toContent(const std::string &, Structures::tTentativelyAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
 	void toContent(const std::string &, Structures::tDeclineItem &, Structures::sShape &, MCONT_PTR &) const;
+	void toContent(const std::string &, Structures::tReplyToItem &, Structures::sShape &, MCONT_PTR &) const;
+	void toContent(const std::string &, Structures::tReplyAllToItem &, Structures::sShape &, MCONT_PTR &) const;
+	void toContent(const std::string &, Structures::tForwardItem &, Structures::sShape &, MCONT_PTR &) const;
 	std::optional<uint64_t> findExistingByGoid(const Structures::sFolderSpec&, const std::string&, const MESSAGE_CONTENT&) const;
 
 	inline void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {}
