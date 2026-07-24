@@ -2146,14 +2146,14 @@ void process(mGetUserOofSettingsRequest &&request, XMLElement *response, const E
 		auto &Duration = data.OofSettings->Duration.emplace();
 		Duration.StartTime = rop_util_nttime_to_unix2(*start_time);
 		Duration.EndTime = rop_util_nttime_to_unix2(*end_time);
-#if 0
-	// XXX: Normally we need this else branch, see reasoning in commit
-	// message gromox-2.46-99-g716671da5
 	} else {
+		/*
+		 * Even when OOF is inactive, some Outlooks crash when XML tags
+		 * are missing.
+		 */
 		auto &dur = data.OofSettings->Duration.emplace();
 		dur.StartTime = clock::now();
 		dur.EndTime = dur.StartTime + std::chrono::days(1);
-#endif
 	}
 	auto int_reply = props.get<const char>(PR_EC_OUTOFOFFICE_MSG);
 	if (int_reply != nullptr)
