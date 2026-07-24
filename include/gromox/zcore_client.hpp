@@ -28,6 +28,7 @@ ZCIDL(resolvename, (GUID hsession, const TARRAY_SET *pcond_set, IDLOUT TARRAY_SE
 ZCIDL(getpermissions, (GUID hsession, uint32_t hobject, IDLOUT PERMISSION_SET *perm_set))
 ZCIDL(modifypermissions, (GUID hsession, uint32_t hfolder, const PERMISSION_SET *pset))
 ZCIDL(modifyrules, (GUID hsession, uint32_t hfolder, uint32_t flags, const RULE_LIST *plist))
+ZCIDL(rulesexecute, (GUID hsession, uint32_t hfolder, const BINARY_ARRAY *pentryids, uint32_t action_flags, IDLOUT uint32_t *processed, uint32_t *skipped, uint32_t *failed))
 ZCIDL(getabgal, (GUID hsession, IDLOUT BINARY *entryid))
 ZCIDL(loadstoretable, (GUID hsession, IDLOUT uint32_t *hobject))
 ZCIDL(openstore, (GUID hsession, BINARY entryid, IDLOUT uint32_t *hobject))

@@ -69,6 +69,7 @@ extern ec_error_t zs_resolvename(GUID ses, const TARRAY_SET *cond, TARRAY_SET *)
 extern ec_error_t zs_getpermissions(GUID ses, uint32_t obj_handle, PERMISSION_SET *);
 extern ec_error_t zs_modifypermissions(GUID ses, uint32_t fld_handle, const PERMISSION_SET *);
 extern ec_error_t zs_modifyrules(GUID ses, uint32_t fld_handle, uint32_t flags, RULE_LIST *);
+extern ec_error_t zs_rulesexecute(GUID ses, uint32_t fld_handle, const BINARY_ARRAY *entryids, uint32_t action_flags, uint32_t *processed, uint32_t *skipped, uint32_t *failed);
 extern ec_error_t zs_getabgal(GUID ses, BINARY *entryid);
 extern ec_error_t zs_loadstoretable(GUID ses, uint32_t *obj_handle);
 extern ec_error_t zs_openstore(GUID ses, BINARY entryid, uint32_t *obj_handle);

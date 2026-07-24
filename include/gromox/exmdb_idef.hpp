@@ -107,6 +107,7 @@ EXMIDL(link_message, (const char *dir, cpid_t cpid, uint64_t folder_id, uint64_t
 EXMIDL(link_messages, (const char *dir, cpid_t cpid, uint64_t folder_id, const EID_ARRAY *message_ids, IDLOUT BOOL *b_partial))
 EXMIDL(unlink_message, (const char *dir, cpid_t cpid, uint64_t folder_id, uint64_t message_id))
 EXMIDL(rule_new_message, (const char *dir, const char *username, cpid_t cpid, uint64_t folder_id, uint64_t message_id))
+EXMIDL(rules_execute, (const char *dir, const char *username, cpid_t cpid, uint64_t folder_id, uint64_t message_id, uint32_t action_flags, IDLOUT uint32_t *skipped))
 EXMIDL(set_message_timer, (const char *dir, uint64_t message_id, uint32_t timer_id))
 EXMIDL(get_message_timer, (const char *dir, uint64_t message_id, IDLOUT uint32_t **ptimer_id))
 EXMIDL(empty_folder_permission, (const char *dir, uint64_t folder_id))

@@ -13,6 +13,7 @@
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <libHX/io.h>
 #include <libHX/scope.hpp>
@@ -1288,6 +1289,105 @@ ec_error_t zs_modifyrules(GUID hsession, uint32_t hfolder, uint32_t flags,
 			return ecAccessDenied;
 	}
 	return pfolder->updaterules(flags, plist) ? ecSuccess : ecError;
+}
+
+/**
+ * Upper bound on messages per call. The work is synchronous and zcore holds the
+ * per-user session lock for a whole request (see zs_query_session), so an
+ * unbounded batch would stall every other request from that session — including
+ * the new-mail notification poll — and pin one of the few RPC worker threads.
+ * The ceiling therefore has to be set here, not left to the caller. Callers
+ * process large folders by issuing several calls.
+ */
+static constexpr size_t RULESEXEC_MAX_BATCH = 1000;
+
+/**
+ * Retroactively run a folder's rules over messages already in it.
+ *
+ * @pentryids:     Messages to process. Entryids that are malformed, belong to
+ *                 another store, or name another folder are counted in @failed
+ *                 and skipped — one bad blob does not abort the batch, because
+ *                 the actions already applied cannot be rolled back.
+ * @action_flags:  enum rule_action_flags. RX_ACT_SAFE keeps the run reversible;
+ *                 RX_ACT_DELETE permits the rules' *hard* deletes, and
+ *                 RX_ACT_SEND lets rules emit mail (reply, forward, bounce,
+ *                 delegate) for every message processed. Both must be asked for
+ *                 by name. Unknown bits are rejected outright so that a future
+ *                 RX_ACT_* cannot be silently enabled by an old caller.
+ * @processed:     Out; messages actually handed to the rule engine.
+ * @skipped:       Out; action blocks suppressed by @action_flags.
+ * @failed:        Out; entryids rejected, plus messages whose rule run errored.
+ *
+ * Requires owner rights on the folder: rules may move, delete or send, so this
+ * is strictly more dangerous than the rights covering the individual operations.
+ * Containment of each message to @hfolder is enforced by exmdb, which is the
+ * only layer that can check it against the store.
+ *
+ * Returns ecSuccess whenever the batch ran, even if some messages failed, so the
+ * counters survive; the generated client discards out-params on a non-success
+ * result. A hard error is reserved for "nothing was attempted".
+ */
+ec_error_t zs_rulesexecute(GUID hsession, uint32_t hfolder,
+    const BINARY_ARRAY *pentryids, uint32_t action_flags,
+    uint32_t *processed, uint32_t *skipped, uint32_t *failed)
+{
+	BOOL b_private;
+	int account_id;
+	zs_objtype mapi_type;
+	eid_t folder_id{}, message_id{};
+
+	*processed = 0;
+	*skipped = 0;
+	*failed = 0;
+	if (action_flags & ~static_cast<uint32_t>(RX_ACT_VALID))
+		return ecInvalidParam;
+	if (pentryids->count > RULESEXEC_MAX_BATCH)
+		return ecTooBig;
+	auto pinfo = zs_query_session(hsession);
+	if (pinfo == nullptr)
+		return ecError;
+	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
+	if (pfolder == nullptr)
+		return ecNullObject;
+	if (mapi_type != zs_objtype::folder)
+		return ecNotSupported;
+	auto pstore = pfolder->pstore;
+	if (!pstore->owner_mode()) {
+		uint32_t permission = 0;
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
+		    pfolder->folder_id, pinfo->get_username(), &permission))
+			return ecError;
+		if (!(permission & frightsOwner))
+			return ecAccessDenied;
+	}
+	/*
+	 * Deduplicate: the rule set is re-run in full per entry, so a repeated
+	 * entryid would re-apply every action — N copies, or N outbound mails
+	 * from one OP_FORWARD rule.
+	 */
+	std::unordered_set<uint64_t> done;
+	for (size_t i = 0; i < pentryids->count; ++i) {
+		if (!cu_entryid_to_mid(pentryids->pbin[i],
+		    &b_private, &account_id, &folder_id, &message_id) ||
+		    b_private != pstore->b_private ||
+		    account_id != pstore->account_id ||
+		    folder_id != pfolder->folder_id) {
+			++*failed;
+			continue;
+		}
+		if (!done.emplace(message_id).second)
+			continue;
+		uint32_t msg_skipped = 0;
+		if (!exmdb_client->rules_execute(pstore->get_dir(),
+		    pinfo->get_username(), pinfo->cpid, pfolder->folder_id,
+		    message_id, action_flags, &msg_skipped)) {
+			++*failed;
+			continue;
+		}
+		++*processed;
+		*skipped += msg_skipped;
+	}
+	return ecSuccess;
 }
 
 ec_error_t zs_getabgal(GUID hsession, BINARY *pentryid)

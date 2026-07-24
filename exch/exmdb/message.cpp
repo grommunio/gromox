@@ -82,11 +82,37 @@ struct rulexec_in {
 	sqlite3 *sqlite = nullptr;
 	uint64_t folder_id = 0, message_id = 0;
 	std::optional<Json::Value> digest;
+	/*
+	 * Action classes this run may perform (see enum rule_action_flags).
+	 * Defaults to "everything", so the delivery path and every existing
+	 * caller are unaffected; only retroactive execution narrows it.
+	 */
+	uint32_t action_flags = RX_ACT_ALL;
+	/* Optional counter for action blocks suppressed by action_flags. */
+	uint32_t *skipped = nullptr;
+	/*
+	 * Emit change numbers and notifications for messages the rules touch
+	 * in place.
+	 *
+	 * Delivery leaves this false: the message is brand new, no client has
+	 * ever seen it, and the creation notification covers everything.
+	 * Retroactive execution MUST set it — the messages pre-exist, so they
+	 * sit in every client's cached table and in dynamic search-folder
+	 * membership, and a silent mutation leaves all of them stale.
+	 */
+	bool track_changes = false;
 };
 
 struct seen_list {
 	std::vector<uint64_t> fld;
 	std::vector<message_node> msg;
+	/*
+	 * Populated only when rulexec_in::track_changes is set. `modified`
+	 * holds messages mutated in place (OP_TAG, OP_MARK_AS_READ), `deleted`
+	 * those the rules removed. Both are drained after the rule run so the
+	 * notifications can be emitted inside the same transaction.
+	 */
+	std::vector<message_node> modified, deleted;
 };
 
 }
@@ -3087,10 +3113,61 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 	return ecServerOOM;
 }
 
+/**
+ * Map a rule action opcode onto its rule_action_flags class.
+ *
+ * Unknown opcodes fall into RX_ACT_SEND, i.e. the most restricted class. A new
+ * action type is then suppressed by default under a narrowed run rather than
+ * silently escaping the gate.
+ */
+static constexpr uint32_t rx_action_class(uint8_t type)
+{
+	switch (type) {
+	case OP_MOVE:
+	case OP_COPY:
+		return RX_ACT_FILE;
+	case OP_TAG:
+	case OP_MARK_AS_READ:
+		return RX_ACT_MARK;
+	case OP_DELETE:
+		return RX_ACT_DELETE;
+	case OP_DEFER_ACTION:
+		return RX_ACT_DEFER;
+	default:
+		return RX_ACT_SEND;
+	}
+}
+
+static bool rx_action_allowed(const rulexec_in &rp, uint8_t type)
+{
+	if (rp.action_flags & rx_action_class(type))
+		return true;
+	if (rp.skipped != nullptr)
+		++*rp.skipped;
+	return false;
+}
+
+/**
+ * Note that a message mutated in place (OP_TAG, OP_MARK_AS_READ) was modified,
+ * so a change number and notification can be emitted once the rule run is over.
+ * No-op unless the caller asked for change tracking. Deduplicates, because
+ * several rules may tag the same message.
+ */
+static void rx_note_modified(const rulexec_in &rp, seen_list &seen)
+{
+	if (!rp.track_changes)
+		return;
+	message_node mn{rp.folder_id, rp.message_id};
+	if (std::find(seen.modified.begin(), seen.modified.end(), mn) == seen.modified.end())
+		seen.modified.push_back(mn);
+}
+
 static ec_error_t op_switch(const rulexec_in &rp, seen_list &seen,
     const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx,
     BOOL &b_del, std::list<DAM_NODE> &dam_list)
 {
+	if (!rx_action_allowed(rp, block.type))
+		return ecSuccess;
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY: {
@@ -3128,6 +3205,7 @@ static ec_error_t op_switch(const rulexec_in &rp, seen_list &seen,
 		if (!cu_set_properties(MAPI_MESSAGE, rp.message_id, rp.cpid,
 		    rp.sqlite, &vals, &problems))
 			return ecError;
+		rx_note_modified(rp, seen);
 		break;
 	}
 	case OP_DELETE:
@@ -3144,6 +3222,7 @@ static ec_error_t op_switch(const rulexec_in &rp, seen_list &seen,
 		if (!cu_set_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.sqlite,
 		    PR_READ, &fake_true, &b_result))
 			return ecError;
+		rx_note_modified(rp, seen);
 		break;
 	}
 	}
@@ -3401,6 +3480,8 @@ static ec_error_t opx_switch(const rulexec_in &rp,
     seen_list &seen, const rule_node &rule, const EXT_ACTION_BLOCK &block,
     size_t act_idx, BOOL &b_del)
 {
+	if (!rx_action_allowed(rp, block.type))
+		return ecSuccess;
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY:
@@ -3439,6 +3520,7 @@ static ec_error_t opx_switch(const rulexec_in &rp,
 		if (!cu_set_properties(MAPI_MESSAGE, rp.message_id, rp.cpid,
 		    rp.sqlite, &vals, &problems))
 			return ecError;
+		rx_note_modified(rp, seen);
 		break;
 	}
 	case OP_DELETE:
@@ -3455,6 +3537,7 @@ static ec_error_t opx_switch(const rulexec_in &rp,
 		if (!cu_set_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.sqlite,
 		    PR_READ, &fake_true, &b_result))
 			return ecError;
+		rx_note_modified(rp, seen);
 		break;
 	}
 	}
@@ -3535,7 +3618,30 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 	if (!b_del)
 		return ecSuccess;
 
-	std::erase(seen.msg, message_node{rp.folder_id, rp.message_id});
+	message_node mn{rp.folder_id, rp.message_id};
+	/* std::erase reports how many elements it removed. */
+	auto created_by_this_run = std::erase(seen.msg, mn) != 0;
+	if (rp.track_changes) {
+		/*
+		 * Drop it from `modified` — a message a later rule deleted must
+		 * not additionally be reported as changed.
+		 */
+		std::erase(seen.modified, mn);
+		/*
+		 * Announce the removal only for a message that pre-existed the
+		 * run. One created *during* the run (a copy that the
+		 * destination folder's own rules then deleted) was never
+		 * announced as created, so a deletion event would name an id no
+		 * client has ever seen.
+		 *
+		 * Deduplicate for the same reason rx_note_modified does: a
+		 * message can reach this point twice, since opx_move recurses
+		 * on the source rather than the copy.
+		 */
+		if (!created_by_this_run &&
+		    std::find(seen.deleted.begin(), seen.deleted.end(), mn) == seen.deleted.end())
+			seen.deleted.push_back(mn);
+	}
 	void *pvalue = nullptr;
 	if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.db,
 	    PR_MESSAGE_SIZE, &pvalue))
@@ -3988,11 +4094,22 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 }
 
 /**
- * @dir:        Mailbox where the action occurs
- * @username:   Actor/Rule executor, used for public store readstate tracking only
+ * Run the folder's rules over one message.
+ *
+ * @dir:          Mailbox where the action occurs
+ * @username:     Actor/Rule executor, used for public store readstate tracking only
+ * @action_flags: Which action classes may run (enum rule_action_flags)
+ * @skipped:      Optional out-counter for action blocks suppressed by @action_flags
+ * @retro:        Retroactive run over a pre-existing message. Enables the
+ *                folder-containment check and change tracking; delivery passes
+ *                false, since it supplies both ids itself and the message is new.
+ *
+ * Shared by exmdb_server::rule_new_message (delivery, all actions) and
+ * exmdb_server::rules_execute (retroactive, caller-selected actions).
  */
-BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
-    cpid_t cpid, uint64_t folder_id, uint64_t message_id) try
+static BOOL rule_exec_common(const char *dir, const char *username,
+    cpid_t cpid, uint64_t folder_id, uint64_t message_id,
+    uint32_t action_flags, uint32_t *skipped, bool retro) try
 {
 	char *pmid_string = nullptr;
 	
@@ -4008,6 +4125,38 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
+	if (retro) {
+		/*
+		 * SECURITY: @folder_id only selects which rule set is loaded —
+		 * every action below addresses the message by id alone (the
+		 * OP_DELETE path is a bare "DELETE FROM messages WHERE
+		 * message_id=", and cu_copy_message takes the mid). A caller
+		 * that can name an arbitrary (folder, message) pair could
+		 * therefore run rules it owns against a message it does not.
+		 * Entryids are unauthenticated blobs and carry the two GC
+		 * values independently, so the pairing MUST be verified here
+		 * rather than trusted from the caller.
+		 *
+		 * is_deleted/is_associated are part of the same check: a
+		 * soft-deleted message keeps its parent_fid, and FAI messages
+		 * — which include the extended-rule messages themselves — are
+		 * ordinary rows with valid entryids. Neither is a legitimate
+		 * target for a retroactive run.
+		 */
+		char sql_string[160];
+		snprintf(sql_string, std::size(sql_string), "SELECT parent_fid "
+			"FROM messages WHERE message_id=%llu AND is_deleted=0 "
+			"AND is_associated=0", LLU{mid_val});
+		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		if (pstmt == nullptr)
+			return FALSE;
+		if (pstmt.step() != SQLITE_ROW)
+			return FALSE;
+		/* An embedded message has parent_fid NULL, which reads as 0. */
+		auto parent_fid = pstmt.col_uint64(0);
+		if (parent_fid == 0 || parent_fid != fid_val)
+			return FALSE;
+	}
 	if (is_pvt && !common_util_get_mid_string(pdb->psqlite, mid_val, &pmid_string))
 		return FALSE;
 	std::optional<Json::Value> digest;
@@ -4026,9 +4175,45 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	if (mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), account) != ecSuccess)
 		return false;
 	auto ec = message_rule_new_message({ENVELOPE_FROM_NULL, account.c_str(), cpid, false,
-	          *pdb, pdb->psqlite, fid_val, mid_val, std::move(digest)}, seen);
+	          *pdb, pdb->psqlite, fid_val, mid_val, std::move(digest),
+	          action_flags, skipped, retro}, seen);
 	if (ec != ecSuccess)
 		return FALSE;
+	/*
+	 * A message mutated in place needs a fresh change number, or ICS
+	 * incremental sync never carries the edit and other devices stay stale
+	 * forever. Allocate before the notifications and inside the transaction,
+	 * the same shape exmdb_server::set_message_read_state uses (that one
+	 * allocates a read_cn; a rule can change arbitrary properties, so the
+	 * message's change_number is what has to move).
+	 *
+	 * Only this folder's commit time is bumped. Anything landing in a
+	 * *different* folder got there via op_move_same/opx_move, both of which
+	 * already bump the destination's PR_LOCAL_COMMIT_TIME_MAX themselves.
+	 */
+	bool touched_folder = false;
+	for (const auto &mn : seen.modified) {
+		uint64_t change_num = 0;
+		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
+			return false;
+		char sql_string[128];
+		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
+			"change_number=%llu WHERE message_id=%llu",
+			LLU{change_num}, LLU{mn.message_id});
+		if (pdb->exec(sql_string) != SQLITE_OK)
+			return FALSE;
+		if (mn.folder_id == fid_val)
+			touched_folder = true;
+	}
+	for (const auto &mn : seen.deleted)
+		if (mn.folder_id == fid_val)
+			touched_folder = true;
+	if (touched_folder) {
+		auto nt_time = rop_util_current_nttime();
+		BOOL b_result = false;
+		cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
+			PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
+	}
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
 	for (const auto &mn : seen.msg) {
@@ -4038,6 +4223,17 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 			mn.folder_id, mn.message_id, 0, *dbase, notifq);
 		pdb->notify_message_creation(mn.folder_id, mn.message_id, *dbase, notifq);
 	}
+	/* Both loops are empty unless @retro requested change tracking. */
+	for (const auto &mn : seen.modified) {
+		pdb->proc_dynamic_event(cpid, dynamic_event::modify_msg,
+			mn.folder_id, mn.message_id, 0, *dbase, notifq);
+		pdb->notify_message_modification(mn.folder_id, mn.message_id, *dbase, notifq);
+	}
+	for (const auto &mn : seen.deleted) {
+		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
+			mn.folder_id, mn.message_id, 0, *dbase, notifq);
+		pdb->notify_message_deletion(mn.folder_id, mn.message_id, *dbase, notifq);
+	}
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	dg_notify(std::move(notifq));
@@ -4045,4 +4241,66 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
+}
+
+/**
+ * @dir:        Mailbox where the action occurs
+ * @username:   Actor/Rule executor, used for public store readstate tracking only
+ *
+ * Delivery-time rule execution. Unrestricted: every action class runs, which is
+ * the historic and expected behaviour for a newly-arrived message.
+ */
+BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
+    cpid_t cpid, uint64_t folder_id, uint64_t message_id)
+{
+	return rule_exec_common(dir, username, cpid, folder_id, message_id,
+	       RX_ACT_ALL, nullptr, false);
+}
+
+/**
+ * Retroactive rule execution: run the folder's rules over a message that is
+ * already in the store.
+ *
+ * @dir:          Mailbox where the action occurs
+ * @username:     Actor/Rule executor, used for public store readstate tracking only
+ * @action_flags: Which action classes may run (enum rule_action_flags).
+ *                RX_ACT_SAFE confines the run to the mailbox itself;
+ *                RX_ACT_SEND additionally permits reply/forward/bounce/delegate,
+ *                which *emit mail* for every matching message.
+ * @skipped:      Out; number of action blocks suppressed by @action_flags, so a
+ *                caller can report "n actions were not applied".
+ *
+ * Differs from delivery-time execution in three ways, all because the message
+ * pre-exists rather than having just arrived:
+ *
+ *  - @message_id is verified to actually live in @folder_id. @folder_id alone
+ *    selects the rule set; every action addresses the message by id, so an
+ *    unverified pair would let a caller run its own rules against someone
+ *    else's message.
+ *  - Messages the rules mutate or delete get a change number and a
+ *    notification. Delivery skips both because nothing has ever observed a
+ *    brand-new message; here every client already holds the message in its
+ *    cached table.
+ *  - @action_flags gates which action classes may run at all.
+ *
+ * Callers wanting to process a whole folder iterate messages themselves and
+ * call this once per message; there is deliberately no folder-wide variant,
+ * which would hold the store transaction (and, further up, the zcore per-user
+ * session lock) for the entire run.
+ */
+BOOL exmdb_server::rules_execute(const char *dir, const char *username,
+    cpid_t cpid, uint64_t folder_id, uint64_t message_id,
+    uint32_t action_flags, uint32_t *skipped)
+{
+	/*
+	 * The generated server dispatch always supplies a slot, but the LPC
+	 * shortcut hands the caller's pointer through unchanged, so this may
+	 * legitimately be null.
+	 */
+	if (skipped != nullptr)
+		*skipped = 0;
+	if (action_flags & ~static_cast<uint32_t>(RX_ACT_VALID))
+		return FALSE;
+	return rule_exec_common(dir, username, cpid, folder_id, message_id,
+	       action_flags, skipped, true);
 }

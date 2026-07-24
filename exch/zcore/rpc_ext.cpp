@@ -674,6 +674,26 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_deletemessages &d)
 	return pack_result::ok;
 }
 
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_rulesexecute &d)
+{
+	QRF(x.g_guid(&d.hsession));
+	QRF(x.g_uint32(&d.hfolder));
+	d.pentryids = x.anew<BINARY_ARRAY>();
+	if (d.pentryids == nullptr)
+		return pack_result::alloc;
+	QRF(x.g_bin_a(d.pentryids));
+	QRF(x.g_uint32(&d.action_flags));
+	return pack_result::ok;
+}
+
+static pack_result zrpc_push(EXT_PUSH &x, const zcresp_rulesexecute &d)
+{
+	QRF(x.p_uint32(d.processed));
+	QRF(x.p_uint32(d.skipped));
+	QRF(x.p_uint32(d.failed));
+	return pack_result::ok;
+}
+
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_copymessages &d)
 {
 	QRF(x.g_guid(&d.hsession));
