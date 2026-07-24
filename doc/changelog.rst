@@ -19,7 +19,7 @@ Fixes:
 * Synthesize the PR_RTF_IN_SYNC MAPI property, fixing a case where Outlook
   could show HTML messages (imported from older Exchange/Kopano) as plaintext.
 * Fixed a crash when the `outgoing_smtp_url` directive was used with a
-  `smtp+tls:` target.
+  `smtp+tls:` target (and the software was built without TLS).
 * Fixed a crash when gromox-delivery processed a meeting invitation from a
   local organizer.
 * Fixed a crash when gromox-imap sent keyword declarations to idle sessions
