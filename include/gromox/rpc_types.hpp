@@ -10,6 +10,7 @@ struct GX_EXPORT CONTEXT_HANDLE {
 struct GX_EXPORT SYNTAX_ID {
 	GUID uuid{};
 	uint32_t version = 0;
+	bool operator==(const SYNTAX_ID &) const = default;
 };
 
 using CXH = CONTEXT_HANDLE;

@@ -801,18 +801,14 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	b_ndr64 = FALSE;
 	b_found = FALSE;
 	for (i=0; i<pbind->ctx_list[0].num_transfer_syntaxes; i++) {
-		if (g_transfer_syntax_ndr.uuid == pbind->ctx_list[0].transfer_syntaxes[i].uuid &&
-			pbind->ctx_list[0].transfer_syntaxes[i].version ==
-			g_transfer_syntax_ndr.version) {
+		if (pbind->ctx_list[0].transfer_syntaxes[i] == g_transfer_syntax_ndr) {
 			b_found = TRUE;
 			break;
 		}
 	}
 	if (!b_found) {
 		for (i=0; i<pbind->ctx_list[0].num_transfer_syntaxes; i++) {
-			if (g_transfer_syntax_ndr64.uuid == pbind->ctx_list[0].transfer_syntaxes[i].uuid &&
-				pbind->ctx_list[0].transfer_syntaxes[i].version ==
-				g_transfer_syntax_ndr64.version) {
+			if (pbind->ctx_list[0].transfer_syntaxes[i] == g_transfer_syntax_ndr64) {
 				b_found = TRUE;
 				break;
 			}
@@ -825,8 +821,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		b_ndr64 = TRUE;
 	}
 	if (support_negotiate && b_found && pbind->num_contexts > 1 &&
-	    memcmp(&pbind->ctx_list[0].abstract_syntax,
-	    &pbind->ctx_list[1].abstract_syntax, sizeof(SYNTAX_ID)) == 0 &&
+	    pbind->ctx_list[0].abstract_syntax == pbind->ctx_list[1].abstract_syntax &&
 	    pbind->ctx_list[1].num_transfer_syntaxes > 0) {
 		char uuid_str[GUIDSTR_SIZE];
 		pbind->ctx_list[1].transfer_syntaxes[0].uuid.to_str(uuid_str, sizeof(uuid_str));
@@ -1074,18 +1069,14 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		b_found = FALSE;
 		
 		for (i=0; i<palter->ctx_list[0].num_transfer_syntaxes; i++) {
-			if (g_transfer_syntax_ndr.uuid == palter->ctx_list[0].transfer_syntaxes[i].uuid &&
-				palter->ctx_list[0].transfer_syntaxes[i].version ==
-				g_transfer_syntax_ndr.version) {
+			if (palter->ctx_list[0].transfer_syntaxes[i] == g_transfer_syntax_ndr) {
 				b_found = TRUE;
 				break;
 			}
 		}
 		if (!b_found) {
 			for (i=0; i<palter->ctx_list[0].num_transfer_syntaxes; i++) {
-				if (g_transfer_syntax_ndr64.uuid == palter->ctx_list[0].transfer_syntaxes[i].uuid &&
-					palter->ctx_list[0].transfer_syntaxes[i].version ==
-					g_transfer_syntax_ndr64.version) {
+				if (palter->ctx_list[0].transfer_syntaxes[i] == g_transfer_syntax_ndr64) {
 					b_found = TRUE;
 					break;
 				}
