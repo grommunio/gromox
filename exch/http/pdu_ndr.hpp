@@ -8,9 +8,8 @@
 
 struct dcerpc_ctx_list {
 	uint16_t context_id;
-	uint8_t num_transfer_syntaxes;
 	SYNTAX_ID abstract_syntax;
-	SYNTAX_ID *transfer_syntaxes;
+	std::vector<SYNTAX_ID> transfer_syntaxes;
 	bool contains(const SYNTAX_ID &) const;
 };
 using DCERPC_CTX_LIST = dcerpc_ctx_list;
@@ -74,12 +73,9 @@ struct dcerpc_cancel_ack final : public dcerpc_payload {
 using DCERPC_CANCEL_ACK = dcerpc_cancel_ack;
 
 struct dcerpc_bind final : public dcerpc_payload {
-	~dcerpc_bind();
-
 	uint16_t max_xmit_frag = 0, max_recv_frag = 0;
 	uint32_t assoc_group_id = 0;
-	uint8_t num_contexts = 0;
-	DCERPC_CTX_LIST *ctx_list = nullptr;
+	std::vector<dcerpc_ctx_list> ctx_list;
 	std::string auth_info;
 };
 using DCERPC_BIND = dcerpc_bind;

@@ -151,19 +151,19 @@ static bool is_negotiate_syntax(const SYNTAX_ID &i)
 
 static bool is_requesting_negotiate(const dcerpc_bind &b)
 {
-	if (!support_negotiate || b.num_contexts <= 1)
+	if (!support_negotiate || b.ctx_list.size() <= 1)
 		return false;
-	auto &first  = b.ctx_list[b.num_contexts-2];
-	auto &second = b.ctx_list[b.num_contexts-1];
+	auto &first  = b.ctx_list[b.ctx_list.size()-2];
+	auto &second = b.ctx_list[b.ctx_list.size()-1];
 	return first.abstract_syntax == second.abstract_syntax &&
-	       second.num_transfer_syntaxes == 1 &&
+	       second.transfer_syntaxes.size() == 1 &&
 	       is_negotiate_syntax(second.transfer_syntaxes[0]);
 }
 
 bool dcerpc_ctx_list::contains(const SYNTAX_ID &o) const
 {
-	auto end = &transfer_syntaxes[num_transfer_syntaxes];
-	return std::find(&transfer_syntaxes[0], end, o) != end;
+	auto end = transfer_syntaxes.cend();
+	return std::find(transfer_syntaxes.cbegin(), end, o) != end;
 }
 
 dcerpc_call::dcerpc_call() :
@@ -776,10 +776,8 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	uint32_t extra_flags;
 	auto pbind = static_cast<dcerpc_bind *>(pcall->pkt.payload.get());
 
-	if (pbind->num_contexts < 1 ||
-		pbind->ctx_list[0].num_transfer_syntaxes < 1) {
+	if (pbind->ctx_list.size() < 1 || pbind->ctx_list[0].transfer_syntaxes.size() < 1)
 		return pdu_processor_bind_nak(pcall, 0);
-	}
 	
 	/* can not bind twice on the same connection */
 	if (pcall->pprocessor->assoc_group_id != 0)
@@ -991,8 +989,8 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pprocessor = pcall->pprocessor;
 	
 	
-	if (palter->num_contexts < 1 ||
-	    palter->ctx_list[0].num_transfer_syntaxes < 1) {
+	if (palter->ctx_list.size() < 1 ||
+	    palter->ctx_list[0].transfer_syntaxes.size() < 1) {
 		result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 		reason = DCERPC_BIND_REASON_ASYNTAX;
 		goto ALTER_ACK;
