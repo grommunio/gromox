@@ -4,12 +4,14 @@
 #include <gromox/ndr.hpp>
 #include "pdu_ndr_ids.hpp"
 
-struct DCERPC_CTX_LIST {
+struct dcerpc_ctx_list {
 	uint16_t context_id;
 	uint8_t num_transfer_syntaxes;
 	SYNTAX_ID abstract_syntax;
 	SYNTAX_ID *transfer_syntaxes;
+	bool contains(const SYNTAX_ID &) const;
 };
+using DCERPC_CTX_LIST = dcerpc_ctx_list;
 
 union DCERPC_OBJECT {
 	char empty;

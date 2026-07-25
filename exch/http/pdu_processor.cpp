@@ -135,6 +135,12 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 
 static int pdu_processor_load_library(const generic_module &);
 
+bool dcerpc_ctx_list::contains(const SYNTAX_ID &o) const
+{
+	auto end = &transfer_syntaxes[num_transfer_syntaxes];
+	return std::find(&transfer_syntaxes[0], end, o) != end;
+}
+
 dcerpc_call::dcerpc_call() :
 	pkt(b_bigendian)
 {
@@ -768,9 +774,7 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason) try
 
 static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 {
-	int i;
 	GUID uuid;
-	BOOL b_found;
 	BOOL b_ndr64;
 	uint32_t reason;
 	uint32_t result;
@@ -799,20 +803,9 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	uuid = pbind->ctx_list[0].abstract_syntax.uuid;
 
 	b_ndr64 = FALSE;
-	b_found = FALSE;
-	for (i=0; i<pbind->ctx_list[0].num_transfer_syntaxes; i++) {
-		if (pbind->ctx_list[0].transfer_syntaxes[i] == g_transfer_syntax_ndr) {
-			b_found = TRUE;
-			break;
-		}
-	}
+	bool b_found = pbind->ctx_list[0].contains(g_transfer_syntax_ndr);
 	if (!b_found) {
-		for (i=0; i<pbind->ctx_list[0].num_transfer_syntaxes; i++) {
-			if (pbind->ctx_list[0].transfer_syntaxes[i] == g_transfer_syntax_ndr64) {
-				b_found = TRUE;
-				break;
-			}
-		}
+		b_found = pbind->ctx_list[0].contains(g_transfer_syntax_ndr64);
 		if (!b_found) {
 			mlog(LV_DEBUG, "pdu_processor: only NDR or NDR64 transfer syntax "
 				"can be accepted by system\n");
@@ -1028,10 +1021,8 @@ static BOOL pdu_processor_auth_alter_ack(DCERPC_CALL *pcall)
 
 static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 {
-	int i;
 	GUID uuid;
 	BOOL b_ndr64;
-	BOOL b_found;
 	uint32_t result = 0, reason = 0;
 	uint32_t if_version;
 	uint32_t context_id;
@@ -1066,21 +1057,9 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pcall->pcontext = pprocessor->find_ctx(context_id);
 	if (NULL == pcall->pcontext) {
 		b_ndr64 = FALSE;
-		b_found = FALSE;
-		
-		for (i=0; i<palter->ctx_list[0].num_transfer_syntaxes; i++) {
-			if (palter->ctx_list[0].transfer_syntaxes[i] == g_transfer_syntax_ndr) {
-				b_found = TRUE;
-				break;
-			}
-		}
+		auto b_found = palter->ctx_list[0].contains(g_transfer_syntax_ndr);
 		if (!b_found) {
-			for (i=0; i<palter->ctx_list[0].num_transfer_syntaxes; i++) {
-				if (palter->ctx_list[0].transfer_syntaxes[i] == g_transfer_syntax_ndr64) {
-					b_found = TRUE;
-					break;
-				}
-			}
+			b_found = palter->ctx_list[0].contains(g_transfer_syntax_ndr64);
 			if (!b_found) {
 				mlog(LV_DEBUG, "pdu_processor: only NDR or NDR64 transfer syntax "
 					"can be accepted by system");
