@@ -144,6 +144,11 @@ static bool is_negotiate_uuid(GUID i)
 	return i == nego;
 }
 
+static bool is_negotiate_syntax(const SYNTAX_ID &i)
+{
+	return i.version == 1 && is_negotiate_uuid(i.uuid);
+}
+
 bool dcerpc_ctx_list::contains(const SYNTAX_ID &o) const
 {
 	auto end = &transfer_syntaxes[num_transfer_syntaxes];
@@ -824,7 +829,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	bool b_negotiate = support_negotiate && b_found && pbind->num_contexts > 1 &&
 	                   pbind->ctx_list[0].abstract_syntax == pbind->ctx_list[1].abstract_syntax &&
 	                   pbind->ctx_list[1].num_transfer_syntaxes > 0 &&
-	                   is_negotiate_uuid(pbind->ctx_list[1].transfer_syntaxes[0].uuid);
+	                   is_negotiate_syntax(pbind->ctx_list[1].transfer_syntaxes[0]);
 	auto pinterface = pdu_processor_find_interface_by_uuid(
 					pcall->pprocessor->pendpoint, &uuid, if_version);
 	if (NULL == pinterface) {
