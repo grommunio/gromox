@@ -747,7 +747,6 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason) try
 	pkt.payload = std::make_unique<dcerpc_bind_nak>();
 	auto bind_nak = static_cast<dcerpc_bind_nak *>(pkt.payload.get());
 	bind_nak->reject_reason = reason;
-	bind_nak->num_versions = 0;
 
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;

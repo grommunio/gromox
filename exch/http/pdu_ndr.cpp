@@ -85,52 +85,27 @@ static pack_result pdu_ndr_pull_dcerpc_ack_ctx(NDR_PULL *pndr, DCERPC_ACK_CTX *r
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr, DCERPC_BIND_NAK *r)
+static pack_result pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr,
+    dcerpc_bind_nak *r) try
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint16(&r->reject_reason));
 	TRY(pndr->align(4));
 	
 	if (DECRPC_BIND_REASON_VERSION_NOT_SUPPORTED == r->reject_reason) {
-		TRY(pndr->g_uint32(&r->num_versions));
-		r->num_versions = std::min(r->num_versions, static_cast<uint32_t>(UINT8_MAX)); /* C706 p. 592 */
-		if (r->num_versions > 0) {
-			r->versions = me_alloc<uint32_t>(r->num_versions);
-			if (NULL == r->versions) {
-				r->num_versions = 0;
-				return pack_result::alloc;
-			}
-			for (size_t i = 0; i < r->num_versions; ++i) {
-				auto status = pndr->g_uint32(&r->versions[i]);
-				if (status != pack_result::ok) {
-					free(r->versions);
-					r->versions = NULL;
-					r->num_versions = 0;
-					return status;
-				}
-			}
-		} else {
-			r->versions = NULL;
+		uint32_t num = 0;
+		TRY(pndr->g_uint32(&num));
+		num = std::min(num, static_cast<uint32_t>(UINT8_MAX)); /* C706 p. 592 */
+		r->versions.resize(num);
+		for (auto &v : r->versions) {
+			auto status = pndr->g_uint32(&v);
+			if (status != pack_result::ok)
+				return status;
 		}
 	}
-	auto status = pndr->trailer_align(4);
-	if (status != pack_result::ok) {
-		if (NULL != r->versions) {
-			free(r->versions);
-			r->versions = NULL;
-		}
-		r->num_versions = 0;
-		return status;
-	}
-	return pack_result::ok;
-}
-
-dcerpc_bind_nak::~dcerpc_bind_nak()
-{
-	auto r = this;
-	if (NULL != r->versions) {
-		free(r->versions);
-	}
+	return pndr->trailer_align(4);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, DCERPC_REQUEST *r)
@@ -930,9 +905,11 @@ static pack_result pdu_ndr_push_dcerpc_bind_nak(NDR_PUSH *pndr,
 	TRY(pndr->align(4));
 	
 	if (DECRPC_BIND_REASON_VERSION_NOT_SUPPORTED == r->reject_reason) {
-		TRY(pndr->p_uint32(r->num_versions));
-		for (size_t i = 0; i < r->num_versions; ++i)
-			TRY(pndr->p_uint32(r->versions[i]));
+		if (r->versions.size() > UINT8_MAX)
+			return pack_result::format;
+		TRY(pndr->p_uint32(r->versions.size()));
+		for (const auto v : r->versions)
+			TRY(pndr->p_uint32(v));
 	}
 	return pndr->trailer_align(4);
 }

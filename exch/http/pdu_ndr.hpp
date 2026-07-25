@@ -97,11 +97,8 @@ struct dcerpc_bind_ack final : public dcerpc_payload {
 using DCERPC_BIND_ACK = dcerpc_bind_ack;
 
 struct dcerpc_bind_nak final : public dcerpc_payload {
-	~dcerpc_bind_nak();
-
 	uint16_t reject_reason = 0;
-	uint32_t num_versions = 0;
-	uint32_t *versions = nullptr;
+	std::vector<uint32_t> versions;
 };
 using DCERPC_BIND_NAK = dcerpc_bind_nak;
 
