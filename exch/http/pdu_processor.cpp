@@ -135,6 +135,15 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 
 static int pdu_processor_load_library(const generic_module &);
 
+static bool is_negotiate_uuid(GUID i)
+{
+	memset(i.clock_seq, 0, sizeof(i.clock_seq));
+	memset(i.node, 0, sizeof(i.node));
+	/* MS-RPCE v33 §3.3.1.5.3 / {6cb71c2c-9812-4540-xxxx-xxxxxxxxxxxx} */
+	static constexpr GUID nego = {0x6cb71c2c, 0x9812, 0x4540};
+	return i == nego;
+}
+
 bool dcerpc_ctx_list::contains(const SYNTAX_ID &o) const
 {
 	auto end = &transfer_syntaxes[num_transfer_syntaxes];
@@ -783,7 +792,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	uint32_t extra_flags;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext;
-	BOOL b_negotiate = FALSE;
 	auto pbind = static_cast<dcerpc_bind *>(pcall->pkt.payload.get());
 
 	if (pbind->num_contexts < 1 ||
@@ -813,14 +821,10 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		}
 		b_ndr64 = TRUE;
 	}
-	if (support_negotiate && b_found && pbind->num_contexts > 1 &&
-	    pbind->ctx_list[0].abstract_syntax == pbind->ctx_list[1].abstract_syntax &&
-	    pbind->ctx_list[1].num_transfer_syntaxes > 0) {
-		char uuid_str[GUIDSTR_SIZE];
-		pbind->ctx_list[1].transfer_syntaxes[0].uuid.to_str(uuid_str, sizeof(uuid_str));
-		if (strncmp("6cb71c2c-9812-4540", uuid_str, 18) == 0)
-			b_negotiate = TRUE;
-	}
+	bool b_negotiate = support_negotiate && b_found && pbind->num_contexts > 1 &&
+	                   pbind->ctx_list[0].abstract_syntax == pbind->ctx_list[1].abstract_syntax &&
+	                   pbind->ctx_list[1].num_transfer_syntaxes > 0 &&
+	                   is_negotiate_uuid(pbind->ctx_list[1].transfer_syntaxes[0].uuid);
 	auto pinterface = pdu_processor_find_interface_by_uuid(
 					pcall->pprocessor->pendpoint, &uuid, if_version);
 	if (NULL == pinterface) {
