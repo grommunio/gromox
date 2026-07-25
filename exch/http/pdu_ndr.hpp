@@ -20,11 +20,12 @@ union DCERPC_OBJECT {
 	GUID object;
 };
 
-struct DCERPC_ACK_CTX {
+struct dcerpc_ack_ctx {
 	uint16_t result;
 	uint16_t reason;
 	SYNTAX_ID syntax;
 };
+using DCERPC_ACK_CTX = dcerpc_ack_ctx;
 
 struct dcerpc_payload {
 	virtual ~dcerpc_payload() = default;
@@ -84,14 +85,11 @@ struct dcerpc_bind final : public dcerpc_payload {
 using DCERPC_BIND = dcerpc_bind;
 
 struct dcerpc_bind_ack final : public dcerpc_payload {
-	~dcerpc_bind_ack();
-
 	uint16_t max_xmit_frag = 0, max_recv_frag = 0;
 	uint32_t assoc_group_id = 0;
 	uint16_t secondary_address_size = 0;
 	char secondary_address[64]{};
-	uint8_t num_contexts = 0;
-	DCERPC_ACK_CTX *ctx_list = nullptr;
+	std::vector<dcerpc_ack_ctx> ctx_list;
 	std::string pad, auth_info;
 };
 using DCERPC_BIND_ACK = dcerpc_bind_ack;

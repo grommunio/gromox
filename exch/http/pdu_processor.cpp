@@ -885,18 +885,12 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	} else {
 		bind_ack->secondary_address[0] = '\0';
 	}
-	if (!b_negotiate) {
-		bind_ack->num_contexts = 1;
-		bind_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
-		if (bind_ack->ctx_list == nullptr) {
-			return pdu_processor_bind_nak(pcall, 0);
-		}
-	} else {
-		bind_ack->num_contexts = 2;
-		bind_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(2);
-		if (bind_ack->ctx_list == nullptr) {
-			return pdu_processor_bind_nak(pcall, 0);
-		}
+	try {
+		bind_ack->ctx_list.resize(b_negotiate ? 2 : 1);
+	} catch (const std::bad_alloc &) {
+		return pdu_processor_bind_nak(pcall, 0);
+	}
+	if (b_negotiate) {
 		bind_ack->ctx_list[1].result = DCERPC_BIND_RESULT_NEGOTIATE_ACK;
 		auto &u = pbind->ctx_list[1].transfer_syntaxes[0].uuid;
 		char bitmap = pcall->b_bigendian ? u.node[5] : u.clock_seq[0];
@@ -1114,9 +1108,9 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		pcall->pcontext->assoc_group_id : DUMMY_ASSOC_GROUP;
 	alter_ack->secondary_address[0] = '\0';
 	
-	alter_ack->num_contexts = 1;
-	alter_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
-	if (alter_ack->ctx_list == nullptr) {
+	try {
+		alter_ack->ctx_list.resize(1);
+	} catch (const std::bad_alloc &) {
 		return FALSE;
 	}
 	alter_ack->ctx_list[0].result = result;

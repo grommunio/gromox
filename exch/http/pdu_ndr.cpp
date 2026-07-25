@@ -309,9 +309,9 @@ dcerpc_bind::~dcerpc_bind()
 	}
 }
 
-static pack_result pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
+static pack_result pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr,
+    dcerpc_bind_ack *r) try
 {
-	int i;
 	uint32_t saved_flags;
 	
 	TRY(pndr->align(4));
@@ -328,55 +328,23 @@ static pack_result pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK 
 	pndr->flags = saved_flags;
 	if (status != pack_result::ok)
 		return status;
-	TRY(pndr->g_uint8(&r->num_contexts));
-	if (r->num_contexts > 0) {
-		r->ctx_list = me_alloc<DCERPC_ACK_CTX>(r->num_contexts);
-		if (NULL == r->ctx_list) {
-			r->num_contexts = 0;
-			return pack_result::alloc;
-		}
-			
-		for (i=0; i<r->num_contexts; i++) {
-			status = pdu_ndr_pull_dcerpc_ack_ctx(pndr, &r->ctx_list[i]);
-			if (status != pack_result::ok) {
-				free(r->ctx_list);
-				r->num_contexts = 0;
-				return status;
-			}
-		}
-	} else {
-		r->ctx_list = NULL;
+	uint8_t num_contexts = 0;
+	TRY(pndr->g_uint8(&num_contexts));
+	r->ctx_list.resize(num_contexts);
+	for (auto &c : r->ctx_list) {
+		status = pdu_ndr_pull_dcerpc_ack_ctx(pndr, &c);
+		if (status != pack_result::ok)
+			return status;
 	}
 		
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = pndr->g_blob(&r->auth_info);
 	pndr->flags = saved_flags;
-	if (status != pack_result::ok) {
-		if (NULL != r->ctx_list) {
-			free(r->ctx_list);
-			r->ctx_list = NULL;
-		}
-		r->num_contexts = 0;
+	if (status != pack_result::ok)
 		return status;
-	}
-	status = pndr->trailer_align(4);
-	if (status != pack_result::ok) {
-		if (NULL != r->ctx_list) {
-			free(r->ctx_list);
-			r->ctx_list = NULL;
-		}
-		r->num_contexts = 0;
-		return status;
-	}
-	return pack_result::ok;
-}
-
-dcerpc_bind_ack::~dcerpc_bind_ack()
-{
-	auto r = this;
-	if (NULL != r->ctx_list) {
-		free(r->ctx_list);
-	}
+	return pndr->trailer_align(4);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result pdu_ndr_pull_dcerpc_co_cancel(NDR_PULL *pndr, DCERPC_CO_CANCEL *r)
@@ -852,22 +820,23 @@ static pack_result pdu_ndr_push_dcerpc_bind(NDR_PUSH *pndr, const DCERPC_BIND *r
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_push_dcerpc_ack_ctx(NDR_PUSH *pndr,
-	const DCERPC_ACK_CTX *r)
+static pack_result pdu_ndr_push_dcerpc_ack_ctx(NDR_PUSH &x,
+    const DCERPC_ACK_CTX &r)
 {
-	TRY(pndr->align(4));
-	TRY(pndr->p_uint16(r->result));
-	TRY(pndr->p_uint16(r->reason));
-	TRY(pndr->p_syntax(r->syntax));
-	return pndr->trailer_align(4);
+	TRY(x.align(4));
+	TRY(x.p_uint16(r.result));
+	TRY(x.p_uint16(r.reason));
+	TRY(x.p_syntax(r.syntax));
+	return x.trailer_align(4);
 }
 
 static pack_result pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 	const DCERPC_BIND_ACK *r)
 {
-	int i;
 	uint32_t saved_flags;
 	
+	if (r->ctx_list.size() > UINT8_MAX)
+		return pack_result::format;
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->max_xmit_frag));
 	TRY(pndr->p_uint16(r->max_recv_frag));
@@ -885,10 +854,9 @@ static pack_result pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 	pndr->flags = saved_flags;
 	if (status != pack_result::ok)
 		return status;
-	TRY(pndr->p_uint8(r->num_contexts));
-	for (i=0; i<r->num_contexts; i++) {
-		TRY(pdu_ndr_push_dcerpc_ack_ctx(pndr, &r->ctx_list[i]));
-	}
+	TRY(pndr->p_uint8(r->ctx_list.size()));
+	for (const auto &c : r->ctx_list)
+		TRY(pdu_ndr_push_dcerpc_ack_ctx(*pndr, c));
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = pndr->p_blob(r->auth_info);
 	pndr->flags = saved_flags;
