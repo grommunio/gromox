@@ -142,9 +142,9 @@ static pack_result pdu_ndr_pull_dcerpc_fault(NDR_PULL *pndr, DCERPC_FAULT *r)
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, DCERPC_FACK *r)
+static pack_result pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, dcerpc_fack *r) try
 {
-	int i;
+	uint16_t num = 0;
 	
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->version));
@@ -153,45 +153,17 @@ static pack_result pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, DCERPC_FACK *r)
 	TRY(pndr->g_uint32(&r->max_tdsu));
 	TRY(pndr->g_uint32(&r->max_frag_size));
 	TRY(pndr->g_uint16(&r->serial_no));
-	TRY(pndr->g_uint16(&r->selack_size));
-	r->selack_size = std::min(r->selack_size, static_cast<uint16_t>(UINT16_MAX));
-	if (r->selack_size > 0) {
-		r->selack = me_alloc<uint32_t>(r->selack_size);
-		if (NULL == r->selack) {
-			r->selack_size = 0;
-			return pack_result::alloc;
-		}
-		
-		for (i=0; i<r->selack_size; i++) {
-			auto status = pndr->g_uint32(&r->selack[i]);
-			if (status != pack_result::ok) {
-				free(r->selack);
-				r->selack = NULL;
-				r->selack_size = 0;
-				return status;
-			}
-		}
-	} else {
-		r->selack = NULL;
+	TRY(pndr->g_uint16(&num));
+	num = std::min(num, static_cast<uint16_t>(UINT16_MAX));
+	r->selack.resize(num);
+	for (auto &v : r->selack) {
+		auto status = pndr->g_uint32(&v);
+		if (status != pack_result::ok)
+			return status;
 	}
-	auto status = pndr->trailer_align(4);
-	if (status != pack_result::ok) {
-		if (NULL != r->selack) {
-			free(r->selack);
-			r->selack = NULL;
-		}
-		r->selack_size = 0;
-		return status;
-	}
-	return pack_result::ok;
-}
-
-dcerpc_fack::~dcerpc_fack()
-{
-	auto r = this;
-	if (NULL != r->selack) {
-		free(r->selack);
-	}
+	return pndr->trailer_align(4);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result pdu_ndr_pull_dcerpc_cancel_ack(NDR_PULL *pndr, DCERPC_CANCEL_ACK *r)
@@ -676,8 +648,8 @@ static pack_result pdu_ndr_push_dcerpc_fault(NDR_PUSH *pndr,
 
 static pack_result pdu_ndr_push_dcerpc_fack(NDR_PUSH *pndr, const DCERPC_FACK *r)
 {
-	int i;
-	
+	if (r->selack.size() > UINT16_MAX)
+		return pack_result::format;
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->version));
 	TRY(pndr->p_uint8(r->pad));
@@ -685,10 +657,9 @@ static pack_result pdu_ndr_push_dcerpc_fack(NDR_PUSH *pndr, const DCERPC_FACK *r
 	TRY(pndr->p_uint32(r->max_tdsu));
 	TRY(pndr->p_uint32(r->max_frag_size));
 	TRY(pndr->p_uint16(r->serial_no));
-	TRY(pndr->p_uint16(r->selack_size));
-	for (i=0; i<r->selack_size; i++) {
-		TRY(pndr->p_uint32(r->selack[i]));
-	}
+	TRY(pndr->p_uint16(r->selack.size()));
+	for (const auto v : r->selack)
+		TRY(pndr->p_uint32(v));
 	return pndr->trailer_align(4);
 }
 

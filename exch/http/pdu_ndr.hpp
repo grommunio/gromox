@@ -56,14 +56,12 @@ struct dcerpc_fault final : public dcerpc_payload {
 using DCERPC_FAULT = dcerpc_fault;
 
 struct dcerpc_fack final : public dcerpc_payload {
-	~dcerpc_fack();
-
 	uint32_t version = 0;
 	uint8_t pad = 0;
 	uint16_t window_size = 0;
 	uint32_t max_tdsu = 0, max_frag_size = 0;
-	uint16_t serial_no = 0, selack_size = 0;
-	uint32_t *selack = nullptr;
+	uint16_t serial_no = 0;
+	std::vector<uint32_t> selack;
 };
 using DCERPC_FACK = dcerpc_fack;
 
