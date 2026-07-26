@@ -118,6 +118,10 @@ static thread_local PROC_PLUGIN *g_cur_plugin;
 static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_list_lock; /* protects g_processor_list */
 static std::mutex g_async_lock; /* protects g_async_hash */
+/*
+ * The endpoint list is lockless: only written during startup/shutdown (with
+ * guaranteed serial execution), otherwise only read.
+ */
 static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
