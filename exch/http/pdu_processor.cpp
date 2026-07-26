@@ -2807,9 +2807,11 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 	return nullptr;
 }
 
-static bool pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
-    const DCERPC_INTERFACE *pinterface)
+static bool pdu_processor_register_interface(dcerpc_endpoint &ep,
+    const dcerpc_interface &intf)
 {
+	auto pendpoint  = &ep;
+	auto pinterface = &intf;
 	if (NULL == pinterface->ndr_pull) {
 		mlog(LV_ERR, "pdu_processor: ndr_pull of interface %s cannot be NULL",
 			pinterface->name);
@@ -2841,11 +2843,11 @@ static bool pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	return TRUE;
 }
 
-static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
-    const DCERPC_INTERFACE *tp)
+static void pdu_processor_unregister_interface(dcerpc_endpoint &ep,
+    const dcerpc_interface &tp)
 {
-	auto &lst = ep->interface_list;
-	lst.remove_if(interface_eq(tp->uuid, tp->version));
+	auto &lst = ep.interface_list;
+	lst.remove_if(interface_eq(tp.uuid, tp.version));
 }
 
 static constexpr struct dlfuncs pdu_funcs = {

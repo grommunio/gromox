@@ -45,14 +45,16 @@ enum class hook_result {
 }
 
 enum class http_status;
-struct DCERPC_ENDPOINT;
+struct dcerpc_endpoint;
 struct DCERPC_INFO;
-struct DCERPC_INTERFACE;
+struct dcerpc_interface;
 struct generic_connection;
 struct MESSAGE_CONTEXT;
 struct HPM_INTERFACE;
 struct http_request;
 struct HTTP_AUTH_INFO;
+using DCERPC_ENDPOINT = dcerpc_endpoint;
+using DCERPC_INTERFACE = dcerpc_interface;
 using HOOK_FUNCTION = gromox::hook_result (*)(MESSAGE_CONTEXT *);
 using rpc_response = gromox::universal_base;
 
@@ -68,8 +70,8 @@ struct dlfuncs {
 	// PROC_
 	struct {
 		DCERPC_ENDPOINT *(*reg_ep)(const char *, uint16_t);
-		bool (*reg_intf)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *);
-		void (*unreg_intf)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *);
+		bool (*reg_intf)(dcerpc_endpoint &, const dcerpc_interface &);
+		void (*unreg_intf)(dcerpc_endpoint &, const dcerpc_interface &);
 		uint64_t (*get_binding_handle)();
 		DCERPC_INFO (*get_rpc_info)();
 		bool (*is_rpc_bigendian)();

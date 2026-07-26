@@ -25,12 +25,13 @@ enum {
 	PDU_PROCESSOR_TERMINATE
 };
 
-struct DCERPC_ENDPOINT {
+struct dcerpc_endpoint {
 	char host[UDOM_SIZE]{};
 	std::list<DCERPC_INTERFACE> interface_list;
 	uint32_t last_group_id = 0;
 	uint16_t tcp_port = 0; /* only for ncacn_http */
 };
+using DCERPC_ENDPOINT = dcerpc_endpoint;
 
 struct PROC_PLUGIN : public gromox::generic_module {
 	PROC_PLUGIN() = default;
