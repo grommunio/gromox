@@ -2843,13 +2843,6 @@ static bool pdu_processor_register_interface(dcerpc_endpoint &ep,
 	return TRUE;
 }
 
-static void pdu_processor_unregister_interface(dcerpc_endpoint &ep,
-    const dcerpc_interface &tp)
-{
-	auto &lst = ep.interface_list;
-	lst.remove_if(interface_eq(tp.uuid, tp.version));
-}
-
 static constexpr struct dlfuncs pdu_funcs = {
 	/* .get_config_path = */ []() {
 		auto r = g_config_file->get_value("config_file_path");
@@ -2868,7 +2861,6 @@ static constexpr struct dlfuncs pdu_funcs = {
 	/* PROC_ */ {
 	pdu_processor_register_endpoint,
 	pdu_processor_register_interface,
-	pdu_processor_unregister_interface,
 	pdu_processor_get_binding_handle,
 	pdu_processor_get_rpc_info,
 	/* .rpc_is_bigendian = */ []() -> bool {

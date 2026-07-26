@@ -148,8 +148,6 @@ bool PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 	}
 	case PLUGIN_FREE:
 		ab_tree::AB.stop();
-		unregister_interface(*ep_6004, interface);
-		unregister_interface(*ep_6001, interface);
 		return TRUE;
 	case PLUGIN_RELOAD:
 		exch_nsp_reload(nullptr);

@@ -71,7 +71,6 @@ struct dlfuncs {
 	struct {
 		DCERPC_ENDPOINT *(*reg_ep)(const char *, uint16_t);
 		bool (*reg_intf)(dcerpc_endpoint &, const dcerpc_interface &);
-		void (*unreg_intf)(dcerpc_endpoint &, const dcerpc_interface &);
 		uint64_t (*get_binding_handle)();
 		DCERPC_INFO (*get_rpc_info)();
 		bool (*is_rpc_bigendian)();

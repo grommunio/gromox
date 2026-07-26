@@ -18,7 +18,6 @@
 #define DECLARE_PROC_API(ns, x) namespace ns { \
 	x decltype(dlfuncs::proc.reg_ep) register_endpoint; \
 	x decltype(dlfuncs::proc.reg_intf) register_interface; \
-	x decltype(dlfuncs::proc.unreg_intf) unregister_interface; \
 	x decltype(dlfuncs::get_host_ID) get_host_ID; \
 	x decltype(dlfuncs::get_config_path) get_config_path; \
 	x decltype(dlfuncs::get_data_path) get_data_path; \
@@ -42,7 +41,6 @@
 #define LINK_PROC_API(param) \
 	register_endpoint = param.proc.reg_ep; \
 	register_interface = param.proc.reg_intf; \
-	unregister_interface = param.proc.unreg_intf; \
 	get_host_ID = param.get_host_ID; \
 	get_config_path = param.get_config_path; \
 	get_data_path = param.get_data_path; \
