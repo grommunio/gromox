@@ -116,7 +116,6 @@ static thread_local DCERPC_CALL *g_call_key;
 static thread_local NDR_STACK_ROOT *g_stack_key;
 static thread_local PROC_PLUGIN *g_cur_plugin;
 static std::list<PROC_PLUGIN> g_plugin_list;
-static std::mutex g_list_lock; /* protects g_processor_list */
 static std::mutex g_async_lock; /* protects g_async_hash */
 /*
  * The endpoint list is lockless: only written during startup/shutdown (with
@@ -125,7 +124,6 @@ static std::mutex g_async_lock; /* protects g_async_hash */
 static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
-static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
 static std::span<const generic_module> g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
@@ -249,13 +247,6 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 
 void pdu_processor_stop()
 {
-	auto z = g_processor_list.size();
-	if (z > 0) {
-		/* http_parser_stop runs before pdu_processor_stop, so all
-		 * VIRTUAL_CONNECTION objects ought to be gone already. */
-		mlog(LV_WARN, "W-1573: %zu PDU_PROCESSORs remaining", z);
-		g_processor_list.clear();
-	}
 	while (!g_plugin_list.empty())
 		g_plugin_list.pop_back();
 	g_endpoint_list.clear();
@@ -305,8 +296,6 @@ pdu_processor_create(const char *host, uint16_t tcp_port)
 			double_list_init(&pprocessor->auth_list);
 			double_list_init(&pprocessor->fragmented_list);
 			pprocessor->pendpoint = &*ei;
-			std::lock_guard li_hold(g_list_lock);
-			g_processor_list.push_back(pprocessor.get());
 			return pprocessor;
 	}
 	return NULL;
@@ -348,9 +337,6 @@ pdu_processor::~pdu_processor()
 	double_list_free(&pprocessor->fragmented_list);
 	
 	pprocessor->cli_max_recv_frag = 0;
-	std::unique_lock li_hold(g_list_lock);
-	g_processor_list.remove(this);
-	li_hold.unlock();
 	pprocessor->pendpoint = NULL;
 }
 
