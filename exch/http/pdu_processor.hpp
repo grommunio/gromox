@@ -25,6 +25,7 @@ enum {
 	PDU_PROCESSOR_TERMINATE
 };
 
+struct dcerpc_call;
 struct dcerpc_endpoint {
 	char host[UDOM_SIZE]{};
 	std::list<DCERPC_INTERFACE> interface_list;
@@ -42,26 +43,14 @@ struct PROC_PLUGIN : public gromox::generic_module {
 	std::vector<gromox::service_node> list_reference;
 };
 
-/* virtual connection to DCE RPC server, actually only data structure of context */
-struct pdu_processor {
-	~pdu_processor();
-	void wait_for_asyncs();
-
-	int async_num = 0;
-	uint32_t assoc_group_id = 0; /* we do not support association mechanism */
-	uint32_t cli_max_recv_frag = 0; /* the maximum size the client wants to receive */
-	DCERPC_ENDPOINT *pendpoint = nullptr;
-	DOUBLE_LIST context_list{}, auth_list{}, fragmented_list{};
-};
-using PDU_PROCESSOR = pdu_processor;
-
-struct DCERPC_AUTH_CONTEXT {
+struct dcerpc_auth_context {
 	DOUBLE_LIST_NODE node{};
 	std::unique_ptr<ntlmssp_ctx> pntlmssp;
 	DCERPC_AUTH auth_info{}; /* auth_context_id is inside this structure */
 	NTLMSSP_SESSION_INFO session_info{};
 	BOOL is_login = false;
 };
+using DCERPC_AUTH_CONTEXT = dcerpc_auth_context;
 
 struct dcerpc_context {
 	~dcerpc_context();
@@ -76,6 +65,24 @@ struct dcerpc_context {
 	DOUBLE_LIST async_list;
 };
 using DCERPC_CONTEXT = dcerpc_context;
+
+/* virtual connection to DCE RPC server, actually only data structure of context */
+struct pdu_processor {
+	~pdu_processor();
+	static std::unique_ptr<pdu_processor> create(const char *host, uint16_t tcp_port);
+	dcerpc_context *find_ctx(uint32_t id) const;
+	dcerpc_auth_context *find_auth_ctx(uint32_t id) const;
+	dcerpc_call *pop_frag_call(uint32_t id);
+	int input(const char *pbuff, uint16_t length, dcerpc_call **ppcall);
+	void wait_for_asyncs();
+
+	int async_num = 0;
+	uint32_t assoc_group_id = 0; /* we do not support association mechanism */
+	uint32_t cli_max_recv_frag = 0; /* the maximum size the client wants to receive */
+	DCERPC_ENDPOINT *pendpoint = nullptr;
+	DOUBLE_LIST context_list{}, auth_list{}, fragmented_list{};
+};
+using PDU_PROCESSOR = pdu_processor;
 
 /* the state of an ongoing dcerpc call */
 struct dcerpc_call {
@@ -112,9 +119,6 @@ struct BLOB_NODE {
 extern void pdu_processor_init(int connection_num, const char *netbios_name, const char *dns_name, const char *dns_domain, BOOL header_signing, size_t max_request_mem, std::span<const gromox::generic_module> &&names);
 extern int pdu_processor_run();
 extern void pdu_processor_stop();
-extern std::unique_ptr<PDU_PROCESSOR> pdu_processor_create(const char *host, uint16_t tcp_port);
-int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
-	uint16_t length, DCERPC_CALL **ppcall);
 int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	DCERPC_CALL **ppcall);
 void pdu_processor_free_blob(BLOB_NODE *pbnode);

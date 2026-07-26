@@ -276,7 +276,7 @@ pdu_processor_find_interface_by_uuid(const DCERPC_ENDPOINT *pendpoint,
 }
 
 std::unique_ptr<PDU_PROCESSOR>
-pdu_processor_create(const char *host, uint16_t tcp_port) try
+pdu_processor::create(const char *host, uint16_t tcp_port) try
 {
 	auto proc = std::make_unique<pdu_processor>();
 	/* verify that EP&INTF exists */
@@ -394,9 +394,9 @@ void pdu_processor_free_blob(BLOB_NODE *pbnode)
 	delete pbnode;
 }
 
-static DCERPC_CALL* pdu_processor_get_fragmented_call(
-	PDU_PROCESSOR *pprocessor, uint32_t call_id)
+dcerpc_call *pdu_processor::pop_frag_call(uint32_t call_id)
 {
+	auto pprocessor = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pprocessor->fragmented_list); NULL!=pnode;
@@ -422,12 +422,10 @@ static uint32_t pdu_processor_allocate_group_id(DCERPC_ENDPOINT *pendpoint)
 }
 
 /* find a registered context_id from a bind or alter_context */
-static DCERPC_CONTEXT* pdu_processor_find_context(PDU_PROCESSOR *pprocessor, 
-	uint32_t context_id)
+dcerpc_context *pdu_processor::find_ctx(uint32_t context_id) const
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pprocessor->context_list); NULL!=pnode;
+	auto pprocessor = this;
+	for (auto pnode = double_list_get_head(&pprocessor->context_list); pnode != nullptr;
 		pnode=double_list_get_after(&pprocessor->context_list, pnode)) {
 		auto pcontext = static_cast<DCERPC_CONTEXT *>(pnode->pdata);
 		if (context_id == pcontext->context_id)
@@ -436,12 +434,10 @@ static DCERPC_CONTEXT* pdu_processor_find_context(PDU_PROCESSOR *pprocessor,
 	return NULL;
 }
 
-static DCERPC_AUTH_CONTEXT* pdu_processor_find_auth_context(
-	PDU_PROCESSOR *pprocessor, uint32_t auth_context_id)
+dcerpc_auth_context *pdu_processor::find_auth_ctx(uint32_t auth_context_id) const
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pprocessor->auth_list); NULL!=pnode;
+	auto pprocessor = this;
+	for (auto pnode = double_list_get_head(&pprocessor->auth_list); pnode != nullptr;
 		pnode=double_list_get_after(&pprocessor->auth_list, pnode)) {
 		auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 		if (auth_context_id == pauth_ctx->auth_info.auth_context_id)
@@ -509,8 +505,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	if (!pdu_processor_pull_auth_trailer(ppkt,
 	    &prequest->stub_and_verifier, &auth, &auth_length, false))
 		return FALSE;
-	pauth_ctx = pdu_processor_find_auth_context(
-				pcall->pprocessor, auth.auth_context_id);
+	pauth_ctx = pcall->pprocessor->find_auth_ctx(auth.auth_context_id);
 	if (NULL == pauth_ctx) {
 		return FALSE;
 	}
@@ -663,8 +658,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 		return FALSE;
 	}
 	
-	if (NULL != pdu_processor_find_auth_context(pcall->pprocessor,
-		pauth_ctx->auth_info.auth_context_id)) {
+	if (pcall->pprocessor->find_auth_ctx(pauth_ctx->auth_info.auth_context_id) != nullptr) {
 		delete pauth_ctx;
 		return FALSE;
 	}
@@ -1074,7 +1068,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 
 	/* check if they are asking for a new interface */
 	pcontext = NULL;
-	pcall->pcontext = pdu_processor_find_context(pprocessor, context_id);
+	pcall->pcontext = pprocessor->find_ctx(context_id);
 	if (NULL == pcall->pcontext) {
 		b_ndr64 = FALSE;
 		b_found = FALSE;
@@ -1682,7 +1676,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	
 	pprocessor = pcall->pprocessor;
 	auto prequest = static_cast<dcerpc_request *>(pcall->pkt.payload.get());
-	pcontext = pdu_processor_find_context(pprocessor, prequest->context_id);
+	pcontext = pprocessor->find_ctx(prequest->context_id);
 	if (pcontext == nullptr)
 		return pdu_processor_fault(pcall, DCERPC_FAULT_UNK_IF);
 	
@@ -1802,12 +1796,7 @@ static void pdu_processor_process_cancel(const dcerpc_call *pcall)
 
 static void pdu_processor_process_orphaned(const dcerpc_call *pcall)
 {
-	DCERPC_CALL *pcallx;
-	
-	pcallx = pdu_processor_get_fragmented_call(
-		pcall->pprocessor, pcall->pkt.call_id);
-	if (pcallx != nullptr)
-		delete pcallx;
+	delete pcall->pprocessor->pop_frag_call(pcall->pkt.call_id);
 }
 
 void pdu_processor_rts_echo(char *pbuff)
@@ -2544,9 +2533,10 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	return PDU_PROCESSOR_ERROR;
 }
 
-int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
-    uint16_t length, DCERPC_CALL **ppcall) try
+int pdu_processor::input(const char *pbuff, uint16_t length,
+    dcerpc_call **ppcall) try
 {
+	auto pprocessor = this;
 	NDR_PULL ndr;
 	BOOL b_result;
 	uint32_t flags;
@@ -2640,8 +2630,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 				pcall->alloc_size = alloc_size;
 			}
 		} else {
-			pcallx = pdu_processor_get_fragmented_call(
-						pprocessor, pcall->pkt.call_id);
+			pcallx = pprocessor->pop_frag_call(pcall->pkt.call_id);
 			if (NULL == pcallx) {
 				if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 					delete pcall;

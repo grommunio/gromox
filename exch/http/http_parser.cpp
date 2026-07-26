@@ -1978,7 +1978,7 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 					"virtual connection error in hash table");
 				return tproc_status::runoff;
 			}
-			result = pdu_processor_input(pvconnection->pprocessor.get(),
+			result = pvconnection->pprocessor->input(
 				 static_cast<char *>(pbuff), frag_length, &pcall);
 			pchannel_in->available_window -= frag_length;
 			pchannel_in->bytes_received += frag_length;
@@ -2431,7 +2431,7 @@ BOOL http_context::try_create_vconnection() try
 	auto hash_key = conn_cookie + ":"s + std::to_string(port) + ":" + host;
 	HX_strlower(hash_key.data());
 	auto nc = std::make_shared<virtual_connection>();
-	nc->pprocessor = pdu_processor_create(host, port);
+	nc->pprocessor = pdu_processor::create(host, port);
 	if (nc->pprocessor == nullptr) {
 		pcontext->log(LV_DEBUG,
 			"fail to create processor on %s:%d",
