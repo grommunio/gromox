@@ -315,7 +315,6 @@ pdu_processor::create(const char *host, uint16_t tcp_port) try
 	          endpoint_mt(host, tcp_port));
 	if (ei == g_endpoint_list.end())
 		return nullptr;
-	double_list_init(&proc->context_list);
 	double_list_init(&proc->auth_list);
 	double_list_init(&proc->fragmented_list);
 	proc->pendpoint = &*ei;
@@ -332,8 +331,8 @@ pdu_processor::~pdu_processor()
 	DCERPC_CALL fake_call;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_pop_front(&pprocessor->context_list)) != nullptr) {
-		auto pcontext = static_cast<DCERPC_CONTEXT *>(pnode->pdata);
+	while (context_list.size() > 0) {
+		auto &pcontext = context_list.front();
 		if (NULL != pcontext->pinterface->unbind) {
 			fake_call.pprocessor = pprocessor;
 			fake_call.pcontext = pcontext;
@@ -344,9 +343,9 @@ pdu_processor::~pdu_processor()
 			pcontext->pinterface->unbind(handle);
 			g_call_key = nullptr;
 		}
-		delete pcontext;
+		context_list.erase(context_list.begin());
 	}
-	double_list_free(&pprocessor->context_list);
+	context_list.clear();
 	
 	while ((pnode = double_list_pop_front(&pprocessor->auth_list)) != nullptr) {
 		auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
@@ -453,16 +452,13 @@ static uint32_t pdu_processor_allocate_group_id(DCERPC_ENDPOINT *pendpoint)
 }
 
 /* find a registered context_id from a bind or alter_context */
-dcerpc_context *pdu_processor::find_ctx(uint32_t context_id) const
+std::shared_ptr<dcerpc_context> pdu_processor::find_ctx(uint32_t id) const
 {
-	auto pprocessor = this;
-	for (auto pnode = double_list_get_head(&pprocessor->context_list); pnode != nullptr;
-		pnode=double_list_get_after(&pprocessor->context_list, pnode)) {
-		auto pcontext = static_cast<DCERPC_CONTEXT *>(pnode->pdata);
-		if (context_id == pcontext->context_id)
-			return pcontext;
-	}
-	return NULL;
+	auto it = std::find_if(context_list.begin(), context_list.end(),
+	          [&](const std::shared_ptr<dcerpc_context> &c) {
+	          	return c->context_id == id;
+	          });
+	return it != context_list.end() ? *it : nullptr;
 }
 
 dcerpc_auth_context *pdu_processor::find_auth_ctx(uint32_t auth_context_id) const
@@ -807,7 +803,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	uint32_t if_version;
 	uint32_t extra_flags;
 	DOUBLE_LIST_NODE *pnode;
-	DCERPC_CONTEXT *pcontext;
 	auto pbind = static_cast<dcerpc_bind *>(pcall->pkt.payload.get());
 
 	if (pbind->num_contexts < 1 ||
@@ -821,7 +816,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	context_id = pbind->ctx_list[0].context_id;
 
 	/* bind only there's no context, otherwise, use alter */
-	if (double_list_get_nodes_num(&pcall->pprocessor->context_list) > 0)
+	if (pcall->pprocessor->context_list.size() > 0)
 		return pdu_processor_bind_nak(pcall, 0);
 	if_version = pbind->ctx_list[0].abstract_syntax.version;
 	uuid = pbind->ctx_list[0].abstract_syntax.uuid;
@@ -840,6 +835,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	bool b_negotiate = b_found && is_requesting_negotiate(*pbind);
 	auto pinterface = pdu_processor_find_interface_by_uuid(
 					pcall->pprocessor->pendpoint, &uuid, if_version);
+	std::shared_ptr<dcerpc_context> pcontext;
 	if (NULL == pinterface) {
 		char uuid_str[GUIDSTR_SIZE];
 		uuid.to_str(uuid_str, std::size(uuid_str));
@@ -848,16 +844,14 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		/* we don't know about that interface */
 		result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 		reason = DCERPC_BIND_REASON_ASYNTAX;
-		pcontext = NULL;
 	} else {
 		/* add this context to the list of available context_ids */
 		try {
-			pcontext = new DCERPC_CONTEXT();
+			pcontext = std::make_shared<dcerpc_context>();
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-2385: ENOMEM");
 			return pdu_processor_bind_nak(pcall, 0);
 		}
-		pcontext->node.pdata = pcontext;
 		pcontext->pinterface = pinterface;
 		pcontext->context_id = context_id;
 		pcontext->b_ndr64 = b_ndr64;
@@ -872,6 +866,8 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		result = 0;
 		reason = 0;
 	}
+
+	/* pcontext will only be set when a new ctx was made */
 
 	if (pcall->pprocessor->cli_max_recv_frag == 0)
 		pcall->pprocessor->cli_max_recv_frag = std::min(pbind->max_recv_frag, static_cast<uint16_t>(0x2000));
@@ -891,14 +887,10 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 
 	/* handle any authentication that is being requested */
 	if (!pdu_processor_auth_bind(pcall)) {
-		if (pcontext != nullptr)
-			delete pcontext;
 		return pdu_processor_bind_nak(pcall,
 					DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
 	}
 	if (!pdu_processor_auth_bind_ack(pcall)) {
-		if (pcontext != nullptr)
-			delete pcontext;
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 
@@ -926,16 +918,12 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		bind_ack->num_contexts = 1;
 		bind_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
 		if (bind_ack->ctx_list == nullptr) {
-			if (pcontext != nullptr)
-				delete pcontext;
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 	} else {
 		bind_ack->num_contexts = 2;
 		bind_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(2);
 		if (bind_ack->ctx_list == nullptr) {
-			if (pcontext != nullptr)
-				delete pcontext;
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 		bind_ack->ctx_list[1].result = DCERPC_BIND_RESULT_NEGOTIATE_ACK;
@@ -952,8 +940,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
-		if (pcontext != nullptr)
-			delete pcontext;
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
@@ -962,8 +948,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pblob_node = new BLOB_NODE();
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2384: ENOMEM");
-		if (pcontext != nullptr)
-			delete pcontext;
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	
@@ -972,13 +956,12 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, &pauth_ctx->auth_info)) {
 		delete pblob_node;
-		if (pcontext != nullptr)
-			delete pcontext;
 		return pdu_processor_bind_nak(pcall, 0);
 	}
-	if (pcontext != nullptr)
-		double_list_insert_as_head(&pcall->pprocessor->context_list,
-			&pcontext->node);
+	if (pcontext != nullptr) {
+		auto &lst = pcall->pprocessor->context_list;
+		lst.insert(lst.begin(), pcall->pcontext);
+	}
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -1042,9 +1025,9 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	uint32_t context_id;
 	uint32_t extra_flags;
 	DOUBLE_LIST_NODE *pnode;
-	DCERPC_CONTEXT *pcontext = nullptr;
 	PDU_PROCESSOR *pprocessor;
 	auto palter = static_cast<dcerpc_bind *>(pcall->pkt.payload.get());
+	std::shared_ptr<dcerpc_context> pcontext;
 	pprocessor = pcall->pprocessor;
 	
 	
@@ -1067,7 +1050,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	context_id = palter->ctx_list[0].context_id;
 
 	/* check if they are asking for a new interface */
-	pcontext = NULL;
 	pcall->pcontext = pprocessor->find_ctx(context_id);
 	if (NULL == pcall->pcontext) {
 		b_ndr64 = FALSE;
@@ -1096,8 +1078,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 			goto ALTER_ACK;
 		}
 
-		if (double_list_get_nodes_num(&pprocessor->context_list) >
-			MAX_CONTEXTS_PER_CONNECTION) {
+		if (pprocessor->context_list.size() > MAX_CONTEXTS_PER_CONNECTION) {
 			mlog(LV_DEBUG, "pdu_processor: maximum rpc contexts number of connection reached");
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
@@ -1105,14 +1086,13 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		}
 		/* add this context to the list of available context_ids */
 		try {
-			pcontext = new DCERPC_CONTEXT();
+			pcontext = std::make_shared<dcerpc_context>();
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-2383: ENOMEM");
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
 			goto ALTER_ACK;
 		}
-		pcontext->node.pdata = pcontext;
 		pcontext->pinterface = pinterface;
 		pcontext->context_id = context_id;
 		pcontext->b_ndr64 = b_ndr64;
@@ -1124,6 +1104,8 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		result = 0;
 		reason = 0;
 	}
+
+	/* pcontext will only be set when a new ctx was made */
 	
  ALTER_ACK:
 	extra_flags = 0;
@@ -1147,13 +1129,9 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		}
 	}
 	if (!pdu_processor_auth_alter(pcall)) {
-		if (pcontext != nullptr)
-			delete pcontext;
 		return FALSE;
 	}
 	if (!pdu_processor_auth_alter_ack(pcall)) {
-		if (pcontext != nullptr)
-			delete pcontext;
 		return FALSE;
 	}
 	
@@ -1173,8 +1151,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	alter_ack->num_contexts = 1;
 	alter_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
 	if (alter_ack->ctx_list == nullptr) {
-		if (pcontext != nullptr)
-			delete pcontext;
 		return FALSE;
 	}
 	alter_ack->ctx_list[0].result = result;
@@ -1185,8 +1161,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
-		if (pcontext != nullptr)
-			delete pcontext;
 		return FALSE;
 	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
@@ -1195,21 +1169,19 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		pblob_node = new BLOB_NODE();
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2382: ENOMEM");
-		if (pcontext != nullptr)
-			delete pcontext;
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = FALSE;
 	if (!pdu_processor_ncacn_push_with_auth(
 		&pblob_node->blob, &pkt, &pauth_ctx->auth_info)) {
-		if (pcontext != nullptr)
-			delete pcontext;
 		delete pblob_node;
 		return FALSE;
 	}
-	if (pcontext != nullptr)
-		double_list_insert_as_head(&pprocessor->context_list, &pcontext->node);
+	if (pcontext != nullptr) {
+		auto &lst = pprocessor->context_list;
+		lst.insert(lst.begin(), std::move(pcontext));
+	}
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -1650,14 +1622,13 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	uint32_t flags;
 	uint64_t handle;
 	NDR_PULL ndr_pull;
-	DCERPC_CONTEXT *pcontext;
 	PDU_PROCESSOR *pprocessor;
 	NDR_STACK_ROOT *pstack_root;
 	
 	
 	pprocessor = pcall->pprocessor;
 	auto prequest = static_cast<dcerpc_request *>(pcall->pkt.payload.get());
-	pcontext = pprocessor->find_ctx(prequest->context_id);
+	auto pcontext = pprocessor->find_ctx(prequest->context_id);
 	if (pcontext == nullptr)
 		return pdu_processor_fault(pcall, DCERPC_FAULT_UNK_IF);
 	
@@ -1735,18 +1706,17 @@ static void pdu_processor_process_cancel(const dcerpc_call *pcall)
 {
 	int async_id;
 	BOOL b_cancel;
-	DOUBLE_LIST *plist;
-	DOUBLE_LIST_NODE *pnode, *pnode1 = nullptr;
+	DOUBLE_LIST_NODE *pnode1 = nullptr;
 	DCERPC_CONTEXT *pcontext = nullptr;
 	ASYNC_NODE *pasync_node = nullptr;
 	
 	async_id = 0;
 	b_cancel = FALSE;
 	std::unique_lock as_hold(g_async_lock);
-	plist = &pcall->pprocessor->context_list;
-	for (pnode = double_list_pop_front(plist); pnode != nullptr;
-		pnode=double_list_get_after(plist, pnode)) {
-		pcontext = static_cast<DCERPC_CONTEXT *>(pnode->pdata);
+	auto &plist = pcall->pprocessor->context_list;
+	while (plist.size() > 0) {
+		auto pcontext = plist.front();
+		plist.erase(plist.begin());
 		for (pnode1=double_list_get_head(&pcontext->async_list); NULL!=pnode1;
 			pnode1=double_list_get_after(&pcontext->async_list, pnode1)) {
 			pasync_node = static_cast<ASYNC_NODE *>(pnode1->pdata);

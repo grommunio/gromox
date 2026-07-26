@@ -55,7 +55,6 @@ using DCERPC_AUTH_CONTEXT = dcerpc_auth_context;
 struct dcerpc_context {
 	~dcerpc_context();
 
-	DOUBLE_LIST_NODE node;
 	uint32_t context_id;
 	BOOL b_ndr64;
 	uint32_t stat_flags; /* this is the default stat_flags */
@@ -70,7 +69,7 @@ using DCERPC_CONTEXT = dcerpc_context;
 struct pdu_processor {
 	~pdu_processor();
 	static std::unique_ptr<pdu_processor> create(const char *host, uint16_t tcp_port);
-	dcerpc_context *find_ctx(uint32_t id) const;
+	std::shared_ptr<dcerpc_context> find_ctx(uint32_t id) const;
 	dcerpc_auth_context *find_auth_ctx(uint32_t id) const;
 	dcerpc_call *pop_frag_call(uint32_t id);
 	int input(const char *pbuff, uint16_t length, dcerpc_call **ppcall);
@@ -80,7 +79,8 @@ struct pdu_processor {
 	uint32_t assoc_group_id = 0; /* we do not support association mechanism */
 	uint32_t cli_max_recv_frag = 0; /* the maximum size the client wants to receive */
 	DCERPC_ENDPOINT *pendpoint = nullptr;
-	DOUBLE_LIST context_list{}, auth_list{}, fragmented_list{};
+	std::vector<std::shared_ptr<dcerpc_context>> context_list;
+	DOUBLE_LIST auth_list{}, fragmented_list{};
 };
 using PDU_PROCESSOR = pdu_processor;
 
@@ -99,7 +99,7 @@ struct dcerpc_call {
 
 	DOUBLE_LIST_NODE node{};
 	PDU_PROCESSOR *pprocessor = nullptr;
-	DCERPC_CONTEXT *pcontext = nullptr;
+	std::shared_ptr<dcerpc_context> pcontext;
 	DCERPC_AUTH_CONTEXT *pauth_ctx = nullptr;
 	BOOL b_bigendian = false;
 	uint32_t alloc_size = 0; /* alloc size for request stub data */
