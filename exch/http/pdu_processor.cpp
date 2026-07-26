@@ -276,29 +276,22 @@ pdu_processor_find_interface_by_uuid(const DCERPC_ENDPOINT *pendpoint,
 }
 
 std::unique_ptr<PDU_PROCESSOR>
-pdu_processor_create(const char *host, uint16_t tcp_port)
+pdu_processor_create(const char *host, uint16_t tcp_port) try
 {
-	std::unique_ptr<PDU_PROCESSOR> pprocessor;
-	
-	try {
-		pprocessor = std::make_unique<PDU_PROCESSOR>();
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1574: ENOMEM");
-		return NULL;
-	}
+	auto proc = std::make_unique<pdu_processor>();
 	/* verify that EP&INTF exists */
 	auto ei = std::find_if(g_endpoint_list.begin(), g_endpoint_list.end(),
 	          endpoint_mt(host, tcp_port));
 	if (ei == g_endpoint_list.end())
 		return nullptr;
-	{
-			double_list_init(&pprocessor->context_list);
-			double_list_init(&pprocessor->auth_list);
-			double_list_init(&pprocessor->fragmented_list);
-			pprocessor->pendpoint = &*ei;
-			return pprocessor;
-	}
-	return NULL;
+	double_list_init(&proc->context_list);
+	double_list_init(&proc->auth_list);
+	double_list_init(&proc->fragmented_list);
+	proc->pendpoint = &*ei;
+	return proc;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return nullptr;
 }
 
 pdu_processor::~pdu_processor()
