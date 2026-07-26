@@ -62,7 +62,9 @@ struct DCERPC_AUTH_CONTEXT {
 	BOOL is_login = false;
 };
 
-struct DCERPC_CONTEXT {
+struct dcerpc_context {
+	~dcerpc_context();
+
 	DOUBLE_LIST_NODE node;
 	uint32_t context_id;
 	BOOL b_ndr64;
@@ -72,6 +74,7 @@ struct DCERPC_CONTEXT {
 	const DCERPC_ENDPOINT *pendpoint;
 	DOUBLE_LIST async_list;
 };
+using DCERPC_CONTEXT = dcerpc_context;
 
 /* the state of an ongoing dcerpc call */
 struct dcerpc_call {

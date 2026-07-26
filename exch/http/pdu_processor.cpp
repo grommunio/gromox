@@ -223,8 +223,9 @@ dcerpc_call::~dcerpc_call()
 		g_call_key = nullptr;
 }
 
-static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
+dcerpc_context::~dcerpc_context()
 {
+	auto pcontext = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while (true) {
@@ -242,7 +243,6 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 		delete pasync_node;
 	}
 	double_list_free(&pcontext->async_list);
-	delete pcontext;
 }
 
 void pdu_processor_stop()
@@ -313,7 +313,7 @@ pdu_processor::~pdu_processor()
 			pcontext->pinterface->unbind(handle);
 			g_call_key = nullptr;
 		}
-		pdu_processor_free_context(pcontext);
+		delete pcontext;
 	}
 	double_list_free(&pprocessor->context_list);
 	
@@ -893,13 +893,13 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	/* handle any authentication that is being requested */
 	if (!pdu_processor_auth_bind(pcall)) {
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return pdu_processor_bind_nak(pcall,
 					DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
 	}
 	if (!pdu_processor_auth_bind_ack(pcall)) {
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 
@@ -929,7 +929,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		bind_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
 		if (bind_ack->ctx_list == nullptr) {
 			if (pcontext != nullptr)
-				pdu_processor_free_context(pcontext);
+				delete pcontext;
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 	} else {
@@ -937,7 +937,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		bind_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(2);
 		if (bind_ack->ctx_list == nullptr) {
 			if (pcontext != nullptr)
-				pdu_processor_free_context(pcontext);
+				delete pcontext;
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 		bind_ack->ctx_list[1].result = DCERPC_BIND_RESULT_NEGOTIATE_ACK;
@@ -956,7 +956,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
@@ -966,7 +966,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2384: ENOMEM");
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	
@@ -976,7 +976,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		&pkt, &pauth_ctx->auth_info)) {
 		delete pblob_node;
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	if (pcontext != nullptr)
@@ -1170,12 +1170,12 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	}
 	if (!pdu_processor_auth_alter(pcall)) {
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return FALSE;
 	}
 	if (!pdu_processor_auth_alter_ack(pcall)) {
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return FALSE;
 	}
 	
@@ -1197,7 +1197,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	alter_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
 	if (alter_ack->ctx_list == nullptr) {
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return FALSE;
 	}
 	alter_ack->ctx_list[0].result = result;
@@ -1210,7 +1210,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return FALSE;
 	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
@@ -1220,7 +1220,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2382: ENOMEM");
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
@@ -1228,7 +1228,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(
 		&pblob_node->blob, &pkt, &pauth_ctx->auth_info)) {
 		if (pcontext != nullptr)
-			pdu_processor_free_context(pcontext);
+			delete pcontext;
 		delete pblob_node;
 		return FALSE;
 	}
