@@ -315,7 +315,6 @@ pdu_processor::create(const char *host, uint16_t tcp_port) try
 	          endpoint_mt(host, tcp_port));
 	if (ei == g_endpoint_list.end())
 		return nullptr;
-	double_list_init(&proc->auth_list);
 	double_list_init(&proc->fragmented_list);
 	proc->pendpoint = &*ei;
 	return proc;
@@ -346,13 +345,7 @@ pdu_processor::~pdu_processor()
 		context_list.erase(context_list.begin());
 	}
 	context_list.clear();
-	
-	while ((pnode = double_list_pop_front(&pprocessor->auth_list)) != nullptr) {
-		auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-		delete pauth_ctx;
-	}
-	double_list_free(&pprocessor->auth_list);
-	
+	auth_list.clear();
 	while ((pnode = double_list_pop_front(&pprocessor->fragmented_list)) != nullptr) {
 		auto pcall = static_cast<DCERPC_CALL *>(pnode->pdata);
 		delete pcall;
@@ -461,16 +454,13 @@ std::shared_ptr<dcerpc_context> pdu_processor::find_ctx(uint32_t id) const
 	return it != context_list.end() ? *it : nullptr;
 }
 
-dcerpc_auth_context *pdu_processor::find_auth_ctx(uint32_t auth_context_id) const
+std::shared_ptr<dcerpc_auth_context> pdu_processor::find_auth_ctx(uint32_t id) const
 {
-	auto pprocessor = this;
-	for (auto pnode = double_list_get_head(&pprocessor->auth_list); pnode != nullptr;
-		pnode=double_list_get_after(&pprocessor->auth_list, pnode)) {
-		auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-		if (auth_context_id == pauth_ctx->auth_info.auth_context_id)
-			return pauth_ctx;
-	}
-	return NULL;
+	auto it = std::find_if(auth_list.begin(), auth_list.end(),
+	          [&](const std::shared_ptr<dcerpc_auth_context> &c) {
+	          	return c->auth_info.auth_context_id == id;
+	          });
+	return it != auth_list.end() ? *it : nullptr;
 }
 
 static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
@@ -507,19 +497,15 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	size_t hdr_size;
 	DCERPC_AUTH auth;
 	uint32_t auth_length;
-	DOUBLE_LIST_NODE *pnode;
 	DCERPC_NCACN_PACKET *ppkt;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
-	
 	
 	ppkt = &pcall->pkt;
 	auto prequest = static_cast<dcerpc_request *>(ppkt->payload.get());
 	hdr_size = DCERPC_REQUEST_LENGTH;
 	if (0 == ppkt->auth_length) {
-		if (double_list_get_nodes_num(&pcall->pprocessor->auth_list) == 0)
+		if (pcall->pprocessor->auth_list.empty())
 			return FALSE;
-		pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
-		pcall->pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
+		pcall->pauth_ctx = pcall->pprocessor->auth_list.back();
 		switch (pcall->pauth_ctx->auth_info.auth_level) {
 		case RPC_C_AUTHN_LEVEL_DEFAULT:
 		case RPC_C_AUTHN_LEVEL_CONNECT:
@@ -532,7 +518,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	if (!pdu_processor_pull_auth_trailer(ppkt, prequest->stub_and_verifier,
 	    &auth, &auth_length, false))
 		return FALSE;
-	pauth_ctx = pcall->pprocessor->find_auth_ctx(auth.auth_context_id);
+	auto pauth_ctx = pcall->pprocessor->find_auth_ctx(auth.auth_context_id);
 	if (NULL == pauth_ctx) {
 		return FALSE;
 	}
@@ -664,35 +650,28 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 	DCERPC_NCACN_PACKET *ppkt = &pcall->pkt;
 	auto pbind = static_cast<dcerpc_bind *>(ppkt->payload.get());
 	
-	if (double_list_get_nodes_num(&pcall->pprocessor->auth_list) >
-		MAX_CONTEXTS_PER_CONNECTION) {
+	if (pcall->pprocessor->auth_list.size() > MAX_CONTEXTS_PER_CONNECTION) {
 		mlog(LV_DEBUG, "pdu_processor: maximum auth contexts number of connection reached");
 		return FALSE;
 	}
-	auto pauth_ctx = new DCERPC_AUTH_CONTEXT();
-	pauth_ctx->node.pdata = pauth_ctx;
-	
+	auto pauth_ctx = std::make_shared<dcerpc_auth_context>();
 	if (pbind->auth_info.empty()) {
 		pauth_ctx->auth_info.auth_type = RPC_C_AUTHN_NONE;
 		pauth_ctx->auth_info.auth_level = RPC_C_AUTHN_LEVEL_DEFAULT;
-		double_list_append_as_tail(&pcall->pprocessor->auth_list,
-			&pauth_ctx->node);
+		pcall->pprocessor->auth_list.emplace_back(std::move(pauth_ctx));
 		return TRUE;
 	}
 	if (!pdu_processor_pull_auth_trailer(ppkt, pbind->auth_info,
 		&pauth_ctx->auth_info, &auth_length, FALSE)) {
-		delete pauth_ctx;
 		return FALSE;
 	}
 	
 	if (pcall->pprocessor->find_auth_ctx(pauth_ctx->auth_info.auth_context_id) != nullptr) {
-		delete pauth_ctx;
 		return FALSE;
 	}
 	
 	if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE) {
-		double_list_append_as_tail(&pcall->pprocessor->auth_list,
-			&pauth_ctx->node);
+		pcall->pprocessor->auth_list.emplace_back(std::move(pauth_ctx));
 		return TRUE;
 	} else if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NTLMSSP) {
 		/*
@@ -718,14 +697,11 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 									NTLMSSP_NEGOTIATE_ALWAYS_SIGN,
 									http_parser_get_password);
 		if (NULL == pauth_ctx->pntlmssp) {
-			delete pauth_ctx;
 			return FALSE;
 		}
-		double_list_append_as_tail(&pcall->pprocessor->auth_list,
-			&pauth_ctx->node);
+		pcall->pprocessor->auth_list.emplace_back(std::move(pauth_ctx));
 		return TRUE;
 	}
-	delete pauth_ctx;
 	mlog(LV_DEBUG, "pdu_processor: unsupported authentication type");
 	return FALSE;
 } catch (const std::bad_alloc &) {
@@ -739,12 +715,9 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 */
 static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
-	if (pnode == nullptr)
+	if (pcall->pprocessor->auth_list.empty())
 		return TRUE;
-	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
+	auto pauth_ctx = pcall->pprocessor->auth_list.back();
 	switch (pauth_ctx->auth_info.auth_type) {
 	case RPC_C_AUTHN_NONE:
 		return pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT ||
@@ -802,7 +775,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	uint32_t context_id;
 	uint32_t if_version;
 	uint32_t extra_flags;
-	DOUBLE_LIST_NODE *pnode;
 	auto pbind = static_cast<dcerpc_bind *>(pcall->pkt.payload.get());
 
 	if (pbind->num_contexts < 1 ||
@@ -937,12 +909,11 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	bind_ack->ctx_list[0].syntax = g_transfer_syntax_ndr;
 	bind_ack->auth_info.clear();
 	
-	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
-	if (NULL == pnode) {
+	if (pcall->pprocessor->auth_list.empty()) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		return pdu_processor_bind_nak(pcall, 0);
 	}
-	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
+	auto pauth_ctx = pcall->pprocessor->auth_list.back();
 	BLOB_NODE *pblob_node;
 	try {
 		pblob_node = new BLOB_NODE();
@@ -970,14 +941,12 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 {
 	uint32_t auth_length;
-	DOUBLE_LIST_NODE *pnode;
 	DCERPC_NCACN_PACKET *ppkt;
 	
 	ppkt = &pcall->pkt;
-	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
-	if (pnode == nullptr)
+	if (pcall->pprocessor->auth_list.empty())
 		return TRUE;
-	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
+	auto pauth_ctx = pcall->pprocessor->auth_list.back();
 	const auto &auth3 = *static_cast<dcerpc_auth3 *>(ppkt->payload.get());
 	/* can't work without an existing state, and an new blob to feed it */
 	if ((pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE &&
@@ -1001,8 +970,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	return TRUE;
 	
  AUTH3_FAIL:
-	double_list_remove(&pcall->pprocessor->auth_list, pnode);
-	delete pauth_ctx;
+	std::erase(pcall->pprocessor->auth_list, pauth_ctx);
 	return TRUE;
 }
 
@@ -1024,7 +992,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	uint32_t if_version;
 	uint32_t context_id;
 	uint32_t extra_flags;
-	DOUBLE_LIST_NODE *pnode;
 	PDU_PROCESSOR *pprocessor;
 	auto palter = static_cast<dcerpc_bind *>(pcall->pkt.payload.get());
 	std::shared_ptr<dcerpc_context> pcontext;
@@ -1158,12 +1125,11 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	alter_ack->ctx_list[0].syntax = g_transfer_syntax_ndr;
 	alter_ack->auth_info.clear();
 	
-	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
-	if (NULL == pnode) {
+	if (pcall->pprocessor->auth_list.empty()) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		return FALSE;
 	}
-	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
+	auto pauth_ctx = pcall->pprocessor->auth_list.back();
 	BLOB_NODE *pblob_node;
 	try {
 		pblob_node = new BLOB_NODE();
@@ -1196,12 +1162,11 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	DATA_BLOB creds2;
 	uint8_t creds2_buff[16];
 	uint32_t payload_length;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	char ndr_buff[DCERPC_BASE_MARSHALL_SIZE];
 
 	creds2.pb = creds2_buff;
 	creds2.cb = 0;
-	pauth_ctx = pcall->pauth_ctx;
+	auto pauth_ctx = pcall->pauth_ctx;
 	/* non-signed packets are simple */
 	if (sig_size == 0)
 		return pdu_processor_ncacn_push_with_auth(pblob, ppkt, NULL);

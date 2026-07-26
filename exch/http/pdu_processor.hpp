@@ -44,7 +44,6 @@ struct PROC_PLUGIN : public gromox::generic_module {
 };
 
 struct dcerpc_auth_context {
-	DOUBLE_LIST_NODE node{};
 	std::unique_ptr<ntlmssp_ctx> pntlmssp;
 	DCERPC_AUTH auth_info{}; /* auth_context_id is inside this structure */
 	NTLMSSP_SESSION_INFO session_info{};
@@ -70,7 +69,7 @@ struct pdu_processor {
 	~pdu_processor();
 	static std::unique_ptr<pdu_processor> create(const char *host, uint16_t tcp_port);
 	std::shared_ptr<dcerpc_context> find_ctx(uint32_t id) const;
-	dcerpc_auth_context *find_auth_ctx(uint32_t id) const;
+	std::shared_ptr<dcerpc_auth_context> find_auth_ctx(uint32_t id) const;
 	dcerpc_call *pop_frag_call(uint32_t id);
 	int input(const char *pbuff, uint16_t length, dcerpc_call **ppcall);
 	void wait_for_asyncs();
@@ -80,7 +79,8 @@ struct pdu_processor {
 	uint32_t cli_max_recv_frag = 0; /* the maximum size the client wants to receive */
 	DCERPC_ENDPOINT *pendpoint = nullptr;
 	std::vector<std::shared_ptr<dcerpc_context>> context_list;
-	DOUBLE_LIST auth_list{}, fragmented_list{};
+	std::vector<std::shared_ptr<dcerpc_auth_context>> auth_list;
+	DOUBLE_LIST fragmented_list{};
 };
 using PDU_PROCESSOR = pdu_processor;
 
@@ -100,7 +100,7 @@ struct dcerpc_call {
 	DOUBLE_LIST_NODE node{};
 	PDU_PROCESSOR *pprocessor = nullptr;
 	std::shared_ptr<dcerpc_context> pcontext;
-	DCERPC_AUTH_CONTEXT *pauth_ctx = nullptr;
+	std::shared_ptr<dcerpc_auth_context> pauth_ctx;
 	BOOL b_bigendian = false;
 	uint32_t alloc_size = 0; /* alloc size for request stub data */
 	uint32_t ptr_cnt = 0;
