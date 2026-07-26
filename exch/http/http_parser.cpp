@@ -260,7 +260,7 @@ static void http_parser_ssl_id(CRYPTO_THREADID* id)
 virtual_connection::~virtual_connection()
 {
 	if (pprocessor != nullptr)
-		pdu_processor_destroy(std::move(pprocessor));
+		pprocessor->wait_for_asyncs();
 }
 
 int http_parser_run()

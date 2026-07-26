@@ -333,9 +333,9 @@ pdu_processor::~pdu_processor()
 	pprocessor->pendpoint = NULL;
 }
 
-void pdu_processor_destroy(std::unique_ptr<PDU_PROCESSOR> &&p)
+void pdu_processor::wait_for_asyncs()
 {
-	auto pprocessor = std::move(p); /* cause destruction at end of this function */
+	auto pprocessor = this;
 	while (true) {
 		std::unique_lock as_hold(g_async_lock);
 		if (pprocessor->async_num <= 0) {

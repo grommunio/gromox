@@ -45,6 +45,7 @@ struct PROC_PLUGIN : public gromox::generic_module {
 /* virtual connection to DCE RPC server, actually only data structure of context */
 struct pdu_processor {
 	~pdu_processor();
+	void wait_for_asyncs();
 
 	int async_num = 0;
 	uint32_t assoc_group_id = 0; /* we do not support association mechanism */
@@ -112,7 +113,6 @@ extern void pdu_processor_init(int connection_num, const char *netbios_name, con
 extern int pdu_processor_run();
 extern void pdu_processor_stop();
 extern std::unique_ptr<PDU_PROCESSOR> pdu_processor_create(const char *host, uint16_t tcp_port);
-extern void pdu_processor_destroy(std::unique_ptr<PDU_PROCESSOR> &&);
 int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	uint16_t length, DCERPC_CALL **ppcall);
 int pdu_processor_rts_input(const char *pbuff, uint16_t length,
