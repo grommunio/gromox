@@ -308,7 +308,7 @@ pdu_processor_create(const char *host, uint16_t tcp_port)
 	return NULL;
 }
 
-PDU_PROCESSOR::~PDU_PROCESSOR()
+pdu_processor::~pdu_processor()
 {
 	auto pprocessor = this;
 	uint64_t handle;
