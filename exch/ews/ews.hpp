@@ -335,6 +335,7 @@ class EWSContext {
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
+	const BINARY *findContactPhoto(const std::string &dir, const std::string &email) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
 	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool) const;
 	void sendMeetingResponse(const Structures::tItemId&, const MESSAGE_CONTENT&) const;
