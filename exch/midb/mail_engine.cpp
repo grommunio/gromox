@@ -3459,6 +3459,12 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 	if (set_seen && !exmdb_client->set_message_read_state(argv[1], nullptr,
 	    rop_util_make_eid_ex(1, message_id), 1, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
+	if (set_deleted && !(msg_status & MSGSTATUS_DELMARKED)) {
+		msg_status |= MSGSTATUS_DELMARKED;
+		auto ret = me_set_u32(argv[1], message_id, PR_MSG_STATUS, msg_status);
+		if (ret != 0)
+			return ret;
+	}
 	auto new_flags = flags_rn(pidb->psqlite, message_id);
 	pidb.reset();
 	return cmd_write(sockd, new_flags.c_str(), new_flags.size());
@@ -3590,6 +3596,12 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 	if (set_seen && !exmdb_client->set_message_read_state(argv[1], nullptr,
 	    rop_util_make_eid_ex(1, message_id), 0, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
+	if (set_deleted && msg_status & MSGSTATUS_DELMARKED) {
+		msg_status &= ~MSGSTATUS_DELMARKED;
+		auto ret = me_set_u32(argv[1], message_id, PR_MSG_STATUS, msg_status);
+		if (ret != 0)
+			return ret;
+	}
 	auto new_flags = flags_rn(pidb->psqlite, message_id);
 	pidb.reset();
 	return cmd_write(sockd, new_flags.c_str(), new_flags.size());
