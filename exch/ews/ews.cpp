@@ -734,12 +734,22 @@ int EWSContext::notify()
 	}
 	for (const tSubscriptionId &subscription : msg.ErrorSubscriptionIds)
 		std::erase(nctx.nct_subs, subscription);
-	msg.success();
+	if (msg.ErrorSubscriptionIds.empty())
+		msg.success();
+	else
+		msg.error("ErrorInvalidSubscription", "Subscription is invalid.");
 	// If there are no more subscriptions to monitor or the stream expired, close it
 	// If there were more events than we could deliver in one message, proceed with the next chunk right away
 	// Otherwise just go back to sleep
 	nctx.state = nctx.nct_subs.empty() || tp_now() > nctx.expire ?
 	             NS::S_CLOSING : moreAny ? NS::S_SLEEP : NS::S_WRITE;
+	/*
+	 * Report the connection as closing on the same chunk that reveals a
+	 * faulted subscription, instead of only in a later, disconnected
+	 * "goodbye" chunk. A client reading only this chunk still gets an
+	 * immediate, correct signal to resubscribe.
+	 */
+	msg.ConnectionStatus = nctx.state == NS::S_CLOSING ? Enum::Closed : Enum::OK;
 	if (nctx.state == NS::S_SLEEP)
 		m_plugin.wakeContext(m_ctx_id, m_plugin.event_stream_interval);
 	return flush();
