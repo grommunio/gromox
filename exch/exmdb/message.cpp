@@ -174,17 +174,17 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	bool is_associated = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
 
-	auto dbase = pdb->lock_base_wr();
-	db_conn::NOTIFQ notifq;
-	if (b_move)
-		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
-			parent_fid, mid_val, 0, *dbase, notifq);
 	uint32_t message_size = 0;
 	if (!cu_copy_message(*pdb, mid_val, fid_val, &dst_val,
 	    &b_result, &message_size))
 		return FALSE;
 	if (!b_result)
 		return TRUE;
+	auto dbase = pdb->lock_base_wr();
+	db_conn::NOTIFQ notifq;
+	if (b_move)
+		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
+			parent_fid, mid_val, 0, *dbase, notifq);
 	pdb->proc_dynamic_event(cpid,
 		dynamic_event::new_msg, fid_val, dst_val, 0, *dbase, notifq);
 	pdb->notify_message_movecopy(!b_move ? TRUE : false,
