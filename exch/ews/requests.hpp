@@ -48,6 +48,7 @@ EWSFUNC(mGetUserAvailabilityRequest);
 EWSFUNC(mGetUserConfigurationRequest);
 EWSFUNC(mGetUserOofSettingsRequest);
 EWSFUNC_NC(mGetUserPhotoRequest);
+EWSFUNC(mMarkAsJunkRequest);
 void process(const Structures::mBaseMoveCopyFolder &, tinyxml2::XMLElement *, const gromox::EWS::EWSContext &);
 void process(const Structures::mBaseMoveCopyItem &, tinyxml2::XMLElement *, const gromox::EWS::EWSContext &);
 EWSFUNC(mRemoveDelegateRequest);

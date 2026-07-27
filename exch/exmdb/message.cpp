@@ -2122,7 +2122,7 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 		uint32_t state = pstmt.col_uint64(1);
 		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
-		if (state & ST_ENABLED)
+		if (!(state & ST_ENABLED))
 			continue;
 		if (state & ST_ONLY_WHEN_OOF && !rp.oof)
 			continue;

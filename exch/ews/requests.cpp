@@ -2146,14 +2146,14 @@ void process(mGetUserOofSettingsRequest &&request, XMLElement *response, const E
 		auto &Duration = data.OofSettings->Duration.emplace();
 		Duration.StartTime = rop_util_nttime_to_unix2(*start_time);
 		Duration.EndTime = rop_util_nttime_to_unix2(*end_time);
-#if 0
-	// XXX: Normally we need this else branch, see reasoning in commit
-	// message gromox-2.46-99-g716671da5
 	} else {
+		/*
+		 * Even when OOF is inactive, some Outlooks crash when XML tags
+		 * are missing.
+		 */
 		auto &dur = data.OofSettings->Duration.emplace();
 		dur.StartTime = clock::now();
 		dur.EndTime = dur.StartTime + std::chrono::days(1);
-#endif
 	}
 	auto int_reply = props.get<const char>(PR_EC_OUTOFOFFICE_MSG);
 	if (int_reply != nullptr)
@@ -2296,6 +2296,59 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 	}
 
 	std::visit([&](auto& d){d.serialize(response);}, data);
+}
+
+/**
+ * @brief      Process MarkAsJunk
+ *
+ * Moves item(s) to or from the Junk Email folder (IsJunk selects the
+ * direction, MoveItem gates whether anything is actually moved).
+ *
+ * The blocked/safe sender list update that real Exchange performs as
+ * part of this operation is not implemented - gromox currently has no
+ * data model for such a list, so this only covers the move semantics.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mMarkAsJunkRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:MarkAsJunkResponse");
+
+	mMarkAsJunkResponse data;
+	data.ResponseMessages.reserve(request.ItemIds.size());
+
+	for (const auto &id : request.ItemIds) try {
+		tItemId itemId = id.itemId();
+		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
+		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
+		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
+		std::string dir = ctx.getDir(sourceFolder);
+		ctx.validate(dir, meid);
+		if (!(ctx.permissions(dir, sourceFolder.folderId) & frightsReadAny))
+			throw EWSError::AccessDenied(E3472);
+
+		auto &msg = data.ResponseMessages.emplace_back();
+		if (request.MoveItem) {
+			sFolderSpec dstFolder = ctx.resolveFolder(tDistinguishedFolderId(
+				request.IsJunk ? Enum::junkemail : Enum::inbox));
+			dstFolder.target = sourceFolder.target;
+			dstFolder.normalize();
+			std::string dstDir = ctx.getDir(dstFolder);
+			if (!(ctx.permissions(dstDir, dstFolder.folderId) & frightsCreate))
+				throw EWSError::AccessDenied(E3473);
+			uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, false);
+			sShape idShape{tItemResponseShape()};
+			sItem movedItem = ctx.loadItem(dstDir, dstFolder.folderId, newItemId, idShape);
+			msg.MovedItemId = std::visit([](auto &&i) -> std::optional<tItemId> {return i.ItemId;}, movedItem);
+		}
+		msg.success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
 }
 
 /**

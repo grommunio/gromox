@@ -521,7 +521,8 @@ table_node::table_node(const table_node &o, clone_t) :
 	folder_id(o.folder_id), handle_guid(o.handle_guid),
 	prestriction(o.prestriction), psorts(o.psorts),
 	instance_tag(o.instance_tag), extremum_tag(o.extremum_tag),
-	header_id(o.header_id), b_search(o.b_search), b_hint(o.b_hint)
+	header_id(o.header_id), accel_tag(o.accel_tag), accel_dir(o.accel_dir),
+	b_search(o.b_search), b_hint(o.b_hint)
 {}
 
 table_node::~table_node()
@@ -1751,7 +1752,8 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 		}
 		datagram.id_array[0] = datagram1.id_array[0] =
 			ptable->table_id; // reserved earlier
-		if (NULL == ptable->psorts) {
+		if (ptable->psorts == nullptr && ptable->accel_dir == 0) {
+			/* Genuinely unsorted table: append the new row at the bottom. */
 			char sql_string[148];
 			snprintf(sql_string, std::size(sql_string), "SELECT "
 				"count(*) FROM t%u", ptable->table_id);
@@ -1797,14 +1799,36 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			                          db_notify_type::cttbl_row_added;
 			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
-		} else if (0 == ptable->psorts->ccategories) {
-			for (size_t i = 0; i < ptable->psorts->count; ++i) {
-				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
+		} else if (ptable->psorts == nullptr || ptable->psorts->ccategories == 0) {
+			/*
+			 * Uncategorized sort, or an accel/msgtime_index table (psorts is
+			 * null; the single sort key lives in accel_tag/accel_dir). Compute
+			 * the insertion point so new rows are positioned rather than
+			 * appended at the bottom (which is what the accel path did before
+			 * and caused new mail to sort to the end in online-mode clients).
+			 */
+			proptype_t sort_type[MAXIMUM_SORT_COUNT];
+			bool sort_asc[MAXIMUM_SORT_COUNT];
+			size_t sort_count;
+			if (ptable->psorts != nullptr) {
+				sort_count = ptable->psorts->count;
+				for (size_t i = 0; i < sort_count; ++i) {
+					auto &s = ptable->psorts->psort[i];
+					sort_type[i] = s.type;
+					sort_asc[i]  = s.table_sort == TABLE_SORT_ASCEND;
+					propvals[i].proptag = PROP_TAG(s.type, s.propid);
+				}
+			} else {
+				sort_count   = 1;
+				sort_type[0] = PROP_TYPE(ptable->accel_tag);
+				sort_asc[0]  = ptable->accel_dir > 0;
+				propvals[0].proptag = ptable->accel_tag;
+			}
+			for (size_t i = 0; i < sort_count; ++i)
 				if (!cu_get_property(MAPI_MESSAGE, message_id,
 				    ptable->cpid, db, propvals[i].proptag,
 				    &propvals[i].pvalue))
 					return;
-			}
 			char sql_string[148];
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id,"
 				" idx FROM t%u ORDER BY idx ASC", ptable->table_id);
@@ -1820,19 +1844,33 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 				row_id1 = sqlite3_column_int64(pstmt, 0);
 				inst_id1 = sqlite3_column_int64(pstmt, 1);
 				idx = sqlite3_column_int64(pstmt, 2);
-				for (size_t i = 0; i < ptable->psorts->count; ++i) {
+				bool b_equal = true;
+				for (size_t i = 0; i < sort_count; ++i) {
 					void *pvalue = nullptr;
 					if (!cu_get_property(MAPI_MESSAGE, inst_id1,
 					    ptable->cpid, db,
 					    propvals[i].proptag, &pvalue))
 						return;
-					auto result = db_engine_compare_propval(ptable->psorts->psort[i].type, propvals[i].pvalue, pvalue);
-					auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
-					if ((asc && result < 0) || (!asc && result > 0))
+					auto result = db_engine_compare_propval(sort_type[i], propvals[i].pvalue, pvalue);
+					if ((sort_asc[i] && result < 0) || (!sort_asc[i] && result > 0))
 						b_break = TRUE;
-					if (result != 0)
+					if (result != 0) {
+						b_equal = false;
 						break;
+					}
 				}
+				/*
+				 * All sort keys equal: break ties by message_id in the primary
+				 * sort direction, mirroring the msgtime_index (folder_id, <ts>,
+				 * message_id) load order and the stbl message_id tiebreak in
+				 * gct_makequery. Without this a newly delivered same-key message
+				 * is appended below its peers here but a reload sorts it among
+				 * them, so online-mode clients show it misordered/duplicated.
+				 */
+				if (b_equal && !b_break &&
+				    ((sort_asc[0] && message_id < inst_id1) ||
+				    (!sort_asc[0] && message_id > inst_id1)))
+					b_break = TRUE;
 				if (b_break)
 					break;
 			}

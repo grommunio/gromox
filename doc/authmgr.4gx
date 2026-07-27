@@ -7,7 +7,20 @@ authmgr \(em Demultiplexer for authentication requests
 authmgr is a component that, for mail account authentication, dynamically
 selects the authentication backend per user account.
 .SH Configuration directives
-The usual config file location is /etc/gromox/authmgr.cfg.
+The following directives are recognized when they are in
+/etc/gromox/gromox.cfg:
+.TP
+\fBauth_fail_delay\fP
+The amount of time to wait after a failed authentication attempt (unknown user
+or rejected password). When the MySQL database itself is unavailable, the delay
+is also added, which mitigates a little what could otherwise be an
+authentication storm. Users which are externally managed (e.g. in LDAP) are
+exempt from auth_fail_delay in Gromox, since the expectation is that the LDAP
+Bind operation already inserts a delay of its own. Setting the value to 0
+disables the delay. Per-username banning by \fBuser_filter\fP(4gx) applies
+regardless of this setting. Subsecond resolution is available.
+.br
+Default: \fI1s\fP
 .TP
 \fBauth_backend_selection\fP
 This controls how authmgr will verify passwords supplied with login operations.
@@ -16,23 +29,10 @@ See the "Authentication modes" section below for details.
 Available: \fIdeny_all\fP, \fIallow_all\fP, \fIldap\fP, \fIpam\fP
 .br
 Default: \fIldap\fP
-.TP
-\fBauth_fail_delay\fP
-The amount of time a failed authentication attempt (unknown user or rejected
-password) is delayed before the result is returned to the client. The delay
-tarpits password guessing attempts, but it also keeps a worker thread of the
-calling process (http, imap, etc.) occupied for its duration, so a misbehaving
-client stuck in a tight login retry loop, or a login storm after an outage of
-the user database has resolved can amplify the delay into thread pool
-exhaustion. Setting the value to 0 disables the delay. Per-username banning by
-\fBuser_filter\fP(4gx) applies regardless of this setting. Subsecond resolution
-is available.
-.br
-Default: \fI1s\fP
 .SH Authentication modes
 .IP \(bu 4
 \fIdeny_all\fP: every attempt at authentication is rejected. This is at best
-useful for testing.
+useful for testing. This also implies auth_fail_delay=0.
 .IP \(bu 4
 \fIallow_all\fP: every attempt at authentication (provided the user exists) is
 permitted. This may be handy when doing the initial mass-import of mailboxes

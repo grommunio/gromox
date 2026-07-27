@@ -240,22 +240,24 @@ static bool login_gen(const char *username, const char *password,
     unsigned int wantpriv, sql_meta_result &mres) try
 {
 	bool auth = false;
+	auto fdelay = am_fail_delay.load(std::memory_order_relaxed);
 	auto err = mysql_adaptor_meta(username, wantpriv, mres);
 	if (err != 0 || mres.have_xid == 0xFF) {
-		if (auto fdelay = am_fail_delay.load(std::memory_order_relaxed);
-		    fdelay != std::chrono::nanoseconds(0))
+		if (fdelay != std::chrono::nanoseconds(0))
 			std::this_thread::sleep_for(fdelay);
-	} else if (am_choice == A_DENY_ALL)
+	} else if (am_choice == A_DENY_ALL) {
 		auth = false;
-	else if (am_choice == A_ALLOW_ALL)
+		if (fdelay != std::chrono::nanoseconds(0))
+			std::this_thread::sleep_for(fdelay);
+	} else if (am_choice == A_ALLOW_ALL) {
 		auth = true;
-	else if (am_choice == A_EXTERNID_LDAP && mres.have_xid > 0)
+	} else if (am_choice == A_EXTERNID_LDAP && mres.have_xid > 0) {
 		/* Failure delay should already be added by the LDAP server */
 		auth = ldap_adaptor_login3(mres.username.c_str(), password, mres);
-	else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0)
+	} else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0) {
 		/* Failure delay should already be added by the PAM stack */
 		auth = login_pam(mres.username.c_str(), password, mres);
-	else if (am_choice == A_EXTERNID_LDAP) {
+	} else if (am_choice == A_EXTERNID_LDAP) {
 		auth = mysql_adaptor_login2(mres.username.c_str(), password,
 		       mres.enc_passwd, mres.errstr);
 		if (!auth) {
@@ -276,7 +278,7 @@ static bool login_gen(const char *username, const char *password,
 
 static bool authmgr_reload()
 {
-	auto pfile = config_file_initd("authmgr.cfg", get_config_path(),
+	auto pfile = config_file_initd("gromox.cfg", get_config_path(),
 	             authmgr_cfg_defaults);
 	if (pfile == nullptr) {
 		mlog(LV_ERR, "authmgr: confing_file_initd authmgr.cfg: %s",
@@ -286,6 +288,12 @@ static bool authmgr_reload()
 	am_fail_delay = std::chrono::nanoseconds(pfile->get_ll("auth_fail_delay"));
 
 	auto val = pfile->get_value("auth_backend_selection");
+	if (val == nullptr) {
+		pfile = config_file_initd("authmgr.cfg", get_config_path(), nullptr);
+		if (pfile != nullptr)
+			val = pfile->get_value("auth_backend_selection");
+	}
+
 	if (val == nullptr) {
 	} else if (strcmp(val, "deny_all") == 0) {
 		am_choice = A_DENY_ALL;
