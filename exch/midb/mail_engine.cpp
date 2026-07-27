@@ -1558,7 +1558,7 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 		static constexpr proptag_t proptags_0[] = {
 			PidTagMid, PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME,
 			PR_MESSAGE_DELIVERY_TIME, PidTagMidString, PR_FLAG_STATUS,
-			PR_ICON_INDEX,
+			PR_ICON_INDEX, PR_MESSAGE_STATUS,
 		};
 		if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
 		    proptags_0, 0, row_count, &rows))
@@ -1590,10 +1590,13 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 		auto mod_time = rows.pparray[i]->get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 		auto recv_time = rows.pparray[i]->get<uint64_t>(PR_MESSAGE_DELIVERY_TIME);
 		auto midstr = rows.pparray[i]->get<const char>(PidTagMidString);
+		auto msgstatus = rows.pparray[i]->get<const uint32_t>(PR_MESSAGE_STATUS);
 		auto num = rows.pparray[i]->get<const uint32_t>(PR_FLAG_STATUS);
-		bool flagged = num != nullptr && *num == followupFlagged;
+		bool flagged = (num != nullptr && *num == followupFlagged) ||
+		               (msgstatus != nullptr && *msgstatus == MSGFLAG_TAGGED);
 		num = rows.pparray[i]->get<const uint32_t>(PR_ICON_INDEX);
-		bool answered = num != nullptr && *num == MAIL_ICON_REPLIED;
+		bool answered = (num != nullptr && *num == MAIL_ICON_REPLIED) ||
+		                (msgstatus != nullptr && *msgstatus == MSGFLAG_ANSWERED);
 		bool forwarded = num != nullptr && *num == MAIL_ICON_FORWARDED;
 		syncmessagelist.emplace(message_id, syncmessage_entry{
 			mod_time != nullptr ? *mod_time : 0,
@@ -3364,35 +3367,6 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 			return MIDB_E_DISK_ERROR;
 	}
 
-	/*
-	 * \Answered:
-	 * PR_MSG_STATUS |= MSGSTATUS_ANSWERED
-	 * PR_ICON_INDEX = MAIL_ICON_REPLIED
-	 *
-	 * \Flagged:
-	 * PR_MSG_STATUS |= MSGSTATUS_TAGGED
-	 * PR_TODO_ITEM_FLAGS |= (f&MSGFLAG_UNSENT) ? TDIP_ActiveRecip : TDIP_Active
-	 * PR_FLAG_STATUS = 2
-	 * PR_FOLLOWUP_ICON = 6
-	 * PidLidTaskStatus = tsvNotStarted
-	 * PidLidFlagRequest = "Follow up"
-	 * PidLidPercentComplete = 0
-	 * PidLidTaskComplete = false
-	 * PidLidToDoTitle = {PR_SUBJECT}
-	 * PidLidValidFlagStringProof = {current time}
-	 *
-	 * \Deleted:
-	 * PR_MSG_STATUS |= MSGSTATUS_DELETED
-	 *
-	 * \Draft:
-	 * PR_MESSAGE_FLAGS |= MSGFLAG_UNSENT;
-	 *
-	 * $MDNSent:
-	 * PR_MSG_STATUS |= MSGSTATUS_MDNSENT;
-	 *
-	 * $Forwarded not supported
-	 * \Recent not supported
-	 */
 	if (set_unsent) {
 		static constexpr proptag_t tmp_proptag[] = {PR_MESSAGE_FLAGS};
 		if (!exmdb_client->get_message_properties(argv[1], NULL,
@@ -3409,8 +3383,17 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 				return MIDB_E_MDB_SETMSGPROPS;
 		}
 	}
-	if (set_answered || set_forwarded) {
-		const uint32_t val = set_answered ? MAIL_ICON_REPLIED : MAIL_ICON_FORWARDED;
+	if (set_answered) {
+		const uint32_t val = MAIL_ICON_REPLIED;
+		const TAGGED_PROPVAL tp[] = {{PR_ICON_INDEX, deconst(&val)}};
+		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
+		if (!exmdb_client->set_message_properties(argv[1],
+		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
+		    &ta, &problems))
+			return MIDB_E_MDB_SETMSGPROPS;
+	}
+	if (set_forwarded) {
+		const uint32_t val = MAIL_ICON_FORWARDED;
 		const TAGGED_PROPVAL tp[] = {{PR_ICON_INDEX, deconst(&val)}};
 		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
 		if (!exmdb_client->set_message_properties(argv[1],
@@ -3494,27 +3477,6 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 			return MIDB_E_DISK_ERROR;
 	}
 
-	/*
-	 * \Answer:
-	 * PR_MSG_STATUS &= ~MSGSTATUS_ANSWERED
-	 * PR_ICON_INDEX untouched
-	 *
-	 * \Flagged:
-	 * PR_MSG_STATUS &= ~MSGSTATUS_TAGGED
-	 * PR_TODO_ITEM_FLAGS = TDIP_None
-	 * Removes PR_FLAG_STATUS, PR_FOLLOWUP_ICON, PidLidTaskStatus,
-	 * PidLidFlagRequest, PidLidPercentComplete, PidLidTaskComplete,
-	 * PidLidToDoTitle
-	 *
-	 * \Deleted:
-	 * PR_MSGFLAG_STATUS &= ~MSGSTATUS_DELETED
-	 *
-	 * \Draft:
-	 * PR_MESSAGE_FLAGS &= ~MSGFLAG_UNSENT;
-	 *
-	 * $MDNSent:
-	 * PR_MSG_STATUS &= ~MSGSTATUS_MDNSENT;
-	 */
 	if (set_unsent) {
 		static constexpr proptag_t tmp_proptag[] = {PR_MESSAGE_FLAGS};
 		TPROPVAL_ARRAY propvals{};
