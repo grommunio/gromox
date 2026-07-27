@@ -2299,6 +2299,7 @@ void process(mGetUserPhotoRequest &&request, XMLElement *response, EWSContext &c
 	response->SetName("m:GetUserPhotoResponse");
 
 	mGetUserPhotoResponse data;
+	const BINARY *photodata = nullptr;
 
 	try {
 		std::string dir = ctx.get_maildir(request.Email);
@@ -2310,15 +2311,29 @@ void process(mGetUserPhotoRequest &&request, XMLElement *response, EWSContext &c
 		const proptag_t tag = PROP_TAG(PT_BINARY, propIds[0]);
 		TPROPVAL_ARRAY props;
 		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, {&tag, 1}, &props);
-		auto photodata = props.get<const BINARY>(tag);
-		if (photodata && photodata->cb)
-			data.PictureData = photodata;
-		else
-			ctx.code(http_status::not_found);
+		photodata = props.get<const BINARY>(tag);
 	} catch (const std::exception &err) {
-		ctx.code(http_status::not_found);
-		mlog(LV_WARN, "[ews#%d] Failed to load user photo: %s", ctx.context_id(), err.what());
+		mlog(LV_WARN, "[ews#%d] Failed to load organizational user photo: %s", ctx.context_id(), err.what());
 	}
+
+	if (photodata == nullptr || photodata->cb == 0) {
+		/*
+		 * Not a local mailbox user (or one without an org photo set) -
+		 * fall back to the requesting user's own saved contact for this
+		 * address, if any (see EWSContext::findContactPhoto).
+		 */
+		try {
+			std::string ownDir = ctx.get_maildir(ctx.auth_info().username);
+			photodata = ctx.findContactPhoto(ownDir, request.Email);
+		} catch (const std::exception &err) {
+			mlog(LV_WARN, "[ews#%d] Failed to load contact photo: %s", ctx.context_id(), err.what());
+		}
+	}
+
+	if (photodata && photodata->cb)
+		data.PictureData = photodata;
+	else
+		ctx.code(http_status::not_found);
 	data.success();
 	data.serialize(response);
 }

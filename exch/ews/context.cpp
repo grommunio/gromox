@@ -3332,6 +3332,74 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 }
 
 /**
+ * @brief      Find a contact photo by email address in the given store's
+ *             default Contacts folder
+ *
+ * @param      dir    Home directory of the mailbox whose Contacts folder to search
+ * @param      email  Email address to match against Email1/2/3
+ *
+ * @return     Pointer to the photo's binary data, or nullptr if no matching
+ *             contact (or no photo on it) was found
+ *
+ * @note       Only searches the default Contacts folder, not any user-created
+ *             subfolders under it.
+ */
+const BINARY *EWSContext::findContactPhoto(const std::string &dir,
+    const std::string &email) const
+{
+	std::array<PROPERTY_NAME, 3> names = {NtEmailAddress1, NtEmailAddress2, NtEmailAddress3};
+	PROPNAME_ARRAY propNames = {static_cast<uint16_t>(names.size()), names.data()};
+	PROPID_ARRAY propIds = getNamedPropIds(dir, propNames);
+	if (propIds.size() != names.size())
+		return nullptr;
+
+	std::array<RESTRICTION_PROPERTY, 3> propertyRestrictions{};
+	std::array<RESTRICTION, 3> childRestrictions{};
+	TAGGED_PROPVAL matchValue{0, deconst(email.c_str())};
+	for (size_t i = 0; i < names.size(); ++i) {
+		auto tag = PROP_TAG(PT_UNICODE, propIds[i]);
+		propertyRestrictions[i].relop = RELOP_EQ;
+		propertyRestrictions[i].proptag = tag;
+		propertyRestrictions[i].propval.proptag = tag;
+		propertyRestrictions[i].propval.pvalue = matchValue.pvalue;
+		childRestrictions[i].rt = RES_PROPERTY;
+		childRestrictions[i].prop = &propertyRestrictions[i];
+	}
+	RESTRICTION_AND_OR orGroup = {static_cast<uint32_t>(childRestrictions.size()), childRestrictions.data()};
+	RESTRICTION restriction = {RES_OR, {&orGroup}};
+
+	uint32_t tableId = 0, rowCount = 0;
+	eid_t contactsFid(1, PRIVATE_FID_CONTACTS);
+	if (!m_plugin.exmdb.load_content_table(dir.c_str(), CP_ACP, contactsFid,
+	    nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr, &tableId, &rowCount) ||
+	    rowCount == 0)
+		return nullptr;
+	auto cl_tbl = HX::make_scope_exit([&]() {
+		m_plugin.exmdb.unload_table(dir.c_str(), tableId);
+	});
+
+	static constexpr proptag_t midTag = PidTagMid;
+	TARRAY_SET rows{};
+	if (!m_plugin.exmdb.query_table(dir.c_str(), nullptr, CP_ACP, tableId,
+	    {&midTag, 1}, 0, 1, &rows) || rows.count == 0 || rows.pparray[0] == nullptr)
+		return nullptr;
+	auto mid = rows.pparray[0]->get<const eid_t>(PidTagMid);
+	if (mid == nullptr)
+		return nullptr;
+
+	MESSAGE_CONTENT *content = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), nullptr, CP_ACP, *mid, &content) ||
+	    content == nullptr || content->children.pattachments == nullptr)
+		return nullptr;
+	for (const auto &att : *content->children.pattachments) {
+		auto isPhoto = att.proplist.get<const uint8_t>(PR_ATTACHMENT_CONTACTPHOTO);
+		if (isPhoto != nullptr && *isPhoto)
+			return att.proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
+	}
+	return nullptr;
+}
+
+/**
  * @brief     Send message
  *
  * @param     dir      Home directory the message is associtated with
