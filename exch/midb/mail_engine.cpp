@@ -1558,7 +1558,7 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 		static constexpr proptag_t proptags_0[] = {
 			PidTagMid, PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME,
 			PR_MESSAGE_DELIVERY_TIME, PidTagMidString, PR_FLAG_STATUS,
-			PR_ICON_INDEX, PR_MESSAGE_STATUS,
+			PR_ICON_INDEX, PR_MSG_STATUS,
 		};
 		if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
 		    proptags_0, 0, row_count, &rows))
@@ -1582,6 +1582,9 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 		if (lnum == nullptr)
 			continue;
 		auto message_id = rop_util_get_gc_value(*lnum);
+		/*
+		 * See description of flag mapping in functions me_psflg, me_pgflg
+		 */
 		auto flags = rows.pparray[i]->get<uint32_t>(PR_MESSAGE_FLAGS);
 		if (flags == nullptr)
 			continue;
@@ -1590,13 +1593,13 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 		auto mod_time = rows.pparray[i]->get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 		auto recv_time = rows.pparray[i]->get<uint64_t>(PR_MESSAGE_DELIVERY_TIME);
 		auto midstr = rows.pparray[i]->get<const char>(PidTagMidString);
-		auto msgstatus = rows.pparray[i]->get<const uint32_t>(PR_MESSAGE_STATUS);
+		auto msgstatus = rows.pparray[i]->get<const uint32_t>(PR_MSG_STATUS);
 		auto num = rows.pparray[i]->get<const uint32_t>(PR_FLAG_STATUS);
 		bool flagged = (num != nullptr && *num == followupFlagged) ||
-		               (msgstatus != nullptr && *msgstatus == MSGFLAG_TAGGED);
+		               (msgstatus != nullptr && *msgstatus & MSGSTATUS_TAGGED);
 		num = rows.pparray[i]->get<const uint32_t>(PR_ICON_INDEX);
 		bool answered = (num != nullptr && *num == MAIL_ICON_REPLIED) ||
-		                (msgstatus != nullptr && *msgstatus == MSGFLAG_ANSWERED);
+		                (msgstatus != nullptr && *msgstatus & MSGSTATUS_ANSWERED);
 		bool forwarded = num != nullptr && *num == MAIL_ICON_FORWARDED;
 		syncmessagelist.emplace(message_id, syncmessage_entry{
 			mod_time != nullptr ? *mod_time : 0,
