@@ -3520,43 +3520,71 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 			return MIDB_E_DISK_ERROR;
 	}
 
-	if (set_unsent) {
-		static constexpr proptag_t tmp_proptag[] = {PR_MESSAGE_FLAGS};
-		TPROPVAL_ARRAY propvals{};
-		if (!exmdb_client->get_message_properties(argv[1], nullptr,
-		    CP_ACP, rop_util_make_eid_ex(1, message_id),
-		    tmp_proptag, &propvals) || propvals.count == 0)
-			return MIDB_E_MDB_GETMSGPROPS;
-		auto message_flags = *static_cast<uint32_t *>(propvals.ppropval[0].pvalue);
-		if (message_flags & MSGFLAG_UNSENT) {
-			message_flags &= ~MSGFLAG_UNSENT;
-			propvals.ppropval[0].pvalue = &message_flags;
-			if (!exmdb_client->set_message_properties(argv[1],
-			    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
-			    &propvals, &problems))
-				return MIDB_E_MDB_SETMSGPROPS;
-		}
+	static constexpr proptag_t mftags[] = {
+		PR_MESSAGE_FLAGS, PR_MSG_STATUS, PR_ICON_INDEX,
+		PR_FLAG_STATUS, PR_FOLLOWUP_ICON,
+	};
+	TPROPVAL_ARRAY propvals{};
+	if (!exmdb_client->get_message_properties(argv[1], nullptr,
+	    CP_ACP, rop_util_make_eid_ex(1, message_id),
+	    mftags, &propvals) || propvals.count == 0)
+		return MIDB_E_MDB_GETMSGPROPS;
+	uint32_t message_flags = 0, msg_status = 0, icon_index = 0;
+	uint32_t flag_status = 0, followup_icon = 0;
+	if (auto p = propvals.get<const uint32_t>(PR_MESSAGE_FLAGS); p != nullptr)
+		message_flags = *p;
+	else
+		return MIDB_E_MDB_GETMSGPROPS;
+	if (auto p = propvals.get<const uint32_t>(PR_MSG_STATUS); p != nullptr)
+		msg_status = *p;
+	if (auto p = propvals.get<const uint32_t>(PR_ICON_INDEX); p != nullptr)
+		icon_index = *p;
+	if (auto p = propvals.get<const uint32_t>(PR_FLAG_STATUS); p != nullptr)
+		flag_status = *p;
+	if (auto p = propvals.get<const uint32_t>(PR_FOLLOWUP_ICON); p != nullptr)
+		followup_icon = *p;
+
+	if (set_unsent && message_flags & MSGFLAG_UNSENT) {
+		message_flags &= ~MSGFLAG_UNSENT;
+		auto ret = me_set_u32(argv[1], message_id, PR_MESSAGE_FLAGS, message_flags);
+		if (ret != 0)
+			return ret;
 	}
-	if (set_answered || set_forwarded) {
+	if (set_answered && msg_status & MSGSTATUS_ANSWERED) {
+		msg_status &= ~MSGSTATUS_ANSWERED;
+		auto ret = me_set_u32(argv[1], message_id, PR_MSG_STATUS, msg_status);
+		if (ret != 0)
+			return ret;
+	}
+	if (set_answered && icon_index == MAIL_ICON_REPLIED) {
 		static constexpr proptag_t proptags_1[] = {PR_ICON_INDEX};
-		TPROPVAL_ARRAY propvals{};
-		if (exmdb_client->get_message_properties(argv[1], nullptr,
-		    CP_ACP, rop_util_make_eid_ex(1, message_id),
-		    proptags_1, &propvals)) {
-			uint32_t testfor = set_answered ? MAIL_ICON_REPLIED : MAIL_ICON_FORWARDED;
-			auto icon = propvals.get<const uint32_t>(PR_ICON_INDEX);
-			if (icon != nullptr && *icon == testfor)
-				if (!exmdb_client->remove_message_properties(argv[1], CP_ACP,
-				    rop_util_make_eid_ex(1, message_id), proptags_1))
-					/* ignore */;
-		}
-	}
-	if (set_flagged) {
-		static constexpr proptag_t tags[] = {
-			PR_FLAG_STATUS, PR_FOLLOWUP_ICON, PR_TODO_ITEM_FLAGS,
-		};
 		if (!exmdb_client->remove_message_properties(argv[1], CP_ACP,
-		    rop_util_make_eid_ex(1, message_id), tags))
+		    rop_util_make_eid_ex(1, message_id), proptags_1))
+			return MIDB_E_MDB_SETMSGPROPS;
+	}
+	if (set_forwarded && icon_index == MAIL_ICON_FORWARDED) {
+		static constexpr proptag_t proptags_1[] = {PR_ICON_INDEX};
+		if (!exmdb_client->remove_message_properties(argv[1], CP_ACP,
+		    rop_util_make_eid_ex(1, message_id), proptags_1))
+			return MIDB_E_MDB_SETMSGPROPS;
+	}
+	if (set_flagged && ((msg_status & MSGSTATUS_TAGGED) ||
+	    flag_status == followupFlagged)) {
+		msg_status &= ~MSGSTATUS_TAGGED;
+		/* Leave followupComplete states intact */
+		if (flag_status != followupComplete) {
+			flag_status = 0;
+			followup_icon = olNoFlagIcon;
+		}
+		const TAGGED_PROPVAL tp[] = {
+			{PR_FLAG_STATUS, &flag_status},
+			{PR_FOLLOWUP_ICON, &followup_icon},
+			{PR_MSG_STATUS, &msg_status},
+		};
+		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
+		if (!exmdb_client->set_message_properties(argv[1],
+		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
+		    &ta, &problems))
 			return MIDB_E_MDB_SETMSGPROPS;
 	}
 	if (set_seen && !exmdb_client->set_message_read_state(argv[1], nullptr,
