@@ -3309,6 +3309,20 @@ static std::string flags_rn(sqlite3 *db, uint64_t gcv)
 	return out;
 }
 
+/* Used for setting a single uint32 property */
+static int me_set_u32(const char *dir, uint64_t msg_id, proptag_t tag,
+    uint32_t new_value)
+{
+	const TAGGED_PROPVAL tp[] = {{tag, &new_value}};
+	const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
+	PROBLEM_ARRAY problems{};
+	if (!exmdb_client->set_message_properties(dir,
+	    nullptr, CP_ACP, rop_util_make_eid_ex(1, msg_id),
+	    &ta, &problems))
+		return MIDB_E_MDB_SETMSGPROPS;
+	return 0;
+}
+
 /**
  * Set flags on message. For (S)een and (U)nsent, exmdb is contacted(!), which
  * is different from GFLG.
@@ -3323,7 +3337,6 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 	uint64_t read_cn;
 	uint64_t message_id;
 	PROBLEM_ARRAY problems;
-	TPROPVAL_ARRAY propvals;
 
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3370,47 +3383,74 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 			return MIDB_E_DISK_ERROR;
 	}
 
-	if (set_unsent) {
-		static constexpr proptag_t tmp_proptag[] = {PR_MESSAGE_FLAGS};
-		if (!exmdb_client->get_message_properties(argv[1], NULL,
-		    CP_ACP, rop_util_make_eid_ex(1, message_id),
-		    tmp_proptag, &propvals) || propvals.count == 0)
-			return MIDB_E_MDB_GETMSGPROPS;
-		auto message_flags = *static_cast<uint32_t *>(propvals.ppropval[0].pvalue);
-		if (!(message_flags & MSGFLAG_UNSENT)) {
-			message_flags |= MSGFLAG_UNSENT;
-			propvals.ppropval[0].pvalue = &message_flags;
-			if (!exmdb_client->set_message_properties(argv[1],
-			    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
-			    &propvals, &problems))
-				return MIDB_E_MDB_SETMSGPROPS;
-		}
+	static constexpr proptag_t mftags[] = {
+		PR_MESSAGE_FLAGS, PR_MSG_STATUS, PR_ICON_INDEX,
+		PR_FLAG_STATUS, PR_FOLLOWUP_ICON,
+	};
+	TPROPVAL_ARRAY propvals{};
+	if (!exmdb_client->get_message_properties(argv[1], NULL,
+	    CP_ACP, rop_util_make_eid_ex(1, message_id),
+	    mftags, &propvals))
+		return MIDB_E_MDB_GETMSGPROPS;
+	uint32_t message_flags = 0, msg_status = 0, icon_index = 0;
+	uint32_t flag_status = 0, followup_icon = 0;
+	if (auto p = propvals.get<const uint32_t>(PR_MESSAGE_FLAGS); p != nullptr)
+		message_flags = *p;
+	else
+		return MIDB_E_MDB_GETMSGPROPS;
+	if (auto p = propvals.get<const uint32_t>(PR_MSG_STATUS); p != nullptr)
+		msg_status = *p;
+	if (auto p = propvals.get<const uint32_t>(PR_ICON_INDEX); p != nullptr)
+		icon_index = *p;
+	if (auto p = propvals.get<const uint32_t>(PR_FLAG_STATUS); p != nullptr)
+		flag_status = *p;
+	if (auto p = propvals.get<const uint32_t>(PR_FOLLOWUP_ICON); p != nullptr)
+		followup_icon = *p;
+
+	if (set_unsent && !(message_flags & MSGFLAG_UNSENT)) {
+		message_flags |= MSGFLAG_UNSENT;
+		auto ret = me_set_u32(argv[1], message_id, PR_MESSAGE_FLAGS, message_flags);
+		if (ret != 0)
+			return ret;
 	}
-	if (set_answered) {
-		const uint32_t val = MAIL_ICON_REPLIED;
-		const TAGGED_PROPVAL tp[] = {{PR_ICON_INDEX, deconst(&val)}};
-		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
-		if (!exmdb_client->set_message_properties(argv[1],
-		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
-		    &ta, &problems))
-			return MIDB_E_MDB_SETMSGPROPS;
-	}
-	if (set_forwarded) {
-		const uint32_t val = MAIL_ICON_FORWARDED;
-		const TAGGED_PROPVAL tp[] = {{PR_ICON_INDEX, deconst(&val)}};
-		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
-		if (!exmdb_client->set_message_properties(argv[1],
-		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
-		    &ta, &problems))
-			return MIDB_E_MDB_SETMSGPROPS;
-	}
-	if (set_flagged) {
-		static constexpr uint32_t val = followupFlagged, icon = olRedFlagIcon;
-		static constexpr TAGGED_PROPVAL tp[] = {
-			{PR_FLAG_STATUS, deconst(&val)},
-			{PR_FOLLOWUP_ICON, deconst(&icon)},
+	if (set_answered && (icon_index != MAIL_ICON_REPLIED ||
+	    !(msg_status & MSGSTATUS_ANSWERED))) {
+		/*
+		 * OL overwrites whatever icon was there before, e.g. in case a
+		 * replied mail was later forwarded. So we do the same.
+		 */
+		icon_index = MAIL_ICON_REPLIED;
+		msg_status |= MSGSTATUS_ANSWERED;
+		const TAGGED_PROPVAL tp[] = {
+			{PR_ICON_INDEX, &icon_index},
+			{PR_MSG_STATUS, &msg_status},
 		};
-		static constexpr TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
+		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
+		if (!exmdb_client->set_message_properties(argv[1],
+		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
+		    &ta, &problems))
+			return MIDB_E_MDB_SETMSGPROPS;
+	}
+	if (set_forwarded && icon_index != MAIL_ICON_FORWARDED) {
+		icon_index = MAIL_ICON_FORWARDED;
+		auto ret = me_set_u32(argv[1], message_id, PR_ICON_INDEX, icon_index);
+		if (ret != 0)
+			return ret;
+	}
+	if (set_flagged && (!(msg_status & MSGSTATUS_TAGGED) ||
+	    flag_status == 0 || followup_icon == olNoFlagIcon)) {
+		/* Keep e.g. flag_status=followupComplete, followup_icon=olGreenFlagIcon */
+		if (flag_status == 0)
+			flag_status = followupFlagged;
+		if (followup_icon == olNoFlagIcon)
+			followup_icon = olRedFlagIcon;
+		msg_status |= MSGSTATUS_TAGGED;
+		const TAGGED_PROPVAL tp[] = {
+			{PR_FLAG_STATUS, &flag_status},
+			{PR_FOLLOWUP_ICON, &followup_icon},
+			{PR_MSG_STATUS, &msg_status},
+		};
+		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
 		if (!exmdb_client->set_message_properties(argv[1],
 		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
 		    &ta, &problems))
