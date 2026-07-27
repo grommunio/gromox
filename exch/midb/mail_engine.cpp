@@ -4061,6 +4061,11 @@ static void notif_msg_added(IDB_ITEM *pidb,
 	num = propvals.get<const uint32_t>(PR_ICON_INDEX);
 	bool set_answered = num != nullptr && *num == MAIL_ICON_REPLIED;
 	bool set_forwarded = num != nullptr && *num == MAIL_ICON_FORWARDED;
+	num = propvals.get<const uint32_t>(PR_MSG_STATUS);
+	if (num != nullptr) {
+		set_answered |= *num & MSGSTATUS_ANSWERED;
+		b_flagged    |= *num & MSGSTATUS_TAGGED;
+	}
 
 	std::string flags_buff;
 	char mid_string[128];
