@@ -1493,9 +1493,14 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 							return MIDB_RDWR_ERROR;
 						last_pos = i + 2;
 						line_pos = 0;
-						pxarray->m_vec.reserve(pxarray->m_vec.size() + lines);
-						pxarray->m_hash.reserve(pxarray->m_hash.size() + lines);
-						pxarray->m_dpool.reserve(pxarray->m_dpool.size() + static_cast<size_t>(lines) * 1024);
+
+						auto new_vec_size = pxarray->m_vec.size() + lines;
+						auto new_hash_size = pxarray->m_hash.size() + lines;
+						auto new_dpool_size = pxarray->m_dpool.size() + static_cast<size_t>(lines) * 1024;
+						/* Armortized O(1) requires exponential growth (replicate emplace_back's implicit logic) */
+						pxarray->m_vec.reserve(std::max(new_vec_size, pxarray->m_vec.size() * 2));
+						pxarray->m_hash.reserve(std::max(new_hash_size, pxarray->m_hash.size() * 2));
+						pxarray->m_dpool.reserve(std::max(new_dpool_size, pxarray->m_dpool.size() * 2));
 						break;
 					} else if (strncmp(buff.c_str(), "FALSE ", 6) == 0) {
 						pback.reset();
