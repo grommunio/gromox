@@ -379,6 +379,109 @@ static void findpeople_search_recipient_history(const EWSContext &ctx,
 }
 
 /**
+ * @brief      Search the requesting user's own Contacts folder for FindPeople matches
+ *
+ * This function will match PR_DISPLAY_NAME or any of Email1/2/3EmailAddress by
+ * substring, using the same restriction as g-web's own ResolveNamesModule::
+ * searchContactsFolders()/getAmbigiousContactRestriction().
+ */
+static void findpeople_search_contacts(const EWSContext &ctx,
+    const std::string &query, std::vector<tPersona> &out) try
+{
+	if (query.empty())
+		return;
+	const char *user = znul(ctx.auth_info().username);
+	std::string dir = ctx.get_maildir(user);
+
+	std::array<PROPERTY_NAME, 3> names = {NtEmailAddress1, NtEmailAddress2, NtEmailAddress3};
+	PROPNAME_ARRAY propNames = {static_cast<uint16_t>(names.size()), names.data()};
+	PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
+	if (propIds.size() != names.size())
+		return;
+	std::array<proptag_t, 3> emailTags = {PROP_TAG(PT_UNICODE, propIds[0]),
+		PROP_TAG(PT_UNICODE, propIds[1]), PROP_TAG(PT_UNICODE, propIds[2])};
+
+	TAGGED_PROPVAL matchValue = {0, deconst(query.c_str())};
+	std::array<RESTRICTION_CONTENT, 4> contentRestrictions{};
+	std::array<RESTRICTION, 4> childRestrictions{};
+	contentRestrictions[0].fuzzy_level = FL_SUBSTRING | FL_IGNORECASE;
+	contentRestrictions[0].proptag = PR_DISPLAY_NAME;
+	contentRestrictions[0].propval.proptag = PR_DISPLAY_NAME;
+	contentRestrictions[0].propval.pvalue = matchValue.pvalue;
+	childRestrictions[0].rt = RES_CONTENT;
+	childRestrictions[0].cont = &contentRestrictions[0];
+	for (size_t i = 0; i < emailTags.size(); ++i) {
+		auto &cr = contentRestrictions[i + 1];
+		cr.fuzzy_level = FL_SUBSTRING | FL_IGNORECASE;
+		cr.proptag = emailTags[i];
+		cr.propval.proptag = emailTags[i];
+		cr.propval.pvalue = matchValue.pvalue;
+		childRestrictions[i + 1].rt = RES_CONTENT;
+		childRestrictions[i + 1].cont = &cr;
+	}
+	RESTRICTION_AND_OR orGroup = {static_cast<uint32_t>(childRestrictions.size()), childRestrictions.data()};
+	RESTRICTION restriction = {RES_OR, {&orGroup}};
+
+	uint32_t tableId = 0, rowCount = 0;
+	eid_t contactsFid(1, PRIVATE_FID_CONTACTS);
+	if (!ctx.plugin().exmdb.load_content_table(dir.c_str(), CP_ACP,
+	    contactsFid, nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction,
+	    nullptr, &tableId, &rowCount) || rowCount == 0)
+		return;
+	auto cl_tbl = HX::make_scope_exit([&]() {
+		ctx.plugin().exmdb.unload_table(dir.c_str(), tableId);
+	});
+
+	static constexpr uint32_t maxResults = 50;
+	std::array<proptag_t, 4> cols = {PR_DISPLAY_NAME, emailTags[0], emailTags[1], emailTags[2]};
+	TARRAY_SET rows{};
+	if (!ctx.plugin().exmdb.query_table(dir.c_str(), nullptr, CP_ACP,
+	    tableId, cols, 0, std::min(rowCount, maxResults), &rows))
+		return;
+
+	for (const auto &row : rows) {
+		auto name = row.get<const char>(PR_DISPLAY_NAME);
+		const char *email = nullptr;
+		for (auto tag : emailTags) {
+			email = row.get<const char>(tag);
+			if (email != nullptr && *email != '\0')
+				break;
+		}
+		if (email == nullptr || *email == '\0')
+			continue;
+
+		std::string dispName = name != nullptr ? name : "";
+		tPersona persona;
+		persona.PersonaType = "Person";
+		if (!dispName.empty()) {
+			persona.DisplayName = dispName;
+			auto space = dispName.find(' ');
+			if (space != std::string::npos) {
+				persona.GivenName = dispName.substr(0, space);
+				persona.Surname = dispName.substr(space + 1);
+			} else {
+				persona.GivenName = dispName;
+			}
+		}
+
+		tEmailAddressType addr;
+		addr.Name = persona.DisplayName;
+		addr.EmailAddress = email;
+		addr.RoutingType  = "SMTP";
+		addr.MailboxType  = Enum::Mailbox;
+		persona.EmailAddress = std::move(addr);
+
+		tPersonaId pid;
+		pid.Id = base64_encode(email);
+		persona.PersonaId = std::move(pid);
+		persona.RelevanceScore = 1;
+		out.emplace_back(std::move(persona));
+	}
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "%s: %s", __func__, e.what());
+}
+
+/**
  * @brief      Process FindPeople
  *
  * @param      request   Request data
@@ -465,6 +568,7 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 		/* Merge in "Mailbox" source results */
 		std::vector<tPersona> history;
 		findpeople_search_recipient_history(ctx, request.QueryString, history);
+		findpeople_search_contacts(ctx, request.QueryString, history);
 		if (!history.empty()) {
 			if (!msg.People)
 				msg.People.emplace();
