@@ -1451,6 +1451,28 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 {
 	auto &rq_prop = par.ctnt->proplist;
 	auto cal_fid  = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	auto goid_tag = PROP_TAG(PT_BINARY, propids[l_goid]);
+	auto seq_tag  = PROP_TAG(PT_LONG, propids[l_appt_seq]);
+	auto goid     = rq_prop.get<const BINARY>(goid_tag);
+	auto basedate = mr_goid_instancedate(goid);
+
+	/*
+	 * An update for one occurrence of a series carries a
+	 * GlobalObjectId with the instance date embedded, which by
+	 * construction never equals the series master's. Only resource
+	 * calendars are maintained server-side here; for user mailboxes,
+	 * blob surgery is left to the recipient's client, just as for a
+	 * single-occurrence cancellation.
+	 *
+	 * Entering the occurrence as a standalone item instead would
+	 * duplicate it: the recipient's client folds the update into the
+	 * master as an exception, while the item entered here relates to
+	 * that master by nothing the client can reconcile, so the
+	 * occurrence stays visible twice.
+	 */
+	if (basedate != 0 && !policy.is_resource())
+		return ecSuccess;
+
 	/*
 	 * Locate any calendar item(s) previously entered for this meeting (same
 	 * PidLidGlobalObjectId); an update or reschedule carries the same GOID,
@@ -1458,9 +1480,6 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	 */
 	std::vector<eid_t> existing;
 	{
-		auto goid_tag = PROP_TAG(PT_BINARY, propids[l_goid]);
-		auto goid = rq_prop.get<const BINARY>(goid_tag);
-		auto seq_tag  = PROP_TAG(PT_LONG, propids[l_appt_seq]);
 		std::vector<mr_calitem> items;
 		auto err = mr_find_cal_items(par, goid_tag, goid, seq_tag,
 		           goid_tag, items);
@@ -1507,7 +1526,6 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 		    nullptr, cal_fid, &ids, true /* hard */, &partial))
 			return ecRpcFailed;
 	}
-
 	/* Lookup conflict state */
 	bool res_in_use = false, response_allowed = false;
 	auto start_nt = rq_prop.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
