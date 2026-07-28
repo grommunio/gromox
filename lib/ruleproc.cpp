@@ -1454,10 +1454,12 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 {
 	auto &rq_prop = par.ctnt->proplist;
 	auto cal_fid  = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
-	auto goid_tag = PROP_TAG(PT_BINARY, propids[l_goid]);
-	auto seq_tag  = PROP_TAG(PT_LONG, propids[l_appt_seq]);
-	auto goid     = rq_prop.get<const BINARY>(goid_tag);
-	auto basedate = mr_goid_instancedate(goid);
+	auto goid_tag  = PROP_TAG(PT_BINARY, propids[l_goid]);
+	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
+	auto seq_tag   = PROP_TAG(PT_LONG, propids[l_appt_seq]);
+	auto goid      = rq_prop.get<const BINARY>(goid_tag);
+	auto cgoid     = rq_prop.get<const BINARY>(cgoid_tag);
+	auto basedate  = mr_goid_instancedate(goid);
 
 	/*
 	 * An update for one occurrence of a series carries a
@@ -1477,22 +1479,43 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 		return ecSuccess;
 
 	/*
-	 * Locate any calendar item(s) previously entered for this meeting (same
-	 * PidLidGlobalObjectId); an update or reschedule carries the same GOID,
-	 * so these are the prior bookings the request supersedes.
+	 * Locate the calendar item(s) this request supersedes. An update or
+	 * reschedule of the series carries the same GOID as the master, but
+	 * standalone items entered earlier for individual occurrences carry an
+	 * instance date in theirs and would never match it, so for a series
+	 * match on CleanGlobalObjectId, which is shared by the master and all
+	 * of its occurrences. An occurrence update matches its own dated GOID,
+	 * which selects just that instance.
 	 */
 	std::vector<eid_t> existing;
 	{
+		auto match_tag = goid_tag;
+		auto match_val = goid;
+		if (basedate == 0 && cgoid != nullptr && cgoid->cb != 0) {
+			match_tag = cgoid_tag;
+			match_val = cgoid;
+		}
 		std::vector<mr_calitem> items;
-		auto err = mr_find_cal_items(par, goid_tag, goid, seq_tag,
+		auto err = mr_find_cal_items(par, match_tag, match_val, seq_tag,
 		           goid_tag, items);
 		if (err != ecSuccess)
 			return err;
 		/* Ignore stale out-of-order updates that predate what we already have. */
 		if (!items.empty()) {
+			/*
+			 * For a series, compare against the master's
+			 * sequence only: per-instance sequences run
+			 * independently per RECURRENCE-ID and can
+			 * exceed a series update's, which would
+			 * discard a valid update as stale.
+			 */
 			uint32_t newest_seq = 0;
-			for (const auto &e : items)
-				newest_seq = std::max(newest_seq, e.seq);
+			for (const auto &e : items) {
+				if (basedate == 0 && e.dated)
+					continue;
+				if (e.seq > newest_seq)
+					newest_seq = e.seq;
+			}
 			auto seq = rq_prop.get<const uint32_t>(seq_tag);
 			if (seq != nullptr && *seq < newest_seq)
 				return mr_mark_done(par);
@@ -1537,8 +1560,6 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	 * not go on reporting both as busy afterwards. Reached for
 	 * resources only, per the note at the top of this function.
 	 */
-	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
-	auto cgoid     = rq_prop.get<const BINARY>(cgoid_tag);
 	if (basedate != 0 && cgoid != nullptr && cgoid->cb != 0) {
 		auto seq = rq_prop.get<const uint32_t>(seq_tag);
 		std::vector<mr_calitem> masters;
