@@ -1446,6 +1446,9 @@ static ec_error_t mr_rewrite_cal_item(rxparam &par, eid_t cal_fid,
 	return err;
 }
 
+static ec_error_t mr_remove_occurrence(rxparam &, const PROPID_ARRAY &,
+	eid_t cal_fid, eid_t cal_mid, uint32_t basedate);
+
 static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
     const mr_policy &policy)
 {
@@ -1526,6 +1529,43 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 		    nullptr, cal_fid, &ids, true /* hard */, &partial))
 			return ecRpcFailed;
 	}
+	/*
+	 * A moved occurrence still holds its original slot in the master's
+	 * recurrence blob. Punch it out before the free/busy check, for the
+	 * same reason the prior bookings are dropped first: the occurrence
+	 * must not clash with its own earlier slot, and the resource must
+	 * not go on reporting both as busy afterwards. Reached for
+	 * resources only, per the note at the top of this function.
+	 */
+	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
+	auto cgoid     = rq_prop.get<const BINARY>(cgoid_tag);
+	if (basedate != 0 && cgoid != nullptr && cgoid->cb != 0) {
+		auto seq = rq_prop.get<const uint32_t>(seq_tag);
+		std::vector<mr_calitem> masters;
+		auto err = mr_find_cal_items(par, cgoid_tag, cgoid, seq_tag,
+		           goid_tag, masters);
+		if (err != ecSuccess)
+			return err;
+		for (const auto &e : masters) {
+			/* another instance's standalone item */
+			if (e.dated)
+				continue;
+			/*
+			 * With no standalone item for this instance, its
+			 * sequence lineage is the master's, so a master ahead
+			 * of the update means the series was re-issued after
+			 * the update was sent and the update is stale. Same
+			 * test as in mr_do_cancel.
+			 */
+			if (existing.empty() && seq != nullptr && e.seq > *seq)
+				continue;
+			err = mr_remove_occurrence(par, propids, cal_fid,
+			      e.mid, basedate);
+			if (err != ecSuccess)
+				return err;
+		}
+	}
+
 	/* Lookup conflict state */
 	bool res_in_use = false, response_allowed = false;
 	auto start_nt = rq_prop.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
