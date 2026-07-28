@@ -94,6 +94,7 @@ static std::vector<const hook_entry *> g_hook_list;
 static std::mutex g_free_threads_mutex, g_threads_list_mutex, g_context_lock;
 static std::mutex g_queue_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
+static bool g_work_started;
 static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
@@ -174,6 +175,7 @@ void transporter_init(const char *path, const std::span<const generic_module> &n
 	g_plugin_names = names;
 	g_local_path.clear();
 	g_transporter_stop = false;
+	g_work_started = false;
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
 	g_free_num = free_num;
@@ -246,6 +248,10 @@ int transporter_run()
 	}
 	pthread_setname_np(g_scan_id, "xprt/scan");
 	/* make all thread wake up */
+	{
+		std::lock_guard lock(g_cond_mutex);
+		g_work_started = true;
+	}
 	g_waken_cond.notify_all();
 	return 0;
 }
@@ -339,7 +345,9 @@ static void *dxp_thrwork(void *arg)
 	cannot_served_times = 0;
 	if (pthr_data->wait_on_event) {
 		std::unique_lock cm_hold(g_cond_mutex);
-		g_waken_cond.wait(cm_hold);
+		g_waken_cond.wait(cm_hold, [] {
+			return g_work_started;
+		});
 	}
 	
 	while (!g_transporter_stop) {
