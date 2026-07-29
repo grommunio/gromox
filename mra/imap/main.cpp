@@ -98,6 +98,7 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_autologout_time", "30min", CFG_TIME, "1s"},
 	{"imap_cmd_debug", "0"},
 	{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
+	{"imap_expunge_on_delete", "false", CFG_BOOL},
 	{"imap_force_starttls", "imap_force_tls", CFG_ALIAS},
 	{"imap_force_tls", "false", CFG_BOOL},
 	{"imap_log_file", "-"},
@@ -132,6 +133,7 @@ static bool imap_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 		cfg->get_ll("imap_log_level"), cfg->get_value("running_identity"));
 	g_imapcmd_debug = cfg->get_ll("imap_cmd_debug");
 	g_rfc9051_enable = cfg->get_ll("imap_rfc9051");
+	g_expunge_on_delete = cfg->get_ll("imap_expunge_on_delete");
 
 	if (gxcfg == nullptr)
 		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);

@@ -68,6 +68,17 @@ upon seeing W-2305 warnings in the log.]
 .br
 Default: \fI64K\fP
 .TP
+\fBemsmdb_collapse_notif_storm\fP
+Collapse long runs of pending row-added/row-modified table notifications for a
+session into a single table-changed notification, like is always done for
+row-deleted runs. This spares the server one synchronous row read per pending
+notification when the response is serialized, at the price of clients
+reloading the affected table view. Exchange 2019 delivers individual events;
+keep this off if exact notification behavior matters more than throughput
+under bulk changes.
+.br
+Default: \fIno\fP
+.TP
 \fBemsmdb_max_cxh_per_user\fP
 The maximum number of EMSMDB sessions (CXH = RPC context handle) for one user.
 The special value 0 indicates unlimited. EMSMDB sessions are not tied to any

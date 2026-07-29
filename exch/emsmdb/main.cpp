@@ -62,6 +62,7 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"ems_max_active_sessions", "0", CFG_SIZE, "0"},
 	{"ems_max_active_users", "0", CFG_SIZE, "0"},
 	{"ems_max_pending_sesnotif", "64K", CFG_SIZE, "0"},
+	{"emsmdb_collapse_notif_storm", "0", CFG_BOOL},
 	{"emsmdb_max_cxh_per_user", "100", CFG_SIZE, "100"},
 	{"emsmdb_max_obh_per_session", "32768", CFG_SIZE, "2G"},
 	{"emsmdb_private_folder_softdelete", "1", CFG_BOOL},
@@ -110,6 +111,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> gxcfg,
 	ems_max_active_sessions = pconfig->get_ll("ems_max_active_sessions");
 	ems_max_active_users = pconfig->get_ll("ems_max_active_users");
 	ems_max_pending_sesnotif = pconfig->get_ll("ems_max_pending_sesnotif");
+	emsmdb_collapse_notif_storm = pconfig->get_ll("emsmdb_collapse_notif_storm");
 	return true;
 }
 

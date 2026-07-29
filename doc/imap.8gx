@@ -171,6 +171,15 @@ connection is terminated.
 .br
 Default: \fI3 minutes\fP
 .TP
+\fBimap_expunge_on_delete\fP
+When a STORE command sets the \\Deleted flag, expunge the affected messages
+immediately instead of waiting for an EXPUNGE or CLOSE command. Some clients
+mark messages as deleted without ever expunging them. For example, Thunderbird
+does this when moving messages to a different account, which leaves such
+messages visible to non-IMAP clients indefinitely.
+.br
+Default: \fIfalse\fP
+.TP
 \fBimap_force_tls\fP
 This flag controls whether clients must utilize TLS, either by way of implicit
 TLS, or through the STARTTLS command.
