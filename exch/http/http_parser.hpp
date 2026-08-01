@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstdint>
 #include <ctime>
+#include <mutex>
 #include <string>
 #include <vector>
 #ifdef HAVE_GSSAPI
