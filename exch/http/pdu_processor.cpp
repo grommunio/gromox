@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <algorithm>
 #include <atomic>
 #include <climits>
@@ -491,17 +494,27 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 	return TRUE;
 }
 
+#ifndef ENABLE_RPCNTLM
+static bool warn_rpcntlm()
+{
+	static bool warned = false;
+	if (warned)
+		return false;
+	warned = true;
+	mlog(LV_ERR, "A client tried to use RPC_C_AUTHN_LEVEL_PKT_PRIVACY/INTEGRITY, but NTLM-in-RPC support is not enabled");
+	return false;
+}
+#endif
+
 /* check credentials on a request */
 static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 {
-	size_t hdr_size;
 	DCERPC_AUTH auth;
 	uint32_t auth_length;
 	DCERPC_NCACN_PACKET *ppkt;
 	
 	ppkt = &pcall->pkt;
 	auto prequest = static_cast<dcerpc_request *>(ppkt->payload.get());
-	hdr_size = DCERPC_REQUEST_LENGTH;
 	if (0 == ppkt->auth_length) {
 		if (pcall->pprocessor->auth_list.empty())
 			return FALSE;
@@ -523,8 +536,12 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		return FALSE;
 	}
 	pcall->pauth_ctx = pauth_ctx;
+
+#ifdef ENABLE_RPCNTLM
+	size_t hdr_size = DCERPC_REQUEST_LENGTH;
 	if (ppkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID)
 		hdr_size += 16;
+#endif
 	
 	switch (pauth_ctx->auth_info.auth_level) {
 	case RPC_C_AUTHN_LEVEL_DEFAULT:
@@ -546,6 +563,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 
 	/* check signature or unseal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
+#ifdef ENABLE_RPCNTLM
 	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY: {
 		std::string_view whole_pdu = *pblob;
 		whole_pdu.remove_suffix(auth.credentials.size());
@@ -565,6 +583,12 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 			return FALSE;
 		break;
 	}
+#else
+	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
+	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY: {
+		return warn_rpcntlm();
+	}
+#endif
 	case RPC_C_AUTHN_LEVEL_CONNECT:
 		/* ignore possible signatures here */
 		break;
@@ -675,10 +699,12 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 		return TRUE;
 	} else if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NTLMSSP) {
 		/*
-		 * Outlook 2010 performs a weird double authentication: it
-		 * sends HTTP Authorization headers, but then *also* performs
-		 * NTLMSSP inside the MSRPC channel.
+		 * In Outlook 2010, it is possible to configure both the RPC
+		 * authentication and the RPCPROXY (HTTP) authentication
+		 * individually. It appears that some OL installations default
+		 * to using NTLM for RPC.
 		 */
+#ifdef ENABLE_RPCNTLM
 		if (pauth_ctx->auth_info.auth_level <= RPC_C_AUTHN_LEVEL_CONNECT)
 			pauth_ctx->pntlmssp = ntlmssp_ctx::create(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,
@@ -696,6 +722,9 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 									NTLMSSP_NEGOTIATE_NTLM2|
 									NTLMSSP_NEGOTIATE_ALWAYS_SIGN,
 									http_parser_get_password);
+#else
+		return warn_rpcntlm();
+#endif
 		if (NULL == pauth_ctx->pntlmssp) {
 			return FALSE;
 		}
@@ -722,7 +751,8 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 	case RPC_C_AUTHN_NONE:
 		return pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT ||
 		       pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_NONE;
-	case RPC_C_AUTHN_NTLMSSP:
+	case RPC_C_AUTHN_NTLMSSP: {
+#ifdef ENABLE_RPCNTLM
 		if (!pauth_ctx->pntlmssp->update(pauth_ctx->auth_info.credentials))
 			return FALSE;
 		if (pauth_ctx->pntlmssp->expected_state == NTLMSSP_PROCESS_AUTH) {
@@ -731,6 +761,10 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 			return TRUE;
 		}
 		return pauth_ctx->pntlmssp->session_info(&pauth_ctx->session_info) ? TRUE : false;
+#else
+		return warn_rpcntlm();
+#endif
+	}
 	default:
 		return false;
 	}
@@ -931,12 +965,12 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 
 static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 {
-	uint32_t auth_length;
-	DCERPC_NCACN_PACKET *ppkt;
-	
-	ppkt = &pcall->pkt;
 	if (pcall->pprocessor->auth_list.empty())
 		return TRUE;
+
+#ifdef ENABLE_RPCNTLM
+	auto ppkt = &pcall->pkt;
+	uint32_t auth_length;
 	auto pauth_ctx = pcall->pprocessor->auth_list.back();
 	const auto &auth3 = *static_cast<dcerpc_auth3 *>(ppkt->payload.get());
 	/* can't work without an existing state, and an new blob to feed it */
@@ -963,6 +997,9 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
  AUTH3_FAIL:
 	std::erase(pcall->pprocessor->auth_list, pauth_ctx);
 	return TRUE;
+#else
+	return warn_rpcntlm();
+#endif
 }
 
 static BOOL pdu_processor_auth_alter(DCERPC_CALL *pcall)
@@ -1152,7 +1189,6 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	uint32_t flags;
 	DATA_BLOB creds2;
 	uint8_t creds2_buff[16];
-	uint32_t payload_length;
 	char ndr_buff[DCERPC_BASE_MARSHALL_SIZE];
 
 	creds2.pb = creds2_buff;
@@ -1188,8 +1224,10 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	if (ndr.p_zero(pauth_ctx->auth_info.auth_pad_length) != pack_result::ok)
 		return FALSE;
 
-	payload_length = response.stub_and_verifier.size() +
+#ifdef ENABLE_RPCNTLM
+	uint32_t payload_length = response.stub_and_verifier.size() +
 	                 pauth_ctx->auth_info.auth_pad_length;
+#endif
 
 	/* start without signature, will be appended later */
 	pauth_ctx->auth_info.credentials.clear();
@@ -1209,19 +1247,25 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 
 	/* sign or seal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
-	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY: {
+	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
+#ifdef ENABLE_RPCNTLM
 		if (!pauth_ctx->pntlmssp->seal_packet(&ndr.data[DCERPC_REQUEST_LENGTH],
 		    payload_length, *pblob, &creds2))
 			return FALSE;
 		break;
-	}
+#else
+		return warn_rpcntlm();
+#endif
 	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY: {
+#ifdef ENABLE_RPCNTLM
 		std::string_view data(&ndr.cdata[DCERPC_REQUEST_LENGTH], payload_length);
 		if (!pauth_ctx->pntlmssp->sign_packet(data, *pblob, &creds2))
 			return FALSE;
 		break;
+#else
+		return warn_rpcntlm();
+#endif
 	}
-
 	default:
 		return FALSE;
 	}

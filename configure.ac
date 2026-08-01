@@ -54,6 +54,12 @@ AS_IF([test "$cxxmode" = error], [
 ])
 my_CXXFLAGS="$my_CXXFLAGS${cxxmode}"
 
+AC_ARG_ENABLE([rpcntlm],
+	[AS_HELP_STRING([--disable-rpcntlm], [Disable old-style in-RPC authentication (used by Outlook 2010)])],
+	[enable_rpcntlm="$enableval"], [enable_rpcntlm=yes])
+AH_TEMPLATE([ENABLE_RPCNTLM], [])
+AS_IF([test "$enable_rpcntlm" != no], [AC_DEFINE([ENABLE_RPCNTLM], [1])])
+AM_CONDITIONAL([ENABLE_RPCNTLM], [test "$enable_rpcntlm" != no])
 AC_ARG_ENABLE([private-headers],
 	[AS_HELP_STRING([--enable-private-headers], [Do copy header files during \`make install\`])],
 	[install_headers="$enableval"], [install_headers=no])
