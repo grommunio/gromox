@@ -217,8 +217,8 @@ bool PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "emsmdb: failed to register endpoint with port 6001");
 			return FALSE;
 		}
-		if (!register_interface(ep_6001, &interface_emsmdb) ||
-		    !register_interface(ep_6001, &interface_async_emsmdb)) {
+		if (!register_interface(*ep_6001, interface_emsmdb) ||
+		    !register_interface(*ep_6001, interface_async_emsmdb)) {
 			mlog(LV_ERR, "emsmdb: failed to register emsmdb interface");
 			return FALSE;
 		}

@@ -250,8 +250,6 @@ bool PROC_exchange_rfr(enum plugin_op reason, const struct dlfuncs &ppdata)
 	/* path contains the config files directory */
 	switch (reason) {
 	case PLUGIN_FREE:
-		unregister_interface(ep_6002, &interface);
-		unregister_interface(ep_6001, &interface);
 		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
@@ -267,8 +265,8 @@ bool PROC_exchange_rfr(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "rfr: failed to register endpoint with port 6002");
 			return FALSE;
 		}
-		if (!register_interface(ep_6001, &interface) ||
-		    !register_interface(ep_6002, &interface)) {
+		if (!register_interface(*ep_6001, interface) ||
+		    !register_interface(*ep_6002, interface)) {
 			mlog(LV_ERR, "rfr: failed to register interface");
 			return FALSE;
 		}

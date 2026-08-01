@@ -262,6 +262,33 @@ pack_result NDR_PULL::g_syntax(SYNTAX_ID *r)
 	return pack_result::ok;
 }
 
+pack_result NDR_PULL::g_blob(std::string *blob) try
+{
+	uint32_t length = 0;
+
+	if (flags & NDR_FLAG_REMAINING) {
+		length = data_size - offset;
+	} else if (flags & (NDR_ALIGN_FLAGS & ~NDR_FLAG_NOALIGN)) {
+		if (flags & NDR_FLAG_ALIGN2)
+			length = ndr_align_size(offset, 2);
+		else if (flags & NDR_FLAG_ALIGN4)
+			length = ndr_align_size(offset, 4);
+		else if (flags & NDR_FLAG_ALIGN8)
+			length = ndr_align_size(offset, 8);
+		if (data_size - offset < length)
+			length = data_size - offset;
+	} else {
+		TRY(g_uint32(&length));
+	}
+	if (data_size < length || offset + length > data_size)
+		return pack_result::bufsize;
+	blob->assign(&cdata[offset], length);
+	offset += length;
+	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
 pack_result NDR_PULL::g_blob(DATA_BLOB *pblob)
 {
 	auto pndr = this;

@@ -130,8 +130,8 @@ bool PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "nsp: failed to register endpoint with port 6004");
 			return FALSE;
 		}
-		if (!register_interface(ep_6001, &interface) ||
-		    !register_interface(ep_6004, &interface)) {
+		if (!register_interface(*ep_6001, interface) ||
+		    !register_interface(*ep_6004, interface)) {
 			mlog(LV_ERR, "nsp: failed to register interface");
 			return FALSE;
 		}
@@ -148,8 +148,6 @@ bool PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 	}
 	case PLUGIN_FREE:
 		ab_tree::AB.stop();
-		unregister_interface(ep_6004, &interface);
-		unregister_interface(ep_6001, &interface);
 		return TRUE;
 	case PLUGIN_RELOAD:
 		exch_nsp_reload(nullptr);

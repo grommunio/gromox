@@ -29,7 +29,7 @@ struct GX_EXPORT DCERPC_INFO {
 using rpc_request = gromox::universal_base;
 using rpc_response = gromox::universal_base;
 
-struct DCERPC_INTERFACE {
+struct dcerpc_interface {
 	char name[128]{};
 	GUID uuid{};
 	uint32_t version = 0;
@@ -44,3 +44,4 @@ struct DCERPC_INTERFACE {
 	/* the reclaim function for the chosen interface */
 	void (*reclaim)(uint32_t async_id) = nullptr;
 };
+using DCERPC_INTERFACE = dcerpc_interface;

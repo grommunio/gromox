@@ -77,12 +77,12 @@ struct GX_EXPORT ntlmssp_ctx {
 	static constexpr unsigned int SIG_SIZE = 16;
 
 	static std::unique_ptr<ntlmssp_ctx> create(const char *netbios_name, const char *dns_name, const char *dns_domain, bool b_lm_key, uint32_t net_flags, NTLMSSP_GET_PASSWORD);
-	bool update(DATA_BLOB *);
+	bool update(std::string &);
 	static size_t sig_size() { return SIG_SIZE; }
-	bool sign_packet(const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, DATA_BLOB *sig);
-	bool check_packet(const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, const DATA_BLOB *sig);
-	bool seal_packet(uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, DATA_BLOB *sig);
-	bool unseal_packet(uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, const DATA_BLOB *sig);
+	bool sign_packet(std::string_view data, std::string_view whole_pdu, DATA_BLOB *sig);
+	bool check_packet(std::string_view data, std::string_view whole_pdu, std::string_view sig);
+	bool seal_packet(uint8_t *data, size_t len, std::string_view whole_pdu, DATA_BLOB *sig);
+	bool unseal_packet(uint8_t *data, size_t len, std::string_view whole_pdu, std::string_view sig);
 	bool session_info(NTLMSSP_SESSION_INFO *);
 
 	std::mutex lock;
