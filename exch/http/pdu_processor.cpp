@@ -994,6 +994,11 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	return TRUE;
 }
 
+/**
+ * This is a fake authentication. It compares the provided NTLM hash with the
+ * password supplied in the HTTP Basic Authentication header — both are
+ * user-controlled.
+ */
 static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 {
 	if (pcall->pprocessor->auth_list.empty())
