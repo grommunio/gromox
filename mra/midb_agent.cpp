@@ -1508,6 +1508,7 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 				if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
+					temp_line[line_pos] = '\0';
 					pspace = strchr(temp_line, ' ');
 					if (pspace == nullptr) {
 						b_format_error = TRUE;
@@ -1538,7 +1539,7 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 					line_pos = 0;
 				} else if (buff[i] != '\r' || i != offset - 1) {
 					temp_line[line_pos++] = buff[i];
-					if (line_pos >= 257 * 1024)
+					if (line_pos >= sizeof(temp_line) - 1)
 						return MIDB_RDWR_ERROR;
 				}
 			}
