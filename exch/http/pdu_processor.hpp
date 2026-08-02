@@ -17,7 +17,7 @@
 #define DISPATCH_SUCCESS							1
 #define DISPATCH_PENDING							2
 
-enum {
+enum pduproc_result {
 	PDU_PROCESSOR_ERROR,
 	PDU_PROCESSOR_INPUT,
 	PDU_PROCESSOR_OUTPUT,

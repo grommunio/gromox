@@ -136,6 +136,37 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 	/* {71710533-beba-4937-8319-b5dbef9ccc36} */
 	{{0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36}}, 1};
 
+static const char *pkttype_to_name(unsigned int type)
+{
+#define E(n) case n: return #n;
+	switch (type) {
+	E(DCERPC_PKT_REQUEST)
+	E(DCERPC_PKT_PING)
+	E(DCERPC_PKT_RESPONSE)
+	E(DCERPC_PKT_FAULT)
+	E(DCERPC_PKT_WORKING)
+	E(DCERPC_PKT_NOCALL)
+	E(DCERPC_PKT_REJECT)
+	E(DCERPC_PKT_ACK)
+	E(DCERPC_PKT_CL_CANCEL)
+	E(DCERPC_PKT_FACK)
+	E(DCERPC_PKT_CANCEL_ACK)
+	E(DCERPC_PKT_BIND)
+	E(DCERPC_PKT_BIND_ACK)
+	E(DCERPC_PKT_BIND_NAK)
+	E(DCERPC_PKT_ALTER)
+	E(DCERPC_PKT_ALTER_ACK)
+	E(DCERPC_PKT_AUTH3)
+	E(DCERPC_PKT_SHUTDOWN)
+	E(DCERPC_PKT_CO_CANCEL)
+	E(DCERPC_PKT_ORPHANED)
+	E(DCERPC_PKT_RTS)
+	E(DCERPC_PKT_INVALID)
+	default: return "??";
+	}
+#undef E
+}
+
 static int pdu_processor_load_library(const generic_module &);
 
 static bool is_negotiate_uuid(GUID i)
@@ -1616,7 +1647,7 @@ static void pdu_processor_async_reply(uint32_t async_id, const rpc_response *pou
 	delete pasync_node;
 }
 
-static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
+static pduproc_result pdu_processor_process_request(dcerpc_call *pcall)
 {
 	GUID *pobject;
 	uint32_t flags;
@@ -1630,12 +1661,14 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	auto prequest = static_cast<dcerpc_request *>(pcall->pkt.payload.get());
 	auto pcontext = pprocessor->find_ctx(prequest->context_id);
 	if (pcontext == nullptr)
-		return pdu_processor_fault(pcall, DCERPC_FAULT_UNK_IF);
+		return pdu_processor_fault(pcall, DCERPC_FAULT_UNK_IF) ?
+		       PDU_PROCESSOR_OUTPUT : PDU_PROCESSOR_ERROR;
 	
 	/* normally, stack root will be freed in pdu_processor_reply_request */
 	pstack_root = pdu_processor_new_stack_root();
 	if (pstack_root == nullptr)
-		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
+		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER) ?
+		       PDU_PROCESSOR_OUTPUT : PDU_PROCESSOR_ERROR;
 	
 	g_call_key = pcall;
 	g_stack_key = pstack_root;
@@ -1658,7 +1691,8 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: pull fail on RPC call %u on %s",
 			prequest->opnum, pcontext->pinterface->name);
-		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
+		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR) ?
+		       PDU_PROCESSOR_OUTPUT : PDU_PROCESSOR_ERROR;
 	}
 	
 	pcall->ptr_cnt = ndr_pull.get_ptrcnt();
@@ -1667,7 +1701,6 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	handle = pcall->pcontext->assoc_group_id;
 	handle <<= 32;
 	handle |= pcall->pcontext->context_id;
-	*pb_async = false;
 	/* call the dispatch function */
 	ec_error_t ecode = ecSuccess;
 	std::unique_ptr<rpc_response> pout;
@@ -1688,17 +1721,19 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: RPC execution fault in call %s:%02x",
 			pcontext->pinterface->name, prequest->opnum);
-		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR);
+		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR) ?
+		       PDU_PROCESSOR_OUTPUT : PDU_PROCESSOR_ERROR;
 	case DISPATCH_PENDING:
-		*pb_async = TRUE;
-		return TRUE;
+		return PDU_PROCESSOR_INPUT;
 	case DISPATCH_SUCCESS:
-		return pdu_processor_reply_request(pcall, pstack_root, pout.get());
+		return pdu_processor_reply_request(pcall, pstack_root, pout.get()) ?
+		       PDU_PROCESSOR_OUTPUT : PDU_PROCESSOR_ERROR;
 	default:
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: unknown return value by %s:%02x",
 			pcontext->pinterface->name, prequest->opnum);
-		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR);
+		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR) ?
+		       PDU_PROCESSOR_OUTPUT : PDU_PROCESSOR_ERROR;
 	}
 }
 
@@ -2487,7 +2522,6 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 {
 	auto pprocessor = this;
 	NDR_PULL ndr;
-	BOOL b_result;
 	uint32_t flags;
 	BOOL b_bigendian;
 	DATA_BLOB tmp_blob;
@@ -2653,49 +2687,47 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 			return PDU_PROCESSOR_INPUT;
 		}
 	}
-	
+
+	pduproc_result result = PDU_PROCESSOR_ERROR;
 	switch (pcall->pkt.pkt_type) {
 	case DCERPC_PKT_BIND:
-		b_result = pdu_processor_process_bind(pcall);
+		result = pdu_processor_process_bind(pcall) ? PDU_PROCESSOR_OUTPUT : PDU_PROCESSOR_ERROR;
 		break;
 	case DCERPC_PKT_AUTH3:
-		b_result = pdu_processor_process_auth3(pcall);
-		if (b_result) {
+		result = pdu_processor_process_auth3(pcall) ? PDU_PROCESSOR_INPUT : PDU_PROCESSOR_ERROR;
+		if (result == PDU_PROCESSOR_INPUT)
 			delete pcall;
-			return PDU_PROCESSOR_INPUT;
-		}
 		break;
 	case DCERPC_PKT_ALTER:
-		b_result = pdu_processor_process_alter(pcall);
+		result = pdu_processor_process_alter(pcall) ? PDU_PROCESSOR_OUTPUT : PDU_PROCESSOR_ERROR;
 		break;
 	case DCERPC_PKT_REQUEST: {
-		BOOL b_async = false;
-		b_result = pdu_processor_process_request(pcall, &b_async);
-		if (b_result && b_async)
-			return PDU_PROCESSOR_INPUT;
+		result = pdu_processor_process_request(pcall);
 		break;
 	}
 	case DCERPC_PKT_CO_CANCEL:
 		pdu_processor_process_cancel(pcall);
 		delete pcall;
-		return PDU_PROCESSOR_INPUT;
+		result = PDU_PROCESSOR_INPUT;
+		break;
 	case DCERPC_PKT_ORPHANED:
 		pdu_processor_process_orphaned(pcall);
 		delete pcall;
-		return PDU_PROCESSOR_INPUT;
+		result = PDU_PROCESSOR_INPUT;
+		break;
 	default:
-		b_result = FALSE;
 		mlog(LV_DEBUG, "pdu_processor: invalid ncancn packet type in process procedure");
 		break;
 	}
+
+	if (g_msrpc_debug >= 1 || result == PDU_PROCESSOR_ERROR)
+		mlog(LV_DEBUG, "rpc_input(%s) = %u", pkttype_to_name(pcall->pkt.pkt_type), result);
 	
-	if (!b_result) {
+	if (result == PDU_PROCESSOR_ERROR)
 		delete pcall;
-		return PDU_PROCESSOR_ERROR;
-	} else {
+	else if (result == PDU_PROCESSOR_OUTPUT)
 		*ppcall = pcall;
-		return PDU_PROCESSOR_OUTPUT;
-	}
+	return result;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2058: ENOMEM");
 	return PDU_PROCESSOR_ERROR;
