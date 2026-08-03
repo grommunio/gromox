@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
@@ -2757,7 +2758,7 @@ static BOOL message_make_dam(const rulexec_in &rp,
 			if (tmp_ids[i] == tmp_eid)
 				break;
 		if (i >= id_count && id_count < std::size(tmp_ids))
-			tmp_ids[id_count++] = tmp_eid;
+			cpu_to_le64p(&tmp_ids[id_count++], tmp_eid);
 	}
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    ext_push.p_rule_actions(actions) != pack_result::ok)
