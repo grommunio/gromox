@@ -914,9 +914,11 @@ bool sMessageEntryId::isPrivate() const
  * Must be sorted alphabetically by name.
  */
 decltype(sFolderSpec::distNameInfo) sFolderSpec::distNameInfo = {{
+    {"archive", PRIVATE_FID_ARCHIVE, true},
     {"calendar", PRIVATE_FID_CALENDAR, true},
     {"conflicts", PRIVATE_FID_CONFLICTS, true},
     {"contacts", PRIVATE_FID_CONTACTS, true},
+    {"conversationhistory", PRIVATE_FID_CONVERSATION_HISTORY, true},
     {"deleteditems", PRIVATE_FID_DELETED_ITEMS, true},
     {"drafts", PRIVATE_FID_DRAFT, true},
     {"imcontactlist", PRIVATE_FID_IMCONTACTLIST, true},
@@ -929,6 +931,7 @@ decltype(sFolderSpec::distNameInfo) sFolderSpec::distNameInfo = {{
     {"outbox", PRIVATE_FID_OUTBOX, true},
     {"publicfoldersroot", PUBLIC_FID_IPMSUBTREE, false},
     {"quickcontacts", PRIVATE_FID_QUICKCONTACTS, true},
+    {"recipientcache", PRIVATE_FID_RECIPIENT_CACHE, true},
     {"root", PRIVATE_FID_ROOT, true},
     {"scheduled", PRIVATE_FID_SCHEDULE, true},
     {"sentitems", PRIVATE_FID_SENT_ITEMS, true},
