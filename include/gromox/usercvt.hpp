@@ -14,6 +14,8 @@ namespace gromox {
 using cvt_id2user = ec_error_t (*)(unsigned int, std::string &);
 extern GX_EXPORT ec_error_t cvt_essdn_to_username(const char *emaddr, const char *org, cvt_id2user, std::string &);
 extern GX_EXPORT ec_error_t cvt_genaddr_to_smtpaddr(const char *atype, const char *emaddr, const char *org, cvt_id2user, std::string &);
+extern GX_EXPORT bool cvt_srchkey_eq(const BINARY &, const BINARY &, const char *org, cvt_id2user);
+extern GX_EXPORT bool rprop_srchkey_eq(const SPropertyRestriction &, const void *dbval, const char *org, cvt_id2user);
 /* Only muidEMSAB entryids */
 extern GX_EXPORT ec_error_t cvt_emsab_to_essdn(const BINARY *, std::string &);
 /* Multiple types of entryids */
