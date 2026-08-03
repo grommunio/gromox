@@ -699,7 +699,7 @@ const char *ab_base::user_info(minid mid, userinfo ui) const
 	const sql_user *user = fetch_user(mid);
 	if (!user)
 		return nullptr;
-	uint32_t tag = 0;
+	proptag_t tag{};
 	switch (ui) {
 	case userinfo::mail_address:
 		if ((user->dtypx & DTE_MASK_LOCAL) != DT_REMOTE_MAILUSER)

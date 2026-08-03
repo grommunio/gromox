@@ -316,7 +316,7 @@ PROPERTY_XNAME::operator PROPERTY_NAME() const
 	return z;
 }
 
-size_t proptag_cspan::indexof(uint32_t tag) const
+size_t proptag_cspan::indexof(proptag_t tag) const
 {
 	for (size_t i = 0; i < size(); ++i)
 		if ((*this)[i] == tag)
@@ -324,7 +324,7 @@ size_t proptag_cspan::indexof(uint32_t tag) const
 	return npos;
 }
 
-size_t PROBLEM_ARRAY::indexof(uint32_t tag) const
+size_t PROBLEM_ARRAY::indexof(proptag_t tag) const
 {
 	for (size_t i = 0; i < count; ++i)
 		if (pproblem[i].proptag == tag)

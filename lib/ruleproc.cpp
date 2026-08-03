@@ -503,7 +503,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 
 static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props, const RESTRICTION &res);
 
-static bool rx_eval_msgsub(const MESSAGE_CHILDREN &ch, uint32_t tag,
+static bool rx_eval_msgsub(const MESSAGE_CHILDREN &ch, proptag_t tag,
     const RESTRICTION &res)
 {
 	uint32_t count = 0;
@@ -533,7 +533,8 @@ static bool rx_eval_msgsub(const MESSAGE_CHILDREN &ch, uint32_t tag,
 	return res.rt == RES_COUNT && res.count->count == count;
 }
 
-static bool rx_eval_sub(const MESSAGE_CONTENT *ct, uint32_t tag, const RESTRICTION &res)
+static bool rx_eval_sub(const MESSAGE_CONTENT *ct, proptag_t tag,
+    const RESTRICTION &res)
 {
 	switch (res.rt) {
 	case RES_OR:

@@ -37,7 +37,7 @@ static str_to_int_t g_cpname2id_map, g_lctag2id_map;
 static str_to_str_t g_ext2mime_map, g_mime2ext_map, g_lang2cset_map, g_ignore_map;
 static folder_name_map_t folder_name_map;
 static std::once_flag g_textmaps_done;
-static std::unordered_map<uint32_t, std::string> g_mapitags;
+static std::unordered_map<proptag_t, std::string> g_mapitags;
 
 static void xmap_read(const char *file, const char *dirs,
     int_to_str_t &fm, str_to_int_t &bm)
@@ -263,7 +263,7 @@ static bool mt_overwrite(const std::string &given, const std::string_view &repla
 	       replace[0] == 'P' && replace[1] == 'i' && replace[2] == 'd';
 }
 
-static void mapitags_read(const char *file, std::unordered_map<uint32_t, std::string> &map)
+static void mapitags_read(const char *file, std::unordered_map<proptag_t, std::string> &map)
 {
 	std::unique_ptr<FILE, file_deleter> filp(fopen(file, "r"));
 	if (filp == nullptr)
@@ -273,7 +273,7 @@ static void mapitags_read(const char *file, std::unordered_map<uint32_t, std::st
 	while (HX_getl(&line, filp.get()) != nullptr) {
 		HX_chomp(line);
 		char *opts = nullptr;
-		uint32_t tag = strtoul(line, &opts, 16);
+		proptag_t tag = strtoul(line, &opts, 16);
 		if (tag == 0)
 			continue;
 		auto name = opts;
@@ -305,7 +305,7 @@ static void mapitags_read(const char *file, std::unordered_map<uint32_t, std::st
 	}
 }
 
-const char *mapitags_namelookup(uint32_t tag)
+const char *mapitags_namelookup(proptag_t tag)
 {
 	auto i = g_mapitags.find(tag);
 	return i != g_mapitags.cend() ? i->second.c_str() : nullptr;

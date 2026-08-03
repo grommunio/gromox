@@ -494,7 +494,7 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 				}
 				++vcf_idx;
 				if (!val.empty()) {
-					uint32_t tag;
+					proptag_t tag;
 					if (strcasecmp(address_type, "work") == 0)
 						tag = g_workaddr_proptags[mapi_idx];
 					else if (strcasecmp(address_type, "home") == 0)
@@ -519,7 +519,7 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			uint32_t tag = 0;
+			proptag_t tag{};
 			if (strcasecmp(keyword, "home") == 0) {
 				++pvparam;
 				if (pvparam == pvline->m_params.cend())
@@ -640,7 +640,7 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			uint32_t tag;
+			proptag_t tag;
 			if (strcasecmp(keyword, "home") == 0)
 				tag = PR_PERSONAL_HOME_PAGE;
 			else if (strcasecmp(keyword, "work") == 0)
@@ -720,7 +720,7 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			uint32_t tag;
+			proptag_t tag;
 			auto pvparam_name = pvparam->name();
 			if (strcasecmp(pvparam_name, "ASSISTANT") == 0)
 				tag = PR_ASSISTANT_TELEPHONE_NUMBER;

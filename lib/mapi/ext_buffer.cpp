@@ -2817,7 +2817,7 @@ pack_result EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID &r)
 	return p_bytes(r.pad2, 2);
 }
 
-pack_result EXT_PUSH::p_flagged_pv(uint32_t tag, const FLAGGED_PROPVAL &r)
+pack_result EXT_PUSH::p_flagged_pv(proptag_t tag, const FLAGGED_PROPVAL &r)
 {
 	auto type = PROP_TYPE(tag);
 	void *pvalue = nullptr;

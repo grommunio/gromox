@@ -36,7 +36,7 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, proptag_t proptag,
 	return true;
 }
 
-ec_error_t TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
+ec_error_t TPROPVAL_ARRAY::set(proptag_t tag, const void *xpropval)
 {
 	for (size_t i = 0; i < count; ++i) {
 		if (ppropval[i].proptag != tag)

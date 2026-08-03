@@ -139,12 +139,12 @@ struct TNEF_PROPLIST {
 	uint32_t count;
 	TNEF_PROPVAL *ppropval;
 
-	void emplace_back(uint32_t tag, const void *d) {
+	void emplace_back(proptag_t tag, const void *d) {
 		ppropval[count++] = TNEF_PROPVAL{static_cast<proptype_t>(PROP_TYPE(tag)),
 		                    static_cast<propid_t>(PROP_ID(tag)),
 		                    nullptr, deconst(d)};
 	}
-	bool emplace_back(uint32_t tag, const void *d, GET_PROPNAME);
+	bool emplace_back(proptag_t tag, const void *d, GET_PROPNAME);
 };
 
 struct TNEF_PROPSET {
@@ -173,7 +173,7 @@ static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 static const uint8_t g_pad_bytes[3]{};
 static BOOL tnef_serialize_internal(tnef_push &, const char *log_id, BOOL b_embedded, const MESSAGE_CONTENT *);
 
-bool TNEF_PROPLIST::emplace_back(uint32_t tag, const void *d, GET_PROPNAME gpn)
+bool TNEF_PROPLIST::emplace_back(proptag_t tag, const void *d, GET_PROPNAME gpn)
 {
 	auto propid = ppropval[count].propid = PROP_ID(tag);
 	ppropval[count].proptype = PROP_TYPE(tag);

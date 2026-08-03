@@ -138,7 +138,7 @@ void writeProp(sShape &shape, const std::optional<std::string> &value,
 		shape.write(name, TAGGED_PROPVAL{type, const_cast<char *>(value->c_str())});
 }
 
-void writeBoolProp(sShape& shape, const std::optional<bool>& value, uint32_t tag)
+void writeBoolProp(sShape &shape, const std::optional<bool> &value, proptag_t tag)
 {
 	if (value)
 		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<uint8_t>(*value ? 1 : 0)});

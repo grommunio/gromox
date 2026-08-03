@@ -710,7 +710,7 @@ bool mysql_plugin::get_user_props(const char *username,
 		return false;
 
 	for (DB_ROW row = res.fetch_row(); row; row = res.fetch_row()) {
-		uint32_t tag = strtoul(row[1], nullptr, 0);
+		proptag_t tag = strtoul(row[1], nullptr, 0);
 		const char* strval = row[3];
 		if(!strval) // Binary values are currently not supported
 			continue;
