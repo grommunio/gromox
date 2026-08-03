@@ -88,8 +88,8 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-using propmap_t = std::unordered_map<std::string, uint16_t>;
-using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
+using propmap_t = std::unordered_map<std::string, propid_t>;
+using propididmap_t = std::unordered_map<propid_t, propid_t>;
 
 namespace {
 struct TNEF_ATTRIBUTE {
@@ -141,7 +141,7 @@ struct TNEF_PROPLIST {
 
 	void emplace_back(uint32_t tag, const void *d) {
 		ppropval[count++] = TNEF_PROPVAL{static_cast<proptype_t>(PROP_TYPE(tag)),
-		                    static_cast<uint16_t>(PROP_ID(tag)),
+		                    static_cast<propid_t>(PROP_ID(tag)),
 		                    nullptr, deconst(d)};
 	}
 	bool emplace_back(uint32_t tag, const void *d, GET_PROPNAME);
