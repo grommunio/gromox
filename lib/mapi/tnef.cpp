@@ -140,7 +140,7 @@ struct TNEF_PROPLIST {
 	TNEF_PROPVAL *ppropval;
 
 	void emplace_back(uint32_t tag, const void *d) {
-		ppropval[count++] = TNEF_PROPVAL{static_cast<uint16_t>(PROP_TYPE(tag)),
+		ppropval[count++] = TNEF_PROPVAL{static_cast<proptype_t>(PROP_TYPE(tag)),
 		                    static_cast<uint16_t>(PROP_ID(tag)),
 		                    nullptr, deconst(d)};
 	}

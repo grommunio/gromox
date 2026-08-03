@@ -169,9 +169,9 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_longterm(LONG_TERM_ID *);
 	pack_result g_longterm_range(LONG_TERM_ID_RANGE *);
 	pack_result g_typed_pv(TYPED_PROPVAL *);
-	pack_result g_propval(uint16_t type, void **);
+	pack_result g_propval(gromox::proptype_t, void **);
 	pack_result g_tagged_pv(TAGGED_PROPVAL *);
-	pack_result g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *);
+	pack_result g_flagged_pv(gromox::proptype_t, FLAGGED_PROPVAL *);
 	pack_result g_proprow(std::span<const gromox::proptag_t>, PROPERTY_ROW *);
 	pack_result g_propname(PROPERTY_NAME *);
 	pack_result g_propname_a(PROPNAME_ARRAY *);

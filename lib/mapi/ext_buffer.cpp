@@ -1053,7 +1053,7 @@ pack_result EXT_PULL::g_rule_actions(RULE_ACTIONS *r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PULL::g_propval(uint16_t type, void **ppval)
+pack_result EXT_PULL::g_propval(proptype_t type, void **ppval)
 {
 	if (m_flags & EXT_FLAG_ABK && (type == PT_STRING8 || type == PT_UNICODE ||
 	    type == PT_BINARY || (type & MV_FLAG))) {
@@ -1521,7 +1521,7 @@ pack_result EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFO *r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
+pack_result EXT_PULL::g_flagged_pv(proptype_t type, FLAGGED_PROPVAL *r)
 {
 	void **ppvalue;
 	
@@ -2682,7 +2682,7 @@ pack_result EXT_PUSH::p_rule_actions(const RULE_ACTIONS &r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PUSH::p_propval(uint16_t type, const void *pval)
+pack_result EXT_PUSH::p_propval(proptype_t type, const void *pval)
 {
 	if (m_flags & EXT_FLAG_ABK && (type == PT_STRING8 ||
 	    type == PT_UNICODE || type == PT_BINARY || (type & MV_FLAG))) {
@@ -2819,7 +2819,7 @@ pack_result EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID &r)
 
 pack_result EXT_PUSH::p_flagged_pv(uint32_t tag, const FLAGGED_PROPVAL &r)
 {
-	uint16_t type = PROP_TYPE(tag);
+	auto type = PROP_TYPE(tag);
 	void *pvalue = nullptr;
 	
 	if (type == PT_UNSPECIFIED && !(m_flags & EXT_FLAG_ABK)) {

@@ -1510,7 +1510,6 @@ static bool db_engine_insert_categories(sqlite3 *psqlite, int depth,
     uint64_t *plast_row_id) try
 {
 	int i;
-	uint16_t type;
 	uint64_t row_id = 0, prev_id = 0, inst_id;
 	
 	if (0 != before_row_id) {
@@ -1531,7 +1530,7 @@ static bool db_engine_insert_categories(sqlite3 *psqlite, int depth,
 		sqlite3_bind_int64(pstmt_insert, 6, 0);
 		sqlite3_bind_int64(pstmt_insert, 7, 0);
 		sqlite3_bind_int64(pstmt_insert, 8, 0);
-		type = psorts->psort[i].type;
+		proptype_t type = psorts->psort[i].type;
 		if ((type & MVI_FLAG) == MVI_FLAG)
 			type &= ~MVI_FLAG;
 		if (ppropvals[i].pvalue == nullptr)
@@ -1565,7 +1564,7 @@ static bool db_engine_insert_categories(sqlite3 *psqlite, int depth,
 }
 
 static bool db_engine_insert_message(sqlite3 *psqlite, uint64_t message_id,
-    bool b_read, int depth, uint32_t inst_num, uint16_t type, void *pvalue,
+    bool b_read, int depth, uint32_t inst_num, proptype_t type, void *pvalue,
     uint64_t parent_id, uint64_t after_row_id, uint64_t before_row_id,
     sqlite3_stmt *pstmt_insert, sqlite3_stmt *pstmt_update,
     std::vector<rowinfo_node> &notify_list, uint64_t *plast_row_id) try
@@ -1630,7 +1629,7 @@ static bool db_engine_check_new_header(const std::vector<rowinfo_node> &notify_l
 	       }) != notify_list.cend();
 }
 
-static inline size_t det_multi_num(uint16_t type, const void *mv)
+static inline size_t det_multi_num(proptype_t type, const void *mv)
 {
 	switch (type) {
 	case PT_MV_SHORT:
@@ -1657,7 +1656,7 @@ static inline size_t det_multi_num(uint16_t type, const void *mv)
 	return UINT32_MAX;
 }
 
-static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
+static inline void *pick_single_val(proptype_t type, void *mv, size_t j)
 {
 	switch (type) {
 	case PT_MV_SHORT:
@@ -2025,7 +2024,7 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			BOOL b_break = FALSE;
 			size_t i;
 			for (i = 0; i < ptable->psorts->ccategories; i++) {
-				uint16_t type = ptable->psorts->psort[i].type;
+				proptype_t type = ptable->psorts->psort[i].type;
 				if ((type & MVI_FLAG) == MVI_FLAG)
 					type &= ~MVI_FLAG;
 				sqlite3_reset(pstmt);
@@ -2094,7 +2093,7 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 				row_id = row_id1;
 				row_id1 = 0;
 			}
-			uint16_t type = 0;
+			proptype_t type{};
 			void *pvalue = nullptr;
 			if (multi_index >= 0) {
 				type = ptable->psorts->psort[multi_index].type & ~MVI_FLAG;
@@ -3297,7 +3296,6 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 	BOOL b_error;
 	uint32_t idx;
 	void *pvalue, *pvalue1 = nullptr;
-	uint16_t type;
 	void *pmultival;
 	int64_t prev_id;
 	uint64_t row_id1, inst_id = 0, inst_id1 = 0;
@@ -3475,7 +3473,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 		{
 		/* check if the multiple instance value is changed */
 		if (0 != ptable->instance_tag) {
-			type = PROP_TYPE(ptable->instance_tag) & ~MVI_FLAG;
+			proptype_t type = PROP_TYPE(ptable->instance_tag) & ~MVI_FLAG;
 			if (!cu_get_property(MAPI_MESSAGE,
 			    message_id, ptable->cpid, db,
 			    ptable->instance_tag & ~MV_INSTANCE, &pmultival))

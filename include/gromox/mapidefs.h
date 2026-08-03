@@ -1156,7 +1156,7 @@ struct GX_EXPORT SHORT_ARRAY {
  * @table_sort: TBL_ASCEND / TBL_DESCEND
  */
 struct GX_EXPORT SORT_ORDER {
-	uint16_t type = 0;
+	gromox::proptype_t type{};
 	gromox::propid_t propid{};
 	uint8_t table_sort = 0;
 

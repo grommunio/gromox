@@ -333,7 +333,6 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
     uint32_t *punread_count) try
 {
 	void *pvalue;
-	uint16_t type;
 	BOOL b_orderby;
 	int bind_index;
 	int multi_index;
@@ -400,7 +399,7 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 				++i;
 				continue;
 			}
-			type = psorts->psort[i].type & ~MVI_FLAG;
+			proptype_t type = psorts->psort[i].type & ~MVI_FLAG;
 			if (!common_util_bind_sqlite_statement(pstmt,
 			    bind_index, type, cond.pvalue))
 				return FALSE;
@@ -428,7 +427,7 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 			if (-1 != multi_index) {
 				sqlite3_bind_int64(pstmt_insert, 7,
 					sqlite3_column_int64(pstmt, 2));
-				type = psorts->psort[multi_index].type & ~MVI_FLAG;
+				proptype_t type = psorts->psort[multi_index].type & ~MVI_FLAG;
 				pvalue = common_util_column_sqlite_statement(pstmt, 3, type);
 				if (pvalue == nullptr)
 					sqlite3_bind_null(pstmt_insert, 8);
@@ -485,7 +484,7 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 			++i;
 			continue;
 		}
-		type = psorts->psort[i].type & ~MVI_FLAG;
+		proptype_t type = psorts->psort[i].type & ~MVI_FLAG;
 		if (!common_util_bind_sqlite_statement(pstmt, bind_index, type,
 		    cond.pvalue))
 			return FALSE;
@@ -505,7 +504,7 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 		sqlite3_bind_int64(pstmt_insert, 6,
 			sqlite3_column_int64(pstmt, 1));
 		sqlite3_bind_int64(pstmt_insert, 7, 0);
-		type = psorts->psort[depth].type & ~MVI_FLAG;
+		proptype_t type = psorts->psort[depth].type & ~MVI_FLAG;
 		if (!b_extremum || (pvalue = common_util_column_sqlite_statement(pstmt,
 		    2, psorts->psort[depth + 1].type)) == nullptr)
 			sqlite3_bind_null(pstmt_insert, 9);
@@ -823,7 +822,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 					continue;
 			}
 			tag_count ++;
-			uint16_t type = psorts->psort[i].type;
+			proptype_t type = psorts->psort[i].type;
 			if ((type & MVI_FLAG) == MVI_FLAG) {
 				type &= ~MVI_FLAG;
 				ptnode->instance_tag = tmp_proptag;
@@ -957,7 +956,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 					sqlite3_reset(pstmt1);
 					continue;
 				}
-				uint16_t type = PROP_TYPE(ptnode->instance_tag) & ~MV_INSTANCE;
+				auto type = PROP_TYPE(ptnode->instance_tag) & ~MV_INSTANCE;
 				switch (type) {
 #define H(ctyp, memb, ptrify) { \
 		auto sa = static_cast<ctyp *>(pvalue); \
@@ -3076,7 +3075,6 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	const unsigned long long busy_timeout_ns = g_sqlite_busy_timeout_ns.load();
 	int depth;
 	void *pvalue;
-	uint16_t type;
 	uint64_t row_id;
 	uint64_t last_id;
 	sqlite3 *psqlite;
@@ -3226,7 +3224,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 			"(depth INTEGER NOT NULL ", *pstate_id);
 	for (unsigned int i = 0; i < ptnode->psorts->ccategories; ++i) {
 		auto tmp_proptag = PROP_TAG(ptnode->psorts->psort[i].type, ptnode->psorts->psort[i].propid);
-		type = ptnode->psorts->psort[i].type;
+		proptype_t type = ptnode->psorts->psort[i].type;
 		if (ptnode->instance_tag == tmp_proptag)
 			type &= ~MVI_FLAG;
 		switch (type) {
@@ -3318,7 +3316,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 		int i = depth;
 		while (true) {
 			stm_sel_vtx.bind_int64(1, row_id);
-			type = ptnode->psorts->psort[i].type & ~MVI_FLAG;
+			proptype_t type = ptnode->psorts->psort[i].type & ~MVI_FLAG;
 			if (stm_sel_vtx.step() != SQLITE_ROW)
 				return FALSE;
 			pvalue = common_util_column_sqlite_statement(stm_sel_vtx, 0, type);
@@ -3352,7 +3350,6 @@ BOOL exmdb_server::restore_table_state(const char *dir, uint32_t table_id,
 {
 	void *pvalue;
 	uint32_t idx;
-	uint16_t type;
 	uint64_t row_id;
 	uint64_t row_id1;
 	uint8_t row_stat;
@@ -3498,7 +3495,7 @@ BOOL exmdb_server::restore_table_state(const char *dir, uint32_t table_id,
 		row_id = 0;
 		unsigned int i;
 		for (i=0; i<=depth; i++) {
-			type = ptnode->psorts->psort[i].type & ~MVI_FLAG;
+			proptype_t type = ptnode->psorts->psort[i].type & ~MVI_FLAG;
 			pvalue = common_util_column_sqlite_statement(pstmt, i + 1, type);
 			if (NULL == pvalue) {
 				sqlite3_bind_int64(pstmt1, 1, row_id);

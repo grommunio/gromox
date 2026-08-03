@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <gromox/common_types.hpp>
 
-extern GX_EXPORT void *propval_dup(uint16_t type, const void *);
-extern GX_EXPORT void propval_free(uint16_t type, void *pvalue);
-extern GX_EXPORT uint32_t propval_size(uint16_t type, const void *pvalue) __attribute__((nonnull(2)));
+extern GX_EXPORT void *propval_dup(gromox::proptype_t, const void *);
+extern GX_EXPORT void propval_free(gromox::proptype_t, void *pvalue);
+extern GX_EXPORT uint32_t propval_size(gromox::proptype_t, const void *pvalue) __attribute__((nonnull(2)));
 extern GX_EXPORT std::strong_ordering propval_compare(const void *, const void *, gromox::proptype_t) __attribute__((nonnull(1,2)));
 extern GX_EXPORT bool propval_compare_relop(relop, gromox::proptype_t, const void *, const void *) __attribute__((nonnull(3,4)));
 extern GX_EXPORT std::strong_ordering SVREID_compare(const SVREID *, const SVREID *);

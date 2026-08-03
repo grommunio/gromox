@@ -296,7 +296,7 @@ static errno_t resolvename(const GUID &guid, const char *name, bool create,
 }
 
 static int delstoreprop(int argc, char **argv, const GUID &guid,
-    const char *name, uint16_t type)
+    const char *name, proptype_t type)
 {
 	if (HX_getopt6(empty_options_table, argc, argv, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)

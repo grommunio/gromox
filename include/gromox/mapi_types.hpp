@@ -143,7 +143,7 @@ struct GX_EXPORT FLAGGED_PROPVAL {
 };
 
 struct GX_EXPORT TYPED_PROPVAL {
-	uint16_t type = 0;
+	gromox::proptype_t type{};
 	void *pvalue = nullptr;
 };
 
