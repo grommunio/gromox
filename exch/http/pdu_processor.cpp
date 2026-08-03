@@ -2694,7 +2694,8 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 	}
 
 	pduproc_result result = PDU_PROCESSOR_ERROR;
-	switch (pcall->pkt.pkt_type) {
+	auto pkt_type = pcall->pkt.pkt_type;
+	switch (pkt_type) {
 	case DCERPC_PKT_BIND:
 		result = pdu_processor_process_bind(pcall) ? PDU_PROCESSOR_OUTPUT : PDU_PROCESSOR_ERROR;
 		break;
@@ -2726,7 +2727,7 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 	}
 
 	if (g_msrpc_debug >= 1 || result == PDU_PROCESSOR_ERROR)
-		mlog(LV_DEBUG, "rpc_input(%s) = %u", pkttype_to_name(pcall->pkt.pkt_type), result);
+		mlog(LV_DEBUG, "rpc_input(%s) = %u", pkttype_to_name(pkt_type), result);
 	
 	if (result == PDU_PROCESSOR_ERROR)
 		delete pcall;
