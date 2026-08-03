@@ -1747,7 +1747,7 @@ static void pdu_processor_process_cancel(const dcerpc_call *pcall)
 	int async_id;
 	BOOL b_cancel;
 	DOUBLE_LIST_NODE *pnode1 = nullptr;
-	DCERPC_CONTEXT *pcontext = nullptr;
+	std::shared_ptr<dcerpc_context> pcontext;
 	ASYNC_NODE *pasync_node = nullptr;
 	
 	async_id = 0;
@@ -1755,7 +1755,7 @@ static void pdu_processor_process_cancel(const dcerpc_call *pcall)
 	std::unique_lock as_hold(g_async_lock);
 	auto &plist = pcall->pprocessor->context_list;
 	while (plist.size() > 0) {
-		auto pcontext = plist.front();
+		pcontext = plist.front();
 		plist.erase(plist.begin());
 		for (pnode1=double_list_get_head(&pcontext->async_list); NULL!=pnode1;
 			pnode1=double_list_get_after(&pcontext->async_list, pnode1)) {
