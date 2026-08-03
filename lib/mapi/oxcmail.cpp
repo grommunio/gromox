@@ -24,9 +24,12 @@
 #include <libHX/string.h>
 #include <vmime/addressList.hpp>
 #include <vmime/constants.hpp>
+#include <vmime/contentTypeField.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/mailboxList.hpp>
+#include <vmime/stringContentHandler.hpp>
 #include <vmime/text.hpp>
+#include <vmime/utility/outputStreamStringAdapter.hpp>
 #include <gromox/defs.h>
 #include <gromox/dsn.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -3507,21 +3510,20 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 		"5.1.0", "5.1.6", "5.0.0", "5.0.0", "5.7.0", "5.0.0",
 		"5.1.2"};
 	
-	DSN dsn;
-	auto pdsn_fields = dsn.get_message_fields();
+	std::string vstr;
+	vmime::utility::outputStreamStringAdapter vadap(vstr);
+	vmime::header dsn;
 	auto str = pmsg->proplist.get<const char>(PidTagReportingMessageTransferAgent);
 	if (str == nullptr) {
 		std::string hn;
 		auto ret = canonical_hostname(hn);
-		if (ret == 0) {
-			hn.insert(0, "dsn; ");
-			if (!dsn.append_field(pdsn_fields, "Reporting-MTA", hn))
-				return FALSE;
-		}
+		if (ret == 0)
+			dsn.getField("Reporting-MTA")->setValue("dns;" + hn);
 	} else {
-		if (!dsn.append_field(pdsn_fields, "Reporting-MTA", str))
-			return FALSE;
+		dsn.getField("Reporting-MTA")->setValue(str);
 	}
+	dsn.generate(vadap);
+	vstr += "\r\n";
 	
 	std::string action;
 	if (class_match_suffix(pmessage_class, ".DR") == 0)
@@ -3536,51 +3538,41 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 		action = "failed";
 	if (pmsg->children.prcpts == nullptr)
 		goto SERIALIZE_DSN;
+
+	dsn = vmime::header();
 	for (const auto &rcpt : *pmsg->children.prcpts) {
-		pdsn_fields = dsn.new_rcpt_fields();
-		if (pdsn_fields == nullptr)
-			return FALSE;
 		std::string username;
 		if (!oxcmail_get_rcpt_address(rcpt, tags_self, org, id2user, username))
 			username.clear();
-		if (!dsn.append_field(pdsn_fields, "Final-Recipient", username.c_str()))
-			return FALSE;
-		if (action.size() > 0 &&
-		    !dsn.append_field(pdsn_fields, "Action", action))
-			return FALSE;
+		dsn.getField("Final-Recipient")->setValue(username);
+		if (action.size() > 0)
+			dsn.getField("Action")->setValue(action);
 		auto num = rcpt.get<const uint32_t>(PR_NDR_DIAG_CODE);
 		if (num != nullptr) {
 			if (*num == MAPI_DIAG_NO_DIAGNOSTIC) {
 				num = rcpt.get<uint32_t>(PR_NDR_REASON_CODE);
-				if (num != nullptr && !dsn.append_field(pdsn_fields,
-				    "Status", *num > 6 ? "5.4.0" : status_strings1[*num]))
-					return FALSE;
+				if (num != nullptr)
+					dsn.getField("Status")->setValue(*num > 6 ? "5.4.0" : status_strings1[*num]);
 			} else {
 				num = rcpt.get<uint32_t>(PR_NDR_REASON_CODE);
-				if (num != nullptr && !dsn.append_field(pdsn_fields,
-				    "Status", *num > 48 ? "5.0.0" : status_strings2[*num]))
-					return FALSE;
+				if (num != nullptr)
+					dsn.getField("Status")->setValue(*num > 48 ? "5.0.0" : status_strings2[*num]);
 			}
 		}
 		str = rcpt.get<char>(PR_DSN_REMOTE_MTA);
-		if (str != nullptr && !dsn.append_field(pdsn_fields,
-		    "Remote-MTA", str))
-			return FALSE;
+		if (str != nullptr)
+			dsn.getField("Remote-MTA")->setValue(str);
 		str = rcpt.get<char>(PR_SUPPLEMENTARY_INFO);
-		if (str != nullptr && !dsn.append_field(pdsn_fields,
-		    "X-Supplementary-Info", str))
-			return FALSE;
+		if (str != nullptr)
+			dsn.getField("X-Supplementary-Info")->setValue(str);
 		str = rcpt.get<char>(PR_DISPLAY_NAME);
-		if (str != nullptr &&
-		    !dsn.append_field(pdsn_fields, "X-Display-Name", enc_text(str)))
-			return FALSE;
+		if (str != nullptr)
+			dsn.getField("X-Display-Name")->setValue(str);
+		dsn.generate(vadap);
 	}
  SERIALIZE_DSN:
-	auto err = dsn.serialize(dsn_content);
-	if (err == ecSuccess)
-		return TRUE;
-	mlog(LV_ERR, "E-1761: %s", mapi_strerror(err));
-	return false;
+	dsn_content = std::move(vstr);
+	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
