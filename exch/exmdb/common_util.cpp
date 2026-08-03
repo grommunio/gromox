@@ -4170,10 +4170,13 @@ static bool cu_eval_subitem_restriction(const db_conn &psqlite, cpid_t cpid,
 		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rprop->proptag, &pvalue))
 			return FALSE;
-		if (pvalue == nullptr || rprop->proptag != PR_ANR)
-			return rprop->eval(pvalue);
-		return strcasestr(static_cast<char *>(pvalue),
-		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
+		if (pvalue != nullptr && rprop->proptag == PR_ANR)
+			return strcasestr(static_cast<char *>(pvalue),
+			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
+		if (rprop_srchkey_eq(*rprop, pvalue, g_exmdb_org_name,
+		    mysql_adaptor_userid_to_name))
+			return rprop->relop == RELOP_EQ;
+		return rprop->eval(pvalue);
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;
@@ -4450,6 +4453,9 @@ bool cu_eval_msg_restriction(const db_conn &psqlite,
 				return FALSE;
 			break;
 		}
+		if (rprop_srchkey_eq(*rprop, pvalue, g_exmdb_org_name,
+		    mysql_adaptor_userid_to_name))
+			return rprop->relop == RELOP_EQ;
 		return rprop->eval(pvalue);
 	}
 	case RES_PROPCOMPARE: {
