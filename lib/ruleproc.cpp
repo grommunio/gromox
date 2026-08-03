@@ -29,6 +29,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -590,7 +591,13 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	case RES_PROPERTY: {
 		auto &rprop = *res.prop;
 		// XXX: special-case PR_ANR?
-		return rprop.comparable() && rprop.eval(props.getval(rprop.proptag));
+		if (!rprop.comparable())
+			return false;
+		auto lhs = props.getval(rprop.proptag);
+		if (rprop_srchkey_eq(rprop, lhs, rp_org_name.c_str(),
+		    mysql_adaptor_userid_to_name))
+			return rprop.relop == RELOP_EQ;
+		return rprop.eval(lhs);
 	}
 	case RES_PROPCOMPARE: {
 		auto &rprop = *res.pcmp;
