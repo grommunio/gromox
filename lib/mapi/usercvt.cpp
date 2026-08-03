@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <fmt/core.h>
 #include <libHX/endian.h>
@@ -13,6 +14,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
+#include <gromox/mapitags.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 
@@ -81,6 +83,108 @@ ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
 	 * {PR_ADDRTYPE = "SMTP", PR_EMAIL_ADDRESS = ""}.
 	 */
 	return ecUnknownUser;
+}
+
+static bool addrkey_style(std::string_view key)
+{
+	if (key.find('\0') != key.npos)
+		return false;
+	return (key.size() >= 3 && strncasecmp(key.data(), "EX:", 3) == 0) ||
+	       (key.size() >= 5 && strncasecmp(key.data(), "SMTP:", 5) == 0);
+}
+
+static ec_error_t srchkey_to_smtpaddr(std::string_view key, const char *org,
+    cvt_id2user id2user, std::string &smtpaddr)
+{
+	auto pos = key.find(':');
+	if (pos == key.npos)
+		return ecUnknownUser;
+	std::string atype(key.substr(0, pos)), emaddr(key.substr(pos + 1));
+	if (strcasecmp(atype.c_str(), "EX") == 0) {
+		/*
+		 * Scan-type consumers (search folders, restricted tables)
+		 * evaluate the same restriction operand against every row;
+		 * memoize the last successful resolution.
+		 */
+		static thread_local std::string last_dn, last_user;
+		if (!last_dn.empty() &&
+		    strcasecmp(emaddr.c_str(), last_dn.c_str()) == 0) {
+			smtpaddr = last_user;
+			return ecSuccess;
+		}
+		auto err = cvt_essdn_to_username(emaddr.c_str(), org,
+		           std::move(id2user), smtpaddr);
+		if (err == ecSuccess) {
+			last_dn = std::move(emaddr);
+			last_user = smtpaddr;
+		}
+		return err;
+	}
+	return cvt_genaddr_to_smtpaddr(atype.c_str(), emaddr.c_str(), org,
+	       std::move(id2user), smtpaddr);
+}
+
+/**
+ * Test two address search keys ("TYPE:ADDRESS", uppercase, trailing NUL) for
+ * logical equality. The GAL emits EX:<essdn> keys, and rule conditions built
+ * from a GAL pick contain that form, whereas messages imported from RFC5322
+ * carry SMTP:<addr> keys even for local users. Resolve both sides to SMTP
+ * addresses so the two forms compare equal.
+ */
+bool cvt_srchkey_eq(const BINARY &a, const BINARY &b, const char *org,
+    cvt_id2user id2user) try
+{
+	std::string_view ka(a.pc, a.cb), kb(b.pc, b.cb);
+	while (!ka.empty() && ka.back() == '\0')
+		ka.remove_suffix(1);
+	while (!kb.empty() && kb.back() == '\0')
+		kb.remove_suffix(1);
+	if (!addrkey_style(ka) || !addrkey_style(kb))
+		return false;
+	if (ka.size() == kb.size() &&
+	    strncasecmp(ka.data(), kb.data(), ka.size()) == 0)
+		return true;
+	std::string sa, sb;
+	if (srchkey_to_smtpaddr(ka, org, id2user, sa) != ecSuccess ||
+	    srchkey_to_smtpaddr(kb, org, id2user, sb) != ecSuccess)
+		return false;
+	return strcasecmp(sa.c_str(), sb.c_str()) == 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
+}
+
+static bool is_srchkey_tag(proptag_t tag)
+{
+	switch (tag) {
+	case PR_SEARCH_KEY:
+	case PR_SENDER_SEARCH_KEY:
+	case PR_SENT_REPRESENTING_SEARCH_KEY:
+	case PR_RECEIVED_BY_SEARCH_KEY:
+	case PR_RCVD_REPRESENTING_SEARCH_KEY:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
+ * Apply search key equivalence to a RES_PROPERTY comparison. True means
+ * @dbval and the restriction operand are address search keys of the same
+ * mailbox; the caller then decides by relop. False means undecided and the
+ * regular bytewise evaluation must run.
+ */
+bool rprop_srchkey_eq(const SPropertyRestriction &rprop, const void *dbval,
+    const char *org, cvt_id2user id2user)
+{
+	if ((rprop.relop != RELOP_EQ && rprop.relop != RELOP_NE) ||
+	    PROP_TYPE(rprop.proptag) != PT_BINARY ||
+	    !is_srchkey_tag(rprop.proptag) ||
+	    dbval == nullptr || rprop.propval.pvalue == nullptr)
+		return false;
+	return cvt_srchkey_eq(*static_cast<const BINARY *>(dbval),
+	       *static_cast<const BINARY *>(rprop.propval.pvalue),
+	       org, std::move(id2user));
 }
 
 static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id2user,
