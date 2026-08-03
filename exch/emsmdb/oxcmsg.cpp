@@ -518,7 +518,6 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	uint8_t tmp_byte;
 	PROBLEM_ARRAY problems;
 	MESSAGE_CONTENT *pbrief;
-	static constexpr uint8_t fake_false = 0;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto username = plogon->readstate_user();
@@ -597,8 +596,8 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		common_util_notify_receipt(plogon->get_account(),
 			NOTIFY_RECEIPT_READ, pbrief);
 	const TAGGED_PROPVAL propval_buff[] = {
-		{PR_READ_RECEIPT_REQUESTED, deconst(&fake_false)},
-		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&fake_false)},
+		{PR_READ_RECEIPT_REQUESTED, deconst(&byte_value_zero)},
+		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&byte_value_zero)},
 	};
 	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
 	exmdb_client->set_message_properties(dir, username,
@@ -626,10 +625,9 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 	EID_ARRAY alt_msgs{};
 	if (pmessage_ids->count == 0) {
 		/* OXCMSG is missing documentation */
-		static constexpr uint8_t fake_false = false;
 		const RESTRICTION_PROPERTY res_prop = {
 			read_flags & rfClearReadFlag ? RELOP_NE : RELOP_EQ,
-			PR_READ, {PR_READ, deconst(&fake_false)}
+			PR_READ, {PR_READ, deconst(&byte_value_zero)}
 		};
 		const RESTRICTION res_top = {RES_PROPERTY, {deconst(&res_prop)}};
 		uint32_t table_id = 0, row_count = 0;

@@ -269,4 +269,8 @@ template<typename T> struct const_deref_iterator {
 	constexpr const_deref_iterator &operator++() { ++ptr; return *this; }
 };
 
+extern GX_EXPORT const uint8_t byte_value_zero, byte_value_one;
+extern GX_EXPORT const uint16_t ushort_value_zero;
+extern GX_EXPORT const uint32_t uint_value_zero, uint_value_one;
+
 }

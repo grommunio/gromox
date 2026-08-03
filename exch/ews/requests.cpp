@@ -786,10 +786,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::InternalServerError(E3427);
 			const char* username = ctx.effectiveUser(sentitems);
 			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-			static constexpr uint8_t proptrue = 1;
 			TAGGED_PROPVAL props[] = {
 				{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
-				{PR_RESPONSE_REQUESTED, deconst(&proptrue)},
+				{PR_RESPONSE_REQUESTED, deconst(&byte_value_one)},
 				{PR_CLIENT_SUBMIT_TIME, now},
 				{PR_MESSAGE_DELIVERY_TIME, now},
 			};
@@ -1767,16 +1766,14 @@ void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
 		auto pclBin = ctx.mkPCL(xid);
 
 		std::string configClass = "IPM.Configuration." + reqName.Name;
-		static constexpr uint8_t trueVal = TRUE;
-
 		std::vector<TAGGED_PROPVAL> props;
 		props.push_back({PidTagMid, &messageId});
 		props.push_back({PidTagChangeNumber, &changeNumber});
 		props.push_back({PR_CHANGE_KEY, &ckeyBin});
 		props.push_back({PR_PREDECESSOR_CHANGE_LIST, pclBin.get()});
-		props.push_back({PR_ASSOCIATED, deconst(&trueVal)});
+		props.emplace_back(PR_ASSOCIATED, deconst(&byte_value_one));
 		props.push_back({PR_MESSAGE_CLASS, deconst(configClass.c_str())});
-		props.push_back({PR_READ, deconst(&trueVal)});
+		props.emplace_back(PR_READ, deconst(&byte_value_one));
 		auto modtime = rop_util_current_nttime();
 		props.push_back({PR_LAST_MODIFICATION_TIME, &modtime});
 
@@ -3227,10 +3224,9 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 						throw EWSError::InternalServerError(E3428);
 					const char *sentuser = ctx.effectiveUser(sentitems);
 					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					static constexpr uint8_t proptrue = 1;
 					const TAGGED_PROPVAL sprops[] = {
 						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
-						{PR_RESPONSE_REQUESTED, deconst(&proptrue)},
+						{PR_RESPONSE_REQUESTED, deconst(&byte_value_one)},
 						{PR_CLIENT_SUBMIT_TIME, now},
 						{PR_MESSAGE_DELIVERY_TIME, now},
 					};

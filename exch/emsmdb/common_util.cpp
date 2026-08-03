@@ -951,8 +951,7 @@ static bool cu_propvals_to_recipient(cpid_t cpid, TPROPVAL_ARRAY *ppropvals,
 	if (addrtype != nullptr) {
 		if (strcasecmp(addrtype, "EX") == 0) {
 			prow->flags |= RECIPIENT_ROW_TYPE_X500DN;
-			static constexpr uint8_t dummy_zero = 0;
-			prow->pprefix_used = deconst(&dummy_zero);
+			prow->pprefix_used = deconst(&byte_value_zero);
 			auto disptype = ppropvals->get<const uint32_t>(PR_DISPLAY_TYPE);
 			if (disptype == nullptr) {
 				prow->display_type = DT_MAILUSER;
@@ -990,15 +989,14 @@ static bool cu_propvals_to_recipient(cpid_t cpid, TPROPVAL_ARRAY *ppropvals,
 static bool cu_recipient_to_propvals(cpid_t cpid, RECIPIENT_ROW *prow,
     proptag_cspan pcolumns, TPROPVAL_ARRAY *ppropvals)
 {
-	static constexpr uint8_t persist_true = true, persist_false = false;
 	BOOL b_unicode = (prow->flags & RECIPIENT_ROW_FLAG_UNICODE) ? TRUE : false;
 	
 	if (cu_set_propval(ppropvals, PR_RESPONSIBILITY,
 	    (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ?
-	    &persist_true : &persist_false) != ecSuccess ||
+	    &byte_value_one : &byte_value_zero) != ecSuccess ||
 	    cu_set_propval(ppropvals, PR_SEND_RICH_INFO,
 	    (prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ?
-	    &persist_true : &persist_false) != ecSuccess)
+	    &byte_value_one : &byte_value_zero) != ecSuccess)
 		return false;
 	if (NULL != prow->ptransmittable_name) {
 		void *pvalue;

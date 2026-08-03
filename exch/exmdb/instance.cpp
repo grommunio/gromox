@@ -1681,7 +1681,6 @@ static BOOL instance_get_message_display_recipients(const tarray_set *prcpts,
 {
 	std::string dr;
 	uint32_t recipient_type = 0;
-	static constexpr uint8_t fake_empty = 0;
 
 	switch (proptag) {
 	case PR_DISPLAY_TO:
@@ -1716,7 +1715,7 @@ static BOOL instance_get_message_display_recipients(const tarray_set *prcpts,
 		dr += name;
 	}
 	if (dr.empty()) {
-		*ppvalue = deconst(&fake_empty);
+		*ppvalue = deconst(&byte_value_zero);
 		return TRUE;
 	}
 	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr) :
@@ -2289,8 +2288,6 @@ static BOOL xns_set_msg_subj(TPROPVAL_ARRAY &msgprop,
 static BOOL set_xns_props_msg(instance_node *pinstance,
     const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
 {
-	static constexpr uint8_t one_byte = 1;
-
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproperties->count);
 	if (pproblems->pproblem == nullptr)
@@ -2342,16 +2339,16 @@ static BOOL set_xns_props_msg(instance_node *pinstance,
 			}
 			auto message_flags = *static_cast<uint32_t *>(pproperties->ppropval[i].pvalue);
 			if (message_flags & MSGFLAG_READ &&
-			    pmsgctnt->proplist.set(PR_READ, &one_byte) != ecSuccess)
+			    pmsgctnt->proplist.set(PR_READ, &byte_value_one) != ecSuccess)
 				return FALSE;
 			if (message_flags & MSGFLAG_ASSOCIATED &&
-			    pmsgctnt->proplist.set(PR_ASSOCIATED, &one_byte) != ecSuccess)
+			    pmsgctnt->proplist.set(PR_ASSOCIATED, &byte_value_one) != ecSuccess)
 				return FALSE;
 			if (message_flags & MSGFLAG_RN_PENDING &&
-			    pmsgctnt->proplist.set(PR_READ_RECEIPT_REQUESTED, &one_byte) != ecSuccess)
+			    pmsgctnt->proplist.set(PR_READ_RECEIPT_REQUESTED, &byte_value_one) != ecSuccess)
 				return FALSE;
 			if (message_flags & MSGFLAG_NRN_PENDING &&
-			    pmsgctnt->proplist.set(PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &one_byte) != ecSuccess)
+			    pmsgctnt->proplist.set(PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &byte_value_one) != ecSuccess)
 				return FALSE;
 			message_flags &= ~(MSGFLAG_READ | MSGFLAG_UNMODIFIED |
 					 MSGFLAG_HASATTACH | MSGFLAG_FROMME |

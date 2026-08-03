@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -210,6 +210,10 @@ static GUID machine_guid;
 static std::once_flag machine_guid_loaded;
 
 namespace gromox {
+
+const uint8_t byte_value_zero = 0, byte_value_one = 1;
+const uint16_t ushort_value_zero = 0;
+const uint32_t uint_value_zero = 0, uint_value_one = 1;
 
 static uint32_t gromox_rng_seed()
 {

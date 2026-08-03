@@ -2677,7 +2677,6 @@ static ec_error_t oxcical_import_todo(const ical &pical,
     const ical_component &comp, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, MESSAGE_CONTENT *pmsg, std::string &errstr) try
 {
-	static constexpr uint8_t le_true = 1;
 	namemap phash;
 	uint16_t last_propid = 0x8000;
 	auto err = oxcical_parse_categories(comp, phash, &last_propid, pmsg);
@@ -2734,7 +2733,7 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 				v = tsvNotStarted;
 			pmsg->proplist.set(PROP_TAG(PT_LONG, propids[l_status]), &v);
 			if (v == tsvComplete)
-				pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids[l_completeflag]), &le_true);
+				pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids[l_completeflag]), &byte_value_one);
 		}
 	}
 
@@ -2783,7 +2782,7 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 		    errstr) == ecSuccess) {
 			auto ntt = rop_util_unix_to_nttime(utctime);
 			pmsg->proplist.set(PROP_TAG(PT_SYSTIME, propids[l_completed]), &ntt);
-			pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids[l_completeflag]), &le_true);
+			pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids[l_completeflag]), &byte_value_one);
 		}
 	}
 

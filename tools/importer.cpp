@@ -170,7 +170,6 @@ static void exm_adjust_staticprops(TPROPVAL_ARRAY &props)
 	 */
 	auto mfp = props.get<uint32_t>(PR_MESSAGE_FLAGS);
 	uint32_t mf = mfp != nullptr ? *mfp : 0;
-	static constexpr uint8_t a_one = 1;
 	static constexpr std::pair<unsigned int, unsigned int> xmap[] = {
 		{MSGFLAG_READ, PR_READ},
 		{MSGFLAG_ASSOCIATED, PR_ASSOCIATED},
@@ -178,7 +177,7 @@ static void exm_adjust_staticprops(TPROPVAL_ARRAY &props)
 		{MSGFLAG_NRN_PENDING, PR_NON_RECEIPT_NOTIFICATION_REQUESTED},
 	};
 	for (const auto &e : xmap)
-		if (mf & e.first && props.set(e.second, &a_one) == ecServerOOM)
+		if (mf & e.first && props.set(e.second, &byte_value_one) == ecServerOOM)
 			throw std::bad_alloc();
 }
 

@@ -175,8 +175,8 @@ static int imls_thrwork(generic_connection &&conn)
 
 		if (fcntl(conn.sockd, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1416: fcntl: %s", strerror(errno));
-		static constexpr int flag = 1;
-		if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+		if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY,
+		    &uint_value_one, sizeof(uint_value_one)) < 0)
 			/* ignore */;
 		auto ctx = static_cast<imap_context *>(contexts_pool_get_context(sctx_status::free));
 		/* there's no context available in contexts pool, close the connection*/

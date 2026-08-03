@@ -738,14 +738,13 @@ static ec_error_t autoreply_getprop1(const char *dir,
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
-		static constexpr uint8_t fake_true = true, fake_false = false;
 		auto cfg = config_file_init(path.c_str(), oof_defaults);
 		if (cfg == nullptr) {
-			value = deconst(&fake_false);
+			value = deconst(&byte_value_zero);
 			return ecSuccess;
 		}
 		auto key = proptag == PR_EC_ALLOW_EXTERNAL ? "allow_external_oof" : "external_audience";
-		value = deconst(cfg->get_ll(key) == 0 ? &fake_false : &fake_true);
+		value = deconst(cfg->get_ll(key) == 0 ? &byte_value_zero : &byte_value_one);
 		return ecSuccess;
 	}
 	}

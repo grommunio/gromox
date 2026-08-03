@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <chrono>
@@ -209,7 +209,6 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	EID_ARRAY deleted_folders;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_proplist;
-	static constexpr uint8_t fake_byte = 0;
 	TPROPVAL_ARRAY *pproplist_deletions;
 	
 	if (pctx->sync_type != SYNC_TYPE_HIERARCHY)
@@ -243,13 +242,13 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				++j;
 		}
 		if (!chg.has(PR_ATTR_HIDDEN) &&
-		    cu_set_propval(&chg, PR_ATTR_HIDDEN, &fake_byte) != ecSuccess)
+		    cu_set_propval(&chg, PR_ATTR_HIDDEN, &byte_value_zero) != ecSuccess)
 			return false;
 		if (!chg.has(PR_ATTR_SYSTEM) &&
-		    cu_set_propval(&chg, PR_ATTR_SYSTEM, &fake_byte) != ecSuccess)
+		    cu_set_propval(&chg, PR_ATTR_SYSTEM, &byte_value_zero) != ecSuccess)
 			return false;
 		if (!chg.has(PR_ATTR_READONLY) &&
-		    cu_set_propval(&chg, PR_ATTR_READONLY, &fake_byte) != ecSuccess)
+		    cu_set_propval(&chg, PR_ATTR_READONLY, &byte_value_zero) != ecSuccess)
 			return false;
 		if (!chg.has(PR_CREATOR_SID)) {
 			tmp_bin.cb = 0;
@@ -650,8 +649,6 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	PROGRESS_MESSAGE progmsg;
 	TPROPVAL_ARRAY chgheader;
 	MESSAGE_CONTENT *pmsgctnt;
-	static constexpr uint8_t fake_true = 1;
-	static constexpr uint8_t fake_false = 0;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto dir = pctx->pstream->plogon->get_dir();
@@ -729,12 +726,12 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			common_util_remove_propvals(&pembedded->proplist, PR_MSG_STATUS);
 			auto flags = pembedded->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
 			auto xbit = flags != nullptr && (*flags & MSGFLAG_RN_PENDING) ?
-			                     deconst(&fake_true) : deconst(&fake_false);
+			                     deconst(&byte_value_one) : deconst(&byte_value_zero);
 			if (cu_set_propval(&pembedded->proplist,
 			    PR_READ_RECEIPT_REQUESTED, xbit) != ecSuccess)
 				return false;
 			xbit = flags != nullptr && (*flags & MSGFLAG_NRN_PENDING) ?
-			                     deconst(&fake_true) : deconst(&fake_false);
+			                     deconst(&byte_value_one) : deconst(&byte_value_zero);
 			if (cu_set_propval(&pembedded->proplist,
 			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit) != ecSuccess)
 				return false;
@@ -802,12 +799,12 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_MSG_STATUS);
 	auto flags = pmsgctnt->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
 	auto xbit = flags != nullptr && (*flags & MSGFLAG_RN_PENDING) ?
-	            deconst(&fake_true) : deconst(&fake_false);
+	            deconst(&byte_value_one) : deconst(&byte_value_zero);
 	if (cu_set_propval(&pmsgctnt->proplist, PR_READ_RECEIPT_REQUESTED,
 	    xbit) != ecSuccess)
 		return false;
 	xbit = flags != nullptr && (*flags & MSGFLAG_NRN_PENDING) ?
-	       deconst(&fake_true) : deconst(&fake_false);
+	       deconst(&byte_value_one) : deconst(&byte_value_zero);
 	if (cu_set_propval(&pmsgctnt->proplist,
 	    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit) != ecSuccess)
 		return false;

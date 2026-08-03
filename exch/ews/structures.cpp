@@ -4519,10 +4519,9 @@ tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
 		fromProp(props.find(PR_SMTP_ADDRESS), UserId.PrimarySmtpAddress);
 		fromProp(props.find(PR_MEMBER_NAME), UserId.DisplayName);
 	}
-	static constexpr uint32_t none = 0;
 	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (!rights)
-		rights = &none;
+		rights = &uint_value_zero;
 	CanCreateItems.emplace(*rights & frightsCreate);
 	CanCreateSubFolders.emplace(*rights & frightsCreateSubfolder);
 	IsFolderOwner.emplace(*rights & frightsOwner);
@@ -4590,10 +4589,9 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
  */
 tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 {
-	static constexpr uint32_t none = 0;
 	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (!rights)
-		rights = &none;
+		rights = &uint_value_zero;
 	ReadItems.emplace(*rights & frightsReadAny ? Enum::FullDetails :
 	                  *rights & frightsFreeBusyDetailed ? Enum::FreeBusyTimeAndSubjectAndLocation :
 	                  *rights & frightsFreeBusySimple ? Enum::TimeOnly :Enum::None);
@@ -4630,10 +4628,9 @@ PERMISSION_DATA tCalendarPermission::write() const
  */
 tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 {
-	static constexpr uint32_t none = 0;
 	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (!rights)
-		rights = &none;
+		rights = &uint_value_zero;
 	ReadItems.emplace(*rights & frightsReadAny ? Enum::FullDetails : Enum::None);
 	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
 	size_t index = std::distance(profileTable.begin(), it);

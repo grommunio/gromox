@@ -1094,15 +1094,14 @@ static const char *mr_get_class(const TPROPVAL_ARRAY &p)
  */
 static ec_error_t mr_mark_done(rxparam &par, bool set_read = true)
 {
-	static constexpr uint8_t v_yes = 1;
 	auto &prop = par.ctnt->proplist;
 	cu_remove_propval(prop, PR_CHANGE_KEY); /* assign new CK upon write */
 	cu_remove_propval(prop, PidTagChangeNumber);
-	auto err = cu_set_propval(prop, PR_PROCESSED, &v_yes);
+	auto err = cu_set_propval(prop, PR_PROCESSED, &byte_value_one);
 	if (err != ecSuccess)
 		return err;
 	if (set_read) {
-		err = cu_set_propval(prop, PR_READ, &v_yes);
+		err = cu_set_propval(prop, PR_READ, &byte_value_one);
 		if (err != ecSuccess)
 			return err;
 	}

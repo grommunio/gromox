@@ -111,7 +111,6 @@ static bool gx_collapse_event_storm;
 /* SF stacking is an unusual usecase and thus disabled for the time being. */
 static bool gx_stacked_searches;
 
-static constexpr uint8_t fake_true = true;
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
 static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
 
@@ -1672,7 +1671,7 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		}
 	}
 	dprop.emplace_back(PR_CONVERSATION_ID, new_cvid);
-	dprop.emplace_back(PR_CONVERSATION_INDEX_TRACKING, &fake_true);
+	dprop.emplace_back(PR_CONVERSATION_INDEX_TRACKING, &byte_value_one);
 	if (old_cvindex == nullptr) {
 		auto new_cvindex = cu_alloc<BINARY>();
 		if (new_cvindex == nullptr)
@@ -2716,13 +2715,12 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	if (pmsg == nullptr)
 		return FALSE;
 	auto nt_time = rop_util_current_nttime();
-	uint8_t tmp_byte = 0;
 	if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &nt_time) != ecSuccess ||
 	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != ecSuccess ||
 	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != ecSuccess ||
 	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != ecSuccess ||
 	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != ecSuccess ||
-	    pmsg->proplist.set(PR_DAM_BACK_PATCHED, &tmp_byte) != ecSuccess)
+	    pmsg->proplist.set(PR_DAM_BACK_PATCHED, &byte_value_zero) != ecSuccess)
 		return FALSE;
 	auto pvalue = common_util_to_private_message_entryid(
 	              rp.sqlite, rp.ev_to, rp.folder_id, rp.message_id);
@@ -3032,7 +3030,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		if (err != ecSuccess)
 			return err;
 	}
-	auto err = cu_set_propval(&pmsgctnt->proplist, PR_DELEGATED_BY_RULE, &fake_true);
+	auto err = cu_set_propval(&pmsgctnt->proplist, PR_DELEGATED_BY_RULE, &byte_value_one);
 	if (err != ecSuccess)
 		return err;
 
@@ -3139,7 +3137,7 @@ static ec_error_t op_switch(const rulexec_in &rp, seen_list &seen,
 			return ecSuccess;
 		BOOL b_result = false;
 		if (!cu_set_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.sqlite,
-		    PR_READ, &fake_true, &b_result))
+		    PR_READ, &byte_value_one, &b_result))
 			return ecError;
 		break;
 	}
@@ -3350,7 +3348,7 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 		if (err != ecSuccess)
 			return err;
 	}
-	auto err = cu_set_propval(&pmsgctnt->proplist, PR_DELEGATED_BY_RULE, &fake_true);
+	auto err = cu_set_propval(&pmsgctnt->proplist, PR_DELEGATED_BY_RULE, &byte_value_one);
 	if (err != ecSuccess)
 		return err;
 
@@ -3450,7 +3448,7 @@ static ec_error_t opx_switch(const rulexec_in &rp,
 			return ecSuccess;
 		BOOL b_result = false;
 		if (!cu_set_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.sqlite,
-		    PR_READ, &fake_true, &b_result))
+		    PR_READ, &byte_value_one, &b_result))
 			return ecError;
 		break;
 	}
@@ -3725,14 +3723,14 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		auto rcpt_type = detect_rcpt_type(account.c_str(), pmsg->children.prcpts);
 		if (rcpt_type == MAPI_TO || rcpt_type == MAPI_CC) {
 			err = cu_set_propval(&tmp_msg.proplist, rcpt_type == MAPI_TO ?
-				PR_MESSAGE_TO_ME : PR_MESSAGE_CC_ME, &fake_true);
+				PR_MESSAGE_TO_ME : PR_MESSAGE_CC_ME, &byte_value_one);
 			if (err != ecSuccess) {
 				mlog(LV_DEBUG, "deliver_message %s: set_propval 11: %s", dir, mapi_strerror(err));
 				return false;
 			}
 		}
 		if (rcpt_type == MAPI_TO || rcpt_type == MAPI_CC || rcpt_type == MAPI_BCC) {
-			err = cu_set_propval(&tmp_msg.proplist, PR_MESSAGE_RECIP_ME, &fake_true);
+			err = cu_set_propval(&tmp_msg.proplist, PR_MESSAGE_RECIP_ME, &byte_value_one);
 			if (err != ecSuccess) {
 				mlog(LV_DEBUG, "deliver_message %s: set_propval 12: %s", dir, mapi_strerror(err));
 				return false;

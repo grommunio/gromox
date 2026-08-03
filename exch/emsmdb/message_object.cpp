@@ -1195,7 +1195,6 @@ ec_error_t message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	uint64_t read_cn;
 	uint8_t tmp_byte;
 	MESSAGE_CONTENT *pbrief;
-	static constexpr uint8_t fake_false = 0;
 	
 	auto rpc_info = get_rpc_info();
 	auto username = pmessage->plogon->is_private() ? nullptr : rpc_info.username;
@@ -1308,8 +1307,8 @@ ec_error_t message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		common_util_notify_receipt(pmessage->plogon->get_account(),
 			NOTIFY_RECEIPT_READ, pbrief);
 	const TAGGED_PROPVAL propval_buff[] = {
-		{PR_READ_RECEIPT_REQUESTED, deconst(&fake_false)},
-		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&fake_false)},
+		{PR_READ_RECEIPT_REQUESTED, deconst(&byte_value_zero)},
+		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&byte_value_zero)},
 	};
 	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
 	PROBLEM_ARRAY problems;

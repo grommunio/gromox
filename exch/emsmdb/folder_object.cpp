@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -146,7 +146,6 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 	EXT_PUSH ext_push;
 	char temp_buff[1024];
 	static constexpr uint8_t bin_buff[22]{};
-	static constexpr uint32_t fake_del = 0;
 	static constexpr BINARY fake_bin = {std::size(bin_buff), {deconst(bin_buff)}};
 	auto dir = pfolder->plogon->get_dir();
 	
@@ -244,7 +243,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 		return TRUE;
 	case PR_DELETED_FOLDER_COUNT:
 		/* just like Exchange 2013, always return 0 */
-		*outvalue = deconst(&fake_del);
+		*outvalue = deconst(&uint_value_zero);
 		return TRUE;
 	case PR_IPM_DRAFTS_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -148,7 +148,6 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	EXT_PUSH ext_push;
 	char temp_buff[1024];
 	static constexpr uint8_t bin_buff[22]{};
-	static constexpr uint32_t fake_del = 0;
 	static constexpr BINARY fake_bin = {std::size(bin_buff), {deconst(bin_buff)}};
 	
 	switch (proptag) {
@@ -232,7 +231,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_DELETED_FOLDER_COUNT:
 		/* just like Exchange 2013, always return 0 */
-		*ppvalue = deconst(&fake_del);
+		*ppvalue = deconst(&uint_value_zero);
 		return TRUE;
 	case PR_IPM_DRAFTS_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))

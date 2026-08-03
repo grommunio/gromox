@@ -376,7 +376,6 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 	                    SYSTEMTIME::maxyear * 31557600ULL * 10000000 :
 	                    rop_util_unix_to_nttime(end_time);
 	bool detailed     = permission & (frightsFreeBusyDetailed | frightsReadAny);
-	static constexpr uint8_t fixed_true = 1;
 
 	/* C1: apptstartwhole >= start && apptstartwhole <= end */
 	RESTRICTION_PROPERTY rst_1 = {RELOP_GE, ptag.apptstartwhole, {ptag.apptstartwhole, &start_nttime}};
@@ -398,7 +397,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 
 	/* C4: have(clipend) && recurring && clipend >= start */
 	RESTRICTION_EXIST rst_13    = {ptag.clipend};
-	RESTRICTION_PROPERTY rst_14 = {RELOP_EQ, ptag.recurring, {ptag.recurring, deconst(&fixed_true)}};
+	RESTRICTION_PROPERTY rst_14 = {RELOP_EQ, ptag.recurring, {ptag.recurring, deconst(&byte_value_one)}};
 	RESTRICTION_PROPERTY rst_15 = {RELOP_GE, ptag.clipend, {ptag.clipend, &start_nttime}};
 	RESTRICTION rst_16[3]       = {{RES_EXIST, {&rst_13}}, {RES_PROPERTY, {&rst_14}}, {RES_PROPERTY, {&rst_15}}};
 	RESTRICTION_AND_OR rst_17   = {std::size(rst_16), rst_16};
@@ -406,7 +405,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 	/* C5: !have(clipend) && recurring && apptstartwhole <= end */
 	RESTRICTION_EXIST rst_18    = {ptag.clipend};
 	RESTRICTION rst_19          = {RES_EXIST, {&rst_18}};
-	RESTRICTION_PROPERTY rst_20 = {RELOP_EQ, ptag.recurring, {ptag.recurring, deconst(&fixed_true)}};
+	RESTRICTION_PROPERTY rst_20 = {RELOP_EQ, ptag.recurring, {ptag.recurring, deconst(&byte_value_one)}};
 	RESTRICTION_PROPERTY rst_21 = {RELOP_LE, ptag.apptstartwhole, {ptag.apptstartwhole, &end_nttime}};
 	RESTRICTION rst_22[3]       = {{RES_NOT, {&rst_19}}, {RES_PROPERTY, {&rst_20}}, {RES_PROPERTY, {&rst_21}}};
 	RESTRICTION_AND_OR rst_23   = {std::size(rst_22), rst_22};
