@@ -451,7 +451,7 @@ std::string RESTRICTION_COMMENT::repr() const
 {
 	std::string s = "RES_COMMENT{props[" + std::to_string(count) + "]={";
 	for (size_t i = 0; i < count; ++i)
-		s += ppropval[i].repr() + ",";
+		s += fmt::format("{:x}h={},", ppropval[i].proptag, ppropval[i].repr());
 	s += "},res={" + pres->repr() + "}}";
 	return s;
 }
