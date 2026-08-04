@@ -649,19 +649,19 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 		IntendedFreeBusyStatus.emplace(busystatus_to_legacyfb(*u32));
 	if ((u32 = shape.get<uint32_t>(NtBusyStatus)))
 		LegacyFreeBusyStatus.emplace(busystatus_to_legacyfb(*u32));
+	/*
+	 * Only report what the shape actually loaded. Synthesising values for
+	 * absent properties makes an id-only response (e.g. the item echoed
+	 * back by UpdateItem) claim the item is not a meeting, which clients
+	 * cache and act upon.
+	 */
 	if ((u32 = shape.get<uint32_t>(NtAppointmentStateFlags))) {
 		AppointmentState.emplace(*u32);
 		IsMeeting = *u32 & asfMeeting ? TRUE : false;
 		IsCancelled = *u32 & asfCanceled ? TRUE : false;
-	} else {
-		AppointmentState = 0;
-		IsMeeting = false;
-		IsCancelled = false;
 	}
 	if ((u32 = shape.get<uint32_t>(NtResponseStatus)))
 		MyResponseType.emplace(respstatus_to_resptype(*u32));
-	else
-		MyResponseType.emplace(Enum::Unknown);
 
 	const uint64_t* u64;
 	if ((u64 = shape.get<uint64_t>(NtAppointmentReplyTime)))
@@ -4415,8 +4415,6 @@ void tMeetingRequestMessage::update(const sShape& shape)
 		if (auto mapped = meettype_to_mrtype(meetingType))
 			MeetingRequestType.emplace(*mapped);
 	}
-	if (!MeetingRequestType)
-		MeetingRequestType.emplace(Enum::None);
 
 	if ((prop = shape.get(NtChangeHighlight))) {
 		const uint32_t flags = *static_cast<const uint32_t*>(prop->pvalue);
