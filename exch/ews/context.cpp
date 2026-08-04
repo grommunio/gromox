@@ -626,7 +626,7 @@ EWSContext::~EWSContext()
 {
 	if (m_notify)
 		for (const auto &sub : m_notify->nct_subs)
-			unsubscribe(sub);
+			m_plugin.detachSubscription(sub, m_ctx_id);
 }
 
 /**

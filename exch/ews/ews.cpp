@@ -1142,6 +1142,28 @@ void EWSPlugin::unlinkSubscription(detail::ContextKey ctx_id) const
 }
 
 /**
+ * @brief      Detach subscription from a context without cancelling it
+ *
+ * Streaming subscriptions outlive the individual GetStreamingEvents
+ * connection: the client reconnects with the same subscription id after
+ * each connection timeout. Only drop the link to the context, leaving the
+ * subscription in place until it times out or is explicitly unsubscribed.
+ *
+ * @param      id      Subscription to detach
+ * @param      ctx_id  Context the subscription was attached to
+ */
+void EWSPlugin::detachSubscription(const Structures::tSubscriptionId &id,
+    detail::ContextKey ctx_id) const
+{
+	auto mgr = get_submgr(id.tsub_rawkey, id.timeout);
+	if (mgr == nullptr)
+		return;
+	std::lock_guard subLock(mgr->lock);
+	if (mgr->waitingContext == ctx_id)
+		mgr->waitingContext = -1;
+}
+
+/**
  * @brief      Remove subscription
  *
  * If the supplied username does not match the username of the subscription,

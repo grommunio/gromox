@@ -149,6 +149,7 @@ class EWSPlugin {
 	std::shared_ptr<SubManager> get_submgr(detail::SubscriptionKey, uint32_t) const;
 	std::string timestamp() const;
 	void unlinkSubscription(detail::ContextKey) const;
+	void detachSubscription(const Structures::tSubscriptionId &, detail::ContextKey) const;
 	bool unsubscribe(detail::SubscriptionKey, const char*) const;
 	void unsubscribe(const detail::ExmdbSubscriptionKey&) const;
 	void wakeContext(int, std::chrono::milliseconds) const;
