@@ -516,6 +516,11 @@ static int do_process_2(std::string_view &&data, const char *str)
 		return 0;
 	case CM_HTMLTORTF: {
 		std::string out;
+		/*
+		 * CP_UTF8: Effectively, this causes the input to not get
+		 * converted. Which is exactly what we want to feed external
+		 * converter programs.
+		 */
 		auto err = html_to_rtf(data, CP_UTF8, out);
 		if (err != ecSuccess) {
 			fprintf(stderr, "html_to_rtf: %s", mapi_strerror(err));
