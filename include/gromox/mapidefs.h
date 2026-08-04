@@ -1552,11 +1552,37 @@ enum { /* for PidLidResponseStatus */
 	respNotResponded,
 };
 
-enum { /* for PidLidMeetingType */
+/**
+ * PidLidMeetingType seems to be for MUA rendering purposes only. The enum
+ * values are arranged as if it were a bitmask. MFCMAPI treats it as a bitmask.
+ * The specs do not mention any flag combinations, so that's that. OL evaluates
+ * it rather wirdly:
+ *
+ * Generally:
+ * - Meeting time shown (#636763 gray, regular).
+ * - Response buttons (Accept/Tentative/Decline/Counter) are shown.
+ *
+ * val > 1:
+ * - Inspects PidLidChangeHighlight and displays old vs. new time/location (old
+ *   values: #a5a5a5 gray italic struck-through text; new values: #de3900 red
+ *   italic text)
+ *
+ * val & (mtgInfo | mtgOutOfDate):
+ * - Response buttons replaced with a "No response needed" no-op button
+ *
+ * val == mtgOutOfDate:
+ * - Shows an extra line "This meeting request was updated after this message
+ *   was sent. You should open a later update or open the item on the
+ *   calendar."
+ *
+ * val == mtgDelegatorCopy:
+ * - Shows an extra line "The meeting has been sent to your delegate(s). [...]"
+ */
+enum {
 	mtgEmpty         = 0x00000000,
 	mtgRequest       = 0x00000001,
-	mtgFull          = 0x00010000,
-	mtgInfo          = 0x00020000,
+	mtgFull          = 0x00010000, /* also known as mtgFullUpdate */
+	mtgInfo          = 0x00020000, /* also known as mtgInfoUpdate */
 	mtgOutOfDate     = 0x00080000,
 	mtgDelegatorCopy = 0x00100000,
 };
