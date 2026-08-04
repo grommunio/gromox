@@ -213,7 +213,7 @@ Enum::LegacyFreeBusyType busystatus_to_legacyfb(uint32_t status)
 	}
 }
 
-std::optional<Enum::MeetingRequestTypeType> meettype_to_mrtype(uint32_t meetingType)
+Enum::MeetingRequestTypeType meettype_to_mrtype(uint32_t meetingType)
 {
 	if (meetingType == mtgEmpty)
 		return Enum::None;
@@ -221,13 +221,13 @@ std::optional<Enum::MeetingRequestTypeType> meettype_to_mrtype(uint32_t meetingT
 		return Enum::Outdated;
 	if (meetingType & mtgDelegatorCopy)
 		return Enum::PrincipalWantsCopy;
-	if (meetingType & mtgRequest)
-		return Enum::NewMeetingRequest;
 	if (meetingType & mtgInfo)
 		return Enum::InformationalUpdate;
 	if (meetingType & mtgFull)
 		return Enum::FullUpdate;
-	return std::nullopt;
+	if (meetingType == mtgRequest)
+		return Enum::NewMeetingRequest;
+	return Enum::FullUpdate;
 }
 
 /**
@@ -4416,8 +4416,7 @@ void tMeetingRequestMessage::update(const sShape& shape)
 
 	if ((prop = shape.get(NtMeetingType))) {
 		const uint32_t meetingType = *static_cast<const uint32_t*>(prop->pvalue);
-		if (auto mapped = meettype_to_mrtype(meetingType))
-			MeetingRequestType.emplace(*mapped);
+		MeetingRequestType.emplace(meettype_to_mrtype(meetingType));
 	}
 	if (!MeetingRequestType)
 		MeetingRequestType.emplace(Enum::None);
