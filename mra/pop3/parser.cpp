@@ -26,6 +26,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
+#include <gromox/safeint.hpp>
 #include "pop3.hpp"
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
@@ -197,12 +198,14 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 {
 	auto &ctx = *static_cast<pop3_context *>(vcontext);
 	auto pcontext = &ctx;
-	int read_len;
+	ssize_t read_len;
 	int ssl_errno;
 	const char *host_ID;
 	char temp_command[1024];
 	char reply_buf[1024];
 	size_t string_length = 0;
+	size_t new_read_offset = 0;
+	int8_t clamped = 0;
 	
 	if (pcontext->is_stls) {
 		if (NULL == pcontext->connection.ssl) {
@@ -376,7 +379,14 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 	}
 	
 	pcontext->connection.last_timestamp = current_time;	
-	pcontext->read_offset += read_len;
+	
+	new_read_offset = safe_add_s(pcontext->read_offset, read_len, &clamped);
+	if (clamped != 0) {
+		pop3_parser_log_info(pcontext, LV_ERR, "read length overflow");
+		goto ERROR_TRANSPORT;
+	}
+	pcontext->read_offset = new_read_offset;
+
 	for (size_t i = 0; i < pcontext->read_offset; ++i) {
 		auto nl_len = newline_size(&pcontext->read_buffer[i], pcontext->read_offset - i);
 		if (nl_len == 0)

@@ -776,8 +776,18 @@ static tproc_status ps_stat_appending(imap_context &ctx)
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
 	pcontext->connection.last_timestamp = current_time;
-	if (pcontext->literal_len <= pcontext->current_len + read_len) {
-		ssize_t temp_len = pcontext->current_len + read_len - pcontext->literal_len;
+
+	int8_t clamped = 0;
+	const auto total_len = safe_add_s(pcontext->current_len, read_len, &clamped);
+	if (clamped != 0 || pcontext->literal_len < 0) {
+		imap_parser_log_info(pcontext, LV_WARN, "APPEND literal length overflow");
+		size_t string_length = 0;
+		auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
+		return ps_end_processing(pcontext, imap_reply_str, string_length);
+	}
+
+	if (static_cast<uint32_t>(pcontext->literal_len) <= total_len) {
+		ssize_t temp_len = total_len - pcontext->literal_len;
 		memcpy(pcontext->read_buffer, pbuff + read_len - temp_len, temp_len);
 		pcontext->read_offset = temp_len;
 		pcontext->stream.fwd_write_ptr(read_len - temp_len);
@@ -785,7 +795,7 @@ static tproc_status ps_stat_appending(imap_context &ctx)
 		pcontext->sched_stat = isched_stat::appended;
 	} else {
 		pcontext->stream.fwd_write_ptr(read_len);
-		pcontext->current_len += read_len;
+		pcontext->current_len = total_len;
 	}
 	if (ctx.literal_len == ctx.current_len)
 		ctx.append_stream = std::move(ctx.stream);
