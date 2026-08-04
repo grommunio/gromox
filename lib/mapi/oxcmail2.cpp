@@ -130,7 +130,7 @@ void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) t
 ec_error_t bodyset_html(TPROPVAL_ARRAY &props, std::string &&rawbody,
     const char *charset)
 {
-	uint32_t id = cset_to_cpid(charset);
+	auto id = cset_to_cpid(charset);
 	auto err = props.set(PR_INTERNET_CPID, &id);
 	if (err != ecSuccess)
 		return err;
@@ -169,7 +169,7 @@ ec_error_t bodyset_plain(TPROPVAL_ARRAY &props, std::string &&rawbody,
 ec_error_t bodyset_enriched(TPROPVAL_ARRAY &props,
     std::string &&rawbody, const char *charset) try
 {
-	uint32_t id = cset_to_cpid(charset);
+	auto id = cset_to_cpid(charset);
 	auto err = props.set(PR_INTERNET_CPID, &id);
 	if (err != ecSuccess)
 		return err;

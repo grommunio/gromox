@@ -343,7 +343,7 @@ static int parse_propstrm_to_cpid(const EXT_PULL &ep1)
 		if (pte.proptag == PR_MESSAGE_CODEPAGE)
 			return pte.v_ui4;
 	}
-	return 0;
+	return CP_ACP;
 }
 
 static int do_recips(libolecf_item_t *msg_dir, unsigned int nrecips,

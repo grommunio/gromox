@@ -622,7 +622,7 @@ static int rtf_parse_control(const char *string,
 	return 1;
 }
 
-static uint32_t rtf_fcharset_to_cpid(int num)
+static int rtf_fcharset_to_cpid(int num)
 {
     switch (num) {
 		case 0: return 1252;
