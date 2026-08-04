@@ -509,7 +509,7 @@ static int icp_match_field(mjson_io &io, const char *cmd_tag,
 			length1 = len1 - offset1;
 		value += "BODY"s + pbody;
 		value += " {" + std::to_string(length1) + "}\r\n";
-		value += std::string_view(buff1).substr(offset1);
+		value += std::string_view(buff1).substr(offset1, length1);
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
