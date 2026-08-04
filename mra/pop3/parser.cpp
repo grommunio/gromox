@@ -303,7 +303,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 				pcontext->data_stat = FALSE;
 				return tproc_status::cont;
 			case POP3_RETRIEVE_ERROR:
-				goto ERROR_TRANSPROT;
+				goto ERROR_TRANSPORT;
 			}
 		}
 		return tproc_status::cont;
@@ -422,7 +422,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 	}
 	return tproc_status::cont;
 	
- ERROR_TRANSPROT:
+ ERROR_TRANSPORT:
 	pcontext->connection.write("\r\n.\r\n", 5);
 	ctx.wrdat_active = false;
 	ctx.wrdat_content.clear();
