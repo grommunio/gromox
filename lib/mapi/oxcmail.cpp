@@ -3581,8 +3581,6 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
     const char *pmessage_class, std::string &mdn_content) try
 {
-	int tmp_len;
-	size_t base64_len;
 	char tmp_address[UADDR_SIZE];
 	
 	tmp_address[0] = '\0';
@@ -3613,37 +3611,27 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
 		}
 	}
  EXPORT_MDN_CONTENT:
-	DSN dsn;
-	auto pdsn_fields = dsn.get_message_fields();
-	auto t_addr = "rfc822;"s + tmp_address;
-	if (!dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str()))
-		return FALSE;
-	tmp_len = strlen(pmessage_class);
-	char tmp_buff[1024];
-	strcpy(tmp_buff, tmp_len >= 6 && strcasecmp(&pmessage_class[tmp_len-6], ".IPNRN") == 0 ?
-	       "manual-action/MDN-sent-automatically; displayed" :
-	       "manual-action/MDN-sent-automatically; deleted");
-	if (!dsn.append_field(pdsn_fields, "Disposition", tmp_buff))
-		return FALSE;
+	std::string vstr;
+	vmime::utility::outputStreamStringAdapter vadap(vstr);
+	vmime::header dsn;
+	dsn.getField("Final-Recipient")->setValue("rfc822;"s + tmp_address);
+	dsn.getField("Disposition")->setValue(
+		class_match_suffix(pmessage_class, ".IPNRN") == 0 ?
+		"manual-action/MDN-sent-automatically; displayed" :
+		"manual-action/MDN-sent-automatically; deleted");
+
 	auto bv = pmsg->proplist.get<const BINARY>(PR_PARENT_KEY);
-	if (bv != nullptr && base64_encode_sized(*bv, tmp_buff,
-	    std::size(tmp_buff), &base64_len) == 0) {
-		tmp_buff[base64_len] = '\0';
-		if (!dsn.append_field(pdsn_fields, "X-MSExch-Correlation-Key", tmp_buff))
-			return FALSE;
+	if (bv != nullptr) {
+		dsn.getField("X-MSExch-Correlation-Key")->setValue(base64_encode(*bv));
 	}
 	str = pmsg->proplist.get<char>(PidTagOriginalMessageId);
-	if (str != nullptr && !dsn.append_field(pdsn_fields,
-	    "Original-Message-ID", str))
-		return FALSE;
-	if (pdisplay_name != nullptr &&
-	    !dsn.append_field(pdsn_fields, "X-Display-Name", enc_text(pdisplay_name)))
-		return FALSE;
-	auto err = dsn.serialize(mdn_content);
-	if (err == ecSuccess)
-		return TRUE;
-	mlog(LV_ERR, "E-1762: %s", mapi_strerror(err));
-	return false;
+	if (str != nullptr)
+		dsn.getField("Original-Message-ID")->setValue(str);
+	if (pdisplay_name != nullptr)
+		dsn.getField("X-Display-Name")->setValue(pdisplay_name);
+	dsn.generate(vadap);
+	mdn_content = std::move(vstr);
+	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
