@@ -2823,7 +2823,7 @@ bool cu_rebuild_subjects(const char *&subj, const char *&pfx, const char *&norm)
 		return true;
 	}
 	auto pfxlen = subj_pfxlen(subj);
-	if (pfxlen < 0)
+	if (pfxlen < 0 || pfxlen >= INT32_MAX)
 		return false;
 	auto newpfx = cu_alloc<char>(static_cast<size_t>(pfxlen) + 1);
 	if (newpfx == nullptr)
