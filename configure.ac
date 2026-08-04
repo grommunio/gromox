@@ -301,7 +301,6 @@ AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CXXFLAGS])
 AC_SUBST([my_LDFLAGS])
 
-AS_IF([test -z "$cxxmode"], [AC_MSG_RESULT([*** No usable -std= argument was detected for this C++ compiler.])])
 AC_LANG_POP([C++])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
