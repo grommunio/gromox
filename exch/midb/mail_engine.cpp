@@ -37,6 +37,7 @@
 #include <vmime/addressList.hpp>
 #include <vmime/header.hpp>
 #include <vmime/mailboxGroup.hpp>
+#include <vmime/text.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
@@ -269,72 +270,24 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 	return 0;
 }
 
-static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
+/**
+ * Decode RFC 2047 encoded-words to UTF-8 for IMAP SEARCH matching, using
+ * vmime. Legacy mails may carry raw 8-bit text (in the message's charset)
+ * around the encoded-words; convert everything to UTF-8 first (encoded-words
+ * are pure ASCII and unaffected), then have vmime decode them.
+ */
+static std::string me_ct_decode_mime(const char *charset,
     std::string_view sv_in) try
 {
-	ENCODE_STRING encode_string;
-
-	auto buff_len = sv_in.size();
-	auto ret_string = std::make_unique<char[]>(2 * (buff_len + 1));
-	auto in_buff = sv_in.data();
-	auto out_buff = ret_string.get();
-	size_t i, offset = 0, last_pos = 0;
-	int begin_pos = -1, end_pos = -1;
-	for (i=0; i<buff_len-1&&offset<2*buff_len+1; i++) {
-		if (-1 == begin_pos && '=' == in_buff[i] && '?' == in_buff[i + 1]) {
-			begin_pos = i;
-			if (i > last_pos) {
-				std::string_view scratch(&in_buff[last_pos], begin_pos - last_pos);
-				while (scratch.size() > 0 && HX_isspace(scratch[0]))
-					scratch.remove_prefix(1);
-				auto tmp_string = me_ct_to_utf8(charset, scratch);
-				memcpy(&out_buff[offset], tmp_string.c_str(), tmp_string.size());
-				offset += tmp_string.size();
-				last_pos = i;
-			}
-		}
-		if (end_pos == -1 && begin_pos != -1 && in_buff[i] == '?' &&
-		    in_buff[i+1] == '=' && ((in_buff[i-1] != 'q' &&
-		    in_buff[i-1] != 'Q') || in_buff[i-2] != '?'))
-			end_pos = i + 1;
-		if (-1 != begin_pos && -1 != end_pos) {
-			parse_mime_encode_string(in_buff + begin_pos, 
-				end_pos - begin_pos + 1, &encode_string);
-			auto tmp_len = strlen(encode_string.title);
-			std::string tmp_string;
-			if (strcasecmp(encode_string.encoding, "base64") == 0) {
-				tmp_string = me_ct_to_utf8(encode_string.charset, base64_decode(encode_string.title));
-			} else if (strcasecmp(encode_string.encoding, "quoted-printable") == 0) {
-				char temp_buff[1024];
-				auto decode_len = qpnl_decode_sized({encode_string.title, tmp_len},
-				                  temp_buff, std::size(temp_buff));
-				if (decode_len < 0)
-					return NULL;
-				temp_buff[decode_len] = '\0';
-				tmp_string = me_ct_to_utf8(encode_string.charset, temp_buff);
-			} else {
-				tmp_string = me_ct_to_utf8(charset, encode_string.title);
-			}
-			memcpy(&out_buff[offset], tmp_string.c_str(), tmp_string.size());
-			offset += tmp_string.size();
-			
-			last_pos = end_pos + 1;
-			i = end_pos;
-			begin_pos = -1;
-			end_pos = -1;
-			continue;
-		}
-	}
-	if (i > last_pos) {
-		auto tmp_string = me_ct_to_utf8(charset, &in_buff[last_pos]);
-		memcpy(&out_buff[offset], tmp_string.c_str(), tmp_string.size());
-		offset += tmp_string.size();
-	} 
-	out_buff[offset] = '\0';
-	return ret_string;
+	auto vpctx = vmail_default_parsectx();
+	vmime::text vtext;
+	vtext.parse(vpctx, me_ct_to_utf8(charset, sv_in));
+	return vtext.getConvertedText(vmime::charsets::UTF_8);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1968: ENOMEM");
-	return nullptr;
+	return {};
+} catch (const vmime::exception &) {
+	return {};
 }
 
 static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
@@ -350,8 +303,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 		auto filename = pmime->get_filename();
 		if ('\0' != filename[0]) {
 			auto rs = me_ct_decode_mime(penum->charset, filename);
-			if (rs != nullptr &&
-			    strcasestr(rs.get(), penum->keyword) != nullptr)
+			if (strcasestr(rs.c_str(), penum->keyword) != nullptr)
 				penum->b_result = TRUE;
 		}
 	}
@@ -413,7 +365,7 @@ static bool me_ct_match_addr(const char *charset, const char *raw,
     const char *keyword) try
 {
 	auto rs = me_ct_decode_mime(charset, raw);
-	if (rs != nullptr && strcasestr(rs.get(), keyword) != nullptr)
+	if (strcasestr(rs.c_str(), keyword) != nullptr)
 		return true;
 	vmime::addressList al;
 	try {
@@ -819,7 +771,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 			if (!get_digest(digest, "subject", val))
 				break;
 			auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
-			if (rs != nullptr && strcasestr(rs.get(),
+			if (strcasestr(rs.c_str(),
 			    ptree_node->ct_keyword.c_str()) != nullptr)
 				b_result1 = true;
 			break;
@@ -833,7 +785,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 			std::string val;
 			if (get_digest(digest, "cc", val)) {
 				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
-				if (rs != nullptr && strcasestr(rs.get(),
+				if (strcasestr(rs.c_str(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
 			}
@@ -841,7 +793,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			if (get_digest(digest, "from", val)) {
 				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
-				if (rs != nullptr && strcasestr(rs.get(),
+				if (strcasestr(rs.c_str(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
 			}
@@ -849,7 +801,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			if (get_digest(digest, "subject", val)) {
 				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
-				if (rs != nullptr && strcasestr(rs.get(),
+				if (strcasestr(rs.c_str(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
 			}
@@ -857,7 +809,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			if (get_digest(digest, "to", val)) {
 				auto rs = me_ct_decode_mime(charset, base64_decode(val).c_str());
-				if (rs != nullptr && strcasestr(rs.get(),
+				if (strcasestr(rs.c_str(),
 				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
 			}

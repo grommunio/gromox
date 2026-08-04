@@ -34,19 +34,12 @@ struct GX_EXPORT kvpair {
 };
 using MIME_FIELD = kvpair;
 
-struct GX_EXPORT ENCODE_STRING {
-    char encoding[32];
-    char charset[32];
-    char title[1024];
-};
-
 using GET_USERNAME = ec_error_t (*)(unsigned int, std::string &);
 
 struct MAIL;
 extern GX_EXPORT BOOL parse_uri(const char *uri_buff, char *parsed_uri);
 extern GX_EXPORT size_t parse_mime_field(const char *, size_t, MIME_FIELD *);
 extern GX_EXPORT void parse_field_value(const char *in_buff, long buff_len, char *value, long val_len, std::vector<kvpair> &);
-extern GX_EXPORT void parse_mime_encode_string(const char *in, long inlen, ENCODE_STRING *);
 extern GX_EXPORT int mutf7_to_utf8(const char *u7, size_t u7len, char *u8, size_t u8len);
 extern GX_EXPORT int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len);
 extern GX_EXPORT int parse_imap_args(char *cmd, int inlen, std::vector<std::string> &, bool keep_nil = false);

@@ -1037,11 +1037,9 @@ static const unsigned char hex_tab[256] =
 	0x10, 0x10, 0x10, 0x10, 0x10, 0x10
 };
 
-static size_t qp_decode(void *voutput, const char *input, size_t length,
-    unsigned int qp_flags)
+static size_t qp_decode(void *voutput, const char *input, size_t length)
 {
 	auto output = static_cast<uint8_t *>(voutput);
-	bool mime_mode = qp_flags & QP_MIME_HEADER;
 	size_t i, cnt = 0;
 	for (i = 0; i < length; i++) {
 		char c = input[i];
@@ -1071,12 +1069,6 @@ static size_t qp_decode(void *voutput, const char *input, size_t length,
 			*/
 			break;
 		}
-		case '_':
-			if (mime_mode) {
-				output[cnt++] = ' ';
-				break;
-			}
-			[[fallthrough]];
 		default:
 			/* pass other characters through unmolested */
 			output[cnt++] = c;
@@ -1087,8 +1079,7 @@ static size_t qp_decode(void *voutput, const char *input, size_t length,
 	return cnt;
 }
 
-ssize_t qpnl_decode_sized(std::string_view sv_in, void *voutput, size_t out_len,
-    unsigned int qp_flags)
+ssize_t qpnl_decode_sized(std::string_view sv_in, void *voutput, size_t out_len)
 {
 	auto input = sv_in.data();
 	auto length = sv_in.size();
@@ -1132,7 +1123,7 @@ ssize_t qpnl_decode_sized(std::string_view sv_in, void *voutput, size_t out_len,
 	}
 	if (cnt >= out_len)
 		return -1;
-	return qp_decode(output, input, length, qp_flags);
+	return qp_decode(output, input, length);
 }
 
 BOOL decode_hex_binary(const char *src, void *vdst, int dstlen)
