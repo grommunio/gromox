@@ -215,15 +215,21 @@ Enum::LegacyFreeBusyType busystatus_to_legacyfb(uint32_t status)
 
 std::optional<Enum::MeetingRequestTypeType> meettype_to_mrtype(uint32_t meetingType)
 {
-	switch (meetingType) {
-	case mtgEmpty:         return Enum::None;
-	case mtgRequest:       return Enum::NewMeetingRequest;
-	case mtgFull:          return Enum::FullUpdate;
-	case mtgInfo:          return Enum::InformationalUpdate;
-	case mtgOutOfDate:     return Enum::Outdated;
-	case mtgDelegatorCopy: return Enum::PrincipalWantsCopy;
-	default:               return std::nullopt;
-	}
+	/* PidLidMeetingType is a bitmask (e.g. mtgRequest|mtgFull for new invites),
+	 * so it must be tested flag-wise rather than compared for equality. */
+	if (meetingType == mtgEmpty)
+		return Enum::None;
+	if (meetingType & mtgOutOfDate)
+		return Enum::Outdated;
+	if (meetingType & mtgDelegatorCopy)
+		return Enum::PrincipalWantsCopy;
+	if (meetingType & mtgRequest)
+		return Enum::NewMeetingRequest;
+	if (meetingType & mtgInfo)
+		return Enum::InformationalUpdate;
+	if (meetingType & mtgFull)
+		return Enum::FullUpdate;
+	return std::nullopt;
 }
 
 /**
