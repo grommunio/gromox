@@ -50,10 +50,6 @@
 #define LOC_TYPE_PRIVATE_MESSAGE					3
 #define LOC_TYPE_PUBLIC_MESSAGE						4
 
-enum class repr_grant {
-	error = -1, no_impersonation, send_on_behalf, send_as,
-};
-
 struct MAIL;
 struct message_content;
 struct message_object;
