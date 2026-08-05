@@ -79,12 +79,12 @@ static constexpr HXoption g_options_table[] = {
 
 void command_overview()
 {
-	fprintf(stderr, "Commands:\n\tcgkreset clear-photo clear-profile "
+	fprintf(stderr, "Commands:\n\tcgkreset clear-msgcopy clear-photo clear-profile "
 		"clear-rwz delmsg echo-maildir echo-username emptyfld "
-		"freeze get-freebusy get-photo get-websettings "
+		"freeze get-freebusy get-msgcopy get-photo get-websettings "
 		"get-websettings-persistent get-websettings-recipients movemsg ping "
 		"purge-datafiles purge-softdelete recalc-sizes set-locale "
-		"set-photo set-websettings set-websettings-persistent "
+		"set-msgcopy set-photo set-websettings set-websettings-persistent "
 		"set-websettings-recipients sync-midb thaw unload vacuum\n");
 	fprintf(stderr, "Command chaining: ( command1 c1args... ) ( command2 c2args... )...\n");
 }
@@ -599,6 +599,10 @@ int cmd_parser(int argc, char **argv)
 		return showstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
 	else if (strcmp(argv[0], "set-websettings-recipients") == 0)
 		return setstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
+	else if (strcmp(argv[0], "get-msgcopy") == 0 ||
+	    strcmp(argv[0], "set-msgcopy") == 0 ||
+	    strcmp(argv[0], "clear-msgcopy") == 0)
+		return msgcopy::main(argc, argv);
 	else if (strcmp(argv[0], "purge-softdelete") == 0)
 		return purgesoftdel::main(argc, argv);
 	else if (strcmp(argv[0], "set-locale") == 0)

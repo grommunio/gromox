@@ -57,6 +57,10 @@ freeze: halt all operations on a mailbox
 .IP \(bu 4
 get\-freebusy: test FB schedule lookups
 .IP \(bu 4
+clear\-msgcopy: unset the sent-as/on-behalf copy settings
+.IP \(bu 4
+get\-msgcopy: show whether sent-as/on-behalf copies are retained
+.IP \(bu 4
 get\-photo: retrieve user image from store and print to stdout
 .IP \(bu 4
 get\-websettings, get\-websettings\-persistent, get\-websettings\-recipients:
@@ -73,6 +77,8 @@ purge\-softdelete: remove soft-deleted items from a folder
 recalc\-sizes: recalculate store size
 .IP \(bu 4
 set\-locale: reset UI language and special folders' names
+.IP \(bu 4
+set\-msgcopy: control retention of sent-as/on-behalf copies
 .IP \(bu 4
 set\-photo: read user image from stdin and save to store
 .IP \(bu 4
@@ -419,6 +425,67 @@ To process an entire mailbox and wipe everything older than a few days:
 gromox\-mbop \-u abc@example.com purge\-softdelete \-r / \-t 10d
 .SH recalc\-sizes
 Recalculates the store size.
+.SH get\-msgcopy, set\-msgcopy, clear\-msgcopy
+.SS Synopsis
+\fBget\-msgcopy\fP
+.PP
+\fBset\-msgcopy\fP [\fB\-v\fP] [\fB\-a\fP \fIboolean\fP] [\fB\-b\fP \fIboolean\fP]
+.PP
+\fBclear\-msgcopy\fP [\fB\-abv\fP]
+.SS Description
+Normally, a message which one user sends as, or on behalf of, another mailbox
+is filed only in the Sent Items folder of whoever composed it, and the
+represented mailbox retains no record of it. This is inconvenient for shared
+mailboxes, where the point is usually that everyone with access can see what
+was sent in the mailbox's name.
+.PP
+When set on a mailbox, these two settings make the server place an additional
+copy of such a message into that mailbox's Sent Items folder. The sender keeps
+their own copy either way. The settings correspond to the Exchange mailbox
+settings MessageCopyForSentAsEnabled and MessageCopyForSendOnBehalfEnabled, and
+are to be set on the \fIrepresented\fP mailbox (the shared mailbox), not on the
+account doing the sending.
+.PP
+Granting someone the right to represent a mailbox is a separate step and is not
+performed by this command; see the delegate and Send-As lists in the mailbox's
+\fIconfig\fP directory. Note that a copy is deposited even if the sender holds
+no explicit permission on the represented mailbox's Sent Items folder, matching
+Exchange behaviour; such an event is noted in the log.
+.PP
+get\-msgcopy reports the current state of both settings. A setting which was
+never set is reported as such, and behaves as if switched off; clear\-msgcopy
+returns a setting to that state, as opposed to setting it to a recorded 0.
+.PP
+Depositing the copy is not allowed to endanger the message that was sent: if it
+fails \(em because the represented mailbox is over quota, for instance, or is
+unreachable \(em the message is still delivered as usual, and only a warning
+appears in the log. The quota of the represented mailbox is not consulted
+beforehand, and the copy counts against it like any other message.
+.PP
+Two paths do not produce a copy at this time. \fBThe EWS protocol\fP does not,
+so messages sent by clients using EWS are unaffected by these settings.
+\fBDeferred sends\fP (a client asking for delayed delivery) complete through a
+separate helper, and whether a copy results there has not been established.
+.SS Options
+.TP
+\fB\-a\fP [\fIboolean\fP]
+Selects the setting governing messages sent \fBas\fP this mailbox. Under
+set\-msgcopy the option takes a value, one of 0/1, no/yes, off/on or
+false/true; anything else is rejected rather than guessed at. Under
+clear\-msgcopy it takes no value and merely selects the setting for removal.
+.TP
+\fB\-b\fP [\fIboolean\fP]
+As \fB\-a\fP, but for messages sent \fBon behalf of\fP this mailbox.
+.TP
+\fB\-v\fP
+Verbose mode. (Same as global \-v.)
+.SS Examples
+.IP \(bu 4
+gromox\-mbop \-u shared@example.com set\-msgcopy \-a 1
+.IP \(bu 4
+gromox\-mbop \-u shared@example.com get\-msgcopy
+.IP \(bu 4
+gromox\-mbop \-u shared@example.com clear\-msgcopy
 .SH set\-locale
 .SS Synopsis
 \fBset\-locale\fP [\fB\-Tv\fP] \-l\fP \fIid\fP
