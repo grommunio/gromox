@@ -420,8 +420,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecSuccess;
 	}
 
-	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
-	ret = cu_send_message(plogon, pmessage, ev_from);
+	ret = cu_send_message(plogon, pmessage, actor, delegator.c_str(), repr_grant);
 	if (ret != ecSuccess && ret != ecWarnWithErrors)
 		exmdb_client->clear_submit(dir, pmessage->get_id(), b_unsent);
 	else if (!b_delete)
@@ -657,8 +656,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		}
 	}
 
-	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
-	return cu_send_message(plogon, pmessage, ev_from);
+	return cu_send_message(plogon, pmessage, actor, delegator.c_str(), repr_grant);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;

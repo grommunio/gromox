@@ -37,6 +37,7 @@
 #include <gromox/proc_common.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/sent_copy.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -1385,11 +1386,121 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 }
 
 /**
- * @ev_from: address to use for Envelope-From
+ * Deposit a copy of a message which was just sent as / on behalf of another
+ * mailbox into that mailbox's Sent Items folder, provided the mailbox asked
+ * for it. Cf. the Exchange mailbox settings MessageCopyForSentAsEnabled and
+ * MessageCopyForSendOnBehalfEnabled.
+ *
+ * Failures are logged and then dropped. The mail has already left the system
+ * by the time this runs, so a missing archival copy must not be turned into a
+ * send failure.
+ */
+static void cu_deposit_repr_copy(logon_object *plogon,
+    const MESSAGE_CONTENT &ctnt, const char *actor, const char *delegator,
+    repr_grant grant, const char *log_id) try
+{
+	/*
+	 * Not merely "delegator is set": IPM.Schedule messages are let through
+	 * without any delegation check at all (cf. pass_scheduling), so an
+	 * unauthorized third party can appear as @delegator here.
+	 */
+	if (grant < repr_grant::send_on_behalf)
+		return;
+	/*
+	 * An ordinary send is modelled as representing oneself, so this is the
+	 * common case by a wide margin and it has to stay cheap: every outgoing
+	 * message passes through here, and resolving a name costs an SQL query.
+	 */
+	if (strcasecmp(delegator, actor) == 0)
+		return;
+	auto tag = grant >= repr_grant::send_as ?
+	           PR_MESSAGE_COPY_FOR_SENT_AS :
+	           PR_MESSAGE_COPY_FOR_SEND_ON_BEHALF;
+	sql_meta_result mres;
+	if (mysql_adaptor_meta(delegator, WANTPRIV_METAONLY, mres) != 0) {
+		mlog(LV_WARN, "W-1273: <%s> cannot be resolved, so no copy of "
+			"%s was deposited", delegator, log_id);
+		return;
+	}
+	auto dir = plogon->get_dir();
+	/*
+	 * Sending under an alias of one's own account is also reported as
+	 * send_as, and there @delegator differs from @actor while the mailbox is
+	 * the same one; filing that would duplicate the sender's own copy. The
+	 * canonical username settles it (the same value oxomsg_get_perm matched
+	 * on), and the maildir is checked too so that the guard does not rest on
+	 * one string alone.
+	 */
+	if (strcasecmp(mres.username.c_str(), actor) == 0 || mres.maildir == dir)
+		return;
+	const proptag_t tag_buff[] = {tag};
+	TPROPVAL_ARRAY props{};
+	if (!exmdb_client->get_store_properties(mres.maildir.c_str(), CP_UTF8,
+	    proptag_cspan{tag_buff}, &props)) {
+		/*
+		 * Not knowing whether a copy was wanted is not the same as it not
+		 * being wanted, and the difference is invisible afterwards, so it
+		 * does not get to pass silently.
+		 */
+		mlog(LV_WARN, "W-1284: cannot read the copy settings of <%s>, so "
+			"no copy of %s was deposited", delegator, log_id);
+		return;
+	}
+	auto flag = props.get<const uint8_t>(tag);
+	if (flag == nullptr || *flag == 0)
+		return;
+
+	auto fid = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
+	/*
+	 * The Send-As/Send-On-Behalf lists and folder ACLs are maintained
+	 * separately, so a delegate without an explicit grant is a routine
+	 * state rather than an error, and EXC does not consult the ACL either.
+	 * Only leave a trace of having written without a confirmed one — which
+	 * covers the permission being absent and the lookup having failed
+	 * alike, so that the trace does not vanish in the degraded case.
+	 */
+	uint32_t perm = 0;
+	if (!exmdb_client->get_folder_perm(mres.maildir.c_str(), fid, actor,
+	    &perm) || !(perm & (frightsOwner | frightsCreate)))
+		mlog(LV_INFO, "I-1283: depositing a copy of %s in <%s>'s Sent "
+			"Items without a confirmed create right for %s",
+			log_id, delegator, actor);
+
+	sent_copy_ctx ctx;
+	ctx.get_named_propnames = exmdb_client->get_named_propnames;
+	ctx.get_named_propids = exmdb_client->get_named_propids;
+	ctx.log_id = log_id;
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> cpy;
+	auto err = sent_copy_prepare(ctx, ctnt, dir, mres.maildir.c_str(), cpy);
+	if (err == ecSuccess) {
+		const std::string digest;
+		uint64_t outmid = 0, outcn = 0;
+		ec_error_t e_result = ecRpcFailed;
+		if (exmdb_client->write_message(mres.maildir.c_str(), CP_UTF8,
+		    fid, cpy.get(), digest, &outmid, &outcn, &e_result) &&
+		    e_result == ecSuccess)
+			return;
+		err = e_result;
+	}
+	mlog(LV_WARN, "W-1274: no copy of %s deposited in <%s>'s Sent Items: %s",
+		log_id, delegator, mapi_strerror(err));
+} catch (const std::bad_alloc &) {
+	/*
+	 * Deliberately not propagated: the caller's own catch handler answers
+	 * with ecServerOOM, which would report a completed send as failed.
+	 */
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+}
+
+/**
+ * @actor:	account owning the store the message is submitted from
+ * @delegator:	identity being represented (equal to @actor if none)
+ * @grant:	to what degree @actor may represent @delegator
  */
 ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
-    const char *ev_from) try
+    const char *actor, const char *delegator, repr_grant grant) try
 {
+	auto ev_from = grant >= repr_grant::send_as ? delegator : actor;
 	auto message_id = msg->get_id();
 	MAIL imail;
 	void *pvalue;
@@ -1493,6 +1604,13 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
+	/*
+	 * Before the branches below, all of which have early exits, and on the
+	 * unmodified content: the delegator's copy is not affected by what the
+	 * client asked us to do with the sender's own copy.
+	 */
+	cu_deposit_repr_copy(plogon, *pmsgctnt, actor, delegator, grant,
+		log_id.c_str());
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
 		if (!cu_entryid_to_mid(*plogon, ptarget, &folder_id, &new_id)) {
