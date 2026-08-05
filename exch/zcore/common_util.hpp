@@ -50,10 +50,6 @@
 #define LOC_TYPE_PRIVATE_MESSAGE					3
 #define LOC_TYPE_PUBLIC_MESSAGE						4
 
-enum class repr_grant {
-	error = -1, no_impersonation, send_on_behalf, send_as,
-};
-
 struct MAIL;
 struct message_content;
 struct message_object;
@@ -64,8 +60,8 @@ extern void common_util_init(const char *org_name, unsigned int max_rcpt, size_t
 extern int common_util_run(const char *data_path);
 extern bool cu_verify_columns_and_sorts(proptag_cspan, const SORTORDER_SET *);
 extern bool cu_extract_delegator(message_object *, std::string &);
-extern repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
-extern repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
+extern gromox::repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
+extern gromox::repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, gromox::proptag_t, const void *);
 extern void common_util_remove_propvals(TPROPVAL_ARRAY *, gromox::proptag_t);
 extern void cu_reduce_proptags(PROPTAG_ARRAY *, proptag_cspan);

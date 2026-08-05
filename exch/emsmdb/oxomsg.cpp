@@ -35,10 +35,6 @@ enum { /* for PR_SUBMIT_FLAGS (unused in Gromox) */
 	SUBMITFLAG_PREPROCESS = 0x2U,
 };
 
-enum class repr_grant {
-	error = -1, no_impersonation, send_on_behalf, send_as,
-};
-
 /**
  * @send_as:	if true, copy PR_SENT_REPR to PR_SENDER
  * 		if false, leave PR_SENT_REPR at its value

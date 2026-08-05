@@ -1677,6 +1677,18 @@ extern GX_EXPORT const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlo
 extern GX_EXPORT const char IPM_Appointment_Exception[];
 
 namespace gromox {
+
+/**
+ * To what degree an actor ("secretary") may assume the identity of another
+ * mailbox ("boss") when submitting a message. Derived from the boss's
+ * config/sendas.txt (send_as) and config/delegates.txt (send_on_behalf).
+ * The relative order matters, as code compares with < and >=.
+ */
+enum class repr_grant {
+	error = -1, no_impersonation, send_on_behalf, send_as,
+};
+
 extern GX_EXPORT std::string guid2name(const FLATUID);
 extern GX_EXPORT const char *relop_repr(enum relop);
+
 }
