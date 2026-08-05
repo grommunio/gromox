@@ -2803,7 +2803,8 @@ static bool genentryid_to_smtpaddr(const BINARY &bin, std::string &dispname,
 			return true;
 	}
 
-	mlog(LV_WARN, "W-1964: skipping unrecognizable entry in PR_REPLY_RECIPIENTS_TO");
+	mlog(LV_WARN, "W-1964: skipping unrecognized PR_REPLY_RECIPIENTS_TO entry %s",
+		bin2hex(std::string_view(bin)).c_str());
 	return false;
 }
 
