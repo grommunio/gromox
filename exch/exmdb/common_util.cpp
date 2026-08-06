@@ -2742,10 +2742,25 @@ static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
 	return pstmt.step() == SQLITE_DONE ? TRUE : false;
 }
 
+static int subj_pfxlen2(const char *s)
+{
+	auto p = strchr(s, ':');
+	if (p == nullptr)
+		return 0;
+	if (!HX_isspace(*++p))
+		return 0;
+	++p;
+	size_t len = p - s;
+	return std::clamp(len, size_t{0}, size_t{20});
+}
+
 /**
- * Determine the length of the message prefix, up to three alphanumeric code
- * points. Combining characters (NFD/NKFD) are not recognized though. Returns
- * the number of bytes in @s that constitute the prefix.
+ * @s: input string in UTF-8 encoding
+ *
+ * Determines the length of the message prefix. The prefix may consist of only
+ * up to three _codepoints_ (followed by colon and space), otherwise it is not
+ * treated as a prefix. Returns the number of _bytes_ in @s that constitute the
+ * prefix.
  */
 static int subj_pfxlen(const char *s) try
 {
@@ -2762,23 +2777,21 @@ static int subj_pfxlen(const char *s) try
 	auto ustr = iconvtext(s, "UTF-8", "wchar_t");
 	if (errno != 0)
 		return -1;
-	auto units = ustr.size() / sizeof(wchar_t);
 	wchar_t uc[6]{};
-	if (units > std::size(uc))
-		units = std::size(uc);
+	auto units = std::min(ustr.size() / sizeof(wchar_t), std::size(uc));
 	memcpy(uc, ustr.data(), units * sizeof(wchar_t));
 	if (uc[0] == L'\0' || !iswalnum(uc[0]))
 		return 0;
 	if (uc[1] == L':' && iswspace(uc[2]))
-		return strchr(s, ':') - s + 2;
+		return subj_pfxlen2(s);
 	if (!iswalnum(uc[1]))
 		return 0;
 	if (uc[2] == L':' && iswspace(uc[3]))
-		return strchr(s, ':') - s + 2;
+		return subj_pfxlen2(s);
 	if (!iswalnum(uc[2]))
 		return 0;
 	if (uc[3] == L':' && iswspace(uc[4]))
-		return strchr(s, ':') - s + 2;
+		return subj_pfxlen2(s);
 	return 0;
 } catch (const std::bad_alloc &) {
 	return -1;
@@ -2812,7 +2825,7 @@ bool cu_rebuild_subjects(const char *&subj, const char *&pfx, const char *&norm)
 	auto pfxlen = subj_pfxlen(subj);
 	if (pfxlen < 0)
 		return false;
-	auto newpfx = cu_alloc<char>(pfxlen + 1);
+	auto newpfx = cu_alloc<char>(static_cast<size_t>(pfxlen) + 1);
 	if (newpfx == nullptr)
 		return false;
 	memcpy(newpfx, subj, pfxlen);
