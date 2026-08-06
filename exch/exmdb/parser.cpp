@@ -586,7 +586,11 @@ static void *request_parser_thread(void *pparam)
 	return nullptr;
 }
 
-bool exmdb_parser_insert_conn(generic_connection &&co) try
+/*
+ * Returns whether thread creation succeeded (and that co->sockd is now under
+ * control of the new thread).
+ */
+bool exmdb_parser_insert_conn(std::shared_ptr<exmdb_connection> co)
 {
 	if (g_max_threads != 0) {
 		std::lock_guard lk(g_connection_lock);
@@ -595,7 +599,7 @@ bool exmdb_parser_insert_conn(generic_connection &&co) try
 	}
 
 	auto par = std::make_unique<parser_params>();
-	par->conn = std::make_shared<exmdb_connection>(std::move(co));
+	par->conn = co;
 	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
 	           request_parser_thread, par.get());
 	if (ret != 0) {
@@ -605,9 +609,6 @@ bool exmdb_parser_insert_conn(generic_connection &&co) try
 		par.release(); /* thread should be vivid now */
 		return true;
 	}
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
 }
 
 std::shared_ptr<router_connection> exmdb_parser_get_router(const char *remote_id)
@@ -671,7 +672,7 @@ void exmdb_parser_stop()
 		rt->join();
 }
 
-static int sockaccept_thread(generic_connection &&conn)
+static int sockaccept_thread(generic_connection &&conn) try
 {
 	if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 	    conn.client_addr) == g_acl_list.cend()) {
@@ -686,12 +687,16 @@ static int sockaccept_thread(generic_connection &&conn)
 			/* ignore */;
 		return 0;
 	}
-	if (!exmdb_parser_insert_conn(std::move(conn))) {
+	auto sp = std::make_shared<exmdb_connection>(std::move(conn));
+	if (!exmdb_parser_insert_conn(sp)) {
 		auto tmp_byte = exmdb_response::max_reached;
-		if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
+		if (HXio_fullwrite(sp->sockd, &tmp_byte, 1) != 1)
 			/* ignore */;
 		return 0;
 	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return 0;
 }
 
