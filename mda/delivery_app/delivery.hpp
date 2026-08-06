@@ -1,5 +1,7 @@
 #pragma once
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <span>
 #include <vector>
 #include <gromox/defs.h>
@@ -31,6 +33,7 @@ struct MESSAGE {
 extern void message_dequeue_init(const char *path, size_t max_memory);
 extern int message_dequeue_run();
 extern void message_dequeue_stop();
+extern bool message_dequeue_avail_unlocked();
 extern MESSAGE *message_dequeue_get();
 extern void message_dequeue_put(MESSAGE *);
 extern int message_dequeue_get_param(int param);
@@ -50,3 +53,5 @@ extern void transporter_trigger_all(enum plugin_op);
 
 extern std::shared_ptr<config_file> g_config_file;
 extern std::string g_outgoing_smtp_url;
+extern std::mutex g_workitem_mutex; /* for g_queue_list and g_used_list */
+extern std::condition_variable g_waken_cond;

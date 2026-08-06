@@ -58,8 +58,9 @@ static size_t			g_max_memory;   /* maximum allocated memory for mess*/
 static size_t			g_current_mem;  /*current allocated memory */
 static std::unique_ptr<MESSAGE[]> g_message_ptr;
 static std::unordered_map<int, MESSAGE *> g_mess_hash;
-static std::vector<MESSAGE *> g_free_list, g_used_list;
-static std::mutex g_hash_mutex, g_used_mutex, g_free_mutex, g_mess_mutex;
+static std::vector<MESSAGE *> g_free_list;
+static std::vector<MESSAGE *> g_used_list; /* protected by g_workitem_mutex */
+static std::mutex g_hash_mutex, g_free_mutex, g_mess_mutex;
 static pthread_t		g_thread_id;
 static gromox::atomic_bool g_dequeue_stop;
 static int				g_dequeued_num;
@@ -182,6 +183,8 @@ int message_dequeue_run()
 	return 0;
 }
 
+bool message_dequeue_avail_unlocked() { return g_used_list.size() > 0; }
+
 /*
  *	get a mail message from mail queue
  *	@return
@@ -189,7 +192,7 @@ int message_dequeue_run()
  */
 MESSAGE* message_dequeue_get()
 {
-	std::unique_lock h(g_used_mutex);
+	std::unique_lock h(g_workitem_mutex);
 	if (g_used_list.size() == 0)
 		return NULL;
 	auto msg = g_used_list.front();
@@ -311,11 +314,12 @@ static void message_dequeue_put_to_free(MESSAGE *pmessage)
  */
 static void message_dequeue_put_to_used(MESSAGE *pmessage)
 {
-	std::unique_lock h(g_used_mutex);
-	g_used_list.push_back(pmessage);
-	h.unlock();
+	{
+		std::lock_guard h(g_workitem_mutex);
+		g_used_list.push_back(pmessage);
+	}
 	/* send a signal to threads pool in transporter */
-	transporter_wakeup_one_thread();
+	g_waken_cond.notify_one();
 }
 
 /*
@@ -454,7 +458,7 @@ int message_dequeue_get_param(int param)
 {
 	if (param != MESSAGE_DEQUEUE_HOLDING)
 		return 0;
-	std::lock_guard lk(g_used_mutex);
+	std::lock_guard lk(g_workitem_mutex);
 	return g_used_list.size();
 }
 

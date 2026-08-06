@@ -72,7 +72,6 @@ using HOOK_PLUG_ENTITY = hook_plug_entity;
 struct THREAD_DATA {
 	DOUBLE_LIST_NODE node{};
 	pthread_t id{};
-	bool wait_on_event = false;
 	MESSAGE_CONTEXT mctx;
 	std::vector<HOOK_FUNCTION> anti_loop;
 	HOOK_FUNCTION last_hook = nullptr, last_thrower = nullptr;
@@ -88,12 +87,14 @@ static unsigned int g_threads_max, g_threads_min, g_free_num;
 static gromox::atomic_bool g_transporter_stop;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
-static std::vector<MESSAGE_CONTEXT *> g_free_list, g_queue_list; /* ctx for generating new messages */
+static std::vector<MESSAGE_CONTEXT *> g_free_list; /* ctx for generating new messages */
+static std::vector<MESSAGE_CONTEXT *> g_queue_list; /* protected by g_workitem_mutex */
 static std::list<hook_plug_entity> g_lib_list;
 static std::vector<const hook_entry *> g_hook_list;
 static std::mutex g_free_threads_mutex, g_threads_list_mutex, g_context_lock;
 static std::mutex g_queue_lock, g_cond_mutex;
-static std::condition_variable g_waken_cond;
+std::condition_variable g_waken_cond;
+std::mutex g_workitem_mutex;
 static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
@@ -224,7 +225,6 @@ int transporter_run()
 		double_list_append_as_tail(&g_free_threads, &g_data_ptr[i].node);
 
 	for (size_t i = 0; i < g_threads_min; ++i) {
-		g_data_ptr[i].wait_on_event = TRUE;
 		auto ret = pthread_create4(&g_data_ptr[i].id, nullptr,
 		           dxp_thrwork, &g_data_ptr[i]);
 		if (ret != 0) {
@@ -245,8 +245,6 @@ int transporter_run()
 		return -11;
 	}
 	pthread_setname_np(g_scan_id, "xprt/scan");
-	/* make all thread wake up */
-	g_waken_cond.notify_all();
 	return 0;
 }
 
@@ -276,11 +274,6 @@ void transporter_stop()
 	g_threads_max = 0;
 	double_list_free(&g_threads_list);
 	double_list_free(&g_free_threads);
-}
-
-void transporter_wakeup_one_thread()
-{
-	g_waken_cond.notify_one();
 }
 
 static gromox::hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
@@ -337,12 +330,18 @@ static void *dxp_thrwork(void *arg)
 	for (const auto &plug : g_lib_list)
 		plug.lib_main(PLUGIN_THREAD_CREATE, mda_funcs);
 	cannot_served_times = 0;
-	if (pthr_data->wait_on_event) {
-		std::unique_lock cm_hold(g_cond_mutex);
-		g_waken_cond.wait(cm_hold);
-	}
 	
 	while (!g_transporter_stop) {
+		{
+			std::unique_lock lk(g_workitem_mutex);
+			g_waken_cond.wait(lk, []() {
+				return g_transporter_stop || g_queue_list.size() > 0 ||
+				       message_dequeue_avail_unlocked();
+			});
+		}
+		if (g_transporter_stop)
+			break;
+
 		pmessage = message_dequeue_get();
 		if (NULL == pmessage) {
 			pcontext = transporter_dequeue_context();	
@@ -564,9 +563,10 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
 				"plugin try to enqueue message context");
 		return;
 	}
-	std::unique_lock q_hold(g_queue_lock);
-	g_queue_list.push_back(pcontext); /* reserved, so should not throw */
-	q_hold.unlock();
+	{
+		std::unique_lock q_hold(g_workitem_mutex);
+		g_queue_list.push_back(pcontext); /* reserved, so should not throw */
+	}
 	/* wake up one thread */
 	g_waken_cond.notify_one();
 }
@@ -578,7 +578,7 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
  */
 static MESSAGE_CONTEXT* transporter_dequeue_context()
 {
-	std::unique_lock q_hold(g_queue_lock);
+	std::unique_lock q_hold(g_workitem_mutex);
 	if (g_queue_list.empty())
 		return NULL;
 	auto free_ctx = g_queue_list.front();
