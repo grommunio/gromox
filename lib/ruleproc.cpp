@@ -1453,31 +1453,76 @@ static ec_error_t mr_rewrite_cal_item(rxparam &par, eid_t cal_fid,
 	return err;
 }
 
+static ec_error_t mr_remove_occurrence(rxparam &, const PROPID_ARRAY &,
+	eid_t cal_fid, eid_t cal_mid, uint32_t basedate);
+
 static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
     const mr_policy &policy)
 {
 	auto &rq_prop = par.ctnt->proplist;
 	auto cal_fid  = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	auto goid_tag  = PROP_TAG(PT_BINARY, propids[l_goid]);
+	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
+	auto seq_tag   = PROP_TAG(PT_LONG, propids[l_appt_seq]);
+	auto goid      = rq_prop.get<const BINARY>(goid_tag);
+	auto cgoid     = rq_prop.get<const BINARY>(cgoid_tag);
+	auto basedate  = mr_goid_instancedate(goid);
+
 	/*
-	 * Locate any calendar item(s) previously entered for this meeting (same
-	 * PidLidGlobalObjectId); an update or reschedule carries the same GOID,
-	 * so these are the prior bookings the request supersedes.
+	 * An update for one occurrence of a series carries a
+	 * GlobalObjectId with the instance date embedded, which by
+	 * construction never equals the series master's. Only resource
+	 * calendars are maintained server-side here; for user mailboxes,
+	 * blob surgery is left to the recipient's client, just as for a
+	 * single-occurrence cancellation.
+	 *
+	 * Entering the occurrence as a standalone item instead would
+	 * duplicate it: the recipient's client folds the update into the
+	 * master as an exception, while the item entered here relates to
+	 * that master by nothing the client can reconcile, so the
+	 * occurrence stays visible twice.
+	 */
+	if (basedate != 0 && !policy.is_resource())
+		return ecSuccess;
+
+	/*
+	 * Locate the calendar item(s) this request supersedes. An update or
+	 * reschedule of the series carries the same GOID as the master, but
+	 * standalone items entered earlier for individual occurrences carry an
+	 * instance date in theirs and would never match it, so for a series
+	 * match on CleanGlobalObjectId, which is shared by the master and all
+	 * of its occurrences. An occurrence update matches its own dated GOID,
+	 * which selects just that instance.
 	 */
 	std::vector<eid_t> existing;
 	{
-		auto goid_tag = PROP_TAG(PT_BINARY, propids[l_goid]);
-		auto goid = rq_prop.get<const BINARY>(goid_tag);
-		auto seq_tag  = PROP_TAG(PT_LONG, propids[l_appt_seq]);
+		auto match_tag = goid_tag;
+		auto match_val = goid;
+		if (basedate == 0 && cgoid != nullptr && cgoid->cb != 0) {
+			match_tag = cgoid_tag;
+			match_val = cgoid;
+		}
 		std::vector<mr_calitem> items;
-		auto err = mr_find_cal_items(par, goid_tag, goid, seq_tag,
+		auto err = mr_find_cal_items(par, match_tag, match_val, seq_tag,
 		           goid_tag, items);
 		if (err != ecSuccess)
 			return err;
 		/* Ignore stale out-of-order updates that predate what we already have. */
 		if (!items.empty()) {
+			/*
+			 * For a series, compare against the master's
+			 * sequence only: per-instance sequences run
+			 * independently per RECURRENCE-ID and can
+			 * exceed a series update's, which would
+			 * discard a valid update as stale.
+			 */
 			uint32_t newest_seq = 0;
-			for (const auto &e : items)
-				newest_seq = std::max(newest_seq, e.seq);
+			for (const auto &e : items) {
+				if (basedate == 0 && e.dated)
+					continue;
+				if (e.seq > newest_seq)
+					newest_seq = e.seq;
+			}
 			auto seq = rq_prop.get<const uint32_t>(seq_tag);
 			if (seq != nullptr && *seq < newest_seq)
 				return mr_mark_done(par);
@@ -1513,6 +1558,40 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 		if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
 		    nullptr, cal_fid, &ids, true /* hard */, &partial))
 			return ecRpcFailed;
+	}
+	/*
+	 * A moved occurrence still holds its original slot in the master's
+	 * recurrence blob. Punch it out before the free/busy check, for the
+	 * same reason the prior bookings are dropped first: the occurrence
+	 * must not clash with its own earlier slot, and the resource must
+	 * not go on reporting both as busy afterwards. Reached for
+	 * resources only, per the note at the top of this function.
+	 */
+	if (basedate != 0 && cgoid != nullptr && cgoid->cb != 0) {
+		auto seq = rq_prop.get<const uint32_t>(seq_tag);
+		std::vector<mr_calitem> masters;
+		auto err = mr_find_cal_items(par, cgoid_tag, cgoid, seq_tag,
+		           goid_tag, masters);
+		if (err != ecSuccess)
+			return err;
+		for (const auto &e : masters) {
+			/* another instance's standalone item */
+			if (e.dated)
+				continue;
+			/*
+			 * With no standalone item for this instance, its
+			 * sequence lineage is the master's, so a master ahead
+			 * of the update means the series was re-issued after
+			 * the update was sent and the update is stale. Same
+			 * test as in mr_do_cancel.
+			 */
+			if (existing.empty() && seq != nullptr && e.seq > *seq)
+				continue;
+			err = mr_remove_occurrence(par, propids, cal_fid,
+			      e.mid, basedate);
+			if (err != ecSuccess)
+				return err;
+		}
 	}
 
 	/* Lookup conflict state */
