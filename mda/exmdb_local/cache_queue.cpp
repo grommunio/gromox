@@ -373,6 +373,7 @@ static void *mdl_thrwork(void *arg)
 			delivery_status deliv_ret;
 			if (zlen == size) {
 				mlog(LV_WARN, "W-1591: garbage in %s; review and delete", temp_path.c_str());
+				temp_rcpt[0] = '\0';
 				deliv_ret = delivery_status::perm_fail;
 			} else {
 				pcontext->ctrl.rcpt.clear();
