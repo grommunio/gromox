@@ -166,6 +166,7 @@ class EWSPlugin {
 	uint32_t max_sync_changes = 512; ///< SyncFolderItems items per page; clamps client MaxChangesReturned, 0 = unlimited. Matches Exchange's 512 limit.
 	uint32_t max_get_items = 0; ///< Optional GetItem batch cap, 0 = unlimited (Exchange does not cap this; overflow -> ErrorServerBusy)
 	uint32_t max_pending_events = 4000; ///< Per-subscription undelivered streaming-event cap, 0 = unlimited. Backlog past this faults the subscription out so the client re-subscribes and resyncs, instead of pinning RSS.
+	uint32_t streaming_subscription_timeout = 1440; ///< Minutes a streaming subscription's server-side state survives without a GetStreamingEvents/GetEvents touch. Must comfortably exceed common client-side gaps (laptop sleep, travel, network roaming) or the subscription is evicted silently and the client is left polling a dead id forever. Bounded by ews_max_pending_events regardless of how long this is set to, so a generous value is low-risk.
 	std::chrono::milliseconds cache_interval{5'000}; ///< Interval for cache cleanup
 	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; ///< Lifetime of attachment instances
 	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; ///< Lifetime of embedded instances
