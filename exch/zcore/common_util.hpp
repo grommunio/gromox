@@ -50,10 +50,6 @@
 #define LOC_TYPE_PRIVATE_MESSAGE					3
 #define LOC_TYPE_PUBLIC_MESSAGE						4
 
-enum class repr_grant {
-	error = -1, no_impersonation, send_on_behalf, send_as,
-};
-
 struct MAIL;
 struct message_content;
 struct message_object;
@@ -119,7 +115,7 @@ BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern BOOL common_util_convert_to_zrule_data(store_object *, TPROPVAL_ARRAY *);
 extern ec_error_t cu_remote_copy_message(store_object *s0, uint64_t message_id, store_object *s1, uint64_t folder_id1);
 extern ec_error_t cu_remote_copy_folder(store_object *s0, uint64_t folder_id, store_object *s1, uint64_t folder_id1, const char *new_name);
-extern ec_error_t cu_send_message(store_object *, message_object *, const char *ev_from);
+extern ec_error_t cu_send_message(store_object *, message_object *, const char *actor, const char *delegator, repr_grant);
 extern BOOL common_util_message_to_rfc822(store_object *, uint64_t inst_id, BINARY *eml);
 extern std::unique_ptr<message_content, gromox::mc_delete> cu_rfc822_to_message(store_object *, unsigned int mxf_flags, BINARY *eml);
 extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);

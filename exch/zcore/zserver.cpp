@@ -3405,8 +3405,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			return ecSuccess;
 		}
 	}
-	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
-	auto ret = cu_send_message(pstore, pmessage, ev_from);
+	auto ret = cu_send_message(pstore, pmessage, actor, delegator.c_str(), repr_grant);
 	if (ret != ecSuccess) {
 		exmdb_client->clear_submit(pstore->get_dir(),
 			pmessage->get_id(), b_unsent);

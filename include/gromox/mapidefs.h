@@ -671,6 +671,16 @@ enum {
 	rightsContributor = frightsVisible | frightsCreate,
 };
 
+/**
+ * To what degree an actor ("secretary") may assume the identity of another
+ * mailbox ("boss") when submitting a message. Derived from the boss's
+ * config/sendas.txt (send_as) and config/delegates.txt (send_on_behalf).
+ * The relative order matters; code compares with < and >=.
+ */
+enum class repr_grant {
+	error = -1, no_impersonation, send_on_behalf, send_as,
+};
+
 enum : uint8_t { /* ROWENTRY::ulRowFlags bits */
 	ROW_ADD    = 0x1U,
 	ROW_MODIFY = 0x2U,
