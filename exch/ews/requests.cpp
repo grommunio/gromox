@@ -401,13 +401,19 @@ void process(mGetPersonaRequest &&request, XMLElement *response, const EWSContex
 				ab_tree::ab_node node(it);
 				if (node.hidden() & AB_HIDE_RESOLVE)
 					continue;
+				/*
+				 * PR_SMTP_ADDRESS is never present in the
+				 * ab_tree node's generic propvals map - same
+				 * issue as FindPeople above, but here it meant
+				 * this match check never succeeded for anyone.
+				 */
+				auto email = node.user_info(ab_tree::userinfo::mail_address);
+				if (email == nullptr || *email == '\0' ||
+				    strcasecmp(email, target.c_str()) != 0)
+					continue;
 				std::string val;
-				if (node.fetch_prop(PR_SMTP_ADDRESS, val) != ecSuccess)
-					continue;
-				if (strcasecmp(val.c_str(), target.c_str()) != 0)
-					continue;
 				tPersona persona;
-				persona.EmailAddress = std::move(val);
+				persona.EmailAddress = email;
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
 					persona.DisplayName = std::move(val);
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
