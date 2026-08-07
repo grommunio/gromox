@@ -18,6 +18,7 @@
 #include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mapitags.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
@@ -295,6 +296,90 @@ void process(mConvertIdRequest &&request, XMLElement *response, EWSContext &ctx)
 }
 
 /**
+ * @brief      Search grommunio-web's recipient history for FindPeople matches
+ *
+ * FindPeople's QuerySources typically ask for both "Directory" (the ab_tree
+ * GAL, handled by the caller) and "Mailbox" - people the user has actually
+ * corresponded with, regardless of whether they're in any directory. gromox
+ * itself doesn't track this for EWS, but grommunio-web already does: it
+ * maintains PR_EC_RECIPIENT_HISTORY_JSON (named property
+ * "websettings_recipienthistory" under PSETID_Gromox on the store) as a JSON
+ * blob of {display_name, smtp_address, count, last_used} updated whenever the
+ * user sends mail *via the webapp*. Reusing it here means Outlook's
+ * autocomplete benefits from the exact same history the webapp already
+ * builds - it just never gets contributed to by non-webapp sends.
+ */
+static void findpeople_search_recipient_history(const EWSContext &ctx,
+    const std::string &query, std::vector<tPersona> &out) try
+{
+	const char *user = znul(ctx.auth_info().username);
+	std::string dir = ctx.get_maildir(user);
+	PROPERTY_NAME pn = {MNID_STRING, PSETID_Gromox, 0, deconst("websettings_recipienthistory")};
+	PROPNAME_ARRAY propNames{1, &pn};
+	PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
+	if (propIds.size() != 1)
+		return;
+	const proptag_t tag = PROP_TAG(PT_UNICODE, propIds[0]);
+	TPROPVAL_ARRAY props;
+	if (!ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, {&tag, 1}, &props))
+		return;
+	auto json_str = props.get<const char>(tag);
+	if (json_str == nullptr || *json_str == '\0')
+		return;
+	Json::Value root;
+	if (!gromox::str_to_json(json_str, root) || !root.isMember("recipients"))
+		return;
+	auto tolower_str = [](std::string s) {
+		std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+		return s;
+	};
+	auto needle = tolower_str(query);
+	for (const auto &entry : root["recipients"]) {
+		auto name = entry.get("display_name", "").asString();
+		auto email = entry.get("smtp_address", "").asString();
+		if (email.empty())
+			continue;
+		if (tolower_str(name).find(needle) == std::string::npos &&
+		    tolower_str(email).find(needle) == std::string::npos)
+			continue;
+		tPersona persona;
+		persona.PersonaType = "Person";
+		if (!name.empty()) {
+			persona.DisplayName = name;
+			/*
+			 * Outlook Mac's FindPeople request explicitly asks for
+			 * persona:GivenName/persona:Surname (AdditionalProperties)
+			 * - a real Exchange capture always includes both, even
+			 * for a simple two-word display name. Leaving them unset
+			 * (as this recipient-history path did before) may cause
+			 * Outlook to silently drop the whole persona since it
+			 * asked for fields that never show up in the response.
+			 */
+			auto space = name.find(' ');
+			if (space != std::string::npos) {
+				persona.GivenName = name.substr(0, space);
+				persona.Surname = name.substr(space + 1);
+			} else {
+				persona.GivenName = name;
+			}
+		}
+		tEmailAddressType addr;
+		addr.Name = persona.DisplayName;
+		addr.EmailAddress = email;
+		addr.RoutingType = "SMTP";
+		addr.MailboxType = Enum::Mailbox;
+		persona.EmailAddress = std::move(addr);
+		tPersonaId pid;
+		pid.Id = base64_encode(email);
+		persona.PersonaId = std::move(pid);
+		persona.RelevanceScore = entry.get("count", 1).asUInt();
+		out.emplace_back(std::move(persona));
+	}
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "findpeople_search_recipient_history: %s", e.what());
+}
+
+/**
  * @brief      Process FindPeople
  *
  * @param      request   Request data
@@ -391,19 +476,43 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 					msg.People->emplace_back(std::move(persona));
 				}
 			}
-			if (msg.People) {
-				msg.TotalNumberOfPeopleInView = msg.People->size();
-				/*
-				 * Outlook Mac's autocomplete always requests a paged
-				 * view (IndexedPageItemView) - a real Exchange capture
-				 * showed it always includes FirstMatchingRowIndex/
-				 * FirstLoadedRowIndex alongside TotalNumberOfPeopleInView,
-				 * even for a single-page result. We don't implement real
-				 * paging, so both are always the start of (and only) page.
-				 */
-				msg.FirstMatchingRowIndex = 0;
-				msg.FirstLoadedRowIndex = 0;
+		}
+
+		/*
+		 * Merge in "Mailbox" source results (people actually emailed
+		 * before, not necessarily in the directory) - see
+		 * findpeople_search_recipient_history() above. Dedup against
+		 * what ab_tree already found, by SMTP address.
+		 */
+		std::vector<tPersona> history;
+		findpeople_search_recipient_history(ctx, request.QueryString, history);
+		if (!history.empty()) {
+			if (!msg.People)
+				msg.People.emplace();
+			auto &people = *msg.People;
+			for (auto &persona : history) {
+				const std::string *addr = persona.EmailAddress ? &*persona.EmailAddress->EmailAddress : nullptr;
+				bool dup = addr && std::any_of(people.begin(), people.end(),
+				           [&](const tPersona &p) {
+				                   return p.EmailAddress && p.EmailAddress->EmailAddress &&
+				                          strcasecmp(p.EmailAddress->EmailAddress->c_str(), addr->c_str()) == 0;
+				           });
+				if (!dup)
+					people.emplace_back(std::move(persona));
 			}
+		}
+		if (msg.People) {
+			msg.TotalNumberOfPeopleInView = msg.People->size();
+			/*
+			 * Outlook Mac's autocomplete always requests a paged
+			 * view (IndexedPageItemView) - a real Exchange capture
+			 * showed it always includes FirstMatchingRowIndex/
+			 * FirstLoadedRowIndex alongside TotalNumberOfPeopleInView,
+			 * even for a single-page result. We don't implement real
+			 * paging, so both are always the start of (and only) page.
+			 */
+			msg.FirstMatchingRowIndex = 0;
+			msg.FirstLoadedRowIndex = 0;
 		}
 	} catch (const EWSError &err) {
 		mFindPeopleResponse errdata(err);
