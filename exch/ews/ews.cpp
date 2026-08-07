@@ -512,6 +512,7 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_request_logging", "0"},
 	{"ews_response_logging", "0"},
 	{"ews_schema_version", "V2017_07_11"},
+	{"ews_streaming_subscription_timeout", "1440"},
 	CFG_TABLE_END,
 };
 
@@ -557,6 +558,7 @@ void EWSPlugin::loadConfig()
 	max_sync_changes = cfg->get_ll("ews_max_sync_changes");
 	max_get_items = cfg->get_ll("ews_max_get_items");
 	max_pending_events = cfg->get_ll("ews_max_pending_events");
+	streaming_subscription_timeout = cfg->get_ll("ews_streaming_subscription_timeout");
 	ver.schema = cfg->get_value("ews_schema_version");
 
 	str = gxcfg->get_value("outgoing_smtp_url");
