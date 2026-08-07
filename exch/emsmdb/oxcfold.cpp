@@ -879,9 +879,19 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 		/* Inaccurate rowcount permissible under OXCFOLD v23.2 §2.2.1.14.1 */
 		return ecSuccess;
 	/*
-	 * Inaccurate rowcounts crash OL's "Recover Deleted Items" dialog.
-	 * Perform the hard work early on, then.
+	 * For a generic folder, sum_content above counted exactly the rows a
+	 * table load would insert: no restriction and no sort order are set on a
+	 * table this fresh, so the load scans gct_makequery_regular/_fai, whose
+	 * predicate is the one sum_content used. *prow_count therefore already
+	 * holds the answer.
+	 *
+	 * A search folder is different: its rows come from search_result, which
+	 * sum_content does not consult, so the count has to come from a real
+	 * table. Inaccurate rowcounts crash OL's "Recover Deleted Items"
+	 * dialog, so do the hard work early in that case.
 	 */
+	if (pfolder->type != FOLDER_SEARCH)
+		return ecSuccess;
 	auto err = rtable->load();
 	if (err != ecSuccess)
 		return err;
