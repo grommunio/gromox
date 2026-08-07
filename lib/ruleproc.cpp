@@ -282,9 +282,33 @@ static void rx_npid_collect(const MESSAGE_CONTENT &ctnt, std::set<uint16_t> &m)
 	}
 }
 
-static void rx_npid_transform(TPROPVAL_ARRAY &props,
+/**
+ * Rewrite named property ids from the source store's numbering into @dst's,
+ * dropping values @dst would not name, and return how many were dropped.
+ *
+ * A @dst entry of 0 means the target store does not have that name and did not
+ * create it (e.g. it is at MAXIMUM_PROPNAME_NUMBER); get_named_propids reports
+ * this per entry while succeeding overall. Neither id is usable in the target
+ * store: 0 is not a named property, and the source id there denotes an
+ * unrelated one.
+ *
+ * Removal precedes the rewrite: erase() matches whole proptags and removes the
+ * first match only, so a rewritten tag can collide with one still queued for
+ * removal.
+ */
+static size_t rx_npid_transform(TPROPVAL_ARRAY &props,
     const std::vector<uint16_t> &src, const PROPID_ARRAY &dst)
 {
+	std::vector<proptag_t> drop;
+	for (const auto &pv : props) {
+		if (!is_nameprop_id(PROP_ID(pv.proptag)))
+			continue;
+		auto it = std::find(src.begin(), src.end(), PROP_ID(pv.proptag));
+		if (it != src.end() && dst[it - src.begin()] == 0)
+			drop.push_back(pv.proptag);
+	}
+	for (auto tag : drop)
+		props.erase(tag);
 	for (unsigned int i = 0; i < props.count; ++i) {
 		auto oldtag = props.ppropval[i].proptag;
 		if (!is_nameprop_id(PROP_ID(oldtag)))
@@ -292,24 +316,29 @@ static void rx_npid_transform(TPROPVAL_ARRAY &props,
 		auto it = std::find(src.begin(), src.end(), PROP_ID(oldtag));
 		if (it == src.end())
 			continue;
-		props.ppropval[i].proptag = PROP_TAG(PROP_TYPE(oldtag), dst[it - src.begin()]);
+		auto newid = dst[it - src.begin()];
+		if (newid == 0)
+			continue; /* dropped above */
+		props.ppropval[i].proptag = PROP_TAG(PROP_TYPE(oldtag), newid);
 	}
+	return drop.size();
 }
 
-static void rx_npid_transform(MESSAGE_CONTENT &ctnt,
+static size_t rx_npid_transform(MESSAGE_CONTENT &ctnt,
     const std::vector<uint16_t> &src, const PROPID_ARRAY &dst)
 {
-	rx_npid_transform(ctnt.proplist, src, dst);
+	size_t dropped = rx_npid_transform(ctnt.proplist, src, dst);
 	if (ctnt.children.prcpts != nullptr)
 		for (auto &rcpt : *ctnt.children.prcpts)
-			rx_npid_transform(rcpt, src, dst);
+			dropped += rx_npid_transform(rcpt, src, dst);
 	if (ctnt.children.pattachments != nullptr) {
 		for (auto &at : *ctnt.children.pattachments) {
-			rx_npid_transform(at.proplist, src, dst);
+			dropped += rx_npid_transform(at.proplist, src, dst);
 			if (at.pembedded != nullptr)
-				rx_npid_transform(*at.pembedded, src, dst);
+				dropped += rx_npid_transform(*at.pembedded, src, dst);
 		}
 	}
+	return dropped;
 }
 
 static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
@@ -343,7 +372,12 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 		mlog(LV_ERR, "ruleproc: np(dst) counts are fishy");
 		return ecError;
 	}
-	rx_npid_transform(ctnt, src_id_vec, dst_id_arr);
+	auto dropped = rx_npid_transform(ctnt, src_id_vec, dst_id_arr);
+	if (dropped > 0)
+		mlog(LV_WARN, "ruleproc: %zu named property value%s omitted from "
+			"the copy because %s would not name them (its "
+			"named-property table may be full)", dropped,
+			dropped == 1 ? " was" : "s were", newdir);
 	return ecSuccess;
 }
 
