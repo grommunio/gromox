@@ -357,8 +357,11 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 				    persona.Title || persona.Nickname ||
 				    persona.BusinessPhoneNumber ||
 				    persona.MobilePhoneNumber ||
-				    persona.HomeAddress || persona.Comment)
-					msg.People.emplace().emplace_back(std::move(persona));
+				    persona.HomeAddress || persona.Comment) {
+					if (!msg.People)
+						msg.People.emplace();
+					msg.People->emplace_back(std::move(persona));
+				}
 			}
 			if (msg.People)
 				msg.TotalNumberOfPeopleInView = msg.People->size();
