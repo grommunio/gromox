@@ -3760,7 +3760,7 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string&
  *
  * @return Pointer to MESSAGE_CONTENT structure
  */
-EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolderSpec& parent, sItem& item, bool persist) const
+EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolderSpec& parent, sCreateItem& item, bool persist) const
 {
 	const auto& exmdb = m_plugin.exmdb;
 	uint64_t messageId, changeNumber;
@@ -4760,6 +4760,31 @@ void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
 	if (!item.ItemClass)
 		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Neg");
 	toContent(dir, static_cast<tMessage &>(item), shape, content);
+}
+
+/*
+ * ReplyToItem/ReplyAllToItem/ForwardItem wrap a full <t:Message> rather than
+ * extending tMessage directly (see the comment on tReplyToItem). The message
+ * content itself is otherwise handled exactly like a normal saved message.
+ * ReferenceItemId (the item being replied to/forwarded) is not otherwise acted
+ * upon yet.
+ */
+void EWSContext::toContent(const std::string &dir, tReplyToItem &item,
+    sShape &shape, MCONT_PTR &content) const
+{
+	toContent(dir, item.Message, shape, content);
+}
+
+void EWSContext::toContent(const std::string &dir, tReplyAllToItem &item,
+    sShape &shape, MCONT_PTR &content) const
+{
+	toContent(dir, item.Message, shape, content);
+}
+
+void EWSContext::toContent(const std::string &dir, tForwardItem &item,
+    sShape &shape, MCONT_PTR &content) const
+{
+	toContent(dir, item.Message, shape, content);
 }
 
 /**
