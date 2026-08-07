@@ -561,6 +561,18 @@ static ZEND_FUNCTION(mapi_load_mapidefs)
 	ZVAL_LONG(&c.value, PR_val); \
 	zend_register_constant(&c);
 #include <mapitags.cpp>
+	/*
+	 * Action classes for mapi_folder_rulesexecute. Registered here (rather
+	 * than generated) because they are hand-written in mapidefs.h; keeping
+	 * them at level 0 means callers never have to spell the bitmask out as
+	 * an integer literal.
+	 */
+	C(RX_ACT_FILE, RX_ACT_FILE)
+	C(RX_ACT_MARK, RX_ACT_MARK)
+	C(RX_ACT_DELETE, RX_ACT_DELETE)
+	C(RX_ACT_SEND, RX_ACT_SEND)
+	C(RX_ACT_DEFER, RX_ACT_DEFER)
+	C(RX_ACT_SAFE, RX_ACT_SAFE)
 	if (level < 1)
 		return;
 #include <mapierr.cpp>
@@ -2922,6 +2934,56 @@ static ZEND_FUNCTION(mapi_folder_modifyrules)
 	MAPI_G(hr) = ecSuccess;
 }
 
+/**
+ * Retroactively run a folder's rules over messages already in it.
+ *
+ * mapi_folder_rulesexecute($fld, $entryids, $action_flags = RX_ACT_SAFE)
+ *   -> ["processed" => int, "skipped" => int, "failed" => int]
+ *
+ * "skipped" counts rule actions that $action_flags suppressed and "failed"
+ * counts messages that could not be processed, so a caller can report both
+ * without inferring them. The default keeps the run reversible; RX_ACT_DELETE
+ * permits the rules' *hard* deletes and RX_ACT_SEND lets rules reply, forward,
+ * bounce and delegate — i.e. emit mail for every message processed. Both have
+ * to be requested by name.
+ */
+static ZEND_FUNCTION(mapi_folder_rulesexecute)
+{
+	ZCL_MEMORY;
+	zend_long action_flags = RX_ACT_SAFE;
+	zval *pzarray, *pzresource;
+	MAPI_RESOURCE *pfolder;
+	BINARY_ARRAY entryid_array;
+	uint32_t processed = 0, skipped = 0, failed = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(),
+		"ra|l", &pzresource, &pzarray, &action_flags) == FAILURE
+		|| NULL == pzresource || NULL == pzarray)
+		pthrow(ecInvalidParam);
+	/*
+	 * Reject rather than truncate. A plain -1 — the usual "all flags"
+	 * idiom — would otherwise narrow to 0xFFFFFFFF and quietly enable the
+	 * sending and hard-delete classes that the default exists to withhold.
+	 */
+	if (action_flags < 0 || (action_flags & ~static_cast<zend_long>(RX_ACT_VALID)))
+		pthrow(ecInvalidParam);
+	ZEND_FETCH_RESOURCE(pfolder, pzresource, le_mapi_folder);
+	if (pfolder->type != zs_objtype::folder)
+		pthrow(ecInvalidObject);
+	auto err = php_to_binary_array(pzarray, &entryid_array);
+	if (err != ecSuccess)
+		pthrow(err);
+	auto result = zclient_rulesexecute(pfolder->hsession, pfolder->hobject,
+	              &entryid_array, action_flags, &processed, &skipped, &failed);
+	if (result != ecSuccess)
+		pthrow(result);
+	zarray_init(return_value);
+	add_assoc_long(return_value, "processed", processed);
+	add_assoc_long(return_value, "skipped", skipped);
+	add_assoc_long(return_value, "failed", failed);
+	MAPI_G(hr) = ecSuccess;
+}
+
 static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 {
 	ZCL_MEMORY;
@@ -4291,6 +4353,7 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_folder_setsearchcriteria)
 	F(mapi_folder_getsearchcriteria)
 	F(mapi_folder_modifyrules)
+	F(mapi_folder_rulesexecute)
 	F(mapi_message_getattachmenttable)
 	F(mapi_message_getrecipienttable)
 	F(mapi_message_openattach)

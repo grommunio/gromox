@@ -1644,6 +1644,35 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_rule_new_message &d)
 	return x.p_uint64(d.message_id);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exreq_rules_execute &d)
+{
+	uint8_t tmp_byte;
+
+	TRY(x.g_uint8(&tmp_byte));
+	if (tmp_byte == 0)
+		d.username = nullptr;
+	else
+		TRY(x.g_str(&d.username));
+	TRY(x.g_nlscp(&d.cpid));
+	TRY(x.g_uint64(&d.folder_id));
+	TRY(x.g_uint64(&d.message_id));
+	return x.g_uint32(&d.action_flags);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_rules_execute &d)
+{
+	if (d.username == nullptr) {
+		TRY(x.p_uint8(0));
+	} else {
+		TRY(x.p_uint8(1));
+		TRY(x.p_str(d.username));
+	}
+	TRY(x.p_uint32(d.cpid));
+	TRY(x.p_uint64(d.folder_id));
+	TRY(x.p_uint64(d.message_id));
+	return x.p_uint32(d.action_flags);
+}
+
 static pack_result exmdb_pull(EXT_PULL &x, exreq_set_message_timer &d)
 {
 	TRY(x.g_uint64(&d.message_id));
@@ -3262,6 +3291,16 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_message_timer &d)
 		return x.p_uint8(0);
 	TRY(x.p_uint8(1));
 	return x.p_uint32(*d.ptimer_id);
+}
+
+static pack_result exmdb_pull(EXT_PULL &x, exresp_rules_execute &d)
+{
+	return x.g_uint32(&d.skipped);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_rules_execute &d)
+{
+	return x.p_uint32(d.skipped);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_update_folder_rule &d)
