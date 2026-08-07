@@ -306,7 +306,7 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 	response->SetName("m:FindPeopleResponse");
 
 	mFindPeopleResponse data;
-	auto &msg = data.ResponseMessages.emplace_back();
+	auto &msg = data;
 	const char *user = znul(ctx.auth_info().username);
 	const char *at = strchr(user, '@');
 	std::string domain = at ? at + 1 : user;
@@ -391,13 +391,23 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 					msg.People->emplace_back(std::move(persona));
 				}
 			}
-			if (msg.People)
+			if (msg.People) {
 				msg.TotalNumberOfPeopleInView = msg.People->size();
+				/*
+				 * Outlook Mac's autocomplete always requests a paged
+				 * view (IndexedPageItemView) - a real Exchange capture
+				 * showed it always includes FirstMatchingRowIndex/
+				 * FirstLoadedRowIndex alongside TotalNumberOfPeopleInView,
+				 * even for a single-page result. We don't implement real
+				 * paging, so both are always the start of (and only) page.
+				 */
+				msg.FirstMatchingRowIndex = 0;
+				msg.FirstLoadedRowIndex = 0;
+			}
 		}
 	} catch (const EWSError &err) {
-		data.ResponseMessages.clear();
-		data.ResponseMessages.emplace_back(err);
-		data.serialize(response);
+		mFindPeopleResponse errdata(err);
+		errdata.serialize(response);
 		return;
 	}
 

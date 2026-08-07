@@ -2424,16 +2424,13 @@ mFindPeopleRequest::mFindPeopleRequest(const XMLElement *xml) :
 	XMLINIT(QueryString)
 {}
 
-void mFindPeopleResponseMessage::serialize(XMLElement *xml) const
+void mFindPeopleResponse::serialize(XMLElement *xml) const
 {
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(People);
 	XMLDUMPM(TotalNumberOfPeopleInView);
-}
-
-void mFindPeopleResponse::serialize(XMLElement *xml) const
-{
-	XMLDUMPM(ResponseMessages);
+	XMLDUMPM(FirstMatchingRowIndex);
+	XMLDUMPM(FirstLoadedRowIndex);
 }
 
 mGetPersonaRequest::mGetPersonaRequest(const XMLElement *xml) :

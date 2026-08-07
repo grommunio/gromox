@@ -4095,19 +4095,21 @@ struct mFindPeopleRequest {
 /**
  * Messages.xsd:2788 (simplified)
  */
-struct mFindPeopleResponseMessage : public mResponseMessageType {
-	static constexpr char NAME[] = "FindPeopleResponseMessage";
-
+/*
+ * Unlike most EWS operations, FindPeople's response is not wrapped in a
+ * ResponseMessages/FindPeopleResponseMessage batch envelope - a real
+ * Exchange capture showed ResponseClass sits directly on the
+ * FindPeopleResponse root element, with People/TotalNumberOfPeopleInView/
+ * FirstMatchingRowIndex/FirstLoadedRowIndex as direct children. Outlook
+ * Mac silently discarded every prior (structurally over-nested) response
+ * regardless of content correctness because of this.
+ */
+struct mFindPeopleResponse : public mResponseMessageType {
 	using mResponseMessageType::mResponseMessageType;
 
 	std::optional<std::vector<tPersona>> People;
 	std::optional<uint32_t> TotalNumberOfPeopleInView;
-
-	void serialize(tinyxml2::XMLElement *) const;
-};
-
-struct mFindPeopleResponse {
-	std::vector<mFindPeopleResponseMessage> ResponseMessages;
+	std::optional<uint32_t> FirstMatchingRowIndex, FirstLoadedRowIndex;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
