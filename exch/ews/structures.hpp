@@ -808,6 +808,19 @@ struct tImAddressDictionaryEntry : public NS_EWS_Types {
 };
 
 /**
+ * Types.xsd:2128 (PersonaId, simplified - just enough for FindPeople to
+ * hand back an opaque, stable identifier; not a real MAPI EntryID like
+ * tBaseItemId)
+ */
+struct tPersonaId : public NS_EWS_Types {
+	static constexpr char NAME[] = "PersonaId";
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::string Id;
+};
+
+/**
  * Types.xsd:8508 (simplified)
  */
 struct tPersona : public NS_EWS_Types {
@@ -815,8 +828,12 @@ struct tPersona : public NS_EWS_Types {
 
 	void serialize(tinyxml2::XMLElement *) const;
 
-	std::optional<std::string> PersonaType, DisplayName, EmailAddress, Title,
+	std::optional<tPersonaId> PersonaId;
+	std::optional<std::string> PersonaType, DisplayName, GivenName, Surname;
+	std::optional<tEmailAddressType> EmailAddress;
+	std::optional<std::string> Title,
 		Nickname, BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
+	std::optional<uint32_t> RelevanceScore;
 };
 
 /**

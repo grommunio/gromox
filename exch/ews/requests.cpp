@@ -329,7 +329,11 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 				 */
 				persona.PersonaType = "Person";
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
-					persona.DisplayName = std::move(val);
+					persona.DisplayName = val;
+				if (node.fetch_prop(PR_GIVEN_NAME, val) == ecSuccess)
+					persona.GivenName = std::move(val);
+				if (node.fetch_prop(PR_SURNAME, val) == ecSuccess)
+					persona.Surname = std::move(val);
 				/*
 				 * PR_SMTP_ADDRESS is never present in the
 				 * ab_tree node's generic propvals map (unlike
@@ -337,10 +341,34 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 				 * dedicated accessor) - fetch_prop() here
 				 * always missed, leaving personas with no
 				 * usable address for Outlook to autocomplete.
+				 * Also: EmailAddress is a nested Mailbox-shaped
+				 * type (Name/EmailAddress/RoutingType/
+				 * MailboxType), not a flat string - a real
+				 * Exchange FindPeople response capture showed
+				 * Outlook expects this exact shape, and rejects
+				 * (silently, still "not found") a flat string.
 				 */
 				if (auto email = node.user_info(ab_tree::userinfo::mail_address);
-				    email != nullptr && *email != '\0')
-					persona.EmailAddress = email;
+				    email != nullptr && *email != '\0') {
+					tEmailAddressType addr;
+					addr.Name = persona.DisplayName;
+					addr.EmailAddress = email;
+					addr.RoutingType = "SMTP";
+					addr.MailboxType = Enum::Mailbox;
+					persona.EmailAddress = std::move(addr);
+					/*
+					 * Real Exchange also always includes a
+					 * PersonaId - not a real MAPI EntryID
+					 * here, just a stable opaque handle
+					 * derived from the address, enough for
+					 * Outlook to accept the entry as
+					 * resolvable/insertable.
+					 */
+					tPersonaId pid;
+					pid.Id = base64_encode(email);
+					persona.PersonaId = std::move(pid);
+					persona.RelevanceScore = UINT32_MAX;
+				}
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
 				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
@@ -413,9 +441,18 @@ void process(mGetPersonaRequest &&request, XMLElement *response, const EWSContex
 					continue;
 				std::string val;
 				tPersona persona;
-				persona.EmailAddress = email;
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
-					persona.DisplayName = std::move(val);
+					persona.DisplayName = val;
+				tEmailAddressType addr;
+				addr.Name = persona.DisplayName;
+				addr.EmailAddress = email;
+				addr.RoutingType = "SMTP";
+				addr.MailboxType = Enum::Mailbox;
+				persona.EmailAddress = std::move(addr);
+				tPersonaId pid;
+				pid.Id = base64_encode(email);
+				persona.PersonaId = std::move(pid);
+				persona.PersonaType = "Person";
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
 				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
