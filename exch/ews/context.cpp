@@ -4920,7 +4920,7 @@ tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) 
 	if (all && req.FolderIds)
 		throw EWSError::InvalidSubscriptionRequest(E3383);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
-	       req.eventMask(), all, std::chrono::minutes(5));
+	       req.eventMask(), all, m_plugin.streaming_subscription_timeout);
 }
 
 /**

@@ -34,6 +34,13 @@ Default: \fI0\fP
 When set to 1 or higher, responses are logged. When set to 2 or higher, the XML
 output is dumped as well. Like requests, these are logged at "debug" priority
 level.
+.TP
+\fBews_streaming_subscription_timeout\fP
+The cache entry backing a streaming subscription (and its
+GetStreamingEvents/GetEvents liveness) is evicted after this much time has gone
+by without the client touching it.
+.br
+Default: \fI5min\fP
 .SH Normative references
 .IP \(bu 4
 OXWAVLS, OXWOOF, OXWSPHOTO

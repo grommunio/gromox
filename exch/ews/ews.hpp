@@ -167,6 +167,7 @@ class EWSPlugin {
 	uint32_t max_sync_changes = 512; ///< SyncFolderItems items per page; clamps client MaxChangesReturned, 0 = unlimited. Matches Exchange's 512 limit.
 	uint32_t max_get_items = 0; ///< Optional GetItem batch cap, 0 = unlimited (Exchange does not cap this; overflow -> ErrorServerBusy)
 	uint32_t max_pending_events = 4000; ///< Per-subscription undelivered streaming-event cap, 0 = unlimited. Backlog past this faults the subscription out so the client re-subscribes and resyncs, instead of pinning RSS.
+	gromox::time_duration streaming_subscription_timeout = std::chrono::minutes(5);
 	gromox::time_duration cache_interval = std::chrono::seconds(5); ///< Interval for cache cleanup
 	gromox::time_duration cache_attachment_instance_lifetime = std::chrono::seconds(30); ///< Lifetime of attachment instances
 	gromox::time_duration cache_embedded_instance_lifetime = std::chrono::seconds(30); ///< Lifetime of embedded instances
