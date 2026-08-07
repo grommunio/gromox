@@ -456,6 +456,11 @@ get\-msgcopy reports the current state of both settings. A setting which was
 never set is reported as such, and behaves as if switched off; clear\-msgcopy
 returns a setting to that state, as opposed to setting it to a recorded 0.
 .PP
+The settings are held as named properties of the mailbox's store, in the
+Gromox property set. set\-msgcopy creates the property on first use; a mailbox
+whose named-property table is exhausted therefore cannot take these settings,
+and set\-msgcopy reports that rather than appearing to succeed.
+.PP
 Depositing the copy is not allowed to endanger the message that was sent: if it
 fails \(em because the represented mailbox is over quota, for instance, or is
 unreachable \(em the message is still delivered as usual, and only a warning

@@ -1071,9 +1071,6 @@ static void cu_deposit_repr_copy(store_object *pstore,
 	/* Cheap test for the common case first; cf. the emsmdb twin. */
 	if (strcasecmp(delegator, actor) == 0)
 		return;
-	auto tag = grant >= repr_grant::send_as ?
-	           PR_MESSAGE_COPY_FOR_SENT_AS :
-	           PR_MESSAGE_COPY_FOR_SEND_ON_BEHALF;
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(delegator, WANTPRIV_METAONLY, mres) != 0) {
 		mlog(LV_WARN, "W-1195: <%s> cannot be resolved, so no copy of "
@@ -1087,6 +1084,25 @@ static void cu_deposit_repr_copy(store_object *pstore,
 	 */
 	if (strcasecmp(mres.username.c_str(), actor) == 0 || mres.maildir == dir)
 		return;
+	/*
+	 * b_create=false so that sending in a mailbox's name never creates the
+	 * setting there. Cf. the emsmdb twin; cu_read_storenamedprop is not
+	 * usable, as it reports a failed lookup and an unset property alike.
+	 */
+	const PROPERTY_NAME xn = {MNID_STRING, PSETID_Gromox, 0,
+		deconst(grant >= repr_grant::send_as ? msgcopy_np_sentas :
+		msgcopy_np_sendonbehalf)};
+	propid_t propid = 0;
+	if (!exmdb_client_get_named_propid(mres.maildir.c_str(), false, &xn,
+	    &propid)) {
+		mlog(LV_WARN, "W-1197: cannot resolve the copy settings of <%s>, "
+			"so no copy of %s was deposited", delegator, log_id);
+		return;
+	}
+	if (propid == 0)
+		/* Never written, i.e. the setting is off. Not an error. */
+		return;
+	auto tag = PROP_TAG(PT_BOOLEAN, propid);
 	const proptag_t tag_buff[] = {tag};
 	TPROPVAL_ARRAY props{};
 	if (!exmdb_client->get_store_properties(mres.maildir.c_str(), CP_UTF8,

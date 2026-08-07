@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -11,7 +12,8 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
-#include <gromox/mapitags.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/sent_copy.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 #include "mbop.hpp"
@@ -21,19 +23,47 @@ using namespace gromox;
 namespace msgcopy {
 
 struct flagdesc {
-	proptag_t tag;
+	const char *npname;
 	const char *name;
 	char opt;
 };
 
 /*
- * One record per setting, so that the proptag, the label and the option letter
- * cannot drift apart the way parallel arrays do.
+ * One record per setting, so that the named property, the label and the option
+ * letter cannot drift apart the way parallel arrays do.
  */
 static constexpr flagdesc g_flags[] = {
-	{PR_MESSAGE_COPY_FOR_SENT_AS, "sent-as", 'a'},
-	{PR_MESSAGE_COPY_FOR_SEND_ON_BEHALF, "send-on-behalf", 'b'},
+	{msgcopy_np_sentas, "sent-as", 'a'},
+	{msgcopy_np_sendonbehalf, "send-on-behalf", 'b'},
 };
+
+/**
+ * Resolve the settings to proptags in the mailbox being operated on. The
+ * entries are named properties, so their ids are per-store and have to be
+ * looked up rather than known.
+ *
+ * @create is only ever set on the write path: a mailbox must not acquire the
+ * named property merely by being inspected. An entry the store does not have
+ * is reported as tag 0, which on the read path is the ordinary "never
+ * configured" state and on the write path is a failure — see do_set.
+ */
+static errno_t resolve_flags(bool create, const bool *sel,
+    proptag_t (&out)[std::size(g_flags)])
+{
+	for (size_t i = 0; i < std::size(g_flags); ++i) {
+		out[i] = 0;
+		if (sel != nullptr && !sel[i])
+			continue;
+		propid_t propid = 0;
+		auto err = resolvename(PSETID_Gromox, g_flags[i].npname, create, &propid);
+		if (err == ENOENT)
+			continue;
+		else if (err != 0)
+			return err;
+		out[i] = PROP_TAG(PT_BOOLEAN, propid);
+	}
+	return 0;
+}
 
 static constexpr HXoption g_set_options[] = {
 	{{}, 'a', HXTYPE_STRING, {}, {}, {}, 0,
@@ -77,23 +107,31 @@ static bool parse_strict_bool(const char *s, uint8_t *out)
 
 static int show()
 {
-	proptag_t tags[std::size(g_flags)];
-	for (size_t i = 0; i < std::size(g_flags); ++i)
-		tags[i] = g_flags[i].tag;
+	proptag_t tag[std::size(g_flags)];
+	if (resolve_flags(false, nullptr, tag) != 0) {
+		mbop_fprintf(stderr, "get_named_propids RPC unsuccessful\n");
+		return EXIT_FAILURE;
+	}
+	proptag_t req[std::size(g_flags)];
+	size_t nreq = 0;
+	for (auto t : tag)
+		if (t != 0)
+			req[nreq++] = t;
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client->get_store_properties(g_storedir, CP_ACP,
-	    tags, &props)) {
+	if (nreq > 0 && !exmdb_client->get_store_properties(g_storedir, CP_ACP,
+	    {req, nreq}, &props)) {
 		mbop_fprintf(stderr, "get_store_prop RPC unsuccessful\n");
 		return EXIT_FAILURE;
 	}
-	for (const auto &f : g_flags) {
-		auto flag = props.get<const uint8_t>(f.tag);
+	for (size_t i = 0; i < std::size(g_flags); ++i) {
 		/*
 		 * An absent property is not the same statement as an explicit 0,
 		 * even though both switch the behavior off, so do not collapse
 		 * them into one another. clear-msgcopy restores the former.
+		 * A name the store never minted is absent in the same sense.
 		 */
-		mbop_fprintf(stdout, "%s: %s\n", f.name,
+		auto flag = tag[i] == 0 ? nullptr : props.get<const uint8_t>(tag[i]);
+		mbop_fprintf(stdout, "%s: %s\n", g_flags[i].name,
 			flag == nullptr ? "unset (off)" : *flag != 0 ? "on" : "off");
 	}
 	return EXIT_SUCCESS;
@@ -130,9 +168,8 @@ static int do_set(int argc, char **argv)
 		return EXIT_PARAM;
 	}
 
-	TAGGED_PROPVAL pv[std::size(g_flags)]{};
 	uint8_t val[std::size(g_flags)]{};
-	TPROPVAL_ARRAY tpa = {0, pv};
+	bool sel[std::size(g_flags)]{};
 	for (size_t i = 0; i < std::size(g_flags); ++i) {
 		if (arg[i] == nullptr)
 			continue;
@@ -141,7 +178,33 @@ static int do_set(int argc, char **argv)
 				"one of 0/1, no/yes, off/on, false/true\n", arg[i]);
 			return EXIT_PARAM;
 		}
-		pv[tpa.count].proptag = g_flags[i].tag;
+		sel[i] = true;
+	}
+
+	/* Create the named property, but only for the settings actually named. */
+	proptag_t tag[std::size(g_flags)];
+	if (resolve_flags(true, sel, tag) != 0) {
+		mbop_fprintf(stderr, "get_named_propids RPC unsuccessful\n");
+		return EXIT_FAILURE;
+	}
+	TAGGED_PROPVAL pv[std::size(g_flags)]{};
+	TPROPVAL_ARRAY tpa = {0, pv};
+	for (size_t i = 0; i < std::size(g_flags); ++i) {
+		if (!sel[i])
+			continue;
+		if (tag[i] == 0) {
+			/*
+			 * get_named_propids stops minting names once the store
+			 * reaches MAXIMUM_PROPNAME_NUMBER, and reports id 0 while
+			 * still succeeding. Saying nothing here would leave the
+			 * setting off and the operator believing otherwise.
+			 */
+			mbop_fprintf(stderr, "Cannot create the named property "
+				"for \"%s\": the mailbox's named-property table "
+				"is full\n", g_flags[i].name);
+			return EXIT_FAILURE;
+		}
+		pv[tpa.count].proptag = tag[i];
 		pv[tpa.count++].pvalue = &val[i];
 	}
 	PROBLEM_ARRAY prob{};
@@ -171,11 +234,22 @@ static int do_clear(int argc, char **argv)
 		for (auto &s : sel)
 			s = true;
 
+	/*
+	 * b_create=false: a name the store never minted has nothing to clear,
+	 * which is the desired end state anyway. Same convention as the other
+	 * clear-* commands.
+	 */
+	proptag_t tag[std::size(g_flags)];
+	if (resolve_flags(false, sel, tag) != 0) {
+		mbop_fprintf(stderr, "get_named_propids RPC unsuccessful\n");
+		return EXIT_FAILURE;
+	}
 	std::vector<proptag_t> tags;
-	for (size_t i = 0; i < std::size(g_flags); ++i)
-		if (sel[i])
-			tags.push_back(g_flags[i].tag);
-	if (!exmdb_client->remove_store_properties(g_storedir, tags)) {
+	for (auto t : tag)
+		if (t != 0)
+			tags.push_back(t);
+	if (!tags.empty() &&
+	    !exmdb_client->remove_store_properties(g_storedir, tags)) {
 		mbop_fprintf(stderr, "remove_store_prop RPC unsuccessful\n");
 		return EXIT_FAILURE;
 	}

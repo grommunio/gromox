@@ -279,7 +279,7 @@ int main(int argc, char **argv)
 
 }
 
-static errno_t resolvename(const GUID &guid, const char *name, bool create,
+errno_t resolvename(const GUID &guid, const char *name, bool create,
     uint16_t *out)
 {
 	const PROPERTY_NAME xn = {MNID_STRING, guid, 0, deconst(name)};
