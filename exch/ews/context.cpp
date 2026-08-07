@@ -4251,7 +4251,15 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
 			throw DispatchError(E3378);
-		auto displayName = deconst(dispName.c_str());
+		/*
+		 * shape.write() does not deep-copy string property values (the
+		 * backing memory must outlive this call, per its own doc
+		 * comment) - dispName is local to this function and would be
+		 * dangling by the time the shape is materialized by the
+		 * caller, corrupting PR_SENDER_NAME/PR_SENT_REPRESENTING_NAME
+		 * with whatever later reuses this stack slot.
+		 */
+		auto displayName = strcpy(alloc<char>(dispName.size() + 1), dispName.c_str());
 		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, displayName});
 		shape.write(TAGGED_PROPVAL{PR_SENDER_NAME, displayName});
 		auto username = deconst(m_auth_info.username);
