@@ -749,8 +749,8 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 		return false;
 	auto sql_string = fmt::format("CREATE TABLE t{} "
 		"(row_id INTEGER PRIMARY KEY AUTOINCREMENT, "
-		"idx INTEGER UNIQUE DEFAULT NULL, "
-		"prev_id INTEGER UNIQUE DEFAULT NULL, "
+		"idx INTEGER DEFAULT NULL, "
+		"prev_id INTEGER DEFAULT NULL, "
 		"inst_id INTEGER NOT NULL, "
 		"row_type INTEGER NOT NULL, "
 		"row_stat INTEGER DEFAULT NULL, "	/* expanded(1) or collapsed(0) */
@@ -764,20 +764,6 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 		table_id);
 	if (db.eph_exec(sql_string) != SQLITE_OK)
 		return FALSE;
-	if (NULL != psorts && psorts->ccategories > 0) {
-		sql_string = fmt::format("CREATE UNIQUE INDEX t{}_1 ON "
-		             "t{} (inst_id, inst_num)", table_id, table_id);
-		if (db.eph_exec(sql_string) != SQLITE_OK)
-			return FALSE;
-		sql_string = fmt::format("CREATE INDEX t{}_2 ON"
-		             " t{} (parent_id)", table_id, table_id);
-		if (db.eph_exec(sql_string) != SQLITE_OK)
-			return FALSE;
-		sql_string = fmt::format("CREATE INDEX t{}_3 ON t{}"
-		             " (parent_id, value)", table_id, table_id);
-		if (db.eph_exec(sql_string) != SQLITE_OK)
-			return FALSE;
-	}
 
 	std::list<table_node> holder;
 	auto ptnode = &holder.emplace_back();
@@ -908,12 +894,6 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return false;
 		}
-		if (ptnode->instance_tag == 0)
-			sql_string = fmt::format("CREATE UNIQUE INDEX t{}_4 ON t{} (inst_id)", table_id, table_id);
-		else
-			sql_string = fmt::format("CREATE INDEX t{}_4 ON t{} (inst_id)", table_id, table_id);
-		if (db.eph_exec(sql_string) != SQLITE_OK)
-			return false;
 		sql_string = "INSERT INTO stbl VALUES (?";
 		for (size_t i = 0; i < tag_count; ++i)
 			sql_string += ", ?";
@@ -1077,6 +1057,30 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 		stmt_cache.clear();
 		pstmt.finalize();
 		pstmt1.finalize();
+		/*
+		 * These serve later table operations; nothing above reads t{}
+		 * through them.
+		 */
+		if (ptnode->instance_tag == 0)
+			sql_string = fmt::format("CREATE UNIQUE INDEX t{}_4 ON t{} (inst_id)", table_id, table_id);
+		else
+			sql_string = fmt::format("CREATE INDEX t{}_4 ON t{} (inst_id)", table_id, table_id);
+		if (db.eph_exec(sql_string) != SQLITE_OK)
+			return false;
+		if (psorts->ccategories > 0) {
+			sql_string = fmt::format("CREATE UNIQUE INDEX t{}_1 ON "
+			             "t{} (inst_id, inst_num)", table_id, table_id);
+			if (db.eph_exec(sql_string) != SQLITE_OK)
+				return FALSE;
+			sql_string = fmt::format("CREATE INDEX t{}_2 ON"
+			             " t{} (parent_id)", table_id, table_id);
+			if (db.eph_exec(sql_string) != SQLITE_OK)
+				return FALSE;
+			sql_string = fmt::format("CREATE INDEX t{}_3 ON t{}"
+			             " (parent_id, value)", table_id, table_id);
+			if (db.eph_exec(sql_string) != SQLITE_OK)
+				return FALSE;
+		}
 		if (psort_transact.commit() != SQLITE_OK)
 			return false;
 		sqlite3_close_v2(psqlite);
@@ -1126,6 +1130,17 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 				return false;
 		}
 	}
+	/*
+	 * idx and prev_id are only consulted once the table is complete.
+	 */
+	sql_string = fmt::format("CREATE UNIQUE INDEX t{}_5 ON t{} (idx)",
+	             table_id, table_id);
+	if (db.eph_exec(sql_string) != SQLITE_OK)
+		return FALSE;
+	sql_string = fmt::format("CREATE UNIQUE INDEX t{}_6 ON t{} (prev_id)",
+	             table_id, table_id);
+	if (db.eph_exec(sql_string) != SQLITE_OK)
+		return FALSE;
 	cl_0.release();
 	if (table_transact.commit() != SQLITE_OK)
 		return false;
