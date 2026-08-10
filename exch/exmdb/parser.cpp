@@ -599,7 +599,7 @@ bool exmdb_parser_insert_conn(std::shared_ptr<exmdb_connection> co)
 	}
 
 	auto par = std::make_unique<parser_params>();
-	par->conn = co;
+	par->conn = std::move(co);
 	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
 	           request_parser_thread, par.get());
 	if (ret != 0) {
