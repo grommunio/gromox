@@ -624,15 +624,22 @@ void db_base::ctor2_and_open(const char *dir)
 {
 	auto unlock = HX::make_scope_exit([this] { sqlite_lock.unlock(); --reference; }); /* unlock whenever we're done */
 	auto db_path = fmt::format("{}/{}/tables.sqlite3", exmdb_eph_prefix, dir);
-	auto ret = ::unlink(db_path.c_str());
-	if (ret != 0 && errno != ENOENT)
-		throw std::runtime_error(fmt::format("E-1351: unlink {}: {}", db_path.c_str(), strerror(errno)));
+	/*
+	 * -wal/-shm need to go as well: after an unclean process end,
+	 * sqlite would replay the leftover WAL of the previous process
+	 * into the empty file recreated at the same path.
+	 */
+	for (const auto suffix : {"", "-wal", "-shm"}) {
+		auto path = db_path + suffix;
+		if (::unlink(path.c_str()) != 0 && errno != ENOENT)
+			throw std::runtime_error(fmt::format("E-1351: unlink {}: {}", path, strerror(errno)));
+	}
 
 	/* We need a handle for the upgrade check... */
 	db_handle hdb(get_db(dir, DB_MAIN));
 	if (!hdb)
 		throw std::runtime_error(fmt::format("E-1434: get_db({}) failed", dir));
-	ret = db_engine_autoupgrade(hdb.get(), dir);
+	auto ret = db_engine_autoupgrade(hdb.get(), dir);
 	if (ret != 0)
 		throw std::runtime_error(fmt::format("E-2105: autoupgrade {}: {}", dir, ret));
 	if (exmdb_server::is_private())
