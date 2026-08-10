@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <iconv.h>
 #include <list>
+#include <map>
+#include <string>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -310,6 +312,9 @@ BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
 	return TRUE;
 }
 
+/* Sort criteria a content table may carry; psort[] is indexed by category depth. */
+static constexpr size_t gct_max_sorts = 16;
+
 static std::string table_cond_to_where(const std::vector<condition_node> &list)
 {
 	std::string w;
@@ -326,22 +331,58 @@ static std::string table_cond_to_where(const std::vector<condition_node> &list)
 	return w;
 }
 
+/**
+ * The per-category queries only vary with the recursion depth, with whether
+ * this is the message level, and with which of the enclosing category values
+ * are NULL (those are inlined into the WHERE clause rather than bound). A
+ * table with many categories therefore reuses the same handful of statements,
+ * and the query text need only be built when one is missing.
+ */
+using tlc_stmt_cache = std::map<uint64_t, xstmt>;
+
+static uint64_t tlc_stmt_key(const std::vector<condition_node> &cond_list,
+    int depth, bool leaf)
+{
+	static_assert(gct_max_sorts <= 64,
+		"nullmask below is a uint64_t, one bit per category depth");
+	uint64_t nullmask = 0;
+	size_t i = 0;
+	for (const auto &cnode : cond_list) {
+		if (cnode.pvalue == nullptr)
+			nullmask |= static_cast<uint64_t>(1) << i;
+		++i;
+	}
+	return nullmask << 16 | static_cast<uint64_t>(depth) << 1 | !!leaf;
+}
+
+template<typename F> static sqlite3_stmt *tlc_prep(tlc_stmt_cache &cache,
+    sqlite3 *psqlite, uint64_t key, F &&make_query)
+{
+	auto iter = cache.find(key);
+	if (iter != cache.end()) {
+		sqlite3_reset(iter->second);
+		return iter->second;
+	}
+	auto stmt = gx_sql_prep(psqlite, make_query());
+	if (stmt == nullptr)
+		return nullptr;
+	return cache.emplace(key, std::move(stmt)).first->second;
+}
+
 static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 	const SORTORDER_SET *psorts, int depth, uint64_t parent_id,
     std::vector<condition_node> &cond_list, sqlite3_stmt *pstmt_insert,
 	uint32_t *pheader_id, sqlite3_stmt *pstmt_update,
-    uint32_t *punread_count) try
+    uint32_t *punread_count, tlc_stmt_cache &stmt_cache) try
 {
 	void *pvalue;
-	BOOL b_orderby;
 	int bind_index;
 	int multi_index;
-	BOOL b_extremum;
+	bool b_extremum;
 	uint64_t header_id;
 	uint32_t unread_count;
 	
 	int64_t prev_id = -parent_id;
-	auto where = table_cond_to_where(cond_list);
 	if (depth == psorts->ccategories) {
 		proptag_t tmp_proptag;
 		multi_index = -1;
@@ -352,40 +393,45 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 				break;
 			}
 		}
-		std::string qstr;
-		if (multi_index != -1)
-			qstr = fmt::format("SELECT message_id, read_state, "
-			       "inst_num, v{:x} FROM stbl {}", tmp_proptag, where);
-		else
-			qstr = fmt::format("SELECT message_id, read_state, "
-			       "inst_num FROM stbl {}", where);
-		b_orderby = FALSE;
-		for (unsigned int i = psorts->ccategories; i < psorts->count; ++i) {
-			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
-			if (tablesort_is_minmax(psorts->psort[i].table_sort))
-				continue;
-			auto ord = psorts->psort[i].table_sort == TABLE_SORT_ASCEND ?
-			           " ASC" : " DESC";
-			if (!b_orderby) {
-				qstr += fmt::format(" ORDER BY v{:x} {}", tmp_proptag, ord);
-				b_orderby = TRUE;
-			} else {
-				qstr += fmt::format(", v{:x} {}", tmp_proptag, ord);
+		auto make_query = [&]() {
+			auto where = table_cond_to_where(cond_list);
+			std::string qstr;
+			if (multi_index != -1)
+				qstr = fmt::format("SELECT message_id, read_state, "
+				       "inst_num, v{:x} FROM stbl {}", tmp_proptag, where);
+			else
+				qstr = fmt::format("SELECT message_id, read_state, "
+				       "inst_num FROM stbl {}", where);
+			bool b_ord = false;
+			for (unsigned int i = psorts->ccategories; i < psorts->count; ++i) {
+				auto tag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
+				if (tablesort_is_minmax(psorts->psort[i].table_sort))
+					continue;
+				auto ord = psorts->psort[i].table_sort == TABLE_SORT_ASCEND ?
+				           " ASC" : " DESC";
+				if (!b_ord) {
+					qstr += fmt::format(" ORDER BY v{:x} {}", tag, ord);
+					b_ord = true;
+				} else {
+					qstr += fmt::format(", v{:x} {}", tag, ord);
+				}
 			}
-		}
-		/*
-		 * For an uncategorized table, break ties on message_id (in the
-		 * primary sort direction) so a reload reproduces the order
-		 * that the live-insert notification path builds; otherwise
-		 * same-key rows can appear reordered/duplicated in online-mode
-		 * clients.
-		 */
-		if (b_orderby && psorts->ccategories == 0) {
-			auto ord = psorts->psort[0].table_sort == TABLE_SORT_ASCEND ?
-			           " ASC" : " DESC";
-			qstr += fmt::format(", message_id {}", ord);
-		}
-		auto pstmt = gx_sql_prep(psqlite, qstr);
+			/*
+			 * For an uncategorized table, break ties on message_id (in the
+			 * primary sort direction) so a reload reproduces the order
+			 * that the live-insert notification path builds; otherwise
+			 * same-key rows can appear reordered/duplicated in online-mode
+			 * clients.
+			 */
+			if (b_ord && psorts->ccategories == 0) {
+				auto ord = psorts->psort[0].table_sort == TABLE_SORT_ASCEND ?
+				           " ASC" : " DESC";
+				qstr += fmt::format(", message_id {}", ord);
+			}
+			return qstr;
+		};
+		auto pstmt = tlc_prep(stmt_cache, psqlite,
+		             tlc_stmt_key(cond_list, depth, true), make_query);
 		if (pstmt == nullptr)
 			return FALSE;
 		bind_index = 1;
@@ -402,7 +448,7 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 			bind_index++;
 			++i;
 		}
-		while (pstmt.step() == SQLITE_ROW) {
+		while (gx_sql_step(pstmt) == SQLITE_ROW) {
 			if (psorts->ccategories <= 0) {
 				sqlite3_bind_null(pstmt_insert, 9);
 			} else if (0 == sqlite3_column_int64(pstmt, 1)) {
@@ -442,31 +488,31 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 		}
 		return TRUE;
 	}
-	std::string qstr;
 	auto tmp_proptag = PROP_TAG(psorts->psort[depth].type, psorts->psort[depth].propid);
-	if (depth == psorts->ccategories - 1 &&
-	    psorts->count > psorts->ccategories &&
-	    tablesort_is_minmax(psorts->psort[depth+1].table_sort)) {
-		auto tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
-		if (TABLE_SORT_MAXIMUM_CATEGORY ==
-			psorts->psort[depth + 1].table_sort) {
-			qstr = fmt::format("SELECT v{:x}, COUNT(*), MAX(v{:x}) AS max_field "
+	b_extremum = depth == psorts->ccategories - 1 &&
+	             psorts->count > psorts->ccategories &&
+	             tablesort_is_minmax(psorts->psort[depth+1].table_sort);
+	auto make_query = [&]() {
+		auto where = table_cond_to_where(cond_list);
+		std::string qstr;
+		if (b_extremum) {
+			auto tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
+			auto agg = TABLE_SORT_MAXIMUM_CATEGORY ==
+			           psorts->psort[depth+1].table_sort ? "MAX" : "MIN";
+			qstr = fmt::format("SELECT v{:x}, COUNT(*), {}(v{:x}) AS max_field "
 			       "FROM stbl {} GROUP BY v{:x} ORDER BY max_field",
-			       tmp_proptag, tmp_proptag1, where, tmp_proptag);
+			       tmp_proptag, agg, tmp_proptag1, where, tmp_proptag);
 		} else {
-			qstr = fmt::format("SELECT v{:x}, COUNT(*), MIN(v{:x}) AS max_field "
-			       "FROM stbl {} GROUP BY v{:x} ORDER BY max_field",
-			       tmp_proptag, tmp_proptag1, where, tmp_proptag);
+			qstr = fmt::format("SELECT v{:x}, COUNT(*) FROM stbl {} "
+			       "GROUP BY v{:x} ORDER BY v{:x}",
+			       tmp_proptag, where, tmp_proptag, tmp_proptag);
 		}
-	} else {
-		b_extremum = FALSE;
-		qstr = fmt::format("SELECT v{:x}, COUNT(*) FROM stbl {} "
-		       "GROUP BY v{:x} ORDER BY v{:x}",
-		       tmp_proptag, where, tmp_proptag, tmp_proptag);
-	}
-	qstr += psorts->psort[depth].table_sort == TABLE_SORT_ASCEND ?
-	        " ASC" : " DESC";
-	auto pstmt = gx_sql_prep(psqlite, qstr);
+		qstr += psorts->psort[depth].table_sort == TABLE_SORT_ASCEND ?
+		        " ASC" : " DESC";
+		return qstr;
+	};
+	auto pstmt = tlc_prep(stmt_cache, psqlite,
+	             tlc_stmt_key(cond_list, depth, false), make_query);
 	if (pstmt == nullptr)
 		return FALSE;
 	bind_index = 1;
@@ -484,7 +530,7 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 		++i;
 	}
 	auto &tmp_cnode = cond_list.emplace_back();
-	while (pstmt.step() == SQLITE_ROW) {
+	while (gx_sql_step(pstmt) == SQLITE_ROW) {
 		(*pheader_id) ++;
 		header_id = *pheader_id | 0x100000000000000ULL;
 		sqlite3_bind_int64(pstmt_insert, 1, header_id);
@@ -519,7 +565,7 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 		tmp_cnode.pvalue = pvalue;
 		if (!table_load_content(db, psqlite, psorts,
 		    depth + 1, prev_id, cond_list, pstmt_insert,
-		    pheader_id, pstmt_update, &unread_count))
+		    pheader_id, pstmt_update, &unread_count, stmt_cache))
 			return FALSE;
 		sqlite3_bind_int64(pstmt_update, 1, unread_count);
 		sqlite3_bind_int64(pstmt_update, 2, prev_id);
@@ -671,12 +717,15 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 	unsigned int col_inum = 0; /* stbl column number for inst_num */
 	size_t tag_count = 0;
 	void *pvalue;
-	proptag_t tmp_proptags[16];
+	proptag_t tmp_proptags[gct_max_sorts];
 
 	auto conv_id = (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) ?
 	               get_conv_id(prestriction) : nullptr;
 	if (psorts != nullptr && psorts->count > std::size(tmp_proptags))
-		return FALSE;	
+		return FALSE;
+	if (psorts != nullptr && psorts->ccategories > psorts->count)
+		/* psort[] holds count entries and is indexed by category depth */
+		return false;
 	bool b_search = false;
 	if (!exmdb_server::is_private()) {
 		exmdb_server::set_public_username(username);
@@ -1021,9 +1070,11 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 
 		std::vector<condition_node> cond_list;
 		uint32_t unread_count = 0;
+		tlc_stmt_cache stmt_cache;
 		if (!table_load_content(db, psqlite, psorts, 0, 0, cond_list,
-		    pstmt, &ptnode->header_id, pstmt1, &unread_count))
+		    pstmt, &ptnode->header_id, pstmt1, &unread_count, stmt_cache))
 			return false;
+		stmt_cache.clear();
 		pstmt.finalize();
 		pstmt1.finalize();
 		if (psort_transact.commit() != SQLITE_OK)
