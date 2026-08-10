@@ -399,14 +399,6 @@ static constexpr char tbl_mboxpermissionindex_24[] =
 static constexpr char tbl_droppropvalindex_25[] =
 "DROP INDEX proptag_propval_index4";
 
-/*
- * Conversation view resolves a PR_CONVERSATION_ID to its messages across the
- * whole store, so that lookup has no folder or message id to narrow itself
- * with -- it was the one caller relying on the index dropped at level 25. A
- * partial index restores it while only covering the one property tag, so the
- * size it costs is proportional to the message count rather than to the number
- * of property values.
- */
 static constexpr char tbl_convidindex_27[] =
 "CREATE INDEX conv_id_index ON message_properties(propval) "
 "WHERE proptag = 806551810"; /* PR_CONVERSATION_ID */
