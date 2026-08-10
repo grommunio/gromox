@@ -42,7 +42,7 @@ struct USER_INFO {
 	std::list<sink_node> sink_list;
 	std::unordered_map<int, long> extra_owner;
 	std::mutex eowner_lock;
-	std::recursive_mutex lock;
+	std::recursive_timed_mutex lock;
 };
 
 struct user_info_del {

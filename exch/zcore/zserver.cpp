@@ -125,8 +125,28 @@ USER_INFO_REF zs_query_session(GUID hsession)
 	pinfo->reference ++;
 	pinfo->last_query_at = tp_now();
 	tl_hold.unlock();
+	/*
+	 * Bound the wait: when a handler wedges while holding the session
+	 * lock (e.g. on an EXRPC to an unresponsive exmdb peer), queued rpc
+	 * threads would otherwise pile up here until the pool is exhausted
+	 * and even sessions of healthy stores stop being served. The bound
+	 * sits above the EXRPC deadline so that it indicates a wedged
+	 * holder, not merely a slow one.
+	 */
+	std::chrono::milliseconds bound = std::chrono::minutes(15);
+	if (exmdb_client.has_value() && exmdb_client->m_rpc_timeout > 0)
+		bound = std::chrono::minutes(1) +
+		        std::chrono::milliseconds(exmdb_client->m_rpc_timeout);
+	if (!pinfo->lock.try_lock_for(bound)) {
+		mlog(LV_WARN, "zs_query_session: timeout waiting for session "
+			"lock of user %d; another request is stuck on this session",
+			user_id);
+		tl_hold.lock();
+		pinfo->reference --;
+		tl_hold.unlock();
+		return nullptr;
+	}
 	g_info_key = pinfo;
-	pinfo->lock.lock();
 	return USER_INFO_REF(pinfo);
 }
 
