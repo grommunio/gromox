@@ -1024,6 +1024,25 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 }
 
 /**
+ * Pick the next queued entry that is not for a (dir, folder) pair another
+ * sfpop thread is already working on. Concurrently populating the same
+ * search folder would link the same messages twice.
+ *
+ * The caller must hold g_list_lock.
+ */
+static std::list<POPULATING_NODE>::iterator sf_pick_node()
+{
+	return std::find_if(g_populating_list.begin(), g_populating_list.end(),
+	       [](const POPULATING_NODE &q) {
+	       	return std::none_of(g_populating_list_active.cbegin(),
+	       	       g_populating_list_active.cend(),
+	       	       [&](const POPULATING_NODE &a) {
+	       	       	return a.dir == q.dir && a.folder_id == q.folder_id;
+	       	       });
+	       });
+}
+
+/**
  * Background task which is responsible for the initial filling of search
  * folders (e.g. when they are created, or the search criteria has been reset).
  */
@@ -1035,18 +1054,24 @@ static void *sf_popul_thread(void *param)
 	while (!g_dbeng_stop) {
  NEXT_SEARCH:
 		std::unique_lock lhold(g_list_lock);
-		g_waken_cond.wait(lhold, []() { return g_dbeng_stop || g_populating_list.size() > 0; });
+		auto pick = g_populating_list.end();
+		g_waken_cond.wait(lhold, [&]() {
+			if (g_dbeng_stop)
+				return true;
+			pick = sf_pick_node();
+			return pick != g_populating_list.end();
+		});
 		if (g_dbeng_stop)
 			break;
-		if (g_populating_list.size() == 0)
-			continue;
-		g_populating_list_active.splice(g_populating_list_active.end(), g_populating_list, g_populating_list.begin());
+		g_populating_list_active.splice(g_populating_list_active.end(), g_populating_list, pick);
 		auto psearch = std::prev(g_populating_list_active.end());
 		lhold.unlock();
 		auto cl_0 = HX::make_scope_exit([&]() {
 			lhold.lock();
 			g_populating_list_active.erase(psearch);
 			lhold.unlock();
+			/* A queued node for the same folder may now be eligible. */
+			g_waken_cond.notify_one();
 		});
 		auto pfolder_ids = eid_array_init(); /* Actually it's just GCVs */
 		if (pfolder_ids == nullptr)
