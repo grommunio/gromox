@@ -1452,6 +1452,11 @@ BOOL exmdb_server::unload_table(const char *dir, uint32_t table_id)
 
 	std::list<table_node> holder;
 	holder.splice(holder.end(), table_list, iter);
+	/*
+	 * Removing the node from table_list under the lock is what makes the
+	 * table unobservable (readers check the list first). The physical
+	 * DROP can then run unlocked, since table ids are never reused.
+	 */
 	dbase.reset();
 	snprintf(sql_string, std::size(sql_string), "DROP TABLE t%u", table_id);
 	if (pdb->eph_exec(sql_string) != SQLITE_OK)
@@ -1465,7 +1470,15 @@ BOOL exmdb_server::sum_table(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
+	/*
+	 * Hold the base lock so reload_content_table/unload_table cannot
+	 * drop t$id while it is being counted.
+	 */
+	auto dbase = pdb->lock_base_rd();
+	auto &table_list = dbase->tables.table_list;
+	if (std::none_of(table_list.cbegin(), table_list.cend(),
+	    [&](const table_node &t) { return t.table_id == table_id; }))
+		return FALSE;
 	return table_sum_table_count(*pdb, table_id, prows);
 }
 
