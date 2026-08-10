@@ -372,16 +372,14 @@ template<typename F> static sqlite3_stmt *tlc_prep(tlc_stmt_cache &cache,
 static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 	const SORTORDER_SET *psorts, int depth, uint64_t parent_id,
     std::vector<condition_node> &cond_list, sqlite3_stmt *pstmt_insert,
-	uint32_t *pheader_id, sqlite3_stmt *pstmt_update,
-    uint32_t *punread_count, tlc_stmt_cache &stmt_cache) try
+	uint32_t *pheader_id, tlc_stmt_cache &stmt_cache) try
 {
 	void *pvalue;
 	int bind_index;
 	int multi_index;
 	bool b_extremum;
 	uint64_t header_id;
-	uint32_t unread_count;
-	
+
 	int64_t prev_id = -parent_id;
 	if (depth == psorts->ccategories) {
 		proptag_t tmp_proptag;
@@ -452,7 +450,6 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 			if (psorts->ccategories <= 0) {
 				sqlite3_bind_null(pstmt_insert, 9);
 			} else if (0 == sqlite3_column_int64(pstmt, 1)) {
-				(*punread_count)++;
 				/* unread(0) in extremum for message row */
 				sqlite3_bind_int64(pstmt_insert, 9, 0);
 			} else {
@@ -481,6 +478,8 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 				sqlite3_bind_null(pstmt_insert, 8);
 			}
 			sqlite3_bind_int64(pstmt_insert, 10, prev_id);
+			/* unread only applies to header rows */
+			sqlite3_bind_null(pstmt_insert, 11);
 			if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
 				return FALSE;
 			prev_id = sqlite3_last_insert_rowid(db.m_sqlite_eph);
@@ -499,12 +498,12 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 			auto tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
 			auto agg = TABLE_SORT_MAXIMUM_CATEGORY ==
 			           psorts->psort[depth+1].table_sort ? "MAX" : "MIN";
-			qstr = fmt::format("SELECT v{:x}, COUNT(*), {}(v{:x}) AS max_field "
-			       "FROM stbl {} GROUP BY v{:x} ORDER BY max_field",
+			qstr = fmt::format("SELECT v{:x}, COUNT(*), {}(v{:x}) AS max_field, "
+			       "SUM(read_state=0) FROM stbl {} GROUP BY v{:x} ORDER BY max_field",
 			       tmp_proptag, agg, tmp_proptag1, where, tmp_proptag);
 		} else {
-			qstr = fmt::format("SELECT v{:x}, COUNT(*) FROM stbl {} "
-			       "GROUP BY v{:x} ORDER BY v{:x}",
+			qstr = fmt::format("SELECT v{:x}, COUNT(*), NULL, SUM(read_state=0) "
+			       "FROM stbl {} GROUP BY v{:x} ORDER BY v{:x}",
 			       tmp_proptag, where, tmp_proptag, tmp_proptag);
 		}
 		qstr += psorts->psort[depth].table_sort == TABLE_SORT_ASCEND ?
@@ -556,23 +555,22 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 		else if (!common_util_bind_sqlite_statement(pstmt_insert, 8, type, pvalue))
 			return FALSE;
 		sqlite3_bind_int64(pstmt_insert, 10, prev_id);
+		/*
+		 * Unread is the number of unread messages anywhere below this
+		 * header, which is what SUM over the group yields: the group holds
+		 * every stbl row this category covers, at any depth.
+		 */
+		sqlite3_bind_int64(pstmt_insert, 11, sqlite3_column_int64(pstmt, 3));
 		if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
 			return FALSE;
 		prev_id = sqlite3_last_insert_rowid(db.m_sqlite_eph);
 		sqlite3_reset(pstmt_insert);
 		tmp_cnode.proptag = tmp_proptag;
-		unread_count = 0;
 		tmp_cnode.pvalue = pvalue;
 		if (!table_load_content(db, psqlite, psorts,
 		    depth + 1, prev_id, cond_list, pstmt_insert,
-		    pheader_id, pstmt_update, &unread_count, stmt_cache))
+		    pheader_id, stmt_cache))
 			return FALSE;
-		sqlite3_bind_int64(pstmt_update, 1, unread_count);
-		sqlite3_bind_int64(pstmt_update, 2, prev_id);
-		if (gx_sql_step(pstmt_update) != SQLITE_DONE)
-			return FALSE;
-		sqlite3_reset(pstmt_update);
-		*punread_count += unread_count;
 	}
 	cond_list.pop_back();
 	return TRUE;
@@ -1038,25 +1036,19 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 	if (NULL != psorts) {
 		sql_string = fmt::format("INSERT INTO t{} "
 		             "(inst_id, row_type, row_stat, parent_id, depth, "
-		             "count, inst_num, value, extremum, prev_id) VALUES"
-		             " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", table_id);
+		             "count, inst_num, value, extremum, prev_id, unread) VALUES"
+		             " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", table_id);
 		pstmt = db.eph_prep(sql_string);
 		if (pstmt == nullptr)
 			return false;
-		sql_string = fmt::format("UPDATE t{} SET unread=? WHERE row_id=?", table_id);
-		pstmt1 = db.eph_prep(sql_string);
-		if (pstmt1 == nullptr)
-			return false;
 
 		std::vector<condition_node> cond_list;
-		uint32_t unread_count = 0;
 		tlc_stmt_cache stmt_cache;
 		if (!table_load_content(db, psqlite, psorts, 0, 0, cond_list,
-		    pstmt, &ptnode->header_id, pstmt1, &unread_count, stmt_cache))
+		    pstmt, &ptnode->header_id, stmt_cache))
 			return false;
 		stmt_cache.clear();
 		pstmt.finalize();
-		pstmt1.finalize();
 		/*
 		 * These serve later table operations; nothing above reads t{}
 		 * through them.
