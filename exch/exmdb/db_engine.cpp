@@ -916,17 +916,25 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 		if (!cu_eval_msg_restriction(db,
 		    cpid, pmessage_ids->pids[i], prestriction))
 			continue;
-		snprintf(sql_string, std::size(sql_string), "REPLACE INTO search_result "
+		snprintf(sql_string, std::size(sql_string), "INSERT OR IGNORE INTO search_result "
 		         "(folder_id, message_id) VALUES (%llu, %llu)",
 		         LLU{search_fid}, LLU{pmessage_ids->pids[i]});
 		auto ret = db.exec(sql_string, SQLEXEC_SILENT_CONSTRAINT);
 		if (ret == SQLITE_CONSTRAINT)
 			/*
 			 * Search folder is closed (deleted) already, INSERT
-			 * does not succeed, and neither will subsequent queries.
+			 * does not succeed (FK violation), and neither will
+			 * subsequent queries.
 			 */
 			break;
 		else if (ret != SQLITE_OK)
+			continue;
+		if (sqlite3_changes(db.psqlite) == 0)
+			/*
+			 * Message was already linked by a concurrent dynamic
+			 * evaluation or an overlapping populate run. A second
+			 * add_row would trip UNIQUE t$id.inst_id, so skip.
+			 */
 			continue;
 		if (sql_transact1.commit() != SQLITE_OK)
 			return false;
