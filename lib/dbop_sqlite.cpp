@@ -163,14 +163,15 @@ static constexpr char tbl_msgprops_4[] =
 static constexpr char tbl_msgprops_move4[] =
 "INSERT INTO message_properties SELECT message_id, proptag, propval FROM u0";
 
-static constexpr char tbl_msgprops_25[] =
+static constexpr char tbl_msgprops_27[] =
 "CREATE TABLE message_properties ("
 "  message_id INTEGER NOT NULL,"
 "  proptag INTEGER NOT NULL,"
 "  propval BLOB NOT NULL,"
 "  FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE ON UPDATE CASCADE);"
 "CREATE INDEX mid_properties_index4 ON message_properties(message_id);"
-"CREATE UNIQUE INDEX message_property_index4 ON message_properties(message_id, proptag);";
+"CREATE UNIQUE INDEX message_property_index4 ON message_properties(message_id, proptag);"
+"CREATE INDEX conv_id_index ON message_properties(propval) WHERE proptag = 806551810;"; /* PR_CONVERSATION_ID */
 
 static constexpr char tbl_msgchgs_0[] =
 "CREATE TABLE message_changes ("
@@ -398,6 +399,18 @@ static constexpr char tbl_mboxpermissionindex_24[] =
 static constexpr char tbl_droppropvalindex_25[] =
 "DROP INDEX proptag_propval_index4";
 
+/*
+ * Conversation view resolves a PR_CONVERSATION_ID to its messages across the
+ * whole store, so that lookup has no folder or message id to narrow itself
+ * with -- it was the one caller relying on the index dropped at level 25. A
+ * partial index restores it while only covering the one property tag, so the
+ * size it costs is proportional to the message count rather than to the number
+ * of property values.
+ */
+static constexpr char tbl_convidindex_27[] =
+"CREATE INDEX conv_id_index ON message_properties(propval) "
+"WHERE proptag = 806551810"; /* PR_CONVERSATION_ID */
+
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
@@ -499,7 +512,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"folder_properties", tbl_fldprops_3},
 	{"permissions", tbl_perms_24},
 	{"rules", tbl_rules_0},
-	{"message_properties", tbl_msgprops_25},
+	{"message_properties", tbl_msgprops_27},
 	{"message_changes", tbl_msgchgs_0},
 	{"recipients", tbl_rcpts_0},
 	{"recipients_properties", tbl_rcptprops_5},
@@ -546,7 +559,7 @@ static constexpr tbl_init tbl_pub_init_top[] = {
 	{"folder_properties", tbl_fldprops_3},
 	{"permissions", tbl_perms_24},
 	{"rules", tbl_rules_0},
-	{"message_properties", tbl_msgprops_25},
+	{"message_properties", tbl_msgprops_27},
 	{"message_changes", tbl_msgchgs_0},
 	{"recipients", tbl_rcpts_0},
 	{"recipients_properties", tbl_rcptprops_5},
@@ -750,6 +763,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{23, tbl_addmsgtimeindex_23},
 	{24, tbl_mboxpermissionindex_24},
 	{25, tbl_droppropvalindex_25},
+	{27, tbl_convidindex_27},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -773,6 +787,7 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{24, tbl_mboxpermissionindex_24},
 	{25, tbl_droppropvalindex_25},
 	{26, tbl_pub_msgs_upgrade26},
+	{27, tbl_convidindex_27},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };
