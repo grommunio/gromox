@@ -927,12 +927,77 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 	auto cl_optim = HX::make_scope_exit([&]() { db.end_optim(); });
 
 	/*
+	 * An unsorted table without a restriction takes every row the scan
+	 * yields, in scan order, so rows can go in several at a time. row_id is
+	 * assigned consecutively by AUTOINCREMENT, which prev_id and idx are
+	 * derived from, so both are known before the insert.
+	 */
+	bool rows_done = psorts == nullptr && conv_id == nullptr &&
+	                 prestriction == nullptr;
+	if (rows_done) {
+		auto stm = db.eph_prep(fmt::format("SELECT IFNULL(MAX(row_id), 0) FROM t{}", table_id));
+		if (stm == nullptr || stm.step() != SQLITE_ROW)
+			return false;
+		uint64_t next_row = stm.col_uint64(0) + 1;
+		stm.finalize();
+
+		static constexpr unsigned int batch = 128;
+		auto row_tpl = fmt::format("(?, ?, {}, 0, 0, ?)", CONTENT_ROW_MESSAGE);
+		auto head = fmt::format("INSERT INTO t{} (inst_id, prev_id, "
+		            "row_type, depth, inst_num, idx) VALUES ", table_id);
+		std::string batch_sql = head;
+		for (unsigned int i = 0; i < batch; ++i)
+			batch_sql += (i == 0 ? "" : ", ") + row_tpl;
+		auto bstm = db.eph_prep(batch_sql);
+		if (bstm == nullptr)
+			return false;
+
+		std::vector<uint64_t> mids;
+		mids.reserve(batch);
+		auto flush = [&]() {
+			sqlite3_stmt *st = bstm;
+			xstmt tail;
+			if (mids.size() != batch) {
+				std::string s = head;
+				for (size_t i = 0; i < mids.size(); ++i)
+					s += (i == 0 ? "" : ", ") + row_tpl;
+				tail = db.eph_prep(s);
+				if (tail == nullptr)
+					return false;
+				st = tail;
+			} else {
+				sqlite3_reset(st);
+			}
+			for (size_t i = 0; i < mids.size(); ++i) {
+				auto row = next_row + i;
+				sqlite3_bind_int64(st, i * 3 + 1, mids[i]);
+				sqlite3_bind_int64(st, i * 3 + 2, row - 1);
+				sqlite3_bind_int64(st, i * 3 + 3, row);
+			}
+			if (gx_sql_step(st) != SQLITE_DONE)
+				return false;
+			next_row += mids.size();
+			mids.clear();
+			return true;
+		};
+		while (pstmt.step() == SQLITE_ROW) {
+			mids.push_back(pstmt.col_uint64(0));
+			if (mids.size() == batch && !flush())
+				return false;
+		}
+		if (!mids.empty() && !flush())
+			return false;
+		pstmt.finalize();
+		pstmt1.finalize();
+	}
+
+	/*
 	 * [Block 3] Loop for reading the folder content. The first pass either
 	 * fills the MAPI content table, or, in case a sort criteria is
 	 * defined, stbl.
 	 */
 	uint64_t last_row_id = 0;
-	while (pstmt.step() == SQLITE_ROW) {
+	while (!rows_done && pstmt.step() == SQLITE_ROW) {
 		uint64_t mid_val = pstmt.col_uint64(0);
 		if (conv_id != nullptr) {
 			uint64_t parent_fid = 0;
