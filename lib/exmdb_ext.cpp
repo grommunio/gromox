@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <chrono>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -3690,9 +3691,20 @@ bool exmdb_client_read_socket(int fd, std::string &bin, long timeout_ms) try
 	pfd.fd = fd;
 	pfd.events = POLLIN | POLLPRI;
 
+	/*
+	 * @timeout_ms bounds the entire response, not just the pause between
+	 * two bursts of bytes; otherwise a peer trickling single bytes can
+	 * occupy the calling thread indefinitely.
+	 */
+	auto deadline = std::chrono::steady_clock::now() +
+	                std::chrono::milliseconds(timeout_ms);
 	while (true) {
-		if (timeout_ms >= 0 && poll(&pfd, 1, timeout_ms) != 1)
-			return false;
+		if (timeout_ms >= 0) {
+			auto left = std::chrono::duration_cast<std::chrono::milliseconds>(
+			            deadline - std::chrono::steady_clock::now()).count();
+			if (left < 0 || poll(&pfd, 1, left) != 1)
+				return false;
+		}
 
 		if (bin.size() == 0) {
 			uint8_t resp_buff[5];
