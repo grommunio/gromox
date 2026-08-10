@@ -317,6 +317,17 @@ ec_error_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
 		return ecNotSupported;
+	/*
+	 * The numerator is the cursor, which the table object tracks on its
+	 * own, and for a plain contents table the denominator is available from
+	 * a single count(*), so neither integer needs the folder materialized.
+	 */
+	uint32_t total = 0;
+	if (!ptable->is_loaded() && ptable->total_without_load(&total)) {
+		*pnumerator = ptable->get_position();
+		*pdenominator = total;
+		return ecSuccess;
+	}
 	auto err = ptable->load();
 	if (err != ecSuccess)
 		return err;

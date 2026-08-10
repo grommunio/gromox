@@ -238,6 +238,36 @@ void table_object::set_position(uint32_t position)
 	m_position = position;
 }
 
+/**
+ * Row count for a table which need not be materialized to be counted, i.e.
+ * one whose rows are exactly the set sum_content tallies with a single
+ * indexed count(*). Returns false when the table's shape rules that out, in
+ * which case the caller has to fall back to loading.
+ *
+ * Disqualifying shapes: a restriction removes rows; categories add header
+ * rows; a search folder draws its rows from search_result, which sum_content
+ * does not consult. Sort order is deliberately not disqualifying as it
+ * reorders rows without changing how many there are.
+ */
+bool table_object::total_without_load(uint32_t *pcount) const
+{
+	if (rop_id != ropGetContentsTable)
+		return false;
+	if (m_restriction != nullptr)
+		return false;
+	if (m_sorts != nullptr && m_sorts->ccategories > 0)
+		return false;
+	if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)
+		return false;
+	auto pfolder = static_cast<const folder_object *>(pparent_obj);
+	if (pfolder == nullptr || pfolder->type == FOLDER_SEARCH)
+		return false;
+	bool b_fai = table_flags & TABLE_FLAG_ASSOCIATED;
+	bool b_del = table_flags & TABLE_FLAG_SOFTDELETES;
+	return exmdb_client->sum_content(plogon->get_dir(), pfolder->folder_id,
+	       b_fai, b_del, pcount);
+}
+
 uint32_t table_object::get_total()
 {
 	if (m_deleted)
