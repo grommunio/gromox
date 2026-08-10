@@ -2891,10 +2891,10 @@ BOOL exmdb_server::expand_table(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto dbase = pdb->lock_base_rd();
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph)
 		return false;
-	auto dbase = pdb->lock_base_rd();
 	auto ptnode = dbase->find_table(table_id);
 	if (ptnode == nullptr) {
 		*pb_found = FALSE;
