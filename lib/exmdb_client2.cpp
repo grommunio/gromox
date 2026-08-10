@@ -448,15 +448,15 @@ void async_listener::connect_and_listen()
 		auto rearm = m_client->m_async_rearm.load(std::memory_order_acquire);
 		if (rearm == nullptr) {
 			/* quiesced by stop_async_listeners; no rearm during teardown */
+			if (do_log && !m_stop)
+				mlog(LV_NOTICE, "exmdb_client: Notify channel re-established after a drop. "
+					"Subscriptions may be stale until clients reconnect "
+					"(no re-arm handler registered for this daemon).");
 		} else if (rearm != nullptr) {
 			if (do_log)
 				mlog(LV_DEBUG, "exmdb_client: Notify channel re-established after a drop. "
 					"Re-subscribing affected stores.");
 			rearm(m_dir.c_str());
-		} else if (do_log) {
-			mlog(LV_NOTICE, "exmdb_client: Notify channel re-established after a drop. "
-				"Subscriptions may be stale until clients reconnect "
-				"(no re-arm handler registered for this daemon).");
 		}
 	}
 	m_second_connect = true;
