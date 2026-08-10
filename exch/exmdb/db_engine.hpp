@@ -109,7 +109,7 @@ struct instance_node {
 
 struct prepared_statements {
 	bool begin(sqlite3 *);
-	gromox::xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
+	gromox::xstmt msg_norm, msg_str, rcpt_norm, rcpt_str, msg_read;
 };
 
 struct db_close;

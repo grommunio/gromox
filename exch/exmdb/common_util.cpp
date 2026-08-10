@@ -414,6 +414,10 @@ bool prepared_statements::begin(sqlite3 *psqlite)
 	               " AND proptag IN (?,?)");
 	if (rcpt_str == nullptr)
 		return FALSE;
+	msg_read = gx_sql_prep(psqlite, "SELECT read_state FROM "
+	           "messages WHERE message_id=?");
+	if (msg_read == nullptr)
+		return false;
 	return true;
 }
 
@@ -1158,10 +1162,11 @@ static bool cu_msg_has_attachments(sqlite3 *psqlite, uint64_t message_id)
 	return pstmt != nullptr && pstmt.step() == SQLITE_ROW;
 }
 
-static bool cu_msg_is_read(sqlite3 *psqlite, uint64_t message_id)
+static bool cu_msg_is_read(const db_conn &db, uint64_t message_id)
 {
+	auto &psqlite = db.psqlite;
 	char sql_string[128];
-	
+
 	if (!exmdb_server::is_private()) {
 		auto username = exmdb_pf_read_per_user ? exmdb_server::get_public_username() : "";
 		if (username == nullptr)
@@ -1175,11 +1180,23 @@ static bool cu_msg_is_read(sqlite3 *psqlite, uint64_t message_id)
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 		return pstmt.step() == SQLITE_ROW;
 	}
-	snprintf(sql_string, std::size(sql_string), "SELECT read_state FROM "
-	          "messages WHERE message_id=%llu", LLU{message_id});
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	return pstmt != nullptr && pstmt.step() == SQLITE_ROW &&
-	       pstmt.col_int64(0) != 0;
+
+	xstmt own_stmt;
+	sqlite3_stmt *pstmt = nullptr;
+	if (g_exmdb_enable_optim_stm && db.m_prepstm != nullptr)
+		pstmt = db.m_prepstm->msg_read;
+	if (pstmt != nullptr) {
+		sqlite3_reset(pstmt);
+	} else {
+		own_stmt = gx_sql_prep(psqlite, "SELECT read_state FROM "
+		           "messages WHERE message_id=?");
+		if (own_stmt == nullptr)
+			return false;
+		pstmt = own_stmt;
+	}
+	sqlite3_bind_int64(pstmt, 1, message_id);
+	return gx_sql_step(pstmt) == SQLITE_ROW &&
+	       sqlite3_column_int64(pstmt, 0) != 0;
 }
 
 static uint64_t common_util_get_message_changenum(
@@ -1220,7 +1237,7 @@ bool cu_get_msg_flags(const db_conn &db, uint64_t message_id, bool b_native,
 	message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH | MSGFLAG_FROMME |
 	                 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
 	if (!b_native) {
-		if (cu_msg_is_read(psqlite, message_id))
+		if (cu_msg_is_read(db, message_id))
 			message_flags |= MSGFLAG_READ;
 		if (cu_msg_has_attachments(psqlite, message_id))
 			message_flags |= MSGFLAG_HASATTACH;
@@ -1855,7 +1872,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
 		*v = exmdb_pf_read_states == 0 && !exmdb_server::is_private() ?
-		     true : cu_msg_is_read(db, id);
+		     true : cu_msg_is_read(db_conn, id);
 		return GP_ADV;
 	}
 	case PR_HAS_NAMED_PROPERTIES: {
