@@ -61,8 +61,12 @@ Example: \fIX-Spam-Flag=YES; X-MC-Relay=; X-SG-EID=\fP
 .TP
 \fBexmdb_client_rpc_timeout\fP
 If the execution of an RPC takes longer than the specified time, the client
-will sever the connection and return an error to the calling program. The value
-cannot be lower than 4s. The special value 0 disabled RPC timeout checking.
+will sever the connection and return an error to the calling program. The
+timeout covers the complete response transfer, not just the pause between two
+bursts of bytes. The value cannot be lower than 4s. The special value 0
+disables RPC timeout checking, which means clients may wait indefinitely on a
+exmdb server that is erroneously stuck or legitimately busy (e.g. a
+long-running gromox\-mbop(8gx) "vacuum" call).
 .br
 Default: \fI0\fP
 .TP

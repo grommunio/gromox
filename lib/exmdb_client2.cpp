@@ -838,7 +838,9 @@ exmdb_client_remote::exmdb_client_remote(unsigned int conn_max)
 	} else {
 		m_rpc_timeout = cfg->get_ll("exmdb_client_rpc_timeout");
 		if (m_rpc_timeout <= 0)
-			m_rpc_timeout = -1;
+			m_rpc_timeout = -1; /* explicitly disabled */
+		else if (m_rpc_timeout < 4)
+			m_rpc_timeout = 4; /* documented minimum */
 		if (m_rpc_timeout > 0)
 			m_rpc_timeout *= 1000;
 	}
