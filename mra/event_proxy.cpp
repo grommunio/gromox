@@ -47,7 +47,7 @@ static gromox::atomic_bool g_eventproxy_stop;
 static char g_event_ip[40];
 static uint16_t g_event_port;
 static pthread_t g_scan_id;
-static std::mutex g_back_lock;
+static std::mutex g_back_lock; /* protects g_back_list, g_lost_list */
 static std::list<BACK_CONN> g_back_list, g_lost_list;
 
 static void *evpx_scanwork(void *);
@@ -106,9 +106,10 @@ bool SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 		g_eventproxy_stop = false;
 		auto ret = pthread_create4(&g_scan_id, nullptr, evpx_scanwork, nullptr);
 		if (ret != 0) {
-			g_eventproxy_stop = true;
-			g_back_list.clear();
 			printf("[event_proxy]: failed to create scan thread: %s\n", strerror(ret));
+			g_eventproxy_stop = true;
+			std::lock_guard lk(g_back_lock);
+			g_back_list.clear();
 			return FALSE;
 		}
 		if (!register_service("broadcast_event", broadcast_event))
