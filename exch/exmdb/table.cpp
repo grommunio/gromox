@@ -890,6 +890,16 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 		return false;
 
 	/*
+	 * The loop below reads sort keys, category keys and read state one
+	 * property at a time, so it issues on the order of (messages * sort
+	 * tags) calls to cu_get_property, all of which can share one prepared
+	 * statement.
+	 */
+	if (!db.begin_optim())
+		return false;
+	auto cl_optim = HX::make_scope_exit([&]() { db.end_optim(); });
+
+	/*
 	 * [Block 3] Loop for reading the folder content. The first pass either
 	 * fills the MAPI content table, or, in case a sort criteria is
 	 * defined, stbl.
