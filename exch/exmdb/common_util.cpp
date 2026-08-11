@@ -1135,18 +1135,16 @@ bool cu_msg_is_fai(sqlite3 *psqlite, uint64_t message_id)
 
 static bool cu_msg_has_namedprops(sqlite3 *psqlite, uint64_t message_id)
 {
-	char sql_string[128];
+	char sql_string[126];
 	
-	snprintf(sql_string, std::size(sql_string), "SELECT proptag"
-				" FROM message_properties WHERE "
-				"message_id=%llu", LLU{message_id});
+	snprintf(sql_string, std::size(sql_string), "SELECT 1 "
+		"FROM message_properties WHERE message_id=%llu "
+		"AND proptag>=0x80000000 AND proptag<0xffff0000 LIMIT 1",
+		LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	while (pstmt.step() == SQLITE_ROW)
-		if (is_nameprop_id(PROP_ID(pstmt.col_int64(0))))
-			return TRUE;
-	return FALSE;
+	return pstmt.step() == SQLITE_ROW;
 }
 
 static bool cu_msg_has_attachments(sqlite3 *psqlite, uint64_t message_id)
