@@ -1152,11 +1152,10 @@ static bool cu_msg_has_attachments(sqlite3 *psqlite, uint64_t message_id)
 {
 	char sql_string[128];
 	
-	snprintf(sql_string, std::size(sql_string), "SELECT count(*) FROM "
-	          "attachments WHERE message_id=%llu", LLU{message_id});
+	snprintf(sql_string, std::size(sql_string), "SELECT 1 FROM "
+	          "attachments WHERE message_id=%llu LIMIT 1", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	return pstmt != nullptr && pstmt.step() == SQLITE_ROW &&
-	       pstmt.col_int64(0) != 0;
+	return pstmt != nullptr && pstmt.step() == SQLITE_ROW;
 }
 
 static bool cu_msg_is_read(sqlite3 *psqlite, uint64_t message_id)
