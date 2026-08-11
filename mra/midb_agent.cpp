@@ -333,6 +333,37 @@ BACK_CONN_floating::BACK_CONN_floating(BACK_CONN_floating &&o)
 	tmplist = std::move(o.tmplist);
 }
 
+/*
+ * Older midb versions stored MAPI category keywords with atom-special
+ * characters in them; coerce all tokens (banned set mirrors midb's
+ * atom_special) so that emitted FLAGS lists stay parseable.
+ */
+static bool kw_atom_special(unsigned char c)
+{
+	return c == '(' || c == ')' || c == '{' || c == '}' || c == ' ' ||
+	       c <= 0x1F || c == 0x7F || c == '%' || c == '*' || c == '"' ||
+	       c == '\\' || c == '[' || c == ']';
+}
+
+static std::string kw_sanitize(std::string_view in)
+{
+	std::string out;
+	for (size_t pos = 0; pos < in.size(); ) {
+		auto sp = in.find(' ', pos);
+		if (sp == in.npos)
+			sp = in.size();
+		if (sp > pos) {
+			std::string tok(in.substr(pos, sp - pos));
+			std::replace_if(tok.begin(), tok.end(), kw_atom_special, '_');
+			if (!out.empty())
+				out += ' ';
+			out += std::move(tok);
+		}
+		pos = sp + 1;
+	}
+	return out;
+}
+
 namespace midb_agent {
 
 int list_mail(const char *path, const std::string &folder,
@@ -1380,7 +1411,7 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 									*pspace3++ = '\0';
 									char *pspace4 = strchr(pspace3, ' ');
 									if (pspace4 != nullptr)
-										kw = base64_decode(pspace4 + 1);
+										kw = kw_sanitize(base64_decode(pspace4 + 1));
 								}
 								int uid = strtol(pspace1, nullptr, 0);
 								if (pxarray->append(MITEM{}, uid) >= 0) {
@@ -1528,7 +1559,8 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 						MITEM mitem;
 						if (get_digest(digest, "file", mitem.mid) &&
 						    get_digest_integer(digest, "uid", mitem.uid)) {
-							mitem.keywords = digest.isMember("keywords") ? digest["keywords"].asString() : "";
+							mitem.keywords = digest.isMember("keywords") ?
+								kw_sanitize(digest["keywords"].asString()) : "";
 							mitem.digest_off = pxarray->m_dpool.size();
 							mitem.digest_len = digest_sv.size();
 							pxarray->m_dpool.append(digest_sv);
@@ -1696,7 +1728,7 @@ int get_flags(const char *path, const std::string &folder,
 				auto kw_end = kw_beg;
 				while (*kw_end != '\0' && *kw_end != '\r' && *kw_end != '\n')
 					++kw_end;
-				*keywords = base64_decode(std::string_view(kw_beg, kw_end - kw_beg));
+				*keywords = kw_sanitize(base64_decode(std::string_view(kw_beg, kw_end - kw_beg)));
 			}
 		} else if (buff[4] == ' ') {
 			*pflag_bits = s_to_flagbits(buff + 5);
@@ -1763,8 +1795,11 @@ int get_folder_keywords(const char *path, const std::string &folder,
 			char *e = p;
 			while (*e != '\0' && *e != ' ' && *e != '\r' && *e != '\n')
 				++e;
-			if (e != p)
-				out.emplace_back(base64_decode(std::string_view(p, e - p)));
+			if (e != p) {
+				auto kw = kw_sanitize(base64_decode(std::string_view(p, e - p)));
+				if (!kw.empty())
+					out.emplace_back(std::move(kw));
+			}
 			p = e;
 		}
 		return MIDB_RESULT_OK;
