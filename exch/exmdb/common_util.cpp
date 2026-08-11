@@ -375,8 +375,7 @@ BOOL common_util_allocate_folder_art(sqlite3 *psqlite, uint32_t *part)
 	return TRUE;
 }
 
-BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
-	uint64_t eid_val, BOOL *pb_result)
+bool cu_eid_is_allocated(sqlite3 *psqlite, uint64_t eid_val, BOOL *pb_result)
 {
 	char sql_string[256];
 	
@@ -662,7 +661,7 @@ static uint32_t common_util_calculate_childcount(uint64_t folder_id, sqlite3 *ps
 	return count;
 }
 
-static bool common_util_check_subfolders(sqlite3 *psqlite, uint64_t folder_id)
+static bool cu_fld_has_subfolders(sqlite3 *psqlite, uint64_t folder_id)
 {
 	char sql_string[80];
 	
@@ -730,7 +729,7 @@ static ec_error_t cu_calc_folder_path(uint64_t folder_id,
 	return ecSuccess;
 }
 
-BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
+bool cu_store_msgcount_limit_reached(sqlite3 *psqlite)
 {
 	char sql_string[64];
 	
@@ -744,10 +743,10 @@ BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 	auto c = pstmt.col_uint64(0);
 	mlog(LV_DEBUG, "D-1681: %llu messages <=> max_store_message_count %u",
 		LLU{c}, g_max_msg);
-	return c >= g_max_msg ? TRUE : false;
+	return c >= g_max_msg;
 }
 
-bool cu_check_msgsize_overflow(const db_conn &psqlite, proptag_t qtag)
+bool cu_store_msgsize_limit_reached(const db_conn &psqlite, proptag_t qtag)
 {
 	const proptag_t tags[] = {qtag, PR_MESSAGE_SIZE_EXTENDED};
 	TPROPVAL_ARRAY propvals;
@@ -938,8 +937,7 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
 	return TRUE;
 }
 
-static BOOL common_util_check_folder_rules(
-	sqlite3 *psqlite, uint64_t folder_id)
+static bool cu_fld_has_rules(sqlite3 *psqlite, uint64_t folder_id)
 {
 	char sql_string[128];
 	
@@ -947,7 +945,7 @@ static BOOL common_util_check_folder_rules(
 	          "rules WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && pstmt.step() == SQLITE_ROW &&
-	       sqlite3_column_int64(pstmt, 0) > 0 ? TRUE : false;
+	       pstmt.col_int64(0) > 0;
 }
 
 static uint32_t common_util_get_folder_flags(
@@ -960,7 +958,7 @@ static uint32_t common_util_get_folder_flags(
 	folder_flags = 0;
 	if (common_util_get_folder_type(psqlite, folder_id, &folder_type))
 		folder_flags |= folder_type == FOLDER_SEARCH ? MDB_FOLDER_SEARCH : MDB_FOLDER_NORMAL;
-	if (common_util_check_folder_rules(psqlite, folder_id))
+	if (cu_fld_has_rules(psqlite, folder_id))
 		folder_flags |= MDB_FOLDER_RULES;
 	if (exmdb_server::is_private()) {
 		if (cu_is_descendant_folder(psqlite, folder_id,
@@ -1124,8 +1122,7 @@ static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 	return pbin;
 }
 
-BOOL common_util_check_message_associated(
-	sqlite3 *psqlite, uint64_t message_id)
+bool cu_msg_is_fai(sqlite3 *psqlite, uint64_t message_id)
 {
 	char sql_string[128];
 	
@@ -1133,11 +1130,10 @@ BOOL common_util_check_message_associated(
 	          "messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && pstmt.step() == SQLITE_ROW &&
-	       sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
+	       pstmt.col_int64(0) != 0;
 }
 
-static BOOL common_util_check_message_named_properties(
-	sqlite3 *psqlite, uint64_t message_id)
+static bool cu_msg_has_namedprops(sqlite3 *psqlite, uint64_t message_id)
 {
 	char sql_string[128];
 	
@@ -1153,8 +1149,7 @@ static BOOL common_util_check_message_named_properties(
 	return FALSE;
 }
 
-static BOOL common_util_check_message_has_attachments(
-	sqlite3 *psqlite, uint64_t message_id)
+static bool cu_msg_has_attachments(sqlite3 *psqlite, uint64_t message_id)
 {
 	char sql_string[128];
 	
@@ -1162,11 +1157,10 @@ static BOOL common_util_check_message_has_attachments(
 	          "attachments WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && pstmt.step() == SQLITE_ROW &&
-	       sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
+	       pstmt.col_int64(0) != 0;
 }
 
-static BOOL common_util_check_message_read(
-	sqlite3 *psqlite, uint64_t message_id)
+static bool cu_msg_is_read(sqlite3 *psqlite, uint64_t message_id)
 {
 	char sql_string[128];
 	
@@ -1181,13 +1175,13 @@ static BOOL common_util_check_message_read(
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-		return pstmt.step() == SQLITE_ROW ? TRUE : false;
+		return pstmt.step() == SQLITE_ROW;
 	}
 	snprintf(sql_string, std::size(sql_string), "SELECT read_state FROM "
 	          "messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && pstmt.step() == SQLITE_ROW &&
-	       sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
+	       pstmt.col_int64(0) != 0;
 }
 
 static uint64_t common_util_get_message_changenum(
@@ -1228,11 +1222,11 @@ bool cu_get_msg_flags(const db_conn &db, uint64_t message_id, bool b_native,
 	message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH | MSGFLAG_FROMME |
 	                 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
 	if (!b_native) {
-		if (common_util_check_message_read(psqlite, message_id))
+		if (cu_msg_is_read(psqlite, message_id))
 			message_flags |= MSGFLAG_READ;
-		if (common_util_check_message_has_attachments(psqlite, message_id))
+		if (cu_msg_has_attachments(psqlite, message_id))
 			message_flags |= MSGFLAG_HASATTACH;
-		if (common_util_check_message_associated(psqlite, message_id))
+		if (cu_msg_is_fai(psqlite, message_id))
 			message_flags |= MSGFLAG_ASSOCIATED;
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
@@ -1739,7 +1733,7 @@ static GP_RESULT gp_folderprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = u;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*u = !!common_util_check_subfolders(db, id);
+		*u = cu_fld_has_subfolders(db, id);
 		return GP_ADV;
 	}
 	case PR_HAS_RULES: {
@@ -1747,7 +1741,7 @@ static GP_RESULT gp_folderprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = u;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*u = !!common_util_check_folder_rules(db, id);
+		*u = cu_fld_has_rules(db, id);
 		return GP_ADV;
 	}
 	case PR_FOLDER_PATHNAME: {
@@ -1846,7 +1840,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = !!common_util_check_message_associated(db, id);
+		*v = cu_msg_is_fai(db, id);
 		return GP_ADV;
 	}
 	case PidTagChangeNumber: {
@@ -1863,7 +1857,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
 		*v = exmdb_pf_read_states == 0 && !exmdb_server::is_private() ?
-		     true : !!common_util_check_message_read(db, id);
+		     true : cu_msg_is_read(db, id);
 		return GP_ADV;
 	}
 	case PR_HAS_NAMED_PROPERTIES: {
@@ -1871,7 +1865,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = !!common_util_check_message_named_properties(db, id);
+		*v = cu_msg_has_namedprops(db, id);
 		return GP_ADV;
 	}
 	case PR_HASATTACH: {
@@ -1879,7 +1873,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = !!common_util_check_message_has_attachments(db, id);
+		*v = cu_msg_has_attachments(db, id);
 		return GP_ADV;
 	}
 	case PidTagMid: {
@@ -4541,8 +4535,8 @@ bool cu_eval_msg_restriction(const db_conn &psqlite,
 	return FALSE;
 }
 
-BOOL common_util_check_search_result(sqlite3 *psqlite,
-	uint64_t folder_id, uint64_t message_id, BOOL *pb_exist)
+bool cu_srchfld_has_msgresult(sqlite3 *psqlite, uint64_t folder_id,
+    uint64_t message_id, bool *pb_exist)
 {
 	char sql_string[256];
 	
@@ -4552,7 +4546,7 @@ BOOL common_util_check_search_result(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	*pb_exist = pstmt.step() == SQLITE_ROW ? TRUE : false;
+	*pb_exist = pstmt.step() == SQLITE_ROW;
 	return TRUE;
 }
 

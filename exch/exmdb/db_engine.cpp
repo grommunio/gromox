@@ -1320,7 +1320,7 @@ static void dbeng_dynevt_1(db_conn &db, cpid_t cpid, uint64_t id1,
     const dynamic_node *pdynamic, size_t i, db_base &dbase, db_conn::NOTIFQ &notifq)
 {
 	auto pdb = &db;
-	BOOL b_exist, b_included, b_included1;
+	BOOL b_included, b_included1;
 	uint64_t message_id;
 	char sql_string[128];
 
@@ -1344,8 +1344,9 @@ static void dbeng_dynevt_1(db_conn &db, cpid_t cpid, uint64_t id1,
 		return;
 	while (pstmt.step() == SQLITE_ROW) {
 		message_id = sqlite3_column_int64(pstmt, 0);
-		if (!common_util_check_search_result(pdb->psqlite,
-		    pdynamic->folder_id, message_id, &b_exist)) {
+		bool b_exist = false;
+		if (!cu_srchfld_has_msgresult(pdb->psqlite, pdynamic->folder_id,
+		    message_id, &b_exist)) {
 			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
 		}
@@ -1381,7 +1382,6 @@ static void dbeng_dynevt_2(db_conn &db, cpid_t cpid, dynamic_event event_type,
     db_base &dbase, db_conn::NOTIFQ &notifq)
 {
 	auto pdb = &db;
-	BOOL b_exist;
 	BOOL b_included;
 	char sql_string[128];
 
@@ -1398,8 +1398,9 @@ static void dbeng_dynevt_2(db_conn &db, cpid_t cpid, dynamic_event event_type,
 			return;
 	}
 	switch (event_type) {
-	case dynamic_event::new_msg:
-		if (!common_util_check_search_result(pdb->psqlite,
+	case dynamic_event::new_msg: {
+		bool b_exist = false;
+		if (!cu_srchfld_has_msgresult(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
 			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
@@ -1420,8 +1421,10 @@ static void dbeng_dynevt_2(db_conn &db, cpid_t cpid, dynamic_event event_type,
 			mlog(LV_DEBUG, "db_engine: failed to insert into search_result");
 		}
 		break;
-	case dynamic_event::del_msg:
-		if (!common_util_check_search_result(pdb->psqlite,
+	}
+	case dynamic_event::del_msg: {
+		bool b_exist = false;
+		if (!cu_srchfld_has_msgresult(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
 			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
@@ -1437,8 +1440,10 @@ static void dbeng_dynevt_2(db_conn &db, cpid_t cpid, dynamic_event event_type,
 		if (pdb->exec(sql_string) != SQLITE_OK)
 			mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		break;
-	case dynamic_event::modify_msg:
-		if (!common_util_check_search_result(pdb->psqlite,
+	}
+	case dynamic_event::modify_msg: {
+		bool b_exist = false;
+		if (!cu_srchfld_has_msgresult(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
 			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
@@ -1476,6 +1481,7 @@ static void dbeng_dynevt_2(db_conn &db, cpid_t cpid, dynamic_event event_type,
 				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		}
 		break;
+	}
 	default:
 		break;
 	}

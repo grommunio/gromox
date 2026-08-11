@@ -78,8 +78,7 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t *peid);
 extern ec_error_t cu_allocate_cn(sqlite3 *, uint64_t *new_cn);
 BOOL common_util_allocate_folder_art(sqlite3 *psqlite, uint32_t *part);
-BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
-	uint64_t eid_val, BOOL *pb_result);
+extern bool cu_eid_is_allocated(sqlite3 *, uint64_t eid_val, BOOL *result);
 extern bool cu_get_proptags(mapi_object_type, uint64_t id, sqlite3 *, std::vector<gromox::proptag_t> &);
 BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
@@ -90,8 +89,8 @@ extern BOOL cu_set_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, 
 extern bool cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, proptag_cspan);
 extern BOOL common_util_get_rule_property(uint64_t rule_id, sqlite3 *, gromox::proptag_t, void **val);
 extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, gromox::proptag_t, void **outval);
-BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
-extern bool cu_check_msgsize_overflow(const db_conn &, gromox::proptag_t);
+extern bool cu_store_msgcount_limit_reached(sqlite3 *);
+extern bool cu_store_msgsize_limit_reached(const db_conn &, gromox::proptag_t);
 extern std::pair<int32_t, int32_t> cu_folder_counts(sqlite3 *psqlite, uint64_t folder_id, unsigned int flags = 0);
 extern BOOL common_util_get_folder_type(sqlite3 *, uint64_t folder_id, uint32_t *type, const char *dir = nullptr);
 uint64_t common_util_get_folder_parent_fid(
@@ -99,8 +98,7 @@ uint64_t common_util_get_folder_parent_fid(
 BOOL common_util_get_folder_by_name(
 	sqlite3 *psqlite, uint64_t parent_id,
 	const char *str_name, uint64_t *pfolder_id);
-BOOL common_util_check_message_associated(
-	sqlite3 *psqlite, uint64_t message_id);
+extern bool cu_msg_is_fai(sqlite3 *, uint64_t msgid);
 extern bool cu_get_msg_flags(const db_conn &, uint64_t msg_id, bool b_native, uint32_t **out);
 extern std::string cu_cid_path(const char *dir, const char *cid, unsigned int type);
 extern int cu_set_message_read(sqlite3 *, uint64_t msg_id, bool is_read);
@@ -120,8 +118,7 @@ BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 extern bool cu_load_search_scopes(sqlite3 *, uint64_t folder_id, std::vector<uint64_t> &src_fo);
 extern bool cu_eval_folder_restriction(const db_conn &, uint64_t folder_id, const RESTRICTION *);
 extern bool cu_eval_msg_restriction(const db_conn &, cpid_t, uint64_t msgid, const RESTRICTION *);
-BOOL common_util_check_search_result(sqlite3 *psqlite,
-	uint64_t folder_id, uint64_t message_id, BOOL *pb_exist);
+extern bool cu_srchfld_has_msgresult(sqlite3 *, uint64_t folder_id, uint64_t message_id, bool *exist);
 BOOL common_util_get_mid_string(sqlite3 *psqlite,
 	uint64_t message_id, char **ppmid_string);
 BOOL common_util_set_mid_string(sqlite3 *psqlite,

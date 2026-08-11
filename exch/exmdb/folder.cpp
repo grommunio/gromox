@@ -354,7 +354,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 			*errcode = ecDuplicateName;
 			return TRUE;
 		}
-		if (!common_util_check_allocated_eid(pdb->psqlite, tmp_val, &b_result)) {
+		if (!cu_eid_is_allocated(pdb->psqlite, tmp_val, &b_result)) {
 			*errcode = ecError;
 			return FALSE;
 		}
@@ -1625,8 +1625,8 @@ BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
 	if (!sql_transact)
 		return false;
 	if (b_copy &&
-	    cu_check_msgsize_overflow(*pdb, PR_STORAGE_QUOTA_LIMIT) &&
-	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
+	    cu_store_msgsize_limit_reached(*pdb, PR_STORAGE_QUOTA_LIMIT) &&
+	    cu_store_msgcount_limit_reached(pdb->psqlite)) {
 		*errcode = ecQuotaExceeded;
 		return TRUE;		
 	}

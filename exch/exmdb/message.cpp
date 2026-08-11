@@ -143,14 +143,14 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	if (!sql_transact)
 		return false;
 	if (!b_move &&
-	    cu_check_msgsize_overflow(*pdb, PR_STORAGE_QUOTA_LIMIT) &&
-	    common_util_check_msgcnt_overflow(pdb->psqlite))
+	    cu_store_msgsize_limit_reached(*pdb, PR_STORAGE_QUOTA_LIMIT) &&
+	    cu_store_msgcount_limit_reached(pdb->psqlite))
 		return TRUE;		
 	auto mid_val = rop_util_get_gc_value(message_id);
 	auto fid_val = rop_util_get_gc_value(dst_fid);
 	auto dst_val = rop_util_get_gc_value(dst_id);
 	BOOL b_result = false;
-	if (!common_util_check_allocated_eid(pdb->psqlite, dst_val, &b_result))
+	if (!cu_eid_is_allocated(pdb->psqlite, dst_val, &b_result))
 		return FALSE;
 	if (!b_result)
 		return TRUE;
@@ -1228,8 +1228,8 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	if (pstmt.step() != SQLITE_ROW)
 		return TRUE;
 	pstmt.finalize();
-	BOOL b_exist = false;
-	if (!common_util_check_search_result(pdb->psqlite, fid_val,
+	bool b_exist = false;
+	if (!cu_srchfld_has_msgresult(pdb->psqlite, fid_val,
 	    mid_val, &b_exist))
 		return FALSE;
 	if (b_exist) {
@@ -1306,8 +1306,8 @@ BOOL exmdb_server::link_messages(const char *dir, cpid_t cpid,
 		}
 		stm.finalize();
 
-		BOOL b_exist = false;
-		if (!common_util_check_search_result(db->psqlite, fid_val,
+		bool b_exist = false;
+		if (!cu_srchfld_has_msgresult(db->psqlite, fid_val,
 		    mid_val, &b_exist))
 			return FALSE;
 		if (b_exist)
@@ -1834,7 +1834,7 @@ static bool message_write_message(bool b_internal, const db_conn &db,
 			if (pstmt == nullptr)
 				return FALSE;
 			if (pstmt.step() != SQLITE_ROW) {
-				if (!common_util_check_allocated_eid(psqlite,
+				if (!cu_eid_is_allocated(psqlite,
 				    *pmessage_id, &b_result))
 					return FALSE;
 				if (!b_result) {
@@ -3609,10 +3609,10 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	if (cu_check_msgsize_overflow(*pdb, PR_PROHIBIT_RECEIVE_QUOTA)) {
+	if (cu_store_msgsize_limit_reached(*pdb, PR_PROHIBIT_RECEIVE_QUOTA)) {
 		*presult = static_cast<uint32_t>(deliver_message_result::mailbox_full_bysize);
 		return TRUE;
-	} else if (common_util_check_msgcnt_overflow(pdb->psqlite)) {
+	} else if (cu_store_msgcount_limit_reached(pdb->psqlite)) {
 		*presult = static_cast<uint32_t>(deliver_message_result::mailbox_full_bymsg);
 		return TRUE;
 	}
@@ -3878,8 +3878,8 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
-	if (cu_check_msgsize_overflow(*pdb, PR_STORAGE_QUOTA_LIMIT) ||
-	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
+	if (cu_store_msgsize_limit_reached(*pdb, PR_STORAGE_QUOTA_LIMIT) ||
+	    cu_store_msgcount_limit_reached(pdb->psqlite)) {
 		*pe_result = MAPI_E_STORE_FULL;
 		return TRUE;	
 	}
