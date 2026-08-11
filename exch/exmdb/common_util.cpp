@@ -663,10 +663,11 @@ static uint32_t common_util_calculate_childcount(uint64_t folder_id, sqlite3 *ps
 
 static bool cu_fld_has_subfolders(sqlite3 *psqlite, uint64_t folder_id)
 {
-	char sql_string[80];
+	char sql_string[92];
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
-	         " folders WHERE parent_id=%llu AND is_deleted=0", LLU{folder_id});
+	         " folders WHERE parent_id=%llu AND is_deleted=0"
+	         " LIMIT 1", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && pstmt.step() == SQLITE_ROW;
 }
