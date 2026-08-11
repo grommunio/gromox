@@ -2853,10 +2853,7 @@ ec_error_t zs_sorttable(GUID hsession,
 		}
 		if (!table_acceptable_type(type))
 			return ecInvalidParam;
-		if (TABLE_SORT_MAXIMUM_CATEGORY ==
-			psortset->psort[i].table_sort ||
-			TABLE_SORT_MINIMUM_CATEGORY ==
-			psortset->psort[i].table_sort) {
+		if (tablesort_is_minmax(psortset->psort[i].table_sort)) {
 			if (b_max || i != psortset->ccategories)
 				return ecInvalidParam;
 			b_max = TRUE;

@@ -362,12 +362,8 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 		b_orderby = FALSE;
 		for (unsigned int i = psorts->ccategories; i < psorts->count; ++i) {
 			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
-			if (TABLE_SORT_MAXIMUM_CATEGORY ==
-				psorts->psort[i].table_sort ||
-				TABLE_SORT_MINIMUM_CATEGORY ==
-				psorts->psort[i].table_sort) {
+			if (tablesort_is_minmax(psorts->psort[i].table_sort))
 				continue;
-			}
 			auto ord = psorts->psort[i].table_sort == TABLE_SORT_ASCEND ?
 			           " ASC" : " DESC";
 			if (!b_orderby) {
@@ -449,12 +445,8 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 	std::string qstr;
 	auto tmp_proptag = PROP_TAG(psorts->psort[depth].type, psorts->psort[depth].propid);
 	if (depth == psorts->ccategories - 1 &&
-		psorts->count > psorts->ccategories
-		&& (TABLE_SORT_MAXIMUM_CATEGORY ==
-		psorts->psort[depth + 1].table_sort ||
-		TABLE_SORT_MINIMUM_CATEGORY ==
-		psorts->psort[depth + 1].table_sort)) {
-		b_extremum = TRUE;
+	    psorts->count > psorts->ccategories &&
+	    tablesort_is_minmax(psorts->psort[depth+1].table_sort)) {
 		auto tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
 		if (TABLE_SORT_MAXIMUM_CATEGORY ==
 			psorts->psort[depth + 1].table_sort) {
@@ -808,8 +800,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 		sql_string = "CREATE TABLE stbl (message_id INTEGER NOT NULL";
 		for (size_t i = 0; i < psorts->count; ++i) {
 			auto tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
-			if (psorts->psort[i].table_sort == TABLE_SORT_MAXIMUM_CATEGORY ||
-			    psorts->psort[i].table_sort == TABLE_SORT_MINIMUM_CATEGORY)
+			if (tablesort_is_minmax(psorts->psort[i].table_sort))
 				ptnode->extremum_tag = tmp_proptag;
 			tmp_proptags[tag_count] = tmp_proptag;
 			/* check if proptag is already in the field list */

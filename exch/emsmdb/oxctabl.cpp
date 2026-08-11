@@ -171,8 +171,7 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 		}
 		if (!table_acceptable_type(type))
 			return ecInvalidParam;
-		if (crit.table_sort == TABLE_SORT_MAXIMUM_CATEGORY ||
-		    crit.table_sort == TABLE_SORT_MINIMUM_CATEGORY) {
+		if (tablesort_is_minmax(crit.table_sort)) {
 			if (b_max || i != psort_criteria->ccategories)
 				return ecInvalidParam;
 			b_max = TRUE;

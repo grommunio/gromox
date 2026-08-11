@@ -776,3 +776,9 @@ using USERNAME_TO_ENTRYID = BOOL (*)(const char *, const char *, BINARY *, enum 
 using EXT_BUFFER_ALLOC = void *(*)(size_t);
 using ENTRYID_TO_USERNAME = BOOL (*)(const BINARY *, EXT_BUFFER_ALLOC, char *, size_t);
 using ESSDN_TO_USERNAME = BOOL (*)(const char *, char *, size_t);
+
+static inline bool tablesort_is_minmax(uint32_t ts)
+{
+	return ts == TABLE_SORT_MINIMUM_CATEGORY ||
+	       ts == TABLE_SORT_MAXIMUM_CATEGORY;
+}
