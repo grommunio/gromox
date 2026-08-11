@@ -79,6 +79,12 @@ static int t_rtf_reader()
 
 	rp_assert(lortf_head + "A\\emspace\\enspace\\qmspace B\\_C\\zwj\\zwnj D\\rtlmark\\ltrmark E" + lortf_foot,
 		"A   B‑C‍‌D‏‎E");
+	rp_assert(lortf_head + "{\\field{\\*\\fldinst {\\rtlch\\fcs1 \\af0 \\ltrch\\fcs0 \\cf0\\lang1033\\langfe1033\\langnp1033\\insrsid10112218\\charrsid10112218  HYPERLINK \"https://grommunio.com\" }}{\\fldrslt {\\rtlch\\fcs1 \\af0 \\ltrch\\fcs0 \\cs15\\ul\\cf17\\lang1033\\langfe1033\\langnp1033\\insrsid10112218\\charrsid10112218 https://grommunio.com}}}" + lortf_foot,
+		"https://grommunio.com");
+	rp_assert(lortf_head + "before {\\field{\\*\\fldinst HYPERLINK \"https://grommunio.com\"}{\\fldrslt https://grommunio.com}} after" + lortf_foot,
+		"before https://grommunio.com after");
+	rp_assert(lortf_head + "{First line with link }{\\field{\\*\\fldinst HYPERLINK \"https://grommunio.com\"}{\\fldrslt https://grommunio.com}}{ and the link goes on}{ and on! And On!}\\par\\par {more notes}" + lortf_foot,
+		"First line with link https://grommunio.com and the link goes on and on! And On!\n\nmore notes");
 	/*
 	 * w3m is a formatter (renderer), and thus does not necessarily
 	 * preserve controlling characters verbatim. So we need to test the
@@ -90,6 +96,10 @@ static int t_rtf_reader()
 		return ret;
 	ret = rp_thtml(lortf_head + "@@\\u127\\'3f@@\\u2047\\'3f@@\\u32767\\'3f@@\\u-1\\'3f@@" + lortf_foot,
 	      "@@\x7f@@߿@@翿@@￿@@");
+	if (ret != 0)
+		return ret;
+	ret = rp_thtml(lortf_head + "{\\field{\\*\\fldinst {\\rtlch\\fcs1 \\af0 \\ltrch\\fcs0 \\cf0\\lang1033\\langfe1033\\langnp1033\\insrsid10112218\\charrsid10112218  HYPERLINK \"https://grommunio.com\" }}{\\fldrslt {\\rtlch\\fcs1 \\af0 \\ltrch\\fcs0 \\cs15\\ul\\cf17\\lang1033\\langfe1033\\langnp1033\\insrsid10112218\\charrsid10112218 https://grommunio.com}}}" + lortf_foot,
+		"<a href=\"https://grommunio.com\">");
 	if (ret != 0)
 		return ret;
 	return 0;
