@@ -29,7 +29,7 @@
 using namespace gromox;
 
 static bool mime_parse_multiple(MIME *);
-static void mime_produce_boundary(MIME *pmime);
+static bool mime_produce_boundary(MIME *pmime);
 
 bool MAIL::set_header(const char *hdr, const char *val)
 {
@@ -351,7 +351,8 @@ bool MIME::set_content_type(const char *newtype)
 			return false;
 	} else if (pmime->mime_type == mime_type::none) {
 		if (b_multiple) {
-			mime_produce_boundary(pmime);
+			if (!mime_produce_boundary(pmime))
+				return false;
 			pmime->mime_type = mime_type::multiple;
 		} else {
 			pmime->mime_type = mime_type::single;
@@ -1580,7 +1581,7 @@ static bool mime_parse_multiple(MIME *pmime)
 	return true;
 }
 
-static void mime_produce_boundary(MIME *pmime)
+static bool mime_produce_boundary(MIME *pmime)
 {
 	char *begin, *end, *ptr;
 	char temp_boundary[VALUE_LEN];
@@ -1610,7 +1611,8 @@ static void mime_produce_boundary(MIME *pmime)
     memcpy(temp_boundary + 1, pmime->boundary_string, boundary_len);
     temp_boundary[boundary_len] = '"';
     temp_boundary[boundary_len + 1] = '\0';
-	pmime->set_content_param("boundary", temp_boundary);
+
+	return pmime->set_content_param("boundary", temp_boundary);
 }
 
 MIME *MIME::get_child()
