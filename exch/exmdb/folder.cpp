@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
@@ -1875,6 +1876,53 @@ static bool folder_clear_search_folder(db_conn &db,
 	return db.exec(sql_string) == SQLITE_OK;
 }
 
+/**
+ * Check whether @prestriction and @pfolder_ids match the existing criteria and
+ * scope. Errors count as "changed", which makes the caller proceed with the
+ * code path for a full rebuild.
+ */
+static bool sf_criteria_unchanged(db_conn &db, uint64_t fid_val,
+    const RESTRICTION *prestriction, const EID_ARRAY *pfolder_ids)
+{
+	char sql_string[128];
+	if (prestriction != nullptr) {
+		EXT_PUSH ext_push;
+		static constexpr size_t buff_size = 0x8000;
+		auto tmp_buff = std::make_unique<uint8_t[]>(buff_size);
+		if (!ext_push.init(tmp_buff.get(), buff_size, 0) ||
+		    ext_push.p_restriction(*prestriction) != pack_result::ok)
+			return false;
+		snprintf(sql_string, std::size(sql_string), "SELECT search_criteria"
+		         " FROM folders WHERE folder_id=%llu", LLU{fid_val});
+		auto pstmt = db.prep(sql_string);
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
+			return false;
+		auto blob = sqlite3_column_blob(pstmt, 0);
+		size_t blen = sqlite3_column_bytes(pstmt, 0);
+		if (blob == nullptr || blen != ext_push.m_offset ||
+		    memcmp(blob, ext_push.m_udata, blen) != 0)
+			return false;
+	}
+	if (pfolder_ids->count == 0)
+		/* Caller reuses current data set, which is identical by definition. */
+		return true;
+	snprintf(sql_string, std::size(sql_string), "SELECT included_fid FROM"
+	         " search_scopes WHERE folder_id=%llu", LLU{fid_val});
+	auto pstmt = db.prep(sql_string);
+	if (pstmt == nullptr)
+		return false;
+	std::vector<uint64_t> old_scope;
+	while (pstmt.step() == SQLITE_ROW)
+		old_scope.push_back(pstmt.col_uint64(0));
+	if (old_scope.size() != pfolder_ids->count)
+		return false;
+	for (size_t i = 0; i < pfolder_ids->count; ++i)
+		if (std::find(old_scope.cbegin(), old_scope.cend(),
+		    rop_util_get_gc_value(pfolder_ids->pids[i])) == old_scope.cend())
+			return false;
+	return true;
+}
+
 BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
     uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction,
     const EID_ARRAY *pfolder_ids, BOOL *pb_result) try
@@ -1914,6 +1962,19 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		return FALSE;
 	uint32_t original_flags = pstmt.col_uint64(0);
 	pstmt.finalize();
+	/*
+	 * Static searches are exempt because those folders do not get updated
+	 * after the fact, so a restart must take a fresh snapshot.
+	 */
+	if (search_flags == original_flags &&
+	    (search_flags & (RESTART_SEARCH | STATIC_SEARCH)) == RESTART_SEARCH &&
+	    db_engine_check_populating(dir, fid_val) &&
+	    sf_criteria_unchanged(*pdb, fid_val, prestriction, pfolder_ids)) {
+		mlog(LV_DEBUG, "db_eng_sf: %s fid 0x%llx: identical criteria "
+			"already populating, skipping rebuild", dir, LLU{fid_val});
+		*pb_result = TRUE;
+		return TRUE;
+	}
 	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET search_flags=%u "
 	        "WHERE folder_id=%llu", search_flags, LLU{fid_val});
 	if (pdb->exec(sql_string) != SQLITE_OK)
