@@ -520,19 +520,13 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
     std::vector<condition_node> &cond_list, sqlite3_stmt *pstmt_insert,
 	uint32_t *pheader_id, tlc_stmt_cache &stmt_cache) try
 {
-	void *pvalue;
-	int bind_index;
-	bool b_extremum;
-	uint64_t header_id;
-
-	int64_t prev_id = -parent_id;
 	if (depth == psorts->ccategories)
 		return table_load_content_leaf(db, psqlite, psorts, depth,
 		       parent_id, cond_list, pstmt_insert, pheader_id,
 		       stmt_cache);
 
 	auto tmp_proptag = PROP_TAG(psorts->psort[depth].type, psorts->psort[depth].propid);
-	b_extremum = depth == psorts->ccategories - 1 &&
+	bool b_extremum = depth == psorts->ccategories - 1 &&
 	             psorts->count > psorts->ccategories &&
 	             tablesort_is_minmax(psorts->psort[depth+1].table_sort);
 	auto pstmt = tlc_prep(stmt_cache, psqlite,
@@ -541,7 +535,7 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 	             TLC_EXTREMUM, b_extremum);
 	if (pstmt == nullptr)
 		return FALSE;
-	bind_index = 1;
+	int bind_index = 1;
 	size_t i = 0;
 	for (const auto &cond : cond_list) {
 		if (cond.pvalue == nullptr) {
@@ -555,10 +549,12 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 		bind_index++;
 		++i;
 	}
+
+	int64_t prev_id = -parent_id;
 	auto &tmp_cnode = cond_list.emplace_back();
 	while (gx_sql_step(pstmt) == SQLITE_ROW) {
 		(*pheader_id) ++;
-		header_id = *pheader_id | 0x100000000000000ULL;
+		uint64_t header_id = *pheader_id | 0x100000000000000ULL;
 		sqlite3_bind_int64(pstmt_insert, 1, header_id);
 		sqlite3_bind_int64(pstmt_insert, 2, CONTENT_ROW_HEADER);
 		sqlite3_bind_int64(pstmt_insert, 3, depth < psorts->cexpanded);
@@ -568,13 +564,16 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 		sqlite3_bind_int64(pstmt_insert, 6,
 			sqlite3_column_int64(pstmt, 1));
 		sqlite3_bind_int64(pstmt_insert, 7, 0);
+
 		proptype_t type = psorts->psort[depth].type & ~MVI_FLAG;
+		void *pvalue;
 		if (!b_extremum || (pvalue = common_util_column_sqlite_statement(pstmt,
 		    2, psorts->psort[depth + 1].type)) == nullptr)
 			sqlite3_bind_null(pstmt_insert, 9);
 		else if (!common_util_bind_sqlite_statement(pstmt_insert,
 		    9, psorts->psort[depth + 1].type, pvalue))
 			return FALSE;
+
 		/* pvalue will be recorded in condition list */
 		pvalue = common_util_column_sqlite_statement(pstmt, 0, type);
 		if (pvalue == nullptr)
