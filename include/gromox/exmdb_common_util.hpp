@@ -99,7 +99,7 @@ BOOL common_util_get_folder_by_name(
 	sqlite3 *psqlite, uint64_t parent_id,
 	const char *str_name, uint64_t *pfolder_id);
 extern bool cu_msg_is_fai(const db_conn &, uint64_t msgid);
-extern bool cu_get_msg_flags(const db_conn &, uint64_t msg_id, bool b_native, uint32_t **out);
+extern bool cu_get_msg_flags(const db_conn &, uint64_t msg_id, bool b_native, uint32_t **out, uint32_t want = UINT32_MAX);
 extern std::string cu_cid_path(const char *dir, const char *cid, unsigned int type);
 extern int cu_set_message_read(sqlite3 *, uint64_t msg_id, bool is_read);
 BINARY* common_util_username_to_addressbook_entryid(

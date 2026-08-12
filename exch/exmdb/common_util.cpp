@@ -1240,9 +1240,19 @@ static uint64_t common_util_get_message_changenum(
 	return rop_util_make_eid_ex(1, change_num);
 }
 
+/**
+ * @want:	which bits of the result the caller will look at. Bits outside it
+ * 		are left cleared and the lookups that would only have served
+ * 		them are skipped. Callers wanting the whole value omit it.
+ *
+ * Each of the recomputed bits costs one lookup.
+ */
 bool cu_get_msg_flags(const db_conn &db, uint64_t message_id, bool b_native,
-	uint32_t **ppmessage_flags)
+	uint32_t **ppmessage_flags, uint32_t want)
 {
+	static constexpr uint32_t recomputed =
+		MSGFLAG_READ | MSGFLAG_HASATTACH | MSGFLAG_FROMME |
+		MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING;
 	auto pstmt = cu_get_optimize_stmt(db, MAPI_MESSAGE, true);
 	xstmt own_stmt;
 	auto &psqlite = db.psqlite;
@@ -1253,41 +1263,50 @@ bool cu_get_msg_flags(const db_conn &db, uint64_t message_id, bool b_native,
 		           "FROM message_properties WHERE message_id=?"
 		           " AND proptag=?");
 		if (own_stmt == nullptr)
-			return FALSE;
+			return false;
 		pstmt = own_stmt;
 	}
-	sqlite3_bind_int64(pstmt, 1, message_id);
-	sqlite3_bind_int64(pstmt, 2, PR_MESSAGE_FLAGS);
-	uint32_t message_flags = gx_sql_step(pstmt) == SQLITE_ROW ?
-	                         sqlite3_column_int64(pstmt, 0) : 0;
-	message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH | MSGFLAG_FROMME |
-	                 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
+	uint32_t message_flags = 0;
+	if (b_native || (want & ~recomputed) != 0) {
+		/* the stored value supplies only the bits not recomputed below */
+		sqlite3_bind_int64(pstmt, 1, message_id);
+		sqlite3_bind_int64(pstmt, 2, PR_MESSAGE_FLAGS);
+		message_flags = gx_sql_step(pstmt) == SQLITE_ROW ?
+		                sqlite3_column_int64(pstmt, 0) : 0;
+		message_flags &= ~recomputed;
+	}
 	if (!b_native) {
-		if (cu_msg_is_read(db, message_id))
+		if ((want & MSGFLAG_READ) && cu_msg_is_read(db, message_id))
 			message_flags |= MSGFLAG_READ;
-		if (cu_msg_has_attachments(db, message_id))
+		if ((want & MSGFLAG_HASATTACH) && cu_msg_has_attachments(db, message_id))
 			message_flags |= MSGFLAG_HASATTACH;
-		if (cu_msg_is_fai(db, message_id))
+		if ((want & MSGFLAG_ASSOCIATED) && cu_msg_is_fai(db, message_id))
 			message_flags |= MSGFLAG_ASSOCIATED;
-		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, message_id);
-		sqlite3_bind_int64(pstmt, 2, PR_READ_RECEIPT_REQUESTED);
-		if (gx_sql_step(pstmt) == SQLITE_ROW)
-			if (sqlite3_column_int64(pstmt, 0) != 0)
+		if (want & MSGFLAG_RN_PENDING) {
+			sqlite3_reset(pstmt);
+			sqlite3_bind_int64(pstmt, 1, message_id);
+			sqlite3_bind_int64(pstmt, 2, PR_READ_RECEIPT_REQUESTED);
+			if (gx_sql_step(pstmt) == SQLITE_ROW &&
+			    sqlite3_column_int64(pstmt, 0) != 0)
 				message_flags |= MSGFLAG_RN_PENDING;
-		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, message_id);
-		sqlite3_bind_int64(pstmt, 2, PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
-		if (gx_sql_step(pstmt) == SQLITE_ROW)
-			if (sqlite3_column_int64(pstmt, 0) != 0)
+		}
+		if (want & MSGFLAG_NRN_PENDING) {
+			sqlite3_reset(pstmt);
+			sqlite3_bind_int64(pstmt, 1, message_id);
+			sqlite3_bind_int64(pstmt, 2, PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
+			if (gx_sql_step(pstmt) == SQLITE_ROW &&
+			    sqlite3_column_int64(pstmt, 0) != 0)
 				message_flags |= MSGFLAG_NRN_PENDING;
+		}
+		if (exmdb_pf_read_states == 0 && !exmdb_server::is_private())
+			message_flags |= MSGFLAG_READ;
 	}
 	own_stmt.finalize();
 	*ppmessage_flags = cu_alloc<uint32_t>();
 	if (*ppmessage_flags == nullptr)
-		return FALSE;
+		return false;
 	**ppmessage_flags = message_flags;
-	return TRUE;
+	return true;
 }
 
 static char *cu_get_msg_parent_display(const db_conn &psqlite, uint64_t message_id)
@@ -1929,11 +1948,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		if (!cu_get_msg_flags(db_conn, id, false,
 		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
 			return GP_ERR;
-		if (pv.pvalue == nullptr)
-			return GP_SKIP;
-		if (exmdb_pf_read_states == 0 && !exmdb_server::is_private())
-			*static_cast<uint32_t *>(pv.pvalue) |= MSGFLAG_READ;
-		return GP_ADV;
+		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PR_SUBJECT:
 	case PR_SUBJECT_A:
 		if (!common_util_get_message_subject(db_conn, cpid, id, tag, &pv.pvalue))
@@ -4523,6 +4538,16 @@ bool cu_eval_msg_restriction(const db_conn &psqlite,
 		auto rbm = pres->bm;
 		if (!rbm->comparable())
 			return FALSE;
+		if (rbm->proptag == PR_MESSAGE_FLAGS) {
+			/*
+			 * The flag is computed from one lookup per bit, and only
+			 * the bits in the mask can change the outcome.
+			 */
+			uint32_t *flags = nullptr;
+			if (!cu_get_msg_flags(psqlite, message_id, false, &flags, rbm->mask))
+				return FALSE;
+			return flags != nullptr && rbm->eval(flags);
+		}
 		if (!cu_get_property(MAPI_MESSAGE,
 		    message_id, cpid, psqlite, rbm->proptag, &pvalue))
 			return FALSE;
