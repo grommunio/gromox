@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
@@ -47,6 +48,11 @@ static int rp_test(const std::string &complete, const char *expout)
 		fprintf(stderr, "rtf+html_to_plain failed on:\n%s\n", complete.c_str());
 		return -1;
 	}
+	/*
+	 * html_to_plain output is CRLF-based when no external renderer
+	 * (chawan/pandoc/w3m) is installed. Normalize for comparison.
+	 */
+	std::erase(outdoc, '\r');
 	HX_chomp(outdoc.data());
 	if (strcmp(outdoc.c_str(), expout) != 0) {
 		fprintf(stderr, "== Input ==\n%s\n\n== Expected ==\n%s\n\n== Actual output ==\n%s\n",
