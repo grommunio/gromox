@@ -164,12 +164,13 @@ static int cu_test_delegate_perm_MD(const char *account,
 	if (!exmdb_client->read_delegates(maildir, send_as, &delegate_list))
 		return -1;
 	for (const auto &d : delegate_list)
-		if (strcasecmp(d.c_str(), account) == 0)
+		if (strcasecmp(d.c_str(), account) == 0 ||
+		    mysql_adaptor_check_mlist_include(d.c_str(), account))
 			return 1;
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
-	return false;
+	return -1;
 }
 
 /**
