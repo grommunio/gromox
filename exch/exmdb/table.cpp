@@ -1001,7 +1001,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 		uint64_t mid_val = pstmt.col_uint64(0);
 		if (conv_id != nullptr) {
 			uint64_t parent_fid = 0;
-			if (cu_msg_is_fai(db.psqlite, mid_val))
+			if (cu_msg_is_fai(db, mid_val))
 				continue;
 			if (!common_util_get_message_parent_folder(db.psqlite,
 			    mid_val, &parent_fid))

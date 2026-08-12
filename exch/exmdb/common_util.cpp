@@ -418,6 +418,14 @@ bool prepared_statements::begin(sqlite3 *psqlite)
 	           "messages WHERE message_id=?");
 	if (msg_read == nullptr)
 		return false;
+	msg_atx = gx_sql_prep(psqlite, "SELECT 1 FROM attachments "
+	          "WHERE message_id=? LIMIT 1");
+	if (msg_atx == nullptr)
+		return false;
+	msg_fai = gx_sql_prep(psqlite, "SELECT is_associated FROM "
+	          "messages WHERE message_id=?");
+	if (msg_fai == nullptr)
+		return false;
 	return true;
 }
 
@@ -1127,15 +1135,24 @@ static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 	return pbin;
 }
 
-bool cu_msg_is_fai(sqlite3 *psqlite, uint64_t message_id)
+bool cu_msg_is_fai(const db_conn &db, uint64_t message_id)
 {
-	char sql_string[128];
-	
-	snprintf(sql_string, std::size(sql_string), "SELECT is_associated FROM "
-	          "messages WHERE message_id=%llu", LLU{message_id});
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	return pstmt != nullptr && pstmt.step() == SQLITE_ROW &&
-	       pstmt.col_int64(0) != 0;
+	xstmt own_stmt;
+	sqlite3_stmt *pstmt = nullptr;
+	if (g_exmdb_enable_optim_stm && db.m_prepstm != nullptr)
+		pstmt = db.m_prepstm->msg_fai;
+	if (pstmt != nullptr) {
+		sqlite3_reset(pstmt);
+	} else {
+		own_stmt = gx_sql_prep(db.psqlite, "SELECT is_associated FROM "
+		           "messages WHERE message_id=?");
+		if (own_stmt == nullptr)
+			return false;
+		pstmt = own_stmt;
+	}
+	sqlite3_bind_int64(pstmt, 1, message_id);
+	return gx_sql_step(pstmt) == SQLITE_ROW &&
+	       sqlite3_column_int64(pstmt, 0) != 0;
 }
 
 static bool cu_msg_has_namedprops(sqlite3 *psqlite, uint64_t message_id)
@@ -1152,14 +1169,23 @@ static bool cu_msg_has_namedprops(sqlite3 *psqlite, uint64_t message_id)
 	return pstmt.step() == SQLITE_ROW;
 }
 
-static bool cu_msg_has_attachments(sqlite3 *psqlite, uint64_t message_id)
+static bool cu_msg_has_attachments(const db_conn &db, uint64_t message_id)
 {
-	char sql_string[128];
-	
-	snprintf(sql_string, std::size(sql_string), "SELECT 1 FROM "
-	          "attachments WHERE message_id=%llu LIMIT 1", LLU{message_id});
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	return pstmt != nullptr && pstmt.step() == SQLITE_ROW;
+	xstmt own_stmt;
+	sqlite3_stmt *pstmt = nullptr;
+	if (g_exmdb_enable_optim_stm && db.m_prepstm != nullptr)
+		pstmt = db.m_prepstm->msg_atx;
+	if (pstmt != nullptr) {
+		sqlite3_reset(pstmt);
+	} else {
+		own_stmt = gx_sql_prep(db.psqlite, "SELECT 1 FROM attachments "
+		           "WHERE message_id=? LIMIT 1");
+		if (own_stmt == nullptr)
+			return false;
+		pstmt = own_stmt;
+	}
+	sqlite3_bind_int64(pstmt, 1, message_id);
+	return gx_sql_step(pstmt) == SQLITE_ROW;
 }
 
 static bool cu_msg_is_read(const db_conn &db, uint64_t message_id)
@@ -1239,9 +1265,9 @@ bool cu_get_msg_flags(const db_conn &db, uint64_t message_id, bool b_native,
 	if (!b_native) {
 		if (cu_msg_is_read(db, message_id))
 			message_flags |= MSGFLAG_READ;
-		if (cu_msg_has_attachments(psqlite, message_id))
+		if (cu_msg_has_attachments(db, message_id))
 			message_flags |= MSGFLAG_HASATTACH;
-		if (cu_msg_is_fai(psqlite, message_id))
+		if (cu_msg_is_fai(db, message_id))
 			message_flags |= MSGFLAG_ASSOCIATED;
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
@@ -1855,7 +1881,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = cu_msg_is_fai(db, id);
+		*v = cu_msg_is_fai(db_conn, id);
 		return GP_ADV;
 	}
 	case PidTagChangeNumber: {
@@ -1888,7 +1914,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = cu_msg_has_attachments(db, id);
+		*v = cu_msg_has_attachments(db_conn, id);
 		return GP_ADV;
 	}
 	case PidTagMid: {
