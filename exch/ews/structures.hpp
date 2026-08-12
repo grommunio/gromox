@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include <gromox/clock.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/mapidefs.h>
@@ -481,7 +482,7 @@ struct sTimePoint {
 	bool needCalcOffset() const;
 
 	time_point time{};
-	std::chrono::minutes offset = std::chrono::minutes(0);
+	gromox::time_duration offset = std::chrono::minutes(0);
 	bool calcOffset = false;
 };
 

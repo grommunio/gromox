@@ -1219,7 +1219,7 @@ void EWSPlugin::unsubscribe(const detail::ExmdbSubscriptionKey& key) const
  * @param     ID       Context ID
  * @param     timeout  Time until wake up
  */
-void EWSPlugin::wakeContext(detail::ContextKey ID, std::chrono::milliseconds timeout) const
+void EWSPlugin::wakeContext(detail::ContextKey ID, time_duration timeout) const
 {
 	/*
 	 * Reschedule an existing timer instead of emplacing a second one:
@@ -1301,7 +1301,7 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const 
  *
  * @param      interval  Scan interval
  */
-void EWSPlugin::ObjectCache::run(std::chrono::milliseconds interval)
+void EWSPlugin::ObjectCache::run(time_duration interval)
 {
 	if (running)
 		return;
@@ -1332,8 +1332,7 @@ void EWSPlugin::ObjectCache::stop()
  *
  * @return     true if the object exists, false otherwise
  */
-bool EWSPlugin::ObjectCache::bump(const CacheKey &key,
-    std::chrono::milliseconds lifespan)
+bool EWSPlugin::ObjectCache::bump(const CacheKey &key, time_duration lifespan)
 {
 	std::lock_guard guard(objectLock);
 	auto it = objects.find(key);
@@ -1371,7 +1370,7 @@ EWSPlugin::CacheObj EWSPlugin::ObjectCache::get(const CacheKey &key) const
  * @return     Copy of the cached object
  */
 EWSPlugin::CacheObj EWSPlugin::ObjectCache::get(const CacheKey &key,
-    std::chrono::milliseconds lifespan)
+    time_duration lifespan)
 {
 	std::lock_guard guard(objectLock);
 	Container &cont = objects.at(key);
@@ -1413,7 +1412,7 @@ void EWSPlugin::ObjectCache::scan()
  *
  * @param sleepTime
  */
-void EWSPlugin::ObjectCache::periodicScan(std::chrono::milliseconds sleepTime)
+void EWSPlugin::ObjectCache::periodicScan(time_duration sleepTime)
 {
 	std::mutex notifyLock;
 	std::unique_lock notifyGuard(notifyLock);

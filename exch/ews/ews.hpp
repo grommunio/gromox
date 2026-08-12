@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include <gromox/clock.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
@@ -152,7 +153,7 @@ class EWSPlugin {
 	void detachSubscription(const Structures::tSubscriptionId &, detail::ContextKey) const;
 	bool unsubscribe(detail::SubscriptionKey, const char*) const;
 	void unsubscribe(const detail::ExmdbSubscriptionKey&) const;
-	void wakeContext(int, std::chrono::milliseconds) const;
+	void wakeContext(int, gromox::time_duration) const;
 
 	inline const SOAP::VersionInfo& server_version() const {return m_server_version;}
 
@@ -166,11 +167,11 @@ class EWSPlugin {
 	uint32_t max_sync_changes = 512; ///< SyncFolderItems items per page; clamps client MaxChangesReturned, 0 = unlimited. Matches Exchange's 512 limit.
 	uint32_t max_get_items = 0; ///< Optional GetItem batch cap, 0 = unlimited (Exchange does not cap this; overflow -> ErrorServerBusy)
 	uint32_t max_pending_events = 4000; ///< Per-subscription undelivered streaming-event cap, 0 = unlimited. Backlog past this faults the subscription out so the client re-subscribes and resyncs, instead of pinning RSS.
-	std::chrono::milliseconds cache_interval{5'000}; ///< Interval for cache cleanup
-	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; ///< Lifetime of attachment instances
-	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; ///< Lifetime of embedded instances
-	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; ///< Lifetime of message instances
-	std::chrono::milliseconds event_stream_interval{45'000}; ///< How often to send updates for GetStreamingEvents
+	gromox::time_duration cache_interval = std::chrono::seconds(5); ///< Interval for cache cleanup
+	gromox::time_duration cache_attachment_instance_lifetime = std::chrono::seconds(30); ///< Lifetime of attachment instances
+	gromox::time_duration cache_embedded_instance_lifetime = std::chrono::seconds(30); ///< Lifetime of embedded instances
+	gromox::time_duration cache_message_instance_lifetime = std::chrono::seconds(30); ///< Lifetime of message instances
+	gromox::time_duration event_stream_interval = std::chrono::seconds(45); ///< How often to send updates for GetStreamingEvents
 
 	int retr(detail::ContextKey);
 	void term(detail::ContextKey);
@@ -223,7 +224,7 @@ class EWSPlugin {
 		 * @brief      Clear cache and stop scanner
 		 */
 		~ObjectCache() { stop(); }
-		void run(std::chrono::milliseconds);
+		void run(gromox::time_duration);
 		void stop();
 
 		/**
@@ -239,19 +240,19 @@ class EWSPlugin {
 		 * @return     true if emplaced, false if already present
 		 */
 		template<typename K, typename... Args>
-		bool emplace(std::chrono::milliseconds lifespan, K &&key, Args &&...args)
+		bool emplace(gromox::time_duration lifespan, K &&key, Args &&...args)
 		{
 			std::lock_guard guard(objectLock);
 			auto res = objects.try_emplace(CacheKey(key), tp_now() + lifespan, std::forward<Args...>(args)...);
 			return res.second;
 		}
 
-		bool bump(const CacheKey &, std::chrono::milliseconds);
+		bool bump(const CacheKey &, gromox::time_duration);
 		CacheObj get(const CacheKey &) const;
-		CacheObj get(const CacheKey &, std::chrono::milliseconds);
+		CacheObj get(const CacheKey &, gromox::time_duration);
 		void evict(const CacheKey &);
 		void scan();
-		void periodicScan(std::chrono::milliseconds);
+		void periodicScan(gromox::time_duration);
 	};
 
 	mutable ObjectCache cache;
