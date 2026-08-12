@@ -409,6 +409,36 @@ bool rtf_reader::riconv_open(const char *fromcode)
 	return true;
 }
 
+/**
+ * Test whether @s starts an HTML character reference ("&lt;", "&#33;",
+ * "&#x2014;"). @len bounds the lookahead to the current text chunk, so a
+ * reference split across two chunks reads as a plain ampersand.
+ */
+static bool rtf_entity_ref_start(const char *s, size_t len)
+{
+	if (len < 4 || s[0] != '&')
+		return false;
+	size_t i = 1, start;
+	if (s[i] != '#') {
+		if (!HX_isalpha(s[i]))
+			return false;
+		start = i;
+		for (; i < len && i - start < 32 && HX_isalnum(s[i]); ++i)
+			;
+		return i - start >= 2 && i < len && s[i] == ';';
+	}
+	if (++i < len && (s[i] == 'x' || s[i] == 'X')) {
+		start = ++i;
+		for (; i < len && i - start < 6 && HX_isxdigit(s[i]); ++i)
+			;
+	} else {
+		start = i;
+		for (; i < len && i - start < 7 && HX_isdigit(s[i]); ++i)
+			;
+	}
+	return i > start && i < len && s[i] == ';';
+}
+
 bool rtf_reader::escape_output(char *string)
 {
 	auto preader = this;
@@ -439,7 +469,21 @@ bool rtf_reader::escape_output(char *string)
 			QRF(ext_push.p_bytes("&gt;"));
 			break;
 		case '&':
-			QRF(ext_push.p_bytes("&amp;"));
+			/*
+			 * Text runs of an encapsulated document may carry HTML
+			 * source rather than decoded text. Escaping a
+			 * character reference in such a run once more yields
+			 * "&amp;lt;", which the reader then displays as the
+			 * literal text "&lt;" instead of "<".
+			 * [MS-OXRTFEX] §2.1.3.2 keeps character references in
+			 * \*\htmltag destinations, so a conformant document
+			 * never arrives here with one.
+			 */
+			if (preader->have_fromhtml &&
+			    rtf_entity_ref_start(&string[i], tmp_len - i))
+				QRF(ext_push.p_uint8('&'));
+			else
+				QRF(ext_push.p_bytes("&amp;"));
 			break;
 		default:
 			QRF(ext_push.p_uint8(string[i]));
