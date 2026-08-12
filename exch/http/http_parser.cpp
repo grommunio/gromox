@@ -1635,7 +1635,10 @@ tproc_status http_parser::wrrep(http_context *pcontext)
 	if (pcontext->channel_type == hchannel_type::out &&
 	    pcontext->pchannel->channel_stat == hchannel_stat::opened) {
 		auto pchannel_out = ctx.pchannel.get();
-		if (pchannel_out->available_window < 1024) {
+		auto hnode = double_list_get_head(&pchannel_out->pdu_list);
+		bool rts_head = hnode != nullptr &&
+		                static_cast<BLOB_NODE *>(hnode->pdata)->b_rts;
+		if (pchannel_out->available_window < 1024 && !rts_head) {
 			/*
 			 * RTS PDUs (keepalive PING, flow control) are not
 			 * subject to RPCH flow control (cf. the accounting
@@ -1643,10 +1646,6 @@ tproc_status http_parser::wrrep(http_context *pcontext)
 			 * otherwise a window-starved channel cannot even ping
 			 * anymore.
 			 */
-			auto pnode = double_list_get_head(&pchannel_out->pdu_list);
-			bool head_is_rts = pnode != nullptr &&
-			                   static_cast<BLOB_NODE *>(pnode->pdata)->b_rts;
-			if (!head_is_rts) {
 			/*
 			 * Returning %dle unconditionally would never
 			 * check the socket and never times out. The
@@ -1670,11 +1669,7 @@ tproc_status http_parser::wrrep(http_context *pcontext)
 				return tproc_status::runoff;
 			}
 			return tproc_status::idle;
-			}
 		}
-		auto hnode = double_list_get_head(&pchannel_out->pdu_list);
-		bool rts_head = hnode != nullptr &&
-		                static_cast<BLOB_NODE *>(hnode->pdata)->b_rts;
 		if (!rts_head && written_len >= 0 &&
 		    static_cast<size_t>(written_len) > pchannel_out->available_window)
 			written_len = pchannel_out->available_window;
