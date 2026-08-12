@@ -95,6 +95,72 @@ static int t_rtf_reader()
 	return 0;
 }
 
+static const char rtf_native_angles[] =
+"{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}"
+"\\plain Von: Katja Test <katja@dev.local>}";
+
+static const char rtf_fromhtml_conformant[] =
+"{\\rtf1\\ansi\\ansicpg1252\\fromhtml1\\deff0{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}"
+"{\\*\\htmltag19 <html>}{\\*\\htmltag34 <body>}{\\*\\htmltag64 <p>}"
+"Von: Katja Test {\\*\\htmltag84 &lt;}\\htmlrtf <\\htmlrtf0 katja@dev.local"
+"{\\*\\htmltag84 &gt;}\\htmlrtf >\\htmlrtf0 {\\*\\htmltag72 </p>}"
+"{\\*\\htmltag41 </body>}{\\*\\htmltag27 </html>}}";
+
+static const char rtf_fromhtml_srctext[] =
+"{\\rtf1\\ansi\\ansicpg1252\\fromhtml1\\deff0{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}"
+"{\\*\\htmltag19 <html>}{\\*\\htmltag34 <body>}{\\*\\htmltag64 <p>}"
+"Von: Katja Test &lt;katja@dev.local&gt;{\\*\\htmltag72 </p>}"
+"{\\*\\htmltag41 </body>}{\\*\\htmltag27 </html>}}";
+
+static const char rtf_fromhtml_srctext_anchor[] =
+"{\\rtf1\\ansi\\ansicpg1252\\fromhtml1\\deff0{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}"
+"{\\*\\htmltag19 <html>}{\\*\\htmltag34 <body>}{\\*\\htmltag64 <p>}"
+"{\\*\\htmltag84 <b>}Von:{\\*\\htmltag92 </b>} Katja Test &lt;"
+"{\\*\\htmltag84 <a href=\"mailto:katja@dev.local\">}katja@dev.local{\\*\\htmltag92 </a>}"
+"&gt;{\\*\\htmltag72 </p>}{\\*\\htmltag41 </body>}{\\*\\htmltag27 </html>}}";
+
+static const char rtf_fromhtml_numeric[] =
+"{\\rtf1\\ansi\\ansicpg1252\\fromhtml1\\deff0{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}"
+"{\\*\\htmltag19 <html>}{\\*\\htmltag34 <body>}{\\*\\htmltag64 <p>}"
+"a&#33;b&#x2014;c{\\*\\htmltag72 </p>}{\\*\\htmltag41 </body>}{\\*\\htmltag27 </html>}}";
+
+static const char rtf_fromhtml_bare_amp[] =
+"{\\rtf1\\ansi\\ansicpg1252\\fromhtml1\\deff0{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}"
+"{\\*\\htmltag19 <html>}{\\*\\htmltag34 <body>}{\\*\\htmltag64 <p>}"
+"Meier & Sohn, A&B, 100&#37, x&y;{\\*\\htmltag72 </p>}{\\*\\htmltag41 </body>}"
+"{\\*\\htmltag27 </html>}}";
+
+/*
+ * Text runs of a \\fromhtml1 document are HTML source in some producers and
+ * decoded text in others; markup always lives in \\*\\htmltag destinations and
+ * is emitted verbatim. Escaping has to leave character references alone
+ * without letting a bare ampersand through.
+ */
+static int t_fromhtml_entities()
+{
+	auto ret = rp_thtml(rtf_native_angles, "&lt;katja@dev.local&gt;");
+	if (ret != 0)
+		return ret;
+	ret = rp_thtml(rtf_fromhtml_conformant, "Von: Katja Test &lt;katja@dev.local&gt;");
+	if (ret != 0)
+		return ret;
+	ret = rp_thtml(rtf_fromhtml_srctext, "Von: Katja Test &lt;katja@dev.local&gt;");
+	if (ret != 0)
+		return ret;
+	ret = rp_thtml(rtf_fromhtml_srctext_anchor,
+	      "&lt;<a href=\"mailto:katja@dev.local\">katja@dev.local</a>&gt;");
+	if (ret != 0)
+		return ret;
+	ret = rp_thtml(rtf_fromhtml_numeric, "a&#33;b&#x2014;c");
+	if (ret != 0)
+		return ret;
+	ret = rp_thtml(rtf_fromhtml_bare_amp,
+	      "Meier &amp; Sohn, A&amp;B, 100&amp;#37, x&amp;y;");
+	if (ret != 0)
+		return ret;
+	return 0;
+}
+
 static int t_html_plain()
 {
 	std::string obuf;
@@ -129,6 +195,8 @@ int main()
 	if (t_html_plain() != 0)
 		return EXIT_FAILURE;
 	if (t_rtf_reader() != 0)
+		return EXIT_FAILURE;
+	if (t_fromhtml_entities() != 0)
 		return EXIT_FAILURE;
 	if (t_htmltortf() != 0)
 		return EXIT_FAILURE;
