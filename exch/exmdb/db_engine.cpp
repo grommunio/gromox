@@ -1266,8 +1266,17 @@ bool db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
 	psearch->folder_id = folder_id;
 	psearch->b_recursive = b_recursive;
 	std::unique_lock lhold(g_list_lock);
+	/* Replace previously queued tasks */
+	auto dropped = std::erase_if(g_populating_list,
+	               [&](const POPULATING_NODE &n) {
+	               	return n.folder_id == folder_id && n.dir == dir;
+	               });
 	g_populating_list.splice(g_populating_list.end(), std::move(holder));
 	lhold.unlock();
+	if (dropped > 0)
+		mlog(LV_DEBUG, "db_eng_sf: %s fid 0x%llx: %zu queued population "
+			"request(s) superseded by a newer one",
+			dir, LLU{folder_id}, dropped);
 	g_waken_cond.notify_one();
 	return TRUE;
 } catch (const std::bad_alloc &) {
