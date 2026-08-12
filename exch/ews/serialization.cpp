@@ -381,7 +381,7 @@ void sTimePoint::serialize(XMLElement *xml) const
 		t = {};
 	auto frac = time.time_since_epoch() % std::chrono::seconds(1);
 	unsigned long long fsec = std::chrono::duration_cast<std::chrono::nanoseconds>(frac).count();
-	int off = -static_cast<int>(offset.count());
+	int off = -static_cast<int>(std::chrono::duration_cast<std::chrono::minutes>(offset).count());
 	std::string dtstr = fmt::format("{:%FT%T}", t);
 	if (fsec)
 		dtstr += fmt::format(".{:09}", fsec);
