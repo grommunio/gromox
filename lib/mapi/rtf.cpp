@@ -238,7 +238,7 @@ struct rtf_reader final {
 	char *read_element();
 	bool load_element_tree();
 	bool process_info_group(SIMPLE_TREE_NODE *);
-	int convert_group_node(SIMPLE_TREE_NODE *);
+	int convert_group_node(SIMPLE_TREE_NODE *, bool inline_group = false);
 	bool express_begin_fontsize(int);
 	bool express_end_fontsize(int);
 	bool express_attr_begin(int, int);
@@ -1933,10 +1933,11 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 	char tmp_buff[1024];
 	bool b_endnotecitations = false;
 	
-	do {
+	pword = pword->get_sibling();
+	for (; pword != nullptr; pword = pword->get_sibling()) {
 		auto pchild = pword->get_child();
 		if (pchild == nullptr || pchild->pdata == nullptr)
-			return CMD_RESULT_IGNORE_REST;
+			continue;
 		if (strcmp(pchild->cdata, "\\fldrslt") == 0)
 			return CMD_RESULT_CONTINUE;
 		if (strcmp(pchild->cdata, "\\*") != 0)
@@ -1963,11 +1964,15 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 						return CMD_RESULT_ERROR;
 				}
 			}
-			for (; pword3 != nullptr; pword3 = pword3->get_sibling())
-				if (pword3->get_child() != nullptr)
-					break;
-			if (pword3 != nullptr)
-				pword3 = pword3->get_child();
+			/* Instructions can be flat or wrapped in a formatting group. */
+			if (pword3 == nullptr || pword3->pdata == nullptr ||
+			    strcmp(pword3->cdata, "HYPERLINK") != 0) {
+				for (; pword3 != nullptr; pword3 = pword3->get_sibling())
+					if (pword3->get_child() != nullptr)
+						break;
+				if (pword3 != nullptr)
+					pword3 = pword3->get_child();
+			}
 			for (; pword3 != nullptr; pword3 = pword3->get_sibling()) {
 				if (pword3->pdata == nullptr)
 					return CMD_RESULT_CONTINUE;
@@ -1992,7 +1997,7 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 				}
 			}
 		}
-	} while ((pword = pword->get_sibling()) != nullptr);
+	}
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -3195,7 +3200,7 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	return 0;
 }
 
-int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
+int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 {
 	int ch;
 	int num;
@@ -3401,13 +3406,18 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 			}
 		} else {
 			auto pchild = pnode->get_child();
-			if (!b_paragraph_begun) {
+			const bool field_instruction = pchild != nullptr &&
+				pchild->pdata != nullptr &&
+				(strcmp(pchild->cdata, "\\fldinst") == 0 ||
+				 strcmp(pchild->cdata, "\\*") == 0);
+			if (!field_instruction && !b_paragraph_begun) {
 				if (!start_par(paragraph_align))
 					return -EINVAL;
 				b_paragraph_begun = true;
 			}
 			if (pchild != nullptr) {
-				auto ret = convert_group_node(pchild);
+				/* RTF groups scope character formatting, not paragraphs. */
+				auto ret = convert_group_node(pchild, true);
 				if (ret != 0)
 					return -EINVAL;
 			}
@@ -3430,7 +3440,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 		return -EINVAL;
 	if (!is_cell_group && !astk_popx_all())
 		return -EINVAL;
-	if (b_paragraph_begun && !end_par(paragraph_align))
+	if (!inline_group && b_paragraph_begun && !end_par(paragraph_align))
 		return -EINVAL;
 	if (preader->attr_stack_list.size() > 0)
 		preader->attr_stack_list.pop_back();
@@ -3547,6 +3557,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"fbidi", &rtf_reader::cmd_fnil}, /* Bidirectional font family - treat like fnil for now */
 	{"fdecor", &rtf_reader::cmd_fdecor},
 	{"field", &rtf_reader::cmd_field},
+	{"fldinst", &rtf_reader::cmd_ignore}, /* field instructions are metadata; render \fldrslt instead */
 	{"fjgothic", &rtf_reader::cmd_fnil},
 	{"fjminchou", &rtf_reader::cmd_fnil},
 	{"fmodern", &rtf_reader::cmd_fmodern},
