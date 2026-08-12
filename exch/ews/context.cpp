@@ -3314,6 +3314,43 @@ uint32_t EWSContext::permissions(const std::string& maildir, uint64_t folderId) 
 }
 
 /**
+ * @brief      Verify the caller may claim a given identity as sender
+ *
+ * A message's From/Sender field is client-supplied and, unlike a folder
+ * target, was never checked against any permission - toContent() writes
+ * whatever identity the client claims straight into the PR_SENT_REPRESENTING
+ * and PR_SENDER properties, for both saved drafts and actual sends. Real Exchange (and
+ * gromox's own zcore/emsmdb paths, see zs_submitmessage()) instead require
+ * frightsGromoxSendAs or full store ownership on the claimed identity's
+ * mailbox before honoring it. This mirrors that check for EWS.
+ *
+ * @param      identity   SMTP address the message claims to be sent from
+ *
+ * @throw      EWSError::AccessDenied   Caller lacks Send-As rights on
+ *              the claimed identity
+ */
+void EWSContext::checkSendAs(const std::string &identity) const
+{
+	if (identity.empty() ||
+	    strcasecmp(identity.c_str(), m_auth_info.username) == 0)
+		return; /* claiming to be yourself never needs a grant */
+	std::string maildir;
+	try {
+		maildir = get_maildir(identity);
+	} catch (...) {
+		/* Unresolvable (external/nonexistent) address - never a valid Send-As target */
+		throw EWSError::AccessDenied(E3474);
+	}
+	if (maildir == m_auth_info.maildir)
+		return; /* alias of the caller's own mailbox */
+	uint32_t permission = 0;
+	if (!m_plugin.exmdb.get_mbox_perm(maildir.c_str(),
+	    m_auth_info.username, &permission) ||
+	    !(permission & (frightsGromoxSendAs | frightsGromoxStoreOwner)))
+		throw EWSError::AccessDenied(E3474);
+}
+
+/**
  * @brief      Read delegate permissions from folder ACLs
  */
 tDelegatePermissions EWSContext::readDelegatePermissions(const std::string &dir, const std::string &username) const
