@@ -147,7 +147,7 @@ class EWSPlugin {
 	Structures::sMessageEntryId mkMessageEntryId(const Structures::sMailboxInfo&, uint64_t, uint64_t) const;
 	std::shared_ptr<SubManager> make_submgr(const Structures::tSubscriptionId &, const char *) const;
 	detail::ExmdbSubscriptionKey subscribe(const std::string&, uint16_t, bool, uint64_t, detail::SubscriptionKey) const;
-	std::shared_ptr<SubManager> get_submgr(detail::SubscriptionKey, uint32_t) const;
+	std::shared_ptr<SubManager> get_submgr(detail::SubscriptionKey, gromox::time_duration) const;
 	std::string timestamp() const;
 	void unlinkSubscription(detail::ContextKey) const;
 	void detachSubscription(const Structures::tSubscriptionId &, detail::ContextKey) const;
@@ -407,7 +407,7 @@ private:
 
 	void impersonate(const char*, const char*);
 
-	Structures::tSubscriptionId subscribe(const std::vector<Structures::sFolderId>&, uint16_t, bool, uint32_t) const;
+	Structures::tSubscriptionId subscribe(const std::vector<Structures::sFolderId> &, uint16_t, bool, gromox::time_duration) const;
 
 	void toContent(const std::string&, Structures::tCalendarItem&, Structures::sShape&, MCONT_PTR&) const;
 	void toContent(const std::string&, Structures::tContact&, Structures::sShape&, MCONT_PTR&) const;

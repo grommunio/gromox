@@ -3042,11 +3042,11 @@ struct tSubscriptionId {
 	static constexpr char NAME[] = "SubscriptionId";
 
 	tSubscriptionId() = default;
-	explicit tSubscriptionId(uint32_t timeout);
+	explicit tSubscriptionId(gromox::time_duration timeout);
 	explicit tSubscriptionId(const tinyxml2::XMLElement *);
 
 	detail::SubscriptionKey tsub_rawkey = 0; ///< Counter value. 0 is reserved, 1 is first valid value.
-	uint32_t timeout = 30; ///< subscription timeout (minutes)
+	gromox::time_duration timeout = std::chrono::minutes(30); ///< subscription timeout
 
 	void serialize(tinyxml2::XMLElement *) const;
 	constexpr inline bool operator==(const tSubscriptionId &o) const { return tsub_rawkey == o.tsub_rawkey; }

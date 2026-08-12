@@ -4841,7 +4841,8 @@ void EWSContext::updated(const std::string& dir, const sFolderSpec& folder) cons
  *
  * @return     Subscription ID
  */
-tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, uint16_t eventMask, bool all, uint32_t timeout) const
+tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId> &folderIds,
+    uint16_t eventMask, bool all, time_duration timeout) const
 {
 	tSubscriptionId subscriptionId(timeout);
 	auto mgr = m_plugin.make_submgr(subscriptionId, m_auth_info.username);
@@ -4887,7 +4888,7 @@ tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest &req) const
 	if (all && req.FolderIds)
 		throw EWSError::InvalidSubscriptionRequest(E3198);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
-	       req.eventMask(), all, req.Timeout);
+	       req.eventMask(), all, std::chrono::minutes(req.Timeout));
 }
 
 /**
@@ -4903,7 +4904,7 @@ tSubscriptionId EWSContext::subscribe(const tPushSubscriptionRequest& req) const
 	if (all && req.FolderIds)
 		throw EWSError::InvalidSubscriptionRequest(E3382);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
-	       req.eventMask(), all, req.StatusFrequency);
+	       req.eventMask(), all, std::chrono::minutes(req.StatusFrequency));
 }
 
 /**
@@ -4919,7 +4920,7 @@ tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) 
 	if (all && req.FolderIds)
 		throw EWSError::InvalidSubscriptionRequest(E3383);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
-	       req.eventMask(), all, 5);
+	       req.eventMask(), all, std::chrono::minutes(5));
 }
 
 /**

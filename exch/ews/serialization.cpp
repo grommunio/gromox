@@ -1762,12 +1762,13 @@ tSubscriptionId::tSubscriptionId(const tinyxml2::XMLElement *xml)
 	if (blob.size() != 8)
 		throw DeserializationError(E3201);
 	tsub_rawkey = le32p_to_cpu(&blob[0]);
-	timeout = le32p_to_cpu(&blob[4]);
+	timeout = std::chrono::minutes(le32p_to_cpu(&blob[4]));
 }
 
 void tSubscriptionId::serialize(tinyxml2::XMLElement *xml) const
 {
-	uint32_t a[2] = {cpu_to_le32(tsub_rawkey), cpu_to_le32(timeout)};
+	uint32_t min = std::chrono::duration_cast<std::chrono::minutes>(timeout).count();
+	uint32_t a[2] = {cpu_to_le32(tsub_rawkey), cpu_to_le32(min)};
 	xml->SetText(base64_encode({reinterpret_cast<const char *>(a), sizeof(a)}).c_str());
 }
 

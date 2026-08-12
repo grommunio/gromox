@@ -1072,7 +1072,7 @@ EWSPlugin::make_submgr(const Structures::tSubscriptionId &ID,
     const char *username) const
 {
 	auto mgr = std::make_shared<SubManager>(username, *this);
-	cache.emplace(std::chrono::milliseconds(ID.timeout * 60'000), ID.tsub_rawkey, mgr);
+	cache.emplace(ID.timeout, ID.tsub_rawkey, mgr);
 	return mgr;
 }
 
@@ -1112,10 +1112,9 @@ detail::ExmdbSubscriptionKey EWSPlugin::subscribe(const std::string& maildir, ui
  */
 std::shared_ptr<EWSPlugin::SubManager>
 EWSPlugin::get_submgr(detail::SubscriptionKey subscriptionKey,
-    uint32_t timeout) const try
+    time_duration timeout) const try
 {
-	return std::get<sptr<SubManager>>(cache.get(subscriptionKey,
-	       std::chrono::milliseconds(timeout * 60'000)));
+	return std::get<sptr<SubManager>>(cache.get(subscriptionKey, timeout));
 } catch (...) { // Key not found or type error
 	return nullptr;
 }
