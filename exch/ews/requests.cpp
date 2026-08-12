@@ -746,6 +746,10 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			}
 		}
 
+		/* Verify the caller has Send-As rights on this identity, else throw */
+		if (auto claimed = content->proplist.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS))
+			ctx.validate_sendas_perms(claimed);
+
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
 			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
 			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
