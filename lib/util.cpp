@@ -740,6 +740,11 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 	auto out = static_cast<uint8_t *>(vout);
 	size_t inLen = inlen;
 	size_t outsize = inlen / 4 * 3;
+	/* unpadded trailing quads produce up to two more bytes */
+	if (inlen % 4 == 2)
+		outsize += 1;
+	else if (inlen % 4 == 3)
+		outsize += 2;
 	/* Get four input chars at a time and decode them. Ignore white space
 	 * chars (CR, LF, SP, HT). If '=' is encountered, terminate input. If
 	 * a char other than white space, base64 char, or '=' is encountered,
@@ -748,7 +753,6 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 	int is_err = 0;
 	int is_endSeen = 0;
 	int b1, b2, b3;
-	int a1, a2, a3, a4;
 	size_t inpos = 0;
 	size_t outPos = 0;
 	
@@ -759,7 +763,7 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 		return -1;
 	}
 	while (inpos < inLen) {
-		a1 = a2 = a3 = a4 = 0;
+		unsigned char a1 = '=', a2 = '=', a3 = '=', a4 = '=';
 		while (inpos < inLen) {
 			a1 = _in[inpos++] & 0xFF;
 			if (isbase64(a1)) {
@@ -839,6 +843,10 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 			a2 = base64idx[a2] & 0xFF;
 			b1 = ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03);
 			out[outPos++] = (char)b1;
+			break;
+		}
+		else if (isbase64(a1)) {
+			is_err = 1;
 			break;
 		}
 		else {
