@@ -3450,19 +3450,30 @@ std::optional<uint64_t> EWSContext::findFolderByClass(const std::string &dir,
  * Real Exchange provisions folders such as Recipient Cache, Archive and
  * Conversation History lazily, on the first authenticated session touching
  * the mailbox, rather than eagerly at mailbox creation time - this mirrors
- * that. Prefers an existing folder carrying the correct PR_CONTAINER_CLASS
- * (created by gromox itself on a previous call, or by a real client such as
- * Outlook); falls back to a legacy static FID for mailboxes provisioned by
- * older gromox versions that created these eagerly with a generic container
- * class, self-healing the class in place; only creates a fresh folder as a
- * last resort.
+ * that.
+ *
+ * When a PR_CONTAINER_CLASS is known (Recipient Cache), that's the sole
+ * identity mechanism: look up an existing folder carrying it, create one if
+ * none exists. No legacy-FID fallback - a prior gromox version could eagerly
+ * create these with the wrong class, but that was this deployment's own
+ * transient state during development, never a real-world condition (a fresh
+ * gromox install with a client that just failed to authenticate touches
+ * nothing at all here), so there's nothing to self-heal in practice.
+ *
+ * When no PR_CONTAINER_CLASS is known (Archive, Conversation History - real
+ * Exchange doesn't expose one for these either, so there's nothing to search
+ * by), the legacy static FID is the only identity gromox has: reuse the
+ * folder there if present, otherwise create it there. Without this, these
+ * two would never be found again after creation and a duplicate would be
+ * created on every request.
  *
  * @param      dir             Home directory
  * @param      parentFolderId  Parent folder to search/create under
- * @param      legacyFolderId  Historical static FID to check for a
- *                              pre-existing folder from an older gromox
- *                              version (0 = none, skip this step)
- * @param      containerClass  Desired PR_CONTAINER_CLASS value
+ * @param      legacyFolderId  Static FID to check for a pre-existing folder
+ *                              (0 = none, skip this step) - only consulted
+ *                              when containerClass is null
+ * @param      containerClass  Desired PR_CONTAINER_CLASS value, or nullptr
+ *                              if none is known for this folder
  * @param      dispNameTid     folder_namedb_get() text id for the display
  *                             name to use if the folder needs creating
  *
@@ -3476,29 +3487,11 @@ uint64_t EWSContext::resolveOrCreateSpecialFolder(const std::string &dir,
 		auto realId = findFolderByClass(dir, parentFolderId, containerClass);
 		if (realId)
 			return *realId;
-	}
-
-	if (legacyFolderId != 0) {
+	} else if (legacyFolderId != 0) {
 		BOOL exists = false;
 		if (m_plugin.exmdb.is_folder_present(dir.c_str(), legacyFolderId, &exists) &&
-		    exists) {
-			if (containerClass) {
-				static constexpr proptag_t tag = PR_CONTAINER_CLASS;
-				TPROPVAL_ARRAY props{};
-				const char *cls = nullptr;
-				if (m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP,
-				    legacyFolderId, {&tag, 1}, &props) && props.count)
-					cls = static_cast<const char *>(props.ppropval[0].pvalue);
-				if (cls == nullptr || strcmp(cls, containerClass) != 0) {
-					TAGGED_PROPVAL fix{PR_CONTAINER_CLASS, deconst(containerClass)};
-					TPROPVAL_ARRAY fixProps{1, &fix};
-					PROBLEM_ARRAY problems{};
-					m_plugin.exmdb.set_folder_properties(dir.c_str(), CP_ACP,
-					    legacyFolderId, &fixProps, &problems);
-				}
-			}
+		    exists)
 			return legacyFolderId;
-		}
 	}
 
 	auto lang = m_auth_info.lang && *m_auth_info.lang ?
