@@ -3048,7 +3048,7 @@ struct tSubscriptionId {
 	uint32_t timeout = 30; ///< subscription timeout (minutes)
 
 	void serialize(tinyxml2::XMLElement *) const;
-	constexpr inline bool operator==(const tSubscriptionId &o) { return tsub_rawkey == o.tsub_rawkey; }
+	constexpr inline bool operator==(const tSubscriptionId &o) const { return tsub_rawkey == o.tsub_rawkey; }
 
 	private:
 	static std::atomic<detail::SubscriptionKey> globcnt;
