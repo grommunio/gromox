@@ -267,6 +267,7 @@ notification_ctx::notification_ctx(notification_ctx &&o) noexcept :
 
 void notification_ctx::clear()
 {
+	std::unique_lock ctx_lock(lock);
 	pending_status = PENDING_STATUS_NONE;
 	notification_status = NOTIFICATION_STATUS_NONE;
 	session_guid = {};
@@ -341,6 +342,7 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 		{
 		std::unique_lock ll_hold(plugin.pending_lock);
 		for (auto ctx : plugin.pending) {
+			std::unique_lock ctx_lock(ctx->lock);
 			if (now - ctx->pending_time >=
 			    response_pending_period - std::chrono::seconds(3)) {
 				ctx->pending_time = now;
@@ -865,6 +867,7 @@ int MhEmsmdbPlugin::retr(int context_id)
 
 void MhEmsmdbPlugin::term(int context_id)
 {
+	std::unique_lock ctx_lock(status[context_id].lock);
 	if (status[context_id].pending_status == PENDING_STATUS_NONE)
 		return;
 	EMSMDB_HANDLE acxh;
