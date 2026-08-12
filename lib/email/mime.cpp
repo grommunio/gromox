@@ -1055,7 +1055,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	case mime_encoding::base64:
 		if (base64_decode_sized({pbuff.get(), size}, out_buff,
 		    max_length, plength) != 0) {
-			mlog(LV_DEBUG, "mime: failed to decode base64 mime content");
+			mlog(LV_WARN, "W-9997: garbage in base64-encoded MIME part, content may be incomplete");
 			if (*plength == 0)
 				return false;
 		}
