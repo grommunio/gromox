@@ -42,6 +42,8 @@ using namespace gromox;
 
 namespace {
 
+enum { TLC_EXTREMUM = false, TLC_LEAF = true };
+
 struct condition_node {
 	proptag_t proptag;
 	void *pvalue;
@@ -331,6 +333,64 @@ static std::string table_cond_to_where(const std::vector<condition_node> &list)
 	return w;
 }
 
+static std::string tlc_make_query_leaf(const SORTORDER_SET &sset,
+    unsigned int depth, std::string &&where, proptag_t tag, bool multi)
+{
+	std::string qstr;
+	if (multi)
+		qstr = fmt::format("SELECT message_id, read_state, "
+		       "inst_num, v{:x} FROM stbl {}", tag, std::move(where));
+	else
+		qstr = fmt::format("SELECT message_id, read_state, "
+		       "inst_num FROM stbl {}", std::move(where));
+	bool b_ord = false;
+	for (unsigned int i = sset.ccategories; i < sset.count; ++i) {
+		const auto &sort = sset.psort[i];
+		auto tag = PROP_TAG(sort.type, sort.propid);
+		if (tablesort_is_minmax(sort.table_sort))
+			continue;
+		auto ord = sort.table_sort == TABLE_SORT_ASCEND ? " ASC" : " DESC";
+		if (!b_ord) {
+			qstr += fmt::format(" ORDER BY v{:x} {}", tag, ord);
+			b_ord = true;
+		} else {
+			qstr += fmt::format(", v{:x} {}", tag, ord);
+		}
+	}
+	/*
+	 * For an uncategorized table, break ties on message_id (in the
+	 * primary sort direction) so a reload reproduces the order
+	 * that the live-insert notification path builds; otherwise
+	 * same-key rows can appear reordered/duplicated in online-mode
+	 * clients.
+	 */
+	if (b_ord && sset.ccategories == 0) {
+		auto ord = sset.psort[0].table_sort == TABLE_SORT_ASCEND ? " ASC" : " DESC";
+		qstr += fmt::format(", message_id {}", ord);
+	}
+	return qstr;
+}
+
+static std::string tlc_make_query_ext(const SORTORDER_SET &sset,
+    unsigned int depth, std::string &&where, proptag_t tag, bool extremum)
+{
+	std::string qstr;
+	if (extremum) {
+		const auto &sort1 = sset.psort[depth+1];
+		auto tag1 = PROP_TAG(sort1.type, sort1.propid);
+		auto agg = sort1.table_sort == TABLE_SORT_MAXIMUM_CATEGORY ? "MAX" : "MIN";
+		qstr = fmt::format("SELECT v{:x}, COUNT(*), {}(v{:x}) AS max_field, "
+		       "SUM(read_state=0) FROM stbl {} GROUP BY v{:x} ORDER BY max_field",
+		       tag, agg, tag1, std::move(where), tag);
+	} else {
+		qstr = fmt::format("SELECT v{:x}, COUNT(*), NULL, SUM(read_state=0) "
+		       "FROM stbl {} GROUP BY v{:x} ORDER BY v{:x}",
+		       tag, where, tag, tag);
+	}
+	qstr += sset.psort[depth].table_sort == TABLE_SORT_ASCEND ? " ASC" : " DESC";
+	return qstr;
+}
+
 /**
  * The per-category queries only vary with the recursion depth, with whether
  * this is the message level, and with which of the enclosing category values
@@ -355,15 +415,20 @@ static uint64_t tlc_stmt_key(const std::vector<condition_node> &cond_list,
 	return nullmask << 16 | static_cast<uint64_t>(depth) << 1 | !!leaf;
 }
 
-template<typename F> static sqlite3_stmt *tlc_prep(tlc_stmt_cache &cache,
-    sqlite3 *psqlite, uint64_t key, F &&make_query)
+static sqlite3_stmt *tlc_prep(tlc_stmt_cache &cache, sqlite3 *psqlite,
+    uint64_t key, const SORTORDER_SET &sort, unsigned int depth,
+    const std::vector<condition_node> &cond_list, proptag_t tag,
+    bool leaf, bool special)
 {
 	auto iter = cache.find(key);
 	if (iter != cache.end()) {
 		sqlite3_reset(iter->second);
 		return iter->second;
 	}
-	auto stmt = gx_sql_prep(psqlite, make_query());
+	auto where = table_cond_to_where(cond_list);
+	auto qstr = leaf ? tlc_make_query_leaf(sort, depth, std::move(where), tag, special) :
+	            tlc_make_query_ext(sort, depth, std::move(where), tag, special);
+	auto stmt = gx_sql_prep(psqlite, std::move(qstr));
 	if (stmt == nullptr)
 		return nullptr;
 	return cache.emplace(key, std::move(stmt)).first->second;
@@ -391,45 +456,10 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 				break;
 			}
 		}
-		auto make_query = [&]() {
-			auto where = table_cond_to_where(cond_list);
-			std::string qstr;
-			if (multi_index != -1)
-				qstr = fmt::format("SELECT message_id, read_state, "
-				       "inst_num, v{:x} FROM stbl {}", tmp_proptag, where);
-			else
-				qstr = fmt::format("SELECT message_id, read_state, "
-				       "inst_num FROM stbl {}", where);
-			bool b_ord = false;
-			for (unsigned int i = psorts->ccategories; i < psorts->count; ++i) {
-				auto tag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
-				if (tablesort_is_minmax(psorts->psort[i].table_sort))
-					continue;
-				auto ord = psorts->psort[i].table_sort == TABLE_SORT_ASCEND ?
-				           " ASC" : " DESC";
-				if (!b_ord) {
-					qstr += fmt::format(" ORDER BY v{:x} {}", tag, ord);
-					b_ord = true;
-				} else {
-					qstr += fmt::format(", v{:x} {}", tag, ord);
-				}
-			}
-			/*
-			 * For an uncategorized table, break ties on message_id (in the
-			 * primary sort direction) so a reload reproduces the order
-			 * that the live-insert notification path builds; otherwise
-			 * same-key rows can appear reordered/duplicated in online-mode
-			 * clients.
-			 */
-			if (b_ord && psorts->ccategories == 0) {
-				auto ord = psorts->psort[0].table_sort == TABLE_SORT_ASCEND ?
-				           " ASC" : " DESC";
-				qstr += fmt::format(", message_id {}", ord);
-			}
-			return qstr;
-		};
 		auto pstmt = tlc_prep(stmt_cache, psqlite,
-		             tlc_stmt_key(cond_list, depth, true), make_query);
+		             tlc_stmt_key(cond_list, depth, TLC_LEAF),
+		             *psorts, depth, cond_list, tmp_proptag,
+		             TLC_LEAF, multi_index != -1);
 		if (pstmt == nullptr)
 			return FALSE;
 		bind_index = 1;
@@ -491,27 +521,10 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 	b_extremum = depth == psorts->ccategories - 1 &&
 	             psorts->count > psorts->ccategories &&
 	             tablesort_is_minmax(psorts->psort[depth+1].table_sort);
-	auto make_query = [&]() {
-		auto where = table_cond_to_where(cond_list);
-		std::string qstr;
-		if (b_extremum) {
-			auto tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
-			auto agg = TABLE_SORT_MAXIMUM_CATEGORY ==
-			           psorts->psort[depth+1].table_sort ? "MAX" : "MIN";
-			qstr = fmt::format("SELECT v{:x}, COUNT(*), {}(v{:x}) AS max_field, "
-			       "SUM(read_state=0) FROM stbl {} GROUP BY v{:x} ORDER BY max_field",
-			       tmp_proptag, agg, tmp_proptag1, where, tmp_proptag);
-		} else {
-			qstr = fmt::format("SELECT v{:x}, COUNT(*), NULL, SUM(read_state=0) "
-			       "FROM stbl {} GROUP BY v{:x} ORDER BY v{:x}",
-			       tmp_proptag, where, tmp_proptag, tmp_proptag);
-		}
-		qstr += psorts->psort[depth].table_sort == TABLE_SORT_ASCEND ?
-		        " ASC" : " DESC";
-		return qstr;
-	};
 	auto pstmt = tlc_prep(stmt_cache, psqlite,
-	             tlc_stmt_key(cond_list, depth, false), make_query);
+	             tlc_stmt_key(cond_list, depth, TLC_EXTREMUM),
+	             *psorts, depth, cond_list, tmp_proptag,
+	             TLC_EXTREMUM, b_extremum);
 	if (pstmt == nullptr)
 		return FALSE;
 	bind_index = 1;
