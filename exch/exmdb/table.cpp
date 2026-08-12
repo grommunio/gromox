@@ -434,6 +434,87 @@ static sqlite3_stmt *tlc_prep(tlc_stmt_cache &cache, sqlite3 *psqlite,
 	return cache.emplace(key, std::move(stmt)).first->second;
 }
 
+static bool table_load_content_leaf(db_conn &db, sqlite3 *psqlite,
+    const SORTORDER_SET *psorts, int depth, uint64_t parent_id,
+    std::vector<condition_node> &cond_list, sqlite3_stmt *pstmt_insert,
+    uint32_t *pheader_id, tlc_stmt_cache &stmt_cache) try
+{
+	proptag_t tmp_proptag{};
+	int multi_index = -1;
+	int64_t prev_id = -parent_id;
+
+	for (unsigned int i = 0; i < psorts->count; ++i) {
+		if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG) {
+			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
+			multi_index = i;
+			break;
+		}
+	}
+	auto pstmt = tlc_prep(stmt_cache, psqlite,
+		     tlc_stmt_key(cond_list, depth, TLC_LEAF),
+		     *psorts, depth, cond_list, tmp_proptag,
+		     TLC_LEAF, multi_index != -1);
+	if (pstmt == nullptr)
+		return FALSE;
+	int bind_index = 1;
+	size_t i = 0;
+	for (const auto &cond : cond_list) {
+		if (cond.pvalue == nullptr) {
+			++i;
+			continue;
+		}
+		proptype_t type = psorts->psort[i].type & ~MVI_FLAG;
+		if (!common_util_bind_sqlite_statement(pstmt,
+		    bind_index, type, cond.pvalue))
+			return FALSE;
+		bind_index++;
+		++i;
+	}
+	while (gx_sql_step(pstmt) == SQLITE_ROW) {
+		if (psorts->ccategories <= 0) {
+			sqlite3_bind_null(pstmt_insert, 9);
+		} else if (0 == sqlite3_column_int64(pstmt, 1)) {
+			/* unread(0) in extremum for message row */
+			sqlite3_bind_int64(pstmt_insert, 9, 0);
+		} else {
+			/* read(1) in extremum for message row */
+			sqlite3_bind_int64(pstmt_insert, 9, 1);
+		}
+		sqlite3_bind_int64(pstmt_insert, 1,
+			sqlite3_column_int64(pstmt, 0));
+		sqlite3_bind_int64(pstmt_insert, 2, CONTENT_ROW_MESSAGE);
+		sqlite3_bind_null(pstmt_insert, 3);
+		sqlite3_bind_int64(pstmt_insert, 4, parent_id);
+		sqlite3_bind_int64(pstmt_insert, 5, depth);
+		sqlite3_bind_null(pstmt_insert, 6);
+		if (-1 != multi_index) {
+			sqlite3_bind_int64(pstmt_insert, 7,
+				sqlite3_column_int64(pstmt, 2));
+			proptype_t type = psorts->psort[multi_index].type & ~MVI_FLAG;
+			auto pvalue = common_util_column_sqlite_statement(pstmt, 3, type);
+			if (pvalue == nullptr)
+				sqlite3_bind_null(pstmt_insert, 8);
+			else if (!common_util_bind_sqlite_statement(pstmt_insert,
+			    8, type, pvalue))
+				return FALSE;
+		} else {
+			sqlite3_bind_int64(pstmt_insert, 7, 0);
+			sqlite3_bind_null(pstmt_insert, 8);
+		}
+		sqlite3_bind_int64(pstmt_insert, 10, prev_id);
+		/* unread only applies to header rows */
+		sqlite3_bind_null(pstmt_insert, 11);
+		if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
+			return FALSE;
+		prev_id = sqlite3_last_insert_rowid(db.m_sqlite_eph);
+		sqlite3_reset(pstmt_insert);
+	}
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
+}
+
 static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 	const SORTORDER_SET *psorts, int depth, uint64_t parent_id,
     std::vector<condition_node> &cond_list, sqlite3_stmt *pstmt_insert,
@@ -441,82 +522,15 @@ static bool table_load_content(db_conn &db, sqlite3 *psqlite,
 {
 	void *pvalue;
 	int bind_index;
-	int multi_index;
 	bool b_extremum;
 	uint64_t header_id;
 
 	int64_t prev_id = -parent_id;
-	if (depth == psorts->ccategories) {
-		proptag_t tmp_proptag;
-		multi_index = -1;
-		for (unsigned int i = 0; i < psorts->count; ++i) {
-			if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG) {
-				tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
-				multi_index = i;
-				break;
-			}
-		}
-		auto pstmt = tlc_prep(stmt_cache, psqlite,
-		             tlc_stmt_key(cond_list, depth, TLC_LEAF),
-		             *psorts, depth, cond_list, tmp_proptag,
-		             TLC_LEAF, multi_index != -1);
-		if (pstmt == nullptr)
-			return FALSE;
-		bind_index = 1;
-		size_t i = 0;
-		for (const auto &cond : cond_list) {
-			if (cond.pvalue == nullptr) {
-				++i;
-				continue;
-			}
-			proptype_t type = psorts->psort[i].type & ~MVI_FLAG;
-			if (!common_util_bind_sqlite_statement(pstmt,
-			    bind_index, type, cond.pvalue))
-				return FALSE;
-			bind_index++;
-			++i;
-		}
-		while (gx_sql_step(pstmt) == SQLITE_ROW) {
-			if (psorts->ccategories <= 0) {
-				sqlite3_bind_null(pstmt_insert, 9);
-			} else if (0 == sqlite3_column_int64(pstmt, 1)) {
-				/* unread(0) in extremum for message row */
-				sqlite3_bind_int64(pstmt_insert, 9, 0);
-			} else {
-				/* read(1) in extremum for message row */
-				sqlite3_bind_int64(pstmt_insert, 9, 1);
-			}
-			sqlite3_bind_int64(pstmt_insert, 1,
-				sqlite3_column_int64(pstmt, 0));
-			sqlite3_bind_int64(pstmt_insert, 2, CONTENT_ROW_MESSAGE);
-			sqlite3_bind_null(pstmt_insert, 3);
-			sqlite3_bind_int64(pstmt_insert, 4, parent_id);
-			sqlite3_bind_int64(pstmt_insert, 5, depth);
-			sqlite3_bind_null(pstmt_insert, 6);
-			if (-1 != multi_index) {
-				sqlite3_bind_int64(pstmt_insert, 7,
-					sqlite3_column_int64(pstmt, 2));
-				proptype_t type = psorts->psort[multi_index].type & ~MVI_FLAG;
-				pvalue = common_util_column_sqlite_statement(pstmt, 3, type);
-				if (pvalue == nullptr)
-					sqlite3_bind_null(pstmt_insert, 8);
-				else if (!common_util_bind_sqlite_statement(pstmt_insert,
-				    8, type, pvalue))
-					return FALSE;
-			} else {
-				sqlite3_bind_int64(pstmt_insert, 7, 0);
-				sqlite3_bind_null(pstmt_insert, 8);
-			}
-			sqlite3_bind_int64(pstmt_insert, 10, prev_id);
-			/* unread only applies to header rows */
-			sqlite3_bind_null(pstmt_insert, 11);
-			if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
-				return FALSE;
-			prev_id = sqlite3_last_insert_rowid(db.m_sqlite_eph);
-			sqlite3_reset(pstmt_insert);
-		}
-		return TRUE;
-	}
+	if (depth == psorts->ccategories)
+		return table_load_content_leaf(db, psqlite, psorts, depth,
+		       parent_id, cond_list, pstmt_insert, pheader_id,
+		       stmt_cache);
+
 	auto tmp_proptag = PROP_TAG(psorts->psort[depth].type, psorts->psort[depth].propid);
 	b_extremum = depth == psorts->ccategories - 1 &&
 	             psorts->count > psorts->ccategories &&
