@@ -467,30 +467,47 @@ static int t_base64()
 
 	if (base64_decode_sized({"\xff\xff\xff\xff", 4}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-18 failed\n");
-#if 0 /* implementation too lenient */
 	if (base64_decode_sized({"====", 4}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-19 failed\n");
-#endif
-	if (base64_decode_sized({"A===", 4}, out, std::size(out), &outlen) >= 0)
+
+	if (base64_decode_sized({"/===", 4}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-20 failed\n");
-#if 0
-	if (base64_decode_sized({"AA==", 4}, out, std::size(out), &outlen) >= 0)
+	if (base64_decode_sized({"/==", 3}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-21 failed\n");
-#endif
-	/* unpadded tails decode fully */
-	if (base64_decode_sized({"QUJDRA", 6}, out, std::size(out), &outlen) < 0 ||
-	    outlen != 4 || memcmp(out, "ABCD", 4) != 0)
+	if (base64_decode_sized({"/=", 2}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-22 failed\n");
-	if (base64_decode_sized({"QUE", 3}, out, std::size(out), &outlen) < 0 ||
-	    outlen != 2 || memcmp(out, "AA", 2) != 0)
+	if (base64_decode_sized({"/", 1}, out, std::size(out), &outlen) >= 0)
 		return printf("TB-23 failed\n");
-	if (base64_decode_sized({"QQ", 2}, out, std::size(out), &outlen) < 0 ||
-	    outlen != 1 || out[0] != 'A')
+
+	using UC = unsigned char;
+	if (base64_decode_sized({"/w==", 4}, out, std::size(out), &outlen) < 0 ||
+	    outlen != 1 || UC(out[0]) != 0xFF)
 		return printf("TB-24 failed\n");
-	/* truncation is flagged, decodable prefix still returned */
-	if (base64_decode_sized({"QUJDR", 5}, out, std::size(out), &outlen) >= 0 ||
-	    outlen != 3 || memcmp(out, "ABC", 3) != 0)
+	if (base64_decode_sized({"/w=", 3}, out, std::size(out), &outlen) >= 0 &&
+	    (outlen != 1 || UC(out[0]) != 0xFF))
 		return printf("TB-25 failed\n");
+	if (base64_decode_sized({"/w", 2}, out, std::size(out), &outlen) < 0 ||
+	    outlen != 1 || UC(out[0]) != 0xFF)
+		return printf("TB-26 failed\n");
+
+	if (base64_decode_sized({"/x==", 4}, out, std::size(out), &outlen) >= 0)
+		return printf("TB-27 failed\n");
+	if (base64_decode_sized({"/x=", 3}, out, std::size(out), &outlen) >= 0 &&
+	    (outlen != 1 || UC(out[0]) != 0xFF))
+		return printf("TB-28 failed\n");
+	if (base64_decode_sized({"/x", 2}, out, std::size(out), &outlen) >= 0)
+		return printf("TB-29 failed\n");
+
+	if (base64_decode_sized({"//8=", 4}, out, std::size(out), &outlen) < 0 ||
+	    outlen != 2 || UC(out[0]) != 0xFF || UC(out[1]) != 0xFF)
+		return printf("TB-30 failed\n");
+	if (base64_decode_sized({"//8", 3}, out, std::size(out), &outlen) < 0 ||
+	    outlen != 2 || UC(out[0]) != 0xFF || UC(out[1]) != 0xFF)
+		return printf("TB-31 failed\n");
+	if (base64_decode_sized({"//9=", 4}, out, std::size(out), &outlen) >= 0)
+		return printf("TB-32 failed\n");
+	if (base64_decode_sized({"//9", 3}, out, std::size(out), &outlen) >= 0)
+		return printf("TB-33 failed\n");
 
 	if (qpnl_encode_sized({"\x01", 1}, out, 3) >= 0)
 		return printf("TQ-1 failed\n");

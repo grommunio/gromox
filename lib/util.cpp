@@ -764,8 +764,12 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 	}
 	while (inpos < inLen) {
 		unsigned char a1 = '=', a2 = '=', a3 = '=', a4 = '=';
+		bool read_any = false;
 		while (inpos < inLen) {
-			a1 = _in[inpos++] & 0xFF;
+			a1 = _in[inpos++];
+			if (HX_isspace(a1))
+				continue;
+			read_any = true;
 			if (isbase64(a1)) {
 				break;
 			}
@@ -773,12 +777,15 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 				is_endSeen = 1;
 				break;
 			}
-			else if (a1 != '\r' && a1 != '\n' && a1 != ' ' && a1 != '\t') {
+			else {
 				is_err = 1;
 			}
 		}
 		while (inpos < inLen) {
-			a2 = _in[inpos++] & 0xFF;
+			a2 = _in[inpos++];
+			if (HX_isspace(a2))
+				continue;
+			read_any = true;
 			if (isbase64(a2)) {
 				break;
 			}
@@ -786,12 +793,15 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 				is_endSeen = 1;
 				break;
 			}
-			else if (a2 != '\r' && a2 != '\n' && a2 != ' ' && a2 != '\t') {
+			else {
 				is_err = 1;
 			}
 		}
 		while (inpos < inLen) {
-			a3 = _in[inpos++] & 0xFF;
+			a3 = _in[inpos++];
+			if (HX_isspace(a3))
+				continue;
+			read_any = true;
 			if (isbase64(a3)) {
 				break;
 			}
@@ -799,12 +809,15 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 				is_endSeen = 1;
 				break;
 			}
-			else if (a3 != '\r' && a3 != '\n' && a3 != ' ' && a3 != '\t') {
+			else {
 				is_err = 1;
 			}
 		}
 		while (inpos < inLen) {
-			a4 = _in[inpos++] & 0xFF;
+			a4 = _in[inpos++];
+			if (HX_isspace(a4))
+				continue;
+			read_any = true;
 			if (isbase64(a4)) {
 				break;
 			}
@@ -812,10 +825,12 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 				is_endSeen = 1;
 				break;
 			}
-			else if (a4 != '\r' && a4 != '\n' && a4 != ' ' && a4 != '\t') {
+			else {
 				is_err = 1;
 			}
 		}
+		if (!read_any)
+			break;
 		if (isbase64(a1) && isbase64(a2) && isbase64(a3) && isbase64(a4)) {
 			a1 = base64idx[a1] & 0xFF;
 			a2 = base64idx[a2] & 0xFF;
@@ -823,7 +838,7 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 			a4 = base64idx[a4] & 0xFF;
 			b1 = ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03);
 			b2 = ((a2 << 4) & 0xF0) | ((a3 >> 2) & 0x0F);
-			b3 = ((a3 << 6) & 0xC0) | ( a4		 & 0x3F);
+			b3 = ((a3 << 6) & 0xC0) | ( a4       & 0x3F);
 			out[outPos++] = (char)b1;
 			out[outPos++] = (char)b2;
 			out[outPos++] = (char)b3;
@@ -834,6 +849,11 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 			a3 = base64idx[a3] & 0xFF;
 			b1 = ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03);
 			b2 = ((a2 << 4) & 0xF0) | ((a3 >> 2) & 0x0F);
+			b3 = ((a3 << 6) & 0xC0);
+			if (b3 != 0) {
+				is_err = 1;
+				break;
+			}
 			out[outPos++] = (char)b1;
 			out[outPos++] = (char)b2;
 			break;
@@ -842,14 +862,16 @@ int base64nl_decode_sized(std::string_view sv_in, void *vout, size_t outmax,
 			a1 = base64idx[a1] & 0xFF;
 			a2 = base64idx[a2] & 0xFF;
 			b1 = ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03);
+			b2 = ((a2 << 4) & 0xF0);
+			if (b2 != 0) {
+				is_err = 1;
+				break;
+			}
 			out[outPos++] = (char)b1;
 			break;
 		}
-		else if (isbase64(a1)) {
-			is_err = 1;
-			break;
-		}
 		else {
+			is_err = 1;
 			break;
 		}
 		if (is_endSeen)
