@@ -5,5 +5,6 @@
 #include "mbop_freebusy.cpp"
 #include "mbop_locale.cpp"
 #include "mbop_main.cpp"
+#include "mbop_msgcopy.cpp"
 #include "mbop_purge.cpp"
 #include "mbop_walk.cpp"

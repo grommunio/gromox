@@ -1,3 +1,15 @@
+Milestone 3.9.209
+=================
+
+Enhancements:
+
+* emsmdb, zcore: new per-mailbox settings MessageCopyForSentAs and
+  MessageCopyForSendOnBehalf. When enabled on a mailbox, messages sent as, or
+  on behalf of, that mailbox are additionally filed into that mailbox's Sent
+  Items folder, so a shared mailbox retains a record of what was sent in its
+  name. The sender keeps their own copy. Not honored by EWS yet.
+* mbop: new "get-msgcopy" and "set-msgcopy" commands
+
 Gromox 3.9 (2026-07-24)
 =======================
 

@@ -38,6 +38,7 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/sent_copy.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -1053,9 +1054,112 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 	return false;
 }
 
-ec_error_t cu_send_message(store_object *pstore, message_object *msg,
-    const char *ev_from) try
+/**
+ * Deposit a copy of a message which was just sent as / on behalf of another
+ * mailbox into that mailbox's Sent Items folder, provided the mailbox asked
+ * for it. Cf. the Exchange mailbox settings MessageCopyForSentAsEnabled and
+ * MessageCopyForSendOnBehalfEnabled.
+ *
+ * Failures are logged and then dropped; the mail has already left the system,
+ * and zs_submitmessage treats every non-success from cu_send_message as fatal.
+ */
+static void cu_deposit_repr_copy(store_object *pstore,
+    const MESSAGE_CONTENT &ctnt, const char *actor, const char *delegator,
+    repr_grant grant, const char *log_id) try
 {
+	if (grant < repr_grant::send_on_behalf)
+		return;
+	/* Cheap test for the common case first; cf. the emsmdb twin. */
+	if (strcasecmp(delegator, actor) == 0)
+		return;
+	sql_meta_result mres;
+	if (mysql_adaptor_meta(delegator, WANTPRIV_METAONLY, mres) != 0) {
+		mlog(LV_WARN, "W-1195: <%s> cannot be resolved, so no copy of "
+			"%s was deposited", delegator, log_id);
+		return;
+	}
+	auto dir = pstore->get_dir();
+	/*
+	 * An alias of one's own account is also reported as send_as; filing that
+	 * would duplicate the sender's own copy. Cf. the emsmdb twin.
+	 */
+	if (strcasecmp(mres.username.c_str(), actor) == 0 || mres.maildir == dir)
+		return;
+	/*
+	 * b_create=false so that sending in a mailbox's name never creates the
+	 * setting there. Cf. the emsmdb twin; cu_read_storenamedprop is not
+	 * usable, as it reports a failed lookup and an unset property alike.
+	 */
+	const PROPERTY_NAME xn = {MNID_STRING, PSETID_Gromox, 0,
+		deconst(grant >= repr_grant::send_as ? msgcopy_np_sentas :
+		msgcopy_np_sendonbehalf)};
+	propid_t propid = 0;
+	if (!exmdb_client_get_named_propid(mres.maildir.c_str(), false, &xn,
+	    &propid)) {
+		mlog(LV_WARN, "W-1197: cannot resolve the copy settings of <%s>, "
+			"so no copy of %s was deposited", delegator, log_id);
+		return;
+	}
+	if (propid == 0)
+		/* Never written, i.e. the setting is off. Not an error. */
+		return;
+	auto tag = PROP_TAG(PT_BOOLEAN, propid);
+	const proptag_t tag_buff[] = {tag};
+	TPROPVAL_ARRAY props{};
+	if (!exmdb_client->get_store_properties(mres.maildir.c_str(), CP_UTF8,
+	    tag_buff, &props)) {
+		/* Unknown is not the same as "no copy wanted". Cf. the emsmdb twin. */
+		mlog(LV_WARN, "W-1198: cannot read the copy settings of <%s>, so "
+			"no copy of %s was deposited", delegator, log_id);
+		return;
+	}
+	auto flag = props.get<const uint8_t>(tag);
+	if (flag == nullptr || *flag == 0)
+		return;
+
+	auto fid = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
+	/*
+	 * Absent permission and a failed lookup are reported alike, so that the
+	 * trace does not vanish in the degraded case. Cf. the emsmdb twin.
+	 */
+	uint32_t perm = 0;
+	if (!exmdb_client->get_folder_perm(mres.maildir.c_str(), fid, actor,
+	    &perm) || !(perm & (frightsOwner | frightsCreate)))
+		mlog(LV_INFO, "I-1197: depositing a copy of %s in <%s>'s Sent "
+			"Items without a confirmed create right for %s",
+			log_id, delegator, actor);
+
+	sent_copy_ctx ctx;
+	ctx.get_named_propnames = exmdb_client_remote::get_named_propnames;
+	ctx.get_named_propids = exmdb_client_remote::get_named_propids;
+	ctx.log_id = log_id;
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> cpy;
+	auto err = sent_copy_prepare(ctx, ctnt, dir, mres.maildir.c_str(), cpy);
+	if (err == ecSuccess) {
+		const std::string digest;
+		uint64_t outmid = 0, outcn = 0;
+		ec_error_t e_result = ecRpcFailed;
+		if (exmdb_client->write_message(mres.maildir.c_str(), CP_UTF8,
+		    fid, cpy.get(), digest, &outmid, &outcn, &e_result) &&
+		    e_result == ecSuccess)
+			return;
+		err = e_result;
+	}
+	mlog(LV_WARN, "W-1196: no copy of %s deposited in <%s>'s Sent Items: %s",
+		log_id, delegator, mapi_strerror(err));
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+}
+
+/**
+ * @actor:	account owning the store the message is submitted from
+ * @delegator:	identity being represented (equal to @actor if none)
+ * @grant:	to what degree @actor may represent @delegator
+ */
+ec_error_t cu_send_message(store_object *pstore, message_object *msg,
+    const char *actor, const char *delegator, repr_grant grant) try
+{
+	auto ev_from = grant >= repr_grant::send_as ? delegator : actor;
 	eid_t message_id = msg->get_id();
 	void *pvalue;
 	BOOL b_private, b_partial = false;
@@ -1144,6 +1248,13 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
+	/*
+	 * Before the branches below, all of which have early exits, and on the
+	 * unmodified content: the delegator's copy is not affected by what the
+	 * client asked us to do with the sender's own copy.
+	 */
+	cu_deposit_repr_copy(pstore, *pmsgctnt, actor, delegator, grant,
+		log_id.c_str());
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
 		eid_t folder_id{}, new_id{};
