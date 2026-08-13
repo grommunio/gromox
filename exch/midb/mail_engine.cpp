@@ -1314,7 +1314,7 @@ static std::string me_get_categories(const char *dir, message_content &mct)
 	if (sa == nullptr)
 		return kw;
 	for (std::string categ : *sa) {
-		std::replace_if(categ.begin(), categ.end(), [](char c) { return !atom_special(c); }, '_');
+		std::replace_if(categ.begin(), categ.end(), atom_special, '_');
 		if (!kw.empty())
 			kw += ' ';
 		kw += std::move(categ);
