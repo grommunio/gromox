@@ -18,3 +18,9 @@ Just try to follow the existing code. A few points of note:
 
 * `LKCS <https://www.kernel.org/doc/html/v7.1/process/coding-style.html>`_ has
   a lot of good points still.
+
+* Do not duplicate notes/comments across both source code and the commit
+  message. Each serves a different purpose.
+
+* Do not overload sentences with too many subclauses.
+  Avoid ';', em dashes and parenthesized inserts.
