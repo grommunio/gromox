@@ -796,32 +796,40 @@ static tarray_set_ptr item_to_tarray_set(libpff_item_t *item,
 	return tset;
 }
 
+/**
+ * Process a libpff "folder". This is not necessarily a MAPI folder i.e.
+ * message container.
+ *
+ * Returns 0 if the folder was not processed, 1 if it was. Returns a negative
+ * integer on error.
+ */
 static int do_folder(unsigned int depth, const parent_desc &parent,
-    libpff_item_t *item)
+    libpff_item_t *item, uint32_t ident)
 {
 	auto props = item_to_tpropval_a(item, parent.names);
 	if (g_show_tree) {
 		auto tset = item_to_tarray_set(item, parent.names);
 		gi_print(depth, *tset, ee_get_propname);
-	} else {
+	}
+	if (!g_wet_run)
+		return 0;
+	auto hidden_flag = props->get<const uint8_t>(PR_ATTR_HIDDEN);
+	auto skip_hidden = hidden_flag != nullptr && *hidden_flag != 0 && !g_with_hidden;
+	if (!g_show_tree) {
 		auto name = props->get<char>(PR_DISPLAY_NAME);
-		if (name != nullptr)
-			fprintf(stderr, "pff: Processing \"%s\"...\n", name);
 		/*
 		 * There are a bunch of folders with no dispname property at all.
 		 * Probably not worth mentioning in the low-verbosity level here.
 		 */
+		if (name != nullptr) {
+			if (skip_hidden)
+				fprintf(stderr, "pff: Skipping \"%s\" (PR_ATTR_HIDDEN=1)\n", name);
+			else
+				fprintf(stderr, "pff: Processing \"%s\"...\n", name);
+		}
 	}
-	uint32_t ident = 0;
-	if (libpff_item_get_identifier(item, &ident, nullptr) < 1)
-		throw YError("PF-1051");
-	if (!g_wet_run)
+	if (skip_hidden)
 		return 0;
-	auto hidden_flag = props->get<const uint8_t>(PR_ATTR_HIDDEN);
-	if (hidden_flag != nullptr && *hidden_flag != 0 && !g_with_hidden) {
-		fprintf(stderr, " - skipped due to PR_ATTR_HIDDEN=1\n");
-		return 1;
-	}
 
 	bool b_create = false;
 	auto iter = g_folder_map.find(ident);
@@ -984,7 +992,7 @@ static void do_print(unsigned int depth, libpff_item_t *item)
 	libpff_item_get_number_of_entries(item, &nent, nullptr);
 	tree(depth);
 	auto sp_nid = az_special_ident(ident);
-	tlog("[id=%lxh%s%s ntyp=%s type=%s nset=%d nent=%lu]\n",
+	tlog("[id=%lxh%s%s type=%s auxtype=%s nset=%d nent=%lu]\n",
 		static_cast<unsigned long>(ident),
 		*sp_nid != '\0' ? " " : "", sp_nid,
 		az_nid_type_to_str(ident),
@@ -1005,7 +1013,7 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
 		if (g_show_tree)
 			do_print(depth++, item);
-		ret = do_folder(depth, parent, item);
+		ret = do_folder(depth, parent, item, ident);
 		new_parent.type = MAPI_FOLDER;
 		new_parent.folder_id = ident;
 	} else if (is_mapi_message(ident)) {
