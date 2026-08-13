@@ -5,7 +5,8 @@ Gromox is the central groupware server component of grommunio. It is capable of
 serving as a drop-in replacement for Microsoft Exchange. Connectivity
 options include RPC/HTTP (Outlook Anywhere), MAPI/HTTP, EWS, IMAP, POP3, an
 SMTP-speaking LDA, and a PHP module with a MAPI function subset. Components can
-scale-out over multiple hosts.
+scale-out over multiple hosts. Data imports can be made from
+PST/OST/MSG/CDFV2/TNEF, EML/mbox/iCal/vCard, Kopano, Zarafa.
 
 |shield-agpl| |shield-release| |shield-cov| |shield-loc|
 
