@@ -301,13 +301,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
 	case PR_ACCOUNT:
 	case PR_SMTP_ADDRESS: {
 		std::string dn;
-		if (node_type == ab_tree::abnode_type::mlist)
-			pnode.mlist_info(&dn, nullptr, nullptr);
-		else if (node_type == ab_tree::abnode_type::user)
-			dn = znul(pnode.user_info(ab_tree::userinfo::mail_address));
-		else
-			return TRUE;
-		if (dn.empty())
+		if (pnode.fetch_prop(PR_SMTP_ADDRESS, dn) != ecSuccess)
 			return TRUE;
 		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)

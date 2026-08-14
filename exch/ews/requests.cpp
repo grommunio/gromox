@@ -521,8 +521,8 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 					persona.GivenName = std::move(val);
 				if (node.fetch_prop(PR_SURNAME, val) == ecSuccess)
 					persona.Surname = std::move(val);
-				if (auto email = node.user_info(ab_tree::userinfo::mail_address);
-				    email != nullptr && *email != '\0') {
+				std::string email;
+				if (node.fetch_prop(PR_SMTP_ADDRESS, email) == ecSuccess) {
 					tEmailAddressType addr;
 					addr.Name         = persona.DisplayName;
 					addr.EmailAddress = email;
@@ -537,7 +537,7 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 					 * entry as resolvable/insertable.
 					 */
 					tPersonaId pid;
-					pid.Id = base64_encode(email);
+					pid.Id = base64_encode(std::move(email));
 					persona.PersonaId = std::move(pid);
 					persona.RelevanceScore = UINT32_MAX;
 				}
@@ -632,24 +632,27 @@ void process(mGetPersonaRequest &&request, XMLElement *response, const EWSContex
 				ab_tree::ab_node node(it);
 				if (node.hidden() & AB_HIDE_RESOLVE)
 					continue;
-				auto email = node.user_info(ab_tree::userinfo::mail_address);
-				if (email == nullptr || *email == '\0' ||
-				    strcasecmp(email, target.c_str()) != 0)
+				std::string email;
+				if (node.fetch_prop(PR_SMTP_ADDRESS, email) != ecSuccess ||
+				    strcasecmp(email.c_str(), target.c_str()) != 0)
 					continue;
 				std::string val;
 				tPersona persona;
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
 					persona.DisplayName = std::move(val);
+
 				tEmailAddressType addr;
 				addr.Name = persona.DisplayName;
 				addr.EmailAddress = email;
-				addr.RoutingType = "SMTP";
-				addr.MailboxType = Enum::Mailbox;
+				addr.RoutingType  = "SMTP";
+				addr.MailboxType  = Enum::Mailbox;
 				persona.EmailAddress = std::move(addr);
+
 				tPersonaId pid;
-				pid.Id = base64_encode(email);
-				persona.PersonaId = std::move(pid);
+				pid.Id = base64_encode(std::move(email));
+				persona.PersonaId   = std::move(pid);
 				persona.PersonaType = "Person";
+
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
 				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)

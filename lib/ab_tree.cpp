@@ -472,6 +472,25 @@ bool ab_base::exists(minid mid) const
  */
 ec_error_t ab_base::fetch_prop(minid mid, proptag_t tag, std::string &prop) const
 {
+	/*
+	 * Do not take these props from user_properties. They are just too
+	 * essential and disagreeing values could lead to confusion.
+	 */
+	if (tag == PR_SMTP_ADDRESS) {
+		if (type(mid) == abnode_type::mlist) {
+			std::string dn;
+			if (!mlist_info(mid, &dn, nullptr, nullptr) || dn.empty())
+				return ecNotFound;
+			prop = std::move(dn);
+			return ecSuccess;
+		}
+		auto addr = user_info(mid, userinfo::mail_address);
+		if (addr == nullptr || *addr == '\0')
+			return ecNotFound;
+		prop = addr;
+		return ecSuccess;
+	}
+
 	const sql_user *user = fetch_user(mid);
 	if (!user)
 		return ecNotFound;
