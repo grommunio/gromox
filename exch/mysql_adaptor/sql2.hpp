@@ -46,7 +46,7 @@ struct mysql_plugin final {
 	~mysql_plugin();
 	void init(mysql_adaptor_init_param &&);
 	int run();
-	bool reload_config(std::shared_ptr<config_file> &&);
+	bool reload_config(std::shared_ptr<config_file> &&, std::shared_ptr<config_file> &&);
 	bool db_upgrade_check_2(MYSQL *);
 	bool db_upgrade_check();
 	MYSQL *sql_make_conn();

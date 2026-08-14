@@ -588,6 +588,17 @@ void mysql_plugin::init(mysql_adaptor_init_param &&parm)
 	}
 }
 
+using mlist_cache_key = std::pair<std::string, std::string>;
+using mlist_cache_verdict = std::pair<bool, time_point>;
+static std::mutex g_mlist_cache_lock;
+static std::map<mlist_cache_key, mlist_cache_verdict> g_mlist_cache;
+static time_duration g_mlist_cache_lifetime = std::chrono::seconds(60);
+
+static constexpr cfg_directive mysql_gromox_cfg_defaults[] = {
+	{"mlist_cache_lifetime", "1min", CFG_TIME},
+	CFG_TABLE_END,
+};
+
 static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 	{"connection_num", "8", CFG_SIZE},
 	{"enable_firsttime_password", "no", CFG_BOOL},
@@ -603,8 +614,17 @@ static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&cfg)
+bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&gxcfg,
+    std::shared_ptr<config_file> &&cfg)
 {
+	if (gxcfg == nullptr)
+		gxcfg = config_file_initd("gromox.cfg", get_config_path(),
+		      mysql_gromox_cfg_defaults);
+	if (gxcfg == nullptr) {
+		mlog(LV_ERR, "mysql_adaptor: config_file_initd mysql_adaptor.cfg: %s",
+		       strerror(errno));
+		return false;
+	}
 	if (cfg == nullptr)
 		cfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
 		      mysql_adaptor_cfg_defaults);
@@ -646,6 +666,7 @@ bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&cfg)
 		par.schema_upgrade = SSU_AUTOUPGRADE;
 
 	par.enable_firsttimepw = cfg->get_ll("enable_firsttime_password");
+	g_mlist_cache_lifetime = std::chrono::seconds(gxcfg->get_ll("mlist_cache_lifetime"));
 	init(std::move(par));
 	return true;
 }
@@ -778,7 +799,7 @@ bool SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data) try
 		return TRUE;
 	} else if (reason == PLUGIN_RELOAD) {
 		if (le_mysql_plugin.has_value())
-			le_mysql_plugin->reload_config(nullptr);
+			le_mysql_plugin->reload_config(nullptr, nullptr);
 		return TRUE;
 	} else if (reason != PLUGIN_INIT) {
 		return TRUE;
@@ -786,6 +807,13 @@ bool SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data) try
 
 	le_mysql_plugin.emplace();
 	LINK_SVC_API(data);
+	auto gxcfg = config_file_initd("gromox.cfg", get_config_path(),
+	             mysql_gromox_cfg_defaults);
+	if (gxcfg == nullptr) {
+		mlog(LV_ERR, "mysql_adaptor: config_file_initd mysql_adaptor.cfg: %s",
+		       strerror(errno));
+		return false;
+	}
 	auto cfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
 	           mysql_adaptor_cfg_defaults);
 	if (cfg == nullptr) {
@@ -793,7 +821,7 @@ bool SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data) try
 		       strerror(errno));
 		return false;
 	}
-	if (!le_mysql_plugin->reload_config(std::move(cfg)))
+	if (!le_mysql_plugin->reload_config(std::move(gxcfg), std::move(cfg)))
 		return false;
 	if (le_mysql_plugin->run() != 0) {
 		mlog(LV_ERR, "mysql_adaptor: failed to startup");
@@ -1092,17 +1120,36 @@ static bool mlist_contains(sqlconn &conn, uint32_t list_id, mlist_type mtype,
 bool mysql_plugin::check_mlist_include(const char *mlist_name,
     const char *account, unsigned int max_depth) try
 {
-	if (max_depth == 0)
+	if (max_depth == 0 || mlist_name == nullptr || account == nullptr)
 		return false;
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn)
-		return 0;
-	auto [id, type] = resolve_list_id(*conn, mlist_name);
-	if (id == 0)
-		return false;
-	if (type == mlist_type::domain)
-		return mlist_domain_contains(&*conn, mlist_name, account);
-	return mlist_contains(*conn, id, type, account, max_depth - 1);
+	auto ttl = g_mlist_cache_lifetime;
+	auto now = std::chrono::steady_clock::now();
+	mlist_cache_key key;
+	if (ttl.count() > 0) {
+		key = {mlist_name, account};
+		std::lock_guard hold(g_mlist_cache_lock);
+		auto it = g_mlist_cache.find(key);
+		if (it != g_mlist_cache.end() && now - it->second.second < ttl)
+			return it->second.first;
+	}
+	bool result = false;
+	{
+		auto conn = g_sqlconn_pool.get_wait();
+		if (!conn)
+			return false; /* transient failure: do not cache */
+		auto [id, type] = resolve_list_id(*conn, mlist_name);
+		if (id != 0)
+			result = type == mlist_type::domain ?
+			         mlist_domain_contains(&*conn, mlist_name, account) :
+			         mlist_contains(*conn, id, type, account, max_depth - 1);
+	}
+	if (ttl.count() > 0) {
+		std::lock_guard hold(g_mlist_cache_lock);
+		if (g_mlist_cache.size() >= 200000)
+			g_mlist_cache.clear();
+		g_mlist_cache[std::move(key)] = {result, now};
+	}
+	return result;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1729", e.what());
 	return false;
