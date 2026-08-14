@@ -91,7 +91,8 @@ static void filter_folder_map(gi_folder_map_t &fmap)
 		fmap.emplace(MAILBOX_FID_UNANCHORED, tgt_folder{false, g_anchor_folder != 0 ?
 			g_anchor_folder : PUBLIC_FID_IPMSUBTREE, ""});
 	for (auto &p : fmap)
-		p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
+		if (p.second.fid_to != MAILBOX_FID_UNANCHORED)
+			p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
 }
 
 static void validate_magic(const char *magic)
@@ -326,12 +327,15 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 	if (current_it != g_folder_map.end() && current_it->second.create) {
 		/*
 		 * #1. Instruction to create folder beneath @fid_to
-		 * such as {NID_ROOT_FOLDER, {true, IPMSUBTREE, "Import of ..."}}
+		 * such as NID_ROOT_FOLDER =>
+		 * {true, IPMSUBTREE/UNANCHORED, "Import of ..."}
 		 */
 		if (props.set(PR_DISPLAY_NAME, current_it->second.create_name.c_str()) == ecServerOOM)
 			throw std::bad_alloc();
-		auto ret = exm_create_folder(current_it->second.fid_to,
-			   &props, g_oexcl, &new_fid);
+		auto fid_to = current_it->second.fid_to;
+		if (fid_to == MAILBOX_FID_UNANCHORED)
+			fid_to = eid_t(1, g_anchor_folder);
+		auto ret = exm_create_folder(fid_to, &props, g_oexcl, &new_fid);
 		if (ret < 0) {
 			fprintf(stderr, "exm: folder for input object %llxh could not be created\n", LLU{obd.nid});
 			return ret;
@@ -346,13 +350,15 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 	} else if (current_it != g_folder_map.end() && !current_it->second.create) {
 		/*
 		 * #2. Instruction to splice @nid onto @fid_to (preexisting folder)
-		 * such as {0x8062, {false, WASTEBASKET}}.
+		 * such as 0x8062 => {false, WASTEBASKET}.
 		 *
 		 * Nothing needs to be done.
 		 * Subobjects will enter case #3.
 		 */
-		//new_fid = current_it->second.fid_to;
-		return exm_permissions(current_it->second.fid_to, perms);
+		const auto &fid_to = current_it->second.fid_to;
+		if (fid_to == MAILBOX_FID_UNANCHORED)
+			return 0;
+		return exm_permissions(fid_to, perms);
 	} else if (parent_it != g_folder_map.end()) {
 		/*
 		 * #3. The parent appears in the folder map.
@@ -568,8 +574,10 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 		for (auto i = 0U; i < g_repeat_iter; ++i) {
 			if (i > 0 && i % 1024 == 0)
 				fprintf(stderr, "importer repeat cycle %u/%u\n", i, g_repeat_iter);
-			auto ret = exm_create_msg(folder_it->second.fid_to,
-			           &ctnt, im_repr, digest);
+			auto fid_to = folder_it->second.fid_to;
+			if (fid_to == MAILBOX_FID_UNANCHORED)
+				fid_to = g_anchor_folder;
+			auto ret = exm_create_msg(fid_to, &ctnt, im_repr, digest);
 			if (ret != EXIT_SUCCESS)
 				return ret;
 		}
