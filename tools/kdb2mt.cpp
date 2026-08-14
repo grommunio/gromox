@@ -1078,6 +1078,14 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 		auto dn = props->get<const char>(PR_DISPLAY_NAME);
 		fprintf(stderr, "Processing folder \"%s\" (%zu elements)...\n",
 		        znul(dn), item.m_sub_hids.size());
+		if (dn == nullptr || *dn == '\0') {
+			auto new_name = std::format("Unnamed folder {:}", item.m_hid);
+			TAGGED_PROPVAL pv;
+			pv.proptag = PR_DISPLAY_NAME;
+			pv.pvalue = new_name.data();
+			if (props->set(pv) == ecServerOOM)
+				throw std::bad_alloc();
+		}
 	}
 	auto hidden_flag = props->get<const uint8_t>(PR_ATTR_HIDDEN);
 	if (hidden_flag != nullptr && *hidden_flag != 0 && !g_with_hidden) {
