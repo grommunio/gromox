@@ -801,8 +801,16 @@ void db_base::drop_all()
  */
 static bool dbase_is_purgable(const db_base &pdb, time_point now)
 {
-	/* Guard against writers that might interfere with reads. */
-	std::lock_guard hold(pdb.giant_lock);
+	/*
+	 * Take the giant lock because we want to be the exclusive
+	 * user if this object is going away. Only use try_lock,
+	 * because a db in active use is not purgable anyway. Our
+	 * caller (db_expiry_thread) holds g_hash_lock, and we must
+	 * not block for any significant amount of time.
+	 */
+	std::unique_lock hold(pdb.giant_lock, std::try_to_lock);
+	if (!hold.owns_lock())
+		return false;
 	if (pdb.tables.table_list.size() > 0)
 		/* emsmdb still references in-memory tables */
 		return false;
