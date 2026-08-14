@@ -512,17 +512,18 @@ sequence of subordinate folder names
 a folder path starting with a fixed symbolic name, optionally followed by a
 slash-separated sequence of subordinate folder names
 .PP
-The backslash may be used as a hierarchy separator instead; in any case, the
-chosen separator must be used consistently in the entire path.
+The backslash may be used as a hierarchy separator instead. In any case, the
+chosen separator must be used consistently in the entire path. The folder path
+is case-insensitive.
 .PP
 The recognized strings are: CALENDAR, COMMON_VIEWS, CONFLICTS, CONTACTS,
-DEFERRED_ACTION, DELETED (TRASH, WASTEBASKET), DRAFT, FINDER, INBOX,
+DEFERRED_ACTION, DELETED (TRASH, WASTEBASKET), DRAFTS, FINDER, INBOX,
 IPM_SUBTREE, JOURNAL, JUNK, LOCAL_FAILURES, NOTES, OUTBOX, SENT,
 SERVER_FAILURES, SHORTCUTS, SYNC_ISSUES, TASKS, VIEWS.
 .PP
 The purpose of these names is for referencing a built-in folder irrespective of
 its assigned name, which is dependent upon translation settings. The symbolic
-names can be used with private stores only; there are no names defined for
+names can be used with private stores only. There are no names defined for
 public folder contents at this time. There is also no parsing support for
 slashes in folder names. The slash character is always treated as a hierarchy
 separator.
