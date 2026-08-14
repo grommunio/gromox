@@ -117,6 +117,16 @@ void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) t
 		if (hjoin_enabled) {
 			info.htmls.insert(info.htmls.end(), std::make_move_iterator(cld_info.htmls.begin()), std::make_move_iterator(cld_info.htmls.end()));
 			info.hjoin.insert(info.hjoin.end(), std::make_move_iterator(cld_info.hjoin.begin()), std::make_move_iterator(cld_info.hjoin.end()));
+		} else if (info.htmls.empty() && !cld_info.htmls.empty()) {
+			/*
+			 * The HTML body is not required to sit in the very
+			 * first subpart; an attachment, a text part or an
+			 * image can precede it. Joining is not applicable
+			 * here (that is what hjoin_enabled selects), but the
+			 * body must still be picked up rather than dropped.
+			 */
+			info.htmls = std::move(cld_info.htmls);
+			info.hjoin = std::move(cld_info.hjoin);
 		}
 		if (cld_info.penriched != nullptr && info.penriched == nullptr)
 			info.penriched = std::move(cld_info.penriched);

@@ -404,6 +404,134 @@ static int select_parts_5()
 	return 0;
 }
 
+static char data_6[] =
+	"Content-Type: multipart/mixed; boundary=\"0\"\r\n"
+	"MIME-Version: 1.0\r\n"
+	"\r\n"
+	"--0\r\n"
+	"Content-Type: application/pdf; name=\"a.pdf\"\r\n"
+	"Content-Disposition: attachment; filename=\"a.pdf\"\r\n"
+	"\r\n"
+	"PDF\r\n"
+	"--0\r\n"
+	"Content-Type: multipart/alternative; boundary=\"1\"\r\n"
+	"\r\n"
+	"--1\r\n"
+	"Content-Type: text/plain; charset=\"utf-8\"\r\n"
+	"\r\n"
+	"ZplainZ\r\n"
+	"--1\r\n"
+	"Content-Type: text/html; charset=\"utf-8\"\r\n"
+	"\r\n"
+	"Zhtml1Z\r\n"
+	"--1--\r\n"
+	"--0--\r\n";
+static char data_7[] =
+	"Content-Type: multipart/mixed; boundary=\"0\"\r\n"
+	"MIME-Version: 1.0\r\n"
+	"\r\n"
+	"--0\r\n"
+	"Content-Type: application/pdf; name=\"a.pdf\"\r\n"
+	"Content-Disposition: attachment; filename=\"a.pdf\"\r\n"
+	"\r\n"
+	"PDF\r\n"
+	"--0\r\n"
+	"Content-Type: text/html; charset=\"utf-8\"\r\n"
+	"\r\n"
+	"Zhtml1Z\r\n"
+	"--0--\r\n";
+static char data_8[] =
+	"Content-Type: multipart/mixed; boundary=\"0\"\r\n"
+	"MIME-Version: 1.0\r\n"
+	"\r\n"
+	"--0\r\n"
+	"Content-Type: text/plain; charset=\"utf-8\"\r\n"
+	"\r\n"
+	"ZplainZ\r\n"
+	"--0\r\n"
+	"Content-Type: text/html; charset=\"utf-8\"\r\n"
+	"\r\n"
+	"Zhtml1Z\r\n"
+	"--0--\r\n";
+
+/*
+ * The HTML body may be preceded by other parts. Ensure it is still used as
+ * the body rather than being demoted to an attachment (which would leave
+ * PR_HTML to be autosynthesized from plaintext later on).
+ */
+static int select_parts_6()
+{
+	fprintf(stderr, "== T6\n");
+	MAIL m;
+	assert(m.refonly_parse(data_6, std::size(data_6)));
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
+	assert(mc != nullptr);
+	auto atl = mc->children.pattachments;
+	if (atl == nullptr || atl->count != 1)
+		gi_print(0, *mc);
+	assert(atl != nullptr && atl->count == 1);
+	auto v = atl->pplist[0]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
+	assert(v != nullptr && strcasecmp(v, "application/pdf") == 0);
+	v = mc->proplist.get<const char>(PR_BODY);
+	assert(v != nullptr && strcmp(v, "ZplainZ") == 0);
+	auto bin = mc->proplist.get<const BINARY>(PR_HTML);
+	assert(bin != nullptr);
+	assert(HX_memmem(bin->pv, bin->cb, "Zhtml1Z", 7) != nullptr);
+	return 0;
+}
+
+/* Same, but without any text/plain alternative to fall back to. */
+static int select_parts_7()
+{
+	fprintf(stderr, "== T7\n");
+	MAIL m;
+	assert(m.refonly_parse(data_7, std::size(data_7)));
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
+	assert(mc != nullptr);
+	auto atl = mc->children.pattachments;
+	if (atl == nullptr || atl->count != 1)
+		gi_print(0, *mc);
+	assert(atl != nullptr && atl->count == 1);
+	auto v = atl->pplist[0]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
+	assert(v != nullptr && strcasecmp(v, "application/pdf") == 0);
+	auto bin = mc->proplist.get<const BINARY>(PR_HTML);
+	assert(bin != nullptr);
+	assert(HX_memmem(bin->pv, bin->cb, "Zhtml1Z", 7) != nullptr);
+	return 0;
+}
+
+/* Some MUAs emit alternative bodies in a mixed container. */
+static int select_parts_8()
+{
+	fprintf(stderr, "== T8\n");
+	MAIL m;
+	assert(m.refonly_parse(data_8, std::size(data_8)));
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
+	assert(mc != nullptr);
+	auto atl = mc->children.pattachments;
+	if (atl != nullptr && atl->count != 0)
+		gi_print(0, *mc);
+	assert(atl == nullptr || atl->count == 0);
+	auto v = mc->proplist.get<const char>(PR_BODY);
+	assert(v != nullptr && strcmp(v, "ZplainZ") == 0);
+	auto bin = mc->proplist.get<const BINARY>(PR_HTML);
+	assert(bin != nullptr);
+	assert(HX_memmem(bin->pv, bin->cb, "Zhtml1Z", 7) != nullptr);
+	return 0;
+}
+
 static int ical_export_1()
 {
 	/*
@@ -532,6 +660,7 @@ int main()
 	int ret = EXIT_SUCCESS;
 	for (auto fct : {excess_attachment, select_parts_1, select_parts_1a,
 	     select_parts_2, select_parts_3, select_parts_4, select_parts_5,
+	     select_parts_6, select_parts_7, select_parts_8,
 	     ical_export_1, ical_export_2, hdrparse_1})
 		if (fct() != EXIT_SUCCESS)
 			ret = EXIT_FAILURE;
