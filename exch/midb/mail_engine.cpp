@@ -3373,6 +3373,35 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 	if (auto p = propvals.get<const uint32_t>(PR_FOLLOWUP_ICON); p != nullptr)
 		followup_icon = *p;
 
+	/*
+	 * \Answered:
+	 * PR_MSG_STATUS |= MSGSTATUS_ANSWERED
+	 * PR_ICON_INDEX = MAIL_ICON_REPLIED
+	 *
+	 * \Flagged:
+	 * PR_MSG_STATUS |= MSGSTATUS_TAGGED
+	 * PR_TODO_ITEM_FLAGS |= (f&MSGFLAG_UNSENT) ? TDIP_ActiveRecip : TDIP_Active
+	 * PR_FLAG_STATUS = 2
+	 * PR_FOLLOWUP_ICON = 6
+	 * PidLidTaskStatus = tsvNotStarted
+	 * PidLidFlagRequest = "Follow up"
+	 * PidLidPercentComplete = 0
+	 * PidLidTaskComplete = false
+	 * PidLidToDoTitle = {PR_SUBJECT}
+	 * PidLidValidFlagStringProof = {current time}
+	 *
+	 * \Deleted:
+	 * PR_MSG_STATUS |= MSGSTATUS_DELETED
+	 *
+	 * \Draft:
+	 * PR_MESSAGE_FLAGS |= MSGFLAG_UNSENT;
+	 *
+	 * $MDNSent:
+	 * PR_MSG_STATUS |= MSGSTATUS_MDNSENT;
+	 *
+	 * $Forwarded not supported
+	 * \Recent not supported
+	 */
 	if (set_unsent && !(message_flags & MSGFLAG_UNSENT)) {
 		message_flags |= MSGFLAG_UNSENT;
 		auto ret = me_set_u32(argv[1], message_id, PR_MESSAGE_FLAGS, message_flags);
@@ -3516,6 +3545,27 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 	if (auto p = propvals.get<const uint32_t>(PR_FOLLOWUP_ICON); p != nullptr)
 		followup_icon = *p;
 
+	/*
+	 * \Answer:
+	 * PR_MSG_STATUS &= ~MSGSTATUS_ANSWERED
+	 * PR_ICON_INDEX untouched
+	 *
+	 * \Flagged:
+	 * PR_MSG_STATUS &= ~MSGSTATUS_TAGGED
+	 * PR_TODO_ITEM_FLAGS = TDIP_None
+	 * Removes PR_FLAG_STATUS, PR_FOLLOWUP_ICON, PidLidTaskStatus,
+	 * PidLidFlagRequest, PidLidPercentComplete, PidLidTaskComplete,
+	 * PidLidToDoTitle
+	 *
+	 * \Deleted:
+	 * PR_MSGFLAG_STATUS &= ~MSGSTATUS_DELETED
+	 *
+	 * \Draft:
+	 * PR_MESSAGE_FLAGS &= ~MSGFLAG_UNSENT;
+	 *
+	 * $MDNSent:
+	 * PR_MSG_STATUS &= ~MSGSTATUS_MDNSENT;
+	 */
 	if (set_unsent && message_flags & MSGFLAG_UNSENT) {
 		message_flags &= ~MSGFLAG_UNSENT;
 		auto ret = me_set_u32(argv[1], message_id, PR_MESSAGE_FLAGS, message_flags);
