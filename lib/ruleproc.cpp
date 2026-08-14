@@ -1050,10 +1050,32 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 	return ecSuccess;
 }
 
+/* Extended-rule OP_MOVE/OP_COPY targets a folder in the user's own store. */
+static ec_error_t opx_move(rxparam &par, const rule_node &rule,
+    const EXT_MOVECOPY_ACTION &mc, uint8_t act_type)
+{
+	if (mc.folder_eid.eid_type != EITLT_PRIVATE_FOLDER)
+		return ecSuccess;
+	SVREID svreid;
+	svreid.folder_id = rop_util_make_eid_ex(1,
+		rop_util_gc_to_value(mc.folder_eid.folder_gc));
+	MOVECOPY_ACTION conv;
+	conv.same_store = 1;
+	conv.pfolder_eid = &svreid;
+	return op_copy(par, rule, conv, act_type);
+}
+
 static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
     const EXT_ACTION_BLOCK &act, size_t act_idx)
 {
 	switch (act.type) {
+	case OP_MOVE:
+	case OP_COPY: {
+		auto mc = static_cast<EXT_MOVECOPY_ACTION *>(act.pdata);
+		if (mc == nullptr)
+			return ecSuccess;
+		return opx_move(par, rule, *mc, act.type);
+	}
 	case OP_MARK_AS_READ:
 		return op_read(par, rule);
 	case OP_TAG:
