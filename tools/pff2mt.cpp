@@ -830,6 +830,14 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 			fprintf(stderr, "pff: Skipping \"%s\" (PR_ATTR_HIDDEN=1)\n", name);
 		else
 			fprintf(stderr, "pff: Processing \"%s\"...\n", name);
+		if (*name == '\0') {
+			auto new_name = std::format("Unnamed folder 0x{:x}", ident);
+			TAGGED_PROPVAL pv;
+			pv.proptag = PR_DISPLAY_NAME;
+			pv.pvalue = new_name.data();
+			if (props->set(pv) == ecServerOOM)
+				throw std::bad_alloc();
+		}
 	}
 	if (skip_hidden)
 		return 0;
