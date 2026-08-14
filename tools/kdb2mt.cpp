@@ -884,7 +884,7 @@ void driver::fmap_setup_standard(const char *title)
 	strftime(timebuf, std::size(timebuf), " @%FT%T", tm);
 	m_folder_map.clear();
 	auto root = get_root_folder();
-	m_folder_map.emplace(root->m_hid, tgt_folder{true, PRIVATE_FID_IPMSUBTREE,
+	m_folder_map.emplace(root->m_hid, tgt_folder{true, MAILBOX_FID_UNANCHORED,
 		"Import of "s + title + timebuf});
 }
 

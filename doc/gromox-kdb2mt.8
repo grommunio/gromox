@@ -122,13 +122,12 @@ leads to \fIconvert\fP. \fIauto\fP plus the absence of \-\-user\-map leads to
 \fB\-\-with\-hidden\fP, \fB\-\-without\-hidden\fP
 This option controls the import of folders that have PR_ATTR_HIDDEN=1.
 .SH Splice mode
-Normally, kdb2mt will have a folder mapping table that specifies one entry,
-which is "(Source root)" to "(Target root)\\Top of Information Store\\Import of
-GUID @date". Any objects within an entry's source folder (including more
-folders) are copied. This default entry makes sure absolutely everything is
-imported, without loss.
+By default, kdb2mt transfers the mail hierarchy and contents such that the
+Kopano mailbox root folder is mapped to a new unanchored folder "Import of
+<GUID> @<date>". Refer to gromox\-import(8) for details on how/where unanchored
+objects are ultimately placed with the target mailbox.
 .PP
-Using the \-s option, this behavior will change. The default mapping is
+When the \-s option is used, this behavior changes. The default mapping is
 replaced by one that will intermix imported folders with an existing hierarchy.
 Specifically, special folders such as the root folder item, Top of Information
 Store (a.k.a. TOIS or IPM_SUBTREE), Inbox, etc. are mapped. This only works
