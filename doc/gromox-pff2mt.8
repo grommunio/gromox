@@ -18,9 +18,10 @@ PST (Personal Storage Table)
 .IP \(bu 4
 OST (Offline Storage Table)
 .PP
-By default, pff2mt creates a new folder "Import of <xyz.pst> on <date>"
-within IPM_SUBTREE ("Top of Information Store") and places all PFF objects into
-that new subfolder.
+By default, pff2mt transfers the mail hierarchy and contents such that the PFF
+root folder is mapped to a new unanchored folder "Import of <xyz.pst> on
+<date>". Refer to gromox\-import(8) for details on how/where unanchored objects
+are ultimately placed with the target mailbox.
 .PP
 Note that folders of non-default mailboxes are stored in a flat fashion in OST.
 A secretary.ost file with hierarchy like "(Boss)\\Inbox\\2021\\Invoices",
@@ -58,17 +59,16 @@ Default: skip hidden folders
 .TP
 \fB\-\-only\-obj\fP \fInid\fP
 Extract just the object with the given PFF node id. This option may be
-specified multiple times. The objects will be unanchored; see gromox\-import(8)
-for where messages are placed.
+specified multiple times. The objects will be unanchored.
 .SH Examples
 Import of a PFF-compatible file into a Gromox mailbox via exmdb transport:
 .PP
 gromox\-pff2mt sample.pst | gromox\-import \-u user@domain.example
 .PP
-gromox-import has more target options; see its manpage.
+gromox-import has more target options. See its manpage.
 .SH Bugs
 Embedded messages are treated as subitems by libpff. Luckily, the only
-consequence is that the tree view (-t) shows duplicate NID visits.
+consequence is that the tree view (\-t) shows duplicate NID visits.
 .PP
 .RS 4
 .nf

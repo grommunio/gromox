@@ -1085,7 +1085,7 @@ static void az_fmap_standard(libpff_file_t *file, const char *filename)
 	time_t now = time(nullptr);
 	auto tm = localtime(&now);
 	strftime(timebuf, std::size(timebuf), " @%FT%T", tm);
-	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, PRIVATE_FID_IPMSUBTREE,
+	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, MAILBOX_FID_UNANCHORED,
 		"Import of "s + HX_basename(filename) + timebuf});
 }
 

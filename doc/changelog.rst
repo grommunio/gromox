@@ -33,6 +33,12 @@ Fixes:
 * ldap_adaptor: recognize LDAP connections that have timed out at the TCP level
   and reconnect
 
+Behavior changes:
+
+* pff2mt: The root folder from PFF files is now emitted as "unanchored" in the
+  GXMT stream (previously: anchored to IPM_SUBTREE) and is now subject to
+  re-anchoring (``gromox-import -B``).
+
 
 Gromox 3.9 (2026-07-24)
 =======================
