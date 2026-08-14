@@ -813,20 +813,23 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	}
 	if (!g_wet_run)
 		return 0;
+	if ((ident & NID_TYPE_MASK) != NID_TYPE_NORMAL_FOLDER)
+		return 0;
 	auto hidden_flag = props->get<const uint8_t>(PR_ATTR_HIDDEN);
 	auto skip_hidden = hidden_flag != nullptr && *hidden_flag != 0 && !g_with_hidden;
 	if (!g_show_tree) {
 		auto name = props->get<char>(PR_DISPLAY_NAME);
 		/*
-		 * There are a bunch of folders with no dispname property at all.
-		 * Probably not worth mentioning in the low-verbosity level here.
+		 * There are a bunch of folders with no dispname property at
+		 * all, but they are often NID_TYPE_INTERNAL, which was already
+		 * filtered.
 		 */
-		if (name != nullptr) {
-			if (skip_hidden)
-				fprintf(stderr, "pff: Skipping \"%s\" (PR_ATTR_HIDDEN=1)\n", name);
-			else
-				fprintf(stderr, "pff: Processing \"%s\"...\n", name);
-		}
+		if (name == nullptr)
+			return 0;
+		if (skip_hidden)
+			fprintf(stderr, "pff: Skipping \"%s\" (PR_ATTR_HIDDEN=1)\n", name);
+		else
+			fprintf(stderr, "pff: Processing \"%s\"...\n", name);
 	}
 	if (skip_hidden)
 		return 0;
