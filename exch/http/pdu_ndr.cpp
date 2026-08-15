@@ -45,7 +45,7 @@ static pack_result pdu_ndr_pull_dcerpc_ctx_list(NDR_PULL *pndr,
 	return pack_result::alloc;
 }
 
-static pack_result pdu_ndr_pull_dcerpc_ack_ctx(NDR_PULL *pndr, DCERPC_ACK_CTX *r)
+static pack_result pdu_ndr_pull_dcerpc_ack_ctx(NDR_PULL *pndr, dcerpc_ack_ctx *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint16(&r->result));
@@ -77,7 +77,7 @@ static pack_result pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr,
 	return pack_result::alloc;
 }
 
-static pack_result pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, DCERPC_REQUEST *r)
+static pack_result pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, dcerpc_request *r)
 {
 	uint32_t saved_flags;
 	
@@ -100,7 +100,7 @@ static pack_result pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, DCERPC_REQUEST *r
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_pull_dcerpc_response(NDR_PULL *pndr, DCERPC_RESPONSE *r)
+static pack_result pdu_ndr_pull_dcerpc_response(NDR_PULL *pndr, dcerpc_response *r)
 {
 	uint32_t saved_flags;
 	
@@ -123,7 +123,7 @@ static pack_result pdu_ndr_pull_dcerpc_response(NDR_PULL *pndr, DCERPC_RESPONSE 
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_pull_dcerpc_fault(NDR_PULL *pndr, DCERPC_FAULT *r)
+static pack_result pdu_ndr_pull_dcerpc_fault(NDR_PULL *pndr, dcerpc_fault *r)
 {
 	uint32_t saved_flags;
 	
@@ -166,7 +166,7 @@ static pack_result pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, dcerpc_fack *r) try
 	return pack_result::alloc;
 }
 
-static pack_result pdu_ndr_pull_dcerpc_cancel_ack(NDR_PULL *pndr, DCERPC_CANCEL_ACK *r)
+static pack_result pdu_ndr_pull_dcerpc_cancel_ack(NDR_PULL *pndr, dcerpc_cancel_ack *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->version));
@@ -175,7 +175,7 @@ static pack_result pdu_ndr_pull_dcerpc_cancel_ack(NDR_PULL *pndr, DCERPC_CANCEL_
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_pull_dcerpc_bind(NDR_PULL *pndr, DCERPC_BIND *r)
+static pack_result pdu_ndr_pull_dcerpc_bind(NDR_PULL *pndr, dcerpc_bind *r)
 {
 	uint32_t saved_flags;
 	uint8_t num = 0;
@@ -238,7 +238,7 @@ static pack_result pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr,
 	return pack_result::alloc;
 }
 
-static pack_result pdu_ndr_pull_dcerpc_co_cancel(NDR_PULL *pndr, DCERPC_CO_CANCEL *r)
+static pack_result pdu_ndr_pull_dcerpc_co_cancel(NDR_PULL *pndr, dcerpc_co_cancel *r)
 {
 	uint32_t saved_flags;
 	
@@ -252,7 +252,7 @@ static pack_result pdu_ndr_pull_dcerpc_co_cancel(NDR_PULL *pndr, DCERPC_CO_CANCE
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_pull_dcerpc_orphaned(NDR_PULL *pndr, DCERPC_ORPHANED *r)
+static pack_result pdu_ndr_pull_dcerpc_orphaned(NDR_PULL *pndr, dcerpc_orphaned *r)
 {
 	uint32_t saved_flags;
 	
@@ -266,7 +266,7 @@ static pack_result pdu_ndr_pull_dcerpc_orphaned(NDR_PULL *pndr, DCERPC_ORPHANED 
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_pull_dcerpc_auth3(NDR_PULL *pndr, DCERPC_AUTH3 *r)
+static pack_result pdu_ndr_pull_dcerpc_auth3(NDR_PULL *pndr, dcerpc_auth3 *r)
 {
 	uint32_t saved_flags;
 	
@@ -373,7 +373,7 @@ static pack_result pdu_ndr_pull_rts_clientaddress(NDR_PULL *pndr,
 }
 
 static pack_result pdu_ndr_pull_rts_cmds(NDR_PULL *pndr,
-	uint32_t command_type, RTS_CMDS *r)
+    uint32_t command_type, rts_cmds *r)
 {
 	TRY(pndr->union_align(4));
 	switch (command_type) {
@@ -429,7 +429,7 @@ static pack_result pdu_ndr_pull_rts_cmds(NDR_PULL *pndr,
 	return pack_result::ok;
 }
 
-static pack_result pdu_ndr_pull_rts_cmd(NDR_PULL *pndr, RTS_CMD *r)
+static pack_result pdu_ndr_pull_rts_cmd(NDR_PULL *pndr, rts_cmd *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->command_type));
@@ -554,7 +554,7 @@ static pack_result pdu_ndr_pull_dcerpc_payload(NDR_PULL *pndr, uint8_t pkt_type,
 	return pack_result::alloc;
 }
 
-pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt)
+pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, dcerpc_ncacn_packet *pkt)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint8(&pkt->rpc_vers));
@@ -581,7 +581,7 @@ static pack_result pdu_ndr_push_dcerpc_object(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_dcerpc_request(NDR_PUSH *pndr,
-	const DCERPC_REQUEST *r)
+	const dcerpc_request *r)
 {
 	uint32_t saved_flags;
 	
@@ -605,7 +605,7 @@ static pack_result pdu_ndr_push_dcerpc_request(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_dcerpc_response(NDR_PUSH *pndr,
-	const DCERPC_RESPONSE *r)
+	const dcerpc_response *r)
 {
 	uint32_t saved_flags;
 	
@@ -628,7 +628,7 @@ static pack_result pdu_ndr_push_dcerpc_response(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_dcerpc_fault(NDR_PUSH *pndr,
-	const DCERPC_FAULT *r)
+	const dcerpc_fault *r)
 {
 	uint32_t saved_flags;
 	
@@ -646,7 +646,7 @@ static pack_result pdu_ndr_push_dcerpc_fault(NDR_PUSH *pndr,
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_push_dcerpc_fack(NDR_PUSH *pndr, const DCERPC_FACK *r)
+static pack_result pdu_ndr_push_dcerpc_fack(NDR_PUSH *pndr, const dcerpc_fack *r)
 {
 	if (r->selack.size() > UINT16_MAX)
 		return pack_result::format;
@@ -664,7 +664,7 @@ static pack_result pdu_ndr_push_dcerpc_fack(NDR_PUSH *pndr, const DCERPC_FACK *r
 }
 
 static pack_result pdu_ndr_push_dcerpc_cancel_ack(NDR_PUSH *pndr,
-	const DCERPC_CANCEL_ACK *r)
+	const dcerpc_cancel_ack *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->version));
@@ -674,7 +674,7 @@ static pack_result pdu_ndr_push_dcerpc_cancel_ack(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_dcerpc_ctx_list(NDR_PUSH *pndr,
-	const DCERPC_CTX_LIST *r)
+	const dcerpc_ctx_list *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->context_id));
@@ -687,7 +687,7 @@ static pack_result pdu_ndr_push_dcerpc_ctx_list(NDR_PUSH *pndr,
 	return pndr->trailer_align(4);
 }
 
-static pack_result pdu_ndr_push_dcerpc_bind(NDR_PUSH *pndr, const DCERPC_BIND *r)
+static pack_result pdu_ndr_push_dcerpc_bind(NDR_PUSH *pndr, const dcerpc_bind *r)
 {
 	uint32_t saved_flags;
 	
@@ -710,7 +710,7 @@ static pack_result pdu_ndr_push_dcerpc_bind(NDR_PUSH *pndr, const DCERPC_BIND *r
 }
 
 static pack_result pdu_ndr_push_dcerpc_ack_ctx(NDR_PUSH &x,
-    const DCERPC_ACK_CTX &r)
+    const dcerpc_ack_ctx &r)
 {
 	TRY(x.align(4));
 	TRY(x.p_uint16(r.result));
@@ -720,7 +720,7 @@ static pack_result pdu_ndr_push_dcerpc_ack_ctx(NDR_PUSH &x,
 }
 
 static pack_result pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
-	const DCERPC_BIND_ACK *r)
+	const dcerpc_bind_ack *r)
 {
 	uint32_t saved_flags;
 	
@@ -755,7 +755,7 @@ static pack_result pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_dcerpc_bind_nak(NDR_PUSH *pndr,
-    const DCERPC_BIND_NAK *r)
+    const dcerpc_bind_nak *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->reject_reason));
@@ -772,7 +772,7 @@ static pack_result pdu_ndr_push_dcerpc_bind_nak(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_dcerpc_co_cancel(NDR_PUSH *pndr,
-	const DCERPC_CO_CANCEL *r)
+	const dcerpc_co_cancel *r)
 {
 	uint32_t saved_flags;
 	
@@ -789,7 +789,7 @@ static pack_result pdu_ndr_push_dcerpc_co_cancel(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_dcerpc_orphaned(NDR_PUSH *pndr,
-	const DCERPC_ORPHANED *r)
+	const dcerpc_orphaned *r)
 {
 	uint32_t saved_flags;
 	
@@ -805,7 +805,7 @@ static pack_result pdu_ndr_push_dcerpc_orphaned(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_dcerpc_auth3(NDR_PUSH *pndr,
-	const DCERPC_AUTH3 *r)
+	const dcerpc_auth3 *r)
 {
 	uint32_t saved_flags;
 	
@@ -880,7 +880,7 @@ static pack_result pdu_ndr_push_rts_clientaddress(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
-	uint32_t command_type, const RTS_CMDS *r)
+    uint32_t command_type, const rts_cmds *r)
 {
 	TRY(pndr->union_align(4));
 	switch (command_type) {
@@ -935,7 +935,7 @@ static pack_result pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
 	return pack_result::ok;
 }
 
-static pack_result pdu_ndr_push_rts_cmd(NDR_PUSH *pndr, const RTS_CMD *r)
+static pack_result pdu_ndr_push_rts_cmd(NDR_PUSH *pndr, const rts_cmd *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->command_type));
@@ -944,7 +944,7 @@ static pack_result pdu_ndr_push_rts_cmd(NDR_PUSH *pndr, const RTS_CMD *r)
 	
 }
 
-static pack_result pdu_ndr_push_dcerpc_rts(NDR_PUSH *pndr, const DCERPC_RTS *r)
+static pack_result pdu_ndr_push_dcerpc_rts(NDR_PUSH *pndr, const dcerpc_rts *r)
 {
 	if (r->commands.size() > UINT16_MAX)
 		return pack_result::format;
@@ -1023,7 +1023,7 @@ static pack_result pdu_ndr_push_dcerpc_payload(NDR_PUSH *pndr, uint8_t pkt_type,
 	return pack_result::bad_switch;
 }
 
-pack_result pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt)
+pack_result pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, dcerpc_ncacn_packet *pkt)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint8(pkt->rpc_vers));

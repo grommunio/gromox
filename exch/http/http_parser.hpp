@@ -97,7 +97,7 @@ struct rpc_out_channel final : public rpc_channel {
 	BOOL b_obsolete = false; /* out channel is obsolete, wait for new out channel */
 	uint32_t window_size = 0;
 	uint32_t bytes_sent = 0; /* length of sent data including RPC and RTS PDU, chunk data */
-	DCERPC_CALL *pcall = nullptr; /* first output pcall of PDU by out channel itself */
+	dcerpc_call *pcall = nullptr; /* first output pcall of PDU by out channel itself */
 };
 
 using RPC_IN_CHANNEL = rpc_in_channel;
@@ -171,7 +171,7 @@ int http_parser_threads_event_proc(int action);
 extern bool http_parser_get_password(const char *username, char *password);
 extern HTTP_CONTEXT *http_parser_get_context();
 void http_parser_vconnection_async_reply(const char *host,
-	int port, const char *connection_cookie, DCERPC_CALL *pcall);
+	int port, const char *connection_cookie, dcerpc_call *pcall);
 extern void http_report();
 extern std::string http_make_err_response(const http_context &, http_status);
 

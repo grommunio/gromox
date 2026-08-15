@@ -32,7 +32,6 @@ struct dcerpc_endpoint {
 	uint32_t last_group_id = 0;
 	uint16_t tcp_port = 0; /* only for ncacn_http */
 };
-using DCERPC_ENDPOINT = dcerpc_endpoint;
 
 struct PROC_PLUGIN : public gromox::generic_module {
 	PROC_PLUGIN() = default;
@@ -49,7 +48,6 @@ struct dcerpc_auth_context {
 	NTLMSSP_SESSION_INFO session_info{};
 	BOOL is_login = false;
 };
-using DCERPC_AUTH_CONTEXT = dcerpc_auth_context;
 
 struct dcerpc_context {
 	~dcerpc_context();
@@ -59,10 +57,9 @@ struct dcerpc_context {
 	uint32_t stat_flags; /* this is the default stat_flags */
 	uint32_t assoc_group_id;
 	const DCERPC_INTERFACE *pinterface; /* the ndr function table for the chosen interface */
-	const DCERPC_ENDPOINT *pendpoint;
+	const dcerpc_endpoint *pendpoint;
 	DOUBLE_LIST async_list;
 };
-using DCERPC_CONTEXT = dcerpc_context;
 
 /* virtual connection to DCE RPC server, actually only data structure of context */
 struct pdu_processor {
@@ -77,12 +74,11 @@ struct pdu_processor {
 	int async_num = 0;
 	uint32_t assoc_group_id = 0; /* we do not support association mechanism */
 	uint32_t cli_max_recv_frag = 0; /* the maximum size the client wants to receive */
-	DCERPC_ENDPOINT *pendpoint = nullptr;
+	dcerpc_endpoint *pendpoint = nullptr;
 	std::vector<std::shared_ptr<dcerpc_context>> context_list;
 	std::vector<std::shared_ptr<dcerpc_auth_context>> auth_list;
 	DOUBLE_LIST fragmented_list{};
 };
-using PDU_PROCESSOR = pdu_processor;
 
 /* the state of an ongoing dcerpc call */
 struct dcerpc_call {
@@ -98,7 +94,7 @@ struct dcerpc_call {
 	BOOL rts_ping();
 
 	DOUBLE_LIST_NODE node{};
-	PDU_PROCESSOR *pprocessor = nullptr;
+	pdu_processor *pprocessor = nullptr;
 	std::shared_ptr<dcerpc_context> pcontext;
 	std::shared_ptr<dcerpc_auth_context> pauth_ctx;
 	BOOL b_bigendian = false;
@@ -107,7 +103,6 @@ struct dcerpc_call {
 	dcerpc_ncacn_packet pkt;
 	DOUBLE_LIST reply_list{};
 };
-using DCERPC_CALL = dcerpc_call;
 
 /* PDU blob for output */
 struct BLOB_NODE {
@@ -120,11 +115,11 @@ extern void pdu_processor_init(int connection_num, const char *netbios_name, con
 extern int pdu_processor_run();
 extern void pdu_processor_stop();
 int pdu_processor_rts_input(const char *pbuff, uint16_t length,
-	DCERPC_CALL **ppcall);
+	dcerpc_call **ppcall);
 void pdu_processor_free_blob(BLOB_NODE *pbnode);
 void pdu_processor_rts_echo(char *pbuff);
 BOOL pdu_processor_rts_flowcontrolack_withdestination(
-	DCERPC_CALL *pcall, uint32_t bytes_received,
+	dcerpc_call *pcall, uint32_t bytes_received,
 	uint32_t available_window, const char *channel_cookie);
 void* pdu_processor_ndr_stack_alloc(int type, size_t size);
 extern bool pdu_processor_rpc_new_stack();

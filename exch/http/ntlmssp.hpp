@@ -103,4 +103,3 @@ struct GX_EXPORT ntlmssp_ctx {
 	NTLM_AUTH_CHALLENGE challenge{};
 	NTLMSSP_GET_PASSWORD get_password = nullptr;
 };
-using NTLMSSP_CTX = ntlmssp_ctx;

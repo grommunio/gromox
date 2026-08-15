@@ -12,7 +12,6 @@ struct dcerpc_ctx_list {
 	std::vector<SYNTAX_ID> transfer_syntaxes;
 	bool contains(const SYNTAX_ID &) const;
 };
-using DCERPC_CTX_LIST = dcerpc_ctx_list;
 
 union DCERPC_OBJECT {
 	char empty;
@@ -24,7 +23,6 @@ struct dcerpc_ack_ctx {
 	uint16_t reason;
 	SYNTAX_ID syntax;
 };
-using DCERPC_ACK_CTX = dcerpc_ack_ctx;
 
 struct dcerpc_payload {
 	virtual ~dcerpc_payload() = default;
@@ -36,7 +34,6 @@ struct dcerpc_request final : public dcerpc_payload {
 	DCERPC_OBJECT object{};
 	std::string pad, stub_and_verifier;
 };
-using DCERPC_REQUEST = dcerpc_request;
 
 struct dcerpc_response final : public dcerpc_payload {
 	uint32_t alloc_hint = 0;
@@ -44,7 +41,6 @@ struct dcerpc_response final : public dcerpc_payload {
 	uint8_t cancel_count = 0;
 	std::string pad, stub_and_verifier;
 };
-using DCERPC_RESPONSE = dcerpc_response;
 
 struct dcerpc_fault final : public dcerpc_payload {
 	uint32_t alloc_hint = 0;
@@ -53,7 +49,6 @@ struct dcerpc_fault final : public dcerpc_payload {
 	int status = 0; /* dcerpc ncacn status */
 	std::string pad;
 };
-using DCERPC_FAULT = dcerpc_fault;
 
 struct dcerpc_fack final : public dcerpc_payload {
 	uint32_t version = 0;
@@ -63,12 +58,10 @@ struct dcerpc_fack final : public dcerpc_payload {
 	uint16_t serial_no = 0;
 	std::vector<uint32_t> selack;
 };
-using DCERPC_FACK = dcerpc_fack;
 
 struct dcerpc_cancel_ack final : public dcerpc_payload {
 	uint32_t version = 0, id = 0, server_is_accepting = 0;
 };
-using DCERPC_CANCEL_ACK = dcerpc_cancel_ack;
 
 struct dcerpc_bind final : public dcerpc_payload {
 	uint16_t max_xmit_frag = 0, max_recv_frag = 0;
@@ -76,7 +69,6 @@ struct dcerpc_bind final : public dcerpc_payload {
 	std::vector<dcerpc_ctx_list> ctx_list;
 	std::string auth_info;
 };
-using DCERPC_BIND = dcerpc_bind;
 
 struct dcerpc_bind_ack final : public dcerpc_payload {
 	uint16_t max_xmit_frag = 0, max_recv_frag = 0;
@@ -86,18 +78,15 @@ struct dcerpc_bind_ack final : public dcerpc_payload {
 	std::vector<dcerpc_ack_ctx> ctx_list;
 	std::string pad, auth_info;
 };
-using DCERPC_BIND_ACK = dcerpc_bind_ack;
 
 struct dcerpc_bind_nak final : public dcerpc_payload {
 	uint16_t reject_reason = 0;
 	std::vector<uint32_t> versions;
 };
-using DCERPC_BIND_NAK = dcerpc_bind_nak;
 
 struct dcerpc_co_cancel final : public dcerpc_payload {
 	std::string auth_info;
 };
-using DCERPC_CO_CANCEL = dcerpc_co_cancel;
 
 struct DCERPC_AUTH {
 	void clear() { credentials.clear(); }
@@ -112,12 +101,10 @@ struct dcerpc_auth3 final : public dcerpc_payload {
 	uint32_t pad = 0;
 	std::string auth_info;
 };
-using DCERPC_AUTH3 = dcerpc_auth3;
 
 struct dcerpc_orphaned final : public dcerpc_payload {
 	std::string auth_info;
 };
-using DCERPC_ORPHANED = dcerpc_orphaned;
 
 struct RTS_FLOWCONTROLACK {
 	uint32_t bytes_received;
@@ -130,7 +117,7 @@ struct RTS_CLIENTADDRESS {
 	char client_address[64];
 };
 
-union RTS_CMDS {
+union rts_cmds {
 	uint32_t receivewindowsize;
 	RTS_FLOWCONTROLACK flowcontrolack;
 	uint32_t connectiontimeout;
@@ -150,9 +137,8 @@ union RTS_CMDS {
 
 struct rts_cmd {
 	uint32_t command_type;
-	RTS_CMDS command;
+	rts_cmds command;
 };
-using RTS_CMD = rts_cmd;
 
 struct dcerpc_rts final : public dcerpc_payload {
 	uint16_t num() const { return commands.size(); }
@@ -160,7 +146,6 @@ struct dcerpc_rts final : public dcerpc_payload {
 	uint16_t flags = 0;
 	std::vector<rts_cmd> commands;
 };
-using DCERPC_RTS = dcerpc_rts;
 
 /*
  * RTS PDU Header
@@ -192,9 +177,8 @@ struct dcerpc_ncacn_packet {
 	uint8_t pkt_type = DCERPC_PKT_INVALID;
 	std::unique_ptr<dcerpc_payload> payload;
 };
-using DCERPC_NCACN_PACKET = dcerpc_ncacn_packet;
 
 extern pack_result pdu_ndr_pull_dcerpc_auth(NDR_PULL *, DCERPC_AUTH *);
 extern pack_result pdu_ndr_push_dcerpc_auth(NDR_PUSH *, const DCERPC_AUTH *);
-extern pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *, DCERPC_NCACN_PACKET *);
-extern pack_result pdu_ndr_push_ncacnpkt(NDR_PUSH *, DCERPC_NCACN_PACKET *);
+extern pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *, dcerpc_ncacn_packet *);
+extern pack_result pdu_ndr_push_ncacnpkt(NDR_PUSH *, dcerpc_ncacn_packet *);

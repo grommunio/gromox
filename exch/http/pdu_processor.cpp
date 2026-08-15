@@ -57,14 +57,14 @@ namespace {
 struct ndr_stack_root {
 	alloc_context in_stack, out_stack;
 };
-using NDR_STACK_ROOT = ndr_stack_root;
+using ndr_stack_root = ndr_stack_root;
 
 struct ASYNC_NODE {
 	DOUBLE_LIST_NODE node;
 	BOOL b_cancelled;
 	uint32_t async_id;
-	DCERPC_CALL *pcall;
-	NDR_STACK_ROOT* pstack_root;
+	dcerpc_call *pcall;
+	ndr_stack_root* pstack_root;
 	char vconn_host[UDOM_SIZE];
 	uint16_t vconn_port;
 	char vconn_cookie[64];
@@ -73,7 +73,7 @@ struct ASYNC_NODE {
 class endpoint_eq {
 	public:
 	constexpr endpoint_eq(const char *h, uint16_t p) : host(h), port(p) {}
-	bool operator()(const DCERPC_ENDPOINT &e) const {
+	bool operator()(const dcerpc_endpoint &e) const {
 		return e.tcp_port == port && strcasecmp(e.host, host) == 0;
 	}
 	protected:
@@ -84,7 +84,7 @@ class endpoint_eq {
 class endpoint_mt : public endpoint_eq {
 	public:
 	using endpoint_eq::endpoint_eq;
-	bool operator()(const DCERPC_ENDPOINT &e) const {
+	bool operator()(const dcerpc_endpoint &e) const {
 		return e.tcp_port == port && wildcard_match(host, e.host, TRUE) > 0;
 	}
 };
@@ -115,8 +115,8 @@ static char g_dns_domain[128];
 static char g_netbios_name[128];
 static size_t g_max_request_mem;
 static std::atomic<uint32_t> g_last_async_id;
-static thread_local DCERPC_CALL *g_call_key;
-static thread_local NDR_STACK_ROOT *g_stack_key;
+static thread_local dcerpc_call *g_call_key;
+static thread_local ndr_stack_root *g_stack_key;
 static thread_local PROC_PLUGIN *g_cur_plugin;
 static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_async_lock; /* protects g_async_hash */
@@ -124,7 +124,7 @@ static std::mutex g_async_lock; /* protects g_async_hash */
  * The endpoint list is lockless: only written during startup/shutdown (with
  * guaranteed serial execution), otherwise only read.
  */
-static std::list<DCERPC_ENDPOINT> g_endpoint_list;
+static std::list<dcerpc_endpoint> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
 static std::span<const generic_module> g_plugin_names;
@@ -213,9 +213,9 @@ dcerpc_call::dcerpc_call() :
 	double_list_init(&reply_list);
 }
 
-static NDR_STACK_ROOT *pdu_processor_new_stack_root() try
+static ndr_stack_root *pdu_processor_new_stack_root() try
 {
-	return new NDR_STACK_ROOT();
+	return new ndr_stack_root();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2389: ENOMEM");
 	return nullptr;
@@ -233,7 +233,7 @@ void* pdu_processor_ndr_stack_alloc(int type, size_t size)
 	return NULL;
 }
 
-static void pdu_processor_free_stack_root(NDR_STACK_ROOT *pstack_root)
+static void pdu_processor_free_stack_root(ndr_stack_root *pstack_root)
 {
 	if (g_stack_key == pstack_root)
 		g_stack_key = nullptr;
@@ -332,7 +332,7 @@ static uint16_t pdu_processor_find_secondary(const char *host,
 
 /* find the interface operations on an endpoint by uuid */
 static const DCERPC_INTERFACE *
-pdu_processor_find_interface_by_uuid(const DCERPC_ENDPOINT *pendpoint,
+pdu_processor_find_interface_by_uuid(const dcerpc_endpoint *pendpoint,
     const GUID *puuid, uint32_t if_version)
 {
 	auto &lst = pendpoint->interface_list;
@@ -340,7 +340,7 @@ pdu_processor_find_interface_by_uuid(const DCERPC_ENDPOINT *pendpoint,
 	return ix != lst.end() ? &*ix : nullptr;
 }
 
-std::unique_ptr<PDU_PROCESSOR>
+std::unique_ptr<pdu_processor>
 pdu_processor::create(const char *host, uint16_t tcp_port) try
 {
 	auto proc = std::make_unique<pdu_processor>();
@@ -361,7 +361,7 @@ pdu_processor::~pdu_processor()
 {
 	auto pprocessor = this;
 	uint64_t handle;
-	DCERPC_CALL fake_call;
+	dcerpc_call fake_call;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while (context_list.size() > 0) {
@@ -381,7 +381,7 @@ pdu_processor::~pdu_processor()
 	context_list.clear();
 	auth_list.clear();
 	while ((pnode = double_list_pop_front(&pprocessor->fragmented_list)) != nullptr) {
-		auto pcall = static_cast<DCERPC_CALL *>(pnode->pdata);
+		auto pcall = static_cast<dcerpc_call *>(pnode->pdata);
 		delete pcall;
 	}
 	double_list_free(&pprocessor->fragmented_list);
@@ -458,7 +458,7 @@ dcerpc_call *pdu_processor::pop_frag_call(uint32_t call_id)
 	
 	for (pnode=double_list_get_head(&pprocessor->fragmented_list); NULL!=pnode;
 		pnode=double_list_get_after(&pprocessor->fragmented_list, pnode)) {
-		auto pcall = static_cast<DCERPC_CALL *>(pnode->pdata);
+		auto pcall = static_cast<dcerpc_call *>(pnode->pdata);
 		if (pcall->pkt.call_id == call_id) {
 			double_list_remove(&pprocessor->fragmented_list, pnode);
 			return pcall;
@@ -467,7 +467,7 @@ dcerpc_call *pdu_processor::pop_frag_call(uint32_t call_id)
 	return NULL;
 }
 
-static uint32_t pdu_processor_allocate_group_id(DCERPC_ENDPOINT *pendpoint)
+static uint32_t pdu_processor_allocate_group_id(dcerpc_endpoint *pendpoint)
 {
 	uint32_t group_id;
 	
@@ -497,7 +497,7 @@ std::shared_ptr<dcerpc_auth_context> pdu_processor::find_auth_ctx(uint32_t id) c
 	return it != auth_list.end() ? *it : nullptr;
 }
 
-static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
+static BOOL pdu_processor_pull_auth_trailer(dcerpc_ncacn_packet *ppkt,
     std::string_view trailer, DCERPC_AUTH *pauth, uint32_t *pauth_length,
 	BOOL auth_data_only)
 {
@@ -538,11 +538,11 @@ static bool warn_rpcntlm()
 #endif
 
 /* check credentials on a request */
-static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
+static BOOL pdu_processor_auth_request(dcerpc_call *pcall, DATA_BLOB *pblob)
 {
 	DCERPC_AUTH auth;
 	uint32_t auth_length;
-	DCERPC_NCACN_PACKET *ppkt;
+	dcerpc_ncacn_packet *ppkt;
 	
 	ppkt = &pcall->pkt;
 	auto prequest = static_cast<dcerpc_request *>(ppkt->payload.get());
@@ -635,7 +635,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 }
 
 static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
-	DCERPC_NCACN_PACKET *ppkt, DCERPC_AUTH *pauth_info)
+	dcerpc_ncacn_packet *ppkt, DCERPC_AUTH *pauth_info)
 {
 	uint32_t flags;
 	std::unique_ptr<uint8_t, stdlib_delete> pdata(me_alloc<uint8_t>(DCERPC_BASE_MARSHALL_SIZE));
@@ -664,7 +664,7 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 	return TRUE;
 }
 
-static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
+static BOOL pdu_processor_fault(dcerpc_call *pcall, uint32_t fault_code) try
 {
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	
@@ -699,10 +699,10 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
   return false if we can't handle the auth request for some 
   reason (in which case we send a bind_nak)
 */
-static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
+static BOOL pdu_processor_auth_bind(dcerpc_call *pcall) try
 {
 	uint32_t auth_length;
-	DCERPC_NCACN_PACKET *ppkt = &pcall->pkt;
+	dcerpc_ncacn_packet *ppkt = &pcall->pkt;
 	auto pbind = static_cast<dcerpc_bind *>(ppkt->payload.get());
 	
 	if (pcall->pprocessor->auth_list.size() > MAX_CONTEXTS_PER_CONNECTION) {
@@ -773,7 +773,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
   add any auth information needed in a bind ack, and 
   process the authentication information found in the bind.
 */
-static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
+static BOOL pdu_processor_auth_bind_ack(dcerpc_call *pcall)
 {
 	if (pcall->pprocessor->auth_list.empty())
 		return TRUE;
@@ -802,7 +802,7 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 }
 
 /* return a dcerpc bind_nak */
-static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason) try
+static BOOL pdu_processor_bind_nak(dcerpc_call *pcall, uint32_t reason) try
 {
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	
@@ -830,7 +830,7 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason) try
 	return false;
 }
 
-static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
+static BOOL pdu_processor_process_bind(dcerpc_call *pcall)
 {
 	GUID uuid;
 	BOOL b_ndr64;
@@ -999,7 +999,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
  * password supplied in the HTTP Basic Authentication header — both are
  * user-controlled.
  */
-static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
+static BOOL pdu_processor_process_auth3(dcerpc_call *pcall)
 {
 	if (pcall->pprocessor->auth_list.empty())
 		return TRUE;
@@ -1038,17 +1038,17 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 #endif
 }
 
-static BOOL pdu_processor_auth_alter(DCERPC_CALL *pcall)
+static BOOL pdu_processor_auth_alter(dcerpc_call *pcall)
 {
 	return pdu_processor_auth_bind(pcall);
 }
 
-static BOOL pdu_processor_auth_alter_ack(DCERPC_CALL *pcall)
+static BOOL pdu_processor_auth_alter_ack(dcerpc_call *pcall)
 {
 	return pdu_processor_auth_bind_ack(pcall);
 }
 
-static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
+static BOOL pdu_processor_process_alter(dcerpc_call *pcall)
 {
 	GUID uuid;
 	BOOL b_ndr64;
@@ -1056,10 +1056,9 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	uint32_t if_version;
 	uint32_t context_id;
 	uint32_t extra_flags;
-	PDU_PROCESSOR *pprocessor;
 	auto palter = static_cast<dcerpc_bind *>(pcall->pkt.payload.get());
 	std::shared_ptr<dcerpc_context> pcontext;
-	pprocessor = pcall->pprocessor;
+	auto pprocessor = pcall->pprocessor;
 	
 	
 	if (palter->ctx_list.size() < 1 ||
@@ -1218,8 +1217,8 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 }
 
 /* push a signed or sealed dcerpc request packet into a blob */
-static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
-	DATA_BLOB *pblob, size_t sig_size, DCERPC_NCACN_PACKET *ppkt)
+static BOOL pdu_processor_auth_response(dcerpc_call *pcall,
+	DATA_BLOB *pblob, size_t sig_size, dcerpc_ncacn_packet *ppkt)
 {
 	NDR_PUSH ndr;
 	uint32_t flags;
@@ -1326,13 +1325,13 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static DCERPC_CALL* pdu_processor_get_call()
+static dcerpc_call* pdu_processor_get_call()
 {
 	return g_call_key;
 }
 
-static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
-    NDR_STACK_ROOT *pstack_root, const rpc_response *pout)
+static BOOL pdu_processor_reply_request(dcerpc_call *pcall,
+    ndr_stack_root *pstack_root, const rpc_response *pout)
 {
 	uint32_t flags;
 	uint32_t length;
@@ -1447,7 +1446,7 @@ static uint32_t get_next_async_id()
 
 static uint32_t pdu_processor_apply_async_id()
 {
-	DCERPC_CALL *pcall;
+	dcerpc_call *pcall;
 	
 	pcall = pdu_processor_get_call();
 	if (pcall == nullptr)
@@ -1506,7 +1505,7 @@ static uint32_t pdu_processor_apply_async_id()
 
 static void pdu_processor_activate_async_id(uint32_t async_id)
 {
-	DCERPC_CALL *pcall;
+	dcerpc_call *pcall;
 	DOUBLE_LIST_NODE *pnode;
 	
 	pcall = pdu_processor_get_call();
@@ -1528,7 +1527,7 @@ static void pdu_processor_activate_async_id(uint32_t async_id)
 
 static void pdu_processor_cancel_async_id(uint32_t async_id)
 {
-	DCERPC_CALL *pcall;
+	dcerpc_call *pcall;
 	DOUBLE_LIST_NODE *pnode;
 	ASYNC_NODE *pasync_node;
 	
@@ -1587,7 +1586,7 @@ static bool pdu_processor_rpc_build_environment(int async_id)
 /* only can be invoked in non-rpc thread */
 bool pdu_processor_rpc_new_stack()
 {
-	NDR_STACK_ROOT *pstack_root;
+	ndr_stack_root *pstack_root;
 	
 	pstack_root = pdu_processor_new_stack_root();
 	if (pstack_root == nullptr)
@@ -1608,7 +1607,7 @@ void pdu_processor_rpc_free_stack()
 
 static void pdu_processor_async_reply(uint32_t async_id, const rpc_response *pout)
 {
-	DCERPC_CALL *pcall;
+	dcerpc_call *pcall;
 	DOUBLE_LIST_NODE *pnode;
 	ASYNC_NODE *pasync_node = nullptr;
 	
@@ -1658,11 +1657,9 @@ static pduproc_result pdu_processor_process_request(dcerpc_call *pcall)
 	uint32_t flags;
 	uint64_t handle;
 	NDR_PULL ndr_pull;
-	PDU_PROCESSOR *pprocessor;
-	NDR_STACK_ROOT *pstack_root;
+	ndr_stack_root *pstack_root;
 	
-	
-	pprocessor = pcall->pprocessor;
+	auto pprocessor = pcall->pprocessor;
 	auto prequest = static_cast<dcerpc_request *>(pcall->pkt.payload.get());
 	auto pcontext = pprocessor->find_ctx(prequest->context_id);
 	if (pcontext == nullptr)
@@ -1841,7 +1838,7 @@ BOOL dcerpc_call::rts_ping() try
 	return false;
 }
 
-static BOOL pdu_processor_retrieve_conn_b1(const DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_conn_b1(const dcerpc_call *pcall,
     char *conn_cookie, size_t conn_ck_size, char *chan_cookie,
     size_t chan_ck_size, uint32_t *plife_time, time_duration *pclient_keepalive,
     char *associationgroupid, size_t gid_size)
@@ -1868,7 +1865,7 @@ static BOOL pdu_processor_retrieve_conn_b1(const DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_conn_a1(const DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_conn_a1(const dcerpc_call *pcall,
     char *conn_cookie, size_t conn_ck_size, char *chan_cookie,
     size_t chan_ck_size, uint32_t *pwindow_size)
 {
@@ -1889,7 +1886,7 @@ static BOOL pdu_processor_retrieve_conn_a1(const DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_inr2_a1(const DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_inr2_a1(const dcerpc_call *pcall,
     char *conn_cookie, size_t conn_ck_size, char *pred_cookie,
     size_t pred_ck_size, char *succ_cookie, size_t succ_ck_size)
 {
@@ -1910,7 +1907,7 @@ static BOOL pdu_processor_retrieve_inr2_a1(const DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_inr2_a5(const DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_inr2_a5(const dcerpc_call *pcall,
     char *succ_cookie, size_t succ_ck_size)
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
@@ -1923,7 +1920,7 @@ static BOOL pdu_processor_retrieve_inr2_a5(const DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_outr2_a7(const DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_outr2_a7(const dcerpc_call *pcall,
     char *succ_cookie, size_t succ_ck_size)
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
@@ -1939,7 +1936,7 @@ static BOOL pdu_processor_retrieve_outr2_a7(const DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_outr2_a3(const DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_outr2_a3(const dcerpc_call *pcall,
     char *conn_cookie, size_t conn_ck_size, char *pred_cookie,
     size_t pred_ck_size, char *succ_cookie, size_t succ_ck_size,
     uint32_t *pwindow_size)
@@ -1965,7 +1962,7 @@ static BOOL pdu_processor_retrieve_outr2_a3(const DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_outr2_c1(const DCERPC_CALL *pcall)
+static BOOL pdu_processor_retrieve_outr2_c1(const dcerpc_call *pcall)
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
@@ -1979,7 +1976,7 @@ static BOOL pdu_processor_retrieve_outr2_c1(const DCERPC_CALL *pcall)
 	
 }
 
-static BOOL pdu_processor_retrieve_keep_alive(const DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_keep_alive(const dcerpc_call *pcall,
     time_duration *pkeep_alive)
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
@@ -1992,7 +1989,7 @@ static BOOL pdu_processor_retrieve_keep_alive(const DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(const DCERPC_CALL *pcall)
+static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(const dcerpc_call *pcall)
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
@@ -2005,7 +2002,7 @@ static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(const DCERPC_C
 	return TRUE;
 }
 
-static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall) try
+static BOOL pdu_processor_rts_conn_a3(dcerpc_call *pcall) try
 {
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
@@ -2080,7 +2077,7 @@ BOOL dcerpc_call::rts_conn_c2(uint32_t in_window_size) try
 	return false;
 }
 
-static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall) try
+static BOOL pdu_processor_rts_inr2_a4(dcerpc_call *pcall) try
 {
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
@@ -2225,7 +2222,7 @@ BOOL dcerpc_call::rts_outr2_b3() try
 	return false;
 }
 
-BOOL pdu_processor_rts_flowcontrolack_withdestination(DCERPC_CALL *pcall,
+BOOL pdu_processor_rts_flowcontrolack_withdestination(dcerpc_call *pcall,
     uint32_t bytes_received, uint32_t available_window,
     const char *channel_cookie) try
 {
@@ -2271,7 +2268,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(DCERPC_CALL *pcall,
 }
 
 int pdu_processor_rts_input(const char *pbuff, uint16_t length,
-	DCERPC_CALL **ppcall)
+	dcerpc_call **ppcall)
 {
 	NDR_PULL ndr;
 	uint32_t flags;
@@ -2294,9 +2291,9 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 		return PDU_PROCESSOR_ERROR;
 	auto &ctx = *pcontext;
 	ndr.init(pbuff, length, flags);
-	DCERPC_CALL *pcall;
+	dcerpc_call *pcall;
 	try {
-		pcall = new DCERPC_CALL();
+		pcall = new dcerpc_call();
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2371: ENOMEM");
 		return PDU_PROCESSOR_ERROR;
@@ -2530,7 +2527,7 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 	uint32_t flags;
 	BOOL b_bigendian;
 	DATA_BLOB tmp_blob;
-	DCERPC_CALL *pcallx;
+	dcerpc_call *pcallx;
 	uint32_t alloc_size;
 	
 	flags = 0;
@@ -2544,9 +2541,9 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 	if (pbuff[DCERPC_PFC_OFFSET] & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	ndr.init(pbuff, length, flags);
-	DCERPC_CALL *pcall;
+	dcerpc_call *pcall;
 	try {
-		pcall = new DCERPC_CALL();
+		pcall = new dcerpc_call();
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2370: ENOMEM");
 		return PDU_PROCESSOR_ERROR;
@@ -2739,7 +2736,7 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 	return PDU_PROCESSOR_ERROR;
 }
 
-static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
+static dcerpc_endpoint* pdu_processor_register_endpoint(const char *host,
     uint16_t tcp_port) try
 {
 	auto ei = std::find_if(g_endpoint_list.begin(), g_endpoint_list.end(),
@@ -2844,7 +2841,7 @@ PROC_PLUGIN::~PROC_PLUGIN()
 static DCERPC_INFO pdu_processor_get_rpc_info()
 {
 	DCERPC_INFO info;
-	DCERPC_CALL *pcall;
+	dcerpc_call *pcall;
 	HTTP_CONTEXT *pcontext;
 	
 	pcall = pdu_processor_get_call();
@@ -2875,7 +2872,7 @@ static DCERPC_INFO pdu_processor_get_rpc_info()
 static uint64_t pdu_processor_get_binding_handle()
 {
 	uint64_t handle;
-	DCERPC_CALL *pcall;
+	dcerpc_call *pcall;
 	
 	pcall = pdu_processor_get_call();
 	if (NULL != pcall) {

@@ -127,7 +127,7 @@ struct http_parser {
 	tproc_status waitinchannel(http_context *, RPC_OUT_CHANNEL *);
 	tproc_status waitrecycled(http_context *, RPC_OUT_CHANNEL *);
 	tproc_status wait(http_context *);
-	void vconnection_async_reply(const char *, int, const char *, DCERPC_CALL *);
+	void vconnection_async_reply(const char *, int, const char *, dcerpc_call *);
 
 #ifdef WITH_SSLPROV
 	struct provfree { inline void operator()(OSSL_PROVIDER *x) const { OSSL_PROVIDER_unload(x); }};
@@ -1998,7 +1998,7 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 	if (tmp_len < frag_length)
 		return tproc_status::cont;
 	g_context_key = pcontext;
-	DCERPC_CALL *pcall = nullptr;
+	dcerpc_call *pcall = nullptr;
 	auto result = pdu_processor_rts_input(static_cast<char *>(pbuff),
 		 frag_length, &pcall);
 	if (pchannel_in != nullptr &&
@@ -2289,14 +2289,14 @@ tproc_status http_parser_process(schedule_context *vcontext)
 }
 
 void http_parser_vconnection_async_reply(const char *host,
-	int port, const char *connection_cookie, DCERPC_CALL *pcall)
+	int port, const char *connection_cookie, dcerpc_call *pcall)
 {
 	/* called from aemsi_thrwork */
 	g_parser->vconnection_async_reply(host, port, connection_cookie, pcall);
 }
 
 void http_parser::vconnection_async_reply(const char *host,
-	int port, const char *connection_cookie, DCERPC_CALL *pcall)
+	int port, const char *connection_cookie, dcerpc_call *pcall)
 {
 	/* system is going to stop now */
 	if (g_async_stop) {

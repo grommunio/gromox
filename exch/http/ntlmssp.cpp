@@ -676,7 +676,7 @@ std::unique_ptr<ntlmssp_ctx> ntlmssp_ctx::create(const char *netbios_name,
 	return nullptr;
 }
 
-static void ntlmssp_handle_neg_flags(NTLMSSP_CTX *pntlmssp, uint32_t neg_flags)
+static void ntlmssp_handle_neg_flags(ntlmssp_ctx *pntlmssp, uint32_t neg_flags)
 {
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		pntlmssp->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
@@ -715,7 +715,7 @@ static void ntlmssp_handle_neg_flags(NTLMSSP_CTX *pntlmssp, uint32_t neg_flags)
 }
 
 
-static const char *ntlmssp_target_name(NTLMSSP_CTX *pntlmssp,
+static const char *ntlmssp_target_name(ntlmssp_ctx *pntlmssp,
 	uint32_t neg_flags, uint32_t *chal_flags)
 {
 	if (!(neg_flags & NTLMSSP_REQUEST_TARGET))
@@ -748,7 +748,7 @@ static pack_result ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION
 	return pndr->trailer_align(2);
 }
 
-static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
+static bool ntlmssp_server_negotiate(ntlmssp_ctx *pntlmssp,
     std::string_view request, DATA_BLOB *preply)
 {
 	NDR_PUSH ndr_push;
@@ -840,7 +840,7 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 	return true;
 }
 
-static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
+static bool ntlmssp_server_preauth(ntlmssp_ctx *pntlmssp,
     NTLMSSP_SERVER_AUTH_STATE *pauth, std::string_view request)
 {
 	char client_netbios_name[1024];
@@ -1045,7 +1045,7 @@ static bool ntlmssp_sess_key_ntlm2(std::string_view ntv2_response,
 	return true;
 }
 
-static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
+static bool ntlmssp_server_chkpasswd(ntlmssp_ctx *pntlmssp,
 	DATA_BLOB *puser_key, DATA_BLOB *plm_key, const char *plain_passwd)
 {
 	DATA_BLOB tmp_key;
@@ -1171,7 +1171,7 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	return true;
 }
 
-static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
+static bool ntlmssp_sign_init(ntlmssp_ctx *pntlmssp)
 {
 	DATA_BLOB seal_key;
 	DATA_BLOB weak_key;
@@ -1269,7 +1269,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
  * Next state function for the Authenticate packet
  * (after authentication - figures out the session keys etc)
  */
-static bool ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
+static bool ntlmssp_server_postauth(ntlmssp_ctx *pntlmssp,
 	NTLMSSP_SERVER_AUTH_STATE *pauth)
 {
 	uint8_t session_key_buff[32];
@@ -1349,7 +1349,7 @@ static bool ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 	return true;
 }
 
-static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
+static bool ntlmssp_server_auth(ntlmssp_ctx *pntlmssp,
     std::string_view in, DATA_BLOB *pout)
 {
 	char username[UADDR_SIZE];
@@ -1420,7 +1420,7 @@ bool ntlmssp_ctx::update(std::string &blob) try
 	return false;
 }
 
-static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
+static bool ntlmssp_make_packet_signature(ntlmssp_ctx *pntlmssp,
     std::string_view pdata, std::string_view pwhole_pdu,
     int direction, DATA_BLOB *psig, bool encrypt_sig)
 {
@@ -1468,7 +1468,7 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	cpu_to_le32p(&psig->pb[0], NTLMSSP_SIGN_VERSION);
 	memcpy(&psig->pb[4], digest, 8);
 	memcpy(&psig->pb[12], seq_num, 4);
-	psig->cb = NTLMSSP_CTX::SIG_SIZE;
+	psig->cb = ntlmssp_ctx::SIG_SIZE;
 	return true;
 }
 
@@ -1484,7 +1484,7 @@ bool ntlmssp_ctx::sign_packet(std::string_view data, std::string_view whole_pdu,
 	       NTLMSSP_DIRECTION_SEND, psig, true);
 }
 
-static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
+static bool ntlmssp_check_packet_internal(ntlmssp_ctx *pntlmssp,
     std::string_view pdata, std::string_view pwhole_pdu, std::string_view psig)
 {
 	DATA_BLOB local_sig;
@@ -1582,7 +1582,7 @@ bool ntlmssp_ctx::unseal_packet(uint8_t *pdata, size_t length,
 	       pwhole_pdu, psig);
 }
 
-static bool ntlmssp_session_key(NTLMSSP_CTX *pntlmssp, DATA_BLOB *psession_key)
+static bool ntlmssp_session_key(ntlmssp_ctx *pntlmssp, DATA_BLOB *psession_key)
 {
 	if (pntlmssp->expected_state != NTLMSSP_PROCESS_DONE)
 		return false;
