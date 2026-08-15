@@ -28,7 +28,7 @@ struct MIME_ENUM_PARAM {
 	MIME_ENUM_PARAM(namemap &r) : phash(r) {}
 	NOMOVE(MIME_ENUM_PARAM);
 
-	bool b_result = false;
+	bool b_result = false, b_attach = false;
 	unsigned int unnamed_atx_counter = 0;
 	GET_PROPIDS get_propids{};
 	EXT_BUFFER_ALLOC alloc{};

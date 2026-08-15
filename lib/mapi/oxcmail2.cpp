@@ -48,6 +48,12 @@ static inline char *gx_xml_getprop(const xmlNode *node, const char *attr)
 
 namespace oxcmail {
 
+static inline bool dispo_inline(const std::string &s)
+{
+	return strncasecmp(s.c_str(), "inline", 6) == 0 &&
+	       (s[6] == '\0' || s[6] == ';');
+}
+
 /**
  * @part:  MIME part to analyze (including its children)
  * @info:  Result structure
@@ -60,11 +66,12 @@ namespace oxcmail {
  */
 void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) try
 {
+	/* Eventually this should use vmime::isBodyPartAnAttachment */
 	auto dispo = part->get_field("Content-Disposition");
-	if (dispo != nullptr &&
-	    strncasecmp(dispo->c_str(), "attachment", 10) == 0 &&
-	    ((*dispo)[10] == '\0' || (*dispo)[10] == ';'))
+	if (dispo != nullptr && !dispo_inline(*dispo)) {
+		info.b_attach = true;
 		return;
+	}
 	if (part->mime_type == mime_type::single) {
 		if (strcasecmp(part->content_type, "text/plain") == 0) {
 			info.pplain = part;
@@ -90,10 +97,10 @@ void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) t
 	++level;
 	bool alt = strcasecmp(part->content_type, "multipart/alternative") == 0;
 	bool hjoin_enabled = false;
-	size_t child_idx = 0;
+	size_t non_at_child_idx = 0;
 
 	for (auto child = part->get_child(); child != nullptr;
-	     (child = child->get_sibling()), ++child_idx) {
+	     (child = child->get_sibling())) {
 		MIME_ENUM_PARAM cld_info{info.phash};
 		select_parts(child, cld_info, level);
 		if (alt) {
@@ -107,10 +114,11 @@ void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) t
 				info.penriched = cld_info.penriched;
 			if (cld_info.pcalendar != nullptr)
 				info.pcalendar = cld_info.pcalendar;
+			non_at_child_idx += !cld_info.b_attach;
 			continue;
 		}
 
-		if (child_idx == 0 && cld_info.htmls.size() > 0)
+		if (non_at_child_idx == 0 && cld_info.htmls.size() > 0)
 			hjoin_enabled = true;
 		if (cld_info.pplain != nullptr && info.pplain == nullptr)
 			info.pplain = std::move(cld_info.pplain);
@@ -122,6 +130,7 @@ void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) t
 			info.penriched = std::move(cld_info.penriched);
 		if (cld_info.pcalendar != nullptr && info.pcalendar == nullptr)
 			info.pcalendar = std::move(cld_info.pcalendar);
+		non_at_child_idx += !cld_info.b_attach;
 	}
 } catch (const std::bad_alloc &) {
 	return;
