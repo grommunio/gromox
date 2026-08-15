@@ -387,13 +387,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 	case PR_ACCOUNT_A:
 	case PR_SMTP_ADDRESS:
 	case PR_SMTP_ADDRESS_A:
-		if (node_type == ab_tree::abnode_type::mlist)
-			node.mlist_info(&dn, nullptr, nullptr);
-		else if (node_type == ab_tree::abnode_type::user)
-			dn = znul(node.user_info(ab_tree::userinfo::mail_address));
-		else
-			return ecNotFound;
-		if (dn.empty())
+		if (node.fetch_prop(PR_SMTP_ADDRESS, dn) != ecSuccess)
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;

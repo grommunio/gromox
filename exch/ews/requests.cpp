@@ -18,6 +18,7 @@
 #include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mapitags.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
@@ -295,6 +296,192 @@ void process(mConvertIdRequest &&request, XMLElement *response, EWSContext &ctx)
 }
 
 /**
+ * @brief      Search grommunio-web's recipient history for FindPeople matches
+ *
+ * FindPeople's QuerySources typically ask for both "Directory", referring the
+ * ab_tree GAL and handled by the caller, and "Mailbox", referring to people
+ * the user has actually corresponded with, regardless of whether they are in
+ * any directory. Gromox itself does not track recently-used recipients.
+ *
+ * g-web maintains PSETID_Gromox:websettings_recipienthistory as a JSON blob of
+ * {display_name, smtp_address, count, last_used} entries, updated whenever the
+ * user sends mail. Reusing it here means Outlook's autocomplete benefits from
+ * the exact same history that g-web webapp already builds, it just never gets
+ * contributed to by non-gweb send actions.
+ */
+static void findpeople_search_recipient_history(const EWSContext &ctx,
+    const std::string &query, std::vector<tPersona> &out) try
+{
+	const char *user = znul(ctx.auth_info().username);
+	std::string dir = ctx.get_maildir(user);
+	PROPERTY_NAME pn = {MNID_STRING, PSETID_Gromox, 0, deconst("websettings_recipienthistory")};
+	PROPNAME_ARRAY propNames{1, &pn};
+	PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
+	if (propIds.size() != 1)
+		return;
+	const proptag_t tag = PROP_TAG(PT_UNICODE, propIds[0]);
+	TPROPVAL_ARRAY props;
+	if (!ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, {&tag, 1}, &props))
+		return;
+	auto json_str = props.get<const char>(tag);
+	if (json_str == nullptr || *json_str == '\0')
+		return;
+	Json::Value root;
+	if (!gromox::str_to_json(json_str, root) || !root.isMember("recipients"))
+		return;
+
+	for (const auto &entry : root["recipients"]) {
+		auto name  = entry.get("display_name", "").asString();
+		auto email = entry.get("smtp_address", "").asString();
+		if (email.empty())
+			continue;
+		if (strcasestr(name.c_str(), query.c_str()) == nullptr &&
+		    strcasestr(email.c_str(), query.c_str()) == nullptr)
+			continue;
+
+		tPersona persona;
+		persona.PersonaType = "Person";
+		if (!name.empty()) {
+			persona.DisplayName = name;
+			/*
+			 * Outlook Mac's FindPeople request explicitly asks for
+			 * persona:GivenName/persona:Surname
+			 * (AdditionalProperties). Exchange always sends both,
+			 * even for a simple two-word display name. Leaving
+			 * them unset might cause Outlook to silently drop the
+			 * whole persona since it asked for fields that never
+			 * show up in the response.
+			 */
+			auto space = name.find(' ');
+			if (space != std::string::npos) {
+				persona.GivenName = name.substr(0, space);
+				persona.Surname = name.substr(space + 1);
+			} else {
+				persona.GivenName = name;
+			}
+		}
+
+		tEmailAddressType addr;
+		addr.Name = persona.DisplayName;
+		addr.EmailAddress = email;
+		addr.RoutingType  = "SMTP";
+		addr.MailboxType  = Enum::Mailbox;
+		persona.EmailAddress = std::move(addr);
+
+		tPersonaId pid;
+		pid.Id = base64_encode(email);
+		persona.PersonaId = std::move(pid);
+		persona.RelevanceScore = entry.get("count", 1).asUInt();
+		out.emplace_back(std::move(persona));
+	}
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "%s: %s", __func__, e.what());
+}
+
+/**
+ * @brief      Search the requesting user's own Contacts folder for FindPeople matches
+ *
+ * This function will match PR_DISPLAY_NAME or any of Email1/2/3EmailAddress by
+ * substring, using the same restriction as g-web's own ResolveNamesModule::
+ * searchContactsFolders()/getAmbigiousContactRestriction().
+ */
+static void findpeople_search_contacts(const EWSContext &ctx,
+    const std::string &query, std::vector<tPersona> &out) try
+{
+	if (query.empty())
+		return;
+	const char *user = znul(ctx.auth_info().username);
+	std::string dir = ctx.get_maildir(user);
+
+	std::array<PROPERTY_NAME, 3> names = {NtEmailAddress1, NtEmailAddress2, NtEmailAddress3};
+	PROPNAME_ARRAY propNames = {static_cast<uint16_t>(names.size()), names.data()};
+	PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
+	if (propIds.size() != names.size())
+		return;
+	std::array<proptag_t, 3> emailTags = {PROP_TAG(PT_UNICODE, propIds[0]),
+		PROP_TAG(PT_UNICODE, propIds[1]), PROP_TAG(PT_UNICODE, propIds[2])};
+
+	TAGGED_PROPVAL matchValue = {0, deconst(query.c_str())};
+	std::array<RESTRICTION_CONTENT, 4> contentRestrictions{};
+	std::array<RESTRICTION, 4> childRestrictions{};
+	contentRestrictions[0].fuzzy_level = FL_SUBSTRING | FL_IGNORECASE;
+	contentRestrictions[0].proptag = PR_DISPLAY_NAME;
+	contentRestrictions[0].propval.proptag = PR_DISPLAY_NAME;
+	contentRestrictions[0].propval.pvalue = matchValue.pvalue;
+	childRestrictions[0].rt = RES_CONTENT;
+	childRestrictions[0].cont = &contentRestrictions[0];
+	for (size_t i = 0; i < emailTags.size(); ++i) {
+		auto &cr = contentRestrictions[i + 1];
+		cr.fuzzy_level = FL_SUBSTRING | FL_IGNORECASE;
+		cr.proptag = emailTags[i];
+		cr.propval.proptag = emailTags[i];
+		cr.propval.pvalue = matchValue.pvalue;
+		childRestrictions[i + 1].rt = RES_CONTENT;
+		childRestrictions[i + 1].cont = &cr;
+	}
+	RESTRICTION_AND_OR orGroup = {static_cast<uint32_t>(childRestrictions.size()), childRestrictions.data()};
+	RESTRICTION restriction = {RES_OR, {&orGroup}};
+
+	uint32_t tableId = 0, rowCount = 0;
+	eid_t contactsFid(1, PRIVATE_FID_CONTACTS);
+	if (!ctx.plugin().exmdb.load_content_table(dir.c_str(), CP_ACP,
+	    contactsFid, nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction,
+	    nullptr, &tableId, &rowCount) || rowCount == 0)
+		return;
+	auto cl_tbl = HX::make_scope_exit([&]() {
+		ctx.plugin().exmdb.unload_table(dir.c_str(), tableId);
+	});
+
+	static constexpr uint32_t maxResults = 50;
+	std::array<proptag_t, 4> cols = {PR_DISPLAY_NAME, emailTags[0], emailTags[1], emailTags[2]};
+	TARRAY_SET rows{};
+	if (!ctx.plugin().exmdb.query_table(dir.c_str(), nullptr, CP_ACP,
+	    tableId, cols, 0, std::min(rowCount, maxResults), &rows))
+		return;
+
+	for (const auto &row : rows) {
+		auto name = row.get<const char>(PR_DISPLAY_NAME);
+		const char *email = nullptr;
+		for (auto tag : emailTags) {
+			email = row.get<const char>(tag);
+			if (email != nullptr && *email != '\0')
+				break;
+		}
+		if (email == nullptr || *email == '\0')
+			continue;
+
+		std::string dispName = name != nullptr ? name : "";
+		tPersona persona;
+		persona.PersonaType = "Person";
+		if (!dispName.empty()) {
+			persona.DisplayName = dispName;
+			auto space = dispName.find(' ');
+			if (space != std::string::npos) {
+				persona.GivenName = dispName.substr(0, space);
+				persona.Surname = dispName.substr(space + 1);
+			} else {
+				persona.GivenName = dispName;
+			}
+		}
+
+		tEmailAddressType addr;
+		addr.Name = persona.DisplayName;
+		addr.EmailAddress = email;
+		addr.RoutingType  = "SMTP";
+		addr.MailboxType  = Enum::Mailbox;
+		persona.EmailAddress = std::move(addr);
+
+		tPersonaId pid;
+		pid.Id = base64_encode(email);
+		persona.PersonaId = std::move(pid);
+		persona.RelevanceScore = 1;
+		out.emplace_back(std::move(persona));
+	}
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "%s: %s", __func__, e.what());
+}
+
+/**
  * @brief      Process FindPeople
  *
  * @param      request   Request data
@@ -306,7 +493,7 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 	response->SetName("m:FindPeopleResponse");
 
 	mFindPeopleResponse data;
-	auto &msg = data.ResponseMessages.emplace_back();
+	auto &msg = data;
 	const char *user = znul(ctx.auth_info().username);
 	const char *at = strchr(user, '@');
 	std::string domain = at ? at + 1 : user;
@@ -320,10 +507,40 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 				ab_tree::ab_node node(base.get(), mid);
 				tPersona persona;
 				std::string val;
+				/*
+				 * Outlook Mac silently discards personas with
+				 * no PersonaType, even when DisplayName/
+				 * EmailAddress are populated - it has no way
+				 * to classify the suggestion, so it never
+				 * offers it in the autocomplete list.
+				 */
+				persona.PersonaType = "Person";
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
 					persona.DisplayName = std::move(val);
-				if (node.fetch_prop(PR_SMTP_ADDRESS, val) == ecSuccess)
-					persona.EmailAddress = std::move(val);
+				if (node.fetch_prop(PR_GIVEN_NAME, val) == ecSuccess)
+					persona.GivenName = std::move(val);
+				if (node.fetch_prop(PR_SURNAME, val) == ecSuccess)
+					persona.Surname = std::move(val);
+				std::string email;
+				if (node.fetch_prop(PR_SMTP_ADDRESS, email) == ecSuccess) {
+					tEmailAddressType addr;
+					addr.Name         = persona.DisplayName;
+					addr.EmailAddress = email;
+					addr.RoutingType  = "SMTP";
+					addr.MailboxType  = Enum::Mailbox;
+					persona.EmailAddress = std::move(addr);
+					/*
+					 * Exchange also always includes a PersonaId.
+					 * This will not be a real MAPI EntryID here,
+					 * just a stable opaque handle derived from the
+					 * address, enough for Outlook to accept the
+					 * entry as resolvable/insertable.
+					 */
+					tPersonaId pid;
+					pid.Id = base64_encode(std::move(email));
+					persona.PersonaId = std::move(pid);
+					persona.RelevanceScore = UINT32_MAX;
+				}
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
 				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
@@ -340,16 +557,50 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 				    persona.Title || persona.Nickname ||
 				    persona.BusinessPhoneNumber ||
 				    persona.MobilePhoneNumber ||
-				    persona.HomeAddress || persona.Comment)
-					msg.People.emplace().emplace_back(std::move(persona));
+				    persona.HomeAddress || persona.Comment) {
+					if (!msg.People)
+						msg.People.emplace();
+					msg.People->emplace_back(std::move(persona));
+				}
 			}
-			if (msg.People)
-				msg.TotalNumberOfPeopleInView = msg.People->size();
+		}
+
+		/* Merge in "Mailbox" source results */
+		std::vector<tPersona> history;
+		findpeople_search_recipient_history(ctx, request.QueryString, history);
+		findpeople_search_contacts(ctx, request.QueryString, history);
+		if (!history.empty()) {
+			if (!msg.People)
+				msg.People.emplace();
+			auto &people = *msg.People;
+			for (auto &persona : history) {
+				const std::string *addr = persona.EmailAddress ? &*persona.EmailAddress->EmailAddress : nullptr;
+				bool dup = addr && std::any_of(people.begin(), people.end(),
+				           [&](const tPersona &p) {
+				                   return p.EmailAddress && p.EmailAddress->EmailAddress &&
+				                          strcasecmp(p.EmailAddress->EmailAddress->c_str(), addr->c_str()) == 0;
+				           });
+				if (!dup)
+					people.emplace_back(std::move(persona));
+			}
+		}
+		if (msg.People) {
+			msg.TotalNumberOfPeopleInView = msg.People->size();
+			/*
+			 * Outlook Mac's autocomplete always requests a paged
+			 * view (IndexedPageItemView). Capturing Exchange shows
+			 * EXC always includes FirstMatchingRowIndex/
+			 * FirstLoadedRowIndex alongside
+			 * TotalNumberOfPeopleInView, even for a single-page
+			 * result. We do not implement actual paging, so both
+			 * are always the start of (and only) page.
+			 */
+			msg.FirstMatchingRowIndex = 0;
+			msg.FirstLoadedRowIndex = 0;
 		}
 	} catch (const EWSError &err) {
-		data.ResponseMessages.clear();
-		data.ResponseMessages.emplace_back(err);
-		data.serialize(response);
+		mFindPeopleResponse errdata(err);
+		errdata.serialize(response);
 		return;
 	}
 
@@ -381,15 +632,27 @@ void process(mGetPersonaRequest &&request, XMLElement *response, const EWSContex
 				ab_tree::ab_node node(it);
 				if (node.hidden() & AB_HIDE_RESOLVE)
 					continue;
+				std::string email;
+				if (node.fetch_prop(PR_SMTP_ADDRESS, email) != ecSuccess ||
+				    strcasecmp(email.c_str(), target.c_str()) != 0)
+					continue;
 				std::string val;
-				if (node.fetch_prop(PR_SMTP_ADDRESS, val) != ecSuccess)
-					continue;
-				if (strcasecmp(val.c_str(), target.c_str()) != 0)
-					continue;
 				tPersona persona;
-				persona.EmailAddress = std::move(val);
 				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
 					persona.DisplayName = std::move(val);
+
+				tEmailAddressType addr;
+				addr.Name = persona.DisplayName;
+				addr.EmailAddress = email;
+				addr.RoutingType  = "SMTP";
+				addr.MailboxType  = Enum::Mailbox;
+				persona.EmailAddress = std::move(addr);
+
+				tPersonaId pid;
+				pid.Id = base64_encode(std::move(email));
+				persona.PersonaId   = std::move(pid);
+				persona.PersonaType = "Person";
+
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
 				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
@@ -2220,6 +2483,7 @@ void process(mGetUserPhotoRequest &&request, XMLElement *response, EWSContext &c
 	response->SetName("m:GetUserPhotoResponse");
 
 	mGetUserPhotoResponse data;
+	const BINARY *photodata = nullptr;
 
 	try {
 		std::string dir = ctx.get_maildir(request.Email);
@@ -2231,15 +2495,29 @@ void process(mGetUserPhotoRequest &&request, XMLElement *response, EWSContext &c
 		const proptag_t tag = PROP_TAG(PT_BINARY, propIds[0]);
 		TPROPVAL_ARRAY props;
 		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, {&tag, 1}, &props);
-		auto photodata = props.get<const BINARY>(tag);
-		if (photodata && photodata->cb)
-			data.PictureData = photodata;
-		else
-			ctx.code(http_status::not_found);
+		photodata = props.get<const BINARY>(tag);
 	} catch (const std::exception &err) {
-		ctx.code(http_status::not_found);
-		mlog(LV_WARN, "[ews#%d] Failed to load user photo: %s", ctx.context_id(), err.what());
+		mlog(LV_WARN, "[ews#%d] Failed to load organizational user photo: %s", ctx.context_id(), err.what());
 	}
+
+	if (photodata == nullptr || photodata->cb == 0) {
+		/*
+		 * Not a local mailbox user (or one without an org photo set) -
+		 * fall back to the requesting user's own saved contact for this
+		 * address, if any (see EWSContext::findContactPhoto).
+		 */
+		try {
+			std::string ownDir = ctx.get_maildir(ctx.auth_info().username);
+			photodata = ctx.findContactPhoto(ownDir, request.Email);
+		} catch (const std::exception &err) {
+			mlog(LV_WARN, "[ews#%d] Failed to load contact photo: %s", ctx.context_id(), err.what());
+		}
+	}
+
+	if (photodata && photodata->cb)
+		data.PictureData = photodata;
+	else
+		ctx.code(http_status::not_found);
 	data.success();
 	data.serialize(response);
 }
