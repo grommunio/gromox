@@ -1,8 +1,13 @@
 #pragma once
+#include <chrono>
 #include <cstring>
+#include <mutex>
 #include <mysql.h>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
+#include <gromox/clock.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/resource_pool.hpp>
@@ -93,6 +98,41 @@ struct mysql_plugin final {
 };
 
 }
+
+extern gromox::time_duration g_obj_cache_lifetime;
+
+/* TTL memoiser for the directory identity lookups. */
+template<typename K, typename V> class ttl_cache {
+	public:
+	bool get(const K &key, gromox::time_duration ttl, V &out)
+	{
+		if (ttl.count() <= 0)
+			return false;
+		auto now = std::chrono::steady_clock::now();
+		std::lock_guard hold(m_lock);
+		auto it = m_map.find(key);
+		if (it == m_map.end() || now - it->second.first >= ttl)
+			return false;
+		out = it->second.second;
+		return true;
+	}
+
+	template<typename K2, typename V2>
+	void put(K2 &&key, gromox::time_duration ttl, V2 &&val)
+	{
+		if (ttl.count() <= 0)
+			return;
+		auto now = std::chrono::steady_clock::now();
+		std::lock_guard hold(m_lock);
+		if (m_map.size() >= 200000)
+			m_map.clear();
+		m_map[std::forward<K2>(key)] = {now, std::forward<V2>(val)};
+	}
+
+	protected:
+	std::mutex m_lock;
+	std::unordered_map<K, std::pair<gromox::time_point, V>> m_map;
+};
 
 extern std::string sql_crypt_newhash(const char *);
 extern bool sql_crypt_verify(const char *, const char *);

@@ -51,6 +51,16 @@ using namespace gromox;
 DECLARE_SVC_API(mysql_adaptor, );
 using namespace mysql_adaptor;
 
+namespace {
+struct id_cache_ids {
+	unsigned int user_id = 0, domain_id = 0;
+	enum display_type dtype = DT_MAILUSER;
+};
+}
+static ttl_cache<unsigned int, std::string> g_uid_name_cache; /* userid_to_name */
+static ttl_cache<std::string, id_cache_ids> g_name_ids_cache; /* get_user_ids */
+static ttl_cache<std::string, std::string> g_name_disp_cache; /* get_user_displayname */
+
 errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
     sql_meta_result &mres) try
 {
@@ -270,6 +280,8 @@ bool mysql_plugin::setpasswd(const char *username,
 ec_error_t mysql_plugin::userid_to_name(unsigned int user_id,
     std::string &username) try
 {
+	if (g_uid_name_cache.get(user_id, g_obj_cache_lifetime, username))
+		return ecSuccess;
 	auto qstr = "SELECT username FROM users WHERE id=" + std::to_string(user_id);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
@@ -286,6 +298,7 @@ ec_error_t mysql_plugin::userid_to_name(unsigned int user_id,
 	if (myrow == nullptr || myrow[0] == nullptr)
 		return ecNotFound;
 	username = myrow[0];
+	g_uid_name_cache.put(user_id, g_obj_cache_lifetime, username);
 	return ecSuccess;
 } catch (const std::bad_alloc &e) {
 	mlog(LV_ERR, "%s: %s", "E-1704", e.what());
@@ -322,6 +335,8 @@ bool mysql_plugin::get_user_displayname(const char *username, std::string &out) 
 {
 	if (!str_isascii(username))
 		return false;
+	if (g_name_disp_cache.get(username, g_obj_cache_lifetime, out))
+		return true;
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
 		return false;
@@ -365,6 +380,7 @@ bool mysql_plugin::get_user_displayname(const char *username, std::string &out) 
 	       myrow[0] != nullptr && *myrow[0] != '\0' ? myrow[0] :
 	       myrow[1] != nullptr && *myrow[1] != '\0' ? myrow[1] :
 	       username;
+	g_name_disp_cache.put(username, g_obj_cache_lifetime, out);
 	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1707", e.what());
@@ -514,6 +530,16 @@ bool mysql_plugin::get_user_ids(const char *username, unsigned int *puser_id,
 {
 	if (!str_isascii(username))
 		return false;
+	id_cache_ids idv;
+	if (g_name_ids_cache.get(username, g_obj_cache_lifetime, idv)) {
+		if (puser_id != nullptr)
+			*puser_id = idv.user_id;
+		if (pdomain_id != nullptr)
+			*pdomain_id = idv.domain_id;
+		if (dtypx != nullptr)
+			*dtypx = idv.dtype;
+		return true;
+	}
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
 		return false;
@@ -538,15 +564,18 @@ bool mysql_plugin::get_user_ids(const char *username, unsigned int *puser_id,
 	if (pmyres.num_rows() != 1)
 		return false;
 	auto myrow = pmyres.fetch_row();
+	idv.user_id = strtoul(myrow[0], nullptr, 0);
+	idv.domain_id = strtoul(myrow[1], nullptr, 0);
+	idv.dtype = DT_MAILUSER;
+	if (myrow[2] != nullptr)
+		idv.dtype = static_cast<enum display_type>(strtoul(myrow[2], nullptr, 0));
 	if (puser_id != nullptr)
-		*puser_id = strtoul(myrow[0], nullptr, 0);
+		*puser_id = idv.user_id;
 	if (pdomain_id != nullptr)
-		*pdomain_id = strtoul(myrow[1], nullptr, 0);
-	if (dtypx != nullptr) {
-		*dtypx = DT_MAILUSER;
-		if (myrow[2] != nullptr)
-			*dtypx = static_cast<enum display_type>(strtoul(myrow[2], nullptr, 0));
-	}
+		*pdomain_id = idv.domain_id;
+	if (dtypx != nullptr)
+		*dtypx = idv.dtype;
+	g_name_ids_cache.put(username, g_obj_cache_lifetime, std::move(idv));
 	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1719", e.what());

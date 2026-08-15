@@ -606,7 +606,7 @@ struct mlist_detail {
 };
 static std::mutex g_mlist_cache_lock;
 static std::unordered_map<std::string, mlist_detail> g_mlist_cache;
-static time_duration g_obj_cache_lifetime = std::chrono::seconds(60);
+time_duration g_obj_cache_lifetime = std::chrono::seconds(60);
 
 static constexpr cfg_directive mysql_gromox_cfg_defaults[] = {
 	{"mysql_object_cache_lifetime", "1min", CFG_TIME},
