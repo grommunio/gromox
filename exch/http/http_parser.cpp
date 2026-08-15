@@ -124,8 +124,8 @@ struct http_parser {
 	tproc_status rdbody(http_context *);
 	tproc_status wrrep(http_context *);
 	tproc_status wrrep_nobuf(http_context *);
-	tproc_status waitinchannel(http_context *, RPC_OUT_CHANNEL *);
-	tproc_status waitrecycled(http_context *, RPC_OUT_CHANNEL *);
+	tproc_status waitinchannel(http_context *, rpc_out_channel *);
+	tproc_status waitrecycled(http_context *, rpc_out_channel *);
 	tproc_status wait(http_context *);
 	void vconnection_async_reply(const char *, int, const char *, dcerpc_call *);
 
@@ -174,13 +174,13 @@ unsigned int g_http_debug;
 size_t g_rqbody_flush_size, g_rqbody_max_size;
 bool g_enforce_auth;
 time_duration g_http_basic_auth_validity;
-static thread_local HTTP_CONTEXT *g_context_key;
+static thread_local http_context *g_context_key;
 static std::optional<http_parser> g_parser;
 static listener_ctx http_listen_ctx;
 
-static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
+static void http_parser_context_clear(http_context *pcontext);
 
-static void httpctx_report(const HTTP_CONTEXT &ctx, size_t i)
+static void httpctx_report(const http_context &ctx, size_t i)
 {
 	auto &cn = ctx.connection;
 	if (cn.sockd < 0)
@@ -328,7 +328,7 @@ int http_parser::run()
 #endif
 	}
 	try {
-		g_context_list = std::make_unique<HTTP_CONTEXT[]>(g_context_num);
+		g_context_list = std::make_unique<http_context[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
 		for (size_t i = 0; i < g_context_num; ++i) {
 			g_context_list[i].context_id = i;
@@ -1436,7 +1436,7 @@ static char *now_str(char *buf, size_t bufsize)
 	return buf;
 }
 
-ssize_t http_parser::readsock(HTTP_CONTEXT *pcontext, const char *tag,
+ssize_t http_parser::readsock(http_context *pcontext, const char *tag,
     void *pbuff, unsigned int size)
 {
 	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
@@ -2141,7 +2141,7 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 }
 
 tproc_status http_parser::waitinchannel(http_context *pcontext,
-    RPC_OUT_CHANNEL *pchannel_out)
+    rpc_out_channel *pchannel_out)
 {
 	auto pvconnection = get_vconnection(pcontext->host,
 	                    pcontext->port, pchannel_out->connection_cookie);
@@ -2178,7 +2178,7 @@ tproc_status http_parser::waitinchannel(http_context *pcontext,
 }
 
 tproc_status http_parser::waitrecycled(http_context *pcontext,
-    RPC_OUT_CHANNEL *pchannel_out)
+    rpc_out_channel *pchannel_out)
 {
 	auto pvconnection = get_vconnection(pcontext->host, pcontext->port,
 	                    pchannel_out->connection_cookie);
@@ -2349,7 +2349,7 @@ http_context::http_context()
 #endif
 }
 
-static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
+static void http_parser_context_clear(http_context *pcontext)
 {
     if (NULL == pcontext) {
         return;
@@ -2427,7 +2427,7 @@ void http_context::log(int level, const char *format, ...) const
 
 }
 
-HTTP_CONTEXT* http_parser_get_context()
+http_context* http_parser_get_context()
 {
 	return g_context_key;
 }
@@ -2442,7 +2442,7 @@ void http_parser_set_context(int context_id)
 
 bool http_parser_get_password(const char *username, char *password)
 {
-	HTTP_CONTEXT *pcontext;
+	http_context *pcontext;
 	
 	pcontext = http_parser_get_context();
 	if (pcontext == nullptr)
@@ -2662,7 +2662,7 @@ rpc_channel::~rpc_channel()
 	double_list_free(&pdu_list);
 }
 
-RPC_OUT_CHANNEL::~RPC_OUT_CHANNEL()
+rpc_out_channel::~rpc_out_channel()
 {
 	if (pcall != nullptr) {
 		delete pcall;
@@ -2680,7 +2680,7 @@ int htls_thrwork(generic_connection &&conn)
 	static const int flag = 1;
 	if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 		/* ignore */;
-	auto ctx = static_cast<HTTP_CONTEXT *>(contexts_pool_get_context(sctx_status::free));
+	auto ctx = static_cast<http_context *>(contexts_pool_get_context(sctx_status::free));
 	/* there's no context available in contexts pool, close the connection*/
 	if (ctx == nullptr) {
 		mlog(LV_NOTICE, "Rejecting connection from [%s]:%hu: "

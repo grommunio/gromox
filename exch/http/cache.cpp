@@ -53,7 +53,6 @@ struct cache_item {
 	void *mblk = nullptr;
 	struct stat sb{};
 };
-using CACHE_ITEM = cache_item;
 
 struct RANGE {
 	uint32_t begin;
@@ -67,7 +66,6 @@ struct cache_context {
 	ssize_t range_pos = -1;
 	std::vector<RANGE> range;
 };
-using CACHE_CONTEXT = cache_context;
 
 struct dir_node {
 	std::string domain, path, dir;
@@ -86,7 +84,7 @@ static gromox::atomic_bool g_httpcache_stop;
 static std::mutex g_hash_lock;
 static directory_list g_directory_list;
 static std::unordered_map<std::string, std::shared_ptr<cache_item>> g_cache_hash;
-static std::unique_ptr<CACHE_CONTEXT[]> g_context_list;
+static std::unique_ptr<cache_context[]> g_context_list;
 
 cache_item::~cache_item()
 {
@@ -198,14 +196,14 @@ void mod_cache_stop()
 	g_cache_hash.clear();
 }
 
-static CACHE_CONTEXT* mod_cache_get_cache_context(HTTP_CONTEXT *phttp)
+static cache_context* mod_cache_get_cache_context(http_context *phttp)
 {
 	return &g_context_list[phttp->context_id];
 }
 
-bool mod_cache_is_in_charge(HTTP_CONTEXT *phttp)
+bool mod_cache_is_in_charge(http_context *phttp)
 {
-	CACHE_CONTEXT *pcontext;
+	cache_context *pcontext;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	return pcontext->pitem != nullptr;
@@ -261,7 +259,7 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 	char etag[128];
 	struct tm tmp_tm;
 	char date_string[128];
-	CACHE_CONTEXT *pcontext;
+	cache_context *pcontext;
 	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
@@ -299,7 +297,7 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 	return false;
 }
 
-static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
+static uint32_t mod_cache_calculate_content_length(cache_context *pcontext)
 {
 	int ctype_len;
 	char num_buff[64];
@@ -334,7 +332,7 @@ static BOOL mod_cache_response_multiple_header(http_context *phttp) try
 	struct tm tmp_tm;
 	char date_string[128];
 	uint32_t content_length;
-	CACHE_CONTEXT *pcontext;
+	cache_context *pcontext;
 	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
@@ -443,7 +441,7 @@ http_status mod_cache_take_request(http_context *phttp)
 	char tmp_buff[8192];
 	struct stat node_stat{};
 	char request_uri[http_request::uri_limit];
-	CACHE_CONTEXT *pcontext;
+	cache_context *pcontext;
 	
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
@@ -572,10 +570,10 @@ http_status mod_cache_take_request(http_context *phttp)
 	return http_status::ok;
 }
 
-void mod_cache_insert_ctx(HTTP_CONTEXT *phttp)
+void mod_cache_insert_ctx(http_context *phttp)
 {
 	auto &rq = phttp->request;
-	CACHE_CONTEXT *pcontext;
+	cache_context *pcontext;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	pcontext->pitem.reset();
@@ -585,18 +583,18 @@ void mod_cache_insert_ctx(HTTP_CONTEXT *phttp)
 	rq.content_len = rq.posted_size = 0;
 }
 
-BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp)
+BOOL mod_cache_check_responded(http_context *phttp)
 {
-	CACHE_CONTEXT *pcontext;
+	cache_context *pcontext;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	return pcontext->b_header ? TRUE : false;
 }
 
-BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
+BOOL mod_cache_read_response(http_context *phttp)
 {
 	char tmp_buff[1024];
-	CACHE_CONTEXT *pcontext;
+	cache_context *pcontext;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	if (pcontext->pitem == nullptr)

@@ -9,7 +9,6 @@
 #include <gromox/plugin.hpp>
 
 struct http_context;
-using HTTP_CONTEXT = http_context;
 
 struct HPM_PLUGIN : public gromox::generic_module {
 	HPM_PLUGIN() = default;
@@ -25,12 +24,12 @@ extern int hpm_processor_run();
 extern void hpm_processor_stop();
 extern http_status hpm_processor_take_request(http_context *);
 extern void hpm_processor_insert_ctx(http_context *);
-extern bool hpm_processor_is_in_charge(HTTP_CONTEXT *);
+extern bool hpm_processor_is_in_charge(http_context *);
 extern http_status http_write_request(http_context *);
-BOOL hpm_processor_proc(HTTP_CONTEXT *phttp);
-int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp);
-BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
+BOOL hpm_processor_proc(http_context *phttp);
+int hpm_processor_retrieve_response(http_context *phttp);
+BOOL hpm_processor_send(http_context *phttp,
 	const void *pbuff, int length);
-int hpm_processor_receive(HTTP_CONTEXT *phttp,
+int hpm_processor_receive(http_context *phttp,
 	char *pbuff, int length);
 extern void hpm_processor_trigger(enum plugin_op);

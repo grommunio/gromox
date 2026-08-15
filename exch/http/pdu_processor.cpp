@@ -57,7 +57,6 @@ namespace {
 struct ndr_stack_root {
 	alloc_context in_stack, out_stack;
 };
-using ndr_stack_root = ndr_stack_root;
 
 struct ASYNC_NODE {
 	DOUBLE_LIST_NODE node;
@@ -2842,7 +2841,7 @@ static DCERPC_INFO pdu_processor_get_rpc_info()
 {
 	DCERPC_INFO info;
 	dcerpc_call *pcall;
-	HTTP_CONTEXT *pcontext;
+	http_context *pcontext;
 	
 	pcall = pdu_processor_get_call();
 	pcontext = http_parser_get_context();

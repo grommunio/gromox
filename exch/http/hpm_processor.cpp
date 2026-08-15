@@ -92,9 +92,9 @@ static HTTP_REQUEST *hpm_processor_get_request(unsigned int context_id)
 	/*
 	 * `context_id` is an index-based handle. Every `whatever[context_id]`
 	 * is de-jure owned by a different thread. A particular thread can
-	 * access the members of its HTTP_CONTEXT without locking.
+	 * access the members of its http_context without locking.
 	 */
-	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
+	auto phttp = static_cast<http_context *>(http_parser_get_contexts_list()[context_id]);
 	return &phttp->request;
 }
 
@@ -102,7 +102,7 @@ static HTTP_AUTH_INFO hpm_processor_get_auth_info(unsigned int context_id)
 {
 	HTTP_AUTH_INFO info;
 	
-	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
+	auto phttp = static_cast<http_context *>(http_parser_get_contexts_list()[context_id]);
 	info.auth_status = phttp->auth_status;
 	info.username = phttp->username;
 	info.password = phttp->password;
@@ -114,14 +114,14 @@ static HTTP_AUTH_INFO hpm_processor_get_auth_info(unsigned int context_id)
 static void hpm_processor_set_ep_info(unsigned int context_id,
     const char *host, int port)
 {
-	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
+	auto phttp = static_cast<http_context *>(http_parser_get_contexts_list()[context_id]);
 	gx_strlcpy(phttp->host, host, std::size(phttp->host));
 	phttp->port = port;
 }
 
 static void hpm_processor_wakeup_context(unsigned int context_id)
 {
-	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
+	auto phttp = static_cast<http_context *>(http_parser_get_contexts_list()[context_id]);
 	/*
 	 * Latch the wakeup *before* inspecting sched_stat. If the context is
 	 * mid-park (its plugin's retr() already returned HPM_RETRIEVE_WAIT, but
@@ -286,7 +286,7 @@ http_status hpm_processor_take_request(http_context *phttp)
 	return http_status::none;
 }
 
-bool hpm_processor_is_in_charge(HTTP_CONTEXT *phttp)
+bool hpm_processor_is_in_charge(http_context *phttp)
 {
 	auto phpm_ctx = &g_context_list[phttp->context_id];
 	return phpm_ctx->b_preproc;
@@ -295,7 +295,7 @@ bool hpm_processor_is_in_charge(HTTP_CONTEXT *phttp)
 /**
  * Move the HTTP request body to cache_fd, depending on size.
  */
-http_status http_write_request(HTTP_CONTEXT *phttp)
+http_status http_write_request(http_context *phttp)
 {
 	auto &rq = phttp->request;
 	int size;
@@ -411,7 +411,7 @@ http_status http_write_request(HTTP_CONTEXT *phttp)
 	return http_status::ok;
 }
 
-BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
+BOOL hpm_processor_proc(http_context *phttp)
 {
 	auto &rq = phttp->request;
 	void *pcontent;
@@ -463,21 +463,21 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 	return status != http_status::none ? TRUE : false;
 }
 
-BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
+BOOL hpm_processor_send(http_context *phttp,
 	const void *pbuff, int length)
 {
 	auto id = phttp->context_id;
 	return g_context_list[id].pinterface->send(id, pbuff, length);
 }
 
-int hpm_processor_receive(HTTP_CONTEXT *phttp,
+int hpm_processor_receive(http_context *phttp,
 	char *pbuff, int length)
 {
 	auto id = phttp->context_id;
 	return g_context_list[id].pinterface->receive(id, pbuff, length);
 }
 
-int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp)
+int hpm_processor_retrieve_response(http_context *phttp)
 {
 	auto id = phttp->context_id;
 	return g_context_list[id].pinterface->retr(id);

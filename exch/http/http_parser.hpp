@@ -61,7 +61,6 @@ struct virtual_connection {
 	http_context *pcontext_in = nullptr, *pcontext_insucc = nullptr;
 	http_context *pcontext_out = nullptr, *pcontext_outsucc = nullptr;
 };
-using VIRTUAL_CONNECTION = virtual_connection;
 
 struct rpc_channel {
 	rpc_channel();
@@ -99,9 +98,6 @@ struct rpc_out_channel final : public rpc_channel {
 	uint32_t bytes_sent = 0; /* length of sent data including RPC and RTS PDU, chunk data */
 	dcerpc_call *pcall = nullptr; /* first output pcall of PDU by out channel itself */
 };
-
-using RPC_IN_CHANNEL = rpc_in_channel;
-using RPC_OUT_CHANNEL = rpc_out_channel;
 
 struct http_context final : public schedule_context {
 	http_context();
@@ -156,7 +152,6 @@ struct http_context final : public schedule_context {
 #endif
 	std::string last_gss_output;
 };
-using HTTP_CONTEXT = http_context;
 
 extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int http_parser_run();
@@ -169,7 +164,7 @@ int http_parser_get_param(int param);
 extern SCHEDULE_CONTEXT **http_parser_get_contexts_list();
 int http_parser_threads_event_proc(int action);
 extern bool http_parser_get_password(const char *username, char *password);
-extern HTTP_CONTEXT *http_parser_get_context();
+extern http_context *http_parser_get_context();
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, dcerpc_call *pcall);
 extern void http_report();

@@ -113,7 +113,7 @@ struct RECORD_HEADER {
 static int g_context_num;
 static time_duration g_exec_timeout;
 static std::vector<FASTCGI_NODE> g_fastcgi_list;
-static std::unique_ptr<FASTCGI_CONTEXT[]> g_context_list;
+static std::unique_ptr<fastcgi_context[]> g_context_list;
 static std::atomic<int> g_unavailable_times;
 
 static const FASTCGI_NODE *mod_fastcgi_find_backend(const char *domain,
@@ -211,7 +211,7 @@ int mod_fastcgi_run() try
 	auto ret = mod_fastcgi_read_txt();
 	if (ret < 0)
 		return ret;
-	g_context_list = std::make_unique<FASTCGI_CONTEXT[]>(g_context_num);
+	g_context_list = std::make_unique<fastcgi_context[]>(g_context_num);
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1654: ENOMEM");
@@ -470,12 +470,12 @@ http_status mod_fastcgi_take_request(http_context *phttp)
 	return http_status::ok;
 }
 
-BOOL mod_fastcgi_check_responded(HTTP_CONTEXT *phttp)
+BOOL mod_fastcgi_check_responded(http_context *phttp)
 {
 	return g_context_list[phttp->context_id].b_header;
 }
 
-static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
+static BOOL mod_fastcgi_build_params(http_context *phttp,
 	uint8_t *pbuff, int *plength)
 {
 	auto &rq = phttp->request;
@@ -629,7 +629,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	return TRUE;
 }
 
-BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
+BOOL mod_fastcgi_relay_content(http_context *phttp)
 {
 	auto &rq = phttp->request;
 	void *pbuff;
@@ -756,7 +756,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	return TRUE;
 }
 
-void mod_fastcgi_insert_ctx(HTTP_CONTEXT *phttp)
+void mod_fastcgi_insert_ctx(http_context *phttp)
 {
 	auto &fctx = g_context_list[phttp->context_id];
 	phttp->request.body_fd.close();
@@ -767,7 +767,7 @@ void mod_fastcgi_insert_ctx(HTTP_CONTEXT *phttp)
 	fctx.b_active = false;
 }
 
-static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
+static BOOL mod_fastcgi_safe_read(fastcgi_context *pfast_context,
     void *pbuff, int length)
 {
 	int offset;
@@ -793,7 +793,7 @@ static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
 	}
 }
 
-int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
+int mod_fastcgi_check_response(http_context *phttp)
 {
 	int tv_msec;
 	int context_num;
@@ -818,7 +818,7 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 	return RESPONSE_WAITING;
 }
 
-BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
+BOOL mod_fastcgi_read_response(http_context *phttp)
 {
 	auto &rq = phttp->request;
 	unsigned int tmp_len;
