@@ -49,7 +49,7 @@ E(broadcast_event)
 #undef E
 
 gromox::atomic_bool g_notify_stop;
-std::shared_ptr<CONFIG_FILE> g_config_file;
+std::shared_ptr<config_file> g_config_file;
 static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
 static thread_local std::unique_ptr<alloc_context> g_alloc_mgr;

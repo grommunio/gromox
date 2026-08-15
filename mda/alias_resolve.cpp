@@ -203,7 +203,7 @@ static constexpr const cfg_directive xa_directives[] = {
 	CFG_TABLE_END,
 };
 
-static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> &&acfg)
+static bool xa_reload_config(std::shared_ptr<config_file> &&acfg)
 {
 	if (acfg == nullptr)
 		acfg = config_file_initd("gromox.cfg", get_config_path(),

@@ -86,7 +86,7 @@ static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 
 GET_USER_IDS system_services_get_user_ids;
 GET_DOMAIN_IDS system_services_get_domain_ids;
-std::shared_ptr<CONFIG_FILE> g_config_file;
+std::shared_ptr<config_file> g_config_file;
 
 static thread_local alloc_context g_alloc_mgr;
 static void *gi_alloc(size_t z) { return g_alloc_mgr.alloc(z); }

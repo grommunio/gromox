@@ -30,7 +30,7 @@
 using namespace gromox;
 
 gromox::atomic_bool g_mda_stop;
-std::shared_ptr<CONFIG_FILE> g_config_file;
+std::shared_ptr<config_file> g_config_file;
 std::string g_outgoing_smtp_url;
 static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
@@ -73,7 +73,7 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 
 static void term_handler(int signo);
 
-static bool delivery_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
+static bool delivery_reload_config(std::shared_ptr<config_file> cfg)
 {
 	if (cfg == nullptr)
 		cfg = config_file_prg(opt_config_file, "delivery.cfg",

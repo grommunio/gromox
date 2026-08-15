@@ -42,7 +42,7 @@
 using namespace gromox;
 
 gromox::atomic_bool g_notify_stop;
-std::shared_ptr<CONFIG_FILE> g_config_file;
+std::shared_ptr<config_file> g_config_file;
 std::string g_rcpt_delimiter;
 static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
@@ -96,8 +96,8 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 
 static void term_handler(int signo);
 
-static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
-    std::shared_ptr<CONFIG_FILE> pconfig = nullptr)
+static bool dq_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
+    std::shared_ptr<config_file> pconfig = nullptr)
 {
 	if (gxcfg == nullptr)
 		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);

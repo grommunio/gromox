@@ -632,7 +632,7 @@ void startup_banner(const char *prog)
 	fprintf(stderr, "\n");
 }
 
-errno_t switch_user_exec(const CONFIG_FILE &cf, char *const *argv)
+errno_t switch_user_exec(const config_file &cf, char *const *argv)
 {
 	return switch_user_exec(cf.get_value("running_identity"), argv);
 }
@@ -1455,10 +1455,10 @@ void config_file::set_value(const char *sk, const char *sv) try
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
-std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
+std::shared_ptr<config_file> config_file_init(const char *filename,
     const cfg_directive *key_desc) try
 {
-	auto cfg = std::make_shared<CONFIG_FILE>(key_desc);
+	auto cfg = std::make_shared<config_file>(key_desc);
 	cfg->m_filename = filename;
 	std::unique_ptr<FILE, file_deleter> fh(fopen(filename, "r"));
 	if (fh == nullptr)
@@ -1499,7 +1499,7 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
  *
  * Attempt to read config file @fb from various paths (@sdlist).
  */
-std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
+std::shared_ptr<config_file> config_file_initd(const char *fb,
     const char *sdlist, const cfg_directive *key_desc) try
 {
 	if (sdlist == nullptr || strchr(fb, '/') != nullptr)
@@ -1519,7 +1519,7 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
 			return nullptr;
 		}
 	}
-	return std::make_shared<CONFIG_FILE>(key_desc);
+	return std::make_shared<config_file>(key_desc);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	errno = ENOMEM;

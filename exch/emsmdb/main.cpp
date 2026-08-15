@@ -77,8 +77,8 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> gxcfg,
-    std::shared_ptr<CONFIG_FILE> pconfig)
+static bool exch_emsmdb_reload(std::shared_ptr<config_file> gxcfg,
+    std::shared_ptr<config_file> pconfig)
 {
 	if (gxcfg == nullptr)
 		gxcfg = config_file_initd("gromox.cfg", get_config_path(), emsmdb_gxcfg_dflt);

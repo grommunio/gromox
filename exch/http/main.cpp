@@ -43,7 +43,7 @@
 using namespace gromox;
 
 gromox::atomic_bool g_httpmain_stop;
-std::shared_ptr<CONFIG_FILE> g_config_file;
+std::shared_ptr<config_file> g_config_file;
 static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled, g_usr_signalled;
 
@@ -122,8 +122,8 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
-    std::shared_ptr<CONFIG_FILE> cfg = nullptr)
+static bool http_reload_config(std::shared_ptr<config_file> xcfg = nullptr,
+    std::shared_ptr<config_file> cfg = nullptr)
 {
 	if (cfg == nullptr)
 		cfg = config_file_prg(opt_config_file, "http.cfg", http_cfg_defaults);

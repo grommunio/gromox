@@ -56,7 +56,7 @@ decltype(system_services_auth_login_token) system_services_auth_login_token;
 int (*system_services_add_timer)(const char *, int);
 
 gromox::atomic_bool g_main_notify_stop;
-std::shared_ptr<CONFIG_FILE> g_config_file;
+std::shared_ptr<config_file> g_config_file;
 static const char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
@@ -116,8 +116,8 @@ static void term_handler(int signo)
 	g_main_notify_stop = true;
 }
 
-static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
-    std::shared_ptr<CONFIG_FILE> pconfig = nullptr)
+static bool zcore_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
+    std::shared_ptr<config_file> pconfig = nullptr)
 {
 	if (gxcfg == nullptr)
 		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", zcore_gxcfg_dflt);
@@ -227,7 +227,7 @@ static void listener_stop()
 int main(int argc, char **argv)
 {
 	char temp_buff[45];
-	std::shared_ptr<CONFIG_FILE> pconfig;
+	std::shared_ptr<config_file> pconfig;
 	HXopt6_auto_result argp;
 	
 	exmdb_rpc_alloc = common_util_alloc;

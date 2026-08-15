@@ -38,7 +38,7 @@ static constexpr cfg_directive nsp_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static bool exch_nsp_reload(std::shared_ptr<CONFIG_FILE> cfg)
+static bool exch_nsp_reload(std::shared_ptr<config_file> cfg)
 {
 	if (cfg == nullptr)
 		cfg = config_file_initd("exchange_nsp.cfg", get_config_path(),

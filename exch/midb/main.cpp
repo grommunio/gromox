@@ -47,7 +47,7 @@ using namespace gromox;
 void (*system_services_broadcast_event)(const char*);
 
 static gromox::atomic_bool g_main_notify_stop;
-std::shared_ptr<CONFIG_FILE> g_config_file;
+std::shared_ptr<config_file> g_config_file;
 std::string g_host_id;
 static const char *opt_config_file;
 static unsigned int opt_show_version;
@@ -227,7 +227,7 @@ static int listener_init(listener_ctx &ctx, const config_file &gxcfg,
 int main(int argc, char **argv)
 {
 	char temp_buff[45];
-	std::shared_ptr<CONFIG_FILE> pconfig;
+	std::shared_ptr<config_file> pconfig;
 	HXopt6_auto_result argp;
 	
 	exmdb_rpc_alloc = cu_alloc_bytes;

@@ -153,7 +153,7 @@ static bool list_file_read_midb(const char *filename) try
 	return false;
 }
 
-static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> &&cfg)
+static bool midb_agent_reload(std::shared_ptr<config_file> &&cfg)
 {
 	if (cfg == nullptr)
 		cfg = config_file_initd("midb_agent.cfg", get_config_path(), midb_agent_cfg_defaults);

@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 		if (argp.desc[i]->sh == 'c')
 			opt_config_file = argp.oarg[i];
 
-	std::shared_ptr<CONFIG_FILE> pconfig;
+	std::shared_ptr<config_file> pconfig;
 	if (opt_config_file == nullptr) {
 		auto http_config = config_file_prg(nullptr, "http.cfg", nullptr);
 		if (http_config == nullptr)

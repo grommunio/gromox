@@ -46,7 +46,7 @@ using namespace gromox;
 DECLARE_SVC_API(exmdb, );
 using namespace exmdb;
 
-static std::shared_ptr<CONFIG_FILE> g_config_during_init, g_config_during_init2;
+static std::shared_ptr<config_file> g_config_during_init, g_config_during_init2;
 
 static constexpr cfg_directive exmdb_gromox_cfg_defaults[] = {
 	{"exmdb_deep_backtrace", "0", CFG_BOOL},
@@ -96,7 +96,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 unsigned int g_dbg_synth_content;
 
 static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
-    std::shared_ptr<CONFIG_FILE> pconfig = nullptr)
+    std::shared_ptr<config_file> pconfig = nullptr)
 {
 	if (pconfig == nullptr)
 		pconfig = config_file_initd("exmdb_provider.cfg", get_config_path(),

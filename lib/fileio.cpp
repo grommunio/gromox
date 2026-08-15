@@ -122,7 +122,7 @@ const std::string_view *archive::find(const std::string &file) const
  * Read user-specified config file (@ov) or, if that is unset, try the default file
  * (@fb, located in default searchpaths) in silent mode.
  */
-std::shared_ptr<CONFIG_FILE> config_file_prg(const char *ov, const char *fb,
+std::shared_ptr<config_file> config_file_prg(const char *ov, const char *fb,
     const cfg_directive *key_desc)
 {
 	if (ov == nullptr)

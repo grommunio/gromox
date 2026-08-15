@@ -51,16 +51,15 @@ class GX_EXPORT config_file {
 	using value_type = map_type::value_type;
 	map_type m_vars;
 };
-using CONFIG_FILE = config_file;
 
 #define NO_SEARCH_DIRS nullptr
 
-extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename, const cfg_directive *);
-extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_initd(const char *basename, const char *searchdirs, const cfg_directive *);
-extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_prg(const char *priority_location, const char *fallback_location_basename, const cfg_directive *);
+extern GX_EXPORT std::shared_ptr<config_file> config_file_init(const char *filename, const cfg_directive *);
+extern GX_EXPORT std::shared_ptr<config_file> config_file_initd(const char *basename, const char *searchdirs, const cfg_directive *);
+extern GX_EXPORT std::shared_ptr<config_file> config_file_prg(const char *priority_location, const char *fallback_location_basename, const cfg_directive *);
 
 namespace gromox {
 
-extern GX_EXPORT errno_t switch_user_exec(const CONFIG_FILE &, char *const *argv);
+extern GX_EXPORT errno_t switch_user_exec(const config_file &, char *const *argv);
 
 }
