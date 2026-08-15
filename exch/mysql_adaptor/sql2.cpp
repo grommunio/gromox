@@ -19,6 +19,8 @@
 #include <set>
 #include <string>
 #include <typeinfo>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <gromox/workqueue.hpp>
@@ -29,6 +31,7 @@
 #	include <pwd.h>
 #endif
 #include <fmt/core.h>
+#include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
@@ -588,10 +591,21 @@ void mysql_plugin::init(mysql_adaptor_init_param &&parm)
 	}
 }
 
-using mlist_cache_key = std::pair<std::string, std::string>;
-using mlist_cache_verdict = std::pair<bool, time_point>;
+struct mlist_detail {
+	time_point stamp{};
+	bool is_domain = false;
+	std::string domain;                       /* domain-type list */
+	std::unordered_set<std::string> members;  /* normal-type list */
+	bool contains(const std::string &account) const {
+		if (!is_domain)
+			return members.find(account) != members.cend();
+		auto at = account.find('@');
+		return at != std::string::npos &&
+		       account.compare(at + 1, std::string::npos, domain) == 0;
+	}
+};
 static std::mutex g_mlist_cache_lock;
-static std::map<mlist_cache_key, mlist_cache_verdict> g_mlist_cache;
+static std::unordered_map<std::string, mlist_detail> g_mlist_cache;
 static time_duration g_mlist_cache_lifetime = std::chrono::seconds(60);
 
 static constexpr cfg_directive mysql_gromox_cfg_defaults[] = {
@@ -1072,45 +1086,48 @@ resolve_list_id(sqlconn &conn, const char *mlist_name)
 	return {strtoul(row[0], nullptr, 0), static_cast<mlist_type>(strtoul(row[1], nullptr, 0))};
 }
 
-/**
- * Check list @id whether it contains @account as a member.
- * Scans subordinate lists for @depth.
- */
-static bool mlist_contains(sqlconn &conn, uint32_t list_id, mlist_type mtype,
-    const char *account, unsigned int depth)
+static std::string mlist_lc(std::string_view sv)
 {
-	auto qstr = "SELECT username FROM associations WHERE list_id=" +
-		    std::to_string(list_id) + " AND username='" +
-		    conn.quote(account) + "'";
-	if (!conn.query(qstr))
-		return false;
-	auto res = conn.store_result();
-	if (res == nullptr)
-		return false;
-	if (res.num_rows() > 0)
-		return true;
-	if (depth == 0)
-		return false;
-	--depth;
+	std::string s(sv);
+	HX_strlower(s.data());
+	return s;
+}
 
-	qstr = "SELECT ml.id, ml.list_type FROM associations AS a INNER JOIN mlists AS ml "
-	       "ON a.username=ml.listname WHERE a.list_id=" + std::to_string(list_id);
-	if (!conn.query(qstr))
-		return false;
-	res = conn.store_result();
-	if (res == nullptr)
-		return false;
-	auto nrows = res.num_rows();
-	for (size_t i = 0; i < nrows; ++i) {
-		auto row = res.fetch_row();
-		if (row == nullptr)
-			break;
-		uint32_t sub_id = strtoul(row[0], nullptr, 0);
-		auto sub_type = static_cast<mlist_type>(strtoul(row[1], nullptr, 0));
-		if (mlist_contains(conn, sub_id, sub_type, account, depth))
-			return true;
+/**
+ * A direct association entry is a member even when it is itself a sub-list,
+ * and sub-lists are additionally expanded (as the old mlist_contains did).
+ * @seen guards against nesting cycles.
+ */
+static void mlist_collect_members(sqlconn &conn, uint32_t list_id,
+    unsigned int depth, std::unordered_set<std::string> &out,
+    std::unordered_set<uint32_t> &seen)
+{
+	if (list_id == 0 || !seen.insert(list_id).second)
+		return;
+	std::vector<uint32_t> sublists;
+	{
+		auto qstr = "SELECT a.username, ml.id FROM associations AS a "
+		            "LEFT JOIN mlists AS ml ON a.username=ml.listname "
+		            "WHERE a.list_id=" + std::to_string(list_id);
+		if (!conn.query(qstr))
+			return;
+		auto res = conn.store_result();
+		if (res == nullptr)
+			return;
+		auto nrows = res.num_rows();
+		for (size_t i = 0; i < nrows; ++i) {
+			auto row = res.fetch_row();
+			if (row == nullptr)
+				break;
+			if (row[0] == nullptr)
+				continue;
+			out.insert(mlist_lc(row[0]));
+			if (row[1] != nullptr && depth > 0)
+				sublists.emplace_back(strtoul(row[1], nullptr, 0));
+		}
 	}
-	return false;
+	for (auto sub_id : sublists)
+		mlist_collect_members(conn, sub_id, depth - 1, out, seen);
 }
 
 /**
@@ -1124,30 +1141,40 @@ bool mysql_plugin::check_mlist_include(const char *mlist_name,
 		return false;
 	auto ttl = g_mlist_cache_lifetime;
 	auto now = std::chrono::steady_clock::now();
-	mlist_cache_key key;
+	auto acct = mlist_lc(account);
+	std::string key;
 	if (ttl.count() > 0) {
-		key = {mlist_name, account};
+		key = mlist_lc(mlist_name);
 		std::lock_guard hold(g_mlist_cache_lock);
 		auto it = g_mlist_cache.find(key);
-		if (it != g_mlist_cache.end() && now - it->second.second < ttl)
-			return it->second.first;
+		if (it != g_mlist_cache.end() && now - it->second.stamp < ttl)
+			return it->second.contains(acct);
 	}
-	bool result = false;
+	/* Miss: resolve the whole list once. */
+	mlist_detail detail;
+	detail.stamp = now;
 	{
 		auto conn = g_sqlconn_pool.get_wait();
 		if (!conn)
 			return false; /* transient failure: do not cache */
 		auto [id, type] = resolve_list_id(*conn, mlist_name);
-		if (id != 0)
-			result = type == mlist_type::domain ?
-			         mlist_domain_contains(&*conn, mlist_name, account) :
-			         mlist_contains(*conn, id, type, account, max_depth - 1);
+		if (id != 0 && type == mlist_type::domain) {
+			detail.is_domain = true;
+			auto at = strchr(mlist_name, '@');
+			if (at != nullptr)
+				detail.domain = mlist_lc(&at[1]);
+		} else if (id != 0) {
+			std::unordered_set<uint32_t> seen;
+			mlist_collect_members(*conn, id, max_depth - 1, detail.members, seen);
+		}
+		/* id == 0: unknown list -> empty member set -> contains() == false */
 	}
+	auto result = detail.contains(acct);
 	if (ttl.count() > 0) {
 		std::lock_guard hold(g_mlist_cache_lock);
 		if (g_mlist_cache.size() >= 200000)
 			g_mlist_cache.clear();
-		g_mlist_cache[std::move(key)] = {result, now};
+		g_mlist_cache[std::move(key)] = std::move(detail);
 	}
 	return result;
 } catch (const std::exception &e) {

@@ -88,8 +88,6 @@ struct mysql_plugin final {
 	gromox::errno_t mda_group_expand(const std::string &group, std::vector<std::string> &exp);
 
 	protected:
-	bool mlist_domain_contains(sqlconn *, const char *mlist, const char *account);
-
 	mysql_adaptor_init_param g_parm;
 	sqlconnpool g_sqlconn_pool;
 };
