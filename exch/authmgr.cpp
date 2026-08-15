@@ -108,16 +108,6 @@ static bool verify_sig(std::unique_ptr<EVP_PKEY, sslfree2> &&pk_obj,
 
 static bool verify_token(std::string token, std::string &ex_user)
 {
-	/*
-	 * JWTs use unpadded base64url (and they are the only thing to do so in
-	 * the scope of Gromox), so just fix it up here rather than decode64_ex.
-	 */
-	std::replace(token.begin(), token.end(), '-', '+');
-	std::replace(token.begin(), token.end(), '_', '/');
-	/*
-	 * signed_msg := header_b64 "." payload_b64
-	 * token := signed_msg "." signature_b64
-	 */
 	auto beg = token.c_str();
 	auto end = strchr(beg, '.');
 	if (end == nullptr)
@@ -126,8 +116,25 @@ static bool verify_token(std::string token, std::string &ex_user)
 	end = strchr(beg, '.');
 	if (end == nullptr)
 		return false;
+	/*
+	 * JWT parts are extracted before conversion to base64 encoding because
+	 * the signature was computed over the verbatim base64url text of
+	 * header and payload. Therefore, signed_msg must remain unmodified.
+	 */
 	std::string_view signed_msg(token.c_str(), end - token.c_str());
 	std::string payload(beg, end - beg), signature(end + 1);
+
+	/*
+	 * JWTs use unpadded base64url (and they are the only thing to do so in
+	 * the scope of Gromox), so just fix it up here rather than
+	 * decode64_ex. Only the copies used for decoding may be converted, not
+	 * signed_msg.
+	 */
+	std::replace(payload.begin(), payload.end(), '-', '+');
+	std::replace(payload.begin(), payload.end(), '_', '/');
+	std::replace(signature.begin(), signature.end(), '-', '+');
+	std::replace(signature.begin(), signature.end(), '_', '/');
+
 	payload.insert(payload.size(), (4 - payload.size() % 4) % 4, '=');
 	signature.insert(signature.size(), (4 - signature.size() % 4) % 4, '=');
 
