@@ -1340,7 +1340,7 @@ static gmf_output oxcmail_get_massaged_filename(const MIME *mime,
 		if (pos != ret.fn.npos && ret.fn.size() - pos < 16)
 			ret.ext = ret.fn.substr(pos);
 	} else {
-		ret.fn = "attachment" + std::to_string(++ei.attach_id);
+		ret.fn = "attachment" + std::to_string(++ei.unnamed_atx_counter);
 	}
 	if (ret.ext.size() > 0)
 		return ret;
@@ -2517,7 +2517,6 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 		b_smime = true;
 	}
 	mime_enum.b_result = true;
-	mime_enum.attach_id = 0;
 	mime_enum.get_propids = get_propids;
 	mime_enum.alloc = alloc;
 	mime_enum.pmsg = pmsg.get();

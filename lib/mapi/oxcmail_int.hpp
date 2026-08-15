@@ -29,7 +29,7 @@ struct MIME_ENUM_PARAM {
 	NOMOVE(MIME_ENUM_PARAM);
 
 	bool b_result = false;
-	int attach_id = 0;
+	unsigned int unnamed_atx_counter = 0;
 	GET_PROPIDS get_propids{};
 	EXT_BUFFER_ALLOC alloc{};
 	message_content *pmsg = nullptr;
