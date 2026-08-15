@@ -2,10 +2,17 @@
 Known incompatibilities involving third-party software.
 
 
+Noteworthy issues for users
+===========================
+
+* Outlook for Mac simply loses track of subscriptions after a while.
+  `<https://github.com/grommunio/gromox/pull/311#issuecomment-5253085314>`_
+
+
 Noteworthy issues for administrators and packagers
 ==================================================
 
-* Due to https://gitlab.gnome.org/GNOME/libxml2/-/issues/508 ,
+* Due to `<https://gitlab.gnome.org/GNOME/libxml2/-/issues/508>`_,
   libxml2 versions 2.9.11 <= v < 2.11.0 cause HTML e-mail message bodies to
   change <o:p> to <p>, which causes the insertion of extraneous empty lines
   upon reception of e-mail.
@@ -15,7 +22,7 @@ Noteworthy issues for administrators and packagers
   returned back to the operating system. This makes gromox-imap appear to have
   high memory consumption (and possibly dying when not enough system memory is
   installed) after obtaining the listview for a folder with 70000 messages.
-  https://github.com/grommunio/gromox/issues/214
+  `<https://github.com/grommunio/gromox/issues/214>`_
 
 * Some C++ shared libraries can not be unloaded
   (when `readelf -aW` outputs "UNIQUE"-type symbols). Components like

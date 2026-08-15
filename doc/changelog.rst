@@ -1,3 +1,39 @@
+Development 3.9.290
+===================
+
+Enhancements:
+
+* midb now synchronizes IMAP message flags to and from the mailbox
+  so they survive a deletion of midb.sqlite3
+* midb/imapd now supports IMAP keywords
+* ews: support OFM smart response draft types
+  (ReplyToItem/ReplyAllToItem/ForwardItem)
+
+Fixes:
+
+* zcore no longer logs the ``session ... not found anymore`` message
+* zcore now scans mlist memberships when doing delegate permission checks
+* ruleproc no longer enters single-occurrence updates into user calendars.
+* ruleproc now releases a resource's original slot when an occurrence moves.
+* ruleproc now drops stale per-occurrence items when the series is re-issued.
+* ruleproc: Rule conditions like "is received from" can use multiple
+  internal representations, but only now an equivalence match was added.
+* oxcical: Work around broken PidLidGlobalObjectId field values and treat it
+  like no GOID was present to begin with (cures the E-2215 log message).
+* exmdb_client: More resilient resubscription after network outages.
+* EWS: Restore a (previously dropped) workaround so 32-bit Outlook no longer
+  crashes when showing an OOF dialog that is all greyed out.
+* exmdb: Re-added an index for PR_CONVERSATION_ID to speed up
+  conversation-based viewing in OL/g-web.
+* exmdb: Fixed a case where a search folder is repopulated over and over again.
+* exmdb: Reading a MAPI content table while another thread is trying to close
+  it could led to a `SELECT count(idx) FROM t656: SQL logic error` log message,
+  which was resolved.
+* emsmdb: fix a case of notifications getting stuck in out of memory situations
+* ldap_adaptor: recognize LDAP connections that have timed out at the TCP level
+  and reconnect
+
+
 Gromox 3.9 (2026-07-24)
 =======================
 
