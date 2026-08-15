@@ -37,7 +37,7 @@ void notification_agent_backward_notify(const char *remote_id,
 	prouter->push_and_wake(std::move(bin));
 }
 
-static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> prouter)
+static BOOL notification_agent_read_response(std::shared_ptr<router_connection> prouter)
 {
 	exmdb_response resp_code;
 	struct pollfd pfd_read;
@@ -51,7 +51,7 @@ static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> 
 	return TRUE;
 }
 
-int notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
+int notification_agent_thread_work(std::shared_ptr<router_connection> &&prouter)
 {
 	uint32_t ping_buff;
 	auto cl_0 = HX::make_scope_exit([&]() {

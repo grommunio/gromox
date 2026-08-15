@@ -35,7 +35,6 @@ class exmdb_connection final : public parser_thread {
 	public:
 	exmdb_connection(generic_connection &&co) : parser_thread(std::move(co)) {}
 };
-using EXMDB_CONNECTION = exmdb_connection;
 
 /**
  * Represents a connection from an exmdb_client which has been switched to
@@ -56,14 +55,13 @@ struct router_connection final : public parser_thread {
 	std::condition_variable waken_cond;
 	std::list<xbinary> datagram_list;
 };
-using ROUTER_CONNECTION = router_connection;
 
 extern void exmdb_parser_init(size_t max_threads, size_t max_routers);
 extern void exmdb_parser_stop();
 extern bool exmdb_parser_insert_conn(std::shared_ptr<exmdb_connection>);
 extern std::shared_ptr<router_connection> exmdb_parser_get_router(const char *remote_id);
-extern void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&);
-extern BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &);
+extern void exmdb_parser_insert_router(std::shared_ptr<router_connection> &&);
+extern BOOL exmdb_parser_erase_router(const std::shared_ptr<router_connection> &);
 extern int exmdb_pickup(int control_fd);
 extern int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg);
 extern int exmdb_listener_run(const char *config_path, const config_file &gxcfg);

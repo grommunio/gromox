@@ -54,7 +54,7 @@ using namespace gromox;
 
 struct parser_params {
 	/* worker state */
-	std::shared_ptr<EXMDB_CONNECTION> conn;
+	std::shared_ptr<exmdb_connection> conn;
 	std::string single_user, injected_pkt;
 	bool is_connected = false, b_private = false;
 
@@ -68,9 +68,9 @@ struct pickup_params {
 };
 
 static size_t g_max_threads, g_max_routers;
-static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
+static std::unordered_set<std::shared_ptr<router_connection>> g_router_list;
 /* used for counting and for setting c->b_stop on exit from main thread */
-static std::unordered_set<std::shared_ptr<EXMDB_CONNECTION>> g_connection_list;
+static std::unordered_set<std::shared_ptr<exmdb_connection>> g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
 static gromox::atomic_bool g_exmdblisten_stop, g_exmdbpickup_running;
 static std::vector<std::string> g_acl_list;
@@ -293,7 +293,7 @@ static bool max_routers_reached()
 
 static std::mutex spwork_lock;
 static std::map<std::string, socketpass_worker> spworkers;
-static bool rqi_handoff(EXMDB_CONNECTION &conn, const char *dir,
+static bool rqi_handoff(exmdb_connection &conn, const char *dir,
     std::string_view input_buf)
 {
 	if (*dir == '\0') {
@@ -351,7 +351,7 @@ static bool rqi_handoff(EXMDB_CONNECTION &conn, const char *dir,
 	return false;
 }
 
-static int rqi_terminate(EXMDB_CONNECTION &conn, exmdb_response resp_code)
+static int rqi_terminate(exmdb_connection &conn, exmdb_response resp_code)
 {
 	if (HXio_fullwrite(conn.sockd, &resp_code, 1) != 1)
 		/* ignore */;
@@ -619,7 +619,7 @@ std::shared_ptr<router_connection> exmdb_parser_get_router(const char *remote_id
 	return it != g_router_list.end() ? *it : nullptr;
 }
 
-void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&pconnection)
+void exmdb_parser_insert_router(std::shared_ptr<router_connection> &&pconnection)
 {
 	std::lock_guard rhold(g_router_lock);
 	try {
@@ -628,7 +628,7 @@ void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&pconnection
 	}
 }
 
-BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &pconnection)
+BOOL exmdb_parser_erase_router(const std::shared_ptr<router_connection> &pconnection)
 {
 	std::lock_guard rhold(g_router_lock);
 	auto it = g_router_list.find(pconnection);
