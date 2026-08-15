@@ -6,8 +6,18 @@ mysql_adaptor \(em MySQL/MariaDB connector for user metadata and authentication
 .SH Description
 mysql_adaptor is a component for integrating user accounts from
 a MySQL/MariaDB database.
-.SH Configuration directives
-The usual config file location is /etc/gromox/mysql_adaptor.cfg.
+.SH Configuration directives (gromox.cfg)
+The following directives are read from gromox.cfg:
+.TP
+\fBmysql_object_cache_lifetime\fP
+Object data stored in SQL may be cached locally in memory to avert repeat
+requests (that would all incur natural network and SQL execution latency). This
+cache affects, including but not limited to, group/list memberships and thus
+permission checks. The special value 0 disables the cache.
+.br
+Default: \fI1min\fP
+.SH Configuration directives (mysql_adaptor.cfg)
+The following directives are read from mysql_adaptor.cfg:
 .TP
 \fBconnection_num\fP
 Number of SQL connections to keep active. Note that the SQL server may have
