@@ -2971,7 +2971,7 @@ static bool skel_grab_rtf(mime_skeleton &skel, const message_content &msg,
  */
 static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
     const char *pcharset, BOOL b_tnef, enum oxcmail_body body_type,
-    MIME_SKELETON *pskeleton)
+    mime_skeleton *pskeleton)
 {
 	pskeleton->clear();
 	pskeleton->charset = pcharset;
@@ -3174,7 +3174,7 @@ static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
 }
 
 static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
-    const MIME_SKELETON *pskeleton, MIME *phead) try
+    const mime_skeleton *pskeleton, MIME *phead) try
 {
 	if (pmsg->children.prcpts == nullptr)
 		return true;

@@ -319,7 +319,6 @@ struct rtf_reader final {
 	SIMPLE_TREE element_tree{};
 	ATTACHMENT_LIST *pattachments = nullptr;
 };
-using RTF_READER = rtf_reader;
 
 }
 
@@ -1834,8 +1833,7 @@ bool rtf_reader::process_info_group(SIMPLE_TREE_NODE *pword)
 }
 
 
-static void rtf_process_color_table(
-	RTF_READER *preader, SIMPLE_TREE_NODE *pword)
+static void rtf_process_color_table(rtf_reader *preader, SIMPLE_TREE_NODE *pword)
 {
 	int r;
 	int g;
@@ -3457,7 +3455,7 @@ static ec_error_t rtf_to_html_boring(std::string_view input, const char *charset
     std::string &buf_out, ATTACHMENT_LIST *pattachments) try
 {
 	int i;
-	RTF_READER reader;
+	rtf_reader reader;
 	char tmp_buff[128];
 	SIMPLE_TREE_NODE *pnode;
 	

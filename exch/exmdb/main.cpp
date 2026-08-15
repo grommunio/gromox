@@ -359,7 +359,7 @@ void set_remote_id(const char *remote_id)
 	g_id_key = remote_id;
 }
 
-ALLOC_CONTEXT *get_alloc_context()
+alloc_context *get_alloc_context()
 {
 	auto pctx = g_env_key.get();
 	if (pctx == nullptr || pctx->b_local)

@@ -20,7 +20,7 @@ extern void set_remote_id(const char *);
 extern const char *get_remote_id();
 extern void set_public_username(const char *);
 extern const char *get_public_username();
-extern ALLOC_CONTEXT *get_alloc_context();
+extern alloc_context *get_alloc_context();
 extern bool is_private();
 extern const char *get_dir();
 extern void set_dir(const char *);

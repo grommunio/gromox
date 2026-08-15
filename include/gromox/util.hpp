@@ -52,7 +52,6 @@ struct GX_EXPORT alloc_context {
 	std::vector<std::unique_ptr<char[]>> m_ptrs;
 	size_t m_total_size = 0;
 };
-using ALLOC_CONTEXT = alloc_context;
 
 extern GX_EXPORT bool utf8_valid(const char *str);
 extern GX_EXPORT BOOL utf8_truncate(char *str, int length);

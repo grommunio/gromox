@@ -72,7 +72,6 @@ struct mime_skeleton {
 	const char *charset = nullptr, *pmessage_class = nullptr;
 	attachment_list *pattachments = nullptr;
 };
-using MIME_SKELETON = mime_skeleton;
 
 static constexpr unsigned int MAXIMUM_SEARCHING_DEPTH = 10;
 
