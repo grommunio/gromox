@@ -606,11 +606,161 @@ static int hdrparse_1()
 	assert(m.refonly_parse(data, strlen(data)));
 	auto part = m.get_head();
 	assert(part->head_begin != nullptr);
-	return 0;
+	return EXIT_SUCCESS;
+}
+
+static int vexport_head()
+{
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+
+	/* Blank message */
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	if (err != ecSuccess)
+		return EXIT_FAILURE;
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Date: ") != nullptr);
+	assert(strstr(ostr.c_str(), "MIME-Version: 1.0") != nullptr);
+	assert(strstr(ostr.c_str(), "X-Mailer: gromox") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: ") == nullptr);
+
+	/* Now with some props */
+#define XFE "\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe"
+#define XFE4 XFE XFE XFE XFE
+	BINARY conv_index = {uint32_t(strlen(XFE4)), {strdup(XFE4)}};
+#undef XFE4
+#undef XFE
+	static const unsigned int loc_x409 = 0x409;
+	props.set(PR_CONVERSATION_INDEX, &conv_index);
+	props.set(PR_READ_RECEIPT_REQUESTED, &byte_value_one);
+	props.set(PidTagReadReceiptName, "Foo Bar");
+	props.set(PidTagReadReceiptAddressType, "SMTP");
+	props.set(PidTagReadReceiptEmailAddress, "foobar@localhost");
+	props.set(PR_SUBJECT_PREFIX, "Re: ");
+	props.set(PR_NORMALIZED_SUBJECT, "Le subjäkt");
+	props.set(PR_IMPORTANCE, &uint_value_zero);
+	props.set(PR_MESSAGE_LOCALE_ID, &loc_x409);
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	if (err != ecSuccess)
+		return EXIT_FAILURE;
+	ostr = vmsg->generate();
+
+	/* Important checks, like... */
+	/* ...that PR_SUBJECT with Unicode is encoded right */
+	assert(strstr(ostr.c_str(), "Subject: Re: Le =?utf-8?Q?") != nullptr);
+	/* ...that overly long header lines wrap (requires =? ?=) */
+	assert(strstr(ostr.c_str(), "Thread-Index: =?us-ascii?Q?") != nullptr);
+	/* ...that Sender/From/Dispo is composed ok */
+	assert(strstr(ostr.c_str(), "Disposition-Notification-To: \"Foo Bar\" <foobar@localhost>") != nullptr);
+
+	return EXIT_SUCCESS;
+}
+
+static int vexport_simple_body()
+{
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+
+	/* Just plaintext mail */
+	auto vmsg = vmime::make_shared<vmime::message>();
+#define HSTR "Ä very long long long long long long long long long long long long long long long long line"
+	props.set(PR_BODY, HSTR);
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	if (err != ecSuccess)
+		return EXIT_FAILURE;
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: text/plain") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/") == nullptr);
+
+	/* Message with two body types */
+#define HSTR2 "<p>" HSTR "</p>"
+	const BINARY bin_html = {strlen(HSTR2), {deconst(HSTR2)}};
+	props.set(PR_HTML, &bin_html);
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	if (err != ecSuccess)
+		return EXIT_FAILURE;
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/alt") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: text/plain") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: text/html") != nullptr);
+	printf("%s\n", ostr.c_str());
+
+	return EXIT_SUCCESS;
+#undef HSTR2
+#undef HSTR
+}
+
+static int vexport_image()
+{
+	printf("== vexport_image ==\n");
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+
+	message_content_ptr mct(message_content_init());
+	auto atxlist = mct->children.pattachments = attachment_list_init();
+	auto atx = attachment_content_init();
+	atxlist->append_internal(atx);
+	const BINARY almost_empty = {1, deconst(" ")};
+	uint32_t method = ATTACH_BY_VALUE;
+	atx->proplist.set(PR_ATTACH_METHOD, &method);
+	atx->proplist.set(PR_ATTACH_DATA_BIN, &almost_empty);
+	/*
+	 * aaaaaagh not enough properties!? It seems load_mime_skeleton() seems
+	 * to not make enough sense of the structure yet, causing the 'mime_skeleton'
+	 * object in oxcmail_export.cpp:do_export to contain not the right information
+	 * for do_export to produce the MULTIPART_MIXED container needed by
+	 * oxcmail_export.cpp:export_attachments...
+	 */
+	
+
+	/*
+	 * Old: MAIL <=> lib/email/mail.cpp <=> lib/mapi/oxcmail.cpp:do_export
+	 * New: vmime::message <=> libvmime/libwmime <=> lib/mapi/oxcmail_export..cpp:do_export
+	 *
+	 * Run the old exporter to show that it too fails. Which is expected;
+	 * the vmime exporter is just an API rewrite (so far).
+	 * Don't bother fixing MAIL.
+	 */
+	{
+		MAIL imail;
+		auto err = cvt.mapi_to_inet(*mct, imail);
+		if (err != ecSuccess)
+			printf("MAIL class failed too! ...\n");
+	}
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	if (err == ecSuccess) {
+		auto ostr = vmsg->generate();
+		printf("ok:: %s\n", ostr.c_str());
+	}
+
+	auto &props = mct->proplist;
+	props.set(PR_BODY, "");
+	BINARY empty{};
+	props.set(PR_HTML, &empty);
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	if (err != ecSuccess)
+		return EXIT_FAILURE;
+	auto ostr = vmsg->generate();
+	printf("%s\n", ostr.c_str());
+	return EXIT_SUCCESS;
 }
 
 int main()
 {
+	mlog_init(nullptr, nullptr, LV_DEBUG, nullptr);
 	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) -> bool { return false; };
 	auto ee_get_domain_ids = [](const char *, unsigned int *, unsigned int *) -> bool { return false; };
 	auto ee_userid_to_name = [](unsigned int, std::string &) -> ec_error_t { return ecNotFound; };
@@ -623,7 +773,8 @@ int main()
 	for (auto fct : {excess_attachment, select_parts_1, select_parts_1a,
 	     select_parts_2, select_parts_3, select_parts_4, select_parts_5,
 	     select_parts_6, select_parts_7,
-	     ical_export_1, ical_export_2, hdrparse_1})
+	     ical_export_1, ical_export_2, hdrparse_1,
+	     vexport_head, vexport_simple_body, vexport_image})
 		if (fct() != EXIT_SUCCESS)
 			ret = EXIT_FAILURE;
 	return ret;

@@ -7,6 +7,8 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/oxcmail.hpp>
+#include <gromox/usercvt.hpp>
 
 struct MIME;
 struct attachment_content;
@@ -74,7 +76,13 @@ struct mime_skeleton {
 };
 
 static constexpr unsigned int MAXIMUM_SEARCHING_DEPTH = 10;
+extern char g_oxcmail_org_name[];
+extern GET_USER_IDS oxcmail_get_user_ids;
+extern GET_USERNAME oxcmail_get_username;
 
+extern bool load_mime_skeleton(const message_content *, const char *, bool, enum oxcmail_body, mime_skeleton *);
+extern bool oxcmail_export_dsn(const message_content *msg, const char *charset, const char *mclass, const char *org, gromox::cvt_id2user, std::string &dsnout);
+extern bool oxcmail_export_mdn(const message_content *msg, const char *charset, const char *mclass, std::string &mdn_content);
 extern void select_parts(const MIME *, MIME_ENUM_PARAM &, unsigned int level);
 extern ec_error_t bodyset_html(TPROPVAL_ARRAY &, std::string &&, const char *);
 extern ec_error_t bodyset_plain(TPROPVAL_ARRAY &, std::string &&, const char *);

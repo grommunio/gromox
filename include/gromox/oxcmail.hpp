@@ -50,13 +50,18 @@ class GX_EXPORT oxcmail_converter {
 	public:
 	void use_format_override(const message_content &);
 	bool mapi_to_inet(const message_content &, MAIL &);
+	ec_error_t mapi_to_inet(const message_content &, vmime::shared_ptr<vmime::message>);
 	std::unique_ptr<message_content, gromox::mc_delete> inet_to_mapi(const MAIL &);
 
 	private:
 	bool do_export(const message_content &, bool force_tnef, MAIL &, unsigned int mdepth);
+	ec_error_t do_export(const message_content &imsg, bool b_tnef, vmime::shared_ptr<vmime::bodyPart>, unsigned int mdepth);
 	ec_error_t export_attachments(const message_content &, const oxcmail::mime_skeleton &, MAIL &, MIME *, MIME *, unsigned int mdepth);
+	ec_error_t __attribute__((warn_unused_result)) export_attachments(const message_content &, const oxcmail::mime_skeleton &, vmime::shared_ptr<vmime::bodyPart> rel, vmime::shared_ptr<vmime::bodyPart> mixed, unsigned int mdepth);
 	bool export_attachment(const attachment_content &, bool b_inline, const oxcmail::mime_skeleton &, MIME &, unsigned int mdepth);
+	ec_error_t __attribute__((warn_unused_result)) export_attachment(const attachment_content &, bool is_inline, const oxcmail::mime_skeleton &, vmime::shared_ptr<vmime::bodyPart> out, unsigned int mdepth);
 	ec_error_t export_tnef_body(const oxcmail::mime_skeleton &, MAIL &, MIME *, unsigned int mdepth);
+	ec_error_t export_tnef_body(const oxcmail::mime_skeleton &skel, vmime::shared_ptr<vmime::bodyPart> rel, unsigned int mdepth);
 
 	public:
 	const char *log_id = "";
