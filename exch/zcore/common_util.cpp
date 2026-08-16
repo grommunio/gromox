@@ -460,20 +460,13 @@ static BOOL common_util_username_to_entryid(const char *username,
     const char *pdisplay_name, BINARY *pbin, enum display_type *dtpp)
 {
 	unsigned int user_id = 0, domain_id = 0;
-	char *pdomain;
 	EXT_PUSH ext_push;
-	char tmp_name[UADDR_SIZE];
 	ONEOFF_ENTRYID oneoff_entry;
 	enum display_type dtypx = DT_MAILUSER;
 	
 	if (mysql_adaptor_get_user_ids(username, &user_id, &domain_id, &dtypx)) {
-		gx_strlcpy(tmp_name, username, std::size(tmp_name));
-		pdomain = strchr(tmp_name, '@');
-		if (pdomain == nullptr)
-			return FALSE;
-		*pdomain = '\0';
 		std::string essdn;
-		if (cvt_username_to_essdn(tmp_name, g_org_name, user_id,
+		if (cvt_username_to_essdn(username, g_org_name, user_id,
 		    domain_id, essdn) != ecSuccess)
 			return false;
 		if (!common_util_essdn_to_entryid(essdn.c_str(), pbin,

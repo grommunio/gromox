@@ -21,6 +21,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #undef assert
 #define assert(x) do { if (!(x)) { printf("%s failed\n", #x); return EXIT_FAILURE; } } while (false)
@@ -683,6 +684,32 @@ static int t_tzdef()
 	return EXIT_SUCCESS;
 }
 
+static ec_error_t essdn_id2user(unsigned int, std::string &out)
+{
+	out = "sender@example.org";
+	return ecSuccess;
+}
+
+static int t_essdn()
+{
+	/*
+	 * cvt_username_to_essdn splits the address itself, so a caller hands
+	 * over the whole thing. A bare local part selects the public-store
+	 * branch instead, and the ESSDN then names no mailbox at all.
+	 */
+	std::string essdn, back;
+	assert(cvt_username_to_essdn("sender@example.org", "example",
+	       0x11, 0x22, essdn) == ecSuccess);
+	assert(essdn.find("-sender") != essdn.npos);
+	assert(cvt_essdn_to_username(essdn.c_str(), "example",
+	       essdn_id2user, back) == ecSuccess);
+	assert(back == "sender@example.org");
+	assert(cvt_username_to_essdn("sender", "example",
+	       0x11, 0x22, essdn) == ecSuccess);
+	assert(essdn.find("-public.folder.root") != essdn.npos);
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -700,7 +727,7 @@ static int runner()
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_string,
-		t_time, t_tzdef,
+		t_time, t_tzdef, t_essdn,
 	};
 	for (auto f : fct) {
 		auto ret = f();
