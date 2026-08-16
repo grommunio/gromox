@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <mutex>
+#include <unordered_set>
 #include <vector>
 #include <libHX/scope.hpp>
 #include <gromox/database.h>
@@ -153,6 +154,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto b_optim = pdb->begin_optim();
+	auto cl_optim = HX::make_scope_exit([&]() { if (b_optim) pdb->end_optim(); });
 	/*
 	 * Read-only transaction ensuring consistency of data across several blocks.
 	 * Nothing is ever written to pdb->psqlite, so no need to commit anything.
@@ -216,6 +219,30 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		if (stm_select_mp == nullptr)
 			return false;
 	}
+	uint64_t rcv_cutoff = 0;
+	std::unordered_set<uint64_t> rcv_scope;
+	bool b_rcv_fast = false;
+	if (prestriction != nullptr && prestriction->rt == RES_PROPERTY &&
+	    prestriction->prop != nullptr &&
+	    prestriction->prop->relop == RELOP_GE &&
+	    prestriction->prop->proptag == PR_MESSAGE_DELIVERY_TIME &&
+	    PROP_TYPE(prestriction->prop->propval.proptag) == PT_SYSTIME &&
+	    prestriction->prop->propval.pvalue != nullptr) try {
+		rcv_cutoff = *static_cast<const uint64_t *>(prestriction->prop->propval.pvalue);
+		snprintf(sql_string, std::size(sql_string), "SELECT message_id "
+		         "FROM msgtime_index WHERE folder_id=%llu AND rcvtime>=%llu",
+		         static_cast<unsigned long long>(fid_val),
+		         static_cast<unsigned long long>(rcv_cutoff));
+		auto stm_scope = pdb->prep(sql_string);
+		if (stm_scope != nullptr) {
+			while (stm_scope.step() == SQLITE_ROW)
+				rcv_scope.insert(sqlite3_column_int64(stm_scope, 0));
+			b_rcv_fast = true;
+		}
+	} catch (const std::bad_alloc &) {
+		rcv_scope.clear();
+		b_rcv_fast = false;
+	}
 	*plast_cn = 0;
 	*plast_readcn = 0;
 	while (stm_select_msg.step() == SQLITE_ROW) {
@@ -232,10 +259,14 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			if (!b_fai)
 				continue;
 		}
-		if (prestriction != nullptr &&
+		if (b_rcv_fast && !b_fai) {
+			if (rcv_scope.find(mid_val) == rcv_scope.cend())
+				continue;
+		} else if (prestriction != nullptr &&
 		    !cu_eval_msg_restriction(*pdb,
-		    cpid, mid_val, prestriction))
-			continue;	
+		    cpid, mid_val, prestriction)) {
+			continue;
+		}
 		sqlite3_reset(stm_insert_exist);
 		sqlite3_bind_int64(stm_insert_exist, 1, mid_val);
 		if (stm_insert_exist.step() != SQLITE_DONE)
