@@ -3488,6 +3488,7 @@ static ec_error_t opx_process(const rulexec_in &rp,
 		return ecError;
 	if (pvalue == nullptr)
 		return ecSuccess;
+	bv = static_cast<BINARY *>(pvalue);
 	ext_pull.init(bv->pb, bv->cb, common_util_alloc,
 		EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 	EXT_RULE_ACTIONS ext_actions;
