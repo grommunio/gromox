@@ -110,7 +110,7 @@ struct imap_context final : public schedule_context {
 	content_array contents;
 	std::optional<std::string> wrdat_backing;
 	const std::string *wrdat_content = nullptr;
-	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
+	bool b_readonly = false; /* is selected folder read only, this is for the examine command */
 	std::atomic<unsigned int> async_change_mask{0};
 	/*
 	 * Because one mail can get repeatedly re-flagged, f_flags is modeled

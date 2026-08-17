@@ -188,8 +188,8 @@ static std::string quote_encode(const std::string &u7)
 	return quote_encode(u7.c_str());
 }
 
-static BOOL icp_parse_fetch_args(mdi_list &plist, BOOL *pb_detail,
-    BOOL *pb_simple, BOOL *pb_data, char *string,
+static bool icp_parse_fetch_args(mdi_list &plist, bool *pb_detail,
+    bool *pb_simple, bool *pb_data, char *string,
     std::vector<std::string> &argv) try
 {
 	static constexpr const char *kw1[] = {"ALL", "FAST", "FULL"};
@@ -459,7 +459,7 @@ std::string icp_make_kwannounce_line(imap_context &ctx, std::string_view kw_spac
 }
 
 static int icp_match_field(mjson_io &io, const char *cmd_tag,
-    const char *file_path, size_t offset, size_t length, BOOL b_not,
+    const char *file_path, size_t offset, size_t length, bool b_not,
     const char *tags, size_t offset1, ssize_t length1, std::string &value) try
 {
 	auto pbody = strchr(cmd_tag, '[');
@@ -715,7 +715,7 @@ static std::pair<std::string, std::string> split_DI(std::string_view sv)
 }
 
 static int icp_process_fetch_item(imap_context &ctx,
-    BOOL b_data, MITEM *pitem, std::string_view digest_str,
+    bool b_data, MITEM *pitem, std::string_view digest_str,
     int item_id, mdi_list &pitem_list) try
 {
 	auto pcontext = &ctx;
@@ -746,7 +746,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 		}
 	};
 
-	BOOL b_first = FALSE;
+	bool b_first = false;
 	buf = "* " + std::to_string(item_id) + " FETCH (";
 	for (auto &kwss : pitem_list) {
 		if (!b_first)
@@ -1160,7 +1160,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 	}
 }
 
-static BOOL icp_convert_imaptime(const char *str_time, time_t *ptime)
+static bool icp_convert_imaptime(const char *str_time, time_t *ptime)
 {
 	struct tm tmp_tm{};
 	auto str_zone = strptime(str_time, "%d-%b-%Y %T ", &tmp_tm);
@@ -1173,7 +1173,7 @@ static BOOL icp_convert_imaptime(const char *str_time, time_t *ptime)
 	return TRUE;
 }
 
-static BOOL icp_wildcard_match(const char *folder, const char *mask)
+static bool icp_wildcard_match(const char *folder, const char *mask)
 {
 	while (true) {
 		if (*folder == '\0' && *mask == '\0')
@@ -1201,7 +1201,7 @@ static BOOL icp_wildcard_match(const char *folder, const char *mask)
 /**
  * See sysfolder_to_imapfolder for some notes.
  */
-static BOOL icp_imapfolder_to_sysfolder(const char *imap_folder,
+static bool icp_imapfolder_to_sysfolder(const char *imap_folder,
     std::string &sys_folder, bool utf8) try
 {
 	std::string t;
@@ -1227,7 +1227,7 @@ static BOOL icp_imapfolder_to_sysfolder(const char *imap_folder,
 	return false;
 }
 
-static BOOL icp_sysfolder_to_imapfolder(const enum_folder_t &sys_folder,
+static bool icp_sysfolder_to_imapfolder(const enum_folder_t &sys_folder,
     std::string &imap_folder, bool utf8) try
 {
 	if (sys_folder.first == PRIVATE_FID_INBOX) {
@@ -3123,8 +3123,6 @@ int icp_fetch(std::span<std::string> argv, imap_context &ctx)
 {
 	auto pcontext = &ctx;
 	int i, num, errnum = 0;
-	BOOL b_data;
-	BOOL b_detail, b_simple;
 	std::vector<std::string> tmp_argv;
 	imap_seq_list list_uid;
 	mdi_list list_data;
@@ -3133,6 +3131,7 @@ int icp_fetch(std::span<std::string> argv, imap_context &ctx)
 		return 1805;
 	if (argv.size() < 4 || parse_imap_seqx(*pcontext, argv[2].c_str(), list_uid) != 0)
 		return 1800;
+	bool b_detail = false, b_simple = false, b_data = false;
 	if (!icp_parse_fetch_args(list_data, &b_detail, &b_simple, &b_data,
 	    argv[3].data(), tmp_argv))
 		return 1800;
@@ -3281,8 +3280,6 @@ int icp_copy(std::span<std::string> argv, imap_context &ctx) try
 	auto pcontext = &ctx;
 	unsigned int uid;
 	int errnum;
-	BOOL b_first;
-	BOOL b_copied;
 	int i, j;
 	std::string sys_name;
 	imap_seq_list list_uid;
@@ -3304,8 +3301,8 @@ int icp_copy(std::span<std::string> argv, imap_context &ctx) try
 	    sys_name, nullptr, nullptr, nullptr, &uidvalidity, nullptr,
 	    &errnum) != MIDB_RESULT_OK)
 		uidvalidity = 0;
-	b_copied = TRUE;
-	b_first = FALSE;
+
+	bool b_copied = true, b_first = false;
 	int num = xarray.get_capacity();
 	std::string uid_string, uid_string1;
 	for (i=0; i<num; i++) {
@@ -3438,8 +3435,6 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 	int num;
 	int errnum;
 	int i;
-	BOOL b_data;
-	BOOL b_detail, b_simple;
 	imap_seq_list list_seq;
 	mdi_list list_data;
 	
@@ -3448,6 +3443,7 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 	if (argv.size() < 5 || parse_imap_seq(list_seq, icp_uidseq(ctx, argv[3])) != 0)
 		return 1800;
 	std::vector<std::string> temp_argv;
+	bool b_detail = false, b_simple = false, b_data = false;
 	if (!icp_parse_fetch_args(list_data, &b_detail, &b_simple,
 	    &b_data, argv[4].data(), temp_argv))
 		return 1800;
@@ -3551,8 +3547,6 @@ int icp_uid_copy(std::span<std::string> argv, imap_context &ctx) try
 	auto pcontext = &ctx;
 	unsigned int uid;
 	int errnum;
-	BOOL b_first;
-	BOOL b_copied;
 	int i, j;
 	std::string sys_name;
 	imap_seq_list list_seq;
@@ -3574,8 +3568,8 @@ int icp_uid_copy(std::span<std::string> argv, imap_context &ctx) try
 	    sys_name, nullptr, nullptr, nullptr, &uidvalidity,
 	    nullptr, &errnum) != MIDB_RESULT_OK)
 		uidvalidity = 0;
-	b_copied = TRUE;
-	b_first = FALSE;
+
+	bool b_copied = true, b_first = false;
 	int num = xarray.get_capacity();
 	std::string uid_string;
 	for (i=0; i<num; i++) {
@@ -3771,7 +3765,6 @@ int icp_uid_move(std::span<std::string> argv, imap_context &ctx) try
 	auto pcontext = &ctx;
 	unsigned int uid;
 	int errnum;
-	BOOL b_first, b_copied;
 	int i, j;
 	std::string sys_name;
 	imap_seq_list list_seq;
@@ -3795,8 +3788,8 @@ int icp_uid_move(std::span<std::string> argv, imap_context &ctx) try
 	    sys_name, nullptr, nullptr, nullptr, &uidvalidity,
 	    nullptr, &errnum) != MIDB_RESULT_OK)
 		uidvalidity = 0;
-	b_copied = TRUE;
-	b_first = FALSE;
+
+	bool b_copied = true, b_first = false;
 	int num = xarray.get_capacity();
 	std::string uid_string;
 	std::vector<MITEM *> moved;
@@ -3954,7 +3947,6 @@ void icp_clsfld(imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int errnum, result, i;
-	BOOL b_deleted;
 	std::string prev_selected;
 	
 	if (pcontext->selected_folder.empty())
@@ -4008,7 +4000,8 @@ void icp_clsfld(imap_context &ctx) try
 		imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
 		return;
 	}
-	b_deleted = FALSE;
+
+	bool b_deleted = false;
 	int num = xarray.get_capacity();
 	std::vector<MITEM *> exp_list;
 	for (i=0; i<num; i++) {

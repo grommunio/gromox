@@ -49,8 +49,7 @@ struct pop3_context final : public schedule_context {
 	char *write_buff = nullptr;
 	std::string wrdat_content;
 	size_t write_length = 0, write_offset = 0, wrdat_offset = 0;
-	bool wrdat_active = false;
-	BOOL data_stat = false, list_stat = false;
+	bool wrdat_active = false, data_stat = false, list_stat = false;
 	int until_line = 0x7FFFFFFF, cur_line = -1;
 	STREAM stream; /* stream accepted from pop3 client */
 	int total_mail = 0;

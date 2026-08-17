@@ -386,7 +386,7 @@ int list_mail(const char *path, const std::string &folder,
 	*psize = 0;
 	int count = 0, lines = -1;
 	size_t offset = 0, last_pos = 0, line_pos = 0;
-	BOOL b_fail = false;
+	bool b_fail = false;
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -1228,7 +1228,7 @@ int list_deleted(const char *path, const std::string &folder, XARRAY *pxarray,
 	buff.resize(256 * 1024);
 	int count = 0, lines = -1;
 	size_t offset = 0, last_pos = 0, line_pos = 0;
-	BOOL b_format_error = false;
+	bool b_format_error = false;
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -1351,7 +1351,7 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 		
 		int count = 0, lines = -1;
 		size_t offset = 0, last_pos = 0, line_pos = 0;
-		BOOL b_format_error = false;
+		bool b_format_error = false;
 		while (true) {
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
@@ -1499,7 +1499,7 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 		
 		int count = 0, lines = -1;
 		size_t offset = 0, last_pos = 0, line_pos = 0;
-		BOOL b_format_error = false;
+		bool b_format_error = false;
 		while (true) {
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;

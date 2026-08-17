@@ -445,7 +445,6 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 {
 	auto &ctx = *pcontext;
 	unsigned int size, line_length;
-	BOOL b_stop;
 	char line_buff[MAX_LINE_LENGTH + 3];
 	
 	pcontext->write_length = 0;
@@ -471,7 +470,8 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 			break;
 		}
 	}
-	b_stop = FALSE;
+
+	bool b_stop = false;
 	scopy_result last_result = scopy_result::ok;
 	while (!b_stop) {
 		line_length = MAX_LINE_LENGTH;
