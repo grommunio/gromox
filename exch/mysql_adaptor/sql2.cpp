@@ -606,10 +606,10 @@ struct mlist_detail {
 };
 static std::mutex g_mlist_cache_lock;
 static std::unordered_map<std::string, mlist_detail> g_mlist_cache;
-static time_duration g_mlist_cache_lifetime = std::chrono::seconds(60);
+static time_duration g_obj_cache_lifetime = std::chrono::seconds(60);
 
 static constexpr cfg_directive mysql_gromox_cfg_defaults[] = {
-	{"mlist_cache_lifetime", "1min", CFG_TIME},
+	{"mysql_object_cache_lifetime", "1min", CFG_TIME},
 	CFG_TABLE_END,
 };
 
@@ -680,7 +680,7 @@ bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&gxcfg,
 		par.schema_upgrade = SSU_AUTOUPGRADE;
 
 	par.enable_firsttimepw = cfg->get_ll("enable_firsttime_password");
-	g_mlist_cache_lifetime = std::chrono::seconds(gxcfg->get_ll("mlist_cache_lifetime"));
+	g_obj_cache_lifetime = std::chrono::seconds(gxcfg->get_ll("mysql_object_cache_lifetime"));
 	init(std::move(par));
 	return true;
 }
@@ -1139,7 +1139,7 @@ bool mysql_plugin::check_mlist_include(const char *mlist_name,
 {
 	if (max_depth == 0 || mlist_name == nullptr || account == nullptr)
 		return false;
-	auto ttl = g_mlist_cache_lifetime;
+	auto ttl = g_obj_cache_lifetime;
 	auto now = std::chrono::steady_clock::now();
 	auto acct = mlist_lc(account);
 	std::string key;
