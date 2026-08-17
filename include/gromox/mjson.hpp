@@ -106,13 +106,13 @@ struct GX_EXPORT MJSON_MIME {
 
 struct GX_EXPORT MJSON {
 	void clear();
-	BOOL load_from_json(const Json::Value &);
-	int fetch_structure(mjson_io &, const char *cset, BOOL ext, std::string &out) const;
+	bool load_from_json(const Json::Value &);
+	int fetch_structure(mjson_io &, const char *cset, bool ext, std::string &out) const;
 	int fetch_envelope(const char *cset, std::string &out) const;
 	bool has_rfc822_part() const;
-	BOOL rfc822_build(mjson_io &, const char *storage_path) const;
-	BOOL rfc822_get(mjson_io &, MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id) const;
-	int rfc822_fetch(mjson_io &, const char *storage_path, const char *cset, BOOL ext, std::string &out) const;
+	bool rfc822_build(mjson_io &, const char *storage_path) const;
+	bool rfc822_get(mjson_io &, MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id) const;
+	int rfc822_fetch(mjson_io &, const char *storage_path, const char *cset, bool ext, std::string &out) const;
 	const char *get_mail_filename() const { return filename.c_str(); }
 	const char *get_mail_received() const { return received.c_str(); }
 	const char *get_mail_messageid() const { return msgid.c_str(); }

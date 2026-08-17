@@ -47,18 +47,18 @@ struct BUILD_PARAM {
 	const char *msg_path = nullptr; /* cache slot the message text is read from */
 	mjson_key key; /* key of the message the enumerated MIMEs belong to */
 	int depth = 0;
-	BOOL build_result = false;
+	bool build_result = false;
 };
 
 }
 
 static bool mjson_parse_array(MJSON *, const Json::Value &, unsigned int type);
-static BOOL mjson_record_node(MJSON *, const Json::Value &, unsigned int type);
-static int mjson_fetch_mime_structure(mjson_io &, const MJSON_MIME *, const mjson_key *self, const char *cset, const char *email_charset, BOOL b_ext, std::string &out);
+static bool mjson_record_node(MJSON *, const Json::Value &, unsigned int type);
+static int mjson_fetch_mime_structure(mjson_io &, const MJSON_MIME *, const mjson_key *self, const char *cset, const char *email_charset, bool b_ext, std::string &out);
 static std::string mjson_cvt_addr(const EMAIL_ADDR &);
 static std::string mjson_add_backslash(const char *);
 static void mjson_enum_build(const MJSON_MIME *, BUILD_PARAM *);
-static int mjson_rfc822_fetch_internal(mjson_io &, const MJSON *, const mjson_key &, const char *cset, BOOL b_ext, std::string &out);
+static int mjson_rfc822_fetch_internal(mjson_io &, const MJSON *, const mjson_key &, const char *cset, bool b_ext, std::string &out);
 
 bool mjson_io::exists(const std::string &path) const
 {
@@ -170,7 +170,7 @@ void MJSON::clear()
 	pjson->size = 0;
 }
 
-BOOL MJSON::load_from_json(const Json::Value &root) try
+bool MJSON::load_from_json(const Json::Value &root) try
 {
 	auto pjson = this;
 	clear();
@@ -218,7 +218,7 @@ const MJSON_MIME *MJSON::get_mime(const char *id) const
 	return m_root.has_value() ? m_root->find_by_id(id) : nullptr;
 }
 
-static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int type) try
+static bool mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int type) try
 {
 	MJSON_MIME temp_mime;
 	temp_mime.mime_type = type == TYPE_STRUCTURE ? mime_type::multiple : mime_type::single;
@@ -298,7 +298,7 @@ static bool mjson_parse_array(MJSON *m, const Json::Value &jv, unsigned int type
 	return true;
 }
 
-int MJSON::fetch_structure(mjson_io &io, const char *cset, BOOL b_ext,
+int MJSON::fetch_structure(mjson_io &io, const char *cset, bool b_ext,
     std::string &buf) const try
 {
 	if (!m_root.has_value())
@@ -316,7 +316,7 @@ int MJSON::fetch_structure(mjson_io &io, const char *cset, BOOL b_ext,
  */
 static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
     const mjson_key *self, const char *charset,
-    const char *email_charset, BOOL b_ext, std::string &buf) try
+    const char *email_charset, bool b_ext, std::string &buf) try
 {
 	auto ctype = pmime->ctype;
 	auto pos = ctype.find('/');
@@ -655,7 +655,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }}
 
-BOOL MJSON::rfc822_build(mjson_io &io, const char *storage_path) const
+bool MJSON::rfc822_build(mjson_io &io, const char *storage_path) const
 {
 	auto pjson = this;
 	if (!has_rfc822_part())
@@ -672,7 +672,7 @@ BOOL MJSON::rfc822_build(mjson_io &io, const char *storage_path) const
 	return build_param.build_result;
 }
 
-BOOL MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
+bool MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
     const char *id, char *mjson_id, char *mime_id) const try
 {
 	auto pjson_base = this;
@@ -704,7 +704,7 @@ BOOL MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 }
 	
 int MJSON::rfc822_fetch(mjson_io &io, const char *storage_path,
-    const char *cset, BOOL b_ext, std::string &buf) const
+    const char *cset, bool b_ext, std::string &buf) const
 {
 	auto pjson = this;
 	if (!has_rfc822_part())
@@ -717,7 +717,7 @@ int MJSON::rfc822_fetch(mjson_io &io, const char *storage_path,
 }
 
 static int mjson_rfc822_fetch_internal(mjson_io &io, const MJSON *pjson,
-    const mjson_key &key, const char *charset, BOOL b_ext, std::string &buf)
+    const mjson_key &key, const char *charset, bool b_ext, std::string &buf)
 {
 	if (!pjson->m_root.has_value())
 		return -1;
