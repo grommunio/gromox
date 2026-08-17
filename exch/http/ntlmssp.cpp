@@ -319,7 +319,7 @@ static std::string ntlmssp_utf16le_to_utf8(std::string_view sv)
 	return iconvtext(sv, "UTF-16LE", "UTF-8");
 }
 
-static bool ntlmssp_md4hash(const char *passwd, void *p16v) try
+static bool ntlmssp_md4hash(std::string_view passwd, void *p16v) try
 {
 	auto p16 = static_cast<uint8_t *>(p16v);
 	memset(p16, 0, MD4_DIGEST_LENGTH);
@@ -335,13 +335,13 @@ static bool ntlmssp_md4hash(const char *passwd, void *p16v) try
 	return false;
 }
 
-static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
+static bool ntlmssp_deshash(std::string_view passwd, uint8_t p16[16])
 {
-	char tmpbuf[14];
-	gx_strlcpy(tmpbuf, passwd, std::size(tmpbuf));
-	HX_strupper(tmpbuf);
+	passwd = passwd.substr(0, 14);
+	std::string tmpbuf(passwd);
+	HX_strupper(tmpbuf.data());
 	/* Only the first 14 chars are considered */
-	return E_P16(reinterpret_cast<uint8_t *>(tmpbuf), p16);
+	return E_P16(reinterpret_cast<uint8_t *>(tmpbuf.data()), p16);
 }
 
 /*
@@ -948,8 +948,8 @@ static bool ntlmssp_check_ntlm1(std::string_view nt_response,
 }
 
 static bool ntlmssp_check_ntlm2(std::string_view ntv2_response,
-    const uint8_t *part_passwd, std::string_view sec_blob, const char *user,
-    const char *domain, DATA_BLOB *puser_key) try
+    const uint8_t *part_passwd, std::string_view sec_blob, std::string_view user,
+    std::string_view domain, DATA_BLOB *puser_key) try
 {
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
 	uint8_t value_from_encryption[16];
@@ -965,7 +965,7 @@ static bool ntlmssp_check_ntlm2(std::string_view ntv2_response,
 	}
 
 	auto client_key = ntv2_response.substr(16);
-	std::string user_upr = user;
+	std::string user_upr(user);
 	HX_strupper(user_upr.data());
 	auto user_in = ntlmssp_utf8_to_utf16le(user_upr);
 	if (errno != 0)
@@ -1000,7 +1000,7 @@ static bool ntlmssp_check_ntlm2(std::string_view ntv2_response,
 
 static bool ntlmssp_sess_key_ntlm2(std::string_view ntv2_response,
     const uint8_t *part_passwd, std::string_view sec_blob,
-    const char *user, const char *domain, DATA_BLOB *puser_key)
+    std::string_view user, std::string_view domain, DATA_BLOB *puser_key)
 {
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
 	uint8_t value_from_encryption[16];
@@ -1016,7 +1016,7 @@ static bool ntlmssp_sess_key_ntlm2(std::string_view ntv2_response,
 	}
 	
 	auto client_key = ntv2_response.substr(16);
-	std::string user_upr = user;
+	std::string user_upr(user);
 	HX_strupper(user_upr.data());
 	auto user_in = ntlmssp_utf8_to_utf16le(user_upr);
 	if (errno != 0)
@@ -1046,7 +1046,7 @@ static bool ntlmssp_sess_key_ntlm2(std::string_view ntv2_response,
 }
 
 static bool ntlmssp_server_chkpasswd(ntlmssp_ctx *pntlmssp,
-	DATA_BLOB *puser_key, DATA_BLOB *plm_key, const char *plain_passwd)
+    DATA_BLOB *puser_key, DATA_BLOB *plm_key, std::string_view plain_passwd)
 {
 	DATA_BLOB tmp_key;
 	const char *pdomain;
