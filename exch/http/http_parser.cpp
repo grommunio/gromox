@@ -2440,7 +2440,7 @@ void http_parser_set_context(int context_id)
 		g_context_key = &g_parser->g_context_list[context_id];
 }
 
-bool http_parser_get_password(const char *username, char *password)
+bool http_parser_get_password(const char *username, std::string &password)
 {
 	http_context *pcontext;
 	
@@ -2449,7 +2449,7 @@ bool http_parser_get_password(const char *username, char *password)
 		return false;
 	if (strcasecmp(username, pcontext->username) != 0)
 		return false;
-	strncpy(password, pcontext->password, 128);
+	password = pcontext->password;
 	return true;
 }
 

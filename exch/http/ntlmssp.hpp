@@ -45,7 +45,7 @@ struct ARCFOUR_STATE {
 };
 
 struct GX_EXPORT NTLMSSP_SESSION_INFO {
-	char username[UADDR_SIZE];
+	std::string username;
 	DATA_BLOB session_key;
 	uint8_t session_key_buff[16];
 };
@@ -71,7 +71,7 @@ struct NTLMSSP_CRYPT_STATE {
 	NTLMSSP_CRYPT_DIRECTION_V2 ntlm2; /* NTLM2 */
 };
 
-using NTLMSSP_GET_PASSWORD = bool (*)(const char *, char *);
+using NTLMSSP_GET_PASSWORD = bool (*)(const char *, std::string &);
 
 struct GX_EXPORT ntlmssp_ctx {
 	static constexpr unsigned int SIG_SIZE = 16;
@@ -89,7 +89,7 @@ struct GX_EXPORT ntlmssp_ctx {
 	uint32_t expected_state = NTLMSSP_PROCESS_NEGOTIATE;
 	bool unicode = false;
 	bool allow_lm_key = false; /* The LM_KEY code is not very secure... */
-	char user[128]{}, domain[128]{};
+	std::string user, domain;
 	uint8_t *nt_hash = nullptr, *lm_hash = nullptr;
 	char netbios_name[128]{}, dns_name[128]{}, dns_domain[128]{};
 	DATA_BLOB internal_chal{}; /* Random challenge as supplied to the client for NTLM authentication */

@@ -530,9 +530,9 @@ static bool ntlmssp_parse_packetv(std::string_view blob, const char *format,
 			auto ptr_ofs = le32p_to_cpu(&blob[head_ofs]);
 			head_ofs += 4;
 
-			auto ps = va_arg(ap, char *);
+			auto ps = va_arg(ap, std::string *);
+			ps->clear();
 			if (0 == len1 && 0 == len2) {
-				ps[0] = '\0';
 				break;
 			}
 			/* make sure its in the right format - be strict */
@@ -545,10 +545,9 @@ static bool ntlmssp_parse_packetv(std::string_view blob, const char *format,
 			if (&blob[ptr_ofs] < reinterpret_cast<char *>(ptr_ofs) ||
 			    &blob[ptr_ofs] < blob.data())
 				return false;
-			auto str = ntlmssp_utf16le_to_utf8({&blob[ptr_ofs], len1});
+			*ps = ntlmssp_utf16le_to_utf8({&blob[ptr_ofs], len1});
 			if (errno != 0)
 				return false;
-			gx_strlcpy(ps, str.c_str(), le32p_to_cpu(ps));
 			break;
 		}
 		case 'A': {
@@ -561,10 +560,10 @@ static bool ntlmssp_parse_packetv(std::string_view blob, const char *format,
 			auto ptr_ofs = le32p_to_cpu(&blob[head_ofs]);
 			head_ofs += 4;
 
-			auto ps = va_arg(ap, char *);
+			auto ps = va_arg(ap, std::string *);
+			ps->clear();
 			/* make sure its in the right format - be strict */
 			if (0 == len1 && 0 == len2) {
-				ps[0] = '\0';
 				break;
 			}
 			if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
@@ -573,10 +572,8 @@ static bool ntlmssp_parse_packetv(std::string_view blob, const char *format,
 			if (&blob[ptr_ofs] < reinterpret_cast<char *>(ptr_ofs) ||
 			    &blob[ptr_ofs] < blob.data())
 				return false;
-			if (len1 > 0) {
-				memcpy(ps, &blob[ptr_ofs], len1);
-				ps[len1] = '\0';
-			}
+			if (len1 > 0)
+				ps->assign(&blob[ptr_ofs], len1);
 			break;
 		}
 		case 'B': {
@@ -843,7 +840,6 @@ static bool ntlmssp_server_negotiate(ntlmssp_ctx *pntlmssp,
 static bool ntlmssp_server_preauth(ntlmssp_ctx *pntlmssp,
     NTLMSSP_SERVER_AUTH_STATE *pauth, std::string_view request)
 {
-	char client_netbios_name[1024];
 	uint8_t session_nonce_hash[16];
 	uint32_t ntlmssp_command, auth_flags;
 	
@@ -855,33 +851,28 @@ static bool ntlmssp_server_preauth(ntlmssp_ctx *pntlmssp,
 	pntlmssp->nt_resp.pb = pntlmssp->nt_resp_buff;
 	pntlmssp->nt_resp.cb = sizeof(pntlmssp->nt_resp_buff);
 	
-	pntlmssp->user[0] = '\0';
-	pntlmssp->domain[0] = '\0';
+	pntlmssp->user.clear();
+	pntlmssp->domain.clear();
 	pauth->encrypted_session_key.pb = pauth->encrypted_session_key_buff;
 	pauth->encrypted_session_key.cb = sizeof(pauth->encrypted_session_key_buff);
-	cpu_to_le32p(pntlmssp->domain, sizeof(pntlmssp->domain));
-	cpu_to_le32p(pntlmssp->user, sizeof(pntlmssp->user));
-	cpu_to_le32p(client_netbios_name, sizeof(client_netbios_name));
 
 	/* now the NTLMSSP encoded auth hashes */
+	std::string client_netbios_name;
 	if (!ntlmssp_parse_packet(request, parse_string, "NTLMSSP",
 	    &ntlmssp_command, &pntlmssp->lm_resp, &pntlmssp->nt_resp,
-	    pntlmssp->domain, pntlmssp->user, client_netbios_name,
+	    &pntlmssp->domain, &pntlmssp->user, &client_netbios_name,
 	    &pauth->encrypted_session_key, &auth_flags)) {
 		/* Try again with a shorter string (Win9X truncates this packet) */
 		parse_string = pntlmssp->unicode ? "CdBBUUU" : "CdBBAAA";
 		pauth->encrypted_session_key.cb = 0;
 		auth_flags = 0;
 		
-		cpu_to_le32p(pntlmssp->domain, sizeof(pntlmssp->domain));
-		cpu_to_le32p(pntlmssp->user, sizeof(pntlmssp->user));
-		cpu_to_le32p(client_netbios_name, sizeof(client_netbios_name));
 		pntlmssp->lm_resp.cb = std::size(pntlmssp->lm_resp_buff);
 		pntlmssp->nt_resp.cb = std::size(pntlmssp->nt_resp_buff);
 		/* now the NTLMSSP encoded auth hashes */
 		if (!ntlmssp_parse_packet(request, parse_string, "NTLMSSP",
 		    &ntlmssp_command, &pntlmssp->lm_resp, &pntlmssp->nt_resp,
-		    pntlmssp->domain, pntlmssp->user, client_netbios_name))
+		    &pntlmssp->domain, &pntlmssp->user, &client_netbios_name))
 			return false;
 	}
 
@@ -1049,15 +1040,13 @@ static bool ntlmssp_server_chkpasswd(ntlmssp_ctx *pntlmssp,
     DATA_BLOB *puser_key, DATA_BLOB *plm_key, std::string_view plain_passwd)
 {
 	DATA_BLOB tmp_key;
-	const char *pdomain;
 	uint8_t tmp_key_buff[256];
-	char upper_domain[128];
 	std::string_view pchallenge   = pntlmssp->challenge.blob;
 	std::string_view plm_response = pntlmssp->lm_resp;
 	std::string_view pnt_response = pntlmssp->nt_resp;
 	
-	gx_strlcpy(upper_domain, pntlmssp->domain, std::size(upper_domain));
-	HX_strupper(upper_domain);
+	auto upper_domain = pntlmssp->domain;
+	HX_strupper(upper_domain.data());
 	uint8_t nt_p16[16]{}, p16[16]{};
 	if (!ntlmssp_md4hash(plain_passwd, nt_p16) ||
 	    !ntlmssp_deshash(plain_passwd, p16))
@@ -1065,7 +1054,7 @@ static bool ntlmssp_server_chkpasswd(ntlmssp_ctx *pntlmssp,
 	
 	if (pnt_response.size() != 0 && pnt_response.size() < 24)
 		mlog(LV_DEBUG, "ntlmssp:%s: invalid NT password length (%zu) for user %s",
-			__func__, pnt_response.size(), pntlmssp->user);
+			__func__, pnt_response.size(), pntlmssp->user.c_str());
 
 	if (pnt_response.size() > 24) {
 		/* We have the NT MD4 hash challenge available - see if we can use it*/
@@ -1103,11 +1092,11 @@ static bool ntlmssp_server_chkpasswd(ntlmssp_ctx *pntlmssp,
 	
 	if (plm_response.size() == 0) {
 		mlog(LV_DEBUG, "ntlmssp:%s: neither LanMan nor NT password supplied for user %s",
-			__func__, pntlmssp->user);
+			__func__, pntlmssp->user.c_str());
 		return false;
 	} else if (plm_response.size() < 24) {
 		mlog(LV_DEBUG, "ntlmssp:%s: invalid LanMan password length (%zu) for user %s",
-			__func__, pnt_response.size(), pntlmssp->user);
+			__func__, pnt_response.size(), pntlmssp->user.c_str());
 		return false;
 	}
 	if (ntlmssp_check_ntlm1(plm_response, p16, pchallenge, nullptr)) {
@@ -1121,7 +1110,9 @@ static bool ntlmssp_server_chkpasswd(ntlmssp_ctx *pntlmssp,
 
 	tmp_key.pb = tmp_key_buff;
 	tmp_key.cb = 0;
+
 	bool b_result = false;
+	std::string pdomain;
 	/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes. */
 	if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
 	    pntlmssp->user, pntlmssp->domain, &tmp_key)) {
@@ -1134,7 +1125,6 @@ static bool ntlmssp_server_chkpasswd(ntlmssp_ctx *pntlmssp,
 	} else if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
 	    pntlmssp->user, "", &tmp_key)) {
 		b_result = true;
-		pdomain = "";
 	}
 	
 	if (b_result) {
@@ -1349,11 +1339,15 @@ static bool ntlmssp_server_postauth(ntlmssp_ctx *pntlmssp,
 	return true;
 }
 
+static std::string maybe_concat_user_and_domain(ntlmssp_ctx &c)
+{
+	return c.user.find('@') == c.user.npos ?
+	       c.user + "@" + c.domain : c.user;
+}
+
 static bool ntlmssp_server_auth(ntlmssp_ctx *pntlmssp,
     std::string_view in, DATA_BLOB *pout)
 {
-	char username[UADDR_SIZE];
-	char plain_passwd[128];
 	NTLMSSP_SERVER_AUTH_STATE auth_state;
 	
 	
@@ -1367,12 +1361,9 @@ static bool ntlmssp_server_auth(ntlmssp_ctx *pntlmssp,
 	auth_state.lm_session_key.pb = auth_state.lm_session_key_buff;
 	auth_state.lm_session_key.cb = 0;
 	
-	if (strchr(pntlmssp->user, '@') == nullptr)
-			snprintf(username, std::size(username), "%s@%s",
-			         pntlmssp->user, pntlmssp->domain);
-	else
-			gx_strlcpy(username, pntlmssp->user, std::size(username));
-	if (!pntlmssp->get_password(username, plain_passwd))
+	auto username = maybe_concat_user_and_domain(*pntlmssp);
+	std::string plain_passwd;
+	if (!pntlmssp->get_password(username.c_str(), plain_passwd))
 		return false;
 	if (!ntlmssp_server_chkpasswd(pntlmssp, &auth_state.user_session_key,
 	    &auth_state.lm_session_key, plain_passwd))
@@ -1597,11 +1588,7 @@ static bool ntlmssp_session_key(ntlmssp_ctx *pntlmssp, DATA_BLOB *psession_key)
 bool ntlmssp_ctx::session_info(NTLMSSP_SESSION_INFO *psession)
 {
 	auto pntlmssp = this;
-	if (strchr(pntlmssp->user, '@') == nullptr)
-		snprintf(psession->username, std::size(psession->username),
-		         "%s@%s", pntlmssp->user, pntlmssp->domain);
-	else
-		gx_strlcpy(psession->username, pntlmssp->user, std::size(psession->username));
+	psession->username = maybe_concat_user_and_domain(*this);
 	psession->session_key.pb = psession->session_key_buff;
 	return ntlmssp_session_key(pntlmssp, &psession->session_key);
 }

@@ -163,7 +163,7 @@ extern gromox::time_point http_parser_get_context_timestamp(const schedule_conte
 int http_parser_get_param(int param);
 extern SCHEDULE_CONTEXT **http_parser_get_contexts_list();
 int http_parser_threads_event_proc(int action);
-extern bool http_parser_get_password(const char *username, char *password);
+extern bool http_parser_get_password(const char *username, std::string &password);
 extern http_context *http_parser_get_context();
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, dcerpc_call *pcall);
