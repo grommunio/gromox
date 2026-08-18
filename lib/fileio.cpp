@@ -570,7 +570,7 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 	fp.reset();
 	int fout = -1;
 	auto cl2 = HX::make_scope_exit([&]() { if (fout != -1) close(fout); });
-	const char *argv[9];
+	const char *argv[11];
 	int argc = 0;
 	if (rend == REND_PANDOC_HTP) {
 		argv[argc++] = "pandoc";
@@ -604,6 +604,7 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 		argv[argc++] = "UTF-8";
 		argv[argc++] = "--dump";
 		argv[argc++] = "-obuffer.styling=false";
+		argv[argc++] = "-obuffer.mark-links=true";
 	} else if (rend == REND_W3M) {
 		argv[argc++] = "w3m";
 		if (cset != nullptr) {
@@ -614,6 +615,8 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 		}
 		argv[argc++] = "-O";
 		argv[argc++] = "UTF-8";
+		argv[argc++] = "-o";
+		argv[argc++] = "display_link_number=1";
 		argv[argc++] = "-dump";
 	}
 	argv[argc++] = filename.c_str();
