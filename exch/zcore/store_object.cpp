@@ -758,11 +758,6 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		sql_meta_result mres;
 		if (mysql_adaptor_meta(pstore->account, WANTPRIV_METAONLY, mres) != 0)
 			return FALSE;	
-		if (mres.lang.size() > 0) {
-			xpg_locale lc(mres.lang);
-			lc.codeset.clear();
-			mres.lang = lc.generate();
-		}
 		*ppvalue = common_util_dup(mres.lang);
 		return TRUE;
 	}

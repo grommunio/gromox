@@ -177,7 +177,9 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		return EACCES;
 	}
 	mres.maildir    = myrow[4];
-	mres.lang       = znul(myrow[5]);
+	xpg_locale lc(znul(myrow[5]));
+	lc.codeset.clear();
+	mres.lang       = lc.generate();
 	mres.enc_passwd = myrow[0];
 	mres.have_xid   = myrow[6] != nullptr;
 	mres.ldap_uri    = znul(myrow[7]);
