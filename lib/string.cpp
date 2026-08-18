@@ -1333,6 +1333,46 @@ size_t mail_lwsp_len(const char *p, const char *end)
 	return q - p;
 }
 
+xpg_locale::xpg_locale(std::string_view sv)
+{
+	auto pos = sv.find('@');
+	if (pos != sv.npos) {
+		modifier = sv.substr(pos + 1);
+		sv = sv.substr(0, pos);
+	}
+	pos = sv.find('.');
+	if (pos != sv.npos) {
+		codeset = sv.substr(pos + 1);
+		sv = sv.substr(0, pos);
+	}
+	pos = sv.find('_');
+	if (pos != sv.npos) {
+		territory = sv.substr(pos + 1);
+		sv = sv.substr(0, pos);
+	}
+	language = sv;
+}
+
+std::string xpg_locale::generate() const
+{
+	std::string o = language;
+	if (o.empty())
+		return o;
+	if (territory.size() > 0) {
+		o += '_';
+		o += territory;
+	}
+	if (codeset.size() > 0) {
+		o += '.';
+		o += codeset;
+	}
+	if (modifier.size() > 0) {
+		o += '@';
+		o += modifier;
+	}
+	return o;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try

@@ -98,6 +98,14 @@ enum hex2bin_mode {
 	HEX2BIN_EMPTY, HEX2BIN_STOP, HEX2BIN_ZERO, HEX2BIN_SKIP,
 };
 
+struct GX_EXPORT xpg_locale {
+	xpg_locale() = default;
+	xpg_locale(std::string_view);
+	std::string generate() const;
+
+	std::string language, territory, codeset, modifier;
+};
+
 extern GX_EXPORT void *zalloc(size_t);
 extern GX_EXPORT uint32_t rand();
 extern GX_EXPORT bool parse_bool(const char *s);
