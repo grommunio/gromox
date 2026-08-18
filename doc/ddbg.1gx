@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025–2026 grommunio GmbH
 .TH ddbg 1 "" "Gromox" "Gromox admin reference"
 .SH Name
 ddbg \(em MAPI data debugger
@@ -58,6 +58,12 @@ Uncompress an lzxpress data stream.
 .TP
 \fB\-\-lzxenc\fP
 Compress data stream with lzxpress.
+.TP
+\fB\-\-qpdecode\fP
+Decode some Quoted-Printable text.
+.TP
+\fB\-\-qpencode\fP
+Encode some text as Quoted-Printable (with line wrapping).
 .TP
 \fB\-\-rtfcp\fP
 Convert RTF to the RTFCP format, particularly the uncompressed "MELA"

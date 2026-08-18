@@ -29,6 +29,7 @@ enum {
 	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME,
 	CM_BIN2HEX, CM_BIN2TXT, CM_LZXDEC, CM_LZXENC, CM_HTMLTORTF,
 	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_TEXTTOHTML, CM_UNRTFCP,
+	CM_QPDECODE, CM_QPENCODE,
 };
 static unsigned int g_dowhat, g_hex2bin;
 static constexpr struct HXoption g_options_table[] = {
@@ -46,6 +47,8 @@ static constexpr struct HXoption g_options_table[] = {
 	{"lzxdec", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXDEC, "LZX decompression"},
 	{"lzxenc", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXENC, "LZX compression"},
 	{"pack", 'p', HXTYPE_NONE, &g_hex2bin, {}, {}, 0, "Employ hex2bin before main action"},
+	{"qpdecode", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_QPDECODE, "Decode quoted-printable text"},
+	{"qpencode", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_QPENCODE, "Encode to quoted-printable"},
 	{"rtfcp", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_RTFCP, "Convert RTF to uncompressed RTFCP"},
 	{"unrtfcp", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_UNRTFCP, "Decompress RTFCP (all forms) to RTF"},
 	{"rtftohtml", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_RTFTOHTML, "Convert RTF to HTML"},
@@ -472,6 +475,27 @@ static int do_lzx(std::string_view data, bool enc)
 	return 0;
 }
 
+static int do_qp(std::string_view data, int mode)
+{
+	std::string out;
+	ssize_t ret;
+	if (mode == CM_QPDECODE) {
+		out.resize(data.size() + 1);
+		ret = qpnl_decode_sized(data, out.data(), out.size());
+	} else if (mode == CM_QPENCODE) {
+		out.resize(data.size() * 3 + data.size() / 70 + 1);
+		ret = qpnl_encode_sized(data, out.data(), out.size());
+	}
+	if (ret < 0) {
+		fprintf(stderr, "qp: unspecified error\n");
+		return -1;
+	} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), ret) < 0) {
+		perror("write");
+		return -1;
+	}
+	return 0;
+}
+
 static int do_process_2(std::string_view &&data, const char *str)
 {
 	switch (g_dowhat) {
@@ -546,6 +570,9 @@ static int do_process_2(std::string_view &&data, const char *str)
 		return do_lzx(data, 0);
 	case CM_LZXENC:
 		return do_lzx(data, 1);
+	case CM_QPDECODE:
+	case CM_QPENCODE:
+		return do_qp(data, g_dowhat);
 	case CM_RTFCP: {
 		std::string out;
 		auto err = rtfcp_encode(data, out);
