@@ -8,6 +8,8 @@ Enhancements:
 * midb/imapd now supports IMAP keywords
 * ews: support OFM smart response draft types
   (ReplyToItem/ReplyAllToItem/ForwardItem)
+* pff2mt: It is now possible to place a private mailbox dump (.pst) into a
+  public folder. See behavioral changes too.
 
 Fixes:
 

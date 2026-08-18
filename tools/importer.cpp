@@ -716,6 +716,11 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	auto cl_0 = HX::make_scope_exit(gi_shutdown);
 	if (g_anchor_folder_str == nullptr) {
+		/* g_public_folder populated by gi_setup* */
+		if (g_public_folder) {
+			fprintf(stderr, "You must specify -B when importing to public stores\n");
+			return EXIT_FAILURE;
+		}
 		g_anchor_folder = PRIVATE_FID_DRAFT;
 	} else {
 		g_anchor_folder = rop_util_get_gc_value(gi_lookup_eid_any_way(g_storedir, g_anchor_folder_str));

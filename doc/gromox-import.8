@@ -32,9 +32,12 @@ gromox\-pff2mt \-\-only\-obj, gromox\-kdb2mt \-\-only\-obj. (Many MUAs do not
 support viewing messages located at the IPM_SUBTREE level and only viewing
 folders at IPM_SUBTREE. For this reason, the default is DRAFTS instead. But
 this also means that imports of hierarchical data, e.g. from .pst files, will
-by default land in DRAFTS too.)
+by default land in DRAFTS too.) Public stores do not have a folder that could
+reliably be offered as a default choice.
 .br
-Default: \fIDRAFTS\fP
+Default: \fIDRAFTS\fP (if target is a private store)
+.br
+Default: fail-import (if target is a public store)
 .TP
 \fB\-D\fP
 Use delivery mode, i.e. treat messages as if they were sent through the mail
@@ -89,6 +92,6 @@ gromox\-pff2mt sample.pst | gromox\-import \-u user@domain.example
 .PP
 PFF import to a public folder:
 .PP
-gromox\-pff2mt sample.pst | gromox\-import \-u @domain.example
+gromox\-pff2mt sample.pst | gromox\-import \-u @domain.example \-B /IPM_SUBTREE
 .SH See also
 \fBgromox\fP(7), \fBgromox\-pff2mt\fP(8)
