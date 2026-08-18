@@ -2531,6 +2531,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 			}
 
 			piline = event->get_line("RECURRENCE-ID");
+			if (piline == nullptr)
+				return ecInvalidParam;
 			time_t tmp_time;
 			err = oxcical_parse_dtvalue(ptz_component, *piline,
 			      &itime, &tmp_time, errstr);
