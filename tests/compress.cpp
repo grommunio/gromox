@@ -20,19 +20,13 @@ static int decomp(int argc, char **argv)
 {
 	if (argc < 2)
 		usage();
-	BINARY bin{};
-	auto ret = gx_decompress_file(argv[1], bin, malloc, realloc);
+	std::string bin;
+	auto ret = gx_decompress_file(argv[1], bin);
 	if (ret != 0) {
 		fprintf(stderr, "gx_decompress %s: %s\n", argv[1], strerror(ret));
 		return EXIT_FAILURE;
 	}
-	fprintf(stderr, "Uncompressed size: %zu\n",
-		static_cast<size_t>(bin.cb));
-	if (bin.pb[bin.cb] != '\0') {
-		fprintf(stderr, "NUL check failed\n");
-		return EXIT_FAILURE;
-	}
-	free(bin.pv);
+	fprintf(stderr, "Uncompressed size: %zu\n", bin.size());
 	return EXIT_SUCCESS;
 }
 

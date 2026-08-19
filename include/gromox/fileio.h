@@ -95,7 +95,7 @@ extern GX_EXPORT DIR_mp opendir_sd(const char *, const char *);
 extern GX_EXPORT std::unique_ptr<FILE, file_deleter> fopen_sd(const char *, const char *);
 extern GX_EXPORT std::string zstd_decompress(std::string_view);
 extern GX_EXPORT size_t gx_decompressed_size(const char *);
-extern GX_EXPORT errno_t gx_decompress_file(const char *, BINARY &, void *(*)(size_t), void *(*)(void *, size_t));
+extern GX_EXPORT errno_t gx_decompress_file(const char *, std::string &);
 extern GX_EXPORT errno_t gx_compress_tofd(std::string_view, int fd, uint8_t complvl = 0);
 extern GX_EXPORT errno_t gx_compress_tofile(std::string_view, const char *outfile, uint8_t complvl = 0, unsigned int mode = FMODE_PRIVATE);
 extern GX_EXPORT int gx_mkbasedir(const char *file, unsigned int mode);

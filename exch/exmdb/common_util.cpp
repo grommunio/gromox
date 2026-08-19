@@ -1466,12 +1466,28 @@ std::string cu_cid_path(const char *dir, const char *id, unsigned int type) try
 
 static void *cu_get_object_text_v0(const char *dir, const char *cid, uint32_t, uint32_t, cpid_t);
 
+errno_t decompress_file_to_bin(const char *infile, BINARY &dxbin)
+{
+	dxbin = {};
+	std::string outblk;
+	auto err = gx_decompress_file(infile, outblk);
+	if (err != 0)
+		return err;
+	dxbin.cb = outblk.size();
+	/* Ensure a trailing NUL is present (dxbin is used for text too) */
+	dxbin.pv = cu_alloc<char>(dxbin.cb + 1);
+	if (dxbin.pv == nullptr)
+		return ENOMEM;
+	memcpy(dxbin.pc, outblk.data(), dxbin.cb);
+	dxbin.pc[dxbin.cb] = '\0';
+	return 0;
+}
+
 static void *cu_get_object_text_vx(const char *dir, const char *cid,
     proptag_t proptag, proptag_t db_proptag, cpid_t cpid, unsigned int type)
 {
 	BINARY dxbin{};
-	errno = gx_decompress_file(cu_cid_path(dir, cid, type).c_str(), dxbin,
-	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
+	errno = decompress_file_to_bin(cu_cid_path(dir, cid, type).c_str(), dxbin);
 	if (errno != 0)
 		return nullptr;
 

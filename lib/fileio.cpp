@@ -669,10 +669,9 @@ size_t gx_decompressed_size(const char *infile)
 /**
  * Even if this function returns an error, outbin.pv needs to be freed.
  */
-errno_t gx_decompress_file(const char *infile, BINARY &outbin,
-    void *(*alloc)(size_t), void *(*realloc)(void *, size_t)) try
+errno_t gx_decompress_file(const char *infile, std::string &outblk) try
 {
-	outbin = {};
+	outblk.clear();
 	wrapfd fd(::open(infile, O_RDONLY));
 	if (fd.get() < 0)
 		return errno;
@@ -708,13 +707,10 @@ errno_t gx_decompress_file(const char *infile, BINARY &outbin,
 		outsize = 1; /* so that multiplication later on works */
 	if (outsize >= UINT32_MAX - 1)
 		outsize = UINT32_MAX - 1;
-	outbin.pv = alloc(outsize + 1); /* arrange for \0 */
-	if (outbin.pv == nullptr)
-		return ENOMEM;
-	outbin.cb = outsize;
+	outblk.resize(outsize);
 
 	ZSTD_inBuffer inds = {inbuf.get(), static_cast<size_t>(rdret)};
-	ZSTD_outBuffer outds = {outbin.pv, outbin.cb};
+	ZSTD_outBuffer outds = {outblk.data(), outblk.size()};
 	do {
 		/*
 		 * Repeat decompress attempt of current read buffer for as long
@@ -732,16 +728,14 @@ errno_t gx_decompress_file(const char *infile, BINARY &outbin,
 				continue;
 			if (outds.pos < outds.size)
 				continue;
-			if (outbin.cb >= UINT32_MAX - 1)
+			if (outblk.size() >= UINT32_MAX - 1)
+				/* MAPI attachments have limits */
 				return EFBIG;
-			size_t newsize = outbin.cb < UINT32_MAX / 2 ? outbin.cb * 2 : UINT32_MAX - 1;
-			void *newblk = realloc(outbin.pv, newsize + 1);
-			if (newblk == nullptr)
-				return ENOMEM;
-			outbin.cb  = newsize;
-			outbin.pv  = newblk;
+			/* realloc */
+			size_t newsize = outblk.size() < UINT32_MAX / 2 ? outblk.size() * 2 : UINT32_MAX - 1;
+			outblk.resize(newsize);
 			outds.size = newsize;
-			outds.dst  = newblk;
+			outds.dst  = outblk.data();
 		}
 		/*
 		 * Read next bite from compressed file.
@@ -753,8 +747,7 @@ errno_t gx_decompress_file(const char *infile, BINARY &outbin,
 		inds.pos = 0;
 		inds.size = static_cast<size_t>(rdret);
 	} while (rdret != 0);
-	outbin.cb = outds.pos;
-	outbin.pb[outbin.cb] = '\0';
+	outblk.resize(outds.pos);
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);

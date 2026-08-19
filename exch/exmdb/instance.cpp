@@ -742,8 +742,7 @@ void *instance_read_cid_content(const char *cid, uint32_t *plen, proptag_t tag) 
 	BINARY dxbin;
 	if (strchr(cid, '/') != nullptr) {
 		/* v3 */
-		errno = gx_decompress_file(cu_cid_path(nullptr, cid, 0).c_str(), dxbin,
-			common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
+		errno = decompress_file_to_bin(cu_cid_path(nullptr, cid, 0).c_str(), dxbin);
 		if (errno == ENOENT && g_dbg_synth_content)
 			return fake_read_cid(g_dbg_synth_content, tag, cid, plen);
 		if (errno != 0)
@@ -753,8 +752,7 @@ void *instance_read_cid_content(const char *cid, uint32_t *plen, proptag_t tag) 
 		return dxbin.pv;
 	}
 
-	errno = gx_decompress_file(cu_cid_path(nullptr, cid, 2).c_str(), dxbin,
-	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
+	errno = decompress_file_to_bin(cu_cid_path(nullptr, cid, 2).c_str(), dxbin);
 	if (errno == 0) {
 		if (plen != nullptr)
 			*plen = dxbin.cb;
@@ -762,8 +760,7 @@ void *instance_read_cid_content(const char *cid, uint32_t *plen, proptag_t tag) 
 	} else if (errno != ENOENT) {
 		return nullptr;
 	}
-	errno = gx_decompress_file(cu_cid_path(nullptr, cid, 1).c_str(), dxbin,
-	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
+	errno = decompress_file_to_bin(cu_cid_path(nullptr, cid, 1).c_str(), dxbin);
 	if (errno == 0) {
 		if (dxbin.cb < 4)
 			return nullptr;

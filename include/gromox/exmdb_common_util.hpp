@@ -151,6 +151,7 @@ extern bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern bool timeindex_insert(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern bool timeindex_refresh(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern ec_error_t autoreply_make_oofstate(const char *dir, void *&outptr);
+extern gromox::errno_t decompress_file_to_bin(const char *infile, BINARY &out);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num, g_cid_compression;
 extern unsigned int g_exmdb_enable_optim_stm;
