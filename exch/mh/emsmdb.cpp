@@ -267,6 +267,7 @@ notification_ctx::notification_ctx(notification_ctx &&o) noexcept :
 
 void notification_ctx::clear()
 {
+	std::unique_lock ctx_lock(lock);
 	pending_status = PENDING_STATUS_NONE;
 	notification_status = NOTIFICATION_STATUS_NONE;
 	session_guid = {};
