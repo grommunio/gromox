@@ -190,7 +190,7 @@ static TIMER *put_timer(TIMER &&ptimer)
 		std::list<TIMER> stash;
 		stash.push_back(std::move(ptimer));
 		g_exec_list.splice(pos, stash, stash.begin());
-		return &*pos;
+		return &*--pos;
 	}
 	g_exec_list.push_back(std::move(ptimer));
 	return &g_exec_list.back();
