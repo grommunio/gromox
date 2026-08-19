@@ -528,7 +528,7 @@ errno_t mysql_plugin::get_homeserver_for_dir(const char *dir, bool *is_pvt,
 	*is_pvt = *row[1] == '1';
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2141: ENOMEM");
+	mlog(LV_ERR, "E-2337: ENOMEM");
 	return -ENOMEM;
 }
 

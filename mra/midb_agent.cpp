@@ -1770,7 +1770,7 @@ int set_keywords(const char *path, const std::string &folder,
 	}
 	return MIDB_RDWR_ERROR;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1922: ENOMEM");
+	mlog(LV_ERR, "E-2339: ENOMEM");
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1813,7 +1813,7 @@ int get_folder_keywords(const char *path, const std::string &folder,
 	}
 	return MIDB_RDWR_ERROR;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2155: ENOMEM");
+	mlog(LV_ERR, "E-2336: ENOMEM");
 	return MIDB_LOCAL_ENOMEM;
 }
 

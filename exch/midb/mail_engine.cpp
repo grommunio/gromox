@@ -342,7 +342,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	if (strcasestr(rs.c_str(), penum->keyword) != nullptr)
 		penum->b_result = TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1970: ENOMEM");
+	mlog(LV_ERR, "E-2338: ENOMEM");
 }
 
 static bool match_addr_vmime(const vmime::mailbox &m, const char *keyword)
@@ -3716,7 +3716,7 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 	pidb.reset();
 	return cmd_write(sockd, new_flags.c_str(), new_flags.size());
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1750: ENOMEM");
+	mlog(LV_ERR, "E-2342: ENOMEM");
 	return MIDB_E_NO_MEMORY;
 }
 

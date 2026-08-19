@@ -230,7 +230,7 @@ static bool cu_valunion_to_propval(proptype_t type, const PROP_VAL_UNION *u, voi
 			return false;
 		break;
 	default:
-		/* also see E-1912 for RPC-based NSP */
+		/* also see E-2340 for RPC-based NSP */
 		mlog(LV_ERR, "E-1759: nsp_ndr type %xh unhandled", type);
 		return false;
 	}

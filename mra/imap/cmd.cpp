@@ -727,10 +727,10 @@ static int icp_process_fetch_item(imap_context &ctx,
 		auto eml_path = std::string(pcontext->maildir) + "/eml";
 		Json::Value digest;
 		if (!str_to_json(digest_str, digest)) {
-			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied1", ctx.maildir, ctx.mid.c_str());
+			mlog(LV_ERR, "E-2321: load_from_json %s/%s oopsied1", ctx.maildir, ctx.mid.c_str());
 			return 1923;
 		} else if (!mjson.load_from_json(digest)) {
-			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied2", ctx.maildir, ctx.mid.c_str());
+			mlog(LV_ERR, "E-2322: load_from_json %s/%s oopsied2", ctx.maildir, ctx.mid.c_str());
 			return 1923;
 		}
 		mjson.path = std::move(eml_path);
@@ -1223,7 +1223,7 @@ static bool icp_imapfolder_to_sysfolder(const char *imap_folder,
 	sys_folder = base64_encode(t);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2418: ENOMEM");
+	mlog(LV_ERR, "E-2332: ENOMEM");
 	return false;
 }
 
@@ -1247,7 +1247,7 @@ static bool icp_sysfolder_to_imapfolder(const enum_folder_t &sys_folder,
 	imap_folder.resize(strlen(imap_folder.c_str()));
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2417: ENOMEM");
+	mlog(LV_ERR, "E-2331: ENOMEM");
 	return false;
 }
 
@@ -3869,7 +3869,7 @@ int icp_uid_move(std::span<std::string> argv, imap_context &ctx) try
 	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2702: ENOMEM");
+	mlog(LV_ERR, "E-2328: ENOMEM");
 	return 1918;
 }
 

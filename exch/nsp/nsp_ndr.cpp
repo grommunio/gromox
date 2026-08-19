@@ -1004,7 +1004,7 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH &x,
 			break;
 		default:
 			/* see also E-1759 for mh_nsp */
-			mlog(LV_ERR, "E-1912: nsp_ndr type %xh unhandled", type);
+			mlog(LV_ERR, "E-2340: nsp_ndr type %xh unhandled", type);
 			return pack_result::bad_switch;
 		}
 	}

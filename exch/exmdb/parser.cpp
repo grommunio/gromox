@@ -603,7 +603,7 @@ bool exmdb_parser_insert_conn(std::shared_ptr<exmdb_connection> co)
 	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
 	           request_parser_thread, par.get());
 	if (ret != 0) {
-		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
+		mlog(LV_WARN, "W-2323: pthread_create: %s", strerror(ret));
 		return false;
 	} else {
 		par.release(); /* thread should be vivid now */
@@ -845,7 +845,7 @@ static int exmdb_pickup_one(int control_fd)
 	auto ret = pthread_create4(&par->conn->thr_id, nullptr,
 	           request_parser_thread, par.get());
 	if (ret != 0)
-		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
+		mlog(LV_WARN, "W-2324: pthread_create: %s", strerror(ret));
 	else
 		par.release(); /* thread should be vivid now */
 	return 0;

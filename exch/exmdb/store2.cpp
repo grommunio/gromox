@@ -1064,7 +1064,7 @@ BOOL exmdb_server::write_delegates(const char *dir, uint32_t mode,
 		return false;
 	int ie = gx_mkbasedir(fn.c_str(), FMODE_PUBLIC);
 	if (ie < 0) {
-		mlog(LV_ERR, "E-1490: mkbasedir for %s: %s", fn.c_str(), strerror(-ie));
+		mlog(LV_ERR, "E-2345: mkbasedir for %s: %s", fn.c_str(), strerror(-ie));
 		return false;
 	}
 	gromox::tmpfile fd;

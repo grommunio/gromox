@@ -124,7 +124,7 @@ static BOOL do_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	gromox::mlog(LV_ERR, "E-2237: ENOMEM");
+	gromox::mlog(LV_ERR, "E-2335: ENOMEM");
 	return false;
 }
 

@@ -2313,7 +2313,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 		return ecInvalidParam;
 	}
 	if (!oxcical_set_stateflags(method, phash, last_propid, *pmsg)) {
-		errstr = "E-2739";
+		errstr = "E-2325";
 		return ecInvalidParam;
 	}
 
@@ -2697,7 +2697,7 @@ static ec_error_t oxcical_import_todo(const ical &pical,
 	if (err != ecSuccess)
 		return err;
 	if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr)) {
-		errstr = "E-2706: oxcical_parse_summary returned an unspecified error";
+		errstr = "E-2723: oxcical_parse_summary returned an unspecified error";
 		return ecInvalidParam;
 	}
 
@@ -2818,7 +2818,7 @@ static ec_error_t oxcical_import_journal(const ical &pical,
 	if (err != ecSuccess)
 		return err;
 	if (!oxcical_parse_summary(comp, pmsg, alloc, nullptr, nullptr)) {
-		errstr = "E-2706: oxcical_parse_summary returned an unspecified error";
+		errstr = "E-2722: oxcical_parse_summary returned an unspecified error";
 		return ecInvalidParam;
 	}
 	return ecSuccess;

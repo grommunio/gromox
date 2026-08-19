@@ -4714,7 +4714,7 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	auto new_eml = fmt::format("{}/eml/{}", basedir, new_midstr);
 	auto ret = gx_mkbasedir(new_eml.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
 	if (ret < 0) {
-		mlog(LV_ERR, "E-1493: mkbasedir for %s: %s", new_eml.c_str(), strerror(-ret));
+		mlog(LV_ERR, "E-2343: mkbasedir for %s: %s", new_eml.c_str(), strerror(-ret));
 		return -ret;
 	}
 	if (link(old_eml.c_str(), new_eml.c_str()) < 0) {

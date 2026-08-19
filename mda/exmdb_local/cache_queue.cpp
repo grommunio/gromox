@@ -163,7 +163,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	uint32_t enc_bounce = cpu_to_le32(pcontext->ctrl.need_bounce);
 	auto err = pcontext->mail.to_fd(fd.get());
 	if (err != 0) {
-		mlog(LV_ERR, "E-1765: writeout failed: %s", strerror(err));
+		mlog(LV_ERR, "E-2341: writeout failed: %s", strerror(err));
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-2106: remove %s: %s",
 			        file_name.c_str(), strerror(errno));

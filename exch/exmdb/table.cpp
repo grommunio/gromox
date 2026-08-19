@@ -3257,7 +3257,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	const auto &state_path = exmdb_eph_prefix + "/" + exmdb_server::get_dir() + "/tablestate.sqlite3";
 	auto ret = gx_mkbasedir(state_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
 	if (ret < 0) {
-		mlog(LV_ERR, "E-2711: mkbasedir %s: %s", state_path.c_str(), strerror(-ret));
+		mlog(LV_ERR, "E-2327: mkbasedir %s: %s", state_path.c_str(), strerror(-ret));
 		return false;
 	}
 	/*

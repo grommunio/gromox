@@ -649,7 +649,7 @@ tproc_status http_parser::rdhead_no(http_context *pcontext, char *line,
 	auto &ctx = *pcontext;
 	auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 	if (NULL == ptoken) {
-		pcontext->log(LV_DEBUG, "D-1921: request line missing a URI");
+		pcontext->log(LV_DEBUG, "D-2320: request line missing a URI");
 		return http_done(pcontext, http_status::bad_request_CL);
 	}
 	size_t tmp_len = ptoken - line;

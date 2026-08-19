@@ -218,7 +218,7 @@ bool db_engine_set_maint(const char *path, enum db_maint_mode mode) try
 		g_maint_table.try_emplace(path).first->second = mode;
 	}
 	g_maint_cv.notify_all();
-	mlog(LV_INFO, "I-2510: Mailbox %s set to maintenance mode %u",
+	mlog(LV_INFO, "I-2330: Mailbox %s set to maintenance mode %u",
 		path, static_cast<unsigned int>(mode));
 	if (!wait)
 		return true;
@@ -570,7 +570,7 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 	sqlite3 *db = nullptr;
 	int ret = gx_mkbasedir(path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
 	if (ret < 0) {
-		mlog(LV_ERR, "E-2710: mkbasedir %s: %s", path.c_str(), strerror(-ret));
+		mlog(LV_ERR, "E-2329: mkbasedir %s: %s", path.c_str(), strerror(-ret));
 		return nullptr;
 	}
 	if (access(path.c_str(), W_OK) != 0 && errno != ENOENT)

@@ -597,7 +597,7 @@ static bool rx_eval_sub(const MESSAGE_CONTENT *ct, proptag_t tag,
 		return rx_eval_msgsub(ch, tag, res);
 	}
 	default:
-		mlog(LV_WARN, "W-2271: restriction type %u unevaluated",
+		mlog(LV_WARN, "W-2334: restriction type %u unevaluated",
                         static_cast<unsigned int>(res.rt));
 		return false;
 	}
@@ -678,7 +678,7 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	case RES_NULL:
 		return true;
 	default:
-		mlog(LV_WARN, "W-2272: restriction type %u unevaluated",
+		mlog(LV_WARN, "W-2333: restriction type %u unevaluated",
 			static_cast<unsigned int>(res.rt));
 		return false;
 	}
@@ -932,7 +932,7 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 		if (pmime == nullptr)
 			return ecServerOOM;
 		if (!pmime->set_content_type("message/rfc822"))
-			mlog(LV_WARN, "W-2729: set_content_type not successful");
+			mlog(LV_WARN, "W-2326: set_content_type not successful");
 		char tmp_buff[64*1024];
 		snprintf(tmp_buff, std::size(tmp_buff), "<%s>", par.ev_to);
 		pmime->set_field("From", tmp_buff);
