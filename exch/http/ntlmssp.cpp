@@ -11,6 +11,7 @@
 #include <iconv.h>
 #include <memory>
 #include <mutex>
+#include <utility>
 #include <libHX/endian.h>
 #include <libHX/string.h>
 #include <openssl/evp.h>
@@ -1121,7 +1122,7 @@ static bool ntlmssp_server_chkpasswd(ntlmssp_ctx *pntlmssp,
 	} else if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
 	    pntlmssp->user, upper_domain, &tmp_key)) {
 		b_result = true;
-		pdomain = upper_domain;
+		pdomain  = std::move(upper_domain);
 	} else if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
 	    pntlmssp->user, "", &tmp_key)) {
 		b_result = true;
