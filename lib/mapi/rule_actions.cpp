@@ -148,9 +148,9 @@ static FORWARDDELEGATE_ACTION* forwarddelegate_action_dup(
 	for (size_t i = 0; i < paction->count; ++i) {
 		if (recipient_block_dup_internal(&paction->pblock[i], &pblock->pblock[i]))
 			continue;
-		for (i -= 1; i >= 0; --i)
+		while (i > 0)
 			recipient_block_free_internal(
-				pblock->pblock + i);
+				pblock->pblock + --i);
 		free(pblock->pblock);
 		free(pblock);
 		return NULL;
