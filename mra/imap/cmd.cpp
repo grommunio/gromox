@@ -3068,9 +3068,12 @@ int icp_search(std::span<std::string> argv, imap_context &ctx)
 static errno_t parse_imap_seqx(imap_context &ctx, const char *range_string,
     imap_seq_list &uid_list) try
 {
+	if (range_string == nullptr)
+		return EINVAL;
+
 	/* SEARCHRES: expand "$" against the saved result (sequence numbers). */
 	std::string subst;
-	if (range_string != nullptr && strchr(range_string, '$') != nullptr) {
+	if (strchr(range_string, '$') != nullptr) {
 		subst = range_string;
 		icp_subst_searchres(ctx, subst, false);
 		range_string = subst.c_str();
