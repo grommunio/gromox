@@ -627,7 +627,8 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 			    buf.get(), dsize2, &~unique_tie(err)) < 1)
 				throw az_error("PF-1036", err);
 		} else if (vtype == PT_UNICODE) {
-			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
+			fprintf(stderr, "PF-1041: Non-Unicode garbage (%zu bytes) in string proptag %xh. "
+				"Won't be fully transferred.\n", dsize, pv.proptag);
 			auto s = iconvtext({reinterpret_cast<char *>(buf.get()), dsize},
 			         "UTF-16", "UTF-8");
 			if (errno != 0)
@@ -636,7 +637,8 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 			buf = std::make_unique<uint8_t[]>(dsize);
 			memcpy(buf.get(), s.data(), dsize);
 		} else if (vtype == PT_STRING8) {
-			fprintf(stderr, "PF-1044: Garbage in string which cannot be represented in UTF-8\n");
+			fprintf(stderr, "PF-1044: Unconvertible byte sequence (%zu bytes) in string proptag %xh. "
+				"Won't be fully transferred.\n", dsize, pv.proptag);
 			auto s = iconvtext({reinterpret_cast<char *>(buf.get()), dsize},
 			         g_ascii_charset, "UTF-8");
 			if (errno != 0)
