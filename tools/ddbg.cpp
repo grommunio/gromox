@@ -485,6 +485,8 @@ static int do_qp(std::string_view data, int mode)
 	} else if (mode == CM_QPENCODE) {
 		out.resize(data.size() * 3 + data.size() / 70 + 1);
 		ret = qpnl_encode_sized(data, out.data(), out.size());
+	} else {
+		return -1;
 	}
 	if (ret < 0) {
 		fprintf(stderr, "qp: unspecified error\n");
