@@ -702,9 +702,26 @@ errno_t gx_decompress_file(const char *infile, std::string &outblk) try
 	if (outsize == ZSTD_CONTENTSIZE_ERROR)
 		return EIO;
 	else if (outsize == ZSTD_CONTENTSIZE_UNKNOWN)
-		outsize = 1023;
-	else if (outsize == 0)
-		outsize = 1; /* so that multiplication later on works */
+		outsize = 1022;
+	/*
+	 * outsize needs to be at least 1 now, so that multiplication"*2" done
+	 * later works. The subsequent ULLONG_MAX test and ++outsize additions
+	 * happens to take implicitly take care of that, too.
+	 */
+	if (outsize < ULLONG_MAX)
+		/*
+		 * The frame content size (FCS) is only a hint, and sometimes
+		 * unavailable. When zstd_decompress has filled the output
+		 * buffer exactly to the brim, we cannot distinguish between
+		 * genuine end of frame (let alone the file), or the FCS being
+		 * inaccurate/unknown. As a result, there is an unconditional
+		 * resize() call after zstd_decompress (when outds.pos ==
+		 * outds.size). But, if FCS is known and the buffer is made
+		 * just one byte larger, then we can avert the situation with
+		 * the exact fit and thus the reallocation.
+		 */
+		++outsize;
+
 	if (outsize >= UINT32_MAX - 1)
 		outsize = UINT32_MAX - 1;
 	outblk.resize(outsize);
