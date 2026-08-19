@@ -744,6 +744,8 @@ static void recordset_to_tpropval_a(libpff_record_set_t *rset,
 			throw az_error("PF-1029", err);
 		recordent_to_tpropval(rent.get(), props, name_map);
 	}
+	if (props->has(PR_RTF_IN_SYNC) && !props->has(PR_RTF_COMPRESSED))
+		props->erase(PR_RTF_IN_SYNC);
 }
 
 /* Collect all recordsets' properties into one TPROPVAL_ARRAY */
