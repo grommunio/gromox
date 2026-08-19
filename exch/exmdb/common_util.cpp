@@ -392,7 +392,7 @@ bool cu_eid_is_allocated(sqlite3 *psqlite, uint64_t eid_val, BOOL *pb_result)
 
 }
 
-bool prepared_statements::begin(sqlite3 *psqlite)
+bool prepared_statements::begin(sqlite3 *psqlite, bool pvt_store)
 {
 	msg_norm = gx_sql_prep(psqlite, "SELECT propval"
 	               " FROM message_properties WHERE "
@@ -414,10 +414,14 @@ bool prepared_statements::begin(sqlite3 *psqlite)
 	               " AND proptag IN (?,?)");
 	if (rcpt_str == nullptr)
 		return FALSE;
-	msg_read = gx_sql_prep(psqlite, "SELECT read_state FROM "
-	           "messages WHERE message_id=?");
-	if (msg_read == nullptr)
-		return false;
+	if (pvt_store) {
+		msg_read = gx_sql_prep(psqlite, "SELECT read_state FROM "
+			   "messages WHERE message_id=?");
+		if (msg_read == nullptr)
+			return false;
+	} else {
+		msg_read.reset();
+	}
 	msg_atx = gx_sql_prep(psqlite, "SELECT 1 FROM attachments "
 	          "WHERE message_id=? LIMIT 1");
 	if (msg_atx == nullptr)
@@ -436,7 +440,7 @@ bool db_conn::begin_optim() try
 		return true;
 	}
 	auto op = std::make_unique<prepared_statements>();
-	if (!op->begin(psqlite))
+	if (!op->begin(psqlite, exmdb_server::is_private()))
 		return false;
 	m_prepstm = std::move(op);
 	return true;
