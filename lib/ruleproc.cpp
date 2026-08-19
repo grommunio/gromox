@@ -603,6 +603,24 @@ static bool rx_eval_sub(const MESSAGE_CONTENT *ct, proptag_t tag,
 	}
 }
 
+/*
+ * String restrictions are charset-insensitive. A message stores PT_STRING8 or
+ * PT_UNICODE, while Outlook rules reference the PT_UNICODE tag. Fall back to
+ * the sibling string type when the exact tag is absent.
+ */
+static const void *rx_getval(const TPROPVAL_ARRAY &props, proptag_t tag)
+{
+	auto v = props.getval(tag);
+	if (v != nullptr)
+		return v;
+	auto t = PROP_TYPE(tag);
+	if (t == PT_UNICODE)
+		return props.getval(CHANGE_PROP_TYPE(tag, PT_STRING8));
+	if (t == PT_STRING8)
+		return props.getval(CHANGE_PROP_TYPE(tag, PT_UNICODE));
+	return nullptr;
+}
+
 static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props,
     const RESTRICTION &res)
 {
@@ -621,14 +639,14 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 		return !rx_eval_props(ct, props, res.xnot->res);
 	case RES_CONTENT: {
 		auto &rcon = *res.cont;
-		return rcon.comparable() && rcon.eval(props.getval(rcon.proptag));
+		return rcon.comparable() && rcon.eval(rx_getval(props, rcon.proptag));
 	}
 	case RES_PROPERTY: {
 		auto &rprop = *res.prop;
 		// XXX: special-case PR_ANR?
 		if (!rprop.comparable())
 			return false;
-		auto lhs = props.getval(rprop.proptag);
+		auto lhs = rx_getval(props, rprop.proptag);
 		if (rprop_srchkey_eq(rprop, lhs, rp_org_name.c_str(),
 		    mysql_adaptor_userid_to_name))
 			return rprop.relop == RELOP_EQ;
