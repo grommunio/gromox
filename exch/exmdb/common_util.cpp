@@ -392,45 +392,35 @@ bool cu_eid_is_allocated(sqlite3 *psqlite, uint64_t eid_val, BOOL *pb_result)
 
 }
 
-bool prepared_statements::begin(sqlite3 *psqlite, bool pvt_store)
+/**
+ * Fill the statement cache. Every user of these statements prepares its own
+ * copy when the cached one is absent, so a member left null here costs speed
+ * and nothing else; gx_sql_prep has already logged the reason.
+ */
+void prepared_statements::begin(sqlite3 *psqlite, bool pvt_store)
 {
 	msg_norm = gx_sql_prep(psqlite, "SELECT propval"
 	               " FROM message_properties WHERE "
 	               "message_id=? AND proptag=?");
-	if (msg_norm == nullptr)
-		return FALSE;
 	msg_str = gx_sql_prep(psqlite, "SELECT proptag, "
 	              "propval FROM message_properties WHERE "
 	              "message_id=? AND proptag IN (?,?)");
-	if (msg_str == nullptr)
-		return FALSE;
 	rcpt_norm = gx_sql_prep(psqlite, "SELECT propval "
 	                "FROM recipients_properties WHERE "
 	                "recipient_id=? AND proptag=?");
-	if (rcpt_norm == nullptr)
-		return FALSE;
 	rcpt_str = gx_sql_prep(psqlite, "SELECT proptag, propval"
 	               " FROM recipients_properties WHERE recipient_id=?"
 	               " AND proptag IN (?,?)");
-	if (rcpt_str == nullptr)
-		return FALSE;
-	if (pvt_store) {
+	/* Public stores keep read state in read_states, not messages. */
+	if (pvt_store)
 		msg_read = gx_sql_prep(psqlite, "SELECT read_state FROM "
-			   "messages WHERE message_id=?");
-		if (msg_read == nullptr)
-			return false;
-	} else {
+		           "messages WHERE message_id=?");
+	else
 		msg_read.reset();
-	}
 	msg_atx = gx_sql_prep(psqlite, "SELECT 1 FROM attachments "
 	          "WHERE message_id=? LIMIT 1");
-	if (msg_atx == nullptr)
-		return false;
 	msg_fai = gx_sql_prep(psqlite, "SELECT is_associated FROM "
 	          "messages WHERE message_id=?");
-	if (msg_fai == nullptr)
-		return false;
-	return true;
 }
 
 bool db_conn::begin_optim() try
@@ -440,9 +430,8 @@ bool db_conn::begin_optim() try
 		return true;
 	}
 	auto op = std::make_unique<prepared_statements>();
-	if (g_exmdb_enable_optim_stm &&
-	    !op->begin(psqlite, exmdb_server::is_private()))
-		return false;
+	if (g_exmdb_enable_optim_stm)
+		op->begin(psqlite, exmdb_server::is_private());
 	m_prepstm = std::move(op);
 	return true;
 } catch (const std::bad_alloc &) {
