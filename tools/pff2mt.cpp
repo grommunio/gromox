@@ -835,7 +835,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 		else
 			fprintf(stderr, "pff: Processing \"%s\"...\n", name);
 		if (*name == '\0') {
-			auto new_name = std::format("Unnamed folder 0x{:x}", ident);
+			auto new_name = "Unnamed folder " + std::to_string(ident);
 			TAGGED_PROPVAL pv;
 			pv.proptag = PR_DISPLAY_NAME;
 			pv.pvalue = new_name.data();

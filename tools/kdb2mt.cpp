@@ -1080,7 +1080,7 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 		fprintf(stderr, "Processing folder \"%s\" (%zu elements)...\n",
 		        znul(dn), item.m_sub_hids.size());
 		if (dn == nullptr || *dn == '\0') {
-			auto new_name = std::format("Unnamed folder {:}", item.m_hid);
+			auto new_name = "Unnamed folder " + std::to_string(item.m_hid);
 			TAGGED_PROPVAL pv;
 			pv.proptag = PR_DISPLAY_NAME;
 			pv.pvalue = new_name.data();
