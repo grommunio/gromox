@@ -522,7 +522,7 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 
 static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 	{"autoreply_silence_window", "1day", CFG_TIME, "0"},
-	{"autoreply_subject_prefix", "Automatische Antwort: "},
+	{"autoreply_subject_prefix", "Automatic reply: "},
 	CFG_TABLE_END,
 };
 
