@@ -156,6 +156,7 @@ MYSQL *mysql_plugin::sql_make_conn()
 	MYSQL *conn = mysql_init(nullptr);
 	if (conn == nullptr)
 		return nullptr;
+	mysql_options(conn, MYSQL_READ_DEFAULT_GROUP, "client");
 	if (g_parm.timeout > 0) {
 		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &g_parm.timeout);
 		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &g_parm.timeout);

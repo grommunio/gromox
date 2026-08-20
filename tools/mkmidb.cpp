@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 		printf("Failed to init mysql object\n");
 		return EXIT_FAILURE;
 	}
-
+	mysql_options(conn.get(), MYSQL_READ_DEFAULT_GROUP, "client");
 	if (mysql_real_connect(conn.get(), mysql_host.c_str(), mysql_user.c_str(),
 	    mysql_pass.has_value() ? mysql_pass->c_str() : nullptr,
 	    db_name.c_str(), sql_port, nullptr, 0) == nullptr) {

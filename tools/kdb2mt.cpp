@@ -569,6 +569,7 @@ static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
 	drv->m_conn = mysql_init(nullptr);
 	if (drv->m_conn == nullptr)
 		throw std::bad_alloc();
+	mysql_options(drv->m_conn, MYSQL_READ_DEFAULT_GROUP, "client");
 	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
 	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
 		throw YError("PK-1018: mysql_connect %s@%s: %s",

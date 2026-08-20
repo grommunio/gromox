@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdlib>
@@ -73,6 +73,7 @@ int main(int argc, char **argv)
 	std::unique_ptr<MYSQL, mysql_delete> pmysql(mysql_init(nullptr));
 	if (pmysql == nullptr)
 		abort();
+	mysql_options(pmysql.get(), MYSQL_READ_DEFAULT_GROUP, "client");
 	auto mysql_host = pconfig->get_value("mysql_host");
 	auto mysql_user = pconfig->get_value("mysql_username");
 	if (mysql_user == nullptr)

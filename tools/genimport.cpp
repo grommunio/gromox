@@ -280,6 +280,7 @@ static std::unique_ptr<MYSQL, mysql_delete> sql_login()
 		fprintf(stderr, "exm: mysql_init failed\n");
 		return nullptr;
 	}
+	mysql_options(conn.get(), MYSQL_READ_DEFAULT_GROUP, "client");
 	if (mysql_real_connect(conn.get(), sql_host, sql_user, sql_pass,
 	    sql_dbname, sql_port, nullptr, 0) == nullptr) {
 		fprintf(stderr, "exm: Failed to connect to SQL %s@%s: %s\n",
