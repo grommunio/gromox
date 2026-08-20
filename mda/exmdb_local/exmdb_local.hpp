@@ -1,5 +1,6 @@
 #pragma once
 #include <ctime>
+#include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/hook_common.h>
 
@@ -9,7 +10,7 @@ enum class delivery_status {
 
 struct MAIL;
 
-extern void auto_response_reply(const char *user_home, const char *from, const char *rcpt);
+extern void auto_response_reply(const char *user_home, const char *from, const char *rcpt, std::string &&orig_subject);
 
 extern void bounce_audit_init(int audit_num, int audit_interval);
 extern BOOL bounce_audit_check(const char *audit_string);
@@ -29,3 +30,4 @@ extern delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const
 extern void exmdb_local_log_info(const CONTROL_INFO &, const char *rcpt, int level, const char *format, ...);
 
 extern unsigned int autoreply_silence_window;
+extern std::string autoreply_subject_prefix;

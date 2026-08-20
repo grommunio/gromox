@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <libHX/string.h>
 #include <vmime/addressList.hpp>
 #include <vmime/dateTime.hpp>
@@ -21,6 +22,7 @@ using namespace gromox;
 DECLARE_HOOK_API(exmdb_local, extern);
 using namespace exmdb_local;
 unsigned int autoreply_silence_window;
+std::string autoreply_subject_prefix;
 
 static int is_same_org(const char *a, const char *b)
 {
@@ -36,9 +38,10 @@ static int is_same_org(const char *a, const char *b)
  * @user_home: Maildir for basically @rcpt
  * @from:      Sender for the autoresponse (Original Envelope-To)
  * @rcpt:      Recipient for the autoresponse (Original Envelope-From)
+ * @orig_subject: Subject of the message that triggered the autoresponse
  */
-void auto_response_reply(const char *user_home,
-    const char *from, const char *rcpt) try
+void auto_response_reply(const char *user_home, const char *from,
+    const char *rcpt, std::string &&orig_subject) try
 {
 	auto same_org = is_same_org(from, rcpt);
 	if (same_org < 0)
@@ -87,8 +90,25 @@ void auto_response_reply(const char *user_home,
 		}
 	}
 
+	std::string subject_buf;
 	auto subject_text = znul(ar_props.get<const char>(same_org ? PR_EC_OUTOFOFFICE_SUBJECT : PR_EC_EXTERNAL_SUBJECT));
 	auto message_text = znul(ar_props.get<const char>(same_org ? PR_EC_OUTOFOFFICE_MSG : PR_EC_EXTERNAL_REPLY));
+	/*
+	 * EWS's SetUserOofSettings has no field for a reply subject. Clients
+	 * using EWS leave PR_EC_*_SUBJECT untouched. Derive one from the
+	 * incoming message rather than emitting an empty Subject header.
+	 */
+	if (*subject_text == '\0' && !autoreply_subject_prefix.empty()) {
+		subject_buf = autoreply_subject_prefix;
+		if (orig_subject.size() > 0) {
+			subject_buf += std::move(orig_subject);
+		} else {
+			/* Drop the separator when there is nothing to append. */
+			auto end = subject_buf.find_last_not_of(" :");
+			subject_buf.erase(end == subject_buf.npos ? 0 : end + 1);
+		}
+		subject_text = subject_buf.c_str();
+	}
 	auto vpctx = vmail_default_parsectx();
 	vmime::message vmsg;
 

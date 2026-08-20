@@ -3,6 +3,16 @@ Schedule
 It's ready when it's ready.
 
 
+Development 3.10.10
+===================
+
+Enhancements:
+
+* lda: out-of-office replies now derive a subject from the incoming message
+  when the mailbox has none stored, e.g. when OOF is set over EWS.
+  The new config directive gromox.cfg:``autoreply_subject_prefix`` was added.
+
+
 Gromox 3.10 (2026-08-22)
 ========================
 
