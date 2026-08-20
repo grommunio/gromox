@@ -440,7 +440,8 @@ bool db_conn::begin_optim() try
 		return true;
 	}
 	auto op = std::make_unique<prepared_statements>();
-	if (!op->begin(psqlite, exmdb_server::is_private()))
+	if (g_exmdb_enable_optim_stm &&
+	    !op->begin(psqlite, exmdb_server::is_private()))
 		return false;
 	m_prepstm = std::move(op);
 	return true;
