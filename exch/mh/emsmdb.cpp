@@ -809,10 +809,7 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 	ProcRes result;
 	auto heapctx = std::make_unique<MhEmsmdbContext>(context_id, m_server_version); /* huge object */
 	MhEmsmdbContext &ctx = *heapctx;
-	{
-		std::lock_guard ctx_hold(status[ctx.ID].lock);
-		status[ctx.ID].clear();
-	}
+	status[ctx.ID].clear();
 	if (ctx.auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	if (!ctx.loadHeaders())

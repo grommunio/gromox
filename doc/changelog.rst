@@ -13,6 +13,8 @@ Enhancements:
 
 Fixes:
 
+* mh_emsmdb: resolve a deadlock that made MAPI/HTTP clients (Outlook) hang on
+  every request
 * zcore no longer logs the ``session ... not found anymore`` message
 * zcore now scans mlist memberships when doing delegate permission checks
 * ruleproc no longer enters single-occurrence updates into user calendars.
