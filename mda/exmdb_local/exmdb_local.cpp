@@ -405,6 +405,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	}
 
 	auto dm_status = static_cast<deliver_message_result>(r32);
+	std::string orig_subject;
 	if (dm_status == deliver_message_result::result_ok) {
 		/* XXX: still need to make partial_ok behavior configurable */
 		auto num = pmsg->proplist.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
@@ -444,6 +445,8 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		    message_id, &rbct) && rbct != nullptr)
 			lq_report(pcontext->ctrl.queue_ID, rop_util_get_gc_value(message_id),
 				"after_delivery", *rbct);
+		if (!(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
+			orig_subject = znul(pmsg->proplist.get<const char>(PR_SUBJECT));
 	}
 	pmsg.reset();
 
@@ -454,7 +457,8 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		if (pcontext->ctrl.need_bounce &&
 		    strcmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) != 0&&
 		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
-			auto_response_reply(home_dir, address, pcontext->ctrl.from);
+			auto_response_reply(home_dir, address, pcontext->ctrl.from,
+				orig_subject.c_str());
 		break;
 	case deliver_message_result::partial_completion:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
@@ -518,6 +522,7 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 
 static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 	{"autoreply_silence_window", "1day", CFG_TIME, "0"},
+	{"autoreply_subject_prefix", "Automatische Antwort: "},
 	CFG_TABLE_END,
 };
 
@@ -540,6 +545,7 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		auto cfg = config_file_initd("gromox.cfg", get_config_path(), mdlgx_cfg_defaults);
 		if (cfg != nullptr) {
 			autoreply_silence_window = cfg->get_ll("autoreply_silence_window");
+			autoreply_subject_prefix = znul(cfg->get_value("autoreply_subject_prefix"));
 			g_junk_rules = parse_junk_rules(cfg->get_value("lda_junk_rules"));
 		}
 

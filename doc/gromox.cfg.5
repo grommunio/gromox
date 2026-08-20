@@ -22,6 +22,15 @@ stored persistently, in the message database.)
 .br
 Default: \fI1day\fP
 .TP
+\fBautoreply_subject_prefix\fP
+Out-of-office replies use the subject that was set alongside the OOF message.
+Clients which configure OOF over EWS cannot set one, because
+SetUserOofSettings has no field for it. When no subject is stored, this prefix
+plus the subject of the incoming message is used instead. Set to the empty
+string to send such replies without a subject.
+.br
+Default: \fIAutomatische Antwort: \fP
+.TP
 \fBbackfill_transport_headers\fP
 Try to fill the PR_TRANSPORT_MESSAGE_HEADERS property when messages are
 submitted.
