@@ -10,6 +10,9 @@ Enhancements:
   (ReplyToItem/ReplyAllToItem/ForwardItem)
 * pff2mt: It is now possible to place a private mailbox dump (.pst) into a
   public folder. See behavioral changes too.
+* lda: out-of-office replies now derive a subject from the incoming message
+  when the mailbox has none stored (new ``autoreply_subject_prefix``
+  directive), which is the case whenever OOF was configured over EWS.
 
 Fixes:
 
