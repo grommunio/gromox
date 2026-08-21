@@ -240,11 +240,11 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		auto fid  = pstmt.col_uint64(0);
 		unsigned int perm = pstmt.col_uint64(1);
 		seen_fid.emplace(fid);
-		if (perm & ~frightsMAPILimit)
+		if (perm & ~rightsMaxROP)
 			mlog(LV_DEBUG, "D-2352: %s has an ACE with unrecognized bits! "
 				"folder=0x%llx user=%s perms=0x%x, unknown: 0x%x. Behavior unspecified.",
 				dir, static_cast<unsigned long long>(fid), username,
-				perm, perm & ~frightsMAPILimit);
+				perm, perm & ~rightsMaxROP);
 		*ppermission |= perm;
 	/*
 	 * Outlook and g-web only expose IPM_SUBTREE and below, so permissions
@@ -271,11 +271,11 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		if (seen_fid.find(fid) != seen_fid.end())
 			continue;
 		unsigned int perm = pstmt.col_uint64(1);
-		if (perm & ~frightsMAPILimit)
+		if (perm & ~rightsMaxROP)
 			mlog(LV_DEBUG, "I-2353: %s has an ACE with unrecognized bits! "
 				"folder=0x%llx user=default perms=0x%x, unknown: 0x%x. Behavior unspecified.",
 				dir, static_cast<unsigned long long>(fid),
-				perm, perm & ~frightsMAPILimit);
+				perm, perm & ~rightsMaxROP);
 		*ppermission |= perm;
 		if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
 			*ppermission |= frightsGromoxStoreOwner;

@@ -634,7 +634,6 @@ enum {
 	frightsFreeBusySimple       = 0x800U, /* cf. IExchangeModifyTable */
 	frightsFreeBusyDetailed     = 0x1000U, /* cf. IExchangeModifyTable */
 
-	frightsMAPILimit            = 0x1ffbU,
 	/*
 	 * Special bits that can be present in the exmdb_server::get_mbox_perm response
 	 * to indicate extra features.

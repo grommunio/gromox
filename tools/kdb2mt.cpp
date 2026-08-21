@@ -968,7 +968,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 	while ((row = res.fetch_row()) != nullptr) {
 		uint32_t ben_id = strtoul(row[0], nullptr, 0);
 		uint32_t rights = strtoul(row[1], nullptr, 0);
-		rights &= ~frightsMAPILimit;
+		rights &= ~rightsMaxROP;
 		auto synthid = std::to_string(ben_id) + "@" + drv.server_guid + ".kopano.invalid";
 		auto it = g_user_map.uid_to_email.find(synthid);
 		if (it != g_user_map.uid_to_email.end())
