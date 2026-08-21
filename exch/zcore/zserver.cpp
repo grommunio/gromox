@@ -2068,7 +2068,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 			propval_buff[2].proptag = PR_MEMBER_RIGHTS;
 			propval_buff[2].pvalue = &permission;
 			if (!exmdb_client->update_folder_permission(pstore->get_dir(),
-			    folder_id, false, 1, &permission_row))
+			    folder_id, 0, 1, &permission_row))
 				return ecError;
 		}
 	}

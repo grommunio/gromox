@@ -5082,7 +5082,8 @@ void EWSContext::writeDelegatePermissions(const std::string &dir, const std::str
 		if (!dispname.empty())
 			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_NAME, EWSContext::cpystr(dispname)};
 		uint64_t fid = rop_util_make_eid_ex(1, m.fid);
-		if (!m_plugin.exmdb.update_folder_permission(dir.c_str(), fid, false, 1, &perm))
+		if (!m_plugin.exmdb.update_folder_permission(dir.c_str(),
+		    fid, 0, 1, &perm))
 			/* ignore */;
 	}
 }

@@ -741,7 +741,6 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
     uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	uint32_t permission;
 
 	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
@@ -752,9 +751,10 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto folder_id = pfolder->folder_id;
-	BOOL b_freebusy = (flags & MODIFY_PERMISSIONS_FLAG_INCLUDEFREEBUSY) ? TRUE : false;
+
 	auto eff_user = plogon->eff_user();
 	if (eff_user != STORE_OWNER_GRANTED) {
+		uint32_t permission = 0;
 		if (!exmdb_client->get_folder_perm(plogon->get_dir(),
 		    pfolder->folder_id, eff_user, &permission))
 			return ecError;
@@ -770,16 +770,29 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 		return ecSuccess;
 	}
 	for (size_t i = 0; i < count; ++i) {
-		auto v = prow[i].propvals.get<uint32_t>(PR_MEMBER_RIGHTS);
-		if (v != nullptr)
+		auto v = deconst(prow[i].propvals.get<uint32_t>(PR_MEMBER_RIGHTS)); // mutable
+		if (v == nullptr)
+			continue;
+		*v &= rightsMaxROP;
+		if (flags & MODIFY_PERMISSIONS_FLAG_INCLUDEFREEBUSY) {
+			/* I am the captain now */
+
 			/*
-			 * Ignore bits that a client should not send
-			 * (OXCPERM v15 §2.2.7).
+			 * OXCPERM v17 §2.2.2.1 asks client to set this flag at most
+			 * for operations on the calendar. OL heeds this. emsmdb32.dll
+			 * and EXC however do not filter this any further, and you can
+			 * happily use INCLUDEFREEBUSY to play with FB bits on e.g. the
+			 * root container. Therefore, Gromox will not filter or log
+			 * this condition either.
 			 */
-			*deconst(v) &= rightsMaxROP; // mutable
+		} else {
+			*v |= frightsFreeBusySimple;
+			if (*v & frightsReadAny)
+				*v |= frightsFreeBusyDetailed; /* 0x401 => 0x1c01 */
+		}
 	}
 	if (!exmdb_client->update_folder_permission(plogon->get_dir(),
-	    folder_id, b_freebusy, count, prow))
+	    folder_id, 0, count, prow))
 		return ecError;
 	return ecSuccess;
 }

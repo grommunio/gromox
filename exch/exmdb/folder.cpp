@@ -2108,7 +2108,14 @@ BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 	return pdb->exec(sql_string) == SQLITE_OK ? TRUE : false;
 }
 
-static uint32_t permission_adjust(uint32_t v, bool adjust_fb = false)
+/**
+ * Adjust basic folder permissions like EXC.
+ *
+ * The adjustment is a convenience for users. Handing out ReadAny without
+ * Visible leaves ReadAny meaningless. (Doing so would similar to chmod-644ing
+ * a file in a POSIX fs, while keeping the enclosing directory on mode 0700.)
+ */
+static uint32_t permission_adjust(uint32_t v)
 {
 	if (v & frightsReadAny)
 		v |= frightsVisible; /* 0x1 => 0x401 */
@@ -2118,16 +2125,11 @@ static uint32_t permission_adjust(uint32_t v, bool adjust_fb = false)
 		v |= frightsDeleteOwned; /* 0x40 => 0x50 */
 	if (v & frightsOwner)
 		v |= frightsVisible | frightsContact; /* 0x100 => 0x500 */
-	if (adjust_fb) {
-		v |= frightsFreeBusySimple;
-		if (v & frightsReadAny)
-			v |= frightsFreeBusyDetailed; /* 0x401 => 0x1c01 */
-	}
 	return v;
 }
 
 static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn &db,
-    bool b_freebusy, uint64_t fid_val, xstmt &pstmt) try
+    uint64_t fid_val, xstmt &pstmt) try
 {
 	auto bin = propvals.get<const BINARY>(PR_ENTRYID);
 	std::string ustg;
@@ -2145,7 +2147,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn &db,
 	auto num = propvals.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (num == nullptr)
 		return true;
-	auto permission = permission_adjust(*num, !b_freebusy);
+	auto permission = permission_adjust(*num);
 	/*
 	 * EXC2019 does REPLACE. So I guess that is our excuse for doing the
 	 * same, even if it overwrites preexisting permissions.
@@ -2171,7 +2173,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn &db,
 }
 
 static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_conn &db,
-    bool b_freebusy, uint64_t fid_val)
+    uint64_t fid_val)
 {
 	auto snum = propvals.get<const int64_t>(PR_MEMBER_ID);
 	if (snum == nullptr)
@@ -2229,7 +2231,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_conn &db,
 	auto num = propvals.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (num == nullptr)
 		return true;
-	auto permission = permission_adjust(*num, !b_freebusy);
+	auto permission = permission_adjust(*num);
 	snprintf(sql_string, std::size(sql_string), "UPDATE permissions SET permission=%u"
 	         " WHERE member_id=%lld", permission, LLD{member_id});
 	if (db.exec(sql_string) != SQLITE_OK)
@@ -2279,9 +2281,8 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_conn &db,
  *
  * [After updating the database, update the table too!]
  */
-BOOL exmdb_server::update_folder_permission(const char *dir,
-	uint64_t folder_id, BOOL b_freebusy,
-	uint16_t count, const PERMISSION_DATA *prow)
+BOOL exmdb_server::update_folder_permission(const char *dir, uint64_t folder_id,
+    BOOL unused_and_ignored, uint16_t count, const PERMISSION_DATA *prow)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -2295,10 +2296,10 @@ BOOL exmdb_server::update_folder_permission(const char *dir,
 		bool ret = true;
 		switch (prow[i].flags) {
 		case ROW_ADD:
-			ret = ufp_add(prow[i].propvals, *pdb, b_freebusy, fid_val, pstmt);
+			ret = ufp_add(prow[i].propvals, *pdb, fid_val, pstmt);
 			break;
 		case ROW_MODIFY:
-			ret = ufp_modify(prow[i].propvals, *pdb, b_freebusy, fid_val);
+			ret = ufp_modify(prow[i].propvals, *pdb, fid_val);
 			break;
 		case ROW_REMOVE:
 			ret = ufp_remove(prow[i].propvals, *pdb, fid_val);

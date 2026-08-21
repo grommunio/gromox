@@ -674,11 +674,8 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		}
 		count ++;
 	}
-	BOOL b_freebusy = pfolder->pstore->b_private &&
-	                  rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
-	                  TRUE : false;
 	return exmdb_client->update_folder_permission(dir,
-		pfolder->folder_id, b_freebusy, count, pperm_data);
+	       pfolder->folder_id, 0, count, pperm_data);
 }
 
 static int folder_object_flush_delegates(std::vector<std::string> &dlist,
