@@ -618,7 +618,6 @@ enum {
 	/* right bits */
 	frightsReadAny              = 0x1U,
 	frightsCreate               = 0x2U,
-	frightsGromoxSendAs         = 0x4U,
 	frightsEditOwned            = 0x8U,
 	frightsDeleteOwned          = 0x10U,
 	frightsEditAny              = 0x20U,
@@ -637,10 +636,10 @@ enum {
 
 	frightsMAPILimit            = 0x1ffbU,
 	/*
-	 * Special bit that can be set on *IPM_SUBTREE* to toggle the OWNER bit
-	 * on *store_object/logon_object* (since Outlook only shows
-	 * IPM_SUBTREE / and Gromox has no store-level permission bits really).
+	 * Special bits that can be present in the exmdb_server::get_mbox_perm response
+	 * to indicate extra features.
 	 */
+	frightsGromoxSendAs         = 0x4U,
 	frightsGromoxStoreOwner     = 0x2000U,
 
 	rightsNone = 0U,
