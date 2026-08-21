@@ -785,7 +785,13 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 			 * root container. Therefore, Gromox will not filter or log
 			 * this condition either.
 			 */
-		} else {
+		} else if (plogon->is_private() && (folder_id == eid_t(1, PRIVATE_FID_CALENDAR) ||
+		    folder_id == eid_t(1, PRIVATE_FID_LOCAL_FREEBUSY))) {
+			/*
+			 * EXC would adjust bits for every folder so touched, but...
+			 * let's keep the Gromox permission table tidy and limit this
+			 * to the Calendar.
+			 */
 			*v |= frightsFreeBusySimple;
 			if (*v & frightsReadAny)
 				*v |= frightsFreeBusyDetailed; /* 0x401 => 0x1c01 */
