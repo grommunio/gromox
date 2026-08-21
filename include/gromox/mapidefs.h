@@ -634,6 +634,8 @@ enum {
 	frightsVisible              = 0x400U,
 	frightsFreeBusySimple       = 0x800U, /* cf. IExchangeModifyTable */
 	frightsFreeBusyDetailed     = 0x1000U, /* cf. IExchangeModifyTable */
+
+	frightsMAPILimit            = 0x1ffbU,
 	/*
 	 * Special bit that can be set on *IPM_SUBTREE* to toggle the OWNER bit
 	 * on *store_object/logon_object* (since Outlook only shows

@@ -495,7 +495,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			if (!exmdb_client->get_mbox_perm(pstore->dir,
 			    pinfo->get_username(), &permission))
 				return FALSE;
-			*static_cast<uint32_t *>(*ppvalue) &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
+			*static_cast<uint32_t *>(*ppvalue) &= frightsMAPILimit;
 			return TRUE;
 		}
 		*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
