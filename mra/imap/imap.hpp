@@ -79,6 +79,20 @@ struct content_array final : public XARRAY {
 };
 
 /**
+ * Continuation state of a streamed metadata FETCH.
+ */
+struct fetch_stream_state {
+	bool active = false, detail = false;
+	bool use_trivial = false, uid_cmd = false;
+	bool mid_range = false; /* next_idx is a resume point inside the range */
+	size_t range_idx = 0, next_idx = 0;
+	gromox::imap_seq_list ranges;
+	std::vector<std::string> items;
+	std::string tag;
+	void reset() { *this = {}; }
+};
+
+/**
  * @mid:        midstr
  * @b_modify:	flag indicating that other clients concurrently modified the mailbox
  * 		(@f_flags, @f_expunged_uids is filled with changes)
@@ -126,6 +140,7 @@ struct imap_context final : public schedule_context {
 	 */
 	std::vector<std::string> announced_keywords;
 	std::vector<uint32_t> saved_uids; /* UIDs saved by SEARCH/UID SEARCH RETURN */
+	fetch_stream_state fstream;
 	char tag_string[32]{};
 	int command_len = 0;
 	char command_buffer[64*1024]{};
@@ -163,6 +178,7 @@ extern  void imap_parser_safe_write(imap_context *, const void *pbuff, size_t co
 extern void imap_parser_log_info(imap_context *, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
 extern void icp_clsfld(imap_context &);
+extern int icp_fetch_stream_continue(imap_context &);
 extern std::string icp_make_kwannounce_line(imap_context &, std::string_view);
 extern int icp_capability(std::span<std::string>, imap_context &);
 extern int icp_enable(std::span<std::string>, imap_context &);

@@ -34,6 +34,9 @@ struct GX_EXPORT XARRAY {
 	MITEM *get_item(size_t idx) {
 		return idx < m_vec.size() ? &m_vec[idx] : nullptr;
 	}
+	const MITEM *get_item(size_t idx) const {
+		return idx < m_vec.size() ? &m_vec[idx] : nullptr;
+	}
 	MITEM *get_itemx(unsigned int tag) {
 		auto i = m_hash.find(tag);
 		return i != m_hash.end() ? &m_vec[i->second] : nullptr;
@@ -47,4 +50,5 @@ struct GX_EXPORT XARRAY {
 	}
 	inline size_t get_capacity() const { return m_vec.size(); }
 	void clear();
+	size_t lower_bound(uint32_t) const;
 };

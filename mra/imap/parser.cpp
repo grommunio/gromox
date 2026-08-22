@@ -921,6 +921,15 @@ static tproc_status ps_stat_wrlst(imap_context &ctx)
 	pcontext->stream.clear();
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
+	if (ctx.fstream.active) {
+		/* Streamed FETCH: emit the next batch and keep draining. */
+		auto ret = icp_fetch_stream_continue(ctx);
+		if (ret == 0)
+			return tproc_status::cont;
+		icp_dval(ctx.fstream.tag.c_str(), ctx, ret);
+		ctx.fstream.reset();
+		pcontext->stream.clear();
+	}
 	pcontext->sched_stat = isched_stat::rdcmd;
 	return tproc_status::literal_checking;
 }
@@ -1605,6 +1614,7 @@ void imap_context::clear()
 	pcontext->f_expunged_uids.clear();
 	pcontext->contents.clear();
 	pcontext->saved_uids.clear();
+	pcontext->fstream.reset();
 	pcontext->announced_keywords.clear();
 	/*
 	 * Drop any pending async bits so a freshly pooled context does not

@@ -1398,6 +1398,19 @@ void XARRAY::clear()
 	std::string{}.swap(m_dpool);
 }
 
+size_t XARRAY::lower_bound(uint32_t uid) const
+{
+	size_t l = 0, r = get_capacity();
+	while (l < r) {
+		size_t m = (l + r) / 2;
+		if (static_cast<uint32_t>(get_item(m)->uid) < uid)
+			l = m + 1;
+		else
+			r = m;
+	}
+	return l;
+}
+
 config_file::cfg_entry::cfg_entry(const cfg_directive &d) :
 	m_min(znul(d.min)), m_max(znul(d.max)), m_flags(d.flags)
 {
