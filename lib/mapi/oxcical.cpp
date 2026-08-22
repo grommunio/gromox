@@ -3468,7 +3468,7 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	auto &pivalue = piline->append_value();
 	if (b_date)
 		piline->append_param("VALUE", "DATE");
-	if (tzid != nullptr)
+	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = false;
@@ -3529,7 +3529,7 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 	auto &pivalue = piline->append_value();
 	if (b_date)
 		piline->append_param("VALUE", "DATE");
-	if (tzid != nullptr)
+	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (size_t i = 0; i < apr->recur_pat.modifiedinstancecount; ++i) {
 		b_found = false;
@@ -3661,7 +3661,7 @@ static void append_dt(ical_component &com, const char *key,
 	auto line = &com.append_line(key, txt);
 	if (b_date)
 		line->append_param("VALUE", "DATE");
-	if (tzid != nullptr)
+	else if (tzid != nullptr)
 		line->append_param("TZID", tzid);
 }
 
