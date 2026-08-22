@@ -1,22 +1,29 @@
-Development 3.9.290
-===================
+Schedule
+========
+It's ready when it's ready.
+
+
+Gromox 3.10 (2026-08-22)
+========================
 
 Enhancements:
 
 * midb now synchronizes IMAP message flags to and from the mailbox
-  so they survive a deletion of midb.sqlite3
-* midb/imapd now supports IMAP keywords
-* ews: support OFM smart response draft types
-  (ReplyToItem/ReplyAllToItem/ForwardItem)
+  so they survive a deletion of midb.sqlite3.
+* midb/imapd now supports IMAP keywords.
+* EWS now supports the Outlook-for-Mac smart response draft types
+  (ReplyToItem/ReplyAllToItem/ForwardItem).
+* EWS: the FindPeople and GetUserPhoto commands now also search for matches in
+  in personal contacts.
 * pff2mt: It is now possible to place a private mailbox dump (.pst) into a
   public folder. See behavioral changes too.
+* mysql_adaptor: A local object cache (TTL 1 minute) was added for recurrent
+  user ID↔name lookups and group membership queries.
 
 Fixes:
 
-* mh_emsmdb: resolve a deadlock that made MAPI/HTTP clients (Outlook) hang on
-  every request
-* zcore no longer logs the ``session ... not found anymore`` message
-* zcore now scans mlist memberships when doing delegate permission checks
+* zcore no longer logs the ``session ... not found anymore`` message.
+* zcore now scans mlist memberships when doing delegate permission checks.
 * ruleproc no longer enters single-occurrence updates into user calendars.
 * ruleproc now releases a resource's original slot when an occurrence moves.
 * ruleproc now drops stale per-occurrence items when the series is re-issued.
@@ -33,9 +40,12 @@ Fixes:
 * exmdb: Reading a MAPI content table while another thread is trying to close
   it could led to a `SELECT count(idx) FROM t656: SQL logic error` log message,
   which was resolved.
-* emsmdb: fix a case of notifications getting stuck in out of memory situations
-* ldap_adaptor: recognize LDAP connections that have timed out at the TCP level
-  and reconnect
+* emsmdb: fix a case of notifications getting stuck in out of memory
+  situations.
+* ldap_adaptor: LDAP connections that have timed out at the TCP level are now
+  recognized and reconnected.
+* oxcmail: when converting from Internet Mail to MAPI, a HTML body is now
+  correctly detected as the HTML body even if some attachments precede it.
 
 Behavior changes:
 
@@ -279,7 +289,7 @@ Enhancements:
 * mbop: new "zaddrxlat" command
 * delivery: add pre-delivery junk shelving and ``lda_junk_rules``
   config directive
-exmdb_local: replace direct disk I/O with imapfile_read/write EXRPCs
+* exmdb_local: replace direct disk I/O with imapfile_read/write EXRPCs
 
 Fixes:
 

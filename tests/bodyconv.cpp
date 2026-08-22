@@ -208,6 +208,8 @@ static int t_htmltortf()
 int main()
 {
 	textmaps_init(getenv("TEST_PATH"));
+	setenv("GROMOX_RTFTOHTML", "internal", true);
+	setenv("GROMOX_HTMLTOPLAIN", "internal", true);
 	if (t_html_plain() != 0)
 		return EXIT_FAILURE;
 	if (t_rtf_reader() != 0)
