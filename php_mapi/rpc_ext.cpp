@@ -298,6 +298,23 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletemessages &d)
 	return pack_result::ok;
 }
 
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_rulesexecute &d)
+{
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_bin_a(*d.pentryids));
+	TRY(x.p_uint32(d.action_flags));
+	return pack_result::ok;
+}
+
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_rulesexecute &d)
+{
+	TRY(x.g_uint32(&d.processed));
+	TRY(x.g_uint32(&d.skipped));
+	TRY(x.g_uint32(&d.failed));
+	return pack_result::ok;
+}
+
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copymessages &d)
 {
 	TRY(x.p_guid(d.hsession));
