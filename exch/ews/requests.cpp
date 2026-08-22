@@ -1009,6 +1009,17 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			}
 		}
 
+		/*
+		 * toContent() writes whatever "From"/"Sender" the client supplied
+		 * straight into the PR_SENT_REPRESENTING and PR_SENDER properties,
+		 * with no authorization check of its own - verify the caller
+		 * actually has Send-As rights on that identity before letting it
+		 * stick, for both saved drafts and actual sends.
+		 */
+		if (auto claimed = content->proplist.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS))
+			ctx.checkSendAs(claimed);
+
+
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
 			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
 			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
