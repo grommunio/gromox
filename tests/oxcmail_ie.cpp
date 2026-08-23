@@ -588,8 +588,8 @@ static int ical_export_2()
 		fprintf(stderr, "ical_serialize failed\n");
 		return EXIT_FAILURE;
 	}
-	if (strstr(icstr.c_str(), "DTSTART;VALUE=DATE;TZID=W. Europe Standard Time:20240926") == nullptr ||
-	    strstr(icstr.c_str(), "DTEND;VALUE=DATE;TZID=W. Europe Standard Time:20240927") == nullptr) {
+	if (strstr(icstr.c_str(), "DTSTART;VALUE=DATE:20240926") == nullptr ||
+	    strstr(icstr.c_str(), "DTEND;VALUE=DATE:20240927") == nullptr) {
 		printf("%s\n", icstr.c_str());
 		fprintf(stderr, "FAILED. Substrings DTSTART/20240926 and DTEND/20240927 not found.\n");
 		return EXIT_FAILURE;
