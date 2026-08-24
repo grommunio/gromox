@@ -1,0 +1,11 @@
+/var/log/gromox/php-fpm.log {
+	compress
+	dateext
+	maxage 30
+	rotate 4
+	size=+4096k
+	missingok
+	notifempty
+	delaycompress
+	su gromox gromox
+}

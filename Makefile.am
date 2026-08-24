@@ -345,7 +345,7 @@ pkginclude_HEADERS = ${header_files}
 endif
 list_files = data/cpid.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
 pkgdata_DATA = data/abkt.pak data/timezone.pak
-dist_pkgdata_DATA = ${list_files} data/Services.wsdl data/Messages.xsd data/Types.xsd data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc tools/conf.php tools/db.php tools/submit.php
+dist_pkgdata_DATA = ${list_files} data/Services.wsdl data/Messages.xsd data/Types.xsd data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc data/logrotate-gromox.conf.sample tools/conf.php tools/db.php tools/submit.php
 EXTRA_DIST += \
 	.editorconfig .gitignore LICENSE.txt README.rst default.sym qconf \
 	${abkt_files} ${tzd_files} \
