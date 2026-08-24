@@ -138,5 +138,5 @@ extern bool permrow_entryids_equal(const PERMISSION_ROW &, const uint32_t *, con
 extern size_t g_max_mail_len;
 extern unsigned int g_max_rcpt;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
-extern unsigned int zcore_backfill_transporthdr;
+extern bool zcore_backfill_transporthdr, zcore_use_vmime;
 extern char g_org_name[256];

@@ -84,7 +84,8 @@ struct LANGMAP_ITEM {
 
 size_t g_max_mail_len;
 unsigned int g_max_rcpt;
-unsigned int g_max_rule_len, g_max_extrule_len, zcore_backfill_transporthdr;
+unsigned int g_max_rule_len, g_max_extrule_len;
+bool zcore_backfill_transporthdr, zcore_use_vmime;
 static std::string g_smtp_url;
 char g_org_name[256];
 static thread_local const char *g_dir_key;
@@ -1225,13 +1226,14 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	}
 
 	common_util_set_dir(pstore->get_dir());
-	MAIL imail;
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids;
 	cvt.get_propname = common_util_get_propname;
 	cvt.use_format_override(*pmsgctnt);
+
+	MAIL imail;
 	if (!cvt.mapi_to_inet(*pmsgctnt, imail))
 		return ecError;
 
@@ -1255,7 +1257,17 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		}
 	}
 
-	auto ret = cu_send_mail(imail, g_smtp_url.c_str(), ev_from, rcpt_list);
+	ec_error_t ret = ecError;
+	if (zcore_use_vmime) {
+		auto vmail = vmime::make_shared<vmime::message>();
+		auto err = cvt.mapi_to_inet(*pmsgctnt, vmail);
+		if (err != ecSuccess)
+			return err;
+		vmail->getHeader()->getField("X-Mailer")->setValue(ZCORE_UA);
+		ret = cu_send_vmail(vmail, g_smtp_url.c_str(), ev_from, rcpt_list);
+	} else {
+		ret = cu_send_mail(imail, g_smtp_url.c_str(), ev_from, rcpt_list);
+	}
 	if (ret != ecSuccess) {
 		mlog(LV_ERR, "E-1194: failed to send %s via SMTP: %s",
 			log_id.c_str(), mapi_strerror(ret));
