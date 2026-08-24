@@ -330,6 +330,14 @@ bool RESTRICTION_CONTENT::eval(const void *dbval) const
 			return lhs.cb >= rhs.cb && memcmp(lhs.pv, rhs.pv, rhs.cb) == 0;
 		}
 		return false;
+	} else if (PROP_TYPE(proptag) == PT_MV_STRING8 ||
+	    PROP_TYPE(proptag) == PT_MV_UNICODE) {
+		RESTRICTION_CONTENT r2 = *this;
+		r2.proptag &= ~MV_FLAG;
+		for (const auto lhs : *static_cast<const STRING_ARRAY *>(dbval))
+			if (r2.eval(lhs))
+				return true;
+		return false;
 	}
 	auto lhs = static_cast<const char *>(dbval);
 	auto rhs = static_cast<const char *>(propval.pvalue);
