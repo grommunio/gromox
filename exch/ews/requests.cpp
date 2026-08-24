@@ -1765,7 +1765,8 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 		else if (folder.folderId == rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_HISTORY))
 			folder.folderId = ctx.resolveOrCreateSpecialFolder(dir,
 			                  rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
-			                  folder.folderId, nullptr, PRIVATE_FID_CONVERSATION_HISTORY);
+			                  folder.folderId, nullptr, PRIVATE_FID_CONVERSATION_HISTORY,
+			                  true);
 		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
 			throw EWSError::AccessDenied(E3136);
 		mGetFolderResponseMessage msg;

@@ -3513,6 +3513,48 @@ std::optional<uint64_t> EWSContext::findFolderByClass(const std::string &dir,
 }
 
 /**
+ * @brief      Find a child folder by PR_DISPLAY_NAME, trying each candidate in order
+ *
+ * Used for folders that, unlike Recipient Cache, have no dedicated
+ * PR_CONTAINER_CLASS to search by on real Exchange (Conversation History) -
+ * matching by name is the only identity mechanism available. Candidates are
+ * tried in order (e.g. the mailbox owner's localized name first, then the
+ * static English one) so a folder created under either naming convention is
+ * still found instead of being duplicated.
+ *
+ * @param      dir             Home directory
+ * @param      parentFolderId  Parent folder to search under
+ * @param      names           Candidate PR_DISPLAY_NAME values to match, tried in order
+ *
+ * @return     Folder ID of the first matching child folder, or unset if none found
+ */
+std::optional<uint64_t> EWSContext::findFolderByName(const std::string &dir,
+    uint64_t parentFolderId, const std::vector<std::string> &names) const
+{
+	for (const auto &name : names) {
+		TAGGED_PROPVAL pv{PR_DISPLAY_NAME, deconst(name.c_str())};
+		RESTRICTION_PROPERTY rprop{RELOP_EQ, PR_DISPLAY_NAME, pv};
+		const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
+		uint32_t tableId = 0, rowCount = 0;
+		if (!m_plugin.exmdb.load_hierarchy_table(dir.c_str(), parentFolderId,
+		    nullptr, 0, &rst, &tableId, &rowCount) || rowCount == 0)
+			continue;
+		auto cl_tbl = HX::make_scope_exit([&]() { m_plugin.exmdb.unload_table(dir.c_str(), tableId); });
+		static constexpr proptag_t eid_tag = PR_ENTRYID;
+		TARRAY_SET rows{};
+		if (!m_plugin.exmdb.query_table(dir.c_str(), nullptr, CP_ACP, tableId,
+		    {&eid_tag, 1}, 0, 1, &rows) || rows.count == 0 || rows.pparray[0] == nullptr)
+			continue;
+		auto eid = rows.pparray[0]->get<const BINARY>(PR_ENTRYID);
+		if (eid == nullptr || eid->cb == 0)
+			continue;
+		sFolderEntryId folderEid(eid->pb, eid->cb);
+		return rop_util_make_eid_ex(1, rop_util_gc_to_value(folderEid.folder_gc));
+	}
+	return std::nullopt;
+}
+
+/**
  * @brief      Resolve a "rich client" special folder, creating it if necessary
  *
  * Real Exchange provisions folders such as Recipient Cache, Archive and
@@ -3544,12 +3586,19 @@ std::optional<uint64_t> EWSContext::findFolderByClass(const std::string &dir,
  *                              if none is known for this folder
  * @param      dispNameTid     folder_namedb_get() text id for the display
  *                             name to use if the folder needs creating
+ * @param      searchByName    If no PR_CONTAINER_CLASS is known and the
+ *                              legacy FID doesn't resolve, also scan for an
+ *                              existing folder by PR_DISPLAY_NAME (localized
+ *                              name first, then the static English one)
+ *                              before creating a new one - for folders like
+ *                              Conversation History, which real Exchange
+ *                              exposes no dedicated container class for.
  *
  * @return     Folder ID
  */
 uint64_t EWSContext::resolveOrCreateSpecialFolder(const std::string &dir,
     uint64_t parentFolderId, uint64_t legacyFolderId, const char *containerClass,
-    unsigned int dispNameTid) const
+    unsigned int dispNameTid, bool searchByName) const
 {
 	if (containerClass) {
 		auto realId = findFolderByClass(dir, parentFolderId, containerClass);
@@ -3566,6 +3615,22 @@ uint64_t EWSContext::resolveOrCreateSpecialFolder(const std::string &dir,
 	            folder_namedb_resolve(m_auth_info.lang) : nullptr;
 	if (lang == nullptr)
 		lang = "en";
+	auto dispName = folder_namedb_get(lang, dispNameTid);
+
+	if (searchByName && !containerClass) {
+		std::vector<std::string> candidates;
+		if (dispName != nullptr && *dispName != '\0')
+			candidates.emplace_back(dispName);
+		auto enName = folder_namedb_get("en", dispNameTid);
+		if (enName != nullptr && *enName != '\0' &&
+		    (candidates.empty() || candidates[0] != enName))
+			candidates.emplace_back(enName);
+		if (!candidates.empty()) {
+			auto realId = findFolderByName(dir, parentFolderId, candidates);
+			if (realId)
+				return *realId;
+		}
+	}
 
 	/*
 	 * Deliberately does not go through EWSContext::create() - that helper
@@ -3581,7 +3646,6 @@ uint64_t EWSContext::resolveOrCreateSpecialFolder(const std::string &dir,
 
 	const char *fclass = containerClass ? containerClass : "IPF.Note";
 	mapi_folder_type type = FOLDER_GENERIC;
-	auto dispName = folder_namedb_get(lang, dispNameTid);
 	uint64_t now = rop_util_current_nttime();
 	uint32_t accountId = getAccountId(m_auth_info.username, false);
 	XID xid{rop_util_make_user_guid(accountId), changeNumber};
