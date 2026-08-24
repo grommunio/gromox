@@ -127,7 +127,9 @@ static bool midb_reload_config(std::shared_ptr<config_file> gxconfig = nullptr,
 
 static void buildenv(bool pvt)
 {
-	cu_build_environment("");
+	if (!cu_build_environment("")) {
+		mlog(LV_WARN,  "Failed building environment");
+	}
 }
 
 static int exmdb_client_run_front(const char *dir)
