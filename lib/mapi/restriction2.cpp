@@ -293,15 +293,31 @@ bool RESTRICTION_CONTENT::comparable() const
 {
 	auto l = PROP_TYPE(proptag);
 	auto r = PROP_TYPE(propval.proptag);
-	if (l == PT_UNICODE || l == PT_STRING8)
+	switch (l) {
+	case PT_STRING8:
+	case PT_UNICODE:
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
 		return r == PT_UNICODE || r == PT_STRING8;
-	return l == r && l == PT_BINARY;
+	case PT_BINARY:
+		return r == PT_BINARY;
+	default:
+		return false;
+	}
 }
 
 bool RESTRICTION_CONTENT::eval(const void *dbval) const
 {
 	if (dbval == nullptr)
 		return false;
+	/*
+	 * PT_BINARY needles can appear in Inbox rules. See
+	 * outlook_rule_spec.rst condition 203 (RES_PROP) and 229
+	 * (RES_CONTENT).
+	 *
+	 * Ironically, EXC does not even support ropRestrictTable with
+	 * RES_CONTENT+PT_BINARY (dies with MAPI_E_TOO_COMPLEX).
+	 */
 	if (PROP_TYPE(proptag) == PT_BINARY) {
 		auto &lhs = *static_cast<const BINARY *>(dbval);
 		auto &rhs = *static_cast<const BINARY *>(propval.pvalue);
@@ -360,7 +376,8 @@ std::string RESTRICTION_CONTENT::repr() const
 bool RESTRICTION_PROPERTY::comparable() const
 {
 	/*
-	 * The LHS of a RES_PROPERTY specifies a property, while the RHS is an
+	 * The LHS of a RES_PROPERTY references a property (by proptag), while
+	 * the RHS is an
 	 * immediate. To evaluate a multivalue LHS against a scalar RHS, use a
 	 * RES_CONTENT instead (with limitations). To evaluate a scalar LHS
 	 * against a multivalue RHS, use RES_OR instead. EXC2019 refuses
