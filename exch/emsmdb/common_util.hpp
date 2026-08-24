@@ -147,6 +147,7 @@ extern size_t g_max_mail_len;
 extern unsigned int g_logon_debug, g_max_rcpt;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
 extern char g_emsmdb_org_name[256];
+extern bool emsmdb_use_vmime;
 
 }
 

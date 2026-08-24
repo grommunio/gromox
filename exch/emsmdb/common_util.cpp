@@ -61,6 +61,7 @@ unsigned int g_max_rcpt;
 unsigned int g_max_rule_len, g_max_extrule_len;
 static std::string g_smtp_url;
 char g_emsmdb_org_name[256];
+bool emsmdb_use_vmime;
 static thread_local const char *g_dir_key;
 static char g_submit_command[1024];
 static constexpr char EMSMDB_UA[] = PACKAGE_NAME "-emsmdb " PACKAGE_VERSION;
@@ -1527,7 +1528,6 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 {
 	auto ev_from = grant >= repr_grant::send_as ? delegator : actor;
 	auto message_id = msg->get_id();
-	MAIL imail;
 	void *pvalue;
 	BOOL b_result;
 	BOOL b_partial;
@@ -1588,6 +1588,8 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	cvt.get_propids = common_util_get_propids;
 	cvt.get_propname = common_util_get_propname;
 	cvt.use_format_override(*pmsgctnt);
+
+	MAIL imail;
 	if (!cvt.mapi_to_inet(*pmsgctnt, imail)) {
 		mlog2(LV_ERR, "E-1281: oxcmail_export %s failed", log_id.c_str());
 		return ecError;	
@@ -1613,7 +1615,17 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		}
 	}
 
-	auto ret = ems_send_mail(&imail, ev_from, rcpt_list);
+	ec_error_t ret = ecError;
+	if (emsmdb_use_vmime) {
+		auto vmail = vmime::make_shared<vmime::message>();
+		auto err = cvt.mapi_to_inet(*pmsgctnt, vmail);
+		if (err != ecSuccess)
+			return err;
+		vmail->getHeader()->getField("X-Mailer")->setValue(EMSMDB_UA);
+		ret = cu_send_vmail(vmail, g_smtp_url.c_str(), ev_from, rcpt_list);
+	} else {
+		ret = ems_send_mail(&imail, ev_from, rcpt_list);
+	}
 	if (ret != ecSuccess) {
 		mlog2(LV_ERR, "E-1280: failed to send %s via SMTP: %s",
 			log_id.c_str(), mapi_strerror(ret));

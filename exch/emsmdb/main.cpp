@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 #include <libHX/string.h>
+#include <vmime/message.hpp>
 #include <vmime/utility/url.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
@@ -89,6 +90,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<config_file> gxcfg,
 	}
 	emsmdb_backfill_transporthdr = gxcfg->get_ll("backfill_transport_headers");
 	emsmdb_compress_threshold = gxcfg->get_ll("emsmdb_compress_threshold");
+	emsmdb_use_vmime = gxcfg->get_ll("use_vmime");
 	auto str = znul(gxcfg->get_value("reported_server_version"));
 	auto &ver = server_normal_version;
 	memset(ver, 0, sizeof(ver));
