@@ -93,6 +93,15 @@ static ec_error_t delete_impossible_mids(const idset &given, EID_ARRAY &del)
 	return p1.error;
 }
 
+static bool eas_time_search(const RESTRICTION *r)
+{
+	return r != nullptr && r->rt == RES_PROPERTY && r->prop != nullptr &&
+	       r->prop->relop == RELOP_GE &&
+	       r->prop->proptag == PR_MESSAGE_DELIVERY_TIME &&
+	       PROP_TYPE(r->prop->propval.proptag) == PT_SYSTIME &&
+	       r->prop->propval.pvalue != nullptr;
+}
+
 /**
  * @username:     Used for retrieving public store readstates
  * @pgiven:       Set of MIDs the client has
@@ -222,12 +231,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	uint64_t rcv_cutoff = 0;
 	std::unordered_set<uint64_t> rcv_scope;
 	bool b_rcv_fast = false;
-	if (prestriction != nullptr && prestriction->rt == RES_PROPERTY &&
-	    prestriction->prop != nullptr &&
-	    prestriction->prop->relop == RELOP_GE &&
-	    prestriction->prop->proptag == PR_MESSAGE_DELIVERY_TIME &&
-	    PROP_TYPE(prestriction->prop->propval.proptag) == PT_SYSTIME &&
-	    prestriction->prop->propval.pvalue != nullptr) try {
+	if (eas_time_search(prestriction)) try {
 		rcv_cutoff = *static_cast<const uint64_t *>(prestriction->prop->propval.pvalue);
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id "
 		         "FROM msgtime_index WHERE folder_id=%llu AND rcvtime>=%llu",
