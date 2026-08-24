@@ -385,14 +385,19 @@ bool RESTRICTION_PROPERTY::comparable() const
 {
 	/*
 	 * The LHS of a RES_PROPERTY references a property (by proptag), while
-	 * the RHS is an
-	 * immediate. To evaluate a multivalue LHS against a scalar RHS, use a
-	 * RES_CONTENT instead (with limitations). To evaluate a scalar LHS
-	 * against a multivalue RHS, use RES_OR instead. EXC2019 refuses
-	 * comparisons with any multivalue RHS.
+	 * the RHS is an immediate. To evaluate a scalar LHS against a
+	 * multivalue RHS, use RES_OR instead. EXC2019 refuses comparisons with
+	 * any multivalue RHS.
 	 */
 	auto l = PROP_TYPE(proptag);
 	auto r = PROP_TYPE(propval.proptag);
+
+	if (l & MV_FLAG) {
+		if (relop != RELOP_EQ && relop != RELOP_NE)
+			return false;
+		l &= ~MV_FLAG;
+	}
+
 	if (l == PT_UNICODE || l == PT_STRING8)
 		return r == PT_UNICODE || r == PT_STRING8;
 	if (l == PT_MV_UNICODE || l == PT_MV_STRING8)
@@ -402,8 +407,38 @@ bool RESTRICTION_PROPERTY::comparable() const
 
 bool RESTRICTION_PROPERTY::eval(const void *dbval) const
 {
-	return propval_compare_relop_nullok(relop, PROP_TYPE(proptag),
-	       dbval, propval.pvalue);
+	if (!(PROP_TYPE(proptag) & MV_FLAG))
+		return propval_compare_relop_nullok(relop, PROP_TYPE(proptag),
+		       dbval, propval.pvalue);
+
+	RESTRICTION_PROPERTY r2 = *this;
+	r2.proptag &= ~MV_FLAG;
+	bool mop = relop == RELOP_EQ;
+
+	switch (PROP_TYPE(proptag)) {
+#define E(ptmv, artype, symbols) \
+	case ptmv: \
+		for (const auto lhs : *static_cast<const artype *>(dbval)) \
+			if (r2.eval(symbols lhs)) \
+				return mop; \
+		return !mop;
+
+	E(PT_MV_SHORT, SHORT_ARRAY, &)
+	E(PT_MV_LONG, LONG_ARRAY, &)
+	E(PT_MV_FLOAT, FLOAT_ARRAY, &)
+	case PT_MV_DOUBLE:
+	E(PT_MV_APPTIME, DOUBLE_ARRAY, &)
+	case PT_MV_I8:
+	case PT_MV_SYSTIME:
+	E(PT_MV_CURRENCY, LONGLONG_ARRAY, &)
+	case PT_MV_STRING8:
+	E(PT_MV_UNICODE, STRING_ARRAY, )
+	E(PT_MV_CLSID, GUID_ARRAY, &)
+	E(PT_MV_BINARY, BINARY_ARRAY, &)
+	default:
+		return false;
+#undef E
+	}
 }
 
 std::string RESTRICTION_PROPERTY::repr() const
