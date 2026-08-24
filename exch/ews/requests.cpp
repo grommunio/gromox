@@ -1184,8 +1184,8 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 			if (att.IsContactPhoto && *att.IsContactPhoto)
 				props.push_back({PR_ATTACHMENT_CONTACTPHOTO, EWSContext::construct<uint8_t>(1)});
 			if (att.Content) {
-				auto bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(att.Content->size()), {EWSContext::alloc<uint8_t>(att.Content->size())}});
-				memcpy(bin->pv, att.Content->data(), att.Content->size());
+				auto bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(att.Content->size()), {EWSContext::alloc<char>(att.Content->size())}});
+				memcpy(bin->pc, att.Content->data(), bin->cb);
 				props.push_back({PR_ATTACH_DATA_BIN, bin});
 				props.push_back({PR_ATTACH_SIZE, EWSContext::construct<int32_t>(bin->cb)});
 			}
@@ -2088,17 +2088,15 @@ void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
 		if (userConfiguration.XmlData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
 			           static_cast<uint32_t>(userConfiguration.XmlData->size()),
-			           {EWSContext::alloc<uint8_t>(userConfiguration.XmlData->size())}});
-			memcpy(bin->pv, userConfiguration.XmlData->data(),
-			       userConfiguration.XmlData->size());
+			           {EWSContext::alloc<char>(userConfiguration.XmlData->size())}});
+			memcpy(bin->pc, userConfiguration.XmlData->data(), bin->cb);
 			props.push_back({PR_ROAMING_XMLSTREAM, bin});
 		}
 		if (userConfiguration.BinaryData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
 			           static_cast<uint32_t>(userConfiguration.BinaryData->size()),
-			           {EWSContext::alloc<uint8_t>(userConfiguration.BinaryData->size())}});
-			memcpy(bin->pv, userConfiguration.BinaryData->data(),
-			       userConfiguration.BinaryData->size());
+			           {EWSContext::alloc<char>(userConfiguration.BinaryData->size())}});
+			memcpy(bin->pc, userConfiguration.BinaryData->data(), bin->cb);
 			props.push_back({PR_ROAMING_BINARYSTREAM, bin});
 		}
 
@@ -2281,16 +2279,15 @@ void process(mUpdateUserConfigurationRequest &&request, XMLElement *response,
 		if (userConfiguration.XmlData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
 			           static_cast<uint32_t>(userConfiguration.XmlData->size()),
-			           {EWSContext::alloc<uint8_t>(userConfiguration.XmlData->size())}});
-			memcpy(bin->pv, userConfiguration.XmlData->data(), userConfiguration.XmlData->size());
+			           {EWSContext::alloc<char>(userConfiguration.XmlData->size())}});
+			memcpy(bin->pc, userConfiguration.XmlData->data(), bin->cb);
 			props.push_back({PR_ROAMING_XMLSTREAM, bin});
 		}
 		if (userConfiguration.BinaryData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
 			           static_cast<uint32_t>(userConfiguration.BinaryData->size()),
-			           {EWSContext::alloc<uint8_t>(userConfiguration.BinaryData->size())}});
-			memcpy(bin->pv, userConfiguration.BinaryData->data(),
-			       userConfiguration.BinaryData->size());
+			           {EWSContext::alloc<char>(userConfiguration.BinaryData->size())}});
+			memcpy(bin->pc, userConfiguration.BinaryData->data(), bin->cb);
 			props.push_back({PR_ROAMING_BINARYSTREAM, bin});
 		}
 

@@ -1921,7 +1921,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 				if (len > UINT32_MAX)
 					throw InputError(E3293);
 				BINARY *tmp_bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
-					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
+					{deconst(buf->data())}});
 				shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
 					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
 				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
@@ -1946,7 +1946,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 					tzs.daylightdate = rule.daylightdate;
 					tzs.standardyear = tzs.standarddate.year;
 					tzs.daylightyear = tzs.daylightdate.year;
-					auto tzdata = EWSContext::alloc<uint8_t>(48);
+					auto tzdata = EWSContext::alloc<char>(48);
 					EXT_PUSH ep;
 					if (ep.init(tzdata, 48, 0) &&
 					    ep.p_tzstruct(tzs) == pack_result::ok)
@@ -2267,8 +2267,7 @@ void tChangeDescription::convBody(const tinyxml2::XMLElement *xml, sShape &shape
 	size_t len = strlen(text);
 	if (len > UINT32_MAX)
 		throw InputError(E3256);
-	BINARY *html = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(text)),
-	               {reinterpret_cast<uint8_t*>(const_cast<char*>(text))}});
+	auto html = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(text)), {deconst(text)}});
 	shape.write(TAGGED_PROPVAL{PR_HTML, html});
 }
 

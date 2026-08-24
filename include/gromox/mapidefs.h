@@ -896,8 +896,8 @@ struct GX_EXPORT ADVISE_INFO {
 struct GX_EXPORT BINARY {
 	uint32_t cb;
 	union {
-		uint8_t *pb;
 		char *pc;
+		uint8_t *pb;
 		void *pv;
 	};
 

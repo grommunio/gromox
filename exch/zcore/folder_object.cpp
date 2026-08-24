@@ -147,7 +147,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	void *pvalue;
 	EXT_PUSH ext_push;
 	char temp_buff[1024];
-	static constexpr uint8_t bin_buff[22]{};
+	static constexpr char bin_buff[22]{};
 	static constexpr BINARY fake_bin = {std::size(bin_buff), {deconst(bin_buff)}};
 	
 	switch (proptag) {

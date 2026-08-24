@@ -824,7 +824,7 @@ static ec_error_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
 {
 	if (entryid.cb < 28)
 		return ecInvalidParam;
-	BINARY lower_eid = {entryid.cb - 28, {entryid.pb + 28}};
+	BINARY lower_eid = {entryid.cb - 28, {&entryid.pc[28]}};
 	return zs_openentry(ses, lower_eid, flags, mapi_type, objh);
 }
 

@@ -2067,7 +2067,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 			tmp_byte |= FMS_MODIFIED;
 		if (pmsg->children.pattachments != nullptr)
 			tmp_byte |= FMS_HASATTACH;
-		BINARY tmp_bin = {1, {&tmp_byte}};
+		BINARY tmp_bin = {1, {reinterpret_cast<char *>(&tmp_byte)}};
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGESTATUS,
 		    &tmp_bin) != pack_result::ok)
 			return FALSE;
