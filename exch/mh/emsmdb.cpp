@@ -257,13 +257,15 @@ static constexpr struct cfg_directive mhems_gxcfg_deflt[] = {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Plugin structure definitions
 
-notification_ctx::notification_ctx(notification_ctx &&o) noexcept :
-	pending_status(std::move(o.pending_status)),
-	notification_status(std::move(o.notification_status)),
-	session_guid(std::move(o.session_guid)),
-	pending_time(std::move(o.pending_time)),
-	wall_start_time(std::move(o.wall_start_time))
-{}
+notification_ctx::notification_ctx(notification_ctx &&o) noexcept
+{
+	std::unique_lock lock_other(o.lock);
+	pending_status = std::move(o.pending_status);
+	notification_status = std::move(o.notification_status);
+	session_guid = std::move(o.session_guid);
+	pending_time = std::move(o.pending_time);
+	wall_start_time = std::move(o.wall_start_time);
+}
 
 void notification_ctx::clear()
 {
