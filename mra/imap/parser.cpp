@@ -1148,6 +1148,9 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 				}
 			}
 		} else if (line_length > 7 && 0 == strncmp(last_line, "<<{bin}", 7)) {
+			last_line[line_length] = '\0';
+			[](imap_context &ctx, char *last_line) {
+			auto pcontext = &ctx;
 			/*
 			 * FETCH BINARY (RFC 3516): "file|coff|clen|enc|poff|plen".
 			 * The raw bytes are cut from the eml and CTE-decoded here,
@@ -1155,7 +1158,6 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 			 * literal8 ("~{n}"). The <poff.plen> partial applies to the
 			 * decoded content.
 			 */
-			last_line[line_length] = '\0';
 			char *fld[6]{};
 			fld[0] = last_line + 7;
 			unsigned int nfld = 1;
@@ -1210,7 +1212,7 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 				pcontext->literal_len = ctx.wrdat_content->size();
 				pcontext->current_len = 0;
 				pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "~{%u}\r\n", pcontext->literal_len);
-				len = MAX_LINE_LENGTH - pcontext->write_length;
+				int len = MAX_LINE_LENGTH - pcontext->write_length;
 				if (len > pcontext->literal_len)
 					len = pcontext->literal_len;
 				memcpy(&ctx.write_buff[ctx.write_length], ctx.wrdat_content->data(), len);
@@ -1224,6 +1226,7 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 					pcontext->current_len = 0;
 				}
 			}
+			}(ctx, last_line);
 		} else {
 			pcontext->write_length += line_length;
 			strcpy(&pcontext->write_buff[pcontext->write_length], "\r\n");
