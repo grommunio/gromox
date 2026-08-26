@@ -916,6 +916,9 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 			vmime::make_shared<vmime::stringContentHandler>(std::string(bv->pc, bv->cb)),
 			mtype);
 		vpart->getBody()->setEncoding(vmime::encoding(vmime::encodingTypes::BASE64));
+	} else {
+		/* e.g. ATTACH_BY_REFERENCE; emit the type even without data */
+		vpart->getBody()->setContentType(mtype);
 	}
 	return ecSuccess;
 }
