@@ -1123,8 +1123,15 @@ static void cu_deposit_repr_copy(store_object *pstore,
 	 * trace does not vanish in the degraded case.
 	 */
 	uint32_t perm = 0;
-	if (!exmdb_client->get_folder_perm(mres.maildir.c_str(), fid, actor,
-	    &perm) || !(perm & (frightsOwner | frightsCreate)))
+	auto ok = exmdb_client->get_folder_perm(mres.maildir.c_str(), fid,
+	          actor, &perm) && (perm & (frightsOwner | frightsCreate));
+	if (!ok) {
+		/* Store ownership is not visible in a folder ACL. Cf. the emsmdb twin. */
+		perm = 0;
+		ok = exmdb_client->get_mbox_perm(mres.maildir.c_str(), actor,
+		     &perm) && (perm & frightsGromoxStoreOwner);
+	}
+	if (!ok)
 		mlog(LV_INFO, "I-1197: depositing a copy of %s in <%s>'s Sent "
 			"Items without a confirmed create right for %s",
 			log_id, delegator, actor);

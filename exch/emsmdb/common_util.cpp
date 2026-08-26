@@ -1456,8 +1456,22 @@ static void cu_deposit_repr_copy(logon_object *plogon,
 	 * rather than an error.
 	 */
 	uint32_t perm = 0;
-	if (!exmdb_client->get_folder_perm(mres.maildir.c_str(), fid, actor,
-	    &perm) || !(perm & (frightsOwner | frightsCreate)))
+	auto ok = exmdb_client->get_folder_perm(mres.maildir.c_str(), fid,
+	          actor, &perm) && (perm & (frightsOwner | frightsCreate));
+	if (!ok) {
+		/*
+		 * A store owner holds every right on the folder without an ACE
+		 * naming them on it, and cu_get_folder_permission only reads
+		 * the ACL, so it reports rightsNone for them. get_mbox_perm is
+		 * what derives frightsGromoxStoreOwner (from frightsOwner on
+		 * IPM_SUBTREE, cf. its own comment). Asked for second so that
+		 * the ordinary case with an ACE costs one RPC rather than two.
+		 */
+		perm = 0;
+		ok = exmdb_client->get_mbox_perm(mres.maildir.c_str(), actor,
+		     &perm) && (perm & frightsGromoxStoreOwner);
+	}
+	if (!ok)
 		mlog(LV_INFO, "I-1283: depositing a copy of %s in <%s>'s Sent "
 			"Items without a confirmed create right for %s",
 			log_id, delegator, actor);
