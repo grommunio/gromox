@@ -1,12 +1,6 @@
 
-Known incompatibilities involving third-party software.
-
-
-Noteworthy issues for users
-===========================
-
-* Outlook for Mac simply loses track of subscriptions after a while.
-  `<https://github.com/grommunio/gromox/pull/311#issuecomment-5253085314>`_
+Known incompatibilities involving third-party software, plus gaps in Gromox
+itself that are understood but not yet closed.
 
 
 Noteworthy issues for administrators and packagers
@@ -29,6 +23,21 @@ Noteworthy issues for administrators and packagers
   libgromox_common.so.0, once loaded into a process, stay resident across
   dlclose-dlopen calls. This generally affects programs that use pam_gromox.so.
   These programs (e.g. keycloak) need to be restarted after a Gromox update.
+
+
+Gaps in Gromox
+==============
+
+* The MessageCopyForSentAs and MessageCopyForSendOnBehalf mailbox settings (see
+  gromox-mbop(8)) are evaluated by emsmdb and zcore only. Messages submitted
+  over **EWS** never produce a copy in the represented mailbox, because
+  ``EWSContext::send`` performs no delegation checks.
+
+* Likewise for **deferred sends**. When a client requests delayed delivery,
+  RopSubmitMessage and zs_submitmessage hand the message to the timer daemon
+  and return before the code that would deposit the copy. The deferred path
+  completes through ``submit_command`` and it has not been established whether
+  a copy results.
 
 
 Noteworthy issues for developers

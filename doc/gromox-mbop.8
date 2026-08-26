@@ -57,6 +57,10 @@ freeze: halt all operations on a mailbox
 .IP \(bu 4
 get\-freebusy: test FB schedule lookups
 .IP \(bu 4
+clear\-msgcopy: unset the sent-as/on-behalf copy settings
+.IP \(bu 4
+get\-msgcopy: show whether sent-as/on-behalf copies are retained
+.IP \(bu 4
 get\-photo: retrieve user image from store and print to stdout
 .IP \(bu 4
 get\-websettings, get\-websettings\-persistent, get\-websettings\-recipients:
@@ -73,6 +77,8 @@ purge\-softdelete: remove soft-deleted items from a folder
 recalc\-sizes: recalculate store size
 .IP \(bu 4
 set\-locale: reset UI language and special folders' names
+.IP \(bu 4
+set\-msgcopy: control retention of sent-as/on-behalf copies
 .IP \(bu 4
 set\-photo: read user image from stdin and save to store
 .IP \(bu 4
@@ -419,6 +425,50 @@ To process an entire mailbox and wipe everything older than a few days:
 gromox\-mbop \-u abc@example.com purge\-softdelete \-r / \-t 10d
 .SH recalc\-sizes
 Recalculates the store size.
+.SH get\-msgcopy, set\-msgcopy, clear\-msgcopy
+.SS Synopsis
+\fBget\-msgcopy\fP
+.PP
+\fBset\-msgcopy\fP [\fB\-v\fP] [\fB\-a\fP \fIboolean\fP] [\fB\-b\fP \fIboolean\fP]
+.PP
+\fBclear\-msgcopy\fP [\fB\-abv\fP]
+.SS Description
+When set on a mailbox, these settings make the server file a copy of every
+message sent as, or on behalf of, that mailbox into that mailbox's Sent Items
+folder, so that everyone with access to a shared mailbox can see what was sent
+in its name. The sender keeps their own copy as well. The settings correspond
+to the Exchange mailbox settings MessageCopyForSentAsEnabled and
+MessageCopyForSendOnBehalfEnabled and belong on the \fIrepresented\fP mailbox,
+not on the account doing the sending.
+.PP
+get\-msgcopy prints the state of the settings. A setting that was never set
+behaves as if switched off and is reported as such. clear\-msgcopy returns a
+setting to that state, as opposed to setting it to a recorded 0.
+.PP
+A copy is deposited even if the sender holds no permission on the represented
+mailbox's Sent Items folder, matching Exchange behaviour. A failure to deposit
+one only produces a log warning and never fails the send. Messages submitted
+over EWS, and deferred sends, produce no copy.
+.SS Options
+.TP
+\fB\-a\fP \fIboolean\fP
+Selects the setting governing messages sent \fBas\fP this mailbox. Under
+set\-msgcopy the option takes a value, one of 0/1, no/yes, off/on or
+false/true. Under clear\-msgcopy it takes no value and merely selects the
+setting for removal.
+.TP
+\fB\-b\fP \fIboolean\fP
+As \fB\-a\fP, but for messages sent \fBon behalf of\fP this mailbox.
+.TP
+\fB\-v\fP
+Verbose mode. (Same as global \-v.)
+.SS Examples
+.IP \(bu 4
+gromox\-mbop \-u shared@example.com set\-msgcopy \-a 1
+.IP \(bu 4
+gromox\-mbop \-u shared@example.com get\-msgcopy
+.IP \(bu 4
+gromox\-mbop \-u shared@example.com clear\-msgcopy
 .SH set\-locale
 .SS Synopsis
 \fBset\-locale\fP [\fB\-Tv\fP] \-l\fP \fIid\fP

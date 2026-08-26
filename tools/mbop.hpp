@@ -21,6 +21,7 @@ namespace movemsg { extern int main(int, char **); }
 namespace emptyfld { extern int main(int, char **); }
 namespace foreach_wrap { extern int main(int, char **); }
 namespace getfreebusy { extern int main(int, char **); }
+namespace msgcopy { extern int main(int, char **); }
 namespace purgesoftdel { extern int main(int, char **); }
 namespace set_locale { extern int main(int, char **); }
 namespace sync_midb { extern int main(int, char **); }
@@ -35,6 +36,15 @@ extern const char *g_arg_username, *g_arg_userdir;
 extern unsigned int g_continuous_mode, g_verbose_mode, g_command_num;
 
 }
+
+/*
+ * Resolve a MNID_STRING named property in the store being operated on.
+ * Returns ENOENT when the store does not have the name. With @create set that
+ * can only mean its named-property table is full, since get_named_propids
+ * downgrades b_create silently in that case and reports propid 0 while still
+ * succeeding.
+ */
+extern gromox::errno_t resolvename(const GUID &, const char *name, bool create, uint16_t *out);
 
 extern ec_error_t select_contents_from_folder(eid_t, unsigned int flags, const RESTRICTION *, std::vector<eid_t> &);
 extern ec_error_t select_hierarchy(eid_t, unsigned int flags, std::vector<eid_t> &);
