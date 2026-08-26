@@ -83,7 +83,7 @@ struct EMSMDB_HANDLE2 : public EMSMDB_HANDLE
 
 struct notification_ctx {
 	notification_ctx() = default;
-	notification_ctx(notification_ctx &&o) noexcept;
+	notification_ctx(notification_ctx &&o);
 	void clear();
 
 	uint8_t pending_status = PENDING_STATUS_NONE;
@@ -257,7 +257,7 @@ static constexpr struct cfg_directive mhems_gxcfg_deflt[] = {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Plugin structure definitions
 
-notification_ctx::notification_ctx(notification_ctx &&o) noexcept
+notification_ctx::notification_ctx(notification_ctx &&o)
 {
 	std::unique_lock lock_other(o.lock);
 	pending_status = std::move(o.pending_status);
