@@ -62,6 +62,6 @@ static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) try
 static const PROPERTY_XNAME *ee_get_propname(gromox::propid_t) __attribute__((unused));
 static const PROPERTY_XNAME *ee_get_propname(gromox::propid_t propid)
 {
-	auto i = static_namedprop_map.fwd.find(propid);
+	auto i = static_namedprop_map.fwd.find(PROP_TAG(PT_UNSPECIFIED, propid));
 	return i != static_namedprop_map.fwd.end() ? &i->second : nullptr;
 }
