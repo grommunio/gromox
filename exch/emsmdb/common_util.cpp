@@ -1394,6 +1394,8 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
  * Failures are logged and then dropped. The mail has already left the system
  * by the time this runs, so a missing archival copy must not be turned into a
  * send failure.
+ *
+ * See zcore/common_util.cpp for a twin of this function.
  */
 static void cu_deposit_repr_copy(logon_object *plogon,
     const MESSAGE_CONTENT &ctnt, const char *actor, const char *delegator,
