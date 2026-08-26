@@ -2314,7 +2314,6 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 static constexpr cfg_directive rp_config_defaults[] = {
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	{"ruleproc_debug", "0", CFG_BOOL},
-	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
 
@@ -2330,7 +2329,17 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 		/* e.g. permission error */
 		return false;
 	g_ruleproc_debug = parse_bool(cfg->get_value("ruleproc_debug"));
-	rp_org_name = znul(cfg->get_value("x500_org_name"));
+	auto org = cfg->get_value("x500_org_name");
+	std::shared_ptr<config_file> lcl;
+	if (*znul(org) == '\0') {
+		/* Fallback for old installations */
+		lcl = config_file_initd("exmdb_local.cfg",
+		      get_config_path(), nullptr);
+		if (lcl != nullptr)
+			org = lcl->get_value("x500_org_name");
+	}
+	rp_org_name = *znul(org) != '\0' ? org : "Gromox default";
+	mlog(LV_DEBUG, "ruleproc: x500 org name is \"%s\"", rp_org_name.c_str());
 	auto str = cfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {
