@@ -460,7 +460,7 @@ static std::string tnef_correl_to_vtext(std::string_view sv)
 {
 	if (sv.size() >= 1 && sv.back() == '\0' &&
 	    std::all_of(sv.begin(), std::prev(sv.end()), HX_isprint))
-		return std::string(sv.begin(), sv.end());
+		return std::string(sv.begin(), std::prev(sv.end()));
 	else if (std::all_of(sv.begin(), sv.end(), HX_isprint))
 		return std::string(sv);
 	else
