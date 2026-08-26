@@ -1164,9 +1164,8 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 			return ecError;
 
 		auto bp = vmime::make_shared<vmime::bodyPart>();
-		pmime->getBody()->appendPart(bp);
-		pmime = std::move(bp);
-		pmime->getBody()->setContents(
+		pmixed->getBody()->appendPart(bp);
+		bp->getBody()->setContents(
 			vmime::make_shared<vmime::stringContentHandler>(content),
 			vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_DELIVERY_STATUS));
 	} else if (skel.mail_type == oxcmail_type::mdn) {
@@ -1176,9 +1175,8 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 			return ecError;
 
 		auto bp = vmime::make_shared<vmime::bodyPart>();
-		pmime->getBody()->appendPart(bp);
-		pmime = std::move(bp);
-		pmime->getBody()->setContents(
+		pmixed->getBody()->appendPart(bp);
+		bp->getBody()->setContents(
 			vmime::make_shared<vmime::stringContentHandler>(content),
 			vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_DISPOSITION_NOTIFICATION));
 	}
