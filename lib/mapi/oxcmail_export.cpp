@@ -834,14 +834,16 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 	auto &vhdr = *vpart->getHeader();
 	auto str = atc.proplist.get<const char>(PR_DISPLAY_NAME);
 	if (str != nullptr && *str != '\0')
-		vhdr.getField("Content-Description")->setValue(str);
+		vhdr.getField("Content-Description")->setValue(text8(str));
 	
 	vhdr.ContentDisposition()->setValue(is_inline ?
 		vmime::contentDispositionTypes::INLINE :
 		vmime::contentDispositionTypes::ATTACHMENT);
 	auto &phf = *vmime::dynamicCast<vmime::parameterizedHeaderField>(vhdr.ContentDisposition());
 	if (file_name != nullptr)
-		*phf.getParameter("filename") = vmime::parameter("filename", file_name);
+		/* Plain strings would be interpreted in the current locale */
+		*phf.getParameter("filename") = vmime::parameter("filename",
+			vmime::word(file_name, vmime::charsets::UTF_8));
 	if (auto ctime = atc.proplist.get<uint64_t>(PR_CREATION_TIME);
 	    ctime != nullptr)
 		*phf.getParameter("creation-date") = vmime::parameter("creation-date",
