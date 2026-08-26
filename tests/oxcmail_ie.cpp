@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
+#include <deque>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ical.hpp>
@@ -699,62 +700,555 @@ static int vexport_simple_body()
 #undef HSTR
 }
 
-static int vexport_image()
+static attachment_content *ve_new_attachment(MESSAGE_CONTENT *mct)
 {
-	printf("== vexport_image ==\n");
+	if (mct->children.pattachments == nullptr)
+		mct->children.pattachments = attachment_list_init();
+	auto atx = attachment_content_init();
+	if (atx != nullptr)
+		mct->children.pattachments->append_internal(atx);
+	return atx;
+}
 
+static TPROPVAL_ARRAY *ve_new_rcpt(MESSAGE_CONTENT *mct, uint32_t type,
+    const char *name, const char *smtp)
+{
+	if (mct->children.prcpts == nullptr)
+		mct->set_rcpts_internal(tarray_set_init());
+	auto row = mct->children.prcpts->emplace();
+	if (row == nullptr)
+		return nullptr;
+	row->set(PR_RECIPIENT_TYPE, &type);
+	if (name != nullptr)
+		row->set(PR_DISPLAY_NAME, name);
+	if (smtp != nullptr) {
+		row->set(PR_ADDRTYPE, "SMTP");
+		row->set(PR_SMTP_ADDRESS, smtp);
+	}
+	return row;
+}
+
+static BOOL ve_get_propname(propid_t propid, PROPERTY_NAME **name)
+{
+	auto xn = ee_get_propname(propid);
+	if (xn == nullptr)
+		return false;
+	/* deque for address stability; TNEF keeps the pointers around */
+	static std::deque<PROPERTY_NAME> keep;
+	keep.emplace_back(static_cast<PROPERTY_NAME>(*xn));
+	*name = &keep.back();
+	return TRUE;
+}
+
+/* Undo quoted-printable soft line breaks so substring checks are stable */
+static std::string ve_qp_unwrap(std::string s)
+{
+	size_t pos;
+	while ((pos = s.find("=\r\n")) != std::string::npos)
+		s.erase(pos, 3);
+	return s;
+}
+
+static oxcmail_converter ve_converter()
+{
 	oxcmail_converter cvt;
 	cvt.alloc = g_alloc;
 	cvt.get_propids = ee_get_propids;
+	cvt.get_propname = ve_get_propname;
+	return cvt;
+}
 
+static int vexport_image()
+{
+	auto cvt = ve_converter();
 	message_content_ptr mct(message_content_init());
-	auto atxlist = mct->children.pattachments = attachment_list_init();
-	auto atx = attachment_content_init();
-	atxlist->append_internal(atx);
+	auto atx = ve_new_attachment(mct.get());
 	const BINARY almost_empty = {1, deconst(" ")};
 	uint32_t method = ATTACH_BY_VALUE;
 	atx->proplist.set(PR_ATTACH_METHOD, &method);
 	atx->proplist.set(PR_ATTACH_DATA_BIN, &almost_empty);
-	/*
-	 * aaaaaagh not enough properties!? It seems load_mime_skeleton() seems
-	 * to not make enough sense of the structure yet, causing the 'mime_skeleton'
-	 * object in oxcmail_export.cpp:do_export to contain not the right information
-	 * for do_export to produce the MULTIPART_MIXED container needed by
-	 * oxcmail_export.cpp:export_attachments...
-	 */
-	
 
-	/*
-	 * Old: MAIL <=> lib/email/mail.cpp <=> lib/mapi/oxcmail.cpp:do_export
-	 * New: vmime::message <=> libvmime/libwmime <=> lib/mapi/oxcmail_export..cpp:do_export
-	 *
-	 * Run the old exporter to show that it too fails. Which is expected;
-	 * the vmime exporter is just an API rewrite (so far).
-	 * Don't bother fixing MAIL.
-	 */
-	{
-		MAIL imail;
-		auto err = cvt.mapi_to_inet(*mct, imail);
-		if (err != ecSuccess)
-			printf("MAIL class failed too! ...\n");
-	}
+	/* Attachment-only message: still a multipart/mixed container */
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/mixed") != nullptr);
+	assert(strstr(ostr.c_str(), "X-MS-Has-Attach: yes") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Disposition: attachment") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Transfer-Encoding: base64") != nullptr);
+	assert(strstr(ostr.c_str(), "\r\nIA==") != nullptr);
+	/* No charset parameter on binary content */
+	assert(strstr(ostr.c_str(), "Content-Type: application/octet-stream\r\n") != nullptr);
+	/* The body-less first part is a proper empty text/plain */
+	assert(strstr(ostr.c_str(), "Content-Type: text/plain") != nullptr);
+
+	/* Same with bodies present */
+	auto &props = mct->proplist;
+	props.set(PR_BODY, "bodyline");
+	const BINARY bin_html = {12, {deconst("<p>etext</p>")}};
+	props.set(PR_HTML, &bin_html);
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/mixed") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/alternative") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: application/octet-stream") != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_inline_image()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_BODY, "see image");
+	const BINARY bin_html = {26, {deconst("<img src=\"cid:img1@ex\">   ")}};
+	props.set(PR_HTML, &bin_html);
+
+	auto atx = ve_new_attachment(mct.get());
+	const BINARY pngish = {4, {deconst("\x89PNG")}};
+	uint32_t method = ATTACH_BY_VALUE, flags = ATT_MHTML_REF;
+	atx->proplist.set(PR_ATTACH_METHOD, &method);
+	atx->proplist.set(PR_ATTACH_DATA_BIN, &pngish);
+	atx->proplist.set(PR_ATTACH_FLAGS, &flags);
+	atx->proplist.set(PR_ATTACH_CONTENT_ID, "img1@ex");
+	atx->proplist.set(PR_ATTACH_MIME_TAG, "image/png");
 
 	auto vmsg = vmime::make_shared<vmime::message>();
 	auto err = cvt.mapi_to_inet(*mct, vmsg);
-	if (err == ecSuccess) {
-		auto ostr = vmsg->generate();
-		printf("ok:: %s\n", ostr.c_str());
-	}
-
-	auto &props = mct->proplist;
-	props.set(PR_BODY, "");
-	BINARY empty{};
-	props.set(PR_HTML, &empty);
-	err = cvt.mapi_to_inet(*mct, vmsg);
-	if (err != ecSuccess)
-		return EXIT_FAILURE;
+	assert(err == ecSuccess);
 	auto ostr = vmsg->generate();
-	printf("%s\n", ostr.c_str());
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/related") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: image/png") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Id: <img1@ex>") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Disposition: inline") != nullptr);
+	/* No plain attachments, so no multipart/mixed level */
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/mixed") == nullptr);
+
+	/* Adding a regular attachment brings in the mixed container, too */
+	auto atx2 = ve_new_attachment(mct.get());
+	const BINARY blob = {3, {deconst("abc")}};
+	atx2->proplist.set(PR_ATTACH_METHOD, &method);
+	atx2->proplist.set(PR_ATTACH_DATA_BIN, &blob);
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/mixed") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/related") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Disposition: attachment") != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_recipients()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_BODY, "x");
+	assert(ve_new_rcpt(mct.get(), MAPI_TO, "Tö Wan", "to@ex.de") != nullptr);
+	assert(ve_new_rcpt(mct.get(), MAPI_TO, nullptr, "to2@ex.de") != nullptr);
+	assert(ve_new_rcpt(mct.get(), MAPI_CC, "Ccpt", "cc@ex.de") != nullptr);
+	assert(ve_new_rcpt(mct.get(), MAPI_BCC, "Bcpt", "bcc@ex.de") != nullptr);
+	props.set(PR_SENDER_NAME, "Sunder");
+	props.set(PR_SENDER_SMTP_ADDRESS, "sender@ex.de");
+	props.set(PR_SENT_REPRESENTING_NAME, "Riprezenting");
+	props.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, "boss@ex.de");
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "To: =?utf-8?B?VMO2?=") != nullptr);
+	assert(strstr(ostr.c_str(), "<to@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "to2@ex.de") != nullptr);
+	assert(strstr(ostr.c_str(), "Cc: \"Ccpt\" <cc@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "Bcc: \"Bcpt\" <bcc@ex.de>") != nullptr);
+	/* Sender and From differ -> both emitted */
+	assert(strstr(ostr.c_str(), "From: \"Riprezenting\" <boss@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "Sender: \"Sunder\" <sender@ex.de>") != nullptr);
+
+	/* Sender == From -> Sender suppressed */
+	props.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, "sender@ex.de");
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Sender: ") == nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_headers()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	static const uint32_t imp_high = 2, sens_conf = 3, scl = 4;
+	props.set(PR_IMPORTANCE, &imp_high);
+	props.set(PR_SENSITIVITY, &sens_conf);
+	props.set(PR_CONTENT_FILTER_SCL, &scl);
+	props.set(PR_AUTO_FORWARDED, &byte_value_one);
+	props.set(PR_INTERNET_MESSAGE_ID, "<self@ex.de>");
+	props.set(PR_IN_REPLY_TO_ID, "<parent@ex.de>");
+	props.set(PR_INTERNET_REFERENCES, "<grandparent@ex.de> <parent@ex.de>");
+	props.set(PR_CONVERSATION_TOPIC, "talk");
+	props.set(PR_LIST_HELP, "<mailto:help@ex.de>");
+	props.set(PR_LIST_SUBSCRIBE, "<mailto:sub@ex.de>");
+	props.set(PR_LIST_UNSUBSCRIBE, "<mailto:unsub@ex.de>");
+	props.set(PR_BODY_CONTENT_ID, "body@ex.de");
+	props.set(PR_BODY_CONTENT_LOCATION, "http://ex.de/b");
+	static const uint32_t ars_all = UINT32_MAX;
+	props.set(PR_AUTO_RESPONSE_SUPPRESS, &ars_all);
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Importance: High") != nullptr);
+	assert(strstr(ostr.c_str(), "Sensitivity: Company-Confidential") != nullptr);
+	assert(strstr(ostr.c_str(), "X-MS-Exchange-Organization-SCL: 4") != nullptr);
+	assert(strstr(ostr.c_str(), "X-MS-Exchange-Organization-AutoForwarded: true") != nullptr);
+	assert(strstr(ostr.c_str(), "Message-Id: <self@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "In-Reply-To: <parent@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "References: <grandparent@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "Thread-Topic: talk") != nullptr);
+	assert(strstr(ostr.c_str(), "List-Help: <mailto:help@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "List-Subscribe: <mailto:sub@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "List-Unsubscribe: <mailto:unsub@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Id: <body@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Location: http://ex.de/b") != nullptr);
+	assert(strstr(ostr.c_str(), "X-Auto-Response-Suppress: ALL") != nullptr);
+
+	static const uint32_t ars_some = 0x2 | 0x10; /* NDR, OOF */
+	props.set(PR_AUTO_RESPONSE_SUPPRESS, &ars_some);
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "X-Auto-Response-Suppress: NDR,OOF") != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_internet_headers()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_BODY, "x");
+	/*
+	 * Transport headers stored as PS_INTERNET_HEADERS named props must be
+	 * re-emitted even for header names vmime has a typed value class for
+	 * (setValue(text) would throw bad_field_value_type at runtime).
+	 */
+	const PROPERTY_NAME pn[] = {
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("X-Funky")},
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Return-Path")},
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Received")},
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	PROPID_ARRAY ids;
+	assert(ee_get_propids(&pna, &ids));
+	props.set(PROP_TAG(PT_UNICODE, ids[0]), "hello");
+	props.set(PROP_TAG(PT_UNICODE, ids[1]), "<bounce@ex.de>");
+	props.set(PROP_TAG(PT_UNICODE, ids[2]), "from a.ex.de by b.ex.de; Mon, 1 Jul 2026 00:00:00 +0000");
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "X-Funky: hello") != nullptr);
+	assert(strstr(ostr.c_str(), "Return-Path: <bounce@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "Received: from a.ex.de") != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_report(const char *msgclass, const char *rpttype,
+    const char *stpart, const char *needle)
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_MESSAGE_CLASS, msgclass);
+	props.set(PR_BODY, "report body");
+	props.set(PR_SENDER_SMTP_ADDRESS, "orig@ex.de");
+	/* keep the test independent of the build host's name resolution */
+	props.set(PidTagReportingMessageTransferAgent, "dns;mta.ex.de");
+	auto rcpt = ve_new_rcpt(mct.get(), MAPI_TO, "Rcpt", "rcpt@ex.de");
+	assert(rcpt != nullptr);
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/report") != nullptr);
+	assert(strstr(ostr.c_str(), rpttype) != nullptr);
+	assert(strstr(ostr.c_str(), stpart) != nullptr);
+	assert(strstr(ostr.c_str(), needle) != nullptr);
+	/* The status part is a sibling of the body part, under the root */
+	auto body = vmsg->getBody();
+	assert(body->getPartCount() == 2);
+	assert(body->getPartAt(1)->getBody()->getContentType().generate().find(stpart + 14) != std::string::npos);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_dsn()
+{
+	return vexport_report("REPORT.IPM.Note.NDR",
+	       "report-type=delivery-status",
+	       "Content-Type: message/delivery-status",
+	       "Reporting-MTA: dns;mta.ex.de");
+}
+
+static int vexport_mdn()
+{
+	return vexport_report("REPORT.IPM.Note.IPNRN",
+	       "report-type=disposition-notification",
+	       "Content-Type: message/disposition-notification",
+	       "Disposition: manual-action/MDN-sent-automatically;displayed");
+}
+
+static int vexport_smime()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME");
+
+	/* No attachment: placeholder text, and no crash */
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = ve_qp_unwrap(vmsg->generate());
+	assert(strstr(ostr.c_str(), "Found 0 attachment objects") != nullptr);
+
+	/* Encrypted blob */
+	auto atx = ve_new_attachment(mct.get());
+	const BINARY blob = {8, {deconst("PKCS#7!!")}};
+	atx->proplist.set(PR_ATTACH_DATA_BIN, &blob);
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: application/pkcs7-mime\r\n") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Transfer-Encoding: base64") != nullptr);
+
+	/* Signed: the stored message is folded into the output */
+	static const char signed_blob[] =
+		"Content-Type: multipart/signed; boundary=\"sig\"; "
+			"protocol=\"application/pkcs7-signature\"\r\n"
+		"\r\n"
+		"--sig\r\n"
+		"Content-Type: text/plain\r\n"
+		"\r\n"
+		"signed text\r\n"
+		"--sig\r\n"
+		"Content-Type: application/pkcs7-signature\r\n"
+		"\r\n"
+		"SIGSIG\r\n"
+		"--sig--\r\n";
+	const BINARY sbin = {strlen(signed_blob), {deconst(signed_blob)}};
+	atx->proplist.set(PR_ATTACH_DATA_BIN, &sbin);
+	props.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned");
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/signed") != nullptr);
+	assert(strstr(ostr.c_str(), "signed text") != nullptr);
+	assert(strstr(ostr.c_str(), "SIGSIG") != nullptr);
+
+	/* Signed, but the blob is not multipart/signed: placeholder */
+	const BINARY nbin = {5, {deconst("hello")}};
+	atx->proplist.set(PR_ATTACH_DATA_BIN, &nbin);
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = ve_qp_unwrap(vmsg->generate());
+	assert(strstr(ostr.c_str(), "not of type multipart/signed") != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_embedded()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	mct->proplist.set(PR_BODY, "outer");
+
+	auto inner = message_content_init();
+	inner->proplist.set(PR_MESSAGE_CLASS, "IPM.Note");
+	inner->proplist.set(PR_SUBJECT, "inner subject");
+	inner->proplist.set(PR_BODY, "inner body");
+	auto atx = ve_new_attachment(mct.get());
+	uint32_t method = ATTACH_EMBEDDED_MSG;
+	atx->proplist.set(PR_ATTACH_METHOD, &method);
+	atx->proplist.set(PR_DISPLAY_NAME, "fwddesc");
+	atx->set_embedded_internal(inner);
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: message/rfc822") != nullptr);
+	assert(strstr(ostr.c_str(), "Subject: inner subject") != nullptr);
+	assert(strstr(ostr.c_str(), "inner body") != nullptr);
+	/* Part headers built before the recursion must survive it */
+	assert(strstr(ostr.c_str(), "Content-Description: fwddesc") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Disposition: attachment") != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_depth_cap()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	mct->proplist.set(PR_BODY, "level0");
+	auto cur = mct.get();
+	for (unsigned int i = 0; i < 9; ++i) {
+		auto inner = message_content_init();
+		inner->proplist.set(PR_MESSAGE_CLASS, "IPM.Note");
+		inner->proplist.set(PR_BODY, "deeper");
+		auto atx = ve_new_attachment(cur);
+		uint32_t method = ATTACH_EMBEDDED_MSG;
+		atx->proplist.set(PR_ATTACH_METHOD, &method);
+		atx->set_embedded_internal(inner);
+		cur = inner;
+	}
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "suppressed upon sending") != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_tnef()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	/* IPM.TaskRequest has no MIME representation -> winmail.dat */
+	props.set(PR_MESSAGE_CLASS, "IPM.TaskRequest");
+	props.set(PR_BODY, "task text");
+	static const char correl[] = "<correl@ex.de>";
+	const BINARY ckey = {std::size(correl), {deconst(correl)}}; /* incl. NUL */
+	props.set(PR_TNEF_CORRELATION_KEY, &ckey);
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/mixed") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: application/ms-tnef") != nullptr);
+	assert(strstr(ostr.c_str(), "name=winmail.dat") != nullptr ||
+	       strstr(ostr.c_str(), "name=\"winmail.dat\"") != nullptr);
+	assert(strstr(ostr.c_str(), "filename=winmail.dat") != nullptr ||
+	       strstr(ostr.c_str(), "filename=\"winmail.dat\"") != nullptr);
+	/* Trailing NUL of the correlation key must not leak into the header */
+	assert(strstr(ostr.c_str(), "X-MS-TNEF-Correlator: <correl@ex.de>\r\n") != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_dataless_attachment()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	mct->proplist.set(PR_BODY, "x");
+	auto atx = ve_new_attachment(mct.get());
+	uint32_t method = ATTACH_BY_REFERENCE;
+	atx->proplist.set(PR_ATTACH_METHOD, &method);
+	atx->proplist.set(PR_ATTACH_MIME_TAG, "application/pdf");
+	atx->proplist.set(PR_ATTACH_LONG_FILENAME, "ref.pdf");
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	/* No content, but the part still says what it would have been */
+	assert(strstr(ostr.c_str(), "Content-Type: application/pdf") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Disposition: attachment; filename=ref.pdf") != nullptr ||
+	       strstr(ostr.c_str(), "filename=ref.pdf") != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_filename_utf8()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	mct->proplist.set(PR_BODY, "x");
+	auto atx = ve_new_attachment(mct.get());
+	const BINARY blob = {3, {deconst("abc")}};
+	uint32_t method = ATTACH_BY_VALUE;
+	atx->proplist.set(PR_ATTACH_METHOD, &method);
+	atx->proplist.set(PR_ATTACH_DATA_BIN, &blob);
+	atx->proplist.set(PR_ATTACH_LONG_FILENAME, "Grüße.txt");
+	atx->proplist.set(PR_DISPLAY_NAME, "Grüße");
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	/* Non-ASCII metadata must be labeled UTF-8, not the process locale */
+	assert(strstr(ostr.c_str(), "utf-8''Gr%C3%BC%C3%9Fe.txt") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Description: =?utf-8?") != nullptr);
+	assert(strstr(ostr.c_str(), "ANSI_X3.4") == nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_body_fallback()
+{
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+
+	/* html_only requested, but only plaintext available */
+	props.set(PR_BODY, "plain only");
+	cvt.body_type = oxcmail_body::html_only;
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: text/plain") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/") == nullptr);
+
+	/* plain_only requested, but only HTML available */
+	props.erase(PR_BODY);
+	const BINARY bin_html = {11, {deconst("<p>htm</p> ")}};
+	props.set(PR_HTML, &bin_html);
+	cvt.body_type = oxcmail_body::plain_only;
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: text/html") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/") == nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_calendar()
+{
+	auto cvt = ve_converter();
+	/* Same appointment shape as ical_export_1, ids via staticnpmap */
+	const PROPERTY_NAME pn[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	PROPID_ARRAY ids;
+	assert(ee_get_propids(&pna, &ids));
+
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	static constexpr uint64_t v_time = 0x1dabd02f773da00;
+	props.set(PR_MESSAGE_CLASS, "IPM.Appointment");
+	props.set(PR_BODY, "appt text");
+	props.set(PR_START_DATE, &v_time);
+	props.set(PR_END_DATE, &v_time);
+	props.set(PROP_TAG(PT_SYSTIME, ids[0]), &v_time);
+	props.set(PROP_TAG(PT_SYSTIME, ids[1]), &v_time);
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "Content-Type: multipart/alternative") != nullptr);
+	assert(strstr(ostr.c_str(), "Content-Type: text/calendar") != nullptr);
+	/* The part must carry the serialized iCal, not just the method */
+	assert(strstr(ostr.c_str(), "BEGIN:VCALENDAR") != nullptr);
+	assert(strstr(ostr.c_str(), "END:VCALENDAR") != nullptr);
 	return EXIT_SUCCESS;
 }
 
@@ -770,12 +1264,29 @@ int main()
 		return EXIT_FAILURE;
 	}
 	int ret = EXIT_SUCCESS;
-	for (auto fct : {excess_attachment, select_parts_1, select_parts_1a,
-	     select_parts_2, select_parts_3, select_parts_4, select_parts_5,
-	     select_parts_6, select_parts_7,
-	     ical_export_1, ical_export_2, hdrparse_1,
-	     vexport_head, vexport_simple_body, vexport_image})
-		if (fct() != EXIT_SUCCESS)
+#define E(f) {#f, f}
+	static constexpr struct {
+		const char *name;
+		int (*fct)();
+	} tests[] = {
+		E(excess_attachment), E(select_parts_1), E(select_parts_1a),
+		E(select_parts_2), E(select_parts_3), E(select_parts_4),
+		E(select_parts_5), E(select_parts_6), E(select_parts_7),
+		E(ical_export_1), E(ical_export_2), E(hdrparse_1),
+		E(vexport_head), E(vexport_simple_body), E(vexport_image),
+		E(vexport_inline_image), E(vexport_recipients),
+		E(vexport_headers), E(vexport_internet_headers),
+		E(vexport_dsn), E(vexport_mdn), E(vexport_smime),
+		E(vexport_embedded), E(vexport_depth_cap), E(vexport_tnef),
+		E(vexport_dataless_attachment),
+		E(vexport_filename_utf8), E(vexport_body_fallback),
+		E(vexport_calendar),
+	};
+#undef E
+	for (const auto &t : tests)
+		if (t.fct() != EXIT_SUCCESS) {
+			printf("FAIL: %s\n", t.name);
 			ret = EXIT_FAILURE;
+		}
 	return ret;
 }
