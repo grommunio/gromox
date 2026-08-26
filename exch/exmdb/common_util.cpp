@@ -28,6 +28,7 @@
 #include <fmt/core.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/evp.h>
@@ -2002,28 +2003,28 @@ static GP_RESULT gp_atxprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		 * parent message_id and the attachment's position, which the
 		 * rewrite preserves.
 		 */
-		uint64_t rk = id;
-		auto stm = gx_sql_prep(db, "SELECT message_id, "
+		uint8_t leadbyte = 0xFF;
+		auto stm = gx_sql_prep(db, "SELECT "
 		           "(SELECT count(*) FROM attachments b WHERE "
 		           "b.message_id=a.message_id AND b.attachment_id<a.attachment_id) "
 		           "FROM attachments a WHERE a.attachment_id=?");
 		if (stm != nullptr) {
 			stm.bind_int64(1, id);
 			if (stm.step() == SQLITE_ROW) {
-				uint64_t mid = stm.col_uint64(0);
-				uint64_t pos = stm.col_uint64(1);
-				rk = (mid << 16) | (pos & 0xffff); /* mid is 48-bit */
+				leadbyte = 0xA2;
+				id = stm.col_uint64(0);
 			}
 		}
 		auto ptmp_bin = cu_alloc<BINARY>();
 		if (ptmp_bin == nullptr)
 			return GP_ERR;
-		ptmp_bin->cb = sizeof(uint64_t);
-		auto v = cu_alloc<uint64_t>();
-		ptmp_bin->pv = v;
-		if (ptmp_bin->pv == nullptr)
+		ptmp_bin->cb = 9;
+		auto v = cu_alloc<char>(ptmp_bin->cb);
+		ptmp_bin->pc = v;
+		if (ptmp_bin->pc == nullptr)
 			return GP_ERR;
-		*v = rk;
+		v[0] = leadbyte;
+		cpu_to_be64p(&v[1], id);
 		pv.pvalue = ptmp_bin;
 		return GP_ADV;
 	}
