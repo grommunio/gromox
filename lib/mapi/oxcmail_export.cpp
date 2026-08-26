@@ -891,9 +891,24 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 		return ecSuccess;
 	}
 
-	if (atc.pembedded != nullptr)
-		return do_export(*atc.pembedded, skel.mail_type == oxcmail_type::tnef,
-		       vpart, mail_depth + 1);
+	if (atc.pembedded != nullptr) {
+		/*
+		 * Exporting into @vpart directly would splice the embedded
+		 * message's headers into the attachment part (and do_export
+		 * starts by clearing the part, throwing away the disposition
+		 * fields built above). Render it separately and encapsulate.
+		 */
+		auto emb = vmime::make_shared<vmime::message>();
+		auto err = do_export(*atc.pembedded,
+		           skel.mail_type == oxcmail_type::tnef, emb,
+		           mail_depth + 1);
+		if (err != ecSuccess)
+			return err;
+		vpart->getBody()->setContents(
+			vmime::make_shared<vmime::stringContentHandler>(emb->generate()),
+			vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_RFC822));
+		return ecSuccess;
+	}
 
 	auto bv = atc.proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
 	if (bv != nullptr) {
