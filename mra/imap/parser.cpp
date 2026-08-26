@@ -992,6 +992,88 @@ static tproc_status ps_end_processing(imap_context *pcontext,
 	return tproc_status::close;
 }
 
+static void wrdat_bin(imap_context &ctx, char *last_line)
+{
+	/*
+	 * FETCH BINARY (RFC 3516): "file|coff|clen|enc|poff|plen". The raw
+	 * bytes are cut from the eml and CTE-decoded here, one marker at a
+	 * time, so no decoded blob outlives its own literal8 ("~{n}"). The
+	 * <poff.plen> partial applies to the decoded content.
+	 */
+	char *fld[6]{};
+	fld[0] = last_line + 7;
+	unsigned int nfld = 1;
+	for (auto p = fld[0]; *p != '\0' && nfld < 6; ++p) {
+		if (*p != '|')
+			continue;
+		*p = '\0';
+		fld[nfld++] = p + 1;
+	}
+	ctx.wrdat_content = nullptr;
+	ctx.wrdat_backing.reset();
+
+	bool ok = false;
+	std::string dec;
+	if (nfld == 6) try {
+		size_t coff = strtoul(fld[1], nullptr, 0);
+		size_t clen = strtoul(fld[2], nullptr, 0);
+		size_t poff = strtoul(fld[4], nullptr, 0);
+		auto plen = strtol(fld[5], nullptr, 0);
+		auto eml_path = ctx.maildir + "/eml/"s + fld[0];
+		auto raw = ctx.io_actor.get_substr(eml_path, coff, clen);
+
+		if (!raw.has_value()) {
+			std::string content;
+			imrpc_build_env();
+			auto cl_0 = HX::make_scope_exit(imrpc_free_env);
+			if (exmdb_client->imapfile_read(ctx.maildir,
+			    "eml", fld[0], &content)) {
+				ctx.io_actor.place(eml_path, std::move(content), true);
+				raw = ctx.io_actor.get_substr(eml_path, coff, clen);
+			}
+		}
+		if (raw.has_value())
+			ok = imap_binary_decode(*fld[3], *raw, dec);
+		if (ok) {
+			if (poff >= dec.size())
+				dec.clear();
+			else if (plen >= 0 && static_cast<size_t>(plen) < dec.size() - poff)
+				dec = dec.substr(poff, plen);
+			else if (poff > 0)
+				dec = dec.substr(poff);
+		}
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-1470: ENOMEM");
+		ok = false;
+	}
+
+	if (!ok) {
+		strcpy(&ctx.write_buff[ctx.write_length], "NIL");
+		ctx.write_length += 3;
+		return;
+	}
+
+	ctx.wrdat_backing.emplace(std::move(dec));
+	ctx.wrdat_content = &*ctx.wrdat_backing;
+	ctx.wrdat_offset = 0;
+	ctx.literal_len = ctx.wrdat_content->size();
+	ctx.current_len = 0;
+	ctx.write_length += sprintf(&ctx.write_buff[ctx.write_length], "~{%u}\r\n", ctx.literal_len);
+	int len = MAX_LINE_LENGTH - ctx.write_length;
+	if (len > ctx.literal_len)
+		len = ctx.literal_len;
+	memcpy(&ctx.write_buff[ctx.write_length], ctx.wrdat_content->data(), len);
+	ctx.wrdat_offset += len;
+	ctx.current_len += len;
+	ctx.write_length += len;
+	if (ctx.literal_len == len) {
+		ctx.wrdat_content = nullptr;
+		ctx.wrdat_backing.reset();
+		ctx.literal_len = 0;
+		ctx.current_len = 0;
+	}
+}
+
 static int imap_parser_wrdat_retrieve(imap_context &ctx)
 {
 	auto pcontext = &ctx;
@@ -1147,6 +1229,9 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 					}
 				}
 			}
+		} else if (line_length > 7 && 0 == strncmp(last_line, "<<{bin}", 7)) {
+			last_line[line_length] = '\0';
+			wrdat_bin(ctx, last_line);
 		} else {
 			pcontext->write_length += line_length;
 			strcpy(&pcontext->write_buff[pcontext->write_length], "\r\n");

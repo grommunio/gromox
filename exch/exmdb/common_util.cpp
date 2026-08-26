@@ -1995,6 +1995,26 @@ static GP_RESULT gp_atxprop(proptag_t tag, TAGGED_PROPVAL &pv,
 {
 	switch (tag) {
 	case PR_RECORD_KEY: {
+		/*
+		 * Saving a message re-inserts all its attachment rows, so the
+		 * rowid @id is not stable across saves and cannot serve as a
+		 * lifetime-stable record key. Derive it from the (stable)
+		 * parent message_id and the attachment's position, which the
+		 * rewrite preserves.
+		 */
+		uint64_t rk = id;
+		auto stm = gx_sql_prep(db, "SELECT message_id, "
+		           "(SELECT count(*) FROM attachments b WHERE "
+		           "b.message_id=a.message_id AND b.attachment_id<a.attachment_id) "
+		           "FROM attachments a WHERE a.attachment_id=?");
+		if (stm != nullptr) {
+			stm.bind_int64(1, id);
+			if (stm.step() == SQLITE_ROW) {
+				uint64_t mid = stm.col_uint64(0);
+				uint64_t pos = stm.col_uint64(1);
+				rk = (mid << 16) | (pos & 0xffff); /* mid is 48-bit */
+			}
+		}
 		auto ptmp_bin = cu_alloc<BINARY>();
 		if (ptmp_bin == nullptr)
 			return GP_ERR;
@@ -2003,7 +2023,7 @@ static GP_RESULT gp_atxprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		ptmp_bin->pv = v;
 		if (ptmp_bin->pv == nullptr)
 			return GP_ERR;
-		*v = id;
+		*v = rk;
 		pv.pvalue = ptmp_bin;
 		return GP_ADV;
 	}

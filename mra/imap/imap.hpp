@@ -222,6 +222,7 @@ extern int icp_uid_store(std::span<std::string> argv, imap_context &);
 extern int icp_uid_copy(std::span<std::string> argv, imap_context &);
 extern int icp_uid_expunge(std::span<std::string> argv, imap_context &);
 extern int icp_dval(const char *tag, imap_context &, unsigned int res);
+extern bool imap_binary_decode(char enc, std::string_view raw, std::string &out);
 
 extern char *capability_list(char *, size_t, imap_context *);
 

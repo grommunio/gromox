@@ -3,14 +3,22 @@ Schedule
 It's ready when it's ready.
 
 
-Development 3.10.10
-===================
+Snapshot 3.10.26
+================
 
 Enhancements:
 
+* imap: implement FETCH BINARY / BINARY.SIZE
 * lda: out-of-office replies now derive a subject from the incoming message
   when the mailbox has none stored, e.g. when OOF is set over EWS.
   The new config directive gromox.cfg:``autoreply_subject_prefix`` was added.
+
+Fixes:
+
+* The rule processor executes Extended Rules' OP_MOVE/OP_COPY now and matches
+  string restrictions across PT_STRING8↔PT_UNICODE.
+* During MAPI-to-iCalender conversions, TZID is now omitted when exporting
+  timeless DATE values.
 
 
 Gromox 3.10 (2026-08-22)
