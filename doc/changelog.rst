@@ -3,7 +3,7 @@ Schedule
 It's ready when it's ready.
 
 
-Snapshot 3.10.26
+Snapshot 3.10.38
 ================
 
 Enhancements:
@@ -12,6 +12,13 @@ Enhancements:
 * lda: out-of-office replies now derive a subject from the incoming message
   when the mailbox has none stored, e.g. when OOF is set over EWS.
   The new config directive gromox.cfg:``autoreply_subject_prefix`` was added.
+* emsmdb, zcore: new per-mailbox settings MessageCopyForSentAs and
+  MessageCopyForSendOnBehalf. When enabled on a mailbox, messages sent as, or
+  on behalf of, that mailbox are also filed into that mailbox's Sent Items
+  folder, so that a shared mailbox retains a record of what was sent in its
+  name. A third setting makes that copy the only one, discarding the sender's
+  own. Not honored by EWS yet.
+* mbop: new "get-msgcopy", "set-msgcopy" and "clear-msgcopy" commands
 
 Fixes:
 
