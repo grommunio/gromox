@@ -1051,9 +1051,11 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 	if (par.exit /* && !(rule.state & ST_ONLY_WHEN_OOF) */)
 		return ecSuccess;
 	if (rule.cond != nullptr) {
+		auto matched = rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond);
 		if (g_ruleproc_debug)
-			mlog(LV_DEBUG, "Rule_Condition %s", rule.cond->repr().c_str());
-		if (!rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
+			mlog(LV_DEBUG, "Rule_Condition %s => %smatch",
+				rule.cond->repr().c_str(), matched ? "" : "no ");
+		if (!matched)
 			return ecSuccess;
 	}
 	if (rule.state & ST_EXIT_LEVEL)
@@ -1112,9 +1114,14 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 {
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
-	if (rule.cond != nullptr &&
-	    !rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
-		return ecSuccess;
+	if (rule.cond != nullptr) {
+		auto matched = rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond);
+		if (g_ruleproc_debug)
+			mlog(LV_DEBUG, "Rule_Condition %s => %smatch",
+				rule.cond->repr().c_str(), matched ? "" : "no ");
+		if (!matched)
+			return ecSuccess;
+	}
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
 	for (size_t i = 0; i < rule.xact.count; ++i) {
