@@ -871,9 +871,7 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 		if (vc_cvt.mapi_to_vcard(*atc.pembedded, vcard_obj)) {
 			std::string vcout;
 			if (vcard_obj.serialize(vcout)) {
-				vpart->getBody()->setContents(
-					vmime::make_shared<vmime::stringContentHandler>(std::move(vcout)),
-					mtype, vmime::charsets::UTF_8);
+				omv_set_bodytext(*vpart, vcout, mtype);
 				auto &chf = *vmime::dynamicCast<vmime::contentTypeField>(vhdr.ContentType());
 				*chf.getParameter("profile") = vmime::parameter("profile", "vCard");
 				return ecSuccess;
