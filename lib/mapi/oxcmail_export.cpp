@@ -1130,6 +1130,12 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 
 	if (pplain != nullptr && skel.pplain != nullptr)
 		omv_set_bodytext(*pplain, skel.pplain, mt_plain);
+	else if (pplain != nullptr && pplain != vmsg)
+		/*
+		 * Body-less message inside a container: fill the part
+		 * so it is not emitted with an empty header block.
+		 */
+		omv_set_bodytext(*pplain, "", mt_plain);
 
 	if (skel.mail_type == oxcmail_type::tnef) {
 		auto bp = vmime::make_shared<vmime::bodyPart>();
