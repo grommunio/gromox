@@ -4,6 +4,7 @@
 #include <cstring>
 #include <ctime>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include <gromox/common_types.hpp>
@@ -109,6 +110,7 @@ struct GX_EXPORT xpg_locale {
 extern GX_EXPORT void *zalloc(size_t);
 extern GX_EXPORT uint32_t rand();
 extern GX_EXPORT bool parse_bool(const char *s);
+extern GX_EXPORT std::optional<bool> parse_bool_strict(const char *s);
 extern GX_EXPORT std::string bin2cstr(const void *, size_t);
 extern GX_EXPORT std::string bin2txt(const void *, size_t);
 extern GX_EXPORT std::string bin2hex(const void *, size_t);

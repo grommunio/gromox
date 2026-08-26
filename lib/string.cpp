@@ -395,6 +395,26 @@ bool parse_bool(const char *s)
 }
 
 /**
+ * Like parse_bool, but an unrecognized word yields no value instead of "true".
+ * For settings where acting on a typo has consequences of its own, so that the
+ * caller can reject the input rather than guess at it.
+ */
+std::optional<bool> parse_bool_strict(const char *s)
+{
+	if (s == nullptr)
+		return std::nullopt;
+	static constexpr const char *yes[] = {"1", "yes", "on", "true"};
+	static constexpr const char *no[] = {"0", "no", "off", "false"};
+	for (auto v : yes)
+		if (strcasecmp(s, v) == 0)
+			return true;
+	for (auto v : no)
+		if (strcasecmp(s, v) == 0)
+			return false;
+	return std::nullopt;
+}
+
+/**
  * Use of octal representation: it is shortest (\377 is just as long as \xff,
  * but \0 is shorter than \x00).
  *
