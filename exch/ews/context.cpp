@@ -3654,6 +3654,17 @@ uint64_t EWSContext::resolveOrCreateSpecialFolder(const std::string &dir,
 
 	sShape shape;
 	shape.write(TAGGED_PROPVAL{PidTagParentFolderId, &parentFolderId});
+	/*
+	 * jengelh, PR review 2026-08-25: "If there is a static FID, I would
+	 * want that folder to always exist." Without this, the presence
+	 * check above only ever reads legacyFolderId - creation always let
+	 * exmdb auto-allocate a fresh, unrelated ID instead, so the
+	 * reservation in mapi_types.hpp was honored on lookup but never on
+	 * creation. Target it explicitly so a freshly-provisioned mailbox's
+	 * copy of these folders actually lands at the reserved ID.
+	 */
+	if (legacyFolderId != 0)
+		shape.write(TAGGED_PROPVAL{PidTagFolderId, &legacyFolderId});
 	shape.write(TAGGED_PROPVAL{PR_FOLDER_TYPE, &type});
 	shape.write(TAGGED_PROPVAL{PR_CONTAINER_CLASS, deconst(fclass)});
 	shape.write(TAGGED_PROPVAL{PR_DISPLAY_NAME, deconst(dispName)});
