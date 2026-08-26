@@ -349,10 +349,16 @@ Instance key
 	* MSEMS provider message store content table row instance keys are 20
 	  bytes long: 8-byte FID/objid (replid included) + 8-byte MID/objid
 	  (replid included) + 4-byte instance number.
+	* MSEMS provider message store attachment table row instance keys are 8
+	  bytes long: 8-byte AID/objid (replid included).
+	* MSEMS provider message store recipient table row instance keys are 4
+	  bytes long: 4-byte recipient index.
 	* MSEMS provider address book table row instance keys can be 8 bytes long:
 	  4-byte AB provider counter + 4-byte MINID.
 	* CONTAB provider address book table row instance keys can vary; either
 	  they are 8 bytes or 4 + muidContabDLL entryid.
+	* MSPST provider message store table instance keys are 4 bytes long:
+	  NID/objid
 
 External Identifier, XID
 	The aggregation of a 128-bit "namespace GUID" plus a storage-specific
