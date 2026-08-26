@@ -704,7 +704,14 @@ static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
 		    strcasecmp(ppropname->pname, "Content-Type") == 0)
 			continue;
 		auto str = static_cast<const char *>(mct.proplist.ppropval[i].pvalue);
-		vhead.getField(ppropname->pname)->setValue(text8(str));
+		/*
+		 * Do not use text8 here: for header names vmime has a
+		 * registered value class for (Received, Return-Path, ...),
+		 * setValue(text) throws bad_field_value_type at runtime. The
+		 * string overload parses into whatever type the field wants,
+		 * like the MAIL exporter's untyped set_field did.
+		 */
+		vhead.getField(ppropname->pname)->setValue(std::string(str));
 	}
 	return ecSuccess;
 }
