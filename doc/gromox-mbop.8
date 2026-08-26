@@ -430,8 +430,9 @@ Recalculates the store size.
 \fBget\-msgcopy\fP
 .PP
 \fBset\-msgcopy\fP [\fB\-v\fP] [\fB\-a\fP \fIboolean\fP] [\fB\-b\fP \fIboolean\fP]
+[\fB\-x\fP \fIboolean\fP]
 .PP
-\fBclear\-msgcopy\fP [\fB\-abv\fP]
+\fBclear\-msgcopy\fP [\fB\-abvx\fP]
 .SS Description
 When set on a mailbox, these settings make the server file a copy of every
 message sent as, or on behalf of, that mailbox into that mailbox's Sent Items
@@ -444,6 +445,17 @@ not on the account doing the sending.
 get\-msgcopy prints the state of the settings. A setting that was never set
 behaves as if switched off and is reported as such. clear\-msgcopy returns a
 setting to that state, as opposed to setting it to a recorded 0.
+.PP
+The \fBexclusive\fP setting says what happens to the sender's own copy once one
+of the other two has placed a copy here. With it set, the submitted message is
+discarded instead of being filed anywhere in the sender's own mailbox, so the
+represented mailbox holds the only copy. A folder the client asked for by
+\fBPR_TARGET_ENTRYID\fP is overridden, since honouring it would put a copy back
+into the mailbox this setting exists to keep clear. It has no effect on its
+own, and none unless this mailbox's copy was written, so a mailbox that is over
+quota or unreachable cannot cause a sent message to be filed nowhere. This is
+the outcome Exchange produces from the client setting DelegateSentItemsStyle=1
+together with MessageCopyForSentAsEnabled=0.
 .PP
 A copy is deposited even if the sender holds no permission on the represented
 mailbox's Sent Items folder, matching Exchange behaviour. A failure to deposit
@@ -460,11 +472,16 @@ setting for removal.
 \fB\-b\fP \fIboolean\fP
 As \fB\-a\fP, but for messages sent \fBon behalf of\fP this mailbox.
 .TP
+\fB\-x\fP \fIboolean\fP
+As \fB\-a\fP, but for the \fBexclusive\fP setting.
+.TP
 \fB\-v\fP
 Verbose mode. (Same as global \-v.)
 .SS Examples
 .IP \(bu 4
 gromox\-mbop \-u shared@example.com set\-msgcopy \-a 1
+.IP \(bu 4
+gromox\-mbop \-u shared@example.com set\-msgcopy \-a 1 \-x 1
 .IP \(bu 4
 gromox\-mbop \-u shared@example.com get\-msgcopy
 .IP \(bu 4

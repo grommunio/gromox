@@ -1395,9 +1395,14 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
  * by the time this runs, so a missing archival copy must not be turned into a
  * send failure.
  *
+ * Returns whether the caller is to discard the sender's own copy, which the
+ * represented mailbox can ask for with msgcopy_exclusive. True is only ever
+ * returned once this mailbox's copy is safely written, so that a failure here
+ * cannot leave the message filed nowhere at all.
+ *
  * See zcore/common_util.cpp for a twin of this function.
  */
-static void cu_deposit_repr_copy(logon_object *plogon,
+static bool cu_deposit_repr_copy(logon_object *plogon,
     const MESSAGE_CONTENT &ctnt, const char *actor, const char *delegator,
     repr_grant grant, const char *log_id) try
 {
@@ -1407,47 +1412,59 @@ static void cu_deposit_repr_copy(logon_object *plogon,
 	 * unauthorized third party can appear as @delegator here.
 	 */
 	if (grant < repr_grant::send_on_behalf)
-		return;
+		return false;
 	/* An ordinary send is modelled as representing oneself */
 	if (strcasecmp(delegator, actor) == 0)
-		return;
+		return false;
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(delegator, WANTPRIV_METAONLY, mres) != 0) {
 		mlog(LV_WARN, "W-1273: <%s> cannot be resolved, so no copy of "
 			"%s was deposited", delegator, log_id);
-		return;
+		return false;
 	}
 	auto dir = plogon->get_dir();
 	/* Ignore user's own aliases */
 	if (strcasecmp(mres.username.c_str(), actor) == 0 || mres.maildir == dir)
-		return;
-	const PROPERTY_NAME xn = {MNID_STRING, PSETID_Gromox, 0,
-		deconst(grant >= repr_grant::send_as ? msgcopy_np_sentas :
-		msgcopy_np_sendonbehalf)};
-	propid_t propid = 0;
+		return false;
+	const PROPERTY_NAME xn[] = {
+		{MNID_STRING, PSETID_Gromox, 0,
+			deconst(grant >= repr_grant::send_as ? msgcopy_np_sentas :
+			msgcopy_np_sendonbehalf)},
+		{MNID_STRING, PSETID_Gromox, 0, deconst(msgcopy_np_exclusive)},
+	};
+	static constexpr uint16_t np_count = std::size(xn);
+	const PROPNAME_ARRAY name_req = {np_count, deconst(xn)};
+	PROPID_ARRAY name_rsp;
 	/* Avoid autocreation of the NP in the delegate if it is absent. */
-	if (!exmdb_client->get_named_propid(mres.maildir.c_str(), false, &xn,
-	    &propid)) {
+	if (!exmdb_client->get_named_propids(mres.maildir.c_str(), FALSE,
+	    &name_req, &name_rsp) || name_rsp.size() != name_req.size()) {
 		mlog(LV_WARN, "W-1285: cannot resolve the copy settings of <%s>, "
 			"so no copy of %s was deposited", delegator, log_id);
-		return;
+		return false;
 	}
-	if (propid == 0)
+	if (name_rsp[0] == 0)
 		/* Property not present nor created. (Not an error.) */
-		return;
-	auto tag = PROP_TAG(PT_BOOLEAN, propid);
-	const proptag_t tag_buff[] = {tag};
+		return false;
+	auto tag = PROP_TAG(PT_BOOLEAN, name_rsp[0]);
+	proptag_t xtag = name_rsp[1] == 0 ? 0 : PROP_TAG(PT_BOOLEAN, name_rsp[1]);
+	proptag_t tag_buff[np_count];
+	size_t ntags = 0;
+	tag_buff[ntags++] = tag;
+	if (xtag != 0)
+		tag_buff[ntags++] = xtag;
 	TPROPVAL_ARRAY props{};
 	if (!exmdb_client->get_store_properties(mres.maildir.c_str(), CP_UTF8,
-	    proptag_cspan{tag_buff}, &props)) {
+	    proptag_cspan{tag_buff, ntags}, &props)) {
 		/* c. Can't tell. */
-		mlog(LV_WARN, "W-1284: cannot read the <%s>'s delegation copy settings, "
-			"so no copy of %s was deposited", delegator, log_id);
-		return;
+		mlog(LV_WARN, "W-1284: cannot read the copy settings of <%s>, so "
+			"no copy of %s was deposited", delegator, log_id);
+		return false;
 	}
 	auto flag = props.get<const uint8_t>(tag);
 	if (flag == nullptr || *flag == 0)
-		return;
+		return false;
+	auto xflag = xtag == 0 ? nullptr : props.get<const uint8_t>(xtag);
+	bool sole = xflag != nullptr && *xflag != 0;
 
 	auto fid = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 	/*
@@ -1489,13 +1506,15 @@ static void cu_deposit_repr_copy(logon_object *plogon,
 		if (exmdb_client->write_message(mres.maildir.c_str(), CP_UTF8,
 		    fid, cpy.get(), digest, &outmid, &outcn, &e_result) &&
 		    e_result == ecSuccess)
-			return;
+			return sole;
 		err = e_result;
 	}
 	mlog(LV_WARN, "W-1274: no copy of %s deposited in <%s>'s Sent Items: %s",
 		log_id, delegator, mapi_strerror(err));
+	return false;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 /**
@@ -1616,8 +1635,21 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	 * affected by what the client asked us to do with the sender's own
 	 * copy.
 	 */
-	cu_deposit_repr_copy(plogon, *pmsgctnt, actor, delegator, grant,
-		log_id.c_str());
+	if (cu_deposit_repr_copy(plogon, *pmsgctnt, actor, delegator, grant,
+	    log_id.c_str())) {
+		/*
+		 * The represented mailbox asked to hold the only copy and now
+		 * does, so the submitted message goes away rather than being
+		 * filed. Ahead of PR_TARGET_ENTRYID on purpose, since a client
+		 * which files its own copy into the shared mailbox is the case
+		 * this setting exists for, and honouring the target would put a
+		 * second copy back. Deletion without clear_submit, as in the
+		 * PR_DELETE_AFTER_SUBMIT branch below.
+		 */
+		exmdb_client->delete_message(dir, plogon->account_id, cpid,
+			parent_id, message_id, TRUE, &b_result);
+		return ecSuccess;
+	}
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
 		if (!cu_entryid_to_mid(*plogon, ptarget, &folder_id, &new_id)) {

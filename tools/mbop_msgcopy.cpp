@@ -35,6 +35,7 @@ struct flagdesc {
 static constexpr flagdesc g_flags[] = {
 	{msgcopy_np_sentas, "sent-as", 'a'},
 	{msgcopy_np_sendonbehalf, "send-on-behalf", 'b'},
+	{msgcopy_np_exclusive, "exclusive", 'x'},
 };
 
 /**
@@ -70,6 +71,8 @@ static constexpr HXoption g_set_options[] = {
 		"Retain a copy when sending as this mailbox", "BOOL"},
 	{{}, 'b', HXTYPE_STRING, {}, {}, {}, 0,
 		"Retain a copy when sending on behalf of this mailbox", "BOOL"},
+	{{}, 'x', HXTYPE_STRING, {}, {}, {}, 0,
+		"Let this mailbox's copy be the only one", "BOOL"},
 	{nullptr, 'v', HXTYPE_NONE, &global::g_verbose_mode, {}, {}, 0, "Verbose mode"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -78,6 +81,7 @@ static constexpr HXoption g_set_options[] = {
 static constexpr HXoption g_clear_options[] = {
 	{{}, 'a', HXTYPE_NONE, {}, {}, {}, 0, "Clear only the sent-as setting"},
 	{{}, 'b', HXTYPE_NONE, {}, {}, {}, 0, "Clear only the on-behalf setting"},
+	{{}, 'x', HXTYPE_NONE, {}, {}, {}, 0, "Clear only the exclusive setting"},
 	{nullptr, 'v', HXTYPE_NONE, &global::g_verbose_mode, {}, {}, 0, "Verbose mode"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -142,7 +146,8 @@ static int do_set(int argc, char **argv)
 				arg[k] = result.oarg[i];
 	if (std::none_of(std::begin(arg), std::end(arg),
 	    [](const char *s) { return s != nullptr; })) {
-		mbop_fprintf(stderr, "You need to specify the -a and/or -b option\n");
+		mbop_fprintf(stderr, "You need to specify at least one of the "
+			"-a, -b and -x options\n");
 		return EXIT_PARAM;
 	}
 

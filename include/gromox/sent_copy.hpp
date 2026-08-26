@@ -9,8 +9,23 @@
 
 namespace gromox {
 
-static constexpr char msgcopy_np_sentas[] = "msgcopy_sentas"; /* to be used with PT_BOOLEAN */
-static constexpr char msgcopy_np_sendonbehalf[] = "msgcopy_sendonbehalf"; /* PT_BOOLEAN */
+/*
+ * The two per-mailbox settings which decide whether a message sent as, or on
+ * behalf of, a mailbox is filed into that mailbox's Sent Items, and whether
+ * that copy is then the only one.
+ *
+ * Spelled out here rather than at each use site because three subsystems read
+ * them, and a typo in one would silently address a different property instead
+ * of failing.
+ *
+ * msgcopy_exclusive has no effect of its own. It only says what happens to the
+ * sender's copy once one of the other two has produced a copy here, which is
+ * how Exchange's DelegateSentItemsStyle=1 plus MessageCopyForSentAsEnabled=0
+ * combination comes out.
+ */
+static constexpr char msgcopy_np_sentas[] = "msgcopy_sentas";
+static constexpr char msgcopy_np_sendonbehalf[] = "msgcopy_sendonbehalf";
+static constexpr char msgcopy_np_exclusive[] = "msgcopy_exclusive";
 
 /**
  * Named property resolvers, so that `sent_copy_prepare` can be called from
