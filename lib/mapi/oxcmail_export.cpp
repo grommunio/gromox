@@ -1086,7 +1086,8 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 		auto a = mct.children.pattachments;
 		if (a == nullptr || a->count != 1) {
 			auto s = fmt::format("[Message is not a valid OXOSMIME message. "
-			         "Found {} attachment objects, but exactly one is required.]", a->count);
+			         "Found {} attachment objects, but exactly one is required.]",
+			         a != nullptr ? a->count : 0);
 			pmime->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(s)), mt_plain, vmime::charsets::UTF_8);
 			return ecSuccess;
 		}
