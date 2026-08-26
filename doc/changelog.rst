@@ -3,6 +3,21 @@ Schedule
 It's ready when it's ready.
 
 
+Snapshot 3.10.20
+================
+
+Enhancements:
+
+* imap: implement FETCH BINARY / BINARY.SIZE
+
+Fixes:
+
+* The rule processor executes Extended Rules' OP_MOVE/OP_COPY now and matches
+  string restrictions across PT_STRING8↔PT_UNICODE.
+* During MAPI-to-iCalender conversions, TZID is now omitted when exporting
+  timeless DATE values.
+
+
 Gromox 3.10 (2026-08-22)
 ========================
 
