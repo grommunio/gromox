@@ -54,6 +54,7 @@ function mapi_folder_setreadflags(resource $fld, array $entryids, ?int $flags = 
 function mapi_folder_setsearchcriteria(resource $fld, array $restriction, array $folderlist, int $flags) : bool {}
 function mapi_folder_getsearchcriteria(resource $fld, ?int $flags = 0) : mixed {}
 function mapi_folder_modifyrules(resource $fld, array $rows, ?int $flags = 0) : bool {}
+function mapi_folder_rulesexecute(resource $fld, array $entryids, ?int $action_flags = 3) : array|bool {}
 function mapi_message_getattachmenttable(resource $msg) : resource|bool {}
 function mapi_message_getrecipienttable(resource $msg) : resource|bool {}
 function mapi_message_openattach(resource $msg, int $id) : resource|bool {}

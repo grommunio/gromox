@@ -788,6 +788,14 @@ struct exreq_rule_new_message final : public exreq {
 	uint64_t folder_id = 0, message_id = 0;
 };
 
+struct exreq_rules_execute final : public exreq {
+	using view_t = exreq_rules_execute;
+	char *username = nullptr;
+	cpid_t cpid{};
+	uint64_t folder_id = 0, message_id = 0;
+	uint32_t action_flags = 0;
+};
+
 struct exreq_set_message_timer final : public exreq {
 	using view_t = exreq_set_message_timer;
 	uint64_t message_id = 0;
@@ -1424,6 +1432,16 @@ struct exresp_get_message_timer final : public exresp {
 struct exresp_update_folder_rule final : public exresp {
 	using view_t = exresp_update_folder_rule;
 	BOOL b_exceed = false;
+};
+
+/*
+ * Unlike exresp_rule_new_message, this cannot be a `using = exresp` alias: the
+ * call has an out-param, and the response push/pull switches dispatch on
+ * exresp_##t::view_t.
+ */
+struct exresp_rules_execute final : public exresp {
+	using view_t = exresp_rules_execute;
+	uint32_t skipped = 0;
 };
 
 enum deliver_message_result {

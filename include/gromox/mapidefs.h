@@ -120,6 +120,48 @@ enum ACTTYPE {
 	OP_MARK_AS_READ = 0xbU,
 };
 
+/**
+ * Which classes of ACTTYPE a rule run is permitted to carry out.
+ *
+ * These exist for retroactive rule execution (cf. exmdb_server::rules_execute),
+ * where the messages are not newly-delivered but arbitrarily old. Replaying
+ * REPLY/FORWARD/BOUNCE/DELEGATE over an existing folder emits mail — possibly
+ * years late and possibly hundreds of times — so the sending class is opt-in
+ * and the caller has to name it explicitly.
+ *
+ * Delivery keeps its historic behaviour by passing RX_ACT_ALL.
+ */
+enum rule_action_flags {
+	RX_ACT_FILE   = 0x1U,  /* OP_MOVE, OP_COPY */
+	RX_ACT_MARK   = 0x2U,  /* OP_TAG, OP_MARK_AS_READ */
+	RX_ACT_DELETE = 0x4U,  /* OP_DELETE */
+	RX_ACT_SEND   = 0x8U,  /* OP_REPLY, OP_OOF_REPLY, OP_FORWARD, OP_BOUNCE, OP_DELEGATE */
+	RX_ACT_DEFER  = 0x10U, /* OP_DEFER_ACTION (deferred action messages for the client) */
+	/*
+	 * Reversible actions only. Note that a cross-store OP_MOVE/OP_COPY is
+	 * internally realised as a DAM, yet it is still classified as
+	 * RX_ACT_FILE: the gate keys off the action block's type, not off how
+	 * the action happens to be implemented.
+	 *
+	 * RX_ACT_DELETE is deliberately NOT in here. A rule's OP_DELETE is a
+	 * *hard* delete — the row is removed and the .eml unlinked; it does
+	 * not land in Deleted Items and cannot be recovered. Replaying that
+	 * over an archive is not something anyone should get by accepting a
+	 * default, so it has to be asked for by name.
+	 */
+	RX_ACT_SAFE   = RX_ACT_FILE | RX_ACT_MARK,
+	/* Every class that is a legal request; used to reject garbage bitmasks. */
+	RX_ACT_VALID  = RX_ACT_FILE | RX_ACT_MARK | RX_ACT_DELETE |
+	                RX_ACT_SEND | RX_ACT_DEFER,
+	/*
+	 * Delivery-time only. This deliberately has bits outside RX_ACT_VALID,
+	 * so exmdb_server::rules_execute *rejects* it — a retroactive caller
+	 * cannot ask for "everything", it has to name the classes it wants.
+	 * Only the delivery path reaches the engine directly and may pass this.
+	 */
+	RX_ACT_ALL    = 0xFFFFFFFFU,
+};
+
 enum apptrecur_flags {
 	ARO_SUBJECT          =   0x1U,
 	ARO_MEETINGTYPE      =   0x2U,
