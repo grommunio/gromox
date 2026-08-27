@@ -602,6 +602,7 @@ E(3470, "only the organizer can cancel a meeting");
 E(3471, "failed to delete cancelled meeting");
 E(3472, "cannot read from item's source folder");
 E(3473, "cannot write to destination folder");
+E(3474, "access denied: missing Send-As permission on the claimed sender identity");
 
 #undef E
 }

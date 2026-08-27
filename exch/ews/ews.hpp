@@ -335,6 +335,7 @@ class EWSContext {
 	void normalize(Structures::tMailbox&) const;
 	int notify();
 	uint32_t permissions(const std::string&, uint64_t) const;
+	void validate_sendas_perms(const std::string &) const;
 	Structures::tDelegatePermissions readDelegatePermissions(const std::string&, const std::string&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
