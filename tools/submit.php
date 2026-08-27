@@ -23,16 +23,24 @@
 	try {
 		$session = mapi_logon_np($argv[1], 0);
 	} catch (Exception  $e) {
-		die("fail to log on the " . $argv[1] . "'s store");
+		$session = false;
+	}
+	if ($session === false) {
+		fwrite(STDERR, "fail to log on the " . $argv[1] . "'s store\n");
+		exit(1);
 	}
 	try {
 		$message = mapi_openentry($session, $loc_string);
 	} catch (Exception  $e) {
-		die("Failed to open message " . $argv[2]);
+		$message = false;
+	}
+	if ($message === false) {
+		die("Failed to open message " . $argv[2] . " (deleted or already sent)");
 	}
 	$props = mapi_getprops($message, array(PR_MESSAGE_FLAGS));
-	if (empty($props[PR_MESSAGE_FLAGS])) {
-		die("cannot get PR_MESSAGE_FLAGS from message object");
+	if ($props === false || empty($props[PR_MESSAGE_FLAGS])) {
+		fwrite(STDERR, "cannot get PR_MESSAGE_FLAGS from message object\n");
+		exit(1);
 	}
 	if (!($props[PR_MESSAGE_FLAGS] & MSGFLAG_SUBMIT)) {
 		fwrite(STDERR, "$argv[2]: submit-init\n");
@@ -48,6 +56,14 @@
 		# Send immediately.
 		#
 	}
-	mapi_message_submitmessage($message);
+	try {
+		$ret = mapi_message_submitmessage($message);
+	} catch (Exception  $e) {
+		$ret = false;
+	}
+	if ($ret === false) {
+		fwrite(STDERR, "failed to submit message " . $argv[2] . "\n");
+		exit(1);
+	}
 	exit("message " . $argv[2] . " has been submitted successfully");
 ?>
