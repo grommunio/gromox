@@ -27,6 +27,7 @@ ATTACHMENT_CONTENT* attachment_content_init()
 		return NULL;
 	}
 	pattachment->pembedded = NULL;
+	pattachment->eph_record_key = GUID::random_new();
 	return pattachment;
 }
 

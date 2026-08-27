@@ -1856,13 +1856,18 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 		}
 		switch (tag) {
 		case PidTagMid: {
-			if (pmessage_id == nullptr)
-				break;
+			/*
+			 * The set of PR_INSTANCE_KEYs in a MAPI table ought to
+			 * be unique. emsmdb32.dll constructs PR_INSTANCE_KEY
+			 * from the first column (it also makes sure to put
+			 * PidTagFid/Mid first as needed). The message id does
+			 * not fit that.
+			 */
 			auto pv = cu_alloc<uint64_t>();
 			vc.pvalue = pv;
 			if (pv == nullptr)
 				return FALSE;
-			*pv = rop_util_make_eid_ex(1, *pmessage_id);
+			memcpy(pv, pattachment->eph_record_key.ab, 8);
 			vc.proptag = tag;
 			ppropvals->count ++;
 			continue;

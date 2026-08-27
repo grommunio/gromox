@@ -60,6 +60,7 @@ struct GX_EXPORT attachment_content {
 
 	TPROPVAL_ARRAY proplist{}; /* PR_ATTACH_NUM must be the first */
 	MESSAGE_CONTENT *pembedded = nullptr;
+	FLATUID eph_record_key{};
 };
 using ATTACHMENT_CONTENT = attachment_content;
 
