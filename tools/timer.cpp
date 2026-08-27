@@ -111,7 +111,7 @@ static void execute_timer(TIMER *ptimer);
 
 static int parse_line(char *pbuff, const char* cmdline, char** argv);
 
-static void encode_line(const char *in, char *out);
+static void encode_line(const char *in, char *out, size_t outsize);
 
 static BOOL read_mark(CONNECTION_NODE *pconnection);
 
@@ -189,7 +189,8 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 			char temp_line[2048];
 			auto temp_len = gx_snprintf(temp_line, std::size(temp_line), "%d\t%ld\t",
 				   pitem[i].tid, pitem[i].exectime);
-			encode_line(pitem[i].command, temp_line + temp_len);
+			encode_line(pitem[i].command, &temp_line[temp_len],
+				std::size(temp_line) - temp_len);
 			temp_len = strlen(temp_line);
 			temp_line[temp_len] = '\n';
 			++temp_len;
@@ -449,7 +450,7 @@ enum { X_STOP, X_LOOP };
 
 static int tmr_thrwork_1()
 {
-	char *pspace, temp_line[1024];
+	char *pspace, temp_line[2048];
 	
 	std::unique_lock co_hold(g_connection_lock);
 	g_waken_cond.wait(co_hold, []() { return g_notify_stop || g_connection_list1.size() > 0; });
@@ -519,7 +520,8 @@ static int tmr_thrwork_1()
 
 			auto temp_len = gx_snprintf(temp_line, std::size(temp_line), "%d\t%lld\t", ptimer->t_id,
 			           static_cast<long long>(ptimer->exec_time));
-			encode_line(ptimer->command.c_str(), temp_line + temp_len);
+			encode_line(ptimer->command.c_str(), &temp_line[temp_len],
+				std::size(temp_line) - temp_len);
 			temp_len = strlen(temp_line);
 			temp_line[temp_len++] = '\n';
 			if (HXio_fullwrite(g_list_fd, temp_line, temp_len) < 0)
@@ -647,16 +649,18 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
     return argc;
 }
 
-static void encode_line(const char *in, char *out)
+static void encode_line(const char *in, char *out, size_t outsize)
 {
-	int len, i, j;
+	size_t j = 0;
 
-	len = strlen(in);
-	for (i=0, j=0; i<len; i++, j++) {
-		if (' ' == in[i] || '\\' == in[i] || '\t' == in[i] || '#' == in[i]) {
+	for (size_t i = 0; in[i] != '\0'; ++i) {
+		unsigned int esc = in[i] == ' ' || in[i] == '\\' ||
+		                   in[i] == '\t' || in[i] == '#';
+		if (j + esc + 2 > outsize)
+			break;
+		if (esc)
 			out[j++] = '\\';
-		}
-		out[j] = in[i];
+		out[j++] = in[i];
 	}
 	out[j] = '\0';
 }
