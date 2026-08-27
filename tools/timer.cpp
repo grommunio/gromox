@@ -16,6 +16,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <libHX/io.h>
@@ -128,6 +129,44 @@ ssize_t CONNECTION_NODE::sk_write(const char *s, size_t z)
 	return ret;
 }
 
+/*
+ * tids are not reused within one state file. A marker line retires every line
+ * carrying its tid, and duplicated ADD lines (written by versions before
+ * gromox-3.9-310-gd995060fd) collapse into one.
+ */
+static void purge_finished(srcitem *pitem, size_t item_num)
+{
+	std::unordered_set<int> retired, pending;
+	try {
+		for (size_t i = 0; i < item_num; ++i)
+			if (pitem[i].exectime == 0)
+				retired.insert(pitem[i].tid);
+		for (size_t i = 0; i < item_num; ++i) {
+			if (pitem[i].exectime == 0)
+				continue;
+			if (retired.find(pitem[i].tid) != retired.cend() ||
+			    !pending.insert(pitem[i].tid).second)
+				pitem[i].exectime = 0;
+		}
+		return;
+	} catch (const std::bad_alloc &) {
+	}
+	for (size_t i = 0; i < item_num; ++i) {
+		if (pitem[i].exectime != 0)
+			continue;
+		for (size_t j = 0; j < item_num; ++j)
+			if (pitem[j].tid == pitem[i].tid)
+				pitem[j].exectime = 0;
+	}
+	for (size_t i = 0; i < item_num; ++i) {
+		if (pitem[i].exectime == 0)
+			continue;
+		for (size_t j = i + 1; j < item_num; ++j)
+			if (pitem[j].tid == pitem[i].tid)
+				pitem[j].exectime = 0;
+	}
+}
+
 static void save_timers(time_t &last_cltime, const time_t &cur_time)
 {
 	close(g_list_fd);
@@ -140,18 +179,7 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 	}
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
-	for (size_t i = 0; i < item_num; ++i) {
-		if (pitem[i].exectime != 0)
-			continue;
-		for (size_t j = 0; j < item_num; ++j) {
-			if (i == j)
-				continue;
-			if (pitem[i].tid == pitem[j].tid) {
-				pitem[j].exectime = 0;
-				break;
-			}
-		}
-	}
+	purge_finished(pitem, item_num);
 	auto temp_path = g_list_path + ".tmp";
 	auto temp_fd = open(temp_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 	if (temp_fd >= 0) {
@@ -269,18 +297,7 @@ int main(int argc, char **argv)
 
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
-	for (size_t i = 0; i < item_num; ++i) {
-		if (pitem[i].exectime != 0)
-			continue;
-		for (size_t j = 0; j < item_num; ++j) {
-			if (i == j)
-				continue;
-			if (pitem[i].tid == pitem[j].tid) {
-				pitem[j].exectime = 0;
-				break;
-			}
-		}
-	}
+	purge_finished(pitem, item_num);
 
 	for (size_t i = 0; i < item_num; ++i) {
 		if (pitem[i].tid > g_last_tid)
