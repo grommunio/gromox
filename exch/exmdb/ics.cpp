@@ -644,6 +644,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 		if (change_num > *plast_cn)
 			*plast_cn = change_num;
 		if (pgiven->contains(rop_util_make_eid_ex(1, fid_val)) &&
+		    pseen != nullptr &&
 		    pseen->contains(rop_util_make_eid_ex(1, change_num)))
 			continue;
 		sqlite3_reset(stm_insert_chg);
