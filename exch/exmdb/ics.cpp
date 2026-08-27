@@ -560,7 +560,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		dir, znul(username), static_cast<unsigned long long>(folder_id));
 	pgiven->dump(fh.get());
 	fprintf(fh.get(), " read=");
-	pread->dump(fh.get());
+	if (pread != nullptr)
+		pread->dump(fh.get());
 	fprintf(fh.get(), " rst=");
 	if (prestriction != nullptr)
 		fprintf(fh.get(), "%s", prestriction->repr().c_str());
