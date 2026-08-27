@@ -163,8 +163,9 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto b_optim = pdb->begin_optim();
-	auto cl_optim = HX::make_scope_exit([&]() { if (b_optim) pdb->end_optim(); });
+	/* No teardown guard needed for this begin_optim, as ~db_conn drops it too */
+	if (!pdb->begin_optim())
+		return FALSE;
 	/*
 	 * Read-only transaction ensuring consistency of data across several blocks.
 	 * Nothing is ever written to pdb->psqlite, so no need to commit anything.
