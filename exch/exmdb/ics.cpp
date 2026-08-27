@@ -240,14 +240,16 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		         static_cast<unsigned long long>(rcv_cutoff));
 		auto stm_scope = pdb->prep(sql_string);
 		if (stm_scope != nullptr) {
-			while (stm_scope.step() == SQLITE_ROW)
+			int ret;
+			while ((ret = stm_scope.step()) == SQLITE_ROW)
 				rcv_scope.insert(sqlite3_column_int64(stm_scope, 0));
-			b_rcv_fast = true;
+			b_rcv_fast = ret == SQLITE_DONE;
 		}
 	} catch (const std::bad_alloc &) {
-		rcv_scope.clear();
 		b_rcv_fast = false;
 	}
+	if (!b_rcv_fast)
+		rcv_scope.clear();
 	*plast_cn = 0;
 	*plast_readcn = 0;
 	while (stm_select_msg.step() == SQLITE_ROW) {
