@@ -1051,9 +1051,11 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 	if (par.exit /* && !(rule.state & ST_ONLY_WHEN_OOF) */)
 		return ecSuccess;
 	if (rule.cond != nullptr) {
+		auto matched = rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond);
 		if (g_ruleproc_debug)
-			mlog(LV_DEBUG, "Rule_Condition %s", rule.cond->repr().c_str());
-		if (!rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
+			mlog(LV_DEBUG, "Rule_Condition %s => %smatch",
+				rule.cond->repr().c_str(), matched ? "" : "no ");
+		if (!matched)
 			return ecSuccess;
 	}
 	if (rule.state & ST_EXIT_LEVEL)
@@ -1112,9 +1114,14 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 {
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
-	if (rule.cond != nullptr &&
-	    !rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
-		return ecSuccess;
+	if (rule.cond != nullptr) {
+		auto matched = rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond);
+		if (g_ruleproc_debug)
+			mlog(LV_DEBUG, "Rule_Condition %s => %smatch",
+				rule.cond->repr().c_str(), matched ? "" : "no ");
+		if (!matched)
+			return ecSuccess;
+	}
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
 	for (size_t i = 0; i < rule.xact.count; ++i) {
@@ -2314,7 +2321,6 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 static constexpr cfg_directive rp_config_defaults[] = {
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	{"ruleproc_debug", "0", CFG_BOOL},
-	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
 
@@ -2330,7 +2336,17 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 		/* e.g. permission error */
 		return false;
 	g_ruleproc_debug = parse_bool(cfg->get_value("ruleproc_debug"));
-	rp_org_name = znul(cfg->get_value("x500_org_name"));
+	auto org = cfg->get_value("x500_org_name");
+	std::shared_ptr<config_file> lcl;
+	if (*znul(org) == '\0') {
+		/* Fallback for old installations */
+		lcl = config_file_initd("exmdb_local.cfg",
+		      get_config_path(), nullptr);
+		if (lcl != nullptr)
+			org = lcl->get_value("x500_org_name");
+	}
+	rp_org_name = *znul(org) != '\0' ? org : "Gromox default";
+	mlog(LV_DEBUG, "ruleproc: x500 org name is \"%s\"", rp_org_name.c_str());
 	auto str = cfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {
