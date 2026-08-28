@@ -2030,7 +2030,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		if (pstmt1 == nullptr)
 			return false;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
-			auto &le_folder = scope_list.emplace_back(rop_util_get_gc_value(pfolder_ids->pids[i]));
+			auto le_folder = rop_util_get_gc_value(pfolder_ids->pids[i]);
 			pstmt1.bind_int64(1, le_folder);
 			if (pstmt1.step() != SQLITE_ROW)
 				return false;
@@ -2039,6 +2039,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 				sqlite3_reset(pstmt1);
 				continue;
 			}
+			scope_list.emplace_back(le_folder);
 			pstmt.bind_int64(1, le_folder);
 			if (pstmt.step() != SQLITE_DONE)
 				return false;
