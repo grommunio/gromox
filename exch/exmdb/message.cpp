@@ -208,7 +208,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 			mlog(LV_DEBUG, "exmdb-audit: moved(PF) message %s:f%llu:m%llu to f%llu:m%llu",
 				dir, LLU{parent_fid}, LLU{mid_val}, LLU{fid_val}, LLU{dst_val});
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM "
-			          "read_states message_id=%llu", LLU{mid_val});
+			          "read_states WHERE message_id=%llu", LLU{mid_val});
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
 		}
