@@ -10,6 +10,7 @@
 #include <ctime>
 #include <list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unistd.h>
 #include <utility>
@@ -328,7 +329,7 @@ struct env_context {
 }
 
 static thread_local const char *g_id_key;
-static thread_local const char *g_public_username_key;
+static thread_local std::optional<std::string> g_public_username_key;
 
 namespace exmdb_server {
 
@@ -374,7 +375,10 @@ const char *get_remote_id()
 
 void set_public_username(const char *username)
 {
-	g_public_username_key = username;
+	if (username != nullptr)
+		g_public_username_key.emplace(username);
+	else
+		g_public_username_key.reset();
 }
 
 /**
@@ -383,7 +387,7 @@ void set_public_username(const char *username)
  */
 const char *get_public_username()
 {
-	return g_public_username_key;
+	return g_public_username_key ? g_public_username_key->c_str() : nullptr;
 }
 
 /* can not be called in local rpc thread without

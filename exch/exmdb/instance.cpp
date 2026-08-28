@@ -1575,7 +1575,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	folder_id = rop_util_make_eid_ex(1, pinstance->folder_id);
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(pinstance->username.c_str());
-	dbase.reset();
+	dbase.reset(); // pinstance efectively goes out of scope too
 	pdb.reset();
 	g_inside_flush_instance = true;
 	uint64_t outmid = 0, outcn = 0;
