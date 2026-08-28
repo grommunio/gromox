@@ -16,6 +16,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <libHX/io.h>
@@ -110,7 +111,7 @@ static void execute_timer(TIMER *ptimer);
 
 static int parse_line(char *pbuff, const char* cmdline, char** argv);
 
-static void encode_line(const char *in, char *out);
+static void encode_line(const char *in, char *out, size_t outsize);
 
 static BOOL read_mark(CONNECTION_NODE *pconnection);
 
@@ -128,6 +129,44 @@ ssize_t CONNECTION_NODE::sk_write(const char *s, size_t z)
 	return ret;
 }
 
+/*
+ * tids are not reused within one state file. A marker line retires every line
+ * carrying its tid, and duplicated ADD lines (written by versions before
+ * gromox-3.9-310-gd995060fd) collapse into one.
+ */
+static void purge_finished(srcitem *pitem, size_t item_num)
+{
+	std::unordered_set<int> retired, pending;
+	try {
+		for (size_t i = 0; i < item_num; ++i)
+			if (pitem[i].exectime == 0)
+				retired.insert(pitem[i].tid);
+		for (size_t i = 0; i < item_num; ++i) {
+			if (pitem[i].exectime == 0)
+				continue;
+			if (retired.find(pitem[i].tid) != retired.cend() ||
+			    !pending.insert(pitem[i].tid).second)
+				pitem[i].exectime = 0;
+		}
+		return;
+	} catch (const std::bad_alloc &) {
+	}
+	for (size_t i = 0; i < item_num; ++i) {
+		if (pitem[i].exectime != 0)
+			continue;
+		for (size_t j = 0; j < item_num; ++j)
+			if (pitem[j].tid == pitem[i].tid)
+				pitem[j].exectime = 0;
+	}
+	for (size_t i = 0; i < item_num; ++i) {
+		if (pitem[i].exectime == 0)
+			continue;
+		for (size_t j = i + 1; j < item_num; ++j)
+			if (pitem[j].tid == pitem[i].tid)
+				pitem[j].exectime = 0;
+	}
+}
+
 static void save_timers(time_t &last_cltime, const time_t &cur_time)
 {
 	close(g_list_fd);
@@ -140,18 +179,7 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 	}
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
-	for (size_t i = 0; i < item_num; ++i) {
-		if (pitem[i].exectime != 0)
-			continue;
-		for (size_t j = 0; j < item_num; ++j) {
-			if (i == j)
-				continue;
-			if (pitem[i].tid == pitem[j].tid) {
-				pitem[j].exectime = 0;
-				break;
-			}
-		}
-	}
+	purge_finished(pitem, item_num);
 	auto temp_path = g_list_path + ".tmp";
 	auto temp_fd = open(temp_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 	if (temp_fd >= 0) {
@@ -161,7 +189,8 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 			char temp_line[2048];
 			auto temp_len = gx_snprintf(temp_line, std::size(temp_line), "%d\t%ld\t",
 				   pitem[i].tid, pitem[i].exectime);
-			encode_line(pitem[i].command, temp_line + temp_len);
+			encode_line(pitem[i].command, &temp_line[temp_len],
+				std::size(temp_line) - temp_len);
 			temp_len = strlen(temp_line);
 			temp_line[temp_len] = '\n';
 			++temp_len;
@@ -269,18 +298,7 @@ int main(int argc, char **argv)
 
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
-	for (size_t i = 0; i < item_num; ++i) {
-		if (pitem[i].exectime != 0)
-			continue;
-		for (size_t j = 0; j < item_num; ++j) {
-			if (i == j)
-				continue;
-			if (pitem[i].tid == pitem[j].tid) {
-				pitem[j].exectime = 0;
-				break;
-			}
-		}
-	}
+	purge_finished(pitem, item_num);
 
 	for (size_t i = 0; i < item_num; ++i) {
 		if (pitem[i].tid > g_last_tid)
@@ -432,7 +450,7 @@ enum { X_STOP, X_LOOP };
 
 static int tmr_thrwork_1()
 {
-	char *pspace, temp_line[1024];
+	char *pspace, temp_line[2048];
 	
 	std::unique_lock co_hold(g_connection_lock);
 	g_waken_cond.wait(co_hold, []() { return g_notify_stop || g_connection_list1.size() > 0; });
@@ -502,7 +520,8 @@ static int tmr_thrwork_1()
 
 			auto temp_len = gx_snprintf(temp_line, std::size(temp_line), "%d\t%lld\t", ptimer->t_id,
 			           static_cast<long long>(ptimer->exec_time));
-			encode_line(ptimer->command.c_str(), temp_line + temp_len);
+			encode_line(ptimer->command.c_str(), &temp_line[temp_len],
+				std::size(temp_line) - temp_len);
 			temp_len = strlen(temp_line);
 			temp_line[temp_len++] = '\n';
 			if (HXio_fullwrite(g_list_fd, temp_line, temp_len) < 0)
@@ -630,16 +649,18 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
     return argc;
 }
 
-static void encode_line(const char *in, char *out)
+static void encode_line(const char *in, char *out, size_t outsize)
 {
-	int len, i, j;
+	size_t j = 0;
 
-	len = strlen(in);
-	for (i=0, j=0; i<len; i++, j++) {
-		if (' ' == in[i] || '\\' == in[i] || '\t' == in[i] || '#' == in[i]) {
+	for (size_t i = 0; in[i] != '\0'; ++i) {
+		unsigned int esc = in[i] == ' ' || in[i] == '\\' ||
+		                   in[i] == '\t' || in[i] == '#';
+		if (j + esc + 2 > outsize)
+			break;
+		if (esc)
 			out[j++] = '\\';
-		}
-		out[j] = in[i];
+		out[j++] = in[i];
 	}
 	out[j] = '\0';
 }

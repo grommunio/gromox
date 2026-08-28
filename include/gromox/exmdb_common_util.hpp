@@ -147,6 +147,8 @@ extern uint32_t common_util_calculate_attachment_size(const attachment_content *
 extern const char *exmdb_rpc_idtoname(exmdb_callid);
 extern int need_msg_perm_check(sqlite3 *, const char *user, uint64_t fid);
 extern int have_delete_perm(const db_conn &, const char *user, uint64_t fid, uint64_t mid = 0);
+extern bool timeindex_covers(gromox::proptag_t);
+extern bool timeindex_present(sqlite3 *db);
 extern bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern bool timeindex_insert(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern bool timeindex_refresh(sqlite3 *db, uint64_t fid, uint64_t mid);

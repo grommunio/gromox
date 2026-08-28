@@ -781,7 +781,9 @@ static bool folder_empty_folder(db_conn &db, cpid_t cpid,
 				snprintf(sql_string, std::size(sql_string), "UPDATE messages SET is_deleted=1"
 				         " WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
 				         LLU{folder_id}, s_normal, s_fai);
-				timeindex_delete(db.psqlite, folder_id, 0);
+				/* only normal messages are indexed */
+				if (b_normal)
+					timeindex_delete(db.psqlite, folder_id, 0);
 			}
 			if (db.exec(sql_string) != SQLITE_OK)
 				return FALSE;
@@ -2028,7 +2030,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		if (pstmt1 == nullptr)
 			return false;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
-			auto &le_folder = scope_list.emplace_back(rop_util_get_gc_value(pfolder_ids->pids[i]));
+			auto le_folder = rop_util_get_gc_value(pfolder_ids->pids[i]);
 			pstmt1.bind_int64(1, le_folder);
 			if (pstmt1.step() != SQLITE_ROW)
 				return false;
@@ -2037,6 +2039,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 				sqlite3_reset(pstmt1);
 				continue;
 			}
+			scope_list.emplace_back(le_folder);
 			pstmt.bind_int64(1, le_folder);
 			if (pstmt.step() != SQLITE_DONE)
 				return false;
@@ -2055,7 +2058,6 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	auto dbase = pdb->lock_base_wr();
 	if (!folder_clear_search_folder(*pdb, cpid, fid_val, dbase.get(), notifq))
 		return false;
-	dg_notify(std::move(notifq));
 	if (search_flags & RESTART_SEARCH) {
 		b_populate = TRUE;
 		if (!(search_flags & STATIC_SEARCH))
@@ -2068,6 +2070,8 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		pdb->delete_dynamic(fid_val, dbase.get());
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
+	dg_notify(std::move(notifq));
+	pstmt.finalize();
 	pdb.reset();
 	if (b_populate && !db_engine_enqueue_populating_criteria(dir,
 	    cpid, fid_val, b_recursive, prestriction, std::move(scope_list)))
@@ -2566,7 +2570,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
  * Function only usable for public stores.
  */
 BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
-	const char *username, uint64_t folder_id, uint32_t *pcount)
+    const char *username, uint64_t folder_id, uint32_t *pcount) try
 {
 	if (exmdb_server::is_private())
 		return FALSE;
@@ -2585,8 +2589,10 @@ BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
 	if (!sql_transact)
 		return false;
 	exmdb_server::set_public_username(username);
+	auto cl_0 = HX::make_scope_exit([&]() { exmdb_server::set_public_username(nullptr); });
 	*pcount = cu_folder_counts(pdb->psqlite, rop_util_get_gc_value(folder_id)).second;
-	exmdb_server::set_public_username(nullptr);
 	return TRUE;
-	
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }

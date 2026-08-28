@@ -126,5 +126,15 @@ Default: \fIoff\fP
 \fBreported_server_version\fP
 .br
 Default: \fI15.00.0847.4040\fP
+.TP
+\fBx500_org_name\fP
+Organization name used by the "TWOSTEP" Client-Side Inbox Rule Processor to
+resolve EX-style addresses in rule conditions and actions. It must be the same
+value as used by the rest of the system, otherwise conditions such as "message
+is received from <user of this organization>" will never match. When the
+directive is not set in gromox.cfg (or set to an empty value), the value is
+read from exmdb_local.cfg instead.
+.br
+Default: \fI(inherit from exmdb_local.cfg, else "Gromox default")\fP
 .SH See also
 \fBgromox\fP(7)

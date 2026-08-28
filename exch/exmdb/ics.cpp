@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <mutex>
@@ -163,8 +164,9 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto b_optim = pdb->begin_optim();
-	auto cl_optim = HX::make_scope_exit([&]() { if (b_optim) pdb->end_optim(); });
+	/* No teardown guard needed for this begin_optim, as ~db_conn drops it too */
+	if (!pdb->begin_optim())
+		return FALSE;
 	/*
 	 * Read-only transaction ensuring consistency of data across several blocks.
 	 * Nothing is ever written to pdb->psqlite, so no need to commit anything.
@@ -231,22 +233,24 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	uint64_t rcv_cutoff = 0;
 	std::unordered_set<uint64_t> rcv_scope;
 	bool b_rcv_fast = false;
-	if (eas_time_search(prestriction)) try {
-		rcv_cutoff = *static_cast<const uint64_t *>(prestriction->prop->propval.pvalue);
+	if (eas_time_search(prestriction) && timeindex_present(pdb->psqlite)) try {
+		rcv_cutoff = *static_cast<const int64_t *>(prestriction->prop->propval.pvalue);
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id "
-		         "FROM msgtime_index WHERE folder_id=%llu AND rcvtime>=%llu",
+		         "FROM msgtime_index WHERE folder_id=%llu AND rcvtime>=%lld",
 		         static_cast<unsigned long long>(fid_val),
-		         static_cast<unsigned long long>(rcv_cutoff));
+		         static_cast<long long>(rcv_cutoff));
 		auto stm_scope = pdb->prep(sql_string);
 		if (stm_scope != nullptr) {
-			while (stm_scope.step() == SQLITE_ROW)
+			int ret;
+			while ((ret = stm_scope.step()) == SQLITE_ROW)
 				rcv_scope.insert(sqlite3_column_int64(stm_scope, 0));
-			b_rcv_fast = true;
+			b_rcv_fast = ret == SQLITE_DONE;
 		}
 	} catch (const std::bad_alloc &) {
-		rcv_scope.clear();
 		b_rcv_fast = false;
 	}
+	if (!b_rcv_fast)
+		rcv_scope.clear();
 	*plast_cn = 0;
 	*plast_readcn = 0;
 	while (stm_select_msg.step() == SQLITE_ROW) {
@@ -547,36 +551,40 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		return TRUE;
 	std::lock_guard lk(ics_log_mtx);
 	std::unique_ptr<FILE, file_deleter> fh;
-	if (g_exmdb_ics_log_file != "-")
+	auto lf = stderr;
+	if (g_exmdb_ics_log_file != "-") {
 		fh.reset(fopen(g_exmdb_ics_log_file.c_str(), "a"));
-	if (fh == nullptr)
-		return TRUE;
-	fprintf(fh.get(), "-------------\n");
-	fprintf(fh.get(), "dir=%s actor=%s CONTENT_SYNC folder_id=%llxh given=",
+		if (fh == nullptr)
+			return TRUE;
+		lf = fh.get();
+	}
+	fprintf(lf, "-------------\n");
+	fprintf(lf, "dir=%s actor=%s CONTENT_SYNC folder_id=%llxh given=",
 		dir, znul(username), static_cast<unsigned long long>(folder_id));
-	pgiven->dump(fh.get());
-	fprintf(fh.get(), " read=");
-	pread->dump(fh.get());
-	fprintf(fh.get(), " rst=");
+	pgiven->dump(lf);
+	fprintf(lf, " read=");
+	if (pread != nullptr)
+		pread->dump(lf);
+	fprintf(lf, " rst=");
 	if (prestriction != nullptr)
-		fprintf(fh.get(), "%s", prestriction->repr().c_str());
-	fprintf(fh.get(), " Out: Msg+FAI=%u+%u upd[%u]={",
+		fprintf(lf, "%s", prestriction->repr().c_str());
+	fprintf(lf, " Out: Msg+FAI=%u+%u upd[%u]={",
 		*pnormal_count, *pfai_count, pupdated_mids->count);
 	for (unsigned long long mid : *pupdated_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\nchg[%u]={", pchg_mids->count);
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\nchg[%u]={", pchg_mids->count);
 	for (unsigned long long mid : *pchg_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\ngiven[%u]={", pgiven_mids->count);
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\ngiven[%u]={", pgiven_mids->count);
 	for (unsigned long long mid : *pgiven_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\ndel[%u]={", pdeleted_mids->count);
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\ndel[%u]={", pdeleted_mids->count);
 	for (unsigned long long mid : *pdeleted_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\nnolonger[%u]={", pnolonger_mids->count);
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\nnolonger[%u]={", pnolonger_mids->count);
 	for (unsigned long long mid : *pnolonger_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
 	return TRUE;
 }
 
@@ -639,6 +647,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 		if (change_num > *plast_cn)
 			*plast_cn = change_num;
 		if (pgiven->contains(rop_util_make_eid_ex(1, fid_val)) &&
+		    pseen != nullptr &&
 		    pseen->contains(rop_util_make_eid_ex(1, change_num)))
 			continue;
 		sqlite3_reset(stm_insert_chg);
@@ -827,20 +836,23 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		return TRUE;
 	std::lock_guard lk(ics_log_mtx);
 	std::unique_ptr<FILE, file_deleter> fh;
-	if (g_exmdb_ics_log_file != "-")
+	auto lf = stderr;
+	if (g_exmdb_ics_log_file != "-") {
 		fh.reset(fopen(g_exmdb_ics_log_file.c_str(), "a"));
-	if (fh == nullptr)
-		return TRUE;
-	fprintf(fh.get(), "-------------\n");
-	fprintf(fh.get(), "* dir=%s actor=%s HIER_SYNC folder_id=%llxh given=",
+		if (fh == nullptr)
+			return TRUE;
+		lf = fh.get();
+	}
+	fprintf(lf, "-------------\n");
+	fprintf(lf, "* dir=%s actor=%s HIER_SYNC folder_id=%llxh given=",
 		dir, znul(username), static_cast<unsigned long long>(folder_id));
-	pgiven->dump(fh.get());
-	fprintf(fh.get(), " Out: given={");
+	pgiven->dump(lf);
+	fprintf(lf, " Out: given={");
 	for (unsigned long long fid : *pgiven_fids)
-		fprintf(fh.get(), "%llxh,", fid);
-	fprintf(fh.get(), "}\ndel={");
+		fprintf(lf, "%llxh,", fid);
+	fprintf(lf, "}\ndel={");
 	for (unsigned long long fid : *pdeleted_fids)
-		fprintf(fh.get(), "%llxh,", fid);
-	fprintf(fh.get(), "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
+		fprintf(lf, "%llxh,", fid);
+	fprintf(lf, "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
 	return TRUE;
 }

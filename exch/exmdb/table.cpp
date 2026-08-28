@@ -289,6 +289,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 	dbase->tables.table_list.splice(dbase->tables.table_list.end(), std::move(holder));
 	return TRUE;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -1234,6 +1235,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 	table_sum_table_count(db, table_id, prow_count);
 	return TRUE;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return FALSE;
 }
 
@@ -2083,7 +2085,7 @@ static bool query_rule(db_conn &db, cpid_t cpid, uint32_t table_id,
  */
 BOOL exmdb_server::query_table(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, proptag_cspan pproptags,
-	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
+    uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset) try
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -2113,6 +2115,9 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		       start_pos, row_needed, pset);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 static bool table_get_content_row_property(const void *pparam, proptag_t proptag,
@@ -2502,8 +2507,8 @@ static bool match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
  */
 BOOL exmdb_server::match_table(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos,
-	const RESTRICTION *pres, proptag_cspan pproptags,
-	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
+    const RESTRICTION *pres, proptag_cspan pproptags,
+    int32_t *pposition, TPROPVAL_ARRAY *ppropvals) try
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -2533,6 +2538,9 @@ BOOL exmdb_server::match_table(const char *dir, const char *username,
 	else
 		*pposition = -1;
 	return ret;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 BOOL exmdb_server::locate_table(const char *dir,
@@ -2746,7 +2754,7 @@ static bool read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
  */
 BOOL exmdb_server::read_table_row(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, proptag_cspan pproptags,
-	uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals)
+    uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals) try
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -2770,6 +2778,9 @@ BOOL exmdb_server::read_table_row(const char *dir, const char *username,
 		return read_tblrow_ctnt(cpid, table_id, pproptags, inst_id,
 		       inst_num, ppropvals, *pdb, ptnode);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 	
 BOOL exmdb_server::mark_table(const char *dir,

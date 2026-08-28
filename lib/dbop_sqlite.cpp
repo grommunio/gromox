@@ -386,7 +386,8 @@ tbl_msgtimeindex_22[] =
 "CREATE UNIQUE INDEX msgtime_mt_idx ON msgtime_index (folder_id, mtime, message_id);"
 "CREATE UNIQUE INDEX msgtime_rt_idx ON msgtime_index (folder_id, rcvtime, message_id);"
 "CREATE UNIQUE INDEX msgtime_st_idx ON msgtime_index (folder_id, sndtime, message_id);",
-tbl_addmsgtimeindex_23[] =
+tbl_rebuildmsgtimeindex_28[] =
+"DELETE FROM msgtime_index;"
 "INSERT INTO msgtime_index "
 "SELECT m.parent_fid, m.message_id, mt.propval, rt.propval, st.propval FROM messages AS m "
 "LEFT JOIN message_properties AS mt ON m.message_id=mt.message_id AND mt.proptag=0x30080040 " /* PR_LAST_MODIFICATION_TIME */
@@ -752,10 +753,10 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{19, tbl_mtimeindex_19},
 	{21, tbl_mtimeindex_21},
 	{22, tbl_msgtimeindex_22},
-	{23, tbl_addmsgtimeindex_23},
 	{24, tbl_mboxpermissionindex_24},
 	{25, tbl_droppropvalindex_25},
 	{27, tbl_convidindex_27},
+	{28, tbl_rebuildmsgtimeindex_28},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -775,11 +776,11 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{19, tbl_mtimeindex_19},
 	{21, tbl_mtimeindex_21},
 	{22, tbl_msgtimeindex_22},
-	{23, tbl_addmsgtimeindex_23},
 	{24, tbl_mboxpermissionindex_24},
 	{25, tbl_droppropvalindex_25},
 	{26, tbl_pub_msgs_upgrade26},
 	{27, tbl_convidindex_27},
+	{28, tbl_rebuildmsgtimeindex_28},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };

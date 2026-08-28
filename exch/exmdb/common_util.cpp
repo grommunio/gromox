@@ -4755,9 +4755,27 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	return ENOMEM;
 }
 
+/* Tags whose values timeindex_insert copies into the index. */
+bool timeindex_covers(proptag_t tag)
+{
+	return tag == PR_LAST_MODIFICATION_TIME ||
+	       tag == PR_MESSAGE_DELIVERY_TIME ||
+	       tag == PR_CLIENT_SUBMIT_TIME;
+}
+
+/* Stores below schema EV-22 do not have the table at all. */
+bool timeindex_present(sqlite3 *db)
+{
+	auto stm = gx_sql_prep(db, "SELECT 1 FROM sqlite_master WHERE "
+	           "type='table' AND name='msgtime_index'");
+	return stm != nullptr && stm.step() == SQLITE_ROW;
+}
+
 bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid)
 {
 	if (fid == 0)
+		return true;
+	if (!timeindex_present(db))
 		return true;
 	const auto &q = mid == 0 ?
 		fmt::format("DELETE FROM msgtime_index WHERE folder_id={}", fid) :
@@ -4769,6 +4787,8 @@ bool timeindex_insert(sqlite3 *db, uint64_t fid, uint64_t mid)
 {
 	if (fid == 0)
 		return true; /* embedded message */
+	if (!timeindex_present(db))
+		return true; /* store predates the index */
 	auto q = fmt::format(
 		"INSERT INTO msgtime_index "
 		"SELECT m.parent_fid, m.message_id, mt.propval, rt.propval, st.propval "
@@ -4879,8 +4899,6 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			LLU{*pdst_mid}, LLU{message_id});
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	if (!timeindex_insert(psqlite, parent_id, *pdst_mid))
-		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT recipient_id FROM"
 	          " recipients WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
@@ -5006,8 +5024,11 @@ bool cu_copy_message(const db_conn &db, uint64_t message_id, uint64_t folder_id,
 	propval_buff[3].pvalue = &nt_time;
 	propvals.count = 4;
 	propvals.ppropval = propval_buff;
-	return cu_set_properties(MAPI_MESSAGE, *pdst_mid, CP_ACP, psqlite,
-	       &propvals, &tmp_problems);
+	if (!cu_set_properties(MAPI_MESSAGE, *pdst_mid, CP_ACP, psqlite,
+	    &propvals, &tmp_problems))
+		return false;
+	/* Only now are the copy's timestamps final. */
+	return timeindex_insert(psqlite, folder_id, *pdst_mid);
 }
 
 BOOL common_util_get_named_propids(sqlite3 *psqlite, BOOL b_create,
