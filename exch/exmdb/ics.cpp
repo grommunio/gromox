@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <mutex>
@@ -233,11 +234,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	std::unordered_set<uint64_t> rcv_scope;
 	bool b_rcv_fast = false;
 	if (eas_time_search(prestriction)) try {
-		rcv_cutoff = *static_cast<const uint64_t *>(prestriction->prop->propval.pvalue);
+		rcv_cutoff = *static_cast<const int64_t *>(prestriction->prop->propval.pvalue);
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id "
-		         "FROM msgtime_index WHERE folder_id=%llu AND rcvtime>=%llu",
+		         "FROM msgtime_index WHERE folder_id=%llu AND rcvtime>=%lld",
 		         static_cast<unsigned long long>(fid_val),
-		         static_cast<unsigned long long>(rcv_cutoff));
+		         static_cast<long long>(rcv_cutoff));
 		auto stm_scope = pdb->prep(sql_string);
 		if (stm_scope != nullptr) {
 			int ret;
