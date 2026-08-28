@@ -2057,7 +2057,6 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	auto dbase = pdb->lock_base_wr();
 	if (!folder_clear_search_folder(*pdb, cpid, fid_val, dbase.get(), notifq))
 		return false;
-	dg_notify(std::move(notifq));
 	if (search_flags & RESTART_SEARCH) {
 		b_populate = TRUE;
 		if (!(search_flags & STATIC_SEARCH))
@@ -2070,6 +2069,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		pdb->delete_dynamic(fid_val, dbase.get());
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
+	dg_notify(std::move(notifq));
 	pstmt.finalize();
 	pdb.reset();
 	if (b_populate && !db_engine_enqueue_populating_criteria(dir,
