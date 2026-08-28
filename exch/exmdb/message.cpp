@@ -204,7 +204,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 			        "is_deleted=1 WHERE message_id=%llu", LLU{mid_val});
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
-			timeindex_delete(pdb->psqlite, fid_val, mid_val);
+			timeindex_delete(pdb->psqlite, parent_fid, mid_val);
 			mlog(LV_DEBUG, "exmdb-audit: moved(PF) message %s:f%llu:m%llu to f%llu:m%llu",
 				dir, LLU{parent_fid}, LLU{mid_val}, LLU{fid_val}, LLU{dst_val});
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM "
@@ -611,7 +611,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 			return FALSE;
 		sqlite3_reset(pstmt1);
 		if (!b_hard && !is_assoc)
-			timeindex_delete(pdb->psqlite, src_val, tmp_val);
+			timeindex_delete(pdb->psqlite, parent_fid, tmp_val);
 		mlog(LV_DEBUG, "exmdb-audit: %s-deleted message %s:f%llu:m%llu (actor:%s)",
 			b_hard ? "hard" : "soft", dir, LLU{src_val}, LLU{tmp_val},
 			username != nullptr ? username : "owner");
