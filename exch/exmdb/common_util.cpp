@@ -4898,8 +4898,6 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			LLU{*pdst_mid}, LLU{message_id});
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	if (!timeindex_insert(psqlite, parent_id, *pdst_mid))
-		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT recipient_id FROM"
 	          " recipients WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
@@ -5025,8 +5023,11 @@ bool cu_copy_message(const db_conn &db, uint64_t message_id, uint64_t folder_id,
 	propval_buff[3].pvalue = &nt_time;
 	propvals.count = 4;
 	propvals.ppropval = propval_buff;
-	return cu_set_properties(MAPI_MESSAGE, *pdst_mid, CP_ACP, psqlite,
-	       &propvals, &tmp_problems);
+	if (!cu_set_properties(MAPI_MESSAGE, *pdst_mid, CP_ACP, psqlite,
+	    &propvals, &tmp_problems))
+		return false;
+	/* Only now are the copy's timestamps final. */
+	return timeindex_insert(psqlite, folder_id, *pdst_mid);
 }
 
 BOOL common_util_get_named_propids(sqlite3 *psqlite, BOOL b_create,
