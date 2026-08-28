@@ -1207,6 +1207,7 @@ struct GX_EXPORT TAGGED_PROPVAL {
 
 struct tarray_set;
 struct TPROPVAL_ARRAY;
+extern GX_EXPORT void propval_free(gromox::proptype_t, void *);
 extern GX_EXPORT TPROPVAL_ARRAY *tpropval_array_init();
 extern GX_EXPORT void tpropval_array_free(TPROPVAL_ARRAY *);
 extern GX_EXPORT bool tpropval_array_init_internal(TPROPVAL_ARRAY *);
@@ -1259,7 +1260,26 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 		ppropval[count++] = TAGGED_PROPVAL{tag, deconst(d)};
 	}
 	void erase(gromox::proptag_t);
-	size_t erase_if(bool (*pred)(const TAGGED_PROPVAL &));
+	/*
+	 * The predicate is handed a mutable reference and may edit the entries it
+	 * keeps; values of the entries it selects are released.
+	 */
+	template<typename F> size_t erase_if(F &&pred) {
+		static_assert(std::is_trivially_copyable_v<TAGGED_PROPVAL>);
+		size_t o = 0;
+		for (size_t i = 0; i < count; ++i) {
+			auto &p = ppropval[i];
+			if (pred(p))
+				propval_free(PROP_TYPE(p.proptag), p.pvalue);
+			else if (i != o)
+				memcpy(&ppropval[o++], &ppropval[i], sizeof(TAGGED_PROPVAL));
+			else
+				++o;
+		}
+		auto removed = count - o;
+		count = o;
+		return removed;
+	}
 	TPROPVAL_ARRAY *dup() const;
 	std::string repr() const;
 
