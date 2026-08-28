@@ -3135,6 +3135,9 @@ static ec_error_t op_switch(const rulexec_in &rp, seen_list &seen,
 		if (!cu_set_properties(MAPI_MESSAGE, rp.message_id, rp.cpid,
 		    rp.sqlite, &vals, &problems))
 			return ecError;
+		if (timeindex_covers(vals.ppropval[0].proptag) &&
+		    !timeindex_refresh(rp.sqlite, rp.folder_id, rp.message_id))
+			return ecError;
 		break;
 	}
 	case OP_DELETE:
@@ -3445,6 +3448,9 @@ static ec_error_t opx_switch(const rulexec_in &rp,
 		TPROPVAL_ARRAY vals = {1, static_cast<TAGGED_PROPVAL *>(block.pdata)};
 		if (!cu_set_properties(MAPI_MESSAGE, rp.message_id, rp.cpid,
 		    rp.sqlite, &vals, &problems))
+			return ecError;
+		if (timeindex_covers(vals.ppropval[0].proptag) &&
+		    !timeindex_refresh(rp.sqlite, rp.folder_id, rp.message_id))
 			return ecError;
 		break;
 	}
