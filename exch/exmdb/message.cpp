@@ -962,6 +962,8 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	if (!cu_set_properties(MAPI_MESSAGE, mid_val, cpid,
 	    pdb->psqlite, pproperties, pproblems))
 		return FALSE;
@@ -969,6 +971,10 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 	if (!common_util_get_message_parent_folder(pdb->psqlite,
 	    mid_val, &fid_val) || fid_val == 0)
 		return FALSE;
+	if (std::any_of(pproperties->begin(), pproperties->end(),
+	    [](const TAGGED_PROPVAL &p) { return timeindex_covers(p.proptag); }) &&
+	    !timeindex_refresh(pdb->psqlite, fid_val, mid_val))
+		return false;
 	auto nt_time = rop_util_current_nttime();
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
@@ -993,6 +999,8 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 		return FALSE;
 	auto mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	if (!cu_remove_properties(MAPI_MESSAGE, mid_val,
 	    pdb->psqlite, pproptags))
 		return FALSE;
@@ -1000,6 +1008,9 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 	if (!common_util_get_message_parent_folder(pdb->psqlite,
 	    mid_val, &fid_val) || fid_val == 0)
 		return FALSE;
+	if (std::any_of(pproptags.begin(), pproptags.end(), timeindex_covers) &&
+	    !timeindex_refresh(pdb->psqlite, fid_val, mid_val))
+		return false;
 	auto nt_time = rop_util_current_nttime();
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,

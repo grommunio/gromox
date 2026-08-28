@@ -4754,6 +4754,14 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	return ENOMEM;
 }
 
+/* Tags whose values timeindex_insert copies into the index. */
+bool timeindex_covers(proptag_t tag)
+{
+	return tag == PR_LAST_MODIFICATION_TIME ||
+	       tag == PR_MESSAGE_DELIVERY_TIME ||
+	       tag == PR_CLIENT_SUBMIT_TIME;
+}
+
 /* Stores below schema EV-22 do not have the table at all. */
 bool timeindex_present(sqlite3 *db)
 {
