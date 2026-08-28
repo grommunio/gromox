@@ -4754,6 +4754,14 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	return ENOMEM;
 }
 
+/* Stores below schema EV-22 do not have the table at all. */
+bool timeindex_present(sqlite3 *db)
+{
+	auto stm = gx_sql_prep(db, "SELECT 1 FROM sqlite_master WHERE "
+	           "type='table' AND name='msgtime_index'");
+	return stm != nullptr && stm.step() == SQLITE_ROW;
+}
+
 bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid)
 {
 	if (fid == 0)

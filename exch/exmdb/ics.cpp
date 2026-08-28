@@ -233,7 +233,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	uint64_t rcv_cutoff = 0;
 	std::unordered_set<uint64_t> rcv_scope;
 	bool b_rcv_fast = false;
-	if (eas_time_search(prestriction)) try {
+	if (eas_time_search(prestriction) && timeindex_present(pdb->psqlite)) try {
 		rcv_cutoff = *static_cast<const int64_t *>(prestriction->prop->propval.pvalue);
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id "
 		         "FROM msgtime_index WHERE folder_id=%llu AND rcvtime>=%lld",
