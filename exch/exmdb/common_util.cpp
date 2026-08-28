@@ -4766,6 +4766,8 @@ bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid)
 {
 	if (fid == 0)
 		return true;
+	if (!timeindex_present(db))
+		return true;
 	const auto &q = mid == 0 ?
 		fmt::format("DELETE FROM msgtime_index WHERE folder_id={}", fid) :
 		fmt::format("DELETE FROM msgtime_index WHERE folder_id={} AND message_id={}", fid, mid);
@@ -4776,6 +4778,8 @@ bool timeindex_insert(sqlite3 *db, uint64_t fid, uint64_t mid)
 {
 	if (fid == 0)
 		return true; /* embedded message */
+	if (!timeindex_present(db))
+		return true; /* store predates the index */
 	auto q = fmt::format(
 		"INSERT INTO msgtime_index "
 		"SELECT m.parent_fid, m.message_id, mt.propval, rt.propval, st.propval "
