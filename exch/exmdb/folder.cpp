@@ -2070,6 +2070,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		pdb->delete_dynamic(fid_val, dbase.get());
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
+	pstmt.finalize();
 	pdb.reset();
 	if (b_populate && !db_engine_enqueue_populating_criteria(dir,
 	    cpid, fid_val, b_recursive, prestriction, std::move(scope_list)))
