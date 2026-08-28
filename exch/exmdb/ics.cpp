@@ -551,37 +551,40 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		return TRUE;
 	std::lock_guard lk(ics_log_mtx);
 	std::unique_ptr<FILE, file_deleter> fh;
-	if (g_exmdb_ics_log_file != "-")
+	auto lf = stderr;
+	if (g_exmdb_ics_log_file != "-") {
 		fh.reset(fopen(g_exmdb_ics_log_file.c_str(), "a"));
-	if (fh == nullptr)
-		return TRUE;
-	fprintf(fh.get(), "-------------\n");
-	fprintf(fh.get(), "dir=%s actor=%s CONTENT_SYNC folder_id=%llxh given=",
+		if (fh == nullptr)
+			return TRUE;
+		lf = fh.get();
+	}
+	fprintf(lf, "-------------\n");
+	fprintf(lf, "dir=%s actor=%s CONTENT_SYNC folder_id=%llxh given=",
 		dir, znul(username), static_cast<unsigned long long>(folder_id));
-	pgiven->dump(fh.get());
-	fprintf(fh.get(), " read=");
+	pgiven->dump(lf);
+	fprintf(lf, " read=");
 	if (pread != nullptr)
-		pread->dump(fh.get());
-	fprintf(fh.get(), " rst=");
+		pread->dump(lf);
+	fprintf(lf, " rst=");
 	if (prestriction != nullptr)
-		fprintf(fh.get(), "%s", prestriction->repr().c_str());
-	fprintf(fh.get(), " Out: Msg+FAI=%u+%u upd[%u]={",
+		fprintf(lf, "%s", prestriction->repr().c_str());
+	fprintf(lf, " Out: Msg+FAI=%u+%u upd[%u]={",
 		*pnormal_count, *pfai_count, pupdated_mids->count);
 	for (unsigned long long mid : *pupdated_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\nchg[%u]={", pchg_mids->count);
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\nchg[%u]={", pchg_mids->count);
 	for (unsigned long long mid : *pchg_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\ngiven[%u]={", pgiven_mids->count);
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\ngiven[%u]={", pgiven_mids->count);
 	for (unsigned long long mid : *pgiven_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\ndel[%u]={", pdeleted_mids->count);
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\ndel[%u]={", pdeleted_mids->count);
 	for (unsigned long long mid : *pdeleted_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\nnolonger[%u]={", pnolonger_mids->count);
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\nnolonger[%u]={", pnolonger_mids->count);
 	for (unsigned long long mid : *pnolonger_mids)
-		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
+		fprintf(lf, "%llxh,", mid);
+	fprintf(lf, "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
 	return TRUE;
 }
 
@@ -833,20 +836,23 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		return TRUE;
 	std::lock_guard lk(ics_log_mtx);
 	std::unique_ptr<FILE, file_deleter> fh;
-	if (g_exmdb_ics_log_file != "-")
+	auto lf = stderr;
+	if (g_exmdb_ics_log_file != "-") {
 		fh.reset(fopen(g_exmdb_ics_log_file.c_str(), "a"));
-	if (fh == nullptr)
-		return TRUE;
-	fprintf(fh.get(), "-------------\n");
-	fprintf(fh.get(), "* dir=%s actor=%s HIER_SYNC folder_id=%llxh given=",
+		if (fh == nullptr)
+			return TRUE;
+		lf = fh.get();
+	}
+	fprintf(lf, "-------------\n");
+	fprintf(lf, "* dir=%s actor=%s HIER_SYNC folder_id=%llxh given=",
 		dir, znul(username), static_cast<unsigned long long>(folder_id));
-	pgiven->dump(fh.get());
-	fprintf(fh.get(), " Out: given={");
+	pgiven->dump(lf);
+	fprintf(lf, " Out: given={");
 	for (unsigned long long fid : *pgiven_fids)
-		fprintf(fh.get(), "%llxh,", fid);
-	fprintf(fh.get(), "}\ndel={");
+		fprintf(lf, "%llxh,", fid);
+	fprintf(lf, "}\ndel={");
 	for (unsigned long long fid : *pdeleted_fids)
-		fprintf(fh.get(), "%llxh,", fid);
-	fprintf(fh.get(), "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
+		fprintf(lf, "%llxh,", fid);
+	fprintf(lf, "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
 	return TRUE;
 }

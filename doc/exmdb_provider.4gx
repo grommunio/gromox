@@ -34,7 +34,9 @@ backtrace instead of a single-level location indicator.
 Default: \fIno\fP
 .TP
 \fBexmdb_ics_log_file\fP
-Log ICS/synchronization requests (and their results) to this file.
+Log ICS/synchronization requests (and their results) to this file. The
+value \fI-\fP selects standard error instead of a file. An empty value
+disables the dump.
 .br
 Default: \fI(empty)\fP
 .TP
