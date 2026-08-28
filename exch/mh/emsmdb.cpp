@@ -82,8 +82,6 @@ struct EMSMDB_HANDLE2 : public EMSMDB_HANDLE
 };
 
 struct notification_ctx {
-	notification_ctx() = default;
-	notification_ctx(notification_ctx &&o) noexcept;
 	void clear();
 
 	uint8_t pending_status = PENDING_STATUS_NONE;
@@ -245,7 +243,7 @@ private:
 	std::unordered_map<std::string, int> users;
 	std::unordered_map<std::string, session_data> sessions;
 
-	std::vector<notification_ctx> status; /* no locking, cf. hpm_processor_get_request() */
+	std::unique_ptr<notification_ctx[]> m_status; /* no locking, cf. hpm_processor_get_request() */
 	std::string m_server_version;
 };
 
@@ -256,14 +254,6 @@ static constexpr struct cfg_directive mhems_gxcfg_deflt[] = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Plugin structure definitions
-
-notification_ctx::notification_ctx(notification_ctx &&o) noexcept :
-	pending_status(std::move(o.pending_status)),
-	notification_status(std::move(o.notification_status)),
-	session_guid(std::move(o.session_guid)),
-	pending_time(std::move(o.pending_time)),
-	wall_start_time(std::move(o.wall_start_time))
-{}
 
 void notification_ctx::clear()
 {
@@ -295,7 +285,7 @@ MhEmsmdbPlugin::MhEmsmdbPlugin(const struct dlfuncs &ppdata)
 	if (cfg != nullptr)
 		m_server_version = cfg->get_value("reported_server_version");
 	size_t contextnum = get_context_num();
-	status.resize(contextnum);
+	m_status = std::make_unique<notification_ctx[]>(contextnum);
 	users.reserve(AVERAGE_SESSION_PER_CONTEXT*contextnum);
 	sessions.reserve(AVERAGE_SESSION_PER_CONTEXT*contextnum);
 	stop = false;
@@ -363,7 +353,7 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 			    response_pending_period - std::chrono::seconds(3)) {
 				ctx->pending_time = now;
 				ctx->pending_status = PENDING_STATUS_KEEPALIVE;
-				wakeup_context(static_cast<int>(ctx-plugin.status.data()));
+				wakeup_context(static_cast<int>(ctx - plugin.m_status.get()));
 			}
 			++iter;
 		}
@@ -762,7 +752,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 	 * tag is already gone from g_tag_hash, no timeout would ever fire,
 	 * and the client would be stuck until its own HTTP timeout).
 	 */
-	notification_ctx &nctx = status[ctx.ID];
+	notification_ctx &nctx = m_status[ctx.ID];
 	{
 		std::lock_guard nc_hold(nctx.lock);
 		nctx.pending_status = PENDING_STATUS_WAITING;
@@ -809,7 +799,7 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 	ProcRes result;
 	auto heapctx = std::make_unique<MhEmsmdbContext>(context_id, m_server_version); /* huge object */
 	MhEmsmdbContext &ctx = *heapctx;
-	status[ctx.ID].clear();
+	m_status[ctx.ID].clear();
 	if (ctx.auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	if (!ctx.loadHeaders())
@@ -853,14 +843,14 @@ int MhEmsmdbPlugin::retr(int context_id)
 	wallclock::time_point wst;
 
 	{
-		std::lock_guard lk(status[context_id].lock);
-		nstat = status[context_id].notification_status;
-		pstat = status[context_id].pending_status;
-		wst   = status[context_id].wall_start_time;
+		std::lock_guard lk(m_status[context_id].lock);
+		nstat = m_status[context_id].notification_status;
+		pstat = m_status[context_id].pending_status;
+		wst   = m_status[context_id].wall_start_time;
 		if (nstat != NOTIFICATION_STATUS_NONE)
-			status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
+			m_status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
 		else if (pstat == PENDING_STATUS_KEEPALIVE)
-			status[context_id].pending_status = PENDING_STATUS_WAITING;
+			m_status[context_id].pending_status = PENDING_STATUS_WAITING;
 	}
 	switch (nstat) {
 	case NOTIFICATION_STATUS_TIMED:
@@ -887,15 +877,15 @@ void MhEmsmdbPlugin::term(int context_id)
 	EMSMDB_HANDLE acxh;
 	acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
 	{
-		std::lock_guard ctx_hold(status[context_id].lock);
-		if (status[context_id].pending_status == PENDING_STATUS_NONE)
+		std::lock_guard ctx_hold(m_status[context_id].lock);
+		if (m_status[context_id].pending_status == PENDING_STATUS_NONE)
 			return;
-		acxh.guid = status[context_id].session_guid;
-		status[context_id].pending_status = PENDING_STATUS_NONE;
+		acxh.guid = m_status[context_id].session_guid;
+		m_status[context_id].pending_status = PENDING_STATUS_NONE;
 	}
 	{
 		std::unique_lock ll_hold(pending_lock);
-		pending.erase(&status[context_id]);
+		pending.erase(&m_status[context_id]);
 	}
 	asyncemsmdb_interface_remove(&acxh);
 }
@@ -903,16 +893,16 @@ void MhEmsmdbPlugin::term(int context_id)
 void MhEmsmdbPlugin::async_wakeup(int context_id, BOOL b_pending)
 {
 	{
-	std::unique_lock lk(status[context_id].lock);
-	if (status[context_id].pending_status == PENDING_STATUS_NONE)
+	std::unique_lock lk(m_status[context_id].lock);
+	if (m_status[context_id].pending_status == PENDING_STATUS_NONE)
 		return;
-	status[context_id].notification_status =
+	m_status[context_id].notification_status =
 		b_pending ? NOTIFICATION_STATUS_PENDING : NOTIFICATION_STATUS_TIMED;
-	status[context_id].pending_status = PENDING_STATUS_NONE;
+	m_status[context_id].pending_status = PENDING_STATUS_NONE;
 	}
 	{
 	std::unique_lock lk(pending_lock);
-	pending.erase(&status[context_id]);
+	pending.erase(&m_status[context_id]);
 	}
 	wakeup_context(context_id);
 }
