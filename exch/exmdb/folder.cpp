@@ -2568,7 +2568,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
  * Function only usable for public stores.
  */
 BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
-	const char *username, uint64_t folder_id, uint32_t *pcount)
+    const char *username, uint64_t folder_id, uint32_t *pcount) try
 {
 	if (exmdb_server::is_private())
 		return FALSE;
@@ -2587,8 +2587,10 @@ BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
 	if (!sql_transact)
 		return false;
 	exmdb_server::set_public_username(username);
+	auto cl_0 = HX::make_scope_exit([&]() { exmdb_server::set_public_username(nullptr); });
 	*pcount = cu_folder_counts(pdb->psqlite, rop_util_get_gc_value(folder_id)).second;
-	exmdb_server::set_public_username(nullptr);
 	return TRUE;
-	
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }

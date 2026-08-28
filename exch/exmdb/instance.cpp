@@ -1437,7 +1437,7 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 
 /* account must be available when it is a normal message instance */ 
 BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
-    ec_error_t *pe_result)
+    ec_error_t *pe_result) try
 {
 	uint64_t folder_id;
 	
@@ -1584,6 +1584,9 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	g_inside_flush_instance = false;
 	exmdb_server::set_public_username(nullptr);
 	return b_result;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 	
 BOOL exmdb_server::unload_instance(const char *dir, uint32_t instance_id)

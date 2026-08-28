@@ -931,7 +931,7 @@ BOOL exmdb_server::get_message_rcpts(const char *dir,
  */
 BOOL exmdb_server::get_message_properties(const char *dir,
     const char *username, cpid_t cpid, uint64_t message_id,
-    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
+    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals) try
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -943,6 +943,9 @@ BOOL exmdb_server::get_message_properties(const char *dir,
 	return cu_get_properties(MAPI_MESSAGE,
 	       rop_util_get_gc_value(message_id), cpid, *pdb,
 	       pproptags, ppropvals);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 /**
@@ -952,7 +955,7 @@ BOOL exmdb_server::get_message_properties(const char *dir,
  */
 BOOL exmdb_server::set_message_properties(const char *dir,
     const char *username, cpid_t cpid, uint64_t message_id,
-	const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
+    const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems) try
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -989,6 +992,9 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 		return false;
 	dg_notify(std::move(notifq));
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
@@ -1030,9 +1036,8 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 /**
  * @username:   Used for adjusting public store readstates
  */
-BOOL exmdb_server::set_message_read_state(const char *dir,
-	const char *username, uint64_t message_id,
-	uint8_t mark_as_read, uint64_t *pread_cn)
+BOOL exmdb_server::set_message_read_state(const char *dir, const char *username,
+    uint64_t message_id, uint8_t mark_as_read, uint64_t *pread_cn) try
 {
 	auto mid_val = rop_util_get_gc_value(message_id);
 	auto pdb = db_engine_get_db(dir);
@@ -1092,6 +1097,9 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 	dg_notify(std::move(notifq));
 	*pread_cn = rop_util_make_eid_ex(1, read_cn);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 /* if folder_id is 0, it means embedded message */
@@ -3982,7 +3990,7 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
  * @username:   Used for adjusting public store readstates
  */
 BOOL exmdb_server::read_message(const char *dir, const char *username,
-    cpid_t cpid, uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt)
+    cpid_t cpid, uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt) try
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -3999,6 +4007,9 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 	if (!ret)
 		return FALSE;
 	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 /**
