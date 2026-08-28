@@ -781,7 +781,9 @@ static bool folder_empty_folder(db_conn &db, cpid_t cpid,
 				snprintf(sql_string, std::size(sql_string), "UPDATE messages SET is_deleted=1"
 				         " WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
 				         LLU{folder_id}, s_normal, s_fai);
-				timeindex_delete(db.psqlite, folder_id, 0);
+				/* only normal messages are indexed */
+				if (b_normal)
+					timeindex_delete(db.psqlite, folder_id, 0);
 			}
 			if (db.exec(sql_string) != SQLITE_OK)
 				return FALSE;
