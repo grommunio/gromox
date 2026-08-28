@@ -2157,7 +2157,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Manager", {[](auto &&...args) { convText(PR_MANAGER_NAME, args...); }}},
 	{"MiddleName", {[](auto &&...args) { convText(PR_MIDDLE_NAME, args...); }}},
 	{"Mileage", {[](auto &&...args) { convText(NtMileage, args...); }, "Task"}},
-	{"MimeContent", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.mimeContent = base64_decode(xml->GetText()); }}},
+	{"MimeContent", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.mimeContent = base64_decode(znul(xml->GetText())); }}},
 	{"Nickname", {[](auto&&... args){convText(PR_NICKNAME, args...);}}},
 	{"OfficeLocation", {[](auto&&... args){convText(PR_OFFICE_LOCATION, args...);}}},
 	{"OptionalAttendees", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.optionalAttendees = xml; }, "CalendarItem"}},
