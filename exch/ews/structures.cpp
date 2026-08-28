@@ -2466,7 +2466,7 @@ void tChangeDescription::convStrArray(proptag_t tag, const XMLElement *v, sShape
 	char** dest = categories->ppstr;
 	for (const XMLElement *s = v->FirstChildElement("String"); s != nullptr;
 	     s = s->NextSiblingElement("String"))
-		strcpy(*dest++ = EWSContext::alloc<char>(strlen(s->GetText()) + 1), s->GetText());
+		*dest++ = EWSContext::cpystr(znul(s->GetText()));
 	shape.write(TAGGED_PROPVAL{tag, categories});
 }
 
