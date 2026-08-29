@@ -2472,8 +2472,15 @@ static ec_error_t oxcical_import_internal(const char *method,
 				errstr = "E-2720";
 				return ecInvalidParam;
 			}
-			if (apr.recur_pat.modifiedinstancecount < apr.recur_pat.deletedinstancecount) {
-				errstr = "E-2721: ical object did not meet condition recur_pat.modifiedinstancecount < recur_pat.deletedinstancecount";
+			/*
+			 * MS-OXOCAL v21 §2.2.1.44.1: ModifiedInstanceCount
+			 * must not exceed DeletedInstanceCount; surplus
+			 * EXDATEs stay plain deletions, and the pairing below
+			 * would otherwise read deleted_dates beyond what
+			 * EXDATE supplied.
+			 */
+			if (apr.recur_pat.modifiedinstancecount > apr.recur_pat.deletedinstancecount) {
+				errstr = "E-2721: ical object has more RDATE than EXDATE values";
 				return ecInvalidParam;
 			}
 			apr.exceptioncount = apr.recur_pat.modifiedinstancecount;
