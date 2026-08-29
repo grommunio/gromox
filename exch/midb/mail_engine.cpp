@@ -3768,7 +3768,9 @@ static int me_mskwd(std::span<char *> argv, int sockd) try
 	 * base64_encode("") is a zero-length string, the parser rightfully
 	 * sees the line as 4 args and some excess whitespace.
 	 */
-	auto keywords = argv.size() >= 5 ? base64_decode(argv[4]) : std::string();
+	std::string keywords;
+	if (argv.size() >= 5)
+		keywords = base64_decode(argv[4]);
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;

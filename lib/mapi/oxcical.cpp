@@ -2634,7 +2634,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 			pexception->reminderdelta = alarmdelta;
 		}
 	}
-	if (!oxcical_fetch_propname(pmsg, phash, alloc, get_propids)) {
+	if (!oxcical_fetch_propname(pmsg, phash, alloc, std::move(get_propids))) {
 		errstr = "E-2735";
 		return ecInvalidParam;
 	}

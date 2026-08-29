@@ -643,7 +643,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 		return;
 	BUILD_PARAM build_param{pbuild->io};
 	build_param.msg_path = msg_path.c_str();
-	build_param.key = sub;
+	build_param.key = std::move(sub);
 	build_param.depth = pbuild->depth + 1;
 	build_param.build_result = TRUE;
 
