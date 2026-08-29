@@ -407,7 +407,7 @@ bool RESTRICTION_PROPERTY::comparable() const
 
 bool RESTRICTION_PROPERTY::eval(const void *dbval) const
 {
-	if (!(PROP_TYPE(proptag) & MV_FLAG))
+	if (!(PROP_TYPE(proptag) & MV_FLAG) || dbval == nullptr)
 		return propval_compare_relop_nullok(relop, PROP_TYPE(proptag),
 		       dbval, propval.pvalue);
 
