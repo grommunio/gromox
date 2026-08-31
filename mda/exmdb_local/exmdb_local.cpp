@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/bounce_gen.hpp>
@@ -522,7 +523,7 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 
 static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 	{"autoreply_silence_window", "1day", CFG_TIME, "0"},
-	{"autoreply_subject_prefix", "Out of office: "},
+	{"autoreply_subject_prefix", "Out of Office: "},
 	CFG_TABLE_END,
 };
 
@@ -546,6 +547,14 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		if (cfg != nullptr) {
 			autoreply_silence_window = cfg->get_ll("autoreply_silence_window");
 			autoreply_subject_prefix = znul(cfg->get_value("autoreply_subject_prefix"));
+			/*
+			 * The prefix carries its own separator, and config_file_init
+			 * trims trailing whitespace off every line, so a configured
+			 * one cannot express it.
+			 */
+			if (!autoreply_subject_prefix.empty() &&
+			    !HX_isspace(autoreply_subject_prefix.back()))
+				autoreply_subject_prefix += ' ';
 			g_junk_rules = parse_junk_rules(cfg->get_value("lda_junk_rules"));
 		}
 
