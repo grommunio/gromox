@@ -609,7 +609,7 @@ ec_error_t message_object::query_attachment_table(proptag_cspan pproptags,
 	       start_pos, row_needed, pset) ? ecSuccess : ecRpcFailed;
 }
 
-ec_error_t message_object::append_stream_object(stream_object *pstream) try
+ec_error_t message_object::append_stream_obj(stream_object *pstream) try
 {
 	auto pmessage = this;
 	
@@ -630,7 +630,7 @@ ec_error_t message_object::append_stream_object(stream_object *pstream) try
 }
 
 /* called when stream object is released */
-ec_error_t message_object::commit_stream_object(stream_object *pstream)
+ec_error_t message_object::commit_stream_obj(stream_object *pstream)
 {
 	auto pmessage = this;
 	uint32_t result;
@@ -858,7 +858,7 @@ static const void *message_object_get_stream_property_value(const message_object
 	return NULL;
 }
 
-ec_error_t message_object::get_properties(uint32_t size_limit,
+ec_error_t message_object::get_props(uint32_t size_limit,
     proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto pmessage = this;
@@ -1030,7 +1030,7 @@ static ec_error_t message_object_set_properties_internal(message_object *pmessag
 	return ecServerOOM;
 }
 
-ec_error_t message_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
+ec_error_t message_object::set_props(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pmessage = this;
@@ -1038,7 +1038,7 @@ ec_error_t message_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 			pmessage, TRUE, ppropvals, pproblems);
 }
 
-ec_error_t message_object::remove_properties(proptag_cspan pproptags,
+ec_error_t message_object::remove_props(proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems) try
 {
 	auto pmessage = this;

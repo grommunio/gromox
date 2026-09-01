@@ -114,7 +114,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		return ecServerOOM;
 	static constexpr proptag_t proptags[] =
 		{PR_HAS_NAMED_PROPERTIES, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
-	auto err = pmessage->get_properties(0, proptags, &propvals);
+	auto err = pmessage->get_props(0, proptags, &propvals);
 	if (err != ecSuccess)
 		return err;
 	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
@@ -268,7 +268,7 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 			return ret;
 	}
 	static constexpr proptag_t tmp_proptag[] = {PidTagMid};
-	auto err = pmessage->get_properties(0, tmp_proptag, &propvals);
+	auto err = pmessage->get_props(0, tmp_proptag, &propvals);
 	if (err != ecSuccess)
 		return err;
 	auto pvalue = propvals.get<uint64_t>(PidTagMid);
@@ -410,7 +410,7 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 		return ecNotSupported;
 	static constexpr proptag_t proptags[] =
 		{PR_HAS_NAMED_PROPERTIES, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
-	auto err = pmessage->get_properties(0, proptags, &propvals);
+	auto err = pmessage->get_props(0, proptags, &propvals);
 	if (err != ecSuccess)
 		return err;
 	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
@@ -860,7 +860,7 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 			return err;
 
 		static constexpr proptag_t proptags[] = {PidTagMid};
-		err = pmessage->get_properties(0, proptags, &propvals);
+		err = pmessage->get_props(0, proptags, &propvals);
 		if (err != ecSuccess)
 			return err;
 		auto mid_p = propvals.get<const eid_t>(PidTagMid);
@@ -888,7 +888,7 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 	static constexpr proptag_t proptags[] =
 		{PidTagMid, PR_HAS_NAMED_PROPERTIES,
 		PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
-	auto err = pmessage->get_properties(0, proptags, &propvals);
+	auto err = pmessage->get_props(0, proptags, &propvals);
 	if (err != ecSuccess)
 		return err;
 	auto mid_p = propvals.get<const eid_t>(PidTagMid);

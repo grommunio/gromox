@@ -120,7 +120,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
-	err = pmessage->set_properties(&tmp_propvals, &tmp_problems);
+	err = pmessage->set_props(&tmp_propvals, &tmp_problems);
 	if (err != ecSuccess)
 		return err;
 	return pmessage->save();
@@ -148,7 +148,7 @@ static ec_error_t oxomsg_extract_delegator(message_object *pmessage,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	auto err = pmessage->get_properties(0, tmp_proptags, &tmp_propvals);
+	auto err = pmessage->get_props(0, tmp_proptags, &tmp_propvals);
 	if (err != ecSuccess)
 		return err;
 	if (0 == tmp_propvals.count) {
@@ -300,7 +300,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecTooManyRecips;
 
 	static constexpr proptag_t ptags_one[] = {PR_ASSOCIATED, PR_MESSAGE_CLASS};
-	err = pmessage->get_properties(0, ptags_one, &tmp_propvals);
+	err = pmessage->get_props(0, ptags_one, &tmp_propvals);
 	if (err != ecSuccess)
 		return err;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
@@ -357,7 +357,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		PR_DEFERRED_SEND_TIME, PR_DEFERRED_SEND_NUMBER,
 		PR_DEFERRED_SEND_UNITS, PR_DELETE_AFTER_SUBMIT};
 	proptag_cspan tmp_proptags = {ptbuf_three, (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : std::size(ptbuf_three)};
-	err = pmessage->get_properties(0, tmp_proptags, &tmp_propvals);
+	err = pmessage->get_props(0, tmp_proptags, &tmp_propvals);
 	if (err != ecSuccess)
 		return err;
 	num = tmp_propvals.get<const uint32_t>(PR_MESSAGE_SIZE);
@@ -625,7 +625,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		TPROPVAL_ARRAY cls_vals{};
-		err = pmessage->get_properties(0, cls_tags, &cls_vals);
+		err = pmessage->get_props(0, cls_tags, &cls_vals);
 		if (err != ecSuccess)
 			return err;
 		auto ret = pass_scheduling("E-2080", actor, delegator.c_str(), *pmessage,
@@ -643,7 +643,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			{PR_SENDER_NAME, PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY,
 			PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ENTRYID,
 			PR_SENT_REPRESENTING_SEARCH_KEY, PR_PROVIDER_SUBMIT_TIME};
-		err = pmessage->get_properties(0, proptags, *pppropvals);
+		err = pmessage->get_props(0, proptags, *pppropvals);
 		if (err != ecSuccess) {
 			*pppropvals = NULL;
 		} else if (!(**pppropvals).has(PR_PROVIDER_SUBMIT_TIME)) {

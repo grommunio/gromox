@@ -707,7 +707,7 @@ ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 			auto msg = static_cast<message_object *>(pctx->pobject);
 			const TPROPVAL_ARRAY av = {1, deconst(ppropval)};
 			PROBLEM_ARRAY pa;
-			return msg->set_properties(&av, &pa);
+			return msg->set_props(&av, &pa);
 		}
 		case ROOT_ELEMENT_ATTACHMENTCONTENT: {
 			auto atx = static_cast<attachment_object *>(pctx->pobject);

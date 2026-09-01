@@ -908,7 +908,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		return ecError;
 	if (!b_new) {
 		static constexpr proptag_t tags[] = {PR_PREDECESSOR_CHANGE_LIST};
-		auto err = pmessage->get_properties(0, tags, &tmp_propvals);
+		auto err = pmessage->get_props(0, tags, &tmp_propvals);
 		if (err != ecSuccess)
 			return err;
 		auto bin = tmp_propvals.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);

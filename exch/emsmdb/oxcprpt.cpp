@@ -166,7 +166,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	}
 	case ems_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
-		auto err = msg->get_properties(0, *ptmp_proptags, &propvals);
+		auto err = msg->get_props(0, *ptmp_proptags, &propvals);
 		if (err != ecSuccess)
 			return err;
 		cpid = msg->get_cpid();
@@ -289,7 +289,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		err = msg->get_properties(size_limit, *ptmp_proptags, ppropvals);
+		err = msg->get_props(size_limit, *ptmp_proptags, ppropvals);
 		if (err != ecSuccess)
 			return err;
 		cpid = msg->get_cpid();
@@ -377,7 +377,7 @@ ec_error_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 		auto tag_access = msg->get_tag_access();
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		return msg->set_properties(ppropvals, pproblems);
+		return msg->set_props(ppropvals, pproblems);
 	}
 	case ems_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -432,7 +432,7 @@ ec_error_t rop_deleteproperties(proptag_cspan pproptags,
 		auto tag_access = msg->get_tag_access();
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		return msg->remove_properties(pproptags, pproblems);
+		return msg->remove_props(pproptags, pproblems);
 	}
 	case ems_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
@@ -665,7 +665,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			poriginal_indices.push_back(i);
 			proptags.emplace_back(tag);
 		}
-		auto err = msgsrc->get_properties(0, proptags, &propvals);
+		auto err = msgsrc->get_props(0, proptags, &propvals);
 		if (err != ecSuccess)
 			return err;
 		for (size_t i = 0; i < proptags.count; ++i) {
@@ -673,7 +673,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			if (!propvals.has(tag))
 				pproblems->emplace_back(poriginal_indices[i], tag, ecNotFound);
 		}
-		err = msgdst->set_properties(&propvals, &tmp_problems);
+		err = msgdst->set_props(&propvals, &tmp_problems);
 		if (err != ecSuccess)
 			return err;
 		for (size_t i = 0; i < tmp_problems.count; ++i)

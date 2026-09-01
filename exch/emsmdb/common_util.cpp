@@ -1604,7 +1604,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 				TAGGED_PROPVAL tp  = {tag, deconst(th)};
 				TPROPVAL_ARRAY tpa = {1, &tp};
 				PROBLEM_ARRAY pa{};
-				if (msg->set_properties(&tpa, &pa) != ecSuccess)
+				if (msg->set_props(&tpa, &pa) != ecSuccess)
 					break;
 				/* Unclear if permitted to save (specs say nothing) */
 				msg->save();
