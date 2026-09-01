@@ -93,7 +93,7 @@ GUID logon_object::guid() const
 	       rop_util_make_domain_guid(account_id);
 }
 
-BOOL logon_object::get_named_propname(propid_t propid,
+ec_error_t logon_object::get_named_propname(propid_t propid,
     PROPERTY_NAME *ppropname)
 {
 	if (!is_nameprop_id(propid)) {
@@ -105,16 +105,16 @@ BOOL logon_object::get_named_propname(propid_t propid,
 	auto iter = propid_hash.find(propid);
 	if (iter != propid_hash.end()) {
 		*ppropname = static_cast<PROPERTY_NAME>(iter->second);
-		return TRUE;
+		return ecSuccess;
 	}
 	if (!exmdb_client->get_named_propname(plogon->dir, propid, ppropname))
-		return FALSE;	
+		return ecRpcFailed;
 	if (ppropname->kind == MNID_ID || ppropname->kind == MNID_STRING)
 		logon_object_cache_propname(plogon, propid, ppropname);
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL logon_object::get_named_propnames(const PROPID_ARRAY &propids,
+ec_error_t logon_object::get_named_propnames(const PROPID_ARRAY &propids,
     PROPNAME_ARRAY *ppropnames) try
 {
 	PROPID_ARRAY tmp_propids;
@@ -122,14 +122,14 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY &propids,
 	
 	if (propids.empty()) {
 		ppropnames->count = 0;
-		return TRUE;
+		return ecSuccess;
 	}
 	auto pindex_map = cu_alloc<int>(propids.size());
 	if (pindex_map == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.size());
 	if (ppropnames->ppropname == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropnames->count = propids.size();
 	auto plogon = this;
 	for (size_t i = 0; i < propids.size(); ++i) {
@@ -150,10 +150,11 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY &propids,
 		}
 	}
 	if (tmp_propids.empty())
-		return TRUE;
+		return ecSuccess;
+
 	if (!exmdb_client->get_named_propnames(plogon->dir,
 	    tmp_propids, &tmp_propnames) || tmp_propnames.size() != tmp_propids.size())
-		return FALSE;	
+		return ecRpcFailed;
 	for (size_t i = 0; i < propids.size(); ++i) {
 		if (pindex_map[i] >= 0)
 			continue;
@@ -163,56 +164,56 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY &propids,
 			logon_object_cache_propname(plogon,
 				propids[i], ppropnames->ppropname + i);
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
 
-BOOL logon_object::get_named_propid(BOOL b_create,
+ec_error_t logon_object::get_named_propid(BOOL b_create,
     const PROPERTY_NAME *ppropname, propid_t *ppropid)
 {
 	if (ppropname->guid == PS_MAPI) {
 		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
-		return TRUE;
+		return ecSuccess;
 	}
 	char ps[NP_STRBUF_SIZE];
 	if (!propname_to_packed(*ppropname, ps, std::size(ps))) {
 		*ppropid = 0;
-		return TRUE;
+		return ecSuccess;
 	}
 	auto plogon = this;
 	auto iter = propname_hash.find(ps);
 	if (iter != propname_hash.end()) {
 		*ppropid = iter->second;
-		return TRUE;
+		return ecSuccess;
 	}
 	if (!exmdb_client->get_named_propid(plogon->dir, b_create,
 	    ppropname, ppropid))
-		return FALSE;
+		return ecRpcFailed;
 	if (*ppropid == 0)
-		return TRUE;
+		return ecSuccess;
 	logon_object_cache_propname(plogon, *ppropid, ppropname);
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL logon_object::get_named_propids(BOOL b_create,
+ec_error_t logon_object::get_named_propids(BOOL b_create,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids) try
 {
 	auto &propids = *ppropids;
 	
 	if (0 == ppropnames->count) {
 		ppropids->clear();
-		return TRUE;
+		return ecSuccess;
 	}
 	auto pindex_map = cu_alloc<int>(ppropnames->count);
 	if (pindex_map == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	PROPID_ARRAY tmp_propids;
 	propids.resize(ppropnames->count);
 	PROPNAME_ARRAY tmp_propnames = {0, cu_alloc<PROPERTY_NAME>(ppropnames->count)};
 	if (tmp_propnames.ppropname == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	auto plogon = this;
 	for (unsigned int i = 0; i < ppropnames->count; ++i) {
 		if (ppropnames->ppropname[i].guid == PS_MAPI) {
@@ -237,11 +238,13 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 		}
 	}
 	if (tmp_propnames.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	if (!exmdb_client->get_named_propids(plogon->dir, b_create,
-	    &tmp_propnames, &tmp_propids) ||
-	    tmp_propids.size() != tmp_propnames.size())
-		return FALSE;	
+	    &tmp_propnames, &tmp_propids))
+		return ecRpcFailed;
+	if (tmp_propids.size() != tmp_propnames.size())
+		return ecError;
 	for (unsigned int i = 0; i < ppropnames->count; ++i) {
 		if (pindex_map[i] >= 0)
 			continue;
@@ -250,10 +253,10 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 			logon_object_cache_propname(plogon,
 				propids[i], ppropnames->ppropname + i);
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
 
 BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const

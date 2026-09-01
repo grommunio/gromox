@@ -258,7 +258,7 @@ static int ftstream_producer_write_propdef(fxstream_producer *pstream,
 	if (propid == PROP_ID_INVALID)
 		mlog(LV_WARN, "W-1271: ftstream with PROP_ID_INVALID seen");
 	if (is_nameprop_id(propid)) {
-		if (!pstream->plogon->get_named_propname(propid, &propname))
+		if (pstream->plogon->get_named_propname(propid, &propname) != ecSuccess)
 			return -1;
 		if (propname.kind == KIND_NONE) {
 			mlog(LV_WARN, "W-1566: propid %xh has no matching namedprop", propid);

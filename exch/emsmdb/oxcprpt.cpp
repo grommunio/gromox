@@ -61,9 +61,7 @@ ec_error_t rop_getpropertyidsfromnames(uint8_t flags,
 			return ecError;
 		return ecSuccess;
 	}
-	if (!plogon->get_named_propids(b_create, ppropnames, ppropids))
-		return ecError;
-	return ecSuccess;
+	return plogon->get_named_propids(b_create, ppropnames, ppropids);
 }
 
 ec_error_t rop_getnamesfrompropertyids(const PROPID_ARRAY &ppropids,
@@ -80,9 +78,7 @@ ec_error_t rop_getnamesfrompropertyids(const PROPID_ARRAY &ppropids,
 	case ems_objtype::folder:
 	case ems_objtype::message:
 	case ems_objtype::attach:
-		if (!plogon->get_named_propnames(ppropids, ppropnames))
-			return ecError;
-		return ecSuccess;
+		return plogon->get_named_propnames(ppropids, ppropnames);
 	default:
 		return ecNotSupported;
 	}
@@ -529,8 +525,10 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	ppropidnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.size());
 	if (ppropidnames->ppropid == nullptr)
 		return ecServerOOM;
-	if (!plogon->get_named_propnames(propids, &propnames) ||
-	    propnames.size() != propids.size())
+	auto err = plogon->get_named_propnames(propids, &propnames);
+	if (err != ecSuccess)
+		return err;
+	if (propnames.size() != propids.size())
 		return ecError;
 	for (size_t i = 0; i < propids.size(); ++i) {
 		if (propnames.ppropname[i].kind == KIND_NONE)
