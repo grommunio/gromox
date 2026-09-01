@@ -709,7 +709,7 @@ ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 			auto atx = static_cast<attachment_object *>(pctx->pobject);
 			const TPROPVAL_ARRAY av = {1, deconst(ppropval)};
 			PROBLEM_ARRAY pa;
-			return atx->set_properties(&av, &pa) == TRUE ? ecSuccess : ecRpcFailed;
+			return atx->set_props(&av, &pa);
 		}
 		case ROOT_ELEMENT_MESSAGELIST:
 		case ROOT_ELEMENT_TOPFOLDER:

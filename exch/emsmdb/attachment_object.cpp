@@ -53,11 +53,11 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 	return pattachment;
 }
 
-BOOL attachment_object::init_attachment()
+ec_error_t attachment_object::init_attachment()
 {
 	auto pattachment = this;
 	if (!pattachment->b_new)
-		return FALSE;
+		return ecInvalidParam;
 	uint32_t rendpos = indet_rendering_pos;
 	auto modtime = rop_util_current_nttime();
 	const TAGGED_PROPVAL propbuf[] = {
@@ -69,7 +69,7 @@ BOOL attachment_object::init_attachment()
 	const TPROPVAL_ARRAY propvals = {std::size(propbuf), deconst(propbuf)};
 	PROBLEM_ARRAY problems;
 	return exmdb_client->set_instance_properties(pattachment->pparent->plogon->get_dir(),
-	       pattachment->instance_id, &propvals, &problems);
+	       pattachment->instance_id, &propvals, &problems) ? ecSuccess : ecRpcFailed;
 }
 
 attachment_object::~attachment_object()
@@ -91,15 +91,17 @@ ec_error_t attachment_object::save()
 	
 	if (!b_touched && !b_new)
 		return ecSuccess;
-	if (!flush_streams())
-		return ecRpcFailed;
+	auto err = flush_streams();
+	if (err != ecSuccess)
+		return err;
 
 	auto nt_time = rop_util_current_nttime();
 	const TAGGED_PROPVAL propbuf[] = {{PR_LAST_MODIFICATION_TIME, &nt_time}};
 	const TPROPVAL_ARRAY tmp_propvals = {std::size(propbuf), deconst(propbuf)};
 	PROBLEM_ARRAY tmp_problems;
-	if (!set_properties(&tmp_propvals, &tmp_problems))
-		return ecRpcFailed;
+	err = set_props(&tmp_propvals, &tmp_problems);
+	if (err != ecSuccess)
+		return err;
 
 	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client->flush_instance(pattachment->pparent->plogon->get_dir(),
@@ -114,21 +116,21 @@ ec_error_t attachment_object::save()
 	return ecSuccess;
 }
 
-BOOL attachment_object::append_stream_object(stream_object *pstream) try
+ec_error_t attachment_object::append_stream_obj(stream_object *pstream) try
 {
 	auto pattachment = this;
 	for (auto so : stream_list)
 		if (so == pstream)
-			return TRUE;
+			return ecSuccess;
 	stream_list.push_back(pstream);
 	pattachment->b_touched = TRUE;
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	return false;
+	return ecServerOOM;
 }
 
 /* called when stream object is released */
-BOOL attachment_object::commit_stream_object(stream_object *pstream)
+ec_error_t attachment_object::commit_stream_obj(stream_object *pstream)
 {
 	auto pattachment = this;
 	uint32_t result;
@@ -143,14 +145,14 @@ BOOL attachment_object::commit_stream_object(stream_object *pstream)
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue  = deconst(pstream->get_content());
 		if (tmp_propval.pvalue == nullptr)
-			return false;
+			return ecError;
 		return exmdb_client->set_instance_property(pattachment->pparent->plogon->get_dir(),
-		       pattachment->instance_id, &tmp_propval, &result) ? TRUE : false;
+		       pattachment->instance_id, &tmp_propval, &result) ? ecSuccess : ecRpcFailed;
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL attachment_object::flush_streams()
+ec_error_t attachment_object::flush_streams()
 {
 	auto pattachment = this;
 	uint32_t result;
@@ -161,34 +163,34 @@ BOOL attachment_object::flush_streams()
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue  = deconst(pstream->get_content());
 		if (tmp_propval.pvalue == nullptr)
-			return false;
+			/* Allocation failure or unsupported proptype */
+			return ecError;
 		if (!exmdb_client->set_instance_property(pattachment->pparent->plogon->get_dir(),
 		    pattachment->instance_id, &tmp_propval, &result))
-			return FALSE;
+			return ecRpcFailed;
 		stream_list.erase(stream_list.begin());
 	}
-	return TRUE;
-	
+	return ecSuccess;
 }
 
-BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
+ec_error_t attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 {
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client->get_instance_all_proptags(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_proptags))
-		return FALSE;	
+		return ecRpcFailed;
 	auto nodes_num = stream_list.size() + 1;
 	pproptags->count = tmp_proptags.count;
 	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + nodes_num);
 	if (pproptags->pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	for (auto so : stream_list)
 		pproptags->emplace_back_nd(so->get_proptag());
 	pproptags->emplace_back_nd(PR_ACCESS_LEVEL);
-	return TRUE;
+	return ecSuccess;
 }
 
 bool attachment_object::is_readonly_prop(proptag_t proptag) const
@@ -213,34 +215,35 @@ bool attachment_object::is_readonly_prop(proptag_t proptag) const
 	return FALSE;
 }
 
-static BOOL attachment_object_get_calculated_property(const attachment_object *pattachment,
+static ec_error_t
+attachment_object_get_calculated_property(const attachment_object *pattachment,
     proptag_t proptag, void **ppvalue)
 {
 	switch (proptag) {
 	case PR_ACCESS:
 		*ppvalue = deconst(&pattachment->pparent->tag_access);
-		return TRUE;
+		return ecSuccess;
 	case PR_ACCESS_LEVEL: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = pattachment->open_flags & MAPI_MODIFY;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (v == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = static_cast<uint32_t>(MAPI_ATTACH);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(pattachment->pparent->plogon->mailbox_guid);
-		return TRUE;
+		return ecSuccess;
 	}
-	return FALSE;
+	return ecNotFound;
 }
 
 static const void *attachment_object_get_stream_property_value(const attachment_object *at,
@@ -252,26 +255,34 @@ static const void *attachment_object_get_stream_property_value(const attachment_
 	return NULL;
 }
 
-bool attachment_object::get_properties(uint32_t size_limit,
+ec_error_t attachment_object::get_props(uint32_t size_limit,
     proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto pattachment = this;
-	static const uint32_t err_code = ecError;
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropvals->count = 0;
 	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		if (attachment_object_get_calculated_property(pattachment, tag, &pvalue)) {
-			if (pvalue != nullptr)
-				ppropvals->emplace_back(tag, pvalue);
-			else
-				ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_code);
+		auto err = attachment_object_get_calculated_property(pattachment, tag, &pvalue);
+		if (err == ecSuccess && pvalue != nullptr) {
+			ppropvals->emplace_back(tag, pvalue);
+			continue;
+		} else if (err == ecNotFound || pvalue == nullptr) {
+		} else {
+			static constexpr uint32_t enomem = ecServerOOM;
+			auto v = cu_alloc<uint32_t>();
+			if (v == nullptr) {
+				ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &enomem);
+				continue;
+			}
+			*v = err;
+			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), v);
 			continue;
 		}
 		pvalue = deconst(attachment_object_get_stream_property_value(pattachment, tag));
@@ -282,18 +293,19 @@ bool attachment_object::get_properties(uint32_t size_limit,
 		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    size_limit, pattachment->instance_id, tmp_proptags, &tmp_propvals))
-		return FALSE;	
+		return ecRpcFailed;
 	if (tmp_propvals.count == 0)
-		return TRUE;
+		return ecSuccess;
 	memcpy(ppropvals->ppropval + ppropvals->count,
 		tmp_propvals.ppropval,
 		sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 	ppropvals->count += tmp_propvals.count;
-	return TRUE;	
+	return ecSuccess;
 }
 
 static bool ao_has_open_streams(attachment_object *at, proptag_t proptag)
@@ -304,7 +316,7 @@ static bool ao_has_open_streams(attachment_object *at, proptag_t proptag)
 	return false;
 }
 
-BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
+ec_error_t attachment_object::set_props(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems) try
 {
 	auto pattachment = this;
@@ -312,10 +324,10 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (pproblems->pproblem == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	TPROPVAL_ARRAY tmp_propvals = {0, cu_alloc<TAGGED_PROPVAL>(ppropvals->count)};
 	if (tmp_propvals.ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	std::vector<uint16_t> poriginal_indices;
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
@@ -328,14 +340,15 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		poriginal_indices.push_back(i);
 	}
 	if (tmp_propvals.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client->set_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_propvals, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	if (0 == tmp_problems.count) {
 		pattachment->b_touched = TRUE;
-		return TRUE;
+		return ecSuccess;
 	}
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
@@ -345,13 +358,13 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 			break;
 		}
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
 
-bool attachment_object::remove_properties(proptag_cspan pproptags,
+ec_error_t attachment_object::remove_props(proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems) try
 {
 	auto pattachment = this;
@@ -359,10 +372,10 @@ bool attachment_object::remove_properties(proptag_cspan pproptags,
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags.size());
 	if (pproblems->pproblem == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	std::vector<uint16_t> poriginal_indices;
 	for (unsigned int i = 0; i < pproptags.size(); ++i) {
 		const auto tag = pproptags[i];
@@ -375,14 +388,15 @@ bool attachment_object::remove_properties(proptag_cspan pproptags,
 		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client->remove_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, tmp_proptags, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	if (0 == tmp_problems.count) {
 		pattachment->b_touched = TRUE;
-		return TRUE;
+		return ecSuccess;
 	}
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
@@ -392,13 +406,13 @@ bool attachment_object::remove_properties(proptag_cspan pproptags,
 			break;
 		}
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
 
-bool attachment_object::copy_properties(attachment_object *pattachment_src,
+ec_error_t attachment_object::copy_props(attachment_object *pattachment_src,
     proptag_cspan pexcluded_proptags, BOOL b_force,
 	BOOL *pb_cycle, PROBLEM_ARRAY *pproblems)
 {
@@ -409,14 +423,15 @@ bool attachment_object::copy_properties(attachment_object *pattachment_src,
 	auto dstdir = pparent->plogon->get_dir();
 	if (!exmdb_client->is_descendant_instance(dstdir,
 	    pattachment_src->instance_id, pattachment->instance_id, pb_cycle))
-		return FALSE;	
+		return ecRpcFailed;
 	if (*pb_cycle)
-		return TRUE;
-	if (!pattachment_src->flush_streams())
-		return FALSE;
+		return ecSuccess;
+	auto err = pattachment_src->flush_streams();
+	if (err != ecSuccess)
+		return err;
 	if (!exmdb_client->read_attachment_instance(pattachment_src->pparent->plogon->get_dir(),
 	    pattachment_src->instance_id, &attctnt))
-		return FALSE;
+		return ecRpcFailed;
 	common_util_remove_propvals(&attctnt.proplist, PR_ATTACH_NUM);
 	i = 0;
 	while (i < attctnt.proplist.count) {
@@ -431,7 +446,7 @@ bool attachment_object::copy_properties(attachment_object *pattachment_src,
 		attctnt.pembedded = NULL;
 	if (!exmdb_client->write_attachment_instance(dstdir,
 	    pattachment->instance_id, &attctnt, b_force, pproblems))
-		return FALSE;	
+		return ecRpcFailed;
 	pattachment->b_touched = TRUE;
-	return TRUE;
+	return ecSuccess;
 }

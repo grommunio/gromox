@@ -744,8 +744,9 @@ ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 	*pattachment_id = pattachment->get_attachment_num();
 	if (*pattachment_id == ATTACHMENT_NUM_INVALID)
 		return ecMaxAttachmentExceeded;
-	if (!pattachment->init_attachment())
-		return ecError;
+	auto err = pattachment->init_attachment();
+	if (err != ecSuccess)
+		return err;
 	auto hnd = plogmap->add_object_handle(logon_id, hin,
 	           {ems_objtype::attach, std::move(pattachment)});
 	if (hnd < 0)

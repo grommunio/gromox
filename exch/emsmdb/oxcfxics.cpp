@@ -502,11 +502,13 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			return ecError;
 		break;
 	}
-	case ems_objtype::attach:
-		if (!static_cast<attachment_object *>(pobject)->flush_streams())
-			return ecError;
+	case ems_objtype::attach: {
+		auto &atx = *static_cast<attachment_object *>(pobject);
+		auto err = atx.flush_streams();
+		if (err != ecSuccess)
+			return err;
 		if (!exmdb_client->read_attachment_instance(plogon->get_dir(),
-		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
+		    atx.get_instance_id(), &attctnt))
 			return ecError;
 		for (const auto tag : pproptags) {
 			switch (tag) {
@@ -521,6 +523,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!pctx->make_attachmentcontent(attctnt))
 			return ecError;
 		break;
+	}
 	default:
 		break;
 	}
@@ -616,11 +619,13 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		break;
 	}
-	case ems_objtype::attach:
-		if (!static_cast<attachment_object *>(pobject)->flush_streams())
-			return ecError;
+	case ems_objtype::attach: {
+		auto &atx = *static_cast<attachment_object *>(pobject);
+		auto err = atx.flush_streams();
+		if (err != ecSuccess)
+			return err;
 		if (!exmdb_client->read_attachment_instance(plogon->get_dir(),
-		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
+		    atx.get_instance_id(), &attctnt))
 			return ecError;
 		for (unsigned int i = 0; i < attctnt.proplist.count; ) {
 			if (!pproptags.has(attctnt.proplist.ppropval[i].proptag)) {
@@ -635,6 +640,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		if (!pctx->make_attachmentcontent(attctnt))
 			return ecError;
 		break;
+	}
 	default:
 		break;
 	}
