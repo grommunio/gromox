@@ -1030,9 +1030,7 @@ ec_error_t rop_commitstream(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 		return ecNotSupported;
 	switch (pstream->get_parent_type()) {
 	case ems_objtype::folder:
-		if (!pstream->commit())
-			return ecError;
-		return ecSuccess;
+		return pstream->commit();
 	case ems_objtype::message:
 	case ems_objtype::attach:
 		return ecSuccess;
@@ -1125,8 +1123,9 @@ ec_error_t rop_copytostream(uint64_t byte_count, uint64_t *pread_bytes,
 		return ecSuccess;
 	}
 	length = byte_count;
-	if (!pdst_stream->copy(psrc_stream, &length))
-		return ecError;
+	auto err = pdst_stream->copy(psrc_stream, &length);
+	if (err != ecSuccess)
+		return err;
 	*pread_bytes = length;
 	*pwritten_bytes = length;
 	return ecSuccess;

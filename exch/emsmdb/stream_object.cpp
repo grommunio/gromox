@@ -242,36 +242,38 @@ ec_error_t stream_object::seek(uint8_t opt, int64_t offset)
 	return ecSuccess;
 }
 
-BOOL stream_object::copy(stream_object *pstream_src, uint32_t *plength)
+ec_error_t stream_object::copy(stream_object *pstream_src, uint32_t *plength)
 {
 	auto pstream_dst = this;
 	if (pstream_src->seek_ptr >=
 		pstream_src->content_bin.cb) {
 		*plength = 0;
-		return TRUE;
+		return ecSuccess;
 	}
 	if (pstream_dst->seek_ptr >=
 		pstream_dst->max_length) {
 		*plength = 0;
-		return TRUE;
+		return ecSuccess;
 	}
 	if (pstream_src->seek_ptr + *plength > pstream_src->content_bin.cb)
 		*plength = pstream_src->content_bin.cb - pstream_src->seek_ptr;
 	if (pstream_dst->seek_ptr + *plength > pstream_dst->max_length)
 		*plength = pstream_dst->max_length - pstream_dst->seek_ptr;
-	if (pstream_dst->seek_ptr + *plength > pstream_dst->content_bin.cb &&
-	    pstream_dst->set_length(pstream_dst->seek_ptr + *plength) != ecSuccess)
-		return FALSE;
+	if (pstream_dst->seek_ptr + *plength > pstream_dst->content_bin.cb) {
+		auto err = pstream_dst->set_length(pstream_dst->seek_ptr + *plength);
+		if (err != ecSuccess)
+			return err;
+	}
 	memcpy(pstream_dst->content_bin.pb +
 		pstream_dst->seek_ptr,
 		pstream_src->content_bin.pb +
 		pstream_src->seek_ptr, *plength);
 	pstream_dst->seek_ptr += *plength;
 	pstream_src->seek_ptr += *plength;
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL stream_object::commit()
+ec_error_t stream_object::commit()
 {
 	auto pstream = this;
 	TAGGED_PROPVAL propval;
@@ -279,24 +281,24 @@ BOOL stream_object::commit()
 	TPROPVAL_ARRAY propvals;
 	
 	if (pstream->object_type != ems_objtype::folder)
-		return FALSE;
+		return ecInvalidParam;
 	if (pstream->open_flags == MAPI_READONLY)
-		return FALSE;
+		return ecAccessDenied;
 	if (!pstream->b_touched)
-		return TRUE;
+		return ecSuccess;
 	propvals.count = 1;
 	propvals.ppropval = &propval;
 	propval.proptag = pstream->proptag;
 	propval.pvalue  = deconst(get_content());
 	if (propval.pvalue == nullptr)
-		return FALSE;
+		return ecError;
 	auto err = static_cast<folder_object *>(pstream->pparent)->set_props(&propvals, &problems);
 	if (err != ecSuccess)
-		return false;
+		return err;
 	if (problems.count > 0)
-		return FALSE;
+		return ecError;
 	pstream->b_touched = FALSE;
-	return TRUE;
+	return ecSuccess;
 }
 
 stream_object::~stream_object()
