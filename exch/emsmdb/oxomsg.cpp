@@ -337,8 +337,9 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	
 	static constexpr proptag_t ptags_two[] =
 		{PR_MAX_SUBMIT_MESSAGE_SIZE, PR_PROHIBIT_SEND_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
-	if (!plogon->get_properties(ptags_two, &tmp_propvals))
-		return ecError;
+	ret = plogon->get_props(ptags_two, &tmp_propvals);
+	if (ret != ecSuccess)
+		return ret;
 
 	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
 	auto storesize = tmp_propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);

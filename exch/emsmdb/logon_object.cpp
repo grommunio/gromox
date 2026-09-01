@@ -259,16 +259,16 @@ ec_error_t logon_object::get_named_propids(BOOL b_create,
 	return ecServerOOM;
 }
 
-BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
+ec_error_t logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 {
 	auto plogon = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client->get_store_all_proptags(plogon->dir, &tmp_proptags))
-		return FALSE;	
+		return ecRpcFailed;
 	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 25);
 	if (pproptags->pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 
@@ -296,7 +296,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 			pproptags->emplace_back(t);
 	for (auto t : tags)
 		pproptags->emplace_back(t);
-	return TRUE;
+	return ecSuccess;
 }
 
 static bool lo_is_readonly_prop(const logon_object *plogon, proptag_t proptag)
@@ -367,7 +367,7 @@ static inline const char *account_to_domain(const char *u)
 	return at != nullptr ? at + 1 : u;
 }
 
-static BOOL logon_object_get_calculated_property(const logon_object *plogon,
+static ec_error_t logon_object_get_calculated_property(const logon_object *plogon,
     proptag_t proptag, void **ppvalue)
 {
 	void *pvalue;
@@ -380,44 +380,48 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		if (!exmdb_client->get_store_property(plogon->dir, CP_ACP,
-		    PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
-		    pvalue == nullptr)
-			return FALSE;	
+		    PR_MESSAGE_SIZE_EXTENDED, &pvalue))
+			return ecRpcFailed;
+		if (pvalue == nullptr)
+			return ecNotFound;
 		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_ASSOC_MESSAGE_SIZE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		if (!exmdb_client->get_store_property(plogon->dir, CP_ACP,
-		    PR_ASSOC_MESSAGE_SIZE_EXTENDED, &pvalue) || pvalue == nullptr)
-			return FALSE;	
+		    PR_ASSOC_MESSAGE_SIZE_EXTENDED, &pvalue))
+			return ecRpcFailed;
+		if (pvalue == nullptr)
+			return ecNotFound;
 		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_NORMAL_MESSAGE_SIZE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		if (!exmdb_client->get_store_property(plogon->dir, CP_ACP,
-		    PR_NORMAL_MESSAGE_SIZE_EXTENDED, &pvalue) ||
-		    pvalue == nullptr)
-			return FALSE;	
+		    PR_NORMAL_MESSAGE_SIZE_EXTENDED, &pvalue))
+			return ecRpcFailed;
+		if (pvalue == nullptr)
+			return ecNotFound;
 		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A: {
 		if (!plogon->is_private())
-			return FALSE;
+			return ecNotFound;
 		std::string dispname;
 		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname))
-			return FALSE;	
+			return ecNotFound;
 		const char *atp;
 		if (std::all_of(dispname.cbegin(), dispname.cend(), HX_isascii))
 			*ppvalue = cu_strdup(dispname);
@@ -426,12 +430,12 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		else
 			*ppvalue = cu_strdup(plogon->account);
 		*ppvalue = cu_strdup(dispname);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_CODE_PAGE_ID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->cpid;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_DELETED_ASSOC_MESSAGE_SIZE:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED:
@@ -442,107 +446,104 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 	case PR_DELETED_NORMAL_MESSAGE_SIZE:
 	case PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED:
 		*ppvalue = deconst(&tmp_ll);
-		return TRUE;
+		return ecSuccess;
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A: {
 		std::string essdn;
-		if (cvt_username_to_essdn(plogon->is_private() ? plogon->account :
-		    account_to_domain(plogon->account), g_emsmdb_org_name,
-		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
-		    essdn) != ecSuccess)
-			return false;
+		auto err = cvt_username_to_essdn(plogon->is_private() ?
+		           plogon->account : account_to_domain(plogon->account),
+		           g_emsmdb_org_name, mysql_adaptor_get_user_ids,
+		           mysql_adaptor_get_domain_ids, essdn);
+		if (err != ecSuccess)
+			return err;
 		*ppvalue = cu_strdup(essdn);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_EXTENDED_RULE_SIZE_LIMIT: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = g_max_extrule_len;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_LOCALE_ID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->lcid_string;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_MAILBOX_OWNER_ENTRYID:
 		*ppvalue = plogon->is_private() ?
 		           common_util_username_to_addressbook_entryid(plogon->account) :
 		           common_util_username_to_addressbook_entryid(account_to_domain(plogon->account));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	case PR_MAILBOX_OWNER_NAME: {
 		if (!plogon->is_private())
-			return FALSE;
+			return ecNotFound;
 		std::string dispname;
 		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname))
-			return FALSE;	
+			return ecNotFound;
 		*ppvalue = !dispname.empty() ? cu_strdup(dispname) : cu_strdup(plogon->account);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_MAILBOX_OWNER_NAME_A: {
 		if (!plogon->is_private())
-			return FALSE;
+			return ecNotFound;
 		std::string dispname;
 		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname))
-			return FALSE;	
+			return ecNotFound;
 		*ppvalue = !dispname.empty() ? cu_utf8_to_mb_dup(CP_OEMCP, dispname) :
 		           cu_utf8_to_mb_dup(CP_OEMCP, plogon->account);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_MAX_SUBMIT_MESSAGE_SIZE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = std::min(static_cast<size_t>(INT32_MAX), g_max_mail_len >> 10);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_SORT_LOCALE_ID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->lcid_sort;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(plogon->mailbox_guid);
-		return TRUE;
+		return ecSuccess;
 	case PR_USER_ENTRYID: {
 		auto rpc_info = get_rpc_info();
 		*ppvalue = common_util_username_to_addressbook_entryid(rpc_info.username);
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	}
 	case PR_ROOT_ENTRYID:
 		*ppvalue = cu_fid_to_entryid(*plogon, plogon->is_private() ?
 		           PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_INBOX_ENTRYID:
 		*ppvalue = cu_fid_to_entryid(*plogon, plogon->is_private() ?
 		           PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PidTagXSpoolerQueueEntryId:
 		*ppvalue = cu_fid_to_entryid(*plogon, plogon->is_private() ?
 		           PRIVATE_FID_SPOOLER_QUEUE : PUBLIC_FID_NONIPMSUBTREE);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_NON_IPM_SUBTREE_ENTRYID:
 		if (plogon->is_private())
-			return false;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*plogon, PUBLIC_FID_NONIPMSUBTREE);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_EFORMS_REGISTRY_ENTRYID:
 		if (plogon->is_private())
-			return false;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*plogon, PUBLIC_FID_EFORMSREGISTRY);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_TEST_LINE_SPEED:
 		*ppvalue = deconst(&test_bin);
-		return TRUE;
+		return ecSuccess;
 	}
-	return FALSE;
+	return ecNotFound;
 }
 
 /**
@@ -566,63 +567,76 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
  * PR_HIERARCHY_SERVER property on the store visible with MFCMAPI, which means
  * EXC2019 also does not synthesize anything server-side in any way.
  */
-bool logon_object::get_properties(proptag_cspan pproptags,
+ec_error_t logon_object::get_props(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals) const
 {
-	static const uint32_t err_code = ecError, invalid_code = ecInvalidParam;
+	static constexpr uint32_t enomem = ecServerOOM, invalid_code = ecInvalidParam;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
-		return FALSE;
+		return ecError;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropvals->count = 0;
 	auto plogon = this;
 	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
 
-		if (PROP_ID(tag) == PROP_ID(PR_HIERARCHY_SERVER))
+		if (PROP_ID(tag) == PROP_ID(PR_HIERARCHY_SERVER)) {
 			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &invalid_code);
-		else if (!logon_object_get_calculated_property(plogon, tag, &pvalue))
-			tmp_proptags.emplace_back(tag);
-		else if (pvalue != nullptr)
+			continue;
+		}
+		auto err = logon_object_get_calculated_property(plogon, tag, &pvalue);
+		if (err == ecSuccess && pvalue != nullptr) {
 			ppropvals->emplace_back(tag, pvalue);
-		else
-			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_code);
+			continue;
+		} else if (err == ecNotFound || pvalue == nullptr) {
+		} else {
+			auto v = cu_alloc<uint32_t>();
+			if (v == nullptr) {
+				ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &enomem);
+				continue;
+			}
+			*v = err;
+			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), v);
+			continue;
+		}
+		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
 
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_store_properties(plogon->dir,
 	    pinfo->cpid, tmp_proptags, &tmp_propvals))
-		return FALSE;	
+		return ecRpcFailed;
 	if (tmp_propvals.count == 0)
-		return TRUE;
+		return ecSuccess;
 	memcpy(ppropvals->ppropval + ppropvals->count,
 		tmp_propvals.ppropval,
 		sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 	ppropvals->count += tmp_propvals.count;
-	return TRUE;	
+	return ecSuccess;
 }
 
-BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
+ec_error_t logon_object::set_props(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems) try
 {
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
-		return FALSE;
+		return ecError;
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (pproblems->pproblem == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	TPROPVAL_ARRAY tmp_propvals = {0, cu_alloc<TAGGED_PROPVAL>(ppropvals->count)};
 	if (tmp_propvals.ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
+
 	std::vector<uint16_t> poriginal_indices;
 	auto plogon = this;
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
@@ -635,31 +649,32 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		}
 	}
 	if (tmp_propvals.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client->set_store_properties(plogon->dir,
 	    pinfo->cpid, &tmp_propvals, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	if (tmp_problems.count == 0)
-		return TRUE;
+		return ecSuccess;
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
 
-bool logon_object::remove_properties(proptag_cspan pproptags,
+ec_error_t logon_object::remove_props(proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags.size());
 	if (pproblems->pproblem == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	auto plogon = this;
 	for (unsigned int i = 0; i < pproptags.size(); ++i) {
 		const auto tag = pproptags[i];
@@ -669,8 +684,9 @@ bool logon_object::remove_properties(proptag_cspan pproptags,
 			tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
-	return exmdb_client->remove_store_properties(plogon->dir, tmp_proptags);
+		return ecSuccess;
+	return exmdb_client->remove_store_properties(plogon->dir, tmp_proptags) ?
+	       ecSuccess : ecRpcFailed;
 }
 
 /**

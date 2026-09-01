@@ -202,8 +202,9 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 			{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 			PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
 		TPROPVAL_ARRAY tmp_propvals;
-		if (!plogon->get_properties(tmp_proptags, &tmp_propvals))
-			return ecError;
+		auto err = plogon->get_props(tmp_proptags, &tmp_propvals);
+		if (err != ecSuccess)
+			return err;
 
 		auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 		uint64_t max_quota = ULLONG_MAX;

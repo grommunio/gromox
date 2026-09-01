@@ -205,8 +205,9 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	static constexpr proptag_t tmp_proptags[] =
 		{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
-	if (!plogon->get_properties(tmp_proptags, &tmp_propvals))
-		return ecError;
+	auto err = plogon->get_props(tmp_proptags, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 	uint64_t max_quota = ULLONG_MAX;
 	if (num != nullptr) {
@@ -229,7 +230,7 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	if (pmessage == nullptr)
 		return ecServerOOM;
 	BOOL b_fai = associated_flag == 0 ? false : TRUE;
-	auto err = pmessage->init_message(b_fai, cpid);
+	err = pmessage->init_message(b_fai, cpid);
 	if (err != ecSuccess)
 		return err;
 	auto hnd = plogmap->add_object_handle(logon_id, hin,

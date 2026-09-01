@@ -145,8 +145,9 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		return ecServerOOM;
 	switch (object_type) {
 	case ems_objtype::logon: {
-		if (!static_cast<logon_object *>(pobject)->get_properties(*ptmp_proptags, &propvals))
-			return ecError;
+		auto err = static_cast<logon_object *>(pobject)->get_props(*ptmp_proptags, &propvals);
+		if (err != ecSuccess)
+			return err;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
 			return ecError;
@@ -236,8 +237,9 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		if (!xlog->get_properties(*ptmp_proptags, ppropvals))
-			return ecError;
+		auto err = xlog->get_props(*ptmp_proptags, ppropvals);
+		if (err != ecSuccess)
+			return err;
 		for (auto &pv : *ppropvals) {
 			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
 				continue;
@@ -327,9 +329,7 @@ ec_error_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 		return ecNullObject;
 	switch (object_type) {
 	case ems_objtype::logon:
-		if (!static_cast<logon_object *>(pobject)->get_all_proptags(pproptags))
-			return ecError;
-		return ecSuccess;
+		return static_cast<logon_object *>(pobject)->get_all_proptags(pproptags);
 	case ems_objtype::folder:
 		if (!static_cast<folder_object *>(pobject)->get_all_proptags(pproptags))
 			return ecError;
@@ -359,9 +359,7 @@ ec_error_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	case ems_objtype::logon:
 		if (plogon->logon_mode == logon_mode::guest)
 			return ecAccessDenied;
-		if (!static_cast<logon_object *>(pobject)->set_properties(ppropvals, pproblems))
-			return ecError;
-		return ecSuccess;
+		return static_cast<logon_object *>(pobject)->set_props(ppropvals, pproblems);
 	case ems_objtype::folder: {
 		auto fld = static_cast<folder_object *>(pobject);
 		auto eff_user = plogon->eff_user();
@@ -418,9 +416,7 @@ ec_error_t rop_deleteproperties(proptag_cspan pproptags,
 	case ems_objtype::logon:
 		if (plogon->logon_mode == logon_mode::guest)
 			return ecAccessDenied;
-		if (!static_cast<logon_object *>(pobject)->remove_properties(pproptags, pproblems))
-			return ecError;
-		return ecSuccess;
+		return static_cast<logon_object *>(pobject)->remove_props(pproptags, pproblems);
 	case ems_objtype::folder: {
 		auto fld = static_cast<folder_object *>(pobject);
 		auto eff_user = plogon->eff_user();
@@ -484,10 +480,12 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 		return ecSuccess;
 	}
 	switch (object_type) {
-	case ems_objtype::logon:
-		if (!static_cast<logon_object *>(pobject)->get_all_proptags(&proptags))
-			return ecError;
+	case ems_objtype::logon: {
+		auto err = static_cast<logon_object *>(pobject)->get_all_proptags(&proptags);
+		if (err != ecSuccess)
+			return err;
 		break;
+	}
 	case ems_objtype::folder:
 		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
