@@ -1574,7 +1574,7 @@ sTimePoint::sTimePoint(const char* dtstr)
 	if (timestamp == static_cast<time_t>(-1))
 		throw EWSError::ValueOutOfRange(E3152);
 	time = clock::from_time_t(timestamp);
-	time += std::chrono::duration_cast<time_point::duration>(std::chrono::duration<double>(seconds));
+	time += std::chrono::duration_cast<time_point::duration>(std::chrono::duration<double>(seconds)); /* LIBCXX-GRANULARITY */
 	offset = std::chrono::minutes(60 * (-tz_hour) + (tz_hour > 0 ? -tz_min : tz_min));
 	if (strlen(dtstr) == 19)
 		calcOffset = true;
@@ -1593,7 +1593,8 @@ sTimePoint sTimePoint::fromNT(uint64_t timestamp)
  */
 uint64_t sTimePoint::toNT() const
 {
-	return rop_util_unix_to_nttime(time + offset);
+	auto tmo = std::chrono::time_point_cast<time_point::duration>(time + offset); /* LIBCXX-GRANUALARITY */
+	return rop_util_unix_to_nttime(tmo);
 }
 
 /**
