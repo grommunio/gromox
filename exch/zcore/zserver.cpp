@@ -3675,9 +3675,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 			container_object_get_user_table_all_proptags(&proptags);
 			wtags = proptags;
 		}
-		if (!static_cast<user_object *>(pobject)->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return static_cast<user_object *>(pobject)->get_props(wtags, ppropvals);
 	case zs_objtype::oneoff:
 		if (pproptags == nullptr)
 			wtags = oneoff_object::all_tags;

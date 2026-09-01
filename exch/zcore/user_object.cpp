@@ -123,7 +123,7 @@ bool user_object::valid()
 	return true;
 }
 
-bool user_object::get_properties(proptag_cspan pproptags,
+ec_error_t user_object::get_props(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto puser = this;
@@ -131,10 +131,10 @@ bool user_object::get_properties(proptag_cspan pproptags,
 	
 	auto pbase = ab_tree::AB.get(puser->base_id);
 	if (!pbase)
-		return FALSE;
+		return ecError;
 	ab_tree::ab_node node(pbase, puser->minid);
 	if (pbase->exists(puser->minid))
-		return ab_tree_fetch_node_properties(node, pproptags, ppropvals);
+		return ab_tree_fetch_node_properties(node, pproptags, ppropvals) ? ecSuccess : ecError;
 	pbase.reset();
 	/* if user is hidden from addressbook tree, we simply
 		return the necessary information to the caller */
@@ -148,32 +148,33 @@ bool user_object::get_properties(proptag_cspan pproptags,
 	if (!w_otype && !w_atype && !wx_name) {
 		ppropvals->count = 0;
 		ppropvals->ppropval = nullptr;
-		return TRUE;
+		return ecSuccess;
 	}
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(6);
 	if (ppropvals->ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	if (w_otype)
 		ppropvals->emplace_back(PR_OBJECT_TYPE, &fake_type);
 	if (w_atype)
 		ppropvals->emplace_back(PR_ADDRTYPE, "EX");
 
 	std::string username, essdn, dispname;
-	if (!wx_name ||
-	    node.mid.type() != ab_tree::minid::Type::address ||
-	    mysql_adaptor_userid_to_name(node.mid.value(), username) != ecSuccess)
-		return TRUE;
+	if (!wx_name || node.mid.type() != ab_tree::minid::Type::address)
+		return ecError;
+	auto err = mysql_adaptor_userid_to_name(node.mid.value(), username);
+	if (err != ecSuccess)
+		return err;
 	if (w_smtp) {
 		auto s = common_util_dup(username);
 		if (s == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		ppropvals->emplace_back(PR_SMTP_ADDRESS, s);
 	}
 	if (w_acct) {
 		auto s = common_util_dup(username);
 		if (s == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		ppropvals->emplace_back(PR_ACCOUNT, s);
 	}
 	if (w_email && cvt_username_to_essdn(username.c_str(), g_org_name,
@@ -181,16 +182,16 @@ bool user_object::get_properties(proptag_cspan pproptags,
 	    essdn) == ecSuccess) {
 		auto s = common_util_dup(essdn);
 		if (s == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		ppropvals->emplace_back(PR_EMAIL_ADDRESS, s);
 	}
 	if (w_dname && mysql_adaptor_get_user_displayname(username.c_str(), dispname)) {
 		auto s = common_util_dup(!dispname.empty() ? dispname : username);
 		if (s == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		ppropvals->emplace_back(PR_DISPLAY_NAME, s);
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
 ec_error_t user_object::load_list_members(const RESTRICTION *res) try

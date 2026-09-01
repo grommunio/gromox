@@ -205,7 +205,7 @@ struct user_object {
 	public:
 	static std::unique_ptr<user_object> create(int base_id, uint32_t minid);
 	bool valid();
-	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
+	ec_error_t get_props(proptag_cspan, TPROPVAL_ARRAY *);
 	ec_error_t load_list_members(const RESTRICTION *);
 	ec_error_t query_member_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 

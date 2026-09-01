@@ -2019,7 +2019,8 @@ bool cu_abentry_to_vcf(user_object *puser, bool is_group, BINARY *pvcf_bin)
 	if (pinfo == nullptr)
 		return false;
 	oxvcard_get_abentry_proptags(&tags);
-	if (!puser->get_properties(tags, &props))
+	auto err = puser->get_props(tags, &props);
+	if (err != ecSuccess)
 		return false;
 	common_util_set_dir(pinfo->get_homedir());
 	oxvcard_converter cvt;
