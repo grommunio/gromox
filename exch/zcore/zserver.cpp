@@ -3619,8 +3619,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	case zs_objtype::store: {
 		auto store = static_cast<store_object *>(pobject);
 		if (NULL == pproptags) {
-			if (!store->get_all_proptags(&proptags))
-				return ecError;
+			auto err = store->get_all_proptags(&proptags);
+			if (err != ecSuccess)
+				return err;
 			wtags = proptags;
 		}
 		if (!store->get_properties(wtags, ppropvals))
@@ -3834,8 +3835,7 @@ ec_error_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
 	}
 	if (pstore == nullptr)
 		return ecNotSupported;
-	return pstore->get_named_propids(TRUE, ppropnames, ppropids) ?
-	       ecSuccess : ecError;
+	return pstore->get_named_propids(TRUE, ppropnames, ppropids);
 }
 
 ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
@@ -3859,8 +3859,7 @@ ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
 	}
 	if (pstore == nullptr)
 		return ecNotSupported;
-	return pstore->get_named_propnames(ppropids, ppropnames) ?
-	       ecSuccess : ecError;
+	return pstore->get_named_propnames(ppropids, ppropnames);
 }
 
 ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,

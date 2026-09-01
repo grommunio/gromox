@@ -134,8 +134,10 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	propname_buff[6].lid = PidLidEmail3DisplayName;
 	propname_buff[7].lid = PidLidEmail3AddressType;
 	propname_buff[8].lid = PidLidEmail3EmailAddress;
-	if (!pstore->get_named_propids(false, &propnames, &propids) ||
-	    propids.size() != propnames.size() || propids.size() != 9)
+	auto err = pstore->get_named_propids(false, &propnames, &propids);
+	if (err != ecSuccess)
+		return false;
+	if (propids.size() != propnames.size() || propids.size() != 9)
 		return FALSE;
 	for (size_t i = 0; i < 9; ++i)
 		pproptags->pproptag[i] = PROP_TAG(PT_UNICODE, propids[i]);

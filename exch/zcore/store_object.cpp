@@ -60,18 +60,18 @@ static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 	return true;
 }
 
-static BOOL store_object_cache_propname(store_object *pstore,
+static ec_error_t store_object_cache_propname(store_object *pstore,
     propid_t propid, const PROPERTY_NAME *ppropname) try
 {
 	char s[NP_STRBUF_SIZE];
 	if (!propname_to_packed(*ppropname, s, std::size(s)))
-		return false;
+		return ecError;
 	pstore->propid_hash.emplace(propid, *ppropname);
 	pstore->propname_hash.emplace(s, propid);
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
-	return false;
+	return ecServerOOM;
 }
 
 std::unique_ptr<store_object> store_object::create(BOOL b_private,
@@ -145,7 +145,7 @@ bool store_object::primary_mode() const
 	return pinfo->user_id == account_id;
 }
 
-BOOL store_object::get_named_propnames(const PROPID_ARRAY &propids,
+ec_error_t store_object::get_named_propnames(const PROPID_ARRAY &propids,
     PROPNAME_ARRAY *ppropnames) try
 {
 	PROPID_ARRAY tmp_propids;
@@ -153,14 +153,14 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY &propids,
 	
 	if (propids.empty()) {
 		ppropnames->count = 0;
-		return TRUE;
+		return ecSuccess;
 	}
 	auto pindex_map = cu_alloc<int>(propids.size());
 	if (pindex_map == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.size());
 	if (ppropnames->ppropname == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropnames->count = propids.size();
 	auto pstore = this;
 	for (size_t i = 0; i < propids.size(); ++i) {
@@ -181,11 +181,12 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY &propids,
 		}
 	}
 	if (tmp_propids.empty())
-		return TRUE;
+		return ecSuccess;
 	if (!exmdb_client->get_named_propnames(
-	    pstore->dir, tmp_propids, &tmp_propnames) ||
-	    tmp_propnames.size() != tmp_propids.size())
-		return FALSE;	
+	    pstore->dir, tmp_propids, &tmp_propnames))
+		return ecRpcFailed;
+	if (tmp_propnames.size() != tmp_propids.size())
+		return ecError;
 	for (size_t i = 0; i < propids.size(); ++i) {
 		if (pindex_map[i] >= 0)
 			continue;
@@ -195,13 +196,13 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY &propids,
 			store_object_cache_propname(pstore,
 				propids[i], ppropnames->ppropname + i);
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
 
-BOOL store_object::get_named_propids(BOOL b_create,
+ec_error_t store_object::get_named_propids(BOOL b_create,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids) try
 {
 	auto &propids = *ppropids;
@@ -210,16 +211,16 @@ BOOL store_object::get_named_propids(BOOL b_create,
 	
 	if (0 == ppropnames->count) {
 		ppropids->clear();
-		return TRUE;
+		return ecSuccess;
 	}
 	auto pindex_map = cu_alloc<int>(ppropnames->count);
 	if (pindex_map == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	propids.resize(ppropnames->count);
 	tmp_propnames.count = 0;
 	tmp_propnames.ppropname = cu_alloc<PROPERTY_NAME>(ppropnames->count);
 	if (tmp_propnames.ppropname == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	auto pstore = this;
 	for (size_t i = 0; i < ppropnames->count; ++i) {
 		if (ppropnames->ppropname[i].guid == PS_MAPI) {
@@ -244,11 +245,12 @@ BOOL store_object::get_named_propids(BOOL b_create,
 		}
 	}
 	if (tmp_propnames.count == 0)
-		return TRUE;
+		return ecSuccess;
 	if (!exmdb_client->get_named_propids(pstore->dir,
-	    b_create, &tmp_propnames, &tmp_propids) ||
-	    tmp_propids.size() != tmp_propnames.size())
-		return FALSE;	
+	    b_create, &tmp_propnames, &tmp_propids))
+		return ecRpcFailed;
+	if (tmp_propids.size() != tmp_propnames.size())
+		return ecError;
 	for (size_t i = 0; i < ppropnames->count; ++i) {
 		if (pindex_map[i] >= 0)
 			continue;
@@ -257,10 +259,10 @@ BOOL store_object::get_named_propids(BOOL b_create,
 			store_object_cache_propname(pstore,
 				propids[i], ppropnames->ppropname + i);
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
 
 static BOOL store_object_is_readonly_prop(store_object *pstore, proptag_t proptag)
@@ -340,16 +342,16 @@ static BOOL store_object_is_readonly_prop(store_object *pstore, proptag_t propta
 	return FALSE;
 }
 
-BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
+ec_error_t store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pstore = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client->get_store_all_proptags(pstore->dir, &tmp_proptags))
-		return FALSE;	
+		return ecRpcFailed;
 	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 56);
 	if (pproptags->pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	if (pstore->b_private) {
@@ -389,7 +391,7 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	};
 	for (auto t : ntags)
 		pproptags->emplace_back(t);
-	return TRUE;
+	return ecSuccess;
 }
 
 static void *store_object_get_oof_property(const char *maildir,
