@@ -57,7 +57,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	}
 	case ems_objtype::folder: {
 		const proptag_cspan proptags = {&proptag, 1};
-		if (!static_cast<const folder_object *>(pparent)->get_properties(proptags, &propvals))
+		auto err = static_cast<const folder_object *>(pparent)->get_props(proptags, &propvals);
+		if (err != ecSuccess)
 			return NULL;
 		break;
 	}

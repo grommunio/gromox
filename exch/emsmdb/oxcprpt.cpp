@@ -155,8 +155,9 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		break;
 	}
 	case ems_objtype::folder: {
-		if (!static_cast<folder_object *>(pobject)->get_properties(*ptmp_proptags, &propvals))
-			return ecError;
+		auto err = static_cast<folder_object *>(pobject)->get_props(*ptmp_proptags, &propvals);
+		if (err != ecSuccess)
+			return err;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
 			return ecError;
@@ -262,8 +263,9 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		if (!fld->get_properties(*ptmp_proptags, ppropvals))
-			return ecError;
+		auto err = fld->get_props(*ptmp_proptags, ppropvals);
+		if (err != ecSuccess)
+			return err;
 		for (auto &pv : *ppropvals) {
 			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
 				continue;
@@ -612,8 +614,9 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			poriginal_indices.push_back(i);
 			proptags.emplace_back(tag);
 		}
-		if (!fldsrc->get_properties(proptags, &propvals))
-			return ecError;
+		auto err = fldsrc->get_props(proptags, &propvals);
+		if (err != ecSuccess)
+			return err;
 		for (size_t i = 0; i < proptags.count; ++i) {
 			const auto tag = pproptags[i];
 			if (!propvals.has(tag))
@@ -811,8 +814,9 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 				continue;
 			tmp_proptags.emplace_back(tag);
 		}
-		if (!fldsrc->get_properties(tmp_proptags, &propvals))
-			return ecError;
+		auto err = fldsrc->get_props(tmp_proptags, &propvals);
+		if (err != ecSuccess)
+			return err;
 		if (b_sub || b_normal || b_fai) {
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			BOOL b_guest = username != STORE_OWNER_GRANTED ? TRUE : false;
