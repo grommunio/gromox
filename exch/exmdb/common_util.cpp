@@ -2547,7 +2547,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		auto v = cu_alloc<uint8_t>();
 		if (v == nullptr)
 			return nullptr;
-		*v = sqlite3_column_int64(pstmt, 0);
+		*v = !!sqlite3_column_int64(pstmt, 0);
 		return v;
 	}
 	case PT_CLSID: {
@@ -3480,7 +3480,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			break;
 		case PT_BOOLEAN:
 			sqlite3_bind_int64(pstmt, 2,
-				*static_cast<uint8_t *>(ppropvals->ppropval[i].pvalue));
+				!!*static_cast<uint8_t *>(ppropvals->ppropval[i].pvalue));
 			s_result = pstmt.step();
 			break;
 		case PT_CLSID: {
@@ -5307,7 +5307,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt, int bind_index,
 		sqlite3_bind_int64(pstmt, bind_index, *static_cast<const uint32_t *>(pvalue));
 		break;
 	case PT_BOOLEAN:
-		sqlite3_bind_int64(pstmt, bind_index, *static_cast<const uint8_t *>(pvalue));
+		sqlite3_bind_int64(pstmt, bind_index, !!*static_cast<const uint8_t *>(pvalue));
 		break;
 	case PT_CLSID:
 		if (!ext_push.init(temp_buff, 16, 0) ||
