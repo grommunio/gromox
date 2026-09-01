@@ -862,7 +862,6 @@ ec_error_t message_object::get_properties(uint32_t size_limit,
     proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto pmessage = this;
-	static const uint32_t err_code = ecError;
 	static const uint32_t lcid_default = 0x409; /* en-US */
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
@@ -874,12 +873,19 @@ ec_error_t message_object::get_properties(uint32_t size_limit,
 	ppropvals->count = 0;
 	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		if (message_object_get_calculated_property(pmessage, tag,
-		    &pvalue) == ecSuccess) {
-			if (pvalue != nullptr)
-				ppropvals->emplace_back(tag, pvalue);
-			else
-				ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_code);
+		auto err = message_object_get_calculated_property(pmessage, tag, &pvalue);
+		if (err == ecSuccess && pvalue != nullptr) {
+			ppropvals->emplace_back(tag, pvalue);
+			continue;
+		} else if (err != ecNotFound) {
+			static constexpr uint32_t enomem = ecServerOOM;
+			auto v = cu_alloc<uint32_t>();
+			if (v == nullptr) {
+				ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &enomem);
+				continue;
+			}
+			*v = err;
+			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), v);
 			continue;
 		}
 		pvalue = deconst(message_object_get_stream_property_value(pmessage, tag));
