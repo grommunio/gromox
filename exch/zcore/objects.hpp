@@ -181,15 +181,15 @@ struct attachment_object {
 	~attachment_object();
 	static std::unique_ptr<attachment_object> create(message_object *parent, uint32_t at_num);
 	uint32_t get_instance_id() const { return instance_id; }
-	BOOL init_attachment();
+	ec_error_t init_attachment();
 	uint32_t get_attachment_num() const { return attachment_num; }
 	uint32_t get_tag_access() const { return pparent->tag_access; }
 	ec_error_t save();
-	BOOL get_all_proptags(PROPTAG_ARRAY *);
-	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
-	BOOL set_properties(const TPROPVAL_ARRAY *);
-	bool remove_properties(proptag_cspan);
-	bool copy_properties(attachment_object *src, proptag_cspan exclprop, BOOL force, BOOL *cycle);
+	ec_error_t get_all_proptags(PROPTAG_ARRAY *);
+	ec_error_t get_properties(proptag_cspan, TPROPVAL_ARRAY *);
+	ec_error_t set_properties(const TPROPVAL_ARRAY *);
+	ec_error_t remove_properties(proptag_cspan);
+	ec_error_t copy_properties(attachment_object *src, proptag_cspan exclprop, BOOL force, BOOL *cycle);
 	store_object *get_store() const { return pparent->pstore; }
 	bool writable() const { return b_writable; }
 

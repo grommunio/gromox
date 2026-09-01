@@ -3498,8 +3498,9 @@ ec_error_t zs_createattachment(GUID hsession,
 		return ecError;
 	if (pattachment->get_attachment_num() == ATTACHMENT_NUM_INVALID)
 		return ecMaxAttachmentExceeded;
-	if (!pattachment->init_attachment())
-		return ecError;
+	auto err = pattachment->init_attachment();
+	if (err != ecSuccess)
+		return err;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::attach, std::move(pattachment)});
 	return zh_error(*phobject);
 }
@@ -3650,8 +3651,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (NULL == pproptags) {
-			if (!atx->get_all_proptags(&proptags))
-				return ecError;
+			auto err = atx->get_all_proptags(&proptags);
+			if (err != ecSuccess)
+				return err;
 			wtags = proptags;
 		}
 		if (!atx->get_properties(wtags, ppropvals))
