@@ -290,8 +290,10 @@ BOOL stream_object::commit()
 	propval.pvalue  = deconst(get_content());
 	if (propval.pvalue == nullptr)
 		return FALSE;
-	if (!static_cast<folder_object *>(pstream->pparent)->set_properties(&propvals, &problems) ||
-	    problems.count > 0)
+	auto err = static_cast<folder_object *>(pstream->pparent)->set_props(&propvals, &problems);
+	if (err != ecSuccess)
+		return false;
+	if (problems.count > 0)
 		return FALSE;
 	pstream->b_touched = FALSE;
 	return TRUE;

@@ -264,9 +264,11 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker) try
 	case STARTTOPFLD:
 		if (m_props == nullptr)
 			break;
-		if (m_props->count > 0 &&
-		    !static_cast<folder_object *>(pctx->pobject)->set_properties(m_props, &tmp_problems))
-			return ecRpcFailed;
+		if (m_props->count > 0) {
+			auto err = static_cast<folder_object *>(pctx->pobject)->set_props(m_props, &tmp_problems);
+			if (err != ecSuccess)
+				return err;
+		}
 		tpropval_array_free(m_props);
 		m_props = nullptr;
 		break;
@@ -275,9 +277,11 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker) try
 			break;
 		if (m_props == nullptr)
 			break;
-		if (m_props->count > 0 &&
-		    !static_cast<folder_object *>(pctx->pobject)->set_properties(m_props, &tmp_problems))
-			return ecRpcFailed;
+		if (m_props->count > 0) {
+			auto err = static_cast<folder_object *>(pctx->pobject)->set_props(m_props, &tmp_problems);
+			if (err != ecSuccess)
+				return err;
+		}
 		tpropval_array_free(m_props);
 		m_props = nullptr;
 		break;

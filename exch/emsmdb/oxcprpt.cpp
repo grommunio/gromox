@@ -333,9 +333,7 @@ ec_error_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 	case ems_objtype::logon:
 		return static_cast<logon_object *>(pobject)->get_all_proptags(pproptags);
 	case ems_objtype::folder:
-		if (!static_cast<folder_object *>(pobject)->get_all_proptags(pproptags))
-			return ecError;
-		return ecSuccess;
+		return static_cast<folder_object *>(pobject)->get_all_proptags(pproptags);
 	case ems_objtype::message:
 		return static_cast<message_object *>(pobject)->get_all_proptags(pproptags);
 	case ems_objtype::attach:
@@ -372,9 +370,7 @@ ec_error_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		if (!fld->set_properties(ppropvals, pproblems))
-			return ecError;
-		return ecSuccess;
+		return fld->set_props(ppropvals, pproblems);
 	}
 	case ems_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
@@ -429,9 +425,7 @@ ec_error_t rop_deleteproperties(proptag_cspan pproptags,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		if (!fld->remove_properties(pproptags, pproblems))
-			return ecError;
-		return ecSuccess;
+		return fld->remove_props(pproptags, pproblems);
 	}
 	case ems_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
@@ -488,10 +482,12 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 			return err;
 		break;
 	}
-	case ems_objtype::folder:
-		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
-			return ecError;
+	case ems_objtype::folder: {
+		auto err = static_cast<folder_object *>(pobject)->get_all_proptags(&proptags);
+		if (err != ecSuccess)
+			return err;
 		break;
+	}
 	case ems_objtype::message: {
 		auto err = static_cast<message_object *>(pobject)->get_all_proptags(&proptags);
 		if (err != ecSuccess)
@@ -622,8 +618,9 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			if (!propvals.has(tag))
 				pproblems->emplace_back(poriginal_indices[i], tag, ecNotFound);
 		}
-		if (!flddst->set_properties(&propvals, &tmp_problems))
-			return ecError;
+		err = flddst->set_props(&propvals, &tmp_problems);
+		if (err != ecSuccess)
+			return err;
 		for (size_t i = 0; i < tmp_problems.count; ++i)
 			tmp_problems.pproblem[i].index = pproptags.indexof(tmp_problems.pproblem[i].proptag);
 		*pproblems += std::move(tmp_problems);
@@ -827,13 +824,9 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 				return ecError;
 			if (b_collid)
 				return ecDuplicateName;
-			if (!flddst->set_properties(&propvals, pproblems))
-				return ecError;
-			return ecSuccess;
+			return flddst->set_props(&propvals, pproblems);
 		}
-		if (!flddst->set_properties(&propvals, pproblems))
-			return ecError;
-		return ecSuccess;
+		return flddst->set_props(&propvals, pproblems);
 	}
 	case ems_objtype::message: {
 		auto msgdst = static_cast<message_object *>(pobject_dst);
