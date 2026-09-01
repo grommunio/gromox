@@ -38,11 +38,11 @@ struct container_object {
 	static std::unique_ptr<container_object> create(uint8_t type, CONTAINER_ID);
 	void clear();
 	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
-	BOOL load_user_table(const RESTRICTION *);
+	ec_error_t load_user_table(const RESTRICTION *);
 	BOOL get_container_table_num(BOOL depth, uint32_t *num);
-	bool query_container_table(proptag_cspan, BOOL depth, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	ec_error_t query_container_table(proptag_cspan, BOOL depth, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 	BOOL get_user_table_num(uint32_t *);
-	bool query_user_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	ec_error_t query_user_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 
 	uint8_t type = 0;
 	CONTAINER_ID id{};

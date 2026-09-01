@@ -59,7 +59,7 @@ void container_object::clear()
 	}
 }
 
-static BOOL container_object_match_contact_message(
+static bool container_object_match_contact_message(
 	const TPROPVAL_ARRAY *ppropvals, const RESTRICTION *pfilter)
 {
 	switch (pfilter->rt) {
@@ -74,9 +74,7 @@ static BOOL container_object_match_contact_message(
 				return TRUE;
 		return FALSE;
 	case RES_NOT:
-		if (container_object_match_contact_message(ppropvals, &pfilter->xnot->res))
-			return FALSE;
-		return TRUE;
+		return !container_object_match_contact_message(ppropvals, &pfilter->xnot->res);
 	case RES_CONTENT: {
 		auto rcon = pfilter->cont;
 		return rcon->comparable() &&
@@ -94,7 +92,7 @@ static BOOL container_object_match_contact_message(
 			return TRUE;
 		pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
 		return pvalue != nullptr && strcasestr(pvalue,
-		       static_cast<char *>(rprop->propval.pvalue)) != nullptr ? TRUE : false;
+		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 	}
 	case RES_BITMASK: {
 		auto rbm = pfilter->bm;
@@ -102,7 +100,7 @@ static BOOL container_object_match_contact_message(
 		       rbm->eval(ppropvals->getval(rbm->proptag));
 	}
 	case RES_EXIST:
-		return ppropvals->has(pfilter->exist->proptag) ? TRUE : false;
+		return ppropvals->has(pfilter->exist->proptag);
 	default:
 		return FALSE;
 	}
@@ -166,7 +164,7 @@ static BINARY *zcsab_prepend(const BINARY *lower_eid,
 	return new_eid;
 }
 
-BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
+ec_error_t container_object::load_user_table(const RESTRICTION *prestriction) try
 {
 	auto pcontainer = this;
 	BINARY tmp_bin;
@@ -190,50 +188,49 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 	
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
 		if (NULL == prestriction ||
-			NULL != pcontainer->contents.pminid_array) {
-			return TRUE;
-		}
+		    pcontainer->contents.pminid_array != nullptr)
+			return ecSuccess;
 		auto pbase = ab_tree::AB.get(pcontainer->id.abtree_id.base_id);
 		if (!pbase)
-			return FALSE;
+			return ecError;
 		if (!ab_tree_match_minids(pbase.get(), pcontainer->id.abtree_id.minid,
 		     prestriction, &minid_array))
-			return FALSE;	
+			return ecError;
 		pbase.reset();
 		pminid_array = me_alloc<LONG_ARRAY>();
 		if (pminid_array == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		pcontainer->contents.pminid_array = pminid_array;
 		pminid_array->count = minid_array.count;
 		if (0 == minid_array.count) {
 			pminid_array->pl = NULL;
-			return TRUE;
+			return ecSuccess;
 		}
 		pminid_array->pl = me_alloc<uint32_t>(minid_array.count);
 		if (NULL == pminid_array->pl) {
 			free(pcontainer->contents.pminid_array);
 			pcontainer->contents.pminid_array = NULL;
-			return FALSE;
+			return ecServerOOM;
 		}
 		memcpy(pminid_array->pl, minid_array.pl,
 			sizeof(uint32_t)*minid_array.count);
-		return TRUE;
+		return ecSuccess;
 	}
 	if (pcontainer->contents.prow_set != nullptr)
-		return TRUE;
+		return ecSuccess;
 	auto pinfo = zs_get_info();
 	if (!exmdb_client->load_content_table(pinfo->get_maildir(),
 	    pinfo->cpid, pcontainer->id.exmdb_id.folder_id, nullptr, 0,
 	    nullptr, nullptr, &table_id, &row_num))
-		return FALSE;
+		return ecRpcFailed;
 	auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
 	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
 	if (pstore == nullptr || mapi_type != zs_objtype::store)
-		return false;
+		return ecInvalidParam;
 	if (row_num > 0) {
 		proptags.pproptag = proptag_buff;
 		if (!container_object_get_pidlids(&proptags))
-			return FALSE;
+			return ecError;
 		static constexpr proptag_t ntags[] = {
 			PR_DISPLAY_NAME, PR_NICKNAME, PR_TITLE, PR_SURNAME,
 			PR_GIVEN_NAME, PR_MIDDLE_NAME,
@@ -247,18 +244,18 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 			proptags.emplace_back(t);
 		if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
 		    pinfo->cpid, table_id, proptags, 0, row_num, &tmp_set))
-			return FALSE;
+			return ecRpcFailed;
 		pparent_entryid = zcsab_prepend(cu_fid_to_entryid(*pstore,
 		                  pcontainer->id.exmdb_id.folder_id), MAPI_ABCONT, UINT32_MAX);
 		if (pparent_entryid == nullptr)
-			return FALSE;
+			return ecError;
 	} else {
 		tmp_set.count = 0;
 	}
 	exmdb_client->unload_table(pinfo->get_maildir(), table_id);
 	pcontainer->contents.prow_set = tarray_set_init();
 	if (pcontainer->contents.prow_set == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		for (unsigned int j = 0; j < 3; ++j) {
 			auto pdisplayname = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j]);
@@ -273,7 +270,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 				mot = MAPI_DISTLIST;
 			tpropval_array_ptr ppropvals(tpropval_array_init());
 			if (ppropvals == nullptr)
-				return FALSE;
+				return ecServerOOM;
 			std::string username;
 			auto addrtype = "SMTP";
 			switch (mot) {
@@ -303,61 +300,89 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 			default:
 				break;
 			}
-			if (ppropvals->set(PR_SMTP_ADDRESS, username.c_str()) != ecSuccess ||
-			    ppropvals->set(PR_ACCOUNT, username.c_str()) != ecSuccess ||
-			    ppropvals->set(PR_ADDRTYPE, addrtype) != ecSuccess ||
-			    ppropvals->set(PR_EMAIL_ADDRESS, username.c_str()) != ecSuccess)
-				return FALSE;
+			auto err = ppropvals->set(PR_SMTP_ADDRESS, username.c_str());
+			if (err != ecSuccess)
+				return err;
+			err = ppropvals->set(PR_ACCOUNT, username.c_str());
+			if (err != ecSuccess)
+				return err;
+			err = ppropvals->set(PR_ADDRTYPE, addrtype);
+			if (err != ecSuccess)
+				return err;
+			err = ppropvals->set(PR_EMAIL_ADDRESS, username.c_str());
+			if (err != ecSuccess)
+				return err;
 			if (NULL != pdisplayname) {
-				if (ppropvals->set(PR_DISPLAY_NAME, pdisplayname) != ecSuccess ||
-				    ppropvals->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplayname) != ecSuccess ||
-				    ppropvals->set(PR_EMS_AB_DISPLAY_NAME_PRINTABLE, pdisplayname) != ecSuccess)
-					return FALSE;
+				err = ppropvals->set(PR_DISPLAY_NAME, pdisplayname);
+				if (err != ecSuccess)
+					return err;
+				err = ppropvals->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplayname);
+				if (err != ecSuccess)
+					return err;
+				err = ppropvals->set(PR_EMS_AB_DISPLAY_NAME_PRINTABLE, pdisplayname);
+				if (err != ecSuccess)
+					return err;
 			}
 			for (size_t k = 0; k < std::size(tmp_proptags); ++k) {
 				uint32_t tag = tmp_proptags[k];
 				auto newval = tmp_set.pparray[i]->getval(tag);
 				if (newval == nullptr)
 					continue;
-				if (ppropvals->set(tag, newval) != ecSuccess)
-					return FALSE;
+				err = ppropvals->set(tag, newval);
+				if (err != ecSuccess)
+					return err;
 			}
-			if (ppropvals->set(PR_PARENT_ENTRYID, pparent_entryid) != ecSuccess)
-				return FALSE;
+			err = ppropvals->set(PR_PARENT_ENTRYID, pparent_entryid);
+			if (err != ecSuccess)
+				return err;
 			auto msgid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
 			if (msgid == nullptr)
-				return FALSE;
+				return ecError;
 			auto pvalue = zcsab_prepend(cu_mid_to_entryid(*pstore,
 			              pcontainer->id.exmdb_id.folder_id, *msgid), mot, 3*i+j);
-			if (pvalue == nullptr ||
-			    ppropvals->set(PR_ENTRYID, pvalue) != ecSuccess ||
-			    ppropvals->set(PR_RECORD_KEY, pvalue) != ecSuccess ||
-			    ppropvals->set(PR_TEMPLATEID, pvalue) != ecSuccess ||
-			    ppropvals->set(PR_ORIGINAL_ENTRYID, pvalue) != ecSuccess)
-				return FALSE;
+			if (pvalue == nullptr)
+				return ecError;
+			err = ppropvals->set(PR_ENTRYID, pvalue);
+			if (err != ecSuccess)
+				return err;
+			err = ppropvals->set(PR_RECORD_KEY, pvalue);
+			if (err != ecSuccess)
+				return err;
+			err = ppropvals->set(PR_TEMPLATEID, pvalue);
+			if (err != ecSuccess)
+				return err;
+			err = ppropvals->set(PR_ORIGINAL_ENTRYID, pvalue);
+			if (err != ecSuccess)
+				return err;
 			tmp_bin.cb = sizeof(muidZCSAB);
 			tmp_bin.pv = deconst(&muidZCSAB);
-			if (ppropvals->set(PR_AB_PROVIDER_ID, &tmp_bin) != ecSuccess)
-				return FALSE;
+			err = ppropvals->set(PR_AB_PROVIDER_ID, &tmp_bin);
+			if (err != ecSuccess)
+				return err;
 			tmp_int = static_cast<uint32_t>(mot);
-			if (ppropvals->set(PR_OBJECT_TYPE, &tmp_int) != ecSuccess)
-				return FALSE;
+			err = ppropvals->set(PR_OBJECT_TYPE, &tmp_int);
+			if (err != ecSuccess)
+				return err;
 			tmp_int = static_cast<uint32_t>(dt);
-			if (ppropvals->set(PR_DISPLAY_TYPE, &tmp_int) != ecSuccess ||
-			    ppropvals->set(PR_DISPLAY_TYPE_EX, &tmp_int) != ecSuccess)
-				return FALSE;
+			err = ppropvals->set(PR_DISPLAY_TYPE, &tmp_int);
+			if (err != ecSuccess)
+				return err;
+			err = ppropvals->set(PR_DISPLAY_TYPE_EX, &tmp_int);
+			if (err != ecSuccess)
+				return err;
 			if (prestriction != nullptr &&
 			    !container_object_match_contact_message(ppropvals.get(), prestriction))
 				continue;
-			if (pcontainer->contents.prow_set->append_move(std::move(ppropvals)) != ecSuccess)
-				return FALSE;
+			err = pcontainer->contents.prow_set->append_move(std::move(ppropvals));
+			if (err != ecSuccess)
+				return err;
 			if (mot == MAPI_DISTLIST)
 				break;
 		}
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	return false;
+	return ecServerOOM;
 }
 
 BOOL container_object_fetch_special_property(uint8_t special_type,
@@ -678,7 +703,7 @@ static bool container_object_query_folder_hierarchy(uint64_t folder_id,
 	return TRUE;
 }
 
-bool container_object::query_container_table(proptag_cspan pproptags,
+ec_error_t container_object::query_container_table(proptag_cspan pproptags,
 	BOOL b_depth, uint32_t start_pos, int32_t row_needed,
 	TARRAY_SET *pset)
 {
@@ -689,63 +714,62 @@ bool container_object::query_container_table(proptag_cspan pproptags,
 	if (0 == row_needed) {
 		pset->count = 0;
 		pset->pparray = NULL;
-		return TRUE;
+		return ecSuccess;
 	}
 	tmp_set.count = 0;
 	tmp_set.pparray = cu_alloc<TPROPVAL_ARRAY *>(100);
 	if (tmp_set.pparray == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	if (CONTAINER_TYPE_FOLDER == pcontainer->type) {
 		if (!container_object_query_folder_hierarchy(pcontainer->id.exmdb_id.folder_id,
 		    pproptags, &tmp_set))
-			return FALSE;	
+			return ecError;
 	} else {
 		auto pbase = ab_tree::AB.get(pcontainer->id.abtree_id.base_id);
 		if (!pbase)
-			return FALSE;
+			return ecError;
 		if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_ROOT) {
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (tmp_set.pparray[tmp_set.count] == nullptr)
-				return FALSE;
+				return ecServerOOM;
 			if (!container_object_fetch_special_properties(ab_tree::minid::SC_GAL,
 			    pproptags, tmp_set.pparray[tmp_set.count]))
-				return FALSE;
+				return ecError;
 			tmp_set.count ++;
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (tmp_set.pparray[tmp_set.count] == nullptr)
-				return FALSE;
+				return ecServerOOM;
 			if (!container_object_fetch_special_properties(ab_tree::minid::SC_PROVIDER,
 			    pproptags, tmp_set.pparray[tmp_set.count]))
-				return FALSE;
+				return ecError;
 			tmp_set.count ++;
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (tmp_set.pparray[tmp_set.count] == nullptr)
-				return FALSE;
+				return ecServerOOM;
 			auto pinfo = zs_get_info();
 			if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
 				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-			    container_object_get_folder_proptags, &tmp_propvals)) {
-				return FALSE;
-			}
+			    container_object_get_folder_proptags, &tmp_propvals))
+				return ecRpcFailed;
 			if (!container_object_fetch_folder_properties(&tmp_propvals,
 			    pproptags, tmp_set.pparray[tmp_set.count]))
-				return FALSE;
+				return ecError;
 			tmp_set.count ++;
 			if (b_depth && !container_object_query_folder_hierarchy(
 			    rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
 			    pproptags, &tmp_set))
-				return FALSE;
+				return ecError;
 			for (auto it = pbase->dbegin(); it != pbase->dend(); ++it)
 				if (!container_object_get_specialtables_from_node(it,
 				    pproptags, &tmp_set))
-					return FALSE;
+					return ecError;
 		} else if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_GAL) {
 			/* no subordinates */
 		} else {
 			if (!pbase->exists(pcontainer->id.abtree_id.minid)) {
 				pset->count = 0;
 				pset->pparray = NULL;
-				return TRUE;
+				return ecSuccess;
 			}
 			// NOTE: removed recursion as containers currently cannot contain containers
 		}
@@ -753,7 +777,7 @@ bool container_object::query_container_table(proptag_cspan pproptags,
 	pset->count = 0;
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(tmp_set.count);
 	if (pset->pparray == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	uint32_t end_pos = safe_add_s(start_pos, row_needed, nullptr);
 	if (row_needed >= 0) {
 		if (end_pos > tmp_set.count)
@@ -766,7 +790,7 @@ bool container_object::query_container_table(proptag_cspan pproptags,
 		        static_cast<unsigned int>(start_pos),
 		        static_cast<int>(row_needed));
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
 BOOL container_object::get_user_table_num(uint32_t *pnum)
@@ -774,7 +798,8 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 	auto pcontainer = this;
 	
 	if (type != CONTAINER_TYPE_ABTREE) {
-		if (contents.prow_set == nullptr && !load_user_table(nullptr))
+		if (contents.prow_set == nullptr &&
+		    load_user_table(nullptr) != ecSuccess)
 			return false;
 		*pnum = contents.prow_set != nullptr ?
 		        contents.prow_set->count : 0;
@@ -825,7 +850,7 @@ void container_object_get_user_table_all_proptags(
 	pproptags->pproptag = deconst(p);
 }
 
-bool container_object::query_user_table(proptag_cspan pproptags,
+ec_error_t container_object::query_user_table(proptag_cspan pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	auto pcontainer = this;
@@ -837,7 +862,7 @@ bool container_object::query_user_table(proptag_cspan pproptags,
 	if (0 == row_needed) {
 		pset->count = 0;
 		pset->pparray = NULL;
-		return TRUE;
+		return ecSuccess;
 	} else if (row_needed > 0) {
 		b_forward = TRUE;
 		first_pos = start_pos;
@@ -855,17 +880,17 @@ bool container_object::query_user_table(proptag_cspan pproptags,
 	pset->count = 0;
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(row_count);
 	if (pset->pparray == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
 		if (NULL != pcontainer->contents.pminid_array &&
 			0 == pcontainer->contents.pminid_array->count) {
 			pset->count = 0;
 			pset->pparray = NULL;
-			return TRUE;
+			return ecSuccess;
 		}
 		auto pbase = ab_tree::AB.get(pcontainer->id.abtree_id.base_id);
 		if (!pbase)
-			return FALSE;
+			return ecError;
 		if (NULL != pcontainer->contents.pminid_array) {
 			for (size_t i = first_pos; i < first_pos+row_count &&
 			     i < pcontainer->contents.pminid_array->count; ++i) {
@@ -880,10 +905,10 @@ bool container_object::query_user_table(proptag_cspan pproptags,
 				 */
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (pset->pparray[pset->count] == nullptr)
-					return FALSE;
+					return ecServerOOM;
 				if (!ab_tree_fetch_node_properties(node,
 				    pproptags, pset->pparray[pset->count]))
-					return FALSE;	
+					return ecError;
 				pset->count ++;
 			}
 		} else if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_GAL) {
@@ -893,20 +918,20 @@ bool container_object::query_user_table(proptag_cspan pproptags,
 					continue;
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (pset->pparray[pset->count] == nullptr)
-					return FALSE;
+					return ecServerOOM;
 				if (!ab_tree_fetch_node_properties(node,
 				    pproptags, pset->pparray[pset->count]))
-					return FALSE;
+					return ecError;
 				pset->count++;
 				if (pset->count == row_count)
 					break;
 			}
 		} else if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_EMPTY) {
-			return TRUE;
+			return ecSuccess;
 		} else {
 			ab_tree::ab_node node(pbase, pcontainer->id.abtree_id.minid);
 			if (!node.exists())
-				return TRUE;
+				return ecSuccess;
 			for (auto it = node.begin() + first_pos; it != node.end(); ++it) {
 				ab_tree::ab_node child(pbase, *it);
 				if(child.type() >= ab_tree::abnode_type::containers ||
@@ -914,18 +939,20 @@ bool container_object::query_user_table(proptag_cspan pproptags,
 					continue;
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (pset->pparray[pset->count] == nullptr)
-					return FALSE;
+					return ecServerOOM;
 				if (!ab_tree_fetch_node_properties(child,
 				    pproptags, pset->pparray[pset->count]))
-					return FALSE;
+					return ecError;
 				if (++pset->count == row_count)
 					break;
 			}
 		}
 	} else {
-		if (pcontainer->contents.prow_set == nullptr &&
-		    !pcontainer->load_user_table(nullptr))
-			return FALSE;
+		if (pcontainer->contents.prow_set == nullptr) {
+			auto err = pcontainer->load_user_table(nullptr);
+			if (err != ecSuccess)
+				return err;
+		}
 		if (pcontainer->contents.prow_set != nullptr)
 			for (size_t i = first_pos;
 			     i < pcontainer->contents.prow_set->count &&
@@ -940,5 +967,5 @@ bool container_object::query_user_table(proptag_cspan pproptags,
 			pset->pparray[pset->count - 1 - i] = ppropvals;
 		}
 	}
-	return TRUE;
+	return ecSuccess;
 }
