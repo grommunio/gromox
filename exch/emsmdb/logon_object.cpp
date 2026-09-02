@@ -429,7 +429,6 @@ static ec_error_t logon_object_get_calculated_property(const logon_object *plogo
 			*ppvalue = cu_strdup({plogon->account, static_cast<size_t>(atp - plogon->account)});
 		else
 			*ppvalue = cu_strdup(plogon->account);
-		*ppvalue = cu_strdup(dispname);
 		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_CODE_PAGE_ID: {

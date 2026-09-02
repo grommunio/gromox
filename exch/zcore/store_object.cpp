@@ -444,7 +444,6 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			*ppvalue = common_util_dup({pstore->account, static_cast<size_t>(atp - pstore->account)});
 		else
 			*ppvalue = common_util_dup(pstore->account);
-		*ppvalue = common_util_dup(dispname);
 		return *ppvalue != nullptr ? TRUE : false;
 	}
 	case PR_DEFAULT_STORE:
