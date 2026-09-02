@@ -174,6 +174,19 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	bool is_associated = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
 
+	// Prepare data for gromox-audit
+	void *pv_subject = nullptr, *pv_src_folder = nullptr, *pv_dst_folder = nullptr;
+	cu_get_property(MAPI_MESSAGE, mid_val, cpid, *pdb, PR_SUBJECT, &pv_subject);
+	cu_get_property(MAPI_FOLDER, parent_fid, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_src_folder);
+	cu_get_property(MAPI_FOLDER, fid_val, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_dst_folder);
+	auto subject = static_cast<const char *>(pv_subject);
+	auto src_folder = static_cast<const char *>(pv_src_folder);
+	auto dst_folder = static_cast<const char *>(pv_dst_folder);
+	std::string mailbox;
+	if (exmdb_server::is_private()) {
+		mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), mailbox);
+	}
+
 	uint32_t message_size = 0;
 	if (!cu_copy_message(*pdb, mid_val, fid_val, &dst_val,
 	    &b_result, &message_size))
@@ -196,8 +209,13 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 			        " WHERE message_id=%llu", LLU{mid_val});
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
+
 			mlog(LV_DEBUG, "exmdb-audit: moved message %s:f%llu:m%llu to f%llu:m%llu",
 				dir, LLU{parent_fid}, LLU{mid_val}, LLU{fid_val}, LLU{dst_val});
+			mlog(LV_NOTICE, "gromox-audit: moved message \"%s\" in mailbox %s "
+				"from folder \"%s\" to \"%s\"",
+				znul(subject), mailbox.c_str(),
+				znul(src_folder), znul(dst_folder));
 			b_update = FALSE;
 		} else {
 			snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
@@ -205,8 +223,13 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
 			timeindex_delete(pdb->psqlite, parent_fid, mid_val);
+
 			mlog(LV_DEBUG, "exmdb-audit: moved(PF) message %s:f%llu:m%llu to f%llu:m%llu",
 				dir, LLU{parent_fid}, LLU{mid_val}, LLU{fid_val}, LLU{dst_val});
+			mlog(LV_NOTICE, "gromox-audit: moved message \"%s\" in public folders "
+				"from folder \"%s\" to \"%s\"",
+				znul(subject), znul(src_folder), znul(dst_folder));
+
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM "
 			          "read_states WHERE message_id=%llu", LLU{mid_val});
 			if (pdb->exec(sql_string) != SQLITE_OK)
@@ -215,6 +238,11 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	} else {
 		mlog(LV_DEBUG, "exmdb-audit: copied message %s:f%llu:m%llu to f%llu:m%llu",
 			dir, LLU{parent_fid}, LLU{mid_val}, LLU{fid_val}, LLU{dst_val});
+		mlog(LV_NOTICE,
+			"gromox-audit: copied message \"%s\" in mailbox %s "
+			"from folder \"%s\" to \"%s\"",
+			znul(subject), mailbox.c_str(),
+			znul(src_folder), znul(dst_folder));
 	}
 	if (b_update && !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE,
 	    is_associated ? 0 : message_size, is_associated ? message_size : 0))
@@ -309,6 +337,20 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		b_check = TRUE;
 	}
 
+	// Prepare data for gromox-audit
+	std::string mailbox;
+	if (exmdb_server::is_private()) {
+		mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), mailbox);
+		mailbox = "mailbox " + mailbox;
+	} else {
+		mailbox = "public folders";
+	}
+	void *pv_src_folder = nullptr, *pv_dst_folder = nullptr;
+	cu_get_property(MAPI_FOLDER, src_val, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_src_folder);
+	cu_get_property(MAPI_FOLDER, dst_val, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_dst_folder);
+	auto src_folder = static_cast<const char *>(pv_src_folder);
+	auto dst_folder = static_cast<const char *>(pv_dst_folder);
+
 	auto b_batch = gx_collapse_event_storm && pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM
 	/* Table reload in MFCMAPI is ~700msg/sec, whereas event processing is ~100msgevt/sec */
 	               /* && table_new_content_count / 7 < pmessage_eids->count */;
@@ -402,9 +444,19 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 			dst_val, tmp_val1, 0, *dbase, notifq);
 		pdb->notify_message_movecopy(b_copy, dst_val, tmp_val1,
 			src_val, tmp_val, *dbase, notifq);
+
+		void *pv_subject = nullptr;
+		cu_get_property(MAPI_MESSAGE, tmp_val, cpid, *pdb, PR_SUBJECT, &pv_subject);
+		auto subject = static_cast<const char *>(pv_subject);
 		if (b_copy) {
 			mlog(LV_DEBUG, "exmdb-audit: copied(mmv) message %s:f%llu:m%llu to f%llu:m%llu",
 				dir, LLU{src_val}, LLU{tmp_val}, LLU{dst_val}, LLU{tmp_val1});
+			mlog(LV_NOTICE,
+				"gromox-audit: %s copied message \"%s\" in %s "
+				"from folder \"%s\" to \"%s\"",
+				username != nullptr ? username : "mailbox owner",
+				znul(subject), mailbox.c_str(),
+				znul(src_folder), znul(dst_folder));
 			continue;
 		}
 
@@ -416,8 +468,16 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		stm_del.reset();
 		if (!b_copy && b_softdel)
 			timeindex_delete(pdb->psqlite, parent_fid, tmp_val);
+
 		mlog(LV_DEBUG, "exmdb-audit: moved(mmv) message %s:f%llu:m%llu to f%llu:m%llu",
 			dir, LLU{src_val}, LLU{tmp_val}, LLU{dst_val}, LLU{tmp_val1});
+		mlog(LV_NOTICE,
+			"gromox-audit: %s moved message \"%s\" in %s "
+			"from folder \"%s\" to \"%s\"",
+			username != nullptr ? username : "mailbox owner",
+			znul(subject), mailbox.c_str(),
+			znul(src_folder), znul(dst_folder));
+
 		if (!exmdb_server::is_private()) {
 			char sql_string[63];
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM read_states"
@@ -538,6 +598,17 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
 	}
 
+	void *pv_src_folder = nullptr;
+	cu_get_property(MAPI_FOLDER, src_val, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_src_folder);
+	auto src_folder = static_cast<const char *>(pv_src_folder);
+	std::string mailbox;
+	if (exmdb_server::is_private()) {
+		mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), mailbox);
+		mailbox = "mailbox " + mailbox;
+	} else {
+		mailbox = "public folders";
+	}
+
 	auto b_batch = gx_collapse_event_storm && pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
@@ -598,6 +669,11 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 				}
 			}
 		}
+		
+		void *pv_subject = nullptr;
+		cu_get_property(MAPI_MESSAGE, tmp_val, cpid, *pdb, PR_SUBJECT, &pv_subject);
+		auto subject = static_cast<const char *>(pv_subject);
+
 		del_count ++;
 		total_adjust[is_assoc] += obj_size;
 		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
@@ -612,9 +688,18 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		sqlite3_reset(pstmt1);
 		if (!b_hard && !is_assoc)
 			timeindex_delete(pdb->psqlite, parent_fid, tmp_val);
+
 		mlog(LV_DEBUG, "exmdb-audit: %s-deleted message %s:f%llu:m%llu (actor:%s)",
 			b_hard ? "hard" : "soft", dir, LLU{src_val}, LLU{tmp_val},
 			username != nullptr ? username : "owner");
+		mlog(LV_NOTICE,
+			"gromox-audit: %s %s-deleted message \"%s\" in %s "
+			"from folder \"%s\"",
+			username != nullptr ? username : "mailbox owner",
+			b_hard ? "hard" : "soft",
+			znul(subject), mailbox.c_str(),
+			znul(src_folder));
+
 		if (!b_hard) {
 			uint64_t change_num = 0;
 			if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
@@ -1887,6 +1972,7 @@ static bool message_write_message(bool b_internal, const db_conn &db,
 				return FALSE;
 			mlog(LV_DEBUG, "exmdb-audit: truncated message %s:f%llu:m%llu (rewrite)",
 				exmdb_server::get_dir(), LLU{parent_id}, LLU{*pmessage_id});
+			
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM message_changes"
 			        "  WHERE message_id=%llu", LLU{*pmessage_id});
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
@@ -3557,6 +3643,19 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 	if (!b_del)
 		return ecSuccess;
 
+	void *pv_subject = nullptr, *pv_folder = nullptr;
+	cu_get_property(MAPI_MESSAGE, rp.message_id, rp.cpid, rp.db, PR_SUBJECT, &pv_subject);
+	cu_get_property(MAPI_FOLDER, rp.folder_id, CP_ACP, rp.db, PR_DISPLAY_NAME, &pv_folder);
+	auto subject = static_cast<const char *>(pv_subject);
+	auto folder = static_cast<const char *>(pv_folder);
+	std::string mailbox;
+	if (exmdb_server::is_private()) {
+		mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), mailbox);
+		mailbox = "mailbox " + mailbox;
+	} else {
+		mailbox = "public folders";
+	}
+
 	std::erase(seen.msg, message_node{rp.folder_id, rp.message_id});
 	void *pvalue = nullptr;
 	if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.db,
@@ -3568,8 +3667,12 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 		" WHERE message_id=%llu", LLU{rp.message_id});
 	if (gx_sql_exec(rp.sqlite, sql_string) != SQLITE_OK)
 		return ecError;
+
 	mlog(LV_DEBUG, "exmdb-audit: hard-deleted message %s:f%llu:m%llu (rule:OP_DELETE)",
 		exmdb_server::get_dir(), LLU{rp.folder_id}, LLU{rp.message_id});
+    mlog(LV_NOTICE, "gromox-audit: rule hard-deleted message \"%s\" in %s from folder \"%s\"",
+        znul(subject), mailbox.c_str(), znul(folder));
+		
 	if (!cu_adjust_store_size(rp.sqlite, ADJ_DECREASE, message_size, 0))
 		return ecError;
 	if (!rp.digest.has_value())
@@ -3938,6 +4041,20 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 		return false;
 	}
 
+	/* Audit metadata */
+	void *pv_subject = nullptr, *pv_folder = nullptr;
+	cu_get_property(MAPI_MESSAGE, *outmid, cpid, *pdb, PR_SUBJECT, &pv_subject);
+	cu_get_property(MAPI_FOLDER, fid_val, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_folder);
+	auto subject = static_cast<const char *>(pv_subject);
+	auto folder = static_cast<const char *>(pv_folder);
+	std::string mailbox;
+	if (exmdb_server::is_private()) {
+		mysql_adaptor_userid_to_name( exmdb_server::get_account_id(), mailbox);
+		mailbox = "mailbox " + mailbox;
+	} else {
+		mailbox = "public folders";
+	}
+
 	if (digest_stream.size() > 0) {
 		Json::Value digest;
 		std::string mid_string;
@@ -3980,6 +4097,11 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 	}
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
+
+	mlog(LV_NOTICE, "gromox-audit: %s message \"%s\" in %s in folder \"%s\"",
+        b_exist ? "updated" : "created",
+        znul(subject), mailbox.c_str(), znul(folder));
+
 	dg_notify(std::move(notifq));
 	*outmid = eid_t(1, *outmid);
 	*pe_result = ecSuccess;
