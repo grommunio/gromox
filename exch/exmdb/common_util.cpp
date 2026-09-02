@@ -5488,9 +5488,9 @@ BOOL common_util_indexing_sub_contents(
  * server however is UTF-8 and thus consumes a different amount of bytes.
  * OXCFXICS v24 §3.2.5.4, §3.3.5.12, once again, allow approximations.
  *
- * Gromox also uses PR_MESSAGE_SIZE for quota tracking. That is not an exact an
- * exact science either, due to potential compression or potential presence of
- * midb EML copies.
+ * Gromox also uses PR_MESSAGE_SIZE for quota tracking. That is not an exact
+ * science either, due to potential compression or potential presence of midb
+ * EML copies.
  */
 static uint32_t cu_get_cid_length(const char *cid, proptype_t proptype)
 {
