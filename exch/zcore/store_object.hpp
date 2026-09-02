@@ -22,7 +22,7 @@ struct store_object {
 	ec_error_t get_named_propnames(const PROPID_ARRAY &, PROPNAME_ARRAY *);
 	ec_error_t get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
 	ec_error_t get_all_proptags(PROPTAG_ARRAY *);
-	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
+	ec_error_t get_props(proptag_cspan, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *);
 	bool remove_properties(proptag_cspan);
 	BOOL get_permissions(PERMISSION_SET *);

@@ -60,13 +60,14 @@ static ec_error_t storetbl_add_row(table_object *tbl, const USER_INFO &info,
 	auto props = cu_alloc<TPROPVAL_ARRAY>();
 	if (props == nullptr)
 		return ecServerOOM;
-	if (!store->get_properties(tags, props))
-		return ecSuccess;
+	auto err = store->get_props(tags, props);
+	if (err != ecSuccess)
+		return err;
 	/* props is from the cu_alloc allocator; by duplication, we make one with me_alloc */
 	tpropval_array_ptr pdup(props->dup());
 	if (pdup == nullptr)
 		return ecServerOOM;
-	auto err = tbl->fixed_data->append_move(std::move(pdup));
+	err = tbl->fixed_data->append_move(std::move(pdup));
 	if (err == ecMAPIOOM)
 		return ecServerOOM;
 	return err;

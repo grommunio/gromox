@@ -1606,8 +1606,9 @@ ec_error_t zs_createmessage(GUID hsession,
 	static constexpr proptag_t proptag_buff[] =
 		{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
-	if (!pstore->get_properties(proptag_buff, &tmp_propvals))
-		return ecError;
+	auto err = pstore->get_props(proptag_buff, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 	int64_t max_quota = num == nullptr ? -1 : static_cast<int64_t>(*num) * 1024;
 	auto lnum = tmp_propvals.get<const uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
@@ -1623,7 +1624,7 @@ ec_error_t zs_createmessage(GUID hsession,
 	if (pmessage == nullptr)
 		return ecError;
 	BOOL b_fai = (flags & MAPI_ASSOCIATED) ? TRUE : false;
-	auto err = pmessage->init_message(b_fai, pinfo->cpid);
+	err = pmessage->init_message(b_fai, pinfo->cpid);
 	if (err != ecSuccess)
 		return err;
 	/* add the store handle as the parent object handle
@@ -3359,8 +3360,9 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return err;
 	static constexpr proptag_t proptag_buff2[] =
 		{PR_MAX_SUBMIT_MESSAGE_SIZE, PR_PROHIBIT_SEND_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
-	if (!pstore->get_properties(proptag_buff2, &tmp_propvals))
-		return ecError;
+	err = pstore->get_props(proptag_buff2, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 
 	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
 	auto storesize = tmp_propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
@@ -3624,9 +3626,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				return err;
 			wtags = proptags;
 		}
-		if (!store->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return store->get_props(wtags, ppropvals);
 	}
 	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);

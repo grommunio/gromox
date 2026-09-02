@@ -404,7 +404,7 @@ static void *store_object_get_oof_property(const char *maildir,
 	return props[0].pvalue;
 }
 
-static BOOL store_object_get_calculated_property(store_object *pstore,
+static ec_error_t store_object_get_calculated_property(store_object *pstore,
     proptag_t proptag, void **ppvalue)
 {
 	uint32_t permission;
@@ -413,13 +413,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_MDB_PROVIDER: {
 		auto bv = cu_alloc<BINARY>();
 		if (bv == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*ppvalue = bv;
 		bv->cb = 16;
 		bv->pv = deconst(!pstore->b_private ? &pbExchangeProviderPublicGuid :
 		         pstore->primary_mode() ? &pbExchangeProviderPrimaryUserGuid :
 		         &pbExchangeProviderDelegateGuid);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_DISPLAY_NAME: {
 		std::string dispname;
@@ -429,16 +429,14 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			*ppvalue = common_util_dup(dispname);
 		else
 			*ppvalue = common_util_dup(pstore->account);
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE: {
 		if (!pstore->b_private)
-			return FALSE;
+			return ecServerOOM;
 		std::string dispname;
 		if (!mysql_adaptor_get_user_displayname(pstore->account, dispname))
-			return FALSE;	
+			return ecServerOOM;	
 		const char *atp;
 		if (std::all_of(dispname.cbegin(), dispname.cend(), HX_isascii))
 			*ppvalue = common_util_dup(dispname);
@@ -446,195 +444,188 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			*ppvalue = common_util_dup({pstore->account, static_cast<size_t>(atp - pstore->account)});
 		else
 			*ppvalue = common_util_dup(pstore->account);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_DEFAULT_STORE:
 		*ppvalue = cu_alloc<uint8_t>();
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*static_cast<uint8_t *>(*ppvalue) = pstore->primary_mode();
-		return TRUE;
+		return ecSuccess;
 	case PR_ACCESS: {
 		auto acval = cu_alloc<uint32_t>();
 		*ppvalue = acval;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		if (pstore->owner_mode()) {
 			*acval = MAPI_ACCESS_AllSix;
-			return TRUE;
+			return ecSuccess;
 		}
 		auto pinfo = zs_get_info();
 		if (!pstore->b_private) {
 			*acval = MAPI_ACCESS_AllSix;
-			return TRUE;
+			return ecSuccess;
 		}
 		if (!exmdb_client->get_mbox_perm(pstore->dir,
 		    pinfo->get_username(), &permission))
-			return FALSE;
+			return ecRpcFailed;
 		permission &= ~frightsGromoxStoreOwner;
 		*acval = MAPI_ACCESS_READ;
 		if (permission & frightsOwner) {
 			*acval = MAPI_ACCESS_AllSix;
-			return TRUE;
+			return ecSuccess;
 		}
 		if (permission & frightsCreate)
 			*acval |= MAPI_ACCESS_CREATE_CONTENTS | MAPI_ACCESS_CREATE_ASSOCIATED;
 		if (permission & frightsCreateSubfolder)
 			*acval |= MAPI_ACCESS_CREATE_HIERARCHY;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_RIGHTS: {
 		*ppvalue = cu_alloc<uint32_t>();
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		if (pstore->owner_mode()) {
 			*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
-			return TRUE;
+			return ecSuccess;
 		}
 		auto pinfo = zs_get_info();
 		if (pstore->b_private) {
 			if (!exmdb_client->get_mbox_perm(pstore->dir,
 			    pinfo->get_username(), &permission))
-				return FALSE;
+				return ecRpcFailed;
 			*static_cast<uint32_t *>(*ppvalue) &= rightsMaxROP;
-			return TRUE;
+			return ecSuccess;
 		}
 		*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_EMAIL_ADDRESS: {
 		std::string essdn;
-		if (cvt_username_to_essdn(pstore->b_private ? pstore->account :
-		    account_to_domain(pstore->account), g_org_name,
-		    mysql_adaptor_get_user_ids,
-		    mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
-			return FALSE;
+		auto err = cvt_username_to_essdn(pstore->b_private ?
+		           pstore->account : account_to_domain(pstore->account),
+		           g_org_name, mysql_adaptor_get_user_ids,
+		           mysql_adaptor_get_domain_ids, essdn);
+		if (err != ecSuccess)
+			return err;
 		auto tstr = cu_alloc<char>(essdn.size() + 1);
 		*ppvalue = tstr;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		gx_strlcpy(tstr, essdn.c_str(), essdn.size() + 1);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_EXTENDED_RULE_SIZE_LIMIT: {
 		auto r = cu_alloc<uint32_t>();
 		*ppvalue = r;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*r = g_max_extrule_len;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_MAILBOX_OWNER_ENTRYID:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = common_util_username_to_addressbook_entryid(pstore->account);
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	case PR_MAILBOX_OWNER_NAME: {
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		std::string dispname;
 		*ppvalue = mysql_adaptor_get_user_displayname(pstore->account, dispname) &&
 		           !dispname.empty() ?
 		           common_util_dup(dispname) : common_util_dup(pstore->account);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_MAX_SUBMIT_MESSAGE_SIZE: {
 		auto r = cu_alloc<uint32_t>();
 		*ppvalue = r;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*r = std::min(static_cast<size_t>(INT32_MAX), g_max_mail_len >> 10);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (v == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = static_cast<uint32_t>(MAPI_STORE);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_PROVIDER_DISPLAY:
 		*ppvalue = deconst("Exchange Message Store");
-		return TRUE;
+		return ecSuccess;
 	case PR_RESOURCE_FLAGS: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = pstore->owner_mode() ?
 		     STATUS_PRIMARY_IDENTITY | STATUS_DEFAULT_STORE | STATUS_PRIMARY_STORE :
 		     STATUS_NO_DEFAULT_STORE;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_RESOURCE_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (v == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = static_cast<uint32_t>(MAPI_STORE_PROVIDER);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_STORE_SUPPORT_MASK: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		if (!pstore->b_private) {
 			*v = EC_SUPPORTMASK_PUBLIC;
-			return TRUE;
+			return ecSuccess;
 		}
 		if (pstore->owner_mode()) {
 			*v = EC_SUPPORTMASK_OWNER;
-			return TRUE;
+			return ecSuccess;
 		}
 		*v = EC_SUPPORTMASK_OTHER;
 		auto pinfo = zs_get_info();
 		auto ret = cu_get_delegate_perm_MD(pinfo->get_username(), pstore->dir);
 		if (ret >= repr_grant::send_on_behalf)
 			*v |= STORE_SUBMIT_OK;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_RECORD_KEY:
 	case PR_INSTANCE_KEY:
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(pstore->mailbox_guid);
-		return TRUE;
+		return ecSuccess;
 	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pstore->mapping_signature);
-		return TRUE;
+		return ecSuccess;
 	case PR_ENTRYID:
 	case PR_STORE_ENTRYID:
 		*ppvalue = cu_to_store_entryid(*pstore);
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_USER_NAME: {
 		auto pinfo = zs_get_info();
 		*ppvalue = deconst(pinfo->get_username());
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_USER_ENTRYID: {
 		auto pinfo = zs_get_info();
 		*ppvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	}
 	case PR_ROOT_ENTRYID:
 		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1, pstore->b_private ?
 		           PRIVATE_FID_ROOT : PUBLIC_FID_ROOT));
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_FINDER_ENTRYID:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_FINDER));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_FAVORITES_ENTRYID:
 		/*
 		 * Our PR_IPM_FAVORITES_ENTRYID for public stores is not
@@ -643,73 +634,57 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*ppvalue = cu_fid_to_entryid(*pstore,
 		           rop_util_make_eid_ex(1, pstore->b_private ?
 		           PRIVATE_FID_SHORTCUTS : PUBLIC_FID_IPMSUBTREE));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_SUBTREE_ENTRYID:
 		/* else case:: different from native MAPI */
 		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_INBOX_ENTRYID:
 		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE));
-		if (*ppvalue == nullptr)
-			return false;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_OUTBOX_ENTRYID:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_SENTMAIL_ENTRYID:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_WASTEBASKET_ENTRYID:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_DAF_ENTRYID:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           PRIVATE_FID_DEFERRED_ACTION));
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_SCHEDULE_FOLDER_ENTRYID:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SCHEDULE));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_VIEWS_ENTRYID:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS));
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_COMMON_VIEWS_ENTRYID:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
 		/*
 		 * Our PR_IPM_PUBLIC_FOLDERS_ENTRYID for public stores is not
@@ -717,27 +692,23 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		 */
 	case PR_NON_IPM_SUBTREE_ENTRYID:
 		if (pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_NONIPMSUBTREE));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_EFORMS_REGISTRY_ENTRYID:
 		if (pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_EFORMSREGISTRY));
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PidTagXSpoolerQueueEntryId:
 		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_SPOOLER_QUEUE : PUBLIC_FID_NONIPMSUBTREE));
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_EC_SERVER_VERSION:
 		*ppvalue = deconst(PACKAGE_VERSION);
-		return TRUE;
+		return ecSuccess;
 	case PR_EC_OUTOFOFFICE:
 	case PR_EC_OUTOFOFFICE_MSG:
 	case PR_EC_OUTOFOFFICE_SUBJECT:
@@ -748,98 +719,93 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_EC_EXTERNAL_REPLY:
 	case PR_EC_EXTERNAL_SUBJECT:
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = store_object_get_oof_property(pstore->get_dir(), proptag);
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	case PR_EC_USER_LANGUAGE: {
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		sql_meta_result mres;
 		if (mysql_adaptor_meta(pstore->account, WANTPRIV_METAONLY, mres) != 0)
-			return FALSE;	
+			return ecError;
 		*ppvalue = common_util_dup(mres.lang);
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_EC_USER_TIMEZONE: {
 		if (!pstore->b_private)
-			return FALSE;
+			return ecNotFound;
 		sql_meta_result mres;
 		auto tmzone = mysql_adaptor_meta(pstore->account, WANTPRIV_METAONLY, mres) == 0 ?
 		              mres.timezone.c_str() : nullptr;
 		if (znoval(tmzone)) {
 			*ppvalue = deconst(common_util_get_default_timezone());
-			return TRUE;
+			return ecSuccess;
 		}
 		*ppvalue = common_util_dup(tmzone);
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PR_EC_WEBACCESS_SETTINGS_JSON:
 		*ppvalue = cu_read_storenamedprop(pstore->dir, PSETID_Gromox,
 		           "websettings", PT_UNICODE);
-		if (*ppvalue == nullptr)
-			return false;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecNotFound;
 	case PR_EC_RECIPIENT_HISTORY_JSON:
 		*ppvalue = cu_read_storenamedprop(pstore->dir, PSETID_Gromox,
 		           "websettings_recipienthistory", PT_UNICODE);
-		if (*ppvalue == nullptr)
-			return false;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecNotFound;
 	case PR_EC_WEBAPP_PERSISTENT_SETTINGS_JSON:
 		*ppvalue = cu_read_storenamedprop(pstore->dir, PSETID_Gromox,
 		           "websettings_persistent", PT_UNICODE);
-		if (*ppvalue == nullptr)
-			return false;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecNotFound;
 	case PR_EC_ENABLED_FEATURES_L: {
 		auto v = cu_alloc<uint32_t>();
 		if (v == nullptr)
-			return false;
+			return ecServerOOM;
 		auto info = zs_get_info();
 		*v = info->privbits;
 		if (!(*v & USER_PRIVILEGE_DETAIL1))
 			*v |= USER_PRIVILEGE_DETAIL1 | USER_PRIVILEGE_WEB |
 			      USER_PRIVILEGE_EAS | USER_PRIVILEGE_DAV;
 		*ppvalue = v;
-		return TRUE;
+		return ecSuccess;
 	}
 	/*
 	 * Do *not* handle PR_EMS_AB_THUMBNAIL_PHOTO. EMSAB proptags are not
 	 * valid in their intended sense for IMsgStores.
 	 */
 	}
-	return FALSE;
+	return ecNotFound;
 }
 
-bool store_object::get_properties(proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
+ec_error_t store_object::get_props(proptag_cspan pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropvals->count = 0;
 	auto pstore = this;
 	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		if (!store_object_get_calculated_property(this, tag, &pvalue))
-			tmp_proptags.emplace_back(tag);
-		else if (pvalue != nullptr)
+		auto err = store_object_get_calculated_property(this, tag, &pvalue);
+		if (err == ecSuccess && pvalue != nullptr) {
 			ppropvals->emplace_back(tag, pvalue);
-		else
-			return false;
+			continue;
+		} else if (err == ecNotFound || pvalue == nullptr) {
+		} else {
+			return err;
+		}
+		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	auto pinfo = zs_get_info();
 	if (pstore->b_private && pinfo->user_id == pstore->account_id) {
 		for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
@@ -855,18 +821,18 @@ bool store_object::get_properties(proptag_cspan pproptags, TPROPVAL_ARRAY *pprop
 			}
 		}	
 		if (tmp_proptags.count == 0)
-			return TRUE;
+			return ecSuccess;
 	}
 	if (!exmdb_client->get_store_properties(pstore->dir, pinfo->cpid,
 	    tmp_proptags, &tmp_propvals))
-		return FALSE;	
+		return ecRpcFailed;
 	if (tmp_propvals.count == 0)
-		return TRUE;
+		return ecSuccess;
 	memcpy(ppropvals->ppropval +
 		ppropvals->count, tmp_propvals.ppropval,
 		sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 	ppropvals->count += tmp_propvals.count;
-	return TRUE;	
+	return ecSuccess;
 }
 
 static BOOL store_object_set_oof_property(const char *maildir,
