@@ -3631,9 +3631,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				return ecError;
 			wtags = proptags;
 		}
-		if (!folder->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return folder->get_props(wtags, ppropvals);
 	}
 	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
@@ -3940,8 +3938,9 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 				continue;
 			tmp_proptags.emplace_back(tag);
 		}
-		if (!folder->get_properties(tmp_proptags, &propvals))
-			return ecError;
+		auto err = folder->get_props(tmp_proptags, &propvals);
+		if (err != ecSuccess)
+			return err;
 		if (b_sub || b_normal || b_fai) {
 			BOOL b_guest = username == STORE_OWNER_GRANTED ? false : TRUE;
 			if (!exmdb_client->copy_folder_internal(pstore->get_dir(),
