@@ -63,6 +63,7 @@ struct object_stat {
 	size_t refs = 0;
 	unsigned long long ifc = 0;
 	ustat du;
+	proptag_t proptag{};
 	int8_t format = -1;
 };
 
@@ -156,18 +157,21 @@ static object_map db_read_usecount(sqlite3 *db, mapi_object_type type)
 {
 	xstmt stm;
 	if (type == MAPI_ATTACH)
-		stm = gx_sql_prep(db, "SELECT propval FROM attachment_properties AS ap "
+		stm = gx_sql_prep(db, "SELECT proptag, propval FROM attachment_properties AS ap "
 		      "WHERE ap.proptag=0x37010102");
 	else if (type == MAPI_MESSAGE)
-		stm = gx_sql_prep(db, "SELECT propval FROM message_properties AS mp "
+		stm = gx_sql_prep(db, "SELECT proptag, propval FROM message_properties AS mp "
 		      "WHERE mp.proptag IN (0x1000001f,0x10090102,0x10130102,0x7d001f)");
 	else
 		throw EXIT_FAILURE;
 	if (stm == nullptr)
 		throw EXIT_FAILURE;
 	object_map m;
-	while (stm.step() == SQLITE_ROW)
-		++m[stm.col_text(0)].refs;
+	while (stm.step() == SQLITE_ROW) {
+		auto &entry = m[stm.col_text(1)];
+		++entry.refs;
+		entry.proptag = stm.col_uint64(0);
+	}
 	return m;
 }
 
@@ -186,11 +190,15 @@ static void file_detail_update(const char *dir, const std::string &obj_id, objec
 	auto path = cid + obj_id;
 
 	if (digits_only(obj_id.c_str())) {
+		/* #codepoints marker in classic PT_UNICODE files (v0/v1z only) */
+		bool strip = info.proptag == PR_BODY ||
+		             info.proptag == PR_TRANSPORT_MESSAGE_HEADERS;
+
 		if (stat(path.c_str(), &sb) == 0) {
 			info.format = 0;
 			info.du     = sb;
 			info.ifc    = info.du.size;
-			if (info.ifc >= 4)
+			if (strip && info.ifc >= 4)
 				info.ifc -= 4;
 			return;
 		}
@@ -199,7 +207,7 @@ static void file_detail_update(const char *dir, const std::string &obj_id, objec
 			info.format = 1;
 			info.du     = sb;
 			info.ifc    = gx_decompressed_size(path.c_str());
-			if (info.ifc >= 4)
+			if (strip && info.ifc >= 4)
 				info.ifc -= 4;
 			return;
 		}
