@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <cctype>
 #include <cerrno>
 #include <cmath>
 #include <cstdint>
@@ -13,6 +14,7 @@
 #include <string>
 #include <unordered_map>
 #include <libHX/ctype_helper.h>
+#include <libHX/option.h>
 #include <sys/stat.h>
 #include <gromox/database.h>
 #include <gromox/fileio.h>
@@ -22,7 +24,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-static char s_unit[8] = "MB";
+static char s_unit[] = "MB";
 static unsigned long long UNIT = 1048576;
 static constexpr int BLOCKUNIT = 512;
 
@@ -43,8 +45,8 @@ struct ustat {
 		pad += o.pad;
 		return *this;
 	}
-	constexpr unsigned long long units() const { return size / UNIT; }
-	constexpr unsigned long long punits() const { return pad / UNIT; }
+	unsigned long long units() const { return size / UNIT; }
+	unsigned long long punits() const { return pad / UNIT; }
 
 	unsigned long long size = 0, pad = 0;
 };
@@ -79,6 +81,12 @@ struct ifc_stat {
 
 using db_handle = std::unique_ptr<sqlite3, deleter>;
 using object_map = std::unordered_map<std::string, object_stat>;
+
+static constexpr HXoption g_options_table[] = {
+	{{}, 'B', HXTYPE_STRING, {}, {}, {}, {}, "Report byte values in this unit (-BK, -BM, -BG, -B4K, -B512)"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 static double ratio(double a, double b) { return b == 0 ? NAN : a / b; }
 
@@ -300,7 +308,30 @@ static uint64_t subabs(uint64_t a, uint64_t b)
 
 int main(int argc, char **argv) try
 {
-	if (argc < 2) {
+	HXopt6_auto_result result{};
+	if (HX_getopt6(g_options_table, argc, argv, &result,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	for (int i = 0; i < result.nopts; ++i) {
+		if (result.desc[i]->sh == 'B') {
+			switch (toupper(result.oarg[i][0])) {
+			case 'B':
+				UNIT = 1; strcpy(s_unit, "B"); break;
+			case 'K':
+				UNIT = 1ULL << 10; strcpy(s_unit, "KB"); break;
+			case 'M':
+				UNIT = 1ULL << 20; strcpy(s_unit, "MB"); break;
+			case 'G':
+				UNIT = 1ULL << 30; strcpy(s_unit, "GB"); break;
+			case 'T':
+				UNIT = 1ULL << 40; strcpy(s_unit, "TB"); break;
+			default:
+				fprintf(stderr, "Unrecognized syntax for -B: \"%s\"\n", result.oarg[i]);
+				return EXIT_FAILURE;
+			}
+		}
+	}
+	if (result.nargs < 1) {
 		fprintf(stderr, "Usage: mbsize <directory>\n");
 		return EXIT_FAILURE;
 	}
@@ -308,12 +339,12 @@ int main(int argc, char **argv) try
 	printf("                                 Apparent         On FS \n");
 	printf("                                ------------  ------------\n");
 
-	auto db_path = argv[1] + "/exmdb/exchange.sqlite3"s;
+	auto db_path = result.uarg[0] + "/exmdb/exchange.sqlite3"s;
 	ustat sqlite_sb, midb_sb;
 	struct stat sb;
 	if (stat(db_path.c_str(), &sb) == 0)
 		sqlite_sb = sb;
-	if (stat((argv[1] + "/exmdb/midb.sqlite3"s).c_str(), &sb) == 0)
+	if (stat((result.uarg[0] + "/exmdb/midb.sqlite3"s).c_str(), &sb) == 0)
 		midb_sb = sb;
 
 	auto db = db_open(db_path.c_str());
@@ -323,11 +354,11 @@ int main(int argc, char **argv) try
 
 	auto msg_uc = db_read_usecount(db.get(), MAPI_MESSAGE);
 	auto atx_uc = db_read_usecount(db.get(), MAPI_ATTACH);
-	auto msg_ic = usecount_analyze(argv[1], msg_uc);
-	auto atx_ic = usecount_analyze(argv[1], atx_uc);
+	auto msg_ic = usecount_analyze(result.uarg[0], msg_uc);
+	auto atx_ic = usecount_analyze(result.uarg[0], atx_uc);
 
-	auto rfc = rfc_count(argv[1] + "/eml"s);
-	rfc += rfc_count(argv[1] + "/ext"s);
+	auto rfc = rfc_count(result.uarg[0] + "/eml"s);
+	rfc += rfc_count(result.uarg[0] + "/ext"s);
 	printf("== RFC5322/Mbox representation ==\n");
 	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Received", rfc.recv.units(), s_unit, rfc.recv.punits(), s_unit);
 	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Sent", rfc.sent.units(), s_unit, rfc.sent.punits(), s_unit);
@@ -349,7 +380,7 @@ int main(int argc, char **argv) try
 	printf("%-30s  %9llu %-2s          -\n", "... Other", (nts - msg_ic.ifco - atx_ic.ifco) / UNIT, s_unit);
 
 	printf("\n== On-disk sizes ==\n");
-	auto cid_dirs = count_dirs(argv[1] + "/cid"s);
+	auto cid_dirs = count_dirs(result.uarg[0] + "/cid"s);
 	auto du = sqlite_sb + msg_ic.du + atx_ic.du + cid_dirs;
 	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Sum of MAPI data", du.units(), s_unit, du.punits(), s_unit);
 	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... exchange.sqlite3", sqlite_sb.units(), s_unit, sqlite_sb.punits(), s_unit);
