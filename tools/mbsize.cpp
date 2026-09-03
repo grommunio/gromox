@@ -169,7 +169,14 @@ static unsigned long long db_read_nts(sqlite3 *db)
 	return stm != nullptr && stm.step() == SQLITE_ROW ? stm.col_uint64(0) : 0;
 }
 
-static object_map db_read_usecount(sqlite3 *db, mapi_object_type type)
+/**
+ * Scan exchange.sqlite3 for CID file references and yield an associative
+ * container that indicates how often each content object was referenced.
+ *
+ * @db:   opened exchange.sqlite3
+ * @type: property set which to examine; either %MAPI_MESSAGE or %MAPI_ATTACH.
+ */
+static object_map db_read_cid_refs(sqlite3 *db, mapi_object_type type)
 {
 	xstmt stm;
 	if (type == MAPI_ATTACH)
@@ -182,6 +189,8 @@ static object_map db_read_usecount(sqlite3 *db, mapi_object_type type)
 		throw EXIT_FAILURE;
 	if (stm == nullptr)
 		throw EXIT_FAILURE;
+
+	/* The columns in question are references to filename rather than the actual content */
 	object_map m;
 	while (stm.step() == SQLITE_ROW) {
 		auto &entry = m[stm.col_text(1)];
@@ -199,7 +208,13 @@ static bool digits_only(const char *s)
 	return true;
 }
 
-static void file_detail_update(const char *dir, const std::string &obj_id, object_stat &info)
+/**
+ * Resolve a CID filename reference and determine/record more information, such as:
+ * - Gromox header/compression type
+ * - actual disk usage of the content object in fs blocks (record fs overhead)
+ */
+static void cid_more_detail(const char *dir, const std::string &obj_id,
+    object_stat &info)
 {
 	auto cid = dir + "/cid/"s;
 	struct stat sb;
@@ -241,14 +256,15 @@ static void file_detail_update(const char *dir, const std::string &obj_id, objec
 }
 
 /**
- * Read the object map and update it with more per-object info.
+ * Reads an object map (populated with deduplication info) and updates it with more
+ * per-object info. In particular, it
  * Sums are built and returned.
  */
-static ifc_stat usecount_analyze(const char *dir, object_map &map)
+static ifc_stat cid_analyze(const char *dir, object_map &map)
 {
 	ifc_stat st;
 	for (auto &[obj_id, info] : map) {
-		file_detail_update(dir, obj_id, info);
+		cid_more_detail(dir, obj_id, info);
 		if (info.format < 0) {
 			st.lost += info.refs;
 			++st.lost_pad;
@@ -353,10 +369,10 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	auto nts = db_read_nts(db.get());
 
-	auto msg_uc = db_read_usecount(db.get(), MAPI_MESSAGE);
-	auto atx_uc = db_read_usecount(db.get(), MAPI_ATTACH);
-	auto msg_ic = usecount_analyze(result.uarg[0], msg_uc);
-	auto atx_ic = usecount_analyze(result.uarg[0], atx_uc);
+	auto msg_uc = db_read_cid_refs(db.get(), MAPI_MESSAGE);
+	auto atx_uc = db_read_cid_refs(db.get(), MAPI_ATTACH);
+	auto msg_ic = cid_analyze(result.uarg[0], msg_uc);
+	auto atx_ic = cid_analyze(result.uarg[0], atx_uc);
 
 	auto rfc = rfc_count(result.uarg[0] + "/eml"s);
 	rfc += rfc_count(result.uarg[0] + "/ext"s);
