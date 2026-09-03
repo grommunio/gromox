@@ -329,6 +329,8 @@ static bool icp_parse_fetch_args(mdi_list &plist, bool *pb_detail,
 			 * BINARY[]/PEEK only.
 			 */
 			auto lb = strchr(arg, '[');
+			if (lb == nullptr)
+				return false;
 			auto pend = strchr(lb, ']');
 			if (pend == nullptr)
 				return FALSE;
@@ -1043,7 +1045,11 @@ static int icp_process_fetch_item(imap_context &ctx,
 			bool peek = strncasecmp(kw, "BINARY.PEEK[", 12) == 0;
 			const char *bname = size_only ? "BINARY.SIZE" : "BINARY";
 			auto lb = strchr(kw, '[');
+			if (lb == nullptr)
+				return false;
 			auto rb = strchr(lb, ']');
+			if (rb == nullptr)
+				return false;
 			std::string part(lb + 1, rb - lb - 1);
 			size_t poff = 0;
 			ssize_t plen = -1;
