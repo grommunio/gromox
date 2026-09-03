@@ -18,18 +18,28 @@ stuff left there by outside actions.
 Selects the display unit.
 .br
 Default: \fBM\fP
+.TP
+\fB\-\-orphans\fP
+Show the list of files believed to be orphaned/unrecognized. This option is
+meant for debugging the counting implementation. Some files are naturally
+orphaned, e.g. between the time a message was hard-deleted and the time that
+`gromox-mbop purge-datafiles` is run.
 .SH Line descriptions
 .PP
 Apparent size: This is the exact size of the object, or simply the sum
 of sizes of objects.
 .PP
-On FS: This is the space that is used on the filesystem, and is subject
-to fs block sizes. Details about this behavior may be found on
-<https://en.wikipedia.org/wiki/Block_(data_storage)>. As a result,
-the on-disk size may be larger than the apparent size.
+On FS: This is the space that is used on the filesystem, and is subject to fs
+block sizes. Details about this behavior may be found on
+<https://en.wikipedia.org/wiki/Block_(data_storage)>. As a result, the on-disk
+size may be larger than the apparent size. It is occassionally possible that
+files can become sparse (e.g. as a result of rsync -S) and their block-based
+use even be lower the apparent filesize.
 .PP
 RFC5322/Mbox: For the sake of IMAP, RFC5322 copies of messages and some
-metadata is retained.
+metadata is retained. A heuristic tries to partition this into received and
+sent based on the program that created it, but this determination is not exact
+because it does not analyze which MAPI folder it belongs to.
 .PP
 RFC5322 Received: Applies to messages received via delivery(8gx).
 .PP
@@ -74,7 +84,8 @@ Compressed.
 MAPI reported sizes: The PR_MESSAGE_SIZE property of a store, folder, message,
 and the PR_ATTACH_SIZE property of an attachment, all give a close
 approximation to the amount of data needed to transfer the object(s) over a
-MAPI connection.
+MAPI connection uncompressed, and without accounting for any framing like TCP,
+HTTP, RPC, ROP or FXSTREAM.
 .PP
 NTS deviation: how much the Network Transfer Size is off from the on-disk size.
 .PP
