@@ -121,8 +121,13 @@ static struct rfc_stat rfc_count(const std::string &dirname)
 		auto name = de->d_name;
 		if (*name == '.')
 			continue;
-		if (fstatat(dfd, name, &sb, 0) != 0 ||
-		    !S_ISREG(sb.st_mode))
+		if (fstatat(dfd, name, &sb, 0) != 0)
+			continue;
+		if (S_ISDIR(sb.st_mode)) {
+			out += rfc_count(dirname + "/"s + name);
+			continue;
+		}
+		if (!S_ISREG(sb.st_mode))
 			continue;
 		if (looks_like_midb_generated(name))
 			out.sent += sb;
