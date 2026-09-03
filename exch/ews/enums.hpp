@@ -216,9 +216,9 @@ struct Enum {
 	STR(IPPhone);
 	STR(IsEqualTo);
 	STR(IsGreaterThan);
-	STR(IsGreaterThanOrEqual);
+	STR(IsGreaterThanOrEqualTo);
 	STR(IsLessThan);
-	STR(IsLessThanOrEqual);
+	STR(IsLessThanOrEqualTo);
 	STR(IsNotEqualTo);
 	STR(Isdn);
 	STR(January);
@@ -479,7 +479,7 @@ struct Enum {
 	using PhysicalAddressKeyType = StrEnum<Home, Business, Other>; ///< Types.xsd:5275
 	using ResolveNamesSearchScopeType = StrEnum<ActiveDirectory, ActiveDirectoryContacts, Contacts, ContactsActiveDirectory>; ///< Types.xsd:4255
 	using ResponseTypeType = StrEnum<Unknown, Organizer, Tentative, Accept, Decline, NoResponseReceived>; ///< Types.xsd:4372
-	using RestrictionRelop = StrEnum<IsLessThan, IsLessThanOrEqual, IsGreaterThan, IsGreaterThanOrEqual, IsEqualTo, IsNotEqualTo>; ///< Helper class, index maps directly to mapi_rtype
+	using RestrictionRelop = StrEnum<IsLessThan, IsLessThanOrEqualTo, IsGreaterThan, IsGreaterThanOrEqualTo, IsEqualTo, IsNotEqualTo>; ///< Helper class, index maps directly to mapi_rtype
 	using OofState = StrEnum<Disabled, Enabled, Scheduled>; ///< Types.xsd:6522
 	using SensitivityChoicesType = StrEnum<Normal, Personal, Private, Confidential>; ///< Types.xsd:1698
 	using ServiceConfigurationType = StrEnum<MailTips, UnifiedMessagingConfiguration, ProtectionRules, PolicyNudges, SharePointURLs, OfficeIntegrationConfiguration>; ///< Types.xsd:7019
