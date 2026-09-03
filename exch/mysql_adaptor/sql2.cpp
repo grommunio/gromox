@@ -807,6 +807,74 @@ bool mysql_plugin::get_user_props(const char *username,
 	return false;
 }
 
+/*
+ * Service entry point: resolve the per-domain SMTP gateway URL
+ * for a given sender. Returns a thread-local C string (valid
+ * until the next call on the same thread) or the fallback on
+ * miss/error. The actual URL building lives here, in the
+ * plugin, so that libgromox_mapi (which calls cu_send_mail)
+ * does not need a link-time dependency on this library.
+ */
+static const char *resolve_smtp_url_for_sender(const char *sender,
+    const char *fallback)
+{
+	static thread_local std::string resolved;
+	resolved.clear();
+	if (sender == nullptr || *sender == '\0' || fallback == nullptr)
+		return fallback;
+	const char *at = strrchr(sender, '@');
+	if (at == nullptr || *(at + 1) == '\0')
+		return fallback;
+	std::string sender_dom(at + 1);
+	for (auto &c : sender_dom)
+		c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+	unsigned int domain_id = 0, org_id = 0;
+	if (!mysql_adaptor_get_domain_ids(sender_dom.c_str(),
+	    &domain_id, &org_id) || domain_id == 0)
+		return fallback;
+	std::string host, encryption, username, password, from_addr;
+	int port = 25;
+	bool enabled = false;
+	if (!mysql_adaptor_get_smtp_gateway(domain_id, &host, &port,
+	    &encryption, &username, &password, &from_addr, &enabled)
+	    || !enabled || host.empty())
+		return fallback;
+	const char *scheme = "smtp";
+	if (encryption == "starttls")
+		scheme = "smtp+tls";
+	else if (encryption == "starttls_unverified")
+		scheme = "smtp+unverifiedtls";
+	else if (encryption == "tls")
+		scheme = "smtps";
+	resolved.reserve(64);
+	resolved += scheme;
+	resolved += "://";
+	if (!username.empty()) {
+		resolved += username;
+		if (!password.empty()) {
+			resolved += ':';
+			for (char c : password) {
+				if (c == '@' || c == '/' || c == ':' ||
+				    c == '?' || c == '#' || c == '%' ||
+				    c == '[' || c == ']') {
+					char buf[4];
+					snprintf(buf, sizeof(buf), "%%%02X",
+					         static_cast<unsigned char>(c));
+					resolved += buf;
+				} else {
+					resolved += c;
+				}
+			}
+		}
+		resolved += '@';
+	}
+	resolved += host;
+	resolved += ':';
+	resolved += std::to_string(port);
+	resolved += '/';
+	return resolved.c_str();
+}
+
 bool SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data) try
 {
 	if (reason == PLUGIN_FREE) {
@@ -841,6 +909,18 @@ bool SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data) try
 	if (le_mysql_plugin->run() != 0) {
 		mlog(LV_ERR, "mysql_adaptor: failed to startup");
 		return false;
+	}
+	/*
+	 * Register the per-domain SMTP gateway resolver as a service
+	 * so that other libraries (e.g. libgromox_mapi) can call it
+	 * without a link-time dependency on libgxs_mysql_adaptor.
+	 * Without this indirection we would have a circular link
+	 * dependency.
+	 */
+	if (!register_service("resolve_smtp_url_for_sender",
+	    &resolve_smtp_url_for_sender)) {
+		mlog(LV_ERR, "mysql_adaptor: failed to register "
+			"`resolve_smtp_url_for_sender' service");
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -1307,6 +1387,15 @@ bool mysql_adaptor_get_org_domains(unsigned int org, std::vector<unsigned int> &
 bool mysql_adaptor_get_domain_info(unsigned int id, sql_domain &d)
 {
 	return le_mysql_plugin->get_domain_info(id, d);
+}
+
+bool mysql_adaptor_get_smtp_gateway(unsigned int id,
+    std::string *host, int *port, std::string *encryption,
+    std::string *username, std::string *password,
+    std::string *from_address, bool *enabled)
+{
+	return le_mysql_plugin->get_smtp_gateway(id, host, port, encryption,
+	    username, password, from_address, enabled);
 }
 
 bool mysql_adaptor_check_same_org(unsigned int a, unsigned int b)

@@ -667,6 +667,59 @@ bool mysql_plugin::get_domain_info(unsigned int domain_id, sql_domain &dinfo) tr
 	return false;
 }
 
+/*
+ * Per-domain SMTP gateway (grommunio-admin API integration).
+ *
+ * Returns true on success; false when there is no row or the
+ * row is disabled. Each out-parameter is optional (nullptr
+ * allowed) so callers can fetch only the fields they need.
+ */
+bool mysql_plugin::get_smtp_gateway(unsigned int domain_id,
+    std::string *host, int *port, std::string *encryption,
+    std::string *username, std::string *password,
+    std::string *from_address, bool *enabled) try
+{
+	if (domain_id == 0)
+		return false;
+	auto qstr = "SELECT host, port, encryption, username, password, "
+	            "from_address, enabled FROM domain_smtp_gateway "
+	            "WHERE domain_id=" + std::to_string(domain_id);
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return false;
+	if (!conn->query(qstr))
+		return false;
+	auto pmyres = conn->store_result();
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
+	if (pmyres.num_rows() != 1)
+		return false;
+	auto myrow = pmyres.fetch_row();
+	if (myrow == nullptr)
+		return false;
+	std::string row_host         = myrow[0] != nullptr ? myrow[0] : "";
+	std::string row_encryption   = myrow[2] != nullptr ? myrow[2] : "none";
+	int row_port                 = myrow[1] != nullptr ? static_cast<int>(strtol(myrow[1], nullptr, 10)) : 25;
+	std::string row_username     = myrow[3] != nullptr ? myrow[3] : "";
+	std::string row_password     = myrow[4] != nullptr ? myrow[4] : "";
+	std::string row_from_address = myrow[5] != nullptr ? myrow[5] : "";
+	bool row_enabled             = myrow[6] == nullptr || strcmp(myrow[6], "0") != 0;
+	if (!row_enabled || row_host.empty())
+		return false;
+	if (host != nullptr)         *host = std::move(row_host);
+	if (port != nullptr)         *port = row_port;
+	if (encryption != nullptr)   *encryption = std::move(row_encryption);
+	if (username != nullptr)     *username = std::move(row_username);
+	if (password != nullptr)     *password = std::move(row_password);
+	if (from_address != nullptr) *from_address = std::move(row_from_address);
+	if (enabled != nullptr)      *enabled = row_enabled;
+	return true;
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "%s: %s", "E-1726", e.what());
+	return false;
+}
+
 bool mysql_plugin::check_same_org(unsigned int domain_id1, unsigned int domain_id2) try
 {
 	if (domain_id1 == domain_id2)

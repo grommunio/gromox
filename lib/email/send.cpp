@@ -17,6 +17,7 @@
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapierr.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/usercvt.hpp>
 #if defined(VMIME_HAVE_TLS_SUPPORT) && VMIME_HAVE_TLS_SUPPORT
 #	define WITH_TLS 1
@@ -25,6 +26,59 @@
 #endif
 
 namespace gromox {
+
+/*
+ * Per-domain SMTP gateway resolution (grommunio-admin API).
+ *
+ * Resolves the URL to use for outbound delivery by checking the
+ * grommunio `domain_smtp_gateway` table. The actual lookup
+ * (including URL building) is implemented in libgxs_mysql_adaptor
+ * and exposed through the service registry as
+ * `resolve_smtp_url_for_sender`. This indirection avoids a
+ * link-time circular dependency between libgromox_mapi and
+ * libgxs_mysql_adaptor.
+ *
+ * The function pointer is looked up once on first use and cached
+ * for the lifetime of the process. The resolved URL is stored in
+ * a thread_local buffer so that it stays alive for the duration
+ * of the call (until `make_transport` has consumed the C string).
+ *
+ * If the service is not registered (e.g. in a unit test that
+ * does not load libgxs_mysql_adaptor) the function simply
+ * returns the fallback URL unchanged.
+ */
+static const char *resolve_smtp_url(const char *sender, const char *fallback,
+    std::string &out)
+{
+	out.clear();
+	if (sender == nullptr || *sender == '\0' || fallback == nullptr)
+		return fallback;
+	using resolve_fn = const char *(*)(const char *, const char *);
+	static resolve_fn pfn = nullptr;
+	static bool lookup_done = false;
+	if (!lookup_done) {
+		/* Use typeid(*pfn) (function type, not pointer-to-function
+		 * type) so that the mangled typeid name matches the one
+		 * the register_service() macro produces on the provider
+		 * side; otherwise the registry complains about a type
+		 * mismatch on dlname "resolve_smtp_url_for_sender". */
+		pfn = reinterpret_cast<resolve_fn>(service_query(
+		    "resolve_smtp_url_for_sender",
+		    typeid(*pfn)));
+		lookup_done = true;
+	}
+	if (pfn == nullptr)
+		return fallback;
+	const char *resolved = pfn(sender, fallback);
+	if (resolved == nullptr)
+		return fallback;
+	/* The service returns a thread-stable C string (the
+	 * per-thread buffer it owns); we copy into our own buffer
+	 * so callers don't have to worry about service-side
+	 * lifetime. */
+	out = resolved;
+	return out.c_str();
+}
 
 static bool mapi_p1(const TPROPVAL_ARRAY &props)
 {
@@ -91,7 +145,19 @@ static vmime::shared_ptr<vmime::net::transport> make_transport(const char *url)
 		return nullptr;
 #endif
 	}
-	auto xp = vmime::net::session::create()->getTransport(std::move(vurl));
+	auto sess = vmime::net::session::create();
+	/* We have to force vmime to actually do AUTH. By default
+	 * (options.need-authentication=false) it skips AUTH entirely
+	 * even if the URL contains credentials. The credentials were
+	 * already copied into the session properties by
+	 * serviceFactory::create(url), so we only need to flip the
+	 * flag here. */
+	if (!vurl.getUsername().empty()) {
+		mlog(LV_NOTICE, "smtp: URL has credentials, will require authentication");
+		sess->getProperties()["transport.smtp.options.need-authentication"] = true;
+		sess->getProperties()["transport.smtps.options.need-authentication"] = true;
+	}
+	auto xp = sess->getTransport(std::move(vurl), vmime::shared_ptr<vmime::security::authenticator>());
 	if (!tls)
 		return xp;
 #if WITH_TLS
@@ -126,6 +192,9 @@ static void transform_lf_to_crlf(std::string &str)
 ec_error_t cu_send_mail(const MAIL &mail, const char *smtp_url, const char *sender,
     const std::vector<std::string> &rcpt_list) try
 {
+	/* Per-domain SMTP gateway resolution (grommunio-admin API). */
+	static thread_local std::string resolved_url;
+	smtp_url = resolve_smtp_url(sender, smtp_url, resolved_url);
 	if (*sender == '\0') {
 		mlog(LV_ERR, "cu_send_mail: empty envelope-from");
 		return MAPI_W_CANCEL_MESSAGE;
@@ -182,6 +251,9 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
     const char *smtp_url, const char *sender,
     const std::vector<std::string> &rcpt_list) try
 {
+	/* Per-domain SMTP gateway resolution (grommunio-admin API). */
+	static thread_local std::string resolved_url;
+	smtp_url = resolve_smtp_url(sender, smtp_url, resolved_url);
 	if (*sender == '\0') {
 		mlog(LV_ERR, "cu_send_mail: empty envelope-from");
 		return MAPI_W_CANCEL_MESSAGE;
