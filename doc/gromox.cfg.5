@@ -59,6 +59,22 @@ Default: (empty)
 .br
 Example: \fIX-Spam-Flag=YES; X-MC-Relay=; X-SG-EID=\fP
 .TP
+\fBlda_relay_unknown_recipients\fP
+In a split domain setup, a domain is defined in this system, but only some of
+its addresses have a mailbox here; the remaining addresses are hosted on a
+foreign system, and the MTA carries the routing information to get there.
+When this directive is enabled, messages which delivery(8gx) generates itself
+(out-of-office autoreplies, non-delivery reports) for an address without a
+mailbox are handed to the MTA (cf. outgoing_smtp_url) rather than discarded.
+The MTA must route such addresses away from this host (e.g. with Postfix
+transport_maps); otherwise the message comes back via SMTP and is bounced to
+its originator. Messages that arrived via SMTP are not affected, since the MTA
+has already made its routing decision for them; messages to the
+bounce_postmaster address are not affected either, so that double bounces stay
+local.
+.br
+Default: \fIoff\fP
+.TP
 \fBexmdb_client_rpc_timeout\fP
 If the execution of an RPC takes longer than the specified time, the client
 will sever the connection and return an error to the calling program. The

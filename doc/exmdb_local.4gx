@@ -27,6 +27,9 @@ Requires lda_twostep_ruleproc to be enabled.
 .br
 Default: \fIno\fP
 .TP
+\fBlda_relay_unknown_recipients\fP
+-> See gromox.cfg(5) manpage instead!
+.TP
 \fBlda_twostep_ruleproc\fP
 If set to \fI1\fP, an alternate rule processor codebase will be used which
 supports cross-store moves, forwarding and OOF condition but (at this time)

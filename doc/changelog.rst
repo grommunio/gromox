@@ -9,6 +9,9 @@ Snapshot 3.10.20
 Enhancements:
 
 * imap: implement FETCH BINARY / BINARY.SIZE
+* delivery: the new gromox.cfg directive ``lda_relay_unknown_recipients``
+  hands autoreplies and bounce reports for mailbox-less addresses of local
+  domains to the MTA, for use in split domain setups
 
 Fixes:
 
