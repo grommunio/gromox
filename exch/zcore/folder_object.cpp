@@ -187,7 +187,7 @@ static ec_error_t folder_object_get_calculated_property(folder_object *pfolder,
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore, pfolder->folder_id);
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue))
@@ -196,10 +196,10 @@ static ec_error_t folder_object_get_calculated_property(folder_object *pfolder,
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_SOURCE_KEY:
 		*ppvalue = cu_fid_to_sk(*pfolder->pstore, pfolder->folder_id);
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_PARENT_SOURCE_KEY:
 		if (pfolder->pstore->b_private) {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
@@ -221,13 +221,13 @@ static ec_error_t folder_object_get_calculated_property(folder_object *pfolder,
 			return ecNotFound;
 		*ppvalue = cu_fid_to_sk(*pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mailbox_guid);
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mapping_signature);
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	case PR_STORE_ENTRYID:
 		*ppvalue = cu_to_store_entryid(*pfolder->pstore);
 		return *ppvalue != nullptr ? ecSuccess : ecError;
@@ -240,37 +240,37 @@ static ec_error_t folder_object_get_calculated_property(folder_object *pfolder,
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_CONTACT_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_APPOINTMENT_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_JOURNAL_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_NOTE_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_TASK_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_REM_ONLINE_ENTRYID:
 		if (!pfolder->pstore->b_private)
 			return ecNotFound;
