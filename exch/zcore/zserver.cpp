@@ -1258,9 +1258,7 @@ ec_error_t zs_getpermissions(GUID hsession,
 	}
 	switch (mapi_type) {
 	case zs_objtype::store:
-		if (!static_cast<store_object *>(pobject)->get_permissions(pperm_set))
-			return ecError;
-		break;
+		return static_cast<store_object *>(pobject)->get_perms(pperm_set);
 	case zs_objtype::folder:
 		if (!static_cast<folder_object *>(pobject)->get_permissions(pperm_set))
 			return ecError;
@@ -3549,9 +3547,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		auto store = static_cast<store_object *>(pobject);
 		if (!store->owner_mode())
 			return ecAccessDenied;
-		if (!store->set_properties(ppropvals))
-			return ecError;
-		return ecSuccess;
+		return store->set_props(ppropvals);
 	}
 	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
@@ -3708,9 +3704,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto store = static_cast<store_object *>(pobject);
 		if (!store->owner_mode())
 			return ecAccessDenied;
-		if (!store->remove_properties(pproptags))
-			return ecError;
-		return ecSuccess;
+		return store->remove_props(pproptags);
 	}
 	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);

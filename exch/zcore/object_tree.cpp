@@ -302,23 +302,24 @@ void *OBJECT_TREE::get_zstore_propval(proptag_t proptag)
 	return prootobj->pprivate_proplist->getval(proptag);
 }
 
-BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
+ec_error_t OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();
 	if (proot == nullptr)
-		return FALSE;
+		return ecError;
 	auto prootobj = static_cast<root_object *>(static_cast<object_node *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
-	if (prootobj->pprivate_proplist->set(*ppropval) != ecSuccess)
-		return false;
+	auto err = prootobj->pprivate_proplist->set(*ppropval);
+	if (err != ecSuccess)
+		return err;
 	/*
 	 * g-web touches PR_EC_WEBACCESS_SETTINGS_JSON every now and then even
 	 * if just browsing one's store/settings panel. Occurrence seems still
 	 * acceptable that we may not need to add an age check.
 	 */
 	object_tree_write_root(prootobj);
-	return TRUE;
+	return ecSuccess;
 }
 
 void OBJECT_TREE::remove_zstore_propval(proptag_t proptag)

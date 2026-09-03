@@ -933,7 +933,7 @@ static void set_store_lang(store_object *store, const char *locale)
 /*
  * This function is tailored to grommunio-web and does not behave like normal.
  */
-BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
+ec_error_t store_object::set_props(const TPROPVAL_ARRAY *ppropvals)
 {
 	auto pinfo = zs_get_info();
 	auto pstore = this;
@@ -954,7 +954,7 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		case PR_EC_EXTERNAL_REPLY:
 			if (!store_object_set_oof_property(pstore->get_dir(),
 			    pv.proptag, pv.pvalue))
-				return FALSE;	
+				return ecError;
 			continue;
 		case PR_EC_USER_LANGUAGE:
 			set_store_lang(pstore, static_cast<char *>(pv.pvalue));
@@ -1009,12 +1009,12 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		 * to zcore (unexplored historic reasons).
 		 */
 		if (!pinfo->ptree->set_zstore_propval(&pv))
-			return FALSE;
+			return ecError;
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-bool store_object::remove_properties(proptag_cspan pproptags)
+ec_error_t store_object::remove_props(proptag_cspan pproptags)
 {
 	auto pstore = this;
 	auto pinfo = zs_get_info();
@@ -1023,10 +1023,10 @@ bool store_object::remove_properties(proptag_cspan pproptags)
 			continue;
 		pinfo->ptree->remove_zstore_propval(tag);
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL store_object_get_folder_permissions(store_object *pstore,
+static ec_error_t store_object_get_folder_permissions(store_object *pstore,
     uint64_t folder_id, PERMISSION_SET *pperm_set)
 {
 	uint32_t row_num;
@@ -1038,11 +1038,11 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	
 	if (!exmdb_client->load_permission_table(
 	    pstore->dir, folder_id, 0, &table_id, &row_num))
-		return FALSE;
+		return ecRpcFailed;
 	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
 	    proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(pstore->dir, table_id);
-		return FALSE;
+		return ecRpcFailed;
 	}
 	exmdb_client->unload_table(pstore->dir, table_id);
 	max_count = (pperm_set->count/100)*100;
@@ -1051,7 +1051,7 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 			max_count += 100;
 			pperm_row = cu_alloc<PERMISSION_ROW>(max_count);
 			if (pperm_row == nullptr)
-				return FALSE;
+				return ecServerOOM;
 			if (pperm_set->count != 0)
 				memcpy(pperm_row, pperm_set->prows,
 					sizeof(PERMISSION_ROW)*pperm_set->count);
@@ -1078,10 +1078,10 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 		cur.entryid = pentryid != nullptr ? *pentryid : BINARY{};
 		++pperm_set->count;
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
+ec_error_t store_object::get_perms(PERMISSION_SET *pperm_set)
 {
 	auto pstore = this;
 	uint32_t row_num;
@@ -1093,19 +1093,20 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	if (!exmdb_client->load_hierarchy_table(
 		pstore->dir, folder_id, NULL, TABLE_FLAG_DEPTH,
 	    NULL, &table_id, &row_num))
-		return FALSE;
+		return ecRpcFailed;
 	static constexpr proptag_t tmp_proptag[] = {PidTagFolderId};
 	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
 	    tmp_proptag, 0, row_num, &tmp_set))
-		return FALSE;
+		return ecRpcFailed;
 	pperm_set->count = 0;
 	pperm_set->prows = NULL;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		if (tmp_set.pparray[i]->count == 0)
 			continue;
-		if (!store_object_get_folder_permissions(this,
-		    *static_cast<uint64_t *>(tmp_set.pparray[i]->ppropval[0].pvalue), pperm_set))
-			return FALSE;	
+		auto err = store_object_get_folder_permissions(this,
+		           *static_cast<uint64_t *>(tmp_set.pparray[i]->ppropval[0].pvalue), pperm_set);
+		if (err != ecSuccess)
+			return err;
 	}
-	return TRUE;
+	return ecSuccess;
 }

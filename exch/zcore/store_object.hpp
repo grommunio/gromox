@@ -23,9 +23,9 @@ struct store_object {
 	ec_error_t get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
 	ec_error_t get_all_proptags(PROPTAG_ARRAY *);
 	ec_error_t get_props(proptag_cspan, TPROPVAL_ARRAY *);
-	BOOL set_properties(const TPROPVAL_ARRAY *);
-	bool remove_properties(proptag_cspan);
-	BOOL get_permissions(PERMISSION_SET *);
+	ec_error_t set_props(const TPROPVAL_ARRAY *);
+	ec_error_t remove_props(proptag_cspan);
+	ec_error_t get_perms(PERMISSION_SET *);
 
 	BOOL b_private = false;
 	int account_id = 0;
