@@ -161,7 +161,7 @@ static object_map db_read_usecount(sqlite3 *db, mapi_object_type type)
 		      "WHERE ap.proptag=0x37010102");
 	else if (type == MAPI_MESSAGE)
 		stm = gx_sql_prep(db, "SELECT proptag, propval FROM message_properties AS mp "
-		      "WHERE mp.proptag IN (0x1000001f,0x10090102,0x10130102,0x7d001f)");
+		      "WHERE mp.proptag IN (0x1000001e,0x1000001f,0x10090102,0x10130102,0x7d001e,0x7d001f)");
 	else
 		throw EXIT_FAILURE;
 	if (stm == nullptr)
