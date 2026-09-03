@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cmath>
@@ -61,9 +61,9 @@ struct rfc_stat {
 
 struct object_stat {
 	size_t refs = 0;
-	unsigned int format = 0;
 	unsigned long long ifc = 0;
 	ustat du;
+	int8_t format = -1;
 };
 
 struct ifc_stat {
@@ -232,7 +232,7 @@ static ifc_stat usecount_analyze(const char *dir, object_map &map)
 	ifc_stat st;
 	for (auto &[obj_id, info] : map) {
 		auto new_info = file_detail(dir, obj_id);
-		if (new_info.refs == 0) {
+		if (new_info.format < 0) {
 			st.lost += info.refs;
 			++st.lost_pad;
 			continue;
