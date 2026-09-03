@@ -39,7 +39,7 @@ using namespace gromox;
 DECLARE_HOOK_API(exmdb_local, );
 using namespace exmdb_local;
 
-static bool g_lda_twostep, g_lda_mrautoproc;
+static bool g_lda_twostep, g_lda_mrautoproc, g_lda_relay_unknown;
 static char g_org_name[256];
 static thread_local alloc_context g_alloc_ctx;
 static thread_local const char *g_storedir;
@@ -119,6 +119,17 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			enqueue_context(pbounce_context);
 			break;
 		case delivery_status::no_user:
+			if (g_lda_relay_unknown &&
+			    pcontext->ctrl.bound_type != BOUND_IN &&
+			    strcasecmp(rcpt_buff, bounce_gen_postmaster()) != 0) {
+				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_INFO,
+					"<%s> has no mailbox here, handing over to the MTA",
+					rcpt_buff);
+				new_rcpts.emplace_back(rcpt);
+				break;
+			}
+			exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
+				"<%s> has no mailbox here", rcpt_buff);
 			if (!pcontext->ctrl.need_bounce ||
 			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
@@ -312,18 +323,12 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	sql_meta_result mres{};
 
 	auto err = mysql_adaptor_meta(address, WANTPRIV_METAONLY, mres);
-	if (err == ENOENT) {
-		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
-			"<%s> has no mailbox here", address);
+	if (err == ENOENT || (err == 0 && mres.maildir.empty()))
 		return delivery_status::no_user;
-	} else if (err != 0) {
+	if (err != 0) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return delivery_status::temp_fail;
-	} else if (mres.maildir.empty()) {
-		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
-			"<%s> has no mailbox here", address);
-		return delivery_status::no_user;
 	}
 	auto home_dir = mres.maildir.c_str();
 	auto pmail = &pcontext->mail;
@@ -518,6 +523,7 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 
 static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 	{"autoreply_silence_window", "1day", CFG_TIME, "0"},
+	{"lda_relay_unknown_recipients", "0", CFG_BOOL},
 	CFG_TABLE_END,
 };
 
@@ -541,6 +547,7 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		if (cfg != nullptr) {
 			autoreply_silence_window = cfg->get_ll("autoreply_silence_window");
 			g_junk_rules = parse_junk_rules(cfg->get_value("lda_junk_rules"));
+			g_lda_relay_unknown = cfg->get_ll("lda_relay_unknown_recipients");
 		}
 
 		auto pfile = config_file_initd("exmdb_local.cfg",
