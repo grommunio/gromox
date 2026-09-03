@@ -27,7 +27,8 @@ Out-of-office replies use the subject that was set alongside the OOF message.
 Clients which configure OOF over EWS cannot set one, because
 SetUserOofSettings has no field for it. When no subject is stored, this prefix
 plus the subject of the incoming message is used instead. Set to the empty
-string to send such replies without a subject.
+string to send such replies without a subject. A prefix not ending in
+whitespace is separated from that subject by a space.
 .br
 Default: \fIOut of Office: \fP
 .TP
