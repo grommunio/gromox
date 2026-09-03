@@ -357,16 +357,21 @@ int main(int argc, char **argv) try
 	printf("                                ------------  ------------\n");
 
 	auto db_path = result.uarg[0] + "/exmdb/exchange.sqlite3"s;
+	db_handle db, midb;
 	ustat sqlite_sb, midb_sb;
 	struct stat sb;
-	if (stat(db_path.c_str(), &sb) == 0)
+	if (stat(db_path.c_str(), &sb) == 0) {
 		sqlite_sb = sb;
-	if (stat((result.uarg[0] + "/exmdb/midb.sqlite3"s).c_str(), &sb) == 0)
+		db = db_open(db_path.c_str());
+		if (db == nullptr)
+			return EXIT_FAILURE;
+	}
+	auto midb_path = result.uarg[0] + "/exmdb/midb.sqlite3"s;
+	if (stat(midb_path.c_str(), &sb) == 0) {
 		midb_sb = sb;
+		midb = db_open(midb_path.c_str());
+	}
 
-	auto db = db_open(db_path.c_str());
-	if (db == nullptr)
-		return EXIT_FAILURE;
 	auto nts = db_read_nts(db.get());
 
 	auto msg_uc = db_read_cid_refs(db.get(), MAPI_MESSAGE);
