@@ -179,48 +179,45 @@ static bool digits_only(const char *s)
 	return true;
 }
 
-static object_stat file_detail(const char *dir, const std::string &obj_id)
+static void file_detail_update(const char *dir, const std::string &obj_id, object_stat &info)
 {
-	object_stat info;
 	auto cid = dir + "/cid/"s;
 	struct stat sb;
 	auto path = cid + obj_id;
+
 	if (digits_only(obj_id.c_str())) {
 		if (stat(path.c_str(), &sb) == 0) {
 			info.format = 0;
-			info.refs   = 1;
 			info.du     = sb;
 			info.ifc    = info.du.size;
 			if (info.ifc >= 4)
 				info.ifc -= 4;
-			return info;
+			return;
 		}
 		path += ".v1z";
 		if (stat(path.c_str(), &sb) == 0) {
 			info.format = 1;
-			info.refs   = 1;
 			info.du     = sb;
 			info.ifc    = gx_decompressed_size(path.c_str());
 			if (info.ifc >= 4)
 				info.ifc -= 4;
-			return info;
+			return;
 		}
 		memcpy(&path[path.size()-3], "zst", 3);
 		if (stat(path.c_str(), &sb) == 0) {
 			info.format = 2;
-			info.refs   = 1;
 			info.du     = sb;
 			info.ifc    = gx_decompressed_size(path.c_str());
+			return;
 		}
 	} else if ((obj_id[0] == 'S' || obj_id[0] == 'Y') && obj_id[1] == '-' &&
 	    HX_isxdigit(obj_id[2]) && HX_isxdigit(obj_id[3]) && obj_id[4] == '/' &&
 	    stat(path.c_str(), &sb) == 0) {
 		info.format = 3;
-		info.refs   = 1;
 		info.du     = sb;
 		info.ifc    = gx_decompressed_size(path.c_str());
+		return;
 	}
-	return info;
 }
 
 /**
@@ -231,14 +228,12 @@ static ifc_stat usecount_analyze(const char *dir, object_map &map)
 {
 	ifc_stat st;
 	for (auto &[obj_id, info] : map) {
-		auto new_info = file_detail(dir, obj_id);
-		if (new_info.format < 0) {
+		file_detail_update(dir, obj_id, info);
+		if (info.format < 0) {
 			st.lost += info.refs;
 			++st.lost_pad;
 			continue;
 		}
-		new_info.refs = info.refs;
-		info          = std::move(new_info);
 		st.ifco   += info.refs * info.ifc;
 		st.dedup  += info.ifc;
 		st.du     += info.du;
