@@ -22,7 +22,9 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-static constexpr int MB = 1048576, BLOCKUNIT = 512;
+static char s_unit[8] = "MB";
+static unsigned long long UNIT = 1048576;
+static constexpr int BLOCKUNIT = 512;
 
 namespace {
 
@@ -41,8 +43,8 @@ struct ustat {
 		pad += o.pad;
 		return *this;
 	}
-	unsigned long long mb() const { return size / MB; }
-	unsigned long long pmb() const { return pad / MB; }
+	constexpr unsigned long long units() const { return size / UNIT; }
+	constexpr unsigned long long punits() const { return pad / UNIT; }
 
 	unsigned long long size = 0, pad = 0;
 };
@@ -252,19 +254,19 @@ static ifc_stat usecount_analyze(const char *dir, object_map &map)
 
 static void ifc_dump(const ifc_stat &s)
 {
-	printf("%-30s  %6zu     %6zu\n", "Missing items", s.lost, s.lost_pad);
-	printf("%-30s  %6llu MB       -\n", "Informational content", s.ifco / MB);
-	printf("%-30s  %6llu MB       -\n", "After deduplication", s.dedup / MB);
-	printf("%-30s  %6.3f x        -\n", "Dedup ratio", ratio(s.ifco, s.dedup));
-	printf("%-30s  %6.1f %%        -\n", "Dedup savings", ratio_sav(s.ifco, s.dedup));
-	printf("%-30s  %6llu MB  %6llu MB\n", "After compression", s.du.mb(), s.du.pmb());
-	printf("%-30s  %6.3f x   %6.3f x\n", "File compression ratio",
+	printf("%-30s  %9zu     %9zu\n", "Missing items", s.lost, s.lost_pad);
+	printf("%-30s  %9llu %-2s          -\n", "Informational content", s.ifco / UNIT, s_unit);
+	printf("%-30s  %9llu %-2s          -\n", "After deduplication", s.dedup / UNIT, s_unit);
+	printf("%-30s  %9.3f x           -\n", "Dedup ratio", ratio(s.ifco, s.dedup));
+	printf("%-30s  %9.1f %%           -\n", "Dedup savings", ratio_sav(s.ifco, s.dedup));
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "After compression", s.du.units(), s_unit, s.du.punits(), s_unit);
+	printf("%-30s  %9.3f x   %9.3f x\n", "File compression ratio",
 		ratio(s.dedup, s.du.size), ratio(s.dedup, s.du.pad));
-	printf("%-30s  %6.1f %%   %6.1f %%\n", "Savings over dedup",
+	printf("%-30s  %9.1f %%   %9.1f %%\n", "Savings over dedup",
 		ratio_sav(s.dedup, s.du.size), ratio_sav(s.dedup, s.du.pad));
-	printf("%-30s  %6.3f x   %6.3f x\n", "IFC compression ratio",
+	printf("%-30s  %9.3f x   %9.3f x\n", "IFC compression ratio",
 		ratio(s.ifco, s.du.size), ratio(s.ifco, s.du.pad));
-	printf("%-30s  %6.1f %%   %6.1f %%\n", "Savings over IFC",
+	printf("%-30s  %9.1f %%   %9.1f %%\n", "Savings over IFC",
 		ratio_sav(s.ifco, s.du.size), ratio_sav(s.ifco, s.du.pad));
 }
 
@@ -303,8 +305,8 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	printf("                                 Apparent    On FS \n");
-	printf("                                ---------  ---------\n");
+	printf("                                 Apparent         On FS \n");
+	printf("                                ------------  ------------\n");
 
 	auto db_path = argv[1] + "/exmdb/exchange.sqlite3"s;
 	ustat sqlite_sb, midb_sb;
@@ -327,12 +329,12 @@ int main(int argc, char **argv) try
 	auto rfc = rfc_count(argv[1] + "/eml"s);
 	rfc += rfc_count(argv[1] + "/ext"s);
 	printf("== RFC5322/Mbox representation ==\n");
-	printf("%-30s  %6llu MB  %6llu MB\n", "Received", rfc.recv.mb(), rfc.recv.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "Sent", rfc.sent.mb(), rfc.sent.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "FS directories", rfc.dirs.mb(), rfc.dirs.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "midb.sqlite3", midb_sb.mb(), midb_sb.pmb());
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Received", rfc.recv.units(), s_unit, rfc.recv.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Sent", rfc.sent.units(), s_unit, rfc.sent.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "FS directories", rfc.dirs.units(), s_unit, rfc.dirs.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "midb.sqlite3", midb_sb.units(), s_unit, midb_sb.punits(), s_unit);
 	rfc.total += midb_sb;
-	printf("%-30s  %6llu MB  %6llu MB\n", "Total", rfc.total.mb(), rfc.total.pmb());
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Total", rfc.total.units(), s_unit, rfc.total.punits(), s_unit);
 
 	printf("\n== FS: Body analysis ==\n");
 	ifc_dump(msg_ic);
@@ -341,26 +343,26 @@ int main(int argc, char **argv) try
 	ifc_dump(atx_ic);
 
 	printf("\n== MAPI Reported Sizes / Network Transfer Size ==\n");
-	printf("%-30s  %6llu MB       -\n", "Store size", nts / MB);
-	printf("%-30s  %6llu MB  %6llu MB\n", "... Bodies", msg_ic.ifco / MB, msg_ic.du.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... Attachments", atx_ic.ifco / MB, atx_ic.du.pmb());
-	printf("%-30s  %6llu MB       -\n", "... Other", (nts - msg_ic.ifco - atx_ic.ifco) / MB);
+	printf("%-30s  %9llu %-2s          -\n", "Store size", nts / UNIT, s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Bodies", msg_ic.ifco / UNIT, s_unit, msg_ic.du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Attachments", atx_ic.ifco / UNIT, s_unit, atx_ic.du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s          -\n", "... Other", (nts - msg_ic.ifco - atx_ic.ifco) / UNIT, s_unit);
 
 	printf("\n== On-disk sizes ==\n");
 	auto cid_dirs = count_dirs(argv[1] + "/cid"s);
 	auto du = sqlite_sb + msg_ic.du + atx_ic.du + cid_dirs;
-	printf("%-30s  %6llu MB  %6llu MB\n", "Sum of MAPI data", du.mb(), du.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... exchange.sqlite3", sqlite_sb.mb(), sqlite_sb.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... Bodies", msg_ic.du.mb(), msg_ic.du.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... Attachments", atx_ic.du.mb(), atx_ic.du.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... FS directories", cid_dirs.mb(), cid_dirs.pmb());
-	printf("%-30s  %6.1f %%   %6.1f %%\n\n", "NTS error",
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Sum of MAPI data", du.units(), s_unit, du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... exchange.sqlite3", sqlite_sb.units(), s_unit, sqlite_sb.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Bodies", msg_ic.du.units(), s_unit, msg_ic.du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Attachments", atx_ic.du.units(), s_unit, atx_ic.du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... FS directories", cid_dirs.units(), s_unit, cid_dirs.punits(), s_unit);
+	printf("%-30s  %9.1f %%   %9.1f %%\n\n", "NTS error",
 		100 * ratio(subabs(nts, du.size), du.size),
 		100 * ratio(subabs(nts, du.pad), du.pad));
 
 	du += rfc.total;
-	printf("%-30s  %6llu MB   %6llu MB\n", "Total MAPI+RFC", du.mb(), du.pmb());
-	printf("%-30s  %6.3f x   %6.3f x\n", "Provisioning factor over NTS",
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Total MAPI+RFC", du.units(), s_unit, du.punits(), s_unit);
+	printf("%-30s  %9.3f x   %9.3f x\n", "Provisioning factor over NTS",
 		ratio(du.size, nts), ratio(du.pad, nts));
 
 	return 0;
