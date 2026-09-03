@@ -74,6 +74,10 @@ struct mysql_plugin final {
 	bool get_domain_ids(const char *domainname, unsigned int *domain_id, unsigned int *org_id);
 	bool get_org_domains(unsigned int org_id, std::vector<unsigned int> &);
 	bool get_domain_info(unsigned int domain_id, sql_domain &);
+	bool get_smtp_gateway(unsigned int domain_id,
+	    std::string *host, int *port, std::string *encryption,
+	    std::string *username, std::string *password,
+	    std::string *from_address, bool *enabled);
 	bool check_same_org(unsigned int domain_id1, unsigned int domain_id2);
 	bool get_domain_groups(unsigned int domain_id, std::vector<sql_group> &);
 	int get_domain_users(unsigned int domain_id, std::vector<sql_user> &);

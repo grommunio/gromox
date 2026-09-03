@@ -135,6 +135,19 @@ extern GX_EXPORT bool mysql_adaptor_get_user_ids(const char *username, unsigned 
 extern GX_EXPORT bool mysql_adaptor_get_domain_ids(const char *domainname, unsigned int *domain_id, unsigned int *org_id);
 extern GX_EXPORT bool mysql_adaptor_get_org_domains(unsigned int org_id, std::vector<unsigned int> &);
 extern GX_EXPORT bool mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &);
+/*
+ * Per-domain SMTP gateway (grommunio-admin API integration).
+ *
+ * Looks up the `domain_smtp_gateway` table for a single row keyed
+ * by domain_id. Returns true and populates the out-parameters on
+ * a match; false (and leaves them untouched) when there is no row
+ * or the row is disabled. The out-pointer parameters may be null
+ * if the caller does not need that particular field.
+ */
+extern GX_EXPORT bool mysql_adaptor_get_smtp_gateway(unsigned int domain_id,
+	std::string *host, int *port, std::string *encryption,
+	std::string *username, std::string *password,
+	std::string *from_address, bool *enabled);
 extern GX_EXPORT bool mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2);
 extern GX_EXPORT bool mysql_adaptor_get_domain_groups(unsigned int domain_id, std::vector<sql_group> &);
 extern GX_EXPORT int mysql_adaptor_get_domain_users(unsigned int domain_id, std::vector<sql_user> &);
