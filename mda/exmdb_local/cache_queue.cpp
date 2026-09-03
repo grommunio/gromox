@@ -401,6 +401,8 @@ static void *mdl_thrwork(void *arg)
 				need_remove = TRUE;
 				break;
 			case delivery_status::no_user:
+				exmdb_local_log_info(pcontext->ctrl, temp_rcpt, LV_ERR,
+					"<%s> has no mailbox here", temp_rcpt);
 				bounce_type = "BOUNCE_NO_USER";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
