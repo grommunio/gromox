@@ -79,6 +79,7 @@ struct ifc_stat {
 
 }
 
+using dir_ptr = std::unique_ptr<DIR, file_deleter>;
 using db_handle = std::unique_ptr<sqlite3, deleter>;
 using object_map = std::unordered_map<std::string, object_stat>;
 
@@ -115,7 +116,7 @@ static struct rfc_stat rfc_count(const std::string &dirname)
 {
 	struct rfc_stat out;
 	struct stat sb;
-	std::unique_ptr<DIR, file_deleter> dh(opendir(dirname.c_str()));
+	dir_ptr dh(opendir(dirname.c_str()));
 	if (dh == nullptr)
 		return out;
 	auto dfd = dirfd(dh.get());
@@ -282,7 +283,7 @@ static ustat count_dirs(const std::string &path)
 {
 	ustat out;
 	struct stat sb;
-	std::unique_ptr<DIR, file_deleter> dh(opendir(path.c_str()));
+	dir_ptr dh(opendir(path.c_str()));
 	if (dh == nullptr)
 		return out;
 	auto dfd = dirfd(dh.get());
