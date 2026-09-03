@@ -205,7 +205,7 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 	}
 	case PR_ENTRYID:
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon, pfolder->folder_id);
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, pfolder->folder_id, PidTagParentFolderId,
@@ -215,7 +215,7 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 		            *static_cast<uint64_t *>(pvalue));
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_PARENT_SOURCE_KEY:
 		if (pfolder->folder_id == rop_util_make_eid_ex(1,
 		    pfolder->plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT)) {
@@ -241,10 +241,10 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 		return ecSuccess;
 	case PR_STORE_RECORD_KEY:
 		*outvalue = common_util_guid_to_binary(pfolder->plogon->mailbox_guid);
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecServerOOM;
 	case PR_MAPPING_SIGNATURE:
 		*outvalue = common_util_guid_to_binary(pfolder->plogon->mapping_signature);
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecServerOOM;
 	case PR_DELETED_FOLDER_COUNT:
 		/* just like Exchange 2013, always return 0 */
 		*outvalue = deconst(&uint_value_zero);
@@ -254,37 +254,37 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_CONTACT_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_APPOINTMENT_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_JOURNAL_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_NOTE_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_TASK_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
-		return ecSuccess;
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_REM_ONLINE_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
