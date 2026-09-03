@@ -200,7 +200,6 @@ static void file_detail_update(const char *dir, const std::string &obj_id, objec
 			info.ifc    = info.du.size;
 			if (strip && info.ifc >= 4)
 				info.ifc -= 4;
-			return;
 		}
 		path += ".v1z";
 		if (stat(path.c_str(), &sb) == 0) {
@@ -209,14 +208,12 @@ static void file_detail_update(const char *dir, const std::string &obj_id, objec
 			info.ifc    = gx_decompressed_size(path.c_str());
 			if (strip && info.ifc >= 4)
 				info.ifc -= 4;
-			return;
 		}
 		memcpy(&path[path.size()-3], "zst", 3);
 		if (stat(path.c_str(), &sb) == 0) {
 			info.format = 2;
 			info.du     = sb;
 			info.ifc    = gx_decompressed_size(path.c_str());
-			return;
 		}
 	} else if ((obj_id[0] == 'S' || obj_id[0] == 'Y') && obj_id[1] == '-' &&
 	    HX_isxdigit(obj_id[2]) && HX_isxdigit(obj_id[3]) && obj_id[4] == '/' &&
@@ -224,7 +221,6 @@ static void file_detail_update(const char *dir, const std::string &obj_id, objec
 		info.format = 3;
 		info.du     = sb;
 		info.ifc    = gx_decompressed_size(path.c_str());
-		return;
 	}
 }
 
