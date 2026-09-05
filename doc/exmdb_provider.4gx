@@ -81,8 +81,8 @@ Lower limit: 1s
 \fBdbg_synthesize_content\fP
 When this directive is set to 1, missing content files will not be regarded as
 an error and the respective attachment or property is delivered with a
-replacement string. If set to 2, a replacement string is always delivered; mode
-2 is useful for reducing the amount of data downloaded when debugging ICS.
+replacement string. If set to 2, a replacement string is always delivered,
+which is useful for reducing the amount of data downloaded when debugging ICS.
 .br
 Default: \fI0\fP
 .TP
