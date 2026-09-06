@@ -380,7 +380,7 @@ static bool cgkreset_3(sqlite3 *db, uint64_t &last_cn, const GUID &store_guid,
 			continue;
 
 		char buf[23];
-		XID xid{store_guid, rop_util_make_eid_ex(1, last_cn)};
+		XID xid{store_guid, eid_t(1, last_cn)};
 		EXT_PUSH ep;
 		if (!ep.init(&buf[1], sizeof(buf) - 1, 0))
 			return false;

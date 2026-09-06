@@ -229,7 +229,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 		propvals.ppropval = tmp_propvals;
 		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 			return FALSE;
-		auto tmp_cn = rop_util_make_eid_ex(1, change_num);
+		eid_t tmp_cn(1, change_num);
 		auto account_id = exmdb_server::get_account_id();
 		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
@@ -451,7 +451,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		propvals.ppropval = tmp_propvals;
 		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 			return FALSE;
-		auto tmp_cn = rop_util_make_eid_ex(1, change_num);
+		eid_t tmp_cn(1, change_num);
 		auto account_id = exmdb_server::get_account_id();
 		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
@@ -616,10 +616,10 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 			b_hard ? "hard" : "soft", dir, LLU{src_val}, LLU{tmp_val},
 			username != nullptr ? username : "owner");
 		if (!b_hard) {
-			uint64_t change_num = 0;
-			if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
+			eid_t change_num{};
+			if (cu_allocate_cn(pdb->psqlite, &change_num.m_value) != ecSuccess)
 				return false;
-			change_num = rop_util_make_eid_ex(1, change_num);
+			change_num = eid_t(1, change_num.m_value);
 			auto account_id = exmdb_server::get_account_id();
 			TAGGED_PROPVAL nprop[5];
 			nprop[0].proptag = PidTagChangeNumber;
@@ -676,7 +676,8 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	uint64_t change_num = 0;
 	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 		return FALSE;
-	auto tmp_cn = rop_util_make_eid_ex(1, change_num);
+
+	eid_t tmp_cn(1, change_num);
 	auto account_id = exmdb_server::get_account_id();
 	tmp_propvals[0].proptag = PidTagChangeNumber;
 	tmp_propvals[0].pvalue = &tmp_cn;
@@ -1095,7 +1096,7 @@ BOOL exmdb_server::set_message_read_state(const char *dir, const char *username,
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	dg_notify(std::move(notifq));
-	*pread_cn = rop_util_make_eid_ex(1, read_cn);
+	*pread_cn = eid_t(1, read_cn);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
@@ -1116,13 +1117,13 @@ BOOL exmdb_server::allocate_message_id(const char *dir,
 	if (0 == folder_id) {
 		if (!common_util_allocate_eid(pdb->psqlite, &eid_val))
 			return FALSE;
-		*pmessage_id = rop_util_make_eid_ex(1, eid_val);
+		*pmessage_id = eid_t(1, eid_val);
 		return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 	}
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (!common_util_allocate_eid_from_folder(pdb->psqlite, fid_val, &eid_val))
 		return FALSE;
-	*pmessage_id = rop_util_make_eid_ex(1, eid_val);
+	*pmessage_id = eid_t(1, eid_val);
 	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
@@ -1807,7 +1808,7 @@ static bool message_write_message(bool b_internal, const db_conn &db,
 			auto pvalue = cu_xid_to_bin({exmdb_server::is_private() ?
 			              	rop_util_make_user_guid(exmdb_server::get_account_id()) :
 			              	rop_util_make_domain_guid(exmdb_server::get_account_id()),
-			              rop_util_make_eid_ex(1, change_num)});
+			              eid_t(1, change_num)});
 			if (pvalue == nullptr)
 				return FALSE;
 			msgctnt.proplist.emplace_back(PR_CHANGE_KEY, pvalue);
@@ -2326,7 +2327,8 @@ static bool message_make_dem(const char *username,
 	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, newval) != ecSuccess ||
 	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != ecSuccess)
 		return FALSE;
-	auto tmp_eid = rop_util_make_eid_ex(1, rule_id);
+
+	eid_t tmp_eid(1, rule_id);
 	if (pmsg->proplist.set(PR_RULE_ID, &tmp_eid) != ecSuccess)
 		return FALSE;
 	uint64_t mid_val = 0, cn_val = 0;
@@ -2749,10 +2751,10 @@ static BOOL message_make_dam(const rulexec_in &rp,
 		return FALSE;
 	SVREID svreid;
 	svreid.pbin = NULL;
-	svreid.folder_id  = rop_util_make_eid_ex(1, rp.folder_id);
-	svreid.message_id = rop_util_make_eid_ex(1, rp.message_id);
+	svreid.folder_id  = eid_t(1, rp.folder_id);
+	svreid.message_id = eid_t(1, rp.message_id);
 	svreid.instance = 0;
-	auto tmp_eid = rop_util_make_eid_ex(1, rp.folder_id);
+	eid_t tmp_eid(1, rp.folder_id);
 	if (pmsg->proplist.set(PR_DAM_ORIG_MSG_SVREID, &svreid) != ecSuccess ||
 	    pmsg->proplist.set(PR_RULE_FOLDER_FID, &tmp_eid) != ecSuccess)
 		return FALSE;
@@ -2771,7 +2773,7 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	unsigned int id_count = 0;
 	for (auto &&node : dam_list) {
 		actions.pblock[actions.count++] = *node.pblock;
-		tmp_eid = rop_util_make_eid_ex(1, node.rule_id);
+		tmp_eid = eid_t(1, node.rule_id);
 		unsigned int i;
 		for (i = 0; i < id_count; ++i)
 			if (tmp_ids[i] == tmp_eid)
@@ -3853,8 +3855,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	dg_notify(std::move(notifq));
-	*new_folder_id = rop_util_make_eid_ex(1, fid_val);
-	*new_msg_id = rop_util_make_eid_ex(1, message_id);
+	*new_folder_id = eid_t(1, fid_val);
+	*new_msg_id = eid_t(1, message_id);
 	*presult = static_cast<uint32_t>(partial ?
 	           deliver_message_result::partial_completion :
 	           deliver_message_result::result_ok);

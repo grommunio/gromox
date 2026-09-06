@@ -512,7 +512,6 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
     uint32_t attachment_instance_id, uint32_t *pinstance_id) try
 {
 	uint64_t mid_val;
-	uint64_t message_id;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -538,8 +537,8 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 			return FALSE;
 		if (sql_transact.commit() != SQLITE_OK)
 			return false;
-		message_id = rop_util_make_eid_ex(1, mid_val);
 
+		eid_t message_id(1, mid_val);
 		instance_node inode, *pinstance = &inode;
 		pinstance->instance_id = instance_id;
 		pinstance->parent_id = attachment_instance_id;
@@ -1439,8 +1438,6 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
     ec_error_t *pe_result) try
 {
-	uint64_t folder_id;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
@@ -1572,7 +1569,8 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		}
 	}
 	pinstance->b_new = FALSE;
-	folder_id = rop_util_make_eid_ex(1, pinstance->folder_id);
+
+	eid_t folder_id(1, pinstance->folder_id);
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(pinstance->username.c_str());
 	dbase.reset(); // pinstance efectively goes out of scope too
@@ -2187,7 +2185,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			vc.pvalue = uv;
 			if (vc.pvalue == nullptr)
 				return FALSE;
-			*uv = rop_util_make_eid_ex(1, pinstance->folder_id);
+			*uv = eid_t(1, pinstance->folder_id);
 			ppropvals->count++;
 			continue;
 		}

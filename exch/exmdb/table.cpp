@@ -1651,7 +1651,7 @@ static BOOL table_column_content_tmptbl(
 		auto v = cu_alloc<uint64_t>();
 		*ppvalue = v;
 		if (*ppvalue != nullptr)
-			*v = rop_util_make_eid_ex(1, folder_id);
+			*v = eid_t(1, folder_id);
 		return TRUE;
 	}
 	case PidTagInstID:
@@ -1659,8 +1659,8 @@ static BOOL table_column_content_tmptbl(
 		if (*ppvalue == nullptr)
 			return TRUE;
 		*static_cast<uint64_t *>(*ppvalue) = row_type == CONTENT_ROW_MESSAGE ?
-			rop_util_make_eid_ex(1, *static_cast<uint64_t *>(*ppvalue)) :
-			rop_util_make_eid_ex(2, *static_cast<uint64_t *>(*ppvalue) & NFID_LOWER_PART);
+			eid_t(1, *static_cast<uint64_t *>(*ppvalue)) :
+			eid_t(2, *static_cast<uint64_t *>(*ppvalue) & NFID_LOWER_PART);
 		return TRUE;
 	case PidTagInstanceNum:
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 10, PT_LONG);
@@ -2134,15 +2134,15 @@ static bool table_get_content_row_property(const void *pparam, proptag_t proptag
 		*ppvalue = eid;
 		eid->pbin = nullptr;
 		if (CONTENT_ROW_HEADER == prow_param->row_type) {
-			eid->folder_id = rop_util_make_eid_ex(1, prow_param->folder_id);
-			eid->message_id = rop_util_make_eid_ex(2, prow_param->inst_id & NFID_LOWER_PART);
+			eid->folder_id  = eid_t(1, prow_param->folder_id);
+			eid->message_id = eid_t(2, prow_param->inst_id & NFID_LOWER_PART);
 			eid->instance = 0;
 		} else {
 			if (!common_util_get_message_parent_folder(prow_param->psqlite,
 			    prow_param->inst_id, &parent_fid))
 				return FALSE;	
-			eid->folder_id = rop_util_make_eid_ex(1, parent_fid);
-			eid->message_id = rop_util_make_eid_ex(1, prow_param->inst_id);
+			eid->folder_id  = eid_t(1, parent_fid);
+			eid->message_id = eid_t(1, prow_param->inst_id);
 			pinst_num = static_cast<uint32_t *>(common_util_column_sqlite_statement(
 			            prow_param->pstmt, 10, PT_LONG));
 			if (pinst_num == nullptr)
@@ -2835,7 +2835,7 @@ BOOL exmdb_server::mark_table(const char *dir,
 			*prow_type = sqlite3_column_int64(pstmt, 2);
 			break;
 		case table_type::rule:
-			*pinst_id = rop_util_make_eid_ex(1, *pinst_id);
+			*pinst_id = eid_t(1, *pinst_id);
 			break;
 		default:
 			break;

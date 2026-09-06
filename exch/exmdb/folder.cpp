@@ -54,8 +54,7 @@ BOOL exmdb_server::get_folder_by_class(const char *dir, const char *str_class,
 		*pdot = '\0';
 		sqlite3_bind_text(pstmt, 1, tmp_class, -1, SQLITE_STATIC);
 		if (pstmt.step() == SQLITE_ROW) {
-			*pid = rop_util_make_eid_ex(1,
-				sqlite3_column_int64(pstmt, 0));
+			*pid = eid_t(1, pstmt.col_uint64(0));
 			*str_explicit = tmp_class;
 			return TRUE;
 		}
@@ -67,9 +66,8 @@ BOOL exmdb_server::get_folder_by_class(const char *dir, const char *str_class,
 	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	*pid = pstmt.step() == SQLITE_ROW ?
-	       rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 0)) :
-	       rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
+	*pid = pstmt.step() == SQLITE_ROW ? eid_t(1, pstmt.col_uint64(0)) :
+	       eid_t(1, PRIVATE_FID_INBOX);
 	str_explicit->clear();
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -178,7 +176,7 @@ BOOL exmdb_server::get_folder_class_table(
 		ppropvals->ppropval[0].pvalue = v;
 		if (ppropvals->ppropval[0].pvalue == nullptr)
 			return FALSE;
-		*v = rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 1));
+		*v = eid_t(1, pstmt.col_uint64(1));
 		ppropvals->ppropval[1].proptag = PR_MESSAGE_CLASS_A;
 		ppropvals->ppropval[1].pvalue =
 			common_util_dup(znul(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0))));
@@ -239,8 +237,8 @@ BOOL exmdb_server::get_folder_by_name(const char *dir,
 		return FALSE;
 	*pfolder_id = fid_val == 0 ? eid_t(0) :
 	              (fid_val & NFID_UPPER_PART) == 0 ?
-	              rop_util_make_eid_ex(1, fid_val) :
-	              rop_util_make_eid_ex(fid_val >> 48, fid_val & NFID_LOWER_PART);
+	              eid_t(1, fid_val) :
+	              eid_t(fid_val >> 48, fid_val & NFID_LOWER_PART);
 	return TRUE;
 }
 
@@ -479,7 +477,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	dg_notify(std::move(notifq));
-	*pfolder_id = rop_util_make_eid_ex(1, folder_id);
+	*pfolder_id = eid_t(1, folder_id);
 	*errcode = ecSuccess;
 	return TRUE;
 }
@@ -952,7 +950,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		void *pvalue = nullptr;
 		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 			return false;
-		change_num = rop_util_make_eid_ex(1, change_num);
+		change_num = eid_t(1, change_num);
 		TAGGED_PROPVAL nprop[5];
 		nprop[0].proptag = PidTagChangeNumber;
 		nprop[0].pvalue = &change_num;
@@ -1693,7 +1691,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
 		uint64_t change_num = 0;
 		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 			return false;
-		change_num = rop_util_make_eid_ex(1, change_num);
+		change_num = eid_t(1, change_num);
 		TAGGED_PROPVAL nprop[4];
 		nprop[0].proptag = PidTagChangeNumber;
 		nprop[0].pvalue  = &change_num;
@@ -1842,7 +1840,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 		if (pfolder_ids->pids == nullptr)
 			return false;
 		for (size_t i = 0; i < pfolder_ids->count; ++i)
-			pfolder_ids->pids[i] = rop_util_make_eid_ex(1, src_fo[i]);
+			pfolder_ids->pids[i] = eid_t(1, src_fo[i]);
 	}
 	*psearch_status = 0;
 	if (db_engine_check_populating(dir, fid_val))
