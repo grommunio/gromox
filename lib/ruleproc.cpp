@@ -729,7 +729,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	auto &fid_bin = *static_cast<const BINARY *>(mc.pfolder_eid);
 	uint64_t dst_fid, dst_mid = 0, dst_cn = 0;
 	if (fid_bin.cb == 0) {
-		dst_fid = rop_util_make_eid_ex(1, tgt_public ?
+		dst_fid = eid_t(1, tgt_public ?
 		          PUBLIC_FID_IPMSUBTREE : PRIVATE_FID_INBOX);
 	} else {
 		FOLDER_ENTRYID folder_eid{};
@@ -741,7 +741,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 			return ecNotFound;
 		else if (folder_eid.eid_type == EITLT_PRIVATE_FOLDER && tgt_public)
 			return ecNotFound;
-		dst_fid = rop_util_make_eid_ex(1, rop_util_gc_to_value(folder_eid.folder_gc));
+		dst_fid = eid_t(1, rop_util_gc_to_value(folder_eid.folder_gc));
 	}
 
 	/*
@@ -1077,8 +1077,7 @@ static ec_error_t opx_move(rxparam &par, const rule_node &rule,
 	if (mc.folder_eid.eid_type != EITLT_PRIVATE_FOLDER)
 		return ecSuccess;
 	SVREID svreid;
-	svreid.folder_id = rop_util_make_eid_ex(1,
-		rop_util_gc_to_value(mc.folder_eid.folder_gc));
+	svreid.folder_id = eid_t(1, rop_util_gc_to_value(mc.folder_eid.folder_gc));
 	MOVECOPY_ACTION conv;
 	conv.same_store = 1;
 	conv.pfolder_eid = &svreid;
@@ -1449,7 +1448,7 @@ static ec_error_t mr_find_cal_items(rxparam &par, proptag_t match_tag,
     const BINARY *match_val, proptag_t seq_tag, proptag_t goid_tag,
     std::vector<mr_calitem> &items)
 {
-	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	eid_t cal_fid(1, PRIVATE_FID_CALENDAR);
 	if (match_val == nullptr || match_val->cb == 0)
 		return ecSuccess;
 	const RESTRICTION_PROPERTY rprop = {RELOP_EQ, match_tag, {match_tag, deconst(match_val)}};
@@ -1541,7 +1540,7 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
     const mr_policy &policy)
 {
 	auto &rq_prop = par.ctnt->proplist;
-	auto cal_fid  = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	eid_t cal_fid(1, PRIVATE_FID_CALENDAR);
 	auto goid_tag  = PROP_TAG(PT_BINARY, propids[l_goid]);
 	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
 	auto seq_tag   = PROP_TAG(PT_LONG, propids[l_appt_seq]);
@@ -1773,7 +1772,7 @@ static ec_error_t mr_do_response(rxparam &par, const PROPID_ARRAY &propids)
 		return ecSuccess;
 	}
 
-	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	eid_t cal_fid(1, PRIVATE_FID_CALENDAR);
 	const RESTRICTION_PROPERTY rprop = {RELOP_EQ, cgoid_tag, {cgoid_tag, deconst(cgoid)}};
 	const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
 	uint32_t table_id = 0, row_count = 0;
@@ -2027,7 +2026,7 @@ static ec_error_t mr_do_cancel(rxparam &par, const PROPID_ARRAY &propids,
     const mr_policy &policy) try
 {
 	auto &cn_prop  = par.ctnt->proplist;
-	auto cal_fid   = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	eid_t cal_fid(1, PRIVATE_FID_CALENDAR);
 	auto goid_tag  = PROP_TAG(PT_BINARY, propids[l_goid]);
 	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
 	auto seq_tag   = PROP_TAG(PT_LONG, propids[l_appt_seq]);

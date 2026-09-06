@@ -544,11 +544,11 @@ BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 	if (!succ)
 		return false;
 	if (NULL == prange_list) {
-		*peid = rop_util_make_eid_ex(replid, 0);
+		*peid = eid_t(replid, 0);
 		return TRUE;
 	}
 	auto pnode = prange_list->begin();
-	*peid = rop_util_make_eid_ex(replid, pnode == prange_list->end() ? 0 :
+	*peid = eid_t(replid, pnode == prange_list->end() ? 0 :
 	        prange_list->front().hi);
 	return TRUE;
 }
@@ -581,12 +581,9 @@ BOOL idset::enum_repl(uint16_t replid, void *p, REPLICA_ENUM repl_enum)
 		return false;
 	if (prange_list == nullptr)
 		return TRUE;
-	for (auto &range_node : *prange_list) {
-		for (auto ival = range_node.lo; ival <= range_node.hi; ++ival) {
-			auto tmp_eid = rop_util_make_eid_ex(replid, ival);
-			repl_enum(p, tmp_eid);
-		}
-	}
+	for (auto &range_node : *prange_list)
+		for (auto ival = range_node.lo; ival <= range_node.hi; ++ival)
+			repl_enum(p, eid_t(replid, ival));
 	return TRUE;
 }
 

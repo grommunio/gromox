@@ -47,7 +47,7 @@ static int t_2209(const char *dir)
 	qvals.emplace_back(PROP_TAG(PT_I8, 0), &v_zero);
 
 	if (!exmdb_client->set_folder_properties(dir, CP_UTF8,
-	    rop_util_make_eid_ex(1, PRIVATE_FID_ROOT), &qvals, &problems)) {
+	    eid_t(1, PRIVATE_FID_ROOT), &qvals, &problems)) {
 		mlog(LV_ERR, "set_folder_properties failed unexpectedly");
 		return EXIT_FAILURE;
 	}

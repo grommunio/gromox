@@ -90,7 +90,7 @@ static int set_names(const char *lang, size_t &fcount)
 		auto new_name = folder_namedb_get(lang, gcv);
 		if (new_name == nullptr)
 			continue;
-		auto folder_id = rop_util_make_eid_ex(1, gcv);
+		eid_t folder_id(1, gcv);
 		if (global::g_verbose_mode) {
 			static constexpr proptag_t tags[] = {PR_DISPLAY_NAME};
 			TPROPVAL_ARRAY props{};

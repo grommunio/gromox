@@ -273,7 +273,7 @@ static int t_id8()
 		s.append_range(1, lo, hi);
 		cnt += 0x10;
 	} while (s.get_repl_list().size() < s.get_repl_list().capacity());
-	s.remove(rop_util_make_eid_ex(1, 0x12));
+	s.remove(eid_t(1, 0x12));
 	s.dump();
 	return EXIT_SUCCESS;
 }
@@ -566,9 +566,9 @@ static int t_eidcvt()
 	assert(memcmp(gc.ab, &network_input[2], 6) == 0);
 	assert(rop_util_gc_to_value(gc) == 0x1fffe);
 	assert(rop_util_make_eid(2, gc) == eid);
-	assert(rop_util_make_eid_ex(2, 0x1fffe) == eid);
+	assert(eid_t(2, 0x1fffe) == eid);
 
-	XID xid{GUID_NULL, rop_util_make_eid_ex(1, 0x8877665544332211ULL)};
+	XID xid{GUID_NULL, eid_t(1, 0x8877665544332211ULL)};
 	assert(memcmp(xid.local_id, "\x66\x55\x44\x33\x22\x11", 6) == 0);
 	return EXIT_SUCCESS;
 }

@@ -427,7 +427,7 @@ static int setstoreprop(int argc, char **argv, const GUID guid,
 
 static errno_t clear_rwz()
 {
-	static const eid_t inbox = rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
+	static constexpr eid_t inbox(1, PRIVATE_FID_INBOX);
 	static constexpr RESTRICTION_EXIST rst_a = {PR_MESSAGE_CLASS};
 	static constexpr RESTRICTION_CONTENT rst_b = {FL_IGNORECASE, PR_MESSAGE_CLASS, {PT_UNICODE, deconst("IPM.RuleOrganizer")}};
 	static constexpr RESTRICTION rst_c[2] = {{RES_EXIST, {deconst(&rst_a)}}, {RES_CONTENT, {deconst(&rst_b)}}};

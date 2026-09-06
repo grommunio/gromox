@@ -92,7 +92,7 @@ static void filter_folder_map(gi_folder_map_t &fmap)
 			g_anchor_folder : PUBLIC_FID_IPMSUBTREE, ""});
 	for (auto &p : fmap)
 		if (p.second.fid_to != MAILBOX_FID_UNANCHORED)
-			p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
+			p.second.fid_to = eid_t(1, p.second.fid_to);
 }
 
 static void validate_magic(const char *magic)
