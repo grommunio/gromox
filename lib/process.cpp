@@ -1031,12 +1031,12 @@ void workqueue::mainloop()
 		 * Comparing the name by pointer value is sufficient.
 		 */
 		tsk = std::find_if(m_tasklist.begin(), m_tasklist.end(),
-		      [&](const task &t) { return t.name == name; });
+		      [&](const wq_task &t) { return t.name == name; });
 		if (tsk == m_tasklist.end())
 			continue;
 		auto ip = std::upper_bound(m_tasklist.begin(),
 		          m_tasklist.end(), next_time,
-		          [](time_point p, const task &t) { return p < t.start_time; });
+		          [](time_point p, const wq_task &t) { return p < t.start_time; });
 		if (tsk < ip)
 			std::rotate(tsk, tsk + 1, ip);
 		else
@@ -1068,7 +1068,7 @@ errno_t workqueue::launch_ondemand()
 bool workqueue::task_exists(const char *name) const
 {
 	return std::any_of(m_tasklist.cbegin(), m_tasklist.cend(),
-	       [&](const struct task &task) { return strcmp(task.name, name) == 0; });
+	       [&](const struct wq_task &task) { return strcmp(task.name, name) == 0; });
 }
 
 void workqueue::delete_task(const char *name)
@@ -1076,7 +1076,7 @@ void workqueue::delete_task(const char *name)
 	bool empty = false;
 	{
 		std::unique_lock lk(m_tasklock);
-		std::erase_if(m_tasklist, [&](const struct task &task) {
+		std::erase_if(m_tasklist, [&](const struct wq_task &task) {
 			return strcmp(task.name, name) == 0;
 		});
 		empty = m_tasklist.empty();
@@ -1096,7 +1096,7 @@ errno_t workqueue::insert_task(const char *name, std::chrono::nanoseconds period
 			return EEXIST;
 		auto here = std::upper_bound(m_tasklist.begin(), m_tasklist.end(),
 		            start_time,
-		            [](time_point tp, const struct workqueue::task &task) {
+		            [](time_point tp, const struct wq_task &task) {
 		            	return tp < task.start_time;
 		            });	
 		m_tasklist.emplace(here, start_time, period, std::move(obj), func, name);

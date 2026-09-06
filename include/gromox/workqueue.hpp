@@ -18,8 +18,8 @@ struct GX_EXPORT workqueue {
 	void delete_task(const char *) __attribute__((nonnull(2)));
 
 	protected:
-	struct task {
-		auto operator<=>(const task &o) const { return start_time <=> o.start_time; }
+	struct wq_task {
+		auto operator<=>(const wq_task &o) const { return start_time <=> o.start_time; }
 		gromox::time_point start_time;
 		std::chrono::nanoseconds period;
 		std::any obj;
@@ -32,7 +32,7 @@ struct GX_EXPORT workqueue {
 	void stop();
 	errno_t launch_ondemand();
 
-	std::vector<task> m_tasklist;
+	std::vector<wq_task> m_tasklist;
 	pthread_t m_thrid{};
 	gromox::atomic_bool m_stop{false};
 	std::condition_variable m_cv;

@@ -347,15 +347,15 @@ static std::string tlc_make_query_leaf(const SORTORDER_SET &sset,
 	bool b_ord = false;
 	for (unsigned int i = sset.ccategories; i < sset.count; ++i) {
 		const auto &sort = sset.psort[i];
-		auto tag = PROP_TAG(sort.type, sort.propid);
+		auto ctag = PROP_TAG(sort.type, sort.propid);
 		if (tablesort_is_minmax(sort.table_sort))
 			continue;
 		auto ord = sort.table_sort == TABLE_SORT_ASCEND ? " ASC" : " DESC";
 		if (!b_ord) {
-			qstr += fmt::format(" ORDER BY v{:x} {}", tag, ord);
+			qstr += fmt::format(" ORDER BY v{:x} {}", ctag, ord);
 			b_ord = true;
 		} else {
-			qstr += fmt::format(", v{:x} {}", tag, ord);
+			qstr += fmt::format(", v{:x} {}", ctag, ord);
 		}
 	}
 	/*
