@@ -504,7 +504,7 @@ static bool container_object_fetch_folder_properties(const TPROPVAL_ARRAY *pprop
 			if (tag != PR_PARENT_ENTRYID) {
 				pvalue = zcsab_prepend(cu_fid_to_entryid(*store, folder_id),
 				         MAPI_ABCONT, UINT32_MAX);
-			} else if (folder_id == rop_util_make_eid_ex(
+			} else if (folder_id == eid_t(
 			    1, PRIVATE_FID_CONTACTS)) {
 				if (!container_object_fetch_special_property(ab_tree::minid::SC_PROVIDER,
 				    PR_ENTRYID, &pvalue))
@@ -750,7 +750,7 @@ ec_error_t container_object::query_container_table(proptag_cspan pproptags,
 				return ecServerOOM;
 			auto pinfo = zs_get_info();
 			if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
-				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+				pinfo->cpid, eid_t(1, PRIVATE_FID_CONTACTS),
 			    container_object_get_folder_proptags, &tmp_propvals))
 				return ecRpcFailed;
 			if (!container_object_fetch_folder_properties(&tmp_propvals,
@@ -758,7 +758,7 @@ ec_error_t container_object::query_container_table(proptag_cspan pproptags,
 				return ecError;
 			tmp_set.count ++;
 			if (b_depth && !container_object_query_folder_hierarchy(
-			    rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+			    eid_t(1, PRIVATE_FID_CONTACTS),
 			    pproptags, &tmp_set))
 				return ecError;
 			for (auto it = pbase->dbegin(); it != pbase->dend(); ++it)

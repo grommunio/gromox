@@ -617,14 +617,14 @@ static ec_error_t store_object_get_calculated_property(store_object *pstore,
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	}
 	case PR_ROOT_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1, pstore->b_private ?
+		*ppvalue = cu_fid_to_entryid(*pstore, eid_t(1, pstore->b_private ?
 		           PRIVATE_FID_ROOT : PUBLIC_FID_ROOT));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_FINDER_ENTRYID:
 		if (!pstore->b_private)
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
-			rop_util_make_eid_ex(1, PRIVATE_FID_FINDER));
+			eid_t(1, PRIVATE_FID_FINDER));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_FAVORITES_ENTRYID:
 		/*
@@ -632,58 +632,58 @@ static ec_error_t store_object_get_calculated_property(store_object *pstore,
 		 * replicating the behavior exhibited by MSMAPI.
 		 */
 		*ppvalue = cu_fid_to_entryid(*pstore,
-		           rop_util_make_eid_ex(1, pstore->b_private ?
+		           eid_t(1, pstore->b_private ?
 		           PRIVATE_FID_SHORTCUTS : PUBLIC_FID_IPMSUBTREE));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_SUBTREE_ENTRYID:
 		/* else case:: different from native MAPI */
-		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, eid_t(1,
 		           pstore->b_private ? PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_INBOX_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, eid_t(1,
 		           pstore->b_private ? PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_OUTBOX_ENTRYID:
 		if (!pstore->b_private)
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
-			rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX));
+			eid_t(1, PRIVATE_FID_OUTBOX));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_SENTMAIL_ENTRYID:
 		if (!pstore->b_private)
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
-			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS));
+			eid_t(1, PRIVATE_FID_SENT_ITEMS));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_WASTEBASKET_ENTRYID:
 		if (!pstore->b_private)
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
-			rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS));
+			eid_t(1, PRIVATE_FID_DELETED_ITEMS));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_DAF_ENTRYID:
 		if (!pstore->b_private)
 			return ecNotFound;
-		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, eid_t(1,
 		           PRIVATE_FID_DEFERRED_ACTION));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_SCHEDULE_FOLDER_ENTRYID:
 		if (!pstore->b_private)
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
-			rop_util_make_eid_ex(1, PRIVATE_FID_SCHEDULE));
+			eid_t(1, PRIVATE_FID_SCHEDULE));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_VIEWS_ENTRYID:
 		if (!pstore->b_private)
 			return ecNotFound;
-		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS));
+		*ppvalue = cu_fid_to_entryid(*pstore, eid_t(1, PRIVATE_FID_VIEWS));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_COMMON_VIEWS_ENTRYID:
 		if (!pstore->b_private)
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
-			rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS));
+			eid_t(1, PRIVATE_FID_COMMON_VIEWS));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
 		/*
@@ -694,16 +694,16 @@ static ec_error_t store_object_get_calculated_property(store_object *pstore,
 		if (pstore->b_private)
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
-			rop_util_make_eid_ex(1, PUBLIC_FID_NONIPMSUBTREE));
+			eid_t(1, PUBLIC_FID_NONIPMSUBTREE));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_EFORMS_REGISTRY_ENTRYID:
 		if (pstore->b_private)
 			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pstore,
-			rop_util_make_eid_ex(1, PUBLIC_FID_EFORMSREGISTRY));
+			eid_t(1, PUBLIC_FID_EFORMSREGISTRY));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PidTagXSpoolerQueueEntryId:
-		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, eid_t(1,
 		           pstore->b_private ? PRIVATE_FID_SPOOLER_QUEUE : PUBLIC_FID_NONIPMSUBTREE));
 		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_EC_SERVER_VERSION:
@@ -857,7 +857,7 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	
 	if (!pstore->b_private)
 		return FALSE;
-	folder_id = rop_util_make_eid_ex(1, fid_val);
+	folder_id = eid_t(1, fid_val);
 	tmp_propvals.ppropval = propval_buff;
 	tmp_propvals.count = 5;
 	tmp_propvals.ppropval[0].proptag = PR_DISPLAY_NAME;
@@ -1087,7 +1087,7 @@ ec_error_t store_object::get_perms(PERMISSION_SET *pperm_set)
 	uint32_t row_num;
 	uint32_t table_id;
 	TARRAY_SET tmp_set;
-	uint64_t folder_id = rop_util_make_eid_ex(1, pstore->b_private ?
+	uint64_t folder_id = eid_t(1, pstore->b_private ?
 	                     PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE);
 	
 	if (!exmdb_client->load_hierarchy_table(

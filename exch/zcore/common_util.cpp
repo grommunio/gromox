@@ -319,7 +319,7 @@ bool common_util_exmdb_locinfo_from_string(const char *loc_string,
 	tmp_val = strtoll(ptoken + 1, NULL, 16);
 	if (tmp_val == 0)
 		return FALSE;
-	*peid = rop_util_make_eid_ex(1, tmp_val);
+	*peid = eid_t(1, tmp_val);
 	return TRUE;
 }
 
@@ -1126,7 +1126,7 @@ static bool cu_deposit_repr_copy(store_object *pstore,
 	auto xflag = xtag == 0 ? nullptr : props.get<const uint8_t>(xtag);
 	bool sole = xflag != nullptr && *xflag != 0;
 
-	auto fid = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
+	auto fid = eid_t(1, PRIVATE_FID_SENT_ITEMS);
 	/*
 	 * Absent permission and a failed lookup are reported alike, so that the
 	 * trace does not vanish in the degraded case.
@@ -1309,7 +1309,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	eid_t folder_id{};
 	if (ptarget == nullptr || !cu_entryid_to_fid(*ptarget,
 	    &b_private, &account_id, &folder_id))
-		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
+		folder_id = eid_t(1, PRIVATE_FID_SENT_ITEMS);
 
 	const EID_ARRAY ids = {1, &message_id};
 	if (!exmdb_client->movecopy_messages(pstore->get_dir(), cpid, false,

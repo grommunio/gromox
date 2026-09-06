@@ -327,7 +327,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::new_mail: {
 		pnotification->event_type = fnevNewMail;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		pnew_mail->pentryid = cu_mid_to_entryid_s(*pstore, folder_id, message_id);
 		if (pnew_mail->pentryid->empty())
 			return;
@@ -364,7 +364,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_created: {
 		pnotification->event_type = fnevObjectCreated;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
 		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
 		if (oz->pentryid->empty())
@@ -390,7 +390,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_deleted: {
 		pnotification->event_type = fnevObjectDeleted;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
 		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
 		if (oz->pentryid->empty())
@@ -412,7 +412,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_modified: {
 		pnotification->event_type = fnevObjectModified;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
 		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
 		if (oz->pentryid->empty())
@@ -450,9 +450,9 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
 		                            fnevObjectMoved : fnevObjectCopied;
 		old_parentid = rop_util_nfid_to_eid(nt->old_folder_id);
-		old_eid = rop_util_make_eid_ex(1, nt->old_message_id);
+		old_eid = eid_t(1, nt->old_message_id);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
 		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
 		if (oz->pentryid->empty())
@@ -854,7 +854,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 
 	eid_t folder_id{}, message_id{};
 	if (0 == entryid.cb) {
-		folder_id = rop_util_make_eid_ex(1, pstore->b_private ?
+		folder_id = eid_t(1, pstore->b_private ?
 		            PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
 		message_id = eid_t(0);
 	} else {
