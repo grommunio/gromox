@@ -882,7 +882,7 @@ uint64_t sMessageEntryId::folderId() const
  */
 eid_t sMessageEntryId::messageId() const
 {
-	return rop_util_make_eid_ex(1, rop_util_gc_to_value(message_gc));
+	return eid_t(1, rop_util_gc_to_value(message_gc));
 }
 
 /**
@@ -952,7 +952,7 @@ sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 	                       [&folder](const auto& elem){return folder.Id == elem.name;});
 	if (it == distNameInfo.end())
 		throw EWSError::FolderNotFound(E3051(folder.Id));
-	folderId = rop_util_make_eid_ex(1, it->id);
+	folderId = eid_t(1, it->id);
 	location = it->isPrivate ? PRIVATE : PUBLIC;
 	if (folder.Mailbox)
 		target = folder.Mailbox->EmailAddress;

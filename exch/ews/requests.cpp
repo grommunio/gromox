@@ -1322,7 +1322,7 @@ void process(mDeleteFolderRequest &&request, XMLElement *response, const EWSCont
 			if (folder.location == folder.PUBLIC)
 				throw EWSError::MoveCopyFailed(E3158);
 			uint32_t accountId = ctx.getAccountId(ctx.auth_info().username, false);
-			uint64_t newParentId = rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS);
+			uint64_t newParentId = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
 			ctx.moveCopyFolder(dir, folder, newParentId, accountId, false);
 		} else {
 			bool hard = request.DeleteType == Enum::HardDelete;
@@ -1400,7 +1400,7 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			data.ResponseMessages.emplace_back().success();
 		} else {
 			auto eid = meid.messageId();
-			auto fid = rop_util_make_eid_ex(1, meid.folderId());
+			auto fid = eid_t(1, meid.folderId());
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete ? TRUE : false;
 			BOOL partial = false;
@@ -2851,7 +2851,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 	sMailboxInfo mbinfo = ctx.getMailboxInfo(dir, folder.location == folder.PUBLIC);
 	// Generate message entry IDs on the fly as we have all necessary information
 	// Use template entry ID and fill in the message Id as needed
-	sMessageEntryId templId = ctx.plugin().mkMessageEntryId(mbinfo, folder.folderId, rop_util_make_eid_ex(1, 0));
+	sMessageEntryId templId = ctx.plugin().mkMessageEntryId(mbinfo, folder.folderId, eid_t(1, 0));
 
 	uint32_t maxItems = request.MaxChangesReturned;
 	uint32_t maxSync = ctx.plugin().max_sync_changes;
@@ -3373,7 +3373,7 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 			throw EWSError::MoveCopyFailed(E3468);
 	} else {
 		auto eid = mid.messageId();
-		auto fid = rop_util_make_eid_ex(1, mid.folderId());
+		auto fid = eid_t(1, mid.folderId());
 		EID_ARRAY eids{1, &eid};
 		BOOL partial = false;
 		if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),

@@ -1349,7 +1349,7 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		if (!cu_switch_allocator())
 			return false;
 		if (!exmdb_client->read_message(dir, nullptr, CP_ACP,
-			rop_util_make_eid_ex(1, message_id), &pmsgctnt)) {
+			eid_t(1, message_id), &pmsgctnt)) {
 			cu_switch_allocator();
 			mlog(LV_ERR, "E-2394: read_message(%s,%llu) EXRPC failed",
 				dir, LLU{message_id});
@@ -1519,7 +1519,7 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 	{
 		uint32_t table_id = 0, row_count = 0;
 		if (!exmdb_client->load_content_table(dir, CP_ACP,
-		    rop_util_make_eid_ex(1, folder_id), nullptr, TABLE_FLAG_NONOTIFICATIONS,
+		    eid_t(1, folder_id), nullptr, TABLE_FLAG_NONOTIFICATIONS,
 		    nullptr, nullptr, &table_id, &row_count))
 			return false;
 		auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
@@ -1764,7 +1764,7 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 	});
 	unsigned int table_id = 0, row_count = 0;
 	if (!exmdb_client->load_hierarchy_table(dir,
-	    rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+	    eid_t(1, PRIVATE_FID_IPMSUBTREE),
 	    NULL, TABLE_FLAG_DEPTH|TABLE_FLAG_NONOTIFICATIONS,
 	    NULL, &table_id, &row_count))
 		return FALSE;	
@@ -2410,7 +2410,7 @@ static int me_minst(std::span<char *> argv, int sockd) try
 	}
 
 	if (!exmdb_client->allocate_message_id(argv[1],
-		rop_util_make_eid_ex(1, folder_id), &message_id) ||
+		eid_t(1, folder_id), &message_id) ||
 	    !exmdb_client->allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO mapping"
@@ -2445,7 +2445,7 @@ static int me_minst(std::span<char *> argv, int sockd) try
 	ec_error_t e_result = ecRpcFailed;
 	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(argv[1], CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), pmsgctnt.get(), djson.c_str(),
+	    eid_t(1, folder_id), pmsgctnt.get(), djson.c_str(),
 	    &outmid, &outcn, &e_result) || e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
 	return cmd_write(sockd, "TRUE\r\n");
@@ -2493,11 +2493,11 @@ static int me_mdele(std::span<char *> argv, int sockd)
 		    gx_sql_col_uint64(pstmt, 1) != folder_id)
 			continue;
 		message_ids.pids[message_ids.count++] =
-			rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 0));
+			eid_t(1, sqlite3_column_int64(pstmt, 0));
 	}
 	pstmt.finalize();
 	if (!exmdb_client->delete_messages(argv[1], CP_ACP, nullptr,
-	    rop_util_make_eid_ex(1, folder_id), &message_ids, TRUE, &b_partial))
+	    eid_t(1, folder_id), &message_ids, TRUE, &b_partial))
 		return MIDB_E_MDB_DELETEMESSAGES;
 
 	/*
@@ -2572,7 +2572,7 @@ static int me_mcopy(std::span<char *> argv, int sockd) try
 	std::string src_kw = znul(pstmt.col_text(CTM_KEYWORDS));
 	pstmt.finalize();
 	if (!exmdb_client->allocate_message_id(argv[1],
-	    rop_util_make_eid_ex(1, dst_fid), &message_id))
+	    eid_t(1, dst_fid), &message_id))
 		return MIDB_E_MDB_ALLOCID;
 
 	/*
@@ -2580,8 +2580,8 @@ static int me_mcopy(std::span<char *> argv, int sockd) try
 	 * will instantiate the midb message (and decide mid_string)
 	 */
 	BOOL e_result = false;
-	if (!exmdb_client->movecopy_message(argv[1], CP_UTF8, rop_util_make_eid_ex(1, src_mid),
-	    rop_util_make_eid_ex(1, dst_fid), message_id,
+	if (!exmdb_client->movecopy_message(argv[1], CP_UTF8, eid_t(1, src_mid),
+	    eid_t(1, dst_fid), message_id,
 	    false, &e_result) || !e_result)
 		return MIDB_E_MDB_WRITEMESSAGE;
 
@@ -2681,7 +2681,7 @@ static int me_mrenf(std::span<char *> argv, int sockd)
 			if (0 == folder_id2) {
 				std::string temp_name(ptoken, ptoken1 - ptoken);
 				if (!cu_create_folder(argv[1],
-				    user_id, rop_util_make_eid_ex(1, folder_id1),
+				    user_id, eid_t(1, folder_id1),
 				    temp_name.c_str(), &folder_id2))
 					return MIDB_E_CREATEFOLDER;
 				folder_id1 = rop_util_get_gc_value(folder_id2);
@@ -2694,9 +2694,9 @@ static int me_mrenf(std::span<char *> argv, int sockd)
 	if (parent_id != folder_id1) {
 		ec_error_t errcode = ecSuccess;
 		if (!exmdb_client->movecopy_folder(argv[1], CP_ACP, false,
-		    nullptr, rop_util_make_eid_ex(1, parent_id),
-		    rop_util_make_eid_ex(1, folder_id),
-		    rop_util_make_eid_ex(1, folder_id1),
+		    nullptr, eid_t(1, parent_id),
+		    eid_t(1, folder_id),
+		    eid_t(1, folder_id1),
 		    ptoken, false, &errcode))
 			return MIDB_E_MDB_MOVECOPY;
 		if (errcode == ecDuplicateName)
@@ -2711,7 +2711,7 @@ static int me_mrenf(std::span<char *> argv, int sockd)
 	static constexpr proptag_t tmp_proptag[] = {PR_PREDECESSOR_CHANGE_LIST};
 	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client->get_folder_properties(argv[1], CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), tmp_proptag, &propvals))
+	    eid_t(1, folder_id), tmp_proptag, &propvals))
 		return MIDB_E_MDB_GETFOLDERPROPS;
 	auto pbin1 = propvals.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 
@@ -2732,7 +2732,7 @@ static int me_mrenf(std::span<char *> argv, int sockd)
 
 	PROBLEM_ARRAY problems;
 	if (!exmdb_client->set_folder_properties(argv[1], CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), &pset, &problems))
+	    eid_t(1, folder_id), &pset, &problems))
 		return MIDB_E_MDB_SETFOLDERPROPS;
 	return cmd_write(sockd, "TRUE\r\n");
 }
@@ -2775,7 +2775,7 @@ static int me_mmakf(std::span<char *> argv, int sockd)
 			if (0 == folder_id2) {
 				std::string temp_name(ptoken, ptoken1 - ptoken);
 				if (!cu_create_folder(argv[1],
-				    user_id, rop_util_make_eid_ex(1, folder_id1),
+				    user_id, eid_t(1, folder_id1),
 				    temp_name.c_str(), &folder_id2))
 					return MIDB_E_CREATEFOLDER;
 				folder_id1 = rop_util_get_gc_value(folder_id2);
@@ -2787,7 +2787,7 @@ static int me_mmakf(std::span<char *> argv, int sockd)
 	pidb.reset();
 	uint64_t new_fid = 0;
 	if (!cu_create_folder(argv[1],
-	    user_id, rop_util_make_eid_ex(1, folder_id1),
+	    user_id, eid_t(1, folder_id1),
 	    ptoken, &new_fid) || new_fid == 0)
 		return MIDB_E_CREATEFOLDER;
 	return cmd_write(sockd, "TRUE\r\n");
@@ -2817,7 +2817,7 @@ static int me_mremf(std::span<char *> argv, int sockd)
 	pidb.reset();
 	if (folder_id < CUSTOM_EID_BEGIN)
 		return MIDB_E_NOTPERMITTED;
-	folder_id = rop_util_make_eid_ex(1, folder_id);
+	folder_id = eid_t(1, folder_id);
 	if (!exmdb_client->empty_folder(argv[1], CP_ACP, nullptr, folder_id,
 	    DELETE_HARD_DELETE | DEL_MESSAGES | DEL_ASSOCIATED, &b_partial) || b_partial ||
 	    !exmdb_client->empty_folder(argv[1], CP_ACP, nullptr, folder_id,
@@ -3377,7 +3377,7 @@ static int me_set_u32(const char *dir, uint64_t msg_id, proptag_t tag,
 	const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
 	PROBLEM_ARRAY problems{};
 	if (!exmdb_client->set_message_properties(dir,
-	    nullptr, CP_ACP, rop_util_make_eid_ex(1, msg_id),
+	    nullptr, CP_ACP, eid_t(1, msg_id),
 	    &ta, &problems))
 		return MIDB_E_MDB_SETMSGPROPS;
 	return 0;
@@ -3449,7 +3449,7 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 	};
 	TPROPVAL_ARRAY propvals{};
 	if (!exmdb_client->get_message_properties(argv[1], NULL,
-	    CP_ACP, rop_util_make_eid_ex(1, message_id),
+	    CP_ACP, eid_t(1, message_id),
 	    mftags, &propvals))
 		return MIDB_E_MDB_GETMSGPROPS;
 	uint32_t message_flags = 0, msg_status = 0, icon_index = 0;
@@ -3516,7 +3516,7 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 		};
 		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
 		if (!exmdb_client->set_message_properties(argv[1],
-		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
+		    nullptr, CP_ACP, eid_t(1, message_id),
 		    &ta, &problems))
 			return MIDB_E_MDB_SETMSGPROPS;
 	}
@@ -3541,12 +3541,12 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 		};
 		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
 		if (!exmdb_client->set_message_properties(argv[1],
-		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
+		    nullptr, CP_ACP, eid_t(1, message_id),
 		    &ta, &problems))
 			return MIDB_E_MDB_SETMSGPROPS;
 	}
 	if (set_seen && !exmdb_client->set_message_read_state(argv[1], nullptr,
-	    rop_util_make_eid_ex(1, message_id), 1, &read_cn))
+	    eid_t(1, message_id), 1, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
 	if (set_deleted && !(msg_status & MSGSTATUS_DELMARKED)) {
 		msg_status |= MSGSTATUS_DELMARKED;
@@ -3621,7 +3621,7 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 	};
 	TPROPVAL_ARRAY propvals{};
 	if (!exmdb_client->get_message_properties(argv[1], nullptr,
-	    CP_ACP, rop_util_make_eid_ex(1, message_id),
+	    CP_ACP, eid_t(1, message_id),
 	    mftags, &propvals) || propvals.count == 0)
 		return MIDB_E_MDB_GETMSGPROPS;
 	uint32_t message_flags = 0, msg_status = 0, icon_index = 0;
@@ -3675,13 +3675,13 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 	if (set_answered && icon_index == MAIL_ICON_REPLIED) {
 		static constexpr proptag_t proptags_1[] = {PR_ICON_INDEX};
 		if (!exmdb_client->remove_message_properties(argv[1], CP_ACP,
-		    rop_util_make_eid_ex(1, message_id), proptags_1))
+		    eid_t(1, message_id), proptags_1))
 			return MIDB_E_MDB_SETMSGPROPS;
 	}
 	if (set_forwarded && icon_index == MAIL_ICON_FORWARDED) {
 		static constexpr proptag_t proptags_1[] = {PR_ICON_INDEX};
 		if (!exmdb_client->remove_message_properties(argv[1], CP_ACP,
-		    rop_util_make_eid_ex(1, message_id), proptags_1))
+		    eid_t(1, message_id), proptags_1))
 			return MIDB_E_MDB_SETMSGPROPS;
 	}
 	if (set_flagged && ((msg_status & MSGSTATUS_TAGGED) ||
@@ -3699,12 +3699,12 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 		};
 		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
 		if (!exmdb_client->set_message_properties(argv[1],
-		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
+		    nullptr, CP_ACP, eid_t(1, message_id),
 		    &ta, &problems))
 			return MIDB_E_MDB_SETMSGPROPS;
 	}
 	if (set_seen && !exmdb_client->set_message_read_state(argv[1], nullptr,
-	    rop_util_make_eid_ex(1, message_id), 0, &read_cn))
+	    eid_t(1, message_id), 0, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
 	if (set_deleted && msg_status & MSGSTATUS_DELMARKED) {
 		msg_status &= ~MSGSTATUS_DELMARKED;
@@ -3732,7 +3732,7 @@ static int me_set_categories(const char *dir, uint64_t msg_id,
 	const proptag_t tags[] = {PROP_TAG(PT_MV_UNICODE, kw_rsp[0])};
 	if (vec.empty()) {
 		if (!exmdb_client->remove_message_properties(dir, CP_ACP,
-		    rop_util_make_eid_ex(1, msg_id), tags))
+		    eid_t(1, msg_id), tags))
 			return MIDB_E_MDB_SETMSGPROPS;
 		return MIDB_I_SUCCESS;
 	}
@@ -3745,7 +3745,7 @@ static int me_set_categories(const char *dir, uint64_t msg_id,
 	const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
 	PROBLEM_ARRAY problems;
 	if (!exmdb_client->set_message_properties(dir, nullptr,
-	    CP_ACP, rop_util_make_eid_ex(1, msg_id), &ta, &problems))
+	    CP_ACP, eid_t(1, msg_id), &ta, &problems))
 		return MIDB_E_MDB_SETMSGPROPS;
 	return MIDB_I_SUCCESS;
 }
@@ -4170,7 +4170,7 @@ static void notif_msg_added(IDB_ITEM *pidb,
 		PR_ICON_INDEX, PR_MSG_STATUS};
 	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client->get_message_properties(cu_get_maildir(),
-	    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
+	    nullptr, CP_ACP, eid_t(1, message_id),
 	    tmp_proptags, &propvals))
 		return;		
 
@@ -4299,7 +4299,7 @@ static BOOL notif_folder_added(IDB_ITEM *pidb,
  REQUERY_FOLDER:
 	TPROPVAL_ARRAY propvals{};
 	if (!exmdb_client->get_folder_properties(cu_get_maildir(), CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), tmp_proptags, &propvals))
+	    eid_t(1, folder_id), tmp_proptags, &propvals))
 		return FALSE;		
 	auto flag = propvals.get<const uint8_t>(PR_ATTR_HIDDEN);
 	if (flag != nullptr && *flag != 0)
@@ -4410,7 +4410,7 @@ static void notif_folder_moved(IDB_ITEM *pidb,
 	static constexpr proptag_t tmp_proptags[] = {PR_DISPLAY_NAME};
 	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client->get_folder_properties(cu_get_maildir(), CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), tmp_proptags, &propvals))
+	    eid_t(1, folder_id), tmp_proptags, &propvals))
 		return;		
 
 	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
@@ -4456,7 +4456,7 @@ static void notif_folder_modified(IDB_ITEM *pidb,
 	static constexpr proptag_t tmp_proptags[] = {PR_DISPLAY_NAME};
 	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client->get_folder_properties(cu_get_maildir(), CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), tmp_proptags, &propvals))
+	    eid_t(1, folder_id), tmp_proptags, &propvals))
 		return;		
 	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
 	if (str == nullptr)
@@ -4501,7 +4501,7 @@ static void notif_msg_modified(IDB_ITEM *pidb, uint64_t folder_id,
 		PR_FLAG_STATUS, PR_ICON_INDEX,
 	};
 	if (!exmdb_client->get_message_properties(cu_get_maildir(),
-	    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
+	    nullptr, CP_ACP, eid_t(1, message_id),
 	    tmp_proptags, &propvals))
 		return;	
 	auto num = propvals.get<const uint32_t>(PR_MESSAGE_FLAGS);
