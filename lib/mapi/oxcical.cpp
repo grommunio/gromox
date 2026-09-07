@@ -2296,6 +2296,17 @@ static ec_error_t oxcical_import_internal(const char *method,
 		return ecInvalidParam;
 	}
 
+	/*
+	 * The flag cannot apply to local times other than midnight. Clients
+	 * like Thunderbird keep it when an allday event is turned into a
+	 * timed one.
+	 */
+	if (b_allday && start_itime.type == itime_type::floating &&
+	    end_itime.type == itime_type::floating &&
+	    (start_itime.hour != 0 || start_itime.minute != 0 ||
+	    start_itime.second != 0 || end_itime.hour != 0 ||
+	    end_itime.minute != 0 || end_itime.second != 0))
+		b_allday = false;
 	if (!b_allday && start_itime.type != itime_type::utc &&
 	    end_itime.type != itime_type::utc && start_itime.hour == 0 &&
 	    start_itime.minute == 0 && start_itime.second == 0 &&
@@ -4162,6 +4173,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	}
 
 	int regravitate_allday = 0;
+	ical_time start_day{};
 	if (has_start_time) {
 		ical_time itime;
 		/*
@@ -4184,6 +4196,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (regravitate_allday != 0 && !ical_utc_to_datetime(ptz_component,
 		    start_time + regravitate_allday, &itime))
 			return "E-2271";
+		start_day = {itime.year, itime.month, itime.day, 0, 0, 0};
 		append_dt(*pcomponent, "DTSTART", itime, b_allday,
 			ptz_component != nullptr ? tzid : nullptr);
 	} else {
@@ -4205,6 +4218,12 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		ical_time itime;
 		if (!ical_utc_to_datetime(ptz_component, end_time + regravitate_allday, &itime))
 			return "E-2222";
+		/* DTEND;VALUE=DATE is exclusive and must not end up on DTSTART */
+		if (b_allday && ical_time(itime.year, itime.month, itime.day,
+		    0, 0, 0) <= start_day) {
+			itime = start_day;
+			itime.add_day(1);
+		}
 		append_dt(*pcomponent, "DTEND", itime, b_allday,
 			ptz_component != nullptr ? tzid : nullptr);
 	}
