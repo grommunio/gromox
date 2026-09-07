@@ -752,6 +752,12 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 		return ecNotSupported;
 	auto folder_id = pfolder->folder_id;
 
+	auto actor = get_rpc_info().username;
+	void *pv_folder_name = nullptr;
+	exmdb_client->get_folder_property( plogon->get_dir(), CP_ACP, folder_id,
+		PR_DISPLAY_NAME, &pv_folder_name);
+	auto folder_name = static_cast<const char *>(pv_folder_name);
+
 	auto eff_user = plogon->eff_user();
 	if (eff_user != STORE_OWNER_GRANTED) {
 		uint32_t permission = 0;
@@ -767,7 +773,10 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 			return ecError;
 	}
 	if (0 == count) {
-		return ecSuccess;
+          mlog(LV_NOTICE, "gromox-audit: %s cleared permissions on folder \"%s\" in "
+               "mailbox %s via EMSMDB",
+               actor, znul(folder_name), plogon->get_account());
+          return ecSuccess;
 	}
 	for (size_t i = 0; i < count; ++i) {
 		auto v = deconst(prow[i].propvals.get<uint32_t>(PR_MEMBER_RIGHTS)); // mutable
@@ -800,6 +809,11 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	if (!exmdb_client->update_folder_permission(plogon->get_dir(),
 	    folder_id, 0, count, prow))
 		return ecError;
+
+
+	mlog(LV_NOTICE, "gromox-audit: %s replaced permissions on folder \"%s\" in mailbox %s via EMSMDB",
+		actor, znul(folder_name), plogon->get_account());
+
 	return ecSuccess;
 }
 

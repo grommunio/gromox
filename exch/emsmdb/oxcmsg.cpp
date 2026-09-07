@@ -161,6 +161,16 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
+
+	auto normalized_subject = propvals.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (plogon->is_private()) {
+		mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in mailbox %s via EMSMDB",
+			rpc_user, znul(normalized_subject), plogon->get_account());
+	} else {
+		mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in public folders via EMSMDB",
+			rpc_user, znul(normalized_subject));
+	}
+
 	return ecSuccess;
 }
 

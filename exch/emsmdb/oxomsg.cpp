@@ -356,10 +356,10 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (num != nullptr)
 		max_length = static_cast<uint64_t>(*num) << 10;
 	static constexpr proptag_t ptbuf_three[] =
-		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS,
+		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS, PR_SUBJECT,
 		PR_DEFERRED_SEND_TIME, PR_DEFERRED_SEND_NUMBER,
 		PR_DEFERRED_SEND_UNITS, PR_DELETE_AFTER_SUBMIT};
-	proptag_cspan tmp_proptags = {ptbuf_three, (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : std::size(ptbuf_three)};
+	proptag_cspan tmp_proptags = {ptbuf_three, (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ? 3 : std::size(ptbuf_three)};
 	err = pmessage->get_properties(0, tmp_proptags, &tmp_propvals);
 	if (err != ecSuccess)
 		return err;
@@ -426,8 +426,19 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 
 	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
 	ret = cu_send_message(plogon, pmessage, ev_from);
-	if (ret != ecSuccess && ret != ecWarnWithErrors)
+	if (ret != ecSuccess && ret != ecWarnWithErrors) {
 		exmdb_client->clear_submit(dir, pmessage->get_id(), b_unsent);
+
+		auto subject = tmp_propvals.get<const char>(PR_SUBJECT);
+		if (strcasecmp(actor, delegator.c_str()) != 0) {
+			if (repr_grant == repr_grant::send_as)
+				mlog(LV_NOTICE, "gromox-audit: %s sent message \"%s\" as %s via EMSMDB",
+					actor, znul(subject), delegator.c_str());
+			else if (repr_grant == repr_grant::send_on_behalf)
+				mlog(LV_NOTICE, "gromox-audit: %s sent message \"%s\" on behalf of %s via EMSMDB",
+					actor, znul(subject), delegator.c_str());
+		}
+	}
 	else if (!b_delete)
 		pmessage->reload();
 	else
