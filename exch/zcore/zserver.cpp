@@ -79,7 +79,6 @@ static std::chrono::seconds g_cache_interval, g_ping_interval;
 static pthread_t g_scan_id;
 static thread_local USER_INFO *g_info_key;
 static std::mutex g_table_lock, g_notify_lock;
-static std::unordered_map<std::string, int> g_user_table;
 static std::unordered_map<std::string, znotifq> g_notify_table;
 static std::unordered_map<int, USER_INFO> g_session_table;
 
@@ -221,9 +220,7 @@ static void *zcorezs_scanwork(void *param)
 				evicted_list.emplace_back();
 				common_util_build_environment();
 				auto cl_0 = HX::make_scope_exit(common_util_free_environment);
-				auto nd = g_session_table.extract(iter++);
-				g_user_table.erase(pinfo->username);
-				evicted_list.back() = std::move(nd);
+				evicted_list.back() = g_session_table.extract(iter++);
 			} catch (const std::bad_alloc &) {
 				break;
 			}
@@ -547,7 +544,6 @@ void zserver_stop()
 	{ /* silence cov-scan, take locks even in single-thread scenarios */
 		std::lock_guard lk(g_table_lock);
 		g_session_table.clear();
-		g_user_table.clear();
 	}
 	{
 		std::lock_guard lk(g_notify_lock);
@@ -558,19 +554,23 @@ void zserver_stop()
 static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 {
 	char homedir[256];
-	char tmp_name[UADDR_SIZE];
-	auto username = mres.username.c_str();
-	auto pdomain = strchr(username, '@');
+	if (mres.user_id == 0)
+		/* All auth backends resolve the account before we get here. */
+		return ecUnknownUser;
+	int user_id = mres.user_id;
+	auto pdomain = strchr(mres.username.c_str(), '@');
 	if (pdomain == nullptr)
 		return ecUnknownUser;
 	pdomain ++;
-	gx_strlcpy(tmp_name, username, std::size(tmp_name));
-	HX_strlower(tmp_name);
-	std::unique_lock tl_hold(g_table_lock);
-	unsigned int user_id = 0, domain_id = 0, org_id = 0;
-	auto iter = g_user_table.find(tmp_name);
-	if (iter != g_user_table.end()) {
-		user_id = iter->second;
+	std::string login_name;
+	try {
+		login_name = mres.username;
+	} catch (const std::bad_alloc &) {
+		return ecServerOOM;
+	}
+	HX_strlower(login_name.data());
+	{
+		std::unique_lock tl_hold(g_table_lock);
 		auto st_iter = g_session_table.find(user_id);
 		if (st_iter != g_session_table.end()) {
 			auto pinfo = &st_iter->second;
@@ -578,12 +578,8 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 			*phsession = pinfo->hsession;
 			return ecSuccess;
 		}
-		g_user_table.erase(iter);
 	}
-	tl_hold.unlock();
-	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr) ||
-	    !mysql_adaptor_get_homedir(pdomain, homedir, std::size(homedir)) ||
-	    !mysql_adaptor_get_domain_ids(pdomain, &domain_id, &org_id))
+	if (!mysql_adaptor_get_homedir(pdomain, homedir, std::size(homedir)))
 		return ecError;
 	assert(!mres.maildir.empty());
 
@@ -591,12 +587,11 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 	tmp_info.hsession = GUID::random_new();
 	memcpy(tmp_info.hsession.node, &user_id, sizeof(int32_t));
 	tmp_info.user_id = user_id;
-	tmp_info.domain_id = domain_id;
-	tmp_info.org_id = org_id;
+	tmp_info.domain_id = mres.domain_id;
+	tmp_info.org_id = mres.org_id;
 	tmp_info.privbits = mres.privbits;
 	try {
-		tmp_info.username = username;
-		HX_strlower(tmp_info.username.data());
+		tmp_info.username = std::move(login_name);
 		tmp_info.lang = mres.lang;
 		tmp_info.maildir = mres.maildir;
 		tmp_info.homedir = homedir;
@@ -609,11 +604,10 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 	tmp_info.ptree = object_tree_create(tmp_info.maildir.c_str());
 	if (tmp_info.ptree == nullptr)
 		return ecError;
-	tl_hold.lock();
+	std::unique_lock tl_hold(g_table_lock);
 	auto st_iter = g_session_table.find(user_id);
 	if (st_iter != g_session_table.end()) {
-		auto pinfo = &st_iter->second;
-		*phsession = pinfo->hsession;
+		*phsession = st_iter->second.hsession;
 		return ecSuccess;
 	}
 	if (g_session_table.size() >= g_table_size)
@@ -621,16 +615,6 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 	try {
 		st_iter = g_session_table.try_emplace(user_id, std::move(tmp_info)).first;
 	} catch (const std::bad_alloc &) {
-		return ecError;
-	}
-	if (g_user_table.size() >= g_table_size) {
-		g_session_table.erase(user_id);
-		return ecError;
-	}
-	try {
-		g_user_table.try_emplace(tmp_name, user_id);
-	} catch (const std::bad_alloc &) {
-		g_session_table.erase(user_id);
 		return ecError;
 	}
 	*phsession = st_iter->second.hsession;
