@@ -2,10 +2,13 @@
 // SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <chrono>
 #include <climits>
 #include <cstdint>
 #include <cstring>
+#include <mutex>
 #include <tinyxml2.h>
+#include <unordered_map>
 #include <unordered_set>
 #include <variant>
 #include <vector>
@@ -15,6 +18,7 @@
 #include <sys/wait.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/clock.hpp>
+#include <gromox/database.h>
 #include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
@@ -1534,6 +1538,284 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 }
 
 /**
+ * @brief      Per-user cache of open, read-only connections to
+ *             grommunio-web's FTS5 index.
+ *
+ * EWS's FindItem is inherently one call per folder (unlike grommunio-web's
+ * own search, which issues one query covering every folder via a single
+ * "folder_id IN (...)" clause) - Outlook searching "all folders" means
+ * gromox-http receives dozens of FindItem calls in a burst. Opening and
+ * closing index.sqlite3 fresh for every single one of those was found to
+ * cause real, if transient, contention with grommunio-index's periodic
+ * regeneration of the same file ("unable to open database file" on both
+ * sides during a live test, see commit message). Keeping one connection
+ * open per user, reused across calls for the lifetime of this gromox-http
+ * process, removes the repeated open/close churn entirely; a busy_timeout
+ * additionally makes any residual overlap with the reindexer wait briefly
+ * instead of failing outright.
+ *
+ * All access (including the initial open) goes through g_ftsMutex, which
+ * both protects the cache map itself and serializes actual use of each
+ * cached handle - simpler and safer than relying on the system libsqlite3
+ * having been built in "serialized" (thread-safe) mode, at the cost of
+ * queries for the same user not running concurrently (acceptable for a
+ * search feature).
+ *
+ * A failed open (no index for this user yet, e.g. a freshly provisioned
+ * mailbox grommunio-index hasn't indexed) is cached too, so a burst of
+ * FindItem calls across many folders doesn't retry stat()+open() for each
+ * one - but only for kFtsFailedRetryInterval, after which the next query
+ * gets to retry, so a user whose index later appears is picked up without
+ * requiring a gromox-http restart. The cache overall is capped at
+ * kFtsMaxCachedConnections entries, evicting the least-recently-used one
+ * (closing its handle) when a new user needs to be added past that limit -
+ * bounds memory/fd usage across many distinct users on a long-running
+ * process instead of growing forever.
+ */
+static constexpr size_t kFtsMaxCachedConnections = 256;
+static constexpr std::chrono::minutes kFtsFailedRetryInterval(5);
+
+namespace {
+struct FtsConnEntry {
+	sqlite3 *db = nullptr;
+	std::chrono::steady_clock::time_point last_used;
+};
+}
+
+static std::mutex g_ftsMutex;
+static std::unordered_map<std::string, FtsConnEntry> g_ftsConnections;
+
+/**
+ * @brief      Reject a username that could escape the per-user index
+ *             directory (path separators or a literal ".." component).
+ *             Usernames reaching here are already-authenticated primary
+ *             SMTP addresses, so this is defense in depth, not the primary
+ *             access control.
+ */
+static bool ftsUsernameSafe(const std::string &username)
+{
+	return !username.empty() && username.find('/') == std::string::npos &&
+	       username != "." && username != "..";
+}
+
+static sqlite3 *ftsOpen(const std::string &basePath, const std::string &username)
+{
+	auto path = basePath + "/" + username + "/index.sqlite3";
+	sqlite3 *db = nullptr;
+	if (sqlite3_open_v2(path.c_str(), &db, SQLITE_OPEN_READONLY, nullptr) != SQLITE_OK) {
+		if (db != nullptr)
+			sqlite3_close(db);
+		return nullptr;
+	}
+	/* Wait out brief lock contention (e.g. grommunio-index's periodic
+	 * regeneration of this same file) instead of failing immediately. */
+	sqlite3_busy_timeout(db, 5000);
+	return db;
+}
+
+static sqlite3 *ftsGetConnection(const std::string &basePath, const std::string &username)
+{
+	/* Caller already holds g_ftsMutex. */
+	auto now = std::chrono::steady_clock::now();
+	auto it = g_ftsConnections.find(username);
+	if (it != g_ftsConnections.end()) {
+		if (it->second.db != nullptr || now - it->second.last_used < kFtsFailedRetryInterval) {
+			it->second.last_used = now;
+			return it->second.db;
+		}
+		/* Cached failure has aged out - retry below. */
+	} else if (g_ftsConnections.size() >= kFtsMaxCachedConnections) {
+		auto oldest = g_ftsConnections.begin();
+		for (auto e = g_ftsConnections.begin(); e != g_ftsConnections.end(); ++e)
+			if (e->second.last_used < oldest->second.last_used)
+				oldest = e;
+		if (oldest->second.db != nullptr)
+			sqlite3_close(oldest->second.db);
+		g_ftsConnections.erase(oldest);
+	}
+	auto db = ftsOpen(basePath, username);
+	g_ftsConnections[username] = FtsConnEntry{db, now};
+	return db;
+}
+
+/**
+ * @brief      Query grommunio-web's per-user FTS5 index for candidate
+ *             message IDs in one folder.
+ *
+ * gromox's own content-restriction evaluation (RESTRICTION_CONTENT::eval())
+ * is a per-row strstr()/strcasestr() scan with no text index at all.
+ * grommunio-web never uses that path for its own search UI - it queries a
+ * separate, already-existing per-user SQLite FTS5 index (maintained by the
+ * grommunio-index package/timer) directly. This is the shared query part of
+ * doing the same for EWS.
+ *
+ * @param      basePath   Base directory of the per-user index
+ *                         (ews.cfg:ews_fts_index_path); empty disables the
+ *                         acceleration entirely
+ * @param      username   Requesting user's primary SMTP address (matches the
+ *                         per-user index directory name)
+ * @param      folderId   Folder to scope the search to (EWS/MAPI-form eid,
+ *                         not yet unwrapped to the store-internal folder id),
+ *                         or 0 to search the whole mailbox
+ * @param      ftsQuery   Already-formatted FTS5 MATCH expression
+ * @param[out] ids        Candidate PidTagMid values found (cleared first)
+ *
+ * @return     false if the index could not be opened/queried at all (caller
+ *             should leave the original restriction/behavior untouched);
+ *             true otherwise, including when `ids` ends up empty (a
+ *             genuine "no matches" result, not a fallback signal).
+ */
+static bool ftsQueryIndex(const std::string &basePath, const char *username,
+    uint64_t folderId, const std::string &ftsQuery, std::vector<uint64_t> &ids)
+{
+	ids.clear();
+	if (basePath.empty() || username == nullptr || !ftsUsernameSafe(username))
+		return false;
+	std::lock_guard<std::mutex> lk(g_ftsMutex);
+	sqlite3 *db = ftsGetConnection(basePath, username);
+	if (db == nullptr)
+		return false;
+
+	auto stmt = gx_sql_prep(db, folderId != 0 ?
+		"SELECT c.message_id FROM msg_content c "
+		"JOIN messages ON messages.rowid = c.message_id "
+		"WHERE messages MATCH ? AND c.folder_id = ? LIMIT 500" :
+		"SELECT c.message_id FROM msg_content c "
+		"JOIN messages ON messages.rowid = c.message_id "
+		"WHERE messages MATCH ? LIMIT 500");
+	if (stmt == nullptr)
+		return false;
+	stmt.bind_text(1, ftsQuery);
+	if (folderId != 0)
+		stmt.bind_int64(2, rop_util_get_gc_value(eid_t(folderId)));
+	while (stmt.step() == SQLITE_ROW)
+		ids.push_back(stmt.col_uint64(0));
+	return true;
+}
+
+/**
+ * @brief      Turn a list of PidTagMid values into a RES_OR-of-RES_PROPERTY
+ *             restriction, reusing already-implemented, already-correct
+ *             restriction node types (no new evaluation logic needed).
+ *             An empty list is a valid restriction that matches nothing.
+ */
+static RESTRICTION *ftsIdsToRestriction(const std::vector<uint64_t> &ids)
+{
+	auto orRes = EWSContext::construct<RESTRICTION>();
+	orRes->rt = mapi_rtype::r_or;
+	orRes->andor = EWSContext::construct<RESTRICTION_AND_OR>();
+	orRes->andor->count = ids.size();
+	orRes->andor->pres = EWSContext::alloc<RESTRICTION>(ids.size());
+	for (size_t i = 0; i < ids.size(); ++i) {
+		auto &r = orRes->andor->pres[i];
+		r.rt = mapi_rtype::property;
+		r.prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+		r.prop->relop = RELOP_EQ;
+		r.prop->proptag = PidTagMid;
+		r.prop->propval.proptag = PidTagMid;
+		r.prop->propval.pvalue = EWSContext::construct<uint64_t>(ids[i]);
+	}
+	return orRes;
+}
+
+/**
+ * @brief      PROTOTYPE: accelerate a simple subject Contains restriction.
+ *
+ * Deliberately narrow for a first prototype:
+ * - only a single RES_CONTENT node directly on PR_SUBJECT is accelerated;
+ *   anything else (AND/OR trees, body/attachment search, ...) falls back
+ *   to the original restriction unchanged.
+ * - only FL_FULLSTRING and FL_PREFIX are accelerated. FL_SUBSTRING is
+ *   deliberately excluded: EWS's "Substring" mode expects an arbitrary,
+ *   mid-word substring match, which FTS5's token/prefix matching (prefix
+ *   indexed at 3/5/7 characters) cannot reproduce exactly - accelerating
+ *   it would silently change search semantics rather than just speed.
+ * - any failure (index missing for this user, query error, ...) returns
+ *   nullptr so the caller transparently falls back to the slow-but-correct
+ *   original restriction - this must never be a source of new errors.
+ *
+ * @return     A replacement restriction, or nullptr if the fast path does
+ *             not apply and `orig` should be used unmodified.
+ */
+static RESTRICTION *ftsAccelerateSubjectContains(const RESTRICTION *orig,
+    const std::string &basePath, const char *username, uint64_t folderId)
+{
+	if (orig == nullptr || orig->rt != mapi_rtype::content)
+		return nullptr;
+	auto rcon = orig->cont;
+	if (rcon->proptag != PR_SUBJECT)
+		return nullptr;
+	auto level = rcon->fuzzy_level & 0xFFFF;
+	if (level != FL_FULLSTRING && level != FL_PREFIX)
+		return nullptr;
+	auto text = static_cast<const char *>(rcon->propval.pvalue);
+	if (text == nullptr || *text == '\0')
+		return nullptr;
+
+	/* FTS5 query syntax: a double-quoted phrase, doubling embedded quotes;
+	 * a trailing '*' requests prefix matching on the last token. Restrict
+	 * to the subject column specifically, to match "Contains on Subject". */
+	std::string ftsQuery = "subject:\"";
+	for (const char *p = text; *p != '\0'; ++p) {
+		ftsQuery += *p;
+		if (*p == '"')
+			ftsQuery += '"';
+	}
+	ftsQuery += '"';
+	if (level == FL_PREFIX)
+		ftsQuery += '*';
+
+	std::vector<uint64_t> ids;
+	if (!ftsQueryIndex(basePath, username, folderId, ftsQuery, ids))
+		return nullptr;
+	mlog(LV_DEBUG, "ews: fts subject %s \"%s\" folder=%llu -> %zu candidate(s)",
+	     level == FL_PREFIX ? "prefix" : "fullstring", text,
+	     static_cast<unsigned long long>(folderId), ids.size());
+	return ftsIdsToRestriction(ids);
+}
+
+/**
+ * @brief      Implement Outlook's Instant Search box (the AQS `QueryString`
+ *             element on FindItem) via the FTS index.
+ *
+ * QueryString was previously entirely unparsed for FindItem (the schema
+ * element existed only as a comment) - gromox silently ignored it and
+ * returned the folder's unfiltered contents, which Outlook then displayed
+ * as if they were search results. This is not full AQS support (no
+ * `subject:`/`from:` field-scoping, no boolean operators beyond what
+ * FTS5's own MATCH syntax happens to accept) - it treats the whole string
+ * as one phrase searched across every indexed column (sender, recipients,
+ * subject, content, attachments), which is what most real searches are.
+ *
+ * On any failure (no index for this user, query error) returns nullptr, in
+ * which case the caller leaves the request unrestricted - i.e. the exact
+ * previous (silently-broken, "shows everything") behavior, not worse than
+ * before. On a successful query with zero matches, returns a real
+ * empty-match restriction, so the user correctly sees "no results" instead
+ * of an unfiltered folder listing.
+ */
+static RESTRICTION *ftsSearchQueryString(const std::string &query,
+    const std::string &basePath, const char *username, uint64_t folderId)
+{
+	if (query.empty())
+		return nullptr;
+	std::string ftsQuery = "\"";
+	for (char c : query) {
+		ftsQuery += c;
+		if (c == '"')
+			ftsQuery += '"';
+	}
+	ftsQuery += '"';
+
+	std::vector<uint64_t> ids;
+	if (!ftsQueryIndex(basePath, username, folderId, ftsQuery, ids))
+		return nullptr;
+	mlog(LV_DEBUG, "ews: fts querystring \"%s\" folder=%llu -> %zu candidate(s)",
+	     query.c_str(), static_cast<unsigned long long>(folderId), ids.size());
+	return ftsIdsToRestriction(ids);
+}
+
+/**
  * @brief      Process FindItem
  *
  * @param      request   Request data
@@ -1571,6 +1853,12 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 		if (dir != lastDir) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
 			auto res1 = request.Restriction ? request.Restriction->build(getId) : nullptr;
+			auto &ftsPath = ctx.plugin().fts_index_path;
+			if (auto fast = ftsAccelerateSubjectContains(res1, ftsPath, ctx.auth_info().username, folder.folderId))
+				res1 = fast;
+			if (request.QueryString)
+				if (auto qres = ftsSearchQueryString(*request.QueryString, ftsPath, ctx.auth_info().username, folder.folderId))
+					res1 = qres;
 			auto res2 = paging ? paging->restriction(getId) : nullptr;
 			res = tRestriction::all(res1, res2);
 			sort = request.SortOrder ? tFieldOrder::build(*request.SortOrder, getId) : nullptr;

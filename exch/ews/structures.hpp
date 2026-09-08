@@ -3548,7 +3548,12 @@ struct mFindItemRequest {
 	std::optional<std::vector<tFieldOrder>> SortOrder;
 	//<xs:element name="SortOrder" type="t:NonEmptyArrayOfFieldOrdersType" minOccurs="0"/>
 	std::vector<sFolderId> ParentFolderIds;
-	//<xs:element name="QueryString" type="m:QueryStringType" minOccurs="0" maxOccurs="1"/>
+	std::optional<std::string> QueryString; // AQS text query (Outlook's Instant Search box).
+	// PROTOTYPE: not a general AQS parser - only used to accelerate a plain
+	// text query via the grommunio-web FTS index, see requests.cpp. Was
+	// previously unparsed entirely (schema element existed only in a
+	// comment), so Outlook's search box silently returned the folder's
+	// unfiltered contents.
 	Enum::ItemQueryTraversalType Traversal; // Attribute
 };
 
