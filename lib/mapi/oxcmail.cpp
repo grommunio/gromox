@@ -3950,15 +3950,16 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 	
 	auto pctime = pattachment->proplist.get<uint64_t>(PR_CREATION_TIME);
 	auto pmtime = pattachment->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
-	std::string ostr = b_inline ? "inline; " : "attachment; ";
+	std::string ostr = b_inline ? "inline" : "attachment";
 	if (pfile_name != nullptr)
-		ostr += "filename=\"" + enc_text(pfile_name) + "\";\r\n\t";
+		ostr += "; filename=\"" + enc_text(pfile_name) + "\"";
 	if (pctime != nullptr) {
 		auto tmp_time = rop_util_nttime_to_unix(*pctime);
 		if (gmtime_r(&tmp_time, &time_buff) != nullptr) {
 			char buf[64];
 			strftime(buf, std::size(buf),
-				"creation-date=\"%a, %d %b %Y %H:%M:%S GMT\";\r\n\t",
+				";\r\n\tcreation-date="
+				"\"%a, %d %b %Y %H:%M:%S GMT\"",
 				&time_buff);
 			ostr += buf;
 		}
@@ -3968,7 +3969,8 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 		if (gmtime_r(&tmp_time, &time_buff) != nullptr) {
 			char buf[64];
 			strftime(buf, std::size(buf),
-				"modification-date=\"%a, %d %b %Y %H:%M:%S GMT\"",
+				";\r\n\tmodification-date="
+				"\"%a, %d %b %Y %H:%M:%S GMT\"",
 				&time_buff);
 			ostr += buf;
 		}
