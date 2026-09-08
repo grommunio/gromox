@@ -574,9 +574,23 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 		auto st_iter = g_session_table.find(user_id);
 		if (st_iter != g_session_table.end()) {
 			auto pinfo = &st_iter->second;
-			pinfo->last_query_at = tp_now();
-			*phsession = pinfo->hsession;
-			return ecSuccess;
+			/*
+			 * A rename leaves the session and the store objects in
+			 * its object tree on the old name.
+			 */
+			if (pinfo->username == login_name ||
+			    pinfo->reference != 0) {
+				pinfo->last_query_at = tp_now();
+				*phsession = pinfo->hsession;
+				return ecSuccess;
+			}
+			mlog(LV_NOTICE, "zs_logon: user %d was renamed from "
+				"<%s> to <%s>. Dropping the prior session.",
+				user_id, pinfo->username.c_str(),
+				login_name.c_str());
+			auto nd = g_session_table.extract(st_iter);
+			tl_hold.unlock();
+			/* ~USER_INFO emits EXRPCs, do that outside of locked regions */
 		}
 	}
 	if (!mysql_adaptor_get_homedir(pdomain, homedir, std::size(homedir)))
