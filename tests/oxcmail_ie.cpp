@@ -694,6 +694,61 @@ static int openpgp_roundtrip()
 	return EXIT_SUCCESS;
 }
 
+static int openpgp_legacy_layout()
+{
+	/*
+	 * Older converters stored OpenPGP parts as body and attachments. GpgOL
+	 * still reclasses such messages, which must then export as regular
+	 * mail instead of the OXOSMIME placeholder.
+	 */
+	static constexpr struct {
+		const char *mclass, *data, *marker;
+		unsigned int attachments;
+	} cases[] = {
+		{"IPM.Note.GpgOL.MultipartSigned",
+		 "From: sender@example.org\r\nTo: recipient@example.org\r\n"
+		 "Subject: legacy signed\r\nMIME-Version: 1.0\r\n"
+		 "Content-Type: multipart/mixed; boundary=\"legacy\"\r\n\r\n"
+		 "--legacy\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n"
+		 "Signed body text\r\n"
+		 "--legacy\r\nContent-Type: application/pgp-signature; name=\"signature.asc\"\r\n"
+		 "Content-Disposition: attachment; filename=\"signature.asc\"\r\n\r\n"
+		 "-----BEGIN PGP SIGNATURE-----\r\n\r\nopaque-signature\r\n-----END PGP SIGNATURE-----\r\n"
+		 "--legacy--\r\n", "Signed body text", 1},
+		{"IPM.Note.GpgOL.MultipartEncrypted",
+		 "From: sender@example.org\r\nTo: recipient@example.org\r\n"
+		 "Subject: legacy encrypted\r\nMIME-Version: 1.0\r\n"
+		 "Content-Type: multipart/mixed; boundary=\"legacy\"\r\n\r\n"
+		 "--legacy\r\nContent-Type: application/pgp-encrypted; name=\"version.asc\"\r\n"
+		 "Content-Disposition: attachment; filename=\"version.asc\"\r\n\r\nVersion: 1\r\n"
+		 "--legacy\r\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\r\n"
+		 "Content-Disposition: attachment; filename=\"encrypted.asc\"\r\n\r\n"
+		 "-----BEGIN PGP MESSAGE-----\r\n\r\nopaque-ciphertext\r\n-----END PGP MESSAGE-----\r\n"
+		 "--legacy--\r\n", "encrypted.asc", 2},
+	};
+	for (const auto &c : cases) {
+		MAIL source;
+		assert(source.refonly_parse(c.data, strlen(c.data)));
+		oxcmail_converter cvt;
+		cvt.alloc = g_alloc;
+		cvt.get_propids = ee_get_propids;
+		auto mc = cvt.inet_to_mapi(source);
+		assert(mc != nullptr);
+		auto atl = mc->children.pattachments;
+		assert(atl != nullptr && atl->count == c.attachments);
+		assert(mc->proplist.set(PR_MESSAGE_CLASS, c.mclass) == ecSuccess);
+		MAIL output;
+		assert(cvt.mapi_to_inet(*mc, output));
+		auto head = output.get_head();
+		assert(head != nullptr && strcasecmp(head->content_type, "multipart/mixed") == 0);
+		std::string text;
+		assert(output.to_str(text) == 0);
+		assert(text.find("[Message is not a valid OXOSMIME message") == std::string::npos);
+		assert(text.find(c.marker) != std::string::npos);
+	}
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	textmaps_init(getenv("GROMOX_TEST_DATA"));
@@ -709,7 +764,8 @@ int main()
 	for (auto fct : {excess_attachment, select_parts_1, select_parts_1a,
 	     select_parts_2, select_parts_3, select_parts_4, select_parts_5,
 	     select_parts_6, select_parts_7,
-	     ical_export_1, ical_export_2, hdrparse_1, openpgp_roundtrip})
+	     ical_export_1, ical_export_2, hdrparse_1, openpgp_roundtrip,
+	     openpgp_legacy_layout})
 		if (fct() != EXIT_SUCCESS)
 			ret = EXIT_FAILURE;
 	return ret;

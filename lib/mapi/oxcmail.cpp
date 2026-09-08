@@ -2355,6 +2355,32 @@ static bool openpgp_mime(const char *head_ct, const MIME *head)
 	        strcasecmp(protocol.c_str(), "application/pgp-encrypted") == 0);
 }
 
+static bool gpgol_class(const char *cls)
+{
+	return class_match_prefix(cls, "IPM.Note.GpgOL.MultipartEncrypted") == 0 ||
+	       class_match_prefix(cls, "IPM.Note.GpgOL.MultipartSigned") == 0 ||
+	       class_match_prefix(cls, "IPM.Note.InfoPathForm.GpgOL") == 0 ||
+	       class_match_prefix(cls, "IPM.Note.InfoPathForm.GpgOLS") == 0;
+}
+
+/**
+ * Parse the sole attachment of an OXOSMIME-style message as the MIME entity
+ * it stores. Returns nullptr when the message does not have that layout.
+ */
+static std::unique_ptr<MIME> envelope_entity(const MESSAGE_CONTENT &msg)
+{
+	auto atl = msg.children.pattachments;
+	if (atl == nullptr || atl->count != 1 || atl->pplist[0] == nullptr)
+		return nullptr;
+	auto bin = atl->pplist[0]->proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
+	if (bin == nullptr)
+		return nullptr;
+	auto entity = MIME::create();
+	if (entity == nullptr || !entity->load_from_str(nullptr, bin->pc, bin->cb))
+		return nullptr;
+	return entity;
+}
+
 static bool smime_clearsigned(const char *head_ct, const MIME *head)
 {
 	if (strcasecmp(head_ct, "multipart/signed") != 0)
@@ -3024,6 +3050,20 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		pskeleton->pmessage_class = "IPM.Note";
 	pskeleton->mail_type = oxcmail_get_mail_type(
 						pskeleton->pmessage_class);
+	if (pskeleton->mail_type == oxcmail_type::xsigned &&
+	    gpgol_class(pskeleton->pmessage_class)) {
+		/*
+		 * GpgOL reclasses received messages irrespective of how they
+		 * were stored. Only a message keeping the complete entity in its
+		 * single attachment can be exported as that entity; a body plus
+		 * signature/ciphertext attachments is a regular message.
+		 */
+		auto ent = envelope_entity(*pmsg);
+		if (ent == nullptr ||
+		    (strcasecmp(ent->content_type, "multipart/signed") != 0 &&
+		    !openpgp_mime(ent->content_type, ent.get())))
+			pskeleton->mail_type = oxcmail_type::normal;
+	}
 	if (pskeleton->mail_type == oxcmail_type::xsigned ||
 	    pskeleton->mail_type == oxcmail_type::encrypted)
 		if (b_tnef)
@@ -3238,13 +3278,9 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 	/* OpenPGP's inner entity omits Bcc, and the outer SMTP headers must
 	 * omit it as well. Keep the MAPI recipient table for envelope delivery
 	 * and the sender's Sent Items; do not rely on the next MTA to strip it. */
-	if (pskeleton->mail_type == oxcmail_type::xsigned &&
-	    pmsg->children.pattachments != nullptr && pmsg->children.pattachments->count == 1) {
-		auto bin = pmsg->children.pattachments->pplist[0]->proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
-		auto entity = MIME::create();
-		if (bin != nullptr && entity != nullptr &&
-		    entity->load_from_str(nullptr, bin->pc, bin->cb) &&
-		    openpgp_mime(entity->content_type, entity.get()))
+	if (pskeleton->mail_type == oxcmail_type::xsigned) {
+		auto ent = envelope_entity(*pmsg);
+		if (ent != nullptr && openpgp_mime(ent->content_type, ent.get()))
 			return true;
 	}
 	mblist = vmime::make_shared<vmime::mailboxList>();
