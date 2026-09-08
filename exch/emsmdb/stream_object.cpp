@@ -88,7 +88,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		pstream->content_bin.pv = malloc(bv->cb);
 		if (pstream->content_bin.pv == nullptr)
 			return NULL;
-		memcpy(pstream->content_bin.pv, bv->pv, bv->cb);
+		if (bv->cb > 0)
+			memcpy(pstream->content_bin.pv, bv->pv, bv->cb);
 		return pstream;
 	}
 	case PT_STRING8: {
