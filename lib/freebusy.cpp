@@ -312,12 +312,11 @@ static int goid_to_icaluid2(const BINARY *gobj, std::string &uid_buf) try
 	ext_pull.init(gobj->pb, gobj->cb, malloc, 0);
 	if (ext_pull.g_goid(&ngid) != pack_result::ok)
 		return -EIO;
-	static_assert(sizeof(ThirdPartyGlobalId) == 12);
-	if (ngid.data.cb >= 12 && memcmp(ngid.data.pc, ThirdPartyGlobalId, 12) == 0) {
-		auto m = ngid.data.cb - 12;
-		if (m > 255)
-			m = 255;//check if this is the typical boundary(OXFB)
-		uid_buf.assign(&ngid.data.pc[12], m);
+	auto tp_uid = ngid.third_party_uid();
+	if (!tp_uid.empty()) {
+		if (tp_uid.size() > 255)
+			tp_uid.resize(255);//check if this is the typical boundary(OXFB)
+		uid_buf = std::move(tp_uid);
 		return 1;
 	}
 

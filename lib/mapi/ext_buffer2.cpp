@@ -423,3 +423,15 @@ pack_result EXT_PUSH::p_eid_a(std::span<const eid_t> r, uint8_t ix)
 		TRY(p_uint64(eid.m_value));
 	return pack_result::ok;
 }
+
+std::string GLOBALOBJECTID::third_party_uid() const
+{
+	static_assert(sizeof(ThirdPartyGlobalId) == 12);
+	if (data.pb == nullptr || data.cb <= 12 ||
+	    memcmp(data.pb, ThirdPartyGlobalId, 12) != 0)
+		return {};
+	size_t len = data.cb - 12;
+	while (len > 0 && data.pc[12+len-1] == '\0')
+		--len;
+	return std::string(&data.pc[12], len);
+}

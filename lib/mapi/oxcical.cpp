@@ -3631,9 +3631,9 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 	ext_pull.init(bin->pb, bin->cb, alloc, 0);
 	if (ext_pull.g_goid(&goid) != pack_result::ok)
 		return oxcical_export_uidx(com);
-	if (goid.data.pb != nullptr && goid.data.cb >= 12 &&
-	    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0) {
-		com.append_line("UID", std::string(&goid.data.pc[12], goid.data.cb - 12));
+	auto tp_uid = goid.third_party_uid();
+	if (!tp_uid.empty()) {
+		com.append_line("UID", std::move(tp_uid));
 		return nullptr;
 	}
 
