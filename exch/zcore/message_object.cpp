@@ -829,8 +829,11 @@ static ec_error_t message_object_set_properties_internal(message_object *pmessag
 		tmp_problems.transform(poriginal_indices);
 		problems += std::move(tmp_problems);
 	}
-	if (pmessage->b_new || pmessage->message_id == 0)
+	if (pmessage->b_new || pmessage->message_id == 0) {
+		/* save() flushes nothing otherwise; emsmdb marks it here too */
+		pmessage->b_touched = TRUE;
 		return ecSuccess;
+	}
 
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		if (problems.have_index(i))
@@ -890,8 +893,11 @@ ec_error_t message_object::remove_properties(proptag_cspan pproptags) try
 		tmp_problems.transform(poriginal_indices);
 		problems += std::move(tmp_problems);
 	}
-	if (pmessage->b_new || pmessage->message_id == 0)
+	if (pmessage->b_new || pmessage->message_id == 0) {
+		/* as in set_properties */
+		pmessage->b_touched = TRUE;
 		return ecSuccess;
+	}
 
 	for (unsigned int i = 0; i < pproptags.size(); ++i) {
 		if (problems.have_index(i))
