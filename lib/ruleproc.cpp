@@ -1126,7 +1126,7 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 	auto &svreid = *static_cast<const SVREID *>(mc.pfolder_eid);
 	auto dst_fid = svreid.folder_id;
 	BOOL exist = false;
-	if (rop_util_get_replid(dst_fid) == 1 &&
+	if (eid_t(dst_fid).replid() == 1 &&
 	    !exmdb_client->is_folder_present(par.cur.dirc(), dst_fid, &exist))
 		return ecRpcFailed;
 	if (!exist) {

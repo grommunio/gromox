@@ -2109,7 +2109,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
-	if (rop_util_get_replid(pparent->folder_id) != 1 ||
+	if (eid_t(pparent->folder_id).replid() != 1 ||
 	    pparent->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto pstore = pparent->pstore;
@@ -2240,7 +2240,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	} else {
-		if (1 == rop_util_get_replid(folder_id) &&
+		if (eid_t(folder_id).replid() == 1 &&
 		    rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	}

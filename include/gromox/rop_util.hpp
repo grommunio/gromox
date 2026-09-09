@@ -19,7 +19,6 @@ namespace gromox {
 using mapitime_point = std::chrono::sys_time<std::chrono::duration<int64_t, std::ratio<1, 10'000'000>>>;
 }
 
-extern GX_EXPORT uint16_t rop_util_get_replid(eid_t);
 extern GX_EXPORT uint64_t rop_util_get_gc_value(eid_t);
 extern GX_EXPORT GLOBCNT rop_util_get_gc_array(eid_t);
 extern GX_EXPORT GLOBCNT rop_util_value_to_gc(uint64_t);

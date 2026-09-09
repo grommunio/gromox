@@ -379,8 +379,6 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
    uint16_t notification_type, BOOL b_whole, uint64_t folder_id,
    uint64_t message_id, uint32_t *psub_id) try
 {
-	uint16_t replid;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
@@ -401,7 +399,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	} else if (exmdb_server::is_private()) {
 		pnsub->folder_id = rop_util_get_gc_value(folder_id);
 	} else {
-		replid = rop_util_get_replid(folder_id);
+		auto replid = eid_t(folder_id).replid();
 		if (1 == replid) {
 			pnsub->folder_id = rop_util_get_gc_value(folder_id);
 		} else {

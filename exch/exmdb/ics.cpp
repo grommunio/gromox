@@ -610,13 +610,10 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id) try
 {
 	auto pparam = static_cast<ENUM_PARAM *>(vparam);
-	uint16_t replid;
-	uint64_t fid_val;
-	
 	if (!pparam->b_result)
 		return;
-	replid = rop_util_get_replid(folder_id);
-	fid_val = rop_util_get_gc_value(folder_id);
+	auto replid  = eid_t(folder_id).replid();
+	auto fid_val = eid_t(folder_id).gcv();
 	if (replid != 1)
 		fid_val |= ((uint64_t)replid) << 48;
 	sqlite3_reset(pparam->stm_exist);

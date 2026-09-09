@@ -400,7 +400,7 @@ ec_error_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 		return ecNotSupported;
 	*plong_term_id = {};
 	plong_term_id->global_counter = rop_util_get_gc_array(id);
-	return replid_to_replguid(*plogon, rop_util_get_replid(id), plong_term_id->guid);
+	return replid_to_replguid(*plogon, eid_t(id).replid(), plong_term_id->guid);
 }	
 
 ec_error_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,

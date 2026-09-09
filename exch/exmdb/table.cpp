@@ -2571,10 +2571,10 @@ BOOL exmdb_server::locate_table(const char *dir,
 	}
 	switch (ptnode->type) {
 	case table_type::hierarchy:
-		if (1 == rop_util_get_replid(inst_id)) {
+		if (eid_t(inst_id).replid() == 1) {
 			inst_id = rop_util_get_gc_value(inst_id);
 		} else {
-			inst_id = rop_util_get_replid(inst_id);
+			inst_id = eid_t(inst_id).replid();
 			inst_id <<= 48;
 			inst_id |= rop_util_get_gc_value(inst_id);
 		}
@@ -2582,7 +2582,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 		          "WHERE folder_id=%llu", ptnode->table_id, LLU{inst_id});
 		break;
 	case table_type::content:
-		inst_id = rop_util_get_replid(inst_id) == 1 ?
+		inst_id = eid_t(inst_id).replid() == 1 ?
 		          rop_util_get_gc_value(inst_id) :
 		          rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, row_type "
@@ -2624,10 +2624,10 @@ static bool read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 	uint64_t folder_id;
 	char sql_string[1024];
 
-	if (1 == rop_util_get_replid(inst_id)) {
+	if (eid_t(inst_id).replid() == 1) {
 		folder_id = rop_util_get_gc_value(inst_id);
 	} else {
-		folder_id = rop_util_get_replid(inst_id);
+		folder_id = eid_t(inst_id).replid();
 		folder_id <<= 48;
 		folder_id |= rop_util_get_gc_value(inst_id);
 	}
@@ -2687,7 +2687,7 @@ static bool read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	int row_type;
 	char sql_string[1024];
 
-	inst_id = rop_util_get_replid(inst_id) == 1 ?
+	inst_id = eid_t(inst_id).replid() == 1 ?
 		  rop_util_get_gc_value(inst_id) :
 		  rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
 	snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u"
@@ -3071,7 +3071,7 @@ BOOL exmdb_server::expand_table(const char *dir,
 		return TRUE;
 	}
 	if (ptnode->type != table_type::content ||
-		2 != rop_util_get_replid(inst_id)) {
+	    eid_t(inst_id).replid() != 2) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
@@ -3181,7 +3181,7 @@ BOOL exmdb_server::collapse_table(const char *dir,
 		return TRUE;
 	}
 	if (ptnode->type != table_type::content ||
-		2 != rop_util_get_replid(inst_id)) {
+	    eid_t(inst_id).replid() != 2) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
@@ -3384,7 +3384,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
 		}
-		if (1 != rop_util_get_replid(inst_id)) {
+		if (eid_t(inst_id).replid() != 1) {
 			auto sql_string = fmt::format("UPDATE "
 				"state_info SET message_id=NULL, "
 				"inst_num=NULL WHERE state_id={}",
@@ -3393,7 +3393,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 				return FALSE;
 		}
 	}
-	if (1 == rop_util_get_replid(inst_id)) {
+	if (eid_t(inst_id).replid() == 1) {
 		auto sql_string = fmt::format("UPDATE "
 			"state_info SET message_id={}, "
 			"inst_num={} WHERE state_id={}",
@@ -3472,7 +3472,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	auto stm_sel_vtx = pdb->eph_prep(sql_string);
 	if (stm_sel_vtx == nullptr)
 		return FALSE;
-	uint64_t inst_id1 = rop_util_get_replid(inst_id) == 2 ?
+	uint64_t inst_id1 = eid_t(inst_id).replid() == 2 ?
 	                    rop_util_get_gc_value(inst_id) | 0x100000000000000ULL : 0;
 
 	while (pstmt.step() == SQLITE_ROW) {

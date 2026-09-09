@@ -27,11 +27,6 @@ static constexpr nt_dur nt_offset = std::chrono::seconds(TIME_FIXUP_CONSTANT_INT
 
 using namespace gromox;
 
-uint16_t rop_util_get_replid(eid_t eid)
-{
-	return eid & 0xFFFF;
-}
-
 /**
  * The reverse of rop_util_make_eid, see there for details.
  */

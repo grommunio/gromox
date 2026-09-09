@@ -631,7 +631,7 @@ static int t_eidcvt()
 	ep.init(network_input, sizeof(network_input), malloc, 0);
 	uint64_t eid = 0;
 	ep.g_uint64(&eid);
-	assert(rop_util_get_replid(eid) == 2);
+	assert(eid_t(eid).replid() == 2);
 	assert(rop_util_get_gc_value(eid) == 0x1fffe);
 	auto gc = rop_util_get_gc_array(eid);
 	assert(memcmp(gc.ab, &network_input[2], 6) == 0);

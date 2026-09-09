@@ -215,7 +215,7 @@ BINARY *cu_fid_to_entryid(const logon_object &logon, uint64_t folder_id)
 	
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = logon.mailbox_guid;
-	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(logon, eid_t(folder_id).replid(),
 	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
 	tmp_entryid.eid_type  = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
@@ -241,7 +241,7 @@ std::string cu_fid_to_entryid_s(const logon_object &logon, uint64_t folder_id) t
 {
 	FOLDER_ENTRYID eid{};
 	eid.provider_uid = logon.mailbox_guid;
-	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(logon, eid_t(folder_id).replid(),
 	    eid.folder_dbguid) != ecSuccess)
 		return {};
 	eid.eid_type  = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
@@ -271,7 +271,7 @@ BINARY *cu_fid_to_sk(const logon_object &logon, uint64_t folder_id)
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(logon, eid_t(folder_id).replid(),
 	    longid.guid) != ecSuccess)
 		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
@@ -289,7 +289,7 @@ BINARY *cu_fid_to_sk(const logon_object &logon, uint64_t folder_id)
 std::string cu_fid_to_sk_s(const logon_object &logon, uint64_t folder_id) try
 {
 	LONG_TERM_ID longid;
-	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(logon, eid_t(folder_id).replid(),
 	    longid.guid) != ecSuccess)
 		return {};
 	longid.global_counter = rop_util_get_gc_array(folder_id);
@@ -315,10 +315,10 @@ BINARY *cu_mid_to_entryid(const logon_object &logon,
 	
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = logon.mailbox_guid;
-	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(logon, eid_t(folder_id).replid(),
 	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
-	if (replid_to_replguid(logon, rop_util_get_replid(message_id),
+	if (replid_to_replguid(logon, eid_t(message_id).replid(),
 	    tmp_entryid.message_dbguid) != ecSuccess)
 		return nullptr;
 	tmp_entryid.eid_type   = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
@@ -348,10 +348,10 @@ std::string cu_mid_to_entryid_s(const logon_object &logon, uint64_t folder_id,
 {
 	MESSAGE_ENTRYID eid{};
 	eid.provider_uid = logon.mailbox_guid;
-	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(logon, eid_t(folder_id).replid(),
 	    eid.folder_dbguid) != ecSuccess)
 		return {};
-	if (replid_to_replguid(logon, rop_util_get_replid(msg_id),
+	if (replid_to_replguid(logon, eid_t(msg_id).replid(),
 	    eid.message_dbguid) != ecSuccess)
 		return {};
 	eid.eid_type   = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;

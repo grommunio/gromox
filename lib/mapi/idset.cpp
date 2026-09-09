@@ -49,7 +49,7 @@ BOOL idset::register_mapping(void *p, REPLICA_MAPPING m)
 BOOL idset::append(uint64_t eid)
 {
 	auto x = rop_util_get_gc_value(eid);
-	return append_range(rop_util_get_replid(eid), x, x);
+	return append_range(eid_t(eid).replid(), x, x);
 }
 
 BOOL idset::append_range(uint16_t replid,
@@ -72,7 +72,7 @@ void idset::remove(uint64_t eid) try
 {
 	if (packed())
 		return;
-	auto replid = rop_util_get_replid(eid);
+	auto replid = eid_t(eid).replid();
 	auto value = rop_util_get_gc_value(eid);
 	auto prepl_node = std::find_if(repl_list.begin(), repl_list.end(),
 	                  [&](const repl_node &n) { return n.replid == replid; });
@@ -103,7 +103,7 @@ bool idset::contains(uint64_t eid) const
 	
 	if (pset->repl_type == idset::type::guid_packed)
 		return FALSE;	
-	auto replid = rop_util_get_replid(eid);
+	auto replid = eid_t(eid).replid();
 	auto value = rop_util_get_gc_value(eid);
 	auto prepl_node = std::find_if(repl_list.begin(), repl_list.end(),
 	                  [&](const repl_node &n) { return n.replid == replid; });

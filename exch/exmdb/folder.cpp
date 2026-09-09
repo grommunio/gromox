@@ -290,7 +290,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	*pfolder_id = 0;
 	auto parent_fid_p = pproperties->get<const eid_t>(PidTagParentFolderId);
 	*errcode = ecInvalidParam;
-	if (parent_fid_p == nullptr || rop_util_get_replid(*parent_fid_p) != 1) {
+	if (parent_fid_p == nullptr || parent_fid_p->replid() != 1) {
 		mlog(LV_ERR, "E-1581: create_folder_b_p request with no parent or wrong EID");
 		return TRUE;
 	}

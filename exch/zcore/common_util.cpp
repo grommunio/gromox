@@ -665,7 +665,7 @@ BINARY *cu_fid_to_entryid(const store_object &store, uint64_t folder_id)
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, eid_t(folder_id).replid(),
 	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
 	if (store.b_private) {
@@ -696,7 +696,7 @@ BINARY *cu_fid_to_entryid(const store_object &store, uint64_t folder_id)
 std::string cu_fid_to_entryid_s(const store_object &store, uint64_t folder_id) try
 {
 	FOLDER_ENTRYID eid{};
-	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, eid_t(folder_id).replid(),
 	    eid.folder_dbguid) != ecSuccess)
 		return {};
 	if (store.b_private) {
@@ -733,7 +733,7 @@ BINARY *cu_fid_to_sk(const store_object &store, uint64_t folder_id)
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, eid_t(folder_id).replid(),
 	    longid.guid) != ecSuccess)
 		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
@@ -752,7 +752,7 @@ std::string cu_fid_to_sk_s(const store_object &store, uint64_t folder_id) try
 {
 	LONG_TERM_ID longid;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
-	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, eid_t(folder_id).replid(),
 	    longid.guid) != ecSuccess)
 		return {};
 
@@ -777,10 +777,10 @@ BINARY *cu_mid_to_entryid(const store_object &store,
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, eid_t(folder_id).replid(),
 	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
-	if (replid_to_replguid(store, rop_util_get_replid(message_id),
+	if (replid_to_replguid(store, eid_t(message_id).replid(),
 	    tmp_entryid.message_dbguid) != ecSuccess)
 		return nullptr;
 	if (store.b_private) {
@@ -817,10 +817,10 @@ std::string cu_mid_to_entryid_s(const store_object &store, uint64_t folder_id,
 	EXT_PUSH ep;
 	MESSAGE_ENTRYID eid{};
 
-	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, eid_t(folder_id).replid(),
 	    eid.folder_dbguid) != ecSuccess)
 		return {};
-	if (replid_to_replguid(store, rop_util_get_replid(msg_id),
+	if (replid_to_replguid(store, eid_t(msg_id).replid(),
 	    eid.message_dbguid) != ecSuccess)
 		return {};
 	if (store.b_private) {

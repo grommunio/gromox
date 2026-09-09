@@ -880,6 +880,10 @@ enum {
 };
 
 /* cf. glossary.rst "Internal Identifier" */
+/*
+ * The eid_t(uint64_t) constructor and the operator uint64_t() UDC is a temporary
+ * measure to be able to roll out eid_t gradually.
+ */
 struct GX_EXPORT eid_t {
 	static constexpr uint64_t GCV_MASK = 0xFFFFFFFFFFFF;
 	eid_t() = default;

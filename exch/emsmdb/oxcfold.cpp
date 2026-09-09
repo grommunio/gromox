@@ -26,7 +26,6 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	BOOL b_del;
 	BOOL b_exist;
 	void *pvalue;
-	uint16_t replid;
 	ems_objtype object_type;
 	uint64_t fid_val;
 	uint32_t tag_access;
@@ -39,7 +38,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
-	replid = rop_util_get_replid(folder_id);
+	auto replid = eid_t(folder_id).replid();
 	if (plogon->is_private()) {
 		if (replid != 1)
 			return ecNotFound;
@@ -144,7 +143,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	if (rop_util_get_replid(pparent->folder_id) != 1)
+	if (eid_t(pparent->folder_id).replid() != 1)
 		return ecAccessDenied;
 	if (pparent->type == FOLDER_SEARCH)
 		return ecNotSupported;
@@ -282,7 +281,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	} else {
-		if (rop_util_get_replid(folder_id) == 1 &&
+		if (eid_t(folder_id).replid() == 1 &&
 		    rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	}
@@ -389,7 +388,7 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 			return ecSuccess;
 	}
 	for (const auto folder_id : *pfolder_ids) {
-		if (rop_util_get_replid(folder_id) != 1)
+		if (eid_t(folder_id).replid() != 1)
 			return ecSearchFolderScopeViolation;
 		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client->get_folder_perm(plogon->get_dir(),
