@@ -1200,6 +1200,9 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 			    aInstId, &err) || err != ecSuccess)
 				throw EWSError::ItemSave(E3431);
+			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
+			    mInst->instanceId, &err) || err != ecSuccess)
+				throw EWSError::ItemSave(E3476);
 
 			sShape shape;
 			ctx.updated(dir, mid, shape);
