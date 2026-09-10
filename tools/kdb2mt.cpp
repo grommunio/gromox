@@ -1298,27 +1298,8 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 		throw std::bad_alloc();
 	auto &props = item.get_props();
 	auto mode = props->get<uint32_t>(PR_ATTACH_METHOD);
-
-	/*
-	 * Scrape all attachments that are in the database, irrespective
-	 * of PR_ATTACH_METHOD. Because we can.
-	 */
 	if ((mode == nullptr || *mode == ATTACH_BY_VALUE) && *g_atxdir != '\0')
 		do_attach_byval(drv, depth, item.m_hid, props.get(), mode == nullptr);
-
-	auto saved_show_tree = g_show_tree;
-	g_show_tree = false;
-	auto new_parent = parent_desc::as_attach(atc.get());
-	for (size_t i = 0; i < item.m_sub_hids.size(); ++i) {
-		auto subitem = item.get_sub_item(i);
-		auto ret = do_item(drv, depth + 1, new_parent, *subitem);
-		if (ret < 0) {
-			g_show_tree = saved_show_tree;
-			return ret;
-		}
-	}
-	g_show_tree = saved_show_tree;
-
 	std::swap(atc->proplist, *props);
 	atc->proplist.erase_if(skip_property);
 	if (parent.type != MAPI_MESSAGE)
@@ -1350,6 +1331,11 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 		ret = do_recip(drv, depth, parent, item);
 	} else if (item.m_mapitype == MAPI_ATTACH) {
 		ret = do_attach(drv, depth, parent, item);
+		if (parent.type == MAPI_MESSAGE) {
+			auto alist = parent.message->children.pattachments;
+			if (alist->size() > 0)
+				new_parent = parent_desc::as_attach(&alist->back());
+		}
 	} else {
 		auto &props = item.get_props();
 		if (g_show_tree)
