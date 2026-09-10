@@ -7,8 +7,8 @@
 #include <gromox/mapierr.hpp>
 
 struct GX_EXPORT vcard_param {
-	vcard_param(const char *n) __attribute__((nonnull(2))) : m_name(n) {}
-	void append_paramval(const char *s) __attribute__((nonnull(2))) { m_paramvals.emplace_back(s); }
+	vcard_param(std::string_view n) : m_name(std::move(n)) {}
+	void append_paramval(std::string_view sv) { m_paramvals.emplace_back(std::move(sv)); }
 	inline const char *name() const { return m_name.c_str(); }
 	inline const std::string &name_s() const { return m_name; }
 
@@ -23,9 +23,10 @@ struct GX_EXPORT vcard_value {
 };
 
 struct GX_EXPORT vcard_line {
-	vcard_line(const char *n) __attribute__((nonnull(2))) : m_name(n) {}
+	vcard_line(std::string_view n) : m_name(std::move(n)) {}
 	inline vcard_param &append_param(vcard_param &&o) { return m_params.emplace_back(std::move(o)); }
-	vcard_param &append_param(const char *p, const char *pv) __attribute__((nonnull(2,3)));
+	inline vcard_param &append_param(std::string_view k) { return m_params.emplace_back(std::move(k)); }
+	vcard_param &append_param(std::string_view k, std::string_view v);
 	inline vcard_value &append_value(vcard_value &&o) { return m_values.emplace_back(std::move(o)); }
 	inline vcard_value &append_value() { return m_values.emplace_back(); }
 	vcard_value &append_value(const char *);
@@ -45,8 +46,8 @@ struct GX_EXPORT vcard {
 	ec_error_t load_single_from_str_move(char *in_buff);
 	bool serialize(std::string &out) const;
 	vcard_line &append_line(vcard_line &&o);
-	vcard_line &append_line(const char *) __attribute__((nonnull(2)));
-	vcard_line &append_line(const char *, const char *) __attribute__((nonnull(2)));
+	vcard_line &append_line(std::string_view);
+	vcard_line &append_line(std::string_view, const char *);
 
 	std::vector<vcard_line> m_lines;
 };

@@ -462,10 +462,10 @@ bool vcard::serialize(std::string &out) const try
 	return false;
 }
 
-vcard_param &vcard_line::append_param(const char *k, const char *v)
+vcard_param &vcard_line::append_param(std::string_view k, std::string_view v)
 {
-	auto &param = append_param(k);
-	param.append_paramval(v);
+	auto &param = append_param(std::move(k));
+	param.append_paramval(std::move(v));
 	return param;
 }
 
@@ -499,16 +499,16 @@ vcard_line &vcard::append_line(vcard_line &&o)
 	return r;
 }
 
-vcard_line &vcard::append_line(const char *name)
+vcard_line &vcard::append_line(std::string_view name)
 {
-	auto &r = m_lines.emplace_back(name);
+	auto &r = m_lines.emplace_back(std::move(name));
 	r.m_lnum = m_lines.size();
 	return r;
 }
 
-vcard_line &vcard::append_line(const char *name, const char *value)
+vcard_line &vcard::append_line(std::string_view name, const char *value)
 {
-	auto &line = append_line(name);
+	auto &line = append_line(std::move(name));
 	line.append_value(value);
 	return line;
 }
