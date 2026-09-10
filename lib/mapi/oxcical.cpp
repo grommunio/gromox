@@ -3258,6 +3258,15 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 			return true;
 		auto piline = &pevent_component.append_line("ATTENDEE");
 		piline->append_param("PARTSTAT", partstat);
+		/*
+		 * Somebody other than the attendee submitted the answer, i.e. a
+		 * delegate acting for the mailbox (RFC 5545 §3.2.18).
+		 */
+		auto sentby = pmsg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+		if (sentby != nullptr && strcasecmp(sentby, str) != 0) {
+			snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", sentby);
+			piline->append_param("SENT-BY", tmp_value);
+		}
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
 		piline->append_value(nullptr, tmp_value);
 		return true;

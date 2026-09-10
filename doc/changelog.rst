@@ -20,7 +20,8 @@ Fixes:
 * A delegate's answer to a meeting invitation is sent in the name of the
   mailbox it was addressed to, rather than the delegate's own, so the organizer
   sees the invited attendee respond.
-* Meeting replies carry the ORGANIZER property that RFC 5546 asks for.
+* Meeting replies carry the ORGANIZER property that RFC 5546 asks for, and name
+  the delegate who answered in the attendee's SENT-BY parameter.
 * emsmdb: Opening a folder that has no contents no longer misses notifications.
 * The rule processor executes Extended Rules' OP_MOVE/OP_COPY now and matches
   string restrictions across PT_STRING8↔PT_UNICODE.
