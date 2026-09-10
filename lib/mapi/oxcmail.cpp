@@ -2634,6 +2634,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 				mime_enum.pcalendar = nullptr;
 			} else {
 				oxcical_converter ical_cvt;
+				ical_cvt.log_id = log_id;
 				ical_cvt.alloc = alloc;
 				ical_cvt.get_propids = get_propids;
 				ical_cvt.username_to_entryid = oxcmail_username_to_entryid;
