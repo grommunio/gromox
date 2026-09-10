@@ -1285,6 +1285,12 @@ static void do_attach_byval(driver &drv, unsigned int depth, unsigned int hid,
 		throw std::bad_alloc();
 }
 
+/**
+ * @parent: Parent specification for the GXMT stream.
+ *          Because --only-objs may be used, @parent can very well be
+ *          MAPI_FOLDER, even if that makes no sense for an attachment
+ *          normally.
+ */
 static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	attachment_content_ptr atc(attachment_content_init());
@@ -1315,11 +1321,16 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 
 	std::swap(atc->proplist, *props);
 	atc->proplist.erase_if(skip_property);
-	if (parent.type == MAPI_MESSAGE) {
-		if (!parent.message->children.pattachments->append_internal(atc.get()))
-			throw std::bad_alloc();
-		atc.release();
-	}
+	if (parent.type != MAPI_MESSAGE)
+		/*
+		 * atc is thrown away again. But its construction was not
+		 * completely for naught: do_attach_byval printed the props.
+		 */
+		return 0;
+
+	if (!parent.message->children.pattachments->append_internal(atc.get()))
+		throw std::bad_alloc();
+	atc.release();
 	return 0;
 }
 
