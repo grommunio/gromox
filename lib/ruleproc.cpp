@@ -1356,6 +1356,18 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_SMTP_ADDRESS available", __func__);
 		return ecInvalidParam;
 	}
+	/* ATTENDEE comes from SENT_REPRESENTING, From: from SENDER */
+	if (par.ev_to == nullptr || *par.ev_to == '\0') {
+		mlog(LV_ERR, "%s: no Envelope-To to identify the responder with", __func__);
+		return ecInvalidParam;
+	}
+	if ((err = rsp_prop.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP")) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, par.ev_to)) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, par.ev_to)) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENDER_ADDRTYPE, "SMTP")) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENDER_EMAIL_ADDRESS, par.ev_to)) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENDER_SMTP_ADDRESS, par.ev_to)) != ecSuccess)
+		return err;
 	auto bin = rq_prop.get<const BINARY>(PR_CONVERSATION_INDEX);
 	if (bin != nullptr && bin->cb >= 22) {
 		auto cvidx = std::make_unique<char[]>(bin->cb + 5);

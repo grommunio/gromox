@@ -598,6 +598,89 @@ static int ical_export_2()
 	return EXIT_SUCCESS;
 }
 
+/*
+ * A meeting response identifies the responder through
+ * PR_SENT_REPRESENTING_SMTP_ADDRESS (the iCalendar ATTENDEE) and through
+ * PR_SENDER_* (the From: header, which a scheduling mail takes from the sender
+ * tags). RFC 5546 §3.2.3 requires the ATTENDEE: it is the whole content of a
+ * REPLY. Anything that generates a response -- lib/ruleproc.cpp does -- has to
+ * put both on the message, so pin what the export needs.
+ */
+static int ical_reply_identity()
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+	};
+	PROPNAME_ARRAY na = {static_cast<uint16_t>(std::size(namelist)), deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	static constexpr uint64_t v_time = 0x1dabd02f773da00;
+	static constexpr uint32_t v_rcpttype = MAPI_TO;
+	fprintf(stderr, "=== ical_reply_identity\n");
+
+	TAGGED_PROPVAL rcpt_props[] = {
+		{PR_ADDRTYPE, deconst("SMTP")},
+		{PR_EMAIL_ADDRESS, deconst("sender@example.org")},
+		{PR_SMTP_ADDRESS, deconst("sender@example.org")},
+		{PR_RECIPIENT_TYPE, deconst(&v_rcpttype)},
+	};
+	TPROPVAL_ARRAY rcpt_row = {static_cast<uint16_t>(std::size(rcpt_props)), rcpt_props};
+	TPROPVAL_ARRAY *rows[] = {&rcpt_row};
+	TARRAY_SET rcpts = {1, rows};
+	const TAGGED_PROPVAL props[] = {
+		{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Resp.Pos")},
+		{PR_SUBJECT_PREFIX, deconst("Accepted: ")},
+		{PR_NORMALIZED_SUBJECT, deconst("appointment")},
+		{PR_START_DATE, deconst(&v_time)},
+		{PR_END_DATE, deconst(&v_time)},
+		{PROP_TAG(PT_SYSTIME, pids[0]), deconst(&v_time)},
+		{PROP_TAG(PT_SYSTIME, pids[1]), deconst(&v_time)},
+		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP")},
+		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, deconst("u@d.at")},
+		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst("u@d.at")},
+		{PR_SENDER_ADDRTYPE, deconst("SMTP")},
+		{PR_SENDER_EMAIL_ADDRESS, deconst("u@d.at")},
+		{PR_SENDER_SMTP_ADDRESS, deconst("u@d.at")},
+	};
+	MESSAGE_CONTENT msgctnt{};
+	msgctnt.proplist = {static_cast<uint16_t>(std::size(props)), deconst(props)};
+	msgctnt.children.prcpts = &rcpts;
+
+	ical icalout;
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	assert(cvt.mapi_to_ical(msgctnt, icalout));
+	std::string icstr;
+	assert(icalout.serialize(icstr) == ecSuccess);
+	assert(icstr.find("METHOD:REPLY") != std::string::npos);
+	assert(icstr.find("ATTENDEE;PARTSTAT=ACCEPTED:MAILTO:u@d.at") != std::string::npos);
+
+	oxcmail_converter mcvt;
+	mcvt.alloc = g_alloc;
+	mcvt.get_propids = ee_get_propids;
+	mcvt.get_propname = [](uint16_t id, PROPERTY_NAME **out) -> BOOL {
+		auto entry = static_namedprop_map.fwd.find(PROP_TAG(PT_UNSPECIFIED, id));
+		if (entry == static_namedprop_map.fwd.end())
+			return false;
+		*out = static_cast<PROPERTY_NAME *>(g_alloc(sizeof(PROPERTY_NAME)));
+		if (*out == nullptr)
+			return false;
+		**out = static_cast<PROPERTY_NAME>(entry->second);
+		return true;
+	};
+	MAIL out;
+	assert(mcvt.mapi_to_inet(msgctnt, out));
+	auto head = out.get_head();
+	assert(head != nullptr);
+	auto from = head->get_field("From");
+	assert(from != nullptr && from->find("u@d.at") != std::string::npos);
+	return EXIT_SUCCESS;
+}
+
 static int hdrparse_1()
 {
 	static const char data[] =
@@ -764,7 +847,8 @@ int main()
 	for (auto fct : {excess_attachment, select_parts_1, select_parts_1a,
 	     select_parts_2, select_parts_3, select_parts_4, select_parts_5,
 	     select_parts_6, select_parts_7,
-	     ical_export_1, ical_export_2, hdrparse_1, openpgp_roundtrip,
+	     ical_export_1, ical_export_2, ical_reply_identity, hdrparse_1,
+	     openpgp_roundtrip,
 	     openpgp_legacy_layout})
 		if (fct() != EXIT_SUCCESS)
 			ret = EXIT_FAILURE;
