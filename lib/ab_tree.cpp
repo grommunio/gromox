@@ -170,6 +170,8 @@ ab_base::ab_base(int32_t id) : m_base_id(id)
 {
 	m_guid = GUID::random_new();
 	memcpy(m_guid.node, &m_base_id, sizeof(int32_t));
+	/* Provisional; the base is in the hash before load() runs. */
+	m_load_time = gromox::tp_now();
 	m_lock.lock(); // unlocked after load
 }
 
