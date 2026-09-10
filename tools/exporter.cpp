@@ -312,7 +312,7 @@ static int emit_message_ical(const message_content &ctnt, const std::string &log
 		fprintf(stderr, "ical::serialize: %s\n", mapi_strerror(err));
 		return -1;
 	}
-	fputs(buf.c_str(), stdout);
+	fwrite(buf.c_str(), buf.size(), 1, stdout);
 	return 0;
 }
 
