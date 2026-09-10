@@ -430,8 +430,6 @@ std::string GLOBALOBJECTID::third_party_uid() const
 	if (data.pb == nullptr || data.cb <= 12 ||
 	    memcmp(data.pb, ThirdPartyGlobalId, 12) != 0)
 		return {};
-	size_t len = data.cb - 12;
-	while (len > 0 && data.pc[12+len-1] == '\0')
-		--len;
-	return std::string(&data.pc[12], len);
+	/* OL trims after first \0 */
+	return std::string(&data.pc[12], strnlen(&data.pc[12], data.cb - 12));
 }
