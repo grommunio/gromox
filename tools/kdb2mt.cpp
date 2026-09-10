@@ -1207,6 +1207,8 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 
 static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
+	if (parent.type != MAPI_MESSAGE)
+		return 0;
 	tpropval_array_ptr props = std::move(item.get_props());
 	props->erase_if(skip_property);
 	auto err = parent.message->children.prcpts->append_move(std::move(props));
