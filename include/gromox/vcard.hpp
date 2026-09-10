@@ -24,9 +24,9 @@ struct GX_EXPORT vcard_value {
 
 struct GX_EXPORT vcard_line {
 	vcard_line(const char *n) __attribute__((nonnull(2))) : m_name(n) {}
-	inline vcard_param &append_param(vcard_param &&o) { m_params.push_back(std::move(o)); return m_params.back(); }
+	inline vcard_param &append_param(vcard_param &&o) { return m_params.emplace_back(std::move(o)); }
 	vcard_param &append_param(const char *p, const char *pv) __attribute__((nonnull(2,3)));
-	inline vcard_value &append_value(vcard_value &&o) { m_values.push_back(std::move(o)); return m_values.back(); }
+	inline vcard_value &append_value(vcard_value &&o) { return m_values.emplace_back(std::move(o)); }
 	inline vcard_value &append_value() { return m_values.emplace_back(); }
 	vcard_value &append_value(const char *);
 	vcard_value &append_value(std::string &&);

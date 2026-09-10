@@ -493,7 +493,7 @@ const char *vcard_line::get_first_subval() const
 
 vcard_line &vcard::append_line(vcard_line &&o)
 {
-	m_lines.push_back(std::move(o));
+	m_lines.emplace_back(std::move(o));
 	auto &r = m_lines.back();
 	r.m_lnum = m_lines.size();
 	return r;
