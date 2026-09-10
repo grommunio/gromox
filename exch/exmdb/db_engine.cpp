@@ -1751,6 +1751,37 @@ static db_conn::ID_ARRAYS table_to_idarray(const table_node &o)
 	return db_conn::ID_ARRAYS{{o.remote_id, {o.table_id}}};
 }
 
+static int8_t ctar_fai(db_conn &db, uint64_t message_id)
+{
+	void *v = nullptr;
+	return cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, db,
+	       PR_ASSOCIATED, &v) ? pvb_enabled(v) : -1;
+}
+
+static int8_t ctar_del(db_conn *pdb, uint64_t message_id)
+{
+	char qstr[256];
+	snprintf(qstr, std::size(qstr), "SELECT is_deleted FROM messages WHERE message_id=%llu", LLU{message_id});
+	auto stm = pdb->prep(qstr);
+	if (stm == nullptr)
+		return -1;
+	auto ret = stm.step();
+	if (ret == SQLITE_ROW)
+		return stm.col_uint64(0) != 0;
+	else if (ret == SQLITE_DONE)
+		return true;
+	return -1;
+}
+
+static int8_t ctar_is_read(db_conn &db, const table_node &table, uint64_t msg_id)
+{
+	void *v = nullptr;
+	if (!cu_get_property(MAPI_MESSAGE, msg_id, table.cpid, db,
+	    PR_READ, &v) || v == nullptr)
+		return -1;
+	return *static_cast<uint8_t *>(v) != 0;
+}
+
 static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
     uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
@@ -1758,24 +1789,15 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 	DB_NOTIFY_DATAGRAM dg_template = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	dg_template.db_notify.row_folder_id  = folder_id;
 	dg_template.db_notify.row_message_id = message_id;
-	BOOL b_read = false;
-	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
-	uint8_t *pread_byte = nullptr;
-	void *pvalue0;
-	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-	    db, PR_ASSOCIATED, &pvalue0))
-		return;	
-	char qstr[256];
-	snprintf(qstr, std::size(qstr), "SELECT is_deleted FROM messages WHERE message_id=%llu", LLU{message_id});
-	auto stm = pdb->prep(qstr);
-	if (stm == nullptr)
-		return;
-	auto b_del = stm.step() != SQLITE_ROW || stm.col_uint64(0) != 0;
-	stm.finalize();
 
+	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
+	int8_t b_read = -1;
+	auto b_fai = ctar_fai(db, message_id);
+	auto b_del = ctar_del(&db, message_id);
+	if (b_fai < 0 || b_del < 0)
+		return;
 	bool did_optim = false;
 	auto cl_0 = HX::make_scope_exit([&]() { if (did_optim) db.end_optim(); });
-	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2063: failed to start transaction in cttbl_add_row");
@@ -2000,14 +2022,12 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			continue;
 		}
-		if (NULL == pread_byte) {
-			if (!cu_get_property(MAPI_MESSAGE,
-			    message_id, ptable->cpid, db, PR_READ,
-			    reinterpret_cast<void **>(&pread_byte)) ||
-			    pread_byte == nullptr)
+		if (b_read < 0) {
+			b_read = ctar_is_read(db, *ptable, message_id);
+			if (b_read < 0)
 				return;
-			b_read = *pread_byte == 0 ? false : TRUE;
 		}
+
 		int multi_index = -1;
 		static_assert(sizeof(multi_index) > sizeof(ptable->psorts->count));
 		for (unsigned int i = 0; i < ptable->psorts->count; ++i) {
