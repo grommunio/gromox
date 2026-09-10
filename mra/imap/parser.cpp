@@ -1700,6 +1700,7 @@ void imap_context::clear()
 	pcontext->contents.clear();
 	pcontext->saved_uids.clear();
 	pcontext->fstream.reset();
+	ctx.authenticated_actor[0] = '\0';
 	pcontext->announced_keywords.clear();
 	/*
 	 * Drop any pending async bits so a freshly pooled context does not

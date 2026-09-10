@@ -152,6 +152,7 @@ struct imap_context final : public schedule_context {
 	STREAM append_stream;
 	mjson_io io_actor;
 	int auth_times = 0;
+	char authenticated_actor[UADDR_SIZE]{};
 	char username[UADDR_SIZE]{}, maildir[256]{}, defcharset[32]{};
 	bool synchronizing_literal = true;
 	/* client sent ENABLE IMAP4rev2 (RFC 9051); gates rev2-only behavior. */
