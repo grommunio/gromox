@@ -1802,6 +1802,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	common_util_set_dir(pstore->get_dir());
 
 	oxcical_converter cvt;
+	cvt.log_id = pstore->get_dir();
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids_create;
 	cvt.username_to_entryid = common_util_username_to_entryid;
@@ -1821,13 +1822,14 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 
 	std::string errstr;
 	oxcical_converter cvt;
+	cvt.log_id = store->get_dir();
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids_create;
 	cvt.username_to_entryid = common_util_username_to_entryid;
 	auto err = cvt.ical_to_mapi_multi(icobj, msgvec, errstr);
 	if (err != ecSuccess)
-		mlog(LV_ERR, "ical_to_mapi_multi: %s", errstr.size() > 0 ?
-			errstr.c_str() : mapi_strerror(err));
+		mlog(LV_ERR, "ical_to_mapi_multi %s: %s", store->get_dir(),
+			errstr.size() > 0 ? errstr.c_str() : mapi_strerror(err));
 	return err;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
