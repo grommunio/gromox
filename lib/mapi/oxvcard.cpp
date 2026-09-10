@@ -108,6 +108,10 @@ static BOOL oxvcard_check_compatible(const vcard *pvcard)
 		auto pstring = pvline->get_first_subval();
 		if (pstring == nullptr)
 			return FALSE;
+		/*
+		 * vCard 2.1 has unusual line breaking rules. Not implemented.
+		 * TEL;TYPE=WORK is also e.g. TEL;WORK in v2.
+		 */
 		if (strcmp(pstring, "3.0") != 0 &&
 		    strcmp(pstring, "4.0") != 0)
 			return FALSE;
