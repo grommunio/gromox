@@ -1755,12 +1755,11 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
     uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
 	auto pdb = &db;
-	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
-	DB_NOTIFY_DATAGRAM datagram1 = datagram;
+	DB_NOTIFY_DATAGRAM dg_template = {deconst(exmdb_server::get_dir()), TRUE, {0}};
+	dg_template.db_notify.row_folder_id  = folder_id;
+	dg_template.db_notify.row_message_id = message_id;
 	BOOL b_read = false;
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
-	DB_NOTIFY *padded_row = nullptr, *padded_row1 = nullptr;
-	
 	uint8_t *pread_byte = nullptr;
 	void *pvalue0;
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
@@ -1801,19 +1800,12 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			ptable->b_hint = TRUE;
 			continue;
 		}
-		if (NULL == padded_row) {
-			padded_row = &datagram.db_notify;
-			padded_row->row_folder_id = folder_id;
-			padded_row->row_message_id = message_id;
-			padded_row1 = &datagram1.db_notify;
-			padded_row1->row_folder_id = folder_id;
-			padded_row1->row_instance = 0;
+		if (!did_optim) {
 			if (!pdb->begin_optim())
 				return;
 			did_optim = true;
 		}
-		datagram.id_array[0] = datagram1.id_array[0] =
-			ptable->table_id; // reserved earlier
+		dg_template.id_array[0] = ptable->table_id; // reserved earlier
 		if (ptable->psorts == nullptr && ptable->accel_dir == 0) {
 			/* Genuinely unsorted table: append the new row at the bottom. */
 			char sql_string[148];
@@ -1848,6 +1840,9 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
+
+			auto dg = dg_template;
+			auto padded_row = &dg.db_notify;
 			padded_row->row_instance = 0;
 			padded_row->after_row_id = inst_id;
 			padded_row->after_instance = 0;
@@ -1856,10 +1851,10 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			else if (!common_util_get_message_parent_folder(pdb->psqlite,
 			    padded_row->after_row_id, &padded_row->after_folder_id))
 				continue;
-			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::srchtbl_row_added :
-			                          db_notify_type::cttbl_row_added;
-			notifq.emplace_back(datagram, table_to_idarray(*ptable));
+			dg.db_notify.type = ptable->b_search ?
+			                    db_notify_type::srchtbl_row_added :
+			                    db_notify_type::cttbl_row_added;
+			notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			continue;
 		} else if (ptable->psorts == nullptr || ptable->psorts->ccategories == 0) {
 			/*
@@ -1937,6 +1932,9 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 					break;
 			}
 			pstmt.finalize();
+
+			auto dg = dg_template;
+			auto padded_row = &dg.db_notify;
 			if (0 == idx) {
 				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
 					" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
@@ -1996,10 +1994,10 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 				continue;
 			padded_row->row_instance = 0;
 			padded_row->after_instance = 0;
-			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::srchtbl_row_added :
-			                          db_notify_type::cttbl_row_added;
-			notifq.emplace_back(datagram, table_to_idarray(*ptable));
+			dg.db_notify.type = ptable->b_search ?
+			                    db_notify_type::srchtbl_row_added :
+			                    db_notify_type::cttbl_row_added;
+			notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			continue;
 		}
 		if (NULL == pread_byte) {
@@ -2320,10 +2318,11 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;
 		if (b_resorted) {
-			datagram1.db_notify.type = ptable->b_search ?
-						   db_notify_type::srchtbl_changed :
-						   db_notify_type::cttbl_changed;
-			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
+			auto dg = dg_template;
+			dg.db_notify.type = ptable->b_search ?
+			                    db_notify_type::srchtbl_changed :
+			                    db_notify_type::cttbl_changed;
+			notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			continue;
 		}
 
@@ -2363,32 +2362,38 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 				sqlite3_reset(pstmt);
 			}
 			if (!b_added) {
+				auto dg = dg_template;
+				auto padded_row1 = &dg.db_notify;
 				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
 				padded_row1->after_row_id = inst_id;
 				padded_row1->after_folder_id = inst_folder_id;
 				padded_row1->after_instance = inst_num;
-				datagram1.db_notify.type = ptable->b_search ?
-							   db_notify_type::srchtbl_row_modified :
-							   db_notify_type::cttbl_row_modified;
-				notifq.emplace_back(datagram1, table_to_idarray(*ptable));
+				dg.db_notify.type = ptable->b_search ?
+				                    db_notify_type::srchtbl_row_modified :
+				                    db_notify_type::cttbl_row_modified;
+				notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			} else if (stm_sel_tx.col_int64(4) == CONTENT_ROW_HEADER) {
+				auto dg = dg_template;
+				auto padded_row1 = &dg.db_notify;
 				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
 				padded_row1->after_row_id = inst_id;
 				padded_row1->after_folder_id = inst_folder_id;
 				padded_row1->after_instance = inst_num;
-				datagram1.db_notify.type = ptable->b_search ?
-				                           db_notify_type::srchtbl_row_added :
-				                           db_notify_type::cttbl_row_added;
-				notifq.emplace_back(datagram1, table_to_idarray(*ptable));
+				dg.db_notify.type = ptable->b_search ?
+				                    db_notify_type::srchtbl_row_added :
+				                    db_notify_type::cttbl_row_added;
+				notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			} else {
+				auto dg = dg_template;
+				auto padded_row = &dg.db_notify;
 				padded_row->row_instance = stm_sel_tx.col_int64(10);
 				padded_row->after_row_id = inst_id;
 				padded_row->after_folder_id = inst_folder_id;
 				padded_row->after_instance = inst_num;
-				datagram.db_notify.type = ptable->b_search ?
-				                          db_notify_type::srchtbl_row_added :
-				                          db_notify_type::cttbl_row_added;
-				notifq.emplace_back(datagram, table_to_idarray(*ptable));
+				dg.db_notify.type = ptable->b_search ?
+				                    db_notify_type::srchtbl_row_added :
+				                    db_notify_type::cttbl_row_added;
+				notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			}
 			stm_sel_tx.reset();
 		}
