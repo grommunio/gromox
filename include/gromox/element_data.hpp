@@ -18,6 +18,9 @@ struct GX_EXPORT attachment_list {
 	gromox::const_deref_iterator<attachment_content> end() const { return pplist + count; }
 	gromox::const_deref_iterator<attachment_content> cbegin() const { return pplist; }
 	gromox::const_deref_iterator<attachment_content> cend() const { return pplist + count; }
+	attachment_content &back() { return *pplist[count-1]; }
+	const attachment_content &back() const { return *pplist[count-1]; }
+	size_t size() const { return count; }
 
 	uint16_t count = 0;
 	attachment_content **pplist = nullptr;
