@@ -1782,6 +1782,28 @@ static int8_t ctar_is_read(db_conn &db, const table_node &table, uint64_t msg_id
 	return *static_cast<uint8_t *>(v) != 0;
 }
 
+static int ctar_multi_index(db_conn &db, const table_node &table,
+    uint64_t msg_id, TAGGED_PROPVAL *propvals)
+{
+	int multi_index = -1;
+	auto &sset = *table.psorts;
+	static_assert(sizeof(multi_index) > sizeof(sset.count));
+	for (unsigned int i = 0; i < sset.count; ++i) {
+		propvals[i].proptag = PROP_TAG(sset.psort[i].type, sset.psort[i].propid);
+		if (propvals[i].proptag == table.instance_tag) {
+			multi_index = i;
+			if (!cu_get_property(MAPI_MESSAGE, msg_id, table.cpid,
+			    db, propvals[i].proptag & ~MV_INSTANCE,
+			    &propvals[i].pvalue))
+				return -2;
+		} else if (!cu_get_property(MAPI_MESSAGE, msg_id, table.cpid,
+		    db, propvals[i].proptag, &propvals[i].pvalue)) {
+			return -2;
+		}
+	}
+	return multi_index;
+}
+
 static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
     uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
@@ -2027,24 +2049,9 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			if (b_read < 0)
 				return;
 		}
-
-		int multi_index = -1;
-		static_assert(sizeof(multi_index) > sizeof(ptable->psorts->count));
-		for (unsigned int i = 0; i < ptable->psorts->count; ++i) {
-			propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
-			if (propvals[i].proptag == ptable->instance_tag) {
-				multi_index = i;
-				if (!cu_get_property(
-				    MAPI_MESSAGE, message_id, ptable->cpid,
-				    db, propvals[i].proptag & ~MV_INSTANCE,
-				    &propvals[i].pvalue))
-					return;
-			} else if (!cu_get_property(MAPI_MESSAGE, message_id,
-			    ptable->cpid, db, propvals[i].proptag,
-			    &propvals[i].pvalue)) {
-				return;
-			}
-		}
+		int multi_index = ctar_multi_index(db, *ptable, message_id, propvals);
+		if (multi_index <= -2)
+			return;
 		void *pmultival = nullptr;
 		uint32_t multi_num = 1;
 		if (multi_index >= 0) {
