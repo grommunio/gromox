@@ -74,7 +74,7 @@ int main(int argc, const char **argv)
 	uint64_t folder_id = PRIVATE_FID_CONTACTS;
 	if (argc >= 3)
 		folder_id = strtoull(argv[2], nullptr, 0);
-	folder_id = rop_util_make_eid_ex(1, folder_id);
+	folder_id = eid_t(1, folder_id);
 
 	uint32_t elist_tag = propid_elist(dir);
 	int ret[8];

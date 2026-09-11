@@ -327,7 +327,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::new_mail: {
 		pnotification->event_type = fnevNewMail;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		pnew_mail->pentryid = cu_mid_to_entryid_s(*pstore, folder_id, message_id);
 		if (pnew_mail->pentryid->empty())
 			return;
@@ -364,7 +364,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_created: {
 		pnotification->event_type = fnevObjectCreated;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
 		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
 		if (oz->pentryid->empty())
@@ -390,7 +390,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_deleted: {
 		pnotification->event_type = fnevObjectDeleted;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
 		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
 		if (oz->pentryid->empty())
@@ -412,7 +412,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_modified: {
 		pnotification->event_type = fnevObjectModified;
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
 		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
 		if (oz->pentryid->empty())
@@ -450,9 +450,9 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
 		                            fnevObjectMoved : fnevObjectCopied;
 		old_parentid = rop_util_nfid_to_eid(nt->old_folder_id);
-		old_eid = rop_util_make_eid_ex(1, nt->old_message_id);
+		old_eid = eid_t(1, nt->old_message_id);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		message_id = rop_util_make_eid_ex(1, nt->message_id);
+		message_id = eid_t(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
 		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
 		if (oz->pentryid->empty())
@@ -854,7 +854,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 
 	eid_t folder_id{}, message_id{};
 	if (0 == entryid.cb) {
-		folder_id = rop_util_make_eid_ex(1, pstore->b_private ?
+		folder_id = eid_t(1, pstore->b_private ?
 		            PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
 		message_id = eid_t(0);
 	} else {
@@ -1258,9 +1258,7 @@ ec_error_t zs_getpermissions(GUID hsession,
 	}
 	switch (mapi_type) {
 	case zs_objtype::store:
-		if (!static_cast<store_object *>(pobject)->get_permissions(pperm_set))
-			return ecError;
-		break;
+		return static_cast<store_object *>(pobject)->get_perms(pperm_set);
 	case zs_objtype::folder:
 		if (!static_cast<folder_object *>(pobject)->get_permissions(pperm_set))
 			return ecError;
@@ -1606,8 +1604,9 @@ ec_error_t zs_createmessage(GUID hsession,
 	static constexpr proptag_t proptag_buff[] =
 		{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
-	if (!pstore->get_properties(proptag_buff, &tmp_propvals))
-		return ecError;
+	auto err = pstore->get_props(proptag_buff, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 	int64_t max_quota = num == nullptr ? -1 : static_cast<int64_t>(*num) * 1024;
 	auto lnum = tmp_propvals.get<const uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
@@ -1623,7 +1622,7 @@ ec_error_t zs_createmessage(GUID hsession,
 	if (pmessage == nullptr)
 		return ecError;
 	BOOL b_fai = (flags & MAPI_ASSOCIATED) ? TRUE : false;
-	auto err = pmessage->init_message(b_fai, pinfo->cpid);
+	err = pmessage->init_message(b_fai, pinfo->cpid);
 	if (err != ecSuccess)
 		return err;
 	/* add the store handle as the parent object handle
@@ -3359,8 +3358,9 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return err;
 	static constexpr proptag_t proptag_buff2[] =
 		{PR_MAX_SUBMIT_MESSAGE_SIZE, PR_PROHIBIT_SEND_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
-	if (!pstore->get_properties(proptag_buff2, &tmp_propvals))
-		return ecError;
+	err = pstore->get_props(proptag_buff2, &tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 
 	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
 	auto storesize = tmp_propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
@@ -3498,8 +3498,9 @@ ec_error_t zs_createattachment(GUID hsession,
 		return ecError;
 	if (pattachment->get_attachment_num() == ATTACHMENT_NUM_INVALID)
 		return ecMaxAttachmentExceeded;
-	if (!pattachment->init_attachment())
-		return ecError;
+	auto err = pattachment->init_attachment();
+	if (err != ecSuccess)
+		return err;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::attach, std::move(pattachment)});
 	return zh_error(*phobject);
 }
@@ -3546,9 +3547,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		auto store = static_cast<store_object *>(pobject);
 		if (!store->owner_mode())
 			return ecAccessDenied;
-		if (!store->set_properties(ppropvals))
-			return ecError;
-		return ecSuccess;
+		return store->set_props(ppropvals);
 	}
 	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
@@ -3618,13 +3617,12 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	case zs_objtype::store: {
 		auto store = static_cast<store_object *>(pobject);
 		if (NULL == pproptags) {
-			if (!store->get_all_proptags(&proptags))
-				return ecError;
+			auto err = store->get_all_proptags(&proptags);
+			if (err != ecSuccess)
+				return err;
 			wtags = proptags;
 		}
-		if (!store->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return store->get_props(wtags, ppropvals);
 	}
 	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
@@ -3633,9 +3631,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				return ecError;
 			wtags = proptags;
 		}
-		if (!folder->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return folder->get_props(wtags, ppropvals);
 	}
 	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
@@ -3650,8 +3646,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (NULL == pproptags) {
-			if (!atx->get_all_proptags(&proptags))
-				return ecError;
+			auto err = atx->get_all_proptags(&proptags);
+			if (err != ecSuccess)
+				return err;
 			wtags = proptags;
 		}
 		if (!atx->get_properties(wtags, ppropvals))
@@ -3673,9 +3670,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 			container_object_get_user_table_all_proptags(&proptags);
 			wtags = proptags;
 		}
-		if (!static_cast<user_object *>(pobject)->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return static_cast<user_object *>(pobject)->get_props(wtags, ppropvals);
 	case zs_objtype::oneoff:
 		if (pproptags == nullptr)
 			wtags = oneoff_object::all_tags;
@@ -3707,9 +3702,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto store = static_cast<store_object *>(pobject);
 		if (!store->owner_mode())
 			return ecAccessDenied;
-		if (!store->remove_properties(pproptags))
-			return ecError;
-		return ecSuccess;
+		return store->remove_props(pproptags);
 	}
 	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
@@ -3834,8 +3827,7 @@ ec_error_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
 	}
 	if (pstore == nullptr)
 		return ecNotSupported;
-	return pstore->get_named_propids(TRUE, ppropnames, ppropids) ?
-	       ecSuccess : ecError;
+	return pstore->get_named_propids(TRUE, ppropnames, ppropids);
 }
 
 ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
@@ -3859,8 +3851,7 @@ ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
 	}
 	if (pstore == nullptr)
 		return ecNotSupported;
-	return pstore->get_named_propnames(ppropids, ppropnames) ?
-	       ecSuccess : ecError;
+	return pstore->get_named_propnames(ppropids, ppropnames);
 }
 
 ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
@@ -3947,8 +3938,9 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 				continue;
 			tmp_proptags.emplace_back(tag);
 		}
-		if (!folder->get_properties(tmp_proptags, &propvals))
-			return ecError;
+		auto err = folder->get_props(tmp_proptags, &propvals);
+		if (err != ecSuccess)
+			return err;
 		if (b_sub || b_normal || b_fai) {
 			BOOL b_guest = username == STORE_OWNER_GRANTED ? false : TRUE;
 			if (!exmdb_client->copy_folder_internal(pstore->get_dir(),

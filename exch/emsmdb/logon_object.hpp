@@ -22,14 +22,14 @@ struct logon_object {
 	GUID guid() const;
 	const char *get_account() const { return account; }
 	const char *get_dir() const { return dir; }
-	BOOL get_named_propname(gromox::propid_t, PROPERTY_NAME *);
-	BOOL get_named_propnames(const PROPID_ARRAY &, PROPNAME_ARRAY *);
-	BOOL get_named_propid(BOOL create, const PROPERTY_NAME *, gromox::propid_t *);
-	BOOL get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
-	BOOL get_all_proptags(PROPTAG_ARRAY *) const;
-	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *) const;
-	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
-	bool remove_properties(proptag_cspan, PROBLEM_ARRAY *);
+	ec_error_t get_named_propname(gromox::propid_t, PROPERTY_NAME *);
+	ec_error_t get_named_propnames(const PROPID_ARRAY &, PROPNAME_ARRAY *);
+	ec_error_t get_named_propid(BOOL create, const PROPERTY_NAME *, gromox::propid_t *);
+	ec_error_t get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
+	ec_error_t get_all_proptags(PROPTAG_ARRAY *) const;
+	ec_error_t get_props(proptag_cspan, TPROPVAL_ARRAY *) const;
+	ec_error_t set_props(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
+	ec_error_t remove_props(proptag_cspan, PROBLEM_ARRAY *);
 	const char *eff_user() const;
 	const char *readstate_user() const;
 

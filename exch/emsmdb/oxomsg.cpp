@@ -120,7 +120,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
-	err = pmessage->set_properties(&tmp_propvals, &tmp_problems);
+	err = pmessage->set_props(&tmp_propvals, &tmp_problems);
 	if (err != ecSuccess)
 		return err;
 	return pmessage->save();
@@ -148,7 +148,7 @@ static ec_error_t oxomsg_extract_delegator(message_object *pmessage,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	auto err = pmessage->get_properties(0, tmp_proptags, &tmp_propvals);
+	auto err = pmessage->get_props(0, tmp_proptags, &tmp_propvals);
 	if (err != ecSuccess)
 		return err;
 	if (0 == tmp_propvals.count) {
@@ -300,7 +300,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecTooManyRecips;
 
 	static constexpr proptag_t ptags_one[] = {PR_ASSOCIATED, PR_MESSAGE_CLASS};
-	err = pmessage->get_properties(0, ptags_one, &tmp_propvals);
+	err = pmessage->get_props(0, ptags_one, &tmp_propvals);
 	if (err != ecSuccess)
 		return err;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
@@ -337,8 +337,9 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	
 	static constexpr proptag_t ptags_two[] =
 		{PR_MAX_SUBMIT_MESSAGE_SIZE, PR_PROHIBIT_SEND_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
-	if (!plogon->get_properties(ptags_two, &tmp_propvals))
-		return ecError;
+	ret = plogon->get_props(ptags_two, &tmp_propvals);
+	if (ret != ecSuccess)
+		return ret;
 
 	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
 	auto storesize = tmp_propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
@@ -356,7 +357,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		PR_DEFERRED_SEND_TIME, PR_DEFERRED_SEND_NUMBER,
 		PR_DEFERRED_SEND_UNITS, PR_DELETE_AFTER_SUBMIT};
 	proptag_cspan tmp_proptags = {ptbuf_three, (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : std::size(ptbuf_three)};
-	err = pmessage->get_properties(0, tmp_proptags, &tmp_propvals);
+	err = pmessage->get_props(0, tmp_proptags, &tmp_propvals);
 	if (err != ecSuccess)
 		return err;
 	num = tmp_propvals.get<const uint32_t>(PR_MESSAGE_SIZE);
@@ -380,7 +381,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto dir = plogon->get_dir();
 #if 0
 	/* check if it is already in spooler queue */
-	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
+	eid_t fid_spooler(1, PRIVATE_FID_SPOOLER_QUEUE);
 	if (!exmdb_client->is_msg_present(dir, fid_spooler,
 	    pmessage->get_id(), &b_exist))
 		return ecError;
@@ -438,7 +439,6 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 {
 	BOOL b_exist;
 	uint32_t *ptimer_id;
-	uint64_t fid_spooler;
 	uint32_t *pmessage_flags;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -472,7 +472,7 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 			return ecError;
 		return ecSuccess;
 	}
-	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
+	eid_t fid_spooler(1, PRIVATE_FID_SPOOLER_QUEUE);
 	if (!exmdb_client->is_msg_present(plogon->get_dir(), fid_spooler,
 	    message_id, &b_exist))
 		return ecError;
@@ -516,7 +516,6 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	uint64_t new_id;
 	uint64_t parent_id;
 	uint64_t folder_id;
-	uint64_t fid_spooler;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -531,7 +530,7 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		return ecAccessDenied;
 	if (lock_stat != LOCK_STAT_1STFINISHED)
 		return ecSuccess;
-	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
+	eid_t fid_spooler(1, PRIVATE_FID_SPOOLER_QUEUE);
 	auto dir = plogon->get_dir();
 	if (!exmdb_client->is_msg_present(dir, fid_spooler, message_id, &b_exist))
 		return ecError;
@@ -624,7 +623,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		TPROPVAL_ARRAY cls_vals{};
-		err = pmessage->get_properties(0, cls_tags, &cls_vals);
+		err = pmessage->get_props(0, cls_tags, &cls_vals);
 		if (err != ecSuccess)
 			return err;
 		auto ret = pass_scheduling("E-2080", actor, delegator.c_str(), *pmessage,
@@ -642,7 +641,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			{PR_SENDER_NAME, PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY,
 			PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ENTRYID,
 			PR_SENT_REPRESENTING_SEARCH_KEY, PR_PROVIDER_SUBMIT_TIME};
-		err = pmessage->get_properties(0, proptags, *pppropvals);
+		err = pmessage->get_props(0, proptags, *pppropvals);
 		if (err != ecSuccess) {
 			*pppropvals = NULL;
 		} else if (!(**pppropvals).has(PR_PROVIDER_SUBMIT_TIME)) {
@@ -683,7 +682,7 @@ ec_error_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
 		return ecNullObject;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	*pfolder_id = rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX);
+	*pfolder_id = eid_t(1, PRIVATE_FID_OUTBOX);
 	return ecSuccess;
 }
 

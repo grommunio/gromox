@@ -380,7 +380,7 @@ static bool cgkreset_3(sqlite3 *db, uint64_t &last_cn, const GUID &store_guid,
 			continue;
 
 		char buf[23];
-		XID xid{store_guid, rop_util_make_eid_ex(1, last_cn)};
+		XID xid{store_guid, eid_t(1, last_cn)};
 		EXT_PUSH ep;
 		if (!ep.init(&buf[1], sizeof(buf) - 1, 0))
 			return false;
@@ -1751,32 +1751,295 @@ static db_conn::ID_ARRAYS table_to_idarray(const table_node &o)
 	return db_conn::ID_ARRAYS{{o.remote_id, {o.table_id}}};
 }
 
-static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
-    uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
+static int8_t ctar_fai(db_conn &db, uint64_t message_id)
 {
-	auto pdb = &db;
-	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
-	DB_NOTIFY_DATAGRAM datagram1 = datagram;
-	BOOL b_read = false;
-	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
-	DB_NOTIFY *padded_row = nullptr, *padded_row1 = nullptr;
-	
-	uint8_t *pread_byte = nullptr;
-	void *pvalue0;
-	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-	    db, PR_ASSOCIATED, &pvalue0))
-		return;	
+	void *v = nullptr;
+	return cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, db,
+	       PR_ASSOCIATED, &v) ? pvb_enabled(v) : -1;
+}
+
+static int8_t ctar_del(db_conn *pdb, uint64_t message_id)
+{
 	char qstr[256];
 	snprintf(qstr, std::size(qstr), "SELECT is_deleted FROM messages WHERE message_id=%llu", LLU{message_id});
 	auto stm = pdb->prep(qstr);
 	if (stm == nullptr)
-		return;
-	auto b_del = stm.step() != SQLITE_ROW || stm.col_uint64(0) != 0;
+		return -1;
+	auto ret = stm.step();
+	if (ret == SQLITE_ROW)
+		return stm.col_uint64(0) != 0;
+	else if (ret == SQLITE_DONE)
+		return true;
+	return -1;
+}
+
+static int8_t ctar_is_read(db_conn &db, const table_node &table, uint64_t msg_id)
+{
+	void *v = nullptr;
+	if (!cu_get_property(MAPI_MESSAGE, msg_id, table.cpid, db,
+	    PR_READ, &v) || v == nullptr)
+		return -1;
+	return *static_cast<uint8_t *>(v) != 0;
+}
+
+static int ctar_multi_index(db_conn &db, const table_node &table,
+    uint64_t msg_id, TAGGED_PROPVAL *propvals)
+{
+	int multi_index = -1;
+	auto &sset = *table.psorts;
+	static_assert(sizeof(multi_index) > sizeof(sset.count));
+	for (unsigned int i = 0; i < sset.count; ++i) {
+		propvals[i].proptag = PROP_TAG(sset.psort[i].type, sset.psort[i].propid);
+		if (propvals[i].proptag == table.instance_tag) {
+			multi_index = i;
+			if (!cu_get_property(MAPI_MESSAGE, msg_id, table.cpid,
+			    db, propvals[i].proptag & ~MV_INSTANCE,
+			    &propvals[i].pvalue))
+				return -2;
+		} else if (!cu_get_property(MAPI_MESSAGE, msg_id, table.cpid,
+		    db, propvals[i].proptag, &propvals[i].pvalue)) {
+			return -2;
+		}
+	}
+	return multi_index;
+}
+
+static std::pair<void *, uint32_t>
+ctar_multi_val(const table_node &table, TAGGED_PROPVAL *propvals, int idx)
+{
+	if (idx < 0)
+		return {nullptr, 1};
+	void *mv = propvals[idx].pvalue;
+	if (mv == nullptr)
+		return {nullptr, 1};
+	auto num = det_multi_num(table.psorts->psort[idx].type & ~MV_INSTANCE, mv);
+	if (num == UINT32_MAX)
+		return {nullptr, 0}; /* complete failure */
+	if (num != 0)
+		return {mv, num};
+	propvals[idx].pvalue = nullptr;
+	return {nullptr, 1};
+}
+
+/* Genuinely unsorted table: append the new row at the bottom. */
+static int ctar_unsorted(db_conn &db, const table_node &table,
+    const DB_NOTIFY_DATAGRAM &dg_template, uint64_t message_id,
+    db_conn::NOTIFQ &notifq)
+{
+	char qstr[148];
+	snprintf(qstr, std::size(qstr), "SELECT count(*) FROM t%u", table.table_id);
+	auto stm = db.eph_prep(qstr);
+	if (stm == nullptr || stm.step() != SQLITE_ROW)
+		return 0;
+	uint32_t idx = stm.col_int64(0);
+	stm.finalize();
+	uint64_t inst_id = 0;
+	if (idx == 0) {
+		snprintf(qstr, std::size(qstr), "INSERT INTO t%u (inst_id, prev_id,"
+			" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
+			"%u, 0, 0, 1)", table.table_id, LLU{message_id},
+			CONTENT_ROW_MESSAGE);
+	} else {
+		snprintf(qstr, std::size(qstr), "SELECT row_id, inst_id "
+			"FROM t%u WHERE idx=%u", table.table_id, idx);
+		stm = db.eph_prep(qstr);
+		if (stm == nullptr || stm.step() != SQLITE_ROW)
+			return 0;
+		uint64_t row_id = stm.col_int64(0);
+		inst_id = stm.col_int64(1);
+		stm.finalize();
+		snprintf(qstr, std::size(qstr), "INSERT INTO t%u (inst_id, prev_id, "
+			"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
+			" %u, 0, 0, %u)", table.table_id, LLU{message_id}, LLU{row_id},
+			CONTENT_ROW_MESSAGE, idx + 1);
+	}
+	if (db.eph_exec(qstr) != SQLITE_OK)
+		return 0;
+	if (table.table_flags & TABLE_FLAG_NONOTIFICATIONS)
+		return 0;
+
+	auto dg   = dg_template;
+	auto &dgn = dg.db_notify;
+	dgn.row_instance   = 0;
+	dgn.after_row_id   = inst_id;
+	dgn.after_instance = 0;
+	if (dgn.after_row_id == 0)
+		dgn.after_folder_id = 0;
+	else if (!common_util_get_message_parent_folder(db.psqlite,
+	    dgn.after_row_id, &dgn.after_folder_id))
+		return 0;
+	dg.db_notify.type = table.b_search ?
+			    db_notify_type::srchtbl_row_added :
+			    db_notify_type::cttbl_row_added;
+	notifq.emplace_back(std::move(dg), table_to_idarray(table));
+	return 0;
+}
+
+/**
+ * Uncategorized sort, or an accel/msgtime_index table (psorts is null; the
+ * single sort key lives in accel_tag/accel_dir). Compute the insertion point
+ * so new rows are positioned rather than appended at the bottom (which is what
+ * the accel path did before and caused new mail to sort to the end in
+ * online-mode clients).
+ */
+static int ctar_uncateg_sort(db_conn &db, const table_node &table,
+    const DB_NOTIFY_DATAGRAM &dg_template, uint64_t message_id,
+    TAGGED_PROPVAL *propvals, db_conn::NOTIFQ &notifq)
+{
+	proptype_t sort_type[MAXIMUM_SORT_COUNT];
+	bool sort_asc[MAXIMUM_SORT_COUNT];
+	size_t sort_count;
+	if (table.psorts != nullptr) {
+		sort_count = table.psorts->count;
+		for (size_t i = 0; i < sort_count; ++i) {
+			auto &s = table.psorts->psort[i];
+			sort_type[i] = s.type;
+			sort_asc[i]  = s.table_sort == TABLE_SORT_ASCEND;
+			propvals[i].proptag = PROP_TAG(s.type, s.propid);
+		}
+	} else {
+		sort_count   = 1;
+		sort_type[0] = PROP_TYPE(table.accel_tag);
+		sort_asc[0]  = table.accel_dir > 0;
+		propvals[0].proptag = table.accel_tag;
+	}
+	for (size_t i = 0; i < sort_count; ++i)
+		if (!cu_get_property(MAPI_MESSAGE, message_id,
+		    table.cpid, db, propvals[i].proptag,
+		    &propvals[i].pvalue))
+			return -1;
+	char qstr[148];
+	snprintf(qstr, std::size(qstr), "SELECT row_id, inst_id,"
+		" idx FROM t%u ORDER BY idx ASC", table.table_id);
+	auto stm = db.eph_prep(qstr);
+	if (stm == nullptr)
+		return 0;
+
+	uint32_t idx = 0;
+	uint64_t row_id = 0, row_id1 = 0, inst_id = 0, inst_id1 = 0;
+	bool b_break = false;
+	while (stm.step() == SQLITE_ROW) {
+		row_id   = row_id1;
+		inst_id  = inst_id1;
+		row_id1  = stm.col_int64(0);
+		inst_id1 = stm.col_int64(1);
+		idx      = stm.col_int64(2);
+
+		bool b_equal = true;
+		for (size_t i = 0; i < sort_count; ++i) {
+			void *pvalue = nullptr;
+			if (!cu_get_property(MAPI_MESSAGE, inst_id1, table.cpid,
+			    db, propvals[i].proptag, &pvalue))
+				return -1;
+			auto result = db_engine_compare_propval(sort_type[i], propvals[i].pvalue, pvalue);
+			if ((sort_asc[i] && result < 0) || (!sort_asc[i] && result > 0))
+				b_break = true;
+			if (result != 0) {
+				b_equal = false;
+				break;
+			}
+		}
+		/*
+		 * All sort keys equal: break ties by message_id in the primary
+		 * sort direction, mirroring the msgtime_index (folder_id, <ts>,
+		 * message_id) load order and the stbl message_id tiebreak in
+		 * gct_makequery. Without this a newly delivered same-key message
+		 * is appended below its peers here but a reload sorts it among
+		 * them, so online-mode clients show it misordered/duplicated.
+		 */
+		if (b_equal && !b_break &&
+		    ((sort_asc[0] && message_id < inst_id1) ||
+		    (!sort_asc[0] && message_id > inst_id1)))
+			b_break = true;
+		if (b_break)
+			break;
+	}
 	stm.finalize();
 
+	auto dg   = dg_template;
+	auto &dgn = dg.db_notify;
+	if (idx == 0) {
+		snprintf(qstr, std::size(qstr), "INSERT INTO t%u (inst_id, prev_id,"
+			" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
+			"%u, 0, 0, 1)", table.table_id, LLU{message_id},
+			CONTENT_ROW_MESSAGE);
+		if (db.eph_exec(qstr) != SQLITE_OK)
+			return 0;
+		dgn.after_row_id = 0;
+	} else if (!b_break) {
+		snprintf(qstr, std::size(qstr), "INSERT INTO t%u (inst_id, prev_id, "
+			"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
+			" %u, 0, 0, %u)", table.table_id, LLU{message_id},
+			LLU{row_id1}, CONTENT_ROW_MESSAGE, idx + 1);
+		if (db.eph_exec(qstr) != SQLITE_OK)
+			return 0;
+		dgn.after_row_id = inst_id1;
+	} else {
+		xsavepoint sql_savepoint(db.m_sqlite_eph, "sp1");
+		if (!sql_savepoint)
+			return 0;
+		snprintf(qstr, std::size(qstr), "UPDATE t%u SET idx=-(idx+1)"
+			" WHERE idx>=%u;UPDATE t%u SET idx=-idx WHERE"
+			" idx<0", table.table_id, idx, table.table_id);
+		if (db.eph_exec(qstr) != SQLITE_OK)
+			return 0;
+		snprintf(qstr, std::size(qstr), "UPDATE t%u SET prev_id=NULL "
+			"WHERE row_id=%llu", table.table_id, LLU{row_id1});
+		if (db.eph_exec(qstr) != SQLITE_OK)
+			return 0;
+		if (row_id == 0)
+			snprintf(qstr, std::size(qstr), "INSERT INTO t%u (inst_id, prev_id,"
+				" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
+				"%u, 0, 0, 1)", table.table_id, LLU{message_id},
+				CONTENT_ROW_MESSAGE);
+		else
+			snprintf(qstr, std::size(qstr), "INSERT INTO t%u (inst_id, prev_id, "
+				"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
+				" %u, 0, 0, %u)", table.table_id, LLU{message_id},
+				LLU{row_id}, CONTENT_ROW_MESSAGE, idx);
+		if (db.eph_exec(qstr) != SQLITE_OK)
+			return 0;
+		row_id = sqlite3_last_insert_rowid(db.m_sqlite_eph);
+		snprintf(qstr, std::size(qstr), "UPDATE t%u SET prev_id=%llu WHERE"
+			" row_id=%llu", table.table_id, LLU{row_id}, LLU{row_id1});
+		if (db.eph_exec(qstr) != SQLITE_OK)
+			return 0;
+		if (sql_savepoint.commit() != SQLITE_OK)
+			return 0;
+		dgn.after_row_id = inst_id;
+	}
+	if (table.table_flags & TABLE_FLAG_NONOTIFICATIONS)
+		return 0;
+	if (dgn.after_row_id == 0)
+		dgn.after_folder_id = 0;
+	else if (!common_util_get_message_parent_folder(db.psqlite,
+	    dgn.after_row_id, &dgn.after_folder_id))
+		return 0;
+	dgn.row_instance   = 0;
+	dgn.after_instance = 0;
+	dg.db_notify.type  = table.b_search ?
+			     db_notify_type::srchtbl_row_added :
+			     db_notify_type::cttbl_row_added;
+	notifq.emplace_back(std::move(dg), table_to_idarray(table));
+	return 0;
+}
+
+static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
+    uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
+{
+	auto pdb = &db;
+	DB_NOTIFY_DATAGRAM dg_template = {deconst(exmdb_server::get_dir()), TRUE, {0}};
+	dg_template.db_notify.row_folder_id  = folder_id;
+	dg_template.db_notify.row_message_id = message_id;
+
+	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
+	int8_t b_read = -1;
+	auto b_fai = ctar_fai(db, message_id);
+	auto b_del = ctar_del(&db, message_id);
+	if (b_fai < 0 || b_del < 0)
+		return;
 	bool did_optim = false;
 	auto cl_0 = HX::make_scope_exit([&]() { if (did_optim) db.end_optim(); });
-	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2063: failed to start transaction in cttbl_add_row");
@@ -1801,247 +2064,36 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			ptable->b_hint = TRUE;
 			continue;
 		}
-		if (NULL == padded_row) {
-			padded_row = &datagram.db_notify;
-			padded_row->row_folder_id = folder_id;
-			padded_row->row_message_id = message_id;
-			padded_row1 = &datagram1.db_notify;
-			padded_row1->row_folder_id = folder_id;
-			padded_row1->row_instance = 0;
+		if (!did_optim) {
 			if (!pdb->begin_optim())
 				return;
 			did_optim = true;
 		}
-		datagram.id_array[0] = datagram1.id_array[0] =
-			ptable->table_id; // reserved earlier
+		dg_template.id_array[0] = ptable->table_id; // reserved earlier
 		if (ptable->psorts == nullptr && ptable->accel_dir == 0) {
-			/* Genuinely unsorted table: append the new row at the bottom. */
-			char sql_string[148];
-			snprintf(sql_string, std::size(sql_string), "SELECT "
-				"count(*) FROM t%u", ptable->table_id);
-			auto pstmt = pdb->eph_prep(sql_string);
-			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
-				continue;
-			uint32_t idx = sqlite3_column_int64(pstmt, 0);
-			pstmt.finalize();
-			uint64_t inst_id = 0, row_id = 0;
-			if (0 == idx) {
-				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
-					" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
-					"%u, 0, 0, 1)", ptable->table_id, LLU{message_id},
-					CONTENT_ROW_MESSAGE);
-			} else {
-				snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id "
-						"FROM t%u WHERE idx=%u", ptable->table_id, idx);
-				pstmt = pdb->eph_prep(sql_string);
-				if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
-					continue;
-				row_id = sqlite3_column_int64(pstmt, 0);
-				inst_id = sqlite3_column_int64(pstmt, 1);
-				pstmt.finalize();
-				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, prev_id, "
-					"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
-					" %u, 0, 0, %u)", ptable->table_id, LLU{message_id}, LLU{row_id},
-					CONTENT_ROW_MESSAGE, idx + 1);
-			}
-			if (pdb->eph_exec(sql_string) != SQLITE_OK)
-				continue;
-			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
-				continue;
-			padded_row->row_instance = 0;
-			padded_row->after_row_id = inst_id;
-			padded_row->after_instance = 0;
-			if (padded_row->after_row_id == 0)
-				padded_row->after_folder_id = 0;
-			else if (!common_util_get_message_parent_folder(pdb->psqlite,
-			    padded_row->after_row_id, &padded_row->after_folder_id))
-				continue;
-			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::srchtbl_row_added :
-			                          db_notify_type::cttbl_row_added;
-			notifq.emplace_back(datagram, table_to_idarray(*ptable));
+			auto ret = ctar_unsorted(db, tnode, dg_template,
+			           message_id, notifq);
+			if (ret < 0)
+				return;
 			continue;
 		} else if (ptable->psorts == nullptr || ptable->psorts->ccategories == 0) {
-			/*
-			 * Uncategorized sort, or an accel/msgtime_index table (psorts is
-			 * null; the single sort key lives in accel_tag/accel_dir). Compute
-			 * the insertion point so new rows are positioned rather than
-			 * appended at the bottom (which is what the accel path did before
-			 * and caused new mail to sort to the end in online-mode clients).
-			 */
-			proptype_t sort_type[MAXIMUM_SORT_COUNT];
-			bool sort_asc[MAXIMUM_SORT_COUNT];
-			size_t sort_count;
-			if (ptable->psorts != nullptr) {
-				sort_count = ptable->psorts->count;
-				for (size_t i = 0; i < sort_count; ++i) {
-					auto &s = ptable->psorts->psort[i];
-					sort_type[i] = s.type;
-					sort_asc[i]  = s.table_sort == TABLE_SORT_ASCEND;
-					propvals[i].proptag = PROP_TAG(s.type, s.propid);
-				}
-			} else {
-				sort_count   = 1;
-				sort_type[0] = PROP_TYPE(ptable->accel_tag);
-				sort_asc[0]  = ptable->accel_dir > 0;
-				propvals[0].proptag = ptable->accel_tag;
-			}
-			for (size_t i = 0; i < sort_count; ++i)
-				if (!cu_get_property(MAPI_MESSAGE, message_id,
-				    ptable->cpid, db, propvals[i].proptag,
-				    &propvals[i].pvalue))
-					return;
-			char sql_string[148];
-			snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id,"
-				" idx FROM t%u ORDER BY idx ASC", ptable->table_id);
-			auto pstmt = pdb->eph_prep(sql_string);
-			if (pstmt == nullptr)
-				continue;
-			uint32_t idx = 0;
-			uint64_t row_id = 0, row_id1 = 0, inst_id = 0, inst_id1 = 0;
-			BOOL b_break = FALSE;
-			while (pstmt.step() == SQLITE_ROW) {
-				row_id = row_id1;
-				inst_id = inst_id1;
-				row_id1 = sqlite3_column_int64(pstmt, 0);
-				inst_id1 = sqlite3_column_int64(pstmt, 1);
-				idx = sqlite3_column_int64(pstmt, 2);
-				bool b_equal = true;
-				for (size_t i = 0; i < sort_count; ++i) {
-					void *pvalue = nullptr;
-					if (!cu_get_property(MAPI_MESSAGE, inst_id1,
-					    ptable->cpid, db,
-					    propvals[i].proptag, &pvalue))
-						return;
-					auto result = db_engine_compare_propval(sort_type[i], propvals[i].pvalue, pvalue);
-					if ((sort_asc[i] && result < 0) || (!sort_asc[i] && result > 0))
-						b_break = TRUE;
-					if (result != 0) {
-						b_equal = false;
-						break;
-					}
-				}
-				/*
-				 * All sort keys equal: break ties by message_id in the primary
-				 * sort direction, mirroring the msgtime_index (folder_id, <ts>,
-				 * message_id) load order and the stbl message_id tiebreak in
-				 * gct_makequery. Without this a newly delivered same-key message
-				 * is appended below its peers here but a reload sorts it among
-				 * them, so online-mode clients show it misordered/duplicated.
-				 */
-				if (b_equal && !b_break &&
-				    ((sort_asc[0] && message_id < inst_id1) ||
-				    (!sort_asc[0] && message_id > inst_id1)))
-					b_break = TRUE;
-				if (b_break)
-					break;
-			}
-			pstmt.finalize();
-			if (0 == idx) {
-				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
-					" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
-					"%u, 0, 0, 1)", ptable->table_id, LLU{message_id},
-					CONTENT_ROW_MESSAGE);
-				if (pdb->eph_exec(sql_string) != SQLITE_OK)
-					continue;
-				padded_row->after_row_id = 0;
-			} else if (!b_break) {
-				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, prev_id, "
-					"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
-					" %u, 0, 0, %u)", ptable->table_id, LLU{message_id},
-					LLU{row_id1}, CONTENT_ROW_MESSAGE, idx + 1);
-				if (pdb->eph_exec(sql_string) != SQLITE_OK)
-					continue;
-				padded_row->after_row_id = inst_id1;
-			} else {
-				xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp1");
-				if (!sql_savepoint)
-					continue;
-				snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx+1)"
-					" WHERE idx>=%u;UPDATE t%u SET idx=-idx WHERE"
-					" idx<0", ptable->table_id, idx, ptable->table_id);
-				if (pdb->eph_exec(sql_string) != SQLITE_OK)
-					continue;
-				snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=NULL "
-					"WHERE row_id=%llu", ptable->table_id, LLU{row_id1});
-				if (pdb->eph_exec(sql_string) != SQLITE_OK)
-					continue;
-				if (row_id == 0)
-					snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
-						" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
-						"%u, 0, 0, 1)", ptable->table_id, LLU{message_id},
-						CONTENT_ROW_MESSAGE);
-				else
-					snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, prev_id, "
-						"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
-						" %u, 0, 0, %u)", ptable->table_id, LLU{message_id},
-						LLU{row_id}, CONTENT_ROW_MESSAGE, idx);
-				if (pdb->eph_exec(sql_string) != SQLITE_OK)
-					continue;
-				row_id = sqlite3_last_insert_rowid(pdb->m_sqlite_eph);
-				snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=%llu WHERE"
-				        " row_id=%llu", ptable->table_id, LLU{row_id}, LLU{row_id1});
-				if (pdb->eph_exec(sql_string) != SQLITE_OK)
-					continue;
-				if (sql_savepoint.commit() != SQLITE_OK)
-					continue;
-				padded_row->after_row_id = inst_id;
-			}
-			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
-				continue;
-			if (padded_row->after_row_id == 0)
-				padded_row->after_folder_id = 0;
-			else if (!common_util_get_message_parent_folder(pdb->psqlite,
-			    padded_row->after_row_id, &padded_row->after_folder_id))
-				continue;
-			padded_row->row_instance = 0;
-			padded_row->after_instance = 0;
-			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::srchtbl_row_added :
-			                          db_notify_type::cttbl_row_added;
-			notifq.emplace_back(datagram, table_to_idarray(*ptable));
+			auto ret = ctar_uncateg_sort(db, tnode, dg_template,
+			           message_id, propvals, notifq);
+			if (ret < 0)
+				return;
 			continue;
 		}
-		if (NULL == pread_byte) {
-			if (!cu_get_property(MAPI_MESSAGE,
-			    message_id, ptable->cpid, db, PR_READ,
-			    reinterpret_cast<void **>(&pread_byte)) ||
-			    pread_byte == nullptr)
+		if (b_read < 0) {
+			b_read = ctar_is_read(db, *ptable, message_id);
+			if (b_read < 0)
 				return;
-			b_read = *pread_byte == 0 ? false : TRUE;
 		}
-		int multi_index = -1;
-		static_assert(sizeof(multi_index) > sizeof(ptable->psorts->count));
-		for (unsigned int i = 0; i < ptable->psorts->count; ++i) {
-			propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
-			if (propvals[i].proptag == ptable->instance_tag) {
-				multi_index = i;
-				if (!cu_get_property(
-				    MAPI_MESSAGE, message_id, ptable->cpid,
-				    db, propvals[i].proptag & ~MV_INSTANCE,
-				    &propvals[i].pvalue))
-					return;
-			} else if (!cu_get_property(MAPI_MESSAGE, message_id,
-			    ptable->cpid, db, propvals[i].proptag,
-			    &propvals[i].pvalue)) {
-				return;
-			}
-		}
-		void *pmultival = nullptr;
-		uint32_t multi_num = 1;
-		if (multi_index >= 0) {
-			pmultival = propvals[multi_index].pvalue;
-			if (pmultival != nullptr) {
-				multi_num = det_multi_num(ptable->psorts->psort[multi_index].type & ~MV_INSTANCE, pmultival);
-				if (multi_num == UINT32_MAX)
-					return;
-				if (0 == multi_num) {
-					pmultival = NULL;
-					multi_num = 1;
-					propvals[multi_index].pvalue = NULL;
-				}
-			}
-		}
+		int multi_index = ctar_multi_index(db, *ptable, message_id, propvals);
+		if (multi_index <= -2)
+			return;
+		auto [pmultival, multi_num] = ctar_multi_val(*ptable, propvals, multi_index);
+		if (multi_num == 0)
+			return;
 		xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp2");
 		if (!sql_savepoint)
 			continue;
@@ -2320,10 +2372,11 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;
 		if (b_resorted) {
-			datagram1.db_notify.type = ptable->b_search ?
-						   db_notify_type::srchtbl_changed :
-						   db_notify_type::cttbl_changed;
-			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
+			auto dg = dg_template;
+			dg.db_notify.type = ptable->b_search ?
+			                    db_notify_type::srchtbl_changed :
+			                    db_notify_type::cttbl_changed;
+			notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			continue;
 		}
 
@@ -2363,32 +2416,38 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 				sqlite3_reset(pstmt);
 			}
 			if (!b_added) {
+				auto dg = dg_template;
+				auto padded_row1 = &dg.db_notify;
 				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
 				padded_row1->after_row_id = inst_id;
 				padded_row1->after_folder_id = inst_folder_id;
 				padded_row1->after_instance = inst_num;
-				datagram1.db_notify.type = ptable->b_search ?
-							   db_notify_type::srchtbl_row_modified :
-							   db_notify_type::cttbl_row_modified;
-				notifq.emplace_back(datagram1, table_to_idarray(*ptable));
+				dg.db_notify.type = ptable->b_search ?
+				                    db_notify_type::srchtbl_row_modified :
+				                    db_notify_type::cttbl_row_modified;
+				notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			} else if (stm_sel_tx.col_int64(4) == CONTENT_ROW_HEADER) {
+				auto dg = dg_template;
+				auto padded_row1 = &dg.db_notify;
 				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
 				padded_row1->after_row_id = inst_id;
 				padded_row1->after_folder_id = inst_folder_id;
 				padded_row1->after_instance = inst_num;
-				datagram1.db_notify.type = ptable->b_search ?
-				                           db_notify_type::srchtbl_row_added :
-				                           db_notify_type::cttbl_row_added;
-				notifq.emplace_back(datagram1, table_to_idarray(*ptable));
+				dg.db_notify.type = ptable->b_search ?
+				                    db_notify_type::srchtbl_row_added :
+				                    db_notify_type::cttbl_row_added;
+				notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			} else {
+				auto dg = dg_template;
+				auto padded_row = &dg.db_notify;
 				padded_row->row_instance = stm_sel_tx.col_int64(10);
 				padded_row->after_row_id = inst_id;
 				padded_row->after_folder_id = inst_folder_id;
 				padded_row->after_instance = inst_num;
-				datagram.db_notify.type = ptable->b_search ?
-				                          db_notify_type::srchtbl_row_added :
-				                          db_notify_type::cttbl_row_added;
-				notifq.emplace_back(datagram, table_to_idarray(*ptable));
+				dg.db_notify.type = ptable->b_search ?
+				                    db_notify_type::srchtbl_row_added :
+				                    db_notify_type::cttbl_row_added;
+				notifq.emplace_back(std::move(dg), table_to_idarray(*ptable));
 			}
 			stm_sel_tx.reset();
 		}

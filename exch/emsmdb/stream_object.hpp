@@ -26,8 +26,8 @@ struct stream_object {
 	ec_error_t set_length(uint32_t len);
 	ec_error_t seek(uint8_t opt, int64_t offset);
 	uint32_t get_seek_position() const { return seek_ptr; }
-	BOOL copy(stream_object *src, uint32_t *len);
-	BOOL commit();
+	ec_error_t copy(stream_object *src, uint32_t *len);
+	ec_error_t commit();
 
 	void *pparent = nullptr;
 	ems_objtype object_type = ems_objtype::none;

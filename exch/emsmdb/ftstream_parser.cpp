@@ -311,7 +311,7 @@ static int ftstream_parser_read_element(fxstream_parser &stream,
 		ppropname = ftstream_parser_read_property_name(pstream);
 		if (ppropname == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (!pstream->plogon->get_named_propid(TRUE, ppropname, &propid))
+		if (pstream->plogon->get_named_propid(TRUE, ppropname, &propid) != ecSuccess)
 			return FTSTREAM_PARSER_READ_FAIL;
 	}
 	if (pstream->st_size == pstream->offset)

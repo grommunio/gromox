@@ -8,7 +8,7 @@
 /*
  * Use unclear. Has something to do with notifications, and that, in sqlite3,
  * FIDs/MIDs seem to be stored 8:56 bits for replid:gcval, whereas in RPC
- * transport, it's 16:48. The rop_util_make_eid_ex(x>>48,y&56bits) is also
+ * transport, it's 16:48. The eid_t(x>>48,y&56bits) is also
  * questionable (should be y&48bits?).
  */
 #define NFID_UPPER_PART 0xFF00000000000000ULL

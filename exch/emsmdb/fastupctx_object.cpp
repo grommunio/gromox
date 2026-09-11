@@ -264,9 +264,11 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker) try
 	case STARTTOPFLD:
 		if (m_props == nullptr)
 			break;
-		if (m_props->count > 0 &&
-		    !static_cast<folder_object *>(pctx->pobject)->set_properties(m_props, &tmp_problems))
-			return ecRpcFailed;
+		if (m_props->count > 0) {
+			auto err = static_cast<folder_object *>(pctx->pobject)->set_props(m_props, &tmp_problems);
+			if (err != ecSuccess)
+				return err;
+		}
 		tpropval_array_free(m_props);
 		m_props = nullptr;
 		break;
@@ -275,9 +277,11 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker) try
 			break;
 		if (m_props == nullptr)
 			break;
-		if (m_props->count > 0 &&
-		    !static_cast<folder_object *>(pctx->pobject)->set_properties(m_props, &tmp_problems))
-			return ecRpcFailed;
+		if (m_props->count > 0) {
+			auto err = static_cast<folder_object *>(pctx->pobject)->set_props(m_props, &tmp_problems);
+			if (err != ecSuccess)
+				return err;
+		}
 		tpropval_array_free(m_props);
 		m_props = nullptr;
 		break;
@@ -703,13 +707,13 @@ ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 			auto msg = static_cast<message_object *>(pctx->pobject);
 			const TPROPVAL_ARRAY av = {1, deconst(ppropval)};
 			PROBLEM_ARRAY pa;
-			return msg->set_properties(&av, &pa);
+			return msg->set_props(&av, &pa);
 		}
 		case ROOT_ELEMENT_ATTACHMENTCONTENT: {
 			auto atx = static_cast<attachment_object *>(pctx->pobject);
 			const TPROPVAL_ARRAY av = {1, deconst(ppropval)};
 			PROBLEM_ARRAY pa;
-			return atx->set_properties(&av, &pa) == TRUE ? ecSuccess : ecRpcFailed;
+			return atx->set_props(&av, &pa);
 		}
 		case ROOT_ELEMENT_MESSAGELIST:
 		case ROOT_ELEMENT_TOPFOLDER:

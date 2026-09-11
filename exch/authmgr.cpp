@@ -268,8 +268,8 @@ static bool login_gen(const char *username, const char *password,
 		auth = mysql_adaptor_login2(mres.username.c_str(), password,
 		       mres.enc_passwd, mres.errstr);
 		if (!auth) {
-			if (auto fdelay = am_fail_delay.load(std::memory_order_relaxed);
-			    fdelay != std::chrono::nanoseconds(0))
+			fdelay = am_fail_delay.load(std::memory_order_relaxed);
+			if (fdelay != std::chrono::nanoseconds(0))
 				std::this_thread::sleep_for(fdelay);
 		}
 	}

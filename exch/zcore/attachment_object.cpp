@@ -48,7 +48,7 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 	return pattachment;
 }
 
-BOOL attachment_object::init_attachment()
+ec_error_t attachment_object::init_attachment()
 {
 	auto pattachment = this;
 	void *pvalue;
@@ -56,22 +56,22 @@ BOOL attachment_object::init_attachment()
 	TPROPVAL_ARRAY propvals;
 	
 	if (!pattachment->b_new)
-		return FALSE;
+		return ecInvalidParam;
 	propvals.count = 0;
 	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5);
 	if (propvals.ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	
 	propvals.ppropval[propvals.count].proptag = PR_ATTACH_NUM;
 	propvals.ppropval[propvals.count++].pvalue = &pattachment->attachment_num;
 	propvals.ppropval[propvals.count].proptag = PR_RENDERING_POSITION;
 	propvals.ppropval[propvals.count].pvalue = cu_alloc<uint32_t>();
 	if (propvals.ppropval[propvals.count].pvalue == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	*static_cast<uint32_t *>(propvals.ppropval[propvals.count++].pvalue) = indet_rendering_pos;
 	pvalue = cu_alloc<uint64_t>();
 	if (pvalue == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	*static_cast<uint64_t *>(pvalue) = rop_util_current_nttime();
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
@@ -79,7 +79,7 @@ BOOL attachment_object::init_attachment()
 	propvals.ppropval[propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	return exmdb_client->set_instance_properties(pattachment->pparent->pstore->get_dir(),
-	       pattachment->instance_id, &propvals, &problems);
+	       pattachment->instance_id, &propvals, &problems) ? ecSuccess : ecRpcFailed;
 }
 
 attachment_object::~attachment_object()
@@ -119,18 +119,18 @@ ec_error_t attachment_object::save()
 	return ecSuccess;
 }
 
-BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
+ec_error_t attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client->get_instance_all_proptags(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &tmp_proptags))
-		return FALSE;	
+		return ecRpcFailed;
 	pproptags->count = tmp_proptags.count;
 	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 5);
 	if (pproptags->pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	static constexpr proptag_t tags1[] = {
 		PR_ACCESS, PR_ACCESS_LEVEL, PR_OBJECT_TYPE,
@@ -138,10 +138,10 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	};
 	for (auto t : tags1)
 		pproptags->emplace_back_nd(t);
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL aobj_is_readonly_prop(const attachment_object *pattachment,
+static bool aobj_is_readonly_prop(const attachment_object *pattachment,
     proptag_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
@@ -165,40 +165,39 @@ static BOOL aobj_is_readonly_prop(const attachment_object *pattachment,
 	return FALSE;
 }
 
-static BOOL attachment_object_get_calculated_property(attachment_object *pattachment,
+static ec_error_t
+attachment_object_get_calculated_property(attachment_object *pattachment,
      proptag_t proptag, void **ppvalue)
 {
 	switch (proptag) {
 	case PR_ACCESS:
 		*ppvalue = &pattachment->pparent->tag_access;
-		return TRUE;
+		return ecSuccess;
 	case PR_ACCESS_LEVEL:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*static_cast<uint32_t *>(*ppvalue) = pattachment->b_writable ? MAPI_MODIFY : 0;
-		return TRUE;
+		return ecSuccess;
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (v == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = static_cast<uint32_t>(MAPI_ATTACH);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(pattachment->pparent->pstore->mailbox_guid);
-		return TRUE;
+		return ecSuccess;
 	case PR_STORE_ENTRYID:
 		*ppvalue = cu_to_store_entryid(*pattachment->pparent->pstore);
-		if (*ppvalue == nullptr)
-			return FALSE;
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	}
-	return FALSE;
+	return ecNotFound;
 }
 
-bool attachment_object::get_properties(proptag_cspan tags, TPROPVAL_ARRAY *ppropvals)
+ec_error_t attachment_object::get_properties(proptag_cspan tags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -206,36 +205,39 @@ bool attachment_object::get_properties(proptag_cspan tags, TPROPVAL_ARRAY *pprop
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(tags.size());
 	if (ppropvals->ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<proptag_t>(tags.size());
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropvals->count = 0;
 	for (const auto tag : tags) {
 		void *pvalue = nullptr;
-		if (!attachment_object_get_calculated_property(pattachment, tag, &pvalue))
-			tmp_proptags.emplace_back(tag);
-		else if (pvalue != nullptr)
+		auto err = attachment_object_get_calculated_property(pattachment, tag, &pvalue);
+		if (err == ecSuccess && pvalue != nullptr) {
 			ppropvals->emplace_back(tag, pvalue);
-		else
-			return false;
+			continue;
+		} else if (err == ecNotFound || pvalue == nullptr) {
+		} else {
+			return err;
+		}
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
+
 	if (!exmdb_client->get_instance_properties(pattachment->pparent->pstore->get_dir(),
 	    0, pattachment->instance_id, tmp_proptags, &tmp_propvals))
-		return FALSE;	
+		return ecRpcFailed;
 	if (tmp_propvals.count == 0)
-		return TRUE;
+		return ecSuccess;
 	memcpy(ppropvals->ppropval + ppropvals->count,
 		tmp_propvals.ppropval,
 		sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 	ppropvals->count += tmp_propvals.count;
-	return TRUE;	
+	return ecSuccess;
 }
 
-BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
+ec_error_t attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
 	PROBLEM_ARRAY tmp_problems;
@@ -244,7 +246,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (tmp_propvals.ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (aobj_is_readonly_prop(pattachment, pv.proptag))
@@ -252,16 +254,16 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		tmp_propvals.ppropval[tmp_propvals.count++] = pv;
 	}
 	if (tmp_propvals.count == 0)
-		return TRUE;
+		return ecSuccess;
 	if (!exmdb_client->set_instance_properties(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &tmp_propvals, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	if (tmp_problems.count < tmp_propvals.count)
 		pattachment->b_touched = TRUE;
-	return TRUE;
+	return ecSuccess;
 }
 
-bool attachment_object::remove_properties(proptag_cspan tags)
+ec_error_t attachment_object::remove_properties(proptag_cspan tags)
 {
 	auto pattachment = this;
 	PROBLEM_ARRAY tmp_problems;
@@ -270,21 +272,21 @@ bool attachment_object::remove_properties(proptag_cspan tags)
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<proptag_t>(tags.size());
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	for (const auto tag : tags)
 		if (!aobj_is_readonly_prop(pattachment, tag))
 			tmp_proptags.emplace_back(tag);
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
 	if (!exmdb_client->remove_instance_properties(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, tmp_proptags, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	if (tmp_problems.count < tmp_proptags.count)
 		pattachment->b_touched = TRUE;
-	return TRUE;
+	return ecSuccess;
 }
 
-bool attachment_object::copy_properties(attachment_object *pattachment_src,
+ec_error_t attachment_object::copy_properties(attachment_object *pattachment_src,
     proptag_cspan excluded_proptags, BOOL b_force, BOOL *pb_cycle)
 {
 	auto pattachment = this;
@@ -298,12 +300,12 @@ bool attachment_object::copy_properties(attachment_object *pattachment_src,
 	    pattachment_src->pparent->pstore->get_dir()) == 0 &&
 	    !exmdb_client->is_descendant_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment_src->instance_id, pattachment->instance_id, pb_cycle))
-		return FALSE;	
+		return ecRpcFailed;
 	if (*pb_cycle)
-		return TRUE;
+		return ecSuccess;
 	if (!exmdb_client->read_attachment_instance(pattachment_src->pparent->pstore->get_dir(),
 	    pattachment_src->instance_id, &attctnt))
-		return FALSE;
+		return ecRpcFailed;
 	common_util_remove_propvals(&attctnt.proplist, PR_ATTACH_NUM);
 	i = 0;
 	while (i < attctnt.proplist.count) {
@@ -318,7 +320,7 @@ bool attachment_object::copy_properties(attachment_object *pattachment_src,
 		attctnt.pembedded = NULL;
 	if (!exmdb_client->write_attachment_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &attctnt, b_force, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	pattachment->b_touched = TRUE;
-	return TRUE;
+	return ecSuccess;
 }

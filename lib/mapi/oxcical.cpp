@@ -2368,7 +2368,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 	}
 	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
 		int32_t tmp_int32 = IMPORTANCE_NORMAL;
-		auto err = pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32);
+		err = pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32);
 		if (err != ecSuccess)
 			return err;
 	}
@@ -2518,7 +2518,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 			if (pembedded == nullptr)
 				return ecMAPIOOM;
 			pattachment->set_embedded_internal(pembedded);
-			auto err = pembedded->proplist.set(PR_MESSAGE_CLASS, IPM_Appointment_Exception);
+			err = pembedded->proplist.set(PR_MESSAGE_CLASS, IPM_Appointment_Exception);
 			if (err != ecSuccess)
 				return err;
 

@@ -442,7 +442,7 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 	    strcasecmp(ptr->first, pathcomp[0].c_str()) != 0)
 		return 0;
 
-	eid_t fid = rop_util_make_eid_ex(1, ptr->second);
+	eid_t fid(1, ptr->second);
 	for (size_t i = 1; i < pathcomp.size(); ++i) {
 		if (pathcomp[i].empty())
 			continue;
@@ -485,7 +485,7 @@ eid_t gi_lookup_eid_any_way(const char *dir, const char *name)
 	char *end = nullptr;
 	auto pure_id = strtoull(name, &end, 0);
 	if (end != name && *znul(end) == '\0')
-		return rop_util_make_eid_ex(1, pure_id);
+		return eid_t(1, pure_id);
 	return gi_lookup_eid_by_name(dir, name);
 }
 

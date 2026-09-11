@@ -202,8 +202,9 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 			{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 			PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
 		TPROPVAL_ARRAY tmp_propvals;
-		if (!plogon->get_properties(tmp_proptags, &tmp_propvals))
-			return ecError;
+		auto err = plogon->get_props(tmp_proptags, &tmp_propvals);
+		if (err != ecSuccess)
+			return err;
 
 		auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 		uint64_t max_quota = ULLONG_MAX;
@@ -502,11 +503,13 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			return ecError;
 		break;
 	}
-	case ems_objtype::attach:
-		if (!static_cast<attachment_object *>(pobject)->flush_streams())
-			return ecError;
+	case ems_objtype::attach: {
+		auto &atx = *static_cast<attachment_object *>(pobject);
+		auto err = atx.flush_streams();
+		if (err != ecSuccess)
+			return err;
 		if (!exmdb_client->read_attachment_instance(plogon->get_dir(),
-		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
+		    atx.get_instance_id(), &attctnt))
 			return ecError;
 		for (const auto tag : pproptags) {
 			switch (tag) {
@@ -521,6 +524,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!pctx->make_attachmentcontent(attctnt))
 			return ecError;
 		break;
+	}
 	default:
 		break;
 	}
@@ -616,11 +620,13 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		break;
 	}
-	case ems_objtype::attach:
-		if (!static_cast<attachment_object *>(pobject)->flush_streams())
-			return ecError;
+	case ems_objtype::attach: {
+		auto &atx = *static_cast<attachment_object *>(pobject);
+		auto err = atx.flush_streams();
+		if (err != ecSuccess)
+			return err;
 		if (!exmdb_client->read_attachment_instance(plogon->get_dir(),
-		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
+		    atx.get_instance_id(), &attctnt))
 			return ecError;
 		for (unsigned int i = 0; i < attctnt.proplist.count; ) {
 			if (!pproptags.has(attctnt.proplist.ppropval[i].proptag)) {
@@ -635,6 +641,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		if (!pctx->make_attachmentcontent(attctnt))
 			return ecError;
 		break;
+	}
 	default:
 		break;
 	}
@@ -901,7 +908,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		return ecError;
 	if (!b_new) {
 		static constexpr proptag_t tags[] = {PR_PREDECESSOR_CHANGE_LIST};
-		auto err = pmessage->get_properties(0, tags, &tmp_propvals);
+		auto err = pmessage->get_props(0, tags, &tmp_propvals);
 		if (err != ecSuccess)
 			return err;
 		auto bin = tmp_propvals.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);

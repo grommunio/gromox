@@ -1010,7 +1010,6 @@ uint64_t common_util_get_folder_parent_fid(
 static uint64_t common_util_get_folder_changenum(
 	sqlite3 *psqlite, uint64_t folder_id)
 {
-	uint64_t change_num;
 	char sql_string[128];
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT change_number FROM "
@@ -1018,8 +1017,7 @@ static uint64_t common_util_get_folder_changenum(
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return 0;
-	change_num = sqlite3_column_int64(pstmt, 0);
-	return rop_util_make_eid_ex(1, change_num);
+	return eid_t(1, pstmt.col_uint64(0));
 }
 
 BOOL common_util_get_folder_by_name(
@@ -1223,7 +1221,6 @@ static bool cu_msg_is_read(const db_conn &db, uint64_t message_id)
 static uint64_t common_util_get_message_changenum(
 	sqlite3 *psqlite, uint64_t message_id)
 {
-	uint64_t change_num;
 	char sql_string[128];
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT change_number FROM "
@@ -1231,8 +1228,7 @@ static uint64_t common_util_get_message_changenum(
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return 0;
-	change_num = sqlite3_column_int64(pstmt, 0);
-	return rop_util_make_eid_ex(1, change_num);
+	return eid_t(1, pstmt.col_uint64(0));
 }
 
 /**
@@ -1781,7 +1777,7 @@ static GP_RESULT gp_folderprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		auto tmp_id = common_util_get_folder_parent_fid(db, id);
 		if (tmp_id == 0)
 			return GP_SKIP;
-		*w = rop_util_make_eid_ex(1, tmp_id);
+		*w = eid_t(1, tmp_id);
 		return GP_ADV;
 	}
 	case PR_PARENT_ENTRYID: {
@@ -1871,7 +1867,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = rop_util_make_eid_ex(1, tmp_id);
+		*v = eid_t(1, tmp_id);
 		return GP_ADV;
 	}
 	case PR_INSTANCE_SVREID: {
@@ -1883,8 +1879,8 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		if (se == nullptr)
 			return GP_ERR;
 		se->pbin = nullptr;
-		se->folder_id = rop_util_make_eid_ex(1, tmp_id);
-		se->message_id = rop_util_make_eid_ex(1, id);
+		se->folder_id  = eid_t(1, tmp_id);
+		se->message_id = eid_t(1, id);
 		se->instance = 0;
 		return GP_ADV;
 	}
@@ -1952,7 +1948,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = rop_util_make_eid_ex(1, id);
+		*v = eid_t(1, id);
 		return GP_ADV;
 	}
 	case PR_MESSAGE_FLAGS:
@@ -3770,7 +3766,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		*ppvalue = v;
 		if (v == nullptr)
 			return FALSE;
-		*v = rop_util_make_eid_ex(1, rule_id);
+		*v = eid_t(1, rule_id);
 		return TRUE;
 	} else {
 		*ppvalue = NULL;
@@ -4202,7 +4198,7 @@ static SVREID *cu_get_msg_parent_svreid(sqlite3 *psqlite, uint64_t message_id)
 	if (s == nullptr)
 		return NULL;
 	s->pbin = nullptr;
-	s->folder_id = rop_util_make_eid_ex(1, folder_id);
+	s->folder_id = eid_t(1, folder_id);
 	s->message_id = eid_t(0);
 	s->instance = 0;
 	return s;
@@ -5010,7 +5006,7 @@ bool cu_copy_message(const db_conn &db, uint64_t message_id, uint64_t folder_id,
 		exmdb_server::is_private() ?
 			rop_util_make_user_guid(account_id) :
 			rop_util_make_domain_guid(account_id),
-		rop_util_make_eid_ex(1, change_num)});
+		eid_t(1, change_num)});
 	if (propval_buff[0].pvalue == nullptr)
 		return FALSE;
 	propval_buff[1].proptag = PR_PREDECESSOR_CHANGE_LIST;

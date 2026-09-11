@@ -878,12 +878,12 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	sTimePoint now(clock::now());
 	auto mkFid = [&](uint64_t fid) {
 		return tFolderId(mkFolderEntryId(mgr->mailboxInfo,
-		       rop_util_make_eid_ex(1, fid)).serialize());
+		       eid_t(1, fid)).serialize());
 	};
 	auto mkMid = [&](uint64_t fid, uint64_t mid) {
 		return tItemId(mkMessageEntryId(mgr->mailboxInfo,
-		       rop_util_make_eid_ex(1, fid),
-		       rop_util_make_eid_ex(1, mid)).serialize());
+		       eid_t(1, fid),
+		       eid_t(1, mid)).serialize());
 	};
 	const auto &evt = *notification;
 	switch (evt.type) {

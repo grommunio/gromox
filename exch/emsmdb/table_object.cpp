@@ -78,12 +78,12 @@ ec_error_t table_object::load()
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
 			return ecError;
-		auto eff_user = ptable->plogon->eff_user();
-		auto rds_user = ptable->plogon->readstate_user();
+		auto &logon   = *ptable->plogon;
+		auto eff_user = logon.eff_user();
+		auto rds_user = logon.readstate_user();
 		if (eff_user != STORE_OWNER_GRANTED) {
-			if (ptable->plogon->is_private()) {
-				if (!exmdb_client->get_folder_perm(
-				    ptable->plogon->get_dir(),
+			if (logon.is_private()) {
+				if (!exmdb_client->get_folder_perm(logon.get_dir(),
 				    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 				    eff_user, &permission))
 					return ecRpcFailed;
@@ -91,7 +91,7 @@ ec_error_t table_object::load()
 					rds_user = nullptr;
 			}
 		}
-		if (!exmdb_client->load_content_table(ptable->plogon->get_dir(),
+		if (!exmdb_client->load_content_table(logon.get_dir(),
 		    pinfo->cpid, static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    rds_user, ptable->table_flags, m_restriction,
 		    m_sorts, &table_id, &row_num))

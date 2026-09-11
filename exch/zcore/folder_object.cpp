@@ -48,8 +48,8 @@ std::unique_ptr<folder_object> folder_object::create(store_object *pstore,
 
 static bool toplevel(uint64_t f)
 {
-	return f == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
-	       f == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
+	return f == eid_t(1, PRIVATE_FID_ROOT) ||
+	       f == eid_t(1, PRIVATE_FID_INBOX);
 }
 
 BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
@@ -140,7 +140,7 @@ bool folder_object::is_readonly_prop(proptag_t proptag) const
 	return FALSE;
 }
 
-static BOOL folder_object_get_calculated_property(folder_object *pfolder,
+static ec_error_t folder_object_get_calculated_property(folder_object *pfolder,
     proptag_t proptag, void **ppvalue)
 {
 	BINARY *pbin;
@@ -153,235 +153,238 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	switch (proptag) {
 	case PR_ACCESS:
 		*ppvalue = &pfolder->tag_access;
-		return TRUE;
+		return ecSuccess;
 	case PR_CONTENT_UNREAD: {
 		if (pfolder->pstore->b_private)
-			return false;
+			return ecNotFound;
 		*ppvalue = cu_alloc<uint32_t>();
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		auto pinfo = zs_get_info();
 		return exmdb_client->get_public_folder_unread_count(pfolder->pstore->get_dir(),
 		       pinfo->get_username(), pfolder->folder_id,
-		       static_cast<uint32_t *>(*ppvalue));
+		       static_cast<uint32_t *>(*ppvalue)) ? ecSuccess : ecRpcFailed;
 	}
 	case PidTagFolderId:
 		*ppvalue = cu_alloc<uint64_t>();
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*static_cast<uint64_t *>(*ppvalue) = pfolder->folder_id;
-		return TRUE;
+		return ecSuccess;
 	case PR_RIGHTS: {
 		*ppvalue = cu_alloc<uint32_t>();
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		if (pfolder->pstore->owner_mode()) {
 			*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
-			return TRUE;
+			return ecSuccess;
 		}
 		auto pinfo = zs_get_info();
 		return exmdb_client->get_folder_perm(pfolder->pstore->get_dir(),
 		       pfolder->folder_id, pinfo->get_username(),
-		       static_cast<uint32_t *>(*ppvalue));
+		       static_cast<uint32_t *>(*ppvalue)) ? ecSuccess : ecRpcFailed;
 	}
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore, pfolder->folder_id);
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
-		    pvalue == nullptr)
-			return FALSE;	
+		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue))
+			return ecRpcFailed;
+		if (pvalue == nullptr)
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_SOURCE_KEY:
 		*ppvalue = cu_fid_to_sk(*pfolder->pstore, pfolder->folder_id);
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_PARENT_SOURCE_KEY:
 		if (pfolder->pstore->b_private) {
-			if (pfolder->folder_id == rop_util_make_eid_ex(
+			if (pfolder->folder_id == eid_t(
 				1, PRIVATE_FID_ROOT)) {
 				*ppvalue = deconst(&fake_bin);
-				return TRUE;
+				return ecSuccess;
 			}
 		} else {
-			if (pfolder->folder_id == rop_util_make_eid_ex(
+			if (pfolder->folder_id == eid_t(
 				1, PUBLIC_FID_ROOT)) {
 				*ppvalue = deconst(&fake_bin);
-				return TRUE;
+				return ecSuccess;
 			}
 		}
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
-		    pvalue == nullptr)
-			return FALSE;	
+		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue))
+			return ecRpcFailed;
+		if (pvalue == nullptr)
+			return ecNotFound;
 		*ppvalue = cu_fid_to_sk(*pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mailbox_guid);
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mapping_signature);
-		return TRUE;
+		return *ppvalue != nullptr ? ecSuccess : ecServerOOM;
 	case PR_STORE_ENTRYID:
 		*ppvalue = cu_to_store_entryid(*pfolder->pstore);
-		return *ppvalue != nullptr ? TRUE : false;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_DELETED_FOLDER_COUNT:
 		/* just like Exchange 2013, always return 0 */
 		*ppvalue = deconst(&uint_value_zero);
-		return TRUE;
+		return ecSuccess;
 	case PR_IPM_DRAFTS_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-			return FALSE;	
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
-					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
-		return TRUE;
+					eid_t(1, PRIVATE_FID_DRAFT));
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_CONTACT_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
-					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
-		return TRUE;
+					eid_t(1, PRIVATE_FID_CONTACTS));
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_APPOINTMENT_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
-					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
-		return TRUE;
+					eid_t(1, PRIVATE_FID_CALENDAR));
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_JOURNAL_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
-					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
-		return TRUE;
+					eid_t(1, PRIVATE_FID_JOURNAL));
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_NOTE_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
-					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
-		return TRUE;
+					eid_t(1, PRIVATE_FID_NOTES));
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_TASK_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-			return FALSE;
+			return ecNotFound;
 		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
-					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
-		return TRUE;
+					eid_t(1, PRIVATE_FID_TASKS));
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_REM_ONLINE_ENTRYID:
 		if (!pfolder->pstore->b_private)
-			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
+			return ecNotFound;
+		if (pfolder->folder_id != eid_t(
 		    1, PRIVATE_FID_ROOT))
-			return FALSE;	
+			return ecNotFound;
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
-		    PR_REM_ONLINE_ENTRYID, &pvalue) ||
-		    pvalue == nullptr)
-			return FALSE;
+		    CP_ACP, eid_t(1, PRIVATE_FID_INBOX),
+		    PR_REM_ONLINE_ENTRYID, &pvalue))
+			return ecRpcFailed;
+		if (pvalue == nullptr)
+			return ecNotFound;
 		*ppvalue = pvalue;
-		return TRUE;
+		return ecSuccess;
 	case PR_ADDITIONAL_REN_ENTRYIDS: {
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-			return FALSE;
+			return ecNotFound;
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, eid_t(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS, &pvalue))
-			return FALSE;
+			return ecRpcFailed;
 		if (NULL != pvalue) {
 			*ppvalue = pvalue;
-			return TRUE;
+			return ecSuccess;
 		}
 		*ppvalue = cu_alloc<BINARY_ARRAY>();
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
 		ba->count = 5;
 		ba->pbin = cu_alloc<BINARY>(ba->count);
 		if (ba->pbin == nullptr) {
 			ba->count = 0;
-			return FALSE;
+			return ecServerOOM;
 		}
 		pbin = cu_fid_to_entryid(*pfolder->pstore,
-				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
+				eid_t(1, PRIVATE_FID_CONFLICTS));
 		if (pbin == nullptr)
-			return FALSE;
+			return ecError;
 		ba->pbin[0] = *pbin;
 		pbin = cu_fid_to_entryid(*pfolder->pstore,
-			rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
+			eid_t(1, PRIVATE_FID_SYNC_ISSUES));
 		if (pbin == nullptr)
-			return FALSE;
+			return ecError;
 		ba->pbin[1] = *pbin;
 		pbin = cu_fid_to_entryid(*pfolder->pstore,
-			rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
+			eid_t(1, PRIVATE_FID_LOCAL_FAILURES));
 		if (pbin == nullptr)
-			return FALSE;
+			return ecError;
 		ba->pbin[2] = *pbin;
 		pbin = cu_fid_to_entryid(*pfolder->pstore,
-			rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
+			eid_t(1, PRIVATE_FID_SERVER_FAILURES));
 		if (pbin == nullptr)
-			return FALSE;
+			return ecError;
 		ba->pbin[3] = *pbin;
 		pbin = cu_fid_to_entryid(*pfolder->pstore,
-				rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
+				eid_t(1, PRIVATE_FID_JUNK));
 		if (pbin == nullptr)
-			return FALSE;
+			return ecError;
 		ba->pbin[4] = *pbin;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_ADDITIONAL_REN_ENTRYIDS_EX: {
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-			return FALSE;
+			return ecNotFound;
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, eid_t(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS_EX, &pvalue))
-			return FALSE;
+			return ecRpcFailed;
 		if (NULL != pvalue) {
 			*ppvalue = pvalue;
-			return TRUE;
+			return ecSuccess;
 		}
 		const PERSISTDATA pd[] = {
-			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
-			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
-			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
+			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, eid_t(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
+			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, eid_t(1, PRIVATE_FID_IMCONTACTLIST))},
+			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, eid_t(1, PRIVATE_FID_QUICKCONTACTS))},
 		};
 		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 		    ext_push.p_persistdata_a(pd) != pack_result::ok)
-			return FALSE;	
+			return ecRpcFormat;
 		*ppvalue = cu_alloc<BINARY>();
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		auto bv = static_cast<BINARY *>(*ppvalue);
 		bv->cb = ext_push.m_offset;
 		bv->pv = common_util_alloc(bv->cb);
 		if (bv->pv == nullptr) {
 			bv->cb = 0;
-			return FALSE;
+			return ecServerOOM;
 		}
 		memcpy(bv->pv, ext_push.m_udata, bv->cb);
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_FREEBUSY_ENTRYIDS: {
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-			return FALSE;
+			return ecNotFound;
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, eid_t(1, PRIVATE_FID_INBOX),
 		    PR_FREEBUSY_ENTRYIDS, &pvalue))
-			return FALSE;
+			return ecRpcFailed;
 		if (NULL != pvalue) {
 			*ppvalue = pvalue;
-			return TRUE;
+			return ecSuccess;
 		}
 		*ppvalue = cu_alloc<BINARY_ARRAY>();
 		if (*ppvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
 		ba->count = 4;
 		ba->pbin = cu_alloc<BINARY>(ba->count);
 		if (ba->pbin == nullptr) {
 			ba->count = 0;
-			return FALSE;
+			return ecServerOOM;
 		}
 		ba->pbin[0].cb = 0;
 		ba->pbin[0].pb = NULL;
@@ -390,25 +393,25 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		ba->pbin[2].cb = 0;
 		ba->pbin[2].pb = NULL;
 		pbin = cu_fid_to_entryid(*pfolder->pstore,
-				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
+				eid_t(1, PRIVATE_FID_LOCAL_FREEBUSY));
 		if (pbin == nullptr)
-			return FALSE;
+			return ecError;
 		ba->pbin[3] = *pbin;
-		return TRUE;
+		return ecSuccess;
 	}
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (v == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		*v = static_cast<uint32_t>(MAPI_FOLDER);
-		return TRUE;
+		return ecSuccess;
 	}
 	}
-	return FALSE;
+	return ecNotFound;
 }
 
-bool folder_object::get_properties(proptag_cspan pproptags,
+ec_error_t folder_object::get_props(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	PROPTAG_ARRAY tmp_proptags;
@@ -416,35 +419,39 @@ bool folder_object::get_properties(proptag_cspan pproptags,
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	ppropvals->count = 0;
 	auto pfolder = this;
 	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue))
-			tmp_proptags.emplace_back(tag);
-		else if (pvalue != nullptr)
+		auto err = folder_object_get_calculated_property(pfolder, tag, &pvalue);
+		if (err == ecSuccess && pvalue != nullptr) {
 			ppropvals->emplace_back(tag, pvalue);
-		else
-			return false;
+			continue;
+		} else if (err == ecNotFound || pvalue == nullptr) {
+		} else {
+			return err;
+		}
+		tmp_proptags.emplace_back(tag);
+		continue;
 	}
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
 	auto pinfo = zs_get_info();
 	if (!exmdb_client->get_folder_properties(pfolder->pstore->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, tmp_proptags, &tmp_propvals))
-		return FALSE;
+		return ecRpcFailed;
 	if (tmp_propvals.count == 0)
-		return TRUE;
+		return ecSuccess;
 	memcpy(ppropvals->ppropval + ppropvals->count,
 	       tmp_propvals.ppropval,
 	       sizeof(TAGGED_PROPVAL) * tmp_propvals.count);
 	ppropvals->count += tmp_propvals.count;
-	return TRUE;	
+	return ecSuccess;	
 }
 
 BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)

@@ -103,21 +103,16 @@ eid_t rop_util_make_eid(uint16_t replid, GLOBCNT gc)
 	return {__builtin_bswap64(rop_util_gc_to_value(gc)) | replid};
 }
 
-eid_t rop_util_make_eid_ex(uint16_t replid, uint64_t value)
-{
-	return {(__builtin_bswap64(value)) | replid};
-}
-
 eid_t rop_util_nfid_to_eid(uint64_t id)
 {
-	return (id & NFID_UPPER_PART) == 0 ? rop_util_make_eid_ex(1, id) :
-	       rop_util_make_eid_ex(id >> 48, id & NFID_LOWER_PART);
+	return (id & NFID_UPPER_PART) == 0 ? eid_t(1, id) :
+	       eid_t(id >> 48, id & NFID_LOWER_PART);
 }
 
 eid_t rop_util_nfid_to_eid2(uint64_t id)
 {
-	return (id & NFID_UPPER_PART) == 0 ? rop_util_make_eid_ex(1, id) :
-	       rop_util_make_eid_ex(2, id & NFID_LOWER_PART);
+	return (id & NFID_UPPER_PART) == 0 ? eid_t(1, id) :
+	       eid_t(2, id & NFID_LOWER_PART);
 }
 
 GUID rop_util_make_user_guid(int user_id)

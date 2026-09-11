@@ -46,7 +46,7 @@ struct OBJECT_TREE {
 		{ return static_cast<T *>(get_object1(h, t)); }
 	void release_object_handle(uint32_t obj_handle);
 	void *get_zstore_propval(gromox::proptag_t);
-	BOOL set_zstore_propval(const TAGGED_PROPVAL *);
+	ec_error_t set_zstore_propval(const TAGGED_PROPVAL *);
 	void remove_zstore_propval(gromox::proptag_t);
 	TPROPVAL_ARRAY *get_profile_sec(GUID sec_guid);
 	void touch_profile_sec();

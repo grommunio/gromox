@@ -334,7 +334,7 @@ BOOL exmdb_server::allocate_cn(const char *dir, uint64_t *pcn)
 	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess ||
 	    sql_transact.commit() != SQLITE_OK)
 		return FALSE;
-	*pcn = rop_util_make_eid_ex(1, change_num);
+	*pcn = eid_t(1, change_num);
 	return TRUE;
 }
 
@@ -376,7 +376,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 	          static_cast<long long>(time(nullptr)));
 	if (pdb->exec(sql_string) != SQLITE_OK || sql_transact.commit() != SQLITE_OK)
 		return FALSE;
-	*pbegin_eid = rop_util_make_eid_ex(1, tmp_eid);
+	*pbegin_eid = eid_t(1, tmp_eid);
 	return TRUE;
 }
 

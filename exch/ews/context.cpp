@@ -871,7 +871,7 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	for (auto tag : rmProps)
 		props.erase(tag);
 
-	requestFolder.folderId = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	requestFolder.folderId = eid_t(1, PRIVATE_FID_CALENDAR);
 	requestFolder.location = sFolderSpec::PRIVATE;
 	if (!requestFolder.target)
 		requestFolder.target = m_auth_info.username;
@@ -1415,7 +1415,7 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(addr, WANTPRIV_METAONLY, mres) != 0)
 		throw EWSError::CannotFindUser(E3330);
-	if (!(permissions(mres.maildir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
+	if (!(permissions(mres.maildir, eid_t{1, PRIVATE_FID_IPMSUBTREE}) & frightsGromoxStoreOwner))
 		throw EWSError::ImpersonateUserDenied(E3243);
 	impersonationUser    = std::move(mres.username);
 	impersonationMaildir = std::move(mres.maildir);
@@ -1755,7 +1755,7 @@ void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
 	if (goid == nullptr || goid->cb == 0)
 		return;
 	sFolderSpec calFolder;
-	calFolder.folderId = rop_util_make_eid_ex(1,
+	calFolder.folderId = eid_t(1,
 	    PRIVATE_FID_CALENDAR);
 	calFolder.location = sFolderSpec::PRIVATE;
 	calFolder.target = m_auth_info.username;
@@ -3351,7 +3351,7 @@ tDelegatePermissions EWSContext::readDelegatePermissions(const std::string &dir,
 	for (const auto &m : delegFolderMap) {
 		uint32_t rights = 0;
 		if (!m_plugin.exmdb.get_folder_perm(dir.c_str(),
-		    rop_util_make_eid_ex(1, m.fid), username.c_str(), &rights))
+		    eid_t(1, m.fid), username.c_str(), &rights))
 			continue; /* ignore error */
 		dp.*(m.field) = rights_to_deleg_level(rights);
 	}
@@ -3388,7 +3388,7 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	sFolderEntryId eid(fId.Id.data(), fId.Id.size());
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
-	folderSpec.folderId = rop_util_make_eid_ex(1, rop_util_gc_to_value(eid.folder_gc));
+	folderSpec.folderId = eid_t(1, rop_util_gc_to_value(eid.folder_gc));
 	if (eid.isPrivate()) {
 		std::string ubuf;
 		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
@@ -3426,7 +3426,7 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 {
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
-	folderSpec.folderId = rop_util_make_eid_ex(1, eid.folderId());
+	folderSpec.folderId = eid_t(1, eid.folderId());
 	if (eid.isPrivate()) {
 		std::string ubuf;
 		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
@@ -4946,7 +4946,7 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId> &folderIds,
 	if (folderIds.empty()) {
 		mgr->mailboxInfo = getMailboxInfo(m_auth_info.maildir, false);
 		mgr->inner_subs.emplace_back(m_plugin.subscribe(m_auth_info.maildir,
-			eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			eventMask, true, eid_t(1, PRIVATE_FID_IPMSUBTREE),
 			subscriptionId.tsub_rawkey));
 		return subscriptionId;
 	}
@@ -5110,7 +5110,7 @@ void EWSContext::writeDelegatePermissions(const std::string &dir, const std::str
 		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_SMTP_ADDRESS, EWSContext::cpystr(username)};
 		if (!dispname.empty())
 			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_NAME, EWSContext::cpystr(dispname)};
-		uint64_t fid = rop_util_make_eid_ex(1, m.fid);
+		uint64_t fid = eid_t(1, m.fid);
 		if (!m_plugin.exmdb.update_folder_permission(dir.c_str(),
 		    fid, 0, 1, &perm))
 			/* ignore */;
