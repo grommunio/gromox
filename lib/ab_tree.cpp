@@ -166,9 +166,13 @@ static const std::vector<std::string> vs_empty;
  *
  * @param      id    Base ID
  */
-ab_base::ab_base(int32_t id) : m_base_id(id)
+ab_base::ab_base(int32_t id) :
+    m_guid(GUID::random_new()), m_load_time(tp_now()), m_base_id(id)
 {
-	m_guid = GUID::random_new();
+	/*
+	 * Set m_load_time provisionally. The base is usually going to part of
+	 * an unordered_map before load() runs for the first time.
+	 */
 	memcpy(m_guid.node, &m_base_id, sizeof(int32_t));
 	m_lock.lock(); // unlocked after load
 }

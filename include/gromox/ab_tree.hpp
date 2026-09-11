@@ -271,7 +271,7 @@ class GX_EXPORT ab_base {
 	private:
 	const ab_domain *find_domain(uint32_t) const;
 
-	GUID m_guid; ///< GUID of the base
+	GUID m_guid{}; ///< GUID of the base
 	gromox::time_point m_load_time{}; ///< Load time
 	/**
 	 * base_id==0: not permitted (contains e.g. the AAPI administrator)
