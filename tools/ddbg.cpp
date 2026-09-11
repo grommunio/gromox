@@ -599,6 +599,8 @@ static int do_process_2(std::string_view &&data, const char *str)
 			perror("write");
 			return -1;
 		}
+		if (at->count > 0)
+			fprintf(stderr, "[rtf_to_html produced an additional %u attachment objects, not emitted to stdout.]\n", at->count);
 		return 0;
 	}
 	case CM_TEXTTOHTML: {
