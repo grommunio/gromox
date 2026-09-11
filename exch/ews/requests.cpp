@@ -3177,7 +3177,7 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 
 	// Specified as explicit error in the documentation
 	if (!request.SaveItemToFolder && request.SavedItemFolderId) {
-		data.Responses.emplace_back(EWSError::InvalidSendItemSaveSettings(E3140));
+		data.ResponseMessages.emplace_back(EWSError::InvalidSendItemSaveSettings(E3140));
 		data.serialize(response);
 		return;
 	}
@@ -3185,12 +3185,12 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 		ctx.resolveFolder(request.SavedItemFolderId->FolderId) :
 		sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
 	if (request.SavedItemFolderId && !(ctx.permissions(ctx.getDir(saveFolder), saveFolder.folderId) & frightsCreate)) {
-		data.Responses.emplace_back(EWSError::AccessDenied(E3141));
+		data.ResponseMessages.emplace_back(EWSError::AccessDenied(E3141));
 		data.serialize(response);
 		return;
 	}
 
-	data.Responses.reserve(request.ItemIds.size());
+	data.ResponseMessages.reserve(request.ItemIds.size());
 	for (const auto &id: request.ItemIds) try {
 		tItemId itemId = id.itemId();
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
@@ -3210,9 +3210,9 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 		if (request.SaveItemToFolder)
 			ctx.create(dir, folder, *content);
 
-		data.Responses.emplace_back().success();
+		data.ResponseMessages.emplace_back().success();
 	} catch(const EWSError& err) {
-		data.Responses.emplace_back(err);
+		data.ResponseMessages.emplace_back(err);
 	}
 
 	data.serialize(response);

@@ -2428,7 +2428,7 @@ mSendItemRequest::mSendItemRequest(const tinyxml2::XMLElement *xml) :
 
 void mSendItemResponse::serialize(tinyxml2::XMLElement *xml) const
 {
-	XMLDUMPM(Responses);
+	XMLDUMPM(ResponseMessages);
 }
 
 mSetUserOofSettingsRequest::mSetUserOofSettingsRequest(const XMLElement *xml) :
