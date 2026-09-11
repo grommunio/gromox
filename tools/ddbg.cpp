@@ -28,10 +28,11 @@ enum {
 	CM_NONE, CM_DEC_ACTION, CM_DEC_ANYTHING, CM_DEC_ENTRYID, CM_DEC_GUID,
 	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME,
 	CM_BIN2HEX, CM_BIN2TXT, CM_LZXDEC, CM_LZXENC, CM_HTMLTORTF,
-	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_TEXTTOHTML, CM_UNRTFCP,
+	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_RTFTOGXHT,
+	CM_TEXTTOHTML, CM_UNRTFCP,
 	CM_QPDECODE, CM_QPENCODE,
 };
-static unsigned int g_dowhat, g_hex2bin, g_external_res;
+static unsigned int g_dowhat, g_hex2bin;
 static constexpr struct HXoption g_options_table[] = {
 	{"bin2hex", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_BIN2HEX, "Run bin2hex"},
 	{"bin2txt", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_BIN2TXT, "Run bin2txt"},
@@ -42,7 +43,6 @@ static constexpr struct HXoption g_options_table[] = {
 	{"decode-nttime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_NTTIME, "Decode NT timestamps to unixtime/calendar"},
 	{"decode-restrict", 'r', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_RESTRICT, "Decode restriction blob (e.g. rule condition)"},
 	{"decode-unixtime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_UNIXTIME, "Decode Unix timestamp to nttime/calendar"},
-	{0, 'X', HXTYPE_NONE, &g_external_res, {}, {}, {}, "Turn images into external cid: references"},
 	{"htmltortf", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTORTF, "Convert HTML to RTF"},
 	{"htmltotext", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTOTEXT, "Convert HTML to plaintext"},
 	{"lzxdec", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXDEC, "LZX decompression"},
@@ -52,6 +52,7 @@ static constexpr struct HXoption g_options_table[] = {
 	{"qpencode", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_QPENCODE, "Encode to quoted-printable"},
 	{"rtfcp", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_RTFCP, "Convert RTF to uncompressed RTFCP"},
 	{"unrtfcp", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_UNRTFCP, "Decompress RTFCP (all forms) to RTF"},
+	{"rtftogxht", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_RTFTOGXHT, "Convert RTF to HTML (transfer format)"},
 	{"rtftohtml", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_RTFTOHTML, "Convert RTF to HTML"},
 	{"texttohtml", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_TEXTTOHTML, "Convert plaintext to HTML"},
 	HXOPT_AUTOHELP,
@@ -499,22 +500,42 @@ static int do_qp(std::string_view data, int mode)
 	return 0;
 }
 
-static int do_rtftohtml(std::string_view data)
+static int do_rtftohtml(std::string_view data, bool transfer)
 {
-	auto at = attachment_list_init();
-	auto cl_0 = HX::make_scope_exit([&]() { attachment_list_free(at); });
+	auto mc = message_content_init();
+	auto cl_0 = HX::make_scope_exit([&]() { message_content_free(mc); });
+	mc->children.pattachments = attachment_list_init();
+
 	std::string out;
-	auto err = rtf_to_html(data, "utf-8", out, g_external_res ? at : nullptr);
+	auto err = transfer ?
+	           rtf_to_html_boring(data, "utf-8", out, mc->children.pattachments) :
+	           rtf_to_html(data, "utf-8", out, nullptr);
 	if (err != ecSuccess) {
 		fprintf(stderr, "rtf_to_html: %s\n", mapi_strerror(err));
 		return -1;
-	} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
+	}
+	if (!transfer) {
+		if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
+			perror("write");
+			return -1;
+		}
+		return 0;
+	}
+
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT, nullptr))
+		return -1;
+	BINARY bin;
+	bin.cb = out.size();
+	bin.pc = deconst(out.c_str());
+	ep.p_bytes("GXHT0001");
+	ep.p_propval(PT_BINARY, &bin);
+	ep.p_msgctnt(*mc);
+
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_cdata, ep.m_offset) < 0) {
 		perror("write");
 		return -1;
 	}
-	if (at->count > 0)
-		fprintf(stderr, "[rtf_to_html produced an additional %u attachment object(s), "
-			"not emitted to stdout.]\n", at->count);
 	return 0;
 }
 
@@ -608,7 +629,9 @@ static int do_process_2(std::string_view &&data, const char *str)
 		return 0;
 	}
 	case CM_RTFTOHTML:
-		return do_rtftohtml(data);
+		return do_rtftohtml(data, 0);
+	case CM_RTFTOGXHT:
+		return do_rtftohtml(data, 1);
 	case CM_TEXTTOHTML: {
 		std::string out;
 		auto err = plain_to_html(str, out);

@@ -3448,7 +3448,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
  *
  * It is allowed for @input to refer to the same object as @buf_out.
  */
-static ec_error_t rtf_to_html_boring(std::string_view input, const char *charset,
+ec_error_t rtf_to_html_boring(std::string_view input, const char *charset,
     std::string &buf_out, ATTACHMENT_LIST *pattachments) try
 {
 	int i;
