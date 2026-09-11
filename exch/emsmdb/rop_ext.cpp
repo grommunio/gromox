@@ -2111,6 +2111,7 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r) try
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
 		common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size);
 	/* lzxpress case */
+	EXT_PULL subext;
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
 		pbuff.resize(0x8000);
 		auto decompressed_len = lzxpress_decompress(pdata,
@@ -2122,14 +2123,13 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r) try
 				decompressed_len);
 			return pack_result::compress;
 		}
+		subext.init(pbuff.data(), rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	} else {
 		if (rpc_header_ext.size_actual > x.m_data_size - x.m_offset)
 			return pack_result::header_size;
-		pbuff.assign(reinterpret_cast<const char *>(pdata), rpc_header_ext.size_actual);
+		subext.init(pdata, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	}
 
-	EXT_PULL subext;
-	subext.init(pbuff.data(), rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	TRY(subext.g_uint16(&size));
 	size = std::min(size, static_cast<uint16_t>(UINT16_MAX));
 	while (subext.m_offset < size) {
