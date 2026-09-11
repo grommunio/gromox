@@ -3,7 +3,7 @@ Schedule
 It's ready when it's ready.
 
 
-Snapshot 3.10.113
+Snapshot 3.10.114
 =================
 
 Enhancements:
@@ -13,6 +13,7 @@ Enhancements:
   hands autoreplies and bounce reports for mailbox-less addresses of local
   domains to the MTA, for use in split domain setups
 * The rule processor now logs the outcome of condition evaluations.
+* INET↔MAPI conversions specifically recognize OpenPGP MIME and GpgOL messages.
 
 Fixes:
 
