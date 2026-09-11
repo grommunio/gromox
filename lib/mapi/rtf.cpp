@@ -3169,9 +3169,11 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	auto reader = this;
 	auto rawpic = hex2bin(std::string_view(picture_push.m_cdata, picture_push.m_offset));
 	if (reader->pattachments == nullptr) {
-		if (ext_push.p_bytes("<img src=\"data:") != pack_result::ok ||
-		    ext_push.p_bytes(img_ctype) != pack_result::ok ||
-		    ext_push.p_bytes(";base64,") != pack_result::ok ||
+		if (ext_push.p_bytes("<img src=\"data:") != pack_result::ok)
+			return -ENOMEM;
+		if (img_ctype != nullptr && ext_push.p_bytes(img_ctype) != pack_result::ok )
+			return -ENOMEM;
+		if (ext_push.p_bytes(";base64,") != pack_result::ok ||
 		    ext_push.p_bytes(base64_encode(rawpic)) != pack_result::ok ||
 		    ext_push.p_bytes("\">") != pack_result::ok)
 			return -ENOMEM;
@@ -3523,20 +3525,29 @@ static ec_error_t gxht_transform(std::string_view inbuf, std::string &outbuf,
 	std::unique_ptr<char[], stdlib_delete> newbuf(HX_slurp_fd(fout, &fsize));
 	if (newbuf == nullptr)
 		return ecMAPIOOM;
-	if (fsize < 8 || memcmp(&newbuf[0], "GXHT0001", 8) != 0)
-		return ecInvalidParam;
+	if (fsize < 8 || memcmp(&newbuf[0], "GXHT0001", 8) != 0) {
+		outbuf.assign(newbuf.get(), fsize); /* Try salvaging */
+		return ecRpcFormat;
+	}
 
 	EXT_PULL ep;
 	ep.init(&newbuf[8], fsize - 8, malloc, EXT_FLAG_WCOUNT);
 	void *vbin = nullptr;
-	if (ep.g_propval(PT_BINARY, &vbin) != pack_result::ok)
+	if (ep.g_propval(PT_BINARY, &vbin) != pack_result::ok) {
+		outbuf.assign(newbuf.get(), fsize);
 		return ecRpcFormat;
+	}
 	auto bin = static_cast<BINARY *>(vbin);
 	auto cl_1 = HX::make_scope_exit([&]() { rop_util_free_binary(bin); });
 	message_content *mc = message_content_init();
 	auto cl_2 = HX::make_scope_exit([&]() { message_content_free(mc); });
-	if (ep.g_msgctnt(mc) != pack_result::ok)
-		return ecRpcFormat;
+	switch (ep.g_msgctnt(mc)) {
+		case pack_result::ok: break;
+		case pack_result::alloc: return ecMAPIOOM;
+		default:
+			outbuf.assign(newbuf.get(), fsize);
+			return ecRpcFormat;
+	}
 	if (atlist != nullptr)
 		std::swap(*atlist, *mc->children.pattachments);
 	outbuf.assign(bin->pc, bin->cb);
@@ -3563,10 +3574,24 @@ ec_error_t rtf_to_html(std::string_view inbuf, const char *cset,
 		return rtf_to_html_boring(inbuf, cset, outbuf, atlist);
 	}
 
-	/* internal.asi (address space isolated) */
-	if (gxht_transform(inbuf, outbuf, atlist) != ecSuccess)
-		return ecSuccess; // reuse outbuf as it were
-	return ecSuccess; // outbuf was successfully transmogrified
+	/*
+	 * internal.asi (address space isolated). outbuf either gets
+	 * modified successfully, or not at all.
+	 */
+	auto err = gxht_transform(inbuf, outbuf, atlist);
+	if (err == ecRpcFormat) {
+		/*
+		 * Upon conversion failure, heuristically locate the end of the
+		 * HTML segment and cut there.
+		 */
+		if (outbuf.size() < 12)
+			return ecSuccess;
+		auto pos = outbuf.find('\0', 12);
+		if (pos != outbuf.npos)
+			outbuf.erase(pos);
+		err = ecSuccess;
+	}
+	return err;
 }
 
 static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {

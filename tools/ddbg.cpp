@@ -528,11 +528,12 @@ static int do_rtftohtml(std::string_view data, bool transfer)
 	BINARY bin;
 	bin.cb = out.size();
 	bin.pc = deconst(out.c_str());
-	ep.p_bytes("GXHT0001");
-	ep.p_propval(PT_BINARY, &bin);
-	ep.p_msgctnt(*mc);
-
-	if (HXio_fullwrite(STDOUT_FILENO, ep.m_cdata, ep.m_offset) < 0) {
+	if (ep.p_bytes("GXHT0001") != pack_result::ok ||
+	    ep.p_propval(PT_BINARY, &bin) != pack_result::ok ||
+	    ep.p_msgctnt(*mc) != pack_result::ok) {
+		fprintf(stderr, "ext_push failed (OOM?)\n");
+		return -1;
+	} else  if (HXio_fullwrite(STDOUT_FILENO, ep.m_cdata, ep.m_offset) < 0) {
 		perror("write");
 		return -1;
 	}
