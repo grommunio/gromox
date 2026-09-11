@@ -52,6 +52,7 @@ extern /*noexport*/ int html_to_plain_boring(std::string_view inbuf, std::string
 extern GX_EXPORT ec_error_t plain_to_html(const char *in, std::string &out);
 extern GX_EXPORT ec_error_t html_to_rtf(std::string_view in, cpid_t, std::string &out);
 extern GX_EXPORT ec_error_t rtf_to_html(std::string_view in, const char *charset, std::string &out, attachment_list *);
+extern GX_EXPORT ec_error_t rtf_to_html_boring(std::string_view in, const char *charset, std::string &out, attachment_list *);
 extern GX_EXPORT ec_error_t rtfcp_uncompress(std::string_view in, std::string &out);
 extern GX_EXPORT ec_error_t rtfcp_encode(std::string_view in, std::string &out);
 

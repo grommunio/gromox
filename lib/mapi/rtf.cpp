@@ -14,12 +14,14 @@
 #include <fmt/format.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/io.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -711,8 +713,11 @@ const FONTENTRY *rtf_reader::lookup_font(int num) const
 		{FONTSCRIPT_STR, ""}, {FONTDECOR_STR, ""},
 		{FONTTECH_STR, ""}};
 	
-	if (num < 0)
-		return &fake_entries[-num-1];
+	if (num < 0) {
+		num = -num;
+		return static_cast<unsigned int>(num) < std::size(fake_entries) ?
+		       &fake_entries[num-1] : nullptr;
+	}
 	auto preader = this;
 	auto i = preader->pfont_hash.find(num);
 	return i != preader->pfont_hash.cend() ? &i->second : nullptr;
@@ -3162,23 +3167,20 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
     const char *pext, const char *cid_name, const char *picture_name)
 {
 	auto reader = this;
-	if (reader->pattachments == nullptr)
+	auto rawpic = hex2bin(std::string_view(picture_push.m_cdata, picture_push.m_offset));
+	if (reader->pattachments == nullptr) {
+		if (ext_push.p_bytes("<img src=\"data:") != pack_result::ok ||
+		    ext_push.p_bytes(img_ctype) != pack_result::ok ||
+		    ext_push.p_bytes(";base64,") != pack_result::ok ||
+		    ext_push.p_bytes(base64_encode(rawpic)) != pack_result::ok ||
+		    ext_push.p_bytes("\">") != pack_result::ok)
+			return -ENOMEM;
 		return 0;
-	BINARY bin;
+	}
 
-	bin.cb = picture_push.m_offset / 2;
-	bin.pv = malloc(bin.cb);
-	if (bin.pv == nullptr ||
-	    picture_push.p_uint8(0) != pack_result::ok ||
-	    !decode_hex_binary(picture_push.m_cdata, bin.pv, bin.cb)) {
-		free(bin.pv);
-		return -EINVAL;
-	}
 	auto atx = attachment_content_init();
-	if (atx == nullptr || !reader->pattachments->append_internal(atx)) {
-		free(bin.pv);
-		return -EINVAL;
-	}
+	if (atx == nullptr || !reader->pattachments->append_internal(atx))
+		return -ENOMEM;
 	ec_error_t ret;
 	uint32_t flags = ATT_MHTML_REF;
 	if ((ret = atx->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != ecSuccess ||
@@ -3186,15 +3188,12 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	    (ret = atx->proplist.set(PR_ATTACH_EXTENSION, pext)) != ecSuccess ||
 	    (ret = atx->proplist.set(PR_ATTACH_LONG_FILENAME, picture_name)) != ecSuccess ||
 	    (ret = atx->proplist.set(PR_ATTACH_FLAGS, &flags)) != ecSuccess ||
-	    (ret = atx->proplist.set(PR_ATTACH_DATA_BIN, &bin)) != ecSuccess) {
-		free(bin.pv);
+	    (ret = atx->proplist.set_bin(PR_ATTACH_DATA_BIN, rawpic)) != ecSuccess)
 		return ece2nerrno(ret);
-	}
-	free(bin.pv);
 	if (ext_push.p_bytes(TAG_IMAGELINK_BEGIN) != pack_result::ok ||
 	    ext_push.p_bytes(cid_name) != pack_result::ok ||
 	    ext_push.p_bytes(TAG_IMAGELINK_END) != pack_result::ok)
-		return -EINVAL;
+		return -ENOMEM;
 	return 0;
 }
 
@@ -3203,10 +3202,9 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 	int ch;
 	int num;
 	int ret_val;
-	char cid_name[64];
+	std::string cid_name, picture_name;
 	CMD_PROC_FUNC func;
 	int paragraph_align;
-	char picture_name[64];
 	EXT_PUSH picture_push;
 	const char *img_ctype = nullptr, *pext = nullptr;
 	bool b_paragraph_begun = false, b_hyperlinked = false;
@@ -3287,9 +3285,9 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 						return -EINVAL;
 					if (!b_picture_push) {
 						pictype_to(preader->picture_type, img_ctype, pext);
-						sprintf(picture_name, "picture%04d.%s",
+						picture_name = fmt::format("picture{:04d}.{}",
 							preader->picture_file_number, pext);
-						sprintf(cid_name, "\"cid:picture%04d@rtf\"", 
+						cid_name = fmt::format("cid:picture{:04d}@rtf",
 							preader->picture_file_number++);
 						if (!picture_push.init(nullptr, 0, 0))
 							return -ENOMEM;
@@ -3426,7 +3424,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 	if (preader->is_within_picture && b_picture_push) {
 		if (picture_push.m_offset > 0) {
 			auto ret = push_da_pic(picture_push, img_ctype,
-			           pext, cid_name, picture_name);
+			           pext, cid_name.c_str(), picture_name.c_str());
 			if (ret != 0)
 				return -ret;
 		}
@@ -3447,11 +3445,12 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 
 /**
  * @charset:      desired output charset
- * @pattachments: put things like images in here
+ * @pattachments: Put things like images in here. May be %nullptr to indicate
+ *                the caller can only accept inline data.
  *
  * It is allowed for @input to refer to the same object as @buf_out.
  */
-static ec_error_t rtf_to_html_boring(std::string_view input, const char *charset,
+ec_error_t rtf_to_html_boring(std::string_view input, const char *charset,
     std::string &buf_out, ATTACHMENT_LIST *pattachments) try
 {
 	int i;
@@ -3501,6 +3500,51 @@ static ec_error_t rtf_to_html_boring(std::string_view input, const char *charset
 	return ecMAPIOOM;
 }
 
+static ec_error_t gxht_transform(std::string_view inbuf, std::string &outbuf,
+    attachment_list *atlist) try
+{
+	static constexpr const char *argv[] = {"gromox-rtftohtml", "--rtftogxht", nullptr};
+	int fin = -1, fout = -1;
+	auto cl_0 = HX::make_scope_exit([&]() {
+		if (fin >= 0)
+			close(fin);
+		if (fout >= 0)
+			close(fout);
+	});
+	auto pid = popenfd(argv[0], argv, &fin, &fout, POPENFD_KEEP,
+	           const_cast<const char *const *>(environ));
+	if (pid < 0)
+		return ecError;
+	if (HXio_fullwrite(fin, inbuf.data(), inbuf.size()) < 0)
+		return ecError;
+	close(fin);
+	fin = -1;
+	size_t fsize = 0;
+	std::unique_ptr<char[], stdlib_delete> newbuf(HX_slurp_fd(fout, &fsize));
+	if (newbuf == nullptr)
+		return ecMAPIOOM;
+	if (fsize < 8 || memcmp(&newbuf[0], "GXHT0001", 8) != 0)
+		return ecInvalidParam;
+
+	EXT_PULL ep;
+	ep.init(&newbuf[8], fsize - 8, malloc, EXT_FLAG_WCOUNT);
+	void *vbin = nullptr;
+	if (ep.g_propval(PT_BINARY, &vbin) != pack_result::ok)
+		return ecRpcFormat;
+	auto bin = static_cast<BINARY *>(vbin);
+	auto cl_1 = HX::make_scope_exit([&]() { rop_util_free_binary(bin); });
+	message_content *mc = message_content_init();
+	auto cl_2 = HX::make_scope_exit([&]() { message_content_free(mc); });
+	if (ep.g_msgctnt(mc) != pack_result::ok)
+		return ecRpcFormat;
+	if (atlist != nullptr)
+		std::swap(*atlist, *mc->children.pattachments);
+	outbuf.assign(bin->pc, bin->cb);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
+}
+
 ec_error_t rtf_to_html(std::string_view inbuf, const char *cset,
     std::string &outbuf, ATTACHMENT_LIST *atlist)
 {
@@ -3514,10 +3558,15 @@ ec_error_t rtf_to_html(std::string_view inbuf, const char *cset,
 	} else if (strcasecmp(s, "pandoc") == 0) {
 		return convert_doc_with_program(inbuf, cset, outbuf,
 		       REND_PANDOC_RTH) >= 0 ? ecSuccess : ecError;
+	} else if (strcasecmp(s, "internal") == 0) {
+		/* rtf_reader will put images in @atlist */
+		return rtf_to_html_boring(inbuf, cset, outbuf, atlist);
 	}
 
-	/* rtf_reader will put images in @atlist */
-	return rtf_to_html_boring(inbuf, cset, outbuf, atlist);
+	/* internal.asi (address space isolated) */
+	if (gxht_transform(inbuf, outbuf, atlist) != ecSuccess)
+		return ecSuccess; // reuse outbuf as it were
+	return ecSuccess; // outbuf was successfully transmogrified
 }
 
 static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {

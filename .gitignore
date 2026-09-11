@@ -94,6 +94,7 @@ Makefile.in
 /test-suite.log
 /tools/authtry
 /tools/ddbg
+/tools/gromox-rtftohtml
 /tools/shmget
 /tools/textmapquery
 /tools/tzdump

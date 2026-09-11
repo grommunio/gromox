@@ -2088,11 +2088,10 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const rop_response &r)
 #undef H
 }
 
-pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
+pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r) try
 {
 	int tmp_num;
 	uint16_t size;
-	EXT_PULL subext;
 	RPC_HEADER_EXT rpc_header_ext;
 	
 	TRY(x.g_rpc_header_ext(&rpc_header_ext));
@@ -2103,9 +2102,7 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	r.rop_list.clear();
 	if (rpc_header_ext.size == 0)
 		return pack_result::header_size;
-	auto pbuff = x.anew<uint8_t>(0x8000);
-	if (pbuff == nullptr)
-		return pack_result::alloc;
+	std::string pbuff;
 	auto pdata = x.m_udata + x.m_offset;
 	/*
 	 * Obfuscation case - modify data in place (devs: ensure callers
@@ -2114,30 +2111,31 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
 		common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size);
 	/* lzxpress case */
+	EXT_PULL subext;
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
+		pbuff.resize(0x8000);
 		auto decompressed_len = lzxpress_decompress(pdata,
-					rpc_header_ext.size, pbuff, 0x8000);
+					rpc_header_ext.size, pbuff.data(), pbuff.size());
 		if (decompressed_len < 0 ||
-		    static_cast<size_t>(decompressed_len) < rpc_header_ext.size_actual) {
+		    static_cast<size_t>(decompressed_len) != rpc_header_ext.size_actual) {
 			mlog(LV_WARN, "W-1097: lzxdecompress failed for client input (z=%u, exp=%u, got=%zd)",
 				rpc_header_ext.size, rpc_header_ext.size_actual,
 				decompressed_len);
 			return pack_result::compress;
 		}
+		subext.init(pbuff.data(), rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	} else {
 		if (rpc_header_ext.size_actual > x.m_data_size - x.m_offset)
 			return pack_result::header_size;
-		memcpy(pbuff, pdata, rpc_header_ext.size_actual);
+		subext.init(pdata, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	}
-	subext.init(pbuff, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
+
 	TRY(subext.g_uint16(&size));
 	size = std::min(size, static_cast<uint16_t>(UINT16_MAX));
-	while (subext.m_offset < size) try {
+	while (subext.m_offset < size) {
 		std::unique_ptr<rop_request> rq;
 		TRY(rop_ext_pull(subext, rq));
 		r.rop_list.push_back(std::move(rq));
-	} catch (const std::bad_alloc &) {
-		return pack_result::alloc;
 	}
 	tmp_num = (rpc_header_ext.size_actual - size) / sizeof(uint32_t);
 	if (0 == tmp_num) {
@@ -2156,6 +2154,8 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	for (size_t i = 0; i < r.hnum; ++i)
 		TRY(subext.g_uint32(&r.phandles[i]));
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 pack_result rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
