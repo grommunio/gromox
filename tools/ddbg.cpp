@@ -499,6 +499,25 @@ static int do_qp(std::string_view data, int mode)
 	return 0;
 }
 
+static int do_rtftohtml(std::string_view data)
+{
+	auto at = attachment_list_init();
+	auto cl_0 = HX::make_scope_exit([&]() { attachment_list_free(at); });
+	std::string out;
+	auto err = rtf_to_html(data, "utf-8", out, g_external_res ? at : nullptr);
+	if (err != ecSuccess) {
+		fprintf(stderr, "rtf_to_html: %s\n", mapi_strerror(err));
+		return -1;
+	} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
+		perror("write");
+		return -1;
+	}
+	if (at->count > 0)
+		fprintf(stderr, "[rtf_to_html produced an additional %u attachment object(s), "
+			"not emitted to stdout.]\n", at->count);
+	return 0;
+}
+
 static int do_process_2(std::string_view &&data, const char *str)
 {
 	switch (g_dowhat) {
@@ -588,23 +607,8 @@ static int do_process_2(std::string_view &&data, const char *str)
 		}
 		return 0;
 	}
-	case CM_RTFTOHTML: {
-		auto at = attachment_list_init();
-		auto cl_0 = HX::make_scope_exit([&]() { attachment_list_free(at); });
-		std::string out;
-		auto err = rtf_to_html(data, "utf-8", out, g_external_res ? at : nullptr);
-		if (err != ecSuccess) {
-			fprintf(stderr, "rtf_to_html: %s\n", mapi_strerror(err));
-			return -1;
-		} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
-			perror("write");
-			return -1;
-		}
-		if (at->count > 0)
-			fprintf(stderr, "[rtf_to_html produced an additional %u attachment object(s), "
-				"not emitted to stdout.]\n", at->count);
-		return 0;
-	}
+	case CM_RTFTOHTML:
+		return do_rtftohtml(data);
 	case CM_TEXTTOHTML: {
 		std::string out;
 		auto err = plain_to_html(str, out);
