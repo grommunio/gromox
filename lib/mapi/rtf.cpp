@@ -14,12 +14,14 @@
 #include <fmt/format.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/io.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -3498,6 +3500,51 @@ ec_error_t rtf_to_html_boring(std::string_view input, const char *charset,
 	return ecMAPIOOM;
 }
 
+static ec_error_t gxht_transform(std::string_view inbuf, std::string &outbuf,
+    attachment_list *atlist) try
+{
+	static constexpr const char *argv[] = {"gromox-rtftohtml", "--rtftogxht", nullptr};
+	int fin = -1, fout = -1;
+	auto cl_0 = HX::make_scope_exit([&]() {
+		if (fin >= 0)
+			close(fin);
+		if (fout >= 0)
+			close(fout);
+	});
+	auto pid = popenfd(argv[0], argv, &fin, &fout, POPENFD_KEEP,
+	           const_cast<const char *const *>(environ));
+	if (pid < 0)
+		return ecError;
+	if (HXio_fullwrite(fin, inbuf.data(), inbuf.size()) < 0)
+		return ecError;
+	close(fin);
+	fin = -1;
+	size_t fsize = 0;
+	std::unique_ptr<char[], stdlib_delete> newbuf(HX_slurp_fd(fout, &fsize));
+	if (newbuf == nullptr)
+		return ecMAPIOOM;
+	if (fsize < 8 || memcmp(&newbuf[0], "GXHT0001", 8) != 0)
+		return ecInvalidParam;
+
+	EXT_PULL ep;
+	ep.init(&newbuf[8], fsize - 8, malloc, EXT_FLAG_WCOUNT);
+	void *vbin = nullptr;
+	if (ep.g_propval(PT_BINARY, &vbin) != pack_result::ok)
+		return ecRpcFormat;
+	auto bin = static_cast<BINARY *>(vbin);
+	auto cl_1 = HX::make_scope_exit([&]() { rop_util_free_binary(bin); });
+	message_content *mc = message_content_init();
+	auto cl_2 = HX::make_scope_exit([&]() { message_content_free(mc); });
+	if (ep.g_msgctnt(mc) != pack_result::ok)
+		return ecRpcFormat;
+	if (atlist != nullptr)
+		std::swap(*atlist, *mc->children.pattachments);
+	outbuf.assign(bin->pc, bin->cb);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
+}
+
 ec_error_t rtf_to_html(std::string_view inbuf, const char *cset,
     std::string &outbuf, ATTACHMENT_LIST *atlist)
 {
@@ -3511,10 +3558,15 @@ ec_error_t rtf_to_html(std::string_view inbuf, const char *cset,
 	} else if (strcasecmp(s, "pandoc") == 0) {
 		return convert_doc_with_program(inbuf, cset, outbuf,
 		       REND_PANDOC_RTH) >= 0 ? ecSuccess : ecError;
+	} else if (strcasecmp(s, "internal") == 0) {
+		/* rtf_reader will put images in @atlist */
+		return rtf_to_html_boring(inbuf, cset, outbuf, atlist);
 	}
 
-	/* rtf_reader will put images in @atlist */
-	return rtf_to_html_boring(inbuf, cset, outbuf, atlist);
+	/* internal.asi (address space isolated) */
+	if (gxht_transform(inbuf, outbuf, atlist) != ecSuccess)
+		return ecSuccess; // reuse outbuf as it were
+	return ecSuccess; // outbuf was successfully transmogrified
 }
 
 static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
