@@ -3955,6 +3955,13 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	}
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
+	auto subject = pmsg->proplist.get<const char>(PR_SUBJECT);
+	if (subject == nullptr)
+		subject = pmsg->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
+	mlog(LV_NOTICE, "gromox-audit: delivered message \"%s\" from %s to mailbox %s%s",
+		subject != nullptr ? subject : "(subject unavailable)",
+		znul(from_address), account.c_str(),
+		partial ? " (partial completion)" : "");
 	dg_notify(std::move(notifq));
 	*new_folder_id = rop_util_make_eid_ex(1, fid_val);
 	*new_msg_id = rop_util_make_eid_ex(1, message_id);
