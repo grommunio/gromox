@@ -3206,10 +3206,9 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 	int ch;
 	int num;
 	int ret_val;
-	char cid_name[64];
+	std::string cid_name, picture_name;
 	CMD_PROC_FUNC func;
 	int paragraph_align;
-	char picture_name[64];
 	EXT_PUSH picture_push;
 	const char *img_ctype = nullptr, *pext = nullptr;
 	bool b_paragraph_begun = false, b_hyperlinked = false;
@@ -3290,9 +3289,9 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 						return -EINVAL;
 					if (!b_picture_push) {
 						pictype_to(preader->picture_type, img_ctype, pext);
-						sprintf(picture_name, "picture%04d.%s",
+						picture_name = fmt::format("picture{:04d}.{}",
 							preader->picture_file_number, pext);
-						sprintf(cid_name, "cid:picture%04d@rtf",
+						cid_name = fmt::format("cid:picture{:04d}@rtf",
 							preader->picture_file_number++);
 						if (!picture_push.init(nullptr, 0, 0))
 							return -ENOMEM;
@@ -3429,7 +3428,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 	if (preader->is_within_picture && b_picture_push) {
 		if (picture_push.m_offset > 0) {
 			auto ret = push_da_pic(picture_push, img_ctype,
-			           pext, cid_name, picture_name);
+			           pext, cid_name.c_str(), picture_name.c_str());
 			if (ret != 0)
 				return -ret;
 		}
