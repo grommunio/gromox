@@ -3,7 +3,7 @@ Schedule
 It's ready when it's ready.
 
 
-Snapshot 3.10.172
+Snapshot 3.10.178
 =================
 
 Enhancements:
@@ -24,6 +24,8 @@ Enhancements:
   domains to the MTA, for use in split domain setups
 * The rule processor now logs the outcome of condition evaluations.
 * INET↔MAPI conversions specifically recognize OpenPGP MIME and GpgOL messages.
+* Restrictions of type RES_CONTENT and RES_PROPERTY with a scalar operand can
+  now be used to match against multivalued properties.
 
 Fixes:
 
