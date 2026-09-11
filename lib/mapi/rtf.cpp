@@ -3169,9 +3169,11 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	auto reader = this;
 	auto rawpic = hex2bin(std::string_view(picture_push.m_cdata, picture_push.m_offset));
 	if (reader->pattachments == nullptr) {
-		if (ext_push.p_bytes("<img src=\"data:") != pack_result::ok ||
-		    ext_push.p_bytes(img_ctype) != pack_result::ok ||
-		    ext_push.p_bytes(";base64,") != pack_result::ok ||
+		if (ext_push.p_bytes("<img src=\"data:") != pack_result::ok)
+			return -ENOMEM;
+		if (img_ctype != nullptr && ext_push.p_bytes(img_ctype) != pack_result::ok )
+			return -ENOMEM;
+		if (ext_push.p_bytes(";base64,") != pack_result::ok ||
 		    ext_push.p_bytes(base64_encode(rawpic)) != pack_result::ok ||
 		    ext_push.p_bytes("\">") != pack_result::ok)
 			return -ENOMEM;
