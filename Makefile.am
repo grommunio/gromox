@@ -51,7 +51,7 @@ endif
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
-dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-exm2eml tools/gromox-exm2ical tools/gromox-exm2mt tools/gromox-exm2tnef tools/gromox-exm2vcf tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-mt2exm tools/gromox-tnef2mt tools/gromox-vcf2mt
+dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-exm2eml tools/gromox-exm2ical tools/gromox-exm2mt tools/gromox-exm2tnef tools/gromox-exm2vcf tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-mt2exm tools/gromox-rtftohtml tools/gromox-tnef2mt tools/gromox-vcf2mt
 dist_pkglibexec_SCRIPTS = tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
@@ -425,6 +425,9 @@ dldcheck.stamp: dldcheck ${dldcheck_files}
 %.service: ${top_builddir}/config.status
 .tps.service:
 	${AM_V_GEN}${MKDIR_P} system; ${SED} -e 's|@''libexecdir''@|${libexecdir}|g' <$< >$@
+
+tools/gromox-rtftohtml: tools/gromox-rtftohtml.in ${top_builddir}/config.status
+	${AM_V_GEN}${MKDIR_P} tools; ${SED} -e 's|@''pkglibexecdir''@|${pkglibexecdir}|g' <${srcdir}/tools/gromox-rtftohtml.in >$@
 
 .PHONY: header-presence
 
