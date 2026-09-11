@@ -2910,6 +2910,49 @@ static uint32_t oxcical_get_calendartype(const ical_line *piline)
 	return it != std::end(cal_scale_names) ? it->first : CAL_DEFAULT;
 }
 
+/*
+ * First timed property with neither TZID nor Z, i.e. floating time (RFC 5545
+ * §3.3.5 form #1). VALUE=DATE is not reported; a date has no zone to name.
+ */
+static const ical_line *oxcical_first_floating_dt(const ical_component &comp)
+{
+	static constexpr const char *timed[] = {"DTSTART", "DTEND", "RECURRENCE-ID"};
+	for (auto name : timed) {
+		auto line = comp.get_line(name);
+		if (line == nullptr)
+			continue;
+		auto vtype = line->get_first_paramval("VALUE");
+		if (vtype != nullptr && strcasecmp(vtype, "DATE-TIME") != 0)
+			continue;
+		if (line->get_first_paramval("TZID") != nullptr)
+			continue;
+		auto value = line->get_first_subvalue();
+		if (value == nullptr || *value == '\0')
+			continue;
+		auto len = strlen(value);
+		if (value[len-1] != 'Z' && value[len-1] != 'z')
+			return line;
+	}
+	return nullptr;
+}
+
+/* The reading is not recoverable afterwards, so say so as it happens */
+static void oxcical_note_floating_times(const uidxevent_list_t &uid_list,
+    const char *log_id)
+{
+	for (const auto &[uid, events] : uid_list)
+		for (const auto *comp : events) {
+			auto line = oxcical_first_floating_dt(*comp);
+			if (line == nullptr)
+				continue;
+			mlog(LV_WARN, "W-2746: %s: %s \"%s\" (UID \"%s\") names no time "
+				"zone; it is read as UTC, which shifts the appointment by "
+				"the author's offset", log_id, line->m_name.c_str(),
+				line->get_first_subvalue(), uid.c_str());
+			break;
+		}
+}
+
 /**
  * Read a bunch of VCALENDAR/VEVENT items from @pical and put each of them as
  * messages into @finalvec.
@@ -2931,6 +2974,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 		errstr = "E-2412: iCal data contained no VEVENTs with UIDs";
 		return ecInvalidParam;
 	}
+	oxcical_note_floating_times(uid_list, log_id);
 	auto first_comp = uid_list.begin()->second.front();
 	if (strcasecmp(first_comp->m_name.c_str(), "VTODO") == 0) {
 		message_ptr msg(message_content_init());
