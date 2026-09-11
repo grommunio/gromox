@@ -333,6 +333,14 @@ ec_error_t message_object::save() try
 		pmessage->pembedding->b_touched = TRUE;
 		return ecSuccess;
 	}
+	if (pmessage->pstore->b_private &&
+	    (pmessage->pchanged_proptags->has(PR_SCHDINFO_DELEGATE_ENTRYIDS) ||
+	    pmessage->premoved_proptags->has(PR_SCHDINFO_DELEGATE_ENTRYIDS))) {
+		void *pvalue = nullptr;
+		if (exmdb_client_get_instance_property(dir, pmessage->instance_id,
+		    PR_SCHDINFO_DELEGATE_ENTRYIDS, &pvalue))
+			cu_flush_delegates(dir, static_cast<const BINARY_ARRAY *>(pvalue));
+	}
 	
 	if (NULL != pmessage->pstate) {
 		pmessage->pstate->pgiven->append(pmessage->message_id);
