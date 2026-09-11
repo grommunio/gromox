@@ -3,12 +3,13 @@ Schedule
 It's ready when it's ready.
 
 
-Snapshot 3.10.20
+Snapshot 3.10.77
 ================
 
 Enhancements:
 
 * imap: implement FETCH BINARY / BINARY.SIZE
+* The rule processor now logs the outcome of condition evaluations.
 
 Fixes:
 
@@ -17,6 +18,19 @@ Fixes:
   string restrictions across PT_STRING8↔PT_UNICODE.
 * During MAPI-to-iCalender conversions, TZID is now omitted when exporting
   timeless DATE values.
+* Repaired some instances where the by-time message lookup index would go out
+  of sync with a folder's message set and indicate fewer messages present than
+  there were.
+* Setting exmdb.cfg:`exmdb_ics_log_file=-` now produces log messages as
+  documented.
+* Repaired a gromox-kdb2mt crash when using --only-obj with an ID that refers
+  to neither a folder nor a message.
+* kdb2mt: An inefficiency that led to exponential time waste
+  processing deeply-nested messages was eliminated.
+
+Behavioral changes:
+
+* rtftohtml conversion is now done in a subprocess
 
 
 Gromox 3.10 (2026-08-22)
