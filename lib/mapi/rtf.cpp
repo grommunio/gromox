@@ -711,8 +711,11 @@ const FONTENTRY *rtf_reader::lookup_font(int num) const
 		{FONTSCRIPT_STR, ""}, {FONTDECOR_STR, ""},
 		{FONTTECH_STR, ""}};
 	
-	if (num < 0)
-		return &fake_entries[-num-1];
+	if (num < 0) {
+		num = -num;
+		return static_cast<unsigned int>(num) < std::size(fake_entries) ?
+		       &fake_entries[num-1] : nullptr;
+	}
 	auto preader = this;
 	auto i = preader->pfont_hash.find(num);
 	return i != preader->pfont_hash.cend() ? &i->second : nullptr;
