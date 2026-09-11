@@ -1804,6 +1804,23 @@ static int ctar_multi_index(db_conn &db, const table_node &table,
 	return multi_index;
 }
 
+static std::pair<void *, uint32_t>
+ctar_multi_val(const table_node &table, TAGGED_PROPVAL *propvals, int idx)
+{
+	if (idx < 0)
+		return {nullptr, 1};
+	void *mv = propvals[idx].pvalue;
+	if (mv == nullptr)
+		return {nullptr, 1};
+	auto num = det_multi_num(table.psorts->psort[idx].type & ~MV_INSTANCE, mv);
+	if (num == UINT32_MAX)
+		return {nullptr, 0}; /* complete failure */
+	if (num != 0)
+		return {mv, num};
+	propvals[idx].pvalue = nullptr;
+	return {nullptr, 1};
+}
+
 static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
     uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
@@ -2052,21 +2069,9 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 		int multi_index = ctar_multi_index(db, *ptable, message_id, propvals);
 		if (multi_index <= -2)
 			return;
-		void *pmultival = nullptr;
-		uint32_t multi_num = 1;
-		if (multi_index >= 0) {
-			pmultival = propvals[multi_index].pvalue;
-			if (pmultival != nullptr) {
-				multi_num = det_multi_num(ptable->psorts->psort[multi_index].type & ~MV_INSTANCE, pmultival);
-				if (multi_num == UINT32_MAX)
-					return;
-				if (0 == multi_num) {
-					pmultival = NULL;
-					multi_num = 1;
-					propvals[multi_index].pvalue = NULL;
-				}
-			}
-		}
+		auto [pmultival, multi_num] = ctar_multi_val(*ptable, propvals, multi_index);
+		if (multi_num == 0)
+			return;
 		xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp2");
 		if (!sql_savepoint)
 			continue;
