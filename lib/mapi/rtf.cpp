@@ -3167,21 +3167,11 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	auto reader = this;
 	if (reader->pattachments == nullptr)
 		return 0;
-	BINARY bin;
 
-	bin.cb = picture_push.m_offset / 2;
-	bin.pv = malloc(bin.cb);
-	if (bin.pv == nullptr ||
-	    picture_push.p_uint8(0) != pack_result::ok ||
-	    !decode_hex_binary(picture_push.m_cdata, bin.pv, bin.cb)) {
-		free(bin.pv);
-		return -EINVAL;
-	}
+	auto rawpic = hex2bin(std::string_view(picture_push.m_cdata, picture_push.m_offset));
 	auto atx = attachment_content_init();
-	if (atx == nullptr || !reader->pattachments->append_internal(atx)) {
-		free(bin.pv);
+	if (atx == nullptr || !reader->pattachments->append_internal(atx))
 		return -EINVAL;
-	}
 	ec_error_t ret;
 	uint32_t flags = ATT_MHTML_REF;
 	if ((ret = atx->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != ecSuccess ||
@@ -3189,11 +3179,8 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	    (ret = atx->proplist.set(PR_ATTACH_EXTENSION, pext)) != ecSuccess ||
 	    (ret = atx->proplist.set(PR_ATTACH_LONG_FILENAME, picture_name)) != ecSuccess ||
 	    (ret = atx->proplist.set(PR_ATTACH_FLAGS, &flags)) != ecSuccess ||
-	    (ret = atx->proplist.set(PR_ATTACH_DATA_BIN, &bin)) != ecSuccess) {
-		free(bin.pv);
+	    (ret = atx->proplist.set_bin(PR_ATTACH_DATA_BIN, rawpic)) != ecSuccess)
 		return ece2nerrno(ret);
-	}
-	free(bin.pv);
 	if (ext_push.p_bytes(TAG_IMAGELINK_BEGIN) != pack_result::ok ||
 	    ext_push.p_bytes(cid_name) != pack_result::ok ||
 	    ext_push.p_bytes(TAG_IMAGELINK_END) != pack_result::ok)
