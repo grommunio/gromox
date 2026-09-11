@@ -3165,10 +3165,16 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
     const char *pext, const char *cid_name, const char *picture_name)
 {
 	auto reader = this;
-	if (reader->pattachments == nullptr)
-		return 0;
-
 	auto rawpic = hex2bin(std::string_view(picture_push.m_cdata, picture_push.m_offset));
+	if (reader->pattachments == nullptr) {
+		ext_push.p_bytes("<img src=\"data:");
+		ext_push.p_bytes(img_ctype);
+		ext_push.p_bytes(";base64,");
+		ext_push.p_bytes(base64_encode(rawpic));
+		ext_push.p_bytes("\">");
+		return 0;
+	}
+
 	auto atx = attachment_content_init();
 	if (atx == nullptr || !reader->pattachments->append_internal(atx))
 		return -EINVAL;
@@ -3436,7 +3442,8 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 
 /**
  * @charset:      desired output charset
- * @pattachments: put things like images in here
+ * @pattachments: Put things like images in here. May be %nullptr to indicate
+ *                the caller can only accept inline data.
  *
  * It is allowed for @input to refer to the same object as @buf_out.
  */
