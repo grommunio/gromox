@@ -786,8 +786,6 @@ bool imap_binary_decode(char enc, std::string_view raw, std::string &out) try
 	return false;
 }
 
-/* Input has already passed icp_parse_fetch_args(). Bare BODY is structure,
- * and MIME/HEADER sections contain only headers, including nested sections. */
 static bool icp_fetch_content(const char *kw)
 {
 	if (strcasecmp(kw, "RFC822") == 0 || strcasecmp(kw, "RFC822.TEXT") == 0 ||
@@ -799,23 +797,6 @@ static bool icp_fetch_content(const char *kw)
 	while (HX_isdigit(*p) || *p == '.')
 		++p;
 	return *p == ']' || strncasecmp(p, "TEXT]", 5) == 0;
-}
-
-/* Bounded, allocation-free enrichment: never let a Subject inject log lines. */
-static void icp_audit_subject(char (&out)[512], const std::string &subject)
-{
-	auto src = subject.empty() ? std::string_view("(no subject)") : std::string_view(subject);
-	size_t n = 0;
-	for (unsigned char c : src) {
-		if (n + 2 >= sizeof(out))
-			break;
-		if (c < 0x20 || c == 0x7f)
-			c = ' ';
-		if (c == '"' || c == '\\')
-			out[n++] = '\\';
-		out[n++] = c;
-	}
-	out[n] = '\0';
 }
 
 static int icp_process_fetch_item(imap_context &ctx,
@@ -850,13 +831,10 @@ static int icp_process_fetch_item(imap_context &ctx,
 		}
 	};
 
-	/* Log the request before preparing content, regardless of retrieval outcome. */
 	if (b_data && std::any_of(pitem_list.begin(), pitem_list.end(),
 	    [](const auto &kw) { return icp_fetch_content(kw.c_str()); })) {
-		char subject[512];
-		icp_audit_subject(subject, mjson.subject);
 		mlog(LV_NOTICE, "gromox-audit: %s requested message content \"%s\" in mailbox %s via IMAP",
-		     ctx.authenticated_actor, subject, ctx.username);
+		     ctx.authenticated_actor, mjson.subject.empty() ? "(no subject)" : mjson.subject.c_str(), ctx.username);
 	}
 	bool b_first = false;
 	buf = "* " + std::to_string(item_id) + " FETCH (";

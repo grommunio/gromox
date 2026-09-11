@@ -186,8 +186,13 @@ int cmdh_pass(std::vector<std::string> &&argv, pop3_context *pcontext)
 	if (pcontext->total_mail < 0 ||
 	    pcontext->msg_array.size() != static_cast<size_t>(pcontext->total_mail))
 		return 1722;
+	gx_strlcpy(pcontext->authenticated_actor, target_mbox == nullptr ?
+	           mres.username.c_str() : mres_auth.username.c_str(),
+	           std::size(pcontext->authenticated_actor));
 	pcontext->is_login = TRUE;
 	pop3_parser_log_info(pcontext, LV_DEBUG, "login ok");
+	mlog(LV_NOTICE, "gromox-audit: %s accessed mailbox %s via POP3",
+	     pcontext->authenticated_actor, pcontext->username);
 	return 1700;
 }
 
@@ -300,6 +305,32 @@ int cmdh_list(std::vector<std::string> &&argv, pop3_context *pcontext)
 	return 1707;
 }
 
+static void pop3_audit_subject(std::string &out, const std::string &eml)
+{
+	out.clear();
+	try {
+		MIME_FIELD field;
+		size_t offset = 0;
+		while (offset < eml.size()) {
+			if (eml[offset] == '\r' || eml[offset] == '\n')
+				return;
+			auto parsed = parse_mime_field(eml.c_str() + offset,
+			              eml.size() - offset, &field);
+			if (parsed == 0)
+				return;
+			offset += parsed;
+			if (strcasecmp(field.name.c_str(), "Subject") != 0)
+				continue;
+			std::string subject;
+			if (!mime_string_to_utf8(field.value, subject))
+				return;
+			out.swap(subject);
+			return;
+		}
+	} catch (const std::bad_alloc &) {
+	}
+}
+
 int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	if (argv.size() < 2)
@@ -330,12 +361,16 @@ int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 	pcontext->stream.clear();
 	if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
 		return 1729;
+	std::string subject;
+	pop3_audit_subject(subject, ctx.wrdat_content);
 	if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
 		pcontext->stream.clear();
 		return 1719;
 	}
 	pop3_parser_log_info(pcontext, LV_DEBUG,
 		"message %s is going to be retrieved", eml_path.c_str());
+	mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in mailbox %s via POP3",
+	     ctx.authenticated_actor, subject.empty() ? "(no subject)" : subject.c_str(), ctx.username);
 	return DISPATCH_DATA;
 }
 
@@ -387,10 +422,16 @@ int cmdh_top(std::vector<std::string> &&argv, pop3_context *pcontext)
 	pcontext->stream.clear();
 	if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
 		return 1729;
+	std::string subject;
+	if (ctx.until_line > 0)
+		pop3_audit_subject(subject, ctx.wrdat_content);
 	if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
 		pcontext->stream.clear();
 		return 1719;
 	}
+	if (ctx.until_line > 0)
+		mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in mailbox %s via POP3",
+		     ctx.authenticated_actor, subject.empty() ? "(no subject)" : subject.c_str(), ctx.username);
 	return DISPATCH_DATA;
 }
 
