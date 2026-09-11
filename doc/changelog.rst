@@ -12,6 +12,7 @@ Enhancements:
 
 Fixes:
 
+* emsmdb: Opening a folder that has no contents no longer misses notifications.
 * The rule processor executes Extended Rules' OP_MOVE/OP_COPY now and matches
   string restrictions across PT_STRING8↔PT_UNICODE.
 * During MAPI-to-iCalender conversions, TZID is now omitted when exporting
