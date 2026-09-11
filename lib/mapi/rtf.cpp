@@ -3292,7 +3292,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode, bool inline_group)
 						pictype_to(preader->picture_type, img_ctype, pext);
 						sprintf(picture_name, "picture%04d.%s",
 							preader->picture_file_number, pext);
-						sprintf(cid_name, "\"cid:picture%04d@rtf\"", 
+						sprintf(cid_name, "cid:picture%04d@rtf",
 							preader->picture_file_number++);
 						if (!picture_push.init(nullptr, 0, 0))
 							return -ENOMEM;
