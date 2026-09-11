@@ -609,6 +609,8 @@ struct GX_EXPORT GLOBALOBJECTID {
 	uint8_t x[8]{};
 	BINARY data{};
 	bool unparsed = false;
+
+	std::string third_party_uid() const;
 };
 
 struct GX_EXPORT EID_ARRAY {

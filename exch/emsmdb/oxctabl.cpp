@@ -186,6 +186,9 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 		return err;
 	*ptable_status = TBLSTAT_COMPLETE;
 	ptable->unload();
+	err = ptable->load_if_empty();
+	if (err != ecSuccess)
+		return err;
 	/* MS-OXCTABL 3.2.5.3 */
 	ptable->clear_bookmarks();
 	ptable->clear_position();
@@ -321,9 +324,11 @@ ec_error_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
 	 * The numerator is the cursor, which the table object tracks on its
 	 * own, and for a plain contents table the denominator is available from
 	 * a single count(*), so neither integer needs the folder materialized.
+	 * An empty table is loaded regardless, see table_object::load_if_empty.
 	 */
 	uint32_t total = 0;
-	if (!ptable->is_loaded() && ptable->total_without_load(&total)) {
+	if (!ptable->is_loaded() && ptable->total_without_load(&total) &&
+	    total != 0) {
 		*pnumerator = ptable->get_position();
 		*pdenominator = total;
 		return ecSuccess;

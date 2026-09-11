@@ -51,7 +51,7 @@ endif
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
-dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-exm2eml tools/gromox-exm2ical tools/gromox-exm2mt tools/gromox-exm2tnef tools/gromox-exm2vcf tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-mt2exm tools/gromox-tnef2mt tools/gromox-vcf2mt
+dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-exm2eml tools/gromox-exm2ical tools/gromox-exm2mt tools/gromox-exm2tnef tools/gromox-exm2vcf tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-mt2exm tools/gromox-rtftohtml tools/gromox-tnef2mt tools/gromox-vcf2mt
 dist_pkglibexec_SCRIPTS = tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
@@ -211,7 +211,7 @@ gromox_mbop_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/mbop.hpp too
 EXTRA_DIST += tools/kdbsub.cpp tools/mbop_cvt.cpp tools/mbop_delmsg.cpp tools/mbop_emptyfld.cpp tools/mbop_foreach.cpp tools/mbop_freebusy.cpp tools/mbop_locale.cpp tools/mbop_main.cpp tools/mbop_msgcopy.cpp tools/mbop_purge.cpp tools/mbop_walk.cpp tools/staticnpmap.cpp
 gromox_mbop_LDADD = ${libHX_LIBS} ${jsoncpp_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la libgxs_midb_agent.la
 gromox_mbsize_SOURCES = tools/mbsize.cpp
-gromox_mbsize_LDADD = ${sqlite_LIBS} libgromox_common.la
+gromox_mbsize_LDADD = ${libHX_LIBS} ${sqlite_LIBS} libgromox_common.la
 gromox_mkmidb_SOURCES = tools/mkmidb.cpp tools/mkshared.cpp tools/mkshared.hpp
 gromox_mkmidb_LDADD = ${fmt_LIBS} ${libHX_LIBS} ${mysql_LIBS} ${libssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_dbop.la libgromox_mapi.la
 gromox_mkprivate_SOURCES = tools/mkprivate.cpp tools/mkshared.cpp tools/mkshared.hpp
@@ -425,6 +425,9 @@ dldcheck.stamp: dldcheck ${dldcheck_files}
 %.service: ${top_builddir}/config.status
 .tps.service:
 	${AM_V_GEN}${MKDIR_P} system; ${SED} -e 's|@''libexecdir''@|${libexecdir}|g' <$< >$@
+
+tools/gromox-rtftohtml: tools/gromox-rtftohtml.in ${top_builddir}/config.status
+	${AM_V_GEN}${MKDIR_P} tools; ${SED} -e 's|@''pkglibexecdir''@|${pkglibexecdir}|g' <${srcdir}/tools/gromox-rtftohtml.in >$@
 
 .PHONY: header-presence
 

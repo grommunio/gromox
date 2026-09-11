@@ -404,6 +404,9 @@ static constexpr char tbl_convidindex_27[] =
 "CREATE INDEX conv_id_index ON message_properties(propval) "
 "WHERE proptag = 806551810"; /* PR_CONVERSATION_ID */
 
+static constexpr char tbl_fixupperms_29[] =
+"UPDATE permissions SET permission=(permission & ~0x2000) | 0x100 WHERE folder_id=9 AND (permission & 0x2000) <> 0";
+
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
@@ -757,6 +760,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{25, tbl_droppropvalindex_25},
 	{27, tbl_convidindex_27},
 	{28, tbl_rebuildmsgtimeindex_28},
+	{29, tbl_fixupperms_29},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };

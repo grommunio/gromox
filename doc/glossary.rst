@@ -321,8 +321,8 @@ Internal Identifier
 
 Folder Identifier, FID
 	Name for *internal identifier* when talking about a folder object. The
-	FID can be observed in *EX entryids* (with conditions) at bytes 38–46.
-	In Gromox source code (as of 2.17), ``fid`` as a variable name
+	FID's GCV can be observed in *EX entryids* (with conditions) at bytes
+	38–46. In Gromox source code (as of 2.17), ``fid`` as a variable name
 	sometimes refers to either to the mixed-byteorder *Internal Identifier*
 	(see above) or the (host-endian) GCV. ``fid_val`` is almost exclusively
 	the host-endian GCV form.
@@ -334,8 +334,8 @@ Correlation ID
 
 Message Identifier, MID
 	Name for *internal identifier* when talking about a message object. The
-	MID can be observed in *EX entryids* (with conditions) at bytes 62–70.
-	In Gromox source code (as of 2.17), ``mid`` as a variable name
+	MID's GCV can be observed in *EX entryids* (with conditions) at bytes
+	62–70. In Gromox source code (as of 2.17), ``mid`` as a variable name
 	sometimes refers to either the mixed-byteorder *Internal Identifier*
 	(see above) or the (host-endian) GCV. ``mid_val`` is almost exclusively
 	the host-endian GCV form.
@@ -365,7 +365,8 @@ External Identifier, XID
 	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
 	because aggregate. Total size: minimum 17 bytes, maximum 24 bytes.
 	[MS-OXCFXICS v25 §2.2.2.2] XIDs make an apperance in PR_CHANGE_KEY
-	and PR_PREDECESSOR_CHANGE_LIST (PCL).
+	and PR_PREDECESSOR_CHANGE_LIST (PCL). A XID without a GLOBCNT portion
+	is invalid.
 
 	EX: *Database GUID* + GCV/CN (6 bytes, MSB) = 22 bytes
 	OST: *Database GUID* + GCV/CN (4 bytes, MSB) = 20 bytes
@@ -374,7 +375,8 @@ Global Identifier, GID
 	The aggregation of the 128-bit *Database GUID* plus the 48-bit
 	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
 	because aggregate. Total size: 22 octets. [MS-OXCDATA v19 §2.2.1.3]
-	Only XIDs with size 22 are GIDs. [MS-OXCFXICS v25 p.13]
+	Only XIDs with size 22 are GIDs. [MS-OXCFXICS v25 p.13] In other words,
+	XIDs in .pst files cannot be considered GIDs.
 
 LongTermID
 	The aggregation of a *GID* (22 bytes) plus 2 NUL pad bytes. Total size:
@@ -387,8 +389,14 @@ Entryid
 	particular mailbox in a particular namespace. Entryids are always at
 	least 20 bytes in length, consisting of 4 flag bytes, a 16 byte MAPI
 	Provider UID and then provider-specific more data.
+
 	* EX entryid
 	* EMSAB entryid
+
+	The root item of a MAPI store is often programmaticaly opened in the
+	MSMAPI C API with a 0-byte entryid. It is therefore conceivable that
+	a 20-byte entryid, i.e. with no provider-specific data portion, could
+	be valid too for a particular provider.
 
 EMSAB entryid
 	Provider UID is {c840a7dc-42c0-1a10-b4b9-08002b2fe182}.
@@ -400,8 +408,10 @@ EX entryid
 	(gromox: `struct FOLDER_ENTRYID`).
 	If byte 22-24 is {0x07,0x00}, read bytes 0-n as an EX Message Entryid
 	(gromox: `struct MESSAGE_ENTRYID`).
-	In entryids, the replid portions of FID/MID are just padding, ignored
-	by readers, and filled by writers with value 0.
+	The pad field is unrelated to the replica (entryids use GIDs, so
+	already encode the replica via dbguid), but the padding placement means
+	source code needs a secondary function to encode the combined 8 byte
+	sequence to a leuint64.
 
 GABUID
 	16-byte GUID value composed of 4 bytes Gromox user ID plus

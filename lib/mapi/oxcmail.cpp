@@ -2240,7 +2240,8 @@ static BOOL oxcmail_parse_smime_message(const MAIL *pmail, MESSAGE_CONTENT *pmsg
 	size_t content_len = rdlength;
 	auto pcontent = std::make_unique<char[]>(content_len + 1024);
 	auto content_type = phead->content_type;
-	if (0 == strcasecmp(content_type, "multipart/signed")) {
+	if (strcasecmp(content_type, "multipart/signed") == 0 ||
+	    strcasecmp(content_type, "multipart/encrypted") == 0) {
 		strcpy(pcontent.get(), "Content-Type: ");
 		offset = 14;
 		if (!phead->get_field("Content-Type", &pcontent[offset], 1024 - offset))
@@ -2248,8 +2249,13 @@ static BOOL oxcmail_parse_smime_message(const MAIL *pmail, MESSAGE_CONTENT *pmsg
 		offset += strlen(&pcontent[offset]);
 		strcpy(&pcontent[offset], "\r\n\r\n");
 		offset += 4;
-		if (!phead->read_content(&pcontent[offset], &content_len))
+		/* Preserve signed octets, including folding and transfer encoding. */
+		if (phead->content_begin != nullptr) {
+			content_len = phead->content_length;
+			memcpy(&pcontent[offset], phead->content_begin, content_len);
+		} else if (!phead->read_content(&pcontent[offset], &content_len)) {
 			return FALSE;
+		}
 		offset += content_len;
 	} else {
 		if (!phead->read_content(pcontent.get(), &content_len))
@@ -2267,13 +2273,15 @@ static BOOL oxcmail_parse_smime_message(const MAIL *pmail, MESSAGE_CONTENT *pmsg
 	tmp_bin.pc = pcontent.get();
 	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != ecSuccess)
 		return FALSE;
+	const bool pgp_encrypted = strcasecmp(content_type, "multipart/encrypted") == 0;
+	const char *filename = pgp_encrypted ? "GpgOL_MIME_structure.mime" : "SMIME.p7m";
 	tmp_int32 = ATTACH_BY_VALUE;
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess ||
 	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, content_type) != ecSuccess ||
-	    pattachment->proplist.set(PR_ATTACH_EXTENSION, ".p7m") != ecSuccess ||
-	    pattachment->proplist.set(PR_ATTACH_FILENAME, "SMIME.p7m") != ecSuccess ||
-	    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, "SMIME.p7m") != ecSuccess ||
-	    pattachment->proplist.set(PR_DISPLAY_NAME, "SMIME.p7m") != ecSuccess)
+	    pattachment->proplist.set(PR_ATTACH_EXTENSION, pgp_encrypted ? ".mime" : ".p7m") != ecSuccess ||
+	    pattachment->proplist.set(PR_ATTACH_FILENAME, filename) != ecSuccess ||
+	    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, filename) != ecSuccess ||
+	    pattachment->proplist.set(PR_DISPLAY_NAME, filename) != ecSuccess)
 		return FALSE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -2334,6 +2342,43 @@ static inline bool tnef_vfy_check_key(MESSAGE_CONTENT *msg, const char *xtnefcor
 #else
 	return true;
 #endif
+}
+
+static bool openpgp_mime(const char *head_ct, const MIME *head)
+{
+	std::string protocol;
+	if (!oxcmail_get_content_param(head, "protocol", protocol))
+		return false;
+	return (strcasecmp(head_ct, "multipart/signed") == 0 &&
+	        strcasecmp(protocol.c_str(), "application/pgp-signature") == 0) ||
+	       (strcasecmp(head_ct, "multipart/encrypted") == 0 &&
+	        strcasecmp(protocol.c_str(), "application/pgp-encrypted") == 0);
+}
+
+static bool gpgol_class(const char *cls)
+{
+	return class_match_prefix(cls, "IPM.Note.GpgOL.MultipartEncrypted") == 0 ||
+	       class_match_prefix(cls, "IPM.Note.GpgOL.MultipartSigned") == 0 ||
+	       class_match_prefix(cls, "IPM.Note.InfoPathForm.GpgOL") == 0 ||
+	       class_match_prefix(cls, "IPM.Note.InfoPathForm.GpgOLS") == 0;
+}
+
+/**
+ * Parse the sole attachment of an OXOSMIME-style message as the MIME entity
+ * it stores. Returns nullptr when the message does not have that layout.
+ */
+static std::unique_ptr<MIME> envelope_entity(const MESSAGE_CONTENT &msg)
+{
+	auto atl = msg.children.pattachments;
+	if (atl == nullptr || atl->count != 1 || atl->pplist[0] == nullptr)
+		return nullptr;
+	auto bin = atl->pplist[0]->proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
+	if (bin == nullptr)
+		return nullptr;
+	auto entity = MIME::create();
+	if (entity == nullptr || !entity->load_from_str(nullptr, bin->pc, bin->cb))
+		return nullptr;
+	return entity;
 }
 
 static bool smime_clearsigned(const char *head_ct, const MIME *head)
@@ -2493,6 +2538,26 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 			}
 		}
 		}
+	} else if (openpgp_mime(head_ct, phead)) {
+		/* OpenPGP signatures use the generic MS-OXOSMIME clear-signed
+		 * mapping. Encryption uses GpgOL's class; neither is CMS data. */
+		const char *mclass = strcasecmp(head_ct, "multipart/encrypted") == 0 ?
+			"IPM.Note.GpgOL.MultipartEncrypted" : "IPM.Note.SMIME.MultipartSigned";
+		if (pmsg->proplist.set(PR_MESSAGE_CLASS, mclass) != ecSuccess ||
+		    !oxcmail_parse_encrypted(phead, &field_param.last_propid, phash, pmsg.get()))
+			return imp_null;
+		/* GpgOL's documented override also identifies signed OpenPGP
+		 * messages in contents tables without inspecting the MIME body. */
+		static constexpr GUID gpgol_guid = {0x31805ab8, 0x3e92, 0x11dc,
+			{0x87, 0x9c}, {0x00, 0x06, 0x1b, 0x03, 0x10, 0x04}};
+		PROPERTY_NAME name = {MNID_STRING, gpgol_guid, 0, deconst("GpgOL Msg Class")};
+		const char *pgpclass = strcasecmp(head_ct, "multipart/encrypted") == 0 ?
+			"IPM.Note.GpgOL.MultipartEncrypted" : "IPM.Note.GpgOL.MultipartSigned";
+		if (namemap_add(phash, field_param.last_propid, std::move(name)) != ecSuccess ||
+		    pmsg->proplist.set(PROP_TAG(PT_STRING8, field_param.last_propid), pgpclass) != ecSuccess)
+			return imp_null;
+		++field_param.last_propid;
+		b_smime = true;
 	} else if (smime_clearsigned(head_ct, phead)) {
 		if (unwrap_smime_clearsigned) {
 			while (smime_clearsigned(mime_root->content_type, mime_root)) {
@@ -2894,7 +2959,11 @@ static enum oxcmail_type oxcmail_get_mail_type(const char *pmessage_class)
 {
 	if (class_match_prefix( pmessage_class, "IPM.Note.SMIME.MultipartSigned") == 0)
 		return oxcmail_type::xsigned;
-	if (class_match_prefix(pmessage_class, "IPM.InfoPathForm") == 0) {
+	if (class_match_prefix(pmessage_class, "IPM.Note.GpgOL.MultipartEncrypted") == 0 ||
+	    class_match_prefix(pmessage_class, "IPM.Note.GpgOL.MultipartSigned") == 0)
+		return oxcmail_type::xsigned;
+	if (class_match_prefix(pmessage_class, "IPM.InfoPathForm") == 0 ||
+	    class_match_prefix(pmessage_class, "IPM.Note.InfoPathForm") == 0) {
 		if (class_match_suffix(pmessage_class, ".SMIME.MultipartSigned") == 0)
 			return oxcmail_type::xsigned;
 		if (class_match_suffix(pmessage_class, ".SMIME") == 0)
@@ -2981,6 +3050,20 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		pskeleton->pmessage_class = "IPM.Note";
 	pskeleton->mail_type = oxcmail_get_mail_type(
 						pskeleton->pmessage_class);
+	if (pskeleton->mail_type == oxcmail_type::xsigned &&
+	    gpgol_class(pskeleton->pmessage_class)) {
+		/*
+		 * GpgOL reclasses received messages irrespective of how they
+		 * were stored. Only a message keeping the complete entity in its
+		 * single attachment can be exported as that entity; a body plus
+		 * signature/ciphertext attachments is a regular message.
+		 */
+		auto ent = envelope_entity(*pmsg);
+		if (ent == nullptr ||
+		    (strcasecmp(ent->content_type, "multipart/signed") != 0 &&
+		    !openpgp_mime(ent->content_type, ent.get())))
+			pskeleton->mail_type = oxcmail_type::normal;
+	}
 	if (pskeleton->mail_type == oxcmail_type::xsigned ||
 	    pskeleton->mail_type == oxcmail_type::encrypted)
 		if (b_tnef)
@@ -3192,6 +3275,14 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 	if (class_match_prefix(pskeleton->pmessage_class, "IPM.Schedule.Meeting") == 0 ||
 	    class_match_prefix(pskeleton->pmessage_class, "IPM.Task") == 0)
 		return true;
+	/* OpenPGP's inner entity omits Bcc, and the outer SMTP headers must
+	 * omit it as well. Keep the MAPI recipient table for envelope delivery
+	 * and the sender's Sent Items; do not rely on the next MTA to strip it. */
+	if (pskeleton->mail_type == oxcmail_type::xsigned) {
+		auto ent = envelope_entity(*pmsg);
+		if (ent != nullptr && openpgp_mime(ent->content_type, ent.get()))
+			return true;
+	}
 	mblist = vmime::make_shared<vmime::mailboxList>();
 	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_BCC, *mblist)) {
 		auto mg = mblist->generate();
@@ -3823,17 +3914,18 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 		return false;
 	if (!sec->get_field("Content-Type", buf, std::size(buf)))
 		return false;
-	if (strncasecmp(buf, "multipart/signed", 16) != 0) {
+	const bool is_signed = strcasecmp(sec->content_type, "multipart/signed") == 0;
+	const bool is_pgp_encrypted = strcasecmp(sec->content_type, "multipart/encrypted") == 0 &&
+		openpgp_mime(sec->content_type, sec.get());
+	if (!is_signed && !is_pgp_encrypted) {
 		origmime.mime_type = mime_type::single;
 		auto s = fmt::format("[Message is not a valid OXOSMIME message. "
-			 "The attachment object is not of type multipart/signed.]");
+			 "The attachment object is not multipart/signed or OpenPGP multipart/encrypted.]");
 		origmime.write_content(s.c_str(), s.size(), mime_encoding::none);
 		if (!origmime.set_content_type("text/plain"))
 			/* ignore */;
 		return TRUE;
 	}
-	if (buf[16] != '\0' && buf[16] != ';')
-		return false;
 	origmime.f_type_params.insert(origmime.f_type_params.end(),
 		std::make_move_iterator(sec->f_type_params.begin()),
 		std::make_move_iterator(sec->f_type_params.end()));
@@ -3848,7 +3940,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 	origmime.content_begin = origmime.content_buf.get();
 	origmime.content_length = sec->content_length;
 	origmime.mime_type = mime_type::single;
-	gx_strlcpy(origmime.content_type, "multipart/signed", std::size(origmime.content_type));
+	gx_strlcpy(origmime.content_type, sec->content_type, std::size(origmime.content_type));
 	origmime.head_touched = TRUE;
 	return true;
 } catch (const std::bad_alloc &) {

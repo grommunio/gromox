@@ -875,6 +875,14 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
 	*phout = hnd;
+	/*
+	 * An empty table is loaded whatever the flags say. See
+	 * table_object::load_if_empty for why it has to exist before the client
+	 * asks for rows; with no rows to insert, the load is free.
+	 */
+	if (!b_conversation && pfolder->type != FOLDER_SEARCH &&
+	    *prow_count == 0)
+		return rtable->load();
 	if (table_flags & MAPI_DEFERRED_ERRORS)
 		/* Inaccurate rowcount permissible under OXCFOLD v23.2 §2.2.1.14.1 */
 		return ecSuccess;

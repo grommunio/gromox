@@ -268,6 +268,21 @@ bool table_object::total_without_load(uint32_t *pcount) const
 	       b_fai, b_del, pcount);
 }
 
+/**
+ * An unloaded table has no counterpart in exmdb, and exmdb sends its
+ * table notifications to that counterpart. A client with rows to show has to
+ * fetch them, and the fetch loads the table. An empty table is only ever
+ * observed through notifications, so it has to exist from the start. Loading
+ * it costs one indexed count and an empty scan.
+ */
+ec_error_t table_object::load_if_empty()
+{
+	uint32_t total = 0;
+	if (m_loaded || !total_without_load(&total) || total != 0)
+		return ecSuccess;
+	return load();
+}
+
 uint32_t table_object::get_total()
 {
 	if (m_deleted)

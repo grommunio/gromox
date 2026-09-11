@@ -1254,6 +1254,7 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 	}
 	template<typename T> inline const T *get(gromox::proptag_t t) const { return static_cast<const T *>(getval(t)); }
 	template<typename T> inline T *get(gromox::proptag_t t) { return static_cast<T *>(getval(t)); }
+	ec_error_t set_bin(gromox::proptag_t, std::string_view);
 	ec_error_t set(gromox::proptag_t, const void *d);
 	inline ec_error_t set(const TAGGED_PROPVAL &a) { return set(a.proptag, a.pvalue); }
 	void emplace_back(gromox::proptag_t tag, const void *d) {

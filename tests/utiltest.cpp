@@ -82,6 +82,31 @@ static int t_extpp()
 	ep.init(s.data(), s.size(), zalloc, 0);
 	assert(ep.g_goid(&goid) == pack_result::ok);
 	assert(goid.unparsed && goid.data.cb == 5);
+
+	/*
+	 * "vCal-Uid", 0x01000000, the UID and a NUL that Size counts: what
+	 * Outlook and every spec-conformant client writes when wrapping a UID
+	 * that did not originate in MAPI. Handing the terminator out puts a NUL
+	 * inside an ical UID line and the payload stops parsing.
+	 */
+#define s_vcal "7643616c2d55696401000000"
+#define s_uid "63653634633666352d653964362d346363392d383538382d613266623536326165346565"
+	s = encid + hex2bin(s_date "31000000" s_vcal s_uid "00");
+	ep.init(s.data(), s.size(), zalloc, 0);
+	assert(ep.g_goid(&goid) == pack_result::ok);
+	assert(goid.third_party_uid() == "ce64c6f5-e9d6-4cc9-8588-a2fb562ae4ee");
+	/* Gromox itself omits the terminator, so both spellings must decode. */
+	s = encid + hex2bin(s_date "30000000" s_vcal s_uid);
+	ep.init(s.data(), s.size(), zalloc, 0);
+	assert(ep.g_goid(&goid) == pack_result::ok);
+	assert(goid.third_party_uid() == "ce64c6f5-e9d6-4cc9-8588-a2fb562ae4ee");
+	/* Without the marker the caller must fall back to the hex-encoded blob. */
+	s = encid + hex2bin(s_date "04000000deadbeef");
+	ep.init(s.data(), s.size(), zalloc, 0);
+	assert(ep.g_goid(&goid) == pack_result::ok);
+	assert(goid.third_party_uid().empty());
+#undef s_uid
+#undef s_vcal
 #undef s_date
 	return EXIT_SUCCESS;
 }
