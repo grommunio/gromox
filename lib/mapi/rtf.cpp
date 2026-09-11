@@ -3167,17 +3167,18 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	auto reader = this;
 	auto rawpic = hex2bin(std::string_view(picture_push.m_cdata, picture_push.m_offset));
 	if (reader->pattachments == nullptr) {
-		ext_push.p_bytes("<img src=\"data:");
-		ext_push.p_bytes(img_ctype);
-		ext_push.p_bytes(";base64,");
-		ext_push.p_bytes(base64_encode(rawpic));
-		ext_push.p_bytes("\">");
+		if (ext_push.p_bytes("<img src=\"data:") != pack_result::ok ||
+		    ext_push.p_bytes(img_ctype) != pack_result::ok ||
+		    ext_push.p_bytes(";base64,") != pack_result::ok ||
+		    ext_push.p_bytes(base64_encode(rawpic)) != pack_result::ok ||
+		    ext_push.p_bytes("\">") != pack_result::ok)
+			return -ENOMEM;
 		return 0;
 	}
 
 	auto atx = attachment_content_init();
 	if (atx == nullptr || !reader->pattachments->append_internal(atx))
-		return -EINVAL;
+		return -ENOMEM;
 	ec_error_t ret;
 	uint32_t flags = ATT_MHTML_REF;
 	if ((ret = atx->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != ecSuccess ||
@@ -3190,7 +3191,7 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	if (ext_push.p_bytes(TAG_IMAGELINK_BEGIN) != pack_result::ok ||
 	    ext_push.p_bytes(cid_name) != pack_result::ok ||
 	    ext_push.p_bytes(TAG_IMAGELINK_END) != pack_result::ok)
-		return -EINVAL;
+		return -ENOMEM;
 	return 0;
 }
 

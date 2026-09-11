@@ -31,7 +31,7 @@ enum {
 	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_TEXTTOHTML, CM_UNRTFCP,
 	CM_QPDECODE, CM_QPENCODE,
 };
-static unsigned int g_dowhat, g_hex2bin;
+static unsigned int g_dowhat, g_hex2bin, g_external_res;
 static constexpr struct HXoption g_options_table[] = {
 	{"bin2hex", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_BIN2HEX, "Run bin2hex"},
 	{"bin2txt", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_BIN2TXT, "Run bin2txt"},
@@ -42,6 +42,7 @@ static constexpr struct HXoption g_options_table[] = {
 	{"decode-nttime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_NTTIME, "Decode NT timestamps to unixtime/calendar"},
 	{"decode-restrict", 'r', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_RESTRICT, "Decode restriction blob (e.g. rule condition)"},
 	{"decode-unixtime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_UNIXTIME, "Decode Unix timestamp to nttime/calendar"},
+	{0, 'X', HXTYPE_NONE, &g_external_res, {}, {}, {}, "Turn images into external cid: references"},
 	{"htmltortf", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTORTF, "Convert HTML to RTF"},
 	{"htmltotext", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTOTEXT, "Convert HTML to plaintext"},
 	{"lzxdec", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXDEC, "LZX decompression"},
@@ -591,7 +592,7 @@ static int do_process_2(std::string_view &&data, const char *str)
 		auto at = attachment_list_init();
 		auto cl_0 = HX::make_scope_exit([&]() { attachment_list_free(at); });
 		std::string out;
-		auto err = rtf_to_html(data, "utf-8", out, at);
+		auto err = rtf_to_html(data, "utf-8", out, g_external_res ? at : nullptr);
 		if (err != ecSuccess) {
 			fprintf(stderr, "rtf_to_html: %s\n", mapi_strerror(err));
 			return -1;
@@ -600,7 +601,8 @@ static int do_process_2(std::string_view &&data, const char *str)
 			return -1;
 		}
 		if (at->count > 0)
-			fprintf(stderr, "[rtf_to_html produced an additional %u attachment objects, not emitted to stdout.]\n", at->count);
+			fprintf(stderr, "[rtf_to_html produced an additional %u attachment object(s), "
+				"not emitted to stdout.]\n", at->count);
 		return 0;
 	}
 	case CM_TEXTTOHTML: {

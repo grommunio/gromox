@@ -13,6 +13,11 @@ values (i.e. content, never the name of a file to read).
 .TP
 \fB\-p\fP, \fB\-\-pack\fP
 Employ hex2bin before main action.
+.TP
+\fB\-X\fP
+When converting RTF to HTML, transform images not into <img> tags with in-line
+image data using a `data:` URI, but into external references utilizing a `cid:`
+URI. ddbg will not emit the image in this case.
 .SH Commands
 .TP
 \fB\-\-bin2hex\fP
