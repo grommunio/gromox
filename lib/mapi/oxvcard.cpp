@@ -108,6 +108,10 @@ static BOOL oxvcard_check_compatible(const vcard *pvcard)
 		auto pstring = pvline->get_first_subval();
 		if (pstring == nullptr)
 			return FALSE;
+		/*
+		 * vCard 2.1 has unusual line breaking rules. Not implemented.
+		 * TEL;TYPE=WORK is also e.g. TEL;WORK in v2.
+		 */
 		if (strcmp(pstring, "3.0") != 0 &&
 		    strcmp(pstring, "4.0") != 0)
 			return FALSE;
@@ -966,31 +970,6 @@ bool oxvcard_converter::mapi_to_vcard(const message_content &msg, vcard &vcard) 
 		email_line.append_value(pvalue);
 	}
 	
-	auto flag = pmsg->proplist.get<const uint8_t>(remap_tag(g_hasphoto_proptag));
-	if (flag != nullptr && *flag != 0 && pmsg->children.pattachments != nullptr) {
-		for (auto &at : *pmsg->children.pattachments) {
-			flag = at.proplist.get<uint8_t>(PR_ATTACHMENT_CONTACTPHOTO);
-			if (flag == nullptr || *flag == 0)
-				continue;
-			pvalue = at.proplist.get<char>(PR_ATTACH_EXTENSION);
-			if (pvalue == nullptr)
-				continue;
-			if (*pvalue == '.')
-				++pvalue;
-			if (strcasecmp(pvalue, "jpg") == 0)
-				pvalue = "JPEG";
-			photo_type = pvalue;
-			auto bv = at.proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
-			if (bv == nullptr)
-				continue;
-			auto &photo_line = vcard.append_line("PHOTO");
-			photo_line.append_param("TYPE", photo_type);
-			photo_line.append_param("ENCODING", "BASE64");
-			photo_line.append_value(base64_encode(*bv));
-			break;
-		}
-	}
-	
 	pvalue = pmsg->proplist.get<char>(PR_BODY);
 	if (has_content(pvalue))
 		vcard.append_line("NOTE", pvalue);
@@ -1160,6 +1139,31 @@ bool oxvcard_converter::mapi_to_vcard(const message_content &msg, vcard &vcard) 
 			auto &day_line = vcard.append_line("X-MS-ANNIVERSARY");
 			day_line.append_param("VALUE", "DATE");
 			day_line.append_value(tb);
+		}
+	}
+
+	auto flag = pmsg->proplist.get<const uint8_t>(remap_tag(g_hasphoto_proptag));
+	if (flag != nullptr && *flag != 0 && pmsg->children.pattachments != nullptr) {
+		for (auto &at : *pmsg->children.pattachments) {
+			flag = at.proplist.get<uint8_t>(PR_ATTACHMENT_CONTACTPHOTO);
+			if (flag == nullptr || *flag == 0)
+				continue;
+			pvalue = at.proplist.get<char>(PR_ATTACH_EXTENSION);
+			if (pvalue == nullptr)
+				continue;
+			if (*pvalue == '.')
+				++pvalue;
+			if (strcasecmp(pvalue, "jpg") == 0)
+				pvalue = "JPEG";
+			photo_type = pvalue;
+			auto bv = at.proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
+			if (bv == nullptr)
+				continue;
+			auto &photo_line = vcard.append_line("PHOTO");
+			photo_line.append_param("TYPE", photo_type);
+			photo_line.append_param("ENCODING", "BASE64");
+			photo_line.append_value(base64_encode(*bv));
+			break;
 		}
 	}
 	return TRUE;

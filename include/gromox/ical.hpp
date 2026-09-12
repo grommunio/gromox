@@ -43,11 +43,11 @@ struct GX_EXPORT ical_line {
 	ical_line(const char *n) : m_name(n) {}
 	ical_line(const char *n, const char *v);
 	ical_line(const char *n, std::string &&v);
-	ical_param &append_param(ical_param &&o) { param_list.push_back(std::move(o)); return param_list.back(); }
+	ical_param &append_param(ical_param &&o) { return param_list.emplace_back(std::move(o)); }
 	void append_param(const char *v, const char *pv);
-	ical_value &append_value(ical_value &&o) { value_list.push_back(std::move(o)); return value_list.back(); }
+	ical_value &append_value(ical_value &&o) { return value_list.emplace_back(std::move(o)); }
 	ical_value &append_value() { return value_list.emplace_back(); }
-	ical_value &append_value(const char *v) { value_list.push_back(ical_value(v)); return value_list.back(); }
+	ical_value &append_value(const char *v) { return value_list.emplace_back(v); }
 	void append_value(const char *v, const char *sv);
 	void append_value(const char *v, std::string &&sv);
 	const char *get_first_paramval(const char *name) const;

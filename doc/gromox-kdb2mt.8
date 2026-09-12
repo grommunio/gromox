@@ -108,10 +108,11 @@ If you are using "attachment_storage=files_v1-\fIx\fP-\fIy\fP" in
 /etc/kopano/server.cfg, call kdb2mt with the L1 and L2 options.
 .TP
 \fB\-\-only\-obj\fP \fIhid\fP
-Extract just the object with the given hierarchy id. This option may be
-specified multiple times to selectively extract more objects. In the output
-stream, objects so extracted will be declared as unanchored so they can be
-imported to a folder of choice later (cf. gromox-import's \-B option).
+Extract just the folder/message object with the given hierarchy id. This
+option may be specified multiple times to selectively extract more objects.
+In the output stream, objects so extracted will be declared as unanchored so
+they can be imported to a folder of choice later (cf. gromox-import's \-B
+option).
 .TP
 \fB\-\-acl\fP={\fIauto\fP|\fIno\fP|\fInoextract\fP|\fIextract\fP|\fIconvert\fP}
 Handling for ACLs on MAPI objects: ignore, extract to synthetic address, or

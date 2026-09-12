@@ -1207,6 +1207,8 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 
 static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
+	if (parent.type != MAPI_MESSAGE)
+		return 0;
 	tpropval_array_ptr props = std::move(item.get_props());
 	props->erase_if(skip_property);
 	auto err = parent.message->children.prcpts->append_move(std::move(props));
@@ -1283,6 +1285,12 @@ static void do_attach_byval(driver &drv, unsigned int depth, unsigned int hid,
 		throw std::bad_alloc();
 }
 
+/**
+ * @parent: Parent specification for the GXMT stream.
+ *          Because --only-objs may be used, @parent can very well be
+ *          MAPI_FOLDER, even if that makes no sense for an attachment
+ *          normally.
+ */
 static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	attachment_content_ptr atc(attachment_content_init());
@@ -1290,34 +1298,20 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 		throw std::bad_alloc();
 	auto &props = item.get_props();
 	auto mode = props->get<uint32_t>(PR_ATTACH_METHOD);
-
-	/*
-	 * Scrape all attachments that are in the database, irrespective
-	 * of PR_ATTACH_METHOD. Because we can.
-	 */
 	if ((mode == nullptr || *mode == ATTACH_BY_VALUE) && *g_atxdir != '\0')
 		do_attach_byval(drv, depth, item.m_hid, props.get(), mode == nullptr);
-
-	auto saved_show_tree = g_show_tree;
-	g_show_tree = false;
-	auto new_parent = parent_desc::as_attach(atc.get());
-	for (size_t i = 0; i < item.m_sub_hids.size(); ++i) {
-		auto subitem = item.get_sub_item(i);
-		auto ret = do_item(drv, depth + 1, new_parent, *subitem);
-		if (ret < 0) {
-			g_show_tree = saved_show_tree;
-			return ret;
-		}
-	}
-	g_show_tree = saved_show_tree;
-
 	std::swap(atc->proplist, *props);
 	atc->proplist.erase_if(skip_property);
-	if (parent.type == MAPI_MESSAGE) {
-		if (!parent.message->children.pattachments->append_internal(atc.get()))
-			throw std::bad_alloc();
-		atc.release();
-	}
+	if (parent.type != MAPI_MESSAGE)
+		/*
+		 * atc is thrown away again. But its construction was not
+		 * completely for naught: do_attach_byval printed the props.
+		 */
+		return 0;
+
+	if (!parent.message->children.pattachments->append_internal(atc.get()))
+		throw std::bad_alloc();
+	atc.release();
 	return 0;
 }
 
@@ -1337,6 +1331,11 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 		ret = do_recip(drv, depth, parent, item);
 	} else if (item.m_mapitype == MAPI_ATTACH) {
 		ret = do_attach(drv, depth, parent, item);
+		if (parent.type == MAPI_MESSAGE) {
+			auto alist = parent.message->children.pattachments;
+			if (alist->size() > 0)
+				new_parent = parent_desc::as_attach(&alist->back());
+		}
 	} else {
 		auto &props = item.get_props();
 		if (g_show_tree)

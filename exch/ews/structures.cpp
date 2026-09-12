@@ -49,10 +49,11 @@ std::string goid_to_uid(const BINARY &goid_bin)
 	EXT_PULL ep;
 	ep.init(goid_bin.pb, goid_bin.cb,
 	    EWSContext::alloc, 0);
-	if (ep.g_goid(&goid) == pack_result::ok &&
-	    goid.data.cb > 12 &&
-	    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0)
-		return std::string(&goid.data.pc[12], goid.data.cb - 12);
+	if (ep.g_goid(&goid) == pack_result::ok) {
+		auto tp_uid = goid.third_party_uid();
+		if (!tp_uid.empty())
+			return tp_uid;
+	}
 	return bin2hex(goid_bin.pc, goid_bin.cb);
 }
 

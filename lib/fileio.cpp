@@ -592,6 +592,9 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 		argv[argc++] = "-t";
 		argv[argc++] = "html";
 		argv[argc++] = "--embed-resources=true";
+	} else if (rend == REND_INT_RTH) {
+		/* The utility needs input on stdin, not as a file */
+		return -1;
 	} else if (rend == REND_CHAWAN) {
 		argv[argc++] = "cha";
 		if (cset != nullptr) {

@@ -2968,7 +2968,7 @@ fhash::fhash(const std::string_view data)
 #ifdef HAVE_XXHASH
 		XXH128_canonical_t canon;
 		XXH128_canonicalFromHash(&canon, XXH3_128bits(data.data(), data.size()));
-		cid = "Y-00/000000000000000000000000000000";
+		cid = "Y-00/000000000000000000000000000000"; // 'Y'
 		hexify(reinterpret_cast<const unsigned char *>(canon.digest), 16);
 		return;
 #endif
@@ -2979,7 +2979,7 @@ fhash::fhash(const std::string_view data)
 	           data.size(), digest, &outsize, EVP_sha3_256(), nullptr);
 	if (ret < 1)
 		return;
-	cid = "S-00/00000000000000000000000000000000000000000000000000000000000000";
+	cid = "S-00/00000000000000000000000000000000000000000000000000000000000000"; // 'S'
 	hexify(digest, 32);
 }
 
@@ -4716,7 +4716,7 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	 * that is not strictly necessary (EML files are write-once).
 	 * For more notes on midstr format, see mt2exm.cpp.
 	 */
-	new_midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
+	new_midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt); // 'R'
 	auto old_eml = fmt::format("{}/eml/{}", basedir, old_midstr);
 	auto new_eml = fmt::format("{}/eml/{}", basedir, new_midstr);
 	auto ret = gx_mkbasedir(new_eml.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
@@ -5485,9 +5485,9 @@ BOOL common_util_indexing_sub_contents(
  * server however is UTF-8 and thus consumes a different amount of bytes.
  * OXCFXICS v24 §3.2.5.4, §3.3.5.12, once again, allow approximations.
  *
- * Gromox also uses PR_MESSAGE_SIZE for quota tracking. That is not an exact an
- * exact science either, due to potential compression or potential presence of
- * midb EML copies.
+ * Gromox also uses PR_MESSAGE_SIZE for quota tracking. That is not an exact
+ * science either, due to potential compression or potential presence of midb
+ * EML copies.
  */
 static uint32_t cu_get_cid_length(const char *cid, proptype_t proptype)
 {

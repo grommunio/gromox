@@ -37,6 +37,7 @@ struct table_object {
 	void clear_position() { m_position = 0; }
 	uint32_t get_total();
 	bool total_without_load(uint32_t *) const;
+	ec_error_t load_if_empty();
 	ec_error_t create_bookmark(uint32_t *pindex);
 	void remove_bookmark(uint32_t index);
 	void clear_bookmarks() { bookmark_list.clear(); }

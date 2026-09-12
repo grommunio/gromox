@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <cctype>
 #include <cerrno>
 #include <cmath>
 #include <cstdint>
@@ -13,6 +14,7 @@
 #include <string>
 #include <unordered_map>
 #include <libHX/ctype_helper.h>
+#include <libHX/option.h>
 #include <sys/stat.h>
 #include <gromox/database.h>
 #include <gromox/fileio.h>
@@ -22,7 +24,9 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-static constexpr int MB = 1048576, BLOCKUNIT = 512;
+static char s_unit[] = "MB";
+static unsigned long long UNIT = 1048576;
+static constexpr int BLOCKUNIT = 512;
 
 namespace {
 
@@ -41,8 +45,8 @@ struct ustat {
 		pad += o.pad;
 		return *this;
 	}
-	unsigned long long mb() const { return size / MB; }
-	unsigned long long pmb() const { return pad / MB; }
+	unsigned long long units() const { return size / UNIT; }
+	unsigned long long punits() const { return pad / UNIT; }
 
 	unsigned long long size = 0, pad = 0;
 };
@@ -59,11 +63,16 @@ struct rfc_stat {
 	ustat recv, sent, dirs, total;
 };
 
+/**
+ * Information about a file
+ * @refs: referenced by this many MAPI objects (i.e. deduplication factor)
+ */
 struct object_stat {
 	size_t refs = 0;
-	unsigned int format = 0;
 	unsigned long long ifc = 0;
 	ustat du;
+	proptag_t proptag{};
+	int8_t format = -1;
 };
 
 struct ifc_stat {
@@ -74,8 +83,18 @@ struct ifc_stat {
 
 }
 
+using dir_ptr = std::unique_ptr<DIR, file_deleter>;
 using db_handle = std::unique_ptr<sqlite3, deleter>;
 using object_map = std::unordered_map<std::string, object_stat>;
+using stat_map = std::unordered_map<std::string, struct stat>;
+
+static unsigned int g_show_orphans;
+static constexpr HXoption g_options_table[] = {
+	{{}, 'B', HXTYPE_STRING, {}, {}, {}, {}, "Report byte values in this unit (-BK, -BM, -BG, -B4K, -B512)"},
+	{"orphans", 0, HXTYPE_NONE, &g_show_orphans, {}, {}, {}, "Show orphaned files"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 static double ratio(double a, double b) { return b == 0 ? NAN : a / b; }
 
@@ -100,38 +119,6 @@ static bool looks_like_midb_generated(const char *name)
 	return false;
 }
 
-static struct rfc_stat rfc_count(const std::string &dirname)
-{
-	struct rfc_stat out;
-	struct stat sb;
-	std::unique_ptr<DIR, file_deleter> dh(opendir(dirname.c_str()));
-	if (dh == nullptr)
-		return out;
-	auto dfd = dirfd(dh.get());
-	if (fstat(dfd, &sb) == 0)
-		/*
-		 * du --app really ignores directories, cf.
-		 * coreutils:/src/system.h:usable_st_size.
-		 */
-		out.dirs.pad += ustat{sb}.pad;
-
-	const struct dirent *de;
-	while ((de = readdir(dh.get())) != nullptr) {
-		auto name = de->d_name;
-		if (*name == '.')
-			continue;
-		if (fstatat(dfd, name, &sb, 0) != 0 ||
-		    !S_ISREG(sb.st_mode))
-			continue;
-		if (looks_like_midb_generated(name))
-			out.sent += sb;
-		else
-			out.recv += sb;
-	}
-	out.total = out.recv + out.sent + out.dirs;
-	return out;
-}
-
 static db_handle db_open(const std::string &path)
 {
 	sqlite3 *dbx = nullptr;
@@ -152,22 +139,34 @@ static unsigned long long db_read_nts(sqlite3 *db)
 	return stm != nullptr && stm.step() == SQLITE_ROW ? stm.col_uint64(0) : 0;
 }
 
-static object_map db_read_usecount(sqlite3 *db, mapi_object_type type)
+/**
+ * Scan exchange.sqlite3 for CID file references and yield an associative
+ * container that indicates how often each content object was referenced.
+ *
+ * @db:   opened exchange.sqlite3
+ * @type: property set which to examine; either %MAPI_MESSAGE or %MAPI_ATTACH.
+ */
+static object_map db_read_cid_refs(sqlite3 *db, mapi_object_type type)
 {
 	xstmt stm;
 	if (type == MAPI_ATTACH)
-		stm = gx_sql_prep(db, "SELECT propval FROM attachment_properties AS ap "
+		stm = gx_sql_prep(db, "SELECT proptag, propval FROM attachment_properties AS ap "
 		      "WHERE ap.proptag=0x37010102");
 	else if (type == MAPI_MESSAGE)
-		stm = gx_sql_prep(db, "SELECT propval FROM message_properties AS mp "
-		      "WHERE mp.proptag IN (0x1000001f,0x10090102,0x10130102,0x7d001f)");
+		stm = gx_sql_prep(db, "SELECT proptag, propval FROM message_properties AS mp "
+		      "WHERE mp.proptag IN (0x1000001e,0x1000001f,0x10090102,0x10130102,0x7d001e,0x7d001f)");
 	else
 		throw EXIT_FAILURE;
 	if (stm == nullptr)
 		throw EXIT_FAILURE;
+
+	/* The columns in question are references to filename rather than the actual content */
 	object_map m;
-	while (stm.step() == SQLITE_ROW)
-		++m[stm.col_text(0)].refs;
+	while (stm.step() == SQLITE_ROW) {
+		auto &entry = m[stm.col_text(1)];
+		++entry.refs;
+		entry.proptag = stm.col_uint64(0);
+	}
 	return m;
 }
 
@@ -179,36 +178,41 @@ static bool digits_only(const char *s)
 	return true;
 }
 
-static object_stat file_detail(const char *dir, const std::string &obj_id)
+/**
+ * Resolve a CID filename reference and determine/record more information, such as:
+ * - Gromox header/compression type
+ * - actual disk usage of the content object in fs blocks (record fs overhead)
+ */
+static void cid_more_detail(const char *dir, const std::string &obj_id,
+    object_stat &info)
 {
-	object_stat info;
 	auto cid = dir + "/cid/"s;
 	struct stat sb;
 	auto path = cid + obj_id;
+
 	if (digits_only(obj_id.c_str())) {
+		/* #codepoints marker in classic PT_UNICODE files (v0/v1z only) */
+		bool strip = info.proptag == PR_BODY ||
+		             info.proptag == PR_TRANSPORT_MESSAGE_HEADERS;
+
 		if (stat(path.c_str(), &sb) == 0) {
 			info.format = 0;
-			info.refs   = 1;
 			info.du     = sb;
 			info.ifc    = info.du.size;
-			if (info.ifc >= 4)
+			if (strip && info.ifc >= 4)
 				info.ifc -= 4;
-			return info;
 		}
 		path += ".v1z";
 		if (stat(path.c_str(), &sb) == 0) {
 			info.format = 1;
-			info.refs   = 1;
 			info.du     = sb;
 			info.ifc    = gx_decompressed_size(path.c_str());
-			if (info.ifc >= 4)
+			if (strip && info.ifc >= 4)
 				info.ifc -= 4;
-			return info;
 		}
 		memcpy(&path[path.size()-3], "zst", 3);
 		if (stat(path.c_str(), &sb) == 0) {
 			info.format = 2;
-			info.refs   = 1;
 			info.du     = sb;
 			info.ifc    = gx_decompressed_size(path.c_str());
 		}
@@ -216,29 +220,26 @@ static object_stat file_detail(const char *dir, const std::string &obj_id)
 	    HX_isxdigit(obj_id[2]) && HX_isxdigit(obj_id[3]) && obj_id[4] == '/' &&
 	    stat(path.c_str(), &sb) == 0) {
 		info.format = 3;
-		info.refs   = 1;
 		info.du     = sb;
 		info.ifc    = gx_decompressed_size(path.c_str());
 	}
-	return info;
 }
 
 /**
- * Read the object map and update it with more per-object info.
+ * Reads an object map (populated with deduplication info) and updates it with more
+ * per-object info. In particular, it
  * Sums are built and returned.
  */
-static ifc_stat usecount_analyze(const char *dir, object_map &map)
+static ifc_stat cid_analyze(const char *dir, object_map &map)
 {
 	ifc_stat st;
 	for (auto &[obj_id, info] : map) {
-		auto new_info = file_detail(dir, obj_id);
-		if (new_info.refs == 0) {
+		cid_more_detail(dir, obj_id, info);
+		if (info.format < 0) {
 			st.lost += info.refs;
 			++st.lost_pad;
 			continue;
 		}
-		new_info.refs = info.refs;
-		info          = std::move(new_info);
 		st.ifco   += info.refs * info.ifc;
 		st.dedup  += info.ifc;
 		st.du     += info.du;
@@ -246,21 +247,68 @@ static ifc_stat usecount_analyze(const char *dir, object_map &map)
 	return st;
 }
 
+/**
+ * Scan a sqlite3 file for EML file references and yield an associative
+ * container that indicates how often each content object was referenced.
+ *
+ * @db: opened exchange.sqlite3 or midb.sqlite3
+ *      (both share the same table column name)
+ * @m:  output
+ */
+static int db_read_eml_refs(sqlite3 *db, object_map &m)
+{
+	auto stm = gx_sql_prep(db, "SELECT mid_string FROM messages");
+	if (stm == nullptr)
+		return -1;
+	while (stm.step() == SQLITE_ROW)
+		++m[stm.col_text(0)].refs;
+	return 0;
+}
+
+static rfc_stat eml_analyze(const char *maildir, const object_map &map)
+{
+	rfc_stat out;
+	dir_ptr dh_eml(opendir((maildir + "/eml"s).c_str()));
+	dir_ptr dh_ext(opendir((maildir + "/ext"s).c_str()));
+	auto dfd_eml = dh_eml != nullptr ? dirfd(dh_eml.get()) : -1;
+	auto dfd_ext = dh_ext != nullptr ? dirfd(dh_ext.get()) : -1;
+
+	for (const auto &[key, info] : map) {
+		struct stat sb;
+		bool maybe_midb = looks_like_midb_generated(key.c_str());
+		if (fstatat(dfd_eml, key.c_str(), &sb, 0) == 0 && S_ISREG(sb.st_mode)) {
+			if (maybe_midb)
+				out.sent += sb;
+			else
+				out.recv += sb;
+			out.total += sb;
+		}
+		if (fstatat(dfd_ext, key.c_str(), &sb, 0) == 0 && S_ISREG(sb.st_mode)) {
+			if (maybe_midb)
+				out.sent += sb;
+			else
+				out.recv += sb;
+			out.total += sb;
+		}
+	}
+	return out;
+}
+
 static void ifc_dump(const ifc_stat &s)
 {
-	printf("%-30s  %6zu     %6zu\n", "Missing items", s.lost, s.lost_pad);
-	printf("%-30s  %6llu MB       -\n", "Informational content", s.ifco / MB);
-	printf("%-30s  %6llu MB       -\n", "After deduplication", s.dedup / MB);
-	printf("%-30s  %6.3f x        -\n", "Dedup ratio", ratio(s.ifco, s.dedup));
-	printf("%-30s  %6.1f %%        -\n", "Dedup savings", ratio_sav(s.ifco, s.dedup));
-	printf("%-30s  %6llu MB  %6llu MB\n", "After compression", s.du.mb(), s.du.pmb());
-	printf("%-30s  %6.3f x   %6.3f x\n", "File compression ratio",
+	printf("%-30s  %9zu     %9zu\n", "Missing items", s.lost, s.lost_pad);
+	printf("%-30s  %9llu %-2s          -\n", "Informational content", s.ifco / UNIT, s_unit);
+	printf("%-30s  %9llu %-2s          -\n", "After deduplication", s.dedup / UNIT, s_unit);
+	printf("%-30s  %9.3f x           -\n", "Dedup ratio", ratio(s.ifco, s.dedup));
+	printf("%-30s  %9.1f %%           -\n", "Dedup savings", ratio_sav(s.ifco, s.dedup));
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "After compression", s.du.units(), s_unit, s.du.punits(), s_unit);
+	printf("%-30s  %9.3f x   %9.3f x\n", "File compression ratio",
 		ratio(s.dedup, s.du.size), ratio(s.dedup, s.du.pad));
-	printf("%-30s  %6.1f %%   %6.1f %%\n", "Savings over dedup",
+	printf("%-30s  %9.1f %%   %9.1f %%\n", "Savings over dedup",
 		ratio_sav(s.dedup, s.du.size), ratio_sav(s.dedup, s.du.pad));
-	printf("%-30s  %6.3f x   %6.3f x\n", "IFC compression ratio",
+	printf("%-30s  %9.3f x   %9.3f x\n", "IFC compression ratio",
 		ratio(s.ifco, s.du.size), ratio(s.ifco, s.du.pad));
-	printf("%-30s  %6.1f %%   %6.1f %%\n", "Savings over IFC",
+	printf("%-30s  %9.1f %%   %9.1f %%\n", "Savings over IFC",
 		ratio_sav(s.ifco, s.du.size), ratio_sav(s.ifco, s.du.pad));
 }
 
@@ -268,7 +316,7 @@ static ustat count_dirs(const std::string &path)
 {
 	ustat out;
 	struct stat sb;
-	std::unique_ptr<DIR, file_deleter> dh(opendir(path.c_str()));
+	dir_ptr dh(opendir(path.c_str()));
 	if (dh == nullptr)
 		return out;
 	auto dfd = dirfd(dh.get());
@@ -287,6 +335,102 @@ static ustat count_dirs(const std::string &path)
 	return out;
 }
 
+/**
+ * Simply find all filenames (recursive entrypoint with directory fd)
+ *
+ * @prefix: prefix for dh
+ * @dh:     directory to scan
+ * @outmap: collected filenames
+ */
+static int sm_find_files(const std::string &prefix, DIR *dh, stat_map &outmap)
+{
+	const struct dirent *de;
+	auto dfd = dirfd(dh);
+	while ((de = readdir(dh)) != nullptr) {
+		auto name = de->d_name;
+		if (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')))
+			continue;
+		struct stat sb;
+		if (fstatat(dfd, name, &sb, 0) != 0)
+			continue;
+		auto de_full = prefix + "/" + name;
+		outmap.emplace(de_full, sb);
+		if (!S_ISDIR(sb.st_mode))
+			continue;
+		dir_ptr sub_dh(opendir(de_full.c_str()));
+		if (sub_dh == nullptr) {
+			fprintf(stderr, "opendir %s: %s\n", de_full.c_str(), strerror(errno));
+			continue;
+		}
+		auto err = sm_find_files(de_full, sub_dh.get(), outmap);
+		if (err < 0)
+			return err;
+	}
+	return 0;
+}
+
+/**
+ * Make a record of all files recursively, and collect their stat() results.
+ *
+ * @path:   directory to scan
+ * @outmap: collected filenames
+ */
+static stat_map sm_find_files(const std::string &path)
+{
+	stat_map outmap;
+	struct stat sb;
+	dir_ptr dh(opendir(path.c_str()));
+	if (dh == nullptr) {
+		fprintf(stderr, "opendir %s: %s\n", path.c_str(), strerror(errno));
+		return {};
+	}
+	if (fstatat(dirfd(dh.get()), ".", &sb, 0) != 0)
+		return {};
+	outmap.emplace(path, sb);
+	if (sm_find_files(path, dh.get(), outmap) < 0)
+		return {};
+	return outmap;
+}
+
+/**
+ * @map:    complete set of filenames in the maildir
+ * @omap:   a set of well-referenced file objects
+ * @prefix: directory prefix for keys in omap
+ */
+static size_t sm_prune_files(stat_map &smap, const object_map &omap,
+    const std::string &prefix)
+{
+	size_t z = 0;
+	for (const auto &[om_key, om_info] : omap) {
+		if (om_key.empty())
+			continue;
+		std::string fn;
+		if (prefix.empty())
+			fn = om_key;
+		else
+			fn = prefix + "/" + om_key;
+		z += smap.erase(fn);
+		z += smap.erase(fn + ".v1z");
+		z += smap.erase(fn + ".zst");
+	}
+	return z;
+}
+
+static ustat sm_cumulate(const stat_map &smap, unsigned int type)
+{
+	ustat out{};
+	for (const auto &[key, sb] : smap) {
+		bool include = false;
+		if (type == S_IFDIR && S_ISDIR(sb.st_mode))
+			include = true;
+		else if (type == 0 && !S_ISDIR(sb.st_mode))
+			include = true;
+		if (include)
+			out += sb;
+	}
+	return out;
+}
+
 static uint64_t subabs(uint64_t a, uint64_t b)
 {
 	return a >= b ? a - b : b - a;
@@ -294,69 +438,135 @@ static uint64_t subabs(uint64_t a, uint64_t b)
 
 int main(int argc, char **argv) try
 {
-	if (argc < 2) {
+	HXopt6_auto_result result{};
+	if (HX_getopt6(g_options_table, argc, argv, &result,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	for (int i = 0; i < result.nopts; ++i) {
+		if (result.desc[i]->sh == 'B') {
+			switch (toupper(result.oarg[i][0])) {
+			case 'B':
+				UNIT = 1; strcpy(s_unit, "B"); break;
+			case 'K':
+				UNIT = 1ULL << 10; strcpy(s_unit, "KB"); break;
+			case 'M':
+				UNIT = 1ULL << 20; strcpy(s_unit, "MB"); break;
+			case 'G':
+				UNIT = 1ULL << 30; strcpy(s_unit, "GB"); break;
+			case 'T':
+				UNIT = 1ULL << 40; strcpy(s_unit, "TB"); break;
+			default:
+				fprintf(stderr, "Unrecognized syntax for -B: \"%s\"\n", result.oarg[i]);
+				return EXIT_FAILURE;
+			}
+		}
+	}
+	if (result.nargs < 1) {
 		fprintf(stderr, "Usage: mbsize <directory>\n");
 		return EXIT_FAILURE;
 	}
 
-	printf("                                 Apparent    On FS \n");
-	printf("                                ---------  ---------\n");
+	printf("                                 Apparent         On FS \n");
+	printf("                                ------------  ------------\n");
 
-	auto db_path = argv[1] + "/exmdb/exchange.sqlite3"s;
+	auto db_path = result.uarg[0] + "/exmdb/exchange.sqlite3"s;
+	db_handle db, midb;
 	ustat sqlite_sb, midb_sb;
 	struct stat sb;
-	if (stat(db_path.c_str(), &sb) == 0)
+	if (stat(db_path.c_str(), &sb) == 0) {
 		sqlite_sb = sb;
-	if (stat((argv[1] + "/exmdb/midb.sqlite3"s).c_str(), &sb) == 0)
+		db = db_open(db_path.c_str());
+		if (db == nullptr)
+			return EXIT_FAILURE;
+	}
+	auto midb_path = result.uarg[0] + "/exmdb/midb.sqlite3"s;
+	if (stat(midb_path.c_str(), &sb) == 0) {
 		midb_sb = sb;
+		midb = db_open(midb_path.c_str());
+	}
 
-	auto db = db_open(db_path.c_str());
-	if (db == nullptr)
-		return EXIT_FAILURE;
 	auto nts = db_read_nts(db.get());
+	auto allfiles = sm_find_files(result.uarg[0]);
+	if (allfiles.empty())
+		return EXIT_FAILURE;
+	/* Prune well-known files */
+	ustat wellknown;
+	for (const auto &fn : {"exmdb/exchange.sqlite3", "exmdb/exchange.sqlite3-shm", "exmdb/exchange.sqlite3-wal",
+	                       "exmdb/midb.sqlite3", "exmdb/midb.sqlite3-shm", "exmdb/midb.sqlite3-wal",
+	                       "tables.sqlite3", "tables.sqlite3-shm", "tables.sqlite3-wal",
+	                       "config/autoreply.cfg", "config/external-reply", "config/internal-reply",
+	                       "config/portrait.jpg", "config/sendas.txt", "config/delegates.txt"}) {
+		auto path = result.uarg[0] + "/"s + fn;
+		if (stat(path.c_str(), &sb) == 0)
+			wellknown += sb;
+		allfiles.erase(path);
+	}
 
-	auto msg_uc = db_read_usecount(db.get(), MAPI_MESSAGE);
-	auto atx_uc = db_read_usecount(db.get(), MAPI_ATTACH);
-	auto msg_ic = usecount_analyze(argv[1], msg_uc);
-	auto atx_ic = usecount_analyze(argv[1], atx_uc);
+	auto msg_refs = db_read_cid_refs(db.get(), MAPI_MESSAGE);
+	sm_prune_files(allfiles, msg_refs, result.uarg[0] + "/cid"s);
+	auto atx_refs = db_read_cid_refs(db.get(), MAPI_ATTACH);
+	sm_prune_files(allfiles, atx_refs, result.uarg[0] + "/cid"s);
+	auto msg_ic = cid_analyze(result.uarg[0], msg_refs);
+	auto atx_ic = cid_analyze(result.uarg[0], atx_refs);
+	msg_refs.clear();
+	atx_refs.clear();
+	object_map eml_refs;
+	if (db_read_eml_refs(db.get(), eml_refs) < 0)
+		return EXIT_FAILURE;
+	if (midb != nullptr && db_read_eml_refs(midb.get(), eml_refs) < 0)
+		return EXIT_FAILURE;
+	sm_prune_files(allfiles, eml_refs, result.uarg[0] + "/eml"s);
+	sm_prune_files(allfiles, eml_refs, result.uarg[0] + "/ext"s);
+	auto rfc = eml_analyze(result.uarg[0], eml_refs);
+	auto rfc1 = rfc;
+	auto dirmeta = sm_cumulate(allfiles, S_IFDIR);
+	auto orphans = sm_cumulate(allfiles, 0);
 
-	auto rfc = rfc_count(argv[1] + "/eml"s);
-	rfc += rfc_count(argv[1] + "/ext"s);
 	printf("== RFC5322/Mbox representation ==\n");
-	printf("%-30s  %6llu MB  %6llu MB\n", "Received", rfc.recv.mb(), rfc.recv.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "Sent", rfc.sent.mb(), rfc.sent.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "FS directories", rfc.dirs.mb(), rfc.dirs.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "midb.sqlite3", midb_sb.mb(), midb_sb.pmb());
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Tracked files in EML/EXT", rfc1.total.units(), s_unit, rfc1.total.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Received", rfc.recv.units(), s_unit, rfc.recv.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Sent", rfc.sent.units(), s_unit, rfc.sent.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "midb.sqlite3", midb_sb.units(), s_unit, midb_sb.punits(), s_unit);
 	rfc.total += midb_sb;
-	printf("%-30s  %6llu MB  %6llu MB\n", "Total", rfc.total.mb(), rfc.total.pmb());
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Files combined (no dirs)", rfc.total.units(), s_unit, rfc.total.punits(), s_unit);
 
-	printf("\n== FS: Body analysis ==\n");
+	printf("\n== FS: Body compression analysis ==\n");
 	ifc_dump(msg_ic);
 
-	printf("\n== FS: Attachment analysis ==\n");
+	printf("\n== FS: Attachment compression analysis ==\n");
 	ifc_dump(atx_ic);
 
 	printf("\n== MAPI Reported Sizes / Network Transfer Size ==\n");
-	printf("%-30s  %6llu MB       -\n", "Store size", nts / MB);
-	printf("%-30s  %6llu MB  %6llu MB\n", "... Bodies", msg_ic.ifco / MB, msg_ic.du.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... Attachments", atx_ic.ifco / MB, atx_ic.du.pmb());
-	printf("%-30s  %6llu MB       -\n", "... Other", (nts - msg_ic.ifco - atx_ic.ifco) / MB);
+	printf("%-30s  %9llu %-2s          -\n", "Store size", nts / UNIT, s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Bodies", msg_ic.ifco / UNIT, s_unit, msg_ic.du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Attachments", atx_ic.ifco / UNIT, s_unit, atx_ic.du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s          -\n", "... Other properties", (nts - msg_ic.ifco - atx_ic.ifco) / UNIT, s_unit);
 
-	printf("\n== On-disk sizes ==\n");
-	auto cid_dirs = count_dirs(argv[1] + "/cid"s);
-	auto du = sqlite_sb + msg_ic.du + atx_ic.du + cid_dirs;
-	printf("%-30s  %6llu MB  %6llu MB\n", "Sum of MAPI data", du.mb(), du.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... exchange.sqlite3", sqlite_sb.mb(), sqlite_sb.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... Bodies", msg_ic.du.mb(), msg_ic.du.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... Attachments", atx_ic.du.mb(), atx_ic.du.pmb());
-	printf("%-30s  %6llu MB  %6llu MB\n", "... FS directories", cid_dirs.mb(), cid_dirs.pmb());
-	printf("%-30s  %6.1f %%   %6.1f %%\n\n", "NTS error",
+	printf("\n== MAPI on-disk ==\n");
+	auto du = sqlite_sb + msg_ic.du + atx_ic.du;
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Sum of MAPI data", du.units(), s_unit, du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... exchange.sqlite3", sqlite_sb.units(), s_unit, sqlite_sb.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Bodies", msg_ic.du.units(), s_unit, msg_ic.du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "... Attachments", atx_ic.du.units(), s_unit, atx_ic.du.punits(), s_unit);
+	printf("%-30s  %9.1f %%   %9.1f %%\n", "NTS deviation",
 		100 * ratio(subabs(nts, du.size), du.size),
 		100 * ratio(subabs(nts, du.pad), du.pad));
 
-	du += rfc.total;
-	printf("%-30s  %6llu MB   %6llu MB\n", "Total MAPI+RFC", du.mb(), du.pmb());
-	printf("%-30s  %6.3f x   %6.3f x\n", "Provisioning factor over NTS",
+	printf("\n== General on-disk overview ==\n");
+	du = rfc1.total + msg_ic.du + atx_ic.du + wellknown + dirmeta + orphans;
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Tracked files in eml/,ext/", rfc1.total.units(), s_unit, rfc1.total.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Tracked bodies in cid/", msg_ic.du.units(), s_unit, msg_ic.du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Tracked attachments in cid/", atx_ic.du.units(), s_unit, atx_ic.du.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Databases & user config", wellknown.units(), s_unit, wellknown.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "FS directories", dirmeta.units(), s_unit, dirmeta.punits(), s_unit);
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Orphaned/Unrecognized files", orphans.units(), s_unit, orphans.punits(), s_unit);
+	if (g_show_orphans)
+		for (const auto &[key, sb] : allfiles)
+			if (!S_ISDIR(sb.st_mode))
+				printf("\t%s\n", key.c_str());
+
+	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Total", du.units(), s_unit, du.punits(), s_unit);
+	printf("%-30s  %9.3f x   %9.3f x\n", "Provisioning factor over NTS",
 		ratio(du.size, nts), ratio(du.pad, nts));
 
 	return 0;

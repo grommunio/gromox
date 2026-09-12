@@ -36,6 +36,16 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, proptag_t proptag,
 	return true;
 }
 
+ec_error_t TPROPVAL_ARRAY::set_bin(proptag_t tag, std::string_view sv)
+{
+	if (PROP_TYPE(tag) != PT_BINARY)
+		return ecInvalidParam;
+	BINARY bv;
+	bv.pc = deconst(sv.data());
+	bv.cb = std::min(sv.size(), static_cast<size_t>(UINT32_MAX));
+	return set(tag, &bv);
+}
+
 ec_error_t TPROPVAL_ARRAY::set(proptag_t tag, const void *xpropval)
 {
 	for (size_t i = 0; i < count; ++i) {

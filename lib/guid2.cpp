@@ -202,9 +202,7 @@ const uint8_t MACBINARY_ENCODING[9] =
 const uint8_t OLE_TAG[11] =
 	{0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0A,
 	0x03, 0x02, 0x01};
-const uint8_t ThirdPartyGlobalId[12] =
-	/* pg 68 // 7643616C2D55696401000000 */
-	{0x76, 0x43, 0x61, 0x6c, 0x2d, 0x55, 0x69, 0x64, 0x01, 0x00, 0x00, 0x00};
+const uint8_t ThirdPartyGlobalId[12] = "vCal-Uid\x01"; // 7643616C2D55696401000000
 const char IPM_Appointment_Exception[] = "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}";
 static GUID machine_guid;
 static std::once_flag machine_guid_loaded;
