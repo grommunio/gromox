@@ -1852,20 +1852,14 @@ static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *
 
 static pack_result ext_buffer_pull_changehighlight(EXT_PULL *pext, CHANGEHIGHLIGHT *r)
 {
-	TRY(pext->g_uint32(&r->size));
+	uint32_t size = 0;
+	TRY(pext->g_uint32(&size));
 	TRY(pext->g_uint32(&r->value));
-	if (r->size < sizeof(uint32_t)) {
+	if (size < sizeof(uint32_t))
 		return pack_result::format;
-	} else if (sizeof(uint32_t) == r->size) {
-		r->preserved = NULL;
+	else if (size == sizeof(uint32_t))
 		return pack_result::ok;
-	}
-	r->preserved = pext->anew<uint8_t>(r->size - sizeof(uint32_t));
-	if (r->preserved == nullptr) {
-		r->size = 0;
-		return pack_result::alloc;
-	}
-	return pext->g_bytes(r->preserved, r->size - sizeof(uint32_t));
+	return pext->advance(size - sizeof(uint32_t));
 }
 
 static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
@@ -3075,13 +3069,8 @@ static pack_result ext_buffer_push_exceptioninfo(EXT_PUSH *pext,
 static pack_result ext_buffer_push_changehighlight(EXT_PUSH *pext,
     const CHANGEHIGHLIGHT *r)
 {
-	TRY(pext->p_uint32(r->size));
-	TRY(pext->p_uint32(r->value));
-	if (r->size < sizeof(uint32_t))
-		return pack_result::format;
-	else if (sizeof(uint32_t) == r->size)
-		return pack_result::ok;
-	return pext->p_bytes(r->preserved, r->size - sizeof(uint32_t));
+	TRY(pext->p_uint32(4));
+	return pext->p_uint32(r->value);
 }
 
 static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
