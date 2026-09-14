@@ -1876,17 +1876,9 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 	
 	if (writerversion2 >= 0x00003009)
 		TRY(ext_buffer_pull_changehighlight(pext, &r->changehighlight));
-	TRY(pext->g_uint32(&r->reservedblockee1size));
-	if (r->reservedblockee1size == 0) {
-		r->preservedblockee1 = NULL;
-	} else {
-		r->preservedblockee1 = pext->anew<uint8_t>(r->reservedblockee1size);
-		if (r->preservedblockee1 == nullptr) {
-			r->reservedblockee1size = 0;
-			return pack_result::alloc;
-		}
-		TRY(pext->g_bytes(r->preservedblockee1, r->reservedblockee1size));
-	}
+	uint32_t dummy = 0;
+	TRY(pext->g_uint32(&dummy));
+	TRY(pext->advance(dummy));
 	if (overrideflags & (ARO_LOCATION | ARO_SUBJECT)) {
 		TRY(pext->g_uint32(&r->startdatetime));
 		TRY(pext->g_uint32(&r->enddatetime));
@@ -1935,17 +1927,8 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 		strcpy(r->location, &pbuff[tmp_len]);
 	}
 	if (overrideflags & (ARO_SUBJECT | ARO_LOCATION)) {
-		TRY(pext->g_uint32(&r->reservedblockee2size));
-		if (r->reservedblockee2size == 0) {
-			r->preservedblockee2 = NULL;
-		} else {
-			r->preservedblockee2 = pext->anew<uint8_t>(r->reservedblockee2size);
-			if (r->preservedblockee2 == nullptr) {
-				r->reservedblockee2size = 0;
-				return pack_result::alloc;
-			}
-			TRY(pext->g_bytes(r->preservedblockee2, r->reservedblockee2size));
-		}
+		TRY(pext->g_uint32(&dummy));
+		TRY(pext->advance(dummy));
 	}
 	return pack_result::ok;
 }
@@ -3106,9 +3089,7 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 {
 	if (writerversion2 >= 0x00003009)
 		TRY(ext_buffer_push_changehighlight(pext, &r->changehighlight));
-	TRY(pext->p_uint32(r->reservedblockee1size));
-	if (r->reservedblockee1size != 0)
-		TRY(pext->p_bytes(r->preservedblockee1, r->reservedblockee1size));
+	TRY(pext->p_uint32(0));
 	if (overrideflags & (ARO_SUBJECT | ARO_LOCATION)) {
 		TRY(pext->p_uint32(r->startdatetime));
 		TRY(pext->p_uint32(r->enddatetime));
@@ -3150,11 +3131,8 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 		TRY(pext->p_uint16(string_len / 2));
 		TRY(pext->p_bytes(pbuff.get(), string_len));
 	}
-	if (overrideflags & (ARO_LOCATION | ARO_SUBJECT)) {
-		TRY(pext->p_uint32(r->reservedblockee2size));
-		if (r->reservedblockee2size != 0)
-			TRY(pext->p_bytes(r->preservedblockee2, r->reservedblockee2size));
-	}
+	if (overrideflags & (ARO_LOCATION | ARO_SUBJECT))
+		TRY(pext->p_uint32(0));
 	return pack_result::ok;
 }
 
