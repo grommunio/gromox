@@ -548,10 +548,10 @@ struct GX_EXPORT EXCEPTIONINFO {
 		{ return startdatetime < o.startdatetime; }
 };
 
+/* MS-OXCDATA v21 §2.2.1.44.3 */
 struct GX_EXPORT CHANGEHIGHLIGHT {
-	uint32_t size;
-	uint32_t value;
-	uint8_t *preserved;
+	uint32_t size = 0, value = 0;
+	uint8_t *preserved = nullptr;
 };
 
 /* MS-OXCDATA v22.1 §2.2.1.44.4 */
