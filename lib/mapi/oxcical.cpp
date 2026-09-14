@@ -2151,7 +2151,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 		return ecInvalidParam;
 	if (pexception != nullptr && pext_exception != nullptr) {
 		*pexception = {};
-		memset(pext_exception, 0, sizeof(EXTENDEDEXCEPTION));
+		*pext_exception = {};
 		pext_exception->changehighlight.size = sizeof(uint32_t);
 	}
 	auto err = oxcical_parse_recipients(*pmain_event, username_to_entryid, pmsg);
@@ -2484,7 +2484,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 			apr.exceptioncount = apr.recur_pat.modifiedinstancecount;
 			for (size_t i = 0; i < apr.exceptioncount; ++i) {
 				exceptions[i] = {};
-				memset(ext_exceptions + i, 0, sizeof(EXTENDEDEXCEPTION));
+				ext_exceptions[i] = {};
 				ext_exceptions[i].startdatetime = exceptions[i].startdatetime = modified_dates[i];
 				ext_exceptions[i].enddatetime = exceptions[i].enddatetime = modified_dates[i] + (end_time - start_time)/60;
 				ext_exceptions[i].originalstartdate = exceptions[i].originalstartdate = deleted_dates[i];

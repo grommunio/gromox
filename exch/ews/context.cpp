@@ -2681,7 +2681,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	ei.overrideflags = 0;
 
 	auto &ee = new_ext[apr.exceptioncount];
-	memset(&ee, 0, sizeof(ee));
+	ee = {};
 	ee.changehighlight.size = sizeof(uint32_t);
 	ee.startdatetime = start_rtime;
 	ee.enddatetime = end_rtime;

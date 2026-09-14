@@ -554,17 +554,15 @@ struct GX_EXPORT CHANGEHIGHLIGHT {
 	uint8_t *preserved;
 };
 
+/* MS-OXCDATA v22.1 §2.2.1.44.4 */
 struct GX_EXPORT EXTENDEDEXCEPTION {
-	CHANGEHIGHLIGHT changehighlight;
-	uint32_t reservedblockee1size;
-	uint8_t *preservedblockee1;
-	uint32_t startdatetime;
-	uint32_t enddatetime;
-	uint32_t originalstartdate;
-	char *subject;
-	char *location;
-	uint32_t reservedblockee2size;
-	uint8_t *preservedblockee2;
+	CHANGEHIGHLIGHT changehighlight{};
+	uint32_t reservedblockee1size = 0;
+	uint8_t *preservedblockee1 = nullptr;
+	uint32_t startdatetime = 0, enddatetime = 0, originalstartdate = 0;
+	char *subject = nullptr, *location = nullptr;
+	uint32_t reservedblockee2size = 0;
+	uint8_t *preservedblockee2 = nullptr;
 
 	inline bool operator<(const EXTENDEDEXCEPTION &o) const
 		{ return startdatetime < o.startdatetime; }
