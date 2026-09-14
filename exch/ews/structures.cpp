@@ -350,11 +350,11 @@ void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
  * @param recurData    Recurrence data
  * @return APPOINTMENT_RECUR_PAT Appointment recurrence pattern
  */
-APPOINTMENT_RECUR_PAT getAppointmentRecurPattern(const BINARY* recurData)
+static APPOINTMENT_RECUR_PAT getAppointmentRecurPattern(std::string_view sv)
 {
 	EXT_PULL ext_pull;
 	APPOINTMENT_RECUR_PAT apprecurr;
-	ext_pull.init(recurData->pb, recurData->cb, gromox::zalloc, EXT_FLAG_UTF16);
+	ext_pull.init(sv.data(), sv.size(), nullptr, EXT_FLAG_UTF16);
 	if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 		throw InputError(E3109);
 	return apprecurr;
@@ -478,11 +478,11 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 	std::vector<tDeletedOccurrenceInfoType> &delOccs,
 	std::chrono::seconds tz_offset)
 {
-	std::set<uint32_t> mod_insts(apprecurr.recur_pat.pmodifiedinstancedates,
-		apprecurr.recur_pat.pmodifiedinstancedates + apprecurr.recur_pat.modifiedinstancecount);
+	std::set<uint32_t> mod_insts(apprecurr.recur_pat.pmodifiedinstancedates.cbegin(),
+		apprecurr.recur_pat.pmodifiedinstancedates.cend());
 
 	size_t del_count = 0; // counter for deleted occurrences
-	for (size_t i = 0; i < apprecurr.recur_pat.deletedinstancecount; ++i) {
+	for (size_t i = 0; i < apprecurr.recur_pat.pdeletedinstancedates.size(); ++i) {
 		auto di = apprecurr.recur_pat.pdeletedinstancedates[i];
 		if (mod_insts.find(di) != mod_insts.end()) {
 			auto &ei = apprecurr.pexceptioninfo[i-del_count];
@@ -689,15 +689,14 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 		calendarItemType = Enum::RecurringMaster;
 		const BINARY* recurData = static_cast<BINARY*>(prop->pvalue);
 		if (recurData->cb > 0) {
-			APPOINTMENT_RECUR_PAT apprecurr = getAppointmentRecurPattern(recurData);
-
+			auto apprecurr = getAppointmentRecurPattern(*recurData);
 			auto& rec = Recurrence.emplace();
 			rec.RecurrencePattern = get_recurrence_pattern(apprecurr.recur_pat);
 			rec.RecurrenceRange = get_recurrence_range(apprecurr.recur_pat);
 
 			// The count of the exceptions (modified and deleted occurrences)
 			// is summed in deletedinstancecount
-			if (apprecurr.recur_pat.deletedinstancecount > 0) {
+			if (apprecurr.recur_pat.pdeletedinstancedates.size() > 0) {
 				std::vector<tOccurrenceInfoType> modOccs;
 				std::vector<tDeletedOccurrenceInfoType> delOccs;
 				auto entryid_propval = shape.get(PR_ENTRYID);

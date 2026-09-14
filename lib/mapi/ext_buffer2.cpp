@@ -452,28 +452,28 @@ std::string GLOBALOBJECTID::third_party_uid() const
 
 bool RECURRENCE_PATTERN::contains_del(uint32_t v) const
 {
-	auto eo = pdeletedinstancedates + deletedinstancecount;
-	return std::find(pdeletedinstancedates, eo, v) != eo;
+	auto &vec = pdeletedinstancedates;
+	return std::find(vec.cbegin(), vec.cend(), v) != vec.cend();
 }
 
 bool RECURRENCE_PATTERN::contains_mod(uint32_t v) const
 {
-	auto eo = pmodifiedinstancedates + modifiedinstancecount;
-	return std::find(pmodifiedinstancedates, eo, v) != eo;
+	auto &vec = pmodifiedinstancedates;
+	return std::find(vec.cbegin(), vec.cend(), v) != vec.cend();
 }
 
 void RECURRENCE_PATTERN::sort_dels()
 {
-	std::sort(pdeletedinstancedates, pdeletedinstancedates + deletedinstancecount);
+	std::sort(pdeletedinstancedates.begin(), pdeletedinstancedates.end());
 }
 
 void RECURRENCE_PATTERN::sort_mods()
 {
-	std::sort(pmodifiedinstancedates, pmodifiedinstancedates + modifiedinstancecount);
+	std::sort(pmodifiedinstancedates.begin(), pmodifiedinstancedates.end());
 }
 
 void APPOINTMENT_RECUR_PAT::sort_exceptions()
 {
-	std::sort(pexceptioninfo, pexceptioninfo + exceptioncount);
-	std::sort(pextendedexception, pextendedexception + exceptioncount);
+	std::sort(pexceptioninfo.begin(), pexceptioninfo.end());
+	std::sort(pextendedexception.begin(), pextendedexception.end());
 }

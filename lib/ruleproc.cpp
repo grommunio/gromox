@@ -1872,12 +1872,11 @@ static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
 	auto recur_bin = props.get<const BINARY>(recur_tag);
 	if (recur_bin != nullptr) {
 		EXT_PULL ep;
-		ep.init(recur_bin->pv, recur_bin->cb, exmdb_rpc_alloc, 0);
+		ep.init(recur_bin->pv, recur_bin->cb, nullptr, 0);
 		APPOINTMENT_RECUR_PAT apr{};
 		bool changed = false;
 		if (ep.g_apptrecpat(&apr) == pack_result::success) {
-			for (size_t i = 0; i < apr.exceptioncount; ++i) {
-				auto &ei = apr.pexceptioninfo[i];
+			for (auto &ei : apr.pexceptioninfo) {
 				if (!(ei.overrideflags & ARO_BUSYSTATUS) ||
 				    ei.busystatus == olFree)
 					continue;
@@ -1930,7 +1929,7 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 		/* not a recurring master (e.g. a standalone occurrence item) */
 		return ecSuccess;
 	EXT_PULL ep;
-	ep.init(recur_bin->pv, recur_bin->cb, exmdb_rpc_alloc, 0);
+	ep.init(recur_bin->pv, recur_bin->cb, nullptr, 0);
 	APPOINTMENT_RECUR_PAT apr{};
 	if (ep.g_apptrecpat(&apr) != pack_result::success) {
 		mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: unparsable recurrence blob",
@@ -1945,55 +1944,43 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	 */
 	auto &rp = apr.recur_pat;
 	/* Locate an exception previously created for this instance */
-	size_t exi = apr.exceptioncount;
-	for (size_t i = 0; i < apr.exceptioncount; ++i)
-		if (same_day(apr.pexceptioninfo[i].originalstartdate, basedate)) {
-			exi = i;
-			break;
-		}
-	auto dend = rp.pdeletedinstancedates + rp.deletedinstancecount;
-	bool was_deleted = std::any_of(rp.pdeletedinstancedates, dend,
+	size_t exi = std::find_if(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
+	             [&](const EXCEPTIONINFO &ei) { return same_day(ei.originalstartdate, basedate); }) -
+	             apr.pexceptioninfo.cbegin();
+	auto &dels = rp.pdeletedinstancedates;
+	bool was_deleted = std::any_of(dels.cbegin(), dels.cend(),
 	                   [&](uint32_t d) { return same_day(d, basedate); });
-	if (was_deleted && exi == apr.exceptioncount)
+	if (was_deleted && exi == apr.pexceptioninfo.size())
 		return ecSuccess; /* already gone */
 
-	std::vector<uint32_t> dels(rp.pdeletedinstancedates, dend);
 	if (!was_deleted) {
 		dels.emplace_back(basedate);
 		std::sort(dels.begin(), dels.end());
-		rp.pdeletedinstancedates = dels.data();
-		rp.deletedinstancecount  = static_cast<uint32_t>(dels.size());
 	}
-	if (exi < apr.exceptioncount) {
+	if (exi < apr.pexceptioninfo.size()) {
 		/*
 		 * Modified-instance dates hold the exception's new start day.
 		 * Drop the exception pair and its modified-date entry together,
 		 * or neither, to keep exceptioncount == modifiedinstancecount.
 		 */
-		auto sd   = apr.pexceptioninfo[exi].startdatetime;
-		auto mend = rp.pmodifiedinstancedates + rp.modifiedinstancecount;
-		auto mit  = std::find_if(rp.pmodifiedinstancedates, mend,
-		            [&](uint32_t m) { return same_day(m, sd); });
-		if (mit == mend)
+		auto sd    = apr.pexceptioninfo[exi].startdatetime;
+		auto &mods = rp.pmodifiedinstancedates;
+		auto mit   = std::find_if(mods.cbegin(), mods.cend(),
+		             [&](uint32_t m) { return same_day(m, sd); });
+		if (mit == mods.cend())
 			/* EWS's updateOccurrence keys the entry by the original
 			   day rather than the new one */
-			mit = std::find_if(rp.pmodifiedinstancedates, mend,
+			mit = std::find_if(mods.cbegin(), mods.cend(),
 			      [&](uint32_t m) { return same_day(m, basedate); });
-		if (mit == mend) {
+		if (mit == mods.cend()) {
 			mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: no modified-instance "
 				"entry for exception %zu; leaving exception in place",
 				par.cur.dirc(),
 				static_cast<unsigned long long>(cal_mid.gcv()), exi);
 		} else {
-			std::copy(mit + 1, mend, mit);
-			--rp.modifiedinstancecount;
-			std::copy(&apr.pexceptioninfo[exi+1],
-				&apr.pexceptioninfo[apr.exceptioncount],
-				&apr.pexceptioninfo[exi]);
-			std::copy(&apr.pextendedexception[exi+1],
-				&apr.pextendedexception[apr.exceptioncount],
-				&apr.pextendedexception[exi]);
-			--apr.exceptioncount;
+			mods.erase(mit);
+			apr.pexceptioninfo.erase(apr.pexceptioninfo.begin() + exi);
+			apr.pextendedexception.erase(apr.pextendedexception.begin() + exi);
 		}
 	}
 	EXT_PUSH epu;

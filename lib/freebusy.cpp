@@ -251,27 +251,32 @@ static bool find_recur_times(const ical_component *tzcom,
 			return du / 86400 == utnz / 86400;
 		};
 		auto &rpat_del = apr.recur_pat;
-		if (std::any_of(rpat_del.pdeletedinstancedates,
-		    rpat_del.pdeletedinstancedates + rpat_del.deletedinstancecount, del_test))
+		if (std::any_of(rpat_del.pdeletedinstancedates.cbegin(),
+		    rpat_del.pdeletedinstancedates.cend(), del_test))
 			continue;
 		auto time_test = [&](const EXCEPTIONINFO &e) {
 			return rop_util_rtime_to_unix(e.originalstartdate) == utnz;
 		};
-		if (std::any_of(apr.exceptions_cbegin(), apr.exceptions_cend(), time_test))
+		if (std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(), time_test))
 			continue;
 		evlist.push_back(ievent{ut, ut + static_cast<long>((apr.endtimeoffset - apr.starttimeoffset) * 60)});
 		if (ut >= end_time)
 			break;
 	} while (irrule.iterate());
-	for (unsigned int i = 0; i < apr.exceptioncount; ++i) {
-		auto ut = rop_util_rtime_to_unix(apr.pexceptioninfo[i].startdatetime);
+	if (apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
+		mlog(LV_ERR, "E-2725: programming error / invalid APR input");
+		return false;
+	}
+	for (size_t i = 0; i < apr.pexceptioninfo.size(); ++i) {
+		auto &ei = apr.pexceptioninfo[i];
+		auto ut = rop_util_rtime_to_unix(ei.startdatetime);
 		ical_time itime;
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
 		    !ical_itime_to_utc(tzcom, itime, &ut) ||
 		    ut < start_time || ut > end_time)
 			continue;
 		ievent event = {ut};
-		ut = rop_util_rtime_to_unix(apr.pexceptioninfo[i].enddatetime);
+		ut = rop_util_rtime_to_unix(ei.enddatetime);
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
 		    !ical_itime_to_utc(tzcom, itime, &ut))
 			continue;
@@ -489,7 +494,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		if (bin == nullptr)
 			continue;
 		APPOINTMENT_RECUR_PAT apprecurr;
-		ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(bin->pb, bin->cb, nullptr, EXT_FLAG_UTF16);
 		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 			continue;
 
@@ -510,11 +515,11 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 			bool ov_meeting  = (event.ei->overrideflags & ARO_MEETINGTYPE) ? event.ei->meetingtype & 1 : is_meeting;
 			bool ov_reminder = (event.ei->overrideflags & ARO_REMINDER)    ? event.ei->reminderset == 0 : is_reminder;
 			uint32_t ov_busy = (event.ei->overrideflags & ARO_BUSYSTATUS)  ? event.ei->busystatus : busy_type;
-			auto ov_subj     = (event.ei->overrideflags & ARO_SUBJECT)     ? event.xe->subject : subject;
-			auto ov_location = (event.ei->overrideflags & ARO_LOCATION)    ? event.xe->location : location;
+			auto &ov_subj     = (event.ei->overrideflags & ARO_SUBJECT)     ? event.xe->subject : subject;
+			auto &ov_location = (event.ei->overrideflags & ARO_LOCATION)    ? event.xe->location : location;
 
 			fb_data.emplace_back(event.start_time, event.end_time,
-				uid_buf.data(), FBE::optnul(ov_subj), FBE::optnul(ov_location),
+				uid_buf.data(), ov_subj, ov_location,
 				ov_busy, ov_meeting, true, true,
 				ov_reminder, is_private, detailed);
 		}
