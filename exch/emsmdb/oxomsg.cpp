@@ -253,6 +253,24 @@ static ec_error_t pass_scheduling(const char *code, const char *account,
 	return ecAccessDenied;
 }
 
+static void oxomsg_audit_send(const char *actor, const char *mailbox,
+    const char *delegator, repr_grant grant, const char *subject)
+{
+	const char *mode = "", *represented = "";
+	if (strcasecmp(mailbox, delegator) != 0) {
+		if (grant == repr_grant::send_as) {
+			mode = " as ";
+			represented = delegator;
+		} else if (grant == repr_grant::send_on_behalf) {
+			mode = " on behalf of ";
+			represented = delegator;
+		}
+	}
+	mlog(LV_NOTICE, "gromox-audit: %s sent message%s%s%s%s%s in mailbox %s via EMSMDB",
+		actor, subject != nullptr ? " \"" : "", znul(subject),
+		subject != nullptr ? "\"" : "", mode, represented, mailbox);
+}
+
 ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin) try
 {
@@ -428,18 +446,11 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	ret = cu_send_message(plogon, pmessage, ev_from);
 	if (ret != ecSuccess && ret != ecWarnWithErrors) {
 		exmdb_client->clear_submit(dir, pmessage->get_id(), b_unsent);
-
-		auto subject = tmp_propvals.get<const char>(PR_SUBJECT);
-		if (strcasecmp(actor, delegator.c_str()) != 0) {
-			if (repr_grant == repr_grant::send_as)
-				mlog(LV_NOTICE, "gromox-audit: %s sent message \"%s\" as %s via EMSMDB",
-					actor, znul(subject), delegator.c_str());
-			else if (repr_grant == repr_grant::send_on_behalf)
-				mlog(LV_NOTICE, "gromox-audit: %s sent message \"%s\" on behalf of %s via EMSMDB",
-					actor, znul(subject), delegator.c_str());
-		}
+		return ret;
 	}
-	else if (!b_delete)
+	oxomsg_audit_send(get_rpc_info().username, actor, delegator.c_str(), repr_grant,
+		tmp_propvals.get<const char>(PR_SUBJECT));
+	if (!b_delete)
 		pmessage->reload();
 	else
 		pmessage->clear_unsent();
@@ -673,7 +684,10 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	}
 
 	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
-	return cu_send_message(plogon, pmessage, ev_from);
+	ret = cu_send_message(plogon, pmessage, ev_from);
+	if (ret == ecSuccess || ret == ecWarnWithErrors)
+		oxomsg_audit_send(get_rpc_info().username, actor, delegator.c_str(), repr_grant, nullptr);
+	return ret;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
