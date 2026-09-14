@@ -3258,6 +3258,15 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 			return true;
 		auto piline = &pevent_component.append_line("ATTENDEE");
 		piline->append_param("PARTSTAT", partstat);
+		/*
+		 * Somebody other than the attendee submitted the answer, i.e. a
+		 * delegate acting for the mailbox (RFC 5545 §3.2.18).
+		 */
+		auto sentby = pmsg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+		if (sentby != nullptr && strcasecmp(sentby, str) != 0) {
+			snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", sentby);
+			piline->append_param("SENT-BY", tmp_value);
+		}
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
 		piline->append_value(nullptr, tmp_value);
 		return true;
@@ -3591,6 +3600,33 @@ static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
 	str = msg.proplist.get<char>(PR_SENT_REPRESENTING_NAME);
 	if (str != nullptr)
 		line->append_param("CN", str);
+}
+
+/**
+ * The organizer of a reply is whoever the reply is addressed to. A response
+ * message carries no organizer of its own — oxcical_parse_organizer discards
+ * the ORGANIZER line of an incoming REPLY for that very reason — so the
+ * recipient table is the only place left to read it from.
+ */
+static void oxcical_export_organizer_rcpt(const MESSAGE_CONTENT &msg,
+    ical_component &com, const char *org_name, cvt_id2user id2user)
+{
+	if (msg.children.prcpts == nullptr)
+		return;
+	for (const auto &rcpt : *msg.children.prcpts) {
+		auto rcpttype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rcpttype != nullptr && *rcpttype != MAPI_TO)
+			continue;
+		std::string username;
+		if (!oxcmail_get_smtp_address(rcpt, nullptr /* tags_self */,
+		    org_name, id2user, username))
+			continue;
+		auto line = &com.append_line("ORGANIZER", "MAILTO:"s + username);
+		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
+		if (name != nullptr)
+			line->append_param("CN", name);
+		return;
+	}
 }
 
 static const char *oxcical_export_uidx(ical_component &com)
@@ -4070,6 +4106,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 
 	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0)
 		oxcical_export_organizer(*pmsg, *pcomponent, org_name, id2user);
+	else if (strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0)
+		oxcical_export_organizer_rcpt(*pmsg, *pcomponent, org_name, id2user);
 	if (!oxcical_export_recipient_table(*pcomponent, org_name,
 	    id2user, alloc, partstat, pmsg))
 		return "E-2211: export_recipient_table - unspecified error";
