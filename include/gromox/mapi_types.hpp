@@ -536,20 +536,13 @@ struct GX_EXPORT RECURRENCE_PATTERN {
 	static constexpr uint16_t default_version = 0x3004;
 };
 
+/* MS-OXCDATA v22.1 §2.2.1.44.2 */
 struct GX_EXPORT EXCEPTIONINFO {
-	uint32_t startdatetime;
-	uint32_t enddatetime;
-	uint32_t originalstartdate;
-	uint16_t overrideflags;
-	char *subject;
-	uint32_t meetingtype;
-	uint32_t reminderdelta;
-	uint32_t reminderset;
-	char *location;
-	uint32_t busystatus;
-	uint32_t attachment;
-	uint32_t subtype;
-	uint32_t appointmentcolor;
+	uint32_t startdatetime = 0, enddatetime = 0, originalstartdate = 0;
+	uint16_t overrideflags = 0;
+	uint32_t meetingtype = 0, reminderdelta = 0, reminderset = 0;
+	char *subject = nullptr, *location = nullptr;
+	uint32_t busystatus = 0, attachment = 0, subtype = 0, appointmentcolor = 0;
 
 	inline bool operator<(const EXCEPTIONINFO &o) const
 		{ return startdatetime < o.startdatetime; }

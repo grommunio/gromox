@@ -2674,7 +2674,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	memcpy(new_ext, apr.pextendedexception, apr.exceptioncount * sizeof(EXTENDEDEXCEPTION));
 
 	auto &ei = new_exc[apr.exceptioncount];
-	memset(&ei, 0, sizeof(ei));
+	ei = {};
 	ei.startdatetime = start_rtime;
 	ei.enddatetime = end_rtime;
 	ei.originalstartdate = basedate;
