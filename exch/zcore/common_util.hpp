@@ -66,6 +66,7 @@ extern bool cu_verify_columns_and_sorts(proptag_cspan, const SORTORDER_SET *);
 extern bool cu_extract_delegator(message_object *, std::string &);
 extern repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
 extern repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
+extern void cu_flush_delegates(const char *dir, const BINARY_ARRAY *);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, gromox::proptag_t, const void *);
 extern void common_util_remove_propvals(TPROPVAL_ARRAY *, gromox::proptag_t);
 extern void cu_reduce_proptags(PROPTAG_ARRAY *, proptag_cspan);

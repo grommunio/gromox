@@ -204,6 +204,33 @@ repr_grant cu_get_delegate_perm_AA(const char *account, const char *repr)
 	return cu_get_delegate_perm_MD(account, mres.maildir.c_str());
 }
 
+/**
+ * Replace the set of delegates permitted to use Send-On-Behalf.
+ *
+ * @eids: the new set of user entryids to become delegates
+ */
+void cu_flush_delegates(const char *dir, const BINARY_ARRAY *eids) try
+{
+	std::vector<std::string> dlist;
+	if (eids != nullptr) {
+		for (const auto &eid : *eids) {
+			std::string addr;
+			auto ret = cvt_entryid_to_smtpaddr(&eid, g_org_name,
+			           mysql_adaptor_userid_to_name, addr);
+			if (ret != ecSuccess) {
+				mlog(LV_WARN, "W-2760: %s: unresolvable delegate entryid: %s",
+					dir, mapi_strerror(ret));
+				continue;
+			}
+			dlist.emplace_back(std::move(addr));
+		}
+	}
+	if (!exmdb_client->write_delegates(dir, 0, dlist))
+		mlog(LV_ERR, "E-2761: %s: write_delegates failed", dir);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2762: ENOMEM");
+}
+
 ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
 	int i;
