@@ -821,6 +821,32 @@ static ZEND_FUNCTION(mapi_logon_np)
 	MAPI_G(hr) = ecSuccess;
 }
 
+/**
+ * Return the authenticated user's permissions to sent emails in the name of
+ * another store.
+ */
+static ZEND_FUNCTION(mapi_getsendpermissions)
+{
+	zval *pzsession;
+	BINARY entryid{};
+	size_t entryid_size = 0;
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs", &pzsession,
+	    &entryid.pb, &entryid_size) == FAILURE)
+		return;
+	if (entryid_size == 0 || entryid_size > UINT32_MAX)
+		pthrow(ecInvalidParam);
+	entryid.cb = entryid_size;
+	MAPI_RESOURCE *psession;
+	ZEND_FETCH_RESOURCE(psession, pzsession, le_mapi_session);
+	uint32_t permissions = 0;
+	auto result = zclient_getsendpermissions(psession->hsession, entryid,
+	              &permissions);
+	if (result != ecSuccess)
+		pthrow(result);
+	RETVAL_LONG(permissions);
+	MAPI_G(hr) = ecSuccess;
+}
+
 static ZEND_FUNCTION(mapi_logon_token)
 {
 	ZCL_MEMORY;
@@ -4249,6 +4275,7 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_logon_zarafa)
 	F(mapi_logon_ex)
 	F(mapi_logon_np)
+	F(mapi_getsendpermissions)
 	F(mapi_getmsgstorestable)
 	F(mapi_openmsgstore)
 	F(mapi_openprofilesection)
