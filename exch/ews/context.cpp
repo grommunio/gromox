@@ -3008,14 +3008,8 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 		apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
 		apr.endtimeoffset = apr.starttimeoffset + duration / 60;
 	}
-	apr.recur_pat.readerversion = 0x3004;
-	apr.recur_pat.writerversion = 0x3004;
-	apr.recur_pat.calendartype = CAL_DEFAULT;
-	apr.recur_pat.deletedinstancecount = 0;
 	apr.recur_pat.pdeletedinstancedates = deleted_dates;
-	apr.recur_pat.modifiedinstancecount = 0;
 	apr.recur_pat.pmodifiedinstancedates = modified_dates;
-	apr.recur_pat.slidingflag = 0;
 	startdate_tm.tm_hour = 0;
 	startdate_tm.tm_min = 0;
 	startdate_tm.tm_sec = 0;
@@ -4019,14 +4013,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
 			apr.endtimeoffset   = apr.starttimeoffset + duration / 60;
 		}
-		apr.recur_pat.readerversion = 0x3004;
-		apr.recur_pat.writerversion = 0x3004;
-		apr.recur_pat.calendartype = CAL_DEFAULT;
-		apr.recur_pat.deletedinstancecount = 0;
 		apr.recur_pat.pdeletedinstancedates = deleted_dates;
-		apr.recur_pat.modifiedinstancecount = 0;
 		apr.recur_pat.pmodifiedinstancedates = modified_dates;
-		apr.recur_pat.slidingflag = 0;
 		startdate_tm.tm_hour = 0;
 		startdate_tm.tm_min = 0;
 		startdate_tm.tm_sec = 0;

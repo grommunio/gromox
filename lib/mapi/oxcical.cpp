@@ -331,8 +331,8 @@ static const char *oxcical_parse_rrule(const ical_component *tzcom,
 	ical_time itime_base = irrule.base_itime, itime_first = irrule.instance_itime;
 	apr->readerversion2 = apr->default_readerversion;
 	apr->writerversion2 = apr->default_writerversion;
-	apr->recur_pat.readerversion = 0x3004;
-	apr->recur_pat.writerversion = 0x3004;
+	apr->recur_pat.readerversion = apr->recur_pat.default_version;
+	apr->recur_pat.writerversion = apr->recur_pat.default_version;
 	apr->recur_pat.slidingflag = 0;
 	apr->recur_pat.firstdow = irrule.weekstart;
 	auto itime = irrule.instance_itime;

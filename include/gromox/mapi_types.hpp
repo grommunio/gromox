@@ -518,25 +518,22 @@ enum {
 	ENDDATE_MISSING_RDELTA = 0x5ae980e1,
 };
 
+/* MS-OXOCAL v22.1 §2.2.1.44.1 */
 struct GX_EXPORT RECURRENCE_PATTERN {
-	uint16_t readerversion; /* 0x3004 */
-	uint16_t writerversion; /* 0x3004 */
-	uint16_t recurfrequency;
-	uint16_t patterntype;
-	uint16_t calendartype;
-	uint32_t firstdatetime;
-	uint32_t period;
-	uint32_t slidingflag; /* only for scheduling tasks, otherwise 0 */
-	PATTERNTYPE_SPECIFIC pts;
-	uint32_t endtype;
-	uint32_t occurrencecount;
-	uint32_t firstdow;
-	uint32_t deletedinstancecount;
-	uint32_t *pdeletedinstancedates;
-	uint32_t modifiedinstancecount;
-	uint32_t *pmodifiedinstancedates;
-	uint32_t startdate;
-	uint32_t enddate; /* if no enddate, should be set to ENDDATE_MISSING */
+	uint16_t readerversion = default_version, writerversion = default_version;
+	uint16_t recurfrequency = 0;
+	uint16_t patterntype = 0, calendartype = CAL_DEFAULT;
+	uint32_t firstdatetime = 0, period = 0;
+	uint32_t slidingflag = 0; /* only for scheduling tasks, otherwise 0 */
+	PATTERNTYPE_SPECIFIC pts{};
+	uint32_t endtype = 0, occurrencecount = 0, firstdow = 0;
+	uint32_t deletedinstancecount = 0;
+	uint32_t *pdeletedinstancedates = nullptr;
+	uint32_t modifiedinstancecount = 0;
+	uint32_t *pmodifiedinstancedates = nullptr;
+	uint32_t startdate = 0, enddate = ENDDATE_MISSING;
+
+	static constexpr uint16_t default_version = 0x3004;
 };
 
 struct GX_EXPORT EXCEPTIONINFO {
