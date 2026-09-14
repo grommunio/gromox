@@ -1537,7 +1537,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
 			std::string es_result;
-			if (cvt_emsab_to_essdn(pbin, es_result) == ecSuccess &&
+			if (cvt_emsab_to_essdn(*pbin, es_result) == ecSuccess &&
 			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, es_result.c_str()) != ecSuccess)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
@@ -1560,7 +1560,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
 			std::string es_result;
-			if (cvt_emsab_to_essdn(pbin, es_result) == ecSuccess &&
+			if (cvt_emsab_to_essdn(*pbin, es_result) == ecSuccess &&
 			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, es_result.c_str()) != ecSuccess)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {

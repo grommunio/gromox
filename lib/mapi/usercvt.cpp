@@ -131,10 +131,9 @@ static ec_error_t srchkey_to_smtpaddr(std::string_view key, const char *org,
  * carry SMTP:<addr> keys even for local users. Resolve both sides to SMTP
  * addresses so the two forms compare equal.
  */
-bool cvt_srchkey_eq(const BINARY &a, const BINARY &b, const char *org,
+bool cvt_srchkey_eq(std::string_view ka, std::string_view kb, const char *org,
     cvt_id2user id2user) try
 {
-	std::string_view ka(a.pc, a.cb), kb(b.pc, b.cb);
 	while (!ka.empty() && ka.back() == '\0')
 		ka.remove_suffix(1);
 	while (!kb.empty() && kb.back() == '\0')
@@ -206,13 +205,11 @@ static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id
 	return cvt_essdn_to_username(eid.x500dn.c_str(), org, std::move(id2user), smtpaddr);
 }
 
-ec_error_t cvt_emsab_to_essdn(const BINARY *bin, std::string &essdn) try
+ec_error_t cvt_emsab_to_essdn(std::string_view sv, std::string &essdn) try
 {
-	if (bin == nullptr)
-		return ecInvalidParam;
 	EXT_PULL ep;
 	EMSAB_ENTRYID eid{};
-	ep.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+	ep.init(sv.data(), sv.size(), malloc, EXT_FLAG_UTF16);
 	if (ep.g_abk_eid(&eid) != pack_result::success)
 		return ecInvalidParam;
 	essdn = std::move(eid.x500dn);
