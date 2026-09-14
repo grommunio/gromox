@@ -458,7 +458,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	pinstance->orig_msg_gcv = eid_t(message_id).gcv();
 	pinstance->type = instance_type::message;
 	if (!exmdb_server::is_private())
-		pinstance->username = username;
+		pinstance->username = znul(username);
 	if (b_new) {
 		/* message_id MUST NOT exist in messages table */
 		pinstance->b_new = TRUE;
