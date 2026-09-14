@@ -580,20 +580,22 @@ struct GX_EXPORT EXTENDEDEXCEPTION {
 		{ return startdatetime < o.startdatetime; }
 };
 
+/* MS-OXCDATA v22.1 §2.2.1.44.5 */
 struct GX_EXPORT APPOINTMENT_RECUR_PAT {
-	RECURRENCE_PATTERN recur_pat;
-	uint32_t readerversion2; /* 0x00003006 */
-	uint32_t writerversion2; /* SHOULD be 0x00003009, can be 0x00003008 */
-	uint32_t starttimeoffset;
-	uint32_t endtimeoffset;
-	uint16_t exceptioncount; /* same as modifiedinstancecount
-								in recurrencepattern */
-	EXCEPTIONINFO *pexceptioninfo;
-	uint32_t reservedblock1size;
-	uint8_t *preservedblock1;
-	EXTENDEDEXCEPTION *pextendedexception;
-	uint32_t reservedblock2size;
-	uint8_t *preservedblock2;
+	RECURRENCE_PATTERN recur_pat{};
+	uint32_t readerversion2 = default_readerversion;
+	uint32_t writerversion2 = default_writerversion; /* can be 0x3008 too */
+	uint32_t starttimeoffset = 0, endtimeoffset = 0;
+	uint16_t exceptioncount = 0; /* same as modifiedinstancecount in recurrencepattern */
+	EXCEPTIONINFO *pexceptioninfo = nullptr;
+	uint32_t reservedblock1size = 0;
+	uint8_t *preservedblock1 = nullptr;
+	EXTENDEDEXCEPTION *pextendedexception = nullptr;
+	uint32_t reservedblock2size = 0;
+	uint8_t *preservedblock2 = nullptr;
+
+	static constexpr uint32_t default_readerversion = 0x3006;
+	static constexpr uint32_t default_writerversion = 0x3009;
 
 	public:
 	inline const EXCEPTIONINFO *exceptions_cbegin() const { return pexceptioninfo; }

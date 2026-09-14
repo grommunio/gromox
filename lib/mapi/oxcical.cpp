@@ -329,8 +329,8 @@ static const char *oxcical_parse_rrule(const ical_component *tzcom,
 	if (b_exceptional && !irrule.iterate())
 		return "E-2807";
 	ical_time itime_base = irrule.base_itime, itime_first = irrule.instance_itime;
-	apr->readerversion2 = 0x3006;
-	apr->writerversion2 = 0x3009;
+	apr->readerversion2 = apr->default_readerversion;
+	apr->writerversion2 = apr->default_writerversion;
 	apr->recur_pat.readerversion = 0x3004;
 	apr->recur_pat.writerversion = 0x3004;
 	apr->recur_pat.slidingflag = 0;
@@ -2445,11 +2445,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 		EXTENDEDEXCEPTION ext_exceptions[appt_max_exceptions];
 		APPOINTMENT_RECUR_PAT apr{};
 
-		apr.recur_pat.deletedinstancecount = 0;
 		apr.recur_pat.pdeletedinstancedates = deleted_dates;
-		apr.recur_pat.modifiedinstancecount = 0;
 		apr.recur_pat.pmodifiedinstancedates = modified_dates;
-		apr.exceptioncount = 0;
 		apr.pexceptioninfo = exceptions;
 		apr.pextendedexception = ext_exceptions;
 		auto ers = oxcical_parse_rrule(ptz_component, *piline,

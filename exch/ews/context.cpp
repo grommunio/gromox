@@ -2975,9 +2975,6 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	EXCEPTIONINFO exceptions[1024];
 	EXTENDEDEXCEPTION ext_exceptions[1024];
 
-	apr.readerversion2 = 0x3006;
-	apr.writerversion2 = 0x3009;
-	apr.exceptioncount = 0;
 	apr.pexceptioninfo = exceptions;
 	apr.pextendedexception = ext_exceptions;
 	if (isAllDay) {
@@ -3975,9 +3972,6 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		EXCEPTIONINFO exceptions[1024];
 		EXTENDEDEXCEPTION ext_exceptions[1024];
 
-		apr.readerversion2 = 0x3006;
-		apr.writerversion2 = 0x3009;
-		apr.exceptioncount = 0;
 		apr.pexceptioninfo = exceptions;
 		apr.pextendedexception = ext_exceptions;
 		if (isAllDay) {
