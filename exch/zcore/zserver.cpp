@@ -682,6 +682,38 @@ ec_error_t zs_checksession(GUID hsession)
 	return ecSuccess;
 }
 
+ec_error_t zs_getsendpermissions(GUID hsession, BINARY entryid,
+    uint32_t *permissions)
+{
+	EXT_PULL ext_pull;
+	STORE_ENTRYID store_entryid{};
+	ext_pull.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
+	auto pkerr = ext_pull.g_store_eid(&store_entryid);
+	if (pkerr == pack_result::alloc)
+		return ecServerOOM;
+	if (pkerr != pack_result::ok || store_entryid.pmailbox_dn == nullptr ||
+	    store_entryid.wrapped_provider_uid != g_muidStorePrivate)
+		return ecInvalidParam;
+
+	auto pinfo = zs_query_session(hsession);
+	if (pinfo == nullptr)
+		return ecError;
+	int user_id = 0;
+	if (!common_util_essdn_to_uid(store_entryid.pmailbox_dn, &user_id))
+		return ecNotFound;
+
+	std::string username;
+	auto err = mysql_adaptor_userid_to_name(user_id, username);
+	if (err != ecSuccess)
+		return err;
+	auto grant = cu_get_delegate_perm_AA(pinfo->get_username(),
+	             username.c_str());
+	if (grant == repr_grant::error)
+		return ecRpcFailed;
+	*permissions = static_cast<uint32_t>(grant);
+	return ecSuccess;
+}
+
 ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
     std::string *dispname, std::string *essdn, uint32_t *pprivilege_bits) try
 {
