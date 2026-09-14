@@ -1886,7 +1886,6 @@ static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
 			}
 		}
 		if (changed) {
-			apr.reservedblock1size = apr.reservedblock2size = 0;
 			EXT_PUSH epu;
 			BINARY new_bin;
 			if (!epu.init(nullptr, 0, EXT_FLAG_UTF16) ||
@@ -1997,11 +1996,6 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 			--apr.exceptioncount;
 		}
 	}
-	/*
-	 * p_apptrecpat does not emit reserved-block bytes (OXOCAL mandates
-	 * size 0 anyway), so avoid claiming a size for absent data.
-	 */
-	apr.reservedblock1size = apr.reservedblock2size = 0;
 	EXT_PUSH epu;
 	if (!epu.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    epu.p_apptrecpat(apr) != pack_result::success)

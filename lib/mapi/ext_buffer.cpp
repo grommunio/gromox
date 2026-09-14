@@ -2020,30 +2020,13 @@ pack_result EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 	}
 	for (size_t i = 0; i < r->exceptioncount; ++i)
 		TRY(ext_buffer_pull_exceptioninfo(this, &r->pexceptioninfo[i]));
-	TRY(g_uint32(&r->reservedblock1size));
-	if (r->reservedblock1size == 0) {
-		r->preservedblock1 = NULL;
-	} else {
-		r->preservedblock1 = anew<uint8_t>(r->reservedblock1size);
-		if (r->preservedblock1 == nullptr) {
-			r->reservedblock1size = 0;
-			return pack_result::alloc;
-		}
-		TRY(g_bytes(r->preservedblock1, r->reservedblock1size));
-	}
+	uint32_t dummy = 0;
+	TRY(g_uint32(&dummy));
+	TRY(advance(dummy));
 	for (size_t i = 0; i < r->exceptioncount; ++i)
 		TRY(ext_buffer_pull_extendedexception(this, r->writerversion2, r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]));
-	TRY(g_uint32(&r->reservedblock2size));
-	if (r->reservedblock2size == 0) {
-		r->preservedblock2 = NULL;
-		return pack_result::ok;
-	}
-	r->preservedblock2 = anew<uint8_t>(r->reservedblock2size);
-	if (r->preservedblock2 == nullptr) {
-		r->reservedblock2size = 0;
-		return pack_result::alloc;
-	}
-	return g_bytes(r->preservedblock2, r->reservedblock2size);
+	TRY(g_uint32(&dummy));
+	return advance(dummy);
 }
 
 static pack_result ext_pull_goid_trailer(EXT_PULL *ext,
@@ -3185,13 +3168,10 @@ pack_result EXT_PUSH::p_apptrecpat(const APPOINTMENT_RECUR_PAT &r)
 	TRY(p_uint16(r.exceptioncount));
 	for (size_t i = 0; i < r.exceptioncount; ++i)
 		TRY(ext_buffer_push_exceptioninfo(this, &r.pexceptioninfo[i]));
-	TRY(p_uint32(r.reservedblock1size));
+	TRY(p_uint32(0));
 	for (size_t i = 0; i < r.exceptioncount; ++i)
 		TRY(ext_buffer_push_extendedexception(this, r.writerversion2, r.pexceptioninfo[i].overrideflags, &r.pextendedexception[i]));
-	TRY(p_uint32(r.reservedblock2size));
-	if (r.reservedblock2size == 0)
-		return pack_result::ok;
-	return p_bytes(r.preservedblock2, r.reservedblock2size);
+	return p_uint32(0);
 }
 
 pack_result EXT_PUSH::p_goid(const GLOBALOBJECTID &r)

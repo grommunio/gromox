@@ -576,11 +576,7 @@ struct GX_EXPORT APPOINTMENT_RECUR_PAT {
 	uint32_t starttimeoffset = 0, endtimeoffset = 0;
 	uint16_t exceptioncount = 0; /* same as modifiedinstancecount in recurrencepattern */
 	EXCEPTIONINFO *pexceptioninfo = nullptr;
-	uint32_t reservedblock1size = 0;
-	uint8_t *preservedblock1 = nullptr;
 	EXTENDEDEXCEPTION *pextendedexception = nullptr;
-	uint32_t reservedblock2size = 0;
-	uint8_t *preservedblock2 = nullptr;
 
 	static constexpr uint32_t default_readerversion = 0x3006;
 	static constexpr uint32_t default_writerversion = 0x3009;
