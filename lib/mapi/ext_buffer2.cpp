@@ -259,6 +259,9 @@ pack_result EXT_PULL::g_fb(freebusy_event *fb_event)
 		if (b) {
 			TRY(g_str(&fb_event->m_location));
 			fb_event->location = fb_event->m_location.c_str();
+		} else {
+			fb_event->m_location.clear();
+			fb_event->location = nullptr;
 		}
 		TRY(g_bool(&b)); fb_event->is_meeting     = b;
 		TRY(g_bool(&b)); fb_event->is_recurring   = b;
