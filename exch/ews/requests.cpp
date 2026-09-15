@@ -910,14 +910,13 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 			continue;
 		}
 		if (du.DelegatePermissions)
-			ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
-		changed = true;
+			changed = ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
 		msg.success();
 		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 	}
 
 	if (changed) {
-		mlog(LV_NOTICE, "gromox-audit: %s added delegates to mailbox %s via EWS",
+		mlog(LV_NOTICE, "gromox-audit: %s updated delegates in mailbox %s via EWS",
 			znul(actor), znul(mailbox));
 	}
 	data.success();

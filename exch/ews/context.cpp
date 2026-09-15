@@ -5103,12 +5103,13 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 /**
  * @brief      Write delegate permissions to folder ACLs
  */
-void EWSContext::writeDelegatePermissions(const std::string &dir, const std::string &username,
+bool EWSContext::writeDelegatePermissions(const std::string &dir, const std::string &username,
     const tDelegatePermissions &dp) const
 {
 	std::string dispname;
 	mysql_adaptor_get_user_displayname(username.c_str(), dispname);
 
+	bool changed = false;
 	for (const auto &m : delegFolderMap) {
 		const auto &level = dp.*(m.field);
 		if (!level)
@@ -5121,10 +5122,11 @@ void EWSContext::writeDelegatePermissions(const std::string &dir, const std::str
 		if (!dispname.empty())
 			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_NAME, EWSContext::cpystr(dispname)};
 		uint64_t fid = rop_util_make_eid_ex(1, m.fid);
-		if (!m_plugin.exmdb.update_folder_permission(dir.c_str(),
+		if (m_plugin.exmdb.update_folder_permission(dir.c_str(),
 		    fid, 0, 1, &perm))
-			/* ignore */;
+			changed = true;
 	}
+	return changed;
 }
 
 
