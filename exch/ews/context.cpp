@@ -1900,6 +1900,21 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 }
 
 /**
+ * Find EXCEPTIONINFO for this basedate from the recurrence blob.
+ * It has the correct startdatetime/enddatetime for the exception,
+ * unlike the embedded message which may have the master's dates.
+ */
+static const EXCEPTIONINFO *
+find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
+{
+	uint32_t bd = basedate / 1440;
+	for (uint16_t ei = 0; ei < apr.exceptioncount; ++ei)
+		if (apr.pexceptioninfo[ei].originalstartdate / 1440 == bd)
+			return &apr.pexceptioninfo[ei];
+	return nullptr;
+}
+
+/**
  * @brief      Load occurrence
  *
  * @param      dir      Store directory
@@ -1963,20 +1978,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
 	struct tm basedate_local;
 	localtime_r(&basedate_ts, &basedate_local);
-
-	/* Find EXCEPTIONINFO for this basedate from the recurrence blob.
-	 * It has the correct startdatetime/enddatetime for the exception,
-	 * unlike the embedded message which may have the master's dates. */
-	const EXCEPTIONINFO *matching_exc = nullptr;
-	if (apr_valid) {
-		uint32_t bd = basedate / 1440;
-		for (uint16_t ei = 0; ei < apr.exceptioncount; ++ei) {
-			if (apr.pexceptioninfo[ei].originalstartdate / 1440 == bd) {
-				matching_exc = &apr.pexceptioninfo[ei];
-				break;
-			}
-		}
-	}
+	auto matching_exc = apr_valid ? find_exc(apr, basedate) : nullptr;
 
 	for (uint16_t i = 0; i < count; ++i) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
