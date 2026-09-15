@@ -12,6 +12,7 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
+#include <gromox/vcard.hpp>
 #include "../tools/staticnpmap.cpp"
 #undef assert
 #define assert(x) do { if (!(x)) { printf("%s failed\n", #x); return EXIT_FAILURE; } } while (false)
@@ -751,6 +752,43 @@ static int hdrparse_1()
 	assert(m.refonly_parse(data, strlen(data)));
 	auto part = m.get_head();
 	assert(part->head_begin != nullptr);
+	return EXIT_SUCCESS;
+}
+
+static std::unique_ptr<message_content, mc_delete> vcf_import(const char *body)
+{
+	std::string str = "BEGIN:VCARD\r\n";
+	str += body;
+	str += "END:VCARD\r\n";
+	vcard vc;
+	if (vc.load_single_from_str_move(str.data()) != ecSuccess)
+		return nullptr;
+	oxvcard_converter cvt;
+	cvt.log_id = "-";
+	cvt.get_propids = ee_get_propids;
+	return cvt.vcard_to_mapi(vc);
+}
+
+static bool vcf_has(const message_content &m, proptag_t tag, const char *want)
+{
+	auto v = m.proplist.get<const char>(tag);
+	if (v != nullptr && strcmp(v, want) == 0)
+		return true;
+	fprintf(stderr, "%08x: \"%s\", expected \"%s\"\n", tag, znul(v), want);
+	return false;
+}
+
+static int vcard_escaped_values()
+{
+	fprintf(stderr, "=== vcard_escaped_values\n");
+	auto m = vcf_import("VERSION:3.0\r\nFN:E\r\nN:Doe\\, Jr.;John;;;\r\n"
+	         "ORG:Smith\\; Partners;Sales\r\n");
+	assert(m != nullptr);
+	if (!vcf_has(*m, PR_SURNAME, "Doe, Jr.") ||
+	    !vcf_has(*m, PR_GIVEN_NAME, "John") ||
+	    !vcf_has(*m, PR_COMPANY_NAME, "Smith; Partners") ||
+	    !vcf_has(*m, PR_DEPARTMENT_NAME, "Sales"))
+		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
 
@@ -1597,6 +1635,7 @@ int main()
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_export_exception),
 		E(hdrparse_1),
+		E(vcard_escaped_values),
 		E(vexport_head), E(vexport_simple_body), E(vexport_image),
 		E(vexport_inline_image), E(vexport_recipients),
 		E(vexport_headers), E(vexport_internet_headers),
