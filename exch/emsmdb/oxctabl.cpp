@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
@@ -762,6 +763,9 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	exmdb_client->get_folder_property( plogon->get_dir(), CP_ACP, folder_id,
 		PR_DISPLAY_NAME, &pv_folder_name);
 	auto folder_name = static_cast<const char *>(pv_folder_name);
+	std::string mailbox;
+	mailbox = plogon->is_private() ?
+		std::string("mailbox ") + plogon->get_account() : "public folders";
 
 	auto eff_user = plogon->eff_user();
 	if (eff_user != STORE_OWNER_GRANTED) {
@@ -776,13 +780,11 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 		if (!exmdb_client->empty_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id))
 			return ecError;
+		mlog(LV_INFO, "gromox-audit: %s cleared permissions on folder \"%s\" in %s via EMSMDB",
+			actor, znul(folder_name), mailbox.c_str());
 	}
-	if (0 == count) {
-          mlog(LV_INFO, "gromox-audit: %s cleared permissions on folder \"%s\" in "
-               "mailbox %s via EMSMDB",
-               actor, znul(folder_name), plogon->get_account());
-          return ecSuccess;
-	}
+	if (count == 0)
+		return ecSuccess;
 	for (size_t i = 0; i < count; ++i) {
 		auto v = deconst(prow[i].propvals.get<uint32_t>(PR_MEMBER_RIGHTS)); // mutable
 		if (v == nullptr)
@@ -814,9 +816,9 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	if (!exmdb_client->update_folder_permission(plogon->get_dir(),
 	    folder_id, 0, count, prow))
 		return ecError;
-
-	mlog(LV_INFO, "gromox-audit: %s replaced permissions on folder \"%s\" in mailbox %s via EMSMDB",
-		actor, znul(folder_name), plogon->get_account());
+	if (!mailbox.empty())
+		mlog(LV_INFO, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EMSMDB",
+			actor, znul(folder_name), mailbox.c_str());
 	return ecSuccess;
 }
 
