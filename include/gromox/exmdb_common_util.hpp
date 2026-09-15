@@ -104,7 +104,7 @@ extern std::string cu_cid_path(const char *dir, const char *cid, unsigned int ty
 extern int cu_set_message_read(sqlite3 *, uint64_t msg_id, bool is_read);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
-extern bool cu_parse_abkeid(const BINARY *, std::string &type, std::string &addr);
+extern bool cu_parse_abkeid(std::string_view, std::string &type, std::string &addr);
 BINARY* common_util_to_private_folder_entryid(
 	sqlite3 *psqlite, const char *username,
 	uint64_t folder_id);

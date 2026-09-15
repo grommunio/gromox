@@ -1530,7 +1530,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
 		if (sr_addrtype == nullptr) {
 			std::string ntype, naddr;
-			if (cu_parse_abkeid(pbin, ntype, naddr)) {
+			if (cu_parse_abkeid(*pbin, ntype, naddr)) {
 				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, ntype.c_str()) != ecSuccess ||
 				    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, naddr.c_str()) != ecSuccess)
 					return FALSE;
@@ -1553,7 +1553,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENDER_ADDRTYPE);
 		if (sr_addrtype == nullptr) {
 			std::string ntype, naddr;
-			if (cu_parse_abkeid(pbin, ntype, naddr)) {
+			if (cu_parse_abkeid(*pbin, ntype, naddr)) {
 				if (pmsgctnt->proplist.set(PR_SENDER_ADDRTYPE, ntype.c_str()) != ecSuccess ||
 				    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, naddr.c_str()) != ecSuccess)
 					return FALSE;
