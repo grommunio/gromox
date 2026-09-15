@@ -430,12 +430,12 @@ char *common_util_dup(std::string_view sv)
 	return out;
 }
 
-bool cu_parse_abkeid(BINARY entryid_bin, uint32_t *ptype, std::string &essdn)
+bool cu_parse_abkeid(std::string_view sv, uint32_t *ptype, std::string &essdn)
 {
 	EXT_PULL ext_pull;
 	EMSAB_ENTRYID tmp_entryid;
 
-	ext_pull.init(entryid_bin.pb, entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
+	ext_pull.init(sv.data(), sv.size(), nullptr, EXT_FLAG_UTF16);
 	if (ext_pull.g_abk_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;
 	*ptype = tmp_entryid.type;

@@ -93,7 +93,7 @@ template<typename T> T *cu_alloc(size_t elem)
 extern void cu_set_clifd(gromox::wrapfd &&);
 extern gromox::wrapfd *cu_get_clifd();
 extern char *common_util_dup(std::string_view);
-extern bool cu_parse_abkeid(BINARY, uint32_t *type, std::string &essdn);
+extern bool cu_parse_abkeid(std::string_view, uint32_t *type, std::string &essdn);
 uint16_t common_util_get_messaging_entryid_type(BINARY bin);
 extern bool cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, eid_t *folder_id);
 extern bool cu_entryid_to_mid(BINARY bin, BOOL *pb_private, int *pdb_id, eid_t *folder_id, eid_t *msg_id);
