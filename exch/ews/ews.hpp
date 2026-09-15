@@ -356,7 +356,7 @@ class EWSContext {
 	void updated(const std::string&, const Structures::sMessageEntryId&, Structures::sShape&) const;
 	void updateReminder(const std::string &, uint64_t, Structures::sShape &) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
-	void writeDelegatePermissions(const std::string&, const std::string&, const Structures::tDelegatePermissions&) const;
+	bool writeDelegatePermissions(const std::string&, const std::string&, const Structures::tDelegatePermissions&) const;
 	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
 
 	gromox::time_duration age() const { return tp_now() - m_created; }
