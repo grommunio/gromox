@@ -3445,24 +3445,15 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 	return false;
 }
 
-static bool oxcical_check_exdate(const APPOINTMENT_RECUR_PAT *apr)
+static bool oxcical_emit_exdates(const APPOINTMENT_RECUR_PAT &apr)
 {
-	bool b_found;
-	size_t count = 0;
-	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
-		b_found = false;
-		for (size_t j = 0; j < apr->exceptioncount; ++j) {
-			if (apr->recur_pat.pdeletedinstancedates[i]
-				== apr->pexceptioninfo[j].originalstartdate &&
-				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = true;
-				break;
-			}
-		}
-		if (!b_found)
-			count ++;
-	}
-	return count != 0;
+	auto &rp = apr.recur_pat;
+	for (size_t i = 0; i < rp.deletedinstancecount; ++i)
+		for (size_t j = 0; j < apr.exceptioncount; ++j)
+			if (rp.pdeletedinstancedates[i] == apr.pexceptioninfo[j].originalstartdate &&
+			    apr.pexceptioninfo[j].overrideflags != 0)
+				return true;
+	return false;
 }
 
 static bool oxcical_export_exdate(const char *tzid, bool b_date,
@@ -3511,25 +3502,15 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	return false;
 }
 
-static bool oxcical_check_rdate(const APPOINTMENT_RECUR_PAT *apr)
+static bool oxcical_emit_rdates(const APPOINTMENT_RECUR_PAT &apr)
 {
-	size_t count = 0;
-	bool b_found;
-
-	for (size_t i = 0; i < apr->recur_pat.modifiedinstancecount; ++i) {
-		b_found = false;
-		for (size_t j = 0; j < apr->exceptioncount; ++j) {
-			if (apr->recur_pat.pmodifiedinstancedates[i]
-				== apr->pexceptioninfo[j].startdatetime &&
-				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = true;
-				break;
-			}
-		}
-		if (!b_found)
-			count ++;
-	}
-	return count != 0;
+	auto &rp = apr.recur_pat;
+	for (size_t i = 0; i < rp.modifiedinstancecount; ++i)
+		for (size_t j = 0; j < apr.exceptioncount; ++j)
+			if (rp.pmodifiedinstancedates[i] == apr.pexceptioninfo[j].startdatetime &&
+			    apr.pexceptioninfo[j].overrideflags != 0)
+				return true;
+	return false;
 }
 
 static bool oxcical_export_rdate(const char *tzid, bool b_date,
@@ -4124,10 +4105,10 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (!b_exceptional && b_recurrence) {
 		if (!oxcical_export_rrule(ptz_component, *pcomponent, &apprecurr))
 			return "E-2212: export_rrule - unspecified error";
-		if (oxcical_check_exdate(&apprecurr) &&
+		if (oxcical_emit_exdates(apprecurr) &&
 		    !oxcical_export_exdate(tzid, b_allday, *pcomponent, &apprecurr))
 			return "E-2213: export_exdate - unspecified error";
-		if (oxcical_check_rdate(&apprecurr) &&
+		if (oxcical_emit_rdates(apprecurr) &&
 		    !oxcical_export_rdate(tzid, b_allday, *pcomponent, &apprecurr))
 			return "E-2214: export_rdate - unspecified error";
 	}
