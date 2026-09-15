@@ -541,9 +541,9 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		return false;
 	for (auto subject : audit_subjects)
 		mlog(LV_NOTICE,
-			"gromox-audit: %s %s message \"%s\" in %s "
+			"gromox-audit: %s%s%s message \"%s\" in %s "
 			"from folder \"%s\" to \"%s\"",
-			username != nullptr ? username : "mailbox owner",
+			znul(username), username != nullptr ? " " : "",
 			b_copy ? "copied" : "moved", znul(subject), mailbox.c_str(),
 			znul(src_folder), znul(dst_folder));
 	dg_notify(std::move(notifq));
@@ -794,9 +794,9 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		return false;
 	for (auto subject : audit_subjects)
 		mlog(LV_NOTICE,
-			"gromox-audit: %s %s-deleted message \"%s\" in %s "
+			"gromox-audit: %s%s%s-deleted message \"%s\" in %s "
 			"from folder \"%s\"",
-			username != nullptr ? username : "mailbox owner",
+			znul(username), username != nullptr ? " " : "",
 			b_hard ? "hard" : "soft", znul(subject), mailbox.c_str(),
 			znul(src_folder));
 	dg_notify(std::move(notifq));
