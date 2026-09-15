@@ -960,12 +960,10 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 				}
 			} catch (const std::bad_alloc &) {
 			}
-			if (pstore->b_private)
-				mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in mailbox %s via ZCORE",
-					pinfo->get_username(), subject, pstore->get_account());
-			else
-				mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in public folders via ZCORE",
-					pinfo->get_username(), subject);
+			std::string mailbox = pstore->b_private ?
+				std::string("mailbox ") + pstore->get_account() : "public folders";
+			mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in %s via ZCORE",
+				pinfo->get_username(), subject, mailbox.c_str());
 		}
 	} else {
 		if (!exmdb_client->is_folder_present(pstore->get_dir(),
@@ -1315,12 +1313,10 @@ ec_error_t zs_modifypermissions(GUID hsession,
 	}
 	if (!pfolder->set_permissions(pset))
 		return ecError;
-	if (pfolder->pstore->b_private)
-		mlog(LV_NOTICE, "gromox-audit: %s changed folder permissions in mailbox %s via ZCORE",
-			pinfo->get_username(), pfolder->pstore->get_account());
-	else
-		mlog(LV_NOTICE, "gromox-audit: %s changed folder permissions in public folders via ZCORE",
-			pinfo->get_username());
+	std::string mailbox = pfolder->pstore->b_private ?
+		std::string("mailbox ") + pfolder->pstore->get_account() : "public folders";
+	mlog(LV_NOTICE, "gromox-audit: %s changed folder permissions in %s via ZCORE",
+		pinfo->get_username(), mailbox.c_str());
 	return ecSuccess;
 }
 

@@ -191,6 +191,9 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	std::string mailbox;
 	if (exmdb_server::is_private()) {
 		mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), mailbox);
+		mailbox = "mailbox " + mailbox;
+	} else {
+		mailbox = "public folders";
 	}
 
 	uint32_t message_size = 0;
@@ -287,12 +290,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	if (b_move && !exmdb_server::is_private())
-		mlog(LV_NOTICE, "gromox-audit: moved message \"%s\" in public folders "
-			"from folder \"%s\" to \"%s\"",
-			znul(subject), znul(src_folder), znul(dst_folder));
-	else
-		mlog(LV_NOTICE, "gromox-audit: %s message \"%s\" in mailbox %s "
+	mlog(LV_NOTICE, "gromox-audit: %s message \"%s\" in %s "
 			"from folder \"%s\" to \"%s\"",
 			b_move ? "moved" : "copied", znul(subject), mailbox.c_str(),
 			znul(src_folder), znul(dst_folder));
