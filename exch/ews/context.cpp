@@ -3510,6 +3510,214 @@ const BINARY *EWSContext::findContactPhoto(const std::string &dir,
 }
 
 /**
+ * @brief      Find a child folder by its PR_CONTAINER_CLASS value
+ *
+ * @param      dir             Home directory
+ * @param      parentFolderId  Parent folder to search under
+ * @param      containerClass  PR_CONTAINER_CLASS value to match
+ *
+ * @return     Folder ID of the first matching child folder, or unset if none found
+ */
+std::optional<uint64_t> EWSContext::findFolderByClass(const std::string &dir,
+    uint64_t parentFolderId, const char *containerClass) const
+{
+	TAGGED_PROPVAL pv{PR_CONTAINER_CLASS, deconst(containerClass)};
+	RESTRICTION_PROPERTY rprop{RELOP_EQ, PR_CONTAINER_CLASS, pv};
+	const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
+	uint32_t tableId = 0, rowCount = 0;
+	if (!m_plugin.exmdb.load_hierarchy_table(dir.c_str(), parentFolderId,
+	    nullptr, 0, &rst, &tableId, &rowCount) || rowCount == 0)
+		return std::nullopt;
+	auto cl_tbl = HX::make_scope_exit([&]() { m_plugin.exmdb.unload_table(dir.c_str(), tableId); });
+	static constexpr proptag_t eid_tag = PR_ENTRYID;
+	TARRAY_SET rows{};
+	if (!m_plugin.exmdb.query_table(dir.c_str(), nullptr, CP_ACP, tableId,
+	    {&eid_tag, 1}, 0, 1, &rows) || rows.count == 0 || rows.pparray[0] == nullptr)
+		return std::nullopt;
+	auto eid = rows.pparray[0]->get<const BINARY>(PR_ENTRYID);
+	if (eid == nullptr || eid->cb == 0)
+		return std::nullopt;
+	sFolderEntryId folderEid(eid->pb, eid->cb);
+	return rop_util_make_eid_ex(1, rop_util_gc_to_value(folderEid.folder_gc));
+}
+
+/**
+ * @brief      Find a child folder by PR_DISPLAY_NAME, trying each candidate in order
+ *
+ * Used for folders that, unlike Recipient Cache, have no dedicated
+ * PR_CONTAINER_CLASS to search by on real Exchange (Conversation History) -
+ * matching by name is the only identity mechanism available. Candidates are
+ * tried in order (e.g. the mailbox owner's localized name first, then the
+ * static English one) so a folder created under either naming convention is
+ * still found instead of being duplicated.
+ *
+ * @param      dir             Home directory
+ * @param      parentFolderId  Parent folder to search under
+ * @param      names           Candidate PR_DISPLAY_NAME values to match, tried in order
+ *
+ * @return     Folder ID of the first matching child folder, or unset if none found
+ */
+std::optional<uint64_t> EWSContext::findFolderByName(const std::string &dir,
+    uint64_t parentFolderId, const std::vector<std::string> &names) const
+{
+	for (const auto &name : names) {
+		TAGGED_PROPVAL pv{PR_DISPLAY_NAME, deconst(name.c_str())};
+		RESTRICTION_PROPERTY rprop{RELOP_EQ, PR_DISPLAY_NAME, pv};
+		const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
+		uint32_t tableId = 0, rowCount = 0;
+		if (!m_plugin.exmdb.load_hierarchy_table(dir.c_str(), parentFolderId,
+		    nullptr, 0, &rst, &tableId, &rowCount) || rowCount == 0)
+			continue;
+		auto cl_tbl = HX::make_scope_exit([&]() { m_plugin.exmdb.unload_table(dir.c_str(), tableId); });
+		static constexpr proptag_t eid_tag = PR_ENTRYID;
+		TARRAY_SET rows{};
+		if (!m_plugin.exmdb.query_table(dir.c_str(), nullptr, CP_ACP, tableId,
+		    {&eid_tag, 1}, 0, 1, &rows) || rows.count == 0 || rows.pparray[0] == nullptr)
+			continue;
+		auto eid = rows.pparray[0]->get<const BINARY>(PR_ENTRYID);
+		if (eid == nullptr || eid->cb == 0)
+			continue;
+		sFolderEntryId folderEid(eid->pb, eid->cb);
+		return rop_util_make_eid_ex(1, rop_util_gc_to_value(folderEid.folder_gc));
+	}
+	return std::nullopt;
+}
+
+/**
+ * @brief      Resolve a "rich client" special folder, creating it if necessary
+ *
+ * Real Exchange provisions folders such as Recipient Cache, Archive and
+ * Conversation History lazily, on the first authenticated session touching
+ * the mailbox, rather than eagerly at mailbox creation time - this mirrors
+ * that.
+ *
+ * When a PR_CONTAINER_CLASS is known (Recipient Cache), that's the sole
+ * identity mechanism: look up an existing folder carrying it, create one if
+ * none exists. No legacy-FID fallback - a prior gromox version could eagerly
+ * create these with the wrong class, but that was this deployment's own
+ * transient state during development, never a real-world condition (a fresh
+ * gromox install with a client that just failed to authenticate touches
+ * nothing at all here), so there's nothing to self-heal in practice.
+ *
+ * When no PR_CONTAINER_CLASS is known (Archive, Conversation History - real
+ * Exchange doesn't expose one for these either, so there's nothing to search
+ * by), the legacy static FID is the only identity gromox has: reuse the
+ * folder there if present, otherwise create it there. Without this, these
+ * two would never be found again after creation and a duplicate would be
+ * created on every request.
+ *
+ * @param      dir             Home directory
+ * @param      parentFolderId  Parent folder to search/create under
+ * @param      legacyFolderId  Static FID to check for a pre-existing folder
+ *                              (0 = none, skip this step) - only consulted
+ *                              when containerClass is null
+ * @param      containerClass  Desired PR_CONTAINER_CLASS value, or nullptr
+ *                              if none is known for this folder
+ * @param      dispNameTid     folder_namedb_get() text id for the display
+ *                             name to use if the folder needs creating
+ * @param      searchByName    If no PR_CONTAINER_CLASS is known and the
+ *                              legacy FID doesn't resolve, also scan for an
+ *                              existing folder by PR_DISPLAY_NAME (localized
+ *                              name first, then the static English one)
+ *                              before creating a new one - for folders like
+ *                              Conversation History, which real Exchange
+ *                              exposes no dedicated container class for.
+ *
+ * @return     Folder ID
+ */
+uint64_t EWSContext::resolveOrCreateSpecialFolder(const std::string &dir,
+    uint64_t parentFolderId, uint64_t legacyFolderId, const char *containerClass,
+    unsigned int dispNameTid, bool searchByName) const
+{
+	if (containerClass) {
+		auto realId = findFolderByClass(dir, parentFolderId, containerClass);
+		if (realId)
+			return *realId;
+	} else if (legacyFolderId != 0) {
+		BOOL exists = false;
+		if (m_plugin.exmdb.is_folder_present(dir.c_str(), legacyFolderId, &exists) &&
+		    exists)
+			return legacyFolderId;
+	}
+
+	auto lang = m_auth_info.lang && *m_auth_info.lang ?
+	            folder_namedb_resolve(m_auth_info.lang) : nullptr;
+	if (lang == nullptr)
+		lang = "en";
+	auto dispName = folder_namedb_get(lang, dispNameTid);
+
+	if (searchByName && !containerClass) {
+		std::vector<std::string> candidates;
+		if (dispName != nullptr && *dispName != '\0')
+			candidates.emplace_back(dispName);
+		auto enName = folder_namedb_get("en", dispNameTid);
+		if (enName != nullptr && *enName != '\0' &&
+		    (candidates.empty() || candidates[0] != enName))
+			candidates.emplace_back(enName);
+		if (!candidates.empty()) {
+			auto realId = findFolderByName(dir, parentFolderId, candidates);
+			if (realId)
+				return *realId;
+		}
+	}
+
+	/*
+	 * Deliberately does not go through EWSContext::create() - that helper
+	 * returns a fully loaded sFolder (its EWS-serialized FolderId, not the
+	 * raw numeric one), which would need re-decoding here for no benefit.
+	 * This mirrors just the property-array construction from create()
+	 * directly, so exmdb.create_folder()'s own numeric out-parameter can
+	 * be used as-is.
+	 */
+	uint64_t changeNumber;
+	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNumber))
+		throw DispatchError(E3153);
+
+	const char *fclass = containerClass ? containerClass : "IPF.Note";
+	mapi_folder_type type = FOLDER_GENERIC;
+	uint64_t now = rop_util_current_nttime();
+	uint32_t accountId = getAccountId(m_auth_info.username, false);
+	XID xid{rop_util_make_user_guid(accountId), changeNumber};
+	BINARY ckey = serialize(xid);
+	auto pcl = mkPCL(xid);
+
+	sShape shape;
+	shape.write(TAGGED_PROPVAL{PidTagParentFolderId, &parentFolderId});
+	/*
+	 * jengelh, PR review 2026-08-25: "If there is a static FID, I would
+	 * want that folder to always exist." Without this, the presence
+	 * check above only ever reads legacyFolderId - creation always let
+	 * exmdb auto-allocate a fresh, unrelated ID instead, so the
+	 * reservation in mapi_types.hpp was honored on lookup but never on
+	 * creation. Target it explicitly so a freshly-provisioned mailbox's
+	 * copy of these folders actually lands at the reserved ID.
+	 */
+	if (legacyFolderId != 0)
+		shape.write(TAGGED_PROPVAL{PidTagFolderId, &legacyFolderId});
+	shape.write(TAGGED_PROPVAL{PR_FOLDER_TYPE, &type});
+	shape.write(TAGGED_PROPVAL{PR_CONTAINER_CLASS, deconst(fclass)});
+	shape.write(TAGGED_PROPVAL{PR_DISPLAY_NAME, deconst(dispName)});
+	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, &now});
+	shape.write({PR_LAST_MODIFICATION_TIME, &now});
+	shape.write({PidTagChangeNumber, &changeNumber});
+	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, &ckey});
+	shape.write(TAGGED_PROPVAL{PR_PREDECESSOR_CHANGE_LIST, pcl.get()});
+	getNamedTags(dir, shape, true);
+	TPROPVAL_ARRAY props = shape.write();
+
+	uint64_t newFolderId = 0;
+	ec_error_t err = ecSuccess;
+	if (!m_plugin.exmdb.create_folder(dir.c_str(), CP_ACP, &props,
+	    &newFolderId, &err))
+		throw EWSError::FolderSave(E3154);
+	if (err != ecSuccess)
+		throw EWSError::FolderSave(E3322(err));
+	if (newFolderId == 0)
+		throw EWSError::FolderExists(E3323);
+	return newFolderId;
+}
+
+/**
  * @brief     Send message
  *
  * @param     dir      Home directory the message is associtated with
