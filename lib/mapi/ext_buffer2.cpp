@@ -353,18 +353,18 @@ pack_result EXT_PUSH::p_fbevent(const freebusy_event &r)
 	TRY(p_int64(r.end_time));
 	TRY(p_uint32(r.busy_status));
 	TRY(p_bool(r.has_details));
-	if (r.has_details) {
-		TRY(p_str(r.id));
-		TRY(p_str(r.subject));
-		TRY(p_bool(r.location != nullptr));
-		if (r.location != nullptr)
-			TRY(p_str(r.location));
-		TRY(p_bool(r.is_meeting));
-		TRY(p_bool(r.is_recurring));
-		TRY(p_bool(r.is_exception));
-		TRY(p_bool(r.is_reminderset));
-		TRY(p_bool(r.is_private));
-	}
+	if (!r.has_details)
+		return pack_result::ok;
+	TRY(p_str(r.id));
+	TRY(p_str(r.subject));
+	TRY(p_bool(r.location != nullptr));
+	if (r.location != nullptr)
+		TRY(p_str(r.location));
+	TRY(p_bool(r.is_meeting));
+	TRY(p_bool(r.is_recurring));
+	TRY(p_bool(r.is_exception));
+	TRY(p_bool(r.is_reminderset));
+	TRY(p_bool(r.is_private));
 	return pack_result::ok;
 }
 
