@@ -215,7 +215,7 @@ void cu_flush_delegates(const char *dir, const BINARY_ARRAY *eids) try
 	if (eids != nullptr) {
 		for (const auto &eid : *eids) {
 			std::string addr;
-			auto ret = cvt_entryid_to_smtpaddr(&eid, g_org_name,
+			auto ret = cvt_entryid_to_smtpaddr(eid, g_org_name,
 			           mysql_adaptor_userid_to_name, addr);
 			if (ret != ecSuccess) {
 				mlog(LV_WARN, "W-2760: %s: unresolvable delegate entryid: %s",

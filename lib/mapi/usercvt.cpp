@@ -229,18 +229,16 @@ static ec_error_t cvt_oneoff_to_smtpaddr(EXT_PULL &ser, const char *org,
 	       org, std::move(id2user), smtpaddr);
 }
 
-ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
+ec_error_t cvt_entryid_to_smtpaddr(std::string_view sv, const char *org,
     cvt_id2user id2user, std::string &smtpaddr)
 {
-	if (bin == nullptr)
-		return ecNullObject;
-	if (bin->cb < 20)
+	if (sv.size() < 20)
 		return ecInvalidParam;
 
 	uint32_t flags;
 	EXT_PULL ext_pull;
 	FLATUID provider_uid;
-	ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+	ext_pull.init(sv.data(), sv.size(), malloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_uint32(&flags) != pack_result::success || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != pack_result::success)
 		return ecInvalidParam;
@@ -251,6 +249,13 @@ ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
 	if (provider_uid == muidOOP)
 		return cvt_oneoff_to_smtpaddr(ext_pull, org, std::move(id2user), smtpaddr);
 	return ecUnknownUser;
+}
+
+ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
+    cvt_id2user id2user, std::string &smtpaddr)
+{
+	return bin == nullptr ? ecNullObject :
+	       cvt_entryid_to_smtpaddr(*bin, org, id2user, smtpaddr);
 }
 
 ec_error_t cvt_username_to_essdn(const char *username, const char *org,

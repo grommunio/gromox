@@ -2806,7 +2806,7 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 	}
 	auto v = props.get<const BINARY>(tags.pr_entryid);
 	if (v != nullptr) {
-		auto ret = cvt_entryid_to_smtpaddr(v, org, std::move(id2user), username);
+		auto ret = cvt_entryid_to_smtpaddr(*v, org, std::move(id2user), username);
 		if (ret == ecSuccess) {
 			username.insert(0, "rfc822;");
 			return true;
