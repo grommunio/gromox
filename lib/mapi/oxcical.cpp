@@ -47,6 +47,7 @@ static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 static constexpr char fmt_date[] = "%04d%02d%02d",
 	fmt_datetimelcl[] = "%04d%02d%02dT%02d%02d%02d",  /* needs buf[16] */
 	fmt_datetimeutc[] = "%04d%02d%02dT%02d%02d%02dZ"; /* needs buf[17] */
+static constexpr size_t appt_max_exceptions = 1024;
 
 static ec_error_t namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
@@ -1149,10 +1150,10 @@ static bool oxcical_parse_dates(const ical_component *ptz_component,
 			for (size_t i = 0; i < *pcount; ++i)
 				if (tmp_date == pdates[i])
 					return true;
+			if (*pcount >= appt_max_exceptions)
+				return true;
 			pdates[*pcount] = tmp_date;
 			(*pcount) ++;
-			if (*pcount >= 1024)
-				return true;
 		}
 	} else if (0 == strcasecmp(pvalue, "DATE")) {
 		for (const auto &pnv2 : pivalue.subval_list) {
@@ -1162,10 +1163,10 @@ static bool oxcical_parse_dates(const ical_component *ptz_component,
 			if (!itime.assign_date(pnv2.c_str()))
 				continue;
 			ical_itime_to_utc(nullptr, itime, &tmp_time);
+			if (*pcount >= appt_max_exceptions)
+				return true;
 			pdates[*pcount] = rop_util_unix_to_rtime(tmp_time);
 			(*pcount) ++;
-			if (*pcount >= 1024)
-				return true;
 		}
 	} else {
 		return false;
@@ -2439,9 +2440,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 			return ecInvalidParam;
 		}
 
-		uint32_t deleted_dates[1024], modified_dates[1024];
-		EXCEPTIONINFO exceptions[1024];
-		EXTENDEDEXCEPTION ext_exceptions[1024];
+		uint32_t deleted_dates[appt_max_exceptions], modified_dates[appt_max_exceptions];
+		EXCEPTIONINFO exceptions[appt_max_exceptions];
+		EXTENDEDEXCEPTION ext_exceptions[appt_max_exceptions];
 		APPOINTMENT_RECUR_PAT apr{};
 
 		apr.recur_pat.deletedinstancecount = 0;
@@ -2554,11 +2555,11 @@ static ec_error_t oxcical_import_internal(const char *method,
 					break;
 			if (i < apr.recur_pat.deletedinstancecount)
 				continue;
-			deleted_dates[apr.recur_pat.deletedinstancecount++] = minutes;
-			if (apr.recur_pat.deletedinstancecount >= 1024) {
-				errstr = "E-2731";
+			if (apr.recur_pat.deletedinstancecount >= appt_max_exceptions) {
+				errstr = "E-2731: The appointment has too many deleted occurrences for this implementation";
 				return ecInvalidParam;
 			}
+			deleted_dates[apr.recur_pat.deletedinstancecount++] = minutes;
 			exceptions[apr.exceptioncount].originalstartdate = minutes;
 			ext_exceptions[apr.exceptioncount].originalstartdate = minutes;
 			ical_itime_to_utc(nullptr, start_itime, &tmp_time);
