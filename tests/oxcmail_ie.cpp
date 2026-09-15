@@ -895,6 +895,39 @@ static int vcard_dates()
 	return EXIT_SUCCESS;
 }
 
+static int vcard_fileas_categories()
+{
+	fprintf(stderr, "=== vcard_fileas_categories\n");
+	auto fileas = vcf_namedtag(PT_UNICODE, {MNID_ID, PSETID_Address, PidLidFileAs});
+	auto fileasid = vcf_namedtag(PT_LONG, {MNID_ID, PSETID_Address, PidLidFileUnderId});
+	auto keywords = vcf_namedtag(PT_MV_UNICODE, {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")});
+	auto m = vcf_import("VERSION:3.0\r\nFN:Eve Olution\r\nN:Olution;Eve;;;\r\n"
+	         "X-EVOLUTION-FILE-AS:Olution\\, Eve (Gnome)\r\nCATEGORIES:Friends,Work\r\n");
+	assert(m != nullptr);
+	if (!vcf_has(*m, fileas, "Olution, Eve (Gnome)"))
+		return EXIT_FAILURE;
+	auto cats = m->proplist.get<const STRING_ARRAY>(keywords);
+	if (cats == nullptr || cats->count != 2 || strcmp(cats->ppstr[1], "Work") != 0)
+		return EXIT_FAILURE;
+	auto out = vcf_export(*m);
+	if (out.find("X-EVOLUTION-FILE-AS:Olution\\, Eve (Gnome)\r\n") == out.npos ||
+	    out.find("CATEGORIES:Friends,Work\r\n") == out.npos) {
+		fprintf(stderr, "%s", out.c_str());
+		return EXIT_FAILURE;
+	}
+	/* no file-as given: Outlook's default */
+	m = vcf_import("VERSION:4.0\r\nFN:John Doe\r\nN:Doe;John;;;\r\n");
+	assert(m != nullptr);
+	auto id = m->proplist.get<const uint32_t>(fileasid);
+	if (!vcf_has(*m, fileas, "Doe, John") || id == nullptr || *id != 0x8017)
+		return EXIT_FAILURE;
+	m = vcf_import("VERSION:4.0\r\nFN:ACME\r\nORG:ACME;\r\n");
+	assert(m != nullptr);
+	if (!vcf_has(*m, fileas, "ACME"))
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
 static int vexport_head()
 {
 	oxcmail_converter cvt;
@@ -1739,6 +1772,7 @@ int main()
 		E(ical_export_exception),
 		E(hdrparse_1),
 		E(vcard_tel_types), E(vcard_escaped_values), E(vcard_photo), E(vcard_dates),
+		E(vcard_fileas_categories),
 		E(vexport_head), E(vexport_simple_body), E(vexport_image),
 		E(vexport_inline_image), E(vexport_recipients),
 		E(vexport_headers), E(vexport_internet_headers),

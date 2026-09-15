@@ -97,6 +97,9 @@ static constexpr proptag_t g_ufld_proptags[] =
 static constexpr proptag_t g_fbl_proptag = 0x8010001F;
 static constexpr proptag_t g_vcarduid_proptag = 0x8011001F;
 static constexpr proptag_t g_hasphoto_proptag = 0x8015000b;
+static constexpr proptag_t g_keywords_proptag = 0x8016101F;
+static constexpr proptag_t g_fileas_proptag = 0x8017001F;
+static constexpr proptag_t g_fileasid_proptag = 0x80180003;
 
 static BOOL oxvcard_check_compatible(const vcard *pvcard)
 {
@@ -125,7 +128,7 @@ static BOOL oxvcard_check_compatible(const vcard *pvcard)
 static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	GET_PROPIDS get_propids)
 {
-	const PROPERTY_NAME bf[22] = {
+	const PROPERTY_NAME bf[25] = {
 	/* 0x0 */
 		{MNID_ID, PSETID_Address, PidLidWorkAddressPostOfficeBox},
 		{MNID_ID, PSETID_Address, PidLidWorkAddressStreet},
@@ -151,6 +154,10 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 		{MNID_ID, PSETID_Address, PidLidEmail2AddressType},
 		{MNID_ID, PSETID_Address, PidLidEmail3AddressType},
 		{MNID_ID, PSETID_Address, PidLidHasPicture},
+		{MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")},
+		{MNID_ID, PSETID_Address, PidLidFileAs},
+	/* 0x18 */
+		{MNID_ID, PSETID_Address, PidLidFileUnderId},
 	};
 	const PROPNAME_ARRAY propnames  {std::size(bf), deconst(bf)};
 	return get_propids(&propnames, ppropids);
@@ -647,7 +654,7 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 			strings_array.count = ptrs.size();
 			strings_array.ppstr = ptrs.data();
 			if (strings_array.count != 0 &&
-			    pmsg->proplist.set(g_categories_proptag, &strings_array) != ecSuccess)
+			    pmsg->proplist.set(g_keywords_proptag, &strings_array) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "NOTE") == 0) {
 			auto pstring = pvline->get_first_subval();
@@ -817,6 +824,11 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 				continue;
 			if (pmsg->proplist.set(PR_ASSISTANT, pstring) != ecSuccess)
 				return imp_null;
+		} else if (strcasecmp(pvline_name, "X-EVOLUTION-FILE-AS") == 0) {
+			auto str = vcard_joined(*pvline);
+			if (!str.empty() &&
+			    pmsg->proplist.set(g_fileas_proptag, str.c_str()) != ecSuccess)
+				return imp_null;
 		} else if (strcasecmp(pvline_name, "FBURL") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
@@ -866,6 +878,24 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 	if (!pmsg->proplist.has(PR_NORMALIZED_SUBJECT)) {
 		auto dn = pmsg->proplist.get<const char>(PR_DISPLAY_NAME);
 		if (dn != nullptr && pmsg->proplist.set(PR_NORMALIZED_SUBJECT, dn) != ecSuccess)
+			return imp_null;
+	}
+	if (!pmsg->proplist.has(g_fileas_proptag)) {
+		/* Like Outlook: "Last, First", else the display name or company */
+		auto sn = pmsg->proplist.get<const char>(PR_SURNAME);
+		auto gn = pmsg->proplist.get<const char>(PR_GIVEN_NAME);
+		std::string fa;
+		if (has_content(sn) && has_content(gn)) {
+			fa = sn + ", "s + gn;
+			uint32_t id = 0x8017;
+			if (pmsg->proplist.set(g_fileasid_proptag, &id) != ecSuccess)
+				return imp_null;
+		} else if (auto dn = pmsg->proplist.get<const char>(PR_DISPLAY_NAME); has_content(dn)) {
+			fa = dn;
+		} else if (auto co = pmsg->proplist.get<const char>(PR_COMPANY_NAME); has_content(co)) {
+			fa = co;
+		}
+		if (!fa.empty() && pmsg->proplist.set(g_fileas_proptag, fa.c_str()) != ecSuccess)
 			return imp_null;
 	}
 	if (!pmsg->proplist.has(PR_CONVERSATION_TOPIC)) {
@@ -1066,7 +1096,11 @@ bool oxvcard_converter::mapi_to_vcard(const message_content &msg, vcard &vcard) 
 		tel_line.append_value(pvalue);
 	}
 	
-	add_string_array(vcard, pmsg->proplist.get<const STRING_ARRAY>(remap_tag(g_categories_proptag)), "CATEGORIES");
+	/* Categories were kept in PidLidCategories until 3.12 */
+	auto cats = pmsg->proplist.get<const STRING_ARRAY>(remap_tag(g_keywords_proptag));
+	if (cats == nullptr)
+		cats = pmsg->proplist.get<const STRING_ARRAY>(remap_tag(g_categories_proptag));
+	add_string_array(vcard, cats, "CATEGORIES");
 	
 	pvalue = pmsg->proplist.get<char>(PR_PROFESSION);
 	if (has_content(pvalue))
@@ -1112,6 +1146,10 @@ bool oxvcard_converter::mapi_to_vcard(const message_content &msg, vcard &vcard) 
 	add_person(vcard, *pmsg, PR_MANAGER_NAME, "X-MS-MANAGER");
 	add_person(vcard, *pmsg, PR_ASSISTANT, "X-MS-ASSISTANT");
 	
+	pvalue = pmsg->proplist.get<char>(remap_tag(g_fileas_proptag));
+	if (has_content(pvalue))
+		vcard.append_line("X-EVOLUTION-FILE-AS", pvalue);
+
 	pvalue = pmsg->proplist.get<char>(remap_tag(g_vcarduid_proptag));
 	if (!has_content(pvalue)) {
 		auto guid = GUID::random_new();
