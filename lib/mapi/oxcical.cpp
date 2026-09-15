@@ -1690,7 +1690,7 @@ static bool oxcical_parse_appt_not_recurring(namemap &phash, uint16_t &last_prop
 	return true;
 }
 
-static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
+static bool oxcical_parse_appointment_recurrence(const APPOINTMENT_RECUR_PAT *apr,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -3308,7 +3308,7 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 }
 
 static bool oxcical_export_rrule(const ical_component *ptz_component,
-    ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
+    ical_component &pcomponent, const APPOINTMENT_RECUR_PAT *apr) try
 {
 	ical_time itime;
 	const char *str_tag;
@@ -3445,7 +3445,7 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 	return false;
 }
 
-static bool oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)
+static bool oxcical_check_exdate(const APPOINTMENT_RECUR_PAT *apr)
 {
 	bool b_found;
 	size_t count = 0;
@@ -3466,7 +3466,7 @@ static bool oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)
 }
 
 static bool oxcical_export_exdate(const char *tzid, bool b_date,
-    ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
+    ical_component &pcomponent, const APPOINTMENT_RECUR_PAT *apr) try
 {
 	bool b_found;
 	ical_time itime;
@@ -3511,7 +3511,7 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	return false;
 }
 
-static bool oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
+static bool oxcical_check_rdate(const APPOINTMENT_RECUR_PAT *apr)
 {
 	size_t count = 0;
 	bool b_found;
@@ -3533,7 +3533,7 @@ static bool oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
 }
 
 static bool oxcical_export_rdate(const char *tzid, bool b_date,
-     ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
+     ical_component &pcomponent, const APPOINTMENT_RECUR_PAT *apr) try
 {
 	bool b_found;
 	ical_time itime;

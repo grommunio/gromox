@@ -24,8 +24,8 @@ namespace {
 
 struct ievent {
 	time_t start_time = 0, end_time = 0;
-	EXCEPTIONINFO *ei = nullptr;
-	EXTENDEDEXCEPTION *xe = nullptr;
+	const EXCEPTIONINFO *ei = nullptr;
+	const EXTENDEDEXCEPTION *xe = nullptr;
 };
 
 struct freebusy_tags {
