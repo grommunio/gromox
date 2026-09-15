@@ -910,7 +910,7 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 			continue;
 		}
 		if (du.DelegatePermissions)
-			changed = ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
+			changed |= ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
 		msg.success();
 		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 	}
