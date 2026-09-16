@@ -1669,6 +1669,31 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		*v = rop_util_current_nttime();
 		dprop.emplace_back(PR_LAST_MODIFICATION_TIME, v);
 	}
+	/*
+	 * The conversation id is derived from the topic below, so the topic
+	 * needs to be resolved before that
+	 */
+	auto cvtopic = sprop.get<char>(PR_CONVERSATION_TOPIC);
+	if (cvtopic == nullptr)
+		cvtopic = sprop.get<char>(PR_CONVERSATION_TOPIC_A);
+	if (cvtopic == nullptr) {
+		const char *pfx = nullptr;
+		proptag_t tag = PR_CONVERSATION_TOPIC;
+		auto norm = sprop.get<char>(PR_NORMALIZED_SUBJECT);
+		auto subj = sprop.get<char>(PR_SUBJECT);
+		if (norm == nullptr && subj == nullptr) {
+			norm = sprop.get<char>(PR_NORMALIZED_SUBJECT_A);
+			subj = sprop.get<char>(PR_SUBJECT_A);
+			tag  = PR_CONVERSATION_TOPIC_A;
+		}
+		if (norm == nullptr && subj != nullptr &&
+		    !cu_rebuild_subjects(subj, pfx, norm))
+			return ecServerOOM;
+		if (norm != nullptr) {
+			cvtopic = norm;
+			dprop.emplace_back(tag, cvtopic);
+		}
+	}
 	auto old_cvindex = sprop.get<BINARY>(PR_CONVERSATION_INDEX);
 	auto new_cvid = cu_alloc<BINARY>();
 	if (new_cvid == nullptr)
@@ -1680,9 +1705,8 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		new_cvid->pv = common_util_alloc(16);
 		if (new_cvid->pv == nullptr)
 			return ecServerOOM;
-		auto pvalue = sprop.get<char>(PR_CONVERSATION_TOPIC);
-		if (pvalue != nullptr && *pvalue != '\0') {
-			if (!message_md5_string(pvalue, new_cvid->pb))
+		if (cvtopic != nullptr && *cvtopic != '\0') {
+			if (!message_md5_string(cvtopic, new_cvid->pb))
 				return ecError;
 		} else {
 			if (!ext_push.init(new_cvid->pb, 16, 0) ||
@@ -1710,19 +1734,6 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 			return ecError;
 		new_cvindex->cb = ext_push.m_offset;
 		dprop.emplace_back(PR_CONVERSATION_INDEX, new_cvindex);
-	}
-	auto pvalue = sprop.get<char>(PR_CONVERSATION_TOPIC);
-	if (pvalue == nullptr)
-		pvalue = sprop.get<char>(PR_CONVERSATION_TOPIC_A);
-	if (NULL == pvalue) {
-		pvalue = sprop.get<char>(PR_NORMALIZED_SUBJECT);
-		if (NULL == pvalue) {
-			pvalue = sprop.get<char>(PR_NORMALIZED_SUBJECT_A);
-			if (pvalue != nullptr)
-				dprop.emplace_back(PR_CONVERSATION_TOPIC_A, pvalue);
-		} else {
-			dprop.emplace_back(PR_CONVERSATION_TOPIC, pvalue);
-		}
 	}
 
 	dst->children.prcpts = src->children.prcpts;
