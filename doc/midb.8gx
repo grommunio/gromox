@@ -118,6 +118,11 @@ temporarily grow to double its size, so ample disk space may be required.)
 Default: \fIyes\fP
 .TP
 \fBmidb_table_size\fP
+Maximum number of message index databases that may be open at any one time.
+When this limit is reached, database access requests can fail until cache
+entries are released. See midb_cache_interval and midb_reload_interval for the
+lifetimes.
+.br
 Default: \fI5000\fP
 .TP
 \fBmidb_threads_num\fP
