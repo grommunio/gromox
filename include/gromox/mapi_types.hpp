@@ -534,6 +534,9 @@ struct GX_EXPORT RECURRENCE_PATTERN {
 	uint32_t startdate = 0, enddate = ENDDATE_MISSING;
 
 	static constexpr uint16_t default_version = 0x3004;
+
+	void sort_dels();
+	void sort_mods();
 };
 
 /* MS-OXCDATA v22.1 §2.2.1.44.2 */
@@ -577,6 +580,7 @@ struct GX_EXPORT APPOINTMENT_RECUR_PAT {
 	static constexpr uint32_t default_writerversion = 0x3009;
 
 	public:
+	void sort_exceptions();
 	inline const EXCEPTIONINFO *exceptions_cbegin() const { return pexceptioninfo; }
 	inline const EXCEPTIONINFO *exceptions_cend() const { return pexceptioninfo + exceptioncount; }
 };

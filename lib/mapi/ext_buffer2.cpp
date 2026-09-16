@@ -449,3 +449,19 @@ std::string GLOBALOBJECTID::third_party_uid() const
 	/* OL trims after first \0 */
 	return std::string(&data.pc[12], strnlen(&data.pc[12], data.cb - 12));
 }
+
+void RECURRENCE_PATTERN::sort_dels()
+{
+	std::sort(pdeletedinstancedates, pdeletedinstancedates + deletedinstancecount);
+}
+
+void RECURRENCE_PATTERN::sort_mods()
+{
+	std::sort(pmodifiedinstancedates, pmodifiedinstancedates + modifiedinstancecount);
+}
+
+void APPOINTMENT_RECUR_PAT::sort_exceptions()
+{
+	std::sort(pexceptioninfo, pexceptioninfo + exceptioncount);
+	std::sort(pextendedexception, pextendedexception + exceptioncount);
+}

@@ -2098,10 +2098,7 @@ void EWSContext::deleteOccurrence(const std::string &dir,
 	rp.pdeletedinstancedates = new_del;
 	++rp.deletedinstancecount;
 
-	/* Sort the deleted dates array */
-	std::sort(rp.pdeletedinstancedates,
-	          rp.pdeletedinstancedates + rp.deletedinstancecount);
-
+	rp.sort_dels();
 	if (!saveRecurBlob(dir, mid, recur_tag, apr))
 		throw DispatchError(E3308);
 }
@@ -2648,8 +2645,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		nd[rp.deletedinstancecount] = basedate;
 		rp.pdeletedinstancedates = nd;
 		++rp.deletedinstancecount;
-		std::sort(rp.pdeletedinstancedates,
-		          rp.pdeletedinstancedates + rp.deletedinstancecount);
+		rp.sort_dels();
 	}
 
 	/* Add to modified instances */
@@ -2664,8 +2660,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		nm[rp.modifiedinstancecount] = basedate;
 		rp.pmodifiedinstancedates = nm;
 		++rp.modifiedinstancecount;
-		std::sort(rp.pmodifiedinstancedates,
-		          rp.pmodifiedinstancedates + rp.modifiedinstancecount);
+		rp.sort_mods();
 	}
 
 	/* Build new EXCEPTIONINFO + EXTENDEDEXCEPTION entries */
@@ -2697,12 +2692,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	apr.pextendedexception = new_ext;
 	apr.exceptioncount = new_exc_count;
 
-	/* Sort exceptions by start time */
-	std::sort(apr.pexceptioninfo,
-	          apr.pexceptioninfo + apr.exceptioncount);
-	std::sort(apr.pextendedexception,
-	          apr.pextendedexception + apr.exceptioncount);
-
+	apr.sort_exceptions();
 	if (!saveRecurBlob(dir, mid, recur_tag, apr))
 		throw DispatchError(E3350);
 }

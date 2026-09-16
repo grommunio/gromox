@@ -2570,10 +2570,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 			ext_exceptions[apr.exceptioncount].enddatetime = minutes;
 			++apr.exceptioncount;
 		}
-		std::sort(deleted_dates, deleted_dates + apr.recur_pat.deletedinstancecount);
-		std::sort(modified_dates, modified_dates + apr.recur_pat.modifiedinstancecount);
-		std::sort(exceptions, exceptions + apr.exceptioncount);
-		std::sort(ext_exceptions, ext_exceptions + apr.exceptioncount);
+		apr.recur_pat.sort_dels();
+		apr.recur_pat.sort_mods();
+		apr.sort_exceptions();
 		if (!oxcical_parse_appointment_recurrence(&apr, phash,
 		    &last_propid, pmsg)) {
 			errstr = "E-2732";
