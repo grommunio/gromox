@@ -251,10 +251,22 @@ pack_result EXT_PULL::g_fb(freebusy_event *fb_event)
 	fb_event->has_details = b;
 
 	if (b) {
-		TRY(g_str(&fb_event->m_id));
-		TRY(g_str(&fb_event->m_subject));
-		fb_event->id = fb_event->m_id.c_str();
-		fb_event->subject = fb_event->m_subject.c_str();
+		TRY(g_bool(&b));
+		if (b) {
+			TRY(g_str(&fb_event->m_id));
+			fb_event->id = fb_event->m_id.c_str();
+		} else {
+			fb_event->m_id.clear();
+			fb_event->id = nullptr;
+		}
+		TRY(g_bool(&b));
+		if (b) {
+			TRY(g_str(&fb_event->m_subject));
+			fb_event->subject = fb_event->m_subject.c_str();
+		} else {
+			fb_event->m_subject.clear();
+			fb_event->subject = nullptr;
+		}
 		TRY(g_bool(&b));
 		if (b) {
 			TRY(g_str(&fb_event->m_location));
@@ -358,8 +370,12 @@ pack_result EXT_PUSH::p_fbevent(const freebusy_event &r)
 	TRY(p_bool(r.has_details));
 	if (!r.has_details)
 		return pack_result::ok;
-	TRY(p_str(r.id));
-	TRY(p_str(r.subject));
+	TRY(p_bool(r.id != nullptr));
+	if (r.id != nullptr)
+		TRY(p_str(r.id));
+	TRY(p_bool(r.subject != nullptr));
+	if (r.subject != nullptr)
+		TRY(p_str(r.subject));
 	TRY(p_bool(r.location != nullptr));
 	if (r.location != nullptr)
 		TRY(p_str(r.location));

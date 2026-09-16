@@ -931,7 +931,6 @@ struct GX_EXPORT freebusy_event {
 	bool has_details = false, is_meeting = false, is_recurring = false;
 	bool is_exception = false, is_reminderset = false, is_private = false;
 	std::string m_id, m_subject, m_location;
-	/* location is optional, but id/subject normally are not. */
 	const char *id = nullptr, *subject = nullptr, *location = nullptr;
 };
 
