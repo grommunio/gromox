@@ -248,7 +248,7 @@ static bool find_recur_times(const ical_component *tzcom,
 		 */
 		auto del_test = [&](uint32_t d) {
 			auto du = rop_util_rtime_to_unix(d);
-			return du - du % 86400 == utnz - utnz % 86400;
+			return du / 86400 == utnz / 86400;
 		};
 		auto &rpat_del = apr.recur_pat;
 		if (std::any_of(rpat_del.pdeletedinstancedates,

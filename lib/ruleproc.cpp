@@ -1903,7 +1903,7 @@ static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
 
 static inline bool same_day(uint32_t a, uint32_t b)
 {
-	return a - a % 1440 == b - b % 1440;
+	return a / 1440 == b / 1440;
 }
 
 /**
