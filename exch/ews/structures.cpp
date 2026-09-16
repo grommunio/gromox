@@ -2012,12 +2012,12 @@ tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
 		return;
 
 	auto &details = CalendarEventDetails.emplace();
-	if (fb_event.id != nullptr)
-		details.ID = fb_event.id;
-	if (fb_event.subject != nullptr)
-		details.Subject = fb_event.subject;
-	if (fb_event.location != nullptr)
-		details.Location = fb_event.location;
+	if (fb_event.id)
+		details.ID = *fb_event.id;
+	if (fb_event.subject)
+		details.Subject = *fb_event.subject;
+	if (fb_event.location)
+		details.Location = *fb_event.location;
 	details.IsMeeting     = fb_event.is_meeting;
 	details.IsRecurring   = fb_event.is_recurring;
 	details.IsException   = fb_event.is_exception;

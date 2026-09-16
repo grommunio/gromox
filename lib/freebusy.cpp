@@ -463,9 +463,12 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		flag = rows.pparray[i]->get<uint8_t>(ptag.recurring);
 
 		// non-recurring appointments
+		using FBE = freebusy_event;
 		if (flag == nullptr || *flag == 0) {
-			fb_data.emplace_back(start_whole, end_whole, busy_type, uid_buf.data(),
-				subject, location, is_meeting, false, false, is_reminder, is_private, detailed);
+			fb_data.emplace_back(start_whole, end_whole,
+				uid_buf.data(), FBE::optnul(subject), FBE::optnul(location),
+				busy_type, is_meeting, false, false,
+				is_reminder, is_private, detailed);
 			continue;
 		}
 		// recurring appointments
@@ -497,8 +500,9 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 
 		for (const auto &event : event_list) {
 			if (event.ei == nullptr || event.xe == nullptr) {
-				fb_data.emplace_back(event.start_time, event.end_time, busy_type,
-					uid_buf.data(), subject, location, is_meeting, TRUE, false,
+				fb_data.emplace_back(event.start_time, event.end_time,
+					uid_buf.data(), FBE::optnul(subject), FBE::optnul(location),
+					busy_type, is_meeting, true, false,
 					is_reminder, is_private, detailed);
 				continue;
 			}
@@ -509,8 +513,9 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 			auto ov_subj     = (event.ei->overrideflags & ARO_SUBJECT)     ? event.xe->subject : subject;
 			auto ov_location = (event.ei->overrideflags & ARO_LOCATION)    ? event.xe->location : location;
 
-			fb_data.emplace_back(event.start_time, event.end_time, ov_busy,
-				uid_buf.data(), ov_subj, ov_location, ov_meeting, TRUE, TRUE,
+			fb_data.emplace_back(event.start_time, event.end_time,
+				uid_buf.data(), FBE::optnul(ov_subj), FBE::optnul(ov_location),
+				ov_busy, ov_meeting, true, true,
 				ov_reminder, is_private, detailed);
 		}
 	}
@@ -521,4 +526,3 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 
 	return ecSuccess;
 }
-

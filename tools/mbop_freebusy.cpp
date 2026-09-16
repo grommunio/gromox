@@ -94,8 +94,10 @@ int main(int argc, char **argv)
 		       "id=%s, subject=\"%s\", location=\"%s\"}}\n",
 		       start_tx, end_tx, e.busy_status, e.has_details,
 		       e.is_meeting, e.is_recurring, e.is_exception,
-		       e.is_reminderset, e.is_private, e.m_id.c_str(),
-		       e.m_subject.c_str(), e.m_location.c_str());
+		       e.is_reminderset, e.is_private,
+		       e.id ? e.id->c_str() : "",
+		       e.subject ? e.subject->c_str() : "",
+		       e.location ? e.location->c_str() : "");
 	}
 	return EXIT_SUCCESS;
 }

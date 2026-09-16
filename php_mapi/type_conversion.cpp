@@ -105,12 +105,12 @@ ec_error_t fb_array_to_php(const std::vector<freebusy_event> &fbs, zval *pzval)
 			add_next_index_zval(pzval, &pzvalfbevent);
 			continue;
 		}
-		if (e.id != nullptr)
-			add_assoc_string(&pzvalfbevent, "id", e.id);
-		if (e.subject != nullptr)
-			add_assoc_string(&pzvalfbevent, "subject", e.subject);
-		if (e.location != nullptr)
-			add_assoc_string(&pzvalfbevent, "location", e.location);
+		if (e.id)
+			add_assoc_stringl(&pzvalfbevent, "id", e.id->c_str(), e.id->size());
+		if (e.subject)
+			add_assoc_stringl(&pzvalfbevent, "subject", e.subject->c_str(), e.subject->size());
+		if (e.location)
+			add_assoc_stringl(&pzvalfbevent, "location", e.location->c_str(), e.location->size());
 		add_assoc_bool(&pzvalfbevent, "meeting", e.is_meeting);
 		add_assoc_bool(&pzvalfbevent, "recurring", e.is_recurring);
 		add_assoc_bool(&pzvalfbevent, "exception", e.is_exception);

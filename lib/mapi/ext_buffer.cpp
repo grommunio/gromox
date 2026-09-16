@@ -3225,31 +3225,3 @@ bool oneoff_to_parts(EXT_PULL &ser, std::string &type, std::string &addr) try
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
-
-freebusy_event::freebusy_event(time_t start, time_t end, uint32_t b_status,
-    const char *ev_id, const char *ev_subject, const char *ev_location,
-    bool ev_meeting, bool ev_recurring, bool ev_exception, bool ev_reminderset,
-    bool ev_private, bool detailed) :
-	start_time(start), end_time(end), busy_status(b_status),
-	has_details(detailed), is_meeting(ev_meeting),
-	is_recurring(ev_recurring), is_exception(ev_exception),
-	is_reminderset(ev_reminderset), is_private(ev_private),
-	m_id(detailed ? znul(ev_id) : ""),
-	m_subject(detailed ? znul(ev_subject) : ""),
-	m_location(detailed ? znul(ev_location) : ""),
-	id(detailed && ev_id != nullptr ? m_id.c_str() : nullptr),
-	subject(detailed && ev_subject != nullptr ? m_subject.c_str() : nullptr),
-	location(detailed && ev_location != nullptr ? m_location.c_str() : nullptr)
-{}
-
-freebusy_event::freebusy_event(const freebusy_event &o) :
-	start_time(o.start_time), end_time(o.end_time),
-	busy_status(o.busy_status), has_details(o.has_details),
-	is_meeting(o.is_meeting), is_recurring(o.is_recurring),
-	is_exception(o.is_exception), is_reminderset(o.is_reminderset),
-	is_private(o.is_private), m_id(o.m_id), m_subject(o.m_subject),
-	m_location(o.m_location),
-	id(o.id != nullptr ? m_id.c_str() : nullptr),
-	subject(o.subject != nullptr ? m_subject.c_str() : nullptr),
-	location(o.location != nullptr ? m_location.c_str() : nullptr)
-{}

@@ -921,17 +921,18 @@ struct GX_EXPORT DOUBLE_ARRAY {
 };
 
 struct GX_EXPORT freebusy_event {
-	freebusy_event() = default;
-	freebusy_event(time_t, time_t, uint32_t, const char *, const char *, const char *, bool, bool, bool, bool, bool, bool);
-	freebusy_event(const freebusy_event &);
-	void operator=(freebusy_event &&) = delete;
+	static std::optional<std::string> optnul(const char *s)
+	{
+		if (s != nullptr)
+			return s;
+		return {};
+	}
 
 	time_t start_time = 0, end_time = 0;
+	std::optional<std::string> id, subject, location;
 	uint32_t busy_status = 0;
 	bool has_details = false, is_meeting = false, is_recurring = false;
 	bool is_exception = false, is_reminderset = false, is_private = false;
-	std::string m_id, m_subject, m_location;
-	const char *id = nullptr, *subject = nullptr, *location = nullptr;
 };
 
 /**
