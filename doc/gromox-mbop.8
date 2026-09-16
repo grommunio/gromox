@@ -18,7 +18,7 @@ on the mailbox.
 Continuous operation mode. If a command in a series (e.g. with foreach.*)
 fails, do not stop.
 .TP
-\fB\-d\fP \fI/var/lib/gromox/user/1/2\fP
+\fB\-d\fP \fI/var/lib/gromox/user/abc@example.com\fP
 Lookup the mailbox parameters from the associated filesystem location.
 .TP
 \fB\-u\fP [\fIuser\fP]\fB@example.com\fP
@@ -418,7 +418,25 @@ Default: \fI0\fP (immediate deletion)
 To process an entire mailbox and wipe everything older than a few days:
 gromox\-mbop \-u abc@example.com purge\-softdelete \-r / \-t 10d
 .SH recalc\-sizes
-Recalculates the store size.
+.SS Synopsis
+\fBrecalc\-sizes\fP
+.SS Description
+Rebuilds the mailbox's stored size totals by summing the message sizes
+recorded in its database. It updates the total, normal message and associated
+message (FAI) size properties, including soft-deleted messages. Associated
+messages hold hidden folder data such as rules and settings.
+.PP
+Use this command when mailbox size accounting is inconsistent, for example
+after a database repair that changed message records without updating the
+store totals. It prints the old and new totals in bytes, with separate normal
+and FAI values, so the result can be compared.
+.PP
+The command uses existing per-message sizes. It does not recalculate those
+sizes from message content, measure filesystem usage, nor reclaim disk space.
+.SS Example
+.EX
+gromox\-mbop \-u abc@example.com recalc\-sizes
+.EE
 .SH set\-locale
 .SS Synopsis
 \fBset\-locale\fP [\fB\-Tv\fP] \-l\fP \fIid\fP

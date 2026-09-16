@@ -25,7 +25,7 @@ Dump more data.
 Default: \fI0\fP
 .TP
 \fBx500_org_name\fP
-Default: (unspecified)
+See gromox.cfg(5):x500_org_name.
 .SH Notes
 A number of properties are always synthesized by exchange_nsp and
 never read from any storage; this includes key properties such as

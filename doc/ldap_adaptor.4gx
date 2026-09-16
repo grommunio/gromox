@@ -59,12 +59,14 @@ Password for Simple Authentication of ldap_bind_user.
 Default: (unset)
 .TP
 \fBldap_host\fP
-Whitespace-separated set of LDAP URIs in the form of
-\fIldap[si]://[name[:port]]\fP for the default LDAP tree. The openldap2
-ldap.conf(5) manpage does not
+Whitespace-separated set of LDAP URIs for the default LDAP tree. The form is
+\fBldap\fP[\fBs\fP]\fB://\fP[\fIname\fP[\fB:\fP\fIport\fP]] or
+\fBldapi://\fP[\fIpath\fP], the latter being a Unix domain socket
+specification, whose path, if specified, needs to be percent-encoded. The
+openldap2 ldap.conf(5) manpage does not
 specify trailing slashes or DN bases like RFC 2255 does, and because of this,
 you should not use them. openldap2 utilities accept-ignore such part of the
-URI, while other implementations like python\-ldap3 fail to connect.
+URI, while other implementations like python-ldap3 fail to connect.
 Per-organization LDAP credentials override ldap_host as necessary.
 .br
 Default: (libldap default, see ldap.conf(5))

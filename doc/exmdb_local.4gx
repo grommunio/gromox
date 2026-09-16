@@ -55,7 +55,7 @@ Default: \fI3min\fP
 Default: \fI30\fP
 .TP
 \fBx500_org_name\fP
-Default: (unspecified)
+See gromox.cfg(5):x500_org_name.
 .SH Notes
 Out-of-office replies are only generated when one of the recipient's
 addresses (primary or alias) appears in the To, Cc or Bcc line of the
