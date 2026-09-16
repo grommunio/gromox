@@ -4060,8 +4060,9 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	}
 
 	mlog(LV_INFO,
-		"gromox-audit: %s sent message \"%s\"%s via EWS",
-		znul(actor), znul(subject), representation.c_str());
+		"gromox-audit: %s sent message \"%s\"%s in mailbox %s via EWS",
+		znul(actor), znul(subject), representation.c_str(),
+		znul(m_auth_info.username));
 }
 
 /**
