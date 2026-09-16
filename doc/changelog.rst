@@ -29,9 +29,18 @@ Enhancements:
 
 Fixes:
 
+* A delegate's answer to a meeting invitation is sent in the name of the
+  mailbox it was addressed to, rather than the delegate's own, so the organizer
+  sees the invited attendee respond.
+* Meeting replies carry the ORGANIZER property that RFC 5546 asks for, and name
+  the delegate who answered in the attendee's SENT-BY parameter.
 * emsmdb: Opening a folder that has no contents no longer misses notifications.
 * The rule processor executes Extended Rules' OP_MOVE/OP_COPY now and matches
   string restrictions across PT_STRING8↔PT_UNICODE.
+* zcore: When folder permissions are updated, the updated delegate list for
+  exmdb is now constructed from PR_SCHDINFO_DELEGATE_ENTRYIDS rather than the
+  recipients of the "Schedule+ EMS Interface" rule, so that delegates who are
+  to not receive meeting copies actually get delegate permissions.
 * During MAPI-to-iCalender conversions, TZID is now omitted when exporting
   timeless DATE values.
 * Repaired some instances where the by-time message lookup index would go out

@@ -65,18 +65,14 @@ details. (Inquiry of public stores are always permitted.)
 Default: \fIyes\fP
 .TP
 \fBx500_org_name\fP
-Same as gromox.cfg:x500_org_name.
-.br
-Default: (unspecified)
+See gromox.cfg(5):x500_org_name.
 .SH Configuration directives (autodiscover.cfg)
 The following directives are recognized when they appear in
 /etc/gromox/autodiscover.cfg. autodiscover.cfg is obsolete in favor of
 gromox.cfg.
 .TP
 \fBx500_org_name\fP
-Same as gromox.cfg:x500_org_name.
-.br
-Default: (unspecified)
+See gromox.cfg(5):x500_org_name.
 .SH Configuration directives (autodiscover.ini)
 The following directives are recognized when they appear in
 /etc/gromox/autodiscover.ini. autodiscover.ini is obsolete in favor of

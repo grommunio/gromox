@@ -68,7 +68,7 @@ static constexpr generic_module g_dfl_svc_plugins[] = {
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "midb_fd_limit", CFG_ALIAS},
-	{"malloc_trim_interval", "10min", CFG_TIME, "0"},
+	{"malloc_trim_interval", "10min", CFG_TIME},
 	{"midb_fd_limit", "0", CFG_SIZE},
 	{"midb_sqlite_busy_timeout", "60s", CFG_TIME_NS, "0s", "1h"},
 	CFG_TABLE_END,
@@ -84,9 +84,9 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"midb_log_level", "4" /* LV_NOTICE */},
 	{"midb_reload_interval", "60min", CFG_TIME, "1min", "1year"},
 	{"midb_schema_upgrades", "auto"},
-	{"midb_table_size", "5000", CFG_SIZE, "100", "50000"},
-	{"midb_threads_num", "100", CFG_SIZE, "20", "1000"},
-	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
+	{"midb_table_size", "5000", CFG_SIZE},
+	{"midb_threads_num", "100", CFG_SIZE},
+	{"rpc_proxy_connection_num", "10", CFG_SIZE},
 	{"sqlite_debug", "0"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,

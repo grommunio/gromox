@@ -82,7 +82,7 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"http_fd_limit", "0", CFG_SIZE},
 	{"http_remote_host_hdr", ""},
 	{"istore_standalone", "0"},
-	{"malloc_trim_interval", "10min", CFG_TIME, "0"},
+	{"malloc_trim_interval", "10min", CFG_TIME},
 	CFG_TABLE_END,
 };
 
@@ -103,11 +103,11 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_krb_service_principal", ""},
 	{"http_log_file", "-"},
 	{"http_log_level", "4" /* LV_NOTICE */},
-	{"http_rqbody_flush_size", "512K", CFG_SIZE, "0"},
+	{"http_rqbody_flush_size", "512K", CFG_SIZE},
 	{"http_rqbody_max_size", "50M", CFG_SIZE, "1"},
 	{"http_support_ssl", "http_support_tls", CFG_ALIAS},
 	{"http_support_tls", "false", CFG_BOOL},
-	{"http_thread_charge_num", "20", CFG_SIZE, "4"},
+	{"http_thread_charge_num", "20", CFG_SIZE},
 	{"http_thread_init_num", "5", CFG_SIZE},
 	{"listen_port", "http_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "http_listen_tls_port", CFG_ALIAS},

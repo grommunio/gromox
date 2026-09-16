@@ -138,7 +138,7 @@ Default: \fI0\fP
 Default: \fI/usr/bin/php /usr/share/gromox/submit.php\fP
 .TP
 \fBx500_org_name\fP
-Default: (unspecified)
+See gromox.cfg(5):x500_org_name.
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification

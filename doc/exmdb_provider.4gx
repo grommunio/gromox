@@ -5,7 +5,7 @@
 exmdb_provider \(em Gromox Information Store
 .SH Description
 exmdb_provider is the mailbox engine. It offers a plethora of stateless
-low-level functions (124 of them) for operating on mailbox stores. The
+low-level functions (about 150) for operating on mailbox stores. The
 functionality of the engine is exposed by way of a Gromox-specific network
 protocol on port 5000.
 .PP
@@ -38,7 +38,7 @@ Log ICS/synchronization requests (and their results) to this file. The
 value \fI-\fP selects standard error instead of a file. An empty value
 disables the dump.
 .br
-Default: \fI(empty)\fP
+Default: (empty)
 .TP
 \fBexmdb_optimize_stm\fP
 A debug knob to turn on/off a specific subset of the SQLite prepared
@@ -276,8 +276,7 @@ Maximum number of concurrently active mailboxes.
 Default: \fI5000\fP
 .TP
 \fBx500_org_name\fP
-.br
-Default: (unspecified)
+See gromox.cfg(5):x500_org_name.
 .SH Sharding / Multiple Home Server Cluster
 Each exmdb_provider (server) instance evalutes the SQL columns
 \fBusers.homeserver\fP/\fBservers.hostname\fP for private stores and

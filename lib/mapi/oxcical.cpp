@@ -47,6 +47,7 @@ static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 static constexpr char fmt_date[] = "%04d%02d%02d",
 	fmt_datetimelcl[] = "%04d%02d%02dT%02d%02d%02d",  /* needs buf[16] */
 	fmt_datetimeutc[] = "%04d%02d%02dT%02d%02d%02dZ"; /* needs buf[17] */
+static constexpr size_t appt_max_exceptions = 1024;
 
 static ec_error_t namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
@@ -285,10 +286,13 @@ static bool oxcical_timezonestruct_to_binary(const TZSTRUCT &s, BINARY *pbin)
 
 /**
  * Breakdown RRULE into a MAPI recurrence pattern.
+ * @apr: blank RECUR_PAT to fill in
+ *
  * MS-OXOCAL v21 §2.1.3.2.2 specifies limitations, and not all RFC 5545
  * documents can be converted into MAPI.
  *
  * On success, returns %nullptr. On error, the error indicator string is returned.
+ * @apr will not be filled with any exceptions.
  */
 static const char *oxcical_parse_rrule(const ical_component *tzcom,
     const ical_line &iline, uint16_t calendartype, time_t start_time,
@@ -328,10 +332,10 @@ static const char *oxcical_parse_rrule(const ical_component *tzcom,
 	if (b_exceptional && !irrule.iterate())
 		return "E-2807";
 	ical_time itime_base = irrule.base_itime, itime_first = irrule.instance_itime;
-	apr->readerversion2 = 0x3006;
-	apr->writerversion2 = 0x3009;
-	apr->recur_pat.readerversion = 0x3004;
-	apr->recur_pat.writerversion = 0x3004;
+	apr->readerversion2 = apr->default_readerversion;
+	apr->writerversion2 = apr->default_writerversion;
+	apr->recur_pat.readerversion = apr->recur_pat.default_version;
+	apr->recur_pat.writerversion = apr->recur_pat.default_version;
 	apr->recur_pat.slidingflag = 0;
 	apr->recur_pat.firstdow = irrule.weekstart;
 	auto itime = irrule.instance_itime;
@@ -1116,16 +1120,15 @@ static bool oxcical_set_stateflags(const char *method,
 }
 
 static bool oxcical_parse_dates(const ical_component *ptz_component,
-    const ical_line &iline, uint32_t *pcount, uint32_t *pdates)
+    const ical_line &iline, std::vector<uint32_t> &dates)
 {
 	time_t tmp_time;
-	uint32_t tmp_date;
 	const char *pvalue;
 
 	auto piline = &iline;
 	if (piline->value_list.size() == 0)
 		return true;
-	*pcount = 0;
+	dates.clear();
 	auto &pivalue = piline->value_list.front();
 	pvalue = piline->get_first_paramval("VALUE");
 	if (pvalue == nullptr || strcasecmp(pvalue, "DATE-TIME") == 0) {
@@ -1145,14 +1148,12 @@ static bool oxcical_parse_dates(const ical_component *ptz_component,
 			itime.minute = 0;
 			itime.second = 0;
 			ical_itime_to_utc(nullptr, itime, &tmp_time);
-			tmp_date = rop_util_unix_to_rtime(tmp_time);
-			for (size_t i = 0; i < *pcount; ++i)
-				if (tmp_date == pdates[i])
-					return true;
-			pdates[*pcount] = tmp_date;
-			(*pcount) ++;
-			if (*pcount >= 1024)
+			auto tmp_date = rop_util_unix_to_rtime(tmp_time);
+			if (std::find(dates.cbegin(), dates.cend(), tmp_date) != dates.cend())
 				return true;
+			if (dates.size() >= appt_max_exceptions)
+				return true;
+			dates.emplace_back(tmp_date);
 		}
 	} else if (0 == strcasecmp(pvalue, "DATE")) {
 		for (const auto &pnv2 : pivalue.subval_list) {
@@ -1161,11 +1162,10 @@ static bool oxcical_parse_dates(const ical_component *ptz_component,
 			ical_time itime{};
 			if (!itime.assign_date(pnv2.c_str()))
 				continue;
-			ical_itime_to_utc(nullptr, itime, &tmp_time);
-			pdates[*pcount] = rop_util_unix_to_rtime(tmp_time);
-			(*pcount) ++;
-			if (*pcount >= 1024)
+			if (dates.size() >= appt_max_exceptions)
 				return true;
+			ical_itime_to_utc(nullptr, itime, &tmp_time);
+			dates.emplace_back(rop_util_unix_to_rtime(tmp_time));
 		}
 	} else {
 		return false;
@@ -1316,8 +1316,8 @@ static bool oxcical_parse_uid(const ical_component &main_event,
 
 static bool oxcical_parse_location(const ical_component &main_event,
     namemap &phash, uint16_t *plast_propid, EXT_BUFFER_ALLOC alloc,
-	MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception,
-	EXTENDEDEXCEPTION *pext_exception)
+    MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception,
+    EXTENDEDEXCEPTION *pext_exception) try
 {
 	auto piline = main_event.get_line("LOCATION");
 	if (piline == nullptr)
@@ -1361,16 +1361,13 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	(*plast_propid) ++;
 	if (pexception != nullptr && pext_exception != nullptr) {
 		pexception->overrideflags |= ARO_LOCATION;
-		pexception->location = static_cast<char *>(alloc(tmp_len + 1));
-		if (pexception->location == nullptr)
-			return false;
-		strcpy(pexception->location, tmp_buff);
-		pext_exception->location = static_cast<char *>(alloc(tmp_len + 1));
-		if (pext_exception->location == nullptr)
-			return false;
-		strcpy(pext_exception->location, tmp_buff);
+		pexception->location = tmp_buff;
+		pext_exception->location = tmp_buff;
 	}
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM\n", __func__);
+	return false;
 }
 
 static bool oxcical_parse_organizer(const ical_component &main_event,
@@ -1488,52 +1485,52 @@ static ol_busy_status lookup_busy_by_name(const char *s)
 {
 	auto it = std::find_if(std::cbegin(busy_status_names), std::cend(busy_status_names),
 	          [&](const auto &p) { return strcasecmp(p.second, s) == 0; });
-	return it != std::cend(busy_status_names) ? it->first : olIndeterminate;
+	return it != std::cend(busy_status_names) ? it->first : olBusyUnspecified;
 }
 
 static ol_busy_status lookup_busy_by_name(const ical_line *l)
 {
 	if (l == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	auto v = l->get_first_subvalue();
-	return v != nullptr ? lookup_busy_by_name(v) : olIndeterminate;
+	return v != nullptr ? lookup_busy_by_name(v) : olBusyUnspecified;
 }
 
 static ol_busy_status lookup_busy_by_transp(const ical_line *l)
 {
 	if (l == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	auto v = l->get_first_subvalue();
 	if (v == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	if (strcasecmp(v, "TRANSPARENT") == 0)
 		return olFree;
 	if (strcasecmp(v, "OPAQUE") == 0)
 		return olBusy;
-	return olIndeterminate;
+	return olBusyUnspecified;
 }
 
 static ol_busy_status lookup_busy_by_status(const ical_line *l)
 {
 	if (l == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	auto v = l->get_first_subvalue();
 	if (v == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	if (strcasecmp(v, "CANCELLED") == 0)
 		return olFree;
 	if (strcasecmp(v, "TENTATIVE") == 0)
 		return olTentative;
 	if (strcasecmp(v, "CONFIRMED") == 0)
 		return olBusy;
-	return olIndeterminate;
+	return olBusyUnspecified;
 }
 
 static bool oxcical_set_busystatus(ol_busy_status busy_status,
     uint32_t pidlid, namemap &phash, uint16_t *plast_propid,
     MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
 {
-	if (busy_status == olIndeterminate)
+	if (busy_status == olBusyUnspecified)
 		return true;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, pidlid};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
@@ -1550,7 +1547,7 @@ static bool oxcical_set_busystatus(ol_busy_status busy_status,
 
 static bool oxcical_parse_summary(const ical_component &main_event,
     MESSAGE_CONTENT *pmsg, EXT_BUFFER_ALLOC alloc, EXCEPTIONINFO *pexception,
-	EXTENDEDEXCEPTION *pext_exception)
+    EXTENDEDEXCEPTION *pext_exception) try
 {
 	auto piline = main_event.get_line("SUMMARY");
 	if (piline == nullptr)
@@ -1580,16 +1577,13 @@ static bool oxcical_parse_summary(const ical_component &main_event,
 		return false;
 	if (pexception != nullptr && pext_exception != nullptr) {
 		pexception->overrideflags |= ARO_SUBJECT;
-		pexception->subject = static_cast<char *>(alloc(tmp_len + 1));
-		if (pexception->subject == nullptr)
-			return false;
-		strcpy(pexception->subject, tmp_buff);
-		pext_exception->subject = static_cast<char *>(alloc(tmp_len + 1));
-		if (pext_exception->subject == nullptr)
-			return false;
-		strcpy(pext_exception->subject, tmp_buff);
+		pexception->subject = tmp_buff;
+		pext_exception->subject = tmp_buff;
 	}
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM\n", __func__);
+	return false;
 }
 
 static bool oxcical_parse_ownerapptid(const ical_component &main_event,
@@ -1689,7 +1683,7 @@ static bool oxcical_parse_appt_not_recurring(namemap &phash, uint16_t &last_prop
 	return true;
 }
 
-static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
+static bool oxcical_parse_appointment_recurrence(const APPOINTMENT_RECUR_PAT *apr,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -2149,8 +2143,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 	if (pmain_event == nullptr)
 		return ecInvalidParam;
 	if (pexception != nullptr && pext_exception != nullptr) {
-		memset(pexception, 0, sizeof(EXCEPTIONINFO));
-		memset(pext_exception, 0, sizeof(EXTENDEDEXCEPTION));
+		*pexception = {};
+		*pext_exception = {};
 		pext_exception->changehighlight.size = sizeof(uint32_t);
 	}
 	auto err = oxcical_parse_recipients(*pmain_event, username_to_entryid, pmsg);
@@ -2387,17 +2381,17 @@ static ec_error_t oxcical_import_internal(const char *method,
 	auto intent_status = lookup_busy_by_name(piline);
 	if (method != nullptr && strcasecmp(method, "REQUEST") == 0) {
 		/* OXCICAL v11 pg 73 */
-		if (intent_status == olIndeterminate) {
+		if (intent_status == olBusyUnspecified) {
 			intent_status = busy_status;
-			if (intent_status == olIndeterminate) {
+			if (intent_status == olBusyUnspecified) {
 				intent_status = olBusy;
 				busy_status = olTentative;
 			}
 		}
 	}
-	if (busy_status == olIndeterminate)
+	if (busy_status == olBusyUnspecified)
 		busy_status = lookup_busy_by_transp(pmain_event->get_line("TRANSP"));
-	if (busy_status == olIndeterminate)
+	if (busy_status == olBusyUnspecified)
 		busy_status = lookup_busy_by_status(pmain_event->get_line("STATUS"));
 	/*
 	 * N.B.: This edits the MAPI message destined for the Inbox folder; it is not
@@ -2439,36 +2433,27 @@ static ec_error_t oxcical_import_internal(const char *method,
 			return ecInvalidParam;
 		}
 
-		uint32_t deleted_dates[1024], modified_dates[1024];
-		EXCEPTIONINFO exceptions[1024];
-		EXTENDEDEXCEPTION ext_exceptions[1024];
-		APPOINTMENT_RECUR_PAT apr{};
-
-		apr.recur_pat.deletedinstancecount = 0;
-		apr.recur_pat.pdeletedinstancedates = deleted_dates;
-		apr.recur_pat.modifiedinstancecount = 0;
-		apr.recur_pat.pmodifiedinstancedates = modified_dates;
-		apr.exceptioncount = 0;
-		apr.pexceptioninfo = exceptions;
-		apr.pextendedexception = ext_exceptions;
+		APPOINTMENT_RECUR_PAT apr;
 		auto ers = oxcical_parse_rrule(ptz_component, *piline,
 		           calendartype, start_time, duration_min, &apr);
 		if (ers != nullptr) {
 			errstr = ers;
 			return ecInvalidParam;
 		}
+		assert(apr.pexceptioninfo.empty());
+		assert(apr.pextendedexception.empty());
 		piline = pmain_event->get_line("EXDATE");
 		if (piline == nullptr)
 			piline = pmain_event->get_line("X-MICROSOFT-EXDATE");
 		if (piline != nullptr && !oxcical_parse_dates(ptz_component,
-		    *piline, &apr.recur_pat.deletedinstancecount, deleted_dates)) {
+		    *piline, apr.recur_pat.pdeletedinstancedates)) {
 			errstr = "E-2719";
 			return ecInvalidParam;
 		}
 		piline = pmain_event->get_line("RDATE");
 		if (piline != nullptr) {
 			if (!oxcical_parse_dates(ptz_component, *piline,
-			    &apr.recur_pat.modifiedinstancecount, modified_dates)) {
+			    apr.recur_pat.pmodifiedinstancedates)) {
 				errstr = "E-2720";
 				return ecInvalidParam;
 			}
@@ -2479,22 +2464,28 @@ static ec_error_t oxcical_import_internal(const char *method,
 			 * would otherwise read deleted_dates beyond what
 			 * EXDATE supplied.
 			 */
-			if (apr.recur_pat.modifiedinstancecount > apr.recur_pat.deletedinstancecount) {
+			if (apr.recur_pat.pmodifiedinstancedates.size() >
+			    apr.recur_pat.pdeletedinstancedates.size()) {
 				errstr = "E-2721: ical object has more RDATE than EXDATE values";
 				return ecInvalidParam;
+			} else if (apr.pexceptioninfo.size() !=
+			    apr.recur_pat.pmodifiedinstancedates.size()) {
+				errstr = "E-2724: ical object did not meet condition #apr.exceptions == #apr.recur_pat.pmodifiedinstancedates";
+				return ecInvalidParam;
 			}
-			apr.exceptioncount = apr.recur_pat.modifiedinstancecount;
-			for (size_t i = 0; i < apr.exceptioncount; ++i) {
-				memset(exceptions + i, 0, sizeof(EXCEPTIONINFO));
-				memset(ext_exceptions + i, 0, sizeof(EXTENDEDEXCEPTION));
-				ext_exceptions[i].startdatetime = exceptions[i].startdatetime = modified_dates[i];
-				ext_exceptions[i].enddatetime = exceptions[i].enddatetime = modified_dates[i] + (end_time - start_time)/60;
-				ext_exceptions[i].originalstartdate = exceptions[i].originalstartdate = deleted_dates[i];
-				exceptions[i].overrideflags = 0;
-				ext_exceptions[i].changehighlight.size = sizeof(uint32_t);
+			for (size_t i = 0; i < apr.pexceptioninfo.size(); ++i) {
+				auto &a = apr.pexceptioninfo[i];
+				auto &b = apr.pextendedexception[i];
+				a = {};
+				b = {};
+				b.startdatetime = a.startdatetime = apr.recur_pat.pmodifiedinstancedates[i];
+				b.enddatetime = a.enddatetime = apr.recur_pat.pmodifiedinstancedates[i] + (end_time - start_time) / 60;
+				b.originalstartdate = a.originalstartdate = apr.recur_pat.pdeletedinstancedates[i];
+				a.overrideflags = 0;
+				b.changehighlight.size = sizeof(uint32_t);
 			}
 		} else {
-			apr.exceptioncount = 0;
+			apr.pexceptioninfo.clear();
 		}
 
 		ATTACHMENT_LIST *pattachments = nullptr;
@@ -2524,11 +2515,12 @@ static ec_error_t oxcical_import_internal(const char *method,
 
 			event_list_t tmp_list;
 			tmp_list.push_back(event);
+			EXCEPTIONINFO ei_new;
+			EXTENDEDEXCEPTION ee_new;
 			err = oxcical_import_internal(method, false,
 			      calendartype, pical, tmp_list, alloc, get_propids,
 			      username_to_entryid, pembedded, &start_itime,
-			      &end_itime, exceptions + apr.exceptioncount,
-			      ext_exceptions + apr.exceptioncount, errstr);
+			      &end_itime, &ei_new, &ee_new, errstr);
 			if (err != ecSuccess)
 				return err;
 			if (!oxcical_parse_exceptional_attachment(pattachment,
@@ -2548,34 +2540,32 @@ static ec_error_t oxcical_import_internal(const char *method,
 				return err;
 			}
 			auto minutes = rop_util_unix_to_rtime(tmp_time);
-			size_t i;
-			for (i = 0; i < apr.recur_pat.deletedinstancecount; ++i)
-				if (deleted_dates[i] == minutes)
-					break;
-			if (i < apr.recur_pat.deletedinstancecount)
+			if (apr.recur_pat.contains_del(minutes))
 				continue;
-			deleted_dates[apr.recur_pat.deletedinstancecount++] = minutes;
-			if (apr.recur_pat.deletedinstancecount >= 1024) {
-				errstr = "E-2731";
+			if (apr.recur_pat.pdeletedinstancedates.size() >= appt_max_exceptions) {
+				errstr = "E-2731: That appointment has too many deleted instances for this implementation";
 				return ecInvalidParam;
 			}
-			exceptions[apr.exceptioncount].originalstartdate = minutes;
-			ext_exceptions[apr.exceptioncount].originalstartdate = minutes;
+			apr.recur_pat.pdeletedinstancedates.emplace_back(minutes);
+			ei_new.originalstartdate = minutes;
+			ee_new.originalstartdate = minutes;
 			ical_itime_to_utc(nullptr, start_itime, &tmp_time);
 			minutes = rop_util_unix_to_rtime(tmp_time);
-			modified_dates[apr.recur_pat.modifiedinstancecount++] = minutes;
-			exceptions[apr.exceptioncount].startdatetime = minutes;
-			ext_exceptions[apr.exceptioncount].startdatetime = minutes;
+			apr.recur_pat.pmodifiedinstancedates.emplace_back(minutes);
+			ei_new.startdatetime = minutes;
+			ee_new.startdatetime = minutes;
 			ical_itime_to_utc(nullptr, end_itime, &tmp_time);
 			minutes = rop_util_unix_to_rtime(tmp_time);
-			exceptions[apr.exceptioncount].enddatetime = minutes;
-			ext_exceptions[apr.exceptioncount].enddatetime = minutes;
-			++apr.exceptioncount;
+			ei_new.enddatetime = minutes;
+			ee_new.enddatetime = minutes;
+
+			apr.pexceptioninfo.emplace_back(std::move(ei_new));
+			apr.pextendedexception.emplace_back(std::move(ee_new));
+			assert(apr.pexceptioninfo.size() == apr.pextendedexception.size());
 		}
-		std::sort(deleted_dates, deleted_dates + apr.recur_pat.deletedinstancecount);
-		std::sort(modified_dates, modified_dates + apr.recur_pat.modifiedinstancecount);
-		std::sort(exceptions, exceptions + apr.exceptioncount);
-		std::sort(ext_exceptions, ext_exceptions + apr.exceptioncount);
+		apr.recur_pat.sort_dels();
+		apr.recur_pat.sort_mods();
+		apr.sort_exceptions();
 		if (!oxcical_parse_appointment_recurrence(&apr, phash,
 		    &last_propid, pmsg)) {
 			errstr = "E-2732";
@@ -3258,6 +3248,15 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 			return true;
 		auto piline = &pevent_component.append_line("ATTENDEE");
 		piline->append_param("PARTSTAT", partstat);
+		/*
+		 * Somebody other than the attendee submitted the answer, i.e. a
+		 * delegate acting for the mailbox (RFC 5545 §3.2.18).
+		 */
+		auto sentby = pmsg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+		if (sentby != nullptr && strcasecmp(sentby, str) != 0) {
+			snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", sentby);
+			piline->append_param("SENT-BY", tmp_value);
+		}
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
 		piline->append_value(nullptr, tmp_value);
 		return true;
@@ -3301,7 +3300,7 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 }
 
 static bool oxcical_export_rrule(const ical_component *ptz_component,
-    ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
+    ical_component &pcomponent, const APPOINTMENT_RECUR_PAT *apr) try
 {
 	ical_time itime;
 	const char *str_tag;
@@ -3438,30 +3437,22 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 	return false;
 }
 
-static bool oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)
+static bool oxcical_emit_exdates(const APPOINTMENT_RECUR_PAT &apr)
 {
-	bool b_found;
-	size_t count = 0;
-	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
-		b_found = false;
-		for (size_t j = 0; j < apr->exceptioncount; ++j) {
-			if (apr->recur_pat.pdeletedinstancedates[i]
-				== apr->pexceptioninfo[j].originalstartdate &&
-				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = true;
-				break;
-			}
-		}
-		if (!b_found)
-			count ++;
-	}
-	return count != 0;
+	return std::any_of(apr.recur_pat.pdeletedinstancedates.cbegin(),
+	       apr.recur_pat.pdeletedinstancedates.cend(),
+	       [&](uint32_t di) {
+	       	return std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
+	       	       [di](const EXCEPTIONINFO &j) {
+	       	       	return j.originalstartdate == di && j.overrideflags != 0;
+	       	       });
+	       });
+	return false;
 }
 
 static bool oxcical_export_exdate(const char *tzid, bool b_date,
-    ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
+    ical_component &pcomponent, const APPOINTMENT_RECUR_PAT *apr) try
 {
-	bool b_found;
 	ical_time itime;
 	char tmp_buff[1024];
 	ical_line *piline;
@@ -3477,19 +3468,14 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 		piline->append_param("VALUE", "DATE");
 	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
-	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
-		b_found = false;
-		for (size_t j = 0; j < apr->exceptioncount; ++j) {
-			if (apr->recur_pat.pdeletedinstancedates[i]
-				== apr->pexceptioninfo[j].originalstartdate &&
-				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = true;
-				break;
-			}
-		}
-		if (b_found)
+	for (auto di : apr->recur_pat.pdeletedinstancedates) {
+		auto found = std::any_of(apr->pexceptioninfo.cbegin(), apr->pexceptioninfo.cend(),
+		             [di](const EXCEPTIONINFO &j) {
+		             	return j.originalstartdate == di && j.overrideflags != 0;
+		             });
+		if (found)
 			continue;
-		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(apr->recur_pat.pdeletedinstancedates[i] + apr->starttimeoffset), &itime);
+		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(di + apr->starttimeoffset), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else if (tzid == nullptr || itime.type == itime_type::utc)
@@ -3504,31 +3490,21 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	return false;
 }
 
-static bool oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
+static bool oxcical_emit_rdates(const APPOINTMENT_RECUR_PAT &apr)
 {
-	size_t count = 0;
-	bool b_found;
-
-	for (size_t i = 0; i < apr->recur_pat.modifiedinstancecount; ++i) {
-		b_found = false;
-		for (size_t j = 0; j < apr->exceptioncount; ++j) {
-			if (apr->recur_pat.pmodifiedinstancedates[i]
-				== apr->pexceptioninfo[j].startdatetime &&
-				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = true;
-				break;
-			}
-		}
-		if (!b_found)
-			count ++;
-	}
-	return count != 0;
+	return std::any_of(apr.recur_pat.pmodifiedinstancedates.cbegin(),
+	       apr.recur_pat.pmodifiedinstancedates.cend(),
+	       [&](uint32_t mi) {
+	       	return std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
+	       	       [mi](const EXCEPTIONINFO &j) {
+	       	       	return j.startdatetime == mi && j.overrideflags != 0;
+	       	       });
+	       });
 }
 
 static bool oxcical_export_rdate(const char *tzid, bool b_date,
-     ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
+     ical_component &pcomponent, const APPOINTMENT_RECUR_PAT *apr) try
 {
-	bool b_found;
 	ical_time itime;
 	char tmp_buff[1024];
 
@@ -3538,19 +3514,14 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 		piline->append_param("VALUE", "DATE");
 	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
-	for (size_t i = 0; i < apr->recur_pat.modifiedinstancecount; ++i) {
-		b_found = false;
-		for (size_t j = 0; j < apr->exceptioncount; ++j) {
-			if (apr->recur_pat.pmodifiedinstancedates[i]
-				== apr->pexceptioninfo[j].startdatetime &&
-				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = true;
-				break;
-			}
-		}
-		if (b_found)
+	for (auto mi : apr->recur_pat.pmodifiedinstancedates) {
+		auto found = std::any_of(apr->pexceptioninfo.cbegin(), apr->pexceptioninfo.cend(),
+		             [mi](const EXCEPTIONINFO &j) {
+		             	return j.startdatetime == mi && j.overrideflags != 0;
+		             });
+		if (found)
 			continue;
-		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(apr->recur_pat.pmodifiedinstancedates[i]), &itime);
+		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(mi), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else if (tzid == nullptr || itime.type == itime_type::utc)
@@ -3591,6 +3562,33 @@ static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
 	str = msg.proplist.get<char>(PR_SENT_REPRESENTING_NAME);
 	if (str != nullptr)
 		line->append_param("CN", str);
+}
+
+/**
+ * The organizer of a reply is whoever the reply is addressed to. A response
+ * message carries no organizer of its own — oxcical_parse_organizer discards
+ * the ORGANIZER line of an incoming REPLY for that very reason — so the
+ * recipient table is the only place left to read it from.
+ */
+static void oxcical_export_organizer_rcpt(const MESSAGE_CONTENT &msg,
+    ical_component &com, const char *org_name, cvt_id2user id2user)
+{
+	if (msg.children.prcpts == nullptr)
+		return;
+	for (const auto &rcpt : *msg.children.prcpts) {
+		auto rcpttype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rcpttype != nullptr && *rcpttype != MAPI_TO)
+			continue;
+		std::string username;
+		if (!oxcmail_get_smtp_address(rcpt, nullptr /* tags_self */,
+		    org_name, id2user, username))
+			continue;
+		auto line = &com.append_line("ORGANIZER", "MAILTO:"s + username);
+		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
+		if (name != nullptr)
+			line->append_param("CN", name);
+		return;
+	}
 }
 
 static const char *oxcical_export_uidx(ical_component &com)
@@ -3977,7 +3975,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		auto bin = pmsg->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, propids[l_recur]));
 		if (bin != nullptr) {
 			EXT_PULL ext_pull;
-			ext_pull.init(bin->pb, bin->cb, alloc, EXT_FLAG_UTF16);
+			ext_pull.init(bin->pb, bin->cb, nullptr, EXT_FLAG_UTF16);
 			if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 				return "E-2204: PidLidAppointmentRecur contents not recognized";
 			b_recurrence = true;
@@ -4010,7 +4008,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				TZDEF tz_definition;
 				TZSTRUCT tz_struct;
 
-				ext_pull.init(bin->pb, bin->cb, alloc, 0);
+				ext_pull.init(bin->pb, bin->cb, nullptr, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
 				new_tzid = tz_definition.keyname;
@@ -4030,7 +4028,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				TZDEF tz_definition;
 				TZSTRUCT tz_struct;
 
-				ext_pull.init(bin->pb, bin->cb, alloc, 0);
+				ext_pull.init(bin->pb, bin->cb, nullptr, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2209: PidLidAppointmentTimeZoneDefinition{Start/End}Display contents not recognized";
 				new_tzid = tz_definition.keyname;
@@ -4070,6 +4068,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 
 	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0)
 		oxcical_export_organizer(*pmsg, *pcomponent, org_name, id2user);
+	else if (strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0)
+		oxcical_export_organizer_rcpt(*pmsg, *pcomponent, org_name, id2user);
 	if (!oxcical_export_recipient_table(*pcomponent, org_name,
 	    id2user, alloc, partstat, pmsg))
 		return "E-2211: export_recipient_table - unspecified error";
@@ -4088,10 +4088,10 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (!b_exceptional && b_recurrence) {
 		if (!oxcical_export_rrule(ptz_component, *pcomponent, &apprecurr))
 			return "E-2212: export_rrule - unspecified error";
-		if (oxcical_check_exdate(&apprecurr) &&
+		if (oxcical_emit_exdates(apprecurr) &&
 		    !oxcical_export_exdate(tzid, b_allday, *pcomponent, &apprecurr))
 			return "E-2213: export_exdate - unspecified error";
-		if (oxcical_check_rdate(&apprecurr) &&
+		if (oxcical_emit_rdates(apprecurr) &&
 		    !oxcical_export_rdate(tzid, b_allday, *pcomponent, &apprecurr))
 			return "E-2214: export_rdate - unspecified error";
 	}
@@ -4197,7 +4197,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		pcomponent->append_line("DTSTAMP", tmp_buff);
 	}
 
-	auto pbusystatus = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_busystatus]));
+	auto pbusystatus = pmsg->proplist.get<int32_t>(PROP_TAG(PT_LONG, propids[l_busystatus]));
 	if (pbusystatus != nullptr) {
 		switch (static_cast<ol_busy_status>(*pbusystatus)) {
 		case olFree:
@@ -4237,9 +4237,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
 			"X-MICROSOFT-CDO-BUSYSTATUS", pcomponent);
 
-	num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_intendedbusy]));
-	if (num != nullptr)
-		busystatus_to_line(static_cast<ol_busy_status>(*num),
+	inum = pmsg->proplist.get<int32_t>(PROP_TAG(PT_LONG, propids[l_intendedbusy]));
+	if (inum != nullptr)
+		busystatus_to_line(static_cast<ol_busy_status>(*inum),
 			"X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent);
 
 	pcomponent->append_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");

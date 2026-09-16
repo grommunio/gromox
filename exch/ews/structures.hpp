@@ -4379,7 +4379,7 @@ struct mSendItemResponseMessage : public mResponseMessageType {
  * Messages.xsd:1136
  */
 struct mSendItemResponse {
-	std::vector<mSendItemResponseMessage> Responses;
+	std::vector<mSendItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };

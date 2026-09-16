@@ -2137,7 +2137,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn &db,
 	std::string ustg;
 	const char *username = nullptr;
 	if (bin != nullptr) {
-		if (cvt_entryid_to_smtpaddr(bin, g_exmdb_org_name,
+		if (cvt_entryid_to_smtpaddr(*bin, g_exmdb_org_name,
 		    mysql_adaptor_userid_to_name, ustg) != ecSuccess)
 			return true;
 		username = ustg.c_str();

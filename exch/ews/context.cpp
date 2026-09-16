@@ -431,13 +431,7 @@ void markOccurrenceId(sItem &item, uint32_t basedate)
  */
 bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
 {
-	bool deleted = std::any_of(&rp.pdeletedinstancedates[0],
-	               &rp.pdeletedinstancedates[rp.deletedinstancecount],
-	               [date](uint32_t entry) { return entry == date; });
-	if (!deleted)
-		return false;
-	return std::none_of(&rp.pmodifiedinstancedates[0], &rp.pmodifiedinstancedates[rp.modifiedinstancecount],
-	       [date](uint32_t entry) { return entry == date; });
+	return rp.contains_del(date) && !rp.contains_mod(date);
 }
 
 /**
@@ -1900,6 +1894,21 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 }
 
 /**
+ * Find EXCEPTIONINFO for this basedate from the recurrence blob.
+ * It has the correct startdatetime/enddatetime for the exception,
+ * unlike the embedded message which may have the master's dates.
+ */
+static const EXCEPTIONINFO *
+find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
+{
+	uint32_t bd = basedate / 1440;
+	for (const auto &ei : apr.pexceptioninfo)
+		if (ei.originalstartdate / 1440 == bd)
+			return &ei;
+	return nullptr;
+}
+
+/**
  * @brief      Load occurrence
  *
  * @param      dir      Store directory
@@ -1949,7 +1958,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
 	if (start_prop_tz != nullptr && recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
 		EXT_PULL rp;
-		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, alloc, 0);
+		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, nullptr, 0);
 		if (rp.g_apptrecpat(&apr) == pack_result::ok) {
 			apr_valid = true;
 			start_off = apr.starttimeoffset;
@@ -1963,20 +1972,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
 	struct tm basedate_local;
 	localtime_r(&basedate_ts, &basedate_local);
-
-	/* Find EXCEPTIONINFO for this basedate from the recurrence blob.
-	 * It has the correct startdatetime/enddatetime for the exception,
-	 * unlike the embedded message which may have the master's dates. */
-	const EXCEPTIONINFO *matching_exc = nullptr;
-	if (apr_valid) {
-		uint32_t bd = basedate / 1440;
-		for (uint16_t ei = 0; ei < apr.exceptioncount; ++ei) {
-			if (apr.pexceptioninfo[ei].originalstartdate / 1440 == bd) {
-				matching_exc = &apr.pexceptioninfo[ei];
-				break;
-			}
-		}
-	}
+	auto matching_exc = apr_valid ? find_exc(apr, basedate) : nullptr;
 
 	for (uint16_t i = 0; i < count; ++i) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
@@ -2082,24 +2078,11 @@ void EWSContext::deleteOccurrence(const std::string &dir,
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
 
-	/* Check if this date is already deleted */
 	auto &rp = apr.recur_pat;
-	if (std::any_of(&rp.pdeletedinstancedates[0], &rp.pdeletedinstancedates[rp.deletedinstancecount],
-	    [=](uint32_t entry) { return entry == basedate; }))
+	if (rp.contains_del(basedate))
 		return; /* already deleted */
-
-	/* Add the basedate to the deleted instances array */
-	auto new_del = alloc<uint32_t>(rp.deletedinstancecount + 1);
-	memcpy(new_del, rp.pdeletedinstancedates,
-	       rp.deletedinstancecount * sizeof(uint32_t));
-	new_del[rp.deletedinstancecount] = basedate;
-	rp.pdeletedinstancedates = new_del;
-	++rp.deletedinstancecount;
-
-	/* Sort the deleted dates array */
-	std::sort(rp.pdeletedinstancedates,
-	          rp.pdeletedinstancedates + rp.deletedinstancecount);
-
+	rp.pdeletedinstancedates.emplace_back(basedate);
+	rp.sort_dels();
 	if (!saveRecurBlob(dir, mid, recur_tag, apr))
 		throw DispatchError(E3308);
 }
@@ -2185,8 +2168,7 @@ bool EWSContext::saveRecurBlob(const std::string &dir, uint64_t mid,
 		return false;
 	BINARY new_bin;
 	new_bin.cb = ext_push.m_offset;
-	new_bin.pb = alloc<uint8_t>(new_bin.cb);
-	memcpy(new_bin.pb, ext_push.m_udata, new_bin.cb);
+	new_bin.pb = ext_push.m_udata;
 	const TAGGED_PROPVAL rprop[] = {{recur_tag, &new_bin}};
 	const TPROPVAL_ARRAY rpropvals = {std::size(rprop), deconst(rprop)};
 	PROBLEM_ARRAY rproblems;
@@ -2210,7 +2192,7 @@ EWSContext::loadRecurPat(const std::string &dir, uint64_t mid) const
 	if (!bin)
 		throw EWSError::ItemCorrupt(E3305);
 	EXT_PULL ext_pull;
-	ext_pull.init(bin->pb, bin->cb, alloc, 0);
+	ext_pull.init(bin->pb, bin->cb, nullptr, 0);
 	APPOINTMENT_RECUR_PAT apr{};
 	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok)
 		throw EWSError::ItemCorrupt(E3306);
@@ -2392,11 +2374,11 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		auto recur_bin = getItemProp<const BINARY>(dir, mid, recur_tag);
 		if (recur_bin) {
 			EXT_PULL ext_pull;
-			ext_pull.init(recur_bin->pb, recur_bin->cb, alloc, 0);
+			ext_pull.init(recur_bin->pb, recur_bin->cb, nullptr, 0);
 			APPOINTMENT_RECUR_PAT apr{};
 			if (ext_pull.g_apptrecpat(&apr) == pack_result::ok) {
 				int32_t tz_min = recurTzOffset(dir, mid, apr);
-				for (uint16_t k = 0; k < apr.exceptioncount; ++k) {
+				for (size_t k = 0; k < apr.pexceptioninfo.size(); ++k) {
 					if (apr.pexceptioninfo[k].originalstartdate != basedate)
 						continue;
 					applyExceptionOverrides(apr.pexceptioninfo[k],
@@ -2423,7 +2405,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	if (!recur_bin)
 		throw EWSError::ItemCorrupt(E3344);
 	EXT_PULL ext_pull;
-	ext_pull.init(recur_bin->pb, recur_bin->cb, alloc, 0);
+	ext_pull.init(recur_bin->pb, recur_bin->cb, nullptr, 0);
 	APPOINTMENT_RECUR_PAT apr{};
 	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok)
 		throw EWSError::ItemCorrupt(E3345);
@@ -2635,53 +2617,25 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	auto &rp = apr.recur_pat;
 
 	/* Add to deleted instances (required for modified occurrences too) */
-	bool in_deleted = false;
-	for (uint32_t i = 0; i < rp.deletedinstancecount; ++i)
-		if (rp.pdeletedinstancedates[i] == basedate)
-			{ in_deleted = true; break; }
-	if (!in_deleted) {
-		auto nd = alloc<uint32_t>(rp.deletedinstancecount + 1);
-		memcpy(nd, rp.pdeletedinstancedates,
-		       rp.deletedinstancecount * sizeof(uint32_t));
-		nd[rp.deletedinstancecount] = basedate;
-		rp.pdeletedinstancedates = nd;
-		++rp.deletedinstancecount;
-		std::sort(rp.pdeletedinstancedates,
-		          rp.pdeletedinstancedates + rp.deletedinstancecount);
+	if (!rp.contains_del(basedate)) {
+		rp.pdeletedinstancedates.emplace_back(basedate);
+		rp.sort_dels();
 	}
 
 	/* Add to modified instances */
-	bool in_modified = false;
-	for (uint32_t i = 0; i < rp.modifiedinstancecount; ++i)
-		if (rp.pmodifiedinstancedates[i] == basedate)
-			{ in_modified = true; break; }
-	if (!in_modified) {
-		auto nm = alloc<uint32_t>(rp.modifiedinstancecount + 1);
-		memcpy(nm, rp.pmodifiedinstancedates,
-		       rp.modifiedinstancecount * sizeof(uint32_t));
-		nm[rp.modifiedinstancecount] = basedate;
-		rp.pmodifiedinstancedates = nm;
-		++rp.modifiedinstancecount;
-		std::sort(rp.pmodifiedinstancedates,
-		          rp.pmodifiedinstancedates + rp.modifiedinstancecount);
+	if (!rp.contains_mod(basedate)) {
+		rp.pmodifiedinstancedates.emplace_back(basedate);
+		rp.sort_mods();
 	}
 
 	/* Build new EXCEPTIONINFO + EXTENDEDEXCEPTION entries */
-	auto new_exc_count = apr.exceptioncount + 1;
-	auto new_exc = alloc<EXCEPTIONINFO>(new_exc_count);
-	auto new_ext = alloc<EXTENDEDEXCEPTION>(new_exc_count);
-	memcpy(new_exc, apr.pexceptioninfo, apr.exceptioncount * sizeof(EXCEPTIONINFO));
-	memcpy(new_ext, apr.pextendedexception, apr.exceptioncount * sizeof(EXTENDEDEXCEPTION));
-
-	auto &ei = new_exc[apr.exceptioncount];
-	memset(&ei, 0, sizeof(ei));
+	auto &ei = apr.pexceptioninfo.emplace_back();
 	ei.startdatetime = start_rtime;
 	ei.enddatetime = end_rtime;
 	ei.originalstartdate = basedate;
 	ei.overrideflags = 0;
 
-	auto &ee = new_ext[apr.exceptioncount];
-	memset(&ee, 0, sizeof(ee));
+	auto &ee = apr.pextendedexception.emplace_back();
 	ee.changehighlight.size = sizeof(uint32_t);
 	ee.startdatetime = start_rtime;
 	ee.enddatetime = end_rtime;
@@ -2691,16 +2645,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		busystatus_id, subtype_id, reminderdelta_id,
 		reminderset_id, tz_minutes);
 
-	apr.pexceptioninfo = new_exc;
-	apr.pextendedexception = new_ext;
-	apr.exceptioncount = new_exc_count;
-
-	/* Sort exceptions by start time */
-	std::sort(apr.pexceptioninfo,
-	          apr.pexceptioninfo + apr.exceptioncount);
-	std::sort(apr.pextendedexception,
-	          apr.pextendedexception + apr.exceptioncount);
-
+	apr.sort_exceptions();
 	if (!saveRecurBlob(dir, mid, recur_tag, apr))
 		throw DispatchError(E3350);
 }
@@ -2971,15 +2916,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 		throw EWSError::CalendarInvalidRecurrence(E3356);
 
 	APPOINTMENT_RECUR_PAT apr{};
-	uint32_t deleted_dates[1024], modified_dates[1024];
-	EXCEPTIONINFO exceptions[1024];
-	EXTENDEDEXCEPTION ext_exceptions[1024];
 
-	apr.readerversion2 = 0x3006;
-	apr.writerversion2 = 0x3009;
-	apr.exceptioncount = 0;
-	apr.pexceptioninfo = exceptions;
-	apr.pextendedexception = ext_exceptions;
 	if (isAllDay) {
 		apr.starttimeoffset = 0;
 		apr.endtimeoffset = 1440;
@@ -2997,7 +2934,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 				if (buf) {
 					EXT_PULL exp;
 					TZDEF tz;
-					exp.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+					exp.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
 					int64_t tz_off = 0;
 					if (exp.g_tzdef(&tz) == pack_result::ok &&
 					    offset_from_tz(tz, localStartTime, tz_off))
@@ -3011,14 +2948,6 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 		apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
 		apr.endtimeoffset = apr.starttimeoffset + duration / 60;
 	}
-	apr.recur_pat.readerversion = 0x3004;
-	apr.recur_pat.writerversion = 0x3004;
-	apr.recur_pat.calendartype = CAL_DEFAULT;
-	apr.recur_pat.deletedinstancecount = 0;
-	apr.recur_pat.pdeletedinstancedates = deleted_dates;
-	apr.recur_pat.modifiedinstancecount = 0;
-	apr.recur_pat.pmodifiedinstancedates = modified_dates;
-	apr.recur_pat.slidingflag = 0;
 	startdate_tm.tm_hour = 0;
 	startdate_tm.tm_min = 0;
 	startdate_tm.tm_sec = 0;
@@ -4000,15 +3929,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
 			throw EWSError::CalendarInvalidRecurrence(E3359);
 		APPOINTMENT_RECUR_PAT apr{};
-		uint32_t deleted_dates[1024], modified_dates[1024];
-		EXCEPTIONINFO exceptions[1024];
-		EXTENDEDEXCEPTION ext_exceptions[1024];
 
-		apr.readerversion2 = 0x3006;
-		apr.writerversion2 = 0x3009;
-		apr.exceptioncount = 0;
-		apr.pexceptioninfo = exceptions;
-		apr.pextendedexception = ext_exceptions;
 		if (isAllDay) {
 			apr.starttimeoffset = 0;
 			apr.endtimeoffset = 1440;
@@ -4041,7 +3962,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 					if (buf) {
 						EXT_PULL ep;
 						TZDEF tzd;
-						ep.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+						ep.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
 						if (ep.g_tzdef(&tzd) == pack_result::ok)
 							offset_from_tz(tzd, localStartTime, tz_off);
 					}
@@ -4054,14 +3975,6 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
 			apr.endtimeoffset   = apr.starttimeoffset + duration / 60;
 		}
-		apr.recur_pat.readerversion = 0x3004;
-		apr.recur_pat.writerversion = 0x3004;
-		apr.recur_pat.calendartype = CAL_DEFAULT;
-		apr.recur_pat.deletedinstancecount = 0;
-		apr.recur_pat.pdeletedinstancedates = deleted_dates;
-		apr.recur_pat.modifiedinstancecount = 0;
-		apr.recur_pat.pmodifiedinstancedates = modified_dates;
-		apr.recur_pat.slidingflag = 0;
 		startdate_tm.tm_hour = 0;
 		startdate_tm.tm_min = 0;
 		startdate_tm.tm_sec = 0;
@@ -4231,7 +4144,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 
 			EXT_PULL ext_pull;
 			TZDEF tzdef;
-			ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+			ext_pull.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
 			if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 				throw EWS::DispatchError(E3294);
 

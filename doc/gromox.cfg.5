@@ -144,13 +144,14 @@ Default: \fIoff\fP
 Default: \fI15.00.0847.4040\fP
 .TP
 \fBx500_org_name\fP
-Organization name used by the "TWOSTEP" Client-Side Inbox Rule Processor to
-resolve EX-style addresses in rule conditions and actions. It must be the same
-value as used by the rest of the system, otherwise conditions such as "message
-is received from <user of this organization>" will never match. When the
-directive is not set in gromox.cfg (or set to an empty value), the value is
-read from exmdb_local.cfg instead.
+Arbitrary identifier for converting between usernames and ESSDNs
+("Enterprise/site/server distinguished name") a.k.a. LegacyDNs, which are an
+archaic form to refer to user entities (and/or their mailbox). New
+installations should not set this directive anymore. If the value is customized
+though, the value needs to be consistent across the entire Gromox cluster.
+Changing the value after any mailbox has been created can invalidate references
+to participants in existing messages and calendar events.
 .br
-Default: \fI(inherit from exmdb_local.cfg, else "Gromox default")\fP
+Default: (unspecified, i.e. do not rely on observing any particular value)
 .SH See also
 \fBgromox\fP(7)

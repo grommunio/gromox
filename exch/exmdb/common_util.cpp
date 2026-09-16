@@ -3970,15 +3970,15 @@ bool cu_get_permission_property(int64_t member_id,
 	return TRUE;
 }
 
-bool cu_parse_abkeid(const BINARY *pbin, std::string &type, std::string &addr)
+bool cu_parse_abkeid(std::string_view sv, std::string &type, std::string &addr)
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
 	FLATUID provider_uid;
 	
-	if (pbin->cb < 20)
+	if (sv.size() < 20)
 		return FALSE;
-	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+	ext_pull.init(sv.data(), sv.size(), nullptr, EXT_FLAG_UTF16);
 	if (ext_pull.g_uint32(&flags) != pack_result::ok || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != pack_result::ok)
 		return FALSE;

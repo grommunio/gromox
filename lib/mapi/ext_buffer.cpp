@@ -1802,7 +1802,7 @@ static pack_result ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
 	}
 }
 
-static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
+static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r) try
 {
 	uint16_t tmp_len;
 	uint16_t tmp_len2;
@@ -1816,11 +1816,8 @@ static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *
 		TRY(pext->g_uint16(&tmp_len2));
 		if (tmp_len != tmp_len2 + 1)
 			return pack_result::format;
-		r->subject = pext->anew<char>(tmp_len);
-		if (r->subject == nullptr)
-			return pack_result::alloc;
-		TRY(pext->g_bytes(r->subject, tmp_len2));
-		r->subject[tmp_len2] = '\0';
+		r->subject.resize(tmp_len2);
+		TRY(pext->g_bytes(r->subject.data(), tmp_len2));
 	}
 	if (r->overrideflags & ARO_MEETINGTYPE)
 		TRY(pext->g_uint32(&r->meetingtype));
@@ -1833,11 +1830,8 @@ static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *
 		TRY(pext->g_uint16(&tmp_len2));
 		if (tmp_len != tmp_len2 + 1)
 			return pack_result::format;
-		r->location = pext->anew<char>(tmp_len);
-		if (r->location == nullptr)
-			return pack_result::alloc;
-		TRY(pext->g_bytes(r->location, tmp_len2));
-		r->location[tmp_len2] = '\0';
+		r->location.resize(tmp_len2);
+		TRY(pext->g_bytes(r->location.data(), tmp_len2));
 	}
 	if (r->overrideflags & ARO_BUSYSTATUS)
 		TRY(pext->g_uint32(&r->busystatus));
@@ -1848,45 +1842,32 @@ static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *
 	if (r->overrideflags & ARO_APPTCOLOR)
 		TRY(pext->g_uint32(&r->appointmentcolor));
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result ext_buffer_pull_changehighlight(EXT_PULL *pext, CHANGEHIGHLIGHT *r)
 {
-	TRY(pext->g_uint32(&r->size));
+	uint32_t size = 0;
+	TRY(pext->g_uint32(&size));
 	TRY(pext->g_uint32(&r->value));
-	if (r->size < sizeof(uint32_t)) {
+	if (size < sizeof(uint32_t))
 		return pack_result::format;
-	} else if (sizeof(uint32_t) == r->size) {
-		r->preserved = NULL;
+	else if (size == sizeof(uint32_t))
 		return pack_result::ok;
-	}
-	r->preserved = pext->anew<uint8_t>(r->size - sizeof(uint32_t));
-	if (r->preserved == nullptr) {
-		r->size = 0;
-		return pack_result::alloc;
-	}
-	return pext->g_bytes(r->preserved, r->size - sizeof(uint32_t));
+	return pext->advance(size - sizeof(uint32_t));
 }
 
 static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
     uint32_t writerversion2, uint16_t overrideflags, EXTENDEDEXCEPTION *r)
 {
-	int string_len;
 	uint16_t tmp_len;
 	
 	if (writerversion2 >= 0x00003009)
 		TRY(ext_buffer_pull_changehighlight(pext, &r->changehighlight));
-	TRY(pext->g_uint32(&r->reservedblockee1size));
-	if (r->reservedblockee1size == 0) {
-		r->preservedblockee1 = NULL;
-	} else {
-		r->preservedblockee1 = pext->anew<uint8_t>(r->reservedblockee1size);
-		if (r->preservedblockee1 == nullptr) {
-			r->reservedblockee1size = 0;
-			return pack_result::alloc;
-		}
-		TRY(pext->g_bytes(r->preservedblockee1, r->reservedblockee1size));
-	}
+	uint32_t dummy = 0;
+	TRY(pext->g_uint32(&dummy));
+	TRY(pext->advance(dummy));
 	if (overrideflags & (ARO_LOCATION | ARO_SUBJECT)) {
 		TRY(pext->g_uint32(&r->startdatetime));
 		TRY(pext->g_uint32(&r->enddatetime));
@@ -1907,11 +1888,7 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 		pbuff[tmp_len ++] = '\0';
 		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
 			return pack_result::charconv;
-		string_len = strlen(&pbuff[tmp_len]);
-		r->subject = pext->anew<char>(string_len + 1);
-		if (r->subject == nullptr)
-			return pack_result::alloc;
-		strcpy(r->subject, &pbuff[tmp_len]);
+		r->subject.assign(&pbuff[tmp_len]);
 	}
 	if (overrideflags & ARO_LOCATION) {
 		TRY(pext->g_uint16(&tmp_len));
@@ -1928,24 +1905,11 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 		pbuff[tmp_len ++] = '\0';
 		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
 			return pack_result::charconv;
-		string_len = strlen(&pbuff[tmp_len]);
-		r->location = pext->anew<char>(string_len + 1);
-		if (r->location == nullptr)
-			return pack_result::alloc;
-		strcpy(r->location, &pbuff[tmp_len]);
+		r->location = &pbuff[tmp_len];
 	}
 	if (overrideflags & (ARO_SUBJECT | ARO_LOCATION)) {
-		TRY(pext->g_uint32(&r->reservedblockee2size));
-		if (r->reservedblockee2size == 0) {
-			r->preservedblockee2 = NULL;
-		} else {
-			r->preservedblockee2 = pext->anew<uint8_t>(r->reservedblockee2size);
-			if (r->preservedblockee2 == nullptr) {
-				r->reservedblockee2size = 0;
-				return pack_result::alloc;
-			}
-			TRY(pext->g_bytes(r->preservedblockee2, r->reservedblockee2size));
-		}
+		TRY(pext->g_uint32(&dummy));
+		TRY(pext->advance(dummy));
 	}
 	return pack_result::ok;
 }
@@ -1964,86 +1928,44 @@ pack_result EXT_PULL::g_recpat(RECURRENCE_PATTERN *r)
 	TRY(g_uint32(&r->endtype));
 	TRY(g_uint32(&r->occurrencecount));
 	TRY(g_uint32(&r->firstdow));
-	TRY(g_uint32(&r->deletedinstancecount));
-	CLAMP32(r->deletedinstancecount);
-	if (r->deletedinstancecount == 0) {
-		r->pdeletedinstancedates = NULL;
-	} else {
-		r->pdeletedinstancedates = anew<uint32_t>(r->deletedinstancecount);
-		if (r->pdeletedinstancedates == nullptr) {
-			r->deletedinstancecount = 0;
-			return pack_result::alloc;
-		}
-	}
-	for (size_t i = 0; i < r->deletedinstancecount; ++i)
+	uint32_t count = 0;
+	TRY(g_uint32(&count));
+	CLAMP32(count);
+	r->pdeletedinstancedates.resize(count);
+	for (size_t i = 0; i < count; ++i)
 		TRY(g_uint32(&r->pdeletedinstancedates[i]));
-	TRY(g_uint32(&r->modifiedinstancecount));
-	CLAMP32(r->modifiedinstancecount);
-	if (r->modifiedinstancecount == 0) {
-		r->pmodifiedinstancedates = NULL;
-	} else {
-		r->pmodifiedinstancedates = anew<uint32_t>(r->modifiedinstancecount);
-		if (r->pmodifiedinstancedates == nullptr) {
-			r->modifiedinstancecount = 0;
-			return pack_result::alloc;
-		}
-	}
-	for (size_t i = 0; i < r->modifiedinstancecount; ++i)
+	TRY(g_uint32(&count));
+	CLAMP32(count);
+	r->pmodifiedinstancedates.resize(count);
+	for (size_t i = 0; i < count; ++i)
 		TRY(g_uint32(&r->pmodifiedinstancedates[i]));
 	TRY(g_uint32(&r->startdate));
 	return g_uint32(&r->enddate);
 }
 
-pack_result EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
+pack_result EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r) try
 {
 	TRY(g_recpat(&r->recur_pat));
 	TRY(g_uint32(&r->readerversion2));
 	TRY(g_uint32(&r->writerversion2));
 	TRY(g_uint32(&r->starttimeoffset));
 	TRY(g_uint32(&r->endtimeoffset));
-	TRY(g_uint16(&r->exceptioncount));
-	CLAMP16(r->exceptioncount);
-	if (r->exceptioncount == 0) {
-		r->pexceptioninfo = NULL;
-		r->pextendedexception = NULL;
-	} else {
-		r->pexceptioninfo = anew<EXCEPTIONINFO>(r->exceptioncount);
-		if (r->pexceptioninfo == nullptr) {
-			r->exceptioncount = 0;
-			return pack_result::alloc;
-		}
-		r->pextendedexception = anew<EXTENDEDEXCEPTION>(r->exceptioncount);
-		if (r->pextendedexception == nullptr) {
-			r->exceptioncount = 0;
-			return pack_result::alloc;
-		}
-	}
-	for (size_t i = 0; i < r->exceptioncount; ++i)
+	uint16_t count = 0;
+	TRY(g_uint16(&count));
+	CLAMP16(count);
+	r->pexceptioninfo.resize(count);
+	r->pextendedexception.resize(count);
+	for (size_t i = 0; i < count; ++i)
 		TRY(ext_buffer_pull_exceptioninfo(this, &r->pexceptioninfo[i]));
-	TRY(g_uint32(&r->reservedblock1size));
-	if (r->reservedblock1size == 0) {
-		r->preservedblock1 = NULL;
-	} else {
-		r->preservedblock1 = anew<uint8_t>(r->reservedblock1size);
-		if (r->preservedblock1 == nullptr) {
-			r->reservedblock1size = 0;
-			return pack_result::alloc;
-		}
-		TRY(g_bytes(r->preservedblock1, r->reservedblock1size));
-	}
-	for (size_t i = 0; i < r->exceptioncount; ++i)
+	uint32_t dummy = 0;
+	TRY(g_uint32(&dummy));
+	TRY(advance(dummy));
+	for (size_t i = 0; i < count; ++i)
 		TRY(ext_buffer_pull_extendedexception(this, r->writerversion2, r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]));
-	TRY(g_uint32(&r->reservedblock2size));
-	if (r->reservedblock2size == 0) {
-		r->preservedblock2 = NULL;
-		return pack_result::ok;
-	}
-	r->preservedblock2 = anew<uint8_t>(r->reservedblock2size);
-	if (r->preservedblock2 == nullptr) {
-		r->reservedblock2size = 0;
-		return pack_result::alloc;
-	}
-	return g_bytes(r->preservedblock2, r->reservedblock2size);
+	TRY(g_uint32(&dummy));
+	return advance(dummy);
+} catch (const std::bad_alloc &) {
+	return pack_result::format;
 }
 
 static pack_result ext_pull_goid_trailer(EXT_PULL *ext,
@@ -3058,11 +2980,17 @@ static pack_result ext_buffer_push_recurrencepattern(EXT_PUSH *pext,
 	TRY(pext->p_uint32(r->endtype));
 	TRY(pext->p_uint32(r->occurrencecount));
 	TRY(pext->p_uint32(r->firstdow));
-	TRY(pext->p_uint32(r->deletedinstancecount));
-	for (size_t i = 0; i < r->deletedinstancecount; ++i)
+	auto count = r->pdeletedinstancedates.size();
+	if (count > UINT32_MAX)
+		return pack_result::format;
+	TRY(pext->p_uint32(count));
+	for (size_t i = 0; i < count; ++i)
 		TRY(pext->p_uint32(r->pdeletedinstancedates[i]));
-	TRY(pext->p_uint32(r->modifiedinstancecount));
-	for (size_t i = 0; i < r->modifiedinstancecount; ++i)
+	count = r->pmodifiedinstancedates.size();
+	if (count > UINT32_MAX)
+		return pack_result::format;
+	TRY(pext->p_uint32(count));
+	for (size_t i = 0; i < count; ++i)
 		TRY(pext->p_uint32(r->pmodifiedinstancedates[i]));
 	TRY(pext->p_uint32(r->startdate));
 	return pext->p_uint32(r->enddate);
@@ -3071,17 +2999,15 @@ static pack_result ext_buffer_push_recurrencepattern(EXT_PUSH *pext,
 static pack_result ext_buffer_push_exceptioninfo(EXT_PUSH *pext,
     const EXCEPTIONINFO *r)
 {
-	uint16_t tmp_len;
-	
 	TRY(pext->p_uint32(r->startdatetime));
 	TRY(pext->p_uint32(r->enddatetime));
 	TRY(pext->p_uint32(r->originalstartdate));
 	TRY(pext->p_uint16(r->overrideflags));
 	if (r->overrideflags & ARO_SUBJECT) {
-		tmp_len = strlen(r->subject);
+		auto tmp_len = std::min(static_cast<size_t>(UINT16_MAX - 1), r->subject.size());
 		TRY(pext->p_uint16(tmp_len + 1));
 		TRY(pext->p_uint16(tmp_len));
-		TRY(pext->p_bytes(r->subject, tmp_len));
+		TRY(pext->p_bytes(r->subject.c_str(), tmp_len));
 	}
 	if (r->overrideflags & ARO_MEETINGTYPE)
 		TRY(pext->p_uint32(r->meetingtype));
@@ -3090,10 +3016,10 @@ static pack_result ext_buffer_push_exceptioninfo(EXT_PUSH *pext,
 	if (r->overrideflags & ARO_REMINDER)
 		TRY(pext->p_uint32(r->reminderset));
 	if (r->overrideflags & ARO_LOCATION) {
-		tmp_len = strlen(r->location);
+		auto tmp_len = std::min(static_cast<size_t>(UINT16_MAX - 1), r->location.size());
 		TRY(pext->p_uint16(tmp_len + 1));
 		TRY(pext->p_uint16(tmp_len));
-		TRY(pext->p_bytes(r->location, tmp_len));
+		TRY(pext->p_bytes(r->location.c_str(), tmp_len));
 	}
 	if (r->overrideflags & ARO_BUSYSTATUS)
 		TRY(pext->p_uint32(r->busystatus));
@@ -3109,13 +3035,8 @@ static pack_result ext_buffer_push_exceptioninfo(EXT_PUSH *pext,
 static pack_result ext_buffer_push_changehighlight(EXT_PUSH *pext,
     const CHANGEHIGHLIGHT *r)
 {
-	TRY(pext->p_uint32(r->size));
-	TRY(pext->p_uint32(r->value));
-	if (r->size < sizeof(uint32_t))
-		return pack_result::format;
-	else if (sizeof(uint32_t) == r->size)
-		return pack_result::ok;
-	return pext->p_bytes(r->preserved, r->size - sizeof(uint32_t));
+	TRY(pext->p_uint32(4));
+	return pext->p_uint32(r->value);
 }
 
 static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
@@ -3123,17 +3044,15 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 {
 	if (writerversion2 >= 0x00003009)
 		TRY(ext_buffer_push_changehighlight(pext, &r->changehighlight));
-	TRY(pext->p_uint32(r->reservedblockee1size));
-	if (r->reservedblockee1size != 0)
-		TRY(pext->p_bytes(r->preservedblockee1, r->reservedblockee1size));
+	TRY(pext->p_uint32(0));
 	if (overrideflags & (ARO_SUBJECT | ARO_LOCATION)) {
 		TRY(pext->p_uint32(r->startdatetime));
 		TRY(pext->p_uint32(r->enddatetime));
 		TRY(pext->p_uint32(r->originalstartdate));
 	}
 	if (overrideflags & ARO_SUBJECT) {
-		auto subj = znul(r->subject);
-		auto tmp_len = strlen(subj) + 1;
+		auto subj = r->subject.c_str();
+		auto tmp_len = r->subject.size() + 1;
 		std::unique_ptr<char[]> pbuff;
 		try {
 			pbuff = std::make_unique<char[]>(2 * tmp_len);
@@ -3150,8 +3069,8 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 		TRY(pext->p_bytes(pbuff.get(), string_len));
 	}
 	if (overrideflags & ARO_LOCATION) {
-		auto loc = znul(r->location);
-		auto tmp_len = strlen(loc) + 1;
+		auto loc = r->location.c_str();
+		auto tmp_len = r->location.size() + 1;
 		std::unique_ptr<char[]> pbuff;
 		try {
 			pbuff = std::make_unique<char[]>(2 * tmp_len);
@@ -3167,11 +3086,8 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 		TRY(pext->p_uint16(string_len / 2));
 		TRY(pext->p_bytes(pbuff.get(), string_len));
 	}
-	if (overrideflags & (ARO_LOCATION | ARO_SUBJECT)) {
-		TRY(pext->p_uint32(r->reservedblockee2size));
-		if (r->reservedblockee2size != 0)
-			TRY(pext->p_bytes(r->preservedblockee2, r->reservedblockee2size));
-	}
+	if (overrideflags & (ARO_LOCATION | ARO_SUBJECT))
+		TRY(pext->p_uint32(0));
 	return pack_result::ok;
 }
 
@@ -3182,16 +3098,16 @@ pack_result EXT_PUSH::p_apptrecpat(const APPOINTMENT_RECUR_PAT &r)
 	TRY(p_uint32(r.writerversion2));
 	TRY(p_uint32(r.starttimeoffset));
 	TRY(p_uint32(r.endtimeoffset));
-	TRY(p_uint16(r.exceptioncount));
-	for (size_t i = 0; i < r.exceptioncount; ++i)
+	auto count = std::min(r.pexceptioninfo.size(), r.pextendedexception.size());
+	if (count > UINT16_MAX)
+		return pack_result::format;
+	TRY(p_uint16(count));
+	for (size_t i = 0; i < count; ++i)
 		TRY(ext_buffer_push_exceptioninfo(this, &r.pexceptioninfo[i]));
-	TRY(p_uint32(r.reservedblock1size));
-	for (size_t i = 0; i < r.exceptioncount; ++i)
+	TRY(p_uint32(0));
+	for (size_t i = 0; i < count; ++i)
 		TRY(ext_buffer_push_extendedexception(this, r.writerversion2, r.pexceptioninfo[i].overrideflags, &r.pextendedexception[i]));
-	TRY(p_uint32(r.reservedblock2size));
-	if (r.reservedblock2size == 0)
-		return pack_result::ok;
-	return p_bytes(r.preservedblock2, r.reservedblock2size);
+	return p_uint32(0);
 }
 
 pack_result EXT_PUSH::p_goid(const GLOBALOBJECTID &r)
@@ -3278,31 +3194,3 @@ bool oneoff_to_parts(EXT_PULL &ser, std::string &type, std::string &addr) try
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
-
-freebusy_event::freebusy_event(time_t start, time_t end, uint32_t b_status,
-    const char *ev_id, const char *ev_subject, const char *ev_location,
-    bool ev_meeting, bool ev_recurring, bool ev_exception, bool ev_reminderset,
-    bool ev_private, bool detailed) :
-	start_time(start), end_time(end), busy_status(b_status),
-	has_details(detailed), is_meeting(ev_meeting),
-	is_recurring(ev_recurring), is_exception(ev_exception),
-	is_reminderset(ev_reminderset), is_private(ev_private),
-	m_id(detailed ? znul(ev_id) : ""),
-	m_subject(detailed ? znul(ev_subject) : ""),
-	m_location(detailed ? znul(ev_location) : ""),
-	id(detailed && ev_id != nullptr ? m_id.c_str() : nullptr),
-	subject(detailed && ev_subject != nullptr ? m_subject.c_str() : nullptr),
-	location(detailed && ev_location != nullptr ? m_location.c_str() : nullptr)
-{}
-
-freebusy_event::freebusy_event(const freebusy_event &o) :
-	start_time(o.start_time), end_time(o.end_time),
-	busy_status(o.busy_status), has_details(o.has_details),
-	is_meeting(o.is_meeting), is_recurring(o.is_recurring),
-	is_exception(o.is_exception), is_reminderset(o.is_reminderset),
-	is_private(o.is_private), m_id(o.m_id), m_subject(o.m_subject),
-	m_location(o.m_location),
-	id(o.id != nullptr ? m_id.c_str() : nullptr),
-	subject(o.subject != nullptr ? m_subject.c_str() : nullptr),
-	location(o.location != nullptr ? m_location.c_str() : nullptr)
-{}

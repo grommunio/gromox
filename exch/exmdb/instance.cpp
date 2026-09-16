@@ -458,7 +458,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	pinstance->orig_msg_gcv = eid_t(message_id).gcv();
 	pinstance->type = instance_type::message;
 	if (!exmdb_server::is_private())
-		pinstance->username = username;
+		pinstance->username = znul(username);
 	if (b_new) {
 		/* message_id MUST NOT exist in messages table */
 		pinstance->b_new = TRUE;
@@ -1527,19 +1527,19 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
 		if (sr_addrtype == nullptr) {
 			std::string ntype, naddr;
-			if (cu_parse_abkeid(pbin, ntype, naddr)) {
+			if (cu_parse_abkeid(*pbin, ntype, naddr)) {
 				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, ntype.c_str()) != ecSuccess ||
 				    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, naddr.c_str()) != ecSuccess)
 					return FALSE;
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
 			std::string es_result;
-			if (cvt_emsab_to_essdn(pbin, es_result) == ecSuccess &&
+			if (cvt_emsab_to_essdn(*pbin, es_result) == ecSuccess &&
 			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, es_result.c_str()) != ecSuccess)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
 			std::string es_result;
-			if (cvt_entryid_to_smtpaddr(pbin, g_exmdb_org_name,
+			if (cvt_entryid_to_smtpaddr(*pbin, g_exmdb_org_name,
 			    mysql_adaptor_userid_to_name, es_result) == ecSuccess &&
 			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, es_result.c_str()) != ecSuccess)
 				return FALSE;
@@ -1550,19 +1550,19 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENDER_ADDRTYPE);
 		if (sr_addrtype == nullptr) {
 			std::string ntype, naddr;
-			if (cu_parse_abkeid(pbin, ntype, naddr)) {
+			if (cu_parse_abkeid(*pbin, ntype, naddr)) {
 				if (pmsgctnt->proplist.set(PR_SENDER_ADDRTYPE, ntype.c_str()) != ecSuccess ||
 				    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, naddr.c_str()) != ecSuccess)
 					return FALSE;
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
 			std::string es_result;
-			if (cvt_emsab_to_essdn(pbin, es_result) == ecSuccess &&
+			if (cvt_emsab_to_essdn(*pbin, es_result) == ecSuccess &&
 			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, es_result.c_str()) != ecSuccess)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
 			std::string es_result;
-			if (cvt_entryid_to_smtpaddr(pbin, g_exmdb_org_name,
+			if (cvt_entryid_to_smtpaddr(*pbin, g_exmdb_org_name,
 			    mysql_adaptor_userid_to_name, es_result) == ecSuccess &&
 			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, es_result.c_str()) != ecSuccess)
 				return FALSE;

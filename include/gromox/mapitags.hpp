@@ -939,7 +939,7 @@ enum {
 	// PR_SCHDINFO_DONT_MAIL_DELEGATES = PROP_TAG(PT_BOOLEAN, 0x6843), /* PidTagScheduleInfoDontMailDelegates */
 	// PR_SCHDINFO_DELEGATE_NAMES = PROP_TAG(PT_MV_UNICODE, 0x6844), /* PidTagScheduleInfoDelegateNames */
 	// PR_WB_SF_RECREATE_INFO = PROP_TAG(PT_BINARY, 0x6844), /* PidTagSearchFolderRecreateInfo */
-	// PR_SCHDINFO_DELEGATE_ENTRYIDS = PROP_TAG(PT_MV_BINARY, 0x6845), /* PidTagScheduleInfoDelegateEntryIds */
+	PR_SCHDINFO_DELEGATE_ENTRYIDS = PROP_TAG(PT_MV_BINARY, 0x6845), /* PidTagScheduleInfoDelegateEntryIds */
 	// PR_WB_SF_DEFINITION = PROP_TAG(PT_BINARY, 0x6845), /* PidTagSearchFolderDefinition */
 	// PR_GATEWAY_NEEDS_TO_REFRESH = PROP_TAG(PT_BOOLEAN, 0x6846), /* PidTagGatewayNeedsToRefresh */
 	// PR_WB_SF_STORAGE_TYPE = PROP_TAG(PT_LONG, 0x6846), /* PidTagSearchFolderStorageType */

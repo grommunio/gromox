@@ -17,9 +17,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
-#include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
 #include "exmdb_client.hpp"
@@ -498,6 +496,9 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	if (!exmdb_client->set_folder_properties(pfolder->pstore->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
+	auto delegates = ppropvals->get<const BINARY_ARRAY>(PR_SCHDINFO_DELEGATE_ENTRYIDS);
+	if (pfolder->pstore->b_private && delegates != nullptr)
+		cu_flush_delegates(pfolder->pstore->get_dir(), delegates);
 	return TRUE;
 }
 
@@ -524,6 +525,9 @@ bool folder_object::remove_properties(proptag_cspan pproptags)
 	if (!exmdb_client->remove_folder_properties(pfolder->pstore->get_dir(),
 	    pfolder->folder_id, tmp_proptags))
 		return FALSE;	
+	if (pfolder->pstore->b_private &&
+	    tmp_proptags.has(PR_SCHDINFO_DELEGATE_ENTRYIDS))
+		cu_flush_delegates(pfolder->pstore->get_dir(), nullptr);
 	tmp_propvals.count = 4;
 	tmp_propvals.ppropval = propval_buff;
 	if (!exmdb_client->allocate_cn(pfolder->pstore->get_dir(), &change_num))
@@ -685,92 +689,17 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	       pfolder->folder_id, 0, count, pperm_data);
 }
 
-static int folder_object_flush_delegates(std::vector<std::string> &dlist,
-    const FORWARDDELEGATE_ACTION &action) try
-{
-	for (const auto &dlgt : action) {
-		const char *ptype = nullptr, *paddress = nullptr;
-		const BINARY *pentryid = nullptr;
-		for (const auto &p : dlgt) {
-			switch (p.proptag) {
-			case PR_ADDRTYPE:
-				ptype = static_cast<const char *>(p.pvalue);
-				break;
-			case PR_ENTRYID:
-				pentryid = static_cast<const BINARY *>(p.pvalue);
-				break;
-			case PR_EMAIL_ADDRESS:
-				paddress = static_cast<const char *>(p.pvalue);
-				break;
-			}
-		}
-		std::string address_buff;
-		if (ptype != nullptr) {
-			auto ret = cvt_genaddr_to_smtpaddr(ptype, paddress,
-			           g_org_name, mysql_adaptor_userid_to_name, address_buff);
-			if (ret == ecSuccess)
-				/* ok */;
-			else if (ret != ecNullObject)
-				return -1;
-		}
-		if (address_buff.empty() && pentryid != nullptr) {
-			auto ret = cvt_entryid_to_smtpaddr(pentryid, g_org_name,
-			           mysql_adaptor_userid_to_name, address_buff);
-			if (ret == ecSuccess)
-				/* ok */;
-			else if (ret != ecNullObject)
-				return -1;
-		}
-		if (address_buff.size() > 0)
-			dlist.emplace_back(std::move(address_buff));
-	}
-	return 0;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "%s: ENOMEM", __func__);
-	return -1;
-}
-
 BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 {
 	BOOL b_exceed;
-	BOOL b_delegate;
-	const RULE_ACTIONS *pactions = nullptr;
 	auto pfolder = this;
 	
 	if (flags & MODIFY_RULES_FLAG_REPLACE &&
 	    !exmdb_client->empty_folder_rule(pfolder->pstore->get_dir(), pfolder->folder_id))
 		return FALSE;	
-	b_delegate = FALSE;
-	for (auto &rule : *plist) {
+	for (auto &rule : *plist)
 		if (!common_util_convert_from_zrule(&rule.propvals))
 			return FALSE;	
-		auto pprovider = rule.propvals.get<char>(PR_RULE_PROVIDER);
-		if (pprovider == nullptr ||
-		    strcasecmp(pprovider, "Schedule+ EMS Interface") != 0)
-			continue;	
-		auto act = rule.propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
-		if (act != nullptr) {
-			b_delegate = TRUE;
-			pactions = act;
-		}
-	}
-	if (pfolder->pstore->b_private &&
-	    rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_INBOX &&
-	    ((flags & MODIFY_RULES_FLAG_REPLACE) || b_delegate)) {
-		std::vector<std::string> dlist;
-		if (b_delegate) {
-			for (const auto &a : *pactions) {
-				if (a.type != OP_DELEGATE)
-					continue;
-				auto ret = folder_object_flush_delegates(dlist,
-					   *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata));
-				if (ret < 0)
-					return false;
-			}
-		}
-		if (!exmdb_client->write_delegates(pfolder->pstore->get_dir(), 0, dlist))
-			/* unclear */;
-	}
 	return exmdb_client->update_folder_rule(pfolder->pstore->get_dir(),
 		pfolder->folder_id, plist->count,
 		plist->prule, &b_exceed);

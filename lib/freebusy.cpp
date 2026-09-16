@@ -24,8 +24,8 @@ namespace {
 
 struct ievent {
 	time_t start_time = 0, end_time = 0;
-	EXCEPTIONINFO *ei = nullptr;
-	EXTENDEDEXCEPTION *xe = nullptr;
+	const EXCEPTIONINFO *ei = nullptr;
+	const EXTENDEDEXCEPTION *xe = nullptr;
 };
 
 struct freebusy_tags {
@@ -248,30 +248,35 @@ static bool find_recur_times(const ical_component *tzcom,
 		 */
 		auto del_test = [&](uint32_t d) {
 			auto du = rop_util_rtime_to_unix(d);
-			return du - du % 86400 == utnz - utnz % 86400;
+			return du / 86400 == utnz / 86400;
 		};
 		auto &rpat_del = apr.recur_pat;
-		if (std::any_of(rpat_del.pdeletedinstancedates,
-		    rpat_del.pdeletedinstancedates + rpat_del.deletedinstancecount, del_test))
+		if (std::any_of(rpat_del.pdeletedinstancedates.cbegin(),
+		    rpat_del.pdeletedinstancedates.cend(), del_test))
 			continue;
 		auto time_test = [&](const EXCEPTIONINFO &e) {
 			return rop_util_rtime_to_unix(e.originalstartdate) == utnz;
 		};
-		if (std::any_of(apr.exceptions_cbegin(), apr.exceptions_cend(), time_test))
+		if (std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(), time_test))
 			continue;
 		evlist.push_back(ievent{ut, ut + static_cast<long>((apr.endtimeoffset - apr.starttimeoffset) * 60)});
 		if (ut >= end_time)
 			break;
 	} while (irrule.iterate());
-	for (unsigned int i = 0; i < apr.exceptioncount; ++i) {
-		auto ut = rop_util_rtime_to_unix(apr.pexceptioninfo[i].startdatetime);
+	if (apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
+		mlog(LV_ERR, "E-2725: programming error / invalid APR input");
+		return false;
+	}
+	for (size_t i = 0; i < apr.pexceptioninfo.size(); ++i) {
+		auto &ei = apr.pexceptioninfo[i];
+		auto ut = rop_util_rtime_to_unix(ei.startdatetime);
 		ical_time itime;
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
 		    !ical_itime_to_utc(tzcom, itime, &ut) ||
 		    ut < start_time || ut > end_time)
 			continue;
 		ievent event = {ut};
-		ut = rop_util_rtime_to_unix(apr.pexceptioninfo[i].enddatetime);
+		ut = rop_util_rtime_to_unix(ei.enddatetime);
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
 		    !ical_itime_to_utc(tzcom, itime, &ut))
 			continue;
@@ -456,16 +461,19 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		bool is_reminder = flag != nullptr && *flag != 0;
 		flag = rows.pparray[i]->get<uint8_t>(ptag.private_flag);
 		bool is_private  = flag != nullptr && *flag != 0;
-		auto num = rows.pparray[i]->get<const uint32_t>(ptag.busystatus);
-		uint32_t busy_type = num == nullptr || *num > olWorkingElsewhere ? 0 : *num;
-		num = rows.pparray[i]->get<uint32_t>(ptag.apptstateflags);
+		auto inum = rows.pparray[i]->get<const int32_t>(ptag.busystatus);
+		int32_t busy_type = inum == nullptr || *inum > olWorkingElsewhere ? 0 : *inum;
+		auto num = rows.pparray[i]->get<uint32_t>(ptag.apptstateflags);
 		bool is_meeting = num != nullptr && *num & asfMeeting;
 		flag = rows.pparray[i]->get<uint8_t>(ptag.recurring);
 
 		// non-recurring appointments
+		using FBE = freebusy_event;
 		if (flag == nullptr || *flag == 0) {
-			fb_data.emplace_back(start_whole, end_whole, busy_type, uid_buf.data(),
-				subject, location, is_meeting, false, false, is_reminder, is_private, detailed);
+			fb_data.emplace_back(start_whole, end_whole,
+				uid_buf.data(), FBE::optnul(subject), FBE::optnul(location),
+				busy_type, is_meeting, false, false,
+				is_reminder, is_private, detailed);
 			continue;
 		}
 		// recurring appointments
@@ -486,7 +494,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		if (bin == nullptr)
 			continue;
 		APPOINTMENT_RECUR_PAT apprecurr;
-		ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(bin->pb, bin->cb, nullptr, EXT_FLAG_UTF16);
 		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 			continue;
 
@@ -497,8 +505,9 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 
 		for (const auto &event : event_list) {
 			if (event.ei == nullptr || event.xe == nullptr) {
-				fb_data.emplace_back(event.start_time, event.end_time, busy_type,
-					uid_buf.data(), subject, location, is_meeting, TRUE, false,
+				fb_data.emplace_back(event.start_time, event.end_time,
+					uid_buf.data(), FBE::optnul(subject), FBE::optnul(location),
+					busy_type, is_meeting, true, false,
 					is_reminder, is_private, detailed);
 				continue;
 			}
@@ -506,11 +515,12 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 			bool ov_meeting  = (event.ei->overrideflags & ARO_MEETINGTYPE) ? event.ei->meetingtype & 1 : is_meeting;
 			bool ov_reminder = (event.ei->overrideflags & ARO_REMINDER)    ? event.ei->reminderset == 0 : is_reminder;
 			uint32_t ov_busy = (event.ei->overrideflags & ARO_BUSYSTATUS)  ? event.ei->busystatus : busy_type;
-			auto ov_subj     = (event.ei->overrideflags & ARO_SUBJECT)     ? event.xe->subject : subject;
-			auto ov_location = (event.ei->overrideflags & ARO_LOCATION)    ? event.xe->location : location;
+			auto &ov_subj     = (event.ei->overrideflags & ARO_SUBJECT)     ? event.xe->subject : subject;
+			auto &ov_location = (event.ei->overrideflags & ARO_LOCATION)    ? event.xe->location : location;
 
-			fb_data.emplace_back(event.start_time, event.end_time, ov_busy,
-				uid_buf.data(), ov_subj, ov_location, ov_meeting, TRUE, TRUE,
+			fb_data.emplace_back(event.start_time, event.end_time,
+				uid_buf.data(), ov_subj, ov_location,
+				ov_busy, ov_meeting, true, true,
 				ov_reminder, is_private, detailed);
 		}
 	}
@@ -521,4 +531,3 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 
 	return ecSuccess;
 }
-

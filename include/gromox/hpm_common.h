@@ -38,8 +38,8 @@ struct http_request {
 	void clear() { *this = {}; }
 
 	char method[14]{};
-	enum http_method imethod = http_method::none;
 	bool b_chunked = false, b_end = false;
+	enum http_method imethod = http_method::none;
 	char version[8]{};
 	uint64_t content_len = 0, chunk_offset = 0, chunk_size = 0, posted_size = 0;
 	std::string f_request_uri, f_host, f_user_agent, f_accept;

@@ -62,6 +62,7 @@ extern bool cu_verify_columns_and_sorts(proptag_cspan, const SORTORDER_SET *);
 extern bool cu_extract_delegator(message_object *, std::string &);
 extern gromox::repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
 extern gromox::repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
+extern void cu_flush_delegates(const char *dir, const BINARY_ARRAY *);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, gromox::proptag_t, const void *);
 extern void common_util_remove_propvals(TPROPVAL_ARRAY *, gromox::proptag_t);
 extern void cu_reduce_proptags(PROPTAG_ARRAY *, proptag_cspan);
@@ -88,7 +89,7 @@ template<typename T> T *cu_alloc(size_t elem)
 extern void cu_set_clifd(gromox::wrapfd &&);
 extern gromox::wrapfd *cu_get_clifd();
 extern char *common_util_dup(std::string_view);
-extern bool cu_parse_abkeid(BINARY, uint32_t *type, std::string &essdn);
+extern bool cu_parse_abkeid(std::string_view, uint32_t *type, std::string &essdn);
 uint16_t common_util_get_messaging_entryid_type(BINARY bin);
 extern bool cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, eid_t *folder_id);
 extern bool cu_entryid_to_mid(BINARY bin, BOOL *pb_private, int *pdb_id, eid_t *folder_id, eid_t *msg_id);

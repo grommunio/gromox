@@ -17,26 +17,20 @@ contain a \fBlist of filenames\fP (i.e. indirection). This can help
 when *.eml leads to an expansion the system cannot handle:
 .PP
 .RS 4
-.nf
 gromox\-eml2mbox *.eml >all.mbox
-.fi
 .RE
 .PP
 May result in a "Argument list too long" error in sh. Remedy for that:
 .PP
 .RS 4
-.nf
 find . \-maxdepth 1 \-type f \-name "*.eml" | gromox\-eml2mbox \-
 >all.mbox
-.fi
 .RE
 .PP
 To convert a single message coming from elsewhere via pipe:
 .PP
 .RS 4
-.nf
 gromox\-exm2mbox <1.eml >1.mbox
-.fi
 .RE
 .SH See also
 \fBgromox\fP(7)

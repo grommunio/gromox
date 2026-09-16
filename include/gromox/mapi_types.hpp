@@ -518,86 +518,76 @@ enum {
 	ENDDATE_MISSING_RDELTA = 0x5ae980e1,
 };
 
+/* MS-OXOCAL v22.1 §2.2.1.44.1 */
 struct GX_EXPORT RECURRENCE_PATTERN {
-	uint16_t readerversion; /* 0x3004 */
-	uint16_t writerversion; /* 0x3004 */
-	uint16_t recurfrequency;
-	uint16_t patterntype;
-	uint16_t calendartype;
-	uint32_t firstdatetime;
-	uint32_t period;
-	uint32_t slidingflag; /* only for scheduling tasks, otherwise 0 */
-	PATTERNTYPE_SPECIFIC pts;
-	uint32_t endtype;
-	uint32_t occurrencecount;
-	uint32_t firstdow;
-	uint32_t deletedinstancecount;
-	uint32_t *pdeletedinstancedates;
-	uint32_t modifiedinstancecount;
-	uint32_t *pmodifiedinstancedates;
-	uint32_t startdate;
-	uint32_t enddate; /* if no enddate, should be set to ENDDATE_MISSING */
+	struct vec : public std::vector<uint32_t> {
+		bool contains(uint32_t) const;
+		void sort();
+	};
+
+	uint16_t readerversion = default_version, writerversion = default_version;
+	uint16_t recurfrequency = 0;
+	uint16_t patterntype = 0, calendartype = CAL_DEFAULT;
+	uint32_t firstdatetime = 0, period = 0;
+	uint32_t slidingflag = 0; /* only for scheduling tasks, otherwise 0 */
+	PATTERNTYPE_SPECIFIC pts{};
+	uint32_t endtype = 0, occurrencecount = 0, firstdow = 0;
+	vec pdeletedinstancedates, pmodifiedinstancedates;
+	uint32_t startdate = 0, enddate = ENDDATE_MISSING;
+
+	static constexpr uint16_t default_version = 0x3004;
+
+	bool contains_del(uint32_t date) const;
+	bool contains_mod(uint32_t date) const;
+	void sort_dels();
+	void sort_mods();
 };
 
+/* MS-OXCDATA v22.1 §2.2.1.44.2 */
 struct GX_EXPORT EXCEPTIONINFO {
-	uint32_t startdatetime;
-	uint32_t enddatetime;
-	uint32_t originalstartdate;
-	uint16_t overrideflags;
-	char *subject;
-	uint32_t meetingtype;
-	uint32_t reminderdelta;
-	uint32_t reminderset;
-	char *location;
-	uint32_t busystatus;
-	uint32_t attachment;
-	uint32_t subtype;
-	uint32_t appointmentcolor;
+	uint32_t startdatetime = 0, enddatetime = 0, originalstartdate = 0;
+	uint16_t overrideflags = 0;
+	uint32_t meetingtype = 0, reminderdelta = 0, reminderset = 0;
+	/*
+	 * The optionality of @subject and @location is indicated by
+	 * @overrideflags, so the members need no optional<> wrapper.
+	 */
+	std::string subject, location;
+	uint32_t busystatus = 0, attachment = 0, subtype = 0, appointmentcolor = 0;
 
 	inline bool operator<(const EXCEPTIONINFO &o) const
 		{ return startdatetime < o.startdatetime; }
 };
 
+/* MS-OXCDATA v21 §2.2.1.44.3 */
 struct GX_EXPORT CHANGEHIGHLIGHT {
-	uint32_t size;
-	uint32_t value;
-	uint8_t *preserved;
+	uint32_t size = 0, value = 0;
 };
 
+/* MS-OXCDATA v22.1 §2.2.1.44.4 */
 struct GX_EXPORT EXTENDEDEXCEPTION {
-	CHANGEHIGHLIGHT changehighlight;
-	uint32_t reservedblockee1size;
-	uint8_t *preservedblockee1;
-	uint32_t startdatetime;
-	uint32_t enddatetime;
-	uint32_t originalstartdate;
-	char *subject;
-	char *location;
-	uint32_t reservedblockee2size;
-	uint8_t *preservedblockee2;
+	CHANGEHIGHLIGHT changehighlight{};
+	uint32_t startdatetime = 0, enddatetime = 0, originalstartdate = 0;
+	std::string subject, location;
 
 	inline bool operator<(const EXTENDEDEXCEPTION &o) const
 		{ return startdatetime < o.startdatetime; }
 };
 
+/* MS-OXCDATA v22.1 §2.2.1.44.5 */
 struct GX_EXPORT APPOINTMENT_RECUR_PAT {
-	RECURRENCE_PATTERN recur_pat;
-	uint32_t readerversion2; /* 0x00003006 */
-	uint32_t writerversion2; /* SHOULD be 0x00003009, can be 0x00003008 */
-	uint32_t starttimeoffset;
-	uint32_t endtimeoffset;
-	uint16_t exceptioncount; /* same as modifiedinstancecount
-								in recurrencepattern */
-	EXCEPTIONINFO *pexceptioninfo;
-	uint32_t reservedblock1size;
-	uint8_t *preservedblock1;
-	EXTENDEDEXCEPTION *pextendedexception;
-	uint32_t reservedblock2size;
-	uint8_t *preservedblock2;
+	RECURRENCE_PATTERN recur_pat{};
+	uint32_t readerversion2 = default_readerversion;
+	uint32_t writerversion2 = default_writerversion; /* can be 0x3008 too */
+	uint32_t starttimeoffset = 0, endtimeoffset = 0;
+	std::vector<EXCEPTIONINFO> pexceptioninfo; /* size should be same as recur_pat.pmodifiedinstancedates.size() */
+	std::vector<EXTENDEDEXCEPTION> pextendedexception; /* size should be same as pexceptioninfo.size() */
+
+	static constexpr uint32_t default_readerversion = 0x3006;
+	static constexpr uint32_t default_writerversion = 0x3009;
 
 	public:
-	inline const EXCEPTIONINFO *exceptions_cbegin() const { return pexceptioninfo; }
-	inline const EXCEPTIONINFO *exceptions_cend() const { return pexceptioninfo + exceptioncount; }
+	void sort_exceptions();
 };
 
 /* GOID is not to be confused with GID (MS-OXCPRPT v25 §1.1) */

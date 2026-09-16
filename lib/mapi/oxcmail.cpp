@@ -2806,7 +2806,7 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 	}
 	auto v = props.get<const BINARY>(tags.pr_entryid);
 	if (v != nullptr) {
-		auto ret = cvt_entryid_to_smtpaddr(v, org, std::move(id2user), username);
+		auto ret = cvt_entryid_to_smtpaddr(*v, org, std::move(id2user), username);
 		if (ret == ecSuccess) {
 			username.insert(0, "rfc822;");
 			return true;
@@ -3149,10 +3149,8 @@ static const char *sender_id_to_text(const uint32_t *v)
 }
 
 static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
-    MIME *phead, bool sched) try
+    MIME *phead) try
 {
-	if (sched)
-		return true;
 	auto str  = pmsg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto str1 = pmsg->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr && str1 != nullptr) {
@@ -3191,12 +3189,19 @@ static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
 {
 	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (sched) {
-		if (oxcmail_export_address(pmsg, tags_sender, *mb)) {
-			auto mg = mb->generate();
-			if (!phead->set_field("From", std::move(mg)))
-				return false;
+		/*
+		 * A delegate answers an invitation in the mailbox owner's name, so the
+		 * owner belongs in From and the delegate in Sender, same as any other
+		 * mail sent on behalf of someone. Fall back to the sender when the
+		 * message names nobody to represent.
+		 */
+		if (!oxcmail_export_address(pmsg, tags_sent_repr, *mb)) {
+			mb = vmime::make_shared<vmime::mailbox>("");
+			if (!oxcmail_export_address(pmsg, tags_sender, *mb))
+				return true;
 		}
-		return true;
+		auto mg = mb->generate();
+		return phead->set_field("From", std::move(mg));
 	}
 	if (oxcmail_export_address(pmsg, tags_sent_repr, *mb)) { {
 		auto mg = mb->generate();
@@ -3305,7 +3310,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 
 	auto sched = pskeleton->mail_type == oxcmail_type::calendar;
 	if (!phead->set_field("MIME-Version", "1.0") ||
-	    !oxcmail_export_sender(pmsg, phead, sched) ||
+	    !oxcmail_export_sender(pmsg, phead) ||
 	    !oxcmail_export_fromsender(pmsg, phead, sched) ||
 	    !oxcmail_export_receiptto(pmsg, phead, sched) ||
 	    !oxcmail_export_receiptflg(pmsg, phead, sched) ||

@@ -251,14 +251,26 @@ pack_result EXT_PULL::g_fb(freebusy_event *fb_event)
 	fb_event->has_details = b;
 
 	if (b) {
-		TRY(g_str(&fb_event->m_id));
-		TRY(g_str(&fb_event->m_subject));
-		fb_event->id = fb_event->m_id.c_str();
-		fb_event->subject = fb_event->m_subject.c_str();
 		TRY(g_bool(&b));
 		if (b) {
-			TRY(g_str(&fb_event->m_location));
-			fb_event->location = fb_event->m_location.c_str();
+			fb_event->id.emplace();
+			TRY(g_str(&*fb_event->id));
+		} else {
+			fb_event->id.reset();
+		}
+		TRY(g_bool(&b));
+		if (b) {
+			fb_event->subject.emplace();
+			TRY(g_str(&*fb_event->subject));
+		} else {
+			fb_event->subject.reset();
+		}
+		TRY(g_bool(&b));
+		if (b) {
+			fb_event->location.emplace();
+			TRY(g_str(&*fb_event->location));
+		} else {
+			fb_event->location.reset();
 		}
 		TRY(g_bool(&b)); fb_event->is_meeting     = b;
 		TRY(g_bool(&b)); fb_event->is_recurring   = b;
@@ -353,18 +365,22 @@ pack_result EXT_PUSH::p_fbevent(const freebusy_event &r)
 	TRY(p_int64(r.end_time));
 	TRY(p_uint32(r.busy_status));
 	TRY(p_bool(r.has_details));
-	if (r.has_details) {
-		TRY(p_str(r.id));
-		TRY(p_str(r.subject));
-		TRY(p_bool(r.location != nullptr));
-		if (r.location != nullptr)
-			TRY(p_str(r.location));
-		TRY(p_bool(r.is_meeting));
-		TRY(p_bool(r.is_recurring));
-		TRY(p_bool(r.is_exception));
-		TRY(p_bool(r.is_reminderset));
-		TRY(p_bool(r.is_private));
-	}
+	if (!r.has_details)
+		return pack_result::ok;
+	TRY(p_bool(r.id.has_value()));
+	if (r.id)
+		TRY(p_str(*r.id));
+	TRY(p_bool(r.subject.has_value()));
+	if (r.subject)
+		TRY(p_str(*r.subject));
+	TRY(p_bool(r.location.has_value()));
+	if (r.location)
+		TRY(p_str(*r.location));
+	TRY(p_bool(r.is_meeting));
+	TRY(p_bool(r.is_recurring));
+	TRY(p_bool(r.is_exception));
+	TRY(p_bool(r.is_reminderset));
+	TRY(p_bool(r.is_private));
 	return pack_result::ok;
 }
 
@@ -432,4 +448,32 @@ std::string GLOBALOBJECTID::third_party_uid() const
 		return {};
 	/* OL trims after first \0 */
 	return std::string(&data.pc[12], strnlen(&data.pc[12], data.cb - 12));
+}
+
+bool RECURRENCE_PATTERN::contains_del(uint32_t v) const
+{
+	auto &vec = pdeletedinstancedates;
+	return std::find(vec.cbegin(), vec.cend(), v) != vec.cend();
+}
+
+bool RECURRENCE_PATTERN::contains_mod(uint32_t v) const
+{
+	auto &vec = pmodifiedinstancedates;
+	return std::find(vec.cbegin(), vec.cend(), v) != vec.cend();
+}
+
+void RECURRENCE_PATTERN::sort_dels()
+{
+	std::sort(pdeletedinstancedates.begin(), pdeletedinstancedates.end());
+}
+
+void RECURRENCE_PATTERN::sort_mods()
+{
+	std::sort(pmodifiedinstancedates.begin(), pmodifiedinstancedates.end());
+}
+
+void APPOINTMENT_RECUR_PAT::sort_exceptions()
+{
+	std::sort(pexceptioninfo.begin(), pexceptioninfo.end());
+	std::sort(pextendedexception.begin(), pextendedexception.end());
 }
