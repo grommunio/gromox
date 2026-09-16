@@ -4145,6 +4145,7 @@ void tItem::update(const sShape& shape)
 		defaulted(Flag).FlagStatus = Enum::NotFlagged;
 	}
 
+	ExtendedProperty.clear();
 	shape.putExtended(ExtendedProperty);
 };
 
