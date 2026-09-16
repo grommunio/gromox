@@ -96,6 +96,15 @@ struct seen_list {
 	std::vector<rule_delete_audit> deletions;
 };
 
+static std::string audit_store_location()
+{
+	if (!exmdb_server::is_private())
+		return "public folders";
+	std::string account;
+	mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), account);
+	return "mailbox " + account;
+}
+
 }
 
 static ec_error_t message_rule_new_message(const rulexec_in &, seen_list &);
@@ -188,13 +197,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	auto subject = static_cast<const char *>(pv_subject);
 	auto src_folder = static_cast<const char *>(pv_src_folder);
 	auto dst_folder = static_cast<const char *>(pv_dst_folder);
-	std::string mailbox;
-	if (exmdb_server::is_private()) {
-		mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), mailbox);
-		mailbox = "mailbox " + mailbox;
-	} else {
-		mailbox = "public folders";
-	}
+	auto mailbox = audit_store_location();
 
 	uint32_t message_size = 0;
 	if (!cu_copy_message(*pdb, mid_val, fid_val, &dst_val,
@@ -339,13 +342,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	}
 
 	// Prepare data for gromox-audit
-	std::string mailbox;
-	if (exmdb_server::is_private()) {
-		mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), mailbox);
-		mailbox = "mailbox " + mailbox;
-	} else {
-		mailbox = "public folders";
-	}
+	auto mailbox = audit_store_location();
 	void *pv_src_folder = nullptr, *pv_dst_folder = nullptr;
 	cu_get_property(MAPI_FOLDER, src_val, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_src_folder);
 	cu_get_property(MAPI_FOLDER, dst_val, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_dst_folder);
@@ -602,13 +599,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	void *pv_src_folder = nullptr;
 	cu_get_property(MAPI_FOLDER, src_val, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_src_folder);
 	auto src_folder = static_cast<const char *>(pv_src_folder);
-	std::string mailbox;
-	if (exmdb_server::is_private()) {
-		mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), mailbox);
-		mailbox = "mailbox " + mailbox;
-	} else {
-		mailbox = "public folders";
-	}
+	auto mailbox = audit_store_location();
 
 	auto b_batch = gx_collapse_event_storm && pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
 	auto dbase = pdb->lock_base_wr();
@@ -3654,13 +3645,7 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 	cu_get_property(MAPI_FOLDER, rp.folder_id, CP_ACP, rp.db, PR_DISPLAY_NAME, &pv_folder);
 	auto subject = static_cast<const char *>(pv_subject);
 	auto folder = static_cast<const char *>(pv_folder);
-	std::string mailbox;
-	if (exmdb_server::is_private()) {
-		mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), mailbox);
-		mailbox = "mailbox " + mailbox;
-	} else {
-		mailbox = "public folders";
-	}
+	auto mailbox = audit_store_location();
 
 	std::erase(seen.msg, message_node{rp.folder_id, rp.message_id});
 	void *pvalue = nullptr;
@@ -4065,13 +4050,7 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 	cu_get_property(MAPI_FOLDER, fid_val, CP_ACP, *pdb, PR_DISPLAY_NAME, &pv_folder);
 	auto subject = static_cast<const char *>(pv_subject);
 	auto folder = static_cast<const char *>(pv_folder);
-	std::string mailbox;
-	if (exmdb_server::is_private()) {
-		mysql_adaptor_userid_to_name( exmdb_server::get_account_id(), mailbox);
-		mailbox = "mailbox " + mailbox;
-	} else {
-		mailbox = "public folders";
-	}
+	auto mailbox = audit_store_location();
 
 	if (digest_stream.size() > 0) {
 		Json::Value digest;
