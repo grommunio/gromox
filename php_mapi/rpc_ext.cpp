@@ -1131,6 +1131,19 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_link_messages &d)
 	return pack_result::ok;
 }
 
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getsendpermissions &d)
+{
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_bin(d.entryid));
+	return pack_result::ok;
+}
+
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getsendpermissions &d)
+{
+	TRY(x.g_uint32(&d.permissions));
+	return pack_result::ok;
+}
+
 pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 {
 	PUSH_CTX push_ctx;
