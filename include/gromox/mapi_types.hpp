@@ -535,6 +535,8 @@ struct GX_EXPORT RECURRENCE_PATTERN {
 
 	static constexpr uint16_t default_version = 0x3004;
 
+	bool contains_del(uint32_t date) const;
+	bool contains_mod(uint32_t date) const;
 	void sort_dels();
 	void sort_mods();
 };

@@ -2546,11 +2546,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 				return err;
 			}
 			auto minutes = rop_util_unix_to_rtime(tmp_time);
-			size_t i;
-			for (i = 0; i < apr.recur_pat.deletedinstancecount; ++i)
-				if (deleted_dates[i] == minutes)
-					break;
-			if (i < apr.recur_pat.deletedinstancecount)
+			if (apr.recur_pat.contains_del(minutes))
 				continue;
 			if (apr.recur_pat.deletedinstancecount >= appt_max_exceptions) {
 				errstr = "E-2731: The appointment has too many deleted occurrences for this implementation";

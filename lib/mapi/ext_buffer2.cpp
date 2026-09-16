@@ -450,6 +450,18 @@ std::string GLOBALOBJECTID::third_party_uid() const
 	return std::string(&data.pc[12], strnlen(&data.pc[12], data.cb - 12));
 }
 
+bool RECURRENCE_PATTERN::contains_del(uint32_t v) const
+{
+	auto eo = pdeletedinstancedates + deletedinstancecount;
+	return std::find(pdeletedinstancedates, eo, v) != eo;
+}
+
+bool RECURRENCE_PATTERN::contains_mod(uint32_t v) const
+{
+	auto eo = pmodifiedinstancedates + modifiedinstancecount;
+	return std::find(pmodifiedinstancedates, eo, v) != eo;
+}
+
 void RECURRENCE_PATTERN::sort_dels()
 {
 	std::sort(pdeletedinstancedates, pdeletedinstancedates + deletedinstancecount);

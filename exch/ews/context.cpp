@@ -431,13 +431,7 @@ void markOccurrenceId(sItem &item, uint32_t basedate)
  */
 bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
 {
-	bool deleted = std::any_of(&rp.pdeletedinstancedates[0],
-	               &rp.pdeletedinstancedates[rp.deletedinstancecount],
-	               [date](uint32_t entry) { return entry == date; });
-	if (!deleted)
-		return false;
-	return std::none_of(&rp.pmodifiedinstancedates[0], &rp.pmodifiedinstancedates[rp.modifiedinstancecount],
-	       [date](uint32_t entry) { return entry == date; });
+	return rp.contains_del(date) && !rp.contains_mod(date);
 }
 
 /**
@@ -2084,10 +2078,8 @@ void EWSContext::deleteOccurrence(const std::string &dir,
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
 
-	/* Check if this date is already deleted */
 	auto &rp = apr.recur_pat;
-	if (std::any_of(&rp.pdeletedinstancedates[0], &rp.pdeletedinstancedates[rp.deletedinstancecount],
-	    [=](uint32_t entry) { return entry == basedate; }))
+	if (rp.contains_del(basedate))
 		return; /* already deleted */
 
 	/* Add the basedate to the deleted instances array */
@@ -2634,11 +2626,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	auto &rp = apr.recur_pat;
 
 	/* Add to deleted instances (required for modified occurrences too) */
-	bool in_deleted = false;
-	for (uint32_t i = 0; i < rp.deletedinstancecount; ++i)
-		if (rp.pdeletedinstancedates[i] == basedate)
-			{ in_deleted = true; break; }
-	if (!in_deleted) {
+	if (!rp.contains_del(basedate)) {
 		auto nd = alloc<uint32_t>(rp.deletedinstancecount + 1);
 		memcpy(nd, rp.pdeletedinstancedates,
 		       rp.deletedinstancecount * sizeof(uint32_t));
@@ -2649,11 +2637,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	}
 
 	/* Add to modified instances */
-	bool in_modified = false;
-	for (uint32_t i = 0; i < rp.modifiedinstancecount; ++i)
-		if (rp.pmodifiedinstancedates[i] == basedate)
-			{ in_modified = true; break; }
-	if (!in_modified) {
+	if (!rp.contains_mod(basedate)) {
 		auto nm = alloc<uint32_t>(rp.modifiedinstancecount + 1);
 		memcpy(nm, rp.pmodifiedinstancedates,
 		       rp.modifiedinstancecount * sizeof(uint32_t));
