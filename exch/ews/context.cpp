@@ -2176,8 +2176,7 @@ bool EWSContext::saveRecurBlob(const std::string &dir, uint64_t mid,
 		return false;
 	BINARY new_bin;
 	new_bin.cb = ext_push.m_offset;
-	new_bin.pb = alloc<uint8_t>(new_bin.cb);
-	memcpy(new_bin.pb, ext_push.m_udata, new_bin.cb);
+	new_bin.pb = ext_push.m_udata;
 	const TAGGED_PROPVAL rprop[] = {{recur_tag, &new_bin}};
 	const TPROPVAL_ARRAY rpropvals = {std::size(rprop), deconst(rprop)};
 	PROBLEM_ARRAY rproblems;
