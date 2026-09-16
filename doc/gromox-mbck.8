@@ -4,21 +4,21 @@
 .SH Synopsis
 \fBgromox\-mbck\fP [\fB\-p\fP] exchange.sqlite3 [...]
 .SH Description
-mbck checks one or more mailbox databases (exmdb/exchange.sqlite3) for
-specific inconsistencies in their internal bookkeeping. Use it when
-investigating suspected mailbox database damage, for example after a database
-recovery, or when directed to do so by support.
+mbck checks one or more mailbox databases (exmdb/exchange.sqlite3) for specific
+inconsistencies in Gromox's bookkeeping. Use it when investigating suspected
+synchronization issues.
 .PP
-The main check verifies that every positive folder and message ID is covered
-by an entry in the allocated_eids table. Missing entries mean the database
-does not record those IDs as allocated. With \fB\-p\fP, mbck inserts allocation
-records for the affected IDs. Without \fB\-p\fP, it reports the affected IDs
-and issue counts without applying repairs.
+The main check validates that every folder and message ID is covered by a prior
+block reservation. Block reservations are means to cluster message IDs
+together, which is supposed to help the compression of ICS metadata a bit
+(saves at most 8 bytes per message). With the repair action selected, missing
+reservations are added.
 .PP
-An additional index-related diagnostic is present, but does not establish
-that all required indexes exist; index repair is not implemented. mbck is
-not a general SQLite integrity checker and does not verify message bodies or
-attachments in the cid directory.
+A second check validates that all indices that are supposed to exist do, in
+fact, exist. This is a read-only test, with no repair actions defined.
+.PP
+mbck is not a general SQLite integrity checker and does not verify message
+bodies or attachments in the cid directory.
 .PP
 Back up the mailbox before using \fB\-p\fP.
 .PP
@@ -27,10 +27,11 @@ believed it is "mostly fine":
 .PP
 It is technically safe to run gromox\-mbck while gromox\-http has a mailbox
 open, provided Gromox is version >= 2.30. HOWEVER, gromox\-http (still as of
-Gromox 2.36) does not anticipate databases being write-locked by another
-process for undue amounts of time (gromox.cfg:sqlite_busy_timeout), and signals
-an operational error to the caller. For example, mail cannot be delivered to
-the mailbox while mbck is running in repair/write mode.
+Gromox 3.10) does not anticipate databases being write-locked by another
+process for undue amounts of time (gromox.cfg:sqlite_busy_timeout), and will
+signal an operational error upwards if that time limit is reached. For example,
+mail cannot be delivered to the mailbox while mbck is running in repair/write
+mode.
 .SH Options
 .TP
 \fB\-p\fP
