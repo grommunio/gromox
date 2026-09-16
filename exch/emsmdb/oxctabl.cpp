@@ -812,9 +812,8 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	    folder_id, 0, count, prow))
 		return ecError;
 
-	if (!mailbox.empty())
-		mlog(LV_NOTICE, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EMSMDB",
-			actor, znul(folder_name), mailbox.c_str());
+	mlog(LV_NOTICE, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EMSMDB",
+		actor, znul(folder_name), mailbox.c_str());
 
 	return ecSuccess;
 }
