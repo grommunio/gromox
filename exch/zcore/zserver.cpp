@@ -949,7 +949,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		*pmapi_type = zs_objtype::message;
 		if (!(entryid.cb >= 7 &&
 		    strncmp(entryid.pc, "/exmdb=", 7) == 0)) {
-			const char *subject = "(subject unavailable)";
+			const char *subject = "";
 			try {
 				static constexpr proptag_t tags[] = {PR_SUBJECT};
 				TPROPVAL_ARRAY props{};

@@ -1144,7 +1144,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	if (subject == nullptr)
 		subject = pmsgctnt->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
 	if (subject == nullptr)
-		subject = "(subject unavailable)";
+		subject = "";
 	auto audit_actor = pinfo == nullptr ? nullptr : pinfo->get_username();
 	auto sender = pmsgctnt->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto representing = pmsgctnt->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);

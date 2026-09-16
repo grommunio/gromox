@@ -3970,7 +3970,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	if (subject == nullptr)
 		subject = pmsg->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
 	mlog(LV_NOTICE, "gromox-audit: delivered message \"%s\" from %s to mailbox %s%s",
-		subject != nullptr ? subject : "(subject unavailable)",
+		znul(subject),
 		znul(from_address), account.c_str(),
 		partial ? " (partial completion)" : "");
 	dg_notify(std::move(notifq));

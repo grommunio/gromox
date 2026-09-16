@@ -834,7 +834,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 	if (b_data && std::any_of(pitem_list.begin(), pitem_list.end(),
 	    [](const auto &kw) { return icp_fetch_content(kw.c_str()); })) {
 		mlog(LV_NOTICE, "gromox-audit: %s requested message content \"%s\" in mailbox %s via IMAP",
-		     ctx.authenticated_actor, mjson.subject.empty() ? "(no subject)" : mjson.subject.c_str(), ctx.username);
+		     ctx.authenticated_actor, mjson.subject.c_str(), ctx.username);
 	}
 	bool b_first = false;
 	buf = "* " + std::to_string(item_id) + " FETCH (";

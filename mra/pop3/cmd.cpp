@@ -370,7 +370,7 @@ int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 	pop3_parser_log_info(pcontext, LV_DEBUG,
 		"message %s is going to be retrieved", eml_path.c_str());
 	mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in mailbox %s via POP3",
-	     ctx.authenticated_actor, subject.empty() ? "(no subject)" : subject.c_str(), ctx.username);
+	     ctx.authenticated_actor, subject.c_str(), ctx.username);
 	return DISPATCH_DATA;
 }
 
@@ -431,7 +431,7 @@ int cmdh_top(std::vector<std::string> &&argv, pop3_context *pcontext)
 	}
 	if (ctx.until_line > 0)
 		mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in mailbox %s via POP3",
-		     ctx.authenticated_actor, subject.empty() ? "(no subject)" : subject.c_str(), ctx.username);
+		     ctx.authenticated_actor, subject.c_str(), ctx.username);
 	return DISPATCH_DATA;
 }
 
