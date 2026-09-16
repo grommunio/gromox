@@ -816,9 +816,8 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	if (!exmdb_client->update_folder_permission(plogon->get_dir(),
 	    folder_id, 0, count, prow))
 		return ecError;
-	if (!mailbox.empty())
-		mlog(LV_INFO, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EMSMDB",
-			actor, znul(folder_name), mailbox.c_str());
+	mlog(LV_INFO, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EMSMDB",
+		actor, znul(folder_name), mailbox.c_str());
 	return ecSuccess;
 }
 
