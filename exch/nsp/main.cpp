@@ -31,7 +31,7 @@ static void exchange_nsp_unbind(uint64_t handle);
 static DCERPC_ENDPOINT *ep_6001, *ep_6004;
 
 static constexpr cfg_directive nsp_cfg_defaults[] = {
-	{"cache_interval", "5min", CFG_TIME, "1s", "1d"},
+	{"cache_interval", "5min", CFG_TIME, "1s"},
 	{"hash_table_size", "3000", CFG_SIZE, "1"},
 	{"nsp_trace", "0"},
 	{"x500_org_name", "Gromox default"},
