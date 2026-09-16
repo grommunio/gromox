@@ -461,9 +461,9 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		bool is_reminder = flag != nullptr && *flag != 0;
 		flag = rows.pparray[i]->get<uint8_t>(ptag.private_flag);
 		bool is_private  = flag != nullptr && *flag != 0;
-		auto num = rows.pparray[i]->get<const uint32_t>(ptag.busystatus);
-		uint32_t busy_type = num == nullptr || *num > olWorkingElsewhere ? 0 : *num;
-		num = rows.pparray[i]->get<uint32_t>(ptag.apptstateflags);
+		auto inum = rows.pparray[i]->get<const int32_t>(ptag.busystatus);
+		int32_t busy_type = inum == nullptr || *inum > olWorkingElsewhere ? 0 : *inum;
+		auto num = rows.pparray[i]->get<uint32_t>(ptag.apptstateflags);
 		bool is_meeting = num != nullptr && *num & asfMeeting;
 		flag = rows.pparray[i]->get<uint8_t>(ptag.recurring);
 
