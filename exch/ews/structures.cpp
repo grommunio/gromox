@@ -483,16 +483,18 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 
 	size_t del_count = 0; // counter for deleted occurrences
 	for (size_t i = 0; i < apprecurr.recur_pat.deletedinstancecount; ++i) {
-		if (mod_insts.find(apprecurr.recur_pat.pdeletedinstancedates[i]) != mod_insts.end()) {
+		auto di = apprecurr.recur_pat.pdeletedinstancedates[i];
+		if (mod_insts.find(di) != mod_insts.end()) {
+			auto &ei = apprecurr.pexceptioninfo[i-del_count];
 			modOccs.emplace_back(tOccurrenceInfoType({
-				sOccurrenceId(*entryid, apprecurr.pexceptioninfo[i-del_count].originalstartdate),
-				rtime_to_tp(tz_offset, apprecurr.pexceptioninfo[i-del_count].startdatetime),
-				rtime_to_tp(tz_offset, apprecurr.pexceptioninfo[i-del_count].enddatetime),
-				rtime_to_tp(tz_offset, apprecurr.pexceptioninfo[i-del_count].originalstartdate)}));
+				sOccurrenceId(*entryid, ei.originalstartdate),
+				rtime_to_tp(tz_offset, ei.startdatetime),
+				rtime_to_tp(tz_offset, ei.enddatetime),
+				rtime_to_tp(tz_offset, ei.originalstartdate)}));
 		} else {
 			del_count++;
 			delOccs.emplace_back(tDeletedOccurrenceInfoType{rtime_to_tp(tz_offset,
-				apprecurr.recur_pat.pdeletedinstancedates[i] + apprecurr.starttimeoffset)});
+				di + apprecurr.starttimeoffset)});
 		}
 	}
 }
