@@ -4008,7 +4008,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				TZDEF tz_definition;
 				TZSTRUCT tz_struct;
 
-				ext_pull.init(bin->pb, bin->cb, alloc, 0);
+				ext_pull.init(bin->pb, bin->cb, nullptr, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
 				new_tzid = tz_definition.keyname;
@@ -4028,7 +4028,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				TZDEF tz_definition;
 				TZSTRUCT tz_struct;
 
-				ext_pull.init(bin->pb, bin->cb, alloc, 0);
+				ext_pull.init(bin->pb, bin->cb, nullptr, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2209: PidLidAppointmentTimeZoneDefinition{Start/End}Display contents not recognized";
 				new_tzid = tz_definition.keyname;

@@ -2934,7 +2934,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 				if (buf) {
 					EXT_PULL exp;
 					TZDEF tz;
-					exp.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+					exp.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
 					int64_t tz_off = 0;
 					if (exp.g_tzdef(&tz) == pack_result::ok &&
 					    offset_from_tz(tz, localStartTime, tz_off))
@@ -3933,7 +3933,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 					if (buf) {
 						EXT_PULL ep;
 						TZDEF tzd;
-						ep.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+						ep.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
 						if (ep.g_tzdef(&tzd) == pack_result::ok)
 							offset_from_tz(tzd, localStartTime, tz_off);
 					}
@@ -4115,7 +4115,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 
 			EXT_PULL ext_pull;
 			TZDEF tzdef;
-			ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+			ext_pull.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
 			if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 				throw EWS::DispatchError(E3294);
 

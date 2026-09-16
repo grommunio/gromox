@@ -1933,7 +1933,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
 				EXT_PULL ext_pull;
 				TZDEF tzdef;
-				ext_pull.init(buf->data(), buf->size(), EWSContext::alloc, EXT_FLAG_UTF16);
+				ext_pull.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
 				if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 					throw EWSError::InternalServerError(E3294);
 				/*

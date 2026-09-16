@@ -54,7 +54,7 @@ static int d_raw(const char *name, const void *data, size_t size)
 {
 	EXT_PULL ep;
 	TZDEF def;
-	ep.init(data, size, zalloc, EXT_FLAG_UTF16);
+	ep.init(data, size, nullptr, EXT_FLAG_UTF16);
 	if (ep.g_tzdef(&def) != pack_result::ok) {
 		fprintf(stderr, "%s: does not look like a TZDEF\n", name);
 		return EXIT_FAILURE;
