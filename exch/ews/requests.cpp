@@ -795,8 +795,7 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 		delegate_list.emplace_back(addr);
 		existing.emplace(addr);
 		if (du.DelegatePermissions)
-			ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
-		changed = true;
+			changed |= ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
 		msg.success();
 		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 	}
