@@ -2,10 +2,25 @@
 .SH Name
 \fBgromox\-mbck\fP \(em Mailbox check and repair utility
 .SH Synopsis
-\fBgromox\-mbck\fP [\fB\-p\fP] x.sqlite
+\fBgromox\-mbck\fP [\fB\-p\fP] exchange.sqlite3 [...]
 .SH Description
-mbck can be used to check one or more mailboxes for problems, and optionally
-repairing them.
+mbck checks one or more mailbox databases (exmdb/exchange.sqlite3) for
+specific inconsistencies in their internal bookkeeping. Use it when
+investigating suspected mailbox database damage, for example after a database
+recovery, or when directed to do so by support.
+.PP
+The main check verifies that every positive folder and message ID is covered
+by an entry in the allocated_eids table. Missing entries mean the database
+does not record those IDs as allocated. With \fB\-p\fP, mbck inserts allocation
+records for the affected IDs. Without \fB\-p\fP, it reports the affected IDs
+and issue counts without applying repairs.
+.PP
+An additional index-related diagnostic is present, but does not establish
+that all required indexes exist; index repair is not implemented. mbck is
+not a general SQLite integrity checker and does not verify message bodies or
+attachments in the cid directory.
+.PP
+Back up the mailbox before using \fB\-p\fP.
 .PP
 mbck directly operates on the filesystem, which is not ideal, but it is
 believed it is "mostly fine":
