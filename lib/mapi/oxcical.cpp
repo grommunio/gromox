@@ -1485,52 +1485,52 @@ static ol_busy_status lookup_busy_by_name(const char *s)
 {
 	auto it = std::find_if(std::cbegin(busy_status_names), std::cend(busy_status_names),
 	          [&](const auto &p) { return strcasecmp(p.second, s) == 0; });
-	return it != std::cend(busy_status_names) ? it->first : olIndeterminate;
+	return it != std::cend(busy_status_names) ? it->first : olBusyUnspecified;
 }
 
 static ol_busy_status lookup_busy_by_name(const ical_line *l)
 {
 	if (l == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	auto v = l->get_first_subvalue();
-	return v != nullptr ? lookup_busy_by_name(v) : olIndeterminate;
+	return v != nullptr ? lookup_busy_by_name(v) : olBusyUnspecified;
 }
 
 static ol_busy_status lookup_busy_by_transp(const ical_line *l)
 {
 	if (l == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	auto v = l->get_first_subvalue();
 	if (v == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	if (strcasecmp(v, "TRANSPARENT") == 0)
 		return olFree;
 	if (strcasecmp(v, "OPAQUE") == 0)
 		return olBusy;
-	return olIndeterminate;
+	return olBusyUnspecified;
 }
 
 static ol_busy_status lookup_busy_by_status(const ical_line *l)
 {
 	if (l == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	auto v = l->get_first_subvalue();
 	if (v == nullptr)
-		return olIndeterminate;
+		return olBusyUnspecified;
 	if (strcasecmp(v, "CANCELLED") == 0)
 		return olFree;
 	if (strcasecmp(v, "TENTATIVE") == 0)
 		return olTentative;
 	if (strcasecmp(v, "CONFIRMED") == 0)
 		return olBusy;
-	return olIndeterminate;
+	return olBusyUnspecified;
 }
 
 static bool oxcical_set_busystatus(ol_busy_status busy_status,
     uint32_t pidlid, namemap &phash, uint16_t *plast_propid,
     MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
 {
-	if (busy_status == olIndeterminate)
+	if (busy_status == olBusyUnspecified)
 		return true;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, pidlid};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != ecSuccess)
@@ -2381,17 +2381,17 @@ static ec_error_t oxcical_import_internal(const char *method,
 	auto intent_status = lookup_busy_by_name(piline);
 	if (method != nullptr && strcasecmp(method, "REQUEST") == 0) {
 		/* OXCICAL v11 pg 73 */
-		if (intent_status == olIndeterminate) {
+		if (intent_status == olBusyUnspecified) {
 			intent_status = busy_status;
-			if (intent_status == olIndeterminate) {
+			if (intent_status == olBusyUnspecified) {
 				intent_status = olBusy;
 				busy_status = olTentative;
 			}
 		}
 	}
-	if (busy_status == olIndeterminate)
+	if (busy_status == olBusyUnspecified)
 		busy_status = lookup_busy_by_transp(pmain_event->get_line("TRANSP"));
-	if (busy_status == olIndeterminate)
+	if (busy_status == olBusyUnspecified)
 		busy_status = lookup_busy_by_status(pmain_event->get_line("STATUS"));
 	/*
 	 * N.B.: This edits the MAPI message destined for the Inbox folder; it is not
@@ -4197,7 +4197,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		pcomponent->append_line("DTSTAMP", tmp_buff);
 	}
 
-	auto pbusystatus = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_busystatus]));
+	auto pbusystatus = pmsg->proplist.get<int32_t>(PROP_TAG(PT_LONG, propids[l_busystatus]));
 	if (pbusystatus != nullptr) {
 		switch (static_cast<ol_busy_status>(*pbusystatus)) {
 		case olFree:
@@ -4237,9 +4237,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
 			"X-MICROSOFT-CDO-BUSYSTATUS", pcomponent);
 
-	num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_intendedbusy]));
-	if (num != nullptr)
-		busystatus_to_line(static_cast<ol_busy_status>(*num),
+	inum = pmsg->proplist.get<int32_t>(PROP_TAG(PT_LONG, propids[l_intendedbusy]));
+	if (inum != nullptr)
+		busystatus_to_line(static_cast<ol_busy_status>(*inum),
 			"X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent);
 
 	pcomponent->append_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");

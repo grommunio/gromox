@@ -557,7 +557,6 @@ enum ol_busy_status {
 	olBusy = 2,
 	olOutOfOffice = 3,
 	olWorkingElsewhere = 4,
-	olIndeterminate = 0xffff, /* gromox internal */
 	/*
 	 * OL creates PidLidIntendedBusyStatus with this value. Not documented
 	 * in MS-OXOCAL v22.1, but it makes an appearance in MS-OUTSPS v11.1
