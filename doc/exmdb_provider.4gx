@@ -276,8 +276,7 @@ Maximum number of concurrently active mailboxes.
 Default: \fI5000\fP
 .TP
 \fBx500_org_name\fP
-.br
-Default: (unspecified)
+See gromox.cfg(5):x500_org_name.
 .SH Sharding / Multiple Home Server Cluster
 Each exmdb_provider (server) instance evalutes the SQL columns
 \fBusers.homeserver\fP/\fBservers.hostname\fP for private stores and
