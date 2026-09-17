@@ -1200,6 +1200,25 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 			    aInstId, &err) || err != ecSuccess)
 				throw EWSError::ItemSave(E3431);
+			/*
+			 * Flushing an attachment instance only merges it into its
+			 * parent message instance's in-memory content
+			 * (exmdb_server::flush_instance()'s instance_type::attachment
+			 * branch, exch/exmdb/instance.cpp) - it does not touch the
+			 * database. The message instance itself must be flushed too
+			 * for the attachment to actually reach the attachments/
+			 * attachment_properties tables; without this, CreateAttachment
+			 * reports success (the attachment is genuinely present in the
+			 * cached message instance at that point) but the attachment
+			 * silently never persists - observed live: present right
+			 * after CreateAttachment, gone from the store (and thus from
+			 * the sent mail) by the time the message is read back via
+			 * read_message()/movecopy_message() at send time. Mirrors
+			 * what DeleteAttachment already does correctly below.
+			 */
+			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
+			    mInst->instanceId, &err) || err != ecSuccess)
+				throw EWSError::ItemSave(E3475);
 
 			sShape shape;
 			ctx.updated(dir, mid, shape);
