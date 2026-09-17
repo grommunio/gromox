@@ -2427,6 +2427,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			if (pstmt.step() != SQLITE_DONE)
 				return false;
 			sqlite3_reset(pstmt);
+			++rule_count;
 			break;
 		}
 		case ROW_MODIFY: {
@@ -2550,6 +2551,8 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			        " WHERE rule_id=%llu", LLU{rule_id});
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return false;
+			if (rule_count > 0)
+				--rule_count;
 			break;
 		}
 		}
