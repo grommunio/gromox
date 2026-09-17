@@ -173,6 +173,7 @@ class EWSPlugin {
 	gromox::time_duration cache_embedded_instance_lifetime = std::chrono::seconds(30); ///< Lifetime of embedded instances
 	gromox::time_duration cache_message_instance_lifetime = std::chrono::seconds(30); ///< Lifetime of message instances
 	gromox::time_duration event_stream_interval = std::chrono::seconds(45); ///< How often to send updates for GetStreamingEvents
+	std::string fts_index_path = "/var/lib/grommunio-web/sqlite-index"; ///< Base directory of grommunio-web's per-user FTS5 search index, used to accelerate FindItem (subject Contains, QueryString/AQS); empty disables the acceleration entirely
 
 	int retr(detail::ContextKey);
 	void term(detail::ContextKey);
