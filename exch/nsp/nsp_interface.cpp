@@ -447,7 +447,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		auto path = node.user_info(ab_tree::userinfo::store_path);
 		if (path == nullptr)
 			return ecNotFound;
-		auto bv = nsp_photo_rpc(dn.c_str());
+		auto bv = nsp_photo_rpc(path);
 		if (bv != nullptr) {
 			if (pprop != nullptr)
 				pprop->value.bin = *bv;
