@@ -108,6 +108,7 @@ static constexpr char
 	mailbox_base_url[] = "https://{}/mapi/{}/?MailboxId={}@{}",
 	ews_base_url[] = "https://{}/EWS/{}",
 	oab_base_url[] = "https://{}/OAB/",
+	web_base_url[] = "https://{}/web/",
 	public_folder[] = "Public Folder",
 	public_folder_email[] = "public.folder.root@";
 static unsigned int ok_code = 200, bad_address_code = 501;
@@ -768,7 +769,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 
 	auto ews_url = fmt::format(ews_base_url, homesrv, exchange_asmx);
 	auto OABUrl = fmt::format(oab_base_url, homesrv);
-	auto EcpUrl = fmt::format(ews_base_url, homesrv, "");
+	auto EcpUrl = fmt::format(web_base_url, homesrv);
 
 	if (advertise_prot(m_advertise_mh, user_agent))
 		resp_mh(resp_acc, homesrv, domain, ews_url, OABUrl, EcpUrl,
@@ -836,7 +837,7 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *homesrv,
 		add_child(resp_prt, "EmwsUrl", ews_url);
 
 		add_child(resp_prt, "EcpUrl", EcpUrl);
-		add_child(resp_prt, "EcpUrl-photo", "thumbnail.php");
+		add_child(resp_prt, "EcpUrl-photo", "?action=profile");
 	}
 
 	resp_prt = add_child(resp_acc, "Protocol");
@@ -886,7 +887,7 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *homesrv,
 		add_child(resp_prt, "EwsUrl", ews_url);
 		add_child(resp_prt, "EmwsUrl", ews_url);
 		add_child(resp_prt, "EcpUrl", EcpUrl);
-		add_child(resp_prt, "EcpUrl-photo", "thumbnail.php");
+		add_child(resp_prt, "EcpUrl-photo", "?action=profile");
 	}
 
 	/* Exchange Proxy RPC (RPCH) */
