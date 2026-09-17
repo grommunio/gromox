@@ -974,10 +974,29 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		                b_writable ? TRUE : false, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
+		auto message = pmessage.get();
 		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::message, std::move(pmessage)});
 		if (zh_is_error(*phobject))
 			return zh_error(*phobject);
 		*pmapi_type = zs_objtype::message;
+		if (!(entryid.cb >= 7 &&
+		    strncmp(entryid.pc, "/exmdb=", 7) == 0)) {
+			const char *subject = "";
+			try {
+				static constexpr proptag_t tags[] = {PR_SUBJECT};
+				TPROPVAL_ARRAY props{};
+				if (message->get_properties(tags, &props) == ecSuccess) {
+					auto value = props.get<const char>(PR_SUBJECT);
+					if (value != nullptr)
+						subject = value;
+				}
+			} catch (const std::bad_alloc &) {
+			}
+			std::string mailbox = pstore->b_private ?
+				std::string("mailbox ") + pstore->get_account() : "public folders";
+			mlog(LV_NOTICE, "gromox-audit: %s accessed message \"%s\" in %s via ZCORE",
+				pinfo->get_username(), subject, mailbox.c_str());
+		}
 	} else {
 		if (!exmdb_client->is_folder_present(pstore->get_dir(),
 		    folder_id, &b_exist))
@@ -1324,7 +1343,13 @@ ec_error_t zs_modifypermissions(GUID hsession,
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 	}
-	return pfolder->set_permissions(pset) ? ecSuccess : ecError;
+	if (!pfolder->set_permissions(pset))
+		return ecError;
+	std::string mailbox = pfolder->pstore->b_private ?
+		std::string("mailbox ") + pfolder->pstore->get_account() : "public folders";
+	mlog(LV_NOTICE, "gromox-audit: %s changed folder permissions in %s via ZCORE",
+		pinfo->get_username(), mailbox.c_str());
+	return ecSuccess;
 }
 
 ec_error_t zs_modifyrules(GUID hsession, uint32_t hfolder, uint32_t flags,
@@ -1422,6 +1447,9 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		if (zh_is_error(err))
 			mlog(LV_DEBUG, "zs_openstore: get_store_handle.1 %u: %s",
 				user_id, mapi_strerror(err));
+		if (err == ecSuccess)
+			mlog(LV_NOTICE, "gromox-audit: %s accessed mailbox %s via ZCORE",
+				pinfo->get_username(), pinfo->get_username());
 		return err;
 	}
 	std::string username;
@@ -1464,6 +1492,9 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	if (zh_is_error(err))
 		mlog(LV_DEBUG, "zs_openstore: get_store_handle.2 %u: %s",
 			user_id, mapi_strerror(err));
+	if (err == ecSuccess)
+		mlog(LV_NOTICE, "gromox-audit: %s accessed mailbox %s via ZCORE",
+			pinfo->get_username(), username.c_str());
 	return err;
 }
 

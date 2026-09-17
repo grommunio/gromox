@@ -3478,6 +3478,46 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	           m_auth_info.username, rcpts);
 	if (err != ecSuccess)
 		throw DispatchError(E3117(err));
+
+	auto get_smtp_address = [&](proptag_t smtp_tag, proptag_t addrtype_tag,
+                            proptag_t email_tag) -> const char * {
+		auto addr = content.proplist.get<const char>(smtp_tag);
+		if (addr != nullptr)
+			return addr;
+
+		auto type = content.proplist.get<const char>(addrtype_tag);
+		if (type == nullptr || strcasecmp(type, "SMTP") == 0)
+			return content.proplist.get<const char>(email_tag);
+
+		return nullptr;
+	};
+
+	auto actor = get_auth_info(m_ctx_id).username;
+	auto subject = content.proplist.get<const char>(PR_SUBJECT);
+
+	auto representing = get_smtp_address(
+		PR_SENT_REPRESENTING_SMTP_ADDRESS,
+		PR_SENT_REPRESENTING_ADDRTYPE,
+		PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+
+	auto sender = get_smtp_address(
+		PR_SENDER_SMTP_ADDRESS,
+		PR_SENDER_ADDRTYPE,
+		PR_SENDER_EMAIL_ADDRESS);
+
+	std::string representation;
+	if (actor != nullptr && representing != nullptr &&
+		strcasecmp(actor, representing) != 0) {
+		if (sender != nullptr && strcasecmp(actor, sender) == 0)
+			representation = " on behalf of "s + representing;
+		else
+			representation = " as "s + representing;
+	}
+
+	mlog(LV_NOTICE,
+		"gromox-audit: %s sent message \"%s\"%s in mailbox %s via EWS",
+		znul(actor), znul(subject), representation.c_str(),
+		znul(m_auth_info.username));
 }
 
 /**
@@ -5004,12 +5044,13 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 /**
  * @brief      Write delegate permissions to folder ACLs
  */
-void EWSContext::writeDelegatePermissions(const std::string &dir, const std::string &username,
+bool EWSContext::writeDelegatePermissions(const std::string &dir, const std::string &username,
     const tDelegatePermissions &dp) const
 {
 	std::string dispname;
 	mysql_adaptor_get_user_displayname(username.c_str(), dispname);
 
+	bool changed = false;
 	for (const auto &m : delegFolderMap) {
 		const auto &level = dp.*(m.field);
 		if (!level)
@@ -5022,10 +5063,11 @@ void EWSContext::writeDelegatePermissions(const std::string &dir, const std::str
 		if (!dispname.empty())
 			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_NAME, EWSContext::cpystr(dispname)};
 		uint64_t fid = rop_util_make_eid_ex(1, m.fid);
-		if (!m_plugin.exmdb.update_folder_permission(dir.c_str(),
+		if (m_plugin.exmdb.update_folder_permission(dir.c_str(),
 		    fid, 0, 1, &perm))
-			/* ignore */;
+			changed = true;
 	}
+	return changed;
 }
 
 

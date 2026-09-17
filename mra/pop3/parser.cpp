@@ -635,6 +635,7 @@ void pop3_context::clear()
 	pcontext->is_stls = 0;
 	pcontext->auth_times = 0;
 	memset(pcontext->username, '\0', std::size(pcontext->username));
+	memset(pcontext->authenticated_actor, '\0', std::size(pcontext->authenticated_actor));
 	memset(pcontext->maildir, '\0', std::size(pcontext->maildir));
 }
 

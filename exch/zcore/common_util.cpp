@@ -1166,6 +1166,29 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 			log_id.c_str(), mapi_strerror(ret));
 		return ret;
 	}
+
+	auto subject = pmsgctnt->proplist.get<const char>(PR_SUBJECT);
+	if (subject == nullptr)
+		subject = pmsgctnt->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (subject == nullptr)
+		subject = "";
+	auto audit_actor = pinfo == nullptr ? nullptr : pinfo->get_username();
+	auto sender = pmsgctnt->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	auto representing = pmsgctnt->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	const char *representation = "", *identity = "";
+	if (sender != nullptr && *sender != '\0' && representing != nullptr && *representing != '\0') {
+		if (strcasecmp(sender, representing) != 0) {
+			representation = " on behalf of ";
+			identity = representing;
+		} else if (audit_actor != nullptr && strcasecmp(audit_actor, representing) != 0) {
+			representation = " as ";
+			identity = representing;
+		}
+	}
+	mlog(LV_NOTICE, "gromox-audit: %s sent message \"%s\"%s%s in mailbox %s via ZCORE",
+		audit_actor == nullptr ? "(unknown)" : audit_actor, subject,
+		representation, identity, pstore->get_account());
+
 	imail.clear();
 
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);

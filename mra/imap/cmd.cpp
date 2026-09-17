@@ -788,6 +788,19 @@ bool imap_binary_decode(char enc, std::string_view raw, std::string &out) try
 	return false;
 }
 
+static bool icp_fetch_content(const char *kw)
+{
+	if (strcasecmp(kw, "RFC822") == 0 || strcasecmp(kw, "RFC822.TEXT") == 0 ||
+	    strncasecmp(kw, "BINARY[", 7) == 0 || strncasecmp(kw, "BINARY.PEEK[", 12) == 0)
+		return true;
+	if (strncasecmp(kw, "BODY[", 5) != 0 && strncasecmp(kw, "BODY.PEEK[", 10) != 0)
+		return false;
+	auto p = strchr(kw, '[') + 1;
+	while (HX_isdigit(*p) || *p == '.')
+		++p;
+	return *p == ']' || strncasecmp(p, "TEXT]", 5) == 0;
+}
+
 static int icp_process_fetch_item(imap_context &ctx,
     bool b_data, MITEM *pitem, std::string_view digest_str,
     int item_id, mdi_list &pitem_list) try
@@ -820,6 +833,11 @@ static int icp_process_fetch_item(imap_context &ctx,
 		}
 	};
 
+	if (b_data && std::any_of(pitem_list.begin(), pitem_list.end(),
+	    [](const auto &kw) { return icp_fetch_content(kw.c_str()); })) {
+		mlog(LV_NOTICE, "gromox-audit: %s requested message content \"%s\" in mailbox %s via IMAP",
+		     ctx.authenticated_actor, mjson.subject.c_str(), ctx.username);
+	}
 	bool b_first = false;
 	buf = "* " + std::to_string(item_id) + " FETCH (";
 	for (auto &kwss : pitem_list) {
@@ -1671,6 +1689,9 @@ static int icp_password2(const char *cmdbuf, imap_context &ctx) try
 			return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 		}
 	}
+	gx_strlcpy(ctx.authenticated_actor, target_mbox == nullptr ?
+	           mres.username.c_str() : mres_auth.username.c_str(),
+	           std::size(ctx.authenticated_actor));
 	gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 	if (*pcontext->maildir == '\0')
@@ -1686,6 +1707,8 @@ static int icp_password2(const char *cmdbuf, imap_context &ctx) try
 	auto buf = fmt::format("{} OK [CAPABILITY {}] Logged in\r\n",
 		   tag_or_bug(pcontext->tag_string), caps);
 	imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
+	mlog(LV_NOTICE, "gromox-audit: %s accessed mailbox %s via IMAP",
+	     ctx.authenticated_actor, ctx.username);
 	return DISPATCH_CONTINUE;
 } catch (const std::bad_alloc &) {
 	return 1918;
@@ -1750,6 +1773,9 @@ int icp_login(std::span<std::string> argv, imap_context &ctx)
 			return 1903 | DISPATCH_SHOULD_CLOSE;
 		}
 	}
+	gx_strlcpy(ctx.authenticated_actor, target_mbox == nullptr ?
+	           mres.username.c_str() : mres_auth.username.c_str(),
+	           std::size(ctx.authenticated_actor));
 	gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 	if (*pcontext->maildir == '\0')
@@ -1760,6 +1786,8 @@ int icp_login(std::span<std::string> argv, imap_context &ctx)
 		std::size(pcontext->defcharset));
 	pcontext->proto_stat = iproto_stat::auth;
 	imap_parser_log_info(pcontext, LV_DEBUG, "LOGIN ok");
+	mlog(LV_NOTICE, "gromox-audit: %s accessed mailbox %s via IMAP",
+	     ctx.authenticated_actor, ctx.username);
 	return 1705;
 }
 
