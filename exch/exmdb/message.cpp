@@ -1577,6 +1577,12 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 			    sprop.has(PR_NORMALIZED_SUBJECT_A))
 				continue;	
 			break;
+		case PR_CONVERSATION_TOPIC:
+		case PR_CONVERSATION_TOPIC_A:
+			/* Rederived from the subject below. */
+			if (*znul(static_cast<const char *>(sprop.ppropval[i].pvalue)) == '\0')
+				continue;
+			break;
 		}
 		auto &sp = sprop.ppropval[i];
 		dprop.emplace_back(sp.proptag, sp.pvalue);
@@ -1674,9 +1680,9 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 	 * needs to be resolved before that
 	 */
 	auto cvtopic = sprop.get<char>(PR_CONVERSATION_TOPIC);
-	if (cvtopic == nullptr)
+	if (cvtopic == nullptr || *cvtopic == '\0')
 		cvtopic = sprop.get<char>(PR_CONVERSATION_TOPIC_A);
-	if (cvtopic == nullptr) {
+	if (cvtopic == nullptr || *cvtopic == '\0') {
 		const char *pfx = nullptr;
 		proptag_t tag = PR_CONVERSATION_TOPIC;
 		auto norm = sprop.get<char>(PR_NORMALIZED_SUBJECT);
