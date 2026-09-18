@@ -1357,9 +1357,10 @@ ec_error_t zs_getabgal(GUID hsession, BINARY *pentryid)
 {
 	void *pvalue;
 	
-	if (!container_object_fetch_special_property(ab_tree::minid::SC_GAL,
-	    PR_ENTRYID, &pvalue))
-		return ecError;
+	auto err = container_object_fetch_special_property(ab_tree::minid::SC_GAL,
+	           PR_ENTRYID, &pvalue);
+	if (err != ecSuccess)
+		return err;
 	if (pvalue == nullptr)
 		return ecNotFound;
 	*pentryid = *static_cast<BINARY *>(pvalue);
@@ -3689,9 +3690,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				&proptags);
 			wtags = proptags;
 		}
-		if (!static_cast<container_object *>(pobject)->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return static_cast<container_object *>(pobject)->get_props(wtags, ppropvals);
 	case zs_objtype::mailuser:
 	case zs_objtype::distlist:
 		if (NULL == pproptags) {

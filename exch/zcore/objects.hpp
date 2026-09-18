@@ -37,11 +37,11 @@ struct container_object {
 	~container_object() { clear(); }
 	static std::unique_ptr<container_object> create(uint8_t type, CONTAINER_ID);
 	void clear();
-	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
+	ec_error_t get_props(proptag_cspan, TPROPVAL_ARRAY *);
 	ec_error_t load_user_table(const RESTRICTION *);
-	BOOL get_container_table_num(BOOL depth, uint32_t *num);
+	ec_error_t get_container_table_num(bool depth, uint32_t *num);
 	ec_error_t query_container_table(proptag_cspan, BOOL depth, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
-	BOOL get_user_table_num(uint32_t *);
+	ec_error_t get_user_table_num(uint32_t *);
 	ec_error_t query_user_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 
 	uint8_t type = 0;
@@ -230,6 +230,6 @@ struct oneoff_object {
 	std::string m_dispname, m_addrtype, m_emaddr;
 };
 
-extern BOOL container_object_fetch_special_property(uint8_t special_type, gromox::proptag_t, void **value);
+extern ec_error_t container_object_fetch_special_property(uint8_t special_type, gromox::proptag_t, void **value);
 extern void container_object_get_container_table_all_proptags(PROPTAG_ARRAY *);
 extern void container_object_get_user_table_all_proptags(PROPTAG_ARRAY *);

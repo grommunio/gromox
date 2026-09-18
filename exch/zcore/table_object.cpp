@@ -763,7 +763,7 @@ uint32_t table_object::get_total()
 	} else if (ptable->table_type == zcore_tbltype::container) {
 		num1 = 0;
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
-		ct->get_container_table_num((ptable->table_flags & CONVENIENT_DEPTH) ? TRUE : false, &num1);
+		ct->get_container_table_num(ptable->table_flags & CONVENIENT_DEPTH, &num1);
 		return num1;
 	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		num1 = 0;
