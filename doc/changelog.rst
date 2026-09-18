@@ -139,6 +139,8 @@ Fixes:
   attendee calendar, it now cancels the exceptions of the series too. Before,
   a moved occurrence stayed active under its old subject.
 * exmdb: rule batches can no longer exceed max_rule_number.
+* zcore: rule updates rejected for exceeding max_rule_number are now
+  reported as failures.
 
 
 Gromox 3.13 (2026-10-28)
