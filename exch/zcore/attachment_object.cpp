@@ -221,6 +221,7 @@ ec_error_t attachment_object::get_properties(proptag_cspan tags, TPROPVAL_ARRAY 
 		} else {
 			return err;
 		}
+		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
 		return ecSuccess;
