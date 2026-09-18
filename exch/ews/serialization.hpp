@@ -12,6 +12,7 @@
 #include <optional>
 #include <string>
 #include <tinyxml2.h>
+#include <type_traits>
 #include <variant>
 #include <vector>
 #include <fmt/chrono.h>
@@ -131,14 +132,23 @@ template<> struct ExplicitConvert<std::string> {
 		return tinyxml2::XML_SUCCESS;
 	}
 
+	/**
+	 * @brief      Drop characters that XML cannot represent
+	 */
+	static std::string filter(const std::string &value)
+	{
+		std::string filtered = value;
+		utf8_filter(filtered.data());
+		filtered.resize(strlen(filtered.c_str()));
+		utf8_sanitize_codepoints(filtered);
+		return filtered;
+	}
+
 	static void serialize(const std::string &value, SetterFunc setter)
 	{
 		if (value.empty())
 			return;
-		auto filtered = value;
-		utf8_filter(filtered.data());
-		filtered.resize(strlen(filtered.c_str()));
-		utf8_sanitize_codepoints(filtered);
+		auto filtered = filter(value);
 		if (!filtered.empty())
 			setter(filtered.c_str());
 	}
@@ -739,6 +749,11 @@ static void toXMLAttr(tinyxml2::XMLElement *parent, const char *name, const T &v
 		if (!value)
 			return;
 		return toXMLAttr(parent, name, *value);
+	} else if constexpr (std::is_same_v<BaseType_t<T>, std::string> ||
+	    std::is_same_v<BaseType_t<T>, Structures::sString>) {
+		/* Emit even when empty; some attributes are mandatory. */
+		parent->SetAttribute(name,
+			ExplicitConvert<std::string>::filter(value).c_str());
 	} else if constexpr (explicit_convert<T>(EC_OUT)) {
 		const BaseType_t<T>* pvalue;
 		if constexpr(BaseType<T>::container == OPTIONAL)
