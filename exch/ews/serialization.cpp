@@ -1168,7 +1168,8 @@ void tExtendedFieldURI::serialize(XMLElement *xml) const
 	if (PropertyTag)
 		xml->SetAttribute("PropertyTag", fmt::format("0x{:x}", *PropertyTag).c_str());
 	XMLDUMPA(PropertyId);
-	XMLDUMPA(PropertySetId);
+	if (!DistinguishedPropertySetId)
+		XMLDUMPA(PropertySetId);
 	XMLDUMPA(DistinguishedPropertySetId);
 	XMLDUMPA(PropertyName);
 }

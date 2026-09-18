@@ -821,6 +821,24 @@ std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calend
 }
 
 /**
+ * @brief Check whether a GlobalObjectId names one occurrence of a series
+ *
+ * The date fields are zero on a series master and carry the instance date on
+ * a single occurrence.
+ */
+static bool goid_is_instance(const BINARY *goid_bin)
+{
+	if (goid_bin == nullptr || goid_bin->cb == 0)
+		return false;
+	GLOBALOBJECTID goid{};
+	EXT_PULL ep;
+	ep.init(goid_bin->pb, goid_bin->cb, EWSContext::alloc, 0);
+	if (ep.g_goid(&goid) != pack_result::ok)
+		return false;
+	return goid.year != 0 || goid.month != 0 || goid.day != 0;
+}
+
+/**
  * @brief Create a calendar item after accepting a meeting request
  *
  * @param refId          Item id
@@ -840,6 +858,15 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	if (!m_plugin.exmdb.read_message(dir.c_str(), username, CP_ACP, requestId.messageId(), &content) ||
 	    content == nullptr)
 		throw EWSError::ItemNotFound(E3143);
+
+	/*
+	 * A response to one occurrence would replace the series master, which
+	 * findExistingByGoid matches through PidLidCleanGlobalObjectId; leave
+	 * the blob surgery to the client, as mr_do_request does.
+	 */
+	auto pidGoid = getNamedPropId(dir, NtGlobalObjectId);
+	if (goid_is_instance(content->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGoid))))
+		return;
 
 	MCONT_PTR calendarItem(content->dup());
 	if (!calendarItem)
