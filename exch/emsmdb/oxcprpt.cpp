@@ -233,12 +233,13 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 	switch (object_type) {
 	case ems_objtype::logon: {
 		auto xlog = static_cast<logon_object *>(pobject);
-		if (!xlog->get_all_proptags(&proptags))
-			return ecError;
+		auto err = xlog->get_all_proptags(&proptags);
+		if (err != ecSuccess)
+			return err;
 		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		auto err = xlog->get_props(*ptmp_proptags, ppropvals);
+		err = xlog->get_props(*ptmp_proptags, ppropvals);
 		if (err != ecSuccess)
 			return err;
 		for (auto &pv : *ppropvals) {
@@ -258,12 +259,13 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 	}
 	case ems_objtype::folder: {
 		auto fld = static_cast<folder_object *>(pobject);
-		if (!fld->get_all_proptags(&proptags))
-			return ecError;
+		auto err = fld->get_all_proptags(&proptags);
+		if (err != ecSuccess)
+			return err;
 		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		auto err = fld->get_props(*ptmp_proptags, ppropvals);
+		err = fld->get_props(*ptmp_proptags, ppropvals);
 		if (err != ecSuccess)
 			return err;
 		for (auto &pv : *ppropvals) {
@@ -596,9 +598,11 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		if (copy_flags & MAPI_NOREPLACE &&
-		    !flddst->get_all_proptags(&proptags1))
-			return ecError;
+		if (copy_flags & MAPI_NOREPLACE) {
+			auto err = flddst->get_all_proptags(&proptags1);
+			if (err != ecSuccess)
+				return err;
+		}
 		for (size_t i = 0; i < pproptags.size(); ++i) {
 			const auto tag = pproptags[i];
 			if (flddst->is_readonly_prop(tag)) {
@@ -795,15 +799,19 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		}
 		BOOL b_normal = !pexcluded_proptags.has(PR_CONTAINER_CONTENTS) ? TRUE : false;
 		BOOL b_fai    = !pexcluded_proptags.has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
-		if (!fldsrc->get_all_proptags(&proptags))
-			return ecError;
+		auto err = fldsrc->get_all_proptags(&proptags);
+		if (err != ecSuccess)
+			return err;
 		cu_reduce_proptags(&proptags, pexcluded_proptags);
 		tmp_proptags.count = 0;
 		tmp_proptags.pproptag = cu_alloc<proptag_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)
 			return ecServerOOM;
-		if (!b_force && !flddst->get_all_proptags(&proptags1))
-			return ecError;
+		if (!b_force) {
+			err = flddst->get_all_proptags(&proptags1);
+			if (err != ecSuccess)
+				return err;
+		}
 		for (const auto tag : proptags) {
 			if (flddst->is_readonly_prop(tag))
 				continue;
@@ -811,7 +819,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 				continue;
 			tmp_proptags.emplace_back(tag);
 		}
-		auto err = fldsrc->get_props(tmp_proptags, &propvals);
+		err = fldsrc->get_props(tmp_proptags, &propvals);
 		if (err != ecSuccess)
 			return err;
 		if (b_sub || b_normal || b_fai) {
