@@ -32,8 +32,10 @@ Column              Meaning
 ``domain_id``       Primary key, foreign key to ``domains.id``
 ``host``            Relay hostname or IP
 ``port``            Relay TCP port (default 25)
-``encryption``      ``none``, ``starttls``, ``starttls_unverified``
-                    or ``tls`` (implicit TLS, e.g. port 465)
+``encryption``      ``none``; ``starttls`` (STARTTLS, certificate
+                    verified); ``starttls_unverified`` (STARTTLS,
+                    no certificate verification); ``tls`` (implicit
+                    TLS, certificate verified, e.g. port 465)
 ``username``        Optional SASL username (no AUTH if empty)
 ``password``        Optional SASL password
 ``enabled``         1 = route this domain via the relay
@@ -47,9 +49,9 @@ this table. Gromox only creates and updates the table schema.
 Postfix wiring example
 ======================
 
-Postfix can query the table live through MySQL maps. Two maps are
-needed; neither affects mail of domains without a gateway row (such
-senders keep using the global ``relayhost``).
+Postfix can query the table live through MySQL maps. Three maps are
+needed; none of them affects mail of domains without a gateway row
+(such senders keep using the global ``relayhost``).
 
 main.cf::
 
@@ -58,10 +60,15 @@ main.cf::
     smtp_sasl_password_maps =
         lmdb:/etc/postfix/sasl_passwd,
         mysql:/etc/postfix/grommunio-domain-gateway-auth.cf
+    smtp_tls_policy_maps =
+        mysql:/etc/postfix/grommunio-domain-gateway-tls-policy.cf
 
 The sender-dependent ``smtp_sasl_password_maps`` lookup order (sender
 address, sender domain, then nexthop) ensures gateway credentials only
-apply to senders of gateway domains.
+apply to senders of gateway domains. Because the ``verify`` and
+``secure`` TLS levels check certificates against trust anchors, set
+``smtp_tls_CAfile`` (e.g. the distribution CA bundle) or
+``smtp_tls_CApath``.
 
 ``grommunio-domain-gateway-transport.cf``::
 
@@ -94,6 +101,27 @@ apply to senders of gateway domains.
 	          AND g.enabled = 1
 	          AND g.username IS NOT NULL AND g.username <> ''
 
+``grommunio-domain-gateway-tls-policy.cf`` — Postfix looks
+``smtp_tls_policy_maps`` up by nexthop (``[host]:port``), while the
+table stores the bare host, hence the ``SUBSTRING_INDEX``
+normalization. Hosts used by any active domain with encryption
+``starttls`` or ``tls`` are pinned to the ``secure`` level; hosts only
+used with ``starttls_unverified`` have no entry and stay at the
+transport's ``encrypt`` level::
+
+	user = grommunio
+	password = ...
+	hosts = localhost
+	dbname = grommunio
+	query = SELECT CONCAT('secure match=', g.host)
+	        FROM domain_smtp_gateway g
+	        JOIN domains d ON d.ID = g.domain_id
+	        WHERE d.domain_status = 0
+	          AND g.enabled = 1
+	          AND g.encryption IN ('starttls', 'tls')
+	          AND g.host = SUBSTRING_INDEX(SUBSTRING_INDEX('%s', ']', 1), '[', -1)
+	        LIMIT 1
+
 ``master.cf`` entries for the STARTTLS and implicit-TLS transports are::
 
 	gwdsgw_starttls unix -  -  n  -  -  smtp
@@ -103,6 +131,13 @@ apply to senders of gateway domains.
 	  -o smtp_tls_security_level=encrypt
 
 Note that Postfix's ``encrypt`` level does not verify the relay
-certificate. To enforce verification, add a ``smtp_tls_policy_maps``
-entry for the relay host. ``starttls`` and ``starttls_unverified`` are
-therefore equivalent under this wiring unless such a policy is present.
+certificate. The ``smtp_tls_policy_maps`` entry above is what
+distinguishes the modes: for ``starttls`` and ``tls`` the connection
+to the relay is escalated to the ``secure`` level, so the relay
+certificate is verified (chain and hostname); ``starttls_unverified``
+keeps ``encrypt`` and works without a verifiable certificate.
+
+The policy is keyed by relay host, not by domain: if several domains
+share a relay host with differing ``encryption`` values, the strictest
+mode applies to that host, and connections to a host that doubles as
+an MX target of another domain are verified as well.
