@@ -687,6 +687,35 @@ static int t_string()
 	return EXIT_SUCCESS;
 }
 
+static int t_unfold()
+{
+	static constexpr std::pair<const char *, const char *> tbl[] = {
+		{"plain", "plain"},
+		{" \t lead", "lead"},
+		{"a@b.c,\r\n d@e.f", "a@b.c, d@e.f"},
+		{"a@b.c, \r\n d@e.f", "a@b.c,  d@e.f"},
+		{"\r\n a@b.c", "a@b.c"},
+		{"=?utf-8?Q?a?=\r\n =?utf-8?Q?b?=", "=?utf-8?Q?a?= =?utf-8?Q?b?="},
+		{"x\r\n\t\t y", "x y"},
+		{"x \r\n  y", "x  y"},
+		{"x\n y", "x y"},
+		{"x\r y", "x y"},
+		{"a\\\r\n b", "a\\ b"},
+		{"a\\\r\nb", "a\\"},
+		{"x\\\r\n\t\ty", "x\\ y"},
+		{"x\\\\\r\n y", "x\\\\ y"},
+		{"a\r\nb", "a"},
+	};
+	for (const auto &[in, exp] : tbl) {
+		auto buf = std::string("K: ") + in + "\r\nX: y\r\n";
+		MIME_FIELD f;
+		assert(parse_mime_field(buf.c_str(), buf.size(), &f) > 0);
+		assert(mime_unfold(in) == exp);
+		assert(mime_unfold(f.value) == exp);
+	}
+	return EXIT_SUCCESS;
+}
+
 static bool negative_time_possible()
 {
 	time_t spot = -1;
@@ -974,7 +1003,7 @@ static int runner()
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
-		t_string, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
+		t_string, t_unfold, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
 		t_res_mvprop, t_srchkey_words,
 	};
 	for (auto f : fct) {

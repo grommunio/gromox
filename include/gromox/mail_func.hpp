@@ -39,6 +39,7 @@ using GET_USERNAME = ec_error_t (*)(unsigned int, std::string &);
 struct MAIL;
 extern GX_EXPORT BOOL parse_uri(const char *uri_buff, char *parsed_uri);
 extern GX_EXPORT size_t parse_mime_field(const char *, size_t, MIME_FIELD *);
+extern GX_EXPORT std::string mime_unfold(std::string_view);
 extern GX_EXPORT void parse_field_value(const char *in_buff, long buff_len, char *value, long val_len, std::vector<kvpair> &);
 extern GX_EXPORT int mutf7_to_utf8(const char *u7, size_t u7len, char *u8, size_t u8len);
 extern GX_EXPORT int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len);

@@ -345,29 +345,29 @@ int MAIL::make_digest(Json::Value &digest) const try
 	digest = Json::objectValue;
 	auto pmime = static_cast<const MIME *>(pnode->pdata);
 	if (auto hval = pmime->get_field("Message-ID"))
-		digest["msgid"] = base64_encode(*hval);
+		digest["msgid"] = base64_encode(mime_unfold(*hval));
 	if (auto hval = pmime->get_field("Date"))
-		digest["date"] = base64_encode(*hval);
+		digest["date"] = base64_encode(mime_unfold(*hval));
 	if (auto hval = pmime->get_field("From"))
-		digest["from"] = base64_encode(*hval);
+		digest["from"] = base64_encode(mime_unfold(*hval));
 	if (auto hval = pmime->get_field("Sender")) {
-		auto s = base64_encode(*hval);
+		auto s = base64_encode(mime_unfold(*hval));
 		if (!s.empty())
 			digest["sender"] = std::move(s);
 	}
 	if (auto hval = pmime->get_field("Reply-To")) {
-		auto s = base64_encode(*hval);
+		auto s = base64_encode(mime_unfold(*hval));
 		if (!s.empty())
 			digest["reply"] = std::move(s);
 	}
 	if (auto hval = pmime->get_field("To"))
-		digest["to"] = base64_encode(*hval);
+		digest["to"] = base64_encode(mime_unfold(*hval));
 	if (auto hval = pmime->get_field("Cc"))
-		digest["cc"] = base64_encode(*hval);
+		digest["cc"] = base64_encode(mime_unfold(*hval));
 	if (auto hval = pmime->get_field("Bcc"))
-		digest["bcc"] = base64_encode(*hval);
+		digest["bcc"] = base64_encode(mime_unfold(*hval));
 	if (auto hval = pmime->get_field("In-Reply-To")) {
-		auto s = base64_encode(*hval);
+		auto s = base64_encode(mime_unfold(*hval));
 		if (!s.empty())
 			digest["inreply"] = std::move(s);
 	}
@@ -381,10 +381,11 @@ int MAIL::make_digest(Json::Value &digest) const try
 	}
 
 	if (auto hval = pmime->get_field("Subject"))
-		digest["subject"] = base64_encode(*hval);
+		digest["subject"] = base64_encode(mime_unfold(*hval));
 	
 	if (auto hval = pmime->get_field("Received")) {
-		auto ptr = strrchr(hval->c_str(), ';');
+		auto rcvd = mime_unfold(*hval);
+		auto ptr = strrchr(rcvd.c_str(), ';');
 		if (NULL == ptr) {
 			digest["received"] = digest["date"];
 		} else {
@@ -406,9 +407,9 @@ int MAIL::make_digest(Json::Value &digest) const try
 	digest["flag"]      = 0;
 	digest["priority"]  = Json::Value::UInt64(priority);
 	if (auto hval = pmime->get_field("Disposition-Notification-To"))
-		digest["notification"] = base64_encode(*hval);
+		digest["notification"] = base64_encode(mime_unfold(*hval));
 	if (auto hval = pmime->get_field("References"))
-		digest["ref"] = base64_encode(*hval);
+		digest["ref"] = base64_encode(mime_unfold(*hval));
 
 	b_tags[TAG_SIGNED] = FALSE;
 	b_tags[TAG_ENCRYPT] = FALSE;
