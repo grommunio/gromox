@@ -115,9 +115,9 @@ ec_error_t table_object::load()
 		m_loaded = true;
 	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
-		auto ok = ct->load_user_table(ptable->prestriction);
-		if (!ok)
-			return ecError;
+		auto err = ct->load_user_table(ptable->prestriction);
+		if (err != ecSuccess)
+			return err;
 		m_loaded = true;
 	} else if (ptable->table_type == zcore_tbltype::distlist) {
 		auto u = static_cast<user_object *>(ptable->pparent_obj);
@@ -645,11 +645,11 @@ ec_error_t table_object::query_rows(/*maybenull*/ const proptag_cspan *icols,
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->query_container_table(cols,
 		       (ptable->table_flags & CONVENIENT_DEPTH) ? TRUE : false,
-		       ptable->position, row_count, pset) ? ecSuccess : ecError;
+		       ptable->position, row_count, pset);
 	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->query_user_table(cols, ptable->position, row_count,
-		       pset) ? ecSuccess : ecError;
+		       pset);
 	} else if (ptable->table_type == zcore_tbltype::distlist) {
 		auto u = static_cast<user_object *>(ptable->pparent_obj);
 		return u->query_member_table(cols, ptable->position, row_count, pset);
@@ -997,12 +997,14 @@ ec_error_t table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 			return err;
 		break;
 	}
-	case zcore_tbltype::abcontusr:
+	case zcore_tbltype::abcontusr: {
 		container_object_get_user_table_all_proptags(&proptags);
-		if (!static_cast<container_object *>(ptable->pparent_obj)->
-		    query_user_table(proptags, ptable->position, INT32_MAX, &tmp_set))
-			return ecError;
+		auto err = static_cast<container_object *>(ptable->pparent_obj)->
+		           query_user_table(proptags, ptable->position, INT32_MAX, &tmp_set);
+		if (err != ecSuccess)
+			return err;
 		break;
+	}
 	default:
 		return ecInvalidParam;
 	}

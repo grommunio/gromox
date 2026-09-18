@@ -104,12 +104,12 @@ ec_error_t attachment_object::save()
 	tmp_propval.proptag = PR_LAST_MODIFICATION_TIME;
 	nt_time = rop_util_current_nttime();
 	tmp_propval.pvalue = &nt_time;
-	if (!set_properties(&tmp_propvals))
-		return ecError;
-	ec_error_t e_result = ecError;
+	auto err = set_properties(&tmp_propvals);
+	if (err != ecSuccess)
+		return err;
 	if (!exmdb_client->flush_instance(pattachment->pparent->pstore->get_dir(),
-	    pattachment->instance_id, &e_result) || e_result != ecSuccess)
-		return e_result;
+	    pattachment->instance_id, &err) || err != ecSuccess)
+		return err;
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;

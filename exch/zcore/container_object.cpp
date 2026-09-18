@@ -614,9 +614,10 @@ BOOL container_object::get_container_table_num(BOOL b_depth, uint32_t *pnum)
 	
 	proptags.count = 0;
 	proptags.pproptag = NULL;
-	if (!pcontainer->query_container_table(proptags, b_depth, 0,
-	    INT32_MAX, &tmp_set))
-		return FALSE;	
+	auto err = pcontainer->query_container_table(proptags, b_depth, 0,
+	           INT32_MAX, &tmp_set);
+	if (err != ecSuccess)
+		return FALSE;
 	*pnum = tmp_set.count;
 	return TRUE;
 }

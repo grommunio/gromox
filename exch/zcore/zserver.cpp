@@ -3605,9 +3605,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->writable())
 			return ecAccessDenied;
-		if (!atx->set_properties(ppropvals))
-			return ecError;
-		return ecSuccess;
+		return atx->set_properties(ppropvals);
 	}
 	default:
 		return ecNotSupported;
@@ -3683,9 +3681,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				return err;
 			wtags = proptags;
 		}
-		if (!atx->get_properties(wtags, ppropvals))
-			return ecError;
-		return ecSuccess;
+		return atx->get_properties(wtags, ppropvals);
 	}
 	case zs_objtype::abcont:
 		if (NULL == pproptags) {
@@ -3760,9 +3756,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->writable())
 			return ecAccessDenied;
-		if (!atx->remove_properties(pproptags))
-			return ecError;
-		return ecSuccess;
+		return atx->remove_properties(pproptags);
 	}
 	default:
 		return ecNotSupported;
@@ -4004,9 +3998,10 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		auto adst = static_cast<attachment_object *>(pobject_dst);
 		if (!adst->writable())
 			return ecAccessDenied;
-		if (!adst->copy_properties(static_cast<attachment_object *>(pobject),
-		    pexclude_proptags, b_force, &b_cycle))
-			return ecError;
+		auto err = adst->copy_properties(static_cast<attachment_object *>(pobject),
+		           pexclude_proptags, b_force, &b_cycle);
+		if (err != ecSuccess)
+			return err;
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}
 	default:

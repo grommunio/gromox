@@ -1008,8 +1008,9 @@ ec_error_t store_object::set_props(const TPROPVAL_ARRAY *ppropvals)
 		 * The rest is written to a *shadow* store object only visible
 		 * to zcore (unexplored historic reasons).
 		 */
-		if (!pinfo->ptree->set_zstore_propval(&pv))
-			return ecError;
+		auto err = pinfo->ptree->set_zstore_propval(&pv);
+		if (err != ecSuccess)
+			return err;
 	}
 	return ecSuccess;
 }
