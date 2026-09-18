@@ -4031,6 +4031,8 @@ std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(const char *co
 	hdr.parse(vpctx, content);
 	for (const auto &hf : hdr.getFieldList()) {
 		auto k = hf->getName();
+		if (k.empty())
+			continue;
 		vmime::text txt;
 		txt.parse(hf->getValue()->generate());
 		result.emplace_back(k, txt.getConvertedText(vmime::charsets::UTF_8).c_str());
