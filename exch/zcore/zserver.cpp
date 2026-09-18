@@ -4089,16 +4089,12 @@ ec_error_t zs_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::icsdownctx)
 		return ecNotSupported;
-	BOOL b_changed = false;
-	if (pctx->get_type() == SYNC_TYPE_CONTENTS) {
-		if (!pctx->make_content(*pstate, prestriction, flags, &b_changed, pcount))
-			return ecError;
-	} else {
-		if (!pctx->make_hierarchy(*pstate, flags, &b_changed, pcount))
-			return ecError;
-	}
+	bool b_changed = false;
+	auto err = pctx->get_type() == SYNC_TYPE_CONTENTS ?
+	           pctx->make_content(*pstate, prestriction, flags, &b_changed, pcount) :
+	           pctx->make_hierarchy(*pstate, flags, &b_changed, pcount);
 	*pb_changed = !!b_changed;
-	return ecSuccess;
+	return err;
 }
 
 ec_error_t zs_statesync(GUID hsession, uint32_t hctx, BINARY *pstate)
@@ -4122,7 +4118,6 @@ ec_error_t zs_statesync(GUID hsession, uint32_t hctx, BINARY *pstate)
 ec_error_t zs_syncmessagechange(GUID hsession, uint32_t hctx,
     uint8_t *pb_new, TPROPVAL_ARRAY *pproplist)
 {
-	BOOL b_found;
 	zs_objtype mapi_type;
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -4132,9 +4127,10 @@ ec_error_t zs_syncmessagechange(GUID hsession, uint32_t hctx,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::icsdownctx || pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
-	BOOL b_new = false;
-	if (!pctx->sync_message_change(&b_found, &b_new, pproplist))
-		return ecError;
+	bool b_found = false, b_new = false;
+	auto err = pctx->sync_message_change(&b_found, &b_new, pproplist);
+	if (err != ecSuccess)
+		return err;
 	*pb_new = !!b_new;
 	return b_found ? ecSuccess : ecNotFound;
 }
@@ -4142,7 +4138,6 @@ ec_error_t zs_syncmessagechange(GUID hsession, uint32_t hctx,
 ec_error_t zs_syncfolderchange(GUID hsession,
 	uint32_t hctx, TPROPVAL_ARRAY *pproplist)
 {
-	BOOL b_found;
 	zs_objtype mapi_type;
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -4152,8 +4147,10 @@ ec_error_t zs_syncfolderchange(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::icsdownctx || pctx->get_type() != SYNC_TYPE_HIERARCHY)
 		return ecNotSupported;
-	if (!pctx->sync_folder_change(&b_found, pproplist))
-		return ecError;
+	bool b_found = false;
+	auto err = pctx->sync_folder_change(&b_found, pproplist);
+	if (err != ecSuccess)
+		return err;
 	return b_found ? ecSuccess : ecNotFound;
 }
 
@@ -4169,7 +4166,7 @@ ec_error_t zs_syncreadstatechanges(GUID hsession, uint32_t hctx,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::icsdownctx || pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
-	return pctx->sync_readstates(pstates) ? ecSuccess : ecError;
+	return pctx->sync_readstates(pstates);
 }
 
 ec_error_t zs_syncdeletions(GUID hsession,
@@ -4184,7 +4181,7 @@ ec_error_t zs_syncdeletions(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::icsdownctx)
 		return ecNotSupported;
-	return pctx->sync_deletions(flags, pbins) ? ecSuccess : ecError;
+	return pctx->sync_deletions(flags, pbins);
 }
 
 ec_error_t zs_hierarchyimport(GUID hsession,

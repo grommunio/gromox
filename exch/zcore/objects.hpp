@@ -82,13 +82,13 @@ struct icsdownctx_object final {
 	~icsdownctx_object();
 	static std::unique_ptr<icsdownctx_object> create(folder_object *, uint8_t sync_type);
 	uint8_t get_type() const { return sync_type; }
-	BOOL make_content(const BINARY &state, const RESTRICTION *, uint16_t sync_flags, BOOL *changed, uint32_t *msg_count);
-	BOOL make_hierarchy(const BINARY &state, uint16_t sync_flags, BOOL *changed, uint32_t *fld_count);
+	ec_error_t make_content(const BINARY &state, const RESTRICTION *, uint16_t sync_flags, bool *changed, uint32_t *msg_count);
+	ec_error_t make_hierarchy(const BINARY &state, uint16_t sync_flags, bool *changed, uint32_t *fld_count);
 	BINARY *get_state();
-	BOOL sync_message_change(BOOL *found, BOOL *b_new, TPROPVAL_ARRAY *);
-	BOOL sync_folder_change(BOOL *found, TPROPVAL_ARRAY *);
-	BOOL sync_deletions(uint32_t flags, BINARY_ARRAY *);
-	BOOL sync_readstates(STATE_ARRAY *);
+	ec_error_t sync_message_change(bool *found, bool *b_new, TPROPVAL_ARRAY *);
+	ec_error_t sync_folder_change(bool *found, TPROPVAL_ARRAY *);
+	ec_error_t sync_deletions(uint32_t flags, BINARY_ARRAY *);
+	ec_error_t sync_readstates(STATE_ARRAY *);
 
 	uint8_t sync_type = 0;
 	store_object *pstore = nullptr;
