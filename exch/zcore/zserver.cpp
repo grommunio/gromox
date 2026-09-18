@@ -1292,13 +1292,10 @@ ec_error_t zs_getpermissions(GUID hsession,
 	case zs_objtype::store:
 		return static_cast<store_object *>(pobject)->get_perms(pperm_set);
 	case zs_objtype::folder:
-		if (!static_cast<folder_object *>(pobject)->get_permissions(pperm_set))
-			return ecError;
-		break;
+		return static_cast<folder_object *>(pobject)->get_perms(pperm_set);
 	default:
 		return ecNotSupported;
 	}
-	return ecSuccess;
 }
 
 ec_error_t zs_modifypermissions(GUID hsession,
@@ -1318,11 +1315,11 @@ ec_error_t zs_modifypermissions(GUID hsession,
 		uint32_t permission = 0;
 		if (!exmdb_client->get_folder_perm(pfolder->pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
-			return ecError;
+			return ecRpcFailed;
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 	}
-	return pfolder->set_permissions(pset) ? ecSuccess : ecError;
+	return pfolder->set_perms(pset);
 }
 
 ec_error_t zs_modifyrules(GUID hsession, uint32_t hfolder, uint32_t flags,
@@ -1350,7 +1347,7 @@ ec_error_t zs_modifyrules(GUID hsession, uint32_t hfolder, uint32_t flags,
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 	}
-	return pfolder->updaterules(flags, plist) ? ecSuccess : ecError;
+	return pfolder->updaterules(flags, plist);
 }
 
 ec_error_t zs_getabgal(GUID hsession, BINARY *pentryid)
@@ -3592,9 +3589,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		if (!folder->set_properties(ppropvals))
-			return ecError;
-		return ecSuccess;
+		return folder->set_props(ppropvals);
 	}
 	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
@@ -3658,8 +3653,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
 		if (NULL == pproptags) {
-			if (!folder->get_all_proptags(&proptags))
-				return ecError;
+			auto err = folder->get_all_proptags(&proptags);
+			if (err != ecSuccess)
+				return err;
 			wtags = proptags;
 		}
 		return folder->get_props(wtags, ppropvals);
@@ -3741,9 +3737,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		if (!folder->remove_properties(pproptags))
-			return ecError;
-		return ecSuccess;
+		return folder->remove_props(pproptags);
 	}
 	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
@@ -3946,15 +3940,19 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		}
 		BOOL b_normal = !pexclude_proptags.has(PR_CONTAINER_CONTENTS) ? TRUE : false;
 		BOOL b_fai    = !pexclude_proptags.has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
-		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
-			return ecError;
+		auto err = folder->get_all_proptags(&proptags);
+		if (err != ecSuccess)
+			return err;
 		cu_reduce_proptags(&proptags, pexclude_proptags);
 		tmp_proptags.count = 0;
 		tmp_proptags.pproptag = cu_alloc<proptag_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)
 			return ecServerOOM;
-		if (!b_force && !fdst->get_all_proptags(&proptags1))
-			return ecError;
+		if (!b_force) {
+			err = fdst->get_all_proptags(&proptags1);
+			if (err != ecSuccess)
+				return err;
+		}
 		for (unsigned int i = 0; i < proptags.count; ++i) {
 			const auto tag = proptags.pproptag[i];
 			if (fdst->is_readonly_prop(tag))
@@ -3963,7 +3961,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 				continue;
 			tmp_proptags.emplace_back(tag);
 		}
-		auto err = folder->get_props(tmp_proptags, &propvals);
+		err = folder->get_props(tmp_proptags, &propvals);
 		if (err != ecSuccess)
 			return err;
 		if (b_sub || b_normal || b_fai) {
@@ -3975,13 +3973,9 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 				return ecError;
 			if (b_collid)
 				return ecDuplicateName;
-			if (!fdst->set_properties(&propvals))
-				return ecError;
-			return ecSuccess;
+			return fdst->set_props(&propvals);
 		}
-		if (!fdst->set_properties(&propvals))
-			return ecError;
-		return ecSuccess;
+		return fdst->set_props(&propvals);
 	}
 	case zs_objtype::message: {
 		auto mdst = static_cast<message_object *>(pobject_dst);

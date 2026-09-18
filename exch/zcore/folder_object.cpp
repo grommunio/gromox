@@ -50,17 +50,17 @@ static bool toplevel(uint64_t f)
 	       f == eid_t(1, PRIVATE_FID_INBOX);
 }
 
-BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
+ec_error_t folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pfolder = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client->get_folder_all_proptags(pfolder->pstore->get_dir(),
 	    pfolder->folder_id, &tmp_proptags))
-		return FALSE;		
+		return ecRpcFailed;
 	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 30);
 	if (pproptags->pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	static constexpr proptag_t tags1[] = {
@@ -79,7 +79,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	if (pfolder->pstore->b_private && toplevel(pfolder->folder_id))
 		for (auto t : tags2)
 			pproptags->emplace_back_nd(t);
-	return TRUE;
+	return ecSuccess;
 }
 
 bool folder_object::is_readonly_prop(proptag_t proptag) const
@@ -452,7 +452,7 @@ ec_error_t folder_object::get_props(proptag_cspan pproptags,
 	return ecSuccess;	
 }
 
-BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
+ec_error_t folder_object::set_props(const TPROPVAL_ARRAY *ppropvals)
 {
 	uint16_t count;
 	BINARY *pbin_pcl;
@@ -462,29 +462,29 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (ppropvals->count == 0)
-		return TRUE;
+		return ecSuccess;
 	count = ppropvals->count + 4;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(count);
 	if (tmp_propvals.ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	memcpy(tmp_propvals.ppropval, ppropvals->ppropval,
 			sizeof(TAGGED_PROPVAL)*ppropvals->count);
 	tmp_propvals.count = ppropvals->count;
 	auto pfolder = this;
 	if (!exmdb_client->allocate_cn(pfolder->pstore->get_dir(), &change_num))
-		return FALSE;
+		return ecRpcFailed;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)))
-		return FALSE;
+		return ecRpcFailed;
 	auto pbin_changekey = cu_xid_to_bin({pfolder->pstore->guid(), change_num});
 	if (pbin_changekey == nullptr)
-		return FALSE;
+		return ecError;
 	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
 	if (pbin_pcl == nullptr)
-		return FALSE;
+		return ecError;
 	last_time = rop_util_current_nttime();
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_changekey;
@@ -495,14 +495,14 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	auto pinfo = zs_get_info();
 	if (!exmdb_client->set_folder_properties(pfolder->pstore->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
-		return FALSE;	
+		return ecRpcFailed;
 	auto delegates = ppropvals->get<const BINARY_ARRAY>(PR_SCHDINFO_DELEGATE_ENTRYIDS);
 	if (pfolder->pstore->b_private && delegates != nullptr)
 		cu_flush_delegates(pfolder->pstore->get_dir(), delegates);
-	return TRUE;
+	return ecSuccess;
 }
 
-bool folder_object::remove_properties(proptag_cspan pproptags)
+ec_error_t folder_object::remove_props(proptag_cspan pproptags)
 {
 	BINARY *pbin_pcl;
 	uint64_t last_time;
@@ -515,35 +515,35 @@ bool folder_object::remove_properties(proptag_cspan pproptags)
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	auto pfolder = this;
 	for (const auto tag : pproptags)
 		if (!pfolder->is_readonly_prop(tag))
 			tmp_proptags.emplace_back(tag);
 	if (tmp_proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
 	if (!exmdb_client->remove_folder_properties(pfolder->pstore->get_dir(),
 	    pfolder->folder_id, tmp_proptags))
-		return FALSE;	
+		return ecRpcFailed;
 	if (pfolder->pstore->b_private &&
 	    tmp_proptags.has(PR_SCHDINFO_DELEGATE_ENTRYIDS))
 		cu_flush_delegates(pfolder->pstore->get_dir(), nullptr);
 	tmp_propvals.count = 4;
 	tmp_propvals.ppropval = propval_buff;
 	if (!exmdb_client->allocate_cn(pfolder->pstore->get_dir(), &change_num))
-		return TRUE;
+		return ecSuccess; // XXX
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)))
-		return FALSE;
+		return ecRpcFailed;
 	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
 	auto pbin_changekey = cu_xid_to_bin({pfolder->pstore->guid(), change_num});
 	if (pbin_changekey == nullptr)
-		return FALSE;
+		return ecError;
 	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
 	if (pbin_pcl == nullptr)
-		return FALSE;
+		return ecError;
 	last_time = rop_util_current_nttime();
 	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = pbin_changekey;
@@ -553,10 +553,10 @@ bool folder_object::remove_properties(proptag_cspan pproptags)
 	propval_buff[3].pvalue = &last_time;
 	exmdb_client->set_folder_properties(pfolder->pstore->get_dir(), CP_ACP,
 		pfolder->folder_id, &tmp_propvals, &tmp_problems);
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
+ec_error_t folder_object::get_perms(PERMISSION_SET *pperm_set)
 {
 	uint32_t row_num;
 	uint32_t table_id;
@@ -569,19 +569,18 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	                 rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
 		         PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY : 0;
 	if (!exmdb_client->load_permission_table(dir,
-		pfolder->folder_id, flags, &table_id, &row_num)) {
-		return FALSE;
-	}
+	    pfolder->folder_id, flags, &table_id, &row_num))
+		return ecRpcFailed;
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
 	    table_id, proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(dir, table_id);
-		return FALSE;
+		return ecRpcFailed;
 	}
 	exmdb_client->unload_table(dir, table_id);
 	pperm_set->count = 0;
 	pperm_set->prows = cu_alloc<PERMISSION_ROW>(permission_set.count);
 	if (pperm_set->prows == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	for (size_t i = 0; i < permission_set.count; ++i) {
 		auto pentry_id = permission_set.pparray[i]->get<BINARY>(PR_ENTRYID);
 		auto &cur = pperm_set->prows[pperm_set->count];
@@ -595,10 +594,10 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 		cur.entryid = pentry_id != nullptr ? *pentry_id : BINARY{};
 		++pperm_set->count;
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
+ec_error_t folder_object::set_perms(const PERMISSION_SET *pperm_set)
 {
 	uint32_t row_num;
 	uint32_t table_id;
@@ -609,17 +608,17 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	auto dir = pfolder->pstore->get_dir();
 	if (!exmdb_client->load_permission_table(dir,
 	    pfolder->folder_id, 0, &table_id, &row_num))
-		return FALSE;
+		return ecRpcFailed;
 	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_ID};
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
 	    table_id, proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(dir, table_id);
-		return FALSE;
+		return ecRpcFailed;
 	}
 	exmdb_client->unload_table(dir, table_id);
 	pperm_data = cu_alloc<PERMISSION_DATA>(pperm_set->count);
 	if (pperm_data == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	uint16_t count = 0;
 	/* For each row in the new set... */
 	for (size_t i = 0; i < pperm_set->count; ++i) {
@@ -639,7 +638,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 				pperm_data[count].propvals.count = 2;
 				pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(2);
 				if (pperm_data[count].propvals.ppropval == nullptr)
-					return FALSE;
+					return ecServerOOM;
 				pperm_data[count].propvals.ppropval[0].proptag = PR_MEMBER_ID;
 				pperm_data[count].propvals.ppropval[0].pvalue = pmember_id;
 				pperm_data[count].propvals.ppropval[1].proptag = PR_MEMBER_RIGHTS;
@@ -654,7 +653,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			pperm_data[count].propvals.count = 2;
 			pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(2);
 			if (pperm_data[count].propvals.ppropval == nullptr)
-				return FALSE;
+				return ecServerOOM;
 			pperm_data[count].propvals.ppropval[0].proptag = PR_ENTRYID;
 			pperm_data[count].propvals.ppropval[0].pvalue =
 								&pperm_set->prows[i].entryid;
@@ -677,7 +676,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			pperm_data[count].propvals.count = 1;
 			pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>();
 			if (pperm_data[count].propvals.ppropval == nullptr)
-				return FALSE;
+				return ecServerOOM;
 			pperm_data[count].propvals.ppropval[0].proptag = PR_MEMBER_ID;
 			pperm_data[count].propvals.ppropval[0].pvalue = pmember_id;
 		} else {
@@ -686,24 +685,25 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		count ++;
 	}
 	return exmdb_client->update_folder_permission(dir,
-	       pfolder->folder_id, 0, count, pperm_data);
+	       pfolder->folder_id, 0, count, pperm_data) ?
+	       ecSuccess : ecRpcFailed;
 }
 
-BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
+ec_error_t folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 {
 	BOOL b_exceed;
 	auto pfolder = this;
 	
 	if (flags & MODIFY_RULES_FLAG_REPLACE &&
 	    !exmdb_client->empty_folder_rule(pfolder->pstore->get_dir(), pfolder->folder_id))
-		return FALSE;	
+		return ecRpcFailed;
 	for (auto &rule : *plist)
 		if (!common_util_convert_from_zrule(&rule.propvals))
-			return FALSE;	
+			return ecError;
 	return exmdb_client->update_folder_rule(pfolder->pstore->get_dir(),
-		pfolder->folder_id, plist->count,
-		plist->prule, &b_exceed);
+	       pfolder->folder_id, plist->count, plist->prule, &b_exceed) ?
+	       ecSuccess : ecRpcFailed;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
+	return ecServerOOM;
 }
