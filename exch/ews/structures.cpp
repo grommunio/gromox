@@ -681,7 +681,7 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	const char* str;
 	if (!(str = shape.get<char>(NtCalendarTimeZone)))
 		str = shape.get<char>(NtTimeZoneDescription);
-	if (str)
+	if (str != nullptr && *str != '\0')
 		timezoneId(str);
 
 	Enum::CalendarItemTypeType calendarItemType = Enum::Single;
