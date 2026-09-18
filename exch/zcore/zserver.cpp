@@ -4241,7 +4241,7 @@ ec_error_t zs_configimport(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::icsupctx)
 		return ecNotSupported;
-	return pctx->upload_state(*pstate) ? ecSuccess : ecError;
+	return pctx->upload_state(*pstate);
 }
 
 ec_error_t zs_stateimport(GUID hsession, uint32_t hctx, BINARY *pstate)

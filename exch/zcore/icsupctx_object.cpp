@@ -24,3 +24,8 @@ icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)
 	pctx->sync_type = sync_type;
 	return pctx;
 }
+
+ec_error_t icsupctx_object::upload_state(const BINARY &s)
+{
+	return pstate->deserialize(s) ? ecSuccess : ecError;
+}
