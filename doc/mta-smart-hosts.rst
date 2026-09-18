@@ -66,9 +66,9 @@ main.cf::
 The sender-dependent ``smtp_sasl_password_maps`` lookup order (sender
 address, sender domain, then nexthop) ensures gateway credentials only
 apply to senders of gateway domains. Because the ``verify`` and
-``secure`` TLS levels check certificates against trust anchors, set
-``smtp_tls_CAfile`` (e.g. the distribution CA bundle) or
-``smtp_tls_CApath``.
+``secure`` TLS levels check certificates against trust anchors, the
+``smtp_tls_CAfile`` variable is automatically set to the system
+certificate ``/etc/ssl/ca-bundle.pem``
 
 ``grommunio-domain-gateway-transport.cf``::
 
