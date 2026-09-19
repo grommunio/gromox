@@ -92,11 +92,6 @@ struct message_node {
 	inline const char *dirc() const { return dir.c_str(); }
 };
 
-struct rx_delete {
-	void operator()(BINARY *x) const { rop_util_free_binary(x); }
-	void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
-};
-
 struct mr_policy {
 	unsigned int dtyp = 0, capacity = 0;
 	bool autoproc = true, accept_appts = false;
@@ -104,8 +99,6 @@ struct mr_policy {
 
 	constexpr bool is_resource() const { return dtyp == DT_ROOM || dtyp == DT_EQUIPMENT; }
 };
-
-using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
 
 /**
  * @ev_from:      Envelope-From of the original message.
@@ -783,7 +776,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	PCL pcl;
 	if (!pcl.append(zxid))
 		return ecMAPIOOM;
-	std::unique_ptr<BINARY, rx_delete> pclbin(pcl.serialize());
+	binary_ptr pclbin(pcl.serialize());
 	if (pclbin == nullptr)
 		return ecMAPIOOM;
 	auto &props = dst->proplist;
@@ -1518,7 +1511,7 @@ static ec_error_t mr_rewrite_cal_item(rxparam &par, eid_t cal_fid,
 		return ecError;
 	if (!pcl.append(new_xid))
 		return ecServerOOM;
-	std::unique_ptr<BINARY, rx_delete> pclbin(pcl.serialize());
+	binary_ptr pclbin(pcl.serialize());
 	if (pclbin == nullptr)
 		return ecServerOOM;
 	ec_error_t err;

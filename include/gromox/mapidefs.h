@@ -1295,11 +1295,17 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 	I_BEGIN_END(ppropval, count);
 };
 
+extern GX_EXPORT void rop_util_free_binary(BINARY *pbin);
+
 struct GX_EXPORT mapidefs1_del {
+	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
 	inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
+	inline void operator()(tarray_set *x) const { tarray_set_free(x); }
 };
 
+using binary_ptr = std::unique_ptr<BINARY, mapidefs1_del>;
 using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, mapidefs1_del>;
+using tarray_set_ptr = std::unique_ptr<tarray_set, mapidefs1_del>;
 
 struct GX_EXPORT LTPROPVAL_ARRAY {
 	uint32_t count = 0;

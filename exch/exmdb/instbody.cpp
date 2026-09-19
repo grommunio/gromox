@@ -18,13 +18,6 @@
 
 using namespace gromox;
 
-namespace {
-struct instbody_delete : public stdlib_delete {
-	using stdlib_delete::operator();
-	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
-};
-}
-
 unsigned int exmdb_body_autosynthesis;
 
 /* Get an arbitrary body, no fallbacks. */

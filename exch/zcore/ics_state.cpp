@@ -62,10 +62,6 @@ std::shared_ptr<ics_state> ics_state::create_shared(uint8_t type) try
 
 BINARY *ics_state::serialize()
 {
-	struct mdel {
-		void operator()(BINARY *x) const { rop_util_free_binary(x); }
-		void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
-	};
 	EXT_PUSH ext_push;
 	static constexpr uint8_t bin_buff[8]{};
 	static constexpr BINARY fake_bin = {std::size(bin_buff), {deconst(bin_buff)}};
@@ -79,10 +75,10 @@ BINARY *ics_state::serialize()
 		if (pstate->pgiven->empty() && pstate->pseen->empty())
 			return deconst(&fake_bin);
 	}
-	std::unique_ptr<TPROPVAL_ARRAY, mdel> pproplist(tpropval_array_init());
+	tpropval_array_ptr pproplist(tpropval_array_init());
 	if (pproplist == nullptr)
 		return NULL;
-	std::unique_ptr<BINARY, mdel> ser(pstate->pgiven->serialize());
+	binary_ptr ser(pstate->pgiven->serialize());
 	if (ser == nullptr || pproplist->set(MetaTagIdsetGiven1, ser.get()) != ecSuccess)
 		return NULL;
 	ser.reset(pstate->pseen->serialize());

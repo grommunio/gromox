@@ -25,9 +25,6 @@ struct STACK_NODE {
 };
 using byte_stack = std::vector<STACK_NODE>;
 
-struct mdel {
-	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
-};
 }
 
 std::unique_ptr<idset> idset::create(idset::type t) try
@@ -115,9 +112,9 @@ bool idset::contains(uint64_t eid) const
 	return prepl_node->range_list.contains(value);
 }
 
-static std::unique_ptr<BINARY, mdel> idset_init_binary()
+static binary_ptr idset_init_binary()
 {
-	std::unique_ptr<BINARY, mdel> pbin(gromox::me_alloc<BINARY>());
+	binary_ptr pbin(gromox::me_alloc<BINARY>());
 	if (pbin == nullptr)
 		return NULL;
 	pbin->cb = 0;

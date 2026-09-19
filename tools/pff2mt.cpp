@@ -27,6 +27,7 @@
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/clock.hpp>
+#include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -360,12 +361,16 @@ static char *u16convert(std::string_view sv)
 	return strndup(s.c_str(), s.size());
 }
 
-static std::unique_ptr<TPROPVAL_ARRAY, gi_delete>
-mv_decode_str(proptag_t proptag, const uint8_t *data, size_t dsize)
+static tpropval_array_ptr mv_decode_str(proptag_t proptag, const uint8_t *data,
+    size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
-	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(me_alloc<TPROPVAL_ARRAY>());
+	/*
+	 * Manual construction of TPROPVAL_ARRAY,
+	 * so we can avoid TPROPVAL_ARRAY::append making copies
+	 */
+	tpropval_array_ptr tp(gromox::me_alloc<TPROPVAL_ARRAY>());
 	if (tp == nullptr)
 		throw std::bad_alloc();
 	auto pv = me_alloc<TAGGED_PROPVAL>();
@@ -422,12 +427,12 @@ mv_decode_str(proptag_t proptag, const uint8_t *data, size_t dsize)
 	return tp;
 }
 
-static std::unique_ptr<TPROPVAL_ARRAY, gi_delete>
-mv_decode_bin(proptag_t proptag, const uint8_t *data, size_t dsize)
+static tpropval_array_ptr mv_decode_bin(proptag_t proptag, const uint8_t *data,
+    size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
-	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(me_alloc<TPROPVAL_ARRAY>());
+	tpropval_array_ptr tp(me_alloc<TPROPVAL_ARRAY>()); /* manual */
 	if (tp == nullptr)
 		throw std::bad_alloc();
 	auto pv = me_alloc<TAGGED_PROPVAL>();
@@ -583,7 +588,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 		GUID_ARRAY ga;
 	} u;
 	SVREID svreid;
-	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> uextra;
+	tpropval_array_ptr uextra;
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
 	pv.pvalue = buf.get();

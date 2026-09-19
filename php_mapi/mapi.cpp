@@ -2810,7 +2810,7 @@ static ZEND_FUNCTION(mapi_decompressrtf)
 	auto err = rtfcp_uncompress({Z_STRVAL_P(deref), Z_STRLEN_P(deref)}, blob);
 	if (err != ecSuccess)
 		pthrow(err);
-	std::unique_ptr<ATTACHMENT_LIST, mc_delete> atxlist(attachment_list_init());
+	attachment_list_ptr atxlist(attachment_list_init());
 	if (atxlist == nullptr)
 		pthrow(ecMAPIOOM);
 	err = rtf_to_html(blob, "utf-8", blob, atxlist.get());

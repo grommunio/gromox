@@ -49,12 +49,10 @@ static_assert(sizeof(pte) == 16);
 struct olecf_error_del { void operator()(libolecf_error_t *x) const { libolecf_error_free(&x); } };
 struct olecf_file_del { void operator()(libolecf_file_t *x) const { libolecf_file_free(&x, nullptr); } };
 struct olecf_item_del { void operator()(libolecf_item_t *x) const { libolecf_item_free(&x, nullptr); } };
-struct bin_del { void operator()(BINARY *x) const { rop_util_free_binary(x); } };
 
 using oxm_error_ptr = std::unique_ptr<libolecf_error_t, olecf_error_del>;
 using oxm_file_ptr  = std::unique_ptr<libolecf_file_t, olecf_file_del>;
 using oxm_item_ptr  = std::unique_ptr<libolecf_item_t, olecf_item_del>;
-using bin_ptr       = std::unique_ptr<BINARY, bin_del>;
 
 }
 
@@ -86,14 +84,14 @@ static YError az_error(const char *prefix, const oxm_error_ptr &err)
 	return YError(std::string(prefix) + ": " + buf);
 }
 
-static bin_ptr slurp_stream(libolecf_item_t *stream)
+static binary_ptr slurp_stream(libolecf_item_t *stream)
 {
 	oxm_error_ptr err;
 	uint32_t strm_size = 0;
 
 	if (libolecf_item_get_size(stream, &strm_size, &unique_tie(err)) < 1)
 		throw az_error("PO-1009", err);
-	bin_ptr buf(me_alloc<BINARY>());
+	binary_ptr buf(me_alloc<BINARY>());
 	if (buf == nullptr)
 		throw std::bad_alloc();
 	buf->cb = strm_size;
@@ -112,7 +110,7 @@ static bin_ptr slurp_stream(libolecf_item_t *stream)
 	return buf;
 }
 
-static bin_ptr slurp_stream(libolecf_item_t *dir, const char *file)
+static binary_ptr slurp_stream(libolecf_item_t *dir, const char *file)
 {
 	oxm_error_ptr err;
 	oxm_item_ptr propstrm;
@@ -229,7 +227,7 @@ static int ptemv_to_prop(const struct pte &pte, const char *cset,
 	}
 	if (pte.v_ui4 != blob->cb)
 		return -EIO;
-	std::vector<bin_ptr> bdata(pte.v_ui4 / 8);
+	std::vector<binary_ptr> bdata(pte.v_ui4 / 8);
 	std::vector<BINARY> bvec(bdata.size());
 	for (uint32_t i = 0; i < bvec.size(); ++i) {
 		file = fmt::format("__substg1.0_{:08X}-{:08X}", pte.proptag, i);

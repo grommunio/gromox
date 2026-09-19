@@ -48,11 +48,11 @@ enum { A_DENY_ALL, A_ALLOW_ALL, A_EXTERNID_LDAP, A_EXTERNID_PAM };
 
 namespace {
 struct sslfree2 : public sslfree {
+	using sslfree::operator();
 #if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
 	inline void operator()(OSSL_DECODER_CTX *x) const { OSSL_DECODER_CTX_free(x); }
 #endif
 	inline void operator()(BIO *x) const { BIO_free(x); }
-	inline void operator()(EVP_PKEY *x) const { EVP_PKEY_free(x); }
 };
 }
 

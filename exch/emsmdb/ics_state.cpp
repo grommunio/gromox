@@ -133,12 +133,8 @@ BOOL ics_state::append_idset(uint32_t state_property, std::unique_ptr<idset> &&p
 
 TPROPVAL_ARRAY *ics_state::serialize()
 {
-	struct mdel {
-		inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
-		inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
-	};
 	auto pstate = this;
-	std::unique_ptr<TPROPVAL_ARRAY, mdel> pproplist(tpropval_array_init());
+	tpropval_array_ptr pproplist(tpropval_array_init());
 	if (pproplist == nullptr)
 		return NULL;
 	
@@ -156,7 +152,7 @@ TPROPVAL_ARRAY *ics_state::serialize()
 		rop_util_free_binary(pbin);
 	}
 	
-	std::unique_ptr<BINARY, mdel> ser(pstate->pseen->serialize());
+	binary_ptr ser(pseen->serialize());
 	if (ser == nullptr || pproplist->set(MetaTagCnsetSeen, ser.get()) != ecSuccess)
 		return NULL;
 	

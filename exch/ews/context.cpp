@@ -595,13 +595,6 @@ uint32_t deleg_level_to_rights(Enum::DelegateFolderPermissionLevelType level)
 
 } // Anonymous namespace
 
-namespace detail {
-
-void Cleaner::operator()(BINARY* x) {rop_util_free_binary(x);}
-
-} // gromox::EWS::detail
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 EWSContext::EWSContext(detail::ContextKey id, const HTTP_AUTH_INFO &ai,
@@ -3113,11 +3106,11 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
  *
  * @return     Serialized predecessor change list buffer
  */
-std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid, PCL pcl) const
+binary_ptr EWSContext::mkPCL(const XID& xid, PCL pcl) const
 {
 	if (!pcl.append(xid))
 		throw DispatchError(E3121);
-	std::unique_ptr<BINARY, detail::Cleaner> pcltemp(pcl.serialize());
+	binary_ptr pcltemp(pcl.serialize());
 	if (!pcltemp)
 		throw EWSError::NotEnoughMemory(E3122);
 	return pcltemp;

@@ -30,13 +30,6 @@ class YError final : public std::exception {
 	std::string m_str;
 };
 
-struct gi_delete : public gromox::stdlib_delete {
-	using gromox::stdlib_delete::operator();
-	inline void operator()(ATTACHMENT_CONTENT *x) const { attachment_content_free(x); }
-	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
-	inline void operator()(TARRAY_SET *x) const { tarray_set_free(x); }
-};
-
 using gi_name_map = std::unordered_map<gromox::proptag_t, PROPERTY_XNAME>;
 struct namedprop_bimap;
 
@@ -77,11 +70,7 @@ struct tgt_folder {
 	std::string create_name;
 };
 
-using attachment_content_ptr = std::unique_ptr<ATTACHMENT_CONTENT, gi_delete>;
 using gi_folder_map_t = std::unordered_map<uint64_t, tgt_folder>;
-using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>;
-using propname_array_ptr = std::unique_ptr<PROPNAME_ARRAY, gi_delete>;
-using tarray_set_ptr = std::unique_ptr<TARRAY_SET, gi_delete>;
 
 enum {
 	DELIVERY_TWOSTEP = 0x8000U,
@@ -110,4 +99,4 @@ extern eid_t gi_lookup_eid_by_name(const char *dir, const char *name);
 extern eid_t gi_lookup_eid_any_way(const char *dir, const char *name); /* also accepts numeric folder ID */
 extern void gi_purge_alloc();
 extern void gi_shutdown();
-extern gromox::errno_t gi_decapsulate_attachment(message_content_ptr &, unsigned int);
+extern gromox::errno_t gi_decapsulate_attachment(gromox::message_content_ptr &, unsigned int);

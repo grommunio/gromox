@@ -32,7 +32,6 @@ using namespace gi_dump;
 
 namespace {
 
-struct bin_del { void operator()(BINARY *x) const { rop_util_free_binary(x); } };
 struct ese_column_del { void operator()(libesedb_column_t *x) const { libesedb_column_free(&x, nullptr); } };
 struct ese_error_del { void operator()(libesedb_error_t *x) const { libesedb_error_free(&x); } };
 struct ese_file_del { void operator()(libesedb_file_t *x) const { libesedb_file_free(&x, nullptr); } };
@@ -47,7 +46,6 @@ using ese_file_ptr   = std::unique_ptr<libesedb_file_t, ese_file_del>;
 using ese_lval_ptr   = std::unique_ptr<libesedb_long_value_t, ese_lval_del>;
 using ese_record_ptr = std::unique_ptr<libesedb_record_t, ese_record_del>;
 using ese_table_ptr  = std::unique_ptr<libesedb_table_t, ese_table_del>;
-using bin_ptr        = std::unique_ptr<BINARY, bin_del>;
 using colmap_t       = std::vector<std::string>; /* index to name */
 using valmap_t       = std::map<std::string, std::string>; /* colname to value */
 using hiermap_t      = std::map<std::string, edb_folder>;

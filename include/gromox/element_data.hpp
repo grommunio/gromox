@@ -102,9 +102,14 @@ extern GX_EXPORT void message_content_free(message_content *);
 namespace gromox {
 
 struct GX_EXPORT mc_delete {
-	inline void operator()(ATTACHMENT_LIST *x) { attachment_list_free(x); }
-	inline void operator()(MESSAGE_CONTENT *x) { message_content_free(x); }
+	inline void operator()(attachment_list *x) const { attachment_list_free(x); }
+	inline void operator()(attachment_content *x) const { attachment_content_free(x); }
+	inline void operator()(message_content *x) const { message_content_free(x); }
 };
+
+using attachment_list_ptr = std::unique_ptr<attachment_list, mc_delete>;
+using attachment_content_ptr = std::unique_ptr<attachment_content, mc_delete>;
+using message_content_ptr = std::unique_ptr<message_content, mc_delete>;
 
 }
 
