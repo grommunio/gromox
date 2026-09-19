@@ -60,9 +60,13 @@ int main(int argc, char **argv)
 	}
 	textmaps_init();
 	if (strcmp(argv[1], "cpidtocset") == 0)
-		return q_generic(argc, argv, +[](const char *a) { return cpid_to_cset(static_cast<cpid_t>(strtoul(a, nullptr, 0))); });
+		return q_generic(argc, argv, +[](const char *a) STATIC_IN_CXX23 {
+		       	return cpid_to_cset(static_cast<cpid_t>(strtoul(a, nullptr, 0)));
+		       });
 	if (strcmp(argv[1], "csettocpid") == 0)
-		return q_generic(argc, argv, +[](const char *a) { return static_cast<unsigned int>(cset_to_cpid(a)); });
+		return q_generic(argc, argv, +[](const char *a) STATIC_IN_CXX23 {
+		       	return static_cast<unsigned int>(cset_to_cpid(a));
+		       });
 	if (strcmp(argv[1], "lcidtoltag") == 0)
 		return q_generic(argc, argv, lcid_to_ltag);
 	if (strcmp(argv[1], "ltagtolcid") == 0)

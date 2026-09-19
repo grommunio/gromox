@@ -145,7 +145,7 @@ static int do_set(int argc, char **argv)
 			if (result.desc[i]->sh == g_flags[k].opt)
 				arg[k] = result.oarg[i];
 	if (std::none_of(std::begin(arg), std::end(arg),
-	    [](const char *s) { return s != nullptr; })) {
+	    [](const char *s) STATIC_IN_CXX23 { return s != nullptr; })) {
 		mbop_fprintf(stderr, "You need to specify at least one of the "
 			"-a, -b and -x options\n");
 		return EXIT_PARAM;
@@ -214,7 +214,8 @@ static int do_clear(int argc, char **argv)
 			if (result.desc[i]->sh == g_flags[k].opt)
 				sel[k] = true;
 	/* Naming none of them means all of them, as with the other clear-* commands. */
-	if (std::none_of(std::begin(sel), std::end(sel), [](bool b) { return b; }))
+	if (std::none_of(std::begin(sel), std::end(sel),
+	    [](bool b) STATIC_IN_CXX23 { return b; }))
 		for (auto &s : sel)
 			s = true;
 

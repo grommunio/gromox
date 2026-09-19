@@ -31,7 +31,7 @@ static constexpr int BLOCKUNIT = 512;
 namespace {
 
 struct deleter {
-	void operator()(sqlite3 *x) const { sqlite3_close_v2(x); }
+	STATIC_IN_CXX23 inline void operator()(sqlite3 *x) CONST_BEFORE_CXX23 { sqlite3_close_v2(x); }
 };
 
 struct ustat {

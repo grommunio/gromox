@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <libHX/option.h>
 #include <sys/shm.h>
+#include <gromox/defs.h>
 
 static long g_key;
 static constexpr struct HXoption g_options_table[] = {
@@ -35,7 +36,9 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	struct shm_delete { void operator()(void *x) const { shmdt(x); } };
+	struct shm_delete {
+		STATIC_IN_CXX23 inline void operator()(void *x) CONST_BEFORE_CXX23 { shmdt(x); }
+	};
 	std::unique_ptr<void, shm_delete> addr(shmat(id, nullptr, SHM_RDONLY));
 	if (addr.get() == (void *)-1) {
 		fprintf(stderr, "shmat(0x%lx): %s\n", g_key, strerror(errno));

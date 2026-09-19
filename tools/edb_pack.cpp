@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -475,7 +475,9 @@ pack_result edb_pull::g_edb_propval_a(TPROPVAL_ARRAY *r)
 	}
 	if (filter) {
 		auto m = std::remove_if(r->begin(), r->end(),
-		         [](const TAGGED_PROPVAL &tp) { return PROP_TYPE(tp.proptag) == PT_NULL; });
+		         [](const TAGGED_PROPVAL &tp) STATIC_IN_CXX23 {
+		         	return PROP_TYPE(tp.proptag) == PT_NULL;
+		         });
 		r->count = m - r->begin();
 	}
 	return pack_result::ok;

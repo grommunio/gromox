@@ -29,8 +29,8 @@
 #endif
 
 struct curl_del {
-	void operator()(CURL *x) const { curl_easy_cleanup(x); }
-	void operator()(curl_slist *x) const { curl_slist_free_all(x); }
+	STATIC_IN_CXX23 inline void operator()(CURL *x) CONST_BEFORE_CXX23 { curl_easy_cleanup(x); }
+	STATIC_IN_CXX23 inline void operator()(curl_slist *x) CONST_BEFORE_CXX23 { curl_slist_free_all(x); }
 };
 
 using namespace std::string_literals;

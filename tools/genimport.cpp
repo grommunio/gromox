@@ -435,7 +435,7 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 	if (pathcomp.size() == 0)
 		return 0;
 	auto ptr = std::lower_bound(std::begin(fld_special_names), std::end(fld_special_names),
-	           pathcomp[0].c_str(), [](const std::pair<const char *, uint8_t> &pair, const char *x) {
+	           pathcomp[0].c_str(), [](const std::pair<const char *, uint8_t> &pair, const char *x) STATIC_IN_CXX23 {
 	           	return strcasecmp(pair.first, x) < 0;
 	           });
 	if (ptr == std::end(fld_special_names) ||

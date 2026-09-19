@@ -453,7 +453,9 @@ static int tmr_thrwork_1()
 	char *pspace, temp_line[2048];
 	
 	std::unique_lock co_hold(g_connection_lock);
-	g_waken_cond.wait(co_hold, []() { return g_notify_stop || g_connection_list1.size() > 0; });
+	g_waken_cond.wait(co_hold, []() STATIC_IN_CXX23 {
+		return g_notify_stop || g_connection_list1.size() > 0;
+	});
 	if (g_notify_stop)
 		return X_STOP;
 	if (g_connection_list1.size() == 0)

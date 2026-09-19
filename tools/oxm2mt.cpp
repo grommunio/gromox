@@ -46,9 +46,9 @@ struct pte {
 };
 static_assert(sizeof(pte) == 16);
 
-struct olecf_error_del { void operator()(libolecf_error_t *x) const { libolecf_error_free(&x); } };
-struct olecf_file_del { void operator()(libolecf_file_t *x) const { libolecf_file_free(&x, nullptr); } };
-struct olecf_item_del { void operator()(libolecf_item_t *x) const { libolecf_item_free(&x, nullptr); } };
+struct olecf_error_del { STATIC_IN_CXX23 inline void operator()(libolecf_error_t *x) CONST_BEFORE_CXX23 { libolecf_error_free(&x); } };
+struct olecf_file_del { STATIC_IN_CXX23 inline void operator()(libolecf_file_t *x) CONST_BEFORE_CXX23 { libolecf_file_free(&x, nullptr); } };
+struct olecf_item_del { STATIC_IN_CXX23 inline void operator()(libolecf_item_t *x) CONST_BEFORE_CXX23 { libolecf_item_free(&x, nullptr); } };
 
 using oxm_error_ptr = std::unique_ptr<libolecf_error_t, olecf_error_del>;
 using oxm_file_ptr  = std::unique_ptr<libolecf_file_t, olecf_file_del>;

@@ -637,7 +637,7 @@ static int openpgp_roundtrip()
 		oxcmail_converter cvt;
 		cvt.alloc = g_alloc;
 		cvt.get_propids = ee_get_propids;
-		cvt.get_propname = [](uint16_t id, PROPERTY_NAME **out) -> BOOL {
+		cvt.get_propname = [](uint16_t id, PROPERTY_NAME **out) STATIC_IN_CXX23 -> BOOL {
 			auto entry = static_namedprop_map.fwd.find(PROP_TAG(PT_UNSPECIFIED, id));
 			if (entry == static_namedprop_map.fwd.end())
 				return false;
@@ -752,9 +752,9 @@ static int openpgp_legacy_layout()
 int main()
 {
 	textmaps_init(getenv("GROMOX_TEST_DATA"));
-	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) -> bool { return false; };
-	auto ee_get_domain_ids = [](const char *, unsigned int *, unsigned int *) -> bool { return false; };
-	auto ee_userid_to_name = [](unsigned int, std::string &) -> ec_error_t { return ecNotFound; };
+	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) STATIC_IN_CXX23 -> bool { return false; };
+	auto ee_get_domain_ids = [](const char *, unsigned int *, unsigned int *) STATIC_IN_CXX23 -> bool { return false; };
+	auto ee_userid_to_name = [](unsigned int, std::string &) STATIC_IN_CXX23 -> ec_error_t { return ecNotFound; };
 	g_show_tree = g_show_props = true;
 	if (!oxcmail_init_library("x500", ee_get_user_ids, ee_get_domain_ids, ee_userid_to_name)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");

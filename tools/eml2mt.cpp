@@ -428,8 +428,8 @@ int main(int argc, char **argv) try
 	}
 
 	if (g_oneoff) {
-		system_services_get_user_ids = [](const char *, unsigned int *, unsigned int *, display_type *) -> bool { return false; };
-		system_services_get_domain_ids = [](const char *, unsigned int *, unsigned int *) -> bool { return false; };
+		system_services_get_user_ids = [](const char *, unsigned int *, unsigned int *, display_type *) STATIC_IN_CXX23 -> bool { return false; };
+		system_services_get_domain_ids = [](const char *, unsigned int *, unsigned int *) STATIC_IN_CXX23 -> bool { return false; };
 	} else {
 		system_services_get_user_ids   = mysql_adaptor_get_user_ids;
 		system_services_get_domain_ids = mysql_adaptor_get_domain_ids;

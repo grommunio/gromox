@@ -246,7 +246,7 @@ static int t_ical_dt()
 		cvt.alloc = zalloc;
 		cvt.get_propids = ee_get_propids;
 		cvt.username_to_entryid = oxcmail_username_to_entryid;
-		cvt.id2user = [](unsigned int, std::string &) -> ec_error_t { return ecNotFound; };
+		cvt.id2user = [](unsigned int, std::string &) STATIC_IN_CXX23 -> ec_error_t { return ecNotFound; };
 		auto mc = cvt.ical_to_mapi_single(ical);
 		if (mc == nullptr) {
 			fprintf(stderr, "oxcical_import unsuccessful\n");

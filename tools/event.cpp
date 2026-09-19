@@ -579,7 +579,9 @@ static int ev_enqwork_1()
 
 	{
 	std::unique_lock eq_hold(g_enqueue_lock);
-	g_enqueue_waken_cond.wait(eq_hold, []() { return g_notify_stop || g_enqueue_list1.size() > 0; });
+	g_enqueue_waken_cond.wait(eq_hold, []() STATIC_IN_CXX23 {
+		return g_notify_stop || g_enqueue_list1.size() > 0;
+	});
 	if (g_notify_stop)
 		return X_STOP;
 	if (g_enqueue_list1.size() == 0)
@@ -629,7 +631,9 @@ static int ev_deqwork_1()
 	std::shared_ptr<DEQUEUE_NODE> pdequeue;
 	{
 	std::unique_lock dq_hold(g_dequeue_lock);
-	g_dequeue_waken_cond.wait(dq_hold, []() { return g_notify_stop || g_dequeue_list1.size() > 0; });
+	g_dequeue_waken_cond.wait(dq_hold, []() STATIC_IN_CXX23 {
+		return g_notify_stop || g_dequeue_list1.size() > 0;
+	});
 	if (g_notify_stop)
 		return X_STOP;
 	if (g_dequeue_list1.size() == 0)

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdio>
@@ -82,7 +82,10 @@ static int filter_users(const char *mode, std::vector<sql_user> &ul)
 		else if (filter == "sharedmb")
 			std::erase_if(ul, adst_nomatch(AF_USER_SHAREDMBOX));
 		else if (filter == "contact")
-			std::erase_if(ul, [](const sql_user &u) { return (u.addr_status & AF_USER__MASK) != AF_USER_CONTACT || (u.dtypx & DTE_MASK_LOCAL) != DT_REMOTE_MAILUSER; });
+			std::erase_if(ul, [](const sql_user &u) STATIC_IN_CXX23 {
+				return (u.addr_status & AF_USER__MASK) != AF_USER_CONTACT ||
+				       (u.dtypx & DTE_MASK_LOCAL) != DT_REMOTE_MAILUSER;
+			});
 		else if (filter == "active")
 			std::erase_if(ul, adst_nomatch(AF_USER_NORMAL));
 		else if (filter == "susp")
@@ -90,9 +93,9 @@ static int filter_users(const char *mode, std::vector<sql_user> &ul)
 		else if (filter == "deleted")
 			std::erase_if(ul, adst_nomatch(AF_USER_DELETED));
 		else if (filter == "mb")
-			std::erase_if(ul, [](const sql_user &u) { return u.maildir.empty(); });
+			std::erase_if(ul, [](const sql_user &u) STATIC_IN_CXX23 { return u.maildir.empty(); });
 		else if (filter == "here")
-			std::erase_if(ul, [&](const sql_user &u) {
+			std::erase_if(ul, [&](const sql_user &u) STATIC_IN_CXX23 {
 				return u.homeserver_id > 0 &&
 				       strcasecmp(u.homeserver.c_str(), this_server.c_str()) != 0;
 			});

@@ -65,13 +65,13 @@ E(BINARY_DATA, BINARY)
 
 namespace {
 
-struct libpff_error_del { void operator()(libpff_error_t *x) const { libpff_error_free(&x); } };
-struct libpff_file_del { void operator()(libpff_file_t *x) const { libpff_file_free(&x, nullptr); } };
-struct libpff_item_del { void operator()(libpff_item_t *x) const { libpff_item_free(&x, nullptr); } };
-struct libpff_record_set_del { void operator()(libpff_record_set_t *x) const { libpff_record_set_free(&x, nullptr); } };
-struct libpff_record_entry_del { void operator()(libpff_record_entry_t *x) const { libpff_record_entry_free(&x, nullptr); } };
-struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) const { libpff_multi_value_free(&x, nullptr); } };
-struct libpff_noop_del { void operator()(void *x) const { } };
+struct libpff_error_del { STATIC_IN_CXX23 inline void operator()(libpff_error_t *x) CONST_BEFORE_CXX23 { libpff_error_free(&x); } };
+struct libpff_file_del { STATIC_IN_CXX23 inline void operator()(libpff_file_t *x) CONST_BEFORE_CXX23 { libpff_file_free(&x, nullptr); } };
+struct libpff_item_del { STATIC_IN_CXX23 inline void operator()(libpff_item_t *x) CONST_BEFORE_CXX23 { libpff_item_free(&x, nullptr); } };
+struct libpff_record_set_del { STATIC_IN_CXX23 inline void operator()(libpff_record_set_t *x) CONST_BEFORE_CXX23 { libpff_record_set_free(&x, nullptr); } };
+struct libpff_record_entry_del { STATIC_IN_CXX23 inline void operator()(libpff_record_entry_t *x) CONST_BEFORE_CXX23 { libpff_record_entry_free(&x, nullptr); } };
+struct libpff_multi_value_del { STATIC_IN_CXX23 inline void operator()(libpff_multi_value_t *x) CONST_BEFORE_CXX23 { libpff_multi_value_free(&x, nullptr); } };
+struct libpff_noop_del { STATIC_IN_CXX23 inline void operator()(void *x) CONST_BEFORE_CXX23 { } };
 
 using libpff_error_ptr        = std::unique_ptr<libpff_error_t, libpff_error_del>;
 using libpff_file_ptr         = std::unique_ptr<libpff_file_t, libpff_file_del>;
