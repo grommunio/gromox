@@ -2077,9 +2077,10 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 	if (err != ecSuccess)
 		throw EWSError::FreeBusyGenerationFailed(E3144);
 
-	FreeBusyViewType = std::all_of(fb_data.begin(), fb_data.end(),
-		[](const freebusy_event &fb_event) { return fb_event.has_details; }) ?
-		"Detailed" : "FreeBusy";
+	FreeBusyViewType = std::all_of(fb_data.cbegin(), fb_data.cend(),
+		[](const freebusy_event &fb_event) STATIC_IN_CXX23 {
+			return fb_event.has_details;
+		}) ? "Detailed" : "FreeBusy";
 
 	auto &cal_events = CalendarEventArray.emplace();
 	cal_events.reserve(fb_data.size());
@@ -2125,69 +2126,69 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
  * List of field -> conversion function mapping
  */
 decltype(tChangeDescription::fields) tChangeDescription::fields = {{
-	{"ActualWork", {[](auto &&...args) { convInt32(NtTaskActualEffort, args...); }, "Task"}},
-	{"AssistantName", {[](auto &&...args) { convText(PR_ASSISTANT, args...); }}},
-	{"BccRecipients", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.bccRecipients = xml; }, "Message"}},
-	{"BillingInformation", {[](auto &&...args) { convText(NtBilling, args...); }, "Task"}},
-	{"Birthday", {[](auto&&... args){convDate(PR_BIRTHDAY, args...);}}},
+	{"ActualWork", {[](auto &&...args) STATIC_IN_CXX23 { convInt32(NtTaskActualEffort, args...); }, "Task"}},
+	{"AssistantName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_ASSISTANT, args...); }}},
+	{"BccRecipients", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.bccRecipients = xml; }, "Message"}},
+	{"BillingInformation", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtBilling, args...); }, "Task"}},
+	{"Birthday", {[](auto &&...args) STATIC_IN_CXX23 { convDate(PR_BIRTHDAY, args...); }}},
 	{"Body", {tChangeDescription::convBody}},
-	{"BusinessHomePage", {[](auto&&... args){convText(PR_BUSINESS_HOME_PAGE, args...);}}},
-	{"Categories", {[](auto&&... args){convStrArray(NtCategories, args...);}}},
-	{"CcRecipients", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.ccRecipients = xml; }, "Message"}},
-	{"Children", {[](auto&&... args){convStrArray(PR_CHILDRENS_NAMES, args...);}}},
-	{"Companies", {[](auto &&...args) { convStrArray(NtCompanies, args...); }, "Task"}},
-	{"CompanyName", {[](auto&&... args){convText(PR_COMPANY_NAME, args...);}}},
-	{"CompleteDate", {[](auto &&...args) { convDate(NtTaskDateCompleted, args...); }, "Task"}},
-	{"Department", {[](auto&&... args){convText(PR_DEPARTMENT_NAME, args...);}}},
-	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
-	{"DueDate", {[](auto &&...args) { convDate(NtTaskDueDate, args...); }, "Task"}},
-	{"End", {[](auto&&... args){convDate(NtCommonEnd, args...);}}},
-	{"EndTimeZone", {[](auto &&...args) { convTzAttr(NtCalendarTimeZone, args...); }}},
-	{"EndTimeZoneId", {[](auto&&... args){convText(NtCalendarTimeZone, args...);}}},
-	{"FileAs", {[](auto&&... args){convText(NtFileAs, args...);}}},
-	{"Flag", {[](auto &&...args) { convFlag(args...); }}},
-	{"Generation", {[](auto&&... args){convText(PR_GENERATION, args...);}}},
-	{"GivenName", {[](auto&&... args){convText(PR_GIVEN_NAME, args...);}}},
-	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
-	{"Initials", {[](auto&&... args){convText(PR_INITIALS, args...);}}},
-	{"IsAllDayEvent", {[](auto &&...args) { convBool(NtAppointmentSubType, args...); }}},
-	{"IsComplete", {[](auto &&...args) { convBool(NtTaskComplete, args...); }, "Task"}},
-	{"IsDeliveryReceiptRequested", {[](auto&&... args){convBool(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED, args...);}}},
-	{"IsRead", {[](auto&&... args){convBool(PR_READ, args...);}}},
-	{"IsReadReceiptRequested", {[](auto&&... args){convBool(PR_READ_RECEIPT_REQUESTED, args...);}}},
-	{"JobTitle", {[](auto&&... args){convText(PR_TITLE, args...);}}},
-	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
-	{"Location", {[](auto &&...args) { convText(NtLocation, args...); }, "CalendarItem"}},
-	{"Manager", {[](auto &&...args) { convText(PR_MANAGER_NAME, args...); }}},
-	{"MiddleName", {[](auto &&...args) { convText(PR_MIDDLE_NAME, args...); }}},
-	{"Mileage", {[](auto &&...args) { convText(NtMileage, args...); }, "Task"}},
-	{"MimeContent", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.mimeContent = base64_decode(znul(xml->GetText())); }}},
-	{"Nickname", {[](auto&&... args){convText(PR_NICKNAME, args...);}}},
-	{"OfficeLocation", {[](auto&&... args){convText(PR_OFFICE_LOCATION, args...);}}},
-	{"OptionalAttendees", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.optionalAttendees = xml; }, "CalendarItem"}},
-	{"Owner", {[](auto &&...args) { convText(NtTaskOwner, args...); }, "Task"}},
-	{"PercentComplete", {[](auto &&...args) { convDouble(NtPercentComplete, args...); }, "Task"}},
-	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.calendarPermissionSet = xml; }, "CalendarFolder"}},
-	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.permissionSet = xml; }}},
-	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
-	{"Profession", {[](auto &&...args) { convText(PR_PROFESSION, args...); }}},
-	{"Recurrence", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.recurrence = xml; }, "CalendarItem"}},
-	{"RequiredAttendees", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.requiredAttendees = xml; }, "CalendarItem"}},
-	{"Resources", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.resourceAttendees = xml; }, "CalendarItem"}},
-	{"Sensitivity", {[](auto &&...args) { convSensitivity(args...); }}},
-	{"SpouseName", {[](auto&&... args){convText(PR_SPOUSE_NAME, args...);}}},
-	{"Start", {[](auto&&... args){convDate(NtCommonStart, args...);}}},
-	{"StartDate", {[](auto &&...args) { convDate(NtTaskStartDate, args...); }, "Task"}},
-	{"StartTimeZone", {[](auto &&...args) { convTzAttr(NtCalendarTimeZone, args...); }}},
-	{"StartTimeZoneId", {[](auto&&... args){convText(NtCalendarTimeZone, args...);}}},
-	{"Status", {[](auto &&...args) { convEnumIndex<Enum::TaskStatusType>(NtTaskStatus, args...); }, "Task"}},
-	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
-	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
-	{"ToRecipients", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.toRecipients = xml; }, "Message"}},
-	{"TotalWork", {[](auto &&...args) { convInt32(NtTaskEstimatedEffort, args...); }, "Task"}},
-	{"UID", {[](auto &&...args) { convUID(args...); }}},
-	{"WeddingAnniversary", {[](auto&&... args){convDate(PR_WEDDING_ANNIVERSARY, args...);}}},
-	{"YomiCompanyName", {[](auto &&...args) { convText(NtYomiCompanyName, args...); }}},
+	{"BusinessHomePage", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_BUSINESS_HOME_PAGE, args...); }}},
+	{"Categories", {[](auto &&...args) STATIC_IN_CXX23 { convStrArray(NtCategories, args...); }}},
+	{"CcRecipients", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.ccRecipients = xml; }, "Message"}},
+	{"Children", {[](auto &&...args) STATIC_IN_CXX23 { convStrArray(PR_CHILDRENS_NAMES, args...); }}},
+	{"Companies", {[](auto &&...args) STATIC_IN_CXX23 { convStrArray(NtCompanies, args...); }, "Task"}},
+	{"CompanyName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_COMPANY_NAME, args...); }}},
+	{"CompleteDate", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtTaskDateCompleted, args...); }, "Task"}},
+	{"Department", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_DEPARTMENT_NAME, args...); }}},
+	{"DisplayName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_DISPLAY_NAME, args...); }}},
+	{"DueDate", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtTaskDueDate, args...); }, "Task"}},
+	{"End", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtCommonEnd, args...); }}},
+	{"EndTimeZone", {[](auto &&...args) STATIC_IN_CXX23 { convTzAttr(NtCalendarTimeZone, args...); }}},
+	{"EndTimeZoneId", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtCalendarTimeZone, args...); }}},
+	{"FileAs", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtFileAs, args...); }}},
+	{"Flag", {[](auto &&...args) STATIC_IN_CXX23 { convFlag(args...); }}},
+	{"Generation", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_GENERATION, args...); }}},
+	{"GivenName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_GIVEN_NAME, args...); }}},
+	{"Importance", {[](auto &&...args) STATIC_IN_CXX23 { convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...); }}},
+	{"Initials", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_INITIALS, args...); }}},
+	{"IsAllDayEvent", {[](auto &&...args) STATIC_IN_CXX23 { convBool(NtAppointmentSubType, args...); }}},
+	{"IsComplete", {[](auto &&...args) STATIC_IN_CXX23 { convBool(NtTaskComplete, args...); }, "Task"}},
+	{"IsDeliveryReceiptRequested", {[](auto &&...args) STATIC_IN_CXX23 { convBool(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED, args...);}}},
+	{"IsRead", {[](auto &&...args) STATIC_IN_CXX23 { convBool(PR_READ, args...); }}},
+	{"IsReadReceiptRequested", {[](auto &&...args) STATIC_IN_CXX23 { convBool(PR_READ_RECEIPT_REQUESTED, args...); }}},
+	{"JobTitle", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_TITLE, args...); }}},
+	{"LastModifiedName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_LAST_MODIFIER_NAME, args...); }}},
+	{"Location", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtLocation, args...); }, "CalendarItem"}},
+	{"Manager", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_MANAGER_NAME, args...); }}},
+	{"MiddleName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_MIDDLE_NAME, args...); }}},
+	{"Mileage", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtMileage, args...); }, "Task"}},
+	{"MimeContent", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.mimeContent = base64_decode(znul(xml->GetText())); }}},
+	{"Nickname", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_NICKNAME, args...); }}},
+	{"OfficeLocation", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_OFFICE_LOCATION, args...); }}},
+	{"OptionalAttendees", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.optionalAttendees = xml; }, "CalendarItem"}},
+	{"Owner", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtTaskOwner, args...); }, "Task"}},
+	{"PercentComplete", {[](auto &&...args) STATIC_IN_CXX23 { convDouble(NtPercentComplete, args...); }, "Task"}},
+	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.calendarPermissionSet = xml; }, "CalendarFolder"}},
+	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.permissionSet = xml; }}},
+	{"PostalAddressIndex", {[](auto &&...args) STATIC_IN_CXX23 { convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...); }}},
+	{"Profession", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_PROFESSION, args...); }}},
+	{"Recurrence", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.recurrence = xml; }, "CalendarItem"}},
+	{"RequiredAttendees", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.requiredAttendees = xml; }, "CalendarItem"}},
+	{"Resources", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.resourceAttendees = xml; }, "CalendarItem"}},
+	{"Sensitivity", {[](auto &&...args) STATIC_IN_CXX23 { convSensitivity(args...); }}},
+	{"SpouseName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_SPOUSE_NAME, args...); }}},
+	{"Start", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtCommonStart, args...); }}},
+	{"StartDate", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtTaskStartDate, args...); }, "Task"}},
+	{"StartTimeZone", {[](auto &&...args) STATIC_IN_CXX23 { convTzAttr(NtCalendarTimeZone, args...); }}},
+	{"StartTimeZoneId", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtCalendarTimeZone, args...); }}},
+	{"Status", {[](auto &&...args) STATIC_IN_CXX23 { convEnumIndex<Enum::TaskStatusType>(NtTaskStatus, args...); }, "Task"}},
+	{"Subject", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_SUBJECT, args...); }}},
+	{"Surname", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_SURNAME, args...); }}},
+	{"ToRecipients", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.toRecipients = xml; }, "Message"}},
+	{"TotalWork", {[](auto &&...args) STATIC_IN_CXX23 { convInt32(NtTaskEstimatedEffort, args...); }, "Task"}},
+	{"UID", {[](auto &&...args) STATIC_IN_CXX23 { convUID(args...); }}},
+	{"WeddingAnniversary", {[](auto &&...args) STATIC_IN_CXX23 STATIC_IN_CXX23 { convDate(PR_WEDDING_ANNIVERSARY, args...); }}},
+	{"YomiCompanyName", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtYomiCompanyName, args...); }}},
 }};
 
 
@@ -2574,8 +2575,8 @@ std::string tContact::mkAddress(const std::optional<std::string>& street, const 
                                 const std::optional<std::string>& state, const std::optional<std::string>& postal,
                                 const std::optional<std::string>& country)
 {
-	auto get = [](const std::optional<std::string> &src) { return src ? src->c_str() : ""; };
-	auto con = [](bool src, const char *c) { return src ? c : ""; };
+	auto get = [](const std::optional<std::string> &src) STATIC_IN_CXX23 { return src ? src->c_str() : ""; };
+	auto con = [](bool src, const char *c) STATIC_IN_CXX23 { return src ? c : ""; };
 	bool lines[] = {bool(street), city || state || postal, bool(country)};
 	return fmt::format(addressTemplate, get(street), con(lines[0] || lines[1], "\n"),
 	                    get(city), con(city && state, " "), get(state), con((city || state) && postal, " "), get(postal),
@@ -3266,8 +3267,10 @@ void tExtendedFieldURI::tags(sShape& shape, bool add) const
  */
 proptype_t tExtendedFieldURI::type() const
 {
-	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
-	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
+	auto type = std::lower_bound(typeMap.cbegin(), typeMap.cend(), PropertyType.c_str(),
+	            [](const TMEntry &v1, const char *v2) STATIC_IN_CXX23 {
+	            	return strcmp(v1.first, v2) < 0;
+	            });
 	if (type == typeMap.end() || strcmp(type->first, PropertyType.c_str()))
 		throw InputError(E3059(PropertyType));
 	return type->second;
@@ -3752,8 +3755,10 @@ void tFieldURI::tags(sShape& shape, bool add) const
 		          add ? sShape::FL_FIELD : sShape::FL_RM);
 	found |= names.first != names.second;
 
-	static auto compval = [](const SMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
-	auto specials = std::lower_bound(specialMap.begin(), specialMap.end(), FieldURI.c_str(), compval);
+	auto specials = std::lower_bound(specialMap.cbegin(), specialMap.cend(), FieldURI.c_str(),
+	                [](const SMEntry &v1, const char *v2) STATIC_IN_CXX23 {
+	                	return strcmp(v1.first, v2) < 0;
+	                });
 	if (specials != specialMap.end() && specials->first == FieldURI) {
 		shape.special |= specials->second;
 		found = true;
@@ -3952,9 +3957,10 @@ decltype(tIndexedFieldURI::nameMap) tIndexedFieldURI::nameMap = {{
  */
 void tIndexedFieldURI::tags(sShape& shape, bool add) const
 {
-	static auto compval = [](const auto& v1, const tIndexedFieldURI& v2)
-	{return std::tie(v1.first.first, v1.first.second) < std::tie(v2.FieldURI, v2.FieldIndex);};
-
+	static auto compval = [](const auto &v1, const tIndexedFieldURI &v2) STATIC_IN_CXX23 {
+	                      	return std::tie(v1.first.first, v1.first.second) <
+	                      	       std::tie(v2.FieldURI, v2.FieldIndex);
+	                      };
 	auto tagIt = std::lower_bound(tagMap.begin(), tagMap.end(), *this, compval);
 	if (tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
 		shape.add(tagIt->second, add ? sShape::FL_FIELD : sShape::FL_RM);
@@ -3980,9 +3986,10 @@ void tIndexedFieldURI::tags(sShape& shape, bool add) const
  */
 proptag_t tIndexedFieldURI::tag(const sGetNameId &getId) const
 {
-	static auto compval = [](const auto& v1, const tIndexedFieldURI& v2)
-	{return std::tie(v1.first.first, v1.first.second) < std::tie(v2.FieldURI, v2.FieldIndex);};
-
+	static auto compval = [](const auto &v1, const tIndexedFieldURI &v2) STATIC_IN_CXX23 {
+	                      	return std::tie(v1.first.first, v1.first.second) <
+	                      	       std::tie(v2.FieldURI, v2.FieldIndex);
+	                      };
 	auto tagIt = std::lower_bound(tagMap.begin(), tagMap.end(), *this, compval);
 	if (tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
 		return tagIt->second;
@@ -4682,7 +4689,7 @@ std::vector<PERMISSION_DATA> tPermissionSet::write() const
 	std::vector<PERMISSION_DATA> res;
 	res.reserve(Permissions.size());
 	std::transform(Permissions.begin(), Permissions.end(), std::back_inserter(res),
-	               [](const tPermission& perm){return perm.write();});
+	               [](const tPermission &perm) STATIC_IN_CXX23 { return perm.write(); });
 	return res;
 }
 
@@ -4711,7 +4718,7 @@ std::vector<PERMISSION_DATA> tCalendarPermissionSet::write() const
 	std::vector<PERMISSION_DATA> res;
 	res.reserve(CalendarPermissions.size());
 	std::transform(CalendarPermissions.begin(), CalendarPermissions.end(), std::back_inserter(res),
-	               [](const tCalendarPermission& perm){return perm.write();});
+	               [](const tCalendarPermission &perm) STATIC_IN_CXX23 { return perm.write(); });
 	return res;
 }
 

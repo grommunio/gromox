@@ -56,19 +56,19 @@ struct EmbeddedInstanceKey {
 } // namespace gromox::EWS::detail
 
 template<> struct std::hash<gromox::EWS::detail::AttachmentInstanceKey> {
-	size_t operator()(const gromox::EWS::detail::AttachmentInstanceKey &) const noexcept;
+	STATIC_IN_CXX23 size_t operator()(const gromox::EWS::detail::AttachmentInstanceKey &) CONST_BEFORE_CXX23 noexcept;
 };
 
 template<> struct std::hash<gromox::EWS::detail::ExmdbSubscriptionKey> {
-	size_t operator()(const gromox::EWS::detail::ExmdbSubscriptionKey &) const noexcept;
+	STATIC_IN_CXX23 size_t operator()(const gromox::EWS::detail::ExmdbSubscriptionKey &) CONST_BEFORE_CXX23 noexcept;
 };
 
 template<> struct std::hash<gromox::EWS::detail::MessageInstanceKey> {
-	size_t operator()(const gromox::EWS::detail::MessageInstanceKey &) const noexcept;
+	STATIC_IN_CXX23 size_t operator()(const gromox::EWS::detail::MessageInstanceKey &) CONST_BEFORE_CXX23 noexcept;
 };
 
 template<> struct std::hash<gromox::EWS::detail::EmbeddedInstanceKey> {
-	size_t operator()(const gromox::EWS::detail::EmbeddedInstanceKey &) const noexcept;
+	STATIC_IN_CXX23 size_t operator()(const gromox::EWS::detail::EmbeddedInstanceKey &) CONST_BEFORE_CXX23 noexcept;
 };
 
 namespace gromox::EWS {

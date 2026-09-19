@@ -646,8 +646,10 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 	uint64_t changeNumber;
 	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNumber))
 		throw DispatchError(E3153);
-	const tBaseFolderType& baseFolder = std::visit([](const auto& f) -> const tBaseFolderType&
-	                                                 {return static_cast<const tBaseFolderType&>(f);}, folder);
+	const auto &baseFolder =
+		std::visit([](const auto &f) STATIC_IN_CXX23 -> const tBaseFolderType & {
+			return static_cast<const tBaseFolderType &>(f);
+		}, folder);
 	for (const tExtendedProperty &prop : baseFolder.ExtendedProperty)
 		if (prop.ExtendedFieldURI.tag())
 			shape.write(prop.propval);
@@ -2930,7 +2932,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	 * for CET), but StartDate is the correct date.
 	 */
 	auto &rr = recurrence.RecurrenceRange;
-	auto rangeStart = clock::to_time_t(std::visit([](const auto &r) { return r.StartDate; }, rr));
+	auto rangeStart = clock::to_time_t(std::visit([](const auto &r) STATIC_IN_CXX23 { return r.StartDate; }, rr));
 	struct tm startdate_tm{};
 	if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
 		throw EWSError::CalendarInvalidRecurrence(E3356);
@@ -3945,7 +3947,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		 */
 		auto &rr = item.Recurrence->RecurrenceRange;
 		auto rangeStart = clock::to_time_t(std::visit(
-		                  [](const auto &r) { return r.StartDate; }, rr));
+		                  [](const auto &r) STATIC_IN_CXX23 { return r.StartDate; }, rr));
 		if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
 			throw EWSError::CalendarInvalidRecurrence(E3359);
 		APPOINTMENT_RECUR_PAT apr{};
@@ -4263,7 +4265,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3377);
 		TARRAY_SET* rcpts = content->children.prcpts;
-		auto add_attendee = [](TPROPVAL_ARRAY *rcpt, const tAttendee &att, uint32_t type) {
+		auto add_attendee = [](TPROPVAL_ARRAY *rcpt, const tAttendee &att, uint32_t type) STATIC_IN_CXX23 {
 			att.Mailbox.mkRecipient(rcpt, type);
 			static constexpr uint32_t sendable = recipSendable;
 			if (rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
