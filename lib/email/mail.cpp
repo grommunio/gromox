@@ -29,7 +29,9 @@ void MAIL::clear()
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
 	if (pnode != nullptr)
-		pmail->tree.destroy_node(pnode, [](SIMPLE_TREE_NODE *n) { delete static_cast<MIME *>(n->pdata); });
+		pmail->tree.destroy_node(pnode, [](tree_node *n) STATIC_IN_CXX23 {
+			delete static_cast<MIME *>(n->pdata);
+		});
 	pmail->buffer.reset();
 }
 

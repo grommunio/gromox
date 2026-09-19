@@ -125,7 +125,7 @@ heap_reaper::heap_reaper(unsigned int sec)
 	if (sec == 0)
 		return;
 	auto ret = global_workqueue.insert_task("heap_reaper",
-	           std::chrono::seconds(sec), [](std::any &) { malloc_trim(0); });
+	           std::chrono::seconds(sec), [](std::any &) STATIC_IN_CXX23 { malloc_trim(0); });
 	if (ret != 0)
 		mlog(LV_WARN, "cannot start heap reaper task: %s", strerror(ret));
 #endif
@@ -301,7 +301,7 @@ int setup_signal_defaults()
 		if (ret < 0 || act.sa_handler != SIG_DFL)
 			continue;
 		sigemptyset(&act.sa_mask);
-		act.sa_handler = [](int) {};
+		act.sa_handler = [](int) STATIC_IN_CXX23 {};
 		ret = sigaction(signum, &act, nullptr);
 		if (ret != 0)
 			mlog(LV_ERR, "sigaction (%u): %s", signum, strerror(errno));
@@ -1036,7 +1036,7 @@ void workqueue::mainloop()
 			continue;
 		auto ip = std::upper_bound(m_tasklist.begin(),
 		          m_tasklist.end(), next_time,
-		          [](time_point p, const wq_task &t) { return p < t.start_time; });
+		          [](time_point p, const wq_task &t) STATIC_IN_CXX23 { return p < t.start_time; });
 		if (tsk < ip)
 			std::rotate(tsk, tsk + 1, ip);
 		else
@@ -1053,7 +1053,7 @@ errno_t workqueue::launch_ondemand()
 	if (!pthread_equal(m_thrid, {}))
 		return 0; /* already running */
 
-	auto raw_entry = [](void *arg) -> void * {
+	auto raw_entry = [](void *arg) STATIC_IN_CXX23 -> void * {
 		pthread_setname_np(pthread_self(), "gl_workqueue");
 		static_cast<workqueue *>(arg)->mainloop();
 		return nullptr;
@@ -1096,7 +1096,7 @@ errno_t workqueue::insert_task(const char *name, std::chrono::nanoseconds period
 			return EEXIST;
 		auto here = std::upper_bound(m_tasklist.begin(), m_tasklist.end(),
 		            start_time,
-		            [](time_point tp, const struct wq_task &task) {
+		            [](time_point tp, const struct wq_task &task) STATIC_IN_CXX23 {
 		            	return tp < task.start_time;
 		            });	
 		m_tasklist.emplace(here, start_time, period, std::move(obj), func, name);

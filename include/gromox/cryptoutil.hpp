@@ -9,9 +9,9 @@
 namespace gromox {
 
 struct GX_EXPORT sslfree {
-	inline void operator()(EVP_CIPHER_CTX *x) const { EVP_CIPHER_CTX_free(x); }
-	inline void operator()(EVP_MD_CTX *x) const { EVP_MD_CTX_free(x); }
-	inline void operator()(EVP_PKEY *x) const { EVP_PKEY_free(x); }
+	STATIC_IN_CXX23 inline void operator()(EVP_CIPHER_CTX *x) CONST_BEFORE_CXX23 { EVP_CIPHER_CTX_free(x); }
+	STATIC_IN_CXX23 inline void operator()(EVP_MD_CTX *x) CONST_BEFORE_CXX23 { EVP_MD_CTX_free(x); }
+	STATIC_IN_CXX23 inline void operator()(EVP_PKEY *x) CONST_BEFORE_CXX23 { EVP_PKEY_free(x); }
 };
 
 extern GX_EXPORT int tls_set_min_proto(SSL_CTX *, const char *);

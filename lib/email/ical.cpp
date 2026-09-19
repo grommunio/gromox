@@ -271,7 +271,9 @@ static bool ical_check_base64(ical_line *piline)
 {
 	const auto &y = piline->param_list;
 	return std::any_of(y.cbegin(), y.cend(),
-	       [](const ical_param &e) { return strcasecmp(e.name.c_str(), "ENCODING") == 0; });
+	       [](const ical_param &e) STATIC_IN_CXX23 {
+	       	return strcasecmp(e.name.c_str(), "ENCODING") == 0;
+	       });
 }
 
 static BOOL ical_retrieve_value(ical_line *piline, char *pvalue) try

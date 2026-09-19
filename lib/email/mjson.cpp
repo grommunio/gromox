@@ -572,7 +572,7 @@ static std::string mjson_add_backslash(const char *s)
 bool MJSON::has_rfc822_part() const
 {
 	bool b_found = false;
-	enum_mime([](const MJSON_MIME *m, bool &found) {
+	enum_mime([](const MJSON_MIME *m, bool &found) STATIC_IN_CXX23 {
 		if (!found && m->ctype_is_rfc822())
 			found = true;
 		}, b_found);

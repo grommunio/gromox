@@ -728,7 +728,7 @@ bool rtf_reader::init_reader(std::string_view buf_in, attachment_list *atl)
 	textmaps_init();
 	auto preader = this;
 	preader->attr_stack_list.clear();
-	preader->ext_pull.init(buf_in.data(), buf_in.size(), [](size_t) -> void * { return nullptr; }, 0);
+	preader->ext_pull.init(buf_in.data(), buf_in.size(), nullptr, 0);
 	if (!preader->ext_push.init(nullptr, 0, 0) ||
 	    !preader->iconv_push.init(nullptr, 0, 0))
 		return false;

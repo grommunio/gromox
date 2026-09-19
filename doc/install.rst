@@ -6,11 +6,16 @@ Dependency installation
 =======================
 
 A pre-built version of Gromox is readily available by way of the grommunio Linux
-distribution. If you choose to build from source nevertheless, a number of
+distribution.
+
+Gromox is a C++ codebase with some scripted helpers sprinkled in.
+(It can be built with different language revisions. The minimum is C++2020.
+Some C++2023 features are exercised when available.)
+If you choose to build from source nevertheless, a number of
 dependencies are needed:
 
 * autotools
-* C and C++20 compiler
+* C++2020 compiler (gcc >= 12 / clang++)
 * fmt >= 8
 * jsoncpp
 * libHX >= 4.28

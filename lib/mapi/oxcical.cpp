@@ -3786,7 +3786,7 @@ static void busystatus_to_line(ol_busy_status status, const char *key,
 {
 	auto it = std::lower_bound(std::cbegin(busy_status_names),
 	          std::cend(busy_status_names), status,
-	          [](const decltype(*busy_status_names) &p, ol_busy_status v) { return p.first < v; });
+	          [](const decltype(*busy_status_names) &p, ol_busy_status v) STATIC_IN_CXX23 { return p.first < v; });
 	if (it != std::cend(busy_status_names) && it->first == status)
 		com->append_line(key, it->second);
 }

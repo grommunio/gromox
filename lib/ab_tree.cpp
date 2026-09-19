@@ -566,7 +566,7 @@ size_t ab_base::children_count(minid mid) const
 size_t ab_base::hidden_count() const
 {
 	return std::count_if(m_users.cbegin(), m_users.cend(),
-	       [](const sql_user &u) { return u.cloak_bits & AB_HIDE_FROM_GAL; });
+	       [](const sql_user &u) STATIC_IN_CXX23 { return u.cloak_bits & AB_HIDE_FROM_GAL; });
 }
 
 /**

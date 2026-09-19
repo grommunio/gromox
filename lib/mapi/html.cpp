@@ -44,7 +44,7 @@ namespace {
 using rgb_t = unsigned int;
 
 struct xmlfree {
-	void operator()(char *s) const { xmlFree(s); }
+	STATIC_IN_CXX23 inline void operator()(char *s) CONST_BEFORE_CXX23 { xmlFree(s); }
 };
 
 using xmlastr = std::unique_ptr<char[], xmlfree>;
@@ -539,7 +539,7 @@ static int html_css_font_keyword_to_pt(const char *value)
 		{"xx-small", 6},
 	};
 	auto i = std::lower_bound(std::cbegin(keywords), std::cend(keywords), value,
-	         [](const kw &e, const char *v) { return strcasecmp(e.name, v) < 0; });
+	         [](const kw &e, const char *v) STATIC_IN_CXX23 { return strcasecmp(e.name, v) < 0; });
 	return i != std::cend(keywords) ? i->pt : 0;
 }
 
@@ -612,7 +612,7 @@ static int html_convert_color(const char *value)
 	gx_strlcpy(color_string, value, std::size(color_string));
 	HX_strlower(color_string);
 	auto it = std::lower_bound(std::begin(color_map), std::end(color_map), color_string,
-	          [](const std::pair<const char *, rgb_t> &pair, const char *k) {
+	          [](const std::pair<const char *, rgb_t> &pair, const char *k) STATIC_IN_CXX23 {
 	          	return strcmp(pair.first, k) < 0;
 	          });
 	if (it == std::end(color_map) || strcmp(it->first, color_string) != 0)
@@ -926,7 +926,7 @@ static htag lookup_tag(const xmlNode *nd)
 {
 	auto k = signed_cast<const char *>(nd->name);
 	auto it = std::lower_bound(std::begin(htmltags), std::end(htmltags), k,
-	          [](const struct tagentry &x, const char *s) { return strcasecmp(x.name, s) < 0; });
+	          [](const struct tagentry &x, const char *s) STATIC_IN_CXX23 { return strcasecmp(x.name, s) < 0; });
 	return it != std::end(htmltags) && strcasecmp(it->name, k) == 0 ?
 	       it->tag : htag::none;
 }

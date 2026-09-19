@@ -19,8 +19,8 @@ extern GX_EXPORT gromox::errno_t read_file_by_line(const char *file, const char 
 namespace gromox {
 
 struct GX_EXPORT file_deleter {
-	inline void operator()(DIR *d) const { closedir(d); }
-	inline void operator()(FILE *f) const { fclose(f); }
+	STATIC_IN_CXX23 inline void operator()(DIR *d) CONST_BEFORE_CXX23 { closedir(d); }
+	STATIC_IN_CXX23 inline void operator()(FILE *f) CONST_BEFORE_CXX23 { fclose(f); }
 };
 
 struct GX_EXPORT DIR_mp {

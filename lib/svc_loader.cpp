@@ -104,10 +104,10 @@ svc_mgr::svc_mgr(service_init_param &&parm) :
 
 /* See commentary of service_query() why it's done */
 static constexpr struct dlfuncs server_funcs = {
-	/* .get_config_path = */ []() { return le_svc_mgr->g_config_dir.c_str(); },
-	/* .get_data_path = */ []() { return le_svc_mgr->g_data_dir.c_str(); },
-	/* .get_context_num = */ []() { return le_svc_mgr->g_context_num; },
-	/* .get_host_ID = */ []() {
+	/* .get_config_path = */ []() STATIC_IN_CXX23 { return le_svc_mgr->g_config_dir.c_str(); },
+	/* .get_data_path = */ []() STATIC_IN_CXX23 { return le_svc_mgr->g_data_dir.c_str(); },
+	/* .get_context_num = */ []() STATIC_IN_CXX23 { return le_svc_mgr->g_context_num; },
+	/* .get_host_ID = */ []() STATIC_IN_CXX23 {
                         auto r = le_svc_mgr->g_config_file->get_value("host_id");
                         return r != nullptr ? r : "localhost";
 	},

@@ -1298,9 +1298,9 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 extern GX_EXPORT void rop_util_free_binary(BINARY *pbin);
 
 struct GX_EXPORT mapidefs1_del {
-	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
-	inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
-	inline void operator()(tarray_set *x) const { tarray_set_free(x); }
+	STATIC_IN_CXX23 inline void operator()(BINARY *x) CONST_BEFORE_CXX23 { rop_util_free_binary(x); }
+	STATIC_IN_CXX23 inline void operator()(TPROPVAL_ARRAY *x) CONST_BEFORE_CXX23 { tpropval_array_free(x); }
+	STATIC_IN_CXX23 inline void operator()(tarray_set *x) CONST_BEFORE_CXX23 { tarray_set_free(x); }
 };
 
 using binary_ptr = std::unique_ptr<BINARY, mapidefs1_del>;

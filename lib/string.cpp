@@ -67,7 +67,7 @@ namespace {
 
 class hxmc_deleter {
 	public:
-	void operator()(hxmc_t *s) const { HXmc_free(s); }
+	STATIC_IN_CXX23 inline void operator()(hxmc_t *s) CONST_BEFORE_CXX23 { HXmc_free(s); }
 };
 
 }

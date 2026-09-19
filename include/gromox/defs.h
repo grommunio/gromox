@@ -13,6 +13,13 @@
 #define SOCKET_TIMEOUT 60
 #define SOCKET_TIMEOUT_MS 60000U
 #define GX_EXPORT __attribute__((visibility("default")))
+#if __cplusplus >= 202300L
+#	define STATIC_IN_CXX23 static
+#	define CONST_BEFORE_CXX23
+#else
+#	define STATIC_IN_CXX23
+#	define CONST_BEFORE_CXX23 const
+#endif
 #define NOMOVE(K) \
 	K(K &&) noexcept = delete; \
 	void operator=(K &&) noexcept = delete;
@@ -144,7 +151,7 @@ struct GX_EXPORT seq_node {
 };
 
 struct GX_EXPORT stdlib_delete {
-	inline void operator()(void *x) const { free(x); }
+	STATIC_IN_CXX23 inline void operator()(void *x) CONST_BEFORE_CXX23 { free(x); }
 };
 template<typename T> static inline T *me_alloc()
 {

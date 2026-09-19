@@ -218,7 +218,9 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 
 int gx_sql_step(sqlite3_stmt *stm, unsigned int flags)
 {
-	struct xfree { void operator()(char *x) const { sqlite3_free(x); } };
+	struct xfree {
+		STATIC_IN_CXX23 void operator()(char *x) CONST_BEFORE_CXX23 { sqlite3_free(x); }
+	};
 	auto ret = sqlite3_step(stm);
 	std::unique_ptr<char[], xfree> exp;
 	if (gx_sqlite_debug >= 1) {
