@@ -11,6 +11,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 #include <fmt/core.h>
 #include <libHX/defs.h>
 #include <libHX/scope.hpp>
@@ -2693,7 +2694,7 @@ BOOL exmdb_server::get_message_instance_rcpts_num(const char *dir,
 }
 
 BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
-    uint32_t instance_id, PROPTAG_ARRAY *pproptags)
+    uint32_t instance_id, PROPTAG_ARRAY *pproptags) try
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -2709,26 +2710,28 @@ BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
 		pproptags->pproptag = NULL;
 		return TRUE;
 	}
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pproptags1(proptag_array_init());
-	if (pproptags1 == nullptr)
-		return FALSE;
+
+	std::vector<proptag_t> tags;
 	for (auto &rcpt : *pmsgctnt->children.prcpts)
 		for (size_t j = 0; j < rcpt.count; ++j)
-			if (!proptag_array_append(pproptags1.get(),
-			    rcpt.ppropval[j].proptag))
-				return FALSE;
+			tags.emplace_back(rcpt.ppropval[j].proptag);
 	/* MSMAPI expects to always see these four tags, even if no rows are sent later. */
-	if (!proptag_array_append(pproptags1.get(), PR_RECIPIENT_TYPE) ||
-	    !proptag_array_append(pproptags1.get(), PR_DISPLAY_NAME) ||
-	    !proptag_array_append(pproptags1.get(), PR_ADDRTYPE) ||
-	    !proptag_array_append(pproptags1.get(), PR_EMAIL_ADDRESS))
-		return false;
-	pproptags->count = pproptags1->count;
-	pproptags->pproptag = cu_alloc<proptag_t>(pproptags1->count);
+	tags.emplace_back(PR_RECIPIENT_TYPE);
+	tags.emplace_back(PR_DISPLAY_NAME);
+	tags.emplace_back(PR_ADDRTYPE);
+	tags.emplace_back(PR_EMAIL_ADDRESS);
+	sort_unique(tags);
+
+	pproptags->count = tags.size();
+	pproptags->pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, pproptags1->pproptag, sizeof(proptag_t) * pproptags1->count);
+	if (tags.size() > 0)
+		memcpy(pproptags->pproptag, tags.data(), sizeof(proptag_t) * pproptags->count);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM\n", __PRETTY_FUNCTION__);
+	return false;
 }
 
 BOOL exmdb_server::get_message_instance_rcpts(const char *dir,
@@ -2928,7 +2931,7 @@ BOOL exmdb_server::get_message_instance_attachments_num(const char *dir,
 }
 
 BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char *dir,
-    uint32_t instance_id, PROPTAG_ARRAY *pproptags)
+    uint32_t instance_id, PROPTAG_ARRAY *pproptags) try
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -2944,9 +2947,8 @@ BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char
 		pproptags->pproptag = NULL;
 		return TRUE;
 	}
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pproptags1(proptag_array_init());
-	if (pproptags1 == nullptr)
-		return FALSE;
+
+	std::vector<proptag_t> tags;
 	for (auto &at : *pmsgctnt->children.pattachments) {
 		for (unsigned int j = 0; j < at.proplist.count; ++j) {
 			auto tag = at.proplist.ppropval[j].proptag;
@@ -2956,16 +2958,20 @@ BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char
 			case PT_GXI_STRING:
 				continue;
 			}
-			if (!proptag_array_append(pproptags1.get(), tag))
-				return FALSE;
+			tags.emplace_back(tag);
 		}
 	}
-	pproptags->count = pproptags1->count;
-	pproptags->pproptag = cu_alloc<proptag_t>(pproptags1->count);
+	sort_unique(tags);
+	pproptags->count = tags.size();
+	pproptags->pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, pproptags1->pproptag, sizeof(proptag_t) * pproptags1->count);
+	if (tags.size() > 0)
+		memcpy(pproptags->pproptag, tags.data(), sizeof(proptag_t) * pproptags->count);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM\n", __PRETTY_FUNCTION__);
+	return false;
 }
 
 BOOL exmdb_server::copy_instance_attachments(const char *dir, BOOL b_force,
