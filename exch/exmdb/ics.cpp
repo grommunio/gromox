@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -24,15 +24,8 @@ using namespace gromox;
 namespace {
 
 struct ENUM_PARAM {
-	~ENUM_PARAM() {
-		if (pnolonger_mids != nullptr)
-			eid_array_free(pnolonger_mids);
-		if (pdeleted_eids != nullptr)
-			eid_array_free(pdeleted_eids);
-	}
-
 	xstmt stm_exist, stm_msg;
-	EID_ARRAY *pdeleted_eids = nullptr, *pnolonger_mids = nullptr;
+	std::vector<eid_t> pdeleted_eids, pnolonger_mids;
 	BOOL b_result;
 };
 
@@ -46,7 +39,21 @@ struct REPLID_ARRAY {
 static std::mutex ics_log_mtx;
 std::string g_exmdb_ics_log_file;
 
-static void ics_enum_content_idset(void *vparam, uint64_t message_id)
+static ec_error_t copy_eids(std::span<const eid_t> in, EID_ARRAY &out)
+{
+	out.count = in.size();
+	if (out.count == 0) {
+		out.pids = nullptr;
+		return ecSuccess;
+	}
+	out.pids = cu_alloc<eid_t>(out.count);
+	if (out.pids == nullptr)
+		return ecServerOOM;
+	memcpy(out.pids, in.data(), sizeof(eid_t) * out.count);
+	return ecSuccess;
+}
+
+static void ics_enum_content_idset(void *vparam, uint64_t message_id) try
 {
 	auto pparam = static_cast<ENUM_PARAM *>(vparam);
 	uint64_t mid_val;
@@ -66,25 +73,26 @@ static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 	sqlite3_reset(pparam->stm_msg);
 	sqlite3_bind_int64(pparam->stm_msg, 1, mid_val);
 	ret = pparam->stm_msg.step();
-	if (ret == SQLITE_ROW) {
-		if (!eid_array_append(pparam->pnolonger_mids, message_id))
-			pparam->b_result = FALSE;
-	} else if (ret == SQLITE_DONE) {
-		if (!eid_array_append(pparam->pdeleted_eids, message_id))
-			pparam->b_result = FALSE;
-	} else {
+	if (ret == SQLITE_ROW)
+		pparam->pnolonger_mids.emplace_back(message_id);
+	else if (ret == SQLITE_DONE)
+		pparam->pdeleted_eids.emplace_back(message_id);
+	else
 		pparam->b_result = false;
-	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	static_cast<ENUM_PARAM *>(vparam)->b_result = false;
 }
 
 /* Counterpart for simc_otherstore. */
-static ec_error_t delete_impossible_mids(const idset &given, EID_ARRAY &del)
+static ec_error_t delete_impossible_mids(const idset &given,
+    std::vector<eid_t> &del) try
 {
 	struct p1data {
 		const idset *given;
-		EID_ARRAY *del;
+		std::vector<eid_t> &del;
 		ec_error_t error;
-	} p1 = {&given, &del, ecSuccess};
+	} p1 = {&given, del, ecSuccess};
 	const_cast<idset &>(given).enum_replist(&p1, [](void *param1, uint16_t replid) {
 		if (replid <= 1)
 			return;
@@ -95,11 +103,13 @@ static ec_error_t delete_impossible_mids(const idset &given, EID_ARRAY &del)
 			auto p3 = static_cast<p1data *>(param2);
 			if (p3->error != ecSuccess)
 				return;
-			if (!eid_array_append(p3->del, msgid))
-				p3->error = ecServerOOM;
+			p3->del.emplace_back(msgid);
 		});
 	});
 	return p1.error;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 static bool eas_time_search(const RESTRICTION *r)
@@ -462,45 +472,16 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (enum_param.stm_msg == nullptr)
 		return FALSE;
 	enum_param.b_result = TRUE;
-	enum_param.pdeleted_eids = eid_array_init();
-	if (enum_param.pdeleted_eids == nullptr)
-		return FALSE;
-	enum_param.pnolonger_mids = eid_array_init();
-	if (enum_param.pnolonger_mids == nullptr)
-		return FALSE;
-	if (delete_impossible_mids(*pgiven, *enum_param.pdeleted_eids) != ecSuccess)
+	if (delete_impossible_mids(*pgiven, enum_param.pdeleted_eids) != ecSuccess)
 		return false;
 	if (!const_cast<idset *>(pgiven)->enum_repl(1, &enum_param,
 	    ics_enum_content_idset))
 		return FALSE;	
 	enum_param.stm_exist.finalize();
 	enum_param.stm_msg.finalize();
-	pdeleted_mids->count = enum_param.pdeleted_eids->count;
-	if (0 != enum_param.pdeleted_eids->count) {
-		pdeleted_mids->pids = cu_alloc<eid_t>(pdeleted_mids->count);
-		if (NULL == pdeleted_mids->pids) {
-			pdeleted_mids->count = 0;
-			return FALSE;
-		}
-		memcpy(pdeleted_mids->pids,
-			enum_param.pdeleted_eids->pids,
-			sizeof(uint64_t)*pdeleted_mids->count);
-	} else {
-		pdeleted_mids->pids = NULL;
-	}
-	pnolonger_mids->count = enum_param.pnolonger_mids->count;
-	if (0 != enum_param.pnolonger_mids->count) {
-		pnolonger_mids->pids = cu_alloc<eid_t>(pnolonger_mids->count);
-		if (NULL == pnolonger_mids->pids) {
-			pnolonger_mids->count = 0;
-			return FALSE;
-		}
-		memcpy(pnolonger_mids->pids,
-			enum_param.pnolonger_mids->pids,
-			sizeof(uint64_t)*pnolonger_mids->count);
-	} else {
-		pnolonger_mids->pids = NULL;
-	}
+	if (copy_eids(enum_param.pdeleted_eids, *pdeleted_mids) != ecSuccess ||
+	    copy_eids(enum_param.pnolonger_mids, *pnolonger_mids) != ecSuccess)
+		return false;
 	} /* section 3 */
 
 	/* Rollback transaction (no changes were made anyway) */
@@ -627,7 +608,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	return TRUE;
 }
 
-static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
+static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id) try
 {
 	auto pparam = static_cast<ENUM_PARAM *>(vparam);
 	uint16_t replid;
@@ -648,8 +629,10 @@ static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
 		pparam->b_result = false;
 		return;
 	}
-	if (!eid_array_append(pparam->pdeleted_eids, folder_id))
-		pparam->b_result = FALSE;
+	pparam->pdeleted_eids.emplace_back(folder_id);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	static_cast<ENUM_PARAM *>(vparam)->b_result = false;
 }
 
 static void ics_enum_hierarchy_replist(void *vpar, uint16_t replid)
@@ -863,23 +846,20 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	if (enum_param.stm_exist == nullptr)
 		return FALSE;
 	enum_param.b_result = TRUE;
-	enum_param.pdeleted_eids = eid_array_init();
-	if (enum_param.pdeleted_eids == nullptr)
-		return FALSE;
 	for (size_t i = 0; i < replids.count; ++i)
 		if (!const_cast<idset *>(pgiven)->enum_repl(replids.replids[i],
 		    &enum_param, ics_enum_hierarchy_idset))
 			return FALSE;	
 
-	pdeleted_fids->count = enum_param.pdeleted_eids->count;
+	pdeleted_fids->count = enum_param.pdeleted_eids.size();
 	pdeleted_fids->pids = cu_alloc<eid_t>(pdeleted_fids->count);
 	if (NULL == pdeleted_fids->pids) {
 		pdeleted_fids->count = 0;
 		return FALSE;
 	}
-	memcpy(pdeleted_fids->pids,
-		enum_param.pdeleted_eids->pids,
-		sizeof(uint64_t)*pdeleted_fids->count);
+	if (pdeleted_fids->count > 0)
+		memcpy(pdeleted_fids->pids, enum_param.pdeleted_eids.data(),
+			sizeof(uint64_t) * pdeleted_fids->count);
 	} /* section 5 */
 
 	if (g_exmdb_ics_log_file.empty())
