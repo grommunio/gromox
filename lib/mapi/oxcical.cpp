@@ -1366,7 +1366,7 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "%s: ENOMEM\n", __func__);
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1582,7 +1582,7 @@ static bool oxcical_parse_summary(const ical_component &main_event,
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "%s: ENOMEM\n", __func__);
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 

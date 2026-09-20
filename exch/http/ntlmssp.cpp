@@ -367,7 +367,7 @@ static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
 	static_assert(std::size(blobs) == std::size(buffs));
 	static_assert(std::size(blobs) == std::size(intargs));
 	if (strlen(format) > std::size(blobs)) {
-		mlog(LV_ERR, "E-1753: ntlmssp_gen_packetv cannot handle %zu arguments\n", strlen(format));
+		mlog(LV_ERR, "E-1753: ntlmssp_gen_packetv cannot handle %zu arguments", strlen(format));
 		return false;
 	}
 	size_t head_size = 0, data_size = 0;

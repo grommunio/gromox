@@ -1382,7 +1382,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	cvt.get_propids = cu_get_propids;
 	cvt.get_propname = cu_get_propname;
 	if (!cvt.mapi_to_inet(*rsp_ctnt, imail)) {
-		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.\n");
+		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.");
 		return ecError;
 	}
 	err = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, {txt});

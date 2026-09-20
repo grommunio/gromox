@@ -297,7 +297,7 @@ static bool rqi_handoff(exmdb_connection &conn, const char *dir,
     std::string_view input_buf)
 {
 	if (*dir == '\0') {
-		mlog(LV_ERR, "Tried to call rqi_handoff with empty dir\n");
+		mlog(LV_ERR, "Tried to call rqi_handoff with empty dir");
 		raise(SIGABRT);
 	}
 	/* End the connection in any case once we return */

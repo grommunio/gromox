@@ -1149,7 +1149,7 @@ generic_connection generic_connection::takeover(int cl_sock)
 	auto ret = getpeername(conn.sockd, reinterpret_cast<sockaddr *>(&cl_addr),
 	           &addrlen);
 	if (ret != 0) {
-		mlog(LV_WARN, "getpeername: %s\n", gai_strerror(ret));
+		mlog(LV_WARN, "getpeername: %s", gai_strerror(ret));
 		conn.reset();
 		return conn;
 	}
@@ -1160,7 +1160,7 @@ generic_connection generic_connection::takeover(int cl_sock)
 	      conn.client_addr, sizeof(conn.client_addr), txtport,
 	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
 	if (ret != 0) {
-		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
 		conn.reset();
 		return conn;
 	}
@@ -1168,7 +1168,7 @@ generic_connection generic_connection::takeover(int cl_sock)
 	addrlen = sizeof(sv_addr);
 	ret = getsockname(conn.sockd, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
 	if (ret != 0) {
-		mlog(LV_WARN, "getsockname: %s\n", strerror(errno));
+		mlog(LV_WARN, "getsockname: %s", strerror(errno));
 		conn.reset();
 		return conn;
 	}
@@ -1176,7 +1176,7 @@ generic_connection generic_connection::takeover(int cl_sock)
 	      conn.server_addr, sizeof(conn.server_addr), txtport,
 	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
 	if (ret != 0) {
-		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
 		conn.reset();
 		return conn;
 	}
@@ -1211,7 +1211,7 @@ generic_connection generic_connection::accept(int sv_sock,
 		   conn.client_addr, sizeof(conn.client_addr), txtport,
 		   sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
 	if (ret != 0) {
-		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
 		conn.reset();
 		return conn;
 	}
@@ -1219,7 +1219,7 @@ generic_connection generic_connection::accept(int sv_sock,
 	addrlen = sizeof(sv_addr);
 	ret = getsockname(cl_sock, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
 	if (ret != 0) {
-		mlog(LV_WARN, "getsockname: %s\n", strerror(errno));
+		mlog(LV_WARN, "getsockname: %s", strerror(errno));
 		conn.reset();
 		return conn;
 	}
@@ -1227,7 +1227,7 @@ generic_connection generic_connection::accept(int sv_sock,
 	      conn.server_addr, sizeof(conn.server_addr), txtport,
 	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
 	if (ret != 0) {
-		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
 		conn.reset();
 		return conn;
 	}

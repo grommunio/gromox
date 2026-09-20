@@ -517,7 +517,7 @@ static BOOL pdu_processor_pull_auth_trailer(dcerpc_ncacn_packet *ppkt,
 		return FALSE;
 	if (auth_data_only && data_and_pad != pauth->auth_pad_length) {
 		mlog(LV_DEBUG, "pdu_processor: WARNING: pad length mismatch, "
-			"calculated %u got %u\n", data_and_pad, pauth->auth_pad_length);
+			"calculated %u got %u", data_and_pad, pauth->auth_pad_length);
 		return FALSE;
 	}
 	
@@ -860,7 +860,7 @@ static BOOL pdu_processor_process_bind(dcerpc_call *pcall)
 		b_found = pbind->ctx_list[0].contains(g_transfer_syntax_ndr64);
 		if (!b_found) {
 			mlog(LV_DEBUG, "pdu_processor: only NDR or NDR64 transfer syntax "
-				"can be accepted by system\n");
+				"can be accepted by system");
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 		b_ndr64 = TRUE;
@@ -1485,7 +1485,7 @@ static uint32_t pdu_processor_apply_async_id()
 	if (g_async_hash.size() >= 2 * ctx_num) {
 		as_hold.unlock();
 		delete pasync_node;
-		mlog(LV_ERR, "E-2045: g_async_hash reached maximum fill level (influenced by http.cfg:context_num,connection_ratio)\n");
+		mlog(LV_ERR, "E-2045: g_async_hash reached maximum fill level (influenced by http.cfg:context_num,connection_ratio)");
 		return 0;
 	}
 	try {
@@ -1493,7 +1493,7 @@ static uint32_t pdu_processor_apply_async_id()
 	} catch (const std::bad_alloc &) {
 		as_hold.unlock();
 		delete pasync_node;
-		mlog(LV_ERR, "E-2044: ENOMEM\n");
+		mlog(LV_ERR, "E-2044: ENOMEM");
 		return 0;
 	}
 	pasync_node->async_id = async_id;

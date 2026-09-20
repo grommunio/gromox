@@ -162,7 +162,7 @@ int imap_parser_run()
 		}
 		auto mp = g_config_file->get_value("tls_min_proto");
 		if (mp != nullptr && tls_set_min_proto(g_ssl_ctx, mp) != 0) {
-			mlog(LV_ERR, "imap_parser: tls_min_proto value \"%s\" not accepted\n", mp);
+			mlog(LV_ERR, "imap_parser: tls_min_proto value \"%s\" not accepted", mp);
 			return -4;
 		}
 		tls_set_renego(g_ssl_ctx);
