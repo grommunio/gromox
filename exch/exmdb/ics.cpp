@@ -10,7 +10,6 @@
 #include <vector>
 #include <libHX/scope.hpp>
 #include <gromox/database.h>
-#include <gromox/eid_array.hpp>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>

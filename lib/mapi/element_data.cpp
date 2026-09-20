@@ -7,7 +7,6 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>

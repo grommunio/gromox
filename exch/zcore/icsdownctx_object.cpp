@@ -7,7 +7,6 @@
 #include <cstring>
 #include <memory>
 #include <gromox/algorithm.hpp>
-#include <gromox/eid_array.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>

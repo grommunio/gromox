@@ -8,7 +8,6 @@
 #include <cstring>
 #include <memory>
 #include <utility>
-#include <gromox/eid_array.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
