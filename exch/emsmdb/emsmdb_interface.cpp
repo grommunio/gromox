@@ -19,6 +19,7 @@
 #include <vector>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>

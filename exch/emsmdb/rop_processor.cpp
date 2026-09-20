@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <utility>
 #include <libHX/string.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>

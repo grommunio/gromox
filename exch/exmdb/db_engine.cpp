@@ -29,6 +29,7 @@
 #include <fmt/core.h>
 #include <sys/stat.h>
 #include <libHX/scope.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/database.h>

@@ -11,6 +11,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <gromox/algorithm.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/gab.hpp>
 #include <gromox/mapidefs.h>

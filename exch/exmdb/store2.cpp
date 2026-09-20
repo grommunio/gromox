@@ -19,6 +19,7 @@
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
@@ -568,12 +569,6 @@ static uint64_t purg_delete_unused_files(const std::string &cid_dir,
 	mlog(LV_NOTICE, "I-2017: Purged %zu files (%sB) from %s",
 	     filecount, buf, cid_dir.c_str());
 	return bytes;
-}
-
-static void sort_unique(std::vector<std::string> &c)
-{
-	std::sort(c.begin(), c.end());
-	c.erase(std::unique(c.begin(), c.end()), c.end());
 }
 
 static bool purg_clean_cid(sqlite3 *db, const char *maildir, time_t upper_bound_ts)

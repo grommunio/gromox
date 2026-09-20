@@ -219,38 +219,6 @@ constexpr inline bool pvb_enabled(const void *z)
 	return z != nullptr && *static_cast<const uint8_t *>(z) != 0;
 }
 
-template<typename Container, typename U> void erase_first(Container &c, const U &value)
-{
-	for (auto i = c.begin(); i != c.end(); ++i) {
-		if (*i == value) {
-			c.erase(i);
-			return;
-		}
-	}
-}
-
-template<typename Container, typename Pred> void erase_first_if(Container &c, Pred &&pred)
-{
-	for (auto i = c.begin(); i != c.end(); ++i) {
-		if (pred(*i)) {
-			c.erase(i);
-			return;
-		}
-	}
-}
-
-template<typename Container> void pop_front(Container &c)
-{
-	c.erase(c.begin());
-}
-
-template<typename Container> auto pop_front_v(Container &c) -> decltype(auto)
-{
-	auto v = std::move(c.front());
-	pop_front(c);
-	return v;
-}
-
 template<typename T> struct deref_iterator {
 	T **ptr = nullptr;
 	constexpr deref_iterator(T **p = nullptr) : ptr(p) {}

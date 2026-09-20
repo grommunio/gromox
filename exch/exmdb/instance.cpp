@@ -16,6 +16,7 @@
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
