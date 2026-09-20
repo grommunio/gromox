@@ -12,9 +12,9 @@
 #include <memory>
 #include <string_view>
 #include <utility>
+#include <vector>
 #include <libHX/scope.hpp>
 #include <gromox/algorithm.hpp>
-#include <gromox/eid_array.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/proc_common.h>
@@ -83,7 +83,7 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 	return nullptr;
 }
 
-static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
+static bool icsdownctx_object_make_content(icsdownctx_object *pctx) try
 {
 	uint32_t count_fai;
 	uint64_t total_fai;
@@ -115,11 +115,8 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	for (auto mid : given_messages)
 		if (!pctx->pstate->pgiven->append(mid))
 			return FALSE;	
-	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
-		pctx->pmessages = eid_array_dup(&chg_messages);
-		if (pctx->pmessages == nullptr)
-			return FALSE;
-	}
+	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL))
+		pctx->pmessages.emplace(chg_messages.cbegin(), chg_messages.cend());
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE) {
 		pctx->pprogtotal.version = 0;
 		pctx->pprogtotal.padding1 = 0;
@@ -130,26 +127,18 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 		pctx->pprogtotal.normal_size = total_normal;
 	}
 	if (!(pctx->sync_flags & SYNC_NO_DELETIONS)) {
-		pctx->pdeleted_messages = eid_array_dup(&deleted_messages);
-		if (pctx->pdeleted_messages == nullptr)
-			return FALSE;
-		pctx->pnolonger_messages = eid_array_dup(&nolonger_messages);
-		if (pctx->pnolonger_messages == nullptr)
-			return FALSE;
+		pctx->pdeleted_messages.emplace(deleted_messages.begin(), deleted_messages.end());
+		pctx->pnolonger_messages.emplace(nolonger_messages.begin(), nolonger_messages.end());
 	}
 	if (pctx->sync_flags & SYNC_READ_STATE) {
-		pctx->pread_messages = eid_array_dup(&read_messages);
-		if (pctx->pread_messages == nullptr)
-			return FALSE;
-		pctx->punread_messages = eid_array_dup(&unread_messages);
-		if (pctx->punread_messages == nullptr)
-			return FALSE;
+		pctx->pread_messages.emplace(read_messages.begin(), read_messages.end());
+		pctx->punread_messages.emplace(unread_messages.begin(), unread_messages.end());
 	}
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
 	    !pctx->flow_list.record_node(ics_flow_func::progress))
 		return FALSE;
 	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
-		for (uint64_t i_mid : *pctx->pmessages) {
+		for (auto i_mid : *pctx->pmessages) {
 			auto type = ct_contains(updated_messages, i_mid) ?
 			            ics_flow_func::upd_msg_id : ics_flow_func::new_msg_id;
 			if (!pctx->flow_list.record_node(type, i_mid))
@@ -170,6 +159,9 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	pctx->total_steps = total_normal + total_fai;
 	pctx->divisor = fx_divisor(pctx->total_steps);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
@@ -637,8 +629,8 @@ static void icsdownctx_object_trim_report_recipients(message_content &msg)
 			icsdownctx_object_trim_report_recipients(*at.pembedded);
 }
 
-static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
-	uint64_t message_id, BOOL b_downloaded, int *ppartial_count)
+static bool icsdownctx_object_write_message_change(icsdownctx_object *pctx,
+    uint64_t message_id, bool b_downloaded, int *ppartial_count) try
 {
 	void *pvalue;
 	PROGRESS_MESSAGE progmsg;
@@ -659,12 +651,11 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 				" (missing CK/PCL/MSGSTATUS)", LLU{message_id});
 		pctx->pstate->pgiven->remove(message_id);
 		if (b_downloaded) {
-			if (!(pctx->sync_flags & SYNC_NO_DELETIONS) &&
-			    !eid_array_append(pctx->pdeleted_messages, message_id))
-				return FALSE;
+			if (!(pctx->sync_flags & SYNC_NO_DELETIONS))
+				pctx->pdeleted_messages->emplace_back(message_id);
 			if (pctx->sync_flags & SYNC_READ_STATE) {
-				eid_array_remove(pctx->pread_messages, message_id);
-				eid_array_remove(pctx->punread_messages, message_id);
+				std::erase(*pctx->pread_messages, message_id);
+				std::erase(*pctx->punread_messages, message_id);
 			}
 		}
 		return TRUE;
@@ -805,6 +796,9 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		return false;
 	fxs_propsort(*pmsgctnt);
 	return pctx->pstream->write_messagechangefull(chgheader, *pmsgctnt);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 /* only be called under content sync */
@@ -814,7 +808,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	TAGGED_PROPVAL tmp_propvals[2];
 	TPROPVAL_ARRAY proplist = {0, tmp_propvals};
 	
-	if (pctx->pdeleted_messages->count > 0) {
+	if (pctx->pdeleted_messages->size() > 0) {
 		idset xset(idset::type::id_loose);
 		for (auto mid : *pctx->pdeleted_messages)
 			if (!xset.append(mid))
@@ -825,7 +819,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 		proplist.emplace_back(MetaTagIdsetDeleted, pbin1);
 	}
 	if (!(pctx->sync_flags & SYNC_NO_SOFT_DELETIONS) &&
-	    pctx->pnolonger_messages->count > 0) {
+	    pctx->pnolonger_messages->size() > 0) {
 		idset xset(idset::type::id_loose);
 		for (auto mid : *pctx->pnolonger_messages) {
 			if (!xset.append(mid)) {
@@ -873,7 +867,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 	
 	proplist.count = 0;
 	proplist.ppropval = tmp_propvals;
-	if (pctx->pread_messages->count > 0) {
+	if (pctx->pread_messages->size() > 0) {
 		idset xset(idset::type::id_loose);
 		for (auto mid : *pctx->pread_messages)
 			if (!xset.append(mid))
@@ -883,7 +877,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 			return FALSE;
 		proplist.emplace_back(MetaTagIdsetRead, pbin1);
 	}
-	if (pctx->punread_messages->count > 0) {
+	if (pctx->punread_messages->size() > 0) {
 		idset xset(idset::type::id_loose);
 		for (auto mid : *pctx->punread_messages)
 			if (!xset.append(mid))
@@ -1029,16 +1023,6 @@ BOOL icsdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 icsdownctx_object::~icsdownctx_object()
 {
 	auto pctx = this;
-	if (pctx->pmessages != nullptr)
-		eid_array_free(pctx->pmessages);
-	if (pctx->pdeleted_messages != nullptr)
-		eid_array_free(pctx->pdeleted_messages);
-	if (pctx->pnolonger_messages != nullptr)
-		eid_array_free(pctx->pnolonger_messages);
-	if (pctx->pread_messages != nullptr)
-		eid_array_free(pctx->pread_messages);
-	if (pctx->punread_messages != nullptr)
-		eid_array_free(pctx->punread_messages);
 	if (pctx->prestriction != nullptr)
 		restriction_free(pctx->prestriction);
 }

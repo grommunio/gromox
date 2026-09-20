@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include <gromox/element_data.hpp>
@@ -57,9 +58,8 @@ struct icsdownctx_object final {
 	ics_flow_list flow_list;
 	uint64_t last_readcn = 0, last_changenum = 0;
 	progress_information pprogtotal;
-	EID_ARRAY *pmessages = nullptr, *pdeleted_messages = nullptr;
-	EID_ARRAY *pnolonger_messages = nullptr, *pread_messages = nullptr;
-	EID_ARRAY *punread_messages = nullptr;
+	std::optional<std::vector<eid_t>> pmessages, pdeleted_messages,
+		pnolonger_messages, pread_messages, punread_messages;
 	uint8_t send_options = 0;
 	uint16_t sync_flags = 0;
 	uint32_t extra_flags = 0, divisor = 1;
