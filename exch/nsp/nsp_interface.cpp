@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/ab_tree.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/archive.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -611,7 +612,7 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 	} else if (pstat->cur_rec == ab_tree::minid::END_OF_TABLE) {
 		*pout_row = *pcount;
 	} else {
-		auto it = std::find(node.begin(), node.end(), pstat->cur_rec);
+		auto it = ct_find(node, pstat->cur_rec);
 		if (it == node.end() || node.root->hidden(pstat->cur_rec) & AB_HIDE_FROM_AL) {
 			/*
 			 * In this case, the position is undefined.
@@ -1595,8 +1596,8 @@ ec_error_t nsp_interface_compare_mids(NSPI_HANDLE handle,
 		ab_tree::ab_node node(base, pstat->container_id);
 		if (!node.exists() || node.children_count() == 0)
 			return ecInvalidBookmark;
-		auto it1 = std::find(node.begin(), node.end(), mid1);
-		auto it2 = std::find(node.begin(), node.end(), mid2);
+		auto it1 = ct_find(node, mid1);
+		auto it2 = ct_find(node, mid2);
 		if (it1 == node.end() || it2 == node.end())
 			return ecError;
 		auto dx = std::distance(it1, it2);

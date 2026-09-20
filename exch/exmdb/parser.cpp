@@ -26,6 +26,7 @@
 #include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
@@ -614,8 +615,9 @@ bool exmdb_parser_insert_conn(std::shared_ptr<exmdb_connection> co)
 std::shared_ptr<router_connection> exmdb_parser_get_router(const char *remote_id)
 {
 	std::lock_guard rhold(g_router_lock);
-	auto it = std::find_if(g_router_list.begin(), g_router_list.end(),
-	          [&](const auto &r) { return r->remote_id == remote_id; });
+	auto it = ct_find_if(g_router_list, [=](const std::shared_ptr<router_connection> &r) {
+	          	return r->remote_id == remote_id;
+	          });
 	return it != g_router_list.end() ? *it : nullptr;
 }
 
@@ -674,8 +676,7 @@ void exmdb_parser_stop()
 
 static int sockaccept_thread(generic_connection &&conn) try
 {
-	if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-	    conn.client_addr) == g_acl_list.cend()) {
+	if (!ct_contains(g_acl_list, conn.client_addr)) {
 		static std::atomic<time_t> g_lastwarn_time;
 		auto prev = g_lastwarn_time.load();
 		auto next = prev + 60;

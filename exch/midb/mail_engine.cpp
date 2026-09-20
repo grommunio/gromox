@@ -40,6 +40,7 @@
 #include <vmime/header.hpp>
 #include <vmime/mailboxGroup.hpp>
 #include <vmime/text.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
@@ -3913,7 +3914,7 @@ static int me_pkwls(std::span<char *> argv, int sockd) try
 				sp = row.size();
 			if (sp > pos) {
 				std::string tok(row.substr(pos, sp - pos));
-				if (std::find(kwset.cbegin(), kwset.cend(), tok) == kwset.cend())
+				if (!ct_contains(kwset, tok))
 					kwset.push_back(std::move(tok));
 			}
 			pos = sp + 1;

@@ -31,7 +31,7 @@
 #include <vmime/stringContentHandler.hpp>
 #include <vmime/text.hpp>
 #include <vmime/utility/outputStreamStringAdapter.hpp>
-#include <gromox/defs.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/dsn.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
@@ -1366,8 +1366,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	auto pmime_enum = static_cast<MIME_ENUM_PARAM *>(pparam);
 	if (!pmime_enum->b_result)
 		return;
-	if (std::find(pmime_enum->htmls.cbegin(), pmime_enum->htmls.cend(),
-	    pmime) != pmime_enum->htmls.cend() ||
+	if (ct_contains(pmime_enum->htmls, pmime) ||
 		pmime == pmime_enum->pplain ||
 		pmime == pmime_enum->pcalendar ||
 		pmime == pmime_enum->penriched ||

@@ -8,6 +8,7 @@
 #include <string>
 #include <fmt/core.h>
 #include <gromox/ab_tree.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/gab.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/usercvt.hpp>
@@ -800,7 +801,7 @@ ab_base::iterator ab_base::find(minid mid) const
 
 uint32_t ab_base::pos_in_filtered_users(minid mid) const
 {
-	auto it = std::find(filtered_gal.cbegin(), filtered_gal.cend(), mid);
+	auto it = ct_find(filtered_gal, mid);
 	return it != filtered_gal.cend() ? it - filtered_gal.cbegin() : 0;
 }
 

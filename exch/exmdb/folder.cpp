@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
@@ -503,7 +504,7 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
 	    rop_util_get_gc_value(folder_id), pdb->psqlite, tags))
 		return FALSE;
 	pdb.reset();
-	if (std::find(tags.cbegin(), tags.cend(), PR_SOURCE_KEY) == tags.cend())
+	if (!ct_contains(tags, PR_SOURCE_KEY))
 		tags.push_back(PR_SOURCE_KEY);
 	pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 	if (pproptags->pproptag == nullptr)
@@ -1916,11 +1917,8 @@ static bool sf_criteria_unchanged(db_conn &db, uint64_t fid_val,
 		old_scope.push_back(pstmt.col_uint64(0));
 	if (old_scope.size() != pfolder_ids->count)
 		return false;
-	for (size_t i = 0; i < pfolder_ids->count; ++i)
-		if (std::find(old_scope.cbegin(), old_scope.cend(),
-		    rop_util_get_gc_value(pfolder_ids->pids[i])) == old_scope.cend())
-			return false;
-	return true;
+	return std::all_of(pfolder_ids->cbegin(), pfolder_ids->cend(),
+	       [&](eid_t f) { return ct_contains(old_scope, f.gcv()); });
 }
 
 BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,

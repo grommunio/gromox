@@ -28,7 +28,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <gromox/defs.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
@@ -476,9 +476,7 @@ std::string icp_make_kwannounce_line(imap_context &ctx, std::string_view kw_spac
 			sp = kw_space.size();
 		if (sp > pos) {
 			std::string tok(kw_space.substr(pos, sp - pos));
-			if (std::find(ctx.announced_keywords.cbegin(),
-			    ctx.announced_keywords.cend(), tok) ==
-			    ctx.announced_keywords.cend()) {
+			if (!ct_contains(ctx.announced_keywords, tok)) {
 				ctx.announced_keywords.emplace_back(std::move(tok));
 				grew = true;
 			}
@@ -1268,7 +1266,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 				pos = sp + 1;
 			}
 			for (const auto &k : kw_list)
-				if (std::find(merged.cbegin(), merged.cend(), k) == merged.cend())
+				if (!ct_contains(merged, k))
 					merged.emplace_back(k);
 			kw_result = icp_join_keywords(merged);
 			midb_agent::set_keywords(pcontext->maildir,
@@ -1303,7 +1301,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 					sp = cur.size();
 				if (sp > pos) {
 					auto tok = cur.substr(pos, sp - pos);
-					if (std::find(kw_list.cbegin(), kw_list.cend(), tok) == kw_list.cend())
+					if (!ct_contains(kw_list, tok))
 						kept.emplace_back(std::move(tok));
 				}
 				pos = sp + 1;
@@ -1831,7 +1829,7 @@ int content_array::refresh(imap_context &ctx, const std::string &folder,
 	}
 	n_recent = std::count_if(m_vec.cbegin(), m_vec.cend(),
 	           [](const MITEM &m) { return m.flag_bits & FLAG_RECENT; });
-	auto iter = std::find_if(m_vec.cbegin(), m_vec.cend(),
+	auto iter = ct_find_if(m_vec,
 	            [](const MITEM &m) { return !(m.flag_bits & FLAG_SEEN); });
 	firstunseen = iter == m_vec.end() ? 0 : iter - m_vec.cbegin() + 1;
 	return 0;

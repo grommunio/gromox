@@ -32,6 +32,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/generic_connection.hpp>
@@ -339,8 +340,7 @@ static int ev_acceptwork(generic_connection &&conn)
 	ENQUEUE_NODE *penqueue = nullptr;
 
 	auto ret = [&]() {
-		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    conn.client_addr) == g_acl_list.cend())
+		if (!ct_contains(g_acl_list, conn.client_addr))
 			return EW_ACL;
 
 		std::unique_lock eq_hold(g_enqueue_lock);
@@ -403,8 +403,9 @@ static int q_listen(eq_iter_t eq_node)
 	gx_strlcpy(pdequeue->res_id, &penqueue->line[7], std::size(pdequeue->res_id));
 	pdequeue->fifo = FIFO(FIFO_AVERAGE_LENGTH);
 	std::unique_lock hl_hold(g_host_lock);
-	auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
-	               [&](const HOST_NODE &h) { return strcmp(h.res_id, penqueue->line + 7) == 0; });
+	auto host_it = ct_find_if(g_host_list, [&](const HOST_NODE &h) {
+	               	return strcmp(h.res_id, penqueue->line + 7) == 0;
+	               });
 	if (host_it == g_host_list.end()) {
 		try {
 			g_host_list.emplace_back();
@@ -492,8 +493,9 @@ static void q_unselect(eq_iter_t eq_node) try
 	temp_string += &pspace[1];
 
 	std::unique_lock hl_hold(g_host_lock);
-	auto phost = std::find_if(g_host_list.begin(), g_host_list.end(),
-	             [&](const HOST_NODE &h) { return strcmp(penqueue->res_id, h.res_id) == 0; });
+	auto phost = ct_find_if(g_host_list, [&](const HOST_NODE &h) {
+	             	return strcmp(penqueue->res_id, h.res_id) == 0;
+	             });
 	if (phost != g_host_list.end())
 		phost->hash.erase(temp_string);
 	hl_hold.unlock();
@@ -640,8 +642,9 @@ static int ev_deqwork_1()
 	decltype(g_host_list)::iterator phost;
 	{
 		std::unique_lock hl_hold(g_host_lock);
-		phost = std::find_if(g_host_list.begin(), g_host_list.end(),
-		        [&](const HOST_NODE &h) { return strcmp(h.res_id, pdequeue->res_id) == 0; });
+		phost = ct_find_if(g_host_list, [&](const HOST_NODE &h) {
+		        	return strcmp(h.res_id, pdequeue->res_id) == 0;
+		        });
 		if (phost == g_host_list.end())
 			return X_LOOP;
 	}
@@ -664,9 +667,7 @@ static int ev_deqwork_1()
 				if (pdequeue->sk_write("PING\r\n") != 6 ||
 				    !read_response(pdequeue->sockd)) {
 					std::unique_lock hl_hold(g_host_lock);
-					auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
-					if (it != phost->list.end())
-						phost->list.erase(it);
+					erase_first(phost->list, pdequeue);
 					return X_LOOP;
 				}
 				last_time = cur_time;
@@ -681,9 +682,7 @@ static int ev_deqwork_1()
 		if (wrret < 0 || static_cast<size_t>(wrret) != buff->size() ||
 		    !read_response(pdequeue->sockd)) {
 			std::unique_lock hl_hold(g_host_lock);
-			auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
-			if (it != phost->list.end())
-				phost->list.erase(it);
+			erase_first(phost->list, pdequeue);
 			return X_LOOP;
 		}
 		

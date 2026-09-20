@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vmime/message.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
@@ -2876,7 +2877,7 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 	dst_fid = rop_util_get_gc_value(static_cast<SVREID *>(
 		       pmovecopy->pfolder_eid)->folder_id);
-	if (std::find(seen.fld.cbegin(), seen.fld.cend(), dst_fid) != seen.fld.cend())
+	if (ct_contains(seen.fld, dst_fid))
 		/* Already moved to this folder once. */
 		return ecSuccess;
 	BOOL b_exist = false;
@@ -3252,7 +3253,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 	if (ec != ecSuccess)
 		return ec;
 	auto dst_fid = rop_util_gc_to_value(pextmvcp->folder_eid.folder_gc);
-	if (std::find(seen.fld.cbegin(), seen.fld.cend(), dst_fid) != seen.fld.cend())
+	if (ct_contains(seen.fld, dst_fid))
 		/* Already moved to this folder once. */
 		return ecSuccess;
 	BOOL b_exist = false;

@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <gromox/defs.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
@@ -458,10 +458,9 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		return ecError;
 	switch (object_type) {
 	case ems_objtype::folder: {
-		auto bg = pproptags.begin(), end = pproptags.end();
-		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) == end;
-		auto b_fai    = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) == end;
-		auto b_normal = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) == end;
+		auto b_sub    = level == 0 && !ct_contains(pproptags, PR_CONTAINER_HIERARCHY);
+		auto b_fai    = level == 0 && !ct_contains(pproptags, PR_CONTAINER_CONTENTS);
+		auto b_normal = level == 0 && !ct_contains(pproptags, PR_FOLDER_ASSOCIATED_CONTENTS);
 		auto pfldctnt = oxcfxics_load_folder_content(plogon,
 		                static_cast<folder_object *>(pobject)->folder_id,
 		                b_fai, b_normal, b_sub);
@@ -569,10 +568,9 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		 * properties and subobjects to include, as opposed to
 		 * exclude""" [like rop_fasttransfersourcecopyproperties]
 		 */
-		auto bg = pproptags.begin(), end = pproptags.end();
-		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) != end;
-		auto b_normal = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) != end;
-		auto b_fai    = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) != end;
+		auto b_sub    = level == 0 && ct_contains(pproptags, PR_CONTAINER_HIERARCHY);
+		auto b_normal = level == 0 && ct_contains(pproptags, PR_CONTAINER_CONTENTS);
+		auto b_fai    = level == 0 && ct_contains(pproptags, PR_FOLDER_ASSOCIATED_CONTENTS);
 		auto pfldctnt = oxcfxics_load_folder_content(plogon,
 		                static_cast<folder_object *>(pobject)->folder_id,
 		                b_fai, b_normal, b_sub);
@@ -693,7 +691,7 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 			return ecError;
 
 	proptag_vector new_tags{pproptags.begin(), pproptags.end()};
-	auto bodyit = std::find(new_tags.begin(), new_tags.end(), PR_BODY);
+	auto bodyit = ct_find(new_tags, PR_BODY);
 	if (!(sync_flags & SYNC_ONLY_SPECIFIED_PROPS) &&
 	    bodyit != new_tags.end() && !new_tags.has(PR_HTML))
 		/*

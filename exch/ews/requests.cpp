@@ -14,8 +14,8 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <gromox/ab_tree.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/clock.hpp>
-#include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
@@ -830,7 +830,7 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 			continue;
 		}
 		const auto &addr = *uid.PrimarySmtpAddress;
-		auto it = std::find(delegate_list.begin(), delegate_list.end(), addr);
+		auto it = ct_find(delegate_list, addr);
 		if (it == delegate_list.end()) {
 			msg.error("ErrorDelegateNotFound", "Delegate not found");
 			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
@@ -2880,7 +2880,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 			if (!changeNum)
 				continue;
 			try {
-				if (eid_array_check(&updated_mids, mid))
+				if (ct_contains(updated_mids, mid))
 					msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});
 				else
 					msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});

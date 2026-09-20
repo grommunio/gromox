@@ -26,6 +26,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
@@ -195,8 +196,7 @@ static bool is_requesting_negotiate(const dcerpc_bind &b)
 
 bool dcerpc_ctx_list::contains(const SYNTAX_ID &o) const
 {
-	auto end = transfer_syntaxes.cend();
-	return std::find(transfer_syntaxes.cbegin(), end, o) != end;
+	return ct_contains(transfer_syntaxes, o);
 }
 
 dcerpc_call::dcerpc_call() :
@@ -320,12 +320,11 @@ void pdu_processor_stop()
 static uint16_t pdu_processor_find_secondary(const char *host,
     uint16_t tcp_port, const GUID *puuid, uint32_t version)
 {
-	auto ei = std::find_if(g_endpoint_list.cbegin(), g_endpoint_list.cend(),
-	          endpoint_eq(host, tcp_port));
+	auto ei = ct_find_if(g_endpoint_list, endpoint_eq(host, tcp_port));
 	if (ei == g_endpoint_list.cend())
 		return tcp_port;
 	auto &lst = ei->interface_list;
-	auto ix = std::find_if(lst.cbegin(), lst.cend(), interface_eq(*puuid, version));
+	auto ix = ct_find_if(lst, interface_eq(*puuid, version));
 	return ix != lst.cend() ? ei->tcp_port : tcp_port;
 }
 
@@ -335,7 +334,7 @@ pdu_processor_find_interface_by_uuid(const dcerpc_endpoint *pendpoint,
     const GUID *puuid, uint32_t if_version)
 {
 	auto &lst = pendpoint->interface_list;
-	auto ix = std::find_if(lst.begin(), lst.end(), interface_eq(*puuid, if_version));
+	auto ix = ct_find_if(lst, interface_eq(*puuid, if_version));
 	return ix != lst.end() ? &*ix : nullptr;
 }
 
@@ -344,8 +343,7 @@ pdu_processor::create(const char *host, uint16_t tcp_port) try
 {
 	auto proc = std::make_unique<pdu_processor>();
 	/* verify that EP&INTF exists */
-	auto ei = std::find_if(g_endpoint_list.begin(), g_endpoint_list.end(),
-	          endpoint_mt(host, tcp_port));
+	auto ei = ct_find_if(g_endpoint_list, endpoint_mt(host, tcp_port));
 	if (ei == g_endpoint_list.end())
 		return nullptr;
 	double_list_init(&proc->fragmented_list);
@@ -480,8 +478,8 @@ static uint32_t pdu_processor_allocate_group_id(dcerpc_endpoint *pendpoint)
 /* find a registered context_id from a bind or alter_context */
 std::shared_ptr<dcerpc_context> pdu_processor::find_ctx(uint32_t id) const
 {
-	auto it = std::find_if(context_list.begin(), context_list.end(),
-	          [&](const std::shared_ptr<dcerpc_context> &c) {
+	auto it = ct_find_if(context_list,
+	          [=](const std::shared_ptr<dcerpc_context> &c) {
 	          	return c->context_id == id;
 	          });
 	return it != context_list.end() ? *it : nullptr;
@@ -489,8 +487,8 @@ std::shared_ptr<dcerpc_context> pdu_processor::find_ctx(uint32_t id) const
 
 std::shared_ptr<dcerpc_auth_context> pdu_processor::find_auth_ctx(uint32_t id) const
 {
-	auto it = std::find_if(auth_list.begin(), auth_list.end(),
-	          [&](const std::shared_ptr<dcerpc_auth_context> &c) {
+	auto it = ct_find_if(auth_list,
+	          [=](const std::shared_ptr<dcerpc_auth_context> &c) {
 	          	return c->auth_info.auth_context_id == id;
 	          });
 	return it != auth_list.end() ? *it : nullptr;
@@ -2738,8 +2736,7 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 static dcerpc_endpoint* pdu_processor_register_endpoint(const char *host,
     uint16_t tcp_port) try
 {
-	auto ei = std::find_if(g_endpoint_list.begin(), g_endpoint_list.end(),
-	          endpoint_eq(host, tcp_port));
+	auto ei = ct_find_if(g_endpoint_list, endpoint_eq(host, tcp_port));
 	if (ei != g_endpoint_list.end())
 		return &*ei;
 	auto &ep = g_endpoint_list.emplace_back();

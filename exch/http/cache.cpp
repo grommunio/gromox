@@ -24,6 +24,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
@@ -104,8 +105,7 @@ void directory_list::emplace(const char *dom, const char *p1, const char *d1)
 
 std::vector<dir_node>::const_iterator directory_list::find(const char *host, const char *uri) const
 {
-	return std::find_if(g_directory_list.cbegin(), g_directory_list.cend(),
-	       [&](const auto &e) {
+	return ct_find_if(g_directory_list, [&](const dir_node &e) {
 	       	return wildcard_match(host, e.domain.c_str(), TRUE) != 0 &&
 	       	       strncasecmp(uri, e.path.c_str(), e.path.size()) == 0;
 	       });

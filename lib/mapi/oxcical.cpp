@@ -18,7 +18,7 @@
 #include <fmt/format.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/ical.hpp>
@@ -188,8 +188,8 @@ static ec_error_t oxcical_tzcom_to_def(const ical_component &vt, TZDEF &def) try
 		if (err != ecSuccess)
 			return err;
 
-		auto iter = std::find_if(rules.begin(), rules.end(),
-		            [&](const TZRULE &r) { return r.year == year; });
+		auto iter = ct_find_if(rules,
+		            [=](const TZRULE &r) { return r.year == year; });
 		if (iter == rules.end()) {
 			rules.emplace_back();
 			iter = std::prev(rules.end());
@@ -1149,7 +1149,7 @@ static bool oxcical_parse_dates(const ical_component *ptz_component,
 			itime.second = 0;
 			ical_itime_to_utc(nullptr, itime, &tmp_time);
 			auto tmp_date = rop_util_unix_to_rtime(tmp_time);
-			if (std::find(dates.cbegin(), dates.cend(), tmp_date) != dates.cend())
+			if (ct_contains(dates, tmp_date))
 				return true;
 			if (dates.size() >= appt_max_exceptions)
 				return true;
@@ -1484,7 +1484,7 @@ static constexpr std::pair<enum ol_busy_status, const char *> busy_status_names[
 static ol_busy_status lookup_busy_by_name(const char *s)
 {
 	auto it = std::find_if(std::cbegin(busy_status_names), std::cend(busy_status_names),
-	          [&](const auto &p) { return strcasecmp(p.second, s) == 0; });
+	          [=](const auto &p) { return strcasecmp(p.second, s) == 0; });
 	return it != std::cend(busy_status_names) ? it->first : olBusyUnspecified;
 }
 
@@ -2895,9 +2895,9 @@ static uint32_t oxcical_get_calendartype(const ical_line *piline)
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return CAL_DEFAULT;
-	auto it = std::find_if(cal_scale_names, std::end(cal_scale_names),
+	auto it = std::find_if(std::cbegin(cal_scale_names), std::cend(cal_scale_names),
 	          [&](const auto &p) { return strcasecmp(pvalue, p.second) == 0; });
-	return it != std::end(cal_scale_names) ? it->first : CAL_DEFAULT;
+	return it != std::cend(cal_scale_names) ? it->first : CAL_DEFAULT;
 }
 
 /**
@@ -3982,10 +3982,10 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		}
 
 		if (b_recurrence) {
-			auto it = std::lower_bound(cal_scale_names, std::end(cal_scale_names),
+			auto it = std::lower_bound(std::cbegin(cal_scale_names), std::cend(cal_scale_names),
 				  apprecurr.recur_pat.calendartype,
 				  [&](const auto &p, unsigned int v) { return p.first < v; });
-			str = it != std::end(cal_scale_names) &&
+			str = it != std::cend(cal_scale_names) &&
 			      it->first == apprecurr.recur_pat.calendartype ?
 			      it->second : nullptr;
 			if (apprecurr.recur_pat.patterntype == rptHjMonth ||

@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/generic_connection.hpp>
@@ -380,8 +381,7 @@ int main(int argc, char **argv)
 
 static int tmr_acceptwork(generic_connection &&conn)
 {
-		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    conn.client_addr) == g_acl_list.cend()) {
+		if (!ct_contains(g_acl_list, conn.client_addr)) {
 			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
 			return 0;

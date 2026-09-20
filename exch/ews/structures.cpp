@@ -16,6 +16,7 @@
 #include <libHX/ctype_helper.h>
 #include <vmime/header.hpp>
 #include <vmime/text.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/freebusy.hpp>
@@ -1175,7 +1176,7 @@ void sShape::write(const TAGGED_PROPVAL& tp)
  */
 void sShape::write(const PROPERTY_NAME& name, const TAGGED_PROPVAL& tp)
 {
-	auto it = std::find(names.begin(), names.end(), name);
+	auto it = ct_find(names, name);
 	if (it == names.end()) {
 		namedTags.emplace_back(tp.proptag);
 		nameMeta.emplace_back(0);
@@ -1224,7 +1225,7 @@ const TAGGED_PROPVAL *sShape::writes(proptag_t tag) const
  */
 const TAGGED_PROPVAL* sShape::writes(const PROPERTY_NAME& name) const
 {
-	auto it = std::find_if(names.begin(), names.end(), [&](const PROPERTY_NAME& n){return n == name;});
+	auto it = ct_find(names, name);
 	if (it == names.end())
 		return nullptr;
 	size_t index = std::distance(names.begin(), it);
@@ -1274,7 +1275,7 @@ const TAGGED_PROPVAL *sShape::get(proptag_t tag, uint8_t mask) const
  */
 const TAGGED_PROPVAL* sShape::get(const PROPERTY_NAME& name, uint8_t mask) const
 {
-	auto it = std::find(names.begin(), names.end(), name);
+	auto it = ct_find(names, name);
 	if (it == names.end())
 		return nullptr;
 	auto index = std::distance(names.begin(), it);
@@ -1311,7 +1312,7 @@ template const BINARY *sShape::get<BINARY>(proptag_t, uint8_t) const;
  */
 template<typename T> const T* sShape::get(const PROPERTY_NAME& name, uint8_t mask) const
 {
-	auto it = std::find(names.begin(), names.end(), name);
+	auto it = ct_find(names, name);
 	if (it == names.end())
 		return nullptr;
 	auto index = std::distance(names.begin(), it);
@@ -1430,7 +1431,7 @@ void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
  */
 proptag_t sShape::tag(const PROPERTY_NAME &name) const
 {
-	auto it = std::find(names.begin(), names.end(), name);
+	auto it = ct_find(names, name);
 	return it == names.end() ? 0 : namedTags[std::distance(names.begin(), it)];
 }
 
@@ -1961,11 +1962,11 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 				auto& op = shape.offsetProps;
 				auto tag = shape.tag(NtCommonStart);
 				if (tag != 0 && startTime.has_value() &&
-				    std::find(op.begin(), op.end(), tag) != op.end())
+				    ct_contains(op, tag))
 					offset_from_tz(tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
 				tag = shape.tag(NtCommonEnd);
 				if (tag != 0 && endTime.has_value() &&
-				    std::find(op.begin(), op.end(), tag) != op.end())
+				    ct_contains(op, tag))
 					offset_from_tz(tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
 			}
 		}
@@ -4599,8 +4600,7 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
 	ReadItems.emplace(*rights & frightsReadAny ? Enum::FullDetails :
 	                  *rights & frightsFreeBusyDetailed ? Enum::FreeBusyTimeAndSubjectAndLocation :
 	                  *rights & frightsFreeBusySimple ? Enum::TimeOnly :Enum::None);
-	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
-	size_t index = std::distance(profileTable.begin(), it);
+	auto index = ct_index(profileTable, *rights);
 	if (index < calendarProfiles)
 		CalendarPermissionLevel = static_cast<uint8_t>(index);
 	else
@@ -4636,8 +4636,7 @@ tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 	if (!rights)
 		rights = &uint_value_zero;
 	ReadItems.emplace(*rights & frightsReadAny ? Enum::FullDetails : Enum::None);
-	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
-	size_t index = std::distance(profileTable.begin(), it);
+	auto index = ct_index(profileTable, *rights);
 	if (index < profiles)
 		PermissionLevel = static_cast<uint8_t>(index);
 	else

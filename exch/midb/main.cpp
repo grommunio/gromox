@@ -21,6 +21,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
@@ -153,8 +154,7 @@ static int system_services_run()
 
 static int midls_thrwork(generic_connection &&gco)
 {
-		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    gco.client_addr) == g_acl_list.cend()) {
+		if (!ct_contains(g_acl_list, gco.client_addr)) {
 			if (HXio_fullwrite(gco.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
 			return 0;

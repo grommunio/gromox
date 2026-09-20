@@ -43,6 +43,44 @@ void sort_unique(auto &&cont)
 	cont.erase(std::unique(cont.begin(), cont.end()), cont.end());
 }
 
+/*
+ * std::ranges::contains is only available in C++23.
+ * std::ranges also needs stdlib containers, but we still have
+ * some legacy structs like EID_ARRAY that have only a minimal
+ * iterator interface.
+ */
+
+template<typename T> decltype(auto) ct_find(auto &&cont, T &&val)
+{
+	return std::find(cont.begin(), cont.end(), std::forward<T>(val));
+}
+
+template<typename F> decltype(auto) ct_find_if(auto &&cont, F &&pred)
+{
+	return std::find_if(cont.begin(), cont.end(), std::forward<F>(pred));
+}
+
+template<typename T> bool ct_contains(auto &&cont, T &&val)
+{
+	return std::find(cont.begin(), cont.end(), std::forward<T>(val)) != cont.end();
+}
+
+/**
+ * Determine the index of a value in a sequenced container, or, if not found,
+ * one past the last.
+ */
+template<typename T> size_t ct_index(auto &&cont, T &&val)
+{
+	return std::distance(cont.begin(), std::find(cont.begin(),
+	       cont.end(), std::forward<T>(val)));
+}
+
+template<typename F> size_t ct_index_if(auto &&cont, F &&pred)
+{
+	return std::distance(cont.begin(), std::find_if(cont.begin(),
+	       cont.end(), std::forward<F>(pred)));
+}
+
 /**
  * Extract a bunch of elements from a std::list satisfying a predicate,
  * and return them in a new list.
