@@ -23,6 +23,17 @@
 
 using namespace gromox;
 
+static ec_error_t copy_cols(proptag_cspan in, PROPTAG_ARRAY &out)
+{
+	out.count = in.size();
+	out.pproptag = cu_alloc<proptag_t>(out.count);
+	if (out.pproptag == nullptr)
+		return ecServerOOM;
+	if (out.count > 0)
+		memcpy(out.pproptag, in.data(), sizeof(proptag_t) * out.count);
+	return ecSuccess;
+}
+
 ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
     uint8_t open_mode_flags, uint64_t message_id,
     uint8_t *phas_named_properties, TYPED_STRING *psubject_prefix,
@@ -138,8 +149,11 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	err = pmessage->get_recipient_num(precipient_count);
 	if (err != ecSuccess)
 		return err;
-	auto pcolumns = pmessage->get_rcpt_columns();
-	*precipient_columns = *pcolumns;
+	const auto &pcolumns = pmessage->get_rcpt_columns();
+	err = copy_cols(pcolumns, *precipient_columns);
+	if (err != ecSuccess)
+		return err;
+
 	emsmdb_interface_get_rop_num(&rop_num);
 	uint8_t rcpt_num = rop_num == 1 ? 0xFE : 5;
 	err = pmessage->read_recipients(0, rcpt_num, &rcpts);
@@ -153,7 +167,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
 		if (!cu_propvals_to_openrecipient(cpid, rcpts.pparray[i],
-		    *pcolumns, &(*pprecipient_row)[i]))
+		    pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	}
 	auto hnd = plogmap->add_object_handle(logon_id, hin,
@@ -377,10 +391,10 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 		return ecNotFound;
 	for (i = 0; i < tmp_set.count; ++i) {
 		if (!cu_propvals_to_readrecipient(pmessage->get_cpid(),
-		    tmp_set.pparray[i], *pmessage->get_rcpt_columns(), &tmp_row))
+		    tmp_set.pparray[i], pmessage->get_rcpt_columns(), &tmp_row))
 			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
-		if (rop_push_ext(*pext, *pmessage->get_rcpt_columns(),
+		if (rop_push_ext(*pext, pmessage->get_rcpt_columns(),
 		    tmp_row) != pack_result::ok) {
 			ext.m_offset = last_offset;
 			break;
@@ -434,8 +448,10 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 	err = pmessage->get_recipient_num(precipient_count);
 	if (err != ecSuccess)
 		return err;
-	auto pcolumns = pmessage->get_rcpt_columns();
-	*precipient_columns = *pcolumns;
+	const auto &pcolumns = pmessage->get_rcpt_columns();
+	err = copy_cols(pcolumns, *precipient_columns);
+	if (err != ecSuccess)
+		return err;
 	err = pmessage->read_recipients(0, 0xFE, &rcpts);
 	if (err != ecSuccess)
 		return err;
@@ -445,7 +461,7 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 		return ecServerOOM;
 	for (size_t i = 0; i < rcpts.count; ++i)
 		if (!cu_propvals_to_openrecipient(pmessage->get_cpid(),
-		    rcpts.pparray[i], *pcolumns, &(*pprecipient_row)[i]))
+		    rcpts.pparray[i], pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	return ecSuccess;
 }
@@ -916,8 +932,10 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 	err = pmessage->get_recipient_num(precipient_count);
 	if (err != ecSuccess)
 		return err;
-	auto pcolumns = pmessage->get_rcpt_columns();
-	*precipient_columns = *pcolumns;
+	const auto &pcolumns = pmessage->get_rcpt_columns();
+	err = copy_cols(pcolumns, *precipient_columns);
+	if (err != ecSuccess)
+		return err;
 	err = pmessage->read_recipients(0, 0xFE, &rcpts);
 	if (err != ecSuccess)
 		return err;
@@ -927,7 +945,7 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		return ecServerOOM;
 	for (size_t i = 0; i < rcpts.count; ++i)
 		if (!cu_propvals_to_openrecipient(pmessage->get_cpid(),
-		    rcpts.pparray[i], *pcolumns, &(*pprecipient_row)[i]))
+		    rcpts.pparray[i], pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	auto hnd = plogmap->add_object_handle(logon_id, hin,
 	           {ems_objtype::message, std::move(pmessage)});

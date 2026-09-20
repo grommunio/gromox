@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -8,7 +8,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <gromox/defs.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
@@ -85,7 +85,7 @@ void attachment_object::set_open_flags(uint8_t f)
 	open_flags = f;
 }
 
-ec_error_t attachment_object::save()
+ec_error_t attachment_object::save() try
 {
 	auto pattachment = this;
 	
@@ -110,10 +110,12 @@ ec_error_t attachment_object::save()
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;
-	if (!proptag_array_append(pattachment->pparent->pchanged_proptags,
-	    PR_MESSAGE_ATTACHMENTS))
-		return ecServerOOM;
+	pparent->changed_proptags.emplace_back(PR_MESSAGE_ATTACHMENTS);
+	sort_unique(pparent->changed_proptags);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
 ec_error_t attachment_object::append_stream_obj(stream_object *pstream) try

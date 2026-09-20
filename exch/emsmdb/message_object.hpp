@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
-#include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
@@ -33,7 +32,7 @@ struct message_object {
 	void set_open_flags(uint8_t open_flags);
 	ec_error_t save();
 	ec_error_t reload();
-	PROPTAG_ARRAY *get_rcpt_columns() const { return precipient_columns; }
+	const std::vector<gromox::proptag_t> &get_rcpt_columns() const { return rcpt_columns; }
 	ec_error_t read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *) const;
 	ec_error_t get_recipient_num(uint16_t *) const;
 	ec_error_t set_rcpts(const TARRAY_SET *);
@@ -66,7 +65,6 @@ struct message_object {
 	uint8_t open_flags = 0;
 	attachment_object *pembedding = nullptr;
 	std::shared_ptr<ics_state> pstate;
-	PROPTAG_ARRAY *precipient_columns = nullptr;
-	PROPTAG_ARRAY *pchanged_proptags = nullptr, *premoved_proptags = nullptr;
+	std::vector<gromox::proptag_t> rcpt_columns, changed_proptags, removed_proptags;
 	std::vector<stream_object *> stream_list;
 };
