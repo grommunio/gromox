@@ -1270,7 +1270,8 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 	 * The predicate is handed a mutable reference and may edit the entries it
 	 * keeps; values of the entries it selects are released.
 	 */
-	template<typename F> size_t erase_if(F &&pred) {
+	size_t erase_if(auto &&pred)
+	{
 		static_assert(std::is_trivially_copyable_v<TAGGED_PROPVAL>);
 		size_t o = 0;
 		for (size_t i = 0; i < count; ++i) {

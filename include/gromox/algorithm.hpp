@@ -47,8 +47,7 @@ void sort_unique(auto &&cont)
  * Extract a bunch of elements from a std::list satisfying a predicate,
  * and return them in a new list.
  */
-template<typename T, typename Pred> std::list<T>
-splice_if(std::list<T> &src, Pred &&pred)
+template<typename T> std::list<T> splice_if(std::list<T> &src, auto &&pred)
 {
 	std::list<T> dst;
 	for (auto it = src.begin(); it != src.end(); ) {
@@ -62,8 +61,7 @@ splice_if(std::list<T> &src, Pred &&pred)
 	return dst;
 }
 
-template<typename T, typename Pred> std::list<T>
-splice_if(std::list<T> &&src, Pred &&pred)
+template<typename T> std::list<T> splice_if(std::list<T> &&src, auto &&pred)
 {
 	return splice_if(src, std::forward(pred));
 }

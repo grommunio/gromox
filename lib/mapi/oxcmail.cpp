@@ -2746,7 +2746,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 }
 #undef imp_null
 
-template<typename T> static inline std::string enc_text(T &&s)
+static inline std::string enc_text(auto &&s)
 {
 	return vmime::text(s, vmime::charsets::UTF_8).generate();
 }
