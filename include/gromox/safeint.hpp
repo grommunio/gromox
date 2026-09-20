@@ -40,7 +40,7 @@ static inline uint32_t safe_add_s(uint64_t x, int64_t y, int8_t *c = nullptr)
 
 namespace gromox {
 
-#if __cpp_lib_integer_comparison_functions < 20202UL
+#if __cpp_lib_integer_comparison_functions < 202002L
 template<typename A, typename B> constexpr bool cmp_less(A &&a, B &&b)
 {
 	if constexpr (std::is_signed_v<A> == std::is_signed_v<B>)
