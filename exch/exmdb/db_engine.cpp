@@ -1091,7 +1091,7 @@ static void *sf_popul_thread(void *param)
 		});
 		auto pfolder_ids = eid_array_init(); /* Actually it's just GCVs */
 		if (pfolder_ids == nullptr)
-			goto NEXT_SEARCH;	
+			continue;
 		auto cl_1 = HX::make_scope_exit([&]() { eid_array_free(pfolder_ids); });
 		exmdb_server::build_env(EM_PRIVATE, psearch->dir.c_str());
 		auto cl_2 = HX::make_scope_exit(exmdb_server::free_env);
@@ -1106,7 +1106,7 @@ static void *sf_popul_thread(void *param)
 		}
 		auto pdb = db_engine_get_db(psearch->dir.c_str());
 		if (!pdb)
-			goto NEXT_SEARCH;
+			continue;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
 			if (g_dbeng_stop)
 				break;
@@ -1131,7 +1131,7 @@ static void *sf_popul_thread(void *param)
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1649: ENOMEM");
 			sleep(60);
-			goto NEXT_SEARCH;
+			continue;
 		}
 		for (const auto &t : dbase->tables.table_list)
 			if (t.type == table_type::content &&
@@ -1147,7 +1147,6 @@ static void *sf_popul_thread(void *param)
 			exmdb_server::reload_content_table(psearch->dir.c_str(), table_ids.back());
 			table_ids.pop_back();
 		}
-		goto NEXT_SEARCH;
 	}
 	return nullptr;
 }
