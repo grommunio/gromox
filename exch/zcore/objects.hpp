@@ -167,7 +167,7 @@ struct message_object {
 	uint32_t instance_id = 0, tag_access = 0;
 	attachment_object *pembedding = nullptr;
 	std::shared_ptr<ics_state> pstate;
-	PROPTAG_ARRAY *pchanged_proptags = nullptr, *premoved_proptags = nullptr;
+	std::vector<gromox::proptag_t> changed_proptags, removed_proptags;
 };
 
 /* message_object and attachment_object are friend classes,

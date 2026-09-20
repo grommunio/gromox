@@ -5,11 +5,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <gromox/defs.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include "common_util.hpp"
 #include "exmdb_client.hpp"
 #include "objects.hpp"
@@ -90,7 +91,7 @@ attachment_object::~attachment_object()
 			pattachment->instance_id);
 }
 
-ec_error_t attachment_object::save()
+ec_error_t attachment_object::save() try
 {
 	auto pattachment = this;
 	uint64_t nt_time;
@@ -113,10 +114,12 @@ ec_error_t attachment_object::save()
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;
-	if (!proptag_array_append(pattachment->pparent->pchanged_proptags,
-	    PR_MESSAGE_ATTACHMENTS))
-		return ecServerOOM;
+	pparent->changed_proptags.emplace_back(PR_MESSAGE_ATTACHMENTS);
+	sort_unique(pparent->changed_proptags);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM\n", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
 ec_error_t attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)

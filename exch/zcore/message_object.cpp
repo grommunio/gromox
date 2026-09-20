@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -9,13 +9,12 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/pcl.hpp>
-#include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
@@ -84,12 +83,6 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 	}
 	if (pmessage->instance_id == 0)
 		return NULL;
-	pmessage->pchanged_proptags = proptag_array_init();
-	if (pmessage->pchanged_proptags == nullptr)
-		return NULL;
-	pmessage->premoved_proptags = proptag_array_init();
-	if (pmessage->premoved_proptags == nullptr)
-		return NULL;
 	if (!b_new) {
 		if (!exmdb_client_get_instance_property(pstore->get_dir(),
 		    pmessage->instance_id, PidTagChangeNumber,
@@ -131,10 +124,6 @@ message_object::~message_object()
 	if (pmessage->instance_id != 0 && exmdb_client.has_value())
 		exmdb_client->unload_instance(pmessage->pstore->get_dir(),
 			pmessage->instance_id);
-	if (pmessage->pchanged_proptags != nullptr)
-		proptag_array_free(pmessage->pchanged_proptags);
-	if (pmessage->premoved_proptags != nullptr)
-		proptag_array_free(pmessage->premoved_proptags);
 }
 
 ec_error_t message_object::init_message(bool fai, cpid_t new_cpid)
@@ -270,10 +259,10 @@ ec_error_t message_object::save() try
 		return ecServerOOM;
 	*modtime = rop_util_current_nttime();
 	tmp_propvals.emplace_back(PR_LOCAL_COMMIT_TIME, modtime);
-	if (!pmessage->pchanged_proptags->has(PR_LAST_MODIFICATION_TIME))
+	if (!ct_contains(changed_proptags, PR_LAST_MODIFICATION_TIME))
 		tmp_propvals.emplace_back(PR_LAST_MODIFICATION_TIME, modtime);
 	
-	if (!pmessage->pchanged_proptags->has(PR_LAST_MODIFIER_NAME)) {
+	if (!ct_contains(changed_proptags, PR_LAST_MODIFIER_NAME)) {
 		const char *u = pinfo->get_username();
 		std::string dispname;
 		auto v = mysql_adaptor_get_user_displayname(u, dispname) && !dispname.empty() ?
@@ -334,8 +323,8 @@ ec_error_t message_object::save() try
 		return ecSuccess;
 	}
 	if (pmessage->pstore->b_private &&
-	    (pmessage->pchanged_proptags->has(PR_SCHDINFO_DELEGATE_ENTRYIDS) ||
-	    pmessage->premoved_proptags->has(PR_SCHDINFO_DELEGATE_ENTRYIDS))) {
+	    (ct_contains(changed_proptags, PR_SCHDINFO_DELEGATE_ENTRYIDS) ||
+	    ct_contains(removed_proptags, PR_SCHDINFO_DELEGATE_ENTRYIDS))) {
 		void *pvalue = nullptr;
 		if (exmdb_client_get_instance_property(dir, pmessage->instance_id,
 		    PR_SCHDINFO_DELEGATE_ENTRYIDS, &pvalue))
@@ -351,8 +340,8 @@ ec_error_t message_object::save() try
 	}
 	
 	if (pmessage->message_id == 0 || b_fai) {
-		proptag_array_clear(pmessage->pchanged_proptags);
-		proptag_array_clear(pmessage->premoved_proptags);
+		changed_proptags.clear();
+		removed_proptags.clear();
 		return ecSuccess;
 	}
 	if (is_new)
@@ -360,8 +349,8 @@ ec_error_t message_object::save() try
 	if (!exmdb_client->mark_modified(dir, pmessage->message_id))
 		return ecError;
  SAVE_FULL_CHANGE:
-	proptag_array_clear(pmessage->pchanged_proptags);
-	proptag_array_clear(pmessage->premoved_proptags);
+	changed_proptags.clear();
+	removed_proptags.clear();
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
@@ -385,8 +374,8 @@ ec_error_t message_object::reload()
 	if (!exmdb_client->reload_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &b_result) || !b_result)
 		return ecRpcFailed;
-	proptag_array_clear(pmessage->pchanged_proptags);
-	proptag_array_clear(pmessage->premoved_proptags);
+	changed_proptags.clear();
+	removed_proptags.clear();
 	pmessage->b_touched = FALSE;
 	pmessage->change_num = 0;
 	if (pmessage->b_new)
@@ -428,8 +417,8 @@ ec_error_t message_object::write_message(const MESSAGE_CONTENT &content)
 	if (!exmdb_client->write_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &msgctnt, TRUE, &proptags, &tmp_problems))
 		return ecRpcFailed;
-	proptag_array_clear(pmessage->pchanged_proptags);
-	proptag_array_clear(pmessage->premoved_proptags);
+	changed_proptags.clear();
+	removed_proptags.clear();
 	pmessage->b_new = TRUE;
 	pmessage->b_touched = TRUE;
 	return ecSuccess;
@@ -470,7 +459,7 @@ ec_error_t message_object::get_recipient_num(uint16_t *pnum)
 	       pmessage->instance_id, pnum) ? ecSuccess : ecRpcFailed;
 }
 
-ec_error_t message_object::empty_rcpts()
+ec_error_t message_object::empty_rcpts() try
 {
 	auto pmessage = this;
 	if (!exmdb_client->empty_message_instance_rcpts(pmessage->pstore->get_dir(),
@@ -479,12 +468,15 @@ ec_error_t message_object::empty_rcpts()
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return ecSuccess;
-	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS))
-		return ecServerOOM;
+	changed_proptags.emplace_back(PR_MESSAGE_RECIPIENTS);
+	sort_unique(changed_proptags);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
-ec_error_t message_object::set_rcpts(const TARRAY_SET *pset)
+ec_error_t message_object::set_rcpts(const tarray_set *pset) try
 {
 	auto pmessage = this;
 	if (!exmdb_client->update_message_instance_rcpts(pmessage->pstore->get_dir(),
@@ -493,9 +485,12 @@ ec_error_t message_object::set_rcpts(const TARRAY_SET *pset)
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return ecSuccess;
-	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS))
-		return ecServerOOM;
+	changed_proptags.emplace_back(PR_MESSAGE_RECIPIENTS);
+	sort_unique(changed_proptags);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
 ec_error_t message_object::get_attachments_num(uint16_t *pnum)
@@ -505,7 +500,7 @@ ec_error_t message_object::get_attachments_num(uint16_t *pnum)
 	       pmessage->instance_id, pnum) ? ecSuccess : ecRpcFailed;
 }
 
-ec_error_t message_object::delete_attachment(uint32_t attachment_num)
+ec_error_t message_object::delete_attachment(uint32_t attachment_num) try
 {
 	auto pmessage = this;
 	if (!exmdb_client->delete_message_instance_attachment(pmessage->pstore->get_dir(),
@@ -514,9 +509,12 @@ ec_error_t message_object::delete_attachment(uint32_t attachment_num)
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return ecSuccess;
-	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS))
-		return ecServerOOM;
+	changed_proptags.emplace_back(PR_MESSAGE_ATTACHMENTS);
+	sort_unique(changed_proptags);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
 ec_error_t message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
@@ -845,11 +843,10 @@ static ec_error_t message_object_set_properties_internal(message_object *pmessag
 			continue;
 		pmessage->b_touched = TRUE;
 		const auto proptag = ppropvals->ppropval[i].proptag;
-		proptag_array_remove(
-			pmessage->premoved_proptags, proptag);
-		if (!proptag_array_append(pmessage->pchanged_proptags, proptag))
-			return ecServerOOM;
+		erase_first(pmessage->removed_proptags, proptag);
+		pmessage->changed_proptags.emplace_back(proptag);
 	}
+	sort_unique(pmessage->changed_proptags);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
@@ -906,11 +903,10 @@ ec_error_t message_object::remove_properties(proptag_cspan pproptags) try
 			continue;
 		pmessage->b_touched = TRUE;
 		const auto proptag = pproptags[i];
-		proptag_array_remove(
-			pmessage->pchanged_proptags, proptag);
-		if (!proptag_array_append(pmessage->premoved_proptags, proptag))
-			return ecServerOOM;
+		erase_first(changed_proptags, proptag);
+		removed_proptags.emplace_back(proptag);
 	}
+	sort_unique(removed_proptags);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
@@ -918,7 +914,7 @@ ec_error_t message_object::remove_properties(proptag_cspan pproptags) try
 }
 
 ec_error_t message_object::copy_to(message_object *pmessage_src,
-    proptag_cspan pexcluded_proptags, BOOL b_force, BOOL *pb_cycle)
+    proptag_cspan pexcluded_proptags, BOOL b_force, BOOL *pb_cycle) try
 {
 	auto pmessage = this;
 	PROPTAG_ARRAY proptags;
@@ -955,10 +951,12 @@ ec_error_t message_object::copy_to(message_object *pmessage_src,
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return ecSuccess;
 	for (unsigned int i = 0; i < proptags.count; ++i)
-		if (!proptag_array_append(pmessage->pchanged_proptags,
-		    proptags.pproptag[i]))
-			return ecServerOOM;
+		changed_proptags.emplace_back(proptags.pproptag[i]);
+	sort_unique(changed_proptags);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
 ec_error_t message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
