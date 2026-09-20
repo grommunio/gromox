@@ -21,6 +21,7 @@
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include <libHX/io.h>
 #include <libHX/scope.hpp>
@@ -476,7 +477,7 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
-		if (cmp_less(pcontext->literal_len, temp_len)) {
+		if (std::cmp_less(pcontext->literal_len, temp_len)) {
 			pcontext->read_offset -= nl_len;
 			auto chunk_len = tail - ctx.literal_ptr;
 			if (chunk_len > 0 && chunk_len < 64 * 1024)
