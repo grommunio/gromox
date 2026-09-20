@@ -612,7 +612,7 @@ static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
 	}
 	drv->schema_vers = strtoul(row[0], nullptr, 0);
 	if (drv->schema_vers < 61)
-		throw YError("PK-1004: Database schema kdb-%u is not supported.\n", drv->schema_vers);
+		throw YError("PK-1004: Database schema kdb-%u is not supported.", drv->schema_vers);
 	fprintf(stderr, "Database schema is kdb-%u\n", drv->schema_vers);
 
 	return drv;
@@ -695,7 +695,7 @@ int driver::open_by_mro(const char *storeuser)
 		return 0;
 	} else if (mysql_num_rows(res.get()) > 1) {
 		present_mro_stores(storeuser, res);
-		throw YError("PK-1013: \"%s\" was ambiguous.\n", storeuser);
+		throw YError("PK-1013: \"%s\" was ambiguous.", storeuser);
 	}
 	auto row = res.fetch_row();
 	if (row == nullptr || row[0] == nullptr)
@@ -710,7 +710,7 @@ int driver::open_by_user(const char *storeuser)
 {
 	if (*storeuser == '\0') {
 		present_user_stores(storeuser);
-		throw YError("PK-1013: \"%s\" was ambiguous.\n", storeuser);
+		throw YError("PK-1013: \"%s\" was ambiguous.", storeuser);
 	}
 	auto it = g_user_map.login_to_guid.find(server_guid + "/" + storeuser);
 	if (it == g_user_map.login_to_guid.end())

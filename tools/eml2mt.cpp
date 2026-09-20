@@ -142,7 +142,7 @@ static int do_emit(const parent_desc &parent, fat_message &&msg)
 	}
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
-		throw YError("E-2013: ENOMEM\n");
+		throw YError("E-2013: ENOMEM");
 	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
 	    ep.p_uint64(g_msgcount + 1) != pack_result::ok ||
 	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||

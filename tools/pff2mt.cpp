@@ -593,30 +593,30 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 	case PT_SHORT:
 		if (dsize == sizeof(uint16_t))
 			break;
-		throw YError("PF-1015: Datasize mismatch on %xh\n", pv.proptag);
+		throw YError("PF-1015: Datasize mismatch on %xh", pv.proptag);
 	case PT_LONG:
 		if (dsize == sizeof(uint32_t))
 			break;
-		throw YError("PF-1016: Datasize mismatch on %xh\n", pv.proptag);
+		throw YError("PF-1016: Datasize mismatch on %xh", pv.proptag);
 	case PT_I8:
 	case PT_SYSTIME:
 	case PT_CURRENCY:
 		if (dsize == sizeof(uint64_t))
 			break;
-		throw YError("PF-1019: Datasize mismatch on %xh\n", pv.proptag);
+		throw YError("PF-1019: Datasize mismatch on %xh", pv.proptag);
 	case PT_FLOAT:
 		if (dsize == sizeof(float))
 			break;
-		throw YError("PF-1020: Datasize mismatch on %xh\n", pv.proptag);
+		throw YError("PF-1020: Datasize mismatch on %xh", pv.proptag);
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		if (dsize == sizeof(double))
 			break;
-		throw YError("PF-1021: Datasize mismatch on %xh\n", pv.proptag);
+		throw YError("PF-1021: Datasize mismatch on %xh", pv.proptag);
 	case PT_BOOLEAN:
 		if (dsize == sizeof(uint8_t))
 			break;
-		throw YError("PF-1024: Datasize mismatch on %xh\n", pv.proptag);
+		throw YError("PF-1024: Datasize mismatch on %xh", pv.proptag);
 	case PT_STRING8:
 	case PT_UNICODE: {
 		size_t dsize2 = 0;
@@ -719,10 +719,10 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 	case PT_OBJECT:
 		if (pv.proptag == PR_ATTACH_DATA_OBJ)
 			return; /* Embedded message, which separately handled. */
-		throw YError("PF-1039: Unsupported proptag %xh (datasize %zu). Implement me!\n",
+		throw YError("PF-1039: Unsupported proptag %xh (datasize %zu). Implement me!",
 		        pv.proptag, dsize);
 	default:
-		throw YError("PF-1042: Unsupported proptype %xh (datasize %zu). Implement me!\n",
+		throw YError("PF-1042: Unsupported proptype %xh (datasize %zu). Implement me!",
 		        pv.proptag, dsize);
 	}
 	bool done = false;
