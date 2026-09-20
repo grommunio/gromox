@@ -27,7 +27,6 @@
 #include <gromox/flat_set.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
-#include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>

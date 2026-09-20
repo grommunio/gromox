@@ -10,7 +10,6 @@
 #include <vector>
 #include <gromox/algorithm.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include "attachment_object.hpp"
 #include "common_util.hpp"

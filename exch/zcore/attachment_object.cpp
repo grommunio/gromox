@@ -8,7 +8,6 @@
 #include <gromox/algorithm.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"

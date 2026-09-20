@@ -9,7 +9,6 @@
 #include <gromox/exmdb_client.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/proptag_array.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
 #include "common_util.hpp"

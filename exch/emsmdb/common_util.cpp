@@ -35,7 +35,6 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/proc_common.h>
-#include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/sent_copy.hpp>
 #include <gromox/textmaps.hpp>

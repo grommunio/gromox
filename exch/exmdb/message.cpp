@@ -37,7 +37,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
-#include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/usercvt.hpp>

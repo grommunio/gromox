@@ -11,7 +11,6 @@
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 
 using namespace gromox;

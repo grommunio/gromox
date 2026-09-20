@@ -18,7 +18,6 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/proc_common.h>
-#include <gromox/proptag_array.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
