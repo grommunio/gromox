@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/mapi_types.hpp>
@@ -61,7 +62,7 @@ struct GX_EXPORT attachment_content {
 using ATTACHMENT_CONTENT = attachment_content;
 
 struct GX_EXPORT folder_messages {
-	EID_ARRAY *pfai_msglst = nullptr, *pnormal_msglst = nullptr;
+	std::optional<std::vector<eid_t>> pfai_msglst, pnormal_msglst;
 };
 using FOLDER_MESSAGES = folder_messages;
 
@@ -72,8 +73,8 @@ struct GX_EXPORT folder_content {
 	void operator=(folder_content &&) noexcept = delete;
 	bool append_subfolder_internal(folder_content &&);
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
-	void append_failist_internal(EID_ARRAY *);
-	void append_normallist_internal(EID_ARRAY *);
+	void append_failist_internal(std::vector<eid_t> &&);
+	void append_normallist_internal(std::vector<eid_t> &&);
 
 	TPROPVAL_ARRAY proplist{};
 	FOLDER_MESSAGES fldmsgs{};

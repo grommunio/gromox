@@ -8,7 +8,6 @@
 #include <utility>
 #include <vector>
 #include <gromox/algorithm.hpp>
-#include <gromox/eid_array.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
@@ -31,14 +30,14 @@
 
 using namespace gromox;
 
-static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
-    uint64_t folder_id, const char *username, BOOL b_fai)
+static std::optional<std::vector<eid_t>>
+oxcfxics_load_folder_messages(logon_object *plogon, uint64_t folder_id,
+    const char *username, bool b_fai) try
 {
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	RESTRICTION restriction;
-	EID_ARRAY *pmessage_ids;
 	RESTRICTION_PROPERTY res_prop;
 	uint8_t tmp_associated = !!b_fai;
 	
@@ -51,27 +50,25 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	if (!exmdb_client->load_content_table(plogon->get_dir(), CP_ACP, folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
-		return NULL;	
+		return {};
 	proptag_t tmp_proptag = PidTagMid;
 	if (!exmdb_client->query_table(plogon->get_dir(), nullptr, CP_ACP,
 	    table_id, {&tmp_proptag, 1}, 0, row_count, &tmp_set))
-		return NULL;	
+		return {};
 	exmdb_client->unload_table(plogon->get_dir(), table_id);
-	pmessage_ids = eid_array_init();
-	if (pmessage_ids == nullptr)
-		return NULL;
+
+	std::vector<eid_t> list;
 	for (const auto &row : tmp_set) {
 		auto pmid = row.get<uint64_t>(PidTagMid);
 		if (NULL == pmid) {
-			eid_array_free(pmessage_ids);
-			return NULL;
+			return {};
 		}
-		if (!eid_array_append(pmessage_ids, *pmid)) {
-			eid_array_free(pmessage_ids);
-			return NULL;
-		}
+		list.emplace_back(*pmid);
 	}
-	return pmessage_ids;
+	return std::move(list);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return {};
 }
 
 static std::unique_ptr<FOLDER_CONTENT>
@@ -79,7 +76,6 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
     bool b_fai, bool b_normal, bool b_sub)
 {
 	TARRAY_SET tmp_set;
-	EID_ARRAY *pmessage_ids;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	auto username = plogon->eff_user();
@@ -111,18 +107,18 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	 * MetaTagNewFXFolder in this spot.
 	 */
 	if (b_fai) {
-		pmessage_ids = oxcfxics_load_folder_messages(
-					plogon, folder_id, username, TRUE);
-		if (pmessage_ids == nullptr)
+		auto list = oxcfxics_load_folder_messages(plogon,
+		            folder_id, username, true);
+		if (!list.has_value())
 			return NULL;
-		pfldctnt->append_failist_internal(pmessage_ids);
+		pfldctnt->append_failist_internal(std::move(*list));
 	}
 	if (b_normal) {
-		pmessage_ids = oxcfxics_load_folder_messages(
-					plogon, folder_id, username, FALSE);
-		if (pmessage_ids == nullptr)
+		auto list = oxcfxics_load_folder_messages(plogon,
+		            folder_id, username, false);
+		if (!list.has_value())
 			return NULL;
-		pfldctnt->append_normallist_internal(pmessage_ids);
+		pfldctnt->append_normallist_internal(std::move(*list));
 	}
 	if (!b_sub)
 		return pfldctnt;
@@ -353,7 +349,7 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 
 ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *pmessage_ids,
     uint8_t flags, uint8_t send_options, LOGMAP *plogmap, uint8_t logon_id,
-    uint32_t hin, uint32_t *phout)
+    uint32_t hin, uint32_t *phout) try
 {
 	BOOL b_owner;
 	ems_objtype object_type;
@@ -386,31 +382,22 @@ ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *pmessage_ids,
 			}
 		}
 	}
-	auto pmids = eid_array_init();
-	if (pmids == nullptr)
-		return ecServerOOM;
-	if (!eid_array_batch_append(pmids, pmessage_ids->count,
-	    pmessage_ids->pids)) {
-		eid_array_free(pmids);
-		return ecServerOOM;
-	}
+
+	std::vector<eid_t> pmids(pmessage_ids->cbegin(), pmessage_ids->cend());
 	BOOL b_chginfo = (flags & FAST_COPY_MESSAGE_FLAG_SENDENTRYID) ? TRUE : false;
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
-	if (NULL == pctx) {
-		eid_array_free(pmids);
+	if (pctx == nullptr ||
+	    !pctx->make_messagelist(b_chginfo, std::move(pmids)))
 		return ecError;
-	}
-	if (!pctx->make_messagelist(b_chginfo, std::move(pmids))) {
-		pctx.reset();
-		eid_array_free(pmids);
-		return ecError;
-	}
 	auto hnd = plogmap->add_object_handle(logon_id, hin,
 	           {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 /*

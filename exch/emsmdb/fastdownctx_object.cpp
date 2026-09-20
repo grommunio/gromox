@@ -36,9 +36,9 @@ bool fxdown_flow_list::record_node(fxdown_flow_func func_id, const void *param)
 	return record_node(func_id, reinterpret_cast<uintptr_t>(param));
 }
 
-bool fxdown_flow_list::record_messagelist(const EID_ARRAY &mvec)
+bool fxdown_flow_list::record_messagelist(std::span<const eid_t> mvec)
 {
-	for (uint64_t mid : mvec)
+	for (auto mid : mvec)
 		if (!record_node(fxdown_flow_func::msg_id, mid))
 			return false;
 	return true;
@@ -46,13 +46,13 @@ bool fxdown_flow_list::record_messagelist(const EID_ARRAY &mvec)
 
 bool fxdown_flow_list::record_foldermessages(const folder_messages &fm)
 {	
-	if (fm.pfai_msglst != nullptr) {
+	if (fm.pfai_msglst.has_value()) {
 		if (!record_tag(MetaTagFXDelProp) ||
 		    !record_tag(PR_FOLDER_ASSOCIATED_CONTENTS) ||
 		    !record_messagelist(*fm.pfai_msglst))
 			return false;
 	}
-	if (fm.pnormal_msglst != nullptr) {
+	if (fm.pnormal_msglst.has_value()) {
 		if (!record_tag(MetaTagFXDelProp) ||
 		    !record_tag(PR_CONTAINER_CONTENTS) ||
 		    !record_messagelist(*fm.pnormal_msglst))
@@ -63,12 +63,9 @@ bool fxdown_flow_list::record_foldermessages(const folder_messages &fm)
 
 bool fxdown_flow_list::record_foldermessagesnodelprops(const folder_messages &fm)
 {
-	auto pfldmsgs = &fm;
-	if (pfldmsgs->pfai_msglst != nullptr &&
-	    !record_messagelist(*fm.pfai_msglst))
+	if (fm.pfai_msglst.has_value() && !record_messagelist(*fm.pfai_msglst))
 		return false;
-	if (pfldmsgs->pnormal_msglst != nullptr &&
-	    !record_messagelist(*fm.pnormal_msglst))
+	if (fm.pnormal_msglst.has_value() && !record_messagelist(*fm.pnormal_msglst))
 		return false;
 	return true;
 }
@@ -267,11 +264,11 @@ bool fastdownctx_object::make_topfolder(std::unique_ptr<folder_content> &&fc)
 	return TRUE;
 }
 
-BOOL fastdownctx_object::make_messagelist(BOOL chginfo, EID_ARRAY *msglst)
+bool fastdownctx_object::make_messagelist(bool chginfo, std::vector<eid_t> &&msglst)
 {
 	auto pctx = this;
 	
-	if (!flow_list.record_messagelist(*msglst))
+	if (!flow_list.record_messagelist(msglst))
 		return FALSE;
 	pctx->b_chginfo = chginfo;
 	pctx->pmsglst = std::move(msglst);
@@ -291,7 +288,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 	if (pctx->flow_list.size() == 0) {
 		if (!pctx->pstream->read_buffer(pbuff, plen, pb_last))
 			return FALSE;	
-		if (pctx->pmsglst == nullptr && pctx->pfldctnt == nullptr)
+		if (!pctx->pmsglst.has_value() && pctx->pfldctnt == nullptr)
 			pctx->progress_steps += *plen;
 		return TRUE;
 	}
@@ -338,7 +335,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 			 */
 			common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
 			common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE_EXTENDED);
-			if (pctx->pmsglst != nullptr) {
+			if (pctx->pmsglst.has_value()) {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
 			} else if (!pctx->b_chginfo) {
 				static constexpr proptag_t tags[] = {
@@ -404,8 +401,4 @@ fastdownctx_object::create(logon_object *plogon, uint8_t string_option) try
 }
 
 fastdownctx_object::~fastdownctx_object()
-{
-	auto pctx = this;
-	if (pctx->pmsglst != nullptr)
-		eid_array_free(pctx->pmsglst);
-}
+{}

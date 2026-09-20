@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <vector>
 #include <gromox/mapi_types.hpp>
 
@@ -22,7 +23,7 @@ struct fxdown_flow_list : public std::vector<fxdown_flow_node> {
 	bool record_node(fxdown_flow_func, uint64_t = 0);
 	bool record_node(fxdown_flow_func, const void *);
 	bool record_tag(uint32_t t) { return record_node(fxdown_flow_func::immed32, t); }
-	bool record_messagelist(const EID_ARRAY &);
+	bool record_messagelist(std::span<const eid_t>);
 	bool record_foldermessages(const folder_messages &);
 	bool record_foldermessagesnodelprops(const folder_messages &);
 	bool record_foldercontent(const folder_content &);
@@ -32,11 +33,6 @@ struct fxdown_flow_list : public std::vector<fxdown_flow_node> {
 };
 
 struct fastdownctx_object final {
-	protected:
-	fastdownctx_object() = default;
-	NOMOVE(fastdownctx_object);
-
-	public:
 	~fastdownctx_object();
 	static std::unique_ptr<fastdownctx_object> create(logon_object *, uint8_t string_option);
 	/* make_xxx function can be invoked only once on the object */
@@ -44,13 +40,13 @@ struct fastdownctx_object final {
 	bool make_attachmentcontent(const attachment_content &);
 	bool make_foldercontent(bool subfolders, std::unique_ptr<folder_content> &&);
 	bool make_topfolder(std::unique_ptr<folder_content> &&);
-	BOOL make_messagelist(BOOL chginfo, EID_ARRAY *msglst);
+	bool make_messagelist(bool chginfo, std::vector<eid_t> &&msglst);
 	bool make_state(ics_state &);
 	BOOL get_buffer(void *buf, uint16_t *len, BOOL *last, uint16_t *progress, uint16_t *total);
 
 	std::unique_ptr<fxstream_producer> pstream;
-	BOOL b_back = false, b_last = false, b_chginfo = false;
-	EID_ARRAY *pmsglst = nullptr;
+	bool b_back = false, b_last = false, b_chginfo = false;
+	std::optional<std::vector<eid_t>> pmsglst;
 	std::unique_ptr<FOLDER_CONTENT> pfldctnt;
 	fxdown_flow_list flow_list;
 	size_t total_steps = 0, progress_steps = 0, divisor = 1;
