@@ -57,7 +57,7 @@ template<typename... Args> int mbop_fprintf(FILE *f, Args &&...args)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
 #endif
-	return fprintf(f, args...);
+	return fprintf(f, std::forward<Args>(args)...);
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
