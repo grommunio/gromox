@@ -56,7 +56,7 @@ struct icsdownctx_object final {
 	BOOL b_started = false;
 	ics_flow_list flow_list;
 	uint64_t last_readcn = 0, last_changenum = 0;
-	PROGRESS_INFORMATION *pprogtotal = nullptr;
+	progress_information pprogtotal;
 	EID_ARRAY *pmessages = nullptr, *pdeleted_messages = nullptr;
 	EID_ARRAY *pnolonger_messages = nullptr, *pread_messages = nullptr;
 	EID_ARRAY *punread_messages = nullptr;

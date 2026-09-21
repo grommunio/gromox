@@ -94,11 +94,8 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	
 	if (pctx->sync_type != SYNC_TYPE_CONTENTS)
 		return FALSE;
-	if (pctx->sync_flags & SYNC_PROGRESS_MODE) {
-		pctx->pprogtotal = gromox::me_alloc<PROGRESS_INFORMATION>();
-		if (pctx->pprogtotal == nullptr)
-			return FALSE;
-	}
+	if (pctx->sync_flags & SYNC_PROGRESS_MODE)
+		pctx->pprogtotal = {};
 	auto pread     = (pctx->sync_flags & SYNC_READ_STATE) ? pctx->pstate->pread.get() : nullptr;
 	auto pseen_fai = (pctx->sync_flags & SYNC_ASSOCIATED) ? pctx->pstate->pseen_fai.get() : nullptr;
 	auto pseen     = (pctx->sync_flags & SYNC_NORMAL) ? pctx->pstate->pseen.get() : nullptr;
@@ -124,13 +121,13 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;
 	}
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE) {
-		pctx->pprogtotal->version = 0;
-		pctx->pprogtotal->padding1 = 0;
-		pctx->pprogtotal->fai_count = count_fai;
-		pctx->pprogtotal->fai_size = total_fai;
-		pctx->pprogtotal->normal_count = count_normal;
-		pctx->pprogtotal->padding2 = 0;
-		pctx->pprogtotal->normal_size = total_normal;
+		pctx->pprogtotal.version = 0;
+		pctx->pprogtotal.padding1 = 0;
+		pctx->pprogtotal.fai_count = count_fai;
+		pctx->pprogtotal.fai_size = total_fai;
+		pctx->pprogtotal.normal_count = count_normal;
+		pctx->pprogtotal.padding2 = 0;
+		pctx->pprogtotal.normal_size = total_normal;
 	}
 	if (!(pctx->sync_flags & SYNC_NO_DELETIONS)) {
 		pctx->pdeleted_messages = eid_array_dup(&deleted_messages);
@@ -975,7 +972,7 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 				return FALSE;
 			break;
 		case ics_flow_func::progress:
-			if (!pctx->pstream->write_progresstotal(*pctx->pprogtotal))
+			if (!pctx->pstream->write_progresstotal(pctx->pprogtotal))
 				return FALSE;
 			break;
 		case ics_flow_func::upd_msg_id:
@@ -1032,8 +1029,6 @@ BOOL icsdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 icsdownctx_object::~icsdownctx_object()
 {
 	auto pctx = this;
-	if (pctx->pprogtotal != nullptr)
-		free(pctx->pprogtotal);
 	if (pctx->pmessages != nullptr)
 		eid_array_free(pctx->pmessages);
 	if (pctx->pdeleted_messages != nullptr)
