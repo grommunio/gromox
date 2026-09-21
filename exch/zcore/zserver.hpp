@@ -60,6 +60,7 @@ extern USER_INFO_REF zs_query_session(GUID);
 extern ec_error_t zs_logon_token(const char *token, const char *rhost, GUID *ses);
 extern ec_error_t zs_logon_np(const char *username, const char *password, const char *rhost, uint32_t flags, GUID *ses);
 extern ec_error_t zs_getsendpermissions(GUID ses, BINARY store_entryid, uint32_t *permissions);
+extern ec_error_t zs_getdelegates(GUID ses, uint32_t mode, std::vector<std::string> *delegates);
 extern ec_error_t zs_logon(const char *username, const char *password, const char *rhost, uint32_t flags, GUID *ses);
 extern ec_error_t zs_checksession(GUID ses);
 extern ec_error_t zs_uinfo(const char *username, BINARY *entryid, std::string *dispname, std::string *x500dn, uint32_t *priv_bits);
