@@ -39,13 +39,6 @@ struct GX_EXPORT progress_message {
 };
 using PROGRESS_MESSAGE = progress_message;
 
-struct GX_EXPORT progress_information {
-	uint16_t version = 0, padding1 = 0, padding2 = 0;
-	uint32_t fai_count = 0, normal_count = 0;
-	uint64_t fai_size = 0, normal_size = 0;
-};
-using PROGRESS_INFORMATION = progress_information;
-
 struct GX_EXPORT message_content {
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
 	void set_rcpts_internal(TARRAY_SET *);

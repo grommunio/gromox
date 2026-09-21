@@ -5,6 +5,8 @@
 #include <vector>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
+#include "structs.hpp"
+using PROGRESS_INFORMATION = progress_information;
 
 struct folder_object;
 struct fxstream_producer;
