@@ -847,6 +847,28 @@ static ZEND_FUNCTION(mapi_getsendpermissions)
 	MAPI_G(hr) = ecSuccess;
 }
 
+/**
+ * Return the authenticated user's delegate list. Flags follows
+ * exmdb_server::read_delegates mode parameter.
+ */
+static ZEND_FUNCTION(mapi_getdelegates)
+{
+	zval *pzsession;
+	zend_long flags = 0;
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rl", &pzsession, &flags) == FAILURE)
+		return;
+	MAPI_RESOURCE *psession;
+	ZEND_FETCH_RESOURCE(psession, pzsession, le_mapi_session);
+	std::vector<std::string> delegates;
+	auto result = zclient_getdelegates(psession->hsession, flags, &delegates);
+	if (result != ecSuccess)
+		pthrow(result);
+	array_init(return_value);
+	for (const auto &delegate : delegates)
+		add_next_index_stringl(return_value, delegate.c_str(), delegate.size());
+	MAPI_G(hr) = ecSuccess;
+}
+
 static ZEND_FUNCTION(mapi_logon_token)
 {
 	ZCL_MEMORY;
@@ -4276,6 +4298,7 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_logon_ex)
 	F(mapi_logon_np)
 	F(mapi_getsendpermissions)
+	F(mapi_getdelegates)
 	F(mapi_getmsgstorestable)
 	F(mapi_openmsgstore)
 	F(mapi_openprofilesection)
