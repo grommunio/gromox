@@ -73,8 +73,12 @@ static std::string crypt_estar(const char *a, const char *b)
 #else
 static std::string crypt_estar(const char *a, const char *b)
 {
-	static std::once_flag of;
-	std::call_once(of, []() { mlog(LV_ERR, "Gromox is built without crypt_r support, thus cannot evaluate such password hashes"); });
+	static bool once = false;
+	if (!once) {
+		mlog(LV_ERR, "Gromox is built without crypt_r support, "
+			"thus cannot evaluate such password hashes");
+		once = true;
+	}
 	return "*0";
 }
 #endif
@@ -550,7 +554,7 @@ mysql_plugin::~mysql_plugin()
 int mysql_plugin::run()
 {
 	auto ret = gromox::global_workqueue.insert_task("sqlpool_reap",
-	           std::chrono::minutes(1), [](std::any &self1) {
+	           std::chrono::minutes(1), [](std::any &self1) STATIC_IN_CXX23 {
 	           	auto self = std::any_cast<mysql_plugin *>(self1);
 	           	auto ttl = self->g_parm.pool_idle_timeout;
 	           	if (ttl <= 0)

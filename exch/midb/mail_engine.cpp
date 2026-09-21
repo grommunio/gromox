@@ -158,7 +158,7 @@ struct IDB_ITEM {
 };
 
 struct idb_item_del {
-	void operator()(IDB_ITEM *);
+	STATIC_IN_CXX23 void operator()(IDB_ITEM *) CONST_BEFORE_CXX23;
 };
 
 }
@@ -2126,7 +2126,7 @@ static IDB_REF me_get_idb(const char *path, bool force_resync = false)
 	return IDB_REF(pidb);
 }
 
-void idb_item_del::operator()(IDB_ITEM *pidb)
+void idb_item_del::operator()(IDB_ITEM *pidb) CONST_BEFORE_CXX23
 {
 	pidb->last_time = time(nullptr);
 	pidb->giant_lock.unlock();

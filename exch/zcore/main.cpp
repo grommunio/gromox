@@ -231,7 +231,7 @@ int main(int argc, char **argv)
 	HXopt6_auto_result argp;
 	
 	exmdb_rpc_alloc = common_util_alloc;
-	exmdb_rpc_free = [](void *) {};
+	exmdb_rpc_free = [](void *) STATIC_IN_CXX23 {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt6(g_options_table, argc, argv, &argp,
 	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 	setup_signal_defaults();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) { g_hup_signalled = true; };
+	sact.sa_handler = [](int) STATIC_IN_CXX23 { g_hup_signalled = true; };
 	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;
@@ -342,7 +342,7 @@ int main(int argc, char **argv)
 	zserver_init(table_size, cache_interval, ping_interval);
 	exmdb_client.emplace(proxy_num);
 	exmdb_client->set_async_notif(zs_notification_proc);
-	auto cl_8 = HX::make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_8 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_client.reset(); });
 	/* parser after zserver: dependency on session table */
 	/* parser after service: dependency on mysql_adaptor */
 	rpc_parser_init(threads_num);
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start address book tree");
 		return EXIT_FAILURE;
 	}
-	auto cl_5 = HX::make_scope_exit([]() { ab_tree::AB.stop(); });
+	auto cl_5 = HX::make_scope_exit([]() STATIC_IN_CXX23 { ab_tree::AB.stop(); });
 	if (zserver_run() != 0) {
 		mlog(LV_ERR, "system: failed to run zserver");
 		return EXIT_FAILURE;
@@ -371,7 +371,7 @@ int main(int argc, char **argv)
 	 * join them before zserver_stop. exmdb_client itself must stay up
 	 * longer (cl_8): session object destructors still issue exmdb RPCs.
 	 */
-	auto cl_9 = HX::make_scope_exit([]() { exmdb_client->stop_async_listeners(); });
+	auto cl_9 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_client->stop_async_listeners(); });
 	/* Zserver session management must outlive the threads making use of them */
 	if (0 != rpc_parser_run()) {
 		mlog(LV_ERR, "system: failed to start ZRPC parser");

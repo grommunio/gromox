@@ -1671,7 +1671,7 @@ static pduproc_result pdu_processor_process_request(dcerpc_call *pcall)
 	
 	g_call_key = pcall;
 	g_stack_key = pstack_root;
-	auto cl_0 = HX::make_scope_exit([]() {
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 {
 		g_stack_key = nullptr;
 		g_call_key = nullptr;
 	});
@@ -2787,16 +2787,16 @@ static bool pdu_processor_register_interface(dcerpc_endpoint &ep,
 }
 
 static constexpr struct dlfuncs pdu_funcs = {
-	/* .get_config_path = */ []() {
+	/* .get_config_path = */ []() STATIC_IN_CXX23 {
 		auto r = g_config_file->get_value("config_file_path");
 		return r != nullptr ? r : PKGSYSCONFDIR;
 	},
-	/* .get_data_path = */ []() {
+	/* .get_data_path = */ []() STATIC_IN_CXX23 {
 		auto r = g_config_file->get_value("data_file_path");
 		return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
 	},
-	/* .get_context_num = */ []() { return g_connection_num; },
-	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
+	/* .get_context_num = */ []() STATIC_IN_CXX23 { return g_connection_num; },
+	/* .get_host_ID = */ []() STATIC_IN_CXX23 { return g_config_file->get_value("host_id"); },
 	/* .ndr_stack_alloc = */ pdu_processor_ndr_stack_alloc,
 	/* .rpc_new_stack = */ pdu_processor_rpc_new_stack,
 	/* .rpc_free_stack = */ pdu_processor_rpc_free_stack,
@@ -2806,7 +2806,7 @@ static constexpr struct dlfuncs pdu_funcs = {
 	pdu_processor_register_interface,
 	pdu_processor_get_binding_handle,
 	pdu_processor_get_rpc_info,
-	/* .rpc_is_bigendian = */ []() -> bool {
+	/* .rpc_is_bigendian = */ []() STATIC_IN_CXX23 -> bool {
 		auto c = pdu_processor_get_call();
 		return c != nullptr ? c->b_bigendian : g_bigendian;
 	},

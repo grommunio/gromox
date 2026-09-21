@@ -233,7 +233,7 @@ int main(int argc, char **argv)
 	HXopt6_auto_result argp;
 	
 	exmdb_rpc_alloc = cu_alloc_bytes;
-	exmdb_rpc_free = [](void *) {};
+	exmdb_rpc_free = [](void *) STATIC_IN_CXX23 {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt6(g_options_table, argc, argv, &argp,
 	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 	setup_signal_defaults();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) { g_hup_signalled = true; };
+	sact.sa_handler = [](int) STATIC_IN_CXX23 { g_hup_signalled = true; };
 	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;
@@ -301,7 +301,7 @@ int main(int argc, char **argv)
 	exmdb_client.emplace(proxy_num);
 	exmdb_client->set_async_notif(midb_notif_handler);
 	exmdb_client->set_async_rearm(midb_notif_rearm);
-	auto cl_6 = HX::make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_6 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_client.reset(); });
 	me_init(g_config_file->get_value("x500_org_name"), table_size);
 	auto cl_5 = HX::make_scope_exit(me_stop);
 

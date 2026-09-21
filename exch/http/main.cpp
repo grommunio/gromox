@@ -170,9 +170,9 @@ int main(int argc, char **argv)
 	setup_signal_defaults();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) { g_usr_signalled = true; };
+	sact.sa_handler = [](int) STATIC_IN_CXX23 { g_usr_signalled = true; };
 	sigaction(SIGUSR1, &sact, nullptr);
-	sact.sa_handler = [](int) { g_hup_signalled = true; };
+	sact.sa_handler = [](int) STATIC_IN_CXX23 { g_hup_signalled = true; };
 	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;

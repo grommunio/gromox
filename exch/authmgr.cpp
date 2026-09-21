@@ -50,9 +50,9 @@ namespace {
 struct sslfree2 : public sslfree {
 	using sslfree::operator();
 #if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
-	inline void operator()(OSSL_DECODER_CTX *x) const { OSSL_DECODER_CTX_free(x); }
+	STATIC_IN_CXX23 inline void operator()(OSSL_DECODER_CTX *x) CONST_BEFORE_CXX23 { OSSL_DECODER_CTX_free(x); }
 #endif
-	inline void operator()(BIO *x) const { BIO_free(x); }
+	STATIC_IN_CXX23 inline void operator()(BIO *x) CONST_BEFORE_CXX23 { BIO_free(x); }
 };
 }
 

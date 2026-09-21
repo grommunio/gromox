@@ -120,7 +120,7 @@ static bool stat4_eq(const struct stat &a, const struct stat &b)
 static void mod_cache_scanwork(std::any &)
 {
 	std::lock_guard hhold(g_hash_lock);
-	std::erase_if(g_cache_hash, [](const decltype(g_cache_hash)::value_type &iter) {
+	std::erase_if(g_cache_hash, [](const decltype(g_cache_hash)::value_type &iter) STATIC_IN_CXX23 {
 		struct stat sb;
 		return stat(iter.first.c_str(), &sb) != 0 ||
 		       !S_ISREG(sb.st_mode) || !stat4_eq(sb, iter.second->sb);
