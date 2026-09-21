@@ -65,7 +65,11 @@ namespace {
 
 struct dir_tree {
 	struct cmp {
-		inline bool operator()(const std::string &a, const std::string &b) const { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+		STATIC_IN_CXX23 inline bool operator()(const std::string &a,
+		    const std::string &b) CONST_BEFORE_CXX23
+		{
+			return strcasecmp(a.c_str(), b.c_str()) < 0;
+		}
 	};
 
 	dir_tree() = default;
@@ -171,7 +175,7 @@ static bool iseq_contains(const imap_seq_list &list,
 	unsigned int num, unsigned int max_uid)
 {
 	auto i = std::lower_bound(list.cbegin(), list.cend(), num,
-	         [](const range_node<uint32_t> &rn, uint32_t vv) { return rn.hi < vv; });
+	         [](const range_node<uint32_t> &rn, uint32_t vv) STATIC_IN_CXX23 { return rn.hi < vv; });
 	if (i == list.cend())
 		return false;
 	return i->lo <= num && num <= i->hi && num <= max_uid;
@@ -197,8 +201,8 @@ static bool icp_parse_fetch_args(mdi_list &plist, bool *pb_detail,
 		"BODY", "BODYSTRUCTURE", "ENVELOPE", "FLAGS", "INTERNALDATE",
 		"RFC822", "RFC822.HEADER", "RFC822.SIZE", "RFC822.TEXT", "UID",
 	};
-	auto contained_in = +[](const char *kw, std::span<const char * const> list) {
-		return std::binary_search(list.begin(), list.end(), kw, [](const char *a, const char *b) {
+	auto contained_in = +[](const char *kw, std::span<const char * const> list) STATIC_IN_CXX23 {
+		return std::binary_search(list.begin(), list.end(), kw, [](const char *a, const char *b) STATIC_IN_CXX23 {
 			return strcasecmp(a, b) < 0;
 		});
 	};
@@ -1828,9 +1832,9 @@ int content_array::refresh(imap_context &ctx, const std::string &folder,
 		}
 	}
 	n_recent = std::count_if(m_vec.cbegin(), m_vec.cend(),
-	           [](const MITEM &m) { return m.flag_bits & FLAG_RECENT; });
+	           [](const MITEM &m) STATIC_IN_CXX23 { return m.flag_bits & FLAG_RECENT; });
 	auto iter = ct_find_if(m_vec,
-	            [](const MITEM &m) { return !(m.flag_bits & FLAG_SEEN); });
+	            [](const MITEM &m) STATIC_IN_CXX23 { return !(m.flag_bits & FLAG_SEEN); });
 	firstunseen = iter == m_vec.end() ? 0 : iter - m_vec.cbegin() + 1;
 	return 0;
 }
@@ -2662,12 +2666,12 @@ int icp_append(std::span<std::string> argv, imap_context &ctx) try
 		auto bg = temp_argv.cbegin();
 		auto ed = temp_argv.cend();
 		flag_buff = flagbits_to_s(
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Seen") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Answered") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Flagged") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Draft") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Deleted") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "$Forwarded") == 0; }));
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Seen") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Answered") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Flagged") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Draft") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Deleted") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "$Forwarded") == 0; }));
 	}
 	std::string mid_string;
 	time_t tmp_time = time(nullptr);
@@ -3769,7 +3773,7 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 	    &b_data, argv[4].data(), temp_argv))
 		return 1800;
 	if (std::none_of(list_data.cbegin(), list_data.cend(),
-	    [](const std::string &e) { return strcasecmp(e.c_str(), "UID") == 0; }))
+	    [](const std::string &e) STATIC_IN_CXX23 { return strcasecmp(e.c_str(), "UID") == 0; }))
 		list_data.emplace_back("UID");
 	if (!b_data)
 		return icp_fetch_stream_begin(ctx, argv[0], true, b_detail,

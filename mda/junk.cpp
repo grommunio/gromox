@@ -21,8 +21,8 @@ using junk_rule_list = std::vector<junk_rule>;
 
 static inline void ws_trim_inplace(std::string &s)
 {
-	auto b = std::find_if_not(s.begin(), s.end(), [](unsigned char ch) { return HX_isspace(ch); });
-	auto e = std::find_if_not(s.rbegin(), s.rend(), [](unsigned char ch) { return HX_isspace(ch); }).base();
+	auto b = std::find_if_not(s.begin(), s.end(), HX_isspace);
+	auto e = std::find_if_not(s.rbegin(), s.rend(), HX_isspace).base();
 	if (b >= e)
 		return;
 	s.assign(b, e);

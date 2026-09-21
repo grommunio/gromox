@@ -324,7 +324,7 @@ int main(int argc, char **argv)
 	setup_signal_defaults();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) { g_hup_signalled = true; };
+	sact.sa_handler = [](int) STATIC_IN_CXX23 { g_hup_signalled = true; };
 	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;
@@ -489,9 +489,9 @@ int main(int argc, char **argv)
 	auto cleanup_14 = HX::make_scope_exit(contexts_pool_stop);
 
 	exmdb_rpc_alloc = imrpc_alloc;
-	exmdb_rpc_free = [](void *) {};
+	exmdb_rpc_free = [](void *) STATIC_IN_CXX23 {};
 	exmdb_client.emplace(UINT_MAX);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_client.reset(); });
 	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
 	    imrpc_build_env1, imrpc_free_env) != 0) {
 		mlog(LV_ERR, "Failed to start exmdb_client");

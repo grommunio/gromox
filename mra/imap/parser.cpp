@@ -1610,7 +1610,7 @@ static int imap_parser_dispatch_cmd2(std::span<std::string> argv,
 		{"STORE", icp_uid_store},
 	};
 
-	auto scmp = [](decltype(*proc) &p, const char *cmd) { return strcasecmp(p.first, cmd) < 0; };
+	auto scmp = [](decltype(*proc) &p, const char *cmd) STATIC_IN_CXX23 { return strcasecmp(p.first, cmd) < 0; };
 	if (strcasecmp(argv[1].c_str(), "UID") == 0) {
 		auto it = std::lower_bound(std::begin(proc_uid), std::end(proc_uid), argv[2].c_str(), scmp);
 		if (it != std::end(proc_uid) && strcasecmp(argv[2].c_str(), it->first) == 0)

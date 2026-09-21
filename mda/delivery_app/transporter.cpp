@@ -122,16 +122,16 @@ hook_plug_entity::hook_plug_entity(hook_plug_entity &&o) noexcept :
 }
 
 static constexpr struct dlfuncs mda_funcs = {
-	/* .get_config_path = */ []() {
+	/* .get_config_path = */ []() STATIC_IN_CXX23 {
 		auto r = g_config_file->get_value("config_file_path");
 		return r != nullptr ? r : PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR;
 	},
-	/* .get_data_path = */ []() {
+	/* .get_data_path = */ []() STATIC_IN_CXX23 {
 		auto r = g_config_file->get_value("data_file_path");
 		return r != nullptr ? r : PKGDATADIR "/delivery:" PKGDATADIR;
 	},
-	/* .get_context_num = */ []() { return g_threads_max + g_free_num; },
-	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
+	/* .get_context_num = */ []() STATIC_IN_CXX23 { return g_threads_max + g_free_num; },
+	/* .get_host_ID = */ []() STATIC_IN_CXX23 { return g_config_file->get_value("host_id"); },
 	/* .ndr_stack_alloc = */ nullptr,
 	/* .rpc_new_stack = */ nullptr,
 	/* .rpc_free_stack = */ nullptr,
@@ -141,9 +141,9 @@ static constexpr struct dlfuncs mda_funcs = {
 	{
 		/* .register_hook = */ transporter_register_hook,
 		/* .register_local = */ transporter_register_local,
-		/* .get_admin_mailbox = */ []() { return g_config_file->get_value("admin_mailbox"); },
-		/* .get_queue_path = */ []() { return g_config_file->get_value("dequeue_path"); },
-		/* .get_threads_num = */ []() { return g_threads_max; },
+		/* .get_admin_mailbox = */ []() STATIC_IN_CXX23 { return g_config_file->get_value("admin_mailbox"); },
+		/* .get_queue_path = */ []() STATIC_IN_CXX23 { return g_config_file->get_value("dequeue_path"); },
+		/* .get_threads_num = */ []() STATIC_IN_CXX23 { return g_threads_max; },
 		/* .get_ctx = */ transporter_get_context,
 		/* .put_ctx = */ transporter_insert_ctx,
 		/* .enqueue_ctx = */ transporter_enqueue_context,
@@ -334,7 +334,7 @@ static void *dxp_thrwork(void *arg)
 	while (!g_transporter_stop) {
 		{
 			std::unique_lock lk(g_workitem_mutex);
-			g_waken_cond.wait(lk, []() {
+			g_waken_cond.wait(lk, []() STATIC_IN_CXX23 {
 				return g_transporter_stop || g_queue_list.size() > 0 ||
 				       message_dequeue_avail_unlocked();
 			});
