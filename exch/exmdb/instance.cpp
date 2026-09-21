@@ -477,7 +477,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	}
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;

@@ -226,7 +226,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 		return FALSE;
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto table_id = pdb->next_table_id();
 	auto table_transact = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
@@ -766,7 +766,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 		}
 		b_search = pstmt.col_int64(0) != 0;
 	}
-	auto cl_1 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_1 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	uint32_t table_id = *ptable_id != 0 ? *ptable_id : db.next_table_id();
 	auto table_transact = gx_sql_begin(db.m_sqlite_eph, txn_mode::write);
 	if (!table_transact)
@@ -2098,7 +2098,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		return TRUE;
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	switch (ptnode->type) {
 	case table_type::hierarchy:
 		return query_hierarchy(*pdb, cpid, table_id,
@@ -2521,7 +2521,7 @@ BOOL exmdb_server::match_table(const char *dir, const char *username,
 	}
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	ppropvals->count = 0;
 	ppropvals->ppropval = NULL;
 	BOOL ret = TRUE;
@@ -2767,7 +2767,7 @@ BOOL exmdb_server::read_table_row(const char *dir, const char *username,
 	}
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_1 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_1 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	ppropvals->count = 0;
 	ppropvals->ppropval = nullptr;
 	if (ptnode->type == table_type::hierarchy)

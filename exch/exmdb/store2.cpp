@@ -41,7 +41,7 @@ using namespace gromox;
 namespace {
 
 struct sql_del {
-	void operator()(sqlite3 *x) const { sqlite3_close_v2(x); }
+	STATIC_IN_CXX23 void operator()(sqlite3 *x) CONST_BEFORE_CXX23 { sqlite3_close_v2(x); }
 };
 
 }

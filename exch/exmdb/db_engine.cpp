@@ -58,7 +58,7 @@ using GCV_ARRAY = LONGLONG_ARRAY;
 using namespace gromox;
 
 struct db_close {
-	void operator()(sqlite3 *x) const;
+	STATIC_IN_CXX23 void operator()(sqlite3 *x) CONST_BEFORE_CXX23;
 };
 
 namespace {
@@ -174,7 +174,7 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	 * workaround.
 	 */
 	g_autoupg_limiter->acquire();
-	auto cl_0 = HX::make_scope_exit([]() { g_autoupg_limiter->release(); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { g_autoupg_limiter->release(); });
 
 	auto c = is_pvt ? 'V' : 'B';
 	mlog(LV_NOTICE, "dbop_sqlite: %s: current schema E%c-%d; upgrading to E%c-%d.",
@@ -1048,7 +1048,7 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 static std::list<POPULATING_NODE>::iterator sf_pick_node()
 {
 	return std::find_if(g_populating_list.begin(), g_populating_list.end(),
-	       [](const POPULATING_NODE &q) {
+	       [](const POPULATING_NODE &q) STATIC_IN_CXX23 {
 	       	return std::none_of(g_populating_list_active.cbegin(),
 	       	       g_populating_list_active.cend(),
 	       	       [&](const POPULATING_NODE &a) {
@@ -4357,7 +4357,7 @@ void db_conn::cancel_batch_mode(db_base &dbase)
 	dbase.tables.b_batch = false;
 }
 
-void db_close::operator()(sqlite3 *x) const
+void db_close::operator()(sqlite3 *x) CONST_BEFORE_CXX23
 {
 	auto z = sqlite3_db_filename(x, nullptr);
 	if (z != nullptr)

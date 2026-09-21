@@ -92,13 +92,13 @@ static ec_error_t delete_impossible_mids(const idset &given,
 		std::vector<eid_t> &del;
 		ec_error_t error;
 	} p1 = {&given, del, ecSuccess};
-	const_cast<idset &>(given).enum_replist(&p1, [](void *param1, uint16_t replid) {
+	const_cast<idset &>(given).enum_replist(&p1, [](void *param1, uint16_t replid) STATIC_IN_CXX23 {
 		if (replid <= 1)
 			return;
 		auto p2 = static_cast<p1data *>(param1);
 		if (p2->error != ecSuccess)
 			return;
-		const_cast<idset *>(p2->given)->enum_repl(replid, p2, [](void *param2, uint64_t msgid) {
+		const_cast<idset *>(p2->given)->enum_repl(replid, p2, [](void *param2, uint64_t msgid) STATIC_IN_CXX23 {
 			auto p3 = static_cast<p1data *>(param2);
 			if (p3->error != ecSuccess)
 				return;
@@ -785,7 +785,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		if (!cu_get_proptags(MAPI_FOLDER, fid_val1,
 		    pdb->psqlite, tags))
 			return FALSE;
-		std::erase_if(tags, [](proptag_t t) {
+		std::erase_if(tags, [](proptag_t t)  STATIC_IN_CXX23 {
 			return t == PR_HAS_RULES || t == PidTagChangeNumber ||
 			       t == PR_LOCAL_COMMIT_TIME || t == PR_DELETED_COUNT_TOTAL ||
 			       t == PR_NORMAL_MESSAGE_SIZE || t == PR_LOCAL_COMMIT_TIME_MAX ||

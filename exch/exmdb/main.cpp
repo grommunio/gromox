@@ -155,7 +155,7 @@ bool SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		LINK_SVC_API(ppdata);
 		textmaps_init();
 		exmdb_rpc_alloc = common_util_alloc;
-		exmdb_rpc_free = [](void *) {};
+		exmdb_rpc_free = [](void *) STATIC_IN_CXX23 {};
 		auto pconfig = g_config_during_init = config_file_initd("exmdb_provider.cfg",
 		               get_config_path(), exmdb_cfg_defaults);
 		if (NULL == pconfig) {
