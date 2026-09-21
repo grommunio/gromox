@@ -1703,13 +1703,18 @@ tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement *xml) :
 	XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
 {}
 
+static inline bool strcmp_lt(const char *a, const char *b)
+{
+	return strcmp(a, b) < 0;
+}
+
 tSetFolderField::tSetFolderField(const tinyxml2::XMLElement *xml) :
 	tChangeDescription(xml)
 {
 	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
-		if (std::binary_search(folderTypes.begin(), folderTypes.end(), child->Name(),
-		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
+		if (std::binary_search(folderTypes.cbegin(), folderTypes.cend(),
+		    child->Name(), strcmp_lt)) {
 			folder = child;
 			break;
 		}
@@ -1722,8 +1727,8 @@ tSetItemField::tSetItemField(const tinyxml2::XMLElement *xml) :
 {
 	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
-		if (std::binary_search(itemTypes.begin(), itemTypes.end(), child->Name(),
-		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
+		if (std::binary_search(itemTypes.cbegin(), itemTypes.cend(),
+		    child->Name(), strcmp_lt)) {
 			item = child;
 			break;
 		}
