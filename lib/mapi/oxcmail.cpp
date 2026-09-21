@@ -2792,6 +2792,11 @@ static inline std::string enc_text(auto &&s)
 	return vmime::text(s, vmime::charsets::UTF_8).generate();
 }
 
+static bool set_folded(MIME *phead, const char *tag, const vmime::component &c)
+{
+	return phead->set_field(tag, vmail_fold(c, strlen(tag) + 2));
+}
+
 BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
     const addr_tags *ptags, const char *org, cvt_id2user id2user,
     std::string &username) try
@@ -3204,8 +3209,7 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
 		auto mb = vmime::make_shared<vmime::mailbox>("");
 		if (!oxcmail_export_address(pmsg, tags_sender, *mb))
 			return true; /* not present */
-		auto mg = mb->generate();
-		if (!phead->set_field("Sender", std::move(mg)))
+		if (!set_folded(phead, "Sender", *mb))
 			return FALSE;
 		return true;
 	}
@@ -3220,8 +3224,7 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
 		return true;
 	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (oxcmail_export_address(pmsg, tags_sender, *mb)) {
-		auto mg = mb->generate();
-		if (!phead->set_field("Sender", std::move(mg)))
+		if (!set_folded(phead, "Sender", *mb))
 			return false;
 	}
 	return true;
@@ -3245,17 +3248,14 @@ static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
 			if (!oxcmail_export_address(pmsg, tags_sender, *mb))
 				return true;
 		}
-		auto mg = mb->generate();
-		return phead->set_field("From", std::move(mg));
+		return set_folded(phead, "From", *mb);
 	}
 	if (oxcmail_export_address(pmsg, tags_sent_repr, *mb)) { {
-		auto mg = mb->generate();
-		if (!phead->set_field("From", std::move(mg)))
+		if (!set_folded(phead, "From", *mb))
 			return FALSE;
 	}
 	} else if (oxcmail_export_address(pmsg, tags_sender, *mb)) {
-		auto mg = mb->generate();
-		if (!phead->set_field("Sender", std::move(mg)))
+		if (!set_folded(phead, "Sender", *mb))
 			return FALSE;
 	}
 	return true;
@@ -3278,8 +3278,7 @@ static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
 		/* ok */;
 	else
 		return true; /* No recipient */
-	auto mg = mb->generate();
-	return phead->set_field("Return-Receipt-To", std::move(mg));
+	return set_folded(phead, "Return-Receipt-To", *mb);
 } catch (...) {
 	return false;
 }
@@ -3299,8 +3298,7 @@ static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
 		/* ok */;
 	else
 		return true; /* No recipient */
-	auto mg = mb->generate();
-	return phead->set_field("Disposition-Notification-To", std::move(mg));
+	return set_folded(phead, "Disposition-Notification-To", *mb);
 } catch (...) {
 	return false;
 }
@@ -3312,14 +3310,12 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 		return true;
 	auto mblist = vmime::make_shared<vmime::mailboxList>();
 	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_TO, *mblist)) {
-		auto mg = mblist->generate();
-		if (!phead->set_field("To", std::move(mg)))
+		if (!set_folded(phead, "To", *mblist))
 			return FALSE;
 	}
 	mblist = vmime::make_shared<vmime::mailboxList>();
 	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_CC, *mblist)) {
-		auto mg = mblist->generate();
-		if (!phead->set_field("Cc", std::move(mg)))
+		if (!set_folded(phead, "Cc", *mblist))
 			return FALSE;
 	}
 	if (class_match_prefix(pskeleton->pmessage_class, "IPM.Schedule.Meeting") == 0 ||
@@ -3335,8 +3331,7 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 	}
 	mblist = vmime::make_shared<vmime::mailboxList>();
 	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_BCC, *mblist)) {
-		auto mg = mblist->generate();
-		if (!phead->set_field("Bcc", std::move(mg)))
+		if (!set_folded(phead, "Bcc", *mblist))
 			return FALSE;
 	}
 	return true;
@@ -3363,8 +3358,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 		return false;
 	auto adrlist = vmime::make_shared<vmime::addressList>();
 	if (oxcmail_export_reply_to(pmsg, *adrlist)) {
-		auto mg = adrlist->generate();
-		if (!phead->set_field("Reply-To", std::move(mg)))
+		if (!set_folded(phead, "Reply-To", *adrlist))
 			return FALSE;
 	}
 

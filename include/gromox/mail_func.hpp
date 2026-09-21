@@ -6,6 +6,7 @@
 #include <vmime/generationContext.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/message.hpp>
+#include <vmime/text.hpp>
 #include <gromox/mapi_types.hpp>
 #define MIME_NAME_LEN 80U
 #define MIME_FIELD_LEN (64U * 1024)
@@ -66,5 +67,7 @@ extern GX_EXPORT vmime::parsingContext vmail_default_parsectx();
 extern GX_EXPORT vmime::generationContext vmail_default_genctx();
 extern GX_EXPORT std::string vmail_to_string(const vmime::message &);
 extern GX_EXPORT std::string vmail_to_string(const vmime::header &);
+extern GX_EXPORT std::string vmail_fold(const vmime::component &, size_t col, bool wrap_msgid = false);
+extern GX_EXPORT std::string vmail_fold_text(const vmime::text &, size_t col, size_t maxlen = vmime::lineLengthLimits::convenient, int flags = 0);
 
 }
