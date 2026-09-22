@@ -30,7 +30,7 @@ void bounce_audit_init(int audit_num, int audit_interval)
 
 static size_t bounce_audit_collect_entry(time_t current_time)
 {
-	return std::erase_if(g_audit_hash, [=](const auto &e) {
+	return std::erase_if(g_audit_hash, [=](const decltype(g_audit_hash)::value_type &e) {
 		return current_time - e.second >= g_audit_interval;
 	});
 }

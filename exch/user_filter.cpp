@@ -49,6 +49,9 @@ class user_filter {
 	size_t m_maxbans = 0, m_maxact = 0, m_maxtries = 0;
 	time_duration m_window{};
 	bool m_icase = true;
+
+	using activity_vt = decltype(m_activity)::value_type;
+	using banlist_vt = decltype(m_banlist)::value_type;
 };
 
 }
@@ -62,7 +65,7 @@ void user_filter::banlist_insert(std::string &&id, std::chrono::seconds bantime)
 	std::lock_guard hold(m_bl_lock);
 	if (m_banlist.size() >= m_maxbans)
 		/* Attempt to purge some outdated entries */
-		std::erase_if(m_banlist, [=](const auto &e) { return now >= e.second; });
+		std::erase_if(m_banlist, [=](const banlist_vt &e) { return now >= e.second; });
 	if (m_banlist.size() < m_maxbans)
 		m_banlist.emplace(std::move(id), expiry);
 }
@@ -117,7 +120,9 @@ bool user_filter::judge(std::string &&id)
 	activity act = {now, now, 1};
 	if (m_activity.size() >= m_maxact)
 		/* try pruning some outdated activity entries */
-		std::erase_if(m_activity, [&](const auto &entry) { return now - entry.second.last >= m_window; });
+		std::erase_if(m_activity, [&](const activity_vt &entry) {
+			return now - entry.second.last >= m_window;
+		});
 	if (m_activity.size() < m_maxact)
 		m_activity.emplace(std::move(id), std::move(act));
 	return true;

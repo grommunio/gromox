@@ -1484,7 +1484,7 @@ static constexpr std::pair<enum ol_busy_status, const char *> busy_status_names[
 static ol_busy_status lookup_busy_by_name(const char *s)
 {
 	auto it = std::find_if(std::cbegin(busy_status_names), std::cend(busy_status_names),
-	          [=](const auto &p) { return strcasecmp(p.second, s) == 0; });
+	          [=](const decltype(*busy_status_names) &p) { return strcasecmp(p.second, s) == 0; });
 	return it != std::cend(busy_status_names) ? it->first : olBusyUnspecified;
 }
 
@@ -2896,7 +2896,7 @@ static uint32_t oxcical_get_calendartype(const ical_line *piline)
 	if (pvalue == nullptr)
 		return CAL_DEFAULT;
 	auto it = std::find_if(std::cbegin(cal_scale_names), std::cend(cal_scale_names),
-	          [&](const auto &p) { return strcasecmp(pvalue, p.second) == 0; });
+	          [&](const decltype(*cal_scale_names) &p) { return strcasecmp(pvalue, p.second) == 0; });
 	return it != std::cend(cal_scale_names) ? it->first : CAL_DEFAULT;
 }
 
@@ -3786,7 +3786,7 @@ static void busystatus_to_line(ol_busy_status status, const char *key,
 {
 	auto it = std::lower_bound(std::cbegin(busy_status_names),
 	          std::cend(busy_status_names), status,
-	          [](const auto &p, ol_busy_status v) { return p.first < v; });
+	          [](const decltype(*busy_status_names) &p, ol_busy_status v) { return p.first < v; });
 	if (it != std::cend(busy_status_names) && it->first == status)
 		com->append_line(key, it->second);
 }
@@ -3984,7 +3984,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (b_recurrence) {
 			auto it = std::lower_bound(std::cbegin(cal_scale_names), std::cend(cal_scale_names),
 				  apprecurr.recur_pat.calendartype,
-				  [&](const auto &p, unsigned int v) { return p.first < v; });
+				  [&](const decltype(*cal_scale_names) &p, unsigned int v) { return p.first < v; });
 			str = it != std::cend(cal_scale_names) &&
 			      it->first == apprecurr.recur_pat.calendartype ?
 			      it->second : nullptr;

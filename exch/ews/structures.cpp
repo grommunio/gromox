@@ -952,7 +952,7 @@ decltype(sFolderSpec::distNameInfo) sFolderSpec::distNameInfo = {{
 sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 {
 	auto it = std::find_if(distNameInfo.begin(), distNameInfo.end(),
-	                       [&folder](const auto& elem){return folder.Id == elem.name;});
+	          [&](const DistNameInfo &elem) { return folder.Id == elem.name; });
 	if (it == distNameInfo.end())
 		throw EWSError::FolderNotFound(E3051(folder.Id));
 	folderId = eid_t(1, it->id);
@@ -3190,7 +3190,7 @@ tExtendedFieldURI::tExtendedFieldURI(proptype_t type, const PROPERTY_NAME &propn
 		PropertyName = propname.pname;
 
 	auto it = std::find_if(std::begin(propsetIds), std::end(propsetIds),
-	                       [&](const auto &propsetId) { return *propsetId == propname.guid; });
+	          [&](const GUID *propsetId) { return *propsetId == propname.guid; });
 	if (it != std::end(propsetIds))
 		DistinguishedPropertySetId = Enum::DistinguishedPropertySetType(static_cast<uint8_t>(std::distance(std::begin(propsetIds), it)));
 }

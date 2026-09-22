@@ -271,7 +271,7 @@ static bool ical_check_base64(ical_line *piline)
 {
 	const auto &y = piline->param_list;
 	return std::any_of(y.cbegin(), y.cend(),
-	       [](const auto &e) { return strcasecmp(e.name.c_str(), "ENCODING") == 0; });
+	       [](const ical_param &e) { return strcasecmp(e.name.c_str(), "ENCODING") == 0; });
 }
 
 static BOOL ical_retrieve_value(ical_line *piline, char *pvalue) try
@@ -536,7 +536,7 @@ ical_get_subval_list_internal(const std::vector<ical_value> *pvalue_list,
 {
 	auto end = pvalue_list->cend();
 	auto it  = std::find_if(pvalue_list->cbegin(), end,
-	           [=](const auto &e) { return strcasecmp(e.name.c_str(), name) == 0; });
+	           [=](const ical_value &e) { return strcasecmp(e.name.c_str(), name) == 0; });
 	if (it == end)
 		return nullptr;
 	return &it->subval_list;

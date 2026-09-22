@@ -13,7 +13,7 @@
 const char *ical_line::get_first_paramval(const char *name) const
 {
 	auto it = std::find_if(param_list.cbegin(), param_list.cend(),
-	          [=](const auto &e) { return strcasecmp(e.name.c_str(), name) == 0; });
+	          [=](const ical_param &e) { return strcasecmp(e.name.c_str(), name) == 0; });
 	if (it == param_list.cend())
 		return nullptr;
 	auto &piparam = *it;

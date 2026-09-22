@@ -160,7 +160,7 @@ static bool ie_get_propids(const ie_name_entry *map, size_t mapsize,
 	id.resize(pna->size());
 	for (size_t i = 0; i < pna->size(); ++i) {
 		auto row = std::find_if(&map[0], &map[mapsize],
-		           [&](const auto &r) -> bool { return r.pn == (*pna)[i]; });
+		           [&](const ie_name_entry &r) -> bool { return r.pn == (*pna)[i]; });
 		id[i] = row != &map[mapsize] ? row->proptag : 0;
 	}
 	return TRUE;

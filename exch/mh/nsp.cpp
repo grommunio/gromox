@@ -566,7 +566,7 @@ http_status MhNspPlugin::process(int context_id, const void *content,
 	ctx.ext_pull.init(content, length, cu_alloc1, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 	HX_strlower(ctx.request_value);
 	auto proc = std::lower_bound(cbegin(reqProcessors), cend(reqProcessors),
-	            ctx.request_value, [](const auto &a, const char *b) -> bool {
+	            ctx.request_value, [](const decltype(*reqProcessors) &a, const char *b) -> bool {
 	            	return strcmp(a.first, b) < 0;
 	            });
 	if (proc == cend(reqProcessors) || strcmp(proc->first, ctx.request_value) != 0)
