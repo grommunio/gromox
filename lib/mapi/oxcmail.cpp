@@ -2797,6 +2797,71 @@ static bool set_folded(MIME *phead, const char *tag, const vmime::component &c)
 	return phead->set_field(tag, vmail_fold(c, strlen(tag) + 2));
 }
 
+/* Printable ASCII that a reader cannot take for an encoded-word */
+static bool plain_ascii(std::string_view s)
+{
+	return s.find("=?") == s.npos && std::all_of(s.begin(), s.end(),
+	       [](unsigned char c) { return c >= 0x20 && c < 0x7f; });
+}
+
+static bool line_over_998(std::string_view v, size_t col)
+{
+	for (size_t e; (e = v.find("\r\n")) != v.npos; v.remove_prefix(e + 2), col = 0)
+		if (col + e > vmime::lineLengthLimits::max)
+			return true;
+	return col + v.size() > vmime::lineLengthLimits::max;
+}
+
+static bool set_text(MIME *phead, const char *tag, const std::string &s)
+{
+	vmime::text t(s, vmime::charsets::UTF_8);
+	if (!plain_ascii(s))
+		return set_folded(phead, tag, t);
+	/* fold at spaces only, rather than encode a long word */
+	vmime::text w;
+	w.appendWord(vmime::make_shared<vmime::word>(s, vmime::charsets::US_ASCII));
+	auto v = vmail_fold_text(w, strlen(tag) + 2,
+	         vmime::lineLengthLimits::convenient,
+	         vmime::text::FORCE_NO_ENCODING);
+	if (v.find("\\\r\n") != v.npos || line_over_998(v, strlen(tag) + 2))
+		return phead->set_field(tag, vmail_fold_text(t, strlen(tag) + 2,
+		       vmime::lineLengthLimits::convenient,
+		       vmime::text::FORCE_ENCODING));
+	return phead->set_field(tag, std::move(v));
+}
+
+/* Each keyword on its own, a comma inside an encoded-word separates nothing */
+static std::string fold_keywords(const STRING_ARRAY &sa)
+{
+	std::string out;
+	size_t col = strlen("Keywords: "), last = 0;
+	for (size_t i = 0; i < sa.count; ++i)
+		if (sa.ppstr[i] != nullptr)
+			last = i;
+	for (size_t i = 0; i < sa.count; ++i) {
+		if (sa.ppstr[i] == nullptr)
+			continue;
+		vmime::text t(sa.ppstr[i], vmime::charsets::UTF_8);
+		/* leave room for the comma that follows */
+		size_t max = vmime::lineLengthLimits::convenient - (i != last);
+		if (!out.empty()) {
+			auto kw = vmail_fold_text(t, col + 2, max);
+			if (kw.find('\n') == kw.npos && col + 2 + kw.size() <= max) {
+				out += ", " + kw;
+				col += 2 + kw.size();
+				continue;
+			}
+			out += ",\r\n ";
+			col = 1;
+		}
+		auto kw = vmail_fold_text(t, col, max);
+		auto nl = kw.rfind('\n');
+		col = nl == kw.npos ? col + kw.size() : kw.size() - nl - 1;
+		out += std::move(kw);
+	}
+	return out;
+}
+
 BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
     const addr_tags *ptags, const char *org, cvt_id2user id2user,
     std::string &username) try
@@ -3437,16 +3502,16 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	str  = pmsg->proplist.get<char>(PR_SUBJECT_PREFIX);
 	auto str1 = pmsg->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
 	if (str != nullptr && str1 != nullptr) {
-		if (!phead->set_field("Subject", enc_text(std::string(str) + str1)))
+		if (!set_text(phead, "Subject", std::string(str) + str1))
 			return FALSE;
 	} else {
 		str = pmsg->proplist.get<char>(PR_SUBJECT);
-		if (str != nullptr && !phead->set_field("Subject", enc_text(str)))
+		if (str != nullptr && !set_text(phead, "Subject", str))
 			return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PR_CONVERSATION_TOPIC);
 	if (str != nullptr && *str != '\0' &&
-	    !phead->set_field("Thread-Topic", enc_text(str)))
+	    !set_text(phead, "Thread-Topic", str))
 		return FALSE;
 	auto bv = pmsg->proplist.get<BINARY>(PR_CONVERSATION_INDEX);
 	if (bv != nullptr &&
@@ -3459,18 +3524,8 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	if (str != nullptr && !phead->set_field("References", str))
 		return FALSE;
 	auto sa = pmsg->proplist.get<STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids[l_keywords]));
-	if (sa != nullptr) {
-		ostr.clear();
-		for (size_t i = 0; i < sa->count; ++i) {
-			if (sa->ppstr[i] == nullptr)
-				continue;
-			if (!ostr.empty())
-				ostr += ", ";
-			ostr += enc_text(sa->ppstr[i]);
-		}
-		if (!phead->set_field("Keywords", std::move(ostr)))
-			return FALSE;
-	}
+	if (sa != nullptr && !phead->set_field("Keywords", fold_keywords(*sa)))
+		return FALSE;
 	str = pmsg->proplist.get<char>(PR_IN_REPLY_TO_ID);
 	if (str != nullptr && !phead->set_field("In-Reply-To", str))
 		return FALSE;
@@ -3836,7 +3891,7 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 	
 	auto str = pattachment->proplist.get<const char>(PR_DISPLAY_NAME);
 	if (str != nullptr && *str != '\0' &&
-	    !pmime->set_field("Content-Description", enc_text(str)))
+	    !set_text(pmime, "Content-Description", str))
 		return FALSE;
 	
 	auto pctime = pattachment->proplist.get<uint64_t>(PR_CREATION_TIME);
