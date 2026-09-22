@@ -816,7 +816,7 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 	}
 	set_context(context_id);
 	rpc_new_stack();
-	auto cleanup_0 = HX::make_scope_exit([&]() STATIC_IN_CXX23 { rpc_free_stack(); });
+	auto cleanup_0 = HX::make_scope_exit([&]() { rpc_free_stack(); });
 	auto allocator = [](size_t size) STATIC_IN_CXX23 { return ndr_stack_alloc(NDR_STACK_IN, size); };
 	ctx.ext_pull.init(content, static_cast<uint32_t>(length), allocator, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 	if (strcasecmp(ctx.request_value, "Connect") == 0)

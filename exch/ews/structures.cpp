@@ -2187,7 +2187,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"ToRecipients", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.toRecipients = xml; }, "Message"}},
 	{"TotalWork", {[](auto &&...args) STATIC_IN_CXX23 { convInt32(NtTaskEstimatedEffort, args...); }, "Task"}},
 	{"UID", {[](auto &&...args) STATIC_IN_CXX23 { convUID(args...); }}},
-	{"WeddingAnniversary", {[](auto &&...args) STATIC_IN_CXX23 STATIC_IN_CXX23 { convDate(PR_WEDDING_ANNIVERSARY, args...); }}},
+	{"WeddingAnniversary", {[](auto &&...args) STATIC_IN_CXX23 { convDate(PR_WEDDING_ANNIVERSARY, args...); }}},
 	{"YomiCompanyName", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtYomiCompanyName, args...); }}},
 }};
 
