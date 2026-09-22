@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <deque>
 #include <libHX/string.h>
+#include <vmime/contentTypeField.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/oxcmail.hpp>
@@ -1262,19 +1263,17 @@ struct pgp_block {
 }
 
 static int openpgp_roundtrip3(message_content &mc, oxcmail_converter &cvt,
-    const pgp_block &ct_info, const char *out_class, const std::string &payload)
+    const pgp_block &ct_info, const char *out_class)
 {
 	assert(mc.proplist.set(PR_MESSAGE_CLASS, ct_info.msg_class) == ecSuccess);
-	MAIL output;
-	assert(cvt.mapi_to_inet(mc, output));
-	auto head = output.get_head();
-	assert(head != nullptr && strcmp(head->content_type, ct_info.ct_type) == 0);
-	assert(head->get_field("Bcc") == nullptr);
-	std::string out_protocol;
-	assert(head->get_content_param("protocol", out_protocol));
-	assert(out_protocol == std::string("\"") + ct_info.ct_protocol + "\"");
-	assert(head->content_length == payload.size());
-	assert(memcmp(head->content_begin, payload.data(), payload.size()) == 0);
+	auto output = vmime::make_shared<vmime::message>();
+	assert(cvt.mapi_to_inet(mc, output) == ecSuccess);
+	auto &vhdr = *output->getHeader();
+	auto phf = vmime::dynamicCast<vmime::contentTypeField>(vhdr.ContentType());
+	assert(phf->getValue()->generate() == ct_info.ct_type);
+	assert(vhdr.findField("Bcc") == nullptr);
+	auto param = phf->findParameter("protocol");
+	assert(param != nullptr && param->getValue().generate() == ct_info.ct_protocol);
 	return EXIT_SUCCESS;
 }
 
@@ -1328,10 +1327,10 @@ static int openpgp_roundtrip2(const pgp_block &ct_info)
 	assert(bin != nullptr && bin->cb > payload.size());
 	assert(memcmp(bin->pc + bin->cb - payload.size(), payload.data(), payload.size()) == 0);
 
-	auto ret = openpgp_roundtrip3(*mc, cvt, ct_info, ct_info.msg_class, payload);
+	auto ret = openpgp_roundtrip3(*mc, cvt, ct_info, ct_info.msg_class);
 	if (ret != EXIT_SUCCESS)
 		return ret;
-	return openpgp_roundtrip3(*mc, cvt, ct_info, ct_info.infopath_class, payload);
+	return openpgp_roundtrip3(*mc, cvt, ct_info, ct_info.infopath_class);
 }
 
 static int openpgp_roundtrip()
