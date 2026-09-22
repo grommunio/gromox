@@ -439,14 +439,6 @@ ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props)
 	return props.set(PR_INTERNET_CPID, &cpid);
 }
 
-static bool att_is_mtg_exception(const attachment_content &at)
-{
-	if (at.pembedded == nullptr)
-		return false;
-	auto s = at.pembedded->proplist.get<const char>(PR_MESSAGE_CLASS);
-	return s != nullptr && strcasecmp(s, IPM_Appointment_Exception) == 0;
-}
-
 bool attachment_is_inline(const attachment_content &at)
 {
 	if (at.pembedded != nullptr)
@@ -527,42 +519,6 @@ bool parse_response_suppress(const char *raw, TPROPVAL_ARRAY &props) try
 	return false;
 }
 
-}
-
-/* For exporting MAPI Attachments as MIME parts */
-ec_error_t oxcmail_converter::export_attachments(const message_content &mc,
-    const mime_skeleton &skel, MAIL &m_mail, MIME *m_related, MIME *m_mixed,
-    unsigned int mail_depth)
-{
-	if (mc.children.pattachments == nullptr)
-		return ecSuccess;
-	for (const auto &at : *mc.children.pattachments) {
-		if (att_is_mtg_exception(at))
-			continue;
-		auto b_inline = attachment_is_inline(at);
-		auto new_part = m_mail.add_child(b_inline ? m_related : m_mixed, MIME_ADD_LAST);
-		if (new_part == nullptr)
-			return ecMAPIOOM;
-		if (!export_attachment(at, b_inline, skel, *new_part, mail_depth))
-			return ecError;
-	}
-	return ecSuccess;
-}
-
-/* Certain MAPI objects can only be expressed in MIME as TNEF */
-ec_error_t oxcmail_converter::export_tnef_body(const mime_skeleton &skel,
-    MAIL &mail, MIME *m_related, unsigned int mail_depth)
-{
-	if (skel.pattachments == nullptr)
-		return ecSuccess;
-	for (const auto &at : *skel.pattachments) {
-		auto new_part = mail.add_child(m_related, MIME_ADD_LAST);
-		if (new_part == nullptr)
-			return ecMAPIOOM;
-		if (!export_attachment(at, true, skel, *new_part, mail_depth))
-			return ecError;
-	}
-	return ecSuccess;
 }
 
 namespace gromox {
