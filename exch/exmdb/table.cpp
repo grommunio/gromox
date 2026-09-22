@@ -3307,7 +3307,8 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 		             " ON state_info (folder_id, table_flags, sorts)");
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK) {
 			sqlite3_close_v2(psqlite);
-			remove(state_path.c_str());
+			if (remove(state_path.c_str()) < 0 && errno != ENOENT)
+				mlog(LV_WARN, "W-5326: remove %s: %s", state_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 	} else if (errno == EEXIST) {
