@@ -515,11 +515,18 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 			bool ov_meeting  = (event.ei->overrideflags & ARO_MEETINGTYPE) ? event.ei->meetingtype & 1 : is_meeting;
 			bool ov_reminder = (event.ei->overrideflags & ARO_REMINDER)    ? event.ei->reminderset == 0 : is_reminder;
 			uint32_t ov_busy = (event.ei->overrideflags & ARO_BUSYSTATUS)  ? event.ei->busystatus : busy_type;
-			auto &ov_subj     = (event.ei->overrideflags & ARO_SUBJECT)     ? event.xe->subject : subject;
-			auto &ov_location = (event.ei->overrideflags & ARO_LOCATION)    ? event.xe->location : location;
+			std::optional<std::string> ov_subj, ov_loc;
+			if (event.ei->overrideflags & ARO_SUBJECT)
+				ov_subj = event.xe->subject;
+			else if (subject != nullptr)
+				ov_subj = subject;
+			if (event.ei->overrideflags & ARO_LOCATION)
+				ov_loc = event.xe->location;
+			else if (location != nullptr)
+				ov_loc = location;
 
 			fb_data.emplace_back(event.start_time, event.end_time,
-				uid_buf.data(), ov_subj, ov_location,
+				uid_buf.data(), std::move(ov_subj), std::move(ov_loc),
 				ov_busy, ov_meeting, true, true,
 				ov_reminder, is_private, detailed);
 		}
