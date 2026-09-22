@@ -84,7 +84,7 @@ struct LANGMAP_ITEM {
 size_t g_max_mail_len;
 unsigned int g_max_rcpt;
 unsigned int g_max_rule_len, g_max_extrule_len;
-bool zcore_backfill_transporthdr, zcore_use_vmime;
+bool zcore_backfill_transporthdr;
 static std::string g_smtp_url;
 char g_org_name[256];
 static thread_local const char *g_dir_key;
@@ -1260,48 +1260,20 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	cvt.use_format_override(*pmsgctnt);
 
 	ec_error_t ret = ecError;
-	if (zcore_use_vmime) {
-		auto vmail = vmime::make_shared<vmime::message>();
-		auto err = cvt.mapi_to_inet(*pmsgctnt, vmail);
-		if (err != ecSuccess)
-			return err;
-		vmail->getHeader()->getField("X-Mailer")->setValue(ZCORE_UA);
-		if (zcore_backfill_transporthdr) {
-			auto th = vmail_to_string(*vmail->getHeader());
-			TAGGED_PROPVAL tp  = {PR_TRANSPORT_MESSAGE_HEADERS_A, deconst(th.c_str())};
-			TPROPVAL_ARRAY tpa = {1, &tp};
-			if (msg->set_properties(&tpa) == ecSuccess)
-				/* Unclear if permitted to save (specs say nothing) */
-				msg->save();
-		}
-		ret = cu_send_vmail(vmail, g_smtp_url.c_str(), ev_from, rcpt_list);
-	} else {
-		MAIL imail;
-		if (!cvt.mapi_to_inet(*pmsgctnt, imail))
-			return ecError;
-
-		imail.set_header("X-Mailer", ZCORE_UA);
-		if (zcore_backfill_transporthdr) {
-			auto rmsg = cvt.inet_to_mapi(imail);
-			if (rmsg != nullptr) {
-				for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
-					auto th = rmsg->proplist.get<const char>(tag);
-					if (th == nullptr)
-						continue;
-					TAGGED_PROPVAL tp  = {tag, deconst(th)};
-					TPROPVAL_ARRAY tpa = {1, &tp};
-					auto err = msg->set_properties(&tpa);
-					if (err != ecSuccess)
-						break;
-					/* Unclear if permitted to save (specs say nothing) */
-					msg->save();
-					break;
-				}
-			}
-		}
-
-		ret = cu_send_mail(imail, g_smtp_url.c_str(), ev_from, rcpt_list);
+	auto vmail = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*pmsgctnt, vmail);
+	if (err != ecSuccess)
+		return err;
+	vmail->getHeader()->getField("X-Mailer")->setValue(ZCORE_UA);
+	if (zcore_backfill_transporthdr) {
+		auto th = vmail_to_string(*vmail->getHeader());
+		TAGGED_PROPVAL tp  = {PR_TRANSPORT_MESSAGE_HEADERS_A, deconst(th.c_str())};
+		TPROPVAL_ARRAY tpa = {1, &tp};
+		if (msg->set_properties(&tpa) == ecSuccess)
+			/* Unclear if permitted to save (specs say nothing) */
+			msg->save();
 	}
+	ret = cu_send_vmail(vmail, g_smtp_url.c_str(), ev_from, rcpt_list);
 	if (ret != ecSuccess) {
 		mlog(LV_ERR, "E-1194: failed to send %s via SMTP: %s",
 			log_id.c_str(), mapi_strerror(ret));
