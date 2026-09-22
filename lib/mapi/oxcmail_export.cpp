@@ -328,6 +328,39 @@ static AWUR ec_error_t omv_export_mdnflag(const message_content &mct,
 	return err;
 }
 
+static AWUR bool is_openpgp_typed(const vmime::header &vhdr)
+{
+	auto ctf = vhdr.findField<vmime::contentTypeField>(vmime::fields::CONTENT_TYPE);
+	if (ctf == nullptr)
+		return false;
+	auto protocol = ctf->findParameter("protocol");
+	if (protocol == nullptr)
+		return false;
+	auto media_type = *ctf->getValue<vmime::mediaType>();
+	auto prot_str = protocol->getValue().generate();
+	if (media_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "encrypted") &&
+	    prot_str == "application/pgp-encrypted")
+		return true;
+	if (media_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "signed") &&
+	    prot_str == "application/pgp-signature")
+		return true;
+	return false;
+}
+
+static AWUR bool openpgp_tocc_handling(const message_content &mct)
+{
+	auto atxlist = mct.children.pattachments;
+	if (atxlist == nullptr || atxlist->count != 1)
+		return false;
+	auto bin = atxlist->pplist[0]->proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
+	if (bin == nullptr)
+		return false;
+	vmime::message entity;
+	auto vpctx = vmail_default_parsectx();
+	entity.parse(vpctx, std::string(std::string_view(*bin)));
+	return is_openpgp_typed(*entity.getHeader());
+}
+
 static AWUR ec_error_t omv_export_tocc(const message_content &mct,
     const mime_skeleton &skel, vmime::header &vhead)
 {
@@ -349,6 +382,13 @@ static AWUR ec_error_t omv_export_tocc(const message_content &mct,
 
 	if (class_match_prefix(skel.pmessage_class, "IPM.Schedule.Meeting") == 0 ||
 	    class_match_prefix(skel.pmessage_class, "IPM.Task") == 0)
+		return ecSuccess;
+	/*
+	 * OpenPGP's inner entity omits Bcc (duh), and the outer SMTP headers must
+	 * omit it as well. Keep the MAPI recipient table for envelope delivery
+	 * and the sender's Sent Items; do not rely on the next MTA to strip it.
+	 */
+	if (skel.mail_type == oxcmail_type::xsigned && openpgp_tocc_handling(mct))
 		return ecSuccess;
 
 	mblist.removeAllMailboxes();
@@ -732,8 +772,10 @@ static AWUR ec_error_t omv_smime_signed_fold(vmime::bodyPart &vmsg,
 {
 	vmime::message dec_blob;
 	dec_blob.parse(blob);
-	if (dec_blob.getBody()->getContentType() !=
-	    vmime::mediaType(vmime::mediaTypes::MULTIPART, "signed")) {
+	auto ct_type   = dec_blob.getBody()->getContentType();
+	auto is_signed = ct_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "signed");
+	auto is_pgp    = is_openpgp_typed(*dec_blob.getHeader());
+	if (!is_signed && !is_pgp) {
 		omv_set_bodytext(vmsg, "[Message is not a valid OXOSMIME message. "
 			"The attachment object is not of type multipart/signed.]");
 		return ecSuccess;
