@@ -28,6 +28,7 @@
 #include <vmime/mailbox.hpp>
 #include <vmime/mailboxList.hpp>
 #include <vmime/messageId.hpp>
+#include <vmime/messageIdSequence.hpp>
 #include <vmime/stringContentHandler.hpp>
 #include <vmime/text.hpp>
 #include <vmime/utility/outputStreamStringAdapter.hpp>
@@ -2830,6 +2831,48 @@ static bool set_text(MIME *phead, const char *tag, const std::string &s)
 	return phead->set_field(tag, std::move(v));
 }
 
+static std::string squeeze_ws(std::string_view v)
+{
+	std::string out;
+	for (auto c : v) {
+		if (!HX_isspace(c))
+			out += c;
+		else if (!out.empty() && out.back() != ' ')
+			out += ' ';
+	}
+	if (!out.empty() && out.back() == ' ')
+		out.pop_back();
+	return out;
+}
+
+/* The first id stays on the header line, readers keep a fold before it */
+static bool set_msgids(MIME *phead, const char *tag, const char *raw)
+{
+	/* Some MUAs separate the ids by commas */
+	std::string v = raw;
+	for (size_t i = 0, depth = 0; i < v.size(); ++i)
+		if (v[i] == '<')
+			++depth;
+		else if (v[i] == '>' && depth > 0)
+			--depth;
+		else if (v[i] == ',' && depth == 0)
+			v[i] = ' ';
+	vmime::messageIdSequence ids;
+	ids.parse(v);
+	if (ids.isEmpty())
+		return phead->set_field(tag, raw);
+	auto out = vmail_fold(*ids.getMessageIdAt(0), 0);
+	ids.removeMessageId(0);
+	if (!ids.isEmpty()) {
+		auto rest = vmail_fold(ids, strlen(tag) + 3 + out.size(), true);
+		out += rest.starts_with("\r\n") ? rest : " " + rest;
+	}
+	/* vmime drops or makes up ids when the list is malformed */
+	if (squeeze_ws(out) != squeeze_ws(v))
+		return phead->set_field(tag, raw);
+	return phead->set_field(tag, std::move(out));
+}
+
 /* Each keyword on its own, a comma inside an encoded-word separates nothing */
 static std::string fold_keywords(const STRING_ARRAY &sa)
 {
@@ -3521,13 +3564,13 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	if (str != nullptr && !phead->set_field("Message-ID", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_INTERNET_REFERENCES);
-	if (str != nullptr && !phead->set_field("References", str))
+	if (str != nullptr && !set_msgids(phead, "References", str))
 		return FALSE;
 	auto sa = pmsg->proplist.get<STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids[l_keywords]));
 	if (sa != nullptr && !phead->set_field("Keywords", fold_keywords(*sa)))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_IN_REPLY_TO_ID);
-	if (str != nullptr && !phead->set_field("In-Reply-To", str))
+	if (str != nullptr && !set_msgids(phead, "In-Reply-To", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_LIST_HELP);
 	if (str != nullptr && !phead->set_field("List-Help", str))
