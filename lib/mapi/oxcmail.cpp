@@ -2668,7 +2668,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	}
 	if (!oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 		return imp_null;
-	if (NULL != mime_enum.pcalendar) {
+	if (pmsg1 != nullptr) {
 		if (!pmsg1->proplist.has(PR_MESSAGE_CLASS)) {
 			/* multiple calendar objects in attachment list */
 			if (pmsg1->children.pattachments != nullptr &&
