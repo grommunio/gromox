@@ -372,7 +372,7 @@ static ec_error_t logon_object_get_calculated_property(const logon_object *plogo
 {
 	void *pvalue;
 	static constexpr uint64_t tmp_ll = 0;
-	static constexpr uint8_t test_buff[256]{};
+	static constexpr char test_buff[256]{};
 	static constexpr BINARY test_bin = {std::size(test_buff), {deconst(test_buff)}};
 	
 	switch (proptag) {

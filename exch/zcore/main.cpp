@@ -128,6 +128,7 @@ static bool zcore_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 	if (gxcfg == nullptr)
 		return false;
 	zcore_backfill_transporthdr = gxcfg->get_ll("backfill_transport_headers");
+	zcore_use_vmime = gxcfg->get_ll("use_vmime");
 
 	if (pconfig == nullptr)
 		pconfig = config_file_prg(opt_config_file, "zcore.cfg",

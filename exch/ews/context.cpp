@@ -2592,9 +2592,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		} else if (upd_text != nullptr && upd_html == nullptr) {
 			std::string html;
 			if (plain_to_html(upd_text, html) == ecSuccess) {
-				auto bin = construct<BINARY>(BINARY{
-				           static_cast<uint32_t>(html.size()),
-				           {reinterpret_cast<uint8_t *>(cpystr(html))}});
+				auto bin = construct<BINARY>(BINARY{static_cast<uint32_t>(html.size()), {cpystr(html)}});
 				emb_props.push_back({PR_HTML, bin});
 			}
 		}
@@ -3094,8 +3092,8 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pb = ext_push.m_udata;
 
-	uint8_t *recurdata = alloc<uint8_t>(tmp_bin.cb);
-	memcpy(recurdata, tmp_bin.pv, tmp_bin.cb);
+	auto recurdata = alloc<char>(tmp_bin.cb);
+	memcpy(recurdata, tmp_bin.pc, tmp_bin.cb);
 
 	shape.write(NtRecurrenceType, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(rectype)});
 	shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY, construct<BINARY>(BINARY{tmp_bin.cb, {recurdata}})});
@@ -3755,7 +3753,7 @@ void EWSContext::cancelCalendarItem(const tItemId &refId, bool saveCopy) const
  */
 BINARY EWSContext::serialize(const XID& xid) const
 {
-	uint8_t* buff = alloc<uint8_t>(xid.size);
+	auto buff = alloc<char>(xid.size);
 	EXT_PUSH ext_push;
 	if (!ext_push.init(buff, xid.size, 0) ||
 	   ext_push.p_xid(xid) != pack_result::ok)
@@ -3834,8 +3832,8 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 		ckey = construct<BINARY>(serialize(xid));
 
 		auto pcltemp = mkPCL(xid);
-		uint8_t* pcldata = alloc<uint8_t>(pcltemp->cb);
-		memcpy(pcldata, pcltemp->pv, pcltemp->cb);
+		auto pcldata = alloc<char>(pcltemp->cb);
+		memcpy(pcldata, pcltemp->pc, pcltemp->cb);
 		pclbin = construct<BINARY>(BINARY{pcltemp->cb, {pcldata}});
 	}
 
@@ -4128,8 +4126,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		tmp_bin.pb = ext_push.m_udata;
 
 		// copy the data from ext_push, so it is not lost when ext_push goes out of scope
-		uint8_t* recurdata = alloc<uint8_t>(tmp_bin.cb);
-		memcpy(recurdata, tmp_bin.pv, tmp_bin.cb);
+		auto recurdata = alloc<char>(tmp_bin.cb);
+		memcpy(recurdata, tmp_bin.pc, tmp_bin.cb);
 
 		isrecurring = 1;
 		shape.write(NtRecurrenceType, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(rectype)});
@@ -4160,8 +4158,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			size_t len = buf->size();
 			if (len > UINT32_MAX)
 				throw InputError(E3293);
-			BINARY *temp_bin = construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
-			                   {reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
+			auto temp_bin = construct<BINARY>(BINARY{static_cast<uint32_t>(len), {deconst(buf->data())}});
 			shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
 				TAGGED_PROPVAL{PT_BINARY, temp_bin});
 			shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
@@ -4189,7 +4186,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				tzs.daylightdate = rule.daylightdate;
 				tzs.standardyear = tzs.standarddate.year;
 				tzs.daylightyear = tzs.daylightdate.year;
-				auto tzdata = alloc<uint8_t>(48);
+				auto tzdata = alloc<char>(48);
 				EXT_PUSH ep;
 				if (ep.init(tzdata, 48, 0) &&
 				    ep.p_tzstruct(tzs) == pack_result::ok)
@@ -4236,7 +4233,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		BINARY goid_bin;
 		auto uid = item.UID.value().c_str();
 		uid_to_goid(uid, goid_bin);
-		BINARY* goid = construct<BINARY>(BINARY{goid_bin.cb, {goid_bin.pb}});
+		auto goid = construct<BINARY>(BINARY{goid_bin.cb, {goid_bin.pc}});
 		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
 	} else if (!shape.writes(NtGlobalObjectId)) {
@@ -4252,14 +4249,14 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		    !ep.init(buf, sizeof(buf), 0) ||
 		    ep.p_goid(goid) != pack_result::ok)
 			throw EWSError::InternalServerError(E3375);
-		auto gb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_udata}});
+		auto gb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_cdata}});
 		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
 		goid.year = goid.month = goid.day = 0;
 		goid.creationtime = 0;
 		if (!ep.init(buf, sizeof(buf), 0) ||
 		    ep.p_goid(goid) != pack_result::ok)
 			throw EWSError::InternalServerError(E3376);
-		auto cb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_udata}});
+		auto cb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_cdata}});
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, cb});
 	}
 
@@ -4321,7 +4318,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
 		EXT_PUSH ext_push;
 		static constexpr size_t ABEIDBUFFSIZE = 1280;
-		uint8_t* abEidBuff = alloc<uint8_t>(ABEIDBUFFSIZE);
+		auto abEidBuff = alloc<char>(ABEIDBUFFSIZE);
 		if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
 		    ext_push.p_abk_eid(abEid) != pack_result::ok)
 			throw DispatchError(E3380);
@@ -4566,15 +4563,14 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 	if (item.MimeContent)
 		content = toContent(dir, *item.MimeContent);
 	if (item.Body) {
-		auto body = const_cast<char*>(item.Body.value().c_str());
+		auto body = item.Body.value().c_str();
 		if (item.Body.value().BodyType == Enum::Text) {
-			shape.write(TAGGED_PROPVAL{PR_BODY, body});
+			shape.write(TAGGED_PROPVAL{PR_BODY, deconst(body)});
 		} else if (item.Body.value().BodyType == Enum::HTML) {
 			size_t bodylen = strlen(body);
 			if (bodylen > UINT32_MAX)
 				throw InputError(E3256);
-			BINARY *html = construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(body)),
-			                                       {reinterpret_cast<uint8_t*>(body)}});
+			auto html = construct<BINARY>(BINARY{static_cast<uint32_t>(bodylen), {deconst(body)}});
 			shape.write(TAGGED_PROPVAL{PR_HTML, html});
 		}
 		shape.write(TAGGED_PROPVAL{PR_INTERNET_CPID, construct<uint32_t>(CP_UTF8)});
@@ -4753,7 +4749,7 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 	if (item.ConversationIndex) {
 		auto bin = construct<BINARY>(BINARY{
 		           static_cast<uint32_t>(item.ConversationIndex->size()),
-		           {reinterpret_cast<uint8_t *>(item.ConversationIndex->data())}});
+		           {item.ConversationIndex->data()}});
 		shape.write(TAGGED_PROPVAL{PR_CONVERSATION_INDEX, bin});
 	}
 	if (item.ConversationTopic)
@@ -4994,7 +4990,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_NAME, const_cast<char*>(m_auth_info.username)});
 
 	static constexpr size_t ABEIDBUFFSIZE = 1280;
-	uint8_t* abEidBuff = alloc<uint8_t>(ABEIDBUFFSIZE);
+	auto abEidBuff = alloc<char>(ABEIDBUFFSIZE);
 	EXT_PUSH wAbEid;
 	std::string essdn;
 	auto err = cvt_username_to_essdn(m_auth_info.username,
@@ -5022,8 +5018,8 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	if (currentPclContainer != nullptr && !pcl.deserialize(currentPclContainer))
 		throw DispatchError(E3087);
 	auto serializedPcl = mkPCL(changeKey, std::move(pcl));
-	BINARY* newPclContainer = construct<BINARY>(BINARY{serializedPcl->cb, {alloc<uint8_t>(serializedPcl->cb)}});
-	memcpy(newPclContainer->pv, serializedPcl->pv, serializedPcl->cb);
+	auto newPclContainer = construct<BINARY>(BINARY{serializedPcl->cb, {alloc<char>(serializedPcl->cb)}});
+	memcpy(newPclContainer->pc, serializedPcl->pc, newPclContainer->cb);
 	shape.write(TAGGED_PROPVAL{PR_PREDECESSOR_CHANGE_LIST, newPclContainer});
 
 	shape.write(TAGGED_PROPVAL{PidTagChangeNumber, construct<uint64_t>(changeNum)});

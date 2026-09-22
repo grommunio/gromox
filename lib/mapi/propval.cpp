@@ -512,7 +512,7 @@ std::strong_ordering SVREID::operator<=>(const SVREID &o) const
 	ret = memcmp(&flag, &o_flag, sizeof(uint8_t)) <=> 0;
 	if (ret != 0)
 		return ret;
-	uint8_t buf[20], o_buf[20];
+	char buf[20], o_buf[20];
 	BINARY bin{20, {buf}}, o_bin{20, {o_buf}};
 	if (flag) {
 		cpu_to_le64p(&buf[0], folder_id);
