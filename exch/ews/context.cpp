@@ -985,7 +985,7 @@ void EWSContext::enableEventStream(int timeout)
  */
 std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONTENT& content, const std::string& log_id) const
 {
-	MAIL mail;
+	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = alloc;
@@ -997,26 +997,10 @@ std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONT
 	                   	*name = getPropertyName(dir, id);
 	                   	return TRUE;
 	                   };
-	if (!cvt.mapi_to_inet(content, mail))
+	if (cvt.mapi_to_inet(content, mail) != ecSuccess)
 		throw EWSError::ItemCorrupt(E3072);
-
-	auto mail_len = mail.get_length();
-	if (mail_len < 0)
-		throw EWSError::ItemCorrupt(E3073);
-	STREAM tempStream;
-	if (!mail.serialize(&tempStream))
-		throw EWSError::ItemCorrupt(E3074);
-	std::string mime;
-	mime.reserve(mail_len);
-	char *data;
-	unsigned int size = STREAM_BLOCK_SIZE;
-	while ((data = static_cast<char *>(tempStream.get_read_buf(&size))) != nullptr) {
-		mime.insert(mime.end(), data, &data[size]);
-		size = STREAM_BLOCK_SIZE;
-	}
-	return mime;
+	return vmail_to_string(*mail);
 }
-
 
 /**
  * @brief     Get user or domain ID by name
@@ -3469,8 +3453,8 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 {
 	if (!content.children.prcpts)
 		throw EWSError::MissingRecipients(E3115);
-	MAIL mail;
 	std::string log_id;
+	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
 	cvt.get_propids = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) {
 	                  	*ids = getNamedPropIds(dir, *names);
@@ -3484,7 +3468,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 		log_id = dir + ":m" + std::to_string(log_msg_id);
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = alloc;
-	if (!cvt.mapi_to_inet(content, mail))
+	if (cvt.mapi_to_inet(content, mail) != ecSuccess)
 		throw EWSError::ItemCorrupt(E3116);
 
 	std::vector<std::string> rcpts;
@@ -3496,7 +3480,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 		normalize(addr);
 		rcpts.emplace_back(*addr.EmailAddress);
 	}
-	auto err = cu_send_mail(mail, m_plugin.smtp_url.c_str(),
+	auto err = cu_send_vmail(mail, m_plugin.smtp_url.c_str(),
 	           m_auth_info.username, rcpts);
 	if (err != ecSuccess)
 		throw DispatchError(E3117(err));
