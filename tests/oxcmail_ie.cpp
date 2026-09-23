@@ -1253,28 +1253,49 @@ static int vexport_calendar()
 	return EXIT_SUCCESS;
 }
 
+namespace {
+struct pgp_block {
+	char ct_type[20]{}, ct_protocol[28]{}, msg_class[36]{};
+	char gpgol_class[36]{}, infopath_class[51]{};
+	const char *payload = nullptr;
+};
+}
+
 static int openpgp_roundtrip()
 {
+	static constexpr pgp_block ct_base_info[] = {{
+		"multipart/signed", "application/pgp-signature",
+		"IPM.Note.SMIME.MultipartSigned",
+		"IPM.Note.GpgOL.MultipartSigned",
+		"IPM.Note.InfoPathForm.GpgOL.SMIME.MultipartSigned",
+
+		"--pgp-boundary\r\nContent-Type: application/pgp-encrypted\r\n\r\nVersion: 1\r\n"
+		"--pgp-boundary\r\nContent-Type: application/octet-stream\r\n\r\n"
+		"-----BEGIN PGP MESSAGE-----\r\n\r\nopaque-ciphertext\r\n-----END PGP MESSAGE-----\r\n"
+		"--pgp-boundary--\r\n",
+	},
+	{
+		"multipart/encrypted", "application/pgp-encrypted",
+		"IPM.Note.GpgOL.MultipartEncrypted",
+		"IPM.Note.GpgOL.MultipartEncrypted",
+		"IPM.Note.InfoPathForm.GpgOLS.SMIME.MultipartSigned",
+
+		"--pgp-boundary\r\nContent-Type: text/plain;\r\n\tcharset=utf-8\r\n"
+		"Content-Transfer-Encoding: quoted-printable\r\n\r\n"
+		"First line=20\r\nSecond =C3=A4 line\r\n\r\n"
+		"--pgp-boundary\r\nContent-Type: application/pgp-signature\r\n\r\n"
+		"-----BEGIN PGP SIGNATURE-----\r\n\r\nopaque-signature\r\n-----END PGP SIGNATURE-----\r\n"
+		"--pgp-boundary--\r\n",
+	}};
 	/* Packet contents are opaque here. Verify byte preservation, MIME
 	 * mapping and GpgOL's transport classes independently of a crypto engine. */
 	for (const bool encrypted : {false, true}) {
-		const char *type = encrypted ? "multipart/encrypted" : "multipart/signed";
-		const char *protocol = encrypted ? "application/pgp-encrypted" : "application/pgp-signature";
-		const char *mclass = encrypted ? "IPM.Note.GpgOL.MultipartEncrypted" : "IPM.Note.SMIME.MultipartSigned";
-		const std::string payload = encrypted ?
-			"--pgp-boundary\r\nContent-Type: application/pgp-encrypted\r\n\r\nVersion: 1\r\n"
-			"--pgp-boundary\r\nContent-Type: application/octet-stream\r\n\r\n"
-			"-----BEGIN PGP MESSAGE-----\r\n\r\nopaque-ciphertext\r\n-----END PGP MESSAGE-----\r\n"
-			"--pgp-boundary--\r\n" :
-			"--pgp-boundary\r\nContent-Type: text/plain;\r\n\tcharset=utf-8\r\n"
-			"Content-Transfer-Encoding: quoted-printable\r\n\r\n"
-			"First line=20\r\nSecond =C3=A4 line\r\n\r\n"
-			"--pgp-boundary\r\nContent-Type: application/pgp-signature\r\n\r\n"
-			"-----BEGIN PGP SIGNATURE-----\r\n\r\nopaque-signature\r\n-----END PGP SIGNATURE-----\r\n"
-			"--pgp-boundary--\r\n";
+		const pgp_block &ct_info = ct_base_info[encrypted];
+		const std::string payload = ct_info.payload;
 		auto data = std::string("From: sender@example.org\r\nTo: recipient@example.org\r\nBcc: hidden@example.org\r\n"
-			"Subject: OpenPGP transport\r\nMIME-Version: 1.0\r\nContent-Type: ") + type +
-			"; protocol=\"" + protocol + "\"; boundary=\"pgp-boundary\"\r\n\r\n" + payload;
+			"Subject: OpenPGP transport\r\nMIME-Version: 1.0\r\nContent-Type: ") +
+			ct_info.ct_type + "; protocol=\"" + ct_info.ct_protocol +
+			"\"; boundary=\"pgp-boundary\"\r\n\r\n" + payload;
 		MAIL source;
 		assert(source.refonly_parse(data.data(), data.size()));
 		oxcmail_converter cvt;
@@ -1293,14 +1314,13 @@ static int openpgp_roundtrip()
 		auto mc = cvt.inet_to_mapi(source);
 		assert(mc != nullptr);
 		auto actual_class = mc->proplist.get<const char>(PR_MESSAGE_CLASS);
-		assert(actual_class != nullptr && strcmp(actual_class, mclass) == 0);
+		assert(actual_class != nullptr && strcmp(actual_class, ct_info.msg_class) == 0);
 		bool found_override = false;
 		for (const auto &[tag, name] : static_namedprop_map.fwd) {
 			if (name.kind != MNID_STRING || name.name != "GpgOL Msg Class")
 				continue;
 			auto value = mc->proplist.get<const char>(CHANGE_PROP_TYPE(tag, PT_STRING8));
-			assert(value != nullptr && strcmp(value, encrypted ?
-				"IPM.Note.GpgOL.MultipartEncrypted" : "IPM.Note.GpgOL.MultipartSigned") == 0);
+			assert(value != nullptr && strcmp(value, ct_info.gpgol_class) == 0);
 			found_override = true;
 		}
 		assert(found_override);
@@ -1314,22 +1334,20 @@ static int openpgp_roundtrip()
 		assert(atl != nullptr && atl->count == 1);
 		auto &aprops = atl->pplist[0]->proplist;
 		auto tag = aprops.get<const char>(PR_ATTACH_MIME_TAG);
-		assert(tag != nullptr && strcmp(tag, type) == 0);
+		assert(tag != nullptr && strcmp(tag, ct_info.ct_type) == 0);
 		auto bin = aprops.get<const BINARY>(PR_ATTACH_DATA_BIN);
 		assert(bin != nullptr && bin->cb > payload.size());
 		assert(memcmp(bin->pc + bin->cb - payload.size(), payload.data(), payload.size()) == 0);
-		for (const char *out_class : {mclass,
-		     encrypted ? "IPM.Note.InfoPathForm.GpgOL.SMIME.MultipartSigned" :
-		                 "IPM.Note.InfoPathForm.GpgOLS.SMIME.MultipartSigned"}) {
+		for (const char *out_class : {ct_info.msg_class, ct_info.infopath_class}) {
 			assert(mc->proplist.set(PR_MESSAGE_CLASS, out_class) == ecSuccess);
 			MAIL output;
 			assert(cvt.mapi_to_inet(*mc, output));
 			auto head = output.get_head();
-			assert(head != nullptr && strcmp(head->content_type, type) == 0);
+			assert(head != nullptr && strcmp(head->content_type, ct_info.ct_type) == 0);
 			assert(head->get_field("Bcc") == nullptr);
 			std::string out_protocol;
 			assert(head->get_content_param("protocol", out_protocol));
-			assert(out_protocol == std::string("\"") + protocol + "\"");
+			assert(out_protocol == std::string("\"") + ct_info.ct_protocol + "\"");
 			assert(head->content_length == payload.size());
 			assert(memcmp(head->content_begin, payload.data(), payload.size()) == 0);
 		}
