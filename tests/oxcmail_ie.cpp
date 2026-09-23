@@ -1261,9 +1261,87 @@ struct pgp_block {
 };
 }
 
+static int openpgp_roundtrip3(message_content &mc, oxcmail_converter &cvt,
+    const pgp_block &ct_info, const char *out_class, const std::string &payload)
+{
+	assert(mc.proplist.set(PR_MESSAGE_CLASS, ct_info.msg_class) == ecSuccess);
+	MAIL output;
+	assert(cvt.mapi_to_inet(mc, output));
+	auto head = output.get_head();
+	assert(head != nullptr && strcmp(head->content_type, ct_info.ct_type) == 0);
+	assert(head->get_field("Bcc") == nullptr);
+	std::string out_protocol;
+	assert(head->get_content_param("protocol", out_protocol));
+	assert(out_protocol == std::string("\"") + ct_info.ct_protocol + "\"");
+	assert(head->content_length == payload.size());
+	assert(memcmp(head->content_begin, payload.data(), payload.size()) == 0);
+	return EXIT_SUCCESS;
+}
+
+static int openpgp_roundtrip2(const pgp_block &ct_info)
+{
+	const std::string payload = ct_info.payload;
+	auto data = std::string("From: sender@example.org\r\nTo: recipient@example.org\r\nBcc: hidden@example.org\r\n"
+		"Subject: OpenPGP transport\r\nMIME-Version: 1.0\r\nContent-Type: ") +
+		ct_info.ct_type + "; protocol=\"" + ct_info.ct_protocol +
+		"\"; boundary=\"pgp-boundary\"\r\n\r\n" + payload;
+	MAIL source;
+	assert(source.refonly_parse(data.data(), data.size()));
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.get_propname = [](uint16_t id, PROPERTY_NAME **out) STATIC_IN_CXX23 -> BOOL {
+		auto entry = static_namedprop_map.fwd.find(PROP_TAG(PT_UNSPECIFIED, id));
+		if (entry == static_namedprop_map.fwd.end())
+			return false;
+		*out = static_cast<PROPERTY_NAME *>(g_alloc(sizeof(PROPERTY_NAME)));
+		if (*out == nullptr)
+			return false;
+		**out = static_cast<PROPERTY_NAME>(entry->second);
+		return true;
+	};
+	auto mc = cvt.inet_to_mapi(source);
+	assert(mc != nullptr);
+	auto actual_class = mc->proplist.get<const char>(PR_MESSAGE_CLASS);
+	assert(actual_class != nullptr && strcmp(actual_class, ct_info.msg_class) == 0);
+	bool found_override = false;
+	for (const auto &[tag, name] : static_namedprop_map.fwd) {
+		if (name.kind != MNID_STRING || name.name != "GpgOL Msg Class")
+			continue;
+		auto value = mc->proplist.get<const char>(CHANGE_PROP_TYPE(tag, PT_STRING8));
+		assert(value != nullptr && strcmp(value, ct_info.gpgol_class) == 0);
+		found_override = true;
+	}
+	assert(found_override);
+	bool has_bcc = false;
+	for (const auto &recipient : *mc->children.prcpts) {
+		auto type = recipient.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		has_bcc |= type != nullptr && *type == MAPI_BCC;
+	}
+	assert(has_bcc);
+	auto atl = mc->children.pattachments;
+	assert(atl != nullptr && atl->count == 1);
+	auto &aprops = atl->pplist[0]->proplist;
+	auto tag = aprops.get<const char>(PR_ATTACH_MIME_TAG);
+	assert(tag != nullptr && strcmp(tag, ct_info.ct_type) == 0);
+	auto bin = aprops.get<const BINARY>(PR_ATTACH_DATA_BIN);
+	assert(bin != nullptr && bin->cb > payload.size());
+	assert(memcmp(bin->pc + bin->cb - payload.size(), payload.data(), payload.size()) == 0);
+
+	auto ret = openpgp_roundtrip3(*mc, cvt, ct_info, ct_info.msg_class, payload);
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	return openpgp_roundtrip3(*mc, cvt, ct_info, ct_info.infopath_class, payload);
+}
+
 static int openpgp_roundtrip()
 {
-	static constexpr pgp_block ct_base_info[] = {{
+	/*
+	 * Packet contents are opaque here. Verify byte preservation, MIME
+	 * mapping and GpgOL's transport classes independently of a crypto
+	 * engine.
+	 */
+	static constexpr pgp_block info[] = {{
 		"multipart/signed", "application/pgp-signature",
 		"IPM.Note.SMIME.MultipartSigned",
 		"IPM.Note.GpgOL.MultipartSigned",
@@ -1287,72 +1365,8 @@ static int openpgp_roundtrip()
 		"-----BEGIN PGP SIGNATURE-----\r\n\r\nopaque-signature\r\n-----END PGP SIGNATURE-----\r\n"
 		"--pgp-boundary--\r\n",
 	}};
-	/* Packet contents are opaque here. Verify byte preservation, MIME
-	 * mapping and GpgOL's transport classes independently of a crypto engine. */
-	for (const bool encrypted : {false, true}) {
-		const pgp_block &ct_info = ct_base_info[encrypted];
-		const std::string payload = ct_info.payload;
-		auto data = std::string("From: sender@example.org\r\nTo: recipient@example.org\r\nBcc: hidden@example.org\r\n"
-			"Subject: OpenPGP transport\r\nMIME-Version: 1.0\r\nContent-Type: ") +
-			ct_info.ct_type + "; protocol=\"" + ct_info.ct_protocol +
-			"\"; boundary=\"pgp-boundary\"\r\n\r\n" + payload;
-		MAIL source;
-		assert(source.refonly_parse(data.data(), data.size()));
-		oxcmail_converter cvt;
-		cvt.alloc = g_alloc;
-		cvt.get_propids = ee_get_propids;
-		cvt.get_propname = [](uint16_t id, PROPERTY_NAME **out) STATIC_IN_CXX23 -> BOOL {
-			auto entry = static_namedprop_map.fwd.find(PROP_TAG(PT_UNSPECIFIED, id));
-			if (entry == static_namedprop_map.fwd.end())
-				return false;
-			*out = static_cast<PROPERTY_NAME *>(g_alloc(sizeof(PROPERTY_NAME)));
-			if (*out == nullptr)
-				return false;
-			**out = static_cast<PROPERTY_NAME>(entry->second);
-			return true;
-		};
-		auto mc = cvt.inet_to_mapi(source);
-		assert(mc != nullptr);
-		auto actual_class = mc->proplist.get<const char>(PR_MESSAGE_CLASS);
-		assert(actual_class != nullptr && strcmp(actual_class, ct_info.msg_class) == 0);
-		bool found_override = false;
-		for (const auto &[tag, name] : static_namedprop_map.fwd) {
-			if (name.kind != MNID_STRING || name.name != "GpgOL Msg Class")
-				continue;
-			auto value = mc->proplist.get<const char>(CHANGE_PROP_TYPE(tag, PT_STRING8));
-			assert(value != nullptr && strcmp(value, ct_info.gpgol_class) == 0);
-			found_override = true;
-		}
-		assert(found_override);
-		bool has_bcc = false;
-		for (const auto &recipient : *mc->children.prcpts) {
-			auto type = recipient.get<const uint32_t>(PR_RECIPIENT_TYPE);
-			has_bcc |= type != nullptr && *type == MAPI_BCC;
-		}
-		assert(has_bcc);
-		auto atl = mc->children.pattachments;
-		assert(atl != nullptr && atl->count == 1);
-		auto &aprops = atl->pplist[0]->proplist;
-		auto tag = aprops.get<const char>(PR_ATTACH_MIME_TAG);
-		assert(tag != nullptr && strcmp(tag, ct_info.ct_type) == 0);
-		auto bin = aprops.get<const BINARY>(PR_ATTACH_DATA_BIN);
-		assert(bin != nullptr && bin->cb > payload.size());
-		assert(memcmp(bin->pc + bin->cb - payload.size(), payload.data(), payload.size()) == 0);
-		for (const char *out_class : {ct_info.msg_class, ct_info.infopath_class}) {
-			assert(mc->proplist.set(PR_MESSAGE_CLASS, out_class) == ecSuccess);
-			MAIL output;
-			assert(cvt.mapi_to_inet(*mc, output));
-			auto head = output.get_head();
-			assert(head != nullptr && strcmp(head->content_type, ct_info.ct_type) == 0);
-			assert(head->get_field("Bcc") == nullptr);
-			std::string out_protocol;
-			assert(head->get_content_param("protocol", out_protocol));
-			assert(out_protocol == std::string("\"") + ct_info.ct_protocol + "\"");
-			assert(head->content_length == payload.size());
-			assert(memcmp(head->content_begin, payload.data(), payload.size()) == 0);
-		}
-	}
-	return EXIT_SUCCESS;
+	auto ret = openpgp_roundtrip2(info[0]);
+	return ret == EXIT_SUCCESS ? openpgp_roundtrip2(info[1]) : ret;
 }
 
 static int openpgp_legacy_layout()
