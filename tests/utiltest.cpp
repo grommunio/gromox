@@ -400,7 +400,7 @@ static void t_respool()
 
 static int t_cmp_binary()
 {
-	uint8_t x[] = "X", xy[] = "XY";
+	char x[] = "X", xy[] = "XY";
 	BINARY p = {1, {x}}, q = {2, {xy}};
 	assert(p < q);
 	assert(q > p);

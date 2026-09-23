@@ -120,3 +120,4 @@ function mapi_linkmessages(resource $ses, string $srcheid, array $msgeids) : mix
 function mapi_ianatz_to_tzdef(string $tz) : string|bool {}
 function mapi_strerror(int $code) : string {}
 function mapi_getsendpermissions(resource $session, string $entryid) : int|bool {}
+function mapi_getdelegates(resource $session, int $mode) : array|bool {}

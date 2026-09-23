@@ -108,5 +108,6 @@ ZCIDL(getuserfreebusy, (GUID hsession, BINARY entryid, time_t starttime, time_t 
 ZCIDL(getuserfreebusyical, (GUID hsession, BINARY entryid, time_t starttime, time_t endtime, IDLOUT BINARY *ical_bin))
 ZCIDL(logon_np, (const char *username, const char *password, const char *rhost, uint32_t flags, IDLOUT GUID *hsession))
 ZCIDL(getsendpermissions, (GUID hsession, BINARY entryid, IDLOUT uint32_t *permissions))
+ZCIDL(getdelegates, (GUID hsession, uint32_t mode, IDLOUT std::vector<std::string> *delegates))
 #undef ZCIDL
 #undef IDLOUT

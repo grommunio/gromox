@@ -63,7 +63,7 @@ std::shared_ptr<ics_state> ics_state::create_shared(uint8_t type) try
 BINARY *ics_state::serialize()
 {
 	EXT_PUSH ext_push;
-	static constexpr uint8_t bin_buff[8]{};
+	static constexpr char bin_buff[8]{};
 	static constexpr BINARY fake_bin = {std::size(bin_buff), {deconst(bin_buff)}};
 	auto pstate = this;
 	

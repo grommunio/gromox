@@ -714,6 +714,19 @@ ec_error_t zs_getsendpermissions(GUID hsession, BINARY entryid,
 	return ecSuccess;
 }
 
+ec_error_t zs_getdelegates(GUID hsession, uint32_t mode,
+    std::vector<std::string> *delegates)
+{
+	if (mode > 1)
+		return ecInvalidParam;
+	auto pinfo = zs_query_session(hsession);
+	if (pinfo == nullptr)
+		return ecError;
+	if (!exmdb_client->read_delegates(pinfo->get_maildir(), mode, delegates))
+		return ecRpcFailed;
+	return ecSuccess;
+}
+
 ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
     std::string *dispname, std::string *essdn, uint32_t *pprivilege_bits) try
 {
@@ -856,7 +869,7 @@ static ec_error_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
 {
 	if (entryid.cb < 28)
 		return ecInvalidParam;
-	BINARY lower_eid = {entryid.cb - 28, {entryid.pb + 28}};
+	BINARY lower_eid = {entryid.cb - 28, {&entryid.pc[28]}};
 	return zs_openentry(ses, lower_eid, flags, mapi_type, objh);
 }
 
