@@ -521,6 +521,69 @@ static int select_parts_7()
 	return 0;
 }
 
+static int ical_meeting_attendees()
+{
+	static constexpr char data[] =
+		"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nBEGIN:VEVENT\r\n"
+		"UID:mtg\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:meeting\r\n"
+		"ORGANIZER;CN=Org:mailto:org@example.org\r\n"
+		"ATTENDEE;CN=Org;PARTSTAT=ACCEPTED;ROLE=CHAIR:mailto:org@example.org\r\n"
+		"ATTENDEE;CN=Two;PARTSTAT=TENTATIVE;ROLE=REQ-PARTICIPANT:mailto:two@example.org\r\n"
+		"ATTENDEE;CN=Three;PARTSTAT=NEEDS-ACTION;ROLE=OPT-PARTICIPANT:mailto:three@example.org\r\n"
+		"DTSTART:20261030T090000Z\r\nDTEND:20261030T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+	static constexpr char plain[] =
+		"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nBEGIN:VEVENT\r\n"
+		"UID:plain\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:plain\r\n"
+		"ATTENDEE:mailto:two@example.org\r\n"
+		"DTSTART:20261030T090000Z\r\nDTEND:20261030T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+	fprintf(stderr, "=== ical_meeting_attendees\n");
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.username_to_entryid = [](const char *, const char *, BINARY *bin, enum display_type *dt) -> BOOL {
+		bin->cb = 0;
+		if (dt != nullptr)
+			*dt = DT_MAILUSER;
+		return TRUE;
+	};
+	std::string str = data;
+	ical ic;
+	assert(ic.load_from_str_move(str.data()));
+	auto msg = cvt.ical_to_mapi_single(ic);
+	assert(msg != nullptr);
+	auto rcpts = msg->children.prcpts;
+	/* organizer once, plus two attendees */
+	if (rcpts == nullptr || rcpts->count != 3) {
+		fprintf(stderr, "%u recipients\n", rcpts != nullptr ? rcpts->count : 0);
+		return EXIT_FAILURE;
+	}
+	ical icalout;
+	assert(cvt.mapi_to_ical(*msg, icalout));
+	std::string icstr;
+	assert(icalout.serialize(icstr) == ecSuccess);
+	for (size_t pos; (pos = icstr.find("\r\n ")) != icstr.npos; )
+		icstr.erase(pos, 3);
+	if (icstr.find("ORGANIZER;CN=Org:MAILTO:org@example.org") == icstr.npos ||
+	    icstr.find("PARTSTAT=TENTATIVE;RSVP=TRUE;CN=Two:MAILTO:two@example.org") == icstr.npos ||
+	    icstr.find("ROLE=OPT-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=Three") == icstr.npos ||
+	    icstr.find("MAILTO:org@example.org", icstr.find("ATTENDEE")) != icstr.npos) {
+		fprintf(stderr, "%s", icstr.c_str());
+		return EXIT_FAILURE;
+	}
+
+	/* no organizer: not a meeting, nothing changes */
+	str = plain;
+	ical ic2;
+	assert(ic2.load_from_str_move(str.data()));
+	msg = cvt.ical_to_mapi_single(ic2);
+	assert(msg != nullptr);
+	if (msg->children.prcpts != nullptr && msg->children.prcpts->count != 0)
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
 static int ical_export_1()
 {
 	/*
@@ -1592,6 +1655,7 @@ int main()
 	} tests[] = {
 		E(excess_attachment), E(nested_boundary_prefix),
 		E(select_parts_1), E(select_parts_1a),
+		E(ical_meeting_attendees),
 		E(select_parts_2), E(select_parts_3), E(select_parts_4),
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),

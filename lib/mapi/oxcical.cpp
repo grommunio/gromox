@@ -761,6 +761,29 @@ static unsigned int role_to_rcpttype(const char *r, const char *cu)
 	return MAPI_TO;
 }
 
+static uint32_t partstat_to_resp(const char *ps)
+{
+	if (ps == nullptr)
+		return respNone;
+	if (strcasecmp(ps, "ACCEPTED") == 0)
+		return respAccepted;
+	if (strcasecmp(ps, "TENTATIVE") == 0)
+		return respTentative;
+	if (strcasecmp(ps, "DECLINED") == 0)
+		return respDeclined;
+	return respNone;
+}
+
+static const char *resp_to_partstat(uint32_t r)
+{
+	switch (r) {
+	case respAccepted: return "ACCEPTED";
+	case respTentative: return "TENTATIVE";
+	case respDeclined: return "DECLINED";
+	default: return "NEEDS-ACTION";
+	}
+}
+
 static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
     USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
@@ -780,9 +803,21 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 		pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (pmessage_class == nullptr)
 		pmessage_class = "IPM.Note";
-	/* ignore ATTENDEE when METHOD is "PUBLIC" */
-	if (class_match_prefix(pmessage_class, "IPM.Appointment") == 0)
-		return ecSuccess;
+	/*
+	 * A published appointment carries attendees only when it is a
+	 * meeting (CalDAV stores the organizer's and the attendees' copy
+	 * that way). The organizer is often listed as attendee, too.
+	 */
+	const char *organizer = nullptr;
+	bool appt = class_match_prefix(pmessage_class, "IPM.Appointment") == 0;
+	if (appt) {
+		auto line = main_ev.get_line("ORGANIZER");
+		organizer = line != nullptr ? line->get_first_subvalue() : nullptr;
+		if (organizer == nullptr || strncasecmp(organizer, "MAILTO:", 7) != 0 ||
+		    main_ev.get_line("ATTENDEE") == nullptr)
+			return ecSuccess;
+		organizer += 7;
+	}
 
 	prcpts = tarray_set_init();
 	if (prcpts == nullptr)
@@ -804,6 +839,8 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 			continue;
 		}
 		paddress += 7;
+		if (appt && is_attendee && strcasecmp(paddress, organizer) == 0)
+			continue;
 		pdisplay_name = piline->get_first_paramval("CN");
 		auto cutype = piline->get_first_paramval("CUTYPE");
 		prole = piline->get_first_paramval("ROLE");
@@ -868,6 +905,13 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 		err = pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32);
 		if (err != ecSuccess)
 			return err;
+		if (appt) {
+			auto ps = piline->get_first_paramval("PARTSTAT");
+			tmp_int32 = is_organizer ? respOrganized : partstat_to_resp(ps);
+			err = pproplist->set(PR_RECIPIENT_TRACKSTATUS, &tmp_int32);
+			if (err != ecSuccess)
+				return err;
+		}
 	}
 	/*
 	 * XXX: Value of tmp_byte is unclear, but it appears it coincides with
@@ -1083,12 +1127,15 @@ static bool oxcical_set_stateflags(const char *method,
     namemap &hash, uint16_t &last_propid, message_content &msg)
 {
 	uint32_t val = 0;
-	if (method != nullptr) {
-		if (strcasecmp(method, "REQUEST") == 0)
-			val = asfMeeting | asfReceived;
-		else if (strcasecmp(method, "CANCEL") == 0)
-			val = asfMeeting | asfReceived | asfCanceled;
-	}
+	auto cls = msg.proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (method != nullptr && strcasecmp(method, "REQUEST") == 0)
+		val = asfMeeting | asfReceived;
+	else if (method != nullptr && strcasecmp(method, "CANCEL") == 0)
+		val = asfMeeting | asfReceived | asfCanceled;
+	else if (cls != nullptr && class_match_prefix(cls, "IPM.Appointment") == 0 &&
+	    msg.children.prcpts != nullptr && msg.children.prcpts->count > 0)
+		/* a published meeting, see oxcical_parse_recipients */
+		val = asfMeeting;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentStateFlags};
 	if (namemap_add(hash, last_propid, std::move(pn)) != ecSuccess)
 		return false;
@@ -3272,7 +3319,7 @@ static bool is_meeting_response(const char *s)
 
 static bool oxcical_export_recipient_table(ical_component &pevent_component,
     const char *org_name, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
-    const char *partstat, const MESSAGE_CONTENT *pmsg) try
+    const char *partstat, bool meeting, const MESSAGE_CONTENT *pmsg) try
 {
 	char tmp_value[334];
 
@@ -3283,8 +3330,9 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 		str = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (str == nullptr)
 		str = "IPM.Note";
-	/* ignore ATTENDEE when METHOD is "PUBLIC" */
-	if (class_match_prefix(str, "IPM.Appointment") == 0)
+	/* a published appointment only lists attendees for meetings */
+	bool appt = class_match_prefix(str, "IPM.Appointment") == 0;
+	if (appt && !meeting)
 		return true;
 	if (is_meeting_response(str)) {
 		str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
@@ -3323,8 +3371,12 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 			*rcpttype == MAPI_BCC ? "NON-PARTICIPANT" :
 			"REQ-PARTICIPANT";
 		piline->append_param("ROLE", role);
-		if (partstat != nullptr)
+		if (partstat != nullptr) {
 			piline->append_param("PARTSTAT", partstat);
+		} else if (appt) {
+			auto ts = rcpt.get<const uint32_t>(PR_RECIPIENT_TRACKSTATUS);
+			piline->append_param("PARTSTAT", resp_to_partstat(ts != nullptr ? *ts : respNone));
+		}
 		if (b_rsvp)
 			piline->append_param("RSVP", "TRUE");
 		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
@@ -3922,6 +3974,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		{MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameLocationUrl)},
 		{MNID_ID, PSETID_Appointment, PidLidIntendedBusyStatus},
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentNotAllowPropose},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStateFlags},
 	};
 	enum {
 		l_counterproposal, l_proposedstartwhole, l_proposedendwhole,
@@ -3929,8 +3982,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		l_tzdesc, l_tzdefrecur, l_tzdefstart, l_tzdefend, l_subtype, l_replacetime,
 		l_taskstart, l_keywords, l_attcritchg, l_ownercritchg, l_busystatus,
 		l_apptseq, l_location, l_locationurl, l_intendedbusy, l_nopropose,
+		l_stateflags,
 	};
-	static_assert(l_nopropose + 1 == std::size(namequeries));
+	static_assert(l_stateflags + 1 == std::size(namequeries));
 	std::string new_tzid;
 	PROPID_ARRAY propids;
 	APPOINTMENT_RECUR_PAT apprecurr;
@@ -4110,12 +4164,15 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	bool b_allday = snum != nullptr && *snum != 0;
 	auto pcomponent = icaltype != nullptr ? &pical.append_comp(icaltype) : &pical;
 
-	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0)
+	auto stateflags = pmsg->proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_stateflags]));
+	bool meeting = stateflags != nullptr && (*stateflags & asfMeeting);
+	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0 ||
+	    (strcmp(method, "PUBLISH") == 0 && meeting))
 		oxcical_export_organizer(*pmsg, *pcomponent, org_name, id2user);
 	else if (strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0)
 		oxcical_export_organizer_rcpt(*pmsg, *pcomponent, org_name, id2user);
 	if (!oxcical_export_recipient_table(*pcomponent, org_name,
-	    id2user, alloc, partstat, pmsg))
+	    id2user, alloc, partstat, meeting, pmsg))
 		return "E-2211: export_recipient_table - unspecified error";
 
 	str = pmsg->proplist.get<char>(PR_BODY);
