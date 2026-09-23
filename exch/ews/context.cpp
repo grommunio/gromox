@@ -4249,15 +4249,11 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		    !ep.init(buf, sizeof(buf), 0) ||
 		    ep.p_goid(goid) != pack_result::ok)
 			throw EWSError::InternalServerError(E3375);
-		auto gb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_cdata}});
+		auto gdata = alloc<char>(ep.m_offset);
+		memcpy(gdata, ep.m_cdata, ep.m_offset);
+		auto gb = construct<BINARY>(BINARY{ep.m_offset, {gdata}});
 		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
-		goid.year = goid.month = goid.day = 0;
-		goid.creationtime = 0;
-		if (!ep.init(buf, sizeof(buf), 0) ||
-		    ep.p_goid(goid) != pack_result::ok)
-			throw EWSError::InternalServerError(E3376);
-		auto cb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_cdata}});
-		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, cb});
+		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
 	}
 
 	size_t recipients = (item.RequiredAttendees ? item.RequiredAttendees->size() : 0) +
