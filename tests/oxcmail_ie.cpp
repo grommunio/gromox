@@ -634,7 +634,7 @@ static int vexport_head()
 	/* Now with some props */
 #define XFE "\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe"
 #define XFE4 XFE XFE XFE XFE
-	BINARY conv_index = {uint32_t(strlen(XFE4)), {strdup(XFE4)}};
+	BINARY conv_index = {uint32_t(strlen(XFE4)), {deconst(XFE4)}};
 #undef XFE4
 #undef XFE
 	static const unsigned int loc_x409 = 0x409;
