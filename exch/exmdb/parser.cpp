@@ -512,13 +512,13 @@ static void *request_parser_thread(void *pparam)
 		return nullptr;
 	}
 	size_t offset = 0;
-	bool is_writing = false, is_connected = false;
+	bool is_connected = false;
 	BINARY output_buf{};
 	auto cl_0 = HX::make_scope_exit([&]() { free(output_buf.pb); });
 	std::string input_buf;
 
 	while (!pconnection->b_stop) {
-		if (is_writing) {
+		if (output_buf.cb > 0) {
 			auto wlen = write(pconnection->sockd, &output_buf.pb[offset],
 			            output_buf.cb - offset);
 			if (wlen <= 0)
@@ -530,7 +530,6 @@ static void *request_parser_thread(void *pparam)
 			output_buf.pb = nullptr;
 			output_buf.cb = 0;
 			offset = 0;
-			is_writing = false;
 			continue;
 		}
 		if (!param->injected_pkt.empty()) {
@@ -538,7 +537,6 @@ static void *request_parser_thread(void *pparam)
 				break;
 			param->injected_pkt.clear();
 			offset = 0;
-			is_writing = true;
 			continue;
 		}
 		pfd_read.fd = pconnection->sockd;
@@ -582,7 +580,6 @@ static void *request_parser_thread(void *pparam)
 			break;
 		input_buf.clear();
 		offset = 0;
-		is_writing = true;
 	}
 	return nullptr;
 }
