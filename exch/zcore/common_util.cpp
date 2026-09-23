@@ -1865,8 +1865,6 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 ec_error_t cu_message_to_rfc822(store_object *pstore, uint64_t inst_id,
     BINARY *peml_bin) try
 {
-	int size;
-	void *ptr;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT msgctnt{}, *pmsgctnt = &msgctnt;
 	
@@ -1887,33 +1885,22 @@ ec_error_t cu_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	}
 	common_util_set_dir(pstore->get_dir());
 	auto log_id = pstore->get_dir() + ":i"s + std::to_string(inst_id);
-	MAIL imail;
+	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids;
 	cvt.get_propname = common_util_get_propname;
 	cvt.use_format_override(*pmsgctnt);
-	if (!cvt.mapi_to_inet(*pmsgctnt, imail))
-		return ecError;
-	auto mail_len = imail.get_length();
-	if (mail_len < 0)
-		return ecError;
-	STREAM tmp_stream;
-	if (!imail.serialize(&tmp_stream))
-		return ecError;
-	imail.clear();
-	peml_bin->pv = common_util_alloc(mail_len + 128);
-	if (peml_bin->pv == nullptr)
+	auto err = cvt.mapi_to_inet(*pmsgctnt, mail);
+	if (err != ecSuccess)
+		return err;
+	auto mail_str = vmail_to_string(*mail);
+	peml_bin->cb = mail_str.size();
+	peml_bin->pc = cu_alloc<char>(peml_bin->cb + 1);
+	if (peml_bin->pc == nullptr)
 		return ecServerOOM;
-
-	peml_bin->cb = 0;
-	size = STREAM_BLOCK_SIZE;
-	while ((ptr = tmp_stream.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
-		memcpy(peml_bin->pb + peml_bin->cb, ptr, size);
-		peml_bin->cb += size;
-		size = STREAM_BLOCK_SIZE;
-	}
+	memcpy(peml_bin->pc, mail_str.c_str(), peml_bin->cb + 1);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
