@@ -370,7 +370,7 @@ static bool handoff_just_one(const char *rq_dir)
 }
 
 static int rqi_connect(parser_params &param, const exreq_connect &q,
-    std::string_view input_buf, BINARY &output_buf)
+    std::string_view input_buf, std::string &output_buf)
 {
 	auto &conn = *param.conn;
 
@@ -391,12 +391,13 @@ static int rqi_connect(parser_params &param, const exreq_connect &q,
 	conn.remote_id = q.remote_id;
 	exmdb_server::set_remote_id(conn.remote_id.c_str());
 	param.is_connected = true;
-	free(output_buf.pb);
-	output_buf.pb = static_cast<uint8_t *>(calloc(1, 5));
-	if (output_buf.pb == nullptr)
+	try {
+		output_buf.clear();
+		output_buf.resize(5);
+		output_buf[0] = static_cast<uint8_t>(exmdb_response::success);
+	} catch (const std::bad_alloc &) {
 		return rqi_terminate(conn, exmdb_response::lack_memory);
-	output_buf.pb[0] = static_cast<uint8_t>(exmdb_response::success);
-	output_buf.cb = 5;
+	}
 	return 0;
 }
 
@@ -436,7 +437,7 @@ static int rqi_listen(parser_params &param, const exreq_listen_notification &q,
 }
 
 static int rqi_unconnected(parser_params &param, const exreq &request,
-    std::string_view input_buf, BINARY &output_buf)
+    std::string_view input_buf, std::string &output_buf)
 {
 	switch (request.call_id) {
 	case exmdb_callid::connect:
@@ -457,7 +458,7 @@ static int rqi_unconnected(parser_params &param, const exreq &request,
  * done by rqp_io itself.)
  */
 static int rqi_handle_buffer(parser_params &param, std::string_view input_buf,
-    BINARY &output_buf)
+    std::string &output_buf)
 {
 	auto &conn = *param.conn;
 	exmdb_server::build_env(param.b_private ? EM_PRIVATE : 0, nullptr);
@@ -480,14 +481,14 @@ static int rqi_handle_buffer(parser_params &param, std::string_view input_buf,
 		return rqi_terminate(conn, exmdb_response::misconfig_prefix);
 	if (!exmdb_parser_dispatch(request.get(), response))
 		return rqi_terminate(conn, exmdb_response::dispatch_error);
-	if (exmdb_ext_push_response(response.get(), &output_buf) != pack_result::success)
+	if (exmdb_ext_push_response(response.get(), output_buf) != pack_result::success)
 		return rqi_terminate(conn, exmdb_response::push_error);
 	return 0;
 }
 
 static void *request_parser_thread(void *pparam)
 {
-	uint8_t resp_buff[5]{};
+	static constexpr uint8_t resp_buff[5]{};
 	struct pollfd pfd_read;
 	
 	std::unique_ptr<parser_params> param(static_cast<parser_params *>(pparam));
@@ -511,32 +512,29 @@ static void *request_parser_thread(void *pparam)
 	} catch (...) {
 		return nullptr;
 	}
-	size_t offset = 0;
 	bool is_connected = false;
-	BINARY output_buf{};
-	auto cl_0 = HX::make_scope_exit([&]() { free(output_buf.pb); });
-	std::string input_buf;
+	std::string output_buf, input_buf;
+	std::string_view output_view, input_view;
 
 	while (!pconnection->b_stop) {
-		if (output_buf.cb > 0) {
-			auto wlen = write(pconnection->sockd, &output_buf.pb[offset],
-			            output_buf.cb - offset);
+		if (output_view.size() > 0) {
+			auto wlen = write(pconnection->sockd, output_view.data(),
+			            output_view.size());
 			if (wlen <= 0)
 				break;
-			offset += wlen;
-			if (offset < output_buf.cb)
+			output_view.remove_prefix(wlen);
+			if (!output_view.empty())
 				continue; /* keep writing if necessary */
-			free(output_buf.pb);
-			output_buf.pb = nullptr;
-			output_buf.cb = 0;
-			offset = 0;
+			output_view = {};
+			output_buf.clear();
+			output_buf.shrink_to_fit();
 			continue;
 		}
 		if (!param->injected_pkt.empty()) {
 			if (rqi_handle_buffer(*param, param->injected_pkt, output_buf) < 0)
 				break;
 			param->injected_pkt.clear();
-			offset = 0;
+			output_view = output_buf;
 			continue;
 		}
 		pfd_read.fd = pconnection->sockd;
@@ -544,6 +542,7 @@ static void *request_parser_thread(void *pparam)
 		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			break;
 		if (input_buf.empty()) {
+			/* Read length marker for the packet and allocate */
 			uint32_t buff_len = 0;
 			auto read_len = read(pconnection->sockd,
 					&buff_len, sizeof(uint32_t));
@@ -566,20 +565,23 @@ static void *request_parser_thread(void *pparam)
 				    !is_connected)
 					break;
 			}
-			offset = 0;
+			input_view = std::string_view(input_buf.data(), 0);
 			continue;
 		}
-		auto read_len = read(pconnection->sockd, &input_buf[offset],
-		                input_buf.size() - offset);
+		/* Secondary reads for the same packet */
+		auto read_len = read(pconnection->sockd, &input_buf[input_view.size()],
+		                input_buf.size() - input_view.size());
 		if (read_len <= 0)
 			break;
-		offset += read_len;
-		if (offset < input_buf.size())
+		input_view = std::string_view(input_buf.data(), input_view.size() + read_len);
+		if (input_view.size() < input_buf.size())
 			continue; /* keep reading as necessary */
 		if (rqi_handle_buffer(*param, input_buf, output_buf) < 0)
 			break;
+		output_view = output_buf;
+		input_view = {};
 		input_buf.clear();
-		offset = 0;
+		input_buf.shrink_to_fit();
 	}
 	return nullptr;
 }

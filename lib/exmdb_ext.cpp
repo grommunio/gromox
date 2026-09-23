@@ -3514,7 +3514,8 @@ pack_result exmdb_ext_pull_response(std::string_view pbin_in, exresp *presponse)
 }
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
-pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *pbin_out)
+pack_result exmdb_ext_push_response(const exresp *presponse,
+    std::string &out) try
 {
 	EXT_PUSH ext_push;
 	
@@ -3542,14 +3543,15 @@ pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *pbin_out)
 
 	if (status != pack_result::ok)
 		return status;
-	pbin_out->cb = ext_push.m_offset;
+	auto saved_offset = ext_push.m_offset;
 	ext_push.m_offset = 1;
-	status = ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t) - 1);
+	status = ext_push.p_uint32(saved_offset - sizeof(uint32_t) - 1);
 	if (status != pack_result::ok)
 		return status;
-	/* memory referenced by ext_push.data will be freed outside */
-	pbin_out->pb = ext_push.release();
+	out.assign(ext_push.m_cdata, saved_offset);
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 pack_result exmdb_ext_pull_db_notify(std::string_view pbin_in,
