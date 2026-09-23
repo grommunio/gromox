@@ -4273,7 +4273,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 
-	return oxcical_export_valarm(*pmsg, *pcomponent, get_propids);
+	return oxcical_export_valarm(*pmsg, *pcomponent, std::move(get_propids));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return "E-2097";

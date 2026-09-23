@@ -190,7 +190,7 @@ static bool oxvcard_abentry_to_contact(const TPROPVAL_ARRAY &props,
 		return PROP_TAG(PROP_TYPE(t), propids[PROP_ID(t) - 0x8000]);
 	};
 
-	if (!oxvcard_get_propids(&propids, get_propids))
+	if (!oxvcard_get_propids(&propids, std::move(get_propids)))
 		return false;
 	if (msg.proplist.set(PR_MESSAGE_CLASS,
 	    is_group ? "IPM.DistList" : "IPM.Contact") != ecSuccess)
