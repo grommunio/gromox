@@ -4937,8 +4937,8 @@ ec_error_t zs_messagetorfc822(GUID hsession, uint32_t hmessage, BINARY *peml_bin
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	return common_util_message_to_rfc822(pmessage->get_store(),
-	       pmessage->instance_id, peml_bin) ? ecSuccess : ecError;
+	return cu_message_to_rfc822(pmessage->get_store(),
+	       pmessage->instance_id, peml_bin);
 }
 
 ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
@@ -4970,8 +4970,8 @@ ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	return common_util_message_to_ical(pmessage->get_store(),
-	       pmessage->get_id(), pical_bin) ? ecSuccess : ecError;
+	return cu_message_to_ical(pmessage->get_store(),
+	       pmessage->get_id(), pical_bin);
 }
 
 ec_error_t zs_icaltomessage(GUID hsession,
@@ -5049,11 +5049,10 @@ ec_error_t zs_messagetovcf(GUID hsession, uint32_t hmessage, BINARY *pvcf_bin)
 	if (obj == nullptr)
 		return ecNullObject;
 	if (mapi_type == zs_objtype::message)
-		return common_util_message_to_vcf(static_cast<message_object *>(obj), pvcf_bin) ?
-			ecSuccess : ecError;
+		return cu_message_to_vcf(static_cast<message_object *>(obj), pvcf_bin);
 	if (mapi_type == zs_objtype::mailuser || mapi_type == zs_objtype::distlist)
 		return cu_abentry_to_vcf(static_cast<user_object *>(obj),
-		       mapi_type == zs_objtype::distlist, pvcf_bin) ? ecSuccess : ecError;
+		       mapi_type == zs_objtype::distlist, pvcf_bin);
 	return ecNotSupported;
 }
 

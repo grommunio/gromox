@@ -1855,7 +1855,7 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	return ecSuccess;
 }
 
-BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
+ec_error_t cu_message_to_rfc822(store_object *pstore, uint64_t inst_id,
     BINARY *peml_bin) try
 {
 	int size;
@@ -1867,11 +1867,11 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	if (!exmdb_client->read_message_instance(pstore->get_dir(),
 	    inst_id, &msgctnt))
-		return FALSE;
+		return ecRpcFailed;
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (ppropval == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
@@ -1888,17 +1888,17 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	cvt.get_propname = common_util_get_propname;
 	cvt.use_format_override(*pmsgctnt);
 	if (!cvt.mapi_to_inet(*pmsgctnt, imail))
-		return FALSE;	
+		return ecError;
 	auto mail_len = imail.get_length();
 	if (mail_len < 0)
-		return false;
+		return ecError;
 	STREAM tmp_stream;
 	if (!imail.serialize(&tmp_stream))
-		return FALSE;
+		return ecError;
 	imail.clear();
 	peml_bin->pv = common_util_alloc(mail_len + 128);
 	if (peml_bin->pv == nullptr)
-		return FALSE;
+		return ecServerOOM;
 
 	peml_bin->cb = 0;
 	size = STREAM_BLOCK_SIZE;
@@ -1907,10 +1907,10 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 		peml_bin->cb += size;
 		size = STREAM_BLOCK_SIZE;
 	}
-	return TRUE;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
-	return false;
+	return ecServerOOM;
 }
 
 std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object *pstore,
@@ -1930,7 +1930,7 @@ std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object *p
 	return cvt.inet_to_mapi(imail);
 }
 
-BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
+ec_error_t cu_message_to_ical(store_object *pstore, uint64_t message_id,
     BINARY *pical_bin) try
 {
 	ical ical;
@@ -1941,7 +1941,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	auto dir = pstore->get_dir();
 	if (!exmdb_client->read_message(dir, nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
-		return FALSE;
+		return ecRpcFailed;
 	common_util_set_dir(dir);
 	auto log_id = dir + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	oxcical_converter cvt;
@@ -1952,19 +1952,20 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	cvt.id2user = mysql_adaptor_userid_to_name;
 	if (!cvt.mapi_to_ical(*pmsgctnt, ical)) {
 		mlog(LV_ERR, "E-2202: oxcical_export %s failed", log_id.c_str());
-		return FALSE;
+		return ecError;
 	}
 	std::string tmp_buff;
-	if (ical.serialize(tmp_buff) != ecSuccess) {
+	auto err = ical.serialize(tmp_buff);
+	if (err != ecSuccess) {
 		mlog(LV_ERR, "E-2552: ical_serialize %s failed", log_id.c_str());
-		return FALSE;	
+		return err;
 	}
 	pical_bin->cb = tmp_buff.size();
 	pical_bin->pc = common_util_dup(tmp_buff);
-	return pical_bin->pc != nullptr ? TRUE : FALSE;
+	return pical_bin->pc != nullptr ? ecSuccess : ecServerOOM;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
-	return false;
+	return ecServerOOM;
 }
 
 message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) try
@@ -2012,7 +2013,7 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 	return ecServerOOM;
 }
 
-BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
+ec_error_t cu_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 {
 	auto pstore = pmessage->get_store();
 	auto message_id = pmessage->get_id();
@@ -2022,7 +2023,7 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	if (!exmdb_client->read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
-		return FALSE;
+		return ecRpcFailed;
 	common_util_set_dir(pstore->get_dir());
 
 	std::string cvt_log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
@@ -2031,22 +2032,22 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	cvt.get_propids = common_util_get_propids;
 	vcard vcard;
 	if (!cvt.mapi_to_vcard(*pmsgctnt, vcard))
-		return FALSE;
+		return ecError;
 	std::string vcf_out;
 	if (!vcard.serialize(vcf_out))
-		return FALSE;	
+		return ecError;
 	pvcf_bin->cb = vcf_out.size();
 	pvcf_bin->pv = common_util_alloc(pvcf_bin->cb);
 	if (pvcf_bin->pv == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	memcpy(pvcf_bin->pv, vcf_out.c_str(), vcf_out.size());
 	auto err = pmessage->write_message(*pmsgctnt);
 	if (err != ecSuccess)
 		/* ignore */;
-	return TRUE;
+	return ecSuccess;
 }
 
-bool cu_abentry_to_vcf(user_object *puser, bool is_group, BINARY *pvcf_bin)
+ec_error_t cu_abentry_to_vcf(user_object *puser, bool is_group, BINARY *pvcf_bin)
 {
 	PROPTAG_ARRAY tags{};
 	TPROPVAL_ARRAY props{};
@@ -2055,24 +2056,24 @@ bool cu_abentry_to_vcf(user_object *puser, bool is_group, BINARY *pvcf_bin)
 	auto pinfo = zs_get_info();
 
 	if (pinfo == nullptr)
-		return false;
+		return ecInvalidParam;
 	oxvcard_get_abentry_proptags(&tags);
 	auto err = puser->get_props(tags, &props);
 	if (err != ecSuccess)
-		return false;
+		return ecRpcFailed;
 	common_util_set_dir(pinfo->get_homedir());
 	oxvcard_converter cvt;
 	cvt.get_propids = common_util_get_propids_create;
 	if (!cvt.abentry_to_vcard(props, is_group, card))
-		return false;
+		return ecError;
 	if (!card.serialize(vcf_out))
-		return false;
+		return ecError;
 	pvcf_bin->cb = vcf_out.size();
 	pvcf_bin->pv = common_util_alloc(pvcf_bin->cb);
 	if (pvcf_bin->pv == nullptr)
-		return false;
+		return ecServerOOM;
 	memcpy(pvcf_bin->pv, vcf_out.c_str(), vcf_out.size());
-	return true;
+	return ecSuccess;
 }
 	
 message_ptr common_util_vcf_to_message(store_object *pstore, const BINARY *pvcf_bin)
