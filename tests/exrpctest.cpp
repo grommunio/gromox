@@ -12,6 +12,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -57,6 +58,8 @@ static int t_2209(const char *dir)
 
 int main(int argc, char **argv)
 {
+	service_init({nullptr, {}, 1});
+	auto cl_1 = HX::make_scope_exit(service_stop);
 	exmdb_rpc_alloc = [](size_t z) { return g_alloc_mgr.alloc(z); };
 	exmdb_rpc_free = [](void *) {};
 	exmdb_client.emplace();
