@@ -138,7 +138,8 @@ Fixes:
 * ruleproc: when meeting autoprocessing marks a cancelled series in an
   attendee calendar, it now cancels the exceptions of the series too. Before,
   a moved occurrence stayed active under its old subject.
-* exmdb: rule batches can no longer exceed max_rule_number.
+* exmdb: rule batches can no longer exceed max_rule_number, and renaming a
+  rule takes effect.
 * zcore: rule updates rejected for exceeding max_rule_number are now
   reported as failures.
 

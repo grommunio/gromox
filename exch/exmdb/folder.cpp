@@ -2456,6 +2456,18 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 					return false;
 				pstmt1.finalize();
 			}
+			auto pname = prow[i].propvals.get<const char>(PR_RULE_NAME);
+			if (pname != nullptr) {
+				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET"
+				          " name=? WHERE rule_id=%llu", LLU{rule_id});
+				pstmt1 = pdb->prep(sql_string);
+				if (pstmt1 == nullptr)
+					return false;
+				sqlite3_bind_text(pstmt1, 1, pname, -1, SQLITE_STATIC);
+				if (pstmt1.step() != SQLITE_DONE)
+					return false;
+				pstmt1.finalize();
+			}
 			auto num = prow[i].propvals.get<const uint32_t>(PR_RULE_SEQUENCE);
 			if (num != nullptr) {
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET sequence=%u"
