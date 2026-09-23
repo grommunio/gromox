@@ -205,6 +205,24 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	return mail_retrieve_to_mime(pmail, pmime, &fss[nl_len], pmime->last_boundary);
 }
 
+/**
+ * Parse @pre followed by @in_buff from a copy that the MAIL owns. The head of
+ * @in_buff stays untouched and is re-emitted verbatim.
+ */
+bool MAIL::refonly_parse_prepended(std::string_view pre, const char *in_buff,
+    size_t length)
+{
+	auto len = pre.size() + length;
+	auto buf = std::make_unique<char[]>(len);
+	memcpy(buf.get(), pre.data(), pre.size());
+	memcpy(&buf[pre.size()], in_buff, length);
+	if (!refonly_parse(buf.get(), len))
+		return false;
+	/* refonly_parse has reset the buffer member */
+	buffer = std::move(buf);
+	return true;
+}
+
 /*
  *	serialize the mail object into stream
  *	@param

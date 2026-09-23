@@ -2901,6 +2901,13 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 	std::unique_ptr<char[], stdlib_delete> pbuff;
 	MAIL imail;
 	if (rp.digest.has_value()) {
+		std::string pre;
+		int skip = 0;
+		if (!(action_flavor & FWD_AS_ATTACHMENT)) {
+			for (const auto &eaddr : rcpt_list)
+				pre += "Delivered-To: " + eaddr + "\r\n";
+			skip = rcpt_list.size();
+		}
 		std::string mid_string;
 		if (!get_digest(*rp.digest, "file", mid_string))
 			return ecError;
@@ -2918,13 +2925,14 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return ecError;
 		imail.clear();
-		if (!imail.refonly_parse(pbuff.get(), node_stat.st_size))
+		if (pre.empty() ? !imail.refonly_parse(pbuff.get(), node_stat.st_size) :
+		    !imail.refonly_parse_prepended(pre, pbuff.get(), node_stat.st_size))
 			return ecError;
 		auto pmime = imail.get_head();
 		if (pmime == nullptr)
 			return ecError;
 		auto num = pmime->get_field_num("Delivered-To");
-		for (int i = 0; i < num; ++i) {
+		for (int i = skip; i < num; ++i) {
 			std::string dvto;
 			if (pmime->search_field("Delivered-To", i, dvto) &&
 			    strcasecmp(dvto.c_str(), rp.ev_to) == 0)
@@ -2996,8 +3004,9 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		auto pmime = imail.get_head();
 		if (pmime == nullptr)
 			return ecError;
-		for (const auto &eaddr : rcpt_list)
-			pmime->append_field("Delivered-To", eaddr.c_str());
+		if (!rp.digest.has_value())
+			for (const auto &eaddr : rcpt_list)
+				pmime->append_field("Delivered-To", eaddr.c_str());
 		/* Set new envelope FROM */
 		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
 		           rp.ev_from : rp.ev_to, std::size(tmp_buff));

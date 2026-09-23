@@ -1364,6 +1364,7 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 		return ecSuccess;
 
 	MAIL imail;
+	bool head_kept = false;
 	auto eml = par.get_eml();
 	if (eml != nullptr) {
 		/*
@@ -1380,6 +1381,21 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 				"message was already delivered to %s",
 				par.orig_dir.c_str(), par.ev_to);
 			return ecSuccess;
+		}
+		auto af = head->get_field("X-MS-Exchange-Organization-AutoForwarded");
+		if (!(flavor & FWD_AS_ATTACHMENT) &&
+		    (!(flavor & FWD_PRESERVE_SENDER) || af == nullptr ||
+		    strcasecmp(af->c_str(), "true") == 0)) {
+			/* Editing the head would re-emit it unfolded */
+			std::string pre;
+			for (const auto &eaddr : rcpt_list)
+				pre += "Delivered-To: " + eaddr + "\r\n";
+			if (flavor & FWD_PRESERVE_SENDER && af == nullptr)
+				pre += "X-MS-Exchange-Organization-AutoForwarded: true\r\n";
+			imail.clear();
+			if (!imail.refonly_parse_prepended(pre, eml->c_str(), eml->size()))
+				return ecError;
+			head_kept = true;
 		}
 	} else {
 		auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
@@ -1444,14 +1460,16 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 		auto pmime = imail.get_head();
 		if (pmime == nullptr)
 			return ecError;
-		for (const auto &eaddr : rcpt_list)
-			pmime->append_field("Delivered-To", eaddr.c_str());
 		/*
 		 * FWD_PRESERVE_SENDER also "indicates that the message was
 		 * autoforwarded", MS-OXORULE v23.0 §2.2.5.1.1.
 		 */
-		if (flavor & FWD_PRESERVE_SENDER)
-			pmime->set_field("X-MS-Exchange-Organization-AutoForwarded", "true");
+		if (!head_kept) {
+			for (const auto &eaddr : rcpt_list)
+				pmime->append_field("Delivered-To", eaddr.c_str());
+			if (flavor & FWD_PRESERVE_SENDER)
+				pmime->set_field("X-MS-Exchange-Organization-AutoForwarded", "true");
+		}
 		auto env_from = (flavor & FWD_PRESERVE_SENDER) ?
 		                par.ev_from : par.ev_to;
 		ret = cu_send_mail(imail, rp_smtp_url.c_str(), env_from, rcpt_list);
