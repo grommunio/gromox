@@ -3013,7 +3013,7 @@ void process(mResolveNamesRequest &&request, XMLElement *response, const EWSCont
 	auto base = ab_tree::AB.get(-static_cast<int32_t>(domId));
 	if (base)
 		ab_tree_resolvename(*base, request.UnresolvedEntry.c_str(), results);
-	if (!results.empty()) {
+	if (base && results.size() > 0) {
 		auto &msg = data.ResponseMessages.emplace_back();
 		auto &resolutionSet = msg.ResolutionSet.emplace();
 		for (auto mid : results) {
