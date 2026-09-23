@@ -64,5 +64,6 @@ extern GX_EXPORT ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message>, con
 extern GX_EXPORT vmime::parsingContext vmail_default_parsectx();
 extern GX_EXPORT vmime::generationContext vmail_default_genctx();
 extern GX_EXPORT std::string vmail_to_string(const vmime::message &);
+extern GX_EXPORT std::string vmail_to_string(const vmime::header &);
 
 }
