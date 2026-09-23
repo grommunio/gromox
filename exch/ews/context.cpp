@@ -929,6 +929,12 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	    props.set(PROP_TAG(PT_LONG, pidBusy), construct<uint32_t>(busyValue)) != ecSuccess)
 		throw EWSError::ItemSave(E3327);
 
+	/* eM Client drops calendar items without IsAllDayEvent */
+	auto pidSubType = getNamedPropId(calendarDir, NtAppointmentSubType, true);
+	if (!props.has(PROP_TAG(PT_BOOLEAN, pidSubType)) &&
+	    props.set(PROP_TAG(PT_BOOLEAN, pidSubType), construct<uint8_t>(0)) != ecSuccess)
+		throw EWSError::ItemSave(E3475);
+
 	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *content);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3328);
