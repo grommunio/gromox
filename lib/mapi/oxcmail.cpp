@@ -2788,11 +2788,6 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 }
 #undef imp_null
 
-static inline std::string enc_text(auto &&s)
-{
-	return vmime::text(s, vmime::charsets::UTF_8).generate();
-}
-
 static bool set_folded(MIME *phead, const char *tag, const vmime::component &c)
 {
 	return phead->set_field(tag, vmail_fold(c, strlen(tag) + 2));
@@ -2829,6 +2824,26 @@ static bool set_text(MIME *phead, const char *tag, const std::string &s)
 		       vmime::lineLengthLimits::convenient,
 		       vmime::text::FORCE_ENCODING));
 	return phead->set_field(tag, std::move(v));
+}
+
+/*
+ * Plain names are quoted as they are. Others become one encoded word,
+ * leaving room for the closing quote and ';'.
+ */
+static std::string enc_param(const char *s, size_t col)
+{
+	if (plain_ascii(s)) {
+		std::string r;
+		for (; *s != '\0'; ++s) {
+			if (*s == '"' || *s == '\\')
+				r += '\\';
+			r += *s;
+		}
+		return r;
+	}
+	vmime::text t;
+	t.appendWord(vmime::make_shared<vmime::word>(s, vmime::charsets::UTF_8));
+	return vmail_fold_text(t, col, 76, vmime::text::FORCE_ENCODING);
 }
 
 /* Passthrough values fold at whitespace only */
@@ -3927,7 +3942,7 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 		if (!pmime->set_content_type(pcontent_type))
 			return FALSE;
 		if (pfile_name != nullptr && *pfile_name != '\0' &&
-		    !pmime->set_content_param("name", ("\"" + enc_text(pfile_name) + "\"").c_str()))
+		    !pmime->set_content_param("name", ("\"" + enc_param(pfile_name, 7) + "\"").c_str()))
 			return FALSE;
 	} else if (b_vcard) {
 		pfile_name = pattachment->proplist.get<char>(PR_ATTACH_LONG_FILENAME);
@@ -3952,7 +3967,7 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 	auto pmtime = pattachment->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 	std::string ostr = b_inline ? "inline" : "attachment";
 	if (pfile_name != nullptr)
-		ostr += "; filename=\"" + enc_text(pfile_name) + "\"";
+		ostr += ";\r\n\tfilename=\"" + enc_param(pfile_name, 11) + "\"";
 	if (pctime != nullptr) {
 		auto tmp_time = rop_util_nttime_to_unix(*pctime);
 		if (gmtime_r(&tmp_time, &time_buff) != nullptr) {
