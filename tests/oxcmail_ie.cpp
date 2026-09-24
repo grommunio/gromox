@@ -786,11 +786,18 @@ static int vexport_simple_body()
 
 static attachment_content *ve_new_attachment(MESSAGE_CONTENT *mct)
 {
-	if (mct->children.pattachments == nullptr)
+	if (mct->children.pattachments == nullptr) {
 		mct->children.pattachments = attachment_list_init();
+		if (mct->children.pattachments == nullptr)
+			return nullptr;
+	}
 	auto atx = attachment_content_init();
-	if (atx != nullptr)
-		mct->children.pattachments->append_internal(atx);
+	if (atx == nullptr)
+		return nullptr;
+	if (!mct->children.pattachments->append_internal(atx)) {
+		attachment_content_free(atx);
+		return nullptr;
+	}
 	return atx;
 }
 
