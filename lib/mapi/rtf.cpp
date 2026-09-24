@@ -3507,6 +3507,10 @@ ec_error_t rtf_to_html_boring(std::string_view input, const char *charset,
 	return ecMAPIOOM;
 }
 
+/*
+ * Similar to convert_doc_with_program(), but uses a pipe and no charset
+ * conversion (it's RTF, so self-describing).
+ */
 static ec_error_t gxht_transform(std::string_view inbuf, std::string &outbuf,
     attachment_list *atlist) try
 {
