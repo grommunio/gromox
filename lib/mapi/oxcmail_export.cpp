@@ -441,7 +441,6 @@ static const char *sender_id_to_text(const uint32_t *v)
 }
 
 static constexpr char
-	PidNameContentClass[] = "Content-Class",
 	PidNameKeywords[] = "Keywords";
 
 template<typename T> static vmime::text text8(T &&s)

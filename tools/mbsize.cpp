@@ -312,29 +312,6 @@ static void ifc_dump(const ifc_stat &s)
 		ratio_sav(s.ifco, s.du.size), ratio_sav(s.ifco, s.du.pad));
 }
 
-static ustat count_dirs(const std::string &path)
-{
-	ustat out;
-	struct stat sb;
-	dir_ptr dh(opendir(path.c_str()));
-	if (dh == nullptr)
-		return out;
-	auto dfd = dirfd(dh.get());
-	if (fstat(dfd, &sb) == 0)
-		out += sb;
-	const struct dirent *de;
-	while ((de = readdir(dh.get())) != nullptr) {
-		auto name = de->d_name;
-		if (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')))
-			continue;
-		if (fstatat(dfd, name, &sb, 0) != 0 || !S_ISDIR(sb.st_mode))
-			continue;
-		out += sb;
-		out += count_dirs(path + "/" + name);
-	}
-	return out;
-}
-
 /**
  * Simply find all filenames (recursive entrypoint with directory fd)
  *
