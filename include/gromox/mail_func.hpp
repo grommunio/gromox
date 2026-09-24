@@ -3,6 +3,7 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include <json/value.h>
 #include <vmime/generationContext.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/message.hpp>
@@ -65,5 +66,6 @@ extern GX_EXPORT vmime::parsingContext vmail_default_parsectx();
 extern GX_EXPORT vmime::generationContext vmail_default_genctx();
 extern GX_EXPORT std::string vmail_to_string(const vmime::message &);
 extern GX_EXPORT std::string vmail_to_string(const vmime::header &);
+extern GX_EXPORT int vmail_to_digest(std::string_view omsg, vmime::bodyPart &vmsg, Json::Value &digest);
 
 }

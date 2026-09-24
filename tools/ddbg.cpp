@@ -554,13 +554,12 @@ static int do_rtftohtml(std::string_view data, bool transfer)
 
 static int mdigest(std::string_view data)
 {
-	MAIL imail;
-	if (!imail.refonly_parse(data.data(), data.size())) {
-		fprintf(stderr, "Failed to parse RFC5322 block for message\n");
-		return -1;
-	}
+	vmime::message vmsg;
+	auto vpctx = vmail_default_parsectx();
+	vmsg.parse(vpctx, std::string(data));
+
 	Json::Value digest;
-	auto ret = imail.make_digest(digest);
+	auto ret = vmail_to_digest(data, vmsg, digest);
 	if (ret <= 0) {
 		fprintf(stderr, "Failed to produce JDigest for RFC5322 block\n");
 		return -1;
