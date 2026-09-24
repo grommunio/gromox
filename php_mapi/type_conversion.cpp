@@ -274,7 +274,7 @@ static void *php_to_propval(zval *entry, proptype_t proptype)
 		pvalue = emalloc(sizeof(uint8_t));
 		if (pvalue == nullptr)
 			return NULL;
-		*static_cast<uint8_t *>(pvalue) = zval_is_true(entry);
+		*static_cast<uint8_t *>(pvalue) = zend_is_true(entry);
 		break;
 	case PT_SYSTIME:
 		/* convert unix timestamp to nt timestamp */
