@@ -199,7 +199,7 @@ ec_error_t message_object::init_message(bool fai, cpid_t new_cpid)
 	auto msglcid = cu_alloc<uint32_t>();
 	if (msglcid == nullptr)
 		return ecServerOOM;
-	*msglcid = 0x409; /* en-US */
+	*msglcid = uint_value_zero;
 	propvals.emplace_back(PR_MESSAGE_LOCALE_ID, msglcid);
 	propvals.emplace_back(PR_LOCALE_ID, msglcid);
 
@@ -718,7 +718,6 @@ ec_error_t message_object::get_properties(proptag_cspan pproptags,
 	auto pmessage = this;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static const uint32_t lcid_default = 0x409; /* en-US */
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
@@ -758,7 +757,7 @@ ec_error_t message_object::get_properties(proptag_cspan pproptags,
 	}
 	if (pproptags.has(PR_MESSAGE_LOCALE_ID) &&
 	    !ppropvals->has(PR_MESSAGE_LOCALE_ID))
-		ppropvals->emplace_back(PR_MESSAGE_LOCALE_ID, &lcid_default);
+		ppropvals->emplace_back(PR_MESSAGE_LOCALE_ID, &uint_value_zero);
 	if (pproptags.has(PR_MESSAGE_CODEPAGE) &&
 	    !ppropvals->has(PR_MESSAGE_CODEPAGE))
 		ppropvals->emplace_back(PR_MESSAGE_CODEPAGE, &pmessage->cpid);
