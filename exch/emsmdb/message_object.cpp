@@ -230,6 +230,10 @@ ec_error_t message_object::init_message(bool fai, cpid_t new_cpid)
 		{PR_CREATION_TIME, &modtime},
 		{PR_SEARCH_KEY, search_key},
 		{PR_MESSAGE_LOCALE_ID, &msglcid},
+		/*
+		 * PR_LOCALE_ID set as per MS-OXCMSG v27 §3.2.5.2.
+		 * EXC foregoes this, as per §6.
+		 */
 		{PR_LOCALE_ID, &msglcid},
 		{PR_CREATOR_NAME, deconst(dispname.c_str())},
 		{PR_CREATOR_ENTRYID, abk_eid},
