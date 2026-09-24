@@ -17,6 +17,7 @@
 #include <libHX/io.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
+#include <sys/wait.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
@@ -3510,15 +3511,21 @@ static ec_error_t gxht_transform(std::string_view inbuf, std::string &outbuf,
     attachment_list *atlist) try
 {
 	static constexpr const char *argv[] = {"gromox-rtftohtml", "--rtftogxht", nullptr};
-	int fin = -1, fout = -1;
+	int fin = -1, fout = -1, status = 0;
+	pid_t pid = -1;
+	auto cl_pid = HX::make_scope_exit([&]() {
+		if (pid > 0)
+			waitpid(pid, &status, 0);
+	});
+	/* during destruction, fds need to be closed before wait()ing */
 	auto cl_0 = HX::make_scope_exit([&]() {
 		if (fin >= 0)
 			close(fin);
 		if (fout >= 0)
 			close(fout);
 	});
-	auto pid = popenfd(argv[0], argv, &fin, &fout, POPENFD_KEEP,
-	           const_cast<const char *const *>(environ));
+	pid = popenfd(argv[0], argv, &fin, &fout, POPENFD_KEEP,
+	      const_cast<const char *const *>(environ));
 	if (pid < 0)
 		return ecError;
 	if (HXio_fullwrite(fin, inbuf.data(), inbuf.size()) < 0)
@@ -3529,6 +3536,11 @@ static ec_error_t gxht_transform(std::string_view inbuf, std::string &outbuf,
 	std::unique_ptr<char[], stdlib_delete> newbuf(HX_slurp_fd(fout, &fsize));
 	if (newbuf == nullptr)
 		return ecMAPIOOM;
+	/*
+	 * Unlike convert_doc_with_program, the exit status is ignored here.
+	 * The stream has length markers, so we can already detect incomplete
+	 * data that way.
+	 */
 	if (fsize < 8 || memcmp(&newbuf[0], "GXHT0001", 8) != 0) {
 		outbuf.assign(newbuf.get(), fsize); /* Try salvaging */
 		return ecRpcFormat;
