@@ -248,10 +248,10 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 		 */
 		if (!exmdb_client->imapfile_read(dir, "eml", mid_string, &slurp_data))
 			return 0;
-		MAIL imail;
-		if (!imail.refonly_parse(slurp_data.c_str(), slurp_data.size()))
-			return 0;
-		if (imail.make_digest(digest) <= 0)
+		vmime::message vmsg;
+		auto vpctx = vmail_default_parsectx();
+		vmsg.parse(vpctx, slurp_data);
+		if (vmail_to_digest(slurp_data, vmsg, digest) <= 0)
 			return 0;
 		digest["file"] = "";
 		auto djson = json_to_str(digest);
@@ -1385,20 +1385,34 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 			return false;
 		}
 		auto log_id = dir + ":m"s + std::to_string(message_id);
-		MAIL imail;
+		auto imail = vmime::make_shared<vmime::message>();
 		oxcmail_converter cvt;
 		cvt.log_id = log_id.c_str();
 		cvt.alloc = cu_alloc_bytes;
 		cvt.get_propids = cu_get_propids;
 		cvt.get_propname = cu_get_propname;
-		if (!cvt.mapi_to_inet(*pmsgctnt, imail)) {
-			mlog(LV_ERR, "E-1222: oxcmail_export %s failed", log_id.c_str());
+		auto err = cvt.mapi_to_inet(*pmsgctnt, imail);
+		if (err != ecSuccess) {
+			mlog(LV_ERR, "E-1222: oxcmail_export %s failed: %s", log_id.c_str(), mapi_strerror(err));
 			cu_switch_allocator();
 			return false;
 		}
 		cu_switch_allocator();
-		if (imail.make_digest(digest) <= 0)
+
+		/* Reparse the vmime::message to fill in the values for getParsedOffset. */
+		std::string emlcontent;
+		try {
+			emlcontent = vmail_to_string(*imail);
+		} catch (const vmime::exception &e) {
+			mlog(LV_ERR, "E-1771: vmail_to_string failed: %s", e.what());
 			return false;
+		}
+		vmime::message vparsed;
+		auto vpctx = vmail_default_parsectx();
+		vparsed.parse(vpctx, emlcontent);
+		if (vmail_to_digest(emlcontent, vparsed, digest) <= 0)
+			return false;
+
 		digest.removeMember("file");
 		djson = json_to_str(digest);
 		char guidtxt[GUIDSTR_SIZE]{};
@@ -1406,12 +1420,6 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		e.midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
 		if (!exmdb_client->imapfile_write(dir, "ext", e.midstr, djson)) {
 			mlog(LV_ERR, "E-1770: imapfile_write %s/ext/%s incomplete", dir, e.midstr.c_str());
-			return false;
-		}
-		std::string emlcontent;
-		auto err = imail.to_str(emlcontent);
-		if (err != 0) {
-			mlog(LV_ERR, "E-1771: imail.to_string failed: %s", strerror(err));
 			return false;
 		}
 		if (!exmdb_client->imapfile_write(dir, "eml", e.midstr, emlcontent)) {
@@ -2375,13 +2383,18 @@ static int me_minst(std::span<char *> argv, int sockd) try
 		mlog(LV_ERR, "E-2071: imapfile_read %s/eml/%s failed", argv[1], argv[3]);
 		return MIDB_E_DISK_ERROR;
 	}
-
 	MAIL imail;
 	if (!imail.refonly_parse(pbuff.c_str(), pbuff.size()))
 		return MIDB_E_IMAIL_RETRIEVE;
+
 	Json::Value digest;
-	if (imail.make_digest(digest) <= 0)
-		return MIDB_E_IMAIL_DIGEST;
+	{
+		vmime::message vmsg;
+		auto vpctx = vmail_default_parsectx();
+		vmsg.parse(vpctx, pbuff);
+		if (vmail_to_digest(pbuff, vmsg, digest) <= 0)
+			return MIDB_E_IMAIL_DIGEST;
+	}
 	digest["file"] = argv[3];
 	auto djson = json_to_str(digest);
 	if (!exmdb_client->imapfile_write(argv[1], "ext", argv[3], djson)) {
