@@ -9,6 +9,11 @@
 #include <vector>
 #include <libHX/endian.h>
 #include <libHX/scope.hpp>
+#include <vmime/addressList.hpp>
+#include <vmime/contentTypeField.hpp>
+#include <vmime/dateTime.hpp>
+#include <vmime/message.hpp>
+#include <vmime/stringContentHandler.hpp>
 #include <vmime/utility/url.hpp>
 #include <gromox/algorithm.hpp>
 #include <gromox/config_file.hpp>
@@ -924,7 +929,7 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 
 	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
 	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
-	MAIL imail;
+	auto vmail = vmime::make_shared<vmime::message>();
 	rp_storedir = par.cur.dirc();
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
@@ -932,63 +937,64 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 	cvt.get_propids = cu_get_propids;
 	cvt.get_propname = cu_get_propname;
 	cvt.use_format_override(*par.ctnt);
-	if (!cvt.mapi_to_inet(*par.ctnt, imail)) {
-		mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed");
+	auto err = cvt.mapi_to_inet(*par.ctnt, vmail);
+	if (err != ecSuccess) {
+		mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed: %s", mapi_strerror(err));
 		rp_alloc_ctx.clear();
 		rp_storedir = nullptr;
-		return ecError;
+		return err;
 	}
 	rp_alloc_ctx.clear();
 	rp_storedir = nullptr;
 
 	ec_error_t ret = ecSuccess;
 	if (flavor & FWD_AS_ATTACHMENT) {
-		MAIL imail1;
-		auto pmime = imail1.add_head();
-		if (pmime == nullptr)
-			return ecServerOOM;
-		if (!pmime->set_content_type("message/rfc822"))
-			mlog(LV_WARN, "W-2326: set_content_type not successful");
-		char tmp_buff[64*1024];
-		snprintf(tmp_buff, std::size(tmp_buff), "<%s>", par.ev_to);
-		pmime->set_field("From", tmp_buff);
-		int offset = 0;
-		for (const auto &eaddr : rcpt_list) {
-			if (offset == 0)
-				offset = gx_snprintf(tmp_buff, std::size(tmp_buff),
-				         "<%s>", eaddr.c_str());
-			else
-				offset += gx_snprintf(tmp_buff + offset,
-				          std::size(tmp_buff) - offset, ", <%s>",
-				          eaddr.c_str());
-			pmime->append_field("Delivered-To", eaddr.c_str());
-		}
-		pmime->set_field("To", tmp_buff);
-		const std::string *old_subject = nullptr;
-		if (auto pmime_old = imail.get_head())
-			old_subject = pmime_old->get_field("Subject");
-		if (old_subject != nullptr)
-			pmime->set_field("Subject", "Fwd: " + *old_subject);
-		else
-			pmime->set_field("Subject", "Fwd: (no subject)");
-		struct tm time_buff;
-		auto cur_time = time(nullptr);
-		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
-			localtime_r(&cur_time, &time_buff));
-		pmime->set_field("Date", tmp_buff);
-		pmime->write_mail(&imail);
-		auto env_from = (flavor & FWD_PRESERVE_SENDER) ?
-		                par.ev_from : par.ev_to;
-		ret = cu_send_mail(imail1, rp_smtp_url.c_str(), env_from, rcpt_list);
-	} else {
-		auto pmime = imail.get_head();
-		if (pmime == nullptr)
+		auto new_msg = vmime::make_shared<vmime::message>();
+		try {
+			auto &new_hdr = *new_msg->getHeader();
+			auto &new_body = *new_msg->getBody();
+			new_body.setContents(vmime::make_shared<vmime::stringContentHandler>(vmail_to_string(*vmail)),
+				vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_RFC822));
+
+			new_hdr.From()->setValue(par.ev_to);
+			vmime::addressList vrcpt_list;
+			auto hf_fac = vmime::headerFieldFactory::getInstance();
+			for (const auto &r : rcpt_list) {
+				vrcpt_list.appendAddress(vmime::make_shared<vmime::mailbox>(r));
+				auto dto = hf_fac->create(vmime::fields::DELIVERED_TO);
+				dto->setValue(r);
+				new_hdr.appendField(dto);
+			}
+			new_hdr.To()->setValue(vrcpt_list);
+
+			auto old_subject = vmail->getHeader()->findField(vmime::fields::SUBJECT);
+			if (old_subject != nullptr) {
+				auto ns = vmime::dynamicCast<vmime::text>(old_subject->getValue()->clone());
+				ns->insertWordBefore(0, vmime::make_shared<vmime::word>("Fwd: "));
+				new_hdr.Subject()->setValue(ns);
+			} else {
+				new_hdr.Subject()->setValue("Fwd: (no subject)");
+			}
+			new_hdr.Date()->setValue(vmime::datetime::now());
+		} catch (const vmime::exception &e) {
+			mlog(LV_ERR, "ruleproc: OP_FORWARD: %s", e.what());
 			return ecError;
-		for (const auto &eaddr : rcpt_list)
-			pmime->append_field("Delivered-To", eaddr.c_str());
+		}
+
 		auto env_from = (flavor & FWD_PRESERVE_SENDER) ?
 		                par.ev_from : par.ev_to;
-		ret = cu_send_mail(imail, rp_smtp_url.c_str(), env_from, rcpt_list);
+		ret = cu_send_vmail(new_msg, rp_smtp_url.c_str(), env_from, rcpt_list);
+	} else {
+		auto &vhdr = *vmail->getHeader();
+		auto hf_fac = vmime::headerFieldFactory::getInstance();
+		for (const auto &eaddr : rcpt_list) {
+			auto dto = hf_fac->create(vmime::fields::DELIVERED_TO);
+			dto->setValue(eaddr);
+			vhdr.appendField(dto);
+		}
+		auto env_from = (flavor & FWD_PRESERVE_SENDER) ?
+		                par.ev_from : par.ev_to;
+		ret = cu_send_vmail(vmail, rp_smtp_url.c_str(), env_from, rcpt_list);
 	}
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "ruleproc: OP_FORWARD cu_send_mail: %s",
@@ -1387,21 +1393,21 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 			return err;
 	}
 
+	auto vmsg = vmime::make_shared<vmime::message>();
 	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
 	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
-	MAIL imail;
 	rp_storedir = par.cur.dirc();
-
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = cu_alloc;
 	cvt.get_propids = cu_get_propids;
 	cvt.get_propname = cu_get_propname;
-	if (!cvt.mapi_to_inet(*rsp_ctnt, imail)) {
-		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.");
-		return ecError;
+	err = cvt.mapi_to_inet(*rsp_ctnt, vmsg);
+	if (err != ecSuccess) {
+		mlog(LV_ERR, "mr_send_response: oxcmail_export failed: %s", mapi_strerror(err));
+		return err;
 	}
-	err = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, {txt});
+	err = cu_send_vmail(vmsg, rp_smtp_url.c_str(), par.ev_to, {txt});
 	rp_alloc_ctx.clear();
 	rp_storedir = nullptr;
 	return err;
