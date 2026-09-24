@@ -685,7 +685,7 @@ static int vexport_simple_body()
 
 	/* Message with two body types */
 #define HSTR2 "<p>" HSTR "</p>"
-	const BINARY bin_html = {strlen(HSTR2), {deconst(HSTR2)}};
+	const BINARY bin_html = {static_cast<uint32_t>(strlen(HSTR2)), {deconst(HSTR2)}};
 	props.set(PR_HTML, &bin_html);
 	err = cvt.mapi_to_inet(*mct, vmsg);
 	if (err != ecSuccess)
@@ -764,7 +764,7 @@ static int vexport_image()
 	auto cvt = ve_converter();
 	message_content_ptr mct(message_content_init());
 	auto atx = ve_new_attachment(mct.get());
-	const BINARY almost_empty = {1, deconst(" ")};
+	const BINARY almost_empty = {1, {deconst(" ")}};
 	uint32_t method = ATTACH_BY_VALUE;
 	atx->proplist.set(PR_ATTACH_METHOD, &method);
 	atx->proplist.set(PR_ATTACH_DATA_BIN, &almost_empty);
@@ -1044,7 +1044,7 @@ static int vexport_smime()
 		"\r\n"
 		"SIGSIG\r\n"
 		"--sig--\r\n";
-	const BINARY sbin = {strlen(signed_blob), {deconst(signed_blob)}};
+	const BINARY sbin = {static_cast<uint32_t>(strlen(signed_blob)), {deconst(signed_blob)}};
 	atx->proplist.set(PR_ATTACH_DATA_BIN, &sbin);
 	props.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned");
 	err = cvt.mapi_to_inet(*mct, vmsg);

@@ -90,7 +90,7 @@ FreeBSD/OpenBSD
 
 .. code-block::
 
-	PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure CC=cc CXX=c++ CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib --with-php=/usr/local/bin/php-config-8.4
+	PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure CC=cc CXX=c++ CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib --with-php=/usr/local/bin/php-config-8.5
 
 * FreeBSD uses /usr/local/libdata/pkgconfig, but some software packages might,
   when built from source, install to /usr/local/lib/pkgconfig instead. (wmime

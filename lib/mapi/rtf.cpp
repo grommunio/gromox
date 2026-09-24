@@ -156,6 +156,10 @@
 
 using namespace gromox;
 
+extern "C" {
+extern char **environ;
+}
+
 enum {
 	ATTR_NONE = 0,
 	ATTR_BOLD,

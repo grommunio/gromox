@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2025-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -8,9 +8,36 @@
 #include <string>
 #include <unistd.h>
 #include <libHX/defs.h>
+#include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <sys/stat.h>
 #undef EXIT_FAILURE
 #define EXIT_FAILURE 2
+
+static std::string la_to_so_simple(std::string file)
+{
+	auto z = file.size();
+	if (z >= 3 && file.compare(z - 3, z, ".la") == 0) {
+		file.replace(z - 3, 3, ".so");
+		auto pos = file.find_last_of('/');
+		file.insert(pos != file.npos ? pos + 1 : 0, ".libs/");
+	}
+	return file;
+}
+
+static std::string la_to_so(const char *la_file)
+{
+	char *dlname = nullptr;
+	auto cl_0 = HX::make_scope_exit([&]() { free(dlname); });
+	const struct HXoption directives[] = {
+		{"dlname", 0, HXTYPE_STRING, &dlname},
+		HXOPT_TABLEEND,
+	};
+	auto ret = HX_shconfig(la_file, directives);
+	if (ret <= 0 || dlname == nullptr)
+		return la_to_so_simple(la_file);
+	return dlname;
+}
 
 int main(int argc, char **argv)
 {
@@ -18,13 +45,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	auto stamp = argv[1];
 	for (argv += 2; *argv != nullptr; ++argv) {
-		std::string file = *argv;
-		auto z = file.size();
-		if (z >= 3 && file.compare(z - 3, z, ".la") == 0) {
-			file.replace(z - 3, 3, ".so");
-			auto pos = file.find_last_of('/');
-			file.insert(pos != file.npos ? pos + 1 : 0, ".libs/");
-		}
+		auto file = la_to_so(*argv);
 		auto h = dlopen(file.c_str(), RTLD_NOW);
 		if (h == nullptr) {
 			fprintf(stderr, "dlopen %s: %s\n", file.c_str(), dlerror());

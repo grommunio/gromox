@@ -56,7 +56,7 @@ dist_pkglibexec_SCRIPTS = tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = exch/exmdb/rpc.cpp include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h lib/exmdb_rpc.cpp php_mapi/zrpc.cpp
-CLEANFILES = ${BUILT_SOURCES} dldcheck.stamp data/abkt.pak data/timezone.pak
+CLEANFILES = ${BUILT_SOURCES} dldcheck.stamp data/abkt.pak data/timezone.pak tools/gromox-rtftohtml
 libgromox_abtree_la_SOURCES = lib/ab_tree.cpp
 libgromox_abtree_la_LDFLAGS = ${default_SYFLAGS}
 libgromox_abtree_la_LIBADD = ${fmt_LIBS} libgxs_mysql_adaptor.la
@@ -248,7 +248,7 @@ if HAVE_GSSAPI
 noinst_PROGRAMS += tests/gssauth
 endif
 dldcheck_SOURCES = tools/dldcheck.cpp
-dldcheck_LDADD = ${dl_LIBS}
+dldcheck_LDADD = ${dl_LIBS} ${libHX_LIBS}
 TESTS = tests/bodyconv tests/jsontest tests/oxcmail_ie tests/utiltest
 tests_udb_SOURCES = tests/userdb.cpp
 tests_udb_LDADD = ${libHX_LIBS} libgromox_common.la libgxs_mysql_adaptor.la
@@ -269,7 +269,7 @@ tests_gxl_383_LDADD = libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
 tests_jsontest_SOURCES = tests/jsontest.cpp
 tests_jsontest_LDADD = ${jsoncpp_LIBS} libgromox_common.la libgromox_mapi.la
 tests_oxcmail_ie_SOURCES = tests/oxcmail_ie.cpp
-tests_oxcmail_ie_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
+tests_oxcmail_ie_LDADD = ${libHX_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_mapi.la
 tests_ucvttest_SOURCES = tests/ucvttest.cpp
 tests_ucvttest_LDADD = libgromox_mapi.la
 tests_utf8filter_SOURCES = tests/utf8filter.cpp
@@ -357,7 +357,7 @@ EXTRA_DIST += \
 	system/selinux/gromox.fc system/selinux/gromox.if system/selinux/gromox.te system/selinux/readme.rst \
 	tests/eps_1_01_03.b tests/eps_1_02.b tests/eps_1_04.b tests/eps_2_05.b tests/epv_1.b tests/epv_2.b tests/epv_3.b tests/epv_4.b \
 	tests/gxl-475.ics tests/gxl-598.ics tests/httppipe.pl tests/mainstub.cpp tests/zlogin.php \
-	tools/abtohex tools/create_k2g_migration_lists.sh tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exchange2grommunio.ps1 tools/exmidl.pl tools/exmidl.sh tools/genmails tools/hunpack tools/includesort tools/kopano2grommunio.sh tools/mpak.pl tools/mpak.sh tools/procnames tools/proptagsort tools/smtpaddr.cpp tools/smtpaddr.rst tools/stackusage tools/tzdef_decode tools/warncount tools/zcidl.pl tools/zcidl.sh
+	tools/abtohex tools/create_k2g_migration_lists.sh tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exchange2grommunio.ps1 tools/exmidl.pl tools/exmidl.sh tools/genmails tools/hunpack tools/includesort tools/kopano2grommunio.sh tools/mpak.pl tools/mpak.sh tools/procnames tools/proptagsort tools/gromox-rtftohtml.in tools/smtpaddr.cpp tools/smtpaddr.rst tools/stackusage tools/tzdef_decode tools/warncount tools/zcidl.pl tools/zcidl.sh
 
 data/abkt.pak: ${abkt_files}
 	${AM_V_GEN}${MKDIR_P} data
