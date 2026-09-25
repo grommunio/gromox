@@ -421,9 +421,10 @@ std::optional<bool> parse_bool_strict(const char *s)
  * Average expansion: x2.71
  * Worst expansion: x4.00
  */
-std::string bin2cstr(const void *vdata, size_t len)
+std::string bin2cstr(std::string_view sv)
 {
-	auto data = static_cast<const unsigned char *>(vdata);
+	auto data = reinterpret_cast<const unsigned char *>(sv.data());
+	auto len = sv.size();
 	std::string ret;
 	char b[5];
 	for (size_t i = 0; i < len; ++i) {
@@ -491,13 +492,14 @@ struct bin2txt_init {
 static bin2txt_init g_bin2txt_choice;
 }
 
-std::string bin2txt(const void *vdata, size_t len)
+std::string bin2txt(std::string_view sv)
 {
 	switch (g_bin2txt_choice.m_cstr) {
-	case 1: return bin2hex(vdata, len);
-	case 2: return bin2cstr(vdata, len);
+	case 1: return bin2hex(std::move(sv));
+	case 2: return bin2cstr(std::move(sv));
 	}
-	auto data = static_cast<const unsigned char *>(vdata);
+	auto data = reinterpret_cast<const unsigned char *>(sv.data());
+	auto len  = sv.size();
 	std::string ret;
 	char b[4]{};
 	for (size_t i = 0; i < len; ++i) {
@@ -536,14 +538,12 @@ std::string bin2txt(const void *vdata, size_t len)
  * Average expansion: x2.00
  * Worst expansion: x2.00
  */
-std::string bin2hex(const void *vin, size_t len)
+std::string bin2hex(std::string_view sv)
 {
-	std::string buffer;
-	if (vin == nullptr)
-		return buffer;
 	static constexpr char digits[] = "0123456789abcdef";
-	auto input = static_cast<const char *>(vin);
-	buffer.resize(len * 2);
+	auto input = sv.data();
+	auto len   = sv.size();
+	std::string buffer(len * 2, '\0');
 	for (size_t j = 0; len-- > 0; j += 2) {
 		buffer[j]   = digits[(*input >> 4) & 0x0F];
 		buffer[j+1] = digits[*input & 0x0F];

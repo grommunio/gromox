@@ -81,7 +81,7 @@ static void nsp_trace(const char *func, bool is_exit, const STAT *s,
 			outrows->prows[k].cvalues);
 		if (eid == nullptr)
 			continue;
-		fprintf(stderr, "\t#%zu  %s\n", k, bin2txt(eid->bin.pb, eid->bin.cb).c_str());
+		fprintf(stderr, "\t#%zu  %s\n", k, bin2txt(static_cast<std::string_view>(eid->bin)).c_str());
 	}
 }
 

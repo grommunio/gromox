@@ -552,7 +552,7 @@ static int do_process_2(std::string_view &&data, const char *str)
 		return 0;
 	}
 	case CM_BIN2TXT: {
-		auto out = bin2txt(data.data(), data.size());
+		auto out = bin2txt(data);
 		if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
 			perror("write");
 			return -1;
