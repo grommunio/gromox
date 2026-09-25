@@ -1103,7 +1103,7 @@ struct tGroupedItems : public NS_EWS_Types {
  */
 struct tFindItemParent : public tFindResponsePagingAttributes {
 	std::vector<sItem> Items;
-	std::vector<tGroupedItems> Groups;
+	std::optional<std::vector<tGroupedItems>> Groups;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
