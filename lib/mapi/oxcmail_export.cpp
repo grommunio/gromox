@@ -813,7 +813,7 @@ static vmime::mediaType att_mediatype(const TPROPVAL_ARRAY &props)
  */
 ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
     bool is_inline, const mime_skeleton &skel,
-    vmime::shared_ptr<vmime::bodyPart> vpart, unsigned int mail_depth)
+    vmime::bodyPart &vpart, unsigned int mail_depth)
 {
 	auto is_contact = mct_is_outlook_contact(atc.pembedded);
 	const char *file_name = atc.proplist.get<char>(PR_ATTACH_LONG_FILENAME);
@@ -830,7 +830,7 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 		file_name = nullptr;
 	}
 	
-	auto &vhdr = *vpart->getHeader();
+	auto &vhdr = *vpart.getHeader();
 	auto str = atc.proplist.get<const char>(PR_DISPLAY_NAME);
 	if (str != nullptr && *str != '\0')
 		vhdr.getField("Content-Description")->setValue(text8(str));
@@ -870,7 +870,7 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 		if (vc_cvt.mapi_to_vcard(*atc.pembedded, vcard_obj)) {
 			std::string vcout;
 			if (vcard_obj.serialize(vcout)) {
-				omv_set_bodytext(*vpart, vcout, mtype);
+				omv_set_bodytext(vpart, vcout, mtype);
 				auto &chf = *vmime::dynamicCast<vmime::contentTypeField>(vhdr.ContentType());
 				*chf.getParameter("profile") = vmime::parameter("profile", "vCard");
 				return ecSuccess;
@@ -882,7 +882,7 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 		auto str = fmt::format("This embedded attachment was suppressed upon sending "
 		           "because it is nested too deeply (maximum {})\n",
 		           m_max_attach_depth);
-		vpart->getBody()->setContents(
+		vpart.getBody()->setContents(
 			vmime::make_shared<vmime::stringContentHandler>(std::move(str)),
 			mt_plain, vmime::charsets::UTF_8);
 		return ecSuccess;
@@ -901,7 +901,7 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 		           mail_depth + 1);
 		if (err != ecSuccess)
 			return err;
-		vpart->getBody()->setContents(
+		vpart.getBody()->setContents(
 			vmime::make_shared<vmime::stringContentHandler>(emb->generate()),
 			vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_RFC822));
 		return ecSuccess;
@@ -909,13 +909,13 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 
 	auto bv = atc.proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
 	if (bv != nullptr) {
-		vpart->getBody()->setContents(
+		vpart.getBody()->setContents(
 			vmime::make_shared<vmime::stringContentHandler>(std::string(bv->pc, bv->cb)),
 			mtype);
-		vpart->getBody()->setEncoding(vmime::encoding(vmime::encodingTypes::BASE64));
+		vpart.getBody()->setEncoding(vmime::encoding(vmime::encodingTypes::BASE64));
 	} else {
 		/* e.g. ATTACH_BY_REFERENCE; emit the type even without data */
-		vpart->getBody()->setContentType(mtype);
+		vpart.getBody()->setContentType(mtype);
 	}
 	return ecSuccess;
 }
@@ -947,7 +947,7 @@ ec_error_t oxcmail_converter::export_attachments(const message_content &mct,
 		}
 		auto new_part = vmime::make_shared<vmime::bodyPart>();
 		container->getBody()->appendPart(new_part);
-		auto err = export_attachment(at, is_inline, skel, new_part, mail_depth);
+		auto err = export_attachment(at, is_inline, skel, *new_part, mail_depth);
 		if (err != ecSuccess)
 			return err;
 	}
@@ -969,7 +969,7 @@ ec_error_t oxcmail_converter::export_tnef_body(const mime_skeleton &skel,
 	for (const auto &at : atxlist) {
 		auto new_part = vmime::make_shared<vmime::bodyPart>();
 		vrelated->getBody()->appendPart(new_part);
-		auto err = export_attachment(at, true, skel, new_part, mail_depth);
+		auto err = export_attachment(at, true, skel, *new_part, mail_depth);
 		if (err != ecSuccess)
 			return err;
 	}
