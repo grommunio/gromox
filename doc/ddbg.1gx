@@ -6,9 +6,10 @@ ddbg \(em MAPI data debugger
 .SH Synopsis
 \fB/usr/libexec/gromox/ddbg\fP [options...] command [args...]
 .SH Description
-ddbg can be used to analyze various binary blobs. If no arguments are given,
-input is read from stdin. If arguments are given, they are treated as immediate
-values (i.e. content, never the name of a file to read).
+ddbg can be used to analyze binary blobs, convert between data formats, or
+query various text/ID mappings commonly used in MAPI. If no arguments are
+given, input is read from stdin. If arguments are given, they are treated as
+immediate values (i.e. content, never the name of a file to read).
 .SH Options
 .TP
 \fB\-p\fP, \fB\-\-pack\fP
@@ -28,6 +29,14 @@ Convert all bytes to a textual representation. The environment variable
 BIN2TXT_MODE can be used to influence the output. Possible values are
 \fBcstr\fP (output as a C string literal without surrounding quotes), \fBhex\fP
 (hex nibbles like bin2hex), \fBtxt\fP (custom compact encoding).
+.TP
+\fB\-\-cpidtocset\fP
+For a given character set identified by numeric IBM/Microsoft
+codepage identifier, show the corresponding IANA name.
+.TP
+\fB\-\-csettocpid\fP
+For a given character set identified by its IANA name, show the
+corresponding numeric IBM/Microsoft codepage identifer.
 .TP
 \fB\-d\fP, \fB\-\-decode\fP
 Try all decoders.
@@ -52,11 +61,32 @@ Decode restriction blob (e.g. rule condition).
 Decode an Unix timestamp and show the equivalent NT time and calendar-based
 date.
 .TP
+\fB\-\-exttomime\fP
+For a given filename extension (e.g. "bmp"), show the most likely MIME type
+(IANA Media Type) that it represents.
+.TP
 \fB\-\-htmltortf\fP
 Convert a HTML document to RTF.
 .TP
 \fB\-\-htmltotext\fP
 Convert a HTML document to plaintext.
+.TP
+\fB\-\-langtocset\fP
+Show the preferred 8-bit character set associated with a given language tag
+(identifier in the style of XPG4 locales, but only a few well-known fixed
+strings are accepted, e.g. "zh_TW").
+.TP
+\fB\-\-langtolcid\fP
+For a given language tag (RFC 5646 form, e.g. "en-US"), show the corresponding
+numeric Windows locale identifier (LCID).
+.TP
+\fB\-\-lcidtolang\fP
+For a given numeric Windows locale identifier, show the corresponding
+langauge tag.
+.TP
+\fB\-\-mimetoext\fP
+For a given MIME type (IANA Media Type), show the typical filename extension
+used for it.
 .TP
 \fB\-\-lzxdec\fP
 Uncompress an lzxpress data stream.
@@ -99,5 +129,9 @@ converters are tried until a working one is found.
 ddbg \-p \-\-decode\-guid 38a1bb1005e5101aa1bb08002b2a56c2
 .IP \(bu 4
 ddbg \-\-unrtfcp <body.bin >body.rtf
+.IP \(bu 4
+ddbg \-\-proptag 0x3001001f
+.IP \(bu 4
+ddbg \-\-exttomime bmp
 .SH See also
 \fBgromox\fP(7)
