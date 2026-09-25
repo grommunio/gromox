@@ -18,6 +18,7 @@
 #include <gromox/rop_util.hpp>
 
 #include "enums.hpp"
+#include "rules.hpp"
 
 namespace tinyxml2 {
 	class XMLElement;
@@ -4944,7 +4945,7 @@ struct mGetInboxRulesResponse : public mResponseMessageType {
 	using mResponseMessageType::success;
 
 	std::optional<bool> OutlookRuleBlobExists;
-	// <xs:element name="InboxRules" type="t:ArrayOfRulesType" minOccurs="0" maxOccurs="1" />
+	std::vector<Rules::Rule> InboxRules;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
