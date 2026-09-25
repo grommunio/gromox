@@ -921,8 +921,8 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 }
 
 ec_error_t oxcmail_converter::export_attachments(const message_content &mct,
-    const mime_skeleton &skel, vmime::shared_ptr<vmime::bodyPart> vrelated,
-    vmime::shared_ptr<vmime::bodyPart> vmixed, unsigned int mail_depth)
+    const mime_skeleton &skel, vmime::bodyPart *vrelated,
+    vmime::bodyPart *vmixed, unsigned int mail_depth)
 {
 	if (mct.children.pattachments == nullptr)
 		return ecSuccess;
@@ -939,7 +939,7 @@ ec_error_t oxcmail_converter::export_attachments(const message_content &mct,
 		 * multipart/alternative.
 		 */
 		auto is_inline = att_is_inline(at);
-		auto &container = is_inline ? vrelated : vmixed;
+		auto container = is_inline ? vrelated : vmixed;
 		if (container == nullptr) {
 			mlog(LV_DEBUG, "D-2359: programming error, %s needs a multipart/%s container",
 				__func__, is_inline ? "related" : "mixed");
@@ -1217,7 +1217,7 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 		mlog(LV_ERR, "E-2941: %s", mapi_strerror(err));
 		return err;
 	}
-	err = export_attachments(mct, skel, prelated, pmixed, mail_depth);
+	err = export_attachments(mct, skel, prelated.get(), pmixed.get(), mail_depth);
 	if (err != ecSuccess) {
 		mlog(LV_ERR, "E-2940: %s", mapi_strerror(err));
 		return err;

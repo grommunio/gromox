@@ -57,7 +57,7 @@ class GX_EXPORT oxcmail_converter {
 	bool do_export(const message_content &, bool force_tnef, MAIL &, unsigned int mdepth);
 	ec_error_t do_export(const message_content &imsg, bool b_tnef, vmime::shared_ptr<vmime::bodyPart>, unsigned int mdepth);
 	ec_error_t export_attachments(const message_content &, const oxcmail::mime_skeleton &, MAIL &, MIME *, MIME *, unsigned int mdepth);
-	ec_error_t __attribute__((warn_unused_result)) export_attachments(const message_content &, const oxcmail::mime_skeleton &, vmime::shared_ptr<vmime::bodyPart> rel, vmime::shared_ptr<vmime::bodyPart> mixed, unsigned int mdepth);
+	ec_error_t __attribute__((warn_unused_result)) export_attachments(const message_content &, const oxcmail::mime_skeleton &, vmime::bodyPart *rel, vmime::bodyPart *mixed, unsigned int mdepth);
 	bool export_attachment(const attachment_content &, bool b_inline, const oxcmail::mime_skeleton &, MIME &, unsigned int mdepth);
 	ec_error_t __attribute__((warn_unused_result)) export_attachment(const attachment_content &, bool is_inline, const oxcmail::mime_skeleton &, vmime::bodyPart &out, unsigned int mdepth);
 	ec_error_t export_tnef_body(const oxcmail::mime_skeleton &, MAIL &, MIME *, unsigned int mdepth);
