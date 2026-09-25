@@ -84,6 +84,9 @@ numeric Windows locale identifier (LCID).
 For a given numeric Windows locale identifier, show the corresponding
 langauge tag.
 .TP
+\fB\-\-mdigest\fP
+Produce an MJSON digest object for a RFC5322 message.
+.TP
 \fB\-\-mimetoext\fP
 For a given MIME type (IANA Media Type), show the typical filename extension
 used for it.

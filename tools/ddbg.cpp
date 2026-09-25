@@ -11,7 +11,9 @@
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/element_data.hpp>
+#include <gromox/json.hpp>
 #include <gromox/lzxpress.hpp>
+#include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
@@ -31,7 +33,7 @@ enum {
 	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_RTFTOGXHT,
 	CM_TEXTTOHTML, CM_UNRTFCP, CM_LANGTOCSET, CM_LCIDTOLTAG, CM_LTAGTOLCID,
 	CM_QPDECODE, CM_QPENCODE, CM_CSETTOCPID, CM_CPIDTOCSET,
-	CM_EXTTOMIME, CM_MIMETOEXT, CM_PROPTAG,
+	CM_EXTTOMIME, CM_MIMETOEXT, CM_PROPTAG, CM_MDIGEST,
 };
 static unsigned int g_dowhat, g_hex2bin;
 static constexpr struct HXoption g_options_table[] = {
@@ -54,6 +56,7 @@ static constexpr struct HXoption g_options_table[] = {
 	{"ltagtolcid", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LTAGTOLCID, "Convert locale tag to locale ID"},
 	{"lzxdec", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXDEC, "LZX decompression"},
 	{"lzxenc", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXENC, "LZX compression"},
+	{"mdigest", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_MDIGEST, "Produce an MJSON digest from an EML"},
 	{"mimetoext", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_MIMETOEXT, "Convert MIME type to filename extension"},
 	{"pack", 'p', HXTYPE_NONE, &g_hex2bin, {}, {}, 0, "Employ hex2bin before main action"},
 	{"proptag", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_PROPTAG, "Show name for MAPI property tag (e.g. 0x3001001f)"},
@@ -549,6 +552,23 @@ static int do_rtftohtml(std::string_view data, bool transfer)
 	return 0;
 }
 
+static int mdigest(std::string_view data)
+{
+	MAIL imail;
+	if (!imail.refonly_parse(data.data(), data.size())) {
+		fprintf(stderr, "Failed to parse RFC5322 block for message\n");
+		return -1;
+	}
+	Json::Value digest;
+	auto ret = imail.make_digest(digest);
+	if (ret <= 0) {
+		fprintf(stderr, "Failed to produce JDigest for RFC5322 block\n");
+		return -1;
+	}
+	printf("%s\n", json_to_str(digest).c_str());
+	return 0;
+}
+
 static int do_process_2(std::string_view &&data, const char *str)
 {
 	switch (g_dowhat) {
@@ -654,6 +674,8 @@ static int do_process_2(std::string_view &&data, const char *str)
 		printf("%s: %s\n", str, mtype != nullptr ? mtype : "?");
 		return 0;
 	}
+	case CM_MDIGEST:
+		return mdigest(data);
 	case CM_PROPTAG: {
 		auto name = mapitags_namelookup(strtoul(str, nullptr, 0));
 		printf("%s: %s\n", str, name != nullptr ? name : "?");
