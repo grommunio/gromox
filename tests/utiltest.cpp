@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <limits>
+#include <unistd.h>
 #include <libHX/endian.h>
 #include <libHX/string.h>
 #include <gromox/cookie_parser.hpp>
@@ -17,11 +18,13 @@
 #include <gromox/idset.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/propval.hpp>
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
+#include "../tools/staticnpmap.cpp"
 #undef assert
 #define assert(x) do { if (!(x)) { printf("%s failed\n", #x); return EXIT_FAILURE; } } while (false)
 using namespace gromox;
@@ -683,6 +686,71 @@ static int t_tzdef()
 	return EXIT_SUCCESS;
 }
 
+static alloc_context t_alloc_mgr;
+static void *t_alloc(size_t z) { return t_alloc_mgr.alloc(z); }
+
+/*
+ * A DTSTART with neither a TZID parameter nor a Z designator is floating time
+ * (RFC 5545 §3.3.5 form #1). It is read by declaring the wall clock to be UTC,
+ * which is what Exchange does; the reading is pinned here rather than changed.
+ * What it must not do is happen quietly: nothing in the resulting object
+ * records the hour that was meant, so W-2746 is the only thing that can
+ * attribute the shift afterwards.
+ */
+static int t_floating_dt()
+{
+	char input[] =
+		"BEGIN:VCALENDAR\r\n"
+		"VERSION:2.0\r\n"
+		"PRODID:-//Gromox//utiltest//EN\r\n"
+		"BEGIN:VEVENT\r\n"
+		"UID:floating-no-zone\r\n"
+		"DTSTAMP:20260909T120000Z\r\n"
+		"SUMMARY:floating DTSTART\r\n"
+		"DTSTART:20260811T103000\r\n"
+		"DTEND:20260811T110000\r\n"
+		"END:VEVENT\r\n"
+		"END:VCALENDAR\r\n";
+	ical ic;
+	assert(ic.load_from_str_move(input));
+
+	char logfile[] = "/tmp/gromox-utiltest-XXXXXX";
+	auto fd = mkstemp(logfile);
+	assert(fd >= 0);
+	close(fd);
+	mlog_init(nullptr, logfile, LV_WARN);
+	oxcical_converter cvt;
+	cvt.alloc = t_alloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.log_id = "u@d.at";
+	std::vector<std::unique_ptr<message_content, mc_delete>> vec;
+	std::string errstr;
+	auto err = cvt.ical_to_mapi_multi(ic, vec, errstr);
+	mlog_init(nullptr, "-", LV_NOTICE);
+
+	std::string log;
+	auto fp = fopen(logfile, "r");
+	if (fp != nullptr) {
+		char buf[512];
+		size_t rd;
+		while ((rd = fread(buf, 1, sizeof(buf), fp)) > 0)
+			log.append(buf, rd);
+		fclose(fp);
+	}
+	unlink(logfile);
+
+	assert(err == ecSuccess);
+	assert(vec.size() == 1);
+	auto start = vec[0]->proplist.get<const uint64_t>(PR_START_DATE);
+	assert(start != nullptr);
+	/* 2026-08-11T10:30:00Z, i.e. the reading taken verbatim as UTC */
+	assert(rop_util_nttime_to_unix(*start) == 1786444200);
+	assert(log.find("W-2746") != std::string::npos);
+	assert(log.find("u@d.at") != std::string::npos);
+	assert(log.find("20260811T103000") != std::string::npos);
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -700,7 +768,7 @@ static int runner()
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_string,
-		t_time, t_tzdef,
+		t_time, t_tzdef, t_floating_dt,
 	};
 	for (auto f : fct) {
 		auto ret = f();
