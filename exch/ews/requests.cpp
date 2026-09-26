@@ -1713,7 +1713,9 @@ static RESTRICTION *ftsIdsToRestriction(const std::vector<uint64_t> &ids)
 		r.prop->relop = RELOP_EQ;
 		r.prop->proptag = PidTagMid;
 		r.prop->propval.proptag = PidTagMid;
-		r.prop->propval.pvalue = EWSContext::construct<uint64_t>(ids[i]);
+		/* The index stores the bare message_id (GC value); exmdb reports
+		 * PidTagMid as a full EID, so encode it the same way. */
+		r.prop->propval.pvalue = EWSContext::construct<uint64_t>(rop_util_make_eid_ex(1, ids[i]));
 	}
 	return orRes;
 }
@@ -1850,15 +1852,25 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 		std::string dir = ctx.getDir(folder);
 		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
 			throw EWSError::AccessDenied(E3244);
-		if (dir != lastDir) {
+		/*
+		 * The FTS index belongs to the authenticated user's own store and
+		 * its results are folder-specific, so an FTS-derived restriction
+		 * cannot be reused across folders.
+		 */
+		bool useFts = ctx.auth_info().maildir != nullptr && dir == ctx.auth_info().maildir;
+		if (dir != lastDir || useFts) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
 			auto res1 = request.Restriction ? request.Restriction->build(getId) : nullptr;
-			auto &ftsPath = ctx.plugin().fts_index_path;
-			if (auto fast = ftsAccelerateSubjectContains(res1, ftsPath, ctx.auth_info().username, folder.folderId))
-				res1 = fast;
-			if (request.QueryString)
-				if (auto qres = ftsSearchQueryString(*request.QueryString, ftsPath, ctx.auth_info().username, folder.folderId))
-					res1 = qres;
+			if (useFts) {
+				auto &ftsPath = ctx.plugin().fts_index_path;
+				/* A deep traversal spans subfolders, so do not scope the index query to one folder. */
+				uint64_t ftsFolder = tableFlags & TABLE_FLAG_DEPTH ? 0 : folder.folderId;
+				if (auto fast = ftsAccelerateSubjectContains(res1, ftsPath, ctx.auth_info().username, ftsFolder))
+					res1 = fast;
+				if (request.QueryString)
+					if (auto qres = ftsSearchQueryString(*request.QueryString, ftsPath, ctx.auth_info().username, ftsFolder))
+						res1 = qres;
+			}
 			auto res2 = paging ? paging->restriction(getId) : nullptr;
 			res = tRestriction::all(res1, res2);
 			sort = request.SortOrder ? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
