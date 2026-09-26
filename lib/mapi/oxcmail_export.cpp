@@ -11,6 +11,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/scope.hpp>
 #include <vmime/addressList.hpp>
+#include <vmime/contentDispositionField.hpp>
 #include <vmime/contentTypeField.hpp>
 #include <vmime/dateTime.hpp>
 #include <vmime/header.hpp>
@@ -877,22 +878,18 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 	if (str != nullptr && *str != '\0')
 		vhdr.getField("Content-Description")->setValue(text8(str));
 	
-	vhdr.ContentDisposition()->setValue(is_inline ?
-		vmime::contentDispositionTypes::INLINE :
-		vmime::contentDispositionTypes::ATTACHMENT);
-	auto &phf = *vmime::dynamicCast<vmime::parameterizedHeaderField>(vhdr.ContentDisposition());
+	auto &ctd = *vhdr.getField<vmime::contentDispositionField>(vmime::fields::CONTENT_DISPOSITION);
+	ctd.setValue(is_inline ?
+	             vmime::contentDispositionTypes::INLINE :
+	             vmime::contentDispositionTypes::ATTACHMENT);
 	if (file_name != nullptr)
-		/* Plain strings would be interpreted in the current locale */
-		*phf.getParameter("filename") = vmime::parameter("filename",
-			vmime::word(file_name, vmime::charsets::UTF_8));
+		ctd.setFilename(vmime::word(file_name, vmime::charsets::UTF_8));
 	if (auto ctime = atc.proplist.get<uint64_t>(PR_CREATION_TIME);
 	    ctime != nullptr)
-		*phf.getParameter("creation-date") = vmime::parameter("creation-date",
-			vmime::datetime(rop_util_nttime_to_unix(*ctime)).generate());
+		ctd.setCreationDate(rop_util_nttime_to_unix(*ctime));
 	if (auto mtime = atc.proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 	    mtime != nullptr)
-		*phf.getParameter("modification-date") = vmime::parameter("modification-date",
-			vmime::datetime(rop_util_nttime_to_unix(*mtime)).generate());
+		ctd.setModificationDate(rop_util_nttime_to_unix(*mtime));
 
 	str = atc.proplist.get<char>(PR_ATTACH_CONTENT_ID);
 	if (str != nullptr)
@@ -1193,9 +1190,9 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 		auto hdr = pmime->getHeader();
 		auto phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(hdr->ContentType());
 		*phf->getParameter("name") = vmime::parameter("name", "winmail.dat");
-		hdr->ContentDisposition()->setValue(vmime::contentDispositionTypes::ATTACHMENT);
-		phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(hdr->ContentDisposition());
-		*phf->getParameter("filename") = vmime::parameter("filename", "winmail.dat");
+		auto &ctd = *hdr->getField<vmime::contentDispositionField>(vmime::fields::CONTENT_DISPOSITION);
+		ctd.setValue(vmime::contentDispositionTypes::ATTACHMENT);
+		ctd.setFilename(vmime::word("winmail.dat"));
 		return ecSuccess;
 	}
 
