@@ -4287,7 +4287,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			"X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent);
 
 	pcomponent->append_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
-	pcomponent->append_line("X-MICROSOFT-CDO-INSTTYPE", b_exceptional ? "3" : b_recurrence ? "1" : "0");
+	auto b_instance = b_exceptional || pcomponent->get_line("RECURRENCE-ID") != nullptr;
+	pcomponent->append_line("X-MICROSOFT-CDO-INSTTYPE", b_instance ? "3" : b_recurrence ? "1" : "0");
 
 	auto flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_nopropose]));
 	if (flag != nullptr)
