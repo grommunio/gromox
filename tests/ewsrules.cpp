@@ -172,10 +172,225 @@ static int t_xml_roundtrip()
 	return EXIT_SUCCESS;
 }
 
+/*
+ * Fake mailbox. Folder ids are "F<n>" for this store and "X<n>" for
+ * another one, template ids are "T<n>".
+ */
+class test_env final : public Env {
+	public:
+	void *alloc(size_t z) override { return calloc(1, z > 0 ? z : 1); }
+	uint16_t keywords_propid(bool) override { return 0x8100; }
+	uint16_t flagrequest_propid(bool) override { return 0x8101; }
+	bool folder_ref(const MOVECOPY_ACTION &mc, FolderRef &f, bool &trash) override
+	{
+		if (!mc.same_store) {
+			auto b = static_cast<const BINARY *>(mc.pfolder_eid);
+			f.id.assign(b->pc, b->cb);
+			return true;
+		}
+		auto fid = rop_util_get_gc_value(static_cast<const SVREID *>(mc.pfolder_eid)->folder_id);
+		trash = fid == PRIVATE_FID_DELETED_ITEMS;
+		f.id = "F" + std::to_string(fid);
+		return true;
+	}
+	bool template_ref(const REPLY_ACTION &ra, ItemRef &i) override
+	{
+		i.id = "T" + std::to_string(rop_util_get_gc_value(ra.template_message_id));
+		return true;
+	}
+	bool essdn_to_smtp(const char *essdn, std::string &smtp) override
+	{
+		auto cn = strrchr(essdn, '=');
+		if (cn == nullptr)
+			return false;
+		smtp = std::string(cn + 1) + "@example.org";
+		return true;
+	}
+};
+
+/* Push through the exmdb storage format and back, as the rules table does */
+static TPROPVAL_ARRAY *stored(const RESTRICTION &cond, const RULE_ACTIONS &acts, uint32_t state = ST_ENABLED)
+{
+	static char buf[65536];
+	EXT_PUSH ep;
+	auto row = static_cast<TPROPVAL_ARRAY *>(calloc(1, sizeof(TPROPVAL_ARRAY)));
+	row->ppropval = static_cast<TAGGED_PROPVAL *>(calloc(8, sizeof(TAGGED_PROPVAL)));
+	auto c = static_cast<RESTRICTION *>(calloc(1, sizeof(RESTRICTION)));
+	auto a = static_cast<RULE_ACTIONS *>(calloc(1, sizeof(RULE_ACTIONS)));
+	if (!ep.init(buf, sizeof(buf), 0) || ep.p_restriction(cond) != pack_result::ok)
+		return nullptr;
+	auto blob = static_cast<char *>(malloc(ep.m_offset));
+	memcpy(blob, buf, ep.m_offset);
+	EXT_PULL pl;
+	pl.init(blob, ep.m_offset, malloc, 0);
+	if (pl.g_restriction(c) != pack_result::ok)
+		return nullptr;
+	if (!ep.init(buf, sizeof(buf), 0) || ep.p_rule_actions(acts) != pack_result::ok)
+		return nullptr;
+	blob = static_cast<char *>(malloc(ep.m_offset));
+	memcpy(blob, buf, ep.m_offset);
+	pl.init(blob, ep.m_offset, malloc, 0);
+	if (pl.g_rule_actions(a) != pack_result::ok)
+		return nullptr;
+	auto id = static_cast<uint64_t *>(malloc(sizeof(uint64_t)));
+	*id = eid_t(1, 77);
+	auto st = static_cast<uint32_t *>(malloc(sizeof(uint32_t)));
+	*st = state;
+	row->emplace_back(PR_RULE_ID, id);
+	row->emplace_back(PR_RULE_STATE, st);
+	row->emplace_back(PR_RULE_CONDITION, c);
+	row->emplace_back(PR_RULE_ACTIONS, a);
+	return row;
+}
+
+static RESTRICTION mkres(mapi_rtype t, void *p)
+{
+	RESTRICTION r;
+	r.rt = t;
+	r.pres = p;
+	return r;
+}
+
+template<typename T> static T *mk()
+{
+	return new T{};
+}
+
+static RESTRICTION r_content(proptag_t tag, uint32_t fl, const char *s, size_t len = 0)
+{
+	auto c = mk<RESTRICTION_CONTENT>();
+	c->fuzzy_level = fl;
+	c->proptag = tag;
+	c->propval.proptag = tag;
+	if (PROP_TYPE(tag) == PT_BINARY) {
+		auto b = mk<BINARY>();
+		b->cb = len;
+		b->pv = deconst(s);
+		c->propval.pvalue = b;
+	} else {
+		c->propval.pvalue = deconst(s);
+	}
+	return mkres(RES_CONTENT, c);
+}
+
+static RESTRICTION r_prop(relop op, proptag_t tag, void *v)
+{
+	auto p = mk<RESTRICTION_PROPERTY>();
+	p->relop = op;
+	p->proptag = tag;
+	p->propval = {tag, v};
+	return mkres(RES_PROPERTY, p);
+}
+
+static RESTRICTION r_list(mapi_rtype t, std::vector<RESTRICTION> v)
+{
+	auto l = mk<RESTRICTION_AND_OR>();
+	l->count = v.size();
+	l->pres = new RESTRICTION[v.size()];
+	std::copy(v.begin(), v.end(), l->pres);
+	return mkres(t, l);
+}
+
+static RULE_ACTIONS *one_action(uint8_t type, uint32_t flavor = 0, void *data = nullptr, uint16_t len = 0)
+{
+	auto a = mk<RULE_ACTIONS>();
+	a->count = 1;
+	a->pblock = new ACTION_BLOCK[1]{};
+	a->pblock[0].type = type;
+	a->pblock[0].flavor = flavor;
+	a->pblock[0].pdata = data;
+	a->pblock[0].length = len;
+	return a;
+}
+
+/* Rules other clients write, outlook_rule_spec.rst and RulesData.js */
+static int t_read_variants()
+{
+	test_env env;
+	auto mark = one_action(OP_MARK_AS_READ);
+	static uint32_t sz_lo = 10240, sz_hi = 102400;
+	static uint8_t yes = 1;
+
+	auto row = stored(r_list(RES_AND, {
+		r_prop(RELOP_GT, PR_MESSAGE_SIZE, &sz_lo),
+		r_prop(RELOP_LE, PR_MESSAGE_SIZE, &sz_hi),
+		r_content(PR_SEARCH_KEY, FL_SUBSTRING, "FOO", 3),
+		r_content(PR_SUBJECT_A, FL_SUBSTRING | FL_IGNORECASE, "eight"),
+	}), *mark);
+	CHECK(row != nullptr);
+	auto r = from_mapi(*row, env);
+	CHECK(!r.not_supported.value_or(false));
+	CHECK(r.conditions.v[P_WithinSizeRange]->min == 10);
+	CHECK(r.conditions.v[P_WithinSizeRange]->max == 100);
+	CHECK(r.conditions.v[P_ContainsRecipientStrings]->strings == std::vector<std::string>{"FOO"});
+	CHECK(r.conditions.v[P_ContainsSubjectStrings]->strings == std::vector<std::string>{"eight"});
+	CHECK(r.actions.v[A_MarkAsRead]->flag);
+	CHECK(r.enabled && r.id == encode_rule_id(eid_t(1, 77)));
+
+	/* Outlook's To shape has no subrestriction, exceptions under one NOT(OR) */
+	static char sk[] = "SMTP:CAROL@EXAMPLE.NET";
+	static uint32_t mapi_to = MAPI_TO, dt = DT_MAILUSER;
+	auto cmt = mk<RESTRICTION_COMMENT>();
+	cmt->count = 3;
+	cmt->ppropval = new TAGGED_PROPVAL[3]{
+		{PROP_TAG(PT_LONG, 0x6000), &mapi_to},
+		{PROP_TAG(PT_STRING8, 0x0001), deconst("Carol C <carol@example.net>")},
+		{PR_DISPLAY_TYPE, &dt},
+	};
+	auto skbin = mk<BINARY>();
+	skbin->cb = sizeof(sk);
+	skbin->pv = sk;
+	cmt->pres = new RESTRICTION(r_prop(RELOP_EQ, PR_SEARCH_KEY, skbin));
+	auto xnot = mk<RESTRICTION_NOT>();
+	xnot->res = r_list(RES_OR, {
+		r_content(PR_SUBJECT, FL_SUBSTRING | FL_IGNORECASE, "s1"),
+		mkres(RES_BITMASK, new RESTRICTION_BITMASK{BMR_NEZ, PR_MESSAGE_FLAGS, MSGFLAG_HASATTACH}),
+	});
+	row = stored(r_list(RES_AND, {mkres(RES_COMMENT, cmt), mkres(RES_NOT, xnot)}), *mark);
+	CHECK(row != nullptr);
+	r = from_mapi(*row, env);
+	CHECK(!r.not_supported.value_or(false));
+	CHECK((r.conditions.v[P_SentToAddresses]->addrs ==
+	      std::vector<Address>{{"Carol C", "carol@example.net", "SMTP"}}));
+	CHECK(r.exceptions.v[P_ContainsSubjectStrings]->strings == std::vector<std::string>{"s1"});
+	CHECK(r.exceptions.v[P_HasAttachments]->flag);
+
+	/* Unknown parts flag the rule, the rest is still shown */
+	auto pc = mk<RESTRICTION_PROPCOMPARE>();
+	pc->relop = RELOP_EQ;
+	pc->proptag1 = PR_SUBJECT;
+	pc->proptag2 = PR_BODY;
+	row = stored(r_list(RES_AND, {mkres(RES_PROPCOMPARE, pc),
+	      r_prop(RELOP_EQ, PR_MESSAGE_TO_ME, &yes)}), *mark);
+	CHECK(row != nullptr);
+	r = from_mapi(*row, env);
+	CHECK(r.not_supported == true);
+	CHECK(r.conditions.v[P_SentToMe]->flag);
+
+	/* Delegate rule action */
+	auto fwd = mk<FORWARDDELEGATE_ACTION>();
+	fwd->count = 1;
+	fwd->pblock = new RECIPIENT_BLOCK[1];
+	fwd->pblock[0].count = 1;
+	fwd->pblock[0].ppropval = new TAGGED_PROPVAL[1]{{PR_SMTP_ADDRESS, deconst("d@example.org")}};
+	row = stored(r_prop(RELOP_EQ, PR_MESSAGE_TO_ME, &yes), *one_action(OP_DELEGATE, 0, fwd));
+	CHECK(row != nullptr);
+	CHECK(from_mapi(*row, env).not_supported == true);
+
+	auto ex = mk<RESTRICTION_EXIST>();
+	ex->proptag = PR_MESSAGE_CLASS;
+
+	/* Out-of-office rules do not map */
+	row = stored(mkres(RES_EXIST, ex), *mark, ST_ENABLED | ST_ONLY_WHEN_OOF);
+	CHECK(from_mapi(*row, env).not_supported == true);
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	using fn = int (*)();
 	for (auto f : std::initializer_list<fn>{t_ruleid, t_parse, t_xml_roundtrip,
+	     t_read_variants,
 	     }) {
 		auto ret = f();
 		if (ret != EXIT_SUCCESS) {

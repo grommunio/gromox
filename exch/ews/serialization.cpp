@@ -2726,6 +2726,11 @@ void mGetInboxRulesResponse::serialize(XMLElement *xml) const
 {
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(OutlookRuleBlobExists);
+	if (InboxRules.empty())
+		return;
+	auto list = xml->InsertNewChildElement("m:InboxRules");
+	for (const auto &rule : InboxRules)
+		Rules::write_rule(list, rule);
 }
 
 mGetItemRequest::mGetItemRequest(const XMLElement *xml) :

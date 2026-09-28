@@ -2531,27 +2531,217 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 	data.serialize(response);
 }
 
+namespace {
+
+constexpr eid_t rules_inbox(1, PRIVATE_FID_INBOX);
+const PROPERTY_NAME NtFlagRequest = {MNID_ID, PSETID_Common, PidLidFlagRequest};
+
+/**
+ * @brief      Rows of the Inbox rules table that EWS manages
+ *
+ * Same selection as grommunio-web: PR_RULE_PROVIDER starting with
+ * "RuleOrganizer". Delegate, out-of-office and import rules are left out.
+ */
+struct rule_row {
+	uint64_t id = 0;
+	uint32_t seq = 0, state = 0;
+	TPROPVAL_ARRAY *props = nullptr;
+};
+
+/**
+ * @brief      Mailbox services for the rule mapper
+ */
+class RulesEnv final : public Rules::Env {
+	public:
+	RulesEnv(const EWSContext &c, const std::string &d, const std::string &u) :
+		ctx(c), exmdb(c.plugin().exmdb), dir(d), user(u)
+	{}
+
+	void *alloc(size_t z) override { return EWSContext::alloc(z); }
+
+	uint16_t keywords_propid(bool create) override { return named(NtCategories, create); }
+	uint16_t flagrequest_propid(bool create) override { return named(NtFlagRequest, create); }
+
+	bool folder_ref(const MOVECOPY_ACTION &, Rules::FolderRef &, bool &) override;
+	bool template_ref(const REPLY_ACTION &, Rules::ItemRef &) override;
+	bool essdn_to_smtp(const char *, std::string &) override;
+
+	private:
+	uint16_t named(const PROPERTY_NAME &name, bool create)
+	{
+		try {
+			return ctx.getNamedPropId(dir, name, create);
+		} catch (const std::exception &) {
+			return 0;
+		}
+	}
+
+	const EWSContext &ctx;
+	const EWSPlugin::_exmdb &exmdb;
+	std::string dir, user;
+};
+
+bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool &trash) try
+{
+	TAGGED_PROPVAL eid{};
+	if (mc.same_store) {
+		auto sv = static_cast<const SVREID *>(mc.pfolder_eid);
+		if (sv == nullptr || sv->pbin != nullptr)
+			return false;
+		trash = rop_util_get_gc_value(sv->folder_id) == PRIVATE_FID_DELETED_ITEMS;
+		eid = ctx.getFolderEntryId(dir, sv->folder_id);
+		ref.id = base64_encode(tFolderId(sBase64Binary(eid), tBaseItemId::ID_FOLDER).serializeId());
+		/* Outlook for Mac crashes on a rule folder without ChangeKey */
+		auto ck = ctx.getFolderProp<BINARY>(dir, sv->folder_id, PR_CHANGE_KEY);
+		if (ck != nullptr)
+			ref.change_key = base64_encode({ck->pc, ck->cb});
+		return true;
+	}
+	auto se = mc.pstore_eid;
+	auto bin = static_cast<const BINARY *>(mc.pfolder_eid);
+	if (se == nullptr || bin == nullptr || se->pserver_name == nullptr ||
+	    se->wrapped_provider_uid != g_muidStorePrivate)
+		return false;
+	sFolderEntryId feid(bin->pv, bin->cb);
+	if (!feid.isPrivate())
+		return false;
+	ref.id = base64_encode(tFolderId(sBase64Binary(bin), tBaseItemId::ID_FOLDER).serializeId());
+	return true;
+} catch (const std::exception &) {
+	return false;
+}
+
+bool RulesEnv::template_ref(const REPLY_ACTION &ra, Rules::ItemRef &ref) try
+{
+	auto eid = ctx.getItemEntryId(dir, ra.template_message_id);
+	ref.id = base64_encode(tItemId(sBase64Binary(eid), tBaseItemId::ID_ITEM).serializeId());
+	return true;
+} catch (const std::exception &) {
+	return false;
+}
+
+bool RulesEnv::essdn_to_smtp(const char *essdn, std::string &smtp) try
+{
+	smtp = ctx.essdn_to_username(essdn);
+	return true;
+} catch (const std::exception &) {
+	return false;
+}
+
+/**
+ * @brief      Resolve the mailbox of a rules request
+ *
+ * Rules of another mailbox need owner rights on its Inbox, as
+ * ropModifyRules does.
+ *
+ * @return     Home directory and user name
+ */
+std::pair<std::string, std::string>
+rules_mailbox(const EWSContext &ctx, const std::optional<std::string> &smtp)
+{
+	std::string user = smtp && !smtp->empty() ? *smtp : ctx.auth_info().username;
+	auto dir = ctx.get_maildir(user);
+	if (!(ctx.permissions(dir, rules_inbox) & frightsOwner))
+		throw EWSError::AccessDenied(E3607);
+	return {std::move(dir), std::move(user)};
+}
+
+/**
+ * @brief      Message ids of the Outlook rule blob FAIs in the Inbox
+ */
+std::vector<eid_t> find_rule_blobs(const EWSContext &ctx, const std::string &dir)
+{
+	auto &exmdb = ctx.plugin().exmdb;
+	static constexpr RESTRICTION_EXIST rst_a = {PR_MESSAGE_CLASS};
+	static constexpr RESTRICTION_CONTENT rst_b = {FL_IGNORECASE, PR_MESSAGE_CLASS, {PT_UNICODE, deconst("IPM.RuleOrganizer")}};
+	static constexpr RESTRICTION rst_c[2] = {{RES_EXIST, {deconst(&rst_a)}}, {RES_CONTENT, {deconst(&rst_b)}}};
+	static constexpr RESTRICTION_AND_OR rst_d = {std::size(rst_c), deconst(rst_c)};
+	static constexpr RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
+	uint32_t table_id = 0, count = 0;
+	if (!exmdb.load_content_table(dir.c_str(), CP_ACP, rules_inbox, nullptr,
+	    TABLE_FLAG_ASSOCIATED, &rst_e, nullptr, &table_id, &count))
+		throw EWSError::InternalServerError(E3608);
+	auto cl = HX::make_scope_exit([&]() { exmdb.unload_table(dir.c_str(), table_id); });
+	std::vector<eid_t> mids;
+	if (count == 0)
+		return mids;
+	static constexpr proptag_t tags[] = {PidTagMid};
+	TARRAY_SET set{};
+	if (!exmdb.query_table(dir.c_str(), nullptr, CP_ACP, table_id, {tags, std::size(tags)}, 0, count, &set))
+		throw EWSError::InternalServerError(E3608);
+	for (const auto &row : set)
+		if (auto mid = row.get<const uint64_t>(PidTagMid))
+			mids.push_back(eid_t(*mid));
+	return mids;
+}
+
+/**
+ * @brief      Load the visible rules of the Inbox, in execution order
+ */
+std::vector<rule_row> load_rules(const EWSContext &ctx, const std::string &dir, bool all = false)
+{
+	auto &exmdb = ctx.plugin().exmdb;
+	uint32_t table_id = 0, count = 0;
+	if (!exmdb.load_rule_table(dir.c_str(), rules_inbox, 0, nullptr, &table_id, &count))
+		throw EWSError::InternalServerError(E3606);
+	auto cl = HX::make_scope_exit([&]() { exmdb.unload_table(dir.c_str(), table_id); });
+	std::vector<rule_row> rows;
+	if (count == 0)
+		return rows;
+	static constexpr proptag_t tags[] = {
+		PR_RULE_ID, PR_RULE_SEQUENCE, PR_RULE_STATE, PR_RULE_NAME,
+		PR_RULE_PROVIDER, PR_RULE_LEVEL, PR_RULE_CONDITION, PR_RULE_ACTIONS,
+	};
+	TARRAY_SET set{};
+	if (!exmdb.query_table(dir.c_str(), nullptr, CP_ACP, table_id, {tags, std::size(tags)}, 0, count, &set))
+		throw EWSError::InternalServerError(E3606);
+	for (auto &row : set) {
+		auto id = row.get<const uint64_t>(PR_RULE_ID);
+		if (id == nullptr || (!all && !Rules::is_visible(row)))
+			continue;
+		auto seq = row.get<const uint32_t>(PR_RULE_SEQUENCE);
+		auto st = row.get<const uint32_t>(PR_RULE_STATE);
+		rows.push_back({*id, seq != nullptr ? *seq : 0, st != nullptr ? *st : 0, &row});
+	}
+	std::stable_sort(rows.begin(), rows.end(), [](const rule_row &a, const rule_row &b) {
+		return a.seq != b.seq ? a.seq < b.seq : rop_util_get_gc_value(a.id) < rop_util_get_gc_value(b.id);
+	});
+	return rows;
+}
+
+}
+
 /**
  * @brief      Process GetInboxRulesRequest
  *
- * Provides the functionality of GetInboxRules
- *
- * In its current state it does nothing more than sending no rules response.
- *
- * @todo       This function lacks most of its functionality and is practically worthless.
+ * Returns the Inbox rules managed through the rules organizer, in execution
+ * order. Rules that EWS cannot express come back with IsNotSupported.
  *
  * @param      request   Request data
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetInboxRulesRequest&&, XMLElement *response, const EWSContext&)
+void process(mGetInboxRulesRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetInboxRulesResponse");
 
 	mGetInboxRulesResponse data;
-	data.OutlookRuleBlobExists = false;
-
-	data.success();
+	try {
+		auto [dir, user] = rules_mailbox(ctx, request.MailboxSmtpAddress);
+		/* MS-OXWSRULES v9.0 §3.1.4.1.3.2: always present */
+		data.OutlookRuleBlobExists = !find_rule_blobs(ctx, dir).empty();
+		RulesEnv env(ctx, dir, user);
+		int32_t prio = 0;
+		for (const auto &row : load_rules(ctx, dir)) {
+			auto rule = Rules::from_mapi(*row.props, env);
+			rule.priority = ++prio;
+			data.InboxRules.push_back(std::move(rule));
+		}
+		data.success();
+	} catch (const EWSError &err) {
+		data = mGetInboxRulesResponse();
+		static_cast<mResponseMessageType &>(data) = mResponseMessageType(err);
+	}
 	data.serialize(response);
 }
 

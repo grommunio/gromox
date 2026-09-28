@@ -669,6 +669,9 @@ E(3601, "cannot modify the existing calendar item of the meeting");
 E(3602, "no read access to the referenced item");
 E(3603, "cannot write to the calendar item of the declined meeting");
 E(3604, "no read access to the meeting to cancel");
+E(3606, "failed to load the inbox rules");
+E(3607, "access denied: inbox rules of another mailbox");
+E(3608, "failed to look for the Outlook rule blob");
 
 #undef E
 }

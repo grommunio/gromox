@@ -117,6 +117,20 @@ class ParseError : public std::runtime_error {
 	using std::runtime_error::runtime_error;
 };
 
+/*
+ * Mailbox-specific services for the mapping.
+ */
+class Env {
+	public:
+	virtual ~Env() = default;
+	virtual void *alloc(size_t) = 0;
+	virtual uint16_t keywords_propid(bool create) = 0;
+	virtual uint16_t flagrequest_propid(bool create) = 0;
+	virtual bool folder_ref(const MOVECOPY_ACTION &, FolderRef &, bool &deleted_items) = 0;
+	virtual bool template_ref(const REPLY_ACTION &, ItemRef &) = 0;
+	virtual bool essdn_to_smtp(const char *essdn, std::string &smtp) = 0;
+};
+
 extern const char *pred_name(unsigned int);
 extern const char *act_name(unsigned int);
 extern vtype pred_type(unsigned int);
@@ -128,5 +142,8 @@ extern std::optional<uint64_t> decode_rule_id(const std::string &);
 extern Rule parse_rule(const tinyxml2::XMLElement *);
 extern std::vector<Operation> parse_operations(const tinyxml2::XMLElement *);
 extern void write_rule(tinyxml2::XMLElement *parent, const Rule &);
+
+extern Rule from_mapi(const TPROPVAL_ARRAY &, Env &);
+extern bool is_visible(const TPROPVAL_ARRAY &);
 
 }
