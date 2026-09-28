@@ -1214,8 +1214,9 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	};
 	for (auto t : rmprops)
 		prop.erase(t);
-	static constexpr uint32_t v_busy = olBusy, stateflags = asfMeeting | asfReceived;
+	static constexpr uint32_t stateflags = asfMeeting | asfReceived;
 	static constexpr uint8_t v_false = false;
+	uint32_t v_busy = accept_type == respAccepted ? olBusy : olTentative;
 	ec_error_t err;
 	if ((err = prop.set(PROP_TAG(PT_LONG, propids[l_response_status]), &accept_type)) != ecSuccess ||
 	    (err = prop.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_busy)) != ecSuccess ||
@@ -1224,6 +1225,11 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 		return err;
 	if (!prop.has(propids[l_recurring])) {
 		err = prop.set(PROP_TAG(PT_LONG, propids[l_recurring]), &v_false);
+		if (err != ecSuccess)
+			return err;
+	}
+	if (!prop.has(PROP_TAG(PT_BOOLEAN, propids[l_appt_sub_type]))) {
+		err = prop.set(PROP_TAG(PT_BOOLEAN, propids[l_appt_sub_type]), &v_false);
 		if (err != ecSuccess)
 			return err;
 	}
