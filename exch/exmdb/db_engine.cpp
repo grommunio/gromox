@@ -41,11 +41,13 @@
 #include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/process.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/sortorder_set.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/fileio.h>
 #include "db_engine.hpp"
@@ -191,6 +193,213 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	mlog(LV_NOTICE, "dbop_sqlite: Completed upgrade of %s in %.2fs.",
 	        filedesc, d2);
 	return 0;
+}
+
+/*
+ * Built-in folders with a reserved FID in the 0x1e..0xff region which
+ * mailboxes created by older versions of mkprivate do not have. Exchange
+ * provisions its whole special-folder set when a mailbox is first used; do
+ * the same whenever a private store is opened, so that a folder with a
+ * reserved FID always exists. Append to this table as the set grows.
+ */
+static constexpr struct {
+	uint64_t fid, parent;
+	const char *cont_class, *eng_name;
+} g_provisioned_folders[] = {
+	{PRIVATE_FID_ARCHIVE, PRIVATE_FID_IPMSUBTREE, "IPF.Note", "Archive"},
+	{PRIVATE_FID_CONVERSATION_HISTORY, PRIVATE_FID_IPMSUBTREE, nullptr, "Conversation History"},
+	{PRIVATE_FID_RECIPIENT_CACHE, PRIVATE_FID_CONTACTS, "IPF.Contact.RecipientCache", "Recipient Cache"},
+};
+
+static bool dbeng_folder_exists(sqlite3 *db, uint64_t fid)
+{
+	auto stm = gx_sql_prep(db, "SELECT 1 FROM folders WHERE folder_id=?");
+	if (stm == nullptr)
+		return true; /* cannot tell; do not try to create */
+	stm.bind_int64(1, fid);
+	return stm.step() == SQLITE_ROW;
+}
+
+static bool dbeng_folder_name_taken(sqlite3 *db, uint64_t parent, const char *name)
+{
+	auto stm = gx_sql_prep(db, "SELECT 1 FROM folders AS f INNER JOIN "
+	           "folder_properties AS fp ON f.folder_id=fp.folder_id AND "
+	           "fp.proptag=? WHERE f.parent_id=? AND f.is_deleted=0 AND "
+	           "fp.propval=? COLLATE NOCASE");
+	if (stm == nullptr)
+		return true;
+	stm.bind_int64(1, PR_DISPLAY_NAME);
+	stm.bind_int64(2, parent);
+	stm.bind_text(3, name);
+	return stm.step() == SQLITE_ROW;
+}
+
+static bool dbeng_create_reserved_folder(sqlite3 *db, uint64_t fid,
+    uint64_t parent, const char *name, const char *cont_class,
+    const GUID &store_guid)
+{
+	uint64_t change_num = 0;
+	uint32_t art = 0;
+	if (cu_allocate_cn(db, &change_num) != ecSuccess ||
+	    !common_util_allocate_folder_art(db, &art))
+		return false;
+	auto stm = gx_sql_prep(db, "SELECT max(range_end) FROM allocated_eids");
+	if (stm == nullptr || stm.step() != SQLITE_ROW)
+		return false;
+	uint64_t cur_eid = stm.col_uint64(0) + 1;
+	uint64_t max_eid = cur_eid + ALLOCATED_EID_RANGE;
+	stm = gx_sql_prep(db, "INSERT INTO allocated_eids VALUES (?, ?, ?, 1)");
+	if (stm == nullptr)
+		return false;
+	stm.bind_int64(1, cur_eid);
+	stm.bind_int64(2, max_eid - 1);
+	stm.bind_int64(3, time(nullptr));
+	if (stm.step() != SQLITE_DONE)
+		return false;
+	stm = gx_sql_prep(db, "INSERT INTO folders (folder_id, parent_id, "
+	      "change_number, cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
+	if (stm == nullptr)
+		return false;
+	stm.bind_int64(1, fid);
+	stm.bind_int64(2, parent);
+	stm.bind_int64(3, change_num);
+	stm.bind_int64(4, cur_eid);
+	stm.bind_int64(5, max_eid);
+	if (stm.step() != SQLITE_DONE)
+		return false;
+
+	stm = gx_sql_prep(db, "INSERT INTO folder_properties "
+	      "(folder_id, proptag, propval) VALUES (?, ?, ?)");
+	if (stm == nullptr)
+		return false;
+	auto nt_time = rop_util_current_nttime();
+	const std::pair<proptag_t, uint64_t> intprops[] = {
+		{PR_DELETED_COUNT_TOTAL, 0}, {PR_DELETED_FOLDER_COUNT, 0},
+		{PR_HIERARCHY_CHANGE_NUM, 0}, {PR_INTERNET_ARTICLE_NUMBER, art},
+		{PR_INTERNET_ARTICLE_NUMBER_NEXT, 1},
+		{PR_CREATION_TIME, nt_time}, {PR_LAST_MODIFICATION_TIME, nt_time},
+		{PR_LOCAL_COMMIT_TIME_MAX, nt_time}, {PR_HIER_REV, nt_time},
+	};
+	for (const auto &[tag, val] : intprops) {
+		stm.reset();
+		stm.bind_int64(1, fid);
+		stm.bind_int64(2, tag);
+		stm.bind_int64(3, val);
+		if (stm.step() != SQLITE_DONE)
+			return false;
+	}
+	const std::pair<proptag_t, const char *> strprops[] = {
+		{PR_DISPLAY_NAME, name}, {PR_COMMENT, ""}, {PR_CONTAINER_CLASS, cont_class},
+	};
+	for (const auto &[tag, val] : strprops) {
+		if (val == nullptr)
+			continue;
+		stm.reset();
+		stm.bind_int64(1, fid);
+		stm.bind_int64(2, tag);
+		stm.bind_text(3, val);
+		if (stm.step() != SQLITE_DONE)
+			return false;
+	}
+	char buf[23];
+	EXT_PUSH ep;
+	if (!ep.init(&buf[1], sizeof(buf) - 1, 0) ||
+	    ep.p_xid(XID{store_guid, eid_t(1, change_num)}) != pack_result::ok)
+		return false;
+	buf[0] = 22;
+	stm.reset();
+	stm.bind_int64(1, fid);
+	stm.bind_int64(2, PR_CHANGE_KEY);
+	stm.bind_blob(3, &buf[1], ep.m_offset);
+	if (stm.step() != SQLITE_DONE)
+		return false;
+	stm.reset();
+	stm.bind_int64(1, fid);
+	stm.bind_int64(2, PR_PREDECESSOR_CHANGE_LIST);
+	stm.bind_blob(3, buf, sizeof(buf));
+	if (stm.step() != SQLITE_DONE)
+		return false;
+
+	/* The parent's hierarchy has changed */
+	stm = gx_sql_prep(db, "UPDATE folder_properties SET propval=propval+1 "
+	      "WHERE folder_id=? AND proptag=?");
+	if (stm == nullptr)
+		return false;
+	stm.bind_int64(1, parent);
+	stm.bind_int64(2, PR_HIERARCHY_CHANGE_NUM);
+	if (stm.step() != SQLITE_DONE)
+		return false;
+	stm = gx_sql_prep(db, "UPDATE folder_properties SET propval=? "
+	      "WHERE folder_id=? AND proptag IN (?, ?)");
+	if (stm == nullptr)
+		return false;
+	stm.bind_int64(1, nt_time);
+	stm.bind_int64(2, parent);
+	stm.bind_int64(3, PR_HIER_REV);
+	stm.bind_int64(4, PR_LOCAL_COMMIT_TIME_MAX);
+	return stm.step() == SQLITE_DONE;
+}
+
+/**
+ * @brief      Create missing built-in folders of a private store
+ *
+ * Runs once per store open (like db_engine_autoupgrade). Folders are created
+ * at their reserved FID, named in the mailbox owner's language. A folder is
+ * skipped (with a notice) if its parent is missing or a folder by the same
+ * name already exists there, e.g. one created by a client under a
+ * different FID.
+ */
+static void db_engine_provision_folders(sqlite3 *db, const char *dir)
+{
+	if (g_exmdb_schema_upgrades == EXMDB_UPGRADE_NO ||
+	    !exmdb_server::is_private())
+		return;
+	bool missing = false;
+	for (const auto &e : g_provisioned_folders)
+		if (!dbeng_folder_exists(db, e.fid) && dbeng_folder_exists(db, e.parent))
+			missing = true;
+	if (!missing)
+		return;
+
+	unsigned int user_id = 0;
+	std::string username;
+	sql_meta_result mres;
+	if (!mysql_adaptor_get_id_from_maildir(dir, &user_id) ||
+	    mysql_adaptor_userid_to_name(user_id, username) != ecSuccess) {
+		mlog(LV_WARN, "W-2800: %s: cannot determine store owner, "
+		        "not provisioning built-in folders", dir);
+		return;
+	}
+	auto lang = mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) == 0 ?
+	            folder_namedb_resolve(mres.lang.c_str()) : nullptr;
+	auto store_guid = rop_util_make_user_guid(user_id);
+
+	auto sql_transact = gx_sql_begin(db, txn_mode::write);
+	if (!sql_transact)
+		return;
+	for (const auto &e : g_provisioned_folders) {
+		if (dbeng_folder_exists(db, e.fid) || !dbeng_folder_exists(db, e.parent))
+			continue;
+		auto name = lang != nullptr ? folder_namedb_get(lang, e.fid) : nullptr;
+		if (name == nullptr)
+			name = e.eng_name;
+		if (dbeng_folder_name_taken(db, e.parent, name)) {
+			mlog(LV_NOTICE, "exmdb: %s: not provisioning folder 0x%llx: "
+			        "\"%s\" already exists under 0x%llx", dir,
+			        LLU{e.fid}, name, LLU{e.parent});
+			continue;
+		}
+		if (!dbeng_create_reserved_folder(db, e.fid, e.parent, name,
+		    e.cont_class, store_guid)) {
+			mlog(LV_ERR, "E-2833: %s: provisioning folder 0x%llx failed",
+			        dir, LLU{e.fid});
+			return; /* rollback */
+		}
+		mlog(LV_NOTICE, "exmdb: %s: provisioned folder 0x%llx \"%s\"",
+		        dir, LLU{e.fid}, name);
+	}
+	if (sql_transact.commit() != SQLITE_OK)
+		mlog(LV_ERR, "E-2834: %s: commit of folder provisioning failed", dir);
 }
 
 bool db_engine_set_maint(const char *path, enum db_maint_mode mode) try
@@ -641,6 +850,7 @@ void db_base::ctor2_and_open(const char *dir)
 	auto ret = db_engine_autoupgrade(hdb.get(), dir);
 	if (ret != 0)
 		throw std::runtime_error(fmt::format("E-2105: autoupgrade {}: {}", dir, ret));
+	db_engine_provision_folders(hdb.get(), dir);
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(this, hdb.get());
 

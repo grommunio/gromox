@@ -1757,18 +1757,18 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 		 * new mailbox, create) them on first request instead of
 		 * letting a missing reserved ID hard-error the whole request.
 		 */
-		if (folder.folderId == rop_util_make_eid_ex(1, PRIVATE_FID_RECIPIENT_CACHE))
+		if (folder.folderId == eid_t(1, PRIVATE_FID_RECIPIENT_CACHE))
 			folder.folderId = ctx.resolveOrCreateSpecialFolder(dir,
-			                  rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+			                  eid_t(1, PRIVATE_FID_CONTACTS),
 			                  folder.folderId, "IPF.Contact.RecipientCache",
 			                  PRIVATE_FID_RECIPIENT_CACHE);
-		else if (folder.folderId == rop_util_make_eid_ex(1, PRIVATE_FID_ARCHIVE))
+		else if (folder.folderId == eid_t(1, PRIVATE_FID_ARCHIVE))
 			folder.folderId = ctx.resolveOrCreateSpecialFolder(dir,
-			                  rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			                  eid_t(1, PRIVATE_FID_IPMSUBTREE),
 			                  folder.folderId, nullptr, PRIVATE_FID_ARCHIVE);
-		else if (folder.folderId == rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_HISTORY))
+		else if (folder.folderId == eid_t(1, PRIVATE_FID_CONVERSATION_HISTORY))
 			folder.folderId = ctx.resolveOrCreateSpecialFolder(dir,
-			                  rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			                  eid_t(1, PRIVATE_FID_IPMSUBTREE),
 			                  folder.folderId, nullptr, PRIVATE_FID_CONVERSATION_HISTORY,
 			                  true);
 		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
