@@ -795,8 +795,6 @@ void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 	tItem::serialize(xml);
 	sCalendarMeetingRequestCommon::serialize(xml);
 	XMLDUMPT(UID);
-	XMLDUMPT(StartTimeZone);
-	XMLDUMPT(EndTimeZone);
 }
 
 tCalendarPermission::tCalendarPermission(const tinyxml2::XMLElement *xml) :
