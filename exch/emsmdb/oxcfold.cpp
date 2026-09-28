@@ -42,7 +42,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	replid = rop_util_get_replid(folder_id);
 	if (plogon->is_private()) {
 		if (replid != 1)
-			return ecInvalidParam;
+			return ecNotFound;
 	} else {
 		if (1 != replid) {
 			*phas_rules = 0;
