@@ -14,6 +14,7 @@
 #include <set>
 #include <utility>
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
 #include <vmime/header.hpp>
 #include <vmime/text.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -54,7 +55,9 @@ std::string goid_to_uid(const BINARY &goid_bin)
 		if (!tp_uid.empty())
 			return tp_uid;
 	}
-	return bin2hex(goid_bin.pc, goid_bin.cb);
+	auto uid = bin2hex(goid_bin.pc, goid_bin.cb);
+	HX_strupper(uid.data());
+	return uid;
 }
 
 /**
