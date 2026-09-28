@@ -1162,7 +1162,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-		sqlite3_bind_int64(pstmt, 2, frightsOwner);
+		sqlite3_bind_int64(pstmt, 2, rightsGromox7);
 		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
 		pstmt.finalize();
@@ -1248,7 +1248,7 @@ static bool folder_copy_search_folder(db_conn &db, cpid_t cpid,
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-		sqlite3_bind_int64(pstmt, 2, frightsOwner);
+		sqlite3_bind_int64(pstmt, 2, rightsGromox7);
 		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
 	}
