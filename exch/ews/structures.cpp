@@ -619,6 +619,18 @@ std::string_view sCalendarMeetingRequestCommon::timezoneId() const
 	return {};
 }
 
+static std::string tzdef_keyname(const BINARY *bin)
+{
+	if (bin == nullptr)
+		return {};
+	EXT_PULL ext_pull;
+	TZDEF tzdef;
+	ext_pull.init(bin->pb, bin->cb, nullptr, EXT_FLAG_UTF16);
+	if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
+		return {};
+	return std::move(tzdef.keyname);
+}
+
 void sCalendarMeetingRequestCommon::update(const sShape &shape)
 {
 	fromProp(shape.get(NtAppointmentSequence), AppointmentSequenceNumber);
@@ -682,11 +694,17 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	if((u64 =  shape.get<uint64_t>(NtCommonStart)))
 		Start.emplace(rop_util_nttime_to_unix2(*u64));
 
-	const char* str;
-	if (!(str = shape.get<char>(NtCalendarTimeZone)))
-		str = shape.get<char>(NtTimeZoneDescription);
-	if (str != nullptr && *str != '\0')
-		timezoneId(str);
+	auto tzid = tzdef_keyname(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionStartDisplay));
+	if (tzid.empty())
+		tzid = tzdef_keyname(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionEndDisplay));
+	const char *str;
+	if (tzid.empty() && (str = shape.get<char>(NtCalendarTimeZone)) != nullptr)
+		tzid = str;
+	/* A description, not necessarily a zone name */
+	if (tzid.empty() && (str = shape.get<char>(NtTimeZoneDescription)) != nullptr)
+		tzid = str;
+	if (!tzid.empty())
+		timezoneId(tzid);
 
 	Enum::CalendarItemTypeType calendarItemType = Enum::Single;
 	if ((prop = shape.get(NtAppointmentRecur))) {
@@ -3653,7 +3671,9 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:End", {NtCommonEnd, PT_SYSTIME}},
 	{"calendar:EndTimeZone", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:EndTimeZone", {NtTimeZoneDescription, PT_UNICODE}},
+	{"calendar:EndTimeZone", {NtAppointmentTimeZoneDefinitionEndDisplay, PT_BINARY}},
 	{"calendar:EndTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
+	{"calendar:EndTimeZoneId", {NtAppointmentTimeZoneDefinitionEndDisplay, PT_BINARY}},
 	{"calendar:IsAllDayEvent", {NtAppointmentSubType, PT_BOOLEAN}},
 	{"calendar:IsCancelled", {NtAppointmentStateFlags, PT_LONG}},
 	{"calendar:IsMeeting", {NtAppointmentStateFlags, PT_LONG}},
@@ -3673,7 +3693,9 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:Start", {NtCommonStart, PT_SYSTIME}},
 	{"calendar:StartTimeZone", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:StartTimeZone", {NtTimeZoneDescription, PT_UNICODE}},
+	{"calendar:StartTimeZone", {NtAppointmentTimeZoneDefinitionStartDisplay, PT_BINARY}},
 	{"calendar:StartTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
+	{"calendar:StartTimeZoneId", {NtAppointmentTimeZoneDefinitionStartDisplay, PT_BINARY}},
 	{"calendar:TimeZone", {NtTimeZone, PT_UNICODE}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
 	{"contacts:CompleteName", {NtYomiFirstName, PT_UNICODE}},
@@ -4193,6 +4215,8 @@ decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefa
 	{&NtCommonStart, PT_SYSTIME},
 	{&NtCommonEnd, PT_SYSTIME},
 	{&NtCalendarTimeZone, PT_UNICODE},
+	{&NtAppointmentTimeZoneDefinitionStartDisplay, PT_BINARY},
+	{&NtAppointmentTimeZoneDefinitionEndDisplay, PT_BINARY},
 	{&NtEmailAddress1, PT_UNICODE},
 	{&NtEmailAddress2, PT_UNICODE},
 	{&NtEmailAddress3, PT_UNICODE},
