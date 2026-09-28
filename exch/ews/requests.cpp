@@ -1027,6 +1027,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			uint32_t busyValue = resp == respAccepted ? olBusy :
 			                     resp == respTentative ? olTentative : olFree;
 			auto bstat = EWSContext::construct<uint32_t>(busyValue);
+			auto processed = EWSContext::construct<uint8_t>(1);
 			auto pidResp  = ctx.getNamedPropId(rdir, NtResponseStatus, true);
 			auto pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
 			auto pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
@@ -1036,6 +1037,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				{PROP_TAG(PT_SYSTIME, pidReply), now},
 				{PROP_TAG(PT_LONG, pidState), astat},
 				{PROP_TAG(PT_LONG, pidBusy), bstat},
+				{PR_PROCESSED, processed},
 			};
 			TPROPVAL_ARRAY proplist{std::size(props), props};
 			PROBLEM_ARRAY problems;

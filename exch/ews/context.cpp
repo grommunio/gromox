@@ -924,6 +924,12 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	    props.set(PROP_TAG(PT_LONG, pidBusy), construct<uint32_t>(busyValue)) != ecSuccess)
 		throw EWSError::ItemSave(E3327);
 
+	/* eM Client drops calendar items without IsAllDayEvent */
+	auto pidSubType = getNamedPropId(calendarDir, NtAppointmentSubType, true);
+	if (!props.has(PROP_TAG(PT_BOOLEAN, pidSubType)) &&
+	    props.set(PROP_TAG(PT_BOOLEAN, pidSubType), construct<uint8_t>(0)) != ecSuccess)
+		throw EWSError::ItemSave(E3475);
+
 	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *content);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3328);
@@ -4228,15 +4234,11 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		    !ep.init(buf, sizeof(buf), 0) ||
 		    ep.p_goid(goid) != pack_result::ok)
 			throw EWSError::InternalServerError(E3375);
-		auto gb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_cdata}});
+		auto gdata = alloc<char>(ep.m_offset);
+		memcpy(gdata, ep.m_cdata, ep.m_offset);
+		auto gb = construct<BINARY>(BINARY{ep.m_offset, {gdata}});
 		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
-		goid.year = goid.month = goid.day = 0;
-		goid.creationtime = 0;
-		if (!ep.init(buf, sizeof(buf), 0) ||
-		    ep.p_goid(goid) != pack_result::ok)
-			throw EWSError::InternalServerError(E3376);
-		auto cb = construct<BINARY>(BINARY{static_cast<uint32_t>(ep.m_offset), {ep.m_cdata}});
-		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, cb});
+		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
 	}
 
 	size_t recipients = (item.RequiredAttendees ? item.RequiredAttendees->size() : 0) +

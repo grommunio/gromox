@@ -214,7 +214,8 @@ bool ab_base::load()
 		domid_to_listidx[domid] = static_cast<uint32_t>(m_domains.size());
 		ab_domain &domain = m_domains.emplace_back();
 		domain.id = domid;
-		mysql_adaptor_get_domain_info(domid, domain.info);
+		if (!mysql_adaptor_get_domain_info(domid, domain.info))
+			return false;
 	} catch (std::exception &) {
 		return false;
 	}

@@ -1208,8 +1208,9 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	};
 	for (auto t : rmprops)
 		prop.erase(t);
-	static constexpr uint32_t v_busy = olBusy, stateflags = asfMeeting | asfReceived;
+	static constexpr uint32_t stateflags = asfMeeting | asfReceived;
 	static constexpr uint8_t v_false = false;
+	uint32_t v_busy = accept_type == respAccepted ? olBusy : olTentative;
 	ec_error_t err;
 	if ((err = prop.set(PROP_TAG(PT_LONG, propids[l_response_status]), &accept_type)) != ecSuccess ||
 	    (err = prop.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_busy)) != ecSuccess ||
@@ -1218,6 +1219,11 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 		return err;
 	if (!prop.has(propids[l_recurring])) {
 		err = prop.set(PROP_TAG(PT_LONG, propids[l_recurring]), &v_false);
+		if (err != ecSuccess)
+			return err;
+	}
+	if (!prop.has(PROP_TAG(PT_BOOLEAN, propids[l_appt_sub_type]))) {
+		err = prop.set(PROP_TAG(PT_BOOLEAN, propids[l_appt_sub_type]), &v_false);
 		if (err != ecSuccess)
 			return err;
 	}
@@ -1349,6 +1355,18 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_SMTP_ADDRESS available", __func__);
 		return ecInvalidParam;
 	}
+	/* ATTENDEE comes from SENT_REPRESENTING, From: from SENDER */
+	if (par.ev_to == nullptr || *par.ev_to == '\0') {
+		mlog(LV_ERR, "%s: no Envelope-To to identify the responder with", __func__);
+		return ecInvalidParam;
+	}
+	if ((err = rsp_prop.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP")) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, par.ev_to)) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, par.ev_to)) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENDER_ADDRTYPE, "SMTP")) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENDER_EMAIL_ADDRESS, par.ev_to)) != ecSuccess ||
+	    (err = rsp_prop.set(PR_SENDER_SMTP_ADDRESS, par.ev_to)) != ecSuccess)
+		return err;
 	auto bin = rq_prop.get<const BINARY>(PR_CONVERSATION_INDEX);
 	if (bin != nullptr && bin->cb >= 22) {
 		auto cvidx = std::make_unique<char[]>(bin->cb + 5);

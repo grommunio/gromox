@@ -547,6 +547,10 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size,
  * It is valid for @inbuf to point to the same object as @outbuf.
  * Returns 0 on success, negative non-zero on error with errno set.
  * @outbuf is only replaced on success.
+ *
+ * Conversion to UTF-8 happens before hand-off:
+ * - pandoc expects UTF-8 (and the manpage is rather clear on that)
+ * - w3m knows only a fixed set of encodings (UTF-16 not among them)
  */
 int convert_doc_with_program(std::string_view inbuf, const char *cset,
     std::string &final_buf, unsigned int rend) try

@@ -153,6 +153,7 @@ struct dcerpc_rts final : public dcerpc_payload {
  * NCA = Network Connection Architecture
  * CN = Connection (ncacn)
  * DG = Datagram / Connectionless (ncadg)
+ * <https://learn.microsoft.com/en-us/windows/win32/rpc/protocol-sequence-constants>
  *
  * C706 §12.6.1 / RPCH v19 §2.2.3.6.1
  */

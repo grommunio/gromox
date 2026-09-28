@@ -1509,11 +1509,7 @@ const char *config_file::get_value(const char *sk) const
 unsigned long long config_file::get_ll(const char *key) const
 {
 	auto s = get_value(key);
-	if (s == nullptr) {
-		mlog(LV_ERR, "*** config key \"%s\" has no default (this is a programming error) and was not set either; yielding 0", key);
-		return 0;
-	}
-	return strtoull(s, nullptr, 0);
+	return s != nullptr ? strtoull(s, nullptr, 0) : 0;
 }
 
 void config_file::set_value(const char *sk, const char *sv) try

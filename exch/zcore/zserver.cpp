@@ -158,9 +158,10 @@ USER_INFO *zs_get_info()
 void user_info_del::operator()(USER_INFO *pinfo) CONST_BEFORE_CXX23
 {
 	pinfo->lock.unlock();
-	std::unique_lock tl_hold(g_table_lock);
-	pinfo->reference --;
-	tl_hold.unlock();
+	{
+		std::lock_guard tl_hold(g_table_lock);
+		pinfo->reference--;
+	}
 	g_info_key = nullptr;
 }
 

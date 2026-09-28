@@ -1644,7 +1644,7 @@ static BOOL giat_message(MESSAGE_CONTENT *pmsgctnt, PROPTAG_ARRAY *pproptags)
 
 static BOOL giat_attachment(ATTACHMENT_CONTENT *pattachment, PROPTAG_ARRAY *pproptags)
 {
-	pproptags->count = pattachment->proplist.count + 1;
+	pproptags->count = pattachment->proplist.count + 2;
 	if (pattachment->pembedded != nullptr)
 		pproptags->count++;
 	pproptags->pproptag = cu_alloc<proptag_t>(pproptags->count);
@@ -1656,6 +1656,8 @@ static BOOL giat_attachment(ATTACHMENT_CONTENT *pattachment, PROPTAG_ARRAY *ppro
 		pproptags->pproptag[i] = atx_idtopr(pattachment->proplist.ppropval[i].proptag);
 	pproptags->count = pattachment->proplist.count;
 	pproptags->emplace_back(PR_ATTACH_SIZE);
+	if (!pattachment->proplist.has(PR_RECORD_KEY))
+		pproptags->emplace_back(PR_RECORD_KEY);
 	return TRUE;
 }
 
@@ -1872,6 +1874,16 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 			memcpy(pv, pattachment->eph_record_key.ab, 8);
 			vc.proptag = tag;
 			ppropvals->count ++;
+			continue;
+		}
+		case PR_RECORD_KEY: {
+			auto num = pattachment->proplist.get<const uint32_t>(PR_ATTACH_NUM);
+			if (num == nullptr)
+				break;
+			auto bin = cu_atx_record_key(*num);
+			if (bin == nullptr)
+				return FALSE;
+			ppropvals->emplace_back(tag, bin);
 			continue;
 		}
 		case PR_ATTACH_SIZE: {

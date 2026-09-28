@@ -434,6 +434,8 @@ PR_SOURCE_KEY
 PR_RECORD_KEY
 	In Exchange, similar to EX entryid.
 	4-byte flags, 16-byte PR_STORE_RECORD_KEY, 2-byte type, 16-byte dbguid, 6-byte GCV, 2-byte pad.
+	For attachments, Gromox emits a 0xA2 byte followed by the 8-byte
+	big-endian position of the attachment within its message.
 
 PR_MDB_PROVIDER
 	When emsmdb32.dll is the provider, the 16-byte value is

@@ -134,6 +134,7 @@ BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t del_count);
 extern BOOL cu_adjust_store_size(sqlite3 *psqlite, bool sub, uint64_t normal_size, uint64_t fai_size);
 extern BINARY *cu_xid_to_bin(const XID &);
+extern BINARY *cu_atx_record_key(uint64_t position);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);

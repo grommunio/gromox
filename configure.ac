@@ -19,7 +19,7 @@ saved_LDFLAGS="$LDFLAGS"
 saved_LIBS="$LIBS"
 AC_LANG_PUSH([C++])
 
-my_CPPFLAGS="-D_FILE_OFFSET_BITS=64 -D_TIME_BITS=64"
+my_CPPFLAGS=""
 my_CFLAGS="-Wall -Wmissing-declarations -Wwrite-strings"
 my_CXXFLAGS="-Wall -Wmissing-declarations"
 my_LDFLAGS=""
