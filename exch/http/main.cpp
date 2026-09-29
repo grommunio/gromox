@@ -292,7 +292,11 @@ int main(int argc, char **argv)
 	mlog(LV_INFO, "http: fastcgi execution timeout is %s", temp_buff);
 	if (listener_init(*gxconfig, *g_config_file, http_support_tls) != 0)
 		return EXIT_FAILURE;
-	auto cleanup_4 = HX::make_scope_exit(listener_stop);
+	/*
+	 * cleanup_4's scope_exit is deliberately NOT registered here even
+	 * though listener_init() just ran - see below, right after
+	 * threads_pool's cleanup_28, for why.
+	 */
 
 	const char *program_identifier = "http";
 	auto istore_standalone = gxconfig->get_ll("istore_standalone");
@@ -400,13 +404,25 @@ int main(int argc, char **argv)
 	}
 
 	/*
-	 * Connection acceptance thread comes last. The htls_thrwork function
-	 * needs an initialized contexts_pool object.
+	 * Connection acceptance thread comes last on *startup* (htls_thrwork
+	 * needs an initialized contexts_pool object), but its scope_exit is
+	 * registered last on purpose too, precisely so it is the first thing
+	 * torn down on *shutdown*. Without this, listener_stop() (which was
+	 * previously registered right after listener_init(), i.e. first =
+	 * torn down LAST) left the accept thread running throughout the
+	 * teardown of contexts_pool/http_parser/hpm_processor/threads_pool
+	 * below it - a still-live connection could be handed off via
+	 * contexts_pool_insert() and processed into already-destroyed
+	 * context arrays (observed as a segfault in hpm_processor_insert_ctx
+	 * -> g_context_list[] during shutdown, 2026-09-02/03). Stopping (and
+	 * joining, see listener_ctx::reset()) the accept thread before any
+	 * of that is torn down closes the race.
 	 */
 	if (listener_trigger_accept() != 0) {
 		mlog(LV_ERR, "system: failed listening socket setup");
 		return EXIT_FAILURE;
 	}
+	auto cleanup_4 = HX::make_scope_exit(listener_stop);
 	
 	mlog(LV_INFO, "system: HTTP daemon is now running");
 	while (!g_httpmain_stop) {
