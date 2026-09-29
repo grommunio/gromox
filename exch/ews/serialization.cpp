@@ -2733,6 +2733,25 @@ void mGetInboxRulesResponse::serialize(XMLElement *xml) const
 		Rules::write_rule(list, rule);
 }
 
+mUpdateInboxRulesRequest::mUpdateInboxRulesRequest(const XMLElement *xml) :
+	XMLINIT(MailboxSmtpAddress), XMLINIT(RemoveOutlookRuleBlob)
+{
+	auto ops = xml->FirstChildElement("Operations");
+	if (ops == nullptr)
+		throw DeserializationError(E3046("Operations", xml->Name()));
+	try {
+		Operations = Rules::parse_operations(ops);
+	} catch (const Rules::ParseError &e) {
+		throw DeserializationError(E3605(e.what()));
+	}
+}
+
+void mUpdateInboxRulesResponse::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	Rules::write_errors(xml, RuleOperationErrors);
+}
+
 mGetItemRequest::mGetItemRequest(const XMLElement *xml) :
 	XMLINIT(ItemShape),
 	XMLINIT(ItemIds)

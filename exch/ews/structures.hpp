@@ -4950,6 +4950,34 @@ struct mGetInboxRulesResponse : public mResponseMessageType {
 	void serialize(tinyxml2::XMLElement *) const;
 };
 
+/**
+ * @brief      Update inbox rules request
+ *
+ * MS-OXWSRULES v9.0 §3.1.4.2.3.1
+ */
+struct mUpdateInboxRulesRequest {
+	explicit mUpdateInboxRulesRequest(const tinyxml2::XMLElement *);
+
+	std::optional<std::string> MailboxSmtpAddress;
+	std::optional<bool> RemoveOutlookRuleBlob;
+	std::vector<Rules::Operation> Operations;
+};
+
+/**
+ * @brief      Update inbox rules response
+ *
+ * MS-OXWSRULES v9.0 §3.1.4.2.3.2
+ */
+struct mUpdateInboxRulesResponse : public mResponseMessageType {
+	static constexpr char NAME[] = "UpdateInboxRulesResponse";
+
+	using mResponseMessageType::success;
+
+	std::vector<Rules::OperationError> RuleOperationErrors;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
 #undef ALIAS
 
 }

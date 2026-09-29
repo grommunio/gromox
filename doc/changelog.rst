@@ -45,6 +45,8 @@ Enhancements:
 * oxcmail: ``X-MS-Exchange-Organization-AutoForwarded: true`` now sets
   PR_AUTO_FORWARDED on import, so rule conditions on automatic forwards can
   match.
+* EWS: GetInboxRules now returns the Inbox rules and UpdateInboxRules is
+  implemented, so Outlook for Mac and eM Client can manage server rules.
 
 Changes:
 

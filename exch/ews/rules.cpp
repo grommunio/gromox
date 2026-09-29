@@ -470,6 +470,25 @@ void write_rule(XMLElement *parent, const Rule &r)
 	xput_group(e, "Actions", r.actions.v, act_defs);
 }
 
+void write_errors(XMLElement *parent, const std::vector<OperationError> &errs)
+{
+	if (errs.empty())
+		return;
+	auto list = parent->InsertNewChildElement("m:RuleOperationErrors");
+	for (const auto &oe : errs) {
+		auto x = xput(list, "RuleOperationError");
+		xput(x, "OperationIndex")->SetText(oe.index);
+		auto ve = xput(x, "ValidationErrors");
+		for (const auto &err : oe.errors) {
+			auto y = xput(ve, "Error");
+			xput(y, "FieldURI", err.field);
+			xput(y, "ErrorCode", err.code);
+			xput(y, "ErrorMessage", err.message);
+			xput(y, "FieldValue", err.value);
+		}
+	}
+}
+
 /*
  * Common restriction helpers
  */
@@ -1254,6 +1273,273 @@ Rule from_mapi(const TPROPVAL_ARRAY &row, Env &env)
 	if (state & ST_EXIT_LEVEL)
 		rule.actions.v[A_StopProcessingRules] = Value{.flag = true};
 	return rule;
+}
+
+/*
+ * Write side
+ */
+namespace {
+
+struct writer {
+	writer(Env &e, std::vector<ValidationError> &v) : env(e), errs(v) {}
+
+	template<typename T> T *mk()
+	{
+		auto p = env.alloc(sizeof(T));
+		if (p == nullptr)
+			throw std::bad_alloc();
+		return new(p) T{};
+	}
+	template<typename T> T *mk(size_t n)
+	{
+		auto p = static_cast<T *>(env.alloc(sizeof(T) * n));
+		if (p == nullptr)
+			throw std::bad_alloc();
+		for (size_t i = 0; i < n; ++i)
+			new(&p[i]) T{};
+		return p;
+	}
+	char *str(const std::string &s)
+	{
+		auto p = static_cast<char *>(env.alloc(s.size() + 1));
+		if (p == nullptr)
+			throw std::bad_alloc();
+		memcpy(p, s.c_str(), s.size() + 1);
+		return p;
+	}
+	BINARY *bin(const std::string &s)
+	{
+		auto b = mk<BINARY>();
+		b->cb = s.size();
+		b->pv = env.alloc(s.size() > 0 ? s.size() : 1);
+		if (b->pv == nullptr)
+			throw std::bad_alloc();
+		memcpy(b->pv, s.data(), s.size());
+		return b;
+	}
+	template<typename T> T *num(T v)
+	{
+		auto p = mk<T>();
+		*p = v;
+		return p;
+	}
+
+	RESTRICTION res(mapi_rtype t, void *p)
+	{
+		RESTRICTION r;
+		r.rt = t;
+		r.pres = p;
+		return r;
+	}
+	RESTRICTION list(mapi_rtype t, const std::vector<RESTRICTION> &v)
+	{
+		auto l = mk<RESTRICTION_AND_OR>();
+		l->count = v.size();
+		l->pres = mk<RESTRICTION>(v.size());
+		std::copy(v.begin(), v.end(), l->pres);
+		return res(t, l);
+	}
+	/* RES_OR only when there is more than one leaf */
+	RESTRICTION any(const std::vector<RESTRICTION> &v)
+	{
+		return v.size() == 1 ? v[0] : list(RES_OR, v);
+	}
+	RESTRICTION xnot(const RESTRICTION &in)
+	{
+		auto n = mk<RESTRICTION_NOT>();
+		n->res = in;
+		return res(RES_NOT, n);
+	}
+	RESTRICTION content(proptag_t tag, uint32_t fl, const std::string &s)
+	{
+		auto c = mk<RESTRICTION_CONTENT>();
+		c->fuzzy_level = fl;
+		c->proptag = tag;
+		c->propval.proptag = PROP_TYPE(tag) == PT_BINARY ? tag :
+		                     CHANGE_PROP_TYPE(tag, PT_UNICODE);
+		c->propval.pvalue = PROP_TYPE(tag) == PT_BINARY ?
+		                    static_cast<void *>(bin(s)) : str(s);
+		return res(RES_CONTENT, c);
+	}
+	RESTRICTION prop(relop op, proptag_t tag, void *v)
+	{
+		auto p = mk<RESTRICTION_PROPERTY>();
+		p->relop = op;
+		p->proptag = tag;
+		p->propval.proptag = tag;
+		p->propval.pvalue = v;
+		return res(RES_PROPERTY, p);
+	}
+	RESTRICTION eq_bool(proptag_t tag, bool v) { return prop(RELOP_EQ, tag, num<uint8_t>(v)); }
+
+	std::optional<RESTRICTION> pred(pred_kind, const Value &, const std::string &uri);
+	ACTION_BLOCK *action(act_kind, const Value &, ACTION_BLOCK &);
+	void error(const std::string &uri, const char *code, const char *msg, const std::string &value = {})
+	{
+		errs.push_back({uri, code, msg, value});
+	}
+
+	Env &env;
+	std::vector<ValidationError> &errs;
+};
+
+}
+
+std::optional<RESTRICTION> writer::pred(pred_kind k, const Value &v, const std::string &uri)
+{
+	/* Predicates of value false do not restrict anything */
+	if (pred_type(k) == vtype::boolean && !v.flag)
+		return std::nullopt;
+	if ((pred_type(k) == vtype::strings && v.strings.empty()) ||
+	    (pred_type(k) == vtype::addresses && v.addrs.empty())) {
+		error(uri, "EmptyValueFound", "The list is empty.");
+		return std::nullopt;
+	}
+	std::vector<RESTRICTION> l;
+	switch (k) {
+	default:
+		error(uri, "UnsupportedRule", "This condition is not supported.");
+		return std::nullopt;
+	}
+	if (l.empty()) {
+		error(uri, "MissingRangeValue", "The range has no bound.");
+		return std::nullopt;
+	}
+	return l.size() == 1 ? l[0] : list(RES_AND, l);
+}
+
+/* Fill @blk, or return nullptr when the action adds no block */
+ACTION_BLOCK *writer::action(act_kind k, const Value &v, ACTION_BLOCK &blk)
+{
+	if (act_type(k) == vtype::boolean && !v.flag)
+		return nullptr;
+	auto uri = "Action:"s + act_name(k);
+	if ((act_type(k) == vtype::strings && v.strings.empty()) ||
+	    (act_type(k) == vtype::addresses && v.addrs.empty())) {
+		error(uri, "EmptyValueFound", "The list is empty.");
+		return nullptr;
+	}
+	blk = {};
+	switch (k) {
+	case A_MarkAsRead:
+		blk.type = OP_MARK_AS_READ;
+		return &blk;
+	case A_PermanentDelete:
+		blk.type = OP_DELETE;
+		return &blk;
+	case A_Delete: {
+		auto mc = mk<MOVECOPY_ACTION>();
+		if (auto code = env.deleted_items(*mc)) {
+			error(uri, code, "The Deleted Items folder cannot be found.");
+			return nullptr;
+		}
+		blk.type = OP_MOVE;
+		blk.pdata = mc;
+		return &blk;
+	}
+	default:
+		/* SendSMSAlertToRecipients: ruleproc has no SMS gateway */
+		error(uri, "UnsupportedRule", "This action is not supported.");
+		return nullptr;
+	}
+}
+
+/*
+ * Conditions are AND'ed, each exception goes into its own RES_NOT, as Outlook
+ * does, see outlook_rule_spec.rst "SSRT: Organizer2". A rule without any must
+ * still carry a restriction, update_folder_rule skips rules without one.
+ */
+bool to_mapi(const Rule &rule, Env &env, RESTRICTION *&cond,
+    RULE_ACTIONS *&acts, std::vector<ValidationError> &errs)
+{
+	auto nerr = errs.size();
+	writer w(env, errs);
+	std::vector<RESTRICTION> all;
+	for (unsigned int k = 0; k < P_COUNT; ++k) {
+		if (rule.conditions.v[k])
+			if (auto r = w.pred(static_cast<pred_kind>(k), *rule.conditions.v[k],
+			    "Condition:"s + pred_name(k)))
+				all.push_back(*r);
+	}
+	for (unsigned int k = 0; k < P_COUNT; ++k) {
+		if (rule.exceptions.v[k])
+			if (auto r = w.pred(static_cast<pred_kind>(k), *rule.exceptions.v[k],
+			    "Exception:"s + pred_name(k)))
+				all.push_back(w.xnot(*r));
+	}
+	cond = w.mk<RESTRICTION>();
+	if (all.empty()) {
+		auto ex = w.mk<RESTRICTION_EXIST>();
+		ex->proptag = PR_MESSAGE_CLASS;
+		*cond = w.res(RES_EXIST, ex);
+	} else {
+		*cond = all.size() == 1 ? all[0] : w.list(RES_AND, all);
+	}
+
+	/* Message-changing actions first, moves after, deletion last */
+	static constexpr act_kind order[] = {
+		A_AssignCategories, A_MarkImportance, A_MarkAsRead,
+		A_ForwardToRecipients, A_ForwardAsAttachmentToRecipients,
+		A_RedirectToRecipients, A_SendSMSAlertToRecipients,
+		A_ServerReplyWithMessage, A_CopyToFolder, A_MoveToFolder,
+		A_Delete, A_PermanentDelete,
+	};
+	std::vector<ACTION_BLOCK> blocks;
+	for (auto k : order) {
+		if (!rule.actions.v[k])
+			continue;
+		ACTION_BLOCK blk;
+		if (w.action(k, *rule.actions.v[k], blk) != nullptr)
+			blocks.push_back(blk);
+	}
+	if (blocks.empty()) {
+		/* Only StopProcessingRules, store grommunio-web's placeholder */
+		ACTION_BLOCK blk{};
+		blk.type = OP_DEFER_ACTION;
+		blk.length = 9 + sizeof(web_default_dam);
+		blk.pdata = w.mk<uint8_t>(sizeof(web_default_dam));
+		memcpy(blk.pdata, web_default_dam, sizeof(web_default_dam));
+		blocks.push_back(blk);
+	}
+	acts = w.mk<RULE_ACTIONS>();
+	acts->count = blocks.size();
+	acts->pblock = w.mk<ACTION_BLOCK>(blocks.size());
+	std::copy(blocks.begin(), blocks.end(), acts->pblock);
+	return errs.size() == nerr;
+}
+
+/* Checks that need no mailbox, MS-OXWSRULES v9.0 §3.1.4.2.4.2 */
+std::vector<ValidationError> validate(const Rule &rule, Operation::kind_t kind)
+{
+	std::vector<ValidationError> errs;
+	if (kind == Operation::CREATE && rule.id)
+		errs.push_back({"RuleId", "CreateWithRuleId",
+			"Create rule operation should not have rule ID set in request.", *rule.id});
+	if (kind == Operation::SET && !rule.id)
+		errs.push_back({"RuleId", "MissingParameter", "The rule ID is missing.", ""});
+	bool any = false;
+	for (unsigned int k = 0; k < A_COUNT; ++k) {
+		auto &a = rule.actions.v[k];
+		if (a && (act_type(k) != vtype::boolean || a->flag))
+			any = true;
+	}
+	if (!any)
+		errs.push_back({"Actions", "MissingAction", "The rule has no action.", ""});
+	return errs;
+}
+
+/*
+ * Sequence numbers for @count visible rules, reusing those the visible rules
+ * had before so rules of other providers keep their place.
+ */
+std::vector<uint32_t> assign_sequences(std::vector<uint32_t> old, size_t count)
+{
+	std::sort(old.begin(), old.end());
+	std::vector<uint32_t> out;
+	uint32_t next = old.empty() ? 10 : old.back() + 1;
+	for (size_t i = 0; i < count; ++i)
+		out.push_back(i < old.size() ? old[i] : next++);
+	return out;
 }
 
 }

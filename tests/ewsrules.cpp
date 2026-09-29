@@ -172,6 +172,31 @@ static int t_xml_roundtrip()
 	return EXIT_SUCCESS;
 }
 
+static int t_errors_xml()
+{
+	tinyxml2::XMLDocument doc;
+	auto root = doc.NewElement("x");
+	doc.InsertFirstChild(root);
+	write_errors(root, {{2, {{"RuleId", "CreateWithRuleId", "msg", "dCsAAABjz0Q="}}}});
+	tinyxml2::XMLPrinter pr(nullptr, true);
+	doc.Print(&pr);
+	std::string out = pr.CStr();
+	CHECK(out == "<x><m:RuleOperationErrors><t:RuleOperationError><t:OperationIndex>2"
+	      "</t:OperationIndex><t:ValidationErrors><t:Error><t:FieldURI>RuleId</t:FieldURI>"
+	      "<t:ErrorCode>CreateWithRuleId</t:ErrorCode><t:ErrorMessage>msg</t:ErrorMessage>"
+	      "<t:FieldValue>dCsAAABjz0Q=</t:FieldValue></t:Error></t:ValidationErrors>"
+	      "</t:RuleOperationError></m:RuleOperationErrors></x>");
+	return EXIT_SUCCESS;
+}
+
+static int t_sequences()
+{
+	CHECK((assign_sequences({}, 2) == std::vector<uint32_t>{10, 11}));
+	CHECK((assign_sequences({12, 10, 11}, 2) == std::vector<uint32_t>{10, 11}));
+	CHECK((assign_sequences({10, 20}, 4) == std::vector<uint32_t>{10, 20, 21, 22}));
+	return EXIT_SUCCESS;
+}
+
 /*
  * Fake mailbox. Folder ids are "F<n>" for this store and "X<n>" for
  * another one, template ids are "T<n>".
@@ -181,6 +206,14 @@ class test_env final : public Env {
 	void *alloc(size_t z) override { return calloc(1, z > 0 ? z : 1); }
 	uint16_t keywords_propid(bool) override { return 0x8100; }
 	uint16_t flagrequest_propid(bool) override { return 0x8101; }
+	const char *deleted_items(MOVECOPY_ACTION &mc) override
+	{
+		auto sv = static_cast<SVREID *>(alloc(sizeof(SVREID)));
+		sv->folder_id = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
+		mc.same_store = 1;
+		mc.pfolder_eid = sv;
+		return nullptr;
+	}
 	bool folder_ref(const MOVECOPY_ACTION &mc, FolderRef &f, bool &trash) override
 	{
 		if (!mc.same_store) {
@@ -379,10 +412,97 @@ static int t_read_variants()
 
 	auto ex = mk<RESTRICTION_EXIST>();
 	ex->proptag = PR_MESSAGE_CLASS;
+	/* grommunio-web's "no action" placeholder with stop processing */
+	Rule stop;
+	stop.name = "stop";
+	stop.priority = 1;
+	stop.actions.v[A_StopProcessingRules] = Value{.flag = true};
+	RESTRICTION *cond = nullptr;
+	RULE_ACTIONS *acts = nullptr;
+	std::vector<ValidationError> errs;
+	CHECK(to_mapi(stop, env, cond, acts, errs));
+	CHECK(acts->count == 1 && acts->pblock[0].type == OP_DEFER_ACTION);
+	row = stored(mkres(RES_EXIST, ex), *acts, ST_ENABLED | ST_EXIT_LEVEL);
+	CHECK(row != nullptr);
+	r = from_mapi(*row, env);
+	CHECK(!r.not_supported.value_or(false));
+	CHECK(r.conditions.empty());
+	CHECK(r.actions.v[A_StopProcessingRules]->flag);
+	CHECK(!r.actions.v[A_MarkAsRead]);
 
 	/* Out-of-office rules do not map */
 	row = stored(mkres(RES_EXIST, ex), *mark, ST_ENABLED | ST_ONLY_WHEN_OOF);
 	CHECK(from_mapi(*row, env).not_supported == true);
+	return EXIT_SUCCESS;
+}
+
+static bool act_written(unsigned int k)
+{
+	switch (k) {
+	case A_MarkAsRead:
+	case A_PermanentDelete:
+	case A_Delete:
+	case A_StopProcessingRules:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static int t_actions()
+{
+	test_env env;
+	for (unsigned int k = 0; k < A_COUNT; ++k) {
+		if (!act_written(k))
+			continue;
+		Rule r;
+		r.name = act_name(k);
+		r.priority = 1;
+		r.actions.v[k] = sample(act_type(k));
+		RESTRICTION *cond = nullptr;
+		RULE_ACTIONS *acts = nullptr;
+		std::vector<ValidationError> errs;
+		if (!to_mapi(r, env, cond, acts, errs)) {
+			fprintf(stderr, "%s: %s\n", act_name(k), errs[0].code.c_str());
+			return EXIT_FAILURE;
+		}
+		auto row = stored(*cond, *acts, k == A_StopProcessingRules ? ST_EXIT_LEVEL : 0);
+		CHECK(row != nullptr);
+		auto r2 = from_mapi(*row, env);
+		if (r2.not_supported.value_or(false) || r2.actions != r.actions) {
+			fprintf(stderr, "%s: no round trip: %s\n", act_name(k), acts->repr().c_str());
+			return EXIT_FAILURE;
+		}
+		if (k == A_Delete) {
+			CHECK(acts->pblock[0].type == OP_MOVE);
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
+static bool has_error(const std::vector<ValidationError> &errs, const char *field, const char *code)
+{
+	for (const auto &e : errs)
+		if (e.field == field && e.code == code)
+			return true;
+	return false;
+}
+
+static int t_validate()
+{
+	Rule r;
+	r.name = "v";
+	r.priority = 1;
+	r.id = "dCsAAABjz0Q=";
+	auto errs = validate(r, Operation::CREATE);
+	CHECK(has_error(errs, "RuleId", "CreateWithRuleId"));
+	CHECK(has_error(errs, "Actions", "MissingAction"));
+	r.actions.v[A_MarkAsRead] = Value{.flag = false};
+	CHECK(has_error(validate(r, Operation::SET), "Actions", "MissingAction"));
+	r.id.reset();
+	CHECK(has_error(validate(r, Operation::SET), "RuleId", "MissingParameter"));
+	r.actions.v[A_StopProcessingRules] = Value{.flag = true};
+	CHECK(validate(r, Operation::CREATE).empty());
 	return EXIT_SUCCESS;
 }
 
@@ -391,6 +511,7 @@ int main()
 	using fn = int (*)();
 	for (auto f : std::initializer_list<fn>{t_ruleid, t_parse, t_xml_roundtrip,
 	     t_read_variants,
+	     t_errors_xml, t_sequences, t_actions, t_validate,
 	     }) {
 		auto ret = f();
 		if (ret != EXIT_SUCCESS) {

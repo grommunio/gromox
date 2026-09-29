@@ -2562,9 +2562,13 @@ class RulesEnv final : public Rules::Env {
 	uint16_t keywords_propid(bool create) override { return named(NtCategories, create); }
 	uint16_t flagrequest_propid(bool create) override { return named(NtFlagRequest, create); }
 
+	const char *deleted_items(MOVECOPY_ACTION &) override;
 	bool folder_ref(const MOVECOPY_ACTION &, Rules::FolderRef &, bool &) override;
 	bool template_ref(const REPLY_ACTION &, Rules::ItemRef &) override;
 	bool essdn_to_smtp(const char *, std::string &) override;
+	void rollback();
+
+	std::vector<eid_t> created_templates;
 
 	private:
 	uint16_t named(const PROPERTY_NAME &name, bool create)
@@ -2580,6 +2584,28 @@ class RulesEnv final : public Rules::Env {
 	const EWSPlugin::_exmdb &exmdb;
 	std::string dir, user;
 };
+
+const char *RulesEnv::deleted_items(MOVECOPY_ACTION &mc)
+{
+	auto sv = EWSContext::construct<SVREID>();
+	sv->folder_id = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
+	mc.same_store = 1;
+	mc.pfolder_eid = sv;
+	return nullptr;
+}
+
+/**
+ * @brief      Delete templates made for a request that did not go through
+ */
+void RulesEnv::rollback()
+{
+	if (created_templates.empty())
+		return;
+	EID_ARRAY ids{static_cast<uint32_t>(created_templates.size()), created_templates.data()};
+	BOOL partial = false;
+	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox, &ids, true, &partial);
+	created_templates.clear();
+}
 
 bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool &trash) try
 {
@@ -2740,6 +2766,207 @@ void process(mGetInboxRulesRequest &&request, XMLElement *response, const EWSCon
 		data.success();
 	} catch (const EWSError &err) {
 		data = mGetInboxRulesResponse();
+		static_cast<mResponseMessageType &>(data) = mResponseMessageType(err);
+	}
+	data.serialize(response);
+}
+
+namespace {
+
+/**
+ * @brief      Rule list entry during UpdateInboxRules
+ */
+struct rule_slot {
+	const rule_row *old = nullptr; /* nullptr: created */
+	const Rules::Rule *rule = nullptr; /* nullptr: unchanged */
+	RESTRICTION *cond = nullptr;
+	RULE_ACTIONS *acts = nullptr;
+	uint32_t state = 0;
+};
+
+/**
+ * @brief      Organizer2 provider data, outlook_rule_spec.rst "FAI message: RuleV2"
+ */
+BINARY *provider_data()
+{
+	auto bin = EWSContext::construct<BINARY>();
+	bin->cb = 16;
+	bin->pv = EWSContext::alloc(16);
+	double apptime = static_cast<double>(time(nullptr)) / 86400 + 25569;
+	EXT_PUSH ep;
+	if (!ep.init(bin->pv, 16, 0) || ep.p_uint32(1) != pack_result::ok ||
+	    ep.p_uint32(1) != pack_result::ok || ep.p_double(apptime) != pack_result::ok)
+		throw EWSError::NotEnoughMemory(E3129);
+	return bin;
+}
+
+}
+
+/**
+ * @brief      Process UpdateInboxRulesRequest
+ *
+ * All operations are validated first. Any error leaves the rules untouched
+ * and reports every failed operation, MS-OXWSRULES v9.0 §3.1.4.2. The
+ * remaining changes are written in one update_folder_rule batch.
+ *
+ * Priorities are positions among the rules GetInboxRules returns. The
+ * sequence numbers those rules had are reused, so delegate and
+ * out-of-office rules keep their place in the execution order.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:UpdateInboxRulesResponse");
+
+	mUpdateInboxRulesResponse data;
+	std::optional<RulesEnv> env;
+	try {
+		auto &exmdb = ctx.plugin().exmdb;
+		auto [dir, user] = rules_mailbox(ctx, request.MailboxSmtpAddress);
+		bool remove_blob = request.RemoveOutlookRuleBlob.value_or(false);
+		auto blobs = find_rule_blobs(ctx, dir);
+		if (!blobs.empty() && !remove_blob)
+			throw EWSError::OutlookRuleBlobExists(E3609);
+		auto rows = load_rules(ctx, dir);
+		env.emplace(ctx, dir, user);
+
+		std::vector<rule_slot> list;
+		for (const auto &row : rows)
+			list.push_back({&row, nullptr, nullptr, nullptr, row.state});
+		auto find = [&](const std::string &id) {
+			auto v = Rules::decode_rule_id(id);
+			return v ? std::find_if(list.begin(), list.end(), [&](const rule_slot &s) {
+				return s.old != nullptr && s.old->id == *v;
+			}) : list.end();
+		};
+		std::unordered_set<std::string> touched;
+		std::vector<Rules::OperationError> errors;
+		for (size_t i = 0; i < request.Operations.size(); ++i) {
+			auto &op = request.Operations[i];
+			std::string id = op.kind == Rules::Operation::DELETE ? op.rule_id :
+			                 op.rule.id.value_or(std::string{});
+			std::vector<Rules::ValidationError> ve;
+			auto it = list.end();
+			if (op.kind == Rules::Operation::DELETE ||
+			    (op.kind == Rules::Operation::SET && op.rule.id)) {
+				it = find(id);
+				if (!id.empty() && !touched.insert(id).second)
+					ve.push_back({"RuleId", "DuplicatedOperationOnTheSameRule",
+						"Only one operation per rule is allowed.", id});
+				else if (it == list.end())
+					ve.push_back({"RuleId", "RuleNotFound", "The rule was not found.", id});
+			}
+			if (op.kind == Rules::Operation::DELETE) {
+				if (ve.empty())
+					list.erase(it);
+				else
+					errors.push_back({static_cast<int32_t>(i), std::move(ve)});
+				continue;
+			}
+			auto rv = Rules::validate(op.rule, op.kind);
+			ve.insert(ve.end(), rv.begin(), rv.end());
+			if (ve.empty() && it != list.end() && op.kind == Rules::Operation::SET &&
+			    Rules::from_mapi(*it->old->props, *env).not_supported.value_or(false))
+				ve.push_back({"IsNotSupported", "UnsupportedRule",
+					"The rule cannot be changed through EWS.", id});
+			rule_slot slot;
+			if (ve.empty() && Rules::to_mapi(op.rule, *env, slot.cond, slot.acts, ve)) {
+				uint32_t state = 0;
+				if (op.kind == Rules::Operation::SET) {
+					slot.old = it->old;
+					state = it->state & ~(ST_ENABLED | ST_EXIT_LEVEL);
+					if (!op.rule.in_error.value_or(true))
+						state &= ~(ST_ERROR | ST_PARSE_ERROR);
+					list.erase(it);
+				}
+				auto &stop = op.rule.actions.v[Rules::A_StopProcessingRules];
+				if (op.rule.enabled)
+					state |= ST_ENABLED;
+				if (stop && stop->flag)
+					state |= ST_EXIT_LEVEL;
+				slot.rule = &op.rule;
+				slot.state = state;
+				auto pos = std::min(static_cast<size_t>(op.rule.priority - 1), list.size());
+				list.insert(list.begin() + pos, slot);
+			}
+			if (!ve.empty())
+				errors.push_back({static_cast<int32_t>(i), std::move(ve)});
+		}
+		if (!errors.empty()) {
+			env->rollback();
+			data.error("ErrorInboxRulesValidationError",
+				"Validation error occurred during rule operation execution.");
+			data.RuleOperationErrors = std::move(errors);
+			data.serialize(response);
+			return;
+		}
+
+		if (remove_blob && !blobs.empty()) {
+			EID_ARRAY ids{static_cast<uint32_t>(blobs.size()), blobs.data()};
+			BOOL partial = false;
+			if (!exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr,
+			    rules_inbox, &ids, true, &partial))
+				throw EWSError::InternalServerError(E3610);
+		}
+
+		std::vector<uint32_t> old_seqs;
+		for (const auto &row : rows)
+			old_seqs.push_back(row.seq);
+		auto seqs = Rules::assign_sequences(std::move(old_seqs), list.size());
+		std::vector<RULE_DATA> batch;
+		auto mkrow = [&](uint8_t flags, std::vector<TAGGED_PROPVAL> &&pv) {
+			auto arr = EWSContext::alloc<TAGGED_PROPVAL>(pv.size());
+			std::copy(pv.begin(), pv.end(), arr);
+			batch.push_back({flags, {static_cast<uint16_t>(pv.size()), arr}});
+		};
+		for (const auto &row : rows)
+			if (std::none_of(list.begin(), list.end(), [&](const rule_slot &s) { return s.old == &row; }))
+				mkrow(ROW_REMOVE, {{PR_RULE_ID, deconst(&row.id)}});
+		static constexpr uint32_t zero = 0;
+		for (size_t i = 0; i < list.size(); ++i) {
+			auto &s = list[i];
+			auto seq = &seqs[i];
+			if (s.old != nullptr && s.rule == nullptr) {
+				if (s.old->seq != *seq)
+					mkrow(ROW_MODIFY, {{PR_RULE_ID, deconst(&s.old->id)},
+						{PR_RULE_SEQUENCE, seq}});
+				continue;
+			}
+			std::vector<TAGGED_PROPVAL> pv = {
+				{PR_RULE_NAME, deconst(s.rule->name.c_str())},
+				{PR_RULE_SEQUENCE, seq},
+				{PR_RULE_STATE, &s.state},
+				{PR_RULE_CONDITION, s.cond},
+				{PR_RULE_ACTIONS, s.acts},
+			};
+			if (s.old != nullptr) {
+				pv.push_back({PR_RULE_ID, deconst(&s.old->id)});
+				mkrow(ROW_MODIFY, std::move(pv));
+				continue;
+			}
+			pv.push_back({PR_RULE_PROVIDER, deconst("RuleOrganizer")});
+			pv.push_back({PR_RULE_LEVEL, deconst(&zero)});
+			pv.push_back({PR_RULE_PROVIDER_DATA, provider_data()});
+			mkrow(ROW_ADD, std::move(pv));
+		}
+		/* Removals first so they make room for the additions */
+		std::stable_partition(batch.begin(), batch.end(),
+			[](const RULE_DATA &r) { return r.flags == ROW_REMOVE; });
+		BOOL exceed = false;
+		if (!batch.empty() && !exmdb.update_folder_rule(dir.c_str(), rules_inbox,
+		    static_cast<uint16_t>(batch.size()), batch.data(), &exceed))
+			throw EWSError::InternalServerError(E3611);
+		if (exceed)
+			throw EWSError::RulesOverQuota(E3612);
+		env->created_templates.clear();
+		data.success();
+	} catch (const EWSError &err) {
+		if (env)
+			env->rollback();
+		data = mUpdateInboxRulesResponse();
 		static_cast<mResponseMessageType &>(data) = mResponseMessageType(err);
 	}
 	data.serialize(response);
