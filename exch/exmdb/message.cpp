@@ -23,7 +23,10 @@
 #include <openssl/md5.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vmime/addressList.hpp>
+#include <vmime/dateTime.hpp>
 #include <vmime/message.hpp>
+#include <vmime/stringContentHandler.hpp>
 #include <gromox/algorithm.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/database.h>
@@ -2525,22 +2528,21 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	}
 	g_sqlite_for_oxcmail = rp.sqlite;
 	auto log_id = rp.ev_to + ":m"s + std::to_string(rop_util_get_gc_value(template_message_id));
-	MAIL imail;
+	auto vmail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = message_get_propids;
 	cvt.get_propname = message_get_propname;
-	if (!cvt.mapi_to_inet(*pmsgctnt, imail)) {
+	auto err = cvt.mapi_to_inet(*pmsgctnt, vmail);
+	if (err != ecSuccess) {
 		g_sqlite_for_oxcmail = nullptr;
 		return FALSE;
 	}
 	g_sqlite_for_oxcmail = nullptr;
-	auto pmime = imail.get_head();
-	if (pmime == nullptr)
-		return FALSE;
-	pmime->set_field("X-Auto-Response-Suppress", "All");
-	pmime->set_field("From", rp.ev_to);
+	auto &vhead = *vmail->getHeader();
+	vhead.getField("X-Auto-Response-Suppress")->setValue("All");
+	vhead.From()->setValue(rp.ev_to);
 	std::vector<std::string> rcpt_list;
 	for (auto &r : *pmsgctnt->children.prcpts) {
 		TPROPVAL_ARRAY pv = {r.count, r.ppropval};
@@ -2548,7 +2550,7 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 		    mysql_adaptor_userid_to_name, false) != ecSuccess)
 			return false;
 	}
-	auto ret = cu_send_mail(std::move(imail), g_exmdb_smtp_url.c_str(), rp.ev_to, rcpt_list);
+	auto ret = cu_send_vmail(vmail, g_exmdb_smtp_url.c_str(), rp.ev_to, rcpt_list);
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "E-1188: cu_send_mail: %s", mapi_strerror(ret));
 	*pb_result = TRUE;
@@ -2623,14 +2625,10 @@ template<typename T> static bool msg_rcpt_blocks_to_list(const T &fwd,
 static ec_error_t message_forward_message(const rulexec_in &rp,
     uint32_t action_flavor, std::vector<std::string> &&rcpt_list) try
 {
-	int offset;
-	struct tm time_buff;
 	struct stat node_stat;
-	char tmp_buff[64*1024];
 	MESSAGE_CONTENT *pmsgctnt;
 
-	std::unique_ptr<char[], stdlib_delete> pbuff;
-	MAIL imail;
+	auto vmail = vmime::make_shared<vmime::message>();
 	if (rp.digest.has_value()) {
 		std::string mid_string;
 		if (!get_digest(*rp.digest, "file", mid_string))
@@ -2643,24 +2641,15 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 			errno = ENOENT;
 			return ecNotFound;
 		}
-		pbuff.reset(me_alloc<char>(node_stat.st_size));
-		if (pbuff == nullptr)
-			return ecServerOOM;
-		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
+		std::string eml_content(node_stat.st_size, '\0');
+		if (read(fd.get(), eml_content.data(), eml_content.size()) !=
+		    static_cast<ssize_t>(eml_content.size()))
 			return ecError;
-		imail.clear();
-		if (!imail.refonly_parse(pbuff.get(), node_stat.st_size))
-			return ecError;
-		auto pmime = imail.get_head();
-		if (pmime == nullptr)
-			return ecError;
-		auto num = pmime->get_field_num("Delivered-To");
-		for (int i = 0; i < num; ++i) {
-			std::string dvto;
-			if (pmime->search_field("Delivered-To", i, dvto) &&
-			    strcasecmp(dvto.c_str(), rp.ev_to) == 0)
+		auto vpctx = vmail_default_parsectx();
+		vmail->parse(vpctx, eml_content);
+		for (const auto &dvto : vmail->getHeader()->findAllFields(vmime::fields::DELIVERED_TO))
+			if (strcasecmp(dvto->getValue()->generate().c_str(), rp.ev_to) == 0)
 				return ecSuccess;
-		}
 	} else {
 		if (!message_read_message(rp.db, rp.cpid, rp.message_id,
 		    &pmsgctnt) || pmsgctnt == nullptr)
@@ -2673,69 +2662,57 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		cvt.get_propids = message_get_propids;
 		cvt.get_propname = message_get_propname;
 		cvt.use_format_override(*pmsgctnt);
-		if (!cvt.mapi_to_inet(*pmsgctnt, imail)) {
+		auto err = cvt.mapi_to_inet(*pmsgctnt, vmail);
+		if (err != ecSuccess) {
 			g_sqlite_for_oxcmail = nullptr;
-			return ecError;
+			return err;
 		}
 		g_sqlite_for_oxcmail = nullptr;
 	}
+	auto hf_fac = vmime::headerFieldFactory::getInstance();
+	auto env_from = (action_flavor & FWD_PRESERVE_SENDER) ? rp.ev_from : rp.ev_to;
 	ec_error_t ret = ecSuccess;
 	if (action_flavor & FWD_AS_ATTACHMENT) {
-		MAIL imail1;
-		auto pmime = imail1.add_head();
-		if (pmime == nullptr)
-			return ecServerOOM;
-		if (!pmime->set_content_type("message/rfc822"))
-			mlog(LV_WARN, "W-1767: set_content_type not successful, investigate");
+		auto new_msg = vmime::make_shared<vmime::message>();
+		auto &new_hdr = *new_msg->getHeader();
 		/*
 		 * OXORULE v21 §2.2.5.1.1 specifies FWD_AS_ATTACHMENT is
 		 * exclusive, so FWD_PRESERVE_SENDER is not evaluated to build
 		 * the From line.
 		 */
-		snprintf(tmp_buff, std::size(tmp_buff), "<%s>", rp.ev_to);
-		pmime->set_field("From", tmp_buff);
-		offset = 0;
+		new_hdr.From()->setValue(rp.ev_to);
+		vmime::addressList vrcpt_list;
 		for (const auto &eaddr : rcpt_list) {
-			if (offset == 0)
-				offset = gx_snprintf(tmp_buff, std::size(tmp_buff),
-				         "<%s>", eaddr.c_str());
-			else
-				offset += gx_snprintf(tmp_buff + offset,
-				          std::size(tmp_buff) - offset, ", <%s>",
-				          eaddr.c_str());
-			pmime->append_field("Delivered-To", eaddr.c_str());
+			vrcpt_list.appendAddress(vmime::make_shared<vmime::mailbox>(eaddr));
+			auto dto = hf_fac->create(vmime::fields::DELIVERED_TO);
+			dto->setValue(eaddr);
+			new_hdr.appendField(dto);
 		}
-		pmime->set_field("To", tmp_buff);
-
-		const std::string *old_subject = nullptr;
-		if (auto pmime_old = imail.get_head())
-			old_subject = pmime_old->get_field("Subject");
-		if (old_subject != nullptr)
-			pmime->set_field("Subject", "Fwd: " + *old_subject);
-		else
-			pmime->set_field("Subject", "Fwd: (no subject)");
-		auto cur_time = time(nullptr);
-		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z", 
-			localtime_r(&cur_time, &time_buff));
-		pmime->set_field("Date", tmp_buff);
-		pmime->write_mail(&imail);
-		/* Set new envelope FROM */
-		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
-		           rp.ev_from : rp.ev_to, std::size(tmp_buff));
-		ret = cu_send_mail(std::move(imail1), g_exmdb_smtp_url.c_str(), tmp_buff, rcpt_list);
+		new_hdr.To()->setValue(vrcpt_list);
+		auto old_subject = vmail->getHeader()->findField(vmime::fields::SUBJECT);
+		if (old_subject != nullptr) {
+			auto ns = vmime::dynamicCast<vmime::text>(old_subject->getValue()->clone());
+			ns->insertWordBefore(0, vmime::make_shared<vmime::word>("Fwd: "));
+			new_hdr.Subject()->setValue(ns);
+		} else {
+			new_hdr.Subject()->setValue("Fwd: (no subject)");
+		}
+		new_hdr.Date()->setValue(vmime::datetime::now());
+		auto &new_body = *new_msg->getBody();
+		new_body.setContentType(vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_RFC822));
+		new_body.setContents(vmime::make_shared<vmime::stringContentHandler>(vmail_to_string(*vmail)));
+		ret = cu_send_vmail(std::move(new_msg), g_exmdb_smtp_url.c_str(), env_from, rcpt_list);
 	} else {
-		auto pmime = imail.get_head();
-		if (pmime == nullptr)
-			return ecError;
-		for (const auto &eaddr : rcpt_list)
-			pmime->append_field("Delivered-To", eaddr.c_str());
-		/* Set new envelope FROM */
-		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
-		           rp.ev_from : rp.ev_to, std::size(tmp_buff));
-		ret = cu_send_mail(std::move(imail), g_exmdb_smtp_url.c_str(), tmp_buff, rcpt_list);
+		auto &vhdr = *vmail->getHeader();
+		for (const auto &eaddr : rcpt_list) {
+			auto dto = hf_fac->create(vmime::fields::DELIVERED_TO);
+			dto->setValue(eaddr);
+			vhdr.appendField(dto);
+		}
+		ret = cu_send_vmail(std::move(vmail), g_exmdb_smtp_url.c_str(), env_from, rcpt_list);
 	}
 	if (ret != ecSuccess)
-		mlog(LV_ERR, "E-1186: cu_send_mail: %s", mapi_strerror(ret));
+		mlog(LV_ERR, "E-1186: cu_send_vmail: %s", mapi_strerror(ret));
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
