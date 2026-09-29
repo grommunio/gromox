@@ -502,6 +502,7 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_cache_interval", "5000"},
 	{"ews_cache_message_instance_lifetime", "30000"},
 	{"ews_event_stream_interval", "45000"},
+	{"ews_fts_index_path", "/var/lib/grommunio-web/sqlite-index"},
 	{"ews_log_filter", "!"},
 	{"ews_log_timestamp", ""},
 	{"ews_max_get_items", "0", CFG_SIZE},
@@ -559,6 +560,7 @@ void EWSPlugin::loadConfig()
 	max_get_items = cfg->get_ll("ews_max_get_items");
 	max_pending_events = cfg->get_ll("ews_max_pending_events");
 	streaming_subscription_timeout = std::chrono::seconds(cfg->get_ll("ews_streaming_subscription_timeout"));
+	fts_index_path = cfg->get_value("ews_fts_index_path");
 	ver.schema = cfg->get_value("ews_schema_version");
 
 	str = gxcfg->get_value("outgoing_smtp_url");
