@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cerrno>
 #include <chrono>
 #include <climits>
 #include <cstdint>
@@ -14,6 +15,7 @@
 #include <vector>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <gromox/ab_tree.hpp>
@@ -1598,6 +1600,32 @@ static bool ftsUsernameSafe(const std::string &username)
 	       username != "." && username != "..";
 }
 
+/*
+ * The index is written by grommunio-index and read by grommunio-web, which
+ * run as other users sharing the database file's group. Reading a WAL
+ * database creates its -wal/-shm files if the writer has removed them, owned
+ * by our own user and primary group, which would lock those other users out
+ * of the index. Hand such files over to the database's group and mode.
+ */
+static void ftsAdoptSidecars(const std::string &path)
+{
+	struct stat db_st;
+	if (stat(path.c_str(), &db_st) != 0)
+		return;
+	for (const auto suffix : {"-wal", "-shm"}) {
+		auto side = path + suffix;
+		struct stat st;
+		if (stat(side.c_str(), &st) != 0 || st.st_uid != geteuid())
+			continue;
+		if (st.st_gid != db_st.st_gid &&
+		    chown(side.c_str(), -1, db_st.st_gid) != 0)
+			mlog(LV_WARN, "ews: chgrp %s: %s", side.c_str(), strerror(errno));
+		if ((st.st_mode & 0777) != (db_st.st_mode & 0777) &&
+		    chmod(side.c_str(), db_st.st_mode & 0777) != 0)
+			mlog(LV_WARN, "ews: chmod %s: %s", side.c_str(), strerror(errno));
+	}
+}
+
 static sqlite3 *ftsOpen(const std::string &basePath, const std::string &username)
 {
 	auto path = basePath + "/" + username + "/index.sqlite3";
@@ -1610,6 +1638,9 @@ static sqlite3 *ftsOpen(const std::string &basePath, const std::string &username
 	/* Wait out brief lock contention (e.g. grommunio-index's periodic
 	 * regeneration of this same file) instead of failing immediately. */
 	sqlite3_busy_timeout(db, 5000);
+	/* The first read creates the WAL sidecars, if missing */
+	sqlite3_exec(db, "SELECT 1 FROM sqlite_master LIMIT 1", nullptr, nullptr, nullptr);
+	ftsAdoptSidecars(path);
 	return db;
 }
 
