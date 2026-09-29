@@ -10,6 +10,7 @@
 #include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <vmime/utility/url.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/exmdb_client.hpp>
@@ -91,11 +92,6 @@ struct message_node {
 	inline const char *dirc() const { return dir.c_str(); }
 };
 
-struct rx_delete {
-	void operator()(BINARY *x) const { rop_util_free_binary(x); }
-	void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
-};
-
 struct mr_policy {
 	unsigned int dtyp = 0, capacity = 0;
 	bool autoproc = true, accept_appts = false;
@@ -103,8 +99,6 @@ struct mr_policy {
 
 	constexpr bool is_resource() const { return dtyp == DT_ROOM || dtyp == DT_EQUIPMENT; }
 };
-
-using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
 
 /**
  * @ev_from:      Envelope-From of the original message.
@@ -303,7 +297,7 @@ static size_t rx_npid_transform(TPROPVAL_ARRAY &props,
 	for (const auto &pv : props) {
 		if (!is_nameprop_id(PROP_ID(pv.proptag)))
 			continue;
-		auto it = std::find(src.begin(), src.end(), PROP_ID(pv.proptag));
+		auto it = ct_find(src, PROP_ID(pv.proptag));
 		if (it != src.end() && dst[it - src.begin()] == 0)
 			drop.push_back(pv.proptag);
 	}
@@ -313,7 +307,7 @@ static size_t rx_npid_transform(TPROPVAL_ARRAY &props,
 		auto oldtag = props.ppropval[i].proptag;
 		if (!is_nameprop_id(PROP_ID(oldtag)))
 			continue;
-		auto it = std::find(src.begin(), src.end(), PROP_ID(oldtag));
+		auto it = ct_find(src, PROP_ID(oldtag));
 		if (it == src.end())
 			continue;
 		auto newid = dst[it - src.begin()];
@@ -782,7 +776,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	PCL pcl;
 	if (!pcl.append(zxid))
 		return ecMAPIOOM;
-	std::unique_ptr<BINARY, rx_delete> pclbin(pcl.serialize());
+	binary_ptr pclbin(pcl.serialize());
 	if (pclbin == nullptr)
 		return ecMAPIOOM;
 	auto &props = dst->proplist;
@@ -1535,7 +1529,7 @@ static ec_error_t mr_rewrite_cal_item(rxparam &par, eid_t cal_fid,
 		return ecError;
 	if (!pcl.append(new_xid))
 		return ecServerOOM;
-	std::unique_ptr<BINARY, rx_delete> pclbin(pcl.serialize());
+	binary_ptr pclbin(pcl.serialize());
 	if (pclbin == nullptr)
 		return ecServerOOM;
 	ec_error_t err;
@@ -1961,9 +1955,8 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	 */
 	auto &rp = apr.recur_pat;
 	/* Locate an exception previously created for this instance */
-	size_t exi = std::find_if(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
-	             [&](const EXCEPTIONINFO &ei) { return same_day(ei.originalstartdate, basedate); }) -
-	             apr.pexceptioninfo.cbegin();
+	size_t exi = ct_index_if(apr.pexceptioninfo,
+	             [&](const EXCEPTIONINFO &ei) { return same_day(ei.originalstartdate, basedate); });
 	auto &dels = rp.pdeletedinstancedates;
 	bool was_deleted = std::any_of(dels.cbegin(), dels.cend(),
 	                   [&](uint32_t d) { return same_day(d, basedate); });
@@ -1982,13 +1975,13 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 		 */
 		auto sd    = apr.pexceptioninfo[exi].startdatetime;
 		auto &mods = rp.pmodifiedinstancedates;
-		auto mit   = std::find_if(mods.cbegin(), mods.cend(),
-		             [&](uint32_t m) { return same_day(m, sd); });
+		auto mit   = ct_find_if(mods,
+		             [=](uint32_t m) { return same_day(m, sd); });
 		if (mit == mods.cend())
 			/* EWS's updateOccurrence keys the entry by the original
 			   day rather than the new one */
-			mit = std::find_if(mods.cbegin(), mods.cend(),
-			      [&](uint32_t m) { return same_day(m, basedate); });
+			mit = ct_find_if(mods,
+			      [=](uint32_t m) { return same_day(m, basedate); });
 		if (mit == mods.cend()) {
 			mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: no modified-instance "
 				"entry for exception %zu; leaving exception in place",

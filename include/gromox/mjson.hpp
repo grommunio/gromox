@@ -92,12 +92,14 @@ struct GX_EXPORT MJSON_MIME {
 	inline size_t get_entire_length() const { return get_head_length() + get_content_length(); }
 	inline size_t get_head_offset() const { return head; }
 	inline size_t get_content_offset() const { return begin; }
-	template<typename F, typename... Args> void exec(F &&func, Args &&...args) {
+	void exec(auto &&func, auto &&...args)
+	{
 		func(this, args...);
 		for (auto &c : children)
 			c.exec(func, args...);
 	}
-	template<typename F, typename... Args> void exec(F &&func, Args &&...args) const {
+	void exec(auto &&func, auto &&...args) const
+	{
 		func(this, args...);
 		for (auto &c : children)
 			c.exec(func, args...);

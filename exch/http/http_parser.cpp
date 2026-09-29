@@ -130,8 +130,11 @@ struct http_parser {
 	void vconnection_async_reply(const char *, int, const char *, dcerpc_call *);
 
 #ifdef WITH_SSLPROV
-	struct provfree { inline void operator()(OSSL_PROVIDER *x) const { OSSL_PROVIDER_unload(x); }};
-	std::unique_ptr<OSSL_PROVIDER, provfree> sslprov_default, sslprov_legacy;
+	struct sslfree2 : public sslfree {
+		using sslfree::operator();
+		STATIC_IN_CXX23 inline void operator()(OSSL_PROVIDER *x) CONST_BEFORE_CXX23 { OSSL_PROVIDER_unload(x); }
+	};
+	std::unique_ptr<OSSL_PROVIDER, sslfree2> sslprov_default, sslprov_legacy;
 #endif
 	size_t g_context_num = 0;
 	gromox::atomic_bool g_async_stop{false};

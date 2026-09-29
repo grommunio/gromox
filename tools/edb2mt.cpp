@@ -32,13 +32,12 @@ using namespace gi_dump;
 
 namespace {
 
-struct bin_del { void operator()(BINARY *x) const { rop_util_free_binary(x); } };
-struct ese_column_del { void operator()(libesedb_column_t *x) const { libesedb_column_free(&x, nullptr); } };
-struct ese_error_del { void operator()(libesedb_error_t *x) const { libesedb_error_free(&x); } };
-struct ese_file_del { void operator()(libesedb_file_t *x) const { libesedb_file_free(&x, nullptr); } };
-struct ese_lval_del { void operator()(libesedb_long_value_t *x) const { libesedb_long_value_free(&x, nullptr); } };
-struct ese_record_del { void operator()(libesedb_record_t *x) const { libesedb_record_free(&x, nullptr); } };
-struct ese_table_del { void operator()(libesedb_table_t *x) const { libesedb_table_free(&x, nullptr); } };
+struct ese_column_del { STATIC_IN_CXX23 inline void operator()(libesedb_column_t *x) CONST_BEFORE_CXX23 { libesedb_column_free(&x, nullptr); } };
+struct ese_error_del { STATIC_IN_CXX23 inline void operator()(libesedb_error_t *x) CONST_BEFORE_CXX23 { libesedb_error_free(&x); } };
+struct ese_file_del { STATIC_IN_CXX23 inline void operator()(libesedb_file_t *x) CONST_BEFORE_CXX23 { libesedb_file_free(&x, nullptr); } };
+struct ese_lval_del { STATIC_IN_CXX23 inline void operator()(libesedb_long_value_t *x) CONST_BEFORE_CXX23 { libesedb_long_value_free(&x, nullptr); } };
+struct ese_record_del { STATIC_IN_CXX23 inline void operator()(libesedb_record_t *x) CONST_BEFORE_CXX23 { libesedb_record_free(&x, nullptr); } };
+struct ese_table_del { STATIC_IN_CXX23 inline void operator()(libesedb_table_t *x) CONST_BEFORE_CXX23 { libesedb_table_free(&x, nullptr); } };
 struct edb_folder;
 
 using ese_column_ptr = std::unique_ptr<libesedb_column_t, ese_column_del>;
@@ -47,7 +46,6 @@ using ese_file_ptr   = std::unique_ptr<libesedb_file_t, ese_file_del>;
 using ese_lval_ptr   = std::unique_ptr<libesedb_long_value_t, ese_lval_del>;
 using ese_record_ptr = std::unique_ptr<libesedb_record_t, ese_record_del>;
 using ese_table_ptr  = std::unique_ptr<libesedb_table_t, ese_table_del>;
-using bin_ptr        = std::unique_ptr<BINARY, bin_del>;
 using colmap_t       = std::vector<std::string>; /* index to name */
 using valmap_t       = std::map<std::string, std::string>; /* colname to value */
 using hiermap_t      = std::map<std::string, edb_folder>;
@@ -443,7 +441,7 @@ static void folder_prop_handler(edb_folder &f, const std::string &key,
 	 */
 	auto iter = std::lower_bound(std::begin(folder_col_to_tag),
 	            std::end(folder_col_to_tag), key.c_str(),
-	            [](const std::pair<const char *, uint32_t> &p, const char *k) {
+	            [](const std::pair<const char *, uint32_t> &p, const char *k) STATIC_IN_CXX23 {
 	            	return strcasecmp(p.first, k) < 0;
 	            });
 	if (iter == std::end(folder_col_to_tag) ||

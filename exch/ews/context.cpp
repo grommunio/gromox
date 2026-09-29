@@ -595,13 +595,6 @@ uint32_t deleg_level_to_rights(Enum::DelegateFolderPermissionLevelType level)
 
 } // Anonymous namespace
 
-namespace detail {
-
-void Cleaner::operator()(BINARY* x) {rop_util_free_binary(x);}
-
-} // gromox::EWS::detail
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 EWSContext::EWSContext(detail::ContextKey id, const HTTP_AUTH_INFO &ai,
@@ -653,8 +646,10 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 	uint64_t changeNumber;
 	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNumber))
 		throw DispatchError(E3153);
-	const tBaseFolderType& baseFolder = std::visit([](const auto& f) -> const tBaseFolderType&
-	                                                 {return static_cast<const tBaseFolderType&>(f);}, folder);
+	const auto &baseFolder =
+		std::visit([](const auto &f) STATIC_IN_CXX23 -> const tBaseFolderType & {
+			return static_cast<const tBaseFolderType &>(f);
+		}, folder);
 	for (const tExtendedProperty &prop : baseFolder.ExtendedProperty)
 		if (prop.ExtendedFieldURI.tag())
 			shape.write(prop.propval);
@@ -996,7 +991,7 @@ void EWSContext::enableEventStream(int timeout)
  */
 std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONTENT& content, const std::string& log_id) const
 {
-	MAIL mail;
+	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = alloc;
@@ -1008,26 +1003,10 @@ std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONT
 	                   	*name = getPropertyName(dir, id);
 	                   	return TRUE;
 	                   };
-	if (!cvt.mapi_to_inet(content, mail))
+	if (cvt.mapi_to_inet(content, mail) != ecSuccess)
 		throw EWSError::ItemCorrupt(E3072);
-
-	auto mail_len = mail.get_length();
-	if (mail_len < 0)
-		throw EWSError::ItemCorrupt(E3073);
-	STREAM tempStream;
-	if (!mail.serialize(&tempStream))
-		throw EWSError::ItemCorrupt(E3074);
-	std::string mime;
-	mime.reserve(mail_len);
-	char *data;
-	unsigned int size = STREAM_BLOCK_SIZE;
-	while ((data = static_cast<char *>(tempStream.get_read_buf(&size))) != nullptr) {
-		mime.insert(mime.end(), data, &data[size]);
-		size = STREAM_BLOCK_SIZE;
-	}
-	return mime;
+	return vmail_to_string(*mail);
 }
-
 
 /**
  * @brief     Get user or domain ID by name
@@ -2941,7 +2920,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	 * for CET), but StartDate is the correct date.
 	 */
 	auto &rr = recurrence.RecurrenceRange;
-	auto rangeStart = clock::to_time_t(std::visit([](const auto &r) { return r.StartDate; }, rr));
+	auto rangeStart = clock::to_time_t(std::visit([](const auto &r) STATIC_IN_CXX23 { return r.StartDate; }, rr));
 	struct tm startdate_tm{};
 	if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
 		throw EWSError::CalendarInvalidRecurrence(E3356);
@@ -3117,11 +3096,11 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
  *
  * @return     Serialized predecessor change list buffer
  */
-std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid, PCL pcl) const
+binary_ptr EWSContext::mkPCL(const XID& xid, PCL pcl) const
 {
 	if (!pcl.append(xid))
 		throw DispatchError(E3121);
-	std::unique_ptr<BINARY, detail::Cleaner> pcltemp(pcl.serialize());
+	binary_ptr pcltemp(pcl.serialize());
 	if (!pcltemp)
 		throw EWSError::NotEnoughMemory(E3122);
 	return pcltemp;
@@ -3480,8 +3459,8 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 {
 	if (!content.children.prcpts)
 		throw EWSError::MissingRecipients(E3115);
-	MAIL mail;
 	std::string log_id;
+	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
 	cvt.get_propids = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) {
 	                  	*ids = getNamedPropIds(dir, *names);
@@ -3495,7 +3474,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 		log_id = dir + ":m" + std::to_string(log_msg_id);
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = alloc;
-	if (!cvt.mapi_to_inet(content, mail))
+	if (cvt.mapi_to_inet(content, mail) != ecSuccess)
 		throw EWSError::ItemCorrupt(E3116);
 
 	std::vector<std::string> rcpts;
@@ -3507,7 +3486,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 		normalize(addr);
 		rcpts.emplace_back(*addr.EmailAddress);
 	}
-	auto err = cu_send_mail(mail, m_plugin.smtp_url.c_str(),
+	auto err = cu_send_vmail(mail, m_plugin.smtp_url.c_str(),
 	           m_auth_info.username, rcpts);
 	if (err != ecSuccess)
 		throw DispatchError(E3117(err));
@@ -3956,7 +3935,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		 */
 		auto &rr = item.Recurrence->RecurrenceRange;
 		auto rangeStart = clock::to_time_t(std::visit(
-		                  [](const auto &r) { return r.StartDate; }, rr));
+		                  [](const auto &r) STATIC_IN_CXX23 { return r.StartDate; }, rr));
 		if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
 			throw EWSError::CalendarInvalidRecurrence(E3359);
 		APPOINTMENT_RECUR_PAT apr{};
@@ -4269,7 +4248,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3377);
 		TARRAY_SET* rcpts = content->children.prcpts;
-		auto add_attendee = [](TPROPVAL_ARRAY *rcpt, const tAttendee &att, uint32_t type) {
+		auto add_attendee = [](TPROPVAL_ARRAY *rcpt, const tAttendee &att, uint32_t type) STATIC_IN_CXX23 {
 			att.Mailbox.mkRecipient(rcpt, type);
 			static constexpr uint32_t sendable = recipSendable;
 			if (rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)

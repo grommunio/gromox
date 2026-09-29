@@ -28,7 +28,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <gromox/defs.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
@@ -65,7 +65,11 @@ namespace {
 
 struct dir_tree {
 	struct cmp {
-		inline bool operator()(const std::string &a, const std::string &b) const { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+		STATIC_IN_CXX23 inline bool operator()(const std::string &a,
+		    const std::string &b) CONST_BEFORE_CXX23
+		{
+			return strcasecmp(a.c_str(), b.c_str()) < 0;
+		}
 	};
 
 	dir_tree() = default;
@@ -171,7 +175,7 @@ static bool iseq_contains(const imap_seq_list &list,
 	unsigned int num, unsigned int max_uid)
 {
 	auto i = std::lower_bound(list.cbegin(), list.cend(), num,
-	         [](const range_node<uint32_t> &rn, uint32_t vv) { return rn.hi < vv; });
+	         [](const range_node<uint32_t> &rn, uint32_t vv) STATIC_IN_CXX23 { return rn.hi < vv; });
 	if (i == list.cend())
 		return false;
 	return i->lo <= num && num <= i->hi && num <= max_uid;
@@ -197,8 +201,8 @@ static bool icp_parse_fetch_args(mdi_list &plist, bool *pb_detail,
 		"BODY", "BODYSTRUCTURE", "ENVELOPE", "FLAGS", "INTERNALDATE",
 		"RFC822", "RFC822.HEADER", "RFC822.SIZE", "RFC822.TEXT", "UID",
 	};
-	auto contained_in = +[](const char *kw, std::span<const char * const> list) {
-		return std::binary_search(list.begin(), list.end(), kw, [](const char *a, const char *b) {
+	auto contained_in = +[](const char *kw, std::span<const char * const> list) STATIC_IN_CXX23 {
+		return std::binary_search(list.begin(), list.end(), kw, [](const char *a, const char *b) STATIC_IN_CXX23 {
 			return strcasecmp(a, b) < 0;
 		});
 	};
@@ -476,9 +480,7 @@ std::string icp_make_kwannounce_line(imap_context &ctx, std::string_view kw_spac
 			sp = kw_space.size();
 		if (sp > pos) {
 			std::string tok(kw_space.substr(pos, sp - pos));
-			if (std::find(ctx.announced_keywords.cbegin(),
-			    ctx.announced_keywords.cend(), tok) ==
-			    ctx.announced_keywords.cend()) {
+			if (!ct_contains(ctx.announced_keywords, tok)) {
 				ctx.announced_keywords.emplace_back(std::move(tok));
 				grew = true;
 			}
@@ -1268,7 +1270,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 				pos = sp + 1;
 			}
 			for (const auto &k : kw_list)
-				if (std::find(merged.cbegin(), merged.cend(), k) == merged.cend())
+				if (!ct_contains(merged, k))
 					merged.emplace_back(k);
 			kw_result = icp_join_keywords(merged);
 			midb_agent::set_keywords(pcontext->maildir,
@@ -1303,7 +1305,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 					sp = cur.size();
 				if (sp > pos) {
 					auto tok = cur.substr(pos, sp - pos);
-					if (std::find(kw_list.cbegin(), kw_list.cend(), tok) == kw_list.cend())
+					if (!ct_contains(kw_list, tok))
 						kept.emplace_back(std::move(tok));
 				}
 				pos = sp + 1;
@@ -1830,9 +1832,9 @@ int content_array::refresh(imap_context &ctx, const std::string &folder,
 		}
 	}
 	n_recent = std::count_if(m_vec.cbegin(), m_vec.cend(),
-	           [](const MITEM &m) { return m.flag_bits & FLAG_RECENT; });
-	auto iter = std::find_if(m_vec.cbegin(), m_vec.cend(),
-	            [](const MITEM &m) { return !(m.flag_bits & FLAG_SEEN); });
+	           [](const MITEM &m) STATIC_IN_CXX23 { return m.flag_bits & FLAG_RECENT; });
+	auto iter = ct_find_if(m_vec,
+	            [](const MITEM &m) STATIC_IN_CXX23 { return !(m.flag_bits & FLAG_SEEN); });
 	firstunseen = iter == m_vec.end() ? 0 : iter - m_vec.cbegin() + 1;
 	return 0;
 }
@@ -2664,12 +2666,12 @@ int icp_append(std::span<std::string> argv, imap_context &ctx) try
 		auto bg = temp_argv.cbegin();
 		auto ed = temp_argv.cend();
 		flag_buff = flagbits_to_s(
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Seen") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Answered") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Flagged") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Draft") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "\\Deleted") == 0; }),
-		            std::any_of(bg, ed, [](const std::string &s) { return strcasecmp(s.c_str(), "$Forwarded") == 0; }));
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Seen") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Answered") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Flagged") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Draft") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "\\Deleted") == 0; }),
+		            std::any_of(bg, ed, [](const std::string &s) STATIC_IN_CXX23 { return strcasecmp(s.c_str(), "$Forwarded") == 0; }));
 	}
 	std::string mid_string;
 	time_t tmp_time = time(nullptr);
@@ -3771,7 +3773,7 @@ int icp_uid_fetch(std::span<std::string> argv, imap_context &ctx) try
 	    &b_data, argv[4].data(), temp_argv))
 		return 1800;
 	if (std::none_of(list_data.cbegin(), list_data.cend(),
-	    [](const std::string &e) { return strcasecmp(e.c_str(), "UID") == 0; }))
+	    [](const std::string &e) STATIC_IN_CXX23 { return strcasecmp(e.c_str(), "UID") == 0; }))
 		list_data.emplace_back("UID");
 	if (!b_data)
 		return icp_fetch_stream_begin(ctx, argv[0], true, b_detail,

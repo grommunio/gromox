@@ -7,11 +7,9 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 
 using namespace gromox;
@@ -188,30 +186,16 @@ folder_content::~folder_content()
 {
 	auto pfldctnt = this;
 	tpropval_array_free_internal(&pfldctnt->proplist);
-	if (NULL != pfldctnt->fldmsgs.pfai_msglst) {
-		eid_array_free(pfldctnt->fldmsgs.pfai_msglst);
-	}
-	if (NULL != pfldctnt->fldmsgs.pnormal_msglst) {
-		eid_array_free(pfldctnt->fldmsgs.pnormal_msglst);
-	}
 }
 
-void folder_content::append_failist_internal(EID_ARRAY *plist)
+void folder_content::append_failist_internal(std::vector<eid_t> &&in)
 {
-	auto pfldctnt = this;
-	if (NULL != pfldctnt->fldmsgs.pfai_msglst) {
-		eid_array_free(pfldctnt->fldmsgs.pfai_msglst);
-	}
-	pfldctnt->fldmsgs.pfai_msglst = plist;
+	fldmsgs.pfai_msglst = std::move(in);
 }
 
-void folder_content::append_normallist_internal(EID_ARRAY *plist)
+void folder_content::append_normallist_internal(std::vector<eid_t> &&in)
 {
-	auto pfldctnt = this;
-	if (NULL != pfldctnt->fldmsgs.pnormal_msglst) {
-		eid_array_free(pfldctnt->fldmsgs.pnormal_msglst);
-	}
-	pfldctnt->fldmsgs.pnormal_msglst = plist;
+	fldmsgs.pnormal_msglst = std::move(in);
 }
 
 BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt)

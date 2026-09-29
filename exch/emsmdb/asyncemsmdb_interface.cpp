@@ -297,7 +297,7 @@ static void *aemsi_thrwork(void *param)
 		std::shared_ptr<ASYNC_WAIT> pnode;
 		{
 			std::unique_lock<std::mutex> holder(g_list_lock);
-			g_waken_cond.wait(holder, [] {
+			g_waken_cond.wait(holder, [] STATIC_IN_CXX23 {
 				return g_aemsi_stop || g_wakeup_list.size() > 0;
 			});
 			if (g_aemsi_stop)

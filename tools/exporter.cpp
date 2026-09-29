@@ -158,22 +158,21 @@ static int fetch_message(const char *idstr, std::string &log_id, eid_t &msg_id,
 
 static int emit_message_im(const message_content &ctnt, const std::string &log_id)
 {
-	MAIL imail;
+	auto vmail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = zalloc;
 	cvt.get_propids = cu_get_propids;
 	cvt.get_propname = cu_get_propname;
-	if (!cvt.mapi_to_inet(ctnt, imail)) {
-		fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
+	auto ec = cvt.mapi_to_inet(ctnt, vmail);
+	if (ec != ecSuccess) {
+		fprintf(stderr, "oxcmail_export: %s\n", mapi_strerror(ec));
 		return -1;
 	}
-	auto err = imail.to_fd(STDOUT_FILENO);
-	if (err == EPIPE) {
-		perror("pipe");
-		return -1;
-	} else if (err != 0) {
-		fprintf(stderr, "Writeout failed for an unspecified reason. %s\n", strerror(err));
+	auto str = vmail_to_string(*vmail);
+	auto err = HXio_fullwrite(STDOUT_FILENO, str.c_str(), str.size());
+	if (err < 0) {
+		perror("write");
 		return -1;
 	}
 	return 0;

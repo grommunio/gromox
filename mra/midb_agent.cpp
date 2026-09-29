@@ -472,6 +472,14 @@ int list_mail(const char *path, const std::string &folder,
 	return MIDB_E_NO_MEMORY;
 }
 
+static size_t ilog10(size_t x)
+{
+	size_t i = 0;
+	for (; x >= 10; ++i)
+		x /= 10;
+	return i;
+}
+
 static int rw_command(int fd, char *buff, size_t olen, size_t ilen)
 {
 	auto ret = write(fd, buff, olen);
@@ -479,7 +487,6 @@ static int rw_command(int fd, char *buff, size_t olen, size_t ilen)
 		return MIDB_RDWR_ERROR;
 	ret = read_line(fd, buff, ilen);
 	if (ret == -ENOBUFS) {
-		auto ilog10 = [](size_t x) -> size_t { size_t i = 0; for (; x >= 10; ++i) x /= 10; return i; };
 		auto b = g_midb_command_buffer_size.load();
 		size_t ap = b / (2 + ilog10(b));
 		mlog(LV_ERR, "E-2154: midb response is longer than expected (%zu), rejecting IMAP command. "

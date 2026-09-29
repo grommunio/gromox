@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  * e2ghelper performs the equivalent of
@@ -97,7 +97,7 @@ int main(int argc, char **argv) try
 	/* Process spin-up */
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) {};
+	sact.sa_handler = [](int) STATIC_IN_CXX23 {};
 	sact.sa_flags = SA_RESTART;
 	if (sigaction(SIGCHLD, &sact, nullptr) < 0) {
 		perror("sigaction");

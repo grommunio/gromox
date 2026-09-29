@@ -14,8 +14,8 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <gromox/ab_tree.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/clock.hpp>
-#include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
@@ -830,7 +830,7 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 			continue;
 		}
 		const auto &addr = *uid.PrimarySmtpAddress;
-		auto it = std::find(delegate_list.begin(), delegate_list.end(), addr);
+		auto it = ct_find(delegate_list, addr);
 		if (it == delegate_list.end()) {
 			msg.error("ErrorDelegateNotFound", "Delegate not found");
 			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
@@ -1202,6 +1202,9 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 			    aInstId, &err) || err != ecSuccess)
 				throw EWSError::ItemSave(E3431);
+			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
+			    mInst->instanceId, &err) || err != ecSuccess)
+				throw EWSError::ItemSave(E3476);
 
 			sShape shape;
 			ctx.updated(dir, mid, shape);
@@ -1517,7 +1520,7 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 			shape.clean();
 			shape.properties(props);
 			sFolder& child = msg.RootFolder->Folders.emplace_back(tBaseFolderType::create(shape));
-			const auto& fid = std::visit([](auto&& f) -> std::optional<tFolderId>& {return f.FolderId;}, child);
+			const auto &fid = std::visit([](auto &&f) STATIC_IN_CXX23 -> std::optional<tFolderId> & { return f.FolderId; }, child);
 			if (shape.special && fid)
 				std::visit([&](auto& f) {ctx.loadSpecial(dir, sFolderEntryId(fid->Id.data(), fid->Id.size()).folderId(), f,
 						                                 shape.special);}, child);
@@ -1607,7 +1610,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 			shape.clean();
 			shape.properties(props);
 			sItem& child = msg.RootFolder->Items.emplace_back(tItem::create(shape));
-			const auto& iid = std::visit([](auto&& i) -> std::optional<tItemId>& {return i.ItemId;}, child);
+			const auto &iid = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> & { return i.ItemId; }, child);
 			if (shape.special && iid) {
 				sMessageEntryId meid(iid->Id.data(), iid->Id.size());
 				std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
@@ -2659,7 +2662,7 @@ void process(mMarkAsJunkRequest &&request, XMLElement *response, const EWSContex
 			uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, false);
 			sShape idShape{tItemResponseShape()};
 			sItem movedItem = ctx.loadItem(dstDir, dstFolder.folderId, newItemId, idShape);
-			msg.MovedItemId = std::visit([](auto &&i) -> std::optional<tItemId> {return i.ItemId;}, movedItem);
+			msg.MovedItemId = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> { return i.ItemId; }, movedItem);
 		}
 		msg.success();
 	} catch(const EWSError& err) {
@@ -2879,7 +2882,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 			if (!changeNum)
 				continue;
 			try {
-				if (eid_array_check(&updated_mids, mid))
+				if (ct_contains(updated_mids, mid))
 					msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});
 				else
 					msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});
@@ -3012,7 +3015,7 @@ void process(mResolveNamesRequest &&request, XMLElement *response, const EWSCont
 	auto base = ab_tree::AB.get(-static_cast<int32_t>(domId));
 	if (base)
 		ab_tree_resolvename(*base, request.UnresolvedEntry.c_str(), results);
-	if (!results.empty()) {
+	if (base && results.size() > 0) {
 		auto &msg = data.ResponseMessages.emplace_back();
 		auto &resolutionSet = msg.ResolutionSet.emplace();
 		for (auto mid : results) {
@@ -3498,8 +3501,9 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			}
 			/* Filter out e.g. neutralized PR_READ entries */
 			props.count = std::remove_if(props.ppropval, props.ppropval + props.count,
-			              [](const TAGGED_PROPVAL &v) { return PROP_TYPE(v.proptag) == PT_NULL; }) -
-			              props.ppropval;
+			              [](const TAGGED_PROPVAL &v) STATIC_IN_CXX23 {
+			              	return PROP_TYPE(v.proptag) == PT_NULL;
+			              }) - props.ppropval;
 			if (props.count > 0 &&
 			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 			    username, CP_ACP, mid.messageId(), &props, &problems))

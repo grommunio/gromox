@@ -1,10 +1,13 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
+#include "structs.hpp"
+using PROGRESS_INFORMATION = progress_information;
 
 struct folder_object;
 struct fxstream_producer;
@@ -54,10 +57,9 @@ struct icsdownctx_object final {
 	BOOL b_started = false;
 	ics_flow_list flow_list;
 	uint64_t last_readcn = 0, last_changenum = 0;
-	PROGRESS_INFORMATION *pprogtotal = nullptr;
-	EID_ARRAY *pmessages = nullptr, *pdeleted_messages = nullptr;
-	EID_ARRAY *pnolonger_messages = nullptr, *pread_messages = nullptr;
-	EID_ARRAY *punread_messages = nullptr;
+	progress_information pprogtotal;
+	std::optional<std::vector<eid_t>> pmessages, pdeleted_messages,
+		pnolonger_messages, pread_messages, punread_messages;
 	uint8_t send_options = 0;
 	uint16_t sync_flags = 0;
 	uint32_t extra_flags = 0, divisor = 1;

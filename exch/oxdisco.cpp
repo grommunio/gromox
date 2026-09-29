@@ -966,7 +966,7 @@ http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) co
 		if (!protocol_name.empty()) {
 			auto iterator = std::lower_bound(std::begin(protocol_list),
 			                std::end(protocol_list), protocol_name.c_str(),
-			                [](const std::pair<const char *, const char *> &i, const char *n) {
+			                [](const std::pair<const char *, const char *> &i, const char *n) STATIC_IN_CXX23 {
 			                	return strcasecmp(i.first, n) < 0;
 			                });
 			if (iterator != std::end(protocol_list) &&
@@ -1230,9 +1230,9 @@ static BOOL oxdisco_init(const struct dlfuncs &apidata)
 		return false;
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &OxdiscoPlugin::preproc;
-	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_oxdisco_plugin->proc(ctx, cont, len); };
-	ifc.retr    = [](int ctx) { return HPM_RETRIEVE_DONE; };
-	ifc.term    = [](int ctx) {};
+	ifc.proc    = [](int ctx, const void *cont, uint64_t len) STATIC_IN_CXX23 { return g_oxdisco_plugin->proc(ctx, cont, len); };
+	ifc.retr    = [](int ctx) STATIC_IN_CXX23 { return HPM_RETRIEVE_DONE; };
+	ifc.term    = [](int ctx) STATIC_IN_CXX23 {};
 	if (!register_interface(&ifc))
 		return false;
 	try {

@@ -1270,7 +1270,8 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 	 * The predicate is handed a mutable reference and may edit the entries it
 	 * keeps; values of the entries it selects are released.
 	 */
-	template<typename F> size_t erase_if(F &&pred) {
+	size_t erase_if(auto &&pred)
+	{
 		static_assert(std::is_trivially_copyable_v<TAGGED_PROPVAL>);
 		size_t o = 0;
 		for (size_t i = 0; i < count; ++i) {
@@ -1294,11 +1295,17 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 	I_BEGIN_END(ppropval, count);
 };
 
+extern GX_EXPORT void rop_util_free_binary(BINARY *pbin);
+
 struct GX_EXPORT mapidefs1_del {
-	inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
+	STATIC_IN_CXX23 inline void operator()(BINARY *x) CONST_BEFORE_CXX23 { rop_util_free_binary(x); }
+	STATIC_IN_CXX23 inline void operator()(TPROPVAL_ARRAY *x) CONST_BEFORE_CXX23 { tpropval_array_free(x); }
+	STATIC_IN_CXX23 inline void operator()(tarray_set *x) CONST_BEFORE_CXX23 { tarray_set_free(x); }
 };
 
+using binary_ptr = std::unique_ptr<BINARY, mapidefs1_del>;
 using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, mapidefs1_del>;
+using tarray_set_ptr = std::unique_ptr<tarray_set, mapidefs1_del>;
 
 struct GX_EXPORT LTPROPVAL_ARRAY {
 	uint32_t count = 0;

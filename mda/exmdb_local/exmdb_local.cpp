@@ -617,7 +617,7 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		cache_queue_init(get_queue_path() + std::string("/cache"), cache_interval, retrying_times);
 		exmdb_client.emplace(conn_num);
 		exmdb_rpc_alloc = exmdb_local_alloc;
-		exmdb_rpc_free  = [](void *) {};
+		exmdb_rpc_free  = [](void *) STATIC_IN_CXX23 {};
 		exmdb_local_init(org_name);
 
 		if (bounce_gen_init(get_config_path(), get_data_path(),

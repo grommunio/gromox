@@ -29,12 +29,12 @@
 #include <fmt/core.h>
 #include <sys/stat.h>
 #include <libHX/scope.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/double_list.hpp>
-#include <gromox/eid_array.hpp>
 #include <gromox/fileio.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -42,7 +42,6 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/process.hpp>
-#include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
@@ -59,7 +58,7 @@ using GCV_ARRAY = LONGLONG_ARRAY;
 using namespace gromox;
 
 struct db_close {
-	void operator()(sqlite3 *x) const;
+	STATIC_IN_CXX23 void operator()(sqlite3 *x) CONST_BEFORE_CXX23;
 };
 
 namespace {
@@ -175,7 +174,7 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	 * workaround.
 	 */
 	g_autoupg_limiter->acquire();
-	auto cl_0 = HX::make_scope_exit([]() { g_autoupg_limiter->release(); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { g_autoupg_limiter->release(); });
 
 	auto c = is_pvt ? 'V' : 'B';
 	mlog(LV_NOTICE, "dbop_sqlite: %s: current schema E%c-%d; upgrading to E%c-%d.",
@@ -871,7 +870,7 @@ void dg_notify(db_conn::NOTIFQ &&notifq)
 
 static bool db_engine_search_folder(const char *dir, cpid_t cpid,
     uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction,
-    db_conn &db)
+    db_conn &db) try
 {
 	char sql_string[128];
 	auto sql_transact = gx_sql_begin(db.psqlite, txn_mode::read); // ends before writes take place
@@ -896,37 +895,33 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 	pstmt = db.prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	auto pmessage_ids = eid_array_init();
-	if (pmessage_ids == nullptr)
-		return FALSE;
-	auto cl_0 = HX::make_scope_exit([&]() { eid_array_free(pmessage_ids); });
+
+	std::vector<uint64_t> pmessage_ids;
 	while (pstmt.step() == SQLITE_ROW)
-		if (!eid_array_append(pmessage_ids,
-		    sqlite3_column_int64(pstmt, 0)))
-			return FALSE;
+		pmessage_ids.emplace_back(pstmt.col_int64(0));
 	pstmt.finalize();
 	auto t_start = tp_now();
 	auto cl_1 = HX::make_scope_exit([&]() {
 		auto t_end = tp_now();
 		auto t_diff = std::chrono::duration<double>(t_end - t_start).count();
-		if (pmessage_ids->count > 0 && t_diff >= 1)
-			mlog(LV_DEBUG, "db_eng_sf: %u messages in %.2f seconds",
-				pmessage_ids->count, t_diff);
+		if (pmessage_ids.size() > 0 && t_diff >= 1)
+			mlog(LV_DEBUG, "db_eng_sf: %zu messages in %.2f seconds",
+				pmessage_ids.size(), t_diff);
 	});
 	sql_transact = xtransaction();
 	bool b_linked = false;
-	for (size_t i = 0; i < pmessage_ids->count; ++i) {
+	for (auto msgid : pmessage_ids) {
 		if (g_dbeng_stop)
 			break;
 		auto sql_transact1 = gx_sql_begin(db.psqlite, txn_mode::write);
 		if (!sql_transact1)
 			return false;
 		if (!cu_eval_msg_restriction(db,
-		    cpid, pmessage_ids->pids[i], prestriction))
+		    cpid, msgid, prestriction))
 			continue;
 		snprintf(sql_string, std::size(sql_string), "INSERT OR IGNORE INTO search_result "
 		         "(folder_id, message_id) VALUES (%llu, %llu)",
-		         LLU{search_fid}, LLU{pmessage_ids->pids[i]});
+		         LLU{search_fid}, LLU{msgid});
 		auto ret = db.exec(sql_string, SQLEXEC_SILENT_CONSTRAINT);
 		if (ret == SQLITE_CONSTRAINT)
 			/*
@@ -954,11 +949,11 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 		db_conn::NOTIFQ notifq;
 		auto dbase = db.lock_base_wr();
 		db.proc_dynamic_event(cpid, dynamic_event::new_msg,
-			search_fid, pmessage_ids->pids[i], 0, *dbase, notifq);
+			search_fid, msgid, 0, *dbase, notifq);
 		/*
 		 * Regular notifications
 		 */
-		db.notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq, false);
+		db.notify_link_creation(search_fid, msgid, *dbase, notifq, false);
 		dg_notify(std::move(notifq));
 		b_linked = true;
 	}
@@ -970,10 +965,13 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 		dg_notify(std::move(notifq));
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
-static bool db_engine_load_folder_descendant(const char *dir,
-    bool b_recursive, uint64_t folder_id, EID_ARRAY *pfolder_ids)
+static bool db_engine_load_folder_descendant(const char *dir, bool b_recursive,
+    uint64_t folder_id, std::vector<uint64_t> &pfolder_ids) try
 {
 	char sql_string[128];
 	
@@ -986,10 +984,11 @@ static bool db_engine_load_folder_descendant(const char *dir,
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW)
-		if (!eid_array_append(pfolder_ids,
-		    sqlite3_column_int64(pstmt, 0)))
-			return FALSE;
+		pfolder_ids.emplace_back(pstmt.col_int64(0));
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 POPULATING_NODE::~POPULATING_NODE()
@@ -1049,7 +1048,7 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 static std::list<POPULATING_NODE>::iterator sf_pick_node()
 {
 	return std::find_if(g_populating_list.begin(), g_populating_list.end(),
-	       [](const POPULATING_NODE &q) {
+	       [](const POPULATING_NODE &q) STATIC_IN_CXX23 {
 	       	return std::none_of(g_populating_list_active.cbegin(),
 	       	       g_populating_list_active.cend(),
 	       	       [&](const POPULATING_NODE &a) {
@@ -1068,7 +1067,7 @@ static void *sf_popul_thread(void *param)
 		/* ignore */;
 	
 	while (!g_dbeng_stop) {
- NEXT_SEARCH:
+ NEXT_SEARCH: try {
 		std::unique_lock lhold(g_list_lock);
 		auto pick = g_populating_list.end();
 		g_waken_cond.wait(lhold, [&]() {
@@ -1089,15 +1088,12 @@ static void *sf_popul_thread(void *param)
 			/* A queued node for the same folder may now be eligible. */
 			g_waken_cond.notify_one();
 		});
-		auto pfolder_ids = eid_array_init(); /* Actually it's just GCVs */
-		if (pfolder_ids == nullptr)
-			goto NEXT_SEARCH;	
-		auto cl_1 = HX::make_scope_exit([&]() { eid_array_free(pfolder_ids); });
+
+		std::vector<uint64_t> pfolder_ids;
 		exmdb_server::build_env(EM_PRIVATE, psearch->dir.c_str());
 		auto cl_2 = HX::make_scope_exit(exmdb_server::free_env);
 		for (auto le_folder : psearch->scope_list) {
-			if (!eid_array_append(pfolder_ids, le_folder))
-				goto NEXT_SEARCH;	
+			pfolder_ids.emplace_back(le_folder);
 			if (!psearch->b_recursive)
 				continue;
 			if (!db_engine_load_folder_descendant(psearch->dir.c_str(),
@@ -1106,13 +1102,13 @@ static void *sf_popul_thread(void *param)
 		}
 		auto pdb = db_engine_get_db(psearch->dir.c_str());
 		if (!pdb)
-			goto NEXT_SEARCH;
-		for (size_t i = 0; i < pfolder_ids->count; ++i) {
+			continue;
+		for (auto fld : pfolder_ids) {
 			if (g_dbeng_stop)
 				break;
 			if (!db_engine_search_folder(psearch->dir.c_str(),
 			    psearch->cpid, psearch->folder_id,
-			    pfolder_ids->pids[i], psearch->prestriction, *pdb))
+			    fld, psearch->prestriction, *pdb))
 				break;
 		}
 		if (g_dbeng_stop)
@@ -1131,7 +1127,7 @@ static void *sf_popul_thread(void *param)
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1649: ENOMEM");
 			sleep(60);
-			goto NEXT_SEARCH;
+			continue;
 		}
 		for (const auto &t : dbase->tables.table_list)
 			if (t.type == table_type::content &&
@@ -1147,7 +1143,9 @@ static void *sf_popul_thread(void *param)
 			exmdb_server::reload_content_table(psearch->dir.c_str(), table_ids.back());
 			table_ids.pop_back();
 		}
-		goto NEXT_SEARCH;
+	} catch (const std::bad_alloc &) {
+		continue;
+	}
 	}
 	return nullptr;
 }
@@ -4359,7 +4357,7 @@ void db_conn::cancel_batch_mode(db_base &dbase)
 	dbase.tables.b_batch = false;
 }
 
-void db_close::operator()(sqlite3 *x) const
+void db_close::operator()(sqlite3 *x) CONST_BEFORE_CXX23
 {
 	auto z = sqlite3_db_filename(x, nullptr);
 	if (z != nullptr)

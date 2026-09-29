@@ -142,4 +142,12 @@ std::string vmail_to_string(const vmime::message &msg)
 	return ss;
 }
 
+std::string vmail_to_string(const vmime::header &msg)
+{
+	std::string ss;
+	vmime::utility::outputStreamStringAdapter adap(ss);
+	msg.generate(vmail_default_genctx(), adap);
+	return ss;
+}
+
 }

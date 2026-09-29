@@ -60,10 +60,10 @@ int main(int argc, char **argv)
 {
 	service_init({nullptr, {}, 1});
 	auto cl_1 = HX::make_scope_exit(service_stop);
-	exmdb_rpc_alloc = [](size_t z) { return g_alloc_mgr.alloc(z); };
-	exmdb_rpc_free = [](void *) {};
+	exmdb_rpc_alloc = [](size_t z) STATIC_IN_CXX23 { return g_alloc_mgr.alloc(z); };
+	exmdb_rpc_free = [](void *) STATIC_IN_CXX23 {};
 	exmdb_client.emplace();
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_client.reset(); });
 	if (exmdb_client_run(PKGSYSCONFDIR) != 0)
 		return EXIT_FAILURE;
 

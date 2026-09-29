@@ -9,7 +9,7 @@ using DB_LENGTHS = unsigned long *;
 using DB_ROW = char **;
 
 struct GX_EXPORT mysql_delete {
-	inline void operator()(MYSQL *x) const { mysql_close(x); }
+	STATIC_IN_CXX23 inline void operator()(MYSQL *x) CONST_BEFORE_CXX23 { mysql_close(x); }
 };
 
 class GX_EXPORT DB_RESULT {

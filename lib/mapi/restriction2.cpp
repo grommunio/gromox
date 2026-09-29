@@ -80,7 +80,7 @@ static std::string ptstring_repr(const char *s, bool verbose)
 std::string BINARY::repr(bool verbose) const
 {
 	return !verbose ? fmt::format("[{} bytes]", cb) :
-	       fmt::format("[{}]=\"{}\"", cb, bin2txt(pv, cb));
+	       fmt::format("[{}]=\"{}\"", cb, bin2txt(static_cast<std::string_view>(*this)));
 }
 
 std::string SVREID::repr(bool verbose) const

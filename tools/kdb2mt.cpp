@@ -946,8 +946,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 	 * genimport's status printouts.)
 	 */
 	std::sort(yi->m_sub_hids.begin(), yi->m_sub_hids.end(),
-		[](const hidxtype &a, const hidxtype &b) /* operator< */
-		{
+		[](const hidxtype &a, const hidxtype &b) STATIC_IN_CXX23 { /* operator< */
 			if (a.second == MAPI_MESSAGE && b.second == MAPI_FOLDER)
 				return true;
 			if (a.second == MAPI_FOLDER && b.second == MAPI_MESSAGE)

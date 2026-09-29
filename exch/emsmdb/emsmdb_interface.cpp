@@ -19,6 +19,7 @@
 #include <vector>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
@@ -56,7 +57,7 @@ static constexpr unsigned int MAX_CONTENT_ROW_EVENTS = 6;
 using namespace gromox;
 
 template<> struct std::hash<GUID> {
-	std::size_t operator()(const GUID &g) const
+	STATIC_IN_CXX23 std::size_t operator()(const GUID &g) CONST_BEFORE_CXX23
 	{
 		uint64_t x[2];
 		memcpy(x, &g, sizeof(x));

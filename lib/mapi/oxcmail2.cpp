@@ -30,9 +30,9 @@ using namespace oxcmail;
 namespace {
 
 struct xmlfree {
-	void operator()(xmlDoc *d) const { xmlFreeDoc(d); }
-	void operator()(xmlChar *s) const { xmlFree(s); }
-	void operator()(char *s) const { xmlFree(reinterpret_cast<xmlChar *>(s)); }
+	STATIC_IN_CXX23 inline void operator()(xmlDoc *d) CONST_BEFORE_CXX23 { xmlFreeDoc(d); }
+	STATIC_IN_CXX23 inline void operator()(xmlChar *s) CONST_BEFORE_CXX23 { xmlFree(s); }
+	STATIC_IN_CXX23 inline void operator()(char *s) CONST_BEFORE_CXX23 { xmlFree(reinterpret_cast<xmlChar *>(s)); }
 };
 
 using xmldocptr = std::unique_ptr<xmlDoc, xmlfree>;

@@ -193,7 +193,8 @@ class db_base_wr_ptr {
 class db_item_deleter;
 struct db_conn {
 	struct xless {
-		bool operator()(const char *a, const char *b) const {
+		STATIC_IN_CXX23 bool operator()(const char *a, const char *b) CONST_BEFORE_CXX23
+		{
 			return b == nullptr ? false : a == nullptr ? true :
 			       strcasecmp(a, b) < 0;
 		}

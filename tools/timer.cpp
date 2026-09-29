@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/generic_connection.hpp>
@@ -380,8 +381,7 @@ int main(int argc, char **argv)
 
 static int tmr_acceptwork(generic_connection &&conn)
 {
-		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    conn.client_addr) == g_acl_list.cend()) {
+		if (!ct_contains(g_acl_list, conn.client_addr)) {
 			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
 			return 0;
@@ -453,7 +453,9 @@ static int tmr_thrwork_1()
 	char *pspace, temp_line[2048];
 	
 	std::unique_lock co_hold(g_connection_lock);
-	g_waken_cond.wait(co_hold, []() { return g_notify_stop || g_connection_list1.size() > 0; });
+	g_waken_cond.wait(co_hold, []() STATIC_IN_CXX23 {
+		return g_notify_stop || g_connection_list1.size() > 0;
+	});
 	if (g_notify_stop)
 		return X_STOP;
 	if (g_connection_list1.size() == 0)

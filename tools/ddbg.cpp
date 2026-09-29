@@ -11,7 +11,9 @@
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/element_data.hpp>
+#include <gromox/json.hpp>
 #include <gromox/lzxpress.hpp>
+#include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
@@ -29,13 +31,16 @@ enum {
 	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME,
 	CM_BIN2HEX, CM_BIN2TXT, CM_LZXDEC, CM_LZXENC, CM_HTMLTORTF,
 	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_RTFTOGXHT,
-	CM_TEXTTOHTML, CM_UNRTFCP,
-	CM_QPDECODE, CM_QPENCODE,
+	CM_TEXTTOHTML, CM_UNRTFCP, CM_LANGTOCSET, CM_LCIDTOLTAG, CM_LTAGTOLCID,
+	CM_QPDECODE, CM_QPENCODE, CM_CSETTOCPID, CM_CPIDTOCSET,
+	CM_EXTTOMIME, CM_MIMETOEXT, CM_PROPTAG, CM_MDIGEST,
 };
 static unsigned int g_dowhat, g_hex2bin;
 static constexpr struct HXoption g_options_table[] = {
 	{"bin2hex", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_BIN2HEX, "Run bin2hex"},
 	{"bin2txt", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_BIN2TXT, "Run bin2txt"},
+	{"cpidtocset", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_CPIDTOCSET, "Convert codepage number to IANA character set"},
+	{"csettocpid", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_CSETTOCPID, "Convert character set name to codepage number"},
 	{"decode", 'd', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_ANYTHING, "Try all decoders"},
 	{"decode-action", 'A', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_ACTION, "Decode rule action blob"},
 	{"decode-entryid", 'e', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_ENTRYID, "Decode entryid"},
@@ -43,11 +48,18 @@ static constexpr struct HXoption g_options_table[] = {
 	{"decode-nttime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_NTTIME, "Decode NT timestamps to unixtime/calendar"},
 	{"decode-restrict", 'r', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_RESTRICT, "Decode restriction blob (e.g. rule condition)"},
 	{"decode-unixtime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_UNIXTIME, "Decode Unix timestamp to nttime/calendar"},
+	{"exttomime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_EXTTOMIME, "Convert filename extension to MIME type"},
 	{"htmltortf", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTORTF, "Convert HTML to RTF"},
 	{"htmltotext", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTOTEXT, "Convert HTML to plaintext"},
+	{"langtocset", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LANGTOCSET, "Show default charset for language"},
+	{"lcidtoltag", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LCIDTOLTAG, "Convert locale ID to locale tag (RFC 5646)"},
+	{"ltagtolcid", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LTAGTOLCID, "Convert locale tag to locale ID"},
 	{"lzxdec", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXDEC, "LZX decompression"},
 	{"lzxenc", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXENC, "LZX compression"},
+	{"mdigest", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_MDIGEST, "Produce an MJSON digest from an EML"},
+	{"mimetoext", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_MIMETOEXT, "Convert MIME type to filename extension"},
 	{"pack", 'p', HXTYPE_NONE, &g_hex2bin, {}, {}, 0, "Employ hex2bin before main action"},
+	{"proptag", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_PROPTAG, "Show name for MAPI property tag (e.g. 0x3001001f)"},
 	{"qpdecode", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_QPDECODE, "Decode quoted-printable text"},
 	{"qpencode", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_QPENCODE, "Encode to quoted-printable"},
 	{"rtfcp", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_RTFCP, "Convert RTF to uncompressed RTFCP"},
@@ -540,6 +552,23 @@ static int do_rtftohtml(std::string_view data, bool transfer)
 	return 0;
 }
 
+static int mdigest(std::string_view data)
+{
+	MAIL imail;
+	if (!imail.refonly_parse(data.data(), data.size())) {
+		fprintf(stderr, "Failed to parse RFC5322 block for message\n");
+		return -1;
+	}
+	Json::Value digest;
+	auto ret = imail.make_digest(digest);
+	if (ret <= 0) {
+		fprintf(stderr, "Failed to produce JDigest for RFC5322 block\n");
+		return -1;
+	}
+	printf("%s\n", json_to_str(digest).c_str());
+	return 0;
+}
+
 static int do_process_2(std::string_view &&data, const char *str)
 {
 	switch (g_dowhat) {
@@ -552,13 +581,21 @@ static int do_process_2(std::string_view &&data, const char *str)
 		return 0;
 	}
 	case CM_BIN2TXT: {
-		auto out = bin2txt(data.data(), data.size());
+		auto out = bin2txt(data);
 		if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
 			perror("write");
 			return -1;
 		}
 		return 0;
 	}
+	case CM_CPIDTOCSET: {
+		auto cset = cpid_to_cset(static_cast<cpid_t>(strtoul(str, nullptr, 0)));
+		printf("%s: %s\n", str, cset != nullptr ? cset : "?");
+		return 0;
+	}
+	case CM_CSETTOCPID:
+		printf("%s: %u\n", str, cset_to_cpid(str));
+		return 0;
 	case CM_DEC_ANYTHING: {
 		try_entryid(data);
 		try_guid(data);
@@ -610,10 +647,40 @@ static int do_process_2(std::string_view &&data, const char *str)
 		}
 		return 0;
 	}
+	case CM_LANGTOCSET: {
+		auto cset = lang_to_charset(str);
+		printf("%s: %s\n", str, cset != nullptr ? cset : "?");
+		return 0;
+	}
+	case CM_LCIDTOLTAG: {
+		auto ltag = lcid_to_ltag(strtoul(str, nullptr, 0));
+		printf("%s: %s\n", str, ltag != nullptr ? ltag : "?");
+		return 0;
+	}
+	case CM_LTAGTOLCID:
+		printf("%s: %u\n", str, ltag_to_lcid(str));
+		return 0;
 	case CM_LZXDEC:
 		return do_lzx(data, 0);
 	case CM_LZXENC:
 		return do_lzx(data, 1);
+	case CM_MIMETOEXT: {
+		auto ext = mime_to_extension(str);
+		printf("%s: %s\n", str, ext != nullptr ? ext : "?");
+		return 0;
+	}
+	case CM_EXTTOMIME: {
+		auto mtype = extension_to_mime(str);
+		printf("%s: %s\n", str, mtype != nullptr ? mtype : "?");
+		return 0;
+	}
+	case CM_MDIGEST:
+		return mdigest(data);
+	case CM_PROPTAG: {
+		auto name = mapitags_namelookup(strtoul(str, nullptr, 0));
+		printf("%s: %s\n", str, name != nullptr ? name : "?");
+		return 0;
+	}
 	case CM_QPDECODE:
 	case CM_QPENCODE:
 		return do_qp(data, g_dowhat);

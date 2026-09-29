@@ -358,7 +358,9 @@ template<typename T>
 static constexpr const char* getNSPrefix(const T&val)
 {
 	if constexpr(BaseType<T>::container == VARIANT)
-		return std::visit([](const auto& v){return getNSPrefix(v);}, val);
+		return std::visit([](const auto &v) STATIC_IN_CXX23 {
+		       	return getNSPrefix(v);
+		       }, val);
 	else
 		return getNSPrefix<T>();
 }

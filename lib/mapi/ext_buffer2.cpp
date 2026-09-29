@@ -6,6 +6,7 @@
 #include <span>
 #include <string>
 #include <vector>
+#include <gromox/algorithm.hpp>
 #include <gromox/ext_buffer.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::success) return klfdv; } while (false)
 #define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
@@ -452,14 +453,12 @@ std::string GLOBALOBJECTID::third_party_uid() const
 
 bool RECURRENCE_PATTERN::contains_del(uint32_t v) const
 {
-	auto &vec = pdeletedinstancedates;
-	return std::find(vec.cbegin(), vec.cend(), v) != vec.cend();
+	return ct_contains(pdeletedinstancedates, v);
 }
 
 bool RECURRENCE_PATTERN::contains_mod(uint32_t v) const
 {
-	auto &vec = pmodifiedinstancedates;
-	return std::find(vec.cbegin(), vec.cend(), v) != vec.cend();
+	return ct_contains(pmodifiedinstancedates, v);
 }
 
 void RECURRENCE_PATTERN::sort_dels()

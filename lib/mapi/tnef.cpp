@@ -15,7 +15,6 @@
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>

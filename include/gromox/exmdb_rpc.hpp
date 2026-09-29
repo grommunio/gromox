@@ -1574,7 +1574,7 @@ struct DB_NOTIFY_DATAGRAM {
 extern GX_EXPORT pack_result exmdb_ext_pull_request(std::string_view, std::unique_ptr<exreq> &alloc_by_callee);
 extern GX_EXPORT pack_result exmdb_ext_push_request(const exreq *, BINARY *);
 extern GX_EXPORT pack_result exmdb_ext_pull_response(std::string_view, exresp *partial_fill_by_caller);
-extern GX_EXPORT pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *);
+extern GX_EXPORT pack_result exmdb_ext_push_response(const exresp *presponse, std::string &out);
 extern GX_EXPORT pack_result exmdb_ext_pull_db_notify(std::string_view, DB_NOTIFY_DATAGRAM *);
 extern GX_EXPORT pack_result exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);
 extern GX_EXPORT const char *exmdb_rpc_strerror(exmdb_response);

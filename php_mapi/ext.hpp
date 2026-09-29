@@ -20,7 +20,7 @@ struct zcreq;
 struct zcresp;
 
 struct zstr_delete {
-	inline void operator()(zend_string *s) const { zend_string_release(s); };
+	STATIC_IN_CXX23 inline void operator()(zend_string *s) CONST_BEFORE_CXX23 { zend_string_release(s); };
 };
 
 using zstrplus = std::unique_ptr<zend_string, zstr_delete>;
@@ -50,7 +50,10 @@ struct PUSH_CTX : public EXT_PUSH {
 };
 
 /* This is like gromox::alloc_context, but uses the PHP allocator */
-struct pdeleter { void operator()(void *p) const { efree(p); } };
+struct pdeleter {
+	STATIC_IN_CXX23 inline void operator()(void *p) CONST_BEFORE_CXX23 { efree(p); }
+};
+
 struct palloc_ctx {
 	palloc_ctx() = default;
 	NOMOVE(palloc_ctx);

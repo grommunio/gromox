@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vmime/message.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
@@ -36,7 +37,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
-#include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/usercvt.hpp>
@@ -940,7 +940,7 @@ BOOL exmdb_server::get_message_properties(const char *dir,
 	/* Only one SQL operation, no transaction needed. */
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	return cu_get_properties(MAPI_MESSAGE,
 	       rop_util_get_gc_value(message_id), cpid, *pdb,
 	       pproptags, ppropvals);
@@ -963,7 +963,7 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 		return FALSE;
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	auto mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
@@ -976,7 +976,7 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 	    mid_val, &fid_val) || fid_val == 0)
 		return FALSE;
 	if (std::any_of(pproperties->begin(), pproperties->end(),
-	    [](const TAGGED_PROPVAL &p) { return timeindex_covers(p.proptag); }) &&
+	    [](const TAGGED_PROPVAL &p) STATIC_IN_CXX23 { return timeindex_covers(p.proptag); }) &&
 	    !timeindex_refresh(pdb->psqlite, fid_val, mid_val))
 		return false;
 	auto nt_time = rop_util_current_nttime();
@@ -1052,7 +1052,7 @@ BOOL exmdb_server::set_message_read_state(const char *dir, const char *username,
 		return false;
 	if (!exmdb_server::is_private()) {
 		exmdb_server::set_public_username(username);
-		auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+		auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 		if (cu_set_message_read(pdb->psqlite,
 		    mid_val, mark_as_read) != SQLITE_OK)
 			return false;
@@ -1454,7 +1454,7 @@ static bool message_read_message(const db_conn &db, cpid_t cpid,
 	std::vector<proptag_t> mtags;
 	if (!cu_get_proptags(MAPI_MESSAGE, message_id, psqlite, mtags))
 		return FALSE;	
-	std::erase_if(mtags, [](proptag_t t) {
+	std::erase_if(mtags, [](proptag_t t) STATIC_IN_CXX23 {
 		return t == PR_DISPLAY_TO || t == PR_DISPLAY_TO_A ||
 		       t == PR_DISPLAY_CC || t == PR_DISPLAY_CC_A ||
 		       t == PR_DISPLAY_BCC || t == PR_DISPLAY_BCC_A ||
@@ -2876,7 +2876,7 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 	dst_fid = rop_util_get_gc_value(static_cast<SVREID *>(
 		       pmovecopy->pfolder_eid)->folder_id);
-	if (std::find(seen.fld.cbegin(), seen.fld.cend(), dst_fid) != seen.fld.cend())
+	if (ct_contains(seen.fld, dst_fid))
 		/* Already moved to this folder once. */
 		return ecSuccess;
 	BOOL b_exist = false;
@@ -3252,7 +3252,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 	if (ec != ecSuccess)
 		return ec;
 	auto dst_fid = rop_util_gc_to_value(pextmvcp->folder_eid.folder_gc);
-	if (std::find(seen.fld.cbegin(), seen.fld.cend(), dst_fid) != seen.fld.cend())
+	if (ct_contains(seen.fld, dst_fid))
 		/* Already moved to this folder once. */
 		return ecSuccess;
 	BOOL b_exist = false;
@@ -4016,7 +4016,7 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 		return FALSE;
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	auto mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!pdb->begin_optim())
@@ -4049,7 +4049,7 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	auto is_pvt = exmdb_server::is_private();
 	if (!is_pvt)
 		exmdb_server::set_public_username(username);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
 	if (is_pvt && !common_util_get_mid_string(pdb->psqlite, mid_val, &pmid_string))

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -10,7 +10,6 @@
 #include <vector>
 #include <libHX/scope.hpp>
 #include <gromox/database.h>
-#include <gromox/eid_array.hpp>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>
@@ -24,15 +23,8 @@ using namespace gromox;
 namespace {
 
 struct ENUM_PARAM {
-	~ENUM_PARAM() {
-		if (pnolonger_mids != nullptr)
-			eid_array_free(pnolonger_mids);
-		if (pdeleted_eids != nullptr)
-			eid_array_free(pdeleted_eids);
-	}
-
 	xstmt stm_exist, stm_msg;
-	EID_ARRAY *pdeleted_eids = nullptr, *pnolonger_mids = nullptr;
+	std::vector<eid_t> pdeleted_eids, pnolonger_mids;
 	BOOL b_result;
 };
 
@@ -46,7 +38,21 @@ struct REPLID_ARRAY {
 static std::mutex ics_log_mtx;
 std::string g_exmdb_ics_log_file;
 
-static void ics_enum_content_idset(void *vparam, uint64_t message_id)
+static ec_error_t copy_eids(std::span<const eid_t> in, EID_ARRAY &out)
+{
+	out.count = in.size();
+	if (out.count == 0) {
+		out.pids = nullptr;
+		return ecSuccess;
+	}
+	out.pids = cu_alloc<eid_t>(out.count);
+	if (out.pids == nullptr)
+		return ecServerOOM;
+	memcpy(out.pids, in.data(), sizeof(eid_t) * out.count);
+	return ecSuccess;
+}
+
+static void ics_enum_content_idset(void *vparam, uint64_t message_id) try
 {
 	auto pparam = static_cast<ENUM_PARAM *>(vparam);
 	uint64_t mid_val;
@@ -56,42 +62,53 @@ static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 	mid_val = rop_util_get_gc_value(message_id);
 	sqlite3_reset(pparam->stm_exist);
 	sqlite3_bind_int64(pparam->stm_exist, 1, mid_val);
-	if (pparam->stm_exist.step() == SQLITE_ROW)
+	auto ret = pparam->stm_exist.step();
+	if (ret == SQLITE_ROW) {
 		return;
+	} else if (ret != SQLITE_DONE) {
+		pparam->b_result = false;
+		return;
+	}
 	sqlite3_reset(pparam->stm_msg);
 	sqlite3_bind_int64(pparam->stm_msg, 1, mid_val);
-	if (pparam->stm_msg.step() == SQLITE_ROW) {
-		if (!eid_array_append(pparam->pnolonger_mids, message_id))
-			pparam->b_result = FALSE;
-	} else {
-		if (!eid_array_append(pparam->pdeleted_eids, message_id))
-			pparam->b_result = FALSE;
-	}
+	ret = pparam->stm_msg.step();
+	if (ret == SQLITE_ROW)
+		pparam->pnolonger_mids.emplace_back(message_id);
+	else if (ret == SQLITE_DONE)
+		pparam->pdeleted_eids.emplace_back(message_id);
+	else
+		pparam->b_result = false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	static_cast<ENUM_PARAM *>(vparam)->b_result = false;
 }
 
 /* Counterpart for simc_otherstore. */
-static ec_error_t delete_impossible_mids(const idset &given, EID_ARRAY &del)
+static ec_error_t delete_impossible_mids(const idset &given,
+    std::vector<eid_t> &del) try
 {
 	struct p1data {
 		const idset *given;
-		EID_ARRAY *del;
+		std::vector<eid_t> &del;
 		ec_error_t error;
-	} p1 = {&given, &del, ecSuccess};
-	const_cast<idset &>(given).enum_replist(&p1, [](void *param1, uint16_t replid) {
+	} p1 = {&given, del, ecSuccess};
+	const_cast<idset &>(given).enum_replist(&p1, [](void *param1, uint16_t replid) STATIC_IN_CXX23 {
 		if (replid <= 1)
 			return;
 		auto p2 = static_cast<p1data *>(param1);
 		if (p2->error != ecSuccess)
 			return;
-		const_cast<idset *>(p2->given)->enum_repl(replid, p2, [](void *param2, uint64_t msgid) {
+		const_cast<idset *>(p2->given)->enum_repl(replid, p2, [](void *param2, uint64_t msgid) STATIC_IN_CXX23 {
 			auto p3 = static_cast<p1data *>(param2);
 			if (p3->error != ecSuccess)
 				return;
-			if (!eid_array_append(p3->del, msgid))
-				p3->error = ecServerOOM;
+			p3->del.emplace_back(msgid);
 		});
 	});
 	return p1.error;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 static bool eas_time_search(const RESTRICTION *r)
@@ -249,11 +266,14 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	} catch (const std::bad_alloc &) {
 		b_rcv_fast = false;
 	}
+
+	int ret;
 	if (!b_rcv_fast)
 		rcv_scope.clear();
 	*plast_cn = 0;
 	*plast_readcn = 0;
-	while (stm_select_msg.step() == SQLITE_ROW) {
+
+	while ((ret = stm_select_msg.step()) == SQLITE_ROW) {
 		uint64_t mid_val = sqlite3_column_int64(stm_select_msg, 0);
 		uint64_t change_num = sqlite3_column_int64(stm_select_msg, 1);
 		BOOL b_fai = sqlite3_column_int64(stm_select_msg, 2) == 0 ? false : TRUE;
@@ -290,8 +310,13 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			sqlite3_bind_int64(stm_select_rcn, 1, mid_val);
 			sqlite3_bind_text(stm_select_rcn, 2,
 				username, -1, SQLITE_STATIC);
-			read_cn = stm_select_rcn.step() != SQLITE_ROW ? 0 :
-			          sqlite3_column_int64(stm_select_rcn, 0);
+			ret = stm_select_rcn.step();
+			if (ret == SQLITE_ROW)
+				read_cn = stm_select_rcn.col_int64(0);
+			else if (ret == SQLITE_DONE)
+				read_cn = 0;
+			else
+				return false;
 		}
 		if (read_cn > *plast_readcn)
 			*plast_readcn = read_cn;
@@ -316,7 +341,13 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 				sqlite3_bind_int64(stm_select_rst, 1, mid_val);
 				sqlite3_bind_text(stm_select_rst, 2,
 					username, -1 , SQLITE_STATIC);
-				read_state = stm_select_rst.step() == SQLITE_ROW;
+				ret = stm_select_rst.step();
+				if (ret == SQLITE_ROW)
+					read_state = true;
+				else if (ret == SQLITE_DONE)
+					read_state = false;
+				else
+					return false;
 			}
 			sqlite3_reset(stm_insert_reads);
 			sqlite3_bind_int64(stm_insert_reads, 1, mid_val);
@@ -330,13 +361,23 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			sqlite3_reset(stm_select_mp);
 			sqlite3_bind_int64(stm_select_mp, 1, PR_MESSAGE_DELIVERY_TIME);
 			sqlite3_bind_int64(stm_select_mp, 2, mid_val);
-			dtime = stm_select_mp.step() == SQLITE_ROW ?
-			        sqlite3_column_int64(stm_select_mp, 0) : 0;
+			ret = stm_select_mp.step();
+			if (ret == SQLITE_ROW)
+				dtime = stm_select_mp.col_int64(0);
+			else if (ret == SQLITE_DONE)
+				dtime = 0;
+			else
+				return false;
 			sqlite3_reset(stm_select_mp);
 			sqlite3_bind_int64(stm_select_mp, 1, PR_LAST_MODIFICATION_TIME);
 			sqlite3_bind_int64(stm_select_mp, 2, mid_val);
-			mtime = stm_select_mp.step() == SQLITE_ROW ?
-			        sqlite3_column_int64(stm_select_mp, 0) : 0;
+			ret = stm_select_mp.step();
+			if (ret == SQLITE_ROW)
+				mtime = stm_select_mp.col_int64(0);
+			else if (ret == SQLITE_DONE)
+				mtime = 0;
+			else
+				return false;
 		}
 		if (b_fai) {
 			(*pfai_count) ++;
@@ -354,6 +395,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		if (stm_insert_chg.step() != SQLITE_DONE)
 			return false;
 	}
+	if (ret != SQLITE_DONE)
+		return false;
 	stm_select_msg.finalize();
 	stm_insert_chg.finalize();
 	stm_insert_exist.finalize();
@@ -428,45 +471,16 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (enum_param.stm_msg == nullptr)
 		return FALSE;
 	enum_param.b_result = TRUE;
-	enum_param.pdeleted_eids = eid_array_init();
-	if (enum_param.pdeleted_eids == nullptr)
-		return FALSE;
-	enum_param.pnolonger_mids = eid_array_init();
-	if (enum_param.pnolonger_mids == nullptr)
-		return FALSE;
-	if (delete_impossible_mids(*pgiven, *enum_param.pdeleted_eids) != ecSuccess)
+	if (delete_impossible_mids(*pgiven, enum_param.pdeleted_eids) != ecSuccess)
 		return false;
 	if (!const_cast<idset *>(pgiven)->enum_repl(1, &enum_param,
 	    ics_enum_content_idset))
 		return FALSE;	
 	enum_param.stm_exist.finalize();
 	enum_param.stm_msg.finalize();
-	pdeleted_mids->count = enum_param.pdeleted_eids->count;
-	if (0 != enum_param.pdeleted_eids->count) {
-		pdeleted_mids->pids = cu_alloc<eid_t>(pdeleted_mids->count);
-		if (NULL == pdeleted_mids->pids) {
-			pdeleted_mids->count = 0;
-			return FALSE;
-		}
-		memcpy(pdeleted_mids->pids,
-			enum_param.pdeleted_eids->pids,
-			sizeof(uint64_t)*pdeleted_mids->count);
-	} else {
-		pdeleted_mids->pids = NULL;
-	}
-	pnolonger_mids->count = enum_param.pnolonger_mids->count;
-	if (0 != enum_param.pnolonger_mids->count) {
-		pnolonger_mids->pids = cu_alloc<eid_t>(pnolonger_mids->count);
-		if (NULL == pnolonger_mids->pids) {
-			pnolonger_mids->count = 0;
-			return FALSE;
-		}
-		memcpy(pnolonger_mids->pids,
-			enum_param.pnolonger_mids->pids,
-			sizeof(uint64_t)*pnolonger_mids->count);
-	} else {
-		pnolonger_mids->pids = NULL;
-	}
+	if (copy_eids(enum_param.pdeleted_eids, *pdeleted_mids) != ecSuccess ||
+	    copy_eids(enum_param.pnolonger_mids, *pnolonger_mids) != ecSuccess)
+		return false;
 	} /* section 3 */
 
 	/* Rollback transaction (no changes were made anyway) */
@@ -492,10 +506,13 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		                     " FROM existence ORDER BY message_id DESC");
 		if (stm_select_ex == nullptr)
 			return FALSE;
-		while (stm_select_ex.step() == SQLITE_ROW) {
+		int ret;
+		while ((ret = stm_select_ex.step()) == SQLITE_ROW) {
 			uint64_t mid_val = sqlite3_column_int64(stm_select_ex, 0);
 			pgiven_mids->pids[pgiven_mids->count++] = eid_t(1, mid_val);
 		}
+		if (ret != SQLITE_DONE)
+			return false;
 	}
 	} /* section 4 */
 
@@ -523,7 +540,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 					"SELECT message_id, read_state FROM reads");
 			if (stm_select_rd == nullptr)
 				return FALSE;
-			while (stm_select_rd.step() == SQLITE_ROW) {
+			int ret;
+			while ((ret = stm_select_rd.step()) == SQLITE_ROW) {
 				uint64_t mid_val = sqlite3_column_int64(stm_select_rd, 0);
 				if (punread_mids->count == count ||
 				    pread_mids->count == count)
@@ -538,6 +556,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 				else
 					pread_mids->pids[pread_mids->count++] = eid_t(1, mid_val);
 			}
+			if (ret != SQLITE_DONE)
+				return false;
 		}
 	} else {
 		pread_mids->count = 0;
@@ -587,7 +607,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	return TRUE;
 }
 
-static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
+static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id) try
 {
 	auto pparam = static_cast<ENUM_PARAM *>(vparam);
 	uint16_t replid;
@@ -601,10 +621,17 @@ static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
 		fid_val |= ((uint64_t)replid) << 48;
 	sqlite3_reset(pparam->stm_exist);
 	sqlite3_bind_int64(pparam->stm_exist, 1, fid_val);
-	if (pparam->stm_exist.step() == SQLITE_ROW)
+	auto ret = pparam->stm_exist.step();
+	if (ret == SQLITE_ROW) {
 		return;
-	if (!eid_array_append(pparam->pdeleted_eids, folder_id))
-		pparam->b_result = FALSE;
+	} else if (ret != SQLITE_DONE) {
+		pparam->b_result = false;
+		return;
+	}
+	pparam->pdeleted_eids.emplace_back(folder_id);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	static_cast<ENUM_PARAM *>(vparam)->b_result = false;
 }
 
 static void ics_enum_hierarchy_replist(void *vpar, uint16_t replid)
@@ -625,10 +652,11 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 	uint64_t change_num;
 	uint32_t permission;
 	std::vector<eid_t> recurse_list;
+	int ret;
 	
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, folder_id);
-	while (gx_sql_step(pstmt) == SQLITE_ROW) {
+	while ((ret = gx_sql_step(pstmt)) == SQLITE_ROW) {
 		uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
 		change_num = sqlite3_column_int64(pstmt, 1);
 		if (username != STORE_OWNER_GRANTED) {
@@ -654,6 +682,8 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 		if (gx_sql_step(stm_insert_chg) != SQLITE_DONE)
 			return FALSE;
 	}
+	if (ret != SQLITE_DONE)
+		return false;
 	for (auto fid_val : recurse_list)
 		if (!ics_load_folder_changes(psqlite, fid_val, username, pgiven,
 		    pseen, pstmt, stm_insert_chg, stm_insert_exist, plast_cn))
@@ -755,7 +785,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		if (!cu_get_proptags(MAPI_FOLDER, fid_val1,
 		    pdb->psqlite, tags))
 			return FALSE;
-		std::erase_if(tags, [](proptag_t t) {
+		std::erase_if(tags, [](proptag_t t)  STATIC_IN_CXX23 {
 			return t == PR_HAS_RULES || t == PidTagChangeNumber ||
 			       t == PR_LOCAL_COMMIT_TIME || t == PR_DELETED_COUNT_TOTAL ||
 			       t == PR_NORMAL_MESSAGE_SIZE || t == PR_LOCAL_COMMIT_TIME_MAX ||
@@ -791,13 +821,16 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		                     " FROM existence ORDER BY folder_id DESC");
 		if (stm_select_ex == nullptr)
 			return FALSE;
-		while (stm_select_ex.step() == SQLITE_ROW) {
+		int ret;
+		while ((ret = stm_select_ex.step()) == SQLITE_ROW) {
 			uint64_t fv = sqlite3_column_int64(stm_select_ex, 0);
 			pgiven_fids->pids[pgiven_fids->count++] =
 				(fv & NFID_UPPER_PART) == 0 ?
 				eid_t(1, fv) :
 				eid_t(fv >> 48, fv & NFID_LOWER_PART);
 		}
+		if (ret != SQLITE_DONE)
+			return false;
 	}
 	} /* section 4 */
 
@@ -812,23 +845,20 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	if (enum_param.stm_exist == nullptr)
 		return FALSE;
 	enum_param.b_result = TRUE;
-	enum_param.pdeleted_eids = eid_array_init();
-	if (enum_param.pdeleted_eids == nullptr)
-		return FALSE;
 	for (size_t i = 0; i < replids.count; ++i)
 		if (!const_cast<idset *>(pgiven)->enum_repl(replids.replids[i],
 		    &enum_param, ics_enum_hierarchy_idset))
 			return FALSE;	
 
-	pdeleted_fids->count = enum_param.pdeleted_eids->count;
+	pdeleted_fids->count = enum_param.pdeleted_eids.size();
 	pdeleted_fids->pids = cu_alloc<eid_t>(pdeleted_fids->count);
 	if (NULL == pdeleted_fids->pids) {
 		pdeleted_fids->count = 0;
 		return FALSE;
 	}
-	memcpy(pdeleted_fids->pids,
-		enum_param.pdeleted_eids->pids,
-		sizeof(uint64_t)*pdeleted_fids->count);
+	if (pdeleted_fids->count > 0)
+		memcpy(pdeleted_fids->pids, enum_param.pdeleted_eids.data(),
+			sizeof(uint64_t) * pdeleted_fids->count);
 	} /* section 5 */
 
 	if (g_exmdb_ics_log_file.empty())

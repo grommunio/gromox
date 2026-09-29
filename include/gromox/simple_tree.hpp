@@ -69,7 +69,7 @@ struct GX_EXPORT mtree {
 };
 using SIMPLE_TREE = mtree;
 
-template<typename C, typename F> void simple_tree_node_enum(C *n, F &&f, unsigned int lvl = 0)
+template<typename C> void simple_tree_node_enum(C *n, auto &&f, unsigned int lvl = 0)
 {
 	do {
 		f(n, lvl);
@@ -78,7 +78,8 @@ template<typename C, typename F> void simple_tree_node_enum(C *n, F &&f, unsigne
 		n = n->pnode_sibling;
 	} while (n != nullptr);
 }
-template<typename C, typename F> void simple_tree_enum_from_node(C *n, F &&f, unsigned int lvl = 0)
+
+template<typename C> void simple_tree_enum_from_node(C *n, auto &&f, unsigned int lvl = 0)
 {
 	f(n, lvl);
 	if (n->pnode_child != nullptr)

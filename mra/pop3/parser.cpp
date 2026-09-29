@@ -576,7 +576,7 @@ static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 	auto argv = gx_split(std::string_view(cmd_line, line_length), ' ');
 	if (argv.size() < 1)
 		return 1703;
-	auto scmp = [](decltype(*proc) &p, const char *cmd) { return strcasecmp(p.first, cmd) < 0; };
+	auto scmp = [](decltype(*proc) &p, const char *cmd) STATIC_IN_CXX23 { return strcasecmp(p.first, cmd) < 0; };
 	auto it = std::lower_bound(std::begin(proc), std::end(proc), argv[0].c_str(), scmp);
 	if (it != std::end(proc) && strcasecmp(argv[0].c_str(), it->first) == 0)
 		return it->second(std::move(argv), ctx);

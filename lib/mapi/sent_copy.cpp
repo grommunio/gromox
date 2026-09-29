@@ -6,7 +6,7 @@
 #include <memory>
 #include <set>
 #include <vector>
-#include <gromox/defs.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
@@ -96,7 +96,7 @@ size_t npid_apply(TPROPVAL_ARRAY &props, const std::vector<propid_t> &src,
 		auto id = PROP_ID(pv.proptag);
 		if (!is_nameprop_id(id))
 			return false;
-		auto it = std::find(src.begin(), src.end(), id);
+		auto it = ct_find(src, id);
 		if (it == src.end())
 			return false;
 		auto newid = dst[it-src.begin()];

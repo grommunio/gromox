@@ -11,6 +11,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/scope.hpp>
 #include <vmime/addressList.hpp>
+#include <vmime/contentDispositionField.hpp>
 #include <vmime/contentTypeField.hpp>
 #include <vmime/dateTime.hpp>
 #include <vmime/header.hpp>
@@ -328,6 +329,39 @@ static AWUR ec_error_t omv_export_mdnflag(const message_content &mct,
 	return err;
 }
 
+static AWUR bool is_openpgp_typed(const vmime::header &vhdr)
+{
+	auto ctf = vhdr.findField<vmime::contentTypeField>(vmime::fields::CONTENT_TYPE);
+	if (ctf == nullptr)
+		return false;
+	auto protocol = ctf->findParameter("protocol");
+	if (protocol == nullptr)
+		return false;
+	auto media_type = *ctf->getValue<vmime::mediaType>();
+	auto prot_str = protocol->getValue().generate();
+	if (media_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "encrypted") &&
+	    prot_str == "application/pgp-encrypted")
+		return true;
+	if (media_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "signed") &&
+	    prot_str == "application/pgp-signature")
+		return true;
+	return false;
+}
+
+static AWUR bool openpgp_tocc_handling(const message_content &mct)
+{
+	auto atxlist = mct.children.pattachments;
+	if (atxlist == nullptr || atxlist->count != 1)
+		return false;
+	auto bin = atxlist->pplist[0]->proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
+	if (bin == nullptr)
+		return false;
+	vmime::message entity;
+	auto vpctx = vmail_default_parsectx();
+	entity.parse(vpctx, std::string(std::string_view(*bin)));
+	return is_openpgp_typed(*entity.getHeader());
+}
+
 static AWUR ec_error_t omv_export_tocc(const message_content &mct,
     const mime_skeleton &skel, vmime::header &vhead)
 {
@@ -349,6 +383,13 @@ static AWUR ec_error_t omv_export_tocc(const message_content &mct,
 
 	if (class_match_prefix(skel.pmessage_class, "IPM.Schedule.Meeting") == 0 ||
 	    class_match_prefix(skel.pmessage_class, "IPM.Task") == 0)
+		return ecSuccess;
+	/*
+	 * OpenPGP's inner entity omits Bcc (duh), and the outer SMTP headers must
+	 * omit it as well. Keep the MAPI recipient table for envelope delivery
+	 * and the sender's Sent Items; do not rely on the next MTA to strip it.
+	 */
+	if (skel.mail_type == oxcmail_type::xsigned && openpgp_tocc_handling(mct))
 		return ecSuccess;
 
 	mblist.removeAllMailboxes();
@@ -732,8 +773,10 @@ static AWUR ec_error_t omv_smime_signed_fold(vmime::bodyPart &vmsg,
 {
 	vmime::message dec_blob;
 	dec_blob.parse(blob);
-	if (dec_blob.getBody()->getContentType() !=
-	    vmime::mediaType(vmime::mediaTypes::MULTIPART, "signed")) {
+	auto ct_type   = dec_blob.getBody()->getContentType();
+	auto is_signed = ct_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "signed");
+	auto is_pgp    = is_openpgp_typed(*dec_blob.getHeader());
+	if (!is_signed && !is_pgp) {
 		omv_set_bodytext(vmsg, "[Message is not a valid OXOSMIME message. "
 			"The attachment object is not of type multipart/signed.]");
 		return ecSuccess;
@@ -835,22 +878,18 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 	if (str != nullptr && *str != '\0')
 		vhdr.getField("Content-Description")->setValue(text8(str));
 	
-	vhdr.ContentDisposition()->setValue(is_inline ?
-		vmime::contentDispositionTypes::INLINE :
-		vmime::contentDispositionTypes::ATTACHMENT);
-	auto &phf = *vmime::dynamicCast<vmime::parameterizedHeaderField>(vhdr.ContentDisposition());
+	auto &ctd = *vhdr.getField<vmime::contentDispositionField>(vmime::fields::CONTENT_DISPOSITION);
+	ctd.setValue(is_inline ?
+	             vmime::contentDispositionTypes::INLINE :
+	             vmime::contentDispositionTypes::ATTACHMENT);
 	if (file_name != nullptr)
-		/* Plain strings would be interpreted in the current locale */
-		*phf.getParameter("filename") = vmime::parameter("filename",
-			vmime::word(file_name, vmime::charsets::UTF_8));
+		ctd.setFilename(vmime::word(file_name, vmime::charsets::UTF_8));
 	if (auto ctime = atc.proplist.get<uint64_t>(PR_CREATION_TIME);
 	    ctime != nullptr)
-		*phf.getParameter("creation-date") = vmime::parameter("creation-date",
-			vmime::datetime(rop_util_nttime_to_unix(*ctime)).generate());
+		ctd.setCreationDate(rop_util_nttime_to_unix(*ctime));
 	if (auto mtime = atc.proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 	    mtime != nullptr)
-		*phf.getParameter("modification-date") = vmime::parameter("modification-date",
-			vmime::datetime(rop_util_nttime_to_unix(*mtime)).generate());
+		ctd.setModificationDate(rop_util_nttime_to_unix(*mtime));
 
 	str = atc.proplist.get<char>(PR_ATTACH_CONTENT_ID);
 	if (str != nullptr)
@@ -1151,9 +1190,9 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 		auto hdr = pmime->getHeader();
 		auto phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(hdr->ContentType());
 		*phf->getParameter("name") = vmime::parameter("name", "winmail.dat");
-		hdr->ContentDisposition()->setValue(vmime::contentDispositionTypes::ATTACHMENT);
-		phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(hdr->ContentDisposition());
-		*phf->getParameter("filename") = vmime::parameter("filename", "winmail.dat");
+		auto &ctd = *hdr->getField<vmime::contentDispositionField>(vmime::fields::CONTENT_DISPOSITION);
+		ctd.setValue(vmime::contentDispositionTypes::ATTACHMENT);
+		ctd.setFilename(vmime::word("winmail.dat"));
 		return ecSuccess;
 	}
 

@@ -11,11 +11,11 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <gromox/algorithm.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/gab.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
-#include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/sortorder_set.hpp>

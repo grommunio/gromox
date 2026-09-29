@@ -45,9 +45,9 @@ DECLARE_SVC_API(,);
 
 namespace {
 struct ldapfree {
-	void operator()(char *s) const { ldap_memfree(s); }
-	void operator()(LDAP *ld) const { ldap_unbind_ext_s(ld, nullptr, nullptr); }
-	void operator()(LDAPMessage *m) const { ldap_msgfree(m); }
+	STATIC_IN_CXX23 inline void operator()(char *s) CONST_BEFORE_CXX23 { ldap_memfree(s); }
+	STATIC_IN_CXX23 inline void operator()(LDAP *ld) CONST_BEFORE_CXX23 { ldap_unbind_ext_s(ld, nullptr, nullptr); }
+	STATIC_IN_CXX23 inline void operator()(LDAPMessage *m) CONST_BEFORE_CXX23 { ldap_msgfree(m); }
 };
 }
 

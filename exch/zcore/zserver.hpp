@@ -46,7 +46,7 @@ struct USER_INFO {
 };
 
 struct user_info_del {
-	void operator()(USER_INFO *x);
+	STATIC_IN_CXX23 void operator()(USER_INFO *x) CONST_BEFORE_CXX23;
 };
 
 using USER_INFO_REF = std::unique_ptr<USER_INFO, user_info_del>;

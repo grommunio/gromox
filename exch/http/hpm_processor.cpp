@@ -148,16 +148,16 @@ static void hpm_processor_wakeup_context(unsigned int context_id)
 }
 
 static constexpr struct dlfuncs hpm_funcs = {
-	/* .get_config_path = */ []() {
+	/* .get_config_path = */ []() STATIC_IN_CXX23 {
 		auto r = g_config_file->get_value("config_file_path");
 		return r != nullptr ? r : PKGSYSCONFDIR;
 	},
-	/* .get_data_path = */ []() {
+	/* .get_data_path = */ []() STATIC_IN_CXX23 {
 		auto r = g_config_file->get_value("data_file_path");
 		return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
 	},
-	/* .get_context_num = */ []() { return g_context_num; },
-	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
+	/* .get_context_num = */ []() STATIC_IN_CXX23 { return g_context_num; },
+	/* .get_host_ID = */ []() STATIC_IN_CXX23 { return g_config_file->get_value("host_id"); },
 	/* .ndr_stack_alloc = */ pdu_processor_ndr_stack_alloc,
 	/* .rpc_new_stack = */ pdu_processor_rpc_new_stack,
 	/* .rpc_free_stack = */ pdu_processor_rpc_free_stack,
@@ -167,17 +167,17 @@ static constexpr struct dlfuncs hpm_funcs = {
 		/* .reg_intf = */ hpm_processor_register_interface,
 		/* .get_req = */ hpm_processor_get_request,
 		/* .get_auth_info = */ hpm_processor_get_auth_info,
-		/* .get_conn = */ [](unsigned int id) {
+		/* .get_conn = */ [](unsigned int id) STATIC_IN_CXX23 {
 			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
 			return &h->connection;
 		},
-		/* .write_response = */ [](unsigned int id, const void *b, size_t z) -> http_status {
+		/* .write_response = */ [](unsigned int id, const void *b, size_t z) STATIC_IN_CXX23 -> http_status {
 			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
 			return h->stream_out.write(b, z) == STREAM_WRITE_OK ?
 			       http_status::ok : http_status::none;
 		},
 		/* .wakeup_ctx = */ hpm_processor_wakeup_context,
-		/* .activate_ctx = */ [](unsigned int id) {
+		/* .activate_ctx = */ [](unsigned int id) STATIC_IN_CXX23 {
 			context_pool_activate_context(http_parser_get_contexts_list()[id]);
 		},
 		/* .set_ctx = */ http_parser_set_context,

@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
+#include "structs.hpp"
 #define FTSTREAM_PRODUCER_POINT_LENGTH			1024
 #define FTSTREAM_PRODUCER_BUFFER_LENGTH			4*1024*1024
 #define STRING_OPTION_NONE						0x00
@@ -16,7 +17,6 @@ struct attachment_content;
 struct folder_changes;
 struct logon_object;
 struct message_content;
-struct progress_information;
 struct progress_message;
 
 enum point_type {

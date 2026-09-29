@@ -614,9 +614,9 @@ static BOOL ews_init(const struct dlfuncs &apidata)
 	}
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
-	ifc.proc    = [](detail::ContextKey ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
-	ifc.retr    = [](detail::ContextKey ctx) { return g_ews_plugin ? g_ews_plugin->retr(ctx) : HPM_RETRIEVE_DONE; };
-	ifc.term    = [](detail::ContextKey ctx) { if (g_ews_plugin) g_ews_plugin->term(ctx); };
+	ifc.proc    = [](detail::ContextKey ctx, const void *cont, uint64_t len) STATIC_IN_CXX23 { return g_ews_plugin->proc(ctx, cont, len); };
+	ifc.retr    = [](detail::ContextKey ctx) STATIC_IN_CXX23 { return g_ews_plugin ? g_ews_plugin->retr(ctx) : HPM_RETRIEVE_DONE; };
+	ifc.term    = [](detail::ContextKey ctx) STATIC_IN_CXX23 { if (g_ews_plugin) g_ews_plugin->term(ctx); };
 	if (!register_interface(&ifc))
 		return false;
 	try {
@@ -1432,22 +1432,22 @@ inline uint64_t FNV::operator()(const std::string& str) noexcept
 	return operator()(str.data(), str.size());
 }
 
-size_t std::hash<detail::AttachmentInstanceKey>::operator()(const detail::AttachmentInstanceKey& key) const noexcept
+size_t std::hash<detail::AttachmentInstanceKey>::operator()(const detail::AttachmentInstanceKey& key) CONST_BEFORE_CXX23 noexcept
 {
 	return FNV(key.dir, key.mid, key.aid).value;
 }
 
-size_t std::hash<detail::MessageInstanceKey>::operator()(const detail::MessageInstanceKey& key) const noexcept
+size_t std::hash<detail::MessageInstanceKey>::operator()(const detail::MessageInstanceKey& key) CONST_BEFORE_CXX23 noexcept
 {
 	return FNV(key.dir, key.mid).value;
 }
 
-size_t std::hash<detail::ExmdbSubscriptionKey>::operator()(const detail::ExmdbSubscriptionKey& key) const noexcept
+size_t std::hash<detail::ExmdbSubscriptionKey>::operator()(const detail::ExmdbSubscriptionKey& key) CONST_BEFORE_CXX23 noexcept
 {
 	return FNV(key.first, key.second).value;
 }
 
-size_t std::hash<detail::EmbeddedInstanceKey>::operator()(const detail::EmbeddedInstanceKey& key) const noexcept
+size_t std::hash<detail::EmbeddedInstanceKey>::operator()(const detail::EmbeddedInstanceKey& key) CONST_BEFORE_CXX23 noexcept
 {
 	return FNV(key.dir, key.aid).value;
 }

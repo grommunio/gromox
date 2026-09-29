@@ -231,7 +231,9 @@ static void *midcp_thrwork(void *param)
 	while (!g_midbcmd_stop) {
 		{
 			std::unique_lock cm_hold(g_cond_mutex);
-			g_waken_cond.wait(cm_hold, []() { return g_midbcmd_stop.load() || connlist_idle_size() > 0; });
+			g_waken_cond.wait(cm_hold, []() STATIC_IN_CXX23 {
+				return g_midbcmd_stop.load() || connlist_idle_size() > 0;
+			});
 			if (g_midbcmd_stop)
 				return nullptr;
 		}

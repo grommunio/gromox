@@ -643,13 +643,9 @@ void locator::cleanup_nts()
 	if (now - m_last_nts_purge < dts_purge_time)
 		return;
 	m_last_nts_purge = now;
-	std::erase_if(name_to_srv, [](const decltype(name_to_srv)::value_type &entry) {
-		bool purgable;
-		{
-			std::lock_guard hold2(entry.second->conn_lock);
-			purgable = entry.second->purgable();
-		}
-		return purgable;
+	std::erase_if(name_to_srv, [](const decltype(name_to_srv)::value_type &entry) STATIC_IN_CXX23 {
+		std::lock_guard hold2(entry.second->conn_lock);
+		return entry.second->purgable();
 	});
 }
 

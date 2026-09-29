@@ -1628,9 +1628,9 @@ static BOOL oab_init(const struct dlfuncs &apidata)
 
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &OabPlugin::preproc;
-	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_oab_plugin->proc(ctx, cont, len); };
-	ifc.retr    = [](int ctx) { return HPM_RETRIEVE_DONE; };
-	ifc.term    = [](int ctx) {};
+	ifc.proc    = [](int ctx, const void *cont, uint64_t len) STATIC_IN_CXX23 { return g_oab_plugin->proc(ctx, cont, len); };
+	ifc.retr    = [](int ctx) STATIC_IN_CXX23 { return HPM_RETRIEVE_DONE; };
+	ifc.term    = [](int ctx) STATIC_IN_CXX23 {};
 	if (!register_interface(&ifc))
 		return false;
 	try {

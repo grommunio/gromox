@@ -114,7 +114,9 @@ static void *zcrp_thrwork(void *param)
 	/* Wait for work items */
 	{
 		std::unique_lock cm_hold(g_conn_lock);
-		g_waken_cond.wait(cm_hold, []() { return g_zrpc_stop || g_conn_list.size() > 0; });
+		g_waken_cond.wait(cm_hold, []() STATIC_IN_CXX23 {
+			return g_zrpc_stop || g_conn_list.size() > 0;
+		});
 		if (g_zrpc_stop)
 			return nullptr;
 		if (g_conn_list.empty())

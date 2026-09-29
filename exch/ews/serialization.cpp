@@ -79,21 +79,6 @@ static void xml_set_filtered_text(tinyxml2::XMLElement *xml, const char *text)
 	xml->SetText(filtered.c_str());
 }
 
-namespace {
-
-/**
- * @brief     Generic deleter struct
- *
- * Provides explicit deleters for classes without destructor.
- */
-struct Cleaner {
-	inline void operator()(BINARY* x) {rop_util_free_binary(x);}
-	inline void operator()(TPROPVAL_ARRAY* x) {tpropval_array_free(x);}
-};
-
-} // Anonymous namespace
-
-
 XMLError ExplicitConvert<EWS::time_point>::deserialize(const tinyxml2::XMLElement *xml, EWS::time_point &value)
 {
 	const char* data = xml->GetText();
@@ -317,10 +302,10 @@ sBase64Binary sMessageEntryId::serialize() const
  */
 std::string sSyncState::serialize()
 {
-	std::unique_ptr<TPROPVAL_ARRAY, Cleaner> pproplist(tpropval_array_init());
+	tpropval_array_ptr pproplist(tpropval_array_init());
 	if (!pproplist)
 		throw EWSError::NotEnoughMemory(E3035);
-	std::unique_ptr<BINARY, Cleaner> ser(given.serialize());
+	binary_ptr ser(given.serialize());
 	if (!ser || pproplist->set(MetaTagIdsetGiven1, ser.get()) == ecServerOOM)
 		throw EWSError::NotEnoughMemory(E3036);
 	ser.reset(seen.serialize());
@@ -1703,13 +1688,18 @@ tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement *xml) :
 	XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
 {}
 
+static inline bool strcmp_lt(const char *a, const char *b)
+{
+	return strcmp(a, b) < 0;
+}
+
 tSetFolderField::tSetFolderField(const tinyxml2::XMLElement *xml) :
 	tChangeDescription(xml)
 {
 	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
-		if (std::binary_search(folderTypes.begin(), folderTypes.end(), child->Name(),
-		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
+		if (std::binary_search(folderTypes.cbegin(), folderTypes.cend(),
+		    child->Name(), strcmp_lt)) {
 			folder = child;
 			break;
 		}
@@ -1722,8 +1712,8 @@ tSetItemField::tSetItemField(const tinyxml2::XMLElement *xml) :
 {
 	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
-		if (std::binary_search(itemTypes.begin(), itemTypes.end(), child->Name(),
-		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
+		if (std::binary_search(itemTypes.cbegin(), itemTypes.cend(),
+		    child->Name(), strcmp_lt)) {
 			item = child;
 			break;
 		}

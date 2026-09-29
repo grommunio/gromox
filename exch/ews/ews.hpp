@@ -25,15 +25,6 @@ struct DB_NOTIFY;
 
 namespace gromox::EWS::detail {
 
-/**
- * @brief     Generic deleter struct
- *
- * Provides explicit deleters for classes without destructor.
- */
-struct Cleaner {
-	void operator()(BINARY*);
-};
-
 struct AttachmentInstanceKey {
 	std::string dir;
 	uint64_t mid;
@@ -65,19 +56,19 @@ struct EmbeddedInstanceKey {
 } // namespace gromox::EWS::detail
 
 template<> struct std::hash<gromox::EWS::detail::AttachmentInstanceKey> {
-	size_t operator()(const gromox::EWS::detail::AttachmentInstanceKey &) const noexcept;
+	STATIC_IN_CXX23 size_t operator()(const gromox::EWS::detail::AttachmentInstanceKey &) CONST_BEFORE_CXX23 noexcept;
 };
 
 template<> struct std::hash<gromox::EWS::detail::ExmdbSubscriptionKey> {
-	size_t operator()(const gromox::EWS::detail::ExmdbSubscriptionKey &) const noexcept;
+	STATIC_IN_CXX23 size_t operator()(const gromox::EWS::detail::ExmdbSubscriptionKey &) CONST_BEFORE_CXX23 noexcept;
 };
 
 template<> struct std::hash<gromox::EWS::detail::MessageInstanceKey> {
-	size_t operator()(const gromox::EWS::detail::MessageInstanceKey &) const noexcept;
+	STATIC_IN_CXX23 size_t operator()(const gromox::EWS::detail::MessageInstanceKey &) CONST_BEFORE_CXX23 noexcept;
 };
 
 template<> struct std::hash<gromox::EWS::detail::EmbeddedInstanceKey> {
-	size_t operator()(const gromox::EWS::detail::EmbeddedInstanceKey &) const noexcept;
+	STATIC_IN_CXX23 size_t operator()(const gromox::EWS::detail::EmbeddedInstanceKey &) CONST_BEFORE_CXX23 noexcept;
 };
 
 namespace gromox::EWS {
@@ -327,7 +318,7 @@ class EWSContext {
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingMessage &, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMeetingRequestMessage &, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
-	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&, PCL=PCL()) const;
+	binary_ptr mkPCL(const XID &, PCL = {}) const;
 	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
 	uint64_t moveCopyItem(const std::string&, const Structures::sMessageEntryId&, uint64_t, bool) const;
 	void normalize(Structures::tEmailAddressType&) const;

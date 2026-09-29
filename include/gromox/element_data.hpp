@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/mapi_types.hpp>
@@ -39,13 +40,6 @@ struct GX_EXPORT progress_message {
 };
 using PROGRESS_MESSAGE = progress_message;
 
-struct GX_EXPORT progress_information {
-	uint16_t version = 0, padding1 = 0, padding2 = 0;
-	uint32_t fai_count = 0, normal_count = 0;
-	uint64_t fai_size = 0, normal_size = 0;
-};
-using PROGRESS_INFORMATION = progress_information;
-
 struct GX_EXPORT message_content {
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
 	void set_rcpts_internal(TARRAY_SET *);
@@ -68,7 +62,7 @@ struct GX_EXPORT attachment_content {
 using ATTACHMENT_CONTENT = attachment_content;
 
 struct GX_EXPORT folder_messages {
-	EID_ARRAY *pfai_msglst = nullptr, *pnormal_msglst = nullptr;
+	std::optional<std::vector<eid_t>> pfai_msglst, pnormal_msglst;
 };
 using FOLDER_MESSAGES = folder_messages;
 
@@ -79,8 +73,8 @@ struct GX_EXPORT folder_content {
 	void operator=(folder_content &&) noexcept = delete;
 	bool append_subfolder_internal(folder_content &&);
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
-	void append_failist_internal(EID_ARRAY *);
-	void append_normallist_internal(EID_ARRAY *);
+	void append_failist_internal(std::vector<eid_t> &&);
+	void append_normallist_internal(std::vector<eid_t> &&);
 
 	TPROPVAL_ARRAY proplist{};
 	FOLDER_MESSAGES fldmsgs{};
@@ -108,9 +102,14 @@ extern GX_EXPORT void message_content_free(message_content *);
 namespace gromox {
 
 struct GX_EXPORT mc_delete {
-	inline void operator()(ATTACHMENT_LIST *x) { attachment_list_free(x); }
-	inline void operator()(MESSAGE_CONTENT *x) { message_content_free(x); }
+	STATIC_IN_CXX23 inline void operator()(attachment_list *x) CONST_BEFORE_CXX23 { attachment_list_free(x); }
+	STATIC_IN_CXX23 inline void operator()(attachment_content *x) CONST_BEFORE_CXX23 { attachment_content_free(x); }
+	STATIC_IN_CXX23 inline void operator()(message_content *x) CONST_BEFORE_CXX23 { message_content_free(x); }
 };
+
+using attachment_list_ptr = std::unique_ptr<attachment_list, mc_delete>;
+using attachment_content_ptr = std::unique_ptr<attachment_content, mc_delete>;
+using message_content_ptr = std::unique_ptr<message_content, mc_delete>;
 
 }
 

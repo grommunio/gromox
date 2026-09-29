@@ -64,7 +64,7 @@ YError::YError(const char *fmt, ...)
 	}
 	va_list args;
 	va_start(args, fmt);
-	std::unique_ptr<char[], gi_delete> strp;
+	std::unique_ptr<char[], stdlib_delete> strp;
 	auto ret = vasprintf(&unique_tie(strp), fmt, args);
 	va_end(args);
 	m_str = ret >= 0 && strp != nullptr ? strp.get() : "vasprintf";
@@ -110,7 +110,7 @@ void gi_folder_map_read(const void *buf, size_t bufsize, gi_folder_map_t &map)
 		uint64_t nid;
 		uint8_t create;
 		uint64_t fidto;
-		std::unique_ptr<char[], gi_delete> name;
+		std::unique_ptr<char[], stdlib_delete> name;
 		if (ep.g_uint64(&nid) != pack_result::ok ||
 		    ep.g_uint8(&create) != pack_result::ok ||
 		    ep.g_uint64(&fidto) != pack_result::ok ||
@@ -222,7 +222,7 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num,
 		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
-	std::unique_ptr<BINARY, gi_delete> pclbin(pcl.serialize());
+	binary_ptr pclbin(pcl.serialize());
 	if (pclbin == nullptr) {
 		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
@@ -435,7 +435,7 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 	if (pathcomp.size() == 0)
 		return 0;
 	auto ptr = std::lower_bound(std::begin(fld_special_names), std::end(fld_special_names),
-	           pathcomp[0].c_str(), [](const std::pair<const char *, uint8_t> &pair, const char *x) {
+	           pathcomp[0].c_str(), [](const std::pair<const char *, uint8_t> &pair, const char *x) STATIC_IN_CXX23 {
 	           	return strcasecmp(pair.first, x) < 0;
 	           });
 	if (ptr == std::end(fld_special_names) ||

@@ -9,7 +9,6 @@
 #include <cstring>
 #include <memory>
 #include <gromox/proc_common.h>
-#include <gromox/proptag_array.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>

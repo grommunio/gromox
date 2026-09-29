@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 	setup_signal_defaults();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) { g_hup_signalled = true; };
+	sact.sa_handler = [](int) STATIC_IN_CXX23 { g_hup_signalled = true; };
 	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;

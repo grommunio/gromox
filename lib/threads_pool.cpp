@@ -10,6 +10,7 @@
 #include <memory>
 #include <mutex>
 #include <unistd.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>

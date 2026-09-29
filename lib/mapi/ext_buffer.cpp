@@ -47,7 +47,7 @@ void EXT_PULL::init(const void *pdata, uint32_t data_size,
 {
 	m_udata = static_cast<const uint8_t *>(pdata);
 	m_data_size = data_size;
-	m_alloc = alloc != nullptr ? alloc : [](size_t) -> void * { return nullptr; };
+	m_alloc = alloc != nullptr ? alloc : [](size_t) STATIC_IN_CXX23 -> void * { return nullptr; };
 	m_offset = 0;
 	m_flags = flags;
 }
