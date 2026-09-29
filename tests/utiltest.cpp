@@ -196,6 +196,17 @@ static int t_emailaddr()
 	return EXIT_SUCCESS;
 }
 
+static int t_mimefield()
+{
+	/* GXL-720 */
+	static constexpr char hdr[] = "Subject: Drive K:\\\r\nThread-Topic: x\r\n";
+	MIME_FIELD f;
+	auto len = parse_mime_field(hdr, strlen(hdr), &f);
+	assert(len == strlen("Subject: Drive K:\\\r\n"));
+	assert(f.name == "Subject" && f.value == "Drive K:\\");
+	return EXIT_SUCCESS;
+}
+
 static int t_id1()
 {
 	idset s(idset::type::id_loose);
@@ -790,7 +801,7 @@ static int runner()
 
 	using fpt = decltype(&t_interval);
 	static constexpr fpt fct[] = {
-		t_extpp, t_convert, t_emailaddr, t_base64,
+		t_extpp, t_convert, t_emailaddr, t_mimefield, t_base64,
 		t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
