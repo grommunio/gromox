@@ -625,6 +625,8 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	fromProp(shape.get(NtConferencingType), ConferenceType);
 	fromProp(shape.get(NtMeetingDoNotForward), DoNotForwardMeeting);
 	fromProp(shape.get(NtAppointmentSubType), IsAllDayEvent);
+	if (!IsAllDayEvent && shape.requested(shape.tag(NtAppointmentSubType)))
+		IsAllDayEvent.emplace(false);
 	fromProp(shape.get(NtConferencingCheck), IsOnlineMeeting);
 	fromProp(shape.get(NtRecurring), IsRecurring);
 	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
