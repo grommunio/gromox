@@ -698,12 +698,12 @@ static int ical_reply_identity()
 		**out = static_cast<PROPERTY_NAME>(entry->second);
 		return true;
 	};
-	MAIL out;
-	assert(mcvt.mapi_to_inet(msgctnt, out));
-	auto head = out.get_head();
+	auto out = vmime::make_shared<vmime::message>();
+	assert(mcvt.mapi_to_inet(msgctnt, out) == ecSuccess);
+	auto head = out->getHeader();
 	assert(head != nullptr);
-	auto from = head->get_field("From");
-	assert(from != nullptr && from->find("u@d.at") != std::string::npos);
+	auto from = head->findField(vmime::fields::FROM);
+	assert(from != nullptr && from->getValue()->generate().find("u@d.at") != std::string::npos);
 	return EXIT_SUCCESS;
 }
 
@@ -1605,12 +1605,13 @@ static int openpgp_legacy_layout()
 		auto atl = mc->children.pattachments;
 		assert(atl != nullptr && atl->count == c.attachments);
 		assert(mc->proplist.set(PR_MESSAGE_CLASS, c.mclass) == ecSuccess);
-		MAIL output;
-		assert(cvt.mapi_to_inet(*mc, output));
-		auto head = output.get_head();
-		assert(head != nullptr && strcasecmp(head->content_type, "multipart/mixed") == 0);
-		std::string text;
-		assert(output.to_str(text) == 0);
+		auto output = vmime::make_shared<vmime::message>();
+		assert(cvt.mapi_to_inet(*mc, output) == ecSuccess);
+		auto head = output->getHeader();
+		assert(head != nullptr);
+		vmime::mediaType mt_mixed(vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_MIXED);
+		assert(output->getBody()->getContentType() == mt_mixed);
+		auto text = vmail_to_string(*output);
 		assert(text.find("[Message is not a valid OXOSMIME message") == std::string::npos);
 		assert(text.find(c.marker) != std::string::npos);
 	}
