@@ -99,7 +99,7 @@ BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_ei
 	} else {
 		return false;
 	}
-	if (maildir == nullptr)
+	if (*maildir == nullptr)
 		return false;
 	*user_id = uid;
 	*domain_id = domid;
