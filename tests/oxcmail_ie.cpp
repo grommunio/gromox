@@ -190,6 +190,30 @@ static int excess_attachment()
 	return 0;
 }
 
+static int nested_boundary_prefix()
+{
+	/* GXL-714 */
+	static char data[] =
+		"Content-Type: multipart/mixed; boundary=\"B\"\r\n\r\n"
+		"--B\r\nContent-Type: multipart/alternative; boundary=\"B-1\"\r\n\r\n"
+		"--B-1\r\nContent-Type: text/plain\r\n\r\nplain\r\n"
+		"--B-1\r\nContent-Type: text/html\r\n\r\n<p>html</p>\r\n"
+		"--B-1--\r\n"
+		"--B\r\nContent-Type: application/octet-stream\r\n"
+		"Content-Disposition: attachment; filename=\"a.bin\"\r\n\r\nx\r\n"
+		"--B--\r\n";
+	MAIL m;
+	assert(m.refonly_parse(data, strlen(data)));
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
+	assert(mc != nullptr);
+	auto atl = mc->children.pattachments;
+	assert(atl != nullptr && atl->count == 1);
+	return EXIT_SUCCESS;
+}
+
 static int select_parts_1()
 {
 	/*
@@ -1566,7 +1590,8 @@ int main()
 		const char *name;
 		int (*fct)();
 	} tests[] = {
-		E(excess_attachment), E(select_parts_1), E(select_parts_1a),
+		E(excess_attachment), E(nested_boundary_prefix),
+		E(select_parts_1), E(select_parts_1a),
 		E(select_parts_2), E(select_parts_3), E(select_parts_4),
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
