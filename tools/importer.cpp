@@ -559,12 +559,10 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 
 	Json::Value digest;
 	if (im_repr.size() > 0) {
-		MAIL imail;
-		if (!imail.refonly_parse(im_repr.data(), im_repr.size())) {
-			fprintf(stderr, "Failed to parse RFC5322 block for message\n");
-			return -EIO;
-		}
-		auto ret = imail.make_digest(digest);
+		vmime::message vmail;
+		auto vpctx = vmail_default_parsectx();
+		vmail.parse(vpctx, im_repr);
+		auto ret = vmail_to_digest(im_repr, vmail, digest);
 		if (ret <= 0) {
 			fprintf(stderr, "Failed to produce JDigest for RFC5322 block\n");
 			return -EIO;
