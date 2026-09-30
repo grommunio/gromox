@@ -1013,6 +1013,8 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		if (auto claimed = content->proplist.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS))
 			ctx.validate_sendas_perms(claimed);
 
+		std::optional<sMessageEntryId> refMid;
+		std::string refDir;
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
 			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
 			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
@@ -1046,6 +1048,12 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemSave(E3409);
 			if (resp == respAccepted || resp == respTentative)
 				ctx.createCalendarItemFromMeetingRequest(refId, resp);
+			auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+			if (pf.location == sFolderSpec::PRIVATE &&
+			    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
+				refDir = rdir;
+				refMid = mid;
+			}
 		};
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
@@ -1071,6 +1079,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			if (responseRef != nullptr)
 				ctx.sendMeetingResponse(*responseRef, *content);
 		}
+		/* Exchange moves an answered request to Deleted Items */
+		if (refMid)
+			ctx.moveCopyItem(refDir, *refMid, eid_t(1, PRIVATE_FID_DELETED_ITEMS), false);
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
 		if (std::holds_alternative<tCalendarItem>(item) &&
