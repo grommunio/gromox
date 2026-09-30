@@ -1557,6 +1557,32 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 }
 
 /**
+ * @brief      Reload binary row values that exmdb clamped to 510 bytes
+ *
+ * @param      ctx    Request context
+ * @param      dir    Store directory
+ * @param      props  Table row
+ */
+static void unclamp_binaries(const EWSContext &ctx, const std::string &dir,
+    TPROPVAL_ARRAY &props)
+{
+	std::vector<proptag_t> tags;
+	for (const auto &pv : props)
+		if (PROP_TYPE(pv.proptag) == PT_BINARY &&
+		    static_cast<const BINARY *>(pv.pvalue)->cb == 510)
+			tags.push_back(pv.proptag);
+	if (tags.empty())
+		return;
+	auto eid = props.get<const BINARY>(PR_ENTRYID);
+	if (eid == nullptr)
+		return;
+	sMessageEntryId meid(eid->pb, eid->cb);
+	for (const auto &pv : ctx.getItemProps(dir, meid.messageId(), tags))
+		if (auto tp = props.find(pv.proptag))
+			tp->pvalue = pv.pvalue;
+}
+
+/**
  * @brief      Process FindItem
  *
  * @param      request   Request data
@@ -1624,7 +1650,8 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 			CP_UTF8, tableId, tags, offset, results, &table);
 		mFindItemResponseMessage msg;
 		msg.RootFolder.emplace().Items.reserve(rowCount);
-		for (const TPROPVAL_ARRAY &props : table) {
+		for (TPROPVAL_ARRAY &props : table) {
+			unclamp_binaries(ctx, dir, props);
 			shape.clean();
 			shape.properties(props);
 			sItem& child = msg.RootFolder->Items.emplace_back(tItem::create(shape));
