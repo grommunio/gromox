@@ -334,15 +334,17 @@ static AWUR bool is_openpgp_typed(const vmime::header &vhdr)
 	auto ctf = vhdr.findField<vmime::contentTypeField>(vmime::fields::CONTENT_TYPE);
 	if (ctf == nullptr)
 		return false;
+	auto media_type = ctf->getValue<vmime::mediaType>();
+	if (media_type == nullptr)
+		return false;
 	auto protocol = ctf->findParameter("protocol");
 	if (protocol == nullptr)
 		return false;
-	auto media_type = *ctf->getValue<vmime::mediaType>();
 	auto prot_str = protocol->getValue().generate();
-	if (media_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "encrypted") &&
+	if (*media_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "encrypted") &&
 	    prot_str == "application/pgp-encrypted")
 		return true;
-	if (media_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "signed") &&
+	if (*media_type == vmime::mediaType(vmime::mediaTypes::MULTIPART, "signed") &&
 	    prot_str == "application/pgp-signature")
 		return true;
 	return false;
