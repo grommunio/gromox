@@ -1504,7 +1504,14 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 			throw EWSError::FolderPropertyRequestFailed(E3219);
 		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 		if (!rowCount) {
-			data.ResponseMessages.emplace_back().success();
+			mFindFolderResponseMessage msg;
+			msg.RootFolder.emplace();
+			if (paging)
+				paging->update(*msg.RootFolder, 0, 0);
+			msg.RootFolder->IncludesLastItemInRange = true;
+			msg.RootFolder->TotalItemsInView = 0;
+			msg.success();
+			data.ResponseMessages.emplace_back(std::move(msg));
 			continue;
 		}
 		ctx.getNamedTags(dir, shape);
