@@ -1078,8 +1078,10 @@ void tFindFolderParent::serialize(tinyxml2::XMLElement *xml) const
 void tFindItemParent::serialize(tinyxml2::XMLElement *xml) const
 {
 	tFindResponsePagingAttributes::serialize(xml);
-	XMLDUMPT(Items);
-	XMLDUMPT(Groups);
+	if (Groups)
+		XMLDUMPT(Groups);
+	else
+		XMLDUMPT(Items);
 }
 
 tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(const tinyxml2::XMLElement *xml) :
