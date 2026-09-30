@@ -332,8 +332,6 @@ void EMAIL_ADDR::parse(const char *input) try
 size_t parse_mime_field(const char *in_buff, size_t buff_len,
     MIME_FIELD *pmime_field) try
 {
-	BOOL meet_slash;
-	
 	if (buff_len > MIME_FIELD_LEN)
 		buff_len = MIME_FIELD_LEN;
 	/* parse the first line the get the field name and part of value*/
@@ -361,14 +359,9 @@ size_t parse_mime_field(const char *in_buff, size_t buff_len,
 	char field_value[MIME_FIELD_LEN];
 	auto dest_ptr = field_value;
 	while (true) {
-		meet_slash = FALSE;
 		while (i < buff_len && *tmp_ptr != '\r' && *tmp_ptr != '\n') {
-			if (tmp_ptr[0] == '\\' && (tmp_ptr[1] == '\r' || tmp_ptr[1] == '\n')) {
-				meet_slash = TRUE;
-			} else {
-				*dest_ptr++ = *tmp_ptr;
-				value_length ++;
-			}
+			*dest_ptr++ = *tmp_ptr;
+			value_length ++;
 			tmp_ptr ++;
 			i ++;
 		}
@@ -388,7 +381,7 @@ size_t parse_mime_field(const char *in_buff, size_t buff_len,
 				pmime_field->value.assign(field_value, value_length);
 				return buff_len;
 			}
-			if (*tmp_ptr == ' ' || *tmp_ptr == '\t' || meet_slash)
+			if (*tmp_ptr == ' ' || *tmp_ptr == '\t')
 				return 0;
 			buff_len--;
 		} else {
@@ -397,7 +390,7 @@ size_t parse_mime_field(const char *in_buff, size_t buff_len,
 				i ++;
 			}
 		}
-		if (*tmp_ptr != ' ' && *tmp_ptr != '\t' && !meet_slash) {
+		if (*tmp_ptr != ' ' && *tmp_ptr != '\t') {
 			pmime_field->value.assign(field_value, value_length);
 			return i;
 		} else {
