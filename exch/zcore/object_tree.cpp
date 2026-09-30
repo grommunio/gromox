@@ -104,8 +104,6 @@ object_tree_init_root(const char *maildir) try
 		return prootobj;
 	}
 	auto pbuff = std::make_unique<char[]>(node_stat.st_size);
-	if (pbuff == nullptr)
-		return NULL;
 	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return NULL;
 	if (object_tree_deserialize(*prootobj, pbuff.get(), node_stat.st_size) != 0)
