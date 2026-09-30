@@ -2413,7 +2413,7 @@ struct tItemResponseShape {
 		PR_MESSAGE_DELIVERY_TIME, PR_LAST_MODIFICATION_TIME,
 		PR_LAST_MODIFIER_NAME, PR_IN_REPLY_TO_ID,
 		PR_READ_RECEIPT_REQUESTED};
-	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 40> namedTagsDefault;
+	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 42> namedTagsDefault;
 	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 10> namedTagsAllProperties;
 };
 
