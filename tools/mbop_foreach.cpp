@@ -95,7 +95,7 @@ static int filter_users(const char *mode, std::vector<sql_user> &ul)
 		else if (filter == "mb")
 			std::erase_if(ul, [](const sql_user &u) STATIC_IN_CXX23 { return u.maildir.empty(); });
 		else if (filter == "here")
-			std::erase_if(ul, [&](const sql_user &u) STATIC_IN_CXX23 {
+			std::erase_if(ul, [&](const sql_user &u) {
 				return u.homeserver_id > 0 &&
 				       strcasecmp(u.homeserver.c_str(), this_server.c_str()) != 0;
 			});
