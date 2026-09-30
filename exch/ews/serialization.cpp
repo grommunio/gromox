@@ -2479,8 +2479,9 @@ mGetInboxRulesRequest::mGetInboxRulesRequest(const XMLElement *xml) :
 
 void mGetInboxRulesResponse::serialize(XMLElement *xml) const
 {
-	XMLDUMPT(OutlookRuleBlobExists);
-	// XMLDUMPT(InboxRules);
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(OutlookRuleBlobExists);
+	// XMLDUMPM(InboxRules);
 }
 
 mGetItemRequest::mGetItemRequest(const XMLElement *xml) :
