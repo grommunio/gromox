@@ -428,6 +428,8 @@ ec_error_t rxparam::load_std_rules(bool oof,
 		auto id    = row->get<const uint64_t>(PR_RULE_ID);
 		if (seq == nullptr || state == nullptr || id == nullptr)
 			continue;
+		if (*state & ST_ONLY_WHEN_OOF && !oof)
+			continue;
 		rule_node rule;
 		rule.seq = *seq;
 		rule.state = *state;
@@ -490,6 +492,8 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		auto state = row->get<const uint32_t>(PR_RULE_MSG_STATE);
 		auto mid   = row->get<const uint64_t>(PidTagMid);
 		if (seq == nullptr || state == nullptr || mid == nullptr)
+			continue;
+		if (*state & ST_ONLY_WHEN_OOF && !oof)
 			continue;
 
 		rule_node rule;
