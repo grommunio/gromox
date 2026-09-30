@@ -683,6 +683,41 @@ static int ical_reply_identity()
 	return EXIT_SUCCESS;
 }
 
+static int ical_export_exception()
+{
+	/* GXL-796 */
+	const ie_name_entry ie_map[] = {
+		{0x809d, {MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole}},
+		{0x809e, {MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole}},
+		{0x8228, {MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime}},
+	};
+	auto get_propids = [&](const PROPNAME_ARRAY *a, PROPID_ARRAY *i) {
+		return ie_get_propids(ie_map, std::size(ie_map), a, i);
+	};
+	static constexpr uint64_t v_start = 0x1db0f96441fb000,
+		v_end = v_start + 18000000000, v_xrt = v_start - 36000000000;
+	const TAGGED_PROPVAL props[] = {
+		{PR_MESSAGE_CLASS, deconst("IPM.Appointment")},
+		{0x809d0040, deconst(&v_start)},
+		{0x809e0040, deconst(&v_end)},
+		{0x82280040, deconst(&v_xrt)},
+	};
+	fprintf(stderr, "=== ical_export_exception\n");
+	const MESSAGE_CONTENT msgctnt = {{std::size(props), deconst(props)}};
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = malloc;
+	cvt.get_propids = get_propids;
+	ical icalout;
+	assert(cvt.mapi_to_ical(msgctnt, icalout));
+	std::string icstr;
+	assert(icalout.serialize(icstr) == ecSuccess);
+	assert(icstr.find("RECURRENCE-ID:") != std::string::npos);
+	assert(icstr.find("X-MICROSOFT-CDO-INSTTYPE:3") != std::string::npos);
+	return EXIT_SUCCESS;
+}
+
 static int hdrparse_1()
 {
 	static const char data[] =
@@ -1535,6 +1570,7 @@ int main()
 		E(select_parts_2), E(select_parts_3), E(select_parts_4),
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
+		E(ical_export_exception),
 		E(hdrparse_1),
 		E(vexport_head), E(vexport_simple_body), E(vexport_image),
 		E(vexport_inline_image), E(vexport_recipients),
