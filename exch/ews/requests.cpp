@@ -1013,6 +1013,8 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		if (auto claimed = content->proplist.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS))
 			ctx.validate_sendas_perms(claimed);
 
+		std::optional<sMessageEntryId> refMid;
+		std::string refDir;
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
 			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
 			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
@@ -1046,6 +1048,12 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemSave(E3409);
 			if (resp == respAccepted || resp == respTentative)
 				ctx.createCalendarItemFromMeetingRequest(refId, resp);
+			auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+			if (pf.location == sFolderSpec::PRIVATE &&
+			    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
+				refDir = rdir;
+				refMid = mid;
+			}
 		};
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
@@ -1071,6 +1079,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			if (responseRef != nullptr)
 				ctx.sendMeetingResponse(*responseRef, *content);
 		}
+		/* Exchange moves an answered request to Deleted Items */
+		if (refMid)
+			ctx.moveCopyItem(refDir, *refMid, eid_t(1, PRIVATE_FID_DELETED_ITEMS), false);
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
 		if (std::holds_alternative<tCalendarItem>(item) &&
@@ -1504,7 +1515,14 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 			throw EWSError::FolderPropertyRequestFailed(E3219);
 		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 		if (!rowCount) {
-			data.ResponseMessages.emplace_back().success();
+			mFindFolderResponseMessage msg;
+			msg.RootFolder.emplace();
+			if (paging)
+				paging->update(*msg.RootFolder, 0, 0);
+			msg.RootFolder->IncludesLastItemInRange = true;
+			msg.RootFolder->TotalItemsInView = 0;
+			msg.success();
+			data.ResponseMessages.emplace_back(std::move(msg));
 			continue;
 		}
 		ctx.getNamedTags(dir, shape);
@@ -1536,6 +1554,32 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 	}
 
 	data.serialize(response);
+}
+
+/**
+ * @brief      Reload binary row values that exmdb clamped to 510 bytes
+ *
+ * @param      ctx    Request context
+ * @param      dir    Store directory
+ * @param      props  Table row
+ */
+static void unclamp_binaries(const EWSContext &ctx, const std::string &dir,
+    TPROPVAL_ARRAY &props)
+{
+	std::vector<proptag_t> tags;
+	for (const auto &pv : props)
+		if (PROP_TYPE(pv.proptag) == PT_BINARY &&
+		    static_cast<const BINARY *>(pv.pvalue)->cb == 510)
+			tags.push_back(pv.proptag);
+	if (tags.empty())
+		return;
+	auto eid = props.get<const BINARY>(PR_ENTRYID);
+	if (eid == nullptr)
+		return;
+	sMessageEntryId meid(eid->pb, eid->cb);
+	for (const auto &pv : ctx.getItemProps(dir, meid.messageId(), tags))
+		if (auto tp = props.find(pv.proptag))
+			tp->pvalue = pv.pvalue;
 }
 
 /**
@@ -1606,7 +1650,8 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 			CP_UTF8, tableId, tags, offset, results, &table);
 		mFindItemResponseMessage msg;
 		msg.RootFolder.emplace().Items.reserve(rowCount);
-		for (const TPROPVAL_ARRAY &props : table) {
+		for (TPROPVAL_ARRAY &props : table) {
+			unclamp_binaries(ctx, dir, props);
 			shape.clean();
 			shape.properties(props);
 			sItem& child = msg.RootFolder->Items.emplace_back(tItem::create(shape));
@@ -2609,7 +2654,7 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 		uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, request.copy);
 		auto& msg = std::visit([&](auto& d) -> mItemInfoResponseMessage&
 			                   {return static_cast<mItemInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
-		if (!request.ReturnNewItemIds || !*request.ReturnNewItemIds)
+		if (request.ReturnNewItemIds.value_or(true))
 			msg.Items.emplace_back(ctx.loadItem(dir, dstFolder.folderId, newItemId, shape));
 		msg.success();
 	} catch(const EWSError& err) {

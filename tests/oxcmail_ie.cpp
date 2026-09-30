@@ -190,6 +190,30 @@ static int excess_attachment()
 	return 0;
 }
 
+static int nested_boundary_prefix()
+{
+	/* GXL-714 */
+	static char data[] =
+		"Content-Type: multipart/mixed; boundary=\"B\"\r\n\r\n"
+		"--B\r\nContent-Type: multipart/alternative; boundary=\"B-1\"\r\n\r\n"
+		"--B-1\r\nContent-Type: text/plain\r\n\r\nplain\r\n"
+		"--B-1\r\nContent-Type: text/html\r\n\r\n<p>html</p>\r\n"
+		"--B-1--\r\n"
+		"--B\r\nContent-Type: application/octet-stream\r\n"
+		"Content-Disposition: attachment; filename=\"a.bin\"\r\n\r\nx\r\n"
+		"--B--\r\n";
+	MAIL m;
+	assert(m.refonly_parse(data, strlen(data)));
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
+	assert(mc != nullptr);
+	auto atl = mc->children.pattachments;
+	assert(atl != nullptr && atl->count == 1);
+	return EXIT_SUCCESS;
+}
+
 static int select_parts_1()
 {
 	/*
@@ -680,6 +704,41 @@ static int ical_reply_identity()
 	assert(head != nullptr);
 	auto from = head->get_field("From");
 	assert(from != nullptr && from->find("u@d.at") != std::string::npos);
+	return EXIT_SUCCESS;
+}
+
+static int ical_export_exception()
+{
+	/* GXL-796 */
+	const ie_name_entry ie_map[] = {
+		{0x809d, {MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole}},
+		{0x809e, {MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole}},
+		{0x8228, {MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime}},
+	};
+	auto get_propids = [&](const PROPNAME_ARRAY *a, PROPID_ARRAY *i) {
+		return ie_get_propids(ie_map, std::size(ie_map), a, i);
+	};
+	static constexpr uint64_t v_start = 0x1db0f96441fb000,
+		v_end = v_start + 18000000000, v_xrt = v_start - 36000000000;
+	const TAGGED_PROPVAL props[] = {
+		{PR_MESSAGE_CLASS, deconst("IPM.Appointment")},
+		{0x809d0040, deconst(&v_start)},
+		{0x809e0040, deconst(&v_end)},
+		{0x82280040, deconst(&v_xrt)},
+	};
+	fprintf(stderr, "=== ical_export_exception\n");
+	const MESSAGE_CONTENT msgctnt = {{std::size(props), deconst(props)}};
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = malloc;
+	cvt.get_propids = get_propids;
+	ical icalout;
+	assert(cvt.mapi_to_ical(msgctnt, icalout));
+	std::string icstr;
+	assert(icalout.serialize(icstr) == ecSuccess);
+	assert(icstr.find("RECURRENCE-ID:") != std::string::npos);
+	assert(icstr.find("X-MICROSOFT-CDO-INSTTYPE:3") != std::string::npos);
 	return EXIT_SUCCESS;
 }
 
@@ -1531,10 +1590,12 @@ int main()
 		const char *name;
 		int (*fct)();
 	} tests[] = {
-		E(excess_attachment), E(select_parts_1), E(select_parts_1a),
+		E(excess_attachment), E(nested_boundary_prefix),
+		E(select_parts_1), E(select_parts_1a),
 		E(select_parts_2), E(select_parts_3), E(select_parts_4),
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
+		E(ical_export_exception),
 		E(hdrparse_1),
 		E(vexport_head), E(vexport_simple_body), E(vexport_image),
 		E(vexport_inline_image), E(vexport_recipients),

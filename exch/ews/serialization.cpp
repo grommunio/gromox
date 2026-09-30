@@ -795,8 +795,6 @@ void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 	tItem::serialize(xml);
 	sCalendarMeetingRequestCommon::serialize(xml);
 	XMLDUMPT(UID);
-	XMLDUMPT(StartTimeZone);
-	XMLDUMPT(EndTimeZone);
 }
 
 tCalendarPermission::tCalendarPermission(const tinyxml2::XMLElement *xml) :
@@ -1078,8 +1076,10 @@ void tFindFolderParent::serialize(tinyxml2::XMLElement *xml) const
 void tFindItemParent::serialize(tinyxml2::XMLElement *xml) const
 {
 	tFindResponsePagingAttributes::serialize(xml);
-	XMLDUMPT(Items);
-	XMLDUMPT(Groups);
+	if (Groups)
+		XMLDUMPT(Groups);
+	else
+		XMLDUMPT(Items);
 }
 
 tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(const tinyxml2::XMLElement *xml) :
@@ -2477,8 +2477,9 @@ mGetInboxRulesRequest::mGetInboxRulesRequest(const XMLElement *xml) :
 
 void mGetInboxRulesResponse::serialize(XMLElement *xml) const
 {
-	XMLDUMPT(OutlookRuleBlobExists);
-	// XMLDUMPT(InboxRules);
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(OutlookRuleBlobExists);
+	// XMLDUMPM(InboxRules);
 }
 
 mGetItemRequest::mGetItemRequest(const XMLElement *xml) :

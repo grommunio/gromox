@@ -63,6 +63,7 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
 	{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
 	{"dequeue_path", PKGSTATEQUEUEDIR},
+	{"free_context_num", "512", CFG_SIZE, "1"},
 	{"lda_log_file", "-"},
 	{"lda_log_level", "4" /* LV_NOTICE */},
 	{"running_identity", RUNNING_IDENTITY},

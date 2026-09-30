@@ -3668,7 +3668,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			mlog(LV_DEBUG, "deliver_message %s: unable to retr PR_OOF_STATE", dir);
 			return FALSE;
 		}
-		b_oof = pvb_disabled(pvalue);
+		b_oof = pvb_enabled(pvalue);
 		fid_val = (dlflags & DELIVERY_FORCE_JUNK) ?
 		          PRIVATE_FID_JUNK : PRIVATE_FID_INBOX;
 	} else {
