@@ -231,6 +231,10 @@ void sCalendarMeetingRequestCommon::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(RequiredAttendees);
 	XMLDUMPT(OptionalAttendees);
 	XMLDUMPT(Resources);
+	XMLDUMPT(ConflictingMeetingCount);
+	XMLDUMPT(AdjacentMeetingCount);
+	XMLDUMPT(ConflictingMeetings);
+	XMLDUMPT(AdjacentMeetings);
 	XMLDUMPT(Recurrence);
 	XMLDUMPT(StartTimeZoneId);
 	XMLDUMPT(EndTimeZoneId);
@@ -577,6 +581,16 @@ void tTask::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(Status);
 	XMLDUMPT(StatusDescription);
 	XMLDUMPT(TotalWork);
+}
+
+void tConflictingMeeting::serialize(tinyxml2::XMLElement *xml) const
+{
+	XMLDUMPT(ItemId);
+	XMLDUMPT(Subject);
+	XMLDUMPT(Start);
+	XMLDUMPT(End);
+	XMLDUMPT(LegacyFreeBusyStatus);
+	XMLDUMPT(Location);
 }
 
 void tCalendarEventDetails::serialize(tinyxml2::XMLElement *xml) const

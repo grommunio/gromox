@@ -631,6 +631,46 @@ static std::string tzdef_keyname(const BINARY *bin)
 	return std::move(tzdef.keyname);
 }
 
+/**
+ * @brief      Collect meetings that overlap or touch this one
+ *
+ * @param      user   Acting user (for free/busy permissions)
+ * @param      dir    Store directory
+ * @param      goid   PidLidCleanGlobalObjectId of the item itself
+ * @param      start  Start of the item
+ * @param      end    End of the item
+ */
+void sCalendarMeetingRequestCommon::loadConflicts(const char *user,
+    const char *dir, const BINARY *goid, time_t start, time_t end)
+{
+	std::vector<freebusy_event> events;
+	if (get_freebusy(user, dir, start, end, events) != ecSuccess)
+		return;
+	auto self = goid != nullptr ? goid_to_uid(*goid) : std::string();
+	bool selfSeen = false;
+	auto &conflicts = ConflictingMeetings.emplace();
+	auto &adjacent = AdjacentMeetings.emplace();
+	for (const auto &ev : events) {
+		if (!self.empty() ? ev.id && *ev.id == self :
+		    !selfSeen && ev.start_time == start && ev.end_time == end) {
+			selfSeen = true;
+			continue;
+		}
+		if (ev.busy_status == olFree)
+			continue;
+		if (ev.start_time < end && ev.end_time > start)
+			conflicts.emplace_back(ev);
+		else if (ev.start_time == end || ev.end_time == start)
+			adjacent.emplace_back(ev);
+	}
+	ConflictingMeetingCount.emplace(conflicts.size());
+	AdjacentMeetingCount.emplace(adjacent.size());
+	if (conflicts.empty())
+		ConflictingMeetings.reset();
+	if (adjacent.empty())
+		AdjacentMeetings.reset();
+}
+
 void sCalendarMeetingRequestCommon::update(const sShape &shape)
 {
 	fromProp(shape.get(NtAppointmentSequence), AppointmentSequenceNumber);
@@ -2017,6 +2057,15 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 	}
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+tConflictingMeeting::tConflictingMeeting(const freebusy_event &ev) :
+	Subject(ev.subject), Start(clock::from_time_t(ev.start_time)),
+	End(clock::from_time_t(ev.end_time)),
+	LegacyFreeBusyStatus(busystatus_to_legacyfb(ev.busy_status)),
+	Location(ev.location), uid(ev.id.value_or(""))
+{}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -3747,6 +3796,10 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
+	{"calendar:AdjacentMeetingCount", sShape::Conflicts},
+	{"calendar:AdjacentMeetings", sShape::Conflicts},
+	{"calendar:ConflictingMeetingCount", sShape::Conflicts},
+	{"calendar:ConflictingMeetings", sShape::Conflicts},
 	{"calendar:OptionalAttendees", sShape::OptionalAttendees},
 	{"calendar:RequiredAttendees", sShape::RequiredAttendees},
 	{"calendar:Resources", sShape::Resources},
@@ -4306,6 +4359,11 @@ void tItemResponseShape::tags(sShape& shape) const
 		if (type == Enum::Best || type == Enum::HTML)
 			shape.add(PR_HTML, sShape::FL_FIELD).add(PR_INTERNET_CPID);
 		shape.special &= ~sShape::Body;
+	}
+	if (shape.special & sShape::Conflicts) {
+		shape.add(NtCommonStart, PT_SYSTIME);
+		shape.add(NtCommonEnd, PT_SYSTIME);
+		shape.add(NtCleanGlobalObjectId, PT_BINARY);
 	}
 	if (shape.special & sShape::MessageFlags) {
 		shape.add(PR_MESSAGE_FLAGS, sShape::FL_FIELD);

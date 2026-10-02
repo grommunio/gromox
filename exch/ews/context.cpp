@@ -737,6 +737,35 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 }
 
 /**
+ * @brief      Fill in the ItemIds of conflicting or adjacent meetings
+ *
+ * @param      folder    Folder of the item the meetings relate to
+ * @param      dir       Store directory
+ * @param      meetings  Meetings with their free/busy UIDs
+ */
+void EWSContext::conflictItemIds(const sFolderSpec &folder, const std::string &dir,
+    std::vector<tConflictingMeeting> &meetings) const
+{
+	sFolderSpec calendar = folder;
+	calendar.folderId = eid_t(1, PRIVATE_FID_CALENDAR);
+	auto tag = PROP_TAG(PT_BINARY, getNamedPropId(dir, NtCleanGlobalObjectId, true));
+	for (auto &m : meetings) try {
+		if (m.uid.empty())
+			continue;
+		BINARY goid{};
+		uid_to_goid(m.uid.c_str(), goid);
+		TAGGED_PROPVAL pv{tag, &goid};
+		MESSAGE_CONTENT content{};
+		content.proplist.count = 1;
+		content.proplist.ppropval = &pv;
+		auto mid = findExistingByGoid(calendar, dir, content);
+		if (mid)
+			m.ItemId.emplace(sBase64Binary(getItemEntryId(dir, *mid)), tItemId::ID_ITEM);
+	} catch (const EWSError &) {
+	}
+}
+
+/**
  * @brief Find calendar item using goid and clean goid
  *
  * @param calendarFolder The calendar folder
