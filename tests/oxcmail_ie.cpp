@@ -1231,7 +1231,7 @@ static int vexport_smime()
 			"protocol=\"application/pkcs7-signature\"\r\n"
 		"\r\n"
 		"--sig\r\n"
-		"Content-Type: text/plain\r\n"
+		"Content-Type: text/plain; charset=\"utf-8\"\r\n"
 		"\r\n"
 		"signed text\r\n"
 		"--sig\r\n"
@@ -1246,8 +1246,8 @@ static int vexport_smime()
 	assert(err == ecSuccess);
 	ostr = vmsg->generate();
 	assert(strstr(ostr.c_str(), "Content-Type: multipart/signed") != nullptr);
-	assert(strstr(ostr.c_str(), "signed text") != nullptr);
-	assert(strstr(ostr.c_str(), "SIGSIG") != nullptr);
+	/* the signed entity must come out byte-for-byte */
+	assert(strstr(ostr.c_str(), strstr(signed_blob, "--sig\r\n")) != nullptr);
 
 	/* Signed, but the blob is not multipart/signed: placeholder */
 	const BINARY nbin = {5, {deconst("hello")}};
