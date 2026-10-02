@@ -13,6 +13,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
 #include <gromox/http.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
 #include <include/gromox/pcl.hpp>
 
@@ -302,7 +303,7 @@ class EWSContext {
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	TARRAY_SET loadPermissions(const std::string&, uint64_t) const;
-	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
+	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&, const ical_component * = nullptr) const;
 	std::vector<Structures::sItem> expandOccurrences(const std::string &, uint64_t, uint64_t, time_t, time_t, Structures::sShape &, size_t) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
 	void deleteOccurrence(const std::string &, uint64_t, uint32_t) const;
@@ -383,6 +384,7 @@ private:
 	int32_t recurTzOffset(const std::string &, uint64_t, const APPOINTMENT_RECUR_PAT &) const;
 	bool saveRecurBlob(const std::string &, uint64_t, proptag_t, const APPOINTMENT_RECUR_PAT &) const;
 	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
+	std::optional<ical_component> loadRecurTz(const std::string &, uint64_t) const;
 
 	struct NotificationContext {
 		enum State : uint8_t {

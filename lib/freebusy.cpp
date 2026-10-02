@@ -122,7 +122,7 @@ static bool fill_tzcom(ical_component &tzcom, const SYSTEMTIME &sys, int year,
 	return true;
 }
 
-static std::optional<ical_component> tz_to_vtimezone(int year,
+std::optional<ical_component> tzstruct_to_vtimezone(int year,
     const char *tzid, const TZSTRUCT &tz)
 {
 	std::optional<ical_component> com("VTIMEZONE");
@@ -490,7 +490,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 			ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_tzstruct(&tz) != pack_result::ok)
 				continue;
-			tzcom = tz_to_vtimezone(1600, "timezone", tz);
+			tzcom = tzstruct_to_vtimezone(1600, "timezone", tz);
 			if (!tzcom.has_value())
 				continue;
 		}
