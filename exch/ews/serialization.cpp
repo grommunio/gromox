@@ -220,6 +220,7 @@ void sCalendarMeetingRequestCommon::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(IsAllDayEvent);
 	XMLDUMPT(LegacyFreeBusyStatus);
 	XMLDUMPT(Location);
+	XMLDUMPT(When);
 	XMLDUMPT(IsMeeting);
 	XMLDUMPT(IsCancelled);
 	XMLDUMPT(IsRecurring);
