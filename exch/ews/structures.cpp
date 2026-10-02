@@ -3615,6 +3615,8 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"item:DateTimeCreated", PR_CREATION_TIME},
 	{"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
 	{"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
+	{"item:DisplayBcc", PR_DISPLAY_BCC},
+	{"item:DisplayCc", PR_DISPLAY_CC},
 	{"item:DisplayTo", PR_DISPLAY_TO},
 	{"item:Flag", PR_FLAG_STATUS},
 	{"item:HasAttachments", PR_HASATTACH},
