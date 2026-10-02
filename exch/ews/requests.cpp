@@ -5,6 +5,7 @@
 #include <climits>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <tinyxml2.h>
 #include <unordered_set>
 #include <variant>
@@ -1664,6 +1665,19 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 	              request.ContactsView ? &*request.ContactsView :
 	              static_cast<tBasePagingType *>(nullptr);
 	uint32_t maxResults = paging && paging->MaxEntriesReturned ? *paging->MaxEntriesReturned : 0;
+	/*
+	 * A CalendarView must report the individual occurrences of a series
+	 * rather than the series itself, so recurring masters are expanded
+	 * below. Other view types keep returning rows verbatim.
+	 */
+	auto calView = request.CalendarView ? &*request.CalendarView : nullptr;
+	time_t viewStart = 0, viewEnd = std::numeric_limits<time_t>::max();
+	if (calView != nullptr) {
+		if (calView->StartDate)
+			viewStart = rop_util_nttime_to_unix(calView->StartDate->toNT());
+		if (calView->EndDate)
+			viewEnd = rop_util_nttime_to_unix(calView->EndDate->toNT());
+	}
 
 	for (const sFolderId &folderId : request.ParentFolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
@@ -1695,29 +1709,97 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 			continue;
 		}
 		ctx.getNamedTags(dir, shape);
-		PROPTAG_ARRAY tags = shape.proptags();
+		/*
+		 * Expansion needs the recurrence blob and the entry id of every
+		 * row. They are appended to the query rather than to the shape,
+		 * so item construction - and therefore the response for single
+		 * appointments - stays exactly as the client requested it.
+		 */
+		std::vector<proptag_t> tagvec(shape.proptags_vec());
+		proptag_t recurTag = 0, startTag = 0;
+		if (calView != nullptr) {
+			recurTag = PROP_TAG(PT_BINARY, ctx.getNamedPropId(dir, NtAppointmentRecur));
+			startTag = PROP_TAG(PT_SYSTIME, ctx.getNamedPropId(dir, NtAppointmentStartWhole));
+			for (proptag_t extra : {recurTag, startTag, proptag_t(PR_ENTRYID)})
+				if (std::find(tagvec.begin(), tagvec.end(), extra) == tagvec.end())
+					tagvec.push_back(extra);
+		}
+		PROPTAG_ARRAY tags = {static_cast<uint16_t>(tagvec.size()), tagvec.data()};
 		TARRAY_SET table;
 		uint32_t offset = paging ? paging->offset(rowCount) : 0;
-		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
+		/*
+		 * MaxEntriesReturned limits occurrences, not rows: one row can
+		 * expand into many items, and they only come out in order once
+		 * every row has been expanded. The cap is therefore applied
+		 * after sorting, not while querying.
+		 */
+		uint32_t results = maxResults && calView == nullptr ?
+			std::min(maxResults, rowCount - offset) : rowCount - offset;
 		exmdb.query_table(dir.c_str(), ctx.auth_info().username,
 			CP_UTF8, tableId, tags, offset, results, &table);
 		mFindItemResponseMessage msg;
-		msg.RootFolder.emplace().Items.reserve(rowCount);
+		auto &items = msg.RootFolder.emplace().Items;
+		items.reserve(rowCount);
+		/* CalendarView: items keyed by start, to be ordered later */
+		std::vector<std::pair<uint64_t, sItem>> calItems;
 		for (TPROPVAL_ARRAY &props : table) {
 			unclamp_binaries(ctx, dir, props);
 			shape.clean();
 			shape.properties(props);
-			sItem& child = msg.RootFolder->Items.emplace_back(tItem::create(shape));
-			const auto &iid = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> & { return i.ItemId; }, child);
-			if (shape.special && iid) {
-				sMessageEntryId meid(iid->Id.data(), iid->Id.size());
-				std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
+			const BINARY *recur = recurTag != 0 ? props.get<const BINARY>(recurTag) : nullptr;
+			const BINARY *eid = recurTag != 0 ? props.get<const BINARY>(PR_ENTRYID) : nullptr;
+			try {
+				if (recur != nullptr && recur->cb > 0 && eid != nullptr) {
+					/* Recurring master: report its occurrences, not the series */
+					sMessageEntryId meid(eid->pc, eid->cb);
+					for (auto &occ : ctx.expandOccurrences(dir, meid.folderId(),
+					     meid.messageId(), viewStart, viewEnd, shape)) {
+						auto &start = std::get<tCalendarItem>(occ).Start;
+						calItems.emplace_back(start ? start->toNT() : 0, std::move(occ));
+					}
+					continue;
+				}
+				sItem child = tItem::create(shape);
+				const auto &iid = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> & { return i.ItemId; }, child);
+				if (shape.special && iid) {
+					sMessageEntryId meid(iid->Id.data(), iid->Id.size());
+					std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
+				}
+				if (calView != nullptr) {
+					auto start = props.get<const uint64_t>(startTag);
+					calItems.emplace_back(start != nullptr ? *start : 0, std::move(child));
+				} else {
+					items.emplace_back(std::move(child));
+				}
+			} catch (const DispatchError &err) {
+				/*
+				 * One unreadable appointment - e.g. a
+				 * PidLidAppointmentRecur blob that cannot be parsed -
+				 * must not take down the response for the whole folder.
+				 */
+				mlog(LV_WARN, "ews: FindItem skipped an item in %s: %s",
+				     dir.c_str(), err.what());
+			} catch (const InputError &err) {
+				mlog(LV_WARN, "ews: FindItem skipped an item in %s: %s",
+				     dir.c_str(), err.what());
 			}
+		}
+		size_t total = calItems.size();
+		if (calView != nullptr) {
+			/* Occurrences are produced per series, so order by start */
+			std::stable_sort(calItems.begin(), calItems.end(),
+				[](const auto &a, const auto &b) { return a.first < b.first; });
+			if (maxResults != 0 && calItems.size() > maxResults)
+				calItems.erase(calItems.begin() + maxResults, calItems.end());
+			for (auto &ci : calItems)
+				items.emplace_back(std::move(ci.second));
 		}
 		if (paging)
 			paging->update(*msg.RootFolder, results, rowCount);
-		msg.RootFolder->IncludesLastItemInRange = results + offset >= rowCount;
-		msg.RootFolder->TotalItemsInView = rowCount;
+		msg.RootFolder->IncludesLastItemInRange = calView != nullptr ?
+			items.size() >= total : results + offset >= rowCount;
+		msg.RootFolder->TotalItemsInView = calView != nullptr ?
+			total : rowCount;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
