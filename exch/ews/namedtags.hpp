@@ -35,6 +35,7 @@ static const PROPERTY_NAME NtEmailAddressType1 = {MNID_ID, PSETID_Address, PidLi
 static const PROPERTY_NAME NtEmailAddressType2 = {MNID_ID, PSETID_Address, PidLidEmail2AddressType};
 static const PROPERTY_NAME NtEmailAddressType3 = {MNID_ID, PSETID_Address, PidLidEmail3AddressType};
 static const PROPERTY_NAME NtFileAs = {MNID_ID, PSETID_Address, PidLidFileAs};
+static const PROPERTY_NAME NtFileUnderId = {MNID_ID, PSETID_Address, PidLidFileUnderId};
 static const PROPERTY_NAME NtHomeAddress = {MNID_ID, PSETID_Address, PidLidHomeAddress};
 static const PROPERTY_NAME NtImAddress1 = {MNID_ID, PSETID_Address, PidLidInstantMessagingAddress};
 static const PROPERTY_NAME NtMailingAddress = {MNID_ID, PSETID_Address, PidLidMailingAdress};

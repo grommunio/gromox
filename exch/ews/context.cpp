@@ -4382,6 +4382,8 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 		shape.write(NtFileAs, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.FileAs)});
 	else if (!shape.writes(NtFileAs) && item.DisplayName)
 		shape.write(NtFileAs, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.DisplayName)});
+	if (auto id = item.FileAsMapping ? tContact::fileUnderId(*item.FileAsMapping) : std::nullopt)
+		shape.write(NtFileUnderId, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(*id)});
 	if (item.PostalAddressIndex)
 		shape.write(NtPostalAddressIndex, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(item.PostalAddressIndex->index())});
 	if (item.EmailAddresses)

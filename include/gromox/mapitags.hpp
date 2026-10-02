@@ -1092,6 +1092,7 @@ enum {
 
 	/* PSETID_Address */
 	PidLidFileAs = 0x8005,
+	PidLidFileUnderId = 0x8006,
 	PidLidHasPicture = 0x8015,
 	PidLidHomeAddress = 0x801a,
 	PidLidBusinessAddress = 0x801b,
