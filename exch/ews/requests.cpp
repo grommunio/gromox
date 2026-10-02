@@ -2192,6 +2192,164 @@ static void unclamp_binaries(const EWSContext &ctx, const std::string &dir,
 			tp->pvalue = pv.pvalue;
 }
 
+namespace {
+
+/**
+ * Translation of Advanced Query Syntax (the QueryString of FindItem, which
+ * is what Outlook's search box sends) into a restriction.
+ *
+ * Supported: words and "quoted phrases", implicitly ANDed; OR; NOT and a
+ * leading '-'; the property prefixes subject:, from:, to:, cc:, body:.
+ * A term without prefix is looked for in subject, body, sender and
+ * recipients. Every term becomes a case-insensitive substring match.
+ */
+struct aqs_term {
+	std::string field, value;
+	bool negate = false;
+};
+
+}
+
+static bool aqs_known_field(std::string_view f)
+{
+	return f == "subject" || f == "title" || f == "body" || f == "from" ||
+	       f == "to" || f == "cc";
+}
+
+static std::vector<proptag_t> aqs_fields(std::string_view field)
+{
+	if (field == "subject" || field == "title")
+		return {PR_SUBJECT};
+	if (field == "body")
+		return {PR_BODY};
+	if (field == "from")
+		return {PR_SENDER_NAME, PR_SENDER_SMTP_ADDRESS,
+		        PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_SMTP_ADDRESS};
+	if (field == "to")
+		return {PR_DISPLAY_TO};
+	if (field == "cc")
+		return {PR_DISPLAY_CC};
+	return {PR_SUBJECT, PR_BODY, PR_SENDER_NAME, PR_SENDER_SMTP_ADDRESS,
+	        PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_SMTP_ADDRESS,
+	        PR_DISPLAY_TO, PR_DISPLAY_CC};
+}
+
+static RESTRICTION *aqs_combine(mapi_rtype rt, std::vector<RESTRICTION> &&v)
+{
+	if (v.empty())
+		return nullptr;
+	auto res = EWSContext::construct<RESTRICTION>();
+	if (v.size() == 1) {
+		*res = std::move(v[0]);
+		return res;
+	}
+	res->rt = rt;
+	res->andor = EWSContext::construct<RESTRICTION_AND_OR>();
+	res->andor->count = v.size();
+	res->andor->pres = EWSContext::alloc<RESTRICTION>(v.size());
+	std::move(v.begin(), v.end(), res->andor->pres);
+	return res;
+}
+
+static RESTRICTION *aqs_term_restriction(const aqs_term &t)
+{
+	auto text = EWSContext::alloc<char>(t.value.size() + 1);
+	memcpy(text, t.value.c_str(), t.value.size() + 1);
+	std::vector<RESTRICTION> alts;
+	for (auto tag : aqs_fields(t.field)) {
+		auto &r = alts.emplace_back();
+		r.rt = mapi_rtype::content;
+		r.cont = EWSContext::construct<RESTRICTION_CONTENT>();
+		r.cont->fuzzy_level = FL_SUBSTRING | FL_IGNORECASE;
+		r.cont->proptag = r.cont->propval.proptag = tag;
+		r.cont->propval.pvalue = text;
+	}
+	auto res = aqs_combine(mapi_rtype::r_or, std::move(alts));
+	if (!t.negate)
+		return res;
+	auto neg = EWSContext::construct<RESTRICTION>();
+	neg->rt = mapi_rtype::r_not;
+	neg->xnot = EWSContext::construct<RESTRICTION_NOT>();
+	neg->xnot->res = std::move(*res);
+	return neg;
+}
+
+/**
+ * @brief      Build a restriction from an AQS query string
+ *
+ * @return     RESTRICTION* or nullptr if the query contains no terms
+ */
+static RESTRICTION *aqs_to_restriction(std::string_view q)
+{
+	std::vector<std::vector<aqs_term>> groups(1); /* OR of ANDs */
+	bool negate_next = false;
+	while (true) {
+		while (!q.empty() && HX_isspace(q.front()))
+			q.remove_prefix(1);
+		if (q.empty())
+			break;
+		aqs_term t;
+		t.negate = negate_next;
+		negate_next = false;
+		if (q.front() == '-') {
+			t.negate = !t.negate;
+			q.remove_prefix(1);
+		}
+		std::string_view word;
+		if (!q.empty() && q.front() == '"') {
+			q.remove_prefix(1);
+			auto end = q.find('"');
+			word = q.substr(0, end);
+			q.remove_prefix(end == q.npos ? q.size() : end + 1);
+			t.value = word;
+		} else {
+			auto end = q.find_first_of(" \t\r\n");
+			word = q.substr(0, end);
+			q.remove_prefix(end == q.npos ? q.size() : end);
+			if (word == "OR") {
+				if (!groups.back().empty())
+					groups.emplace_back();
+				continue;
+			} else if (word == "AND") {
+				continue;
+			} else if (word == "NOT") {
+				negate_next = true;
+				continue;
+			}
+			auto colon = word.find(':');
+			std::string field;
+			if (colon != word.npos) {
+				field = word.substr(0, colon);
+				HX_strlower(field.data());
+			}
+			if (colon != word.npos && aqs_known_field(field)) {
+				t.field = std::move(field);
+				word.remove_prefix(colon + 1);
+				if (word.empty() && !q.empty() && q.front() == '"') {
+					/* subject:"some phrase" */
+					q.remove_prefix(1);
+					auto end = q.find('"');
+					word = q.substr(0, end);
+					q.remove_prefix(end == q.npos ? q.size() : end + 1);
+				}
+			}
+			t.value = word;
+		}
+		if (!t.value.empty())
+			groups.back().push_back(std::move(t));
+	}
+	std::vector<RESTRICTION> ors;
+	for (const auto &g : groups) {
+		std::vector<RESTRICTION> ands;
+		for (const auto &t : g)
+			ands.push_back(std::move(*aqs_term_restriction(t)));
+		auto r = aqs_combine(mapi_rtype::r_and, std::move(ands));
+		if (r != nullptr)
+			ors.push_back(std::move(*r));
+	}
+	return aqs_combine(mapi_rtype::r_or, std::move(ors));
+}
+
 /**
  * @brief      Process FindItem
  *
@@ -2260,6 +2418,8 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				return essdn;
 			};
 			auto res1 = request.Restriction ? request.Restriction->build(getId, getEssdn) : nullptr;
+			if (request.QueryString)
+				res1 = tRestriction::all(res1, aqs_to_restriction(*request.QueryString));
 			auto res2 = paging ? paging->restriction(getId) : nullptr;
 			auto newRes = tRestriction::all(res1, res2);
 			auto newSort = request.SortOrder ? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
