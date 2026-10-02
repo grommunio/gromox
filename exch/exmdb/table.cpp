@@ -34,6 +34,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.hpp"
+#include "fts.hpp"
 #include "parser.hpp"
 
 using LLU = unsigned long long;
@@ -1028,6 +1029,10 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 	 * defined, stbl.
 	 */
 	uint64_t last_row_id = 0;
+	std::unique_ptr<fts_prefilter> fts_filt;
+	if (!rows_done && prestriction != nullptr && conv_id == nullptr &&
+	    exmdb_server::is_private())
+		fts_filt = fts_prefilter::create(exmdb_server::get_dir(), db, prestriction);
 	while (!rows_done && pstmt.step() == SQLITE_ROW) {
 		uint64_t mid_val = pstmt.col_uint64(0);
 		if (conv_id != nullptr) {
@@ -1040,7 +1045,8 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 			if (parent_fid == 0)
 				continue;
 		} else if (prestriction != nullptr &&
-		    !cu_eval_msg_restriction(db, cpid, mid_val, prestriction)) {
+		    ((fts_filt != nullptr && !fts_filt->may_match(mid_val)) ||
+		    !cu_eval_msg_restriction(db, cpid, mid_val, prestriction))) {
 			continue;
 		}
 		sqlite3_bind_int64(pstmt1, 1, mid_val);
