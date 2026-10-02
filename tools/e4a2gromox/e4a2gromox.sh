@@ -21,7 +21,7 @@
 #   fixup             pre-flight, ACL rename, EX->SMTP rewrite, schema
 #                     upgrade, quota re-sync
 #   verify            compare folder/message counts source vs target
-#  
+#
 # Options: -c FILE  config file (default ./e4a2gromox.conf,
 #                   /etc/e4a2gromox.conf)
 #          -o ADDR  only this source mailbox/list/alias (repeatable)
