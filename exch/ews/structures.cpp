@@ -996,6 +996,15 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	/* A description, not necessarily a zone name */
 	if (tzid.empty() && (str = shape.get<char>(NtTimeZoneDescription)) != nullptr)
 		tzid = str;
+	/* A single all-day item stored at UTC midnight without any zone */
+	auto u8allday = shape.get<uint8_t>(NtAppointmentSubType, sShape::FL_ANY);
+	if (tzid.empty() && u8allday != nullptr && *u8allday &&
+	    shape.get(NtAppointmentRecur) == nullptr &&
+	    (shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionStartDisplay)) ||
+	    shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionEndDisplay))) &&
+	    (u64 = shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY)) != nullptr &&
+	    rop_util_nttime_to_unix(*u64) % 86400 == 0)
+		tzid = "UTC";
 	if (!tzid.empty())
 		timezoneId(tzid);
 
@@ -5059,6 +5068,12 @@ void tItemResponseShape::tags(sShape& shape) const
 		for (const auto& named : namedTagsAllProperties)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
+	/*
+	 * The UTC fallback zone of all-day items needs these. Added last so
+	 * that a field request made above keeps its flags.
+	 */
+	shape.add(NtAppointmentSubType, PT_BOOLEAN);
+	shape.add(NtCommonStart, PT_SYSTIME);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
