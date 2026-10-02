@@ -361,6 +361,7 @@ class sShape {
 	static constexpr uint64_t Rights =            1 << 10;
 	static constexpr uint64_t Permissions =       1 << 11;
 	static constexpr uint64_t ReplyToRecipients = 1 << 12;
+	static constexpr uint64_t ResponseObjects =   1 << 15;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients | ReplyToRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
@@ -942,6 +943,17 @@ struct tEffectiveRights {
 };
 
 /**
+ * Types.xsd:1486
+ */
+struct tResponseObjects {
+	explicit tResponseObjects(const sShape &);
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::vector<const char *> Objects;
+};
+
+/**
  * Types.xsd:1142
  */
 struct tExtendedFieldURI {
@@ -1045,7 +1057,7 @@ struct tFieldURI {
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, proptag_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, proptype_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 18> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 19> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -1970,7 +1982,7 @@ struct tItem : public NS_EWS_Types {
 	std::optional<std::vector<tInternetMessageHeader>> InternetMessageHeaders;
 	std::optional<sTimePoint> DateTimeSent;
 	std::optional<sTimePoint> DateTimeCreated;
-	//<xs:element name="ResponseObjects" type="t:NonEmptyArrayOfResponseObjectsType" minOccurs="0" />
+	std::optional<tResponseObjects> ResponseObjects;
 	std::optional<time_point> ReminderDueBy;
 	std::optional<bool> ReminderIsSet;
 	//std::optional<time_point> ReminderNextTime;
