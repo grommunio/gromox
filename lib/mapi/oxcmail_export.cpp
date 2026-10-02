@@ -937,7 +937,7 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 		if (err != ecSuccess)
 			return err;
 		vpart.getBody()->setContents(
-			vmime::make_shared<vmime::stringContentHandler>(emb->generate()),
+			vmime::make_shared<vmime::stringContentHandler>(vmail_to_string(*emb)),
 			vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_RFC822));
 		return ecSuccess;
 	}
