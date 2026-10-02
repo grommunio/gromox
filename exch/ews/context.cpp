@@ -1810,6 +1810,9 @@ void EWSContext::loadSpecial(const std::string &dir, uint64_t fid, uint64_t mid,
 		auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
 		if (!recipientType)
 			continue;
+		auto flags = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (flags != nullptr && (*flags & recipOrganizer))
+			continue;
 		switch (*recipientType) {
 		case MAPI_TO:
 			if (special & sShape::RequiredAttendees)
@@ -1852,6 +1855,9 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	for (const auto &rcpt : rcpts) {
 		auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
 		if (!recipientType)
+			continue;
+		auto flags = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (flags != nullptr && (*flags & recipOrganizer))
 			continue;
 		switch (*recipientType) {
 		case MAPI_TO:
