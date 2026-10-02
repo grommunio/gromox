@@ -421,6 +421,8 @@ void markOccurrenceId(sItem &item, uint32_t basedate)
 	std::visit(setter, item);
 }
 
+}
+
 /**
  * @brief      Test whether a date is truly deleted (not a modified exception)
  *
@@ -558,6 +560,8 @@ uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
 	}
 	throw InputError(E3334);
 }
+
+namespace {
 
 /**
  * @brief      Map MAPI rights to delegate permission level
