@@ -3789,7 +3789,12 @@ void tFieldURI::tags(sShape& shape, bool add) const
 		shape.special |= specials->second;
 		found = true;
 	}
-	if (!found)
+	if (found)
+		return;
+	if (FieldURI == "item:WebClientReadFormQueryString" ||
+	    FieldURI == "item:WebClientEditFormQueryString")
+		mlog(LV_DEBUG, "ews: unsupported field URI '%s' (ignored)", FieldURI.c_str());
+	else
 		mlog(LV_NOTICE, "ews: unknown field URI '%s' (ignored)", FieldURI.c_str());
 }
 
