@@ -511,6 +511,13 @@ static bool same_tag(proptag_t a, proptag_t b)
 	       (ta & MV_FLAG) == (tb & MV_FLAG));
 }
 
+static std::string upper(std::string s)
+{
+	for (auto &c : s)
+		c = HX_toupper(c);
+	return s;
+}
+
 static std::string lower(std::string s)
 {
 	for (auto &c : s)
@@ -1395,8 +1402,65 @@ std::optional<RESTRICTION> writer::pred(pred_kind k, const Value &v, const std::
 		error(uri, "EmptyValueFound", "The list is empty.");
 		return std::nullopt;
 	}
+	auto strs = [&](proptag_t tag, uint32_t fl) {
+		std::vector<RESTRICTION> l;
+		for (const auto &s : v.strings)
+			l.push_back(content(tag, fl, s));
+		return any(l);
+	};
 	std::vector<RESTRICTION> l;
 	switch (k) {
+	case P_Categories: {
+		auto id = env.keywords_propid(true);
+		if (id == 0) {
+			error(uri, "UnexpectedError", "Cannot register the Keywords property");
+			return std::nullopt;
+		}
+		return strs(PROP_TAG(PT_MV_UNICODE, id), FL_FULLSTRING | FL_IGNORECASE);
+	}
+	case P_ContainsBodyStrings:
+		return strs(PR_BODY, FL_SUBSTRING | FL_IGNORECASE);
+	case P_ContainsHeaderStrings:
+		return strs(PR_TRANSPORT_MESSAGE_HEADERS, FL_SUBSTRING | FL_IGNORECASE);
+	case P_ContainsRecipientStrings:
+		for (const auto &s : v.strings) {
+			auto sub = mk<RESTRICTION_SUBOBJ>();
+			sub->subobject = PR_MESSAGE_RECIPIENTS;
+			sub->res = content(PR_SMTP_ADDRESS, FL_SUBSTRING | FL_IGNORECASE, s);
+			l.push_back(res(RES_SUBRESTRICTION, sub));
+		}
+		return any(l);
+	case P_ContainsSenderStrings:
+		/* Search keys are upper case */
+		for (const auto &s : v.strings)
+			l.push_back(content(PR_SENDER_SEARCH_KEY, FL_SUBSTRING, upper(s)));
+		return any(l);
+	case P_ContainsSubjectOrBodyStrings:
+		for (const auto &s : v.strings) {
+			l.push_back(content(PR_SUBJECT, FL_SUBSTRING | FL_IGNORECASE, s));
+			l.push_back(content(PR_BODY, FL_SUBSTRING | FL_IGNORECASE, s));
+		}
+		return list(RES_OR, l);
+	case P_ContainsSubjectStrings:
+		return strs(PR_SUBJECT, FL_SUBSTRING | FL_IGNORECASE);
+	case P_ItemClasses:
+		for (const auto &s : v.strings)
+			l.push_back(prop(RELOP_EQ, PR_MESSAGE_CLASS, str(s)));
+		return list(RES_OR, l);
+	case P_FlaggedForAction: {
+		auto flagged = prop(RELOP_EQ, PR_FLAG_STATUS, num<uint32_t>(followupFlagged));
+		if (v.text == "Any")
+			return flagged;
+		auto id = env.flagrequest_propid(true);
+		if (id == 0) {
+			error(uri, "UnexpectedError", "Cannot register the FlagRequest property");
+			return std::nullopt;
+		}
+		auto it = std::find_if(std::begin(flag_texts), std::end(flag_texts),
+		          [&](const auto &x) { return v.text == x.first; });
+		return list(RES_AND, {flagged, prop(RELOP_EQ,
+		       PROP_TAG(PT_UNICODE, id), str(it->second))});
+	}
 	default:
 		error(uri, "UnsupportedRule", "This condition is not supported.");
 		return std::nullopt;

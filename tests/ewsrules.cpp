@@ -436,6 +436,21 @@ static int t_read_variants()
 	return EXIT_SUCCESS;
 }
 
+static bool pred_written(unsigned int k)
+{
+	switch (k) {
+	case P_FromConnectedAccounts:
+	case P_MessageClassifications:
+		return false;
+	default:
+		break;
+	}
+	auto t = pred_type(k);
+	if (t == vtype::strings || t == vtype::flag)
+		return true;
+	return false;
+}
+
 static bool act_written(unsigned int k)
 {
 	switch (k) {
@@ -447,6 +462,54 @@ static bool act_written(unsigned int k)
 	default:
 		return false;
 	}
+}
+
+/* Each predicate as condition and as exception, write then read */
+static int t_predicates()
+{
+	test_env env;
+	for (unsigned int k = 0; k < P_COUNT; ++k) {
+		if (!pred_written(k))
+			continue;
+		for (bool exc : {false, true}) {
+			Rule r;
+			r.name = pred_name(k);
+			r.priority = 1;
+			r.enabled = true;
+			auto v = sample(pred_type(k), k == P_ContainsSenderStrings);
+			(exc ? r.exceptions : r.conditions).v[k] = v;
+			r.actions.v[A_MarkAsRead] = Value{.flag = true};
+			RESTRICTION *cond = nullptr;
+			RULE_ACTIONS *acts = nullptr;
+			std::vector<ValidationError> errs;
+			if (!to_mapi(r, env, cond, acts, errs)) {
+				fprintf(stderr, "%s: %s\n", pred_name(k), errs[0].code.c_str());
+				return EXIT_FAILURE;
+			}
+			auto row = stored(*cond, *acts);
+			CHECK(row != nullptr);
+			auto r2 = from_mapi(*row, env);
+			if (r2.not_supported.value_or(false) || r2.conditions != r.conditions ||
+			    r2.exceptions != r.exceptions) {
+				fprintf(stderr, "%s (%s): no round trip: %s\n", pred_name(k),
+				        exc ? "exception" : "condition", cond->repr().c_str());
+				return EXIT_FAILURE;
+			}
+		}
+	}
+	/* FlaggedForAction without a request text */
+	Rule r;
+	r.name = "any flag";
+	r.priority = 1;
+	r.conditions.v[P_FlaggedForAction] = Value{.text = "Any"};
+	r.actions.v[A_MarkAsRead] = Value{.flag = true};
+	RESTRICTION *cond = nullptr;
+	RULE_ACTIONS *acts = nullptr;
+	std::vector<ValidationError> errs;
+	CHECK(to_mapi(r, env, cond, acts, errs));
+	CHECK(cond->rt == RES_PROPERTY);
+	CHECK(from_mapi(*stored(*cond, *acts), env).conditions == r.conditions);
+	return EXIT_SUCCESS;
 }
 
 static int t_actions()
@@ -512,6 +575,7 @@ int main()
 	for (auto f : std::initializer_list<fn>{t_ruleid, t_parse, t_xml_roundtrip,
 	     t_read_variants,
 	     t_errors_xml, t_sequences, t_actions, t_validate,
+	     t_predicates,
 	     }) {
 		auto ret = f();
 		if (ret != EXIT_SUCCESS) {
