@@ -240,7 +240,7 @@ mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
-noinst_PROGRAMS = dldcheck tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/mdigest tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
 if HAVE_ESEDB
 noinst_PROGRAMS += tests/epv_unpack
 endif
@@ -249,7 +249,7 @@ noinst_PROGRAMS += tests/gssauth
 endif
 dldcheck_SOURCES = tools/dldcheck.cpp
 dldcheck_LDADD = ${dl_LIBS} ${libHX_LIBS}
-TESTS = tests/bodyconv tests/jsontest tests/oxcmail_ie tests/utiltest
+TESTS = tests/bodyconv tests/jsontest tests/mdigest tests/oxcmail_ie tests/utiltest
 tests_udb_SOURCES = tests/userdb.cpp
 tests_udb_LDADD = ${libHX_LIBS} libgromox_common.la libgxs_mysql_adaptor.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
@@ -268,6 +268,8 @@ tests_gxl_383_SOURCES = tests/gxl-383.cpp
 tests_gxl_383_LDADD = libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
 tests_jsontest_SOURCES = tests/jsontest.cpp
 tests_jsontest_LDADD = ${jsoncpp_LIBS} libgromox_common.la libgromox_mapi.la
+tests_mdigest_SOURCES = tests/mdigest.cpp
+tests_mdigest_LDADD = ${jsoncpp_LIBS} ${libHX_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_mapi.la
 tests_oxcmail_ie_SOURCES = tests/oxcmail_ie.cpp
 tests_oxcmail_ie_LDADD = ${libHX_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_mapi.la
 tests_ucvttest_SOURCES = tests/ucvttest.cpp
