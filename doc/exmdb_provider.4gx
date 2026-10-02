@@ -112,6 +112,29 @@ Compress content files (bodytexts and attachments). Possible values: \fBno\fP,
 .br
 Default: \fIzstd\-6\fP
 .TP
+\fBexmdb_fts\fP
+Maintain a full-text index for each private store, in
+\fIexmdb/fts.sqlite3\fP next to \fIexchange.sqlite3\fP. The index covers
+subject, sender, recipients, body and attachment file names, and is used only
+to narrow down content restrictions (RES_CONTENT) before the regular
+evaluation, so search results are the same with or without it. A missing or
+incomplete index is rebuilt in the background when the store is opened;
+deleting \fIfts.sqlite3\fP is always safe. Can be changed with SIGHUP.
+.br
+Default: \fIno\fP
+.TP
+\fBexmdb_fts_max_body\fP
+Only index this many bytes of a message's body text. Messages whose body
+was cut are marked as partial and are always evaluated in full.
+.br
+Default: \fI1M\fP
+.TP
+\fBexmdb_fts_nice\fP
+Run the full-text indexing thread with adjusted niceness (see
+\fBexmdb_search_nice\fP for the semantics). Only takes effect at startup.
+.br
+Default: \fI10\fP
+.TP
 \fBexmdb_hosts_allow\fP
 A space-separated list of individual host addresses that are allowed to
 converse with the exmdb service. The addresses must conform to gromox(7) \(sc
@@ -328,6 +351,8 @@ pdu := {
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/mail_bounce/
+.IP \(bu 4
+\fImaildir\fP/exmdb/fts.sqlite3: full-text index (see \fBexmdb_fts\fP)
 .PP
 \fIconfig_file_path\fP and \fIdata_file_path\fP is determined by the
 configuration of the program that loaded the exmdb_provider component.
