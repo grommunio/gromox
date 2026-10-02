@@ -3965,6 +3965,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"item:Preview", sShape::Preview},
 	{"item:ResponseObjects", sShape::ResponseObjects},
 	{"item:TextBody", sShape::TextBody},
+	{"item:UniqueBody", sShape::UniqueBody},
 	{"message:BccRecipients", sShape::BccRecipients},
 	{"message:CcRecipients", sShape::CcRecipients},
 	{"message:ReplyTo", sShape::ReplyToRecipients},
@@ -4292,24 +4293,41 @@ tItem::tItem(const sShape& shape)
 	tItem::update(shape);
 }
 
+/**
+ * @brief      Build a body element from PR_HTML or PR_BODY
+ *
+ * @param      shape  Shape containing the properties
+ * @param      mask   Flags the body properties must have been requested with
+ */
+static std::optional<tBody> mkBody(const sShape &shape, uint8_t mask)
+{
+	auto bodyHtml = shape.get<const BINARY>(PR_HTML, mask);
+	if (bodyHtml != nullptr) {
+		auto cpid = shape.get<cpid_t>(PR_INTERNET_CPID, sShape::FL_ANY);
+		const char *cset;
+		if (cpid && *cpid != CP_UTF8 && (cset = cpid_to_cset(*cpid)))
+			return tBody(iconvtext(*bodyHtml, cset, "UTF-8"), Enum::HTML);
+		return tBody(*bodyHtml, Enum::HTML);
+	}
+	auto bodyText = shape.get<const char>(PR_BODY, mask);
+	if (bodyText != nullptr)
+		return tBody(bodyText, Enum::Text);
+	return std::nullopt;
+}
+
 void tItem::update(const sShape& shape)
 {
 	const uint32_t* v32;
 	const TAGGED_PROPVAL* prop;
 	fromProp(shape.get(PR_ASSOCIATED), IsAssociated);
-	auto bodyText = shape.get<const char>(PR_BODY);
-	auto bodyHtml = shape.get<const BINARY>(PR_HTML);
-	if (bodyHtml != nullptr) {
-		const cpid_t* cpid = shape.get<cpid_t>(PR_INTERNET_CPID, sShape::FL_ANY);
-		const char* cset;
-		if (cpid && *cpid != CP_UTF8 && (cset = cpid_to_cset(*cpid)))
-			Body.emplace(iconvtext(*bodyHtml, cset, "UTF-8"), Enum::HTML);
-		else
-			Body.emplace(*bodyHtml, Enum::HTML);
-	} else if (bodyText != nullptr) {
-		Body.emplace(bodyText, Enum::Text);
-	} else if (shape.requested(PR_BODY) || shape.requested(PR_HTML)) {
+	if (auto body = mkBody(shape, sShape::FL_FIELD))
+		Body = std::move(body);
+	else if (shape.requested(PR_BODY) || shape.requested(PR_HTML))
 		Body.emplace("", Enum::Text);
+	if (shape.special & sShape::UniqueBody) {
+		UniqueBody = mkBody(shape, sShape::FL_ANY);
+		if (!UniqueBody)
+			UniqueBody.emplace("", Enum::Text);
 	}
 
 	if (shape.special & (sShape::Preview | sShape::TextBody)) {
@@ -4539,6 +4557,12 @@ void tItemResponseShape::tags(sShape& shape) const
 		shape.add(NtCommonStart, PT_SYSTIME);
 		shape.add(NtCommonEnd, PT_SYSTIME);
 		shape.add(NtCleanGlobalObjectId, PT_BINARY);
+	}
+	if (shape.special & sShape::UniqueBody) {
+		if (type == Enum::Best || type == Enum::Text)
+			shape.add(PR_BODY);
+		if (type == Enum::Best || type == Enum::HTML)
+			shape.add(PR_HTML).add(PR_INTERNET_CPID);
 	}
 	if (shape.special & sShape::MessageFlags) {
 		shape.add(PR_MESSAGE_FLAGS, sShape::FL_FIELD);
