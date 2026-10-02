@@ -303,6 +303,7 @@ class EWSContext {
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	TARRAY_SET loadPermissions(const std::string&, uint64_t) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
+	std::vector<Structures::sItem> expandOccurrences(const std::string &, uint64_t, uint64_t, time_t, time_t, Structures::sShape &, size_t) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
 	void deleteOccurrence(const std::string &, uint64_t, uint32_t) const;
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;

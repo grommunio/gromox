@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <sstream>
 #include <fmt/core.h>
 #include <libHX/scope.hpp>
@@ -435,38 +436,46 @@ bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
 }
 
 /**
- * @brief      Compute the Nth non-deleted occurrence date
+ * Find EXCEPTIONINFO for this basedate from the recurrence blob.
+ * It has the correct startdatetime/enddatetime for the exception,
+ * unlike the embedded message which may have the master's dates.
+ */
+static const EXCEPTIONINFO *
+find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
+{
+	uint32_t bd = basedate / 1440;
+	for (const auto &ei : apr.pexceptioninfo)
+		if (ei.originalstartdate / 1440 == bd)
+			return &ei;
+	return nullptr;
+}
+
+/**
+ * @brief      Enumerate the visible occurrence dates of a recurrence pattern
  *
- * EWS InstanceIndex counts only visible (non-deleted) occurrences.
- * Modified exceptions are still visible and counted.
+ * Walks the pattern in chronological order and invokes @cb for every
+ * occurrence that is not truly deleted. Modified exceptions are still
+ * visible and are reported at their *original* slot, so a caller that wants
+ * the rescheduled time has to consult the EXCEPTIONINFO itself.
+ *
+ * Enumeration stops when @cb returns true or the pattern is exhausted.
  *
  * @param      rp     Recurrence pattern (includes deleted/modified lists)
- * @param      index  1-based occurrence index
- *
- * @return     Occurrence date in rtime format (minutes since 1601-01-01)
+ * @param      cb     Callback, returns true to stop enumeration
  */
-uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
+static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
+    const std::function<bool(uint32_t)> &cb)
 {
-	if (index < 1)
-		throw InputError(E3307);
-
-	uint32_t count = 0;
-	auto check = [&](uint32_t date) -> uint32_t {
-		if (isTrulyDeleted(rp, date))
-			return 0;
-		if (++count == index)
-			return date;
-		return 0;
+	auto visit = [&](uint32_t date) -> bool {
+		return isTrulyDeleted(rp, date) ? false : cb(date);
 	};
 
 	switch (rp.patterntype) {
 	case rptMinute:
 		/* Daily: period is in minutes (day count * 1440) */
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			auto date = rp.startdate + i * rp.period;
-			if (auto r = check(date); r != 0)
-				return r;
-		}
+		for (uint32_t i = 0; i < rp.occurrencecount; ++i)
+			if (visit(rp.startdate + i * rp.period))
+				return;
 		break;
 	case rptWeek: {
 		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
@@ -486,8 +495,8 @@ uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
 				if (!(rp.pts.weekrecur & (1 << wday)))
 					continue;
 				++raw;
-				if (auto r = check(date); r != 0)
-					return r;
+				if (visit(date))
+					return;
 			}
 		}
 		break;
@@ -515,9 +524,8 @@ uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
 			occ.tm_year = year - 1900;
 			occ.tm_mon  = month - 1;
 			occ.tm_mday = dom;
-			auto date = rop_util_unix_to_rtime(timegm(&occ));
-			if (auto r = check(date); r != 0)
-				return r;
+			if (visit(rop_util_unix_to_rtime(timegm(&occ))))
+				return;
 		}
 		break;
 	}
@@ -542,21 +550,102 @@ uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
 					continue;
 				int day = ical_get_dayofmonth(year, month,
 				          order == 5 ? -1 : order, wd);
-				if (day > 0) {
-					struct tm occ = {};
-					occ.tm_year = year - 1900;
-					occ.tm_mon  = month - 1;
-					occ.tm_mday = day;
-					auto date = rop_util_unix_to_rtime(timegm(&occ));
-					if (auto r = check(date); r != 0)
-						return r;
-				}
+				if (day <= 0)
+					continue;
+				struct tm occ = {};
+				occ.tm_year = year - 1900;
+				occ.tm_mon  = month - 1;
+				occ.tm_mday = day;
+				if (visit(rop_util_unix_to_rtime(timegm(&occ))))
+					return;
 			}
 		}
 		break;
 	}
 	}
-	throw InputError(E3334);
+}
+
+/**
+ * @brief      Compute the Nth non-deleted occurrence date
+ *
+ * EWS InstanceIndex counts only visible (non-deleted) occurrences.
+ * Modified exceptions are still visible and counted.
+ *
+ * @param      rp     Recurrence pattern (includes deleted/modified lists)
+ * @param      index  1-based occurrence index
+ *
+ * @return     Occurrence date in rtime format (minutes since 1601-01-01)
+ */
+uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
+{
+	if (index < 1)
+		throw InputError(E3307);
+
+	uint32_t count = 0, found = 0;
+	walkOccurrenceDates(rp, [&](uint32_t date) {
+		if (++count < index)
+			return false;
+		found = date;
+		return true;
+	});
+	if (found == 0)
+		throw InputError(E3334);
+	return found;
+}
+
+/**
+ * @brief      Collect occurrence basedates overlapping a time window
+ *
+ * Mirrors the expansion GetUserAvailability performs, so that a CalendarView
+ * and a Detailed free/busy query over the same window agree on which
+ * occurrences exist.
+ *
+ * A modified exception is enumerated at its original slot but tested with its
+ * rescheduled start/end, so occurrences moved into or out of the window are
+ * handled correctly. Because an exception may be moved to an arbitrary time,
+ * enumeration does not stop at the first slot past the window.
+ *
+ * @param      apr        Appointment recurrence pattern
+ * @param      tz_offset  Offset between the blob's local-as-UTC rtimes and UTC
+ * @param      start      Window start (UTC)
+ * @param      end        Window end (UTC)
+ * @param      limit      Maximum number of basedates to collect (0 = no limit)
+ *
+ * @return     Basedates in rtime format, chronologically ordered
+ */
+std::vector<uint32_t> occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr,
+    std::chrono::seconds tz_offset, time_t start, time_t end, size_t limit)
+{
+	std::vector<uint32_t> out;
+	/*
+	 * Guard against a corrupted occurrencecount turning the walk into a
+	 * near-infinite loop; a window wide enough to hold more occurrences
+	 * than this is not something a client can usefully consume anyway.
+	 */
+	static constexpr size_t walk_cap = 65536;
+	size_t visited = 0;
+
+	walkOccurrenceDates(apr.recur_pat, [&](uint32_t date) {
+		if (++visited > walk_cap)
+			return true;
+		auto exc = find_exc(apr, date);
+		time_t occ_start, occ_end;
+		if (exc != nullptr) {
+			occ_start = clock::to_time_t(rop_util_rtime_to_unix2(exc->startdatetime)) + tz_offset.count();
+			occ_end   = clock::to_time_t(rop_util_rtime_to_unix2(exc->enddatetime)) + tz_offset.count();
+		} else {
+			occ_start = clock::to_time_t(rop_util_rtime_to_unix2(date + apr.starttimeoffset)) + tz_offset.count();
+			occ_end   = clock::to_time_t(rop_util_rtime_to_unix2(date + apr.endtimeoffset)) + tz_offset.count();
+		}
+		/* Overlap, matching the semantics of tCalendarView::datefilter */
+		if (occ_end >= start && occ_start <= end) {
+			out.push_back(date);
+			if (limit != 0 && out.size() >= limit)
+				return true;
+		}
+		return false;
+	});
+	return out;
 }
 
 /**
@@ -1906,21 +1995,6 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 }
 
 /**
- * Find EXCEPTIONINFO for this basedate from the recurrence blob.
- * It has the correct startdatetime/enddatetime for the exception,
- * unlike the embedded message which may have the master's dates.
- */
-static const EXCEPTIONINFO *
-find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
-{
-	uint32_t bd = basedate / 1440;
-	for (const auto &ei : apr.pexceptioninfo)
-		if (ei.originalstartdate / 1440 == bd)
-			return &ei;
-	return nullptr;
-}
-
-/**
  * @brief      Load occurrence
  *
  * @param      dir      Store directory
@@ -2056,6 +2130,39 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	}
 	markOccurrenceId(item, basedate);
 	return item;
+}
+
+/**
+ * @brief      Expand a recurring master into its occurrences within a window
+ *
+ * Produces one item per visible occurrence overlapping [start, end], each
+ * carrying its own occurrence ItemId (resolvable via GetItem) and the
+ * occurrence's own Start/End. Deleted occurrences are omitted and modified
+ * ones are returned as Exception rather than Occurrence; both are decided by
+ * loadOccurrence().
+ *
+ * @param      dir    Store directory
+ * @param      fid    Folder ID
+ * @param      mid    Message ID of the recurring master
+ * @param      start  Window start (UTC)
+ * @param      end    Window end (UTC)
+ * @param      shape  Shape to load the occurrences with
+ * @param      limit  Maximum number of occurrences (0 = no limit)
+ *
+ * @return     Expanded occurrences, chronologically ordered
+ */
+std::vector<sItem> EWSContext::expandOccurrences(const std::string &dir,
+    uint64_t fid, uint64_t mid, time_t start, time_t end, sShape &shape,
+    size_t limit) const
+{
+	auto apr = loadRecurPat(dir, mid).second;
+	std::chrono::minutes tz_offset(recurTzOffset(dir, mid, apr));
+	auto dates = occurrenceDatesInRange(apr, tz_offset, start, end, limit);
+	std::vector<sItem> items;
+	items.reserve(dates.size());
+	for (auto date : dates)
+		items.emplace_back(loadOccurrence(dir, fid, mid, date, shape));
+	return items;
 }
 
 /**
