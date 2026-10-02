@@ -755,7 +755,15 @@ static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
 static void omv_set_bodytext(vmime::bodyPart &bp, std::string_view text,
     vmime::mediaType mtype = mt_plain, vmime::charset cset = vmime::charsets::UTF_8)
 {
-	auto cth = vmime::make_shared<vmime::stringContentHandler>(std::string(text));
+	std::string crlf_text;
+	crlf_text.reserve(text.size());
+	/* Canonicalization (RFC 2049 §4, no. (2)) */
+	for (size_t i = 0; i < text.size(); ++i) {
+		if (text[i] == '\n' && (i == 0 || text[i-1] != '\r'))
+			crlf_text += '\r';
+		crlf_text += text[i];
+	}
+	auto cth = vmime::make_shared<vmime::stringContentHandler>(std::move(crlf_text));
 	auto enc = vmime::encoding::decide(cth, vmime::charsets::UTF_8, vmime::encoding::USAGE_TEXT);
 	bp.getBody()->setContents(std::move(cth), mtype, cset, std::move(enc));
 }
