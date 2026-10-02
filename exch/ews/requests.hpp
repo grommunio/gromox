@@ -30,6 +30,7 @@ EWSFUNC(mFindFolderRequest);
 EWSFUNC(mFindItemRequest);
 EWSFUNC(mFindPeopleRequest);
 EWSFUNC(mAddDelegateRequest);
+EWSFUNC(mAddEntityFeedbackRequest);
 EWSFUNC(mGetAppManifestsRequest);
 EWSFUNC(mGetAppMarketplaceUrlRequest);
 EWSFUNC(mGetAttachmentRequest);

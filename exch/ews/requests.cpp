@@ -482,6 +482,23 @@ static void findpeople_search_contacts(const EWSContext &ctx,
 }
 
 /**
+ * @brief      Process AddEntityFeedback
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mAddEntityFeedbackRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:AddEntityFeedbackResponse");
+	mlog(LV_DEBUG, "[ews#%d] AddEntityFeedback: discarding %zu entries",
+	     ctx.context_id(), request.entries);
+	mAddEntityFeedbackResponse data;
+	data.success();
+	data.serialize(response);
+}
+
+/**
  * @brief      Process FindPeople
  *
  * @param      request   Request data
