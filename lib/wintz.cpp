@@ -109,6 +109,17 @@ const std::string_view *wintz_to_tzdef(const char *izone)
 	return tzd_archive.find(name + ".tzd");
 }
 
+std::vector<std::string_view> wintz_all_tzdefs()
+{
+	std::vector<std::string_view> out;
+	if (wintz_load_once() != 0)
+		return out;
+	for (const auto &[name, data] : tzd_archive.list())
+		if (class_match_suffix(name.c_str(), ".tzd") == 0)
+			out.push_back(data);
+	return out;
+}
+
 const std::string_view *ianatz_to_tzdef(const char *izone)
 {
 	if (wintz_load_once() != 0)

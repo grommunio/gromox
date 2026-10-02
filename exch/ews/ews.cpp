@@ -286,6 +286,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetPersona", process<Structures::mGetPersonaRequest>},
 	{"GetRoomLists", process<Structures::mGetRoomListsRequest>},
 	{"GetRooms", process<Structures::mGetRoomsRequest>},
+	{"GetServerTimeZones", process<Structures::mGetServerTimeZonesRequest>},
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetStreamingEvents", process<Structures::mGetStreamingEventsRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},

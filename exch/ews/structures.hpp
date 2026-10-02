@@ -2076,6 +2076,22 @@ struct tTimeZoneDefinition {
 
 
 /**
+ * Full time zone definition as returned by GetServerTimeZones
+ *
+ * Types.xsd:6444
+ */
+struct tServerTimeZone : public NS_EWS_Types {
+	static constexpr char NAME[] = "TimeZoneDefinition";
+
+	tServerTimeZone(TZDEF &&, bool);
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	TZDEF tz;
+	bool full = true;
+};
+
+/**
  * @brief      Support struct to reduce redundancy
  *
  * Bundles overlapping properties and functionality of tCalendarItem and
@@ -3803,6 +3819,40 @@ struct mGetRoomsResponse : public mResponseMessageType {
 	std::optional<std::vector<tRoomType>> Rooms;
 
 	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
+ * Messages.xsd:1929
+ */
+struct mGetServerTimeZonesRequest {
+	struct Id : public std::string, public NS_EWS_Types {
+		static constexpr char NAME[] = "Id";
+		using std::string::string;
+	};
+
+	explicit mGetServerTimeZonesRequest(const tinyxml2::XMLElement *);
+
+	std::optional<std::vector<Id>> Ids;
+	std::optional<bool> ReturnFullTimeZoneData; // Attribute
+};
+
+/**
+ * Messages.xsd:1943
+ */
+struct mGetServerTimeZonesResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "GetServerTimeZonesResponseMessage";
+
+	using mResponseMessageType::success;
+
+	std::vector<tServerTimeZone> TimeZoneDefinitions;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+struct mGetServerTimeZonesResponse {
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::vector<mGetServerTimeZonesResponseMessage> ResponseMessages;
 };
 
 /**
