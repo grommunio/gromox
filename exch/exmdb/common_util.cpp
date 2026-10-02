@@ -32,6 +32,7 @@
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/evp.h>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/database.h>
@@ -3008,11 +3009,13 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 	path = maildir + "/cid/"s + hval.str();
 	cid  = hval.str();
 
-	/* See if the object already exists. (Skip compression.) */
+	/* See if the object already exists. (Skip compression, but touch.) */
 	wrapfd check_fd = open(path.c_str(), O_RDONLY);
 	struct stat sb;
-	if (check_fd.get() >= 0 && fstat(check_fd.get(), &sb) == 0 &&
-	    sb.st_size > 0)
+	if (check_fd.get() >= 0 && flock(check_fd.get(), LOCK_SH) == 0 &&
+	    futimens(check_fd.get(), nullptr) == 0 &&
+	    fstat(check_fd.get(), &sb) == 0 && sb.st_size > 0 &&
+	    sb.st_nlink > 0)
 		return 0;
 	check_fd.close_rd();
 
