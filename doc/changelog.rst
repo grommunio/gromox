@@ -3,8 +3,8 @@ Schedule
 It's ready when it's ready.
 
 
-Development 3.11.114
-====================
+Gromox 3.12 (2026-10-02)
+========================
 
 Enhancements:
 
@@ -18,15 +18,19 @@ Fixes:
 
 * A process leak (zombies piling up) during RTF-to-HTML conversions was
   plugged. This had affected systems without Pandoc installed.
-* ews: PidLidAppointmentSubType will be set when a user accepts a meeting
+* EWS: PidLidAppointmentSubType will be set when a user accepts a meeting
   request.
-* ews: Answered meeting requests are marked as "processed", and moved to
+* EWS: Answered meeting requests are marked as "processed", and moved to
   Deleted Items, mimicing Exchange-EWS behavior. (MAPI-based Outlook never
   moves them.)
-* ews: GlobalObjectId-based iCal UIDs are emitted as uppercase so they
+* EWS: GlobalObjectId-based iCal UIDs are emitted as uppercase so they
   match what other Gromox parts do for a given message.
-* ews: The correct name for restriction relop names are now employed in
+* EWS: The correct name for restriction relop names are now employed in
   XML responses (e.g. "IsLessThanOrEqual" → "IsLessThanOrEqualTo").
+* EWS: Fetching allday events now reports <StartTimeZone>/<EndTimeZone>
+  and <IsAllDayEvent> XML tags.
+* exmdb: When a store guest copied a folder, insufficient permissions were
+  set on the new folder and the copy could fail, which was fixed.
 * mr-autoproc: Meeting placeholders will now get tentative status, and
   the all-day property will be present (whether its value is 0 or 1).
 * mr-autoproc: Automatic meeting responses now have attendees conveyed
