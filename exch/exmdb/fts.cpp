@@ -19,10 +19,12 @@
 #include <pthread.h>
 #include <set>
 #include <string>
+#include <string_view>
 #include <unistd.h>
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/scope.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/database.h>
@@ -58,7 +60,7 @@ struct fts_db_close {
 using fts_handle = std::unique_ptr<sqlite3, fts_db_close>;
 
 struct fts_doc {
-	bool present = false;
+	bool present = false, partial = false;
 	uint64_t folder_id = 0, cn = 0;
 	std::string subject, sender, rcpts, body, attach;
 };
@@ -97,7 +99,8 @@ static constexpr char fts_triggers[] =
  */
 static constexpr char fts_schema[] =
 	"CREATE TABLE IF NOT EXISTS docs (message_id INTEGER PRIMARY KEY, "
-	"folder_id INTEGER NOT NULL, cn INTEGER NOT NULL);"
+	"folder_id INTEGER NOT NULL, cn INTEGER NOT NULL, "
+	"partial INTEGER NOT NULL DEFAULT 0);"
 	"CREATE INDEX IF NOT EXISTS docs_fid ON docs(folder_id);"
 	"CREATE VIRTUAL TABLE IF NOT EXISTS ftri USING fts5(subject, sender, "
 	"recipients, body, attachments, tokenize='trigram remove_diacritics 1', "
@@ -327,13 +330,14 @@ static void fts_get_body(const db_conn &db, uint64_t mid, std::string &out)
 }
 
 /* Truncate at a UTF-8 character boundary */
-static void fts_truncate(std::string &s, size_t max)
+static bool fts_truncate(std::string &s, size_t max)
 {
 	if (s.size() <= max)
-		return;
+		return false;
 	while (max > 0 && (static_cast<unsigned char>(s[max]) & 0xC0) == 0x80)
 		--max;
 	s.resize(max);
+	return true;
 }
 
 static bool fts_extract(const db_conn &db, uint64_t mid, fts_doc &doc)
@@ -409,7 +413,7 @@ static bool fts_extract(const db_conn &db, uint64_t mid, fts_doc &doc)
 	}
 
 	fts_get_body(db, mid, doc.body);
-	fts_truncate(doc.body, g_exmdb_fts_max_body);
+	doc.partial = fts_truncate(doc.body, g_exmdb_fts_max_body);
 	return true;
 }
 
@@ -422,7 +426,7 @@ static bool fts_write(sqlite3 *fdb, const std::vector<std::pair<uint64_t, fts_do
 	auto del_doc  = gx_sql_prep(fdb, "DELETE FROM docs WHERE message_id=?");
 	auto ins_tri  = gx_sql_prep(fdb, "INSERT INTO ftri (rowid, subject, sender, "
 	                "recipients, body, attachments) VALUES (?,?,?,?,?,?)");
-	auto ins_doc  = gx_sql_prep(fdb, "INSERT INTO docs (message_id, folder_id, cn) VALUES (?,?,?)");
+	auto ins_doc  = gx_sql_prep(fdb, "INSERT INTO docs (message_id, folder_id, cn, partial) VALUES (?,?,?,?)");
 	if (del_tri == nullptr || del_doc == nullptr || ins_tri == nullptr ||
 	    ins_doc == nullptr)
 		return false;
@@ -447,6 +451,7 @@ static bool fts_write(sqlite3 *fdb, const std::vector<std::pair<uint64_t, fts_do
 		ins_doc.bind_int64(1, mid);
 		ins_doc.bind_int64(2, doc.folder_id);
 		ins_doc.bind_int64(3, doc.cn);
+		ins_doc.bind_int64(4, doc.partial);
 		if (ins_doc.step() != SQLITE_DONE)
 			return false;
 		ins_doc.reset();
@@ -581,4 +586,196 @@ void fts_stop()
 	g_fts_cond.notify_all();
 	pthread_join(g_fts_tid, nullptr);
 	g_fts_queue.clear();
+}
+
+/*
+ * Index column holding the text of a property, for properties whose
+ * values are indexed verbatim (so that the index text contains every
+ * substring the property value contains).
+ */
+static const char *fts_column(proptag_t tag)
+{
+	switch (tag) {
+	case PR_SUBJECT:
+	case PR_NORMALIZED_SUBJECT:
+		return "subject";
+	case PR_BODY:
+		return "body";
+	case PR_SENDER_NAME:
+	case PR_SENDER_SMTP_ADDRESS:
+	case PR_SENDER_EMAIL_ADDRESS:
+	case PR_SENT_REPRESENTING_NAME:
+	case PR_SENT_REPRESENTING_SMTP_ADDRESS:
+	case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
+		return "sender";
+	case PR_DISPLAY_TO:
+	case PR_DISPLAY_CC:
+	case PR_DISPLAY_BCC:
+		/* "; "-joined names; see fts_needle */
+		return "recipients";
+	}
+	return nullptr;
+}
+
+/*
+ * Pick the part of @needle that the index can be asked for. Any substring
+ * of the needle will do, as it is implied by the needle. PR_DISPLAY_TO and
+ * friends are synthesized as "name1; name2", while the index holds the
+ * names separately, so for those, only a piece that cannot straddle a
+ * separator is usable.
+ */
+static std::string_view fts_needle(std::string_view col, std::string_view needle)
+{
+	if (col != "recipients")
+		return needle;
+	std::string_view best;
+	while (!needle.empty()) {
+		auto pos = needle.find(';');
+		auto seg = needle.substr(0, pos);
+		while (!seg.empty() && HX_isspace(seg.front()))
+			seg.remove_prefix(1);
+		while (!seg.empty() && HX_isspace(seg.back()))
+			seg.remove_suffix(1);
+		if (seg.size() > best.size())
+			best = seg;
+		if (pos == needle.npos)
+			break;
+		needle.remove_prefix(pos + 1);
+	}
+	return best;
+}
+
+/**
+ * Derive an FTS5 query that every message matching @r also matches.
+ * Returns false if no such constraint can be derived.
+ */
+static bool fts_res_query(const RESTRICTION &r, std::string &q)
+{
+	switch (r.rt) {
+	case RES_AND:
+	case RES_OR: {
+		std::string out;
+		size_t parts = 0;
+		for (const auto &sub : *r.andor) {
+			std::string sq;
+			if (!fts_res_query(sub, sq)) {
+				if (r.rt == RES_OR)
+					return false;
+				continue;
+			}
+			if (parts++ > 0)
+				out += r.rt == RES_AND ? " AND " : " OR ";
+			out += "(" + sq + ")";
+		}
+		if (parts == 0)
+			return false;
+		q = std::move(out);
+		return true;
+	}
+	case RES_CONTENT: {
+		auto &c = *r.cont;
+		auto col = fts_column(c.proptag);
+		auto lvl = c.fuzzy_level & 0xFFFF;
+		if (col == nullptr || PROP_TYPE(c.propval.proptag) != PT_UNICODE ||
+		    c.propval.pvalue == nullptr ||
+		    (lvl != FL_FULLSTRING && lvl != FL_SUBSTRING && lvl != FL_PREFIX))
+			return false;
+		auto needle = fts_needle(col, static_cast<const char *>(c.propval.pvalue));
+		size_t chars = 0;
+		for (auto ch : needle)
+			if ((static_cast<unsigned char>(ch) & 0xC0) != 0x80)
+				++chars;
+		if (chars < 3)
+			return false; /* the trigram index cannot answer this */
+		q = fmt::format("{} : \"", col);
+		for (auto ch : needle) {
+			if (ch == '"')
+				q += '"';
+			q += ch;
+		}
+		q += '"';
+		return true;
+	}
+	default:
+		return false;
+	}
+}
+
+fts_prefilter::~fts_prefilter() = default;
+
+/**
+ * Prepare a candidate filter for @res. Returns nullptr when the index cannot
+ * narrow the search; the caller then evaluates every message as usual.
+ */
+std::unique_ptr<fts_prefilter> fts_prefilter::create(const char *dir,
+    const db_conn &db, const RESTRICTION *res) try
+{
+	if (!g_exmdb_fts || dir == nullptr || res == nullptr)
+		return nullptr;
+	std::string query;
+	if (!fts_res_query(*res, query))
+		return nullptr;
+	auto path = fmt::format("{}/exmdb/fts.sqlite3", dir);
+	sqlite3 *raw = nullptr;
+	auto ret = sqlite3_open_v2(path.c_str(), &raw,
+	           SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nullptr);
+	fts_handle fdb(raw);
+	if (ret != SQLITE_OK)
+		return nullptr;
+	sqlite3_busy_timeout(fdb.get(), int(g_sqlite_busy_timeout_ns / 1000000));
+	auto stm = gx_sql_prep(fdb.get(), "PRAGMA user_version");
+	if (stm == nullptr || stm.step() != SQLITE_ROW ||
+	    stm.col_int64(0) != fts_schema_version)
+		return nullptr;
+	stm.finalize();
+	std::unique_ptr<fts_prefilter> f(new fts_prefilter);
+	/* Hits and docs rows must come from the same snapshot */
+	f->m_txn = gx_sql_begin(fdb.get(), txn_mode::read);
+	if (!f->m_txn)
+		return nullptr;
+	stm = gx_sql_prep(fdb.get(), "SELECT rowid FROM ftri WHERE ftri MATCH ?");
+	if (stm == nullptr)
+		return nullptr;
+	stm.bind_text(1, query);
+	while ((ret = stm.step()) == SQLITE_ROW)
+		f->m_hits.insert(stm.col_uint64(0));
+	if (ret != SQLITE_DONE) {
+		mlog(LV_WARN, "W-1795: %s: FTS query <%s> failed: %s", dir,
+			query.c_str(), sqlite3_errmsg(fdb.get()));
+		return nullptr;
+	}
+	stm.finalize();
+	f->m_doc = gx_sql_prep(fdb.get(), "SELECT cn, partial FROM docs WHERE message_id=?");
+	f->m_msg = db.prep("SELECT change_number FROM messages WHERE message_id=?");
+	if (f->m_doc == nullptr || f->m_msg == nullptr)
+		return nullptr;
+	f->m_fdb.reset(fdb.release());
+	mlog(LV_DEBUG, "fts: %s: <%s> -> %zu hits", dir, query.c_str(), f->m_hits.size());
+	return f;
+} catch (const std::bad_alloc &) {
+	return nullptr;
+}
+
+/**
+ * Whether message @mid can possibly satisfy the restriction. Messages whose
+ * index entry is missing, outdated or truncated are always candidates.
+ */
+bool fts_prefilter::may_match(uint64_t mid)
+{
+	if (m_hits.contains(mid))
+		return true;
+	m_doc.reset();
+	m_doc.bind_int64(1, mid);
+	if (m_doc.step() != SQLITE_ROW || m_doc.col_int64(1) != 0)
+		return true;
+	m_msg.reset();
+	m_msg.bind_int64(1, mid);
+	if (m_msg.step() != SQLITE_ROW)
+		return true;
+	return m_msg.col_uint64(0) != m_doc.col_uint64(0);
+}
+
+void fts_prefilter::close::operator()(sqlite3 *d) const
+{
+	sqlite3_close_v2(d);
 }

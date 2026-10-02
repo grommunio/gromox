@@ -918,9 +918,12 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 	});
 	sql_transact = xtransaction();
 	bool b_linked = false;
+	auto fts_filt = fts_prefilter::create(dir, db, prestriction);
 	for (auto msgid : pmessage_ids) {
 		if (g_dbeng_stop)
 			break;
+		if (fts_filt != nullptr && !fts_filt->may_match(msgid))
+			continue;
 		auto sql_transact1 = gx_sql_begin(db.psqlite, txn_mode::write);
 		if (!sql_transact1)
 			return false;
