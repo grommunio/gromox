@@ -2426,7 +2426,7 @@ void tCalendarItem::update(const sShape& shape)
 void tCalendarItem::setDatetimeFields(sShape& shape)
 {
 	int64_t startOffset = 0, endOffset = 0;
-	std::optional<uint64_t> startTime = 0, endTime = 0;
+	std::optional<uint64_t> startTime, endTime;
 	fromProp(shape.writes(NtCommonStart), startTime);
 	fromProp(shape.writes(NtCommonEnd), endTime);
 	if (shape.tag(NtCalendarTimeZone) != 0) {
@@ -2488,25 +2488,18 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 		}
 	}
 
-	for (auto &prop : {NtCommonStart, NtCommonEnd}) {
-		if (shape.tag(prop) == 0)
-			continue;
-		switch (prop.lid) {
-		case PidLidCommonStart: {
-			auto start = EWSContext::construct<uint64_t>(startTime.value() + startOffset * 600000000);
-			shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
-			shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
-			shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
-			break;
-		}
-		case PidLidCommonEnd: {
-			auto end = EWSContext::construct<uint64_t>(endTime.value() + endOffset * 600000000);
-			shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
-			shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
-			shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
-			break;
-		}
-		}
+	/* Only rewrite what the client set, not a deleted field */
+	if (startTime.has_value()) {
+		auto start = EWSContext::construct<uint64_t>(*startTime + startOffset * 600000000);
+		shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
+		shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
+		shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+	}
+	if (endTime.has_value()) {
+		auto end = EWSContext::construct<uint64_t>(*endTime + endOffset * 600000000);
+		shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
+		shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
+		shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
 	}
 }
 
