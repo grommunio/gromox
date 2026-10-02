@@ -55,6 +55,7 @@ struct aMovedEvent;
 struct aNewMailEvent;
 struct aStatusEvent;
 class sShape;
+struct sRecurrenceFrame;
 struct tAppendToItemField;
 struct tCalendarFolderType;
 struct tCalendarItem;
@@ -424,6 +425,7 @@ class sShape {
 	const tinyxml2::XMLElement *toRecipients = nullptr; ///< ToRecipients for update
 	const tinyxml2::XMLElement *ccRecipients = nullptr; ///< CcRecipients for update
 	const tinyxml2::XMLElement *bccRecipients = nullptr; ///< BccRecipients for update
+	const sRecurrenceFrame *recurrenceFrame = nullptr; ///< Time zone to return recurrences in
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 
@@ -1798,6 +1800,7 @@ using tRecurrencePattern = std::variant<
  */
 struct tRecurrenceRangeBase : public NS_EWS_Types {
 	time_point StartDate{};
+	std::optional<int32_t> StartDateZone; ///< zone offset of StartDate (minutes east of UTC)
 
 	void serialize(tinyxml2::XMLElement *) const;
 
@@ -1829,6 +1832,7 @@ struct tEndDateRecurrenceRange : public tRecurrenceRangeBase {
 	void serialize(tinyxml2::XMLElement *) const;
 
 	time_point EndDate{};
+	std::optional<int32_t> EndDateZone; ///< zone offset of EndDate (minutes east of UTC)
 
 	using tRecurrenceRangeBase::tRecurrenceRangeBase;
 	tEndDateRecurrenceRange() = default;
@@ -1873,6 +1877,25 @@ struct tRecurrenceType {
 	tRecurrenceType() = default;
 	explicit tRecurrenceType(const tinyxml2::XMLElement *);
 	void serialize(tinyxml2::XMLElement *) const;
+
+	void shift(int);
+	std::optional<int32_t> startDateZone() const;
+	void zone(int32_t);
+};
+
+/**
+ * @brief      Time zone that a request expresses recurrence patterns in
+ *
+ * Recurrence patterns and ranges carry no time zone of their own. Like
+ * Exchange, they are taken relative to the request's TimeZoneContext,
+ * or UTC if there is none, and converted from/to the time zone of the
+ * calendar item.
+ */
+struct sRecurrenceFrame {
+	std::optional<TZDEF> tz; ///< Zone from TimeZoneContext
+	int32_t bias = 0; ///< Fixed offset (minutes east of UTC) if no TZDEF
+
+	int32_t offset(time_t) const;
 };
 
 /**

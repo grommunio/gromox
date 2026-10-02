@@ -538,6 +538,40 @@ std::string mkPreview(const char *text)
 	return out;
 }
 
+constexpr const char *weekday_names[] =
+	{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+
+/**
+ * @brief      Move the days of a DaysOfWeek list by a number of days
+ *
+ * Lists with Day, Weekday or WeekendDay cannot be moved and are returned
+ * unchanged.
+ */
+std::string rotate_days(const std::string &list, int days)
+{
+	std::string out;
+	for (const auto &day : gx_split(list, ' ')) {
+		if (day.empty())
+			continue;
+		auto it = std::find_if(std::begin(weekday_names), std::end(weekday_names),
+		          [&](const char *n) { return day == n; });
+		if (it == std::end(weekday_names))
+			return list;
+		auto idx = (it - std::begin(weekday_names) + days) % 7;
+		if (idx < 0)
+			idx += 7;
+		if (!out.empty())
+			out += ' ';
+		out += weekday_names[idx];
+	}
+	return out;
+}
+
+inline time_t unix_day(time_t t)
+{
+	return t >= 0 ? t / 86400 : (t - 86399) / 86400;
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -707,6 +741,112 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
 	/* pattern type not enumerable */
 }
 
+/**
+ * @brief      Offset of the frame at a given time
+ *
+ * @param      t     Time (UTC)
+ *
+ * @return     Offset in minutes east of UTC
+ */
+int32_t sRecurrenceFrame::offset(time_t t) const
+{
+	int64_t b;
+	if (tz && tz_to_offset(*tz, t, b))
+		return -static_cast<int32_t>(b);
+	return bias;
+}
+
+/**
+ * @brief      Move the recurrence by whole days
+ *
+ * Day of month and month are only moved where they match the start of
+ * the range; DayOfWeekIndex is kept.
+ *
+ * @param      days  Number of days (may be negative)
+ */
+void tRecurrenceType::shift(int days)
+{
+	if (days == 0)
+		return;
+	auto delta = std::chrono::days(days);
+	auto &rangeStart = std::visit([](auto &r) -> time_point & { return r.StartDate; }, RecurrenceRange);
+	tm before{}, after{};
+	auto ts = clock::to_time_t(rangeStart);
+	gmtime_r(&ts, &before);
+	rangeStart += delta;
+	ts = clock::to_time_t(rangeStart);
+	gmtime_r(&ts, &after);
+	if (auto r = std::get_if<tEndDateRecurrenceRange>(&RecurrenceRange))
+		r->EndDate += delta;
+	std::visit([&](auto &p) {
+		using T = std::decay_t<decltype(p)>;
+		if constexpr (std::is_same_v<T, tWeeklyRecurrencePattern> ||
+		    std::is_same_v<T, tRelativeMonthlyRecurrencePattern> ||
+		    std::is_same_v<T, tRelativeYearlyRecurrencePattern>)
+			p.DaysOfWeek = rotate_days(p.DaysOfWeek, days);
+		if constexpr (std::is_same_v<T, tAbsoluteMonthlyRecurrencePattern>) {
+			if (p.DayOfMonth == before.tm_mday)
+				p.DayOfMonth = after.tm_mday;
+		}
+		if constexpr (std::is_same_v<T, tAbsoluteYearlyRecurrencePattern>) {
+			if (p.DayOfMonth == before.tm_mday && p.Month.index() == before.tm_mon) {
+				p.DayOfMonth = after.tm_mday;
+				p.Month = Enum::MonthNamesType(static_cast<uint8_t>(after.tm_mon));
+			}
+		}
+		if constexpr (std::is_same_v<T, tRelativeYearlyRecurrencePattern>) {
+			if (p.Month.index() == before.tm_mon)
+				p.Month = Enum::MonthNamesType(static_cast<uint8_t>(after.tm_mon));
+		}
+	}, RecurrencePattern);
+}
+
+/**
+ * @brief      Zone the client gave the range start date with, if any
+ */
+std::optional<int32_t> tRecurrenceType::startDateZone() const
+{
+	return std::visit([](const auto &r) { return r.StartDateZone; }, RecurrenceRange);
+}
+
+/**
+ * @brief      Set the zone the range dates are written with
+ */
+void tRecurrenceType::zone(int32_t z)
+{
+	std::visit([z](auto &r) { r.StartDateZone = z; }, RecurrenceRange);
+	if (auto r = std::get_if<tEndDateRecurrenceRange>(&RecurrenceRange))
+		r->EndDateZone = z;
+}
+
+/**
+ * @brief      Convert a stored recurrence to the request's time zone
+ *
+ * Only done for series whose stored start agrees with the item start, so
+ * that series written by earlier versions are returned as before.
+ *
+ * @param      rec     Recurrence in the item's time zone
+ * @param      frame   Time zone of the request
+ * @param      apr     Stored recurrence pattern
+ * @param      start   Item start (UTC)
+ * @param      tz      Item time zone, if known
+ */
+static void recurrence_to_frame(tRecurrenceType &rec, const sRecurrenceFrame &frame,
+    const APPOINTMENT_RECUR_PAT &apr, time_t start, const TZDEF *tz)
+{
+	auto first = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
+	int64_t east = (first - start) / 60;
+	if (tz != nullptr) {
+		int64_t b;
+		if (!tz_to_offset(*tz, start, b) || -b != east)
+			return;
+	} else if (std::abs(east) > 14 * 60) {
+		return;
+	}
+	rec.shift(unix_day(start + frame.offset(start) * 60) - unix_day(first));
+	rec.zone(frame.offset(start));
+}
+
 static std::string tzdef_keyname(const BINARY *bin)
 {
 	if (bin == nullptr)
@@ -853,6 +993,14 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 					shape.get<uint64_t>(PR_START_DATE) != nullptr ?
 					shape.get<uint64_t>(PR_START_DATE) :
 					shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY));
+			auto sp = shape.get<uint64_t>(PR_START_DATE);
+			if (!sp)
+				sp = shape.get<uint64_t>(NtCommonStart);
+			if (sp && shape.recurrenceFrame != nullptr) {
+				auto tzdef = binary_to_tzdef(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY));
+				recurrence_to_frame(rec, *shape.recurrenceFrame, apprecurr,
+					rop_util_nttime_to_unix(*sp), tzdef ? &*tzdef : nullptr);
+			}
 
 			// The count of the exceptions (modified and deleted occurrences)
 			// is summed in deletedinstancecount
@@ -4535,6 +4683,7 @@ void tItemResponseShape::tags(sShape& shape) const
 	shape.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD);
 	shape.add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD);
 	shape.add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
+	shape.add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
 	shape.add(PR_START_DATE, sShape::FL_FIELD);
 	std::string_view type = BodyType ? *BodyType : Enum::Best;
 	if ((IncludeMimeContent && *IncludeMimeContent) || (BodyType && type == Enum::Best))

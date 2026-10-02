@@ -369,6 +369,7 @@ class EWSContext {
 	inline void log(bool l) {m_log = l;}
 	inline State state() const {return m_state;}
 	inline void state(State s) {m_state = s;}
+	inline const Structures::sRecurrenceFrame *get_recurrence_frame() const {return m_recurrence_frame ? &*m_recurrence_frame : nullptr;}
 
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
@@ -436,6 +437,7 @@ private:
 	std::string impersonationMaildir; ///< Buffer to hold maildir of impersonated user
 	gromox::time_point m_created{};
 	std::unique_ptr<NotificationContext> m_notify;
+	std::optional<Structures::sRecurrenceFrame> m_recurrence_frame; ///< Time zone of recurrences in the request
 };
 
 /**
@@ -520,6 +522,11 @@ extern std::optional<TZDEF> lookup_tz_get_tzdef(const std::string &) = delete;
 inline std::optional<TZDEF> lookup_tz_get_tzdef(const char *name)
 {
 	auto sv = lookup_tz_get_sv(name);
+	return sv != nullptr ? EXT_PULL::bin_to_tzdef(*sv) : std::nullopt;
+}
+
+inline std::optional<TZDEF> binary_to_tzdef(const BINARY *sv)
+{
 	return sv != nullptr ? EXT_PULL::bin_to_tzdef(*sv) : std::nullopt;
 }
 

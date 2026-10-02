@@ -597,6 +597,84 @@ uint32_t deleg_level_to_rights(Enum::DelegateFolderPermissionLevelType level)
 	}
 }
 
+static inline time_t unix_day(time_t t)
+{
+	return t >= 0 ? t / 86400 : (t - 86399) / 86400;
+}
+
+/**
+ * @brief      Convert a client-supplied recurrence to the item's time zone
+ *
+ * The pattern and range are given relative to the request's time zone
+ * (or the zone of the range start date, if it has one).
+ *
+ * @param      rec    Recurrence as received
+ * @param      frame  Time zone of the request
+ * @param      start  Item start (UTC)
+ * @param      tz     Item time zone
+ */
+void shift_recurrence(tRecurrenceType &rec, const sRecurrenceFrame &frame,
+    const TZDEF &tz, time_t start)
+{
+	int64_t b;
+	if (!tz_to_offset(tz, start, b))
+		return;
+	auto east = rec.startDateZone().value_or(frame.offset(start));
+	rec.shift(unix_day(start - b * 60) - unix_day(start + east * 60));
+}
+
+bool has_element(const tinyxml2::XMLElement *xml, const char *name)
+{
+	for (; xml != nullptr; xml = xml->NextSiblingElement())
+		if (strcmp(xml->Name(), name) == 0 ||
+		    has_element(xml->FirstChildElement(), name))
+			return true;
+	return false;
+}
+
+/**
+ * @brief      Determine the time zone of a request's recurrence data
+ *
+ * Requests with MeetingTimeZone (Exchange 2007 style) carry the zone with
+ * the item and are not converted. Without a TimeZoneContext header,
+ * recurrences are in UTC. A TimeZoneContext that cannot be resolved
+ * (including one lacking the mandatory TimeZoneDefinition) leaves the
+ * recurrence unconverted rather than guessing UTC.
+ *
+ * @return     Frame, or nothing for no conversion
+ */
+std::optional<sRecurrenceFrame> make_recurrence_frame(const SOAP::Envelope &req)
+{
+	if (has_element(req.body, "MeetingTimeZone"))
+		return std::nullopt;
+	sRecurrenceFrame frame;
+	auto def = req.header != nullptr ? req.header->FirstChildElement("TimeZoneContext") : nullptr;
+	if (def == nullptr)
+		return frame;
+	def = def->FirstChildElement("TimeZoneDefinition");
+	if (def == nullptr)
+		return std::nullopt;
+	auto tzdef = lookup_tz_get_tzdef(def->Attribute("Id"));
+	if (tzdef) {
+		frame.tz = std::move(*tzdef);
+		return frame;
+	}
+	auto period = def->FirstChildElement("Periods");
+	period = period != nullptr ? period->FirstChildElement("Period") : nullptr;
+	auto bias = period != nullptr ? period->Attribute("Bias") : nullptr;
+	if (bias == nullptr)
+		return std::nullopt;
+	bool negative = *bias == '-';
+	if (*bias == '-' || *bias == '+')
+		++bias;
+	char *end = nullptr;
+	auto sec = HX_strtoull8601p_sec(bias, &end);
+	if (end == nullptr || end == bias)
+		return std::nullopt;
+	frame.bias = negative ? sec / 60 : -static_cast<int32_t>(sec / 60);
+	return frame;
+}
+
 } // Anonymous namespace
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -605,7 +683,7 @@ EWSContext::EWSContext(detail::ContextKey id, const HTTP_AUTH_INFO &ai,
     const char *data, uint64_t length, EWSPlugin &p) :
 	m_ctx_id(id), m_orig(*get_request(id)), m_auth_info(ai),
 	m_request(data, length), m_response(p.server_version()), m_plugin(p),
-	m_created(tp_now())
+	m_created(tp_now()), m_recurrence_frame(make_recurrence_frame(m_request))
 {
 	tinyxml2::XMLElement *imp = nullptr;
 	if (m_request.header && (imp = m_request.header->FirstChildElement("ExchangeImpersonation")) &&
@@ -1936,6 +2014,7 @@ void EWSContext::updateProps(tCalendarItem& calItem, sShape& shape, const TPROPV
 sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sShape& shape) const
 {
 	shape.clean();
+	shape.recurrenceFrame = get_recurrence_frame();
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 	sItem item = tItem::create(shape);
@@ -1978,6 +2057,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 		throw DispatchError(E3210);
 
 	shape.clean();
+	shape.recurrenceFrame = get_recurrence_frame();
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 	PROPNAME_ARRAY propnames;
@@ -2945,6 +3025,15 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	}
 	if (localStartTime == 0 || localEndTime == 0)
 		throw EWSError::CalendarInvalidRecurrence(E3265);
+
+	std::optional<TZDEF> item_tz;
+	if (auto caltz = shape.writes(NtCalendarTimeZone))
+		item_tz = lookup_tz_get_tzdef(static_cast<const char *>(caltz->pvalue));
+	if (!item_tz && shape.tag(NtAppointmentTimeZoneDefinitionRecur) != 0)
+		item_tz = binary_to_tzdef(getItemProp<const BINARY>(dir, mid,
+		          shape.tag(NtAppointmentTimeZoneDefinitionRecur)));
+	if (item_tz && m_recurrence_frame)
+		shift_recurrence(recurrence, *m_recurrence_frame, *item_tz, localStartTime);
 
 	/* Check if this is an all-day event */
 	bool isAllDay = false;
@@ -4000,6 +4089,16 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		 * StartDate in the RecurrenceRange is the correct date-only
 		 * value.
 		 */
+		if (auto tz = lookup_tz_get_tzdef(item.timezoneId().c_str());
+		    tz && m_recurrence_frame) {
+			time_t start = localStartTime;
+			int64_t b;
+			if (!calcStartOffset)
+				start += static_cast<time_t>(startOffset) * 60;
+			else if (tz_to_offset(*tz, start, b))
+				start += b * 60;
+			shift_recurrence(*item.Recurrence, *m_recurrence_frame, *tz, start);
+		}
 		auto &rr = item.Recurrence->RecurrenceRange;
 		auto rangeStart = clock::to_time_t(std::visit(
 		                  [](const auto &r) STATIC_IN_CXX23 { return r.StartDate; }, rr));

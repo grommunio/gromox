@@ -700,13 +700,58 @@ void tDailyRecurrencePattern::serialize(tinyxml2::XMLElement *xml) const
 	tIntervalRecurrencePatternBase::serialize(xml);
 }
 
+namespace {
+
+/**
+ * @brief      Read the zone designator of an xs:date or xs:dateTime value
+ *
+ * @return     Offset in minutes east of UTC, or nothing if absent
+ */
+std::optional<int32_t> xsdate_zone(const tinyxml2::XMLElement *xml)
+{
+	auto text = xml != nullptr ? xml->GetText() : nullptr;
+	if (text == nullptr || strlen(text) < 10)
+		return std::nullopt;
+	const char *z = text + 10;
+	if (*z == 'T')
+		z += strcspn(z, "Z+-");
+	if (*z == 'Z')
+		return 0;
+	int h = 0, m = 0;
+	if ((*z == '+' || *z == '-') && sscanf(z + 1, "%2d:%2d", &h, &m) == 2)
+		return (*z == '-' ? -1 : 1) * (h * 60 + m);
+	return std::nullopt;
+}
+
+/**
+ * @brief      Write a date as xs:date, with zone designator if known
+ */
+void xsdate_write(tinyxml2::XMLElement *xml, const char *name,
+    gromox::EWS::time_point date, const std::optional<int32_t> &zone)
+{
+	tm t{};
+	auto ts = clock::to_time_t(date);
+	if (gmtime_r(&ts, &t) == nullptr)
+		t = {};
+	std::string s = fmt::format("{:%F}", t);
+	if (zone && *zone == 0)
+		s += 'Z';
+	else if (zone)
+		s += fmt::format("{}{:02}:{:02}", *zone < 0 ? '-' : '+',
+		     std::abs(*zone) / 60, std::abs(*zone) % 60);
+	xml->InsertNewChildElement(name)->SetText(s.c_str());
+}
+
+}
+
 tRecurrenceRangeBase::tRecurrenceRangeBase(const tinyxml2::XMLElement *xml) :
-	XMLINIT(StartDate)
+	XMLINIT(StartDate),
+	StartDateZone(xsdate_zone(xml->FirstChildElement("StartDate")))
 {}
 
 void tRecurrenceRangeBase::serialize(tinyxml2::XMLElement *xml) const
 {
-	XMLDUMPT(StartDate);
+	xsdate_write(xml, "t:StartDate", StartDate, StartDateZone);
 }
 
 tNoEndRecurrenceRange::tNoEndRecurrenceRange(const tinyxml2::XMLElement *xml) :
@@ -720,14 +765,14 @@ void tNoEndRecurrenceRange::serialize(tinyxml2::XMLElement *xml) const
 
 tEndDateRecurrenceRange::tEndDateRecurrenceRange(const tinyxml2::XMLElement *xml) :
 	tRecurrenceRangeBase(xml),
-	XMLINIT(EndDate)
+	XMLINIT(EndDate),
+	EndDateZone(xsdate_zone(xml->FirstChildElement("EndDate")))
 {}
 
 void tEndDateRecurrenceRange::serialize(tinyxml2::XMLElement *xml) const
 {
 	tRecurrenceRangeBase::serialize(xml);
-
-	XMLDUMPT(EndDate);
+	xsdate_write(xml, "t:EndDate", EndDate, EndDateZone);
 }
 
 tNumberedRecurrenceRange::tNumberedRecurrenceRange(const tinyxml2::XMLElement *xml) :
