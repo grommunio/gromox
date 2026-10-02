@@ -2719,7 +2719,7 @@ void EWSContext::updateAttendees(const std::string &dir,
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType   = construct<uint32_t>(mtgRequest);
 		auto apptState  = construct<uint32_t>(asfMeeting);
-		auto respStatus = construct<uint32_t>(respNotResponded);
+		auto respStatus = construct<uint32_t>(respOrganized);
 		const TAGGED_PROPVAL oprops[] = {
 			{PR_SENT_REPRESENTING_NAME, deconst(dispName.c_str())},
 			{PR_SENDER_NAME, deconst(dispName.c_str())},
@@ -4286,7 +4286,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType = construct<uint32_t>(mtgRequest);
 		auto apptState = construct<uint32_t>(asfMeeting);
-		auto respStatus = construct<uint32_t>(respNotResponded);
+		auto respStatus = construct<uint32_t>(respOrganized);
 		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, meetType});
 		shape.write(NtAppointmentStateFlags, TAGGED_PROPVAL{PT_LONG, apptState});
 		shape.write(NtResponseStatus, TAGGED_PROPVAL{PT_LONG, respStatus});
