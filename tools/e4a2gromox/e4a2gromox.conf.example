@@ -1,0 +1,49 @@
+# e4a2gromox configuration (bash syntax; sourced by e4a2gromox.sh)
+#
+# ---- source: the exchange4all / Kopanion appliance -------------------------
+# SSH target for the e4a HOST (not the container). Needs root (read access to
+# the store directories, docker exec). Key-based auth is required; jump hosts
+# go into SRC_SSH_OPTS (-o ProxyJump=user@jumphost).
+SRC_SSH="root@kopanion.example.com"
+SRC_SSH_OPTS="-p 2222"
+SRC_CONTAINER="kopanion_exchange4all_1"
+SRC_DB="email"
+# where the container's /opt/exchange4all tree lives on the host
+SRC_HOST_PREFIX="/data/kopanion/e4a"
+SRC_CONTAINER_PREFIX="/opt/exchange4all"
+# X500_ORG_NAME from the e4a zcore.cfg (used to synthesize EX DNs)
+SRC_X500_ORG="My Organization"
+# "rsync" pulls the stores over SSH (default). "archive" instead unpacks
+# SRC_ARCHIVE_DIR/<source address>.tar.zst files made on the e4a host (see
+# transfer_one in the script) - for setups without direct SSH connectivity.
+SRC_MODE="rsync"
+SRC_ARCHIVE_DIR="/var/lib/e4a2gromox/archives"
+
+# ---- mapping ---------------------------------------------------------------
+# source-domain=target-domain; domains not listed keep their name.
+DOMAIN_MAP=("example.com=example.com")
+# domains to leave out entirely (e.g. the appliance's own admin domain)
+SKIP_DOMAINS=("kopanion.example.com")
+# individual source users to leave out
+SKIP_USERS=("admin@kopanion.example.com")
+# source mailboxes to create as SHARED mailboxes (no login) on the target
+SHARED_MAILBOXES=("publicFolder@example.com")
+# privileges every created user gets (pop3/imap, smtp, change-password and
+# public-address come from the e4a privilege bits); flags of
+# "grommunio-admin user create"
+USER_PRIVS="--privWeb true --privEas true --privDav true --privChat false --privVideo false --privFiles false --privArchive false --chat false"
+# fallback language/timezone when the source record is empty
+DEFAULT_LANG="de_DE"
+DEFAULT_TZ="Europe/Berlin"
+# quota handling: "source" copies users.max_size, or a number in MiB, or 0
+QUOTA_MODE="source"
+# "copy" carries the e4a password hashes over (gromox verifies them with
+# crypt(3), e4a uses yescrypt), "random" generates new ones (credentials.txt)
+PASSWORD_MODE="copy"
+
+# ---- target ----------------------------------------------------------------
+WORKDIR="/var/lib/e4a2gromox"
+GROMOX_USER="gromox"
+GROMOX_GROUP="gromox"
+# rsync tuning; --delete is added by the script. -S handles sparse files.
+RSYNC_OPTS="-aHS --info=progress2 --partial"

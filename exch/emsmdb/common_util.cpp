@@ -1602,7 +1602,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 			/* Unclear if permitted to save (specs say nothing) */
 			msg->save();
 	}
-	ret = cu_send_vmail(vmail, g_smtp_url.c_str(), ev_from, rcpt_list);
+	ret = cu_send_vmail(std::move(vmail), g_smtp_url.c_str(), ev_from, rcpt_list);
 	if (ret != ecSuccess) {
 		mlog2(LV_ERR, "E-1280: failed to send %s via SMTP: %s",
 			log_id.c_str(), mapi_strerror(ret));
