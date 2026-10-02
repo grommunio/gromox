@@ -251,6 +251,33 @@ static tRoomListEntry make_room_list_entry(const sql_domain& domain)
 //Request implementations
 
 /**
+ * @brief      Determine the mailbox an entry ID belongs to
+ *
+ * @param      ctx    Request context
+ * @param      id     Decoded identifier
+ *
+ * @return     Primary address of the owning mailbox, if it is a private store
+ */
+static std::optional<std::string> convertid_owner(const EWSContext &ctx,
+    const tBaseItemId &id) try
+{
+	sFolderSpec folder;
+	if (id.type == tBaseItemId::ID_FOLDER)
+		folder = ctx.resolveFolder(tFolderId(id.Id, tBaseItemId::ID_FOLDER));
+	else if (id.type == tBaseItemId::ID_ITEM ||
+	    id.type == tBaseItemId::ID_ATTACHMENT ||
+	    id.type == tBaseItemId::ID_OCCURRENCE)
+		folder = ctx.resolveFolder(sMessageEntryId(id.Id.data(), id.Id.size()));
+	else
+		return std::nullopt;
+	if (folder.location != sFolderSpec::PRIVATE || !folder.target)
+		return std::nullopt;
+	return folder.target;
+} catch (const EWSError &) {
+	return std::nullopt;
+}
+
+/**
  * @brief      Process ConvertId
  *
  * @param      request   Request data
@@ -278,11 +305,12 @@ void process(mConvertIdRequest &&request, XMLElement *response, EWSContext &ctx)
 			if (id.type == tBaseItemId::ID_UNKNOWN)
 				throw EWSError::CorruptData(E3252);
 			mConvertIdResponseMessage msg;
+			auto mailbox = convertid_owner(ctx, id).value_or(aid.Mailbox);
 			if (request.DestinationFormat == Enum::EwsId ||
 			    request.DestinationFormat == Enum::EwsLegacyId)
-				msg.AlternateId = tAlternateId(request.DestinationFormat, base64_encode(id.serializeId()), aid.Mailbox);
+				msg.AlternateId = tAlternateId(request.DestinationFormat, base64_encode(id.serializeId()), mailbox);
 			else if (request.DestinationFormat == Enum::HexEntryId)
-				msg.AlternateId = tAlternateId(request.DestinationFormat, hexEncode(id.Id), aid.Mailbox);
+				msg.AlternateId = tAlternateId(request.DestinationFormat, hexEncode(id.Id), mailbox);
 			else
 				throw EWSError::InternalServerError(E3253);
 			data.ResponseMessages.emplace_back(std::move(msg));
