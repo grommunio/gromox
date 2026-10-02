@@ -310,7 +310,7 @@ ec_error_t message_object::save() try
 	    pmessage->instance_id, &tmp_propval, &result))
 		return ecServerOOM;
 	
-	ec_error_t e_result = ecError;
+	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client->flush_instance(dir, pmessage->instance_id,
 	    &e_result) || e_result != ecSuccess)
 		return e_result;

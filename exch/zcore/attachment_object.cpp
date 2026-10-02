@@ -107,6 +107,7 @@ ec_error_t attachment_object::save() try
 	auto err = set_properties(&tmp_propvals);
 	if (err != ecSuccess)
 		return err;
+	err = ecRpcFailed;
 	if (!exmdb_client->flush_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &err) || err != ecSuccess)
 		return err;
