@@ -3553,6 +3553,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 	idOnly.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD);
 	idOnly.add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD);
 	idOnly.add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
+	idOnly.add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
 	for (const auto &change : request.ItemChanges) try {
 		if (change.ItemId.holds_alternative<tRecurringMasterItemId>())
 			throw EWSError::InvalidId(E3450);  // currently not supported

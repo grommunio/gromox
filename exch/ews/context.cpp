@@ -2099,6 +2099,16 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 			tz_offset = std::chrono::seconds(su - sl);
 		}
 	}
+	std::optional<TZDEF> tzdef;
+	auto tzbin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY);
+	if (apr_valid && tzbin != nullptr)
+		tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
+	auto toUtc = [&](uint32_t rtime) {
+		int64_t off;
+		if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
+			return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
+		return rop_util_rtime_to_unix2(rtime) + tz_offset;
+	};
 
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
 	struct tm basedate_local;
@@ -2136,18 +2146,18 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 				 * master's dates; use EXCEPTIONINFO from the blob. */
 				if (matching_exc) {
 					cal->Start.emplace(
-						rop_util_rtime_to_unix2(matching_exc->startdatetime) + tz_offset);
+						toUtc(matching_exc->startdatetime));
 					cal->End.emplace(
-						rop_util_rtime_to_unix2(matching_exc->enddatetime) + tz_offset);
+						toUtc(matching_exc->enddatetime));
 				} else {
 					cal->Start.emplace(
-						rop_util_rtime_to_unix2(basedate + start_off) + tz_offset);
+						toUtc(basedate + start_off));
 					cal->End.emplace(
-						rop_util_rtime_to_unix2(basedate + end_off) + tz_offset);
+						toUtc(basedate + end_off));
 				}
 				cal->CalendarItemType.emplace(Enum::Exception);
 				cal->RecurrenceId.emplace(
-					rop_util_rtime_to_unix2(basedate) + tz_offset);
+					toUtc(basedate));
 				cal->Recurrence.reset();
 				cal->ModifiedOccurrences.reset();
 				cal->DeletedOccurrences.reset();
@@ -2163,12 +2173,12 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
 	if (auto cal = std::get_if<tCalendarItem>(&item)) {
 		cal->Start.emplace(
-			rop_util_rtime_to_unix2(basedate + start_off) + tz_offset);
+			toUtc(basedate + start_off));
 		cal->End.emplace(
-			rop_util_rtime_to_unix2(basedate + end_off) + tz_offset);
+			toUtc(basedate + end_off));
 		cal->CalendarItemType.emplace(Enum::Occurrence);
 		cal->RecurrenceId.emplace(
-			rop_util_rtime_to_unix2(basedate) + tz_offset);
+			toUtc(basedate));
 		cal->Recurrence.reset();
 		cal->ModifiedOccurrences.reset();
 		cal->DeletedOccurrences.reset();
