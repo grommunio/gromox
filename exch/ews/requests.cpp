@@ -1009,9 +1009,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			}
 		}
 
-		/* Verify the caller has Send-As rights on this identity, else throw */
-		if (auto claimed = content->proplist.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS))
-			ctx.validate_sendas_perms(claimed);
+		if (send_message || (std::holds_alternative<tCalendarItem>(item) &&
+		    request.SendMeetingInvitations != Enum::SendToNone))
+			ctx.validate_sendas_perms(*content);
 
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
@@ -3256,6 +3256,7 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 		    ctx.effectiveUser(folder), CP_ACP, meid.messageId(),
 		    &content) || content == nullptr)
 			throw EWSError::ItemNotFound(E3403);
+		ctx.validate_sendas_perms(*content);
 		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
 
 		if (request.SaveItemToFolder)
@@ -3405,6 +3406,7 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 	    username, CP_ACP, mid.messageId(), &sendcontent) ||
 	    sendcontent == nullptr)
 		throw EWSError::ItemNotFound(E3466);
+	ctx.validate_sendas_perms(*sendcontent);
 	ctx.send(dir, rop_util_get_gc_value(mid.messageId()), *sendcontent);
 
 	if (*request.MessageDisposition == Enum::SendAndSaveCopy) {

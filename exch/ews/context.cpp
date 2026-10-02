@@ -3288,6 +3288,29 @@ void EWSContext::validate_sendas_perms(const std::string &identity) const
 }
 
 /**
+ * @brief      Verify the caller may send a message with its sender identity
+ *
+ * @param      content   Message about to be submitted
+ */
+void EWSContext::validate_sendas_perms(const MESSAGE_CONTENT &content) const
+{
+	auto &pl = content.proplist;
+	auto addr = pl.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (addr == nullptr) {
+		auto type = pl.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+		auto email = pl.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+		if (email == nullptr)
+			return;
+		if (type != nullptr && strcasecmp(type, "EX") == 0) {
+			validate_sendas_perms(essdn_to_username(email));
+			return;
+		}
+		addr = email;
+	}
+	validate_sendas_perms(addr);
+}
+
+/**
  * @brief      Read delegate permissions from folder ACLs
  */
 tDelegatePermissions EWSContext::readDelegatePermissions(const std::string &dir, const std::string &username) const
