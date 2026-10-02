@@ -18,6 +18,7 @@
 #include <fmt/core.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <gromox/algorithm.hpp>
 #include <gromox/database.h>
@@ -546,6 +547,11 @@ purg_delete_unused_files4(const std::string &cid_dir, const std::string &subdir,
 			continue;
 		}
 		if (sb.st_mtime >= upper_bound_ts)
+			continue;
+		/* Pairs with the LOCK_SH+futimens in cu_cid_writeout */
+		wrapfd fd = openat(dfd, de->d_name, O_RDONLY);
+		if (fd.get() < 0 || flock(fd.get(), LOCK_EX | LOCK_NB) != 0 ||
+		    fstat(fd.get(), &sb) != 0 || sb.st_mtime >= upper_bound_ts)
 			continue;
 		if (unlinkat(dfd, de->d_name, 0) != 0) {
 			mlog(LV_ERR, "E-2392: unlink %s/%s: %s", subdir.c_str(), de->d_name, strerror(errno));
