@@ -3473,6 +3473,11 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
 		shape.add(NtTimeZoneStruct, PT_BINARY);
 		shape.add(NtPrivate, PT_BOOLEAN);
+		shape.add(NtReminderSet, PT_BOOLEAN);
+		shape.add(NtReminderDelta, PT_LONG);
+		shape.add(NtReminderTime, PT_SYSTIME);
+		shape.add(NtReminderSignalTime, PT_SYSTIME);
+		shape.add(NtRecurring, PT_BOOLEAN);
 		ctx.getNamedTags(dir, shape, true);
 		for (const auto &update : change.Updates) {
 			if (std::holds_alternative<tSetItemField>(update))
@@ -3521,6 +3526,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    &outmid, &outcn, &error) || error != ecSuccess)
 				throw EWSError::ItemSave(E3446);
 		} else {
+			ctx.updateReminder(dir, mid.messageId(), shape);
 			ctx.updated(dir, mid, shape);
 			TPROPVAL_ARRAY props = shape.write();
 			const auto &tagsRm = shape.remove_vec();

@@ -4954,6 +4954,75 @@ bool EWSContext::unsubscribe(const Structures::tSubscriptionId& subscriptionId) 
 }
 
 /**
+ * @brief      Get pending value from shape, falling back to the stored one
+ *
+ * @param      shape  Shape with the pending writes
+ * @param      props  Stored properties
+ * @param      name   Property name
+ * @param      tag    Property tag
+ *
+ * @return     Pointer to the value or nullptr if neither is present
+ */
+template<typename T> static const T *currentValue(const sShape &shape,
+    const TPROPVAL_ARRAY &props, const PROPERTY_NAME &name, proptag_t tag)
+{
+	auto p = shape.writes(name);
+	return static_cast<const T *>(p != nullptr ? p->pvalue : props.getval(tag));
+}
+
+/**
+ * @brief      Recompute the reminder signal time after an item change
+ *
+ * For appointments the reminder is due at the start time, otherwise at
+ * PidLidReminderTime (MS-OXORMDR v16 §2.2.1.4).
+ *
+ * @param      dir    Store directory
+ * @param      mid    Message ID
+ * @param      shape  Shape with the pending writes
+ */
+void EWSContext::updateReminder(const std::string &dir, uint64_t mid, sShape &shape) const
+{
+	auto tagSet = shape.tag(NtReminderSet), tagDelta = shape.tag(NtReminderDelta);
+	auto tagTime = shape.tag(NtReminderTime), tagStart = shape.tag(NtCommonStart);
+	auto tagSignal = shape.tag(NtReminderSignalTime);
+	if (tagSet == 0 || tagDelta == 0 || tagTime == 0 || tagSignal == 0)
+		return;
+	if (!shape.writes(NtReminderSet) && !shape.writes(NtReminderDelta) &&
+	    !shape.writes(NtReminderTime) && !shape.writes(NtCommonStart))
+		return;
+	if (tagStart == 0) {
+		/* Not part of the shape, since setDatetimeFields would write it */
+		PROPERTY_NAME name = NtCommonStart;
+		auto ids = getNamedPropIds(dir, PROPNAME_ARRAY{1, &name});
+		if (ids.size() != 1 || ids[0] == 0)
+			return;
+		tagStart = PROP_TAG(PT_SYSTIME, ids[0]);
+	}
+	auto tagRecur = shape.tag(NtRecurring);
+	const proptag_t tags[] = {PR_MESSAGE_CLASS, tagDelta, tagTime, tagStart, tagRecur};
+	auto props = getItemProps(dir, mid, {tags, tagRecur != 0 ? std::size(tags) : std::size(tags) - 1});
+
+	auto recur = currentValue<uint8_t>(shape, props, NtRecurring, tagRecur);
+	if (tagRecur != 0 && recur != nullptr && *recur)
+		return;
+	auto cls = props.get<const char>(PR_MESSAGE_CLASS);
+	bool appt = class_match_prefix(cls, "IPM.Appointment") == 0 ||
+	            class_match_prefix(cls, "IPM.Schedule.Meeting") == 0;
+	auto delta = currentValue<int32_t>(shape, props, NtReminderDelta, tagDelta);
+	auto due = appt ?
+	           currentValue<uint64_t>(shape, props, NtCommonStart, tagStart) :
+	           currentValue<uint64_t>(shape, props, NtReminderTime, tagTime);
+	if (due == nullptr)
+		return;
+	if (appt && shape.writes(NtCommonStart))
+		shape.write(NtReminderTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(*due)});
+	uint64_t signal = *due;
+	if (appt && delta != nullptr)
+		signal -= static_cast<int64_t>(*delta) * 600000000;
+	shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(signal)});
+}
+
+/**
  * @brief      Add update tags to the shape
  *
  * @param      dir       Home directory of user or domain

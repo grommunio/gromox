@@ -349,6 +349,7 @@ class EWSContext {
 	bool unsubscribe(const Structures::tSubscriptionId&) const;
 	void updated(const std::string&, const Structures::sFolderSpec&) const;
 	void updated(const std::string&, const Structures::sMessageEntryId&, Structures::sShape&) const;
+	void updateReminder(const std::string &, uint64_t, Structures::sShape &) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
 	void writeDelegatePermissions(const std::string&, const std::string&, const Structures::tDelegatePermissions&) const;
 	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
