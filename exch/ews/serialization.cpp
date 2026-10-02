@@ -1352,6 +1352,8 @@ void tItem::serialize(XMLElement *xml) const
 	XMLDUMPT(IsAssociated);
 	XMLDUMPT(ConversationId);
 	XMLDUMPT(Flag);
+	XMLDUMPT(Preview);
+	XMLDUMPT(TextBody);
 	for (const tExtendedProperty &ep : ExtendedProperty)
 		toXMLNode(xml, "t:ExtendedProperty", ep);
 }

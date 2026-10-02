@@ -503,6 +503,41 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 	}
 }
 
+/**
+ * @brief      Build the item preview text
+ *
+ * Whitespace runs are collapsed and the result is cut after 256
+ * characters.
+ *
+ * @param      text   Plain text body
+ */
+std::string mkPreview(const char *text)
+{
+	std::string out;
+	size_t chars = 0;
+	bool space = false;
+	for (; *text != '\0'; ++text) {
+		auto c = static_cast<unsigned char>(*text);
+		if (HX_isspace(c)) {
+			space = !out.empty();
+			continue;
+		}
+		if ((c & 0xC0) != 0x80) {
+			/* ASCII character, or the start byte of a multibyte sequence. */
+			if (chars + space >= 256)
+				break;
+			if (space) {
+				out += ' ';
+				++chars;
+				space = false;
+			}
+			++chars;
+		}
+		out += c;
+	}
+	return out;
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3761,6 +3796,8 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"item:IsSubmitted", sShape::MessageFlags},
 	{"item:IsUnmodified", sShape::MessageFlags},
 	{"item:MimeContent", sShape::MimeContent},
+	{"item:Preview", sShape::Preview},
+	{"item:TextBody", sShape::TextBody},
 	{"message:BccRecipients", sShape::BccRecipients},
 	{"message:CcRecipients", sShape::CcRecipients},
 	{"message:ReplyTo", sShape::ReplyToRecipients},
@@ -4101,6 +4138,14 @@ void tItem::update(const sShape& shape)
 		Body.emplace("", Enum::Text);
 	}
 
+	if (shape.special & (sShape::Preview | sShape::TextBody)) {
+		auto text = shape.get<const char>(PR_BODY, sShape::FL_ANY);
+		if (shape.special & sShape::TextBody)
+			TextBody.emplace(znul(text), Enum::Text);
+		if (shape.special & sShape::Preview)
+			Preview.emplace(mkPreview(znul(text)));
+	}
+
 	if ((prop = shape.get(PR_CHANGE_KEY)))
 		fromProp(prop, defaulted(ItemId).ChangeKey);
 	fromProp(shape.get(PR_CLIENT_SUBMIT_TIME), DateTimeSent);
@@ -4307,6 +4352,8 @@ void tItemResponseShape::tags(sShape& shape) const
 			shape.add(PR_HTML, sShape::FL_FIELD).add(PR_INTERNET_CPID);
 		shape.special &= ~sShape::Body;
 	}
+	if (shape.special & (sShape::Preview | sShape::TextBody))
+		shape.add(PR_BODY);
 	if (shape.special & sShape::MessageFlags) {
 		shape.add(PR_MESSAGE_FLAGS, sShape::FL_FIELD);
 		shape.special &= ~sShape::MessageFlags;
