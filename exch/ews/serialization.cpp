@@ -965,6 +965,7 @@ void tPhysicalAddressDictionaryEntry::serialize(tinyxml2::XMLElement *xml) const
 tContact::tContact(const tinyxml2::XMLElement *xml) :
 	tItem(xml),
 	XMLINIT(FileAs),
+	XMLINIT(FileAsMapping),
 	XMLINIT(DisplayName),
 	XMLINIT(GivenName),
 	XMLINIT(Initials),
@@ -999,6 +1000,7 @@ void tContact::serialize(tinyxml2::XMLElement *xml) const
 	tItem::serialize(xml);
 
 	XMLDUMPT(FileAs);
+	XMLDUMPT(FileAsMapping);
 	XMLDUMPT(DisplayName);
 	XMLDUMPT(GivenName);
 	XMLDUMPT(Initials);

@@ -2175,6 +2175,11 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"EndTimeZone", {[](auto &&...args) STATIC_IN_CXX23 { convTzAttr(NtCalendarTimeZone, args...); }}},
 	{"EndTimeZoneId", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtCalendarTimeZone, args...); }}},
 	{"FileAs", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtFileAs, args...); }}},
+	{"FileAsMapping", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
+		if (auto tag = shape.tag(NtFileUnderId))
+			if (auto id = tContact::fileUnderId(Enum::FileAsMappingType(znul(xml->GetText()))))
+				shape.write(mkProp(tag, *id));
+	}, "Contact"}},
 	{"Flag", {[](auto &&...args) STATIC_IN_CXX23 { convFlag(args...); }}},
 	{"Generation", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_GENERATION, args...); }}},
 	{"GivenName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_GIVEN_NAME, args...); }}},
@@ -2611,6 +2616,42 @@ std::string tContact::mkAddress(const std::optional<std::string>& street, const 
 	                    con((lines[0] || lines[1]) && lines[2], "\n"), get(country));
 }
 
+namespace {
+
+/* PidLidFileUnderId values, indexed like Enum::FileAsMappingType */
+constexpr uint32_t fileUnderIds[] = {
+	0xFFFFFFFE, 0x8017, 0x8037, 0x3A16, 0x8019, 0x8032, 0x8030, 0x8034,
+	0x8018, 0x8036, 0x8035, 0x8033, 0x8031, 0x3001, 0x3A06, 0x8038,
+	0x3A11, 0,
+};
+
+}
+
+/**
+ * @brief      Convert PidLidFileUnderId to FileAsMapping
+ *
+ * Special and unknown values are reported as None.
+ */
+Enum::FileAsMappingType tContact::fileAsMapping(uint32_t id)
+{
+	auto it = std::find(std::cbegin(fileUnderIds), std::cend(fileUnderIds), id);
+	return Enum::FileAsMappingType(static_cast<uint8_t>(it == std::cend(fileUnderIds) ?
+	       0 : it - std::cbegin(fileUnderIds)));
+}
+
+/**
+ * @brief      Convert FileAsMapping to PidLidFileUnderId
+ *
+ * None has no single value (it also stands for user-entered FileAs
+ * strings), so it leaves the property alone.
+ */
+std::optional<uint32_t> tContact::fileUnderId(const Enum::FileAsMappingType &m)
+{
+	if (m.index() == 0)
+		return std::nullopt;
+	return fileUnderIds[m.index()];
+}
+
 void tContact::update(const sShape& shape)
 {
 	fromProp(shape.get(PR_ASSISTANT), AssistantName);
@@ -2625,6 +2666,8 @@ void tContact::update(const sShape& shape)
 	fromProp(shape.get(PR_SPOUSE_NAME), SpouseName);
 	fromProp(shape.get(PR_WEDDING_ANNIVERSARY), WeddingAnniversary);
 	fromProp(shape.get(NtFileAs), FileAs);
+	if (auto v32 = shape.get<uint32_t>(NtFileUnderId))
+		FileAsMapping.emplace(fileAsMapping(*v32));
 	const char* val;
 	if ((val = shape.get<char>(PR_BUSINESS_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessPhone));
@@ -3713,6 +3756,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"contacts:CompleteName", {NtYomiLastName, PT_UNICODE}},
 	{"contacts:DisplayName", {NtFileAs, PT_UNICODE}},
 	{"contacts:FileAs", {NtFileAs, PT_UNICODE}},
+	{"contacts:FileAsMapping", {NtFileUnderId, PT_LONG}},
 	{"contacts:PostalAddressIndex", {NtPostalAddressIndex, PT_LONG}},
 	{"contacts:YomiCompanyName", {NtYomiCompanyName, PT_UNICODE}},
 	{"item:Categories", {NtCategories, PT_MV_UNICODE}},

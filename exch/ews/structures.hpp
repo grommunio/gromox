@@ -2271,8 +2271,11 @@ struct tContact : public tItem {
 
 	void serialize(tinyxml2::XMLElement *) const;
 
+	static Enum::FileAsMappingType fileAsMapping(uint32_t);
+	static std::optional<uint32_t> fileUnderId(const Enum::FileAsMappingType &);
+
 	std::optional<std::string> FileAs;
-	//std::optional<Enum::FileAsMappingType> FileAsMapping;
+	std::optional<Enum::FileAsMappingType> FileAsMapping;
 	std::optional<std::string> DisplayName;
 	std::optional<std::string> GivenName;
 	std::optional<std::string> Initials;
