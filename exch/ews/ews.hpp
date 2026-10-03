@@ -296,6 +296,7 @@ class EWSContext {
 	GUID getMailboxGuid(const std::string&) const;
 	Structures::sMailboxInfo getMailboxInfo(const std::string&, bool) const;
 	propid_t getNamedPropId(const std::string &, const PROPERTY_NAME &, bool = false) const;
+	void conflictItemIds(const Structures::sFolderSpec &, const std::string &, std::vector<Structures::tConflictingMeeting> &) const;
 	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&, bool=false) const;
 	void getNamedTags(const std::string&, Structures::sShape&, bool=false) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;

@@ -365,6 +365,7 @@ class sShape {
 	static constexpr uint64_t TextBody =          1 << 14;
 	static constexpr uint64_t ResponseObjects =   1 << 15;
 	static constexpr uint64_t Occurrences =       1 << 16;
+	static constexpr uint64_t Conflicts =         1 << 18;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients | ReplyToRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
@@ -1060,7 +1061,7 @@ struct tFieldURI {
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, proptag_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, proptype_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 23> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 27> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -1889,6 +1890,24 @@ struct tOccurrenceInfoType : public NS_EWS_Types {
 };
 
 /**
+ * Abbreviated calendar item for ConflictingMeetings/AdjacentMeetings
+ */
+struct tConflictingMeeting : public NS_EWS_Types {
+	static constexpr char NAME[] = "CalendarItem";
+
+	explicit tConflictingMeeting(const freebusy_event &);
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::optional<tItemId> ItemId;
+	std::optional<std::string> Subject;
+	sTimePoint Start, End;
+	Enum::LegacyFreeBusyType LegacyFreeBusyStatus;
+	std::optional<std::string> Location;
+	std::string uid; ///< not serialized, used to look up ItemId
+};
+
+/**
  * Types.xsd:4437
  */
 struct tOccurrenceItemId {
@@ -2121,6 +2140,7 @@ struct sCalendarMeetingRequestCommon {
 
 	void timezoneId(std::string_view, bool=true, bool=true);
 	void firstLastOccurrence(const TAGGED_PROPVAL &, const APPOINTMENT_RECUR_PAT &, const BINARY *, const uint64_t *);
+	void loadConflicts(const char *, const char *, const BINARY *, time_t, time_t);
 	std::string_view timezoneId() const;
 
 	//<!-- Single and Occurrence only -->
@@ -2146,11 +2166,10 @@ struct sCalendarMeetingRequestCommon {
 	std::optional<std::vector<tAttendee>> OptionalAttendees;
 	std::optional<std::vector<tAttendee>> Resources;
 
-		// <!-- Conflicting and adjacent meetings -->
-	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
-	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+	std::optional<int32_t> ConflictingMeetingCount;
+	std::optional<int32_t> AdjacentMeetingCount;
+	std::optional<std::vector<tConflictingMeeting>> ConflictingMeetings;
+	std::optional<std::vector<tConflictingMeeting>> AdjacentMeetings;
 
 	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
 	std::optional<tRecurrenceType> Recurrence;

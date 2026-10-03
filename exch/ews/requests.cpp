@@ -3100,6 +3100,25 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 		} else {
 			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
 		}
+		if (shape.special & sShape::Conflicts && parentFolder.location == sFolderSpec::PRIVATE)
+			std::visit([&](auto &item) {
+				if constexpr (std::is_base_of_v<sCalendarMeetingRequestCommon, std::decay_t<decltype(item)>>) {
+					auto s = shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY);
+					auto e = shape.get<uint64_t>(NtCommonEnd, sShape::FL_ANY);
+					time_t start = item.Start ? clock::to_time_t(item.Start->time) :
+					               s != nullptr ? rop_util_nttime_to_unix(*s) : 0;
+					time_t end = item.End ? clock::to_time_t(item.End->time) :
+					             e != nullptr ? rop_util_nttime_to_unix(*e) : 0;
+					if (start == 0 || end == 0)
+						return;
+					item.loadConflicts(ctx.auth_info().username, dir.c_str(),
+						shape.get<BINARY>(NtCleanGlobalObjectId, sShape::FL_ANY), start, end);
+					if (item.ConflictingMeetings)
+						ctx.conflictItemIds(parentFolder, dir, *item.ConflictingMeetings);
+					if (item.AdjacentMeetings)
+						ctx.conflictItemIds(parentFolder, dir, *item.AdjacentMeetings);
+				}
+			}, msg.Items.back());
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
