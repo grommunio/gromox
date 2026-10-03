@@ -3850,6 +3850,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"item:IsUnmodified", sShape::MessageFlags},
 	{"item:MimeContent", sShape::MimeContent},
 	{"item:Preview", sShape::Preview},
+	{"item:ResponseObjects", sShape::ResponseObjects},
 	{"item:TextBody", sShape::TextBody},
 	{"message:BccRecipients", sShape::BccRecipients},
 	{"message:CcRecipients", sShape::CcRecipients},
@@ -4205,7 +4206,8 @@ void tItem::update(const sShape& shape)
 		if (shape.special & sShape::Preview)
 			Preview.emplace(mkPreview(znul(text)));
 	}
-
+	if (shape.special & sShape::ResponseObjects)
+		ResponseObjects.emplace(shape);
 	if ((prop = shape.get(PR_CHANGE_KEY)))
 		fromProp(prop, defaulted(ItemId).ChangeKey);
 	fromProp(shape.get(PR_CLIENT_SUBMIT_TIME), DateTimeSent);
@@ -4414,6 +4416,10 @@ void tItemResponseShape::tags(sShape& shape) const
 	}
 	if (shape.special & (sShape::Preview | sShape::TextBody))
 		shape.add(PR_BODY);
+	if (shape.special & sShape::ResponseObjects) {
+		shape.add(PR_MESSAGE_CLASS).add(PR_MESSAGE_FLAGS);
+		shape.add(NtAppointmentStateFlags, PT_LONG);
+	}
 	if (shape.special & sShape::MessageFlags) {
 		shape.add(PR_MESSAGE_FLAGS, sShape::FL_FIELD);
 		shape.special &= ~sShape::MessageFlags;
@@ -5009,6 +5015,44 @@ void tSetItemField::put(sShape& shape) const
 	} else {
 		convProp(item->Name(), child->Name(), child, shape);
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Determine the responses applicable to an item
+ *
+ * Only response objects that CreateItem can process are listed.
+ *
+ * @param      shape  Shape containing the item properties
+ */
+tResponseObjects::tResponseObjects(const sShape &shape)
+{
+	auto cls = shape.get<const char>(PR_MESSAGE_CLASS, sShape::FL_ANY);
+	auto v32 = shape.get<const uint32_t>(PR_MESSAGE_FLAGS, sShape::FL_ANY);
+	uint32_t msgflags = v32 != nullptr ? *v32 : 0;
+	v32 = shape.get<const uint32_t>(NtAppointmentStateFlags, sShape::FL_ANY);
+	uint32_t apptstate = v32 != nullptr ? *v32 : 0;
+	if (cls == nullptr)
+		cls = "IPM.Note";
+	bool attendee = class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0 ||
+	                (class_match_prefix(cls, "IPM.Appointment") == 0 &&
+	                (apptstate & (asfMeeting | asfReceived | asfCanceled)) == (asfMeeting | asfReceived));
+	if (attendee)
+		Objects.insert(Objects.end(), {tAcceptItem::NAME,
+			tTentativelyAcceptItem::NAME, tDeclineItem::NAME});
+	if (class_match_prefix(cls, "IPM.Appointment") == 0 &&
+	    (apptstate & (asfMeeting | asfReceived)) == asfMeeting)
+		Objects.emplace_back(tCancelCalendarItem::NAME);
+	else if (!(msgflags & MSGFLAG_UNSENT) &&
+	    class_match_prefix(cls, "IPM.Contact") != 0 &&
+	    class_match_prefix(cls, "IPM.DistList") != 0 &&
+	    class_match_prefix(cls, "IPM.Task") != 0 &&
+	    (class_match_prefix(cls, "IPM.Appointment") != 0 || (apptstate & asfMeeting)))
+		Objects.insert(Objects.end(), {tReplyToItem::NAME, tReplyAllToItem::NAME});
+	Objects.emplace_back(tForwardItem::NAME);
+	if ((msgflags & (MSGFLAG_RN_PENDING | MSGFLAG_UNSENT)) == MSGFLAG_RN_PENDING)
+		Objects.emplace_back(tSuppressReadReceipt::NAME);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

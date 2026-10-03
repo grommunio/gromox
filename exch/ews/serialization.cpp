@@ -1069,6 +1069,12 @@ void tEffectiveRights::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(Read);
 }
 
+void tResponseObjects::serialize(tinyxml2::XMLElement *xml) const
+{
+	for (auto name : Objects)
+		xml->InsertNewChildElement(fmt::format("t:{}", name).c_str());
+}
+
 tEmailAddressType::tEmailAddressType(const tinyxml2::XMLElement *xml) :
 	XMLINIT(Name),
 	XMLINIT(EmailAddress),
@@ -1417,6 +1423,7 @@ void tItem::serialize(XMLElement *xml) const
 	XMLDUMPT(InternetMessageHeaders);
 	XMLDUMPT(DateTimeSent);
 	XMLDUMPT(DateTimeCreated);
+	XMLDUMPT(ResponseObjects);
 	XMLDUMPT(ReminderDueBy);
 	XMLDUMPT(ReminderIsSet);
 	XMLDUMPT(ReminderMinutesBeforeStart);
