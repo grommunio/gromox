@@ -4505,14 +4505,17 @@ static void notif_msg_modified(IDB_ITEM *pidb, uint64_t folder_id,
     const std::string &folder_name, uint64_t message_id) try
 {
 	TPROPVAL_ARRAY propvals;
-	static constexpr proptag_t tmp_proptags[] = {
+	auto dir = cu_get_maildir();
+	proptag_t kw_tag = 0;
+	std::vector<proptag_t> tmp_proptags = {
 		PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME, PidTagMidString,
 		PR_FLAG_STATUS, PR_ICON_INDEX,
 	};
-	if (!exmdb_client->get_message_properties(cu_get_maildir(),
-	    nullptr, CP_ACP, eid_t(1, message_id),
-	    tmp_proptags, &propvals))
-		return;	
+	if (!me_add_kw_proptag(pidb, dir, tmp_proptags, kw_tag))
+		return;
+	if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
+	    eid_t(1, message_id), tmp_proptags, &propvals))
+		return;
 	auto num = propvals.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	auto message_flags = num != nullptr ? *num : 0;
 	num = propvals.get<const uint32_t>(PR_FLAG_STATUS);
@@ -4520,20 +4523,26 @@ static void notif_msg_modified(IDB_ITEM *pidb, uint64_t folder_id,
 	num = propvals.get<const uint32_t>(PR_ICON_INDEX);
 	bool set_answered = num != nullptr && *num == MAIL_ICON_REPLIED;
 	bool set_forwarded = num != nullptr && *num == MAIL_ICON_FORWARDED;
+	auto sa = propvals.get<const STRING_ARRAY>(kw_tag);
+	auto keywords = me_join_categories(sa);
 	auto str = propvals.get<const char>(PidTagMidString);
 	if (str != nullptr) {
  UPDATE_MESSAGE_FLAGS:
 		auto b_unsent = !!(message_flags & MSGFLAG_UNSENT);
 		auto b_read   = !!(message_flags & MSGFLAG_READ);
-		auto qstr = fmt::format("UPDATE messages SET read={}, unsent={}, flagged={}",
+		auto qstr = fmt::format("UPDATE messages SET read={}, "
+		            "unsent={}, flagged={}, keywords=?",
 		            b_read, b_unsent, b_flagged);
 		if (set_answered)
 			qstr += ", replied=1";
 		if (set_forwarded)
 			qstr += ", forwarded=1";
 		qstr += " WHERE message_id=" + std::to_string(message_id);
-		if (gx_sql_exec(pidb->psqlite, qstr.c_str()) != SQLITE_OK)
+		auto ust = gx_sql_prep(pidb->psqlite, qstr.c_str());
+		if (ust == nullptr || ust.bind_text(1, keywords) != SQLITE_OK ||
+		    ust.step() != SQLITE_DONE)
 			/* uh.. still notify? */;
+		ust.finalize();
 
 		qstr = "SELECT uid FROM messages WHERE message_id=" + std::to_string(message_id);
 		auto stm = gx_sql_prep(pidb->psqlite, qstr.c_str());
