@@ -114,6 +114,7 @@ struct syncmessage_entry {
 	std::string midstr;
 	bool answered = false, forwarded = false, flagged = false;
 	bool delmarked = false;
+	std::string keywords;
 };
 
 using syncfolder_list = std::unordered_map<uint64_t /* folder_id */, syncfolder_entry>;
@@ -152,6 +153,7 @@ struct IDB_ITEM {
 	std::string username;
 	time_t last_time = 0, load_time = 0;
 	uint32_t sub_id = 0;
+	propid_t kw_propid = 0;
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference{0};
 	std::timed_mutex giant_lock;
@@ -1303,19 +1305,12 @@ static inline bool atom_special(char c)
 }
 
 /**
- * Obtain message object categories and turn it into a single space-separated
- * string.
+ * Turn message object categories into a single space-separated string of
+ * IMAP atoms.
  */
-static std::string me_get_categories(const char *dir, message_content &mct)
+static std::string me_join_categories(const STRING_ARRAY *sa)
 {
 	std::string kw;
-	const PROPERTY_NAME name = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
-	const PROPNAME_ARRAY req = {1, deconst(&name)};
-	PROPID_ARRAY rsp{};
-	if (!exmdb_client->get_named_propids(dir, false, &req, &rsp) ||
-	    rsp.size() != 1 || rsp[0] == 0)
-		return kw;
-	auto sa = mct.proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, rsp[0]));
 	if (sa == nullptr)
 		return kw;
 	for (std::string categ : *sa) {
@@ -1327,12 +1322,39 @@ static std::string me_get_categories(const char *dir, message_content &mct)
 	return kw;
 }
 
+/* @out stays 0 while the store has not registered PidNameKeywords yet */
+static bool me_get_kw_propid(IDB_ITEM *pidb, const char *dir, propid_t &out)
+{
+	out = pidb->kw_propid;
+	if (out != 0)
+		return true;
+	const PROPERTY_NAME name = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
+	const PROPNAME_ARRAY req = {1, deconst(&name)};
+	PROPID_ARRAY rsp{};
+	if (!exmdb_client->get_named_propids(dir, false, &req, &rsp) ||
+	    rsp.size() != 1)
+		return false;
+	out = pidb->kw_propid = rsp[0];
+	return true;
+}
+
+/* Request PidNameKeywords too once the store has registered it */
+static bool me_add_kw_proptag(IDB_ITEM *pidb, const char *dir,
+    std::vector<proptag_t> &tags, proptag_t &kw_tag)
+{
+	propid_t kw_propid = 0;
+	if (!me_get_kw_propid(pidb, dir, kw_propid))
+		return false;
+	kw_tag = PROP_TAG(PT_MV_UNICODE, kw_propid);
+	if (kw_propid != 0)
+		tags.emplace_back(kw_tag);
+	return true;
+}
+
 static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
     uint64_t message_id, sqlite3 *db, syncmessage_entry e) try
 {
 	MESSAGE_CONTENT *pmsgctnt;
-	std::string keywords;
-	
 	auto dir = cu_get_maildir();
 	std::string djson;
 	if (e.midstr.size() > 0 &&
@@ -1362,11 +1384,6 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 				dir, LLU{message_id});
 			return false;
 		}
-		/*
-		 * Obtain message object categories and turn it into a single
-		 * space-separated string.
-		 */
-		keywords = me_get_categories(dir, *pmsgctnt);
 		auto log_id = dir + ":m"s + std::to_string(message_id);
 		MAIL imail;
 		oxcmail_converter cvt;
@@ -1421,7 +1438,7 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	stm_insert.bind_text(9, rcpt);
 	stm_insert.bind_int64(10, size);
 	stm_insert.bind_int64(11, e.recv_time);
-	stm_insert.bind_text(12, keywords);
+	stm_insert.bind_text(12, e.keywords);
 	if (stm_insert.step() != SQLITE_DONE)
 		mlog(LV_ERR, "E-2075: sqlite_step not finished");
 	auto qstr = "UPDATE messages SET flagged=" + std::to_string(e.flagged);
@@ -1517,6 +1534,14 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 	mlog(LV_NOTICE, "Running sync_contents for %s, folder %llu",
 	        dir, LLU{folder_id});
 
+	proptag_t kw_tag = 0;
+	std::vector<proptag_t> proptags = {
+		PidTagMid, PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME,
+		PR_MESSAGE_DELIVERY_TIME, PidTagMidString, PR_FLAG_STATUS,
+		PR_ICON_INDEX, PR_MSG_STATUS,
+	};
+	if (!me_add_kw_proptag(pidb, dir, proptags, kw_tag))
+		return false;
 	{
 		uint32_t table_id = 0, row_count = 0;
 		if (!exmdb_client->load_content_table(dir, CP_ACP,
@@ -1524,13 +1549,8 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 		    nullptr, nullptr, &table_id, &row_count))
 			return false;
 		auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
-		static constexpr proptag_t proptags_0[] = {
-			PidTagMid, PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME,
-			PR_MESSAGE_DELIVERY_TIME, PidTagMidString, PR_FLAG_STATUS,
-			PR_ICON_INDEX, PR_MSG_STATUS,
-		};
 		if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
-		    proptags_0, 0, row_count, &rows))
+		    proptags, 0, row_count, &rows))
 			return false;
 	}
 
@@ -1571,11 +1591,12 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 		bool answered = (num != nullptr && *num == MAIL_ICON_REPLIED) ||
 		                (msgstatus != nullptr && *msgstatus & MSGSTATUS_ANSWERED);
 		bool forwarded = num != nullptr && *num == MAIL_ICON_FORWARDED;
+		auto sa = rows.pparray[i]->get<const STRING_ARRAY>(kw_tag);
 		syncmessagelist.emplace(message_id, syncmessage_entry{
 			mod_time != nullptr ? *mod_time : 0,
 			recv_time != nullptr ? *recv_time : 0,
 			*flags, znul(midstr), answered, forwarded, flagged,
-			delmarked});
+			delmarked, me_join_categories(sa)});
 	}
 
 	size_t totalmsgs = syncmessagelist.size(), procmsgs = 0;
@@ -2570,7 +2591,6 @@ static int me_mcopy(std::span<char *> argv, int sockd) try
 	    pstmt.col_uint64(CTM_FOLDERID) != src_fid)
 		return MIDB_E_NO_MESSAGE;
 	uint64_t src_mid = pstmt.col_uint64(CTM_MSGID), message_id = 0;
-	std::string src_kw = znul(pstmt.col_text(CTM_KEYWORDS));
 	pstmt.finalize();
 	if (!exmdb_client->allocate_message_id(argv[1],
 	    eid_t(1, dst_fid), &message_id))
@@ -2599,23 +2619,6 @@ static int me_mcopy(std::span<char *> argv, int sockd) try
 		if (pstmt.step() == SQLITE_ROW) {
 			mid_string = "TRUE "s + pstmt.col_text(0) + "\r\n";
 			pstmt.finalize();
-			/*
-			 * exmdb carried PidNameKeywords to the copied message,
-			 * but the async midb insert took the cached-digest path
-			 * (the source ext file is hardlinked) and left the midb
-			 * keywords column empty. Mirror the source row's value
-			 * onto the dst row while we still hold the lock; no exmdb
-			 * round-trip is needed since the store already agrees.
-			 */
-			if (!src_kw.empty()) {
-				auto stm_kw = gx_sql_prep(pidb->psqlite, "UPDATE messages "
-				              "SET keywords=? WHERE message_id=?");
-				if (stm_kw != nullptr) {
-					stm_kw.bind_text(1, src_kw);
-					stm_kw.bind_int64(2, rop_util_get_gc_value(message_id));
-					stm_kw.step();
-				}
-			}
 			break;
 		}
 		pstmt.reset();
@@ -4165,15 +4168,18 @@ static int me_xrsyf(std::span<char *> argv, int sockd)
 static void notif_msg_added(IDB_ITEM *pidb,
     uint64_t folder_id, uint64_t message_id) try
 {
-	static constexpr proptag_t tmp_proptags[] =
+	auto dir = cu_get_maildir();
+	proptag_t kw_tag = 0;
+	std::vector<proptag_t> tmp_proptags =
 		{PR_MESSAGE_DELIVERY_TIME, PR_LAST_MODIFICATION_TIME,
 		PidTagMidString, PR_MESSAGE_FLAGS, PR_FLAG_STATUS,
 		PR_ICON_INDEX, PR_MSG_STATUS};
+	if (!me_add_kw_proptag(pidb, dir, tmp_proptags, kw_tag))
+		return;
 	TPROPVAL_ARRAY propvals;
-	if (!exmdb_client->get_message_properties(cu_get_maildir(),
-	    nullptr, CP_ACP, eid_t(1, message_id),
-	    tmp_proptags, &propvals))
-		return;		
+	if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
+	    eid_t(1, message_id), tmp_proptags, &propvals))
+		return;
 
 	auto lnum = propvals.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
 	auto mod_time = lnum != nullptr ? *lnum : 0;
@@ -4240,9 +4246,11 @@ static void notif_msg_added(IDB_ITEM *pidb,
 	pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return;	
+	auto sa = propvals.get<const STRING_ARRAY>(kw_tag);
 	if (!me_insert_message(pstmt, &uidnext, message_id, pidb->psqlite,
 	    syncmessage_entry{mod_time, received_time, message_flags,
-	    znul(str), set_answered, set_forwarded, b_flagged, b_delmarked}))
+	    znul(str), set_answered, set_forwarded, b_flagged, b_delmarked,
+	    me_join_categories(sa)}))
 		return;
 	if (flags_buff.find(midb_flag::deleted) == flags_buff.npos)
 		return;
