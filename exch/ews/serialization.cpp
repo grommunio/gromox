@@ -2498,6 +2498,23 @@ void mGetItemResponseMessage::serialize(XMLElement *xml) const
 	XMLDUMPM(Items);
 }
 
+mAddEntityFeedbackRequest::mAddEntityFeedbackRequest(const XMLElement *xml)
+{
+	auto list = xml->FirstChildElement("EntityFeedbackEntries");
+	if (list == nullptr)
+		return;
+	for (auto e = list->FirstChildElement("EntityFeedbackEntry"); e != nullptr;
+	     e = e->NextSiblingElement("EntityFeedbackEntry"))
+		++entries;
+}
+
+void mAddEntityFeedbackResponse::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(ErrorCount);
+	XMLDUMPM(ErrorDetails);
+}
+
 mFindPeopleRequest::mFindPeopleRequest(const XMLElement *xml) :
 	XMLINIT(QueryString)
 {}

@@ -4257,6 +4257,27 @@ struct mFindPeopleResponse : public mResponseMessageType {
 };
 
 /**
+ * Messages.xsd (AddEntityFeedbackType)
+ */
+struct mAddEntityFeedbackRequest {
+	explicit mAddEntityFeedbackRequest(const tinyxml2::XMLElement *);
+
+	size_t entries = 0;
+};
+
+/**
+ * Messages.xsd (AddEntityFeedbackResponseType)
+ */
+struct mAddEntityFeedbackResponse : public mResponseMessageType {
+	using mResponseMessageType::success;
+
+	int32_t ErrorCount = 0;
+	std::string ErrorDetails;
+
+	void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd (simplified)
  */
 struct mGetPersonaRequest {
