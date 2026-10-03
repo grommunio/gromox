@@ -361,6 +361,8 @@ class sShape {
 	static constexpr uint64_t Rights =            1 << 10;
 	static constexpr uint64_t Permissions =       1 << 11;
 	static constexpr uint64_t ReplyToRecipients = 1 << 12;
+	static constexpr uint64_t Preview =           1 << 13;
+	static constexpr uint64_t TextBody =          1 << 14;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients | ReplyToRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
@@ -1045,7 +1047,7 @@ struct tFieldURI {
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, proptag_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, proptype_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 18> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 20> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -1997,13 +1999,13 @@ struct tItem : public NS_EWS_Types {
 	//<xs:element name="PolicyTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="RetentionDate" type="xs:dateTime" minOccurs="0" />
-	//<xs:element name="Preview" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Preview;
 	//<xs:element name="RightsManagementLicenseData" type="t:RightsManagementLicenseDataType" minOccurs="0" />
 	//<xs:element name="PredictedActionReasons" type="t:NonEmptyArrayOfPredictedActionReasonType" minOccurs="0" />
 	//<xs:element name="IsClutter" type="xs:boolean" minOccurs="0" />
 	//<xs:element name="BlockStatus" type="xs:boolean" minOccurs="0" />
 	//<xs:element name="HasBlockedImages" type="xs:boolean" minOccurs="0" />
-	//<xs:element name="TextBody" type="t:BodyType" minOccurs="0"/>
+	std::optional<tBody> TextBody;
 	//<xs:element name="IconIndex" type="t:IconIndexType" minOccurs="0"/>
 	//<xs:element name="SearchKey" type="xs:base64Binary" minOccurs="0" />
 	//<xs:element name="SortKey" type="xs:long" minOccurs="0" />
