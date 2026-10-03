@@ -3777,6 +3777,8 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 
 void tFieldURI::tags(sShape& shape, bool add) const
 {
+	if (FieldURI == "item:ItemId")
+		return;
 	auto tags = tagMap.equal_range(FieldURI);
 	for (auto it = tags.first; it != tags.second; ++it)
 		shape.add(it->second, add ? sShape::FL_FIELD : sShape::FL_RM);
