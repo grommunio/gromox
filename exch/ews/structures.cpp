@@ -654,6 +654,58 @@ std::string_view sCalendarMeetingRequestCommon::timezoneId() const
 	return {};
 }
 
+/**
+ * @brief      Compute the first and last occurrence of a series
+ *
+ * @param      eid    Entry ID of the recurring master
+ * @param      apr    Appointment recurrence pattern
+ * @param      tzbin  PidLidAppointmentTimeZoneDefinitionRecur (may be nullptr)
+ * @param      start  PR_START_DATE of the master (may be nullptr)
+ */
+void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &eid,
+    const APPOINTMENT_RECUR_PAT &apr, const BINARY *tzbin, const uint64_t *start) try
+{
+	auto &rp = apr.recur_pat;
+	TZDEF tzdef;
+	bool have_tz = false;
+	if (tzbin != nullptr) {
+		EXT_PULL ep;
+		ep.init(tzbin->pb, tzbin->cb, nullptr, EXT_FLAG_UTF16);
+		have_tz = ep.g_tzdef(&tzdef) == pack_result::ok;
+	}
+	int64_t fixed = 0;
+	if (start != nullptr)
+		fixed = (rop_util_nttime_to_unix(*start) -
+		        rop_util_rtime_to_unix(rp.startdate + apr.starttimeoffset)) / 60;
+	auto toUtc = [&](uint32_t rtime) {
+		int64_t off = fixed;
+		if (have_tz && !offset_from_tz(tzdef, rop_util_rtime_to_unix(rtime), off))
+			off = fixed;
+		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
+	};
+	auto mkOcc = [&](uint32_t date) {
+		uint32_t ostart = date + apr.starttimeoffset;
+		for (const auto &ei : apr.pexceptioninfo)
+			if (ei.originalstartdate == ostart)
+				return tOccurrenceInfoType(sOccurrenceId(eid, date),
+				       toUtc(ei.startdatetime), toUtc(ei.enddatetime), toUtc(ostart));
+		return tOccurrenceInfoType(sOccurrenceId(eid, date), toUtc(ostart),
+		       toUtc(date + apr.endtimeoffset), toUtc(ostart));
+	};
+
+	FirstOccurrence.emplace(mkOcc(nthOccurrenceDate(rp, 1)));
+	if (rp.endtype != IDC_RCEV_PAT_ERB_END &&
+	    rp.endtype != IDC_RCEV_PAT_ERB_AFTERNOCCUR)
+		return;
+	auto gone = std::count_if(rp.pdeletedinstancedates.cbegin(),
+	            rp.pdeletedinstancedates.cend(),
+	            [&](uint32_t d) { return isTrulyDeleted(rp, d); });
+	if (rp.occurrencecount > gone)
+		LastOccurrence.emplace(mkOcc(nthOccurrenceDate(rp, rp.occurrencecount - gone)));
+} catch (const InputError &) {
+	/* pattern type not enumerable */
+}
+
 static std::string tzdef_keyname(const BINARY *bin)
 {
 	if (bin == nullptr)
@@ -753,13 +805,19 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 			auto& rec = Recurrence.emplace();
 			rec.RecurrencePattern = get_recurrence_pattern(apprecurr.recur_pat);
 			rec.RecurrenceRange = get_recurrence_range(apprecurr.recur_pat);
+			auto entryid_propval = shape.get(PR_ENTRYID);
+			if ((shape.special & sShape::Occurrences) && entryid_propval != nullptr)
+				firstLastOccurrence(*entryid_propval, apprecurr,
+					shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY),
+					shape.get<uint64_t>(PR_START_DATE) != nullptr ?
+					shape.get<uint64_t>(PR_START_DATE) :
+					shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY));
 
 			// The count of the exceptions (modified and deleted occurrences)
 			// is summed in deletedinstancecount
 			if (apprecurr.recur_pat.pdeletedinstancedates.size() > 0) {
 				std::vector<tOccurrenceInfoType> modOccs;
 				std::vector<tDeletedOccurrenceInfoType> delOccs;
-				auto entryid_propval = shape.get(PR_ENTRYID);
 				std::chrono::seconds tz_offset{0};
 				auto sp = shape.get<uint64_t>(PR_START_DATE);
 				if (!sp)
@@ -3835,6 +3893,8 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
+	{"calendar:FirstOccurrence", sShape::Occurrences},
+	{"calendar:LastOccurrence", sShape::Occurrences},
 	{"calendar:OptionalAttendees", sShape::OptionalAttendees},
 	{"calendar:RequiredAttendees", sShape::RequiredAttendees},
 	{"calendar:Resources", sShape::Resources},
@@ -4420,6 +4480,8 @@ void tItemResponseShape::tags(sShape& shape) const
 		shape.add(PR_MESSAGE_CLASS).add(PR_MESSAGE_FLAGS);
 		shape.add(NtAppointmentStateFlags, PT_LONG);
 	}
+	if (shape.special & sShape::Occurrences)
+		shape.add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
 	if (shape.special & sShape::MessageFlags) {
 		shape.add(PR_MESSAGE_FLAGS, sShape::FL_FIELD);
 		shape.special &= ~sShape::MessageFlags;

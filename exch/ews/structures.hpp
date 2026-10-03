@@ -364,6 +364,7 @@ class sShape {
 	static constexpr uint64_t Preview =           1 << 13;
 	static constexpr uint64_t TextBody =          1 << 14;
 	static constexpr uint64_t ResponseObjects =   1 << 15;
+	static constexpr uint64_t Occurrences =       1 << 16;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients | ReplyToRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
@@ -1059,7 +1060,7 @@ struct tFieldURI {
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, proptag_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, proptype_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 21> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 23> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -2119,6 +2120,7 @@ struct sCalendarMeetingRequestCommon {
 	void update(const sShape &);
 
 	void timezoneId(std::string_view, bool=true, bool=true);
+	void firstLastOccurrence(const TAGGED_PROPVAL &, const APPOINTMENT_RECUR_PAT &, const BINARY *, const uint64_t *);
 	std::string_view timezoneId() const;
 
 	//<!-- Single and Occurrence only -->
@@ -2152,8 +2154,8 @@ struct sCalendarMeetingRequestCommon {
 
 	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
 	std::optional<tRecurrenceType> Recurrence;
-	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	std::optional<tOccurrenceInfoType> FirstOccurrence;
+	std::optional<tOccurrenceInfoType> LastOccurrence;
 
 	std::optional<std::vector<tOccurrenceInfoType>> ModifiedOccurrences;
 	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;

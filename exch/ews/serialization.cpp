@@ -233,6 +233,8 @@ void sCalendarMeetingRequestCommon::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(OptionalAttendees);
 	XMLDUMPT(Resources);
 	XMLDUMPT(Recurrence);
+	XMLDUMPT(FirstOccurrence);
+	XMLDUMPT(LastOccurrence);
 	XMLDUMPT(StartTimeZoneId);
 	XMLDUMPT(EndTimeZoneId);
 	XMLDUMPT(ModifiedOccurrences);

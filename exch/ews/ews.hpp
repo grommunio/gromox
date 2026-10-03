@@ -505,4 +505,7 @@ inline T* EWSContext::construct(Args&&... args)
 	return new(alloc<T>()) T(std::forward<Args>(args)...);
 }
 
+extern bool isTrulyDeleted(const RECURRENCE_PATTERN &, uint32_t);
+extern uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &, uint32_t);
+
 }
