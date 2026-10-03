@@ -745,7 +745,7 @@ static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
 		if (ppropname->kind != MNID_STRING ||
 		    strcasecmp(ppropname->pname, "Content-Type") == 0)
 			continue;
-		auto str = static_cast<const char *>(mct.proplist.ppropval[i].pvalue);
+		str = static_cast<const char *>(mct.proplist.ppropval[i].pvalue);
 		/*
 		 * Do not use text8 here: for header names vmime has a
 		 * registered value class for (Received, Return-Path, ...),
@@ -920,11 +920,11 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 	}
 	
 	if (atc.pembedded != nullptr && mail_depth >= m_max_attach_depth) {
-		auto str = fmt::format("This embedded attachment was suppressed upon sending "
+		auto msg = fmt::format("This embedded attachment was suppressed upon sending "
 		           "because it is nested too deeply (maximum {})\n",
 		           m_max_attach_depth);
 		vpart.getBody()->setContents(
-			vmime::make_shared<vmime::stringContentHandler>(std::move(str)),
+			vmime::make_shared<vmime::stringContentHandler>(std::move(msg)),
 			mt_plain, vmime::charsets::UTF_8);
 		return ecSuccess;
 	}
@@ -1033,7 +1033,6 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 	static const vmime::mediaType mt_mixed (vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_MIXED);
 	static const vmime::mediaType mt_alt   (vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_ALTERNATIVE);
 	static const vmime::mediaType mt_rel   (vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_RELATED);
-	static const vmime::mediaType mt_plain (vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_PLAIN);
 	static const vmime::mediaType mt_html  (vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_HTML);
 	static const vmime::mediaType mt_cal   (vmime::mediaTypes::TEXT, "calendar");
 
@@ -1215,7 +1214,7 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 			return ecError;
 		}
 		std::string tmp_buff;
-		auto err = ical.serialize(tmp_buff);
+		err = ical.serialize(tmp_buff);
 		if (err != ecSuccess) {
 			mlog(LV_ERR, "E-2361: %s", mapi_strerror(err));
 			return err;

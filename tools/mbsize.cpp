@@ -538,8 +538,8 @@ int main(int argc, char **argv) try
 	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "FS directories", dirmeta.units(), s_unit, dirmeta.punits(), s_unit);
 	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Orphaned/Unrecognized files", orphans.units(), s_unit, orphans.punits(), s_unit);
 	if (g_show_orphans)
-		for (const auto &[key, sb] : allfiles)
-			if (!S_ISDIR(sb.st_mode))
+		for (const auto &[key, sb2] : allfiles)
+			if (!S_ISDIR(sb2.st_mode))
 				printf("\t%s\n", key.c_str());
 
 	printf("%-30s  %9llu %-2s  %9llu %-2s\n", "Total", du.units(), s_unit, du.punits(), s_unit);
