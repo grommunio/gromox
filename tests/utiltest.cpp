@@ -694,7 +694,7 @@ static int t_tzdef()
 	d.rules[0].year = 1971;
 	d.rules[1].year = 1972;
 	int64_t ofs;
-	offset_from_tz(d, 369 * 86400, ofs);
+	tz_to_offset(d, 369 * 86400, ofs);
 	return EXIT_SUCCESS;
 }
 

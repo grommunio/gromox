@@ -679,7 +679,7 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
 		        rop_util_rtime_to_unix(rp.startdate + apr.starttimeoffset)) / 60;
 	auto toUtc = [&](uint32_t rtime) {
 		int64_t off = fixed;
-		if (have_tz && !offset_from_tz(tzdef, rop_util_rtime_to_unix(rtime), off))
+		if (have_tz && !tz_to_offset(tzdef, rop_util_rtime_to_unix(rtime), off))
 			off = fixed;
 		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
 	};
@@ -2120,11 +2120,11 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 				auto tag = shape.tag(NtCommonStart);
 				if (tag != 0 && startTime.has_value() &&
 				    ct_contains(op, tag))
-					offset_from_tz(tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
+					tz_to_offset(tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
 				tag = shape.tag(NtCommonEnd);
 				if (tag != 0 && endTime.has_value() &&
 				    ct_contains(op, tag))
-					offset_from_tz(tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
+					tz_to_offset(tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
 			}
 		}
 	}

@@ -329,7 +329,7 @@ time_t timegm_dststd_start(const int year, const SYSTEMTIME *ruledate)
 /**
  * Calculate the offset from UTC from the timezone definition
  */
-bool offset_from_tz(const TZDEF &tzdef, time_t start_time, int64_t &offset)
+bool tz_to_offset(const TZDEF &tzdef, time_t start_time, int64_t &offset)
 {
 	struct tm start_date;
 	gmtime_r(&start_time, &start_date);
