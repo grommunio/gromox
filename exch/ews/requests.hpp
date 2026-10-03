@@ -43,6 +43,7 @@ EWSFUNC(mGetMailTipsRequest);
 EWSFUNC(mGetPersonaRequest);
 EWSFUNC(mGetRoomListsRequest);
 EWSFUNC(mGetRoomsRequest);
+EWSFUNC(mGetServerTimeZonesRequest);
 EWSFUNC(mGetServiceConfigurationRequest);
 EWSFUNC_NC(mGetStreamingEventsRequest);
 EWSFUNC(mGetUserAvailabilityRequest);

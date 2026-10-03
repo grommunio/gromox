@@ -784,6 +784,81 @@ void tTimeZoneDefinition::serialize(tinyxml2::XMLElement *xml) const
 	xml->SetAttribute("Name", Id.c_str());
 }
 
+namespace {
+
+std::string tz_duration(int32_t minutes)
+{
+	auto m = minutes < 0 ? -static_cast<int64_t>(minutes) : minutes;
+	std::string out = minutes < 0 ? "-PT" : "PT";
+	if (m >= 60)
+		out += fmt::format("{}H", m / 60);
+	if (m % 60 != 0 || m == 0)
+		out += fmt::format("{}M", m % 60);
+	return out;
+}
+
+void tz_recurring_transition(XMLElement *group, const std::string &to,
+    const SYSTEMTIME &st)
+{
+	static constexpr const char *wdays[] =
+		{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+	auto tr = group->InsertNewChildElement("t:RecurringDayTransition");
+	auto e = tr->InsertNewChildElement("t:To");
+	e->SetAttribute("Kind", "Period");
+	e->SetText(to.c_str());
+	tr->InsertNewChildElement("t:TimeOffset")->SetText(tz_duration(st.hour * 60 + st.minute).c_str());
+	tr->InsertNewChildElement("t:Month")->SetText(st.month);
+	tr->InsertNewChildElement("t:DayOfWeek")->SetText(wdays[st.dayofweek % 7]);
+	tr->InsertNewChildElement("t:Occurrence")->SetText(st.day >= 5 ? -1 : st.day);
+}
+
+}
+
+void tServerTimeZone::serialize(XMLElement *xml) const
+{
+	xml->SetAttribute("Id", tz.keyname.c_str());
+	xml->SetAttribute("Name", tz.keyname.c_str());
+	if (!full || tz.rules.empty())
+		return;
+	auto prefix = "trule:Microsoft/Registry/" + tz.keyname + "/";
+	auto periods = xml->InsertNewChildElement("t:Periods");
+	auto groups = xml->InsertNewChildElement("t:TransitionsGroups");
+	auto transitions = xml->InsertNewChildElement("t:Transitions");
+	for (size_t i = 0; i < tz.rules.size(); ++i) {
+		const auto &rule = tz.rules[i];
+		bool dst = rule.standarddate.month != 0 && rule.daylightdate.month != 0;
+		auto stdId = prefix + std::to_string(rule.year) + "-Standard";
+		auto dstId = prefix + std::to_string(rule.year) + "-Daylight";
+		auto p = periods->InsertNewChildElement("t:Period");
+		p->SetAttribute("Bias", tz_duration(rule.bias + rule.standardbias).c_str());
+		p->SetAttribute("Name", "Standard");
+		p->SetAttribute("Id", stdId.c_str());
+		if (dst) {
+			p = periods->InsertNewChildElement("t:Period");
+			p->SetAttribute("Bias", tz_duration(rule.bias + rule.daylightbias).c_str());
+			p->SetAttribute("Name", "Daylight");
+			p->SetAttribute("Id", dstId.c_str());
+		}
+		auto group = groups->InsertNewChildElement("t:TransitionsGroup");
+		group->SetAttribute("Id", static_cast<unsigned int>(i));
+		if (dst) {
+			tz_recurring_transition(group, dstId, rule.daylightdate);
+			tz_recurring_transition(group, stdId, rule.standarddate);
+		} else {
+			auto to = group->InsertNewChildElement("t:Transition")->InsertNewChildElement("t:To");
+			to->SetAttribute("Kind", "Period");
+			to->SetText(stdId.c_str());
+		}
+		auto tr = transitions->InsertNewChildElement(i == 0 ? "t:Transition" : "t:AbsoluteDateTransition");
+		auto to = tr->InsertNewChildElement("t:To");
+		to->SetAttribute("Kind", "Group");
+		to->SetText(static_cast<unsigned int>(i));
+		if (i > 0)
+			tr->InsertNewChildElement("t:DateTime")->SetText(
+				fmt::format("{:04}-01-01T00:00:00", rule.year).c_str());
+	}
+}
+
 tCalendarItem::tCalendarItem(const tinyxml2::XMLElement *xml) :
 	tItem(xml),
 	sCalendarMeetingRequestCommon(xml),
@@ -2203,6 +2278,22 @@ void mGetRoomsResponse::serialize(XMLElement *xml) const
 {
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(Rooms);
+}
+
+mGetServerTimeZonesRequest::mGetServerTimeZonesRequest(const XMLElement *xml) :
+	XMLINIT(Ids),
+	XMLINITA(ReturnFullTimeZoneData)
+{}
+
+void mGetServerTimeZonesResponseMessage::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(TimeZoneDefinitions);
+}
+
+void mGetServerTimeZonesResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
 }
 
 mGetServiceConfigurationRequest::mGetServiceConfigurationRequest(const XMLElement *xml) :

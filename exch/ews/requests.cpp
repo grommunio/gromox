@@ -1916,6 +1916,42 @@ void process(mGetMailTipsRequest &&request, XMLElement *response, const EWSConte
 }
 
 /**
+ * @brief      Process GetServerTimeZones
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetServerTimeZonesRequest &&request, XMLElement *response, const EWSContext &)
+{
+	response->SetName("m:GetServerTimeZonesResponse");
+
+	bool full = request.ReturnFullTimeZoneData.value_or(true);
+	std::vector<std::string_view> blobs;
+	if (request.Ids) {
+		for (const auto &id : *request.Ids)
+			if (auto tzd = wintz_to_tzdef(id.c_str()))
+				blobs.push_back(*tzd);
+	} else {
+		blobs = wintz_all_tzdefs();
+	}
+	mGetServerTimeZonesResponseMessage msg;
+	for (auto blob : blobs) {
+		EXT_PULL ep;
+		TZDEF tzdef;
+		ep.init(blob.data(), blob.size(), nullptr, EXT_FLAG_UTF16);
+		if (ep.g_tzdef(&tzdef) == pack_result::ok && !tzdef.keyname.empty())
+			msg.TimeZoneDefinitions.emplace_back(std::move(tzdef), full);
+	}
+	std::sort(msg.TimeZoneDefinitions.begin(), msg.TimeZoneDefinitions.end(),
+		[](const tServerTimeZone &a, const tServerTimeZone &b) { return a.tz.keyname < b.tz.keyname; });
+	msg.success();
+	mGetServerTimeZonesResponse data;
+	data.ResponseMessages.emplace_back(std::move(msg));
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetRoomListsRequest
  */
 void process(mGetRoomListsRequest&&, XMLElement *response, const EWSContext &ctx)

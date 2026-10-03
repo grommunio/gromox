@@ -161,6 +161,10 @@ template<> struct ExplicitConvert<Structures::sString> :
     public ExplicitConvert<std::string> {
 };
 
+template<> struct ExplicitConvert<Structures::mGetServerTimeZonesRequest::Id> :
+    public ExplicitConvert<std::string> {
+};
+
 /**
  * @brief      Conversion specialization for timestamps
  */

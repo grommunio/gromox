@@ -11,6 +11,7 @@ class GX_EXPORT archive {
 	~archive();
 	errno_t open(const char *file);
 	const std::string_view *find(const std::string &) const;
+	const std::map<std::string, std::string_view> &list() const { return entries; }
 
 	protected:
 	const char *mapped_area = nullptr;

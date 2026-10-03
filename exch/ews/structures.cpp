@@ -2020,6 +2020,11 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+tServerTimeZone::tServerTimeZone(TZDEF &&t, bool f) : tz(std::move(t)), full(f)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
 tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
 	StartTime(clock::from_time_t(fb_event.start_time)),
 	EndTime(clock::from_time_t(fb_event.end_time))

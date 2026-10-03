@@ -130,6 +130,7 @@ extern GX_EXPORT bool setup_utf8_locale();
 extern GX_EXPORT int iconv_validate();
 extern GX_EXPORT const std::string_view *ianatz_to_tzdef(const char *);
 extern GX_EXPORT const std::string_view *wintz_to_tzdef(const char *);
+extern GX_EXPORT std::vector<std::string_view> wintz_all_tzdefs();
 extern GX_EXPORT bool get_digest(const char *src, const char *tag, char *out, size_t outmax);
 extern GX_EXPORT bool parse_impersonation_address(const char *address, std::string &store_user, std::string &auth_user, bool &is_impersonation);
 extern GX_EXPORT void mlog_init(const char *ident, const char *file, unsigned int level, const char *user = nullptr);
