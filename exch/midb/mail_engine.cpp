@@ -3799,7 +3799,7 @@ static int me_mskwd(std::span<char *> argv, int sockd) try
 	 * that a change notification re-syncing from exmdb in between cannot
 	 * resurrect the prior keyword set.
 	 */
-	auto err = me_set_categories(argv[1], msg_id, gx_split(old_kw, ' '));
+	auto err = me_set_categories(argv[1], msg_id, gx_split_ws(keywords));
 	if (err != MIDB_I_SUCCESS)
 		return err;
 
