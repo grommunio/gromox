@@ -647,6 +647,7 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	fromProp(shape.get(NtMeetingWorkspaceUrl), MeetingWorkspaceUrl);
 	fromProp(shape.get(NtNetShowUrl), NetShowUrl);
 	fromProp(shape.get(NtTimeZone), TimeZone);
+	fromProp(shape.get(NtRecurrencePattern), When);
 
 
 	const TAGGED_PROPVAL* prop;
@@ -3707,6 +3708,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:StartTimeZoneId", {NtAppointmentTimeZoneDefinitionStartDisplay, PT_BINARY}},
 	{"calendar:TimeZone", {NtTimeZone, PT_UNICODE}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
+	{"calendar:When", {NtRecurrencePattern, PT_UNICODE}},
 	{"contacts:CompleteName", {NtYomiFirstName, PT_UNICODE}},
 	{"contacts:CompleteName", {NtYomiLastName, PT_UNICODE}},
 	{"contacts:DisplayName", {NtFileAs, PT_UNICODE}},

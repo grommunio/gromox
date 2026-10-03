@@ -2117,7 +2117,7 @@ struct sCalendarMeetingRequestCommon {
 	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
 	std::optional<std::string> Location;
 
-	// <xs:element name="When" type="xs:string" minOccurs="0" />
+	std::optional<std::string> When;
 	std::optional<bool> IsMeeting;
 	std::optional<bool> IsCancelled;
 	std::optional<bool> IsRecurring;

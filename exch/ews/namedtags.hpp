@@ -75,6 +75,7 @@ static const PROPERTY_NAME NtRecurring = {MNID_ID, PSETID_Appointment, PidLidRec
 static const PROPERTY_NAME NtIntendedBusyStatus = {MNID_ID, PSETID_Appointment, PidLidIntendedBusyStatus};
 static const PROPERTY_NAME NtExceptionReplaceTime = {MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime};
 static const PROPERTY_NAME NtFInvited = {MNID_ID, PSETID_Appointment, PidLidFInvited};
+static const PROPERTY_NAME NtRecurrencePattern = {MNID_ID, PSETID_Appointment, PidLidRecurrencePattern};
 static const PROPERTY_NAME NtRecurrenceType = {MNID_ID, PSETID_Appointment, PidLidRecurrenceType};
 static const PROPERTY_NAME NtTimeZoneStruct = {MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct};
 static const PROPERTY_NAME NtClipStart = {MNID_ID, PSETID_Appointment, PidLidClipStart};
