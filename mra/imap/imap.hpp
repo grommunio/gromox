@@ -158,7 +158,7 @@ struct imap_context final : public schedule_context {
 	bool enabled_rev2 = false;
 };
 
-extern void imap_parser_init(int context_num, int average_num, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
+extern void imap_parser_init(int context_num, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int imap_parser_run();
 extern tproc_status imap_parser_process(schedule_context *);
 extern void imap_parser_stop();

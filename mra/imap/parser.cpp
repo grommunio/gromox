@@ -67,7 +67,6 @@ static int imap_parser_wrdat_retrieve(imap_context &);
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls, g_expunge_on_delete;
-static int g_average_num;
 static size_t g_context_num;
 static time_duration g_timeout, g_autologout_time;
 static pthread_t g_thr_id;
@@ -82,13 +81,12 @@ static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
-void imap_parser_init(int context_num, int average_num,
+void imap_parser_init(int context_num,
     time_duration timeout, time_duration autologout_time, int max_auth_times,
     int block_auth_fail, bool support_tls, bool force_tls,
 	const char *certificate_path, const char *cb_passwd, const char *key_path)
 {
 	g_context_num           = context_num;
-	g_average_num           = average_num;
 	g_timeout               = timeout;
 	g_autologout_time       = autologout_time;
 	g_max_auth_times        = max_auth_times;

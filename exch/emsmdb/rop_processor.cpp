@@ -41,7 +41,6 @@
 
 using namespace gromox;
 
-static int g_scan_interval;
 static unsigned int g_emsmdb_full_parenting;
 static unsigned int g_max_rop_payloads = 96;
 
@@ -322,11 +321,6 @@ logon_object *LOGMAP::get_logon_object(uint8_t logon_id)
 	if (plogitem == nullptr)
 		return nullptr;
 	return plogitem->get_logon_object();
-}
-
-void rop_processor_init(int scan_interval)
-{
-	g_scan_interval = scan_interval;
 }
 
 static uint32_t rpcext_cutoff = 32U << 10; /* OXCRPC v23 3.1.4.2.1.2.2 */

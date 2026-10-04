@@ -63,7 +63,6 @@ static std::vector<MESSAGE *> g_used_list; /* protected by g_workitem_mutex */
 static std::mutex g_hash_mutex, g_free_mutex, g_mess_mutex;
 static pthread_t		g_thread_id;
 static gromox::atomic_bool g_dequeue_stop;
-static int				g_dequeued_num;
 
 static BOOL message_dequeue_check();
 static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size);
@@ -90,7 +89,6 @@ void message_dequeue_init(const char *path, size_t max_memory)
 	g_msg_id = -1;
 	g_message_ptr.reset();
 	g_dequeue_stop = false;
-	g_dequeued_num = 0;
 }
 
 
@@ -216,7 +214,6 @@ void message_dequeue_put(MESSAGE *pmessage) try
 	g_mess_hash.erase(pmessage->message_data);
 	h.unlock();
 	message_dequeue_put_to_free(pmessage);
-	g_dequeued_num ++;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "mdq: MDQ-254");
 }

@@ -36,7 +36,6 @@ struct curl_del {
 using namespace std::string_literals;
 using namespace gromox;
 
-static bool g_tty;
 static unsigned int g_eas_mode, g_tb_mode, g_verbose;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
 static const char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn, *g_auth_user;
@@ -435,7 +434,6 @@ static int tb_main(const char *email)
 
 int main(int argc, char **argv)
 {
-	g_tty = isatty(STDERR_FILENO);
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	HXopt6_auto_result argp;
 	if (HX_getopt6(g_options_table, argc, argv, &argp,

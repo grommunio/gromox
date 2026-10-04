@@ -61,7 +61,6 @@ static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
 
 static std::unique_ptr<SMTP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static int g_block_ID;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 smtp_param g_param;
@@ -79,7 +78,6 @@ smtp_param g_param;
 void smtp_parser_init(const smtp_param &param)
 {
 	g_param = param;
-	g_block_ID              = 0;
 	g_ssl_mutex_buf         = NULL;
 }
 

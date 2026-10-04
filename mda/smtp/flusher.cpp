@@ -42,14 +42,12 @@ static int flusher_increase_max_ID();
 	
 static std::unique_ptr<FLH_PLUG_ENTITY> g_flusher_plug;
 static bool g_can_register;
-static size_t g_max_queue_len;
 static std::atomic<int> g_current_ID;
 
 void flusher_init(size_t queue_len) try
 {
 	g_flusher_plug = std::make_unique<FLH_PLUG_ENTITY>();
 	g_flusher_plug->flush_cancel = NULL;
-	g_max_queue_len = queue_len;
 } catch (const std::bad_alloc &) {
 }
 

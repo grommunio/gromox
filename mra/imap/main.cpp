@@ -465,7 +465,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
 	}
-	imap_parser_init(context_num, context_aver_mitem,
+	imap_parser_init(context_num,
 		imap_conn_timeout, autologout_time, imap_auth_times,
 		block_interval_auth, imap_support_tls, imap_force_tls,
 		certificate_path, cb_passwd, private_key_path);  

@@ -84,7 +84,6 @@ struct object_node {
 	std::shared_ptr<object_node> parent;
 };
 
-extern void rop_processor_init(int scan_interval);
 extern ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *in, uint32_t cb_in, uint8_t *out, uint32_t *cb_out);
 extern ec_error_t aoh_to_error(int);
 

@@ -67,7 +67,6 @@ static BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *);
 static char         g_path[256];
 static int			g_msg_id;
 static int			g_last_flush_ID;
-static int			g_last_pos;
 
 /*
  *    @param
@@ -77,7 +76,6 @@ static void message_enqueue_init(const char *path)
 {
 	gx_strlcpy(g_path, path, std::size(g_path));
     g_last_flush_ID = 0;
-	g_last_pos = 0;
 }
 
 /*
@@ -132,7 +130,6 @@ static void message_enqueue_free()
 {
     g_path[0] = '\0';
     g_last_flush_ID = 0;
-	g_last_pos = 0;
 	g_msg_id = -1;
 }
 

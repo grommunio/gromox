@@ -225,7 +225,6 @@ bool PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		common_util_init(org_name, max_rcpt, max_length,
 			max_rule_len, std::move(smtp_url), submit_command);
-		rop_processor_init(ping_interval);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
 		if (bounce_gen_init(get_config_path(), get_data_path(),

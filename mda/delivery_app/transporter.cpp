@@ -92,7 +92,7 @@ static std::vector<MESSAGE_CONTEXT *> g_queue_list; /* protected by g_workitem_m
 static std::list<hook_plug_entity> g_lib_list;
 static std::vector<const hook_entry *> g_hook_list;
 static std::mutex g_free_threads_mutex, g_threads_list_mutex, g_context_lock;
-static std::mutex g_queue_lock, g_cond_mutex;
+static std::mutex g_cond_mutex;
 std::condition_variable g_waken_cond;
 std::mutex g_workitem_mutex;
 static thread_local THREAD_DATA *g_tls_key;
