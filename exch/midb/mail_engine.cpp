@@ -3758,6 +3758,40 @@ static int me_set_categories(const char *dir, uint64_t msg_id,
 }
 
 /**
+ * Atoms are a lossy rendering of category names, so keep the spelling of
+ * categories that are already on the message.
+ */
+static std::vector<std::string> me_kw_to_categories(IDB_ITEM *pidb,
+    const char *dir, uint64_t msg_id, const std::string &keywords)
+{
+	auto vec = gx_split_ws(keywords);
+	std::vector<std::string> out;
+	propid_t kw_propid = 0;
+	TPROPVAL_ARRAY propvals;
+	const STRING_ARRAY *sa = nullptr;
+	if (!vec.empty() && me_get_kw_propid(pidb, dir, kw_propid) &&
+	    kw_propid != 0) {
+		const proptag_t tags[] = {PROP_TAG(PT_MV_UNICODE, kw_propid)};
+		if (exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
+		    eid_t(1, msg_id), tags, &propvals))
+			sa = propvals.get<const STRING_ARRAY>(tags[0]);
+	}
+	for (auto &atom : vec) {
+		for (size_t i = 0; sa != nullptr && i < sa->count; ++i) {
+			std::string san = sa->ppstr[i];
+			std::replace_if(san.begin(), san.end(), atom_special, '_');
+			if (strcasecmp(san.c_str(), atom.c_str()) == 0) {
+				atom = sa->ppstr[i];
+				break;
+			}
+		}
+		if (!ct_contains(out, atom))
+			out.emplace_back(std::move(atom));
+	}
+	return out;
+}
+
+/**
  * Set the custom IMAP keywords (MAPI categories, PidNameKeywords) on a
  * message. The keyword set passed in fully replaces any prior set. The caller
  * is responsible for computing the result set for any +/- operations it
@@ -3805,7 +3839,8 @@ static int me_mskwd(std::span<char *> argv, int sockd) try
 	 * that a change notification re-syncing from exmdb in between cannot
 	 * resurrect the prior keyword set.
 	 */
-	auto err = me_set_categories(argv[1], msg_id, gx_split_ws(keywords));
+	auto err = me_set_categories(argv[1], msg_id,
+	           me_kw_to_categories(pidb.get(), argv[1], msg_id, keywords));
 	if (err != MIDB_I_SUCCESS)
 		return err;
 
