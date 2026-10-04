@@ -1460,16 +1460,18 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 static bool me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
     xstmt &stm_update, uint32_t *puidnext, uint64_t message_id,
     const syncmessage_entry &e, uint64_t old_mtime,
-    bool old_unsent, bool old_read)
+    bool old_unsent, bool old_read, std::string_view old_kw)
 {
 	if (e.midstr.size() > 0 || e.mod_time <= old_mtime) {
 		auto new_unsent = !!(e.msg_flags & MSGFLAG_UNSENT);
 		auto new_read   = !!(e.msg_flags & MSGFLAG_READ);
-		if (old_unsent != new_unsent || old_read != new_read) {
+		if (old_unsent != new_unsent || old_read != new_read ||
+		    old_kw != e.keywords) {
 			stm_update.reset();
 			stm_update.bind_int64(1, new_unsent);
 			stm_update.bind_int64(2, new_read);
-			stm_update.bind_int64(3, message_id);
+			stm_update.bind_text(3, e.keywords);
+			stm_update.bind_int64(4, message_id);
 			if (stm_update.step() != SQLITE_DONE)
 				return false;
 		}
@@ -1600,8 +1602,9 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 	}
 
 	size_t totalmsgs = syncmessagelist.size(), procmsgs = 0;
-	auto stm_select_msg = gx_sql_prep(pidb->psqlite, "SELECT message_id, mid_string,"
-	                      " mod_time, unsent, read FROM messages WHERE message_id=?");
+	auto stm_select_msg = gx_sql_prep(pidb->psqlite, "SELECT message_id,"
+	                      " mid_string, mod_time, unsent, read, keywords"
+	                      " FROM messages WHERE message_id=?");
 	if (stm_select_msg == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO messages (message_id, "
@@ -1612,7 +1615,7 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 	if (stm_insert_msg == nullptr)
 		return FALSE;
 	auto stm_upd_msg = gx_sql_prep(pidb->psqlite, "UPDATE messages"
-	              " SET unsent=?, read=? WHERE message_id=?");
+	              " SET unsent=?, read=?, keywords=? WHERE message_id=?");
 	if (stm_upd_msg == nullptr)
 		return FALSE;
 	for (const auto &[message_id, entry] : syncmessagelist) {
@@ -1630,7 +1633,7 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 			bool old_read   = stm_select_msg.col_int64(4);
 			if (!me_sync_message(pidb, stm_insert_msg, stm_upd_msg,
 			    &uidnext, message_id, entry, old_mtime, old_unsent,
-			    old_read))
+			    old_read, stm_select_msg.col_text(5)))
 				/* ignore (retry later) */;
 		}
 		if (++procmsgs % 512 == 0)
