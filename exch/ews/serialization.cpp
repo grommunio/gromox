@@ -79,7 +79,7 @@ static void xml_set_filtered_text(tinyxml2::XMLElement *xml, const char *text)
 	xml->SetText(filtered.c_str());
 }
 
-XMLError ExplicitConvert<EWS::time_point>::deserialize(const tinyxml2::XMLElement *xml, EWS::time_point &value)
+XMLError ExplicitConvert<EWS::time_point>::deserialize(const tinyxml2::XMLElement *xml, EWS::time_point &tp)
 {
 	const char* data = xml->GetText();
 	if (!data)
@@ -102,8 +102,8 @@ XMLError ExplicitConvert<EWS::time_point>::deserialize(const tinyxml2::XMLElemen
 	auto timestamp = timegm(&t);
 	if (timestamp == static_cast<time_t>(-1))
 		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
-	value = clock::from_time_t(timestamp);
-	value += std::chrono::duration_cast<time_point::duration>(std::chrono::duration<double>(seconds)); /* LIBCXX-GRANULARITY */
+	tp = clock::from_time_t(timestamp);
+	tp += std::chrono::duration_cast<time_point::duration>(std::chrono::duration<double>(seconds)); /* LIBCXX-GRANULARITY */
 	return tinyxml2::XML_SUCCESS;
 }
 
