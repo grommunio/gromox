@@ -332,7 +332,8 @@ time_t timegm_dststd_start(const int year, const SYSTEMTIME *ruledate)
 bool tz_to_offset(const TZDEF &tzdef, time_t start_time, int64_t &offset)
 {
 	struct tm start_date;
-	gmtime_r(&start_time, &start_date);
+	if (gmtime_r(&start_time, &start_date) == nullptr)
+		return false;
 	auto rule = active_rule_for_year(tzdef, start_date.tm_year + 1900);
 	if (rule == nullptr)
 		return false;
