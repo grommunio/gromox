@@ -3612,6 +3612,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"folder:TotalCount", PR_CONTENT_COUNT},
 	{"folder:UnreadCount", PR_CONTENT_UNREAD},
 	{"item:ConversationId", PR_CONVERSATION_ID},
+	{"item:Culture", PR_MESSAGE_LOCALE_ID},
 	{"item:DateTimeCreated", PR_CREATION_TIME},
 	{"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
 	{"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
@@ -4085,6 +4086,7 @@ void tItem::update(const sShape& shape)
 {
 	const uint32_t* v32;
 	const TAGGED_PROPVAL* prop;
+	const char *str;
 	fromProp(shape.get(PR_ASSOCIATED), IsAssociated);
 	auto bodyText = shape.get<const char>(PR_BODY);
 	auto bodyHtml = shape.get<const BINARY>(PR_HTML);
@@ -4124,6 +4126,9 @@ void tItem::update(const sShape& shape)
 		Importance = *v32 == IMPORTANCE_LOW ? Enum::Low :
 		             *v32 == IMPORTANCE_HIGH ? Enum::High : Enum::Normal;
 	fromProp(shape.get(PR_IN_REPLY_TO_ID), InReplyTo);
+	if ((v32 = shape.get<const uint32_t>(PR_MESSAGE_LOCALE_ID)) != nullptr &&
+	    (str = lcid_to_ltag(*v32)) != nullptr)
+		Culture.emplace(str);
 	fromProp(shape.get(PR_LAST_MODIFIER_NAME), LastModifiedName);
 	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
 	fromProp(shape.get(PR_MESSAGE_CLASS), ItemClass);
