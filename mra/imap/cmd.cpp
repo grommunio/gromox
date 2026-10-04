@@ -462,6 +462,15 @@ static std::string icp_convert_flags_string(int flag_bits,
  */
 #define IMAP_FLAGS_SYSTEM "\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded"
 
+static bool icp_kw_contains(const std::vector<std::string> &kw_list,
+    const std::string &kw)
+{
+	for (const auto &k : kw_list)
+		if (strcasecmp(k.c_str(), kw.c_str()) == 0)
+			return true;
+	return false;
+}
+
 /**
  * Produce a keyword pre-announcement line (RFC 3501 §7.2.6).
  *
@@ -480,7 +489,7 @@ std::string icp_make_kwannounce_line(imap_context &ctx, std::string_view kw_spac
 			sp = kw_space.size();
 		if (sp > pos) {
 			std::string tok(kw_space.substr(pos, sp - pos));
-			if (!ct_contains(ctx.announced_keywords, tok)) {
+			if (!icp_kw_contains(ctx.announced_keywords, tok)) {
 				ctx.announced_keywords.emplace_back(std::move(tok));
 				grew = true;
 			}
@@ -1272,7 +1281,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 				pos = sp + 1;
 			}
 			for (const auto &k : kw_list)
-				if (!ct_contains(merged, k))
+				if (!icp_kw_contains(merged, k))
 					merged.emplace_back(k);
 			kw_result = icp_join_keywords(merged);
 			midb_agent::set_keywords(pcontext->maildir,
@@ -1307,7 +1316,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 					sp = cur.size();
 				if (sp > pos) {
 					auto tok = cur.substr(pos, sp - pos);
-					if (!ct_contains(kw_list, tok))
+					if (!icp_kw_contains(kw_list, tok))
 						kept.emplace_back(std::move(tok));
 				}
 				pos = sp + 1;
