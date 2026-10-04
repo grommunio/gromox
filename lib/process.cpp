@@ -342,7 +342,7 @@ errno_t switch_user_exec(const char *user, char *const *argv)
 		auto ret = gx_reexec(nullptr);
 		if (ret != 0)
 			return ret;
-		auto m = umask(07777);
+		auto m = umask(0777);
 		m = (m & ~0070) | ((m & 0700) >> 3); /* copy user bits to group bits */
 		umask(m);
 		return 0;
@@ -351,7 +351,7 @@ errno_t switch_user_exec(const char *user, char *const *argv)
 		auto ret = gx_reexec(const_cast<const char *const *>(argv));
 		if (ret != 0)
 			return ret;
-		auto m = umask(07777);
+		auto m = umask(0777);
 		m = (m & ~0070) | ((m & 0700) >> 3);
 		umask(m);
 		return 0;
