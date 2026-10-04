@@ -1215,21 +1215,16 @@ static std::string icp_join_keywords(const std::vector<std::string> &kw_list)
 }
 
 /**
- * Retrieve the current custom keyword set for a single message (by seqid) from
- * midb. Used to compute the resulting set for +FLAGS/-FLAGS, since the simple
- * fetch path does not carry keywords.
+ * Retrieve the current custom keyword set of a message from midb, to compute
+ * the resulting set for +FLAGS/-FLAGS.
  */
-static std::string icp_get_keywords(imap_context &ctx, int id)
+static bool icp_get_keywords(imap_context &ctx, const std::string &mid,
+    std::string &kw)
 {
-	imap_seq_list seq;
-	seq.insert(id, id);
-	XARRAY xa;
+	unsigned int flag_bits = 0;
 	int errnum = 0;
-	if (midb_agent::fetch_detail_uid(ctx.maildir, ctx.selected_folder,
-	    seq, &xa, &errnum) != MIDB_RESULT_OK)
-		return "";
-	auto item = xa.get_item(0);
-	return item != nullptr ? item->keywords : "";
+	return midb_agent::get_flags(ctx.maildir, ctx.selected_folder, mid,
+	       &flag_bits, &errnum, &kw) == MIDB_RESULT_OK;
 }
 
 static void icp_store_flags(const char *cmd, const std::string &mid,
@@ -1268,18 +1263,10 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		0 == strcasecmp(cmd, "+FLAGS.SILENT")) {
 		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
-		if (!kw_list.empty()) {
+		std::string cur;
+		if (!kw_list.empty() && icp_get_keywords(ctx, mid, cur)) {
 			/* union of current and requested keywords */
-			auto cur = icp_get_keywords(ctx, id);
-			std::vector<std::string> merged;
-			for (size_t pos = 0; pos < cur.size(); ) {
-				auto sp = cur.find(' ', pos);
-				if (sp == std::string::npos)
-					sp = cur.size();
-				if (sp > pos)
-					merged.emplace_back(cur.substr(pos, sp - pos));
-				pos = sp + 1;
-			}
+			auto merged = gx_split_ws(cur);
 			for (const auto &k : kw_list)
 				if (!icp_kw_contains(merged, k))
 					merged.emplace_back(k);
@@ -1291,7 +1278,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			if (kw_result.empty())
-				kw_result = icp_get_keywords(ctx, id);
+				icp_get_keywords(ctx, mid, kw_result);
 			auto fs = icp_convert_flags_string(flag_bits, kw_result, ctx.enabled_rev2);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
@@ -1306,21 +1293,13 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		0 == strcasecmp(cmd, "-FLAGS.SILENT")) {
 		midb_agent::unset_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
-		if (!kw_list.empty()) {
+		std::string cur;
+		if (!kw_list.empty() && icp_get_keywords(ctx, mid, cur)) {
 			/* current minus requested keywords */
-			auto cur = icp_get_keywords(ctx, id);
 			std::vector<std::string> kept;
-			for (size_t pos = 0; pos < cur.size(); ) {
-				auto sp = cur.find(' ', pos);
-				if (sp == std::string::npos)
-					sp = cur.size();
-				if (sp > pos) {
-					auto tok = cur.substr(pos, sp - pos);
-					if (!icp_kw_contains(kw_list, tok))
-						kept.emplace_back(std::move(tok));
-				}
-				pos = sp + 1;
-			}
+			for (auto &tok : gx_split_ws(cur))
+				if (!icp_kw_contains(kw_list, tok))
+					kept.emplace_back(std::move(tok));
 			kw_result = icp_join_keywords(kept);
 			midb_agent::set_keywords(pcontext->maildir,
 				pcontext->selected_folder, mid, kw_result, &errnum);
@@ -1329,7 +1308,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			if (kw_result.empty() && kw_list.empty())
-				kw_result = icp_get_keywords(ctx, id);
+				icp_get_keywords(ctx, mid, kw_result);
 			auto fs = icp_convert_flags_string(flag_bits, kw_result, ctx.enabled_rev2);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
