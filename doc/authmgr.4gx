@@ -10,6 +10,21 @@ selects the authentication backend per user account.
 The following directives are recognized when they are in
 /etc/gromox/gromox.cfg:
 .TP
+\fBauth_cred_caching\fP
+Remember successful password verifications for this amount of time. A login
+with the same password for the same account is then accepted without consulting
+the backend (LDAP, PAM, MySQL password column). The account is still looked up
+in MySQL first, so a disabled or deleted user is rejected right away. The
+cached entry is tied to the user id and to the presence of an externid, so a
+re-created account or a change of externid drops it as well. A different
+password always goes to the backend. After a password change or an account lock
+in the backend, the previous password stays accepted until the cached entry
+expires or the process is reloaded with SIGHUP. The per-connection cache
+\fBhttp_basic_auth_cred_caching\fP of \fBhttp\fP(8gx) is independent of this
+one. Setting the value to 0 disables the cache.
+.br
+Default: \fI1 minute\fP
+.TP
 \fBauth_fail_delay\fP
 The amount of time to wait after a failed authentication attempt (unknown user
 or rejected password). When the MySQL database itself is unavailable, the delay
@@ -50,5 +65,6 @@ PAM service stack, or it will lead to infinite recursion.
 .SH Signals
 Upon receipt of SIGHUP, configuration files are re-read, but only a few select
 directives can be changed this way, as many parts do not implement reload.
+A reload also discards the credential cache of auth_cred_caching.
 .SH See also
 \fBgromox\fP(7), \fBldap_adaptor\fP(4gx), \fBmysql_adaptor\fP(4gx)

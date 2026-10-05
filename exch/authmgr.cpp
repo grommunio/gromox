@@ -11,23 +11,28 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/bio.h>
+#include <openssl/crypto.h>
 #if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
 #	include <openssl/decoder.h>
 #endif
 #include <openssl/evp.h>
 #include <openssl/pem.h>
+#include <openssl/rand.h>
 #include <openssl/rsa.h>
 #ifdef HAVE_SECURITY_PAM_MODULES_H
 #	include <security/pam_appl.h>
 #endif
 #include <gromox/authmgr.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/cryptoutil.hpp>
@@ -54,15 +59,107 @@ struct sslfree2 : public sslfree {
 #endif
 	STATIC_IN_CXX23 inline void operator()(BIO *x) CONST_BEFORE_CXX23 { BIO_free(x); }
 };
+
+struct cred_entry {
+	std::string salt, hash;
+	time_point expiry;
+	uint32_t user_id;
+	uint8_t have_xid;
+};
+
 }
 
 static unsigned int am_choice = A_EXTERNID_LDAP;
-static std::atomic<std::chrono::nanoseconds> am_fail_delay;
+static std::atomic<std::chrono::nanoseconds> am_fail_delay, am_cred_lifetime;
+static std::atomic<unsigned int> am_cred_gen;
+static std::mutex am_cred_lock;
+static std::unordered_map<std::string, cred_entry> am_cred_cache;
+static constexpr size_t am_cred_max = 65536;
 
 static constexpr cfg_directive authmgr_cfg_defaults[] = {
+	{"auth_cred_caching", "1min", CFG_TIME_NS},
 	{"auth_fail_delay", "1s", CFG_TIME_NS},
 	CFG_TABLE_END,
 };
+
+static std::string cred_hash(const std::string &salt, const char *pass)
+{
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+	unsigned char md[EVP_MAX_MD_SIZE];
+	unsigned int len = 0;
+	if (ctx == nullptr ||
+	    EVP_DigestInit_ex(ctx.get(), EVP_sha256(), nullptr) != 1 ||
+	    EVP_DigestUpdate(ctx.get(), salt.data(), salt.size()) != 1 ||
+	    EVP_DigestUpdate(ctx.get(), pass, strlen(pass)) != 1 ||
+	    EVP_DigestFinal_ex(ctx.get(), md, &len) != 1)
+		return {};
+	return std::string(reinterpret_cast<char *>(md), len);
+}
+
+static bool cred_cache_hit(const sql_meta_result &mres, const char *pass)
+{
+	auto lifetime = am_cred_lifetime.load(std::memory_order_relaxed);
+	if (lifetime == std::chrono::nanoseconds(0) || znoval(pass))
+		return false;
+	cred_entry e;
+	auto now = tp_now();
+	{
+		std::lock_guard hold(am_cred_lock);
+		auto it = am_cred_cache.find(mres.username);
+		if (it == am_cred_cache.end())
+			return false;
+		if (now >= it->second.expiry ||
+		    it->second.user_id != mres.user_id ||
+		    it->second.have_xid != mres.have_xid) {
+			am_cred_cache.erase(it);
+			return false;
+		}
+		e = it->second;
+	}
+	auto hash = cred_hash(e.salt, pass);
+	return hash.size() == e.hash.size() &&
+	       CRYPTO_memcmp(hash.data(), e.hash.data(), hash.size()) == 0;
+}
+
+static void cred_cache_store(const sql_meta_result &mres, const char *pass,
+    unsigned int gen)
+{
+	if (am_cred_lifetime.load(std::memory_order_relaxed) ==
+	    std::chrono::nanoseconds(0) || znoval(pass))
+		return;
+	cred_entry e;
+	e.salt.resize(16);
+	if (RAND_bytes(reinterpret_cast<unsigned char *>(e.salt.data()),
+	    e.salt.size()) != 1)
+		return;
+	e.hash = cred_hash(e.salt, pass);
+	if (e.hash.empty())
+		return;
+	e.user_id  = mres.user_id;
+	e.have_xid = mres.have_xid;
+	auto now = tp_now();
+	std::lock_guard hold(am_cred_lock);
+	auto lifetime = am_cred_lifetime.load(std::memory_order_relaxed);
+	if (lifetime == std::chrono::nanoseconds(0) ||
+	    gen != am_cred_gen.load(std::memory_order_relaxed))
+		/* Verified under the settings of a previous configuration */
+		return;
+	e.expiry = now + std::chrono::duration_cast<time_duration>(lifetime);
+	auto it = am_cred_cache.find(mres.username);
+	if (it != am_cred_cache.end()) {
+		it->second = std::move(e);
+		return;
+	}
+	if (am_cred_cache.size() >= am_cred_max)
+		std::erase_if(am_cred_cache,
+			[=](const auto &p) { return now >= p.second.expiry; });
+	if (am_cred_cache.size() >= am_cred_max)
+		am_cred_cache.erase(std::min_element(am_cred_cache.begin(),
+			am_cred_cache.end(), [](const auto &a, const auto &b) {
+				return a.second.expiry < b.second.expiry;
+			}));
+	am_cred_cache.emplace(mres.username, std::move(e));
+}
 
 static std::unique_ptr<EVP_PKEY, sslfree2>
 read_pkey(const unsigned char *pk_str, size_t pk_size)
@@ -246,8 +343,9 @@ static bool login_pam(const char *user, const char *pass,
 static bool login_gen(const char *username, const char *password,
     unsigned int wantpriv, sql_meta_result &mres) try
 {
-	bool auth = false;
+	bool auth = false, fresh = false;
 	auto fdelay = am_fail_delay.load(std::memory_order_relaxed);
+	auto cred_gen = am_cred_gen.load(std::memory_order_relaxed);
 	auto err = mysql_adaptor_meta(username, wantpriv, mres);
 	if (err != 0 || mres.have_xid == 0xFF) {
 		if (fdelay != std::chrono::nanoseconds(0))
@@ -258,15 +356,18 @@ static bool login_gen(const char *username, const char *password,
 			std::this_thread::sleep_for(fdelay);
 	} else if (am_choice == A_ALLOW_ALL) {
 		auth = true;
+	} else if (cred_cache_hit(mres, password)) {
+		auth = true;
 	} else if (am_choice == A_EXTERNID_LDAP && mres.have_xid > 0) {
 		/* Failure delay should already be added by the LDAP server */
-		auth = ldap_adaptor_login3(mres.username.c_str(), password, mres);
+		auth = fresh = ldap_adaptor_login3(mres.username.c_str(),
+		               password, mres);
 	} else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0) {
 		/* Failure delay should already be added by the PAM stack */
-		auth = login_pam(mres.username.c_str(), password, mres);
+		auth = fresh = login_pam(mres.username.c_str(), password, mres);
 	} else if (am_choice == A_EXTERNID_LDAP) {
-		auth = mysql_adaptor_login2(mres.username.c_str(), password,
-		       mres.enc_passwd, mres.errstr);
+		auth = fresh = mysql_adaptor_login2(mres.username.c_str(),
+		               password, mres.enc_passwd, mres.errstr);
 		if (!auth) {
 			fdelay = am_fail_delay.load(std::memory_order_relaxed);
 			if (fdelay != std::chrono::nanoseconds(0))
@@ -274,6 +375,8 @@ static bool login_gen(const char *username, const char *password,
 		}
 	}
 	auth = auth && err == 0;
+	if (fresh)
+		cred_cache_store(mres, password, cred_gen);
 	if (!auth && mres.errstr.empty())
 		mres.errstr = "Authentication rejected";
 	safe_memset(mres.enc_passwd.data(), 0, mres.enc_passwd.size());
@@ -293,6 +396,7 @@ static bool authmgr_reload()
 		return false;
 	}
 	am_fail_delay = std::chrono::nanoseconds(pfile->get_ll("auth_fail_delay"));
+	am_cred_lifetime = std::chrono::nanoseconds(pfile->get_ll("auth_cred_caching"));
 
 	auto val = pfile->get_value("auth_backend_selection");
 	if (val == nullptr) {
@@ -317,6 +421,9 @@ static bool authmgr_reload()
 	} else if (strcmp(val, "pam") == 0) {
 		am_choice = A_EXTERNID_PAM;
 	}
+	std::lock_guard hold(am_cred_lock);
+	++am_cred_gen;
+	am_cred_cache.clear();
 	return true;
 }
 
