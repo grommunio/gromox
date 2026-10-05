@@ -596,34 +596,47 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 		return std::nullopt;
 	}
 
+	/* A Connect with stale cookies just starts a new session context. */
+	bool is_connect = strcasecmp(ctx.request_value, "Connect") == 0;
+	auto fresh = [&]() -> ProcRes {
+		*ctx.session_string = '\0';
+		ctx.sequence_guid = {};
+		ctx.session = nullptr;
+		return std::nullopt;
+	};
 	cookie_jar pparser;
 	if (pparser.add(ctx.orig.f_cookie) != ecSuccess)
 		return ctx.error_responsecode(resp_code::enomem);
 	auto string = pparser["sid"];
 	if (string == nullptr || strlen(string) >= std::size(ctx.session_string))
-		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
+		return is_connect ? fresh() :
+		       ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	gx_strlcpy(ctx.session_string, string, std::size(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
 		string = pparser["sequence"];
 		if (string == nullptr || !ctx.sequence_guid.from_str(string))
-			return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
+			return is_connect ? fresh() :
+			       ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	}
 
 	std::unique_lock hl_hold(ses_lock);
 	auto it = sessions.find(ctx.session_string);
 	if (it == sessions.end())
-		return ctx.error_responsecode(resp_code::ctx_not_found);
+		return is_connect ? fresh() :
+		       ctx.error_responsecode(resp_code::ctx_not_found);
 	if (it->second.expire_time < ctx.start_time) {
 		auto guid = it->second.session_guid;
 		removeSession(it);
 		hl_hold.unlock();
 		emsmdb_bridge_disconnect(guid);
-		return ctx.error_responsecode(resp_code::ctx_not_found);
+		return is_connect ? fresh() :
+		       ctx.error_responsecode(resp_code::ctx_not_found);
 	}
+	if (strcasecmp(it->second.username, ctx.auth_info.username) != 0)
+		return is_connect ? fresh() :
+		       ctx.error_responsecode(resp_code::no_priv);
 	ctx.session = &it->second;
-	if (strcasecmp(ctx.session->username, ctx.auth_info.username) != 0)
-		return ctx.error_responsecode(resp_code::no_priv);
 	ctx.session_guid = ctx.session->session_guid;
 	if (strcasecmp(ctx.request_value, "Execute") == 0 &&
 	    ctx.sequence_guid != ctx.session->sequence_guid)
