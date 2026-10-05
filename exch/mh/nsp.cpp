@@ -421,10 +421,10 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 	std::unique_lock hl_hold(hashLock);
 	auto it = sessions.find(ctx.session_string);
 	if (it == sessions.end())
-		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
+		return ctx.error_responsecode(resp_code::ctx_not_found);
 	if (it->second.expire_time < ctx.start_time) {
 		removeSession(it);
-		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
+		return ctx.error_responsecode(resp_code::ctx_not_found);
 	}
 	ctx.session = &it->second;
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&

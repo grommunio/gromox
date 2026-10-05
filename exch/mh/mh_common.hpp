@@ -42,7 +42,8 @@ struct session_data {
 /* MS-OXCMAPIHTTP v15 §2.2.3.3.3 */
 enum class resp_code {
 	success = 0, enomem = 1, invalid_verb = 2, invalid_rq_type = 5,
-	invalid_ctx_cookie = 6, missing_header = 7, no_priv = 11,
+	invalid_ctx_cookie = 6, missing_header = 7, ctx_not_found = 10,
+	no_priv = 11,
 	invalid_rq_body = 12, missing_cookie = 13, invalid_seq = 15,
 };
 
@@ -55,6 +56,7 @@ static inline const char *resp_code_text(resp_code c)
 	case resp_code::invalid_rq_type: return "Invalid request type for this endpoint.";
 	case resp_code::invalid_ctx_cookie: return "The request has an invalid session context cookie.";
 	case resp_code::missing_header: return "The request has a missing required header.";
+	case resp_code::ctx_not_found: return "The Session Context was not found.";
 	case resp_code::no_priv: return "The client has no privileges to the Session Context.";
 	case resp_code::invalid_rq_body: return "The request body is invalid.";
 	case resp_code::missing_cookie: return "The request is missing a required cookie.";
