@@ -113,6 +113,9 @@ http_status MhContext::error_responsecode(resp_code response_code) const
 {
 	char dstring[128], text_buff[512];
 
+	mlog(LV_DEBUG, "D-2390: mh: user=%s rq=%s sid=%s X-ResponseCode %u",
+		znul(auth_info.username), request_value, session_string,
+		static_cast<unsigned int>(response_code));
 	auto text_len = gx_snprintf(text_buff, sizeof(text_buff),
 		"<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\r\n"
 		"<html><head>\r\n"
