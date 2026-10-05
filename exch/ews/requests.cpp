@@ -2563,6 +2563,7 @@ class RulesEnv final : public Rules::Env {
 	uint16_t flagrequest_propid(bool create) override { return named(NtFlagRequest, create); }
 
 	const char *deleted_items(MOVECOPY_ACTION &) override;
+	const char *resolve_address(Rules::Address &) override;
 	bool folder_ref(const MOVECOPY_ACTION &, Rules::FolderRef &, bool &) override;
 	bool template_ref(const REPLY_ACTION &, Rules::ItemRef &) override;
 	bool essdn_to_smtp(const char *, std::string &) override;
@@ -2605,6 +2606,21 @@ void RulesEnv::rollback()
 	BOOL partial = false;
 	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox, &ids, true, &partial);
 	created_templates.clear();
+}
+
+const char *RulesEnv::resolve_address(Rules::Address &a)
+{
+	if (strcasecmp(a.routing.c_str(), "EX") == 0) {
+		try {
+			a.email = ctx.essdn_to_username(a.email);
+		} catch (const std::exception &) {
+			return "InvalidAddress";
+		}
+	}
+	a.routing = "SMTP";
+	if (a.email.find('@') == a.email.npos)
+		return "InvalidAddress";
+	return nullptr;
 }
 
 bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool &trash) try

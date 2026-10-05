@@ -214,6 +214,15 @@ class test_env final : public Env {
 		mc.pfolder_eid = sv;
 		return nullptr;
 	}
+	const char *resolve_address(Address &a) override
+	{
+		if (strcasecmp(a.routing.c_str(), "EX") == 0) {
+			if (!essdn_to_smtp(a.email.c_str(), a.email))
+				return "InvalidAddress";
+		}
+		a.routing = "SMTP";
+		return a.email.find('@') == a.email.npos ? "InvalidAddress" : nullptr;
+	}
 	bool folder_ref(const MOVECOPY_ACTION &mc, FolderRef &f, bool &trash) override
 	{
 		if (!mc.same_store) {
@@ -442,6 +451,9 @@ static bool pred_written(unsigned int k)
 	case P_FromConnectedAccounts:
 	case P_MessageClassifications:
 		return false;
+	case P_FromAddresses:
+	case P_SentToAddresses:
+		return true;
 	default:
 		break;
 	}

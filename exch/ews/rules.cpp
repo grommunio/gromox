@@ -1385,11 +1385,56 @@ struct writer {
 	{
 		errs.push_back({uri, code, msg, value});
 	}
+	RESTRICTION addr_cond(const Address &, proptag_t);
 
 	Env &env;
 	std::vector<ValidationError> &errs;
 };
 
+}
+
+/* Search key form of an SMTP address, ADDRTYPE:ADDRESS upper-cased */
+static std::string smtp_srchkey(const std::string &addr)
+{
+	auto s = "SMTP:" + upper(addr);
+	s.push_back('\0');
+	return s;
+}
+
+static std::string oneoff_entryid(const Address &a)
+{
+	ONEOFF_ENTRYID e{};
+	e.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
+	e.pdisplay_name = a.name.empty() ? a.email : a.name;
+	e.paddress_type = "SMTP";
+	e.pmail_address = a.email;
+	std::string out;
+	out.resize(1280);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), out.size(), EXT_FLAG_UTF16) ||
+	    ep.p_oneoff_eid(e) != pack_result::success)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+}
+
+/*
+ * RES_COMMENT{props, RES_PROPERTY(@tag == search key)} as Outlook and
+ * grommunio-web write it, outlook_rule_spec.rst condition 203.
+ */
+RESTRICTION writer::addr_cond(const Address &a, proptag_t tag)
+{
+	auto c = mk<RESTRICTION_COMMENT>();
+	c->count = 4;
+	c->ppropval = mk<TAGGED_PROPVAL>(4);
+	auto label = a.name.empty() ? a.email : a.name + " <" + a.email + ">";
+	c->ppropval[0] = {PROP_TAG(PT_LONG, 0x6000), num<uint32_t>(MAPI_TO)};
+	c->ppropval[1] = {PROP_TAG(PT_BINARY, 0x0001), bin(oneoff_entryid(a))};
+	c->ppropval[2] = {PROP_TAG(PT_UNICODE, 0x0001), str(label)};
+	c->ppropval[3] = {PR_DISPLAY_TYPE, num<uint32_t>(DT_MAILUSER)};
+	c->pres = mk<RESTRICTION>();
+	*c->pres = prop(RELOP_EQ, tag, bin(smtp_srchkey(a.email)));
+	return res(RES_COMMENT, c);
 }
 
 std::optional<RESTRICTION> writer::pred(pred_kind k, const Value &v, const std::string &uri)
@@ -1461,6 +1506,23 @@ std::optional<RESTRICTION> writer::pred(pred_kind k, const Value &v, const std::
 		return list(RES_AND, {flagged, prop(RELOP_EQ,
 		       PROP_TAG(PT_UNICODE, id), str(it->second))});
 	}
+	case P_FromAddresses:
+	case P_SentToAddresses:
+		for (auto a : v.addrs) {
+			if (auto code = env.resolve_address(a)) {
+				error(uri, code, "The address is not valid.", a.email);
+				return std::nullopt;
+			}
+			if (k == P_FromAddresses) {
+				l.push_back(addr_cond(a, PR_SENDER_SEARCH_KEY));
+				continue;
+			}
+			auto sub = mk<RESTRICTION_SUBOBJ>();
+			sub->subobject = PR_MESSAGE_RECIPIENTS;
+			sub->res = addr_cond(a, PR_SEARCH_KEY);
+			l.push_back(res(RES_SUBRESTRICTION, sub));
+		}
+		return any(l);
 	default:
 		error(uri, "UnsupportedRule", "This condition is not supported.");
 		return std::nullopt;
