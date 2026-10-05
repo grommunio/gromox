@@ -120,7 +120,7 @@ http_status MhContext::error_responsecode(resp_code response_code) const
 		"</head><body>\r\n"
 		"<h1>Diagnostic Information</h1>\r\n"
 		"<p>%s</p>\r\n"
-		"</body></html>\r\n", g_error_text[static_cast<unsigned int>(response_code)]);
+		"</body></html>\r\n", resp_code_text(response_code));
 	rfc1123_dstring(dstring, std::size(dstring), wallclock::to_time_t(wall_start_time));
 	static constexpr char templ[] =
 		"HTTP/1.1 200 OK\r\n"

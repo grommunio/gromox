@@ -39,24 +39,30 @@ struct session_data {
 	gromox::time_point expire_time;
 };
 
+/* MS-OXCMAPIHTTP v15 §2.2.3.3.3 */
 enum class resp_code {
-	success, invalid_verb, invalid_ctx_cookie, missing_header, no_priv,
-	invalid_rq_body, missing_cookie, invalid_seq, invalid_rq_type, enomem,
+	success = 0, enomem = 1, invalid_verb = 2, invalid_rq_type = 5,
+	invalid_ctx_cookie = 6, missing_header = 7, no_priv = 11,
+	invalid_rq_body = 12, missing_cookie = 13, invalid_seq = 15,
 };
 
-static constexpr const char *g_error_text[] = {
-    "The request was properly formatted and accepted.",
-    "The request has an invalid verb.",
-    "The request has an invalid session context cookie.",
-    "The request has a missing required header.",
-    "The client has no privileges to the Session Context.",
-    "The request body is invalid.",
-    "The request is missing a required cookie.",
-    "The request has violated the sequencing requirement"
-        " of one request at a time per Session Context.",
-    "Invalid request type for this endpoint.",
-	"Out of memory.",
-};
+static inline const char *resp_code_text(resp_code c)
+{
+	switch (c) {
+	case resp_code::success: return "The request was properly formatted and accepted.";
+	case resp_code::enomem: return "Out of memory.";
+	case resp_code::invalid_verb: return "The request has an invalid verb.";
+	case resp_code::invalid_rq_type: return "Invalid request type for this endpoint.";
+	case resp_code::invalid_ctx_cookie: return "The request has an invalid session context cookie.";
+	case resp_code::missing_header: return "The request has a missing required header.";
+	case resp_code::no_priv: return "The client has no privileges to the Session Context.";
+	case resp_code::invalid_rq_body: return "The request body is invalid.";
+	case resp_code::missing_cookie: return "The request is missing a required cookie.";
+	case resp_code::invalid_seq: return "The request has violated the sequencing requirement"
+		" of one request at a time per Session Context.";
+	}
+	return "Unknown failure.";
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
