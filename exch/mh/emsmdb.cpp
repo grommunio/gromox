@@ -319,15 +319,23 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 	MhEmsmdbPlugin& plugin = *static_cast<MhEmsmdbPlugin*>(ptr);
 	while (!plugin.stop) {
 		auto now = tp_now();
+		std::vector<GUID> expired;
 		{
 		std::unique_lock hl_hold(plugin.ses_lock);
 		for (auto entry = plugin.sessions.begin(); entry != plugin.sessions.end();) {
-			if (entry->second.expire_time < now)
+			if (entry->second.expire_time < now) {
+				try {
+					expired.push_back(entry->second.session_guid);
+				} catch (const std::bad_alloc &) {
+				}
 				entry = plugin.removeSession(entry);
-			else
+			} else {
 				++entry;
+			}
 		}
 		}
+		for (const auto &guid : expired)
+			emsmdb_interface_remove_handle({HANDLE_EXCHANGE_EMSMDB, guid});
 
 		{
 		std::unique_lock ll_hold(plugin.pending_lock);
@@ -607,7 +615,10 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	if (it == sessions.end())
 		return ctx.error_responsecode(resp_code::ctx_not_found);
 	if (it->second.expire_time < ctx.start_time) {
+		auto guid = it->second.session_guid;
 		removeSession(it);
+		hl_hold.unlock();
+		emsmdb_bridge_disconnect(guid);
 		return ctx.error_responsecode(resp_code::ctx_not_found);
 	}
 	ctx.session = &it->second;
