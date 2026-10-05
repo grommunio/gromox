@@ -62,7 +62,6 @@ static void xmap_read(const char *file, const char *dirs,
 		while (!HX_isspace(*eol) && *eol != '\0')
 			++eol;
 		*eol = '\0';
-		HX_strlower(e);
 		fm.emplace(a, e);
 		bm.emplace(e, a);
 	}

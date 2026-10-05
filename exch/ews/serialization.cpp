@@ -1447,6 +1447,7 @@ void tItem::serialize(XMLElement *xml) const
 	XMLDUMPT(DisplayTo);
 	XMLDUMPT(DisplayBcc);
 	XMLDUMPT(HasAttachments);
+	XMLDUMPT(Culture);
 	XMLDUMPT(EffectiveRights);
 	XMLDUMPT(LastModifiedName);
 	XMLDUMPT(LastModifiedTime);
