@@ -461,6 +461,9 @@ find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
  * the rescheduled time has to consult the EXCEPTIONINFO itself.
  *
  * Enumeration stops when @cb returns true or the pattern is exhausted.
+ * OccurrenceCount bounds only an end-after-N pattern. The others are bounded
+ * by EndDate, which is ENDDATE_MISSING for a never-ending pattern, so the
+ * callback should return true once it has seen enough.
  *
  * @param      rp     Recurrence pattern (includes deleted/modified lists)
  * @param      cb     Callback, returns true to stop enumeration
@@ -468,28 +471,36 @@ find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
 static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
     const std::function<bool(uint32_t)> &cb)
 {
+	auto bycount = rp.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR;
+	uint32_t count = bycount ? rp.occurrencecount : UINT32_MAX;
+	uint32_t last = bycount ? UINT32_MAX :
+	                rp.endtype == IDC_RCEV_PAT_ERB_END ? rp.enddate : ENDDATE_MISSING;
 	auto visit = [&](uint32_t date) -> bool {
-		return isTrulyDeleted(rp, date) ? false : cb(date);
+		if (date > last)
+			return true;
+		if (isTrulyDeleted(rp, date))
+			return false;
+		return cb(date);
 	};
 
 	switch (rp.patterntype) {
 	case rptMinute:
 		/* Daily: period is in minutes (day count * 1440) */
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i)
+		for (uint32_t i = 0; i < count; ++i)
 			if (visit(rp.startdate + i * rp.period))
 				return;
 		break;
 	case rptWeek: {
 		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
 		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
+		if ((rp.pts.weekrecur & 0x7f) == 0 || gmtime_r(&start_unix, &tm) == nullptr)
 			break;
 		int start_wday = tm.tm_wday;
 		int days_back = (start_wday - static_cast<int>(rp.firstdow) + 7) % 7;
 		uint32_t week_start = rp.startdate - days_back * 1440;
 		uint32_t raw = 0;
-		for (uint32_t week = week_start; raw < rp.occurrencecount; week += rp.period * 7 * 1440) {
-			for (int d = 0; d < 7 && raw < rp.occurrencecount; ++d) {
+		for (uint32_t week = week_start; raw < count; week += rp.period * 7 * 1440) {
+			for (int d = 0; d < 7 && raw < count; ++d) {
 				int wday = (rp.firstdow + d) % 7;
 				uint32_t date = week + d * 1440;
 				if (date < rp.startdate)
@@ -510,7 +521,7 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 		if (gmtime_r(&start_unix, &tm) == nullptr)
 			break;
 		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
+		for (uint32_t i = 0; i < count; ++i) {
 			if (i > 0) {
 				month += rp.period;
 				while (month > 12) {
@@ -535,11 +546,12 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 	case rptHjMonthNth: {
 		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
 		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
+		if ((rp.pts.monthnth.weekrecur & 0x7f) == 0 ||
+		    gmtime_r(&start_unix, &tm) == nullptr)
 			break;
 		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
 		int order = rp.pts.monthnth.recurnum;
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
+		for (uint32_t i = 0; i < count; ++i) {
 			if (i > 0) {
 				month += rp.period;
 				while (month > 12) {
@@ -605,7 +617,8 @@ uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
  * A modified exception is enumerated at its original slot but tested with its
  * rescheduled start/end, so occurrences moved into or out of the window are
  * handled correctly. Because an exception may be moved to an arbitrary time,
- * enumeration does not stop at the first slot past the window.
+ * enumeration only stops once the slots are past both the window and the last
+ * exception's original slot.
  *
  * @param      apr        Appointment recurrence pattern
  * @param      tz         Recurrence time zone (may be nullptr)
@@ -634,9 +647,16 @@ occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
 	 */
 	static constexpr size_t walk_cap = 65536;
 	size_t visited = 0;
+	uint32_t last_exc = 0;
+	for (const auto &ei : apr.pexceptioninfo)
+		last_exc = std::max(last_exc, ei.originalstartdate);
 
 	walkOccurrenceDates(apr.recur_pat, [&](uint32_t date) {
 		if (++visited > walk_cap)
+			return true;
+		/* MonthNth slots within one month may come out of order */
+		if (date + apr.starttimeoffset > last_exc &&
+		    toUtc(date + apr.starttimeoffset) - 7 * 86400 > end)
 			return true;
 		auto exc = find_exc(apr, date);
 		time_t occ_start, occ_end;
