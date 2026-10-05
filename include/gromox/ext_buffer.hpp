@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <type_traits>
 #include <vector>
@@ -200,6 +201,7 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_fb(freebusy_event *);
 	pack_result g_fb_a(std::vector<freebusy_event> *);
 	pack_result g_recpat(RECURRENCE_PATTERN *);
+	static std::optional<TZDEF> bin_to_tzdef(std::string_view);
 
 	template<typename T> inline T *anew()
 	{

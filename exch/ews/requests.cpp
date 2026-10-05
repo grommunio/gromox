@@ -1937,11 +1937,9 @@ void process(mGetServerTimeZonesRequest &&request, XMLElement *response, const E
 	}
 	mGetServerTimeZonesResponseMessage msg;
 	for (auto blob : blobs) {
-		EXT_PULL ep;
-		TZDEF tzdef;
-		ep.init(blob.data(), blob.size(), nullptr, EXT_FLAG_UTF16);
-		if (ep.g_tzdef(&tzdef) == pack_result::ok && !tzdef.keyname.empty())
-			msg.TimeZoneDefinitions.emplace_back(std::move(tzdef), full);
+		auto tzdef = EXT_PULL::bin_to_tzdef(blob);
+		if (tzdef && tzdef->keyname.size() > 0)
+			msg.TimeZoneDefinitions.emplace_back(std::move(*tzdef), full);
 	}
 	std::sort(msg.TimeZoneDefinitions.begin(), msg.TimeZoneDefinitions.end(),
 		[](const tServerTimeZone &a, const tServerTimeZone &b) { return a.tz.keyname < b.tz.keyname; });

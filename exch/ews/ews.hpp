@@ -509,4 +509,18 @@ inline T* EWSContext::construct(Args&&... args)
 extern bool isTrulyDeleted(const RECURRENCE_PATTERN &, uint32_t);
 extern uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &, uint32_t);
 
+extern const std::string_view *lookup_tz_get_sv(const std::string &) = delete;
+inline const std::string_view *lookup_tz_get_sv(const char *name)
+{
+	auto sv = ianatz_to_tzdef(name);
+	return sv != nullptr ? sv : wintz_to_tzdef(name);
+}
+
+extern std::optional<TZDEF> lookup_tz_get_tzdef(const std::string &) = delete;
+inline std::optional<TZDEF> lookup_tz_get_tzdef(const char *name)
+{
+	auto sv = lookup_tz_get_sv(name);
+	return sv != nullptr ? EXT_PULL::bin_to_tzdef(*sv) : std::nullopt;
+}
+
 }

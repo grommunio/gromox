@@ -4048,40 +4048,32 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (b_recurrence) {
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
 			if (bin != nullptr) {
-				EXT_PULL ext_pull;
-				TZDEF tz_definition;
-				TZSTRUCT tz_struct;
-
-				ext_pull.init(bin->pb, bin->cb, nullptr, 0);
-				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
-					return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
-				new_tzid = tz_definition.keyname;
-				tzid = new_tzid.c_str();
-				oxcical_convert_to_tzstruct(tz_definition, tz_struct);
-				ptz_component = oxcical_export_timezone(
-						pical, year - 1, tzid, &tz_struct);
-				if (ptz_component == nullptr)
-					return "E-2208: export_timezone returned an unspecified error";
+				auto tzdef = EXT_PULL::bin_to_tzdef(*bin);
+				if (tzdef) {
+					new_tzid = tzdef->keyname;
+					tzid = new_tzid.c_str();
+					TZSTRUCT tz_struct;
+					oxcical_convert_to_tzstruct(*tzdef, tz_struct);
+					ptz_component = oxcical_export_timezone(pical, year - 1, tzid, &tz_struct);
+					if (ptz_component == nullptr)
+						return "E-2208: export_timezone returned an unspecified error";
+				}
 			}
 		} else {
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefstart]));
 			if (bin != nullptr)
 				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefend]));
 			if (bin != nullptr && bin->cb > 0) {
-				EXT_PULL ext_pull;
-				TZDEF tz_definition;
-				TZSTRUCT tz_struct;
-
-				ext_pull.init(bin->pb, bin->cb, nullptr, 0);
-				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
-					return "E-2209: PidLidAppointmentTimeZoneDefinition{Start/End}Display contents not recognized";
-				new_tzid = tz_definition.keyname;
-				tzid = new_tzid.c_str();
-				oxcical_convert_to_tzstruct(tz_definition, tz_struct);
-				ptz_component = oxcical_export_timezone(
-						pical, year - 1, tzid, &tz_struct);
-				if (ptz_component == nullptr)
-					return "E-2210: export_timezone returned an unspecified error";
+				auto tzdef = EXT_PULL::bin_to_tzdef(*bin);
+				if (tzdef) {
+					new_tzid = tzdef->keyname;
+					tzid = new_tzid.c_str();
+					TZSTRUCT tz_struct;
+					oxcical_convert_to_tzstruct(*tzdef, tz_struct);
+					ptz_component = oxcical_export_timezone(pical, year - 1, tzid, &tz_struct);
+					if (ptz_component == nullptr)
+						return "E-2210: export_timezone returned an unspecified error";
+				}
 			}
 		}
 		if (ptz_component == nullptr) {

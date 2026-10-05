@@ -1746,6 +1746,16 @@ static pack_result ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 	return pext->g_systime(&r->daylightdate);
 }
 
+std::optional<TZDEF> EXT_PULL::bin_to_tzdef(std::string_view sv)
+{
+	EXT_PULL ep;
+	TZDEF tz;
+	ep.init(sv.data(), sv.size(), nullptr, EXT_FLAG_UTF16);
+	if (ep.g_tzdef(&tz) == pack_result::ok)
+		return tz;
+	return std::nullopt;
+}
+
 pack_result EXT_PULL::g_tzdef(TZDEF *r) try
 {
 	uint8_t major, minor;
