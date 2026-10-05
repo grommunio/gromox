@@ -1453,6 +1453,7 @@ void tItem::serialize(XMLElement *xml) const
 	XMLDUMPT(LastModifiedTime);
 	XMLDUMPT(IsAssociated);
 	XMLDUMPT(ConversationId);
+	XMLDUMPT(UniqueBody);
 	XMLDUMPT(Flag);
 	XMLDUMPT(Preview);
 	XMLDUMPT(TextBody);

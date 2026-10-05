@@ -365,6 +365,7 @@ class sShape {
 	static constexpr uint64_t TextBody =          1 << 14;
 	static constexpr uint64_t ResponseObjects =   1 << 15;
 	static constexpr uint64_t Occurrences =       1 << 16;
+	static constexpr uint64_t UniqueBody =        1 << 17;
 	static constexpr uint64_t Conflicts =         1 << 18;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients | ReplyToRecipients;
@@ -1061,7 +1062,7 @@ struct tFieldURI {
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, proptag_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, proptype_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 27> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 28> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -2022,7 +2023,7 @@ struct tItem : public NS_EWS_Types {
 	//<xs:element name="WebClientReadFormQueryString" type="xs:string" minOccurs="0" />
 	//<xs:element name="WebClientEditFormQueryString" type="xs:string" minOccurs="0" />
 	std::optional<tItemId> ConversationId;
-	//<xs:element name="UniqueBody" type="t:BodyType" minOccurs="0" />
+	std::optional<tBody> UniqueBody;
 	std::optional<tFlagType> Flag;
 	//<xs:element name="StoreEntryId" type="xs:base64Binary" minOccurs="0" />
 	//<xs:element name="InstanceKey" type="xs:base64Binary" minOccurs="0" />
