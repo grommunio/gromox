@@ -157,13 +157,14 @@ http_status MhContext::failure_response(uint32_t status) const try
 	auto ct = render_content(current_time, wall_start_time);
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, m_server_version, current_time) +
-	          fmt::format("Content-Length: {}\r\n", ct.size());
+	          fmt::format("Content-Length: {}\r\n", ct.size() + sizeof(stbuf));
 	if (sequence_guid != GUID_NULL) {
 		char txt[GUIDSTR_SIZE];
 		sequence_guid.to_str(txt, std::size(txt));
 		rs += fmt::format("Set-Cookie: sequence={}\r\n", txt);
 	}
-	rs += "\r\n" + std::move(ct) + binStatus(stbuf, status);
+	rs += "\r\n" + std::move(ct);
+	rs.append(binStatus(stbuf, status), sizeof(stbuf));
 	return write_response(ID, rs.c_str(), rs.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1143: ENOMEM");
