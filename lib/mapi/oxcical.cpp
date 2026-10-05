@@ -3761,8 +3761,16 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 			}
 		}
 	} else {
-		if (!ical_utc_to_datetime(ptz_component,
-		    rop_util_nttime_to_unix(*lnum), &itime))
+		auto xrt = rop_util_nttime_to_unix(*lnum);
+		if (!ical_utc_to_datetime(ptz_component, xrt, &itime))
+			return "E-2219";
+		/*
+		 * Handle this case just like DTSTART (regravitate_allday):
+		 * Without a timezone, the local midnight of an all-day
+		 * occurrence east of UTC is on the previous day in UTC.
+		 */
+		if (b_date && itime.hour >= 12 &&
+		    !ical_utc_to_datetime(ptz_component, xrt + 12 * 3600, &itime))
 			return "E-2219";
 		itime_is_set = true;
 	}
