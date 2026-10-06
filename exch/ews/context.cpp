@@ -3949,7 +3949,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	}
 
 	if (!shape.writes(NtCalendarTimeZone)) {
-		auto tz = item.timezoneId();
+		const auto &tz = item.timezoneId();
 		if(!tz.empty())
 			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(tz)});
 	}
@@ -4026,7 +4026,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				 * rather than shape – the shape's named
 				 * property cache has not been resolved yet.
 				 */
-				std::string tz(item.timezoneId());
+				const auto &tz = item.timezoneId();
 				if (!tz.empty()) {
 					auto buf = ianatz_to_tzdef(tz.c_str());
 					if (!buf)
@@ -4194,7 +4194,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	 * point, so shape.writes(NtCalendarTimeZone) would return nullptr even
 	 * though the value was written above.
 	 */
-	std::string tz(item.timezoneId());
+	const auto &tz = item.timezoneId();
 	if (!tz.empty()) {
 		auto buf = ianatz_to_tzdef(tz.c_str());
 		if (buf == nullptr)

@@ -641,7 +641,7 @@ void sCalendarMeetingRequestCommon::timezoneId(std::string_view tzid, bool setTz
 		EndTimeZoneId = StartTimeZoneId = tzid;
 }
 
-std::string_view sCalendarMeetingRequestCommon::timezoneId() const
+const std::string &sCalendarMeetingRequestCommon::timezoneId() const
 {
 	if(StartTimeZoneId)
 		return *StartTimeZoneId;
@@ -651,7 +651,8 @@ std::string_view sCalendarMeetingRequestCommon::timezoneId() const
 		return StartTimeZone->Id;
 	if(EndTimeZone)
 		return EndTimeZone->Id;
-	return {};
+	static const std::string empty;
+	return empty;
 }
 
 /**

@@ -2142,7 +2142,7 @@ struct sCalendarMeetingRequestCommon {
 	void timezoneId(std::string_view, bool=true, bool=true);
 	void firstLastOccurrence(const TAGGED_PROPVAL &, const APPOINTMENT_RECUR_PAT &, const BINARY *, const uint64_t *);
 	void loadConflicts(const char *, const char *, const BINARY *, time_t, time_t);
-	std::string_view timezoneId() const;
+	const std::string &timezoneId() const;
 
 	//<!-- Single and Occurrence only -->
 	std::optional<sTimePoint> Start;
