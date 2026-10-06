@@ -2,7 +2,13 @@
 // SPDX-FileCopyrightText: 2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <cstdio>
+#include <string>
+#include <utility>
 #include <fmt/core.h>
+#include <libHX/endian.h>
 #include <gromox/clock.hpp>
 #include <gromox/util.hpp>
 #include "mh_common.hpp"
@@ -34,22 +40,6 @@ bool MhContext::loadHeaders()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief	Write binary status code
- *
- * @param	dest	Destination buffer
- * @param	status	Status code
- */
-static char *binStatus(char (&dest)[8], uint32_t status)
-{
-	EXT_PUSH ext_push;
-	if (!ext_push.init(dest, sizeof(dest), 0) ||
-	    ext_push.p_uint32(status) != pack_result::success ||
-	    ext_push.p_uint32(status) != pack_result::success)
-		/* ignore */;
-	return dest;
-}
 
 namespace hpm_mh {
 
@@ -152,19 +142,20 @@ http_status MhContext::ping_response() const try
 
 http_status MhContext::failure_response(uint32_t status) const try
 {
-	char stbuf[8];
 	auto current_time = wallclock::now();
 	auto ct = render_content(current_time, wall_start_time);
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, m_server_version, current_time) +
-	          fmt::format("Content-Length: {}\r\n", ct.size() + sizeof(stbuf));
+	          fmt::format("Content-Length: {}\r\n", ct.size() + 8);
 	if (sequence_guid != GUID_NULL) {
 		char txt[GUIDSTR_SIZE];
 		sequence_guid.to_str(txt, std::size(txt));
 		rs += fmt::format("Set-Cookie: sequence={}\r\n", txt);
 	}
 	rs += "\r\n" + std::move(ct);
-	rs.append(binStatus(stbuf, status), sizeof(stbuf));
+	uint32_t v = cpu_to_le32(status);
+	rs.append(reinterpret_cast<const char *>(&v), sizeof(v));
+	rs.append(reinterpret_cast<const char *>(&v), sizeof(v));
 	return write_response(ID, rs.c_str(), rs.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1143: ENOMEM");
