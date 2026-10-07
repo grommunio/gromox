@@ -1292,7 +1292,9 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const 
 	} catch(const std::out_of_range&) {
 	}
 	uint32_t instanceId;
-	if (!exmdb.load_embedded_instance(dir.c_str(), false, aid, &instanceId))
+	/* exmdb reports "no embedded message" as success with instance 0 */
+	if (!exmdb.load_embedded_instance(dir.c_str(), false, aid, &instanceId) ||
+	    instanceId == 0)
 		throw DispatchError(Exceptions::E3208);
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_embedded_instance_lifetime, ekey, instance);
