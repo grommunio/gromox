@@ -547,18 +547,16 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 		const auto &mn = rp.pts.monthnth;
 		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
 		struct tm tm;
-		if (rp.period == 0 || gmtime_r(&start_unix, &tm) == nullptr ||
+		if (rp.period == 0 || rp.period > 99 * 12 ||
+		    gmtime_r(&start_unix, &tm) == nullptr ||
 		    (nth && (mn.recurnum < 1 || mn.recurnum > 5 ||
 		    (mn.weekrecur & 0x7f) == 0)))
 			break;
 		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		for (uint32_t i = 0; i < count; ++i) {
-			if (i > 0) {
-				month += rp.period;
-				while (month > 12) {
-					month -= 12;
-					++year;
-				}
+		for (uint32_t raw = 0; raw < count; month += rp.period) {
+			while (month > 12) {
+				month -= 12;
+				++year;
 			}
 			struct tm occ = {};
 			occ.tm_year = year - 1900;
@@ -569,7 +567,11 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 			else
 				occ.tm_mday = std::min<int>(rp.pts.dayofmonth,
 				              ical_get_monthdays(year, month));
-			if (visit(rop_util_unix_to_rtime(timegm(&occ))))
+			auto date = rop_util_unix_to_rtime(timegm(&occ));
+			if (date < rp.startdate)
+				continue;
+			++raw;
+			if (visit(date))
 				return;
 		}
 		break;
