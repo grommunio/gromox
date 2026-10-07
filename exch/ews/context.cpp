@@ -556,6 +556,14 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 		    (mn.weekrecur & 0x7f) == 0)))
 			break;
 		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
+		if (rp.period % 12 == 0) {
+			/* yearly: the month is in FirstDateTime (MS-OXOCAL) */
+			ical_time it;
+			ical_get_itime_from_yearday(1601,
+				rp.firstdatetime / 1440 + 1, &it);
+			if (it.month >= 1 && it.month <= 12)
+				month = it.month;
+		}
 		for (uint32_t raw = 0; raw < count; month += rp.period) {
 			while (month > 12) {
 				month -= 12;
