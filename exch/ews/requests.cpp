@@ -1127,6 +1127,13 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)
 			ctx.moveCopyItem(refDir, *refMid, eid_t(1, PRIVATE_FID_DELETED_ITEMS), false);
+		if (isMessageLike &&
+		    request.MessageDisposition == Enum::SendAndSaveCopy) {
+			auto flags = content->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
+			if (flags != nullptr)
+				*flags &= ~(MSGFLAG_SUBMITTED | MSGFLAG_UNSENT);
+			content->proplist.set(PR_READ, &byte_value_one);
+		}
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
 		if (std::holds_alternative<tCalendarItem>(item) &&
