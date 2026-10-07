@@ -627,6 +627,21 @@ uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index)
 }
 
 /**
+ * @brief      Last non-deleted occurrence date of a bounded series
+ *
+ * @return     Occurrence date in rtime format, or 0 if there is none
+ */
+uint32_t lastOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr)
+{
+	uint32_t last = 0;
+	walkOccurrenceDates(apr, [&](uint32_t date) {
+		last = std::max(last, date);
+		return false;
+	});
+	return last;
+}
+
+/**
  * @brief      Collect occurrence basedates overlapping a time window
  *
  * Mirrors the expansion GetUserAvailability performs, so that a CalendarView
