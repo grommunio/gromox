@@ -539,41 +539,17 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 		break;
 	}
 	case rptMonth:
-	case rptMonthEnd: {
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
-			break;
-		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		for (uint32_t i = 0; i < count; ++i) {
-			if (i > 0) {
-				month += rp.period;
-				while (month > 12) {
-					month -= 12;
-					++year;
-				}
-			}
-			int dom = rp.pts.dayofmonth;
-			int maxdays = ical_get_monthdays(year, month);
-			if (dom > maxdays)
-				dom = maxdays;
-			struct tm occ = {};
-			occ.tm_year = year - 1900;
-			occ.tm_mon  = month - 1;
-			occ.tm_mday = dom;
-			if (visit(rop_util_unix_to_rtime(timegm(&occ))))
-				return;
-		}
-		break;
-	}
+	case rptMonthEnd:
 	case rptMonthNth:
 	case rptHjMonthNth: {
+		bool nth = rp.patterntype == rptMonthNth ||
+		           rp.patterntype == rptHjMonthNth;
+		const auto &mn = rp.pts.monthnth;
 		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
 		struct tm tm;
-		const auto &mn = rp.pts.monthnth;
-		if (rp.period == 0 || mn.recurnum < 1 || mn.recurnum > 5 ||
-		    (mn.weekrecur & 0x7f) == 0 ||
-		    gmtime_r(&start_unix, &tm) == nullptr)
+		if (rp.period == 0 || gmtime_r(&start_unix, &tm) == nullptr ||
+		    (nth && (mn.recurnum < 1 || mn.recurnum > 5 ||
+		    (mn.weekrecur & 0x7f) == 0)))
 			break;
 		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
 		for (uint32_t i = 0; i < count; ++i) {
@@ -587,8 +563,12 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 			struct tm occ = {};
 			occ.tm_year = year - 1900;
 			occ.tm_mon  = month - 1;
-			occ.tm_mday = nth_matching_mday(year, month,
-			              mn.recurnum, mn.weekrecur);
+			if (nth)
+				occ.tm_mday = nth_matching_mday(year, month,
+				              mn.recurnum, mn.weekrecur);
+			else
+				occ.tm_mday = std::min<int>(rp.pts.dayofmonth,
+				              ical_get_monthdays(year, month));
 			if (visit(rop_util_unix_to_rtime(timegm(&occ))))
 				return;
 		}
