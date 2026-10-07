@@ -333,18 +333,19 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 		 * any circumstances (even if offset>0).
 		 */
 		if (psubtype.empty())
-			buf += fmt::format("(\"{}\" NIL", ctype);
+			buf += fmt::format("(\"{}\" NIL", mjson_add_backslash(ctype.c_str()));
 		else
-			buf += fmt::format("(\"{}\" \"{}\"", ctype, psubtype);
+			buf += fmt::format("(\"{}\" \"{}\"", mjson_add_backslash(ctype.c_str()),
+			       mjson_add_backslash(psubtype.c_str()));
 		if (pmime->charset.size() > 0 || pmime->filename.size() > 0) {
 			buf += " (";
 			bool b_space = false;
 			if (pmime->charset.size() > 0) {
-				buf += "\"CHARSET\" \"" + pmime->charset + "\"";
+				buf += "\"CHARSET\" \"" + mjson_add_backslash(pmime->charset.c_str()) + "\"";
 				b_space = TRUE;
 			} else if (strcasecmp(ctype.c_str(), "text") == 0 &&
 			    *email_charset != '\0') {
-				buf += "\"CHARSET\" \""s + email_charset + "\"";
+				buf += "\"CHARSET\" \""s + mjson_add_backslash(email_charset) + "\"";
 				b_space = TRUE;
 			}
 			
@@ -378,9 +379,9 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 			    pmime->encoding_is_q())
 				buf += " \"7bit\"";
 			else
-				buf += " \"" + pmime->encoding + "\"";
+				buf += " \"" + mjson_add_backslash(pmime->encoding.c_str()) + "\"";
 		} else {
-			buf += " \"" + pmime->encoding + "\"";
+			buf += " \"" + mjson_add_backslash(pmime->encoding.c_str()) + "\"";
 		}
 		
 		if (self != nullptr && pmime->ctype_is_rfc822() &&
@@ -427,7 +428,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 		if (b_ext) {
 			buf += " NIL"; /* body MD5 */
 			buf += pmime->cntdspn.size() > 0 ?
-			       " (\""s + pmime->cntdspn + "\" NIL)" :
+			       " (\""s + mjson_add_backslash(pmime->cntdspn.c_str()) + "\" NIL)" :
 			       " NIL"s;
 			buf += " NIL"; /* body language */
 			buf += pmime->cntl.size() > 0 && str_isasciipr(pmime->cntl.c_str()) ?
@@ -447,7 +448,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 		if (psubtype.empty())
 			buf += " NIL";
 		else
-			buf += " \""s + psubtype + "\"";
+			buf += " \""s + mjson_add_backslash(psubtype.c_str()) + "\"";
 		if (b_ext)
 			buf += " NIL NIL NIL";
 		buf += ')';
