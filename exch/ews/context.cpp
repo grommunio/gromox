@@ -2327,7 +2327,7 @@ sItem EWSContext::materializeOccurrence(const std::string &dir,
 				cal->End.emplace(s.toUtc(basedate + s.endOff));
 			}
 			cal->CalendarItemType.emplace(type);
-			cal->RecurrenceId.emplace(s.toUtc(basedate));
+			cal->RecurrenceId.emplace(s.toUtc(basedate + s.startOff));
 			cal->Recurrence.reset();
 			cal->ModifiedOccurrences.reset();
 			cal->DeletedOccurrences.reset();
