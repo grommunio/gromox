@@ -125,7 +125,7 @@ bool MJSON_MIME::contains_none_type() const
 
 const MJSON_MIME *MJSON_MIME::find_by_id(const char *key) const
 {
-	if (strcmp(get_id(), key) == 0)
+	if (id == key)
 		return this;
 	for (auto &c : children) {
 		auto r = c.find_by_id(key);
@@ -336,11 +336,11 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 			buf += fmt::format("(\"{}\" NIL", ctype);
 		else
 			buf += fmt::format("(\"{}\" \"{}\"", ctype, psubtype);
-		if (*pmime->get_charset() != '\0' || *pmime->get_filename() != '\0') {
+		if (pmime->charset.size() > 0 || pmime->filename.size() > 0) {
 			buf += " (";
 			bool b_space = false;
-			if (*pmime->get_charset() != '\0') {
-				buf += "\"CHARSET\" \""s + pmime->get_charset() + "\"";
+			if (pmime->charset.size() > 0) {
+				buf += "\"CHARSET\" \"" + pmime->charset + "\"";
 				b_space = TRUE;
 			} else if (strcasecmp(ctype.c_str(), "text") == 0 &&
 			    *email_charset != '\0') {
@@ -348,17 +348,17 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 				b_space = TRUE;
 			}
 			
-			if (*pmime->get_filename() != '\0') {
+			if (pmime->filename.size() > 0) {
 				if (b_space)
 					buf += ' ';
-				if (str_isasciipr(pmime->get_filename()))
+				if (str_isasciipr(pmime->filename.c_str()))
 					buf += "\"NAME\" \"" +
-					       mjson_add_backslash(pmime->get_filename()) +
+					       mjson_add_backslash(pmime->filename.c_str()) +
 					       "\"";
 				else
 					buf += fmt::format("\"NAME\" \"=?{}?b?{}?=\"",
 					       *email_charset != '\0' ? email_charset : charset,
-					       base64_encode(pmime->get_filename()));
+					       base64_encode(pmime->filename));
 			}
 			buf += ')';
 		} else {
@@ -370,7 +370,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 		
 		/* body description */
 		buf += " NIL";
-		if (*pmime->get_encoding() == '\0') {
+		if (pmime->encoding.empty()) {
 			buf += " NIL";
 		} else if (self != nullptr && pmime->ctype_is_rfc822()) {
 			/* revision for APPLE device */
@@ -378,14 +378,14 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 			    pmime->encoding_is_q())
 				buf += " \"7bit\"";
 			else
-				buf += " \""s + pmime->get_encoding() + "\"";
+				buf += " \"" + pmime->encoding + "\"";
 		} else {
-			buf += " \""s + pmime->get_encoding() + "\"";
+			buf += " \"" + pmime->encoding + "\"";
 		}
 		
 		if (self != nullptr && pmime->ctype_is_rfc822() &&
 		    (pmime->encoding_is_b() || pmime->encoding_is_q())) {
-			ssize_t z = io.get_size(self->sub(pmime->get_id()).msg());
+			ssize_t z = io.get_size(self->sub(pmime->id.c_str()).msg());
 			buf += z >= 0 ? " " + std::to_string(z) : " NIL";
 		} else {
 			buf += " " + std::to_string(pmime->length);
@@ -396,7 +396,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 			buf += " " + std::to_string(pmime->lines);
 		
 		if (self != nullptr && pmime->ctype_is_rfc822()) {
-			auto sub = self->sub(pmime->get_id());
+			auto sub = self->sub(pmime->id.c_str());
 			auto eml_content = io.get_full(sub.digest());
 			if (eml_content == nullptr)
 				goto RFC822_FAILURE;
@@ -553,9 +553,8 @@ int MJSON::fetch_envelope(const char *cset, std::string &buf) const try
 	buf += inreply.size() > 0 && str_isasciipr(inreply.c_str()) ?
 	       " \"" + mjson_add_backslash(inreply.c_str()) + "\"" :
 	       " NIL";
-	buf += *get_mail_messageid() != '\0' &&
-	       str_isasciipr(get_mail_messageid()) ?
-	       " \"" + mjson_add_backslash(get_mail_messageid()) + "\")" :
+	buf += msgid.size() > 0 && str_isasciipr(msgid.c_str()) ?
+	       " \"" + mjson_add_backslash(msgid.c_str()) + "\")" :
 	       " NIL)";
 	return 0;
 } catch (const std::bad_alloc &) {
@@ -584,7 +583,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	if (!pbuild->build_result || pbuild->depth > MAX_RFC822_DEPTH ||
 	    !pmime->ctype_is_rfc822())
 		return;
-	auto sub = pbuild->key.sub(pmime->get_id());
+	auto sub = pbuild->key.sub(pmime->id.c_str());
 	auto msg_path = sub.msg();
 	auto eml_content = pbuild->io.get_substr(pbuild->msg_path,
 	                   pmime->get_content_offset(),
@@ -662,10 +661,10 @@ bool MJSON::rfc822_build(mjson_io &io, const char *storage_path) const
 		return FALSE;
 	if (pjson->path.empty())
 		return FALSE;
-	auto src_key = pjson->path + "/"s + get_mail_filename();
+	auto src_key = pjson->path + "/"s + filename;
 	BUILD_PARAM build_param{io};
 	build_param.msg_path = src_key.c_str();
-	build_param.key = mjson_key(storage_path + "/"s + get_mail_filename());
+	build_param.key = mjson_key(storage_path + "/"s + filename);
 	build_param.depth = 1;
 	build_param.build_result = TRUE;
 	pjson->enum_mime(mjson_enum_build, &build_param);
@@ -679,7 +678,7 @@ bool MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 
 	if (!has_rfc822_part())
 		return FALSE;
-	auto ns_key = storage_path + "/"s + pjson_base->get_mail_filename();
+	auto ns_key = storage_path + "/"s + pjson_base->filename;
 	
 	/*
 	 * Descend one IMAP component per nesting level. An rfc822-root message
@@ -756,7 +755,7 @@ int MJSON::rfc822_fetch(mjson_io &io, const char *storage_path,
 	auto pjson = this;
 	if (!has_rfc822_part())
 		return -1;
-	mjson_key key(storage_path + "/"s + get_mail_filename());
+	mjson_key key(storage_path + "/"s + filename);
 	if (!m_root.has_value())
 		return -1;
 	return mjson_fetch_mime_structure(io, &*m_root, &key,

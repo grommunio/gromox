@@ -79,14 +79,9 @@ struct GX_EXPORT MJSON_MIME {
 	bool contains_none_type() const;
 	const MJSON_MIME *find_by_id(const char *) const;
 	inline enum mime_type get_mtype() const { return mime_type; }
-	inline const char *get_ctype() const { return ctype.c_str(); }
-	inline const char *get_charset() const { return charset.c_str(); }
-	inline const char *get_filename() const { return filename.c_str(); }
-	inline const char *get_encoding() const { return encoding.c_str(); }
-	inline const char *get_id() const { return id.c_str(); }
-	inline bool ctype_is_rfc822() const { return strcasecmp(get_ctype(), "message/rfc822") == 0; }
-	inline bool encoding_is_b() const { return strcasecmp(get_encoding(), "base64") == 0; }
-	inline bool encoding_is_q() const { return strcasecmp(get_encoding(), "quoted-printable") == 0; }
+	inline bool ctype_is_rfc822() const { return strcasecmp(ctype.c_str(), "message/rfc822") == 0; }
+	inline bool encoding_is_b() const { return strcasecmp(encoding.c_str(), "base64") == 0; }
+	inline bool encoding_is_q() const { return strcasecmp(encoding.c_str(), "quoted-printable") == 0; }
 	inline size_t get_head_length() const { return begin - head; }
 	inline size_t get_content_length() const { return length; }
 	inline size_t get_entire_length() const { return get_head_length() + get_content_length(); }
@@ -115,9 +110,6 @@ struct GX_EXPORT MJSON {
 	bool rfc822_build(mjson_io &, const char *storage_path) const;
 	bool rfc822_get(mjson_io &, MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id, bool for_mime = false) const;
 	int rfc822_fetch(mjson_io &, const char *storage_path, const char *cset, bool ext, std::string &out) const;
-	const char *get_mail_filename() const { return filename.c_str(); }
-	const char *get_mail_received() const { return received.c_str(); }
-	const char *get_mail_messageid() const { return msgid.c_str(); }
 	size_t get_mail_length() const { return size; }
 	const MJSON_MIME *get_mime(const char *id) const;
 

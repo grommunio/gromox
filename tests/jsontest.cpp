@@ -13,7 +13,7 @@ using namespace gromox;
 static void enx(const MJSON_MIME *mi, void *q)
 {
 	printf("this=%p type=%u id=%s\n", mi,
-	       static_cast<unsigned int>(mi->mime_type), mi->get_id());
+	       static_cast<unsigned int>(mi->mime_type), mi->id.c_str());
 }
 
 static constexpr char tdata1[] =

@@ -315,9 +315,9 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	    pmime->get_mtype() != mime_type::single_obj)
 		return;
 
-	if (strncmp(pmime->get_ctype(), "text/", 5) != 0) {
-		auto filename = pmime->get_filename();
-		if ('\0' != filename[0]) {
+	if (strncmp(pmime->ctype.c_str(), "text/", 5) != 0) {
+		const auto &filename = pmime->filename;
+		if (filename.size() > 0) {
 			auto rs = me_ct_decode_mime(penum->charset, filename);
 			if (strcasestr(rs.c_str(), penum->keyword) != nullptr)
 				penum->b_result = TRUE;
@@ -329,9 +329,9 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 		return;
 	std::string_view ctview(content.data() + pmime->begin,
 	                 std::min(content.size(), pmime->get_content_length()));
-	if (strcasecmp(pmime->get_encoding(), "base64") == 0) {
+	if (strcasecmp(pmime->encoding.c_str(), "base64") == 0) {
 		content = base64_decode(ctview);
-	} else if (strcasecmp(pmime->get_encoding(), "quoted-printable") == 0) {
+	} else if (strcasecmp(pmime->encoding.c_str(), "quoted-printable") == 0) {
 		auto xl = qpnl_decode_sized(ctview, &content[0], content.size());
 		if (xl < 0)
 			return;
@@ -340,8 +340,8 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 		content = std::string(ctview);
 	}
 
-	auto charset = pmime->get_charset();
-	auto rs = me_ct_to_utf8(*charset != '\0' ? charset : penum->charset, content);
+	const auto &charset = pmime->charset;
+	auto rs = me_ct_to_utf8(charset.size() > 0 ? charset.c_str() : penum->charset, content);
 	if (strcasestr(rs.c_str(), penum->keyword) != nullptr)
 		penum->b_result = TRUE;
 } catch (const std::bad_alloc &) {

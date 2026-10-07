@@ -597,12 +597,10 @@ static int pstruct_null(MJSON *pjson,
 		length = part_length - offset;
 	if (storage_path == nullptr)
 		buf += fmt::format("BODY{} <<{{file}}{}|{}|{}\r\n",
-		       pbody, pjson->get_mail_filename(),
-		       temp_len + offset, length);
+		       pbody, pjson->filename, temp_len + offset, length);
 	else
 		buf += fmt::format("BODY{} <<{{rfc822}}{}/{}|{}|{}\r\n",
-		       pbody, storage_path,
-		       pjson->get_mail_filename(),
+		       pbody, storage_path, pjson->filename,
 		       temp_len + offset, length);
 	return 0;
 }
@@ -633,12 +631,11 @@ static int pstruct_mime(MJSON *pjson,
 		length = head_length - offset;
 	if (storage_path == nullptr)
 		buf += fmt::format("BODY{} <<{{file}}{}|{}|{}\r\n",
-		       pbody, pjson->get_mail_filename(),
+		       pbody, pjson->filename,
 		       pmime->get_head_offset() + offset, length);
 	else
 		buf += fmt::format("BODY{} <<{{rfc822}}{}/{}|{}|{}\r\n",
-		       pbody, storage_path,
-		       pjson->get_mail_filename(),
+		       pbody, storage_path, pjson->filename,
 		       pmime->get_head_offset() + offset, length);
 	return 0;
 }
@@ -668,12 +665,11 @@ static int pstruct_text(MJSON *pjson,
 		length = ct_length - offset;
 	if (storage_path == nullptr)
 		buf += fmt::format("BODY{} <<{{file}}{}|{}|{}\r\n",
-		       pbody, pjson->get_mail_filename(),
+		       pbody, pjson->filename,
 		       pmime->get_content_offset() + offset, length);
 	else
 		buf += fmt::format("BODY{} <<{{rfc822}}{}/{}|{}|{}\r\n",
-		       pbody, storage_path,
-		       pjson->get_mail_filename(),
+		       pbody, storage_path, pjson->filename,
 		       pmime->get_content_offset() + offset, length);
 	return 0;
 }
@@ -692,15 +688,15 @@ static int pstruct_else(imap_context &ctx, MJSON *pjson,
 	}
 	std::string eml_path;
 	if (storage_path == nullptr) {
-		eml_path = ctx.maildir + "/eml/"s + pjson->get_mail_filename();
+		eml_path = ctx.maildir + "/eml/"s + pjson->filename;
 		if (!ctx.io_actor.exists(eml_path)) {
 			std::string content;
 			if (exmdb_client->imapfile_read(ctx.maildir, "eml",
-			    pjson->get_mail_filename(), &content))
+			    pjson->filename, &content))
 				ctx.io_actor.place(eml_path, std::move(content), true);
 		}
 	} else {
-		eml_path = ctx.maildir + "/tmp/imap.rfc822/"s + storage_path + "/" + pjson->get_mail_filename();
+		eml_path = ctx.maildir + "/tmp/imap.rfc822/"s + storage_path + "/" + pjson->filename;
 	}
 	std::string b2;
 	int len = icp_match_field(ctx.io_actor, cmd_tag.c_str(), eml_path.c_str(),
@@ -906,8 +902,8 @@ static int icp_process_fetch_item(imap_context &ctx,
 			time_t tmp_time;
 			struct tm tmp_tm;
 
-			if (!parse_rfc822_timestamp(mjson.get_mail_received(), &tmp_time))
-				tmp_time = strtol(mjson.get_mail_filename(), nullptr, 0);
+			if (!parse_rfc822_timestamp(mjson.received.c_str(), &tmp_time))
+				tmp_time = strtol(mjson.filename.c_str(), nullptr, 0);
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			char b2[80];
 			if (gmtime_r(&tmp_time, &tmp_tm) != nullptr)
@@ -917,8 +913,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			buf += b2;
 		} else if (strcasecmp(kw, "RFC822") == 0) {
 			buf += fmt::format("RFC822 <<{{file}}{}|0|{}\r\n",
-			       mjson.get_mail_filename(),
-			       mjson.get_mail_length());
+			       mjson.filename, mjson.get_mail_length());
 			if (!pcontext->b_readonly &&
 			    !(pitem->flag_bits & FLAG_SEEN)) {
 				midb_agent::set_flags(pcontext->maildir,
@@ -931,8 +926,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			auto pmime = mjson.get_mime("");
 			if (pmime != nullptr)
 				buf += fmt::format("RFC822.HEADER <<{{file}}{}|0|{}\r\n",
-				       mjson.get_mail_filename(),
-				       pmime->get_head_length());
+				       mjson.filename, pmime->get_head_length());
 			else
 				buf += "RFC822.HEADER NIL";
 		} else if (strcasecmp(kw, "RFC822.SIZE") == 0) {
@@ -943,8 +937,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			size_t ct_length = pmime != nullptr ? pmime->get_content_length() : 0;
 			if (pmime != nullptr)
 				buf += fmt::format("RFC822.TEXT <<{{file}}{}|{}|{}\r\n",
-				       mjson.get_mail_filename(),
-				       pmime->get_content_offset(),
+				       mjson.filename, pmime->get_content_offset(),
 				       ct_length);
 			else
 				buf += "RFC822.TEXT NIL";
@@ -1021,7 +1014,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 						len = icp_print_structure(ctx,
 						      &temp_mjson, kwss.c_str(), buf,
 						      pbody, final_id, ptr, offset, length,
-						      mjson.get_mail_filename());
+						      mjson.filename.c_str());
 					else
 						len = icp_print_structure(ctx,
 						      &mjson, kwss.c_str(), buf,
@@ -1093,7 +1086,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 				char enc;
 				if (part.empty() || (!pmime->encoding_is_b() &&
 				    !pmime->encoding_is_q())) {
-					auto e = pmime->get_encoding();
+					auto e = pmime->encoding.c_str();
 					if (!part.empty() && *e != '\0' &&
 					    strcasecmp(e, "7bit") != 0 &&
 					    strcasecmp(e, "8bit") != 0 &&
@@ -1106,11 +1099,11 @@ static int icp_process_fetch_item(imap_context &ctx,
 				size_t coff = part.empty() ? pmime->get_head_offset() : pmime->get_content_offset();
 				size_t clen = part.empty() ? pmime->get_entire_length() : pmime->get_content_length();
 				if (size_only) {
-					auto eml_path = std::string(pcontext->maildir) + "/eml/" + mjson.get_mail_filename();
+					auto eml_path = pcontext->maildir + "/eml/"s + mjson.filename;
 					if (!ctx.io_actor.exists(eml_path)) {
 						std::string content;
 						if (exmdb_client->imapfile_read(ctx.maildir, "eml",
-						    mjson.get_mail_filename(), &content))
+						    mjson.filename, &content))
 							ctx.io_actor.place(eml_path, std::move(content), true);
 					}
 					auto raw = ctx.io_actor.get_substr(eml_path, coff, clen);
@@ -1123,7 +1116,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 					buf += fmt::format("BINARY.SIZE[{}] {}", part, dec.size());
 				} else {
 					buf += fmt::format("BINARY[{}]{} <<{{bin}}{}|{}|{}|{}|{}|{}\r\n",
-					       part, ptag, mjson.get_mail_filename(),
+					       part, ptag, mjson.filename,
 					       coff, clen, enc, poff, plen);
 				}
 			}
