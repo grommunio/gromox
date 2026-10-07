@@ -425,19 +425,6 @@ void markOccurrenceId(sItem &item, uint32_t basedate)
 }
 
 /**
- * @brief      Test whether a date is truly deleted (not a modified exception)
- *
- * @param      rp     Recurrence pattern
- * @param      date   Date in rtime format
- *
- * @return     true if the date is deleted and not modified
- */
-bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
-{
-	return rp.contains_del(date) && !rp.contains_mod(date);
-}
-
-/**
  * Find EXCEPTIONINFO for this basedate from the recurrence blob.
  * It has the correct startdatetime/enddatetime for the exception,
  * unlike the embedded message which may have the master's dates.
@@ -450,6 +437,26 @@ find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
 		if (ei.originalstartdate / 1440 == bd)
 			return &ei;
 	return nullptr;
+}
+
+/**
+ * @brief      Test whether a date is truly deleted (not a modified exception)
+ *
+ * Compared by day: a moved exception keeps only its original day in the
+ * deleted list, and imported blobs carry a time of day in both lists.
+ *
+ * @param      apr    Appointment recurrence pattern
+ * @param      date   Date in rtime format
+ *
+ * @return     true if the date is deleted and not modified
+ */
+bool isTrulyDeleted(const APPOINTMENT_RECUR_PAT &apr, uint32_t date)
+{
+	auto &rp = apr.recur_pat;
+	auto same_day = [&](uint32_t d) { return d / 1440 == date / 1440; };
+	return std::any_of(rp.pdeletedinstancedates.cbegin(), rp.pdeletedinstancedates.cend(), same_day) &&
+	       std::none_of(rp.pmodifiedinstancedates.cbegin(), rp.pmodifiedinstancedates.cend(), same_day) &&
+	       find_exc(apr, date) == nullptr;
 }
 
 /**
@@ -489,12 +496,13 @@ static int nth_matching_mday(int year, int month, unsigned int order,
  * by EndDate, which is ENDDATE_MISSING for a never-ending pattern, so the
  * callback should return true once it has seen enough.
  *
- * @param      rp     Recurrence pattern (includes deleted/modified lists)
+ * @param      apr    Appointment recurrence pattern
  * @param      cb     Callback, returns true to stop enumeration
  */
-static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
+static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
     const std::function<bool(uint32_t)> &cb)
 {
+	auto &rp = apr.recur_pat;
 	auto bycount = rp.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR;
 	uint32_t count = bycount ? rp.occurrencecount : UINT32_MAX;
 	uint32_t last = bycount ? UINT32_MAX :
@@ -502,7 +510,7 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 	auto visit = [&](uint32_t date) -> bool {
 		if (date > last)
 			return true;
-		if (isTrulyDeleted(rp, date))
+		if (isTrulyDeleted(apr, date))
 			return false;
 		return cb(date);
 	};
@@ -596,18 +604,18 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
  * EWS InstanceIndex counts only visible (non-deleted) occurrences.
  * Modified exceptions are still visible and counted.
  *
- * @param      rp     Recurrence pattern (includes deleted/modified lists)
+ * @param      apr    Appointment recurrence pattern
  * @param      index  1-based occurrence index
  *
  * @return     Occurrence date in rtime format (minutes since 1601-01-01)
  */
-uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
+uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index)
 {
 	if (index < 1)
 		throw InputError(E3307);
 
 	uint32_t count = 0, found = 0;
-	walkOccurrenceDates(rp, [&](uint32_t date) {
+	walkOccurrenceDates(apr, [&](uint32_t date) {
 		if (++count < index)
 			return false;
 		found = date;
@@ -662,7 +670,7 @@ occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
 	for (const auto &ei : apr.pexceptioninfo)
 		last_exc = std::max(last_exc, ei.originalstartdate);
 
-	walkOccurrenceDates(apr.recur_pat, [&](uint32_t date) {
+	walkOccurrenceDates(apr, [&](uint32_t date) {
 		if (++visited > walk_cap)
 			return true;
 		if (date + apr.starttimeoffset > last_exc &&
@@ -2425,7 +2433,7 @@ uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
     uint64_t mid, uint32_t index) const
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
-	return nthOccurrenceDate(apr.recur_pat, index);
+	return nthOccurrenceDate(apr, index);
 }
 
 /**

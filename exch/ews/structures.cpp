@@ -732,15 +732,15 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
 		       toUtc(date + apr.endtimeoffset), toUtc(ostart));
 	};
 
-	FirstOccurrence.emplace(mkOcc(nthOccurrenceDate(rp, 1)));
+	FirstOccurrence.emplace(mkOcc(nthOccurrenceDate(apr, 1)));
 	if (rp.endtype != IDC_RCEV_PAT_ERB_END &&
 	    rp.endtype != IDC_RCEV_PAT_ERB_AFTERNOCCUR)
 		return;
 	auto gone = std::count_if(rp.pdeletedinstancedates.cbegin(),
 	            rp.pdeletedinstancedates.cend(),
-	            [&](uint32_t d) { return isTrulyDeleted(rp, d); });
+	            [&](uint32_t d) { return isTrulyDeleted(apr, d); });
 	if (rp.occurrencecount > gone)
-		LastOccurrence.emplace(mkOcc(nthOccurrenceDate(rp, rp.occurrencecount - gone)));
+		LastOccurrence.emplace(mkOcc(nthOccurrenceDate(apr, rp.occurrencecount - gone)));
 } catch (const InputError &) {
 	/* pattern type not enumerable */
 }

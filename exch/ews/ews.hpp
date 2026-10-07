@@ -532,8 +532,8 @@ inline T* EWSContext::construct(Args&&... args)
 	return new(alloc<T>()) T(std::forward<Args>(args)...);
 }
 
-extern bool isTrulyDeleted(const RECURRENCE_PATTERN &, uint32_t);
-extern uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &, uint32_t);
+extern bool isTrulyDeleted(const APPOINTMENT_RECUR_PAT &, uint32_t);
+extern uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &, uint32_t);
 
 extern const std::string_view *lookup_tz_get_sv(const std::string &) = delete;
 inline const std::string_view *lookup_tz_get_sv(const char *name)
