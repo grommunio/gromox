@@ -2283,6 +2283,24 @@ sItem EWSContext::materializeOccurrence(const std::string &dir,
 	struct tm basedate_local;
 	localtime_r(&basedate_ts, &basedate_local);
 	auto matching_exc = s.aprValid ? find_exc(s.apr, basedate) : nullptr;
+	auto stamp = [&](sItem &item, Enum::CalendarItemTypeType type) {
+		if (auto cal = std::get_if<tCalendarItem>(&item)) {
+			/* An embedded message has the master's dates */
+			if (matching_exc) {
+				cal->Start.emplace(s.toUtc(matching_exc->startdatetime));
+				cal->End.emplace(s.toUtc(matching_exc->enddatetime));
+			} else {
+				cal->Start.emplace(s.toUtc(basedate + s.startOff));
+				cal->End.emplace(s.toUtc(basedate + s.endOff));
+			}
+			cal->CalendarItemType.emplace(type);
+			cal->RecurrenceId.emplace(s.toUtc(basedate));
+			cal->Recurrence.reset();
+			cal->ModifiedOccurrences.reset();
+			cal->DeletedOccurrences.reset();
+		}
+		markOccurrenceId(item, basedate);
+	};
 
 	auto slot = std::find_if(s.exceptions.begin(), s.exceptions.end(),
 	            [&](const sOccurrenceSeries::exc_slot &e) {
@@ -2296,25 +2314,23 @@ sItem EWSContext::materializeOccurrence(const std::string &dir,
 			throw DispatchError(E3211);
 		sItem item = *s.base;
 		std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
-		if (auto cal = std::get_if<tCalendarItem>(&item)) {
-			/*
-			 * Override Start/End: the embedded message has the
-			 * master's dates; use EXCEPTIONINFO from the blob.
-			 */
-			if (matching_exc) {
-				cal->Start.emplace(s.toUtc(matching_exc->startdatetime));
-				cal->End.emplace(s.toUtc(matching_exc->enddatetime));
-			} else {
-				cal->Start.emplace(s.toUtc(basedate + s.startOff));
-				cal->End.emplace(s.toUtc(basedate + s.endOff));
-			}
-			cal->CalendarItemType.emplace(Enum::Exception);
-			cal->RecurrenceId.emplace(s.toUtc(basedate));
-			cal->Recurrence.reset();
-			cal->ModifiedOccurrences.reset();
-			cal->DeletedOccurrences.reset();
-		}
-		markOccurrenceId(item, basedate);
+		stamp(item, Enum::Exception);
+		return item;
+	}
+	if (matching_exc != nullptr) {
+		/* Modified in the blob only: apply its overrides */
+		sItem item = *s.base;
+		auto cal = std::get_if<tCalendarItem>(&item);
+		const auto &xe = s.apr.pextendedexception[matching_exc -
+		                 s.apr.pexceptioninfo.data()];
+		auto ovr = matching_exc->overrideflags;
+		if (cal != nullptr && ovr & ARO_SUBJECT &&
+		    shape.requested(PR_SUBJECT))
+			cal->Subject.emplace(xe.subject);
+		if (cal != nullptr && ovr & ARO_LOCATION &&
+		    shape.requested(shape.tag(NtLocation)))
+			cal->Location.emplace(xe.location);
+		stamp(item, Enum::Exception);
 		return item;
 	}
 
@@ -2326,16 +2342,7 @@ sItem EWSContext::materializeOccurrence(const std::string &dir,
 		}, *s.occBase);
 	}
 	sItem item = s.occBase ? *s.occBase : *s.base;
-	if (auto cal = std::get_if<tCalendarItem>(&item)) {
-		cal->Start.emplace(s.toUtc(basedate + s.startOff));
-		cal->End.emplace(s.toUtc(basedate + s.endOff));
-		cal->CalendarItemType.emplace(Enum::Occurrence);
-		cal->RecurrenceId.emplace(s.toUtc(basedate));
-		cal->Recurrence.reset();
-		cal->ModifiedOccurrences.reset();
-		cal->DeletedOccurrences.reset();
-	}
-	markOccurrenceId(item, basedate);
+	stamp(item, Enum::Occurrence);
 	return item;
 }
 
