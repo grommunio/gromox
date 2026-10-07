@@ -1752,7 +1752,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				if (recur != nullptr && recur->cb > 0 && eid != nullptr) {
 					/* Recurring master: report its occurrences, not the series */
 					sMessageEntryId meid(eid->pc, eid->cb);
-					for (auto &occ : ctx.expandOccurrences(dir, meid.folderId(),
+					for (auto &occ : ctx.expandOccurrences(dir, eid_t(1, meid.folderId()),
 					     meid.messageId(), viewStart, viewEnd, shape)) {
 						auto &start = std::get<tCalendarItem>(occ).Start;
 						calItems.emplace_back(start ? start->toNT() : 0, std::move(occ));
