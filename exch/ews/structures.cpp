@@ -463,8 +463,11 @@ tRecurrenceRange get_recurrence_range(const RECURRENCE_PATTERN& recur_pat)
 }
 
 static inline std::chrono::system_clock::time_point
-rtime_to_tp(std::chrono::seconds tz_offset, uint32_t rtime)
+rtime_to_tp(const TZDEF *tz, std::chrono::seconds tz_offset, uint32_t rtime)
 {
+	int64_t off;
+	if (tz != nullptr && tz_to_offset(*tz, rop_util_rtime_to_unix(rtime), off))
+		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
 	return rop_util_rtime_to_unix2(rtime) + tz_offset;
 }
 
@@ -475,12 +478,13 @@ rtime_to_tp(std::chrono::seconds tz_offset, uint32_t rtime)
  * @param apprecurr    Appointment recurrence pattern
  * @param modOccs      Vector containing modified occurrences
  * @param delOccs      Vector containing deleted occurrences
- * @param tz_offset    Timezone offset (UTC minus local) in seconds
+ * @param tz           Recurrence time zone (may be nullptr)
+ * @param tz_offset    Timezone offset (UTC minus local) in seconds, used without tz
  */
 void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_PAT& apprecurr,
 	std::vector<tOccurrenceInfoType>& modOccs,
 	std::vector<tDeletedOccurrenceInfoType> &delOccs,
-	std::chrono::seconds tz_offset)
+	const TZDEF *tz, std::chrono::seconds tz_offset)
 {
 	std::set<uint32_t> mod_insts(apprecurr.recur_pat.pmodifiedinstancedates.cbegin(),
 		apprecurr.recur_pat.pmodifiedinstancedates.cend());
@@ -492,12 +496,12 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 			auto &ei = apprecurr.pexceptioninfo[i-del_count];
 			modOccs.emplace_back(tOccurrenceInfoType({
 				sOccurrenceId(*entryid, ei.originalstartdate),
-				rtime_to_tp(tz_offset, ei.startdatetime),
-				rtime_to_tp(tz_offset, ei.enddatetime),
-				rtime_to_tp(tz_offset, ei.originalstartdate)}));
+				rtime_to_tp(tz, tz_offset, ei.startdatetime),
+				rtime_to_tp(tz, tz_offset, ei.enddatetime),
+				rtime_to_tp(tz, tz_offset, ei.originalstartdate)}));
 		} else {
 			del_count++;
-			delOccs.emplace_back(tDeletedOccurrenceInfoType{rtime_to_tp(tz_offset,
+			delOccs.emplace_back(tDeletedOccurrenceInfoType{rtime_to_tp(tz, tz_offset,
 				di + apprecurr.starttimeoffset)});
 		}
 	}
@@ -1016,7 +1020,11 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 					auto sl = rop_util_rtime_to_unix(apprecurr.recur_pat.startdate + apprecurr.starttimeoffset);
 					tz_offset = std::chrono::seconds(su - sl);
 				}
-				process_occurrences(entryid_propval, apprecurr, modOccs, delOccs, tz_offset);
+				std::optional<TZDEF> tzdef;
+				if (auto bin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY))
+					tzdef = EXT_PULL::bin_to_tzdef(*bin);
+				process_occurrences(entryid_propval, apprecurr, modOccs,
+					delOccs, tzdef ? &*tzdef : nullptr, tz_offset);
 				if (modOccs.size() > 0)
 					ModifiedOccurrences.emplace(modOccs);
 				if (delOccs.size() > 0)
