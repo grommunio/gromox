@@ -25,7 +25,7 @@
 #	include <xxh3.h>
 #	include <xxhash.h>
 #endif
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/endian.h>

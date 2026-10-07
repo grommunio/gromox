@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>

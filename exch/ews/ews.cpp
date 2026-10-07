@@ -12,7 +12,7 @@
 #include <tinyxml2.h>
 #include <unordered_map>
 #include <fmt/chrono.h>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/scope.hpp>
 #include <vmime/utility/url.hpp>
 #include <gromox/bounce_gen.hpp>

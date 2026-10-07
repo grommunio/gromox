@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #ifdef HAVE_GSSAPI
 #	include <gssapi/gssapi.h>
 #endif

@@ -15,7 +15,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>

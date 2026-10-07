@@ -16,7 +16,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>

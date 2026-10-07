@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <type_traits>
 #include <vector>
-#include <fmt/core.h>
 #include <fmt/format.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>

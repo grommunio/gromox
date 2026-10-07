@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>

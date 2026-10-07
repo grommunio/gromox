@@ -7,7 +7,7 @@
 #include <cstring>
 #include <string>
 #include <utility>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/scope.hpp>
 #include <vmime/addressList.hpp>

@@ -25,7 +25,7 @@
 #	include <xxh3.h>
 #	include <xxhash.h>
 #endif
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <openssl/evp.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/clock.hpp>

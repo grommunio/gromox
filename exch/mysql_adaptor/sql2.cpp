@@ -30,7 +30,7 @@
 #ifdef __OpenBSD__
 #	include <pwd.h>
 #endif
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>

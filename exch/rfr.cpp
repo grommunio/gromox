@@ -7,7 +7,7 @@
 #include <cstring>
 #include <memory>
 #include <utility>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/endian.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>

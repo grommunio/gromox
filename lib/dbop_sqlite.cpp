@@ -5,7 +5,7 @@
 #include <climits>
 #include <cstdio>
 #include <memory>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/util.hpp>

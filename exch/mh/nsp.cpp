@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <utility>
 #include <variant>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/endian.h>
 #include <libHX/scope.hpp>

@@ -10,7 +10,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/string.h>

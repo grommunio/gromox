@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
 #include <gromox/mapidefs.h>

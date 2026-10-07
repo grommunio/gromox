@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <mutex>
 #include <string>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/algorithm.hpp>
 #include <gromox/gab.hpp>

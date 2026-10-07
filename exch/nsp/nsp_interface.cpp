@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <unordered_set>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/endian.h>
 #include <libHX/string.h>
 #include <sys/stat.h>

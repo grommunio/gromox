@@ -16,7 +16,7 @@
 #include <variant>
 #include <vector>
 #include <fmt/chrono.h>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gromox/clock.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"

@@ -29,7 +29,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/scope.hpp>

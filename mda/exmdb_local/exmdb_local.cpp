@@ -13,7 +13,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/bounce_gen.hpp>

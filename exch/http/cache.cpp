@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>

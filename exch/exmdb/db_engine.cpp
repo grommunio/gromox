@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <sys/stat.h>
 #include <libHX/scope.hpp>
 #include <gromox/algorithm.hpp>

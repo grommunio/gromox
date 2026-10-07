@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/string.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>

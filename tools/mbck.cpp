@@ -6,7 +6,7 @@
 #include <cstring>
 #include <sqlite3.h>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/database.h>

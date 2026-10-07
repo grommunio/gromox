@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/scope.hpp>

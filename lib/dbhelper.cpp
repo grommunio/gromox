@@ -7,7 +7,7 @@
 #include <sqlite3.h>
 #include <string>
 #include <unistd.h>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <gromox/database.h>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>

@@ -15,7 +15,7 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>

@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <string>
 #include <utility>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/endian.h>
 #include <gromox/clock.hpp>
 #include <gromox/util.hpp>

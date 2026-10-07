@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <string>
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 std::string PROPERTY_VALUE::repr() const
 {

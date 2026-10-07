@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <vmime/message.hpp>

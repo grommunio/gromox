@@ -16,7 +16,7 @@
 #include <memory>
 #include <unistd.h>
 #include <utility>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <vmime/parameterizedHeaderField.hpp>

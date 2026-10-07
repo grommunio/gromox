@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>

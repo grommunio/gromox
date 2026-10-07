@@ -14,7 +14,7 @@
 #include <string>
 #include <utility>
 #include <tinyxml2.h>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <fmt/printf.h>
 #include <json/value.h>
 #include <json/writer.h>
