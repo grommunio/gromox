@@ -453,6 +453,30 @@ find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
 }
 
 /**
+ * @brief      Day of month of a MonthNth slot
+ *
+ * Picks the @order'th (1–4, or 5 for the last) of those days in the month
+ * whose weekday is in @mask (bit 0 = Sunday), like RRULE BYDAY with BYSETPOS.
+ */
+static int nth_matching_mday(int year, int month, unsigned int order,
+    uint32_t mask)
+{
+	int mdays = ical_get_monthdays(year, month);
+	int dow1 = ical_get_dayofweek(year, month, 1);
+	auto match = [&](int d) { return mask & (1U << (dow1 + d - 1) % 7); };
+	if (order == 5) {
+		for (int d = mdays; d >= 1; --d)
+			if (match(d))
+				return d;
+		return 0;
+	}
+	for (int d = 1, n = 0; d <= mdays; ++d)
+		if (match(d) && ++n == static_cast<int>(order))
+			return d;
+	return 0;
+}
+
+/**
  * @brief      Enumerate the visible occurrence dates of a recurrence pattern
  *
  * Walks the pattern in chronological order and invokes @cb for every
@@ -546,11 +570,12 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 	case rptHjMonthNth: {
 		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
 		struct tm tm;
-		if ((rp.pts.monthnth.weekrecur & 0x7f) == 0 ||
+		const auto &mn = rp.pts.monthnth;
+		if (rp.period == 0 || mn.recurnum < 1 || mn.recurnum > 5 ||
+		    (mn.weekrecur & 0x7f) == 0 ||
 		    gmtime_r(&start_unix, &tm) == nullptr)
 			break;
 		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		int order = rp.pts.monthnth.recurnum;
 		for (uint32_t i = 0; i < count; ++i) {
 			if (i > 0) {
 				month += rp.period;
@@ -559,20 +584,13 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 					++year;
 				}
 			}
-			for (int wd = 0; wd < 7; ++wd) {
-				if (!(rp.pts.monthnth.weekrecur & (1 << wd)))
-					continue;
-				int day = ical_get_dayofmonth(year, month,
-				          order == 5 ? -1 : order, wd);
-				if (day <= 0)
-					continue;
-				struct tm occ = {};
-				occ.tm_year = year - 1900;
-				occ.tm_mon  = month - 1;
-				occ.tm_mday = day;
-				if (visit(rop_util_unix_to_rtime(timegm(&occ))))
-					return;
-			}
+			struct tm occ = {};
+			occ.tm_year = year - 1900;
+			occ.tm_mon  = month - 1;
+			occ.tm_mday = nth_matching_mday(year, month,
+			              mn.recurnum, mn.weekrecur);
+			if (visit(rop_util_unix_to_rtime(timegm(&occ))))
+				return;
 		}
 		break;
 	}
@@ -654,9 +672,8 @@ occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
 	walkOccurrenceDates(apr.recur_pat, [&](uint32_t date) {
 		if (++visited > walk_cap)
 			return true;
-		/* MonthNth slots within one month may come out of order */
 		if (date + apr.starttimeoffset > last_exc &&
-		    toUtc(date + apr.starttimeoffset) - 7 * 86400 > end)
+		    toUtc(date + apr.starttimeoffset) > end)
 			return true;
 		auto exc = find_exc(apr, date);
 		time_t occ_start, occ_end;
