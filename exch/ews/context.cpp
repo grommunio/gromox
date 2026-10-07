@@ -2182,17 +2182,19 @@ EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
 	auto start_prop_tz = shape.get<const uint64_t>(PR_START_DATE);
 	if (!start_prop_tz)
 		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
-	if (start_prop_tz != nullptr && recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
+	if (recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
 		EXT_PULL rp;
 		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, nullptr, 0);
-		if (rp.g_apptrecpat(&s.apr) == pack_result::ok) {
-			s.aprValid = true;
-			s.startOff = s.apr.starttimeoffset;
-			s.endOff   = s.apr.endtimeoffset;
-			auto su    = rop_util_nttime_to_unix(*start_prop_tz);
-			auto sl    = rop_util_rtime_to_unix(s.apr.recur_pat.startdate + s.apr.starttimeoffset);
-			s.tzOffset = std::chrono::seconds(su - sl);
-		}
+		s.aprValid = rp.g_apptrecpat(&s.apr) == pack_result::ok;
+	}
+	if (s.aprValid) {
+		s.startOff = s.apr.starttimeoffset;
+		s.endOff   = s.apr.endtimeoffset;
+	}
+	if (s.aprValid && start_prop_tz != nullptr) {
+		auto su    = rop_util_nttime_to_unix(*start_prop_tz);
+		auto sl    = rop_util_rtime_to_unix(s.apr.recur_pat.startdate + s.apr.starttimeoffset);
+		s.tzOffset = std::chrono::seconds(su - sl);
 	}
 	auto tzbin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY);
 	if (s.aprValid && tzbin != nullptr)
@@ -2376,17 +2378,15 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 std::vector<sItem> EWSContext::expandOccurrences(const std::string &dir,
     uint64_t fid, uint64_t mid, time_t start, time_t end, sShape &shape) const
 {
-	auto apr = loadRecurPat(dir, mid).second;
-	std::chrono::minutes tz_offset(recurTzOffset(dir, mid, apr));
-	/* before loadOccurrenceSeries() resets the shape */
-	std::optional<TZDEF> tzdef;
-	if (auto bin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY))
-		tzdef = EXT_PULL::bin_to_tzdef(*bin);
-	auto dates = occurrenceDatesInRange(apr, tzdef ? &*tzdef : nullptr,
-	             tz_offset, start, end);
+	auto s = loadOccurrenceSeries(dir, fid, mid, shape);
+	if (!s.aprValid) {
+		auto bin = shape.get<const BINARY>(NtAppointmentRecur);
+		throw EWSError::ItemCorrupt(bin == nullptr || bin->cb == 0 ? E3305 : E3306);
+	}
+	auto dates = occurrenceDatesInRange(s.apr, s.tzdef ? &*s.tzdef : nullptr,
+	             s.tzOffset, start, end);
 	if (dates.empty())
 		return {};
-	auto s = loadOccurrenceSeries(dir, fid, mid, shape);
 	loadOccurrenceInstances(dir, s, shape);
 	std::vector<sItem> items;
 	items.reserve(dates.size());
