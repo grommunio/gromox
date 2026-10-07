@@ -124,18 +124,19 @@ bool cu_extract_delegator(message_object *pmessage, std::string &username)
 		username.clear();
 		return TRUE;
 	}
-	auto addrtype = tmp_propvals.get<const char>(PR_ADDRTYPE);
-	auto emaddr   = tmp_propvals.get<const char>(PR_EMAIL_ADDRESS);
+	auto addrtype = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+	auto emaddr   = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (addrtype != nullptr) {
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
 		           mysql_adaptor_userid_to_name, username);
 		if (ret == ecSuccess)
 			return true;
-		else if (ret != ecNullObject)
+		/* Foreign EX DNs (migrated items) fall through to the SMTP address */
+		else if (ret != ecNullObject && ret != ecUnknownUser)
 			return false;
 	}
 	auto str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-	if (str != nullptr) {
+	if (str != nullptr && *str != '\0') {
 		username = str;
 		return TRUE;
 	}
