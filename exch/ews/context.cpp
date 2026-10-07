@@ -541,7 +541,10 @@ static void walkOccurrenceDates(const RECURRENCE_PATTERN &rp,
 	case rptMonth:
 	case rptMonthEnd:
 	case rptMonthNth:
+	case rptHjMonth:
+	case rptHjMonthEnd:
 	case rptHjMonthNth: {
+		/* Hijri patterns are expanded as Gregorian, as freebusy does */
 		bool nth = rp.patterntype == rptMonthNth ||
 		           rp.patterntype == rptHjMonthNth;
 		const auto &mn = rp.pts.monthnth;
