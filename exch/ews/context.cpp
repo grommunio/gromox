@@ -2138,6 +2138,206 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 }
 
 /**
+ * @brief      Convert a local-as-UTC rtime of the series to UTC
+ */
+clock::time_point EWSContext::sOccurrenceSeries::toUtc(uint32_t rtime) const
+{
+	int64_t off;
+	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
+		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
+	return rop_util_rtime_to_unix2(rtime) + tzOffset;
+}
+
+/**
+ * @brief      Load the master properties of a recurring series
+ *
+ * Leaves the master's properties in @shape and parses the recurrence
+ * pattern and time zone from them. The occurrences need
+ * loadOccurrenceInstances() in addition.
+ *
+ * @param      dir    Store directory
+ * @param      fid    Parent folder ID
+ * @param      mid    Message ID of the recurring master
+ * @param      shape  Requested item shape
+ */
+EWSContext::sOccurrenceSeries
+EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
+    uint64_t mid, sShape &shape) const
+{
+	sOccurrenceSeries s;
+	s.fid = fid;
+	s.mid = mid;
+	shape.clean();
+	shape.recurrenceFrame = get_recurrence_frame();
+	getNamedTags(dir, shape);
+	shape.properties(getItemProps(dir, mid, shape.proptags()));
+
+	/*
+	 * Compute timezone offset for rtime→UTC conversion. Recurrence blob
+	 * rtimes are "local-as-UTC" – derive the offset from the master's
+	 * PR_START_DATE (real UTC) vs the recurrence pattern's first
+	 * occurrence rtime.
+	 */
+	auto recur_prop_tz = shape.get<const BINARY>(NtAppointmentRecur);
+	auto start_prop_tz = shape.get<const uint64_t>(PR_START_DATE);
+	if (!start_prop_tz)
+		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
+	if (start_prop_tz != nullptr && recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
+		EXT_PULL rp;
+		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, nullptr, 0);
+		if (rp.g_apptrecpat(&s.apr) == pack_result::ok) {
+			s.aprValid = true;
+			s.startOff = s.apr.starttimeoffset;
+			s.endOff   = s.apr.endtimeoffset;
+			auto su    = rop_util_nttime_to_unix(*start_prop_tz);
+			auto sl    = rop_util_rtime_to_unix(s.apr.recur_pat.startdate + s.apr.starttimeoffset);
+			s.tzOffset = std::chrono::seconds(su - sl);
+		}
+	}
+	auto tzbin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY);
+	if (s.aprValid && tzbin != nullptr)
+		s.tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
+	return s;
+}
+
+/**
+ * @brief      Load what all occurrences of a series share
+ *
+ * Builds the master item the occurrences are copied from and locates the
+ * exception attachments. Expects the master's properties in @shape, as left
+ * by loadOccurrenceSeries().
+ *
+ * @param      dir    Store directory
+ * @param      s      Series
+ * @param      shape  Requested item shape
+ */
+void EWSContext::loadOccurrenceInstances(const std::string &dir,
+    sOccurrenceSeries &s, sShape &shape) const
+{
+	auto mInst = m_plugin.loadMessageInstance(dir, s.fid, s.mid);
+	uint16_t count;
+	if (!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+		throw DispatchError(E3210);
+
+	PROPNAME_ARRAY propnames;
+	propnames.count = 1;
+	PROPERTY_NAME propname_buff[1];
+	propname_buff[0].kind = MNID_ID;
+	propname_buff[0].guid = PSETID_Appointment;
+	propname_buff[0].lid  = PidLidExceptionReplaceTime;
+	propnames.ppropname   = propname_buff;
+	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
+	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
+	s.excTags = shape.proptags_vec();
+	s.excTags.emplace_back(ex_replace_time_tag);
+
+	/* Exceptions carry no MimeContent, see materializeOccurrence() */
+	s.base.emplace(tItem::create(shape));
+	if (auto special = shape.special & ~sShape::MimeContent)
+		std::visit([&](auto &&it) {
+			loadSpecial(dir, s.fid, s.mid, it, special);
+		}, *s.base);
+
+	const proptag_t ex_tags[] = {ex_replace_time_tag};
+	for (uint16_t i = 0; i < count; ++i) {
+		auto aInst = m_plugin.loadAttachmentInstance(dir, s.fid, s.mid, i);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		} catch (const DispatchError &) {
+			continue; /* skip non-embedded attachments */
+		}
+		TPROPVAL_ARRAY props;
+		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
+		    eInst->instanceId, proptag_cspan{ex_tags}, &props))
+			throw DispatchError(E3211);
+		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
+		if (!exstarttime)
+			continue;
+		auto exstart = clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
+		struct tm exstart_local;
+		localtime_r(&exstart, &exstart_local);
+		s.exceptions.emplace_back(sOccurrenceSeries::exc_slot{
+			exstart_local.tm_year, exstart_local.tm_yday,
+			std::move(eInst)});
+	}
+}
+
+/**
+ * @brief      Build one occurrence of a series
+ *
+ * @param      dir      Store directory
+ * @param      s        Series, from loadOccurrenceSeries() and
+ *                      loadOccurrenceInstances()
+ * @param      basedate Basedate of the occurrence
+ * @param      shape    Requested item shape
+ *
+ * @return     The occurrence, with its occurrence ItemId
+ */
+sItem EWSContext::materializeOccurrence(const std::string &dir,
+    sOccurrenceSeries &s, uint32_t basedate, sShape &shape) const
+{
+	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
+	struct tm basedate_local;
+	localtime_r(&basedate_ts, &basedate_local);
+	auto matching_exc = s.aprValid ? find_exc(s.apr, basedate) : nullptr;
+
+	auto slot = std::find_if(s.exceptions.begin(), s.exceptions.end(),
+	            [&](const sOccurrenceSeries::exc_slot &e) {
+	            	return e.year == basedate_local.tm_year &&
+	            	       e.yday == basedate_local.tm_yday;
+	            });
+	if (slot != s.exceptions.end()) {
+		TPROPVAL_ARRAY props;
+		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
+		    slot->inst->instanceId, s.excTags, &props))
+			throw DispatchError(E3211);
+		sItem item = *s.base;
+		std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
+		if (auto cal = std::get_if<tCalendarItem>(&item)) {
+			/*
+			 * Override Start/End: the embedded message has the
+			 * master's dates; use EXCEPTIONINFO from the blob.
+			 */
+			if (matching_exc) {
+				cal->Start.emplace(s.toUtc(matching_exc->startdatetime));
+				cal->End.emplace(s.toUtc(matching_exc->enddatetime));
+			} else {
+				cal->Start.emplace(s.toUtc(basedate + s.startOff));
+				cal->End.emplace(s.toUtc(basedate + s.endOff));
+			}
+			cal->CalendarItemType.emplace(Enum::Exception);
+			cal->RecurrenceId.emplace(s.toUtc(basedate));
+			cal->Recurrence.reset();
+			cal->ModifiedOccurrences.reset();
+			cal->DeletedOccurrences.reset();
+		}
+		markOccurrenceId(item, basedate);
+		return item;
+	}
+
+	/* Unmodified occurrence: construct from master properties */
+	if (shape.special & sShape::MimeContent && !s.occBase) {
+		s.occBase.emplace(*s.base);
+		std::visit([&](auto &&it) {
+			loadSpecial(dir, s.fid, s.mid, it, sShape::MimeContent);
+		}, *s.occBase);
+	}
+	sItem item = s.occBase ? *s.occBase : *s.base;
+	if (auto cal = std::get_if<tCalendarItem>(&item)) {
+		cal->Start.emplace(s.toUtc(basedate + s.startOff));
+		cal->End.emplace(s.toUtc(basedate + s.endOff));
+		cal->CalendarItemType.emplace(Enum::Occurrence);
+		cal->RecurrenceId.emplace(s.toUtc(basedate));
+		cal->Recurrence.reset();
+		cal->ModifiedOccurrences.reset();
+		cal->DeletedOccurrences.reset();
+	}
+	markOccurrenceId(item, basedate);
+	return item;
+}
+
+/**
  * @brief      Load occurrence
  *
  * @param      dir      Store directory
@@ -2150,140 +2350,9 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
  */
 sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t mid, uint32_t basedate, sShape& shape) const
 {
-	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
-	uint16_t count;
-	if (!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
-		throw DispatchError(E3210);
-
-	shape.clean();
-	shape.recurrenceFrame = get_recurrence_frame();
-	getNamedTags(dir, shape);
-	shape.properties(getItemProps(dir, mid, shape.proptags()));
-	PROPNAME_ARRAY propnames;
-	propnames.count = 1;
-	PROPERTY_NAME propname_buff[1];
-	propname_buff[0].kind = MNID_ID;
-	propname_buff[0].guid = PSETID_Appointment;
-	propname_buff[0].lid = PidLidExceptionReplaceTime;
-	propnames.ppropname = propname_buff;
-	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
-	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
-	TPROPVAL_ARRAY props;
-	auto tags_1 = shape.proptags_vec();
-	tags_1.emplace_back(ex_replace_time_tag);
-
-	/*
-	 * Compute timezone offset for rtime→UTC conversion. Recurrence blob
-	 * rtimes are "local-as-UTC" – derive the offset from the master's
-	 * PR_START_DATE (real UTC) vs the recurrence pattern's first
-	 * occurrence rtime.
-	 */
-	std::chrono::seconds tz_offset{0};
-	uint32_t start_off = 0, end_off = 1440;
-	APPOINTMENT_RECUR_PAT apr{};
-	bool apr_valid = false;
-	auto recur_prop_tz = shape.get<const BINARY>(NtAppointmentRecur);
-	auto start_prop_tz = shape.get<const uint64_t>(PR_START_DATE);
-	if (!start_prop_tz)
-		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
-	if (start_prop_tz != nullptr && recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
-		EXT_PULL rp;
-		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, nullptr, 0);
-		if (rp.g_apptrecpat(&apr) == pack_result::ok) {
-			apr_valid = true;
-			start_off = apr.starttimeoffset;
-			end_off   = apr.endtimeoffset;
-			auto su   = rop_util_nttime_to_unix(*start_prop_tz);
-			auto sl   = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
-			tz_offset = std::chrono::seconds(su - sl);
-		}
-	}
-	std::optional<TZDEF> tzdef;
-	auto tzbin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY);
-	if (apr_valid && tzbin != nullptr)
-		tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
-	auto toUtc = [&](uint32_t rtime) {
-		int64_t off;
-		if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
-			return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
-		return rop_util_rtime_to_unix2(rtime) + tz_offset;
-	};
-
-	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
-	struct tm basedate_local;
-	localtime_r(&basedate_ts, &basedate_local);
-	auto matching_exc = apr_valid ? find_exc(apr, basedate) : nullptr;
-
-	for (uint16_t i = 0; i < count; ++i) {
-		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
-		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
-		try {
-			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
-		} catch (const DispatchError &) {
-			continue; /* skip non-embedded attachments */
-		}
-		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, tags_1, &props))
-			throw DispatchError(E3211);
-
-		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
-		if (!exstarttime)
-			continue;
-		auto exstart = clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
-		struct tm exstart_local;
-		localtime_r(&exstart, &exstart_local);
-		if (is_same_day(basedate_local, exstart_local)) {
-			sItem item = tItem::create(shape);
-			/* For exceptions, skip MimeContent from master —
-			 * the embedded msg body is applied via updateProps.
-			 * Attachments and attendees still come from master. */
-			auto exc_special = shape.special & ~sShape::MimeContent;
-			if (exc_special)
-				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, exc_special); }, item);
-			std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
-			if (auto cal = std::get_if<tCalendarItem>(&item)) {
-				/* Override Start/End: the embedded message has the
-				 * master's dates; use EXCEPTIONINFO from the blob. */
-				if (matching_exc) {
-					cal->Start.emplace(
-						toUtc(matching_exc->startdatetime));
-					cal->End.emplace(
-						toUtc(matching_exc->enddatetime));
-				} else {
-					cal->Start.emplace(
-						toUtc(basedate + start_off));
-					cal->End.emplace(
-						toUtc(basedate + end_off));
-				}
-				cal->CalendarItemType.emplace(Enum::Exception);
-				cal->RecurrenceId.emplace(
-					toUtc(basedate));
-				cal->Recurrence.reset();
-				cal->ModifiedOccurrences.reset();
-				cal->DeletedOccurrences.reset();
-			}
-			markOccurrenceId(item, basedate);
-			return item;
-		}
-	}
-
-	/* Unmodified occurrence: construct from master properties */
-	sItem item = tItem::create(shape);
-	if (shape.special)
-		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
-	if (auto cal = std::get_if<tCalendarItem>(&item)) {
-		cal->Start.emplace(
-			toUtc(basedate + start_off));
-		cal->End.emplace(
-			toUtc(basedate + end_off));
-		cal->CalendarItemType.emplace(Enum::Occurrence);
-		cal->RecurrenceId.emplace(
-			toUtc(basedate));
-		cal->Recurrence.reset();
-		cal->ModifiedOccurrences.reset();
-		cal->DeletedOccurrences.reset();
-	}
-	markOccurrenceId(item, basedate);
-	return item;
+	auto s = loadOccurrenceSeries(dir, fid, mid, shape);
+	loadOccurrenceInstances(dir, s, shape);
+	return materializeOccurrence(dir, s, basedate, shape);
 }
 
 /**
@@ -2293,7 +2362,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
  * carrying its own occurrence ItemId (resolvable via GetItem) and the
  * occurrence's own Start/End. Deleted occurrences are omitted and modified
  * ones are returned as Exception rather than Occurrence. Both are decided by
- * loadOccurrence().
+ * materializeOccurrence().
  *
  * @param      dir    Store directory
  * @param      fid    Folder ID
@@ -2309,16 +2378,20 @@ std::vector<sItem> EWSContext::expandOccurrences(const std::string &dir,
 {
 	auto apr = loadRecurPat(dir, mid).second;
 	std::chrono::minutes tz_offset(recurTzOffset(dir, mid, apr));
-	/* before loadOccurrence() resets the shape */
+	/* before loadOccurrenceSeries() resets the shape */
 	std::optional<TZDEF> tzdef;
 	if (auto bin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY))
 		tzdef = EXT_PULL::bin_to_tzdef(*bin);
 	auto dates = occurrenceDatesInRange(apr, tzdef ? &*tzdef : nullptr,
 	             tz_offset, start, end);
+	if (dates.empty())
+		return {};
+	auto s = loadOccurrenceSeries(dir, fid, mid, shape);
+	loadOccurrenceInstances(dir, s, shape);
 	std::vector<sItem> items;
 	items.reserve(dates.size());
 	for (auto date : dates)
-		items.emplace_back(loadOccurrence(dir, fid, mid, date, shape));
+		items.emplace_back(materializeOccurrence(dir, s, date, shape));
 	return items;
 }
 
