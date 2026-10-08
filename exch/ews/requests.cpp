@@ -1425,8 +1425,6 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 
 	for (const auto &id : request.ItemIds) try {
 		tItemId itemId = id.itemId();
-		if (id.holds_alternative<tRecurringMasterItemId>())
-			throw EWSError::InvalidId(E3451);  // currently not supported
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
@@ -3166,8 +3164,6 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 	sShape shape(request.ItemShape);
 	uint32_t max_get = ctx.plugin().max_get_items, gotten = 0;
 	for (const auto &id : request.ItemIds) try {
-		if (id.holds_alternative<tRecurringMasterItemId>())
-			throw EWSError::InvalidId(E3452);
 		if (max_get != 0 && gotten++ >= max_get)
 			throw EWSError::ServerBusy(E3453);
 
@@ -3648,8 +3644,6 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 	idOnly.add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
 	idOnly.add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
 	for (const auto &change : request.ItemChanges) try {
-		if (change.ItemId.holds_alternative<tRecurringMasterItemId>())
-			throw EWSError::InvalidId(E3450);  // currently not supported
 		tItemId itemId = change.ItemId.itemId();
 		sMessageEntryId mid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(mid);
