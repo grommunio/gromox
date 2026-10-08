@@ -60,6 +60,8 @@ class EWSError : public DispatchError {
 
 #define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
+	ERR(CalendarCannotMoveOrCopyOccurrence) ///< Move/Copy of a single occurrence
+	ERR(CalendarCannotUseIdForOccurrenceId) ///< Id does not refer to an occurrence
 	ERR(CalendarCannotUseIdForRecurringMasterId) ///< Id does not refer to a recurring master
 	ERR(CalendarInvalidRecurrence) ///< Internal structure of the objects that represent the recurrence is invalid.
 	ERR(CalendarIsNotOrganizer) ///< Operation is reserved for the organizer of the meeting
@@ -608,6 +610,11 @@ E(3474, "access denied: missing Send-As permission on the claimed sender identit
 E(3475, "failed to set all-day flag on calendar item");
 E(3476, "failed to persist attachment to parent message");
 E(3477, "item is not a recurring master");
+E(3478, "RecurringMasterId does not refer to a recurring master");
+E(3479, "OccurrenceId does not refer to an occurrence");
+E(3480, "cannot move or copy a single occurrence");
+E(3481, "cannot mark a single occurrence as junk");
+E(3482, "cannot send a single occurrence");
 
 #undef E
 }

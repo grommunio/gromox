@@ -2810,6 +2810,8 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 		tItemId itemId = id.itemId();
 		if (!dstAccess)
 			throw EWSError::AccessDenied(E3184);
+		if (id.isOccurrence())
+			throw EWSError::CalendarCannotMoveOrCopyOccurrence(E3480);
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
@@ -2854,6 +2856,8 @@ void process(mMarkAsJunkRequest &&request, XMLElement *response, const EWSContex
 
 	for (const auto &id : request.ItemIds) try {
 		tItemId itemId = id.itemId();
+		if (id.isOccurrence())
+			throw EWSError::InvalidId(E3481);
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
@@ -3430,6 +3434,8 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	for (const auto &id: request.ItemIds) try {
 		tItemId itemId = id.itemId();
+		if (id.isOccurrence())
+			throw EWSError::InvalidId(E3482);
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec folder = ctx.resolveFolder(meid);

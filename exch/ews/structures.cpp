@@ -615,6 +615,9 @@ sBase64Binary::sBase64Binary(std::string &&data)
 /**
  * @brief      Extract item id
  *
+ * OccurrenceItemId and RecurringMasterItemId both yield the id of the
+ * recurring master.
+ *
  * @return     Item id corresponding to the stored variant
  */
 tItemId sBaseItemId::itemId() const
@@ -624,15 +627,32 @@ tItemId sBaseItemId::itemId() const
 		return std::get<tItemId>(base);
 	if (std::holds_alternative<tOccurrenceItemId>(base)) {
 		const auto& ocid = std::get<tOccurrenceItemId>(base);
-		tItemId itemId(ocid.RecurringMasterId);
+		tItemId itemId(ocid.RecurringMasterId, tItemId::ID_GUESS);
+		if (itemId.type != tItemId::ID_ITEM)
+			throw EWSError::CalendarCannotUseIdForRecurringMasterId(E3478);
 		itemId.ChangeKey = ocid.ChangeKey;
 		return itemId;
 	}
 	// must be tReccurrenceMasterId then
 	const auto& rmid = std::get<tRecurringMasterItemId>(base);
-	tItemId itemId(rmid.OccurrenceId);
+	tItemId itemId(rmid.OccurrenceId, tItemId::ID_GUESS);
+	if (itemId.type != tItemId::ID_OCCURRENCE)
+		throw EWSError::CalendarCannotUseIdForOccurrenceId(E3479);
+	itemId.Id.resize(itemId.Id.size() - sizeof(uint32_t));
+	itemId.type = tItemId::ID_ITEM;
 	itemId.ChangeKey = rmid.ChangeKey;
 	return itemId;
+}
+
+/**
+ * @brief      Whether the id addresses a single occurrence
+ */
+bool sBaseItemId::isOccurrence() const
+{
+	if (holds_alternative<tOccurrenceItemId>())
+		return true;
+	auto id = std::get_if<tItemId>(&asVariant());
+	return id != nullptr && id->type == tItemId::ID_OCCURRENCE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
