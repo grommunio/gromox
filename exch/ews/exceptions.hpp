@@ -66,6 +66,7 @@ class EWSError : public DispatchError {
 	ERR(CalendarInvalidRecurrence) ///< Internal structure of the objects that represent the recurrence is invalid.
 	ERR(CalendarIsNotOrganizer) ///< Operation is reserved for the organizer of the meeting
 	ERR(CalendarOccurrenceIndexIsOutOfRecurrenceRange) ///< InstanceIndex beyond the end of the series
+	ERR(CalendarOccurrenceIsDeletedFromRecurrence) ///< InstanceIndex of a deleted occurrence
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
 	ERR(CannotEmptyFolder) ///< Failed to empty folder
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
@@ -612,6 +613,7 @@ E(3479, "OccurrenceId does not refer to an occurrence");
 E(3480, "cannot move or copy a single occurrence");
 E(3481, "cannot mark a single occurrence as junk");
 E(3482, "cannot send a single occurrence");
+E(3483, "occurrence has been deleted from the series");
 
 #undef E
 }

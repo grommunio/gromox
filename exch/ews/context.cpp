@@ -487,9 +487,10 @@ static int nth_matching_mday(int year, int month, unsigned int order,
  * @brief      Enumerate the visible occurrence dates of a recurrence pattern
  *
  * Walks the pattern in chronological order and invokes @cb for every
- * occurrence that is not truly deleted. Modified exceptions are still
- * visible and are reported at their *original* slot, so a caller that wants
- * the rescheduled time has to consult the EXCEPTIONINFO itself.
+ * occurrence that is not truly deleted (or for every one, with @all).
+ * Modified exceptions are still visible and are reported at their *original*
+ * slot, so a caller that wants the rescheduled time has to consult the
+ * EXCEPTIONINFO itself.
  *
  * Enumeration stops when @cb returns true or the pattern is exhausted.
  * OccurrenceCount bounds only an end-after-N pattern. The others are bounded
@@ -498,9 +499,10 @@ static int nth_matching_mday(int year, int month, unsigned int order,
  *
  * @param      apr    Appointment recurrence pattern
  * @param      cb     Callback, returns true to stop enumeration
+ * @param      all    Include deleted occurrences
  */
 static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
-    const std::function<bool(uint32_t)> &cb)
+    const std::function<bool(uint32_t)> &cb, bool all = false)
 {
 	auto &rp = apr.recur_pat;
 	auto bycount = rp.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR;
@@ -510,7 +512,7 @@ static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
 	auto visit = [&](uint32_t date) -> bool {
 		if (date > last)
 			return true;
-		if (isTrulyDeleted(apr, date))
+		if (!all && isTrulyDeleted(apr, date))
 			return false;
 		return cb(date);
 	};
@@ -599,17 +601,19 @@ static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
 }
 
 /**
- * @brief      Compute the Nth non-deleted occurrence date
+ * @brief      Compute the Nth occurrence date
  *
- * EWS InstanceIndex counts only visible (non-deleted) occurrences.
- * Modified exceptions are still visible and counted.
+ * Deleted occurrences are skipped unless @all. Modified exceptions are
+ * always counted.
  *
  * @param      apr    Appointment recurrence pattern
  * @param      index  1-based occurrence index
+ * @param      all    Count deleted occurrences too, like EWS InstanceIndex
  *
  * @return     Occurrence date in rtime format (minutes since 1601-01-01)
  */
-uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index)
+uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index,
+    bool all)
 {
 	if (index < 1)
 		throw InputError(E3307);
@@ -620,7 +624,7 @@ uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index)
 			return false;
 		found = date;
 		return true;
-	});
+	}, all);
 	if (found == 0)
 		throw InputError(E3334);
 	return found;
@@ -2448,7 +2452,10 @@ uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
     uint64_t mid, uint32_t index) const try
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
-	return nthOccurrenceDate(apr, index);
+	auto date = nthOccurrenceDate(apr, index, true);
+	if (isTrulyDeleted(apr, date))
+		throw EWSError::CalendarOccurrenceIsDeletedFromRecurrence(E3483);
+	return date;
 } catch (const InputError &e) {
 	throw EWSError::CalendarOccurrenceIndexIsOutOfRecurrenceRange(e.what());
 }
