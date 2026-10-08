@@ -91,11 +91,11 @@ Produce an MJSON digest object for a RFC5322 message.
 For a given MIME type (IANA Media Type), show the typical filename extension
 used for it.
 .TP
-\fB\-\-lzxdec\fP
-Uncompress an lzxpress data stream.
+\fB\-\-lzxpdec\fP
+Uncompress an LZXpress/XCA data stream.
 .TP
-\fB\-\-lzxenc\fP
-Compress data stream with lzxpress.
+\fB\-\-lzxpenc\fP
+Compress data stream with LZXpress/XCA.
 .TP
 \fB\-\-qpdecode\fP
 Decode some Quoted-Printable text.

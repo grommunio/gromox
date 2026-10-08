@@ -29,7 +29,7 @@ using LLU = unsigned long long;
 enum {
 	CM_NONE, CM_DEC_ACTION, CM_DEC_ANYTHING, CM_DEC_ENTRYID, CM_DEC_GUID,
 	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME,
-	CM_BIN2HEX, CM_BIN2TXT, CM_LZXDEC, CM_LZXENC, CM_HTMLTORTF,
+	CM_BIN2HEX, CM_BIN2TXT, CM_LZXPDEC, CM_LZXPENC, CM_HTMLTORTF,
 	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_RTFTOGXHT,
 	CM_TEXTTOHTML, CM_UNRTFCP, CM_LANGTOCSET, CM_LCIDTOLTAG, CM_LTAGTOLCID,
 	CM_QPDECODE, CM_QPENCODE, CM_CSETTOCPID, CM_CPIDTOCSET,
@@ -54,8 +54,8 @@ static constexpr struct HXoption g_options_table[] = {
 	{"langtocset", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LANGTOCSET, "Show default charset for language"},
 	{"lcidtoltag", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LCIDTOLTAG, "Convert locale ID to locale tag (RFC 5646)"},
 	{"ltagtolcid", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LTAGTOLCID, "Convert locale tag to locale ID"},
-	{"lzxdec", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXDEC, "LZX decompression"},
-	{"lzxenc", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXENC, "LZX compression"},
+	{"lzxpdec", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXPDEC, "LZXpress/XCA decompression"},
+	{"lzxpenc", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXPENC, "LZXpress/XCA compression"},
 	{"mdigest", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_MDIGEST, "Produce an MJSON digest from an EML"},
 	{"mimetoext", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_MIMETOEXT, "Convert MIME type to filename extension"},
 	{"pack", 'p', HXTYPE_NONE, &g_hex2bin, {}, {}, 0, "Employ hex2bin before main action"},
@@ -468,12 +468,12 @@ static void print_unixtime(const char *str)
 	printf("%lld ... is calendar %s\n", LLD{ut}, buf);
 }
 
-static int do_lzx(std::string_view data, bool enc)
+static int do_lzxpress(std::string_view data, bool enc)
 {
 	/*
 	 * The API of that lzxpress implementation does not expose streamed
-	 * decompression; it's just one-shot. Just allocate a huge chunk and
-	 * hope.
+	 * decompression, it only offers one-shot mode. Just allocate a huge
+	 * chunk and hope.
 	 */
 	size_t osize = data.size() * 10;
 	auto outbuf = std::make_unique<char[]>(osize);
@@ -660,10 +660,10 @@ static int do_process_2(std::string_view &&data, const char *str)
 	case CM_LTAGTOLCID:
 		printf("%s: %u\n", str, ltag_to_lcid(str));
 		return 0;
-	case CM_LZXDEC:
-		return do_lzx(data, 0);
-	case CM_LZXENC:
-		return do_lzx(data, 1);
+	case CM_LZXPDEC:
+		return do_lzxpress(data, 0);
+	case CM_LZXPENC:
+		return do_lzxpress(data, 1);
 	case CM_MIMETOEXT: {
 		auto ext = mime_to_extension(str);
 		printf("%s: %s\n", str, ext != nullptr ? ext : "?");
