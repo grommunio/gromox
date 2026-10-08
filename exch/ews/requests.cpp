@@ -1434,25 +1434,23 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		if (!(ctx.permissions(dir, parent.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
 
+		std::optional<uint32_t> basedate;
+		if (auto occ = std::get_if<tOccurrenceItemId>(&id.asVariant()))
+			basedate = ctx.resolveOccurrenceIndex(dir,
+			           meid.messageId(), occ->InstanceIndex);
+		else if (itemId.type == tItemId::ID_OCCURRENCE)
+			basedate = sOccurrenceId(itemId.Id.data(),
+			           itemId.Id.size()).basedate;
+
+		/* The cancellation covers the whole series */
 		if (request.SendMeetingCancellations &&
 		    *request.SendMeetingCancellations != Enum::SendToNone &&
-		    (id.holds_alternative<tOccurrenceItemId>() ||
-		    itemId.type == tItemId::ID_ITEM))
+		    !basedate && itemId.type == tItemId::ID_ITEM)
 			ctx.sendMeetingCancellation(dir, meid, parent,
 				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
 
-		if (id.holds_alternative<tOccurrenceItemId>()) {
-			/* OccurrenceItemId: delete a single occurrence */
-			tOccurrenceItemId occurrenceId = std::get<tOccurrenceItemId>(id.asVariant());
-			auto mid = meid.messageId();
-			auto basedate = ctx.resolveOccurrenceIndex(dir, mid,
-			                occurrenceId.InstanceIndex);
-			ctx.deleteOccurrence(dir, mid, basedate);
-			data.ResponseMessages.emplace_back().success();
-		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
-			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
-			ctx.deleteOccurrence(dir,
-				meid.messageId(), oid.basedate);
+		if (basedate) {
+			ctx.deleteOccurrence(dir, meid.messageId(), *basedate);
 			data.ResponseMessages.emplace_back().success();
 		} else if (request.DeleteType == Enum::MoveToDeletedItems) {
 			uint64_t newMid = 0;
