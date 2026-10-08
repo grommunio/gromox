@@ -3674,6 +3674,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		tContact::genFields(shape);
 		tCalendarItem::setDatetimeFields(shape);
+		if (shape.recurrence && change.ItemId.isOccurrence())
+			throw EWSError::InvalidPropertySet(E3484);
 		if (shape.recurrence)
 			ctx.applyRecurrence(dir, mid.messageId(), shape.recurrence, shape);
 		const char* username = ctx.effectiveUser(parentFolder);

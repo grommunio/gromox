@@ -90,6 +90,7 @@ class EWSError : public DispatchError {
 	ERR(InvalidIdNotAnItemAttachmentId) ///< Attachment id expected, but got something else
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
+	ERR(InvalidPropertySet) ///< Property cannot be set on this item
 	ERR(InvalidRecipients) ///< Recipient list is malformed
 	ERR(InvalidRestriction) ///< Restriction cannot be deserialized
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
@@ -614,6 +615,7 @@ E(3480, "cannot move or copy a single occurrence");
 E(3481, "cannot mark a single occurrence as junk");
 E(3482, "cannot send a single occurrence");
 E(3483, "occurrence has been deleted from the series");
+E(3484, "Recurrence cannot be set on a single occurrence");
 
 #undef E
 }
