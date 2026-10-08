@@ -207,7 +207,7 @@ static int vmail_to_struct_digest_1(std::string_view omsg, vmime::bodyPart &part
 
 	/* only look at multipart/… objects */
 	auto &entry = dsarray.append(Json::objectValue);
-	entry["id"] = part_id;
+	entry["id"] = std::string(part_id);
 	auto &hdr = *part.getHeader();
 	if (auto ctf = hdr.findField<vmime::contentTypeField>(vmime::fields::CONTENT_TYPE);
 	    ctf != nullptr)
