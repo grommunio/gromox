@@ -2578,10 +2578,11 @@ EWSContext::loadRecurPat(const std::string &dir, uint64_t mid) const
 	const PROPERTY_NAME pn[] = {{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur}};
 	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
 	auto ids = getNamedPropIds(dir, pna);
-	auto tag = PROP_TAG(PT_BINARY, ids[0]);
-	auto bin = getItemProp<const BINARY>(dir, mid, tag);
-	if (!bin)
-		throw EWSError::ItemCorrupt(E3305);
+	proptag_t tag = PROP_TAG(PT_BINARY, ids[0]);
+	auto props = getItemProps(dir, mid, proptag_cspan{&tag, 1});
+	auto bin = props.get<const BINARY>(tag);
+	if (bin == nullptr)
+		throw EWSError::CalendarCannotUseIdForRecurringMasterId(E3477);
 	EXT_PULL ext_pull;
 	ext_pull.init(bin->pb, bin->cb, nullptr, 0);
 	APPOINTMENT_RECUR_PAT apr{};

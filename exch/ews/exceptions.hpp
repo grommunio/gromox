@@ -60,6 +60,7 @@ class EWSError : public DispatchError {
 
 #define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
+	ERR(CalendarCannotUseIdForRecurringMasterId) ///< Id does not refer to a recurring master
 	ERR(CalendarInvalidRecurrence) ///< Internal structure of the objects that represent the recurrence is invalid.
 	ERR(CalendarIsNotOrganizer) ///< Operation is reserved for the organizer of the meeting
 	ERR(CalendarOccurrenceIndexIsOutOfRecurrenceRange) ///< InstanceIndex beyond the end of the series
@@ -606,6 +607,7 @@ E(3473, "cannot write to destination folder");
 E(3474, "access denied: missing Send-As permission on the claimed sender identity");
 E(3475, "failed to set all-day flag on calendar item");
 E(3476, "failed to persist attachment to parent message");
+E(3477, "item is not a recurring master");
 
 #undef E
 }
