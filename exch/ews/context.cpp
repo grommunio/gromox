@@ -2778,7 +2778,8 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			if (ext_pull.g_apptrecpat(&apr) == pack_result::ok) {
 				int32_t tz_min = recurTzOffset(dir, mid, apr);
 				for (size_t k = 0; k < apr.pexceptioninfo.size(); ++k) {
-					if (apr.pexceptioninfo[k].originalstartdate != basedate)
+					if (apr.pexceptioninfo[k].originalstartdate / 1440 !=
+					    basedate / 1440)
 						continue;
 					applyExceptionOverrides(apr.pexceptioninfo[k],
 						apr.pextendedexception[k],
