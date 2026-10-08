@@ -460,6 +460,7 @@ static bool pred_written(unsigned int k)
 	auto t = pred_type(k);
 	if (t == vtype::strings || t == vtype::flag)
 		return true;
+	return t != vtype::addresses;
 	return false;
 }
 

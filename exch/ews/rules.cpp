@@ -1523,6 +1523,84 @@ std::optional<RESTRICTION> writer::pred(pred_kind k, const Value &v, const std::
 			l.push_back(res(RES_SUBRESTRICTION, sub));
 		}
 		return any(l);
+	case P_HasAttachments: {
+		auto bm = mk<RESTRICTION_BITMASK>();
+		bm->bitmask_relop = BMR_NEZ;
+		bm->proptag = PR_MESSAGE_FLAGS;
+		bm->mask = MSGFLAG_HASATTACH;
+		return res(RES_BITMASK, bm);
+	}
+	case P_Importance: {
+		auto it = std::find(std::begin(importance_names), std::end(importance_names), v.text);
+		return prop(RELOP_EQ, PR_IMPORTANCE, num<uint32_t>(it - std::begin(importance_names)));
+	}
+	case P_Sensitivity: {
+		auto it = std::find(std::begin(sensitivity_names), std::end(sensitivity_names), v.text);
+		return prop(RELOP_EQ, PR_SENSITIVITY, num<uint32_t>(it - std::begin(sensitivity_names)));
+	}
+	case P_IsApprovalRequest:
+	case P_IsMeetingResponse:
+	case P_IsPermissionControlled:
+	case P_IsReadReceipt:
+	case P_IsSigned:
+	case P_IsVoicemail:
+		for (const auto &[kind, pfx] : class_prefixes)
+			if (kind == k)
+				return content(PR_MESSAGE_CLASS, FL_PREFIX | FL_IGNORECASE, pfx);
+		return std::nullopt;
+	case P_IsAutomaticForward:
+		return eq_bool(PR_AUTO_FORWARDED, true);
+	case P_IsAutomaticReply:
+		return prop(RELOP_EQ, PR_MESSAGE_CLASS, str(OOF_TPL_CLASS));
+	case P_IsEncrypted:
+		return list(RES_AND, {
+			content(PR_MESSAGE_CLASS, FL_PREFIX | FL_IGNORECASE, "IPM.Note.SMIME"),
+			xnot(content(PR_MESSAGE_CLASS, FL_PREFIX | FL_IGNORECASE, "IPM.Note.SMIME.MultipartSigned")),
+		});
+	case P_IsMeetingRequest:
+		return list(RES_OR, {
+			content(PR_MESSAGE_CLASS, FL_FULLSTRING | FL_IGNORECASE, "IPM.Schedule.Meeting.Request"),
+			content(PR_MESSAGE_CLASS, FL_FULLSTRING | FL_IGNORECASE, "IPM.Schedule.Meeting.Canceled"),
+		});
+	case P_IsNDR:
+		return list(RES_AND, {
+			content(PR_MESSAGE_CLASS, FL_PREFIX | FL_IGNORECASE, "REPORT."),
+			content(PR_MESSAGE_CLASS, FL_SUBSTRING | FL_IGNORECASE, ".NDR"),
+		});
+	case P_NotSentToMe:
+		return eq_bool(PR_MESSAGE_TO_ME, false);
+	case P_SentCcMe:
+		return list(RES_AND, {
+			eq_bool(PR_MESSAGE_CC_ME, true),
+			eq_bool(PR_MESSAGE_RECIP_ME, true),
+			eq_bool(PR_MESSAGE_TO_ME, false),
+		});
+	case P_SentOnlyToMe:
+		return list(RES_AND, {
+			eq_bool(PR_MESSAGE_TO_ME, true),
+			xnot(content(PR_DISPLAY_TO, FL_SUBSTRING, ";")),
+			prop(RELOP_EQ, PR_DISPLAY_CC, str("")),
+		});
+	case P_SentToMe:
+		return eq_bool(PR_MESSAGE_TO_ME, true);
+	case P_SentToOrCcMe:
+		return eq_bool(PR_MESSAGE_RECIP_ME, true);
+	case P_WithinDateRange:
+		if (v.start)
+			l.push_back(prop(RELOP_GT, PR_MESSAGE_DELIVERY_TIME,
+			            num<uint64_t>(rop_util_unix_to_nttime(*v.start))));
+		if (v.end)
+			l.push_back(prop(RELOP_LT, PR_MESSAGE_DELIVERY_TIME,
+			            num<uint64_t>(rop_util_unix_to_nttime(*v.end))));
+		break;
+	case P_WithinSizeRange:
+		if (v.min)
+			l.push_back(prop(RELOP_GE, PR_MESSAGE_SIZE,
+			            num<uint32_t>(static_cast<uint32_t>(*v.min) * 1024)));
+		if (v.max)
+			l.push_back(prop(RELOP_LE, PR_MESSAGE_SIZE,
+			            num<uint32_t>(static_cast<uint32_t>(*v.max) * 1024)));
+		break;
 	default:
 		error(uri, "UnsupportedRule", "This condition is not supported.");
 		return std::nullopt;
