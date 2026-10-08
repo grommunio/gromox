@@ -62,6 +62,7 @@ class EWSError : public DispatchError {
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
 	ERR(CalendarInvalidRecurrence) ///< Internal structure of the objects that represent the recurrence is invalid.
 	ERR(CalendarIsNotOrganizer) ///< Operation is reserved for the organizer of the meeting
+	ERR(CalendarOccurrenceIndexIsOutOfRecurrenceRange) ///< InstanceIndex beyond the end of the series
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
 	ERR(CannotEmptyFolder) ///< Failed to empty folder
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error

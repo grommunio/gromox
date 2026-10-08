@@ -2445,10 +2445,12 @@ std::vector<sItem> EWSContext::expandOccurrences(const std::string &dir,
  * @return     Basedate in rtime format
  */
 uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
-    uint64_t mid, uint32_t index) const
+    uint64_t mid, uint32_t index) const try
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
 	return nthOccurrenceDate(apr, index);
+} catch (const InputError &e) {
+	throw EWSError::CalendarOccurrenceIndexIsOutOfRecurrenceRange(e.what());
 }
 
 /**
