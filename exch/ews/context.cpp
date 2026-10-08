@@ -11,6 +11,7 @@
 #include <functional>
 #include <sstream>
 #include <fmt/format.h>
+#include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <vmime/message.hpp>
@@ -412,11 +413,11 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
  */
 void markOccurrenceId(sItem &item, uint32_t basedate)
 {
-	auto setter = [basedate](auto &it) {
+	auto setter = [bd = cpu_to_le32(basedate)](auto &it) {
 		if (!it.ItemId)
 			return;
-		it.ItemId->Id.append(reinterpret_cast<const char *>(&basedate),
-		                     sizeof(basedate));
+		it.ItemId->Id.append(reinterpret_cast<const char *>(&bd),
+		                     sizeof(bd));
 		it.ItemId->type = tBaseItemId::ID_OCCURRENCE;
 	};
 	std::visit(setter, item);
