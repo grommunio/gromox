@@ -2635,12 +2635,14 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	auto appt_start_tag   = PROP_TAG(PT_SYSTIME, namedids[10]);
 	auto appt_end_tag     = PROP_TAG(PT_SYSTIME, namedids[11]);
 
-	/* Load message instance and count attachments */
+	/* A cached instance may predate saveRecurBlob; flushing it reverts it */
+	m_plugin.unloadMessageInstance(dir, mid);
 	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 	uint16_t att_count = 0;
 	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
 	    mInst->instanceId, &att_count))
 		throw DispatchError(E3335);
+	m_plugin.evictAttachmentInstances(dir, mid, att_count);
 
 	/* Search for an existing exception matching this basedate */
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));

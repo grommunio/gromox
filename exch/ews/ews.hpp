@@ -130,6 +130,7 @@ class EWSPlugin {
 	};
 
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;
+	void evictAttachmentInstances(const std::string &, uint64_t, uint32_t) const;
 	bool linkSubscription(const Structures::tSubscriptionId&, const EWSContext&) const;
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
 	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string&, uint32_t) const;
