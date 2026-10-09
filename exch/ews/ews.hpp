@@ -397,7 +397,7 @@ private:
 	/* State shared by the occurrences of one recurring series */
 	struct sOccurrenceSeries {
 		struct exc_slot {
-			int year, yday; /* local day of PidLidExceptionReplaceTime */
+			uint64_t replace_time; /* PidLidExceptionReplaceTime */
 			std::shared_ptr<EWSPlugin::ExmdbInstance> inst;
 		};
 		uint64_t fid = 0, mid = 0;

@@ -73,19 +73,6 @@ inline std::string &tolower_inplace(std::string &str)
 }
 
 /**
- * @brief      Checks if two dates are on the same day
- *
- * @param      tm    First time point
- * @param      tm    Second time point
- *
- * @return     true if both time points are on the same day, false otherwise
- */
-inline bool is_same_day(const tm& date1, const tm& date2)
-{
-	return date1.tm_year == date2.tm_year && date1.tm_yday == date2.tm_yday;
-}
-
-/**
  * @brief     Access contained value, create if empty
  *
  * @param     container   (Possibly empty) container
@@ -2372,12 +2359,8 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
 		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
 		if (!exstarttime)
 			continue;
-		auto exstart = clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
-		struct tm exstart_local;
-		localtime_r(&exstart, &exstart_local);
 		s.exceptions.emplace_back(sOccurrenceSeries::exc_slot{
-			exstart_local.tm_year, exstart_local.tm_yday,
-			std::move(eInst)});
+			*exstarttime, std::move(eInst)});
 	}
 }
 
@@ -2395,9 +2378,6 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
 sItem EWSContext::materializeOccurrence(const std::string &dir,
     sOccurrenceSeries &s, uint32_t basedate, sShape &shape) const
 {
-	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
-	struct tm basedate_local;
-	localtime_r(&basedate_ts, &basedate_local);
 	auto matching_exc = s.aprValid ? find_exc(s.apr, basedate) : nullptr;
 	auto stamp = [&](sItem &item, Enum::CalendarItemTypeType type) {
 		if (auto cal = std::get_if<tCalendarItem>(&item)) {
@@ -2413,10 +2393,10 @@ sItem EWSContext::materializeOccurrence(const std::string &dir,
 		markOccurrenceId(item, basedate);
 	};
 
+	auto orig = s.toUtc(basedate + s.startOff);
 	auto slot = std::find_if(s.exceptions.begin(), s.exceptions.end(),
 	            [&](const sOccurrenceSeries::exc_slot &e) {
-	            	return e.year == basedate_local.tm_year &&
-	            	       e.yday == basedate_local.tm_yday;
+	            	return s.replaces(basedate, orig, e.replace_time);
 	            });
 	if (slot != s.exceptions.end()) {
 		TPROPVAL_ARRAY props;
