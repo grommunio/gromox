@@ -1261,7 +1261,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 
 		for (const tFileAttachment &att : request.Attachments) try {
 			auto mInst = ctx.plugin().loadMessageInstance(dir,
-			             mid.folderId(), mid.messageId());
+			             parentFolder.folderId, mid.messageId());
 			uint32_t aInstId = 0, aNum = 0;
 			if (!ctx.plugin().exmdb.create_attachment_instance(dir.c_str(),
 			    mInst->instanceId, &aInstId, &aNum))
@@ -1366,7 +1366,7 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 			throw EWSError::AccessDenied(E3444);
 
 		auto mInst = ctx.plugin().loadMessageInstance(dir,
-		             aid.folderId(), aid.messageId());
+		             parentFolder.folderId, aid.messageId());
 		if (!ctx.plugin().exmdb.delete_message_instance_attachment(dir.c_str(),
 		    mInst->instanceId, aid.attachment_num))
 			throw EWSError::ItemSave(E3432);
@@ -1810,7 +1810,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				const auto &iid = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> & { return i.ItemId; }, child);
 				if (shape.special && iid) {
 					sMessageEntryId meid(iid->Id.data(), iid->Id.size());
-					std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
+					std::visit([&](auto& i) {ctx.loadSpecial(dir, eid_t(1, meid.folderId()), meid.messageId(), i, shape.special);}, child);
 				}
 				if (calView != nullptr) {
 					auto start = props.get<const uint64_t>(startTag);

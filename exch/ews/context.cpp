@@ -1689,7 +1689,7 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
  */
 sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
 {
-	auto aInst = m_plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
+	auto aInst = m_plugin.loadAttachmentInstance(dir, eid_t(1, aid.folderId()), aid.messageId(), aid.attachment_num);
 	static constexpr proptag_t tagIDs[] = {
 		PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
 		PR_ATTACH_DATA_BIN, PR_ATTACH_CONTENT_ID,
