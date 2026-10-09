@@ -1433,12 +1433,14 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			throw EWSError::AccessDenied(E3131);
 
 		std::optional<uint32_t> basedate;
-		if (auto occ = std::get_if<tOccurrenceItemId>(&id.asVariant()))
+		if (auto occ = std::get_if<tOccurrenceItemId>(&id.asVariant())) {
 			basedate = ctx.resolveOccurrenceIndex(dir,
 			           meid.messageId(), occ->InstanceIndex);
-		else if (itemId.type == tItemId::ID_OCCURRENCE)
+		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
 			basedate = sOccurrenceId(itemId.Id.data(),
 			           itemId.Id.size()).basedate;
+			ctx.checkOccurrence(dir, meid.messageId(), *basedate);
+		}
 
 		/* The cancellation covers the whole series */
 		if (request.SendMeetingCancellations &&

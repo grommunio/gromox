@@ -2488,6 +2488,20 @@ uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
 }
 
 /**
+ * @brief      Refuse the occurrence id of a deleted occurrence
+ *
+ * @param      dir       Store directory
+ * @param      mid       Message ID of the recurring master
+ * @param      basedate  Basedate from the occurrence id
+ */
+void EWSContext::checkOccurrence(const std::string &dir, uint64_t mid,
+    uint32_t basedate) const
+{
+	if (isTrulyDeleted(loadRecurPat(dir, mid).second, basedate))
+		throw EWSError::CalendarOccurrenceIsDeletedFromRecurrence(E3488);
+}
+
+/**
  * @brief      Delete a single occurrence from a recurring appointment
  *
  * Adds the occurrence date to the deleted instances list in the

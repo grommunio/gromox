@@ -619,6 +619,7 @@ E(3484, "Recurrence cannot be set on a single occurrence");
 E(3485, "failed to count exception attachments");
 E(3486, "failed to read exception attachment");
 E(3487, "failed to delete exception attachment");
+E(3488, "occurrence has been deleted from the series");
 
 #undef E
 }
