@@ -495,7 +495,7 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 		if (mod_insts.find(di) != mod_insts.end()) {
 			auto &ei = apprecurr.pexceptioninfo[i-del_count];
 			modOccs.emplace_back(tOccurrenceInfoType({
-				sOccurrenceId(*entryid, ei.originalstartdate),
+				sOccurrenceId(*entryid, ei.originalstartdate / 1440 * 1440),
 				rtime_to_tp(tz, tz_offset, ei.startdatetime),
 				rtime_to_tp(tz, tz_offset, ei.enddatetime),
 				rtime_to_tp(tz, tz_offset, ei.originalstartdate)}));
@@ -1089,6 +1089,8 @@ sOccurrenceId::sOccurrenceId(const void* data, uint64_t size)
 	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3206, "ErrorInvalidOccurrenceId");
 	TRY(ext_pull.g_uint32(&basedate), E3207, "ErrorInvalidOccurrenceId");
+	/* Ids from ModifiedOccurrences used to carry the start time */
+	basedate -= basedate % 1440;
 }
 
 /**
