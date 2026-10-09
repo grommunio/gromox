@@ -4206,6 +4206,20 @@ void EWSContext::suppressReadReceipt(const tItemId &refId) const
 }
 
 /**
+ * @brief      Whether the item is the organizer's copy of the meeting
+ */
+bool EWSContext::isOrganizer(const std::string &dir, uint64_t mid) const
+{
+	void *state = nullptr;
+	auto tag = PROP_TAG(PT_LONG, getNamedPropId(dir, NtAppointmentStateFlags, true));
+	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP,
+	    mid, tag, &state))
+		throw EWSError::ItemNotFound(E3389);
+	return state == nullptr ||
+	       !(*static_cast<const uint32_t *>(state) & asfReceived);
+}
+
+/**
  * @brief      Cancel a meeting and remove it from the organizer's calendar
  *
  * @param      refId     Calendar item to cancel
@@ -4221,13 +4235,7 @@ void EWSContext::cancelCalendarItem(const tItemId &refId, bool saveCopy) const
 	if (!(permissions(dir, parent.folderId) & frightsDeleteAny))
 		throw EWSError::AccessDenied(E3131);
 
-	void *organizer = nullptr;
-	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP,
-	    meid.messageId(), PR_SENT_REPRESENTING_SMTP_ADDRESS, &organizer))
-		throw EWSError::ItemNotFound(E3389);
-	if (organizer != nullptr && m_auth_info.username != nullptr &&
-	    strcasecmp(static_cast<const char *>(organizer),
-	    m_auth_info.username) != 0)
+	if (!isOrganizer(dir, meid.messageId()))
 		throw EWSError::CalendarIsNotOrganizer(E3470);
 
 	sendMeetingCancellation(dir, meid, parent, saveCopy);

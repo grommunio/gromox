@@ -1443,7 +1443,8 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		/* The cancellation covers the whole series */
 		if (request.SendMeetingCancellations &&
 		    *request.SendMeetingCancellations != Enum::SendToNone &&
-		    !basedate && itemId.type == tItemId::ID_ITEM)
+		    !basedate && itemId.type == tItemId::ID_ITEM &&
+		    ctx.isOrganizer(dir, meid.messageId()))
 			ctx.sendMeetingCancellation(dir, meid, parent,
 				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
 

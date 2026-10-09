@@ -301,6 +301,7 @@ class EWSContext {
 	void conflictItemIds(const Structures::sFolderSpec &, const std::string &, std::vector<Structures::tConflictingMeeting> &) const;
 	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&, bool=false) const;
 	void getNamedTags(const std::string&, Structures::sShape&, bool=false) const;
+	bool isOrganizer(const std::string &, uint64_t) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
