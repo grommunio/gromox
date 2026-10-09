@@ -3751,6 +3751,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    username, CP_ACP, mid.messageId(), &props, &problems))
 				throw EWSError::ItemSave(E3418);
 			msg.ConflictResults.Count = problems.count;
+			ctx.plugin().unloadMessageInstance(dir, mid.messageId());
 			if (shape.requiredAttendees || shape.optionalAttendees ||
 			    shape.resourceAttendees)
 				ctx.updateAttendees(dir, parentFolder,
