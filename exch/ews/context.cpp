@@ -4393,12 +4393,13 @@ bool EWSContext::isOrganizer(const std::string &dir, uint64_t mid) const
 /**
  * @brief      Cancel a meeting and remove it from the organizer's calendar
  *
- * @param      refId     Calendar item to cancel
+ * @param      refId     Calendar item or occurrence to cancel
  * @param      saveCopy  Whether to keep a copy in Sent Items
  */
 void EWSContext::cancelCalendarItem(const tItemId &refId, bool saveCopy) const
 {
-	assertIdType(refId.type, tItemId::ID_ITEM);
+	if (refId.type != tItemId::ID_OCCURRENCE)
+		assertIdType(refId.type, tItemId::ID_ITEM);
 	sMessageEntryId meid(refId.Id.data(), refId.Id.size());
 	sFolderSpec parent = resolveFolder(meid);
 	std::string dir = getDir(parent);
@@ -4409,6 +4410,14 @@ void EWSContext::cancelCalendarItem(const tItemId &refId, bool saveCopy) const
 	if (!isOrganizer(dir, meid.messageId()))
 		throw EWSError::CalendarIsNotOrganizer(E3470);
 
+	if (refId.type == tItemId::ID_OCCURRENCE) {
+		auto basedate = sOccurrenceId(refId.Id.data(),
+		                refId.Id.size()).basedate;
+		checkOccurrence(dir, meid.messageId(), basedate);
+		sendMeetingCancellation(dir, meid, parent, saveCopy, basedate);
+		deleteOccurrence(dir, parent.folderId, meid.messageId(), basedate);
+		return;
+	}
 	sendMeetingCancellation(dir, meid, parent, saveCopy);
 
 	sFolderSpec deleted = resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
