@@ -2187,6 +2187,59 @@ clock::time_point EWSContext::sOccurrenceSeries::toUtc(uint32_t rtime) const
 }
 
 /**
+ * @brief      Parse the recurrence and time zone of a series master
+ *
+ * @param      recur  PidLidAppointmentRecur
+ * @param      start  PR_START_DATE (UTC)
+ * @param      tzbin  PidLidAppointmentTimeZoneDefinitionRecur
+ */
+void EWSContext::sOccurrenceSeries::parse(const BINARY *recur,
+    const uint64_t *start, const BINARY *tzbin)
+{
+	/*
+	 * Recurrence blob rtimes are "local-as-UTC" – derive the offset
+	 * from the master's PR_START_DATE (real UTC) vs the recurrence
+	 * pattern's first occurrence rtime.
+	 */
+	if (recur != nullptr && recur->cb > 0) {
+		EXT_PULL rp;
+		rp.init(recur->pb, recur->cb, nullptr, 0);
+		aprValid = rp.g_apptrecpat(&apr) == pack_result::ok;
+	}
+	if (!aprValid)
+		return;
+	startOff = apr.starttimeoffset;
+	endOff   = apr.endtimeoffset;
+	if (start != nullptr) {
+		auto su  = rop_util_nttime_to_unix(*start);
+		auto sl  = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
+		tzOffset = std::chrono::seconds(su - sl);
+	}
+	if (tzbin != nullptr)
+		tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
+}
+
+/**
+ * @brief      Original and actual start/end of an occurrence (UTC)
+ */
+EWSContext::sOccurrenceSeries::times
+EWSContext::sOccurrenceSeries::occurrenceTimes(uint32_t basedate) const
+{
+	times t;
+	t.orig_start = toUtc(basedate + startOff);
+	/* An embedded message has the master's dates */
+	auto exc = aprValid ? find_exc(apr, basedate) : nullptr;
+	if (exc != nullptr) {
+		t.start = toUtc(exc->startdatetime);
+		t.end   = toUtc(exc->enddatetime);
+	} else {
+		t.start = t.orig_start;
+		t.end   = toUtc(basedate + endOff);
+	}
+	return t;
+}
+
+/**
  * @brief      Load the master properties of a recurring series
  *
  * Leaves the master's properties in @shape and parses the recurrence
@@ -2210,33 +2263,11 @@ EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 
-	/*
-	 * Compute timezone offset for rtime→UTC conversion. Recurrence blob
-	 * rtimes are "local-as-UTC" – derive the offset from the master's
-	 * PR_START_DATE (real UTC) vs the recurrence pattern's first
-	 * occurrence rtime.
-	 */
-	auto recur_prop_tz = shape.get<const BINARY>(NtAppointmentRecur);
-	auto start_prop_tz = shape.get<const uint64_t>(PR_START_DATE);
-	if (!start_prop_tz)
-		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
-	if (recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
-		EXT_PULL rp;
-		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, nullptr, 0);
-		s.aprValid = rp.g_apptrecpat(&s.apr) == pack_result::ok;
-	}
-	if (s.aprValid) {
-		s.startOff = s.apr.starttimeoffset;
-		s.endOff   = s.apr.endtimeoffset;
-	}
-	if (s.aprValid && start_prop_tz != nullptr) {
-		auto su    = rop_util_nttime_to_unix(*start_prop_tz);
-		auto sl    = rop_util_rtime_to_unix(s.apr.recur_pat.startdate + s.apr.starttimeoffset);
-		s.tzOffset = std::chrono::seconds(su - sl);
-	}
-	auto tzbin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY);
-	if (s.aprValid && tzbin != nullptr)
-		s.tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
+	auto start = shape.get<const uint64_t>(PR_START_DATE);
+	if (start == nullptr)
+		start = shape.get<uint64_t>(NtCommonStart);
+	s.parse(shape.get<const BINARY>(NtAppointmentRecur), start,
+		shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY));
 	return s;
 }
 
@@ -2323,14 +2354,9 @@ sItem EWSContext::materializeOccurrence(const std::string &dir,
 	auto matching_exc = s.aprValid ? find_exc(s.apr, basedate) : nullptr;
 	auto stamp = [&](sItem &item, Enum::CalendarItemTypeType type) {
 		if (auto cal = std::get_if<tCalendarItem>(&item)) {
-			/* An embedded message has the master's dates */
-			if (matching_exc) {
-				cal->Start.emplace(s.toUtc(matching_exc->startdatetime));
-				cal->End.emplace(s.toUtc(matching_exc->enddatetime));
-			} else {
-				cal->Start.emplace(s.toUtc(basedate + s.startOff));
-				cal->End.emplace(s.toUtc(basedate + s.endOff));
-			}
+			auto t = s.occurrenceTimes(basedate);
+			cal->Start.emplace(t.start);
+			cal->End.emplace(t.end);
 			cal->CalendarItemType.emplace(type);
 			cal->RecurrenceId.emplace(s.toUtc(basedate + s.startOff));
 			cal->Recurrence.reset();

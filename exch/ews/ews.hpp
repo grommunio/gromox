@@ -407,7 +407,13 @@ private:
 		std::optional<Structures::sItem> base, occBase; /* occBase: + MimeContent */
 		std::vector<exc_slot> exceptions; /* attachment order */
 
+		struct times {
+			clock::time_point orig_start, start, end;
+		};
+
+		void parse(const BINARY *, const uint64_t *, const BINARY *);
 		clock::time_point toUtc(uint32_t) const;
+		times occurrenceTimes(uint32_t) const;
 	};
 	sOccurrenceSeries loadOccurrenceSeries(const std::string &, uint64_t, uint64_t, Structures::sShape &) const;
 	void loadOccurrenceInstances(const std::string &, sOccurrenceSeries &, Structures::sShape &) const;
