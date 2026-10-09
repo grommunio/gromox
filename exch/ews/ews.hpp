@@ -308,7 +308,7 @@ class EWSContext {
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
 	std::vector<Structures::sItem> expandOccurrences(const std::string &, uint64_t, uint64_t, time_t, time_t, Structures::sShape &) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
-	void deleteOccurrence(const std::string &, uint64_t, uint32_t) const;
+	void deleteOccurrence(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
 	void applyRecurrence(const std::string &, uint64_t, const tinyxml2::XMLElement *, Structures::sShape &) const;
 	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
@@ -389,6 +389,7 @@ private:
 	int32_t recurTzOffset(const std::string &, uint64_t, const APPOINTMENT_RECUR_PAT &) const;
 	bool saveRecurBlob(const std::string &, uint64_t, proptag_t, const APPOINTMENT_RECUR_PAT &) const;
 	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
+	void deleteExceptionAttachment(const std::string &, uint64_t, uint64_t, uint32_t) const;
 
 	/* State shared by the occurrences of one recurring series */
 	struct sOccurrenceSeries {

@@ -1448,7 +1448,8 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
 
 		if (basedate) {
-			ctx.deleteOccurrence(dir, meid.messageId(), *basedate);
+			ctx.deleteOccurrence(dir, parent.folderId,
+				meid.messageId(), *basedate);
 			data.ResponseMessages.emplace_back().success();
 		} else if (request.DeleteType == Enum::MoveToDeletedItems) {
 			uint64_t newMid = 0;

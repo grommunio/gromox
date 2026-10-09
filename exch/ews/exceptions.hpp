@@ -616,6 +616,9 @@ E(3481, "cannot mark a single occurrence as junk");
 E(3482, "cannot send a single occurrence");
 E(3483, "occurrence has been deleted from the series");
 E(3484, "Recurrence cannot be set on a single occurrence");
+E(3485, "failed to count exception attachments");
+E(3486, "failed to read exception attachment");
+E(3487, "failed to delete exception attachment");
 
 #undef E
 }

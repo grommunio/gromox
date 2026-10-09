@@ -2465,25 +2465,78 @@ uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
  * @brief      Delete a single occurrence from a recurring appointment
  *
  * Adds the occurrence date to the deleted instances list in the
- * recurrence blob and saves it back to the item.
+ * recurrence blob and drops the exception of a modified occurrence.
  *
  * @param      dir       Store directory
  * @param      fid       Folder ID
  * @param      mid       Message ID of the recurring master
  * @param      basedate  Occurrence date in rtime format
  */
-void EWSContext::deleteOccurrence(const std::string &dir,
+void EWSContext::deleteOccurrence(const std::string &dir, uint64_t fid,
     uint64_t mid, uint32_t basedate) const
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
-
-	auto &rp = apr.recur_pat;
-	if (rp.contains_del(basedate))
+	auto ret = apr.remove_instance(basedate);
+	if (ret == 0)
 		return; /* already deleted */
-	rp.pdeletedinstancedates.emplace_back(basedate);
-	rp.sort_dels();
+	if (ret == 1)
+		deleteExceptionAttachment(dir, fid, mid, basedate);
 	if (!saveRecurBlob(dir, mid, recur_tag, apr))
 		throw DispatchError(E3308);
+}
+
+/**
+ * @brief      Remove the exception attachment of an occurrence
+ *
+ * Otherwise oxcical would still export the occurrence as an override.
+ */
+void EWSContext::deleteExceptionAttachment(const std::string &dir,
+    uint64_t fid, uint64_t mid, uint32_t basedate) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	m_plugin.unloadMessageInstance(dir, mid);
+	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
+	uint16_t count = 0;
+	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
+	    mInst->instanceId, &count))
+		throw DispatchError(E3485);
+	m_plugin.evictAttachmentInstances(dir, mid, count);
+	const proptag_t tags[] = {PROP_TAG(PT_SYSTIME,
+		getNamedPropId(dir, NtExceptionReplaceTime, true))};
+	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
+	struct tm basedate_local{};
+	localtime_r(&basedate_ts, &basedate_local);
+	for (uint16_t i = 0; i < count; ++i) {
+		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		} catch (const DispatchError &) {
+			continue; /* skip non-embedded attachments */
+		}
+		TPROPVAL_ARRAY props{};
+		if (!exmdb.get_instance_properties(dir.c_str(), 0,
+		    eInst->instanceId, proptag_cspan{tags}, &props))
+			throw DispatchError(E3486);
+		auto extime = props.get<const uint64_t>(tags[0]);
+		if (extime == nullptr)
+			continue;
+		auto ex_ts = clock::to_time_t(rop_util_nttime_to_unix2(*extime));
+		struct tm ex_local{};
+		localtime_r(&ex_ts, &ex_local);
+		if (!is_same_day(basedate_local, ex_local))
+			continue;
+		ec_error_t err = ecSuccess;
+		if (!exmdb.delete_message_instance_attachment(dir.c_str(),
+		    mInst->instanceId, i) ||
+		    !exmdb.flush_instance(dir.c_str(), mInst->instanceId, &err) ||
+		    err != ecSuccess)
+			throw EWSError::ItemSave(E3487);
+		/* The attachment numbers have a gap now */
+		m_plugin.unloadMessageInstance(dir, mid);
+		m_plugin.evictAttachmentInstances(dir, mid, count);
+		return;
+	}
 }
 
 /**
