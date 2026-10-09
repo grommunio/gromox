@@ -417,7 +417,10 @@ private:
 		void parse(const BINARY *, const uint64_t *, const BINARY *);
 		clock::time_point toUtc(uint32_t) const;
 		times occurrenceTimes(uint32_t) const;
+		bool replaces(uint32_t, uint64_t) const;
+		bool replaces(uint32_t, clock::time_point, uint64_t) const;
 	};
+	sOccurrenceSeries loadSeriesTimes(const std::string &, uint64_t) const;
 	sOccurrenceSeries loadOccurrenceSeries(const std::string &, uint64_t, uint64_t, Structures::sShape &) const;
 	void loadOccurrenceInstances(const std::string &, sOccurrenceSeries &, Structures::sShape &) const;
 	Structures::sItem materializeOccurrence(const std::string &, sOccurrenceSeries &, uint32_t, Structures::sShape &) const;

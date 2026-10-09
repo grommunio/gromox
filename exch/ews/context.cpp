@@ -2240,6 +2240,53 @@ EWSContext::sOccurrenceSeries::occurrenceTimes(uint32_t basedate) const
 }
 
 /**
+ * @brief      Whether an exception replaces the occurrence at @basedate
+ *
+ * @param      basedate  Basedate of the occurrence
+ * @param      exrt      PidLidExceptionReplaceTime of the exception (UTC)
+ */
+bool EWSContext::sOccurrenceSeries::replaces(uint32_t basedate,
+    uint64_t exrt) const
+{
+	return replaces(basedate, toUtc(basedate + startOff), exrt);
+}
+
+/**
+ * @param      orig  Original start of the occurrence (UTC)
+ */
+bool EWSContext::sOccurrenceSeries::replaces(uint32_t basedate,
+    clock::time_point orig, uint64_t exrt) const
+{
+	/* Compare days in the series zone, not in the server's */
+	auto diff = std::chrono::duration_cast<std::chrono::minutes>(
+	            rop_util_nttime_to_unix2(exrt) - orig).count();
+	int64_t local = int64_t{basedate} + startOff + diff;
+	return local >= 0 && local / 1440 == basedate / 1440;
+}
+
+/**
+ * @brief      Load the recurrence and time zone of a series master
+ *
+ * Enough for occurrence times, unlike loadOccurrenceSeries().
+ */
+EWSContext::sOccurrenceSeries
+EWSContext::loadSeriesTimes(const std::string &dir, uint64_t mid) const
+{
+	auto recur_tag = PROP_TAG(PT_BINARY, getNamedPropId(dir,
+	                 NtAppointmentRecur, true));
+	auto tzr_tag   = PROP_TAG(PT_BINARY, getNamedPropId(dir,
+	                 NtAppointmentTimeZoneDefinitionRecur, true));
+	const proptag_t tags[] = {PR_START_DATE, recur_tag, tzr_tag};
+	auto props = getItemProps(dir, mid, tags);
+	sOccurrenceSeries s;
+	s.mid = mid;
+	s.parse(props.get<const BINARY>(recur_tag),
+		props.get<const uint64_t>(PR_START_DATE),
+		props.get<const BINARY>(tzr_tag));
+	return s;
+}
+
+/**
  * @brief      Load the master properties of a recurring series
  *
  * Leaves the master's properties in @shape and parses the recurrence
@@ -2543,9 +2590,7 @@ void EWSContext::deleteExceptionAttachment(const std::string &dir,
 	m_plugin.evictAttachmentInstances(dir, mid, count);
 	const proptag_t tags[] = {PROP_TAG(PT_SYSTIME,
 		getNamedPropId(dir, NtExceptionReplaceTime, true))};
-	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
-	struct tm basedate_local{};
-	localtime_r(&basedate_ts, &basedate_local);
+	auto series = loadSeriesTimes(dir, mid);
 	for (uint16_t i = 0; i < count; ++i) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
@@ -2559,12 +2604,7 @@ void EWSContext::deleteExceptionAttachment(const std::string &dir,
 		    eInst->instanceId, proptag_cspan{tags}, &props))
 			throw DispatchError(E3486);
 		auto extime = props.get<const uint64_t>(tags[0]);
-		if (extime == nullptr)
-			continue;
-		auto ex_ts = clock::to_time_t(rop_util_nttime_to_unix2(*extime));
-		struct tm ex_local{};
-		localtime_r(&ex_ts, &ex_local);
-		if (!is_same_day(basedate_local, ex_local))
+		if (extime == nullptr || !series.replaces(basedate, *extime))
 			continue;
 		ec_error_t err = ecSuccess;
 		if (!exmdb.delete_message_instance_attachment(dir.c_str(),
@@ -2738,9 +2778,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	m_plugin.evictAttachmentInstances(dir, mid, att_count);
 
 	/* Search for an existing exception matching this basedate */
-	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
-	struct tm basedate_local{};
-	localtime_r(&basedate_ts, &basedate_local);
+	auto series = loadSeriesTimes(dir, mid);
 
 	for (uint16_t i = 0; i < att_count; ++i) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
@@ -2756,12 +2794,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		    eInst->instanceId, proptag_cspan{etags}, &eprops))
 			continue;
 		auto extime = eprops.get<const uint64_t>(ex_replace_tag);
-		if (!extime)
-			continue;
-		auto ex_ts = clock::to_time_t(rop_util_nttime_to_unix2(*extime));
-		struct tm ex_local{};
-		localtime_r(&ex_ts, &ex_local);
-		if (!is_same_day(basedate_local, ex_local))
+		if (!extime || !series.replaces(basedate, *extime))
 			continue;
 
 		/* Found existing exception – update its embedded message */
@@ -2907,16 +2940,6 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		throw EWSError::ItemCorrupt(E3345);
 
 	int32_t tz_minutes = recurTzOffset(dir, mid, apr);
-	/* Mind DST between series start and occurrence */
-	sOccurrenceSeries series;
-	{
-		auto tzr_tag = PROP_TAG(PT_BINARY, getNamedPropId(dir,
-		               NtAppointmentTimeZoneDefinitionRecur, true));
-		const proptag_t stags[] = {PR_START_DATE, tzr_tag};
-		auto sprops = getItemProps(dir, mid, stags);
-		series.parse(recur_bin, sprops.get<const uint64_t>(PR_START_DATE),
-			sprops.get<const BINARY>(tzr_tag));
-	}
 
 	/* Compute occurrence start/end as local-as-UTC rtimes */
 	auto start_rtime = basedate + apr.starttimeoffset;
