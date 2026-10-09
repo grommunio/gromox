@@ -2893,6 +2893,16 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		throw EWSError::ItemCorrupt(E3345);
 
 	int32_t tz_minutes = recurTzOffset(dir, mid, apr);
+	/* Mind DST between series start and occurrence */
+	sOccurrenceSeries series;
+	{
+		auto tzr_tag = PROP_TAG(PT_BINARY, getNamedPropId(dir,
+		               NtAppointmentTimeZoneDefinitionRecur, true));
+		const proptag_t stags[] = {PR_START_DATE, tzr_tag};
+		auto sprops = getItemProps(dir, mid, stags);
+		series.parse(recur_bin, sprops.get<const uint64_t>(PR_START_DATE),
+			sprops.get<const BINARY>(tzr_tag));
+	}
 
 	/* Compute occurrence start/end as local-as-UTC rtimes */
 	auto start_rtime = basedate + apr.starttimeoffset;
@@ -2933,9 +2943,9 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 
 	/* If no explicit times, compute real UTC NTTIMEs from rtimes */
 	if (!has_explicit_start)
-		start_nttime = rop_util_unix_to_nttime(rop_util_rtime_to_unix(start_rtime) + static_cast<time_t>(tz_minutes) * 60);
+		start_nttime = rop_util_unix_to_nttime(series.toUtc(start_rtime));
 	if (!has_explicit_end)
-		end_nttime = rop_util_unix_to_nttime(rop_util_rtime_to_unix(end_rtime) + static_cast<time_t>(tz_minutes) * 60);
+		end_nttime = rop_util_unix_to_nttime(series.toUtc(end_rtime));
 
 	/* Read master's properties as defaults for the embedded message */
 	auto master_props = getItemProps(dir, mid, proptag_cspan{});
@@ -3069,9 +3079,8 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	 * be the original date+time (not just date) so Outlook can match the
 	 * embedded message to the exception.
 	 */
-	auto orig_start_utc = rop_util_rtime_to_unix(basedate + apr.starttimeoffset) +
-	                      static_cast<time_t>(tz_minutes) * 60;
-	auto orig_time = construct<uint64_t>(rop_util_unix_to_nttime(orig_start_utc));
+	auto orig_time = construct<uint64_t>(rop_util_unix_to_nttime(
+	                 series.occurrenceTimes(basedate).orig_start));
 	emb_props.push_back({ex_replace_tag, orig_time});
 
 	content.proplist.count = emb_props.size();
