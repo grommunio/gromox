@@ -1061,7 +1061,36 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
+		std::optional<sOccurrenceId> declinedOcc;
+		auto updateOccRef = [&](const tItemId &refId, uint32_t resp) {
+			sOccurrenceId oid(refId.Id.data(), refId.Id.size());
+			sFolderSpec pf = ctx.resolveFolder(oid);
+			std::string rdir = ctx.getDir(pf);
+			ctx.validate(rdir, oid);
+			ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
+			/* A declined occurrence goes once the reply is out */
+			if (resp == respDeclined && send_message) {
+				declinedOcc.emplace(oid);
+				return;
+			}
+			uint64_t now = rop_util_current_nttime();
+			uint32_t busy = resp == respAccepted ? olBusy :
+			                resp == respTentative ? olTentative : olFree;
+			auto pid = [&](const PROPERTY_NAME &name) {
+				return ctx.getNamedPropId(rdir, name, true);
+			};
+			TAGGED_PROPVAL props[] = {
+				{PROP_TAG(PT_LONG, pid(NtResponseStatus)), &resp},
+				{PROP_TAG(PT_SYSTIME, pid(NtAppointmentReplyTime)), &now},
+				{PROP_TAG(PT_LONG, pid(NtBusyStatus)), &busy},
+			};
+			const TPROPVAL_ARRAY proplist{std::size(props), props};
+			ctx.updateOccurrence(rdir, pf.folderId, oid.messageId(),
+				oid.basedate, proplist, {});
+		};
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
+			if (refId.type == tItemId::ID_OCCURRENCE)
+				return updateOccRef(refId, resp);
 			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
 			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
 			sFolderSpec pf = ctx.resolveFolder(mid);
@@ -1128,6 +1157,11 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)
 			ctx.moveCopyItem(refDir, *refMid, eid_t(1, PRIVATE_FID_DELETED_ITEMS), false);
+		if (declinedOcc) {
+			sFolderSpec pf = ctx.resolveFolder(*declinedOcc);
+			ctx.deleteOccurrence(ctx.getDir(pf), pf.folderId,
+				declinedOcc->messageId(), declinedOcc->basedate);
+		}
 		if (isMessageLike &&
 		    request.MessageDisposition == Enum::SendAndSaveCopy) {
 			auto flags = content->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);

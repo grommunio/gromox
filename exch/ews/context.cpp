@@ -4246,7 +4246,12 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
  */
 void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_CONTENT &respItem) const
 {
-	assertIdType(responseRef.type, tItemId::ID_ITEM);
+	std::optional<uint32_t> basedate;
+	if (responseRef.type == tItemId::ID_OCCURRENCE)
+		basedate = sOccurrenceId(responseRef.Id.data(),
+		           responseRef.Id.size()).basedate;
+	else
+		assertIdType(responseRef.type, tItemId::ID_ITEM);
 	sMessageEntryId refMid(responseRef.Id.data(), responseRef.Id.size());
 	sFolderSpec refFolder = resolveFolder(refMid);
 	std::string refDir = getDir(refFolder);
@@ -4264,6 +4269,8 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 	EWSContext::MCONT_PTR content(reqContent->dup());
 	if (!content)
 		throw EWSError::NotEnoughMemory(E3288);
+	if (basedate)
+		toInstance(refDir, *basedate, *content);
 	auto respClass = respItem.proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (respClass)
 		content->proplist.set(PR_MESSAGE_CLASS, respClass);
