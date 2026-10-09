@@ -588,6 +588,7 @@ struct GX_EXPORT APPOINTMENT_RECUR_PAT {
 
 	public:
 	void sort_exceptions();
+	int remove_instance(uint32_t basedate);
 };
 
 /* GOID is not to be confused with GID (MS-OXCPRPT v25 §1.1) */

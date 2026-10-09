@@ -476,3 +476,63 @@ void APPOINTMENT_RECUR_PAT::sort_exceptions()
 	std::sort(pexceptioninfo.begin(), pexceptioninfo.end());
 	std::sort(pextendedexception.begin(), pextendedexception.end());
 }
+
+static inline bool same_day(uint32_t a, uint32_t b)
+{
+	return a / 1440 == b / 1440;
+}
+
+/**
+ * Enter @basedate into the deleted-instance list, and if that instance had
+ * been rescheduled earlier (i.e. has an exception), drop the exception from
+ * the blob as well.
+ *
+ * Blob producers disagree on whether instance-date lists and exception
+ * fields are stored as midnights (OXOCAL) or carry a time of day (oxcical
+ * import does for override VEVENTs), so all matching here is done at day
+ * granularity of the local-as-UTC rtimes.
+ *
+ * Returns 0 if the instance was already gone, 1 if it was removed, 2 if it
+ * was removed but its exception had to be left in place.
+ */
+int APPOINTMENT_RECUR_PAT::remove_instance(uint32_t basedate)
+{
+	auto &rp = recur_pat;
+	/* Locate an exception previously created for this instance */
+	size_t exi = ct_index_if(pexceptioninfo,
+	             [&](const EXCEPTIONINFO &ei) { return same_day(ei.originalstartdate, basedate); });
+	auto &dels = rp.pdeletedinstancedates;
+	bool was_deleted = std::any_of(dels.cbegin(), dels.cend(),
+	                   [&](uint32_t d) { return same_day(d, basedate); });
+	if (was_deleted && exi == pexceptioninfo.size())
+		return 0;
+
+	if (!was_deleted) {
+		dels.emplace_back(basedate);
+		std::sort(dels.begin(), dels.end());
+	}
+	if (exi == pexceptioninfo.size())
+		return 1;
+	/*
+	 * Modified-instance dates hold the exception's new start day.
+	 * Drop the exception pair and its modified-date entry together,
+	 * or neither, to keep exceptioncount == modifiedinstancecount.
+	 */
+	auto sd    = pexceptioninfo[exi].startdatetime;
+	auto &mods = rp.pmodifiedinstancedates;
+	auto mit   = ct_find_if(mods,
+	             [=](uint32_t m) { return same_day(m, sd); });
+	if (mit == mods.cend())
+		/*
+		 * EWS's updateOccurrence keys the entry by the original
+		 * day rather than the new one.
+		 */
+		mit = ct_find_if(mods,
+		      [=](uint32_t m) { return same_day(m, basedate); });
+	if (mit == mods.cend())
+		return 2;
+	mods.erase(mit);
+	pexceptioninfo.erase(pexceptioninfo.begin() + exi);
+	pextendedexception.erase(pextendedexception.begin() + exi);
+	return 1;
+}

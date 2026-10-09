@@ -1915,11 +1915,6 @@ static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
 	return mr_rewrite_cal_item(par, cal_fid, cal_mid, *cal_ctnt);
 }
 
-static inline bool same_day(uint32_t a, uint32_t b)
-{
-	return a / 1440 == b / 1440;
-}
-
 /**
  * Remove one occurrence from a recurring master: enter @basedate into the
  * deleted-instance list of the recurrence blob, and if that instance had been
@@ -1951,52 +1946,13 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 			par.cur.dirc(), static_cast<unsigned long long>(rop_util_get_gc_value(cal_mid)));
 		return ecSuccess;
 	}
-	/*
-	 * Blob producers disagree on whether instance-date lists and exception
-	 * fields are stored as midnights (OXOCAL) or carry a time of day
-	 * (oxcical import does for override VEVENTs), so all matching here is
-	 * done at day granularity.
-	 */
-	auto &rp = apr.recur_pat;
-	/* Locate an exception previously created for this instance */
-	size_t exi = ct_index_if(apr.pexceptioninfo,
-	             [&](const EXCEPTIONINFO &ei) { return same_day(ei.originalstartdate, basedate); });
-	auto &dels = rp.pdeletedinstancedates;
-	bool was_deleted = std::any_of(dels.cbegin(), dels.cend(),
-	                   [&](uint32_t d) { return same_day(d, basedate); });
-	if (was_deleted && exi == apr.pexceptioninfo.size())
+	auto ret = apr.remove_instance(basedate);
+	if (ret == 0)
 		return ecSuccess; /* already gone */
-
-	if (!was_deleted) {
-		dels.emplace_back(basedate);
-		std::sort(dels.begin(), dels.end());
-	}
-	if (exi < apr.pexceptioninfo.size()) {
-		/*
-		 * Modified-instance dates hold the exception's new start day.
-		 * Drop the exception pair and its modified-date entry together,
-		 * or neither, to keep exceptioncount == modifiedinstancecount.
-		 */
-		auto sd    = apr.pexceptioninfo[exi].startdatetime;
-		auto &mods = rp.pmodifiedinstancedates;
-		auto mit   = ct_find_if(mods,
-		             [=](uint32_t m) { return same_day(m, sd); });
-		if (mit == mods.cend())
-			/* EWS's updateOccurrence keys the entry by the original
-			   day rather than the new one */
-			mit = ct_find_if(mods,
-			      [=](uint32_t m) { return same_day(m, basedate); });
-		if (mit == mods.cend()) {
-			mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: no modified-instance "
-				"entry for exception %zu; leaving exception in place",
-				par.cur.dirc(),
-				static_cast<unsigned long long>(cal_mid.gcv()), exi);
-		} else {
-			mods.erase(mit);
-			apr.pexceptioninfo.erase(apr.pexceptioninfo.begin() + exi);
-			apr.pextendedexception.erase(apr.pextendedexception.begin() + exi);
-		}
-	}
+	if (ret == 2)
+		mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: no modified-instance "
+			"entry for exception, leaving exception in place.",
+			par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
 	EXT_PUSH epu;
 	if (!epu.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    epu.p_apptrecpat(apr) != pack_result::success)
