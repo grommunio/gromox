@@ -620,6 +620,10 @@ E(3485, "failed to count exception attachments");
 E(3486, "failed to read exception attachment");
 E(3487, "failed to delete exception attachment");
 E(3488, "occurrence has been deleted from the series");
+E(3489, "item is not a recurring master");
+E(3490, "failed to write cancellation copy to Sent Items");
+E(3491, "failed to build occurrence message");
+E(3492, "failed to build occurrence cancellation");
 
 #undef E
 }

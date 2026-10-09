@@ -1442,13 +1442,13 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			ctx.checkOccurrence(dir, meid.messageId(), *basedate);
 		}
 
-		/* The cancellation covers the whole series */
 		if (request.SendMeetingCancellations &&
 		    *request.SendMeetingCancellations != Enum::SendToNone &&
-		    !basedate && itemId.type == tItemId::ID_ITEM &&
+		    (basedate || itemId.type == tItemId::ID_ITEM) &&
 		    ctx.isOrganizer(dir, meid.messageId()))
 			ctx.sendMeetingCancellation(dir, meid, parent,
-				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
+				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy,
+				basedate);
 
 		if (basedate) {
 			ctx.deleteOccurrence(dir, parent.folderId,

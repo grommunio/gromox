@@ -341,7 +341,7 @@ class EWSContext {
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
 	const BINARY *findContactPhoto(const std::string &dir, const std::string &email) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
-	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool) const;
+	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool, std::optional<uint32_t> = std::nullopt) const;
 	void suppressReadReceipt(const Structures::tItemId&) const;
 	void cancelCalendarItem(const Structures::tItemId&, bool) const;
 	void sendMeetingResponse(const Structures::tItemId&, const MESSAGE_CONTENT&) const;
@@ -392,6 +392,7 @@ private:
 	bool saveRecurBlob(const std::string &, uint64_t, proptag_t, const APPOINTMENT_RECUR_PAT &) const;
 	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
 	void deleteExceptionAttachment(const std::string &, uint64_t, uint64_t, uint32_t) const;
+	void toInstance(const std::string &, uint32_t, MESSAGE_CONTENT &) const;
 
 	/* State shared by the occurrences of one recurring series */
 	struct sOccurrenceSeries {

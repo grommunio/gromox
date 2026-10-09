@@ -17,6 +17,7 @@ static const PROPERTY_NAME NtGlobalObjectId = {MNID_ID, PSETID_Meeting, PidLidGl
 static const PROPERTY_NAME NtTimeZone = {MNID_ID, PSETID_Meeting, PidLidTimeZone};
 static const PROPERTY_NAME NtCleanGlobalObjectId = {MNID_ID, PSETID_Meeting, PidLidCleanGlobalObjectId};
 static const PROPERTY_NAME NtMeetingType = {MNID_ID, PSETID_Meeting, PidLidMeetingType};
+static const PROPERTY_NAME NtIsException = {MNID_ID, PSETID_Meeting, PidLidIsException};
 
 /* PSETID_Address */
 static const PROPERTY_NAME NtBusinessAddress = {MNID_ID, PSETID_Address, PidLidBusinessAddress};

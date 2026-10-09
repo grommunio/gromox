@@ -4023,13 +4023,135 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 }
 
 /**
+ * @brief      Turn a copy of a series master into a message for one occurrence
+ *
+ * oxcical exports it as a single VEVENT with a RECURRENCE-ID.
+ *
+ * @param      dir       Store directory
+ * @param      basedate  Basedate of the occurrence
+ * @param      msg       Copy of the master, modified in place
+ */
+void EWSContext::toInstance(const std::string &dir, uint32_t basedate,
+    MESSAGE_CONTENT &msg) const
+{
+	const PROPERTY_NAME names[] = {
+		NtAppointmentRecur, NtAppointmentTimeZoneDefinitionRecur,
+		NtAppointmentTimeZoneDefinitionStartDisplay,
+		NtAppointmentTimeZoneDefinitionEndDisplay,
+		NtAppointmentStartWhole, NtAppointmentEndWhole, NtCommonStart,
+		NtCommonEnd, NtExceptionReplaceTime, NtIsException,
+		NtGlobalObjectId, NtRecurring, NtRecurrencePattern,
+		NtRecurrenceType, NtLocation,
+	};
+	enum {
+		l_recur, l_tzrecur, l_tzstart, l_tzend, l_startwhole,
+		l_endwhole, l_commonstart, l_commonend, l_replacetime,
+		l_isexception, l_goid, l_recurring, l_pattern, l_rectype,
+		l_location,
+	};
+	static_assert(l_location + 1 == std::size(names));
+	const PROPNAME_ARRAY pna = {std::size(names), deconst(names)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(names))
+		throw DispatchError(E3491);
+	auto &props = msg.proplist;
+	auto recur_tag = PROP_TAG(PT_BINARY, ids[l_recur]);
+	auto tzr_tag   = PROP_TAG(PT_BINARY, ids[l_tzrecur]);
+	auto tzs_tag   = PROP_TAG(PT_BINARY, ids[l_tzstart]);
+	auto tze_tag   = PROP_TAG(PT_BINARY, ids[l_tzend]);
+	auto goid_tag  = PROP_TAG(PT_BINARY, ids[l_goid]);
+
+	sOccurrenceSeries s;
+	s.parse(props.get<const BINARY>(recur_tag),
+		props.get<const uint64_t>(PR_START_DATE),
+		props.get<const BINARY>(tzr_tag));
+	if (!s.aprValid)
+		throw EWSError::CalendarCannotUseIdForRecurringMasterId(E3489);
+	auto t = s.occurrenceTimes(basedate);
+	uint64_t start = rop_util_unix_to_nttime(t.start);
+	uint64_t end   = rop_util_unix_to_nttime(t.end);
+	uint64_t orig  = rop_util_unix_to_nttime(t.orig_start);
+	uint8_t yes = 1, no = 0;
+	const TAGGED_PROPVAL tv[] = {
+		{PR_START_DATE, &start},
+		{PR_END_DATE, &end},
+		{PROP_TAG(PT_SYSTIME, ids[l_startwhole]), &start},
+		{PROP_TAG(PT_SYSTIME, ids[l_endwhole]), &end},
+		{PROP_TAG(PT_SYSTIME, ids[l_commonstart]), &start},
+		{PROP_TAG(PT_SYSTIME, ids[l_commonend]), &end},
+		{PROP_TAG(PT_SYSTIME, ids[l_replacetime]), &orig},
+		{PROP_TAG(PT_BOOLEAN, ids[l_isexception]), &yes},
+		{PROP_TAG(PT_BOOLEAN, ids[l_recurring]), &no},
+	};
+	for (const auto &p : tv)
+		if (props.set(p.proptag, p.pvalue) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3491);
+
+	/* MS-OXOCAL v26 §2.2.1.27: the instance date, a local day */
+	auto goid_bin = props.get<const BINARY>(goid_tag);
+	if (goid_bin != nullptr) {
+		GLOBALOBJECTID goid{};
+		EXT_PULL ep;
+		ep.init(goid_bin->pb, goid_bin->cb, alloc, 0);
+		auto ts = rop_util_rtime_to_unix(basedate);
+		struct tm tm{};
+		EXT_PUSH epu;
+		if (ep.g_goid(&goid) == pack_result::ok &&
+		    gmtime_r(&ts, &tm) != nullptr) {
+			goid.year  = tm.tm_year + 1900;
+			goid.month = tm.tm_mon + 1;
+			goid.day   = tm.tm_mday;
+			if (!epu.init(nullptr, 0, 0) ||
+			    epu.p_goid(goid) != pack_result::ok)
+				throw EWSError::NotEnoughMemory(E3491);
+			BINARY bin;
+			bin.cb = epu.m_offset;
+			bin.pv = epu.m_udata;
+			if (props.set(goid_tag, &bin) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3491);
+		}
+	}
+
+	/* Without the recurrence, oxcical takes the zone from these */
+	auto tzr = props.get<const BINARY>(tzr_tag);
+	if (tzr != nullptr && (!props.has(tzs_tag) || !props.has(tze_tag)) &&
+	    ((!props.has(tzs_tag) && props.set(tzs_tag, tzr) != ecSuccess) ||
+	    (!props.has(tze_tag) && props.set(tze_tag, tzr) != ecSuccess)))
+		throw EWSError::NotEnoughMemory(E3491);
+
+	auto exc = find_exc(s.apr, basedate);
+	if (exc != nullptr) {
+		const auto &xe = s.apr.pextendedexception[exc -
+		                 s.apr.pexceptioninfo.data()];
+		if (exc->overrideflags & ARO_SUBJECT) {
+			/* oxcmail prefers these over PR_SUBJECT */
+			props.erase(PR_SUBJECT_PREFIX);
+			props.erase(PR_NORMALIZED_SUBJECT);
+			if (props.set(PR_SUBJECT, xe.subject.c_str()) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3491);
+		}
+		if (exc->overrideflags & ARO_LOCATION &&
+		    props.set(PROP_TAG(PT_UNICODE, ids[l_location]),
+		    xe.location.c_str()) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3491);
+	}
+	props.erase(recur_tag);
+	props.erase(tzr_tag);
+	props.erase(PROP_TAG(PT_UNICODE, ids[l_pattern]));
+	props.erase(PROP_TAG(PT_LONG, ids[l_rectype]));
+	/* oxcical would export each exception as an extra VEVENT */
+	msg.set_attachments_internal(nullptr);
+}
+
+/**
  * @brief      Send meeting cancellation to attendees
  *
  * Reads the calendar item, stamps it as a cancellation, and
  * either saves a copy in Sent Items or sends directly.
  */
 void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageEntryId &meid,
-    const sFolderSpec &parent, bool saveCopy) const
+    const sFolderSpec &parent, bool saveCopy,
+    std::optional<uint32_t> basedate) const
 {
 	auto &exmdb = m_plugin.exmdb;
 	const char *username = effectiveUser(parent);
@@ -4043,6 +4165,41 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	    cancelcontent->children.prcpts == nullptr ||
 	    cancelcontent->children.prcpts->count == 0)
 		return;
+	if (basedate) {
+		MCONT_PTR inst(cancelcontent->dup());
+		if (!inst)
+			throw EWSError::NotEnoughMemory(E3492);
+		toInstance(dir, *basedate, *inst);
+		auto &props = inst->proplist;
+		auto seq_tag = PROP_TAG(PT_LONG,
+		               getNamedPropId(dir, NtAppointmentSequence, true));
+		auto seq = props.get<const uint32_t>(seq_tag);
+		uint32_t newseq = seq != nullptr ? *seq + 1 : 1;
+		auto now = rop_util_current_nttime();
+		if (props.set(PR_MESSAGE_CLASS,
+		    "IPM.Schedule.Meeting.Canceled") != ecSuccess ||
+		    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+		    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
+		    props.set(seq_tag, &newseq) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3492);
+		send(dir, meid.messageId(), *inst);
+		if (!saveCopy)
+			return;
+		static constexpr proptag_t rmProps[] = {
+			PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+			PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+		};
+		for (auto tag : rmProps)
+			props.erase(tag);
+		auto sentitems = resolveFolder(
+		                 tDistinguishedFolderId(Enum::sentitems));
+		uint64_t newMid = 0, newCn = 0;
+		ec_error_t err = ecSuccess;
+		if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
+		    inst.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3490);
+		return;
+	}
 	if (saveCopy) {
 		sFolderSpec sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 		uint64_t newMid = 0;
