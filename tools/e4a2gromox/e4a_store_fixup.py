@@ -429,10 +429,103 @@ def cmd_rewrite_guids(args):
                      "%d files\n" % (args.db, gr.hits, changed, files))
 
 
+MUID_STORE_WRAP = bytes.fromhex("38a1bb1005e5101aa1bb08002b2a56c2")
+HEX_EID_RE = re.compile(r"^[0-9A-Fa-f]{40,}$")
+
+
+class StaleRefs:
+    """Decide whether a hex entryid found in the g-web settings still
+    refers to something on the target. stores: file with lines
+    "<users.id> <maildir>" for every user of the target; maildir "-" for
+    stores whose content is not final yet (references are kept)."""
+
+    def __init__(self, path):
+        self.stores = {}
+        for line in open(path):
+            f = line.split(None, 1)
+            if len(f) == 2:
+                self.stores[int(f[0])] = f[1].strip()
+        self.dbs = {}
+
+    def folder_exists(self, uid, fid):
+        md = self.stores.get(uid)
+        if md is None:
+            return False
+        if md == "-":
+            return True
+        if uid not in self.dbs:
+            try:
+                self.dbs[uid] = ro_connect(md + "/exmdb/exchange.sqlite3")
+            except sqlite3.Error:
+                self.dbs[uid] = None
+        c = self.dbs[uid]
+        if c is None:
+            return False
+        return c.execute("SELECT 1 FROM folders WHERE folder_id=?",
+                         (fid,)).fetchone() is not None
+
+    def is_stale(self, h):
+        """True for entryids that cannot resolve on the target, False for
+        valid ones, None when the value is not an entryid we understand"""
+        if not HEX_EID_RE.match(h) or len(h) % 2:
+            return None
+        b = bytes.fromhex(h)
+        if len(b) >= 20 and b[4:20] == MUID_STORE_WRAP:
+            # source-system store entryids (emsmdb.dll + source mailbox
+            # DN) never compare equal to the ones zcore hands out
+            return True
+        if len(b) >= 20 and b[4:20] == MUID_EMSAB:
+            return True
+        if len(b) == 46 and b[20:22] == b"\x01\x00":
+            guid = b[22:38]
+            if guid[4:] == bytes.fromhex(GUID_PRIVATE_TAIL):
+                uid = int.from_bytes(guid[:4], "little")
+                return not self.folder_exists(uid, int.from_bytes(b[38:44], "big"))
+            return None
+        return None
+
+
+def drop_stale_settings(j, stale):
+    """remove dict entries keyed by / list items holding unresolvable
+    entryids, and reset main/default_addressbook if it is a source
+    address book entryid; returns the number of removals"""
+    n = 0
+    v1 = j.get("settings", {}).get("zarafa", {}).get("v1", {})
+    main = v1.get("main", {})
+    if isinstance(main.get("default_addressbook"), str) and \
+       stale.is_stale(main["default_addressbook"]):
+        del main["default_addressbook"]
+        n += 1
+
+    def walk(o):
+        nonlocal n
+        if isinstance(o, dict):
+            for k in list(o):
+                if stale.is_stale(k):
+                    del o[k]
+                    n += 1
+                    continue
+                v = o[k]
+                if isinstance(v, str) and stale.is_stale(v):
+                    del o[k]
+                    n += 1
+                    continue
+                walk(v)
+        elif isinstance(o, list):
+            keep = [x for x in o if not (isinstance(x, str) and stale.is_stale(x))]
+            n += len(o) - len(keep)
+            o[:] = keep
+            for x in o:
+                walk(x)
+    walk(v1.get("state", {}))
+    return n
+
+
 def cmd_web_settings(args):
     """zarafa.dat = EXT_PUSH tpropval_array (+ tarray_set); the settings JSON
     is a NUL-terminated UTF-8 string without length prefix, so it can be
     edited in place as long as the terminator stays."""
+    stale = StaleRefs(args.stores) if args.drop_stale else None
     b = open(args.file, "rb").read()
     out, pos, edits = bytearray(), 0, 0
     while True:
@@ -455,11 +548,14 @@ def cmd_web_settings(args):
             if "shared_stores" in h:
                 del h["shared_stores"]
                 edits += 1
+        if args.drop_stale:
+            edits += drop_stale_settings(j, stale)
         out += b[pos:i] + json.dumps(j, separators=(",", ":")).encode("utf-8")
         pos = end
-    if edits:
+    if edits and not args.dry_run:
         open(args.file, "wb").write(bytes(out))
-    sys.stderr.write("web-settings %s: %d edits\n" % (args.file, edits))
+    sys.stderr.write("web-settings %s: %d edits%s\n" % (
+        args.file, edits, " (dry run)" if args.dry_run else ""))
 
 
 DN_RE = re.compile(r"^/O=([^/]+)/OU=[^/]+/CN=RECIPIENTS/CN=([0-9A-F]{8})"
@@ -703,6 +799,11 @@ def main():
     p = sub.add_parser("web-settings")
     p.add_argument("file", help="config/zarafa.dat")
     p.add_argument("--drop-shared", action="store_true")
+    p.add_argument("--drop-stale", action="store_true",
+                   help="drop settings entries whose entryids do not resolve "
+                        "on the target (needs --stores)")
+    p.add_argument("--stores", help='file with "<users.id> <maildir>" lines')
+    p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("rewrite-perms")
     p.add_argument("db")
     p.add_argument("--domain-map", action="append", metavar="SRC=DST")

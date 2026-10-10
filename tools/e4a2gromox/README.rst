@@ -61,7 +61,10 @@ What differs between the two systems and has to be handled:
 | Web settings     | ``config/zarafa.dat`` (Kopano WebApp       | zcore reads the same legacy | Copied. The ``shared_stores`` list  |
 |                  | settings, zcore profile)                   | file and converts it on the | is removed (it names other          |
 |                  |                                            | next write                  | mailboxes by source identity; users |
-|                  |                                            |                             | re-add them).                       |
+|                  |                                            |                             | re-add them), as are entries keyed  |
+|                  |                                            |                             | by source store or address book     |
+|                  |                                            |                             | entryids and by folders that do not |
+|                  |                                            |                             | exist on the target.                |
 +------------------+--------------------------------------------+-----------------------------+-------------------------------------+
 
 Prerequisites
