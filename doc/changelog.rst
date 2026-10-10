@@ -3,6 +3,18 @@ Schedule
 It's ready when it's ready.
 
 
+Development 3.12.94
+===================
+
+Fixes:
+
+* php_mapi: The declared return type of resource-returning functions named
+  a nonexistent class "resource", which made opcache's optimizer fold
+  ``is_resource()`` on such values to false. The arginfo was corrected and
+  php_mapi no longer refuses to run with opcache enabled; opcache.enable=0 is
+  no longer shipped in mapi.ini.
+
+
 Gromox 3.12 (2026-10-02)
 ========================
 
