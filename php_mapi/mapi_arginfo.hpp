@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 07b2ba889463a60815dcb93b289fc6f3e35f68ef */
+ * Stub hash: 3c4cc3ac4947731283c4cf9c27bec88a38c2658b */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_load_mapidefs, 0, 1, IS_VOID, 0)
 	ZEND_ARG_TYPE_INFO(0, level, IS_LONG, 1)
@@ -39,7 +39,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_parseoneoff, 0, 1, MAY_BE_A
 	ZEND_ARG_TYPE_INFO(0, entryid, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_logon_zarafa, 0, 2, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_logon_zarafa, 0, 0, 2)
 	ZEND_ARG_TYPE_INFO(0, username, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, password, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, server, IS_STRING, 1, "null")
@@ -50,44 +50,44 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_logon_zarafa, 0, 2, res
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, misc_version, IS_STRING, 1, "null")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_logon_ex, 0, 3, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_logon_ex, 0, 0, 3)
 	ZEND_ARG_TYPE_INFO(0, username, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, password, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_logon_np, 0, 2, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_logon_np, 0, 0, 2)
 	ZEND_ARG_TYPE_INFO(0, username, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_logon_token, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_logon_token, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, token, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_getmsgstorestable, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_getmsgstorestable, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, session, resource, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_openmsgstore, 0, 2, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_openmsgstore, 0, 0, 2)
 	ZEND_ARG_OBJ_INFO(0, ses, resource, 0)
 	ZEND_ARG_TYPE_INFO(0, entryid, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_openprofilesection, 0, 2, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_openprofilesection, 0, 0, 2)
 	ZEND_ARG_OBJ_INFO(0, ses, resource, 0)
 	ZEND_ARG_TYPE_INFO(0, uid, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_mapi_openaddressbook arginfo_mapi_getmsgstorestable
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_openentry, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_openentry, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, ses, resource, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, entryid, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_ab_openentry, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_ab_openentry, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, abk, resource, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, entryid, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
@@ -114,13 +114,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_msgstore_getarchiveentryid,
 	ZEND_ARG_TYPE_INFO(0, server, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_msgstore_openentry, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_msgstore_openentry, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, store, resource, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, entryid, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_msgstore_getreceivefolder, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_msgstore_getreceivefolder, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, store, resource, 0)
 ZEND_END_ARG_INFO()
 
@@ -147,7 +147,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_msgstore_abortsubmit, 0, 1,
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, entryid, IS_STRING, 1, "null")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_sink_create, 0, 0, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_sink_create, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_sink_timedwait, 0, 2, IS_MIXED, 0)
@@ -210,20 +210,20 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_table_freebookmark, 0, 2, _
 	ZEND_ARG_TYPE_INFO(0, bookmark, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_folder_gethierarchytable, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_folder_gethierarchytable, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, fld, resource, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
 ZEND_END_ARG_INFO()
 
 #define arginfo_mapi_folder_getcontentstable arginfo_mapi_folder_gethierarchytable
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_folder_getrulestable, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_folder_getrulestable, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, fld, resource, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_mapi_folder_createmessage arginfo_mapi_folder_gethierarchytable
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_folder_createfolder, 0, 2, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_folder_createfolder, 0, 0, 2)
 	ZEND_ARG_OBJ_INFO(0, fld, resource, 0)
 	ZEND_ARG_TYPE_INFO(0, fname, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, comment, IS_STRING, 1, "null")
@@ -283,18 +283,18 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_folder_modifyrules, 0, 2, _
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_message_getattachmenttable, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_message_getattachmenttable, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, msg, resource, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_mapi_message_getrecipienttable arginfo_mapi_message_getattachmenttable
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_message_openattach, 0, 2, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_message_openattach, 0, 0, 2)
 	ZEND_ARG_OBJ_INFO(0, msg, resource, 0)
 	ZEND_ARG_TYPE_INFO(0, id, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_message_createattach, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_message_createattach, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, msg, resource, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
 ZEND_END_ARG_INFO()
@@ -320,7 +320,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_message_setreadflag, 0, 2, 
 	ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_openpropertytostream, 0, 2, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_openpropertytostream, 0, 0, 2)
 	ZEND_ARG_OBJ_INFO(0, any, resource, 0)
 	ZEND_ARG_TYPE_INFO(0, proptag, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
@@ -358,7 +358,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_mapi_stream_create arginfo_mapi_sink_create
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_attach_openobj, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_attach_openobj, 0, 0, 1)
 	ZEND_ARG_OBJ_INFO(0, attach, resource, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
 ZEND_END_ARG_INFO()
@@ -386,7 +386,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_copyto, 0, 4, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 1, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_openproperty, 0, 2, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_openproperty, 0, 0, 2)
 	ZEND_ARG_OBJ_INFO(0, any, resource, 0)
 	ZEND_ARG_TYPE_INFO(0, proptag, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, iid, IS_STRING, 1, "null")
@@ -518,13 +518,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_importhierarchychanges_impo
 	ZEND_ARG_TYPE_INFO(0, folders, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_wrap_importcontentschanges, 0, 1, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_wrap_importcontentschanges, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(1, object, IS_OBJECT, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_mapi_wrap_importhierarchychanges arginfo_mapi_wrap_importcontentschanges
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_inetmapi_imtoinet, 0, 4, resource, MAY_BE_BOOL)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_mapi_inetmapi_imtoinet, 0, 0, 4)
 	ZEND_ARG_OBJ_INFO(0, ses, resource, 0)
 	ZEND_ARG_OBJ_INFO(0, abk, resource, 0)
 	ZEND_ARG_OBJ_INFO(0, msg, resource, 0)
