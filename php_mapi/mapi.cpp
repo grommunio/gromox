@@ -468,55 +468,8 @@ static PHP_MSHUTDOWN_FUNCTION(mapi)
 	return SUCCESS;
 }
 
-static bool opcache_is_interfering()
-{
-	const char sz_fname[] = "opcache_get_configuration";
-	if (!zend_hash_str_exists(CG(function_table), sz_fname, std::size(sz_fname) - 1))
-		return false;
-
-	/* look up directive['opcache.x'] */
-	zstrplus zstr_fname(zend_string_init(ZEND_STRL(sz_fname), 0));
-	zval zfunc, zconfig;
-	ZVAL_STR(&zfunc, zstr_fname.get());
-	if (call_user_function(EG(function_table), nullptr, &zfunc, &zconfig,
-	    0, nullptr) != SUCCESS)
-		return false;
-
-	auto cl_0 = HX::make_scope_exit([&]() { zval_ptr_dtor(&zconfig); });
-	const char sz_directives[] = "directives";
-	zval *pdirectives = zend_hash_str_find(Z_ARRVAL(zconfig),
-	                          sz_directives, std::size(sz_directives) - 1);
-	if (pdirectives == nullptr || Z_TYPE_P(pdirectives) != IS_ARRAY)
-		return false;
-
-	/* look up directive['opcache.enable'] */
-	const char sz_enabled[] = "opcache.enable";
-	zval *penabled = zend_hash_str_find(Z_ARRVAL_P(pdirectives),
-	                       sz_enabled, std::size(sz_enabled) - 1);
-	if (penabled == nullptr || !zval_get_long(penabled))
-		return false;
-	if (sapi_module.name == nullptr || strcasecmp(sapi_module.name, "cli") != 0)
-		return true;
-
-	/* look up directive['opcache.enable_cli'] */
-	const char sz_ecli[] = "opcache.enable_cli";
-	penabled = zend_hash_str_find(Z_ARRVAL_P(pdirectives),
-	           sz_ecli, std::size(sz_ecli) - 1);
-	return penabled != nullptr && zval_get_long(penabled);
-}
-
 static PHP_RINIT_FUNCTION(mapi)
 {
-	zstrplus str_opcache(zend_string_init(ZEND_STRL("zend opcache"), 0));
-
-	if (zend_hash_exists(&module_registry, str_opcache.get()) &&
-	    opcache_is_interfering()) {
-		php_error_docref(nullptr, E_ERROR, "mapi: MAPI cannot execute while opcache is present and enabled. "
-			"You must deactivate opcache in PHP (opcache.enable=0 or `phpdismod` command on some systems), "
-			"or remove opcache entirely with the package manager. <https://docs.grommunio.com/kb/php.html>");
-		return FAILURE;
-	}
-
 	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
 	zstrplus str_user(zend_string_init(ZEND_STRL("REMOTE_USER"), 0));
 
