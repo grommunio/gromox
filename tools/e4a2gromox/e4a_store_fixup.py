@@ -270,32 +270,45 @@ def store_guid_hex(kind, dbid):
 
 
 class GuidRewriter:
+    # one pass: source and target ids overlap
     def __init__(self, pairs):
-        self.bin = [(bytes.fromhex(o), bytes.fromhex(n)) for o, n in pairs]
-        self.txt = []
+        bmap = {}
+        tmap = {}
         for o, n in pairs:
-            self.txt.append((o.lower(), n.lower()))
-            self.txt.append((o.upper(), n.upper()))
+            bmap[bytes.fromhex(o)] = bytes.fromhex(n)
+            tmap[o.lower()] = n.lower()
+            tmap[o.upper()] = n.upper()
+        self.bmap = bmap
+        self.tmap = tmap
+        # hex-encoded entryids inside binary JSON etc.
+        self.hmap = {k.encode(): v.encode() for k, v in tmap.items()}
+        self.bre = self._regex(list(bmap) + list(self.hmap), True)
+        self.tre = self._regex(list(tmap), False)
         self.hits = 0
 
+    @staticmethod
+    def _regex(keys, binary):
+        if not keys:
+            return None
+        if binary:
+            return re.compile(b"|".join(re.escape(k) for k in keys))
+        return re.compile("|".join(re.escape(k) for k in keys))
+
+    def _sub(self, rx, table, v):
+        if rx is None:
+            return v
+        def repl(m):
+            self.hits += 1
+            return table[m.group(0)]
+        return rx.sub(repl, v)
+
     def blob(self, v):
-        for o, n in self.bin:
-            if o in v:
-                self.hits += v.count(o)
-                v = v.replace(o, n)
-        for o, n in self.txt:  # hex-encoded entryids inside binary JSON etc.
-            ob, nb = o.encode(), n.encode()
-            if ob in v:
-                self.hits += v.count(ob)
-                v = v.replace(ob, nb)
-        return v
+        table = dict(self.bmap)
+        table.update(self.hmap)
+        return self._sub(self.bre, table, v)
 
     def text(self, v):
-        for o, n in self.txt:
-            if o in v:
-                self.hits += v.count(o)
-                v = v.replace(o, n)
-        return v
+        return self._sub(self.tre, self.tmap, v)
 
 
 def cmd_rewrite_guids(args):
