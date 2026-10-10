@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: cb97059ea8bf95f516761ebd7bf6629d7d7bf99a */
+ * Stub hash: 07b2ba889463a60815dcb93b289fc6f3e35f68ef */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_load_mapidefs, 0, 1, IS_VOID, 0)
 	ZEND_ARG_TYPE_INFO(0, level, IS_LONG, 1)
@@ -63,16 +63,6 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_logon_token, 0, 1, resource, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, token, IS_STRING, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_getsendpermissions, 0, 2, MAY_BE_LONG|MAY_BE_BOOL)
-	ZEND_ARG_OBJ_INFO(0, session, resource, 0)
-	ZEND_ARG_TYPE_INFO(0, entryid, IS_STRING, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_getdelegates, 0, 2, MAY_BE_ARRAY|MAY_BE_BOOL)
-	ZEND_ARG_OBJ_INFO(0, session, resource, 0)
-	ZEND_ARG_TYPE_INFO(0, mode, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_mapi_getmsgstorestable, 0, 1, resource, MAY_BE_BOOL)
@@ -642,3 +632,14 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_strerror, 0, 1, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, code, IS_LONG, 0)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_getsendpermissions, 0, 2, MAY_BE_LONG|MAY_BE_BOOL)
+	ZEND_ARG_OBJ_INFO(0, session, resource, 0)
+	ZEND_ARG_TYPE_INFO(0, entryid, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_getdelegates, 0, 2, MAY_BE_ARRAY|MAY_BE_BOOL)
+	ZEND_ARG_OBJ_INFO(0, session, resource, 0)
+	ZEND_ARG_TYPE_INFO(0, mode, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
