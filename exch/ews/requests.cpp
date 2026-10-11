@@ -969,6 +969,35 @@ void process(mCreateFolderRequest &&request, XMLElement *response, const EWSCont
 	data.serialize(response);
 }
 
+static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
+    uint32_t resp, bool send_message, std::optional<sOccurrenceId> &declinedOcc)
+{
+	sOccurrenceId oid(refId.Id.data(), refId.Id.size());
+	sFolderSpec pf = ctx.resolveFolder(oid);
+	std::string rdir = ctx.getDir(pf);
+	ctx.validate(rdir, oid);
+	ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
+	/* A declined occurrence goes once the reply is out */
+	if (resp == respDeclined && send_message) {
+		declinedOcc.emplace(oid);
+		return;
+	}
+	uint64_t now = rop_util_current_nttime();
+	uint32_t busy = resp == respAccepted ? olBusy :
+	                resp == respTentative ? olTentative : olFree;
+	auto pid = [&](const PROPERTY_NAME &name) {
+		return ctx.getNamedPropId(rdir, name, true);
+	};
+	TAGGED_PROPVAL props[] = {
+		{PROP_TAG(PT_LONG, pid(NtResponseStatus)), &resp},
+		{PROP_TAG(PT_SYSTIME, pid(NtAppointmentReplyTime)), &now},
+		{PROP_TAG(PT_LONG, pid(NtBusyStatus)), &busy},
+	};
+	const TPROPVAL_ARRAY proplist{std::size(props), props};
+	ctx.updateOccurrence(rdir, pf.folderId, oid.messageId(),
+		oid.basedate, proplist, {});
+}
+
 /**
  * @brief      Process CreateItem
  *
@@ -1062,32 +1091,6 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
-		auto updateOccRef = [](const EWSContext &ctx, const tItemId &refId, uint32_t resp, bool send_message, std::optional<sOccurrenceId> &declinedOcc) {
-			sOccurrenceId oid(refId.Id.data(), refId.Id.size());
-			sFolderSpec pf = ctx.resolveFolder(oid);
-			std::string rdir = ctx.getDir(pf);
-			ctx.validate(rdir, oid);
-			ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
-			/* A declined occurrence goes once the reply is out */
-			if (resp == respDeclined && send_message) {
-				declinedOcc.emplace(oid);
-				return;
-			}
-			uint64_t now = rop_util_current_nttime();
-			uint32_t busy = resp == respAccepted ? olBusy :
-			                resp == respTentative ? olTentative : olFree;
-			auto pid = [&](const PROPERTY_NAME &name) {
-				return ctx.getNamedPropId(rdir, name, true);
-			};
-			TAGGED_PROPVAL props[] = {
-				{PROP_TAG(PT_LONG, pid(NtResponseStatus)), &resp},
-				{PROP_TAG(PT_SYSTIME, pid(NtAppointmentReplyTime)), &now},
-				{PROP_TAG(PT_LONG, pid(NtBusyStatus)), &busy},
-			};
-			const TPROPVAL_ARRAY proplist{std::size(props), props};
-			ctx.updateOccurrence(rdir, pf.folderId, oid.messageId(),
-				oid.basedate, proplist, {});
-		};
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
 			if (refId.type == tItemId::ID_OCCURRENCE)
 				return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
