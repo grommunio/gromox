@@ -64,9 +64,14 @@ PROPSETS = (
     (0x0079001F, 0x007A001F, 0x004C0102, 0x00560102, None, 0x004D001F),        # orig author
     (0x007B001F, 0x007C001F, 0x10120102, None, None, None),                    # orig intended
     (0x0C1E001F, 0x0C1F001F, 0x0C190102, 0x0C1D0102, 0x5D01001F, 0x0C1A001F),  # sender
+    (None, None, 0x00460102, 0x00530102, None, None),                          # read receipt
+    (None, None, 0x00450102, 0x00540102, None, None),                          # report
     (0x3002001F, 0x3003001F, 0x0FFF0102, 0x300B0102, 0x39FE001F, 0x3001001F),  # bare/recipient
 )
 RCPT_SET = PROPSETS[-1]
+# recipient rows carry the address book entryid twice more
+# (PR_RECIPIENT_ENTRYID, PR_RECORD_KEY)
+RCPT_EXTRA_EIDS = (0x5FF70102, 0x0FF90102)
 # contact items: PSETID_Address Email{1,2,3}{AddressType,EmailAddress,
 # OriginalEntryId} (PidLid 0x8082/0x8083/0x8085, 0x8092/.., 0x80A2/..) are
 # named properties; their propids are per store (named_properties)
@@ -103,6 +108,20 @@ def emsab_dn(blob):
         return None
 
 
+def ab_dn(blob):
+    """emsab_dn, plus the variant e4a left in PR_RECIPIENT_ENTRYID: same
+    layout, but a per-user provider UID instead of muidEMSAB"""
+    dn = emsab_dn(blob)
+    if dn is not None or not isinstance(blob, bytes) or len(blob) < 31:
+        return dn
+    if blob[20:24] != b"\1\0\0\0" or blob[28:31].upper() != b"/O=":
+        return None
+    try:
+        return blob[28:].split(b"\0", 1)[0].decode("ascii")
+    except UnicodeDecodeError:
+        return None
+
+
 class Translator:
     def __init__(self, mapfile, strict, dmap=None):
         self.map = {}
@@ -120,6 +139,31 @@ class Translator:
     def process(self, props, pset):
         """props: {proptag: value} of one object; returns list of
         (proptag, value) to write, or []"""
+        out = self.process_addr(props, pset)
+        done = dict(out)
+        at, em, eid, sk, smtp, dname = pset
+        display = text(props.get(dname)) if dname else None
+        # the object's own SMTP address, if it has one, also covers DNs of
+        # foreign organisations that are not in the map
+        own = text(done.get(smtp, props.get(smtp))) if smtp else None
+        if not own and at and em:
+            a, e = text(done.get(at, props.get(at))), text(done.get(em, props.get(em)))
+            if a is not None and a.upper() == "SMTP" and e and "@" in e:
+                own = e
+        if eid and eid not in done:
+            out.extend(self.process_entryid(props, eid, dname, display, own))
+        if sk and sk not in done:
+            v = props.get(sk)
+            if isinstance(v, bytes) and v[:3].upper() == b"EX:":
+                dn = v[3:].split(b"\0", 1)[0].decode("ascii", "replace")
+                addr = own or self.lookup(dn)
+                if addr is None:
+                    self.unmapped[dn] = self.unmapped.get(dn, 0) + 1
+                else:
+                    out.append((sk, searchkey(addr)))
+        return out
+
+    def process_addr(self, props, pset):
         at, em, eid, sk, smtp, dname = pset
         addr = text(props.get(smtp)) if smtp else None
         out = []
@@ -157,15 +201,17 @@ class Translator:
             out.append((sk, searchkey(addr)))
         return out
 
-    def process_entryid(self, props, eid_tag, name_tag):
-        dn = emsab_dn(props.get(eid_tag))
+    def process_entryid(self, props, eid_tag, name_tag, display=None, own=None):
+        dn = ab_dn(props.get(eid_tag))
         if dn is None:
             return []
-        addr = self.lookup(dn)
+        addr = own or self.lookup(dn)
         if addr is None:
             self.unmapped[dn] = self.unmapped.get(dn, 0) + 1
             return []
-        return [(eid_tag, oneoff_entryid(text(props.get(name_tag)) or addr, addr))]
+        if display is None and name_tag:
+            display = text(props.get(name_tag))
+        return [(eid_tag, oneoff_entryid(display or addr, addr))]
 
 
 def contact_propsets(c):
@@ -235,7 +281,16 @@ def cmd_xlat_addrs(args):
         return out
 
     def rcpt_work(props):
-        return tr.process(props, RCPT_SET)
+        out = tr.process(props, RCPT_SET)
+        done = dict(out)
+        own = None
+        if text(done.get(RCPT_SET[0], props.get(RCPT_SET[0]))) in ("SMTP", "smtp"):
+            own = text(done.get(RCPT_SET[1], props.get(RCPT_SET[1])))
+        own = text(props.get(RCPT_SET[4])) or own
+        for tag in RCPT_EXTRA_EIDS:
+            out.extend(tr.process_entryid(props, tag, RCPT_SET[5], None,
+                                          own if own and "@" in own else None))
+        return out
 
     tm = tu = rm = ru = 0
     for lo, hi in chunked_ids(c, "messages", "message_id", args.chunk):
@@ -245,7 +300,7 @@ def cmd_xlat_addrs(args):
         c.commit()
     for lo, hi in chunked_ids(c, "recipients", "recipient_id", args.chunk * 4):
         n, u = xlat_table(c, tr, "recipients_properties", "recipient_id", lo, hi,
-                          [t for t in RCPT_SET if t], rcpt_work)
+                          [t for t in RCPT_SET + RCPT_EXTRA_EIDS if t], rcpt_work)
         rm += n; ru += u
         c.commit()
     c.close()
@@ -270,32 +325,45 @@ def store_guid_hex(kind, dbid):
 
 
 class GuidRewriter:
+    # one pass: source and target ids overlap
     def __init__(self, pairs):
-        self.bin = [(bytes.fromhex(o), bytes.fromhex(n)) for o, n in pairs]
-        self.txt = []
+        bmap = {}
+        tmap = {}
         for o, n in pairs:
-            self.txt.append((o.lower(), n.lower()))
-            self.txt.append((o.upper(), n.upper()))
+            bmap[bytes.fromhex(o)] = bytes.fromhex(n)
+            tmap[o.lower()] = n.lower()
+            tmap[o.upper()] = n.upper()
+        self.bmap = bmap
+        self.tmap = tmap
+        # hex-encoded entryids inside binary JSON etc.
+        self.hmap = {k.encode(): v.encode() for k, v in tmap.items()}
+        self.bre = self._regex(list(bmap) + list(self.hmap), True)
+        self.tre = self._regex(list(tmap), False)
         self.hits = 0
 
+    @staticmethod
+    def _regex(keys, binary):
+        if not keys:
+            return None
+        if binary:
+            return re.compile(b"|".join(re.escape(k) for k in keys))
+        return re.compile("|".join(re.escape(k) for k in keys))
+
+    def _sub(self, rx, table, v):
+        if rx is None:
+            return v
+        def repl(m):
+            self.hits += 1
+            return table[m.group(0)]
+        return rx.sub(repl, v)
+
     def blob(self, v):
-        for o, n in self.bin:
-            if o in v:
-                self.hits += v.count(o)
-                v = v.replace(o, n)
-        for o, n in self.txt:  # hex-encoded entryids inside binary JSON etc.
-            ob, nb = o.encode(), n.encode()
-            if ob in v:
-                self.hits += v.count(ob)
-                v = v.replace(ob, nb)
-        return v
+        table = dict(self.bmap)
+        table.update(self.hmap)
+        return self._sub(self.bre, table, v)
 
     def text(self, v):
-        for o, n in self.txt:
-            if o in v:
-                self.hits += v.count(o)
-                v = v.replace(o, n)
-        return v
+        return self._sub(self.tre, self.tmap, v)
 
 
 def cmd_rewrite_guids(args):
@@ -361,10 +429,103 @@ def cmd_rewrite_guids(args):
                      "%d files\n" % (args.db, gr.hits, changed, files))
 
 
+MUID_STORE_WRAP = bytes.fromhex("38a1bb1005e5101aa1bb08002b2a56c2")
+HEX_EID_RE = re.compile(r"^[0-9A-Fa-f]{40,}$")
+
+
+class StaleRefs:
+    """Decide whether a hex entryid found in the g-web settings still
+    refers to something on the target. stores: file with lines
+    "<users.id> <maildir>" for every user of the target; maildir "-" for
+    stores whose content is not final yet (references are kept)."""
+
+    def __init__(self, path):
+        self.stores = {}
+        for line in open(path):
+            f = line.split(None, 1)
+            if len(f) == 2:
+                self.stores[int(f[0])] = f[1].strip()
+        self.dbs = {}
+
+    def folder_exists(self, uid, fid):
+        md = self.stores.get(uid)
+        if md is None:
+            return False
+        if md == "-":
+            return True
+        if uid not in self.dbs:
+            try:
+                self.dbs[uid] = ro_connect(md + "/exmdb/exchange.sqlite3")
+            except sqlite3.Error:
+                self.dbs[uid] = None
+        c = self.dbs[uid]
+        if c is None:
+            return False
+        return c.execute("SELECT 1 FROM folders WHERE folder_id=?",
+                         (fid,)).fetchone() is not None
+
+    def is_stale(self, h):
+        """True for entryids that cannot resolve on the target, False for
+        valid ones, None when the value is not an entryid we understand"""
+        if not HEX_EID_RE.match(h) or len(h) % 2:
+            return None
+        b = bytes.fromhex(h)
+        if len(b) >= 20 and b[4:20] == MUID_STORE_WRAP:
+            # source-system store entryids (emsmdb.dll + source mailbox
+            # DN) never compare equal to the ones zcore hands out
+            return True
+        if len(b) >= 20 and b[4:20] == MUID_EMSAB:
+            return True
+        if len(b) == 46 and b[20:22] == b"\x01\x00":
+            guid = b[22:38]
+            if guid[4:] == bytes.fromhex(GUID_PRIVATE_TAIL):
+                uid = int.from_bytes(guid[:4], "little")
+                return not self.folder_exists(uid, int.from_bytes(b[38:44], "big"))
+            return None
+        return None
+
+
+def drop_stale_settings(j, stale):
+    """remove dict entries keyed by / list items holding unresolvable
+    entryids, and reset main/default_addressbook if it is a source
+    address book entryid; returns the number of removals"""
+    n = 0
+    v1 = j.get("settings", {}).get("zarafa", {}).get("v1", {})
+    main = v1.get("main", {})
+    if isinstance(main.get("default_addressbook"), str) and \
+       stale.is_stale(main["default_addressbook"]):
+        del main["default_addressbook"]
+        n += 1
+
+    def walk(o):
+        nonlocal n
+        if isinstance(o, dict):
+            for k in list(o):
+                if stale.is_stale(k):
+                    del o[k]
+                    n += 1
+                    continue
+                v = o[k]
+                if isinstance(v, str) and stale.is_stale(v):
+                    del o[k]
+                    n += 1
+                    continue
+                walk(v)
+        elif isinstance(o, list):
+            keep = [x for x in o if not (isinstance(x, str) and stale.is_stale(x))]
+            n += len(o) - len(keep)
+            o[:] = keep
+            for x in o:
+                walk(x)
+    walk(v1.get("state", {}))
+    return n
+
+
 def cmd_web_settings(args):
     """zarafa.dat = EXT_PUSH tpropval_array (+ tarray_set); the settings JSON
     is a NUL-terminated UTF-8 string without length prefix, so it can be
     edited in place as long as the terminator stays."""
+    stale = StaleRefs(args.stores) if args.drop_stale else None
     b = open(args.file, "rb").read()
     out, pos, edits = bytearray(), 0, 0
     while True:
@@ -387,11 +548,14 @@ def cmd_web_settings(args):
             if "shared_stores" in h:
                 del h["shared_stores"]
                 edits += 1
+        if args.drop_stale:
+            edits += drop_stale_settings(j, stale)
         out += b[pos:i] + json.dumps(j, separators=(",", ":")).encode("utf-8")
         pos = end
-    if edits:
+    if edits and not args.dry_run:
         open(args.file, "wb").write(bytes(out))
-    sys.stderr.write("web-settings %s: %d edits\n" % (args.file, edits))
+    sys.stderr.write("web-settings %s: %d edits%s\n" % (
+        args.file, edits, " (dry run)" if args.dry_run else ""))
 
 
 DN_RE = re.compile(r"^/O=([^/]+)/OU=[^/]+/CN=RECIPIENTS/CN=([0-9A-F]{8})"
@@ -453,7 +617,7 @@ def cmd_check(args):
 def scan_dns(path):
     c = ro_connect(path)
     counts = {}
-    tags = set(ps[1] for ps in PROPSETS[:-1]) | set(ps[1] for ps in contact_propsets(c))
+    tags = set(ps[1] for ps in PROPSETS[:-1] if ps[1]) | set(ps[1] for ps in contact_propsets(c))
     for tag in sorted(tags):
         for v, n in c.execute("SELECT propval, COUNT(*) FROM message_properties "
                               "WHERE proptag=? AND (propval LIKE '/O=%' OR "
@@ -463,12 +627,19 @@ def scan_dns(path):
                           "WHERE proptag=? AND (propval LIKE '/O=%' OR "
                           "propval LIKE '/o=%') GROUP BY propval", (RCPT_ADDR_TAG,)):
         counts[text(v)] = counts.get(text(v), 0) + n
-    # address-book entryids of creator / last modifier
-    for (v,) in c.execute("SELECT propval FROM message_properties WHERE proptag "
-                          "IN (?, ?)", (PR_CREATOR_ENTRYID, PR_LAST_MODIFIER_ENTRYID)):
-        dn = emsab_dn(v)
-        if dn:
-            counts[dn] = counts.get(dn, 0) + 1
+    # address-book entryids (also where the addrtype already says SMTP)
+    msg_eids = set(ps[2] for ps in PROPSETS[:-1] if ps[2])
+    msg_eids |= {PR_CREATOR_ENTRYID, PR_LAST_MODIFIER_ENTRYID}
+    for table, eids in (("message_properties", msg_eids),
+                        ("recipients_properties",
+                         {RCPT_SET[2]} | set(RCPT_EXTRA_EIDS))):
+        q = ("SELECT propval, COUNT(*) FROM %s WHERE proptag IN (%s) AND "
+             "substr(propval, 5, 16) = ? GROUP BY propval" %
+             (table, ",".join(str(t) for t in sorted(eids))))
+        for v, n in c.execute(q, (MUID_EMSAB,)):
+            dn = emsab_dn(v)
+            if dn:
+                counts[dn] = counts.get(dn, 0) + n
     c.close()
     return counts
 
@@ -628,6 +799,11 @@ def main():
     p = sub.add_parser("web-settings")
     p.add_argument("file", help="config/zarafa.dat")
     p.add_argument("--drop-shared", action="store_true")
+    p.add_argument("--drop-stale", action="store_true",
+                   help="drop settings entries whose entryids do not resolve "
+                        "on the target (needs --stores)")
+    p.add_argument("--stores", help='file with "<users.id> <maildir>" lines')
+    p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("rewrite-perms")
     p.add_argument("db")
     p.add_argument("--domain-map", action="append", metavar="SRC=DST")

@@ -107,6 +107,10 @@ note() { # note <file> <line>: append bookkeeping unless dry run
 	[[ $DRYRUN -eq 1 ]] || echo "$2" >>"$1"
 }
 listed() { [[ -f $1 ]] && grep -qxF -- "$2" "$1"; }
+planned() { # planned <target address>: a user/shared row of the plan?
+	awk -F'|' -v a="$1" '($1 == "user" || $1 == "shared") && tolower($3) == tolower(a) { f = 1 }
+		END { exit !f }' "$PLAN"
+}
 src_ssh() { # run a command on the e4a host
 	# shellcheck disable=SC2086
 	ssh $SRC_SSH_OPTS -o BatchMode=yes "$SRC_SSH" "$@"
@@ -566,9 +570,11 @@ fixup_one() { # fixup_one <dst address> <dst dir> <kind> <quota> <displayname>
 	# persisted entryids embed the source store GUID (= MySQL id)
 	run python3 "$HERE/e4a_store_fixup.py" rewrite-guids "${GUID_PAIRS[@]}" \
 		--file "$dst/config/zarafa.dat" "$db" || return 1
-	# web settings: shared-store list refers to source identities; drop it
+	# web settings: shared-store list and source store/AB entryids refer
+	# to source identities; drop them, and folders that no longer exist
 	[[ -f $dst/config/zarafa.dat ]] &&
-		run python3 "$HERE/e4a_store_fixup.py" web-settings --drop-shared "$dst/config/zarafa.dat"
+		run python3 "$HERE/e4a_store_fixup.py" web-settings --drop-shared \
+			--drop-stale --stores "$STORES" "$dst/config/zarafa.dat"
 	run chown -R "$GROMOX_USER:$GROMOX_GROUP" "$dst"
 	run chmod -R u+rwX,g+rwX,o-rwx "$dst"
 	# schema upgrade (EV-0 -> current) offline; ~36 s per GB of sqlite and
@@ -620,6 +626,19 @@ cmd_fixup() {
 		kinds+=("$kind"); quotas+=("$quota"); names+=("$name")
 	done <"$PLAN"
 	[[ ${#dbs[@]} -gt 0 ]] || die "no transferred stores to fix up"
+	# stores the settings cleanup may resolve against; planned mailboxes
+	# without a transfer yet are marked "-" (content not final, keep refs)
+	declare -g STORES=$WORKDIR/stores.lst
+	if [[ $DRYRUN -eq 0 ]]; then
+		local id u m
+		sql "SELECT id, username, maildir FROM users" |
+		while IFS=$'\t' read -r id u m; do
+			if [[ -z $m ]] || { planned "$u" && ! listed "$TRANSFERRED" "$u"; }; then
+				m=-
+			fi
+			printf '%s %s\n' "$id" "$m"
+		done >"$STORES"
+	fi
 	log "fixup: scanning ${#dbs[@]} stores for EX addresses"
 	local -a dm=(); mapfile -t dm < <(dm_args)
 	declare -g -a GUID_PAIRS=(); mapfile -t GUID_PAIRS < <(guid_pairs)
