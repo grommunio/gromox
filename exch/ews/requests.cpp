@@ -1091,7 +1091,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
-		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
+		auto updateRef = [](const EWSContext &ctx, const tItemId &refId, uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid, bool send_message, std::optional<sOccurrenceId> &declinedOcc) {
 			if (refId.type == tItemId::ID_OCCURRENCE)
 				return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
 			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
@@ -1135,13 +1135,19 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		};
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
-				updateRef(*acc->ReferenceItemId, respAccepted);
+				updateRef(ctx, *acc->ReferenceItemId,
+				          respAccepted, refDir, refMid,
+				          send_message, declinedOcc);
 		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
 			if (tent->ReferenceItemId)
-				updateRef(*tent->ReferenceItemId, respTentative);
+				updateRef(ctx, *tent->ReferenceItemId,
+				          respTentative, refDir, refMid,
+				          send_message, declinedOcc);
 		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
 			if (dec->ReferenceItemId)
-				updateRef(*dec->ReferenceItemId, respDeclined);
+				updateRef(ctx, *dec->ReferenceItemId,
+				          respDeclined, refDir, refMid,
+				          send_message, declinedOcc);
 		}
 		if (send_message) {
 			const tItemId *responseRef = nullptr;
