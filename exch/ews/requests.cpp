@@ -2199,9 +2199,10 @@ namespace {
  * is what Outlook's search box sends) into a restriction.
  *
  * Supported: words and "quoted phrases", implicitly ANDed; OR; NOT and a
- * leading '-'; the property prefixes subject:, from:, to:, cc:, body:.
+ * leading '-'; the property prefixes subject:, from:, to:, cc:, body:,
+ * attachment: (attachment file names) and hasattachment: (yes/no).
  * A term without prefix is looked for in subject, body, sender and
- * recipients. Every term becomes a case-insensitive substring match.
+ * recipients. Every other term becomes a case-insensitive substring match.
  */
 struct aqs_term {
 	std::string field, value;
@@ -2213,7 +2214,9 @@ struct aqs_term {
 static bool aqs_known_field(std::string_view f)
 {
 	return f == "subject" || f == "title" || f == "body" || f == "from" ||
-	       f == "to" || f == "cc";
+	       f == "to" || f == "cc" || f == "attachment" ||
+	       f == "attachments" || f == "hasattachment" ||
+	       f == "hasattachments";
 }
 
 static std::vector<proptag_t> aqs_fields(std::string_view field)
@@ -2251,21 +2254,52 @@ static RESTRICTION *aqs_combine(mapi_rtype rt, std::vector<RESTRICTION> &&v)
 	return res;
 }
 
+static RESTRICTION aqs_content(proptag_t tag, char *text)
+{
+	RESTRICTION r;
+	r.rt = mapi_rtype::content;
+	r.cont = EWSContext::construct<RESTRICTION_CONTENT>();
+	r.cont->fuzzy_level = FL_SUBSTRING | FL_IGNORECASE;
+	r.cont->proptag = r.cont->propval.proptag = tag;
+	r.cont->propval.pvalue = text;
+	return r;
+}
+
+/**
+ * @return     RESTRICTION* or nullptr if the term is to be ignored
+ */
 static RESTRICTION *aqs_term_restriction(const aqs_term &t)
 {
 	auto text = EWSContext::alloc<char>(t.value.size() + 1);
 	memcpy(text, t.value.c_str(), t.value.size() + 1);
-	std::vector<RESTRICTION> alts;
-	for (auto tag : aqs_fields(t.field)) {
-		auto &r = alts.emplace_back();
-		r.rt = mapi_rtype::content;
-		r.cont = EWSContext::construct<RESTRICTION_CONTENT>();
-		r.cont->fuzzy_level = FL_SUBSTRING | FL_IGNORECASE;
-		r.cont->proptag = r.cont->propval.proptag = tag;
-		r.cont->propval.pvalue = text;
+	RESTRICTION *res;
+	bool negate = t.negate;
+	if (t.field == "hasattachment" || t.field == "hasattachments") {
+		HX_strlower(text);
+		std::string_view v = text;
+		if (v == "no" || v == "false" || v == "0")
+			negate = !negate;
+		else if (v != "yes" && v != "true" && v != "1")
+			return nullptr;
+		res = EWSContext::construct<RESTRICTION>();
+		res->rt = mapi_rtype::property;
+		res->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+		res->prop->relop = relop::eq;
+		res->prop->proptag = res->prop->propval.proptag = PR_HASATTACH;
+		res->prop->propval.pvalue = EWSContext::construct<uint8_t>(1);
+	} else if (t.field == "attachment" || t.field == "attachments") {
+		res = EWSContext::construct<RESTRICTION>();
+		res->rt = mapi_rtype::sub;
+		res->sub = EWSContext::construct<RESTRICTION_SUBOBJ>();
+		res->sub->subobject = PR_MESSAGE_ATTACHMENTS;
+		res->sub->res = aqs_content(PR_ATTACH_LONG_FILENAME, text);
+	} else {
+		std::vector<RESTRICTION> alts;
+		for (auto tag : aqs_fields(t.field))
+			alts.push_back(aqs_content(tag, text));
+		res = aqs_combine(mapi_rtype::r_or, std::move(alts));
 	}
-	auto res = aqs_combine(mapi_rtype::r_or, std::move(alts));
-	if (!t.negate)
+	if (!negate)
 		return res;
 	auto neg = EWSContext::construct<RESTRICTION>();
 	neg->rt = mapi_rtype::r_not;
@@ -2342,7 +2376,8 @@ static RESTRICTION *aqs_to_restriction(std::string_view q)
 	for (const auto &g : groups) {
 		std::vector<RESTRICTION> ands;
 		for (const auto &t : g)
-			ands.push_back(std::move(*aqs_term_restriction(t)));
+			if (auto r = aqs_term_restriction(t))
+				ands.push_back(std::move(*r));
 		auto r = aqs_combine(mapi_rtype::r_and, std::move(ands));
 		if (r != nullptr)
 			ors.push_back(std::move(*r));
