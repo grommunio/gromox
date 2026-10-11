@@ -593,8 +593,15 @@ void fts_stop()
  * values are indexed verbatim (so that the index text contains every
  * substring the property value contains).
  */
-static const char *fts_column(proptag_t tag)
+static const char *fts_column(proptag_t tag, bool in_attach)
 {
+	if (in_attach)
+		/*
+		 * The indexer stores the first of PR_ATTACH_LONG_FILENAME,
+		 * PR_ATTACH_FILENAME, PR_DISPLAY_NAME; only the first one is
+		 * thus guaranteed to be there when it is set.
+		 */
+		return tag == PR_ATTACH_LONG_FILENAME ? "attachments" : nullptr;
 	switch (tag) {
 	case PR_SUBJECT:
 	case PR_NORMALIZED_SUBJECT:
@@ -649,7 +656,8 @@ static std::string_view fts_needle(std::string_view col, std::string_view needle
  * Derive an FTS5 query that every message matching @r also matches.
  * Returns false if no such constraint can be derived.
  */
-static bool fts_res_query(const RESTRICTION &r, std::string &q)
+static bool fts_res_query(const RESTRICTION &r, std::string &q,
+    bool in_attach = false)
 {
 	switch (r.rt) {
 	case RES_AND:
@@ -658,7 +666,7 @@ static bool fts_res_query(const RESTRICTION &r, std::string &q)
 		size_t parts = 0;
 		for (const auto &sub : *r.andor) {
 			std::string sq;
-			if (!fts_res_query(sub, sq)) {
+			if (!fts_res_query(sub, sq, in_attach)) {
 				if (r.rt == RES_OR)
 					return false;
 				continue;
@@ -674,7 +682,7 @@ static bool fts_res_query(const RESTRICTION &r, std::string &q)
 	}
 	case RES_CONTENT: {
 		auto &c = *r.cont;
-		auto col = fts_column(c.proptag);
+		auto col = fts_column(c.proptag, in_attach);
 		auto lvl = c.fuzzy_level & 0xFFFF;
 		if (col == nullptr || PROP_TYPE(c.propval.proptag) != PT_UNICODE ||
 		    c.propval.pvalue == nullptr ||
@@ -696,6 +704,15 @@ static bool fts_res_query(const RESTRICTION &r, std::string &q)
 		q += '"';
 		return true;
 	}
+	case RES_SUBRESTRICTION:
+		/*
+		 * The attachments column holds the names of all attachments of
+		 * the message, so whatever one attachment has to contain, the
+		 * column contains as well.
+		 */
+		if (in_attach || r.sub->subobject != PR_MESSAGE_ATTACHMENTS)
+			return false;
+		return fts_res_query(r.sub->res, q, true);
 	default:
 		return false;
 	}
