@@ -166,7 +166,7 @@ Deleted accounts are mapped from the ``-NAME`` suffix. The stores are rewritten
 key per participant set), but also covers the recipient rows, the
 creator/last-modifier entryids and the Email1-3 fields of contact items, which
 mbop does not. e4a often stored ``SMTP`` as addrtype while keeping the EX
-entryid and ``EX:`` search key next to it; those are rewritten as well, using
+entryid and ``EX:`` search key next to it. Those are rewritten as well, using
 the participant's own SMTP address where present. It applies the domain rename to existing SMTP addresses, and does
 not rewrite messages through exmdb. exaddrxlat would re-write every message
 (and its cid files) of the 680 GB archive. Not translated: ``rules.actions``
@@ -177,7 +177,7 @@ Noteworthy mentions
 -------------------
 
 * midb/IMAP state: UIDs are reassigned, clients download again.
-* ``config/zarafa.dat`` is copied; if a mailbox's web settings misbehave,
+* ``config/zarafa.dat`` is copied. If a mailbox's web settings misbehave,
   ``gromox-mbop -u user clear-profile`` resets them.
 * e4a accounts with ``address_status != 0`` are created suspended and their
   password hash is not copied.
