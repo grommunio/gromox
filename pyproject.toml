@@ -1,0 +1,2 @@
+[tool.yapf]
+USE_TABS=1

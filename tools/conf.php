@@ -1,9 +1,9 @@
 <?php
 function remove_quotes_assocarray($a) {
-    foreach ($a as $k => $v) {
-        $a[$k] = str_replace("'","",$a[$k]);
-    }
-    return $a;
+	foreach ($a as $k => $v) {
+		$a[$k] = str_replace("'","",$a[$k]);
+	}
+	return $a;
 }
 function get_app_config()
 {
