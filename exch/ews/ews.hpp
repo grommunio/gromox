@@ -130,10 +130,12 @@ class EWSPlugin {
 	};
 
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;
+	void evictAttachmentInstances(const std::string &, uint64_t, uint32_t) const;
 	bool linkSubscription(const Structures::tSubscriptionId&, const EWSContext&) const;
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
 	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string&, uint32_t) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
+	void unloadMessageInstance(const std::string&, uint64_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
 	Structures::sMessageEntryId mkMessageEntryId(const Structures::sMailboxInfo&, uint64_t, uint64_t) const;
 	std::shared_ptr<SubManager> make_submgr(const Structures::tSubscriptionId &, const char *) const;
@@ -299,6 +301,7 @@ class EWSContext {
 	void conflictItemIds(const Structures::sFolderSpec &, const std::string &, std::vector<Structures::tConflictingMeeting> &) const;
 	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&, bool=false) const;
 	void getNamedTags(const std::string&, Structures::sShape&, bool=false) const;
+	bool isOrganizer(const std::string &, uint64_t) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
@@ -306,7 +309,8 @@ class EWSContext {
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
 	std::vector<Structures::sItem> expandOccurrences(const std::string &, uint64_t, uint64_t, time_t, time_t, Structures::sShape &) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
-	void deleteOccurrence(const std::string &, uint64_t, uint32_t) const;
+	void checkOccurrence(const std::string &, uint64_t, uint32_t) const;
+	void deleteOccurrence(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
 	void applyRecurrence(const std::string &, uint64_t, const tinyxml2::XMLElement *, Structures::sShape &) const;
 	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
@@ -337,7 +341,7 @@ class EWSContext {
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
 	const BINARY *findContactPhoto(const std::string &dir, const std::string &email) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
-	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool) const;
+	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool, std::optional<uint32_t> = std::nullopt) const;
 	void suppressReadReceipt(const Structures::tItemId&) const;
 	void cancelCalendarItem(const Structures::tItemId&, bool) const;
 	void sendMeetingResponse(const Structures::tItemId&, const MESSAGE_CONTENT&) const;
@@ -387,11 +391,13 @@ private:
 	int32_t recurTzOffset(const std::string &, uint64_t, const APPOINTMENT_RECUR_PAT &) const;
 	bool saveRecurBlob(const std::string &, uint64_t, proptag_t, const APPOINTMENT_RECUR_PAT &) const;
 	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
+	void deleteExceptionAttachment(const std::string &, uint64_t, uint64_t, uint32_t) const;
+	void toInstance(const std::string &, uint32_t, MESSAGE_CONTENT &) const;
 
 	/* State shared by the occurrences of one recurring series */
 	struct sOccurrenceSeries {
 		struct exc_slot {
-			int year, yday; /* local day of PidLidExceptionReplaceTime */
+			uint64_t replace_time; /* PidLidExceptionReplaceTime */
 			std::shared_ptr<EWSPlugin::ExmdbInstance> inst;
 		};
 		uint64_t fid = 0, mid = 0;
@@ -404,8 +410,17 @@ private:
 		std::optional<Structures::sItem> base, occBase; /* occBase: + MimeContent */
 		std::vector<exc_slot> exceptions; /* attachment order */
 
+		struct times {
+			clock::time_point orig_start, start, end;
+		};
+
+		void parse(const BINARY *, const uint64_t *, const BINARY *);
 		clock::time_point toUtc(uint32_t) const;
+		times occurrenceTimes(uint32_t) const;
+		bool replaces(uint32_t, uint64_t) const;
+		bool replaces(uint32_t, clock::time_point, uint64_t) const;
 	};
+	sOccurrenceSeries loadSeriesTimes(const std::string &, uint64_t) const;
 	sOccurrenceSeries loadOccurrenceSeries(const std::string &, uint64_t, uint64_t, Structures::sShape &) const;
 	void loadOccurrenceInstances(const std::string &, sOccurrenceSeries &, Structures::sShape &) const;
 	Structures::sItem materializeOccurrence(const std::string &, sOccurrenceSeries &, uint32_t, Structures::sShape &) const;

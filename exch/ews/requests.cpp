@@ -969,6 +969,81 @@ void process(mCreateFolderRequest &&request, XMLElement *response, const EWSCont
 	data.serialize(response);
 }
 
+static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
+    uint32_t resp, bool send_message, std::optional<sOccurrenceId> &declinedOcc)
+{
+	sOccurrenceId oid(refId.Id.data(), refId.Id.size());
+	sFolderSpec pf = ctx.resolveFolder(oid);
+	std::string rdir = ctx.getDir(pf);
+	ctx.validate(rdir, oid);
+	ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
+	/* A declined occurrence goes once the reply is out */
+	if (resp == respDeclined && send_message) {
+		declinedOcc.emplace(oid);
+		return;
+	}
+	uint64_t now = rop_util_current_nttime();
+	uint32_t busy = resp == respAccepted ? olBusy :
+	                resp == respTentative ? olTentative : olFree;
+	auto pid = [&](const PROPERTY_NAME &name) {
+		return ctx.getNamedPropId(rdir, name, true);
+	};
+	TAGGED_PROPVAL props[] = {
+		{PROP_TAG(PT_LONG, pid(NtResponseStatus)), &resp},
+		{PROP_TAG(PT_SYSTIME, pid(NtAppointmentReplyTime)), &now},
+		{PROP_TAG(PT_LONG, pid(NtBusyStatus)), &busy},
+	};
+	const TPROPVAL_ARRAY proplist{std::size(props), props};
+	ctx.updateOccurrence(rdir, pf.folderId, oid.messageId(),
+		oid.basedate, proplist, {});
+}
+
+static void updateRef(const EWSContext &ctx, const tItemId &refId,
+    uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
+    bool send_message, std::optional<sOccurrenceId> &declinedOcc)
+{
+	if (refId.type == tItemId::ID_OCCURRENCE)
+		return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
+	ctx.assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId mid(refId.Id.data(), refId.Id.size());
+	sFolderSpec pf = ctx.resolveFolder(mid);
+	std::string rdir = ctx.getDir(pf);
+	ctx.validate(rdir, mid);
+	const char *username = ctx.effectiveUser(pf);
+	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	auto rstat = EWSContext::construct<uint32_t>(resp);
+	uint32_t state = asfMeeting | asfReceived;
+	auto astat = EWSContext::construct<uint32_t>(state);
+	uint32_t busyValue = resp == respAccepted ? olBusy :
+	                     resp == respTentative ? olTentative : olFree;
+	auto bstat = EWSContext::construct<uint32_t>(busyValue);
+	auto processed = EWSContext::construct<uint8_t>(1);
+	auto pidResp  = ctx.getNamedPropId(rdir, NtResponseStatus, true);
+	auto pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
+	auto pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
+	auto pidBusy  = ctx.getNamedPropId(rdir, NtBusyStatus, true);
+	TAGGED_PROPVAL props[] = {
+		{PROP_TAG(PT_LONG, pidResp), rstat},
+		{PROP_TAG(PT_SYSTIME, pidReply), now},
+		{PROP_TAG(PT_LONG, pidState), astat},
+		{PROP_TAG(PT_LONG, pidBusy), bstat},
+		{PR_PROCESSED, processed},
+	};
+	TPROPVAL_ARRAY proplist{std::size(props), props};
+	PROBLEM_ARRAY problems;
+	if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
+		mid.messageId(), &proplist, &problems))
+		throw EWSError::ItemSave(E3409);
+	if (resp == respAccepted || resp == respTentative)
+		ctx.createCalendarItemFromMeetingRequest(refId, resp);
+	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+	if (pf.location == sFolderSpec::PRIVATE &&
+	    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
+		refDir = rdir;
+		refMid = mid;
+	}
+}
+
 /**
  * @brief      Process CreateItem
  *
@@ -1061,55 +1136,22 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
-		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
-			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
-			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
-			sFolderSpec pf = ctx.resolveFolder(mid);
-			std::string rdir = ctx.getDir(pf);
-			ctx.validate(rdir, mid);
-			const char *username = ctx.effectiveUser(pf);
-			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-			auto rstat = EWSContext::construct<uint32_t>(resp);
-			uint32_t state = asfMeeting | asfReceived;
-			auto astat = EWSContext::construct<uint32_t>(state);
-			uint32_t busyValue = resp == respAccepted ? olBusy :
-			                     resp == respTentative ? olTentative : olFree;
-			auto bstat = EWSContext::construct<uint32_t>(busyValue);
-			auto processed = EWSContext::construct<uint8_t>(1);
-			auto pidResp  = ctx.getNamedPropId(rdir, NtResponseStatus, true);
-			auto pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
-			auto pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
-			auto pidBusy  = ctx.getNamedPropId(rdir, NtBusyStatus, true);
-			TAGGED_PROPVAL props[] = {
-				{PROP_TAG(PT_LONG, pidResp), rstat},
-				{PROP_TAG(PT_SYSTIME, pidReply), now},
-				{PROP_TAG(PT_LONG, pidState), astat},
-				{PROP_TAG(PT_LONG, pidBusy), bstat},
-				{PR_PROCESSED, processed},
-			};
-			TPROPVAL_ARRAY proplist{std::size(props), props};
-			PROBLEM_ARRAY problems;
-			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
-				mid.messageId(), &proplist, &problems))
-				throw EWSError::ItemSave(E3409);
-			if (resp == respAccepted || resp == respTentative)
-				ctx.createCalendarItemFromMeetingRequest(refId, resp);
-			auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
-			if (pf.location == sFolderSpec::PRIVATE &&
-			    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
-				refDir = rdir;
-				refMid = mid;
-			}
-		};
+		std::optional<sOccurrenceId> declinedOcc;
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
-				updateRef(*acc->ReferenceItemId, respAccepted);
+				updateRef(ctx, *acc->ReferenceItemId,
+				          respAccepted, refDir, refMid,
+				          send_message, declinedOcc);
 		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
 			if (tent->ReferenceItemId)
-				updateRef(*tent->ReferenceItemId, respTentative);
+				updateRef(ctx, *tent->ReferenceItemId,
+				          respTentative, refDir, refMid,
+				          send_message, declinedOcc);
 		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
 			if (dec->ReferenceItemId)
-				updateRef(*dec->ReferenceItemId, respDeclined);
+				updateRef(ctx, *dec->ReferenceItemId,
+				          respDeclined, refDir, refMid,
+				          send_message, declinedOcc);
 		}
 		if (send_message) {
 			const tItemId *responseRef = nullptr;
@@ -1128,6 +1170,11 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)
 			ctx.moveCopyItem(refDir, *refMid, eid_t(1, PRIVATE_FID_DELETED_ITEMS), false);
+		if (declinedOcc) {
+			sFolderSpec pf = ctx.resolveFolder(*declinedOcc);
+			ctx.deleteOccurrence(ctx.getDir(pf), pf.folderId,
+				declinedOcc->messageId(), declinedOcc->basedate);
+		}
 		if (isMessageLike &&
 		    request.MessageDisposition == Enum::SendAndSaveCopy) {
 			auto flags = content->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
@@ -1433,22 +1480,26 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			throw EWSError::AccessDenied(E3131);
 
 		std::optional<uint32_t> basedate;
-		if (auto occ = std::get_if<tOccurrenceItemId>(&id.asVariant()))
+		if (auto occ = std::get_if<tOccurrenceItemId>(&id.asVariant())) {
 			basedate = ctx.resolveOccurrenceIndex(dir,
 			           meid.messageId(), occ->InstanceIndex);
-		else if (itemId.type == tItemId::ID_OCCURRENCE)
+		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
 			basedate = sOccurrenceId(itemId.Id.data(),
 			           itemId.Id.size()).basedate;
+			ctx.checkOccurrence(dir, meid.messageId(), *basedate);
+		}
 
-		/* The cancellation covers the whole series */
 		if (request.SendMeetingCancellations &&
 		    *request.SendMeetingCancellations != Enum::SendToNone &&
-		    !basedate && itemId.type == tItemId::ID_ITEM)
+		    (basedate || itemId.type == tItemId::ID_ITEM) &&
+		    ctx.isOrganizer(dir, meid.messageId()))
 			ctx.sendMeetingCancellation(dir, meid, parent,
-				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
+				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy,
+				basedate);
 
 		if (basedate) {
-			ctx.deleteOccurrence(dir, meid.messageId(), *basedate);
+			ctx.deleteOccurrence(dir, parent.folderId,
+				meid.messageId(), *basedate);
 			data.ResponseMessages.emplace_back().success();
 		} else if (request.DeleteType == Enum::MoveToDeletedItems) {
 			uint64_t newMid = 0;
@@ -3751,6 +3802,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    username, CP_ACP, mid.messageId(), &props, &problems))
 				throw EWSError::ItemSave(E3418);
 			msg.ConflictResults.Count = problems.count;
+			ctx.plugin().unloadMessageInstance(dir, mid.messageId());
 			if (shape.requiredAttendees || shape.optionalAttendees ||
 			    shape.resourceAttendees)
 				ctx.updateAttendees(dir, parentFolder,

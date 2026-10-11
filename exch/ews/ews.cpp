@@ -1010,6 +1010,17 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
 }
 
 /**
+ * @brief      Drop a cached message instance
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      mid   Message ID
+ */
+void EWSPlugin::unloadMessageInstance(const std::string &dir, uint64_t mid) const
+{
+	cache.evict(detail::MessageInstanceKey{dir, mid});
+}
+
+/**
  * @brief      Link subscription to a waiting context
  *
  * Registers the context as waiting for subscription events.
@@ -1033,6 +1044,20 @@ bool EWSPlugin::linkSubscription(const Structures::tSubscriptionId& subscription
 		unlinkSubscription(mgr->waitingContext);
 	mgr->waitingContext = ctx.context_id();
 	return true;
+}
+
+/**
+ * @brief      Drop the cached attachment instances of a message
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      mid   Message ID
+ * @param      natt  Number of attachments
+ */
+void EWSPlugin::evictAttachmentInstances(const std::string &dir, uint64_t mid,
+    uint32_t natt) const
+{
+	for (uint32_t i = 0; i < natt; ++i)
+		cache.evict(detail::AttachmentInstanceKey{dir, mid, i});
 }
 
 /**
