@@ -1969,6 +1969,7 @@ struct sBaseItemId : public std::variant<tItemId, tOccurrenceItemId, tRecurringM
 	explicit inline sBaseItemId(Base &&b) : Base(std::move(b)) {}
 
 	tItemId itemId() const;
+	bool isOccurrence() const;
 
 	constexpr const Base &asVariant() const { return *this; }
 	template<typename T> constexpr bool holds_alternative() const {return std::holds_alternative<T>(asVariant());}

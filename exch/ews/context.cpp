@@ -11,6 +11,7 @@
 #include <functional>
 #include <sstream>
 #include <fmt/format.h>
+#include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <vmime/message.hpp>
@@ -412,11 +413,11 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
  */
 void markOccurrenceId(sItem &item, uint32_t basedate)
 {
-	auto setter = [basedate](auto &it) {
+	auto setter = [bd = cpu_to_le32(basedate)](auto &it) {
 		if (!it.ItemId)
 			return;
-		it.ItemId->Id.append(reinterpret_cast<const char *>(&basedate),
-		                     sizeof(basedate));
+		it.ItemId->Id.append(reinterpret_cast<const char *>(&bd),
+		                     sizeof(bd));
 		it.ItemId->type = tBaseItemId::ID_OCCURRENCE;
 	};
 	std::visit(setter, item);
@@ -487,9 +488,10 @@ static int nth_matching_mday(int year, int month, unsigned int order,
  * @brief      Enumerate the visible occurrence dates of a recurrence pattern
  *
  * Walks the pattern in chronological order and invokes @cb for every
- * occurrence that is not truly deleted. Modified exceptions are still
- * visible and are reported at their *original* slot, so a caller that wants
- * the rescheduled time has to consult the EXCEPTIONINFO itself.
+ * occurrence that is not truly deleted (or for every one, with @all).
+ * Modified exceptions are still visible and are reported at their *original*
+ * slot, so a caller that wants the rescheduled time has to consult the
+ * EXCEPTIONINFO itself.
  *
  * Enumeration stops when @cb returns true or the pattern is exhausted.
  * OccurrenceCount bounds only an end-after-N pattern. The others are bounded
@@ -498,9 +500,10 @@ static int nth_matching_mday(int year, int month, unsigned int order,
  *
  * @param      apr    Appointment recurrence pattern
  * @param      cb     Callback, returns true to stop enumeration
+ * @param      all    Include deleted occurrences
  */
 static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
-    const std::function<bool(uint32_t)> &cb)
+    const std::function<bool(uint32_t)> &cb, bool all = false)
 {
 	auto &rp = apr.recur_pat;
 	auto bycount = rp.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR;
@@ -510,7 +513,7 @@ static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
 	auto visit = [&](uint32_t date) -> bool {
 		if (date > last)
 			return true;
-		if (isTrulyDeleted(apr, date))
+		if (!all && isTrulyDeleted(apr, date))
 			return false;
 		return cb(date);
 	};
@@ -599,17 +602,19 @@ static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
 }
 
 /**
- * @brief      Compute the Nth non-deleted occurrence date
+ * @brief      Compute the Nth occurrence date
  *
- * EWS InstanceIndex counts only visible (non-deleted) occurrences.
- * Modified exceptions are still visible and counted.
+ * Deleted occurrences are skipped unless @all. Modified exceptions are
+ * always counted.
  *
  * @param      apr    Appointment recurrence pattern
  * @param      index  1-based occurrence index
+ * @param      all    Count deleted occurrences too, like EWS InstanceIndex
  *
  * @return     Occurrence date in rtime format (minutes since 1601-01-01)
  */
-uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index)
+uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index,
+    bool all)
 {
 	if (index < 1)
 		throw InputError(E3307);
@@ -620,7 +625,7 @@ uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index)
 			return false;
 		found = date;
 		return true;
-	});
+	}, all);
 	if (found == 0)
 		throw InputError(E3334);
 	return found;
@@ -2445,10 +2450,15 @@ std::vector<sItem> EWSContext::expandOccurrences(const std::string &dir,
  * @return     Basedate in rtime format
  */
 uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
-    uint64_t mid, uint32_t index) const
+    uint64_t mid, uint32_t index) const try
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
-	return nthOccurrenceDate(apr, index);
+	auto date = nthOccurrenceDate(apr, index, true);
+	if (isTrulyDeleted(apr, date))
+		throw EWSError::CalendarOccurrenceIsDeletedFromRecurrence(E3483);
+	return date;
+} catch (const InputError &e) {
+	throw EWSError::CalendarOccurrenceIndexIsOutOfRecurrenceRange(e.what());
 }
 
 /**
@@ -2576,10 +2586,11 @@ EWSContext::loadRecurPat(const std::string &dir, uint64_t mid) const
 	const PROPERTY_NAME pn[] = {{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur}};
 	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
 	auto ids = getNamedPropIds(dir, pna);
-	auto tag = PROP_TAG(PT_BINARY, ids[0]);
-	auto bin = getItemProp<const BINARY>(dir, mid, tag);
-	if (!bin)
-		throw EWSError::ItemCorrupt(E3305);
+	proptag_t tag = PROP_TAG(PT_BINARY, ids[0]);
+	auto props = getItemProps(dir, mid, proptag_cspan{&tag, 1});
+	auto bin = props.get<const BINARY>(tag);
+	if (bin == nullptr)
+		throw EWSError::CalendarCannotUseIdForRecurringMasterId(E3477);
 	EXT_PULL ext_pull;
 	ext_pull.init(bin->pb, bin->cb, nullptr, 0);
 	APPOINTMENT_RECUR_PAT apr{};
@@ -2768,7 +2779,8 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			if (ext_pull.g_apptrecpat(&apr) == pack_result::ok) {
 				int32_t tz_min = recurTzOffset(dir, mid, apr);
 				for (size_t k = 0; k < apr.pexceptioninfo.size(); ++k) {
-					if (apr.pexceptioninfo[k].originalstartdate != basedate)
+					if (apr.pexceptioninfo[k].originalstartdate / 1440 !=
+					    basedate / 1440)
 						continue;
 					applyExceptionOverrides(apr.pexceptioninfo[k],
 						apr.pextendedexception[k],

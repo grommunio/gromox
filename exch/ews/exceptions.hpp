@@ -60,8 +60,13 @@ class EWSError : public DispatchError {
 
 #define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
+	ERR(CalendarCannotMoveOrCopyOccurrence) ///< Move/Copy of a single occurrence
+	ERR(CalendarCannotUseIdForOccurrenceId) ///< Id does not refer to an occurrence
+	ERR(CalendarCannotUseIdForRecurringMasterId) ///< Id does not refer to a recurring master
 	ERR(CalendarInvalidRecurrence) ///< Internal structure of the objects that represent the recurrence is invalid.
 	ERR(CalendarIsNotOrganizer) ///< Operation is reserved for the organizer of the meeting
+	ERR(CalendarOccurrenceIndexIsOutOfRecurrenceRange) ///< InstanceIndex beyond the end of the series
+	ERR(CalendarOccurrenceIsDeletedFromRecurrence) ///< InstanceIndex of a deleted occurrence
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
 	ERR(CannotEmptyFolder) ///< Failed to empty folder
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
@@ -85,6 +90,7 @@ class EWSError : public DispatchError {
 	ERR(InvalidIdNotAnItemAttachmentId) ///< Attachment id expected, but got something else
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
+	ERR(InvalidPropertySet) ///< Property cannot be set on this item
 	ERR(InvalidRecipients) ///< Recipient list is malformed
 	ERR(InvalidRestriction) ///< Restriction cannot be deserialized
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
@@ -578,9 +584,6 @@ E(3446, "failed to write updated message content");
 E(3447, "failed to delete user configuration message");
 E(3448, "failed to append read change number to sync state");
 E(3449, "failed to set message id on updated content");
-E(3450, "RecurringMasterId is currently not supported");
-E(3451, "RecurringMasterId is currently not supported");
-E(3452, "RecurringMasterId is currently not supported");
 E(3453, "GetItem batch exceeds ews_max_get_items; resend in smaller batches");
 E(3454, "subscription event backlog exceeded ews_max_pending_events; re-subscribe and resync");
 E(3455, "failed to allocate the recipient set while updating attendees");
@@ -605,6 +608,14 @@ E(3473, "cannot write to destination folder");
 E(3474, "access denied: missing Send-As permission on the claimed sender identity");
 E(3475, "failed to set all-day flag on calendar item");
 E(3476, "failed to persist attachment to parent message");
+E(3477, "item is not a recurring master");
+E(3478, "RecurringMasterId does not refer to a recurring master");
+E(3479, "OccurrenceId does not refer to an occurrence");
+E(3480, "cannot move or copy a single occurrence");
+E(3481, "cannot mark a single occurrence as junk");
+E(3482, "cannot send a single occurrence");
+E(3483, "occurrence has been deleted from the series");
+E(3484, "Recurrence cannot be set on a single occurrence");
 
 #undef E
 }

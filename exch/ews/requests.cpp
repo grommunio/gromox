@@ -1425,8 +1425,6 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 
 	for (const auto &id : request.ItemIds) try {
 		tItemId itemId = id.itemId();
-		if (id.holds_alternative<tRecurringMasterItemId>())
-			throw EWSError::InvalidId(E3451);  // currently not supported
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
@@ -1434,25 +1432,23 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		if (!(ctx.permissions(dir, parent.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
 
+		std::optional<uint32_t> basedate;
+		if (auto occ = std::get_if<tOccurrenceItemId>(&id.asVariant()))
+			basedate = ctx.resolveOccurrenceIndex(dir,
+			           meid.messageId(), occ->InstanceIndex);
+		else if (itemId.type == tItemId::ID_OCCURRENCE)
+			basedate = sOccurrenceId(itemId.Id.data(),
+			           itemId.Id.size()).basedate;
+
+		/* The cancellation covers the whole series */
 		if (request.SendMeetingCancellations &&
 		    *request.SendMeetingCancellations != Enum::SendToNone &&
-		    (id.holds_alternative<tOccurrenceItemId>() ||
-		    itemId.type == tItemId::ID_ITEM))
+		    !basedate && itemId.type == tItemId::ID_ITEM)
 			ctx.sendMeetingCancellation(dir, meid, parent,
 				*request.SendMeetingCancellations == Enum::SendToAllAndSaveCopy);
 
-		if (id.holds_alternative<tOccurrenceItemId>()) {
-			/* OccurrenceItemId: delete a single occurrence */
-			tOccurrenceItemId occurrenceId = std::get<tOccurrenceItemId>(id.asVariant());
-			auto mid = meid.messageId();
-			auto basedate = ctx.resolveOccurrenceIndex(dir, mid,
-			                occurrenceId.InstanceIndex);
-			ctx.deleteOccurrence(dir, mid, basedate);
-			data.ResponseMessages.emplace_back().success();
-		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
-			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
-			ctx.deleteOccurrence(dir,
-				meid.messageId(), oid.basedate);
+		if (basedate) {
+			ctx.deleteOccurrence(dir, meid.messageId(), *basedate);
 			data.ResponseMessages.emplace_back().success();
 		} else if (request.DeleteType == Enum::MoveToDeletedItems) {
 			uint64_t newMid = 0;
@@ -2812,6 +2808,8 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 		tItemId itemId = id.itemId();
 		if (!dstAccess)
 			throw EWSError::AccessDenied(E3184);
+		if (id.isOccurrence())
+			throw EWSError::CalendarCannotMoveOrCopyOccurrence(E3480);
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
@@ -2856,6 +2854,8 @@ void process(mMarkAsJunkRequest &&request, XMLElement *response, const EWSContex
 
 	for (const auto &id : request.ItemIds) try {
 		tItemId itemId = id.itemId();
+		if (id.isOccurrence())
+			throw EWSError::InvalidId(E3481);
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
@@ -3164,8 +3164,6 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 	sShape shape(request.ItemShape);
 	uint32_t max_get = ctx.plugin().max_get_items, gotten = 0;
 	for (const auto &id : request.ItemIds) try {
-		if (id.holds_alternative<tRecurringMasterItemId>())
-			throw EWSError::InvalidId(E3452);
 		if (max_get != 0 && gotten++ >= max_get)
 			throw EWSError::ServerBusy(E3453);
 
@@ -3432,6 +3430,8 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	for (const auto &id: request.ItemIds) try {
 		tItemId itemId = id.itemId();
+		if (id.isOccurrence())
+			throw EWSError::InvalidId(E3482);
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec folder = ctx.resolveFolder(meid);
@@ -3644,8 +3644,6 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 	idOnly.add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
 	idOnly.add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
 	for (const auto &change : request.ItemChanges) try {
-		if (change.ItemId.holds_alternative<tRecurringMasterItemId>())
-			throw EWSError::InvalidId(E3450);  // currently not supported
 		tItemId itemId = change.ItemId.itemId();
 		sMessageEntryId mid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(mid);
@@ -3676,6 +3674,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		tContact::genFields(shape);
 		tCalendarItem::setDatetimeFields(shape);
+		if (shape.recurrence && change.ItemId.isOccurrence())
+			throw EWSError::InvalidPropertySet(E3484);
 		if (shape.recurrence)
 			ctx.applyRecurrence(dir, mid.messageId(), shape.recurrence, shape);
 		const char* username = ctx.effectiveUser(parentFolder);
