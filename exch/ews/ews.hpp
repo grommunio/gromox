@@ -304,6 +304,7 @@ class EWSContext {
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	TARRAY_SET loadPermissions(const std::string&, uint64_t) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
+	std::vector<Structures::sItem> expandOccurrences(const std::string &, uint64_t, uint64_t, time_t, time_t, Structures::sShape &) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
 	void deleteOccurrence(const std::string &, uint64_t, uint32_t) const;
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
@@ -386,6 +387,28 @@ private:
 	int32_t recurTzOffset(const std::string &, uint64_t, const APPOINTMENT_RECUR_PAT &) const;
 	bool saveRecurBlob(const std::string &, uint64_t, proptag_t, const APPOINTMENT_RECUR_PAT &) const;
 	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
+
+	/* State shared by the occurrences of one recurring series */
+	struct sOccurrenceSeries {
+		struct exc_slot {
+			int year, yday; /* local day of PidLidExceptionReplaceTime */
+			std::shared_ptr<EWSPlugin::ExmdbInstance> inst;
+		};
+		uint64_t fid = 0, mid = 0;
+		APPOINTMENT_RECUR_PAT apr{};
+		bool aprValid = false;
+		uint32_t startOff = 0, endOff = 1440;
+		std::chrono::seconds tzOffset{0};
+		std::optional<TZDEF> tzdef;
+		std::vector<proptag_t> excTags;
+		std::optional<Structures::sItem> base, occBase; /* occBase: + MimeContent */
+		std::vector<exc_slot> exceptions; /* attachment order */
+
+		clock::time_point toUtc(uint32_t) const;
+	};
+	sOccurrenceSeries loadOccurrenceSeries(const std::string &, uint64_t, uint64_t, Structures::sShape &) const;
+	void loadOccurrenceInstances(const std::string &, sOccurrenceSeries &, Structures::sShape &) const;
+	Structures::sItem materializeOccurrence(const std::string &, sOccurrenceSeries &, uint32_t, Structures::sShape &) const;
 
 	struct NotificationContext {
 		enum State : uint8_t {
@@ -509,8 +532,9 @@ inline T* EWSContext::construct(Args&&... args)
 	return new(alloc<T>()) T(std::forward<Args>(args)...);
 }
 
-extern bool isTrulyDeleted(const RECURRENCE_PATTERN &, uint32_t);
-extern uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &, uint32_t);
+extern bool isTrulyDeleted(const APPOINTMENT_RECUR_PAT &, uint32_t);
+extern uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &, uint32_t);
+extern uint32_t lastOccurrenceDate(const APPOINTMENT_RECUR_PAT &);
 
 extern const std::string_view *lookup_tz_get_sv(const std::string &) = delete;
 inline const std::string_view *lookup_tz_get_sv(const char *name)

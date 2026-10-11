@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <sstream>
 #include <fmt/format.h>
 #include <libHX/scope.hpp>
@@ -424,16 +425,177 @@ void markOccurrenceId(sItem &item, uint32_t basedate)
 }
 
 /**
+ * Find EXCEPTIONINFO for this basedate from the recurrence blob.
+ * It has the correct startdatetime/enddatetime for the exception,
+ * unlike the embedded message which may have the master's dates.
+ */
+static const EXCEPTIONINFO *
+find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
+{
+	uint32_t bd = basedate / 1440;
+	for (const auto &ei : apr.pexceptioninfo)
+		if (ei.originalstartdate / 1440 == bd)
+			return &ei;
+	return nullptr;
+}
+
+/**
  * @brief      Test whether a date is truly deleted (not a modified exception)
  *
- * @param      rp     Recurrence pattern
+ * Compared by day: a moved exception keeps only its original day in the
+ * deleted list, and imported blobs carry a time of day in both lists.
+ *
+ * @param      apr    Appointment recurrence pattern
  * @param      date   Date in rtime format
  *
  * @return     true if the date is deleted and not modified
  */
-bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
+bool isTrulyDeleted(const APPOINTMENT_RECUR_PAT &apr, uint32_t date)
 {
-	return rp.contains_del(date) && !rp.contains_mod(date);
+	auto &rp = apr.recur_pat;
+	auto same_day = [&](uint32_t d) { return d / 1440 == date / 1440; };
+	return std::any_of(rp.pdeletedinstancedates.cbegin(), rp.pdeletedinstancedates.cend(), same_day) &&
+	       std::none_of(rp.pmodifiedinstancedates.cbegin(), rp.pmodifiedinstancedates.cend(), same_day) &&
+	       find_exc(apr, date) == nullptr;
+}
+
+/**
+ * @brief      Day of month of a MonthNth slot
+ *
+ * Picks the @order'th (1–4, or 5 for the last) of those days in the month
+ * whose weekday is in @mask (bit 0 = Sunday), like RRULE BYDAY with BYSETPOS.
+ */
+static int nth_matching_mday(int year, int month, unsigned int order,
+    uint32_t mask)
+{
+	int mdays = ical_get_monthdays(year, month);
+	int dow1 = ical_get_dayofweek(year, month, 1);
+	auto match = [&](int d) { return mask & (1U << (dow1 + d - 1) % 7); };
+	if (order == 5) {
+		for (int d = mdays; d >= 1; --d)
+			if (match(d))
+				return d;
+		return 0;
+	}
+	for (int d = 1, n = 0; d <= mdays; ++d)
+		if (match(d) && ++n == static_cast<int>(order))
+			return d;
+	return 0;
+}
+
+/**
+ * @brief      Enumerate the visible occurrence dates of a recurrence pattern
+ *
+ * Walks the pattern in chronological order and invokes @cb for every
+ * occurrence that is not truly deleted. Modified exceptions are still
+ * visible and are reported at their *original* slot, so a caller that wants
+ * the rescheduled time has to consult the EXCEPTIONINFO itself.
+ *
+ * Enumeration stops when @cb returns true or the pattern is exhausted.
+ * OccurrenceCount bounds only an end-after-N pattern. The others are bounded
+ * by EndDate, which is ENDDATE_MISSING for a never-ending pattern, so the
+ * callback should return true once it has seen enough.
+ *
+ * @param      apr    Appointment recurrence pattern
+ * @param      cb     Callback, returns true to stop enumeration
+ */
+static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
+    const std::function<bool(uint32_t)> &cb)
+{
+	auto &rp = apr.recur_pat;
+	auto bycount = rp.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR;
+	uint32_t count = bycount ? rp.occurrencecount : UINT32_MAX;
+	uint32_t last = bycount ? UINT32_MAX :
+	                rp.endtype == IDC_RCEV_PAT_ERB_END ? rp.enddate : ENDDATE_MISSING;
+	auto visit = [&](uint32_t date) -> bool {
+		if (date > last)
+			return true;
+		if (isTrulyDeleted(apr, date))
+			return false;
+		return cb(date);
+	};
+
+	switch (rp.patterntype) {
+	case rptMinute:
+		/* Daily: period is in minutes (day count * 1440) */
+		for (uint32_t i = 0; i < count; ++i)
+			if (visit(rp.startdate + i * rp.period))
+				return;
+		break;
+	case rptWeek: {
+		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+		struct tm tm;
+		if ((rp.pts.weekrecur & 0x7f) == 0 || gmtime_r(&start_unix, &tm) == nullptr)
+			break;
+		int start_wday = tm.tm_wday;
+		int days_back = (start_wday - static_cast<int>(rp.firstdow) + 7) % 7;
+		uint32_t week_start = rp.startdate - days_back * 1440;
+		uint32_t raw = 0;
+		for (uint32_t week = week_start; raw < count; week += rp.period * 7 * 1440) {
+			for (int d = 0; d < 7 && raw < count; ++d) {
+				int wday = (rp.firstdow + d) % 7;
+				uint32_t date = week + d * 1440;
+				if (date < rp.startdate)
+					continue;
+				if (!(rp.pts.weekrecur & (1 << wday)))
+					continue;
+				++raw;
+				if (visit(date))
+					return;
+			}
+		}
+		break;
+	}
+	case rptMonth:
+	case rptMonthEnd:
+	case rptMonthNth:
+	case rptHjMonth:
+	case rptHjMonthEnd:
+	case rptHjMonthNth: {
+		/* Hijri patterns are expanded as Gregorian, as freebusy does */
+		bool nth = rp.patterntype == rptMonthNth ||
+		           rp.patterntype == rptHjMonthNth;
+		const auto &mn = rp.pts.monthnth;
+		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+		struct tm tm;
+		if (rp.period == 0 || rp.period > 99 * 12 ||
+		    gmtime_r(&start_unix, &tm) == nullptr ||
+		    (nth && (mn.recurnum < 1 || mn.recurnum > 5 ||
+		    (mn.weekrecur & 0x7f) == 0)))
+			break;
+		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
+		if (rp.period % 12 == 0) {
+			/* yearly: the month is in FirstDateTime (MS-OXOCAL) */
+			ical_time it;
+			ical_get_itime_from_yearday(1601,
+				rp.firstdatetime / 1440 + 1, &it);
+			if (it.month >= 1 && it.month <= 12)
+				month = it.month;
+		}
+		for (uint32_t raw = 0; raw < count; month += rp.period) {
+			while (month > 12) {
+				month -= 12;
+				++year;
+			}
+			struct tm occ = {};
+			occ.tm_year = year - 1900;
+			occ.tm_mon  = month - 1;
+			if (nth)
+				occ.tm_mday = nth_matching_mday(year, month,
+				              mn.recurnum, mn.weekrecur);
+			else
+				occ.tm_mday = std::min<int>(rp.pts.dayofmonth,
+				              ical_get_monthdays(year, month));
+			auto date = rop_util_unix_to_rtime(timegm(&occ));
+			if (date < rp.startdate)
+				continue;
+			++raw;
+			if (visit(date))
+				return;
+		}
+		break;
+	}
+	}
 }
 
 /**
@@ -442,123 +604,108 @@ bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
  * EWS InstanceIndex counts only visible (non-deleted) occurrences.
  * Modified exceptions are still visible and counted.
  *
- * @param      rp     Recurrence pattern (includes deleted/modified lists)
+ * @param      apr    Appointment recurrence pattern
  * @param      index  1-based occurrence index
  *
  * @return     Occurrence date in rtime format (minutes since 1601-01-01)
  */
-uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
+uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index)
 {
 	if (index < 1)
 		throw InputError(E3307);
 
-	uint32_t count = 0;
-	auto check = [&](uint32_t date) -> uint32_t {
-		if (isTrulyDeleted(rp, date))
-			return 0;
-		if (++count == index)
-			return date;
-		return 0;
-	};
+	uint32_t count = 0, found = 0;
+	walkOccurrenceDates(apr, [&](uint32_t date) {
+		if (++count < index)
+			return false;
+		found = date;
+		return true;
+	});
+	if (found == 0)
+		throw InputError(E3334);
+	return found;
+}
 
-	switch (rp.patterntype) {
-	case rptMinute:
-		/* Daily: period is in minutes (day count * 1440) */
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			auto date = rp.startdate + i * rp.period;
-			if (auto r = check(date); r != 0)
-				return r;
+/**
+ * @brief      Last non-deleted occurrence date of a bounded series
+ *
+ * @return     Occurrence date in rtime format, or 0 if there is none
+ */
+uint32_t lastOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr)
+{
+	uint32_t last = 0;
+	walkOccurrenceDates(apr, [&](uint32_t date) {
+		last = std::max(last, date);
+		return false;
+	});
+	return last;
+}
+
+/**
+ * @brief      Collect occurrence basedates overlapping a time window
+ *
+ * Mirrors the expansion GetUserAvailability performs, so that a CalendarView
+ * and a Detailed free/busy query over the same window agree on which
+ * occurrences exist.
+ *
+ * A modified exception is enumerated at its original slot but tested with its
+ * rescheduled start/end, so occurrences moved into or out of the window are
+ * handled correctly. Because an exception may be moved to an arbitrary time,
+ * enumeration only stops once the slots are past both the window and the last
+ * exception's original slot.
+ *
+ * @param      apr        Appointment recurrence pattern
+ * @param      tz         Recurrence time zone (may be nullptr)
+ * @param      tz_offset  Offset between the blob's local-as-UTC rtimes and UTC,
+ *                        used without tz
+ * @param      start      Window start (UTC)
+ * @param      end        Window end (UTC)
+ *
+ * @return     Basedates in rtime format, chronologically ordered
+ */
+static std::vector<uint32_t>
+occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
+    std::chrono::seconds tz_offset, time_t start, time_t end)
+{
+	std::vector<uint32_t> out;
+	auto toUtc = [&](uint32_t rtime) {
+		int64_t off;
+		if (tz != nullptr && tz_to_offset(*tz, rop_util_rtime_to_unix(rtime), off))
+			return rop_util_rtime_to_unix(rtime) + off * 60;
+		return rop_util_rtime_to_unix(rtime) + tz_offset.count();
+	};
+	/*
+	 * Guard against a corrupted occurrencecount turning the walk into a
+	 * near-infinite loop. A window wide enough to hold more occurrences
+	 * than this is not something a client can usefully consume anyway.
+	 */
+	static constexpr size_t walk_cap = 65536;
+	size_t visited = 0;
+	uint32_t last_exc = 0;
+	for (const auto &ei : apr.pexceptioninfo)
+		last_exc = std::max(last_exc, ei.originalstartdate);
+
+	walkOccurrenceDates(apr, [&](uint32_t date) {
+		if (++visited > walk_cap)
+			return true;
+		if (date + apr.starttimeoffset > last_exc &&
+		    toUtc(date + apr.starttimeoffset) > end)
+			return true;
+		auto exc = find_exc(apr, date);
+		time_t occ_start, occ_end;
+		if (exc != nullptr) {
+			occ_start = toUtc(exc->startdatetime);
+			occ_end   = toUtc(exc->enddatetime);
+		} else {
+			occ_start = toUtc(date + apr.starttimeoffset);
+			occ_end   = toUtc(date + apr.endtimeoffset);
 		}
-		break;
-	case rptWeek: {
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
-			break;
-		int start_wday = tm.tm_wday;
-		int days_back = (start_wday - static_cast<int>(rp.firstdow) + 7) % 7;
-		uint32_t week_start = rp.startdate - days_back * 1440;
-		uint32_t raw = 0;
-		for (uint32_t week = week_start; raw < rp.occurrencecount; week += rp.period * 7 * 1440) {
-			for (int d = 0; d < 7 && raw < rp.occurrencecount; ++d) {
-				int wday = (rp.firstdow + d) % 7;
-				uint32_t date = week + d * 1440;
-				if (date < rp.startdate)
-					continue;
-				if (!(rp.pts.weekrecur & (1 << wday)))
-					continue;
-				++raw;
-				if (auto r = check(date); r != 0)
-					return r;
-			}
-		}
-		break;
-	}
-	case rptMonth:
-	case rptMonthEnd: {
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
-			break;
-		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			if (i > 0) {
-				month += rp.period;
-				while (month > 12) {
-					month -= 12;
-					++year;
-				}
-			}
-			int dom = rp.pts.dayofmonth;
-			int maxdays = ical_get_monthdays(year, month);
-			if (dom > maxdays)
-				dom = maxdays;
-			struct tm occ = {};
-			occ.tm_year = year - 1900;
-			occ.tm_mon  = month - 1;
-			occ.tm_mday = dom;
-			auto date = rop_util_unix_to_rtime(timegm(&occ));
-			if (auto r = check(date); r != 0)
-				return r;
-		}
-		break;
-	}
-	case rptMonthNth:
-	case rptHjMonthNth: {
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
-			break;
-		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		int order = rp.pts.monthnth.recurnum;
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			if (i > 0) {
-				month += rp.period;
-				while (month > 12) {
-					month -= 12;
-					++year;
-				}
-			}
-			for (int wd = 0; wd < 7; ++wd) {
-				if (!(rp.pts.monthnth.weekrecur & (1 << wd)))
-					continue;
-				int day = ical_get_dayofmonth(year, month,
-				          order == 5 ? -1 : order, wd);
-				if (day > 0) {
-					struct tm occ = {};
-					occ.tm_year = year - 1900;
-					occ.tm_mon  = month - 1;
-					occ.tm_mday = day;
-					auto date = rop_util_unix_to_rtime(timegm(&occ));
-					if (auto r = check(date); r != 0)
-						return r;
-				}
-			}
-		}
-		break;
-	}
-	}
-	throw InputError(E3334);
+		/* Overlap, matching the semantics of tCalendarView::datefilter */
+		if (occ_end >= start && occ_start <= end)
+			out.push_back(date);
+		return false;
+	});
+	return out;
 }
 
 namespace {
@@ -2024,18 +2171,212 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 }
 
 /**
- * Find EXCEPTIONINFO for this basedate from the recurrence blob.
- * It has the correct startdatetime/enddatetime for the exception,
- * unlike the embedded message which may have the master's dates.
+ * @brief      Convert a local-as-UTC rtime of the series to UTC
  */
-static const EXCEPTIONINFO *
-find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
+clock::time_point EWSContext::sOccurrenceSeries::toUtc(uint32_t rtime) const
 {
-	uint32_t bd = basedate / 1440;
-	for (const auto &ei : apr.pexceptioninfo)
-		if (ei.originalstartdate / 1440 == bd)
-			return &ei;
-	return nullptr;
+	int64_t off;
+	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
+		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
+	return rop_util_rtime_to_unix2(rtime) + tzOffset;
+}
+
+/**
+ * @brief      Load the master properties of a recurring series
+ *
+ * Leaves the master's properties in @shape and parses the recurrence
+ * pattern and time zone from them. The occurrences need
+ * loadOccurrenceInstances() in addition.
+ *
+ * @param      dir    Store directory
+ * @param      fid    Parent folder ID
+ * @param      mid    Message ID of the recurring master
+ * @param      shape  Requested item shape
+ */
+EWSContext::sOccurrenceSeries
+EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
+    uint64_t mid, sShape &shape) const
+{
+	sOccurrenceSeries s;
+	s.fid = fid;
+	s.mid = mid;
+	shape.clean();
+	shape.recurrenceFrame = get_recurrence_frame();
+	getNamedTags(dir, shape);
+	shape.properties(getItemProps(dir, mid, shape.proptags()));
+
+	/*
+	 * Compute timezone offset for rtime→UTC conversion. Recurrence blob
+	 * rtimes are "local-as-UTC" – derive the offset from the master's
+	 * PR_START_DATE (real UTC) vs the recurrence pattern's first
+	 * occurrence rtime.
+	 */
+	auto recur_prop_tz = shape.get<const BINARY>(NtAppointmentRecur);
+	auto start_prop_tz = shape.get<const uint64_t>(PR_START_DATE);
+	if (!start_prop_tz)
+		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
+	if (recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
+		EXT_PULL rp;
+		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, nullptr, 0);
+		s.aprValid = rp.g_apptrecpat(&s.apr) == pack_result::ok;
+	}
+	if (s.aprValid) {
+		s.startOff = s.apr.starttimeoffset;
+		s.endOff   = s.apr.endtimeoffset;
+	}
+	if (s.aprValid && start_prop_tz != nullptr) {
+		auto su    = rop_util_nttime_to_unix(*start_prop_tz);
+		auto sl    = rop_util_rtime_to_unix(s.apr.recur_pat.startdate + s.apr.starttimeoffset);
+		s.tzOffset = std::chrono::seconds(su - sl);
+	}
+	auto tzbin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY);
+	if (s.aprValid && tzbin != nullptr)
+		s.tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
+	return s;
+}
+
+/**
+ * @brief      Load what all occurrences of a series share
+ *
+ * Builds the master item the occurrences are copied from and locates the
+ * exception attachments. Expects the master's properties in @shape, as left
+ * by loadOccurrenceSeries().
+ *
+ * @param      dir    Store directory
+ * @param      s      Series
+ * @param      shape  Requested item shape
+ */
+void EWSContext::loadOccurrenceInstances(const std::string &dir,
+    sOccurrenceSeries &s, sShape &shape) const
+{
+	auto mInst = m_plugin.loadMessageInstance(dir, s.fid, s.mid);
+	uint16_t count;
+	if (!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+		throw DispatchError(E3210);
+
+	PROPNAME_ARRAY propnames;
+	propnames.count = 1;
+	PROPERTY_NAME propname_buff[1];
+	propname_buff[0].kind = MNID_ID;
+	propname_buff[0].guid = PSETID_Appointment;
+	propname_buff[0].lid  = PidLidExceptionReplaceTime;
+	propnames.ppropname   = propname_buff;
+	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
+	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
+	s.excTags = shape.proptags_vec();
+	s.excTags.emplace_back(ex_replace_time_tag);
+
+	/* Exceptions carry no MimeContent, see materializeOccurrence() */
+	s.base.emplace(tItem::create(shape));
+	if (auto special = shape.special & ~sShape::MimeContent)
+		std::visit([&](auto &&it) {
+			loadSpecial(dir, s.fid, s.mid, it, special);
+		}, *s.base);
+
+	const proptag_t ex_tags[] = {ex_replace_time_tag};
+	for (uint16_t i = 0; i < count; ++i) {
+		auto aInst = m_plugin.loadAttachmentInstance(dir, s.fid, s.mid, i);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		} catch (const DispatchError &) {
+			continue; /* skip non-embedded attachments */
+		}
+		TPROPVAL_ARRAY props;
+		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
+		    eInst->instanceId, proptag_cspan{ex_tags}, &props))
+			throw DispatchError(E3211);
+		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
+		if (!exstarttime)
+			continue;
+		auto exstart = clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
+		struct tm exstart_local;
+		localtime_r(&exstart, &exstart_local);
+		s.exceptions.emplace_back(sOccurrenceSeries::exc_slot{
+			exstart_local.tm_year, exstart_local.tm_yday,
+			std::move(eInst)});
+	}
+}
+
+/**
+ * @brief      Build one occurrence of a series
+ *
+ * @param      dir      Store directory
+ * @param      s        Series, from loadOccurrenceSeries() and
+ *                      loadOccurrenceInstances()
+ * @param      basedate Basedate of the occurrence
+ * @param      shape    Requested item shape
+ *
+ * @return     The occurrence, with its occurrence ItemId
+ */
+sItem EWSContext::materializeOccurrence(const std::string &dir,
+    sOccurrenceSeries &s, uint32_t basedate, sShape &shape) const
+{
+	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
+	struct tm basedate_local;
+	localtime_r(&basedate_ts, &basedate_local);
+	auto matching_exc = s.aprValid ? find_exc(s.apr, basedate) : nullptr;
+	auto stamp = [&](sItem &item, Enum::CalendarItemTypeType type) {
+		if (auto cal = std::get_if<tCalendarItem>(&item)) {
+			/* An embedded message has the master's dates */
+			if (matching_exc) {
+				cal->Start.emplace(s.toUtc(matching_exc->startdatetime));
+				cal->End.emplace(s.toUtc(matching_exc->enddatetime));
+			} else {
+				cal->Start.emplace(s.toUtc(basedate + s.startOff));
+				cal->End.emplace(s.toUtc(basedate + s.endOff));
+			}
+			cal->CalendarItemType.emplace(type);
+			cal->RecurrenceId.emplace(s.toUtc(basedate + s.startOff));
+			cal->Recurrence.reset();
+			cal->ModifiedOccurrences.reset();
+			cal->DeletedOccurrences.reset();
+		}
+		markOccurrenceId(item, basedate);
+	};
+
+	auto slot = std::find_if(s.exceptions.begin(), s.exceptions.end(),
+	            [&](const sOccurrenceSeries::exc_slot &e) {
+	            	return e.year == basedate_local.tm_year &&
+	            	       e.yday == basedate_local.tm_yday;
+	            });
+	if (slot != s.exceptions.end()) {
+		TPROPVAL_ARRAY props;
+		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
+		    slot->inst->instanceId, s.excTags, &props))
+			throw DispatchError(E3211);
+		sItem item = *s.base;
+		std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
+		stamp(item, Enum::Exception);
+		return item;
+	}
+	if (matching_exc != nullptr) {
+		/* Modified in the blob only: apply its overrides */
+		sItem item = *s.base;
+		auto cal = std::get_if<tCalendarItem>(&item);
+		const auto &xe = s.apr.pextendedexception[matching_exc -
+		                 s.apr.pexceptioninfo.data()];
+		auto ovr = matching_exc->overrideflags;
+		if (cal != nullptr && ovr & ARO_SUBJECT &&
+		    shape.requested(PR_SUBJECT))
+			cal->Subject.emplace(xe.subject);
+		if (cal != nullptr && ovr & ARO_LOCATION &&
+		    shape.requested(shape.tag(NtLocation)))
+			cal->Location.emplace(xe.location);
+		stamp(item, Enum::Exception);
+		return item;
+	}
+
+	/* Unmodified occurrence: construct from master properties */
+	if (shape.special & sShape::MimeContent && !s.occBase) {
+		s.occBase.emplace(*s.base);
+		std::visit([&](auto &&it) {
+			loadSpecial(dir, s.fid, s.mid, it, sShape::MimeContent);
+		}, *s.occBase);
+	}
+	sItem item = s.occBase ? *s.occBase : *s.base;
+	stamp(item, Enum::Occurrence);
+	return item;
 }
 
 /**
@@ -2051,140 +2392,47 @@ find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
  */
 sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t mid, uint32_t basedate, sShape& shape) const
 {
-	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
-	uint16_t count;
-	if (!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
-		throw DispatchError(E3210);
+	auto s = loadOccurrenceSeries(dir, fid, mid, shape);
+	loadOccurrenceInstances(dir, s, shape);
+	return materializeOccurrence(dir, s, basedate, shape);
+}
 
-	shape.clean();
-	shape.recurrenceFrame = get_recurrence_frame();
-	getNamedTags(dir, shape);
-	shape.properties(getItemProps(dir, mid, shape.proptags()));
-	PROPNAME_ARRAY propnames;
-	propnames.count = 1;
-	PROPERTY_NAME propname_buff[1];
-	propname_buff[0].kind = MNID_ID;
-	propname_buff[0].guid = PSETID_Appointment;
-	propname_buff[0].lid = PidLidExceptionReplaceTime;
-	propnames.ppropname = propname_buff;
-	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
-	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
-	TPROPVAL_ARRAY props;
-	auto tags_1 = shape.proptags_vec();
-	tags_1.emplace_back(ex_replace_time_tag);
-
-	/*
-	 * Compute timezone offset for rtime→UTC conversion. Recurrence blob
-	 * rtimes are "local-as-UTC" – derive the offset from the master's
-	 * PR_START_DATE (real UTC) vs the recurrence pattern's first
-	 * occurrence rtime.
-	 */
-	std::chrono::seconds tz_offset{0};
-	uint32_t start_off = 0, end_off = 1440;
-	APPOINTMENT_RECUR_PAT apr{};
-	bool apr_valid = false;
-	auto recur_prop_tz = shape.get<const BINARY>(NtAppointmentRecur);
-	auto start_prop_tz = shape.get<const uint64_t>(PR_START_DATE);
-	if (!start_prop_tz)
-		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
-	if (start_prop_tz != nullptr && recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
-		EXT_PULL rp;
-		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, nullptr, 0);
-		if (rp.g_apptrecpat(&apr) == pack_result::ok) {
-			apr_valid = true;
-			start_off = apr.starttimeoffset;
-			end_off   = apr.endtimeoffset;
-			auto su   = rop_util_nttime_to_unix(*start_prop_tz);
-			auto sl   = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
-			tz_offset = std::chrono::seconds(su - sl);
-		}
+/**
+ * @brief      Expand a recurring master into its occurrences within a window
+ *
+ * Produces one item per visible occurrence overlapping [start, end], each
+ * carrying its own occurrence ItemId (resolvable via GetItem) and the
+ * occurrence's own Start/End. Deleted occurrences are omitted and modified
+ * ones are returned as Exception rather than Occurrence. Both are decided by
+ * materializeOccurrence().
+ *
+ * @param      dir    Store directory
+ * @param      fid    Folder ID
+ * @param      mid    Message ID of the recurring master
+ * @param      start  Window start (UTC)
+ * @param      end    Window end (UTC)
+ * @param      shape  Shape to load the occurrences with
+ *
+ * @return     Expanded occurrences, chronologically ordered
+ */
+std::vector<sItem> EWSContext::expandOccurrences(const std::string &dir,
+    uint64_t fid, uint64_t mid, time_t start, time_t end, sShape &shape) const
+{
+	auto s = loadOccurrenceSeries(dir, fid, mid, shape);
+	if (!s.aprValid) {
+		auto bin = shape.get<const BINARY>(NtAppointmentRecur);
+		throw EWSError::ItemCorrupt(bin == nullptr || bin->cb == 0 ? E3305 : E3306);
 	}
-	std::optional<TZDEF> tzdef;
-	auto tzbin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY);
-	if (apr_valid && tzbin != nullptr)
-		tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
-	auto toUtc = [&](uint32_t rtime) {
-		int64_t off;
-		if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
-			return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
-		return rop_util_rtime_to_unix2(rtime) + tz_offset;
-	};
-
-	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
-	struct tm basedate_local;
-	localtime_r(&basedate_ts, &basedate_local);
-	auto matching_exc = apr_valid ? find_exc(apr, basedate) : nullptr;
-
-	for (uint16_t i = 0; i < count; ++i) {
-		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
-		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
-		try {
-			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
-		} catch (const DispatchError &) {
-			continue; /* skip non-embedded attachments */
-		}
-		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, tags_1, &props))
-			throw DispatchError(E3211);
-
-		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
-		if (!exstarttime)
-			continue;
-		auto exstart = clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
-		struct tm exstart_local;
-		localtime_r(&exstart, &exstart_local);
-		if (is_same_day(basedate_local, exstart_local)) {
-			sItem item = tItem::create(shape);
-			/* For exceptions, skip MimeContent from master —
-			 * the embedded msg body is applied via updateProps.
-			 * Attachments and attendees still come from master. */
-			auto exc_special = shape.special & ~sShape::MimeContent;
-			if (exc_special)
-				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, exc_special); }, item);
-			std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
-			if (auto cal = std::get_if<tCalendarItem>(&item)) {
-				/* Override Start/End: the embedded message has the
-				 * master's dates; use EXCEPTIONINFO from the blob. */
-				if (matching_exc) {
-					cal->Start.emplace(
-						toUtc(matching_exc->startdatetime));
-					cal->End.emplace(
-						toUtc(matching_exc->enddatetime));
-				} else {
-					cal->Start.emplace(
-						toUtc(basedate + start_off));
-					cal->End.emplace(
-						toUtc(basedate + end_off));
-				}
-				cal->CalendarItemType.emplace(Enum::Exception);
-				cal->RecurrenceId.emplace(
-					toUtc(basedate));
-				cal->Recurrence.reset();
-				cal->ModifiedOccurrences.reset();
-				cal->DeletedOccurrences.reset();
-			}
-			markOccurrenceId(item, basedate);
-			return item;
-		}
-	}
-
-	/* Unmodified occurrence: construct from master properties */
-	sItem item = tItem::create(shape);
-	if (shape.special)
-		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
-	if (auto cal = std::get_if<tCalendarItem>(&item)) {
-		cal->Start.emplace(
-			toUtc(basedate + start_off));
-		cal->End.emplace(
-			toUtc(basedate + end_off));
-		cal->CalendarItemType.emplace(Enum::Occurrence);
-		cal->RecurrenceId.emplace(
-			toUtc(basedate));
-		cal->Recurrence.reset();
-		cal->ModifiedOccurrences.reset();
-		cal->DeletedOccurrences.reset();
-	}
-	markOccurrenceId(item, basedate);
-	return item;
+	auto dates = occurrenceDatesInRange(s.apr, s.tzdef ? &*s.tzdef : nullptr,
+	             s.tzOffset, start, end);
+	if (dates.empty())
+		return {};
+	loadOccurrenceInstances(dir, s, shape);
+	std::vector<sItem> items;
+	items.reserve(dates.size());
+	for (auto date : dates)
+		items.emplace_back(materializeOccurrence(dir, s, date, shape));
+	return items;
 }
 
 /**
@@ -2200,7 +2448,7 @@ uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
     uint64_t mid, uint32_t index) const
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
-	return nthOccurrenceDate(apr.recur_pat, index);
+	return nthOccurrenceDate(apr, index);
 }
 
 /**

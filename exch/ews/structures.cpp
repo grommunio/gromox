@@ -732,15 +732,12 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
 		       toUtc(date + apr.endtimeoffset), toUtc(ostart));
 	};
 
-	FirstOccurrence.emplace(mkOcc(nthOccurrenceDate(rp, 1)));
+	FirstOccurrence.emplace(mkOcc(nthOccurrenceDate(apr, 1)));
 	if (rp.endtype != IDC_RCEV_PAT_ERB_END &&
 	    rp.endtype != IDC_RCEV_PAT_ERB_AFTERNOCCUR)
 		return;
-	auto gone = std::count_if(rp.pdeletedinstancedates.cbegin(),
-	            rp.pdeletedinstancedates.cend(),
-	            [&](uint32_t d) { return isTrulyDeleted(rp, d); });
-	if (rp.occurrencecount > gone)
-		LastOccurrence.emplace(mkOcc(nthOccurrenceDate(rp, rp.occurrencecount - gone)));
+	if (auto last = lastOccurrenceDate(apr); last != 0)
+		LastOccurrence.emplace(mkOcc(last));
 } catch (const InputError &) {
 	/* pattern type not enumerable */
 }
@@ -2388,11 +2385,102 @@ RESTRICTION* tCalendarView::datefilter(const sTimePoint& time, bool isStart, con
  *
  * @return     Pointer to restriction or nullptr if no condition is set
  */
+/**
+ * @brief      Generate restriction matching recurring masters touching the view
+ *
+ * The start/end filters of datefilter() compare against
+ * PidLidAppointmentStartWhole/EndWhole, which on a recurring master describe
+ * the *first* occurrence only. A series whose first occurrence predates the
+ * requested window is therefore dropped before expansion can ever see it.
+ *
+ * This adds the series itself as a candidate:
+ *
+ *   recurring == 1 && exist(appointmentrecur) &&
+ *   apptstartwhole <= windowEnd + slack &&
+ *   (!exist(clipend) || clipend >= windowStart - slack)
+ *
+ * PidLidClipEnd marks the end of the whole series (absent for an open-ended
+ * one), but only as the midnight of its last day, and an exception may be
+ * moved before the first or past the last slot. The filter is therefore
+ * deliberately permissive: it only has to avoid dropping a series, because
+ * expandOccurrences() afterwards decides per occurrence. Without the blob
+ * there is nothing to expand, so such an item is left to the plain date
+ * filter.
+ *
+ * New restriction is stack allocated and must not be freed manually.
+ *
+ * @param      getId   Function to retrieve named property IDs
+ *
+ * @return     Pointer to restriction or nullptr if no window is set
+ */
+RESTRICTION* tCalendarView::recurfilter(const sGetNameId& getId) const
+{
+	/* A day for ClipEnd granularity, a day for the zone, and some leeway */
+	static constexpr uint64_t slack = 7ULL * 86400 * 10000000;
+	static const PROPERTY_NAME recurName = {MNID_ID, PSETID_Appointment, PidLidRecurring, nullptr},
+		blobName = {MNID_ID, PSETID_Appointment, PidLidAppointmentRecur, nullptr},
+		clipEndName = {MNID_ID, PSETID_Appointment, PidLidClipEnd, nullptr},
+		startName = {MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole, nullptr};
+	if (!StartDate && !EndDate)
+		return nullptr;
+
+	/* recurring == 1 */
+	auto recurTag = PROP_TAG(PT_BOOLEAN, getId(recurName));
+	auto isRecur = EWSContext::construct<RESTRICTION>();
+	isRecur->rt = mapi_rtype::property;
+	isRecur->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+	isRecur->prop->relop = relop::eq;
+	isRecur->prop->proptag = isRecur->prop->propval.proptag = recurTag;
+	isRecur->prop->propval.pvalue = EWSContext::construct<uint8_t>(1);
+	auto hasBlob = EWSContext::construct<RESTRICTION>();
+	hasBlob->rt = mapi_rtype::exist;
+	hasBlob->exist = EWSContext::construct<RESTRICTION_EXIST>();
+	hasBlob->exist->proptag = PROP_TAG(PT_BINARY, getId(blobName));
+
+	/* apptstartwhole <= windowEnd (first occurrence starts before view ends) */
+	RESTRICTION *startsBefore = nullptr;
+	if (EndDate) {
+		startsBefore = EWSContext::construct<RESTRICTION>();
+		startsBefore->rt = mapi_rtype::property;
+		startsBefore->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+		startsBefore->prop->relop = relop::le;
+		startsBefore->prop->proptag = startsBefore->prop->propval.proptag =
+			PROP_TAG(PT_SYSTIME, getId(startName));
+		startsBefore->prop->propval.pvalue = EWSContext::construct<uint64_t>(EndDate->toNT() + slack);
+	}
+
+	/* !exist(clipend) || clipend >= windowStart */
+	RESTRICTION *notEnded = nullptr;
+	if (StartDate) {
+		auto clipTag = PROP_TAG(PT_SYSTIME, getId(clipEndName));
+		auto hasClip = EWSContext::construct<RESTRICTION>();
+		hasClip->rt = mapi_rtype::exist;
+		hasClip->exist = EWSContext::construct<RESTRICTION_EXIST>();
+		hasClip->exist->proptag = clipTag;
+		auto noClip = EWSContext::construct<RESTRICTION>();
+		noClip->rt = mapi_rtype::r_not;
+		noClip->xnot = EWSContext::construct<RESTRICTION_NOT>();
+		noClip->xnot->res = std::move(*hasClip);
+
+		auto clipLate = EWSContext::construct<RESTRICTION>();
+		clipLate->rt = mapi_rtype::property;
+		clipLate->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+		clipLate->prop->relop = relop::ge;
+		clipLate->prop->proptag = clipLate->prop->propval.proptag = clipTag;
+		clipLate->prop->propval.pvalue = EWSContext::construct<uint64_t>(
+			StartDate->toNT() > slack ? StartDate->toNT() - slack : 0);
+		notEnded = tRestriction::any(noClip, clipLate);
+	}
+
+	return tRestriction::all(tRestriction::all(tRestriction::all(isRecur,
+	       hasBlob), startsBefore), notEnded);
+}
+
 RESTRICTION* tCalendarView::restriction(const sGetNameId& getId) const
 {
 	auto startRes = StartDate ? datefilter(*StartDate, true, getId) : nullptr;
 	auto endRes = EndDate ? datefilter(*EndDate, false, getId) : nullptr;
-	return tRestriction::all(startRes, endRes);
+	return tRestriction::any(tRestriction::all(startRes, endRes), recurfilter(getId));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3328,6 +3416,29 @@ RESTRICTION* tRestriction::all(RESTRICTION* r1, RESTRICTION* r2)
 		return r1 ? r1 : r2;
 	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
 	res->rt = mapi_rtype::r_and;
+	res->andor = EWSContext::construct<RESTRICTION_AND_OR>();
+	res->andor->count = 2;
+	res->andor->pres = EWSContext::alloc<RESTRICTION>(2);
+	res->andor->pres[0] = std::move(*r1);
+	res->andor->pres[1] = std::move(*r2);
+	return res;
+}
+
+/**
+ * @brief      Combine two restrictions with a logical OR
+ *
+ * Either argument may be nullptr, in which case the other is returned
+ * unchanged. New restriction is stack allocated and must not be freed
+ * manually.
+ *
+ * @return     Pointer to restriction or nullptr if both are empty
+ */
+RESTRICTION* tRestriction::any(RESTRICTION* r1, RESTRICTION* r2)
+{
+	if (!r1 || !r2)
+		return r1 ? r1 : r2;
+	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
+	res->rt = mapi_rtype::r_or;
 	res->andor = EWSContext::construct<RESTRICTION_AND_OR>();
 	res->andor->count = 2;
 	res->andor->pres = EWSContext::alloc<RESTRICTION>(2);
