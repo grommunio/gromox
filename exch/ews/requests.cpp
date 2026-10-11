@@ -1062,7 +1062,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
-		auto updateOccRef = [&](const tItemId &refId, uint32_t resp) {
+		auto updateOccRef = [](const EWSContext &ctx, const tItemId &refId, uint32_t resp, bool send_message, std::optional<sOccurrenceId> &declinedOcc) {
 			sOccurrenceId oid(refId.Id.data(), refId.Id.size());
 			sFolderSpec pf = ctx.resolveFolder(oid);
 			std::string rdir = ctx.getDir(pf);
@@ -1090,7 +1090,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		};
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
 			if (refId.type == tItemId::ID_OCCURRENCE)
-				return updateOccRef(refId, resp);
+				return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
 			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
 			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
 			sFolderSpec pf = ctx.resolveFolder(mid);
