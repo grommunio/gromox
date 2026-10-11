@@ -20,6 +20,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/cookie_parser.hpp>
@@ -319,11 +320,32 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 	MhEmsmdbPlugin& plugin = *static_cast<MhEmsmdbPlugin*>(ptr);
 	while (!plugin.stop) {
 		auto now = tp_now();
-		std::vector<GUID> expired;
+		std::vector<GUID> expired, waiting;
+		{
+		/*
+		 * MS-OXCMAPIHTTP "Responding to a NotificationWait Request
+		 * Type Request": the session context must stay alive for the
+		 * duration of a NotificationWait, and its expiration is
+		 * refreshed when the request completes.
+		 */
+		std::unique_lock ll_hold(plugin.pending_lock);
+		for (auto ctx : plugin.pending) {
+			std::lock_guard ctx_hold(ctx->lock);
+			if (ctx->pending_status == PENDING_STATUS_NONE)
+				continue;
+			try {
+				waiting.push_back(ctx->session_guid);
+			} catch (const std::bad_alloc &) {
+			}
+		}
+		}
 		{
 		std::unique_lock hl_hold(plugin.ses_lock);
 		for (auto entry = plugin.sessions.begin(); entry != plugin.sessions.end();) {
-			if (entry->second.expire_time < now) {
+			if (ct_contains(waiting, entry->second.session_guid)) {
+				entry->second.expire_time = now + session_valid_interval + session_valid_extragrace;
+				++entry;
+			} else if (entry->second.expire_time < now) {
 				try {
 					expired.push_back(entry->second.session_guid);
 				} catch (const std::bad_alloc &) {
