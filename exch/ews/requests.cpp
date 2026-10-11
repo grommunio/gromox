@@ -998,6 +998,52 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 		oid.basedate, proplist, {});
 }
 
+static void updateRef(const EWSContext &ctx, const tItemId &refId,
+    uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
+    bool send_message, std::optional<sOccurrenceId> &declinedOcc)
+{
+	if (refId.type == tItemId::ID_OCCURRENCE)
+		return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
+	ctx.assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId mid(refId.Id.data(), refId.Id.size());
+	sFolderSpec pf = ctx.resolveFolder(mid);
+	std::string rdir = ctx.getDir(pf);
+	ctx.validate(rdir, mid);
+	const char *username = ctx.effectiveUser(pf);
+	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	auto rstat = EWSContext::construct<uint32_t>(resp);
+	uint32_t state = asfMeeting | asfReceived;
+	auto astat = EWSContext::construct<uint32_t>(state);
+	uint32_t busyValue = resp == respAccepted ? olBusy :
+	                     resp == respTentative ? olTentative : olFree;
+	auto bstat = EWSContext::construct<uint32_t>(busyValue);
+	auto processed = EWSContext::construct<uint8_t>(1);
+	auto pidResp  = ctx.getNamedPropId(rdir, NtResponseStatus, true);
+	auto pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
+	auto pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
+	auto pidBusy  = ctx.getNamedPropId(rdir, NtBusyStatus, true);
+	TAGGED_PROPVAL props[] = {
+		{PROP_TAG(PT_LONG, pidResp), rstat},
+		{PROP_TAG(PT_SYSTIME, pidReply), now},
+		{PROP_TAG(PT_LONG, pidState), astat},
+		{PROP_TAG(PT_LONG, pidBusy), bstat},
+		{PR_PROCESSED, processed},
+	};
+	TPROPVAL_ARRAY proplist{std::size(props), props};
+	PROBLEM_ARRAY problems;
+	if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
+		mid.messageId(), &proplist, &problems))
+		throw EWSError::ItemSave(E3409);
+	if (resp == respAccepted || resp == respTentative)
+		ctx.createCalendarItemFromMeetingRequest(refId, resp);
+	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+	if (pf.location == sFolderSpec::PRIVATE &&
+	    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
+		refDir = rdir;
+		refMid = mid;
+	}
+}
+
 /**
  * @brief      Process CreateItem
  *
@@ -1091,48 +1137,6 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
-		auto updateRef = [](const EWSContext &ctx, const tItemId &refId, uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid, bool send_message, std::optional<sOccurrenceId> &declinedOcc) {
-			if (refId.type == tItemId::ID_OCCURRENCE)
-				return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
-			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
-			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
-			sFolderSpec pf = ctx.resolveFolder(mid);
-			std::string rdir = ctx.getDir(pf);
-			ctx.validate(rdir, mid);
-			const char *username = ctx.effectiveUser(pf);
-			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-			auto rstat = EWSContext::construct<uint32_t>(resp);
-			uint32_t state = asfMeeting | asfReceived;
-			auto astat = EWSContext::construct<uint32_t>(state);
-			uint32_t busyValue = resp == respAccepted ? olBusy :
-			                     resp == respTentative ? olTentative : olFree;
-			auto bstat = EWSContext::construct<uint32_t>(busyValue);
-			auto processed = EWSContext::construct<uint8_t>(1);
-			auto pidResp  = ctx.getNamedPropId(rdir, NtResponseStatus, true);
-			auto pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
-			auto pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
-			auto pidBusy  = ctx.getNamedPropId(rdir, NtBusyStatus, true);
-			TAGGED_PROPVAL props[] = {
-				{PROP_TAG(PT_LONG, pidResp), rstat},
-				{PROP_TAG(PT_SYSTIME, pidReply), now},
-				{PROP_TAG(PT_LONG, pidState), astat},
-				{PROP_TAG(PT_LONG, pidBusy), bstat},
-				{PR_PROCESSED, processed},
-			};
-			TPROPVAL_ARRAY proplist{std::size(props), props};
-			PROBLEM_ARRAY problems;
-			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
-				mid.messageId(), &proplist, &problems))
-				throw EWSError::ItemSave(E3409);
-			if (resp == respAccepted || resp == respTentative)
-				ctx.createCalendarItemFromMeetingRequest(refId, resp);
-			auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
-			if (pf.location == sFolderSpec::PRIVATE &&
-			    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
-				refDir = rdir;
-				refMid = mid;
-			}
-		};
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
 				updateRef(ctx, *acc->ReferenceItemId,
