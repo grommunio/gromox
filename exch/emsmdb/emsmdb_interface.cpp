@@ -328,6 +328,7 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 	auto phandle = ei_lookup_session(*pcxh);
 	if (phandle == nullptr)
 		return;
+	{
 	std::unique_lock gl_hold(g_lock);
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter != g_user_hash.end()) {
@@ -337,6 +338,13 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 			g_user_hash.erase(phandle->username);
 	}
 	g_handle_hash.erase(pcxh->guid);
+	}
+	/*
+	 * Release an async wait still parked on this handle. Its tag
+	 * (username:cxr) would otherwise outlive the handle and reject the
+	 * waits of the next session that is assigned the same CXR.
+	 */
+	asyncemsmdb_interface_wakeup(phandle->username, phandle->cxr);
 }
 
 void emsmdb_interface_init()

@@ -1037,10 +1037,12 @@ void workqueue::mainloop()
 		auto ip = std::upper_bound(m_tasklist.begin(),
 		          m_tasklist.end(), next_time,
 		          [](time_point p, const wq_task &t) STATIC_IN_CXX23 { return p < t.start_time; });
-		if (tsk < ip)
-			std::rotate(tsk, tsk + 1, ip);
-		else
+		if (tsk < ip) {
+			tsk = std::rotate(tsk, tsk + 1, ip);
+		} else {
 			std::rotate(ip, tsk, tsk + 1);
+			tsk = ip;
+		}
 		tsk->start_time = std::move(next_time);
 		tsk->func = std::move(func);
 		tsk->obj = std::move(obj);
