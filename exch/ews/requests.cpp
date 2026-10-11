@@ -2200,7 +2200,7 @@ namespace {
  *
  * Supported: words and "quoted phrases", implicitly ANDed; OR; NOT and a
  * leading '-'; the property prefixes subject:, from:, to:, cc:, body:,
- * attachment: (attachment file names) and hasattachment: (yes/no).
+ * attachment: (attachment file names), hasattachment: and isread: (yes/no).
  * A term without prefix is looked for in subject, body, sender and
  * recipients. Every other term becomes a case-insensitive substring match.
  */
@@ -2216,7 +2216,21 @@ static bool aqs_known_field(std::string_view f)
 	return f == "subject" || f == "title" || f == "body" || f == "from" ||
 	       f == "to" || f == "cc" || f == "attachment" ||
 	       f == "attachments" || f == "hasattachment" ||
-	       f == "hasattachments";
+	       f == "hasattachments" || f == "isread";
+}
+
+/**
+ * @return     1 for yes/true/1, 0 for no/false/0, -1 for anything else
+ */
+static int aqs_bool(char *text)
+{
+	HX_strlower(text);
+	std::string_view v = text;
+	if (v == "yes" || v == "true" || v == "1")
+		return 1;
+	if (v == "no" || v == "false" || v == "0")
+		return 0;
+	return -1;
 }
 
 static std::vector<proptag_t> aqs_fields(std::string_view field)
@@ -2275,18 +2289,27 @@ static RESTRICTION *aqs_term_restriction(const aqs_term &t)
 	RESTRICTION *res;
 	bool negate = t.negate;
 	if (t.field == "hasattachment" || t.field == "hasattachments") {
-		HX_strlower(text);
-		std::string_view v = text;
-		if (v == "no" || v == "false" || v == "0")
-			negate = !negate;
-		else if (v != "yes" && v != "true" && v != "1")
+		auto b = aqs_bool(text);
+		if (b < 0)
 			return nullptr;
+		if (b == 0)
+			negate = !negate;
 		res = EWSContext::construct<RESTRICTION>();
 		res->rt = mapi_rtype::property;
 		res->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
 		res->prop->relop = relop::eq;
 		res->prop->proptag = res->prop->propval.proptag = PR_HASATTACH;
 		res->prop->propval.pvalue = EWSContext::construct<uint8_t>(1);
+	} else if (t.field == "isread") {
+		auto b = aqs_bool(text);
+		if (b < 0)
+			return nullptr;
+		res = EWSContext::construct<RESTRICTION>();
+		res->rt = mapi_rtype::bitmask;
+		res->bm = EWSContext::construct<RESTRICTION_BITMASK>();
+		res->bm->bitmask_relop = b ? BMR_NEZ : BMR_EQZ;
+		res->bm->proptag = PR_MESSAGE_FLAGS;
+		res->bm->mask = MSGFLAG_READ;
 	} else if (t.field == "attachment" || t.field == "attachments") {
 		res = EWSContext::construct<RESTRICTION>();
 		res->rt = mapi_rtype::sub;
