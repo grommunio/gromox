@@ -206,6 +206,31 @@ class test_env final : public Env {
 	void *alloc(size_t z) override { return calloc(1, z > 0 ? z : 1); }
 	uint16_t keywords_propid(bool) override { return 0x8100; }
 	uint16_t flagrequest_propid(bool) override { return 0x8101; }
+	const char *resolve_folder(const FolderRef &f, MOVECOPY_ACTION &mc) override
+	{
+		if (f.id.size() < 2)
+			return "InvalidFolderId";
+		if (f.id[0] == 'X') {
+			auto se = static_cast<STORE_ENTRYID *>(alloc(sizeof(STORE_ENTRYID)));
+			se->wrapped_provider_uid = g_muidStorePrivate;
+			se->pserver_name = strdup("other@example.org");
+			se->pmailbox_dn = strdup("/o=x/ou=y/cn=Recipients/cn=other");
+			auto b = static_cast<BINARY *>(alloc(sizeof(BINARY)));
+			b->cb = f.id.size();
+			b->pv = strdup(f.id.c_str());
+			mc.same_store = 0;
+			mc.pstore_eid = se;
+			mc.pfolder_eid = b;
+			return nullptr;
+		}
+		if (f.id[0] != 'F')
+			return "FolderDoesNotExist";
+		auto sv = static_cast<SVREID *>(alloc(sizeof(SVREID)));
+		sv->folder_id = eid_t(1, strtoull(&f.id[1], nullptr, 0));
+		mc.same_store = 1;
+		mc.pfolder_eid = sv;
+		return nullptr;
+	}
 	const char *deleted_items(MOVECOPY_ACTION &mc) override
 	{
 		auto sv = static_cast<SVREID *>(alloc(sizeof(SVREID)));
@@ -472,6 +497,11 @@ static bool act_written(unsigned int k)
 	case A_Delete:
 	case A_StopProcessingRules:
 		return true;
+	case A_CopyToFolder:
+	case A_MoveToFolder:
+	case A_AssignCategories:
+	case A_MarkImportance:
+		return true;
 	default:
 		return false;
 	}
@@ -556,6 +586,24 @@ static int t_actions()
 	return EXIT_SUCCESS;
 }
 
+static int t_other_store()
+{
+	test_env env;
+	Rule r;
+	r.name = "x";
+	r.priority = 1;
+	r.actions.v[A_CopyToFolder] = Value{.folder = {false, "X99", "", ""}};
+	RESTRICTION *cond = nullptr;
+	RULE_ACTIONS *acts = nullptr;
+	std::vector<ValidationError> errs;
+	CHECK(to_mapi(r, env, cond, acts, errs));
+	auto mc = static_cast<const MOVECOPY_ACTION *>(acts->pblock[0].pdata);
+	CHECK(mc->same_store == 0);
+	auto r2 = from_mapi(*stored(*cond, *acts), env);
+	CHECK(r2.actions == r.actions);
+	return EXIT_SUCCESS;
+}
+
 static bool has_error(const std::vector<ValidationError> &errs, const char *field, const char *code)
 {
 	for (const auto &e : errs)
@@ -589,6 +637,7 @@ int main()
 	     t_read_variants,
 	     t_errors_xml, t_sequences, t_actions, t_validate,
 	     t_predicates,
+	     t_other_store,
 	     }) {
 		auto ret = f();
 		if (ret != EXIT_SUCCESS) {

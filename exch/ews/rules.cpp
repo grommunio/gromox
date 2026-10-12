@@ -1641,6 +1641,41 @@ ACTION_BLOCK *writer::action(act_kind k, const Value &v, ACTION_BLOCK &blk)
 		blk.pdata = mc;
 		return &blk;
 	}
+	case A_CopyToFolder:
+	case A_MoveToFolder: {
+		auto mc = mk<MOVECOPY_ACTION>();
+		if (auto code = env.resolve_folder(v.folder, *mc)) {
+			error(uri, code, "The folder is not valid.", v.folder.id);
+			return nullptr;
+		}
+		blk.type = k == A_MoveToFolder ? OP_MOVE : OP_COPY;
+		blk.pdata = mc;
+		return &blk;
+	}
+	case A_AssignCategories: {
+		auto id = env.keywords_propid(true);
+		if (id == 0) {
+			error(uri, "UnexpectedError", "Cannot register the Keywords property");
+			return nullptr;
+		}
+		auto sa = mk<STRING_ARRAY>();
+		sa->count = v.strings.size();
+		sa->ppstr = mk<char *>(v.strings.size());
+		for (size_t i = 0; i < v.strings.size(); ++i)
+			sa->ppstr[i] = str(v.strings[i]);
+		blk.type = OP_TAG;
+		blk.pdata = mk<TAGGED_PROPVAL>();
+		*static_cast<TAGGED_PROPVAL *>(blk.pdata) = {PROP_TAG(PT_MV_UNICODE, id), sa};
+		return &blk;
+	}
+	case A_MarkImportance: {
+		auto it = std::find(std::begin(importance_names), std::end(importance_names), v.text);
+		blk.type = OP_TAG;
+		blk.pdata = mk<TAGGED_PROPVAL>();
+		*static_cast<TAGGED_PROPVAL *>(blk.pdata) = {PR_IMPORTANCE,
+			num<uint32_t>(it - std::begin(importance_names))};
+		return &blk;
+	}
 	default:
 		/* SendSMSAlertToRecipients: ruleproc has no SMS gateway */
 		error(uri, "UnsupportedRule", "This action is not supported.");

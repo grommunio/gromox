@@ -139,6 +139,7 @@ class Env {
 	virtual void *alloc(size_t) = 0;
 	virtual uint16_t keywords_propid(bool create) = 0;
 	virtual uint16_t flagrequest_propid(bool create) = 0;
+	virtual const char *resolve_folder(const FolderRef &, MOVECOPY_ACTION &) = 0;
 	virtual const char *deleted_items(MOVECOPY_ACTION &) = 0;
 	/* Turn the address into plain SMTP form */
 	virtual const char *resolve_address(Address &) = 0;
