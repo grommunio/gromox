@@ -388,8 +388,8 @@ inline std::string E3238(const std::string_view& val) {return fmt::format("E-323
 inline std::string E3239(const std::string_view& val) {return fmt::format("E-3239: invalid boolean value '{}'", val);}
 inline std::string E3240(const std::string_view& val) {return fmt::format("E-3240: invalid i8 value '{}'", val);}
 inline std::string E3241(const char* type) {return fmt::format("E-3241: Constant Value of type {} is not supported", type);}
-E(3242, "unsupported ConnectingSID for impersonation");
-E(3243, "insufficient permissions to impersonate user");
+inline std::string E3242(std::string_view type) {return fmt::format("E-3242: unsupported ConnectingSID type \"{}\" for impersonation", type);}
+inline std::string E3243(std::string_view user, std::string_view target) {return fmt::format("E-3243: \"{}\" has no permission to impersonate \"{}\"", user, target);}
 E(3244, "cannot access target folder");
 E(3245, "failed to load content table");
 E(3246, "failed to get named property id");
@@ -476,7 +476,7 @@ E(3326, "failed to set message class on calendar item");
 E(3327, "failed to set calendar item response properties");
 E(3328, "failed to set existing mid on calendar item");
 E(3329, "failed to write calendar item to store");
-E(3330, "impersonation: user not found");
+inline std::string E3330(std::string_view target) {return fmt::format("E-3330: impersonation: user \"{}\" not found", target);}
 E(3331, "failed to resolve user home directory");
 E(3332, "item corrupt: failed to parse appointment recurrence");
 E(3333, "failed to dispatch embedded message load");
