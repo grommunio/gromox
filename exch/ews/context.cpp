@@ -2283,13 +2283,14 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
 	if (strcasecmp(addrtype, "PrincipalName") != 0 &&
 	    strcasecmp(addrtype, "PrimarySmtpAddress") != 0 &&
 	    strcasecmp(addrtype, "SmtpAddress") != 0)
-		throw EWSError::ImpersonationFailed(E3242);
+		throw EWSError::ImpersonationFailed(E3242(addrtype));
 
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(addr, WANTPRIV_METAONLY, mres) != 0)
-		throw EWSError::CannotFindUser(E3330);
+		throw EWSError::CannotFindUser(E3330(addr));
 	if (!(permissions(mres.maildir, eid_t{1, PRIVATE_FID_IPMSUBTREE}) & frightsGromoxStoreOwner))
-		throw EWSError::ImpersonateUserDenied(E3243);
+		throw EWSError::ImpersonateUserDenied(E3243(
+		      znul(m_auth_info.username), mres.username));
 	impersonationUser    = std::move(mres.username);
 	impersonationMaildir = std::move(mres.maildir);
 	m_auth_info.username = impersonationUser.c_str();
