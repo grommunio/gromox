@@ -61,7 +61,10 @@ What differs between the two systems and has to be handled:
 | Web settings     | ``config/zarafa.dat`` (Kopano WebApp       | zcore reads the same legacy | Copied. The ``shared_stores`` list  |
 |                  | settings, zcore profile)                   | file and converts it on the | is removed (it names other          |
 |                  |                                            | next write                  | mailboxes by source identity; users |
-|                  |                                            |                             | re-add them).                       |
+|                  |                                            |                             | re-add them), as are entries keyed  |
+|                  |                                            |                             | by source store or address book     |
+|                  |                                            |                             | entryids and by folders that do not |
+|                  |                                            |                             | exist on the target.                |
 +------------------+--------------------------------------------+-----------------------------+-------------------------------------+
 
 Prerequisites
@@ -162,7 +165,9 @@ Deleted accounts are mapped from the ``-NAME`` suffix. The stores are rewritten
 ``gromox-mbop exaddrxlat`` (addrtype, e-mail address, one-off entryid, search
 key per participant set), but also covers the recipient rows, the
 creator/last-modifier entryids and the Email1-3 fields of contact items, which
-mbop does not. It applies the domain rename to existing SMTP addresses, and does
+mbop does not. e4a often stored ``SMTP`` as addrtype while keeping the EX
+entryid and ``EX:`` search key next to it. Those are rewritten as well, using
+the participant's own SMTP address where present. It applies the domain rename to existing SMTP addresses, and does
 not rewrite messages through exmdb. exaddrxlat would re-write every message
 (and its cid files) of the 680 GB archive. Not translated: ``rules.actions``
 blobs (recreate the two forwarding rules by hand) and
@@ -172,7 +177,7 @@ Noteworthy mentions
 -------------------
 
 * midb/IMAP state: UIDs are reassigned, clients download again.
-* ``config/zarafa.dat`` is copied; if a mailbox's web settings misbehave,
+* ``config/zarafa.dat`` is copied. If a mailbox's web settings misbehave,
   ``gromox-mbop -u user clear-profile`` resets them.
 * e4a accounts with ``address_status != 0`` are created suspended and their
   password hash is not copied.

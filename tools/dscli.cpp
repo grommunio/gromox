@@ -55,6 +55,7 @@ static constexpr HXoption g_options_table[] = {
 #ifndef HAVE_NS
 static void dnssrv_notbuilt()
 {
+	bool g_tty = isatty(STDOUT_FILENO);
 	fprintf(stderr, "%sThis version was not built with DNS SRV analysis.%s\n",
 	        g_tty ? "\e[1;33m" : "", g_tty ? "\e[0m" : "");
 }

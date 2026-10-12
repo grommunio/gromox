@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>

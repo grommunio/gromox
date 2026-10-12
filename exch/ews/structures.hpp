@@ -1969,6 +1969,7 @@ struct sBaseItemId : public std::variant<tItemId, tOccurrenceItemId, tRecurringM
 	explicit inline sBaseItemId(Base &&b) : Base(std::move(b)) {}
 
 	tItemId itemId() const;
+	bool isOccurrence() const;
 
 	constexpr const Base &asVariant() const { return *this; }
 	template<typename T> constexpr bool holds_alternative() const {return std::holds_alternative<T>(asVariant());}
@@ -2272,6 +2273,9 @@ struct tCalendarView final : public tBasePagingType {
 	RESTRICTION* restriction(const sGetNameId&) const override;
 
 	static RESTRICTION* datefilter(const sTimePoint&, bool, const sGetNameId&);
+
+	private:
+	RESTRICTION* recurfilter(const sGetNameId&) const;
 };
 
 /**
@@ -3255,6 +3259,7 @@ class tRestriction {
 
 	RESTRICTION* build(const sGetNameId&) const;
 	static RESTRICTION* all(RESTRICTION*, RESTRICTION*);
+	static RESTRICTION* any(RESTRICTION*, RESTRICTION*);
 
 	private:
 	const tinyxml2::XMLElement *source = nullptr;  ///< XMLElement of the contained restriction

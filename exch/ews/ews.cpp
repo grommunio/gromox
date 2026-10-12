@@ -1010,6 +1010,17 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
 }
 
 /**
+ * @brief      Drop a cached message instance
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      mid   Message ID
+ */
+void EWSPlugin::unloadMessageInstance(const std::string &dir, uint64_t mid) const
+{
+	cache.evict(detail::MessageInstanceKey{dir, mid});
+}
+
+/**
  * @brief      Link subscription to a waiting context
  *
  * Registers the context as waiting for subscription events.
@@ -1033,6 +1044,20 @@ bool EWSPlugin::linkSubscription(const Structures::tSubscriptionId& subscription
 		unlinkSubscription(mgr->waitingContext);
 	mgr->waitingContext = ctx.context_id();
 	return true;
+}
+
+/**
+ * @brief      Drop the cached attachment instances of a message
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      mid   Message ID
+ * @param      natt  Number of attachments
+ */
+void EWSPlugin::evictAttachmentInstances(const std::string &dir, uint64_t mid,
+    uint32_t natt) const
+{
+	for (uint32_t i = 0; i < natt; ++i)
+		cache.evict(detail::AttachmentInstanceKey{dir, mid, i});
 }
 
 /**
@@ -1292,7 +1317,9 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const 
 	} catch(const std::out_of_range&) {
 	}
 	uint32_t instanceId;
-	if (!exmdb.load_embedded_instance(dir.c_str(), false, aid, &instanceId))
+	/* exmdb reports "no embedded message" as success with instance 0 */
+	if (!exmdb.load_embedded_instance(dir.c_str(), false, aid, &instanceId) ||
+	    instanceId == 0)
 		throw DispatchError(Exceptions::E3208);
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_embedded_instance_lifetime, ekey, instance);

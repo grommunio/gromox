@@ -8,8 +8,10 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <sstream>
 #include <fmt/format.h>
+#include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <vmime/message.hpp>
@@ -68,19 +70,6 @@ inline std::string &tolower_inplace(std::string &str)
 {
 	std::transform(str.begin(), str.end(), str.begin(), HX_tolower);
 	return str;
-}
-
-/**
- * @brief      Checks if two dates are on the same day
- *
- * @param      tm    First time point
- * @param      tm    Second time point
- *
- * @return     true if both time points are on the same day, false otherwise
- */
-inline bool is_same_day(const tm& date1, const tm& date2)
-{
-	return date1.tm_year == date2.tm_year && date1.tm_yday == date2.tm_yday;
 }
 
 /**
@@ -411,11 +400,11 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
  */
 void markOccurrenceId(sItem &item, uint32_t basedate)
 {
-	auto setter = [basedate](auto &it) {
+	auto setter = [bd = cpu_to_le32(basedate)](auto &it) {
 		if (!it.ItemId)
 			return;
-		it.ItemId->Id.append(reinterpret_cast<const char *>(&basedate),
-		                     sizeof(basedate));
+		it.ItemId->Id.append(reinterpret_cast<const char *>(&bd),
+		                     sizeof(bd));
 		it.ItemId->type = tBaseItemId::ID_OCCURRENCE;
 	};
 	std::visit(setter, item);
@@ -424,63 +413,116 @@ void markOccurrenceId(sItem &item, uint32_t basedate)
 }
 
 /**
+ * Find EXCEPTIONINFO for this basedate from the recurrence blob.
+ * It has the correct startdatetime/enddatetime for the exception,
+ * unlike the embedded message which may have the master's dates.
+ */
+static const EXCEPTIONINFO *
+find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
+{
+	uint32_t bd = basedate / 1440;
+	for (const auto &ei : apr.pexceptioninfo)
+		if (ei.originalstartdate / 1440 == bd)
+			return &ei;
+	return nullptr;
+}
+
+/**
  * @brief      Test whether a date is truly deleted (not a modified exception)
  *
- * @param      rp     Recurrence pattern
+ * Compared by day: a moved exception keeps only its original day in the
+ * deleted list, and imported blobs carry a time of day in both lists.
+ *
+ * @param      apr    Appointment recurrence pattern
  * @param      date   Date in rtime format
  *
  * @return     true if the date is deleted and not modified
  */
-bool isTrulyDeleted(const RECURRENCE_PATTERN &rp, uint32_t date)
+bool isTrulyDeleted(const APPOINTMENT_RECUR_PAT &apr, uint32_t date)
 {
-	return rp.contains_del(date) && !rp.contains_mod(date);
+	auto &rp = apr.recur_pat;
+	auto same_day = [&](uint32_t d) { return d / 1440 == date / 1440; };
+	return std::any_of(rp.pdeletedinstancedates.cbegin(), rp.pdeletedinstancedates.cend(), same_day) &&
+	       std::none_of(rp.pmodifiedinstancedates.cbegin(), rp.pmodifiedinstancedates.cend(), same_day) &&
+	       find_exc(apr, date) == nullptr;
 }
 
 /**
- * @brief      Compute the Nth non-deleted occurrence date
+ * @brief      Day of month of a MonthNth slot
  *
- * EWS InstanceIndex counts only visible (non-deleted) occurrences.
- * Modified exceptions are still visible and counted.
- *
- * @param      rp     Recurrence pattern (includes deleted/modified lists)
- * @param      index  1-based occurrence index
- *
- * @return     Occurrence date in rtime format (minutes since 1601-01-01)
+ * Picks the @order'th (1–4, or 5 for the last) of those days in the month
+ * whose weekday is in @mask (bit 0 = Sunday), like RRULE BYDAY with BYSETPOS.
  */
-uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
+static int nth_matching_mday(int year, int month, unsigned int order,
+    uint32_t mask)
 {
-	if (index < 1)
-		throw InputError(E3307);
-
-	uint32_t count = 0;
-	auto check = [&](uint32_t date) -> uint32_t {
-		if (isTrulyDeleted(rp, date))
-			return 0;
-		if (++count == index)
-			return date;
+	int mdays = ical_get_monthdays(year, month);
+	int dow1 = ical_get_dayofweek(year, month, 1);
+	auto match = [&](int d) { return mask & (1U << (dow1 + d - 1) % 7); };
+	if (order == 5) {
+		for (int d = mdays; d >= 1; --d)
+			if (match(d))
+				return d;
 		return 0;
+	}
+	for (int d = 1, n = 0; d <= mdays; ++d)
+		if (match(d) && ++n == static_cast<int>(order))
+			return d;
+	return 0;
+}
+
+/**
+ * @brief      Enumerate the visible occurrence dates of a recurrence pattern
+ *
+ * Walks the pattern in chronological order and invokes @cb for every
+ * occurrence that is not truly deleted (or for every one, with @all).
+ * Modified exceptions are still visible and are reported at their *original*
+ * slot, so a caller that wants the rescheduled time has to consult the
+ * EXCEPTIONINFO itself.
+ *
+ * Enumeration stops when @cb returns true or the pattern is exhausted.
+ * OccurrenceCount bounds only an end-after-N pattern. The others are bounded
+ * by EndDate, which is ENDDATE_MISSING for a never-ending pattern, so the
+ * callback should return true once it has seen enough.
+ *
+ * @param      apr    Appointment recurrence pattern
+ * @param      cb     Callback, returns true to stop enumeration
+ * @param      all    Include deleted occurrences
+ */
+static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
+    const std::function<bool(uint32_t)> &cb, bool all = false)
+{
+	auto &rp = apr.recur_pat;
+	auto bycount = rp.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR;
+	uint32_t count = bycount ? rp.occurrencecount : UINT32_MAX;
+	uint32_t last = bycount ? UINT32_MAX :
+	                rp.endtype == IDC_RCEV_PAT_ERB_END ? rp.enddate : ENDDATE_MISSING;
+	auto visit = [&](uint32_t date) -> bool {
+		if (date > last)
+			return true;
+		if (!all && isTrulyDeleted(apr, date))
+			return false;
+		return cb(date);
 	};
 
 	switch (rp.patterntype) {
 	case rptMinute:
 		/* Daily: period is in minutes (day count * 1440) */
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			auto date = rp.startdate + i * rp.period;
-			if (auto r = check(date); r != 0)
-				return r;
-		}
+		for (uint32_t i = 0; i < count; ++i)
+			if (visit(rp.startdate + i * rp.period))
+				return;
 		break;
 	case rptWeek: {
 		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
 		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
+		if ((rp.pts.weekrecur & 0x7f) == 0 || gmtime_r(&start_unix, &tm) == nullptr)
 			break;
 		int start_wday = tm.tm_wday;
 		int days_back = (start_wday - static_cast<int>(rp.firstdow) + 7) % 7;
 		uint32_t week_start = rp.startdate - days_back * 1440;
 		uint32_t raw = 0;
-		for (uint32_t week = week_start; raw < rp.occurrencecount; week += rp.period * 7 * 1440) {
-			for (int d = 0; d < 7 && raw < rp.occurrencecount; ++d) {
+		for (uint32_t week = week_start; raw < count; week += rp.period * 7 * 1440) {
+			for (int d = 0; d < 7 && raw < count; ++d) {
 				int wday = (rp.firstdow + d) % 7;
 				uint32_t date = week + d * 1440;
 				if (date < rp.startdate)
@@ -488,77 +530,174 @@ uint32_t nthOccurrenceDate(const RECURRENCE_PATTERN &rp, uint32_t index)
 				if (!(rp.pts.weekrecur & (1 << wday)))
 					continue;
 				++raw;
-				if (auto r = check(date); r != 0)
-					return r;
+				if (visit(date))
+					return;
 			}
 		}
 		break;
 	}
 	case rptMonth:
-	case rptMonthEnd: {
+	case rptMonthEnd:
+	case rptMonthNth:
+	case rptHjMonth:
+	case rptHjMonthEnd:
+	case rptHjMonthNth: {
+		/* Hijri patterns are expanded as Gregorian, as freebusy does */
+		bool nth = rp.patterntype == rptMonthNth ||
+		           rp.patterntype == rptHjMonthNth;
+		const auto &mn = rp.pts.monthnth;
 		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
 		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
+		if (rp.period == 0 || rp.period > 99 * 12 ||
+		    gmtime_r(&start_unix, &tm) == nullptr ||
+		    (nth && (mn.recurnum < 1 || mn.recurnum > 5 ||
+		    (mn.weekrecur & 0x7f) == 0)))
 			break;
 		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			if (i > 0) {
-				month += rp.period;
-				while (month > 12) {
-					month -= 12;
-					++year;
-				}
+		if (rp.period % 12 == 0) {
+			/* yearly: the month is in FirstDateTime (MS-OXOCAL) */
+			ical_time it;
+			ical_get_itime_from_yearday(1601,
+				rp.firstdatetime / 1440 + 1, &it);
+			if (it.month >= 1 && it.month <= 12)
+				month = it.month;
+		}
+		for (uint32_t raw = 0; raw < count; month += rp.period) {
+			while (month > 12) {
+				month -= 12;
+				++year;
 			}
-			int dom = rp.pts.dayofmonth;
-			int maxdays = ical_get_monthdays(year, month);
-			if (dom > maxdays)
-				dom = maxdays;
 			struct tm occ = {};
 			occ.tm_year = year - 1900;
 			occ.tm_mon  = month - 1;
-			occ.tm_mday = dom;
+			if (nth)
+				occ.tm_mday = nth_matching_mday(year, month,
+				              mn.recurnum, mn.weekrecur);
+			else
+				occ.tm_mday = std::min<int>(rp.pts.dayofmonth,
+				              ical_get_monthdays(year, month));
 			auto date = rop_util_unix_to_rtime(timegm(&occ));
-			if (auto r = check(date); r != 0)
-				return r;
-		}
-		break;
-	}
-	case rptMonthNth:
-	case rptHjMonthNth: {
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if (gmtime_r(&start_unix, &tm) == nullptr)
-			break;
-		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		int order = rp.pts.monthnth.recurnum;
-		for (uint32_t i = 0; i < rp.occurrencecount; ++i) {
-			if (i > 0) {
-				month += rp.period;
-				while (month > 12) {
-					month -= 12;
-					++year;
-				}
-			}
-			for (int wd = 0; wd < 7; ++wd) {
-				if (!(rp.pts.monthnth.weekrecur & (1 << wd)))
-					continue;
-				int day = ical_get_dayofmonth(year, month,
-				          order == 5 ? -1 : order, wd);
-				if (day > 0) {
-					struct tm occ = {};
-					occ.tm_year = year - 1900;
-					occ.tm_mon  = month - 1;
-					occ.tm_mday = day;
-					auto date = rop_util_unix_to_rtime(timegm(&occ));
-					if (auto r = check(date); r != 0)
-						return r;
-				}
-			}
+			if (date < rp.startdate)
+				continue;
+			++raw;
+			if (visit(date))
+				return;
 		}
 		break;
 	}
 	}
-	throw InputError(E3334);
+}
+
+/**
+ * @brief      Compute the Nth occurrence date
+ *
+ * Deleted occurrences are skipped unless @all. Modified exceptions are
+ * always counted.
+ *
+ * @param      apr    Appointment recurrence pattern
+ * @param      index  1-based occurrence index
+ * @param      all    Count deleted occurrences too, like EWS InstanceIndex
+ *
+ * @return     Occurrence date in rtime format (minutes since 1601-01-01)
+ */
+uint32_t nthOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr, uint32_t index,
+    bool all)
+{
+	if (index < 1)
+		throw InputError(E3307);
+
+	uint32_t count = 0, found = 0;
+	walkOccurrenceDates(apr, [&](uint32_t date) {
+		if (++count < index)
+			return false;
+		found = date;
+		return true;
+	}, all);
+	if (found == 0)
+		throw InputError(E3334);
+	return found;
+}
+
+/**
+ * @brief      Last non-deleted occurrence date of a bounded series
+ *
+ * @return     Occurrence date in rtime format, or 0 if there is none
+ */
+uint32_t lastOccurrenceDate(const APPOINTMENT_RECUR_PAT &apr)
+{
+	uint32_t last = 0;
+	walkOccurrenceDates(apr, [&](uint32_t date) {
+		last = std::max(last, date);
+		return false;
+	});
+	return last;
+}
+
+/**
+ * @brief      Collect occurrence basedates overlapping a time window
+ *
+ * Mirrors the expansion GetUserAvailability performs, so that a CalendarView
+ * and a Detailed free/busy query over the same window agree on which
+ * occurrences exist.
+ *
+ * A modified exception is enumerated at its original slot but tested with its
+ * rescheduled start/end, so occurrences moved into or out of the window are
+ * handled correctly. Because an exception may be moved to an arbitrary time,
+ * enumeration only stops once the slots are past both the window and the last
+ * exception's original slot.
+ *
+ * @param      apr        Appointment recurrence pattern
+ * @param      tz         Recurrence time zone (may be nullptr)
+ * @param      tz_offset  Offset between the blob's local-as-UTC rtimes and UTC,
+ *                        used without tz
+ * @param      start      Window start (UTC)
+ * @param      end        Window end (UTC)
+ *
+ * @return     Basedates in rtime format, chronologically ordered
+ */
+static std::vector<uint32_t>
+occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
+    std::chrono::seconds tz_offset, time_t start, time_t end)
+{
+	std::vector<uint32_t> out;
+	auto toUtc = [&](uint32_t rtime) -> time_t {
+		int64_t off;
+		if (tz != nullptr && tz_to_offset(*tz, rop_util_rtime_to_unix(rtime), off))
+			return rop_util_rtime_to_unix(rtime) + off * 60;
+		return rop_util_rtime_to_unix(rtime) + tz_offset.count();
+	};
+	/*
+	 * Guard against a corrupted occurrencecount turning the walk into a
+	 * near-infinite loop. A window wide enough to hold more occurrences
+	 * than this is not something a client can usefully consume anyway.
+	 */
+	static constexpr size_t walk_cap = 65536;
+	size_t visited = 0;
+	uint32_t last_exc = 0;
+	for (const auto &ei : apr.pexceptioninfo)
+		last_exc = std::max(last_exc, ei.originalstartdate);
+
+	walkOccurrenceDates(apr, [&](uint32_t date) {
+		if (++visited > walk_cap)
+			return true;
+		if (date + apr.starttimeoffset > last_exc &&
+		    toUtc(date + apr.starttimeoffset) > end)
+			return true;
+		auto exc = find_exc(apr, date);
+		time_t occ_start, occ_end;
+		if (exc != nullptr) {
+			occ_start = toUtc(exc->startdatetime);
+			occ_end   = toUtc(exc->enddatetime);
+		} else {
+			occ_start = toUtc(date + apr.starttimeoffset);
+			occ_end   = toUtc(date + apr.endtimeoffset);
+		}
+		/* Overlap, matching the semantics of tCalendarView::datefilter */
+		if (occ_end >= start && occ_start <= end)
+			out.push_back(date);
+		return false;
+	});
+	return out;
 }
 
 namespace {
@@ -974,7 +1113,7 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	if (goid_is_instance(content->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGoid))))
 		return;
 
-	MCONT_PTR calendarItem(content->dup());
+	message_content_ptr calendarItem(content->dup());
 	if (!calendarItem)
 		throw EWSError::ItemSave(E3325);
 
@@ -2024,18 +2163,278 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 }
 
 /**
- * Find EXCEPTIONINFO for this basedate from the recurrence blob.
- * It has the correct startdatetime/enddatetime for the exception,
- * unlike the embedded message which may have the master's dates.
+ * @brief      Convert a local-as-UTC rtime of the series to UTC
  */
-static const EXCEPTIONINFO *
-find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
+clock::time_point EWSContext::sOccurrenceSeries::toUtc(uint32_t rtime) const
 {
-	uint32_t bd = basedate / 1440;
-	for (const auto &ei : apr.pexceptioninfo)
-		if (ei.originalstartdate / 1440 == bd)
-			return &ei;
-	return nullptr;
+	int64_t off;
+	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
+		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
+	return rop_util_rtime_to_unix2(rtime) + tzOffset;
+}
+
+/**
+ * @brief      Parse the recurrence and time zone of a series master
+ *
+ * @param      recur  PidLidAppointmentRecur
+ * @param      start  PR_START_DATE (UTC)
+ * @param      tzbin  PidLidAppointmentTimeZoneDefinitionRecur
+ */
+void EWSContext::sOccurrenceSeries::parse(const BINARY *recur,
+    const uint64_t *start, const BINARY *tzbin)
+{
+	/*
+	 * Recurrence blob rtimes are "local-as-UTC" – derive the offset
+	 * from the master's PR_START_DATE (real UTC) vs the recurrence
+	 * pattern's first occurrence rtime.
+	 */
+	if (recur != nullptr && recur->cb > 0) {
+		EXT_PULL rp;
+		rp.init(recur->pb, recur->cb, nullptr, 0);
+		aprValid = rp.g_apptrecpat(&apr) == pack_result::ok;
+	}
+	if (!aprValid)
+		return;
+	startOff = apr.starttimeoffset;
+	endOff   = apr.endtimeoffset;
+	if (start != nullptr) {
+		auto su  = rop_util_nttime_to_unix(*start);
+		auto sl  = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
+		tzOffset = std::chrono::seconds(su - sl);
+	}
+	if (tzbin != nullptr)
+		tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
+}
+
+/**
+ * @brief      Original and actual start/end of an occurrence (UTC)
+ */
+EWSContext::sOccurrenceSeries::times
+EWSContext::sOccurrenceSeries::occurrenceTimes(uint32_t basedate) const
+{
+	times t;
+	t.orig_start = toUtc(basedate + startOff);
+	/* An embedded message has the master's dates */
+	auto exc = aprValid ? find_exc(apr, basedate) : nullptr;
+	if (exc != nullptr) {
+		t.start = toUtc(exc->startdatetime);
+		t.end   = toUtc(exc->enddatetime);
+	} else {
+		t.start = t.orig_start;
+		t.end   = toUtc(basedate + endOff);
+	}
+	return t;
+}
+
+/**
+ * @brief      Whether an exception replaces the occurrence at @basedate
+ *
+ * @param      basedate  Basedate of the occurrence
+ * @param      exrt      PidLidExceptionReplaceTime of the exception (UTC)
+ */
+bool EWSContext::sOccurrenceSeries::replaces(uint32_t basedate,
+    uint64_t exrt) const
+{
+	return replaces(basedate, toUtc(basedate + startOff), exrt);
+}
+
+/**
+ * @param      orig  Original start of the occurrence (UTC)
+ */
+bool EWSContext::sOccurrenceSeries::replaces(uint32_t basedate,
+    clock::time_point orig, uint64_t exrt) const
+{
+	/* Compare days in the series zone, not in the server's */
+	auto diff = std::chrono::duration_cast<std::chrono::minutes>(
+	            rop_util_nttime_to_unix2(exrt) - orig).count();
+	int64_t local = int64_t{basedate} + startOff + diff;
+	return local >= 0 && local / 1440 == basedate / 1440;
+}
+
+/**
+ * @brief      Load the recurrence and time zone of a series master
+ *
+ * Enough for occurrence times, unlike loadOccurrenceSeries().
+ */
+EWSContext::sOccurrenceSeries
+EWSContext::loadSeriesTimes(const std::string &dir, uint64_t mid) const
+{
+	auto recur_tag = PROP_TAG(PT_BINARY, getNamedPropId(dir,
+	                 NtAppointmentRecur, true));
+	auto tzr_tag   = PROP_TAG(PT_BINARY, getNamedPropId(dir,
+	                 NtAppointmentTimeZoneDefinitionRecur, true));
+	const proptag_t tags[] = {PR_START_DATE, recur_tag, tzr_tag};
+	auto props = getItemProps(dir, mid, tags);
+	sOccurrenceSeries s;
+	s.mid = mid;
+	s.parse(props.get<const BINARY>(recur_tag),
+		props.get<const uint64_t>(PR_START_DATE),
+		props.get<const BINARY>(tzr_tag));
+	return s;
+}
+
+/**
+ * @brief      Load the master properties of a recurring series
+ *
+ * Leaves the master's properties in @shape and parses the recurrence
+ * pattern and time zone from them. The occurrences need
+ * loadOccurrenceInstances() in addition.
+ *
+ * @param      dir    Store directory
+ * @param      fid    Parent folder ID
+ * @param      mid    Message ID of the recurring master
+ * @param      shape  Requested item shape
+ */
+EWSContext::sOccurrenceSeries
+EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
+    uint64_t mid, sShape &shape) const
+{
+	sOccurrenceSeries s;
+	s.fid = fid;
+	s.mid = mid;
+	shape.clean();
+	shape.recurrenceFrame = get_recurrence_frame();
+	getNamedTags(dir, shape);
+	shape.properties(getItemProps(dir, mid, shape.proptags()));
+
+	auto start = shape.get<const uint64_t>(PR_START_DATE);
+	if (start == nullptr)
+		start = shape.get<uint64_t>(NtCommonStart);
+	s.parse(shape.get<const BINARY>(NtAppointmentRecur), start,
+		shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY));
+	return s;
+}
+
+/**
+ * @brief      Load what all occurrences of a series share
+ *
+ * Builds the master item the occurrences are copied from and locates the
+ * exception attachments. Expects the master's properties in @shape, as left
+ * by loadOccurrenceSeries().
+ *
+ * @param      dir    Store directory
+ * @param      s      Series
+ * @param      shape  Requested item shape
+ */
+void EWSContext::loadOccurrenceInstances(const std::string &dir,
+    sOccurrenceSeries &s, sShape &shape) const
+{
+	auto mInst = m_plugin.loadMessageInstance(dir, s.fid, s.mid);
+	uint16_t count;
+	if (!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+		throw DispatchError(E3210);
+
+	PROPNAME_ARRAY propnames;
+	propnames.count = 1;
+	PROPERTY_NAME propname_buff[1];
+	propname_buff[0].kind = MNID_ID;
+	propname_buff[0].guid = PSETID_Appointment;
+	propname_buff[0].lid  = PidLidExceptionReplaceTime;
+	propnames.ppropname   = propname_buff;
+	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
+	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
+	s.excTags = shape.proptags_vec();
+	s.excTags.emplace_back(ex_replace_time_tag);
+
+	/* Exceptions carry no MimeContent, see materializeOccurrence() */
+	s.base.emplace(tItem::create(shape));
+	if (auto special = shape.special & ~sShape::MimeContent)
+		std::visit([&](auto &&it) {
+			loadSpecial(dir, s.fid, s.mid, it, special);
+		}, *s.base);
+
+	const proptag_t ex_tags[] = {ex_replace_time_tag};
+	for (uint16_t i = 0; i < count; ++i) {
+		auto aInst = m_plugin.loadAttachmentInstance(dir, s.fid, s.mid, i);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		} catch (const DispatchError &) {
+			continue; /* skip non-embedded attachments */
+		}
+		TPROPVAL_ARRAY props;
+		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
+		    eInst->instanceId, proptag_cspan{ex_tags}, &props))
+			throw DispatchError(E3211);
+		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
+		if (!exstarttime)
+			continue;
+		s.exceptions.emplace_back(sOccurrenceSeries::exc_slot{
+			*exstarttime, std::move(eInst)});
+	}
+}
+
+/**
+ * @brief      Build one occurrence of a series
+ *
+ * @param      dir      Store directory
+ * @param      s        Series, from loadOccurrenceSeries() and
+ *                      loadOccurrenceInstances()
+ * @param      basedate Basedate of the occurrence
+ * @param      shape    Requested item shape
+ *
+ * @return     The occurrence, with its occurrence ItemId
+ */
+sItem EWSContext::materializeOccurrence(const std::string &dir,
+    sOccurrenceSeries &s, uint32_t basedate, sShape &shape) const
+{
+	auto matching_exc = s.aprValid ? find_exc(s.apr, basedate) : nullptr;
+	auto stamp = [&](sItem &item, Enum::CalendarItemTypeType type) {
+		if (auto cal = std::get_if<tCalendarItem>(&item)) {
+			auto t = s.occurrenceTimes(basedate);
+			cal->Start.emplace(t.start);
+			cal->End.emplace(t.end);
+			cal->CalendarItemType.emplace(type);
+			cal->RecurrenceId.emplace(s.toUtc(basedate + s.startOff));
+			cal->Recurrence.reset();
+			cal->ModifiedOccurrences.reset();
+			cal->DeletedOccurrences.reset();
+		}
+		markOccurrenceId(item, basedate);
+	};
+
+	auto orig = s.toUtc(basedate + s.startOff);
+	auto slot = std::find_if(s.exceptions.begin(), s.exceptions.end(),
+	            [&](const sOccurrenceSeries::exc_slot &e) {
+	            	return s.replaces(basedate, orig, e.replace_time);
+	            });
+	if (slot != s.exceptions.end()) {
+		TPROPVAL_ARRAY props;
+		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
+		    slot->inst->instanceId, s.excTags, &props))
+			throw DispatchError(E3211);
+		sItem item = *s.base;
+		std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
+		stamp(item, Enum::Exception);
+		return item;
+	}
+	if (matching_exc != nullptr) {
+		/* Modified in the blob only: apply its overrides */
+		sItem item = *s.base;
+		auto cal = std::get_if<tCalendarItem>(&item);
+		const auto &xe = s.apr.pextendedexception[matching_exc -
+		                 s.apr.pexceptioninfo.data()];
+		auto ovr = matching_exc->overrideflags;
+		if (cal != nullptr && ovr & ARO_SUBJECT &&
+		    shape.requested(PR_SUBJECT))
+			cal->Subject.emplace(xe.subject);
+		if (cal != nullptr && ovr & ARO_LOCATION &&
+		    shape.requested(shape.tag(NtLocation)))
+			cal->Location.emplace(xe.location);
+		stamp(item, Enum::Exception);
+		return item;
+	}
+
+	/* Unmodified occurrence: construct from master properties */
+	if (shape.special & sShape::MimeContent && !s.occBase) {
+		s.occBase.emplace(*s.base);
+		std::visit([&](auto &&it) {
+			loadSpecial(dir, s.fid, s.mid, it, sShape::MimeContent);
+		}, *s.occBase);
+	}
+	sItem item = s.occBase ? *s.occBase : *s.base;
+	stamp(item, Enum::Occurrence);
+	return item;
 }
 
 /**
@@ -2051,140 +2450,47 @@ find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
  */
 sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t mid, uint32_t basedate, sShape& shape) const
 {
-	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
-	uint16_t count;
-	if (!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
-		throw DispatchError(E3210);
+	auto s = loadOccurrenceSeries(dir, fid, mid, shape);
+	loadOccurrenceInstances(dir, s, shape);
+	return materializeOccurrence(dir, s, basedate, shape);
+}
 
-	shape.clean();
-	shape.recurrenceFrame = get_recurrence_frame();
-	getNamedTags(dir, shape);
-	shape.properties(getItemProps(dir, mid, shape.proptags()));
-	PROPNAME_ARRAY propnames;
-	propnames.count = 1;
-	PROPERTY_NAME propname_buff[1];
-	propname_buff[0].kind = MNID_ID;
-	propname_buff[0].guid = PSETID_Appointment;
-	propname_buff[0].lid = PidLidExceptionReplaceTime;
-	propnames.ppropname = propname_buff;
-	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
-	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
-	TPROPVAL_ARRAY props;
-	auto tags_1 = shape.proptags_vec();
-	tags_1.emplace_back(ex_replace_time_tag);
-
-	/*
-	 * Compute timezone offset for rtime→UTC conversion. Recurrence blob
-	 * rtimes are "local-as-UTC" – derive the offset from the master's
-	 * PR_START_DATE (real UTC) vs the recurrence pattern's first
-	 * occurrence rtime.
-	 */
-	std::chrono::seconds tz_offset{0};
-	uint32_t start_off = 0, end_off = 1440;
-	APPOINTMENT_RECUR_PAT apr{};
-	bool apr_valid = false;
-	auto recur_prop_tz = shape.get<const BINARY>(NtAppointmentRecur);
-	auto start_prop_tz = shape.get<const uint64_t>(PR_START_DATE);
-	if (!start_prop_tz)
-		start_prop_tz = shape.get<uint64_t>(NtCommonStart);
-	if (start_prop_tz != nullptr && recur_prop_tz != nullptr && recur_prop_tz->cb > 0) {
-		EXT_PULL rp;
-		rp.init(recur_prop_tz->pb, recur_prop_tz->cb, nullptr, 0);
-		if (rp.g_apptrecpat(&apr) == pack_result::ok) {
-			apr_valid = true;
-			start_off = apr.starttimeoffset;
-			end_off   = apr.endtimeoffset;
-			auto su   = rop_util_nttime_to_unix(*start_prop_tz);
-			auto sl   = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
-			tz_offset = std::chrono::seconds(su - sl);
-		}
+/**
+ * @brief      Expand a recurring master into its occurrences within a window
+ *
+ * Produces one item per visible occurrence overlapping [start, end], each
+ * carrying its own occurrence ItemId (resolvable via GetItem) and the
+ * occurrence's own Start/End. Deleted occurrences are omitted and modified
+ * ones are returned as Exception rather than Occurrence. Both are decided by
+ * materializeOccurrence().
+ *
+ * @param      dir    Store directory
+ * @param      fid    Folder ID
+ * @param      mid    Message ID of the recurring master
+ * @param      start  Window start (UTC)
+ * @param      end    Window end (UTC)
+ * @param      shape  Shape to load the occurrences with
+ *
+ * @return     Expanded occurrences, chronologically ordered
+ */
+std::vector<sItem> EWSContext::expandOccurrences(const std::string &dir,
+    uint64_t fid, uint64_t mid, time_t start, time_t end, sShape &shape) const
+{
+	auto s = loadOccurrenceSeries(dir, fid, mid, shape);
+	if (!s.aprValid) {
+		auto bin = shape.get<const BINARY>(NtAppointmentRecur);
+		throw EWSError::ItemCorrupt(bin == nullptr || bin->cb == 0 ? E3305 : E3306);
 	}
-	std::optional<TZDEF> tzdef;
-	auto tzbin = shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY);
-	if (apr_valid && tzbin != nullptr)
-		tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
-	auto toUtc = [&](uint32_t rtime) {
-		int64_t off;
-		if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
-			return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
-		return rop_util_rtime_to_unix2(rtime) + tz_offset;
-	};
-
-	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
-	struct tm basedate_local;
-	localtime_r(&basedate_ts, &basedate_local);
-	auto matching_exc = apr_valid ? find_exc(apr, basedate) : nullptr;
-
-	for (uint16_t i = 0; i < count; ++i) {
-		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
-		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
-		try {
-			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
-		} catch (const DispatchError &) {
-			continue; /* skip non-embedded attachments */
-		}
-		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, tags_1, &props))
-			throw DispatchError(E3211);
-
-		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
-		if (!exstarttime)
-			continue;
-		auto exstart = clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
-		struct tm exstart_local;
-		localtime_r(&exstart, &exstart_local);
-		if (is_same_day(basedate_local, exstart_local)) {
-			sItem item = tItem::create(shape);
-			/* For exceptions, skip MimeContent from master —
-			 * the embedded msg body is applied via updateProps.
-			 * Attachments and attendees still come from master. */
-			auto exc_special = shape.special & ~sShape::MimeContent;
-			if (exc_special)
-				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, exc_special); }, item);
-			std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
-			if (auto cal = std::get_if<tCalendarItem>(&item)) {
-				/* Override Start/End: the embedded message has the
-				 * master's dates; use EXCEPTIONINFO from the blob. */
-				if (matching_exc) {
-					cal->Start.emplace(
-						toUtc(matching_exc->startdatetime));
-					cal->End.emplace(
-						toUtc(matching_exc->enddatetime));
-				} else {
-					cal->Start.emplace(
-						toUtc(basedate + start_off));
-					cal->End.emplace(
-						toUtc(basedate + end_off));
-				}
-				cal->CalendarItemType.emplace(Enum::Exception);
-				cal->RecurrenceId.emplace(
-					toUtc(basedate));
-				cal->Recurrence.reset();
-				cal->ModifiedOccurrences.reset();
-				cal->DeletedOccurrences.reset();
-			}
-			markOccurrenceId(item, basedate);
-			return item;
-		}
-	}
-
-	/* Unmodified occurrence: construct from master properties */
-	sItem item = tItem::create(shape);
-	if (shape.special)
-		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
-	if (auto cal = std::get_if<tCalendarItem>(&item)) {
-		cal->Start.emplace(
-			toUtc(basedate + start_off));
-		cal->End.emplace(
-			toUtc(basedate + end_off));
-		cal->CalendarItemType.emplace(Enum::Occurrence);
-		cal->RecurrenceId.emplace(
-			toUtc(basedate));
-		cal->Recurrence.reset();
-		cal->ModifiedOccurrences.reset();
-		cal->DeletedOccurrences.reset();
-	}
-	markOccurrenceId(item, basedate);
-	return item;
+	auto dates = occurrenceDatesInRange(s.apr, s.tzdef ? &*s.tzdef : nullptr,
+	             s.tzOffset, start, end);
+	if (dates.empty())
+		return {};
+	loadOccurrenceInstances(dir, s, shape);
+	std::vector<sItem> items;
+	items.reserve(dates.size());
+	for (auto date : dates)
+		items.emplace_back(materializeOccurrence(dir, s, date, shape));
+	return items;
 }
 
 /**
@@ -2197,35 +2503,100 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
  * @return     Basedate in rtime format
  */
 uint32_t EWSContext::resolveOccurrenceIndex(const std::string &dir,
-    uint64_t mid, uint32_t index) const
+    uint64_t mid, uint32_t index) const try
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
-	return nthOccurrenceDate(apr.recur_pat, index);
+	auto date = nthOccurrenceDate(apr, index, true);
+	if (isTrulyDeleted(apr, date))
+		throw EWSError::CalendarOccurrenceIsDeletedFromRecurrence(E3483);
+	return date;
+} catch (const InputError &e) {
+	throw EWSError::CalendarOccurrenceIndexIsOutOfRecurrenceRange(e.what());
+}
+
+/**
+ * @brief      Refuse the occurrence id of a deleted occurrence
+ *
+ * @param      dir       Store directory
+ * @param      mid       Message ID of the recurring master
+ * @param      basedate  Basedate from the occurrence id
+ */
+void EWSContext::checkOccurrence(const std::string &dir, uint64_t mid,
+    uint32_t basedate) const
+{
+	if (isTrulyDeleted(loadRecurPat(dir, mid).second, basedate))
+		throw EWSError::CalendarOccurrenceIsDeletedFromRecurrence(E3488);
 }
 
 /**
  * @brief      Delete a single occurrence from a recurring appointment
  *
  * Adds the occurrence date to the deleted instances list in the
- * recurrence blob and saves it back to the item.
+ * recurrence blob and drops the exception of a modified occurrence.
  *
  * @param      dir       Store directory
  * @param      fid       Folder ID
  * @param      mid       Message ID of the recurring master
  * @param      basedate  Occurrence date in rtime format
  */
-void EWSContext::deleteOccurrence(const std::string &dir,
+void EWSContext::deleteOccurrence(const std::string &dir, uint64_t fid,
     uint64_t mid, uint32_t basedate) const
 {
 	auto [recur_tag, apr] = loadRecurPat(dir, mid);
-
-	auto &rp = apr.recur_pat;
-	if (rp.contains_del(basedate))
+	auto ret = apr.remove_instance(basedate);
+	if (ret == 0)
 		return; /* already deleted */
-	rp.pdeletedinstancedates.emplace_back(basedate);
-	rp.sort_dels();
+	if (ret == 1)
+		deleteExceptionAttachment(dir, fid, mid, basedate);
 	if (!saveRecurBlob(dir, mid, recur_tag, apr))
 		throw DispatchError(E3308);
+}
+
+/**
+ * @brief      Remove the exception attachment of an occurrence
+ *
+ * Otherwise oxcical would still export the occurrence as an override.
+ */
+void EWSContext::deleteExceptionAttachment(const std::string &dir,
+    uint64_t fid, uint64_t mid, uint32_t basedate) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	m_plugin.unloadMessageInstance(dir, mid);
+	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
+	uint16_t count = 0;
+	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
+	    mInst->instanceId, &count))
+		throw DispatchError(E3485);
+	m_plugin.evictAttachmentInstances(dir, mid, count);
+	const proptag_t tags[] = {PROP_TAG(PT_SYSTIME,
+		getNamedPropId(dir, NtExceptionReplaceTime, true))};
+	auto series = loadSeriesTimes(dir, mid);
+	for (uint16_t i = 0; i < count; ++i) {
+		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		} catch (const DispatchError &) {
+			continue; /* skip non-embedded attachments */
+		}
+		TPROPVAL_ARRAY props{};
+		if (!exmdb.get_instance_properties(dir.c_str(), 0,
+		    eInst->instanceId, proptag_cspan{tags}, &props))
+			throw DispatchError(E3486);
+		auto extime = props.get<const uint64_t>(tags[0]);
+		if (extime == nullptr || !series.replaces(basedate, *extime))
+			continue;
+		ec_error_t err = ecSuccess;
+		if (!exmdb.delete_message_instance_attachment(dir.c_str(),
+		    mInst->instanceId, i) ||
+		    !exmdb.flush_instance(dir.c_str(), mInst->instanceId, &err) ||
+		    err != ecSuccess)
+			throw EWSError::ItemSave(E3487);
+		/* The attachment numbers have a gap now */
+		m_plugin.unloadMessageInstance(dir, mid);
+		m_plugin.evictAttachmentInstances(dir, mid, count);
+		return;
+	}
 }
 
 /**
@@ -2328,10 +2699,11 @@ EWSContext::loadRecurPat(const std::string &dir, uint64_t mid) const
 	const PROPERTY_NAME pn[] = {{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur}};
 	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
 	auto ids = getNamedPropIds(dir, pna);
-	auto tag = PROP_TAG(PT_BINARY, ids[0]);
-	auto bin = getItemProp<const BINARY>(dir, mid, tag);
-	if (!bin)
-		throw EWSError::ItemCorrupt(E3305);
+	proptag_t tag = PROP_TAG(PT_BINARY, ids[0]);
+	auto props = getItemProps(dir, mid, proptag_cspan{&tag, 1});
+	auto bin = props.get<const BINARY>(tag);
+	if (bin == nullptr)
+		throw EWSError::CalendarCannotUseIdForRecurringMasterId(E3477);
 	EXT_PULL ext_pull;
 	ext_pull.init(bin->pb, bin->cb, nullptr, 0);
 	APPOINTMENT_RECUR_PAT apr{};
@@ -2376,17 +2748,17 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	auto appt_start_tag   = PROP_TAG(PT_SYSTIME, namedids[10]);
 	auto appt_end_tag     = PROP_TAG(PT_SYSTIME, namedids[11]);
 
-	/* Load message instance and count attachments */
+	/* A cached instance may predate saveRecurBlob; flushing it reverts it */
+	m_plugin.unloadMessageInstance(dir, mid);
 	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 	uint16_t att_count = 0;
 	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
 	    mInst->instanceId, &att_count))
 		throw DispatchError(E3335);
+	m_plugin.evictAttachmentInstances(dir, mid, att_count);
 
 	/* Search for an existing exception matching this basedate */
-	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
-	struct tm basedate_local{};
-	localtime_r(&basedate_ts, &basedate_local);
+	auto series = loadSeriesTimes(dir, mid);
 
 	for (uint16_t i = 0; i < att_count; ++i) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
@@ -2402,12 +2774,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		    eInst->instanceId, proptag_cspan{etags}, &eprops))
 			continue;
 		auto extime = eprops.get<const uint64_t>(ex_replace_tag);
-		if (!extime)
-			continue;
-		auto ex_ts = clock::to_time_t(rop_util_nttime_to_unix2(*extime));
-		struct tm ex_local{};
-		localtime_r(&ex_ts, &ex_local);
-		if (!is_same_day(basedate_local, ex_local))
+		if (!extime || !series.replaces(basedate, *extime))
 			continue;
 
 		/* Found existing exception – update its embedded message */
@@ -2520,7 +2887,8 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			if (ext_pull.g_apptrecpat(&apr) == pack_result::ok) {
 				int32_t tz_min = recurTzOffset(dir, mid, apr);
 				for (size_t k = 0; k < apr.pexceptioninfo.size(); ++k) {
-					if (apr.pexceptioninfo[k].originalstartdate != basedate)
+					if (apr.pexceptioninfo[k].originalstartdate / 1440 !=
+					    basedate / 1440)
 						continue;
 					applyExceptionOverrides(apr.pexceptioninfo[k],
 						apr.pextendedexception[k],
@@ -2592,9 +2960,9 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 
 	/* If no explicit times, compute real UTC NTTIMEs from rtimes */
 	if (!has_explicit_start)
-		start_nttime = rop_util_unix_to_nttime(rop_util_rtime_to_unix(start_rtime) + static_cast<time_t>(tz_minutes) * 60);
+		start_nttime = rop_util_unix_to_nttime(series.toUtc(start_rtime));
 	if (!has_explicit_end)
-		end_nttime = rop_util_unix_to_nttime(rop_util_rtime_to_unix(end_rtime) + static_cast<time_t>(tz_minutes) * 60);
+		end_nttime = rop_util_unix_to_nttime(series.toUtc(end_rtime));
 
 	/* Read master's properties as defaults for the embedded message */
 	auto master_props = getItemProps(dir, mid, proptag_cspan{});
@@ -2728,9 +3096,8 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	 * be the original date+time (not just date) so Outlook can match the
 	 * embedded message to the exception.
 	 */
-	auto orig_start_utc = rop_util_rtime_to_unix(basedate + apr.starttimeoffset) +
-	                      static_cast<time_t>(tz_minutes) * 60;
-	auto orig_time = construct<uint64_t>(rop_util_unix_to_nttime(orig_start_utc));
+	auto orig_time = construct<uint64_t>(rop_util_unix_to_nttime(
+	                 series.occurrenceTimes(basedate).orig_start));
 	emb_props.push_back({ex_replace_tag, orig_time});
 
 	content.proplist.count = emb_props.size();
@@ -3659,13 +4026,135 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 }
 
 /**
+ * @brief      Turn a copy of a series master into a message for one occurrence
+ *
+ * oxcical exports it as a single VEVENT with a RECURRENCE-ID.
+ *
+ * @param      dir       Store directory
+ * @param      basedate  Basedate of the occurrence
+ * @param      msg       Copy of the master, modified in place
+ */
+void EWSContext::toInstance(const std::string &dir, uint32_t basedate,
+    MESSAGE_CONTENT &msg) const
+{
+	const PROPERTY_NAME names[] = {
+		NtAppointmentRecur, NtAppointmentTimeZoneDefinitionRecur,
+		NtAppointmentTimeZoneDefinitionStartDisplay,
+		NtAppointmentTimeZoneDefinitionEndDisplay,
+		NtAppointmentStartWhole, NtAppointmentEndWhole, NtCommonStart,
+		NtCommonEnd, NtExceptionReplaceTime, NtIsException,
+		NtGlobalObjectId, NtRecurring, NtRecurrencePattern,
+		NtRecurrenceType, NtLocation,
+	};
+	enum {
+		l_recur, l_tzrecur, l_tzstart, l_tzend, l_startwhole,
+		l_endwhole, l_commonstart, l_commonend, l_replacetime,
+		l_isexception, l_goid, l_recurring, l_pattern, l_rectype,
+		l_location,
+	};
+	static_assert(l_location + 1 == std::size(names));
+	const PROPNAME_ARRAY pna = {std::size(names), deconst(names)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(names))
+		throw DispatchError(E3491);
+	auto &props = msg.proplist;
+	auto recur_tag = PROP_TAG(PT_BINARY, ids[l_recur]);
+	auto tzr_tag   = PROP_TAG(PT_BINARY, ids[l_tzrecur]);
+	auto tzs_tag   = PROP_TAG(PT_BINARY, ids[l_tzstart]);
+	auto tze_tag   = PROP_TAG(PT_BINARY, ids[l_tzend]);
+	auto goid_tag  = PROP_TAG(PT_BINARY, ids[l_goid]);
+
+	sOccurrenceSeries s;
+	s.parse(props.get<const BINARY>(recur_tag),
+		props.get<const uint64_t>(PR_START_DATE),
+		props.get<const BINARY>(tzr_tag));
+	if (!s.aprValid)
+		throw EWSError::CalendarCannotUseIdForRecurringMasterId(E3489);
+	auto t = s.occurrenceTimes(basedate);
+	uint64_t start = rop_util_unix_to_nttime(t.start);
+	uint64_t end   = rop_util_unix_to_nttime(t.end);
+	uint64_t orig  = rop_util_unix_to_nttime(t.orig_start);
+	uint8_t yes = 1, no = 0;
+	const TAGGED_PROPVAL tv[] = {
+		{PR_START_DATE, &start},
+		{PR_END_DATE, &end},
+		{PROP_TAG(PT_SYSTIME, ids[l_startwhole]), &start},
+		{PROP_TAG(PT_SYSTIME, ids[l_endwhole]), &end},
+		{PROP_TAG(PT_SYSTIME, ids[l_commonstart]), &start},
+		{PROP_TAG(PT_SYSTIME, ids[l_commonend]), &end},
+		{PROP_TAG(PT_SYSTIME, ids[l_replacetime]), &orig},
+		{PROP_TAG(PT_BOOLEAN, ids[l_isexception]), &yes},
+		{PROP_TAG(PT_BOOLEAN, ids[l_recurring]), &no},
+	};
+	for (const auto &p : tv)
+		if (props.set(p.proptag, p.pvalue) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3491);
+
+	/* MS-OXOCAL v26 §2.2.1.27: the instance date, a local day */
+	auto goid_bin = props.get<const BINARY>(goid_tag);
+	if (goid_bin != nullptr) {
+		GLOBALOBJECTID goid{};
+		EXT_PULL ep;
+		ep.init(goid_bin->pb, goid_bin->cb, alloc, 0);
+		auto ts = rop_util_rtime_to_unix(basedate);
+		struct tm tm{};
+		EXT_PUSH epu;
+		if (ep.g_goid(&goid) == pack_result::ok &&
+		    gmtime_r(&ts, &tm) != nullptr) {
+			goid.year  = tm.tm_year + 1900;
+			goid.month = tm.tm_mon + 1;
+			goid.day   = tm.tm_mday;
+			if (!epu.init(nullptr, 0, 0) ||
+			    epu.p_goid(goid) != pack_result::ok)
+				throw EWSError::NotEnoughMemory(E3491);
+			BINARY bin;
+			bin.cb = epu.m_offset;
+			bin.pv = epu.m_udata;
+			if (props.set(goid_tag, &bin) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3491);
+		}
+	}
+
+	/* Without the recurrence, oxcical takes the zone from these */
+	auto tzr = props.get<const BINARY>(tzr_tag);
+	if (tzr != nullptr && (!props.has(tzs_tag) || !props.has(tze_tag)) &&
+	    ((!props.has(tzs_tag) && props.set(tzs_tag, tzr) != ecSuccess) ||
+	    (!props.has(tze_tag) && props.set(tze_tag, tzr) != ecSuccess)))
+		throw EWSError::NotEnoughMemory(E3491);
+
+	auto exc = find_exc(s.apr, basedate);
+	if (exc != nullptr) {
+		const auto &xe = s.apr.pextendedexception[exc -
+		                 s.apr.pexceptioninfo.data()];
+		if (exc->overrideflags & ARO_SUBJECT) {
+			/* oxcmail prefers these over PR_SUBJECT */
+			props.erase(PR_SUBJECT_PREFIX);
+			props.erase(PR_NORMALIZED_SUBJECT);
+			if (props.set(PR_SUBJECT, xe.subject.c_str()) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3491);
+		}
+		if (exc->overrideflags & ARO_LOCATION &&
+		    props.set(PROP_TAG(PT_UNICODE, ids[l_location]),
+		    xe.location.c_str()) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3491);
+	}
+	props.erase(recur_tag);
+	props.erase(tzr_tag);
+	props.erase(PROP_TAG(PT_UNICODE, ids[l_pattern]));
+	props.erase(PROP_TAG(PT_LONG, ids[l_rectype]));
+	/* oxcical would export each exception as an extra VEVENT */
+	msg.set_attachments_internal(nullptr);
+}
+
+/**
  * @brief      Send meeting cancellation to attendees
  *
  * Reads the calendar item, stamps it as a cancellation, and
  * either saves a copy in Sent Items or sends directly.
  */
 void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageEntryId &meid,
-    const sFolderSpec &parent, bool saveCopy) const
+    const sFolderSpec &parent, bool saveCopy,
+    std::optional<uint32_t> basedate) const
 {
 	auto &exmdb = m_plugin.exmdb;
 	const char *username = effectiveUser(parent);
@@ -3679,6 +4168,41 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	    cancelcontent->children.prcpts == nullptr ||
 	    cancelcontent->children.prcpts->count == 0)
 		return;
+	if (basedate) {
+		message_content_ptr inst(cancelcontent->dup());
+		if (!inst)
+			throw EWSError::NotEnoughMemory(E3492);
+		toInstance(dir, *basedate, *inst);
+		auto &props = inst->proplist;
+		auto seq_tag = PROP_TAG(PT_LONG,
+		               getNamedPropId(dir, NtAppointmentSequence, true));
+		auto seq = props.get<const uint32_t>(seq_tag);
+		uint32_t newseq = seq != nullptr ? *seq + 1 : 1;
+		auto now = rop_util_current_nttime();
+		if (props.set(PR_MESSAGE_CLASS,
+		    "IPM.Schedule.Meeting.Canceled") != ecSuccess ||
+		    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+		    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
+		    props.set(seq_tag, &newseq) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3492);
+		send(dir, meid.messageId(), *inst);
+		if (!saveCopy)
+			return;
+		static constexpr proptag_t rmProps[] = {
+			PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+			PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+		};
+		for (auto tag : rmProps)
+			props.erase(tag);
+		auto sentitems = resolveFolder(
+		                 tDistinguishedFolderId(Enum::sentitems));
+		uint64_t newMid = 0, newCn = 0;
+		ec_error_t err = ecSuccess;
+		if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
+		    inst.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3490);
+		return;
+	}
 	if (saveCopy) {
 		sFolderSpec sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 		uint64_t newMid = 0;
@@ -3706,7 +4230,7 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 			throw EWSError::ItemNotFound(E3390);
 		send(dir, meid.messageId(), *sentcontent);
 	} else {
-		EWSContext::MCONT_PTR dupcontent(cancelcontent->dup());
+		message_content_ptr dupcontent(cancelcontent->dup());
 		if (!dupcontent)
 			throw EWSError::NotEnoughMemory(E3407);
 		dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Canceled");
@@ -3725,7 +4249,12 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
  */
 void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_CONTENT &respItem) const
 {
-	assertIdType(responseRef.type, tItemId::ID_ITEM);
+	std::optional<uint32_t> basedate;
+	if (responseRef.type == tItemId::ID_OCCURRENCE)
+		basedate = sOccurrenceId(responseRef.Id.data(),
+		           responseRef.Id.size()).basedate;
+	else
+		assertIdType(responseRef.type, tItemId::ID_ITEM);
 	sMessageEntryId refMid(responseRef.Id.data(), responseRef.Id.size());
 	sFolderSpec refFolder = resolveFolder(refMid);
 	std::string refDir = getDir(refFolder);
@@ -3740,9 +4269,11 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 		orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	if ((wantResp != nullptr && *wantResp == 0) || orgSmtp == nullptr)
 		return;
-	EWSContext::MCONT_PTR content(reqContent->dup());
+	message_content_ptr content(reqContent->dup());
 	if (!content)
 		throw EWSError::NotEnoughMemory(E3288);
+	if (basedate)
+		toInstance(refDir, *basedate, *content);
 	auto respClass = respItem.proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (respClass)
 		content->proplist.set(PR_MESSAGE_CLASS, respClass);
@@ -3856,14 +4387,29 @@ void EWSContext::suppressReadReceipt(const tItemId &refId) const
 }
 
 /**
+ * @brief      Whether the item is the organizer's copy of the meeting
+ */
+bool EWSContext::isOrganizer(const std::string &dir, uint64_t mid) const
+{
+	void *state = nullptr;
+	auto tag = PROP_TAG(PT_LONG, getNamedPropId(dir, NtAppointmentStateFlags, true));
+	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP,
+	    mid, tag, &state))
+		throw EWSError::ItemNotFound(E3389);
+	return state == nullptr ||
+	       !(*static_cast<const uint32_t *>(state) & asfReceived);
+}
+
+/**
  * @brief      Cancel a meeting and remove it from the organizer's calendar
  *
- * @param      refId     Calendar item to cancel
+ * @param      refId     Calendar item or occurrence to cancel
  * @param      saveCopy  Whether to keep a copy in Sent Items
  */
 void EWSContext::cancelCalendarItem(const tItemId &refId, bool saveCopy) const
 {
-	assertIdType(refId.type, tItemId::ID_ITEM);
+	if (refId.type != tItemId::ID_OCCURRENCE)
+		assertIdType(refId.type, tItemId::ID_ITEM);
 	sMessageEntryId meid(refId.Id.data(), refId.Id.size());
 	sFolderSpec parent = resolveFolder(meid);
 	std::string dir = getDir(parent);
@@ -3871,15 +4417,17 @@ void EWSContext::cancelCalendarItem(const tItemId &refId, bool saveCopy) const
 	if (!(permissions(dir, parent.folderId) & frightsDeleteAny))
 		throw EWSError::AccessDenied(E3131);
 
-	void *organizer = nullptr;
-	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP,
-	    meid.messageId(), PR_SENT_REPRESENTING_SMTP_ADDRESS, &organizer))
-		throw EWSError::ItemNotFound(E3389);
-	if (organizer != nullptr && m_auth_info.username != nullptr &&
-	    strcasecmp(static_cast<const char *>(organizer),
-	    m_auth_info.username) != 0)
+	if (!isOrganizer(dir, meid.messageId()))
 		throw EWSError::CalendarIsNotOrganizer(E3470);
 
+	if (refId.type == tItemId::ID_OCCURRENCE) {
+		auto basedate = sOccurrenceId(refId.Id.data(),
+		                refId.Id.size()).basedate;
+		checkOccurrence(dir, meid.messageId(), basedate);
+		sendMeetingCancellation(dir, meid, parent, saveCopy, basedate);
+		deleteOccurrence(dir, parent.folderId, meid.messageId(), basedate);
+		return;
+	}
 	sendMeetingCancellation(dir, meid, parent, saveCopy);
 
 	sFolderSpec deleted = resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
@@ -3935,7 +4483,8 @@ bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
  *
  * @return    Pointer to new MESSAGE_CONTENT structure
  */
-EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string& mimeContent) const
+message_content_ptr EWSContext::toContent(const std::string &dir,
+    std::string &mimeContent) const
 {
 	MAIL mail;
 	if (!mail.refonly_parse(mimeContent.data(), mimeContent.size()))
@@ -3962,7 +4511,8 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string&
  *
  * @return Pointer to MESSAGE_CONTENT structure
  */
-EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolderSpec& parent, sCreateItem& item, bool persist) const
+message_content_ptr EWSContext::toContent(const std::string &dir,
+    const sFolderSpec &parent, sCreateItem &item, bool persist) const
 {
 	const auto& exmdb = m_plugin.exmdb;
 	uint64_t messageId, changeNumber;
@@ -3989,7 +4539,7 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 	}
 
 	sShape shape;
-	MCONT_PTR content(message_content_init());
+	message_content_ptr content(message_content_init());
 	if (!content)
 		throw EWSError::NotEnoughMemory(E3217);
 	std::visit([&](auto& i){toContent(dir, i, shape, content);}, item);
@@ -4029,7 +4579,8 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
  *
  * @todo Map remaining fields
  */
-void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& shape, MCONT_PTR& content) const
+void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, static_cast<tItem&>(item), shape, content);
 	if (!item.ItemClass)
@@ -4487,7 +5038,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
  * @param      shape     Shape to store properties in
  * @param      content   Message content
  */
-void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape, MCONT_PTR& content) const
+void EWSContext::toContent(const std::string &dir, tContact &item,
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, static_cast<tItem&>(item), shape, content);
 	shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, const_cast<char*>("IPM.Contact")});
@@ -4642,7 +5194,7 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
  * @param      content   Message content
  */
 void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
-    MCONT_PTR &content) const
+    message_content_ptr &content) const
 {
 	toContent(dir, static_cast<tItem &>(item), shape, content);
 	if (!item.ItemClass)
@@ -4707,7 +5259,8 @@ void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
  * @param      shape     Shape to store properties in
  * @param      content   Message content
  */
-void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, MCONT_PTR& content) const
+void EWSContext::toContent(const std::string &dir, tItem &item, sShape &shape,
+    message_content_ptr &content) const
 {
 	if (item.MimeContent)
 		content = toContent(dir, *item.MimeContent);
@@ -4847,7 +5400,8 @@ void EWSContext::rcpt_add_unique(TARRAY_SET *rcpts, tEmailAddressType rcpt, uint
  * @param      shape     Shape to store properties in
  * @param      content   Message content
  */
-void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape, MCONT_PTR& content) const
+void EWSContext::toContent(const std::string &dir, tMessage &item,
+    sShape &shape, message_content_ptr &content) const
 {
 	auto &to = item.ToRecipients, &cc = item.CcRecipients, &bcc = item.BccRecipients;
 	toContent(dir, static_cast<tItem&>(item), shape, content);
@@ -4929,7 +5483,7 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 }
 
 void EWSContext::toContent(const std::string &dir, tAcceptItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	if (!item.ItemClass)
 		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Pos");
@@ -4937,7 +5491,7 @@ void EWSContext::toContent(const std::string &dir, tAcceptItem &item,
 }
 
 void EWSContext::toContent(const std::string &dir, tTentativelyAcceptItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	if (!item.ItemClass)
 		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Tent");
@@ -4945,7 +5499,7 @@ void EWSContext::toContent(const std::string &dir, tTentativelyAcceptItem &item,
 }
 
 void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	if (!item.ItemClass)
 		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Neg");
@@ -4960,19 +5514,19 @@ void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
  * upon yet.
  */
 void EWSContext::toContent(const std::string &dir, tReplyToItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tReplyAllToItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tForwardItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
 }

@@ -50,23 +50,36 @@ import re
 import sqlite3
 import sys
 
-RCPT_ADDR_TAG = 0x3003001F   # PR_EMAIL_ADDRESS
+RCPT_ADDR_TAG = 0x3003001F  # PR_EMAIL_ADDRESS
 
 # --- EX -> SMTP translation ---------------------------------------------
 # propsets as in gromox tools/kdbsub.cpp: (addrtype, email, entryid,
 # searchkey, smtp, displayname); None = property does not exist for the set
 PROPSETS = (
-    (0x0064001F, 0x0065001F, 0x00410102, 0x003B0102, 0x5D02001F, 0x0042001F),  # sent repr
-    (0x0066001F, 0x0067001F, 0x005B0102, 0x005C0102, None, 0x005A001F),        # orig sender
-    (0x0068001F, 0x0069001F, 0x005E0102, 0x005F0102, None, 0x005D001F),        # orig sent repr
-    (0x0075001F, 0x0076001F, 0x003F0102, 0x00510102, None, 0x0040001F),        # received by
-    (0x0077001F, 0x0078001F, 0x00430102, 0x00520102, None, 0x0044001F),        # rcvd repr
-    (0x0079001F, 0x007A001F, 0x004C0102, 0x00560102, None, 0x004D001F),        # orig author
-    (0x007B001F, 0x007C001F, 0x10120102, None, None, None),                    # orig intended
-    (0x0C1E001F, 0x0C1F001F, 0x0C190102, 0x0C1D0102, 0x5D01001F, 0x0C1A001F),  # sender
-    (0x3002001F, 0x3003001F, 0x0FFF0102, 0x300B0102, 0x39FE001F, 0x3001001F),  # bare/recipient
+    (0x0064001F, 0x0065001F, 0x00410102, 0x003B0102, 0x5D02001F,
+     0x0042001F),  # sent repr
+    (0x0066001F, 0x0067001F, 0x005B0102, 0x005C0102, None,
+     0x005A001F),  # orig sender
+    (0x0068001F, 0x0069001F, 0x005E0102, 0x005F0102, None,
+     0x005D001F),  # orig sent repr
+    (0x0075001F, 0x0076001F, 0x003F0102, 0x00510102, None,
+     0x0040001F),  # received by
+    (0x0077001F, 0x0078001F, 0x00430102, 0x00520102, None,
+     0x0044001F),  # rcvd repr
+    (0x0079001F, 0x007A001F, 0x004C0102, 0x00560102, None,
+     0x004D001F),  # orig author
+    (0x007B001F, 0x007C001F, 0x10120102, None, None, None),  # orig intended
+    (0x0C1E001F, 0x0C1F001F, 0x0C190102, 0x0C1D0102, 0x5D01001F,
+     0x0C1A001F),  # sender
+    (None, None, 0x00460102, 0x00530102, None, None),  # read receipt
+    (None, None, 0x00450102, 0x00540102, None, None),  # report
+    (0x3002001F, 0x3003001F, 0x0FFF0102, 0x300B0102, 0x39FE001F,
+     0x3001001F),  # bare/recipient
 )
 RCPT_SET = PROPSETS[-1]
+# recipient rows carry the address book entryid twice more
+# (PR_RECIPIENT_ENTRYID, PR_RECORD_KEY)
+RCPT_EXTRA_EIDS = (0x5FF70102, 0x0FF90102)
 # contact items: PSETID_Address Email{1,2,3}{AddressType,EmailAddress,
 # OriginalEntryId} (PidLid 0x8082/0x8083/0x8085, 0x8092/.., 0x80A2/..) are
 # named properties; their propids are per store (named_properties)
@@ -80,566 +93,822 @@ MUID_EMSAB = bytes.fromhex("dca740c8c042101ab4b908002b2fe182")
 
 
 def oneoff_entryid(display, addr):
-    # EXT_PUSH::p_oneoff_eid: flags, muidOOP, version, ctrl_flags
-    # (MAPI_ONE_OFF_NO_RICH_INFO|MAPI_ONE_OFF_UNICODE), 3x UTF-16LE strings
-    def w(x):
-        return (x or "").encode("utf-16-le") + b"\0\0"
-    return (b"\0\0\0\0" + MUID_OOP + b"\0\0" + b"\x01\x80" +
-            w(display) + w("SMTP") + w(addr))
+	# EXT_PUSH::p_oneoff_eid: flags, muidOOP, version, ctrl_flags
+	# (MAPI_ONE_OFF_NO_RICH_INFO|MAPI_ONE_OFF_UNICODE), 3x UTF-16LE strings
+	def w(x):
+		return (x or "").encode("utf-16-le") + b"\0\0"
+
+	return (b"\0\0\0\0" + MUID_OOP + b"\0\0" + b"\x01\x80" + w(display) +
+	        w("SMTP") + w(addr))
 
 
 def searchkey(addr):
-    return ("SMTP:" + addr.upper()).encode("utf-8") + b"\0"
+	return ("SMTP:" + addr.upper()).encode("utf-8") + b"\0"
 
 
 def emsab_dn(blob):
-    # EXT_PUSH::p_abk_eid: flags(4) muidEMSAB(16) version(4)=1 type(4) dn\0
-    if not isinstance(blob, bytes) or len(blob) < 29 or blob[4:20] != MUID_EMSAB:
-        return None
-    dn = blob[28:].split(b"\0", 1)[0]
-    try:
-        return dn.decode("ascii")
-    except UnicodeDecodeError:
-        return None
+	# EXT_PUSH::p_abk_eid: flags(4) muidEMSAB(16) version(4)=1 type(4) dn\0
+	if not isinstance(blob,
+	                  bytes) or len(blob) < 29 or blob[4:20] != MUID_EMSAB:
+		return None
+	dn = blob[28:].split(b"\0", 1)[0]
+	try:
+		return dn.decode("ascii")
+	except UnicodeDecodeError:
+		return None
+
+
+def ab_dn(blob):
+	"""emsab_dn, plus the variant e4a left in PR_RECIPIENT_ENTRYID: same
+    layout, but a per-user provider UID instead of muidEMSAB"""
+	dn = emsab_dn(blob)
+	if dn is not None or not isinstance(blob, bytes) or len(blob) < 31:
+		return dn
+	if blob[20:24] != b"\1\0\0\0" or blob[28:31].upper() != b"/O=":
+		return None
+	try:
+		return blob[28:].split(b"\0", 1)[0].decode("ascii")
+	except UnicodeDecodeError:
+		return None
 
 
 class Translator:
-    def __init__(self, mapfile, strict, dmap=None):
-        self.map = {}
-        for e in json.load(open(mapfile)):
-            if e.get("dn") and e.get("to"):
-                self.map[e["dn"] if strict else e["dn"].upper()] = e["to"]
-        self.strict = strict
-        self.dmap = dmap or {}
-        self.n_sets = self.n_rows = self.n_creator = 0
-        self.unmapped = {}
 
-    def lookup(self, dn):
-        return self.map.get(dn if self.strict else dn.upper())
+	def __init__(self, mapfile, strict, dmap=None):
+		self.map = {}
+		for e in json.load(open(mapfile)):
+			if e.get("dn") and e.get("to"):
+				self.map[e["dn"] if strict else e["dn"].upper()] = e["to"]
+		self.strict = strict
+		self.dmap = dmap or {}
+		self.n_sets = self.n_rows = self.n_creator = 0
+		self.unmapped = {}
 
-    def process(self, props, pset):
-        """props: {proptag: value} of one object; returns list of
+	def lookup(self, dn):
+		return self.map.get(dn if self.strict else dn.upper())
+
+	def process(self, props, pset):
+		"""props: {proptag: value} of one object; returns list of
         (proptag, value) to write, or []"""
-        at, em, eid, sk, smtp, dname = pset
-        addr = text(props.get(smtp)) if smtp else None
-        out = []
-        if addr:
-            # existing SMTP address is the truth (as in gromox), but it may
-            # still need the domain rename
-            mapped = map_address(addr, self.dmap)
-            if mapped != addr:
-                out.append((smtp, mapped))
-                addr = mapped
-        if not addr:
-            atype = text(props.get(at))
-            dn = text(props.get(em))
-            if atype is not None and atype.upper() == "SMTP" and dn and "@" in dn:
-                # plain SMTP participant: only the domain rename applies
-                mapped = map_address(dn, self.dmap)
-                return [(em, mapped)] if mapped != dn else []
-            if atype is None or atype.upper() != "EX":
-                return []
-            if dn is None:
-                return []
-            addr = self.lookup(dn)
-            if addr is None:
-                if dn.upper().startswith("/O="):
-                    self.unmapped[dn] = self.unmapped.get(dn, 0) + 1
-                return []
-        cur_at, cur_em = text(props.get(at)), text(props.get(em))
-        if cur_at is not None and cur_at.upper() == "SMTP" and cur_em == addr:
-            return out  # already a plain SMTP participant
-        out += [(at, "SMTP"), (em, addr)]
-        display = text(props.get(dname)) if dname else None
-        if eid:
-            out.append((eid, oneoff_entryid(display or addr, addr)))
-        if sk:
-            out.append((sk, searchkey(addr)))
-        return out
+		out = self.process_addr(props, pset)
+		done = dict(out)
+		at, em, eid, sk, smtp, dname = pset
+		display = text(props.get(dname)) if dname else None
+		# the object's own SMTP address, if it has one, also covers DNs of
+		# foreign organisations that are not in the map
+		own = text(done.get(smtp, props.get(smtp))) if smtp else None
+		if not own and at and em:
+			a, e = text(done.get(at, props.get(at))), text(
+			    done.get(em, props.get(em)))
+			if a is not None and a.upper() == "SMTP" and e and "@" in e:
+				own = e
+		if eid and eid not in done:
+			out.extend(self.process_entryid(props, eid, dname, display, own))
+		if sk and sk not in done:
+			v = props.get(sk)
+			if isinstance(v, bytes) and v[:3].upper() == b"EX:":
+				dn = v[3:].split(b"\0", 1)[0].decode("ascii", "replace")
+				addr = own or self.lookup(dn)
+				if addr is None:
+					self.unmapped[dn] = self.unmapped.get(dn, 0) + 1
+				else:
+					out.append((sk, searchkey(addr)))
+		return out
 
-    def process_entryid(self, props, eid_tag, name_tag):
-        dn = emsab_dn(props.get(eid_tag))
-        if dn is None:
-            return []
-        addr = self.lookup(dn)
-        if addr is None:
-            self.unmapped[dn] = self.unmapped.get(dn, 0) + 1
-            return []
-        return [(eid_tag, oneoff_entryid(text(props.get(name_tag)) or addr, addr))]
+	def process_addr(self, props, pset):
+		at, em, eid, sk, smtp, dname = pset
+		addr = text(props.get(smtp)) if smtp else None
+		out = []
+		if addr:
+			# existing SMTP address is the truth (as in gromox), but it may
+			# still need the domain rename
+			mapped = map_address(addr, self.dmap)
+			if mapped != addr:
+				out.append((smtp, mapped))
+				addr = mapped
+		if not addr:
+			atype = text(props.get(at))
+			dn = text(props.get(em))
+			if atype is not None and atype.upper(
+			) == "SMTP" and dn and "@" in dn:
+				# plain SMTP participant: only the domain rename applies
+				mapped = map_address(dn, self.dmap)
+				return [(em, mapped)] if mapped != dn else []
+			if atype is None or atype.upper() != "EX":
+				return []
+			if dn is None:
+				return []
+			addr = self.lookup(dn)
+			if addr is None:
+				if dn.upper().startswith("/O="):
+					self.unmapped[dn] = self.unmapped.get(dn, 0) + 1
+				return []
+		cur_at, cur_em = text(props.get(at)), text(props.get(em))
+		if cur_at is not None and cur_at.upper() == "SMTP" and cur_em == addr:
+			return out  # already a plain SMTP participant
+		out += [(at, "SMTP"), (em, addr)]
+		display = text(props.get(dname)) if dname else None
+		if eid:
+			out.append((eid, oneoff_entryid(display or addr, addr)))
+		if sk:
+			out.append((sk, searchkey(addr)))
+		return out
+
+	def process_entryid(self,
+	                    props,
+	                    eid_tag,
+	                    name_tag,
+	                    display=None,
+	                    own=None):
+		dn = ab_dn(props.get(eid_tag))
+		if dn is None:
+			return []
+		addr = own or self.lookup(dn)
+		if addr is None:
+			self.unmapped[dn] = self.unmapped.get(dn, 0) + 1
+			return []
+		if display is None and name_tag:
+			display = text(props.get(name_tag))
+		return [(eid_tag, oneoff_entryid(display or addr, addr))]
 
 
 def contact_propsets(c):
-    """resolve the Email1..3 named properties of this store into propsets
+	"""resolve the Email1..3 named properties of this store into propsets
     (addrtype, email, entryid, None, None, displayname=None)"""
-    ids = {}
-    for pid, name in c.execute("SELECT propid, name_string FROM named_properties "
-                               "WHERE name_string LIKE ?",
-                               ("GUID=%s,LID=%%" % PSETID_ADDRESS,)):
-        try:
-            ids[int(name.rsplit("=", 1)[1])] = pid
-        except ValueError:
-            pass
-    sets = []
-    for at, em, eid in CONTACT_LIDS:
-        if at in ids and em in ids:
-            sets.append(((ids[at] << 16) | 0x001F, (ids[em] << 16) | 0x001F,
-                         ((ids[eid] << 16) | 0x0102) if eid in ids else None,
-                         None, None, None))
-    return sets
+	ids = {}
+	for pid, name in c.execute(
+	    "SELECT propid, name_string FROM named_properties "
+	    "WHERE name_string LIKE ?", ("GUID=%s,LID=%%" % PSETID_ADDRESS, )):
+		try:
+			ids[int(name.rsplit("=", 1)[1])] = pid
+		except ValueError:
+			pass
+	sets = []
+	for at, em, eid in CONTACT_LIDS:
+		if at in ids and em in ids:
+			sets.append(((ids[at] << 16) | 0x001F, (ids[em] << 16) | 0x001F,
+			             ((ids[eid] << 16) | 0x0102) if eid in ids else None,
+			             None, None, None))
+	return sets
 
 
 def chunked_ids(c, table, col, size):
-    ids = [r[0] for r in c.execute("SELECT %s FROM %s ORDER BY %s" % (col, table, col))]
-    for i in range(0, len(ids), size):
-        yield ids[i], ids[i + size - 1] if i + size - 1 < len(ids) else ids[-1]
+	ids = [
+	    r[0]
+	    for r in c.execute("SELECT %s FROM %s ORDER BY %s" % (col, table, col))
+	]
+	for i in range(0, len(ids), size):
+		yield ids[i], ids[i + size - 1] if i + size - 1 < len(ids) else ids[-1]
 
 
 def xlat_table(c, tr, table, idcol, lo, hi, tags, work):
-    """load rows of one id range, run work(props)->updates, write back"""
-    q = ("SELECT %s, proptag, propval FROM %s WHERE %s BETWEEN ? AND ? AND "
-         "proptag IN (%s)" % (idcol, table, idcol, ",".join(str(t) for t in tags)))
-    objs = {}
-    for oid, tag, val in c.execute(q, (lo, hi)):
-        objs.setdefault(oid, {})[tag] = val
-    ups = []
-    for oid, props in objs.items():
-        for tag, val in work(props):
-            if props.get(tag) == val:
-                continue
-            ups.append((oid, tag, val))
-    if ups:
-        c.executemany("INSERT OR REPLACE INTO %s (%s, proptag, propval) "
-                      "VALUES (?, ?, ?)" % (table, idcol), ups)
-    return len(objs), len(ups)
+	"""load rows of one id range, run work(props)->updates, write back"""
+	q = ("SELECT %s, proptag, propval FROM %s WHERE %s BETWEEN ? AND ? AND "
+	     "proptag IN (%s)" %
+	     (idcol, table, idcol, ",".join(str(t) for t in tags)))
+	objs = {}
+	for oid, tag, val in c.execute(q, (lo, hi)):
+		objs.setdefault(oid, {})[tag] = val
+	ups = []
+	for oid, props in objs.items():
+		for tag, val in work(props):
+			if props.get(tag) == val:
+				continue
+			ups.append((oid, tag, val))
+	if ups:
+		c.executemany(
+		    "INSERT OR REPLACE INTO %s (%s, proptag, propval) "
+		    "VALUES (?, ?, ?)" % (table, idcol), ups)
+	return len(objs), len(ups)
 
 
 def cmd_xlat_addrs(args):
-    tr = Translator(args.map, args.strict, parse_domain_map(args.domain_map))
-    c = rw_connect(args.db)
-    csets = contact_propsets(c)
-    c.execute("PRAGMA journal_mode=OFF" if args.unsafe else "PRAGMA journal_mode=DELETE")
-    c.execute("PRAGMA synchronous=OFF")
-    msg_tags = set()
-    for ps in tuple(PROPSETS) + tuple(csets):
-        msg_tags.update(t for t in ps if t)
-    msg_tags.update((PR_CREATOR_ENTRYID, PR_CREATOR_NAME,
-                     PR_LAST_MODIFIER_ENTRYID, PR_LAST_MODIFIER_NAME))
+	tr = Translator(args.map, args.strict, parse_domain_map(args.domain_map))
+	c = rw_connect(args.db)
+	csets = contact_propsets(c)
+	c.execute("PRAGMA journal_mode=OFF" if args.
+	          unsafe else "PRAGMA journal_mode=DELETE")
+	c.execute("PRAGMA synchronous=OFF")
+	msg_tags = set()
+	for ps in tuple(PROPSETS) + tuple(csets):
+		msg_tags.update(t for t in ps if t)
+	msg_tags.update((PR_CREATOR_ENTRYID, PR_CREATOR_NAME,
+	                 PR_LAST_MODIFIER_ENTRYID, PR_LAST_MODIFIER_NAME))
 
-    def msg_work(props):
-        out = []
-        for ps in tuple(PROPSETS) + tuple(csets):
-            out.extend(tr.process(props, ps))
-        out.extend(tr.process_entryid(props, PR_CREATOR_ENTRYID, PR_CREATOR_NAME))
-        out.extend(tr.process_entryid(props, PR_LAST_MODIFIER_ENTRYID,
-                                      PR_LAST_MODIFIER_NAME))
-        return out
+	def msg_work(props):
+		out = []
+		for ps in tuple(PROPSETS) + tuple(csets):
+			out.extend(tr.process(props, ps))
+		out.extend(
+		    tr.process_entryid(props, PR_CREATOR_ENTRYID, PR_CREATOR_NAME))
+		out.extend(
+		    tr.process_entryid(props, PR_LAST_MODIFIER_ENTRYID,
+		                       PR_LAST_MODIFIER_NAME))
+		return out
 
-    def rcpt_work(props):
-        return tr.process(props, RCPT_SET)
+	def rcpt_work(props):
+		out = tr.process(props, RCPT_SET)
+		done = dict(out)
+		own = None
+		if text(done.get(RCPT_SET[0],
+		                 props.get(RCPT_SET[0]))) in ("SMTP", "smtp"):
+			own = text(done.get(RCPT_SET[1], props.get(RCPT_SET[1])))
+		own = text(props.get(RCPT_SET[4])) or own
+		for tag in RCPT_EXTRA_EIDS:
+			out.extend(
+			    tr.process_entryid(props, tag, RCPT_SET[5], None,
+			                       own if own and "@" in own else None))
+		return out
 
-    tm = tu = rm = ru = 0
-    for lo, hi in chunked_ids(c, "messages", "message_id", args.chunk):
-        n, u = xlat_table(c, tr, "message_properties", "message_id", lo, hi,
-                          sorted(msg_tags), msg_work)
-        tm += n; tu += u
-        c.commit()
-    for lo, hi in chunked_ids(c, "recipients", "recipient_id", args.chunk * 4):
-        n, u = xlat_table(c, tr, "recipients_properties", "recipient_id", lo, hi,
-                          [t for t in RCPT_SET if t], rcpt_work)
-        rm += n; ru += u
-        c.commit()
-    c.close()
-    sys.stderr.write("xlat-addrs %s: %d messages scanned, %d property rows "
-                     "written; %d recipients scanned, %d rows written; %d "
-                     "distinct unmapped EX DNs\n" % (args.db, tm, tu, rm, ru,
-                                                     len(tr.unmapped)))
-    for dn, n in sorted(tr.unmapped.items(), key=lambda kv: -kv[1])[:40]:
-        sys.stderr.write("  unmapped %6d  %s\n" % (n, dn))
+	tm = tu = rm = ru = 0
+	for lo, hi in chunked_ids(c, "messages", "message_id", args.chunk):
+		n, u = xlat_table(c, tr, "message_properties", "message_id", lo, hi,
+		                  sorted(msg_tags), msg_work)
+		tm += n
+		tu += u
+		c.commit()
+	for lo, hi in chunked_ids(c, "recipients", "recipient_id", args.chunk * 4):
+		n, u = xlat_table(c, tr, "recipients_properties", "recipient_id", lo,
+		                  hi, [t for t in RCPT_SET + RCPT_EXTRA_EIDS if t],
+		                  rcpt_work)
+		rm += n
+		ru += u
+		c.commit()
+	c.close()
+	sys.stderr.write("xlat-addrs %s: %d messages scanned, %d property rows "
+	                 "written; %d recipients scanned, %d rows written; %d "
+	                 "distinct unmapped EX DNs\n" %
+	                 (args.db, tm, tu, rm, ru, len(tr.unmapped)))
+	for dn, n in sorted(tr.unmapped.items(), key=lambda kv: -kv[1])[:40]:
+		sys.stderr.write("  unmapped %6d  %s\n" % (n, dn))
 
 
 # --- store GUID rewrite ------------------------------------------------------
-GUID_PRIVATE_TAIL = "a5187b6fbcdcea1ed03c5657"   # gx_dbguid_store_private
-GUID_PUBLIC_TAIL = "0afb7df6919249886aa738ce"    # gx_dbguid_store_public
+GUID_PRIVATE_TAIL = "a5187b6fbcdcea1ed03c5657"  # gx_dbguid_store_private
+GUID_PUBLIC_TAIL = "0afb7df6919249886aa738ce"  # gx_dbguid_store_public
 
 
 def store_guid_hex(kind, dbid):
-    """hex string (as serialized, little-endian time_low) of
+	"""hex string (as serialized, little-endian time_low) of
     rop_util_make_user_guid / rop_util_make_domain_guid"""
-    tail = GUID_PRIVATE_TAIL if kind == "private" else GUID_PUBLIC_TAIL
-    return int(dbid).to_bytes(4, "little").hex() + tail
+	tail = GUID_PRIVATE_TAIL if kind == "private" else GUID_PUBLIC_TAIL
+	return int(dbid).to_bytes(4, "little").hex() + tail
 
 
 class GuidRewriter:
-    def __init__(self, pairs):
-        self.bin = [(bytes.fromhex(o), bytes.fromhex(n)) for o, n in pairs]
-        self.txt = []
-        for o, n in pairs:
-            self.txt.append((o.lower(), n.lower()))
-            self.txt.append((o.upper(), n.upper()))
-        self.hits = 0
+	# one pass: source and target ids overlap
+	def __init__(self, pairs):
+		bmap = {}
+		tmap = {}
+		for o, n in pairs:
+			bmap[bytes.fromhex(o)] = bytes.fromhex(n)
+			tmap[o.lower()] = n.lower()
+			tmap[o.upper()] = n.upper()
+		self.bmap = bmap
+		self.tmap = tmap
+		# hex-encoded entryids inside binary JSON etc.
+		self.hmap = {k.encode(): v.encode() for k, v in tmap.items()}
+		self.bre = self._regex(list(bmap) + list(self.hmap), True)
+		self.tre = self._regex(list(tmap), False)
+		self.hits = 0
 
-    def blob(self, v):
-        for o, n in self.bin:
-            if o in v:
-                self.hits += v.count(o)
-                v = v.replace(o, n)
-        for o, n in self.txt:  # hex-encoded entryids inside binary JSON etc.
-            ob, nb = o.encode(), n.encode()
-            if ob in v:
-                self.hits += v.count(ob)
-                v = v.replace(ob, nb)
-        return v
+	@staticmethod
+	def _regex(keys, binary):
+		if not keys:
+			return None
+		if binary:
+			return re.compile(b"|".join(re.escape(k) for k in keys))
+		return re.compile("|".join(re.escape(k) for k in keys))
 
-    def text(self, v):
-        for o, n in self.txt:
-            if o in v:
-                self.hits += v.count(o)
-                v = v.replace(o, n)
-        return v
+	def _sub(self, rx, table, v):
+		if rx is None:
+			return v
+
+		def repl(m):
+			self.hits += 1
+			return table[m.group(0)]
+
+		return rx.sub(repl, v)
+
+	def blob(self, v):
+		table = dict(self.bmap)
+		table.update(self.hmap)
+		return self._sub(self.bre, table, v)
+
+	def text(self, v):
+		return self._sub(self.tre, self.tmap, v)
 
 
 def cmd_rewrite_guids(args):
-    pairs = []
-    for it in args.guid or []:
-        o, n = it.split("=", 1)
-        if len(o) != 32 or len(n) != 32:
-            raise SystemExit("bad --guid %r (want 32 hex = 32 hex)" % it)
-        pairs.append((o.lower(), n.lower()))
-    gr = GuidRewriter(pairs)
-    c = rw_connect(args.db)
-    c.execute("PRAGMA synchronous=OFF")
-    changed = 0
-    # binary properties anywhere; text properties only on store/folder level
-    # (that is where clients persist hex entryids; message bodies are cid
-    # files anyway)
-    for table, key in (("store_properties", "rowid"), ("folder_properties", "rowid"),
-                       ("message_properties", "rowid"), ("attachment_properties", "rowid"),
-                       ("recipients_properties", "rowid")):
-        rows = c.execute("SELECT rowid, propval FROM %s WHERE typeof(propval)='blob'"
-                         % table).fetchall()
-        ups = []
-        for rid, v in rows:
-            nv = gr.blob(v)
-            if nv != v:
-                ups.append((nv, rid))
-        if ups:
-            c.executemany("UPDATE %s SET propval=? WHERE rowid=?" % table, ups)
-        changed += len(ups)
-        c.commit()
-    for table in ("store_properties", "folder_properties"):
-        rows = c.execute("SELECT rowid, propval FROM %s WHERE typeof(propval)='text'"
-                         % table).fetchall()
-        ups = [(gr.text(v), rid) for rid, v in rows if gr.text(v) != v]
-        if ups:
-            c.executemany("UPDATE %s SET propval=? WHERE rowid=?" % table, ups)
-        changed += len(ups)
-    for table, col in (("folders", "search_criteria"), ("rules", "condition"),
-                       ("rules", "actions")):
-        rows = c.execute("SELECT rowid, %s FROM %s WHERE %s IS NOT NULL" % (col, table, col)).fetchall()
-        ups = []
-        for rid, v in rows:
-            if isinstance(v, bytes):
-                nv = gr.blob(v)
-                if nv != v:
-                    ups.append((nv, rid))
-        if ups:
-            c.executemany("UPDATE %s SET %s=? WHERE rowid=?" % (table, col), ups)
-        changed += len(ups)
-    c.commit()
-    c.close()
-    files = 0
-    for f in args.file or []:
-        try:
-            b = open(f, "rb").read()
-        except OSError:
-            continue
-        nb = gr.blob(b)
-        if nb != b:
-            open(f, "wb").write(nb)
-            files += 1
-    sys.stderr.write("rewrite-guids %s: %d GUID occurrences replaced in %d rows, "
-                     "%d files\n" % (args.db, gr.hits, changed, files))
+	pairs = []
+	for it in args.guid or []:
+		o, n = it.split("=", 1)
+		if len(o) != 32 or len(n) != 32:
+			raise SystemExit("bad --guid %r (want 32 hex = 32 hex)" % it)
+		pairs.append((o.lower(), n.lower()))
+	gr = GuidRewriter(pairs)
+	c = rw_connect(args.db)
+	c.execute("PRAGMA synchronous=OFF")
+	changed = 0
+	# binary properties anywhere; text properties only on store/folder level
+	# (that is where clients persist hex entryids; message bodies are cid
+	# files anyway)
+	for table, key in (("store_properties",
+	                    "rowid"), ("folder_properties",
+	                               "rowid"), ("message_properties", "rowid"),
+	                   ("attachment_properties",
+	                    "rowid"), ("recipients_properties", "rowid")):
+		rows = c.execute(
+		    "SELECT rowid, propval FROM %s WHERE typeof(propval)='blob'" %
+		    table).fetchall()
+		ups = []
+		for rid, v in rows:
+			nv = gr.blob(v)
+			if nv != v:
+				ups.append((nv, rid))
+		if ups:
+			c.executemany("UPDATE %s SET propval=? WHERE rowid=?" % table, ups)
+		changed += len(ups)
+		c.commit()
+	for table in ("store_properties", "folder_properties"):
+		rows = c.execute(
+		    "SELECT rowid, propval FROM %s WHERE typeof(propval)='text'" %
+		    table).fetchall()
+		ups = [(gr.text(v), rid) for rid, v in rows if gr.text(v) != v]
+		if ups:
+			c.executemany("UPDATE %s SET propval=? WHERE rowid=?" % table, ups)
+		changed += len(ups)
+	for table, col in (("folders", "search_criteria"), ("rules", "condition"),
+	                   ("rules", "actions")):
+		rows = c.execute("SELECT rowid, %s FROM %s WHERE %s IS NOT NULL" %
+		                 (col, table, col)).fetchall()
+		ups = []
+		for rid, v in rows:
+			if isinstance(v, bytes):
+				nv = gr.blob(v)
+				if nv != v:
+					ups.append((nv, rid))
+		if ups:
+			c.executemany("UPDATE %s SET %s=? WHERE rowid=?" % (table, col),
+			              ups)
+		changed += len(ups)
+	c.commit()
+	c.close()
+	files = 0
+	for f in args.file or []:
+		try:
+			b = open(f, "rb").read()
+		except OSError:
+			continue
+		nb = gr.blob(b)
+		if nb != b:
+			open(f, "wb").write(nb)
+			files += 1
+	sys.stderr.write(
+	    "rewrite-guids %s: %d GUID occurrences replaced in %d rows, "
+	    "%d files\n" % (args.db, gr.hits, changed, files))
+
+
+MUID_STORE_WRAP = bytes.fromhex("38a1bb1005e5101aa1bb08002b2a56c2")
+HEX_EID_RE = re.compile(r"^[0-9A-Fa-f]{40,}$")
+
+
+class StaleRefs:
+	"""Decide whether a hex entryid found in the g-web settings still
+    refers to something on the target. stores: file with lines
+    "<users.id> <maildir>" for every user of the target; maildir "-" for
+    stores whose content is not final yet (references are kept)."""
+
+	def __init__(self, path):
+		self.stores = {}
+		for line in open(path):
+			f = line.split(None, 1)
+			if len(f) == 2:
+				self.stores[int(f[0])] = f[1].strip()
+		self.dbs = {}
+
+	def folder_exists(self, uid, fid):
+		md = self.stores.get(uid)
+		if md is None:
+			return False
+		if md == "-":
+			return True
+		if uid not in self.dbs:
+			try:
+				self.dbs[uid] = ro_connect(md + "/exmdb/exchange.sqlite3")
+			except sqlite3.Error:
+				self.dbs[uid] = None
+		c = self.dbs[uid]
+		if c is None:
+			return False
+		return c.execute("SELECT 1 FROM folders WHERE folder_id=?",
+		                 (fid, )).fetchone() is not None
+
+	def is_stale(self, h):
+		"""True for entryids that cannot resolve on the target, False for
+        valid ones, None when the value is not an entryid we understand"""
+		if not HEX_EID_RE.match(h) or len(h) % 2:
+			return None
+		b = bytes.fromhex(h)
+		if len(b) >= 20 and b[4:20] == MUID_STORE_WRAP:
+			# source-system store entryids (emsmdb.dll + source mailbox
+			# DN) never compare equal to the ones zcore hands out
+			return True
+		if len(b) >= 20 and b[4:20] == MUID_EMSAB:
+			return True
+		if len(b) == 46 and b[20:22] == b"\x01\x00":
+			guid = b[22:38]
+			if guid[4:] == bytes.fromhex(GUID_PRIVATE_TAIL):
+				uid = int.from_bytes(guid[:4], "little")
+				return not self.folder_exists(uid,
+				                              int.from_bytes(b[38:44], "big"))
+			return None
+		return None
+
+
+def drop_stale_settings(j, stale):
+	"""remove dict entries keyed by / list items holding unresolvable
+    entryids, and reset main/default_addressbook if it is a source
+    address book entryid; returns the number of removals"""
+	n = 0
+	v1 = j.get("settings", {}).get("zarafa", {}).get("v1", {})
+	main = v1.get("main", {})
+	if isinstance(main.get("default_addressbook"), str) and \
+       stale.is_stale(main["default_addressbook"]):
+		del main["default_addressbook"]
+		n += 1
+
+	def walk(o):
+		nonlocal n
+		if isinstance(o, dict):
+			for k in list(o):
+				if stale.is_stale(k):
+					del o[k]
+					n += 1
+					continue
+				v = o[k]
+				if isinstance(v, str) and stale.is_stale(v):
+					del o[k]
+					n += 1
+					continue
+				walk(v)
+		elif isinstance(o, list):
+			keep = [
+			    x for x in o if not (isinstance(x, str) and stale.is_stale(x))
+			]
+			n += len(o) - len(keep)
+			o[:] = keep
+			for x in o:
+				walk(x)
+
+	walk(v1.get("state", {}))
+	return n
 
 
 def cmd_web_settings(args):
-    """zarafa.dat = EXT_PUSH tpropval_array (+ tarray_set); the settings JSON
+	"""zarafa.dat = EXT_PUSH tpropval_array (+ tarray_set); the settings JSON
     is a NUL-terminated UTF-8 string without length prefix, so it can be
     edited in place as long as the terminator stays."""
-    b = open(args.file, "rb").read()
-    out, pos, edits = bytearray(), 0, 0
-    while True:
-        i = b.find(b'{"settings"', pos)
-        if i < 0:
-            out += b[pos:]
-            break
-        end = b.find(b"\0", i)
-        if end < 0:
-            out += b[pos:]
-            break
-        try:
-            j = json.loads(b[i:end].decode("utf-8"))
-        except ValueError:
-            out += b[pos:end]
-            pos = end
-            continue
-        if args.drop_shared:
-            h = j.get("settings", {}).get("zarafa", {}).get("v1", {}).get("contexts", {}).get("hierarchy", {})
-            if "shared_stores" in h:
-                del h["shared_stores"]
-                edits += 1
-        out += b[pos:i] + json.dumps(j, separators=(",", ":")).encode("utf-8")
-        pos = end
-    if edits:
-        open(args.file, "wb").write(bytes(out))
-    sys.stderr.write("web-settings %s: %d edits\n" % (args.file, edits))
+	stale = StaleRefs(args.stores) if args.drop_stale else None
+	b = open(args.file, "rb").read()
+	out, pos, edits = bytearray(), 0, 0
+	while True:
+		i = b.find(b'{"settings"', pos)
+		if i < 0:
+			out += b[pos:]
+			break
+		end = b.find(b"\0", i)
+		if end < 0:
+			out += b[pos:]
+			break
+		try:
+			j = json.loads(b[i:end].decode("utf-8"))
+		except ValueError:
+			out += b[pos:end]
+			pos = end
+			continue
+		if args.drop_shared:
+			h = j.get("settings",
+			          {}).get("zarafa",
+			                  {}).get("v1", {}).get("contexts",
+			                                        {}).get("hierarchy", {})
+			if "shared_stores" in h:
+				del h["shared_stores"]
+				edits += 1
+		if args.drop_stale:
+			edits += drop_stale_settings(j, stale)
+		out += b[pos:i] + json.dumps(j, separators=(",", ":")).encode("utf-8")
+		pos = end
+	if edits and not args.dry_run:
+		open(args.file, "wb").write(bytes(out))
+	sys.stderr.write("web-settings %s: %d edits%s\n" %
+	                 (args.file, edits, " (dry run)" if args.dry_run else ""))
 
 
-DN_RE = re.compile(r"^/O=([^/]+)/OU=[^/]+/CN=RECIPIENTS/CN=([0-9A-F]{8})"
-                   r"([0-9A-F]{8})(?:-(.*))?$", re.I)
+DN_RE = re.compile(
+    r"^/O=([^/]+)/OU=[^/]+/CN=RECIPIENTS/CN=([0-9A-F]{8})"
+    r"([0-9A-F]{8})(?:-(.*))?$", re.I)
 
 
 def le_hex_to_int(h):
-    return int.from_bytes(bytes.fromhex(h), "little")
+	return int.from_bytes(bytes.fromhex(h), "little")
 
 
 def parse_dn(dn):
-    m = DN_RE.match(dn)
-    if m is None:
-        return None
-    return {"org": m.group(1), "domain_id": le_hex_to_int(m.group(2)),
-            "user_id": le_hex_to_int(m.group(3)), "suffix": m.group(4) or ""}
+	m = DN_RE.match(dn)
+	if m is None:
+		return None
+	return {
+	    "org": m.group(1),
+	    "domain_id": le_hex_to_int(m.group(2)),
+	    "user_id": le_hex_to_int(m.group(3)),
+	    "suffix": m.group(4) or ""
+	}
 
 
 def rw_connect(path):
-    return sqlite3.connect(path, timeout=30)
+	return sqlite3.connect(path, timeout=30)
 
 
 def ro_connect(path):
-    return sqlite3.connect("file:%s?mode=ro" % path, uri=True)
+	return sqlite3.connect("file:%s?mode=ro" % path, uri=True)
 
 
 def text(v):
-    if isinstance(v, bytes):
-        return v.decode("utf-8", "replace").rstrip("\0")
-    return v
+	if isinstance(v, bytes):
+		return v.decode("utf-8", "replace").rstrip("\0")
+	return v
 
 
 def cmd_check(args):
-    c = ro_connect(args.db)
-    print("configurations:")
-    for k, v in c.execute("SELECT config_id, config_value FROM configurations "
-                          "ORDER BY config_id"):
-        print("  %2d = %s" % (k, text(v)))
-    for t in ("folders", "messages", "attachments", "permissions", "rules",
-              "named_properties", "allocated_eids"):
-        print("%-18s %d" % (t, c.execute("SELECT COUNT(*) FROM " + t).fetchone()[0]))
-    print("sqlite_master tables: %s" % ", ".join(
-        r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table' "
-                                "ORDER BY name")))
-    # pre-flight for the gromox schema upgrade (lib/dbop_sqlite.cpp):
-    # step 12 creates UNIQUE INDEX on named_properties(name_string) (NOCASE)
-    # and step 15 needs a non-empty allocated_eids table
-    dups = c.execute("SELECT name_string, COUNT(*) FROM named_properties "
-                     "GROUP BY name_string COLLATE NOCASE HAVING COUNT(*) > 1").fetchall()
-    eids = c.execute("SELECT COUNT(*) FROM allocated_eids").fetchone()[0]
-    print("preflight: duplicate named_properties: %d, allocated_eids rows: %d -> %s"
-          % (len(dups), eids, "OK" if not dups and eids else "FAIL"))
-    for n, k in dups[:20]:
-        print("  dup: %r x%d" % (n, k))
-    if args.preflight and (dups or not eids):
-        sys.exit(3)
+	c = ro_connect(args.db)
+	print("configurations:")
+	for k, v in c.execute("SELECT config_id, config_value FROM configurations "
+	                      "ORDER BY config_id"):
+		print("  %2d = %s" % (k, text(v)))
+	for t in ("folders", "messages", "attachments", "permissions", "rules",
+	          "named_properties", "allocated_eids"):
+		print("%-18s %d" %
+		      (t, c.execute("SELECT COUNT(*) FROM " + t).fetchone()[0]))
+	print("sqlite_master tables: %s" % ", ".join(
+	    r[0]
+	    for r in c.execute("SELECT name FROM sqlite_master WHERE type='table' "
+	                       "ORDER BY name")))
+	# pre-flight for the gromox schema upgrade (lib/dbop_sqlite.cpp):
+	# step 12 creates UNIQUE INDEX on named_properties(name_string) (NOCASE)
+	# and step 15 needs a non-empty allocated_eids table
+	dups = c.execute(
+	    "SELECT name_string, COUNT(*) FROM named_properties "
+	    "GROUP BY name_string COLLATE NOCASE HAVING COUNT(*) > 1").fetchall()
+	eids = c.execute("SELECT COUNT(*) FROM allocated_eids").fetchone()[0]
+	print(
+	    "preflight: duplicate named_properties: %d, allocated_eids rows: %d -> %s"
+	    % (len(dups), eids, "OK" if not dups and eids else "FAIL"))
+	for n, k in dups[:20]:
+		print("  dup: %r x%d" % (n, k))
+	if args.preflight and (dups or not eids):
+		sys.exit(3)
 
 
 def scan_dns(path):
-    c = ro_connect(path)
-    counts = {}
-    tags = set(ps[1] for ps in PROPSETS[:-1]) | set(ps[1] for ps in contact_propsets(c))
-    for tag in sorted(tags):
-        for v, n in c.execute("SELECT propval, COUNT(*) FROM message_properties "
-                              "WHERE proptag=? AND (propval LIKE '/O=%' OR "
-                              "propval LIKE '/o=%') GROUP BY propval", (tag,)):
-            counts[text(v)] = counts.get(text(v), 0) + n
-    for v, n in c.execute("SELECT propval, COUNT(*) FROM recipients_properties "
-                          "WHERE proptag=? AND (propval LIKE '/O=%' OR "
-                          "propval LIKE '/o=%') GROUP BY propval", (RCPT_ADDR_TAG,)):
-        counts[text(v)] = counts.get(text(v), 0) + n
-    # address-book entryids of creator / last modifier
-    for (v,) in c.execute("SELECT propval FROM message_properties WHERE proptag "
-                          "IN (?, ?)", (PR_CREATOR_ENTRYID, PR_LAST_MODIFIER_ENTRYID)):
-        dn = emsab_dn(v)
-        if dn:
-            counts[dn] = counts.get(dn, 0) + 1
-    c.close()
-    return counts
+	c = ro_connect(path)
+	counts = {}
+	tags = set(ps[1] for ps in PROPSETS[:-1] if ps[1]) | set(
+	    ps[1] for ps in contact_propsets(c))
+	for tag in sorted(tags):
+		for v, n in c.execute(
+		    "SELECT propval, COUNT(*) FROM message_properties "
+		    "WHERE proptag=? AND (propval LIKE '/O=%' OR "
+		    "propval LIKE '/o=%') GROUP BY propval", (tag, )):
+			counts[text(v)] = counts.get(text(v), 0) + n
+	for v, n in c.execute(
+	    "SELECT propval, COUNT(*) FROM recipients_properties "
+	    "WHERE proptag=? AND (propval LIKE '/O=%' OR "
+	    "propval LIKE '/o=%') GROUP BY propval", (RCPT_ADDR_TAG, )):
+		counts[text(v)] = counts.get(text(v), 0) + n
+	# address-book entryids (also where the addrtype already says SMTP)
+	msg_eids = set(ps[2] for ps in PROPSETS[:-1] if ps[2])
+	msg_eids |= {PR_CREATOR_ENTRYID, PR_LAST_MODIFIER_ENTRYID}
+	for table, eids in (("message_properties", msg_eids),
+	                    ("recipients_properties",
+	                     {RCPT_SET[2]} | set(RCPT_EXTRA_EIDS))):
+		q = ("SELECT propval, COUNT(*) FROM %s WHERE proptag IN (%s) AND "
+		     "substr(propval, 5, 16) = ? GROUP BY propval" %
+		     (table, ",".join(str(t) for t in sorted(eids))))
+		for v, n in c.execute(q, (MUID_EMSAB, )):
+			dn = emsab_dn(v)
+			if dn:
+				counts[dn] = counts.get(dn, 0) + n
+	c.close()
+	return counts
 
 
 def cmd_scan_dn(args):
-    total = {}
-    for db in args.db:
-        for dn, n in scan_dns(db).items():
-            total[dn] = total.get(dn, 0) + n
-    json.dump([{"dn": dn, "count": n} for dn, n in
-               sorted(total.items(), key=lambda kv: -kv[1])],
-              sys.stdout, indent=1)
-    sys.stdout.write("\n")
+	total = {}
+	for db in args.db:
+		for dn, n in scan_dns(db).items():
+			total[dn] = total.get(dn, 0) + n
+	json.dump([{
+	    "dn": dn,
+	    "count": n
+	} for dn, n in sorted(total.items(), key=lambda kv: -kv[1])],
+	          sys.stdout,
+	          indent=1)
+	sys.stdout.write("\n")
 
 
 def parse_domain_map(items):
-    m = {}
-    for it in items or []:
-        if "=" not in it:
-            raise SystemExit("bad --domain-map entry %r (want src=dst)" % it)
-        s, d = it.split("=", 1)
-        m[s.lower()] = d.lower()
-    return m
+	m = {}
+	for it in items or []:
+		if "=" not in it:
+			raise SystemExit("bad --domain-map entry %r (want src=dst)" % it)
+		s, d = it.split("=", 1)
+		m[s.lower()] = d.lower()
+	return m
 
 
 def map_address(addr, dmap):
-    if "@" not in addr:
-        return addr
-    lp, dom = addr.rsplit("@", 1)
-    return "%s@%s" % (lp, dmap.get(dom.lower(), dom))
+	if "@" not in addr:
+		return addr
+	lp, dom = addr.rsplit("@", 1)
+	return "%s@%s" % (lp, dmap.get(dom.lower(), dom))
 
 
 def cmd_build_map(args):
-    inv = json.load(open(args.inventory))
-    dmap = parse_domain_map(args.domain_map)
-    users_by_id = {u["id"]: u for u in inv["users"]}
-    domains_by_id = {int(d["id"]): d["domainname"] for d in inv["domains"]}
-    dns = json.load(open(args.dns)) if args.dns else []
-    out, unresolved = [], []
-    seen = set()
-    # 1. every known user/alias/mlist of the source gets a DN entry
-    for u in inv["users"]:
-        if u["id"] is None:
-            continue
-        dom = domains_by_id.get(u["domain_id"], "")
-        dn = ("/O=%s/OU=EXCHANGE ADMINISTRATIVE GROUP (FYDIBOHF23SPDLT)/"
-              "CN=RECIPIENTS/CN=%s%s-%s" % (
-                  args.org, u["domain_id"].to_bytes(4, "little").hex(),
-                  u["id"].to_bytes(4, "little").hex(),
-                  u["username"].split("@", 1)[0])).upper()
-        out.append({"dn": dn, "to": map_address(u["username"], dmap),
-                    "na": u["username"]})
-        seen.add(dn.upper())
-    # 2. DNs seen in message data that do not belong to a current user
-    #    (deleted accounts): synthesize the address from the DN suffix
-    for e in dns:
-        dn = e["dn"]
-        if dn.upper() in seen:
-            continue
-        p = parse_dn(dn)
-        if p is None:
-            unresolved.append(dn)
-            continue
-        u = users_by_id.get(p["user_id"])
-        dom = domains_by_id.get(p["domain_id"])
-        if u is not None and u["domain_id"] == p["domain_id"]:
-            to = map_address(u["username"], dmap)
-        elif p["suffix"] and dom:
-            to = map_address("%s@%s" % (p["suffix"].lower(), dom), dmap)
-        else:
-            unresolved.append(dn)
-            continue
-        out.append({"dn": dn, "to": to, "deleted": u is None})
-        seen.add(dn.upper())
-    json.dump(out, open(args.output, "w"), indent=1)
-    sys.stderr.write("map: %d entries written to %s, %d unresolved DNs\n"
-                     % (len(out), args.output, len(unresolved)))
-    for dn in unresolved:
-        sys.stderr.write("  unresolved: %s\n" % dn)
+	inv = json.load(open(args.inventory))
+	dmap = parse_domain_map(args.domain_map)
+	users_by_id = {u["id"]: u for u in inv["users"]}
+	domains_by_id = {int(d["id"]): d["domainname"] for d in inv["domains"]}
+	dns = json.load(open(args.dns)) if args.dns else []
+	out, unresolved = [], []
+	seen = set()
+	# 1. every known user/alias/mlist of the source gets a DN entry
+	for u in inv["users"]:
+		if u["id"] is None:
+			continue
+		dom = domains_by_id.get(u["domain_id"], "")
+		dn = ("/O=%s/OU=EXCHANGE ADMINISTRATIVE GROUP (FYDIBOHF23SPDLT)/"
+		      "CN=RECIPIENTS/CN=%s%s-%s" %
+		      (args.org, u["domain_id"].to_bytes(4, "little").hex(),
+		       u["id"].to_bytes(4, "little").hex(), u["username"].split(
+		           "@", 1)[0])).upper()
+		out.append({
+		    "dn": dn,
+		    "to": map_address(u["username"], dmap),
+		    "na": u["username"]
+		})
+		seen.add(dn.upper())
+	# 2. DNs seen in message data that do not belong to a current user
+	#    (deleted accounts): synthesize the address from the DN suffix
+	for e in dns:
+		dn = e["dn"]
+		if dn.upper() in seen:
+			continue
+		p = parse_dn(dn)
+		if p is None:
+			unresolved.append(dn)
+			continue
+		u = users_by_id.get(p["user_id"])
+		dom = domains_by_id.get(p["domain_id"])
+		if u is not None and u["domain_id"] == p["domain_id"]:
+			to = map_address(u["username"], dmap)
+		elif p["suffix"] and dom:
+			to = map_address("%s@%s" % (p["suffix"].lower(), dom), dmap)
+		else:
+			unresolved.append(dn)
+			continue
+		out.append({"dn": dn, "to": to, "deleted": u is None})
+		seen.add(dn.upper())
+	json.dump(out, open(args.output, "w"), indent=1)
+	sys.stderr.write("map: %d entries written to %s, %d unresolved DNs\n" %
+	                 (len(out), args.output, len(unresolved)))
+	for dn in unresolved:
+		sys.stderr.write("  unresolved: %s\n" % dn)
 
 
 def cmd_rewrite_perms(args):
-    dmap = parse_domain_map(args.domain_map)
-    keep = None
-    if args.known_users:
-        keep = set(l.strip().lower() for l in open(args.known_users)
-                   if l.strip())
-    c = rw_connect(args.db)
-    rows = c.execute("SELECT member_id, folder_id, username FROM permissions").fetchall()
-    changed = dropped = 0
-    for mid, fid, user in rows:
-        user = text(user)
-        if user in ("default", "anonymous", "") or "@" not in user:
-            continue
-        new = map_address(user, dmap)
-        if keep is not None and new.lower() not in keep:
-            if args.drop_unknown:
-                c.execute("DELETE FROM permissions WHERE member_id=?", (mid,))
-                dropped += 1
-            else:
-                sys.stderr.write("warning: fid %d: principal %s not on target\n"
-                                 % (fid, new))
-            continue
-        if new != user:
-            # the (folder_id, username) index is UNIQUE; merge if the target
-            # principal already has an entry on this folder
-            dup = c.execute("SELECT member_id FROM permissions WHERE folder_id=? "
-                            "AND username=?", (fid, new)).fetchone()
-            if dup:
-                c.execute("UPDATE permissions SET permission = permission | "
-                          "(SELECT permission FROM permissions WHERE member_id=?) "
-                          "WHERE member_id=?", (mid, dup[0]))
-                c.execute("DELETE FROM permissions WHERE member_id=?", (mid,))
-                dropped += 1
-            else:
-                c.execute("UPDATE permissions SET username=? WHERE member_id=?",
-                          (new, mid))
-                changed += 1
-    c.commit()
-    c.close()
-    sys.stderr.write("permissions: %d renamed, %d dropped\n" % (changed, dropped))
+	dmap = parse_domain_map(args.domain_map)
+	keep = None
+	if args.known_users:
+		keep = set(l.strip().lower() for l in open(args.known_users)
+		           if l.strip())
+	c = rw_connect(args.db)
+	rows = c.execute(
+	    "SELECT member_id, folder_id, username FROM permissions").fetchall()
+	changed = dropped = 0
+	for mid, fid, user in rows:
+		user = text(user)
+		if user in ("default", "anonymous", "") or "@" not in user:
+			continue
+		new = map_address(user, dmap)
+		if keep is not None and new.lower() not in keep:
+			if args.drop_unknown:
+				c.execute("DELETE FROM permissions WHERE member_id=?", (mid, ))
+				dropped += 1
+			else:
+				sys.stderr.write(
+				    "warning: fid %d: principal %s not on target\n" %
+				    (fid, new))
+			continue
+		if new != user:
+			# the (folder_id, username) index is UNIQUE; merge if the target
+			# principal already has an entry on this folder
+			dup = c.execute(
+			    "SELECT member_id FROM permissions WHERE folder_id=? "
+			    "AND username=?", (fid, new)).fetchone()
+			if dup:
+				c.execute(
+				    "UPDATE permissions SET permission = permission | "
+				    "(SELECT permission FROM permissions WHERE member_id=?) "
+				    "WHERE member_id=?", (mid, dup[0]))
+				c.execute("DELETE FROM permissions WHERE member_id=?", (mid, ))
+				dropped += 1
+			else:
+				c.execute(
+				    "UPDATE permissions SET username=? WHERE member_id=?",
+				    (new, mid))
+				changed += 1
+	c.commit()
+	c.close()
+	sys.stderr.write("permissions: %d renamed, %d dropped\n" %
+	                 (changed, dropped))
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    sub = ap.add_subparsers(dest="cmd")
-    sub.required = True  # (python 3.6 has no required= keyword)
-    p = sub.add_parser("guid")  # print store GUID hex for the shell driver
-    p.add_argument("kind", choices=["private", "public"])
-    p.add_argument("id", type=int)
-    p = sub.add_parser("check"); p.add_argument("db")
-    p.add_argument("--preflight", action="store_true",
-                   help="exit 3 when the store would fail the schema upgrade")
-    p = sub.add_parser("scan-dn"); p.add_argument("db", nargs="+")
-    p = sub.add_parser("build-map")
-    p.add_argument("--inventory", required=True)
-    p.add_argument("--dns", help="output of scan-dn (JSON)")
-    p.add_argument("--org", default="My Organization",
-                   help="source x500_org_name (e4a zcore.cfg X500_ORG_NAME)")
-    p.add_argument("--domain-map", action="append", metavar="SRC=DST")
-    p.add_argument("--output", required=True)
-    p = sub.add_parser("xlat-addrs")
-    p.add_argument("db")
-    p.add_argument("--map", required=True, help="user map JSON (dn/to)")
-    p.add_argument("--domain-map", action="append", metavar="SRC=DST",
-                   help="also rename existing SMTP addresses of these domains")
-    p.add_argument("--strict", action="store_true",
-                   help="case-sensitive DN matching like gromox-mbop")
-    p.add_argument("--chunk", type=int, default=20000)
-    p.add_argument("--unsafe", action="store_true",
-                   help="no rollback journal (faster; only with a backup)")
-    p = sub.add_parser("rewrite-guids")
-    p.add_argument("db")
-    p.add_argument("--guid", action="append", metavar="OLDHEX=NEWHEX",
-                   help="32-hex-digit store GUID pair as serialized (see store_guid_hex)")
-    p.add_argument("--file", action="append", help="extra file to patch (zarafa.dat)")
-    p = sub.add_parser("web-settings")
-    p.add_argument("file", help="config/zarafa.dat")
-    p.add_argument("--drop-shared", action="store_true")
-    p = sub.add_parser("rewrite-perms")
-    p.add_argument("db")
-    p.add_argument("--domain-map", action="append", metavar="SRC=DST")
-    p.add_argument("--known-users", help="file with one target address per line")
-    p.add_argument("--drop-unknown", action="store_true")
-    args = ap.parse_args()
-    if args.cmd == "guid":
-        print(store_guid_hex(args.kind, args.id)); return
-    {"check": cmd_check, "scan-dn": cmd_scan_dn, "build-map": cmd_build_map,
-     "rewrite-perms": cmd_rewrite_perms, "xlat-addrs": cmd_xlat_addrs,
-     "rewrite-guids": cmd_rewrite_guids, "web-settings": cmd_web_settings}[args.cmd](args)
+	ap = argparse.ArgumentParser()
+	sub = ap.add_subparsers(dest="cmd")
+	sub.required = True  # (python 3.6 has no required= keyword)
+	p = sub.add_parser("guid")  # print store GUID hex for the shell driver
+	p.add_argument("kind", choices=["private", "public"])
+	p.add_argument("id", type=int)
+	p = sub.add_parser("check")
+	p.add_argument("db")
+	p.add_argument("--preflight",
+	               action="store_true",
+	               help="exit 3 when the store would fail the schema upgrade")
+	p = sub.add_parser("scan-dn")
+	p.add_argument("db", nargs="+")
+	p = sub.add_parser("build-map")
+	p.add_argument("--inventory", required=True)
+	p.add_argument("--dns", help="output of scan-dn (JSON)")
+	p.add_argument("--org",
+	               default="My Organization",
+	               help="source x500_org_name (e4a zcore.cfg X500_ORG_NAME)")
+	p.add_argument("--domain-map", action="append", metavar="SRC=DST")
+	p.add_argument("--output", required=True)
+	p = sub.add_parser("xlat-addrs")
+	p.add_argument("db")
+	p.add_argument("--map", required=True, help="user map JSON (dn/to)")
+	p.add_argument("--domain-map",
+	               action="append",
+	               metavar="SRC=DST",
+	               help="also rename existing SMTP addresses of these domains")
+	p.add_argument("--strict",
+	               action="store_true",
+	               help="case-sensitive DN matching like gromox-mbop")
+	p.add_argument("--chunk", type=int, default=20000)
+	p.add_argument("--unsafe",
+	               action="store_true",
+	               help="no rollback journal (faster; only with a backup)")
+	p = sub.add_parser("rewrite-guids")
+	p.add_argument("db")
+	p.add_argument(
+	    "--guid",
+	    action="append",
+	    metavar="OLDHEX=NEWHEX",
+	    help="32-hex-digit store GUID pair as serialized (see store_guid_hex)")
+	p.add_argument("--file",
+	               action="append",
+	               help="extra file to patch (zarafa.dat)")
+	p = sub.add_parser("web-settings")
+	p.add_argument("file", help="config/zarafa.dat")
+	p.add_argument("--drop-shared", action="store_true")
+	p.add_argument("--drop-stale",
+	               action="store_true",
+	               help="drop settings entries whose entryids do not resolve "
+	               "on the target (needs --stores)")
+	p.add_argument("--stores", help='file with "<users.id> <maildir>" lines')
+	p.add_argument("--dry-run", action="store_true")
+	p = sub.add_parser("rewrite-perms")
+	p.add_argument("db")
+	p.add_argument("--domain-map", action="append", metavar="SRC=DST")
+	p.add_argument("--known-users",
+	               help="file with one target address per line")
+	p.add_argument("--drop-unknown", action="store_true")
+	args = ap.parse_args()
+	if args.cmd == "guid":
+		print(store_guid_hex(args.kind, args.id))
+		return
+	{
+	    "check": cmd_check,
+	    "scan-dn": cmd_scan_dn,
+	    "build-map": cmd_build_map,
+	    "rewrite-perms": cmd_rewrite_perms,
+	    "xlat-addrs": cmd_xlat_addrs,
+	    "rewrite-guids": cmd_rewrite_guids,
+	    "web-settings": cmd_web_settings
+	}[args.cmd](args)
 
 
 if __name__ == "__main__":
-    main()
+	main()

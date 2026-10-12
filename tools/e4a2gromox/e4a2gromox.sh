@@ -107,6 +107,10 @@ note() { # note <file> <line>: append bookkeeping unless dry run
 	[[ $DRYRUN -eq 1 ]] || echo "$2" >>"$1"
 }
 listed() { [[ -f $1 ]] && grep -qxF -- "$2" "$1"; }
+planned() { # planned <target address>: a user/shared row of the plan?
+	awk -F'|' -v a="$1" '($1 == "user" || $1 == "shared") && tolower($3) == tolower(a) { f = 1 }
+		END { exit !f }' "$PLAN"
+}
 src_ssh() { # run a command on the e4a host
 	# shellcheck disable=SC2086
 	ssh $SRC_SSH_OPTS -o BatchMode=yes "$SRC_SSH" "$@"
@@ -180,16 +184,18 @@ cmd_inventory() {
 	chmod 600 "$INV"
 	python3 - "$INV" <<'PY'
 import json, sys
+
 inv = json.load(open(sys.argv[1]))
 st = inv.get("stores", {})
-print("domains: %d  users: %d  aliases: %d  mlists: %d  stores: %d"
-      " (%d GiB cid, %d GiB sqlite)  orphan stores: %d  stores with WAL: %d" % (
-      len(inv["domains"]), len(inv["users"]), len(inv["aliases"]),
-      len(inv["mlists"]), len(st),
-      sum(s.get("cid_mb", 0) for s in st.values()) // 1024,
-      sum(s.get("sqlite_bytes", 0) for s in st.values()) >> 30,
-      len(inv.get("orphan_stores", [])),
-      sum(1 for s in st.values() if s.get("wal_bytes"))))
+print(
+    "domains: %d  users: %d  aliases: %d  mlists: %d  stores: %d"
+    " (%d GiB cid, %d GiB sqlite)  orphan stores: %d  stores with WAL: %d" %
+    (len(inv["domains"]), len(inv["users"]), len(inv["aliases"]),
+     len(inv["mlists"]), len(st), sum(s.get("cid_mb", 0)
+                                      for s in st.values()) // 1024,
+     sum(s.get("sqlite_bytes", 0)
+         for s in st.values()) >> 30, len(inv.get("orphan_stores", [])),
+     sum(1 for s in st.values() if s.get("wal_bytes"))))
 PY
 	log "inventory written to $INV"
 }
@@ -209,6 +215,7 @@ cmd_plan() {
 		"$(printf '%s\n' "${SKIP_USERS[@]}")" \
 		"$(printf '%s\n' "${SHARED_MAILBOXES[@]}")" <<'PY'
 import json, sys
+
 inv = json.load(open(sys.argv[1]))
 out = open(sys.argv[2], "w")
 dlang, dtz, qmode = sys.argv[3], sys.argv[4], sys.argv[5]
@@ -216,72 +223,100 @@ dmap = dict(l.split("=", 1) for l in sys.argv[6].split("\n") if "=" in l)
 skipd = set(l for l in sys.argv[7].split("\n") if l)
 skipu = set(l for l in sys.argv[8].split("\n") if l)
 shared = set(l for l in sys.argv[9].split("\n") if l)
-def md(d): return dmap.get(d, d)
-def ma(a): lp, d = a.rsplit("@", 1); return "%s@%s" % (lp, md(d))
+
+
+def md(d):
+	return dmap.get(d, d)
+
+
+def ma(a):
+	lp, d = a.rsplit("@", 1)
+	return "%s@%s" % (lp, md(d))
+
+
 # e4a "de-de" -> grommunio storelangs key "de_DE"
-def lang(l): p = (l or "").replace("-", "_").split("_"); return (p[0].lower() + ("_" + p[1].upper() if len(p) > 1 else "")) if l else dlang
-def row(*f): out.write("|".join(str(x if x is not None else "").replace("|", "/") for x in f) + "\n")
-out.write("# kind|source|target|source_store|quota_mb|lang|tz|displayname|extra|opts\n")
+def lang(l):
+	p = (l or "").replace("-", "_").split("_")
+	return (p[0].lower() +
+	        ("_" + p[1].upper() if len(p) > 1 else "")) if l else dlang
+
+
+def row(*f):
+	out.write("|".join(
+	    str(x if x is not None else "").replace("|", "/") for x in f) + "\n")
+
+
+out.write(
+    "# kind|source|target|source_store|quota_mb|lang|tz|displayname|extra|opts\n"
+)
 out.write("# kinds: domain user shared alias mlist domainstore; delete or\n")
 out.write("# comment out lines you do not want; 'extra' = alias target /\n")
 out.write("# list members (comma separated) / domain of a domainstore;\n")
 out.write("# 'opts' = key=value;... (priv=<e4a privilege_bits>, status=<e4a\n")
-out.write("# address_status>, pwhash=<crypt hash>, main=<source main user of an\n")
-out.write("# alias>, ltype=<list_type>, lpriv=<list privilege>, senders=<a,b>)\n")
+out.write(
+    "# address_status>, pwhash=<crypt hash>, main=<source main user of an\n")
+out.write(
+    "# alias>, ltype=<list_type>, lpriv=<list privilege>, senders=<a,b>)\n")
 lpriv = {0: "all", 1: "internal", 2: "domain", 3: "specific", 4: "outgoing"}
 senders = {}
 for sdr in inv.get("list_senders", []):
-    senders.setdefault(str(sdr["list_id"]), []).append(ma(sdr["username"]))
+	senders.setdefault(str(sdr["list_id"]), []).append(ma(sdr["username"]))
 lists_by_name = {m["listname"]: m for m in inv["mlists"]}
 alias_names = set(a["aliasname"] for a in inv["aliases"])
 doms = {int(d["id"]): d for d in inv["domains"]}
 for d in inv["domains"]:
-    if d["domainname"] in skipd: continue
-    row("domain", d["domainname"], md(d["domainname"]), d["homedir_host"],
-        d["max_size"], "", "", d["title"] or "", "", "srcdom=%s" % d["id"])
-    st = inv.get("stores", {}).get(d["homedir_host"], {})
-    if st.get("messages", 0) > 0 or len(st.get("ipm_folders", [])) > 0:
-        row("domainstore", d["domainname"], md(d["domainname"]),
-            d["homedir_host"], "", "", "", "", md(d["domainname"]), "srcdom=%s" % d["id"])
+	if d["domainname"] in skipd: continue
+	row("domain", d["domainname"], md(d["domainname"]), d["homedir_host"],
+	    d["max_size"], "", "", d["title"] or "", "", "srcdom=%s" % d["id"])
+	st = inv.get("stores", {}).get(d["homedir_host"], {})
+	if st.get("messages", 0) > 0 or len(st.get("ipm_folders", [])) > 0:
+		row("domainstore", d["domainname"],
+		    md(d["domainname"]), d["homedir_host"], "", "", "", "",
+		    md(d["domainname"]), "srcdom=%s" % d["id"])
 by_store = {}
 for u in inv["users"]:
-    if u["address_type"] == 0 and u["maildir_host"]:
-        by_store.setdefault(u["maildir_host"], u)
+	if u["address_type"] == 0 and u["maildir_host"]:
+		by_store.setdefault(u["maildir_host"], u)
 for u in sorted(inv["users"], key=lambda u: (u["address_type"], u["id"])):
-    dom = doms.get(u["domain_id"], {}).get("domainname", "")
-    if dom in skipd or u["username"] in skipu: continue
-    if u["address_type"] == 2:  # mailing list
-        ml = lists_by_name.get(u["username"], {})
-        lp = int(ml.get("list_privilege", 0) or 0)
-        opts = "ltype=%s;lpriv=%s" % (ml.get("list_type", 0), lpriv.get(lp, "all"))
-        if lp == 3 and senders.get(str(ml.get("id"))):
-            opts += ";senders=" + ",".join(senders[str(ml["id"])])
-        members = [ma(a["username"]) for a in inv["associations"]
-                   if a["listname"] == u["username"]]
-        row("mlist", u["username"], ma(u["username"]), "", "", "", "",
-            u["real_name"] or "", ",".join(members), opts)
-    elif u["address_type"] == 1:  # alias row sharing a maildir
-        if u["username"] in alias_names: continue  # listed in aliases
-        main = by_store.get(u["maildir_host"])
-        row("alias", u["username"], ma(u["username"]), "", "", "", "",
-            "", ma(main["username"]) if main else "?",
-            "main=%s" % (main["username"] if main else ""))
-    elif u["address_type"] == 0:
-        if not u["maildir_host"]:
-            out.write("# no store on the source, skipped: %s\n" % u["username"])
-            continue
-        q = u["max_size"] if qmode == "source" else int(qmode)
-        kind = "shared" if u["username"] in shared else "user"
-        opts = "priv=%d;status=%d;srcid=%d;srcdom=%d" % (
-            u["privilege_bits"] or 0, u["address_status"] or 0, u["id"], u["domain_id"])
-        if u.get("password"): opts += ";pwhash=" + u["password"]
-        row(kind, u["username"], ma(u["username"]), u["maildir_host"],
-            q, lang(u["lang"]), u["timezone"] or dtz,
-            u["real_name"] or u["username"].split("@")[0], "", opts)
+	dom = doms.get(u["domain_id"], {}).get("domainname", "")
+	if dom in skipd or u["username"] in skipu: continue
+	if u["address_type"] == 2:  # mailing list
+		ml = lists_by_name.get(u["username"], {})
+		lp = int(ml.get("list_privilege", 0) or 0)
+		opts = "ltype=%s;lpriv=%s" % (ml.get("list_type",
+		                                     0), lpriv.get(lp, "all"))
+		if lp == 3 and senders.get(str(ml.get("id"))):
+			opts += ";senders=" + ",".join(senders[str(ml["id"])])
+		members = [
+		    ma(a["username"]) for a in inv["associations"]
+		    if a["listname"] == u["username"]
+		]
+		row("mlist", u["username"], ma(u["username"]), "", "", "", "",
+		    u["real_name"] or "", ",".join(members), opts)
+	elif u["address_type"] == 1:  # alias row sharing a maildir
+		if u["username"] in alias_names: continue  # listed in aliases
+		main = by_store.get(u["maildir_host"])
+		row("alias", u["username"], ma(u["username"]), "", "", "", "", "",
+		    ma(main["username"]) if main else "?",
+		    "main=%s" % (main["username"] if main else ""))
+	elif u["address_type"] == 0:
+		if not u["maildir_host"]:
+			out.write("# no store on the source, skipped: %s\n" %
+			          u["username"])
+			continue
+		q = u["max_size"] if qmode == "source" else int(qmode)
+		kind = "shared" if u["username"] in shared else "user"
+		opts = "priv=%d;status=%d;srcid=%d;srcdom=%d" % (
+		    u["privilege_bits"] or 0, u["address_status"]
+		    or 0, u["id"], u["domain_id"])
+		if u.get("password"): opts += ";pwhash=" + u["password"]
+		row(kind, u["username"], ma(u["username"]), u["maildir_host"], q,
+		    lang(u["lang"]), u["timezone"] or dtz, u["real_name"]
+		    or u["username"].split("@")[0], "", opts)
 for a in inv["aliases"]:
-    if a["aliasname"].rsplit("@", 1)[-1] in skipd: continue
-    row("alias", a["aliasname"], ma(a["aliasname"]), "", "", "", "", "",
-        ma(a["mainname"]), "main=%s" % a["mainname"])
+	if a["aliasname"].rsplit("@", 1)[-1] in skipd: continue
+	row("alias", a["aliasname"], ma(a["aliasname"]), "", "", "", "", "",
+	    ma(a["mainname"]), "main=%s" % a["mainname"])
 out.close()
 PY
 	mv "$PLAN.tmp" "$PLAN"
@@ -566,9 +601,11 @@ fixup_one() { # fixup_one <dst address> <dst dir> <kind> <quota> <displayname>
 	# persisted entryids embed the source store GUID (= MySQL id)
 	run python3 "$HERE/e4a_store_fixup.py" rewrite-guids "${GUID_PAIRS[@]}" \
 		--file "$dst/config/zarafa.dat" "$db" || return 1
-	# web settings: shared-store list refers to source identities; drop it
+	# web settings: shared-store list and source store/AB entryids refer
+	# to source identities; drop them, and folders that no longer exist
 	[[ -f $dst/config/zarafa.dat ]] &&
-		run python3 "$HERE/e4a_store_fixup.py" web-settings --drop-shared "$dst/config/zarafa.dat"
+		run python3 "$HERE/e4a_store_fixup.py" web-settings --drop-shared \
+			--drop-stale --stores "$STORES" "$dst/config/zarafa.dat"
 	run chown -R "$GROMOX_USER:$GROMOX_GROUP" "$dst"
 	run chmod -R u+rwX,g+rwX,o-rwx "$dst"
 	# schema upgrade (EV-0 -> current) offline; ~36 s per GB of sqlite and
@@ -620,6 +657,19 @@ cmd_fixup() {
 		kinds+=("$kind"); quotas+=("$quota"); names+=("$name")
 	done <"$PLAN"
 	[[ ${#dbs[@]} -gt 0 ]] || die "no transferred stores to fix up"
+	# stores the settings cleanup may resolve against; planned mailboxes
+	# without a transfer yet are marked "-" (content not final, keep refs)
+	declare -g STORES=$WORKDIR/stores.lst
+	if [[ $DRYRUN -eq 0 ]]; then
+		local id u m
+		sql "SELECT id, username, maildir FROM users" |
+		while IFS=$'\t' read -r id u m; do
+			if [[ -z $m ]] || { planned "$u" && ! listed "$TRANSFERRED" "$u"; }; then
+				m=-
+			fi
+			printf '%s %s\n' "$id" "$m"
+		done >"$STORES"
+	fi
 	log "fixup: scanning ${#dbs[@]} stores for EX addresses"
 	local -a dm=(); mapfile -t dm < <(dm_args)
 	declare -g -a GUID_PAIRS=(); mapfile -t GUID_PAIRS < <(guid_pairs)

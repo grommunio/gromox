@@ -370,6 +370,11 @@ static int do_content(const message_content &ctnt, const parent_desc &pd,
 	return 0;
 }
 
+static bool supports_multiple_objects(unsigned int x)
+{
+	return x == EXPORT_GXMT || x == EXPORT_VCARD;
+}
+
 static int do_folder(eid_t folder_id, const parent_desc &pd)
 {
 	if (g_export_mode != EXPORT_GXMT) {
@@ -522,8 +527,11 @@ int main(int argc, char **argv) try
 	if (HX_getopt6(g_options_table, argc, argv, &argp,
 	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (argp.nargs > 1 && g_export_mode != EXPORT_GXMT) {
-		fprintf(stderr, "Attempted to export more than one object, which is only supported with GXMT format.\n");
+	if (argp.nargs > 1 && !supports_multiple_objects(g_export_mode)) {
+		fprintf(stderr, "Attempted to export more than one object, "
+		        "which is only supported in some formats "
+		        "(and possibly with limitations on what can be exported): "
+		        "GXMT, vCard.\n");
 		return EXIT_FAILURE;
 	}
 	for (int i = 0; i < argp.nopts; ++i)
