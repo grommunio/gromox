@@ -84,6 +84,18 @@ enum {
 	NP_STRBUF_SIZE = 36 + 11 + NP_NAMEBUF_SIZE, /* "GUID=<>,NAME=<>" */
 };
 
+/*
+ * CP_ACP ("ANSI Code Page") is a magic value referring to the operating
+ * system's charset.
+ *
+ * CP_OEMCP ("OEM Code Page") is a magic value referring to the DOS
+ * environment's charset. (Before x86 EGA and thus user-defined glyph sets, the
+ * manufacturer selected the font ROM.) Has no practical meaning in Unixy
+ * environments.
+ *
+ * In Gromox, CP_OEMCP is used as a placeholder for "foreign" (emsmdb) or
+ * arbitrary custom handling (exmdb).
+ */
 enum cpid_t : uint32_t {
 	CP_ACP = 0,
 	CP_OEMCP = 1,
