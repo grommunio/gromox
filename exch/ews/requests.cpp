@@ -3749,7 +3749,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				mid.messageId(), occ_basedate, props, tagsRm);
 		} else if (shape.mimeContent) {
 			ctx.updated(dir, mid, shape);
-			EWSContext::MCONT_PTR content = ctx.toContent(dir, *shape.mimeContent);
+			auto content = ctx.toContent(dir, *shape.mimeContent);
 			for (auto tag : shape.remove())
 				content->proplist.erase(tag);
 			for (const auto &prop : shape.write()) {
@@ -3867,7 +3867,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 					 * propval_free() and tpropval_array_append(), which use
 					 * incompatible malloc/realloc/free. Thus, dup() first.
 					 */
-					EWSContext::MCONT_PTR dupcontent(sendcontent->dup());
+					message_content_ptr dupcontent(sendcontent->dup());
 					if (!dupcontent)
 						throw EWSError::NotEnoughMemory(E3408);
 					dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");

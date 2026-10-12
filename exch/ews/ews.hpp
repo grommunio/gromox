@@ -266,8 +266,6 @@ class EWSPlugin {
  */
 class EWSContext {
 	public:
-	using MCONT_PTR = std::unique_ptr<message_content, gromox::mc_delete>;
-
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 
 	EWSContext(detail::ContextKey, const HTTP_AUTH_INFO &, const char *, uint64_t, EWSPlugin &);
@@ -348,8 +346,8 @@ class EWSContext {
 	BINARY serialize(const XID&) const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
 	void rcpt_add_unique(TARRAY_SET *, gromox::EWS::Structures::tEmailAddressType, uint32_t) const;
-	MCONT_PTR toContent(const std::string&, std::string&) const;
-	MCONT_PTR toContent(const std::string&, const Structures::sFolderSpec&, Structures::sCreateItem&, bool) const;
+	message_content_ptr toContent(const std::string &, std::string &) const;
+	message_content_ptr toContent(const std::string &, const Structures::sFolderSpec &, Structures::sCreateItem &, bool) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPullSubscriptionRequest&) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPushSubscriptionRequest &) const;
 	Structures::tSubscriptionId subscribe(const Structures::tStreamingSubscriptionRequest&) const;
@@ -445,17 +443,17 @@ private:
 
 	Structures::tSubscriptionId subscribe(const std::vector<Structures::sFolderId> &, uint16_t, bool, gromox::time_duration) const;
 
-	void toContent(const std::string&, Structures::tCalendarItem&, Structures::sShape&, MCONT_PTR&) const;
-	void toContent(const std::string&, Structures::tContact&, Structures::sShape&, MCONT_PTR&) const;
-	void toContent(const std::string&, Structures::tItem&, Structures::sShape&, MCONT_PTR&) const;
-	void toContent(const std::string&, Structures::tMessage&, Structures::sShape&, MCONT_PTR&) const;
-	void toContent(const std::string &, Structures::tTask &, Structures::sShape &, MCONT_PTR &) const;
-	void toContent(const std::string &, Structures::tAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
-	void toContent(const std::string &, Structures::tTentativelyAcceptItem &, Structures::sShape &, MCONT_PTR &) const;
-	void toContent(const std::string &, Structures::tDeclineItem &, Structures::sShape &, MCONT_PTR &) const;
-	void toContent(const std::string &, Structures::tReplyToItem &, Structures::sShape &, MCONT_PTR &) const;
-	void toContent(const std::string &, Structures::tReplyAllToItem &, Structures::sShape &, MCONT_PTR &) const;
-	void toContent(const std::string &, Structures::tForwardItem &, Structures::sShape &, MCONT_PTR &) const;
+	void toContent(const std::string &, Structures::tCalendarItem &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tContact &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tItem &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tMessage &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tTask &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tAcceptItem &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tTentativelyAcceptItem &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tDeclineItem &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tReplyToItem &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tReplyAllToItem &, Structures::sShape &, message_content_ptr &) const;
+	void toContent(const std::string &, Structures::tForwardItem &, Structures::sShape &, message_content_ptr &) const;
 	std::optional<uint64_t> findExistingByGoid(const Structures::sFolderSpec&, const std::string&, const MESSAGE_CONTENT&) const;
 
 	inline void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {}

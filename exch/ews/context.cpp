@@ -1113,7 +1113,7 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	if (goid_is_instance(content->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGoid))))
 		return;
 
-	MCONT_PTR calendarItem(content->dup());
+	message_content_ptr calendarItem(content->dup());
 	if (!calendarItem)
 		throw EWSError::ItemSave(E3325);
 
@@ -4169,7 +4169,7 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	    cancelcontent->children.prcpts->count == 0)
 		return;
 	if (basedate) {
-		MCONT_PTR inst(cancelcontent->dup());
+		message_content_ptr inst(cancelcontent->dup());
 		if (!inst)
 			throw EWSError::NotEnoughMemory(E3492);
 		toInstance(dir, *basedate, *inst);
@@ -4230,7 +4230,7 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 			throw EWSError::ItemNotFound(E3390);
 		send(dir, meid.messageId(), *sentcontent);
 	} else {
-		EWSContext::MCONT_PTR dupcontent(cancelcontent->dup());
+		message_content_ptr dupcontent(cancelcontent->dup());
 		if (!dupcontent)
 			throw EWSError::NotEnoughMemory(E3407);
 		dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Canceled");
@@ -4269,7 +4269,7 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 		orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	if ((wantResp != nullptr && *wantResp == 0) || orgSmtp == nullptr)
 		return;
-	EWSContext::MCONT_PTR content(reqContent->dup());
+	message_content_ptr content(reqContent->dup());
 	if (!content)
 		throw EWSError::NotEnoughMemory(E3288);
 	if (basedate)
@@ -4483,7 +4483,8 @@ bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
  *
  * @return    Pointer to new MESSAGE_CONTENT structure
  */
-EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string& mimeContent) const
+message_content_ptr EWSContext::toContent(const std::string &dir,
+    std::string &mimeContent) const
 {
 	MAIL mail;
 	if (!mail.refonly_parse(mimeContent.data(), mimeContent.size()))
@@ -4510,7 +4511,8 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string&
  *
  * @return Pointer to MESSAGE_CONTENT structure
  */
-EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolderSpec& parent, sCreateItem& item, bool persist) const
+message_content_ptr EWSContext::toContent(const std::string &dir,
+    const sFolderSpec &parent, sCreateItem &item, bool persist) const
 {
 	const auto& exmdb = m_plugin.exmdb;
 	uint64_t messageId, changeNumber;
@@ -4537,7 +4539,7 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 	}
 
 	sShape shape;
-	MCONT_PTR content(message_content_init());
+	message_content_ptr content(message_content_init());
 	if (!content)
 		throw EWSError::NotEnoughMemory(E3217);
 	std::visit([&](auto& i){toContent(dir, i, shape, content);}, item);
@@ -4577,7 +4579,8 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
  *
  * @todo Map remaining fields
  */
-void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& shape, MCONT_PTR& content) const
+void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, static_cast<tItem&>(item), shape, content);
 	if (!item.ItemClass)
@@ -5035,7 +5038,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
  * @param      shape     Shape to store properties in
  * @param      content   Message content
  */
-void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape, MCONT_PTR& content) const
+void EWSContext::toContent(const std::string &dir, tContact &item,
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, static_cast<tItem&>(item), shape, content);
 	shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, const_cast<char*>("IPM.Contact")});
@@ -5190,7 +5194,7 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
  * @param      content   Message content
  */
 void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
-    MCONT_PTR &content) const
+    message_content_ptr &content) const
 {
 	toContent(dir, static_cast<tItem &>(item), shape, content);
 	if (!item.ItemClass)
@@ -5255,7 +5259,8 @@ void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
  * @param      shape     Shape to store properties in
  * @param      content   Message content
  */
-void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, MCONT_PTR& content) const
+void EWSContext::toContent(const std::string &dir, tItem &item, sShape &shape,
+    message_content_ptr &content) const
 {
 	if (item.MimeContent)
 		content = toContent(dir, *item.MimeContent);
@@ -5395,7 +5400,8 @@ void EWSContext::rcpt_add_unique(TARRAY_SET *rcpts, tEmailAddressType rcpt, uint
  * @param      shape     Shape to store properties in
  * @param      content   Message content
  */
-void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape, MCONT_PTR& content) const
+void EWSContext::toContent(const std::string &dir, tMessage &item,
+    sShape &shape, message_content_ptr &content) const
 {
 	auto &to = item.ToRecipients, &cc = item.CcRecipients, &bcc = item.BccRecipients;
 	toContent(dir, static_cast<tItem&>(item), shape, content);
@@ -5477,7 +5483,7 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 }
 
 void EWSContext::toContent(const std::string &dir, tAcceptItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	if (!item.ItemClass)
 		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Pos");
@@ -5485,7 +5491,7 @@ void EWSContext::toContent(const std::string &dir, tAcceptItem &item,
 }
 
 void EWSContext::toContent(const std::string &dir, tTentativelyAcceptItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	if (!item.ItemClass)
 		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Tent");
@@ -5493,7 +5499,7 @@ void EWSContext::toContent(const std::string &dir, tTentativelyAcceptItem &item,
 }
 
 void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	if (!item.ItemClass)
 		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Neg");
@@ -5508,19 +5514,19 @@ void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
  * upon yet.
  */
 void EWSContext::toContent(const std::string &dir, tReplyToItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tReplyAllToItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tForwardItem &item,
-    sShape &shape, MCONT_PTR &content) const
+    sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
 }
