@@ -660,7 +660,7 @@ occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
     std::chrono::seconds tz_offset, time_t start, time_t end)
 {
 	std::vector<uint32_t> out;
-	auto toUtc = [&](uint32_t rtime) {
+	auto toUtc = [&](uint32_t rtime) -> time_t {
 		int64_t off;
 		if (tz != nullptr && tz_to_offset(*tz, rop_util_rtime_to_unix(rtime), off))
 			return rop_util_rtime_to_unix(rtime) + off * 60;
