@@ -3860,7 +3860,7 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	sFolderEntryId eid(fId.Id.data(), fId.Id.size());
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
-	folderSpec.folderId = eid_t(1, rop_util_gc_to_value(eid.folder_gc));
+	folderSpec.folderId = eid.folderId();
 	if (eid.isPrivate()) {
 		std::string ubuf;
 		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)

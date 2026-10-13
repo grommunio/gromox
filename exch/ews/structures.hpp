@@ -166,7 +166,7 @@ struct sFolderEntryId : public FOLDER_ENTRYID {
 	sBase64Binary serialize() const;
 
 	uint32_t accountId() const;
-	uint64_t folderId() const;
+	eid_t folderId() const;
 	bool isPrivate() const;
 	private:
 	void init(const void*, uint64_t);
