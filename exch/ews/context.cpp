@@ -1741,6 +1741,9 @@ std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONT
 {
 	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
+	auto owner = storeOwner(dir);
+	auto at = owner.find('@');
+	cvt.imcea_domain = at != owner.npos ? &owner[at+1] : nullptr;
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = alloc;
 	cvt.get_propids = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) {
