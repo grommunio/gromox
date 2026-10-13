@@ -188,7 +188,7 @@ struct sMessageEntryId : public MESSAGE_ENTRYID {
 	explicit sMessageEntryId(const TAGGED_PROPVAL&);
 
 	uint32_t accountId() const;
-	uint64_t folderId() const;
+	eid_t folderId() const;
 	eid_t messageId() const;
 	sMessageEntryId& messageId(eid_t);
 	bool isPrivate() const;

@@ -1689,7 +1689,7 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
  */
 sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
 {
-	auto aInst = m_plugin.loadAttachmentInstance(dir, eid_t(1, aid.folderId()), aid.messageId(), aid.attachment_num);
+	auto aInst = m_plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
 	static constexpr proptag_t tagIDs[] = {
 		PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
 		PR_ATTACH_DATA_BIN, PR_ATTACH_CONTENT_ID,
@@ -3898,7 +3898,7 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 {
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
-	folderSpec.folderId = eid_t(1, eid.folderId());
+	folderSpec.folderId = eid.folderId();
 	if (eid.isPrivate()) {
 		std::string ubuf;
 		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
@@ -5857,7 +5857,7 @@ void EWSContext::validate(const std::string& dir, const sMessageEntryId& meid) c
 	}
 	if (!parentFid)
 		throw EWSError::ItemNotFound(E3187);
-	if (rop_util_get_gc_value(*parentFid) != meid.folderId())
+	if (*parentFid != meid.folderId())
 		throw EWSError::InvalidId(E3188);
 }
 

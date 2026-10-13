@@ -1516,7 +1516,7 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			data.ResponseMessages.emplace_back().success();
 		} else {
 			auto eid = meid.messageId();
-			auto fid = eid_t(1, meid.folderId());
+			auto fid = meid.folderId();
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete ? TRUE : false;
 			BOOL partial = false;
@@ -1799,7 +1799,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				if (recur != nullptr && recur->cb > 0 && eid != nullptr) {
 					/* Recurring master: report its occurrences, not the series */
 					sMessageEntryId meid(eid->pc, eid->cb);
-					for (auto &occ : ctx.expandOccurrences(dir, eid_t(1, meid.folderId()),
+					for (auto &occ : ctx.expandOccurrences(dir, meid.folderId(),
 					     meid.messageId(), viewStart, viewEnd, shape)) {
 						auto &start = std::get<tCalendarItem>(occ).Start;
 						calItems.emplace_back(start ? start->toNT() : 0, std::move(occ));
@@ -1810,7 +1810,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				const auto &iid = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> & { return i.ItemId; }, child);
 				if (shape.special && iid) {
 					sMessageEntryId meid(iid->Id.data(), iid->Id.size());
-					std::visit([&](auto& i) {ctx.loadSpecial(dir, eid_t(1, meid.folderId()), meid.messageId(), i, shape.special);}, child);
+					std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
 				}
 				if (calView != nullptr) {
 					auto start = props.get<const uint64_t>(startTag);
@@ -3661,7 +3661,7 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 			throw EWSError::MoveCopyFailed(E3468);
 	} else {
 		auto eid = mid.messageId();
-		auto fid = eid_t(1, mid.folderId());
+		auto fid = mid.folderId();
 		EID_ARRAY eids{1, &eid};
 		BOOL partial = false;
 		if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
