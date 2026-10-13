@@ -3003,44 +3003,38 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	ptarget_hash = HASH_OF(pzperms);
 	if (NULL == ptarget_hash)
 		pthrow(ecInvalidParam);
-	zend_hash_internal_pointer_reset(ptarget_hash);
-	perm_set.count = zend_hash_num_elements(ptarget_hash);
-	perm_set.prows = sta_malloc<PERMISSION_ROW>(perm_set.count);
+	perm_set.count = 0;
+	perm_set.prows = sta_malloc<PERMISSION_ROW>(zend_hash_num_elements(ptarget_hash));
 	if (NULL == perm_set.prows)
 		pthrow(ecMAPIOOM);
 
-	for (unsigned int i = 0, j = 0; i < perm_set.count; ++i) {
-		auto ppzentry = zend_hash_get_current_data(ptarget_hash);
+	zval *ppzentry;
+	ZEND_HASH_FOREACH_VAL(ptarget_hash, ppzentry) {
 		ZVAL_DEREF(ppzentry);
 		pdata = HASH_OF(ppzentry);
-		zend_hash_internal_pointer_reset(pdata);
+		if (pdata == nullptr)
+			continue;
+		auto &row = perm_set.prows[perm_set.count];
 		auto value = zend_hash_find(pdata, str_userid.get());
 		if (value == nullptr)
 			continue;
 		auto ss = zval_get_string(value);
-		perm_set.prows[j].entryid.pb = reinterpret_cast<uint8_t *>(ZSTR_VAL(ss));
-		perm_set.prows[j].entryid.cb = ZSTR_LEN(ss);
+		row.entryid.pb = reinterpret_cast<uint8_t *>(ZSTR_VAL(ss));
+		row.entryid.cb = ZSTR_LEN(ss);
 		value = zend_hash_find(pdata, str_type.get());
-		if (value == nullptr)
+		if (value == nullptr || zval_get_long(value) != ACCESS_TYPE_GRANT)
 			continue;
-		if (zval_get_long(value) != ACCESS_TYPE_GRANT)
-			continue;
-		value = zend_hash_find(pdata, str_mbid.get());
-		if (value == nullptr)
-			continue;
-		perm_set.prows[j].member_id = zval_get_long(value);
 		value = zend_hash_find(pdata, str_rights.get());
 		if (value == nullptr)
 			continue;
-		perm_set.prows[j].member_rights = zval_get_long(value);
+		row.member_rights = zval_get_long(value);
 		value = zend_hash_find(pdata, str_mbid.get());
-		perm_set.prows[j].member_id = value != nullptr ? zval_get_long(value) : 0xdeadbeefU;
+		row.member_id = value != nullptr ? zval_get_long(value) : 0xdeadbeefU;
 		value = zend_hash_find(pdata, str_state.get());
-		perm_set.prows[j].flags = value != nullptr ? zval_get_long(value) :
-		                          RIGHT_NEW | RIGHT_AUTOUPDATE_DENIED;
-		j ++;
-		zend_hash_move_forward(ptarget_hash);
-	}
+		row.flags = value != nullptr ? zval_get_long(value) :
+		            RIGHT_NEW | RIGHT_AUTOUPDATE_DENIED;
+		++perm_set.count;
+	} ZEND_HASH_FOREACH_END();
 	auto result = zclient_modifypermissions(
 		pfolder->hsession, pfolder->hobject,
 		&perm_set);
