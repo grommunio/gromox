@@ -10,8 +10,10 @@
 #include <gromox/element_data.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/oxcmail.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
+#include <gromox/vcard.hpp>
 #include "../tools/staticnpmap.cpp"
 #undef assert
 #define assert(x) do { if (!(x)) { printf("%s failed\n", #x); return EXIT_FAILURE; } } while (false)
@@ -862,6 +864,178 @@ static int hdrparse_1()
 	return EXIT_SUCCESS;
 }
 
+static std::unique_ptr<message_content, mc_delete> vcf_import(const char *body)
+{
+	std::string str = "BEGIN:VCARD\r\n";
+	str += body;
+	str += "END:VCARD\r\n";
+	vcard vc;
+	if (vc.load_single_from_str_move(str.data()) != ecSuccess)
+		return nullptr;
+	oxvcard_converter cvt;
+	cvt.log_id = "-";
+	cvt.get_propids = ee_get_propids;
+	return cvt.vcard_to_mapi(vc);
+}
+
+static std::string vcf_export(const message_content &msg)
+{
+	oxvcard_converter cvt;
+	cvt.log_id = "-";
+	cvt.get_propids = ee_get_propids;
+	vcard vc;
+	std::string out;
+	if (!cvt.mapi_to_vcard(msg, vc) || !vc.serialize(out))
+		return {};
+	return out;
+}
+
+static proptag_t vcf_namedtag(uint16_t type, const PROPERTY_NAME &pn)
+{
+	PROPNAME_ARRAY na = {1, deconst(&pn)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	return PROP_TAG(type, pids[0]);
+}
+
+static bool vcf_has(const message_content &m, proptag_t tag, const char *want)
+{
+	auto v = m.proplist.get<const char>(tag);
+	if (v != nullptr && strcmp(v, want) == 0)
+		return true;
+	fprintf(stderr, "%08x: \"%s\", expected \"%s\"\n", tag, znul(v), want);
+	return false;
+}
+
+static int vcard_tel_types()
+{
+	fprintf(stderr, "=== vcard_tel_types\n");
+	/* Thunderbird */
+	auto m = vcf_import("VERSION:4.0\r\nFN:T\r\n"
+	         "TEL;TYPE=work;VALUE=TEXT:1\r\nTEL;TYPE=home;VALUE=TEXT:2\r\n"
+	         "TEL;TYPE=cell;VALUE=TEXT:3\r\nTEL;TYPE=fax;VALUE=TEXT:4\r\n"
+	         "TEL;VALUE=TEXT:5\r\n");
+	assert(m != nullptr);
+	if (!vcf_has(*m, PR_BUSINESS_TELEPHONE_NUMBER, "1") ||
+	    !vcf_has(*m, PR_HOME_TELEPHONE_NUMBER, "2") ||
+	    !vcf_has(*m, PR_MOBILE_TELEPHONE_NUMBER, "3") ||
+	    !vcf_has(*m, PR_PRIMARY_FAX_NUMBER, "4") ||
+	    !vcf_has(*m, PR_OTHER_TELEPHONE_NUMBER, "5"))
+		return EXIT_FAILURE;
+	/* Apple, DAVx5, Evolution */
+	m = vcf_import("VERSION:3.0\r\nFN:A\r\n"
+	    "TEL;type=CELL;type=VOICE;type=pref:1\r\nTEL;type=WORK;type=VOICE:2\r\n"
+	    "TEL;TYPE=\"home,voice\":3\r\nTEL;TYPE=WORK,FAX:4\r\nTEL;TYPE=HOME;FAX:5\r\n"
+	    "item1.ADR;type=WORK;type=pref:;;Street 1;City;;1010;AT\r\nitem1.X-ABADR:at\r\n");
+	assert(m != nullptr);
+	if (!vcf_has(*m, PR_MOBILE_TELEPHONE_NUMBER, "1") ||
+	    !vcf_has(*m, PR_BUSINESS_TELEPHONE_NUMBER, "2") ||
+	    !vcf_has(*m, PR_HOME_TELEPHONE_NUMBER, "3") ||
+	    !vcf_has(*m, PR_BUSINESS_FAX_NUMBER, "4") ||
+	    !vcf_has(*m, PR_HOME_FAX_NUMBER, "5") ||
+	    !vcf_has(*m, vcf_namedtag(PT_UNICODE, {MNID_ID, PSETID_Address, PidLidWorkAddressCity}), "City"))
+		return EXIT_FAILURE;
+	auto out = vcf_export(*m);
+	if (out.find("TEL;TYPE=WORK;FAX:4") == out.npos ||
+	    out.find("ADR;TYPE=WORK:;;Street 1;City;;1010;AT") == out.npos) {
+		fprintf(stderr, "%s", out.c_str());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+static int vcard_escaped_values()
+{
+	fprintf(stderr, "=== vcard_escaped_values\n");
+	auto m = vcf_import("VERSION:3.0\r\nFN:E\r\nN:Doe\\, Jr.;John;;;\r\n"
+	         "ORG:Smith\\; Partners;Sales\r\n");
+	assert(m != nullptr);
+	if (!vcf_has(*m, PR_SURNAME, "Doe, Jr.") ||
+	    !vcf_has(*m, PR_GIVEN_NAME, "John") ||
+	    !vcf_has(*m, PR_COMPANY_NAME, "Smith; Partners") ||
+	    !vcf_has(*m, PR_DEPARTMENT_NAME, "Sales"))
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
+static int vcard_photo()
+{
+	fprintf(stderr, "=== vcard_photo\n");
+	static constexpr char png[] = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+	auto hasphoto = vcf_namedtag(PT_BOOLEAN, {MNID_ID, PSETID_Address, PidLidHasPicture});
+	for (auto fmt : {"VERSION:4.0\r\nFN:P\r\nPHOTO:data:image/png;base64,%s\r\n",
+	     "VERSION:4.0\r\nFN:P\r\nPHOTO;VALUE=URI:data:image/png;base64,%s\r\n",
+	     "VERSION:3.0\r\nFN:P\r\nPHOTO;ENCODING=b;TYPE=PNG:%s\r\n"}) {
+		char buf[512];
+		snprintf(buf, sizeof(buf), fmt, png);
+		auto m = vcf_import(buf);
+		assert(m != nullptr);
+		auto flag = m->proplist.get<const uint8_t>(hasphoto);
+		auto atl = m->children.pattachments;
+		if (flag == nullptr || *flag == 0 || atl == nullptr || atl->count != 1) {
+			fprintf(stderr, "no photo from %s", buf);
+			return EXIT_FAILURE;
+		}
+		auto at = atl->pplist[0];
+		auto cp = at->proplist.get<const uint8_t>(PR_ATTACHMENT_CONTACTPHOTO);
+		auto meth = at->proplist.get<const uint32_t>(PR_ATTACH_METHOD);
+		if (cp == nullptr || *cp == 0 || meth == nullptr || *meth != ATTACH_BY_VALUE)
+			return EXIT_FAILURE;
+		auto out = vcf_export(*m);
+		if (out.find("PHOTO:data:image/png;base64,iVBORw0KGgo") == out.npos) {
+			fprintf(stderr, "%s", out.c_str());
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
+static int vcard_dates()
+{
+	fprintf(stderr, "=== vcard_dates\n");
+	auto m = vcf_import("VERSION:4.0\r\nFN:D\r\nBDAY;VALUE=DATE:19800102\r\nANNIVERSARY:2005-06-07\r\n");
+	assert(m != nullptr);
+	auto b = m->proplist.get<const uint64_t>(PR_BIRTHDAY);
+	auto w = m->proplist.get<const uint64_t>(PR_WEDDING_ANNIVERSARY);
+	if (b == nullptr || rop_util_nttime_to_unix(*b) != 315619200 ||
+	    w == nullptr || rop_util_nttime_to_unix(*w) != 1118102400)
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
+static int vcard_fileas_categories()
+{
+	fprintf(stderr, "=== vcard_fileas_categories\n");
+	auto fileas = vcf_namedtag(PT_UNICODE, {MNID_ID, PSETID_Address, PidLidFileAs});
+	auto fileasid = vcf_namedtag(PT_LONG, {MNID_ID, PSETID_Address, PidLidFileUnderId});
+	auto keywords = vcf_namedtag(PT_MV_UNICODE, {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")});
+	auto m = vcf_import("VERSION:3.0\r\nFN:Eve Olution\r\nN:Olution;Eve;;;\r\n"
+	         "X-EVOLUTION-FILE-AS:Olution\\, Eve (Gnome)\r\nCATEGORIES:Friends,Work\r\n");
+	assert(m != nullptr);
+	if (!vcf_has(*m, fileas, "Olution, Eve (Gnome)"))
+		return EXIT_FAILURE;
+	auto cats = m->proplist.get<const STRING_ARRAY>(keywords);
+	if (cats == nullptr || cats->count != 2 || strcmp(cats->ppstr[1], "Work") != 0)
+		return EXIT_FAILURE;
+	auto out = vcf_export(*m);
+	if (out.find("X-EVOLUTION-FILE-AS:Olution\\, Eve (Gnome)\r\n") == out.npos ||
+	    out.find("CATEGORIES:Friends,Work\r\n") == out.npos) {
+		fprintf(stderr, "%s", out.c_str());
+		return EXIT_FAILURE;
+	}
+	/* no file-as given: Outlook's default */
+	m = vcf_import("VERSION:4.0\r\nFN:John Doe\r\nN:Doe;John;;;\r\n");
+	assert(m != nullptr);
+	auto id = m->proplist.get<const uint32_t>(fileasid);
+	if (!vcf_has(*m, fileas, "Doe, John") || id == nullptr || *id != 0x8017)
+		return EXIT_FAILURE;
+	m = vcf_import("VERSION:4.0\r\nFN:ACME\r\nORG:ACME;\r\n");
+	assert(m != nullptr);
+	if (!vcf_has(*m, fileas, "ACME"))
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
 static int vexport_head()
 {
 	oxcmail_converter cvt;
@@ -1706,6 +1880,8 @@ int main()
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(hdrparse_1),
+		E(vcard_tel_types), E(vcard_escaped_values), E(vcard_photo), E(vcard_dates),
+		E(vcard_fileas_categories),
 		E(vexport_head), E(vexport_simple_body), E(vexport_image),
 		E(vexport_inline_image), E(vexport_recipients),
 		E(vexport_headers), E(vexport_internet_headers),

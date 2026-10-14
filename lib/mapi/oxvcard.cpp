@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstdio>
@@ -10,6 +11,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -95,6 +97,9 @@ static constexpr proptag_t g_ufld_proptags[] =
 static constexpr proptag_t g_fbl_proptag = 0x8010001F;
 static constexpr proptag_t g_vcarduid_proptag = 0x8011001F;
 static constexpr proptag_t g_hasphoto_proptag = 0x8015000b;
+static constexpr proptag_t g_keywords_proptag = 0x8016101F;
+static constexpr proptag_t g_fileas_proptag = 0x8017001F;
+static constexpr proptag_t g_fileasid_proptag = 0x80180003;
 
 static BOOL oxvcard_check_compatible(const vcard *pvcard)
 {
@@ -123,7 +128,7 @@ static BOOL oxvcard_check_compatible(const vcard *pvcard)
 static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	GET_PROPIDS get_propids)
 {
-	const PROPERTY_NAME bf[22] = {
+	const PROPERTY_NAME bf[25] = {
 	/* 0x0 */
 		{MNID_ID, PSETID_Address, PidLidWorkAddressPostOfficeBox},
 		{MNID_ID, PSETID_Address, PidLidWorkAddressStreet},
@@ -149,6 +154,10 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 		{MNID_ID, PSETID_Address, PidLidEmail2AddressType},
 		{MNID_ID, PSETID_Address, PidLidEmail3AddressType},
 		{MNID_ID, PSETID_Address, PidLidHasPicture},
+		{MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")},
+		{MNID_ID, PSETID_Address, PidLidFileAs},
+	/* 0x18 */
+		{MNID_ID, PSETID_Address, PidLidFileUnderId},
 	};
 	const PROPNAME_ARRAY propnames  {std::size(bf), deconst(bf)};
 	return get_propids(&propnames, ppropids);
@@ -161,12 +170,59 @@ static bool is_photo(const char *t)
 	       strcasecmp(t, "bmp") == 0;
 }
 
-static bool is_fax_param(const vcard_param &p)
+/*
+ * TYPE values of a line, from TYPE=a,b / TYPE=a;TYPE=b / TYPE="a,b" and
+ * from bare (vCard 2.1 style) parameters, in any order.
+ */
+static std::vector<std::string> vcard_types(const vcard_line &line)
 {
-	if (strcasecmp(p.name(), "type") == 0 && p.m_paramvals.size() > 0 &&
-	    strcasecmp(p.m_paramvals[0].c_str(), "fax") == 0)
-		return true;
-	return strcasecmp(p.name(), "fax") == 0;
+	std::vector<std::string> v;
+	for (const auto &p : line.m_params) {
+		if (strcasecmp(p.name(), "TYPE") == 0) {
+			for (auto s : p.m_paramvals) {
+				std::erase(s, '"');
+				if (!s.empty())
+					v.push_back(std::move(s));
+			}
+		} else if (p.m_paramvals.empty()) {
+			v.emplace_back(p.name());
+		}
+	}
+	return v;
+}
+
+static bool has_type(const std::vector<std::string> &v, const char *t)
+{
+	return std::any_of(v.cbegin(), v.cend(),
+	       [&](const std::string &s) { return strcasecmp(s.c_str(), t) == 0; });
+}
+
+/* The value of a line as it was written, before the parser split it at ; and , */
+static std::string vcard_joined(const vcard_line &line)
+{
+	std::string out;
+	for (size_t i = 0; i < line.m_values.size(); ++i) {
+		if (i > 0)
+			out += ';';
+		auto &sv = line.m_values[i].m_subvals;
+		for (size_t j = 0; j < sv.size(); ++j) {
+			if (j > 0)
+				out += ',';
+			out += sv[j];
+		}
+	}
+	return out;
+}
+
+/* 1980-01-02, 19800102 (vCard 4 basic format), optionally with a time part */
+static bool vcard_date(const char *s, uint64_t *nt)
+{
+	struct tm tm{};
+	if (strptime(s, "%Y-%m-%d", &tm) == nullptr &&
+	    (strlen(s) < 8 || strptime(s, "%Y%m%d", &tm) == nullptr))
+		return false;
+	*nt = rop_util_unix_to_nttime(timegm(&tm));
+	return true;
 }
 
 static inline bool has_content(const char *value)
@@ -337,7 +393,6 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 	int count;
 	int ufld_count;
 	int mail_count;
-	BOOL b_encoding;
 	struct tm tmp_tm;
 	uint8_t tmp_byte;
 	uint32_t tmp_int32;
@@ -360,6 +415,10 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 	for (const auto &line : pvcard->m_lines) try {
 		auto pvline = &line;
 		auto pvline_name = pvline->name();
+		/* Apple groups lines like item1.ADR, item1.X-ABLabel */
+		auto dot = strchr(pvline_name, '.');
+		if (dot != nullptr)
+			pvline_name = dot + 1;
 		if (strcasecmp(pvline_name, "UID") == 0) {
 			/* Deviation from MS-OXVCARD v8.3 §2.1.3.7.7 */
 			auto pstring = pvline->get_first_subval();
@@ -398,8 +457,8 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 		} else if (strcasecmp(pvline_name, "PHOTO") == 0) {
 			if (pmsg->children.pattachments != nullptr)
 				throw unrecog(line);
-			b_encoding = FALSE;
-			const char *photo_type = nullptr;
+			bool b64 = false;
+			std::string photo_type;
 			for (const auto &prnode : pvline->m_params) {
 				auto pvparam = &prnode;
 				if (strcasecmp(pvparam->name(), "ENCODING") == 0) {
@@ -408,23 +467,28 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 					if (strcasecmp(pvparam->m_paramvals[0].c_str(), "b") != 0 &&
 					    strcasecmp(pvparam->m_paramvals[0].c_str(), "base64") != 0)
 						throw unrecog(line, prnode);
-					b_encoding = TRUE;
+					b64 = true;
 				} else if (strcasecmp(pvparam->name(), "TYPE") == 0) {
 					if (pvparam->m_paramvals.size() == 0)
 						throw unrecog(line, prnode);
-					auto &s = pvparam->m_paramvals[0];
-					if (s.empty())
-						throw unrecog(line, prnode);
-					photo_type = s.c_str();
+					photo_type = pvparam->m_paramvals[0];
 				}
 			}
-			if (!b_encoding || photo_type == nullptr)
-				throw unrecog(line);
-
-			if (!is_photo(photo_type))
-				throw unrecog(line);
-			auto pstring = pvline->get_first_subval();
-			if (pstring == nullptr)
+			/*
+			 * vCard 4: data:image/jpeg;base64,..., which the parser
+			 * has split at the semicolon and the comma.
+			 */
+			auto data = vcard_joined(*pvline);
+			if (strncasecmp(data.c_str(), "data:image/", 11) == 0) {
+				auto comma = data.find(',');
+				if (comma == data.npos || comma < 18 ||
+				    strncasecmp(&data[comma-7], ";base64", 7) != 0)
+					throw unrecog(line);
+				photo_type = data.substr(11, comma - 18);
+				data.erase(0, comma + 1);
+				b64 = true;
+			}
+			if (!b64 || photo_type.empty() || !is_photo(photo_type.c_str()) || data.empty())
 				throw unrecog(line);
 			pattachments = attachment_list_init();
 			if (pattachments == nullptr)
@@ -438,37 +502,32 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 				return imp_null;
 			}
 
-			auto picture = base64_decode(pstring);
+			auto picture = base64_decode(data);
 			BINARY tmp_bin;
 			tmp_bin.pv = deconst(picture.data());
 			tmp_bin.cb = picture.size();
+			uint32_t method = ATTACH_BY_VALUE;
+			tmp_byte = 1;
 			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != ecSuccess ||
-			    pattachment->proplist.set(PR_ATTACH_EXTENSION, photo_type) != ecSuccess)
+			    pattachment->proplist.set(PR_ATTACH_EXTENSION, photo_type.c_str()) != ecSuccess ||
+			    pattachment->proplist.set(PR_ATTACH_METHOD, &method) != ecSuccess ||
+			    pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != ecSuccess)
 				return imp_null;
 			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME,
 			    ("ContactPhoto."s + photo_type).c_str()) != ecSuccess)
 				return imp_null;
-			tmp_byte = 1;
-			if (pmsg->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != ecSuccess)
+			if (pmsg->proplist.set(g_hasphoto_proptag, &tmp_byte) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "BDAY") == 0) {
 			auto pstring = pvline->get_first_subval();
-			if (pstring == nullptr)
+			if (pstring == nullptr || !vcard_date(pstring, &tmp_int64))
 				continue;
-			memset(&tmp_tm, 0, sizeof(tmp_tm));
-			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
-				tmp_int64 = rop_util_unix_to_nttime(timegm(&tmp_tm));
-				if (pmsg->proplist.set(PR_BIRTHDAY, &tmp_int64) != ecSuccess)
-					return imp_null;
-			}
+			if (pmsg->proplist.set(PR_BIRTHDAY, &tmp_int64) != ecSuccess)
+				return imp_null;
 		} else if (strcasecmp(pvline_name, "ADR") == 0) {
-			auto pvparam = pvline->m_params.cbegin();
-			if (pvparam == pvline->m_params.cend())
-				throw unrecog(line);
-			if (strcasecmp(pvparam->name(), "TYPE") != 0 ||
-			    pvparam->m_paramvals.size() == 0)
-				throw unrecog(line, *pvparam);
-			address_type = pvparam->m_paramvals[0].c_str();
+			auto types = vcard_types(*pvline);
+			address_type = has_type(types, "work") ? "work" :
+			               has_type(types, "home") ? "home" : "other";
 
 			/* Map ADR's 7 fields to MAPI's 6 properties */
 			unsigned int vcf_idx = 0, mapi_idx = 0;
@@ -511,54 +570,36 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 				++mapi_idx;
 			}
 		} else if (strcasecmp(pvline_name, "TEL") == 0) {
-			auto pvparam = pvline->m_params.cbegin();
-			if (pvparam == pvline->m_params.cend())
-				throw unrecog(line);
-			if (strcasecmp(pvparam->name(), "TYPE") != 0 ||
-			    pvparam->m_paramvals.size() == 0)
-				throw unrecog(line);
-			auto keyword = pvparam->m_paramvals[0].c_str();
-			if (*keyword == '\0')
-				throw unrecog(line, *pvparam);
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
+			auto types = vcard_types(*pvline);
+			auto is = [&](const char *t) { return has_type(types, t); };
 			proptag_t tag{};
-			if (strcasecmp(keyword, "home") == 0) {
-				++pvparam;
-				if (pvparam == pvline->m_params.cend())
-					tag = pmsg->proplist.has(PR_HOME_TELEPHONE_NUMBER) ?
-					      PR_HOME2_TELEPHONE_NUMBER :
-					      PR_HOME_TELEPHONE_NUMBER;
-				else if (is_fax_param(*pvparam))
-					tag = PR_HOME_FAX_NUMBER;
-				else
-					throw unrecog(line, *pvparam);
-			} else if (strcasecmp(keyword, "voice") == 0) {
-				tag = PR_OTHER_TELEPHONE_NUMBER;
-			} else if (strcasecmp(keyword, "work") == 0) {
-				++pvparam;
-				if (pvparam == pvline->m_params.cend())
-					tag = pmsg->proplist.has(PR_BUSINESS_TELEPHONE_NUMBER) ?
-					      PR_BUSINESS2_TELEPHONE_NUMBER :
-					      PR_BUSINESS_TELEPHONE_NUMBER;
-				else if (is_fax_param(*pvparam))
-					tag = PR_BUSINESS_FAX_NUMBER;
-				else
-					throw unrecog(line, *pvparam);
-			} else if (strcasecmp(keyword, "cell") == 0) {
+			if (is("fax"))
+				tag = is("home") ? PR_HOME_FAX_NUMBER :
+				      is("work") ? PR_BUSINESS_FAX_NUMBER : PR_PRIMARY_FAX_NUMBER;
+			else if (is("cell"))
 				tag = PR_MOBILE_TELEPHONE_NUMBER;
-			} else if (strcasecmp(keyword, "pager") == 0) {
+			else if (is("pager"))
 				tag = PR_PAGER_TELEPHONE_NUMBER;
-			} else if (strcasecmp(keyword, "car") == 0) {
+			else if (is("car"))
 				tag = PR_CAR_TELEPHONE_NUMBER;
-			} else if (strcasecmp(keyword, "isdn") == 0) {
+			else if (is("isdn"))
 				tag = PR_ISDN_NUMBER;
-			} else if (strcasecmp(keyword, "pref") == 0) {
+			else if (is("home"))
+				tag = pmsg->proplist.has(PR_HOME_TELEPHONE_NUMBER) ?
+				      PR_HOME2_TELEPHONE_NUMBER : PR_HOME_TELEPHONE_NUMBER;
+			else if (is("work"))
+				tag = pmsg->proplist.has(PR_BUSINESS_TELEPHONE_NUMBER) ?
+				      PR_BUSINESS2_TELEPHONE_NUMBER : PR_BUSINESS_TELEPHONE_NUMBER;
+			else if (is("pref"))
 				tag = PR_PRIMARY_TELEPHONE_NUMBER;
-			} else {
+			else if (!pmsg->proplist.has(PR_OTHER_TELEPHONE_NUMBER))
+				/* VOICE, TEXT or no type at all */
+				tag = PR_OTHER_TELEPHONE_NUMBER;
+			else
 				continue;
-			}
 			if (pmsg->proplist.set(tag, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "EMAIL") == 0) {
@@ -613,7 +654,7 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 			strings_array.count = ptrs.size();
 			strings_array.ppstr = ptrs.data();
 			if (strings_array.count != 0 &&
-			    pmsg->proplist.set(g_categories_proptag, &strings_array) != ecSuccess)
+			    pmsg->proplist.set(g_keywords_proptag, &strings_array) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "NOTE") == 0) {
 			auto pstring = pvline->get_first_subval();
@@ -740,16 +781,13 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 				throw unrecog(line, *pvparam);
 			if (pmsg->proplist.set(tag, pstring) != ecSuccess)
 				return imp_null;
-		} else if (strcasecmp(pvline_name, "X-MS-ANNIVERSARY") == 0) {
+		} else if (strcasecmp(pvline_name, "X-MS-ANNIVERSARY") == 0 ||
+		    strcasecmp(pvline_name, "ANNIVERSARY") == 0) {
 			auto pstring = pvline->get_first_subval();
-			if (pstring == nullptr)
+			if (pstring == nullptr || !vcard_date(pstring, &tmp_int64))
 				continue;
-			memset(&tmp_tm, 0, sizeof(tmp_tm));
-			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
-				tmp_int64 = rop_util_unix_to_nttime(timegm(&tmp_tm));
-				if (pmsg->proplist.set(PR_WEDDING_ANNIVERSARY, &tmp_int64) != ecSuccess)
-					return imp_null;
-			}	
+			if (pmsg->proplist.set(PR_WEDDING_ANNIVERSARY, &tmp_int64) != ecSuccess)
+				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-SPOUSE") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
 			if (pvparam == pvline->m_params.cend())
@@ -785,6 +823,11 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 			if (pstring == nullptr)
 				continue;
 			if (pmsg->proplist.set(PR_ASSISTANT, pstring) != ecSuccess)
+				return imp_null;
+		} else if (strcasecmp(pvline_name, "X-EVOLUTION-FILE-AS") == 0) {
+			auto str = vcard_joined(*pvline);
+			if (!str.empty() &&
+			    pmsg->proplist.set(g_fileas_proptag, str.c_str()) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "FBURL") == 0) {
 			auto pstring = pvline->get_first_subval();
@@ -835,6 +878,24 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 	if (!pmsg->proplist.has(PR_NORMALIZED_SUBJECT)) {
 		auto dn = pmsg->proplist.get<const char>(PR_DISPLAY_NAME);
 		if (dn != nullptr && pmsg->proplist.set(PR_NORMALIZED_SUBJECT, dn) != ecSuccess)
+			return imp_null;
+	}
+	if (!pmsg->proplist.has(g_fileas_proptag)) {
+		/* Like Outlook: "Last, First", else the display name or company */
+		auto sn = pmsg->proplist.get<const char>(PR_SURNAME);
+		auto gn = pmsg->proplist.get<const char>(PR_GIVEN_NAME);
+		std::string fa;
+		if (has_content(sn) && has_content(gn)) {
+			fa = sn + ", "s + gn;
+			uint32_t id = 0x8017;
+			if (pmsg->proplist.set(g_fileasid_proptag, &id) != ecSuccess)
+				return imp_null;
+		} else if (auto dn = pmsg->proplist.get<const char>(PR_DISPLAY_NAME); has_content(dn)) {
+			fa = dn;
+		} else if (auto co = pmsg->proplist.get<const char>(PR_COMPANY_NAME); has_content(co)) {
+			fa = co;
+		}
+		if (!fa.empty() && pmsg->proplist.set(g_fileas_proptag, fa.c_str()) != ecSuccess)
 			return imp_null;
 	}
 	if (!pmsg->proplist.has(PR_CONVERSATION_TOPIC)) {
@@ -1027,8 +1088,19 @@ bool oxvcard_converter::mapi_to_vcard(const message_content &msg, vcard &vcard) 
 		tel_line.append_param("FAX");
 		tel_line.append_value(pvalue);
 	}
+
+	pvalue = pmsg->proplist.get<char>(PR_PRIMARY_FAX_NUMBER);
+	if (has_content(pvalue)) {
+		auto &tel_line = vcard.append_line("TEL");
+		tel_line.append_param("TYPE", "FAX");
+		tel_line.append_value(pvalue);
+	}
 	
-	add_string_array(vcard, pmsg->proplist.get<const STRING_ARRAY>(remap_tag(g_categories_proptag)), "CATEGORIES");
+	/* Categories were kept in PidLidCategories until 3.12 */
+	auto cats = pmsg->proplist.get<const STRING_ARRAY>(remap_tag(g_keywords_proptag));
+	if (cats == nullptr)
+		cats = pmsg->proplist.get<const STRING_ARRAY>(remap_tag(g_categories_proptag));
+	add_string_array(vcard, cats, "CATEGORIES");
 	
 	pvalue = pmsg->proplist.get<char>(PR_PROFESSION);
 	if (has_content(pvalue))
@@ -1074,6 +1146,10 @@ bool oxvcard_converter::mapi_to_vcard(const message_content &msg, vcard &vcard) 
 	add_person(vcard, *pmsg, PR_MANAGER_NAME, "X-MS-MANAGER");
 	add_person(vcard, *pmsg, PR_ASSISTANT, "X-MS-ASSISTANT");
 	
+	pvalue = pmsg->proplist.get<char>(remap_tag(g_fileas_proptag));
+	if (has_content(pvalue))
+		vcard.append_line("X-EVOLUTION-FILE-AS", pvalue);
+
 	pvalue = pmsg->proplist.get<char>(remap_tag(g_vcarduid_proptag));
 	if (!has_content(pvalue)) {
 		auto guid = GUID::random_new();
@@ -1159,10 +1235,17 @@ bool oxvcard_converter::mapi_to_vcard(const message_content &msg, vcard &vcard) 
 			auto bv = at.proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
 			if (bv == nullptr)
 				continue;
+			/*
+			 * vCard 4 wants a data URI. The ; and , in it separate
+			 * values and subvalues, so it is assembled that way.
+			 */
+			std::string mt = "data:image/"s + photo_type;
+			HX_strlower(mt.data());
 			auto &photo_line = vcard.append_line("PHOTO");
-			photo_line.append_param("TYPE", photo_type);
-			photo_line.append_param("ENCODING", "BASE64");
-			photo_line.append_value(base64_encode(*bv));
+			photo_line.append_value().append_subval(std::move(mt));
+			auto &pv = photo_line.append_value();
+			pv.append_subval("base64");
+			pv.append_subval(base64_encode(*bv));
 			break;
 		}
 	}

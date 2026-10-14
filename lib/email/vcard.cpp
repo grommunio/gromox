@@ -44,8 +44,7 @@ static char* vcard_get_semicolon(char *pstring)
 		if ('\\' == pstring[i]) {
 			if ('\\' == pstring[i + 1] || ';' == pstring[i + 1] ||
 				',' == pstring[i + 1]) {
-				memmove(pstring + i, pstring + i + 1, tmp_len - i - 1);
-				pstring[tmp_len] = '\0';
+				memmove(pstring + i, pstring + i + 1, tmp_len - i);
 				tmp_len --;
 			} else if ('n' == pstring[i + 1] || 'N' == pstring[i + 1]) {
 				pstring[i] = '\r';
@@ -255,6 +254,24 @@ static vcard_line vcard_retrieve_tag(char *ptag)
 	return pvline;
 }
 
+static void vcard_unescape_string(char *);
+
+/* Cut at the next unescaped @sep, escapes are left in place */
+static char *vcard_cut_unescaped(char *s, char sep)
+{
+	for (; *s != '\0'; ++s) {
+		if (*s == '\\' && s[1] != '\0') {
+			++s;
+			continue;
+		}
+		if (*s == sep) {
+			*s = '\0';
+			return s + 1;
+		}
+	}
+	return nullptr;
+}
+
 static void vcard_retrieve_value(vcard_line *pvline, char *pvalue)
 {
 	char *ptr;
@@ -265,10 +282,14 @@ static void vcard_retrieve_value(vcard_line *pvline, char *pvalue)
 	ptr = pvalue;
 	do {
 		auto &va = pvline->append_value();
-		pnext = vcard_get_semicolon(ptr);
+		pnext = vcard_cut_unescaped(ptr, ';');
+		if (pnext != nullptr)
+			while (*pnext == ' ' || *pnext == '\t')
+				++pnext;
 		ptr1 = ptr;
 		do {
-			pnext1 = vcard_get_comma(ptr1);
+			pnext1 = vcard_cut_unescaped(ptr1, ',');
+			vcard_unescape_string(ptr1);
 			va.append_subval(ptr1);
 		} while ((ptr1 = pnext1) != NULL);
 	} while ((ptr = pnext) != NULL);
