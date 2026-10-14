@@ -431,8 +431,9 @@ find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
 /**
  * @brief      Test whether a date is truly deleted (not a modified exception)
  *
- * Compared by day: a moved exception keeps only its original day in the
- * deleted list, and imported blobs carry a time of day in both lists.
+ * Compared by day, as imported blobs carry a time of day. The modified
+ * list holds the new day of a moved exception, so only the exceptions
+ * tell whether the original day was modified.
  *
  * @param      apr    Appointment recurrence pattern
  * @param      date   Date in rtime format
@@ -444,7 +445,6 @@ bool isTrulyDeleted(const APPOINTMENT_RECUR_PAT &apr, uint32_t date)
 	auto &rp = apr.recur_pat;
 	auto same_day = [&](uint32_t d) { return d / 1440 == date / 1440; };
 	return std::any_of(rp.pdeletedinstancedates.cbegin(), rp.pdeletedinstancedates.cend(), same_day) &&
-	       std::none_of(rp.pmodifiedinstancedates.cbegin(), rp.pmodifiedinstancedates.cend(), same_day) &&
 	       find_exc(apr, date) == nullptr;
 }
 
