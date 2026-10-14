@@ -3799,7 +3799,7 @@ static void append_dt(ical_component &com, const char *key,
 }
 
 static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
-    proptag_t proptag_xrt, bool b_exceptional, bool b_date,
+    proptag_t proptag_xrt, bool b_exceptional, bool b_recurrence, bool b_date,
     ical_component &com, const ical_component *ptz_component,
     const char *tzid, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
 {
@@ -3823,26 +3823,33 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 		if (!get_propids(&propnames, &propids) || propids.size() != propnames.size())
 			return E_2201;
 		auto flag = msg.proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_is_except]));
-		if (flag != nullptr && *flag != 0) {
-			auto num = msg.proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_startrecurtime]));
-			if (num != nullptr) {
+		auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_goid]));
+		auto num = msg.proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_startrecurtime]));
+		GLOBALOBJECTID goid{};
+		/* A series is no instance unless flagged, e.g. an occurrence reply */
+		if (b_recurrence && (flag == nullptr || *flag == 0))
+			bin = nullptr;
+		if (bin != nullptr) {
+			EXT_PULL ext_pull;
+			ext_pull.init(bin->pb, bin->cb, alloc, 0);
+			if (ext_pull.g_goid(&goid) != pack_result::ok ||
+			    !(goid.arrayid == EncodedGlobalId) ||
+			    goid.month < 1 || goid.month > 12 || goid.day < 1 ||
+			    goid.day > ical_get_monthdays(goid.year, goid.month))
+				goid.year = 0;
+		}
+		/* A DATE value has no use for the time */
+		if (goid.year >= 1601 && goid.year <= 4500 &&
+		    (num != nullptr || b_date)) {
+			itime.year  = goid.year;
+			itime.month = goid.month;
+			itime.day   = goid.day;
+			if (num != nullptr && !b_date) {
 				itime.hour   = (*num >> 12) & 0x1f;
 				itime.minute = (*num >> 6) & 0x3f;
 				itime.second = *num & 0x3f;
-				itime_is_set = true;
-				auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_goid]));
-				if (bin != nullptr) {
-					EXT_PULL ext_pull;
-					GLOBALOBJECTID globalobjectid;
-
-					ext_pull.init(bin->pb, bin->cb, alloc, 0);
-					if (ext_pull.g_goid(&globalobjectid) != pack_result::ok)
-						return "E-2218: PidLidGlobalObjectId contents not recognized";
-					itime.year = globalobjectid.year;
-					itime.month = globalobjectid.month;
-					itime.day = globalobjectid.day;
-				}
 			}
+			itime_is_set = true;
 		}
 	} else {
 		auto xrt = rop_util_nttime_to_unix(*lnum);
@@ -4239,7 +4246,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 
 	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids[l_replacetime]);
 	auto err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
-	      b_allday, *pcomponent, ptz_component, tzid, alloc, get_propids);
+	      b_recurrence, b_allday, *pcomponent, ptz_component, tzid, alloc,
+	      get_propids);
 	if (err != nullptr)
 		return err;
 

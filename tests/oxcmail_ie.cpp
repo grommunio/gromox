@@ -1042,12 +1042,14 @@ static int ical_standalone_occurrence()
 	static const PROPERTY_NAME namelist[] = {
 		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
 		{MNID_ID, PSETID_Meeting, PidLidIsException},
+		{MNID_ID, PSETID_Meeting, PidLidGlobalObjectId},
 	};
 	PROPNAME_ARRAY na = {static_cast<uint16_t>(std::size(namelist)), deconst(namelist)};
 	PROPID_ARRAY pids;
 	assert(ee_get_propids(&na, &pids));
 	const auto xrt_tag = PROP_TAG(PT_SYSTIME, pids[0]);
 	const auto isx_tag = PROP_TAG(PT_BOOLEAN, pids[1]);
+	const auto goid_tag = PROP_TAG(PT_BINARY, pids[2]);
 
 	fprintf(stderr, "=== ical_standalone_occurrence\n");
 	auto msg = ical_load(data);
@@ -1066,15 +1068,40 @@ static int ical_standalone_occurrence()
 	cvt.org_name = "x500org";
 	cvt.alloc = g_alloc;
 	cvt.get_propids = ee_get_propids;
+	for (unsigned int i = 0; i < 2; ++i) {
+		/* copies stored before the fix only have the GOID date */
+		if (i == 1) {
+			msg->proplist.erase(xrt_tag);
+			msg->proplist.erase(isx_tag);
+		}
+		ical icalout;
+		assert(cvt.mapi_to_ical(*msg, icalout));
+		std::string icstr;
+		assert(icalout.serialize(icstr) == ecSuccess);
+		if (icstr.find("RECURRENCE-ID;VALUE=DATE:20260810\r\n") == std::string::npos ||
+		    icstr.find("DTSTART;VALUE=DATE:20260811\r\n") == std::string::npos ||
+		    icstr.find("X-MICROSOFT-CDO-INSTTYPE:3\r\n") == std::string::npos ||
+		    icstr.find("RRULE", icstr.find("BEGIN:VEVENT")) != std::string::npos) {
+			fprintf(stderr, "pass %u:\n%s", i, icstr.c_str());
+			return EXIT_FAILURE;
+		}
+	}
+
+	/* a GOID not in the EncodedGlobalId format carries no date */
+	uint8_t junk[40];
+	memset(junk, 0xbc, sizeof(junk));
+	memcpy(&junk[16], "\x07\xea\x08\x0a", 4);
+	BINARY jbin;
+	jbin.cb = sizeof(junk);
+	jbin.pb = junk;
+	assert(msg->proplist.set(goid_tag, &jbin) == ecSuccess);
 	ical icalout;
 	assert(cvt.mapi_to_ical(*msg, icalout));
 	std::string icstr;
 	assert(icalout.serialize(icstr) == ecSuccess);
-	if (icstr.find("RECURRENCE-ID;VALUE=DATE:20260810\r\n") == std::string::npos ||
-	    icstr.find("DTSTART;VALUE=DATE:20260811\r\n") == std::string::npos ||
-	    icstr.find("X-MICROSOFT-CDO-INSTTYPE:3\r\n") == std::string::npos ||
-	    icstr.find("RRULE", icstr.find("BEGIN:VEVENT")) != std::string::npos) {
-		fprintf(stderr, "%s", icstr.c_str());
+	if (icstr.find("RECURRENCE-ID") != std::string::npos ||
+	    icstr.find("X-MICROSOFT-CDO-INSTTYPE:0\r\n") == std::string::npos) {
+		fprintf(stderr, "junk GOID:\n%s", icstr.c_str());
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
