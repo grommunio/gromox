@@ -3519,15 +3519,9 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 		/* localStartTime is real UTC from NTTIME.  Convert to
 		 * the appointment's local timezone for the blob. */
 		time_t appt_local = localStartTime;
-		auto caltz_tag = shape.tag(NtCalendarTimeZone);
-		if (caltz_tag != 0) {
-			const TAGGED_PROPVAL *caltz = shape.writes(NtCalendarTimeZone);
-			if (caltz) {
-				auto offset = lookup_tz_get_offset(static_cast<char *>(caltz->pvalue), localStartTime);
-				if (offset)
-					appt_local = localStartTime - static_cast<time_t>(*offset) * 60;
-			}
-		}
+		int64_t b;
+		if (item_tz && tz_to_offset(*item_tz, localStartTime, b))
+			appt_local = localStartTime - static_cast<time_t>(b) * 60;
 		struct tm start_tm{};
 		gmtime_r(&appt_local, &start_tm);
 		apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
