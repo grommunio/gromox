@@ -1021,6 +1021,65 @@ static int ical_allday_hint()
 	return EXIT_SUCCESS;
 }
 
+/* GXL-797 */
+static int ical_standalone_occurrence()
+{
+	static constexpr char data[] =
+		"BEGIN:VCALENDAR\r\nMETHOD:REQUEST\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n"
+		"BEGIN:VTIMEZONE\r\nTZID:W. Europe Standard Time\r\n"
+		"BEGIN:STANDARD\r\nDTSTART:16010101T030000\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+		"RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+		"BEGIN:DAYLIGHT\r\nDTSTART:16010101T020000\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+		"RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\nEND:VTIMEZONE\r\n"
+		"BEGIN:VEVENT\r\n"
+		"UID:040000008200E00074C5B7101A82E008000000008094416AF015DD01000000000000000"
+		"010000000794CB8A8093341F056A4152A7710228F\r\n"
+		"RECURRENCE-ID;VALUE=DATE;TZID=W. Europe Standard Time:20260810\r\n"
+		"DTSTART;VALUE=DATE;TZID=W. Europe Standard Time:20260811\r\n"
+		"DTEND;VALUE=DATE;TZID=W. Europe Standard Time:20260812\r\n"
+		"DTSTAMP:20260717T133447Z\r\nSEQUENCE:1\r\nSUMMARY:x\r\n"
+		"X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
+		{MNID_ID, PSETID_Meeting, PidLidIsException},
+	};
+	PROPNAME_ARRAY na = {static_cast<uint16_t>(std::size(namelist)), deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	const auto xrt_tag = PROP_TAG(PT_SYSTIME, pids[0]);
+	const auto isx_tag = PROP_TAG(PT_BOOLEAN, pids[1]);
+
+	fprintf(stderr, "=== ical_standalone_occurrence\n");
+	auto msg = ical_load(data);
+	assert(msg != nullptr);
+	auto xrt = msg->proplist.get<const uint64_t>(xrt_tag);
+	auto isx = msg->proplist.get<const uint8_t>(isx_tag);
+	/* 2026-08-10 00:00 CEST */
+	if (xrt == nullptr || rop_util_nttime_to_unix(*xrt) != 1786312800 ||
+	    isx == nullptr || *isx == 0) {
+		fprintf(stderr, "occurrence not marked\n");
+		return EXIT_FAILURE;
+	}
+
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	ical icalout;
+	assert(cvt.mapi_to_ical(*msg, icalout));
+	std::string icstr;
+	assert(icalout.serialize(icstr) == ecSuccess);
+	if (icstr.find("RECURRENCE-ID;VALUE=DATE:20260810\r\n") == std::string::npos ||
+	    icstr.find("DTSTART;VALUE=DATE:20260811\r\n") == std::string::npos ||
+	    icstr.find("X-MICROSOFT-CDO-INSTTYPE:3\r\n") == std::string::npos ||
+	    icstr.find("RRULE", icstr.find("BEGIN:VEVENT")) != std::string::npos) {
+		fprintf(stderr, "%s", icstr.c_str());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 static int hdrparse_1()
 {
 	static const char data[] =
@@ -2051,6 +2110,7 @@ int main()
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(ical_allday_hint),
+		E(ical_standalone_occurrence),
 		E(hdrparse_1),
 		E(vcard_tel_types), E(vcard_escaped_values), E(vcard_photo), E(vcard_dates),
 		E(vcard_fileas_categories),

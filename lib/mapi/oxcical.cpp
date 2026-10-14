@@ -1669,6 +1669,15 @@ static ec_error_t oxcical_parse_recurrence_id(const ical_component *ptz_componen
 	if (err != ecSuccess)
 		return err;
 	(*plast_propid) ++;
+	pn = {MNID_ID, PSETID_Meeting, PidLidIsException};
+	err = namemap_add(phash, *plast_propid, std::move(pn));
+	if (err != ecSuccess)
+		return err;
+	static constexpr uint8_t v_true = 1;
+	err = pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &v_true);
+	if (err != ecSuccess)
+		return err;
+	(*plast_propid) ++;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
@@ -2388,7 +2397,10 @@ static ec_error_t oxcical_import_internal(const char *method,
 	ical_time itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
 	if (piline != nullptr) {
-		if (pexception != nullptr && pext_exception != nullptr) {
+		/* A standalone occurrence update needs it just as much */
+		if (pexception != nullptr ||
+		    (pmain_event->get_line("RRULE") == nullptr &&
+		    pmain_event->get_line("X-MICROSOFT-RRULE") == nullptr)) {
 			err = oxcical_parse_recurrence_id(ptz_component,
 			      *piline, phash, &last_propid, pmsg, errstr);
 			if (err != ecSuccess) {
