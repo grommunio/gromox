@@ -486,21 +486,24 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 	std::vector<tDeletedOccurrenceInfoType> &delOccs,
 	const TZDEF *tz, std::chrono::seconds tz_offset)
 {
-	std::set<uint32_t> mod_insts(apprecurr.recur_pat.pmodifiedinstancedates.cbegin(),
-		apprecurr.recur_pat.pmodifiedinstancedates.cend());
-
-	size_t del_count = 0; // counter for deleted occurrences
-	for (size_t i = 0; i < apprecurr.recur_pat.pdeletedinstancedates.size(); ++i) {
-		auto di = apprecurr.recur_pat.pdeletedinstancedates[i];
-		if (mod_insts.find(di) != mod_insts.end()) {
-			auto &ei = apprecurr.pexceptioninfo[i-del_count];
+	/*
+	 * A deleted date with an exception for its day is a modified
+	 * occurrence. ModifiedInstanceDates holds the new day, which
+	 * says nothing about the original one. Older EWS exceptions
+	 * carry only the original day, not the time.
+	 */
+	for (auto di : apprecurr.recur_pat.pdeletedinstancedates) {
+		auto ei = std::find_if(apprecurr.pexceptioninfo.cbegin(),
+		          apprecurr.pexceptioninfo.cend(),
+		          [&](const EXCEPTIONINFO &e) { return e.originalstartdate / 1440 == di / 1440; });
+		if (ei != apprecurr.pexceptioninfo.cend()) {
 			modOccs.emplace_back(tOccurrenceInfoType({
-				sOccurrenceId(*entryid, ei.originalstartdate / 1440 * 1440),
-				rtime_to_tp(tz, tz_offset, ei.startdatetime),
-				rtime_to_tp(tz, tz_offset, ei.enddatetime),
-				rtime_to_tp(tz, tz_offset, ei.originalstartdate)}));
+				sOccurrenceId(*entryid, ei->originalstartdate / 1440 * 1440),
+				rtime_to_tp(tz, tz_offset, ei->startdatetime),
+				rtime_to_tp(tz, tz_offset, ei->enddatetime),
+				rtime_to_tp(tz, tz_offset, di / 1440 * 1440 +
+					apprecurr.starttimeoffset)}));
 		} else {
-			del_count++;
 			delOccs.emplace_back(tDeletedOccurrenceInfoType{rtime_to_tp(tz, tz_offset,
 				di + apprecurr.starttimeoffset)});
 		}
