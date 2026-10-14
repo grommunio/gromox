@@ -3168,14 +3168,15 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	auto &ei = apr.pexceptioninfo.emplace_back();
 	ei.startdatetime = start_rtime;
 	ei.enddatetime = end_rtime;
-	ei.originalstartdate = basedate;
+	/* MS-OXOCAL v22.1 §2.2.1.44.2: the original start, not its day */
+	ei.originalstartdate = basedate / 1440 * 1440 + apr.starttimeoffset;
 	ei.overrideflags = 0;
 
 	auto &ee = apr.pextendedexception.emplace_back();
 	ee.changehighlight.size = sizeof(uint32_t);
 	ee.startdatetime = start_rtime;
 	ee.enddatetime = end_rtime;
-	ee.originalstartdate = basedate;
+	ee.originalstartdate = ei.originalstartdate;
 
 	applyExceptionOverrides(ei, ee, props, location_id,
 		busystatus_id, subtype_id, reminderdelta_id,
