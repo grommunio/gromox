@@ -2680,6 +2680,27 @@ static void applyExceptionOverrides(EXCEPTIONINFO &ei, EXTENDEDEXCEPTION &ee,
 }
 
 /**
+ * Move the ModifiedInstanceDates entry of an exception whose start changed
+ * from @old_start to @new_start. Blobs written by older versions keyed the
+ * entry by the original day @basedate.
+ */
+static void moveModifiedDate(RECURRENCE_PATTERN &rp, uint32_t old_start,
+    uint32_t basedate, uint32_t new_start)
+{
+	auto &mods = rp.pmodifiedinstancedates;
+	auto day = [](uint32_t d) { return d / 1440; };
+	auto it = std::find_if(mods.begin(), mods.end(),
+	          [&](uint32_t m) { return day(m) == day(old_start); });
+	if (it == mods.end())
+		it = std::find_if(mods.begin(), mods.end(),
+		     [&](uint32_t m) { return day(m) == day(basedate); });
+	if (it == mods.end())
+		return;
+	*it = day(new_start) * 1440;
+	rp.sort_mods();
+}
+
+/**
  * Serialize an APPOINTMENT_RECUR_PAT and save it as a property.
  * Returns false on serialization failure.
  */
@@ -2899,15 +2920,18 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			if (ext_pull.g_apptrecpat(&apr) == pack_result::ok) {
 				int32_t tz_min = recurTzOffset(dir, mid, apr);
 				for (size_t k = 0; k < apr.pexceptioninfo.size(); ++k) {
-					if (apr.pexceptioninfo[k].originalstartdate / 1440 !=
-					    basedate / 1440)
+					auto &ei = apr.pexceptioninfo[k];
+					if (ei.originalstartdate / 1440 != basedate / 1440)
 						continue;
-					applyExceptionOverrides(apr.pexceptioninfo[k],
+					auto old_start = ei.startdatetime;
+					applyExceptionOverrides(ei,
 						apr.pextendedexception[k],
 						props, location_id,
 						busystatus_id, subtype_id,
 						reminderdelta_id,
 						reminderset_id, tz_min);
+					moveModifiedDate(apr.recur_pat, old_start,
+						basedate, ei.startdatetime);
 					break;
 				}
 				saveRecurBlob(dir, mid, recur_tag, apr);
@@ -3140,12 +3164,6 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		rp.sort_dels();
 	}
 
-	/* Add to modified instances */
-	if (!rp.contains_mod(basedate)) {
-		rp.pmodifiedinstancedates.emplace_back(basedate);
-		rp.sort_mods();
-	}
-
 	/* Build new EXCEPTIONINFO + EXTENDEDEXCEPTION entries */
 	auto &ei = apr.pexceptioninfo.emplace_back();
 	ei.startdatetime = start_rtime;
@@ -3162,6 +3180,10 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	applyExceptionOverrides(ei, ee, props, location_id,
 		busystatus_id, subtype_id, reminderdelta_id,
 		reminderset_id, tz_minutes);
+
+	/* MS-OXOCAL v22.1 §3.1.4.6.2: the new start day of the exception */
+	rp.pmodifiedinstancedates.emplace_back(ei.startdatetime / 1440 * 1440);
+	rp.sort_mods();
 
 	apr.sort_exceptions();
 	if (!saveRecurBlob(dir, mid, recur_tag, apr))
