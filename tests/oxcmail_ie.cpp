@@ -8,6 +8,7 @@
 #include <libHX/string.h>
 #include <vmime/contentTypeField.hpp>
 #include <gromox/element_data.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
@@ -684,6 +685,92 @@ static int ical_export_2()
 	    strstr(icstr.c_str(), "DTEND;VALUE=DATE:20240927") == nullptr) {
 		printf("%s\n", icstr.c_str());
 		fprintf(stderr, "FAILED. Substrings DTSTART/20240926 and DTEND/20240927 not found.\n");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+static std::unique_ptr<message_content, mc_delete> ical_load(std::string &&str)
+{
+	ical ic;
+	if (!ic.load_from_str_move(str.data()))
+		return nullptr;
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	return cvt.ical_to_mapi_single(ic);
+}
+
+static bool ical_recur(const message_content &msg, APPOINTMENT_RECUR_PAT &apr)
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
+	};
+	PROPNAME_ARRAY na = {1, deconst(namelist)};
+	PROPID_ARRAY pids;
+	if (!ee_get_propids(&na, &pids))
+		return false;
+	auto bin = msg.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pids[0]));
+	if (bin == nullptr)
+		return false;
+	EXT_PULL ep;
+	ep.init(bin->pb, bin->cb, g_alloc, EXT_FLAG_UTF16);
+	return ep.g_apptrecpat(&apr) == pack_result::ok;
+}
+
+static int ical_exception_roundtrip()
+{
+	static constexpr char data[] =
+		"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n"
+		"BEGIN:VTIMEZONE\r\nTZID:Europe/Berlin\r\n"
+		"BEGIN:DAYLIGHT\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+		"DTSTART:19700329T020000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\n"
+		"BEGIN:STANDARD\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+		"DTSTART:19701025T030000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+		"END:VTIMEZONE\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-rt\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:daily\r\n"
+		"RRULE:FREQ=DAILY;COUNT=5\r\nEXDATE;TZID=Europe/Berlin:20261021T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261020T100000\r\nDTEND;TZID=Europe/Berlin:20261020T110000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-rt\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:moved\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261022T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261022T140000\r\nDTEND;TZID=Europe/Berlin:20261022T150000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	fprintf(stderr, "=== ical_exception_roundtrip\n");
+	auto msg1 = ical_load(data);
+	assert(msg1 != nullptr);
+	APPOINTMENT_RECUR_PAT apr1{};
+	assert(ical_recur(*msg1, apr1));
+	assert(apr1.pexceptioninfo.size() == 1);
+
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	ical icalout;
+	assert(cvt.mapi_to_ical(*msg1, icalout));
+	std::string icstr;
+	assert(icalout.serialize(icstr) == ecSuccess);
+	/* only the real deletion, given in local time; the moved one is a VEVENT */
+	if (icstr.find("EXDATE;TZID=Europe/Berlin:20261021T100000\r\n") == std::string::npos ||
+	    icstr.find("EXDATE;TZID=Europe/Berlin:\r\n") != std::string::npos ||
+	    icstr.find("RDATE") != std::string::npos) {
+		fprintf(stderr, "%s", icstr.c_str());
+		return EXIT_FAILURE;
+	}
+
+	/* the export writes the exception in UTC; the local time must survive */
+	auto msg2 = ical_load(std::move(icstr));
+	assert(msg2 != nullptr);
+	APPOINTMENT_RECUR_PAT apr2{};
+	assert(ical_recur(*msg2, apr2));
+	assert(apr2.pexceptioninfo.size() == 1);
+	if (apr2.pexceptioninfo[0].startdatetime != apr1.pexceptioninfo[0].startdatetime ||
+	    apr2.pexceptioninfo[0].enddatetime != apr1.pexceptioninfo[0].enddatetime) {
+		fprintf(stderr, "exception moved from %u to %u\n",
+		        apr1.pexceptioninfo[0].startdatetime, apr2.pexceptioninfo[0].startdatetime);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -1891,6 +1978,7 @@ int main()
 		E(vexport_filename_utf8), E(vexport_body_fallback),
 		E(vexport_calendar), E(openpgp_roundtrip),
 		E(openpgp_legacy_layout),
+		E(ical_exception_roundtrip),
 	};
 #undef E
 	for (const auto &t : tests)

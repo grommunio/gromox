@@ -2178,6 +2178,22 @@ static inline unsigned int dfl_alarm_offset(bool allday)
 	return allday ? 1080 : 15;
 }
 
+/*
+ * Exception start/end times are kept in the local time of the series.
+ * A time given in UTC needs to be moved there first.
+ */
+static time_t oxcical_wall_time(const ical_component *tz, const ical_time &itime)
+{
+	time_t t;
+	ical_itime_to_utc(nullptr, itime, &t);
+	if (itime.type != itime_type::utc || tz == nullptr)
+		return t;
+	ical_time lcl;
+	if (ical_utc_to_datetime(tz, t, &lcl))
+		ical_itime_to_utc(nullptr, lcl, &t);
+	return t;
+}
+
 static ec_error_t oxcical_import_internal(const char *method,
     bool b_proposal, uint16_t calendartype, const ical &pical,
     const event_list_t &pevent_list, EXT_BUFFER_ALLOC alloc,
@@ -2596,13 +2612,11 @@ static ec_error_t oxcical_import_internal(const char *method,
 			apr.recur_pat.pdeletedinstancedates.emplace_back(minutes);
 			ei_new.originalstartdate = minutes;
 			ee_new.originalstartdate = minutes;
-			ical_itime_to_utc(nullptr, start_itime, &tmp_time);
-			minutes = rop_util_unix_to_rtime(tmp_time);
+			minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, start_itime));
 			apr.recur_pat.pmodifiedinstancedates.emplace_back(minutes);
 			ei_new.startdatetime = minutes;
 			ee_new.startdatetime = minutes;
-			ical_itime_to_utc(nullptr, end_itime, &tmp_time);
-			minutes = rop_util_unix_to_rtime(tmp_time);
+			minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, end_itime));
 			ei_new.enddatetime = minutes;
 			ee_new.enddatetime = minutes;
 
@@ -3533,17 +3547,25 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 	return false;
 }
 
+/*
+ * Every exception is exported as a VEVENT with RECURRENCE-ID, no matter
+ * whether it changes more than the time (overrideflags == 0, Outlook moves).
+ * Its date must not show up in EXDATE/RDATE as well. The dates are compared
+ * by day, as the time part differs between producers.
+ */
+static bool oxcical_is_exception(const APPOINTMENT_RECUR_PAT &apr, uint32_t date, bool orig)
+{
+	return std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
+	       [&](const EXCEPTIONINFO &j) {
+	       	return (orig ? j.originalstartdate : j.startdatetime) / 1440 == date / 1440;
+	       });
+}
+
 static bool oxcical_emit_exdates(const APPOINTMENT_RECUR_PAT &apr)
 {
 	return std::any_of(apr.recur_pat.pdeletedinstancedates.cbegin(),
 	       apr.recur_pat.pdeletedinstancedates.cend(),
-	       [&](uint32_t di) {
-	       	return std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
-	       	       [di](const EXCEPTIONINFO &j) {
-	       	       	return j.originalstartdate == di && j.overrideflags != 0;
-	       	       });
-	       });
-	return false;
+	       [&](uint32_t di) { return !oxcical_is_exception(apr, di, true); });
 }
 
 static bool oxcical_export_exdate(const char *tzid, bool b_date,
@@ -3565,16 +3587,12 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (auto di : apr->recur_pat.pdeletedinstancedates) {
-		auto found = std::any_of(apr->pexceptioninfo.cbegin(), apr->pexceptioninfo.cend(),
-		             [di](const EXCEPTIONINFO &j) {
-		             	return j.originalstartdate == di && j.overrideflags != 0;
-		             });
-		if (found)
+		if (oxcical_is_exception(*apr, di, true))
 			continue;
 		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(di + apr->starttimeoffset), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		else if (tzid == nullptr || itime.type == itime_type::utc)
+		else if (tzid == nullptr)
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
@@ -3590,12 +3608,7 @@ static bool oxcical_emit_rdates(const APPOINTMENT_RECUR_PAT &apr)
 {
 	return std::any_of(apr.recur_pat.pmodifiedinstancedates.cbegin(),
 	       apr.recur_pat.pmodifiedinstancedates.cend(),
-	       [&](uint32_t mi) {
-	       	return std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
-	       	       [mi](const EXCEPTIONINFO &j) {
-	       	       	return j.startdatetime == mi && j.overrideflags != 0;
-	       	       });
-	       });
+	       [&](uint32_t mi) { return !oxcical_is_exception(apr, mi, false); });
 }
 
 static bool oxcical_export_rdate(const char *tzid, bool b_date,
@@ -3611,16 +3624,12 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (auto mi : apr->recur_pat.pmodifiedinstancedates) {
-		auto found = std::any_of(apr->pexceptioninfo.cbegin(), apr->pexceptioninfo.cend(),
-		             [mi](const EXCEPTIONINFO &j) {
-		             	return j.startdatetime == mi && j.overrideflags != 0;
-		             });
-		if (found)
+		if (oxcical_is_exception(*apr, mi, false))
 			continue;
 		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(mi), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		else if (tzid == nullptr || itime.type == itime_type::utc)
+		else if (tzid == nullptr)
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
