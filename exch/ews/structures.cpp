@@ -582,11 +582,6 @@ bool has_day(const std::string &list, int wday)
 	return false;
 }
 
-inline time_t unix_day(time_t t)
-{
-	return t >= 0 ? t / 86400 : (t - 86399) / 86400;
-}
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -869,20 +864,19 @@ void tRecurrenceType::zone(int32_t z)
 }
 
 /**
- * @brief      Convert a stored recurrence to the request's time zone
+ * @brief      Mark the range dates of a stored recurrence with its zone
  *
- * Only done for series whose stored start agrees with the item start, so
- * that series written by earlier versions are returned as before. Monthly
- * and yearly rules have no UTC equivalent and stay in the item's time
- * zone, with the range dates marked as such.
+ * The pattern stays in the item's time zone and the range dates carry its
+ * offset, as in Exchange's GetItem responses. Only done for series whose
+ * stored start agrees with the item start, so that series written by
+ * earlier versions are returned as before.
  *
  * @param      rec     Recurrence in the item's time zone
- * @param      frame   Time zone of the request
  * @param      apr     Stored recurrence pattern
  * @param      start   Item start (UTC)
  * @param      tz      Item time zone, if known
  */
-static void recurrence_to_frame(tRecurrenceType &rec, const sRecurrenceFrame &frame,
+static void recurrence_zone(tRecurrenceType &rec,
     const APPOINTMENT_RECUR_PAT &apr, time_t start, const TZDEF *tz)
 {
 	auto first = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
@@ -894,19 +888,7 @@ static void recurrence_to_frame(tRecurrenceType &rec, const sRecurrenceFrame &fr
 	} else if (std::abs(east) > 14 * 60) {
 		return;
 	}
-	bool local = std::visit([](const auto &p) {
-		using T = std::decay_t<decltype(p)>;
-		return std::is_same_v<T, tAbsoluteMonthlyRecurrencePattern> ||
-		       std::is_same_v<T, tRelativeMonthlyRecurrencePattern> ||
-		       std::is_same_v<T, tAbsoluteYearlyRecurrencePattern> ||
-		       std::is_same_v<T, tRelativeYearlyRecurrencePattern>;
-	}, rec.RecurrencePattern);
-	if (local) {
-		rec.zone(east);
-		return;
-	}
-	rec.shift(unix_day(start + frame.offset(start) * 60) - unix_day(first));
-	rec.zone(frame.offset(start));
+	rec.zone(east);
 }
 
 static std::string tzdef_keyname(const BINARY *bin)
@@ -1068,9 +1050,9 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 			auto sp = shape.get<uint64_t>(PR_START_DATE);
 			if (!sp)
 				sp = shape.get<uint64_t>(NtCommonStart);
-			if (sp && shape.recurrenceFrame != nullptr) {
+			if (sp) {
 				auto tzdef = binary_to_tzdef(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY));
-				recurrence_to_frame(rec, *shape.recurrenceFrame, apprecurr,
+				recurrence_zone(rec, apprecurr,
 					rop_util_nttime_to_unix(*sp), tzdef ? &*tzdef : nullptr);
 			}
 

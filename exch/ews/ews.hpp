@@ -394,7 +394,6 @@ class EWSContext {
 	inline void log(bool l) {m_log = l;}
 	inline State state() const {return m_state;}
 	inline void state(State s) {m_state = s;}
-	inline const Structures::sRecurrenceFrame *get_recurrence_frame() const {return m_recurrence_frame ? &*m_recurrence_frame : nullptr;}
 
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);

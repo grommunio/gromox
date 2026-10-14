@@ -482,7 +482,6 @@ class sShape {
 	const tinyxml2::XMLElement *toRecipients = nullptr; ///< ToRecipients for update
 	const tinyxml2::XMLElement *ccRecipients = nullptr; ///< CcRecipients for update
 	const tinyxml2::XMLElement *bccRecipients = nullptr; ///< BccRecipients for update
-	const sRecurrenceFrame *recurrenceFrame = nullptr; ///< Time zone to return recurrences in
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 
@@ -1945,10 +1944,10 @@ struct tRecurrenceType {
 /**
  * @brief      Time zone that a request expresses recurrence patterns in
  *
- * Recurrence patterns and ranges carry no time zone of their own. Like
- * Exchange, they are taken relative to the request's TimeZoneContext,
- * or UTC if there is none, and converted from/to the time zone of the
- * calendar item.
+ * Recurrence patterns and ranges carry no time zone of their own. In a
+ * request, they are taken relative to the TimeZoneContext, or UTC if there
+ * is none, and converted to the time zone of the calendar item. Responses
+ * return them in the item's time zone.
  */
 struct sRecurrenceFrame {
 	std::optional<TZDEF> tz; ///< Zone from TimeZoneContext
