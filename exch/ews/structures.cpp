@@ -574,6 +574,14 @@ std::string rotate_days(const std::string &list, int days)
 	return out;
 }
 
+bool has_day(const std::string &list, int wday)
+{
+	for (const auto &day : gx_split(list, ' '))
+		if (day == weekday_names[wday])
+			return true;
+	return false;
+}
+
 inline time_t unix_day(time_t t)
 {
 	return t >= 0 ? t / 86400 : (t - 86399) / 86400;
@@ -784,8 +792,9 @@ int32_t sRecurrenceFrame::offset(time_t t) const
 /**
  * @brief      Move the recurrence by whole days
  *
- * Day of month and month are only moved where they match the start of
- * the range; DayOfWeekIndex is kept.
+ * Monthly and yearly day rules are only moved where they match the start
+ * of the range before but not after the move. This is a best guess at
+ * whether the client gave them in UTC. DayOfWeekIndex is kept.
  *
  * @param      days  Number of days (may be negative)
  */
@@ -805,10 +814,14 @@ void tRecurrenceType::shift(int days)
 		r->EndDate += delta;
 	std::visit([&](auto &p) {
 		using T = std::decay_t<decltype(p)>;
-		if constexpr (std::is_same_v<T, tWeeklyRecurrencePattern> ||
-		    std::is_same_v<T, tRelativeMonthlyRecurrencePattern> ||
-		    std::is_same_v<T, tRelativeYearlyRecurrencePattern>)
+		if constexpr (std::is_same_v<T, tWeeklyRecurrencePattern>)
 			p.DaysOfWeek = rotate_days(p.DaysOfWeek, days);
+		if constexpr (std::is_same_v<T, tRelativeMonthlyRecurrencePattern> ||
+		    std::is_same_v<T, tRelativeYearlyRecurrencePattern>) {
+			if (has_day(p.DaysOfWeek, before.tm_wday) &&
+			    !has_day(p.DaysOfWeek, after.tm_wday))
+				p.DaysOfWeek = rotate_days(p.DaysOfWeek, days);
+		}
 		if constexpr (std::is_same_v<T, tAbsoluteMonthlyRecurrencePattern>) {
 			if (p.DayOfMonth == before.tm_mday)
 				p.DayOfMonth = after.tm_mday;
@@ -848,7 +861,9 @@ void tRecurrenceType::zone(int32_t z)
  * @brief      Convert a stored recurrence to the request's time zone
  *
  * Only done for series whose stored start agrees with the item start, so
- * that series written by earlier versions are returned as before.
+ * that series written by earlier versions are returned as before. Monthly
+ * and yearly rules have no UTC equivalent and stay in the item's time
+ * zone, with the range dates marked as such.
  *
  * @param      rec     Recurrence in the item's time zone
  * @param      frame   Time zone of the request
@@ -866,6 +881,17 @@ static void recurrence_to_frame(tRecurrenceType &rec, const sRecurrenceFrame &fr
 		if (!tz_to_offset(*tz, start, b) || -b != east)
 			return;
 	} else if (std::abs(east) > 14 * 60) {
+		return;
+	}
+	bool local = std::visit([](const auto &p) {
+		using T = std::decay_t<decltype(p)>;
+		return std::is_same_v<T, tAbsoluteMonthlyRecurrencePattern> ||
+		       std::is_same_v<T, tRelativeMonthlyRecurrencePattern> ||
+		       std::is_same_v<T, tAbsoluteYearlyRecurrencePattern> ||
+		       std::is_same_v<T, tRelativeYearlyRecurrencePattern>;
+	}, rec.RecurrencePattern);
+	if (local) {
+		rec.zone(east);
 		return;
 	}
 	rec.shift(unix_day(start + frame.offset(start) * 60) - unix_day(first));

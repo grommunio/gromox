@@ -747,7 +747,9 @@ static inline time_t unix_day(time_t t)
  * @brief      Convert a client-supplied recurrence to the item's time zone
  *
  * The pattern and range are given relative to the request's time zone
- * (or the zone of the range start date, if it has one).
+ * (or the zone of the range start date, if it has one). A start date
+ * without a zone on the local day of the item start is taken as local,
+ * since responses give the range in the item's time zone.
  *
  * @param      rec    Recurrence as received
  * @param      frame  Time zone of the request
@@ -760,8 +762,13 @@ void shift_recurrence(tRecurrenceType &rec, const sRecurrenceFrame &frame,
 	int64_t b;
 	if (!tz_to_offset(tz, start, b))
 		return;
+	auto day = unix_day(start - b * 60);
+	auto first = clock::to_time_t(std::visit([](const auto &r) STATIC_IN_CXX23 {
+	             return r.StartDate; }, rec.RecurrenceRange));
+	if (!rec.startDateZone() && unix_day(first) == day)
+		return;
 	auto east = rec.startDateZone().value_or(frame.offset(start));
-	rec.shift(unix_day(start - b * 60) - unix_day(start + east * 60));
+	rec.shift(day - unix_day(start + east * 60));
 }
 
 bool has_element(const tinyxml2::XMLElement *xml, const char *name)
