@@ -1739,8 +1739,23 @@ static bool oxcical_parse_appt_not_recurring(namemap &phash, uint16_t &last_prop
 	return true;
 }
 
-static bool oxcical_parse_appointment_recurrence(const APPOINTMENT_RECUR_PAT *apr,
-    namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
+/*
+ * MS-OXOCAL v22.1 §2.2.1.14/§2.2.1.15: the clip bounds of a series are
+ * midnight in the local zone on the first/last day, stored as UTC.
+ */
+static uint64_t oxcical_clip_time(const ical_component *tz, uint32_t rtime)
+{
+	time_t t = rop_util_rtime_to_unix(rtime), u;
+	ical_time itime;
+	if (tz != nullptr && ical_utc_to_datetime(nullptr, t, &itime) &&
+	    ical_itime_to_utc(tz, itime, &u))
+		t = u;
+	return rop_util_unix_to_nttime(t);
+}
+
+static bool oxcical_parse_appointment_recurrence(const ical_component *tz,
+    const APPOINTMENT_RECUR_PAT *apr, namemap &phash, uint16_t *plast_propid,
+    MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
@@ -1768,17 +1783,17 @@ static bool oxcical_parse_appointment_recurrence(const APPOINTMENT_RECUR_PAT *ap
 	    pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &num) != ecSuccess)
 		return false;
 	++*plast_propid;
-	auto nt_time = rop_util_rtime_to_nttime(
-		apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND ||
-		apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND1 ?
-		ENDDATE_MISSING : apr->recur_pat.enddate);
+	auto nt_time = apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND ||
+	               apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND1 ?
+	               rop_util_rtime_to_nttime(ENDDATE_MISSING) :
+	               oxcical_clip_time(tz, apr->recur_pat.enddate);
 	propname = {MNID_ID, PSETID_Appointment, PidLidClipEnd};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
-	nt_time = rop_util_rtime_to_nttime(apr->recur_pat.startdate);
+	nt_time = oxcical_clip_time(tz, apr->recur_pat.startdate);
 	propname = {MNID_ID, PSETID_Appointment, PidLidClipStart};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
@@ -2650,8 +2665,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 		apr.recur_pat.sort_dels();
 		apr.recur_pat.sort_mods();
 		apr.sort_exceptions();
-		if (!oxcical_parse_appointment_recurrence(&apr, phash,
-		    &last_propid, pmsg)) {
+		if (!oxcical_parse_appointment_recurrence(ptz_component, &apr,
+		    phash, &last_propid, pmsg)) {
 			errstr = "E-2732";
 			return ecInvalidParam;
 		}
