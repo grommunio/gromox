@@ -1136,9 +1136,9 @@ uint32_t sFolderEntryId::accountId() const
  *
  * @return    Folder ID
  */
-uint64_t sFolderEntryId::folderId() const
+eid_t sFolderEntryId::folderId() const
 {
-	return rop_util_gc_to_value(folder_gc);
+	return eid_t(1, rop_util_gc_to_value(folder_gc));
 }
 
 /**
@@ -1206,9 +1206,9 @@ uint32_t sMessageEntryId::accountId() const
  *
  * @return    folder ID
  */
-uint64_t sMessageEntryId::folderId() const
+eid_t sMessageEntryId::folderId() const
 {
-	return rop_util_gc_to_value(folder_gc);
+	return eid_t(1, rop_util_gc_to_value(folder_gc));
 }
 
 /**

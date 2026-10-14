@@ -1261,7 +1261,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 
 		for (const tFileAttachment &att : request.Attachments) try {
 			auto mInst = ctx.plugin().loadMessageInstance(dir,
-			             mid.folderId(), mid.messageId());
+			             parentFolder.folderId, mid.messageId());
 			uint32_t aInstId = 0, aNum = 0;
 			if (!ctx.plugin().exmdb.create_attachment_instance(dir.c_str(),
 			    mInst->instanceId, &aInstId, &aNum))
@@ -1366,7 +1366,7 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 			throw EWSError::AccessDenied(E3444);
 
 		auto mInst = ctx.plugin().loadMessageInstance(dir,
-		             aid.folderId(), aid.messageId());
+		             parentFolder.folderId, aid.messageId());
 		if (!ctx.plugin().exmdb.delete_message_instance_attachment(dir.c_str(),
 		    mInst->instanceId, aid.attachment_num))
 			throw EWSError::ItemSave(E3432);
@@ -1516,7 +1516,7 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			data.ResponseMessages.emplace_back().success();
 		} else {
 			auto eid = meid.messageId();
-			auto fid = eid_t(1, meid.folderId());
+			auto fid = meid.folderId();
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete ? TRUE : false;
 			BOOL partial = false;
@@ -1799,7 +1799,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				if (recur != nullptr && recur->cb > 0 && eid != nullptr) {
 					/* Recurring master: report its occurrences, not the series */
 					sMessageEntryId meid(eid->pc, eid->cb);
-					for (auto &occ : ctx.expandOccurrences(dir, eid_t(1, meid.folderId()),
+					for (auto &occ : ctx.expandOccurrences(dir, meid.folderId(),
 					     meid.messageId(), viewStart, viewEnd, shape)) {
 						auto &start = std::get<tCalendarItem>(occ).Start;
 						calItems.emplace_back(start ? start->toNT() : 0, std::move(occ));
@@ -3661,7 +3661,7 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 			throw EWSError::MoveCopyFailed(E3468);
 	} else {
 		auto eid = mid.messageId();
-		auto fid = eid_t(1, mid.folderId());
+		auto fid = mid.folderId();
 		EID_ARRAY eids{1, &eid};
 		BOOL partial = false;
 		if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),

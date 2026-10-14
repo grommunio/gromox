@@ -3860,7 +3860,7 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	sFolderEntryId eid(fId.Id.data(), fId.Id.size());
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
-	folderSpec.folderId = eid_t(1, rop_util_gc_to_value(eid.folder_gc));
+	folderSpec.folderId = eid.folderId();
 	if (eid.isPrivate()) {
 		std::string ubuf;
 		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
@@ -3898,7 +3898,7 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 {
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
-	folderSpec.folderId = eid_t(1, eid.folderId());
+	folderSpec.folderId = eid.folderId();
 	if (eid.isPrivate()) {
 		std::string ubuf;
 		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
@@ -5863,7 +5863,7 @@ void EWSContext::validate(const std::string& dir, const sMessageEntryId& meid) c
 	}
 	if (!parentFid)
 		throw EWSError::ItemNotFound(E3187);
-	if (rop_util_get_gc_value(*parentFid) != meid.folderId())
+	if (*parentFid != meid.folderId())
 		throw EWSError::InvalidId(E3188);
 }
 
