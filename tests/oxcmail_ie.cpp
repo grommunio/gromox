@@ -777,6 +777,83 @@ static int ical_exception_roundtrip()
 }
 
 /*
+ * An occurrence moved to another day. MS-OXOCAL wants its new day in
+ * ModifiedInstanceDates. EWS used to store the original day there, and the
+ * export then had an RDATE without EXDATE, which the import rejects.
+ */
+static int ical_moved_exception_dates()
+{
+	static constexpr char data[] =
+		"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n"
+		"BEGIN:VTIMEZONE\r\nTZID:Europe/Berlin\r\n"
+		"BEGIN:DAYLIGHT\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+		"DTSTART:19700329T020000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\n"
+		"BEGIN:STANDARD\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+		"DTSTART:19701025T030000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+		"END:VTIMEZONE\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-moved\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:daily\r\n"
+		"RRULE:FREQ=WEEKLY;COUNT=3\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261102T100000\r\nDTEND;TZID=Europe/Berlin:20261102T110000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-moved\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:moved\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261109T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261110T140000\r\nDTEND;TZID=Europe/Berlin:20261110T150000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
+	};
+	PROPNAME_ARRAY na = {1, deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	fprintf(stderr, "=== ical_moved_exception_dates\n");
+	for (bool legacy : {false, true}) {
+		auto msg1 = ical_load(data);
+		assert(msg1 != nullptr);
+		APPOINTMENT_RECUR_PAT apr{};
+		assert(ical_recur(*msg1, apr));
+		assert(apr.pexceptioninfo.size() == 1);
+		assert(apr.recur_pat.pmodifiedinstancedates.size() == 1);
+		auto &ei = apr.pexceptioninfo[0];
+		apr.recur_pat.pmodifiedinstancedates[0] = legacy ?
+			ei.originalstartdate / 1440 * 1440 :
+			ei.startdatetime / 1440 * 1440;
+		EXT_PUSH ep;
+		assert(ep.init(nullptr, 0, EXT_FLAG_UTF16) &&
+		       ep.p_apptrecpat(apr) == pack_result::ok);
+		BINARY bin;
+		bin.cb = ep.m_offset;
+		bin.pv = ep.m_udata;
+		assert(msg1->proplist.set(PROP_TAG(PT_BINARY, pids[0]), &bin) == ecSuccess);
+
+		oxcical_converter cvt;
+		cvt.log_id = "-";
+		cvt.org_name = "x500org";
+		cvt.alloc = g_alloc;
+		cvt.get_propids = ee_get_propids;
+		ical icalout;
+		assert(cvt.mapi_to_ical(*msg1, icalout));
+		std::string icstr;
+		assert(icalout.serialize(icstr) == ecSuccess);
+		if (icstr.find("RDATE") != std::string::npos ||
+		    icstr.find("EXDATE") != std::string::npos) {
+			fprintf(stderr, "%s", icstr.c_str());
+			return EXIT_FAILURE;
+		}
+		auto msg2 = ical_load(std::move(icstr));
+		assert(msg2 != nullptr);
+		APPOINTMENT_RECUR_PAT apr2{};
+		assert(ical_recur(*msg2, apr2));
+		assert(apr2.pexceptioninfo.size() == 1);
+		assert(apr2.pexceptioninfo[0].startdatetime == ei.startdatetime);
+		assert(apr2.recur_pat.pdeletedinstancedates.size() == 1);
+		assert(apr2.recur_pat.pmodifiedinstancedates.size() == 1);
+		assert(apr2.recur_pat.pmodifiedinstancedates[0] / 1440 ==
+		       ei.startdatetime / 1440);
+	}
+	return EXIT_SUCCESS;
+}
+
+/*
  * A meeting response identifies the responder through
  * PR_SENT_REPRESENTING_SMTP_ADDRESS (the iCalendar ATTENDEE) and through
  * PR_SENDER_* (the From: header, which a scheduling mail takes from the sender
@@ -2151,6 +2228,7 @@ int main()
 		E(vexport_calendar), E(openpgp_roundtrip),
 		E(openpgp_legacy_layout),
 		E(ical_exception_roundtrip),
+		E(ical_moved_exception_dates),
 	};
 #undef E
 	for (const auto &t : tests)

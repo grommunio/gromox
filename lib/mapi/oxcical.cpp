@@ -3627,11 +3627,21 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	return false;
 }
 
+/*
+ * EWS used to store the original day of a moved exception as its modified
+ * date. Its EXDATE is not emitted, so neither must the RDATE be.
+ */
+static bool oxcical_is_modified(const APPOINTMENT_RECUR_PAT &apr, uint32_t date)
+{
+	return oxcical_is_exception(apr, date, false) ||
+	       oxcical_is_exception(apr, date, true);
+}
+
 static bool oxcical_emit_rdates(const APPOINTMENT_RECUR_PAT &apr)
 {
 	return std::any_of(apr.recur_pat.pmodifiedinstancedates.cbegin(),
 	       apr.recur_pat.pmodifiedinstancedates.cend(),
-	       [&](uint32_t mi) { return !oxcical_is_exception(apr, mi, false); });
+	       [&](uint32_t mi) { return !oxcical_is_modified(apr, mi); });
 }
 
 static bool oxcical_export_rdate(const char *tzid, bool b_date,
@@ -3647,7 +3657,7 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (auto mi : apr->recur_pat.pmodifiedinstancedates) {
-		if (oxcical_is_exception(*apr, mi, false))
+		if (oxcical_is_modified(*apr, mi))
 			continue;
 		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(mi), &itime);
 		if (b_date)
