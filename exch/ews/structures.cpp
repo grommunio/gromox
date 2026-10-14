@@ -747,8 +747,9 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
 	};
 	auto mkOcc = [&](uint32_t date) {
 		uint32_t ostart = date + apr.starttimeoffset;
+		/* Older exceptions only carry the original day */
 		for (const auto &ei : apr.pexceptioninfo)
-			if (ei.originalstartdate == ostart)
+			if (ei.originalstartdate / 1440 == date / 1440)
 				return tOccurrenceInfoType(sOccurrenceId(eid, date),
 				       toUtc(ei.startdatetime), toUtc(ei.enddatetime), toUtc(ostart));
 		return tOccurrenceInfoType(sOccurrenceId(eid, date), toUtc(ostart),

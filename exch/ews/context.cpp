@@ -676,7 +676,8 @@ occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
 	size_t visited = 0;
 	uint32_t last_exc = 0;
 	for (const auto &ei : apr.pexceptioninfo)
-		last_exc = std::max(last_exc, ei.originalstartdate);
+		last_exc = std::max(last_exc, ei.originalstartdate / 1440 *
+		           1440 + apr.starttimeoffset);
 
 	walkOccurrenceDates(apr, [&](uint32_t date) {
 		if (++visited > walk_cap)
