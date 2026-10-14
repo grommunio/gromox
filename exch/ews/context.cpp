@@ -3425,6 +3425,19 @@ lookup_tz_get_offset(const char *name, time_t local_start)
 	return std::nullopt;
 }
 
+/*
+ * MS-OXOCAL v22.1 §2.2.1.14/§2.2.1.15: the clip bounds of a series are
+ * midnight in the local zone on the first/last day, stored as UTC.
+ */
+static uint64_t clip_time(const std::optional<TZDEF> &tz, uint32_t rtime)
+{
+	time_t t = rop_util_rtime_to_unix(rtime);
+	int64_t off = 0;
+	if (rtime != ENDDATE_MISSING && tz && tz_to_offset(*tz, t, off))
+		t += off * 60;
+	return rop_util_unix_to_nttime(t);
+}
+
 /**
  * @brief      Convert EWS Recurrence XML to MAPI properties and write to shape
  *
@@ -3659,9 +3672,9 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	shape.write(NtRecurrenceType, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(rectype)});
 	shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY, construct<BINARY>(BINARY{tmp_bin.cb, {recurdata}})});
 	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(1)});
-	auto clipstart = construct<uint64_t>(rop_util_unix_to_nttime(startdate));
+	auto clipstart = construct<uint64_t>(clip_time(item_tz, apr.recur_pat.startdate));
 	shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME, clipstart});
-	auto clipend = construct<uint64_t>(rop_util_rtime_to_nttime(apr.recur_pat.enddate));
+	auto clipend = construct<uint64_t>(clip_time(item_tz, apr.recur_pat.enddate));
 	shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
 }
 
@@ -5012,11 +5025,10 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		isrecurring = 1;
 		shape.write(NtRecurrenceType, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(rectype)});
 		shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY, construct<BINARY>(BINARY{tmp_bin.cb, {recurdata}})});
-		// TODO: midnight in local time persist in UTC
-		auto clipstart = EWSContext::construct<uint64_t>(rop_util_unix_to_nttime(startdate));
+		auto item_tz = lookup_tz_get_tzdef(item.timezoneId().c_str());
+		auto clipstart = EWSContext::construct<uint64_t>(clip_time(item_tz, apr.recur_pat.startdate));
 		shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME, clipstart});
-		// TODO: midnight in local time persist in UTC
-		auto clipend = EWSContext::construct<uint64_t>(rop_util_rtime_to_nttime(apr.recur_pat.enddate));
+		auto clipend = EWSContext::construct<uint64_t>(clip_time(item_tz, apr.recur_pat.enddate));
 		shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
 	}
 	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(isrecurring)});
