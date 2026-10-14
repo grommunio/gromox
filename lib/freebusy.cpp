@@ -518,6 +518,12 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 	                    SYSTEMTIME::maxyear * 31557600ULL * 10000000 :
 	                    rop_util_unix_to_nttime(end_time);
 	bool detailed     = permission & (frightsFreeBusyDetailed | frightsReadAny);
+	/*
+	 * PidLidClipEnd is local midnight of the last day, and an exception
+	 * may move past it. fb_recur_times filters the occurrences anyway.
+	 */
+	static constexpr uint64_t clip_slack = 7ULL * 86400 * 10000000;
+	auto clip_nttime  = start_nttime - clip_slack;
 	/* Owners and delegates allowed to see private items get their details */
 	bool see_private  = username == nullptr ||
 	                    (detailed && sees_private_items(dir, username));
@@ -540,10 +546,10 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 	RESTRICTION rst_11[2]       = {{RES_PROPERTY, {&rst_9}}, {RES_PROPERTY, {&rst_10}}};
 	RESTRICTION_AND_OR rst_12   = {std::size(rst_11), rst_11};
 
-	/* C4: have(clipend) && recurring && clipend >= start */
+	/* C4: have(clipend) && recurring && clipend >= start - slack */
 	RESTRICTION_EXIST rst_13    = {ptag.clipend};
 	RESTRICTION_PROPERTY rst_14 = {RELOP_EQ, ptag.recurring, {ptag.recurring, deconst(&byte_value_one)}};
-	RESTRICTION_PROPERTY rst_15 = {RELOP_GE, ptag.clipend, {ptag.clipend, &start_nttime}};
+	RESTRICTION_PROPERTY rst_15 = {RELOP_GE, ptag.clipend, {ptag.clipend, &clip_nttime}};
 	RESTRICTION rst_16[3]       = {{RES_EXIST, {&rst_13}}, {RES_PROPERTY, {&rst_14}}, {RES_PROPERTY, {&rst_15}}};
 	RESTRICTION_AND_OR rst_17   = {std::size(rst_16), rst_16};
 
