@@ -768,7 +768,16 @@ void shift_recurrence(tRecurrenceType &rec, const sRecurrenceFrame &frame,
 	if (!rec.startDateZone() && unix_day(first) == day)
 		return;
 	auto east = rec.startDateZone().value_or(frame.offset(start));
-	rec.shift(day - unix_day(start + east * 60));
+	int days = day - unix_day(start + east * 60);
+	/*
+	 * The series start is its first instance, MS-OXOCAL v22.1 §2.2.1.5.
+	 * A weekly rule that names the local weekday of the start, and would
+	 * lose it when moved, was given in the item's time zone already.
+	 */
+	auto wday = [](time_t d) { return static_cast<int>((d % 7 + 11) % 7); };
+	if (rec.weeklyOn(wday(day)) && !rec.weeklyOn(wday(day - days)))
+		return;
+	rec.shift(days);
 }
 
 bool has_element(const tinyxml2::XMLElement *xml, const char *name)

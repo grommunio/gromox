@@ -1938,6 +1938,7 @@ struct tRecurrenceType {
 
 	void shift(int);
 	std::optional<int32_t> startDateZone() const;
+	bool weeklyOn(int) const;
 	void zone(int32_t);
 };
 

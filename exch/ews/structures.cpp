@@ -848,6 +848,17 @@ std::optional<int32_t> tRecurrenceType::startDateZone() const
 }
 
 /**
+ * @brief      Whether a weekly pattern names a day of the week
+ *
+ * @param      wday   Day of the week, 0 is Sunday
+ */
+bool tRecurrenceType::weeklyOn(int wday) const
+{
+	auto p = std::get_if<tWeeklyRecurrencePattern>(&RecurrencePattern);
+	return p != nullptr && has_day(p->DaysOfWeek, wday);
+}
+
+/**
  * @brief      Set the zone the range dates are written with
  */
 void tRecurrenceType::zone(int32_t z)
