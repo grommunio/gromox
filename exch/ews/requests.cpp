@@ -4115,6 +4115,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtReminderTime, PT_SYSTIME);
 		shape.add(NtReminderSignalTime, PT_SYSTIME);
 		shape.add(NtRecurring, PT_BOOLEAN);
+		/* Written by applyRecurrence */
+		shape.add(NtRecurrenceType, PT_LONG);
+		shape.add(NtClipStart, PT_SYSTIME);
+		shape.add(NtClipEnd, PT_SYSTIME);
 		ctx.getNamedTags(dir, shape, true);
 		for (const auto &update : change.Updates) {
 			if (std::holds_alternative<tSetItemField>(update))
