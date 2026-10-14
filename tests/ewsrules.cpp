@@ -502,6 +502,10 @@ static bool act_written(unsigned int k)
 	case A_AssignCategories:
 	case A_MarkImportance:
 		return true;
+	case A_ForwardToRecipients:
+	case A_ForwardAsAttachmentToRecipients:
+	case A_RedirectToRecipients:
+		return true;
 	default:
 		return false;
 	}
@@ -604,6 +608,36 @@ static int t_other_store()
 	return EXIT_SUCCESS;
 }
 
+static int t_forward_shape()
+{
+	test_env env;
+	Rule r;
+	r.name = "fwd";
+	r.priority = 1;
+	r.actions.v[A_RedirectToRecipients] = Value{.addrs = {{"", "/o=x/ou=y/cn=Recipients/cn=dave", "EX"}}};
+	RESTRICTION *cond = nullptr;
+	RULE_ACTIONS *acts = nullptr;
+	std::vector<ValidationError> errs;
+	CHECK(to_mapi(r, env, cond, acts, errs));
+	auto &blk = acts->pblock[0];
+	CHECK(blk.type == OP_FORWARD);
+	CHECK(blk.flavor == (FWD_PRESERVE_SENDER | FWD_DO_NOT_MUNGE_MSG));
+	auto fwd = static_cast<const FORWARDDELEGATE_ACTION *>(blk.pdata);
+	TPROPVAL_ARRAY pv{static_cast<uint16_t>(fwd->pblock[0].count), fwd->pblock[0].ppropval};
+	CHECK(strcmp(pv.get<const char>(PR_SMTP_ADDRESS), "dave@example.org") == 0);
+	CHECK(strcmp(pv.get<const char>(PR_ADDRTYPE), "SMTP") == 0);
+	auto sk = pv.get<const BINARY>(PR_SEARCH_KEY);
+	CHECK(sk != nullptr && sk->cb == 22 && memcmp(sk->pv, "SMTP:DAVE@EXAMPLE.ORG", 22) == 0);
+	CHECK(pv.has(PR_ENTRYID));
+
+	r.actions.v[A_RedirectToRecipients].reset();
+	r.actions.v[A_SendSMSAlertToRecipients] = Value{.addrs = {{"", "+43123", "MOBILE"}}};
+	CHECK(!to_mapi(r, env, cond, acts, errs));
+	CHECK(errs.back().code == "UnsupportedRule");
+	CHECK(errs.back().field == "Action:SendSMSAlertToRecipients");
+	return EXIT_SUCCESS;
+}
+
 static bool has_error(const std::vector<ValidationError> &errs, const char *field, const char *code)
 {
 	for (const auto &e : errs)
@@ -638,6 +672,7 @@ int main()
 	     t_errors_xml, t_sequences, t_actions, t_validate,
 	     t_predicates,
 	     t_other_store,
+	     t_forward_shape,
 	     }) {
 		auto ret = f();
 		if (ret != EXIT_SUCCESS) {

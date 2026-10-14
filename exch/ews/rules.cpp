@@ -1385,6 +1385,7 @@ struct writer {
 	{
 		errs.push_back({uri, code, msg, value});
 	}
+	FORWARDDELEGATE_ACTION *recipients(const std::vector<Address> &, const std::string &uri);
 	RESTRICTION addr_cond(const Address &, proptag_t);
 
 	Env &env;
@@ -1612,6 +1613,35 @@ std::optional<RESTRICTION> writer::pred(pred_kind k, const Value &v, const std::
 	return l.size() == 1 ? l[0] : list(RES_AND, l);
 }
 
+FORWARDDELEGATE_ACTION *writer::recipients(const std::vector<Address> &addrs,
+    const std::string &uri)
+{
+	auto fwd = mk<FORWARDDELEGATE_ACTION>();
+	fwd->count = addrs.size();
+	fwd->pblock = mk<RECIPIENT_BLOCK>(addrs.size());
+	for (size_t i = 0; i < addrs.size(); ++i) {
+		Address a = addrs[i];
+		auto code = env.resolve_address(a);
+		if (code != nullptr) {
+			error(uri, code, "The address is not valid.", addrs[i].email);
+			return nullptr;
+		}
+		auto &blk = fwd->pblock[i];
+		blk.count = 9;
+		blk.ppropval = mk<TAGGED_PROPVAL>(9);
+		blk.ppropval[0] = {PR_ADDRTYPE, str("SMTP")};
+		blk.ppropval[1] = {PR_EMAIL_ADDRESS, str(a.email)};
+		blk.ppropval[2] = {PR_SMTP_ADDRESS, str(a.email)};
+		blk.ppropval[3] = {PR_DISPLAY_NAME, str(a.name.empty() ? a.email : a.name)};
+		blk.ppropval[4] = {PR_RECIPIENT_TYPE, num<uint32_t>(MAPI_TO)};
+		blk.ppropval[5] = {PR_SEARCH_KEY, bin(smtp_srchkey(a.email))};
+		blk.ppropval[6] = {PR_ENTRYID, bin(oneoff_entryid(a))};
+		blk.ppropval[7] = {PR_OBJECT_TYPE, num<uint32_t>(static_cast<uint32_t>(MAPI_MAILUSER))};
+		blk.ppropval[8] = {PR_DISPLAY_TYPE, num<uint32_t>(DT_MAILUSER)};
+	}
+	return fwd;
+}
+
 /* Fill @blk, or return nullptr when the action adds no block */
 ACTION_BLOCK *writer::action(act_kind k, const Value &v, ACTION_BLOCK &blk)
 {
@@ -1674,6 +1704,18 @@ ACTION_BLOCK *writer::action(act_kind k, const Value &v, ACTION_BLOCK &blk)
 		blk.pdata = mk<TAGGED_PROPVAL>();
 		*static_cast<TAGGED_PROPVAL *>(blk.pdata) = {PR_IMPORTANCE,
 			num<uint32_t>(it - std::begin(importance_names))};
+		return &blk;
+	}
+	case A_ForwardToRecipients:
+	case A_ForwardAsAttachmentToRecipients:
+	case A_RedirectToRecipients: {
+		auto fwd = recipients(v.addrs, uri);
+		if (fwd == nullptr)
+			return nullptr;
+		blk.type = OP_FORWARD;
+		blk.flavor = k == A_ForwardAsAttachmentToRecipients ? FWD_AS_ATTACHMENT :
+		             k == A_RedirectToRecipients ? FWD_PRESERVE_SENDER | FWD_DO_NOT_MUNGE_MSG : 0;
+		blk.pdata = fwd;
 		return &blk;
 	}
 	default:
