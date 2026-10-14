@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -934,6 +934,88 @@ static int ical_export_allday_exception()
 	if (icstr.find("DTSTART;VALUE=DATE:20261120") == std::string::npos ||
 	    icstr.find("RECURRENCE-ID;VALUE=DATE:20261119") == std::string::npos) {
 		fprintf(stderr, "%s\n", icstr.c_str());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+static std::unique_ptr<message_content, mc_delete> ical_import_str(const char *body)
+{
+	std::string str = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n"
+		"BEGIN:VTIMEZONE\r\nTZID:Europe/Berlin\r\n"
+		"BEGIN:DAYLIGHT\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+		"DTSTART:19700329T020000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\n"
+		"BEGIN:STANDARD\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+		"DTSTART:19701025T030000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+		"END:VTIMEZONE\r\nBEGIN:VEVENT\r\nUID:allday-hint\r\nDTSTAMP:20261005T100000Z\r\n";
+	str += body;
+	str += "END:VEVENT\r\nEND:VCALENDAR\r\n";
+	ical ic;
+	if (!ic.load_from_str_move(str.data()))
+		return nullptr;
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	return cvt.ical_to_mapi_single(ic);
+}
+
+static int ical_allday_hint()
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentSubType},
+	};
+	PROPNAME_ARRAY na = {static_cast<uint16_t>(std::size(namelist)), deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	const auto subtype = PROP_TAG(PT_BOOLEAN, pids[0]);
+	static constexpr struct {
+		const char *body;
+		bool allday;
+	} cases[] = {
+		/* allday event made timed by Thunderbird, hint left behind */
+		{"DTSTART;TZID=Europe/Berlin:20261019T160000\r\nDTEND;TZID=Europe/Berlin:20261019T170000\r\n"
+		 "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n", false},
+		{"DTSTART;VALUE=DATE:20261019\r\nDTEND;VALUE=DATE:20261020\r\n"
+		 "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n", true},
+		{"DTSTART;TZID=Europe/Berlin:20261019T000000\r\nDTEND;TZID=Europe/Berlin:20261020T000000\r\n"
+		 "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n", true},
+		{"DTSTART;TZID=Europe/Berlin:20261019T000000\r\nDTEND;TZID=Europe/Berlin:20261020T000000\r\n", true},
+		/* older Exchange exports allday events in UTC */
+		{"DTSTART:20261018T220000Z\r\nDTEND:20261019T220000Z\r\n"
+		 "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n", true},
+		{"DTSTART;TZID=Europe/Berlin:20261019T160000\r\nDTEND;TZID=Europe/Berlin:20261019T170000\r\n", false},
+	};
+	fprintf(stderr, "=== ical_allday_hint\n");
+	for (const auto &c : cases) {
+		auto msg = ical_import_str(c.body);
+		assert(msg != nullptr);
+		auto v = msg->proplist.get<const uint8_t>(subtype);
+		bool allday = v != nullptr && *v != 0;
+		if (allday != c.allday) {
+			fprintf(stderr, "allday=%d expected %d for:\n%s", allday, c.allday, c.body);
+			return EXIT_FAILURE;
+		}
+	}
+
+	/* a sub-day allday appointment must still export a non-empty DATE range */
+	auto msg = ical_import_str("DTSTART;TZID=Europe/Berlin:20261019T160000\r\n"
+	           "DTEND;TZID=Europe/Berlin:20261019T170000\r\n");
+	assert(msg != nullptr);
+	static constexpr uint8_t v_true = 1;
+	assert(msg->proplist.set(subtype, &v_true) == ecSuccess);
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	ical icalout;
+	assert(cvt.mapi_to_ical(*msg, icalout));
+	std::string icstr;
+	assert(icalout.serialize(icstr) == ecSuccess);
+	if (icstr.find("DTSTART;VALUE=DATE:20261020") == std::string::npos ||
+	    icstr.find("DTEND;VALUE=DATE:20261021") == std::string::npos) {
+		fprintf(stderr, "%s", icstr.c_str());
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -1966,6 +2048,7 @@ int main()
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_export_exception), E(ical_export_allday_exception),
+		E(ical_allday_hint),
 		E(hdrparse_1),
 		E(vcard_tel_types), E(vcard_escaped_values), E(vcard_photo), E(vcard_dates),
 		E(vcard_fileas_categories),
