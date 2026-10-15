@@ -4415,6 +4415,8 @@ void EWSContext::suppressReadReceipt(const tItemId &refId) const
 	sFolderSpec parent = resolveFolder(mid);
 	std::string dir = getDir(parent);
 	validate(dir, mid);
+	if (!(permissions(dir, parent.folderId) & frightsEditAny))
+		throw EWSError::AccessDenied(E3527);
 	const TAGGED_PROPVAL propval_buff[] = {
 		{PR_READ_RECEIPT_REQUESTED, deconst(&byte_value_zero)},
 		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&byte_value_zero)},

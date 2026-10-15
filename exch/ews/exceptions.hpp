@@ -626,6 +626,7 @@ E(3491, "failed to build occurrence message");
 E(3492, "failed to build occurrence cancellation");
 E(3525, "cannot write to the folder of the referenced occurrence");
 E(3526, "cannot write to the folder of the referenced item");
+E(3527, "cannot write to the folder of the item to suppress the read receipt for");
 
 #undef E
 }
