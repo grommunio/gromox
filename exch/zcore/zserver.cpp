@@ -1007,7 +1007,8 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			std::string mailbox = pstore->b_private ?
 				std::string("mailbox ") + pstore->get_account() : "public folders";
 			mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via ZCORE",
-				pinfo->get_username(), subject, mailbox.c_str());
+				pinfo->get_username(), txt2cstr(subject).c_str(),
+				mailbox.c_str());
 		}
 	} else {
 		if (!exmdb_client->is_folder_present(pstore->get_dir(),

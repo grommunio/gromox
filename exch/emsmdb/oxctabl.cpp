@@ -781,7 +781,7 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 		    pfolder->folder_id))
 			return ecError;
 		mlog(LV_INFO, "gromox-audit: %s cleared permissions on folder \"%s\" in %s via EMSMDB",
-			actor, znul(folder_name), mailbox.c_str());
+			actor, txt2cstr(folder_name).c_str(), mailbox.c_str());
 	}
 	if (count == 0)
 		return ecSuccess;
@@ -817,7 +817,7 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	    folder_id, 0, count, prow))
 		return ecError;
 	mlog(LV_INFO, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EMSMDB",
-		actor, znul(folder_name), mailbox.c_str());
+		actor, txt2cstr(folder_name).c_str(), mailbox.c_str());
 	return ecSuccess;
 }
 

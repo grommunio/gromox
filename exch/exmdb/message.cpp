@@ -295,8 +295,9 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 		return false;
 	mlog(LV_INFO, "gromox-audit: %s message \"%s\" in %s "
 			"from folder \"%s\" to \"%s\"",
-			b_move ? "moved" : "copied", znul(subject), mailbox.c_str(),
-			znul(src_folder), znul(dst_folder));
+			b_move ? "moved" : "copied", txt2cstr(subject).c_str(),
+			mailbox.c_str(), txt2cstr(src_folder).c_str(),
+			txt2cstr(dst_folder).c_str());
 	dg_notify(std::move(notifq));
 	*pb_result = TRUE;
 	return TRUE;
@@ -539,8 +540,9 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 			"gromox-audit: %s%s%s message \"%s\" in %s "
 			"from folder \"%s\" to \"%s\"",
 			znul(username), username != nullptr ? " " : "",
-			b_copy ? "copied" : "moved", znul(subject), mailbox.c_str(),
-			znul(src_folder), znul(dst_folder));
+			b_copy ? "copied" : "moved", txt2cstr(subject).c_str(),
+			mailbox.c_str(), txt2cstr(src_folder).c_str(),
+			txt2cstr(dst_folder).c_str());
 	dg_notify(std::move(notifq));
 	if (b_batch) {
 		b_batch = false;
@@ -787,8 +789,8 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 			"gromox-audit: %s%s%s-deleted message \"%s\" in %s "
 			"from folder \"%s\"",
 			znul(username), username != nullptr ? " " : "",
-			b_hard ? "hard" : "soft", znul(subject), mailbox.c_str(),
-			znul(src_folder));
+			b_hard ? "hard" : "soft", txt2cstr(subject).c_str(),
+			mailbox.c_str(), txt2cstr(src_folder).c_str());
 	dg_notify(std::move(notifq));
 	if (b_batch) {
 		b_batch = false;
@@ -3969,13 +3971,14 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		return false;
 	for (const auto &audit : seen.deletions)
 		mlog(LV_INFO, "gromox-audit: rule hard-deleted message \"%s\" in %s from folder \"%s\"",
-			znul(audit.subject), audit.mailbox.c_str(), znul(audit.folder));
+			txt2cstr(audit.subject).c_str(), audit.mailbox.c_str(),
+			txt2cstr(audit.folder).c_str());
 	auto subject = pmsg->proplist.get<const char>(PR_SUBJECT);
 	if (subject == nullptr)
 		subject = pmsg->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
 	mlog(LV_INFO, "gromox-audit: delivered message \"%s\" from %s to mailbox %s%s",
-		znul(subject),
-		znul(from_address), account.c_str(),
+		txt2cstr(subject).c_str(),
+		txt2cstr(from_address).c_str(), account.c_str(),
 		partial ? " (partial completion)" : "");
 	dg_notify(std::move(notifq));
 	*new_folder_id = eid_t(1, fid_val);
@@ -4116,7 +4119,8 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 
 	mlog(LV_INFO, "gromox-audit: %s message \"%s\" in %s in folder \"%s\"",
 		b_exist ? "updated" : "created",
-		znul(subject), mailbox.c_str(), znul(folder));
+		txt2cstr(subject).c_str(), mailbox.c_str(),
+		txt2cstr(folder).c_str());
 
 	dg_notify(std::move(notifq));
 	*outmid = eid_t(1, *outmid);
@@ -4205,7 +4209,8 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 		return false;
 	for (const auto &audit : seen.deletions)
 		mlog(LV_INFO, "gromox-audit: rule hard-deleted message \"%s\" in %s from folder \"%s\"",
-			znul(audit.subject), audit.mailbox.c_str(), znul(audit.folder));
+			txt2cstr(audit.subject).c_str(), audit.mailbox.c_str(),
+			txt2cstr(audit.folder).c_str());
 	dg_notify(std::move(notifq));
 	return TRUE;
 } catch (const std::bad_alloc &) {

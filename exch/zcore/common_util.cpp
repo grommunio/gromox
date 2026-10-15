@@ -1292,8 +1292,9 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		}
 	}
 	mlog(LV_INFO, "gromox-audit: %s sent message \"%s\"%s%s in mailbox %s via ZCORE",
-		audit_actor == nullptr ? "(unknown)" : audit_actor, subject,
-		representation, identity, pstore->get_account());
+		audit_actor == nullptr ? "(unknown)" : audit_actor,
+		txt2cstr(subject).c_str(), representation,
+		txt2cstr(identity).c_str(), pstore->get_account());
 
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;

@@ -264,7 +264,8 @@ static void oxomsg_audit_send(const char *actor, const char *mailbox,
 		}
 	}
 	mlog(LV_INFO, "gromox-audit: %s %s message \"%s\"%s%s%s in mailbox %s via EMSMDB",
-		actor, verb, znul(subject), event, mode, represented, mailbox);
+		actor, verb, txt2cstr(subject).c_str(), event, mode,
+		represented, mailbox);
 }
 
 ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,

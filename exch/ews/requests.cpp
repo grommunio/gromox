@@ -3295,7 +3295,7 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 			mailbox = "mailbox " + *parentFolder.target;
 
 		mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via EWS",
-			znul(actor), znul(subject), mailbox.c_str());
+			znul(actor), txt2cstr(subject).c_str(), mailbox.c_str());
 
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
@@ -3605,7 +3605,8 @@ void process(mUpdateFolderRequest &&request, XMLElement *response, const EWSCont
 				mailbox = "mailbox " + *folder.target;
 
 			mlog(LV_INFO, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EWS",
-				znul(actor), znul(folder_name), mailbox.c_str());
+				znul(actor), txt2cstr(folder_name).c_str(),
+				mailbox.c_str());
 		}
 
 		msg.success();
