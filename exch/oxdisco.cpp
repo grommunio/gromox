@@ -1193,7 +1193,7 @@ http_status OxdiscoPlugin::resp_dav(int ctx_id) const
 std::string OxdiscoPlugin::get_redirect_addr(const char *email) const
 {
 	std::string s_email = email;
-	std::string username = s_email.substr(0, s_email.find('@') - 1);
+	std::string username = s_email.substr(0, s_email.find('@'));
 	std::string redirect_addr = username + "@" + RedirectAddr;
 	return redirect_addr;
 }
