@@ -4048,6 +4048,7 @@ SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const s
 		current->type = PROP_TYPE(tag);
 		current->propid = PROP_ID(tag);
 		current->table_sort = sort.Order.index();
+		++current;
 	}
 	return sset;
 }
