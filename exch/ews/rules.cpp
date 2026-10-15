@@ -1718,6 +1718,16 @@ ACTION_BLOCK *writer::action(act_kind k, const Value &v, ACTION_BLOCK &blk)
 		blk.pdata = fwd;
 		return &blk;
 	}
+	case A_ServerReplyWithMessage: {
+		auto ra = mk<REPLY_ACTION>();
+		if (auto code = env.resolve_template(v.item, *ra)) {
+			error(uri, code, "The reply template cannot be used.", v.item.id);
+			return nullptr;
+		}
+		blk.type = OP_REPLY;
+		blk.pdata = ra;
+		return &blk;
+	}
 	default:
 		/* SendSMSAlertToRecipients: ruleproc has no SMS gateway */
 		error(uri, "UnsupportedRule", "This action is not supported.");

@@ -2535,6 +2535,7 @@ namespace {
 
 constexpr eid_t rules_inbox(1, PRIVATE_FID_INBOX);
 const PROPERTY_NAME NtFlagRequest = {MNID_ID, PSETID_Common, PidLidFlagRequest};
+const PROPERTY_NAME NtRuleTemplate = {MNID_STRING, PSETID_Gromox, 0, deconst("ews_rule_template")};
 
 /**
  * @brief      Rows of the Inbox rules table that EWS manages
@@ -2564,6 +2565,7 @@ class RulesEnv final : public Rules::Env {
 
 	const char *resolve_folder(const Rules::FolderRef &, MOVECOPY_ACTION &) override;
 	const char *deleted_items(MOVECOPY_ACTION &) override;
+	const char *resolve_template(const Rules::ItemRef &, REPLY_ACTION &) override;
 	const char *resolve_address(Rules::Address &) override;
 	bool folder_ref(const MOVECOPY_ACTION &, Rules::FolderRef &, bool &) override;
 	bool template_ref(const REPLY_ACTION &, Rules::ItemRef &) override;
@@ -2640,6 +2642,83 @@ const char *RulesEnv::deleted_items(MOVECOPY_ACTION &mc)
 	mc.same_store = 1;
 	mc.pfolder_eid = sv;
 	return nullptr;
+}
+
+/**
+ * @brief      Find or create the reply template of a ServerReplyWithMessage
+ *
+ * An existing Inbox reply template is used as is. Any other message of the
+ * mailbox is copied into a new one, MS-OXORULE v23.0 §3.1.4.2.5, and marked
+ * so it can be removed once no rule refers to it.
+ */
+const char *RulesEnv::resolve_template(const Rules::ItemRef &ref, REPLY_ACTION &ra) try
+{
+	auto raw = base64_decode(ref.id);
+	if (raw.empty() || raw.back() != tBaseItemId::ID_ITEM)
+		return "InvalidValue";
+	raw.pop_back();
+	sMessageEntryId meid(raw.data(), raw.size());
+	if (!meid.isPrivate() || meid.accountId() != ctx.getAccountId(user, false))
+		return "InvalidValue";
+	/* A delegate must not copy items it cannot read into a template */
+	ctx.validate(dir, meid);
+	if (!(ctx.permissions(dir, meid.folderId()) & frightsReadAny))
+		return "InvalidValue";
+	MESSAGE_CONTENT *content = nullptr;
+	if (!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(),
+	    &content) || content == nullptr)
+		return "InvalidValue";
+	auto &pl = content->proplist;
+	auto fai = pl.get<const uint8_t>(PR_ASSOCIATED);
+	auto cls = pl.get<const char>(PR_MESSAGE_CLASS);
+	auto tid = pl.get<const BINARY>(PR_REPLY_TEMPLATE_ID);
+	if (fai != nullptr && *fai != 0 && cls != nullptr &&
+	    strncasecmp(cls, "IPM.Note.Rules.ReplyTemplate.", 29) == 0 &&
+	    meid.folderId() == rules_inbox && tid != nullptr && tid->cb == sizeof(GUID)) {
+		ra.template_folder_id = rules_inbox;
+		ra.template_message_id = meid.messageId();
+		ra.template_guid = rop_util_binary_to_guid(tid);
+		return nullptr;
+	}
+
+	message_content_ptr copy(content->dup());
+	if (copy == nullptr)
+		return "UnexpectedError";
+	auto &props = copy->proplist;
+	static constexpr proptag_t rm[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+		PR_PARENT_SOURCE_KEY, PR_PARENT_ENTRYID,
+	};
+	for (auto t : rm)
+		props.erase(t);
+	auto marker = named(NtRuleTemplate, true);
+	if (marker == 0)
+		return "UnexpectedError";
+	auto guid = GUID::random_new();
+	char gbuf[16];
+	EXT_PUSH ep;
+	if (!ep.init(gbuf, sizeof(gbuf), 0) || ep.p_guid(guid) != pack_result::ok)
+		return "UnexpectedError";
+	BINARY gbin{sizeof(gbuf), {gbuf}};
+	uint8_t one = 1;
+	if (props.set(PR_MESSAGE_CLASS, "IPM.Note.Rules.ReplyTemplate.Microsoft") != ecSuccess ||
+	    props.set(PR_ASSOCIATED, &one) != ecSuccess ||
+	    props.set(PR_REPLY_TEMPLATE_ID, &gbin) != ecSuccess ||
+	    props.set(PROP_TAG(PT_BOOLEAN, marker), &one) != ecSuccess)
+		return "UnexpectedError";
+	uint64_t outmid = 0, outcn = 0;
+	ec_error_t err = ecSuccess;
+	if (!exmdb.write_message(dir.c_str(), CP_ACP, rules_inbox, copy.get(),
+	    {}, &outmid, &outcn, &err) || err != ecSuccess)
+		return "UnexpectedError";
+	created_templates.push_back(eid_t(outmid));
+	ra.template_folder_id = rules_inbox;
+	ra.template_message_id = eid_t(outmid);
+	ra.template_guid = guid;
+	return nullptr;
+} catch (const std::exception &) {
+	return "InvalidValue";
 }
 
 /**
@@ -2863,6 +2942,53 @@ BINARY *provider_data()
 	return bin;
 }
 
+/**
+ * @brief      Delete reply templates that EWS made and no rule uses anymore
+ */
+void purge_templates(const EWSContext &ctx, const std::string &dir)
+{
+	auto &exmdb = ctx.plugin().exmdb;
+	propid_t marker = 0;
+	try {
+		marker = ctx.getNamedPropId(dir, NtRuleTemplate, false);
+	} catch (const std::exception &) {
+		return;
+	}
+	if (marker == 0)
+		return;
+	RESTRICTION_EXIST ex{PROP_TAG(PT_BOOLEAN, marker)};
+	RESTRICTION res{RES_EXIST, {&ex}};
+	uint32_t table_id = 0, count = 0;
+	if (!exmdb.load_content_table(dir.c_str(), CP_ACP, rules_inbox, nullptr,
+	    TABLE_FLAG_ASSOCIATED, &res, nullptr, &table_id, &count))
+		return;
+	auto cl = HX::make_scope_exit([&]() { exmdb.unload_table(dir.c_str(), table_id); });
+	if (count == 0)
+		return;
+	static constexpr proptag_t tags[] = {PidTagMid};
+	TARRAY_SET set{};
+	if (!exmdb.query_table(dir.c_str(), nullptr, CP_ACP, table_id, {tags, std::size(tags)}, 0, count, &set))
+		return;
+	std::unordered_set<uint64_t> used;
+	for (const auto &row : load_rules(ctx, dir, true)) {
+		auto acts = row.props->get<const RULE_ACTIONS>(PR_RULE_ACTIONS);
+		if (acts == nullptr)
+			continue;
+		for (const auto &a : *acts)
+			if ((a.type == OP_REPLY || a.type == OP_OOF_REPLY) && a.pdata != nullptr)
+				used.insert(static_cast<const REPLY_ACTION *>(a.pdata)->template_message_id);
+	}
+	std::vector<eid_t> orphans;
+	for (const auto &row : set)
+		if (auto mid = row.get<const uint64_t>(PidTagMid); mid != nullptr && !used.contains(*mid))
+			orphans.push_back(eid_t(*mid));
+	if (orphans.empty())
+		return;
+	EID_ARRAY ids{static_cast<uint32_t>(orphans.size()), orphans.data()};
+	BOOL partial = false;
+	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox, &ids, true, &partial);
+}
+
 }
 
 /**
@@ -3025,6 +3151,7 @@ void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWS
 		if (exceed)
 			throw EWSError::RulesOverQuota(E3612);
 		env->created_templates.clear();
+		purge_templates(ctx, dir);
 		data.success();
 	} catch (const EWSError &err) {
 		if (env)

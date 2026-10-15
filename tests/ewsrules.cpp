@@ -239,6 +239,14 @@ class test_env final : public Env {
 		mc.pfolder_eid = sv;
 		return nullptr;
 	}
+	const char *resolve_template(const ItemRef &i, REPLY_ACTION &ra) override
+	{
+		if (i.id.size() < 2 || i.id[0] != 'T')
+			return "InvalidValue";
+		ra.template_folder_id = eid_t(1, PRIVATE_FID_INBOX);
+		ra.template_message_id = eid_t(1, strtoull(&i.id[1], nullptr, 0));
+		return nullptr;
+	}
 	const char *resolve_address(Address &a) override
 	{
 		if (strcasecmp(a.routing.c_str(), "EX") == 0) {
@@ -505,6 +513,8 @@ static bool act_written(unsigned int k)
 	case A_ForwardToRecipients:
 	case A_ForwardAsAttachmentToRecipients:
 	case A_RedirectToRecipients:
+		return true;
+	case A_ServerReplyWithMessage:
 		return true;
 	default:
 		return false;
