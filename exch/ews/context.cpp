@@ -3536,7 +3536,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 
 	if (isAllDay) {
 		apr.starttimeoffset = 0;
-		apr.endtimeoffset = 1440;
+		apr.endtimeoffset = duration / 60;
 	} else {
 		/* localStartTime is real UTC from NTTIME.  Convert to
 		 * the appointment's local timezone for the blob. */
@@ -5067,7 +5067,7 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 
 		if (isAllDay) {
 			apr.starttimeoffset = 0;
-			apr.endtimeoffset = 1440;
+			apr.endtimeoffset = duration / 60;
 		} else {
 			/*
 			 * The blob stores times in the appointment's local
