@@ -1006,6 +1006,8 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 	sFolderSpec pf = ctx.resolveFolder(oid);
 	std::string rdir = ctx.getDir(pf);
 	ctx.validate(rdir, oid);
+	if (!(ctx.permissions(rdir, pf.folderId) & frightsEditAny))
+		throw EWSError::AccessDenied(E3525);
 	ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
 	/* A declined occurrence goes once the reply is out */
 	if (resp == respDeclined && send_message) {
@@ -1039,6 +1041,9 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	sFolderSpec pf = ctx.resolveFolder(mid);
 	std::string rdir = ctx.getDir(pf);
 	ctx.validate(rdir, mid);
+	auto rights = ctx.permissions(rdir, pf.folderId);
+	if (!(rights & frightsEditAny))
+		throw EWSError::AccessDenied(E3526);
 	const char *username = ctx.effectiveUser(pf);
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	auto rstat = EWSContext::construct<uint32_t>(resp);
@@ -1067,7 +1072,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	if (resp == respAccepted || resp == respTentative)
 		ctx.createCalendarItemFromMeetingRequest(refId, resp);
 	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
-	if (pf.location == sFolderSpec::PRIVATE &&
+	if (pf.location == sFolderSpec::PRIVATE && rights & frightsDeleteAny &&
 	    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
 		refDir = rdir;
 		refMid = mid;
