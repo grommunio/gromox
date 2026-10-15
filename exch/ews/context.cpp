@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <bit>
 #include <cctype>
 #include <chrono>
 #include <climits>
@@ -218,6 +219,7 @@ void calc_firstdatetime(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		break;
 	}
 	case rptMonth:
+	case rptMonthEnd:
 	case rptMonthNth: {
 		recur_pat.firstdatetime = 0;
 		int fdt = ((((12 % recur_pat.period) * ((tmp_tm->tm_year + 299) % recur_pat.period)) % recur_pat.period) + tmp_tm->tm_mon) % recur_pat.period;
@@ -3676,6 +3678,214 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME, clipstart});
 	auto clipend = construct<uint64_t>(clip_time(item_tz, apr.recur_pat.enddate));
 	shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
+}
+
+/**
+ * @brief      Anchor a recurrence pattern on a new start date
+ *
+ * The pattern is kept if the date is one of its days. Otherwise a single
+ * weekday, day of month or nth weekday is moved to the date, and a set
+ * of weekdays is rotated by the same number of days as the start.
+ *
+ * @param      rp    Pattern to change
+ * @param      date  Midnight of the new start date, local time as UTC
+ * @param      days  Number of days the start was moved by
+ *
+ * @return     false if the pattern cannot be moved
+ */
+static bool move_pattern(RECURRENCE_PATTERN &rp, time_t date, int days)
+{
+	switch (rp.calendartype) {
+	case CAL_DEFAULT:
+	case CAL_GREGORIAN:
+	case CAL_GREGORIAN_US:
+	case CAL_GREGORIAN_ME_FRENCH:
+	case CAL_GREGORIAN_ARABIC:
+	case CAL_GREGORIAN_XLIT_ENGLISH:
+	case CAL_GREGORIAN_XLIT_FRENCH:
+		break;
+	default:
+		return false;
+	}
+	struct tm tm;
+	if (rp.slidingflag != 0 || rp.period == 0 ||
+	    gmtime_r(&date, &tm) == nullptr)
+		return false;
+	int year = tm.tm_year + 1900, month = tm.tm_mon + 1, mday = tm.tm_mday;
+	int mdays = ical_get_monthdays(year, month);
+	uint32_t wbit = 1U << tm.tm_wday;
+	switch (rp.patterntype) {
+	case rptMinute:
+		break;
+	case rptWeek: {
+		auto &w = rp.pts.weekrecur;
+		w &= 0x7f;
+		if (w & wbit)
+			break;
+		if (std::popcount(w) == 1) {
+			w = wbit;
+		} else {
+			int r = (days % 7 + 7) % 7;
+			w = ((w << r) | (w >> (7 - r))) & 0x7f;
+		}
+		if (!(w & wbit))
+			return false;
+		if (rp.recurfrequency == IDC_RCEV_PAT_ORB_DAILY ||
+		    rp.recurfrequency == IDC_RCEV_PAT_ORB_WEEKLY)
+			rp.recurfrequency = w == 0x3E ? IDC_RCEV_PAT_ORB_DAILY :
+			                    IDC_RCEV_PAT_ORB_WEEKLY;
+		break;
+	}
+	case rptMonth:
+		if (std::min<int>(rp.pts.dayofmonth, mdays) != mday)
+			rp.pts.dayofmonth = mday;
+		break;
+	case rptMonthEnd:
+		if (mday != mdays) {
+			rp.patterntype = rptMonth;
+			rp.pts.dayofmonth = mday;
+		}
+		break;
+	case rptMonthNth: {
+		auto &mn = rp.pts.monthnth;
+		if (mn.recurnum >= 1 && mn.recurnum <= 5 &&
+		    nth_matching_mday(year, month, mn.recurnum, mn.weekrecur) == mday)
+			break;
+		if (std::popcount(mn.weekrecur & 0x7f) != 1)
+			return false;
+		unsigned int nth = (mday - 1) / 7 + 1;
+		if (nth == 5 || (mn.recurnum == 5 && mday + 7 > mdays))
+			nth = 5;
+		mn.weekrecur = wbit;
+		mn.recurnum = nth;
+		break;
+	}
+	default:
+		return false;
+	}
+	rp.startdate = rop_util_unix_to_rtime(date);
+	if (rp.endtype == IDC_RCEV_PAT_ERB_END) {
+		rp.enddate += days * 1440;
+		if (rp.enddate < rp.startdate)
+			return false;
+	}
+	calc_firstdatetime(rp, &tm);
+	return true;
+}
+
+/**
+ * @brief      Keep a series in line with its start and end
+ *
+ * macOS Calendar moves a series by sending a new Start and End without
+ * the Recurrence. Series with exceptions are left alone.
+ *
+ * @param      dir    Store directory
+ * @param      mid    Message ID of the series
+ * @param      shape  Shape of the update
+ */
+void EWSContext::moveRecurrence(const std::string &dir, uint64_t mid,
+    sShape &shape) const
+{
+	auto sp = shape.writes(NtCommonStart);
+	auto ep = shape.writes(NtCommonEnd);
+	if (sp == nullptr && ep == nullptr)
+		return;
+	const PROPERTY_NAME pn[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
+		{MNID_ID, PSETID_Appointment, PidLidRecurring},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentSubType},
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna);
+	/* the Recurrence is being deleted */
+	for (auto t : shape.remove_vec())
+		if (PROP_ID(t) == ids[0] || PROP_ID(t) == ids[1])
+			return;
+	const proptag_t tags[] = {PROP_TAG(PT_BINARY, ids[0]),
+		PROP_TAG(PT_BOOLEAN, ids[1]), PROP_TAG(PT_BINARY, ids[2]),
+		PROP_TAG(PT_BOOLEAN, ids[3]), PR_START_DATE, PR_END_DATE};
+	auto props = getItemProps(dir, mid, tags);
+	auto bin = props.get<const BINARY>(tags[0]);
+	auto recurring = props.get<const uint8_t>(tags[1]);
+	auto ostart = props.get<const uint64_t>(PR_START_DATE);
+	auto oend = props.get<const uint64_t>(PR_END_DATE);
+	if (bin == nullptr || (recurring != nullptr && *recurring == 0) ||
+	    ostart == nullptr || oend == nullptr)
+		return;
+	EXT_PULL ext_pull;
+	ext_pull.init(bin->pb, bin->cb, nullptr, EXT_FLAG_UTF16);
+	APPOINTMENT_RECUR_PAT apr{};
+	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok ||
+	    !apr.recur_pat.pdeletedinstancedates.empty() ||
+	    !apr.recur_pat.pmodifiedinstancedates.empty() ||
+	    !apr.pexceptioninfo.empty())
+		return;
+	std::optional<TZDEF> tz;
+	if (auto t = shape.writes(NtAppointmentTimeZoneDefinitionRecur))
+		tz = binary_to_tzdef(static_cast<const BINARY *>(t->pvalue));
+	if (!tz)
+		tz = binary_to_tzdef(props.get<const BINARY>(tags[2]));
+	/* a series moved without its pattern has a bogus offset */
+	int64_t fallback = recurTzOffset(dir, mid, apr);
+	if (fallback < -840 || fallback > 840)
+		fallback = 0;
+	auto local = [&](time_t t) {
+		int64_t b;
+		if (!tz || !tz_to_offset(*tz, t, b))
+			b = fallback;
+		return t - b * 60;
+	};
+	auto allday = shape.writes(tags[3]);
+	auto alldayv = allday != nullptr ? static_cast<const uint8_t *>(allday->pvalue) :
+	               props.get<const uint8_t>(tags[3]);
+	bool isAllDay = alldayv != nullptr && *alldayv != 0;
+	auto nt = [](const TAGGED_PROPVAL *p, const uint64_t *o) {
+		return rop_util_nttime_to_unix(p != nullptr ?
+		       *static_cast<const uint64_t *>(p->pvalue) : *o);
+	};
+	time_t os = local(rop_util_nttime_to_unix(*ostart));
+	time_t ns = local(nt(sp, ostart)), ne = local(nt(ep, oend));
+	if (isAllDay) {
+		/* tolerate an offset that is off by the DST bias */
+		os = unix_day(os + 43200) * 86400;
+		ns = unix_day(ns + 43200) * 86400;
+		ne = unix_day(ne + 43200) * 86400;
+	}
+	if (ne < ns)
+		return;
+	int days = unix_day(ns) - unix_day(os);
+	uint32_t st = (ns - unix_day(ns) * 86400) / 60;
+	uint32_t et = st + (ne - ns) / 60;
+	if (days == 0 && st == apr.starttimeoffset && et == apr.endtimeoffset)
+		return;
+	if (days != 0 &&
+	    !move_pattern(apr.recur_pat, unix_day(ns) * 86400, days))
+		return;
+	if (days != 0 && apr.recur_pat.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR) try {
+		apr.recur_pat.enddate = nthOccurrenceDate(apr,
+		                        apr.recur_pat.occurrencecount, true);
+	} catch (const InputError &) {
+		return;
+	}
+	apr.starttimeoffset = st;
+	apr.endtimeoffset = et;
+	EXT_PUSH ext_push;
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ext_push.p_apptrecpat(apr) != pack_result::ok)
+		throw DispatchError(E3120);
+	auto recurdata = alloc<char>(ext_push.m_offset);
+	memcpy(recurdata, ext_push.m_udata, ext_push.m_offset);
+	shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY,
+		construct<BINARY>(BINARY{ext_push.m_offset, {recurdata}})});
+	const auto &rp = apr.recur_pat;
+	shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME,
+		construct<uint64_t>(clip_time(tz, rp.startdate))});
+	auto clipend = rp.endtype == IDC_RCEV_PAT_ERB_NOEND ||
+	               rp.endtype == IDC_RCEV_PAT_ERB_NOEND1 ?
+	               ENDDATE_MISSING : rp.enddate;
+	shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME,
+		construct<uint64_t>(clip_time(tz, clipend))});
 }
 
 /**

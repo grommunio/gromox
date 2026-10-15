@@ -4115,7 +4115,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtReminderTime, PT_SYSTIME);
 		shape.add(NtReminderSignalTime, PT_SYSTIME);
 		shape.add(NtRecurring, PT_BOOLEAN);
-		/* Written by applyRecurrence */
+		/* Written by applyRecurrence and moveRecurrence */
+		shape.add(NtAppointmentRecur, PT_BINARY);
 		shape.add(NtRecurrenceType, PT_LONG);
 		shape.add(NtClipStart, PT_SYSTIME);
 		shape.add(NtClipEnd, PT_SYSTIME);
@@ -4130,6 +4131,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			throw EWSError::InvalidPropertySet(E3484);
 		if (shape.recurrence)
 			ctx.applyRecurrence(dir, mid.messageId(), shape.recurrence, shape);
+		else if (!change.ItemId.isOccurrence())
+			ctx.moveRecurrence(dir, mid.messageId(), shape);
 		const char* username = ctx.effectiveUser(parentFolder);
 		mUpdateItemResponseMessage msg;
 		uint32_t occ_basedate = 0;
