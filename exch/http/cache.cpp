@@ -475,7 +475,7 @@ http_status mod_cache_take_request(http_context *phttp)
 		if (it == g_directory_list.cend())
 			return http_status::none;
 		tmp_path = it->dir + &request_uri[it->path.size()];
-		fd = wrapfd(open(tmp_path.c_str(), O_RDONLY));
+		fd = wrapfd(::open(tmp_path.c_str(), O_RDONLY | O_CLOEXEC));
 		if (fd.get() < 0)
 			return errno == ENOENT || errno == ENOTDIR ? http_status::not_found :
 			       errno == EACCES || errno == EISDIR ? http_status::forbidden :

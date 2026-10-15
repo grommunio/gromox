@@ -77,7 +77,7 @@ archive::~archive()
 
 errno_t archive::open(const char *file)
 {
-	wrapfd fd(::open(file, O_RDONLY | O_BINARY));
+	wrapfd fd(::open(file, O_RDONLY | O_BINARY | O_CLOEXEC));
 	if (fd.get() < 0)
 		return errno;
 	struct stat sb;
@@ -181,7 +181,7 @@ int tmpfile::open_impl(const char *dir, unsigned int flags, unsigned int mode,
 #ifdef O_TMPFILE
 	if (make_anon) {
 		m_path.clear();
-		m_fd = ::open(dir, O_TMPFILE | flags, mode);
+		m_fd = ::open(dir, O_TMPFILE | O_CLOEXEC | flags, mode);
 		if (m_fd >= 0)
 			return m_fd;
 		if (errno != EISDIR && errno != EOPNOTSUPP)
@@ -372,7 +372,7 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
 
 	popen_fdset fd;
 	if (fdinp == nullptr || fdoutp == nullptr || fderrp == nullptr) {
-		fd.null = ::open("/dev/null", O_RDWR);
+		fd.null = ::open("/dev/null", O_RDWR | O_CLOEXEC);
 		if (fd.null < 0)
 			return -errno;
 	}
@@ -388,7 +388,7 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
 		if (ret != 0)
 			return -ret;
 	} else {
-		if (::pipe(fd.in) < 0)
+		if (::pipe2(fd.in, O_CLOEXEC) < 0)
 			return -errno;
 		ret = posix_spawn_file_actions_addclose(&fa, fd.in[1]);
 		if (ret != 0)
@@ -404,7 +404,7 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
 			return -ret;
 	} else if (fdoutp == POPENFD_KEEP) {
 	} else {
-		if (::pipe(fd.out) < 0)
+		if (::pipe2(fd.out, O_CLOEXEC) < 0)
 			return -errno;
 		ret = posix_spawn_file_actions_addclose(&fa, fd.out[0]);
 		if (ret != 0)
@@ -424,7 +424,7 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
 		if (ret != 0)
 			return -ret;
 	} else {
-		if (fderrp != nullptr && fderrp != fdoutp && ::pipe(fd.err) < 0)
+		if (fderrp != nullptr && fderrp != fdoutp && ::pipe2(fd.err, O_CLOEXEC) < 0)
 			return -errno;
 		ret = posix_spawn_file_actions_addclose(&fa, fd.err[0]);
 		if (ret != 0)
