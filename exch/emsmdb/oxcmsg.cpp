@@ -175,6 +175,12 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
+
+	auto normalized_subject = propvals.get<const char>(PR_NORMALIZED_SUBJECT);
+	std::string mailbox = plogon->is_private() ?
+		std::string("mailbox ") + plogon->get_account() : "public folders";
+	mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via EMSMDB",
+		rpc_user, txt2cstr(normalized_subject).c_str(), mailbox.c_str());
 	return ecSuccess;
 }
 

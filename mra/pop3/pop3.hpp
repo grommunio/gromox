@@ -67,6 +67,7 @@ struct pop3_context final : public schedule_context {
 	BOOL is_stls = false; /* if last command is STLS */
 	int auth_times = 0;
 	char username[UADDR_SIZE]{};
+	char authenticated_actor[UADDR_SIZE]{};
 	char maildir[256]{};
 };
 

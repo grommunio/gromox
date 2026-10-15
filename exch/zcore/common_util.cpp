@@ -1273,6 +1273,29 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		return ret;
 	}
 
+	auto subject = pmsgctnt->proplist.get<const char>(PR_SUBJECT);
+	if (subject == nullptr)
+		subject = pmsgctnt->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (subject == nullptr)
+		subject = "";
+	auto audit_actor = pinfo == nullptr ? nullptr : pinfo->get_username();
+	auto sender = pmsgctnt->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	auto representing = pmsgctnt->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	const char *representation = "", *identity = "";
+	if (sender != nullptr && *sender != '\0' && representing != nullptr && *representing != '\0') {
+		if (strcasecmp(sender, representing) != 0) {
+			representation = " on behalf of ";
+			identity = representing;
+		} else if (audit_actor != nullptr && strcasecmp(audit_actor, representing) != 0) {
+			representation = " as ";
+			identity = representing;
+		}
+	}
+	mlog(LV_INFO, "gromox-audit: %s sent message \"%s\"%s%s in mailbox %s via ZCORE",
+		audit_actor == nullptr ? "(unknown)" : audit_actor,
+		txt2cstr(subject).c_str(), representation,
+		txt2cstr(identity).c_str(), pstore->get_account());
+
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);

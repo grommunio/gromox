@@ -1658,6 +1658,7 @@ template<typename T> const T* sShape::get(const PROPERTY_NAME& name, uint8_t mas
  * structures.cpp has the definition available so can autoinstantiate,
  * but this does not apply to the other .cpp files. Therefore, some explicit instantiations:
  */
+template const char *sShape::get<const char>(proptag_t, uint8_t) const;
 template const uint64_t *sShape::get<const uint64_t>(proptag_t, uint8_t) const;
 template const BINARY *sShape::get<const BINARY>(const PROPERTY_NAME &, uint8_t) const;
 
