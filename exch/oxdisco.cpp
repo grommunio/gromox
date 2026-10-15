@@ -138,7 +138,8 @@ static constexpr char
 	header_templ[] =
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: text/xml\r\n"
-		"Content-Length: {}\r\n\r\n",
+		"Content-Length: {}\r\n"
+		"X-SOAP-Enabled: True\r\n\r\n",
 	header_templ_json[] =
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: application/json\r\n"
