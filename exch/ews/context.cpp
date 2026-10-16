@@ -3987,6 +3987,29 @@ const BINARY *EWSContext::findContactPhoto(const std::string &dir,
  * @param     dir      Home directory the message is associtated with
  * @param     content  Message content
  */
+/**
+ * @brief      Check whether a message has at least one recipient to send to
+ *
+ * Clients leave attendee rows without any address behind (e.g. an empty
+ * attendee line in Outlook for Mac). Such rows must not count, or a
+ * cancellation/update gets submitted with an empty address, which comes
+ * out as <invalid@invalid> and bounces back to the organizer.
+ */
+bool EWSContext::has_rcpt_address(const MESSAGE_CONTENT &content)
+{
+	if (content.children.prcpts == nullptr)
+		return false;
+	for (const auto &rcpt : *content.children.prcpts) {
+		auto a = rcpt.get<const char>(PR_SMTP_ADDRESS);
+		if (a != nullptr && *a != '\0')
+			return true;
+		a = rcpt.get<const char>(PR_EMAIL_ADDRESS);
+		if (a != nullptr && *a != '\0')
+			return true;
+	}
+	return false;
+}
+
 void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
     const MESSAGE_CONTENT &content) const
 {
@@ -4014,10 +4037,11 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	rcpts.reserve(content.children.prcpts->count);
 	for (auto &rcpt : *content.children.prcpts) {
 		tEmailAddressType addr(rcpt);
-		if (!addr.EmailAddress)
+		if (!addr.EmailAddress || addr.EmailAddress->empty())
 			continue;
 		normalize(addr);
-		rcpts.emplace_back(*addr.EmailAddress);
+		if (!addr.EmailAddress->empty())
+			rcpts.emplace_back(*addr.EmailAddress);
 	}
 	auto err = cu_send_vmail(mail, m_plugin.smtp_url.c_str(),
 	           m_auth_info.username, rcpts);
@@ -4165,8 +4189,7 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	auto cls = cancelcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (cls == nullptr ||
 	    class_match_prefix(cls, "IPM.Appointment") != 0 ||
-	    cancelcontent->children.prcpts == nullptr ||
-	    cancelcontent->children.prcpts->count == 0)
+	    !has_rcpt_address(*cancelcontent))
 		return;
 	if (basedate) {
 		message_content_ptr inst(cancelcontent->dup());
