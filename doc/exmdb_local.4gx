@@ -26,7 +26,9 @@ Default: \fI5\fP
 .TP
 \fBlda_mrautoproc\fP
 Perform meeting request autoprocessing. This feature is currently experimental.
-Requires lda_twostep_ruleproc to be enabled.
+With lda_twostep_ruleproc enabled, all stores are processed. Without it, only
+stores which have PR_SCHDINFO_AUTO_ACCEPT_APPTS set (and room/equipment
+resources) are processed, after the server-side rules have run.
 .br
 Default: \fIno\fP
 .TP
