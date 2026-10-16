@@ -3512,15 +3512,26 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 
 	/*
 	 * For all-day events the duration must be a whole number of days.
-	 * Round up to the next day boundary if not.
+	 * Round up to the next day boundary if not. Days are counted in
+	 * local time, where a DST change day is not 86400s long.
 	 */
-	if (isAllDay && (localEndTime - localStartTime) % 86400 != 0) {
-		auto days = (localEndTime - localStartTime + 86399) / 86400;
-		localEndTime = localStartTime + days * 86400;
-		auto corrected_end = construct<uint64_t>(rop_util_unix_to_nttime(localEndTime));
-		shape.write(TAGGED_PROPVAL{end_tag, corrected_end});
-	}
 	auto duration = localEndTime - localStartTime;
+	if (isAllDay) {
+		int64_t sb = 0, eb = 0;
+		if (item_tz && (!tz_to_offset(*item_tz, localStartTime, sb) ||
+		    !tz_to_offset(*item_tz, localEndTime, eb)))
+			sb = eb = 0;
+		duration = localEndTime - eb * 60 - (localStartTime - sb * 60);
+		if (duration % 86400 != 0) {
+			duration = (duration + 86399) / 86400 * 86400;
+			auto le = localStartTime - sb * 60 + duration;
+			if (item_tz && !tz_to_offset(*item_tz, le, eb))
+				eb = sb;
+			localEndTime = le + eb * 60;
+			auto corrected_end = construct<uint64_t>(rop_util_unix_to_nttime(localEndTime));
+			shape.write(TAGGED_PROPVAL{end_tag, corrected_end});
+		}
+	}
 	/*
 	 * Use RecurrenceRange StartDate for the recurrence start date. For
 	 * all-day events, the Start time is midnight local in UTC (e.g. 23:00Z
