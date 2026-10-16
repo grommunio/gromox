@@ -776,6 +776,42 @@ static int ical_exception_roundtrip()
 	return EXIT_SUCCESS;
 }
 
+static int ical_exception_origdate()
+{
+	static constexpr char data[] =
+		"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n"
+		"BEGIN:VTIMEZONE\r\nTZID:Europe/Berlin\r\n"
+		"BEGIN:DAYLIGHT\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+		"DTSTART:19700329T020000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\n"
+		"BEGIN:STANDARD\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+		"DTSTART:19701025T030000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+		"END:VTIMEZONE\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-od\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:daily\r\n"
+		"RRULE:FREQ=DAILY;COUNT=5\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261020T003000\r\nDTEND;TZID=Europe/Berlin:20261020T013000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-od\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:moved\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261022T003000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261022T143000\r\nDTEND;TZID=Europe/Berlin:20261022T153000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	fprintf(stderr, "=== ical_exception_origdate\n");
+	auto msg = ical_load(data);
+	assert(msg != nullptr);
+	APPOINTMENT_RECUR_PAT apr{};
+	assert(ical_recur(*msg, apr));
+	assert(apr.pexceptioninfo.size() == 1);
+	/* 2026-10-22 00:30 local, not 2026-10-21 22:30 UTC */
+	auto want = rop_util_unix_to_rtime(1792629000);
+	if (apr.pexceptioninfo[0].originalstartdate != want ||
+	    apr.pextendedexception[0].originalstartdate != want ||
+	    !apr.recur_pat.contains_del(want)) {
+		fprintf(stderr, "originalstartdate %u, want %u\n",
+		        apr.pexceptioninfo[0].originalstartdate, want);
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 /*
  * An occurrence moved to another day. MS-OXOCAL wants its new day in
  * ModifiedInstanceDates. EWS used to store the original day there, and the
@@ -2227,7 +2263,7 @@ int main()
 		E(vexport_filename_utf8), E(vexport_body_fallback),
 		E(vexport_calendar), E(openpgp_roundtrip),
 		E(openpgp_legacy_layout),
-		E(ical_exception_roundtrip),
+		E(ical_exception_roundtrip), E(ical_exception_origdate),
 		E(ical_moved_exception_dates),
 	};
 #undef E

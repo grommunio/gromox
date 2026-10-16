@@ -2203,7 +2203,8 @@ static inline unsigned int dfl_alarm_offset(bool allday)
 }
 
 /*
- * Exception start/end times are kept in the local time of the series.
+ * Exception start/end/original times are kept in the local time of the
+ * series.
  * A time given in UTC needs to be moved there first.
  */
 static time_t oxcical_wall_time(const ical_component *tz, const ical_time &itime)
@@ -2633,14 +2634,13 @@ static ec_error_t oxcical_import_internal(const char *method,
 			piline = event->get_line("RECURRENCE-ID");
 			if (piline == nullptr)
 				return ecInvalidParam;
-			time_t tmp_time;
 			err = oxcical_parse_dtvalue(ptz_component, *piline,
-			      &itime, &tmp_time, errstr);
+			      &itime, nullptr, errstr);
 			if (err != ecSuccess) {
 				errstr.insert(0, "E-2730: ");
 				return err;
 			}
-			auto minutes = rop_util_unix_to_rtime(tmp_time);
+			auto minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, itime));
 			if (apr.recur_pat.contains_del(minutes))
 				continue;
 			if (apr.recur_pat.pdeletedinstancedates.size() >= appt_max_exceptions) {
