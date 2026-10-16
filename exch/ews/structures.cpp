@@ -1471,7 +1471,8 @@ PROPTAG_ARRAY sShape::remove() const
 bool sShape::requested(proptag_t tag, uint8_t mask) const
 {
 	auto it = props.find(tag);
-	return it != props.end() && (mask == FL_ANY || it->second.flags & mask);
+	return it != props.end() && (mask == FL_ANY || it->second.flags & mask) &&
+	       readable(tag, access);
 }
 
 /**
@@ -1575,11 +1576,28 @@ const TAGGED_PROPVAL* sShape::writes(const PROPERTY_NAME& name) const
 
 /**
  * @brief      Reset all properties to unloaded
+ *
+ * @param      exception  Next item is an exception of the last series master
  */
-void sShape::clean()
+void sShape::clean(bool exception)
 {
 	for (auto &entry : props)
 		entry.second.prop = nullptr;
+	/* A private series makes all of its exceptions private */
+	if (exception)
+		applySeriesAccess();
+	else
+		privateItem = false;
+	inException = exception;
+}
+
+/**
+ * @brief      Give the next item the access level of the last series master
+ */
+void sShape::applySeriesAccess()
+{
+	privateItem = seriesPrivate;
+	access = seriesAccess;
 }
 
 /**
@@ -1731,6 +1749,123 @@ void sShape::properties(const TPROPVAL_ARRAY& properties)
 {
 	for (const auto &prop : properties)
 		props[prop.proptag].prop = &prop;
+	if (rights.has_value())
+		redact();
+}
+
+/**
+ * Named properties readable without frightsReadAny. The first one is only
+ * readable with frightsFreeBusyDetailed, the second one is not passed on
+ * as is, see putExtended().
+ */
+static const PROPERTY_NAME fbNameList[] = {
+	NtLocation, NtAppointmentRecur,
+	NtAppointmentStartWhole, NtAppointmentEndWhole,
+	NtAppointmentDuration, NtAppointmentSubType, NtRecurring,
+	NtRecurrenceType, NtRecurrencePattern, NtBusyStatus,
+	NtAppointmentStateFlags, NtCommonStart, NtCommonEnd, NtClipStart,
+	NtClipEnd, NtExceptionReplaceTime, NtIsException, NtPrivate,
+	NtTimeZone, NtTimeZoneStruct,
+	NtAppointmentTimeZoneDefinitionStartDisplay,
+	NtAppointmentTimeZoneDefinitionEndDisplay,
+	NtAppointmentTimeZoneDefinitionRecur,
+	NtGlobalObjectId, NtCleanGlobalObjectId,
+};
+
+const PROPNAME_ARRAY sShape::fbNames = {std::size(fbNameList), deconst(fbNameList)};
+
+/**
+ * @brief      Limit item contents to what folder rights allow
+ *
+ * Readers without frightsReadAny only get times and busy status of items.
+ * With frightsFreeBusyDetailed, they also get subject and location of
+ * items that are not private.
+ *
+ * @param      folderRights  Rights of the reader on the parent folder
+ * @param      ids           IDs of fbNames in the store of the folder
+ */
+void sShape::restrict(uint32_t folderRights, const PROPID_ARRAY &ids)
+{
+	/* Not after named tags, namedProperties() drops those from the end */
+	add(PR_SENSITIVITY);
+	privateItem = seriesPrivate = false;
+	if (folderRights & frightsGromoxStoreOwner) {
+		rights.reset();
+		access = seriesAccess = Access::full;
+		return;
+	}
+	rights = folderRights;
+	fbIds.clear();
+	locationId = recurId = 0;
+	if (ids.size() != std::size(fbNameList))
+		return;
+	locationId = ids[0];
+	recurId = ids[1];
+	for (size_t i = 1; i < ids.size(); ++i)
+		if (ids[i] != 0)
+			fbIds.push_back(ids[i]);
+}
+
+/**
+ * @brief      Determine access level of the current item and drop the rest
+ */
+void sShape::redact()
+{
+	auto sens = get<const uint32_t>(PR_SENSITIVITY, FL_ANY);
+	if (sens != nullptr && *sens == SENSITIVITY_PRIVATE)
+		privateItem = true;
+	access = *rights & frightsReadAny ? Access::full :
+	         !privateItem && *rights & frightsFreeBusyDetailed ?
+	         Access::fbdetail : Access::fbsimple;
+	if (!inException) {
+		seriesPrivate = privateItem;
+		seriesAccess = access;
+	}
+	if (access == Access::full)
+		return;
+	for (auto &entry : props)
+		if (entry.second.prop != nullptr && !readable(entry.first, access))
+			entry.second.prop = nullptr;
+}
+
+/**
+ * @brief      Returns whether a property is readable at an access level
+ */
+bool sShape::readable(proptag_t tag, Access level) const
+{
+	if (level == Access::full)
+		return true;
+	auto id = PROP_ID(tag);
+	if (level == Access::fbdetail) {
+		if (id == PROP_ID(PR_SUBJECT) ||
+		    id == PROP_ID(PR_NORMALIZED_SUBJECT) ||
+		    id == PROP_ID(PR_SUBJECT_PREFIX))
+			return true;
+		if (locationId != 0 && id == locationId)
+			return true;
+	}
+	static constexpr propid_t fbIdList[] = {
+		PROP_ID(PR_ENTRYID), PROP_ID(PR_PARENT_ENTRYID),
+		PROP_ID(PR_CHANGE_KEY), PROP_ID(PR_MESSAGE_CLASS),
+		PROP_ID(PR_SENSITIVITY), PROP_ID(PR_START_DATE),
+		PROP_ID(PR_END_DATE), PROP_ID(PR_MESSAGE_SIZE),
+		PROP_ID(PR_CREATION_TIME), PROP_ID(PR_LAST_MODIFICATION_TIME),
+		PROP_ID(PidTagMid), PROP_ID(PidTagFolderId),
+		PROP_ID(PidTagChangeNumber),
+	};
+	if (std::find(std::begin(fbIdList), std::end(fbIdList), id) != std::end(fbIdList))
+		return true;
+	return is_nameprop_id(id) &&
+	       std::find(fbIds.begin(), fbIds.end(), id) != fbIds.end();
+}
+
+/**
+ * @brief      Returns the special fields to load for the current item
+ */
+uint64_t sShape::specials() const
+{
+	return access == Access::full ? special :
+	       special & (Rights | Occurrences | ResponseObjects);
 }
 
 /**
@@ -1751,7 +1886,10 @@ PROPTAG_ARRAY sShape::proptags() const
 void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
 {
 	for (const auto &prop : props)
-		if (prop.second.flags & FL_EXT && prop.second.prop)
+		/* Exceptions in the recurrence blob carry subject and location */
+		if (prop.second.flags & FL_EXT && prop.second.prop &&
+		    (access == Access::full || recurId == 0 ||
+		    PROP_ID(prop.first) != recurId))
 			extprops.emplace_back(*prop.second.prop,
 				prop.second.name ? *prop.second.name : NONAME);
 }

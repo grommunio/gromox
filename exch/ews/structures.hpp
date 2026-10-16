@@ -343,6 +343,21 @@ class sShape {
 
 	static constexpr PROPERTY_NAME NONAME{KIND_NONE, {}, 0, nullptr};
 
+	enum class Access : uint8_t { fbsimple, fbdetail, full };
+
+	bool readable(proptag_t, Access) const;
+	void redact();
+
+	std::optional<uint32_t> rights; ///< Folder rights of a reader, unset for store owners
+	Access access = Access::full; ///< What the current item may reveal
+	Access seriesAccess = Access::full; ///< Access of the last series master
+	bool privateItem = false; ///< Current item has private sensitivity
+	bool seriesPrivate = false; ///< Last series master has private sensitivity
+	bool inException = false; ///< Current item is an exception of a series
+	std::vector<propid_t> fbIds; ///< Named properties readable without frightsReadAny
+	propid_t locationId = 0; ///< PidLidLocation in the store of the folder
+	propid_t recurId = 0; ///< PidLidAppointmentRecur in the store of the folder
+
 	public:
 	static constexpr uint8_t FL_ANY =   0;
 	static constexpr uint8_t FL_FIELD = 1 << 0; ///< Tag was requested as field
@@ -385,7 +400,7 @@ class sShape {
 	sShape& operator=(const sShape&) = delete;
 	sShape& operator=(sShape&&) = delete;
 
-	void clean();
+	void clean(bool = false);
 	bool namedProperties(const PROPID_ARRAY&);
 	PROPNAME_ARRAY namedProperties() const;
 	void properties(const TPROPVAL_ARRAY&);
@@ -411,6 +426,11 @@ class sShape {
 	template<typename T> const T *get(proptag_t, uint8_t = FL_FIELD) const;
 	template<typename T> const T* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	void putExtended(std::vector<tExtendedProperty>&) const;
+	void restrict(uint32_t, const PROPID_ARRAY &);
+	void applySeriesAccess();
+	uint64_t specials() const;
+
+	static const PROPNAME_ARRAY fbNames; ///< Names to resolve for restrict()
 
 
 	uint64_t special = 0; ///< Fields that are not directly accessible by properties

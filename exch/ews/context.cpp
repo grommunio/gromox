@@ -2137,7 +2137,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
  */
 void EWSContext::updateProps(tCalendarItem& calItem, sShape& shape, const TPROPVAL_ARRAY& props) const
 {
-	shape.clean();
+	shape.clean(true);
 	shape.properties(props);
 	calItem.update(shape);
 }
@@ -2159,8 +2159,8 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 	sItem item = tItem::create(shape);
-	if (shape.special)
-		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
+	if (auto special = shape.specials())
+		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, special); }, item);
 	return item;
 }
 
@@ -2340,7 +2340,7 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
 
 	/* Exceptions carry no MimeContent, see materializeOccurrence() */
 	s.base.emplace(tItem::create(shape));
-	if (auto special = shape.special & ~sShape::MimeContent)
+	if (auto special = shape.specials() & ~sShape::MimeContent)
 		std::visit([&](auto &&it) {
 			loadSpecial(dir, s.fid, s.mid, it, special);
 		}, *s.base);
@@ -2380,6 +2380,8 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
 sItem EWSContext::materializeOccurrence(const std::string &dir,
     sOccurrenceSeries &s, uint32_t basedate, sShape &shape) const
 {
+	/* Judge every occurrence by its series first */
+	shape.applySeriesAccess();
 	auto matching_exc = s.aprValid ? find_exc(s.apr, basedate) : nullptr;
 	auto stamp = [&](sItem &item, Enum::CalendarItemTypeType type) {
 		if (auto cal = std::get_if<tCalendarItem>(&item)) {
@@ -2428,7 +2430,7 @@ sItem EWSContext::materializeOccurrence(const std::string &dir,
 	}
 
 	/* Unmodified occurrence: construct from master properties */
-	if (shape.special & sShape::MimeContent && !s.occBase) {
+	if (shape.specials() & sShape::MimeContent && !s.occBase) {
 		s.occBase.emplace(*s.base);
 		std::visit([&](auto &&it) {
 			loadSpecial(dir, s.fid, s.mid, it, sShape::MimeContent);
@@ -3762,6 +3764,20 @@ uint32_t EWSContext::permissions(const std::string& maildir, uint64_t folderId) 
 	    m_auth_info.username, &permissions))
 		return 0;
 	return permissions;
+}
+
+/**
+ * @brief      Limit a shape to what the reader may see in a folder
+ *
+ * @param      dir     Store of the folder
+ * @param      rights  Rights of the reader on the folder
+ * @param      shape   Shape to restrict
+ */
+void EWSContext::restrictShape(const std::string &dir, uint32_t rights,
+    sShape &shape) const
+{
+	shape.restrict(rights, rights & frightsGromoxStoreOwner ? PROPID_ARRAY{} :
+		getNamedPropIds(dir, sShape::fbNames));
 }
 
 /**
