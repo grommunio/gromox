@@ -1513,6 +1513,8 @@ void tItem::serialize(XMLElement *xml) const
 	XMLDUMPT(DisplayTo);
 	XMLDUMPT(DisplayBcc);
 	XMLDUMPT(HasAttachments);
+	for (const tExtendedProperty &ep : ExtendedProperty)
+		toXMLNode(xml, "t:ExtendedProperty", ep);
 	XMLDUMPT(Culture);
 	XMLDUMPT(EffectiveRights);
 	XMLDUMPT(LastModifiedName);
@@ -1523,8 +1525,6 @@ void tItem::serialize(XMLElement *xml) const
 	XMLDUMPT(Flag);
 	XMLDUMPT(Preview);
 	XMLDUMPT(TextBody);
-	for (const tExtendedProperty &ep : ExtendedProperty)
-		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
 
 tItemChange::tItemChange(const XMLElement *xml) :
