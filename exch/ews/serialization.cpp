@@ -929,10 +929,53 @@ tCalendarItem::tCalendarItem(const tinyxml2::XMLElement *xml) :
 
 void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 {
+	/* Types.xsd CalendarItemType order */
 	tItem::serialize(xml);
-	sCalendarMeetingRequestCommon::serialize(xml);
 	XMLDUMPT(UID);
 	XMLDUMPT(RecurrenceId);
+	XMLDUMPT(Start);
+	XMLDUMPT(End);
+	XMLDUMPT(OriginalStart);
+	XMLDUMPT(IsAllDayEvent);
+	XMLDUMPT(LegacyFreeBusyStatus);
+	XMLDUMPT(Location);
+	XMLDUMPT(When);
+	XMLDUMPT(IsMeeting);
+	XMLDUMPT(IsCancelled);
+	XMLDUMPT(IsRecurring);
+	XMLDUMPT(MeetingRequestWasSent);
+	XMLDUMPT(IsResponseRequested);
+	XMLDUMPT(CalendarItemType);
+	XMLDUMPT(MyResponseType);
+	XMLDUMPT(Organizer);
+	XMLDUMPT(RequiredAttendees);
+	XMLDUMPT(OptionalAttendees);
+	XMLDUMPT(Resources);
+	XMLDUMPT(ConflictingMeetingCount);
+	XMLDUMPT(AdjacentMeetingCount);
+	XMLDUMPT(ConflictingMeetings);
+	XMLDUMPT(AdjacentMeetings);
+	XMLDUMPT(Duration);
+	XMLDUMPT(TimeZone);
+	XMLDUMPT(AppointmentReplyTime);
+	XMLDUMPT(AppointmentSequenceNumber);
+	XMLDUMPT(AppointmentState);
+	XMLDUMPT(Recurrence);
+	XMLDUMPT(FirstOccurrence);
+	XMLDUMPT(LastOccurrence);
+	XMLDUMPT(ModifiedOccurrences);
+	XMLDUMPT(DeletedOccurrences);
+	XMLDUMPT(StartTimeZone);
+	XMLDUMPT(EndTimeZone);
+	XMLDUMPT(ConferenceType);
+	XMLDUMPT(AllowNewTimeProposal);
+	XMLDUMPT(IsOnlineMeeting);
+	XMLDUMPT(MeetingWorkspaceUrl);
+	XMLDUMPT(NetShowUrl);
+	XMLDUMPT(StartTimeZoneId);
+	XMLDUMPT(EndTimeZoneId);
+	XMLDUMPT(IntendedFreeBusyStatus);
+	XMLDUMPT(DoNotForwardMeeting);
 }
 
 tCalendarPermission::tCalendarPermission(const tinyxml2::XMLElement *xml) :
