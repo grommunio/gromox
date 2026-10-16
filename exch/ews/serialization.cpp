@@ -933,6 +933,7 @@ void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 	tItem::serialize(xml);
 	XMLDUMPT(UID);
 	XMLDUMPT(RecurrenceId);
+	XMLDUMPT(DateTimeStamp);
 	XMLDUMPT(Start);
 	XMLDUMPT(End);
 	XMLDUMPT(OriginalStart);
