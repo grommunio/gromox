@@ -1878,7 +1878,7 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 	for (const sFolderId &folderId : request.ParentFolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
 		std::string dir = ctx.getDir(folder);
-		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+		if (!(itemRights(ctx, dir, folder.folderId) & (frightsVisible | fbRights)))
 			throw EWSError::AccessDenied(E3218);
 		if (dir != lastDir) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
