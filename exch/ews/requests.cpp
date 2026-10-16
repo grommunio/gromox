@@ -1184,7 +1184,17 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
-		if (std::holds_alternative<tCalendarItem>(item) &&
+		/*
+		 * Like Exchange, an appointment without attendees is only saved,
+		 * whatever SendMeetingInvitations says. Outlook for Mac creates
+		 * new events with SendToAllAndSaveCopy before any attendee is
+		 * added; attempting the send fails (no envelope recipient) and
+		 * the error makes the client abandon the already-saved item.
+		 */
+		bool cal_invite = std::holds_alternative<tCalendarItem>(item) &&
+		                  content->children.prcpts != nullptr &&
+		                  content->children.prcpts->count > 0;
+		if (cal_invite &&
 		    request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy) {
 			sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 			uint64_t newMid;
@@ -1219,7 +1229,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		if (std::holds_alternative<tMessage>(item) && send_message)
 			ctx.send(dir, 0, *content);
-		if (std::holds_alternative<tCalendarItem>(item) &&
+		if (cal_invite &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
 			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 			content->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");
