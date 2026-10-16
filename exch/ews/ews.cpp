@@ -850,6 +850,31 @@ EWSPlugin::WakeupNotify::~WakeupNotify()
 		wakeup_context(ctx_id);
 }
 
+static bool in_folders(const DB_NOTIFY &n, const std::unordered_set<uint64_t> &f)
+{
+	switch (n.type) {
+	case db_notify_type::new_mail:
+	case db_notify_type::message_created:
+	case db_notify_type::message_deleted:
+	case db_notify_type::message_modified:
+		return f.contains(n.folder_id);
+	case db_notify_type::folder_created:
+		return f.contains(n.parent_id);
+	case db_notify_type::folder_deleted:
+	case db_notify_type::folder_modified:
+		return f.contains(n.folder_id) || f.contains(n.parent_id);
+	case db_notify_type::message_moved:
+	case db_notify_type::message_copied:
+		return f.contains(n.folder_id) || f.contains(n.old_folder_id);
+	case db_notify_type::folder_moved:
+	case db_notify_type::folder_copied:
+		return f.contains(n.folder_id) || f.contains(n.old_folder_id) ||
+		       f.contains(n.parent_id) || f.contains(n.old_parent_id);
+	default:
+		return false;
+	}
+}
+
 void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notification) const try
 {
 	using namespace Structures;
@@ -866,6 +891,8 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	} catch (...) { // Key not found or type error
 	}
 	if (mgr == nullptr)
+		return;
+	if (!mgr->folders.empty() && !in_folders(*notification, mgr->folders))
 		return;
 	lock = std::unique_lock(mgr->lock);
 	if (mgr->overflow)

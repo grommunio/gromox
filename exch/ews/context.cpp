@@ -6059,7 +6059,6 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId> &folderIds,
 			subscriptionId.tsub_rawkey));
 		return subscriptionId;
 	}
-	mgr->inner_subs.reserve(folderIds.size());
 	std::string target;
 	std::string maildir;
 	for (const sFolderId &f : folderIds) {
@@ -6075,9 +6074,12 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId> &folderIds,
 		}
 		if (!(permissions(maildir, folderspec.folderId) & frightsReadAny))
 			continue; // TODO: proper error handling
-		mgr->inner_subs.emplace_back(m_plugin.subscribe(maildir,
-			eventMask, all, folderspec.folderId, subscriptionId.tsub_rawkey));
+		mgr->folders.emplace(rop_util_get_gc_value(folderspec.folderId));
 	}
+	/* Filtered in EWSPlugin::event */
+	if (!mgr->folders.empty())
+		mgr->inner_subs.emplace_back(m_plugin.subscribe(maildir,
+			eventMask, true, 0, subscriptionId.tsub_rawkey));
 	return subscriptionId;
 }
 
