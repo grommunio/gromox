@@ -72,6 +72,8 @@ ping: cause a mailbox's sqlite files to be opened
 .IP \(bu 4
 purge\-datafiles: remove orphaned attachments/content files from disk
 .IP \(bu 4
+purge\-orphan\-perms: remove permission entries of users that no longer exist
+.IP \(bu 4
 purge\-softdelete: remove soft-deleted items from a folder
 .IP \(bu 4
 recalc\-sizes: recalculate store size
@@ -400,6 +402,24 @@ Forcibly rerun the sync routine for a single specific folder. See section
 .SH purge\-datafiles
 The "purge\-datafiles" RPC makes exmdb_provider remove attachment and content
 files from disk that are no longer referenced by any message.
+.SH purge\-orphan\-perms
+.SS Synopsis
+\fBpurge\-orphan\-perms\fP [\fB\-n\fP]
+.SS Description
+Removes the permission entries of all folders in the store whose username is
+no longer found in the user database (e.g. because the user was deleted).
+The command stops at the first folder where the user database cannot be
+queried.
+.SS Subcommand options
+.TP
+\fB\-n\fP
+Only list the entries that would be removed.
+.SS Examples
+.IP \(bu 4
+To clean up all mailboxes: gromox\-mbop foreach.mb purge\-orphan\-perms
+.IP \(bu 4
+To clean up the public folders of a domain: gromox\-mbop \-u @example.com
+purge\-orphan\-perms
 .SH purge\-softdelete
 .SS Synopsis
 \fBpurge-softdelete\fP [\fB\-r\fP] [\fB\-t\fP \fItimespec\fP]
