@@ -3416,9 +3416,9 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	bool isAllDay = false;
 	auto st = shape.writes(subtype_tag);
 	if (st) {
-		isAllDay = *static_cast<const uint32_t *>(st->pvalue) != 0;
+		isAllDay = *static_cast<const uint8_t *>(st->pvalue) != 0;
 	} else {
-		auto v = getItemProp<const uint32_t>(dir, mid, subtype_tag);
+		auto v = getItemProp<const uint8_t>(dir, mid, subtype_tag);
 		if (v)
 			isAllDay = *v != 0;
 	}
