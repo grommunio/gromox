@@ -1143,7 +1143,8 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 		requestFolder.target = m_auth_info.username;
 	std::string calendarDir = getDir(requestFolder);
 
-	if (!(permissions(calendarDir, requestFolder.folderId) & (frightsOwner | frightsCreate)))
+	auto calRights = permissions(calendarDir, requestFolder.folderId);
+	if (!(calRights & (frightsOwner | frightsCreate)))
 		throw EWSError::AccessDenied(E3130);
 
 	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
@@ -1181,6 +1182,8 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 		throw EWSError::ItemSave(E3475);
 
 	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *content);
+	if (existingMid && !(calRights & (frightsOwner | frightsEditAny)))
+		throw EWSError::AccessDenied(E3601);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3328);
 

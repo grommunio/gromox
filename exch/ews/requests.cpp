@@ -1044,6 +1044,14 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	auto rights = ctx.permissions(rdir, pf.folderId);
 	if (!(rights & frightsEditAny))
 		throw EWSError::AccessDenied(E3526);
+	/* Accepting writes the meeting into the calendar of the same store */
+	if ((resp == respAccepted || resp == respTentative) &&
+	    pf.location == sFolderSpec::PRIVATE) {
+		auto cal = ctx.permissions(rdir, eid_t(1, PRIVATE_FID_CALENDAR));
+		if (!(cal & frightsOwner) &&
+		    (cal & (frightsCreate | frightsEditAny)) != (frightsCreate | frightsEditAny))
+			throw EWSError::AccessDenied(E3600);
+	}
 	const char *username = ctx.effectiveUser(pf);
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	auto rstat = EWSContext::construct<uint32_t>(resp);
