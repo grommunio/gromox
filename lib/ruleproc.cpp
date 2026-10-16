@@ -2233,6 +2233,16 @@ ec_error_t rxparam::run()
 		auto err = mr_get_policy(ev_to, res_policy);
 		if (err != ecSuccess)
 			return err;
+		if ((m_flags & DELIVERY_MRAUTOPROC_OPTIN) && !res_policy.accept_appts)
+			return ecSuccess;
+		if (ctnt == nullptr) {
+			/* Not loaded by run_rules (server-side rules mode) */
+			if (!exmdb_client->read_message(cur.dirc(), nullptr,
+			    CP_ACP, cur.mid, &ctnt))
+				return ecError;
+			if (ctnt == nullptr)
+				return ecNotFound;
+		}
 		err = mr_start(*this, res_policy);
 		if (err != ecSuccess)
 			return err;
