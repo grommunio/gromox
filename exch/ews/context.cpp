@@ -260,7 +260,9 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 	// be inside the recurrence range (minus one to make sure there is
 	// always at least one occurrence left)
 	uint32_t forwardcount = 0;
-	switch(recur_pat.recurfrequency) {
+	/* every weekday is a daily frequency with a weekly pattern */
+	switch (recur_pat.patterntype == rptWeek ? IDC_RCEV_PAT_ORB_WEEKLY :
+	        recur_pat.recurfrequency) {
 	case IDC_RCEV_PAT_ORB_DAILY:
 		if (recur_pat.patterntype == rptMinute)
 			// occurrencecount - 1 because the first day already counts
