@@ -569,7 +569,7 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 	auto cl1 = HX::make_scope_exit([&]() { unlink(filename.c_str()); });
 	/* pandoc immediately switches to latin1 on funny characters; forbid that */
 	if (utf8_writeout(fp.get(), inbuf.data(), inbuf.size(), cset,
-	    rend >= REND_PANDOC_HTP) != 0)
+	    rend >= REND_PANDOC) != 0)
 		return -1;
 	fp.reset();
 	int fout = -1;

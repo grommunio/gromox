@@ -155,7 +155,7 @@ Optional runtime components
   messages to, remote SMTP servers on the Internet. Spam handling should also
   occur in the MTA chain.
 
-* For improved conversion from HTML to plaintext (in order of preference):
+* For improved conversion from HTML to plaintext (from high to low preference):
   * chawan, or pandoc, or w3m
 
 * For improved conversion between HTML and RTF:
