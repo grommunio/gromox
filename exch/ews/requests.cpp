@@ -43,6 +43,222 @@ using namespace tinyxml2;
 
 namespace {
 
+static constexpr uint32_t fbRights = frightsFreeBusySimple | frightsFreeBusyDetailed;
+/* Rights that let a reader read some properties of the items in a folder */
+static constexpr uint32_t itemReadRights = frightsReadAny | fbRights;
+
+/**
+ * @brief      Returns whether a folder is a calendar folder
+ */
+static bool isCalendar(const EWSContext &ctx, const std::string &dir,
+    uint64_t fid)
+{
+	static constexpr proptag_t tags[] = {PR_CONTAINER_CLASS};
+	auto cls = ctx.getFolderProps(dir, fid, tags).get<const char>(PR_CONTAINER_CLASS);
+	return cls != nullptr && class_match_prefix(cls, "IPF.Appointment") == 0;
+}
+
+/**
+ * @brief      Returns the rights of the user on a folder for reading its items
+ *
+ * frightsFreeBusySimple and frightsFreeBusyDetailed only grant access to
+ * the items of calendar folders. Without frightsReadAny they are removed
+ * from the rights on any other folder. frightsReadAny grants more than
+ * both on every folder, so with it the rights are returned unchanged and
+ * the folder class is not looked up.
+ */
+static uint32_t itemRights(const EWSContext &ctx, const std::string &dir,
+    uint64_t fid)
+{
+	auto rights = ctx.permissions(dir, fid);
+	if (rights & frightsReadAny)
+		return rights;
+	if (rights & fbRights && !isCalendar(ctx, dir, fid))
+		rights &= ~fbRights;
+	return rights;
+}
+
+/**
+ * @brief      Get the property tags a restriction leaf tests
+ *
+ * @return     Number of tags stored in @p tags
+ */
+static size_t leafTags(RESTRICTION &r, proptag_t *tags[2])
+{
+	switch (r.rt) {
+	case mapi_rtype::content:
+		tags[0] = &r.cont->proptag;
+		return 1;
+	case mapi_rtype::property:
+		tags[0] = &r.prop->proptag;
+		return 1;
+	case mapi_rtype::propcmp:
+		tags[0] = &r.pcmp->proptag1;
+		tags[1] = &r.pcmp->proptag2;
+		return 2;
+	case mapi_rtype::bitmask:
+		tags[0] = &r.bm->proptag;
+		return 1;
+	case mapi_rtype::exist:
+		tags[0] = &r.exist->proptag;
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+/**
+ * @brief      Copy a restriction leaf so its tags can be changed
+ */
+static RESTRICTION copyLeaf(const RESTRICTION &r)
+{
+	RESTRICTION c;
+	c.rt = r.rt;
+	switch (r.rt) {
+	case mapi_rtype::content:
+		c.cont = EWSContext::construct<RESTRICTION_CONTENT>(*r.cont);
+		break;
+	case mapi_rtype::property:
+		c.prop = EWSContext::construct<RESTRICTION_PROPERTY>(*r.prop);
+		break;
+	case mapi_rtype::propcmp:
+		c.pcmp = EWSContext::construct<RESTRICTION_PROPCOMPARE>(*r.pcmp);
+		break;
+	case mapi_rtype::bitmask:
+		c.bm = EWSContext::construct<RESTRICTION_BITMASK>(*r.bm);
+		break;
+	default:
+		c.exist = EWSContext::construct<RESTRICTION_EXIST>(*r.exist);
+		break;
+	}
+	return c;
+}
+
+/**
+ * @brief      Build a restriction matching the private or the public items
+ *
+ * Private items have PR_SENSITIVITY set to SENSITIVITY_PRIVATE, public
+ * items are all others.
+ */
+static RESTRICTION *matchPrivate(bool priv)
+{
+	auto eq = EWSContext::construct<RESTRICTION_PROPERTY>();
+	eq->relop = priv ? relop::eq : relop::ne;
+	eq->proptag = eq->propval.proptag = PR_SENSITIVITY;
+	eq->propval.pvalue = EWSContext::construct<uint32_t>(SENSITIVITY_PRIVATE);
+	auto res = EWSContext::construct<RESTRICTION>();
+	res->rt = mapi_rtype::property;
+	res->prop = eq;
+	return res;
+}
+
+/**
+ * @brief      Limit a restriction to the properties the reader may read
+ *
+ * A property that the reader may not read in an item is treated as absent
+ * from that item, so the result never depends on its value.
+ *
+ * - A node on a property that is readable in no item gets property ID 0
+ *   in its tag. No message has a property with that ID.
+ * - A node on a property that is readable in public items only, see
+ *   sShape::Query, becomes (public AND node) OR (private AND node0). In
+ *   node0 that property has ID 0.
+ * - A node that tests no single property is replaced by RES_EXIST on
+ *   property ID 0, which matches no item, unless the reader may read
+ *   every property of every item. EWS builds no such nodes.
+ */
+static void limitRestriction(const sShape &shape, RESTRICTION &r)
+{
+	switch (r.rt) {
+	case mapi_rtype::r_and:
+	case mapi_rtype::r_or:
+		for (auto &sub : *r.andor)
+			limitRestriction(shape, sub);
+		return;
+	case mapi_rtype::r_not:
+		return limitRestriction(shape, r.xnot->res);
+	default:
+		break;
+	}
+	proptag_t *tags[2];
+	auto n = leafTags(r, tags);
+	if (n == 0) {
+		if (!shape.allReadable()) {
+			r.rt = mapi_rtype::exist;
+			r.exist = EWSContext::construct<RESTRICTION_EXIST>();
+		}
+		return;
+	}
+	bool publicOnly = false;
+	for (size_t i = 0; i < n; ++i) {
+		auto q = shape.queryable(*tags[i]);
+		if (q == sShape::Query::none)
+			*tags[i] = PROP_TAG(PROP_TYPE(*tags[i]), 0);
+		else if (q == sShape::Query::publicOnly)
+			publicOnly = true;
+	}
+	if (!publicOnly)
+		return;
+	auto node0 = EWSContext::construct<RESTRICTION>(copyLeaf(r));
+	n = leafTags(*node0, tags);
+	for (size_t i = 0; i < n; ++i)
+		if (shape.queryable(*tags[i]) == sShape::Query::publicOnly)
+			*tags[i] = PROP_TAG(PROP_TYPE(*tags[i]), 0);
+	auto node = EWSContext::construct<RESTRICTION>(r);
+	r = *tRestriction::any(tRestriction::all(matchPrivate(false), node),
+	    tRestriction::all(matchPrivate(true), node0));
+}
+
+/**
+ * @brief      Limit filter and sort order to the properties the reader may read
+ *
+ * The filter is edited by limitRestriction(). Each sort key is handled
+ * by the items in which the reader may read its property, see
+ * sShape::Query.
+ *
+ * - In all items: the key is kept.
+ * - In public items only: the key is kept. Private items then come from
+ *   a table of their own, sorted by the keys readable in all items, and
+ *   are listed after the others.
+ * - In no item: the key is removed.
+ *
+ * Private items never reveal more than public ones, so no key is readable
+ * in private items only.
+ *
+ * @param      shape     Shape restricted to the folder
+ * @param      res       Restriction to limit
+ * @param      sort      Sort order to limit
+ * @param      privSort  Set to the order of the private items
+ *
+ * @return     Whether private items need a table of their own
+ */
+static bool limitQuery(const sShape &shape, RESTRICTION *&res,
+    SORTORDER_SET *&sort, SORTORDER_SET *&privSort)
+{
+	privSort = nullptr;
+	if (res != nullptr)
+		limitRestriction(shape, *res);
+	if (sort == nullptr)
+		return false;
+	auto keep = EWSContext::construct<SORTORDER_SET>();
+	keep->psort = EWSContext::alloc<SORT_ORDER>(sort->count);
+	auto priv = EWSContext::construct<SORTORDER_SET>();
+	priv->psort = EWSContext::alloc<SORT_ORDER>(sort->count);
+	for (const auto &key : *sort) {
+		auto q = shape.queryable(PROP_TAG(key.type, key.propid));
+		if (q == sShape::Query::none)
+			continue;
+		keep->psort[keep->count++] = key;
+		if (q == sShape::Query::all)
+			priv->psort[priv->count++] = key;
+	}
+	sort = keep->count > 0 ? keep : nullptr;
+	if (priv->count == keep->count)
+		return false;
+	privSort = priv->count > 0 ? priv : nullptr;
+	return true;
+}
+
 /**
  * @brief      Encode hex string
  *
@@ -1761,7 +1977,12 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 	                     request.Traversal == Enum::Shallow ? 0 : TABLE_FLAG_DEPTH;
 	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
 	const SORTORDER_SET* sort = nullptr; // Lol same
+	/* Table of the private items, see limitQuery */
+	const RESTRICTION *privRes = nullptr;
+	const SORTORDER_SET *privSort = nullptr;
+	bool split = false;
 	std::string lastDir; // Simple restriction caching
+	uint32_t lastRights = 0;
 
 	auto& exmdb = ctx.plugin().exmdb;
 	mFindItemResponse data;
@@ -1790,21 +2011,45 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 	for (const sFolderId &folderId : request.ParentFolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
 		std::string dir = ctx.getDir(folder);
-		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+		auto rights = itemRights(ctx, dir, folder.folderId);
+		if (!(rights & itemReadRights))
 			throw EWSError::AccessDenied(E3244);
-		if (dir != lastDir) {
+		ctx.restrictShape(dir, rights, shape);
+		if (dir != lastDir || rights != lastRights) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
 			auto res1 = request.Restriction ? request.Restriction->build(getId) : nullptr;
 			auto res2 = paging ? paging->restriction(getId) : nullptr;
-			res = tRestriction::all(res1, res2);
-			sort = request.SortOrder ? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
+			auto newRes = tRestriction::all(res1, res2);
+			auto newSort = request.SortOrder ? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
+			SORTORDER_SET *newPrivSort;
+			split = limitQuery(shape, newRes, newSort, newPrivSort);
+			if (split) {
+				auto copy = newRes != nullptr ? EWSContext::construct<RESTRICTION>(*newRes) : nullptr;
+				privRes = tRestriction::all(copy, matchPrivate(true));
+				newRes = tRestriction::all(newRes, matchPrivate(false));
+			}
+			res = newRes;
+			sort = newSort;
+			privSort = newPrivSort;
 			lastDir = dir;
+			lastRights = rights;
 		}
-		uint32_t tableId, rowCount;
+		uint32_t tableId, rowCount, privTable = 0, privCount = 0;
 		if (!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId,
 		    "", tableFlags, res, sort, &tableId, &rowCount))
 			throw EWSError::ItemPropertyRequestFailed(E3245);
 		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+		if (split && !exmdb.load_content_table(dir.c_str(), CP_UTF8,
+		    folder.folderId, "", tableFlags, privRes, privSort,
+		    &privTable, &privCount))
+			throw EWSError::ItemPropertyRequestFailed(E3245);
+		auto unloadPriv = HX::make_scope_exit([&, privTable] {
+			if (split)
+				exmdb.unload_table(dir.c_str(), privTable);
+		});
+		/* Rows of the private table come after those of the other */
+		uint32_t pubCount = rowCount;
+		rowCount += privCount;
 		if (!rowCount) {
 			mFindItemResponseMessage msg;
 			msg.RootFolder.emplace();
@@ -1843,14 +2088,27 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 		 */
 		uint32_t results = maxResults && calView == nullptr ?
 			std::min(maxResults, rowCount - offset) : rowCount - offset;
-		exmdb.query_table(dir.c_str(), ctx.auth_info().username,
-			CP_UTF8, tableId, tags, offset, results, &table);
+		TARRAY_SET privRows;
+		std::vector<TPROPVAL_ARRAY *> rows;
+		if (offset < pubCount)
+			exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+				CP_UTF8, tableId, tags, offset,
+				std::min(results, pubCount - offset), &table);
+		if (offset + results > pubCount) {
+			uint32_t privOffset = offset > pubCount ? offset - pubCount : 0;
+			exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+				CP_UTF8, privTable, tags, privOffset,
+				offset + results - pubCount - privOffset, &privRows);
+		}
+		for (auto set : {&table, &privRows})
+			rows.insert(rows.end(), set->pparray, set->pparray + set->count);
 		mFindItemResponseMessage msg;
 		auto &items = msg.RootFolder.emplace().Items;
 		items.reserve(rowCount);
 		/* CalendarView: items keyed by start, to be ordered later */
 		std::vector<std::pair<uint64_t, sItem>> calItems;
-		for (TPROPVAL_ARRAY &props : table) {
+		for (auto row : rows) {
+			TPROPVAL_ARRAY &props = *row;
 			unclamp_binaries(ctx, dir, props);
 			shape.clean();
 			shape.properties(props);
@@ -1869,9 +2127,9 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				}
 				sItem child = tItem::create(shape);
 				const auto &iid = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> & { return i.ItemId; }, child);
-				if (shape.special && iid) {
+				if (shape.specials() && iid) {
 					sMessageEntryId meid(iid->Id.data(), iid->Id.size());
-					std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
+					std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.specials());}, child);
 				}
 				if (calView != nullptr) {
 					auto start = props.get<const uint64_t>(startTag);

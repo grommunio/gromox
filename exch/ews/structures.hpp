@@ -426,7 +426,16 @@ class sShape {
 	template<typename T> const T *get(proptag_t, uint8_t = FL_FIELD) const;
 	template<typename T> const T* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	void putExtended(std::vector<tExtendedProperty>&) const;
+	/**
+	 * In which items the reader may filter or sort by a property. Private
+	 * items have PR_SENSITIVITY set to SENSITIVITY_PRIVATE, public items
+	 * are all others.
+	 */
+	enum class Query : uint8_t { none, publicOnly, all };
+
 	void restrict(uint32_t, const PROPID_ARRAY &);
+	bool allReadable() const;
+	Query queryable(proptag_t) const;
 	void applySeriesAccess();
 	uint64_t specials() const;
 

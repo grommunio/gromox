@@ -1860,6 +1860,30 @@ bool sShape::readable(proptag_t tag, Access level) const
 }
 
 /**
+ * @brief      Returns whether the reader may read every property of every item
+ */
+bool sShape::allReadable() const
+{
+	return !rights.has_value() || *rights & frightsReadAny;
+}
+
+/**
+ * @brief      Returns in which items a property may be filtered or sorted by
+ */
+sShape::Query sShape::queryable(proptag_t tag) const
+{
+	/* No item has a property with ID 0 */
+	if (allReadable() || PROP_ID(tag) == 0 ||
+	    readable(tag, Access::fbsimple))
+		return Query::all;
+	/* Private items are at Access::fbsimple here, see redact() */
+	auto pubAccess = *rights & frightsReadAny ? Access::full :
+	                 *rights & frightsFreeBusyDetailed ? Access::fbdetail :
+	                 Access::fbsimple;
+	return readable(tag, pubAccess) ? Query::publicOnly : Query::none;
+}
+
+/**
  * @brief      Returns the special fields to load for the current item
  */
 uint64_t sShape::specials() const
