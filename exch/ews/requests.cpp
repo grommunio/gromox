@@ -1681,8 +1681,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		/* Like Exchange, only save an appointment without attendees */
 		bool cal_invite = std::holds_alternative<tCalendarItem>(item) &&
-		                  content->children.prcpts != nullptr &&
-		                  content->children.prcpts->count > 0;
+		                  ctx.has_rcpt_address(*content);
 		if (cal_invite &&
 		    request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy) {
 			sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
