@@ -29,8 +29,9 @@ Perform meeting request autoprocessing after the rules of a delivered
 message have run. Meeting requests are entered into the recipient's calendar
 as tentative, room and equipment mailboxes accept or decline them according to
 their booking settings, and responses and cancellations update the calendar
-items. This needs lda_twostep_ruleproc. With lda_twostep_ruleproc=0, no
-meeting autoprocessing takes place.
+items. With lda_twostep_ruleproc enabled, all stores are processed. Without it,
+only stores which have PR_SCHDINFO_AUTO_ACCEPT_APPTS set (and room/equipment
+resources) are processed, after the server-side rules have run.
 .br
 Default: \fIyes\fP
 .TP

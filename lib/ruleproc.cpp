@@ -4395,7 +4395,9 @@ ec_error_t rxparam::run()
 			err = ecNotFound;
 		if (err == ecSuccess)
 			err = mr_get_policy(ev_to, res_policy);
-		if (err == ecSuccess)
+		/* Stores that did not opt in are left alone in OPTIN mode */
+		if (err == ecSuccess && !((m_flags & DELIVERY_MRAUTOPROC_OPTIN) &&
+		    !res_policy.accept_appts))
 			err = mr_start(*this, res_policy);
 		if (err == ecSuccess && cal_changed)
 			stamp_dlg_copies();
