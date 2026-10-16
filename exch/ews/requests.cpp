@@ -2299,7 +2299,7 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 			folder.target = ctx.auth_info().username;
 		folder.normalize();
 		std::string dir = ctx.getDir(folder);
-		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+		if (!(itemRights(ctx, dir, folder.folderId) & (frightsVisible | fbRights)))
 			throw EWSError::AccessDenied(E3136);
 		mGetFolderResponseMessage msg;
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, shape));
@@ -3422,7 +3422,8 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 	std::string dir = ctx.getDir(folder.normalize());
 
 	mSyncFolderItemsResponse data;
-	if (!(ctx.permissions(dir, folder.folderId) & frightsReadAny)) {
+	auto rights = itemRights(ctx, dir, folder.folderId);
+	if (!(rights & itemReadRights)) {
 		data.ResponseMessages.emplace_back(EWSError::AccessDenied(E3138));
 		data.serialize(response);
 		return;
@@ -3443,6 +3444,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 		throw DispatchError(E3031);
 
 	sShape shape(request.ItemShape);
+	ctx.restrictShape(dir, rights, shape);
 	sMailboxInfo mbinfo = ctx.getMailboxInfo(dir, folder.location == folder.PUBLIC);
 	// Generate message entry IDs on the fly as we have all necessary information
 	// Use template entry ID and fill in the message Id as needed
@@ -3554,8 +3556,10 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, eid);
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsReadAny))
+		auto rights = itemRights(ctx, dir, parentFolder.folderId);
+		if (!(rights & itemReadRights))
 			throw EWSError::AccessDenied(E3139);
+		ctx.restrictShape(dir, rights, shape);
 		mGetItemResponseMessage msg;
 		auto mid = eid.messageId();
 		if (id.holds_alternative<tOccurrenceItemId>()) {
@@ -3568,7 +3572,7 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 		} else {
 			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
 		}
-		if (shape.special & sShape::Conflicts && parentFolder.location == sFolderSpec::PRIVATE)
+		if (shape.specials() & sShape::Conflicts && parentFolder.location == sFolderSpec::PRIVATE)
 			std::visit([&](auto &item) {
 				if constexpr (std::is_base_of_v<sCalendarMeetingRequestCommon, std::decay_t<decltype(item)>>) {
 					auto s = shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY);
