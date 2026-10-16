@@ -4120,6 +4120,17 @@ void tExtendedProperty::deserialize(const XMLElement *xml, proptype_t type, void
 		memcpy(static_cast<char*>(dest), src, len + 1);
 		break;
 	}
+	case PT_BINARY: {
+		std::string_view src = znul(content);
+		auto bin = static_cast<BINARY *>(dest);
+		bin->cb = 0;
+		bin->pv = EWSContext::alloc(src.size() + 1);
+		size_t outlen = 0;
+		if (base64nl_decode_sized(src, bin->pv, src.size() + 1, &outlen) < 0)
+			throw EWSError::InvalidExtendedPropertyValue(E3493(src));
+		bin->cb = outlen;
+		break;
+	}
 	case PT_MV_SHORT:
 		deserializeMV(xml, type, &SHORT_ARRAY::ps); break;
 	case PT_MV_LONG:
@@ -4136,6 +4147,8 @@ void tExtendedProperty::deserialize(const XMLElement *xml, proptype_t type, void
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		deserializeMV(xml, type, &STRING_ARRAY::ppstr); break;
+	case PT_MV_BINARY:
+		deserializeMV(xml, type, &BINARY_ARRAY::pbin); break;
 	default:
 		throw NotImplementedError(E3107(tExtendedFieldURI::typeName(type)));
 	}
@@ -4217,6 +4230,8 @@ void tExtendedProperty::serialize(const void *data, proptype_t type, XMLElement 
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		return serializeMV(data, type, xml, &STRING_ARRAY::ppstr);
+	case PT_MV_BINARY:
+		return serializeMV(data, type, xml, &BINARY_ARRAY::pbin);
 	}
 }
 

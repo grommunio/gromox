@@ -624,6 +624,7 @@ E(3489, "item is not a recurring master");
 E(3490, "failed to write cancellation copy to Sent Items");
 E(3491, "failed to build occurrence message");
 E(3492, "failed to build occurrence cancellation");
+inline std::string E3493(std::string_view val) {return fmt::format("E-3493: invalid binary value '{}'", val);}
 E(3499, "no availability data for this email address");
 E(3501, "private item");
 E(3520, "failed to load the LocalFreebusy table");
