@@ -5042,6 +5042,30 @@ const BINARY *EWSContext::findContactPhoto(const std::string &dir,
 }
 
 /**
+ * @brief      Check whether a message has a recipient with an address
+ *
+ * Clients leave attendee rows without any address behind. A meeting
+ * message whose recipients are all like that has nobody to go to, and
+ * submitting it would produce an <invalid@invalid> envelope recipient.
+ * Where such rows sit next to real attendees, send() leaves them out of
+ * the envelope.
+ */
+bool EWSContext::has_rcpt_address(const MESSAGE_CONTENT &content)
+{
+	if (content.children.prcpts == nullptr)
+		return false;
+	for (const auto &rcpt : *content.children.prcpts) {
+		auto a = rcpt.get<const char>(PR_SMTP_ADDRESS);
+		if (a != nullptr && *a != '\0')
+			return true;
+		a = rcpt.get<const char>(PR_EMAIL_ADDRESS);
+		if (a != nullptr && *a != '\0')
+			return true;
+	}
+	return false;
+}
+
+/**
  * @brief     Send message
  *
  * The submit identity is completed on the outgoing copy only, callers
@@ -5102,7 +5126,8 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 		if (!addr.EmailAddress)
 			continue;
 		normalize(addr);
-		rcpts.emplace_back(*addr.EmailAddress);
+		if (!addr.EmailAddress->empty())
+			rcpts.emplace_back(*addr.EmailAddress);
 	}
 	if (rcpts.empty() && organizer)
 		return;
@@ -5457,8 +5482,7 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	auto cls = cancelcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (cls == nullptr ||
 	    class_match_prefix(cls, "IPM.Appointment") != 0 ||
-	    cancelcontent->children.prcpts == nullptr ||
-	    cancelcontent->children.prcpts->count == 0)
+	    !has_rcpt_address(*cancelcontent))
 		return;
 	/* The cancellation carries the content of the meeting */
 	if (!(permissions(dir, parent.folderId) & frightsReadAny))
