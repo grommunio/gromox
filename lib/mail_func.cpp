@@ -759,6 +759,11 @@ int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv,
 				size_t length = strtoul(&ptr[1], nullptr, 10);
 				memmove(ptr, last_brace + 1, cmdline + cmdlen - 1 - last_brace);
 				cmdlen -= last_brace + 1 - ptr;
+				/* literal must fit the bytes still present */
+				if (length > static_cast<size_t>(cmdline + cmdlen - ptr)) {
+					argv.clear();
+					return -1;
+				}
 				ptr += length;
 				continue;
 			} else {
