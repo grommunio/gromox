@@ -2014,7 +2014,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 		auto rights = itemRights(ctx, dir, folder.folderId);
 		if (!(rights & itemReadRights))
 			throw EWSError::AccessDenied(E3244);
-		ctx.restrictShape(dir, rights, shape);
+		ctx.restrictShape(dir, folder, rights, shape);
 		if (dir != lastDir || rights != lastRights) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
 			auto res1 = request.Restriction ? request.Restriction->build(getId) : nullptr;
@@ -2233,8 +2233,10 @@ void process(mGetAttachmentRequest &&request, XMLElement *response, const EWSCon
 		sFolderSpec parentFolder = ctx.resolveFolder(aid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, aid);
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsReadAny))
+		auto rights = ctx.permissions(dir, parentFolder.folderId);
+		if (!(rights & frightsReadAny))
 			throw EWSError::AccessDenied(E3135);
+		ctx.assertCanReadPrivate(dir, parentFolder, rights, aid.messageId());
 		mGetAttachmentResponseMessage msg;
 		msg.Attachments.emplace_back(ctx.loadAttachment(dir, aid));
 		msg.success();
@@ -3444,7 +3446,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 		throw DispatchError(E3031);
 
 	sShape shape(request.ItemShape);
-	ctx.restrictShape(dir, rights, shape);
+	ctx.restrictShape(dir, folder, rights, shape);
 	sMailboxInfo mbinfo = ctx.getMailboxInfo(dir, folder.location == folder.PUBLIC);
 	// Generate message entry IDs on the fly as we have all necessary information
 	// Use template entry ID and fill in the message Id as needed
@@ -3559,7 +3561,7 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 		auto rights = itemRights(ctx, dir, parentFolder.folderId);
 		if (!(rights & itemReadRights))
 			throw EWSError::AccessDenied(E3139);
-		ctx.restrictShape(dir, rights, shape);
+		ctx.restrictShape(dir, parentFolder, rights, shape);
 		mGetItemResponseMessage msg;
 		auto mid = eid.messageId();
 		if (id.holds_alternative<tOccurrenceItemId>()) {

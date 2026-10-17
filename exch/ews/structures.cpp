@@ -1779,12 +1779,15 @@ const PROPNAME_ARRAY sShape::fbNames = {std::size(fbNameList), deconst(fbNameLis
  *
  * Readers without frightsReadAny only get times and busy status of items.
  * With frightsFreeBusyDetailed, they also get subject and location of
- * items that are not private.
+ * items that are not private. Readers who do not see private items only
+ * get times and busy status of those, whatever their rights.
  *
  * @param      folderRights  Rights of the reader on the parent folder
  * @param      ids           IDs of fbNames in the store of the folder
+ * @param      seesPrivate   Reader sees private items in full
  */
-void sShape::restrict(uint32_t folderRights, const PROPID_ARRAY &ids)
+void sShape::restrict(uint32_t folderRights, const PROPID_ARRAY &ids,
+    bool seesPrivate)
 {
 	/* Not after named tags, namedProperties() drops those from the end */
 	add(PR_SENSITIVITY);
@@ -1795,6 +1798,7 @@ void sShape::restrict(uint32_t folderRights, const PROPID_ARRAY &ids)
 		return;
 	}
 	rights = folderRights;
+	seesPrivateItems = seesPrivate;
 	fbIds.clear();
 	locationId = recurId = 0;
 	if (ids.size() != std::size(fbNameList))
@@ -1814,7 +1818,8 @@ void sShape::redact()
 	auto sens = get<const uint32_t>(PR_SENSITIVITY, FL_ANY);
 	if (sens != nullptr && *sens == SENSITIVITY_PRIVATE)
 		privateItem = true;
-	access = *rights & frightsReadAny ? Access::full :
+	access = privateItem && !seesPrivateItems ? Access::fbsimple :
+	         *rights & frightsReadAny ? Access::full :
 	         !privateItem && *rights & frightsFreeBusyDetailed ?
 	         Access::fbdetail : Access::fbsimple;
 	if (!inException) {
@@ -1864,7 +1869,8 @@ bool sShape::readable(proptag_t tag, Access level) const
  */
 bool sShape::allReadable() const
 {
-	return !rights.has_value() || *rights & frightsReadAny;
+	return !rights.has_value() ||
+	       (*rights & frightsReadAny && seesPrivateItems);
 }
 
 /**

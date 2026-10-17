@@ -3767,17 +3767,53 @@ uint32_t EWSContext::permissions(const std::string& maildir, uint64_t folderId) 
 }
 
 /**
+ * @brief      Returns whether the user sees the private items of a folder
+ *
+ * Only users with access to the whole store see them in full, others only
+ * get their times and busy status.
+ *
+ * @param      folder  Folder of the items
+ * @param      rights  Rights of the user on the folder
+ */
+static bool seesPrivateItems(const sFolderSpec &folder, uint32_t rights)
+{
+	return folder.location != sFolderSpec::PRIVATE ||
+	       rights & frightsGromoxStoreOwner;
+}
+
+/**
+ * @brief      Refuse access to a private item the user does not see
+ *
+ * @param      dir     Store of the item
+ * @param      folder  Folder of the item
+ * @param      rights  Rights of the user on the folder
+ * @param      mid     Message ID of the item
+ */
+void EWSContext::assertCanReadPrivate(const std::string &dir,
+    const sFolderSpec &folder, uint32_t rights, uint64_t mid) const
+{
+	if (seesPrivateItems(folder, rights))
+		return;
+	static constexpr proptag_t tags[] = {PR_SENSITIVITY};
+	auto sens = getItemProps(dir, mid, tags).get<const uint32_t>(PR_SENSITIVITY);
+	if (sens != nullptr && *sens == SENSITIVITY_PRIVATE)
+		throw EWSError::AccessDenied(E3501);
+}
+
+/**
  * @brief      Limit a shape to what the reader may see in a folder
  *
  * @param      dir     Store of the folder
+ * @param      folder  Folder to read from
  * @param      rights  Rights of the reader on the folder
  * @param      shape   Shape to restrict
  */
-void EWSContext::restrictShape(const std::string &dir, uint32_t rights,
-    sShape &shape) const
+void EWSContext::restrictShape(const std::string &dir, const sFolderSpec &folder,
+    uint32_t rights, sShape &shape) const
 {
 	shape.restrict(rights, rights & frightsGromoxStoreOwner ? PROPID_ARRAY{} :
-		getNamedPropIds(dir, sShape::fbNames));
+		getNamedPropIds(dir, sShape::fbNames),
+		seesPrivateItems(folder, rights));
 }
 
 /**

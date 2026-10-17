@@ -354,6 +354,7 @@ class sShape {
 	bool privateItem = false; ///< Current item has private sensitivity
 	bool seriesPrivate = false; ///< Last series master has private sensitivity
 	bool inException = false; ///< Current item is an exception of a series
+	bool seesPrivateItems = true; ///< Reader sees private items in full
 	std::vector<propid_t> fbIds; ///< Named properties readable without frightsReadAny
 	propid_t locationId = 0; ///< PidLidLocation in the store of the folder
 	propid_t recurId = 0; ///< PidLidAppointmentRecur in the store of the folder
@@ -433,7 +434,7 @@ class sShape {
 	 */
 	enum class Query : uint8_t { none, publicOnly, all };
 
-	void restrict(uint32_t, const PROPID_ARRAY &);
+	void restrict(uint32_t, const PROPID_ARRAY &, bool);
 	bool allReadable() const;
 	Query queryable(proptag_t) const;
 	void applySeriesAccess();
