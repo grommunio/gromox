@@ -5941,26 +5941,29 @@ void EWSContext::toContent(const std::string &dir, tMessage &item,
 			for (const auto &rcpt : *bcc)
 				rcpt_add_unique(rcpts, rcpt, MAPI_BCC);
 	}
-	if (item.From) {
-		if (item.From->Mailbox.RoutingType)
-			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, item.From->Mailbox.RoutingType->data()});
-		if (item.From->Mailbox.EmailAddress)
-			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, item.From->Mailbox.EmailAddress->data()});
-		if (item.From->Mailbox.Name)
-			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, item.From->Mailbox.Name->data()});
-	}
-	if (item.Sender) {
-		writeProp(shape, item.Sender->Mailbox.RoutingType, PR_SENDER_ADDRTYPE);
-		writeProp(shape, item.Sender->Mailbox.EmailAddress, PR_SENDER_EMAIL_ADDRESS);
-		writeProp(shape, item.Sender->Mailbox.Name, PR_SENDER_NAME);
-		if (item.Sender->Mailbox.EmailAddress) {
-			auto isSmtp = !item.Sender->Mailbox.RoutingType ||
-				strcasecmp(item.Sender->Mailbox.RoutingType->c_str(), "SMTP") == 0;
-			if (isSmtp)
-				shape.write(TAGGED_PROPVAL{PR_SENDER_SMTP_ADDRESS,
-					deconst(item.Sender->Mailbox.EmailAddress->c_str())});
+	/* An address without RoutingType is an SMTP address */
+	auto writeAddr = [&](const tEmailAddressType &mb, proptag_t typeTag,
+	                 proptag_t addrTag, proptag_t nameTag, proptag_t smtpTag) {
+		writeProp(shape, mb.Name, nameTag);
+		if (!mb.EmailAddress) {
+			writeProp(shape, mb.RoutingType, typeTag);
+			return;
 		}
-	}
+		auto addr = deconst(mb.EmailAddress->c_str());
+		auto type = mb.RoutingType ? mb.RoutingType->c_str() : "SMTP";
+		shape.write(TAGGED_PROPVAL{typeTag, deconst(type)});
+		shape.write(TAGGED_PROPVAL{addrTag, addr});
+		if (strcasecmp(type, "SMTP") == 0)
+			shape.write(TAGGED_PROPVAL{smtpTag, addr});
+	};
+	if (item.From)
+		writeAddr(item.From->Mailbox, PR_SENT_REPRESENTING_ADDRTYPE,
+			PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+			PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (item.Sender)
+		writeAddr(item.Sender->Mailbox, PR_SENDER_ADDRTYPE,
+			PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,
+			PR_SENDER_SMTP_ADDRESS);
 	if (item.References)
 		shape.write(TAGGED_PROPVAL{PR_INTERNET_REFERENCES, deconst(item.References->c_str())});
 	if (item.ConversationIndex) {
