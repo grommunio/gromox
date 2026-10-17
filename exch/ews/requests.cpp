@@ -1339,6 +1339,18 @@ static bool is_message_like(const sCreateItem &item)
 	       std::holds_alternative<tDeclineItem>(item);
 }
 
+/*
+ * Folder for CreateItem when no SavedItemFolderId is given. Exchange keeps
+ * the copy of a sent message in Sent Items.
+ */
+static const char *default_folder(const sCreateItem &item,
+    const Enum::MessageDispositionType &disp)
+{
+	if (is_message_like(item) && disp == Enum::SendAndSaveCopy)
+		return Enum::sentitems;
+	return Enum::outbox;
+}
+
 /**
  * @brief      Process CreateItem
  *
@@ -1352,13 +1364,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 
 	mCreateItemResponse data;
 
-	std::optional<sFolderSpec> targetFolder;
+	std::optional<sFolderSpec> savedFolder;
 	if (request.SavedItemFolderId)
-		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->FolderId);
-	else
-		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
-	std::string dir = ctx.getDir(*targetFolder);
-	bool hasAccess = ctx.permissions(dir, targetFolder->folderId) & (frightsOwner | frightsCreate);
+		savedFolder = ctx.resolveFolder(request.SavedItemFolderId->FolderId);
 
 	if (!request.MessageDisposition)
 		request.MessageDisposition = Enum::SaveOnly;
@@ -1369,7 +1377,13 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 
 	data.ResponseMessages.reserve(request.Items.size());
 	for (sCreateItem &item : request.Items) try {
-		if (!hasAccess)
+		auto targetFolder = savedFolder;
+		if (!targetFolder)
+			targetFolder = ctx.resolveFolder(tDistinguishedFolderId(
+			               default_folder(item, *request.MessageDisposition)));
+		std::string dir = ctx.getDir(*targetFolder);
+		if (!(ctx.permissions(dir, targetFolder->folderId) &
+		    (frightsOwner | frightsCreate)))
 			throw EWSError::AccessDenied(E3130);
 
 		if (auto srr = std::get_if<tSuppressReadReceipt>(&item)) {
