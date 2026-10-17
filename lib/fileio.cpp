@@ -599,7 +599,7 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 	} else if (rend == REND_INT_RTH) {
 		/* The utility needs input on stdin, not as a file */
 		return -1;
-	} else if (rend == REND_CHAWAN) {
+	} else if (rend == REND_CHAWAN_HTP) {
 		argv[argc++] = "cha";
 		if (cset != nullptr) {
 			argv[argc++] = "-I";
@@ -612,7 +612,7 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 		argv[argc++] = "--dump";
 		argv[argc++] = "-obuffer.styling=false";
 		argv[argc++] = "-obuffer.mark-links=true";
-	} else if (rend == REND_W3M) {
+	} else if (rend == REND_W3M_HTP) {
 		argv[argc++] = "w3m";
 		if (cset != nullptr) {
 			argv[argc++] = "-I";

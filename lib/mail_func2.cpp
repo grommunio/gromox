@@ -41,13 +41,13 @@ int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
 		 * Automatic mode. Prefer Chawan because it handles <p
 		 * align="right"> and produces the nicest <ul> lists.
 		 */
-		auto ret = convert_doc_with_program(inbuf, cset, outbuf, REND_CHAWAN);
+		auto ret = convert_doc_with_program(inbuf, cset, outbuf, REND_CHAWAN_HTP);
 		if (ret >= 0)
 			return CP_UTF8;
 		ret = convert_doc_with_program(inbuf, cset, outbuf, REND_PANDOC_HTP);
 		if (ret >= 0)
 			return CP_UTF8;
-		ret = convert_doc_with_program(inbuf, cset, outbuf, REND_W3M);
+		ret = convert_doc_with_program(inbuf, cset, outbuf, REND_W3M_HTP);
 		if (ret >= 0)
 			return CP_UTF8;
 		/*
@@ -61,11 +61,11 @@ int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
 		 * --convert-to txt:Text 1.html
 		 */
 	} else if (strcasecmp(s, "chawan") == 0) {
-		return convert_doc_with_program(inbuf, cset, outbuf, REND_CHAWAN) >= 0 ? CP_UTF8 : -1;
+		return convert_doc_with_program(inbuf, cset, outbuf, REND_CHAWAN_HTP) >= 0 ? CP_UTF8 : -1;
 	} else if (strcasecmp(s, "pandoc") == 0) {
 		return convert_doc_with_program(inbuf, cset, outbuf, REND_PANDOC_HTP) >= 0 ? CP_UTF8 : -1;
 	} else if (strcasecmp(s, "w3m") == 0) {
-		return convert_doc_with_program(inbuf, cset, outbuf, REND_W3M) >= 0 ? CP_UTF8 : -1;
+		return convert_doc_with_program(inbuf, cset, outbuf, REND_W3M_HTP) >= 0 ? CP_UTF8 : -1;
 	}
 	auto ret = html_to_plain_boring(inbuf, outbuf);
 	return ret >= 0 ? cpid : ret;
