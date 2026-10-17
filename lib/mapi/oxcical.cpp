@@ -638,6 +638,19 @@ static const ical_component *oxcical_find_vtimezone(const ical &pical, const cha
 	return nullptr;
 }
 
+static const ical_component *oxcical_sole_vtimezone(const ical &pical)
+{
+	const ical_component *found = nullptr;
+	for (const auto &comp : pical.component_list) {
+		if (strcasecmp(comp.m_name.c_str(), "VTIMEZONE") != 0)
+			continue;
+		if (found != nullptr)
+			return nullptr;
+		found = &comp;
+	}
+	return found;
+}
+
 static ec_error_t oxcical_take_tzbin(bool b_dtstart, const BINARY &tmp_bin,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
@@ -2297,6 +2310,17 @@ static ec_error_t oxcical_import_internal(const char *method,
 			if (err != ecSuccess)
 				return err;
 		}
+	} else if (pvalue1 != nullptr && strcasecmp(pvalue1, "DATE") == 0 &&
+	    (ptz_component = oxcical_sole_vtimezone(pical)) != nullptr) {
+		/*
+		 * RFC 5545 §3.2.19 forbids TZID on DATE. With exactly
+		 * one VTIMEZONE, as gromox and Exchange send, take the day
+		 * in that zone.
+		 */
+		err = oxcical_parse_tzdisplay(true, *ptz_component,
+		      phash, &last_propid, pmsg, errstr);
+		if (err != ecSuccess)
+			return err;
 	}
 
 	time_t start_time = 0, end_time = 0;
@@ -2304,6 +2328,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 	/*
 	 * EXC2019 treats iCalendar floating time as if it was specified with
 	 * UTC time. As a result, export of such MAPI objects can shift it.
+	 * Gromox does the same, except for DATE values matched to a sole
+	 * VTIMEZONE above.
 	 */
 	err = oxcical_parse_dtvalue(ptz_component, *piline, &start_itime,
 	      &start_time, errstr);

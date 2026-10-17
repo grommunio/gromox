@@ -1220,6 +1220,57 @@ static int ical_standalone_occurrence()
 	return EXIT_SUCCESS;
 }
 
+static int ical_allday_date_zone()
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+	};
+	PROPNAME_ARRAY na = {static_cast<uint16_t>(std::size(namelist)), deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	fprintf(stderr, "=== ical_allday_date_zone\n");
+	auto msg = ical_import_str("DTSTART;VALUE=DATE:20261019\r\n"
+	           "DTEND;VALUE=DATE:20261020\r\n"
+	           "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=3\r\n"
+	           "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n");
+	assert(msg != nullptr);
+	auto start = msg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, pids[0]));
+	auto end = msg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, pids[1]));
+	assert(start != nullptr && end != nullptr);
+	/* local midnight in Europe/Berlin, not UTC midnight */
+	if (rop_util_nttime_to_unix(*start) != 1792360800 ||
+	    rop_util_nttime_to_unix(*end) != 1792447200) {
+		fprintf(stderr, "start %lld end %lld\n",
+			static_cast<long long>(rop_util_nttime_to_unix(*start)),
+			static_cast<long long>(rop_util_nttime_to_unix(*end)));
+		return EXIT_FAILURE;
+	}
+
+	/* the original date of a moved occurrence stays on its day */
+	msg = ical_import_str("DTSTART;VALUE=DATE:20261019\r\n"
+	      "DTEND;VALUE=DATE:20261020\r\n"
+	      "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=3\r\n"
+	      "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n"
+	      "END:VEVENT\r\nBEGIN:VEVENT\r\nUID:allday-hint\r\n"
+	      "DTSTAMP:20261005T100000Z\r\n"
+	      "RECURRENCE-ID;VALUE=DATE:20261026\r\n"
+	      "DTSTART;VALUE=DATE:20261027\r\n"
+	      "DTEND;VALUE=DATE:20261028\r\n");
+	assert(msg != nullptr);
+	APPOINTMENT_RECUR_PAT apr{};
+	assert(ical_recur(*msg, apr));
+	assert(apr.pexceptioninfo.size() == 1);
+	auto want = rop_util_unix_to_rtime(1792972800);
+	if (apr.pexceptioninfo[0].originalstartdate != want ||
+	    !apr.recur_pat.contains_del(want)) {
+		fprintf(stderr, "originalstartdate %u, want %u\n",
+		        apr.pexceptioninfo[0].originalstartdate, want);
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 static int hdrparse_1()
 {
 	static const char data[] =
@@ -2249,7 +2300,7 @@ int main()
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_export_exception), E(ical_export_allday_exception),
-		E(ical_allday_hint),
+		E(ical_allday_hint), E(ical_allday_date_zone),
 		E(ical_standalone_occurrence),
 		E(hdrparse_1),
 		E(vcard_tel_types), E(vcard_escaped_values), E(vcard_photo), E(vcard_dates),
