@@ -6,9 +6,11 @@
 #endif
 #include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
+#include <csignal>
 #include <cstdlib>
 #include <cstring>
 #include <dirent.h>
@@ -16,6 +18,7 @@
 #include <iconv.h>
 #include <memory>
 #include <netdb.h>
+#include <poll.h>
 #include <spawn.h>
 #include <string>
 #include <unistd.h>
@@ -365,7 +368,7 @@ int popenfd_keepfd_marker;
  *          Pass the C stdlib variable `environ` explicitly to carry it over.
  */
 pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
-    int *fdoutp, int *fderrp, const char *const *env)
+    int *fdoutp, int *fderrp, const char *const *env, unsigned int flags)
 {
 	if (argv == nullptr || argv[0] == nullptr)
 		return -EINVAL;
@@ -456,8 +459,20 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
 	    (ret = posix_spawn_file_actions_addclose(&fa, fd.null)) != 0)
 		return -ret;
 
+	posix_spawnattr_t attr{};
+	ret = posix_spawnattr_init(&attr);
+	if (ret != 0)
+		return -ret;
+	auto cl3 = HX::make_scope_exit([&]() { posix_spawnattr_destroy(&attr); });
+	if (flags & POPENFD_SETPGRP) {
+		ret = posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP);
+		if (ret == 0)
+			ret = posix_spawnattr_setpgroup(&attr, 0);
+		if (ret != 0)
+			return -ret;
+	}
 	pid_t pid = -1;
-	ret = posix_spawnp(&pid, prog, &fa, nullptr,
+	ret = posix_spawnp(&pid, prog, &fa, &attr,
 	      const_cast<char **>(argv), const_cast<char **>(env));
 	if (ret != 0)
 		return -ret;
@@ -475,6 +490,8 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
 	}
 	return pid;
 }
+
+static constexpr std::chrono::seconds convert_deadline{60};
 
 /**
  * @fp:       file to emit to
@@ -629,17 +646,44 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 	argv[argc++] = filename.c_str();
 	argv[argc]   = nullptr;
 	auto pid = popenfd(argv[0], argv, POPENFD_NULL, &fout, POPENFD_NULL,
-	           const_cast<const char *const *>(environ));
+	           const_cast<const char *const *>(environ), POPENFD_SETPGRP);
 	if (pid < 0)
 		return -1;
 	int status = 0;
-	auto cl3 = HX::make_scope_exit([&]() { waitpid(pid, &status, 0); });
+	auto cl3 = HX::make_scope_exit([&]() {
+		kill(-pid, SIGKILL);
+		waitpid(pid, &status, 0);
+	});
 
 	std::string outbuf;
-	ssize_t ret;
 	char fbuf[4096];
-	while ((ret = ::read(fout, fbuf, std::size(fbuf))) > 0)
+	auto deadline = std::chrono::steady_clock::now() + convert_deadline;
+	while (true) {
+		auto left = std::chrono::duration_cast<std::chrono::milliseconds>(
+		            deadline - std::chrono::steady_clock::now()).count();
+		if (left <= 0) {
+			errno = ETIMEDOUT;
+			return -1;
+		}
+		struct pollfd pfd = {fout, POLLIN, 0};
+		auto pr = poll(&pfd, 1, std::min<long long>(left, INT_MAX));
+		if (pr == 0) {
+			errno = ETIMEDOUT;
+			return -1;
+		} else if (pr < 0 && errno == EINTR) {
+			continue;
+		} else if (pr < 0) {
+			return -1;
+		}
+		auto ret = ::read(fout, fbuf, std::size(fbuf));
+		if (ret == 0)
+			break;
+		else if (ret < 0 && errno == EINTR)
+			continue;
+		else if (ret < 0)
+			return -1;
 		outbuf.append(fbuf, ret);
+	}
 	cl3.release();
 	waitpid(pid, &status, 0);
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
