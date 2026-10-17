@@ -4533,14 +4533,29 @@ const BINARY *EWSContext::findContactPhoto(const std::string &dir,
 /**
  * @brief     Send message
  *
+ * The submit identity is completed on the outgoing copy only, callers
+ * that keep a copy stamp it themselves.
+ *
  * @param     dir      Home directory the message is associtated with
- * @param     content  Message content
+ * @param     msg      Message content
  */
 void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
-    const MESSAGE_CONTENT &content) const
+    const MESSAGE_CONTENT &msg) const
 {
-	if (!content.children.prcpts)
+	if (!msg.children.prcpts)
 		throw EWSError::MissingRecipients(E3115);
+	std::vector<proptag_t> drop;
+	auto ident = submitIdentity(dir, msg.proplist, drop);
+	for (const auto &prop : ident)
+		drop.push_back(prop.proptag);
+	std::vector<TAGGED_PROPVAL> props;
+	props.reserve(msg.proplist.count + ident.size());
+	for (const auto &prop : msg.proplist)
+		if (std::find(drop.begin(), drop.end(), prop.proptag) == drop.end())
+			props.push_back(prop);
+	props.insert(props.end(), ident.begin(), ident.end());
+	auto content = msg;
+	content.proplist = {static_cast<uint16_t>(props.size()), props.data()};
 	std::string log_id;
 	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
