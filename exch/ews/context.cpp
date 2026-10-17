@@ -751,6 +751,23 @@ static inline time_t unix_day(time_t t)
 }
 
 /**
+ * @brief      Take a range date with a zone as the local date it denotes
+ *
+ * "2026-10-23-22:00" is 2026-10-24 for an item in UTC+2.
+ */
+static void local_date(time_point &date, std::optional<int32_t> &zone,
+    const TZDEF &tz)
+{
+	if (!zone)
+		return;
+	auto t = clock::to_time_t(date) - static_cast<time_t>(*zone) * 60;
+	int64_t b;
+	if (tz_to_offset(tz, t, b))
+		date = clock::from_time_t(unix_day(t - b * 60) * 86400);
+	zone.reset();
+}
+
+/**
  * @brief      Convert a client-supplied recurrence to the item's time zone
  *
  * The pattern and range are given relative to the request's time zone
@@ -766,6 +783,15 @@ static inline time_t unix_day(time_t t)
 void shift_recurrence(tRecurrenceType &rec, const sRecurrenceFrame &frame,
     const TZDEF &tz, time_t start)
 {
+	if (frame.item_local) {
+		auto &range = rec.RecurrenceRange;
+		std::visit([&](auto &r) {
+			local_date(r.StartDate, r.StartDateZone, tz);
+		}, range);
+		if (auto r = std::get_if<tEndDateRecurrenceRange>(&range))
+			local_date(r->EndDate, r->EndDateZone, tz);
+		return;
+	}
 	int64_t b;
 	if (!tz_to_offset(tz, start, b))
 		return;
@@ -803,15 +829,22 @@ bool has_element(const tinyxml2::XMLElement *xml, const char *name)
  * the item and are not converted. Without a TimeZoneContext header,
  * recurrences are in UTC. A TimeZoneContext that cannot be resolved
  * (including one lacking the mandatory TimeZoneDefinition) leaves the
- * recurrence unconverted rather than guessing UTC.
+ * recurrence unconverted rather than guessing UTC. Outlook for Mac sends
+ * no TimeZoneContext, but reads and writes recurrences in the item's time
+ * zone.
  *
  * @return     Frame, or nothing for no conversion
  */
-std::optional<sRecurrenceFrame> make_recurrence_frame(const SOAP::Envelope &req)
+std::optional<sRecurrenceFrame> make_recurrence_frame(const SOAP::Envelope &req,
+    const std::string &user_agent)
 {
 	if (has_element(req.body, "MeetingTimeZone"))
 		return std::nullopt;
 	sRecurrenceFrame frame;
+	if (strncmp(user_agent.c_str(), "MacOutlook/", 11) == 0) {
+		frame.item_local = true;
+		return frame;
+	}
 	auto def = req.header != nullptr ? req.header->FirstChildElement("TimeZoneContext") : nullptr;
 	if (def == nullptr)
 		return frame;
@@ -847,7 +880,9 @@ EWSContext::EWSContext(detail::ContextKey id, const HTTP_AUTH_INFO &ai,
     const char *data, uint64_t length, EWSPlugin &p) :
 	m_ctx_id(id), m_orig(*get_request(id)), m_auth_info(ai),
 	m_request(data, length), m_response(p.server_version()), m_plugin(p),
-	m_created(tp_now()), m_recurrence_frame(make_recurrence_frame(m_request))
+	m_created(tp_now()),
+	m_recurrence_frame(make_recurrence_frame(m_request,
+	                   m_orig.f_user_agent))
 {
 	tinyxml2::XMLElement *imp = nullptr;
 	if (m_request.header && (imp = m_request.header->FirstChildElement("ExchangeImpersonation")) &&
