@@ -501,7 +501,7 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size,
 	if (cd == iconv_t(-1)) {
 		/* Dunno how to translate, just feed it as-is to the converter */
 		cset = nullptr;
-		return 0;
+		return fwrite(src, src_size, 1, fp) == 1 ? 0 : -1;
 	}
 	auto cleanup = HX::make_scope_exit([&]() { iconv_close(cd); });
 	char buffer[4096];
