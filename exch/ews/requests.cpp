@@ -1324,6 +1324,21 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	}
 }
 
+/*
+ * Reply/forward and meeting response objects are treated the same way as a
+ * regular tMessage for persistence and sender identity purposes.
+ */
+static bool is_message_like(const sCreateItem &item)
+{
+	return std::holds_alternative<tMessage>(item) ||
+	       std::holds_alternative<tReplyToItem>(item) ||
+	       std::holds_alternative<tReplyAllToItem>(item) ||
+	       std::holds_alternative<tForwardItem>(item) ||
+	       std::holds_alternative<tAcceptItem>(item) ||
+	       std::holds_alternative<tTentativelyAcceptItem>(item) ||
+	       std::holds_alternative<tDeclineItem>(item);
+}
+
 /**
  * @brief      Process CreateItem
  *
@@ -1374,15 +1389,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 
 		mCreateItemResponseMessage msg;
-		/*
-		 * ReplyToItem/ReplyAllToItem/ForwardItem wrap a plain message
-		 * (see tReplyToItem) and should be treated the same way as a
-		 * regular tMessage for persistence/sender-identity purposes.
-		 */
-		bool isMessageLike = std::holds_alternative<tMessage>(item) ||
-		                     std::holds_alternative<tReplyToItem>(item) ||
-		                     std::holds_alternative<tReplyAllToItem>(item) ||
-		                     std::holds_alternative<tForwardItem>(item);
+		bool isMessageLike = is_message_like(item);
 		bool persist = !(isMessageLike && request.MessageDisposition == Enum::SendOnly);
 
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
