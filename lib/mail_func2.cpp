@@ -50,22 +50,17 @@ int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
 		ret = convert_doc_with_program(inbuf, cset, outbuf, REND_W3M_HTP);
 		if (ret >= 0)
 			return CP_UTF8;
-		/*
-		 * LibreOffice works in principle but has plenty of undesirable
-		 * characteristics: underdocumented, quirky to invoke, slower
-		 * than pandoc, produces non-wrapped text (unacceptable).
-		 *
-		 * lowriter
-		 *     -env:UserInstallation=file://some/ephemeral/path
-		 *  or --nolockcheck
-		 * --convert-to txt:Text 1.html
-		 */
+		ret = convert_doc_with_program(inbuf, cset, outbuf, REND_SOFFICE_HTP);
+		if (ret >= 0)
+			return CP_UTF8;
 	} else if (strcasecmp(s, "chawan") == 0) {
 		return convert_doc_with_program(inbuf, cset, outbuf, REND_CHAWAN_HTP) >= 0 ? CP_UTF8 : -1;
 	} else if (strcasecmp(s, "pandoc") == 0) {
 		return convert_doc_with_program(inbuf, cset, outbuf, REND_PANDOC_HTP) >= 0 ? CP_UTF8 : -1;
 	} else if (strcasecmp(s, "w3m") == 0) {
 		return convert_doc_with_program(inbuf, cset, outbuf, REND_W3M_HTP) >= 0 ? CP_UTF8 : -1;
+	} else if (strcasecmp(s, "soffice") == 0) {
+		return convert_doc_with_program(inbuf, cset, outbuf, REND_SOFFICE_HTP) >= 0 ? CP_UTF8 : -1;
 	}
 	auto ret = html_to_plain_boring(inbuf, outbuf);
 	return ret >= 0 ? cpid : ret;
