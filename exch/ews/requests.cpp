@@ -1410,6 +1410,8 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			}
 		}
 
+		if (std::holds_alternative<tMessage>(item) && send_message)
+			ctx.stampSubmitIdentity(dir, *content);
 		if (send_message || (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations != Enum::SendToNone))
 			ctx.validate_sendas_perms(*content);
@@ -3866,11 +3868,16 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 			throw EWSError::AccessDenied(E3142);
 		ctx.assertCanReadPrivate(dir, folder, rights, meid.messageId());
 
-		MESSAGE_CONTENT *content = nullptr;
+		MESSAGE_CONTENT *rdcontent = nullptr;
 		if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 		    ctx.effectiveUser(folder), CP_ACP, meid.messageId(),
-		    &content) || content == nullptr)
+		    &rdcontent) || rdcontent == nullptr)
 			throw EWSError::ItemNotFound(E3403);
+		/* read_message memory is ndr_stack backed, so dup() before editing */
+		message_content_ptr content(rdcontent->dup());
+		if (content == nullptr)
+			throw EWSError::NotEnoughMemory(E3532);
+		ctx.stampSubmitIdentity(dir, *content);
 		ctx.validate_sendas_perms(*content);
 		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
 
@@ -4013,28 +4020,18 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 		sprops.push_back({PR_MESSAGE_FLAGS,
 			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
 
-	std::string dispname;
-	auto smtpaddr = deconst(ctx.auth_info().username);
-	if (sendcontent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS) == nullptr &&
-	    mysql_adaptor_get_user_displayname(ctx.auth_info().username, dispname)) {
-		auto sName = deconst(dispname.empty() ?
-			     ctx.auth_info().username : dispname.c_str());
-		auto addrtype = deconst("SMTP");
-		sprops.push_back({PR_SENT_REPRESENTING_NAME, sName});
-		sprops.push_back({PR_SENDER_NAME, sName});
-		sprops.push_back({PR_SENT_REPRESENTING_SMTP_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENDER_SMTP_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENT_REPRESENTING_EMAIL_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENDER_EMAIL_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENT_REPRESENTING_ADDRTYPE, addrtype});
-		sprops.push_back({PR_SENDER_ADDRTYPE, addrtype});
-	}
+	std::vector<proptag_t> drop;
+	auto ident = ctx.submitIdentity(dir, sendcontent->proplist, drop);
+	sprops.insert(sprops.end(), ident.begin(), ident.end());
 
 	const TPROPVAL_ARRAY proplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
 	PROBLEM_ARRAY problems;
 	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 	    username, CP_ACP, mid.messageId(), &proplist, &problems))
 		throw EWSError::ItemSave(E3465);
+	if (!drop.empty() && !ctx.plugin().exmdb.remove_message_properties(
+	    dir.c_str(), CP_ACP, mid.messageId(), drop))
+		throw EWSError::ItemSave(E3531);
 	if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 	    username, CP_ACP, mid.messageId(), &sendcontent) ||
 	    sendcontent == nullptr)

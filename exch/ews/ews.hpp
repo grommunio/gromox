@@ -362,6 +362,8 @@ class EWSContext {
 	void restrictShape(const std::string &, const Structures::sFolderSpec &, uint32_t, Structures::sShape &) const;
 	const BINARY *findContactPhoto(const std::string &dir, const std::string &email) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
+	std::vector<TAGGED_PROPVAL> submitIdentity(const std::string &dir, const TPROPVAL_ARRAY &, std::vector<proptag_t> &) const;
+	void stampSubmitIdentity(const std::string &dir, MESSAGE_CONTENT &) const;
 	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool, std::optional<uint32_t> = std::nullopt) const;
 	void suppressReadReceipt(const Structures::tItemId&) const;
 	void cancelCalendarItem(const Structures::tItemId&, bool) const;

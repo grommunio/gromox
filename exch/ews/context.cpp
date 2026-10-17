@@ -4240,6 +4240,130 @@ void EWSContext::validate_sendas_perms(const MESSAGE_CONTENT &content) const
 }
 
 /**
+ * @brief      Sender identity of mail the caller is about to submit
+ *
+ * Without From, the caller sends in its own name. The caller is also
+ * the Sender, unless it holds Send-As rights on From, or owns the store
+ * of From and submits from that store.
+ *
+ * @param      dir     Home directory of the store submitting the mail
+ * @param      props   Message properties
+ * @param      drop    Receives stale tags of a replaced identity
+ *
+ * @return     Properties to set
+ */
+std::vector<TAGGED_PROPVAL> EWSContext::submitIdentity(const std::string &dir,
+    const TPROPVAL_ARRAY &props, std::vector<proptag_t> &drop) const
+{
+	auto user = m_auth_info.username;
+	auto smtpOf = [&](proptag_t smtpTag, proptag_t typeTag,
+	              proptag_t addrTag) -> std::string {
+		auto smtp = props.get<const char>(smtpTag);
+		if (smtp != nullptr && *smtp != '\0')
+			return smtp;
+		auto addr = props.get<const char>(addrTag);
+		if (addr == nullptr || *addr == '\0')
+			return {};
+		auto type = props.get<const char>(typeTag);
+		if (type == nullptr || strcasecmp(type, "SMTP") == 0)
+			return addr;
+		if (strcasecmp(type, "EX") == 0) try {
+			return essdn_to_username(addr);
+		} catch (const DispatchError &) {
+		}
+		return {};
+	};
+	auto sendAs = [&](const std::string &repr) {
+		std::string maildir;
+		try {
+			maildir = get_maildir(repr);
+		} catch (const EWSError &) {
+			return false;
+		}
+		if (maildir == m_auth_info.maildir)
+			return true;
+		/* Store owners act as the mailbox only in its own store */
+		uint32_t perm = 0;
+		if (maildir == dir &&
+		    m_plugin.exmdb.get_mbox_perm(maildir.c_str(), user, &perm) &&
+		    (perm & frightsGromoxStoreOwner))
+			return true;
+		std::vector<std::string> list;
+		if (!m_plugin.exmdb.read_delegates(maildir.c_str(), 1, &list))
+			return false;
+		for (const auto &d : list)
+			if (strcasecmp(d.c_str(), user) == 0 ||
+			    mysql_adaptor_check_mlist_include(d.c_str(), user))
+				return true;
+		return false;
+	};
+	auto copyStr = [](const std::string &str) {
+		return strcpy(alloc<char>(str.size() + 1), str.c_str());
+	};
+	auto dispName = [&](const std::string &who) -> char * {
+		std::string name;
+		if (!mysql_adaptor_get_user_displayname(who.c_str(), name) ||
+		    name.empty())
+			return nullptr;
+		return copyStr(name);
+	};
+	std::vector<TAGGED_PROPVAL> out;
+	auto stamp = [&](const std::string &who, proptag_t nameTag,
+	             proptag_t typeTag, proptag_t addrTag, proptag_t smtpTag,
+	             proptag_t eidTag, proptag_t skeyTag) {
+		auto addr = copyStr(who);
+		auto name = dispName(who);
+		out.push_back({nameTag, name != nullptr ? name : addr});
+		out.push_back({typeTag, deconst("SMTP")});
+		out.push_back({addrTag, addr});
+		out.push_back({smtpTag, addr});
+		drop.push_back(eidTag);
+		drop.push_back(skeyTag);
+	};
+	auto repr = smtpOf(PR_SENT_REPRESENTING_SMTP_ADDRESS,
+	            PR_SENT_REPRESENTING_ADDRTYPE,
+	            PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+	if (repr.empty() && !props.has(PR_SENT_REPRESENTING_ENTRYID)) {
+		repr = user;
+		stamp(repr, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
+		      PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+		      PR_SENT_REPRESENTING_SMTP_ADDRESS,
+		      PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_SEARCH_KEY);
+	} else if (!repr.empty() && !props.has(PR_SENT_REPRESENTING_NAME)) {
+		auto name = dispName(repr);
+		if (name != nullptr)
+			out.push_back({PR_SENT_REPRESENTING_NAME, name});
+	}
+	std::string sender = user;
+	if (!repr.empty() && strcasecmp(repr.c_str(), user) != 0 && sendAs(repr))
+		sender = repr;
+	auto cur = smtpOf(PR_SENDER_SMTP_ADDRESS, PR_SENDER_ADDRTYPE,
+	           PR_SENDER_EMAIL_ADDRESS);
+	if (strcasecmp(cur.c_str(), sender.c_str()) != 0)
+		stamp(sender, PR_SENDER_NAME, PR_SENDER_ADDRTYPE,
+		      PR_SENDER_EMAIL_ADDRESS, PR_SENDER_SMTP_ADDRESS,
+		      PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY);
+	return out;
+}
+
+/**
+ * @brief      Complete the sender identity of mail about to be submitted
+ *
+ * @param      dir       Home directory of the store submitting the mail
+ * @param      content   Message to submit
+ */
+void EWSContext::stampSubmitIdentity(const std::string &dir,
+    MESSAGE_CONTENT &content) const
+{
+	std::vector<proptag_t> drop;
+	for (const auto &prop : submitIdentity(dir, content.proplist, drop))
+		if (content.proplist.set(prop) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3530);
+	for (auto tag : drop)
+		content.proplist.erase(tag);
+}
+
+/**
  * @brief      Read delegate permissions from folder ACLs
  */
 tDelegatePermissions EWSContext::readDelegatePermissions(const std::string &dir, const std::string &username) const
