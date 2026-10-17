@@ -793,7 +793,15 @@ static AWUR ec_error_t omv_smime_signed_fold(vmime::bodyPart &vmsg,
 		else
 			*exfield = std::move(*f);
 	}
-	vmsg.setBody(std::move(dec_blob.getBody()));
+	/* Keep the signed entity byte-for-byte; the signature covers it. */
+	auto sep = blob.find("\r\n\r\n");
+	size_t sep_len = 4;
+	if (sep == blob.npos) {
+		sep = blob.find("\n\n");
+		sep_len = 2;
+	}
+	vmsg.getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(
+		sep != blob.npos ? blob.substr(sep + sep_len) : std::string()));
 	return ecSuccess;
 }
 
