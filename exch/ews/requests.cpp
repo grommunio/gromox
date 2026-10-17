@@ -1658,8 +1658,10 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 		ctx.getNamedTags(dir, shape);
 		PROPTAG_ARRAY tags = shape.proptags();
 		TARRAY_SET table;
-		uint32_t offset = paging ? paging->offset(rowCount) : 0;
-		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
+		uint32_t offset = paging ? std::min(paging->offset(rowCount), rowCount) : 0;
+		uint32_t results = rowCount - offset;
+		if (maxResults)
+			results = std::min(maxResults, results);
 		exmdb.query_table(dir.c_str(), ctx.auth_info().username,
 			CP_UTF8, tableId, tags, offset, results, &table);
 		mFindFolderResponseMessage msg;
@@ -1803,7 +1805,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 		}
 		PROPTAG_ARRAY tags = {static_cast<uint16_t>(tagvec.size()), tagvec.data()};
 		TARRAY_SET table;
-		uint32_t offset = paging ? paging->offset(rowCount) : 0;
+		uint32_t offset = paging ? std::min(paging->offset(rowCount), rowCount) : 0;
 		/*
 		 * MaxEntriesReturned limits occurrences, not rows: one row can
 		 * expand into many items, and they only come out in order once
