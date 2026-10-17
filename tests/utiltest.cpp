@@ -625,6 +625,19 @@ static int t_bin2cstr()
 	return EXIT_SUCCESS;
 }
 
+static int t_log_escape()
+{
+	static constexpr char exp[] = "a\\\"b\\\\\\x0a\\x0dgromox-audit \xc3\xa4";
+	auto got = txt2cstr("a\"b\\\n\rgromox-audit \xc3\xa4");
+	if (strcmp(got.c_str(), exp) != 0) {
+		fprintf(stderr, "txt2cstr: expected %s, got %s\n", exp, got.c_str());
+		return EXIT_FAILURE;
+	}
+	if (!txt2cstr(nullptr).empty())
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
 static int t_string()
 {
 	auto p = search_string("foobar", "oba", 3);
@@ -805,8 +818,8 @@ static int runner()
 		t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
-		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_string,
-		t_time, t_tzdef, t_floating_dt, t_essdn,
+		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
+		t_string, t_time, t_tzdef, t_floating_dt, t_essdn,
 	};
 	for (auto f : fct) {
 		auto ret = f();

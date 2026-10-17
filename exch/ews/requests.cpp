@@ -29,6 +29,8 @@
 #include "namedtags.hpp"
 #include "requests.hpp"
 
+DECLARE_HPM_API(gromox::EWS, extern);
+
 namespace gromox::EWS::Requests {
 
 using namespace gromox;
@@ -818,6 +820,10 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 		throw EWSError::InternalServerError(E3316);
 	std::unordered_set<std::string> existing(delegate_list.begin(), delegate_list.end());
 
+	auto actor = get_auth_info(ctx.context_id()).username;
+	auto mailbox = ctx.auth_info().username;
+	bool changed = false;
+
 	mGetDelegateResponse data;
 	for (const auto &du : request.DelegateUsers) {
 		auto &msg = data.ResponseMessages.emplace_back();
@@ -834,6 +840,7 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 		}
 		delegate_list.emplace_back(addr);
 		existing.emplace(addr);
+		changed = true;
 		if (du.DelegatePermissions)
 			ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
 		msg.success();
@@ -842,6 +849,11 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 
 	if (!ctx.plugin().exmdb.write_delegates(dir.c_str(), 0, delegate_list))
 		throw EWSError::InternalServerError(E3317);
+
+	if (changed) {
+		mlog(LV_INFO, "gromox-audit: %s added delegates to mailbox %s via EWS",
+			znul(actor), znul(mailbox));
+	}
 
 	data.success();
 	data.serialize(response);
@@ -867,6 +879,10 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 	if (!ctx.plugin().exmdb.read_delegates(dir.c_str(), 0, &delegate_list))
 		throw EWSError::InternalServerError(E3318);
 
+	auto actor = get_auth_info(ctx.context_id()).username;
+	auto mailbox = ctx.auth_info().username;
+	bool changed = false;
+
 	mGetDelegateResponse data;
 	for (const auto &uid : request.UserIds) {
 		auto &msg = data.ResponseMessages.emplace_back();
@@ -883,12 +899,18 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 			continue;
 		}
 		delegate_list.erase(it);
+		changed = true;
 		msg.success();
 		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 	}
 
 	if (!ctx.plugin().exmdb.write_delegates(dir.c_str(), 0, delegate_list))
 		throw EWSError::InternalServerError(E3319);
+
+	if (changed) {
+		mlog(LV_INFO, "gromox-audit: %s removed delegates from mailbox %s via EWS",
+			znul(actor), znul(mailbox));
+	}
 
 	data.success();
 	data.serialize(response);
@@ -915,6 +937,10 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 		throw EWSError::InternalServerError(E3320);
 	std::unordered_set<std::string> existing(delegate_list.begin(), delegate_list.end());
 
+	auto actor = get_auth_info(ctx.context_id()).username;
+	auto mailbox = ctx.auth_info().username;
+	bool changed = false;
+
 	mGetDelegateResponse data;
 	for (const auto &du : request.DelegateUsers) {
 		auto &msg = data.ResponseMessages.emplace_back();
@@ -930,11 +956,15 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 			continue;
 		}
 		if (du.DelegatePermissions)
-			ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
+			changed |= ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
 		msg.success();
 		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 	}
 
+	if (changed) {
+		mlog(LV_INFO, "gromox-audit: %s updated delegates in mailbox %s via EWS",
+			znul(actor), znul(mailbox));
+	}
 	data.success();
 	data.serialize(response);
 }
@@ -1261,7 +1291,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 
 		for (const tFileAttachment &att : request.Attachments) try {
 			auto mInst = ctx.plugin().loadMessageInstance(dir,
-			             mid.folderId(), mid.messageId());
+			             parentFolder.folderId, mid.messageId());
 			uint32_t aInstId = 0, aNum = 0;
 			if (!ctx.plugin().exmdb.create_attachment_instance(dir.c_str(),
 			    mInst->instanceId, &aInstId, &aNum))
@@ -1366,7 +1396,7 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 			throw EWSError::AccessDenied(E3444);
 
 		auto mInst = ctx.plugin().loadMessageInstance(dir,
-		             aid.folderId(), aid.messageId());
+		             parentFolder.folderId, aid.messageId());
 		if (!ctx.plugin().exmdb.delete_message_instance_attachment(dir.c_str(),
 		    mInst->instanceId, aid.attachment_num))
 			throw EWSError::ItemSave(E3432);
@@ -1516,7 +1546,7 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			data.ResponseMessages.emplace_back().success();
 		} else {
 			auto eid = meid.messageId();
-			auto fid = eid_t(1, meid.folderId());
+			auto fid = meid.folderId();
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete ? TRUE : false;
 			BOOL partial = false;
@@ -1799,7 +1829,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				if (recur != nullptr && recur->cb > 0 && eid != nullptr) {
 					/* Recurring master: report its occurrences, not the series */
 					sMessageEntryId meid(eid->pc, eid->cb);
-					for (auto &occ : ctx.expandOccurrences(dir, eid_t(1, meid.folderId()),
+					for (auto &occ : ctx.expandOccurrences(dir, meid.folderId(),
 					     meid.messageId(), viewStart, viewEnd, shape)) {
 						auto &start = std::get<tCalendarItem>(occ).Start;
 						calItems.emplace_back(start ? start->toNT() : 0, std::move(occ));
@@ -3213,7 +3243,10 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 	mGetItemResponse data;
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	sShape shape(request.ItemShape);
+	shape.add(PR_SUBJECT);
+	auto actor = get_auth_info(ctx.context_id()).username;
 	uint32_t max_get = ctx.plugin().max_get_items, gotten = 0;
+
 	for (const auto &id : request.ItemIds) try {
 		if (max_get != 0 && gotten++ >= max_get)
 			throw EWSError::ServerBusy(E3453);
@@ -3256,6 +3289,15 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 						ctx.conflictItemIds(parentFolder, dir, *item.AdjacentMeetings);
 				}
 			}, msg.Items.back());
+
+		auto subject = shape.get<const char>(PR_SUBJECT, sShape::FL_ANY);
+		std::string mailbox = "public folders";
+		if (parentFolder.location == sFolderSpec::PRIVATE)
+			mailbox = "mailbox " + *parentFolder.target;
+
+		mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via EWS",
+			znul(actor), txt2cstr(subject).c_str(), mailbox.c_str());
+
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
@@ -3523,6 +3565,9 @@ void process(mUpdateFolderRequest &&request, XMLElement *response, const EWSCont
 	mUpdateFolderResponse data;
 	data.ResponseMessages.reserve(request.FolderChanges.size());
 	sShape idOnly((tFolderResponseShape()));
+	idOnly.add(PR_DISPLAY_NAME);
+
+	auto actor = get_auth_info(ctx.context_id()).username;
 
 	for (const auto &change : request.FolderChanges) try {
 		sFolderSpec folder = ctx.resolveFolder(change.folderId);
@@ -3534,6 +3579,7 @@ void process(mUpdateFolderRequest &&request, XMLElement *response, const EWSCont
 		for (const auto &update : change.Updates)
 			if (std::holds_alternative<tSetFolderField>(update))
 				std::get<tSetFolderField>(update).put(shape);
+		bool permission_change = shape.permissionSet != nullptr || shape.calendarPermissionSet != nullptr;
 		TPROPVAL_ARRAY props = shape.write();
 		PROPTAG_ARRAY tagsRm = shape.remove();
 		PROBLEM_ARRAY problems;
@@ -3550,6 +3596,20 @@ void process(mUpdateFolderRequest &&request, XMLElement *response, const EWSCont
 		ctx.updated(dir, folder);
 		mUpdateFolderResponseMessage msg;
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, idOnly));
+
+		if (permission_change) {
+			auto folder_name =
+				idOnly.get<const char>(PR_DISPLAY_NAME, sShape::FL_ANY);
+
+			std::string mailbox = "public folders";
+			if (folder.location == sFolderSpec::PRIVATE)
+				mailbox = "mailbox " + *folder.target;
+
+			mlog(LV_INFO, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EWS",
+				znul(actor), txt2cstr(folder_name).c_str(),
+				mailbox.c_str());
+		}
+
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
@@ -3661,7 +3721,7 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 			throw EWSError::MoveCopyFailed(E3468);
 	} else {
 		auto eid = mid.messageId();
-		auto fid = eid_t(1, mid.folderId());
+		auto fid = mid.folderId();
 		EID_ARRAY eids{1, &eid};
 		BOOL partial = false;
 		if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),

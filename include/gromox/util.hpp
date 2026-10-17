@@ -113,6 +113,7 @@ extern GX_EXPORT bool parse_bool(const char *s);
 extern GX_EXPORT std::optional<bool> parse_bool_strict(const char *s);
 extern GX_EXPORT std::string bin2cstr(std::string_view);
 extern GX_EXPORT std::string bin2txt(std::string_view);
+extern GX_EXPORT std::string txt2cstr(const char *);
 extern GX_EXPORT std::string bin2hex(std::string_view);
 inline std::string bin2hex(const std::string &s) { return bin2hex(std::string_view(s)); }
 inline std::string bin2hex(const void *v, size_t z) { return v != nullptr ? bin2hex(std::string_view(static_cast<const char *>(v), z)) : std::string(); }

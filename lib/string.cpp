@@ -470,6 +470,30 @@ std::string bin2cstr(std::string_view sv)
 }
 
 /**
+ * Represent a text string in C string form.
+ */
+std::string txt2cstr(const char *s)
+{
+	std::string ret;
+	if (s == nullptr)
+		return ret;
+	for (; *s != '\0'; ++s) {
+		auto c = static_cast<unsigned char>(*s);
+		if (c == '"' || c == '\\') {
+			ret += '\\';
+			ret += c;
+		} else if (c < 0x20 || c == 0x7f) {
+			char b[5];
+			snprintf(b, std::size(b), "\\x%02x", c);
+			ret += b;
+		} else {
+			ret += c;
+		}
+	}
+	return ret;
+}
+
+/**
  * Represent a binary blob in a form that is somewhat compact but also show
  * ASCII and low control codes recognizably.
  *

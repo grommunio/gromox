@@ -761,6 +761,29 @@ static unsigned int role_to_rcpttype(const char *r, const char *cu)
 	return MAPI_TO;
 }
 
+static uint32_t partstat_to_resp(const char *ps)
+{
+	if (ps == nullptr)
+		return respNone;
+	if (strcasecmp(ps, "ACCEPTED") == 0)
+		return respAccepted;
+	if (strcasecmp(ps, "TENTATIVE") == 0)
+		return respTentative;
+	if (strcasecmp(ps, "DECLINED") == 0)
+		return respDeclined;
+	return respNone;
+}
+
+static const char *resp_to_partstat(uint32_t r)
+{
+	switch (r) {
+	case respAccepted: return "ACCEPTED";
+	case respTentative: return "TENTATIVE";
+	case respDeclined: return "DECLINED";
+	default: return "NEEDS-ACTION";
+	}
+}
+
 static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
     USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
@@ -780,9 +803,21 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 		pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (pmessage_class == nullptr)
 		pmessage_class = "IPM.Note";
-	/* ignore ATTENDEE when METHOD is "PUBLIC" */
-	if (class_match_prefix(pmessage_class, "IPM.Appointment") == 0)
-		return ecSuccess;
+	/*
+	 * A published appointment carries attendees only when it is a
+	 * meeting (CalDAV stores the organizer's and the attendees' copy
+	 * that way). The organizer is often listed as attendee, too.
+	 */
+	const char *organizer = nullptr;
+	bool appt = class_match_prefix(pmessage_class, "IPM.Appointment") == 0;
+	if (appt) {
+		auto line = main_ev.get_line("ORGANIZER");
+		organizer = line != nullptr ? line->get_first_subvalue() : nullptr;
+		if (organizer == nullptr || strncasecmp(organizer, "MAILTO:", 7) != 0 ||
+		    main_ev.get_line("ATTENDEE") == nullptr)
+			return ecSuccess;
+		organizer += 7;
+	}
 
 	prcpts = tarray_set_init();
 	if (prcpts == nullptr)
@@ -804,6 +839,8 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 			continue;
 		}
 		paddress += 7;
+		if (appt && is_attendee && strcasecmp(paddress, organizer) == 0)
+			continue;
 		pdisplay_name = piline->get_first_paramval("CN");
 		auto cutype = piline->get_first_paramval("CUTYPE");
 		prole = piline->get_first_paramval("ROLE");
@@ -868,6 +905,13 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 		err = pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32);
 		if (err != ecSuccess)
 			return err;
+		if (appt) {
+			auto ps = piline->get_first_paramval("PARTSTAT");
+			tmp_int32 = is_organizer ? respOrganized : partstat_to_resp(ps);
+			err = pproplist->set(PR_RECIPIENT_TRACKSTATUS, &tmp_int32);
+			if (err != ecSuccess)
+				return err;
+		}
 	}
 	/*
 	 * XXX: Value of tmp_byte is unclear, but it appears it coincides with
@@ -1083,12 +1127,15 @@ static bool oxcical_set_stateflags(const char *method,
     namemap &hash, uint16_t &last_propid, message_content &msg)
 {
 	uint32_t val = 0;
-	if (method != nullptr) {
-		if (strcasecmp(method, "REQUEST") == 0)
-			val = asfMeeting | asfReceived;
-		else if (strcasecmp(method, "CANCEL") == 0)
-			val = asfMeeting | asfReceived | asfCanceled;
-	}
+	auto cls = msg.proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (method != nullptr && strcasecmp(method, "REQUEST") == 0)
+		val = asfMeeting | asfReceived;
+	else if (method != nullptr && strcasecmp(method, "CANCEL") == 0)
+		val = asfMeeting | asfReceived | asfCanceled;
+	else if (cls != nullptr && class_match_prefix(cls, "IPM.Appointment") == 0 &&
+	    msg.children.prcpts != nullptr && msg.children.prcpts->count > 0)
+		/* a published meeting, see oxcical_parse_recipients */
+		val = asfMeeting;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentStateFlags};
 	if (namemap_add(hash, last_propid, std::move(pn)) != ecSuccess)
 		return false;
@@ -2131,6 +2178,22 @@ static inline unsigned int dfl_alarm_offset(bool allday)
 	return allday ? 1080 : 15;
 }
 
+/*
+ * Exception start/end times are kept in the local time of the series.
+ * A time given in UTC needs to be moved there first.
+ */
+static time_t oxcical_wall_time(const ical_component *tz, const ical_time &itime)
+{
+	time_t t;
+	ical_itime_to_utc(nullptr, itime, &t);
+	if (itime.type != itime_type::utc || tz == nullptr)
+		return t;
+	ical_time lcl;
+	if (ical_utc_to_datetime(tz, t, &lcl))
+		ical_itime_to_utc(nullptr, lcl, &t);
+	return t;
+}
+
 static ec_error_t oxcical_import_internal(const char *method,
     bool b_proposal, uint16_t calendartype, const ical &pical,
     const event_list_t &pevent_list, EXT_BUFFER_ALLOC alloc,
@@ -2296,6 +2359,17 @@ static ec_error_t oxcical_import_internal(const char *method,
 		return ecInvalidParam;
 	}
 
+	/*
+	 * The flag cannot apply to local times other than midnight. Clients
+	 * like Thunderbird keep it when an allday event is turned into a
+	 * timed one.
+	 */
+	if (b_allday && start_itime.type == itime_type::floating &&
+	    end_itime.type == itime_type::floating &&
+	    (start_itime.hour != 0 || start_itime.minute != 0 ||
+	    start_itime.second != 0 || end_itime.hour != 0 ||
+	    end_itime.minute != 0 || end_itime.second != 0))
+		b_allday = false;
 	if (!b_allday && start_itime.type != itime_type::utc &&
 	    end_itime.type != itime_type::utc && start_itime.hour == 0 &&
 	    start_itime.minute == 0 && start_itime.second == 0 &&
@@ -2549,13 +2623,11 @@ static ec_error_t oxcical_import_internal(const char *method,
 			apr.recur_pat.pdeletedinstancedates.emplace_back(minutes);
 			ei_new.originalstartdate = minutes;
 			ee_new.originalstartdate = minutes;
-			ical_itime_to_utc(nullptr, start_itime, &tmp_time);
-			minutes = rop_util_unix_to_rtime(tmp_time);
+			minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, start_itime));
 			apr.recur_pat.pmodifiedinstancedates.emplace_back(minutes);
 			ei_new.startdatetime = minutes;
 			ee_new.startdatetime = minutes;
-			ical_itime_to_utc(nullptr, end_itime, &tmp_time);
-			minutes = rop_util_unix_to_rtime(tmp_time);
+			minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, end_itime));
 			ei_new.enddatetime = minutes;
 			ee_new.enddatetime = minutes;
 
@@ -3272,7 +3344,7 @@ static bool is_meeting_response(const char *s)
 
 static bool oxcical_export_recipient_table(ical_component &pevent_component,
     const char *org_name, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
-    const char *partstat, const MESSAGE_CONTENT *pmsg) try
+    const char *partstat, bool meeting, const MESSAGE_CONTENT *pmsg) try
 {
 	char tmp_value[334];
 
@@ -3283,8 +3355,9 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 		str = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (str == nullptr)
 		str = "IPM.Note";
-	/* ignore ATTENDEE when METHOD is "PUBLIC" */
-	if (class_match_prefix(str, "IPM.Appointment") == 0)
+	/* a published appointment only lists attendees for meetings */
+	bool appt = class_match_prefix(str, "IPM.Appointment") == 0;
+	if (appt && !meeting)
 		return true;
 	if (is_meeting_response(str)) {
 		str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
@@ -3323,8 +3396,12 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 			*rcpttype == MAPI_BCC ? "NON-PARTICIPANT" :
 			"REQ-PARTICIPANT";
 		piline->append_param("ROLE", role);
-		if (partstat != nullptr)
+		if (partstat != nullptr) {
 			piline->append_param("PARTSTAT", partstat);
+		} else if (appt) {
+			auto ts = rcpt.get<const uint32_t>(PR_RECIPIENT_TRACKSTATUS);
+			piline->append_param("PARTSTAT", resp_to_partstat(ts != nullptr ? *ts : respNone));
+		}
 		if (b_rsvp)
 			piline->append_param("RSVP", "TRUE");
 		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
@@ -3481,17 +3558,25 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 	return false;
 }
 
+/*
+ * Every exception is exported as a VEVENT with RECURRENCE-ID, no matter
+ * whether it changes more than the time (overrideflags == 0, Outlook moves).
+ * Its date must not show up in EXDATE/RDATE as well. The dates are compared
+ * by day, as the time part differs between producers.
+ */
+static bool oxcical_is_exception(const APPOINTMENT_RECUR_PAT &apr, uint32_t date, bool orig)
+{
+	return std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
+	       [&](const EXCEPTIONINFO &j) {
+	       	return (orig ? j.originalstartdate : j.startdatetime) / 1440 == date / 1440;
+	       });
+}
+
 static bool oxcical_emit_exdates(const APPOINTMENT_RECUR_PAT &apr)
 {
 	return std::any_of(apr.recur_pat.pdeletedinstancedates.cbegin(),
 	       apr.recur_pat.pdeletedinstancedates.cend(),
-	       [&](uint32_t di) {
-	       	return std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
-	       	       [di](const EXCEPTIONINFO &j) {
-	       	       	return j.originalstartdate == di && j.overrideflags != 0;
-	       	       });
-	       });
-	return false;
+	       [&](uint32_t di) { return !oxcical_is_exception(apr, di, true); });
 }
 
 static bool oxcical_export_exdate(const char *tzid, bool b_date,
@@ -3513,16 +3598,12 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (auto di : apr->recur_pat.pdeletedinstancedates) {
-		auto found = std::any_of(apr->pexceptioninfo.cbegin(), apr->pexceptioninfo.cend(),
-		             [di](const EXCEPTIONINFO &j) {
-		             	return j.originalstartdate == di && j.overrideflags != 0;
-		             });
-		if (found)
+		if (oxcical_is_exception(*apr, di, true))
 			continue;
 		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(di + apr->starttimeoffset), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		else if (tzid == nullptr || itime.type == itime_type::utc)
+		else if (tzid == nullptr)
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
@@ -3538,12 +3619,7 @@ static bool oxcical_emit_rdates(const APPOINTMENT_RECUR_PAT &apr)
 {
 	return std::any_of(apr.recur_pat.pmodifiedinstancedates.cbegin(),
 	       apr.recur_pat.pmodifiedinstancedates.cend(),
-	       [&](uint32_t mi) {
-	       	return std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
-	       	       [mi](const EXCEPTIONINFO &j) {
-	       	       	return j.startdatetime == mi && j.overrideflags != 0;
-	       	       });
-	       });
+	       [&](uint32_t mi) { return !oxcical_is_exception(apr, mi, false); });
 }
 
 static bool oxcical_export_rdate(const char *tzid, bool b_date,
@@ -3559,16 +3635,12 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (auto mi : apr->recur_pat.pmodifiedinstancedates) {
-		auto found = std::any_of(apr->pexceptioninfo.cbegin(), apr->pexceptioninfo.cend(),
-		             [mi](const EXCEPTIONINFO &j) {
-		             	return j.startdatetime == mi && j.overrideflags != 0;
-		             });
-		if (found)
+		if (oxcical_is_exception(*apr, mi, false))
 			continue;
 		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(mi), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		else if (tzid == nullptr || itime.type == itime_type::utc)
+		else if (tzid == nullptr)
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
@@ -3930,6 +4002,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		{MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameLocationUrl)},
 		{MNID_ID, PSETID_Appointment, PidLidIntendedBusyStatus},
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentNotAllowPropose},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStateFlags},
 	};
 	enum {
 		l_counterproposal, l_proposedstartwhole, l_proposedendwhole,
@@ -3937,8 +4010,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		l_tzdesc, l_tzdefrecur, l_tzdefstart, l_tzdefend, l_subtype, l_replacetime,
 		l_taskstart, l_keywords, l_attcritchg, l_ownercritchg, l_busystatus,
 		l_apptseq, l_location, l_locationurl, l_intendedbusy, l_nopropose,
+		l_stateflags,
 	};
-	static_assert(l_nopropose + 1 == std::size(namequeries));
+	static_assert(l_stateflags + 1 == std::size(namequeries));
 	std::string new_tzid;
 	PROPID_ARRAY propids;
 	APPOINTMENT_RECUR_PAT apprecurr;
@@ -4110,12 +4184,15 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	bool b_allday = snum != nullptr && *snum != 0;
 	auto pcomponent = icaltype != nullptr ? &pical.append_comp(icaltype) : &pical;
 
-	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0)
+	auto stateflags = pmsg->proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_stateflags]));
+	bool meeting = stateflags != nullptr && (*stateflags & asfMeeting);
+	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0 ||
+	    (strcmp(method, "PUBLISH") == 0 && meeting))
 		oxcical_export_organizer(*pmsg, *pcomponent, org_name, id2user);
 	else if (strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0)
 		oxcical_export_organizer_rcpt(*pmsg, *pcomponent, org_name, id2user);
 	if (!oxcical_export_recipient_table(*pcomponent, org_name,
-	    id2user, alloc, partstat, pmsg))
+	    id2user, alloc, partstat, meeting, pmsg))
 		return "E-2211: export_recipient_table - unspecified error";
 
 	str = pmsg->proplist.get<char>(PR_BODY);
@@ -4162,6 +4239,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	}
 
 	int regravitate_allday = 0;
+	ical_time start_day{};
 	if (has_start_time) {
 		ical_time itime;
 		/*
@@ -4184,6 +4262,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (regravitate_allday != 0 && !ical_utc_to_datetime(ptz_component,
 		    start_time + regravitate_allday, &itime))
 			return "E-2271";
+		start_day = {itime.year, itime.month, itime.day, 0, 0, 0};
 		append_dt(*pcomponent, "DTSTART", itime, b_allday,
 			ptz_component != nullptr ? tzid : nullptr);
 	} else {
@@ -4205,6 +4284,12 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		ical_time itime;
 		if (!ical_utc_to_datetime(ptz_component, end_time + regravitate_allday, &itime))
 			return "E-2222";
+		/* DTEND;VALUE=DATE is exclusive and must not end up on DTSTART */
+		if (b_allday && ical_time(itime.year, itime.month, itime.day,
+		    0, 0, 0) <= start_day) {
+			itime = start_day;
+			itime.add_day(1);
+		}
 		append_dt(*pcomponent, "DTEND", itime, b_allday,
 			ptz_component != nullptr ? tzid : nullptr);
 	}
