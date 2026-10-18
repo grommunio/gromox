@@ -1667,6 +1667,11 @@ struct tAttendee : public NS_EWS_Types {
 	std::optional<time_point> LastResponseTime{}, ProposedStart{}, ProposedEnd{};
 
 	void serialize(tinyxml2::XMLElement *) const;
+	/* Whether the attendee line came with an empty address */
+	bool empty_address() const
+	{
+		return Mailbox.EmailAddress && Mailbox.EmailAddress->empty();
+	}
 
 	tAttendee() = default;
 	explicit tAttendee(const TPROPVAL_ARRAY&);
