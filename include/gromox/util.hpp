@@ -146,6 +146,7 @@ extern GX_EXPORT std::string gx_utf8_to_punycode(const char *);
 extern GX_EXPORT bool str_isascii(const char *);
 extern GX_EXPORT bool str_isasciipr(const char *);
 extern GX_EXPORT int ece2nerrno(ec_error_t);
+extern GX_EXPORT std::string iconvtext_csetforce(std::string_view, const char *from, const char *to, unsigned int flags = 0);
 extern GX_EXPORT std::string iconvtext(std::string_view, const char *from, const char *to, unsigned int flags = 0);
 extern GX_EXPORT std::vector<std::string> gx_split(std::string_view, char sep);
 extern GX_EXPORT std::vector<std::string> gx_split_ws(std::string_view);

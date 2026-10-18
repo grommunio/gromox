@@ -85,11 +85,32 @@ class GX_EXPORT wrapfd {
 };
 
 enum {
-	REND_W3M, REND_CHAWAN, REND_PANDOC_HTP, REND_PANDOC_HTR, REND_PANDOC_RTH, REND_INT_RTH,
+	REND_HTMLTOPLAIN = 0x1,
+	REND_HTMLTORTF = 0x2,
+	REND_RTFTOHTML = 0x3,
+	REND_CONVMASK = 0xf,
+
+	REND_W3M = 0x20,
+	REND_CHAWAN = 0x30,
+	/* From here on, UTF-8 forced for these conversion programs: */
+	REND_PANDOC = 0x40,
+	REND_INT = 0x50,
+	REND_SOFFICE = 0x60,
+	REND_PROGMASK = 0xf0,
+
+	REND_W3M_HTP = REND_W3M | REND_HTMLTOPLAIN,
+	REND_CHAWAN_HTP = REND_CHAWAN | REND_HTMLTOPLAIN,
+	REND_PANDOC_HTP = REND_PANDOC | REND_HTMLTOPLAIN,
+	REND_PANDOC_HTR = REND_PANDOC | REND_HTMLTORTF,
+	REND_PANDOC_RTH = REND_PANDOC | REND_RTFTOHTML,
+	REND_INT_RTH = REND_INT | REND_RTFTOHTML,
+	REND_SOFFICE_HTP = REND_SOFFICE | REND_HTMLTOPLAIN,
+	REND_SOFFICE_HTR = REND_SOFFICE | REND_HTMLTORTF,
+	REND_SOFFICE_RTH = REND_SOFFICE | REND_RTFTOHTML,
 };
 
 extern GX_EXPORT errno_t canonical_hostname(std::string &);
-extern GX_EXPORT pid_t popenfd(const char *, const char *const *, int *, int *, int *, const char *const *);
+extern GX_EXPORT pid_t popenfd(const char *, const char *const *, int *, int *, int *, const char *const *, unsigned int flags = 0);
 extern GX_EXPORT int convert_doc_with_program(std::string_view, const char *in_cset, std::string &out, unsigned int rend);
 extern GX_EXPORT DIR_mp opendir_sd(const char *, const char *);
 extern GX_EXPORT std::unique_ptr<FILE, file_deleter> fopen_sd(const char *, const char *);
@@ -101,6 +122,9 @@ extern GX_EXPORT errno_t gx_compress_tofile(std::string_view, const char *outfil
 extern GX_EXPORT int gx_mkbasedir(const char *file, unsigned int mode);
 
 extern GX_EXPORT int popenfd_keepfd_marker;
+enum {
+	POPENFD_SETPGRP = 0x1U,
+};
 #define POPENFD_NULL (nullptr)
 #define POPENFD_KEEP (&::gromox::popenfd_keepfd_marker)
 

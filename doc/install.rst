@@ -155,11 +155,11 @@ Optional runtime components
   messages to, remote SMTP servers on the Internet. Spam handling should also
   occur in the MTA chain.
 
-* For improved conversion from HTML to plaintext (in order of preference):
-  * chawan, or pandoc, or w3m
+* For improved conversion from HTML to plaintext (from high to low preference):
+  * chawan, pandoc, w3m, LibreOffice
 
-* For improved conversion between HTML and RTF:
-  * pandoc
+* For improved conversion between HTML and RTF (from high to low preference):
+  * LibreOffice or compatibles (``/usr/bin/soffice``), pandoc
 
 * If tinkering with databases, the ``sqlite3`` and ``mysql``
   command-line clients may prove useful.
