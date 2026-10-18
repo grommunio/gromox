@@ -1268,13 +1268,12 @@ std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONT
  */
 uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
 {
-	uint32_t accountId, unused1;
-	display_type unused2;
+	uint32_t accountId;
 	BOOL res;
 	if (isDomain)
-		res = mysql_adaptor_get_domain_ids(name.c_str(), &accountId, &unused1);
+		res = mysql_adaptor_get_domain_ids(name.c_str(), &accountId, nullptr);
 	else
-		res = mysql_adaptor_get_user_ids(name.c_str(), &accountId, &unused1, &unused2);
+		res = mysql_adaptor_get_user_ids(name.c_str(), &accountId, nullptr, nullptr);
 	if (!res)
 		throw EWSError::CannotFindUser(E3113(isDomain ? "domain" : "user", name));
 	return accountId;
