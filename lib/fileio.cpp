@@ -494,66 +494,6 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
 static constexpr std::chrono::seconds convert_deadline{60};
 
 /**
- * @fp:       file to emit to
- * @src:      input data
- * @cset:     character set of data in @src
- * @force_conv: force-feed through iconv (e.g. is cset is already UTF-8 but the
- *              content is not clean)
- *
- * Convert @src to UTF-8 if needed (depends on @cset), and writeout to @fp.
- * Updates @cset in case w3m should not be given the -I argument.
- * Returns 0 for success; other values indicate an error condition.
- */
-static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size,
-    const char *&cset, bool force_conv)
-{
-	auto src = const_cast<char *>(static_cast<const char *>(vsrc));
-	if (cset == nullptr)
-		return fwrite(src, src_size, 1, fp) == 1 ? 0 : -1;
-	bool input_is_utf8 = strcasecmp(cset, "utf8") == 0 ||
-	                     strcasecmp(cset, "utf-8") == 0;
-	if (input_is_utf8 && !force_conv)
-		return fwrite(src, src_size, 1, fp) == 1 ? 0 : -1;
-	auto cd = iconv_open("utf-8", cset);
-	if (cd == iconv_t(-1)) {
-		/* Dunno how to translate, just feed it as-is to the converter */
-		cset = nullptr;
-		return fwrite(src, src_size, 1, fp) == 1 ? 0 : -1;
-	}
-	auto cleanup = HX::make_scope_exit([&]() { iconv_close(cd); });
-	char buffer[4096];
-
-	/* Loop copied from iconvtext() */
-	while (src_size > 0) {
-		auto dst = buffer;
-		size_t dst_size = sizeof(buffer);
-		auto ret = iconv(cd, &src, &src_size, &dst, &dst_size);
-		if (ret != static_cast<size_t>(-1) || dst_size != sizeof(buffer)) {
-			if (fwrite(buffer, sizeof(buffer) - dst_size, 1, fp) != 1)
-				return -1;
-			continue;
-		}
-		if (src_size > 0) {
-			--src_size;
-			++src;
-		}
-		if (fwrite(buffer, sizeof(buffer) - dst_size, 1, fp) != 1)
-			return -1;
-	}
-
-	/* Flush pending shift and/or state */
-	auto dst = buffer;
-	size_t dst_size = sizeof(buffer);
-	auto ret = iconv(cd, nullptr, 0, &dst, &dst_size);
-	if (ret == static_cast<size_t>(-1))
-		/* ignore */;
-	if (dst_size != sizeof(buffer) &&
-	    fwrite(buffer, sizeof(buffer) - dst_size, 1, fp) != 1)
-		return -1;
-	return 0;
-}
-
-/**
  * Run an external document converter.
  *
  * @inbuf:  input data
@@ -580,13 +520,21 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 	randstring(&filename[pos+1], 12, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
 	filename[pos+13] = '.';
 
+	/* pandoc immediately switches to latin1 on funny characters; forbid that */
+	std::string doc;
+	bool input_is_utf8 = strcasecmp(cset, "utf8") == 0 ||
+	                     strcasecmp(cset, "utf-8") == 0;
+	bool force_conv = rend >= REND_PANDOC;
+	if (input_is_utf8 && !force_conv)
+		doc.assign(inbuf);
+	else
+		doc = iconvtext_csetforce(inbuf, cset, "utf-8");
+
 	std::unique_ptr<FILE, file_deleter> fp(fopen(filename.c_str(), "w"));
 	if (fp == nullptr)
 		return -1;
 	auto cl1 = HX::make_scope_exit([&]() { unlink(filename.c_str()); });
-	/* pandoc immediately switches to latin1 on funny characters; forbid that */
-	if (utf8_writeout(fp.get(), inbuf.data(), inbuf.size(), cset,
-	    rend >= REND_PANDOC) != 0)
+	if (doc.size() > 0 && fwrite(doc.data(), doc.size(), 1, fp.get()) != 1)
 		return -1;
 	fp.reset();
 	int fout = -1;
