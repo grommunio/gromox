@@ -3187,6 +3187,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 		     entry != nullptr;
 		     entry = entry->NextSiblingElement("Attendee")) {
 			tAttendee att(entry);
+			if (att.empty_address())
+				continue;
 			auto rcpt = rcpts->emplace();
 			att.Mailbox.mkRecipient(rcpt, type);
 			/* update_message_instance_rcpts wants PR_ROWID */
@@ -4982,9 +4984,11 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
 	}
 
-	size_t recipients = (item.RequiredAttendees ? item.RequiredAttendees->size() : 0) +
-	                    (item.OptionalAttendees ? item.OptionalAttendees->size() : 0) +
-	                    (item.Resources ? item.Resources->size() : 0);
+	size_t recipients = 0;
+	for (const auto &list : {&item.RequiredAttendees, &item.OptionalAttendees, &item.Resources})
+		if (*list)
+			recipients += std::count_if((*list)->begin(), (*list)->end(),
+			              [](const tAttendee &a) { return !a.empty_address(); });
 	if (recipients) {
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3377);
@@ -4997,13 +5001,16 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		};
 		if (item.RequiredAttendees)
 			for (const auto &att : *item.RequiredAttendees)
-				add_attendee(rcpts->emplace(), att, MAPI_TO);
+				if (!att.empty_address())
+					add_attendee(rcpts->emplace(), att, MAPI_TO);
 		if (item.OptionalAttendees)
 			for (const auto &att : *item.OptionalAttendees)
-				add_attendee(rcpts->emplace(), att, MAPI_CC);
+				if (!att.empty_address())
+					add_attendee(rcpts->emplace(), att, MAPI_CC);
 		if (item.Resources)
 			for (const auto &att : *item.Resources)
-				add_attendee(rcpts->emplace(), att, MAPI_TO);
+				if (!att.empty_address())
+					add_attendee(rcpts->emplace(), att, MAPI_TO);
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
 			throw DispatchError(E3378);
