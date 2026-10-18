@@ -1019,13 +1019,9 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
  * escape without conversion to ENOMEM. Callers should ideally check for ENOMEM
  * anyway.
  */
-std::string iconvtext(std::string_view sv,
-    const char *from, const char *to, unsigned int flags) try
+std::string iconvtext_csetforce(std::string_view sv, const char *from,
+    const char *to, unsigned int flags) try
 {
-	if (strcasecmp(from, to) == 0) {
-		errno = 0;
-		return std::string(sv);
-	}
 	auto cd = iconv_open(to, from);
 	if (cd == reinterpret_cast<iconv_t>(-1)) {
 		mlog(LV_ERR, "E-2116: iconv_open(%s -> %s): %s", from, to, strerror(errno));
@@ -1086,6 +1082,16 @@ std::string iconvtext(std::string_view sv,
 } catch (const std::bad_alloc &) {
 	errno = ENOMEM;
 	return {};
+}
+
+std::string iconvtext(std::string_view sv, const char *from, const char *to,
+    unsigned int flags)
+{
+	if (strcasecmp(from, to) == 0) {
+		errno = 0;
+		return std::string(sv);
+	}
+	return iconvtext_csetforce(sv, from, to, flags);
 }
 
 std::string base64_encode(std::string_view x)
