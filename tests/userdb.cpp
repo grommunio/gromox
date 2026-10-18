@@ -26,7 +26,7 @@ static int t_private()
 {
 	sql_meta_result mres;
 	auto err = mysql_adaptor_meta(g_username, 0, mres);
-	printf("meta: %s\n", err == 0 ? "OK" : strerror(errno));
+	printf("meta: %s\n", err == 0 ? "OK" : strerror(err));
 
 	auto pass = znul(getenv("PASS"));
 	std::string errstr;
