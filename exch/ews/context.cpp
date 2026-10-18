@@ -3865,6 +3865,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 		     entry != nullptr;
 		     entry = entry->NextSiblingElement("Attendee")) {
 			tAttendee att(entry);
+			if (att.empty_address())
+				continue;
 			auto rcpt = rcpts->emplace();
 			att.Mailbox.mkRecipient(rcpt, type);
 			/* update_message_instance_rcpts wants PR_ROWID */
@@ -6901,28 +6903,32 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
 	}
 
-	size_t recipients = (item.RequiredAttendees ? item.RequiredAttendees->size() : 0) +
-	                    (item.OptionalAttendees ? item.OptionalAttendees->size() : 0) +
-	                    (item.Resources ? item.Resources->size() : 0);
-	if (recipients) {
+	using attendees_t = decltype(item.RequiredAttendees);
+	auto addressed = [](const attendees_t &list) STATIC_IN_CXX23 {
+		return list && std::any_of(list->begin(), list->end(),
+		       [](const tAttendee &a) { return !a.empty_address(); });
+	};
+	if (addressed(item.RequiredAttendees) ||
+	    addressed(item.OptionalAttendees) || addressed(item.Resources)) {
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3377);
 		TARRAY_SET* rcpts = content->children.prcpts;
-		auto add_attendee = [](TPROPVAL_ARRAY *rcpt, const tAttendee &att, uint32_t type) STATIC_IN_CXX23 {
-			att.Mailbox.mkRecipient(rcpt, type);
-			static constexpr uint32_t sendable = recipSendable;
-			if (rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
-				throw EWSError::NotEnoughMemory(E3377);
+		static constexpr uint32_t sendable = recipSendable;
+		auto add = [&](const attendees_t &list, uint32_t type) {
+			if (!list)
+				return;
+			for (const auto &att : *list) {
+				if (att.empty_address())
+					continue;
+				auto rcpt = rcpts->emplace();
+				att.Mailbox.mkRecipient(rcpt, type);
+				if (rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
+					throw EWSError::NotEnoughMemory(E3377);
+			}
 		};
-		if (item.RequiredAttendees)
-			for (const auto &att : *item.RequiredAttendees)
-				add_attendee(rcpts->emplace(), att, MAPI_TO);
-		if (item.OptionalAttendees)
-			for (const auto &att : *item.OptionalAttendees)
-				add_attendee(rcpts->emplace(), att, MAPI_CC);
-		if (item.Resources)
-			for (const auto &att : *item.Resources)
-				add_attendee(rcpts->emplace(), att, MAPI_BCC);
+		add(item.RequiredAttendees, MAPI_TO);
+		add(item.OptionalAttendees, MAPI_CC);
+		add(item.Resources, MAPI_BCC);
 		for (const auto &prop : meetingIdentity(dir))
 			shape.write(prop);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
