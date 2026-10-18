@@ -122,7 +122,7 @@ extern GX_EXPORT std::string hex2bin(std::string_view, hex2bin_mode = HEX2BIN_EM
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, const struct tm &);
 extern GX_EXPORT size_t qp_encoded_size_estimate(const char *, size_t);
-extern GX_EXPORT void safe_memset(void *, uint8_t, size_t);
+extern GX_EXPORT void safe_memset(void *, int, size_t);
 extern GX_EXPORT unsigned int newline_size(const char *, size_t);
 extern GX_EXPORT ec_error_t cu_validate_msgclass(const char *);
 extern GX_EXPORT bool cpid_cstr_compatible(cpid_t);

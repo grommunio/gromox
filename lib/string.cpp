@@ -681,13 +681,11 @@ errno_t switch_user_exec(const config_file &cf, char *const *argv)
 	return switch_user_exec(cf.get_value("running_identity"), argv);
 }
 
-void safe_memset(void *p, uint8_t c, size_t z)
+static volatile decltype(&memset) memset_func = memset;
+
+void safe_memset(void *p, int c, size_t z)
 {
-	volatile size_t vz = 0;
-	volatile auto q = static_cast<uint8_t *>(p);
-	if (z != 0) do {
-		memset(p, c, z);
-	} while (q[vz] != c);
+	memset_func(p, c, z);
 }
 
 unsigned int newline_size(const char *s, size_t z)
