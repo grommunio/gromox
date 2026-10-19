@@ -1842,6 +1842,22 @@ static ec_error_t zs_copymessages_other(const BINARY_ARRAY &entryids,
 		    account_id != src_store.account_id ||
 		    folder_id != src_folder.folder_id)
 			continue;
+		/*
+		 * Authorize the read as an open would: the entryid folder part is
+		 * caller-supplied, so resolve the real parent (not psrc_folder).
+		 */
+		if (!src_store.owner_mode()) {
+			void *pvparent = nullptr;
+			if (!exmdb_client_get_message_property(src_store.get_dir(),
+			    nullptr, CP_ACP, message_id, PidTagParentFolderId, &pvparent))
+				return ecError;
+			if (pvparent == nullptr)
+				continue;
+			uint32_t msg_access = 0;
+			if (cu_calc_msg_access(src_store, uinfo.get_username(),
+			    *static_cast<eid_t *>(pvparent), message_id, msg_access) != ecSuccess)
+				continue;
+		}
 		auto ret = cu_remote_copy_message(src_store, message_id,
 		           dst_store, dst_folder.folder_id);
 		if (ret != ecSuccess)
