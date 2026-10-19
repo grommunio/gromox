@@ -1342,10 +1342,17 @@ static bool is_message_like(const sCreateItem &item)
 /*
  * Folder for CreateItem when no SavedItemFolderId is given. Exchange keeps
  * the copy of a sent message in Sent Items and an unsent one in Drafts.
+ * Calendar items, contacts and tasks go to their own default folder.
  */
 static const char *default_folder(const sCreateItem &item,
     const Enum::MessageDispositionType &disp)
 {
+	if (std::holds_alternative<tCalendarItem>(item))
+		return Enum::calendar;
+	if (std::holds_alternative<tContact>(item))
+		return Enum::contacts;
+	if (std::holds_alternative<tTask>(item))
+		return Enum::tasks;
 	if (is_message_like(item)) {
 		if (disp == Enum::SendAndSaveCopy)
 			return Enum::sentitems;
