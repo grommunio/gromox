@@ -4855,7 +4855,7 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
  * identity on PR_SENDER_*, preserves PR_SENT_REPRESENTING_* as the
  * organizer, and sends.
  */
-void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_CONTENT &respItem) const
+void EWSContext::sendMeetingResponse(const tItemId &responseRef, MESSAGE_CONTENT &respItem) const
 {
 	std::optional<uint32_t> basedate;
 	if (responseRef.type == tItemId::ID_OCCURRENCE)
@@ -4916,6 +4916,34 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 		org.Name = orgName;
 	org.RoutingType = "SMTP";
 	org.mkRecipient(content->children.prcpts->emplace(), MAPI_TO);
+
+	/* Let the saved copy show what is sent */
+	auto subject = content->proplist.get<const char>(PR_SUBJECT);
+	if (subject != nullptr && !respItem.proplist.has(PR_SUBJECT) &&
+	    respItem.proplist.set(PR_SUBJECT, subject) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3288);
+	if (respItem.children.prcpts == nullptr ||
+	    respItem.children.prcpts->count == 0) {
+		auto rcpts = content->children.prcpts->dup();
+		if (rcpts == nullptr)
+			throw EWSError::NotEnoughMemory(E3288);
+		respItem.set_rcpts_internal(rcpts);
+	}
+	/* The copy in Sent Items names the same sender as the mail */
+	for (auto tag : {PR_SENDER_NAME, PR_SENDER_ADDRTYPE,
+	     PR_SENDER_EMAIL_ADDRESS, PR_SENDER_SMTP_ADDRESS,
+	     PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
+	     PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+	     PR_SENT_REPRESENTING_SMTP_ADDRESS}) {
+		auto str = content->proplist.get<const char>(tag);
+		if (str == nullptr)
+			respItem.proplist.erase(tag);
+		else if (respItem.proplist.set(tag, str) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3288);
+	}
+	for (auto tag : {PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY,
+	     PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_SEARCH_KEY})
+		respItem.proplist.erase(tag);
 	send(refDir, 0, *content);
 }
 
