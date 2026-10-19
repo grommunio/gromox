@@ -4854,8 +4854,10 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
  * Duplicates the original meeting request, stamps the responder's
  * identity on PR_SENDER_*, preserves PR_SENT_REPRESENTING_* as the
  * organizer, and sends.
+ *
+ * @return     false if no response was sent
  */
-void EWSContext::sendMeetingResponse(const tItemId &responseRef, MESSAGE_CONTENT &respItem) const
+bool EWSContext::sendMeetingResponse(const tItemId &responseRef, MESSAGE_CONTENT &respItem) const
 {
 	std::optional<uint32_t> basedate;
 	if (responseRef.type == tItemId::ID_OCCURRENCE)
@@ -4876,7 +4878,7 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, MESSAGE_CONTENT
 	if (!orgSmtp)
 		orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	if ((wantResp != nullptr && *wantResp == 0) || orgSmtp == nullptr)
-		return;
+		return false;
 	message_content_ptr content(reqContent->dup());
 	if (!content)
 		throw EWSError::NotEnoughMemory(E3288);
@@ -4945,6 +4947,7 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, MESSAGE_CONTENT
 	     PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_SEARCH_KEY})
 		respItem.proplist.erase(tag);
 	send(refDir, 0, *content);
+	return true;
 }
 
 /**

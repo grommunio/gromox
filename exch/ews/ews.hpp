@@ -367,7 +367,7 @@ class EWSContext {
 	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool, std::optional<uint32_t> = std::nullopt) const;
 	void suppressReadReceipt(const Structures::tItemId&) const;
 	void cancelCalendarItem(const Structures::tItemId&, bool) const;
-	void sendMeetingResponse(const Structures::tItemId&, MESSAGE_CONTENT&) const;
+	bool sendMeetingResponse(const Structures::tItemId&, MESSAGE_CONTENT&) const;
 	BINARY serialize(const XID&) const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
 	void rcpt_add_unique(TARRAY_SET *, gromox::EWS::Structures::tEmailAddressType, uint32_t) const;

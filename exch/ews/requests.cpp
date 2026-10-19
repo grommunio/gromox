@@ -1467,7 +1467,10 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				          respDeclined, refDir, refMid,
 				          send_message, declinedOcc);
 		}
-		if (send_message) {
+		bool isResponse = std::holds_alternative<tAcceptItem>(item) ||
+		                  std::holds_alternative<tTentativelyAcceptItem>(item) ||
+		                  std::holds_alternative<tDeclineItem>(item);
+		if (send_message && isResponse) {
 			const tItemId *responseRef = nullptr;
 			if (auto acc = std::get_if<tAcceptItem>(&item))
 				responseRef = acc->ReferenceItemId ?
@@ -1478,8 +1481,10 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			else if (auto dec2 = std::get_if<tDeclineItem>(&item))
 				responseRef = dec2->ReferenceItemId ?
 				              &*dec2->ReferenceItemId : nullptr;
-			if (responseRef != nullptr)
-				ctx.sendMeetingResponse(*responseRef, *content);
+			/* Keep no copy of a response that was not sent */
+			if (responseRef == nullptr ||
+			    !ctx.sendMeetingResponse(*responseRef, *content))
+				persist = false;
 		}
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)
