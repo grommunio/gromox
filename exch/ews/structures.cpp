@@ -967,19 +967,29 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	fromProp(shape.get(NtRecurrencePattern), When);
 
 
+	/* MS-OXOCAL v22.1 §4.2.2.3: the represented sender organizes */
 	const TAGGED_PROPVAL* prop;
-	if ((prop = shape.get(PR_SENDER_ADDRTYPE)))
+	bool repr = shape.get(PR_SENT_REPRESENTING_EMAIL_ADDRESS) != nullptr ||
+	            shape.get(PR_SENT_REPRESENTING_SMTP_ADDRESS) != nullptr;
+	if ((prop = shape.get(repr ? PR_SENT_REPRESENTING_ADDRTYPE : PR_SENDER_ADDRTYPE)))
 		fromProp(prop, defaulted(Organizer).Mailbox.RoutingType);
-	if ((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
+	if ((prop = shape.get(repr ? PR_SENT_REPRESENTING_EMAIL_ADDRESS : PR_SENDER_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
-	if ((prop = shape.get(PR_SENDER_NAME)))
+	if ((prop = shape.get(repr ? PR_SENT_REPRESENTING_NAME : PR_SENDER_NAME)))
 		fromProp(prop, defaulted(Organizer).Mailbox.Name);
-	if (Organizer && Organizer->Mailbox.RoutingType &&
-	    strcasecmp(Organizer->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
-	    (prop = shape.get(PR_SENDER_SMTP_ADDRESS))) {
-		fromProp(prop, Organizer->Mailbox.EmailAddress);
+	if ((!Organizer || !Organizer->Mailbox.RoutingType ||
+	    strcasecmp(Organizer->Mailbox.RoutingType->c_str(), "SMTP") != 0) &&
+	    (prop = shape.get(repr ? PR_SENT_REPRESENTING_SMTP_ADDRESS : PR_SENDER_SMTP_ADDRESS))) {
+		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
 		Organizer->Mailbox.RoutingType = "SMTP";
 	}
+	/* iCal import leaves the name unset if ORGANIZER has no CN */
+	auto sender = shape.get<char>(PR_SENDER_SMTP_ADDRESS);
+	if (repr && Organizer && !Organizer->Mailbox.Name &&
+	    Organizer->Mailbox.EmailAddress && sender != nullptr &&
+	    strcasecmp(sender, Organizer->Mailbox.EmailAddress->c_str()) == 0 &&
+	    (prop = shape.get(PR_SENDER_NAME)))
+		fromProp(prop, Organizer->Mailbox.Name);
 
 	const uint8_t* u8;
 	if ((u8 = shape.get<uint8_t>(NtAppointmentNotAllowPropose)))
@@ -4456,6 +4466,10 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
 	{"calendar:Organizer", PR_SENDER_SMTP_ADDRESS},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_ADDRTYPE},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_NAME},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_SMTP_ADDRESS},
 	{"calendar:Start", PR_START_DATE},
 	{"contacts:AssistantName", PR_ASSISTANT},
 	{"contacts:Birthday", PR_BIRTHDAY},
