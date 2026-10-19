@@ -607,7 +607,6 @@ static const char *base_tmpdir()
 }
 
 /**
->>>>>>> 87bb688c7 (lib: support LibreOffice for RTF↔HTML↔plaintext conversions)
  * Run an external document converter.
  *
  * @inbuf:  input data
