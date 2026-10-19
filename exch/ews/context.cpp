@@ -1499,6 +1499,25 @@ std::string EWSContext::essdn_to_username(const std::string& essdn) const
 }
 
 /**
+ * @brief      Get the user owning a store
+ *
+ * @param      dir   Home directory of the store
+ *
+ * @return     Owner of a private store, the caller otherwise
+ */
+std::string EWSContext::storeOwner(const std::string &dir) const
+{
+	if (dir == m_auth_info.maildir)
+		return m_auth_info.username;
+	unsigned int user_id = 0;
+	std::string owner;
+	if (!mysql_adaptor_get_id_from_maildir(dir.c_str(), &user_id) ||
+	    mysql_adaptor_userid_to_name(user_id, owner) != ecSuccess)
+		return m_auth_info.username;
+	return owner;
+}
+
+/**
  * @brief      Get user maildir from Mailbox speciication
  *
  * @param      Mailbox   Mailbox structure
@@ -3421,21 +3440,23 @@ void EWSContext::updateAttendees(const std::string &dir,
 		    inst->instanceId, rcpts))
 			throw EWSError::ItemSave(E3351);
 		/* Set organizer properties when attendees are present */
-		std::string dispName;
-		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
+		auto organizer = storeOwner(dir);
+		std::string dispName, orgName;
+		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName) ||
+		    !mysql_adaptor_get_user_displayname(organizer.c_str(), orgName))
 			throw DispatchError(E3352);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType   = construct<uint32_t>(mtgRequest);
 		auto apptState  = construct<uint32_t>(asfMeeting);
 		auto respStatus = construct<uint32_t>(respOrganized);
 		const TAGGED_PROPVAL oprops[] = {
-			{PR_SENT_REPRESENTING_NAME, deconst(dispName.c_str())},
+			{PR_SENT_REPRESENTING_NAME, deconst(orgName.c_str())},
 			{PR_SENDER_NAME, deconst(dispName.c_str())},
-			{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(m_auth_info.username)},
+			{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(organizer.c_str())},
 			{PR_SENDER_SMTP_ADDRESS, deconst(m_auth_info.username)},
 			{PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP")},
 			{PR_SENDER_ADDRTYPE, deconst("SMTP")},
-			{PR_SENT_REPRESENTING_EMAIL_ADDRESS, deconst(m_auth_info.username)},
+			{PR_SENT_REPRESENTING_EMAIL_ADDRESS, deconst(organizer.c_str())},
 			{PR_SENDER_EMAIL_ADDRESS, deconst(m_auth_info.username)},
 		};
 		const TPROPVAL_ARRAY oproplist = {std::size(oprops), deconst(oprops)};
@@ -5772,9 +5793,6 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		if (item.Resources)
 			for (const auto &att : *item.Resources)
 				add_attendee(rcpts->emplace(), att, MAPI_TO);
-		std::string dispName;
-		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
-			throw DispatchError(E3378);
 		/*
 		 * shape.write() does not deep-copy string property values (the
 		 * backing memory must outlive this call, per its own doc
@@ -5783,11 +5801,41 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		 * caller, corrupting PR_SENDER_NAME/PR_SENT_REPRESENTING_NAME
 		 * with whatever later reuses this stack slot.
 		 */
-		auto displayName = strcpy(alloc<char>(dispName.size() + 1), dispName.c_str());
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, displayName});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_NAME, displayName});
+		auto copyStr = [this](const std::string &str) {
+			return strcpy(alloc<char>(str.size() + 1), str.c_str());
+		};
+		auto mkAbEid = [&](const char *user) {
+			std::string essdn;
+			if (cvt_username_to_essdn(user, m_plugin.x500_org_name.c_str(),
+			    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
+				throw DispatchError(E3379);
+			EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
+			EXT_PUSH ext_push;
+			static constexpr size_t ABEIDBUFFSIZE = 1280;
+			auto abEidBuff = alloc<char>(ABEIDBUFFSIZE);
+			if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
+			    ext_push.p_abk_eid(abEid) != pack_result::ok)
+				throw DispatchError(E3380);
+			return construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
+		};
+		/* The store owner organizes, the caller may be a delegate */
 		auto username = deconst(m_auth_info.username);
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_SMTP_ADDRESS, username});
+		auto organizer = copyStr(storeOwner(dir));
+		std::string dispName;
+		if (!mysql_adaptor_get_user_displayname(username, dispName))
+			throw DispatchError(E3378);
+		auto displayName = copyStr(dispName);
+		auto orgName = displayName;
+		auto senderEid = mkAbEid(username), orgEid = senderEid;
+		if (strcasecmp(organizer, username) != 0) {
+			if (!mysql_adaptor_get_user_displayname(organizer, dispName))
+				throw DispatchError(E3378);
+			orgName = copyStr(dispName);
+			orgEid = mkAbEid(organizer);
+		}
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, orgName});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_NAME, displayName});
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_SMTP_ADDRESS, organizer});
 		shape.write(TAGGED_PROPVAL{PR_SENDER_SMTP_ADDRESS, username});
 		auto addrType = deconst("SMTP");
 		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, addrType});
@@ -5799,22 +5847,10 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, meetType});
 		shape.write(NtAppointmentStateFlags, TAGGED_PROPVAL{PT_LONG, apptState});
 		shape.write(NtResponseStatus, TAGGED_PROPVAL{PT_LONG, respStatus});
-		std::string essdn;
-		if (cvt_username_to_essdn(m_auth_info.username, m_plugin.x500_org_name.c_str(),
-		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
-			throw DispatchError(E3379);
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, username});
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, organizer});
 		shape.write(TAGGED_PROPVAL{PR_SENDER_EMAIL_ADDRESS, username});
-		EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
-		EXT_PUSH ext_push;
-		static constexpr size_t ABEIDBUFFSIZE = 1280;
-		auto abEidBuff = alloc<char>(ABEIDBUFFSIZE);
-		if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
-		    ext_push.p_abk_eid(abEid) != pack_result::ok)
-			throw DispatchError(E3380);
-		BINARY* abEidContainer = construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ENTRYID, abEidContainer});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_ENTRYID, abEidContainer});
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ENTRYID, orgEid});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_ENTRYID, senderEid});
 	}
 }
 

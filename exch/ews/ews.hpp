@@ -304,6 +304,7 @@ class EWSContext {
 	std::string get_maildir(const std::string&) const;
 	uint32_t getAccountId(const std::string&, bool) const;
 	std::string getDir(const Structures::sFolderSpec&) const;
+	std::string storeOwner(const std::string &) const;
 	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T *getFolderProp(const std::string &, uint64_t, proptag_t) const;
 	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, proptag_cspan) const;

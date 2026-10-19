@@ -4236,6 +4236,20 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
  *
  * @todo check whether instances should rathe be used
  */
+/**
+ * @brief      Whether the item is the organizer's copy of a meeting
+ */
+static bool upd_is_organizer_copy(const EWSContext &ctx,
+    const std::string &dir, uint64_t mid)
+{
+	void *cls = nullptr;
+	if (!ctx.plugin().exmdb.get_message_property(dir.c_str(), nullptr,
+	    CP_ACP, mid, PR_MESSAGE_CLASS, &cls) || cls == nullptr)
+		return false;
+	return class_match_prefix(static_cast<const char *>(cls),
+	       "IPM.Appointment") == 0 && ctx.isOrganizer(dir, mid);
+}
+
 void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:UpdateItemResponse");
@@ -4260,6 +4274,14 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		if (!(rights & frightsEditAny))
 			throw EWSError::AccessDenied(E3445);
 		ctx.assertCanReadPrivate(dir, parentFolder, rights, mid.messageId());
+		/* The update goes out in the owner's name, check before writing */
+		bool orgCopy = request.SendMeetingInvitationsOrCancellations &&
+		    *request.SendMeetingInvitationsOrCancellations != Enum::SendToNone &&
+		    !change.ItemId.isOccurrence() &&
+		    itemId.type != tItemId::ID_OCCURRENCE &&
+		    upd_is_organizer_copy(ctx, dir, mid.messageId());
+		if (orgCopy)
+			ctx.validate_sendas_perms(ctx.storeOwner(dir));
 		sShape shape(change);
 		/*
 		 * Pre-register timezone properties that setDatetimeFields may
@@ -4394,6 +4416,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
 			    sendcontent->children.prcpts != nullptr &&
 			    sendcontent->children.prcpts->count > 0) {
+				if (orgCopy)
+					ctx.validate_sendas_perms(*sendcontent);
 				if (*request.SendMeetingInvitationsOrCancellations == Enum::SendToAllAndSaveCopy ||
 				    *request.SendMeetingInvitationsOrCancellations == Enum::SendToChangedAndSaveCopy) {
 					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
