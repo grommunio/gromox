@@ -965,6 +965,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			return ecInvalidParam;
 	}
 	if (0 != message_id) {
+		return [](store_object *pstore, eid_t folder_id, eid_t message_id, BINARY &entryid, uint32_t hobject, unsigned int flags, USER_INFO *pinfo, uint32_t *phobject, zs_objtype *pmapi_type) {
 		BOOL b_del = false;
 		if (!exmdb_client->is_msg_deleted(pstore->get_dir(),
 		    message_id, &b_del))
@@ -1007,7 +1008,10 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 				pinfo->get_username(), txt2cstr(subject).c_str(),
 				mailbox.c_str());
 		}
+		return ecSuccess;
+		}(pstore, folder_id, message_id, entryid, hobject, flags, &*pinfo, phobject, pmapi_type);
 	} else {
+		return [](store_object *pstore, eid_t folder_id, uint32_t hobject, unsigned int flags, USER_INFO *pinfo, uint32_t *phobject, zs_objtype *pmapi_type) {
 		BOOL b_exist = false;
 		if (!exmdb_client->is_folder_present(pstore->get_dir(),
 		    folder_id, &b_exist))
@@ -1064,8 +1068,9 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		if (zh_is_error(*phobject))
 			return zh_error(*phobject);
 		*pmapi_type = zs_objtype::folder;
+		return ecSuccess;
+		}(pstore, folder_id, hobject, flags, &*pinfo, phobject, pmapi_type);
 	}
-	return ecSuccess;
 }
 
 static ec_error_t zs_openab_emsab(USER_INFO_REF &&, BINARY, int, zs_objtype *, uint32_t *);
