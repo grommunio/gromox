@@ -384,6 +384,7 @@ class sShape {
 	static constexpr uint64_t Occurrences =       1 << 16;
 	static constexpr uint64_t UniqueBody =        1 << 17;
 	static constexpr uint64_t Conflicts =         1 << 18;
+	static constexpr uint64_t Redacted =          1 << 19; ///< Private item withheld from the reader
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients | ReplyToRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;

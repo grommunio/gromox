@@ -1894,8 +1894,12 @@ sShape::Query sShape::queryable(proptag_t tag) const
  */
 uint64_t sShape::specials() const
 {
-	return access == Access::full ? special :
-	       special & (Rights | Occurrences | ResponseObjects);
+	if (access == Access::full)
+		return special;
+	auto s = special & (Rights | Occurrences | ResponseObjects);
+	if (s & Rights && privateItem && !seesPrivateItems)
+		s |= Redacted;
+	return s;
 }
 
 /**

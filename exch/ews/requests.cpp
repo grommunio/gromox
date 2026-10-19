@@ -1523,8 +1523,10 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, mid);
 		// XXX: Permission check is wrong; we must check whether message can be modified
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
+		auto rights = ctx.permissions(dir, parentFolder.folderId);
+		if (!(rights & frightsEditAny))
 			throw EWSError::AccessDenied(E3190);
+		ctx.assertCanReadPrivate(dir, parentFolder, rights, mid.messageId());
 
 		for (const tFileAttachment &att : request.Attachments) try {
 			auto mInst = ctx.plugin().loadMessageInstance(dir,
@@ -1629,8 +1631,10 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, aid);
 		// XXX: Permission check is wrong; we must check whether message can be modified
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
+		auto rights = ctx.permissions(dir, parentFolder.folderId);
+		if (!(rights & frightsEditAny))
 			throw EWSError::AccessDenied(E3444);
+		ctx.assertCanReadPrivate(dir, parentFolder, rights, aid.messageId());
 
 		auto mInst = ctx.plugin().loadMessageInstance(dir,
 		             parentFolder.folderId, aid.messageId());
@@ -1753,8 +1757,10 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
 		ctx.validate(dir, meid);
-		if (!(ctx.permissions(dir, parent.folderId) & frightsDeleteAny))
+		auto rights = ctx.permissions(dir, parent.folderId);
+		if (!(rights & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
+		ctx.assertCanReadPrivate(dir, parent, rights, meid.messageId());
 
 		std::optional<uint32_t> basedate;
 		if (auto occ = std::get_if<tOccurrenceItemId>(&id.asVariant())) {
@@ -3197,8 +3203,10 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 		if (sourceFolder.target != dstFolder.target)
 			throw EWSError::CrossMailboxMoveCopy(E3186);
 		ctx.validate(dir, meid);
-		if (!(ctx.permissions(dir, sourceFolder.folderId) & frightsReadAny))
+		auto rights = ctx.permissions(dir, sourceFolder.folderId);
+		if (!(rights & frightsReadAny))
 			throw EWSError::AccessDenied(E3185);
+		ctx.assertCanReadPrivate(dir, sourceFolder, rights, meid.messageId());
 		uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, request.copy);
 		auto& msg = std::visit([&](auto& d) -> mItemInfoResponseMessage&
 			                   {return static_cast<mItemInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
@@ -3242,8 +3250,10 @@ void process(mMarkAsJunkRequest &&request, XMLElement *response, const EWSContex
 		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(sourceFolder);
 		ctx.validate(dir, meid);
-		if (!(ctx.permissions(dir, sourceFolder.folderId) & frightsReadAny))
+		auto rights = ctx.permissions(dir, sourceFolder.folderId);
+		if (!(rights & frightsReadAny))
 			throw EWSError::AccessDenied(E3472);
+		ctx.assertCanReadPrivate(dir, sourceFolder, rights, meid.messageId());
 
 		auto &msg = data.ResponseMessages.emplace_back();
 		if (request.MoveItem) {
@@ -3833,8 +3843,10 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec folder = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(folder);
-		if (!(ctx.permissions(dir, folder.folderId) & frightsReadAny))
+		auto rights = ctx.permissions(dir, folder.folderId);
+		if (!(rights & frightsReadAny))
 			throw EWSError::AccessDenied(E3142);
+		ctx.assertCanReadPrivate(dir, folder, rights, meid.messageId());
 
 		MESSAGE_CONTENT *content = nullptr;
 		if (!ctx.plugin().exmdb.read_message(dir.c_str(),
@@ -4064,8 +4076,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		sFolderSpec parentFolder = ctx.resolveFolder(mid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, mid);
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
+		auto rights = ctx.permissions(dir, parentFolder.folderId);
+		if (!(rights & frightsEditAny))
 			throw EWSError::AccessDenied(E3445);
+		ctx.assertCanReadPrivate(dir, parentFolder, rights, mid.messageId());
 		sShape shape(change);
 		/*
 		 * Pre-register timezone properties that setDatetimeFields may

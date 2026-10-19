@@ -1894,8 +1894,14 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		if (item.Attachments->empty())
 			item.Attachments.reset();
 	}
-	if (special & sShape::Rights)
-		item.EffectiveRights.emplace(permissions(dir, fid));
+	if (special & sShape::Rights) {
+		auto rights = permissions(dir, fid);
+		/* Withheld private items can be neither read nor changed */
+		if (special & sShape::Redacted)
+			rights &= ~(frightsReadAny | frightsEditAny | frightsEditOwned |
+			          frightsDeleteAny | frightsDeleteOwned);
+		item.EffectiveRights.emplace(rights);
+	}
 }
 
 /**
