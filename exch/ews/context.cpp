@@ -4307,9 +4307,18 @@ void EWSContext::validate_sendas_perms(const std::string &identity) const
 		return; /* alias of the caller's own mailbox */
 	uint32_t permission = 0;
 	if (!m_plugin.exmdb.get_mbox_perm(maildir.c_str(),
-	    m_auth_info.username, &permission) ||
-	    !(permission & (frightsGromoxSendAs | frightsGromoxStoreOwner)))
+	    m_auth_info.username, &permission))
 		throw EWSError::AccessDenied(E3474);
+	if (permission & (frightsGromoxSendAs | frightsGromoxStoreOwner))
+		return;
+	/* get_mbox_perm only knows the Send-On-Behalf list */
+	std::vector<std::string> sendas;
+	if (m_plugin.exmdb.read_delegates(maildir.c_str(), 1, &sendas))
+		for (const auto &d : sendas)
+			if (strcasecmp(d.c_str(), m_auth_info.username) == 0 ||
+			    mysql_adaptor_check_mlist_include(d.c_str(), m_auth_info.username))
+				return;
+	throw EWSError::AccessDenied(E3474);
 }
 
 /**
