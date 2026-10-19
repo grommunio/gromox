@@ -1075,10 +1075,10 @@ void tContact::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(Birthday);
 	XMLDUMPT(BusinessHomePage);
 	XMLDUMPT(Children);
+	XMLDUMPT(ContactSource);
 	XMLDUMPT(Department);
 	XMLDUMPT(Generation);
 	XMLDUMPT(ImAddresses);
-	XMLDUMPT(ContactSource);
 	XMLDUMPT(JobTitle);
 	XMLDUMPT(Manager);
 	XMLDUMPT(OfficeLocation);
