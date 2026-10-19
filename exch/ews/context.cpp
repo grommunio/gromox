@@ -1518,6 +1518,62 @@ std::string EWSContext::storeOwner(const std::string &dir) const
 }
 
 /**
+ * @brief      Sender properties of meeting mail sent from a store
+ *
+ * The store owner organizes, the caller may be a delegate. Values are
+ * allocated with alloc() and stay valid for the request.
+ *
+ * @param      dir   Home directory of the store
+ */
+std::vector<TAGGED_PROPVAL> EWSContext::meetingIdentity(const std::string &dir) const
+{
+	auto copyStr = [](const std::string &str) {
+		return strcpy(alloc<char>(str.size() + 1), str.c_str());
+	};
+	auto mkAbEid = [&](const char *user) {
+		std::string essdn;
+		if (cvt_username_to_essdn(user, m_plugin.x500_org_name.c_str(),
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
+			throw DispatchError(E3379);
+		EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
+		EXT_PUSH ext_push;
+		static constexpr size_t ABEIDBUFFSIZE = 1280;
+		auto abEidBuff = alloc<char>(ABEIDBUFFSIZE);
+		if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
+		    ext_push.p_abk_eid(abEid) != pack_result::ok)
+			throw DispatchError(E3380);
+		return construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
+	};
+	auto username = deconst(m_auth_info.username);
+	auto organizer = copyStr(storeOwner(dir));
+	std::string dispName;
+	if (!mysql_adaptor_get_user_displayname(username, dispName))
+		throw DispatchError(E3378);
+	auto displayName = copyStr(dispName);
+	auto orgName = displayName;
+	auto senderEid = mkAbEid(username), orgEid = senderEid;
+	if (strcasecmp(organizer, username) != 0) {
+		if (!mysql_adaptor_get_user_displayname(organizer, dispName))
+			throw DispatchError(E3378);
+		orgName = copyStr(dispName);
+		orgEid = mkAbEid(organizer);
+	}
+	auto addrType = deconst("SMTP");
+	return {
+		{PR_SENT_REPRESENTING_NAME, orgName},
+		{PR_SENT_REPRESENTING_SMTP_ADDRESS, organizer},
+		{PR_SENT_REPRESENTING_ADDRTYPE, addrType},
+		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, organizer},
+		{PR_SENT_REPRESENTING_ENTRYID, orgEid},
+		{PR_SENDER_NAME, displayName},
+		{PR_SENDER_SMTP_ADDRESS, username},
+		{PR_SENDER_ADDRTYPE, addrType},
+		{PR_SENDER_EMAIL_ADDRESS, username},
+		{PR_SENDER_ENTRYID, senderEid},
+	};
+}
+
+/**
  * @brief      Get user maildir from Mailbox speciication
  *
  * @param      Mailbox   Mailbox structure
@@ -3440,26 +3496,12 @@ void EWSContext::updateAttendees(const std::string &dir,
 		    inst->instanceId, rcpts))
 			throw EWSError::ItemSave(E3351);
 		/* Set organizer properties when attendees are present */
-		auto organizer = storeOwner(dir);
-		std::string dispName, orgName;
-		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName) ||
-		    !mysql_adaptor_get_user_displayname(organizer.c_str(), orgName))
-			throw DispatchError(E3352);
+		auto oprops = meetingIdentity(dir);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType   = construct<uint32_t>(mtgRequest);
 		auto apptState  = construct<uint32_t>(asfMeeting);
 		auto respStatus = construct<uint32_t>(respOrganized);
-		const TAGGED_PROPVAL oprops[] = {
-			{PR_SENT_REPRESENTING_NAME, deconst(orgName.c_str())},
-			{PR_SENDER_NAME, deconst(dispName.c_str())},
-			{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(organizer.c_str())},
-			{PR_SENDER_SMTP_ADDRESS, deconst(m_auth_info.username)},
-			{PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP")},
-			{PR_SENDER_ADDRTYPE, deconst("SMTP")},
-			{PR_SENT_REPRESENTING_EMAIL_ADDRESS, deconst(organizer.c_str())},
-			{PR_SENDER_EMAIL_ADDRESS, deconst(m_auth_info.username)},
-		};
-		const TPROPVAL_ARRAY oproplist = {std::size(oprops), deconst(oprops)};
+		const TPROPVAL_ARRAY oproplist = {static_cast<uint16_t>(oprops.size()), oprops.data()};
 		PROBLEM_ARRAY problems;
 		if (!exmdb.set_instance_properties(dir.c_str(),
 		    inst->instanceId, &oproplist, &problems))
@@ -4884,6 +4926,10 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		throw EWSError::AccessDenied(E3604);
 	/* Callers delete the item afterwards, so check before that */
 	validate_sendas_perms(storeOwner(dir));
+	/* The caller sends, the stored PR_SENDER may name someone else */
+	auto ident = meetingIdentity(dir);
+	const std::vector<proptag_t> staleKeys
+		{PR_SENDER_SEARCH_KEY, PR_SENT_REPRESENTING_SEARCH_KEY};
 	if (basedate) {
 		message_content_ptr inst(cancelcontent->dup());
 		if (!inst)
@@ -4901,6 +4947,11 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
 		    props.set(seq_tag, &newseq) != ecSuccess)
 			throw EWSError::NotEnoughMemory(E3492);
+		for (const auto &prop : ident)
+			if (props.set(prop) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3492);
+		for (auto tag : staleKeys)
+			props.erase(tag);
 		send(dir, meid.messageId(), *inst);
 		if (!saveCopy)
 			return;
@@ -4930,15 +4981,18 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 			throw EWSError::InternalServerError(E3301);
 		const char *sentuser = effectiveUser(sentitems);
 		auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-		const TAGGED_PROPVAL sprops[] = {
+		std::vector<TAGGED_PROPVAL> sprops = {
 			{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Canceled")},
 			{PR_CLIENT_SUBMIT_TIME, now},
 			{PR_MESSAGE_DELIVERY_TIME, now},
 		};
-		const TPROPVAL_ARRAY sproplist{std::size(sprops), deconst(sprops)};
+		sprops.insert(sprops.end(), ident.begin(), ident.end());
+		const TPROPVAL_ARRAY sproplist{static_cast<uint16_t>(sprops.size()), sprops.data()};
 		PROBLEM_ARRAY sproblems;
 		if (!exmdb.set_message_properties(dir.c_str(), sentuser, CP_ACP,
-		    newMid, &sproplist, &sproblems))
+		    newMid, &sproplist, &sproblems) ||
+		    !exmdb.remove_message_properties(dir.c_str(), CP_ACP,
+		    newMid, staleKeys))
 			throw EWSError::ItemSave(E3092);
 		MESSAGE_CONTENT *sentcontent = nullptr;
 		if (!exmdb.read_message(dir.c_str(), sentuser, CP_ACP, newMid,
@@ -4953,6 +5007,11 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		auto now = EWSContext::construct<uint64_t>( rop_util_current_nttime());
 		dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 		dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+		for (const auto &prop : ident)
+			if (dupcontent->proplist.set(prop) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3407);
+		for (auto tag : staleKeys)
+			dupcontent->proplist.erase(tag);
 		send(dir, meid.messageId(), *dupcontent);
 	}
 }
@@ -5810,53 +5869,8 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		if (item.Resources)
 			for (const auto &att : *item.Resources)
 				add_attendee(rcpts->emplace(), att, MAPI_TO);
-		/*
-		 * shape.write() does not deep-copy string property values (the
-		 * backing memory must outlive this call, per its own doc
-		 * comment) - dispName is local to this function and would be
-		 * dangling by the time the shape is materialized by the
-		 * caller, corrupting PR_SENDER_NAME/PR_SENT_REPRESENTING_NAME
-		 * with whatever later reuses this stack slot.
-		 */
-		auto copyStr = [this](const std::string &str) {
-			return strcpy(alloc<char>(str.size() + 1), str.c_str());
-		};
-		auto mkAbEid = [&](const char *user) {
-			std::string essdn;
-			if (cvt_username_to_essdn(user, m_plugin.x500_org_name.c_str(),
-			    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
-				throw DispatchError(E3379);
-			EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
-			EXT_PUSH ext_push;
-			static constexpr size_t ABEIDBUFFSIZE = 1280;
-			auto abEidBuff = alloc<char>(ABEIDBUFFSIZE);
-			if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
-			    ext_push.p_abk_eid(abEid) != pack_result::ok)
-				throw DispatchError(E3380);
-			return construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
-		};
-		/* The store owner organizes, the caller may be a delegate */
-		auto username = deconst(m_auth_info.username);
-		auto organizer = copyStr(storeOwner(dir));
-		std::string dispName;
-		if (!mysql_adaptor_get_user_displayname(username, dispName))
-			throw DispatchError(E3378);
-		auto displayName = copyStr(dispName);
-		auto orgName = displayName;
-		auto senderEid = mkAbEid(username), orgEid = senderEid;
-		if (strcasecmp(organizer, username) != 0) {
-			if (!mysql_adaptor_get_user_displayname(organizer, dispName))
-				throw DispatchError(E3378);
-			orgName = copyStr(dispName);
-			orgEid = mkAbEid(organizer);
-		}
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, orgName});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_NAME, displayName});
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_SMTP_ADDRESS, organizer});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_SMTP_ADDRESS, username});
-		auto addrType = deconst("SMTP");
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, addrType});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_ADDRTYPE, addrType});
+		for (const auto &prop : meetingIdentity(dir))
+			shape.write(prop);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType = construct<uint32_t>(mtgRequest);
 		auto apptState = construct<uint32_t>(asfMeeting);
@@ -5864,10 +5878,6 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, meetType});
 		shape.write(NtAppointmentStateFlags, TAGGED_PROPVAL{PT_LONG, apptState});
 		shape.write(NtResponseStatus, TAGGED_PROPVAL{PT_LONG, respStatus});
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, organizer});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_EMAIL_ADDRESS, username});
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ENTRYID, orgEid});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_ENTRYID, senderEid});
 	}
 }
 

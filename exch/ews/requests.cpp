@@ -4422,7 +4422,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
 			    sendcontent->children.prcpts != nullptr &&
 			    sendcontent->children.prcpts->count > 0) {
-				ctx.validate_sendas_perms(*sendcontent);
+				/* The owner organizes and the caller sends */
+				auto ident = ctx.meetingIdentity(dir);
+				const std::vector<proptag_t> staleKeys
+					{PR_SENDER_SEARCH_KEY, PR_SENT_REPRESENTING_SEARCH_KEY};
 				if (*request.SendMeetingInvitationsOrCancellations == Enum::SendToAllAndSaveCopy ||
 				    *request.SendMeetingInvitationsOrCancellations == Enum::SendToChangedAndSaveCopy) {
 					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
@@ -4437,16 +4440,19 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 						throw EWSError::InternalServerError(E3428);
 					const char *sentuser = ctx.effectiveUser(sentitems);
 					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					const TAGGED_PROPVAL sprops[] = {
+					std::vector<TAGGED_PROPVAL> sprops = {
 						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
 						{PR_RESPONSE_REQUESTED, deconst(&byte_value_one)},
 						{PR_CLIENT_SUBMIT_TIME, now},
 						{PR_MESSAGE_DELIVERY_TIME, now},
 					};
-					const TPROPVAL_ARRAY sproplist = {std::size(sprops), deconst(sprops)};
+					sprops.insert(sprops.end(), ident.begin(), ident.end());
+					const TPROPVAL_ARRAY sproplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
 					PROBLEM_ARRAY sproblems;
 					if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-					    sentuser, CP_ACP, newMid, &sproplist, &sproblems))
+					    sentuser, CP_ACP, newMid, &sproplist, &sproblems) ||
+					    !ctx.plugin().exmdb.remove_message_properties(dir.c_str(),
+					    CP_ACP, newMid, staleKeys))
 						throw EWSError::ItemSave(E3419);
 					MESSAGE_CONTENT *sentcontent = nullptr;
 					if (!ctx.plugin().exmdb.read_message(dir.c_str(),
@@ -4468,6 +4474,11 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 					dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 					dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+					for (const auto &prop : ident)
+						if (dupcontent->proplist.set(prop) != ecSuccess)
+							throw EWSError::NotEnoughMemory(E3408);
+					for (auto tag : staleKeys)
+						dupcontent->proplist.erase(tag);
 					ctx.send(dir, mid.messageId(), *dupcontent);
 				}
 			}
