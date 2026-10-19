@@ -108,6 +108,7 @@ class EWSError : public DispatchError {
 	ERR(NameResolutionNoResults) ///< Name resolution failed / no results
 	ERR(NotEnoughMemory) ///< Out of memory
 	ERR(SchemaValidation) ///< XML value is does not confirm to schema
+	ERR(SendAsDenied) ///< Caller may not send as or on behalf of the claimed sender
 	ERR(ServerBusy) ///< Server declined to process the request (e.g. batch exceeds a configured limit)
 	ERR(SubscriptionAccessDenied) ///< Trying to access subscription from another user
 	ERR(TimeZone) ///< Invalid or missing time zone

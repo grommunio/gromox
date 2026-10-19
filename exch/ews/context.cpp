@@ -4288,7 +4288,7 @@ void EWSContext::restrictShape(const std::string &dir, const sFolderSpec &folder
  *
  * @param      identity   SMTP address the message claims to be sent from
  *
- * @throw      EWSError::AccessDenied   Caller lacks Send-As rights on
+ * @throw      EWSError::SendAsDenied   Caller lacks Send-As rights on
  *              the claimed identity
  */
 void EWSContext::validate_sendas_perms(const std::string &identity) const
@@ -4301,7 +4301,7 @@ void EWSContext::validate_sendas_perms(const std::string &identity) const
 		maildir = get_maildir(identity);
 	} catch (...) {
 		/* Unresolvable (external/nonexistent) address is never a valid Send-As target */
-		throw EWSError::AccessDenied(E3474);
+		throw EWSError::SendAsDenied(E3474);
 	}
 	if (maildir == m_auth_info.maildir)
 		return; /* alias of the caller's own mailbox */
@@ -4318,7 +4318,7 @@ void EWSContext::validate_sendas_perms(const std::string &identity) const
 			if (strcasecmp(d.c_str(), m_auth_info.username) == 0 ||
 			    mysql_adaptor_check_mlist_include(d.c_str(), m_auth_info.username))
 				return;
-	throw EWSError::AccessDenied(E3474);
+	throw EWSError::SendAsDenied(E3474);
 }
 
 /**
