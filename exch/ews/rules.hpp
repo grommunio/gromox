@@ -149,6 +149,9 @@ class Env {
 	virtual bool essdn_to_smtp(const char *essdn, std::string &smtp) = 0;
 };
 
+static constexpr size_t MAX_RECIPIENTS = 256;
+static constexpr int32_t MAX_SIZE_KB = 2097151;
+
 extern const char *pred_name(unsigned int);
 extern const char *act_name(unsigned int);
 extern vtype pred_type(unsigned int);

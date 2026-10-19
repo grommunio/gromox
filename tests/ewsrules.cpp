@@ -671,6 +671,46 @@ static int t_validate()
 	CHECK(has_error(validate(r, Operation::SET), "RuleId", "MissingParameter"));
 	r.actions.v[A_StopProcessingRules] = Value{.flag = true};
 	CHECK(validate(r, Operation::CREATE).empty());
+	auto c = r;
+	c.priority = 0;
+	c.name.clear();
+	c.conditions.v[P_ContainsSubjectStrings] = Value{.strings = {""}};
+	c.conditions.v[P_ContainsBodyStrings] = Value{};
+	c.conditions.v[P_ContainsHeaderStrings] = Value{.strings = {std::string(300, 'x')}};
+	c.exceptions.v[P_WithinDateRange] = Value{.start = 20, .end = 10};
+	c.conditions.v[P_WithinDateRange] = Value{};
+	c.conditions.v[P_WithinSizeRange] = Value{.min = 0, .max = 9999990};
+	c.exceptions.v[P_WithinSizeRange] = Value{.min = 50, .max = 10};
+	c.conditions.v[P_FromAddresses] = Value{.addrs = {{"x", "", "SMTP"}}};
+	c.exceptions.v[P_FromAddresses] = Value{.addrs = {{"x", "+431", "MOBILE"}}};
+	c.actions.v[A_ForwardToRecipients] = Value{};
+	errs = validate(c, Operation::CREATE);
+	CHECK(has_error(errs, "Priority", "InvalidValue"));
+	CHECK(has_error(errs, "DisplayName", "EmptyValueFound"));
+	CHECK(has_error(errs, "Condition:ContainsSubjectStrings", "EmptyValueFound"));
+	CHECK(has_error(errs, "Condition:ContainsBodyStrings", "EmptyValueFound"));
+	CHECK(has_error(errs, "Condition:ContainsHeaderStrings", "StringValueTooBig"));
+	CHECK(has_error(errs, "Exception:WithinDateRange", "InvalidDateRange"));
+	CHECK(has_error(errs, "Condition:WithinDateRange", "MissingRangeValue"));
+	CHECK(has_error(errs, "Condition:WithinSizeRange", "InvalidValue"));
+	CHECK(has_error(errs, "Exception:WithinSizeRange", "InvalidSizeRange"));
+	CHECK(has_error(errs, "Condition:FromAddresses", "InvalidAddress"));
+	CHECK(has_error(errs, "Exception:FromAddresses", "UnsupportedAddress"));
+	CHECK(has_error(errs, "Action:ForwardToRecipients", "EmptyValueFound"));
+	c = r;
+	c.conditions.v[P_WithinSizeRange] = Value{.min = -1};
+	CHECK(has_error(validate(c, Operation::CREATE), "Condition:WithinSizeRange", "SizeLessThanZero"));
+
+	test_env env;
+	c = r;
+	c.conditions.v[P_FromConnectedAccounts] = Value{.strings = {"a@b"}};
+	c.exceptions.v[P_MessageClassifications] = Value{.strings = {"c"}};
+	RESTRICTION *cond = nullptr;
+	RULE_ACTIONS *acts = nullptr;
+	errs.clear();
+	CHECK(!to_mapi(c, env, cond, acts, errs));
+	CHECK(has_error(errs, "Condition:FromConnectedAccounts", "ConnectedAccountNotFound"));
+	CHECK(has_error(errs, "Exception:MessageClassifications", "MessageClassificationNotFound"));
 	return EXIT_SUCCESS;
 }
 
