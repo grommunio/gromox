@@ -1268,9 +1268,9 @@ void tPersona::serialize(XMLElement *xml) const
 	XMLDUMPT(DisplayName);
 	XMLDUMPT(GivenName);
 	XMLDUMPT(Surname);
-	XMLDUMPT(EmailAddress);
-	XMLDUMPT(Title);
 	XMLDUMPT(Nickname);
+	XMLDUMPT(Title);
+	XMLDUMPT(EmailAddress);
 	XMLDUMPT(BusinessPhoneNumber);
 	XMLDUMPT(MobilePhoneNumber);
 	XMLDUMPT(HomeAddress);
