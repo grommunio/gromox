@@ -540,7 +540,11 @@ static int tmr_thrwork_1()
 		} else if (0 == strcasecmp(pconnection->line, "PING")) {
 			pconnection->sk_write("TRUE\r\n");
 		} else {
+			/* An unrecognized command ends the session. */
 			pconnection->sk_write("FALSE\r\n");
+			co_hold.lock();
+			g_connection_list.erase(pconnection);
+			return X_LOOP;
 		}
 	}
 }
