@@ -1515,6 +1515,23 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		    request.SendMeetingInvitations != Enum::SendToNone))
 			ctx.validate_sendas_perms(*content);
 
+		const tItemId *responseRef = nullptr;
+		if (auto acc = std::get_if<tAcceptItem>(&item))
+			responseRef = acc->ReferenceItemId ?
+			              &*acc->ReferenceItemId : nullptr;
+		else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item))
+			responseRef = tent->ReferenceItemId ?
+			              &*tent->ReferenceItemId : nullptr;
+		else if (auto dec = std::get_if<tDeclineItem>(&item))
+			responseRef = dec->ReferenceItemId ?
+			              &*dec->ReferenceItemId : nullptr;
+		if (send_message && responseRef != nullptr) {
+			auto refFolder = ctx.resolveFolder(sMessageEntryId(
+			                 responseRef->Id.data(), responseRef->Id.size()));
+			if (refFolder.location == sFolderSpec::PRIVATE)
+				ctx.validate_sendas_perms(*refFolder.target);
+		}
+
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
@@ -1536,16 +1553,6 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				          send_message, declinedOcc, &calItem);
 		}
 		if (isResponse) {
-			const tItemId *responseRef = nullptr;
-			if (auto acc = std::get_if<tAcceptItem>(&item))
-				responseRef = acc->ReferenceItemId ?
-				              &*acc->ReferenceItemId : nullptr;
-			else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item))
-				responseRef = tent->ReferenceItemId ?
-				              &*tent->ReferenceItemId : nullptr;
-			else if (auto dec2 = std::get_if<tDeclineItem>(&item))
-				responseRef = dec2->ReferenceItemId ?
-				              &*dec2->ReferenceItemId : nullptr;
 			bool sent = responseRef != nullptr &&
 			            ctx.sendMeetingResponse(*responseRef,
 			            *content, send_message);

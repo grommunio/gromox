@@ -5046,21 +5046,27 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 	content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 	content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
 	auto respUser = deconst(m_auth_info.username);
-	std::string respName;
+	/* The attendee is the owner of the request, the caller may be a delegate */
+	std::string attendee = refFolder.location == sFolderSpec::PRIVATE ?
+	                       *refFolder.target : m_auth_info.username;
+	std::string respName, attName;
 	mysql_adaptor_get_user_displayname(m_auth_info.username, respName);
+	mysql_adaptor_get_user_displayname(attendee.c_str(), attName);
 	content->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
 	/* oxcical takes the ATTENDEE of a REPLY from PR_SENT_REPRESENTING_* */
-	content->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, respUser);
-	content->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, respUser);
+	content->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, attendee.c_str());
+	content->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, attendee.c_str());
 	content->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP"));
 	content->proplist.erase(PR_SENT_REPRESENTING_ENTRYID);
 	content->proplist.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
-	if (!respName.empty()) {
+	if (!respName.empty())
 		content->proplist.set(PR_SENDER_NAME, respName.c_str());
-		content->proplist.set(PR_SENT_REPRESENTING_NAME, respName.c_str());
-	}
+	if (!attName.empty())
+		content->proplist.set(PR_SENT_REPRESENTING_NAME, attName.c_str());
+	else
+		content->proplist.erase(PR_SENT_REPRESENTING_NAME);
 	if (content->children.prcpts)
 		tarray_set_free(content->children.prcpts);
 	content->children.prcpts = tarray_set_init();
