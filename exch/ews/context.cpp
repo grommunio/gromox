@@ -3495,9 +3495,12 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	std::optional<TZDEF> item_tz;
 	if (auto caltz = shape.writes(NtCalendarTimeZone))
 		item_tz = lookup_tz_get_tzdef(static_cast<const char *>(caltz->pvalue));
-	if (!item_tz && shape.tag(NtAppointmentTimeZoneDefinitionRecur) != 0)
-		item_tz = binary_to_tzdef(getItemProp<const BINARY>(dir, mid,
-		          shape.tag(NtAppointmentTimeZoneDefinitionRecur)));
+	if (!item_tz && shape.tag(NtAppointmentTimeZoneDefinitionRecur) != 0) {
+		/* An item stored with an unknown zone name has no definition */
+		const proptag_t tztag = shape.tag(NtAppointmentTimeZoneDefinitionRecur);
+		auto props = getItemProps(dir, mid, {&tztag, 1});
+		item_tz = binary_to_tzdef(props.get<const BINARY>(tztag));
+	}
 	if (item_tz && m_recurrence_frame)
 		shift_recurrence(recurrence, *m_recurrence_frame, *item_tz, localStartTime);
 
