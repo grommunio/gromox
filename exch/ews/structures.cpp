@@ -5175,6 +5175,7 @@ void tMessage::update(const sShape& shape)
 		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.Name);
 	fromProp(shape.get(PR_READ), IsRead);
 	fromProp(shape.get(PR_READ_RECEIPT_REQUESTED), IsReadReceiptRequested);
+	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
 	if ((prop = shape.get(PR_RECEIVED_BY_ADDRTYPE)))
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.RoutingType);
 	if ((prop = shape.get(PR_RECEIVED_BY_EMAIL_ADDRESS)))

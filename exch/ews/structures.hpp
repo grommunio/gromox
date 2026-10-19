@@ -2219,7 +2219,6 @@ struct sCalendarMeetingRequestCommon {
 	sCalendarMeetingRequestCommon() = default;
 	explicit sCalendarMeetingRequestCommon(const tinyxml2::XMLElement *);
 
-	void serialize(tinyxml2::XMLElement *) const;
 	void update(const sShape &);
 
 	void timezoneId(std::string_view, bool=true, bool=true);
