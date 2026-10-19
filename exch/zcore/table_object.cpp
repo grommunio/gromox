@@ -659,7 +659,7 @@ ec_error_t table_object::query_rows(/*maybenull*/ const proptag_cspan *icols,
 		    ptable->position, row_count, pset))
 			return ecRpcFailed;
 		for (auto &row : *pset)
-			if (!common_util_convert_to_zrule_data(ptable->pstore, &row))
+			if (!cu_convert_to_zrule_data(*ptable->pstore, &row))
 				return ecError;
 		return ecSuccess;
 	} else if (ptable->table_type == zcore_tbltype::store) {

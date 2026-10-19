@@ -111,13 +111,13 @@ bool cu_verify_columns_and_sorts(proptag_cspan cols, const SORTORDER_SET *psort_
 }
 
 /* Cf. oxomsg_extract_delegate for comments */
-bool cu_extract_delegator(message_object *pmessage, std::string &username)
+bool cu_extract_delegator(message_object &msg, std::string &username)
 {
 	TPROPVAL_ARRAY tmp_propvals;
 	static constexpr proptag_t proptag_buff[] =
 		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
-	auto err = pmessage->get_properties(proptag_buff, &tmp_propvals);
+	auto err = msg.get_properties(proptag_buff, &tmp_propvals);
 	if (err != ecSuccess)
 		return FALSE;	
 	if (0 == tmp_propvals.count) {
@@ -151,7 +151,7 @@ bool cu_extract_delegator(message_object *pmessage, std::string &username)
 	mlog(LV_WARN, "W-2100: rejecting submission of msgid %llxh because "
 		"its PR_SENT_REPRESENTING_ENTRYID does not reference "
 		"a user in the local system",
-		static_cast<unsigned long long>(pmessage->message_id));
+		static_cast<unsigned long long>(msg.message_id));
 	return false;
 }
 
@@ -1088,7 +1088,7 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
  * Returns whether the caller is to discard the sender's own copy.
  * See emsmdb/common_util.cpp for a twin of this function.
  */
-static bool cu_deposit_repr_copy(store_object *pstore,
+static bool cu_deposit_repr_copy(store_object &store,
     const MESSAGE_CONTENT &ctnt, const char *actor, const char *delegator,
     repr_grant grant, const char *log_id) try
 {
@@ -1103,7 +1103,7 @@ static bool cu_deposit_repr_copy(store_object *pstore,
 			"%s was deposited", delegator, log_id);
 		return false;
 	}
-	auto dir = pstore->get_dir();
+	auto dir = store.get_dir();
 	/* Ignore user's own aliases */
 	if (strcasecmp(mres.username.c_str(), actor) == 0 || mres.maildir == dir)
 		return false;
@@ -1195,11 +1195,11 @@ static bool cu_deposit_repr_copy(store_object *pstore,
  * @delegator:	identity being represented (equal to @actor if none)
  * @grant:	to what degree @actor may represent @delegator
  */
-ec_error_t cu_send_message(store_object *pstore, message_object *msg,
+ec_error_t cu_send_message(store_object &store, message_object &msg,
     const char *actor, const char *delegator, repr_grant grant) try
 {
 	auto ev_from = grant >= repr_grant::send_as ? delegator : actor;
-	eid_t message_id = msg->get_id();
+	eid_t message_id = msg.get_id();
 	void *pvalue;
 	BOOL b_private, b_partial = false;
 	int account_id;
@@ -1208,11 +1208,11 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	
 	auto pinfo = zs_get_info();
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
-	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, CP_ACP,
+	if (!exmdb_client_get_message_property(store.get_dir(), nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return ecNotFound;
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
-	if (!exmdb_client->read_message(pstore->get_dir(), nullptr, cpid,
+	if (!exmdb_client->read_message(store.get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecRpcFailed;
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
@@ -1227,7 +1227,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	}
 	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	bool b_resend = num != nullptr && *num & MSGFLAG_RESEND;
-	auto log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+	auto log_id = store.get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (prcpts == nullptr || prcpts->count == 0) {
 		mlog(LV_ERR, "E-1504: Tried to send %s but message has 0 recipients", log_id.c_str());
@@ -1245,7 +1245,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		return MAPI_E_NO_RECIPIENTS;
 	}
 
-	common_util_set_dir(pstore->get_dir());
+	common_util_set_dir(store.get_dir());
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = common_util_alloc;
@@ -1263,9 +1263,10 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		auto th = vmail_to_string(*vmail->getHeader());
 		TAGGED_PROPVAL tp  = {PR_TRANSPORT_MESSAGE_HEADERS_A, deconst(th.c_str())};
 		TPROPVAL_ARRAY tpa = {1, &tp};
-		if (msg->set_properties(&tpa) == ecSuccess)
+
+		if (msg.set_properties(&tpa) == ecSuccess)
 			/* Unclear if permitted to save (specs say nothing) */
-			msg->save();
+			msg.save();
 	}
 	ret = cu_send_vmail(std::move(vmail), g_smtp_url.c_str(), ev_from, rcpt_list);
 	if (ret != ecSuccess) {
@@ -1295,7 +1296,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	mlog(LV_INFO, "gromox-audit: %s sent message \"%s\"%s%s in mailbox %s via ZCORE",
 		audit_actor == nullptr ? "(unknown)" : audit_actor,
 		txt2cstr(subject).c_str(), representation,
-		txt2cstr(identity).c_str(), pstore->get_account());
+		txt2cstr(identity).c_str(), store.get_account());
 
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
@@ -1305,7 +1306,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	 * unmodified content. The delegator's copy is not affected by what the
 	 * client asked us to do with the sender's own copy.
 	 */
-	if (cu_deposit_repr_copy(pstore, *pmsgctnt, actor, delegator, grant,
+	if (cu_deposit_repr_copy(store, *pmsgctnt, actor, delegator, grant,
 	    log_id.c_str())) {
 		/*
 		 * The represented mailbox holds the only copy now, by its own
@@ -1313,7 +1314,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		 * the emsmdb twin.
 		 */
 		const EID_ARRAY sole_ids = {1, &message_id};
-		if (!exmdb_client->delete_messages(pstore->get_dir(), cpid,
+		if (!exmdb_client->delete_messages(store.get_dir(), cpid,
 		    nullptr, parent_id, &sole_ids, TRUE, &b_partial) || b_partial)
 			/* ignore, as in the PR_DELETE_AFTER_SUBMIT branch below */;
 		return ecSuccess;
@@ -1324,20 +1325,20 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		if (!cu_entryid_to_mid(*ptarget,
 		    &b_private, &account_id, &folder_id, &new_id))
 			return ecWarnWithErrors;
-		if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
+		if (!exmdb_client->clear_submit(store.get_dir(), message_id, false))
 			return ecWarnWithErrors;
-		if (!exmdb_client->movecopy_message(pstore->get_dir(), cpid,
+		if (!exmdb_client->movecopy_message(store.get_dir(), cpid,
 		    message_id, folder_id, new_id, TRUE, &b_partial) || b_partial)
 			return ecWarnWithErrors;
 		return ecSuccess;
 	} else if (b_delete) {
 		const EID_ARRAY ids = {1, &message_id};
-		if (!exmdb_client->delete_messages(pstore->get_dir(), cpid,
+		if (!exmdb_client->delete_messages(store.get_dir(), cpid,
 		    nullptr, parent_id, &ids, TRUE, &b_partial) || b_partial)
 			/* ignore */;
 		return ecSuccess;
 	}
-	if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
+	if (!exmdb_client->clear_submit(store.get_dir(), message_id, false))
 		return ecWarnWithErrors;
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	eid_t folder_id{};
@@ -1346,7 +1347,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		folder_id = eid_t(1, PRIVATE_FID_SENT_ITEMS);
 
 	const EID_ARRAY ids = {1, &message_id};
-	if (!exmdb_client->movecopy_messages(pstore->get_dir(), cpid, false,
+	if (!exmdb_client->movecopy_messages(store.get_dir(), cpid, false,
 	    STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial) || b_partial)
 		return ecWarnWithErrors;
 	return ecSuccess;
@@ -1550,7 +1551,7 @@ std::string cu_to_store_entryid_s(const store_object &store) try
 	return {};
 }
 
-static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOPY_ACTION &src)
+static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object &store, const MOVECOPY_ACTION &src)
 {
 	EXT_PUSH ext_push;
 	
@@ -1566,11 +1567,11 @@ static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOP
 		dst->store_eid.cb = ext_push.m_offset;
 		dst->folder_eid = *static_cast<BINARY *>(src.pfolder_eid);
 	} else {
-		auto pbin = cu_to_store_entryid(*pstore);
+		auto pbin = cu_to_store_entryid(store);
 		if (pbin == nullptr)
 			return NULL;
 		dst->store_eid = *pbin;
-		pbin = cu_fid_to_entryid(*pstore, static_cast<SVREID *>(src.pfolder_eid)->folder_id);
+		pbin = cu_fid_to_entryid(store, static_cast<SVREID *>(src.pfolder_eid)->folder_id);
 		if (pbin == nullptr)
 			return NULL;
 		dst->folder_eid = *pbin;
@@ -1578,19 +1579,19 @@ static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOP
 	return dst;
 }
 
-static ZREPLY_ACTION *cu_cvt_to_zreply(store_object *pstore, const REPLY_ACTION &src)
+static ZREPLY_ACTION *cu_cvt_to_zreply(store_object &store, const REPLY_ACTION &src)
 {
 	auto dst = cu_alloc<ZREPLY_ACTION>();
 	if (dst == nullptr)
 		return NULL;
-	if (cu_mid_to_entryid(*pstore, src.template_folder_id,
+	if (cu_mid_to_entryid(store, src.template_folder_id,
 	    src.template_message_id) == nullptr)
 		return NULL;	
 	dst->template_guid = src.template_guid;
 	return dst;
 }
 
-BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppropvals)
+bool cu_convert_to_zrule_data(store_object &store, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pactions = ppropvals->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 	if (pactions == nullptr)
@@ -1599,13 +1600,13 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 		switch (act.type) {
 		case OP_MOVE:
 		case OP_COPY:
-			act.pdata = cu_cvt_to_zmovecopy(pstore, *static_cast<const MOVECOPY_ACTION *>(act.pdata));
+			act.pdata = cu_cvt_to_zmovecopy(store, *static_cast<const MOVECOPY_ACTION *>(act.pdata));
 			if (act.pdata == nullptr)
 				return FALSE;
 			break;
 		case OP_REPLY:
 		case OP_OOF_REPLY:
-			act.pdata = cu_cvt_to_zreply(pstore, *static_cast<const REPLY_ACTION *>(act.pdata));
+			act.pdata = cu_cvt_to_zreply(store, *static_cast<const REPLY_ACTION *>(act.pdata));
 			if (act.pdata == nullptr)
 				return FALSE;
 			break;
@@ -1614,15 +1615,15 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 	return TRUE;
 }
 
-ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
-    store_object *dst_store, uint64_t folder_id1)
+ec_error_t cu_remote_copy_message(store_object &src_store, uint64_t message_id,
+    store_object &dst_store, uint64_t folder_id1)
 {
 	uint64_t change_num;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zs_get_info();
-	auto username = src_store->b_private ? nullptr : pinfo->get_username();
-	if (!exmdb_client->read_message(src_store->get_dir(), username,
+	auto username = src_store.b_private ? nullptr : pinfo->get_username();
+	if (!exmdb_client->read_message(src_store.get_dir(), username,
 	    pinfo->cpid, message_id, &pmsgctnt))
 		return ecError;
 	if (pmsgctnt == nullptr)
@@ -1638,12 +1639,12 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
-	if (!exmdb_client->allocate_cn(dst_store->get_dir(), &change_num))
+	if (!exmdb_client->allocate_cn(dst_store.get_dir(), &change_num))
 		return ecError;
 	auto err = cu_set_propval(&pmsgctnt->proplist, PidTagChangeNumber, &change_num);
 	if (err != ecSuccess)
 		return err;
-	auto pbin = cu_xid_to_bin({src_store->guid(), change_num});
+	auto pbin = cu_xid_to_bin({src_store.guid(), change_num});
 	if (pbin == nullptr)
 		return ecError;
 	err = cu_set_propval(&pmsgctnt->proplist, PR_CHANGE_KEY, pbin);
@@ -1658,14 +1659,14 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 		return err;
 	err = ecError;
 	uint64_t outmid = 0, outcn = 0;
-	if (!exmdb_client->write_message(dst_store->get_dir(), pinfo->cpid,
+	if (!exmdb_client->write_message(dst_store.get_dir(), pinfo->cpid,
 	    folder_id1, pmsgctnt, {}, &outmid, &outcn, &err) ||
 	    err != ecSuccess)
 		return err;
 	return ecSuccess;
 }
 
-static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
+static ec_error_t cu_create_folder(store_object &store, uint64_t parent_id,
     TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
 	uint64_t tmp_id;
@@ -1702,12 +1703,12 @@ static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
 	err = cu_set_propval(pproplist, PidTagParentFolderId, &parent_id);
 	if (err != ecSuccess)
 		return err;
-	if (!exmdb_client->allocate_cn(pstore->get_dir(), &change_num))
+	if (!exmdb_client->allocate_cn(store.get_dir(), &change_num))
 		return ecError;
 	err = cu_set_propval(pproplist, PidTagChangeNumber, &change_num);
 	if (err != ecSuccess)
 		return err;
-	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
+	auto pbin = cu_xid_to_bin({store.guid(), change_num});
 	if (pbin == nullptr)
 		return ecMAPIOOM;
 	err = cu_set_propval(pproplist, PR_CHANGE_KEY, pbin);
@@ -1722,14 +1723,14 @@ static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
 		return err;
 	auto pinfo = zs_get_info();
 	err = ecSuccess;
-	if (!exmdb_client->create_folder(pstore->get_dir(), pinfo->cpid,
+	if (!exmdb_client->create_folder(store.get_dir(), pinfo->cpid,
 	    pproplist, pfolder_id, &err))
 		return ecError;
 	if (err != ecSuccess)
 		return err;
 	if (*pfolder_id == 0)
 		return ecError;
-	if (pstore->owner_mode())
+	if (store.owner_mode())
 		return ecSuccess;
 	pentryid = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (pentryid == nullptr)
@@ -1745,12 +1746,12 @@ static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
 	propval_buff[1].pvalue = &tmp_id;
 	propval_buff[2].proptag = PR_MEMBER_RIGHTS;
 	propval_buff[2].pvalue = &permission;
-	exmdb_client->update_folder_permission(pstore->get_dir(),
+	exmdb_client->update_folder_permission(store.get_dir(),
 		*pfolder_id, 0, 1, &permission_row);
 	return ecSuccess;
 }
 
-static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
+static EID_ARRAY *cu_load_folder_messages(store_object &store,
     uint64_t folder_id, const char *username)
 {
 	uint32_t table_id;
@@ -1758,15 +1759,15 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	TARRAY_SET tmp_set;
 	EID_ARRAY *pmessage_ids;
 	
-	if (!exmdb_client->load_content_table(pstore->get_dir(), CP_ACP,
+	if (!exmdb_client->load_content_table(store.get_dir(), CP_ACP,
 	    folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 	    nullptr, nullptr, &table_id, &row_count))
 		return NULL;	
 	static constexpr proptag_t tmp_proptag[] = {PidTagMid};
-	if (!exmdb_client->query_table(pstore->get_dir(), nullptr, CP_ACP,
+	if (!exmdb_client->query_table(store.get_dir(), nullptr, CP_ACP,
 	    table_id, tmp_proptag, 0, row_count, &tmp_set))
 		return NULL;	
-	exmdb_client->unload_table(pstore->get_dir(), table_id);
+	exmdb_client->unload_table(store.get_dir(), table_id);
 	pmessage_ids = cu_alloc<EID_ARRAY>();
 	if (pmessage_ids == nullptr)
 		return NULL;
@@ -1783,8 +1784,8 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	return pmessage_ids;
 }
 
-ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
-    store_object *dst_store, uint64_t folder_id1, const char *new_name)
+ec_error_t cu_remote_copy_folder(store_object &src_store, uint64_t folder_id,
+    store_object &dst_store, uint64_t folder_id1, const char *new_name)
 {
 	uint64_t new_fid;
 	uint32_t table_id;
@@ -1795,10 +1796,10 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (!exmdb_client->get_folder_all_proptags(src_store->get_dir(),
+	if (!exmdb_client->get_folder_all_proptags(src_store.get_dir(),
 	    folder_id, &tmp_proptags))
 		return ecError;
-	if (!exmdb_client->get_folder_properties(src_store->get_dir(), CP_ACP,
+	if (!exmdb_client->get_folder_properties(src_store.get_dir(), CP_ACP,
 	    folder_id, tmp_proptags, &tmp_propvals))
 		return ecError;
 	if (new_name != nullptr) {
@@ -1811,16 +1812,15 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 		return err;
 	auto pinfo = zs_get_info();
 	const char *username = nullptr;
-	if (!src_store->owner_mode()) {
+	if (!src_store.owner_mode()) {
 		username = pinfo->get_username();
-		if (!exmdb_client->get_folder_perm(src_store->get_dir(),
+		if (!exmdb_client->get_folder_perm(src_store.get_dir(),
 		    folder_id, username, &permission))
 			return ecError;
 		if (!(permission & (frightsReadAny | frightsOwner)))
 			return ecAccessDenied;
 	}
-	pmessage_ids = common_util_load_folder_messages(
-						src_store, folder_id, username);
+	pmessage_ids = cu_load_folder_messages(src_store, folder_id, username);
 	if (pmessage_ids == nullptr)
 		return ecError;
 	for (auto mid : *pmessage_ids) {
@@ -1828,17 +1828,17 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 		if (err != ecSuccess)
 			return err;
 	}
-	username = src_store->owner_mode() ? nullptr : pinfo->get_username();
-	if (!exmdb_client->load_hierarchy_table(src_store->get_dir(), folder_id,
+	username = src_store.owner_mode() ? nullptr : pinfo->get_username();
+	if (!exmdb_client->load_hierarchy_table(src_store.get_dir(), folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
 		return ecError;
 
 	static constexpr proptag_t xb_proptag[] = {PidTagFolderId};
-	if (!exmdb_client->query_table(src_store->get_dir(), nullptr, CP_ACP,
+	if (!exmdb_client->query_table(src_store.get_dir(), nullptr, CP_ACP,
 	    table_id, xb_proptag, 0, row_count, &tmp_set))
 		return ecError;
-	exmdb_client->unload_table(src_store->get_dir(), table_id);
+	exmdb_client->unload_table(src_store.get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
 		if (pfolder_id == nullptr)
@@ -1851,7 +1851,7 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	return ecSuccess;
 }
 
-ec_error_t cu_message_to_rfc822(store_object *pstore, uint64_t inst_id,
+ec_error_t cu_message_to_rfc822(store_object &store, uint64_t inst_id,
     BINARY *peml_bin) try
 {
 	TAGGED_PROPVAL *ppropval;
@@ -1859,7 +1859,7 @@ ec_error_t cu_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	
 	auto pinfo = zs_get_info();
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
-	if (!exmdb_client->read_message_instance(pstore->get_dir(),
+	if (!exmdb_client->read_message_instance(store.get_dir(),
 	    inst_id, &msgctnt))
 		return ecRpcFailed;
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
@@ -1872,8 +1872,8 @@ ec_error_t cu_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
-	common_util_set_dir(pstore->get_dir());
-	auto log_id = pstore->get_dir() + ":i"s + std::to_string(inst_id);
+	common_util_set_dir(store.get_dir());
+	auto log_id = store.get_dir() + ":i"s + std::to_string(inst_id);
 	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
 	cvt.log_id = log_id.c_str();
@@ -1896,13 +1896,13 @@ ec_error_t cu_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	return ecServerOOM;
 }
 
-std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object *pstore,
+std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object &store,
     unsigned int mxf_flags, /* effective-moved-from */ BINARY *peml_bin)
 {
 	MAIL imail;
 	if (!imail.refonly_parse(peml_bin->pc, peml_bin->cb))
 		return NULL;
-	common_util_set_dir(pstore->get_dir());
+	common_util_set_dir(store.get_dir());
 	oxcmail_converter cvt;
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids_create;
@@ -1913,7 +1913,7 @@ std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object *p
 	return cvt.inet_to_mapi(imail);
 }
 
-ec_error_t cu_message_to_ical(store_object *pstore, uint64_t message_id,
+ec_error_t cu_message_to_ical(store_object &store, uint64_t message_id,
     BINARY *pical_bin) try
 {
 	ical ical;
@@ -1921,7 +1921,7 @@ ec_error_t cu_message_to_ical(store_object *pstore, uint64_t message_id,
 	
 	auto pinfo = zs_get_info();
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
-	auto dir = pstore->get_dir();
+	auto dir = store.get_dir();
 	if (!exmdb_client->read_message(dir, nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecRpcFailed;
@@ -1951,7 +1951,7 @@ ec_error_t cu_message_to_ical(store_object *pstore, uint64_t message_id,
 	return ecServerOOM;
 }
 
-message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) try
+message_ptr cu_ical_to_message(store_object &store, const BINARY *pical_bin) try
 {
 	ical ical;
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
@@ -1961,10 +1961,10 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	pbuff[pical_bin->cb] = '\0';
 	if (!ical.load_from_str_move(pbuff))
 		return NULL;
-	common_util_set_dir(pstore->get_dir());
+	common_util_set_dir(store.get_dir());
 
 	oxcical_converter cvt;
-	cvt.log_id = pstore->get_dir();
+	cvt.log_id = store.get_dir();
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids_create;
 	cvt.username_to_entryid = common_util_username_to_entryid;
@@ -1974,23 +1974,23 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	return nullptr;
 }
 
-ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
+ec_error_t cu_ical_to_message2(store_object &store, char *ical_data,
     std::vector<message_ptr> &msgvec) try
 {
 	ical icobj;
 	if (!icobj.load_from_str_move(ical_data))
 		return ecError;
-	common_util_set_dir(store->get_dir());
+	common_util_set_dir(store.get_dir());
 
 	std::string errstr;
 	oxcical_converter cvt;
-	cvt.log_id = store->get_dir();
+	cvt.log_id = store.get_dir();
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids_create;
 	cvt.username_to_entryid = common_util_username_to_entryid;
 	auto err = cvt.ical_to_mapi_multi(icobj, msgvec, errstr);
 	if (err != ecSuccess)
-		mlog(LV_ERR, "ical_to_mapi_multi %s: %s", store->get_dir(),
+		mlog(LV_ERR, "ical_to_mapi_multi %s: %s", store.get_dir(),
 			errstr.size() > 0 ? errstr.c_str() : mapi_strerror(err));
 	return err;
 } catch (const std::bad_alloc &) {
@@ -1998,20 +1998,20 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 	return ecServerOOM;
 }
 
-ec_error_t cu_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
+ec_error_t cu_message_to_vcf(message_object &msg, BINARY *pvcf_bin)
 {
-	auto pstore = pmessage->get_store();
-	auto message_id = pmessage->get_id();
+	auto &store = *msg.get_store();
+	auto message_id = msg.get_id();
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zs_get_info();
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
-	if (!exmdb_client->read_message(pstore->get_dir(), nullptr, cpid,
+	if (!exmdb_client->read_message(store.get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecRpcFailed;
-	common_util_set_dir(pstore->get_dir());
+	common_util_set_dir(store.get_dir());
 
-	std::string cvt_log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+	std::string cvt_log_id = store.get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	oxvcard_converter cvt;
 	cvt.log_id = cvt_log_id.c_str();
 	cvt.get_propids = common_util_get_propids;
@@ -2026,13 +2026,13 @@ ec_error_t cu_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	if (pvcf_bin->pv == nullptr)
 		return ecServerOOM;
 	memcpy(pvcf_bin->pv, vcf_out.c_str(), vcf_out.size());
-	auto err = pmessage->write_message(*pmsgctnt);
+	auto err = msg.write_message(*pmsgctnt);
 	if (err != ecSuccess)
 		/* ignore */;
 	return ecSuccess;
 }
 
-ec_error_t cu_abentry_to_vcf(user_object *puser, bool is_group, BINARY *pvcf_bin)
+ec_error_t cu_abentry_to_vcf(user_object &user, bool is_group, BINARY *pvcf_bin)
 {
 	PROPTAG_ARRAY tags{};
 	TPROPVAL_ARRAY props{};
@@ -2043,7 +2043,7 @@ ec_error_t cu_abentry_to_vcf(user_object *puser, bool is_group, BINARY *pvcf_bin
 	if (pinfo == nullptr)
 		return ecInvalidParam;
 	oxvcard_get_abentry_proptags(&tags);
-	auto err = puser->get_props(tags, &props);
+	auto err = user.get_props(tags, &props);
 	if (err != ecSuccess)
 		return ecRpcFailed;
 	common_util_set_dir(pinfo->get_homedir());
@@ -2061,7 +2061,7 @@ ec_error_t cu_abentry_to_vcf(user_object *puser, bool is_group, BINARY *pvcf_bin
 	return ecSuccess;
 }
 	
-message_ptr common_util_vcf_to_message(store_object *pstore, const BINARY *pvcf_bin)
+message_ptr common_util_vcf_to_message(store_object &store, const BINARY *pvcf_bin)
 {
 	auto pbuff = cu_alloc<char>(pvcf_bin->cb + 1);
 	if (pbuff == nullptr)
@@ -2072,21 +2072,21 @@ message_ptr common_util_vcf_to_message(store_object *pstore, const BINARY *pvcf_
 	auto ret = vcard.load_single_from_str_move(pbuff);
 	if (ret != ecSuccess)
 		return nullptr;
-	common_util_set_dir(pstore->get_dir());
+	common_util_set_dir(store.get_dir());
 
 	oxvcard_converter cvt;
 	cvt.get_propids = common_util_get_propids_create;
 	return cvt.vcard_to_mapi(vcard);
 }
 
-ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
+ec_error_t cu_vcf_to_message2(store_object &store, char *vcf_data,
     std::vector<message_ptr> &msgvec) try
 {
 	std::vector<vcard> cardvec;
 	auto ret = vcard_load_multi_from_str_move(vcf_data, cardvec);
 	if (ret != ecSuccess)
 		return ret;
-	common_util_set_dir(store->get_dir());
+	common_util_set_dir(store.get_dir());
 
 	oxvcard_converter cvt;
 	cvt.get_propids = common_util_get_propids_create;

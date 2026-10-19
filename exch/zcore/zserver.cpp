@@ -1860,8 +1860,8 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 			    account_id != src_store->account_id ||
 			    folder_id != psrc_folder->folder_id)
 				continue;
-			auto ret = cu_remote_copy_message(src_store, message_id,
-			           dst_store, pdst_folder->folder_id);
+			auto ret = cu_remote_copy_message(*src_store, message_id,
+			           *dst_store, pdst_folder->folder_id);
 			if (ret != ecSuccess)
 				return ret;
 			if (!b_copy) {
@@ -2344,7 +2344,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		auto ret = cu_remote_copy_folder(src_store, folder_id, dst_store,
+		auto ret = cu_remote_copy_folder(*src_store, folder_id, *dst_store,
 		           pdst_folder->folder_id, new_name);
 		if (ret != ecSuccess)
 			return ret;
@@ -3412,7 +3412,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
 	std::string delegator;
-	if (!cu_extract_delegator(pmessage, delegator))
+	if (!cu_extract_delegator(*pmessage, delegator))
 		return ecSendAsDenied;
 	auto actor = pstore->get_account();
 	repr_grant repr_grant;
@@ -3497,7 +3497,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			return ecSuccess;
 		}
 	}
-	auto ret = cu_send_message(pstore, pmessage, actor, delegator.c_str(), repr_grant);
+	auto ret = cu_send_message(*pstore, *pmessage, actor, delegator.c_str(), repr_grant);
 	if (ret != ecSuccess) {
 		exmdb_client->clear_submit(pstore->get_dir(),
 			pmessage->get_id(), b_unsent);
@@ -4969,7 +4969,7 @@ ec_error_t zs_messagetorfc822(GUID hsession, uint32_t hmessage, BINARY *peml_bin
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	return cu_message_to_rfc822(pmessage->get_store(),
+	return cu_message_to_rfc822(*pmessage->get_store(),
 	       pmessage->instance_id, peml_bin);
 }
 
@@ -4985,7 +4985,7 @@ ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	auto pmsgctnt = cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin);
+	auto pmsgctnt = cu_rfc822_to_message(*pmessage->get_store(), mxf_flags, peml_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(*pmsgctnt);
@@ -5002,7 +5002,7 @@ ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	return cu_message_to_ical(pmessage->get_store(),
+	return cu_message_to_ical(*pmessage->get_store(),
 	       pmessage->get_id(), pical_bin);
 }
 
@@ -5018,7 +5018,7 @@ ec_error_t zs_icaltomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	auto pmsgctnt = cu_ical_to_message(pmessage->get_store(), pical_bin);
+	auto pmsgctnt = cu_ical_to_message(*pmessage->get_store(), pical_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(*pmsgctnt);
@@ -5039,9 +5039,9 @@ ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 	std::vector<message_ptr> msgvec;
 	ec_error_t ret = ecInvalidParam;
 	if (data_type == IMTOMESSAGE_ICAL)
-		ret = cu_ical_to_message2(fld->pstore, im_data, msgvec);
+		ret = cu_ical_to_message2(*fld->pstore, im_data, msgvec);
 	else if (data_type == IMTOMESSAGE_VCARD)
-		ret = cu_vcf_to_message2(fld->pstore, im_data, msgvec);
+		ret = cu_vcf_to_message2(*fld->pstore, im_data, msgvec);
 	if (ret != ecSuccess)
 		return ret;
 
@@ -5081,9 +5081,9 @@ ec_error_t zs_messagetovcf(GUID hsession, uint32_t hmessage, BINARY *pvcf_bin)
 	if (obj == nullptr)
 		return ecNullObject;
 	if (mapi_type == zs_objtype::message)
-		return cu_message_to_vcf(static_cast<message_object *>(obj), pvcf_bin);
+		return cu_message_to_vcf(*static_cast<message_object *>(obj), pvcf_bin);
 	if (mapi_type == zs_objtype::mailuser || mapi_type == zs_objtype::distlist)
-		return cu_abentry_to_vcf(static_cast<user_object *>(obj),
+		return cu_abentry_to_vcf(*static_cast<user_object *>(obj),
 		       mapi_type == zs_objtype::distlist, pvcf_bin);
 	return ecNotSupported;
 }
@@ -5100,7 +5100,7 @@ ec_error_t zs_vcftomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	auto pmsgctnt = common_util_vcf_to_message(pmessage->get_store(), pvcf_bin);
+	auto pmsgctnt = common_util_vcf_to_message(*pmessage->get_store(), pvcf_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(*pmsgctnt);
