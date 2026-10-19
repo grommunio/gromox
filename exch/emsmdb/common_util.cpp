@@ -1401,7 +1401,7 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
  *
  * See zcore/common_util.cpp for a twin of this function.
  */
-static bool cu_deposit_repr_copy(logon_object *plogon,
+static bool cu_deposit_repr_copy(logon_object &logon,
     const MESSAGE_CONTENT &ctnt, const char *actor, const char *delegator,
     repr_grant grant, const char *log_id) try
 {
@@ -1421,7 +1421,7 @@ static bool cu_deposit_repr_copy(logon_object *plogon,
 			"%s was deposited", delegator, log_id);
 		return false;
 	}
-	auto dir = plogon->get_dir();
+	auto dir = logon.get_dir();
 	/* Ignore user's own aliases */
 	if (strcasecmp(mres.username.c_str(), actor) == 0 || mres.maildir == dir)
 		return false;
@@ -1521,11 +1521,11 @@ static bool cu_deposit_repr_copy(logon_object *plogon,
  * @delegator:	identity being represented (equal to @actor if none)
  * @grant:	to what degree @actor may represent @delegator
  */
-ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
+ec_error_t cu_send_message(logon_object &logon, message_object &msg,
     const char *actor, const char *delegator, repr_grant grant) try
 {
 	auto ev_from = grant >= repr_grant::send_as ? delegator : actor;
-	auto message_id = msg->get_id();
+	auto message_id = msg.get_id();
 	void *pvalue;
 	BOOL b_result;
 	BOOL b_partial;
@@ -1534,7 +1534,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	auto dir = plogon->get_dir();
+	auto dir = logon.get_dir();
 	auto log_id = dir + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	cpid_t cpid = pinfo == nullptr ? static_cast<cpid_t>(1252) : pinfo->cpid;
 	if (!exmdb_client->get_message_property(dir, nullptr, CP_ACP,
@@ -1598,9 +1598,9 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		TAGGED_PROPVAL tp  = {PR_TRANSPORT_MESSAGE_HEADERS_A, deconst(th.c_str())};
 		TPROPVAL_ARRAY tpa = {1, &tp};
 		PROBLEM_ARRAY pa{};
-		if (msg->set_props(&tpa, &pa) == ecSuccess)
+		if (msg.set_props(&tpa, &pa) == ecSuccess)
 			/* Unclear if permitted to save (specs say nothing) */
-			msg->save();
+			msg.save();
 	}
 	ret = cu_send_vmail(std::move(vmail), g_smtp_url.c_str(), ev_from, rcpt_list);
 	if (ret != ecSuccess) {
@@ -1623,7 +1623,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	 * affected by what the client asked us to do with the sender's own
 	 * copy.
 	 */
-	if (cu_deposit_repr_copy(plogon, *pmsgctnt, actor, delegator, grant,
+	if (cu_deposit_repr_copy(logon, *pmsgctnt, actor, delegator, grant,
 	    log_id.c_str())) {
 		/*
 		 * The represented mailbox asked to hold the only copy and now
@@ -1634,13 +1634,13 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		 * second copy back. Deletion without clear_submit, as in the
 		 * PR_DELETE_AFTER_SUBMIT branch below.
 		 */
-		exmdb_client->delete_message(dir, plogon->account_id, cpid,
+		exmdb_client->delete_message(dir, logon.account_id, cpid,
 			parent_id, message_id, TRUE, &b_result);
 		return ecSuccess;
 	}
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
-		if (!cu_entryid_to_mid(*plogon, ptarget, &folder_id, &new_id)) {
+		if (!cu_entryid_to_mid(logon, ptarget, &folder_id, &new_id)) {
 			mlog2(LV_WARN, "W-1279: PR_TARGET_ENTRYID inconvertible in %s",
 				log_id.c_str());
 			return ecWarnWithErrors;	
@@ -1658,7 +1658,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		}
 		return ecSuccess;
 	} else if (b_delete) {
-		exmdb_client->delete_message(dir, plogon->account_id, cpid,
+		exmdb_client->delete_message(dir, logon.account_id, cpid,
 			parent_id, message_id, TRUE, &b_result);
 		return ecSuccess;
 	}
@@ -1670,7 +1670,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	if (ptarget == nullptr ||
-	    !cu_entryid_to_fid(*plogon, ptarget, &folder_id))
+	    !cu_entryid_to_fid(logon, ptarget, &folder_id))
 		folder_id = eid_t(1, PRIVATE_FID_SENT_ITEMS);
 
 	const EID_ARRAY ids = {1, &message_id};
