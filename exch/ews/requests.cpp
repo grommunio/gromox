@@ -4410,9 +4410,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
 		else
 			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
-		if (occ_basedate == 0 &&
-		    request.SendMeetingInvitationsOrCancellations &&
-		    *request.SendMeetingInvitationsOrCancellations != Enum::SendToNone) {
+		/* An attendee's copy sends nothing, like in Exchange */
+		if (orgCopy) {
 			MESSAGE_CONTENT *sendcontent = nullptr;
 			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 			    username, CP_ACP, mid.messageId(), &sendcontent) ||
@@ -4423,8 +4422,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
 			    sendcontent->children.prcpts != nullptr &&
 			    sendcontent->children.prcpts->count > 0) {
-				if (orgCopy)
-					ctx.validate_sendas_perms(*sendcontent);
+				ctx.validate_sendas_perms(*sendcontent);
 				if (*request.SendMeetingInvitationsOrCancellations == Enum::SendToAllAndSaveCopy ||
 				    *request.SendMeetingInvitationsOrCancellations == Enum::SendToChangedAndSaveCopy) {
 					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
