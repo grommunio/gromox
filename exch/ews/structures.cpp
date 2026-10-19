@@ -23,10 +23,12 @@
 #include <gromox/freebusy.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include "ews.hpp"
 #include "structures.hpp"
 #include "namedtags.hpp"
@@ -1787,8 +1789,52 @@ void sShape::properties(const TPROPVAL_ARRAY& properties)
 {
 	for (const auto &prop : properties)
 		props[prop.proptag].prop = &prop;
+	deriveSmtp();
 	if (rights.has_value())
 		redact();
+}
+
+/**
+ * @brief      Fill in missing SMTP addresses of EX type originators
+ */
+void sShape::deriveSmtp()
+{
+	static constexpr proptag_t tags[][3] = {
+		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_SMTP_ADDRESS},
+		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS},
+	};
+	static_assert(std::size(tags) == std::size(smtpProps));
+	for (size_t i = 0; i < std::size(tags); ++i) {
+		auto it = props.find(tags[i][2]);
+		if (it == props.end() || it->second.prop != nullptr)
+			continue;
+		auto type = get<char>(tags[i][0], FL_ANY);
+		auto addr = get<char>(tags[i][1], FL_ANY);
+		if (type == nullptr || addr == nullptr || strcasecmp(type, "EX") != 0)
+			continue;
+		const char *smtp = nullptr;
+		if (x500Org != nullptr) {
+			auto c = smtpCache.find(addr);
+			if (c == smtpCache.end()) {
+				std::string user;
+				if (cvt_essdn_to_username(addr, x500Org,
+				    mysql_adaptor_userid_to_name, user) != ecSuccess)
+					user.clear();
+				c = smtpCache.emplace(addr, std::move(user)).first;
+			}
+			if (!c->second.empty())
+				smtp = c->second.c_str();
+		}
+		/* Sender and representee are often the same mailbox */
+		auto sender = get<char>(PR_SENDER_EMAIL_ADDRESS, FL_ANY);
+		if (smtp == nullptr && i == 1 && sender != nullptr &&
+		    strcasecmp(sender, addr) == 0)
+			smtp = get<char>(PR_SENDER_SMTP_ADDRESS, FL_ANY);
+		if (smtp == nullptr)
+			continue;
+		smtpProps[i] = TAGGED_PROPVAL{tags[i][2], deconst(smtp)};
+		it->second.prop = &smtpProps[i];
+	}
 }
 
 /**

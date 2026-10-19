@@ -2116,6 +2116,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 	response->SetName("m:FindItemResponse");
 
 	sShape shape(request.ItemShape);
+	shape.x500Org = ctx.plugin().x500_org_name.c_str();
 	uint8_t tableFlags = request.Traversal == Enum::SoftDeleted ? TABLE_FLAG_SOFTDELETES :
 	                     request.Traversal == Enum::Associated ? TABLE_FLAG_ASSOCIATED :
 	                     request.Traversal == Enum::Shallow ? 0 : TABLE_FLAG_DEPTH;

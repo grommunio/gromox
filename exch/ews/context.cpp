@@ -2293,6 +2293,7 @@ void EWSContext::updateProps(tCalendarItem& calItem, sShape& shape, const TPROPV
 sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sShape& shape) const
 {
 	shape.clean();
+	shape.x500Org = m_plugin.x500_org_name.c_str();
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 	sItem item = tItem::create(shape);
@@ -2448,6 +2449,7 @@ EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
 	s.fid = fid;
 	s.mid = mid;
 	shape.clean();
+	shape.x500Org = m_plugin.x500_org_name.c_str();
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 
