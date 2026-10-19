@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -27,7 +28,7 @@ using namespace gromox;
 namespace {
 
 struct ievent {
-	time_t start_time = 0, end_time = 0;
+	time_t start_time = 0, end_time = 0, orig_start = 0;
 	const EXCEPTIONINFO *ei = nullptr;
 	const EXTENDEDEXCEPTION *xe = nullptr;
 };
@@ -38,7 +39,7 @@ struct freebusy_tags {
 	uint32_t apptstartwhole = 0, apptendwhole = 0, busystatus = 0, recurring = 0,
 		apptrecur = 0, apptsubtype = 0, private_flag = 0, apptstateflags = 0,
 		clipend = 0, location = 0, reminderset = 0, globalobjectid = 0,
-		timezonestruct = 0;
+		timezonestruct = 0, exreplacetime = 0;
 	bool init_ok = false;
 };
 
@@ -60,6 +61,7 @@ freebusy_tags::freebusy_tags(const char *dir)
 		{MNID_ID, PSETID_Common,      PidLidReminderSet},
 		{MNID_ID, PSETID_Meeting,     PidLidGlobalObjectId},
 		{MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct},
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
 	};
 
 	const PROPNAME_ARRAY propnames = {std::size(propname_buff), deconst(propname_buff)};
@@ -79,6 +81,7 @@ freebusy_tags::freebusy_tags(const char *dir)
 		reminderset    = PROP_TAG(PT_BOOLEAN, ids[10]);
 		globalobjectid = PROP_TAG(PT_BINARY,  ids[11]);
 		timezonestruct = PROP_TAG(PT_BINARY,  ids[12]);
+		exreplacetime  = PROP_TAG(PT_SYSTIME, ids[13]);
 		init_ok = true;
 	}
 }
@@ -285,6 +288,10 @@ static bool find_recur_times(const ical_component *tzcom,
 		    !ical_itime_to_utc(tzcom, itime, &ut))
 			continue;
 		event.end_time = ut;
+		ut = rop_util_rtime_to_unix(ei.originalstartdate);
+		if (ical_utc_to_datetime(nullptr, ut, &itime) &&
+		    ical_itime_to_utc(tzcom, itime, &ut))
+			event.orig_start = ut;
 		event.ei = &apr.pexceptioninfo[i];
 		event.xe = &apr.pextendedexception[i];
 		evlist.push_back(std::move(event));
@@ -448,6 +455,42 @@ bool sees_private_items(const char *dir, const char *actor)
 	return false;
 }
 
+static bool appt_is_private(const TPROPVAL_ARRAY &props, const freebusy_tags &ptag)
+{
+	auto flag = props.get<const uint8_t>(ptag.private_flag);
+	auto sens = props.get<const uint32_t>(PR_SENSITIVITY);
+	return (flag != nullptr && *flag != 0) ||
+	       (sens != nullptr && *sens == SENSITIVITY_PRIVATE);
+}
+
+/**
+ * Returns whether the exception of @master that replaces the occurrence
+ * originally at @orig_start is private. The closest exception within a
+ * day counts, to absorb zone conversion errors.
+ */
+static bool exception_private(const message_content &master,
+    const freebusy_tags &ptag, time_t orig_start)
+{
+	auto atts = master.children.pattachments;
+	if (atts == nullptr)
+		return false;
+	const message_content *best = nullptr;
+	time_t best_diff = 86400;
+	for (const auto &at : *atts) {
+		if (at.pembedded == nullptr)
+			continue;
+		auto rt = at.pembedded->proplist.get<const uint64_t>(ptag.exreplacetime);
+		if (rt == nullptr)
+			continue;
+		time_t diff = std::abs(rop_util_nttime_to_unix(*rt) - orig_start);
+		if (diff < best_diff) {
+			best = at.pembedded;
+			best_diff = diff;
+		}
+	}
+	return best != nullptr && appt_is_private(best->proplist, ptag);
+}
+
 ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time,
     time_t end_time, std::vector<freebusy_event> &fb_data)
 {
@@ -554,12 +597,9 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		auto end_whole   = rop_util_nttime_to_unix(*ts);
 		auto subject     = rows.pparray[i]->get<char>(PR_SUBJECT);
 		auto location    = rows.pparray[i]->get<char>(ptag.location);
-		auto sensitivity = rows.pparray[i]->get<const uint32_t>(PR_SENSITIVITY);
 		auto flag        = rows.pparray[i]->get<const uint8_t>(ptag.reminderset);
 		bool is_reminder = flag != nullptr && *flag != 0;
-		flag = rows.pparray[i]->get<uint8_t>(ptag.private_flag);
-		bool is_private  = (flag != nullptr && *flag != 0) ||
-		                   (sensitivity != nullptr && *sensitivity == SENSITIVITY_PRIVATE);
+		bool is_private  = appt_is_private(*rows.pparray[i], ptag);
 		/* MS-OXWAVLS v17.0 §3.1.4.1.3.10 */
 		bool withhold    = is_private && !see_private;
 		std::optional<std::string> id;
@@ -632,24 +672,29 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 			bool ov_meeting  = (event.ei->overrideflags & ARO_MEETINGTYPE) ? event.ei->meetingtype & 1 : is_meeting;
 			bool ov_reminder = (event.ei->overrideflags & ARO_REMINDER)    ? event.ei->reminderset == 0 : is_reminder;
 			uint32_t ov_busy = (event.ei->overrideflags & ARO_BUSYSTATUS)  ? event.ei->busystatus : busy_type;
+			/* A private exception withholds only its own details */
+			bool ov_private  = is_private ||
+			                   exception_private(*ctnt, ptag, event.orig_start);
+			bool ov_withhold = ov_private && !see_private;
 			std::optional<std::string> ov_subj, ov_loc;
-			if (!withhold && event.ei->overrideflags & ARO_SUBJECT)
+			if (!ov_withhold && event.ei->overrideflags & ARO_SUBJECT)
 				ov_subj = event.xe->subject;
-			else if (subject != nullptr)
+			else if (!ov_withhold && subject != nullptr)
 				ov_subj = subject;
-			if (!withhold && event.ei->overrideflags & ARO_LOCATION)
+			if (!ov_withhold && event.ei->overrideflags & ARO_LOCATION)
 				ov_loc = event.xe->location;
-			else if (location != nullptr)
+			else if (!ov_withhold && location != nullptr)
 				ov_loc = location;
 
 			fb_data.push_back(FBE{
 				.start_time = event.start_time, .end_time = event.end_time,
-				.id = id, .subject = std::move(ov_subj),
+				.id = ov_withhold ? std::nullopt : id,
+				.subject = std::move(ov_subj),
 				.location = std::move(ov_loc),
 				.busy_status = ov_busy, .has_details = detailed,
 				.is_meeting = ov_meeting, .is_recurring = true,
 				.is_exception = true, .is_reminderset = ov_reminder,
-				.is_private = is_private});
+				.is_private = ov_private});
 		}
 	}
 
