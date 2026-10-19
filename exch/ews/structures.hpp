@@ -365,7 +365,7 @@ class sShape {
 	std::vector<proptag_t> dTags; ///< List of tags to remove
 
 	std::unordered_map<proptag_t, PropInfo> props; ///< Tag -> Property mapping
-	TAGGED_PROPVAL smtpProps[2]{}; ///< SMTP addresses derived from EX ones
+	TAGGED_PROPVAL smtpProps[4]{}; ///< SMTP addresses derived from EX ones
 	std::unordered_map<std::string, std::string> smtpCache; ///< ESSDN -> SMTP
 
 	void deriveSmtp();
