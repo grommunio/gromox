@@ -944,6 +944,7 @@ void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(EndTimeZoneId);
 	XMLDUMPT(IntendedFreeBusyStatus);
 	XMLDUMPT(DoNotForwardMeeting);
+	XMLDUMPT(IsOrganizer);
 }
 
 tCalendarPermission::tCalendarPermission(const tinyxml2::XMLElement *xml) :
