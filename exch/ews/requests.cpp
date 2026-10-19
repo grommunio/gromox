@@ -1562,26 +1562,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 				throw EWSError::ItemSave(E3429);
 
 			ATTACHMENT_CONTENT ac{};
-			std::vector<TAGGED_PROPVAL> props;
-			if (att.Name) {
-				props.push_back({PR_ATTACH_LONG_FILENAME, EWSContext::cpystr(*att.Name)});
-				props.push_back({PR_ATTACH_FILENAME, EWSContext::cpystr(*att.Name)});
-				props.push_back({PR_DISPLAY_NAME, EWSContext::cpystr(*att.Name)});
-			}
-			static constexpr uint32_t method = ATTACH_BY_VALUE;
-			props.push_back({PR_ATTACH_METHOD, EWSContext::construct<uint32_t>(method)});
-			if (att.IsInline && *att.IsInline) {
-				static constexpr uint32_t flags = ATT_MHTML_REF;
-				props.push_back({PR_ATTACH_FLAGS, EWSContext::construct<uint32_t>(flags)});
-			}
-			if (att.IsContactPhoto && *att.IsContactPhoto)
-				props.push_back({PR_ATTACHMENT_CONTACTPHOTO, EWSContext::construct<uint8_t>(1)});
-			if (att.Content) {
-				auto bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(att.Content->size()), {EWSContext::alloc<char>(att.Content->size())}});
-				memcpy(bin->pc, att.Content->data(), bin->cb);
-				props.push_back({PR_ATTACH_DATA_BIN, bin});
-				props.push_back({PR_ATTACH_SIZE, EWSContext::construct<int32_t>(bin->cb)});
-			}
+			auto props = att.props();
 			ac.proplist.count = props.size();
 			ac.proplist.ppropval = props.data();
 			ac.pembedded = nullptr;

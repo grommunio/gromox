@@ -4558,6 +4558,37 @@ tFileAttachment::tFileAttachment(const sAttachmentId& aid, const sShape& shape) 
 	}
 }
 
+/**
+ * @brief      Properties of a new attachment made from this one
+ *
+ * @return     Properties, valid for the duration of the request
+ */
+std::vector<TAGGED_PROPVAL> tFileAttachment::props() const
+{
+	std::vector<TAGGED_PROPVAL> props;
+	if (Name) {
+		auto name = EWSContext::cpystr(*Name);
+		props.push_back({PR_ATTACH_LONG_FILENAME, name});
+		props.push_back({PR_ATTACH_FILENAME, name});
+		props.push_back({PR_DISPLAY_NAME, name});
+	}
+	static constexpr uint32_t method = ATTACH_BY_VALUE;
+	props.push_back({PR_ATTACH_METHOD, deconst(&method)});
+	if (IsInline && *IsInline) {
+		static constexpr uint32_t flags = ATT_MHTML_REF;
+		props.push_back({PR_ATTACH_FLAGS, deconst(&flags)});
+	}
+	if (IsContactPhoto && *IsContactPhoto)
+		props.push_back({PR_ATTACHMENT_CONTACTPHOTO, deconst(&byte_value_one)});
+	if (Content) {
+		auto bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(Content->size()), {EWSContext::alloc<char>(Content->size())}});
+		memcpy(bin->pc, Content->data(), bin->cb);
+		props.push_back({PR_ATTACH_DATA_BIN, bin});
+		props.push_back({PR_ATTACH_SIZE, EWSContext::construct<int32_t>(bin->cb)});
+	}
+	return props;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /**

@@ -1136,6 +1136,7 @@ struct tFileAttachment : public tAttachment {
 	std::optional<bool> IsContactPhoto;
 	std::optional<sBase64Binary> Content;
 
+	std::vector<TAGGED_PROPVAL> props() const;
 	void serialize(tinyxml2::XMLElement *) const;
 };
 
