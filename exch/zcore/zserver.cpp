@@ -1802,6 +1802,70 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	       ecSuccess : ecError;
 }
 
+static ec_error_t zs_copymessages_other(const BINARY_ARRAY &entryids,
+    store_object &src_store, folder_object &src_folder, store_object &dst_store,
+    folder_object &dst_folder, USER_INFO &uinfo, unsigned int flags)
+{
+	bool b_guest = true;
+	if (flags & MAPI_MOVE) {
+		b_guest = false;
+		if (!src_store.owner_mode()) {
+			uint32_t permission = 0;
+			if (!exmdb_client->get_folder_perm(src_store.get_dir(),
+			    src_folder.folder_id, uinfo.get_username(), &permission))
+				return ecError;
+			if (permission & frightsDeleteAny)
+				/* permission to delete any message */;
+			else if (permission & frightsDeleteOwned)
+				b_guest = true;
+			else
+				return ecAccessDenied;
+		}
+	}
+	if (!dst_store.owner_mode()) {
+		uint32_t permission = 0;
+		if (!exmdb_client->get_folder_perm(dst_store.get_dir(),
+		    dst_folder.folder_id, uinfo.get_username(), &permission))
+			return ecError;
+		if (!(permission & frightsCreate))
+			return ecAccessDenied;
+	}
+	for (size_t i = 0; i < entryids.count; ++i) {
+		eid_t folder_id{}, message_id{};
+		BOOL b_private = true;
+		int account_id = 0;
+
+		if (!cu_entryid_to_mid(entryids.pbin[i],
+		    &b_private, &account_id, &folder_id, &message_id))
+			return ecError;
+		if (b_private != src_store.b_private ||
+		    account_id != src_store.account_id ||
+		    folder_id != src_folder.folder_id)
+			continue;
+		auto ret = cu_remote_copy_message(src_store, message_id,
+		           dst_store, dst_folder.folder_id);
+		if (ret != ecSuccess)
+			return ret;
+		if (flags & MAPI_MOVE) {
+			if (b_guest) {
+				BOOL b_owner = false;
+				if (!exmdb_client_check_message_owner(src_store.get_dir(),
+				    message_id, uinfo.get_username(), &b_owner))
+					return ecError;
+				if (!b_owner)
+					continue;
+			}
+			BOOL b_partial = false;
+			const EID_ARRAY ids = {1, &message_id};
+			if (!exmdb_client->delete_messages(src_store.get_dir(),
+			    uinfo.cpid, nullptr, src_folder.folder_id,
+			    &ids, false, &b_partial))
+				return ecError;
+		}
+	}
+	return ecSuccess;
+}
+
 ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
     uint32_t hdstfolder, const BINARY_ARRAY *pentryids, uint32_t flags)
 {
@@ -1824,66 +1888,8 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 		return ecNotSupported;
 	auto dst_store = pdst_folder->pstore;
 	if (src_store != dst_store)
-		return [](const BINARY_ARRAY *pentryids, store_object *src_store, folder_object *psrc_folder, store_object *dst_store, folder_object *pdst_folder, USER_INFO_REF &pinfo, unsigned int flags) {
-		bool b_guest = true;
-		if (flags & MAPI_MOVE) {
-			b_guest = FALSE;
-			if (!src_store->owner_mode()) {
-				uint32_t permission = 0;
-				if (!exmdb_client->get_folder_perm(src_store->get_dir(),
-				    psrc_folder->folder_id, pinfo->get_username(), &permission))
-					return ecError;
-				if (permission & frightsDeleteAny)
-					/* permission to delete any message */;
-				else if (permission & frightsDeleteOwned)
-					b_guest = true;
-				else
-					return ecAccessDenied;
-			}
-		}
-		if (!dst_store->owner_mode()) {
-			uint32_t permission = 0;
-			if (!exmdb_client->get_folder_perm(dst_store->get_dir(),
-			    pdst_folder->folder_id, pinfo->get_username(), &permission))
-				return ecError;
-			if (!(permission & frightsCreate))
-				return ecAccessDenied;
-		}
-		for (size_t i = 0; i < pentryids->count; ++i) {
-			eid_t folder_id{}, message_id{};
-			BOOL b_private = true;
-			int account_id = 0;
-
-			if (!cu_entryid_to_mid(pentryids->pbin[i],
-			    &b_private, &account_id, &folder_id, &message_id))
-				return ecError;
-			if (b_private != src_store->b_private ||
-			    account_id != src_store->account_id ||
-			    folder_id != psrc_folder->folder_id)
-				continue;
-			auto ret = cu_remote_copy_message(*src_store, message_id,
-			           *dst_store, pdst_folder->folder_id);
-			if (ret != ecSuccess)
-				return ret;
-			if (flags & MAPI_MOVE) {
-				if (b_guest) {
-					BOOL b_owner = false;
-					if (!exmdb_client_check_message_owner(src_store->get_dir(),
-					    message_id, pinfo->get_username(), &b_owner))
-						return ecError;
-					if (!b_owner)
-						continue;
-				}
-				BOOL b_partial = false;
-				const EID_ARRAY ids = {1, &message_id};
-				if (!exmdb_client->delete_messages(src_store->get_dir(),
-				    pinfo->cpid, nullptr, psrc_folder->folder_id,
-				    &ids, false, &b_partial))
-					return ecError;
-			}
-		}
-		return ecSuccess;
-		}(pentryids, src_store, psrc_folder, dst_store, pdst_folder, pinfo, flags);
+		return zs_copymessages_other(*pentryids, *src_store, *psrc_folder,
+		       *dst_store, *pdst_folder, *pinfo, flags);
 
 	EID_ARRAY ids;
 	ids.count = 0;
