@@ -1805,17 +1805,12 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
     uint32_t hdstfolder, const BINARY_ARRAY *pentryids, uint32_t flags)
 {
-	BOOL b_guest = TRUE, b_owner;
-	BOOL b_private;
-	int account_id;
-	zs_objtype mapi_type;
-	uint32_t permission;
-	
 	if (pentryids->count == 0)
 		return ecSuccess;
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
+	zs_objtype mapi_type;
 	auto psrc_folder = pinfo->ptree->get_object<folder_object>(hsrcfolder, &mapi_type);
 	if (psrc_folder == nullptr)
 		return ecNullObject;
@@ -1828,23 +1823,25 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	if (mapi_type != zs_objtype::folder || pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto dst_store = pdst_folder->pstore;
-	BOOL b_copy = (flags & MAPI_MOVE) ? false : TRUE;
 	if (src_store != dst_store) {
-		if (!b_copy) {
+		bool b_guest = true;
+		if (flags & MAPI_MOVE) {
 			b_guest = FALSE;
 			if (!src_store->owner_mode()) {
+				uint32_t permission = 0;
 				if (!exmdb_client->get_folder_perm(src_store->get_dir(),
 				    psrc_folder->folder_id, pinfo->get_username(), &permission))
 					return ecError;
 				if (permission & frightsDeleteAny)
 					/* permission to delete any message */;
 				else if (permission & frightsDeleteOwned)
-					b_guest = TRUE;
+					b_guest = true;
 				else
 					return ecAccessDenied;
 			}
 		}
 		if (!dst_store->owner_mode()) {
+			uint32_t permission = 0;
 			if (!exmdb_client->get_folder_perm(dst_store->get_dir(),
 			    pdst_folder->folder_id, pinfo->get_username(), &permission))
 				return ecError;
@@ -1853,6 +1850,9 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 		}
 		for (size_t i = 0; i < pentryids->count; ++i) {
 			eid_t folder_id{}, message_id{};
+			BOOL b_private = true;
+			int account_id = 0;
+
 			if (!cu_entryid_to_mid(pentryids->pbin[i],
 			    &b_private, &account_id, &folder_id, &message_id))
 				return ecError;
@@ -1864,8 +1864,9 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 			           *dst_store, pdst_folder->folder_id);
 			if (ret != ecSuccess)
 				return ret;
-			if (!b_copy) {
+			if (flags & MAPI_MOVE) {
 				if (b_guest) {
+					BOOL b_owner = false;
 					if (!exmdb_client_check_message_owner(src_store->get_dir(),
 					    message_id, pinfo->get_username(), &b_owner))
 						return ecError;
@@ -1890,6 +1891,9 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 		return ecServerOOM;
 	for (size_t i = 0; i < pentryids->count; ++i) {
 		eid_t folder_id{}, message_id{};
+		BOOL b_private = true;
+		int account_id = 0;
+
 		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
@@ -1899,20 +1903,21 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 			continue;
 		ids.pids[ids.count++] = message_id;
 	}
+	bool b_guest = false;
 	if (!src_store->owner_mode()) {
+		uint32_t permission = 0;
 		if (!exmdb_client->get_folder_perm(src_store->get_dir(),
 		    pdst_folder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsCreate))
 			return ecAccessDenied;
-		b_guest = TRUE;
-	} else {
-		b_guest = FALSE;
+		b_guest = true;
 	}
 	BOOL b_partial = false;
 	return exmdb_client->movecopy_messages(src_store->get_dir(),
-	       pinfo->cpid, b_guest, pinfo->get_username(),
-	       psrc_folder->folder_id, pdst_folder->folder_id, b_copy, &ids,
+	       pinfo->cpid, b_guest ? TRUE : false, pinfo->get_username(),
+	       psrc_folder->folder_id, pdst_folder->folder_id,
+	       (flags & MAPI_MOVE) ? false : TRUE, &ids,
 	       &b_partial) ? ecSuccess : ecError;
 }
 
