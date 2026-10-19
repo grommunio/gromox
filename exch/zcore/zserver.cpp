@@ -1823,7 +1823,8 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	if (mapi_type != zs_objtype::folder || pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto dst_store = pdst_folder->pstore;
-	if (src_store != dst_store) {
+	if (src_store != dst_store)
+		return [](const BINARY_ARRAY *pentryids, store_object *src_store, folder_object *psrc_folder, store_object *dst_store, folder_object *pdst_folder, USER_INFO_REF &pinfo, unsigned int flags) {
 		bool b_guest = true;
 		if (flags & MAPI_MOVE) {
 			b_guest = FALSE;
@@ -1882,7 +1883,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 			}
 		}
 		return ecSuccess;
-	}
+		}(pentryids, src_store, psrc_folder, dst_store, pdst_folder, pinfo, flags);
 
 	EID_ARRAY ids;
 	ids.count = 0;
