@@ -933,6 +933,7 @@ void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 	sCalendarMeetingRequestCommon::serialize(xml);
 	XMLDUMPT(UID);
 	XMLDUMPT(RecurrenceId);
+	XMLDUMPT(IsOrganizer);
 }
 
 tCalendarPermission::tCalendarPermission(const tinyxml2::XMLElement *xml) :

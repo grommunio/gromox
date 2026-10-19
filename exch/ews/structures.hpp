@@ -2257,6 +2257,8 @@ struct tCalendarItem : public tItem, public sCalendarMeetingRequestCommon {
 	// <xs:element name="JoinOnlineMeetingUrl" type="xs:string" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="OnlineMeetingSettings" type="t:OnlineMeetingSettingsType" minOccurs="0" maxOccurs="1"/>
 	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
+	std::optional<bool> IsOrganizer;
+
 	// <xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
 
 };
