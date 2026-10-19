@@ -804,9 +804,25 @@ static int ical_exception_origdate()
 	auto want = rop_util_unix_to_rtime(1792629000);
 	if (apr.pexceptioninfo[0].originalstartdate != want ||
 	    apr.pextendedexception[0].originalstartdate != want ||
-	    !apr.recur_pat.contains_del(want)) {
+	    !apr.recur_pat.contains_del(want - 30)) {
 		fprintf(stderr, "originalstartdate %u, want %u\n",
 		        apr.pexceptioninfo[0].originalstartdate, want);
+		return EXIT_FAILURE;
+	}
+
+	/* an EXDATE for the same day must not swallow the exception */
+	std::string d2 = data;
+	d2.insert(d2.find("DTSTART;TZID=Europe/Berlin:20261020"),
+		"EXDATE;TZID=Europe/Berlin:20261022T003000\r\n");
+	msg = ical_load(std::move(d2));
+	assert(msg != nullptr);
+	apr = {};
+	assert(ical_recur(*msg, apr));
+	if (apr.pexceptioninfo.size() != 1 ||
+	    apr.recur_pat.pdeletedinstancedates.size() != 1) {
+		fprintf(stderr, "%zu exceptions, %zu deletions\n",
+		        apr.pexceptioninfo.size(),
+		        apr.recur_pat.pdeletedinstancedates.size());
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

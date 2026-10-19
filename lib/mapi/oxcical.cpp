@@ -2667,13 +2667,18 @@ static ec_error_t oxcical_import_internal(const char *method,
 				return err;
 			}
 			auto minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, itime));
-			if (apr.recur_pat.contains_del(minutes))
+			if (std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
+			    [&](const EXCEPTIONINFO &e) { return e.originalstartdate / 1440 == minutes / 1440; }))
 				continue;
-			if (apr.recur_pat.pdeletedinstancedates.size() >= appt_max_exceptions) {
-				errstr = "E-2731: That appointment has too many deleted instances for this implementation";
-				return ecInvalidParam;
+			/* deleted dates are midnights, EXDATE may have the day already */
+			auto day = minutes / 1440 * 1440;
+			if (!apr.recur_pat.contains_del(day)) {
+				if (apr.recur_pat.pdeletedinstancedates.size() >= appt_max_exceptions) {
+					errstr = "E-2731: That appointment has too many deleted instances for this implementation";
+					return ecInvalidParam;
+				}
+				apr.recur_pat.pdeletedinstancedates.emplace_back(day);
 			}
-			apr.recur_pat.pdeletedinstancedates.emplace_back(minutes);
 			ei_new.originalstartdate = minutes;
 			ee_new.originalstartdate = minutes;
 			minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, start_itime));
