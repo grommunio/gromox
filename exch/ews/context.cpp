@@ -16,6 +16,7 @@
 #include <libHX/string.h>
 #include <vmime/message.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/freebusy.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
@@ -3775,16 +3776,25 @@ uint32_t EWSContext::permissions(const std::string& maildir, uint64_t folderId) 
 /**
  * @brief      Returns whether the user sees the private items of a folder
  *
- * Only users with access to the whole store see them in full, others only
- * get their times and busy status.
+ * Only users with access to the whole store and delegates allowed to see
+ * private items see them in full, others only get their times and busy
+ * status.
  *
+ * @param      dir     Store of the folder
  * @param      folder  Folder of the items
  * @param      rights  Rights of the user on the folder
  */
-static bool seesPrivateItems(const sFolderSpec &folder, uint32_t rights)
+bool EWSContext::seesPrivateItems(const std::string &dir,
+    const sFolderSpec &folder, uint32_t rights) const
 {
-	return folder.location != sFolderSpec::PRIVATE ||
-	       rights & frightsGromoxStoreOwner;
+	if (folder.location != sFolderSpec::PRIVATE ||
+	    rights & frightsGromoxStoreOwner)
+		return true;
+	auto it = m_seesPrivateItems.find(dir);
+	if (it == m_seesPrivateItems.end())
+		it = m_seesPrivateItems.emplace(dir, sees_private_items(dir.c_str(),
+		     m_auth_info.username)).first;
+	return it->second;
 }
 
 /**
@@ -3798,7 +3808,7 @@ static bool seesPrivateItems(const sFolderSpec &folder, uint32_t rights)
 void EWSContext::assertCanReadPrivate(const std::string &dir,
     const sFolderSpec &folder, uint32_t rights, uint64_t mid) const
 {
-	if (seesPrivateItems(folder, rights))
+	if (seesPrivateItems(dir, folder, rights))
 		return;
 	static constexpr proptag_t tags[] = {PR_SENSITIVITY};
 	auto sens = getItemProps(dir, mid, tags).get<const uint32_t>(PR_SENSITIVITY);
@@ -3819,7 +3829,7 @@ void EWSContext::restrictShape(const std::string &dir, const sFolderSpec &folder
 {
 	shape.restrict(rights, rights & frightsGromoxStoreOwner ? PROPID_ARRAY{} :
 		getNamedPropIds(dir, sShape::fbNames),
-		seesPrivateItems(folder, rights));
+		seesPrivateItems(dir, folder, rights));
 }
 
 /**

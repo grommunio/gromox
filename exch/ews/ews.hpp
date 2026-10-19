@@ -337,6 +337,7 @@ class EWSContext {
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
+	bool seesPrivateItems(const std::string &, const Structures::sFolderSpec &, uint32_t) const;
 	void assertCanReadPrivate(const std::string &, const Structures::sFolderSpec &, uint32_t, uint64_t) const;
 	void restrictShape(const std::string &, const Structures::sFolderSpec &, uint32_t, Structures::sShape &) const;
 	const BINARY *findContactPhoto(const std::string &dir, const std::string &email) const;
@@ -477,6 +478,7 @@ private:
 	gromox::time_point m_created{};
 	std::unique_ptr<NotificationContext> m_notify;
 	std::optional<Structures::sRecurrenceFrame> m_recurrence_frame; ///< Time zone of recurrences in the request
+	mutable std::unordered_map<std::string, bool> m_seesPrivateItems; ///< Whether the user sees private items, per store
 };
 
 /**

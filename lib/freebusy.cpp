@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <cstring>
+#include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 #include <fmt/format.h>
@@ -14,7 +17,9 @@
 #include <gromox/ical.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -355,6 +360,92 @@ unsigned int freebusy_perms(const char *actor, const char *target)
 	if (!exmdb_client->get_folder_perm(target, cal_eid, actor, &perm))
 		return 0;
 	return perm & (frightsFreeBusySimple | frightsFreeBusyDetailed | frightsReadAny);
+}
+
+/**
+ * Returns whether @eid, an entry of PidTagScheduleInfoDelegateEntryIds, is
+ * @actor.
+ */
+static bool delegate_eid_is(const BINARY &eid, const char *actor)
+{
+	std::string_view sv(eid.pc, eid.cb);
+	std::string essdn, user;
+	if (cvt_emsab_to_essdn(sv, essdn) == ecSuccess) {
+		/* Any organization name, only the user ID and name count */
+		auto end = essdn.find('/', 3);
+		if (strncasecmp(essdn.c_str(), "/o=", 3) != 0 || end == essdn.npos ||
+		    cvt_essdn_to_username(essdn.c_str(), essdn.substr(3, end - 3).c_str(),
+		    mysql_adaptor_userid_to_name, user) != ecSuccess)
+			return false;
+	} else if (cvt_entryid_to_smtpaddr(sv, "", mysql_adaptor_userid_to_name,
+	    user) != ecSuccess) {
+		return false;
+	}
+	return strcasecmp(user.c_str(), actor) == 0;
+}
+
+/**
+ * Returns whether the delegate list of the store at @dir lets @actor see
+ * private items, that is ShowPrivate in PidTagDelegateFlags of the
+ * LocalFreebusy message.
+ */
+bool sees_private_items(const char *dir, const char *actor)
+{
+	static constexpr proptag_t tags[] = {PR_SCHDINFO_DELEGATE_ENTRYIDS, PR_DELEGATE_FLAGS};
+	auto sees = [&](const TPROPVAL_ARRAY &props, bool &found) {
+		auto eids  = props.get<const BINARY_ARRAY>(PR_SCHDINFO_DELEGATE_ENTRYIDS);
+		auto flags = props.get<const LONG_ARRAY>(PR_DELEGATE_FLAGS);
+		if (eids == nullptr || flags == nullptr)
+			return false;
+		for (size_t i = 0; i < eids->count && i < flags->count; ++i) {
+			if (!delegate_eid_is(eids->pbin[i], actor))
+				continue;
+			found = true;
+			return (flags->pl[i] & 1) != 0;
+		}
+		return false;
+	};
+	/* Clients use the message named in PidTagFreeBusyEntryIds[1] */
+	static constexpr proptag_t fbtag[] = {PR_FREEBUSY_ENTRYIDS};
+	TPROPVAL_ARRAY fbprops;
+	if (!exmdb_client->get_folder_properties(dir, CP_ACP,
+	    eid_t(1, PRIVATE_FID_INBOX), fbtag, &fbprops))
+		return false;
+	auto fb = fbprops.get<const BINARY_ARRAY>(PR_FREEBUSY_ENTRYIDS);
+	if (fb != nullptr && fb->count > 1 && fb->pbin[1].cb > 0) {
+		static constexpr proptag_t mtags[] = {PR_MESSAGE_CLASS,
+			PR_SCHDINFO_DELEGATE_ENTRYIDS, PR_DELEGATE_FLAGS};
+		MESSAGE_ENTRYID meid;
+		EXT_PULL ep;
+		TPROPVAL_ARRAY props;
+		ep.init(fb->pbin[1].pb, fb->pbin[1].cb, malloc, 0);
+		bool found = false;
+		if (ep.g_msg_eid(&meid) == pack_result::ok &&
+		    exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
+		    eid_t(1, rop_util_gc_to_value(meid.message_gc)), mtags, &props) &&
+		    props.has(PR_MESSAGE_CLASS))
+			return sees(props, found);
+	}
+	for (uint8_t tflags : {uint8_t{0}, uint8_t{TABLE_FLAG_ASSOCIATED}}) {
+		uint32_t table_id = 0, row_count = 0;
+		if (!exmdb_client->load_content_table(dir, CP_ACP,
+		    eid_t(1, PRIVATE_FID_LOCAL_FREEBUSY), nullptr,
+		    tflags | TABLE_FLAG_NONOTIFICATIONS, nullptr, nullptr,
+		    &table_id, &row_count))
+			return false;
+		auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
+		TARRAY_SET rows;
+		if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
+		    tags, 0, row_count, &rows))
+			return false;
+		for (const auto &row : rows) {
+			bool found = false;
+			auto ret = sees(row, found);
+			if (found)
+				return ret;
+		}
+	}
+	return false;
 }
 
 ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time,

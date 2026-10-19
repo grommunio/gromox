@@ -971,7 +971,7 @@ enum {
 	// PR_FREEBUSY_RANGE_TIMESTAMP = PROP_TAG(PT_SYSTIME, 0x6868), /* PidTagFreeBusyRangeTimestamp */
 	// PR_FREEBUSY_COUNT_MONTHS = PROP_TAG(PT_LONG, 0x6869), /* PidTagFreeBusyCountMonths */
 	// PR_SCHDINFO_APPT_TOMBSTONE = PROP_TAG(PT_BINARY, 0x686A), /* PidTagScheduleInfoAppointmentTombstone */
-	// PR_DELEGATE_FLAGS = PROP_TAG(PT_MV_LONG, 0x686B), /* PidTagDelegateFlags */
+	PR_DELEGATE_FLAGS = PROP_TAG(PT_MV_LONG, 0x686B), /* PidTagDelegateFlags */
 	// PR_SCHDINFO_FREEBUSY = PROP_TAG(PT_BINARY, 0x686C), /* PidTagScheduleInfoFreeBusy */
 	PR_SCHDINFO_AUTO_ACCEPT_APPTS = PROP_TAG(PT_BOOLEAN, 0x686D), /* PidTagScheduleInfoAutoAcceptAppointments */
 	PR_SCHDINFO_DISALLOW_RECURRING_APPTS = PROP_TAG(PT_BOOLEAN, 0x686E), /* PidTagScheduleInfoDisallowRecurringAppts */
