@@ -412,10 +412,10 @@ void tBaseFolderType::serialize(XMLElement *xml) const
 	XMLDUMPT(DisplayName);
 	XMLDUMPT(TotalCount);
 	XMLDUMPT(ChildFolderCount);
-	XMLDUMPT(EffectiveRights);
-	XMLDUMPT(DistinguishedFolderId);
 	for (const tExtendedProperty &ep : ExtendedProperty)
 		toXMLNode(xml, "t:ExtendedProperty", ep);
+	XMLDUMPT(EffectiveRights);
+	XMLDUMPT(DistinguishedFolderId);
 }
 
 tBaseItemId::tBaseItemId(const XMLElement *xml) :
