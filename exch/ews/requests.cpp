@@ -1015,6 +1015,8 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 	ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
 	/* A declined occurrence goes once the reply is out */
 	if (resp == respDeclined && send_message) {
+		if (!(rights & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3131);
 		declinedOcc.emplace(oid);
 		return;
 	}

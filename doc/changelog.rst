@@ -10,7 +10,8 @@ Fixes:
 
 * EWS: AcceptItem, TentativelyAcceptItem and DeclineItem now require Read and
   Edit rights on the referenced item, and Create and Edit rights on the
-  calendar that accepting writes to. SuppressReadReceipt requires Edit rights.
+  calendar that accepting writes to. Declining an occurrence, which removes
+  it, also requires Delete rights. SuppressReadReceipt requires Edit rights.
   Previously any user could answer, alter or move meeting requests and
   calendar items in other mailboxes.
 * php_mapi: The declared return type of resource-returning functions named
