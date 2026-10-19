@@ -1442,7 +1442,11 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			}
 		}
 
-		if (std::holds_alternative<tMessage>(item) && send_message)
+		bool isResponse = std::holds_alternative<tAcceptItem>(item) ||
+		                  std::holds_alternative<tTentativelyAcceptItem>(item) ||
+		                  std::holds_alternative<tDeclineItem>(item);
+		/* Responses carry the attendee identity, see sendMeetingResponse */
+		if (isMessageLike && !isResponse && send_message)
 			ctx.stampSubmitIdentity(dir, *content);
 		if (send_message || (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations != Enum::SendToNone))
@@ -1467,9 +1471,6 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				          respDeclined, refDir, refMid,
 				          send_message, declinedOcc);
 		}
-		bool isResponse = std::holds_alternative<tAcceptItem>(item) ||
-		                  std::holds_alternative<tTentativelyAcceptItem>(item) ||
-		                  std::holds_alternative<tDeclineItem>(item);
 		if (send_message && isResponse) {
 			const tItemId *responseRef = nullptr;
 			if (auto acc = std::get_if<tAcceptItem>(&item))
@@ -1544,7 +1545,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemNotFound(E3391);
 			ctx.send(dir, messageId, *sendcontent);
 		}
-		if (std::holds_alternative<tMessage>(item) && send_message)
+		if (isMessageLike && !isResponse && send_message)
 			ctx.send(dir, 0, *content);
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
