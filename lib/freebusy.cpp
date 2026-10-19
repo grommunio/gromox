@@ -454,6 +454,10 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 	uint32_t permission = 0;
 	eid_t cal_eid(1, PRIVATE_FID_CALENDAR);
 
+	/* Store owners count as the owner */
+	if (username != nullptr && exmdb_client->get_mbox_perm(dir, username,
+	    &permission) && permission & frightsGromoxStoreOwner)
+		username = nullptr;
 	if (username != nullptr) {
 		permission = freebusy_perms(username, dir);
 		if (permission == 0)
@@ -470,6 +474,9 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 	                    SYSTEMTIME::maxyear * 31557600ULL * 10000000 :
 	                    rop_util_unix_to_nttime(end_time);
 	bool detailed     = permission & (frightsFreeBusyDetailed | frightsReadAny);
+	/* Owners and delegates allowed to see private items get their details */
+	bool see_private  = username == nullptr ||
+	                    (detailed && sees_private_items(dir, username));
 
 	/* C1: apptstartwhole >= start && apptstartwhole <= end */
 	RESTRICTION_PROPERTY rst_1 = {RELOP_GE, ptag.apptstartwhole, {ptag.apptstartwhole, &start_nttime}};
@@ -520,7 +527,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		ptag.apptstartwhole, ptag.apptendwhole, ptag.busystatus,
 		ptag.recurring, ptag.apptsubtype, ptag.private_flag,
 		ptag.apptstateflags, ptag.location, ptag.reminderset,
-		PR_SUBJECT, PidTagMid,
+		PR_SUBJECT, PidTagMid, PR_SENSITIVITY,
 	};
 	TARRAY_SET rows;
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
@@ -547,10 +554,19 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		auto end_whole   = rop_util_nttime_to_unix(*ts);
 		auto subject     = rows.pparray[i]->get<char>(PR_SUBJECT);
 		auto location    = rows.pparray[i]->get<char>(ptag.location);
+		auto sensitivity = rows.pparray[i]->get<const uint32_t>(PR_SENSITIVITY);
 		auto flag        = rows.pparray[i]->get<const uint8_t>(ptag.reminderset);
 		bool is_reminder = flag != nullptr && *flag != 0;
 		flag = rows.pparray[i]->get<uint8_t>(ptag.private_flag);
-		bool is_private  = flag != nullptr && *flag != 0;
+		bool is_private  = (flag != nullptr && *flag != 0) ||
+		                   (sensitivity != nullptr && *sensitivity == SENSITIVITY_PRIVATE);
+		/* MS-OXWAVLS v17.0 §3.1.4.1.3.10 */
+		bool withhold    = is_private && !see_private;
+		std::optional<std::string> id;
+		if (withhold)
+			subject = location = nullptr;
+		else
+			id = uid_buf;
 		auto inum = rows.pparray[i]->get<const int32_t>(ptag.busystatus);
 		int32_t busy_type = inum == nullptr || *inum > olWorkingElsewhere ? 0 : *inum;
 		auto num = rows.pparray[i]->get<uint32_t>(ptag.apptstateflags);
@@ -562,7 +578,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		if (flag == nullptr || *flag == 0) {
 			fb_data.push_back(FBE{
 				.start_time = start_whole, .end_time = end_whole,
-				.id = uid_buf, .subject = FBE::optnul(subject),
+				.id = id, .subject = FBE::optnul(subject),
 				.location = FBE::optnul(location),
 				.busy_status = static_cast<uint32_t>(busy_type),
 				.has_details = detailed,
@@ -603,7 +619,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 				fb_data.push_back(FBE{
 					.start_time = event.start_time,
 					.end_time = event.end_time,
-					.id = uid_buf, .subject = FBE::optnul(subject),
+					.id = id, .subject = FBE::optnul(subject),
 					.location = FBE::optnul(location),
 					.busy_status = static_cast<uint32_t>(busy_type),
 					.has_details = detailed,
@@ -617,18 +633,18 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 			bool ov_reminder = (event.ei->overrideflags & ARO_REMINDER)    ? event.ei->reminderset == 0 : is_reminder;
 			uint32_t ov_busy = (event.ei->overrideflags & ARO_BUSYSTATUS)  ? event.ei->busystatus : busy_type;
 			std::optional<std::string> ov_subj, ov_loc;
-			if (event.ei->overrideflags & ARO_SUBJECT)
+			if (!withhold && event.ei->overrideflags & ARO_SUBJECT)
 				ov_subj = event.xe->subject;
 			else if (subject != nullptr)
 				ov_subj = subject;
-			if (event.ei->overrideflags & ARO_LOCATION)
+			if (!withhold && event.ei->overrideflags & ARO_LOCATION)
 				ov_loc = event.xe->location;
 			else if (location != nullptr)
 				ov_loc = location;
 
 			fb_data.push_back(FBE{
 				.start_time = event.start_time, .end_time = event.end_time,
-				.id = uid_buf, .subject = std::move(ov_subj),
+				.id = id, .subject = std::move(ov_subj),
 				.location = std::move(ov_loc),
 				.busy_status = ov_busy, .has_details = detailed,
 				.is_meeting = ov_meeting, .is_recurring = true,

@@ -2568,7 +2568,9 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 			fbr.ResponseMessage.emplace(EWSError::MailRecipientNotFound(E3499));
 			continue;
 		}
-		tFreeBusyView fbv(ctx.auth_info().username, maildir.c_str(), start, end);
+		/* No user means the owner, see get_freebusy() */
+		tFreeBusyView fbv(maildir == ctx.auth_info().maildir ? nullptr :
+			ctx.auth_info().username, maildir.c_str(), start, end);
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
 		if (fbr.FreeBusyView && fbr.FreeBusyView->CalendarEventArray) {
 			for (auto &event : *fbr.FreeBusyView->CalendarEventArray) {
@@ -3595,7 +3597,8 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 					             e != nullptr ? rop_util_nttime_to_unix(*e) : 0;
 					if (start == 0 || end == 0)
 						return;
-					item.loadConflicts(ctx.auth_info().username, dir.c_str(),
+					item.loadConflicts(dir == ctx.auth_info().maildir ? nullptr :
+						ctx.auth_info().username, dir.c_str(),
 						shape.get<BINARY>(NtCleanGlobalObjectId, sShape::FL_ANY), start, end);
 					if (item.ConflictingMeetings)
 						ctx.conflictItemIds(parentFolder, dir, *item.ConflictingMeetings);

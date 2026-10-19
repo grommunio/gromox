@@ -900,7 +900,8 @@ void sCalendarMeetingRequestCommon::loadConflicts(const char *user,
 	auto &conflicts = ConflictingMeetings.emplace();
 	auto &adjacent = AdjacentMeetings.emplace();
 	for (const auto &ev : events) {
-		if (!self.empty() ? ev.id && *ev.id == self :
+		/* Private events of others come without ID */
+		if (!self.empty() && ev.id ? *ev.id == self :
 		    !selfSeen && ev.start_time == start && ev.end_time == end) {
 			selfSeen = true;
 			continue;
