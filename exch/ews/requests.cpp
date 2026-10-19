@@ -3917,10 +3917,42 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 			throw EWSError::NotEnoughMemory(E3532);
 		ctx.stampSubmitIdentity(dir, *content);
 		ctx.validate_sendas_perms(*content);
+		uint64_t saveFid = 0;
+		if (request.SavedItemFolderId) {
+			if (saveFolder.target != folder.target)
+				throw EWSError::CrossMailboxMoveCopy(E3496);
+			saveFid = saveFolder.folderId;
+		} else if (folder.location == sFolderSpec::PRIVATE) {
+			saveFid = eid_t(1, PRIVATE_FID_SENT_ITEMS);
+		}
 		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
 
-		if (request.SaveItemToFolder)
-			ctx.create(dir, folder, *content);
+		/* Exchange moves the sent item to the save folder or drops it */
+		auto username = ctx.effectiveUser(folder);
+		if (!request.SaveItemToFolder) {
+			auto eid = meid.messageId();
+			EID_ARRAY eids{1, &eid};
+			BOOL partial = false;
+			if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
+			    CP_ACP, username, folder.folderId, &eids, false,
+			    &partial) || partial)
+				throw EWSError::CannotDeleteObject(E3497);
+		} else {
+			auto flags = content->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+			uint32_t newFlags = (flags != nullptr ? *flags : 0) &
+			                    ~(MSGFLAG_SUBMITTED | MSGFLAG_UNSENT);
+			const TAGGED_PROPVAL sprops[] = {
+				{PR_MESSAGE_FLAGS, &newFlags},
+				{PR_READ, deconst(&byte_value_one)},
+			};
+			const TPROPVAL_ARRAY proplist = {std::size(sprops), deconst(sprops)};
+			PROBLEM_ARRAY problems;
+			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			    username, CP_ACP, meid.messageId(), &proplist, &problems))
+				throw EWSError::ItemSave(E3498);
+			if (saveFid != 0 && saveFid != folder.folderId)
+				ctx.moveCopyItem(dir, meid, saveFid, false);
+		}
 
 		data.ResponseMessages.emplace_back().success();
 	} catch (const EWSError &err) {
