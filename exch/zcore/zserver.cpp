@@ -875,21 +875,10 @@ static ec_error_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
 ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
     uint32_t flags, zs_objtype *pmapi_type, uint32_t *phobject)
 {
-	BOOL b_del;
-	BOOL b_exist;
-	void *pvalue;
-	BOOL b_private;
-	int account_id;
-	uint64_t fid_val;
-	uint8_t loc_type;
-	zs_objtype mapi_type;
-	uint32_t tag_access;
-	uint32_t permission;
-	uint32_t address_type;
-	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
+	zs_objtype mapi_type;
 	auto pstore = pinfo->ptree->get_object<store_object>(hobject, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
@@ -905,6 +894,10 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		eid_t eid{};
 		std::string essdn_s;
 		const char *essdn;
+		uint32_t address_type = 0;
+		int account_id = 0;
+		uint8_t loc_type = 0;
+		BOOL b_private = TRUE;
 
 		auto type = common_util_get_messaging_entryid_type(entryid);
 		switch (type) {
@@ -959,6 +952,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		}
 		if (LOC_TYPE_PRIVATE_MESSAGE == loc_type ||
 			LOC_TYPE_PUBLIC_MESSAGE == loc_type) {
+			void *pvalue = nullptr;
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
 			    nullptr, CP_ACP, message_id, PidTagParentFolderId,
 			    &pvalue) || pvalue == nullptr)
@@ -971,11 +965,14 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			return ecInvalidParam;
 	}
 	if (0 != message_id) {
+		BOOL b_del = false;
 		if (!exmdb_client->is_msg_deleted(pstore->get_dir(),
 		    message_id, &b_del))
 			return ecError;
 		if (b_del && !(flags & SHOW_SOFT_DELETES))
 			return ecNotFound;
+
+		uint32_t tag_access = 0;
 		auto ret = cu_calc_msg_access(*pstore, pinfo->get_username(),
 		           folder_id, message_id, tag_access);
 		if (ret != ecSuccess)
@@ -1011,30 +1008,33 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 				mailbox.c_str());
 		}
 	} else {
+		BOOL b_exist = false;
 		if (!exmdb_client->is_folder_present(pstore->get_dir(),
 		    folder_id, &b_exist))
 			return ecError;
 		if (!b_exist)
 			return ecNotFound;
 		if (!pstore->b_private) {
+			BOOL b_del = false;
 			if (!exmdb_client->is_folder_deleted(pstore->get_dir(),
 			    folder_id, &b_del))
 				return ecError;
 			if (b_del && !(flags & SHOW_SOFT_DELETES))
 				return ecNotFound;
 		}
+		void *pvalue = nullptr;
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
 		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
 		auto folder_type = *static_cast<uint32_t *>(pvalue);
-		if (pstore->owner_mode()) {
-			tag_access = MAPI_ACCESS_AllSix;
-		} else {
+		uint32_t tag_access = MAPI_ACCESS_AllSix;
+		if (!pstore->owner_mode()) {
+			uint32_t permission = 0;
 			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    folder_id, pinfo->get_username(), &permission))
 				return ecError;
 			if (permission == rightsNone) {
-				fid_val = rop_util_get_gc_value(folder_id);
+				auto fid_val = rop_util_get_gc_value(folder_id);
 				if (pstore->b_private) {
 					if (fid_val == PRIVATE_FID_ROOT ||
 					    fid_val == PRIVATE_FID_IPMSUBTREE)
