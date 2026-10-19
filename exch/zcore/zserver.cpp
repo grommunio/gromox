@@ -872,6 +872,118 @@ static ec_error_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
 	return zs_openentry(ses, lower_eid, flags, mapi_type, objh);
 }
 
+static ec_error_t zs_openstoreentry_1(store_object &store, eid_t folder_id,
+    eid_t message_id, const BINARY &entryid, uint32_t hobject,
+    unsigned int flags, USER_INFO &uinfo, uint32_t *phobject,
+    zs_objtype *pmapi_type)
+{
+	BOOL b_del = false;
+	if (!exmdb_client->is_msg_deleted(store.get_dir(), message_id, &b_del))
+		return ecError;
+	if (b_del && !(flags & SHOW_SOFT_DELETES))
+		return ecNotFound;
+
+	uint32_t tag_access = 0;
+	auto ret = cu_calc_msg_access(store, uinfo.get_username(),
+	           folder_id, message_id, tag_access);
+	if (ret != ecSuccess)
+		return ret;
+	bool b_writable = tag_access & MAPI_ACCESS_MODIFY;
+	auto pmessage = message_object::create(&store, false,
+	                uinfo.cpid, message_id, &folder_id, tag_access,
+	                b_writable ? TRUE : false, nullptr);
+	if (pmessage == nullptr)
+		return ecError;
+	auto message = pmessage.get();
+	*phobject = uinfo.ptree->add_object_handle(hobject, {zs_objtype::message, std::move(pmessage)});
+	if (zh_is_error(*phobject))
+		return zh_error(*phobject);
+	*pmapi_type = zs_objtype::message;
+	if (entryid.cb >= 7 && strncmp(entryid.pc, "/exmdb=", 7) == 0)
+		return ecSuccess;
+
+	const char *subject = "";
+	try {
+		static constexpr proptag_t tags[] = {PR_SUBJECT};
+		TPROPVAL_ARRAY props{};
+		if (message->get_properties(tags, &props) == ecSuccess) {
+			auto value = props.get<const char>(PR_SUBJECT);
+			if (value != nullptr)
+				subject = value;
+		}
+	} catch (const std::bad_alloc &) {
+	}
+	std::string mailbox = store.b_private ?
+		std::string("mailbox ") + store.get_account() : "public folders";
+	mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via ZCORE",
+		uinfo.get_username(), txt2cstr(subject).c_str(),
+		mailbox.c_str());
+	return ecSuccess;
+}
+
+static ec_error_t zs_openstoreentry_0(store_object &store, eid_t folder_id,
+    uint32_t hobject, unsigned int flags, USER_INFO &uinfo, uint32_t *phobject,
+    zs_objtype *pmapi_type)
+{
+	BOOL b_exist = false;
+	if (!exmdb_client->is_folder_present(store.get_dir(),
+	    folder_id, &b_exist))
+		return ecError;
+	if (!b_exist)
+		return ecNotFound;
+	if (!store.b_private) {
+		BOOL b_del = false;
+		if (!exmdb_client->is_folder_deleted(store.get_dir(),
+		    folder_id, &b_del))
+			return ecError;
+		if (b_del && !(flags & SHOW_SOFT_DELETES))
+			return ecNotFound;
+	}
+	void *pvalue = nullptr;
+	if (!exmdb_client_get_folder_property(store.get_dir(), CP_ACP,
+	    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
+		return ecError;
+	auto folder_type = *static_cast<uint32_t *>(pvalue);
+	uint32_t tag_access = MAPI_ACCESS_AllSix;
+	if (!store.owner_mode()) {
+		uint32_t permission = 0;
+		if (!exmdb_client->get_folder_perm(store.get_dir(),
+		    folder_id, uinfo.get_username(), &permission))
+			return ecError;
+		if (permission == rightsNone) {
+			auto fid_val = folder_id.gcv();
+			if (store.b_private) {
+				if (fid_val == PRIVATE_FID_ROOT ||
+				    fid_val == PRIVATE_FID_IPMSUBTREE)
+					permission = frightsVisible;
+			} else {
+				if (fid_val == PUBLIC_FID_ROOT)
+					permission = frightsVisible;
+			}
+		}
+		if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
+			return ecNotFound;
+		if (permission & frightsOwner) {
+			tag_access = MAPI_ACCESS_AllSix;
+		} else {
+			tag_access = MAPI_ACCESS_READ;
+			if (permission & frightsCreate)
+				tag_access |= MAPI_ACCESS_CREATE_CONTENTS | MAPI_ACCESS_CREATE_ASSOCIATED;
+			if (permission & frightsCreateSubfolder)
+				tag_access |= MAPI_ACCESS_CREATE_HIERARCHY;
+		}
+	}
+	auto pfolder = folder_object::create(&store, folder_id,
+	               folder_type, tag_access);
+	if (pfolder == nullptr)
+		return ecError;
+	*phobject = uinfo.ptree->add_object_handle(hobject, {zs_objtype::folder, std::move(pfolder)});
+	if (zh_is_error(*phobject))
+		return zh_error(*phobject);
+	*pmapi_type = zs_objtype::folder;
+	return ecSuccess;
+}
+
 ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
     uint32_t flags, zs_objtype *pmapi_type, uint32_t *phobject)
 {
@@ -964,113 +1076,12 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		    account_id != pstore->account_id)
 			return ecInvalidParam;
 	}
-	if (0 != message_id) {
-		return [](store_object *pstore, eid_t folder_id, eid_t message_id, BINARY &entryid, uint32_t hobject, unsigned int flags, USER_INFO *pinfo, uint32_t *phobject, zs_objtype *pmapi_type) {
-		BOOL b_del = false;
-		if (!exmdb_client->is_msg_deleted(pstore->get_dir(),
-		    message_id, &b_del))
-			return ecError;
-		if (b_del && !(flags & SHOW_SOFT_DELETES))
-			return ecNotFound;
+	if (message_id != 0)
+		return zs_openstoreentry_1(*pstore, folder_id, message_id,
+		       entryid, hobject, flags, *pinfo, phobject, pmapi_type);
 
-		uint32_t tag_access = 0;
-		auto ret = cu_calc_msg_access(*pstore, pinfo->get_username(),
-		           folder_id, message_id, tag_access);
-		if (ret != ecSuccess)
-			return ret;
-		bool b_writable = tag_access & MAPI_ACCESS_MODIFY;
-		auto pmessage = message_object::create(pstore, false,
-		                pinfo->cpid, message_id, &folder_id, tag_access,
-		                b_writable ? TRUE : false, nullptr);
-		if (pmessage == nullptr)
-			return ecError;
-		auto message = pmessage.get();
-		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::message, std::move(pmessage)});
-		if (zh_is_error(*phobject))
-			return zh_error(*phobject);
-		*pmapi_type = zs_objtype::message;
-		if (!(entryid.cb >= 7 &&
-		    strncmp(entryid.pc, "/exmdb=", 7) == 0)) {
-			const char *subject = "";
-			try {
-				static constexpr proptag_t tags[] = {PR_SUBJECT};
-				TPROPVAL_ARRAY props{};
-				if (message->get_properties(tags, &props) == ecSuccess) {
-					auto value = props.get<const char>(PR_SUBJECT);
-					if (value != nullptr)
-						subject = value;
-				}
-			} catch (const std::bad_alloc &) {
-			}
-			std::string mailbox = pstore->b_private ?
-				std::string("mailbox ") + pstore->get_account() : "public folders";
-			mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via ZCORE",
-				pinfo->get_username(), txt2cstr(subject).c_str(),
-				mailbox.c_str());
-		}
-		return ecSuccess;
-		}(pstore, folder_id, message_id, entryid, hobject, flags, &*pinfo, phobject, pmapi_type);
-	} else {
-		return [](store_object *pstore, eid_t folder_id, uint32_t hobject, unsigned int flags, USER_INFO *pinfo, uint32_t *phobject, zs_objtype *pmapi_type) {
-		BOOL b_exist = false;
-		if (!exmdb_client->is_folder_present(pstore->get_dir(),
-		    folder_id, &b_exist))
-			return ecError;
-		if (!b_exist)
-			return ecNotFound;
-		if (!pstore->b_private) {
-			BOOL b_del = false;
-			if (!exmdb_client->is_folder_deleted(pstore->get_dir(),
-			    folder_id, &b_del))
-				return ecError;
-			if (b_del && !(flags & SHOW_SOFT_DELETES))
-				return ecNotFound;
-		}
-		void *pvalue = nullptr;
-		if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
-		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
-			return ecError;
-		auto folder_type = *static_cast<uint32_t *>(pvalue);
-		uint32_t tag_access = MAPI_ACCESS_AllSix;
-		if (!pstore->owner_mode()) {
-			uint32_t permission = 0;
-			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
-			    folder_id, pinfo->get_username(), &permission))
-				return ecError;
-			if (permission == rightsNone) {
-				auto fid_val = rop_util_get_gc_value(folder_id);
-				if (pstore->b_private) {
-					if (fid_val == PRIVATE_FID_ROOT ||
-					    fid_val == PRIVATE_FID_IPMSUBTREE)
-						permission = frightsVisible;
-				} else {
-					if (fid_val == PUBLIC_FID_ROOT)
-						permission = frightsVisible;
-				}
-			}
-			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
-				return ecNotFound;
-			if (permission & frightsOwner) {
-				tag_access = MAPI_ACCESS_AllSix;
-			} else {
-				tag_access = MAPI_ACCESS_READ;
-				if (permission & frightsCreate)
-					tag_access |= MAPI_ACCESS_CREATE_CONTENTS | MAPI_ACCESS_CREATE_ASSOCIATED;
-				if (permission & frightsCreateSubfolder)
-					tag_access |= MAPI_ACCESS_CREATE_HIERARCHY;
-			}
-		}
-		auto pfolder = folder_object::create(pstore, folder_id,
-		               folder_type, tag_access);
-		if (pfolder == nullptr)
-			return ecError;
-		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::folder, std::move(pfolder)});
-		if (zh_is_error(*phobject))
-			return zh_error(*phobject);
-		*pmapi_type = zs_objtype::folder;
-		return ecSuccess;
-		}(pstore, folder_id, hobject, flags, &*pinfo, phobject, pmapi_type);
-	}
+	return zs_openstoreentry_0(*pstore, folder_id, hobject, flags, *pinfo,
+	       phobject, pmapi_type);
 }
 
 static ec_error_t zs_openab_emsab(USER_INFO_REF &&, BINARY, int, zs_objtype *, uint32_t *);
