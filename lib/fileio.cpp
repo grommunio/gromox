@@ -633,9 +633,11 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 	                (conv == REND_RTFTOHTML ? ".rtf" : ".html");
 	std::string doc;
 	/* pandoc immediately switches to latin1 on funny characters; forbid that */
+	bool force_conv = cset == nullptr || rend >= REND_PANDOC;
+	if (cset == nullptr)
+		cset = "utf-8";
 	bool input_is_utf8 = strcasecmp(cset, "utf8") == 0 ||
 	                     strcasecmp(cset, "utf-8") == 0;
-	bool force_conv = rend >= REND_PANDOC;
 	if (input_is_utf8 && !force_conv)
 		doc.assign(inbuf);
 	else
