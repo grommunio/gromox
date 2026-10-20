@@ -26,6 +26,8 @@ Fixes:
 * EWS: changing the attendees of a meeting with UpdateItem no longer drops
   the responses of the attendees that stay, unless the start, end or
   recurrence changed too.
+* ruleproc: an unparsable extended rule no longer keeps all other rules of the
+  folder from running in the TwoStep processor.
 
 
 Gromox 3.13 (2026-10-28)

@@ -520,8 +520,11 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 			ep.init(cond->pb, cond->cb, exmdb_rpc_alloc,
 				EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 			if (ep.g_namedprop_info(&rule.xcnames) != pack_result::ok ||
-			    ep.g_restriction(&rule.xcond) != pack_result::ok)
-				return ecError;
+			    ep.g_restriction(&rule.xcond) != pack_result::ok) {
+				mlog(LV_WARN, "ruleproc: %s: extrule %llxh: unparsable condition",
+					dir, static_cast<unsigned long long>(*mid));
+				continue;
+			}
 			rule.cond = &rule.xcond;
 		}
 		uint32_t version = 0;
@@ -530,8 +533,11 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		if (ep.g_namedprop_info(&rule.xanames) != pack_result::ok ||
 		    ep.g_uint32(&version) != pack_result::ok ||
 		    version != 1 ||
-		    ep.g_ext_rule_actions(&rule.xact) != pack_result::ok)
-			return ecError;
+		    ep.g_ext_rule_actions(&rule.xact) != pack_result::ok) {
+			mlog(LV_WARN, "ruleproc: %s: extrule %llxh: unparsable actions",
+				dir, static_cast<unsigned long long>(*mid));
+			continue;
+		}
 		rule_list.emplace_back(std::move(rule));
 	}
 	return ecSuccess;
