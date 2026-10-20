@@ -919,7 +919,7 @@ struct tPersona : public NS_EWS_Types {
 	std::optional<tEmailAddressType> EmailAddress;
 	std::optional<std::string> Title,
 		Nickname, BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
-	std::optional<uint32_t> RelevanceScore;
+	std::optional<int32_t> RelevanceScore;
 };
 
 /**

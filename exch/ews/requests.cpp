@@ -619,7 +619,8 @@ static void findpeople_search_recipient_history(const EWSContext &ctx,
 		tPersonaId pid;
 		pid.Id = base64_encode(email);
 		persona.PersonaId = std::move(pid);
-		persona.RelevanceScore = entry.get("count", 1).asUInt();
+		persona.RelevanceScore = std::min(entry.get("count", 1).asUInt(),
+		                         static_cast<unsigned int>(INT32_MAX));
 		out.emplace_back(std::move(persona));
 	}
 } catch (const std::exception &e) {
@@ -804,7 +805,7 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 					tPersonaId pid;
 					pid.Id = base64_encode(std::move(email));
 					persona.PersonaId = std::move(pid);
-					persona.RelevanceScore = UINT32_MAX;
+					persona.RelevanceScore = INT32_MAX;
 				}
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
