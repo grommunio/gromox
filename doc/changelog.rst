@@ -57,6 +57,8 @@ Fixes:
   mailboxes and forwards the message as received, keeping signatures intact.
 * ruleproc: gromox.cfg is now read from the config_file_path of the hosting
   program instead of always /etc/gromox.
+* email_lib: embedded message/rfc822 parts are no longer serialized empty, so
+  rules that forward as attachment send the original message again.
 
 
 Gromox 3.13 (2026-10-28)
