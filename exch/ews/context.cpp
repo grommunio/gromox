@@ -4993,22 +4993,28 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	auto ident = meetingIdentity(dir);
 	const std::vector<proptag_t> staleKeys
 		{PR_SENDER_SEARCH_KEY, PR_SENT_REPRESENTING_SEARCH_KEY};
+	const PROPERTY_NAME pn[] = {NtAppointmentSequence, NtOwnerCriticalChange};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	auto seq_tag = PROP_TAG(PT_LONG, ids[0]);
+	auto crit_tag = PROP_TAG(PT_SYSTIME, ids[1]);
+	auto now = rop_util_current_nttime();
+	uint32_t newseq = nextSequence(dir, parent, meid.messageId(), true, now);
 	if (basedate) {
 		message_content_ptr inst(cancelcontent->dup());
 		if (!inst)
 			throw EWSError::NotEnoughMemory(E3492);
 		toInstance(dir, *basedate, *inst);
 		auto &props = inst->proplist;
-		auto seq_tag = PROP_TAG(PT_LONG,
-		               getNamedPropId(dir, NtAppointmentSequence, true));
-		auto seq = props.get<const uint32_t>(seq_tag);
-		uint32_t newseq = seq != nullptr ? *seq + 1 : 1;
-		auto now = rop_util_current_nttime();
 		if (props.set(PR_MESSAGE_CLASS,
 		    "IPM.Schedule.Meeting.Canceled") != ecSuccess ||
 		    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
 		    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
-		    props.set(seq_tag, &newseq) != ecSuccess)
+		    props.set(seq_tag, &newseq) != ecSuccess ||
+		    props.set(crit_tag, &now) != ecSuccess)
 			throw EWSError::NotEnoughMemory(E3492);
 		for (const auto &prop : ident)
 			if (props.set(prop) != ecSuccess)
@@ -5043,11 +5049,12 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		    sentitems.folderId, newMid, false, &result) || !result)
 			throw EWSError::InternalServerError(E3301);
 		const char *sentuser = effectiveUser(sentitems);
-		auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 		std::vector<TAGGED_PROPVAL> sprops = {
 			{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Canceled")},
-			{PR_CLIENT_SUBMIT_TIME, now},
-			{PR_MESSAGE_DELIVERY_TIME, now},
+			{PR_CLIENT_SUBMIT_TIME, &now},
+			{PR_MESSAGE_DELIVERY_TIME, &now},
+			{seq_tag, &newseq},
+			{crit_tag, &now},
 		};
 		sprops.insert(sprops.end(), ident.begin(), ident.end());
 		const TPROPVAL_ARRAY sproplist{static_cast<uint16_t>(sprops.size()), sprops.data()};
@@ -5066,15 +5073,19 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		message_content_ptr dupcontent(cancelcontent->dup());
 		if (!dupcontent)
 			throw EWSError::NotEnoughMemory(E3407);
-		dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Canceled");
-		auto now = EWSContext::construct<uint64_t>( rop_util_current_nttime());
-		dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
-		dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+		auto &props = dupcontent->proplist;
+		if (props.set(PR_MESSAGE_CLASS,
+		    "IPM.Schedule.Meeting.Canceled") != ecSuccess ||
+		    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+		    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
+		    props.set(seq_tag, &newseq) != ecSuccess ||
+		    props.set(crit_tag, &now) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3407);
 		for (const auto &prop : ident)
-			if (dupcontent->proplist.set(prop) != ecSuccess)
+			if (props.set(prop) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3407);
 		for (auto tag : staleKeys)
-			dupcontent->proplist.erase(tag);
+			props.erase(tag);
 		send(dir, meid.messageId(), *dupcontent);
 	}
 }
@@ -5114,8 +5125,7 @@ std::string EWSContext::rcptAddress(const TPROPVAL_ARRAY &row) const
  * @brief      Send a cancellation to attendees dropped from a meeting
  *
  * MS-OXOCAL v22.1 §3.1.4.9.1.1: only the removed attendees get the
- * Meeting Cancellation object. The Meeting object keeps its sequence
- * number since not all attendees are told, see §3.1.5.4.
+ * Meeting Cancellation object.
  *
  * @param      dir       Store directory
  * @param      parent    Parent folder of the meeting
@@ -5177,6 +5187,7 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	const PROPERTY_NAME pn[] = {
 		NtAppointmentSequence, NtAppointmentStateFlags,
 		NtResponseStatus, NtBusyStatus, NtIntendedBusyStatus,
+		NtOwnerCriticalChange,
 	};
 	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
 	auto ids = getNamedPropIds(dir, pna, true);
@@ -5186,13 +5197,12 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	auto &props = cancel->proplist;
 	auto seq_tag = PROP_TAG(PT_LONG, ids[0]);
 	auto state_tag = PROP_TAG(PT_LONG, ids[1]);
-	auto seq = props.get<const uint32_t>(seq_tag);
-	uint32_t newseq = seq != nullptr ? *seq + 1 : 1;
+	auto now = rop_util_current_nttime();
+	uint32_t newseq = nextSequence(dir, parent, mid, false, now);
 	auto st = props.get<const uint32_t>(state_tag);
 	uint32_t state = (st != nullptr ? *st : asfMeeting) |
 	                 asfReceived | asfCanceled;
 	uint32_t resp = respNotResponded, busy = olFree;
-	auto now = rop_util_current_nttime();
 	auto subj = props.get<const char>(PR_NORMALIZED_SUBJECT);
 	if (subj == nullptr)
 		subj = props.get<const char>(PR_SUBJECT);
@@ -5203,6 +5213,7 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
 	    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
 	    props.set(seq_tag, &newseq) != ecSuccess ||
+	    props.set(PROP_TAG(PT_SYSTIME, ids[5]), &now) != ecSuccess ||
 	    props.set(state_tag, &state) != ecSuccess ||
 	    props.set(PROP_TAG(PT_LONG, ids[2]), &resp) != ecSuccess ||
 	    props.set(PROP_TAG(PT_LONG, ids[3]), &busy) != ecSuccess ||
@@ -5232,6 +5243,63 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
 	    cancel.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
 		throw EWSError::ItemSave(E3490);
+}
+
+/**
+ * @brief      Pick the sequence number of an outgoing meeting message
+ *
+ * MS-OXOCAL v22.1 §3.1.5.4: every update or cancellation increments it.
+ * The Meeting object records the new number as its last sequence, and
+ * as its sequence with the sequence time only when all attendees are
+ * told.
+ *
+ * @param      dir       Store directory
+ * @param      parent    Parent folder of the meeting
+ * @param      mid       Message ID of the meeting
+ * @param      toAll     Whether the message goes to all attendees
+ * @param      critical  PidLidOwnerCriticalChange of the message
+ *
+ * @return     Sequence number for the outgoing message
+ */
+uint32_t EWSContext::nextSequence(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid, bool toAll,
+    uint64_t critical) const
+{
+	const PROPERTY_NAME pn[] = {
+		NtAppointmentSequence, NtAppointmentLastSequence,
+		NtAppointmentSequenceTime, NtOwnerCriticalChange,
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	const proptag_t tags[] = {
+		PROP_TAG(PT_LONG, ids[0]), PROP_TAG(PT_LONG, ids[1]),
+		PROP_TAG(PT_SYSTIME, ids[2]), PROP_TAG(PT_SYSTIME, ids[3]),
+	};
+	auto props = getItemProps(dir, mid, tags);
+	auto seq = props.get<const uint32_t>(tags[0]);
+	auto last = props.get<const uint32_t>(tags[1]);
+	auto seqtime = props.get<const uint64_t>(tags[2]);
+	auto owncrit = props.get<const uint64_t>(tags[3]);
+	uint32_t val = std::max(seq != nullptr ? *seq : 0,
+	               last != nullptr ? *last : 0) + 1;
+	std::vector<TAGGED_PROPVAL> vals{{tags[1], &val}};
+	if (toAll) {
+		vals.push_back({tags[0], &val});
+		vals.push_back({tags[2], &critical});
+		vals.push_back({tags[3], &critical});
+	} else if (seqtime == nullptr && owncrit != nullptr) {
+		vals.push_back({tags[2], deconst(owncrit)});
+	}
+	const TPROPVAL_ARRAY list = {static_cast<uint16_t>(vals.size()),
+	                            vals.data()};
+	PROBLEM_ARRAY problems;
+	if (!m_plugin.exmdb.set_message_properties(dir.c_str(),
+	    effectiveUser(parent), CP_ACP, mid, &list, &problems))
+		throw EWSError::ItemSave(E3542);
+	return val;
 }
 
 /**
@@ -5302,10 +5370,21 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	    	       !(*flags & recipOrganizer));
 	    }))
 		return;
-	auto &props = req->proplist;
+	const PROPERTY_NAME pn[] = {
+		NtAppointmentSequence, NtOwnerCriticalChange,
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
 	auto now = rop_util_current_nttime();
+	uint32_t seq = nextSequence(dir, parent, mid, oldRcpts == nullptr, now);
+	auto &props = req->proplist;
 	if (props.set(PR_MESSAGE_CLASS,
 	    "IPM.Schedule.Meeting.Request") != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, ids[0]), &seq) != ecSuccess ||
+	    props.set(PROP_TAG(PT_SYSTIME, ids[1]), &now) != ecSuccess ||
 	    props.set(PR_RESPONSE_REQUESTED, &byte_value_one) != ecSuccess ||
 	    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
 	    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess)

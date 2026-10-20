@@ -1142,6 +1142,8 @@ enum {
 	/* PSETID_Appointment */
 	PidLidSendMeetingAsIcal = 0x8200,
 	PidLidAppointmentSequence = 0x8201,
+	PidLidAppointmentSequenceTime = 0x8202,
+	PidLidAppointmentLastSequence = 0x8203,
 	PidLidChangeHighlight = 0x8204,
 	PidLidBusyStatus = 0x8205,
 	PidLidLocation = 0x8208,
