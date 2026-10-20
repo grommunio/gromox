@@ -382,7 +382,8 @@ int main(int argc, char **argv)
 static int tmr_acceptwork(generic_connection &&conn)
 {
 		if (!ct_contains(g_acl_list, conn.client_addr)) {
-			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
+			static constexpr char msg[] = "FALSE Access denied\r\n";
+			if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 				/* ignore */;
 			return 0;
 		}
@@ -390,7 +391,8 @@ static int tmr_acceptwork(generic_connection &&conn)
 		std::unique_lock co_hold(g_connection_lock);
 		if (g_connection_list.size() + 1 + g_connection_list1.size() >= g_threads_num) {
 			co_hold.unlock();
-			if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
+			static constexpr char msg[] = "FALSE Maximum number of connections reached!\r\n";
+			if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 				/* ignore */;
 			return 0;
 		}
@@ -400,7 +402,8 @@ static int tmr_acceptwork(generic_connection &&conn)
 		try {
 			cn = &g_connection_list1.emplace_back(std::move(conn));
 		} catch (const std::bad_alloc &) {
-			if (HXio_fullwrite(rawfd, "FALSE Not enough memory\r\n", 25) < 0)
+			static constexpr char msg[] = "FALSE Not enough memory\r\n";
+			if (HXio_fullwrite(rawfd, msg, strlen(msg)) < 0)
 				/* ignore */;
 			return 0;
 		}
