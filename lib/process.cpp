@@ -1107,6 +1107,35 @@ errno_t workqueue::insert_task(const char *name, std::chrono::nanoseconds period
 	return launch_ondemand();
 }
 
+/**
+ * @path: Filesystem path for UNIX socket
+ */
+int gx_local_connect(const char *path)
+{
+	auto fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+	if (fd < 0)
+		return -errno;
+	struct sockaddr_un u{};
+	u.sun_family = AF_UNIX;
+	gx_strlcpy(u.sun_path, path, sizeof(u.sun_path));
+	auto ret = connect(fd, reinterpret_cast<const sockaddr *>(&u), sizeof(u));
+	if (ret == 0)
+		return fd;
+	auto saved_errno = errno;
+	close(fd);
+	return -(errno = saved_errno);
+}
+
+/**
+ * @host: Target host, or `unix:PATH`
+ * @port: Target port, in case of INET sockets
+ */
+int gx_generic_connect(const char *host, uint16_t port)
+{
+	return strncmp(host, "unix:", 5) == 0 ?
+	       gx_local_connect(&host[5]) : HX_inet_connect(host, port, 0);
+}
+
 } /* namespace gromox */
 
 generic_connection::generic_connection(generic_connection &&o) :

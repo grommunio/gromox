@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <pthread.h>
 #ifdef __OpenBSD__
 #	include <pthread_np.h>
@@ -45,5 +46,7 @@ extern GX_EXPORT int setup_signal_defaults();
 extern GX_EXPORT std::string simple_backtrace();
 extern GX_EXPORT errno_t switch_user_exec(const char *user, char *const *argv);
 extern GX_EXPORT int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *);
+extern GX_EXPORT int gx_local_connect(const char *);
+extern GX_EXPORT int gx_generic_connect(const char *, uint16_t);
 
 }
