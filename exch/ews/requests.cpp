@@ -3513,6 +3513,112 @@ void process(mExpandDLRequest &&request, XMLElement *response, const EWSContext 
 }
 
 /**
+ * @brief      Stamp a stored message for sending
+ *
+ * Clears MSGFLAG_UNSENT, sets the submit and delivery time and fills in
+ * the sender identity when the client did not supply one. The message is
+ * reread afterwards so that the caller sends the stamped version.
+ *
+ * @param      ctx       Request context
+ * @param      dir       Store directory
+ * @param      username  User the store is accessed as
+ * @param      mid       Message to stamp
+ * @param      content   Message content, replaced by the reread copy
+ */
+static void stamp_for_send(const EWSContext &ctx, const std::string &dir,
+    const char *username, const sMessageEntryId &mid, MESSAGE_CONTENT *&content)
+{
+	std::vector<TAGGED_PROPVAL> sprops;
+	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	sprops.push_back({PR_CLIENT_SUBMIT_TIME, now});
+	sprops.push_back({PR_MESSAGE_DELIVERY_TIME, now});
+	auto flags = content->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	if (flags != nullptr && *flags & MSGFLAG_UNSENT)
+		sprops.push_back({PR_MESSAGE_FLAGS,
+			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
+
+	std::string dispname;
+	auto smtpaddr = deconst(ctx.auth_info().username);
+	if (content->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS) == nullptr &&
+	    mysql_adaptor_get_user_displayname(ctx.auth_info().username, dispname)) {
+		auto sName = deconst(dispname.empty() ?
+			     ctx.auth_info().username : dispname.c_str());
+		auto addrtype = deconst("SMTP");
+		sprops.push_back({PR_SENT_REPRESENTING_NAME, sName});
+		sprops.push_back({PR_SENDER_NAME, sName});
+		sprops.push_back({PR_SENT_REPRESENTING_SMTP_ADDRESS, smtpaddr});
+		sprops.push_back({PR_SENDER_SMTP_ADDRESS, smtpaddr});
+		sprops.push_back({PR_SENT_REPRESENTING_EMAIL_ADDRESS, smtpaddr});
+		sprops.push_back({PR_SENDER_EMAIL_ADDRESS, smtpaddr});
+		sprops.push_back({PR_SENT_REPRESENTING_ADDRTYPE, addrtype});
+		sprops.push_back({PR_SENDER_ADDRTYPE, addrtype});
+	}
+
+	const TPROPVAL_ARRAY proplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
+	PROBLEM_ARRAY problems;
+	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+	    username, CP_ACP, mid.messageId(), &proplist, &problems))
+		throw EWSError::ItemSave(E3465);
+	if (!ctx.plugin().exmdb.read_message(dir.c_str(),
+	    username, CP_ACP, mid.messageId(), &content) ||
+	    content == nullptr)
+		throw EWSError::ItemNotFound(E3466);
+}
+
+/**
+ * @brief      File a message after it has been sent
+ *
+ * Moves the message to the save folder when both are in the same store.
+ * For a save folder in another store a copy is written there and the
+ * original is deleted. Without a save folder the message is deleted.
+ *
+ * @param      ctx         Request context
+ * @param      dir         Store directory of the message
+ * @param      username    User the store is accessed as
+ * @param      mid         Message that was sent
+ * @param      saveFolder  Folder to keep the message in, or nullptr
+ * @param      content     Message content as sent
+ */
+static void file_sent_message(const EWSContext &ctx, const std::string &dir,
+    const char *username, const sMessageEntryId &mid,
+    const sFolderSpec *saveFolder, MESSAGE_CONTENT &content)
+{
+	auto &exmdb = ctx.plugin().exmdb;
+	if (saveFolder != nullptr) {
+		std::string savedir = ctx.getDir(*saveFolder);
+		if (savedir == dir) {
+			if (saveFolder->folderId == mid.folderId())
+				return;
+			uint64_t newMid = 0;
+			if (!exmdb.allocate_message_id(dir.c_str(),
+			    saveFolder->folderId, &newMid))
+				throw EWSError::MoveCopyFailed(E3467);
+			BOOL result = false;
+			if (!exmdb.movecopy_message(dir.c_str(), CP_ACP,
+			    mid.messageId(), saveFolder->folderId, newMid,
+			    TRUE, &result) || !result)
+				throw EWSError::MoveCopyFailed(E3468);
+			return;
+		}
+		uint64_t newMid = 0;
+		if (!exmdb.allocate_message_id(savedir.c_str(),
+		    saveFolder->folderId, &newMid))
+			throw EWSError::MoveCopyFailed(E3467);
+		if (content.proplist.set(PidTagMid,
+		    EWSContext::construct<uint64_t>(newMid)) == ecServerOOM)
+			throw EWSError::NotEnoughMemory(E3494);
+		ctx.create(savedir, *saveFolder, content);
+	}
+	auto eid = mid.messageId();
+	auto fid = mid.folderId();
+	EID_ARRAY eids{1, &eid};
+	BOOL partial = false;
+	if (!exmdb.delete_messages(dir.c_str(), CP_ACP, username, fid,
+	    &eids, false, &partial) || partial)
+		throw EWSError::CannotDeleteObject(E3469);
+}
+
+/**
  * @brief      Process SendItem
  *
  * @param      request   Request data
@@ -3552,16 +3658,17 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 		if (!(ctx.permissions(dir, folder.folderId) & frightsReadAny))
 			throw EWSError::AccessDenied(E3142);
 
+		const char *username = ctx.effectiveUser(folder);
 		MESSAGE_CONTENT *content = nullptr;
 		if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-		    ctx.effectiveUser(folder), CP_ACP, meid.messageId(),
+		    username, CP_ACP, meid.messageId(),
 		    &content) || content == nullptr)
 			throw EWSError::ItemNotFound(E3403);
 		ctx.validate_sendas_perms(*content);
+		stamp_for_send(ctx, dir, username, meid, content);
 		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
-
-		if (request.SaveItemToFolder)
-			ctx.create(dir, folder, *content);
+		file_sent_message(ctx, dir, username, meid,
+			request.SaveItemToFolder ? &saveFolder : nullptr, *content);
 
 		data.ResponseMessages.emplace_back().success();
 	} catch(const EWSError& err) {
@@ -3690,64 +3797,15 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 	if (cls == nullptr || class_match_prefix(cls, "IPM.Note") != 0)
 		return;
 
-	std::vector<TAGGED_PROPVAL> sprops;
-	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-	sprops.push_back({PR_CLIENT_SUBMIT_TIME, now});
-	sprops.push_back({PR_MESSAGE_DELIVERY_TIME, now});
-	auto flags = sendcontent->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
-	if (flags != nullptr && *flags & MSGFLAG_UNSENT)
-		sprops.push_back({PR_MESSAGE_FLAGS,
-			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
-
-	std::string dispname;
-	auto smtpaddr = deconst(ctx.auth_info().username);
-	if (sendcontent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS) == nullptr &&
-	    mysql_adaptor_get_user_displayname(ctx.auth_info().username, dispname)) {
-		auto sName = deconst(dispname.empty() ?
-			     ctx.auth_info().username : dispname.c_str());
-		auto addrtype = deconst("SMTP");
-		sprops.push_back({PR_SENT_REPRESENTING_NAME, sName});
-		sprops.push_back({PR_SENDER_NAME, sName});
-		sprops.push_back({PR_SENT_REPRESENTING_SMTP_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENDER_SMTP_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENT_REPRESENTING_EMAIL_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENDER_EMAIL_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENT_REPRESENTING_ADDRTYPE, addrtype});
-		sprops.push_back({PR_SENDER_ADDRTYPE, addrtype});
-	}
-
-	const TPROPVAL_ARRAY proplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
-	PROBLEM_ARRAY problems;
-	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-	    username, CP_ACP, mid.messageId(), &proplist, &problems))
-		throw EWSError::ItemSave(E3465);
-	if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-	    username, CP_ACP, mid.messageId(), &sendcontent) ||
-	    sendcontent == nullptr)
-		throw EWSError::ItemNotFound(E3466);
+	stamp_for_send(ctx, dir, username, mid, sendcontent);
 	ctx.validate_sendas_perms(*sendcontent);
 	ctx.send(dir, rop_util_get_gc_value(mid.messageId()), *sendcontent);
 
 	if (*request.MessageDisposition == Enum::SendAndSaveCopy) {
 		sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
-		uint64_t newMid = 0;
-		if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
-		    sentitems.folderId, &newMid))
-			throw EWSError::MoveCopyFailed(E3467);
-		BOOL result = false;
-		if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(),
-		    CP_ACP, mid.messageId(), sentitems.folderId,
-		    newMid, TRUE, &result) || !result)
-			throw EWSError::MoveCopyFailed(E3468);
+		file_sent_message(ctx, dir, username, mid, &sentitems, *sendcontent);
 	} else {
-		auto eid = mid.messageId();
-		auto fid = mid.folderId();
-		EID_ARRAY eids{1, &eid};
-		BOOL partial = false;
-		if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
-		    CP_ACP, username, fid, &eids, false, &partial) ||
-		    partial)
-			throw EWSError::CannotDeleteObject(E3469);
+		file_sent_message(ctx, dir, username, mid, nullptr, *sendcontent);
 	}
 }
 
