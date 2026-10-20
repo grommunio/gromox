@@ -4489,8 +4489,10 @@ void EWSContext::suppressReadReceipt(const tItemId &refId) const
 	sFolderSpec parent = resolveFolder(mid);
 	std::string dir = getDir(parent);
 	validate(dir, mid);
-	if (!(permissions(dir, parent.folderId) & frightsEditAny))
+	auto rights = permissions(dir, parent.folderId);
+	if (!(rights & frightsEditAny))
 		throw EWSError::AccessDenied(E3527);
+	assertCanReadPrivate(dir, parent, rights, mid.messageId());
 	const TAGGED_PROPVAL propval_buff[] = {
 		{PR_READ_RECEIPT_REQUESTED, deconst(&byte_value_zero)},
 		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&byte_value_zero)},
@@ -4530,8 +4532,10 @@ void EWSContext::cancelCalendarItem(const tItemId &refId, bool saveCopy) const
 	sFolderSpec parent = resolveFolder(meid);
 	std::string dir = getDir(parent);
 	validate(dir, meid);
-	if (!(permissions(dir, parent.folderId) & frightsDeleteAny))
+	auto rights = permissions(dir, parent.folderId);
+	if (!(rights & frightsDeleteAny))
 		throw EWSError::AccessDenied(E3131);
+	assertCanReadPrivate(dir, parent, rights, meid.messageId());
 
 	if (!isOrganizer(dir, meid.messageId()))
 		throw EWSError::CalendarIsNotOrganizer(E3470);

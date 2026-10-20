@@ -3,6 +3,16 @@ Schedule
 It's ready when it's ready.
 
 
+Development 3.13.16
+===================
+
+Fixes:
+
+* EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
+  and CancelCalendarItem now refuse private items of others for users who
+  are not allowed to see private items.
+
+
 Gromox 3.13 (2026-10-28)
 ========================
 

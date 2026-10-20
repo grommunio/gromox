@@ -1237,6 +1237,7 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 	/* The response is built from the content of the referenced item */
 	if (!(rights & frightsReadAny))
 		throw EWSError::AccessDenied(E3602);
+	ctx.assertCanReadPrivate(rdir, pf, rights, oid.messageId());
 	ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
 	/* A declined occurrence goes once the reply is out */
 	if (resp == respDeclined && send_message) {
@@ -1277,6 +1278,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		throw EWSError::AccessDenied(E3526);
 	if (!(rights & frightsReadAny))
 		throw EWSError::AccessDenied(E3602);
+	ctx.assertCanReadPrivate(rdir, pf, rights, mid.messageId());
 	/* Accepting writes the meeting into the calendar of the same store */
 	if ((resp == respAccepted || resp == respTentative) &&
 	    pf.location == sFolderSpec::PRIVATE) {
