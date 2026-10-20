@@ -332,6 +332,20 @@ std::string simple_backtrace()
 	return out;
 }
 
+/**
+ * Set a new umask where user bits are copied to group bits.
+ * This turns e.g. umask 022 into umask 002.
+ * Gromox services need to create files with group writability,
+ * so that e.g. AAPI can manage files. (In the long run that
+ * should perhaps be refined.)
+ */
+static void gx_set_umask()
+{
+	auto m = umask(0777);
+	m = (m & ~0070) | ((m & 0700) >> 3);
+	umask(m);
+}
+
 errno_t switch_user_exec(const char *user, char *const *argv)
 {
 	if (user == nullptr)
@@ -343,18 +357,14 @@ errno_t switch_user_exec(const char *user, char *const *argv)
 		auto ret = gx_reexec(nullptr);
 		if (ret != 0)
 			return ret;
-		auto m = umask(0777);
-		m = (m & ~0070) | ((m & 0700) >> 3); /* copy user bits to group bits */
-		umask(m);
+		gx_set_umask();
 		return 0;
 	}
 	case HXPROC_SU_SUCCESS: {
 		auto ret = gx_reexec(const_cast<const char *const *>(argv));
 		if (ret != 0)
 			return ret;
-		auto m = umask(0777);
-		m = (m & ~0070) | ((m & 0700) >> 3);
-		umask(m);
+		gx_set_umask();
 		return 0;
 	}
 	case HXPROC_USER_NOT_FOUND:
