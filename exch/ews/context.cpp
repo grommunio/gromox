@@ -1535,11 +1535,28 @@ bool EWSContext::actsAsOwner(const std::string &dir) const
 }
 
 /**
+ * @brief      Check whether the caller is on the Send-As list of a store
+ *
+ * @param      dir   Home directory of the store
+ */
+bool EWSContext::onSendAsList(const std::string &dir) const
+{
+	std::vector<std::string> list;
+	if (!m_plugin.exmdb.read_delegates(dir.c_str(), 1, &list))
+		return false;
+	for (const auto &d : list)
+		if (strcasecmp(d.c_str(), m_auth_info.username) == 0 ||
+		    mysql_adaptor_check_mlist_include(d.c_str(), m_auth_info.username))
+			return true;
+	return false;
+}
+
+/**
  * @brief      Sender properties of meeting mail sent from a store
  *
  * The store owner organizes, the caller may be a delegate. A caller
- * acting as the owner sends as the owner. Values are allocated with
- * alloc() and stay valid for the request.
+ * acting as the owner or holding Send-As rights sends as the owner.
+ * Values are allocated with alloc() and stay valid for the request.
  *
  * @param      dir   Home directory of the store
  */
@@ -1563,7 +1580,8 @@ std::vector<TAGGED_PROPVAL> EWSContext::meetingIdentity(const std::string &dir) 
 		return construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
 	};
 	auto organizer = copyStr(storeOwner(dir));
-	auto username = actsAsOwner(dir) ? organizer : deconst(m_auth_info.username);
+	auto username = actsAsOwner(dir) || onSendAsList(dir) ? organizer :
+	                deconst(m_auth_info.username);
 	std::string dispName;
 	if (!mysql_adaptor_get_user_displayname(username, dispName))
 		throw DispatchError(E3378);
@@ -4372,13 +4390,8 @@ void EWSContext::validate_sendas_perms(const std::string &identity) const
 	if (permission & (frightsGromoxSendAs | frightsGromoxStoreOwner))
 		return;
 	/* get_mbox_perm only knows the Send-On-Behalf list */
-	std::vector<std::string> sendas;
-	if (m_plugin.exmdb.read_delegates(maildir.c_str(), 1, &sendas))
-		for (const auto &d : sendas)
-			if (strcasecmp(d.c_str(), m_auth_info.username) == 0 ||
-			    mysql_adaptor_check_mlist_include(d.c_str(), m_auth_info.username))
-				return;
-	throw EWSError::SendAsDenied(E3474);
+	if (!onSendAsList(maildir))
+		throw EWSError::SendAsDenied(E3474);
 }
 
 /**
@@ -5136,7 +5149,8 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 	/* The attendee is the owner of the request, the caller may be a delegate */
 	std::string attendee = refFolder.location == sFolderSpec::PRIVATE ?
 	                       *refFolder.target : m_auth_info.username;
-	auto respUser = actsAsOwner(refDir) ? cpystr(attendee) :
+	auto respUser = actsAsOwner(refDir) || onSendAsList(refDir) ?
+	                cpystr(attendee) :
 	                deconst(m_auth_info.username);
 	std::string respName, attName;
 	mysql_adaptor_get_user_displayname(respUser, respName);
