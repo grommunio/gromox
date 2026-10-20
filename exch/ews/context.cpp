@@ -2229,6 +2229,22 @@ clock::time_point EWSContext::sOccurrenceSeries::toUtc(uint32_t rtime) const
 }
 
 /**
+ * @brief      Convert a UTC NTTIME to a local-as-UTC rtime of the series
+ *
+ * The offset is taken at the converted instant, so a series that
+ * crosses a DST change keeps the wall clock time of each occurrence.
+ */
+uint32_t EWSContext::sOccurrenceSeries::toLocal(uint64_t nttime) const
+{
+	auto utc = rop_util_nttime_to_unix(nttime);
+	int64_t off;
+	if (tzdef && tz_to_offset(*tzdef, utc, off) &&
+	    tz_to_offset(*tzdef, utc - off * 60, off))
+		return rop_util_unix_to_rtime(utc - off * 60);
+	return rop_util_unix_to_rtime(utc - tzOffset.count());
+}
+
+/**
  * @brief      Parse the recurrence and time zone of a series master
  *
  * @param      recur  PidLidAppointmentRecur
@@ -2676,10 +2692,10 @@ int32_t EWSContext::recurTzOffset(const std::string &dir, uint64_t mid,
  * Apply property changes to an EXCEPTIONINFO/EXTENDEDEXCEPTION pair
  * in the recurrence blob.
  */
-static void applyExceptionOverrides(EXCEPTIONINFO &ei, EXTENDEDEXCEPTION &ee,
-    const TPROPVAL_ARRAY &props, propid_t location_id, propid_t busystatus_id,
-    propid_t subtype_id, propid_t reminderdelta_id, propid_t reminderset_id,
-    int32_t tz_min)
+template<typename F> static void applyExceptionOverrides(EXCEPTIONINFO &ei,
+    EXTENDEDEXCEPTION &ee, const TPROPVAL_ARRAY &props, propid_t location_id,
+    propid_t busystatus_id, propid_t subtype_id, propid_t reminderdelta_id,
+    propid_t reminderset_id, F &&to_local)
 {
 	for (unsigned int j = 0; j < props.count; ++j) {
 		auto tag = props.ppropval[j].proptag;
@@ -2707,11 +2723,11 @@ static void applyExceptionOverrides(EXCEPTIONINFO &ei, EXTENDEDEXCEPTION &ee,
 			ei.reminderset = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
 		} else if (tag == PR_START_DATE) {
 			auto nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
-			ei.startdatetime = rop_util_nttime_to_rtime(nt) - tz_min;
+			ei.startdatetime = to_local(nt);
 			ee.startdatetime = ei.startdatetime;
 		} else if (tag == PR_END_DATE) {
 			auto nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
-			ei.enddatetime = rop_util_nttime_to_rtime(nt) - tz_min;
+			ei.enddatetime = to_local(nt);
 			ee.enddatetime = ei.enddatetime;
 		} else if (tag == PR_BODY || tag == PR_BODY_W || tag == PR_HTML) {
 			ei.overrideflags |= ARO_EXCEPTIONAL_BODY;
@@ -2959,7 +2975,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			ext_pull.init(recur_bin->pb, recur_bin->cb, nullptr, 0);
 			APPOINTMENT_RECUR_PAT apr{};
 			if (ext_pull.g_apptrecpat(&apr) == pack_result::ok) {
-				int32_t tz_min = recurTzOffset(dir, mid, apr);
+				auto to_local = [&](uint64_t nt) { return series.toLocal(nt); };
 				for (size_t k = 0; k < apr.pexceptioninfo.size(); ++k) {
 					auto &ei = apr.pexceptioninfo[k];
 					if (ei.originalstartdate / 1440 != basedate / 1440)
@@ -2970,7 +2986,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 						props, location_id,
 						busystatus_id, subtype_id,
 						reminderdelta_id,
-						reminderset_id, tz_min);
+						reminderset_id, to_local);
 					moveModifiedDate(apr.recur_pat, old_start,
 						basedate, ei.startdatetime);
 					break;
@@ -2996,7 +3012,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok)
 		throw EWSError::ItemCorrupt(E3345);
 
-	int32_t tz_minutes = recurTzOffset(dir, mid, apr);
+	auto to_local = [&](uint64_t nt) { return series.toLocal(nt); };
 
 	/* Compute occurrence start/end as local-as-UTC rtimes */
 	auto start_rtime = basedate + apr.starttimeoffset;
@@ -3017,11 +3033,11 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		auto tag = props.ppropval[j].proptag;
 		if (tag == PR_START_DATE) {
 			start_nttime = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
-			start_rtime  = rop_util_nttime_to_rtime(start_nttime) - tz_minutes;
+			start_rtime  = to_local(start_nttime);
 			has_explicit_start = true;
 		} else if (tag == PR_END_DATE) {
 			end_nttime = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
-			end_rtime  = rop_util_nttime_to_rtime(end_nttime) - tz_minutes;
+			end_rtime  = to_local(end_nttime);
 			has_explicit_end = true;
 		} else if (!disp_name && (tag == PR_SUBJECT ||
 		    tag == PR_NORMALIZED_SUBJECT)) {
@@ -3221,7 +3237,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 
 	applyExceptionOverrides(ei, ee, props, location_id,
 		busystatus_id, subtype_id, reminderdelta_id,
-		reminderset_id, tz_minutes);
+		reminderset_id, to_local);
 
 	/* MS-OXOCAL v22.1 §3.1.4.6.2: the new start day of the exception */
 	rp.pmodifiedinstancedates.emplace_back(ei.startdatetime / 1440 * 1440);

@@ -435,6 +435,7 @@ private:
 
 		void parse(const BINARY *, const uint64_t *, const BINARY *);
 		clock::time_point toUtc(uint32_t) const;
+		uint32_t toLocal(uint64_t) const;
 		times occurrenceTimes(uint32_t) const;
 		bool replaces(uint32_t, uint64_t) const;
 		bool replaces(uint32_t, clock::time_point, uint64_t) const;
