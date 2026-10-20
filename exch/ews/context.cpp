@@ -1518,10 +1518,28 @@ std::string EWSContext::storeOwner(const std::string &dir) const
 }
 
 /**
+ * @brief      Check whether the caller acts as the owner of a store
+ *
+ * Store owners, which is what Full Access amounts to, send as the
+ * mailbox, like emsmdb and zcore do when submitting from that store.
+ *
+ * @param      dir   Home directory of the store
+ */
+bool EWSContext::actsAsOwner(const std::string &dir) const
+{
+	if (dir == m_auth_info.maildir)
+		return true;
+	uint32_t perm = 0;
+	return m_plugin.exmdb.get_mbox_perm(dir.c_str(),
+	       m_auth_info.username, &perm) && (perm & frightsGromoxStoreOwner);
+}
+
+/**
  * @brief      Sender properties of meeting mail sent from a store
  *
- * The store owner organizes, the caller may be a delegate. Values are
- * allocated with alloc() and stay valid for the request.
+ * The store owner organizes, the caller may be a delegate. A caller
+ * acting as the owner sends as the owner. Values are allocated with
+ * alloc() and stay valid for the request.
  *
  * @param      dir   Home directory of the store
  */
@@ -1544,8 +1562,8 @@ std::vector<TAGGED_PROPVAL> EWSContext::meetingIdentity(const std::string &dir) 
 			throw DispatchError(E3380);
 		return construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
 	};
-	auto username = deconst(m_auth_info.username);
 	auto organizer = copyStr(storeOwner(dir));
+	auto username = actsAsOwner(dir) ? organizer : deconst(m_auth_info.username);
 	std::string dispName;
 	if (!mysql_adaptor_get_user_displayname(username, dispName))
 		throw DispatchError(E3378);
@@ -5115,12 +5133,13 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 	content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
-	auto respUser = deconst(m_auth_info.username);
 	/* The attendee is the owner of the request, the caller may be a delegate */
 	std::string attendee = refFolder.location == sFolderSpec::PRIVATE ?
 	                       *refFolder.target : m_auth_info.username;
+	auto respUser = actsAsOwner(refDir) ? cpystr(attendee) :
+	                deconst(m_auth_info.username);
 	std::string respName, attName;
-	mysql_adaptor_get_user_displayname(m_auth_info.username, respName);
+	mysql_adaptor_get_user_displayname(respUser, respName);
 	mysql_adaptor_get_user_displayname(attendee.c_str(), attName);
 	content->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
