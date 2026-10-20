@@ -474,7 +474,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 
 	static constexpr proptag_t tags[] = {
 		PR_RULE_MSG_STATE, PidTagMid, PR_RULE_MSG_SEQUENCE,
-		PR_RULE_MSG_PROVIDER,
+		PR_RULE_MSG_PROVIDER, PR_RULE_MSG_NAME,
 	};
 	static constexpr proptag_t tags2[] = {
 		PR_EXTENDED_RULE_MSG_CONDITION, PR_EXTENDED_RULE_MSG_ACTIONS,
