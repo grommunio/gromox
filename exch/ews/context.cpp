@@ -4542,7 +4542,8 @@ const BINARY *EWSContext::findContactPhoto(const std::string &dir,
 void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
     const MESSAGE_CONTENT &msg) const
 {
-	if (!msg.children.prcpts)
+	if (msg.children.prcpts == nullptr ||
+	    msg.children.prcpts->count == 0)
 		throw EWSError::MissingRecipients(E3115);
 	std::vector<proptag_t> drop;
 	auto ident = submitIdentity(dir, msg.proplist, drop);

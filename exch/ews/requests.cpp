@@ -1502,6 +1502,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				*flags &= ~(MSGFLAG_SUBMITTED | MSGFLAG_UNSENT);
 			content->proplist.set(PR_READ, &byte_value_one);
 		}
+		/* Send first so that a failed send leaves no copy behind */
+		if (isMessageLike && !isResponse && send_message)
+			ctx.send(dir, 0, *content);
 		if (persist) {
 			/* Exchange returns the IDs of attachments it was given */
 			bool atts = std::visit([](const auto &i) {
@@ -1545,8 +1548,6 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemNotFound(E3391);
 			ctx.send(dir, messageId, *sendcontent);
 		}
-		if (isMessageLike && !isResponse && send_message)
-			ctx.send(dir, 0, *content);
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
 			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
