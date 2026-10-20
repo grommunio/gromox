@@ -343,7 +343,7 @@ static void gx_set_umask()
 {
 	auto m = umask(0777);
 	m = (m & ~0070) | ((m & 0700) >> 3);
-	umask(m);
+	umask(m | 0007);
 }
 
 errno_t switch_user_exec(const char *user, char *const *argv)
