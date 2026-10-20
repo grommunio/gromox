@@ -40,6 +40,8 @@ Fixes:
   time of the message to 1601 and now produces a valid change key.
 * ruleproc: a failing rule no longer stops the remaining rules and the
   new-mail notification in the TwoStep processor.
+* ruleproc: OP_FORWARD in the TwoStep processor no longer loops between
+  mailboxes and forwards the message as received, keeping signatures intact.
 
 
 Gromox 3.13 (2026-10-28)

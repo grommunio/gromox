@@ -124,6 +124,7 @@ struct rxparam {
 	ec_error_t is_oof(bool *out) const;
 	ec_error_t load_std_rules(bool oof, std::vector<rule_node> &out) const;
 	ec_error_t load_ext_rules(bool oof, std::vector<rule_node> &out) const;
+	const std::string *get_eml();
 	void notify();
 
 	const char *ev_from = nullptr, *ev_to = nullptr;
@@ -131,6 +132,8 @@ struct rxparam {
 	message_content *ctnt = nullptr;
 	std::string orig_dir; /* rule table origin */
 	eid_t orig_fid = 0; /* rule folder */
+	std::string orig_midstr, eml; /* stored RFC 5322 form of the message */
+	bool eml_loaded = false;
 	unsigned int m_flags = ~0U;
 	uint32_t act_type = 0, act_idx = 0; /* action being run, for DEMs */
 	bool del = false, exit = false;
@@ -1178,24 +1181,48 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 	if (rcpt_list.empty())
 		return ecSuccess;
 
-	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
-	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
 	MAIL imail;
-	rp_storedir = par.cur.dirc();
-	oxcmail_converter cvt;
-	cvt.log_id = log_id.c_str();
-	cvt.alloc = cu_alloc;
-	cvt.get_propids = cu_get_propids;
-	cvt.get_propname = cu_get_propname;
-	cvt.use_format_override(*par.ctnt);
-	if (!cvt.mapi_to_inet(*par.ctnt, imail)) {
-		mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed");
+	auto eml = par.get_eml();
+	if (eml != nullptr) {
+		/*
+		 * Send the message as received, which keeps signatures intact
+		 * and lets the trace headers count hops.
+		 */
+		if (!imail.refonly_parse(eml->c_str(), eml->size()))
+			return ecError;
+		auto head = imail.get_head();
+		if (head == nullptr)
+			return ecError;
+		auto num = head->get_field_num("Delivered-To");
+		for (int i = 0; i < num; ++i) {
+			std::string dvto;
+			if (head->search_field("Delivered-To", i, dvto) &&
+			    strcasecmp(dvto.c_str(), par.ev_to) == 0) {
+				mlog(LV_DEBUG, "ruleproc: %s: OP_FORWARD skipped, "
+					"message was already delivered to %s",
+					par.orig_dir.c_str(), par.ev_to);
+				return ecSuccess;
+			}
+		}
+	} else {
+		auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
+		              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
+		rp_storedir = par.cur.dirc();
+		oxcmail_converter cvt;
+		cvt.log_id = log_id.c_str();
+		cvt.alloc = cu_alloc;
+		cvt.get_propids = cu_get_propids;
+		cvt.get_propname = cu_get_propname;
+		cvt.use_format_override(*par.ctnt);
+		if (!cvt.mapi_to_inet(*par.ctnt, imail)) {
+			mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed");
+			rp_alloc_ctx.clear();
+			rp_storedir = nullptr;
+			return ecError;
+		}
 		rp_alloc_ctx.clear();
 		rp_storedir = nullptr;
-		return ecError;
 	}
-	rp_alloc_ctx.clear();
-	rp_storedir = nullptr;
 
 	ec_error_t ret = ecSuccess;
 	if (flavor & FWD_AS_ATTACHMENT) {
@@ -2463,6 +2490,12 @@ ec_error_t rxparam::run_rules()
 		return ecError;
 	if (ctnt == nullptr)
 		return ecNotFound;
+	/* Rules may move the message, so remember the file name now */
+	static constexpr proptag_t midtag[] = {PidTagMidString};
+	TPROPVAL_ARRAY midvals{};
+	if (exmdb_client->get_message_properties(cur.dirc(), nullptr, CP_ACP,
+	    cur.mid, midtag, &midvals))
+		orig_midstr = znul(midvals.get<const char>(PidTagMidString));
 	for (auto &&rule : rule_list) {
 		err = rule.extended ? opx_process(*this, rule) : op_process(*this, rule);
 		if (err != ecSuccess)
@@ -2511,6 +2544,23 @@ ec_error_t rxparam::run()
 	if (m_flags & DELIVERY_DO_NOTIF_CL)
 		notify();
 	return ret;
+}
+
+/**
+ * The RFC 5322 representation stored at delivery time. exmdb does not unlink
+ * it when a rule moves or deletes the message, so it stays readable for the
+ * whole rule run.
+ */
+const std::string *rxparam::get_eml()
+{
+	if (!eml_loaded) {
+		eml_loaded = true;
+		if (!orig_midstr.empty() &&
+		    !exmdb_client->imapfile_read(orig_dir.c_str(), "eml",
+		    orig_midstr, &eml))
+			eml.clear();
+	}
+	return eml.empty() ? nullptr : &eml;
 }
 
 void rxparam::notify()
