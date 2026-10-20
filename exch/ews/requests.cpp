@@ -4326,6 +4326,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		const char* username = ctx.effectiveUser(parentFolder);
 		mUpdateItemResponseMessage msg;
 		uint32_t occ_basedate = 0;
+		std::optional<TARRAY_SET> oldRcpts;
 		if (change.ItemId.holds_alternative<tOccurrenceItemId>()) {
 			const auto& occurrence  = std::get<tOccurrenceItemId>(change.ItemId.asVariant());
 			occ_basedate = ctx.resolveOccurrenceIndex(dir,
@@ -4398,9 +4399,14 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			msg.ConflictResults.Count = problems.count;
 			ctx.plugin().unloadMessageInstance(dir, mid.messageId());
 			if (shape.requiredAttendees || shape.optionalAttendees ||
-			    shape.resourceAttendees)
+			    shape.resourceAttendees) {
+				oldRcpts.emplace();
+				if (!ctx.plugin().exmdb.get_message_rcpts(
+				    dir.c_str(), mid.messageId(), &*oldRcpts))
+					throw EWSError::ItemNotFound(E3494);
 				ctx.updateAttendees(dir, parentFolder,
-				    mid.messageId(), shape);
+				    mid.messageId(), shape, *oldRcpts);
+			}
 			if (shape.toRecipients || shape.ccRecipients ||
 			    shape.bccRecipients)
 				ctx.updateMessageRecipients(dir, parentFolder,

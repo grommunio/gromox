@@ -3483,17 +3483,19 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
  * @brief      Update attendee recipients on existing calendar item
  *
  * Used by UpdateItem when the client sets RequiredAttendees,
- * OptionalAttendees, or Resources. Replaces all recipients via the
- * message instance API and sets organizer properties.
+ * OptionalAttendees, or Resources. Replaces the attendee kinds present
+ * in the update via the message instance API, keeps the organizer row
+ * and the other kinds, and sets organizer properties.
  *
- * @param      dir     Store directory
- * @param      parent  Parent folder specification
- * @param      mid     Message ID of the calendar item
- * @param      shape   Shape containing attendee XML pointers
+ * @param      dir       Store directory
+ * @param      parent    Parent folder specification
+ * @param      mid       Message ID of the calendar item
+ * @param      shape     Shape containing attendee XML pointers
+ * @param      oldRcpts  Recipients of the item before the update
  */
 void EWSContext::updateAttendees(const std::string &dir,
-    const sFolderSpec &parent, uint64_t mid,
-    const sShape &shape) const
+    const sFolderSpec &parent, uint64_t mid, const sShape &shape,
+    const TARRAY_SET &oldRcpts) const
 {
 	auto &exmdb = plugin().exmdb;
 	auto inst = m_plugin.loadMessageInstance(dir, parent.folderId, mid);
@@ -3520,6 +3522,25 @@ void EWSContext::updateAttendees(const std::string &dir,
 			++row_id;
 		}
 	};
+	for (const auto &row : oldRcpts) {
+		auto type = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		bool keep = flags != nullptr && *flags & recipOrganizer;
+		if (!keep && type != nullptr) {
+			auto t = *type & 0xf;
+			keep = (t == MAPI_TO && !shape.requiredAttendees) ||
+			       (t == MAPI_CC && !shape.optionalAttendees) ||
+			       (t == MAPI_BCC && !shape.resourceAttendees);
+		}
+		if (!keep)
+			continue;
+		tpropval_array_ptr dup(row.dup());
+		if (dup == nullptr ||
+		    dup->set(PR_ROWID, &row_id) != ecSuccess ||
+		    rcpts->append_move(std::move(dup)) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3456);
+		++row_id;
+	}
 	if (shape.requiredAttendees)
 		parseAttendees(shape.requiredAttendees, MAPI_TO);
 	if (shape.optionalAttendees)

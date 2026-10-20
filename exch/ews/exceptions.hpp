@@ -626,6 +626,7 @@ E(3490, "failed to write cancellation copy to Sent Items");
 E(3491, "failed to build occurrence message");
 E(3492, "failed to build occurrence cancellation");
 inline std::string E3493(std::string_view val) {return fmt::format("E-3493: invalid binary value '{}'", val);}
+E(3494, "failed to load meeting recipients");
 E(3496, "cannot save the sent item in another store");
 E(3497, "failed to delete sent item");
 E(3498, "failed to mark sent item as sent");
