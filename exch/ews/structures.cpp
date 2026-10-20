@@ -3701,14 +3701,17 @@ void tRestriction::deserialize(RESTRICTION &dst, const tinyxml2::XMLElement *src
 		build_andor(dst, src, getId);
 	} else if (!strcmp(name, "Contains")) {
 		build_contains(dst, src, getId);
+		widen_addr(dst, src);
 	} else if (!strcmp(name, "Excludes")) {
 		build_excludes(dst, src, getId);
 	} else if (!strcmp(name, "Exists")) {
 		build_exists(dst, src, getId);
+		widen_addr(dst, src);
 	} else if (!strcmp(name, "Not")) {
 		build_not(dst, src, getId);
 	} else try {
 		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()), getId);
+		widen_addr(dst, src);
 	} catch (const EnumError &) {
 		/* The name of the node could not be mapped to a relop */
 		throw EWSError::InvalidRestriction(E3220(name));
@@ -3826,6 +3829,85 @@ void tRestriction::build_not(RESTRICTION &dst, const tinyxml2::XMLElement *src, 
 	dst.rt = mapi_rtype::r_not;
 	dst.xnot = EWSContext::construct<RESTRICTION_NOT>();
 	deserialize(dst.xnot->res, child, getId);
+}
+
+/**
+ * @brief      Match address fields against their SMTP address
+ *
+ * Address fields are compared by SMTP address. Items carry it either in the
+ * dedicated SMTP property or, with an SMTP address type, in the plain email
+ * address property. Use the SMTP property where present and the email
+ * address otherwise.
+ *
+ * @param      dst   Restriction built for the field
+ * @param      src   XML node the restriction was built from
+ */
+void tRestriction::widen_addr(RESTRICTION &dst, const tinyxml2::XMLElement *src)
+{
+	static constexpr struct {
+		const char *uri;
+		proptag_t smtp, type, addr;
+	} fields[] = {
+		{"message:From", PR_SENT_REPRESENTING_SMTP_ADDRESS,
+		 PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+		{"message:Sender", PR_SENDER_SMTP_ADDRESS,
+		 PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS},
+	};
+	if (dst.rt != mapi_rtype::property && dst.rt != mapi_rtype::content &&
+	    dst.rt != mapi_rtype::exist)
+		return;
+	auto uri = src->FirstChildElement("FieldURI");
+	auto name = uri != nullptr ? uri->Attribute("FieldURI") : nullptr;
+	if (name == nullptr)
+		return;
+	auto f = std::find_if(std::begin(fields), std::end(fields),
+	         [&](const auto &e) { return strcmp(e.uri, name) == 0; });
+	if (f == std::end(fields))
+		return;
+
+	auto exist = [](proptag_t tag) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = mapi_rtype::exist;
+		r->exist = EWSContext::construct<RESTRICTION_EXIST>();
+		r->exist->proptag = tag;
+		return r;
+	};
+	auto negate = [](RESTRICTION *in) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = mapi_rtype::r_not;
+		r->xnot = EWSContext::construct<RESTRICTION_NOT>();
+		r->xnot->res = std::move(*in);
+		return r;
+	};
+	if (dst.rt == mapi_rtype::exist) {
+		dst = std::move(*any(exist(f->smtp), exist(f->addr)));
+		return;
+	}
+	auto retag = [&](proptag_t tag) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = dst.rt;
+		if (dst.rt == mapi_rtype::property) {
+			r->prop = EWSContext::construct<RESTRICTION_PROPERTY>(*dst.prop);
+			r->prop->proptag = r->prop->propval.proptag = tag;
+		} else {
+			r->cont = EWSContext::construct<RESTRICTION_CONTENT>(*dst.cont);
+			r->cont->proptag = r->cont->propval.proptag = tag;
+		}
+		return r;
+	};
+	/* No SMTP property, but an SMTP address type */
+	auto useAddr = [&]() {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = mapi_rtype::property;
+		r->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+		r->prop->relop = RELOP_EQ;
+		r->prop->proptag = f->type;
+		r->prop->propval = TAGGED_PROPVAL{f->type, deconst("SMTP")};
+		return all(negate(exist(f->smtp)), r);
+	};
+	auto viaAddr = all(useAddr(), retag(f->addr));
+	auto viaSmtp = all(negate(useAddr()), retag(f->smtp));
+	dst = std::move(*any(viaAddr, viaSmtp));
 }
 
 void *tRestriction::loadConstant(const tinyxml2::XMLElement *parent, proptype_t type)

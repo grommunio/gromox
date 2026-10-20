@@ -3329,6 +3329,7 @@ class tRestriction {
 	static void build_exists(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
 	static void build_not(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
 	static void deserialize(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
+	static void widen_addr(RESTRICTION &, const tinyxml2::XMLElement *);
 
 	static void *loadConstant(const tinyxml2::XMLElement *, proptype_t);
 	static proptag_t getTag(const tinyxml2::XMLElement *, const sGetNameId &);
