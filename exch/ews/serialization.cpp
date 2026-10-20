@@ -1198,6 +1198,10 @@ tFileAttachment::tFileAttachment(const XMLElement *xml)
 {
 	if (const XMLElement *xp = xml->FirstChildElement("Name"))
 		Name = fromXMLNode<std::string>(xp);
+	if (const XMLElement *xp = xml->FirstChildElement("ContentType"))
+		ContentType = fromXMLNode<std::string>(xp);
+	if (const XMLElement *xp = xml->FirstChildElement("ContentId"))
+		ContentId = fromXMLNode<std::string>(xp);
 	if (const XMLElement *xp = xml->FirstChildElement("IsInline"))
 		IsInline.emplace(fromXMLNode<bool>(xp));
 	if (const XMLElement *xp = xml->FirstChildElement("IsContactPhoto"))

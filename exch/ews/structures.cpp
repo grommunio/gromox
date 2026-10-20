@@ -4572,6 +4572,10 @@ std::vector<TAGGED_PROPVAL> tFileAttachment::props() const
 		props.push_back({PR_ATTACH_FILENAME, name});
 		props.push_back({PR_DISPLAY_NAME, name});
 	}
+	if (ContentType)
+		props.push_back({PR_ATTACH_MIME_TAG, EWSContext::cpystr(*ContentType)});
+	if (ContentId)
+		props.push_back({PR_ATTACH_CONTENT_ID, EWSContext::cpystr(*ContentId)});
 	static constexpr uint32_t method = ATTACH_BY_VALUE;
 	props.push_back({PR_ATTACH_METHOD, deconst(&method)});
 	if (IsInline && *IsInline) {
