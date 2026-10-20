@@ -358,18 +358,24 @@ static int ev_acceptwork(generic_connection &&conn)
 		return EW_OK;
 	}();
 	switch (ret) {
-	case EW_ACL:
-		if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
+	case EW_ACL: {
+		static constexpr char msg[] = "FALSE Access denied\r\n";
+		if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 			/* ignore */;
 		return 0;
-	case EW_MAXCONN:
-		if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
+	}
+	case EW_MAXCONN: {
+		static constexpr char msg[] = "FALSE Maximum number of connections reached!\r\n";
+		if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 			/* ignore */;
 		return 0;
-	case EW_NOMEM:
-		if (HXio_fullwrite(conn.sockd, "FALSE Not enough memory\r\n", 25) < 0)
+	}
+	case EW_NOMEM: {
+		static constexpr char msg[] = "FALSE Not enough memory\r\n";
+		if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 			/* ignore */;
 		return 0;
+	}
 	case EW_OK:
 		if (HXio_fullwrite(penqueue->sockd, "OK\r\n", 4) < 0)
 			penqueue->reset();
