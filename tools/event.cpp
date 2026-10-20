@@ -127,6 +127,7 @@ static constexpr cfg_directive event_cfg_defaults[] = {
 	{"event_log_file", "-"},
 	{"event_log_level", "4" /* LV_NOTICE */},
 	{"event_threads_num", "50", CFG_SIZE, "1", "1000"},
+	{"running_identity", RUNNING_IDENTITY},
 	CFG_TABLE_END,
 };
 
