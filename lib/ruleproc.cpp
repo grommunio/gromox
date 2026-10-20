@@ -92,6 +92,11 @@ struct message_node {
 	inline const char *dirc() const { return dir.c_str(); }
 };
 
+struct dam_entry {
+	const rule_node *rule = nullptr;
+	const ACTION_BLOCK *blk = nullptr;
+};
+
 struct mr_policy {
 	unsigned int dtyp = 0, capacity = 0;
 	bool autoproc = true, accept_appts = false;
@@ -125,6 +130,7 @@ struct rxparam {
 	ec_error_t load_std_rules(bool oof, std::vector<rule_node> &out) const;
 	ec_error_t load_ext_rules(bool oof, std::vector<rule_node> &out) const;
 	const std::string *get_eml();
+	void make_dams();
 	void notify();
 
 	const char *ev_from = nullptr, *ev_to = nullptr;
@@ -133,6 +139,7 @@ struct rxparam {
 	std::string orig_dir; /* rule table origin */
 	eid_t orig_fid = 0; /* rule folder */
 	std::string orig_midstr, eml; /* stored RFC 5322 form of the message */
+	std::vector<dam_entry> dams; /* client-side actions */
 	bool eml_loaded = false;
 	unsigned int m_flags = ~0U;
 	uint32_t act_type = 0, act_idx = 0; /* action being run, for DEMs */
@@ -816,8 +823,8 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	return false;
 }
 
-/* Same limit as the legacy processor */
-static constexpr size_t rx_max_rule_rcpts = 256;
+/* Same limits as the legacy processor */
+static constexpr size_t rx_max_rule_rcpts = 256, rx_max_dams = 128;
 
 /*
  * Flag a rule as failed so it is skipped from now on, as the legacy processor
@@ -1322,6 +1329,9 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 		return op_forward(par, rule, act);
 	case OP_DELETE:
 		par.del = true;
+		return ecSuccess;
+	case OP_DEFER_ACTION:
+		par.dams.push_back({&rule, &act});
 		return ecSuccess;
 	default:
 		return ecSuccess;
@@ -2507,6 +2517,8 @@ ec_error_t rxparam::run_rules()
 		if (del)
 			break;
 	}
+	if (!del)
+		make_dams();
 	if (del) {
 		const EID_ARRAY ids = {1, &cur.mid};
 		BOOL partial;
@@ -2561,6 +2573,120 @@ const std::string *rxparam::get_eml()
 			eml.clear();
 	}
 	return eml.empty() ? nullptr : &eml;
+}
+
+/**
+ * Deferred Action Messages for client-side rules, MS-OXORULE v23.0
+ * §2.2.6 and §3.2.5.1.2. One DAM per rule provider.
+ */
+void rxparam::make_dams() try
+{
+	if (dams.empty())
+		return;
+	auto dir = orig_dir.c_str();
+	if (dams.size() > rx_max_dams) {
+		mlog(LV_NOTICE, "ruleproc: %s: too many deferred actions (%zu), none written",
+			dir, dams.size());
+		return;
+	}
+	if (cur.dir != orig_dir) {
+		mlog(LV_NOTICE, "ruleproc: %s: message was moved to another store, "
+			"deferred actions dropped", dir);
+		return;
+	}
+	static constexpr proptag_t eidtag[] = {PR_ENTRYID};
+	TPROPVAL_ARRAY mvals{}, fvals{};
+	if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
+	    cur.mid, eidtag, &mvals) ||
+	    !exmdb_client->get_folder_properties(dir, CP_ACP, orig_fid,
+	    eidtag, &fvals))
+		return;
+	auto msg_eid = mvals.get<const BINARY>(PR_ENTRYID);
+	auto fld_eid = fvals.get<const BINARY>(PR_ENTRYID);
+	if (msg_eid == nullptr || fld_eid == nullptr)
+		return;
+	/* ServerEid layout, MS-OXORULE v23.0 §2.2.5.1.2.1.1 */
+	EXT_PUSH svp;
+	if (!svp.init(nullptr, 0, 0) || svp.p_uint8(1) != pack_result::ok ||
+	    svp.p_uint64(cur.fid) != pack_result::ok ||
+	    svp.p_uint64(cur.mid) != pack_result::ok ||
+	    svp.p_uint32(0) != pack_result::ok)
+		return;
+	BINARY svreid_bin;
+	svreid_bin.cb = svp.m_offset;
+	svreid_bin.pv = svp.m_udata;
+	uint64_t rule_fid = orig_fid;
+
+	std::vector<bool> done(dams.size());
+	for (size_t i = 0; i < dams.size(); ++i) {
+		if (done[i])
+			continue;
+		auto &provider = dams[i].rule->provider;
+		std::vector<ACTION_BLOCK> blocks;
+		std::vector<uint64_t> ids;
+		for (size_t j = i; j < dams.size(); ++j) {
+			if (done[j] || strcasecmp(dams[j].rule->provider.c_str(),
+			    provider.c_str()) != 0)
+				continue;
+			done[j] = true;
+			blocks.push_back(*dams[j].blk);
+			if (std::find(ids.begin(), ids.end(),
+			    dams[j].rule->rule_id) == ids.end())
+				ids.push_back(dams[j].rule->rule_id);
+		}
+		const RULE_ACTIONS actions = {static_cast<uint16_t>(blocks.size()), blocks.data()};
+		EXT_PUSH acp, idp;
+		if (!acp.init(nullptr, 0, EXT_FLAG_UTF16) ||
+		    acp.p_rule_actions(actions) != pack_result::ok ||
+		    !idp.init(nullptr, 0, 0))
+			return;
+		for (auto id : ids)
+			if (idp.p_uint64(id) != pack_result::ok)
+				return;
+		BINARY act_bin;
+		act_bin.cb = acp.m_offset;
+		act_bin.pv = acp.m_udata;
+		BINARY ids_bin;
+		ids_bin.cb = idp.m_offset;
+		ids_bin.pv = idp.m_udata;
+
+		message_content_ptr msg(message_content_init());
+		if (msg == nullptr)
+			return;
+		auto &p = msg->proplist;
+		auto now = rop_util_current_nttime();
+		if (p.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+		    p.set(PR_CREATION_TIME, &now) != ecSuccess ||
+		    p.set(PR_LAST_MODIFICATION_TIME, &now) != ecSuccess ||
+		    p.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
+		    p.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != ecSuccess ||
+		    p.set(PR_DAM_BACK_PATCHED, &byte_value_zero) != ecSuccess ||
+		    p.set(PR_DAM_ORIGINAL_ENTRYID, msg_eid) != ecSuccess ||
+		    p.set(PR_DAM_ORIG_MSG_SVREID, &svreid_bin) != ecSuccess ||
+		    p.set(PR_RULE_FOLDER_ENTRYID, fld_eid) != ecSuccess ||
+		    p.set(PR_RULE_FOLDER_FID, &rule_fid) != ecSuccess ||
+		    p.set(PR_RULE_PROVIDER, provider.c_str()) != ecSuccess ||
+		    p.set(PR_CLIENT_ACTIONS, &act_bin) != ecSuccess ||
+		    p.set(PR_RULE_IDS, &ids_bin) != ecSuccess)
+			return;
+		uint64_t outmid = 0, outcn = 0;
+		auto e_result = ecSuccess;
+		if (!exmdb_client->write_message(dir, CP_ACP,
+		    eid_t(1, PRIVATE_FID_DEFERRED_ACTION), msg.get(), {},
+		    &outmid, &outcn, &e_result) || e_result != ecSuccess) {
+			mlog(LV_ERR, "ruleproc: %s: could not write DAM: %s",
+				dir, mapi_strerror(e_result));
+			return;
+		}
+	}
+	const TAGGED_PROPVAL hasdam[] = {{PR_HAS_DAMS, deconst(&byte_value_one)}};
+	const TPROPVAL_ARRAY hasdam_arr = {std::size(hasdam), deconst(hasdam)};
+	PROBLEM_ARRAY problems{};
+	if (!exmdb_client->set_message_properties(dir, nullptr, CP_ACP,
+	    cur.mid, &hasdam_arr, &problems))
+		mlog(LV_ERR, "ruleproc: %s: could not set PR_HAS_DAMS", dir);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void rxparam::notify()
