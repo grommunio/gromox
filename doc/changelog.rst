@@ -48,6 +48,8 @@ Fixes:
   new-mail notification in the TwoStep processor.
 * ruleproc: OP_FORWARD in the TwoStep processor no longer loops between
   mailboxes and forwards the message as received, keeping signatures intact.
+* ruleproc: gromox.cfg is now read from the config_file_path of the hosting
+  program instead of always /etc/gromox.
 
 
 Gromox 3.13 (2026-10-28)

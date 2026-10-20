@@ -3098,7 +3098,7 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	LINK_SVC_API(param);
 	if (!register_service("rules_execute", exmdb_local_rules_execute))
 		return false;
-	auto cfg = config_file_prg(nullptr, "gromox.cfg", rp_config_defaults);
+	auto cfg = config_file_initd("gromox.cfg", get_config_path(), rp_config_defaults);
 	if (cfg == nullptr)
 		/* e.g. permission error */
 		return false;
