@@ -363,10 +363,11 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 		src_id_vec.push_back(id);
 	PROPNAME_ARRAY src_name_arr{};
 	auto cl_0 = HX::make_scope_exit([&]() { rx_delete_local(src_name_arr); });
-	if (!exmdb_client->get_named_propnames(par.cur.dirc(),
+	/* @ctnt was read before any rule ran, so it uses orig_dir's ids */
+	if (!exmdb_client->get_named_propnames(par.orig_dir.c_str(),
 	    src_id_vec, &src_name_arr)) {
 		mlog(LV_DEBUG, "ruleproc: get_named_propnames(%s) failed",
-			par.cur.dirc());
+			par.orig_dir.c_str());
 		return ecRpcFailed;
 	}
 	if (src_name_arr.size() != src_id_vec.size()) {
@@ -1218,7 +1219,7 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 	} else {
 		auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
 		              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
-		rp_storedir = par.cur.dirc();
+		rp_storedir = par.orig_dir.c_str();
 		oxcmail_converter cvt;
 		cvt.log_id = log_id.c_str();
 		cvt.alloc = cu_alloc;
