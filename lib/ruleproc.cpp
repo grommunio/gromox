@@ -2335,7 +2335,11 @@ ec_error_t rxparam::run_rules()
 	for (auto &&rule : rule_list) {
 		err = rule.extended ? opx_process(*this, rule) : op_process(*this, rule);
 		if (err != ecSuccess)
-			return err;
+			/* One failing rule must not keep the others from running */
+			mlog(LV_ERR, "ruleproc: %s: %srule %llxh \"%s\" failed: %s",
+				orig_dir.c_str(), rule.extended ? "ext" : "",
+				static_cast<unsigned long long>(rule.rule_id),
+				rule.name.c_str(), mapi_strerror(err));
 		if (del)
 			break;
 	}
@@ -2351,25 +2355,31 @@ ec_error_t rxparam::run_rules()
 
 ec_error_t rxparam::run()
 {
-	if (m_flags & DELIVERY_DO_RULES_CL) {
-		auto err = run_rules();
-		if (err != ecSuccess)
-			return err;
-	}
+	ec_error_t ret = ecSuccess;
+	if (m_flags & DELIVERY_DO_RULES_CL)
+		ret = run_rules();
+	if (del)
+		/* Message is gone, nothing left to process or announce */
+		return ret;
 
 	if (m_flags & DELIVERY_DO_MRAUTOPROC) {
 		mr_policy res_policy;
-		auto err = mr_get_policy(ev_to, res_policy);
-		if (err != ecSuccess)
-			return err;
-		err = mr_start(*this, res_policy);
-		if (err != ecSuccess)
-			return err;
+		auto err = ecSuccess;
+		if (ctnt == nullptr && (!exmdb_client->read_message(cur.dirc(),
+		    nullptr, CP_ACP, cur.mid, &ctnt) || ctnt == nullptr))
+			err = ecNotFound;
+		if (err == ecSuccess)
+			err = mr_get_policy(ev_to, res_policy);
+		if (err == ecSuccess)
+			err = mr_start(*this, res_policy);
+		if (ret == ecSuccess)
+			ret = err;
 	}
 
+	/* The message is committed, so always announce it */
 	if (m_flags & DELIVERY_DO_NOTIF_CL)
 		notify();
-	return ecSuccess;
+	return ret;
 }
 
 void rxparam::notify()

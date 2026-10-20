@@ -32,6 +32,8 @@ Fixes:
   processor.
 * ruleproc: OP_TAG in the TwoStep processor no longer sets the modification
   time of the message to 1601 and now produces a valid change key.
+* ruleproc: a failing rule no longer stops the remaining rules and the
+  new-mail notification in the TwoStep processor.
 
 
 Gromox 3.13 (2026-10-28)
