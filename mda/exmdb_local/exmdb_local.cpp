@@ -525,6 +525,12 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 	}
 }
 
+static constexpr cfg_directive exmdb_local_cfg_defaults[] = {
+	{"lda_mrautoproc", "0", CFG_BOOL},
+	{"lda_twostep_ruleproc", "1", CFG_BOOL},
+	CFG_TABLE_END,
+};
+
 static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 	{"autoreply_silence_window", "1day", CFG_TIME, "0"},
 	{"autoreply_subject_prefix", "Out of office: "},
@@ -557,7 +563,7 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 
 		auto pfile = config_file_initd("exmdb_local.cfg",
-		             get_config_path(), nullptr);
+		             get_config_path(), exmdb_local_cfg_defaults);
 		if (pfile == nullptr) {
 			mlog(LV_ERR, "exmdb_local: config_file_initd exmdb_local.cfg: %s",
 				strerror(errno));
@@ -610,8 +616,8 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		HX_unit_seconds(temp_buff, std::size(temp_buff), response_interval, 0);
 		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
 
-		g_lda_twostep = parse_bool(pfile->get_value("lda_twostep_ruleproc"));
-		g_lda_mrautoproc = parse_bool(pfile->get_value("lda_mrautoproc"));
+		g_lda_twostep = pfile->get_ll("lda_twostep_ruleproc");
+		g_lda_mrautoproc = pfile->get_ll("lda_mrautoproc");
 
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(get_queue_path() + std::string("/cache"), cache_interval, retrying_times);

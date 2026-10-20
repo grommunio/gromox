@@ -6,6 +6,13 @@ It's ready when it's ready.
 Development 3.13.16
 ===================
 
+Behavior changes:
+
+* delivery: ``exmdb_local.cfg:lda_twostep_ruleproc`` now defaults to 1, so
+  server-side rules of delivered mail are run by the TwoStep processor. Set it
+  to 0 to return to the old processor. exmdb_local(4gx) lists the remaining
+  differences.
+
 Enhancements:
 
 * ruleproc: the TwoStep processor now reports failed rules with deferred error
