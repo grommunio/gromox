@@ -1138,6 +1138,24 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
 
 		if (isMessageLike &&
+		    request.MessageDisposition == Enum::SaveOnly) {
+			/*
+			 * Exchange keeps a message that is saved but not sent as
+			 * a draft. Outlook for Mac reads IsDraft back after the
+			 * save and otherwise shows the new message read-only.
+			 */
+			auto dmsg = std::get_if<tMessage>(&item);
+			if (dmsg == nullptr || !dmsg->IsDraft || *dmsg->IsDraft) {
+				auto flags = content->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
+				if (flags != nullptr)
+					*flags |= MSGFLAG_UNSENT;
+				else if (content->proplist.set(PR_MESSAGE_FLAGS,
+				    EWSContext::construct<uint32_t>(MSGFLAG_UNSENT)) == ecServerOOM)
+					throw EWSError::NotEnoughMemory(E3493);
+			}
+		}
+
+		if (isMessageLike &&
 		    request.MessageDisposition == Enum::SaveOnly &&
 		    !content->proplist.has(PR_SENT_REPRESENTING_EMAIL_ADDRESS)) {
 			/*
