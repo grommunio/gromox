@@ -96,6 +96,7 @@ static constexpr HXoption g_options_table[] = {
 
 static constexpr cfg_directive timer_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR},
+	{"running_identity", RUNNING_IDENTITY},
 	{"timer_hosts_allow", ""}, /* ::1 default set later during startup */
 	{"timer_listen_ip", "::1"},
 	{"timer_listen_port", "6666"},
