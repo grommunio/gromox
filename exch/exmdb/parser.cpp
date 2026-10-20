@@ -711,9 +711,8 @@ static int exmdb_acl_read(const char *config_path, const char *hosts_allow)
 		mlog(LV_ERR, "exmdb_provider: Failed to read ACLs from exmdb_acl.txt: %s", strerror(errno));
 		return -5;
 	}
-	std::sort(acl.begin(), acl.end());
 	std::erase(acl, "");
-	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
+	sort_unique(acl);
 	if (acl.size() == 0) {
 		mlog(LV_NOTICE, "exmdb_provider: defaulting to implicit access ACL containing ::1.");
 		acl = {"::1"};

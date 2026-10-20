@@ -1401,9 +1401,7 @@ static ec_error_t nsp_get_proptags(const ab_tree::ab_node &node,
 
 	/* User-defined values */
 	node.proplist(t);
-	std::sort(t.begin(), t.end());
-	t.erase(std::unique(t.begin(), t.end()), t.end());
-
+	sort_unique(t);
 	/*
 	 * Trim tags that have no propval (requirement as per MS-OXNSPI v14
 	 * §3.1.4.1.6 point 5).

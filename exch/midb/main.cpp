@@ -187,9 +187,8 @@ static int midb_acl_read(const char *configdir, const char *hosts_allow)
 		mlog(LV_ERR, "listener: list_file_initd \"midb_acl.txt\": %s", strerror(errno));
 		return -5;
 	}
-	std::sort(acl.begin(), acl.end());
 	std::erase(acl, "");
-	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
+	sort_unique(acl);
 	if (acl.size() == 0) {
 		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
 		acl = {"::1"};

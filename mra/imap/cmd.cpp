@@ -3091,8 +3091,7 @@ static std::string icp_esearch_line(const char *tag, bool uid_mode,
 		ids.push_back(v);
 		p = end;
 	}
-	std::sort(ids.begin(), ids.end());
-	ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
+	sort_unique(ids);
 	std::string out = fmt::format("* ESEARCH (TAG \"{}\")", tag);
 	if (uid_mode)
 		out += " UID";

@@ -30,6 +30,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/cryptoutil.hpp>
@@ -1418,8 +1419,7 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 			continue;
 		seqid_list.push_back(item->id);
 	}
-	std::sort(seqid_list.begin(), seqid_list.end());
-	seqid_list.erase(std::unique(seqid_list.begin(), seqid_list.end()), seqid_list.end());
+	sort_unique(seqid_list);
 	size_t elem = seqid_list.size();
 	/* Use a higher-to-lower approach (cf. RFC 3501 §7.4.1) */
 	while (elem-- > 0) {
