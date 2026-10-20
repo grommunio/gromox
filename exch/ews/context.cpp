@@ -6204,27 +6204,156 @@ void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
 
 /*
  * ReplyToItem/ReplyAllToItem/ForwardItem wrap a full <t:Message> rather than
- * extending tMessage directly (see the comment on tReplyToItem). The message
- * content itself is otherwise handled exactly like a normal saved message.
- * ReferenceItemId (the item being replied to/forwarded) is not otherwise acted
- * upon yet.
+ * extending tMessage directly (see the comment on tReplyToItem). Whatever the
+ * message leaves out is taken from the item referred to.
  */
 void EWSContext::toContent(const std::string &dir, tReplyToItem &item,
     sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
+	smartResponse(item.ReferenceItemId, smart_type::reply, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tReplyAllToItem &item,
     sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
+	smartResponse(item.ReferenceItemId, smart_type::reply_all, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tForwardItem &item,
     sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
+	smartResponse(item.ReferenceItemId, smart_type::forward, shape, content);
+}
+
+/* Author of a message, as the representing or the actual sender */
+static std::optional<tEmailAddressType> msg_author(const TPROPVAL_ARRAY &props)
+{
+	static constexpr proptag_t tags[][4] = {
+		{PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+		 PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_NAME},
+		{PR_SENDER_SMTP_ADDRESS, PR_SENDER_EMAIL_ADDRESS,
+		 PR_SENDER_ADDRTYPE, PR_SENDER_NAME},
+	};
+	for (const auto &t : tags) {
+		tEmailAddressType addr;
+		auto str = props.get<const char>(t[0]);
+		if (str != nullptr) {
+			addr.EmailAddress = str;
+			addr.RoutingType = "SMTP";
+		} else if ((str = props.get<const char>(t[1])) != nullptr) {
+			addr.EmailAddress = str;
+			auto type = props.get<const char>(t[2]);
+			if (type != nullptr)
+				addr.RoutingType = type;
+		} else {
+			continue;
+		}
+		auto name = props.get<const char>(t[3]);
+		if (name != nullptr)
+			addr.Name = name;
+		return addr;
+	}
+	return std::nullopt;
+}
+
+/**
+ * @brief      Complete a reply or forward from the item it refers to
+ *
+ * Exchange addresses a reply to the Reply-To or the sender of the
+ * referenced item, and a reply to all additionally to its To and Cc
+ * recipients, leaving out the mailbox owner.
+ *
+ * @param      refId    Item replied to or forwarded
+ * @param      type     Kind of response
+ * @param      shape    Shape of the response
+ * @param      content  Content of the response
+ */
+void EWSContext::smartResponse(const tItemId &refId, smart_type type,
+    sShape &shape, message_content_ptr &content) const
+{
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId mid(refId.Id.data(), refId.Id.size());
+	sFolderSpec folder = resolveFolder(mid);
+	std::string dir = getDir(folder);
+	validate(dir, mid);
+	if (!(permissions(dir, folder.folderId) & (frightsOwner | frightsReadAny)))
+		throw EWSError::AccessDenied(E3515);
+	auto owner = effectiveUser(folder);
+	MESSAGE_CONTENT *ref = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), owner, CP_ACP,
+	    mid.messageId(), &ref) || ref == nullptr)
+		throw EWSError::ItemNotFound(E3516);
+	const auto &props = ref->proplist;
+
+	auto topic = props.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (topic == nullptr)
+		topic = props.get<const char>(PR_SUBJECT);
+	if (topic == nullptr)
+		topic = "";
+	if (!shape.writes(PR_SUBJECT))
+		shape.write(TAGGED_PROPVAL{PR_SUBJECT, cpystr(std::string(
+			type == smart_type::forward ? "FW: " : "RE: ") + topic)});
+	if (!shape.writes(PR_CONVERSATION_TOPIC)) {
+		auto ct = props.get<const char>(PR_CONVERSATION_TOPIC);
+		shape.write(TAGGED_PROPVAL{PR_CONVERSATION_TOPIC,
+			cpystr(ct != nullptr ? ct : topic)});
+	}
+	if (type == smart_type::forward)
+		return;
+
+	auto msgid = props.get<const char>(PR_INTERNET_MESSAGE_ID);
+	if (msgid != nullptr && *msgid != '\0') {
+		if (!shape.writes(PR_IN_REPLY_TO_ID))
+			shape.write(TAGGED_PROPVAL{PR_IN_REPLY_TO_ID, cpystr(msgid)});
+		auto refs = props.get<const char>(PR_INTERNET_REFERENCES);
+		if (!shape.writes(PR_INTERNET_REFERENCES))
+			shape.write(TAGGED_PROPVAL{PR_INTERNET_REFERENCES,
+				cpystr(refs != nullptr && *refs != '\0' ?
+				std::string(refs) + " " + msgid : std::string(msgid))});
+	}
+
+	auto rcpts = content->children.prcpts;
+	if (rcpts != nullptr && rcpts->count > 0)
+		return;
+	if (rcpts == nullptr) {
+		rcpts = content->children.prcpts = tarray_set_init();
+		if (rcpts == nullptr)
+			throw EWSError::NotEnoughMemory(E3517);
+	}
+	auto add = [&](tEmailAddressType &&addr, uint32_t rtype) {
+		if (!addr.EmailAddress)
+			return;
+		try {
+			normalize(addr);
+		} catch (const EWSError &) {
+			return;
+		}
+		if (type == smart_type::reply_all &&
+		    ((owner != nullptr && strcasecmp(addr.EmailAddress->c_str(), owner) == 0) ||
+		    strcasecmp(addr.EmailAddress->c_str(), m_auth_info.username) == 0))
+			return;
+		rcpt_add_unique(rcpts, std::move(addr), rtype);
+	};
+	auto replyTo = props.get<const BINARY>(PR_REPLY_RECIPIENT_ENTRIES);
+	auto targets = replyTo != nullptr ? reply_to_list(*replyTo) :
+	               std::vector<tEmailAddressType>();
+	if (targets.empty()) {
+		auto author = msg_author(props);
+		if (author)
+			targets.emplace_back(std::move(*author));
+	}
+	for (auto &addr : targets)
+		add(std::move(addr), MAPI_TO);
+	if (type != smart_type::reply_all || ref->children.prcpts == nullptr)
+		return;
+	for (const auto &row : *ref->children.prcpts) {
+		auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rtype != nullptr && (*rtype == MAPI_TO || *rtype == MAPI_CC))
+			add(tEmailAddressType(row), *rtype);
+	}
 }
 
 /**

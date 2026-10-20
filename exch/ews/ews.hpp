@@ -481,6 +481,8 @@ private:
 	void toContent(const std::string &, Structures::tReplyToItem &, Structures::sShape &, message_content_ptr &) const;
 	void toContent(const std::string &, Structures::tReplyAllToItem &, Structures::sShape &, message_content_ptr &) const;
 	void toContent(const std::string &, Structures::tForwardItem &, Structures::sShape &, message_content_ptr &) const;
+	enum class smart_type { reply, reply_all, forward };
+	void smartResponse(const Structures::tItemId &, smart_type, Structures::sShape &, message_content_ptr &) const;
 	std::optional<uint64_t> findExistingByGoid(const Structures::sFolderSpec&, const std::string&, const MESSAGE_CONTENT&) const;
 	std::optional<uint64_t> findDelegateMessage(const std::string &, std::optional<uint64_t>) const;
 	void stampDelegateMessage(const std::string &, const BINARY_ARRAY *, uint64_t) const;
