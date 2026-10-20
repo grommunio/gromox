@@ -4171,6 +4171,33 @@ void process(mUnsubscribeRequest &&request, XMLElement *response, const EWSConte
 	data.serialize(response);
 }
 
+/**
+ * @brief      Apply DeleteItemField to a meeting attendee list
+ *
+ * An attendee list without Attendee children clears that kind, so
+ * updateAttendees drops the rows and cancels the meeting for them.
+ */
+static void delete_attendees(const sItemChangeDescription &update,
+    sShape &shape)
+{
+	static const XMLElement *const empty = [] {
+		static XMLDocument doc;
+		return doc.NewElement("Attendees");
+	}();
+	auto del = std::get_if<tDeleteItemField>(&update);
+	if (del == nullptr)
+		return;
+	auto uri = std::get_if<tFieldURI>(&del->fieldURI.asVariant());
+	if (uri == nullptr)
+		return;
+	if (uri->FieldURI == "calendar:RequiredAttendees")
+		shape.requiredAttendees = empty;
+	else if (uri->FieldURI == "calendar:OptionalAttendees")
+		shape.optionalAttendees = empty;
+	else if (uri->FieldURI == "calendar:Resources")
+		shape.resourceAttendees = empty;
+}
+
 static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx,
     const std::string &dir, const char *username, sMessageEntryId &mid)
 {
@@ -4314,6 +4341,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		for (const auto &update : change.Updates) {
 			if (std::holds_alternative<tSetItemField>(update))
 				std::get<tSetItemField>(update).put(shape);
+			delete_attendees(update, shape);
 		}
 		tContact::genFields(shape);
 		tCalendarItem::setDatetimeFields(shape);
