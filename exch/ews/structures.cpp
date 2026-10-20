@@ -2431,8 +2431,10 @@ void tCalendarItem::update(const sShape& shape)
 			UID.emplace(goid_to_uid(*goid));
 	}
 
-	if ((prop = shape.get(NtExceptionReplaceTime)))
+	if ((prop = shape.get(NtExceptionReplaceTime))) {
 		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+		OriginalStart = RecurrenceId;
+	}
 
 	if ((prop = shape.get(PR_CREATION_TIME)))
 		fromProp(prop, DateTimeStamp);
