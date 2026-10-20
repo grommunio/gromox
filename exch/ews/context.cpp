@@ -2772,8 +2772,41 @@ bool EWSContext::saveRecurBlob(const std::string &dir, uint64_t mid,
 	BINARY new_bin;
 	new_bin.cb = ext_push.m_offset;
 	new_bin.pb = ext_push.m_udata;
-	const TAGGED_PROPVAL rprop[] = {{recur_tag, &new_bin}};
-	const TPROPVAL_ARRAY rpropvals = {std::size(rprop), deconst(rprop)};
+	std::vector<TAGGED_PROPVAL> rprop = {{recur_tag, &new_bin}};
+
+	/*
+	 * The series changed with its occurrence, so give it a new change
+	 * number and key. Otherwise SyncFolderItems and ICS never report
+	 * the change and other clients keep the old occurrences.
+	 */
+	uint64_t cn = 0;
+	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &cn))
+		return false;
+	uint64_t now = rop_util_current_nttime();
+	rprop.push_back({PidTagChangeNumber, &cn});
+	rprop.push_back({PR_LAST_MODIFICATION_TIME, &now});
+	const proptag_t ctags[] = {PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST};
+	auto cur = getItemProps(dir, mid, ctags);
+	auto oldkey = cur.get<const BINARY>(PR_CHANGE_KEY);
+	XID xid;
+	EXT_PULL ep;
+	BINARY ckey{};
+	binary_ptr pcl_buf;
+	if (oldkey != nullptr) {
+		ep.init(oldkey->pb, oldkey->cb, nullptr, 0);
+		if (ep.g_xid(oldkey->cb, &xid) == pack_result::ok) {
+			xid = XID{xid.guid, cn};
+			ckey = serialize(xid);
+			PCL pcl;
+			auto oldpcl = cur.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+			if (oldpcl != nullptr && !pcl.deserialize(oldpcl))
+				pcl = PCL{};
+			pcl_buf = mkPCL(xid, std::move(pcl));
+			rprop.push_back({PR_CHANGE_KEY, &ckey});
+			rprop.push_back({PR_PREDECESSOR_CHANGE_LIST, pcl_buf.get()});
+		}
+	}
+	const TPROPVAL_ARRAY rpropvals = {static_cast<uint16_t>(rprop.size()), rprop.data()};
 	PROBLEM_ARRAY rproblems;
 	return m_plugin.exmdb.set_message_properties(dir.c_str(),
 	       nullptr, CP_ACP, mid, &rpropvals, &rproblems) &&
