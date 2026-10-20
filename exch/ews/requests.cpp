@@ -4198,6 +4198,28 @@ static void delete_attendees(const sItemChangeDescription &update,
 		shape.resourceAttendees = empty;
 }
 
+/**
+ * @brief      Check whether an ItemChange only edits attendee lists
+ *
+ * MS-OXOCAL v22.1 §3.1.4.7.3.4: only such an update can go to the added
+ * attendees alone. Any other change concerns all attendees.
+ */
+static bool attendees_only(const tItemChange &change)
+{
+	for (const auto &update : change.Updates) {
+		auto &path = std::visit([](const auto &u) -> const tPath & {
+		             	return u.fieldURI;
+		             }, update);
+		auto uri = std::get_if<tFieldURI>(&path.asVariant());
+		if (uri == nullptr ||
+		    (uri->FieldURI != "calendar:RequiredAttendees" &&
+		    uri->FieldURI != "calendar:OptionalAttendees" &&
+		    uri->FieldURI != "calendar:Resources"))
+			return false;
+	}
+	return true;
+}
+
 static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx,
     const std::string &dir, const char *username, sMessageEntryId &mid)
 {
@@ -4354,6 +4376,9 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		const char* username = ctx.effectiveUser(parentFolder);
 		mUpdateItemResponseMessage msg;
 		uint32_t occ_basedate = 0;
+		Enum::CalendarItemUpdateOperationType mode =
+			request.SendMeetingInvitationsOrCancellations.value_or(
+			Enum::SendToNone);
 		std::optional<TARRAY_SET> oldRcpts;
 		bool organizer = false;
 		if (change.ItemId.holds_alternative<tOccurrenceItemId>()) {
@@ -4450,88 +4475,24 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		/* An attendee's copy sends nothing, like in Exchange */
 		if (orgCopy) {
-			MESSAGE_CONTENT *sendcontent = nullptr;
-			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-			    username, CP_ACP, mid.messageId(), &sendcontent) ||
-			    sendcontent == nullptr)
-				throw EWSError::ItemNotFound(E3404);
-			auto cls = sendcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
-			if (cls != nullptr &&
-			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
-			    sendcontent->children.prcpts != nullptr &&
-			    sendcontent->children.prcpts->count > 0) {
-				/* The owner organizes and the caller sends */
-				auto ident = ctx.meetingIdentity(dir);
-				const std::vector<proptag_t> staleKeys
-					{PR_SENDER_SEARCH_KEY, PR_SENT_REPRESENTING_SEARCH_KEY};
-				if (*request.SendMeetingInvitationsOrCancellations == Enum::SendToAllAndSaveCopy ||
-				    *request.SendMeetingInvitationsOrCancellations == Enum::SendToChangedAndSaveCopy) {
-					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
-					uint64_t newMid = 0;
-					if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
-					    sentitems.folderId, &newMid))
-						throw EWSError::InternalServerError(E3426);
-					BOOL result = false;
-					if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(), CP_ACP,
-					    mid.messageId(), sentitems.folderId, newMid, false, &result) ||
-					    !result)
-						throw EWSError::InternalServerError(E3428);
-					const char *sentuser = ctx.effectiveUser(sentitems);
-					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					std::vector<TAGGED_PROPVAL> sprops = {
-						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
-						{PR_RESPONSE_REQUESTED, deconst(&byte_value_one)},
-						{PR_CLIENT_SUBMIT_TIME, now},
-						{PR_MESSAGE_DELIVERY_TIME, now},
-					};
-					sprops.insert(sprops.end(), ident.begin(), ident.end());
-					const TPROPVAL_ARRAY sproplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
-					PROBLEM_ARRAY sproblems;
-					if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-					    sentuser, CP_ACP, newMid, &sproplist, &sproblems) ||
-					    !ctx.plugin().exmdb.remove_message_properties(dir.c_str(),
-					    CP_ACP, newMid, staleKeys))
-						throw EWSError::ItemSave(E3419);
-					MESSAGE_CONTENT *sentcontent = nullptr;
-					if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-					    sentuser, CP_ACP, newMid, &sentcontent) ||
-					    sentcontent == nullptr)
-						throw EWSError::ItemNotFound(E3405);
-					ctx.send(dir, mid.messageId(), *sentcontent);
-				} else {
-					/*
-					 * read_message returns pointers backed by ndr_stack
-					 * regions. Calling cancelcontent->set() invokes
-					 * propval_free() and tpropval_array_append(), which use
-					 * incompatible malloc/realloc/free. Thus, dup() first.
-					 */
-					message_content_ptr dupcontent(sendcontent->dup());
-					if (!dupcontent)
-						throw EWSError::NotEnoughMemory(E3408);
-					dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");
-					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
-					dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
-					for (const auto &prop : ident)
-						if (dupcontent->proplist.set(prop) != ecSuccess)
-							throw EWSError::NotEnoughMemory(E3408);
-					for (auto tag : staleKeys)
-						dupcontent->proplist.erase(tag);
-					ctx.send(dir, mid.messageId(), *dupcontent);
-				}
-			}
+			/*
+			 * A change other than to the attendee lists affects
+			 * every attendee, so it goes to all of them.
+			 */
+			bool addedOnly = oldRcpts && attendees_only(change) &&
+			                 (mode == Enum::SendOnlyToChanged ||
+			                 mode == Enum::SendToChangedAndSaveCopy);
+			ctx.sendMeetingUpdate(dir, parentFolder,
+			    mid.messageId(), addedOnly ? &*oldRcpts : nullptr,
+			    mode == Enum::SendToAllAndSaveCopy ||
+			    mode == Enum::SendToChangedAndSaveCopy);
 		}
-		if (oldRcpts && organizer &&
-		    request.SendMeetingInvitationsOrCancellations) {
+		if (orgCopy && oldRcpts && organizer)
 			/* MS-OXWSMTGS v14.0 §2.2.5.3 */
-			auto mode =
-				*request.SendMeetingInvitationsOrCancellations;
-			if (mode != Enum::SendToNone)
-				ctx.cancelRemovedAttendees(dir, parentFolder,
-				    mid.messageId(), *oldRcpts,
-				    mode == Enum::SendToAllAndSaveCopy ||
-				    mode == Enum::SendToChangedAndSaveCopy);
-		}
+			ctx.cancelRemovedAttendees(dir, parentFolder,
+			    mid.messageId(), *oldRcpts,
+			    mode == Enum::SendToAllAndSaveCopy ||
+			    mode == Enum::SendToChangedAndSaveCopy);
 		if (occ_basedate == 0 && request.MessageDisposition &&
 		    (*request.MessageDisposition == Enum::SendOnly ||
 		    *request.MessageDisposition == Enum::SendAndSaveCopy))

@@ -4784,6 +4784,8 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 			organizer = true;
 			continue;
 		}
+		if (flags != nullptr && !(*flags & recipSendable))
+			continue;
 		tEmailAddressType addr(rcpt);
 		if (!addr.EmailAddress)
 			continue;
@@ -5091,6 +5093,24 @@ static const char *resp_subject_prefix(const char *cls, const char *lang)
 }
 
 /**
+ * @brief      Get the SMTP address of a recipient row
+ *
+ * @param      row     Recipient row
+ *
+ * @return     Address, or an empty string if it cannot be resolved
+ */
+std::string EWSContext::rcptAddress(const TPROPVAL_ARRAY &row) const
+{
+	tEmailAddressType addr(row);
+	try {
+		normalize(addr);
+	} catch (const DispatchError &) {
+		return {};
+	}
+	return addr.EmailAddress.value_or("");
+}
+
+/**
  * @brief      Send a cancellation to attendees dropped from a meeting
  *
  * MS-OXOCAL v22.1 §3.1.4.9.1.1: only the removed attendees get the
@@ -5115,19 +5135,10 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	auto cls = cur->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (cls == nullptr || class_match_prefix(cls, "IPM.Appointment") != 0)
 		return;
-	auto address = [&](const TPROPVAL_ARRAY &row) -> std::string {
-		tEmailAddressType addr(row);
-		try {
-			normalize(addr);
-		} catch (const DispatchError &) {
-			return {};
-		}
-		return addr.EmailAddress.value_or("");
-	};
 	std::vector<std::string> kept;
 	if (cur->children.prcpts != nullptr)
 		for (const auto &row : *cur->children.prcpts)
-			kept.emplace_back(address(row));
+			kept.emplace_back(rcptAddress(row));
 	auto is_kept = [&](const std::string &a) {
 		return std::any_of(kept.cbegin(), kept.cend(),
 		       [&](const std::string &k) {
@@ -5145,7 +5156,7 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 		auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
 		if (flags != nullptr && *flags & recipOrganizer)
 			continue;
-		auto addr = address(row);
+		auto addr = rcptAddress(row);
 		if (addr.empty()) {
 			mlog(LV_WARN, "[ews] %s:m%llu: removed attendee has "
 			     "no usable address, no cancellation sent",
@@ -5221,6 +5232,105 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
 	    cancel.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
 		throw EWSError::ItemSave(E3490);
+}
+
+/**
+ * @brief      Send the update of a meeting changed by UpdateItem
+ *
+ * MS-OXWSMTGS v14.0 §2.2.5.3: the SendToChanged modes only address
+ * the attendees that were added or removed. Removed attendees are
+ * handled by cancelRemovedAttendees.
+ *
+ * @param      dir       Store directory
+ * @param      parent    Parent folder of the meeting
+ * @param      mid       Message ID of the meeting
+ * @param      oldRcpts  Recipients before the update to send only to
+ *                       the added attendees, nullptr to send to all
+ * @param      saveCopy  Whether to keep a copy in Sent Items
+ */
+void EWSContext::sendMeetingUpdate(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid, const TARRAY_SET *oldRcpts,
+    bool saveCopy) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	MESSAGE_CONTENT *cur = nullptr;
+	if (!exmdb.read_message(dir.c_str(), effectiveUser(parent), CP_ACP,
+	    mid, &cur) || cur == nullptr)
+		throw EWSError::ItemNotFound(E3404);
+	auto cls = cur->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr || class_match_prefix(cls, "IPM.Appointment") != 0 ||
+	    cur->children.prcpts == nullptr || cur->children.prcpts->count == 0)
+		return;
+	/*
+	 * read_message returns pointers backed by ndr_stack regions, which
+	 * set() must not free. Thus, dup() first.
+	 */
+	message_content_ptr req(cur->dup());
+	if (!req)
+		throw EWSError::NotEnoughMemory(E3408);
+	auto rcpts = req->children.prcpts;
+	if (oldRcpts != nullptr) {
+		/*
+		 * MS-OXOCAL v22.1 §3.1.4.7.3.4: the other attendees stay
+		 * listed in the request but are marked unsendable.
+		 */
+		std::vector<std::string> old;
+		for (const auto &row : *oldRcpts)
+			old.emplace_back(rcptAddress(row));
+		for (auto &row : *rcpts) {
+			auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+			uint32_t f = flags != nullptr ? *flags : 0;
+			if (f & recipOrganizer)
+				continue;
+			auto a = rcptAddress(row);
+			if (!a.empty() && std::none_of(old.cbegin(), old.cend(),
+			    [&](const std::string &o) {
+			    	return strcasecmp(o.c_str(), a.c_str()) == 0;
+			    }))
+				continue;
+			if (f & recipSendable)
+				f |= recipOriginal;
+			f &= ~recipSendable;
+			if (row.set(PR_RECIPIENT_FLAGS, &f) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3408);
+		}
+	}
+	if (std::none_of(rcpts->begin(), rcpts->end(),
+	    [](const TPROPVAL_ARRAY &row) {
+	    	auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+	    	return flags == nullptr || (*flags & recipSendable &&
+	    	       !(*flags & recipOrganizer));
+	    }))
+		return;
+	auto &props = req->proplist;
+	auto now = rop_util_current_nttime();
+	if (props.set(PR_MESSAGE_CLASS,
+	    "IPM.Schedule.Meeting.Request") != ecSuccess ||
+	    props.set(PR_RESPONSE_REQUESTED, &byte_value_one) != ecSuccess ||
+	    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+	    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3408);
+	/* The owner organizes and the caller sends */
+	for (const auto &prop : meetingIdentity(dir))
+		if (props.set(prop) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3408);
+	props.erase(PR_SENDER_SEARCH_KEY);
+	props.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
+	send(dir, mid, *req);
+	if (!saveCopy)
+		return;
+	static constexpr proptag_t rmProps[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+	};
+	for (auto tag : rmProps)
+		props.erase(tag);
+	auto sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+	uint64_t newMid = 0, newCn = 0;
+	ec_error_t err = ecSuccess;
+	if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
+	    req.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3540);
 }
 
 /**

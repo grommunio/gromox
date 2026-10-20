@@ -648,6 +648,7 @@ E(3527, "cannot write to the folder of the item to suppress the read receipt for
 E(3530, "failed to set the sender identity");
 E(3531, "failed to remove a stale sender identity");
 E(3532, "failed to copy the message to submit");
+E(3540, "failed to write meeting request copy to Sent Items");
 E(3570, "out of memory adding an attachment");
 E(3571, "failed to add an attachment");
 E(3572, "only file attachments can be created with an item");
