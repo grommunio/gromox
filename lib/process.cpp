@@ -17,6 +17,7 @@
 #include <memory>
 #include <mutex>
 #include <pthread.h>
+#include <pwd.h>
 #include <sched.h>
 #include <spawn.h>
 #include <string>
@@ -524,13 +525,34 @@ errno_t listener_ctx::add_inet(const char *addr, uint16_t port, uint32_t mark)
 	return 0;
 }
 
-errno_t listener_ctx::add_local(const char *path, uint32_t mark)
+errno_t listener_ctx::add_local(const char *path, const char *user, uint32_t mark)
 {
 	auto fd = HX_local_listen(path);
 	if (fd < 0) {
 		auto se = errno;
 		mlog(LV_ERR, "%s(%s): %s", __PRETTY_FUNCTION__, path, strerror(se));
 		return se;
+	}
+	if (user != nullptr) {
+		/* Similar logic as in lib/string.cpp:mlog_init */
+		char buf[256];
+		struct passwd pwd{}, *result = nullptr;
+		if (getpwnam_r(user, &pwd, buf, std::size(buf), &result) != 0 ||
+		    result == nullptr) {
+			int se = errno;
+			if (se == 0)
+				se = ENOENT;
+			mlog(LV_ERR, "add_local(\"%s\", \"%s\"): %s",
+			     path, znul(user), strerror(se));
+			return se;
+		} else if (chown(path, result->pw_uid, result->pw_gid) != 0) {
+			int se = errno;
+			mlog(LV_ERR, "chown(\"%s\", (\"%s\")%u,%u): %s",
+				path, user, static_cast<unsigned int>(result->pw_uid),
+				static_cast<unsigned int>(result->pw_gid),
+				strerror(se));
+			return se;
+		}
 	}
 	try {
 		m_sockets.emplace_back(fd, mark);
@@ -543,11 +565,12 @@ errno_t listener_ctx::add_local(const char *path, uint32_t mark)
 	return 0;
 }
 
-errno_t listener_ctx::add_bunch(const char *line, uint32_t mark)
+errno_t listener_ctx::add_bunch(const char *line, const char *user,
+    uint32_t mark)
 {
 	for (auto &&spec : gx_split_ws(line)) {
 		if (strncmp(spec.c_str(), "unix:", 5) == 0) {
-			auto err = add_local(&spec[5]);
+			auto err = add_local(&spec[5], user);
 			if (err != 0)
 				return err;
 			continue;

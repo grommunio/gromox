@@ -285,7 +285,7 @@ static int imap_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
 {
 	auto line = gxcfg.get_value(gxkey);
 	if (line != nullptr)
-		return ctx.add_bunch(line, mark);
+		return ctx.add_bunch(line, oldcfg.get_value("running_identity"), mark);
 	auto host = oldcfg.get_value(oldkey);
 	if (host != nullptr)
 		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",

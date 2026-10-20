@@ -726,7 +726,7 @@ int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg)
 	ctx.m_thread_name = "exmdb_accept";
 	auto line = gxcfg.get_value("exmdb_listen");
 	if (line != nullptr)
-		return ctx.add_bunch(line);
+		return ctx.add_bunch(line, oldcfg.get_value("running_identity"));
 	auto host = oldcfg.get_value("listen_ip");
 	if (host != nullptr)
 		mlog(LV_NOTICE, "%s:listen_ip is deprecated in favor of %s:exmdb_listen",

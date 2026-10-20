@@ -206,7 +206,7 @@ static int listener_init(listener_ctx &ctx, const config_file &gxcfg,
 		return ret;
 	auto line = gxcfg.get_value("midb_listen");
 	if (line != nullptr)
-		return ctx.add_bunch(line);
+		return ctx.add_bunch(line, oldcfg.get_value("running_identity"));
 	auto host = oldcfg.get_value("midb_listen_ip");
 	if (host != nullptr)
 		mlog(LV_NOTICE, "%s:listen_ip is deprecated in favor of %s:midb_listen",
