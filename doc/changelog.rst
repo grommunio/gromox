@@ -6,6 +6,12 @@ It's ready when it's ready.
 Development 3.13.16
 ===================
 
+Enhancements:
+
+* ruleproc: the TwoStep processor now reports failed rules with deferred error
+  messages and disables rules whose target folder is gone or whose forward has
+  too many recipients.
+
 Fixes:
 
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt

@@ -130,7 +130,9 @@ struct rxparam {
 	message_node cur;
 	message_content *ctnt = nullptr;
 	std::string orig_dir; /* rule table origin */
+	eid_t orig_fid = 0; /* rule folder */
 	unsigned int m_flags = ~0U;
+	uint32_t act_type = 0, act_idx = 0; /* action being run, for DEMs */
 	bool del = false, exit = false;
 };
 
@@ -811,6 +813,101 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	return false;
 }
 
+/* Same limit as the legacy processor */
+static constexpr size_t rx_max_rule_rcpts = 256;
+
+/*
+ * Flag a rule as failed so it is skipped from now on, as the legacy processor
+ * does. See MS-OXORULE v23.0 §3.2.5.1.3.
+ */
+static void rx_disable_rule(rxparam &par, const rule_node &rule)
+{
+	using LLU = unsigned long long;
+	auto dir = par.orig_dir.c_str();
+	uint32_t state = rule.state | ST_ERROR;
+	bool ok;
+	if (rule.extended) {
+		const TAGGED_PROPVAL pv[] = {{PR_RULE_MSG_STATE, &state}};
+		const TPROPVAL_ARRAY pa = {std::size(pv), deconst(pv)};
+		PROBLEM_ARRAY problems{};
+		ok = exmdb_client->set_message_properties(dir, nullptr, CP_ACP,
+		     rule.rule_id, &pa, &problems);
+	} else {
+		uint64_t rule_id = rule.rule_id;
+		TAGGED_PROPVAL pv[] = {{PR_RULE_ID, &rule_id}, {PR_RULE_STATE, &state}};
+		RULE_DATA row;
+		row.flags = ROW_MODIFY;
+		row.propvals = {std::size(pv), pv};
+		BOOL exceed = false;
+		ok = exmdb_client->update_folder_rule(dir, par.orig_fid, 1,
+		     &row, &exceed);
+	}
+	if (!ok)
+		mlog(LV_ERR, "ruleproc: %s: could not disable %srule %llxh",
+			dir, rule.extended ? "ext" : "", LLU{rule.rule_id});
+	else
+		mlog(LV_NOTICE, "ruleproc: %s: %srule %llxh \"%s\" disabled after an error",
+			dir, rule.extended ? "ext" : "", LLU{rule.rule_id},
+			rule.name.c_str());
+}
+
+/* Deferred Error Message, MS-OXORULE v23.0 §2.2.7 */
+static void rx_make_dem(rxparam &par, const rule_node &rule,
+    uint32_t rule_error)
+{
+	if (rule.extended)
+		return; /* §2.2.7: extended rules are not used in DEMs */
+	auto dir = par.orig_dir.c_str();
+	message_content_ptr msg(message_content_init());
+	if (msg == nullptr)
+		return;
+	auto &p = msg->proplist;
+	auto now = rop_util_current_nttime();
+	uint64_t rule_id = rule.rule_id;
+	if (p.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+	    p.set(PR_CREATION_TIME, &now) != ecSuccess ||
+	    p.set(PR_LAST_MODIFICATION_TIME, &now) != ecSuccess ||
+	    p.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
+	    p.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Error") != ecSuccess ||
+	    p.set(PR_RULE_ERROR, &rule_error) != ecSuccess ||
+	    p.set(PR_RULE_ACTION_TYPE, &par.act_type) != ecSuccess ||
+	    p.set(PR_RULE_ACTION_NUMBER, &par.act_idx) != ecSuccess ||
+	    p.set(PR_RULE_PROVIDER, rule.provider.c_str()) != ecSuccess ||
+	    p.set(PR_RULE_ID, &rule_id) != ecSuccess)
+		return;
+	static constexpr proptag_t eidtag[] = {PR_ENTRYID};
+	TPROPVAL_ARRAY vals{};
+	if (par.cur.dir == par.orig_dir &&
+	    exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
+	    par.cur.mid, eidtag, &vals)) {
+		auto eid = vals.get<const BINARY>(PR_ENTRYID);
+		if (eid != nullptr && p.set(PR_DAM_ORIGINAL_ENTRYID, eid) != ecSuccess)
+			return;
+	}
+	vals = {};
+	if (exmdb_client->get_folder_properties(dir, CP_ACP, par.orig_fid,
+	    eidtag, &vals)) {
+		auto eid = vals.get<const BINARY>(PR_ENTRYID);
+		if (eid != nullptr && p.set(PR_RULE_FOLDER_ENTRYID, eid) != ecSuccess)
+			return;
+	}
+	uint64_t outmid = 0, outcn = 0;
+	auto e_result = ecSuccess;
+	if (!exmdb_client->write_message(dir, CP_ACP,
+	    eid_t(1, PRIVATE_FID_DEFERRED_ACTION), msg.get(), {},
+	    &outmid, &outcn, &e_result) || e_result != ecSuccess)
+		mlog(LV_ERR, "ruleproc: %s: could not write DEM: %s",
+			dir, mapi_strerror(e_result));
+}
+
+static void rx_rule_error(rxparam &par, const rule_node &rule,
+    uint32_t rule_error, bool disable)
+{
+	rx_make_dem(par, rule, rule_error);
+	if (disable)
+		rx_disable_rule(par, rule);
+}
+
 static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
     const MOVECOPY_ACTION &mc, uint8_t act_type)
 {
@@ -943,12 +1040,29 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 {
 	if (mc.pfolder_eid == nullptr)
 		return ecSuccess;
-	if (!mc.same_store)
-		return op_copy_other(par, rule, mc, act_type);
+	if (!mc.same_store) {
+		auto err = op_copy_other(par, rule, mc, act_type);
+		if (err == ecNotFound || err == ecAccessDenied) {
+			rx_rule_error(par, rule, err == ecAccessDenied ?
+				RULE_ERROR_PERMISSION : RULE_ERROR_MOVECOPY, true);
+			return ecSuccess;
+		}
+		return err;
+	}
 	auto &svreid = *static_cast<const SVREID *>(mc.pfolder_eid);
 	auto dst_fid = svreid.folder_id;
-	if (rop_util_get_replid(dst_fid) != 1)
-		return ecNotFound;
+	BOOL exist = false;
+	if (rop_util_get_replid(dst_fid) == 1 &&
+	    !exmdb_client->is_folder_present(par.cur.dirc(), dst_fid, &exist))
+		return ecRpcFailed;
+	if (!exist) {
+		mlog(LV_WARN, "ruleproc: %s: OP_MOVE/OP_COPY target folder %llxh does not exist",
+			par.cur.dirc(), static_cast<unsigned long long>(rop_util_get_gc_value(dst_fid)));
+		rx_rule_error(par, rule, RULE_ERROR_MOVECOPY, true);
+		return ecSuccess;
+	}
+	if (eid_t(dst_fid) == par.cur.fid)
+		return ecSuccess; /* already there */
 	uint64_t dst_mid = 0;
 	BOOL result = false;
 	if (!exmdb_client->allocate_message_id(par.cur.dirc(), dst_fid, &dst_mid))
@@ -956,6 +1070,10 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 	if (!exmdb_client->movecopy_message(par.cur.dirc(), CP_ACP, par.cur.mid,
 	    dst_fid, dst_mid, act_type == OP_MOVE ? TRUE : false, &result))
 		return ecRpcFailed;
+	if (!result) {
+		rx_rule_error(par, rule, RULE_ERROR_MOVECOPY, false);
+		return ecSuccess;
+	}
 	if (act_type == OP_MOVE) {
 		par.cur.fid = eid_t(dst_fid);
 		par.cur.mid = eid_t(dst_mid);
@@ -1044,6 +1162,10 @@ static ec_error_t op_read(rxparam &par, const rule_node &rule)
 static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
     const FORWARDDELEGATE_ACTION &blk, uint32_t flavor) try
 {
+	if (blk.count > rx_max_rule_rcpts) {
+		rx_rule_error(par, rule, RULE_ERROR_TOO_MANY_RCPTS, true);
+		return ecSuccess;
+	}
 	std::vector<std::string> rcpt_list;
 	for (const auto &rcptprops : blk) {
 		TPROPVAL_ARRAY pv;
@@ -1155,6 +1277,8 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 {
 	if (g_ruleproc_debug)
 		mlog(LV_DEBUG, "Rule_Action %s", act.repr().c_str());
+	par.act_type = act.type;
+	par.act_idx  = act_idx;
 	switch (act.type) {
 	case OP_MOVE:
 	case OP_COPY: {
@@ -1196,8 +1320,10 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 		return ecSuccess;
 	for (size_t i = 0; i < rule.act->count; ++i) {
 		auto ret = op_switch(par, rule, rule.act->pblock[i], i);
-		if (ret != ecSuccess)
+		if (ret != ecSuccess) {
+			rx_rule_error(par, rule, RULE_ERROR_EXECUTING, false);
 			return ret;
+		}
 	}
 	return ecSuccess;
 }
@@ -1206,8 +1332,10 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 static ec_error_t opx_move(rxparam &par, const rule_node &rule,
     const EXT_MOVECOPY_ACTION &mc, uint8_t act_type)
 {
-	if (mc.folder_eid.eid_type != EITLT_PRIVATE_FOLDER)
+	if (mc.folder_eid.eid_type != EITLT_PRIVATE_FOLDER) {
+		rx_disable_rule(par, rule);
 		return ecSuccess;
+	}
 	SVREID svreid;
 	svreid.folder_id = eid_t(1, rop_util_gc_to_value(mc.folder_eid.folder_gc));
 	MOVECOPY_ACTION conv;
@@ -1219,6 +1347,8 @@ static ec_error_t opx_move(rxparam &par, const rule_node &rule,
 static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
     const EXT_ACTION_BLOCK &act, size_t act_idx)
 {
+	par.act_type = act.type;
+	par.act_idx  = act_idx;
 	switch (act.type) {
 	case OP_MOVE:
 	case OP_COPY: {
@@ -2313,6 +2443,7 @@ ec_error_t rxparam::run_rules()
 	if (err != ecSuccess)
 		return err;
 	orig_dir = cur.dir; /* remember where the rule table came from */
+	orig_fid = cur.fid;
 	std::vector<rule_node> rule_list;
 	err = load_std_rules(oof, rule_list);
 	if (err != ecSuccess)
