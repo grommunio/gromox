@@ -3524,15 +3524,21 @@ void process(mExpandDLRequest &&request, XMLElement *response, const EWSContext 
  * @param      username  User the store is accessed as
  * @param      mid       Message to stamp
  * @param      content   Message content, replaced by the reread copy
+ *
+ * @return     PR_MESSAGE_FLAGS before stamping, if the message had any
  */
-static void stamp_for_send(const EWSContext &ctx, const std::string &dir,
-    const char *username, const sMessageEntryId &mid, MESSAGE_CONTENT *&content)
+static std::optional<uint32_t> stamp_for_send(const EWSContext &ctx,
+    const std::string &dir, const char *username, const sMessageEntryId &mid,
+    MESSAGE_CONTENT *&content)
 {
 	std::vector<TAGGED_PROPVAL> sprops;
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	sprops.push_back({PR_CLIENT_SUBMIT_TIME, now});
 	sprops.push_back({PR_MESSAGE_DELIVERY_TIME, now});
 	auto flags = content->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	std::optional<uint32_t> prev;
+	if (flags != nullptr)
+		prev = *flags;
 	if (flags != nullptr && *flags & MSGFLAG_UNSENT)
 		sprops.push_back({PR_MESSAGE_FLAGS,
 			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
@@ -3563,6 +3569,41 @@ static void stamp_for_send(const EWSContext &ctx, const std::string &dir,
 	    username, CP_ACP, mid.messageId(), &content) ||
 	    content == nullptr)
 		throw EWSError::ItemNotFound(E3466);
+	return prev;
+}
+
+/**
+ * @brief      Send a stamped message, keeping it a draft on failure
+ *
+ * A message that the SMTP hand-off rejects must not stay flagged as
+ * sent, otherwise clients show it read-only in Drafts and it can be
+ * neither edited nor sent again.
+ *
+ * @param      ctx       Request context
+ * @param      dir       Store directory
+ * @param      username  User the store is accessed as
+ * @param      mid       Message to send
+ * @param      content   Stamped message content
+ * @param      prev      PR_MESSAGE_FLAGS before stamping
+ */
+static void send_stamped(const EWSContext &ctx, const std::string &dir,
+    const char *username, const sMessageEntryId &mid,
+    const MESSAGE_CONTENT &content, const std::optional<uint32_t> &prev)
+{
+	try {
+		ctx.send(dir, rop_util_get_gc_value(mid.messageId()), content);
+	} catch (...) {
+		if (prev && *prev & MSGFLAG_UNSENT) {
+			TAGGED_PROPVAL prop{PR_MESSAGE_FLAGS,
+				EWSContext::construct<uint32_t>(*prev)};
+			const TPROPVAL_ARRAY proplist = {1, &prop};
+			PROBLEM_ARRAY problems;
+			ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+				username, CP_ACP, mid.messageId(), &proplist,
+				&problems);
+		}
+		throw;
+	}
 }
 
 /**
@@ -3665,8 +3706,8 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 		    &content) || content == nullptr)
 			throw EWSError::ItemNotFound(E3403);
 		ctx.validate_sendas_perms(*content);
-		stamp_for_send(ctx, dir, username, meid, content);
-		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
+		auto prev = stamp_for_send(ctx, dir, username, meid, content);
+		send_stamped(ctx, dir, username, meid, *content, prev);
 		file_sent_message(ctx, dir, username, meid,
 			request.SaveItemToFolder ? &saveFolder : nullptr, *content);
 
@@ -3797,9 +3838,9 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 	if (cls == nullptr || class_match_prefix(cls, "IPM.Note") != 0)
 		return;
 
-	stamp_for_send(ctx, dir, username, mid, sendcontent);
+	auto prev = stamp_for_send(ctx, dir, username, mid, sendcontent);
 	ctx.validate_sendas_perms(*sendcontent);
-	ctx.send(dir, rop_util_get_gc_value(mid.messageId()), *sendcontent);
+	send_stamped(ctx, dir, username, mid, *sendcontent, prev);
 
 	if (*request.MessageDisposition == Enum::SendAndSaveCopy) {
 		sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
