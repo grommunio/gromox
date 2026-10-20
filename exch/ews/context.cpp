@@ -1956,6 +1956,43 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	}
 }
 
+/* Reply-To addresses of a message */
+static std::vector<tEmailAddressType> reply_to_list(const BINARY &entries)
+{
+	std::vector<tEmailAddressType> list;
+	if (entries.pb == nullptr || entries.cb == 0)
+		return list;
+	EXT_PULL pull;
+	BINARY_ARRAY addressArray{};
+	auto cleanup = HX::make_scope_exit([&]() {
+		for (uint32_t i = 0; i < addressArray.count; ++i)
+			std::free(addressArray.pbin[i].pb);
+		std::free(addressArray.pbin);
+	});
+	pull.init(entries.pb, entries.cb, zalloc, EXT_FLAG_WCOUNT);
+	if (pull.g_flatentry_a(&addressArray) != pack_result::ok)
+		return list;
+	list.reserve(addressArray.count);
+	for (uint32_t i = 0; i < addressArray.count; ++i) {
+		EXT_PULL entryPull;
+		entryPull.init(addressArray.pbin[i].pb, addressArray.pbin[i].cb, zalloc, EXT_FLAG_UTF16);
+		ONEOFF_ENTRYID entry{};
+		if (entryPull.g_oneoff_eid(&entry) != pack_result::ok)
+			continue;
+		if (entry.pmail_address.empty())
+			continue;
+		auto &recipient = list.emplace_back();
+		recipient.EmailAddress = std::move(entry.pmail_address);
+		if (!entry.pdisplay_name.empty())
+			recipient.Name = std::move(entry.pdisplay_name);
+		if (!entry.paddress_type.empty())
+			recipient.RoutingType = std::move(entry.paddress_type);
+		else
+			recipient.RoutingType = "SMTP";
+	}
+	return list;
+}
+
 /**
  * @brief     Load message attributes not contained in tags
  *
@@ -2006,41 +2043,12 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP, mid,
 	    PR_REPLY_RECIPIENT_ENTRIES, &propval) || propval == nullptr)
 		return;
-	auto replyEntries = static_cast<const BINARY *>(propval);
-	if (replyEntries->pb == nullptr || replyEntries->cb == 0)
+	auto list = reply_to_list(*static_cast<const BINARY *>(propval));
+	if (list.empty())
 		return;
-
-	EXT_PULL pull;
-	BINARY_ARRAY addressArray{};
-	auto cleanup = HX::make_scope_exit([&]() {
-		for (uint32_t i = 0; i < addressArray.count; ++i)
-			std::free(addressArray.pbin[i].pb);
-		std::free(addressArray.pbin);
-	});
-	pull.init(replyEntries->pb, replyEntries->cb, zalloc, EXT_FLAG_WCOUNT);
-	auto parseResult = pull.g_flatentry_a(&addressArray);
-	if (parseResult != pack_result::ok || addressArray.count == 0)
-		return;
-
 	auto &replyList = defaulted(message.ReplyTo);
-	replyList.reserve(replyList.size() + static_cast<size_t>(addressArray.count));
-	for (uint32_t i = 0; i < addressArray.count; ++i) {
-		EXT_PULL entryPull;
-		entryPull.init(addressArray.pbin[i].pb, addressArray.pbin[i].cb, zalloc, EXT_FLAG_UTF16);
-		ONEOFF_ENTRYID entry{};
-		if (entryPull.g_oneoff_eid(&entry) != pack_result::ok)
-			continue;
-		if (entry.pmail_address.empty())
-			continue;
-		auto &recipient = replyList.emplace_back();
-		recipient.EmailAddress = std::move(entry.pmail_address);
-		if (!entry.pdisplay_name.empty())
-			recipient.Name = std::move(entry.pdisplay_name);
-		if (!entry.paddress_type.empty())
-			recipient.RoutingType = std::move(entry.paddress_type);
-		else
-			recipient.RoutingType = "SMTP";
-	}
+	replyList.insert(replyList.end(), std::make_move_iterator(list.begin()),
+		std::make_move_iterator(list.end()));
 }
 
 /**
