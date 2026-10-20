@@ -1209,31 +1209,41 @@ generic_connection generic_connection::accept(int sv_sock,
 		return conn;
 	}
 	char txtport[40];
-	auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
-		   conn.client_addr, sizeof(conn.client_addr), txtport,
-		   sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
-	if (ret != 0) {
-		mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
-		conn.reset();
-		return conn;
+	if (cl_addr.ss_family == AF_UNIX) {
+		gx_strlcpy(conn.client_addr, "unix:", sizeof(conn.client_addr));
+		conn.client_port = 0;
+	} else {
+		auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
+			   conn.client_addr, sizeof(conn.client_addr), txtport,
+			   sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
+			conn.reset();
+			return conn;
+		}
+		conn.client_port = strtoul(txtport, nullptr, 0);
 	}
-	conn.client_port = strtoul(txtport, nullptr, 0);
 	addrlen = sizeof(sv_addr);
-	ret = getsockname(cl_sock, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
+	auto ret = getsockname(cl_sock, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
 	if (ret != 0) {
 		mlog(LV_WARN, "getsockname: %s", strerror(errno));
 		conn.reset();
 		return conn;
 	}
-	ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
-	      conn.server_addr, sizeof(conn.server_addr), txtport,
-	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
-	if (ret != 0) {
-		mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
-		conn.reset();
-		return conn;
+	if (sv_addr.ss_family == AF_UNIX) {
+		gx_strlcpy(conn.server_addr, "unix:", sizeof(conn.server_addr));
+		conn.server_port = 0;
+	} else {
+		ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
+		      conn.server_addr, sizeof(conn.server_addr), txtport,
+		      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
+			conn.reset();
+			return conn;
+		}
+		conn.server_port = strtoul(txtport, nullptr, 0);
 	}
-	conn.server_port = strtoul(txtport, nullptr, 0);
 	conn.last_timestamp = tp_now();
 	return conn;
 }
