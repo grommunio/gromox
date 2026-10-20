@@ -630,6 +630,7 @@ E(3527, "cannot write to the folder of the item to suppress the read receipt for
 E(3600, "cannot write to the calendar of the referenced item");
 E(3601, "cannot modify the existing calendar item of the meeting");
 E(3602, "no read access to the referenced item");
+E(3604, "no read access to the meeting to cancel");
 
 #undef E
 }

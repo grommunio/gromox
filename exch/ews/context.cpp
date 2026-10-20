@@ -4211,6 +4211,9 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	    cancelcontent->children.prcpts == nullptr ||
 	    cancelcontent->children.prcpts->count == 0)
 		return;
+	/* The cancellation carries the content of the meeting */
+	if (!(permissions(dir, parent.folderId) & frightsReadAny))
+		throw EWSError::AccessDenied(E3604);
 	if (basedate) {
 		message_content_ptr inst(cancelcontent->dup());
 		if (!inst)
