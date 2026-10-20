@@ -258,6 +258,15 @@ extern void db_engine_init(size_t table_size, int cache_interval, unsigned int s
 extern int db_engine_run();
 extern void db_engine_stop();
 
+/* Deferred ("send later") message submission, see deferred.cpp */
+enum class defer_role { executor, director, worker };
+extern int deferred_run(defer_role);
+extern void deferred_stop();
+extern void deferred_sched_arm(const char *dir, uint64_t mid_val, time_t due);
+extern void deferred_sched_cancel(const char *dir, uint64_t mid_val);
+/* Read a store's deferred_sends table and arm the scheduler for each row. */
+extern void deferred_arm_store(const char *dir);
+
 extern bool db_engine_set_maint(const char *path, enum db_maint_mode);
 extern std::optional<db_conn> db_engine_get_db(const char *dir);
 extern BOOL db_engine_vacuum(const char *path);
