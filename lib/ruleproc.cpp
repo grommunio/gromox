@@ -8,9 +8,12 @@
 #include <utility>
 #include <vector>
 #include <libHX/endian.h>
+#include <libHX/option.h>
 #include <libHX/scope.hpp>
+#include <libHX/string.h>
 #include <vmime/utility/url.hpp>
 #include <gromox/algorithm.hpp>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/exmdb_client.hpp>
@@ -29,6 +32,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -1306,6 +1310,205 @@ static ec_error_t opx_forward(rxparam &par, const rule_node &rule,
 	return op_forward2(par, rule, *fwd, act.flavor);
 }
 
+/* Body of a reply that uses STOCK_REPLY_TEMPLATE */
+static bool rx_stock_reply_body(rxparam &par, std::string &body) try
+{
+	const char *charset = nullptr;
+	sql_meta_result mres;
+	if (mysql_adaptor_meta(par.ev_from, WANTPRIV_METAONLY, mres) == 0)
+		charset = lang_to_charset(mres.lang.c_str());
+	auto &props = par.ctnt->proplist;
+	if (znoval(charset)) {
+		auto cpid = props.get<const uint32_t>(PR_INTERNET_CPID);
+		if (cpid != nullptr)
+			charset = cpid_to_cset(static_cast<cpid_t>(*cpid));
+		if (charset == nullptr)
+			charset = "ascii";
+	}
+	auto tp = bounce_gen_lookup(charset, "BOUNCE_AUTO_RESPONSE");
+	if (tp == nullptr)
+		return false;
+	std::string parts;
+	if (par.ctnt->children.pattachments != nullptr) {
+		for (const auto &at : *par.ctnt->children.pattachments) {
+			auto name = at.proplist.get<const char>(PR_ATTACH_LONG_FILENAME);
+			if (name == nullptr)
+				continue;
+			if (!parts.empty())
+				parts += ", ";
+			parts += name;
+		}
+	}
+	char date_buf[128], size_buf[64];
+	rfc1123_dstring(date_buf, std::size(date_buf), 0);
+	auto size = props.get<const uint32_t>(PR_MESSAGE_SIZE);
+	HX_unit_size(size_buf, std::size(size_buf), size != nullptr ? *size : 0, 1000, 0);
+	auto fa = HXformat_init();
+	if (fa == nullptr)
+		return false;
+	auto cl_0 = HX::make_scope_exit([&]() { HXformat_free(fa); });
+	if (HXformat_add(fa, "time", date_buf, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "from", par.ev_from, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "rcpt", par.ev_to, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "subject", znul(props.get<const char>(PR_SUBJECT)), HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "parts", parts.c_str(), HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "length", size_buf, HXTYPE_STRING) < 0)
+		return false;
+	hxmc_t *replaced = nullptr;
+	if (HXformat_aprintf(fa, &replaced, &tp->content[tp->body_start]) < 0)
+		return false;
+	body = replaced;
+	HXmc_free(replaced);
+	return true;
+} catch (const std::bad_alloc &) {
+	return false;
+}
+
+/**
+ * OP_REPLY and OP_OOF_REPLY, MS-OXORULE v23.0 §3.2.5.1. @tpl_mid is the
+ * template, an FAI message in the rule folder.
+ *
+ * Returns ecNotFound if the template is unusable, which the caller turns into
+ * a disabled rule.
+ */
+static ec_error_t op_reply2(rxparam &par, uint8_t act_type, uint32_t flavor,
+    eid_t tpl_mid, const GUID &tpl_guid) try
+{
+	if (strcasecmp(par.ev_from, ENVELOPE_FROM_NULL) == 0)
+		return ecSuccess;
+	auto &props = par.ctnt->proplist;
+	auto suppress = props.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
+	if (suppress != nullptr && *suppress & (act_type == OP_REPLY ?
+	    AUTO_RESPONSE_SUPPRESS_AUTOREPLY : AUTO_RESPONSE_SUPPRESS_OOF))
+		return ecSuccess;
+
+	auto dir = par.orig_dir.c_str();
+	message_content *tpl = nullptr;
+	if (!exmdb_client->read_message(dir, nullptr, CP_ACP, tpl_mid, &tpl))
+		return ecRpcFailed;
+	if (tpl == nullptr)
+		return ecNotFound;
+	auto &tprops = tpl->proplist;
+	auto cls = tprops.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr || class_match_prefix(cls, act_type == OP_REPLY ?
+	    "IPM.Note.rules.ReplyTemplate" : "IPM.Note.rules") != 0)
+		return ecNotFound;
+	auto fai = tprops.get<const uint8_t>(PR_ASSOCIATED);
+	if (fai == nullptr || *fai == 0)
+		return ecNotFound;
+	if (tpl_guid != GUID_NULL) {
+		auto bin = tprops.get<const BINARY>(PR_REPLY_TEMPLATE_ID);
+		if (bin == nullptr || bin->cb != sizeof(GUID) ||
+		    rop_util_binary_to_guid(bin) != tpl_guid)
+			return ecNotFound;
+	}
+
+	/* Recipient: the template's own ones, or the sender */
+	auto sender = props.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	auto sender_name = props.get<const char>(PR_SENT_REPRESENTING_NAME);
+	uint32_t rcpt_type = MAPI_TO;
+	TAGGED_PROPVAL rcpt_pv[] = {
+		{PR_SMTP_ADDRESS, deconst(sender != nullptr ? sender : par.ev_from)},
+		{PR_RECIPIENT_TYPE, &rcpt_type},
+		{PR_DISPLAY_NAME, deconst(sender_name)},
+	};
+	TPROPVAL_ARRAY rcpt = {static_cast<uint16_t>(sender_name != nullptr ? 3 : 2), rcpt_pv};
+	TPROPVAL_ARRAY *rcpt_p = &rcpt;
+	tarray_set rcpt_set;
+	if (flavor & DO_NOT_SEND_TO_ORIGINATOR) {
+		if (tpl->children.prcpts == nullptr ||
+		    tpl->children.prcpts->count == 0)
+			return ecNotFound;
+	} else {
+		rcpt_set.count = 1;
+		rcpt_set.pparray = &rcpt_p;
+		tpl->children.prcpts = &rcpt_set;
+	}
+	std::string body;
+	std::vector<TAGGED_PROPVAL> stock_props;
+	if (flavor & STOCK_REPLY_TEMPLATE) {
+		if (!rx_stock_reply_body(par, body))
+			return ecNotFound;
+		/*
+		 * @tpl lives in the RPC arena, which erase and set would free
+		 * into. Point the template at a new list instead.
+		 */
+		for (const auto &pv : tprops)
+			if (pv.proptag != PR_ASSOCIATED && pv.proptag != PidTagMid &&
+			    pv.proptag != PR_BODY && pv.proptag != PR_BODY_A &&
+			    pv.proptag != PR_HTML && pv.proptag != PR_RTF_COMPRESSED)
+				stock_props.push_back(pv);
+		stock_props.push_back({PR_BODY, body.data()});
+		tprops.count    = static_cast<uint16_t>(stock_props.size());
+		tprops.ppropval = stock_props.data();
+	}
+
+	auto log_id = par.orig_dir + ":m" + std::to_string(rop_util_get_gc_value(tpl_mid));
+	MAIL imail;
+	rp_storedir = dir;
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = cu_alloc;
+	cvt.get_propids = cu_get_propids;
+	cvt.get_propname = cu_get_propname;
+	auto ok = cvt.mapi_to_inet(*tpl, imail);
+	rp_alloc_ctx.clear();
+	rp_storedir = nullptr;
+	if (!ok) {
+		mlog(LV_ERR, "ruleproc: OP_REPLY oxcmail_export failed");
+		return ecError;
+	}
+	auto head = imail.get_head();
+	if (head == nullptr)
+		return ecError;
+	head->set_field("X-Auto-Response-Suppress", "All");
+	head->set_field("From", par.ev_to);
+	std::vector<std::string> rcpt_list;
+	for (const auto &r : *tpl->children.prcpts) {
+		TPROPVAL_ARRAY pv = {r.count, r.ppropval};
+		if (cu_rcpt_to_list(std::move(pv), rp_org_name.c_str(),
+		    rcpt_list, mysql_adaptor_userid_to_name, false) != ecSuccess)
+			return ecError;
+	}
+	if (rcpt_list.empty())
+		return ecSuccess;
+	auto ret = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, rcpt_list);
+	if (ret != ecSuccess)
+		mlog(LV_ERR, "ruleproc: OP_REPLY cu_send_mail: %s", mapi_strerror(ret));
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
+}
+
+static ec_error_t op_reply(rxparam &par, const rule_node &rule,
+    const ACTION_BLOCK &act)
+{
+	auto ra = static_cast<const REPLY_ACTION *>(act.pdata);
+	if (ra == nullptr)
+		return ecSuccess;
+	auto err = op_reply2(par, act.type, act.flavor,
+	           ra->template_message_id, ra->template_guid);
+	if (err != ecNotFound)
+		return err;
+	rx_rule_error(par, rule, RULE_ERROR_RETRIEVE_TEMPLATE, true);
+	return ecSuccess;
+}
+
+static ec_error_t opx_reply(rxparam &par, const rule_node &rule,
+    const EXT_ACTION_BLOCK &act)
+{
+	auto ra = static_cast<const EXT_REPLY_ACTION *>(act.pdata);
+	if (ra == nullptr)
+		return ecSuccess;
+	auto mid = eid_t(1, rop_util_gc_to_value(ra->message_eid.message_gc));
+	auto err = op_reply2(par, act.type, act.flavor, mid, ra->template_guid);
+	if (err != ecNotFound)
+		return err;
+	rx_rule_error(par, rule, RULE_ERROR_RETRIEVE_TEMPLATE, true);
+	return ecSuccess;
+}
+
 static ec_error_t op_switch(rxparam &par, const rule_node &rule,
     const ACTION_BLOCK &act, size_t act_idx)
 {
@@ -1333,6 +1536,9 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 	case OP_DEFER_ACTION:
 		par.dams.push_back({&rule, &act});
 		return ecSuccess;
+	case OP_REPLY:
+	case OP_OOF_REPLY:
+		return op_reply(par, rule, act);
 	default:
 		return ecSuccess;
 	}
@@ -1400,6 +1606,9 @@ static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
 		return op_tag(par, rule, static_cast<TAGGED_PROPVAL *>(act.pdata));
 	case OP_FORWARD:
 		return opx_forward(par, rule, act);
+	case OP_REPLY:
+	case OP_OOF_REPLY:
+		return opx_reply(par, rule, act);
 	case OP_DELETE:
 		par.del = true;
 		return ecSuccess;
@@ -2739,6 +2948,9 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 		/* e.g. permission error */
 		return false;
 	g_ruleproc_debug = parse_bool(cfg->get_value("ruleproc_debug"));
+	/* Only needed for STOCK_REPLY_TEMPLATE */
+	if (bounce_gen_init(get_config_path(), get_data_path(), "mail_bounce") != 0)
+		mlog(LV_WARN, "ruleproc: stock reply templates unavailable");
 	auto org = cfg->get_value("x500_org_name");
 	std::shared_ptr<config_file> lcl;
 	if (*znul(org) == '\0') {
