@@ -445,6 +445,90 @@ ec_error_t rxparam::load_std_rules(bool oof,
 	return ecSuccess;
 }
 
+using npid_map = std::vector<std::pair<propid_t, propid_t>>;
+
+/*
+ * Extended rules carry their own named property table, see MS-OXORULE
+ * v23.0 §2.2.4.2. Translate it to the numbering of the store at @dir.
+ */
+static bool rx_xrule_npmap(const char *dir, const NAMEDPROPERTY_INFO &info,
+    npid_map &map)
+{
+	if (info.count == 0)
+		return true;
+	const PROPNAME_ARRAY names = {info.count, info.ppropname};
+	PROPID_ARRAY ids;
+	if (!exmdb_client->get_named_propids(dir, TRUE, &names, &ids) ||
+	    ids.size() != info.count)
+		return false;
+	for (unsigned int i = 0; i < info.count; ++i)
+		if (ids[i] != 0)
+			map.emplace_back(info.ppropid[i], ids[i]);
+	return true;
+}
+
+static void rx_xrule_retag(const npid_map &map, proptag_t &tag)
+{
+	if (!is_nameprop_id(PROP_ID(tag)))
+		return;
+	for (const auto &[from, to] : map) {
+		if (from == PROP_ID(tag)) {
+			tag = PROP_TAG(PROP_TYPE(tag), to);
+			return;
+		}
+	}
+}
+
+static void rx_xrule_retag(const npid_map &map, RESTRICTION &res)
+{
+	switch (res.rt) {
+	case RES_AND:
+	case RES_OR:
+		for (size_t i = 0; i < res.andor->count; ++i)
+			rx_xrule_retag(map, res.andor->pres[i]);
+		break;
+	case RES_NOT:
+		rx_xrule_retag(map, res.xnot->res);
+		break;
+	case RES_CONTENT:
+		rx_xrule_retag(map, res.cont->proptag);
+		res.cont->propval.proptag = res.cont->proptag;
+		break;
+	case RES_PROPERTY:
+		rx_xrule_retag(map, res.prop->proptag);
+		res.prop->propval.proptag = res.prop->proptag;
+		break;
+	case RES_PROPCOMPARE:
+		rx_xrule_retag(map, res.pcmp->proptag1);
+		rx_xrule_retag(map, res.pcmp->proptag2);
+		break;
+	case RES_BITMASK:
+		rx_xrule_retag(map, res.bm->proptag);
+		break;
+	case RES_SIZE:
+		rx_xrule_retag(map, res.size->proptag);
+		break;
+	case RES_EXIST:
+		rx_xrule_retag(map, res.exist->proptag);
+		break;
+	case RES_SUBRESTRICTION:
+		rx_xrule_retag(map, res.sub->res);
+		break;
+	case RES_COMMENT:
+	case RES_ANNOTATION:
+		for (size_t i = 0; i < res.comment->count; ++i)
+			rx_xrule_retag(map, res.comment->ppropval[i].proptag);
+		if (res.comment->pres != nullptr)
+			rx_xrule_retag(map, *res.comment->pres);
+		break;
+	case RES_COUNT:
+		rx_xrule_retag(map, res.count->sub_res);
+		break;
+	default:
+		break;
+	}
+}
+
 /**
  * Preconditions: @this->cur needs to be set
  * Postconditions: @rule_list has new rules appended to
@@ -525,6 +609,13 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 					dir, static_cast<unsigned long long>(*mid));
 				continue;
 			}
+			npid_map map;
+			if (!rx_xrule_npmap(dir, rule.xcnames, map)) {
+				mlog(LV_WARN, "ruleproc: %s: extrule %llxh: named properties unresolvable",
+					dir, static_cast<unsigned long long>(*mid));
+				continue;
+			}
+			rx_xrule_retag(map, rule.xcond);
 			rule.cond = &rule.xcond;
 		}
 		uint32_t version = 0;
@@ -538,6 +629,15 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 				dir, static_cast<unsigned long long>(*mid));
 			continue;
 		}
+		npid_map map;
+		if (!rx_xrule_npmap(dir, rule.xanames, map)) {
+			mlog(LV_WARN, "ruleproc: %s: extrule %llxh: named properties unresolvable",
+				dir, static_cast<unsigned long long>(*mid));
+			continue;
+		}
+		for (auto &blk : rule.xact)
+			if (blk.type == OP_TAG && blk.pdata != nullptr)
+				rx_xrule_retag(map, static_cast<TAGGED_PROPVAL *>(blk.pdata)->proptag);
 		rule_list.emplace_back(std::move(rule));
 	}
 	return ecSuccess;

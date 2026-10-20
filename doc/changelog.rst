@@ -28,6 +28,8 @@ Fixes:
   recurrence changed too.
 * ruleproc: an unparsable extended rule no longer keeps all other rules of the
   folder from running in the TwoStep processor.
+* ruleproc: extended rules on named properties now match in the TwoStep
+  processor.
 
 
 Gromox 3.13 (2026-10-28)
