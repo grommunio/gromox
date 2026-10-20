@@ -1794,39 +1794,55 @@ void tCancelCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(ReferenceItemId);
 }
 
+/* The flat SmartResponseType or a nested <t:Message> */
+static tMessage smart_message(const tinyxml2::XMLElement *xml)
+{
+	auto msg = xml->FirstChildElement("Message");
+	return tMessage(msg != nullptr ? msg : xml);
+}
+
 tReplyToItem::tReplyToItem(const tinyxml2::XMLElement *xml) :
 	XMLINIT(ReferenceItemId),
-	XMLINIT(Message)
+	Message(smart_message(xml)),
+	XMLINIT(NewBodyContent),
+	Nested(xml->FirstChildElement("Message") != nullptr)
 {}
 
 void tReplyToItem::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(ReferenceItemId);
 	XMLDUMPT(Message);
+	XMLDUMPT(NewBodyContent);
 }
 
 tReplyAllToItem::tReplyAllToItem(const tinyxml2::XMLElement *xml) :
 	XMLINIT(ReferenceItemId),
-	XMLINIT(Message),
-	XMLINIT(IsSpecificMessageReply)
+	Message(smart_message(xml)),
+	XMLINIT(NewBodyContent),
+	XMLINIT(IsSpecificMessageReply),
+	Nested(xml->FirstChildElement("Message") != nullptr)
 {}
 
 void tReplyAllToItem::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(ReferenceItemId);
 	XMLDUMPT(Message);
+	XMLDUMPT(NewBodyContent);
 	XMLDUMPT(IsSpecificMessageReply);
 }
 
 tForwardItem::tForwardItem(const tinyxml2::XMLElement *xml) :
 	XMLINIT(ReferenceItemId),
-	XMLINIT(Message)
+	Message(smart_message(xml)),
+	XMLINIT(NewBodyContent),
+	Nested(xml->FirstChildElement("Message") != nullptr)
 {}
 
 void tForwardItem::serialize(tinyxml2::XMLElement *xml) const
 {
 	XMLDUMPT(ReferenceItemId);
 	XMLDUMPT(Message);
+	XMLDUMPT(NewBodyContent);
 }
 
 void tModifiedEvent::serialize(tinyxml2::XMLElement *xml) const

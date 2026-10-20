@@ -6203,29 +6203,32 @@ void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
 }
 
 /*
- * ReplyToItem/ReplyAllToItem/ForwardItem wrap a full <t:Message> rather than
- * extending tMessage directly (see the comment on tReplyToItem). Whatever the
- * message leaves out is taken from the item referred to.
+ * ReplyToItem/ReplyAllToItem/ForwardItem carry their message in Message, as
+ * the comment on tReplyToItem explains. Whatever the message leaves out is
+ * taken from the item referred to.
  */
 void EWSContext::toContent(const std::string &dir, tReplyToItem &item,
     sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
-	smartResponse(item.ReferenceItemId, smart_type::reply, shape, content);
+	smartResponse(item.ReferenceItemId, smart_type::reply,
+		item.NewBodyContent, !item.Nested, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tReplyAllToItem &item,
     sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
-	smartResponse(item.ReferenceItemId, smart_type::reply_all, shape, content);
+	smartResponse(item.ReferenceItemId, smart_type::reply_all,
+		item.NewBodyContent, !item.Nested, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tForwardItem &item,
     sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
-	smartResponse(item.ReferenceItemId, smart_type::forward, shape, content);
+	smartResponse(item.ReferenceItemId, smart_type::forward,
+		item.NewBodyContent, !item.Nested, shape, content);
 }
 
 /* Author of a message, as the representing or the actual sender */
@@ -6259,20 +6262,120 @@ static std::optional<tEmailAddressType> msg_author(const TPROPVAL_ARRAY &props)
 	return std::nullopt;
 }
 
+/* Display names of the recipients of one type */
+static std::string rcpt_names(const TARRAY_SET *rcpts, uint32_t type)
+{
+	std::string out;
+	if (rcpts == nullptr)
+		return out;
+	for (const auto &row : *rcpts) {
+		auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rtype == nullptr || *rtype != type)
+			continue;
+		auto name = row.get<const char>(PR_DISPLAY_NAME);
+		if (name == nullptr)
+			name = row.get<const char>(PR_SMTP_ADDRESS);
+		if (name == nullptr)
+			name = row.get<const char>(PR_EMAIL_ADDRESS);
+		if (name == nullptr)
+			continue;
+		if (!out.empty())
+			out += "; ";
+		out += name;
+	}
+	return out;
+}
+
+/*
+ * NewBodyContent followed by a header and the body of the referenced
+ * message, the way Exchange quotes it.
+ */
+static std::string smart_body(const tBody &nb, const MESSAGE_CONTENT &ref)
+{
+	const auto &props = ref.proplist;
+	bool html = nb.BodyType == Enum::HTML;
+	std::vector<std::pair<const char *, std::string>> hdr;
+	auto author = msg_author(props);
+	if (author && author->EmailAddress) {
+		std::string from = author->Name ? *author->Name + " <" +
+		                   *author->EmailAddress + ">" : *author->EmailAddress;
+		hdr.emplace_back("From", std::move(from));
+	}
+	auto when = props.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
+	if (when == nullptr)
+		when = props.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
+	if (when != nullptr) {
+		auto t = rop_util_nttime_to_unix(*when);
+		struct tm tm{};
+		char buf[64];
+		if (localtime_r(&t, &tm) != nullptr &&
+		    strftime(buf, std::size(buf), "%a, %d %b %Y %H:%M", &tm) > 0)
+			hdr.emplace_back("Sent", buf);
+	}
+	auto to = rcpt_names(ref.children.prcpts, MAPI_TO);
+	if (!to.empty())
+		hdr.emplace_back("To", std::move(to));
+	auto cc = rcpt_names(ref.children.prcpts, MAPI_CC);
+	if (!cc.empty())
+		hdr.emplace_back("Cc", std::move(cc));
+	auto subj = props.get<const char>(PR_SUBJECT);
+	hdr.emplace_back("Subject", subj != nullptr ? subj : "");
+
+	auto cpid = props.get<const uint32_t>(PR_INTERNET_CPID);
+	auto text = props.get<const char>(PR_BODY);
+	auto hbin = props.get<const BINARY>(PR_HTML);
+	std::string orig;
+	const char *cset;
+	if (html && hbin != nullptr && hbin->pc != nullptr)
+		orig = cpid != nullptr && *cpid != CP_UTF8 &&
+		       (cset = cpid_to_cset(static_cast<cpid_t>(*cpid))) != nullptr ?
+		       iconvtext({hbin->pc, hbin->cb}, cset, "UTF-8") :
+		       std::string(hbin->pc, hbin->cb);
+	else if (html && text != nullptr)
+		plain_to_html(text, orig);
+	else if (text != nullptr)
+		orig = text;
+	else if (hbin != nullptr && hbin->pc != nullptr &&
+	    html_to_plain({hbin->pc, hbin->cb}, cpid != nullptr ?
+	    static_cast<cpid_t>(*cpid) : CP_UTF8, orig) < 0)
+		orig.clear();
+
+	std::string out = nb;
+	if (!html) {
+		out += "\r\n\r\n________________________________\r\n";
+		for (const auto &[k, v] : hdr)
+			out += std::string(k) + ": " + v + "\r\n";
+		return out + "\r\n" + orig;
+	}
+	out += "<hr><div>";
+	for (const auto &[k, v] : hdr) {
+		std::unique_ptr<char[], stdlib_delete> q(HX_strquote(v.c_str(), HXQUOTE_HTML, nullptr));
+		if (q == nullptr)
+			throw std::bad_alloc();
+		out += std::string("<b>") + k + ":</b> " + q.get() + "<br>";
+	}
+	return out + "</div><br>" + orig;
+}
+
 /**
  * @brief      Complete a reply or forward from the item it refers to
  *
  * Exchange addresses a reply to the Reply-To or the sender of the
  * referenced item, and a reply to all additionally to its To and Cc
- * recipients, leaving out the mailbox owner.
+ * recipients, leaving out the mailbox owner. Recipients given in the
+ * request are added to those. NewBodyContent is put above the quoted
+ * referenced message, and a forward carries its attachments.
  *
  * @param      refId    Item replied to or forwarded
  * @param      type     Kind of response
+ * @param      newBody  NewBodyContent of the request
+ * @param      merge    Whether to add recipients to those given
  * @param      shape    Shape of the response
  * @param      content  Content of the response
  */
 void EWSContext::smartResponse(const tItemId &refId, smart_type type,
-    sShape &shape, message_content_ptr &content) const
+    const std::optional<tBody> &newBody, bool merge, sShape &shape,
+    message_content_ptr &content) const
 {
 	assertIdType(refId.type, tItemId::ID_ITEM);
 	sMessageEntryId mid(refId.Id.data(), refId.Id.size());
@@ -6301,8 +6404,30 @@ void EWSContext::smartResponse(const tItemId &refId, smart_type type,
 		shape.write(TAGGED_PROPVAL{PR_CONVERSATION_TOPIC,
 			cpystr(ct != nullptr ? ct : topic)});
 	}
-	if (type == smart_type::forward)
+	if (newBody && !shape.writes(PR_BODY) && !shape.writes(PR_HTML)) {
+		auto body = smart_body(*newBody, *ref);
+		if (newBody->BodyType == Enum::HTML) {
+			if (body.size() > UINT32_MAX)
+				throw InputError(E3256);
+			shape.write(TAGGED_PROPVAL{PR_HTML, construct<BINARY>(BINARY{
+				static_cast<uint32_t>(body.size()), {cpystr(body)}})});
+		} else {
+			shape.write(TAGGED_PROPVAL{PR_BODY, cpystr(body)});
+		}
+		shape.write(TAGGED_PROPVAL{PR_INTERNET_CPID, construct<uint32_t>(CP_UTF8)});
+	}
+	if (type == smart_type::forward) {
+		auto atts = ref->children.pattachments;
+		if (atts == nullptr || atts->count == 0 ||
+		    (content->children.pattachments != nullptr &&
+		    content->children.pattachments->count > 0))
+			return;
+		auto dup = atts->dup();
+		if (dup == nullptr)
+			throw EWSError::NotEnoughMemory(E3518);
+		content->set_attachments_internal(dup);
 		return;
+	}
 
 	auto msgid = props.get<const char>(PR_INTERNET_MESSAGE_ID);
 	if (msgid != nullptr && *msgid != '\0') {
@@ -6316,7 +6441,7 @@ void EWSContext::smartResponse(const tItemId &refId, smart_type type,
 	}
 
 	auto rcpts = content->children.prcpts;
-	if (rcpts != nullptr && rcpts->count > 0)
+	if (!merge && rcpts != nullptr && rcpts->count > 0)
 		return;
 	if (rcpts == nullptr) {
 		rcpts = content->children.prcpts = tarray_set_init();

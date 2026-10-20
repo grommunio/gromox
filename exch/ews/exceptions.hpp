@@ -633,6 +633,7 @@ E(3501, "private item");
 E(3515, "no read access to the item replied to or forwarded");
 E(3516, "failed to load the item replied to or forwarded");
 E(3517, "failed to allocate reply recipients");
+E(3518, "failed to copy the attachments to forward");
 E(3520, "failed to load the LocalFreebusy table");
 E(3521, "failed to query the LocalFreebusy table");
 E(3522, "failed to build the delegate entry ID");
