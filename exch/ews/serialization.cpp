@@ -1462,6 +1462,17 @@ tItem::tItem(const tinyxml2::XMLElement *xml) :
 	for (const tinyxml2::XMLElement *xp = xml->FirstChildElement("ExtendedProperty");
 	     xp != nullptr; xp = xp->NextSiblingElement("ExtendedProperty"))
 		ExtendedProperty.emplace_back(xp);
+	auto atts = xml->FirstChildElement("Attachments");
+	if (atts == nullptr)
+		return;
+	Attachments.emplace();
+	for (auto xp = atts->FirstChildElement(); xp != nullptr;
+	     xp = xp->NextSiblingElement())
+		if (strcmp(xp->Name(), "FileAttachment") == 0)
+			Attachments->emplace_back(tFileAttachment(xp));
+		else
+			/* Placeholder that toContent refuses */
+			Attachments->emplace_back(tItemAttachment());
 }
 
 void tItem::serialize(XMLElement *xml) const

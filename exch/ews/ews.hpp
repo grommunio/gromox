@@ -292,7 +292,7 @@ class EWSContext {
 	NOMOVE(EWSContext);
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
-	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
+	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&, bool = false) const;
 	void createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
 	void disableEventStream();
 	const char* effectiveUser(const Structures::sFolderSpec&) const;
@@ -401,6 +401,7 @@ class EWSContext {
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
+	static void addAttachment(MESSAGE_CONTENT &, const Structures::tFileAttachment &);
 	static char *cpystr(const std::string_view);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);

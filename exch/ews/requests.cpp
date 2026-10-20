@@ -1460,8 +1460,16 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				*flags &= ~(MSGFLAG_SUBMITTED | MSGFLAG_UNSENT);
 			content->proplist.set(PR_READ, &byte_value_one);
 		}
-		if (persist)
-			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
+		if (persist) {
+			/* Exchange returns the IDs of attachments it was given */
+			bool atts = std::visit([](const auto &i) {
+				if constexpr (std::is_base_of_v<tItem, std::decay_t<decltype(i)>>)
+					return i.Attachments.has_value();
+				else
+					return false;
+			}, item);
+			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content, atts));
+		}
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy) {
 			sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
