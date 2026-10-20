@@ -1728,9 +1728,9 @@ tAcceptItem::tAcceptItem(const tinyxml2::XMLElement *xml) :
 void tAcceptItem::serialize(tinyxml2::XMLElement *xml) const
 {
 	tMessage::serialize(xml);
+	XMLDUMPT(ReferenceItemId);
 	XMLDUMPT(ProposedStart);
 	XMLDUMPT(ProposedEnd);
-	XMLDUMPT(ReferenceItemId);
 }
 
 tTentativelyAcceptItem::tTentativelyAcceptItem(const tinyxml2::XMLElement *xml) :
@@ -1746,9 +1746,9 @@ tTentativelyAcceptItem::tTentativelyAcceptItem(const tinyxml2::XMLElement *xml) 
 void tTentativelyAcceptItem::serialize(tinyxml2::XMLElement *xml) const
 {
 	tMessage::serialize(xml);
+	XMLDUMPT(ReferenceItemId);
 	XMLDUMPT(ProposedStart);
 	XMLDUMPT(ProposedEnd);
-	XMLDUMPT(ReferenceItemId);
 }
 
 tDeclineItem::tDeclineItem(const tinyxml2::XMLElement *xml) :
@@ -1764,9 +1764,9 @@ tDeclineItem::tDeclineItem(const tinyxml2::XMLElement *xml) :
 void tDeclineItem::serialize(tinyxml2::XMLElement *xml) const
 {
 	tMessage::serialize(xml);
+	XMLDUMPT(ReferenceItemId);
 	XMLDUMPT(ProposedStart);
 	XMLDUMPT(ProposedEnd);
-	XMLDUMPT(ReferenceItemId);
 }
 
 tSuppressReadReceipt::tSuppressReadReceipt(const tinyxml2::XMLElement *xml) :
