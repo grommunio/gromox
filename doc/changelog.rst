@@ -30,6 +30,8 @@ Fixes:
   folder from running in the TwoStep processor.
 * ruleproc: extended rules on named properties now match in the TwoStep
   processor.
+* ruleproc: OP_TAG in the TwoStep processor no longer sets the modification
+  time of the message to 1601 and now produces a valid change key.
 
 
 Gromox 3.13 (2026-10-28)

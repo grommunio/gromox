@@ -984,22 +984,46 @@ static ec_error_t op_tag(rxparam &par, const rule_node &rule,
 {
 	if (setval == nullptr)
 		return ecSuccess;
-	uint64_t change_num = 0, modtime = 0;
+	static constexpr proptag_t oldtags[] = {PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST};
+	TPROPVAL_ARRAY oldvals{};
+	if (!exmdb_client->get_message_properties(par.cur.dirc(), nullptr,
+	    CP_ACP, par.cur.mid, oldtags, &oldvals))
+		return ecRpcFailed;
+	/* Reuse the replica GUID that delivery put into the change key */
+	XID xid{};
+	auto oldck = oldvals.get<const BINARY>(PR_CHANGE_KEY);
+	if (oldck != nullptr && oldck->cb > sizeof(GUID) && oldck->cb <= 24) {
+		EXT_PULL ep;
+		ep.init(oldck->pb, oldck->cb, exmdb_rpc_alloc, 0);
+		if (ep.g_xid(oldck->cb, &xid) != pack_result::ok)
+			xid = {};
+	}
+	uint64_t change_num = 0;
 	if (!exmdb_client->allocate_cn(par.cur.dirc(), &change_num))
 		return ecRpcFailed;
-	auto change_key = xid_to_bin({GUID{}, change_num});
+	xid = {xid.guid, change_num};
+	auto change_key = xid_to_bin(xid);
 	if (change_key == nullptr)
 		return ecServerOOM;
+	PCL pcl;
+	auto oldpcl = oldvals.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+	if (oldpcl != nullptr && !pcl.deserialize(oldpcl))
+		pcl.clear();
+	if (!pcl.append(xid))
+		return ecServerOOM;
+	binary_ptr pclbin(pcl.serialize());
+	if (pclbin == nullptr)
+		return ecServerOOM;
+	auto modtime = rop_util_current_nttime();
 	const TAGGED_PROPVAL valdata[] = {
 		{PidTagChangeNumber, &change_num},
 		{PR_CHANGE_KEY, change_key},
+		{PR_PREDECESSOR_CHANGE_LIST, pclbin.get()},
 		{PR_LOCAL_COMMIT_TIME, &modtime},
 		{PR_LAST_MODIFICATION_TIME, &modtime},
 		{setval->proptag, setval->pvalue},
 	};
 	const TPROPVAL_ARRAY valhdr = {std::size(valdata), deconst(valdata)};
-	if (valdata[1].pvalue == nullptr)
-		return ecServerOOM;
 	PROBLEM_ARRAY problems{};
 	if (!exmdb_client->set_message_properties(par.cur.dirc(),
 	    nullptr, CP_ACP, par.cur.mid, &valhdr, &problems))
