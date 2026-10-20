@@ -4776,13 +4776,22 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 
 	std::vector<std::string> rcpts;
 	rcpts.reserve(content.children.prcpts->count);
+	bool organizer = false;
 	for (auto &rcpt : *content.children.prcpts) {
+		/* The organizer row of a meeting is not an addressee */
+		auto flags = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (flags != nullptr && *flags & recipOrganizer) {
+			organizer = true;
+			continue;
+		}
 		tEmailAddressType addr(rcpt);
 		if (!addr.EmailAddress)
 			continue;
 		normalize(addr);
 		rcpts.emplace_back(*addr.EmailAddress);
 	}
+	if (rcpts.empty() && organizer)
+		return;
 	auto err = cu_send_vmail(mail, m_plugin.smtp_url.c_str(),
 	           m_auth_info.username, rcpts);
 	if (err != ecSuccess)
