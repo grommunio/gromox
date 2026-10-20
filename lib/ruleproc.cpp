@@ -11,6 +11,8 @@
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
+#include <fmt/core.h>
+#include <json/value.h>
 #include <vmime/utility/url.hpp>
 #include <gromox/algorithm.hpp>
 #include <gromox/bounce_gen.hpp>
@@ -21,6 +23,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/ical.hpp>
+#include <gromox/json.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
@@ -130,6 +133,7 @@ struct rxparam {
 	NOMOVE(rxparam);
 	ec_error_t run();
 	ec_error_t run_rules();
+	ec_error_t delegate_to(const char *addr);
 	ec_error_t is_oof(bool *out) const;
 	ec_error_t load_std_rules(bool oof, std::vector<rule_node> &out) const;
 	ec_error_t load_ext_rules(bool oof, std::vector<rule_node> &out) const;
@@ -1510,6 +1514,152 @@ static ec_error_t opx_reply(rxparam &par, const rule_node &rule,
 	return ecSuccess;
 }
 
+/**
+ * Deliver a copy of the message to @addr on behalf of the mailbox owner, then
+ * run @addr's own rules on it. OP_DELEGATE, MS-OXORULE v23.0 §3.2.5.1.
+ */
+ec_error_t rxparam::delegate_to(const char *addr) try
+{
+	auto mbox = orig_dir.c_str();
+	sql_meta_result mres;
+	if (mysql_adaptor_meta(addr, WANTPRIV_METAONLY, mres) != 0 ||
+	    mres.maildir.empty()) {
+		mlog(LV_WARN, "ruleproc: %s: OP_DELEGATE to %s skipped: no such mailbox",
+			mbox, addr);
+		return ecSuccess;
+	}
+	auto dlg_dir = mres.maildir.c_str();
+	auto src = get_eml();
+	if (src == nullptr) {
+		mlog(LV_ERR, "ruleproc: %s: OP_DELEGATE: no stored RFC 5322 file", mbox);
+		return ecNotFound;
+	}
+	MAIL imail;
+	Json::Value digest;
+	if (!imail.refonly_parse(src->c_str(), src->size()) ||
+	    imail.make_digest(digest) <= 0)
+		return ecError;
+
+	message_content_ptr msg(ctnt->dup());
+	if (msg == nullptr)
+		return ecServerOOM;
+	auto &props = msg->proplist;
+	for (auto t : {PR_DISPLAY_TO, PR_DISPLAY_TO_A, PR_DISPLAY_CC,
+	     PR_DISPLAY_CC_A, PR_DISPLAY_BCC, PR_DISPLAY_BCC_A, PidTagMid,
+	     PR_MESSAGE_SIZE, PR_ASSOCIATED, PidTagChangeNumber,
+	     PR_CHANGE_KEY, PR_READ, PR_HASATTACH, PR_PREDECESSOR_CHANGE_LIST,
+	     PR_MESSAGE_TO_ME, PR_MESSAGE_CC_ME, PidTagMidString})
+		props.erase(t);
+	std::string essdn, abkeid, dispname;
+	if (!props.has(PR_RCVD_REPRESENTING_ENTRYID)) {
+		/* Delivery normally set these already */
+		auto err = cvt_username_to_essdn(ev_to, rp_org_name.c_str(),
+		           mysql_adaptor_get_user_ids,
+		           mysql_adaptor_get_domain_ids, essdn);
+		if (err != ecSuccess)
+			return err;
+		err = cvt_username_to_abkeid(ev_to, rp_org_name.c_str(),
+		      DT_MAILUSER, mysql_adaptor_get_user_ids,
+		      mysql_adaptor_get_domain_ids, abkeid);
+		if (err != ecSuccess)
+			return err;
+		HX_strupper(essdn.data());
+		auto srchkey = "EX:" + essdn;
+		BINARY eid_bin, sk_bin;
+		eid_bin.cb = abkeid.size();
+		eid_bin.pv = abkeid.data();
+		sk_bin.cb  = srchkey.size() + 1;
+		sk_bin.pv  = srchkey.data();
+		if ((err = props.set(PR_RCVD_REPRESENTING_ENTRYID, &eid_bin)) != ecSuccess ||
+		    (err = props.set(PR_RCVD_REPRESENTING_ADDRTYPE, "EX")) != ecSuccess ||
+		    (err = props.set(PR_RCVD_REPRESENTING_EMAIL_ADDRESS, essdn.c_str())) != ecSuccess ||
+		    (err = props.set(PR_RCVD_REPRESENTING_SEARCH_KEY, &sk_bin)) != ecSuccess)
+			return err;
+		if (mysql_adaptor_get_user_displayname(ev_to, dispname) &&
+		    (err = props.set(PR_RCVD_REPRESENTING_NAME, dispname.c_str())) != ecSuccess)
+			return err;
+	}
+	auto err = props.set(PR_DELEGATED_BY_RULE, &byte_value_one);
+	if (err != ecSuccess)
+		return err;
+	err = rx_npid_replace(*this, *msg, dlg_dir);
+	if (err != ecSuccess)
+		return err;
+
+	char guidtxt[GUIDSTR_SIZE]{};
+	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+	auto mid_string = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
+	if (!exmdb_client->imapfile_write(dlg_dir, "eml", mid_string, *src)) {
+		mlog(LV_ERR, "ruleproc: OP_DELEGATE: writing %s/eml/%s failed",
+			dlg_dir, mid_string.c_str());
+		return ecError;
+	}
+	digest["file"] = std::move(mid_string);
+	auto djson = json_to_str(digest);
+	unsigned int dflags = DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
+	uint64_t fid = 0, mid = 0;
+	uint32_t r32 = 0;
+	if (!exmdb_client->deliver_message(dlg_dir, ev_from, addr, CP_ACP,
+	    dflags, msg.get(), djson.c_str(), &fid, &mid, &r32)) {
+		mlog(LV_ERR, "ruleproc: %s: OP_DELEGATE to %s: deliver_message failed",
+			mbox, addr);
+		return ecRpcFailed;
+	}
+	if (r32 != deliver_message_result::result_ok) {
+		mlog(LV_ERR, "ruleproc: %s: OP_DELEGATE to %s: delivery result %u",
+			mbox, addr, r32);
+		return ecSuccess;
+	}
+	if (g_ruleproc_debug)
+		mlog(LV_DEBUG, "ruleproc: %s: OP_DELEGATE copy delivered to %s",
+			mbox, addr);
+	/* PR_DELEGATED_BY_RULE on the copy keeps this from recursing further */
+	rxparam dlg({dlg_dir, eid_t(fid), eid_t(mid)});
+	dlg.ev_from = ev_from;
+	dlg.ev_to   = addr;
+	dlg.m_flags = dflags;
+	err = dlg.run();
+	if (err != ecSuccess)
+		mlog(LV_ERR, "ruleproc: %s: rules of delegate %s: %s",
+			mbox, addr, mapi_strerror(err));
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+static ec_error_t op_delegate(rxparam &par, const rule_node &rule,
+    const FORWARDDELEGATE_ACTION *blk)
+{
+	if (blk == nullptr || blk->count == 0)
+		return ecSuccess;
+	if (blk->count > rx_max_rule_rcpts) {
+		rx_rule_error(par, rule, RULE_ERROR_TOO_MANY_RCPTS, true);
+		return ecSuccess;
+	}
+	if (par.ctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
+		if (g_ruleproc_debug)
+			mlog(LV_DEBUG, "ruleproc: %s: delegated message is not delegated again",
+				par.orig_dir.c_str());
+		return ecSuccess;
+	}
+	std::vector<std::string> rcpt_list;
+	for (const auto &rcptprops : *blk) {
+		TPROPVAL_ARRAY pv;
+		pv.count = rcptprops.count;
+		pv.ppropval = rcptprops.ppropval;
+		if (cu_rcpt_to_list(std::move(pv), rp_org_name.c_str(),
+		    rcpt_list, mysql_adaptor_userid_to_name, false) != ecSuccess)
+			return ecError;
+	}
+	auto ret = ecSuccess;
+	for (const auto &addr : rcpt_list) {
+		auto err = par.delegate_to(addr.c_str());
+		if (err != ecSuccess && ret == ecSuccess)
+			ret = err;
+	}
+	return ret;
+}
+
 static ec_error_t op_switch(rxparam &par, const rule_node &rule,
     const ACTION_BLOCK &act, size_t act_idx)
 {
@@ -1540,6 +1690,8 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		return op_reply(par, rule, act);
+	case OP_DELEGATE:
+		return op_delegate(par, rule, static_cast<const FORWARDDELEGATE_ACTION *>(act.pdata));
 	default:
 		return ecSuccess;
 	}
@@ -1610,6 +1762,8 @@ static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		return opx_reply(par, rule, act);
+	case OP_DELEGATE:
+		return op_delegate(par, rule, static_cast<const FORWARDDELEGATE_ACTION *>(act.pdata));
 	case OP_DELETE:
 		par.del = true;
 		return ecSuccess;

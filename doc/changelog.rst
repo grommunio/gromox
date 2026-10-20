@@ -15,6 +15,8 @@ Enhancements:
   Outlook client-only rules work.
 * ruleproc: the TwoStep processor now supports OP_REPLY and OP_OOF_REPLY
   (reply templates, Out of Office assistant rules).
+* ruleproc: the TwoStep processor now supports OP_DELEGATE, so delegates
+  receive meeting messages.
 
 Fixes:
 
