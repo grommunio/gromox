@@ -1492,6 +1492,8 @@ void process(mDeleteFolderRequest &&request, XMLElement *response, const EWSCont
 			uint64_t newParentId = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
 			ctx.moveCopyFolder(dir, folder, newParentId, accountId, false);
 		} else {
+			if (!(ctx.permissions(dir, folder.folderId) & frightsOwner))
+				throw EWSError::AccessDenied(E3573);
 			bool hard = request.DeleteType == Enum::HardDelete;
 			BOOL result;
 			if (!ctx.plugin().exmdb.delete_folder(dir.c_str(), CP_ACP,
