@@ -4327,6 +4327,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		mUpdateItemResponseMessage msg;
 		uint32_t occ_basedate = 0;
 		std::optional<TARRAY_SET> oldRcpts;
+		bool organizer = false;
 		if (change.ItemId.holds_alternative<tOccurrenceItemId>()) {
 			const auto& occurrence  = std::get<tOccurrenceItemId>(change.ItemId.asVariant());
 			occ_basedate = ctx.resolveOccurrenceIndex(dir,
@@ -4404,6 +4405,9 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				if (!ctx.plugin().exmdb.get_message_rcpts(
 				    dir.c_str(), mid.messageId(), &*oldRcpts))
 					throw EWSError::ItemNotFound(E3494);
+				/* updateAttendees marks it as organized */
+				organizer = ctx.isOrganizer(dir,
+				            mid.messageId());
 				ctx.updateAttendees(dir, parentFolder,
 				    mid.messageId(), shape, *oldRcpts);
 			}
@@ -4488,6 +4492,17 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 					ctx.send(dir, mid.messageId(), *dupcontent);
 				}
 			}
+		}
+		if (oldRcpts && organizer &&
+		    request.SendMeetingInvitationsOrCancellations) {
+			/* MS-OXWSMTGS v14.0 §2.2.5.3 */
+			auto mode =
+				*request.SendMeetingInvitationsOrCancellations;
+			if (mode != Enum::SendToNone)
+				ctx.cancelRemovedAttendees(dir, parentFolder,
+				    mid.messageId(), *oldRcpts,
+				    mode == Enum::SendToAllAndSaveCopy ||
+				    mode == Enum::SendToChangedAndSaveCopy);
 		}
 		if (occ_basedate == 0 && request.MessageDisposition &&
 		    (*request.MessageDisposition == Enum::SendOnly ||
