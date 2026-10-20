@@ -5944,6 +5944,240 @@ bool EWSContext::writeDelegatePermissions(const std::string &dir, const std::str
 }
 
 
+namespace {
+
+/**
+ * Delegates of the LocalFreebusy message, as parallel arrays
+ */
+struct DelegateList {
+	std::vector<BINARY> eids;
+	std::vector<char *> names;
+	std::vector<uint32_t> flags;
+};
+
+/**
+ * @brief      Returns the delegates stored in the LocalFreebusy message
+ *
+ * @param      props  Properties of the LocalFreebusy message
+ */
+DelegateList readDelegateList(const TPROPVAL_ARRAY &props)
+{
+	DelegateList list;
+	auto e = props.get<const BINARY_ARRAY>(PR_SCHDINFO_DELEGATE_ENTRYIDS);
+	auto n = props.get<const STRING_ARRAY>(PR_SCHDINFO_DELEGATE_NAMES);
+	auto f = props.get<const LONG_ARRAY>(PR_DELEGATE_FLAGS);
+	if (e != nullptr)
+		list.eids.assign(e->pbin, e->pbin + e->count);
+	for (size_t i = 0; i < list.eids.size(); ++i) {
+		list.names.emplace_back(n != nullptr && i < n->count ? n->ppstr[i] : deconst(""));
+		list.flags.emplace_back(f != nullptr && i < f->count ? f->pl[i] : 0);
+	}
+	return list;
+}
+
+/**
+ * @brief      Add, update or remove a delegate
+ *
+ * @param      list         Delegates to change
+ * @param      username     Delegate
+ * @param      org          X500 organization name of the store
+ * @param      viewPrivate  New ShowPrivate flag, none keeps the current one
+ * @param      remove       Remove the delegate instead
+ *
+ * @return     Returns whether the list was changed
+ */
+bool editDelegateList(DelegateList &list, const std::string &username,
+    const char *org, std::optional<bool> viewPrivate, bool remove)
+{
+	size_t idx = 0;
+	while (idx < list.eids.size() && !delegate_eid_is(list.eids[idx], username.c_str()))
+		++idx;
+	if (remove) {
+		if (idx == list.eids.size())
+			return false;
+		list.eids.erase(list.eids.begin() + idx);
+		list.names.erase(list.names.begin() + idx);
+		list.flags.erase(list.flags.begin() + idx);
+		return true;
+	}
+	if (idx < list.eids.size()) {
+		if (!viewPrivate)
+			return false;
+		list.flags[idx] = *viewPrivate;
+		return true;
+	}
+	std::string eid, dispname;
+	if (cvt_username_to_abkeid(username.c_str(), org, DT_MAILUSER,
+	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+	    eid) != ecSuccess)
+		throw EWSError::InternalServerError(E3522);
+	if (!mysql_adaptor_get_user_displayname(username.c_str(), dispname) ||
+	    dispname.empty())
+		dispname = username;
+	auto buf = EWSContext::alloc<char>(eid.size());
+	memcpy(buf, eid.data(), eid.size());
+	list.eids.emplace_back(BINARY{static_cast<uint32_t>(eid.size()), {buf}});
+	list.names.emplace_back(EWSContext::cpystr(dispname));
+	list.flags.emplace_back(viewPrivate.value_or(false));
+	return true;
+}
+
+}
+
+/**
+ * @brief      Returns the LocalFreebusy message holding the delegates
+ *
+ * @param      dir     Store of the delegator
+ * @param      refMid  Message named in PidTagFreeBusyEntryIds[1]
+ *
+ * @return     Returns @refMid if it exists, else the first one found
+ */
+std::optional<uint64_t> EWSContext::findDelegateMessage(const std::string &dir,
+    std::optional<uint64_t> refMid) const
+{
+	const auto &exmdb = m_plugin.exmdb;
+	uint32_t tableId = 0, rowCount = 0;
+	if (!exmdb.load_content_table(dir.c_str(), CP_ACP,
+	    eid_t(1, PRIVATE_FID_LOCAL_FREEBUSY), nullptr,
+	    TABLE_FLAG_NONOTIFICATIONS, nullptr, nullptr, &tableId, &rowCount))
+		throw EWSError::InternalServerError(E3520);
+	auto unloadTable = HX::make_scope_exit([&]() { exmdb.unload_table(dir.c_str(), tableId); });
+	static constexpr std::array<proptag_t, 2> rowTags = {PidTagMid, PR_MESSAGE_CLASS};
+	TARRAY_SET rows{};
+	if (!exmdb.query_table(dir.c_str(), nullptr, CP_ACP, tableId, rowTags,
+	    0, rowCount, &rows))
+		throw EWSError::InternalServerError(E3521);
+	std::optional<uint64_t> mid;
+	for (const auto &row : rows) {
+		auto m = row.get<const uint64_t>(PidTagMid);
+		auto cls = row.get<const char>(PR_MESSAGE_CLASS);
+		if (m == nullptr || cls == nullptr ||
+		    class_match_prefix(cls, "IPM.Microsoft.ScheduleData.FreeBusy") != 0)
+			continue;
+		if (*m == refMid)
+			return *m;
+		if (!mid)
+			mid = *m;
+	}
+	return mid;
+}
+
+/**
+ * @brief      Name a LocalFreebusy message in PidTagFreeBusyEntryIds[1]
+ *
+ * The property is set on the root folder and the inbox, as MS-OXODLGT
+ * v16.0 §3.1.4.2 asks.
+ *
+ * @param      dir     Store of the delegator
+ * @param      fbEids  Current PidTagFreeBusyEntryIds of the inbox
+ * @param      mid     LocalFreebusy message
+ */
+void EWSContext::stampDelegateMessage(const std::string &dir,
+    const BINARY_ARRAY *fbEids, uint64_t mid) const
+{
+	std::vector<BINARY> fb;
+	if (fbEids != nullptr)
+		fb.assign(fbEids->pbin, fbEids->pbin + fbEids->count);
+	if (fb.size() < 4)
+		fb.resize(4);
+	fb[1] = *static_cast<const BINARY *>(getItemEntryId(dir, mid).pvalue);
+	if (fb[3].cb == 0)
+		fb[3] = *static_cast<const BINARY *>(getFolderEntryId(dir,
+		        eid_t(1, PRIVATE_FID_LOCAL_FREEBUSY)).pvalue);
+	BINARY_ARRAY fbArr{static_cast<uint32_t>(fb.size()), fb.data()};
+	TAGGED_PROPVAL fbProp{PR_FREEBUSY_ENTRYIDS, &fbArr};
+	TPROPVAL_ARRAY fbProps{1, &fbProp};
+	for (eid_t f : {eid_t(1, PRIVATE_FID_ROOT), eid_t(1, PRIVATE_FID_INBOX)}) {
+		PROBLEM_ARRAY problems;
+		updated(dir, sFolderSpec(m_auth_info.username, f));
+		if (!m_plugin.exmdb.set_folder_properties(dir.c_str(), CP_ACP, f,
+		    &fbProps, &problems) || problems.count > 0)
+			throw EWSError::InternalServerError(E3524);
+	}
+}
+
+/**
+ * @brief      Update a delegate in the LocalFreebusy message
+ *
+ * Outlook and grommunio-web keep the delegates there, with ShowPrivate in
+ * PidTagDelegateFlags, see sees_private_items().
+ *
+ * @param      dir          Store of the delegator
+ * @param      username     Delegate
+ * @param      viewPrivate  New ShowPrivate flag, none keeps the current one
+ * @param      remove       Remove the delegate instead
+ */
+void EWSContext::writeDelegateFlags(const std::string &dir,
+    const std::string &username, std::optional<bool> viewPrivate,
+    bool remove) const
+{
+	const auto &exmdb = m_plugin.exmdb;
+	/* Clients open the message named in PidTagFreeBusyEntryIds[1] */
+	static constexpr proptag_t fbTag[] = {PR_FREEBUSY_ENTRYIDS};
+	auto inboxProps = getFolderProps(dir, eid_t(1, PRIVATE_FID_INBOX), fbTag);
+	auto fbEids = inboxProps.get<const BINARY_ARRAY>(PR_FREEBUSY_ENTRYIDS);
+	std::optional<uint64_t> refMid;
+	if (fbEids != nullptr && fbEids->count > 1 && fbEids->pbin[1].cb > 0) try {
+		refMid = sMessageEntryId(fbEids->pbin[1].pv, fbEids->pbin[1].cb).messageId();
+	} catch (const EWSError &) {
+	}
+	auto mid = findDelegateMessage(dir, refMid);
+	if (!mid && remove)
+		return;
+	static constexpr std::array<proptag_t, 3> tags = {PR_SCHDINFO_DELEGATE_ENTRYIDS,
+		PR_SCHDINFO_DELEGATE_NAMES, PR_DELEGATE_FLAGS};
+	DelegateList list;
+	if (mid)
+		list = readDelegateList(getItemProps(dir, *mid, tags));
+	if (!editDelegateList(list, username, m_plugin.x500_org_name.c_str(),
+	    viewPrivate, remove))
+		return;
+
+	BINARY_ARRAY eidArr{static_cast<uint32_t>(list.eids.size()), list.eids.data()};
+	STRING_ARRAY nameArr{static_cast<uint32_t>(list.names.size()), list.names.data()};
+	LONG_ARRAY flagArr{static_cast<uint32_t>(list.flags.size()), list.flags.data()};
+	if (!mid) {
+		/* No delegate rule, so the delegator gets the meeting requests */
+		static constexpr uint8_t wantsCopy = 1, wantsInfo = 0;
+		const TAGGED_PROPVAL newProps[] = {
+			{PR_MESSAGE_CLASS, deconst("IPM.Microsoft.ScheduleData.FreeBusy")},
+			{PR_SUBJECT, deconst("LocalFreebusy")},
+			{PR_SCHDINFO_BOSS_WANTS_COPY, deconst(&wantsCopy)},
+			{PR_SCHDINFO_BOSS_WANTS_INFO, deconst(&wantsInfo)},
+			{PR_SCHDINFO_DELEGATE_ENTRYIDS, &eidArr},
+			{PR_SCHDINFO_DELEGATE_NAMES, &nameArr},
+			{PR_DELEGATE_FLAGS, &flagArr},
+		};
+		MESSAGE_CONTENT content{};
+		content.proplist = {std::size(newProps), deconst(newProps)};
+		uint64_t newMid = 0, newCn = 0;
+		ec_error_t err = ecSuccess;
+		if (!exmdb.write_message(dir.c_str(), CP_ACP,
+		    eid_t(1, PRIVATE_FID_LOCAL_FREEBUSY), &content, {},
+		    &newMid, &newCn, &err) || err != ecSuccess)
+			throw EWSError::InternalServerError(E3523);
+		stampDelegateMessage(dir, fbEids, newMid);
+		return;
+	}
+	if (*mid != refMid)
+		stampDelegateMessage(dir, fbEids, *mid);
+	if (list.eids.empty() &&
+	    !exmdb.remove_message_properties(dir.c_str(), CP_ACP, *mid, tags))
+		throw EWSError::InternalServerError(E3524);
+	sShape shape;
+	if (!list.eids.empty()) {
+		shape.write(TAGGED_PROPVAL{PR_SCHDINFO_DELEGATE_ENTRYIDS, &eidArr});
+		shape.write(TAGGED_PROPVAL{PR_SCHDINFO_DELEGATE_NAMES, &nameArr});
+		shape.write(TAGGED_PROPVAL{PR_DELEGATE_FLAGS, &flagArr});
+	}
+	updated(dir, sMessageEntryId(getItemEntryId(dir, *mid)), shape);
+	auto msgProps = shape.write();
+	PROBLEM_ARRAY problems;
+	if (!exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, *mid,
+	    &msgProps, &problems))
+		throw EWSError::InternalServerError(E3524);
+}
+
 /**
  * @brief      Write permissions
  *

@@ -933,11 +933,11 @@ enum {
 	// PR_WB_SF_LAST_USED = PROP_TAG(PT_LONG, 0x6834), /* PidTagSearchFolderLastUsed */
 	// PR_WB_SF_EXPIRATION = PROP_TAG(PT_LONG, 0x683A), /* PidTagSearchFolderExpiration */
 	// PR_WB_SF_TEMPLATE_ID = PROP_TAG(PT_LONG, 0x6841), /* PidTagSearchFolderTemplateId */
-	// PR_SCHDINFO_BOSS_WANTS_COPY = PROP_TAG(PT_BOOLEAN, 0x6842), /* PidTagScheduleInfoDelegatorWantsCopy */
+	PR_SCHDINFO_BOSS_WANTS_COPY = PROP_TAG(PT_BOOLEAN, 0x6842), /* PidTagScheduleInfoDelegatorWantsCopy */
 	// PR_WB_SF_ID = PROP_TAG(PT_BINARY, 0x6842), /* PidTagSearchFolderId */
 	// PidTagWlinkGroupHeaderID = PROP_TAG(PT_CLSID, 0x6842), /* OXPROPS v27 §2.1071 says it is binary(!?) */
 	// PR_SCHDINFO_DONT_MAIL_DELEGATES = PROP_TAG(PT_BOOLEAN, 0x6843), /* PidTagScheduleInfoDontMailDelegates */
-	// PR_SCHDINFO_DELEGATE_NAMES = PROP_TAG(PT_MV_UNICODE, 0x6844), /* PidTagScheduleInfoDelegateNames */
+	PR_SCHDINFO_DELEGATE_NAMES = PROP_TAG(PT_MV_UNICODE, 0x6844), /* PidTagScheduleInfoDelegateNames */
 	// PR_WB_SF_RECREATE_INFO = PROP_TAG(PT_BINARY, 0x6844), /* PidTagSearchFolderRecreateInfo */
 	PR_SCHDINFO_DELEGATE_ENTRYIDS = PROP_TAG(PT_MV_BINARY, 0x6845), /* PidTagScheduleInfoDelegateEntryIds */
 	// PR_WB_SF_DEFINITION = PROP_TAG(PT_BINARY, 0x6845), /* PidTagSearchFolderDefinition */
@@ -949,7 +949,7 @@ enum {
 	// PR_WLINK_TYPE = PROP_TAG(PT_LONG, 0x6849), /* PidTagWlinkType */
 	// PR_SCHDINFO_DELEGATE_NAMES_W = PROP_TAG(PT_MV_UNICODE, 0x684A), /* PidTagScheduleInfoDelegateNamesW */
 	// PR_WLINK_FLAGS = PROP_TAG(PT_LONG, 0x684A), /* PidTagWlinkFlags */
-	// PR_SCHDINFO_BOSS_WANTS_INFO = PROP_TAG(PT_BOOLEAN, 0x684B), /* PidTagScheduleInfoDelegatorWantsInfo */
+	PR_SCHDINFO_BOSS_WANTS_INFO = PROP_TAG(PT_BOOLEAN, 0x684B), /* PidTagScheduleInfoDelegatorWantsInfo */
 	// PR_WLINK_ORDINAL = PROP_TAG(PT_BINARY, 0x684B), /* PidTagWlinkOrdinal */
 	// PR_WLINK_ENTRYID = PROP_TAG(PT_BINARY, 0x684C), /* PidTagWlinkEntryId */
 	// PR_WLINK_RECKEY = PROP_TAG(PT_BINARY, 0x684D), /* PidTagWlinkRecordKey */

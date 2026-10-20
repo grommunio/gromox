@@ -19,6 +19,7 @@
 #include <gromox/clock.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
+#include <gromox/freebusy.hpp>
 #include <gromox/json.hpp>
 #include <gromox/mapitags.hpp>
 #include <gromox/mapidefs.h>
@@ -996,8 +997,10 @@ void process(mGetDelegateRequest &&request, XMLElement *response, const EWSConte
 		    dispname) && !dispname.empty())
 			msg.DelegateUser.UserId.DisplayName.emplace(
 			    std::move(dispname));
-		if (request.IncludePermissions && *request.IncludePermissions)
+		if (request.IncludePermissions && *request.IncludePermissions) {
 			msg.DelegateUser.DelegatePermissions.emplace(ctx.readDelegatePermissions(dir, deleg));
+			msg.DelegateUser.ViewPrivateItems = sees_private_items(dir.c_str(), deleg.c_str());
+		}
 		found.insert(deleg);
 	}
 
@@ -1054,6 +1057,7 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 			continue;
 		}
+		ctx.writeDelegateFlags(dir, addr, du.ViewPrivateItems, false);
 		delegate_list.emplace_back(addr);
 		existing.emplace(addr);
 		changed = true;
@@ -1114,6 +1118,7 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 			continue;
 		}
+		ctx.writeDelegateFlags(dir, addr, {}, true);
 		delegate_list.erase(it);
 		changed = true;
 		msg.success();
@@ -1173,6 +1178,10 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 		}
 		if (du.DelegatePermissions)
 			changed |= ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
+		if (du.ViewPrivateItems) {
+			ctx.writeDelegateFlags(dir, addr, du.ViewPrivateItems, false);
+			changed = true;
+		}
 		msg.success();
 		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 	}

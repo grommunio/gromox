@@ -360,6 +360,7 @@ class EWSContext {
 	void updateReminder(const std::string &, uint64_t, Structures::sShape &) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
 	bool writeDelegatePermissions(const std::string&, const std::string&, const Structures::tDelegatePermissions&) const;
+	void writeDelegateFlags(const std::string &, const std::string &, std::optional<bool>, bool) const;
 	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
 
 	gromox::time_duration age() const { return tp_now() - m_created; }
@@ -458,6 +459,8 @@ private:
 	void toContent(const std::string &, Structures::tReplyAllToItem &, Structures::sShape &, message_content_ptr &) const;
 	void toContent(const std::string &, Structures::tForwardItem &, Structures::sShape &, message_content_ptr &) const;
 	std::optional<uint64_t> findExistingByGoid(const Structures::sFolderSpec&, const std::string&, const MESSAGE_CONTENT&) const;
+	std::optional<uint64_t> findDelegateMessage(const std::string &, std::optional<uint64_t>) const;
+	void stampDelegateMessage(const std::string &, const BINARY_ARRAY *, uint64_t) const;
 
 	inline void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {}
 	void updateProps(Structures::tCalendarItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const;

@@ -1295,6 +1295,7 @@ struct tDelegateUser {
 
 	tUserId UserId;
 	std::optional<tDelegatePermissions> DelegatePermissions;
+	std::optional<bool> ViewPrivateItems;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };

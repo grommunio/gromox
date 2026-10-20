@@ -2486,13 +2486,15 @@ void tDelegatePermissions::serialize(XMLElement *xml) const
 
 tDelegateUser::tDelegateUser(const XMLElement *xml) :
 	XMLINIT(UserId),
-	XMLINIT(DelegatePermissions)
+	XMLINIT(DelegatePermissions),
+	XMLINIT(ViewPrivateItems)
 {}
 
 void tDelegateUser::serialize(XMLElement *xml) const
 {
 	XMLDUMPT(UserId);
 	XMLDUMPT(DelegatePermissions);
+	XMLDUMPT(ViewPrivateItems);
 }
 
 mGetDelegateRequest::mGetDelegateRequest(const XMLElement *xml) :

@@ -373,7 +373,7 @@ unsigned int freebusy_perms(const char *actor, const char *target)
  * Returns whether @eid, an entry of PidTagScheduleInfoDelegateEntryIds, is
  * @actor.
  */
-static bool delegate_eid_is(const BINARY &eid, const char *actor)
+bool delegate_eid_is(const BINARY &eid, const char *actor)
 {
 	std::string_view sv(eid.pc, eid.cb);
 	std::string essdn, user;
