@@ -3525,7 +3525,7 @@ void EWSContext::updateAttendees(const std::string &dir,
 	if (shape.optionalAttendees)
 		parseAttendees(shape.optionalAttendees, MAPI_CC);
 	if (shape.resourceAttendees)
-		parseAttendees(shape.resourceAttendees, MAPI_TO);
+		parseAttendees(shape.resourceAttendees, MAPI_BCC);
 
 	if (rcpts->count > 0) {
 		if (!exmdb.update_message_instance_rcpts(dir.c_str(),
@@ -5901,7 +5901,7 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 				add_attendee(rcpts->emplace(), att, MAPI_CC);
 		if (item.Resources)
 			for (const auto &att : *item.Resources)
-				add_attendee(rcpts->emplace(), att, MAPI_TO);
+				add_attendee(rcpts->emplace(), att, MAPI_BCC);
 		for (const auto &prop : meetingIdentity(dir))
 			shape.write(prop);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
