@@ -793,7 +793,9 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 		return !rx_eval_props(ct, props, res.xnot->res);
 	case RES_CONTENT: {
 		auto &rcon = *res.cont;
-		return rcon.comparable() && rcon.eval(rx_getval(props, rcon.proptag));
+		return rcon.comparable() &&
+		       rcont_srchkey_eval(rcon, rx_getval(props, rcon.proptag),
+		       rp_org_name.c_str(), mysql_adaptor_userid_to_name);
 	}
 	case RES_PROPERTY: {
 		auto &rprop = *res.prop;

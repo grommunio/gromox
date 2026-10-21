@@ -91,6 +91,8 @@ Fixes:
   instead of the date.
 * ruleproc: Out of Office rules now still run in the TwoStep processor after
   a rule that stops processing or deletes the message.
+* ruleproc: "sender contains these words" conditions now match local senders
+  by their e-mail address and ignore case in the TwoStep processor.
 * ruleproc: the TwoStep processor now runs at most
   ``exmdb_provider.cfg:max_ext_rule_number`` extended rules per folder, as the
   old processor does.
