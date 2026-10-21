@@ -1266,7 +1266,8 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
     uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
-    bool send_message, std::optional<sOccurrenceId> &declinedOcc)
+    bool send_message, std::optional<sOccurrenceId> &declinedOcc,
+    std::optional<std::pair<std::string, uint64_t>> *calItem = nullptr)
 {
 	if (refId.type == tItemId::ID_OCCURRENCE)
 		return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
@@ -1314,8 +1315,11 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
 		mid.messageId(), &proplist, &problems))
 		throw EWSError::ItemSave(E3409);
-	if (resp == respAccepted || resp == respTentative)
-		ctx.createCalendarItemFromMeetingRequest(refId, resp);
+	if (resp == respAccepted || resp == respTentative) {
+		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp);
+		if (cal && calItem != nullptr)
+			calItem->emplace(rdir, *cal);
+	}
 	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
 	if (pf.location == sFolderSpec::PRIVATE && rights & frightsDeleteAny &&
 	    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
@@ -1482,16 +1486,17 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
+		std::optional<std::pair<std::string, uint64_t>> calItem;
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
 				updateRef(ctx, *acc->ReferenceItemId,
 				          respAccepted, refDir, refMid,
-				          send_message, declinedOcc);
+				          send_message, declinedOcc, &calItem);
 		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
 			if (tent->ReferenceItemId)
 				updateRef(ctx, *tent->ReferenceItemId,
 				          respTentative, refDir, refMid,
-				          send_message, declinedOcc);
+				          send_message, declinedOcc, &calItem);
 		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
 			if (dec->ReferenceItemId)
 				updateRef(ctx, *dec->ReferenceItemId,
@@ -1515,6 +1520,20 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			/* Keep no copy of a response that was not sent */
 			if (send_message && !sent)
 				persist = false;
+		}
+		/*
+		 * Exchange returns the calendar item of the attendee along with
+		 * the response. macOS Calendar keys its event to the first item.
+		 */
+		if (calItem) {
+			sShape calShape;
+			calShape.add(PR_ENTRYID, sShape::FL_FIELD).add(PR_CHANGE_KEY, sShape::FL_FIELD).add(PR_MESSAGE_CLASS);
+			/* The CalendarItemType of a series is derived from these */
+			calShape.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD)
+			        .add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD)
+			        .add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
+			msg.Items.emplace_back(ctx.loadItem(calItem->first,
+				eid_t(1, PRIVATE_FID_CALENDAR), calItem->second, calShape));
 		}
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)

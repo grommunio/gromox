@@ -1139,8 +1139,10 @@ static bool goid_is_instance(const BINARY *goid_bin)
  *
  * @param refId          Item id
  * @param response       Response type
+ *
+ * @return Message ID of the calendar item, none for a single occurrence
  */
-void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint32_t response) const
+std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint32_t response) const
 {
 	// Duplicate the original request and persist it as a calendar appointment.
 	assertIdType(refId.type, tItemId::ID_ITEM);
@@ -1162,7 +1164,7 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	 */
 	auto pidGoid = getNamedPropId(dir, NtGlobalObjectId);
 	if (goid_is_instance(content->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGoid))))
-		return;
+		return std::nullopt;
 
 	message_content_ptr calendarItem(content->dup());
 	if (!calendarItem)
@@ -1243,6 +1245,7 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, requestFolder.folderId,
 	        calendarItem.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
 		throw EWSError::ItemSave(E3329);
+	return existingMid ? *existingMid : newMid;
 }
 
 /**

@@ -293,7 +293,7 @@ class EWSContext {
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&, bool = false) const;
-	void createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
+	std::optional<uint64_t> createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
 	void disableEventStream();
 	const char* effectiveUser(const Structures::sFolderSpec&) const;
 	void enableEventStream(int);
