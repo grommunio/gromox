@@ -36,6 +36,8 @@ Enhancements:
   processor as a short text mail with sender, subject and the start of the
   body, instead of a copy of the whole message. Mobile numbers cannot be
   reached and get a deferred error message.
+* ruleproc: redirects (OP_FORWARD with FWD_PRESERVE_SENDER) of the TwoStep
+  processor now carry ``X-MS-Exchange-Organization-AutoForwarded: true``.
 
 Fixes:
 
