@@ -33,20 +33,19 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "exmdb_local.hpp"
+#include "bounce_producer.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;
-DECLARE_HOOK_API(exmdb_local, extern);
-using namespace exmdb_local;
 
 /*
  *	make a bounce mail
  *	@param
+ *		host_id				name of the reporting MTA
  *		bounce_type			type of bounce mail
  *		pmail [out]			bounce mail object
  */
-bool exml_bouncer_make(const char *from, const char *rcpt_to,
+bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_to,
     MAIL *pmail_original, time_t original_time, const char *bounce_type,
     MAIL *qmail) try
 {
@@ -133,7 +132,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	vmime::utility::outputStreamStringAdapter vadap(vstr);
 
 	vmime::header dsn;
-	auto mta = "dns;"s + get_host_ID();
+	auto mta = "dns;"s + host_id;
 	dsn.getField("Reporting-MTA")->setValue(mta);
 	dsn.getField("Arrival-Date")->setValue(date_buff);
 	dsn.generate(vadap);

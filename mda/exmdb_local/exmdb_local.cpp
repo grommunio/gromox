@@ -104,7 +104,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->ctrl.from,
+			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
 			    rcpt_buff, &pcontext->mail, time(nullptr),
 			    "BOUNCE_MAIL_DELIVERED", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
@@ -140,7 +140,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->ctrl.from,
+			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
 			    rcpt_buff, &pcontext->mail, time(nullptr),
 			    "BOUNCE_NO_USER", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
@@ -165,7 +165,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->ctrl.from,
+			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
 			    rcpt_buff, &pcontext->mail, time(nullptr),
 			    "BOUNCE_MAILBOX_FULL", &pbounce_context->mail)) {
 				put_context(pbounce_context);
@@ -189,7 +189,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->ctrl.from,
+			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
 			    rcpt_buff, &pcontext->mail, time(nullptr),
 			    "BOUNCE_OPERATION_ERROR", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
