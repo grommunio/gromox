@@ -628,6 +628,7 @@ E(3525, "cannot write to the folder of the referenced occurrence");
 E(3526, "cannot write to the folder of the referenced item");
 E(3527, "cannot write to the folder of the item to suppress the read receipt for");
 E(3573, "no permission to delete folder");
+E(3574, "failed to delete the content of a folder");
 E(3600, "cannot write to the calendar of the referenced item");
 E(3601, "cannot modify the existing calendar item of the meeting");
 E(3602, "no read access to the referenced item");
