@@ -1746,7 +1746,7 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 	static constexpr proptag_t tagIDs[] = {
 		PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
 		PR_ATTACH_DATA_BIN, PR_ATTACH_CONTENT_ID,
-		PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS,
+		PR_ATTACH_LONG_FILENAME, PR_ATTACH_FLAGS,
 	};
 	TPROPVAL_ARRAY props;
 	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
@@ -1907,7 +1907,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		static constexpr proptag_t tagIDs[] = {
 			PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
 			PR_ATTACH_CONTENT_ID, PR_ATTACH_LONG_FILENAME,
-			PR_ATTACHMENT_FLAGS, PR_ATTACH_SIZE,
+			PR_ATTACH_FLAGS, PR_ATTACH_SIZE,
 			PR_ATTACHMENT_HIDDEN,
 		};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
