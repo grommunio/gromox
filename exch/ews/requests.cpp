@@ -4333,8 +4333,6 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		/* The update goes out in the owner's name, check before writing */
 		bool orgCopy = request.SendMeetingInvitationsOrCancellations &&
 		    *request.SendMeetingInvitationsOrCancellations != Enum::SendToNone &&
-		    !change.ItemId.isOccurrence() &&
-		    itemId.type != tItemId::ID_OCCURRENCE &&
 		    upd_is_organizer_copy(ctx, dir, mid.messageId());
 		if (orgCopy)
 			ctx.validate_sendas_perms(ctx.storeOwner(dir));
@@ -4474,7 +4472,11 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		else
 			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		/* An attendee's copy sends nothing, like in Exchange */
-		if (orgCopy) {
+		if (orgCopy && occ_basedate != 0) {
+			ctx.sendOccurrenceUpdate(dir, mid, parentFolder,
+				mode == Enum::SendToAllAndSaveCopy ||
+				mode == Enum::SendToChangedAndSaveCopy, occ_basedate);
+		} else if (orgCopy) {
 			/*
 			 * A change other than to the attendee lists affects
 			 * every attendee, so it goes to all of them.

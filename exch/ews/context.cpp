@@ -4989,6 +4989,70 @@ void EWSContext::toInstance(const std::string &dir, uint32_t basedate,
 }
 
 /**
+ * @brief      Send a meeting message for one occurrence of a series
+ *
+ * @param      dir       Store directory
+ * @param      parent    Parent folder of the meeting
+ * @param      mid       Message ID of the series master
+ * @param      master    Content of the series master
+ * @param      basedate  Basedate of the occurrence
+ * @param      cls       Message class to send
+ * @param      saveCopy  Whether to keep a copy in Sent Items
+ */
+void EWSContext::sendInstance(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid, const MESSAGE_CONTENT &master,
+    uint32_t basedate, const char *cls, bool saveCopy) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	message_content_ptr inst(master.dup());
+	if (!inst)
+		throw EWSError::NotEnoughMemory(E3492);
+	toInstance(dir, basedate, *inst);
+	const PROPERTY_NAME pn[] = {NtAppointmentSequence, NtOwnerCriticalChange};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	auto now = rop_util_current_nttime();
+	/* MS-OXOCAL v22.1 §3.1.5.4: the Meeting object keeps the new number */
+	uint32_t newseq = nextSequence(dir, parent, mid, true, now);
+	m_plugin.unloadMessageInstance(dir, mid);
+	auto &props = inst->proplist;
+	if (props.set(PR_MESSAGE_CLASS, cls) != ecSuccess ||
+	    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+	    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, ids[0]), &newseq) != ecSuccess ||
+	    props.set(PROP_TAG(PT_SYSTIME, ids[1]), &now) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3492);
+	if (strcmp(cls, "IPM.Schedule.Meeting.Request") == 0 &&
+	    props.set(PR_RESPONSE_REQUESTED, &byte_value_one) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3536);
+	/* The owner organizes and the caller sends */
+	for (const auto &prop : meetingIdentity(dir))
+		if (props.set(prop) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3492);
+	props.erase(PR_SENDER_SEARCH_KEY);
+	props.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
+	send(dir, mid, *inst);
+	if (!saveCopy)
+		return;
+	static constexpr proptag_t rmProps[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+	};
+	for (auto tag : rmProps)
+		props.erase(tag);
+	auto sentitems = resolveFolder(
+	                 tDistinguishedFolderId(Enum::sentitems));
+	uint64_t newMid = 0, newCn = 0;
+	ec_error_t err = ecSuccess;
+	if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
+	    inst.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3490);
+}
+
+/**
  * @brief      Send meeting cancellation to attendees
  *
  * Reads the calendar item, stamps it as a cancellation, and
@@ -5015,6 +5079,11 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		throw EWSError::AccessDenied(E3604);
 	/* Callers delete the item afterwards, so check before that */
 	validate_sendas_perms(storeOwner(dir));
+	if (basedate) {
+		sendInstance(dir, parent, meid.messageId(), *cancelcontent,
+			*basedate, "IPM.Schedule.Meeting.Canceled", saveCopy);
+		return;
+	}
 	/* The caller sends, the stored PR_SENDER may name someone else */
 	auto ident = meetingIdentity(dir);
 	const std::vector<proptag_t> staleKeys
@@ -5029,42 +5098,6 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	auto crit_tag = PROP_TAG(PT_SYSTIME, ids[1]);
 	auto now = rop_util_current_nttime();
 	uint32_t newseq = nextSequence(dir, parent, meid.messageId(), true, now);
-	if (basedate) {
-		message_content_ptr inst(cancelcontent->dup());
-		if (!inst)
-			throw EWSError::NotEnoughMemory(E3492);
-		toInstance(dir, *basedate, *inst);
-		auto &props = inst->proplist;
-		if (props.set(PR_MESSAGE_CLASS,
-		    "IPM.Schedule.Meeting.Canceled") != ecSuccess ||
-		    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
-		    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
-		    props.set(seq_tag, &newseq) != ecSuccess ||
-		    props.set(crit_tag, &now) != ecSuccess)
-			throw EWSError::NotEnoughMemory(E3492);
-		for (const auto &prop : ident)
-			if (props.set(prop) != ecSuccess)
-				throw EWSError::NotEnoughMemory(E3492);
-		for (auto tag : staleKeys)
-			props.erase(tag);
-		send(dir, meid.messageId(), *inst);
-		if (!saveCopy)
-			return;
-		static constexpr proptag_t rmProps[] = {
-			PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
-			PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
-		};
-		for (auto tag : rmProps)
-			props.erase(tag);
-		auto sentitems = resolveFolder(
-		                 tDistinguishedFolderId(Enum::sentitems));
-		uint64_t newMid = 0, newCn = 0;
-		ec_error_t err = ecSuccess;
-		if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
-		    inst.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
-			throw EWSError::ItemSave(E3490);
-		return;
-	}
 	if (saveCopy) {
 		sFolderSpec sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 		uint64_t newMid = 0;
@@ -5436,6 +5469,30 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
 	    req.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
 		throw EWSError::ItemSave(E3540);
+}
+
+/**
+ * @brief      Send a meeting update for one occurrence to the attendees
+ *
+ * MS-OXOCAL v22.1 §3.1.4.7.3: the update is a meeting request for
+ * the instance, which oxcical exports with RECURRENCE-ID.
+ */
+void EWSContext::sendOccurrenceUpdate(const std::string &dir,
+    const sMessageEntryId &meid, const sFolderSpec &parent, bool saveCopy,
+    uint32_t basedate) const
+{
+	MESSAGE_CONTENT *content = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), effectiveUser(parent),
+	    CP_ACP, meid.messageId(), &content) || content == nullptr)
+		throw EWSError::ItemNotFound(E3537);
+	auto cls = content->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr ||
+	    class_match_prefix(cls, "IPM.Appointment") != 0 ||
+	    content->children.prcpts == nullptr ||
+	    content->children.prcpts->count == 0)
+		return;
+	sendInstance(dir, parent, meid.messageId(), *content, basedate,
+		"IPM.Schedule.Meeting.Request", saveCopy);
 }
 
 /**
