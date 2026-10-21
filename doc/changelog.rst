@@ -76,6 +76,8 @@ Fixes:
   own.
 * ruleproc: rules without a condition no longer apply to every message in
   the TwoStep processor and are skipped, as in the old processor.
+* delivery: the Arrival-Date of bounce reports showed the message size
+  instead of the date.
 * ruleproc: Out of Office rules now still run in the TwoStep processor after
   a rule that stops processing or deletes the message.
 * ruleproc: the TwoStep processor now runs at most

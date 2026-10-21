@@ -50,7 +50,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail_original, time_t original_time, const char *bounce_type,
     MAIL *qmail) try
 {
-	char date_buff[128];
+	char date_buff[128], size_buff[64];
 	sql_meta_result mres;
 	const char *charset = nullptr;
 
@@ -89,8 +89,8 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 		mlog(LV_ERR, "exmdb_local: failed to get mail length");
 		mail_len = 0;
 	}
-	HX_unit_size(date_buff, std::size(date_buff), mail_len, 1000, 0);
-	if (HXformat_add(fa, "length", date_buff, HXTYPE_STRING) < 0)
+	HX_unit_size(size_buff, std::size(size_buff), mail_len, 1000, 0);
+	if (HXformat_add(fa, "length", size_buff, HXTYPE_STRING) < 0)
 		return false;
 
 	hxmc_t *replaced = nullptr;
