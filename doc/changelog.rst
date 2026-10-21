@@ -60,6 +60,10 @@ Changes:
 * ruleproc: meeting autoprocessing now writes the subject prefixes of its
   responses and of cancelled calendar items in the language of the mailbox,
   e.g. "Angenommen: " and "Abgesagt: " for German mailboxes.
+* EWS: UpdateInboxRules now removes leading and trailing ``*`` from the
+  strings of the Contains*Strings conditions and exceptions. eM Client wraps
+  each of these strings in asterisks, which a substring match takes
+  literally, so its server rules never matched.
 
 Fixes:
 

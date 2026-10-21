@@ -1883,6 +1883,40 @@ static void check_value(vtype type, const Value &v, const std::string &uri,
 	}
 }
 
+/*
+ * eM Client sends "contains X" as "*X*". Exchange matches the asterisks
+ * literally, so such rules never fire there. Drop the outer ones.
+ */
+void strip_wildcards(Rule &rule)
+{
+	static constexpr pred_kind kinds[] = {
+		P_ContainsBodyStrings, P_ContainsHeaderStrings,
+		P_ContainsRecipientStrings, P_ContainsSenderStrings,
+		P_ContainsSubjectOrBodyStrings, P_ContainsSubjectStrings,
+	};
+	for (auto grp : {&rule.conditions, &rule.exceptions}) {
+		for (auto k : kinds) {
+			auto &v = grp->v[k];
+			if (!v)
+				continue;
+			auto &list = v->strings;
+			for (auto it = list.begin(); it != list.end(); ) {
+				if (it->empty()) {
+					++it;
+					continue;
+				}
+				auto b = it->find_first_not_of('*');
+				if (b == it->npos) {
+					it = list.erase(it);
+					continue;
+				}
+				*it = it->substr(b, it->find_last_not_of('*') + 1 - b);
+				++it;
+			}
+		}
+	}
+}
+
 /* Checks that need no mailbox, MS-OXWSRULES v9.0 §3.1.4.2.4.2 */
 std::vector<ValidationError> validate(const Rule &rule, Operation::kind_t kind)
 {

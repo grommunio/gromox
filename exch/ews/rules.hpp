@@ -165,6 +165,7 @@ extern std::vector<Operation> parse_operations(const tinyxml2::XMLElement *);
 extern void write_rule(tinyxml2::XMLElement *parent, const Rule &);
 extern void write_errors(tinyxml2::XMLElement *parent, const std::vector<OperationError> &);
 
+extern void strip_wildcards(Rule &);
 extern std::vector<ValidationError> validate(const Rule &, Operation::kind_t);
 extern bool to_mapi(const Rule &, Env &, RESTRICTION *&, RULE_ACTIONS *&, std::vector<ValidationError> &);
 extern Rule from_mapi(const TPROPVAL_ARRAY &, Env &);

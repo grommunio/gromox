@@ -714,12 +714,42 @@ static int t_validate()
 	return EXIT_SUCCESS;
 }
 
+static int t_wildcards()
+{
+	auto ops = parse_ops(em_ops);
+	auto &r = ops[0].rule;
+	strip_wildcards(r);
+	CHECK(r.conditions.v[P_ContainsSubjectStrings]->strings == std::vector<std::string>{"TSR-EM-read"});
+
+	Rule c;
+	c.conditions.v[P_ContainsBodyStrings] = Value{.strings = {"**a*b**", "***", "", "c"}};
+	c.conditions.v[P_ContainsSenderStrings] = Value{.strings = {"*x@y*"}};
+	c.exceptions.v[P_ContainsHeaderStrings] = Value{.strings = {"*"}};
+	c.exceptions.v[P_ContainsRecipientStrings] = Value{.strings = {"*r"}};
+	c.exceptions.v[P_ContainsSubjectOrBodyStrings] = Value{.strings = {"s*"}};
+	c.conditions.v[P_ItemClasses] = Value{.strings = {"*IPM.Note*"}};
+	c.conditions.v[P_Categories] = Value{.strings = {"*Rot*"}};
+	strip_wildcards(c);
+	CHECK((c.conditions.v[P_ContainsBodyStrings]->strings == std::vector<std::string>{"a*b", "", "c"}));
+	CHECK(c.conditions.v[P_ContainsSenderStrings]->strings == std::vector<std::string>{"x@y"});
+	CHECK(c.exceptions.v[P_ContainsHeaderStrings]->strings.empty());
+	CHECK(c.exceptions.v[P_ContainsRecipientStrings]->strings == std::vector<std::string>{"r"});
+	CHECK(c.exceptions.v[P_ContainsSubjectOrBodyStrings]->strings == std::vector<std::string>{"s"});
+	CHECK(c.conditions.v[P_ItemClasses]->strings == std::vector<std::string>{"*IPM.Note*"});
+	CHECK(c.conditions.v[P_Categories]->strings == std::vector<std::string>{"*Rot*"});
+	c.name = "w";
+	c.priority = 1;
+	c.actions.v[A_MarkAsRead] = Value{.flag = true};
+	CHECK(has_error(validate(c, Operation::CREATE), "Exception:ContainsHeaderStrings", "EmptyValueFound"));
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	using fn = int (*)();
 	for (auto f : std::initializer_list<fn>{t_ruleid, t_parse, t_xml_roundtrip,
 	     t_read_variants,
-	     t_errors_xml, t_sequences, t_actions, t_validate,
+	     t_errors_xml, t_sequences, t_actions, t_validate, t_wildcards,
 	     t_predicates,
 	     t_other_store,
 	     t_forward_shape,

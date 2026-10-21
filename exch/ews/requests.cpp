@@ -3055,6 +3055,7 @@ void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWS
 					errors.push_back({static_cast<int32_t>(i), std::move(ve)});
 				continue;
 			}
+			Rules::strip_wildcards(op.rule);
 			auto rv = Rules::validate(op.rule, op.kind);
 			ve.insert(ve.end(), rv.begin(), rv.end());
 			if (ve.empty() && it != list.end() && op.kind == Rules::Operation::SET &&
