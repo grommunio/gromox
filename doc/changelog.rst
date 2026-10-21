@@ -68,6 +68,9 @@ Fixes:
 * ruleproc: meeting autoprocessing now records a response that a delegate sent
   on behalf of an attendee for that attendee, instead of looking for the
   delegate among the attendees.
+* EWS: a delegate answering its copy of a meeting request now responds on
+  behalf of the principal and updates the principal's calendar instead of its
+  own.
 
 
 Gromox 3.13 (2026-10-28)

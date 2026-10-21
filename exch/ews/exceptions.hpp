@@ -662,6 +662,8 @@ E(3574, "failed to delete the content of a folder");
 inline std::string E3580(std::string_view val) {return fmt::format("E-3580: invalid base64 constant '{}'", val);}
 inline std::string E3581(std::string_view val) {return fmt::format("E-3581: invalid GUID constant '{}'", val);}
 E(3582, "failed to set response properties on the calendar item");
+E(3590, "no right to answer for the principal in its calendar");
+E(3591, "failed to map named properties to the principal's store");
 E(3600, "cannot write to the calendar of the referenced item");
 E(3601, "cannot modify the existing calendar item of the meeting");
 E(3602, "no read access to the referenced item");
