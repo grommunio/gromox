@@ -1672,54 +1672,6 @@ BOOL exmdb_server::unlink_message(const char *dir,
 	return TRUE;
 }
 
-/* private only */
-BOOL exmdb_server::set_message_timer(const char *dir,
-	uint64_t message_id, uint32_t timer_id)
-{
-	char sql_string[256];
-	
-	if (!exmdb_server::is_private())
-		return FALSE;
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
-	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
-		" timer_id=%u WHERE message_id=%llu",
-		XUI{timer_id}, LLU{rop_util_get_gc_value(message_id)});
-	return pdb->exec(sql_string) == SQLITE_OK ? TRUE : false;
-}
-
-/* private only */
-BOOL exmdb_server::get_message_timer(const char *dir,
-	uint64_t message_id, uint32_t **pptimer_id)
-{
-	char sql_string[256];
-	
-	if (!exmdb_server::is_private())
-		return FALSE;
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
-	auto mid_val = rop_util_get_gc_value(message_id);
-	snprintf(sql_string, std::size(sql_string), "SELECT timer_id FROM "
-	          "messages WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = pdb->prep(sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	if (pstmt.step() != SQLITE_ROW ||
-	    sqlite3_column_type(pstmt, 0) == SQLITE_NULL) {
-		*pptimer_id = NULL;
-		return TRUE;
-	}
-	*pptimer_id = cu_alloc<uint32_t>();
-	if (*pptimer_id == nullptr)
-		return FALSE;
-	**pptimer_id = sqlite3_column_int64(pstmt, 0);
-	return TRUE;
-}
-
 static bool message_read_message(const db_conn &db, cpid_t cpid,
     uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt) try
 {
