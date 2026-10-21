@@ -1400,6 +1400,24 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 		}
 	}
 
+	/* Moving objects out of the outbox counts as a cancellation. */
+	uint64_t parent_fid = 0;
+	{
+		char q[128];
+		snprintf(q, std::size(q), "SELECT parent_fid FROM messages "
+			"WHERE message_id=%llu", LLU{mid_val});
+		auto st = pdb->prep(q);
+		if (st != nullptr && st.step() == SQLITE_ROW)
+			parent_fid = st.col_uint64(0);
+	}
+	if (parent_fid != PRIVATE_FID_OUTBOX) {
+		char dq[128];
+		snprintf(dq, std::size(dq), "DELETE FROM deferred_sends "
+			"WHERE message_id=%llu", LLU{mid_val});
+		pdb->exec(dq);
+		return ecSuccess;
+	}
+
 	unsigned int uid = 0;
 	std::string actor;
 	if (!mysql_adaptor_get_id_from_maildir(dir, &uid) ||
@@ -1464,15 +1482,6 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 	mlog(LV_INFO, "gromox-audit: deferred message sent from <%s> in mailbox %s",
 		ev_from, dir);
 
-	uint64_t parent_fid = 0;
-	{
-		char q[128];
-		snprintf(q, std::size(q), "SELECT parent_fid FROM messages "
-			"WHERE message_id=%llu", LLU{mid_val});
-		auto st = pdb->prep(q);
-		if (st != nullptr && st.step() == SQLITE_ROW)
-			parent_fid = st.col_uint64(0);
-	}
 	auto del_after = ctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	eid_t mid_eid = eid_t(1, mid_val);
 	EID_ARRAY ids = {1, &mid_eid};
