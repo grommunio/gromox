@@ -27,12 +27,6 @@ using namespace gromox;
 
 namespace {
 
-struct ievent {
-	time_t start_time = 0, end_time = 0, orig_start = 0;
-	const EXCEPTIONINFO *ei = nullptr;
-	const EXTENDEDEXCEPTION *xe = nullptr;
-};
-
 struct freebusy_tags {
 	freebusy_tags(const char *);
 
@@ -230,20 +224,28 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 	return false;
 }
 
-static bool find_recur_times(const ical_component *tzcom,
+/**
+ * Expand the occurrences of a series that overlap or touch
+ * [start_time, end_time], like the C1 to C3 conditions of get_freebusy do
+ * for single appointments. A negative end_time yields just the next
+ * occurrence.
+ */
+bool gromox::fb_recur_times(const ical_component *tzcom,
     time_t start_whole, const APPOINTMENT_RECUR_PAT &apr,
-    time_t start_time, time_t end_time, std::vector<ievent> &evlist)
+    time_t start_time, time_t end_time, std::vector<fb_instance> &evlist)
 {
 	ical_rrule irrule{};
+	auto duration = static_cast<time_t>(apr.endtimeoffset - apr.starttimeoffset) * 60;
 
 	if (!recurrencepattern_to_rrule(tzcom, start_whole, apr, &irrule))
 		return false;
 	do {
 		ical_time itime = irrule.instance_itime;
 		time_t ut{}, utnz{};
-		if (!ical_itime_to_utc(tzcom, itime, &ut))
+		if (!ical_itime_to_utc(tzcom, itime, &ut) ||
+		    (end_time >= 0 && ut > end_time))
 			break;
-		if (ut < start_time)
+		if (ut + duration < start_time)
 			continue;
 		if (!ical_itime_to_utc(nullptr, itime, &utnz))
 			break;
@@ -266,8 +268,8 @@ static bool find_recur_times(const ical_component *tzcom,
 		};
 		if (std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(), time_test))
 			continue;
-		evlist.push_back(ievent{ut, ut + static_cast<long>((apr.endtimeoffset - apr.starttimeoffset) * 60)});
-		if (ut >= end_time)
+		evlist.push_back(fb_instance{ut, ut + duration});
+		if (end_time < 0)
 			break;
 	} while (irrule.iterate());
 	if (apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
@@ -279,13 +281,12 @@ static bool find_recur_times(const ical_component *tzcom,
 		auto ut = rop_util_rtime_to_unix(ei.startdatetime);
 		ical_time itime;
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
-		    !ical_itime_to_utc(tzcom, itime, &ut) ||
-		    ut < start_time || ut > end_time)
+		    !ical_itime_to_utc(tzcom, itime, &ut) || ut > end_time)
 			continue;
-		ievent event = {ut};
+		fb_instance event = {ut};
 		ut = rop_util_rtime_to_unix(ei.enddatetime);
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
-		    !ical_itime_to_utc(tzcom, itime, &ut))
+		    !ical_itime_to_utc(tzcom, itime, &ut) || ut < start_time)
 			continue;
 		event.end_time = ut;
 		ut = rop_util_rtime_to_unix(ei.originalstartdate);
@@ -649,8 +650,8 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 			continue;
 
-		std::vector<ievent> event_list;
-		if (!find_recur_times(tzcom.has_value() ? &*tzcom : nullptr,
+		std::vector<fb_instance> event_list;
+		if (!fb_recur_times(tzcom.has_value() ? &*tzcom : nullptr,
 		    start_whole, apprecurr, start_time, end_time, event_list))
 			continue;
 
