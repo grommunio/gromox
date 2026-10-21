@@ -1150,6 +1150,10 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (tmp_int32 != 0 &&
 		    penum_param->pmsg->proplist.set(PR_SENDER_ID_STATUS, &tmp_int32) != ecSuccess)
 			return FALSE;
+	} else if (strcasecmp(key, "X-MS-Exchange-Organization-AutoForwarded") == 0) {
+		if (strcasecmp(field, "true") == 0 &&
+		    penum_param->pmsg->proplist.set(PR_AUTO_FORWARDED, &byte_value_one) != ecSuccess)
+			return FALSE;
 	} else if (strcasecmp(key, "X-MS-Exchange-Organization-SCL") == 0) {
 		int32_t tmp_int32 = strtol(field, nullptr, 0);
 		if (penum_param->pmsg->proplist.set(PR_CONTENT_FILTER_SCL, &tmp_int32) != ecSuccess)

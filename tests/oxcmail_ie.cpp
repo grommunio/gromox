@@ -1299,6 +1299,30 @@ static int hdrparse_1()
 	return EXIT_SUCCESS;
 }
 
+static int import_autoforwarded()
+{
+	/* the header oxcmail_export writes for PR_AUTO_FORWARDED */
+	for (const auto &[hdr, want] : {std::pair{"true", true}, {"TRUE", true}, {"false", false}}) {
+		std::string data = std::string("X-MS-Exchange-Organization-AutoForwarded: ") +
+		                   hdr + "\r\nSubject: fw\r\n\r\nbody\r\n";
+		MAIL m;
+		assert(m.refonly_parse(data.c_str(), data.size()));
+		oxcmail_converter cvt;
+		cvt.alloc = g_alloc;
+		cvt.get_propids = ee_get_propids;
+		auto mc = cvt.inet_to_mapi(m);
+		assert(mc != nullptr);
+		auto v = mc->proplist.get<const uint8_t>(PR_AUTO_FORWARDED);
+		assert((v != nullptr && *v != 0) == want);
+		MAIL out;
+		assert(cvt.mapi_to_inet(*mc, out));
+		std::string text;
+		assert(out.to_str(text) == 0);
+		assert((text.find("X-MS-Exchange-Organization-AutoForwarded: true") != text.npos) == want);
+	}
+	return EXIT_SUCCESS;
+}
+
 static std::unique_ptr<message_content, mc_delete> vcf_import(const char *body)
 {
 	std::string str = "BEGIN:VCARD\r\n";
@@ -2388,7 +2412,7 @@ int main()
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(ical_allday_hint), E(ical_allday_date_zone),
 		E(ical_standalone_occurrence),
-		E(hdrparse_1),
+		E(hdrparse_1), E(import_autoforwarded),
 		E(vcard_tel_types), E(vcard_escaped_values), E(vcard_photo), E(vcard_dates),
 		E(vcard_fileas_categories),
 		E(vexport_head), E(vexport_simple_body), E(vexport_image),

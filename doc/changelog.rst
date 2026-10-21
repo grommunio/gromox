@@ -38,6 +38,9 @@ Enhancements:
   reached and get a deferred error message.
 * ruleproc: redirects (OP_FORWARD with FWD_PRESERVE_SENDER) of the TwoStep
   processor now carry ``X-MS-Exchange-Organization-AutoForwarded: true``.
+* oxcmail: ``X-MS-Exchange-Organization-AutoForwarded: true`` now sets
+  PR_AUTO_FORWARDED on import, so rule conditions on automatic forwards can
+  match.
 
 Fixes:
 
