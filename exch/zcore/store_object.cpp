@@ -494,7 +494,7 @@ static ec_error_t store_object_get_calculated_property(store_object *pstore,
 			if (!exmdb_client->get_mbox_perm(pstore->dir,
 			    pinfo->get_username(), &permission))
 				return ecRpcFailed;
-			*static_cast<uint32_t *>(*ppvalue) &= rightsMaxROP;
+			*static_cast<uint32_t *>(*ppvalue) = permission & rightsMaxROP;
 			return ecSuccess;
 		}
 		*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
