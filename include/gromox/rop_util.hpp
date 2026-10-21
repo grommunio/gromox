@@ -14,6 +14,11 @@
 #define NFID_UPPER_PART 0xFF00000000000000ULL
 #define NFID_LOWER_PART 0x00FFFFFFFFFFFFFFULL
 
+namespace gromox {
+/* Unix time in mapitime_t units, which nanoseconds cannot hold past 2262 */
+using mapitime_point = std::chrono::sys_time<std::chrono::duration<int64_t, std::ratio<1, 10'000'000>>>;
+}
+
 extern GX_EXPORT uint16_t rop_util_get_replid(eid_t);
 extern GX_EXPORT uint64_t rop_util_get_gc_value(eid_t);
 extern GX_EXPORT GLOBCNT rop_util_get_gc_array(eid_t);
@@ -28,10 +33,10 @@ extern GX_EXPORT GUID rop_util_make_domain_guid(int domain_id);
 extern GX_EXPORT int rop_util_get_user_id(GUID);
 extern GX_EXPORT int rop_util_get_domain_id(GUID);
 extern GX_EXPORT uint64_t rop_util_unix_to_nttime(time_t unix_time);
-extern GX_EXPORT uint64_t rop_util_unix_to_nttime(std::chrono::system_clock::time_point);
+extern GX_EXPORT uint64_t rop_util_unix_to_nttime(gromox::mapitime_point);
 extern GX_EXPORT time_t rop_util_nttime_to_unix(uint64_t nt_time);
-extern GX_EXPORT std::chrono::system_clock::time_point rop_util_nttime_to_unix2(uint64_t nt_time);
-extern GX_EXPORT std::chrono::system_clock::time_point rop_util_rtime_to_unix2(uint32_t t);
+extern GX_EXPORT gromox::mapitime_point rop_util_nttime_to_unix2(uint64_t nt_time);
+extern GX_EXPORT gromox::mapitime_point rop_util_rtime_to_unix2(uint32_t t);
 inline uint32_t rop_util_nttime_to_rtime(uint64_t t) { return t / RTIME_FACTOR; }
 inline uint64_t rop_util_rtime_to_nttime(uint32_t t) { return t * RTIME_FACTOR; }
 extern GX_EXPORT uint32_t rop_util_unix_to_rtime(time_t);

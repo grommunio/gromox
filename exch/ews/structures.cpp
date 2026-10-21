@@ -462,7 +462,7 @@ tRecurrenceRange get_recurrence_range(const RECURRENCE_PATTERN& recur_pat)
 	}
 }
 
-static inline std::chrono::system_clock::time_point
+static inline EWS::time_point
 rtime_to_tp(const TZDEF *tz, std::chrono::seconds tz_offset, uint32_t rtime)
 {
 	int64_t off;
