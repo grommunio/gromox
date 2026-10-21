@@ -5331,11 +5331,17 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	    props.set(PR_SUBJECT, full.c_str()) != ecSuccess)
 		throw EWSError::NotEnoughMemory(E3406);
 	/* The owner organizes and the caller sends */
-	for (const auto &prop : meetingIdentity(dir))
+	auto ident = meetingIdentity(dir);
+	for (const auto &prop : ident)
 		if (props.set(prop) != ecSuccess)
 			throw EWSError::NotEnoughMemory(E3406);
 	props.erase(PR_SENDER_SEARCH_KEY);
 	props.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
+	/* RFC 5546 §3.2.5: every VEVENT of the CANCEL needs these */
+	ident.push_back({seq_tag, &newseq});
+	ident.push_back({PROP_TAG(PT_SYSTIME, ids[5]), &now});
+	if (!stamp_exceptions(*cancel, ident))
+		throw EWSError::NotEnoughMemory(E3406);
 	send(dir, mid, *cancel);
 	if (!saveCopy)
 		return;
