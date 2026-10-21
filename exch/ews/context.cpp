@@ -5056,8 +5056,8 @@ void EWSContext::sendInstance(const std::string &dir,
  * @brief      Stamp properties on the exceptions of a series message
  *
  * oxcical exports each exception as its own VEVENT and takes ORGANIZER,
- * DTSTAMP and SEQUENCE from the exception message, which UpdateItem
- * creates without them.
+ * ATTENDEE, DTSTAMP and SEQUENCE from the exception message, which
+ * UpdateItem creates without them.
  *
  * @param      msg     Duplicated series message
  * @param      props   Properties to set
@@ -5079,6 +5079,14 @@ static bool stamp_exceptions(MESSAGE_CONTENT &msg,
 		for (const auto &p : props)
 			if (at.pembedded->proplist.set(p) != ecSuccess)
 				return false;
+		auto rcpts = at.pembedded->children.prcpts;
+		if (msg.children.prcpts == nullptr ||
+		    (rcpts != nullptr && rcpts->count > 0))
+			continue;
+		rcpts = msg.children.prcpts->dup();
+		if (rcpts == nullptr)
+			return false;
+		at.pembedded->set_rcpts_internal(rcpts);
 	}
 	return true;
 }
