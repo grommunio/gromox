@@ -4999,7 +4999,10 @@ sItem tItem::create(const sShape& shape)
 		return tMeetingRequestMessage(shape);
 	else if (class_match_prefix(itemClass, "IPM.Schedule.Meeting.Resp") == 0)
 		return tMeetingResponseMessage(shape);
-	return tItem(shape);
+	else if (class_match_prefix(itemClass, "IPM.DistList") == 0)
+		return tItem(shape);
+	/* Exchange serves classes without a dedicated EWS type as Message */
+	return tMessage(shape);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
