@@ -132,12 +132,11 @@ extern ec_error_t ems_send_vmail(vmime::shared_ptr<vmime::message>, const char *
 extern ec_error_t cu_send_message(logon_object &, message_object &, const char *actor, const char *delegator, gromox::repr_grant);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, message_content *, const char *bounce_type, MAIL *);
 
-extern int (*common_util_add_timer)(const char *command, int interval);
+extern int (*common_util_add_timer)(const char *, uint64_t, int);
 extern BOOL (*common_util_cancel_timer)(int timer_id);
 
-extern void common_util_init(const char *org_name, unsigned int max_rcpt, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
+extern void common_util_init(const char *org_name, unsigned int max_rcpt, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url);
 extern int common_util_run();
-extern const char *common_util_get_submit_command();
 extern uint32_t common_util_get_ftstream_id();
 extern void fxs_propsort(message_content &);
 extern ec_error_t replid_to_replguid(const logon_object &, uint16_t, GUID &);

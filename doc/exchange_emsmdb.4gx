@@ -134,9 +134,6 @@ all ROPs. Note the daemon log level needs to be "debug" (6), too.
 .br
 Default: \fI0\fP
 .TP
-\fBsubmit_command\fP
-Default: \fI/usr/bin/php /usr/share/gromox/submit.php\fP
-.TP
 \fBx500_org_name\fP
 See gromox.cfg(5):x500_org_name.
 .SH Files

@@ -39,6 +39,9 @@ To inhibit the switch, assign the empty value.
 .br
 Default: \fIgromox\fP
 .TP
+\fBsubmit_command\fP
+Default: \fI/usr/bin/php /usr/share/gromox/submit.php\fP
+.TP
 \fBtimer_hosts_allow\fP
 A space-separated list of individual IPv6 or v4-mapped IPv6 host addresses that
 are allowed to converse with the timer service. No networks and no CIDR

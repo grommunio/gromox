@@ -61,7 +61,6 @@ unsigned int g_max_rule_len, g_max_extrule_len;
 static std::string g_smtp_url;
 char g_emsmdb_org_name[256];
 static thread_local const char *g_dir_key;
-static char g_submit_command[1024];
 static constexpr char EMSMDB_UA[] = PACKAGE_NAME "-emsmdb " PACKAGE_VERSION;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
@@ -1688,15 +1687,13 @@ ec_error_t cu_send_message(logon_object &logon, message_object &msg,
 }
 
 void common_util_init(const char *org_name, unsigned int max_rcpt,
-    size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url,
-    const char *submit_command)
+    size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url)
 {
 	gx_strlcpy(g_emsmdb_org_name, org_name, std::size(g_emsmdb_org_name));
 	g_max_rcpt = max_rcpt;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
 	g_smtp_url = std::move(smtp_url);
-	gx_strlcpy(g_submit_command, submit_command, std::size(g_submit_command));
 }
 
 int common_util_run()
@@ -1718,11 +1715,6 @@ int common_util_run()
 		return -2;
 	}
 	return 0;
-}
-
-const char* common_util_get_submit_command()
-{
-	return g_submit_command;
 }
 
 static void mlog2(unsigned int level, const char *format, ...)

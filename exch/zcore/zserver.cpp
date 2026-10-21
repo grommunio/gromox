@@ -3413,7 +3413,6 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	BOOL b_marked;
 	zs_objtype mapi_type;
 	uint16_t rcpt_num;
-	char command_buff[1024];
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = zs_query_session(hsession);
@@ -3525,11 +3524,8 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			return ecAccessDenied;
 		auto deferred_time = props_to_defer_interval(tmp_propvals);
 		if (deferred_time > 0) {
-			snprintf(command_buff, 1024, "%s %s %llu",
-			         common_util_get_submit_command(), actor,
-			         LLU{rop_util_get_gc_value(pmessage->get_id())});
-			timer_id = system_services_add_timer(
-					command_buff, deferred_time);
+			timer_id = system_services_add_timer(actor,
+			           pmessage->get_id().gcv(), deferred_time);
 			if (0 == timer_id) {
 				exmdb_client->clear_submit(pstore->get_dir(),
 					pmessage->get_id(), b_unsent);
