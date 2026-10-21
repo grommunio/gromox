@@ -1679,6 +1679,38 @@ static ec_error_t op_delegate(rxparam &par, const rule_node &rule,
 	return ret;
 }
 
+/*
+ * After OP_DELETE only Out of Office rules still run. Actions that would keep
+ * the message in a mailbox are dropped then.
+ */
+static bool rx_skip_after_delete(const rxparam &par, uint8_t type)
+{
+	if (!par.del)
+		return false;
+	switch (type) {
+	case OP_MOVE:
+	case OP_COPY:
+	case OP_TAG:
+	case OP_MARK_AS_READ:
+	case OP_DEFER_ACTION:
+		if (g_ruleproc_debug)
+			mlog(LV_DEBUG, "ruleproc: %s: action %u skipped, message is deleted",
+				par.orig_dir.c_str(), type);
+		return true;
+	default:
+		return false;
+	}
+}
+
+/*
+ * After a rule with ST_EXIT_LEVEL or OP_DELETE, only Out of Office rules are
+ * evaluated, MS-OXORULE v23.0 §3.2.5.1 and §3.2.5.1.1.1.
+ */
+static bool rx_rule_exited(const rxparam &par, const rule_node &rule)
+{
+	return (par.exit || par.del) && !(rule.state & rx_oof_only);
+}
+
 static ec_error_t op_switch(rxparam &par, const rule_node &rule,
     const ACTION_BLOCK &act, size_t act_idx)
 {
@@ -1686,6 +1718,8 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 		mlog(LV_DEBUG, "Rule_Action %s", act.repr().c_str());
 	par.act_type = act.type;
 	par.act_idx  = act_idx;
+	if (rx_skip_after_delete(par, act.type))
+		return ecSuccess;
 	switch (act.type) {
 	case OP_MOVE:
 	case OP_COPY: {
@@ -1738,8 +1772,7 @@ static bool rx_rule_matches(const rxparam &par, const rule_node &rule)
 
 static ec_error_t op_process(rxparam &par, const rule_node &rule)
 {
-	/* WHEN_OOF rules already excluded during rule loading. */
-	if (par.exit /* && !(rule.state & ST_ONLY_WHEN_OOF) */)
+	if (rx_rule_exited(par, rule))
 		return ecSuccess;
 	if (!rx_rule_matches(par, rule))
 		return ecSuccess;
@@ -1778,6 +1811,8 @@ static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
 {
 	par.act_type = act.type;
 	par.act_idx  = act_idx;
+	if (rx_skip_after_delete(par, act.type))
+		return ecSuccess;
 	switch (act.type) {
 	case OP_MOVE:
 	case OP_COPY: {
@@ -1807,7 +1842,7 @@ static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
 
 static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 {
-	if (par.exit && !(rule.state & rx_oof_only))
+	if (rx_rule_exited(par, rule))
 		return ecSuccess;
 	if (!rx_rule_matches(par, rule))
 		return ecSuccess;
@@ -3277,8 +3312,6 @@ ec_error_t rxparam::run_rules()
 				orig_dir.c_str(), rule.extended ? "ext" : "",
 				static_cast<unsigned long long>(rule.rule_id),
 				rule.name.c_str(), mapi_strerror(err));
-		if (del)
-			break;
 	}
 	if (!del)
 		make_dams();

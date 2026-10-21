@@ -73,6 +73,8 @@ Fixes:
   own.
 * ruleproc: rules without a condition no longer apply to every message in
   the TwoStep processor and are skipped, as in the old processor.
+* ruleproc: Out of Office rules now still run in the TwoStep processor after
+  a rule that stops processing or deletes the message.
 * ruleproc: the TwoStep processor now runs at most
   ``exmdb_provider.cfg:max_ext_rule_number`` extended rules per folder, as the
   old processor does.
