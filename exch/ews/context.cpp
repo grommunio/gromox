@@ -4857,12 +4857,26 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		send(dir, meid.messageId(), *dupcontent);
 	}
 }
+/* Subject prefix of a meeting response, MS-OXOCAL v22.1 §2.2.7.2 */
+static const char *resp_subject_prefix(const char *cls)
+{
+	if (cls == nullptr)
+		return nullptr;
+	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Pos") == 0)
+		return "Accepted: ";
+	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Tent") == 0)
+		return "Tentative: ";
+	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Neg") == 0)
+		return "Declined: ";
+	return nullptr;
+}
+
 /**
  * @brief      Send a meeting response to the organizer
  *
- * Gives the response the subject of the request and the organizer as
- * recipient. To send, duplicates the original meeting request, stamps
- * the responder's identity on PR_SENDER_*, preserves
+ * Gives the response the prefixed subject of the request and the
+ * organizer as recipient. To send, duplicates the original meeting request,
+ * stamps the responder's identity on PR_SENDER_*, preserves
  * PR_SENT_REPRESENTING_* as the organizer, and sends.
  *
  * @param      responseRef  Meeting request or meeting responded to
@@ -4902,10 +4916,19 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 	}
 
 	/* Subject and recipient for the saved copy or the draft */
-	auto subject = reqContent->proplist.get<const char>(PR_SUBJECT);
-	if (subject != nullptr && !respItem.proplist.has(PR_SUBJECT) &&
-	    respItem.proplist.set(PR_SUBJECT, subject) != ecSuccess)
-		throw EWSError::NotEnoughMemory(E3288);
+	auto respClass = respItem.proplist.get<const char>(PR_MESSAGE_CLASS);
+	auto topic = reqContent->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (topic == nullptr)
+		topic = reqContent->proplist.get<const char>(PR_SUBJECT);
+	if (topic != nullptr && !respItem.proplist.has(PR_SUBJECT)) {
+		auto pfx = resp_subject_prefix(respClass);
+		if (pfx == nullptr)
+			pfx = "";
+		if (respItem.proplist.set(PR_SUBJECT_PREFIX, pfx) != ecSuccess ||
+		    respItem.proplist.set(PR_NORMALIZED_SUBJECT, topic) != ecSuccess ||
+		    respItem.proplist.set(PR_SUBJECT, cpystr(std::string(pfx) + topic)) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3288);
+	}
 	if (orgSmtp != nullptr && (respItem.children.prcpts == nullptr ||
 	    respItem.children.prcpts->count == 0)) {
 		auto rcpts = tarray_set_init();
@@ -4922,9 +4945,15 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 		throw EWSError::NotEnoughMemory(E3288);
 	if (basedate)
 		toInstance(refDir, *basedate, *content);
-	auto respClass = respItem.proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (respClass)
 		content->proplist.set(PR_MESSAGE_CLASS, respClass);
+	for (auto tag : {PR_SUBJECT, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT}) {
+		auto str = respItem.proplist.get<const char>(tag);
+		if (str == nullptr)
+			content->proplist.erase(tag);
+		else if (content->proplist.set(tag, str) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3288);
+	}
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 	content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
