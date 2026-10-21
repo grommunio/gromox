@@ -1312,6 +1312,28 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	};
 	TPROPVAL_ARRAY proplist{std::size(props), props};
 	PROBLEM_ARRAY problems;
+	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+	/* A declined Meeting object leaves the calendar once the reply is out */
+	std::optional<uint64_t> declinedCal;
+	bool isRequest = class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0;
+	if (resp == respDeclined && send_message && calItem != nullptr &&
+	    pf.location == sFolderSpec::PRIVATE) {
+		uint64_t calFid = pf.folderId;
+		if (class_match_prefix(cls, "IPM.Appointment") == 0) {
+			if (pf.folderId != eid_t(1, PRIVATE_FID_DELETED_ITEMS))
+				declinedCal = mid.messageId();
+		} else if (isRequest) {
+			declinedCal = ctx.findMeetingObject(refId);
+			calFid = eid_t(1, PRIVATE_FID_CALENDAR);
+		}
+		auto calRights = declinedCal ? ctx.permissions(rdir, calFid) : 0;
+		if (declinedCal && !(calRights & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3131);
+		/* The response status is also written to the calendar item */
+		if (declinedCal && *declinedCal != mid.messageId() &&
+		    !(calRights & frightsEditAny))
+			throw EWSError::AccessDenied(E3603);
+	}
 	if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
 		mid.messageId(), &proplist, &problems))
 		throw EWSError::ItemSave(E3409);
@@ -1320,9 +1342,18 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		if (cal && calItem != nullptr)
 			calItem->emplace(rdir, *cal);
 	}
-	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+	if (declinedCal) {
+		if (*declinedCal != mid.messageId()) {
+			/* All but PR_PROCESSED, which is for the request */
+			TPROPVAL_ARRAY calProps{std::size(props) - 1, props};
+			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(),
+			    username, CP_ACP, *declinedCal, &calProps, &problems))
+				throw EWSError::ItemSave(E3582);
+		}
+		calItem->emplace(rdir, *declinedCal);
+	}
 	if (pf.location == sFolderSpec::PRIVATE && rights & frightsDeleteAny &&
-	    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
+	    isRequest) {
 		refDir = rdir;
 		refMid = mid;
 	}
@@ -1501,7 +1532,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			if (dec->ReferenceItemId)
 				updateRef(ctx, *dec->ReferenceItemId,
 				          respDeclined, refDir, refMid,
-				          send_message, declinedOcc);
+				          send_message, declinedOcc, &calItem);
 		}
 		if (isResponse) {
 			const tItemId *responseRef = nullptr;
@@ -1526,6 +1557,16 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		 * the response. macOS Calendar keys its event to the first item.
 		 */
 		if (calItem) {
+			uint64_t calFid = eid_t(1, PRIVATE_FID_CALENDAR);
+			/* A declined one is returned from Deleted Items */
+			if (std::holds_alternative<tDeclineItem>(item)) {
+				auto eid = ctx.getItemEntryId(calItem->first, calItem->second);
+				auto bin = static_cast<const BINARY *>(eid.pvalue);
+				sMessageEntryId calMeid(bin->pb, bin->cb);
+				calFid = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
+				calItem->second = ctx.moveCopyItem(calItem->first,
+				                  calMeid, calFid, false);
+			}
 			sShape calShape;
 			calShape.add(PR_ENTRYID, sShape::FL_FIELD).add(PR_CHANGE_KEY, sShape::FL_FIELD).add(PR_MESSAGE_CLASS);
 			/* The CalendarItemType of a series is derived from these */
@@ -1533,7 +1574,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			        .add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD)
 			        .add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
 			msg.Items.emplace_back(ctx.loadItem(calItem->first,
-				eid_t(1, PRIVATE_FID_CALENDAR), calItem->second, calShape));
+				calFid, calItem->second, calShape));
 		}
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)

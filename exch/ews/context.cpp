@@ -1249,6 +1249,33 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
 }
 
 /**
+ * @brief Find the Meeting object of a meeting request
+ *
+ * @param refId  Meeting request
+ *
+ * @return Message ID in the calendar of the same store, none for a single
+ *         occurrence or when there is no Meeting object
+ */
+std::optional<uint64_t> EWSContext::findMeetingObject(const tItemId &refId) const
+{
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId requestId(refId.Id.data(), refId.Id.size());
+	sFolderSpec folder = resolveFolder(requestId);
+	std::string dir = getDir(folder);
+	auto goidTag  = PROP_TAG(PT_BINARY, getNamedPropId(dir, NtGlobalObjectId, true));
+	auto cgoidTag = PROP_TAG(PT_BINARY, getNamedPropId(dir, NtCleanGlobalObjectId, true));
+	const proptag_t tags[] = {goidTag, cgoidTag};
+	TPROPVAL_ARRAY goids = getItemProps(dir, requestId.messageId(), tags);
+	/* An occurrence matches the series master through the clean goid */
+	if (goid_is_instance(goids.get<const BINARY>(goidTag)))
+		return std::nullopt;
+	MESSAGE_CONTENT content{};
+	content.proplist = goids;
+	folder.folderId = eid_t(1, PRIVATE_FID_CALENDAR);
+	return findExistingByGoid(folder, dir, content);
+}
+
+/**
  * @brief      Schedule notification stream for closing
  */
 void EWSContext::disableEventStream()

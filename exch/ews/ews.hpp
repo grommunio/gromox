@@ -299,6 +299,7 @@ class EWSContext {
 	void enableEventStream(int);
 	std::string essdn_to_username(const std::string&) const;
 	std::string exportContent(const std::string&, const MESSAGE_CONTENT&, const std::string&) const;
+	std::optional<uint64_t> findMeetingObject(const Structures::tItemId &) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
 	uint32_t getAccountId(const std::string&, bool) const;
