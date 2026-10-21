@@ -1206,8 +1206,13 @@ tFileAttachment::tFileAttachment(const XMLElement *xml)
 		IsInline.emplace(fromXMLNode<bool>(xp));
 	if (const XMLElement *xp = xml->FirstChildElement("IsContactPhoto"))
 		IsContactPhoto.emplace(fromXMLNode<bool>(xp));
-	if (const XMLElement *xp = xml->FirstChildElement("Content"))
-		Content.emplace(xp);
+	if (const XMLElement *xp = xml->FirstChildElement("Content")) {
+		/* eM Client sends an empty sharing_metadata.xml */
+		if (xp->GetText() == nullptr)
+			Content.emplace();
+		else
+			Content.emplace(xp);
+	}
 }
 
 void tFileAttachment::serialize(tinyxml2::XMLElement *xml) const
