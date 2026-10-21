@@ -27,6 +27,9 @@ Enhancements:
 * ruleproc: meeting autoprocessing now marks a cancelled occurrence of a
   recurring meeting as cancelled in attendee calendars, not only in resource
   calendars.
+* ruleproc: Out of Office reply rules with ST_KEEP_OOF_HIST now answer each
+  sender only once per Out of Office period in the TwoStep processor. A
+  change of the Out of Office settings starts a new period.
 
 Fixes:
 

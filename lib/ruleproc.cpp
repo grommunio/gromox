@@ -156,6 +156,7 @@ struct rxparam {
 	unsigned int m_flags = ~0U;
 	uint32_t act_type = 0, act_idx = 0; /* action being run, for DEMs */
 	bool del = false, exit = false, cal_changed = false;
+	int64_t oof_hist_window = -1; /* seconds, see rx_oof_hist_window */
 };
 
 }
@@ -1770,11 +1771,104 @@ static bool rx_rule_matches(const rxparam &par, const rule_node &rule)
 	return matched;
 }
 
+/*
+ * Age limit for ST_KEEP_OOF_HIST entries: the time since the Out of Office
+ * state last changed, or since a scheduled period began. Older entries belong
+ * to an earlier period, MS-OXORULE v23.0 §3.2.4.2.
+ */
+static int64_t rx_oof_hist_window(rxparam &par)
+{
+	if (par.oof_hist_window >= 0)
+		return par.oof_hist_window;
+	auto dir = par.orig_dir.c_str();
+	uint64_t since_change = 0;
+	if (!exmdb_client->autoreply_tsquery(dir, OOF_STATE_CHANGE_PEER, 0,
+	    &since_change))
+		since_change = INT64_MAX;
+	int64_t window = std::min(since_change, static_cast<uint64_t>(INT64_MAX));
+	static constexpr proptag_t tags[] = {PR_EC_OUTOFOFFICE, PR_EC_OUTOFOFFICE_FROM};
+	TPROPVAL_ARRAY props{};
+	if (exmdb_client->autoreply_getprop(dir, CP_UTF8, tags, &props)) {
+		auto state = props.get<const uint32_t>(PR_EC_OUTOFOFFICE);
+		auto from  = props.get<const uint64_t>(PR_EC_OUTOFOFFICE_FROM);
+		auto now   = time(nullptr);
+		if (state != nullptr && *state == 2 && from != nullptr) {
+			auto start = rop_util_nttime_to_unix(*from);
+			if (start <= now)
+				window = std::min(window, static_cast<int64_t>(now - start));
+		}
+	}
+	par.oof_hist_window = std::max(window, static_cast<int64_t>(1));
+	return par.oof_hist_window;
+}
+
+/*
+ * History key for an OP_OOF_REPLY rule with ST_KEEP_OOF_HIST, MS-OXORULE
+ * v23.0 §3.2.5.1.1, or empty if the rule keeps none.
+ */
+static std::string rx_oof_hist_key(const rxparam &par, const rule_node &rule) try
+{
+	if (!(rule.state & ST_KEEP_OOF_HIST))
+		return {};
+	bool oofreply = false;
+	if (rule.extended) {
+		for (const auto &blk : rule.xact)
+			oofreply |= blk.type == OP_OOF_REPLY;
+	} else if (rule.act != nullptr) {
+		for (size_t i = 0; i < rule.act->count; ++i)
+			oofreply |= rule.act->pblock[i].type == OP_OOF_REPLY;
+	}
+	if (!oofreply)
+		return {};
+	auto sender = par.ctnt->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (sender == nullptr)
+		sender = par.ev_from;
+	if (*znul(sender) == '\0' || strcasecmp(sender, ENVELOPE_FROM_NULL) == 0)
+		return {};
+	std::string key = fmt::format("oofhist:{}{:x}:{}",
+	                  rule.extended ? "x" : "", rule.rule_id, sender);
+	HX_strlower(key.data());
+	return key;
+} catch (const std::bad_alloc &) {
+	return {};
+}
+
+/* Whether the sender already is in the history of the rule */
+static bool rx_oof_hist_seen(rxparam &par, const std::string &key)
+{
+	auto window = rx_oof_hist_window(par);
+	uint64_t age = 0;
+	if (!exmdb_client->autoreply_tsquery(par.orig_dir.c_str(), key.c_str(),
+	    window, &age))
+		return false;
+	return age < static_cast<uint64_t>(window);
+}
+
+/* Evaluate @rule, honoring ST_KEEP_OOF_HIST */
+static bool rx_rule_applies(rxparam &par, const rule_node &rule)
+{
+	auto key = rx_oof_hist_key(par, rule);
+	if (!key.empty() && rx_oof_hist_seen(par, key)) {
+		if (g_ruleproc_debug)
+			mlog(LV_DEBUG, "ruleproc: %s: %srule %llxh skipped, %s was answered before",
+				par.orig_dir.c_str(), rule.extended ? "ext" : "",
+				static_cast<unsigned long long>(rule.rule_id), key.c_str());
+		return false;
+	}
+	if (!rx_rule_matches(par, rule))
+		return false;
+	if (!key.empty() &&
+	    !exmdb_client->autoreply_tsupdate(par.orig_dir.c_str(), key.c_str()))
+		mlog(LV_WARN, "ruleproc: %s: could not update the OOF history",
+			par.orig_dir.c_str());
+	return true;
+}
+
 static ec_error_t op_process(rxparam &par, const rule_node &rule)
 {
 	if (rx_rule_exited(par, rule))
 		return ecSuccess;
-	if (!rx_rule_matches(par, rule))
+	if (!rx_rule_applies(par, rule))
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
@@ -1844,7 +1938,7 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 {
 	if (rx_rule_exited(par, rule))
 		return ecSuccess;
-	if (!rx_rule_matches(par, rule))
+	if (!rx_rule_applies(par, rule))
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
