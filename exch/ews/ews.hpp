@@ -104,8 +104,11 @@ class EWSPlugin {
 		const EWSPlugin& plugin; ///< Plugin used to release the instance
 		std::string dir; ///< Home directory of domain or user
 		uint32_t instanceId; ///< Instance ID
+		/* exmdb needs the parent instance to exist while this one is used */
+		std::shared_ptr<const ExmdbInstance> parent;
 
-		ExmdbInstance(const EWSPlugin&, const std::string&, uint32_t);
+		ExmdbInstance(const EWSPlugin &, const std::string &, uint32_t,
+		    std::shared_ptr<const ExmdbInstance> = {});
 		ExmdbInstance(const ExmdbInstance&) = delete;
 		ExmdbInstance& operator=(const ExmdbInstance&) = delete;
 		~ExmdbInstance();
@@ -133,7 +136,7 @@ class EWSPlugin {
 	void evictAttachmentInstances(const std::string &, uint64_t, uint32_t) const;
 	bool linkSubscription(const Structures::tSubscriptionId&, const EWSContext&) const;
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
-	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string&, uint32_t) const;
+	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string &, const std::shared_ptr<ExmdbInstance> &) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
 	void unloadMessageInstance(const std::string&, uint64_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;

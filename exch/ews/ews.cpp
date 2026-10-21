@@ -807,8 +807,9 @@ static void ews_event_proc(const char* dir, BOOL table, uint32_t ID, const DB_NO
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //Cache
 
-EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin& p, const std::string& d, uint32_t i) :
-	plugin(p), dir(d), instanceId(i)
+EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin &p,
+    const std::string &d, uint32_t i, std::shared_ptr<const ExmdbInstance> par) :
+	plugin(p), dir(d), instanceId(i), parent(std::move(par))
 {}
 
 /**
@@ -1083,7 +1084,8 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(cons
 	if (!exmdb.load_attachment_instance(dir.c_str(),
 	    messageInstance->instanceId, aid, &instanceId))
 		throw DispatchError(Exceptions::E3078);
-	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
+	auto instance = std::make_shared<ExmdbInstance>(*this, dir,
+	                instanceId, std::move(messageInstance));
 	cache.emplace(cache_message_instance_lifetime, akey, instance);
 	return instance;
 }
@@ -1305,23 +1307,24 @@ Structures::sMessageEntryId EWSPlugin::mkMessageEntryId(const Structures::sMailb
  * @brief      Load embedded instance
  *
  * @param      dir   Home directory of user or domain
- * @param      aid   Attachment ID
+ * @param      aInst Attachment instance
  *
  * @return     Embedded instance information
  */
-std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const std::string& dir, uint32_t aid) const
+std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const std::string &dir,
+    const std::shared_ptr<ExmdbInstance> &aInst) const
 {
-	detail::EmbeddedInstanceKey ekey{dir, aid};
+	detail::EmbeddedInstanceKey ekey{dir, aInst->instanceId};
 	try {
 		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(ekey, cache_embedded_instance_lifetime));
 	} catch (const std::out_of_range &) {
 	}
 	uint32_t instanceId;
 	/* exmdb reports "no embedded message" as success with instance 0 */
-	if (!exmdb.load_embedded_instance(dir.c_str(), false, aid, &instanceId) ||
+	if (!exmdb.load_embedded_instance(dir.c_str(), false, aInst->instanceId, &instanceId) ||
 	    instanceId == 0)
 		throw DispatchError(Exceptions::E3208);
-	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
+	auto instance = std::make_shared<ExmdbInstance>(*this, dir, instanceId, aInst);
 	cache.emplace(cache_embedded_instance_lifetime, ekey, instance);
 	return instance;
 }

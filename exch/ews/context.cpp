@@ -1707,7 +1707,7 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 
 	auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
 	if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
-		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 		MESSAGE_CONTENT content{};
 		if (!m_plugin.exmdb.read_message_instance(dir.c_str(),
 		    eInst->instanceId, &content))
@@ -1879,7 +1879,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			sShape shape(props);
 			auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
 			if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
-				auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+				auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 				MESSAGE_CONTENT eInstContent{};
 				if (!exmdb.read_message_instance(dir.c_str(), eInst->instanceId, &eInstContent))
 					throw DispatchError(E3333);
@@ -2359,7 +2359,7 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
 		auto aInst = m_plugin.loadAttachmentInstance(dir, s.fid, s.mid, i);
 		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
 		try {
-			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 		} catch (const DispatchError &) {
 			continue; /* skip non-embedded attachments */
 		}
@@ -2588,7 +2588,7 @@ void EWSContext::deleteExceptionAttachment(const std::string &dir,
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
 		try {
-			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 		} catch (const DispatchError &) {
 			continue; /* skip non-embedded attachments */
 		}
@@ -2798,7 +2798,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
 		try {
-			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 		} catch (const DispatchError &) {
 			continue; /* skip non-embedded attachments */
 		}
