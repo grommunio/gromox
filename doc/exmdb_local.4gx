@@ -44,8 +44,6 @@ Compared to the old processor, the twostep processor also moves and copies
 into other stores (if the mailbox owner has write access there) and logs
 rule errors instead of failing the delivery. Its differences are:
 .IP \(bu 4
-OP_BOUNCE actions are ignored.
-.IP \(bu 4
 After a move, the rules of the target folder are not evaluated.
 .IP \(bu 4
 Clients may briefly see a message in the Inbox before a rule moves or

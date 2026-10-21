@@ -39,6 +39,7 @@
 #include <gromox/tie.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
+#include "../mda/exmdb_local/bounce_producer.hpp"
 
 using namespace gromox;
 DECLARE_SVC_API(,);
@@ -1712,6 +1713,70 @@ static bool rx_rule_exited(const rxparam &par, const rule_node &rule)
 	return (par.exit || par.del) && !(rule.state & rx_oof_only);
 }
 
+/**
+ * OP_BOUNCE, MS-OXORULE v23.0 §2.2.5.1.2.5 and §3.2.5.1: send a non-delivery
+ * report to the sender and drop the message.
+ */
+static ec_error_t op_bounce(rxparam &par, const rule_node &rule,
+    const uint32_t *code) try
+{
+	if (code == nullptr)
+		return ecSuccess;
+	const char *type = nullptr;
+	switch (*code) {
+	case BOUNCE_CODE_MESSAGE_TOO_LARGE:
+		type = "BOUNCE_MAIL_TOO_LARGE";
+		break;
+	case BOUNCE_CODE_MESSAGE_NOT_DISPLAYED:
+		type = "BOUNCE_CANNOT_DISPLAY";
+		break;
+	case BOUNCE_CODE_MESSAGE_DENIED:
+		type = "BOUNCE_GENERIC_ERROR";
+		break;
+	default:
+		mlog(LV_WARN, "ruleproc: %s: OP_BOUNCE with unknown code %xh",
+			par.orig_dir.c_str(), *code);
+		rx_rule_error(par, rule, RULE_ERROR_PARSING, true);
+		return ecSuccess;
+	}
+	par.del = true;
+	if (strcasecmp(par.ev_from, ENVELOPE_FROM_NULL) == 0)
+		return ecSuccess;
+	auto &props = par.ctnt->proplist;
+	auto suppress = props.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
+	if (suppress != nullptr && *suppress & AUTO_RESPONSE_SUPPRESS_NDR)
+		return ecSuccess;
+	auto domain = strchr(par.ev_to, '@');
+	if (domain == nullptr)
+		return ecSuccess;
+	auto eml = par.get_eml();
+	if (eml == nullptr) {
+		mlog(LV_ERR, "ruleproc: %s: OP_BOUNCE: no stored RFC 5322 file",
+			par.orig_dir.c_str());
+		return ecSuccess;
+	}
+	MAIL orig, ndr;
+	if (!orig.refonly_parse(eml->c_str(), eml->size()))
+		return ecError;
+	auto dtime = props.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
+	auto arrival = dtime != nullptr ? rop_util_nttime_to_unix(*dtime) : time(nullptr);
+	if (!exml_bouncer_make(get_host_ID(), par.ev_from, par.ev_to, &orig,
+	    arrival, type, &ndr)) {
+		mlog(LV_ERR, "ruleproc: %s: OP_BOUNCE: no report for %s",
+			par.orig_dir.c_str(), type);
+		return ecSuccess;
+	}
+	auto sender = props.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	const std::vector<std::string> rcpt_list = {sender != nullptr ? sender : par.ev_from};
+	auto env_from = std::string("postmaster") + domain;
+	auto ret = cu_send_mail(ndr, rp_smtp_url.c_str(), env_from.c_str(), rcpt_list);
+	if (ret != ecSuccess)
+		mlog(LV_ERR, "ruleproc: OP_BOUNCE cu_send_mail: %s", mapi_strerror(ret));
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
+}
+
 static ec_error_t op_switch(rxparam &par, const rule_node &rule,
     const ACTION_BLOCK &act, size_t act_idx)
 {
@@ -1746,6 +1811,8 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 		return op_reply(par, rule, act);
 	case OP_DELEGATE:
 		return op_delegate(par, rule, static_cast<const FORWARDDELEGATE_ACTION *>(act.pdata));
+	case OP_BOUNCE:
+		return op_bounce(par, rule, static_cast<const uint32_t *>(act.pdata));
 	default:
 		return ecSuccess;
 	}
@@ -1929,6 +1996,8 @@ static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
 	case OP_DELETE:
 		par.del = true;
 		return ecSuccess;
+	case OP_BOUNCE:
+		return op_bounce(par, rule, static_cast<const uint32_t *>(act.pdata));
 	default:
 		return ecSuccess;
 	}

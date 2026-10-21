@@ -30,6 +30,8 @@ Enhancements:
 * ruleproc: Out of Office reply rules with ST_KEEP_OOF_HIST now answer each
   sender only once per Out of Office period in the TwoStep processor. A
   change of the Out of Office settings starts a new period.
+* ruleproc: the TwoStep processor now supports OP_BOUNCE. The sender gets a
+  non-delivery report and the message is not kept.
 
 Fixes:
 
