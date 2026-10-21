@@ -5354,6 +5354,22 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 }
 
 /**
+ * @brief      Rights of a calendar permission level
+ *
+ * Calendar levels that can read items can also read free/busy data, as in
+ * Exchange and Outlook.
+ */
+static uint32_t calendarProfile(size_t index)
+{
+	uint32_t rights = tBasePermission::profileTable[index];
+	if (rights & frightsReadAny)
+		rights |= frightsFreeBusySimple | frightsFreeBusyDetailed;
+	else if (rights & frightsFreeBusyDetailed)
+		rights |= frightsFreeBusySimple;
+	return rights;
+}
+
+/**
  * @brief      Create permission from properties
  *
  * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
@@ -5367,13 +5383,17 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
 	if (!rights)
 		rights = &uint_value_zero;
 	ReadItems.emplace(*rights & frightsReadAny ? Enum::FullDetails :
-	                  *rights & frightsFreeBusyDetailed ? Enum::FreeBusyTimeAndSubjectAndLocation :
-	                  *rights & frightsFreeBusySimple ? Enum::TimeOnly :Enum::None);
-	auto index = ct_index(profileTable, *rights);
-	if (index < calendarProfiles)
-		CalendarPermissionLevel = static_cast<uint8_t>(index);
-	else
-		CalendarPermissionLevel = Enum::Custom;
+	                  *rights & frightsFreeBusyDetailed ? Enum::TimeAndSubjectAndLocation :
+	                  *rights & frightsFreeBusySimple ? Enum::TimeOnly : Enum::None);
+	CalendarPermissionLevel = Enum::Custom;
+	for (size_t i = 0; i < calendarProfiles; ++i) {
+		/* The free/busy levels may come with a visible folder */
+		auto masked = i >= profiles ? *rights & ~frightsVisible : *rights;
+		if (*rights == profileTable[i] || masked == calendarProfile(i)) {
+			CalendarPermissionLevel = static_cast<uint8_t>(i);
+			break;
+		}
+	}
 }
 
 
@@ -5384,10 +5404,13 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
  */
 PERMISSION_DATA tCalendarPermission::write() const
 {
+	static constexpr uint32_t fb = frightsFreeBusySimple | frightsFreeBusyDetailed;
 	uint32_t rights = CalendarPermissionLevel == Enum::Custom ?
-	                  0 : profileTable[CalendarPermissionLevel.index()];
+	                  0 : calendarProfile(CalendarPermissionLevel.index());
 	if (ReadItems)
-		rights |= *ReadItems == Enum::FullDetails ? frightsReadAny : 0;
+		rights |= *ReadItems == Enum::FullDetails ? frightsReadAny | fb :
+		          *ReadItems == Enum::TimeAndSubjectAndLocation ? fb :
+		          *ReadItems == Enum::TimeOnly ? frightsFreeBusySimple : 0;
 	return tBasePermission::write(rights);
 }
 

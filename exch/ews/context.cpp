@@ -1725,11 +1725,12 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
  *
  * @return     Property table containing `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and `PR_SMTP_ADDRESS` tags
  */
-TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid) const
+TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid, bool freebusy) const
 {
 	uint32_t tableId, rowCount;
 	const auto& exmdb = m_plugin.exmdb;
-	if (!exmdb.load_permission_table(dir.c_str(), fid, 0, &tableId, &rowCount))
+	uint32_t flags = freebusy ? PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY : 0;
+	if (!exmdb.load_permission_table(dir.c_str(), fid, flags, &tableId, &rowCount))
 		throw EWSError::ItemCorrupt(E3283);
 	auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 	static constexpr proptag_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
@@ -1769,7 +1770,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fId, tCalendarFold
 {
 	loadSpecial(dir, fId, static_cast<tBaseFolderType&>(folder), special);
 	if (special & sShape::Permissions)
-		folder.PermissionSet.emplace(loadPermissions(dir, fId));
+		folder.PermissionSet.emplace(loadPermissions(dir, fId, true));
 }
 
 /**
