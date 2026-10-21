@@ -5490,11 +5490,17 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess)
 		throw EWSError::NotEnoughMemory(E3408);
 	/* The owner organizes and the caller sends */
-	for (const auto &prop : meetingIdentity(dir))
+	auto ident = meetingIdentity(dir);
+	for (const auto &prop : ident)
 		if (props.set(prop) != ecSuccess)
 			throw EWSError::NotEnoughMemory(E3408);
 	props.erase(PR_SENDER_SEARCH_KEY);
 	props.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
+	/* RFC 5546 §3.2.2: every VEVENT of the REQUEST needs these */
+	ident.push_back({PROP_TAG(PT_LONG, ids[0]), &seq});
+	ident.push_back({PROP_TAG(PT_SYSTIME, ids[1]), &now});
+	if (!stamp_exceptions(*req, ident))
+		throw EWSError::NotEnoughMemory(E3408);
 	send(dir, mid, *req);
 	if (!saveCopy)
 		return;
