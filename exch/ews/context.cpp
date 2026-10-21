@@ -5053,6 +5053,37 @@ void EWSContext::sendInstance(const std::string &dir,
 }
 
 /**
+ * @brief      Stamp properties on the exceptions of a series message
+ *
+ * oxcical exports each exception as its own VEVENT and takes ORGANIZER,
+ * DTSTAMP and SEQUENCE from the exception message, which UpdateItem
+ * creates without them.
+ *
+ * @param      msg     Duplicated series message
+ * @param      props   Properties to set
+ *
+ * @return     false if memory ran out
+ */
+static bool stamp_exceptions(MESSAGE_CONTENT &msg,
+    const std::vector<TAGGED_PROPVAL> &props)
+{
+	if (msg.children.pattachments == nullptr)
+		return true;
+	for (auto &at : *msg.children.pattachments) {
+		if (at.pembedded == nullptr)
+			continue;
+		auto cls = at.pembedded->proplist.get<const char>(PR_MESSAGE_CLASS);
+		if (cls == nullptr ||
+		    class_match_prefix(cls, IPM_Appointment_Exception) != 0)
+			continue;
+		for (const auto &p : props)
+			if (at.pembedded->proplist.set(p) != ecSuccess)
+				return false;
+	}
+	return true;
+}
+
+/**
  * @brief      Send meeting cancellation to attendees
  *
  * Reads the calendar item, stamps it as a cancellation, and
@@ -5098,6 +5129,10 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	auto crit_tag = PROP_TAG(PT_SYSTIME, ids[1]);
 	auto now = rop_util_current_nttime();
 	uint32_t newseq = nextSequence(dir, parent, meid.messageId(), true, now);
+	/* RFC 5546 §3.2.5: every VEVENT of the CANCEL needs these */
+	auto excProps = ident;
+	excProps.push_back({seq_tag, &newseq});
+	excProps.push_back({crit_tag, &now});
 	if (saveCopy) {
 		sFolderSpec sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 		uint64_t newMid = 0;
@@ -5127,7 +5162,11 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		if (!exmdb.read_message(dir.c_str(), sentuser, CP_ACP, newMid,
 		    &sentcontent) || sentcontent == nullptr)
 			throw EWSError::ItemNotFound(E3390);
-		send(dir, meid.messageId(), *sentcontent);
+		message_content_ptr outcontent(sentcontent->dup());
+		if (!outcontent ||
+		    !stamp_exceptions(*outcontent, excProps))
+			throw EWSError::NotEnoughMemory(E3407);
+		send(dir, meid.messageId(), *outcontent);
 	} else {
 		message_content_ptr dupcontent(cancelcontent->dup());
 		if (!dupcontent)
@@ -5145,6 +5184,8 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 				throw EWSError::NotEnoughMemory(E3407);
 		for (auto tag : staleKeys)
 			props.erase(tag);
+		if (!stamp_exceptions(*dupcontent, excProps))
+			throw EWSError::NotEnoughMemory(E3407);
 		send(dir, meid.messageId(), *dupcontent);
 	}
 }
