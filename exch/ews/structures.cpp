@@ -3848,6 +3848,8 @@ void tRestriction::widen_addr(RESTRICTION &dst, const tinyxml2::XMLElement *src)
 		const char *uri;
 		proptag_t smtp, type, addr;
 	} fields[] = {
+		{"calendar:Organizer", PR_SENDER_SMTP_ADDRESS,
+		 PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS},
 		{"message:From", PR_SENT_REPRESENTING_SMTP_ADDRESS,
 		 PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS},
 		{"message:Sender", PR_SENDER_SMTP_ADDRESS,
