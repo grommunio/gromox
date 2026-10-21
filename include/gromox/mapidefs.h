@@ -1590,6 +1590,16 @@ enum { /* for PidLidAppointmentStateFlags */
 	asfCanceled = 0x4U,
 };
 
+enum { /* for PidLidServerProcessingActions, MS-OXOCAL v22.1 §2.2.5.5 */
+	cpsDelegatorWantsCopy  = 0x2U,
+	cpsCreatedOnPrincipal  = 0x10U,
+	cpsUpdatedCalItem      = 0x80U,
+	cpsCopiedOldProperties = 0x100U,
+	cpsSendAutoResponse    = 0x400U,
+	cpsRevivedException    = 0x800U,
+	cpsProcessedMeetingForwardNotification = 0x1000U,
+};
+
 enum { /* for PidLidResponseStatus */
 	respNone = 0,
 	respOrganized,

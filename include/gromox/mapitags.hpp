@@ -1220,6 +1220,8 @@ enum {
 	PidLidClassificationDescription = 0x85B7,
 	PidLidClassificationGuid = 0x85B8,
 	PidLidClassificationKeep = 0x85BA,
+	PidLidServerProcessed = 0x85CC,
+	PidLidServerProcessingActions = 0x85CD,
 	PidLidCommon85D8 = 0x85D8, /* undocumented */
 	PROP_ID_INVALID = 0xFFFF,
 };

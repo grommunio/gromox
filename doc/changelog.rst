@@ -62,6 +62,9 @@ Fixes:
   program instead of always /etc/gromox.
 * email_lib: embedded message/rfc822 parts are no longer serialized empty, so
   rules that forward as attachment send the original message again.
+* ruleproc: with meeting autoprocessing, meeting messages that a delegate rule
+  hands to the delegates only now still update the principal's calendar, and
+  the delegates' copies are flagged as processed.
 
 
 Gromox 3.13 (2026-10-28)

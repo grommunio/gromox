@@ -123,6 +123,8 @@ struct mr_policy {
  *                Unlike EXC, we won't recurse into other mailbox's rules.
  * @exit:         Flag for op_process to stop early.
  * @del:          Message should be deleted at end of processing.
+ * @dlg_copies:   Copies handed to delegates by OP_DELEGATE.
+ * @cal_changed:  Meeting processing updated the calendar.
  */
 struct rxparam {
 	/**
@@ -140,6 +142,7 @@ struct rxparam {
 	const std::string *get_eml();
 	void make_dams();
 	void notify();
+	void stamp_dlg_copies() const;
 
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
@@ -148,10 +151,11 @@ struct rxparam {
 	eid_t orig_fid = 0; /* rule folder */
 	std::string orig_midstr, eml; /* stored RFC 5322 form of the message */
 	std::vector<dam_entry> dams; /* client-side actions */
+	std::vector<message_node> dlg_copies;
 	bool eml_loaded = false;
 	unsigned int m_flags = ~0U;
 	uint32_t act_type = 0, act_idx = 0; /* action being run, for DEMs */
-	bool del = false, exit = false;
+	bool del = false, exit = false, cal_changed = false;
 };
 
 }
@@ -1622,6 +1626,8 @@ ec_error_t rxparam::delegate_to(const char *addr) try
 	if (err != ecSuccess)
 		mlog(LV_ERR, "ruleproc: %s: rules of delegate %s: %s",
 			mbox, addr, mapi_strerror(err));
+	if (!dlg.del)
+		dlg_copies.emplace_back(dlg.cur);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
@@ -1838,6 +1844,8 @@ static const char *mr_get_class(const TPROPVAL_ARRAY &p)
  */
 static ec_error_t mr_mark_done(rxparam &par, bool set_read = true)
 {
+	if (par.del)
+		return ecSuccess; /* deleted by a rule, do not write it back */
 	auto &prop = par.ctnt->proplist;
 	cu_remove_propval(prop, PR_CHANGE_KEY); /* assign new CK upon write */
 	cu_remove_propval(prop, PidTagChangeNumber);
@@ -1900,6 +1908,8 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	if (!exmdb_client->write_message(par.cur.dir.c_str(), CP_ACP,
 	    cal_fid, msg.get(), std::string(), &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
+	if (err == ecSuccess)
+		par.cal_changed = true;
 	return err;
 }
 
@@ -2211,6 +2221,8 @@ static ec_error_t mr_rewrite_cal_item(rxparam &par, eid_t cal_fid,
 	if (!exmdb_client->write_message(par.cur.dirc(), CP_ACP,
 	    cal_fid, &cal_ctnt, {}, &out_mid, &out_cn, &err))
 		return ecRpcFailed;
+	if (err == ecSuccess)
+		par.cal_changed = true;
 	return err;
 }
 
@@ -3054,6 +3066,7 @@ static ec_error_t mr_do_cancel(rxparam &par, const PROPID_ARRAY &propids,
 			if (!exmdb_client->delete_messages(par.cur.dirc(),
 			    CP_ACP, nullptr, cal_fid, &ids, true /* hard */, &partial))
 				return ecRpcFailed;
+			par.cal_changed = true;
 			return mr_mark_done(par);
 		}
 		for (const auto &e : items) {
@@ -3095,6 +3108,7 @@ static ec_error_t mr_do_cancel(rxparam &par, const PROPID_ARRAY &propids,
 		if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
 		    nullptr, cal_fid, &ids, true /* hard */, &partial))
 			return ecRpcFailed;
+		par.cal_changed = true;
 	}
 
 	/* Punch the instance out of the recurring master */
@@ -3259,7 +3273,13 @@ ec_error_t rxparam::run()
 	ec_error_t ret = ecSuccess;
 	if (m_flags & DELIVERY_DO_RULES_CL)
 		ret = run_rules();
-	if (del)
+	/*
+	 * A message the rules deleted is still processed for the calendar
+	 * when delegates got a copy, as with "send meeting requests to my
+	 * delegates only": the delegates act on the calendar of this mailbox,
+	 * see MS-OXOCAL v22.1 §3.1.5.1.
+	 */
+	if (del && dlg_copies.empty())
 		/* Message is gone, nothing left to process or announce */
 		return ret;
 
@@ -3273,14 +3293,57 @@ ec_error_t rxparam::run()
 			err = mr_get_policy(ev_to, res_policy);
 		if (err == ecSuccess)
 			err = mr_start(*this, res_policy);
+		if (err == ecSuccess && cal_changed)
+			stamp_dlg_copies();
 		if (ret == ecSuccess)
 			ret = err;
 	}
+	if (del)
+		return ret;
 
 	/* The message is committed, so always announce it */
 	if (m_flags & DELIVERY_DO_NOTIF_CL)
 		notify();
 	return ret;
+}
+
+/**
+ * Tell the delegates' copies that the calendar of this mailbox has been
+ * updated for them already, so that their clients may skip doing it
+ * again, see MS-OXOCAL v22.1 §3.1.4.7.2.1 and §3.1.4.9.2.1.
+ */
+void rxparam::stamp_dlg_copies() const try
+{
+	if (dlg_copies.empty() || ctnt == nullptr)
+		return;
+	uint32_t actions = cpsUpdatedCalItem;
+	if (class_match_prefix(mr_get_class(ctnt->proplist),
+	    "IPM.Schedule.Meeting.Request") == 0)
+		actions |= cpsCreatedOnPrincipal;
+	const PROPERTY_NAME names[] = {
+		{MNID_ID, PSETID_CalendarAssistant, PidLidServerProcessed},
+		{MNID_ID, PSETID_CalendarAssistant, PidLidServerProcessingActions},
+	};
+	const PROPNAME_ARRAY pna = {std::size(names), deconst(names)};
+	for (const auto &c : dlg_copies) {
+		PROPID_ARRAY ids;
+		if (!exmdb_client->get_named_propids(c.dirc(), TRUE, &pna, &ids) ||
+		    ids.size() != pna.size() || ids[0] == 0 || ids[1] == 0) {
+			mlog(LV_ERR, "ruleproc: %s: cannot map named properties", c.dirc());
+			continue;
+		}
+		const TAGGED_PROPVAL pv[] = {
+			{PROP_TAG(PT_BOOLEAN, ids[0]), deconst(&byte_value_one)},
+			{PROP_TAG(PT_LONG, ids[1]), &actions},
+		};
+		const TPROPVAL_ARRAY pva = {std::size(pv), deconst(pv)};
+		PROBLEM_ARRAY problems{};
+		if (!exmdb_client->set_message_properties(c.dirc(), nullptr,
+		    CP_ACP, c.mid, &pva, &problems))
+			mlog(LV_ERR, "ruleproc: %s: cannot flag the delegate copy", c.dirc());
+	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "ruleproc: %s: ENOMEM", __func__);
 }
 
 /**
