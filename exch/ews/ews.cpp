@@ -1097,7 +1097,7 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(cons
 		throw Exceptions::EWSError::ItemNotFound(Exceptions::E3078);
 	auto instance = std::make_shared<ExmdbInstance>(*this, dir,
 	                instanceId, std::move(messageInstance));
-	cache.emplace(cache_message_instance_lifetime, akey, instance);
+	cache.emplace(cache_attachment_instance_lifetime, akey, instance);
 	return instance;
 }
 
