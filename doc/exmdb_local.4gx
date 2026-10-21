@@ -46,6 +46,10 @@ rule errors instead of failing the delivery. Its differences are:
 .IP \(bu 4
 After a move, the rules of the target folder are not evaluated.
 .IP \(bu 4
+SMS alert forwards (FWD_AS_SMS_ALERT) are sent as a short text mail to the
+e-mail recipients of the rule. There is no SMS gateway, so recipients with a
+mobile number get nothing and the rule reports a deferred error message.
+.IP \(bu 4
 Clients may briefly see a message in the Inbox before a rule moves or
 deletes it.
 .IP \(bu 4

@@ -13,6 +13,12 @@
 #include <libHX/string.h>
 #include <fmt/core.h>
 #include <json/value.h>
+#include <vmime/addressList.hpp>
+#include <vmime/headerFieldFactory.hpp>
+#include <vmime/dateTime.hpp>
+#include <vmime/mailbox.hpp>
+#include <vmime/message.hpp>
+#include <vmime/stringContentHandler.hpp>
 #include <vmime/utility/url.hpp>
 #include <gromox/algorithm.hpp>
 #include <gromox/bounce_gen.hpp>
@@ -1197,6 +1203,107 @@ static ec_error_t op_read(rxparam &par, const rule_node &rule)
 	return ecSuccess;
 }
 
+/*
+ * Whether a forward by a rule already reached @rcpt. Forwards and alerts name
+ * their recipients in Delivered-To, which stops forwarding loops.
+ */
+static bool rx_delivered_before(const MIME &head, const char *rcpt)
+{
+	auto num = head.get_field_num("Delivered-To");
+	for (int i = 0; i < num; ++i) {
+		std::string dvto;
+		if (head.search_field("Delivered-To", i, dvto) &&
+		    strcasecmp(dvto.c_str(), rcpt) == 0)
+			return true;
+	}
+	return false;
+}
+
+/**
+ * FWD_AS_SMS_ALERT, MS-OXORULE v23.0 §2.2.5.1.1. There is no SMS gateway, so
+ * the alert goes out as a short text mail to the e-mail recipients of the
+ * rule. MOBILE recipients cannot be reached, a DEM reports that.
+ */
+static ec_error_t op_sms_alert(rxparam &par, const rule_node &rule,
+    const FORWARDDELEGATE_ACTION &blk) try
+{
+	std::vector<std::string> rcpt_list;
+	bool mobile = false;
+	for (const auto &rcptprops : blk) {
+		TPROPVAL_ARRAY pv;
+		pv.count = rcptprops.count;
+		pv.ppropval = rcptprops.ppropval;
+		auto atype = pv.get<const char>(PR_ADDRTYPE);
+		if (atype != nullptr && strcasecmp(atype, "MOBILE") == 0) {
+			mobile = true;
+			continue;
+		}
+		if (cu_rcpt_to_list(std::move(pv), rp_org_name.c_str(),
+		    rcpt_list, mysql_adaptor_userid_to_name, false) != ecSuccess)
+			return ecError;
+	}
+	if (mobile) {
+		mlog(LV_NOTICE, "ruleproc: %s: SMS alert to a mobile number not sent, "
+			"no SMS gateway", par.orig_dir.c_str());
+		rx_rule_error(par, rule, RULE_ERROR_DELIVERY, false);
+	}
+	if (rcpt_list.empty())
+		return ecSuccess;
+	if (auto eml = par.get_eml(); eml != nullptr) {
+		MAIL imail;
+		if (imail.refonly_parse(eml->c_str(), eml->size()) &&
+		    imail.get_head() != nullptr &&
+		    rx_delivered_before(*imail.get_head(), par.ev_to)) {
+			mlog(LV_DEBUG, "ruleproc: %s: SMS alert skipped, "
+				"message was already delivered to %s",
+				par.orig_dir.c_str(), par.ev_to);
+			return ecSuccess;
+		}
+	}
+
+	auto &props = par.ctnt->proplist;
+	std::string sender = znul(props.get<const char>(PR_SENT_REPRESENTING_NAME));
+	auto saddr = props.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (saddr == nullptr)
+		saddr = par.ev_from;
+	if (sender.empty() || strcasecmp(sender.c_str(), saddr) == 0)
+		sender = saddr;
+	else
+		sender = sender + " <" + saddr + ">";
+	std::string subject = znul(props.get<const char>(PR_SUBJECT));
+	std::string body = znul(props.get<const char>(PR_BODY));
+	/* The length of one SMS */
+	utf8_truncate(body.data(), 160);
+	body.resize(strlen(body.c_str()));
+	body = "From: " + sender + "\r\nSubject: " + subject + "\r\n\r\n" + body;
+
+	auto msg = vmime::make_shared<vmime::message>();
+	auto hdr = msg->getHeader();
+	hdr->getField("MIME-Version")->setValue("1.0");
+	hdr->From()->setValue(vmime::mailbox(par.ev_to));
+	vmime::addressList to;
+	for (const auto &r : rcpt_list)
+		to.appendAddress(vmime::make_shared<vmime::mailbox>(r));
+	hdr->To()->setValue(to);
+	hdr->Subject()->setValue(vmime::text(subject, vmime::charsets::UTF_8));
+	hdr->Date()->setValue(vmime::datetime::now());
+	hdr->getField("Auto-Submitted")->setValue("auto-generated");
+	hdr->getField("X-Auto-Response-Suppress")->setValue("All");
+	for (const auto &r : rcpt_list)
+		hdr->appendField(vmime::headerFieldFactory::getInstance()->create("Delivered-To", r));
+	vmime::encoding enc;
+	enc.setUsage(vmime::encoding::EncodingUsage::USAGE_TEXT);
+	msg->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(body), std::move(enc)),
+		vmime::mediaType(vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_PLAIN),
+		vmime::charsets::UTF_8);
+	auto ret = cu_send_vmail(std::move(msg), rp_smtp_url.c_str(), par.ev_to, rcpt_list);
+	if (ret != ecSuccess)
+		mlog(LV_ERR, "ruleproc: SMS alert cu_send_vmail: %s", mapi_strerror(ret));
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
+}
+
 static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
     const FORWARDDELEGATE_ACTION &blk, uint32_t flavor) try
 {
@@ -1204,6 +1311,8 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 		rx_rule_error(par, rule, RULE_ERROR_TOO_MANY_RCPTS, true);
 		return ecSuccess;
 	}
+	if (flavor & FWD_AS_SMS_ALERT)
+		return op_sms_alert(par, rule, blk);
 	std::vector<std::string> rcpt_list;
 	for (const auto &rcptprops : blk) {
 		TPROPVAL_ARRAY pv;
@@ -1228,16 +1337,11 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 		auto head = imail.get_head();
 		if (head == nullptr)
 			return ecError;
-		auto num = head->get_field_num("Delivered-To");
-		for (int i = 0; i < num; ++i) {
-			std::string dvto;
-			if (head->search_field("Delivered-To", i, dvto) &&
-			    strcasecmp(dvto.c_str(), par.ev_to) == 0) {
-				mlog(LV_DEBUG, "ruleproc: %s: OP_FORWARD skipped, "
-					"message was already delivered to %s",
-					par.orig_dir.c_str(), par.ev_to);
-				return ecSuccess;
-			}
+		if (rx_delivered_before(*head, par.ev_to)) {
+			mlog(LV_DEBUG, "ruleproc: %s: OP_FORWARD skipped, "
+				"message was already delivered to %s",
+				par.orig_dir.c_str(), par.ev_to);
+			return ecSuccess;
 		}
 	} else {
 		auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +

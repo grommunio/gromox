@@ -32,6 +32,10 @@ Enhancements:
   change of the Out of Office settings starts a new period.
 * ruleproc: the TwoStep processor now supports OP_BOUNCE. The sender gets a
   non-delivery report and the message is not kept.
+* ruleproc: forwards flagged FWD_AS_SMS_ALERT are now sent by the TwoStep
+  processor as a short text mail with sender, subject and the start of the
+  body, instead of a copy of the whole message. Mobile numbers cannot be
+  reached and get a deferred error message.
 
 Fixes:
 
