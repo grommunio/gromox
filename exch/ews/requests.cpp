@@ -1340,6 +1340,24 @@ static bool is_message_like(const sCreateItem &item)
 }
 
 /*
+ * Exchange keeps a SaveOnly message as a draft until it is sent. Importers
+ * opt out by setting PR_MESSAGE_FLAGS themselves.
+ */
+static bool client_sets_msgflags(const sCreateItem &item)
+{
+	auto &base = std::visit([](const auto &i) -> const tItem & {
+		if constexpr (std::is_base_of_v<tItem, std::decay_t<decltype(i)>>)
+			return i;
+		else
+			return i.Message;
+	}, item);
+	return base.IsDraft || std::any_of(base.ExtendedProperty.begin(),
+	       base.ExtendedProperty.end(), [](const tExtendedProperty &p) {
+	       	return p.propval.proptag == PR_MESSAGE_FLAGS;
+	       });
+}
+
+/*
  * Folder for CreateItem when no SavedItemFolderId is given. Exchange keeps
  * the copy of a sent message in Sent Items and an unsent one in Drafts.
  * Calendar items, contacts and tasks go to their own default folder.
@@ -1418,6 +1436,15 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		bool persist = !(isMessageLike && request.MessageDisposition == Enum::SendOnly);
 
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
+
+		if (isMessageLike &&
+		    request.MessageDisposition == Enum::SaveOnly &&
+		    !client_sets_msgflags(item)) {
+			auto flags = content->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
+			uint32_t newFlags = (flags != nullptr ? *flags : 0) | MSGFLAG_UNSENT;
+			if (content->proplist.set(PR_MESSAGE_FLAGS, &newFlags) == ecServerOOM)
+				throw EWSError::NotEnoughMemory(E3358);
+		}
 
 		if (isMessageLike &&
 		    request.MessageDisposition == Enum::SaveOnly &&
