@@ -24,6 +24,9 @@ Enhancements:
   (reply templates, Out of Office assistant rules).
 * ruleproc: the TwoStep processor now supports OP_DELEGATE, so delegates
   receive meeting messages.
+* ruleproc: meeting autoprocessing now marks a cancelled occurrence of a
+  recurring meeting as cancelled in attendee calendars, not only in resource
+  calendars.
 
 Fixes:
 

@@ -2234,8 +2234,7 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	 * GlobalObjectId with the instance date embedded, which by
 	 * construction never equals the series master's. Only resource
 	 * calendars are maintained server-side here; for user mailboxes,
-	 * blob surgery is left to the recipient's client, just as for a
-	 * single-occurrence cancellation.
+	 * blob surgery is left to the recipient's client.
 	 *
 	 * Entering the occurrence as a standalone item instead would
 	 * duplicate it: the recipient's client folds the update into the
@@ -2634,6 +2633,372 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	return ecServerOOM;
 }
 
+static constexpr char mr_cancel_prefix[] = "Canceled: ";
+
+static std::string mr_cancel_subject(const char *subj)
+{
+	std::string s = znul(subj);
+	if (strncasecmp(s.c_str(), mr_cancel_prefix, strlen(mr_cancel_prefix)) != 0)
+		s.insert(0, mr_cancel_prefix);
+	return s;
+}
+
+/**
+ * Flag the exception embedded message of a series as cancelled, like
+ * mr_cancel_cal_item does for a whole item.
+ */
+static ec_error_t mr_cancel_embedded(message_content &emb,
+    const PROPID_ARRAY &propids, const char *norm_subj)
+{
+	auto &props = emb.proplist;
+	auto flags_tag = PROP_TAG(PT_LONG, propids[l_appt_state_flags]);
+	auto oldfl = props.get<const uint32_t>(flags_tag);
+	uint32_t stateflags = (oldfl != nullptr ? *oldfl : asfMeeting | asfReceived) | asfCanceled;
+	static constexpr uint32_t v_free = olFree;
+	auto subj = props.get<const char>(PR_NORMALIZED_SUBJECT);
+	std::string ns = znul(subj != nullptr ? subj : norm_subj);
+	props.erase(PR_SUBJECT);
+	ec_error_t err;
+	if ((err = props.set(flags_tag, &stateflags)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_free)) != ecSuccess ||
+	    (err = props.set(PR_SUBJECT_PREFIX, mr_cancel_prefix)) != ecSuccess ||
+	    (err = props.set(PR_NORMALIZED_SUBJECT, ns.c_str())) != ecSuccess)
+		return err;
+	return ecSuccess;
+}
+
+/**
+ * Build the Exception Attachment object of MS-OXOCAL v22.1 §3.1.4.6.2 for
+ * an instance that has none yet, with the embedded message already flagged
+ * cancelled. The instance is described by its local-as-UTC rtimes
+ * @lstart/@lend and its UTC equivalents @ustart/@uend.
+ */
+static ec_error_t mr_make_exception(const message_content &master,
+    const PROPID_ARRAY &propids, const PROPID_ARRAY &xids,
+    uint32_t lstart, uint32_t lend, uint64_t ustart, uint64_t uend,
+    attachment_content *&out) try
+{
+	message_content_ptr emb(master.dup());
+	if (emb == nullptr)
+		return ecServerOOM;
+	emb->set_attachments_internal(nullptr);
+	auto &props = emb->proplist;
+	auto norm = props.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (norm == nullptr)
+		norm = props.get<const char>(PR_SUBJECT);
+	std::string ns = znul(norm);
+	static constexpr proptag_t rmprops[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+		PR_PARENT_SOURCE_KEY, PR_HASATTACH, PR_MESSAGE_SIZE,
+		PidTagMidString,
+	};
+	for (auto t : rmprops)
+		props.erase(t);
+	props.erase(PROP_TAG(PT_BINARY, propids[l_apptrecur]));
+	auto exrt_tag   = PROP_TAG(PT_SYSTIME, xids[0]);
+	auto cstart_tag = PROP_TAG(PT_SYSTIME, xids[1]);
+	auto cend_tag   = PROP_TAG(PT_SYSTIME, xids[2]);
+	static constexpr uint8_t v_false = false, v_true = true;
+	ec_error_t err;
+	if ((err = props.set(PR_MESSAGE_CLASS, IPM_Appointment_Exception)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_BOOLEAN, propids[l_recurring]), &v_false)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_BOOLEAN, propids[l_is_exception]), &v_true)) != ecSuccess ||
+	    (err = props.set(PR_START_DATE, &ustart)) != ecSuccess ||
+	    (err = props.set(PR_END_DATE, &uend)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_SYSTIME, propids[l_start_whole]), &ustart)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_SYSTIME, propids[l_end_whole]), &uend)) != ecSuccess ||
+	    (err = props.set(cstart_tag, &ustart)) != ecSuccess ||
+	    (err = props.set(cend_tag, &uend)) != ecSuccess ||
+	    (err = props.set(exrt_tag, &ustart)) != ecSuccess)
+		return err;
+	err = mr_cancel_embedded(*emb, propids, ns.c_str());
+	if (err != ecSuccess)
+		return err;
+
+	attachment_content_ptr at(attachment_content_init());
+	if (at == nullptr)
+		return ecServerOOM;
+	auto &ap = at->proplist;
+	static constexpr uint32_t v_method = ATTACH_EMBEDDED_MSG, v_afl = afException;
+	static constexpr uint32_t v_zero = 0, v_rpos = UINT32_MAX;
+	uint64_t xstart = rop_util_rtime_to_nttime(lstart);
+	uint64_t xend   = rop_util_rtime_to_nttime(lend);
+	BINARY v_enc{};
+	auto dispname = mr_cancel_subject(ns.c_str());
+	if ((err = ap.set(PR_ATTACH_METHOD, &v_method)) != ecSuccess ||
+	    (err = ap.set(PR_ATTACHMENT_FLAGS, &v_afl)) != ecSuccess ||
+	    (err = ap.set(PR_ATTACHMENT_HIDDEN, &v_true)) != ecSuccess ||
+	    (err = ap.set(PR_ATTACHMENT_LINKID, &v_zero)) != ecSuccess ||
+	    (err = ap.set(PR_ATTACH_FLAGS, &v_zero)) != ecSuccess ||
+	    (err = ap.set(PR_ATTACH_ENCODING, &v_enc)) != ecSuccess ||
+	    (err = ap.set(PR_RENDERING_POSITION, &v_rpos)) != ecSuccess ||
+	    (err = ap.set(PR_EXCEPTION_STARTTIME, &xstart)) != ecSuccess ||
+	    (err = ap.set(PR_EXCEPTION_ENDTIME, &xend)) != ecSuccess ||
+	    (err = ap.set(PR_DISPLAY_NAME, dispname.c_str())) != ecSuccess)
+		return err;
+	at->set_embedded_internal(emb.release());
+	out = at.release();
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+/**
+ * Mark one occurrence of a recurring master in an attendee's calendar as
+ * cancelled, as the EXC Calendar Attendant does: the occurrence becomes an
+ * exception, or keeps the one it already has, whose embedded message carries
+ * asfCanceled and the "Canceled:" prefix, and whose slot no longer counts as
+ * busy. An instance the user already deleted is not brought back, see
+ * MS-OXOCAL v22.1 §3.1.4.9.2.1.
+ *
+ * @cn_start/@cn_end: the cancellation's start and end in UTC, or nullptr
+ */
+static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids,
+    eid_t cal_fid, eid_t cal_mid, uint32_t basedate,
+    const uint64_t *cn_start, const uint64_t *cn_end) try
+{
+	message_content *cal_raw = nullptr;
+	if (!exmdb_client->read_message(par.cur.dirc(), nullptr, CP_ACP,
+	    cal_mid, &cal_raw) || cal_raw == nullptr)
+		return ecSuccess;
+	message_content_ptr cal_ctnt(cal_raw->dup());
+	if (cal_ctnt == nullptr)
+		return ecServerOOM;
+	auto &props = cal_ctnt->proplist;
+	auto recur_tag = PROP_TAG(PT_BINARY, propids[l_apptrecur]);
+	auto recur_bin = props.get<const BINARY>(recur_tag);
+	if (recur_bin == nullptr)
+		return ecSuccess;
+	EXT_PULL ep;
+	ep.init(recur_bin->pv, recur_bin->cb, nullptr, 0);
+	APPOINTMENT_RECUR_PAT apr{};
+	if (ep.g_apptrecpat(&apr) != pack_result::success ||
+	    apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
+		mlog(LV_WARN, "mr_cancel_occurrence: %s:m%llu: unparsable recurrence blob",
+			par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+		return ecSuccess;
+	}
+	auto &rp = apr.recur_pat;
+	auto day_eq = [](uint32_t a, uint32_t b) { return a / 1440 == b / 1440; };
+	auto exi = ct_index_if(apr.pexceptioninfo,
+	           [&](const EXCEPTIONINFO &e) { return day_eq(e.originalstartdate, basedate); });
+	bool have_exc = exi < apr.pexceptioninfo.size();
+	if (!have_exc && std::any_of(rp.pdeletedinstancedates.cbegin(),
+	    rp.pdeletedinstancedates.cend(),
+	    [&](uint32_t d) { return day_eq(d, basedate); }))
+		return ecSuccess;
+
+	const PROPERTY_NAME xnames[] = {
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
+		{MNID_ID, PSETID_Common, PidLidCommonStart},
+		{MNID_ID, PSETID_Common, PidLidCommonEnd},
+	};
+	const PROPNAME_ARRAY xna = {std::size(xnames), deconst(xnames)};
+	PROPID_ARRAY xids;
+	if (!exmdb_client->get_named_propids(par.cur.dirc(), TRUE, &xna, &xids) ||
+	    xids.size() != xna.size())
+		return ecRpcFailed;
+	for (auto id : xids)
+		if (id == 0)
+			return ecError;
+
+	/*
+	 * Local time minus UTC, in minutes, at the instance. The series time
+	 * zone gives it exactly. Without one, take it from the series start,
+	 * and for an instance that kept its slot, from the cancellation's
+	 * own start.
+	 */
+	int64_t off = 0, bias = 0;
+	int64_t lorig = static_cast<int64_t>(basedate) + apr.starttimeoffset;
+	auto tzbin = props.get<const BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
+	auto tzdef = tzbin != nullptr ? EXT_PULL::bin_to_tzdef(*tzbin) : std::nullopt;
+	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(lorig), bias)) {
+		off = -bias;
+	} else {
+		auto mstart = props.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
+		if (mstart == nullptr)
+			mstart = props.get<const uint64_t>(PR_START_DATE);
+		if (mstart != nullptr)
+			off = static_cast<int64_t>(rp.startdate) + apr.starttimeoffset -
+			      rop_util_nttime_to_rtime(*mstart);
+		if (cn_start != nullptr) {
+			int64_t o2 = lorig - rop_util_nttime_to_rtime(*cn_start);
+			if (std::abs(o2 - off) <= 120)
+				off = o2;
+		}
+	}
+
+	auto norm = props.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (norm == nullptr)
+		norm = props.get<const char>(PR_SUBJECT);
+	if (have_exc) {
+		auto &ei = apr.pexceptioninfo[exi];
+		auto &ee = apr.pextendedexception[exi];
+		auto subj = mr_cancel_subject(ei.overrideflags & ARO_SUBJECT ?
+		            ee.subject.c_str() : norm);
+		if (!(ei.overrideflags & (ARO_SUBJECT | ARO_LOCATION))) {
+			ee.startdatetime     = ei.startdatetime;
+			ee.enddatetime       = ei.enddatetime;
+			ee.originalstartdate = ei.originalstartdate;
+		}
+		ei.overrideflags |= ARO_SUBJECT | ARO_BUSYSTATUS;
+		ei.subject = ee.subject = std::move(subj);
+		ei.busystatus = olFree;
+		/*
+		 * Find the embedded message by PidLidExceptionReplaceTime of
+		 * MS-OXOCAL v22.1 §3.1.5.1, the one nearest the original
+		 * start and within half a day of it.
+		 */
+		auto exrt_tag = PROP_TAG(PT_SYSTIME, xids[0]);
+		int64_t uorig = lorig - off, best_d = 721;
+		message_content *best = nullptr;
+		if (cal_ctnt->children.pattachments != nullptr)
+			for (auto &at : *cal_ctnt->children.pattachments) {
+				if (at.pembedded == nullptr)
+					continue;
+				auto t = at.pembedded->proplist.get<const uint64_t>(exrt_tag);
+				if (t == nullptr)
+					continue;
+				int64_t d = std::abs(static_cast<int64_t>(rop_util_nttime_to_rtime(*t)) - uorig);
+				if (d < best_d) {
+					best_d = d;
+					best = at.pembedded;
+				}
+			}
+		if (best != nullptr) {
+			auto err = mr_cancel_embedded(*best, propids, norm);
+			if (err != ecSuccess)
+				return err;
+		} else {
+			mlog(LV_WARN, "mr_cancel_occurrence: %s:m%llu: no embedded "
+				"message for the exception, blob updated only",
+				par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+		}
+	} else {
+		uint32_t lstart = basedate + apr.starttimeoffset;
+		uint32_t lend   = basedate + apr.endtimeoffset;
+		uint64_t ustart = rop_util_rtime_to_nttime(lstart - off);
+		uint64_t uend   = rop_util_rtime_to_nttime(lend - off);
+		attachment_content *at = nullptr;
+		auto err = mr_make_exception(*cal_ctnt, propids, xids, lstart,
+		           lend, ustart, uend, at);
+		if (err != ecSuccess)
+			return err;
+		if (cal_ctnt->children.pattachments == nullptr) {
+			auto al = attachment_list_init();
+			if (al == nullptr) {
+				attachment_content_free(at);
+				return ecServerOOM;
+			}
+			cal_ctnt->set_attachments_internal(al);
+		}
+		if (!cal_ctnt->children.pattachments->append_internal(at)) {
+			attachment_content_free(at);
+			return ecServerOOM;
+		}
+		if (!rp.contains_del(basedate)) {
+			rp.pdeletedinstancedates.emplace_back(basedate);
+			rp.sort_dels();
+		}
+		if (!rp.contains_mod(basedate)) {
+			rp.pmodifiedinstancedates.emplace_back(basedate);
+			rp.sort_mods();
+		}
+		auto subj = mr_cancel_subject(norm);
+		auto &ei = apr.pexceptioninfo.emplace_back();
+		ei.startdatetime     = lstart;
+		ei.enddatetime       = lend;
+		ei.originalstartdate = basedate;
+		ei.overrideflags     = ARO_SUBJECT | ARO_BUSYSTATUS;
+		ei.subject           = subj;
+		ei.busystatus        = olFree;
+		auto &ee = apr.pextendedexception.emplace_back();
+		ee.startdatetime     = lstart;
+		ee.enddatetime       = lend;
+		ee.originalstartdate = basedate;
+		ee.subject           = std::move(subj);
+		apr.sort_exceptions();
+	}
+	EXT_PUSH epu;
+	if (!epu.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    epu.p_apptrecpat(apr) != pack_result::success)
+		return ecError;
+	BINARY new_bin;
+	new_bin.cb = epu.m_offset;
+	new_bin.pv = epu.m_udata;
+	auto err = props.set(recur_tag, &new_bin);
+	if (err != ecSuccess)
+		return err;
+	return mr_rewrite_cal_item(par, cal_fid, cal_mid, *cal_ctnt);
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+/**
+ * Single occurrence cancelled in a user mailbox. A standalone item entered
+ * for the instance is flagged like a cancelled meeting, and in the recurring
+ * master the instance becomes a cancelled exception.
+ */
+static ec_error_t mr_do_cancel_occ(rxparam &par, const PROPID_ARRAY &propids,
+    uint32_t basedate)
+{
+	auto &cn_prop  = par.ctnt->proplist;
+	eid_t cal_fid(1, PRIVATE_FID_CALENDAR);
+	auto goid_tag  = PROP_TAG(PT_BINARY, propids[l_goid]);
+	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
+	auto seq_tag   = PROP_TAG(PT_LONG, propids[l_appt_seq]);
+	auto goid      = cn_prop.get<const BINARY>(goid_tag);
+	auto cgoid     = cn_prop.get<const BINARY>(cgoid_tag);
+	auto seq       = cn_prop.get<const uint32_t>(seq_tag);
+	auto cn_start  = cn_prop.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
+	auto cn_end    = cn_prop.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_end_whole]));
+	if (cn_start == nullptr || cn_end == nullptr) {
+		cn_start = cn_prop.get<const uint64_t>(PR_START_DATE);
+		cn_end   = cn_prop.get<const uint64_t>(PR_END_DATE);
+	}
+
+	std::vector<mr_calitem> items;
+	auto err = mr_find_cal_items(par, goid_tag, goid, seq_tag, goid_tag, items);
+	if (err != ecSuccess)
+		return err;
+	uint32_t newest_seq = 0;
+	for (const auto &e : items)
+		newest_seq = std::max(newest_seq, e.seq);
+	if (seq != nullptr && *seq < newest_seq)
+		return ecSuccess;
+	bool found = false;
+	for (const auto &e : items) {
+		err = mr_cancel_cal_item(par, propids, cal_fid, e.mid);
+		if (err != ecSuccess)
+			return err;
+		found = true;
+	}
+	if (cgoid != nullptr && cgoid->cb != 0) {
+		std::vector<mr_calitem> masters;
+		err = mr_find_cal_items(par, cgoid_tag, cgoid, seq_tag,
+		      goid_tag, masters);
+		if (err != ecSuccess)
+			return err;
+		for (const auto &e : masters) {
+			if (e.dated)
+				continue;
+			/* Same staleness test as for resources in mr_do_cancel */
+			if (items.empty() && seq != nullptr && e.seq > *seq)
+				continue;
+			err = mr_cancel_occurrence(par, propids, cal_fid, e.mid,
+			      basedate, cn_start, cn_end);
+			if (err != ecSuccess)
+				return err;
+			found = true;
+		}
+	}
+	/* Nothing found: leave the cancellation to the client */
+	if (!found)
+		return ecSuccess;
+	return mr_mark_done(par, false);
+}
+
 /**
  * Process an incoming meeting cancellation. Resource mailboxes have their
  * booking dropped outright, like the EXC Resource Booking Attendant does;
@@ -2704,13 +3069,9 @@ static ec_error_t mr_do_cancel(rxparam &par, const PROPID_ARRAY &propids,
 		return mr_mark_done(par, false);
 	}
 
-	/*
-	 * Single occurrence cancelled. Only resource calendars are maintained
-	 * server-side here; for user mailboxes, blob surgery is left to the
-	 * recipient's client.
-	 */
+	/* Single occurrence cancelled */
 	if (!policy.is_resource())
-		return ecSuccess;
+		return mr_do_cancel_occ(par, propids, basedate);
 	/*
 	 * Drop any standalone item previously entered for this instance
 	 * (a single-occurrence update arrives with the same dated GOID).
