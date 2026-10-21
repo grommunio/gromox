@@ -84,8 +84,19 @@ address. When a (reverse) proxy is placed in front of gromox-http, the address
 gxhttp normally sees is the proxy address (e.g. ::1). If the proxy sets a
 custom header to convey the actual client address, Gromox can pick this up for
 its own reporting, which in turn is useful for e.g. fail2ban setups.
+gromox-http uses the header only from the peers in
+\fBhttp_remote_host_trusted\fP.
 .br
 Default: (empty)
+.TP
+\fBhttp_remote_host_trusted\fP
+A space-separated list of IPv6/IPv4 addresses. gromox-http uses
+\fBhttp_remote_host_hdr\fP only when the peer of the connection has one of
+these addresses. For a different peer, gromox-http ignores the header and
+reports the peer address. Address ranges are not supported. When the proxy is
+on a different host, add the address of the proxy.
+.br
+Default: \fI::1 127.0.0.1\fP
 .TP
 \fBistore_standalone\fP
 A bitmask controlling how the Information Store code should run as separate
