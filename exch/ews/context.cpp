@@ -4860,13 +4860,19 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 /**
  * @brief      Send a meeting response to the organizer
  *
- * Duplicates the original meeting request, stamps the responder's
- * identity on PR_SENDER_*, preserves PR_SENT_REPRESENTING_* as the
- * organizer, and sends.
+ * Gives the response the subject of the request and the organizer as
+ * recipient. To send, duplicates the original meeting request, stamps
+ * the responder's identity on PR_SENDER_*, preserves
+ * PR_SENT_REPRESENTING_* as the organizer, and sends.
+ *
+ * @param      responseRef  Meeting request or meeting responded to
+ * @param      respItem     Response to complete
+ * @param      doSend       Whether to send the response
  *
  * @return     false if no response was sent
  */
-bool EWSContext::sendMeetingResponse(const tItemId &responseRef, MESSAGE_CONTENT &respItem) const
+bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
+    MESSAGE_CONTENT &respItem, bool doSend) const
 {
 	std::optional<uint32_t> basedate;
 	if (responseRef.type == tItemId::ID_OCCURRENCE)
@@ -4886,8 +4892,31 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef, MESSAGE_CONTENT
 	auto orgSmtp = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (!orgSmtp)
 		orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
-	if ((wantResp != nullptr && *wantResp == 0) || orgSmtp == nullptr)
+	tEmailAddressType org;
+	if (orgSmtp != nullptr) {
+		org.EmailAddress = orgSmtp;
+		auto orgName = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
+		if (orgName)
+			org.Name = orgName;
+		org.RoutingType = "SMTP";
+	}
+
+	/* Subject and recipient for the saved copy or the draft */
+	auto subject = reqContent->proplist.get<const char>(PR_SUBJECT);
+	if (subject != nullptr && !respItem.proplist.has(PR_SUBJECT) &&
+	    respItem.proplist.set(PR_SUBJECT, subject) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3288);
+	if (orgSmtp != nullptr && (respItem.children.prcpts == nullptr ||
+	    respItem.children.prcpts->count == 0)) {
+		auto rcpts = tarray_set_init();
+		if (rcpts == nullptr)
+			throw EWSError::NotEnoughMemory(E3288);
+		respItem.set_rcpts_internal(rcpts);
+		org.mkRecipient(rcpts->emplace(), MAPI_TO);
+	}
+	if (!doSend || (wantResp != nullptr && *wantResp == 0) || orgSmtp == nullptr)
 		return false;
+
 	message_content_ptr content(reqContent->dup());
 	if (!content)
 		throw EWSError::NotEnoughMemory(E3288);
@@ -4920,26 +4949,7 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef, MESSAGE_CONTENT
 	content->children.prcpts = tarray_set_init();
 	if (!content->children.prcpts)
 		throw EWSError::NotEnoughMemory(E3406);
-	tEmailAddressType org;
-	org.EmailAddress = orgSmtp;
-	auto orgName = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
-	if (orgName)
-		org.Name = orgName;
-	org.RoutingType = "SMTP";
 	org.mkRecipient(content->children.prcpts->emplace(), MAPI_TO);
-
-	/* Let the saved copy show what is sent */
-	auto subject = content->proplist.get<const char>(PR_SUBJECT);
-	if (subject != nullptr && !respItem.proplist.has(PR_SUBJECT) &&
-	    respItem.proplist.set(PR_SUBJECT, subject) != ecSuccess)
-		throw EWSError::NotEnoughMemory(E3288);
-	if (respItem.children.prcpts == nullptr ||
-	    respItem.children.prcpts->count == 0) {
-		auto rcpts = content->children.prcpts->dup();
-		if (rcpts == nullptr)
-			throw EWSError::NotEnoughMemory(E3288);
-		respItem.set_rcpts_internal(rcpts);
-	}
 	/* The copy in Sent Items names the same sender as the mail */
 	for (auto tag : {PR_SENDER_NAME, PR_SENDER_ADDRTYPE,
 	     PR_SENDER_EMAIL_ADDRESS, PR_SENDER_SMTP_ADDRESS,
