@@ -53,6 +53,9 @@ deletes it.
 .IP \(bu 4
 Rules flagged ST_ONLY_WHEN_OOF are evaluated during Out of Office even
 without ST_ENABLED, as MS-OXORULE v23.0 section 2.2.1.3.1.3 describes.
+.IP \(bu 4
+ST_ONLY_WHEN_OOF_EX, which Exchange 2007 sets on Out of Office rules, is
+treated like ST_ONLY_WHEN_OOF.
 .PP
 The setting only affects mail delivered through this hook (LMTP/SMTP).
 gromox\-import(8) \-D (without \-\-twostep) and messages saved into public

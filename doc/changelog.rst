@@ -76,6 +76,8 @@ Fixes:
 * ruleproc: the TwoStep processor now runs at most
   ``exmdb_provider.cfg:max_ext_rule_number`` extended rules per folder, as the
   old processor does.
+* ruleproc: the TwoStep processor now treats rules flagged
+  ST_ONLY_WHEN_OOF_EX, as Exchange 2007 writes them, as Out of Office rules.
 
 
 Gromox 3.13 (2026-10-28)

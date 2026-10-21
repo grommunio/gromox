@@ -163,6 +163,11 @@ struct rxparam {
 unsigned int g_ruleproc_debug;
 static std::string rp_smtp_url, rp_org_name;
 static unsigned int rp_max_ext_rules = 20;
+/*
+ * Exchange 2007 marks Out of Office rules with ST_ONLY_WHEN_OOF_EX, with the
+ * same meaning as ST_ONLY_WHEN_OOF, MS-OXORULE v23.0 §2.2.1.3.1.3 note 1.
+ */
+static constexpr uint32_t rx_oof_only = ST_ONLY_WHEN_OOF | ST_ONLY_WHEN_OOF_EX;
 static thread_local alloc_context rp_alloc_ctx;
 static thread_local const char *rp_storedir;
 
@@ -422,7 +427,7 @@ ec_error_t rxparam::load_std_rules(bool oof,
 	uint32_t table_id = 0, row_count = 0;
 
 	RESTRICTION_BITMASK rst_1 = {BMR_NEZ, PR_RULE_STATE, ST_ENABLED};
-	RESTRICTION_BITMASK rst_2 = {BMR_NEZ, PR_RULE_STATE, oof ? ST_ONLY_WHEN_OOF : 0U};
+	RESTRICTION_BITMASK rst_2 = {BMR_NEZ, PR_RULE_STATE, oof ? rx_oof_only : 0U};
 	RESTRICTION rst_3[]       = {{RES_BITMASK, {&rst_1}}, {RES_BITMASK, {&rst_2}}};
 	RESTRICTION_AND_OR rst_4  = {std::size(rst_3), rst_3};
 
@@ -456,7 +461,7 @@ ec_error_t rxparam::load_std_rules(bool oof,
 			continue;
 		if (*state & (ST_ERROR | ST_PARSE_ERROR))
 			continue;
-		if (*state & ST_ONLY_WHEN_OOF && !oof)
+		if (*state & rx_oof_only && !oof)
 			continue;
 		rule_node rule;
 		rule.seq = *seq;
@@ -565,7 +570,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 	uint32_t table_id = 0, row_count = 0;
 
 	RESTRICTION_BITMASK rst_1 = {BMR_NEZ, PR_RULE_MSG_STATE, ST_ENABLED};
-	RESTRICTION_BITMASK rst_2 = {BMR_NEZ, PR_RULE_MSG_STATE, oof ? ST_ONLY_WHEN_OOF : 0U};
+	RESTRICTION_BITMASK rst_2 = {BMR_NEZ, PR_RULE_MSG_STATE, oof ? rx_oof_only : 0U};
 	RESTRICTION rst_3[2]      = {{RES_BITMASK, {&rst_1}}, {RES_BITMASK, {&rst_2}}};
 	RESTRICTION_AND_OR rst_4  = {std::size(rst_3), rst_3};
 
@@ -608,7 +613,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 			continue;
 		if (*state & (ST_ERROR | ST_PARSE_ERROR))
 			continue;
-		if (*state & ST_ONLY_WHEN_OOF && !oof)
+		if (*state & rx_oof_only && !oof)
 			continue;
 		if (loaded >= rp_max_ext_rules) {
 			mlog(LV_NOTICE, "ruleproc: %s: only the first %u extended rules are run",
@@ -1802,7 +1807,7 @@ static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
 
 static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 {
-	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
+	if (par.exit && !(rule.state & rx_oof_only))
 		return ecSuccess;
 	if (!rx_rule_matches(par, rule))
 		return ecSuccess;
