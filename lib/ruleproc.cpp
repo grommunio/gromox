@@ -1703,19 +1703,33 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 	}
 }
 
+/*
+ * A rule without a condition is skipped, as in the legacy processor. Clients
+ * that mean "all messages" store RES_EXIST(PR_MESSAGE_CLASS).
+ */
+static bool rx_rule_matches(const rxparam &par, const rule_node &rule)
+{
+	if (rule.cond == nullptr) {
+		if (g_ruleproc_debug)
+			mlog(LV_DEBUG, "ruleproc: %s: %srule %llxh has no condition, skipped",
+				par.orig_dir.c_str(), rule.extended ? "ext" : "",
+				static_cast<unsigned long long>(rule.rule_id));
+		return false;
+	}
+	auto matched = rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond);
+	if (g_ruleproc_debug)
+		mlog(LV_DEBUG, "Rule_Condition %s => %smatch",
+			rule.cond->repr().c_str(), matched ? "" : "no ");
+	return matched;
+}
+
 static ec_error_t op_process(rxparam &par, const rule_node &rule)
 {
 	/* WHEN_OOF rules already excluded during rule loading. */
 	if (par.exit /* && !(rule.state & ST_ONLY_WHEN_OOF) */)
 		return ecSuccess;
-	if (rule.cond != nullptr) {
-		auto matched = rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond);
-		if (g_ruleproc_debug)
-			mlog(LV_DEBUG, "Rule_Condition %s => %smatch",
-				rule.cond->repr().c_str(), matched ? "" : "no ");
-		if (!matched)
-			return ecSuccess;
-	}
+	if (!rx_rule_matches(par, rule))
+		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
 	if (rule.act == nullptr)
@@ -1782,14 +1796,8 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 {
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
-	if (rule.cond != nullptr) {
-		auto matched = rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond);
-		if (g_ruleproc_debug)
-			mlog(LV_DEBUG, "Rule_Condition %s => %smatch",
-				rule.cond->repr().c_str(), matched ? "" : "no ");
-		if (!matched)
-			return ecSuccess;
-	}
+	if (!rx_rule_matches(par, rule))
+		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
 	for (size_t i = 0; i < rule.xact.count; ++i) {

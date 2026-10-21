@@ -71,6 +71,8 @@ Fixes:
 * EWS: a delegate answering its copy of a meeting request now responds on
   behalf of the principal and updates the principal's calendar instead of its
   own.
+* ruleproc: rules without a condition no longer apply to every message in
+  the TwoStep processor and are skipped, as in the old processor.
 
 
 Gromox 3.13 (2026-10-28)
