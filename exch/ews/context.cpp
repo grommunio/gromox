@@ -4954,6 +4954,32 @@ void EWSContext::toInstance(const std::string &dir, uint32_t basedate,
 		    xe.location.c_str()) != ecSuccess)
 			throw EWSError::NotEnoughMemory(E3491);
 	}
+
+	/* The exception message carries the body of the occurrence */
+	auto xrt_tag = PROP_TAG(PT_SYSTIME, ids[l_replacetime]);
+	const MESSAGE_CONTENT *emb = nullptr;
+	if (exc != nullptr && msg.children.pattachments != nullptr)
+		for (const auto &at : *msg.children.pattachments) {
+			if (at.pembedded == nullptr)
+				continue;
+			auto xrt = at.pembedded->proplist.get<const uint64_t>(xrt_tag);
+			if (xrt != nullptr && s.replaces(basedate, *xrt)) {
+				emb = at.pembedded;
+				break;
+			}
+		}
+	static constexpr proptag_t body_tags[] =
+		{PR_BODY, PR_HTML, PR_RTF_COMPRESSED, PR_RTF_IN_SYNC};
+	if (emb != nullptr && (emb->proplist.has(PR_BODY) ||
+	    emb->proplist.has(PR_HTML) || emb->proplist.has(PR_RTF_COMPRESSED))) {
+		for (auto tag : body_tags)
+			props.erase(tag);
+		for (auto tag : body_tags) {
+			auto v = emb->proplist.getval(tag);
+			if (v != nullptr && props.set(tag, v) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3535);
+		}
+	}
 	props.erase(recur_tag);
 	props.erase(tzr_tag);
 	props.erase(PROP_TAG(PT_UNICODE, ids[l_pattern]));

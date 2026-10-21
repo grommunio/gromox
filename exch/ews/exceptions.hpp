@@ -648,6 +648,7 @@ E(3527, "cannot write to the folder of the item to suppress the read receipt for
 E(3530, "failed to set the sender identity");
 E(3531, "failed to remove a stale sender identity");
 E(3532, "failed to copy the message to submit");
+E(3535, "failed to copy the exception body");
 E(3540, "failed to write meeting request copy to Sent Items");
 E(3541, "failed to resolve meeting sequence properties");
 E(3542, "failed to store meeting sequence number");
