@@ -1068,6 +1068,31 @@ std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calend
 }
 
 /**
+ * @brief      Get the attachment numbers of a message instance
+ *
+ * They have gaps once an attachment was deleted from a cached instance.
+ *
+ * @return     false if the instance could not be read
+ */
+static bool attachment_nums(const EWSPlugin &plugin, const std::string &dir,
+    uint32_t inst, std::vector<uint32_t> &nums)
+{
+	static constexpr proptag_t tags[] = {PR_ATTACH_NUM};
+	TARRAY_SET rows{};
+	if (!plugin.exmdb.query_message_instance_attachment_table(dir.c_str(),
+	    inst, proptag_cspan{tags}, 0, INT32_MAX, &rows))
+		return false;
+	nums.clear();
+	nums.reserve(rows.count);
+	for (uint32_t i = 0; i < rows.count; ++i) {
+		auto num = rows.pparray[i]->get<const uint32_t>(PR_ATTACH_NUM);
+		if (num != nullptr)
+			nums.push_back(*num);
+	}
+	return true;
+}
+
+/**
  * @brief Check whether a GlobalObjectId names one occurrence of a series
  *
  * The date fields are zero on a series master and carry the instance date on
@@ -1862,12 +1887,12 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			PR_ATTACHMENT_HIDDEN,
 		};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
-		uint16_t count;
-		if (!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+		std::vector<uint32_t> nums;
+		if (!attachment_nums(m_plugin, dir, mInst->instanceId, nums))
 			throw DispatchError(E3079);
 		sAttachmentId aid(this->getItemEntryId(dir, mid), 0);
-		item.Attachments.emplace().reserve(count);
-		for (uint16_t i = 0; i < count; ++i) {
+		item.Attachments.emplace().reserve(nums.size());
+		for (auto i : nums) {
 			auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 			TPROPVAL_ARRAY props;
 			if (!exmdb.get_instance_properties(dir.c_str(), 0,
@@ -2331,8 +2356,8 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
     sOccurrenceSeries &s, sShape &shape) const
 {
 	auto mInst = m_plugin.loadMessageInstance(dir, s.fid, s.mid);
-	uint16_t count;
-	if (!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+	std::vector<uint32_t> nums;
+	if (!attachment_nums(m_plugin, dir, mInst->instanceId, nums))
 		throw DispatchError(E3210);
 
 	PROPNAME_ARRAY propnames;
@@ -2355,7 +2380,7 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
 		}, *s.base);
 
 	const proptag_t ex_tags[] = {ex_replace_time_tag};
-	for (uint16_t i = 0; i < count; ++i) {
+	for (auto i : nums) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, s.fid, s.mid, i);
 		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
 		try {
@@ -2580,7 +2605,6 @@ void EWSContext::deleteExceptionAttachment(const std::string &dir,
 	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
 	    mInst->instanceId, &count))
 		throw DispatchError(E3485);
-	m_plugin.evictAttachmentInstances(dir, mid, count);
 	const proptag_t tags[] = {PROP_TAG(PT_SYSTIME,
 		getNamedPropId(dir, NtExceptionReplaceTime, true))};
 	auto series = loadSeriesTimes(dir, mid);
@@ -2607,7 +2631,6 @@ void EWSContext::deleteExceptionAttachment(const std::string &dir,
 			throw EWSError::ItemSave(E3487);
 		/* The attachment numbers have a gap now */
 		m_plugin.unloadMessageInstance(dir, mid);
-		m_plugin.evictAttachmentInstances(dir, mid, count);
 		return;
 	}
 }
@@ -2789,7 +2812,6 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
 	    mInst->instanceId, &att_count))
 		throw DispatchError(E3335);
-	m_plugin.evictAttachmentInstances(dir, mid, att_count);
 
 	/* Search for an existing exception matching this basedate */
 	auto series = loadSeriesTimes(dir, mid);

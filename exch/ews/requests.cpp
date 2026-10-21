@@ -1656,6 +1656,12 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 		    mInst->instanceId, &err) || err != ecSuccess)
 			throw EWSError::ItemSave(E3433);
+		/*
+		 * Keep the message instance. A reload would renumber the
+		 * attachments and shift the AttachmentIds the client holds.
+		 */
+		ctx.plugin().unloadAttachmentInstance(dir, aid.messageId(),
+			aid.attachment_num);
 
 		sShape shape;
 		ctx.updated(dir, aid, shape);
