@@ -3986,6 +3986,20 @@ void *tRestriction::loadConstant(const tinyxml2::XMLElement *parent, proptype_t 
 		memcpy(static_cast<char *>(dest), value, len + 1);
 		break;
 	}
+	case PT_BINARY: {
+		std::string_view src = value;
+		auto bin = static_cast<BINARY *>(dest);
+		bin->pv = EWSContext::alloc(src.size() + 1);
+		size_t outlen = 0;
+		if (base64nl_decode_sized(src, bin->pv, src.size() + 1, &outlen) < 0)
+			throw EWSError::InvalidRestriction(E3580(src));
+		bin->cb = outlen;
+		break;
+	}
+	case PT_CLSID:
+		if (!static_cast<GUID *>(dest)->from_str(value))
+			throw EWSError::InvalidRestriction(E3581(value));
+		break;
 	default:
 		throw EWSError::InvalidRestriction(E3241(tExtendedFieldURI::typeName(type)));
 	}
