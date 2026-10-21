@@ -65,6 +65,9 @@ Fixes:
 * ruleproc: with meeting autoprocessing, meeting messages that a delegate rule
   hands to the delegates only now still update the principal's calendar, and
   the delegates' copies are flagged as processed.
+* ruleproc: meeting autoprocessing now records a response that a delegate sent
+  on behalf of an attendee for that attendee, instead of looking for the
+  delegate among the attendees.
 
 
 Gromox 3.13 (2026-10-28)

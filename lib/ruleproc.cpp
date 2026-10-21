@@ -2448,10 +2448,13 @@ static ec_error_t mr_do_response(rxparam &par, const PROPID_ARRAY &propids)
 	else
 		return ecSuccess;
 
-	/* Get responder's SMTP address */
-	auto responder = rsp_prop.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	/*
+	 * The attendee is the represented user. The sender differs when a
+	 * delegate answered, see MS-OXOCAL v22.1 §3.1.4.8.4.
+	 */
+	auto responder = rsp_prop.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (responder == nullptr)
-		responder = rsp_prop.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+		responder = rsp_prop.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	if (responder == nullptr) {
 		mlog(LV_WARN, "mr_do_response: no sender SMTP address on response");
 		return ecSuccess;
