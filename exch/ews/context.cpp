@@ -1228,6 +1228,25 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
 	    props.set(PROP_TAG(PT_LONG, pidBusy), construct<uint32_t>(busyValue)) != ecSuccess)
 		throw EWSError::ItemSave(E3327);
 
+	/*
+	 * MS-OXOCAL v22.1 §2.2.1.32/33: PidLidCommonStart and PidLidCommonEnd
+	 * equal the whole start and end. Outlook deletes both from the request
+	 * when it clears its flag, and EWS reads Start and End from them.
+	 */
+	const std::pair<const PROPERTY_NAME &, const PROPERTY_NAME &> times[] = {
+		{NtAppointmentStartWhole, NtCommonStart},
+		{NtAppointmentEndWhole, NtCommonEnd},
+	};
+	for (const auto &[whole, common] : times) {
+		auto src = getNamedPropId(calendarDir, whole);
+		auto v = src != 0 ? props.get<const uint64_t>(PROP_TAG(PT_SYSTIME, src)) : nullptr;
+		if (v == nullptr)
+			continue;
+		auto dst = PROP_TAG(PT_SYSTIME, getNamedPropId(calendarDir, common, true));
+		if (props.set(dst, construct<uint64_t>(*v)) != ecSuccess)
+			throw EWSError::ItemSave(E3327);
+	}
+
 	/* eM Client drops calendar items without IsAllDayEvent */
 	auto pidSubType = getNamedPropId(calendarDir, NtAppointmentSubType, true);
 	if (!props.has(PROP_TAG(PT_BOOLEAN, pidSubType)) &&
