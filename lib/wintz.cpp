@@ -23,6 +23,7 @@ static std::atomic<unsigned int> wintz_loaded;
 static gromox::archive tzd_archive;
 static std::unordered_map<std::string, std::string> iana_to_wzone;
 static std::unordered_map<std::string, std::string> wzone_to_tzdef;
+static std::unordered_map<std::string, std::string> iana_links;
 
 static errno_t wintz_load_namemap(const archive &arc)
 {
@@ -78,6 +79,26 @@ static errno_t wintz_load_namemap(const archive &arc)
 	return 0;
 }
 
+/*
+ * windowsZones.xml only knows the canonical IANA names. Clients also send
+ * link names like Atlantic/Jan_Mayen, so learn the links of the tz
+ * database from the "L target link" lines in tzdata.zi.
+ */
+static void wintz_load_links()
+{
+	std::vector<std::string> lines;
+	if (read_file_by_line("/usr/share/zoneinfo/tzdata.zi", lines) != 0)
+		return;
+	for (auto &line : lines) {
+		if (line.size() < 2 || line[0] != 'L' || line[1] != ' ')
+			continue;
+		HX_strlower(line.data());
+		auto f = gx_split(line, ' ');
+		if (f.size() == 3 && !f[1].empty() && !f[2].empty())
+			iana_links.emplace(std::move(f[2]), std::move(f[1]));
+	}
+}
+
 static errno_t wintz_load_once()
 {
 	unsigned int exp = 0;
@@ -91,7 +112,10 @@ static errno_t wintz_load_once()
 		mlog(LV_ERR, "Could not read %s: %s", pak, strerror(errno));
 		return errno;
 	}
-	return wintz_load_namemap(tzd_archive);
+	err = wintz_load_namemap(tzd_archive);
+	if (err == 0)
+		wintz_load_links();
+	return err;
 }
 
 namespace gromox {
@@ -127,6 +151,14 @@ const std::string_view *ianatz_to_tzdef(const char *izone)
 	std::string lizone = izone;
 	HX_strlower(lizone.data());
 	auto wi = iana_to_wzone.find(lizone);
+	/* Follow a few links, tzdata has no chains, but be safe */
+	for (unsigned int i = 0; i < 4 && wi == iana_to_wzone.end(); ++i) {
+		auto li = iana_links.find(lizone);
+		if (li == iana_links.end())
+			return nullptr;
+		lizone = li->second;
+		wi = iana_to_wzone.find(lizone);
+	}
 	if (wi == iana_to_wzone.end())
 		return nullptr;
 	return wintz_to_tzdef(wi->second.c_str());
