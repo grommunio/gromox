@@ -16,6 +16,7 @@
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/ical.hpp>
@@ -227,7 +228,7 @@ static int emit_message_gxmt(const message_content &ctnt,
 {
 	std::vector<propid_t> tags;
 	get_all_nptags(ctnt, tags);
-	tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+	sort_unique(tags);
 	PROPNAME_ARRAY propnames{};
 	if (tags.size() > 0 &&
 	    (!exmdb_client_remote::get_named_propnames(g_storedir, tags, &propnames) ||

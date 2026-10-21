@@ -681,13 +681,11 @@ errno_t switch_user_exec(const config_file &cf, char *const *argv)
 	return switch_user_exec(cf.get_value("running_identity"), argv);
 }
 
-void safe_memset(void *p, uint8_t c, size_t z)
+static volatile decltype(&memset) memset_func = memset;
+
+void safe_memset(void *p, int c, size_t z)
 {
-	volatile size_t vz = 0;
-	volatile auto q = static_cast<uint8_t *>(p);
-	if (z != 0) do {
-		memset(p, c, z);
-	} while (q[vz] != c);
+	memset_func(p, c, z);
 }
 
 unsigned int newline_size(const char *s, size_t z)
@@ -1019,13 +1017,9 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
  * escape without conversion to ENOMEM. Callers should ideally check for ENOMEM
  * anyway.
  */
-std::string iconvtext(std::string_view sv,
-    const char *from, const char *to, unsigned int flags) try
+std::string iconvtext_csetforce(std::string_view sv, const char *from,
+    const char *to, unsigned int flags) try
 {
-	if (strcasecmp(from, to) == 0) {
-		errno = 0;
-		return std::string(sv);
-	}
 	auto cd = iconv_open(to, from);
 	if (cd == reinterpret_cast<iconv_t>(-1)) {
 		mlog(LV_ERR, "E-2116: iconv_open(%s -> %s): %s", from, to, strerror(errno));
@@ -1086,6 +1080,16 @@ std::string iconvtext(std::string_view sv,
 } catch (const std::bad_alloc &) {
 	errno = ENOMEM;
 	return {};
+}
+
+std::string iconvtext(std::string_view sv, const char *from, const char *to,
+    unsigned int flags)
+{
+	if (strcasecmp(from, to) == 0) {
+		errno = 0;
+		return std::string(sv);
+	}
+	return iconvtext_csetforce(sv, from, to, flags);
 }
 
 std::string base64_encode(std::string_view x)

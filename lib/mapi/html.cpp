@@ -1177,9 +1177,16 @@ ec_error_t html_to_rtf(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
 	auto s = getenv("GROMOX_HTMLTORTF");
 	if (s == nullptr) {
 		auto ret = convert_doc_with_program(inbuf, cset, outbuf,
-		           REND_PANDOC_HTR);
+		           REND_SOFFICE_HTR);
 		if (ret >= 0)
 			return ecSuccess;
+		ret = convert_doc_with_program(inbuf, cset, outbuf,
+		      REND_PANDOC_HTR);
+		if (ret >= 0)
+			return ecSuccess;
+	} else if (strcasecmp(s, "soffice") == 0) {
+		return convert_doc_with_program(inbuf, cset, outbuf,
+		       REND_SOFFICE_HTR) >= 0 ? ecSuccess : ecError;
 	} else if (strcasecmp(s, "pandoc") == 0) {
 		return convert_doc_with_program(inbuf, cset, outbuf,
 		       REND_PANDOC_HTR) >= 0 ? ecSuccess : ecError;

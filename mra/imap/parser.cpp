@@ -30,6 +30,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/cryptoutil.hpp>
@@ -466,6 +467,12 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 			auto msg = resource_get_imap_code(1817, 1, &len);
 			return ps_end_processing(pcontext, msg, len);
 		}
+		/* refuse a non-numeric or out-of-range literal length */
+		if (openbr[1] < '0' || openbr[1] > '9' || pcontext->literal_len < 0) {
+			size_t len = 0;
+			auto msg = resource_get_imap_code(1817, 1, &len);
+			return ps_end_processing(pcontext, msg, len);
+		}
 		auto temp_len = 64 * 1024 - (&ctx.literal_ptr[nl_len] - ctx.read_buffer) -
 		           pcontext->command_len - nl_len;
 		if (temp_len <= 0 || temp_len >= 64 * 1024) {
@@ -711,7 +718,10 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 			return tproc_status::literal_checking;
 		}
 
-		switch (imap_parser_dispatch_cmd(argv, ctx)) {
+		auto disp = imap_parser_dispatch_cmd(argv, ctx);
+		/* do not keep the handled command line in the buffer */
+		safe_memset(pcontext->command_buffer, 0, std::size(pcontext->command_buffer));
+		switch (disp) {
 		case DISPATCH_CONTINUE:
 			pcontext->command_len = 0;
 			return tproc_status::literal_processing;
@@ -1409,8 +1419,7 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 			continue;
 		seqid_list.push_back(item->id);
 	}
-	std::sort(seqid_list.begin(), seqid_list.end());
-	seqid_list.erase(std::unique(seqid_list.begin(), seqid_list.end()), seqid_list.end());
+	sort_unique(seqid_list);
 	size_t elem = seqid_list.size();
 	/* Use a higher-to-lower approach (cf. RFC 3501 §7.4.1) */
 	while (elem-- > 0) {
@@ -1687,9 +1696,10 @@ void imap_context::clear()
 	pcontext->b_readonly = false;
 	pcontext->tag_string[0] = '\0';
 	pcontext->command_len = 0;
-	pcontext->command_buffer[0] = '\0';
+	/* context is reused later, so clear the buffers fully */
+	safe_memset(pcontext->command_buffer, 0, std::size(pcontext->command_buffer));
 	pcontext->read_offset = 0;
-	pcontext->read_buffer[0] = '\0';
+	safe_memset(pcontext->read_buffer, 0, std::size(pcontext->read_buffer));
 	pcontext->literal_ptr = nullptr;
 	pcontext->literal_len = 0;
 	pcontext->current_len = 0;

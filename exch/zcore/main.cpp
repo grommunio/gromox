@@ -269,6 +269,7 @@ int main(int argc, char **argv)
 	unsigned int threads_num = pconfig->get_ll("zcore_threads_num");
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
+	gx_set_umask();
 	filedes_limit_bump(gxconfig->get_ll("zcore_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
 	

@@ -159,7 +159,10 @@ minimal fashion to stderr. Level 1 emits commands that have failed execution,
 level 2 emits all commands. (The response text is \fBnot\fP sent to the log,
 because of size. Deep analysis can be done with socat/telnet/tcpdump; shallow
 analysis for end-users is possible with the protocol-compliant error-reporting
-MUA "Alpine" <https://alpineapp.email/>.)
+MUA
+.UR https:\://alpineapp.email/
+Alpine
+.UE .
 .br
 Default: \fI0\fP
 .TP

@@ -258,6 +258,10 @@ ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
 	       cvt_entryid_to_smtpaddr(*bin, org, id2user, smtpaddr);
 }
 
+/**
+ * Variant of user_to_essden if the numeric IDs are already known.
+ * Just a bit of string concatenation… et voilà.
+ */
 ec_error_t cvt_username_to_essdn(const char *username, const char *org,
     unsigned int user_id, unsigned int domain_id, std::string &essdn) try
 {
@@ -287,6 +291,10 @@ ec_error_t cvt_username_to_essdn(const char *username, const char *org,
 	return ecServerOOM;
 }
 
+/**
+ * Variant of user_to_essden if the numeric IDs are not yet known.
+ * Can yield additional error codes over the other variant.
+ */
 ec_error_t cvt_username_to_essdn(const char *username, const char *org,
     GET_USER_IDS get_uids, GET_DOMAIN_IDS get_dids, std::string &essdn) try
 {

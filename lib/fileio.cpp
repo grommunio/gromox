@@ -6,9 +6,11 @@
 #endif
 #include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
+#include <csignal>
 #include <cstdlib>
 #include <cstring>
 #include <dirent.h>
@@ -16,12 +18,17 @@
 #include <iconv.h>
 #include <memory>
 #include <netdb.h>
+#include <optional>
+#include <poll.h>
+#include <semaphore>
 #include <spawn.h>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <utility>
 #include <vector>
 #include <zstd.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/endian.h>
 #include <libHX/io.h>
@@ -67,6 +74,39 @@ struct popen_fdset {
 	NOMOVE(popen_fdset);
 };
 
+struct soffice_param {
+	soffice_param(const std::string &tmpdir, const char *tn);
+	~soffice_param();
+	NOMOVE(soffice_param);
+
+	std::string outdir, prefarg;
+	bool ok = false;
+};
+
+}
+
+static constexpr char tmpfile_charpool[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+static std::counting_semaphore<> g_soffice_slots(std::max(2U,
+	std::thread::hardware_concurrency()));
+
+soffice_param::soffice_param(const std::string &tmpdir, const char *tn)
+{
+	outdir = tmpdir + "/" + tn + ".d";
+	if (::mkdir(outdir.c_str(), S_IRWXU) != 0) {
+		outdir.clear();
+		return;
+	}
+	auto prefdir = outdir + "/prefs";
+	if (::mkdir(prefdir.c_str(), S_IRWXU) != 0)
+		return;
+	prefarg = "-env:UserInstallation=file://" + prefdir;
+	ok = true;
+}
+
+soffice_param::~soffice_param()
+{
+	if (!outdir.empty() && HX_rrmdir(outdir.c_str()) < 0)
+		/* ignore */;
 }
 
 archive::~archive()
@@ -189,7 +229,7 @@ int tmpfile::open_impl(const char *dir, unsigned int flags, unsigned int mode,
 	}
 #endif
 	char tn[17];
-	randstring(tn, 16, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+	randstring(tn, 16, tmpfile_charpool);
 	m_path = dir + "/"s + tn;
 	m_fd = ::open(m_path.c_str(), O_CREAT | flags, mode);
 	return m_fd >= 0 ? m_fd : -errno;
@@ -365,7 +405,7 @@ int popenfd_keepfd_marker;
  *          Pass the C stdlib variable `environ` explicitly to carry it over.
  */
 pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
-    int *fdoutp, int *fderrp, const char *const *env)
+    int *fdoutp, int *fderrp, const char *const *env, unsigned int flags)
 {
 	if (argv == nullptr || argv[0] == nullptr)
 		return -EINVAL;
@@ -456,8 +496,20 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
 	    (ret = posix_spawn_file_actions_addclose(&fa, fd.null)) != 0)
 		return -ret;
 
+	posix_spawnattr_t attr{};
+	ret = posix_spawnattr_init(&attr);
+	if (ret != 0)
+		return -ret;
+	auto cl3 = HX::make_scope_exit([&]() { posix_spawnattr_destroy(&attr); });
+	if (flags & POPENFD_SETPGRP) {
+		ret = posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP);
+		if (ret == 0)
+			ret = posix_spawnattr_setpgroup(&attr, 0);
+		if (ret != 0)
+			return -ret;
+	}
 	pid_t pid = -1;
-	ret = posix_spawnp(&pid, prog, &fa, nullptr,
+	ret = posix_spawnp(&pid, prog, &fa, &attr,
 	      const_cast<char **>(argv), const_cast<char **>(env));
 	if (ret != 0)
 		return -ret;
@@ -476,64 +528,82 @@ pid_t popenfd(const char *prog, const char *const *argv, int *fdinp,
 	return pid;
 }
 
-/**
- * @fp:       file to emit to
- * @src:      input data
- * @cset:     character set of data in @src
- * @force_conv: force-feed through iconv (e.g. is cset is already UTF-8 but the
- *              content is not clean)
- *
- * Convert @src to UTF-8 if needed (depends on @cset), and writeout to @fp.
- * Updates @cset in case w3m should not be given the -I argument.
- * Returns 0 for success; other values indicate an error condition.
- */
-static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size,
-    const char *&cset, bool force_conv)
-{
-	auto src = const_cast<char *>(static_cast<const char *>(vsrc));
-	if (cset == nullptr)
-		return fwrite(src, src_size, 1, fp) == 1 ? 0 : -1;
-	bool input_is_utf8 = strcasecmp(cset, "utf8") == 0 ||
-	                     strcasecmp(cset, "utf-8") == 0;
-	if (input_is_utf8 && !force_conv)
-		return fwrite(src, src_size, 1, fp) == 1 ? 0 : -1;
-	auto cd = iconv_open("utf-8", cset);
-	if (cd == iconv_t(-1)) {
-		/* Dunno how to translate, just feed it as-is to the converter */
-		cset = nullptr;
-		return 0;
-	}
-	auto cleanup = HX::make_scope_exit([&]() { iconv_close(cd); });
-	char buffer[4096];
+static constexpr std::chrono::seconds convert_deadline{60};
 
-	/* Loop copied from iconvtext() */
-	while (src_size > 0) {
-		auto dst = buffer;
-		size_t dst_size = sizeof(buffer);
-		auto ret = iconv(cd, &src, &src_size, &dst, &dst_size);
-		if (ret != static_cast<size_t>(-1) || dst_size != sizeof(buffer)) {
-			if (fwrite(buffer, sizeof(buffer) - dst_size, 1, fp) != 1)
-				return -1;
+/* soffice trusts the charset declaration over the bytes it is given */
+static void html_meta_utf8(std::string &doc)
+{
+	size_t pos = 0;
+	while (pos < doc.size()) {
+		auto p = strcasestr(&doc[pos], "charset");
+		if (p == nullptr)
+			break;
+		size_t i = p - doc.data() + 7;
+		while (i < doc.size() && HX_isspace(doc[i]))
+			++i;
+		if (i >= doc.size() || doc[i] != '=') {
+			pos = i;
 			continue;
 		}
-		if (src_size > 0) {
-			--src_size;
-			++src;
-		}
-		if (fwrite(buffer, sizeof(buffer) - dst_size, 1, fp) != 1)
-			return -1;
+		for (++i; i < doc.size() && (HX_isspace(doc[i]) ||
+		     doc[i] == '"' || doc[i] == '\''); ++i)
+			;
+		auto start = i;
+		while (i < doc.size() && (HX_isalnum(doc[i]) || doc[i] == '-' ||
+		       doc[i] == '_' || doc[i] == '.' || doc[i] == ':'))
+			++i;
+		doc.replace(start, i - start, "utf-8");
+		pos = start + 5;
 	}
+}
 
-	/* Flush pending shift and/or state */
-	auto dst = buffer;
-	size_t dst_size = sizeof(buffer);
-	auto ret = iconv(cd, nullptr, 0, &dst, &dst_size);
-	if (ret == static_cast<size_t>(-1))
-		/* ignore */;
-	if (dst_size != sizeof(buffer) &&
-	    fwrite(buffer, sizeof(buffer) - dst_size, 1, fp) != 1)
-		return -1;
-	return 0;
+static void wrap_lines(std::string &text, size_t width)
+{
+	std::string out;
+	out.reserve(text.size() + text.size() / 32);
+	for (size_t ls = 0; ls < text.size(); ) {
+		auto le = text.find('\n', ls);
+		if (le == text.npos)
+			le = text.size();
+		std::string_view line(&text[ls], le - ls);
+		auto ind = line.find_first_not_of(" \t");
+		auto prefix = line.substr(0, ind == line.npos ? 0 : ind);
+		line.remove_prefix(prefix.size());
+		while (true) {
+			size_t cols = prefix.size(), brk = line.npos, i = 0;
+			for (; i < line.size(); ++i) {
+				if ((static_cast<unsigned char>(line[i]) & 0xC0) == 0x80)
+					continue;
+				if (cols >= width && brk != line.npos)
+					break;
+				if (line[i] == ' ')
+					brk = i;
+				++cols;
+			}
+			if (i >= line.size())
+				break;
+			out += prefix;
+			out.append(line.data(), brk);
+			out += '\n';
+			line.remove_prefix(brk + 1);
+			auto nz = line.find_first_not_of(' ');
+			line.remove_prefix(nz == line.npos ? line.size() : nz);
+		}
+		out += prefix;
+		out += line;
+		if (le < text.size())
+			out += '\n';
+		ls = le + 1;
+	}
+	text = std::move(out);
+}
+
+static const char *base_tmpdir()
+{
+	auto s = getenv("TMPDIR");
+	if (s != nullptr && *s == '/')
+		return s;
+	return "/tmp";
 }
 
 /**
@@ -555,28 +625,67 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size,
 int convert_doc_with_program(std::string_view inbuf, const char *cset,
     std::string &final_buf, unsigned int rend) try
 {
-	std::string filename;
-	auto tmpdir = getenv("TMPDIR");
-	filename = tmpdir == nullptr ? "/tmp" : tmpdir;
-	auto pos = filename.length();
-	filename += "/XXXXXXXXXXXX.html";
-	randstring(&filename[pos+1], 12, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
-	filename[pos+13] = '.';
+	auto prog = rend & REND_PROGMASK, conv = rend & REND_CONVMASK;
+	std::string tmpdir = base_tmpdir();
+	char tn[13];
+	randstring(tn, 12, tmpfile_charpool);
+	auto filename = tmpdir + "/" + tn +
+	                (conv == REND_RTFTOHTML ? ".rtf" : ".html");
+	std::string doc;
+	/* pandoc immediately switches to latin1 on funny characters; forbid that */
+	bool force_conv = cset == nullptr || rend >= REND_PANDOC;
+	if (cset == nullptr)
+		cset = "utf-8";
+	bool input_is_utf8 = strcasecmp(cset, "utf8") == 0 ||
+	                     strcasecmp(cset, "utf-8") == 0;
+	if (input_is_utf8 && !force_conv)
+		doc.assign(inbuf);
+	else
+		doc = iconvtext_csetforce(inbuf, cset, "utf-8");
 
+	if (prog == REND_SOFFICE && cset != nullptr &&
+	    (conv == REND_HTMLTOPLAIN || conv == REND_HTMLTORTF))
+		html_meta_utf8(doc);
 	std::unique_ptr<FILE, file_deleter> fp(fopen(filename.c_str(), "w"));
 	if (fp == nullptr)
 		return -1;
 	auto cl1 = HX::make_scope_exit([&]() { unlink(filename.c_str()); });
-	/* pandoc immediately switches to latin1 on funny characters; forbid that */
-	if (utf8_writeout(fp.get(), inbuf.data(), inbuf.size(), cset,
-	    rend >= REND_PANDOC_HTP) != 0)
+	if (doc.size() > 0 && fwrite(doc.data(), doc.size(), 1, fp.get()) != 1)
 		return -1;
 	fp.reset();
 	int fout = -1;
 	auto cl2 = HX::make_scope_exit([&]() { if (fout != -1) close(fout); });
-	const char *argv[11];
+	std::optional<soffice_param> sofpar;
+	std::string outfile;
+	const char *argv[12];
 	int argc = 0;
-	if (rend == REND_PANDOC_HTP) {
+	if (prog == REND_SOFFICE) {
+		sofpar.emplace(tmpdir, tn);
+		if (!sofpar->ok)
+			return -1;
+		argv[argc++] = "soffice";
+		argv[argc++] = sofpar->prefarg.c_str();
+		argv[argc++] = "--headless";
+		if (conv != REND_RTFTOHTML)
+			/* Writer/Web, the default for HTML input, has no RTF export filter */
+			argv[argc++] = "--infilter=HTML (StarWriter)";
+		argv[argc++] = "--convert-to";
+		outfile = sofpar->outdir + "/" + tn;
+		if (conv == REND_HTMLTOPLAIN) {
+			argv[argc++] = "txt:Text (encoded):UTF8";
+			outfile += ".txt";
+		} else if (conv == REND_HTMLTORTF) {
+			argv[argc++] = "rtf";
+			outfile += ".rtf";
+		} else if (conv == REND_RTFTOHTML) {
+			argv[argc++] = "html:HTML (StarWriter):EmbedImages";
+			outfile += ".html";
+		} else {
+			return -1;
+		}
+		argv[argc++] = "--outdir";
+		argv[argc++] = sofpar->outdir.c_str();
+	} else if (rend == REND_PANDOC_HTP) {
 		argv[argc++] = "pandoc";
 		argv[argc++] = "-f";
 		argv[argc++] = "html";
@@ -599,7 +708,7 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 	} else if (rend == REND_INT_RTH) {
 		/* The utility needs input on stdin, not as a file */
 		return -1;
-	} else if (rend == REND_CHAWAN) {
+	} else if (rend == REND_CHAWAN_HTP) {
 		argv[argc++] = "cha";
 		if (cset != nullptr) {
 			argv[argc++] = "-I";
@@ -612,7 +721,7 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 		argv[argc++] = "--dump";
 		argv[argc++] = "-obuffer.styling=false";
 		argv[argc++] = "-obuffer.mark-links=true";
-	} else if (rend == REND_W3M) {
+	} else if (rend == REND_W3M_HTP) {
 		argv[argc++] = "w3m";
 		if (cset != nullptr) {
 			argv[argc++] = "-I";
@@ -628,22 +737,71 @@ int convert_doc_with_program(std::string_view inbuf, const char *cset,
 	}
 	argv[argc++] = filename.c_str();
 	argv[argc]   = nullptr;
+	if (prog == REND_SOFFICE &&
+	    !g_soffice_slots.try_acquire_for(convert_deadline)) {
+		errno = EBUSY;
+		return -1;
+	}
+	auto cl_slot = HX::make_scope_exit([&]() {
+		if (prog == REND_SOFFICE)
+			g_soffice_slots.release();
+	});
 	auto pid = popenfd(argv[0], argv, POPENFD_NULL, &fout, POPENFD_NULL,
-	           const_cast<const char *const *>(environ));
+	           const_cast<const char *const *>(environ), POPENFD_SETPGRP);
 	if (pid < 0)
 		return -1;
 	int status = 0;
-	auto cl3 = HX::make_scope_exit([&]() { waitpid(pid, &status, 0); });
+	auto cl3 = HX::make_scope_exit([&]() {
+		kill(-pid, SIGKILL);
+		waitpid(pid, &status, 0);
+	});
 
 	std::string outbuf;
-	ssize_t ret;
 	char fbuf[4096];
-	while ((ret = ::read(fout, fbuf, std::size(fbuf))) > 0)
+	auto deadline = std::chrono::steady_clock::now() + convert_deadline;
+	while (true) {
+		auto left = std::chrono::duration_cast<std::chrono::milliseconds>(
+		            deadline - std::chrono::steady_clock::now()).count();
+		if (left <= 0) {
+			errno = ETIMEDOUT;
+			return -1;
+		}
+		struct pollfd pfd = {fout, POLLIN, 0};
+		auto pr = poll(&pfd, 1, std::min<long long>(left, INT_MAX));
+		if (pr == 0) {
+			errno = ETIMEDOUT;
+			return -1;
+		} else if (pr < 0 && errno == EINTR) {
+			continue;
+		} else if (pr < 0) {
+			return -1;
+		}
+		auto ret = ::read(fout, fbuf, std::size(fbuf));
+		if (ret == 0)
+			break;
+		else if (ret < 0 && errno == EINTR)
+			continue;
+		else if (ret < 0)
+			return -1;
 		outbuf.append(fbuf, ret);
+	}
 	cl3.release();
 	waitpid(pid, &status, 0);
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		return -1;
+	if (prog == REND_SOFFICE) {
+		size_t osize = 0;
+		std::unique_ptr<char[], stdlib_delete>
+			obuf(HX_slurp_file(outfile.c_str(), &osize));
+		if (obuf == nullptr)
+			return -1;
+		outbuf.assign(obuf.get(), osize);
+		if (conv == REND_HTMLTOPLAIN) {
+			if (outbuf.starts_with("\xEF\xBB\xBF"))
+				outbuf.erase(0, 3);
+			wrap_lines(outbuf, 72);
+		}
+	}
 	final_buf = std::move(outbuf);
 	return 0;
 } catch (...) {

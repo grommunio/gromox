@@ -169,7 +169,7 @@ static int smtp_parse_binds(listener_ctx &ctx, const config_file &gxcfg,
 {
 	auto line = gxcfg.get_value(gxkey);
 	if (line != nullptr)
-		return ctx.add_bunch(line, mark);
+		return ctx.add_bunch(line, oldcfg.get_value("running_identity"), mark);
 	auto host = oldcfg.get_value(oldkey);
 	if (host != nullptr)
 		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
@@ -345,6 +345,7 @@ int main(int argc, char **argv)
 	listener.m_haproxy_level = g_haproxy_level;
 	listener.m_thread_name   = "accept";
 
+	gx_set_umask();
 	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, scfg.context_num});
 	if (switch_user_exec(*g_config_file, argv) != 0)

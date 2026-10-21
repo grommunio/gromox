@@ -2027,7 +2027,7 @@ static int openpgp_legacy_layout()
 int main()
 {
 	mlog_init(nullptr, nullptr, LV_DEBUG, nullptr);
-	textmaps_init(getenv("GROMOX_TEST_DATA"));
+	textmaps_init(getenv("TEST_PATH"));
 	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) STATIC_IN_CXX23 -> bool { return false; };
 	auto ee_get_domain_ids = [](const char *, unsigned int *, unsigned int *) STATIC_IN_CXX23 -> bool { return false; };
 	auto ee_userid_to_name = [](unsigned int, std::string &) STATIC_IN_CXX23 -> ec_error_t { return ecNotFound; };

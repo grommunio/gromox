@@ -17,6 +17,7 @@
 #include <memory>
 #include <mutex>
 #include <pthread.h>
+#include <pwd.h>
 #include <sched.h>
 #include <spawn.h>
 #include <string>
@@ -331,6 +332,20 @@ std::string simple_backtrace()
 	return out;
 }
 
+/**
+ * Set a new umask where user bits are copied to group bits.
+ * This turns e.g. umask 022 into umask 002.
+ * Gromox services need to create files with group writability,
+ * so that e.g. AAPI can manage files. (In the long run that
+ * should perhaps be refined.)
+ */
+void gx_set_umask()
+{
+	auto m = umask(0777);
+	m = (m & ~0070) | ((m & 0700) >> 3);
+	umask(m | 0007);
+}
+
 errno_t switch_user_exec(const char *user, char *const *argv)
 {
 	if (user == nullptr)
@@ -342,18 +357,14 @@ errno_t switch_user_exec(const char *user, char *const *argv)
 		auto ret = gx_reexec(nullptr);
 		if (ret != 0)
 			return ret;
-		auto m = umask(0777);
-		m = (m & ~0070) | ((m & 0700) >> 3); /* copy user bits to group bits */
-		umask(m);
+		gx_set_umask();
 		return 0;
 	}
 	case HXPROC_SU_SUCCESS: {
 		auto ret = gx_reexec(const_cast<const char *const *>(argv));
 		if (ret != 0)
 			return ret;
-		auto m = umask(0777);
-		m = (m & ~0070) | ((m & 0700) >> 3);
-		umask(m);
+		gx_set_umask();
 		return 0;
 	}
 	case HXPROC_USER_NOT_FOUND:
@@ -524,13 +535,34 @@ errno_t listener_ctx::add_inet(const char *addr, uint16_t port, uint32_t mark)
 	return 0;
 }
 
-errno_t listener_ctx::add_local(const char *path, uint32_t mark)
+errno_t listener_ctx::add_local(const char *path, const char *user, uint32_t mark)
 {
 	auto fd = HX_local_listen(path);
 	if (fd < 0) {
 		auto se = errno;
 		mlog(LV_ERR, "%s(%s): %s", __PRETTY_FUNCTION__, path, strerror(se));
 		return se;
+	}
+	if (user != nullptr) {
+		/* Similar logic as in lib/string.cpp:mlog_init */
+		char buf[256];
+		struct passwd pwd{}, *result = nullptr;
+		if (getpwnam_r(user, &pwd, buf, std::size(buf), &result) != 0 ||
+		    result == nullptr) {
+			int se = errno;
+			if (se == 0)
+				se = ENOENT;
+			mlog(LV_ERR, "add_local(\"%s\", \"%s\"): %s",
+			     path, znul(user), strerror(se));
+			return se;
+		} else if (chown(path, result->pw_uid, result->pw_gid) != 0) {
+			int se = errno;
+			mlog(LV_ERR, "chown(\"%s\", (\"%s\")%u,%u): %s",
+				path, user, static_cast<unsigned int>(result->pw_uid),
+				static_cast<unsigned int>(result->pw_gid),
+				strerror(se));
+			return se;
+		}
 	}
 	try {
 		m_sockets.emplace_back(fd, mark);
@@ -543,11 +575,12 @@ errno_t listener_ctx::add_local(const char *path, uint32_t mark)
 	return 0;
 }
 
-errno_t listener_ctx::add_bunch(const char *line, uint32_t mark)
+errno_t listener_ctx::add_bunch(const char *line, const char *user,
+    uint32_t mark)
 {
 	for (auto &&spec : gx_split_ws(line)) {
 		if (strncmp(spec.c_str(), "unix:", 5) == 0) {
-			auto err = add_local(&spec[5]);
+			auto err = add_local(&spec[5], user);
 			if (err != 0)
 				return err;
 			continue;
@@ -1107,6 +1140,35 @@ errno_t workqueue::insert_task(const char *name, std::chrono::nanoseconds period
 	return launch_ondemand();
 }
 
+/**
+ * @path: Filesystem path for UNIX socket
+ */
+int gx_local_connect(const char *path)
+{
+	auto fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+	if (fd < 0)
+		return -errno;
+	struct sockaddr_un u{};
+	u.sun_family = AF_UNIX;
+	gx_strlcpy(u.sun_path, path, sizeof(u.sun_path));
+	auto ret = connect(fd, reinterpret_cast<const sockaddr *>(&u), sizeof(u));
+	if (ret == 0)
+		return fd;
+	auto saved_errno = errno;
+	close(fd);
+	return -(errno = saved_errno);
+}
+
+/**
+ * @host: Target host, or `unix:PATH`
+ * @port: Target port, in case of INET sockets
+ */
+int gx_generic_connect(const char *host, uint16_t port)
+{
+	return strncmp(host, "unix:", 5) == 0 ?
+	       gx_local_connect(&host[5]) : HX_inet_connect(host, port, 0);
+}
+
 } /* namespace gromox */
 
 generic_connection::generic_connection(generic_connection &&o) :
@@ -1209,31 +1271,41 @@ generic_connection generic_connection::accept(int sv_sock,
 		return conn;
 	}
 	char txtport[40];
-	auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
-		   conn.client_addr, sizeof(conn.client_addr), txtport,
-		   sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
-	if (ret != 0) {
-		mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
-		conn.reset();
-		return conn;
+	if (cl_addr.ss_family == AF_UNIX) {
+		gx_strlcpy(conn.client_addr, "unix:", sizeof(conn.client_addr));
+		conn.client_port = 0;
+	} else {
+		auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
+			   conn.client_addr, sizeof(conn.client_addr), txtport,
+			   sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
+			conn.reset();
+			return conn;
+		}
+		conn.client_port = strtoul(txtport, nullptr, 0);
 	}
-	conn.client_port = strtoul(txtport, nullptr, 0);
 	addrlen = sizeof(sv_addr);
-	ret = getsockname(cl_sock, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
+	auto ret = getsockname(cl_sock, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
 	if (ret != 0) {
 		mlog(LV_WARN, "getsockname: %s", strerror(errno));
 		conn.reset();
 		return conn;
 	}
-	ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
-	      conn.server_addr, sizeof(conn.server_addr), txtport,
-	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
-	if (ret != 0) {
-		mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
-		conn.reset();
-		return conn;
+	if (sv_addr.ss_family == AF_UNIX) {
+		gx_strlcpy(conn.server_addr, "unix:", sizeof(conn.server_addr));
+		conn.server_port = 0;
+	} else {
+		ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
+		      conn.server_addr, sizeof(conn.server_addr), txtport,
+		      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			mlog(LV_WARN, "getnameinfo: %s", gai_strerror(ret));
+			conn.reset();
+			return conn;
+		}
+		conn.server_port = strtoul(txtport, nullptr, 0);
 	}
-	conn.server_port = strtoul(txtport, nullptr, 0);
 	conn.last_timestamp = tp_now();
 	return conn;
 }

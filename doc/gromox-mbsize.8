@@ -31,7 +31,10 @@ of sizes of objects.
 .PP
 On FS: This is the space that is used on the filesystem, and is subject to fs
 block sizes. Details about this behavior may be found on
-<https://en.wikipedia.org/wiki/Block_(data_storage)>. As a result, the on-disk
+.UR https:\://en.wikipedia.org/\:wiki/\:Block_(data_storage)
+Wikipedia
+.UE .
+As a result, the on-disk
 size may be larger than the apparent size. It is occassionally possible that
 files can become sparse (e.g. as a result of rsync -S) and their block-based
 use even be lower the apparent filesize.

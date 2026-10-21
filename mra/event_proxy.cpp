@@ -83,7 +83,7 @@ bool SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 
 		str_value = pfile->get_value("EVENT_HOST");
-		gx_strlcpy(g_event_ip, str_value != nullptr ? str_value : "::1",
+		gx_strlcpy(g_event_ip, str_value != nullptr ? str_value : "unix:/run/gromox/event.sock",
 		           std::size(g_event_ip));
 		str_value = pfile->get_value("EVENT_PORT");
 		if (NULL == str_value) {
@@ -272,14 +272,14 @@ static int read_line(int sockd, char *buff, int length)
 static int connect_event()
 {
     char temp_buff[1024];
-	int sockd = HX_inet_connect(g_event_ip, g_event_port, 0);
+	auto sockd = gx_generic_connect(g_event_ip, g_event_port);
 	if (sockd < 0) {
 		static std::atomic<time_t> g_lastwarn_time;
 		auto prev = g_lastwarn_time.load();
 		auto next = prev + 60;
 		auto now = time(nullptr);
 		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-			fprintf(stderr, "HX_inet_connect event_proxy@[%s]:%hu: %s\n",
+			fprintf(stderr, "gx_generic_connect event_proxy@[%s]:%hu: %s\n",
 			        g_event_ip, g_event_port, strerror(-sockd));
 		return -1;
 	}

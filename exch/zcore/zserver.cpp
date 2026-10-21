@@ -872,24 +872,125 @@ static ec_error_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
 	return zs_openentry(ses, lower_eid, flags, mapi_type, objh);
 }
 
+static ec_error_t zs_openstoreentry_1(store_object &store, eid_t folder_id,
+    eid_t message_id, const BINARY &entryid, uint32_t hobject,
+    unsigned int flags, USER_INFO &uinfo, uint32_t *phobject,
+    zs_objtype *pmapi_type)
+{
+	BOOL b_del = false;
+	if (!exmdb_client->is_msg_deleted(store.get_dir(), message_id, &b_del))
+		return ecError;
+	if (b_del && !(flags & SHOW_SOFT_DELETES))
+		return ecNotFound;
+
+	uint32_t tag_access = 0;
+	auto ret = cu_calc_msg_access(store, uinfo.get_username(),
+	           folder_id, message_id, tag_access);
+	if (ret != ecSuccess)
+		return ret;
+	bool b_writable = tag_access & MAPI_ACCESS_MODIFY;
+	auto pmessage = message_object::create(&store, false,
+	                uinfo.cpid, message_id, &folder_id, tag_access,
+	                b_writable ? TRUE : false, nullptr);
+	if (pmessage == nullptr)
+		return ecError;
+	auto message = pmessage.get();
+	*phobject = uinfo.ptree->add_object_handle(hobject, {zs_objtype::message, std::move(pmessage)});
+	if (zh_is_error(*phobject))
+		return zh_error(*phobject);
+	*pmapi_type = zs_objtype::message;
+	if (entryid.cb >= 7 && strncmp(entryid.pc, "/exmdb=", 7) == 0)
+		return ecSuccess;
+
+	const char *subject = "";
+	try {
+		static constexpr proptag_t tags[] = {PR_SUBJECT};
+		TPROPVAL_ARRAY props{};
+		if (message->get_properties(tags, &props) == ecSuccess) {
+			auto value = props.get<const char>(PR_SUBJECT);
+			if (value != nullptr)
+				subject = value;
+		}
+	} catch (const std::bad_alloc &) {
+	}
+	std::string mailbox = store.b_private ?
+		std::string("mailbox ") + store.get_account() : "public folders";
+	mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via ZCORE",
+		uinfo.get_username(), txt2cstr(subject).c_str(),
+		mailbox.c_str());
+	return ecSuccess;
+}
+
+static ec_error_t zs_openstoreentry_0(store_object &store, eid_t folder_id,
+    uint32_t hobject, unsigned int flags, USER_INFO &uinfo, uint32_t *phobject,
+    zs_objtype *pmapi_type)
+{
+	BOOL b_exist = false;
+	if (!exmdb_client->is_folder_present(store.get_dir(),
+	    folder_id, &b_exist))
+		return ecError;
+	if (!b_exist)
+		return ecNotFound;
+	if (!store.b_private) {
+		BOOL b_del = false;
+		if (!exmdb_client->is_folder_deleted(store.get_dir(),
+		    folder_id, &b_del))
+			return ecError;
+		if (b_del && !(flags & SHOW_SOFT_DELETES))
+			return ecNotFound;
+	}
+	void *pvalue = nullptr;
+	if (!exmdb_client_get_folder_property(store.get_dir(), CP_ACP,
+	    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
+		return ecError;
+	auto folder_type = *static_cast<uint32_t *>(pvalue);
+	uint32_t tag_access = MAPI_ACCESS_AllSix;
+	if (!store.owner_mode()) {
+		uint32_t permission = 0;
+		if (!exmdb_client->get_folder_perm(store.get_dir(),
+		    folder_id, uinfo.get_username(), &permission))
+			return ecError;
+		if (permission == rightsNone) {
+			auto fid_val = folder_id.gcv();
+			if (store.b_private) {
+				if (fid_val == PRIVATE_FID_ROOT ||
+				    fid_val == PRIVATE_FID_IPMSUBTREE)
+					permission = frightsVisible;
+			} else {
+				if (fid_val == PUBLIC_FID_ROOT)
+					permission = frightsVisible;
+			}
+		}
+		if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
+			return ecNotFound;
+		if (permission & frightsOwner) {
+			tag_access = MAPI_ACCESS_AllSix;
+		} else {
+			tag_access = MAPI_ACCESS_READ;
+			if (permission & frightsCreate)
+				tag_access |= MAPI_ACCESS_CREATE_CONTENTS | MAPI_ACCESS_CREATE_ASSOCIATED;
+			if (permission & frightsCreateSubfolder)
+				tag_access |= MAPI_ACCESS_CREATE_HIERARCHY;
+		}
+	}
+	auto pfolder = folder_object::create(&store, folder_id,
+	               folder_type, tag_access);
+	if (pfolder == nullptr)
+		return ecError;
+	*phobject = uinfo.ptree->add_object_handle(hobject, {zs_objtype::folder, std::move(pfolder)});
+	if (zh_is_error(*phobject))
+		return zh_error(*phobject);
+	*pmapi_type = zs_objtype::folder;
+	return ecSuccess;
+}
+
 ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
     uint32_t flags, zs_objtype *pmapi_type, uint32_t *phobject)
 {
-	BOOL b_del;
-	BOOL b_exist;
-	void *pvalue;
-	BOOL b_private;
-	int account_id;
-	uint64_t fid_val;
-	uint8_t loc_type;
-	zs_objtype mapi_type;
-	uint32_t tag_access;
-	uint32_t permission;
-	uint32_t address_type;
-	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
+	zs_objtype mapi_type;
 	auto pstore = pinfo->ptree->get_object<store_object>(hobject, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
@@ -905,6 +1006,10 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		eid_t eid{};
 		std::string essdn_s;
 		const char *essdn;
+		uint32_t address_type = 0;
+		int account_id = 0;
+		uint8_t loc_type = 0;
+		BOOL b_private = TRUE;
 
 		auto type = common_util_get_messaging_entryid_type(entryid);
 		switch (type) {
@@ -959,6 +1064,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		}
 		if (LOC_TYPE_PRIVATE_MESSAGE == loc_type ||
 			LOC_TYPE_PUBLIC_MESSAGE == loc_type) {
+			void *pvalue = nullptr;
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
 			    nullptr, CP_ACP, message_id, PidTagParentFolderId,
 			    &pvalue) || pvalue == nullptr)
@@ -970,102 +1076,12 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		    account_id != pstore->account_id)
 			return ecInvalidParam;
 	}
-	if (0 != message_id) {
-		if (!exmdb_client->is_msg_deleted(pstore->get_dir(),
-		    message_id, &b_del))
-			return ecError;
-		if (b_del && !(flags & SHOW_SOFT_DELETES))
-			return ecNotFound;
-		auto ret = cu_calc_msg_access(*pstore, pinfo->get_username(),
-		           folder_id, message_id, tag_access);
-		if (ret != ecSuccess)
-			return ret;
-		bool b_writable = tag_access & MAPI_ACCESS_MODIFY;
-		auto pmessage = message_object::create(pstore, false,
-		                pinfo->cpid, message_id, &folder_id, tag_access,
-		                b_writable ? TRUE : false, nullptr);
-		if (pmessage == nullptr)
-			return ecError;
-		auto message = pmessage.get();
-		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::message, std::move(pmessage)});
-		if (zh_is_error(*phobject))
-			return zh_error(*phobject);
-		*pmapi_type = zs_objtype::message;
-		if (!(entryid.cb >= 7 &&
-		    strncmp(entryid.pc, "/exmdb=", 7) == 0)) {
-			const char *subject = "";
-			try {
-				static constexpr proptag_t tags[] = {PR_SUBJECT};
-				TPROPVAL_ARRAY props{};
-				if (message->get_properties(tags, &props) == ecSuccess) {
-					auto value = props.get<const char>(PR_SUBJECT);
-					if (value != nullptr)
-						subject = value;
-				}
-			} catch (const std::bad_alloc &) {
-			}
-			std::string mailbox = pstore->b_private ?
-				std::string("mailbox ") + pstore->get_account() : "public folders";
-			mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via ZCORE",
-				pinfo->get_username(), txt2cstr(subject).c_str(),
-				mailbox.c_str());
-		}
-	} else {
-		if (!exmdb_client->is_folder_present(pstore->get_dir(),
-		    folder_id, &b_exist))
-			return ecError;
-		if (!b_exist)
-			return ecNotFound;
-		if (!pstore->b_private) {
-			if (!exmdb_client->is_folder_deleted(pstore->get_dir(),
-			    folder_id, &b_del))
-				return ecError;
-			if (b_del && !(flags & SHOW_SOFT_DELETES))
-				return ecNotFound;
-		}
-		if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
-		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
-			return ecError;
-		auto folder_type = *static_cast<uint32_t *>(pvalue);
-		if (pstore->owner_mode()) {
-			tag_access = MAPI_ACCESS_AllSix;
-		} else {
-			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
-			    folder_id, pinfo->get_username(), &permission))
-				return ecError;
-			if (permission == rightsNone) {
-				fid_val = rop_util_get_gc_value(folder_id);
-				if (pstore->b_private) {
-					if (fid_val == PRIVATE_FID_ROOT ||
-					    fid_val == PRIVATE_FID_IPMSUBTREE)
-						permission = frightsVisible;
-				} else {
-					if (fid_val == PUBLIC_FID_ROOT)
-						permission = frightsVisible;
-				}
-			}
-			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
-				return ecNotFound;
-			if (permission & frightsOwner) {
-				tag_access = MAPI_ACCESS_AllSix;
-			} else {
-				tag_access = MAPI_ACCESS_READ;
-				if (permission & frightsCreate)
-					tag_access |= MAPI_ACCESS_CREATE_CONTENTS | MAPI_ACCESS_CREATE_ASSOCIATED;
-				if (permission & frightsCreateSubfolder)
-					tag_access |= MAPI_ACCESS_CREATE_HIERARCHY;
-			}
-		}
-		auto pfolder = folder_object::create(pstore, folder_id,
-		               folder_type, tag_access);
-		if (pfolder == nullptr)
-			return ecError;
-		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::folder, std::move(pfolder)});
-		if (zh_is_error(*phobject))
-			return zh_error(*phobject);
-		*pmapi_type = zs_objtype::folder;
-	}
-	return ecSuccess;
+	if (message_id != 0)
+		return zs_openstoreentry_1(*pstore, folder_id, message_id,
+		       entryid, hobject, flags, *pinfo, phobject, pmapi_type);
+
+	return zs_openstoreentry_0(*pstore, folder_id, hobject, flags, *pinfo,
+	       phobject, pmapi_type);
 }
 
 static ec_error_t zs_openab_emsab(USER_INFO_REF &&, BINARY, int, zs_objtype *, uint32_t *);
@@ -1802,20 +1818,95 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	       ecSuccess : ecError;
 }
 
+static ec_error_t zs_copymessages_other(const BINARY_ARRAY &entryids,
+    store_object &src_store, folder_object &src_folder, store_object &dst_store,
+    folder_object &dst_folder, USER_INFO &uinfo, unsigned int flags)
+{
+	bool b_guest = true;
+	if (flags & MAPI_MOVE) {
+		b_guest = false;
+		if (!src_store.owner_mode()) {
+			uint32_t permission = 0;
+			if (!exmdb_client->get_folder_perm(src_store.get_dir(),
+			    src_folder.folder_id, uinfo.get_username(), &permission))
+				return ecError;
+			if (permission & frightsDeleteAny)
+				/* permission to delete any message */;
+			else if (permission & frightsDeleteOwned)
+				b_guest = true;
+			else
+				return ecAccessDenied;
+		}
+	}
+	if (!dst_store.owner_mode()) {
+		uint32_t permission = 0;
+		if (!exmdb_client->get_folder_perm(dst_store.get_dir(),
+		    dst_folder.folder_id, uinfo.get_username(), &permission))
+			return ecError;
+		if (!(permission & frightsCreate))
+			return ecAccessDenied;
+	}
+	for (size_t i = 0; i < entryids.count; ++i) {
+		eid_t folder_id{}, message_id{};
+		BOOL b_private = true;
+		int account_id = 0;
+
+		if (!cu_entryid_to_mid(entryids.pbin[i],
+		    &b_private, &account_id, &folder_id, &message_id))
+			return ecError;
+		if (b_private != src_store.b_private ||
+		    account_id != src_store.account_id ||
+		    folder_id != src_folder.folder_id)
+			continue;
+		/*
+		 * Authorize the read as an open would: the entryid folder part is
+		 * caller-supplied, so resolve the real parent (not psrc_folder).
+		 */
+		if (!src_store.owner_mode()) {
+			void *pvparent = nullptr;
+			if (!exmdb_client_get_message_property(src_store.get_dir(),
+			    nullptr, CP_ACP, message_id, PidTagParentFolderId, &pvparent))
+				return ecError;
+			if (pvparent == nullptr)
+				continue;
+			uint32_t msg_access = 0;
+			if (cu_calc_msg_access(src_store, uinfo.get_username(),
+			    *static_cast<eid_t *>(pvparent), message_id, msg_access) != ecSuccess)
+				continue;
+		}
+		auto ret = cu_remote_copy_message(src_store, message_id,
+		           dst_store, dst_folder.folder_id);
+		if (ret != ecSuccess)
+			return ret;
+		if (flags & MAPI_MOVE) {
+			if (b_guest) {
+				BOOL b_owner = false;
+				if (!exmdb_client_check_message_owner(src_store.get_dir(),
+				    message_id, uinfo.get_username(), &b_owner))
+					return ecError;
+				if (!b_owner)
+					continue;
+			}
+			BOOL b_partial = false;
+			const EID_ARRAY ids = {1, &message_id};
+			if (!exmdb_client->delete_messages(src_store.get_dir(),
+			    uinfo.cpid, nullptr, src_folder.folder_id,
+			    &ids, false, &b_partial))
+				return ecError;
+		}
+	}
+	return ecSuccess;
+}
+
 ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
     uint32_t hdstfolder, const BINARY_ARRAY *pentryids, uint32_t flags)
 {
-	BOOL b_guest = TRUE, b_owner;
-	BOOL b_private;
-	int account_id;
-	zs_objtype mapi_type;
-	uint32_t permission;
-	
 	if (pentryids->count == 0)
 		return ecSuccess;
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
+	zs_objtype mapi_type;
 	auto psrc_folder = pinfo->ptree->get_object<folder_object>(hsrcfolder, &mapi_type);
 	if (psrc_folder == nullptr)
 		return ecNullObject;
@@ -1828,60 +1919,9 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	if (mapi_type != zs_objtype::folder || pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto dst_store = pdst_folder->pstore;
-	BOOL b_copy = (flags & MAPI_MOVE) ? false : TRUE;
-	if (src_store != dst_store) {
-		if (!b_copy) {
-			b_guest = FALSE;
-			if (!src_store->owner_mode()) {
-				if (!exmdb_client->get_folder_perm(src_store->get_dir(),
-				    psrc_folder->folder_id, pinfo->get_username(), &permission))
-					return ecError;
-				if (permission & frightsDeleteAny)
-					/* permission to delete any message */;
-				else if (permission & frightsDeleteOwned)
-					b_guest = TRUE;
-				else
-					return ecAccessDenied;
-			}
-		}
-		if (!dst_store->owner_mode()) {
-			if (!exmdb_client->get_folder_perm(dst_store->get_dir(),
-			    pdst_folder->folder_id, pinfo->get_username(), &permission))
-				return ecError;
-			if (!(permission & frightsCreate))
-				return ecAccessDenied;
-		}
-		for (size_t i = 0; i < pentryids->count; ++i) {
-			eid_t folder_id{}, message_id{};
-			if (!cu_entryid_to_mid(pentryids->pbin[i],
-			    &b_private, &account_id, &folder_id, &message_id))
-				return ecError;
-			if (b_private != src_store->b_private ||
-			    account_id != src_store->account_id ||
-			    folder_id != psrc_folder->folder_id)
-				continue;
-			auto ret = cu_remote_copy_message(src_store, message_id,
-			           dst_store, pdst_folder->folder_id);
-			if (ret != ecSuccess)
-				return ret;
-			if (!b_copy) {
-				if (b_guest) {
-					if (!exmdb_client_check_message_owner(src_store->get_dir(),
-					    message_id, pinfo->get_username(), &b_owner))
-						return ecError;
-					if (!b_owner)
-						continue;
-				}
-				BOOL b_partial = false;
-				const EID_ARRAY ids = {1, &message_id};
-				if (!exmdb_client->delete_messages(src_store->get_dir(),
-				    pinfo->cpid, nullptr, psrc_folder->folder_id,
-				    &ids, false, &b_partial))
-					return ecError;
-			}
-		}
-		return ecSuccess;
-	}
+	if (src_store != dst_store)
+		return zs_copymessages_other(*pentryids, *src_store, *psrc_folder,
+		       *dst_store, *pdst_folder, *pinfo, flags);
 
 	EID_ARRAY ids;
 	ids.count = 0;
@@ -1890,6 +1930,9 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 		return ecServerOOM;
 	for (size_t i = 0; i < pentryids->count; ++i) {
 		eid_t folder_id{}, message_id{};
+		BOOL b_private = true;
+		int account_id = 0;
+
 		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
@@ -1899,20 +1942,21 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 			continue;
 		ids.pids[ids.count++] = message_id;
 	}
+	bool b_guest = false;
 	if (!src_store->owner_mode()) {
+		uint32_t permission = 0;
 		if (!exmdb_client->get_folder_perm(src_store->get_dir(),
 		    pdst_folder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsCreate))
 			return ecAccessDenied;
-		b_guest = TRUE;
-	} else {
-		b_guest = FALSE;
+		b_guest = true;
 	}
 	BOOL b_partial = false;
 	return exmdb_client->movecopy_messages(src_store->get_dir(),
-	       pinfo->cpid, b_guest, pinfo->get_username(),
-	       psrc_folder->folder_id, pdst_folder->folder_id, b_copy, &ids,
+	       pinfo->cpid, b_guest ? TRUE : false, pinfo->get_username(),
+	       psrc_folder->folder_id, pdst_folder->folder_id,
+	       (flags & MAPI_MOVE) ? false : TRUE, &ids,
 	       &b_partial) ? ecSuccess : ecError;
 }
 
@@ -2344,7 +2388,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		auto ret = cu_remote_copy_folder(src_store, folder_id, dst_store,
+		auto ret = cu_remote_copy_folder(*src_store, folder_id, *dst_store,
 		           pdst_folder->folder_id, new_name);
 		if (ret != ecSuccess)
 			return ret;
@@ -3412,7 +3456,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
 	std::string delegator;
-	if (!cu_extract_delegator(pmessage, delegator))
+	if (!cu_extract_delegator(*pmessage, delegator))
 		return ecSendAsDenied;
 	auto actor = pstore->get_account();
 	repr_grant repr_grant;
@@ -3497,7 +3541,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			return ecSuccess;
 		}
 	}
-	auto ret = cu_send_message(pstore, pmessage, actor, delegator.c_str(), repr_grant);
+	auto ret = cu_send_message(*pstore, *pmessage, actor, delegator.c_str(), repr_grant);
 	if (ret != ecSuccess) {
 		exmdb_client->clear_submit(pstore->get_dir(),
 			pmessage->get_id(), b_unsent);
@@ -4969,7 +5013,7 @@ ec_error_t zs_messagetorfc822(GUID hsession, uint32_t hmessage, BINARY *peml_bin
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	return cu_message_to_rfc822(pmessage->get_store(),
+	return cu_message_to_rfc822(*pmessage->get_store(),
 	       pmessage->instance_id, peml_bin);
 }
 
@@ -4985,7 +5029,7 @@ ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	auto pmsgctnt = cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin);
+	auto pmsgctnt = cu_rfc822_to_message(*pmessage->get_store(), mxf_flags, peml_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(*pmsgctnt);
@@ -5002,7 +5046,7 @@ ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	return cu_message_to_ical(pmessage->get_store(),
+	return cu_message_to_ical(*pmessage->get_store(),
 	       pmessage->get_id(), pical_bin);
 }
 
@@ -5018,7 +5062,7 @@ ec_error_t zs_icaltomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	auto pmsgctnt = cu_ical_to_message(pmessage->get_store(), pical_bin);
+	auto pmsgctnt = cu_ical_to_message(*pmessage->get_store(), pical_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(*pmsgctnt);
@@ -5039,9 +5083,9 @@ ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 	std::vector<message_ptr> msgvec;
 	ec_error_t ret = ecInvalidParam;
 	if (data_type == IMTOMESSAGE_ICAL)
-		ret = cu_ical_to_message2(fld->pstore, im_data, msgvec);
+		ret = cu_ical_to_message2(*fld->pstore, im_data, msgvec);
 	else if (data_type == IMTOMESSAGE_VCARD)
-		ret = cu_vcf_to_message2(fld->pstore, im_data, msgvec);
+		ret = cu_vcf_to_message2(*fld->pstore, im_data, msgvec);
 	if (ret != ecSuccess)
 		return ret;
 
@@ -5081,9 +5125,9 @@ ec_error_t zs_messagetovcf(GUID hsession, uint32_t hmessage, BINARY *pvcf_bin)
 	if (obj == nullptr)
 		return ecNullObject;
 	if (mapi_type == zs_objtype::message)
-		return cu_message_to_vcf(static_cast<message_object *>(obj), pvcf_bin);
+		return cu_message_to_vcf(*static_cast<message_object *>(obj), pvcf_bin);
 	if (mapi_type == zs_objtype::mailuser || mapi_type == zs_objtype::distlist)
-		return cu_abentry_to_vcf(static_cast<user_object *>(obj),
+		return cu_abentry_to_vcf(*static_cast<user_object *>(obj),
 		       mapi_type == zs_objtype::distlist, pvcf_bin);
 	return ecNotSupported;
 }
@@ -5100,7 +5144,7 @@ ec_error_t zs_vcftomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	auto pmsgctnt = common_util_vcf_to_message(pmessage->get_store(), pvcf_bin);
+	auto pmsgctnt = common_util_vcf_to_message(*pmessage->get_store(), pvcf_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(*pmsgctnt);

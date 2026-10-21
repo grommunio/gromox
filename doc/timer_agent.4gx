@@ -18,14 +18,15 @@ Number of connections to keep active.
 .br
 Default: \fI8\fP
 .TP
-\fBtimer_host\fP
-The hostname/IP address for contacting the timer daemon.
+\fBtimer_server\fP
+Host carrying the timer service.
 .br
-Default: \fI::1\fP
+Default: \fIunix:/run/gromox/timer.sock\fP
+.TP
+\fBtimer_host\fP
+Deprecated in favor of \fBtimer_server\fP.
 .TP
 \fBtimer_port\fP
-The TCP port number for contacting the timer daemon.
-.br
-Default: \fI6666\fP
+Deprecated in favor of \fBtimer_server\fP.
 .SH See also
 \fBgromox\fP(7), \fBtimer\fP(8gx)

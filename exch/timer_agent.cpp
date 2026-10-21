@@ -52,7 +52,7 @@ static std::list<BACK_CONN> g_back_list, g_lost_list;
 
 static constexpr cfg_directive timer_agent_cfg_defaults[] = {
 	{"connection_num", "8", CFG_SIZE, "1"},
-	{"timer_host", "::1"},
+	{"timer_host", "unix:/run/gromox/timer.sock"},
 	{"timer_port", "6666"},
 	CFG_TABLE_END,
 };
@@ -305,14 +305,14 @@ static int read_line(int sockd, char *buff, int length)
 static int connect_timer()
 {
     char temp_buff[1024];
-	int sockd = HX_inet_connect(g_timer_ip, g_timer_port, 0);
+	auto sockd = gx_generic_connect(g_timer_ip, g_timer_port);
 	if (sockd < 0) {
 		static std::atomic<time_t> g_lastwarn_time;
 		auto prev = g_lastwarn_time.load();
 		auto next = prev + 60;
 		auto now = time(nullptr);
 		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-			mlog(LV_ERR, "HX_inet_connect timer_agent@[%s]:%hu: %s",
+			mlog(LV_ERR, "gx_generic_connect timer_agent@[%s]:%hu: %s",
 			        g_timer_ip, g_timer_port, strerror(-sockd));
 	        return -1;
 	}

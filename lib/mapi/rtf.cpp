@@ -3583,9 +3583,16 @@ ec_error_t rtf_to_html(std::string_view inbuf, const char *cset,
 	/* PANDOC_RTH will use image embedding... might work, might not. */
 	if (s == nullptr) {
 		auto ret = convert_doc_with_program(inbuf, cset, outbuf,
-		           REND_PANDOC_RTH);
+		           REND_SOFFICE_RTH);
 		if (ret >= 0)
 			return ecSuccess;
+		ret = convert_doc_with_program(inbuf, cset, outbuf,
+		      REND_PANDOC_RTH);
+		if (ret >= 0)
+			return ecSuccess;
+	} else if (strcasecmp(s, "soffice") == 0) {
+		return convert_doc_with_program(inbuf, cset, outbuf,
+		       REND_SOFFICE_RTH) >= 0 ? ecSuccess : ecError;
 	} else if (strcasecmp(s, "pandoc") == 0) {
 		return convert_doc_with_program(inbuf, cset, outbuf,
 		       REND_PANDOC_RTH) >= 0 ? ecSuccess : ecError;

@@ -96,9 +96,9 @@ static constexpr HXoption g_options_table[] = {
 
 static constexpr cfg_directive timer_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR},
-	{"timer_hosts_allow", ""}, /* ::1 default set later during startup */
-	{"timer_listen_ip", "::1"},
-	{"timer_listen_port", "6666"},
+	{"running_identity", RUNNING_IDENTITY},
+	{"timer_hosts_allow", ""}, /* default set added later during startup */
+	{"timer_listen", "unix:/run/gromox/timer.sock"},
 	{"timer_log_file", "-"},
 	{"timer_log_level", "4" /* LV_NOTICE */},
 	{"timer_state_path", PKGSTATEDIR "/timer.txt"},
@@ -241,6 +241,33 @@ static void do_tasks(time_t &last_cltime)
 		save_timers(last_cltime, cur_time);
 }
 
+static int parse_binds(listener_ctx &ctx, const config_file &cfg,
+    const char *newkey, const char *oldkey, const char *oldportkey,
+    unsigned int mark)
+{
+	auto line = cfg.get_value(newkey);
+	if (line != nullptr)
+		return ctx.add_bunch(line, cfg.get_value("running_identity"), mark);
+	auto host = cfg.get_value(oldkey);
+	if (host == nullptr)
+		return 0;
+	mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+		cfg.m_filename.c_str(), oldkey,
+		cfg.m_filename.c_str(), newkey);
+	auto ps = cfg.get_value(oldportkey);
+	uint16_t port = 6666;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			cfg.m_filename.c_str(), oldportkey,
+			cfg.m_filename.c_str(), newkey);
+		port = strtoul(ps, nullptr, 0);
+	}
+	if (port != 0 &&
+	    ctx.add_inet(host, port, mark) != 0)
+		return -1;
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	std::vector<pthread_t> thr_ids;
@@ -273,17 +300,18 @@ int main(int argc, char **argv)
 		pconfig->get_ll("timer_log_level"),
 		pconfig->get_value("running_identity"));
 	g_list_path = pconfig->get_value("timer_state_path");
-	uint16_t listen_port = pconfig->get_ll("timer_listen_port");
+	auto listen_port = pconfig->get_ll("timer_listen_port");
 	auto listen_ip = pconfig->get_value("timer_listen_ip");
-	printf("[system]: listen address is [%s]:%hu\n",
-	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
-
 	g_threads_num = pconfig->get_ll("timer_threads_num");
 	printf("[system]: processing threads number is %u\n", g_threads_num);
 	g_threads_num ++;
 
 	listener_ctx listener;
-	if (listen_port != 0 &&
+	gx_set_umask();
+	if (parse_binds(listener, *pconfig, "timer_listen",
+	    "timer_listen_ip", "timer_listen_port", 0) != 0)
+		return EXIT_FAILURE;
+	if (listen_port != 0 && listen_ip != nullptr &&
 	    listener.add_inet(listen_ip, listen_port) != 0)
 		return EXIT_FAILURE;
 	listener.m_thread_name = "accept";
@@ -351,12 +379,11 @@ int main(int argc, char **argv)
 	auto hosts_allow = pconfig->get_value("timer_hosts_allow");
 	if (hosts_allow != nullptr)
 		g_acl_list = gx_split(hosts_allow, ' ');
-	std::sort(g_acl_list.begin(), g_acl_list.end());
 	std::erase(g_acl_list, "");
-	g_acl_list.erase(std::unique(g_acl_list.begin(), g_acl_list.end()), g_acl_list.end());
+	sort_unique(g_acl_list);
 	if (g_acl_list.size() == 0) {
-		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
-		g_acl_list = {"::1"};
+		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing {\"unix:\"}");
+		g_acl_list = {"unix:"};
 	}
 
 	auto err = listener.watch_start(g_notify_stop, tmr_acceptwork);
@@ -382,7 +409,8 @@ int main(int argc, char **argv)
 static int tmr_acceptwork(generic_connection &&conn)
 {
 		if (!ct_contains(g_acl_list, conn.client_addr)) {
-			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
+			static constexpr char msg[] = "FALSE Access denied\r\n";
+			if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 				/* ignore */;
 			return 0;
 		}
@@ -390,7 +418,8 @@ static int tmr_acceptwork(generic_connection &&conn)
 		std::unique_lock co_hold(g_connection_lock);
 		if (g_connection_list.size() + 1 + g_connection_list1.size() >= g_threads_num) {
 			co_hold.unlock();
-			if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
+			static constexpr char msg[] = "FALSE Maximum number of connections reached!\r\n";
+			if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 				/* ignore */;
 			return 0;
 		}
@@ -400,7 +429,8 @@ static int tmr_acceptwork(generic_connection &&conn)
 		try {
 			cn = &g_connection_list1.emplace_back(std::move(conn));
 		} catch (const std::bad_alloc &) {
-			if (HXio_fullwrite(rawfd, "FALSE Not enough memory\r\n", 25) < 0)
+			static constexpr char msg[] = "FALSE Not enough memory\r\n";
+			if (HXio_fullwrite(rawfd, msg, strlen(msg)) < 0)
 				/* ignore */;
 			return 0;
 		}
@@ -540,7 +570,11 @@ static int tmr_thrwork_1()
 		} else if (0 == strcasecmp(pconnection->line, "PING")) {
 			pconnection->sk_write("TRUE\r\n");
 		} else {
+			/* An unrecognized command ends the session. */
 			pconnection->sk_write("FALSE\r\n");
+			co_hold.lock();
+			g_connection_list.erase(pconnection);
+			return X_LOOP;
 		}
 	}
 }

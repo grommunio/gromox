@@ -187,9 +187,8 @@ static int midb_acl_read(const char *configdir, const char *hosts_allow)
 		mlog(LV_ERR, "listener: list_file_initd \"midb_acl.txt\": %s", strerror(errno));
 		return -5;
 	}
-	std::sort(acl.begin(), acl.end());
 	std::erase(acl, "");
-	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
+	sort_unique(acl);
 	if (acl.size() == 0) {
 		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
 		acl = {"::1"};
@@ -207,7 +206,7 @@ static int listener_init(listener_ctx &ctx, const config_file &gxcfg,
 		return ret;
 	auto line = gxcfg.get_value("midb_listen");
 	if (line != nullptr)
-		return ctx.add_bunch(line);
+		return ctx.add_bunch(line, oldcfg.get_value("running_identity"));
 	auto host = oldcfg.get_value("midb_listen_ip");
 	if (host != nullptr)
 		mlog(LV_NOTICE, "%s:listen_ip is deprecated in favor of %s:midb_listen",
@@ -291,6 +290,7 @@ int main(int argc, char **argv)
 	HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 	mlog(LV_INFO, "system: cache interval is %s", temp_buff);
 	
+	gx_set_umask();
 	filedes_limit_bump(gxconfig->get_ll("midb_fd_limit"));
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	g_midb_busy_timeout_ns = gxconfig->get_ll("midb_sqlite_busy_timeout");

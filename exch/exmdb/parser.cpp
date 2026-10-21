@@ -711,9 +711,8 @@ static int exmdb_acl_read(const char *config_path, const char *hosts_allow)
 		mlog(LV_ERR, "exmdb_provider: Failed to read ACLs from exmdb_acl.txt: %s", strerror(errno));
 		return -5;
 	}
-	std::sort(acl.begin(), acl.end());
 	std::erase(acl, "");
-	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
+	sort_unique(acl);
 	if (acl.size() == 0) {
 		mlog(LV_NOTICE, "exmdb_provider: defaulting to implicit access ACL containing ::1.");
 		acl = {"::1"};
@@ -727,7 +726,7 @@ int exmdb_listener_init(const config_file &gxcfg, const config_file &oldcfg)
 	ctx.m_thread_name = "exmdb_accept";
 	auto line = gxcfg.get_value("exmdb_listen");
 	if (line != nullptr)
-		return ctx.add_bunch(line);
+		return ctx.add_bunch(line, oldcfg.get_value("running_identity"));
 	auto host = oldcfg.get_value("listen_ip");
 	if (host != nullptr)
 		mlog(LV_NOTICE, "%s:listen_ip is deprecated in favor of %s:exmdb_listen",

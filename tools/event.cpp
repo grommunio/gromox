@@ -121,12 +121,12 @@ static constexpr HXoption g_options_table[] = {
 
 static constexpr cfg_directive event_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/event:" PKGSYSCONFDIR},
-	{"event_hosts_allow", ""}, /* ::1 default set later during startup */
-	{"event_listen_ip", "::1"},
-	{"event_listen_port", "33333"},
+	{"event_hosts_allow", ""}, /* default set added later during startup */
+	{"event_listen", "unix:/run/gromox/event.sock"},
 	{"event_log_file", "-"},
 	{"event_log_level", "4" /* LV_NOTICE */},
 	{"event_threads_num", "50", CFG_SIZE, "1", "1000"},
+	{"running_identity", RUNNING_IDENTITY},
 	CFG_TABLE_END,
 };
 
@@ -175,6 +175,33 @@ ssize_t qsock::sk_write(const std::string_view &sv)
 	return ret;
 }
 
+static int parse_binds(listener_ctx &ctx, const config_file &cfg,
+    const char *newkey, const char *oldkey, const char *oldportkey,
+    unsigned int mark)
+{
+	auto line = cfg.get_value(newkey);
+	if (line != nullptr)
+		return ctx.add_bunch(line, cfg.get_value("running_identity"), mark);
+	auto host = cfg.get_value(oldkey);
+	if (host == nullptr)
+		return 0;
+	mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+		cfg.m_filename.c_str(), oldkey,
+		cfg.m_filename.c_str(), newkey);
+	auto ps = cfg.get_value(oldportkey);
+	uint16_t port = 6666;
+	if (ps != nullptr) {
+		mlog(LV_NOTICE, "%s:%s is deprecated in favor of %s:%s",
+			cfg.m_filename.c_str(), oldportkey,
+			cfg.m_filename.c_str(), newkey);
+		port = strtoul(ps, nullptr, 0);
+	}
+	if (port != 0 &&
+	    ctx.add_inet(host, port, mark) != 0)
+		return -1;
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	HXopt6_auto_result argp;
@@ -208,14 +235,16 @@ int main(int argc, char **argv)
 		pconfig->get_value("running_identity"));
 	auto listen_ip = pconfig->get_value("event_listen_ip");
 	uint16_t listen_port = pconfig->get_ll("event_listen_port");
-	printf("[system]: listen address is [%s]:%hu\n",
-	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	g_threads_num = pconfig->get_ll("event_threads_num");
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
 
 	listener_ctx listener;
-	if (listen_port != 0 &&
+	gx_set_umask();
+	if (parse_binds(listener, *pconfig, "event_listen",
+	    "event_listen_ip", "event_listen_port", 0) != 0)
+		return EXIT_FAILURE;
+	if (listen_port != 0 && listen_ip != nullptr &&
 	    listener.add_inet(listen_ip, listen_port) != 0)
 		return EXIT_FAILURE;
 	listener.m_thread_name = "accept";
@@ -262,12 +291,11 @@ int main(int argc, char **argv)
 	auto hosts_allow = pconfig->get_value("event_hosts_allow");
 	if (hosts_allow != nullptr)
 		g_acl_list = gx_split(hosts_allow, ' ');
-	std::sort(g_acl_list.begin(), g_acl_list.end());
 	std::erase(g_acl_list, "");
-	g_acl_list.erase(std::unique(g_acl_list.begin(), g_acl_list.end()), g_acl_list.end());
+	sort_unique(g_acl_list);
 	if (g_acl_list.size() == 0) {
-		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
-		g_acl_list = {"::1"};
+		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing {\"unix:\"}.");
+		g_acl_list = {"unix:"};
 	}
 
 	pthread_t scan_thr{};
@@ -358,18 +386,24 @@ static int ev_acceptwork(generic_connection &&conn)
 		return EW_OK;
 	}();
 	switch (ret) {
-	case EW_ACL:
-		if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
+	case EW_ACL: {
+		static constexpr char msg[] = "FALSE Access denied\r\n";
+		if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 			/* ignore */;
 		return 0;
-	case EW_MAXCONN:
-		if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
+	}
+	case EW_MAXCONN: {
+		static constexpr char msg[] = "FALSE Maximum number of connections reached!\r\n";
+		if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 			/* ignore */;
 		return 0;
-	case EW_NOMEM:
-		if (HXio_fullwrite(conn.sockd, "FALSE Not enough memory\r\n", 25) < 0)
+	}
+	case EW_NOMEM: {
+		static constexpr char msg[] = "FALSE Not enough memory\r\n";
+		if (HXio_fullwrite(conn.sockd, msg, strlen(msg)) < 0)
 			/* ignore */;
 		return 0;
+	}
 	case EW_OK:
 		if (HXio_fullwrite(penqueue->sockd, "OK\r\n", 4) < 0)
 			penqueue->reset();
