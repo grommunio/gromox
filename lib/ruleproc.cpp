@@ -162,6 +162,7 @@ struct rxparam {
 
 unsigned int g_ruleproc_debug;
 static std::string rp_smtp_url, rp_org_name;
+static unsigned int rp_max_ext_rules = 20;
 static thread_local alloc_context rp_alloc_ctx;
 static thread_local const char *rp_storedir;
 
@@ -595,6 +596,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 	    0, row_count, &output_rows))
 		return ecError;
 
+	unsigned int loaded = 0;
 	for (unsigned int i = 0; i < output_rows.count; ++i) {
 		auto row   = output_rows.pparray[i];
 		if (row == nullptr)
@@ -608,6 +610,11 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 			continue;
 		if (*state & ST_ONLY_WHEN_OOF && !oof)
 			continue;
+		if (loaded >= rp_max_ext_rules) {
+			mlog(LV_NOTICE, "ruleproc: %s: only the first %u extended rules are run",
+				dir, rp_max_ext_rules);
+			break;
+		}
 
 		rule_node rule;
 		rule.seq = *seq;
@@ -664,6 +671,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 			if (blk.type == OP_TAG && blk.pdata != nullptr)
 				rx_xrule_retag(map, static_cast<TAGGED_PROPVAL *>(blk.pdata)->proptag);
 		rule_list.emplace_back(std::move(rule));
+		++loaded;
 	}
 	return ecSuccess;
 }
@@ -3552,6 +3560,14 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	}
 	rp_org_name = *znul(org) != '\0' ? org : "Gromox default";
 	mlog(LV_DEBUG, "ruleproc: x500 org name is \"%s\"", rp_org_name.c_str());
+	/* Same limit as the legacy processor in exmdb_provider */
+	static constexpr cfg_directive xp_defaults[] = {
+		{"max_ext_rule_number", "20", CFG_SIZE},
+		CFG_TABLE_END,
+	};
+	auto xpc = config_file_initd("exmdb_provider.cfg", get_config_path(), xp_defaults);
+	if (xpc != nullptr)
+		rp_max_ext_rules = xpc->get_ll("max_ext_rule_number");
 	auto str = cfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {

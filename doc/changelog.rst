@@ -73,6 +73,9 @@ Fixes:
   own.
 * ruleproc: rules without a condition no longer apply to every message in
   the TwoStep processor and are skipped, as in the old processor.
+* ruleproc: the TwoStep processor now runs at most
+  ``exmdb_provider.cfg:max_ext_rule_number`` extended rules per folder, as the
+  old processor does.
 
 
 Gromox 3.13 (2026-10-28)
