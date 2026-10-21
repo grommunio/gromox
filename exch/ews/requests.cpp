@@ -25,6 +25,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
 #include "namedtags.hpp"
@@ -2029,7 +2030,15 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 		ctx.restrictShape(dir, folder, rights, shape);
 		if (dir != lastDir || rights != lastRights) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
-			auto res1 = request.Restriction ? request.Restriction->build(getId) : nullptr;
+			auto getEssdn = [&](const char *addr) {
+				std::string essdn;
+				if (cvt_username_to_essdn(addr, ctx.plugin().x500_org_name.c_str(),
+				    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+				    essdn) != ecSuccess)
+					essdn.clear();
+				return essdn;
+			};
+			auto res1 = request.Restriction ? request.Restriction->build(getId, getEssdn) : nullptr;
 			auto res2 = paging ? paging->restriction(getId) : nullptr;
 			auto newRes = tRestriction::all(res1, res2);
 			auto newSort = request.SortOrder ? tFieldOrder::build(*request.SortOrder, getId) : nullptr;

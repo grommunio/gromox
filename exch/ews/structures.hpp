@@ -203,6 +203,9 @@ using sFolderId = std::variant<tFolderId, tDistinguishedFolderId>;
 /// Function to get tag id from property name
 using sGetNameId = std::function<propid_t (const PROPERTY_NAME &)>;
 
+/// Function to get the ESSDN of an SMTP address, empty if unknown
+using sGetEssdn = std::function<std::string (const char *)>;
+
 /**
  * @brief     Message entry ID extension
  *
@@ -3315,21 +3318,21 @@ class tRestriction {
 	public:
 	explicit tRestriction(const tinyxml2::XMLElement *);
 
-	RESTRICTION* build(const sGetNameId&) const;
+	RESTRICTION *build(const sGetNameId &, const sGetEssdn & = {}) const;
 	static RESTRICTION* all(RESTRICTION*, RESTRICTION*);
 	static RESTRICTION* any(RESTRICTION*, RESTRICTION*);
 
 	private:
 	const tinyxml2::XMLElement *source = nullptr;  ///< XMLElement of the contained restriction
 
-	static void build_andor(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
+	static void build_andor(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &, const sGetEssdn &);
 	static void build_compare(RESTRICTION &, const tinyxml2::XMLElement *, relop, const sGetNameId &);
 	static void build_contains(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
 	static void build_excludes(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
 	static void build_exists(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
-	static void build_not(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
-	static void deserialize(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
-	static void widen_addr(RESTRICTION &, const tinyxml2::XMLElement *);
+	static void build_not(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &, const sGetEssdn &);
+	static void deserialize(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &, const sGetEssdn &);
+	static void widen_addr(RESTRICTION &, const tinyxml2::XMLElement *, const sGetEssdn &);
 
 	static void *loadConstant(const tinyxml2::XMLElement *, proptype_t);
 	static proptag_t getTag(const tinyxml2::XMLElement *, const sGetNameId &);
