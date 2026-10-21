@@ -137,6 +137,7 @@ int main(int argc, char **argv)
 	}
 	mlog(LV_INFO, "istore: host ID is \"%s\"", str);
 
+	gx_set_umask();
 	filedes_limit_bump(cfg->get_ll("istore_fd_limit"));
 	service_init({cfg, g_dfl_svc_plugins, 1, prog_id.c_str(), argv[0]});
 	auto cl_0 = HX::make_scope_exit(service_stop);

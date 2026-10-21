@@ -240,6 +240,7 @@ int main(int argc, char **argv)
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
 
 	listener_ctx listener;
+	gx_set_umask();
 	if (parse_binds(listener, *pconfig, "event_listen",
 	    "event_listen_ip", "event_listen_port", 0) != 0)
 		return EXIT_FAILURE;

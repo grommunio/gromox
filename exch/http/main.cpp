@@ -311,6 +311,7 @@ int main(int argc, char **argv)
 		mlog(LV_INFO, "Information Store is set to run in this process image with LPC");
 	}
 
+	gx_set_umask();
 	filedes_limit_bump(gxconfig->get_ll("http_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins,
 		context_num, program_identifier, argv[0]});

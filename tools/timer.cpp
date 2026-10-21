@@ -307,6 +307,7 @@ int main(int argc, char **argv)
 	g_threads_num ++;
 
 	listener_ctx listener;
+	gx_set_umask();
 	if (parse_binds(listener, *pconfig, "timer_listen",
 	    "timer_listen_ip", "timer_listen_port", 0) != 0)
 		return EXIT_FAILURE;

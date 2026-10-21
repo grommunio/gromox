@@ -110,6 +110,7 @@ int main(int argc, char **argv)
 	}
 	mlog(LV_INFO, "istore: host ID is \"%s\"", str);
 
+	gx_set_umask();
 	filedes_limit_bump(cfg->get_ll("fcgid_fd_limit"));
 	service_init({cfg, {}, 1, "fcgid"});
 	auto cl_0 = HX::make_scope_exit(service_stop);

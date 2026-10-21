@@ -290,6 +290,7 @@ int main(int argc, char **argv)
 	HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 	mlog(LV_INFO, "system: cache interval is %s", temp_buff);
 	
+	gx_set_umask();
 	filedes_limit_bump(gxconfig->get_ll("midb_fd_limit"));
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	g_midb_busy_timeout_ns = gxconfig->get_ll("midb_sqlite_busy_timeout");

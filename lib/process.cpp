@@ -339,7 +339,7 @@ std::string simple_backtrace()
  * so that e.g. AAPI can manage files. (In the long run that
  * should perhaps be refined.)
  */
-static void gx_set_umask()
+void gx_set_umask()
 {
 	auto m = umask(0777);
 	m = (m & ~0070) | ((m & 0700) >> 3);
