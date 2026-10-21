@@ -6178,12 +6178,31 @@ void EWSContext::updateReminder(const std::string &dir, uint64_t mid, sShape &sh
 		tagStart = PROP_TAG(PT_SYSTIME, ids[0]);
 	}
 	auto tagRecur = shape.tag(NtRecurring);
-	const proptag_t tags[] = {PR_MESSAGE_CLASS, tagDelta, tagTime, tagStart, tagRecur};
+	const proptag_t tags[] = {PR_MESSAGE_CLASS, tagDelta, tagTime, tagStart, tagSignal, tagRecur};
 	auto props = getItemProps(dir, mid, {tags, tagRecur != 0 ? std::size(tags) : std::size(tags) - 1});
 
 	auto recur = currentValue<uint8_t>(shape, props, NtRecurring, tagRecur);
-	if (tagRecur != 0 && recur != nullptr && *recur)
+	if (tagRecur != 0 && recur != nullptr && *recur) {
+		/*
+		 * A series signals at the next instance, or at 4501-01-01
+		 * once no instance is left, see MS-OXORMDR v16 §3.1.4.6.2.
+		 * Keep it on that instance when only the delta changes.
+		 */
+		static constexpr uint64_t noMoreSignals = 0x0CB34557A3DD4000;
+		auto newDelta = shape.writes(NtReminderDelta);
+		auto oldDelta = props.get<const int32_t>(tagDelta);
+		auto signal = props.get<const uint64_t>(tagSignal);
+		if (newDelta == nullptr || oldDelta == nullptr ||
+		    signal == nullptr || *signal >= noMoreSignals ||
+		    shape.writes(NtCommonStart) ||
+		    shape.writes(NtReminderSignalTime))
+			return;
+		auto diff = static_cast<int64_t>(*oldDelta) -
+		            *static_cast<const int32_t *>(newDelta->pvalue);
+		shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME,
+			construct<uint64_t>(*signal + diff * 600000000)});
 		return;
+	}
 	auto cls = props.get<const char>(PR_MESSAGE_CLASS);
 	bool appt = class_match_prefix(cls, "IPM.Appointment") == 0 ||
 	            class_match_prefix(cls, "IPM.Schedule.Meeting") == 0;
