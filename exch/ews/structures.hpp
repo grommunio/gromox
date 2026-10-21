@@ -1894,6 +1894,7 @@ struct tRecurrenceType {
 struct sRecurrenceFrame {
 	std::optional<TZDEF> tz; ///< Zone from TimeZoneContext
 	int32_t bias = 0; ///< Fixed offset (minutes east of UTC) if no TZDEF
+	bool item_local = false; ///< Client works in the item's time zone
 
 	int32_t offset(time_t) const;
 };
