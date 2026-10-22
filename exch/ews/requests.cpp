@@ -24,6 +24,7 @@
 #include <gromox/mapitags.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -4315,6 +4316,98 @@ static bool upd_is_organizer_copy(const EWSContext &ctx,
 	       "IPM.Appointment") == 0 && ctx.isOrganizer(dir, mid);
 }
 
+/* Properties PidLidChangeHighlight looks at, in BIT_CH order */
+static std::vector<proptag_t> upd_highlight_tags(const EWSContext &ctx,
+    const std::string &dir)
+{
+	const PROPERTY_NAME pn[] = {
+		NtAppointmentStartWhole, NtAppointmentEndWhole,
+		NtAppointmentRecur, NtLocation,
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = ctx.getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	return {PROP_TAG(PT_SYSTIME, ids[0]), PROP_TAG(PT_SYSTIME, ids[1]),
+	        PROP_TAG(PT_BINARY, ids[2]), PROP_TAG(PT_UNICODE, ids[3]),
+	        PR_SUBJECT, PR_BODY};
+}
+
+static std::vector<std::string> upd_attendees(const EWSContext &ctx,
+    const TARRAY_SET &rows, uint32_t type)
+{
+	std::vector<std::string> out;
+	for (const auto &row : rows) {
+		auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (rtype == nullptr || (*rtype & 0xf) != type ||
+		    (flags != nullptr && *flags & recipOrganizer))
+			continue;
+		auto a = ctx.rcptAddress(row);
+		HX_strlower(a.data());
+		out.emplace_back(std::move(a));
+	}
+	std::sort(out.begin(), out.end());
+	return out;
+}
+
+/**
+ * @brief      Work out what an update changed in the item properties
+ *
+ * MS-OXOCAL v22.1 §2.2.6.2
+ *
+ * @param      before    Values of @tags before the update
+ *
+ * @return     PidLidChangeHighlight bits
+ */
+static uint32_t upd_highlight(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, const std::vector<proptag_t> &tags,
+    const TPROPVAL_ARRAY &before)
+{
+	static constexpr uint32_t bits[] = {
+		BIT_CH_START, BIT_CH_END, BIT_CH_RECUR, BIT_CH_LOCATION,
+		BIT_CH_SUBJECT, BIT_CH_BODY,
+	};
+	if (tags.empty())
+		return 0;
+	if (tags.size() != std::size(bits))
+		throw EWSError::ItemSave(E3541);
+	auto after = ctx.getItemProps(dir, mid, tags);
+	uint32_t ch = 0;
+	for (size_t i = 0; i < tags.size(); ++i)
+		if (!propval_compare_relop_nullok(RELOP_EQ, PROP_TYPE(tags[i]),
+		    before.getval(tags[i]), after.getval(tags[i])))
+			ch |= bits[i];
+	return ch;
+}
+
+/**
+ * @brief      Work out which attendee kinds an update added to
+ *
+ * MS-OXOCAL v22.1 §2.2.6.2: BIT_CH_REQATT and BIT_CH_OPTATT stand for
+ * added attendees, removed ones set no bit.
+ *
+ * @param      oldRcpts  Recipients before the update
+ *
+ * @return     PidLidChangeHighlight bits
+ */
+static uint32_t upd_added_attendees(const EWSContext &ctx,
+    const std::string &dir, uint64_t mid, const TARRAY_SET &oldRcpts)
+{
+	TARRAY_SET rcpts{};
+	if (!ctx.plugin().exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+		throw EWSError::ItemNotFound(E3494);
+	uint32_t ch = 0;
+	for (auto [type, bit] : {std::pair{MAPI_TO, BIT_CH_REQATT}, std::pair{MAPI_CC, BIT_CH_OPTATT}}) {
+		auto o = upd_attendees(ctx, oldRcpts, type);
+		auto n = upd_attendees(ctx, rcpts, type);
+		if (!std::includes(o.cbegin(), o.cend(), n.cbegin(), n.cend()))
+			ch |= bit;
+	}
+	return ch;
+}
+
 void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:UpdateItemResponse");
@@ -4345,6 +4438,12 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		    upd_is_organizer_copy(ctx, dir, mid.messageId());
 		if (orgCopy)
 			ctx.validate_sendas_perms(ctx.storeOwner(dir));
+		std::vector<proptag_t> hlTags;
+		TPROPVAL_ARRAY hlBefore{};
+		if (orgCopy && !change.ItemId.isOccurrence()) {
+			hlTags = upd_highlight_tags(ctx, dir);
+			hlBefore = ctx.getItemProps(dir, mid.messageId(), hlTags);
+		}
 		sShape shape(change);
 		/*
 		 * Pre-register timezone properties that setDatetimeFields may
@@ -4493,10 +4592,23 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			bool addedOnly = oldRcpts && attendees_only(change) &&
 			                 (mode == Enum::SendOnlyToChanged ||
 			                 mode == Enum::SendToChangedAndSaveCopy);
+			/*
+			 * MS-OXOCAL v22.1 §2.2.6.5, §3.1.4.7.3.1: a new start,
+			 * end or recurrence, or added attendees, make a full
+			 * update, everything else an informational one.
+			 */
+			auto hl = upd_highlight(ctx, dir, mid.messageId(),
+			          hlTags, hlBefore);
+			if (oldRcpts)
+				hl |= upd_added_attendees(ctx, dir,
+				      mid.messageId(), *oldRcpts);
+			bool full = hl & (BIT_CH_START | BIT_CH_END |
+			            BIT_CH_RECUR | BIT_CH_REQATT | BIT_CH_OPTATT);
 			ctx.sendMeetingUpdate(dir, parentFolder,
 			    mid.messageId(), addedOnly ? &*oldRcpts : nullptr,
 			    mode == Enum::SendToAllAndSaveCopy ||
-			    mode == Enum::SendToChangedAndSaveCopy);
+			    mode == Enum::SendToChangedAndSaveCopy, hl,
+			    full || addedOnly);
 		}
 		if (orgCopy && oldRcpts && organizer)
 			/* MS-OXWSMTGS v14.0 §2.2.5.3 */

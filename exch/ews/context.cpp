@@ -5538,10 +5538,12 @@ static void mark_invited(const EWSContext &ctx, const std::string &dir,
  * @param      oldRcpts  Recipients before the update to send only to
  *                       the added attendees, nullptr to send to all
  * @param      saveCopy  Whether to keep a copy in Sent Items
+ * @param      highlight PidLidChangeHighlight of the update
+ * @param      full      Whether it is a full update
  */
 void EWSContext::sendMeetingUpdate(const std::string &dir,
     const sFolderSpec &parent, uint64_t mid, const TARRAY_SET *oldRcpts,
-    bool saveCopy) const
+    bool saveCopy, uint32_t highlight, bool full) const
 {
 	auto &exmdb = m_plugin.exmdb;
 	MESSAGE_CONTENT *cur = nullptr;
@@ -5597,16 +5599,27 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 		return;
 	const PROPERTY_NAME pn[] = {
 		NtAppointmentSequence, NtOwnerCriticalChange,
-		NtAppointmentUnsendableRecipients,
+		NtAppointmentUnsendableRecipients, NtFInvited,
+		NtChangeHighlight, NtMeetingType,
 	};
 	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
 	auto ids = getNamedPropIds(dir, pna, true);
 	if (ids.size() != std::size(pn) ||
 	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
 		throw EWSError::ItemSave(E3541);
+	auto &props = req->proplist;
+	/*
+	 * MS-OXOCAL v22.1 §2.2.6.2, §2.2.6.5. The first invitation to go
+	 * out stays the initial request.
+	 */
+	auto invited = props.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, ids[3]));
+	uint32_t mtgType = full ? mtgFull : mtgInfo;
+	if (invited != nullptr && *invited != 0 &&
+	    (props.set(PROP_TAG(PT_LONG, ids[4]), &highlight) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, ids[5]), &mtgType) != ecSuccess))
+		throw EWSError::NotEnoughMemory(E3408);
 	auto now = rop_util_current_nttime();
 	uint32_t seq = nextSequence(dir, parent, mid, oldRcpts == nullptr, now);
-	auto &props = req->proplist;
 	setUnsendable(props, PROP_TAG(PT_BINARY, ids[2]), unsendable);
 	if (props.set(PR_MESSAGE_CLASS,
 	    "IPM.Schedule.Meeting.Request") != ecSuccess ||

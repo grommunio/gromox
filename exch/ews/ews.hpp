@@ -374,7 +374,7 @@ class EWSContext {
 	void suppressReadReceipt(const Structures::tItemId&) const;
 	void cancelCalendarItem(const Structures::tItemId&, bool) const;
 	void cancelRemovedAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const TARRAY_SET&, bool) const;
-	void sendMeetingUpdate(const std::string&, const Structures::sFolderSpec&, uint64_t, const TARRAY_SET *, bool) const;
+	void sendMeetingUpdate(const std::string&, const Structures::sFolderSpec&, uint64_t, const TARRAY_SET *, bool, uint32_t, bool) const;
 	static void setUnsendable(TPROPVAL_ARRAY &, proptag_t, const std::vector<TPROPVAL_ARRAY *> &);
 	uint32_t nextSequence(const std::string&, const Structures::sFolderSpec&, uint64_t, bool, uint64_t) const;
 	std::string rcptAddress(const TPROPVAL_ARRAY &) const;

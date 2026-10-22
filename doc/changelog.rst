@@ -20,6 +20,9 @@ Fixes:
   them without calendar:IsMeeting.
 * imap: The greeting on implicit TLS connections advertised a truncated
   capability list.
+* EWS: meeting updates sent by UpdateItem now carry PidLidChangeHighlight
+  and are marked as full or informational updates instead of as a new
+  request.
 
 
 Gromox 3.13 (2026-10-28)
