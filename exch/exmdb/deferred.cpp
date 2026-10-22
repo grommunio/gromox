@@ -147,6 +147,70 @@ static void defer_scan_all()
 			armed, scanned);
 }
 
+/**
+ * One-shot import of any jobs left by the removed timer(8gx) daemon. Each
+ * timer.txt line is `tid<TAB>exectime<TAB>command`, command being
+ * `<submit_command> <user> <gcv>` with spaces/backslashes escaped.
+ */
+static void defer_migrate_timertxt()
+{
+	auto path = std::string(PKGSTATEDIR) + "/timer.txt";
+	std::unique_ptr<FILE, file_deleter> fp(fopen(path.c_str(), "r"));
+	if (fp == nullptr)
+		return;
+	auto now = time(nullptr);
+	size_t migrated = 0;
+	char line[1024];
+	while (fgets(line, std::size(line), fp.get()) != nullptr) {
+		char *p = line, *f1 = strchr(p, '\t');
+		if (f1 == nullptr)
+			continue;
+		*f1++ = '\0';
+		char *f2 = strchr(f1, '\t');
+		if (f2 == nullptr)
+			continue;
+		*f2++ = '\0';
+		time_t due = strtoll(f1, nullptr, 0);
+		if (due == 0)
+			continue; /* completion marker */
+		std::string cmd; /* unescape */
+		for (char *q = f2; *q != '\0' && *q != '\n'; ++q)
+			cmd += (*q == '\\' && q[1] != '\0') ? *++q : *q;
+		auto sp2 = cmd.rfind(' ');
+		if (sp2 == std::string::npos)
+			continue;
+		auto sp1 = cmd.rfind(' ', sp2 - 1);
+		if (sp1 == std::string::npos)
+			continue;
+		auto user = cmd.substr(sp1 + 1, sp2 - sp1 - 1);
+		uint64_t gcv = strtoull(cmd.c_str() + sp2 + 1, nullptr, 0);
+		if (gcv == 0)
+			continue;
+		sql_meta_result mres;
+		if (mysql_adaptor_meta(user.c_str(), WANTPRIV_METAONLY, mres) != 0)
+			continue;
+		due = due < now ? now : due;
+		exmdb_server::build_env(EM_PRIVATE, mres.maildir.c_str());
+		auto pdb = db_engine_get_db(mres.maildir.c_str()); /* also upgrades schema */
+		if (pdb) {
+			char q[160];
+			snprintf(q, std::size(q), "INSERT OR REPLACE INTO deferred_sends "
+				"(message_id, due_time) VALUES (%llu, %lld)",
+				static_cast<unsigned long long>(gcv),
+				static_cast<long long>(due));
+			if (pdb->exec(q) == SQLITE_OK) {
+				deferred_sched_arm(mres.maildir.c_str(), gcv, due);
+				++migrated;
+			}
+		}
+		exmdb_server::free_env();
+	}
+	fp.reset();
+	::rename(path.c_str(), (path + ".migrated").c_str());
+	if (migrated != 0)
+		mlog(LV_NOTICE, "deferred: migrated %zu job(s) from timer.txt", migrated);
+}
+
 static void defer_fire(const std::string &dir, uint64_t mid)
 {
 	if (g_role == defer_role::director) {
@@ -164,6 +228,8 @@ static void defer_fire(const std::string &dir, uint64_t mid)
 static void *defer_thread(void *)
 {
 	pthread_setname_np(pthread_self(), "deferred");
+	if (g_role == defer_role::executor)
+		defer_migrate_timertxt();
 	if (g_role != defer_role::worker)
 		defer_scan_all();
 	std::unique_lock lk(g_lock);
