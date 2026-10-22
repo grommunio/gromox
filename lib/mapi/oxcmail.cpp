@@ -1729,6 +1729,35 @@ static BOOL oxcmail_copy_message_proplist(
 	return TRUE;
 }
 
+/**
+ * A delegate sends a meeting request as From organizer with Sender
+ * delegate. The organizer from the iCal object fills both the
+ * PR_SENT_REPRESENTING and PR_SENDER properties of @ical. Like Exchange,
+ * keep the delegate of the Sender header of @mime as PR_SENDER then.
+ */
+static bool oxcmail_keep_delegate_sender(const MESSAGE_CONTENT &mime,
+    MESSAGE_CONTENT &ical)
+{
+	static constexpr proptag_t tags[] = {
+		PR_SENDER_NAME, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
+		PR_SENDER_SMTP_ADDRESS, PR_SENDER_SEARCH_KEY, PR_SENDER_ENTRYID,
+	};
+	auto from   = mime.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	auto sender = mime.proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	auto org    = ical.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (from == nullptr || sender == nullptr || org == nullptr ||
+	    strcasecmp(from, org) != 0 || strcasecmp(sender, org) == 0)
+		return true;
+	for (auto tag : tags) {
+		auto v = mime.proplist.getval(tag);
+		if (v == nullptr)
+			ical.proplist.erase(tag);
+		else if (ical.proplist.set(tag, v) != ecSuccess)
+			return false;
+	}
+	return true;
+}
+
 static BOOL oxcmail_merge_message_attachments(
 	MESSAGE_CONTENT *pmsg, MESSAGE_CONTENT *pmsg1)
 {
@@ -2439,6 +2468,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	field_param.b_classified = phead->get_field("X-Microsoft-Classified") != nullptr;
 	if (!phead->enum_field(oxcmail_enum_mail_head, &field_param))
 		return imp_null;
+	auto b_sender_hdr = pmsg->proplist.has(PR_SENDER_SMTP_ADDRESS);
 	if (!pmsg->proplist.has(PR_SENDER_NAME) &&
 	    !pmsg->proplist.has(PR_SENDER_SMTP_ADDRESS)) {
 		if (!oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_NAME, PR_SENT_REPRESENTING_NAME) ||
@@ -2675,7 +2705,9 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 				return imp_null;
 			pmsg1.reset();
 		} else {
-			if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()) ||
+			if ((b_sender_hdr &&
+			    !oxcmail_keep_delegate_sender(*pmsg, *pmsg1)) ||
+			    !oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()) ||
 			    !oxcmail_merge_message_attachments(pmsg.get(), pmsg1.get()))
 				return imp_null;
 			pmsg = std::move(pmsg1);
