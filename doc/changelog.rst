@@ -124,6 +124,10 @@ Fixes:
   old processor does.
 * ruleproc: the TwoStep processor now treats rules flagged
   ST_ONLY_WHEN_OOF_EX, as Exchange 2007 writes them, as Out of Office rules.
+* ruleproc: with meeting autoprocessing, a meeting update that keeps the
+  start, end and recurrence, such as one that removes an attendee, no longer
+  resets the responses of an attendee who had already answered, nor the
+  attendee's reminders.
 
 
 Gromox 3.13 (2026-10-28)
