@@ -852,6 +852,22 @@ EWSContext::EWSContext(detail::ContextKey id, const HTTP_AUTH_INFO &ai,
 		impersonate(imp->Name(), imp->GetText());
 }
 
+/**
+ * @brief      Get the language for text the server writes
+ *
+ * Like the mailbox session of Exchange, this is the MailboxCulture header
+ * of the request if there is one, else the language of the user.
+ *
+ * @return     Locale string, possibly empty
+ */
+const char *EWSContext::culture() const
+{
+	auto hdr = m_request.header != nullptr ?
+	           m_request.header->FirstChildElement("MailboxCulture") : nullptr;
+	auto text = hdr != nullptr ? hdr->GetText() : nullptr;
+	return !znoval(text) ? text : znul(m_auth_info.lang);
+}
+
 EWSContext::~EWSContext()
 {
 	if (m_notify)
@@ -4907,16 +4923,16 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	}
 }
 /* Subject prefix of a meeting response, MS-OXOCAL v22.1 §2.2.7.2 */
-static const char *resp_subject_prefix(const char *cls)
+static const char *resp_subject_prefix(const char *cls, const char *lang)
 {
 	if (cls == nullptr)
 		return nullptr;
 	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Pos") == 0)
-		return "Accepted: ";
+		return meeting_subject_prefix(lang, "accepted");
 	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Tent") == 0)
-		return "Tentative: ";
+		return meeting_subject_prefix(lang, "tentative");
 	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Neg") == 0)
-		return "Declined: ";
+		return meeting_subject_prefix(lang, "declined");
 	return nullptr;
 }
 
@@ -4970,7 +4986,7 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 	if (topic == nullptr)
 		topic = reqContent->proplist.get<const char>(PR_SUBJECT);
 	if (topic != nullptr && !respItem.proplist.has(PR_SUBJECT)) {
-		auto pfx = resp_subject_prefix(respClass);
+		auto pfx = resp_subject_prefix(respClass, culture());
 		if (pfx == nullptr)
 			pfx = "";
 		if (respItem.proplist.set(PR_SUBJECT_PREFIX, pfx) != ecSuccess ||

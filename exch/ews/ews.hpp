@@ -370,6 +370,7 @@ class EWSContext {
 	void cancelCalendarItem(const Structures::tItemId&, bool) const;
 	bool sendMeetingResponse(const Structures::tItemId&, MESSAGE_CONTENT&, bool) const;
 	BINARY serialize(const XID&) const;
+	const char *culture() const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
 	void rcpt_add_unique(TARRAY_SET *, gromox::EWS::Structures::tEmailAddressType, uint32_t) const;
 	message_content_ptr toContent(const std::string &, std::string &) const;
