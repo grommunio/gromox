@@ -55,6 +55,9 @@ Changes:
   grommunio-web, so replies are titled like in Exchange, e.g.
   "Automatic reply: <subject>". Before, a subject once set in grommunio-web
   stayed in use after the OOF settings were changed in Outlook or eM Client.
+* ruleproc: meeting autoprocessing now writes the subject prefixes of its
+  responses and of cancelled calendar items in the language of the mailbox,
+  e.g. "Angenommen: " and "Abgesagt: " for German mailboxes.
 
 Fixes:
 

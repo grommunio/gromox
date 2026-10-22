@@ -2274,6 +2274,19 @@ static inline uint32_t cvidx_make_delta(uint64_t oldtime, uint64_t now)
 	       (delta >> 18) & ~(1ULL << 31);
 }
 
+/*
+ * Language of the text that meeting processing writes. The Calendar
+ * Attendant of EXC uses the one of the mailbox.
+ */
+static std::string mr_owner_lang(const rxparam &par)
+{
+	sql_meta_result mres;
+	if (znoval(par.ev_to) ||
+	    mysql_adaptor_meta(par.ev_to, WANTPRIV_METAONLY, mres) != 0)
+		return {};
+	return std::move(mres.lang);
+}
+
 static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
     const PROPID_ARRAY &propids, uint32_t rsp_status) try
 {
@@ -2333,16 +2346,18 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 			}
 		}
 
+	/* OXOCAL v22.1 §2.2.7.2 */
+	auto lang = mr_owner_lang(par);
 	const char *newclass = nullptr, *newprefix = nullptr;
 	if (rsp_status == respAccepted) {
 		newclass  = "IPM.Schedule.Meeting.Resp.Pos";
-		newprefix = "Accepted: ";
+		newprefix = meeting_subject_prefix(lang.c_str(), "accepted");
 	} else if (rsp_status == respTentative) {
 		newclass  = "IPM.Schedule.Meeting.Resp.Tent";
-		newprefix = "Tentative: ";
+		newprefix = meeting_subject_prefix(lang.c_str(), "tentative");
 	} else if (rsp_status == respDeclined) {
 		newclass  = "IPM.Schedule.Meeting.Resp.Neg";
-		newprefix = "Declined: ";
+		newprefix = meeting_subject_prefix(lang.c_str(), "declined");
 	}
 	if (newclass != nullptr) {
 		auto err = rsp_prop.set(PR_MESSAGE_CLASS, newclass);
@@ -2350,8 +2365,14 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 			return err;
 	}
 	if (newprefix != nullptr) {
-		auto err = rsp_prop.set(PR_SUBJECT_PREFIX, newprefix);
-		if (err != ecSuccess)
+		auto norm = rq_prop.get<const char>(PR_NORMALIZED_SUBJECT);
+		if (norm == nullptr)
+			norm = rq_prop.get<const char>(PR_SUBJECT);
+		auto subj = newprefix + std::string(znul(norm));
+		ec_error_t err;
+		if ((err = rsp_prop.set(PR_SUBJECT_PREFIX, newprefix)) != ecSuccess ||
+		    (err = rsp_prop.set(PR_NORMALIZED_SUBJECT, znul(norm))) != ecSuccess ||
+		    (err = rsp_prop.set(PR_SUBJECT, subj.c_str())) != ecSuccess)
 			return err;
 	}
 	auto nt_time = rop_util_current_nttime();
@@ -2906,10 +2927,17 @@ static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
 	auto oldfl = props.get<const uint32_t>(flags_tag);
 	uint32_t stateflags = (oldfl != nullptr ? *oldfl : asfMeeting | asfReceived) | asfCanceled;
 	static constexpr uint32_t v_free = olFree;
+	auto pfx = meeting_subject_prefix(mr_owner_lang(par).c_str(), "canceled");
+	auto norm = props.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (norm == nullptr)
+		norm = props.get<const char>(PR_SUBJECT);
+	std::string ns = znul(norm);
+	props.erase(PR_SUBJECT);
 	ec_error_t err;
 	if ((err = props.set(flags_tag, &stateflags)) != ecSuccess ||
 	    (err = props.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_free)) != ecSuccess ||
-	    (err = props.set(PR_SUBJECT_PREFIX, "Canceled: ")) != ecSuccess)
+	    (err = props.set(PR_SUBJECT_PREFIX, pfx)) != ecSuccess ||
+	    (err = props.set(PR_NORMALIZED_SUBJECT, ns.c_str())) != ecSuccess)
 		return err;
 	/*
 	 * The item-level busy status does not cover exceptions carrying an
@@ -3001,13 +3029,11 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	return ecServerOOM;
 }
 
-static constexpr char mr_cancel_prefix[] = "Canceled: ";
-
-static std::string mr_cancel_subject(const char *subj)
+static std::string mr_cancel_subject(const char *pfx, const char *subj)
 {
 	std::string s = znul(subj);
-	if (strncasecmp(s.c_str(), mr_cancel_prefix, strlen(mr_cancel_prefix)) != 0)
-		s.insert(0, mr_cancel_prefix);
+	if (strncasecmp(s.c_str(), pfx, strlen(pfx)) != 0)
+		s.insert(0, pfx);
 	return s;
 }
 
@@ -3016,7 +3042,7 @@ static std::string mr_cancel_subject(const char *subj)
  * mr_cancel_cal_item does for a whole item.
  */
 static ec_error_t mr_cancel_embedded(message_content &emb,
-    const PROPID_ARRAY &propids, const char *norm_subj)
+    const PROPID_ARRAY &propids, const char *norm_subj, const char *pfx)
 {
 	auto &props = emb.proplist;
 	auto flags_tag = PROP_TAG(PT_LONG, propids[l_appt_state_flags]);
@@ -3029,7 +3055,7 @@ static ec_error_t mr_cancel_embedded(message_content &emb,
 	ec_error_t err;
 	if ((err = props.set(flags_tag, &stateflags)) != ecSuccess ||
 	    (err = props.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_free)) != ecSuccess ||
-	    (err = props.set(PR_SUBJECT_PREFIX, mr_cancel_prefix)) != ecSuccess ||
+	    (err = props.set(PR_SUBJECT_PREFIX, pfx)) != ecSuccess ||
 	    (err = props.set(PR_NORMALIZED_SUBJECT, ns.c_str())) != ecSuccess)
 		return err;
 	return ecSuccess;
@@ -3044,7 +3070,7 @@ static ec_error_t mr_cancel_embedded(message_content &emb,
 static ec_error_t mr_make_exception(const message_content &master,
     const PROPID_ARRAY &propids, const PROPID_ARRAY &xids,
     uint32_t lstart, uint32_t lend, uint64_t ustart, uint64_t uend,
-    attachment_content *&out) try
+    const char *pfx, attachment_content *&out) try
 {
 	message_content_ptr emb(master.dup());
 	if (emb == nullptr)
@@ -3080,7 +3106,7 @@ static ec_error_t mr_make_exception(const message_content &master,
 	    (err = props.set(cend_tag, &uend)) != ecSuccess ||
 	    (err = props.set(exrt_tag, &ustart)) != ecSuccess)
 		return err;
-	err = mr_cancel_embedded(*emb, propids, ns.c_str());
+	err = mr_cancel_embedded(*emb, propids, ns.c_str(), pfx);
 	if (err != ecSuccess)
 		return err;
 
@@ -3093,7 +3119,7 @@ static ec_error_t mr_make_exception(const message_content &master,
 	uint64_t xstart = rop_util_rtime_to_nttime(lstart);
 	uint64_t xend   = rop_util_rtime_to_nttime(lend);
 	BINARY v_enc{};
-	auto dispname = mr_cancel_subject(ns.c_str());
+	auto dispname = mr_cancel_subject(pfx, ns.c_str());
 	if ((err = ap.set(PR_ATTACH_METHOD, &v_method)) != ecSuccess ||
 	    (err = ap.set(PR_ATTACHMENT_FLAGS, &v_afl)) != ecSuccess ||
 	    (err = ap.set(PR_ATTACHMENT_HIDDEN, &v_true)) != ecSuccess ||
@@ -3200,10 +3226,11 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	auto norm = props.get<const char>(PR_NORMALIZED_SUBJECT);
 	if (norm == nullptr)
 		norm = props.get<const char>(PR_SUBJECT);
+	auto pfx = meeting_subject_prefix(mr_owner_lang(par).c_str(), "canceled");
 	if (have_exc) {
 		auto &ei = apr.pexceptioninfo[exi];
 		auto &ee = apr.pextendedexception[exi];
-		auto subj = mr_cancel_subject(ei.overrideflags & ARO_SUBJECT ?
+		auto subj = mr_cancel_subject(pfx, ei.overrideflags & ARO_SUBJECT ?
 		            ee.subject.c_str() : norm);
 		if (!(ei.overrideflags & (ARO_SUBJECT | ARO_LOCATION))) {
 			ee.startdatetime     = ei.startdatetime;
@@ -3235,7 +3262,7 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 				}
 			}
 		if (best != nullptr) {
-			auto err = mr_cancel_embedded(*best, propids, norm);
+			auto err = mr_cancel_embedded(*best, propids, norm, pfx);
 			if (err != ecSuccess)
 				return err;
 		} else {
@@ -3250,7 +3277,7 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 		uint64_t uend   = rop_util_rtime_to_nttime(lend - off);
 		attachment_content *at = nullptr;
 		auto err = mr_make_exception(*cal_ctnt, propids, xids, lstart,
-		           lend, ustart, uend, at);
+		           lend, ustart, uend, pfx, at);
 		if (err != ecSuccess)
 			return err;
 		if (cal_ctnt->children.pattachments == nullptr) {
@@ -3273,7 +3300,7 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 			rp.pmodifiedinstancedates.emplace_back(basedate);
 			rp.sort_mods();
 		}
-		auto subj = mr_cancel_subject(norm);
+		auto subj = mr_cancel_subject(pfx, norm);
 		auto &ei = apr.pexceptioninfo.emplace_back();
 		ei.startdatetime     = lstart;
 		ei.enddatetime       = lend;
