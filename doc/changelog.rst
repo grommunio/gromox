@@ -12,6 +12,10 @@ Behavior changes:
   server-side rules of delivered mail are run by the TwoStep processor. Set it
   to 0 to return to the old processor. exmdb_local(4gx) lists the remaining
   differences.
+* delivery: ``exmdb_local.cfg:lda_mrautoproc`` now defaults to 1, so meeting
+  requests, responses and cancellations are entered into calendars on
+  delivery. It only works together with ``lda_twostep_ruleproc=1``. Set
+  ``lda_mrautoproc=0`` to turn it off.
 
 Enhancements:
 

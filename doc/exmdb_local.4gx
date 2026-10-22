@@ -25,10 +25,14 @@ Default: 3min
 Default: \fI5\fP
 .TP
 \fBlda_mrautoproc\fP
-Perform meeting request autoprocessing. This feature is currently experimental.
-Requires lda_twostep_ruleproc to be enabled.
+Perform meeting request autoprocessing after the rules of a delivered
+message have run. Meeting requests are entered into the recipient's calendar
+as tentative, room and equipment mailboxes accept or decline them according to
+their booking settings, and responses and cancellations update the calendar
+items. This needs lda_twostep_ruleproc. With lda_twostep_ruleproc=0, no
+meeting autoprocessing takes place.
 .br
-Default: \fIno\fP
+Default: \fIyes\fP
 .TP
 \fBlda_relay_unknown_recipients\fP
 -> See gromox.cfg(5) manpage instead!

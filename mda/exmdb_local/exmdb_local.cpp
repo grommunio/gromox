@@ -526,7 +526,7 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 }
 
 static constexpr cfg_directive exmdb_local_cfg_defaults[] = {
-	{"lda_mrautoproc", "0", CFG_BOOL},
+	{"lda_mrautoproc", "1", CFG_BOOL},
 	{"lda_twostep_ruleproc", "1", CFG_BOOL},
 	CFG_TABLE_END,
 };
