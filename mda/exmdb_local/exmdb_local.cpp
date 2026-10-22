@@ -493,6 +493,16 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		            address, folder_id, message_id, flags);
 		if (ec_err != ecSuccess)
 			mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(ec_err));
+	} else if (g_lda_mrautoproc && message_id != 0) {
+		/*
+		 * Rules already ran server-side; only do meeting request
+		 * processing, and only for stores which asked for it.
+		 */
+		auto ec_err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
+		              address, folder_id, message_id,
+		              DELIVERY_DO_MRAUTOPROC | DELIVERY_MRAUTOPROC_OPTIN);
+		if (ec_err != ecSuccess)
+			mlog(LV_ERR, "MR autoprocessing unsuccessful: %s", mapi_strerror(ec_err));
 	}
 	if (b_bounce_delivered)
 		return delivery_status::bounce_sent;

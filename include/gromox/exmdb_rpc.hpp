@@ -831,6 +831,8 @@ enum delivery_flags {
 	DELIVERY_FORCE_JUNK = 0x8U,
 	DELIVERY_DO_RULES_CL = 0x10U,
 	DELIVERY_DO_NOTIF_CL = 0x20U,
+	/* With DO_MRAUTOPROC: only for stores with PR_SCHDINFO_AUTO_ACCEPT_APPTS (or resources) */
+	DELIVERY_MRAUTOPROC_OPTIN = 0x40U,
 };
 
 struct exreq_deliver_message final : public exreq {
