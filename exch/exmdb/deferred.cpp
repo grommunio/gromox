@@ -10,6 +10,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <map>
@@ -21,22 +22,23 @@
 #include <vector>
 #include <libHX/scope.hpp>
 #include <gromox/atomic.hpp>
+#include <gromox/authmgr.hpp>
 #include <gromox/clock.hpp>
-#include <gromox/defs.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/paths.h>
+#include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.hpp"
+#include "parser.hpp"
 
 using namespace gromox;
-
-/* Defined in message.cpp (it needs that file's static send helpers). */
-extern ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val);
 
 namespace {
 struct defer_key {
@@ -114,6 +116,12 @@ void deferred_arm_store(const char *dir)
 	defer_arm_store_i(dir);
 }
 
+bool deferred_pending()
+{
+	std::lock_guard lk(g_lock);
+	return !g_queue.empty();
+}
+
 /*
  * One-time sweep over all local mailboxes at startup, so a pending send is
  * honored even for a mailbox whose owner never reconnects after a restart.
@@ -142,9 +150,9 @@ static void defer_scan_all()
 static void defer_fire(const std::string &dir, uint64_t mid)
 {
 	if (g_role == defer_role::director) {
-		/* Phase 2: wake the worker for @dir instead of executing here. */
-		mlog(LV_WARN, "deferred: director-mode execution for %s:m%llu "
-			"not available", dir.c_str(), static_cast<unsigned long long>(mid));
+		/* Director holds no stores: wake the worker, which sends on startup. */
+		if (exmdb_wake_worker(dir.c_str()) != 0)
+			mlog(LV_WARN, "deferred: could not wake worker for %s", dir.c_str());
 		return;
 	}
 	auto err = exmdb_execute_deferred_send(dir.c_str(), mid);
