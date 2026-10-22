@@ -26,10 +26,12 @@ Default: \fI1day\fP
 Out-of-office replies use the subject that was set alongside the OOF message.
 Clients which configure OOF over EWS cannot set one, because
 SetUserOofSettings has no field for it. When no subject is stored, this prefix
-plus the subject of the incoming message is used instead. Set to the empty
-string to send such replies without a subject.
+plus the subject of the incoming message is used instead. When the directive
+is not set, the prefix follows the mailbox language like Exchange does
+("Automatische Antwort: " for German, "Automatic reply: " otherwise). Set to
+the empty string to send such replies without a subject.
 .br
-Default: \fIOut of Office: \fP
+Default: \fI(unset)\fP
 .TP
 \fBbackfill_transport_headers\fP
 Try to fill the PR_TRANSPORT_MESSAGE_HEADERS property when messages are

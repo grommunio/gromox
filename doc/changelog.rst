@@ -46,6 +46,12 @@ Enhancements:
   PR_AUTO_FORWARDED on import, so rule conditions on automatic forwards can
   match.
 
+Changes:
+
+* exmdb_local: Out-of-office replies without a stored subject now use
+  Exchange's "Automatic reply: " prefix, or "Automatische Antwort: " for
+  German mailboxes, unless gromox.cfg:``autoreply_subject_prefix`` is set.
+
 Fixes:
 
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
