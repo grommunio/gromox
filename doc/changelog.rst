@@ -93,6 +93,8 @@ Fixes:
   instead of the date.
 * ruleproc: Out of Office rules now still run in the TwoStep processor after
   a rule that stops processing or deletes the message.
+* ruleproc: the conditions "not sent to me", "sent only to me" and "where my
+  name is in the Cc box" now match in the TwoStep processor.
 * ruleproc: "sender contains these words" conditions now match local senders
   by their e-mail address and ignore case in the TwoStep processor.
 * ruleproc: the TwoStep processor now runs at most

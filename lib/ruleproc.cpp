@@ -727,16 +727,69 @@ static bool rx_eval_sub(const MESSAGE_CONTENT *ct, proptag_t tag,
  * PT_UNICODE, while Outlook rules reference the PT_UNICODE tag. Fall back to
  * the sibling string type when the exact tag is absent.
  */
-static const void *rx_getval(const TPROPVAL_ARRAY &props, proptag_t tag)
+/* PR_DISPLAY_TO/CC/BCC as exmdb computes them from the recipients */
+static std::string rx_display_list(const MESSAGE_CONTENT &ct, uint32_t type) try
+{
+	std::string out;
+	if (ct.children.prcpts == nullptr)
+		return out;
+	for (const auto &rcpt : *ct.children.prcpts) {
+		auto rt = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rt == nullptr || (*rt & 0xf) != type)
+			continue;
+		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
+		if (name == nullptr)
+			name = rcpt.get<const char>(PR_SMTP_ADDRESS);
+		if (name == nullptr)
+			name = rcpt.get<const char>(PR_EMAIL_ADDRESS);
+		if (name == nullptr)
+			continue;
+		if (!out.empty())
+			out += "; ";
+		out += name;
+	}
+	return out;
+} catch (const std::bad_alloc &) {
+	return {};
+}
+
+/*
+ * @ct is the message whose properties @props are, or nullptr for recipients
+ * and attachments. @buf holds a computed value.
+ */
+static const void *rx_getval(const MESSAGE_CONTENT *ct,
+    const TPROPVAL_ARRAY &props, proptag_t tag, std::string &buf)
 {
 	auto v = props.getval(tag);
 	if (v != nullptr)
 		return v;
 	auto t = PROP_TYPE(tag);
 	if (t == PT_UNICODE)
-		return props.getval(CHANGE_PROP_TYPE(tag, PT_STRING8));
-	if (t == PT_STRING8)
-		return props.getval(CHANGE_PROP_TYPE(tag, PT_UNICODE));
+		v = props.getval(CHANGE_PROP_TYPE(tag, PT_STRING8));
+	else if (t == PT_STRING8)
+		v = props.getval(CHANGE_PROP_TYPE(tag, PT_UNICODE));
+	if (v != nullptr)
+		return v;
+	/*
+	 * Delivery stores the flags only when they are true, and read_message
+	 * leaves out the display lists that exmdb computes. Outlook conditions
+	 * like "sent only to me" compare them with false and "",
+	 * conditions 201, 202 and 226 of outlook_rule_spec.rst.
+	 */
+	switch (CHANGE_PROP_TYPE(tag, PT_UNSPECIFIED)) {
+	case CHANGE_PROP_TYPE(PR_MESSAGE_TO_ME, PT_UNSPECIFIED):
+	case CHANGE_PROP_TYPE(PR_MESSAGE_CC_ME, PT_UNSPECIFIED):
+	case CHANGE_PROP_TYPE(PR_MESSAGE_RECIP_ME, PT_UNSPECIFIED):
+		return t == PT_BOOLEAN ? &byte_value_zero : nullptr;
+	case CHANGE_PROP_TYPE(PR_DISPLAY_TO, PT_UNSPECIFIED):
+	case CHANGE_PROP_TYPE(PR_DISPLAY_CC, PT_UNSPECIFIED):
+	case CHANGE_PROP_TYPE(PR_DISPLAY_BCC, PT_UNSPECIFIED):
+		if (ct == nullptr || (t != PT_UNICODE && t != PT_STRING8))
+			return nullptr;
+		buf = rx_display_list(*ct, PROP_ID(tag) == PROP_ID(PR_DISPLAY_TO) ? MAPI_TO :
+		      PROP_ID(tag) == PROP_ID(PR_DISPLAY_CC) ? MAPI_CC : MAPI_BCC);
+		return buf.c_str();
+	}
 	return nullptr;
 }
 
@@ -758,8 +811,9 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 		return !rx_eval_props(ct, props, res.xnot->res);
 	case RES_CONTENT: {
 		auto &rcon = *res.cont;
+		std::string buf;
 		return rcon.comparable() &&
-		       rcont_srchkey_eval(rcon, rx_getval(props, rcon.proptag),
+		       rcont_srchkey_eval(rcon, rx_getval(ct, props, rcon.proptag, buf),
 		       rp_org_name.c_str(), mysql_adaptor_userid_to_name);
 	}
 	case RES_PROPERTY: {
@@ -767,7 +821,8 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 		// XXX: special-case PR_ANR?
 		if (!rprop.comparable())
 			return false;
-		auto lhs = rx_getval(props, rprop.proptag);
+		std::string buf;
+		auto lhs = rx_getval(ct, props, rprop.proptag, buf);
 		if (rprop_srchkey_eq(rprop, lhs, rp_org_name.c_str(),
 		    mysql_adaptor_userid_to_name))
 			return rprop.relop == RELOP_EQ;
