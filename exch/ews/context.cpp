@@ -2150,7 +2150,14 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	loadSpecial(dir, fid, mid, static_cast<tItem&>(calItem), special);
 	if (!(special & sShape::Attendees))
 		return;
-	if (!calItem.IsMeeting || !*calItem.IsMeeting)
+	/* IsMeeting is only there when the shape asked for it */
+	bool meeting = calItem.IsMeeting && *calItem.IsMeeting;
+	if (!calItem.IsMeeting) {
+		auto flags = getItemProp<uint32_t>(dir, mid, PROP_TAG(PT_LONG,
+		             getNamedPropId(dir, NtAppointmentStateFlags)));
+		meeting = flags != nullptr && *flags & asfMeeting;
+	}
+	if (!meeting)
 		return;
 	TARRAY_SET rcpts;
 	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
