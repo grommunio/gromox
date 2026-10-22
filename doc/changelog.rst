@@ -23,6 +23,9 @@ Fixes:
 * EWS: meeting updates sent by UpdateItem now carry PidLidChangeHighlight
   and are marked as full or informational updates instead of as a new
   request.
+* EWS: changing the attendees of a meeting with UpdateItem no longer drops
+  the responses of the attendees that stay, unless the start, end or
+  recurrence changed too.
 
 
 Gromox 3.13 (2026-10-28)

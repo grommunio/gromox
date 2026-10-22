@@ -3493,10 +3493,12 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
  * @param      mid       Message ID of the calendar item
  * @param      shape     Shape containing attendee XML pointers
  * @param      oldRcpts  Recipients of the item before the update
+ * @param      keepResponses  Whether attendees that stay keep their
+ *                       response
  */
 void EWSContext::updateAttendees(const std::string &dir,
     const sFolderSpec &parent, uint64_t mid, const sShape &shape,
-    const TARRAY_SET &oldRcpts) const
+    const TARRAY_SET &oldRcpts, bool keepResponses) const
 {
 	auto &exmdb = plugin().exmdb;
 	auto inst = m_plugin.loadMessageInstance(dir, parent.folderId, mid);
@@ -3507,6 +3509,9 @@ void EWSContext::updateAttendees(const std::string &dir,
 	if (rcpts == nullptr)
 		throw EWSError::NotEnoughMemory(E3455);
 	auto cl_rcpts = HX::make_scope_exit([&]() { tarray_set_free(rcpts); });
+	std::vector<std::string> oldAddrs;
+	for (const auto &row : oldRcpts)
+		oldAddrs.emplace_back(rcptAddress(row));
 	uint32_t row_id = 0;
 	auto parseAttendees = [&](const tinyxml2::XMLElement *xml, uint32_t type) {
 		for (auto entry = xml->FirstChildElement("Attendee");
@@ -3521,6 +3526,21 @@ void EWSContext::updateAttendees(const std::string &dir,
 			    rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3456);
 			++row_id;
+			/* MS-OXOCAL v22.1 §3.1.4.7.3.2 */
+			if (!keepResponses)
+				continue;
+			auto addr = rcptAddress(*rcpt);
+			auto it = addr.empty() ? oldAddrs.cend() :
+			          std::find_if(oldAddrs.cbegin(), oldAddrs.cend(),
+			          [&](const std::string &o) { return strcasecmp(o.c_str(), addr.c_str()) == 0; });
+			if (it == oldAddrs.cend())
+				continue;
+			auto &old = oldRcpts.pparray[it - oldAddrs.cbegin()];
+			for (auto tag : {PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME}) {
+				auto v = old->getval(tag);
+				if (v != nullptr && rcpt->set(tag, v) != ecSuccess)
+					throw EWSError::NotEnoughMemory(E3456);
+			}
 		}
 	};
 	for (const auto &row : oldRcpts) {

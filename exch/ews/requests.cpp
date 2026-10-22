@@ -4567,8 +4567,15 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				/* updateAttendees marks it as organized */
 				organizer = ctx.isOrganizer(dir,
 				            mid.messageId());
+				/*
+				 * MS-OXOCAL v22.1 §3.1.4.7.3.2: responses stay
+				 * unless the update is a significant change
+				 */
+				auto ch = upd_highlight(ctx, dir,
+				          mid.messageId(), hlTags, hlBefore);
 				ctx.updateAttendees(dir, parentFolder,
-				    mid.messageId(), shape, *oldRcpts);
+				    mid.messageId(), shape, *oldRcpts,
+				    !(ch & (BIT_CH_START | BIT_CH_END | BIT_CH_RECUR)));
 			}
 			if (shape.toRecipients || shape.ccRecipients ||
 			    shape.bccRecipients)
