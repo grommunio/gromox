@@ -3741,14 +3741,16 @@ void tRestriction::build_compare(RESTRICTION &dst, const tinyxml2::XMLElement *s
 	const tinyxml2::XMLElement *cmptarget = src->FirstChildElement("FieldURIOrConstant");
 	if (!cmptarget)
 		throw EWSError::InvalidRestriction(E3221);
-	void* constantData = loadConstant(cmptarget, PROP_TYPE(tag));
+	/* A multivalue property matches if any of its values does */
+	proptype_t ctype = PROP_TYPE(tag) & ~MV_FLAG;
+	void *constantData = loadConstant(cmptarget, ctype);
 	dst.rt = constantData ? mapi_rtype::property : mapi_rtype::propcmp;
 	if (constantData) {
 		/* Constant found and loaded -> compare to static data */
 		dst.prop = EWSContext::construct<RESTRICTION_PROPERTY>();
 		dst.prop->relop = op;
 		dst.prop->proptag = tag;
-		dst.prop->propval = TAGGED_PROPVAL{tag, constantData};
+		dst.prop->propval = TAGGED_PROPVAL{CHANGE_PROP_TYPE(tag, ctype), constantData};
 	} else {
 		dst.pcmp = EWSContext::construct<RESTRICTION_PROPCOMPARE>();
 		dst.pcmp->relop = op;
@@ -3763,11 +3765,13 @@ void tRestriction::build_contains(RESTRICTION &dst, const tinyxml2::XMLElement *
 {
 	dst.rt = mapi_rtype::content;
 	dst.cont = EWSContext::construct<RESTRICTION_CONTENT>();
-	if (!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src, getId)))
+	if (!(dst.cont->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3224);
+	proptype_t ctype = PROP_TYPE(dst.cont->proptag) & ~MV_FLAG;
+	dst.cont->propval.proptag = CHANGE_PROP_TYPE(dst.cont->proptag, ctype);
 	if (!dst.cont->comparable())
 			throw EWSError::InvalidRestriction(E3225);
-	if (!(dst.cont->propval.pvalue = loadConstant(src, PROP_TYPE(dst.cont->proptag))))
+	if (!(dst.cont->propval.pvalue = loadConstant(src, ctype)))
 		throw EWSError::InvalidRestriction(E3226);
 	const char* mode = src->Attribute("ContainmentMode");
 	if (!mode || !strcmp(mode, "FullString"))
