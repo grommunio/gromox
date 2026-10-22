@@ -196,41 +196,6 @@ template<typename T> T *cu_alloc_t(size_t elem)
         return static_cast<T *>(cu_alloc(sizeof(T) * elem));
 }
 
-static ec_error_t cu_set_propval(TPROPVAL_ARRAY &arr, proptag_t tag,
-    const void *data)
-{
-	for (unsigned int i = 0; i < arr.count; ++i) {
-		if (arr.ppropval[i].proptag == tag) {
-			arr.ppropval[i].pvalue = deconst(data);
-			return ecSuccess;
-		}
-	}
-
-	if (arr.count >= UINT16_MAX)
-		return ecTooBig;
-	auto newarr = cu_alloc_t<TAGGED_PROPVAL>(arr.count + 1);
-	if (newarr == nullptr)
-		return ecMAPIOOM;
-	if (arr.ppropval != nullptr)
-		memcpy(newarr, arr.ppropval, arr.count * sizeof(TAGGED_PROPVAL));
-	arr.ppropval = newarr;
-	arr.emplace_back(tag, data);
-	return ecSuccess;
-}
-
-static void cu_remove_propval(TPROPVAL_ARRAY &arr, proptag_t proptag)
-{
-	for (unsigned int i = 0; i < arr.count; ++i) {
-		if (proptag != arr.ppropval[i].proptag)
-			continue;
-		arr.count--;
-		if (i < arr.count)
-			memmove(arr.ppropval + i, arr.ppropval + i + 1,
-				(arr.count - i) * sizeof(TAGGED_PROPVAL));
-		return;
-	}
-}
-
 static BOOL cu_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 {
 	return exmdb_client->get_named_propids(rp_storedir, false, names, ids);
@@ -1143,15 +1108,13 @@ static BINARY *xid_to_bin(const XID &xid)
 	return bin;
 }
 
-static ec_error_t op_tag(rxparam &par, const rule_node &rule,
-    const TAGGED_PROPVAL *setval)
+/* Set one property on @cur as a new change of the message */
+static ec_error_t rx_set_prop(const message_node &cur, const TAGGED_PROPVAL &setval)
 {
-	if (setval == nullptr)
-		return ecSuccess;
 	static constexpr proptag_t oldtags[] = {PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST};
 	TPROPVAL_ARRAY oldvals{};
-	if (!exmdb_client->get_message_properties(par.cur.dirc(), nullptr,
-	    CP_ACP, par.cur.mid, oldtags, &oldvals))
+	if (!exmdb_client->get_message_properties(cur.dirc(), nullptr,
+	    CP_ACP, cur.mid, oldtags, &oldvals))
 		return ecRpcFailed;
 	/* Reuse the replica GUID that delivery put into the change key */
 	XID xid{};
@@ -1163,7 +1126,7 @@ static ec_error_t op_tag(rxparam &par, const rule_node &rule,
 			xid = {};
 	}
 	uint64_t change_num = 0;
-	if (!exmdb_client->allocate_cn(par.cur.dirc(), &change_num))
+	if (!exmdb_client->allocate_cn(cur.dirc(), &change_num))
 		return ecRpcFailed;
 	xid = {xid.guid, change_num};
 	auto change_key = xid_to_bin(xid);
@@ -1185,14 +1148,22 @@ static ec_error_t op_tag(rxparam &par, const rule_node &rule,
 		{PR_PREDECESSOR_CHANGE_LIST, pclbin.get()},
 		{PR_LOCAL_COMMIT_TIME, &modtime},
 		{PR_LAST_MODIFICATION_TIME, &modtime},
-		{setval->proptag, setval->pvalue},
+		{setval.proptag, setval.pvalue},
 	};
 	const TPROPVAL_ARRAY valhdr = {std::size(valdata), deconst(valdata)};
 	PROBLEM_ARRAY problems{};
-	if (!exmdb_client->set_message_properties(par.cur.dirc(),
-	    nullptr, CP_ACP, par.cur.mid, &valhdr, &problems))
+	if (!exmdb_client->set_message_properties(cur.dirc(),
+	    nullptr, CP_ACP, cur.mid, &valhdr, &problems))
 		return ecRpcFailed;
 	return ecSuccess;
+}
+
+static ec_error_t op_tag(rxparam &par, const rule_node &rule,
+    const TAGGED_PROPVAL *setval)
+{
+	if (setval == nullptr)
+		return ecSuccess;
+	return rx_set_prop(par.cur, *setval);
 }
 
 static ec_error_t op_read(rxparam &par, const rule_node &rule)
@@ -2173,27 +2144,23 @@ static const char *mr_get_class(const TPROPVAL_ARRAY &p)
  * @set_read: Set this to false for messages that a human recipient still needs
  *            to notice.
  */
+/*
+ * Only update the flags. @par.ctnt was read before the rules ran, writing it
+ * back would undo their changes such as OP_TAG and PR_HAS_DAMS, and its named
+ * property ids do not fit a message a rule moved into another store.
+ */
 static ec_error_t mr_mark_done(rxparam &par, bool set_read = true)
 {
 	if (par.del)
-		return ecSuccess; /* deleted by a rule, do not write it back */
-	auto &prop = par.ctnt->proplist;
-	cu_remove_propval(prop, PR_CHANGE_KEY); /* assign new CK upon write */
-	cu_remove_propval(prop, PidTagChangeNumber);
-	auto err = cu_set_propval(prop, PR_PROCESSED, &byte_value_one);
+		return ecSuccess; /* deleted by a rule */
+	auto err = rx_set_prop(par.cur, {PR_PROCESSED, deconst(&byte_value_one)});
 	if (err != ecSuccess)
 		return err;
-	if (set_read) {
-		err = cu_set_propval(prop, PR_READ, &byte_value_one);
-		if (err != ecSuccess)
-			return err;
-	}
-	uint64_t cal_mid = par.cur.mid, cal_cn = 0;
-	err = ecSuccess;
-	if (!exmdb_client->write_message(par.cur.dir.c_str(), CP_ACP,
-	    par.cur.fid, par.ctnt, {}, &cal_mid, &cal_cn, &err))
+	uint64_t cn = 0;
+	if (set_read && !exmdb_client->set_message_read_state(par.cur.dirc(),
+	    nullptr, par.cur.mid, true, &cn))
 		return ecRpcFailed;
-	return err;
+	return ecSuccess;
 }
 
 static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
