@@ -90,6 +90,11 @@ Out-of-office replies are only generated when one of the recipient's
 addresses (primary or alias) appears in the To, Cc or Bcc line of the
 message, cf. RFC 5230 section 4.5. Mail that reaches a mailbox only by way of
 e.g. a distribution group thus produces no OOF reply.
+.PP
+Rule conditions on the message class of automatic replies
+(IPM.Note.Rules.OofTemplate.Microsoft) only match replies that carry that
+class, e.g. from Exchange in TNEF form. The Out of Office replies Gromox
+sends arrive as IPM.Note.
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/local_bounce/: response templates for when mail cannot be
