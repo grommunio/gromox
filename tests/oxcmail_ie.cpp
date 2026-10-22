@@ -2291,6 +2291,32 @@ static int openpgp_legacy_layout()
 	return EXIT_SUCCESS;
 }
 
+static int meeting_prefixes()
+{
+	static constexpr struct {
+		const char *loc, *key, *exp;
+	} cases[] = {
+		{"de", "accepted", "Angenommen: "},
+		{"de-DE", "tentative", "Mit Vorbehalt angenommen: "},
+		{"de_AT.UTF-8@euro", "canceled", "Abgesagt: "},
+		{"fr-FR", "declined", "Refusé: "},
+		{"NL", "accepted", "Geaccepteerd: "},
+		{"xx_YY", "tentative", "Tentative: "},
+		{"", "canceled", "Canceled: "},
+		{nullptr, "newtime", "New Time Proposed: "},
+		{"de", "nosuchkey", ""},
+	};
+	for (const auto &c : cases) {
+		auto p = meeting_subject_prefix(c.loc, c.key);
+		if (strcmp(p, c.exp) != 0) {
+			fprintf(stderr, "meeting_subject_prefix(%s, %s) = \"%s\"\n",
+			        znul(c.loc), c.key, p);
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	mlog_init(nullptr, nullptr, LV_DEBUG, nullptr);
@@ -2331,7 +2357,7 @@ int main()
 		E(vexport_calendar), E(openpgp_roundtrip),
 		E(openpgp_legacy_layout),
 		E(ical_exception_roundtrip), E(ical_exception_origdate),
-		E(ical_moved_exception_dates),
+		E(ical_moved_exception_dates), E(meeting_prefixes),
 	};
 #undef E
 	for (const auto &t : tests)

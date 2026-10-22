@@ -32,10 +32,12 @@ using int_to_str_t = std::unordered_map<unsigned int, std::string>;
 using str_to_int_t = std::unordered_map<std::string, unsigned int, icasehash, icasecmp>;
 using str_to_str_t = std::unordered_map<std::string, std::string, icasehash, icasecmp>;
 using folder_name_map_t = std::unordered_map<std::string, std::unordered_map<unsigned int, std::string>>;
+using mtg_prefix_map_t = std::unordered_map<std::string, str_to_str_t, icasehash, icasecmp>;
 static int_to_str_t g_cpid2name_map, g_lcid2tag_map;
 static str_to_int_t g_cpname2id_map, g_lctag2id_map;
 static str_to_str_t g_ext2mime_map, g_mime2ext_map, g_lang2cset_map, g_ignore_map;
 static folder_name_map_t folder_name_map;
+static mtg_prefix_map_t g_mtg_prefix_map;
 static std::once_flag g_textmaps_done;
 static std::unordered_map<proptag_t, std::string> g_mapitags;
 
@@ -141,6 +143,38 @@ static void folder_namedb_read(const char *file, const char *dirs, folder_name_m
 		if (end == line)
 			continue;
 		current_locale->emplace(id, value);
+	}
+}
+
+/* Same layout as folder_names.txt, with names instead of numbers as keys */
+static void mtg_prefix_read(const char *file, const char *dirs, mtg_prefix_map_t &fm)
+{
+	auto filp = fopen_sd(file, dirs);
+	if (filp == nullptr) {
+		mlog(LV_ERR, "textmaps: fopen_sd %s: %s", file, strerror(errno));
+		return;
+	}
+	hxmc_t *line = nullptr;
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
+	mtg_prefix_map_t::mapped_type *current_locale = nullptr;
+	while (HX_getl(&line, filp.get()) != nullptr) {
+		HX_chomp(line);
+		if (*line == '[') { // ]
+			auto value = strchr(line + 1, ']');
+			if (value == nullptr)
+				continue;
+			*value = '\0';
+			current_locale = &fm[line+1];
+			continue;
+		} else if (current_locale == nullptr) {
+			continue;
+		}
+		char *value = strchr(line, '=');
+		if (value == nullptr || value == line)
+			continue;
+		*value++ = '\0';
+		/* The space after the prefix is implied */
+		current_locale->emplace(line, value + " "s);
 	}
 }
 
@@ -252,6 +286,70 @@ const char *folder_namedb_get(const char *locale, unsigned int tid)
 	return id_it->second.c_str();
 }
 
+/**
+ * @map:	map keyed by language
+ * @loc:	XPG locale like de_DE.UTF-8 or RFC 3066 tag like de-DE
+ *
+ * Returns the closest language key of @map, dropping the variant and then
+ * the territory, or nullptr.
+ */
+template<typename M> static const std::string *lang_match(const M &map,
+    const char *loc)
+{
+	std::string s = znul(loc);
+	std::replace(s.begin(), s.end(), '-', '_');
+	auto pos = s.find('.');
+	if (pos != s.npos) {
+		auto at = s.find('@', pos);
+		s.erase(pos, at == s.npos ? s.npos : at - pos);
+	}
+	while (!s.empty()) {
+		auto iter = map.find(s);
+		if (iter != map.end())
+			return &iter->first;
+		pos = s.find('@');
+		if (pos == s.npos)
+			pos = s.find('_');
+		if (pos == s.npos)
+			break;
+		s.erase(pos);
+	}
+	return nullptr;
+}
+
+/**
+ * @locale:	user language, e.g. users.lang or the EWS MailboxCulture
+ * @key:	accepted, tentative, declined, newtime or canceled
+ *
+ * Returns the subject prefix of a meeting response or cancellation that
+ * MS-OXOCAL v22.1 §2.2.7.2 and §2.2.8.2 call localized, including the
+ * trailing space. Missing languages and keys fall back to English.
+ */
+const char *meeting_subject_prefix(const char *locale, const char *key) try
+{
+	auto lang = lang_match(g_mtg_prefix_map, locale);
+	for (const auto &l : {lang != nullptr ? *lang : "en"s, "en"s}) {
+		auto map = g_mtg_prefix_map.find(l);
+		if (map == g_mtg_prefix_map.end())
+			continue;
+		auto iter = map->second.find(key);
+		if (iter != map->second.end())
+			return iter->second.c_str();
+	}
+	static constexpr std::pair<const char *, const char *> builtin[] = {
+		{"accepted", "Accepted: "}, {"tentative", "Tentative: "},
+		{"declined", "Declined: "}, {"newtime", "New Time Proposed: "},
+		{"canceled", "Canceled: "},
+	};
+	for (const auto &[k, v] : builtin)
+		if (strcmp(k, key) == 0)
+			return v;
+	return "";
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return "";
+}
+
 static bool mt_overwrite(const std::string &given, const std::string_view &replace)
 {
 	if (given[0] == 'P' && given[1] == 'R' && given[2] == '_')
@@ -341,6 +439,8 @@ void textmaps_init(const char *datapath)
 
 		folder_namedb_read("folder_names.txt", datapath, folder_name_map);
 		mlog(LV_DEBUG, "textmaps: %zu translations in folder namedb", folder_name_map.size());
+		mtg_prefix_read("meeting_prefixes.txt", datapath, g_mtg_prefix_map);
+		mlog(LV_DEBUG, "textmaps: %zu translations of meeting prefixes", g_mtg_prefix_map.size());
 		mapitags_read(DATADIR "/mapitags/mapitags.txt", g_mapitags);
 		mapitags_read(DATADIR "/mapitags/gromox.txt", g_mapitags);
 	});

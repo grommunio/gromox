@@ -337,7 +337,7 @@ header_files += include/gromox/sent_copy.hpp include/gromox/socketpass.hpp inclu
 if ENABLE_PRIVATE_HEADERS
 pkginclude_HEADERS = ${header_files}
 endif
-list_files = data/cpid.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
+list_files = data/cpid.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/meeting_prefixes.txt data/mime_extension.txt data/propnames.txt
 pkgdata_DATA = data/abkt.pak data/timezone.pak
 dist_pkgdata_DATA = ${list_files} data/Services.wsdl data/Messages.xsd data/Types.xsd data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc data/logrotate-gromox.conf.sample
 EXTRA_DIST += \
