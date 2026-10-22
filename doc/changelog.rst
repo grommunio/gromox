@@ -14,6 +14,8 @@ Fixes:
 * EWS: the subject prefix of meeting responses, e.g. "Accepted: ", is now in
   the language of the MailboxCulture header of the request, or else of the
   user, like Exchange does. A German mailbox answers with "Angenommen: ".
+* EWS: the "Canceled: " prefix of meeting cancellations now follows the same
+  language as the prefix of meeting responses.
 * EWS: GetItem now returns the attendees of a meeting when the shape asks for
   them without calendar:IsMeeting.
 * imap: The greeting on implicit TLS connections advertised a truncated

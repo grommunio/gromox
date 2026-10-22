@@ -4993,24 +4993,26 @@ void EWSContext::toInstance(const std::string &dir, uint32_t basedate,
  * @brief      Prefix the subject of a meeting cancellation
  *
  * MS-OXOCAL v22.1 §2.2.8.2 gives cancellations a localized subject prefix.
- * Use the "Canceled: " that Exchange and Outlook use.
+ * Use the one Exchange and Outlook use in that language.
  *
  * @param      props  Properties of the cancellation
+ * @param      lang   Language of the prefix
  * @param      norm   Storage for the normalized subject
  * @param      full   Storage for the full subject
  *
  * @return     Tagged values to set, pointing into norm and full
  */
 static std::array<TAGGED_PROPVAL, 3> cancel_subject(const TPROPVAL_ARRAY &props,
-    std::string &norm, std::string &full)
+    const char *lang, std::string &norm, std::string &full)
 {
 	auto subj = props.get<const char>(PR_NORMALIZED_SUBJECT);
 	if (subj == nullptr)
 		subj = props.get<const char>(PR_SUBJECT);
+	auto pfx = meeting_subject_prefix(lang, "canceled");
 	norm = znul(subj);
-	full = "Canceled: " + norm;
+	full = pfx + norm;
 	return {{
-		{PR_SUBJECT_PREFIX, deconst("Canceled: ")},
+		{PR_SUBJECT_PREFIX, deconst(pfx)},
 		{PR_NORMALIZED_SUBJECT, norm.data()},
 		{PR_SUBJECT, full.data()},
 	}};
@@ -5058,7 +5060,7 @@ void EWSContext::sendInstance(const std::string &dir,
 		throw EWSError::NotEnoughMemory(E3536);
 	if (strcmp(cls, "IPM.Schedule.Meeting.Canceled") == 0) {
 		std::string norm, full;
-		for (const auto &p : cancel_subject(props, norm, full))
+		for (const auto &p : cancel_subject(props, culture(), norm, full))
 			if (props.set(p) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3492);
 	}
@@ -5194,7 +5196,7 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		};
 		sprops.insert(sprops.end(), ident.begin(), ident.end());
 		std::string norm, full;
-		auto subj = cancel_subject(cancelcontent->proplist, norm, full);
+		auto subj = cancel_subject(cancelcontent->proplist, culture(), norm, full);
 		sprops.insert(sprops.end(), subj.begin(), subj.end());
 		const TPROPVAL_ARRAY sproplist{static_cast<uint16_t>(sprops.size()), sprops.data()};
 		PROBLEM_ARRAY sproblems;
@@ -5228,7 +5230,7 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 			if (props.set(prop) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3407);
 		std::string norm, full;
-		for (const auto &p : cancel_subject(props, norm, full))
+		for (const auto &p : cancel_subject(props, culture(), norm, full))
 			if (props.set(p) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3407);
 		for (auto tag : staleKeys)
@@ -5353,7 +5355,7 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	                 asfReceived | asfCanceled;
 	uint32_t resp = respNotResponded, busy = olFree;
 	std::string norm, full;
-	auto subjProps = cancel_subject(props, norm, full);
+	auto subjProps = cancel_subject(props, culture(), norm, full);
 	if (props.set(PR_MESSAGE_CLASS,
 	    "IPM.Schedule.Meeting.Canceled") != ecSuccess ||
 	    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
