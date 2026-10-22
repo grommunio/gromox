@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <vector>
 #include <fmt/format.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/bounce_gen.hpp>
@@ -559,6 +560,10 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 			auto v = cfg->get_value("autoreply_subject_prefix");
 			autoreply_subject_prefix_set = v != nullptr;
 			autoreply_subject_prefix = znul(v);
+			/* The config parser strips trailing blanks */
+			if (!autoreply_subject_prefix.empty() &&
+			    !HX_isspace(autoreply_subject_prefix.back()))
+				autoreply_subject_prefix += ' ';
 			g_junk_rules = parse_junk_rules(cfg->get_value("lda_junk_rules"));
 			g_lda_relay_unknown = cfg->get_ll("lda_relay_unknown_recipients");
 		}

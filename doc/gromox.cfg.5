@@ -29,7 +29,8 @@ SetUserOofSettings has no field for it. When no subject is stored, this prefix
 plus the subject of the incoming message is used instead. When the directive
 is not set, the prefix follows the mailbox language like Exchange does
 ("Automatische Antwort: " for German, "Automatic reply: " otherwise). Set to
-the empty string to send such replies without a subject.
+the empty string to send such replies without a subject. A space is put
+between a non-empty prefix and the incoming subject.
 .br
 Default: \fI(unset)\fP
 .TP
