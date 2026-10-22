@@ -1177,6 +1177,7 @@ enum {
 	PidLidAppointmentProposedEndWhole = 0x8251,
 	PidLidAppointmentCounterProposal = 0x8257,
 	PidLidAppointmentNotAllowPropose = 0x825A,
+	PidLidAppointmentUnsendableRecipients = 0x825D,
 	PidLidAppointmentTimeZoneDefinitionStartDisplay = 0x825E,
 	PidLidAppointmentTimeZoneDefinitionEndDisplay = 0x825F,
 	PidLidAppointmentTimeZoneDefinitionRecur = 0x8260,

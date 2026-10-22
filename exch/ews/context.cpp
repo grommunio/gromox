@@ -5417,6 +5417,53 @@ uint32_t EWSContext::nextSequence(const std::string &dir,
 }
 
 /**
+ * @brief      Record the attendees an update is not sent to
+ *
+ * MS-OXOCAL v22.1 §2.2.1.25, §3.1.4.7.3.4. An empty list removes
+ * the property, so a copied calendar item does not pass on a stale one.
+ *
+ * @param      props  Properties of the meeting update
+ * @param      tag    Tag of PidLidAppointmentUnsendableRecipients
+ * @param      rows   Recipient rows of the unsendable attendees
+ */
+void EWSContext::setUnsendable(TPROPVAL_ARRAY &props, proptag_t tag,
+    const std::vector<TPROPVAL_ARRAY *> &rows)
+{
+	props.erase(tag);
+	if (rows.empty())
+		return;
+	static constexpr proptag_t keep[] = {
+		PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
+		PR_SMTP_ADDRESS, PR_ENTRYID, PR_DISPLAY_TYPE,
+		PR_RECIPIENT_TYPE, PR_RECIPIENT_FLAGS,
+		PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME,
+	};
+	std::vector<std::vector<TAGGED_PROPVAL>> vals(rows.size());
+	std::vector<TPROPVAL_ARRAY> sub(rows.size());
+	std::vector<TPROPVAL_ARRAY *> ptrs(rows.size());
+	for (size_t i = 0; i < rows.size(); ++i) {
+		for (auto t : keep) {
+			auto v = rows[i]->getval(t);
+			if (v != nullptr)
+				vals[i].emplace_back(TAGGED_PROPVAL{t, deconst(v)});
+		}
+		sub[i] = {static_cast<uint16_t>(vals[i].size()), vals[i].data()};
+		ptrs[i] = &sub[i];
+	}
+	const TARRAY_SET set = {static_cast<uint32_t>(ptrs.size()), ptrs.data()};
+	/* Only a SHOULD, so the update goes out without it */
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ep.p_rcpt_stream(set) != pack_result::ok)
+		return;
+	BINARY bin;
+	bin.cb = ep.m_offset;
+	bin.pv = ep.m_udata;
+	if (props.set(tag, &bin) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3408);
+}
+
+/**
  * @brief      Send the update of a meeting changed by UpdateItem
  *
  * MS-OXWSMTGS v14.0 §2.2.5.3: the SendToChanged modes only address
@@ -5451,6 +5498,7 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	if (!req)
 		throw EWSError::NotEnoughMemory(E3408);
 	auto rcpts = req->children.prcpts;
+	std::vector<TPROPVAL_ARRAY *> unsendable;
 	if (oldRcpts != nullptr) {
 		/*
 		 * MS-OXOCAL v22.1 §3.1.4.7.3.4: the other attendees stay
@@ -5470,11 +5518,12 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 			    	return strcasecmp(o.c_str(), a.c_str()) == 0;
 			    }))
 				continue;
-			if (f & recipSendable)
+			if (flags == nullptr || f & recipSendable)
 				f |= recipOriginal;
 			f &= ~recipSendable;
 			if (row.set(PR_RECIPIENT_FLAGS, &f) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3408);
+			unsendable.push_back(&row);
 		}
 	}
 	if (std::none_of(rcpts->begin(), rcpts->end(),
@@ -5486,6 +5535,7 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 		return;
 	const PROPERTY_NAME pn[] = {
 		NtAppointmentSequence, NtOwnerCriticalChange,
+		NtAppointmentUnsendableRecipients,
 	};
 	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
 	auto ids = getNamedPropIds(dir, pna, true);
@@ -5495,6 +5545,7 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	auto now = rop_util_current_nttime();
 	uint32_t seq = nextSequence(dir, parent, mid, oldRcpts == nullptr, now);
 	auto &props = req->proplist;
+	setUnsendable(props, PROP_TAG(PT_BINARY, ids[2]), unsendable);
 	if (props.set(PR_MESSAGE_CLASS,
 	    "IPM.Schedule.Meeting.Request") != ecSuccess ||
 	    props.set(PROP_TAG(PT_LONG, ids[0]), &seq) != ecSuccess ||

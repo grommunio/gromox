@@ -89,6 +89,7 @@ static const PROPERTY_NAME NtConferencingCheck = {MNID_ID, PSETID_Appointment, P
 static const PROPERTY_NAME NtConferencingType = {MNID_ID, PSETID_Appointment, PidLidConferencingType};
 static const PROPERTY_NAME NtNetShowUrl = {MNID_ID, PSETID_Appointment, PidLidNetShowUrl};
 static const PROPERTY_NAME NtAppointmentNotAllowPropose = {MNID_ID, PSETID_Appointment, PidLidAppointmentNotAllowPropose};
+static const PROPERTY_NAME NtAppointmentUnsendableRecipients = {MNID_ID, PSETID_Appointment, PidLidAppointmentUnsendableRecipients};
 static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionStartDisplay = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionStartDisplay};
 static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionEndDisplay = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionEndDisplay};
 static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionRecur = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur};
