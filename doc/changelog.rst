@@ -51,6 +51,10 @@ Changes:
 * exmdb_local: Out-of-office replies without a stored subject now use
   Exchange's "Automatic reply: " prefix, or "Automatische Antwort: " for
   German mailboxes, unless gromox.cfg:``autoreply_subject_prefix`` is set.
+* EWS: SetUserOofSettings now clears the Out of Office subjects stored by
+  grommunio-web, so replies are titled like in Exchange, e.g.
+  "Automatic reply: <subject>". Before, a subject once set in grommunio-web
+  stayed in use after the OOF settings were changed in Outlook or eM Client.
 
 Fixes:
 

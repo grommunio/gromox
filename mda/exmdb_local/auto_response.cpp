@@ -115,9 +115,9 @@ void auto_response_reply(const char *user_home, const char *from,
 	auto subject_text = znul(ar_props.get<const char>(same_org ? PR_EC_OUTOFOFFICE_SUBJECT : PR_EC_EXTERNAL_SUBJECT));
 	auto message_text = znul(ar_props.get<const char>(same_org ? PR_EC_OUTOFOFFICE_MSG : PR_EC_EXTERNAL_REPLY));
 	/*
-	 * EWS's SetUserOofSettings has no field for a reply subject. Clients
-	 * using EWS leave PR_EC_*_SUBJECT untouched. Derive one from the
-	 * incoming message rather than emitting an empty Subject header.
+	 * EWS's SetUserOofSettings has no field for a reply subject and
+	 * clears PR_EC_*_SUBJECT. Derive one from the incoming message
+	 * rather than emitting an empty Subject header.
 	 */
 	auto prefix = oof_subject_prefix(lang);
 	if (*subject_text == '\0' && *prefix != '\0') {

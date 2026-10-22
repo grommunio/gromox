@@ -3534,6 +3534,12 @@ void process(mSetUserOofSettingsRequest &&request, XMLElement *response, const E
 	if (OofSettings.ExternalReply && OofSettings.ExternalReply->Message)
 		ext_msg = *OofSettings.ExternalReply->Message;
 	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_REPLY, deconst(ext_msg.c_str())});
+	/*
+	 * Exchange has no OOF reply subject, its replies are titled
+	 * "Automatic reply: <subject>". Drop one a non-EWS client stored.
+	 */
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_SUBJECT, deconst("")});
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_SUBJECT, deconst("")});
 	TPROPVAL_ARRAY vals = {static_cast<uint16_t>(pvs.size()), pvs.data()};
 	PROBLEM_ARRAY problems{};
 	if (!ctx.plugin().exmdb.autoreply_setprop(maildir.c_str(), CP_UTF8,
