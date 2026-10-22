@@ -131,6 +131,10 @@ Fixes:
 * EWS: accepting a meeting request for one occurrence of a series now updates
   that occurrence in the attendee's calendar and returns it, instead of
   writing nothing.
+* ruleproc: meeting autoprocessing now enters an update for one occurrence of
+  a series into the attendee's series as an exception. Before, attendee
+  calendars kept the old time until a client acted, and clients that rely on
+  the server, such as Apple Calendar, never showed the update.
 
 
 Gromox 3.13 (2026-10-28)

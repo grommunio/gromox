@@ -2974,6 +2974,8 @@ static ec_error_t mr_info_update(rxparam &par, const PROPID_ARRAY &propids,
 
 static ec_error_t mr_remove_occurrence(rxparam &, const PROPID_ARRAY &,
 	eid_t cal_fid, eid_t cal_mid, uint32_t basedate);
+static ec_error_t mr_do_request_occ(rxparam &, const PROPID_ARRAY &,
+	uint32_t basedate);
 
 static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
     const mr_policy &policy)
@@ -2990,18 +2992,12 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	/*
 	 * An update for one occurrence of a series carries a
 	 * GlobalObjectId with the instance date embedded, which by
-	 * construction never equals the series master's. Only resource
-	 * calendars are maintained server-side here; for user mailboxes,
-	 * blob surgery is left to the recipient's client.
-	 *
-	 * Entering the occurrence as a standalone item instead would
-	 * duplicate it: the recipient's client folds the update into the
-	 * master as an exception, while the item entered here relates to
-	 * that master by nothing the client can reconcile, so the
-	 * occurrence stays visible twice.
+	 * construction never equals the series master's. In a user
+	 * mailbox it becomes an exception of the master. A standalone
+	 * item would show the occurrence twice.
 	 */
 	if (basedate != 0 && !policy.is_resource())
-		return ecSuccess;
+		return mr_do_request_occ(par, propids, basedate);
 
 	/*
 	 * Locate the calendar item(s) this request supersedes. An update or
@@ -3707,6 +3703,324 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	return mr_rewrite_cal_item(par, cal_fid, cal_mid, *cal_ctnt);
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
+}
+
+/**
+ * Minutes that local time is ahead of UTC at the local-as-UTC rtime
+ * @lt in the series @props. The series time zone gives it exactly.
+ * Without one, take it from the series start.
+ */
+static int64_t mr_series_offset(const TPROPVAL_ARRAY &props,
+    const PROPID_ARRAY &propids, const APPOINTMENT_RECUR_PAT &apr, int64_t lt)
+{
+	int64_t bias = 0;
+	auto tzbin = props.get<const BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
+	auto tzdef = tzbin != nullptr ? EXT_PULL::bin_to_tzdef(*tzbin) : std::nullopt;
+	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(lt), bias))
+		return -bias;
+	auto mstart = props.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
+	if (mstart == nullptr)
+		mstart = props.get<const uint64_t>(PR_START_DATE);
+	if (mstart == nullptr)
+		return 0;
+	return static_cast<int64_t>(apr.recur_pat.startdate) + apr.starttimeoffset -
+	       rop_util_nttime_to_rtime(*mstart);
+}
+
+/**
+ * Turn the request for one occurrence into the embedded message of its
+ * exception: times @ustart/@uend in UTC, @uorig the original start, and
+ * not yet answered, see MS-OXOCAL v22.1 §3.1.4.7.4.2.
+ */
+static ec_error_t mr_occ_embedded(const message_content &rq,
+    const PROPID_ARRAY &propids, const PROPID_ARRAY &xids, uint64_t ustart,
+    uint64_t uend, uint64_t uorig, message_content_ptr &emb)
+{
+	emb.reset(rq.dup());
+	if (emb == nullptr)
+		return ecServerOOM;
+	auto &props = emb->proplist;
+	static constexpr proptag_t rmprops[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+		PR_PARENT_SOURCE_KEY, PR_HASATTACH, PR_MESSAGE_SIZE,
+		PidTagMidString, PR_PROCESSED,
+		PR_RECEIVED_BY_ENTRYID, PR_RECEIVED_BY_NAME,
+		PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS,
+		PR_RECEIVED_BY_SEARCH_KEY, PR_RCVD_REPRESENTING_ENTRYID,
+		PR_RCVD_REPRESENTING_NAME, PR_RCVD_REPRESENTING_ADDRTYPE,
+		PR_RCVD_REPRESENTING_EMAIL_ADDRESS,
+		PR_RCVD_REPRESENTING_SEARCH_KEY, PR_MESSAGE_TO_ME,
+		PR_TRANSPORT_MESSAGE_HEADERS, PR_CONTENT_FILTER_SCL,
+	};
+	for (auto t : rmprops)
+		props.erase(t);
+	props.erase(PROP_TAG(PT_BINARY, propids[l_apptrecur]));
+	auto intended = props.get<const uint32_t>(PROP_TAG(PT_LONG, xids[3]));
+	uint32_t v_busy = intended != nullptr && *intended == olFree ? olFree : olTentative;
+	static constexpr uint32_t v_resp = respNotResponded;
+	static constexpr uint32_t v_state = asfMeeting | asfReceived;
+	static constexpr uint8_t v_false = false, v_true = true;
+	ec_error_t err;
+	if ((err = props.set(PR_MESSAGE_CLASS, IPM_Appointment_Exception)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_BOOLEAN, propids[l_recurring]), &v_false)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_BOOLEAN, propids[l_is_recurring]), &v_true)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_BOOLEAN, propids[l_is_exception]), &v_true)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_LONG, propids[l_response_status]), &v_resp)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_busy)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_LONG, propids[l_appt_state_flags]), &v_state)) != ecSuccess ||
+	    (err = props.set(PR_START_DATE, &ustart)) != ecSuccess ||
+	    (err = props.set(PR_END_DATE, &uend)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_SYSTIME, propids[l_start_whole]), &ustart)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_SYSTIME, propids[l_end_whole]), &uend)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_SYSTIME, xids[1]), &ustart)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_SYSTIME, xids[2]), &uend)) != ecSuccess ||
+	    (err = props.set(PROP_TAG(PT_SYSTIME, xids[0]), &uorig)) != ecSuccess)
+		return err;
+	return ecSuccess;
+}
+
+/**
+ * Enter an update of one occurrence into the attendee's series, as the EXC
+ * Calendar Attendant does. The occurrence becomes an exception with the
+ * times, subject and location of the request, or its exception is replaced,
+ * see MS-OXOCAL v22.1 §3.1.4.7.4.2. A deleted occurrence comes back. The
+ * client finds the exception by its original start, §3.1.5.1.
+ */
+static ec_error_t mr_update_occurrence(rxparam &par, const PROPID_ARRAY &propids,
+    eid_t cal_fid, eid_t cal_mid, uint32_t basedate) try
+{
+	auto &rq_prop = par.ctnt->proplist;
+	auto pstart = rq_prop.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
+	auto pend   = rq_prop.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_end_whole]));
+	if (pstart == nullptr || pend == nullptr) {
+		pstart = rq_prop.get<const uint64_t>(PR_START_DATE);
+		pend   = rq_prop.get<const uint64_t>(PR_END_DATE);
+	}
+	if (pstart == nullptr || pend == nullptr || *pend < *pstart)
+		return ecSuccess;
+	uint64_t ustart = *pstart, uend = *pend;
+
+	message_content *cal_raw = nullptr;
+	if (!exmdb_client->read_message(par.cur.dirc(), nullptr, CP_ACP,
+	    cal_mid, &cal_raw) || cal_raw == nullptr)
+		return ecSuccess;
+	message_content_ptr cal_ctnt(cal_raw->dup());
+	if (cal_ctnt == nullptr)
+		return ecServerOOM;
+	auto &props = cal_ctnt->proplist;
+	/* The organizer's own series is not updated, §3.1.4.7.4.2 */
+	auto state = props.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_appt_state_flags]));
+	if (state != nullptr && (*state & asfMeeting) && !(*state & asfReceived))
+		return ecSuccess;
+	auto recur_tag = PROP_TAG(PT_BINARY, propids[l_apptrecur]);
+	auto recur_bin = props.get<const BINARY>(recur_tag);
+	if (recur_bin == nullptr)
+		return ecSuccess;
+	EXT_PULL ep;
+	ep.init(recur_bin->pv, recur_bin->cb, nullptr, 0);
+	APPOINTMENT_RECUR_PAT apr{};
+	if (ep.g_apptrecpat(&apr) != pack_result::success ||
+	    apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
+		mlog(LV_WARN, "mr_update_occurrence: %s:m%llu: unparsable recurrence blob",
+			par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+		return ecSuccess;
+	}
+
+	const PROPERTY_NAME xnames[] = {
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
+		{MNID_ID, PSETID_Common, PidLidCommonStart},
+		{MNID_ID, PSETID_Common, PidLidCommonEnd},
+		{MNID_ID, PSETID_Appointment, PidLidIntendedBusyStatus},
+	};
+	const PROPNAME_ARRAY xna = {std::size(xnames), deconst(xnames)};
+	PROPID_ARRAY xids;
+	if (!exmdb_client->get_named_propids(par.cur.dirc(), TRUE, &xna, &xids) ||
+	    xids.size() != xna.size())
+		return ecRpcFailed;
+	for (auto id : xids)
+		if (id == 0)
+			return ecError;
+
+	auto &rp = apr.recur_pat;
+	uint32_t lorig = basedate / 1440 * 1440 + apr.starttimeoffset;
+	uint64_t uorig = rop_util_rtime_to_nttime(lorig -
+	                 mr_series_offset(props, propids, apr, lorig));
+	auto to_local = [&](uint64_t nt) {
+		int64_t t = rop_util_nttime_to_rtime(nt);
+		return static_cast<uint32_t>(t + mr_series_offset(props, propids, apr, t));
+	};
+	uint32_t lstart = to_local(ustart), lend = to_local(uend);
+
+	message_content_ptr emb;
+	auto err = mr_occ_embedded(*par.ctnt, propids, xids, ustart, uend, uorig, emb);
+	if (err != ecSuccess)
+		return err;
+	auto subj = emb->proplist.get<const char>(PR_SUBJECT);
+	auto loc  = emb->proplist.get<const char>(PROP_TAG(PT_UNICODE, propids[l_location]));
+	auto busy = *emb->proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_busy_status]));
+
+	auto day_eq = [](uint32_t a, uint32_t b) { return a / 1440 == b / 1440; };
+	auto exi = ct_index_if(apr.pexceptioninfo,
+	           [&](const EXCEPTIONINFO &e) { return day_eq(e.originalstartdate, basedate); });
+	bool have_exc = exi < apr.pexceptioninfo.size();
+	attachment_content *at = nullptr;
+	if (have_exc && cal_ctnt->children.pattachments != nullptr) {
+		/* Nearest PidLidExceptionReplaceTime, within half a day */
+		int64_t best_d = 721;
+		for (auto &a : *cal_ctnt->children.pattachments) {
+			if (a.pembedded == nullptr)
+				continue;
+			auto t = a.pembedded->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, xids[0]));
+			if (t == nullptr)
+				continue;
+			int64_t d = std::abs(static_cast<int64_t>(rop_util_nttime_to_rtime(*t)) -
+			            static_cast<int64_t>(rop_util_nttime_to_rtime(uorig)));
+			if (d < best_d) {
+				best_d = d;
+				at = &a;
+			}
+		}
+	}
+	if (at != nullptr) {
+		/* Out-of-date for this instance, §3.1.5.2 */
+		auto seq_tag = PROP_TAG(PT_LONG, propids[l_appt_seq]);
+		auto oseq = at->pembedded->proplist.get<const uint32_t>(seq_tag);
+		auto nseq = rq_prop.get<const uint32_t>(seq_tag);
+		if (oseq != nullptr && nseq != nullptr && *nseq < *oseq)
+			return ecSuccess;
+	} else {
+		attachment_content_ptr nat(attachment_content_init());
+		if (nat == nullptr)
+			return ecServerOOM;
+		static constexpr uint32_t v_method = ATTACH_EMBEDDED_MSG, v_afl = afException;
+		static constexpr uint32_t v_zero = 0, v_rpos = UINT32_MAX;
+		static constexpr uint8_t v_true = true;
+		BINARY v_enc{};
+		auto &ap = nat->proplist;
+		if ((err = ap.set(PR_ATTACH_METHOD, &v_method)) != ecSuccess ||
+		    (err = ap.set(PR_ATTACHMENT_FLAGS, &v_afl)) != ecSuccess ||
+		    (err = ap.set(PR_ATTACHMENT_HIDDEN, &v_true)) != ecSuccess ||
+		    (err = ap.set(PR_ATTACHMENT_LINKID, &v_zero)) != ecSuccess ||
+		    (err = ap.set(PR_ATTACH_FLAGS, &v_zero)) != ecSuccess ||
+		    (err = ap.set(PR_ATTACH_ENCODING, &v_enc)) != ecSuccess ||
+		    (err = ap.set(PR_RENDERING_POSITION, &v_rpos)) != ecSuccess)
+			return err;
+		if (cal_ctnt->children.pattachments == nullptr) {
+			auto al = attachment_list_init();
+			if (al == nullptr)
+				return ecServerOOM;
+			cal_ctnt->set_attachments_internal(al);
+		}
+		auto raw = nat.release();
+		if (!cal_ctnt->children.pattachments->append_internal(raw)) {
+			attachment_content_free(raw);
+			return ecServerOOM;
+		}
+		auto &al = *cal_ctnt->children.pattachments;
+		at = &al.back();
+	}
+	uint64_t xstart = rop_util_rtime_to_nttime(lstart);
+	uint64_t xend   = rop_util_rtime_to_nttime(lend);
+	if ((err = at->proplist.set(PR_EXCEPTION_STARTTIME, &xstart)) != ecSuccess ||
+	    (err = at->proplist.set(PR_EXCEPTION_ENDTIME, &xend)) != ecSuccess)
+		return err;
+	if (subj != nullptr &&
+	    (err = at->proplist.set(PR_DISPLAY_NAME, subj)) != ecSuccess)
+		return err;
+	at->set_embedded_internal(emb.release());
+
+	if (!have_exc) {
+		exi = apr.pexceptioninfo.size();
+		auto &ei = apr.pexceptioninfo.emplace_back();
+		auto &ee = apr.pextendedexception.emplace_back();
+		/* MS-OXOCAL v22.1 §2.2.1.44.2: the original start, not its day */
+		ei.originalstartdate = ee.originalstartdate = lorig;
+		ee.changehighlight.size = sizeof(uint32_t);
+		if (!rp.contains_del(basedate)) {
+			rp.pdeletedinstancedates.emplace_back(basedate);
+			rp.sort_dels();
+		}
+	} else {
+		/* The new start day replaces the old one, §3.1.4.6.2 */
+		auto day = apr.pexceptioninfo[exi].startdatetime / 1440 * 1440;
+		auto &mods = rp.pmodifiedinstancedates;
+		auto it = std::find(mods.begin(), mods.end(), day);
+		if (it != mods.end())
+			mods.erase(it);
+	}
+	auto &ei = apr.pexceptioninfo[exi];
+	auto &ee = apr.pextendedexception[exi];
+	ei.startdatetime = ee.startdatetime = lstart;
+	ei.enddatetime   = ee.enddatetime   = lend;
+	ei.overrideflags |= ARO_BUSYSTATUS;
+	ei.busystatus = busy;
+	if (subj != nullptr) {
+		ei.overrideflags |= ARO_SUBJECT;
+		ei.subject = ee.subject = subj;
+	}
+	if (loc != nullptr) {
+		ei.overrideflags |= ARO_LOCATION;
+		ei.location = ee.location = loc;
+	}
+	rp.pmodifiedinstancedates.emplace_back(lstart / 1440 * 1440);
+	rp.sort_mods();
+	apr.sort_exceptions();
+
+	EXT_PUSH epu;
+	if (!epu.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    epu.p_apptrecpat(apr) != pack_result::success)
+		return ecError;
+	BINARY new_bin;
+	new_bin.cb = epu.m_offset;
+	new_bin.pv = epu.m_udata;
+	err = props.set(recur_tag, &new_bin);
+	if (err != ecSuccess)
+		return err;
+	return mr_rewrite_cal_item(par, cal_fid, cal_mid, *cal_ctnt);
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+/**
+ * Update for one occurrence in a user mailbox. The series master of the
+ * attendee gets the exception. A standalone item that earlier versions
+ * entered for the instance, or a missing series, is left to the client.
+ */
+static ec_error_t mr_do_request_occ(rxparam &par, const PROPID_ARRAY &propids,
+    uint32_t basedate)
+{
+	auto &rq_prop  = par.ctnt->proplist;
+	eid_t cal_fid(1, PRIVATE_FID_CALENDAR);
+	auto goid_tag  = PROP_TAG(PT_BINARY, propids[l_goid]);
+	auto cgoid_tag = PROP_TAG(PT_BINARY, propids[l_cleangoid]);
+	auto seq_tag   = PROP_TAG(PT_LONG, propids[l_appt_seq]);
+	auto goid      = rq_prop.get<const BINARY>(goid_tag);
+	auto cgoid     = rq_prop.get<const BINARY>(cgoid_tag);
+	auto seq       = rq_prop.get<const uint32_t>(seq_tag);
+	if (cgoid == nullptr || cgoid->cb == 0)
+		return ecSuccess;
+	std::vector<mr_calitem> items;
+	auto err = mr_find_cal_items(par, goid_tag, goid, seq_tag, goid_tag, items);
+	if (err != ecSuccess)
+		return err;
+	if (!items.empty())
+		return ecSuccess;
+	std::vector<mr_calitem> masters;
+	err = mr_find_cal_items(par, cgoid_tag, cgoid, seq_tag, goid_tag, masters);
+	if (err != ecSuccess)
+		return err;
+	for (const auto &e : masters) {
+		if (e.dated)
+			continue;
+		/* Same staleness test as in mr_do_cancel */
+		if (seq != nullptr && e.seq > *seq)
+			continue;
+		err = mr_update_occurrence(par, propids, cal_fid, e.mid, basedate);
+		if (err != ecSuccess)
+			return err;
+	}
+	return ecSuccess;
 }
 
 /**
