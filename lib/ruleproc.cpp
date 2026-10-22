@@ -3281,13 +3281,17 @@ static ec_error_t mr_do_response(rxparam &par, const PROPID_ARRAY &propids)
 	return mr_rewrite_cal_item(par, cal_fid, cal_mid, *cal_ctnt);
 }
 
+static std::string mr_cancel_subject(const char *pfx, const char *subj);
+static ec_error_t mr_cancel_embedded(message_content &, const PROPID_ARRAY &,
+	const char *norm_subj, const char *pfx);
+
 /**
  * Flag a calendar item as cancelled without removing it, i.e. what the EXC
  * Calendar Attendant does for non-resource mailboxes: the item stays visible,
  * but the slot no longer counts as busy.
  */
 static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
-    eid_t cal_fid, eid_t cal_mid)
+    eid_t cal_fid, eid_t cal_mid) try
 {
 	message_content *cal_raw = nullptr;
 	if (!exmdb_client->read_message(par.cur.dirc(), nullptr, CP_ACP,
@@ -3317,7 +3321,8 @@ static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
 	/*
 	 * The item-level busy status does not cover exceptions carrying an
 	 * ARO_BUSYSTATUS override (freebusy reports those from the blob), so
-	 * release them too.
+	 * release them too. Exceptions with a subject of their own get the
+	 * prefix as well.
 	 */
 	auto recur_tag = PROP_TAG(PT_BINARY, propids[l_apptrecur]);
 	auto recur_bin = props.get<const BINARY>(recur_tag);
@@ -3326,8 +3331,15 @@ static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
 		ep.init(recur_bin->pv, recur_bin->cb, nullptr, 0);
 		APPOINTMENT_RECUR_PAT apr{};
 		bool changed = false;
-		if (ep.g_apptrecpat(&apr) == pack_result::success) {
-			for (auto &ei : apr.pexceptioninfo) {
+		if (ep.g_apptrecpat(&apr) == pack_result::success &&
+		    apr.pexceptioninfo.size() == apr.pextendedexception.size()) {
+			for (size_t i = 0; i < apr.pexceptioninfo.size(); ++i) {
+				auto &ei = apr.pexceptioninfo[i];
+				auto &ee = apr.pextendedexception[i];
+				if (ei.overrideflags & ARO_SUBJECT) {
+					ei.subject = ee.subject = mr_cancel_subject(pfx, ee.subject.c_str());
+					changed = true;
+				}
 				if (!(ei.overrideflags & ARO_BUSYSTATUS) ||
 				    ei.busystatus == olFree)
 					continue;
@@ -3348,7 +3360,27 @@ static ec_error_t mr_cancel_cal_item(rxparam &par, const PROPID_ARRAY &propids,
 				return err;
 		}
 	}
+	/* The exceptions are cancelled with the series */
+	if (cal_ctnt->children.pattachments != nullptr)
+		for (auto &at : *cal_ctnt->children.pattachments) {
+			if (at.pembedded == nullptr)
+				continue;
+			auto afl = at.proplist.get<const uint32_t>(PR_ATTACHMENT_FLAGS);
+			auto cls = at.pembedded->proplist.get<const char>(PR_MESSAGE_CLASS);
+			if ((afl == nullptr || !(*afl & afException)) &&
+			    (cls == nullptr || strcasecmp(cls, IPM_Appointment_Exception) != 0))
+				continue;
+			err = mr_cancel_embedded(*at.pembedded, propids, ns.c_str(), pfx);
+			if (err != ecSuccess)
+				return err;
+			auto en = at.pembedded->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
+			auto dn = mr_cancel_subject(pfx, znul(en));
+			if ((err = at.proplist.set(PR_DISPLAY_NAME, dn.c_str())) != ecSuccess)
+				return err;
+		}
 	return mr_rewrite_cal_item(par, cal_fid, cal_mid, *cal_ctnt);
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 /**

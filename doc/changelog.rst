@@ -135,6 +135,9 @@ Fixes:
   a series into the attendee's series as an exception. Before, attendee
   calendars kept the old time until a client acted, and clients that rely on
   the server, such as Apple Calendar, never showed the update.
+* ruleproc: when meeting autoprocessing marks a cancelled series in an
+  attendee calendar, it now cancels the exceptions of the series too. Before,
+  a moved occurrence stayed active under its old subject.
 
 
 Gromox 3.13 (2026-10-28)
