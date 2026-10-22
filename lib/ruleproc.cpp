@@ -2339,7 +2339,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		newprefix = "Accepted: ";
 	} else if (rsp_status == respTentative) {
 		newclass  = "IPM.Schedule.Meeting.Resp.Tent";
-		newprefix = "Maybe: ";
+		newprefix = "Tentative: ";
 	} else if (rsp_status == respDeclined) {
 		newclass  = "IPM.Schedule.Meeting.Resp.Neg";
 		newprefix = "Declined: ";

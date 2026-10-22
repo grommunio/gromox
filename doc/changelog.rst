@@ -105,6 +105,8 @@ Fixes:
   meeting message, e.g. the importance or categories set by a rule.
 * delivery: the Arrival-Date of bounce reports showed the message size
   instead of the date.
+* ruleproc: tentative responses of meeting autoprocessing now carry the
+  subject prefix "Tentative: " instead of "Maybe: ".
 * ruleproc: Out of Office rules now still run in the TwoStep processor after
   a rule that stops processing or deletes the message.
 * oxcmail: importing X-Message-Flag stored the subject as the flag text
