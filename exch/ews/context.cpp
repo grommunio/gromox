@@ -5464,6 +5464,28 @@ void EWSContext::setUnsendable(TPROPVAL_ARRAY &props, proptag_t tag,
 }
 
 /**
+ * @brief      Record that the meeting requests went out
+ *
+ * Sets PidLidFInvited, which EWS reports as MeetingRequestWasSent. Outlook
+ * shows a meeting without it as not sent yet. The mail is out already, so
+ * a failure is only logged.
+ */
+static void mark_invited(const EWSContext &ctx, const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid)
+{
+	auto propid = ctx.getNamedPropId(dir, NtFInvited, true);
+	if (propid == 0)
+		return;
+	const TAGGED_PROPVAL val = {PROP_TAG(PT_BOOLEAN, propid), deconst(&byte_value_one)};
+	const TPROPVAL_ARRAY list = {1, deconst(&val)};
+	PROBLEM_ARRAY problems;
+	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+	    ctx.effectiveUser(parent), CP_ACP, mid, &list, &problems))
+		mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited",
+			dir.c_str(), static_cast<unsigned long long>(rop_util_get_gc_value(mid)));
+}
+
+/**
  * @brief      Send the update of a meeting changed by UpdateItem
  *
  * MS-OXWSMTGS v14.0 §2.2.5.3: the SendToChanged modes only address
@@ -5567,6 +5589,7 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	if (!stamp_exceptions(*req, ident))
 		throw EWSError::NotEnoughMemory(E3408);
 	send(dir, mid, *req);
+	mark_invited(*this, dir, parent, mid);
 	if (!saveCopy)
 		return;
 	static constexpr proptag_t rmProps[] = {

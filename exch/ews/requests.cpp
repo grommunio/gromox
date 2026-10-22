@@ -1644,6 +1644,15 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				|| sendcontent == nullptr)
 				throw EWSError::ItemNotFound(E3391);
 			ctx.send(dir, messageId, *sendcontent);
+			/* Exchange reports MeetingRequestWasSent from now on */
+			auto invited = ctx.getNamedPropId(dir, NtFInvited, true);
+			const TAGGED_PROPVAL ival = {PROP_TAG(PT_BOOLEAN, invited), deconst(&byte_value_one)};
+			const TPROPVAL_ARRAY ilist = {1, deconst(&ival)};
+			if (invited == 0 ||
+			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			    ctx.effectiveUser(*targetFolder), CP_ACP, messageId,
+			    &ilist, &problems))
+				mlog(LV_ERR, "[ews] %s: cannot set PidLidFInvited", dir.c_str());
 		}
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
