@@ -833,7 +833,7 @@ static BOOL oxcmail_parse_message_flag(const char *field,
 		str = pproplist->get<char>(PR_SUBJECT_A);
 	}
 	if (str != nullptr) {
-		propname = {MNID_ID, PSETID_Common, PidLidFlagRequest};
+		propname = {MNID_ID, PSETID_Common, PidLidToDoTitle};
 		if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 			return FALSE;
 		tag = PROP_TAG(b_unicode ? PT_UNICODE : PT_STRING8, *plast_propid);

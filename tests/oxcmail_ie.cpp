@@ -1323,6 +1323,33 @@ static int import_autoforwarded()
 	return EXIT_SUCCESS;
 }
 
+static proptag_t vcf_namedtag(uint16_t type, const PROPERTY_NAME &pn);
+
+static int import_message_flag()
+{
+	static char data[] =
+		"Subject: Budget\r\n"
+		"X-Message-Flag: Follow up\r\n"
+		"\r\n"
+		"body\r\n";
+	MAIL m;
+	assert(m.refonly_parse(data, strlen(data)));
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
+	assert(mc != nullptr);
+	auto v = mc->proplist.get<const uint32_t>(PR_FLAG_STATUS);
+	assert(v != nullptr && *v == followupFlagged);
+	PROPERTY_NAME req = {MNID_ID, PSETID_Common, PidLidFlagRequest};
+	PROPERTY_NAME title = {MNID_ID, PSETID_Common, PidLidToDoTitle};
+	auto s = mc->proplist.get<const char>(vcf_namedtag(PT_UNICODE, req));
+	assert(s != nullptr && strcmp(s, "Follow up") == 0);
+	s = mc->proplist.get<const char>(vcf_namedtag(PT_UNICODE, title));
+	assert(s != nullptr && strcmp(s, "Budget") == 0);
+	return EXIT_SUCCESS;
+}
+
 static std::unique_ptr<message_content, mc_delete> vcf_import(const char *body)
 {
 	std::string str = "BEGIN:VCARD\r\n";
@@ -2412,7 +2439,7 @@ int main()
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(ical_allday_hint), E(ical_allday_date_zone),
 		E(ical_standalone_occurrence),
-		E(hdrparse_1), E(import_autoforwarded),
+		E(hdrparse_1), E(import_autoforwarded), E(import_message_flag),
 		E(vcard_tel_types), E(vcard_escaped_values), E(vcard_photo), E(vcard_dates),
 		E(vcard_fileas_categories),
 		E(vexport_head), E(vexport_simple_body), E(vexport_image),
