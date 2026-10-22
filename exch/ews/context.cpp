@@ -1152,6 +1152,29 @@ static bool goid_is_instance(const BINARY *goid_bin)
 }
 
 /**
+ * @brief      Instance date of a GlobalObjectId
+ *
+ * @return     Local midnight of the occurrence as rtime, 0 for a series
+ */
+static uint32_t goid_basedate(const BINARY *goid_bin)
+{
+	if (goid_bin == nullptr || goid_bin->cb == 0)
+		return 0;
+	GLOBALOBJECTID goid{};
+	EXT_PULL ep;
+	ep.init(goid_bin->pb, goid_bin->cb, EWSContext::alloc, 0);
+	if (ep.g_goid(&goid) != pack_result::ok || goid.year < 1601 ||
+	    goid.year > 4500 || goid.month < 1 || goid.month > 12 ||
+	    goid.day < 1 || goid.day > ical_get_monthdays(goid.year, goid.month))
+		return 0;
+	struct tm tm{};
+	tm.tm_year = goid.year - 1900;
+	tm.tm_mon  = goid.month - 1;
+	tm.tm_mday = goid.day;
+	return rop_util_unix_to_rtime(timegm(&tm));
+}
+
+/**
  * @brief      Principal that a delegate copy of a meeting message is for
  *
  * A delegate rule puts a copy of the message into the delegate's mailbox
@@ -1263,18 +1286,134 @@ void EWSContext::remapNamedProps(const std::string &src, const std::string &dst,
 }
 
 /**
+ * @brief      Sequence number of one occurrence in the series
+ *
+ * The higher one of the series and of the exception for @p basedate,
+ * 0 if the series cannot be read.
+ *
+ * @param      dir       Store
+ * @param      mid       Series
+ * @param      basedate  Occurrence date
+ * @param      seqTag    Tag of PidLidAppointmentSequence in @p dir
+ */
+uint32_t EWSContext::occurrenceSequence(const std::string &dir, uint64_t mid,
+    uint32_t basedate, proptag_t seqTag) const
+{
+	MESSAGE_CONTENT *ct = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &ct) ||
+	    ct == nullptr)
+		return 0;
+	auto mseq = ct->proplist.get<const uint32_t>(seqTag);
+	uint32_t seq = mseq != nullptr ? *mseq : 0;
+	if (ct->children.pattachments == nullptr)
+		return seq;
+	auto rtag = PROP_TAG(PT_SYSTIME, getNamedPropId(dir, NtExceptionReplaceTime, true));
+	auto series = loadSeriesTimes(dir, mid);
+	for (const auto &at : *ct->children.pattachments) {
+		if (at.pembedded == nullptr)
+			continue;
+		auto t = at.pembedded->proplist.get<const uint64_t>(rtag);
+		if (t == nullptr || !series.replaces(basedate, *t))
+			continue;
+		auto eseq = at.pembedded->proplist.get<const uint32_t>(seqTag);
+		if (eseq != nullptr && *eseq > seq)
+			seq = *eseq;
+		break;
+	}
+	return seq;
+}
+
+/**
+ * @brief      Answer a request for one occurrence in the series
+ *
+ * The series is the Calendar object whose PidLidGlobalObjectId is the
+ * PidLidCleanGlobalObjectId of the request, MS-OXOCAL v22.1 §3.1.5.1.
+ * Its occurrence becomes an exception with the times, subject, location
+ * and response of the request, or its exception is updated.
+ *
+ * @param      cal       Calendar folder
+ * @param      calDir    Store of the calendar
+ * @param      req       Request properties, named IDs of @p calDir
+ * @param      basedate  Occurrence date
+ * @param      response  Response type
+ *
+ * @return     Message ID of the series, none if there is no series
+ */
+std::optional<uint64_t> EWSContext::acceptOccurrence(const sFolderSpec &cal,
+    const std::string &calDir, const TPROPVAL_ARRAY &req, uint32_t basedate,
+    uint32_t response) const
+{
+	auto cgoid = req.get<BINARY>(PROP_TAG(PT_BINARY,
+	             getNamedPropId(calDir, NtCleanGlobalObjectId, true)));
+	if (cgoid == nullptr || cgoid->cb == 0)
+		return std::nullopt;
+	TAGGED_PROPVAL key = {PROP_TAG(PT_BINARY,
+		getNamedPropId(calDir, NtGlobalObjectId, true)), deconst(cgoid)};
+	MESSAGE_CONTENT match{};
+	match.proplist = {1, &key};
+	auto series = findExistingByGoid(cal, calDir, match);
+	if (!series)
+		return std::nullopt;
+	if (!(permissions(calDir, cal.folderId) & (frightsOwner | frightsEditAny)))
+		throw EWSError::AccessDenied(E3601);
+
+	auto tag = [&](const PROPERTY_NAME &name, proptype_t type) {
+		return PROP_TAG(type, getNamedPropId(calDir, name, true));
+	};
+	/* An out-of-date request leaves the occurrence alone, §3.1.5.2 */
+	auto seqTag = tag(NtAppointmentSequence, PT_LONG);
+	auto rseq = req.get<const uint32_t>(seqTag);
+	if (rseq != nullptr && occurrenceSequence(calDir, *series,
+	    basedate, seqTag) > *rseq)
+		return series;
+	std::vector<TAGGED_PROPVAL> vals;
+	auto copy = [&](proptag_t from, proptag_t to) {
+		auto v = req.getval(from);
+		if (v != nullptr)
+			vals.push_back({to, deconst(v)});
+	};
+	auto start = tag(NtAppointmentStartWhole, PT_SYSTIME);
+	auto end   = tag(NtAppointmentEndWhole, PT_SYSTIME);
+	copy(req.has(start) ? start : PR_START_DATE, PR_START_DATE);
+	copy(req.has(end) ? end : PR_END_DATE, PR_END_DATE);
+	copy(PR_SUBJECT, PR_SUBJECT);
+	auto loc = tag(NtLocation, PT_UNICODE);
+	copy(loc, loc);
+	auto reply = tag(NtAppointmentReplyName, PT_UNICODE);
+	copy(reply, reply);
+	uint32_t busy = response == respAccepted ? olBusy :
+	                response == respTentative ? olTentative : olFree;
+	vals.push_back({tag(NtBusyStatus, PT_LONG), construct<uint32_t>(busy)});
+	vals.push_back({tag(NtResponseStatus, PT_LONG), construct<uint32_t>(response)});
+	vals.push_back({tag(NtAppointmentReplyTime, PT_SYSTIME),
+		construct<uint64_t>(rop_util_current_nttime())});
+	vals.push_back({tag(NtAppointmentStateFlags, PT_LONG),
+		construct<uint32_t>(asfMeeting | asfReceived)});
+	const TPROPVAL_ARRAY occ{static_cast<uint16_t>(vals.size()), vals.data()};
+	updateOccurrence(calDir, cal.folderId, *series, basedate, occ, {});
+	return series;
+}
+
+/**
  * @brief Create a calendar item after accepting a meeting request
+ *
+ * A request for one occurrence updates that occurrence in the series of
+ * the attendee, see MS-OXOCAL v22.1 §3.1.4.8.1 and §3.1.5.1.
  *
  * @param refId          Item id
  * @param response       Response type
  * @param owner          Calendar to use if not that of the request's
  *                       mailbox, e.g. the principal's for a delegate copy
+ * @param basedate       Set to the occurrence date for a request for one
+ *                       occurrence of a series, else to 0
  *
- * @return Message ID of the calendar item, none for a single occurrence
+ * @return Message ID of the calendar item or of the series
  */
 std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId,
-    uint32_t response, const std::string *owner) const
+    uint32_t response, const std::string *owner, uint32_t *basedate) const
 {
+	if (basedate != nullptr)
+		*basedate = 0;
 	// Duplicate the original request and persist it as a calendar appointment.
 	assertIdType(refId.type, tItemId::ID_ITEM);
 	sMessageEntryId requestId(refId.Id.data(), refId.Id.size());
@@ -1288,14 +1427,8 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
 	    content == nullptr)
 		throw EWSError::ItemNotFound(E3143);
 
-	/*
-	 * A response to one occurrence would replace the series master, which
-	 * findExistingByGoid matches through PidLidCleanGlobalObjectId; leave
-	 * the blob surgery to the client, as mr_do_request does.
-	 */
 	auto pidGoid = getNamedPropId(dir, NtGlobalObjectId);
-	if (goid_is_instance(content->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGoid))))
-		return std::nullopt;
+	auto instDate = goid_basedate(content->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGoid)));
 
 	message_content_ptr calendarItem(content->dup());
 	if (!calendarItem)
@@ -1394,6 +1527,17 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
 		if (mysql_adaptor_get_user_displayname(m_auth_info.username, dlgName) &&
 		    props.set(PROP_TAG(PT_UNICODE, pidReplyName), dlgName.c_str()) != ecSuccess)
 			throw EWSError::ItemSave(E3327);
+	}
+
+	if (instDate != 0) {
+		auto series = acceptOccurrence(requestFolder, calendarDir,
+		              props, instDate, response);
+		if (series) {
+			if (basedate != nullptr)
+				*basedate = instDate;
+			return series;
+		}
+		/* Invited to this occurrence only, see §3.1.5.1 */
 	}
 
 	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *calendarItem);

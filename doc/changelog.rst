@@ -128,6 +128,9 @@ Fixes:
   start, end and recurrence, such as one that removes an attendee, no longer
   resets the responses of an attendee who had already answered, nor the
   attendee's reminders.
+* EWS: accepting a meeting request for one occurrence of a series now updates
+  that occurrence in the attendee's calendar and returns it, instead of
+  writing nothing.
 
 
 Gromox 3.13 (2026-10-28)

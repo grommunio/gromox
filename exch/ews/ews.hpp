@@ -293,7 +293,9 @@ class EWSContext {
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&, bool = false) const;
-	std::optional<uint64_t> createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t, const std::string * = nullptr) const;
+	std::optional<uint64_t> createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t, const std::string * = nullptr, uint32_t * = nullptr) const;
+	uint32_t occurrenceSequence(const std::string &, uint64_t, uint32_t, proptag_t) const;
+	std::optional<uint64_t> acceptOccurrence(const Structures::sFolderSpec &, const std::string &, const TPROPVAL_ARRAY &, uint32_t, uint32_t) const;
 	std::optional<std::string> delegatePrincipal(const TPROPVAL_ARRAY &, const std::string &) const;
 	void checkPrincipalCalendar(const std::string &) const;
 	void remapNamedProps(const std::string &, const std::string &, MESSAGE_CONTENT &) const;

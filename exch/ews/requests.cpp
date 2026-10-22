@@ -1269,7 +1269,8 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
     uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
     bool send_message, std::optional<sOccurrenceId> &declinedOcc,
-    std::optional<std::pair<std::string, uint64_t>> *calItem = nullptr)
+    std::optional<std::pair<std::string, uint64_t>> *calItem = nullptr,
+    uint32_t *calDate = nullptr)
 {
 	if (refId.type == tItemId::ID_OCCURRENCE)
 		return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
@@ -1367,7 +1368,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		throw EWSError::ItemSave(E3409);
 	if (resp == respAccepted || resp == respTentative) {
 		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp,
-		           principal ? &*principal : nullptr);
+		           principal ? &*principal : nullptr, calDate);
 		if (cal && calItem != nullptr)
 			calItem->emplace(principal ? ctx.get_maildir(*principal) : rdir, *cal);
 	}
@@ -1573,16 +1574,17 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
 		std::optional<std::pair<std::string, uint64_t>> calItem;
+		uint32_t calDate = 0;
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
 				updateRef(ctx, *acc->ReferenceItemId,
 				          respAccepted, refDir, refMid,
-				          send_message, declinedOcc, &calItem);
+				          send_message, declinedOcc, &calItem, &calDate);
 		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
 			if (tent->ReferenceItemId)
 				updateRef(ctx, *tent->ReferenceItemId,
 				          respTentative, refDir, refMid,
-				          send_message, declinedOcc, &calItem);
+				          send_message, declinedOcc, &calItem, &calDate);
 		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
 			if (dec->ReferenceItemId)
 				updateRef(ctx, *dec->ReferenceItemId,
@@ -1618,8 +1620,16 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			calShape.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD)
 			        .add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD)
 			        .add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
-			msg.Items.emplace_back(ctx.loadItem(calItem->first,
-				calFid, calItem->second, calShape));
+			/* For one occurrence, Exchange returns that occurrence */
+			if (calDate != 0) {
+				/* The occurrence times need the series start and zone */
+				calShape.add(PR_START_DATE, sShape::FL_FIELD)
+				        .add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
+				msg.Items.emplace_back(ctx.loadOccurrence(calItem->first,
+					calFid, calItem->second, calDate, calShape));
+			} else
+				msg.Items.emplace_back(ctx.loadItem(calItem->first,
+					calFid, calItem->second, calShape));
 		}
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)
