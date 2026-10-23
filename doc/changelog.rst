@@ -8,6 +8,14 @@ Development 3.12.94
 
 Fixes:
 
+* EWS: AcceptItem, TentativelyAcceptItem and DeclineItem now require Read and
+  Edit rights on the referenced item, and Create and Edit rights on the
+  calendar that accepting writes to. Declining an occurrence, which removes
+  it, also requires Delete rights. SuppressReadReceipt requires Edit rights.
+  CancelCalendarItem and DeleteItem with meeting cancellations require Read
+  rights on the meeting.
+  Previously any user could answer, alter or move meeting requests and
+  calendar items in other mailboxes.
 * php_mapi: The declared return type of resource-returning functions named
   a nonexistent class "resource", which made opcache's optimizer fold
   ``is_resource()`` on such values to false. The arginfo was corrected and

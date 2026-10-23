@@ -1006,9 +1006,17 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 	sFolderSpec pf = ctx.resolveFolder(oid);
 	std::string rdir = ctx.getDir(pf);
 	ctx.validate(rdir, oid);
+	auto rights = ctx.permissions(rdir, pf.folderId);
+	if (!(rights & frightsEditAny))
+		throw EWSError::AccessDenied(E3525);
+	/* The response is built from the content of the referenced item */
+	if (!(rights & frightsReadAny))
+		throw EWSError::AccessDenied(E3602);
 	ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
 	/* A declined occurrence goes once the reply is out */
 	if (resp == respDeclined && send_message) {
+		if (!(rights & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3131);
 		declinedOcc.emplace(oid);
 		return;
 	}
@@ -1039,6 +1047,19 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	sFolderSpec pf = ctx.resolveFolder(mid);
 	std::string rdir = ctx.getDir(pf);
 	ctx.validate(rdir, mid);
+	auto rights = ctx.permissions(rdir, pf.folderId);
+	if (!(rights & frightsEditAny))
+		throw EWSError::AccessDenied(E3526);
+	if (!(rights & frightsReadAny))
+		throw EWSError::AccessDenied(E3602);
+	/* Accepting writes the meeting into the calendar of the same store */
+	if ((resp == respAccepted || resp == respTentative) &&
+	    pf.location == sFolderSpec::PRIVATE) {
+		auto cal = ctx.permissions(rdir, eid_t(1, PRIVATE_FID_CALENDAR));
+		if (!(cal & frightsOwner) &&
+		    (cal & (frightsCreate | frightsEditAny)) != (frightsCreate | frightsEditAny))
+			throw EWSError::AccessDenied(E3600);
+	}
 	const char *username = ctx.effectiveUser(pf);
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	auto rstat = EWSContext::construct<uint32_t>(resp);
@@ -1067,7 +1088,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	if (resp == respAccepted || resp == respTentative)
 		ctx.createCalendarItemFromMeetingRequest(refId, resp);
 	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
-	if (pf.location == sFolderSpec::PRIVATE &&
+	if (pf.location == sFolderSpec::PRIVATE && rights & frightsDeleteAny &&
 	    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
 		refDir = rdir;
 		refMid = mid;
@@ -1471,7 +1492,17 @@ void process(mDeleteFolderRequest &&request, XMLElement *response, const EWSCont
 			uint64_t newParentId = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
 			ctx.moveCopyFolder(dir, folder, newParentId, accountId, false);
 		} else {
+			if (!(ctx.permissions(dir, folder.folderId) & frightsOwner))
+				throw EWSError::AccessDenied(E3573);
 			bool hard = request.DeleteType == Enum::HardDelete;
+			/* exmdb only deletes empty folders, Exchange takes the content along */
+			uint32_t flags = DEL_MESSAGES | DEL_FOLDERS | DEL_ASSOCIATED |
+			                 (hard ? DELETE_HARD_DELETE : 0);
+			BOOL partial;
+			if (!ctx.plugin().exmdb.empty_folder(dir.c_str(), CP_ACP,
+			    ctx.effectiveUser(folder), folder.folderId, flags,
+			    &partial) || partial)
+				throw EWSError::CannotDeleteObject(E3574);
 			BOOL result;
 			if (!ctx.plugin().exmdb.delete_folder(dir.c_str(), CP_ACP,
 			    folder.folderId, hard ? TRUE : false, &result) || !result)
