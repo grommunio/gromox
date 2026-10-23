@@ -70,7 +70,6 @@ static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgromox_auth.so/mgr", SVC_authmgr},
 	{"libgromox_authz.so/dnsbl", SVC_dnsbl_filter},
 	{"libgromox_authz.so/user", SVC_user_filter},
-	{"libgxs_timer_agent.so", SVC_timer_agent},
 	{"libgxs_exmdb_provider.so", SVC_exmdb_provider},
 };
 
