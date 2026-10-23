@@ -365,6 +365,11 @@ static bool login_gen(const char *username, const char *password,
 	} else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0) {
 		/* Failure delay should already be added by the PAM stack */
 		auth = fresh = login_pam(mres.username.c_str(), password, mres);
+	} else if (am_choice == A_EXTERNID_PAM) {
+		/* No externid: pam mode does not use the MySQL password (authmgr(4gx)) */
+		mres.errstr = "User has no externid (auth_backend_selection=pam)";
+		if (fdelay != std::chrono::nanoseconds(0))
+			std::this_thread::sleep_for(fdelay);
 	} else if (am_choice == A_EXTERNID_LDAP) {
 		auth = fresh = mysql_adaptor_login2(mres.username.c_str(),
 		               password, mres.enc_passwd, mres.errstr);
