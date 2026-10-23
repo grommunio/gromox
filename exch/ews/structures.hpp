@@ -246,7 +246,7 @@ struct sFolderSpec {
 
 	std::optional<std::string> target;
 	uint64_t folderId=0;
-	enum : uint8_t {AUTO, PRIVATE, PUBLIC} location = AUTO;
+	enum : uint8_t { AUTO, PRIVATE, PUBLIC } location = AUTO;
 
 	private:
 	struct DistNameInfo {

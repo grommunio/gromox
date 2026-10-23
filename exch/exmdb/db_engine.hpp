@@ -125,7 +125,7 @@ using db_handle = std::unique_ptr<sqlite3, db_close>;
  * @mx_sqlite_eph: cached sqlite handles for tables.sqlite3
  */
 struct db_base {
-	enum DB_TYPE : uint8_t {DB_MAIN = 0, DB_EPH = 1};
+	enum DB_TYPE : uint8_t { DB_MAIN = 0, DB_EPH = 1 };
 
 	db_base();
 	~db_base();
