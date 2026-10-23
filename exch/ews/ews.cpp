@@ -999,7 +999,7 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
 	detail::MessageInstanceKey mkey{dir, mid};
 	try {
 		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(mkey, cache_message_instance_lifetime));
-	} catch(const std::out_of_range&) {
+	} catch (const std::out_of_range &) {
 	}
 	uint32_t instanceId;
 	if (!exmdb.load_message_instance(dir.c_str(), "", CP_ACP, false,fid, mid, &instanceId))
@@ -1076,7 +1076,7 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(cons
 	detail::AttachmentInstanceKey akey{dir, mid, aid};
 	try {
 		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(akey, cache_attachment_instance_lifetime));
-	} catch(const std::out_of_range&) {
+	} catch (const std::out_of_range &) {
 	}
 	auto messageInstance = loadMessageInstance(dir, fid, mid);
 	uint32_t instanceId;
@@ -1314,7 +1314,7 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const 
 	detail::EmbeddedInstanceKey ekey{dir, aid};
 	try {
 		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(ekey, cache_embedded_instance_lifetime));
-	} catch(const std::out_of_range&) {
+	} catch (const std::out_of_range &) {
 	}
 	uint32_t instanceId;
 	/* exmdb reports "no embedded message" as success with instance 0 */

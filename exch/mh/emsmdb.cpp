@@ -454,11 +454,11 @@ bool HPM_mh_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		std::unique_ptr<MhEmsmdbPlugin> created;
 		try {
 			created = std::make_unique<MhEmsmdbPlugin>(ppdata);
-		} catch(std::bad_alloc& exc) {
+		} catch (const std::bad_alloc &exc) {
 			mlog(LV_ERR, "mh_emsmdb: failed to allocate plugin memory (%s)", exc.what());
-		} catch(std::runtime_error& exc) {
+		} catch (const std::runtime_error &exc) {
 			mlog(LV_ERR, "mh_emsmdb: failed to initialize plugin (%s)", exc.what());
-		} catch(std::exception& exc) {
+		} catch (const std::exception &exc) {
 			mlog(LV_ERR, "mh_emsmdb: unknown error during initialization (%s)", exc.what());
 		}
 		if (!created)
@@ -736,7 +736,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 				}
 				auto ucount = users.emplace(emplaced.first->second.username, 0);
 				++ucount.first->second;
-			}  catch (std::bad_alloc&) {
+			} catch (const std::bad_alloc &) {
 				hl_hold.unlock();
 				emsmdb_bridge_disconnect(ctx.session_guid);
 				return ctx.failure_response(ecServerOOM);
@@ -811,7 +811,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 		std::unique_lock ll_hold(pending_lock);
 		try {
 			pending.emplace(&nctx);
-		} catch (std::bad_alloc &) {
+		} catch (const std::bad_alloc &) {
 			ll_hold.unlock();
 			std::lock_guard nc_hold(nctx.lock);
 			nctx.pending_status = PENDING_STATUS_NONE;

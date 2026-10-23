@@ -340,7 +340,7 @@ int main(int argc, char **argv)
 			tmr.exec_time = pitem[i].exectime;
 			tmr.command = pitem[i].command;
 			put_timer(std::move(tmr));
-		} catch (std::bad_alloc &) {
+		} catch (const std::bad_alloc &) {
 		}
 	}
 	pfile.reset();

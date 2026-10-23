@@ -319,7 +319,7 @@ void process(mConvertIdRequest &&request, XMLElement *response, EWSContext &ctx)
 			data.ResponseMessages.emplace_back(std::move(msg));
 		}
 		data.ResponseMessages.back().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -992,7 +992,7 @@ void process(mCreateFolderRequest &&request, XMLElement *response, const EWSCont
 		mCreateFolderResponseMessage msg;
 		msg.Folders.emplace_back(ctx.create(dir, parent, folder));
 		data.ResponseMessages.emplace_back(std::move(msg)).success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1280,7 +1280,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1509,7 +1509,7 @@ void process(mDeleteFolderRequest &&request, XMLElement *response, const EWSCont
 				throw EWSError::CannotDeleteObject(E3165);
 		}
 		data.ResponseMessages.emplace_back().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1588,7 +1588,7 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 
 			data.ResponseMessages.emplace_back().success();
 		}
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1625,7 +1625,7 @@ void process(mEmptyFolderRequest &&request, XMLElement *response, const EWSConte
 		    username, folder.folderId, deleteFlags, &partial) || partial)
 			throw EWSError::CannotEmptyFolder(E3180);
 		data.ResponseMessages.emplace_back().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1710,7 +1710,7 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 		msg.RootFolder->TotalItemsInView = rowCount;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1910,7 +1910,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 			total : rowCount;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1981,7 +1981,7 @@ void process(mGetAttachmentRequest &&request, XMLElement *response, const EWSCon
 		msg.Attachments.emplace_back(ctx.loadAttachment(dir, aid));
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -2047,7 +2047,7 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, shape));
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -2302,10 +2302,10 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 			}
 		}
 		fbr.ResponseMessage.emplace().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
 		fbr.ResponseMessage.emplace(err);
-	} catch(const std::exception& err) {
+	} catch (const std::exception &err) {
 		mlog(LV_ERR, "[ews#%d] failed to resolve availability for %s: %s",
 		    ctx.context_id(), MailboxData.Email.Address.c_str(), err.what());
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
@@ -2886,7 +2886,7 @@ void process(const mBaseMoveCopyFolder &request, XMLElement *response, const EWS
 			                    {return static_cast<mFolderInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, shape));
 		msg.success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		std::visit([&](auto& d){d.ResponseMessages.emplace_back(err);}, data);
 	}
 
@@ -2936,7 +2936,7 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 		if (request.ReturnNewItemIds.value_or(true))
 			msg.Items.emplace_back(ctx.loadItem(dir, dstFolder.folderId, newItemId, shape));
 		msg.success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		std::visit([&](auto& d){d.ResponseMessages.emplace_back(err);}, data);
 	}
 
@@ -2991,7 +2991,7 @@ void process(mMarkAsJunkRequest &&request, XMLElement *response, const EWSContex
 			msg.MovedItemId = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> { return i.ItemId; }, movedItem);
 		}
 		msg.success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -3252,7 +3252,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 		msg.IncludesLastItemInRange = !clipped;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 	data.serialize(response);
@@ -3331,7 +3331,7 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	} catch (const std::exception &) {
 		data.ResponseMessages.emplace_back(EWSError::ItemCorrupt(E3303));
@@ -3575,7 +3575,7 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 			ctx.create(dir, folder, *content);
 
 		data.ResponseMessages.emplace_back().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -3643,7 +3643,7 @@ void process(mUpdateFolderRequest &&request, XMLElement *response, const EWSCont
 
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -3975,7 +3975,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			process_upditem_2(request, ctx, dir, username, mid);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
