@@ -1447,11 +1447,13 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 	const char *ev_from = (send_as && delegator != nullptr && *delegator != '\0') ?
 	                      delegator : actor.c_str();
 
+	auto msgflags = ctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	bool b_resend = msgflags != nullptr && (*msgflags & MSGFLAG_RESEND);
 	std::vector<std::string> rcpt_list;
 	for (auto &rcpt : *prcpts) {
 		TPROPVAL_ARRAY pv = {rcpt.count, rcpt.ppropval};
 		if (cu_rcpt_to_list(std::move(pv), g_exmdb_org_name, rcpt_list,
-		    mysql_adaptor_userid_to_name, false) != ecSuccess)
+		    mysql_adaptor_userid_to_name, b_resend) != ecSuccess)
 			return ecError;
 	}
 	if (rcpt_list.empty())
@@ -1482,6 +1484,8 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 	mlog(LV_INFO, "gromox-audit: deferred message sent from <%s> in mailbox %s",
 		ev_from, dir);
 
+	/* Clear MSGFLAG_SUBMITTED on the copy about to be filed. */
+	exmdb_server::clear_submit(dir, eid_t(1, mid_val), false);
 	auto del_after = ctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	eid_t mid_eid = eid_t(1, mid_val);
 	EID_ARRAY ids = {1, &mid_eid};
