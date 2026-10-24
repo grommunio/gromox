@@ -139,6 +139,10 @@ static void defer_scan_all()
 			return;
 		if (u.maildir.empty())
 			continue;
+		/* Only stores homed on this node, else nodes duplicate sends. */
+		bool pvt = false;
+		if (exmdb_parser_is_local(u.maildir.c_str(), &pvt) != 0 || !pvt)
+			continue;
 		armed += defer_arm_store_i(u.maildir.c_str());
 		++scanned;
 	}

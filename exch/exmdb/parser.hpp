@@ -67,6 +67,7 @@ extern int exmdb_listener_init(const config_file &gxcfg, const config_file &oldc
 extern int exmdb_listener_run(const char *config_path, const config_file &gxcfg);
 extern void exmdb_listener_stop();
 extern int exmdb_wake_worker(const char *dir);
+extern gromox::errno_t exmdb_parser_is_local(const char *prefix, bool *pvt);
 extern int exmdb_pickup_run(int fd);
 extern bool exmdb_pickup_running();
 extern void exmdb_pickup_stop();

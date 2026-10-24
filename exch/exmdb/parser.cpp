@@ -187,7 +187,7 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
  * errno for transient infrastructure failures (e.g. SQL unavailable), which
  * callers should not present as a permanent misconfiguration.
  */
-static errno_t exmdb_parser_is_local(const char *prefix, bool *pvt)
+errno_t exmdb_parser_is_local(const char *prefix, bool *pvt)
 {
 	if (*prefix == '\0')
 		return 0;
