@@ -1313,22 +1313,10 @@ BOOL exmdb_server::clear_submit(const char *dir,
 	if (!cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
 	    PR_MESSAGE_FLAGS, pmessage_flags, &b_result))
 		return FALSE;
-	if (!b_result)
-		return TRUE;
-	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
-	          " timer_id=? WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = pdb->prep(sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_null(pstmt, 1);
-	if (pstmt.step() != SQLITE_DONE)
-		return FALSE;
-	pstmt.finalize();
-	/* Cancel any pending deferred send for this message. */
-	char dq[128];
-	snprintf(dq, std::size(dq), "DELETE FROM deferred_sends WHERE message_id=%llu",
-		LLU{mid_val});
-	if (pdb->exec(dq) != SQLITE_OK)
+	/* Cancel any pending deferred send, even if the flag was already clear. */
+	snprintf(sql_string, std::size(sql_string),
+		"DELETE FROM deferred_sends WHERE message_id=%llu", LLU{mid_val});
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
@@ -1422,40 +1410,38 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 	if (!pdb)
 		return ecError;
 
-	/* Deleted (or never existed) after scheduling: retire the job. */
-	{
-		char q[128];
-		snprintf(q, std::size(q), "SELECT is_deleted FROM messages "
-			"WHERE message_id=%llu", LLU{mid_val});
-		auto st = pdb->prep(q);
-		if (st == nullptr)
-			return ecError;
-		if (st.step() != SQLITE_ROW || st.col_uint64(0) != 0) {
-			char dq[128];
-			snprintf(dq, std::size(dq), "DELETE FROM deferred_sends "
-				"WHERE message_id=%llu", LLU{mid_val});
-			pdb->exec(dq);
-			return ecNotFound;
-		}
-	}
-
-	/* Moving objects out of the outbox counts as a cancellation. */
+	/*
+	 * Claim the job by deleting its row first, so a racing clear_submit
+	 * loses and a crash hereafter cannot re-send (at-most-once). Recheck the
+	 * message in the same transaction.
+	 */
 	uint64_t parent_fid = 0;
+	bool present = false;
 	{
-		char q[128];
+		auto xact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+		if (!xact)
+			return ecError;
+		char q[160];
+		snprintf(q, std::size(q), "DELETE FROM deferred_sends "
+			"WHERE message_id=%llu", LLU{mid_val});
+		if (pdb->exec(q) != SQLITE_OK)
+			return ecError;
+		if (sqlite3_changes(pdb->psqlite) != 1)
+			return ecSuccess; /* cancelled or already claimed */
 		snprintf(q, std::size(q), "SELECT parent_fid FROM messages "
-			"WHERE message_id=%llu", LLU{mid_val});
+			"WHERE message_id=%llu AND is_deleted=0", LLU{mid_val});
 		auto st = pdb->prep(q);
-		if (st != nullptr && st.step() == SQLITE_ROW)
+		if (st != nullptr && st.step() == SQLITE_ROW) {
+			present = true;
 			parent_fid = st.col_uint64(0);
+		}
+		if (xact.commit() != SQLITE_OK)
+			return ecError;
 	}
-	if (parent_fid != PRIVATE_FID_OUTBOX) {
-		char dq[128];
-		snprintf(dq, std::size(dq), "DELETE FROM deferred_sends "
-			"WHERE message_id=%llu", LLU{mid_val});
-		pdb->exec(dq);
-		return ecSuccess;
-	}
+	if (!present)
+		return ecNotFound;        /* deleted after scheduling */
+	if (parent_fid != PRIVATE_FID_OUTBOX)
+		return ecSuccess;         /* moved out of the Outbox = cancelled */
 
 	unsigned int uid = 0;
 	std::string actor;
@@ -1531,19 +1517,17 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 	eid_t mid_eid = eid_t(1, mid_val);
 	EID_ARRAY ids = {1, &mid_eid};
 	BOOL partial = false;
-	if (del_after != nullptr && *del_after != 0) {
+	if (del_after != nullptr && *del_after != 0)
 		exmdb_server::delete_messages(dir, CP_ACP, nullptr,
 			eid_t(1, parent_fid), &ids, TRUE, &partial);
-	} else {
+	else
+		/*
+		 * NB: Filing always targets Sent Items. PR_SENTMAIL_ENTRYID and the
+		 * represented mailbox copy are not honored for deferred sends.
+		 */
 		exmdb_server::movecopy_messages(dir, CP_ACP, false, nullptr,
-			eid_t(1, parent_fid),
-			eid_t(1, PRIVATE_FID_SENT_ITEMS),
+			eid_t(1, parent_fid), eid_t(1, PRIVATE_FID_SENT_ITEMS),
 			false, &ids, &partial);
-	}
-	char dq[128];
-	snprintf(dq, std::size(dq), "DELETE FROM deferred_sends WHERE message_id=%llu",
-		LLU{mid_val});
-	pdb->exec(dq);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
