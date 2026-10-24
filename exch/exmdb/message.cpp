@@ -1372,6 +1372,45 @@ static ec_error_t defer_check_repr(const char *actor, const char *delegator,
 }
 
 /**
+ * Resolve the represented sender the way oxcmail derives the From header
+ * (SMTP, then EX ADDRTYPE+EMAIL, then ENTRYID), so the identity we authorize
+ * is the one that goes on the wire. Empty output = no representation. A repr
+ * that does not resolve to a local user is refused.
+ */
+static ec_error_t defer_extract_delegator(const MESSAGE_CONTENT &ctnt,
+    std::string &out)
+{
+	out.clear();
+	auto smtp = ctnt.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (smtp != nullptr && *smtp != '\0') {
+		out = smtp;
+		return ecSuccess;
+	}
+	auto addrtype = ctnt.proplist.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+	auto emaddr = ctnt.proplist.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_exmdb_org_name,
+		           mysql_adaptor_userid_to_name, out);
+		if (ret == ecSuccess)
+			return ecSuccess;
+		if (ret != ecNullObject && ret != ecUnknownUser)
+			return ret;
+	}
+	auto eid = ctnt.proplist.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID);
+	if (eid == nullptr)
+		return ecSuccess; /* no representation requested */
+	auto ret = cvt_entryid_to_smtpaddr(eid, g_exmdb_org_name,
+	           mysql_adaptor_userid_to_name, out);
+	if (ret == ecSuccess)
+		return ecSuccess;
+	if (ret == ecNullObject) {
+		out.clear();
+		return ecSuccess;
+	}
+	return ecSendAsDenied; /* Refuse unresolvable representation */
+}
+
+/**
  * Deferred-send second stage (run by deferred.cpp when the time arrives).
  * Build the mime object, submit to the MTA, then file or delete the message.
  */
@@ -1434,18 +1473,20 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 	if (prcpts == nullptr || prcpts->count == 0)
 		return MAPI_E_NO_RECIPIENTS;
 
-	auto delegator = ctnt->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	std::string delegator;
+	auto xret = defer_extract_delegator(*ctnt, delegator);
 	bool send_as = true;
-	auto perr = defer_check_repr(actor.c_str(), delegator, send_as);
+	auto perr = xret == ecSuccess ?
+	            defer_check_repr(actor.c_str(), delegator.c_str(), send_as) : xret;
 	if (perr != ecSuccess) {
 		mlog(LV_WARN, "deferred send %s:m%llu denied: <%s> may no longer "
 			"be represented by <%s>", dir, LLU{mid_val},
-			znul(delegator), actor.c_str());
+			delegator.c_str(), actor.c_str());
 		exmdb_server::clear_submit(dir, eid_t(1, mid_val), TRUE);
 		return perr;
 	}
-	const char *ev_from = (send_as && delegator != nullptr && *delegator != '\0') ?
-	                      delegator : actor.c_str();
+	const char *ev_from = (send_as && !delegator.empty()) ?
+	                      delegator.c_str() : actor.c_str();
 
 	auto msgflags = ctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	bool b_resend = msgflags != nullptr && (*msgflags & MSGFLAG_RESEND);
