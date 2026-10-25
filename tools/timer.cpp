@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cerrno>
 #include <condition_variable>
 #include <csignal>
@@ -481,6 +482,13 @@ static void execute_timer(TIMER *ptimer)
 
 enum { X_STOP, X_LOOP };
 
+static bool disallowed_chars(std::string_view sv)
+{
+	return std::any_of(sv.begin(), sv.end(), [](unsigned char c) {
+	       	return c < 0x21 || c == 0x7f || isspace(c) || c == '"' || c == '\\';
+	       });
+}
+
 static int tmr_thrwork_1()
 {
 	char *pspace, temp_line[2048];
@@ -535,19 +543,31 @@ static int tmr_thrwork_1()
 			*pspace++ = '\0';
 
 			int exec_interval = strtol(&pconnection->line[5], nullptr, 0);
-			if (exec_interval <= 0 || strlen(pspace) >= COMMAND_LENGTH) {
+			if (exec_interval <= 0) {
 				pconnection->sk_write("FALSE 2\r\n");
 				continue;
 			}
 			char *start_ptr = pspace;
 			pspace = strchr(start_ptr, ' ');
-			if (pspace == nullptr) {
+			if (pspace == nullptr || pspace == start_ptr) {
 				pconnection->sk_write("FALSE 1\r\n");
 				continue;
 			}
 			std::string actor(start_ptr, pspace - start_ptr);
 			*pspace++ = '\0';
-			auto msg_gcv = strtoull(pspace, nullptr, 0);
+			/* parse_line would interpret quotes and backslashes */
+			if (disallowed_chars(actor)) {
+				pconnection->sk_write("FALSE 1\r\n");
+				continue;
+			}
+			char *end = nullptr;
+			errno = 0;
+			auto msg_gcv = strtoull(pspace, &end, 0);
+			if (*pspace < '0' || *pspace > '9' || *end != '\0' ||
+			    errno != 0 || msg_gcv == 0) {
+				pconnection->sk_write("FALSE 1\r\n");
+				continue;
+			}
 
 			TIMER tmr;
 			tmr.t_id = ++g_last_tid;
@@ -557,6 +577,11 @@ static int tmr_thrwork_1()
 				              std::to_string(msg_gcv);
 			} catch (const std::bad_alloc &) {
 				pconnection->sk_write("FALSE 3\r\n");
+				continue;
+			}
+			/* srcitem::command bounds what the state file can hold */
+			if (tmr.command.size() >= COMMAND_LENGTH) {
+				pconnection->sk_write("FALSE 2\r\n");
 				continue;
 			}
 
