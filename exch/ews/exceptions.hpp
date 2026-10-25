@@ -633,6 +633,7 @@ E(3600, "cannot write to the calendar of the referenced item");
 E(3601, "cannot modify the existing calendar item of the meeting");
 E(3602, "no read access to the referenced item");
 E(3604, "no read access to the meeting to cancel");
+E(3605, "no availability data for this email address");
 
 #undef E
 }
