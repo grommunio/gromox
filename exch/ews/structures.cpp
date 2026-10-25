@@ -2521,6 +2521,9 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 			return fb_event.has_details;
 		}) ? "Detailed" : "FreeBusy";
 
+	/* Exchange omits an empty CalendarEventArray, and clients rely on it */
+	if (fb_data.empty())
+		return;
 	auto &cal_events = CalendarEventArray.emplace();
 	cal_events.reserve(fb_data.size());
 
