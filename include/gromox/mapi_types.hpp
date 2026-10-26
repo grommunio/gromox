@@ -632,6 +632,9 @@ struct GX_EXPORT EXTENDED_ERROR {
 #define LOGON_FLAG_UNDER_COVER						0x2
 #define LOGON_FLAG_GHOSTED							0x4
 #define LOGON_FLAG_SPI_PROCESS						0x8
+/* Undocumented, sent by MS Remote Connectivity Analyzer */
+#define LOGON_FLAG_EXTENDED							0x40
+#define LOGON_EXTFLAG_APPLICATION_ID				0x8
 
 #define LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE			0x1
 #define LOGON_OPEN_FLAG_PUBLIC						0x2
