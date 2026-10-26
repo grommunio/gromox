@@ -1263,6 +1263,26 @@ static bool cvidx_child(const BINARY *bin, uint64_t nt_time, std::string &out)
 	return true;
 }
 
+/* Make @addr the sender of a message that ruleproc generates */
+static ec_error_t rx_set_sender(TPROPVAL_ARRAY &props, const char *addr,
+    const char *name = nullptr)
+{
+	ec_error_t err;
+	if ((err = props.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP")) != ecSuccess ||
+	    (err = props.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, addr)) != ecSuccess ||
+	    (err = props.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, addr)) != ecSuccess ||
+	    (err = props.set(PR_SENDER_ADDRTYPE, "SMTP")) != ecSuccess ||
+	    (err = props.set(PR_SENDER_EMAIL_ADDRESS, addr)) != ecSuccess ||
+	    (err = props.set(PR_SENDER_SMTP_ADDRESS, addr)) != ecSuccess)
+		return err;
+	if (name == nullptr)
+		return ecSuccess;
+	if ((err = props.set(PR_SENT_REPRESENTING_NAME, name)) != ecSuccess ||
+	    (err = props.set(PR_SENDER_NAME, name)) != ecSuccess)
+		return err;
+	return ecSuccess;
+}
+
 /*
  * Whether a forward by a rule already reached @rcpt. Forwards and alerts name
  * their recipients in Delivered-To, which stops forwarding loops.
@@ -2477,12 +2497,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		mlog(LV_ERR, "%s: no Envelope-To to identify the responder with", __func__);
 		return ecInvalidParam;
 	}
-	if ((err = rsp_prop.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP")) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, par.ev_to)) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, par.ev_to)) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENDER_ADDRTYPE, "SMTP")) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENDER_EMAIL_ADDRESS, par.ev_to)) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENDER_SMTP_ADDRESS, par.ev_to)) != ecSuccess)
+	if ((err = rx_set_sender(rsp_prop, par.ev_to)) != ecSuccess)
 		return err;
 	std::string cvidx;
 	if (cvidx_child(rq_prop.get<const BINARY>(PR_CONVERSATION_INDEX),
