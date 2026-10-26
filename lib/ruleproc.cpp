@@ -1241,6 +1241,28 @@ static ec_error_t op_read(rxparam &par, const rule_node &rule)
 	return ecSuccess;
 }
 
+static inline uint32_t cvidx_make_delta(uint64_t oldtime, uint64_t now)
+{
+	auto delta = now - oldtime;
+	return delta >= (1ULL << 48) ?
+	       (delta >> 23) | (1ULL << 31) :
+	       (delta >> 18) & ~(1ULL << 31);
+}
+
+/* PR_CONVERSATION_INDEX for a message answering one with index @bin */
+static bool cvidx_child(const BINARY *bin, uint64_t nt_time, std::string &out)
+{
+	if (bin == nullptr || bin->cb < 22)
+		return false;
+	out.assign(bin->pc, bin->cb);
+	out.resize(bin->cb + 5);
+	/* Well that's just great, Y2057 problem */
+	auto oldtime = be64p_to_cpu(&out[1]) & 0xffffffffff000000ULL;
+	cpu_to_be32p(&out[bin->cb], cvidx_make_delta(oldtime, nt_time));
+	out[bin->cb+4] = gromox::rand();
+	return true;
+}
+
 /*
  * Whether a forward by a rule already reached @rcpt. Forwards and alerts name
  * their recipients in Delivered-To, which stops forwarding loops.
@@ -2316,14 +2338,6 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	return err;
 }
 
-static inline uint32_t cvidx_make_delta(uint64_t oldtime, uint64_t now)
-{
-	auto delta = now - oldtime;
-	return delta >= (1ULL << 48) ?
-	       (delta >> 23) | (1ULL << 31) :
-	       (delta >> 18) & ~(1ULL << 31);
-}
-
 /*
  * Language of the text that meeting processing writes. The Calendar
  * Attendant of EXC uses the one of the mailbox.
@@ -2470,17 +2484,12 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	    (err = rsp_prop.set(PR_SENDER_EMAIL_ADDRESS, par.ev_to)) != ecSuccess ||
 	    (err = rsp_prop.set(PR_SENDER_SMTP_ADDRESS, par.ev_to)) != ecSuccess)
 		return err;
-	auto bin = rq_prop.get<const BINARY>(PR_CONVERSATION_INDEX);
-	if (bin != nullptr && bin->cb >= 22) {
-		auto cvidx = std::make_unique<char[]>(bin->cb + 5);
-		memcpy(&cvidx[0], bin->pv, bin->cb);
-		/* Well that's just great, Y2057 problem */
-		auto oldtime = be64p_to_cpu(&cvidx[1]) & 0xffffffffff000000ULL;
-		cpu_to_be32p(&cvidx[bin->cb], cvidx_make_delta(oldtime, nt_time));
-		cvidx[bin->cb+4] = gromox::rand();
+	std::string cvidx;
+	if (cvidx_child(rq_prop.get<const BINARY>(PR_CONVERSATION_INDEX),
+	    nt_time, cvidx)) {
 		BINARY cvbin;
-		cvbin.cb = bin->cb + 5;
-		cvbin.pc = cvidx.get();
+		cvbin.cb = cvidx.size();
+		cvbin.pc = cvidx.data();
 		err = rsp_prop.set(PR_CONVERSATION_INDEX, &cvbin);
 		if (err != ecSuccess)
 			return err;
