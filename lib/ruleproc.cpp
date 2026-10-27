@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <libHX/ctype_helper.h>
 #include <libHX/endian.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
@@ -1299,6 +1300,286 @@ static bool rx_delivered_before(const MIME &head, const char *rcpt)
 	return false;
 }
 
+static std::string rx_html_quote(std::string_view s)
+{
+	std::unique_ptr<char[], stdlib_delete> q(HX_strquote(std::string(s).c_str(),
+		HXQUOTE_HTML, nullptr));
+	if (q == nullptr)
+		throw std::bad_alloc();
+	return q.get();
+}
+
+using fwd_header = std::vector<std::pair<const char *, std::string>>;
+
+/* The header block of @ct that a forward quotes above the original text */
+static fwd_header rx_fwd_header(const message_content &ct)
+{
+	auto &p = ct.proplist;
+	fwd_header h;
+	auto name = p.get<const char>(PR_SENT_REPRESENTING_NAME);
+	auto addr = p.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (znoval(name) && znoval(addr)) {
+		name = p.get<const char>(PR_SENDER_NAME);
+		addr = p.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	}
+	if (!znoval(name) && !znoval(addr) && strcasecmp(name, addr) != 0)
+		h.emplace_back("From", std::string(name) + " <" + addr + ">");
+	else if (!znoval(name) || !znoval(addr))
+		h.emplace_back("From", !znoval(name) ? name : addr);
+	auto when = p.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
+	if (when == nullptr)
+		when = p.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
+	if (when != nullptr) {
+		auto t = rop_util_nttime_to_unix(*when);
+		struct tm tm{};
+		char buf[64];
+		if (localtime_r(&t, &tm) != nullptr &&
+		    strftime(buf, std::size(buf), "%a, %d %b %Y %H:%M", &tm) > 0)
+			h.emplace_back("Sent", buf);
+	}
+	auto to = rx_display_list(ct, MAPI_TO);
+	if (!to.empty())
+		h.emplace_back("To", std::move(to));
+	auto cc = rx_display_list(ct, MAPI_CC);
+	if (!cc.empty())
+		h.emplace_back("Cc", std::move(cc));
+	h.emplace_back("Subject", znul(p.get<const char>(PR_SUBJECT)));
+	return h;
+}
+
+/* Bodies of @orig with its header block quoted on top, into @out */
+static ec_error_t rx_fwd_body(const message_content &orig, TPROPVAL_ARRAY &out)
+{
+	auto &p = orig.proplist;
+	auto cpid = p.get<const uint32_t>(PR_INTERNET_CPID);
+	auto text = p.get<const char>(PR_BODY);
+	auto html = p.get<const BINARY>(PR_HTML);
+	std::string conv;
+	ec_error_t err;
+	if (text == nullptr && (text = p.get<const char>(PR_BODY_A)) != nullptr) {
+		auto cset = cpid != nullptr ? cpid_to_cset(static_cast<cpid_t>(*cpid)) : nullptr;
+		conv = cset != nullptr ? iconvtext(text, cset, "UTF-8") : text;
+		text = conv.c_str();
+	}
+	if (text == nullptr && (html == nullptr || html->pc == nullptr)) {
+		auto rtf = p.getval(PR_RTF_COMPRESSED);
+		if (rtf != nullptr) {
+			/* Not worth an RTF editor, keep the body as it is */
+			for (auto tag : {PR_RTF_COMPRESSED, PR_RTF_IN_SYNC, PR_NATIVE_BODY_INFO}) {
+				auto v = p.getval(tag);
+				if (v != nullptr && (err = out.set(tag, v)) != ecSuccess)
+					return err;
+			}
+			return ecSuccess;
+		}
+		text = "";
+	}
+	auto hdr = rx_fwd_header(orig);
+	std::string plain;
+	if (text != nullptr) {
+		plain = "\r\n\r\n________________________________\r\n";
+		for (const auto &[k, v] : hdr)
+			plain += std::string(k) + ": " + v + "\r\n";
+		plain += "\r\n";
+		plain += text;
+		if ((err = out.set(PR_BODY, plain.c_str())) != ecSuccess)
+			return err;
+	}
+	/* As with EWS ForwardItem, the HTML part goes out in UTF-8 */
+	static constexpr uint32_t utf8_cpid = CP_UTF8;
+	const uint32_t *out_cpid = &utf8_cpid;
+	if (html != nullptr && html->pc != nullptr) {
+		std::string_view orig_html(html->pc, html->cb);
+		std::string conv_html;
+		auto cset = cpid != nullptr && *cpid != CP_UTF8 ?
+		            cpid_to_cset(static_cast<cpid_t>(*cpid)) : nullptr;
+		if (cset != nullptr && !orig_html.empty()) {
+			conv_html = iconvtext(orig_html, cset, "UTF-8");
+			if (conv_html.empty()) {
+				/* Charset unknown to iconv, pass the HTML on unchanged */
+				out_cpid = cpid;
+				if ((err = out.set(PR_HTML, html)) != ecSuccess)
+					return err;
+				return out.set(PR_INTERNET_CPID, out_cpid);
+			}
+			orig_html = conv_html;
+		}
+		std::string q = "<div><br></div><hr style=\"display:inline-block;"
+		                "width:98%\" tabindex=\"-1\"><div id=\"divRplyFwdMsg\" "
+		                "dir=\"ltr\">";
+		for (const auto &[k, v] : hdr)
+			q += "<b>" + rx_html_quote(k) + ":</b> " + rx_html_quote(v) + "<br>";
+		q += "</div><br>";
+		static constexpr std::string_view tag = "<body";
+		auto it = std::search(orig_html.begin(), orig_html.end(), tag.begin(), tag.end(),
+		          [](char a, char b) { return HX_tolower(a) == b; });
+		size_t pos = 0;
+		if (it != orig_html.end()) {
+			auto gt = orig_html.find('>', it - orig_html.begin());
+			if (gt != orig_html.npos)
+				pos = gt + 1;
+		}
+		std::string s(orig_html.substr(0, pos));
+		s += q;
+		s.append(orig_html.substr(pos));
+		if (s.size() > UINT32_MAX)
+			return ecInvalidParam;
+		BINARY bin;
+		bin.cb = s.size();
+		bin.pc = s.data();
+		if ((err = out.set(PR_HTML, &bin)) != ecSuccess)
+			return err;
+	}
+	return out.set(PR_INTERNET_CPID, out_cpid);
+}
+
+/**
+ * A forward by a rule that does not preserve the sender is a new message
+ * from the mailbox owner, which quotes the original as a forward by hand
+ * would. EXC does the same.
+ */
+static ec_error_t rx_fwd_compose(const rxparam &par,
+    const std::vector<std::string> &rcpt_list,
+    const std::vector<std::string> &rcpt_names, message_content &fwd)
+{
+	auto &p = par.ctnt->proplist;
+	auto &o = fwd.proplist;
+	auto norm = p.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (norm == nullptr)
+		norm = znul(p.get<const char>(PR_SUBJECT));
+	auto topic = p.get<const char>(PR_CONVERSATION_TOPIC);
+	auto subj = std::string("FW: ") + norm;
+	auto now = rop_util_current_nttime();
+	char msgid[128];
+	auto err = make_inet_msgid(msgid, std::size(msgid), 0x5246);
+	if (err != ecSuccess)
+		return err;
+	std::string owner_name;
+	if (!mysql_adaptor_get_user_displayname(par.ev_to, owner_name) ||
+	    owner_name.empty())
+		owner_name = par.ev_to;
+	if ((err = o.set(PR_MESSAGE_CLASS, "IPM.Note")) != ecSuccess ||
+	    (err = o.set(PR_SUBJECT_PREFIX, "FW: ")) != ecSuccess ||
+	    (err = o.set(PR_NORMALIZED_SUBJECT, norm)) != ecSuccess ||
+	    (err = o.set(PR_SUBJECT, subj.c_str())) != ecSuccess ||
+	    (err = o.set(PR_CONVERSATION_TOPIC, topic != nullptr ? topic : norm)) != ecSuccess ||
+	    (err = o.set(PR_CLIENT_SUBMIT_TIME, &now)) != ecSuccess ||
+	    (err = o.set(PR_AUTO_FORWARDED, &byte_value_one)) != ecSuccess ||
+	    (err = o.set(PR_INTERNET_MESSAGE_ID, msgid)) != ecSuccess ||
+	    (err = rx_set_sender(o, par.ev_to, owner_name.c_str())) != ecSuccess)
+		return err;
+	auto imp = p.get<const uint32_t>(PR_IMPORTANCE);
+	if (imp != nullptr && (err = o.set(PR_IMPORTANCE, imp)) != ecSuccess)
+		return err;
+	std::string cvidx;
+	if (cvidx_child(p.get<const BINARY>(PR_CONVERSATION_INDEX), now, cvidx)) {
+		BINARY cvbin;
+		cvbin.cb = cvidx.size();
+		cvbin.pc = cvidx.data();
+		if ((err = o.set(PR_CONVERSATION_INDEX, &cvbin)) != ecSuccess)
+			return err;
+	}
+	auto omid = p.get<const char>(PR_INTERNET_MESSAGE_ID);
+	if (!znoval(omid)) {
+		auto refs = p.get<const char>(PR_INTERNET_REFERENCES);
+		auto nrefs = znoval(refs) ? std::string(omid) : std::string(refs) + " " + omid;
+		if ((err = o.set(PR_IN_REPLY_TO_ID, omid)) != ecSuccess ||
+		    (err = o.set(PR_INTERNET_REFERENCES, nrefs.c_str())) != ecSuccess)
+			return err;
+	}
+	err = rx_fwd_body(*par.ctnt, o);
+	if (err != ecSuccess)
+		return err;
+
+	auto rcpts = tarray_set_init();
+	if (rcpts == nullptr)
+		return ecServerOOM;
+	fwd.set_rcpts_internal(rcpts);
+	static constexpr uint32_t rtype = MAPI_TO;
+	for (size_t i = 0; i < rcpt_list.size(); ++i) {
+		auto r = rcpts->emplace();
+		if (r == nullptr)
+			return ecServerOOM;
+		auto addr = rcpt_list[i].c_str();
+		auto name = rcpt_names[i].empty() ? addr : rcpt_names[i].c_str();
+		if ((err = r->set(PR_RECIPIENT_TYPE, &rtype)) != ecSuccess ||
+		    (err = r->set(PR_ADDRTYPE, "SMTP")) != ecSuccess ||
+		    (err = r->set(PR_EMAIL_ADDRESS, addr)) != ecSuccess ||
+		    (err = r->set(PR_SMTP_ADDRESS, addr)) != ecSuccess ||
+		    (err = r->set(PR_DISPLAY_NAME, name)) != ecSuccess)
+			return err;
+	}
+	auto atx = par.ctnt->children.pattachments;
+	if (atx != nullptr && atx->count > 0) {
+		auto dup = atx->dup();
+		if (dup == nullptr)
+			return ecServerOOM;
+		fwd.set_attachments_internal(dup);
+	}
+	return ecSuccess;
+}
+
+/* Whether a forward may rewrite a message of class @cls */
+static bool rx_fwd_may_munge(const char *cls)
+{
+	if (cls == nullptr)
+		return true;
+	return class_match_prefix(cls, "IPM.Note") == 0 &&
+	       class_match_prefix(cls, "IPM.Note.SMIME") != 0;
+}
+
+static ec_error_t rx_fwd_new(rxparam &par,
+    const std::vector<std::string> &rcpt_list,
+    const std::vector<std::string> &rcpt_names)
+{
+	auto eml = par.get_eml();
+	if (eml != nullptr) {
+		MAIL orig;
+		if (!orig.refonly_parse(eml->c_str(), eml->size()))
+			return ecError;
+		auto head = orig.get_head();
+		if (head != nullptr && rx_delivered_before(*head, par.ev_to)) {
+			mlog(LV_DEBUG, "ruleproc: %s: OP_FORWARD skipped, "
+				"message was already delivered to %s",
+				par.orig_dir.c_str(), par.ev_to);
+			return ecSuccess;
+		}
+	}
+	message_content_ptr fwd(message_content_init());
+	if (fwd == nullptr)
+		return ecServerOOM;
+	auto err = rx_fwd_compose(par, rcpt_list, rcpt_names, *fwd);
+	if (err != ecSuccess)
+		return err;
+	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
+	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
+	MAIL imail;
+	rp_storedir = par.orig_dir.c_str();
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = cu_alloc;
+	cvt.get_propids = cu_get_propids;
+	cvt.get_propname = cu_get_propname;
+	cvt.use_format_override(*par.ctnt);
+	auto ok = cvt.mapi_to_inet(*fwd, imail);
+	rp_alloc_ctx.clear();
+	rp_storedir = nullptr;
+	if (!ok) {
+		mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed");
+		return ecError;
+	}
+	auto head = imail.get_head();
+	if (head == nullptr)
+		return ecError;
+	for (const auto &eaddr : rcpt_list)
+		head->append_field("Delivered-To", eaddr.c_str());
+	err = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, rcpt_list);
+	if (err != ecSuccess)
+		mlog(LV_ERR, "ruleproc: OP_FORWARD cu_send_mail: %s",
+			mapi_strerror(err));
+	return ecSuccess;
+}
+
 /**
  * FWD_AS_SMS_ALERT, MS-OXORULE v23.0 §2.2.5.1.1. There is no SMS gateway, so
  * the alert goes out as a short text mail to the e-mail recipients of the
@@ -1404,17 +1685,24 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 	}
 	if (flavor & FWD_AS_SMS_ALERT)
 		return op_sms_alert(par, rule, blk);
-	std::vector<std::string> rcpt_list;
+	std::vector<std::string> rcpt_list, rcpt_names;
 	for (const auto &rcptprops : blk) {
 		TPROPVAL_ARRAY pv;
 		pv.count = rcptprops.count;
 		pv.ppropval = rcptprops.ppropval;
-		if (cu_rcpt_to_list(std::move(pv), rp_org_name.c_str(),
+		auto before = rcpt_list.size();
+		if (cu_rcpt_to_list(pv, rp_org_name.c_str(),
 		    rcpt_list, mysql_adaptor_userid_to_name, false) != ecSuccess)
 			return ecError;
+		auto name = rcpt_list.size() == before + 1 ?
+		            znul(pv.get<const char>(PR_DISPLAY_NAME)) : "";
+		rcpt_names.resize(rcpt_list.size(), name);
 	}
 	if (rcpt_list.empty())
 		return ecSuccess;
+	if (!(flavor & (FWD_PRESERVE_SENDER | FWD_DO_NOT_MUNGE_MSG | FWD_AS_ATTACHMENT)) &&
+	    rx_fwd_may_munge(par.ctnt->proplist.get<const char>(PR_MESSAGE_CLASS)))
+		return rx_fwd_new(par, rcpt_list, rcpt_names);
 
 	MAIL imail;
 	bool head_kept = false;
