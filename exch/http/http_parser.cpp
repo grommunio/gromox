@@ -1892,7 +1892,10 @@ tproc_status http_parser::rdbody_nochan2(http_context *pcontext)
 
 tproc_status http_parser::rdbody_nochan(http_context *pcontext)
 {
-	if (0 == pcontext->total_length ||
+	auto is_rpc = pcontext->request.imethod == http_method::rpcin ||
+	              pcontext->request.imethod == http_method::rpcout;
+	/* An empty RPC echo request has no body to wait for */
+	if ((!is_rpc && pcontext->total_length == 0) ||
 	    pcontext->bytes_rw < pcontext->total_length) {
 		auto ret = rdbody_nochan2(pcontext);
 		if (ret == tproc_status::endproc)
