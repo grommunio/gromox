@@ -317,15 +317,7 @@ template<typename M> static const std::string *lang_match(const M &map,
 	return nullptr;
 }
 
-/**
- * @locale:	user language, e.g. users.lang or the EWS MailboxCulture
- * @key:	accepted, tentative, declined, newtime or canceled
- *
- * Returns the subject prefix of a meeting response or cancellation that
- * MS-OXOCAL v22.1 §2.2.7.2 and §2.2.8.2 call localized, including the
- * trailing space. Missing languages and keys fall back to English.
- */
-const char *meeting_subject_prefix(const char *locale, const char *key) try
+static const std::string *prefix_lookup(const char *locale, const char *key)
 {
 	auto lang = lang_match(g_mtg_prefix_map, locale);
 	for (const auto &l : {lang != nullptr ? *lang : "en"s, "en"s}) {
@@ -334,12 +326,29 @@ const char *meeting_subject_prefix(const char *locale, const char *key) try
 			continue;
 		auto iter = map->second.find(key);
 		if (iter != map->second.end())
-			return iter->second.c_str();
+			return &iter->second;
 	}
+	return nullptr;
+}
+
+/**
+ * @locale:	user language, e.g. users.lang or the EWS MailboxCulture
+ * @key:	accepted, tentative, declined, newtime, canceled or forward
+ *
+ * Returns the subject prefix of a meeting response or cancellation that
+ * MS-OXOCAL v22.1 §2.2.7.2 and §2.2.8.2 call localized, or of a forward,
+ * including the trailing space. Missing languages and keys fall back to
+ * English.
+ */
+const char *meeting_subject_prefix(const char *locale, const char *key) try
+{
+	auto s = prefix_lookup(locale, key);
+	if (s != nullptr)
+		return s->c_str();
 	static constexpr std::pair<const char *, const char *> builtin[] = {
 		{"accepted", "Accepted: "}, {"tentative", "Tentative: "},
 		{"declined", "Declined: "}, {"newtime", "New Time Proposed: "},
-		{"canceled", "Canceled: "},
+		{"canceled", "Canceled: "}, {"forward", "FW: "},
 	};
 	for (const auto &[k, v] : builtin)
 		if (strcmp(k, key) == 0)
@@ -348,6 +357,29 @@ const char *meeting_subject_prefix(const char *locale, const char *key) try
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return "";
+}
+
+/**
+ * @key:	from, sent, to, cc or subject
+ *
+ * Returns the label of a header line that a forward quotes, without colon.
+ */
+std::string forward_header_label(const char *locale, const char *key) try
+{
+	auto s = prefix_lookup(locale, ("hdr_"s + key).c_str());
+	if (s != nullptr && !s->empty())
+		return s->substr(0, s->size() - 1);
+	static constexpr std::pair<const char *, const char *> builtin[] = {
+		{"from", "From"}, {"sent", "Sent"}, {"to", "To"}, {"cc", "Cc"},
+		{"subject", "Subject"},
+	};
+	for (const auto &[k, v] : builtin)
+		if (strcmp(k, key) == 0)
+			return v;
+	return key;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return key;
 }
 
 static bool mt_overwrite(const std::string &given, const std::string_view &replace)
