@@ -1300,6 +1300,8 @@ static bool rx_delivered_before(const MIME &head, const char *rcpt)
 	return false;
 }
 
+static std::string mr_owner_lang(const rxparam &);
+
 static std::string rx_html_quote(std::string_view s)
 {
 	std::unique_ptr<char[], stdlib_delete> q(HX_strquote(std::string(s).c_str(),
@@ -1309,10 +1311,10 @@ static std::string rx_html_quote(std::string_view s)
 	return q.get();
 }
 
-using fwd_header = std::vector<std::pair<const char *, std::string>>;
+using fwd_header = std::vector<std::pair<std::string, std::string>>;
 
 /* The header block of @ct that a forward quotes above the original text */
-static fwd_header rx_fwd_header(const message_content &ct)
+static fwd_header rx_fwd_header(const message_content &ct, const char *lang)
 {
 	auto &p = ct.proplist;
 	fwd_header h;
@@ -1323,9 +1325,11 @@ static fwd_header rx_fwd_header(const message_content &ct)
 		addr = p.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	}
 	if (!znoval(name) && !znoval(addr) && strcasecmp(name, addr) != 0)
-		h.emplace_back("From", std::string(name) + " <" + addr + ">");
+		h.emplace_back(forward_header_label(lang, "from"),
+			std::string(name) + " <" + addr + ">");
 	else if (!znoval(name) || !znoval(addr))
-		h.emplace_back("From", !znoval(name) ? name : addr);
+		h.emplace_back(forward_header_label(lang, "from"),
+			!znoval(name) ? name : addr);
 	auto when = p.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
 	if (when == nullptr)
 		when = p.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
@@ -1335,20 +1339,22 @@ static fwd_header rx_fwd_header(const message_content &ct)
 		char buf[64];
 		if (localtime_r(&t, &tm) != nullptr &&
 		    strftime(buf, std::size(buf), "%a, %d %b %Y %H:%M", &tm) > 0)
-			h.emplace_back("Sent", buf);
+			h.emplace_back(forward_header_label(lang, "sent"), buf);
 	}
 	auto to = rx_display_list(ct, MAPI_TO);
 	if (!to.empty())
-		h.emplace_back("To", std::move(to));
+		h.emplace_back(forward_header_label(lang, "to"), std::move(to));
 	auto cc = rx_display_list(ct, MAPI_CC);
 	if (!cc.empty())
-		h.emplace_back("Cc", std::move(cc));
-	h.emplace_back("Subject", znul(p.get<const char>(PR_SUBJECT)));
+		h.emplace_back(forward_header_label(lang, "cc"), std::move(cc));
+	h.emplace_back(forward_header_label(lang, "subject"),
+		znul(p.get<const char>(PR_SUBJECT)));
 	return h;
 }
 
 /* Bodies of @orig with its header block quoted on top, into @out */
-static ec_error_t rx_fwd_body(const message_content &orig, TPROPVAL_ARRAY &out)
+static ec_error_t rx_fwd_body(const message_content &orig, const char *lang,
+    TPROPVAL_ARRAY &out)
 {
 	auto &p = orig.proplist;
 	auto cpid = p.get<const uint32_t>(PR_INTERNET_CPID);
@@ -1374,12 +1380,12 @@ static ec_error_t rx_fwd_body(const message_content &orig, TPROPVAL_ARRAY &out)
 		}
 		text = "";
 	}
-	auto hdr = rx_fwd_header(orig);
+	auto hdr = rx_fwd_header(orig, lang);
 	std::string plain;
 	if (text != nullptr) {
 		plain = "\r\n\r\n________________________________\r\n";
 		for (const auto &[k, v] : hdr)
-			plain += std::string(k) + ": " + v + "\r\n";
+			plain += k + ": " + v + "\r\n";
 		plain += "\r\n";
 		plain += text;
 		if ((err = out.set(PR_BODY, plain.c_str())) != ecSuccess)
@@ -1448,7 +1454,9 @@ static ec_error_t rx_fwd_compose(const rxparam &par,
 	if (norm == nullptr)
 		norm = znul(p.get<const char>(PR_SUBJECT));
 	auto topic = p.get<const char>(PR_CONVERSATION_TOPIC);
-	auto subj = std::string("FW: ") + norm;
+	auto lang = mr_owner_lang(par);
+	auto pfx = meeting_subject_prefix(lang.c_str(), "forward");
+	auto subj = pfx + std::string(norm);
 	auto now = rop_util_current_nttime();
 	char msgid[128];
 	auto err = make_inet_msgid(msgid, std::size(msgid), 0x5246);
@@ -1459,7 +1467,7 @@ static ec_error_t rx_fwd_compose(const rxparam &par,
 	    owner_name.empty())
 		owner_name = par.ev_to;
 	if ((err = o.set(PR_MESSAGE_CLASS, "IPM.Note")) != ecSuccess ||
-	    (err = o.set(PR_SUBJECT_PREFIX, "FW: ")) != ecSuccess ||
+	    (err = o.set(PR_SUBJECT_PREFIX, pfx)) != ecSuccess ||
 	    (err = o.set(PR_NORMALIZED_SUBJECT, norm)) != ecSuccess ||
 	    (err = o.set(PR_SUBJECT, subj.c_str())) != ecSuccess ||
 	    (err = o.set(PR_CONVERSATION_TOPIC, topic != nullptr ? topic : norm)) != ecSuccess ||
@@ -1487,7 +1495,7 @@ static ec_error_t rx_fwd_compose(const rxparam &par,
 		    (err = o.set(PR_INTERNET_REFERENCES, nrefs.c_str())) != ecSuccess)
 			return err;
 	}
-	err = rx_fwd_body(*par.ctnt, o);
+	err = rx_fwd_body(*par.ctnt, lang.c_str(), o);
 	if (err != ecSuccess)
 		return err;
 
