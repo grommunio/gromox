@@ -263,7 +263,7 @@ static void oxomsg_audit_send(const char *actor, const char *mailbox,
 			represented = delegator;
 		}
 	}
-	mlog(LV_INFO, "gromox-audit: %s %s message \"%s\"%s%s%s in mailbox %s via EMSMDB",
+	mlog(LV_INFO, "emsmdb-audit: %s %s message \"%s\"%s%s%s in mailbox %s",
 		actor, verb, txt2cstr(subject).c_str(), event, mode,
 		represented, mailbox);
 }

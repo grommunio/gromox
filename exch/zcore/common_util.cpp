@@ -1291,7 +1291,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 			identity = representing;
 		}
 	}
-	mlog(LV_INFO, "gromox-audit: %s sent message \"%s\"%s%s in mailbox %s via ZCORE",
+	mlog(LV_INFO, "zcore-audit: %s sent message \"%s\"%s%s in mailbox %s",
 		audit_actor == nullptr ? "(unknown)" : audit_actor,
 		txt2cstr(subject).c_str(), representation,
 		txt2cstr(identity).c_str(), store.get_account());

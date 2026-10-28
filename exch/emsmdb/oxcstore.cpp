@@ -151,7 +151,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		return aoh_to_error(handle);
 	}
 	*phout = handle;
-	mlog(LV_INFO, "gromox-audit: %s accessed mailbox %s via EMSMDB",
+	mlog(LV_INFO, "emsmdb-audit: %s accessed mailbox %s",
 		rpc_info.username, username.c_str());
 	return ecSuccess;
 } catch (const std::bad_alloc &) {

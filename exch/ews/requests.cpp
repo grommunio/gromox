@@ -851,7 +851,7 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 		throw EWSError::InternalServerError(E3317);
 
 	if (changed) {
-		mlog(LV_INFO, "gromox-audit: %s added delegates to mailbox %s via EWS",
+		mlog(LV_INFO, "ews-audit: %s added delegates to mailbox %s",
 			znul(actor), znul(mailbox));
 	}
 
@@ -908,7 +908,7 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 		throw EWSError::InternalServerError(E3319);
 
 	if (changed) {
-		mlog(LV_INFO, "gromox-audit: %s removed delegates from mailbox %s via EWS",
+		mlog(LV_INFO, "ews-audit: %s removed delegates from mailbox %s",
 			znul(actor), znul(mailbox));
 	}
 
@@ -962,7 +962,7 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 	}
 
 	if (changed) {
-		mlog(LV_INFO, "gromox-audit: %s updated delegates in mailbox %s via EWS",
+		mlog(LV_INFO, "ews-audit: %s updated delegates in mailbox %s",
 			znul(actor), znul(mailbox));
 	}
 	data.success();
@@ -3326,7 +3326,7 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 		if (parentFolder.location == sFolderSpec::PRIVATE)
 			mailbox = "mailbox " + *parentFolder.target;
 
-		mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via EWS",
+		mlog(LV_INFO, "ews-audit: %s accessed message \"%s\" in %s",
 			znul(actor), txt2cstr(subject).c_str(), mailbox.c_str());
 
 		msg.success();
@@ -3636,7 +3636,7 @@ void process(mUpdateFolderRequest &&request, XMLElement *response, const EWSCont
 			if (folder.location == sFolderSpec::PRIVATE)
 				mailbox = "mailbox " + *folder.target;
 
-			mlog(LV_INFO, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EWS",
+			mlog(LV_INFO, "ews-audit: %s changed permissions on folder \"%s\" in %s",
 				znul(actor), txt2cstr(folder_name).c_str(),
 				mailbox.c_str());
 		}
