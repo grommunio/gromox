@@ -638,6 +638,19 @@ static const ical_component *oxcical_find_vtimezone(const ical &pical, const cha
 	return nullptr;
 }
 
+static const ical_component *oxcical_sole_vtimezone(const ical &pical)
+{
+	const ical_component *found = nullptr;
+	for (const auto &comp : pical.component_list) {
+		if (strcasecmp(comp.m_name.c_str(), "VTIMEZONE") != 0)
+			continue;
+		if (found != nullptr)
+			return nullptr;
+		found = &comp;
+	}
+	return found;
+}
+
 static ec_error_t oxcical_take_tzbin(bool b_dtstart, const BINARY &tmp_bin,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
@@ -1669,6 +1682,15 @@ static ec_error_t oxcical_parse_recurrence_id(const ical_component *ptz_componen
 	if (err != ecSuccess)
 		return err;
 	(*plast_propid) ++;
+	pn = {MNID_ID, PSETID_Meeting, PidLidIsException};
+	err = namemap_add(phash, *plast_propid, std::move(pn));
+	if (err != ecSuccess)
+		return err;
+	static constexpr uint8_t v_true = 1;
+	err = pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &v_true);
+	if (err != ecSuccess)
+		return err;
+	(*plast_propid) ++;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
@@ -1730,8 +1752,23 @@ static bool oxcical_parse_appt_not_recurring(namemap &phash, uint16_t &last_prop
 	return true;
 }
 
-static bool oxcical_parse_appointment_recurrence(const APPOINTMENT_RECUR_PAT *apr,
-    namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
+/*
+ * MS-OXOCAL v22.1 §2.2.1.14/§2.2.1.15: the clip bounds of a series are
+ * midnight in the local zone on the first/last day, stored as UTC.
+ */
+static uint64_t oxcical_clip_time(const ical_component *tz, uint32_t rtime)
+{
+	time_t t = rop_util_rtime_to_unix(rtime), u;
+	ical_time itime;
+	if (tz != nullptr && ical_utc_to_datetime(nullptr, t, &itime) &&
+	    ical_itime_to_utc(tz, itime, &u))
+		t = u;
+	return rop_util_unix_to_nttime(t);
+}
+
+static bool oxcical_parse_appointment_recurrence(const ical_component *tz,
+    const APPOINTMENT_RECUR_PAT *apr, namemap &phash, uint16_t *plast_propid,
+    MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
@@ -1759,17 +1796,17 @@ static bool oxcical_parse_appointment_recurrence(const APPOINTMENT_RECUR_PAT *ap
 	    pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &num) != ecSuccess)
 		return false;
 	++*plast_propid;
-	auto nt_time = rop_util_rtime_to_nttime(
-		apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND ||
-		apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND1 ?
-		ENDDATE_MISSING : apr->recur_pat.enddate);
+	auto nt_time = apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND ||
+	               apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND1 ?
+	               rop_util_rtime_to_nttime(ENDDATE_MISSING) :
+	               oxcical_clip_time(tz, apr->recur_pat.enddate);
 	propname = {MNID_ID, PSETID_Appointment, PidLidClipEnd};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
-	nt_time = rop_util_rtime_to_nttime(apr->recur_pat.startdate);
+	nt_time = oxcical_clip_time(tz, apr->recur_pat.startdate);
 	propname = {MNID_ID, PSETID_Appointment, PidLidClipStart};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != ecSuccess)
 		return false;
@@ -2179,7 +2216,8 @@ static inline unsigned int dfl_alarm_offset(bool allday)
 }
 
 /*
- * Exception start/end times are kept in the local time of the series.
+ * Exception start/end/original times are kept in the local time of the
+ * series.
  * A time given in UTC needs to be moved there first.
  */
 static time_t oxcical_wall_time(const ical_component *tz, const ical_time &itime)
@@ -2272,6 +2310,17 @@ static ec_error_t oxcical_import_internal(const char *method,
 			if (err != ecSuccess)
 				return err;
 		}
+	} else if (pvalue1 != nullptr && strcasecmp(pvalue1, "DATE") == 0 &&
+	    (ptz_component = oxcical_sole_vtimezone(pical)) != nullptr) {
+		/*
+		 * RFC 5545 §3.2.19 forbids TZID on DATE. With exactly
+		 * one VTIMEZONE, as gromox and Exchange send, take the day
+		 * in that zone.
+		 */
+		err = oxcical_parse_tzdisplay(true, *ptz_component,
+		      phash, &last_propid, pmsg, errstr);
+		if (err != ecSuccess)
+			return err;
 	}
 
 	time_t start_time = 0, end_time = 0;
@@ -2279,6 +2328,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 	/*
 	 * EXC2019 treats iCalendar floating time as if it was specified with
 	 * UTC time. As a result, export of such MAPI objects can shift it.
+	 * Gromox does the same, except for DATE values matched to a sole
+	 * VTIMEZONE above.
 	 */
 	err = oxcical_parse_dtvalue(ptz_component, *piline, &start_itime,
 	      &start_time, errstr);
@@ -2388,7 +2439,10 @@ static ec_error_t oxcical_import_internal(const char *method,
 	ical_time itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
 	if (piline != nullptr) {
-		if (pexception != nullptr && pext_exception != nullptr) {
+		/* A standalone occurrence update needs it just as much */
+		if (pexception != nullptr ||
+		    (pmain_event->get_line("RRULE") == nullptr &&
+		    pmain_event->get_line("X-MICROSOFT-RRULE") == nullptr)) {
 			err = oxcical_parse_recurrence_id(ptz_component,
 			      *piline, phash, &last_propid, pmsg, errstr);
 			if (err != ecSuccess) {
@@ -2606,21 +2660,25 @@ static ec_error_t oxcical_import_internal(const char *method,
 			piline = event->get_line("RECURRENCE-ID");
 			if (piline == nullptr)
 				return ecInvalidParam;
-			time_t tmp_time;
 			err = oxcical_parse_dtvalue(ptz_component, *piline,
-			      &itime, &tmp_time, errstr);
+			      &itime, nullptr, errstr);
 			if (err != ecSuccess) {
 				errstr.insert(0, "E-2730: ");
 				return err;
 			}
-			auto minutes = rop_util_unix_to_rtime(tmp_time);
-			if (apr.recur_pat.contains_del(minutes))
+			auto minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, itime));
+			if (std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
+			    [&](const EXCEPTIONINFO &e) { return e.originalstartdate / 1440 == minutes / 1440; }))
 				continue;
-			if (apr.recur_pat.pdeletedinstancedates.size() >= appt_max_exceptions) {
-				errstr = "E-2731: That appointment has too many deleted instances for this implementation";
-				return ecInvalidParam;
+			/* deleted dates are midnights, EXDATE may have the day already */
+			auto day = minutes / 1440 * 1440;
+			if (!apr.recur_pat.contains_del(day)) {
+				if (apr.recur_pat.pdeletedinstancedates.size() >= appt_max_exceptions) {
+					errstr = "E-2731: That appointment has too many deleted instances for this implementation";
+					return ecInvalidParam;
+				}
+				apr.recur_pat.pdeletedinstancedates.emplace_back(day);
 			}
-			apr.recur_pat.pdeletedinstancedates.emplace_back(minutes);
 			ei_new.originalstartdate = minutes;
 			ee_new.originalstartdate = minutes;
 			minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, start_itime));
@@ -2638,8 +2696,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 		apr.recur_pat.sort_dels();
 		apr.recur_pat.sort_mods();
 		apr.sort_exceptions();
-		if (!oxcical_parse_appointment_recurrence(&apr, phash,
-		    &last_propid, pmsg)) {
+		if (!oxcical_parse_appointment_recurrence(ptz_component, &apr,
+		    phash, &last_propid, pmsg)) {
 			errstr = "E-2732";
 			return ecInvalidParam;
 		}
@@ -3615,11 +3673,21 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	return false;
 }
 
+/*
+ * EWS used to store the original day of a moved exception as its modified
+ * date. Its EXDATE is not emitted, so neither must the RDATE be.
+ */
+static bool oxcical_is_modified(const APPOINTMENT_RECUR_PAT &apr, uint32_t date)
+{
+	return oxcical_is_exception(apr, date, false) ||
+	       oxcical_is_exception(apr, date, true);
+}
+
 static bool oxcical_emit_rdates(const APPOINTMENT_RECUR_PAT &apr)
 {
 	return std::any_of(apr.recur_pat.pmodifiedinstancedates.cbegin(),
 	       apr.recur_pat.pmodifiedinstancedates.cend(),
-	       [&](uint32_t mi) { return !oxcical_is_exception(apr, mi, false); });
+	       [&](uint32_t mi) { return !oxcical_is_modified(apr, mi); });
 }
 
 static bool oxcical_export_rdate(const char *tzid, bool b_date,
@@ -3635,7 +3703,7 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 	else if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (auto mi : apr->recur_pat.pmodifiedinstancedates) {
-		if (oxcical_is_exception(*apr, mi, false))
+		if (oxcical_is_modified(*apr, mi))
 			continue;
 		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(mi), &itime);
 		if (b_date)
@@ -3787,7 +3855,7 @@ static void append_dt(ical_component &com, const char *key,
 }
 
 static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
-    proptag_t proptag_xrt, bool b_exceptional, bool b_date,
+    proptag_t proptag_xrt, bool b_exceptional, bool b_recurrence, bool b_date,
     ical_component &com, const ical_component *ptz_component,
     const char *tzid, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
 {
@@ -3811,26 +3879,33 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 		if (!get_propids(&propnames, &propids) || propids.size() != propnames.size())
 			return E_2201;
 		auto flag = msg.proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_is_except]));
-		if (flag != nullptr && *flag != 0) {
-			auto num = msg.proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_startrecurtime]));
-			if (num != nullptr) {
+		auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_goid]));
+		auto num = msg.proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_startrecurtime]));
+		GLOBALOBJECTID goid{};
+		/* A series is no instance unless flagged, e.g. an occurrence reply */
+		if (b_recurrence && (flag == nullptr || *flag == 0))
+			bin = nullptr;
+		if (bin != nullptr) {
+			EXT_PULL ext_pull;
+			ext_pull.init(bin->pb, bin->cb, alloc, 0);
+			if (ext_pull.g_goid(&goid) != pack_result::ok ||
+			    !(goid.arrayid == EncodedGlobalId) ||
+			    goid.month < 1 || goid.month > 12 || goid.day < 1 ||
+			    goid.day > ical_get_monthdays(goid.year, goid.month))
+				goid.year = 0;
+		}
+		/* A DATE value has no use for the time */
+		if (goid.year >= 1601 && goid.year <= 4500 &&
+		    (num != nullptr || b_date)) {
+			itime.year  = goid.year;
+			itime.month = goid.month;
+			itime.day   = goid.day;
+			if (num != nullptr && !b_date) {
 				itime.hour   = (*num >> 12) & 0x1f;
 				itime.minute = (*num >> 6) & 0x3f;
 				itime.second = *num & 0x3f;
-				itime_is_set = true;
-				auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_goid]));
-				if (bin != nullptr) {
-					EXT_PULL ext_pull;
-					GLOBALOBJECTID globalobjectid;
-
-					ext_pull.init(bin->pb, bin->cb, alloc, 0);
-					if (ext_pull.g_goid(&globalobjectid) != pack_result::ok)
-						return "E-2218: PidLidGlobalObjectId contents not recognized";
-					itime.year = globalobjectid.year;
-					itime.month = globalobjectid.month;
-					itime.day = globalobjectid.day;
-				}
 			}
+			itime_is_set = true;
 		}
 	} else {
 		auto xrt = rop_util_nttime_to_unix(*lnum);
@@ -4227,7 +4302,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 
 	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids[l_replacetime]);
 	auto err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
-	      b_allday, *pcomponent, ptz_component, tzid, alloc, get_propids);
+	      b_recurrence, b_allday, *pcomponent, ptz_component, tzid, alloc,
+	      get_propids);
 	if (err != nullptr)
 		return err;
 

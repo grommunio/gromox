@@ -1656,6 +1656,12 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 		    mInst->instanceId, &err) || err != ecSuccess)
 			throw EWSError::ItemSave(E3433);
+		/*
+		 * Keep the message instance. A reload would renumber the
+		 * attachments and shift the AttachmentIds the client holds.
+		 */
+		ctx.plugin().unloadAttachmentInstance(dir, aid.messageId(),
+			aid.attachment_num);
 
 		sShape shape;
 		ctx.updated(dir, aid, shape);
@@ -1988,7 +1994,6 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 	response->SetName("m:FindItemResponse");
 
 	sShape shape(request.ItemShape);
-	shape.recurrenceFrame = ctx.get_recurrence_frame();
 	uint8_t tableFlags = request.Traversal == Enum::SoftDeleted ? TABLE_FLAG_SOFTDELETES :
 	                     request.Traversal == Enum::Associated ? TABLE_FLAG_ASSOCIATED :
 	                     request.Traversal == Enum::Shallow ? 0 : TABLE_FLAG_DEPTH;
@@ -4110,6 +4115,11 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtReminderTime, PT_SYSTIME);
 		shape.add(NtReminderSignalTime, PT_SYSTIME);
 		shape.add(NtRecurring, PT_BOOLEAN);
+		/* Written by applyRecurrence and moveRecurrence */
+		shape.add(NtAppointmentRecur, PT_BINARY);
+		shape.add(NtRecurrenceType, PT_LONG);
+		shape.add(NtClipStart, PT_SYSTIME);
+		shape.add(NtClipEnd, PT_SYSTIME);
 		ctx.getNamedTags(dir, shape, true);
 		for (const auto &update : change.Updates) {
 			if (std::holds_alternative<tSetItemField>(update))
@@ -4121,6 +4131,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			throw EWSError::InvalidPropertySet(E3484);
 		if (shape.recurrence)
 			ctx.applyRecurrence(dir, mid.messageId(), shape.recurrence, shape);
+		else if (!change.ItemId.isOccurrence())
+			ctx.moveRecurrence(dir, mid.messageId(), shape);
 		const char* username = ctx.effectiveUser(parentFolder);
 		mUpdateItemResponseMessage msg;
 		uint32_t occ_basedate = 0;

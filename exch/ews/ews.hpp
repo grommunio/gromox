@@ -104,8 +104,11 @@ class EWSPlugin {
 		const EWSPlugin& plugin; ///< Plugin used to release the instance
 		std::string dir; ///< Home directory of domain or user
 		uint32_t instanceId; ///< Instance ID
+		/* exmdb needs the parent instance to exist while this one is used */
+		std::shared_ptr<const ExmdbInstance> parent;
 
-		ExmdbInstance(const EWSPlugin&, const std::string&, uint32_t);
+		ExmdbInstance(const EWSPlugin &, const std::string &, uint32_t,
+		    std::shared_ptr<const ExmdbInstance> = {});
 		ExmdbInstance(const ExmdbInstance&) = delete;
 		ExmdbInstance& operator=(const ExmdbInstance&) = delete;
 		~ExmdbInstance();
@@ -130,12 +133,12 @@ class EWSPlugin {
 	};
 
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;
-	void evictAttachmentInstances(const std::string &, uint64_t, uint32_t) const;
 	bool linkSubscription(const Structures::tSubscriptionId&, const EWSContext&) const;
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
-	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string&, uint32_t) const;
+	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string &, const std::shared_ptr<ExmdbInstance> &) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
 	void unloadMessageInstance(const std::string&, uint64_t) const;
+	void unloadAttachmentInstance(const std::string &, uint64_t, uint32_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
 	Structures::sMessageEntryId mkMessageEntryId(const Structures::sMailboxInfo&, uint64_t, uint64_t) const;
 	std::shared_ptr<SubManager> make_submgr(const Structures::tSubscriptionId &, const char *) const;
@@ -245,6 +248,20 @@ class EWSPlugin {
 		CacheObj get(const CacheKey &) const;
 		CacheObj get(const CacheKey &, gromox::time_duration);
 		void evict(const CacheKey &);
+
+		/**
+		 * @brief      Remove all objects whose key matches @pred
+		 */
+		template<typename F> void evict_if(F &&pred)
+		{
+			std::vector<node_t> del; /* destroyed after unlocking */
+			std::lock_guard guard(objectLock);
+			for (auto it = objects.begin(); it != objects.end(); )
+				if (pred(it->first))
+					del.emplace_back(objects.extract(it++));
+				else
+					++it;
+		}
 		void scan();
 		void periodicScan(gromox::time_duration);
 	};
@@ -311,6 +328,7 @@ class EWSContext {
 	void deleteOccurrence(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
 	void applyRecurrence(const std::string &, uint64_t, const tinyxml2::XMLElement *, Structures::sShape &) const;
+	void moveRecurrence(const std::string &, uint64_t, Structures::sShape &) const;
 	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
 	void updateMessageRecipients(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
@@ -377,7 +395,6 @@ class EWSContext {
 	inline void log(bool l) {m_log = l;}
 	inline State state() const {return m_state;}
 	inline void state(State s) {m_state = s;}
-	inline const Structures::sRecurrenceFrame *get_recurrence_frame() const {return m_recurrence_frame ? &*m_recurrence_frame : nullptr;}
 
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
@@ -418,6 +435,7 @@ private:
 
 		void parse(const BINARY *, const uint64_t *, const BINARY *);
 		clock::time_point toUtc(uint32_t) const;
+		uint32_t toLocal(uint64_t) const;
 		times occurrenceTimes(uint32_t) const;
 		bool replaces(uint32_t, uint64_t) const;
 		bool replaces(uint32_t, clock::time_point, uint64_t) const;

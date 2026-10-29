@@ -807,8 +807,9 @@ static void ews_event_proc(const char* dir, BOOL table, uint32_t ID, const DB_NO
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //Cache
 
-EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin& p, const std::string& d, uint32_t i) :
-	plugin(p), dir(d), instanceId(i)
+EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin &p,
+    const std::string &d, uint32_t i, std::shared_ptr<const ExmdbInstance> par) :
+	plugin(p), dir(d), instanceId(i), parent(std::move(par))
 {}
 
 /**
@@ -1010,14 +1011,32 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
 }
 
 /**
- * @brief      Drop a cached message instance
+ * @brief      Drop a cached message instance and its attachment instances
  *
  * @param      dir   Home directory of user or domain
  * @param      mid   Message ID
  */
 void EWSPlugin::unloadMessageInstance(const std::string &dir, uint64_t mid) const
 {
-	cache.evict(detail::MessageInstanceKey{dir, mid});
+	cache.evict_if([&](const CacheKey &key) {
+		if (auto m = std::get_if<detail::MessageInstanceKey>(&key))
+			return m->mid == mid && m->dir == dir;
+		auto a = std::get_if<detail::AttachmentInstanceKey>(&key);
+		return a != nullptr && a->mid == mid && a->dir == dir;
+	});
+}
+
+/**
+ * @brief      Drop a cached attachment instance
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      mid   Message ID
+ * @param      aid   Attachment number
+ */
+void EWSPlugin::unloadAttachmentInstance(const std::string &dir, uint64_t mid,
+    uint32_t aid) const
+{
+	cache.evict(detail::AttachmentInstanceKey{dir, mid, aid});
 }
 
 /**
@@ -1047,20 +1066,6 @@ bool EWSPlugin::linkSubscription(const Structures::tSubscriptionId& subscription
 }
 
 /**
- * @brief      Drop the cached attachment instances of a message
- *
- * @param      dir   Home directory of user or domain
- * @param      mid   Message ID
- * @param      natt  Number of attachments
- */
-void EWSPlugin::evictAttachmentInstances(const std::string &dir, uint64_t mid,
-    uint32_t natt) const
-{
-	for (uint32_t i = 0; i < natt; ++i)
-		cache.evict(detail::AttachmentInstanceKey{dir, mid, i});
-}
-
-/**
  * @brief      Load attachment instance
  *
  * @param      dir   Home directory of user or domain
@@ -1074,17 +1079,25 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(cons
                                                                             uint64_t mid, uint32_t aid) const
 {
 	detail::AttachmentInstanceKey akey{dir, mid, aid};
+	auto messageInstance = loadMessageInstance(dir, fid, mid);
 	try {
-		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(akey, cache_attachment_instance_lifetime));
+		auto instance = std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(akey, cache_attachment_instance_lifetime));
+		/* A reloaded message instance numbers its attachments anew */
+		if (instance->parent == messageInstance)
+			return instance;
+		cache.evict(akey);
 	} catch (const std::out_of_range &) {
 	}
-	auto messageInstance = loadMessageInstance(dir, fid, mid);
 	uint32_t instanceId;
 	if (!exmdb.load_attachment_instance(dir.c_str(),
 	    messageInstance->instanceId, aid, &instanceId))
 		throw DispatchError(Exceptions::E3078);
-	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
-	cache.emplace(cache_message_instance_lifetime, akey, instance);
+	/* exmdb reports "no such attachment" as success with instance 0 */
+	if (instanceId == 0)
+		throw Exceptions::EWSError::ItemNotFound(Exceptions::E3078);
+	auto instance = std::make_shared<ExmdbInstance>(*this, dir,
+	                instanceId, std::move(messageInstance));
+	cache.emplace(cache_attachment_instance_lifetime, akey, instance);
 	return instance;
 }
 
@@ -1305,23 +1318,24 @@ Structures::sMessageEntryId EWSPlugin::mkMessageEntryId(const Structures::sMailb
  * @brief      Load embedded instance
  *
  * @param      dir   Home directory of user or domain
- * @param      aid   Attachment ID
+ * @param      aInst Attachment instance
  *
  * @return     Embedded instance information
  */
-std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const std::string& dir, uint32_t aid) const
+std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const std::string &dir,
+    const std::shared_ptr<ExmdbInstance> &aInst) const
 {
-	detail::EmbeddedInstanceKey ekey{dir, aid};
+	detail::EmbeddedInstanceKey ekey{dir, aInst->instanceId};
 	try {
 		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(ekey, cache_embedded_instance_lifetime));
 	} catch (const std::out_of_range &) {
 	}
 	uint32_t instanceId;
 	/* exmdb reports "no embedded message" as success with instance 0 */
-	if (!exmdb.load_embedded_instance(dir.c_str(), false, aid, &instanceId) ||
+	if (!exmdb.load_embedded_instance(dir.c_str(), false, aInst->instanceId, &instanceId) ||
 	    instanceId == 0)
 		throw DispatchError(Exceptions::E3208);
-	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
+	auto instance = std::make_shared<ExmdbInstance>(*this, dir, instanceId, aInst);
 	cache.emplace(cache_embedded_instance_lifetime, ekey, instance);
 	return instance;
 }

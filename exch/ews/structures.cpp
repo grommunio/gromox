@@ -462,7 +462,7 @@ tRecurrenceRange get_recurrence_range(const RECURRENCE_PATTERN& recur_pat)
 	}
 }
 
-static inline std::chrono::system_clock::time_point
+static inline EWS::time_point
 rtime_to_tp(const TZDEF *tz, std::chrono::seconds tz_offset, uint32_t rtime)
 {
 	int64_t off;
@@ -486,21 +486,24 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 	std::vector<tDeletedOccurrenceInfoType> &delOccs,
 	const TZDEF *tz, std::chrono::seconds tz_offset)
 {
-	std::set<uint32_t> mod_insts(apprecurr.recur_pat.pmodifiedinstancedates.cbegin(),
-		apprecurr.recur_pat.pmodifiedinstancedates.cend());
-
-	size_t del_count = 0; // counter for deleted occurrences
-	for (size_t i = 0; i < apprecurr.recur_pat.pdeletedinstancedates.size(); ++i) {
-		auto di = apprecurr.recur_pat.pdeletedinstancedates[i];
-		if (mod_insts.find(di) != mod_insts.end()) {
-			auto &ei = apprecurr.pexceptioninfo[i-del_count];
+	/*
+	 * A deleted date with an exception for its day is a modified
+	 * occurrence. ModifiedInstanceDates holds the new day, which
+	 * says nothing about the original one. Older EWS exceptions
+	 * carry only the original day, not the time.
+	 */
+	for (auto di : apprecurr.recur_pat.pdeletedinstancedates) {
+		auto ei = std::find_if(apprecurr.pexceptioninfo.cbegin(),
+		          apprecurr.pexceptioninfo.cend(),
+		          [&](const EXCEPTIONINFO &e) { return e.originalstartdate / 1440 == di / 1440; });
+		if (ei != apprecurr.pexceptioninfo.cend()) {
 			modOccs.emplace_back(tOccurrenceInfoType({
-				sOccurrenceId(*entryid, ei.originalstartdate / 1440 * 1440),
-				rtime_to_tp(tz, tz_offset, ei.startdatetime),
-				rtime_to_tp(tz, tz_offset, ei.enddatetime),
-				rtime_to_tp(tz, tz_offset, ei.originalstartdate)}));
+				sOccurrenceId(*entryid, ei->originalstartdate / 1440 * 1440),
+				rtime_to_tp(tz, tz_offset, ei->startdatetime),
+				rtime_to_tp(tz, tz_offset, ei->enddatetime),
+				rtime_to_tp(tz, tz_offset, di / 1440 * 1440 +
+					apprecurr.starttimeoffset)}));
 		} else {
-			del_count++;
 			delOccs.emplace_back(tDeletedOccurrenceInfoType{rtime_to_tp(tz, tz_offset,
 				di + apprecurr.starttimeoffset)});
 		}
@@ -571,9 +574,12 @@ std::string rotate_days(const std::string &list, int days)
 	return out;
 }
 
-inline time_t unix_day(time_t t)
+bool has_day(const std::string &list, int wday)
 {
-	return t >= 0 ? t / 86400 : (t - 86399) / 86400;
+	for (const auto &day : gx_split(list, ' '))
+		if (day == weekday_names[wday])
+			return true;
+	return false;
 }
 
 }
@@ -744,8 +750,9 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
 	};
 	auto mkOcc = [&](uint32_t date) {
 		uint32_t ostart = date + apr.starttimeoffset;
+		/* Older exceptions only carry the original day */
 		for (const auto &ei : apr.pexceptioninfo)
-			if (ei.originalstartdate == ostart)
+			if (ei.originalstartdate / 1440 == date / 1440)
 				return tOccurrenceInfoType(sOccurrenceId(eid, date),
 				       toUtc(ei.startdatetime), toUtc(ei.enddatetime), toUtc(ostart));
 		return tOccurrenceInfoType(sOccurrenceId(eid, date), toUtc(ostart),
@@ -780,8 +787,9 @@ int32_t sRecurrenceFrame::offset(time_t t) const
 /**
  * @brief      Move the recurrence by whole days
  *
- * Day of month and month are only moved where they match the start of
- * the range; DayOfWeekIndex is kept.
+ * Monthly and yearly day rules are only moved where they match the start
+ * of the range before but not after the move. This is a best guess at
+ * whether the client gave them in UTC. DayOfWeekIndex is kept.
  *
  * @param      days  Number of days (may be negative)
  */
@@ -801,10 +809,14 @@ void tRecurrenceType::shift(int days)
 		r->EndDate += delta;
 	std::visit([&](auto &p) {
 		using T = std::decay_t<decltype(p)>;
-		if constexpr (std::is_same_v<T, tWeeklyRecurrencePattern> ||
-		    std::is_same_v<T, tRelativeMonthlyRecurrencePattern> ||
-		    std::is_same_v<T, tRelativeYearlyRecurrencePattern>)
+		if constexpr (std::is_same_v<T, tWeeklyRecurrencePattern>)
 			p.DaysOfWeek = rotate_days(p.DaysOfWeek, days);
+		if constexpr (std::is_same_v<T, tRelativeMonthlyRecurrencePattern> ||
+		    std::is_same_v<T, tRelativeYearlyRecurrencePattern>) {
+			if (has_day(p.DaysOfWeek, before.tm_wday) &&
+			    !has_day(p.DaysOfWeek, after.tm_wday))
+				p.DaysOfWeek = rotate_days(p.DaysOfWeek, days);
+		}
 		if constexpr (std::is_same_v<T, tAbsoluteMonthlyRecurrencePattern>) {
 			if (p.DayOfMonth == before.tm_mday)
 				p.DayOfMonth = after.tm_mday;
@@ -831,6 +843,17 @@ std::optional<int32_t> tRecurrenceType::startDateZone() const
 }
 
 /**
+ * @brief      Whether a weekly pattern names a day of the week
+ *
+ * @param      wday   Day of the week, 0 is Sunday
+ */
+bool tRecurrenceType::weeklyOn(int wday) const
+{
+	auto p = std::get_if<tWeeklyRecurrencePattern>(&RecurrencePattern);
+	return p != nullptr && has_day(p->DaysOfWeek, wday);
+}
+
+/**
  * @brief      Set the zone the range dates are written with
  */
 void tRecurrenceType::zone(int32_t z)
@@ -841,18 +864,19 @@ void tRecurrenceType::zone(int32_t z)
 }
 
 /**
- * @brief      Convert a stored recurrence to the request's time zone
+ * @brief      Mark the range dates of a stored recurrence with its zone
  *
- * Only done for series whose stored start agrees with the item start, so
- * that series written by earlier versions are returned as before.
+ * The pattern stays in the item's time zone and the range dates carry its
+ * offset, as in Exchange's GetItem responses. Only done for series whose
+ * stored start agrees with the item start, so that series written by
+ * earlier versions are returned as before.
  *
  * @param      rec     Recurrence in the item's time zone
- * @param      frame   Time zone of the request
  * @param      apr     Stored recurrence pattern
  * @param      start   Item start (UTC)
  * @param      tz      Item time zone, if known
  */
-static void recurrence_to_frame(tRecurrenceType &rec, const sRecurrenceFrame &frame,
+static void recurrence_zone(tRecurrenceType &rec,
     const APPOINTMENT_RECUR_PAT &apr, time_t start, const TZDEF *tz)
 {
 	auto first = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
@@ -864,8 +888,7 @@ static void recurrence_to_frame(tRecurrenceType &rec, const sRecurrenceFrame &fr
 	} else if (std::abs(east) > 14 * 60) {
 		return;
 	}
-	rec.shift(unix_day(start + frame.offset(start) * 60) - unix_day(first));
-	rec.zone(frame.offset(start));
+	rec.zone(east);
 }
 
 static std::string tzdef_keyname(const BINARY *bin)
@@ -996,6 +1019,15 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	/* A description, not necessarily a zone name */
 	if (tzid.empty() && (str = shape.get<char>(NtTimeZoneDescription)) != nullptr)
 		tzid = str;
+	/* A single all-day item stored at UTC midnight without any zone */
+	auto u8allday = shape.get<uint8_t>(NtAppointmentSubType, sShape::FL_ANY);
+	if (tzid.empty() && u8allday != nullptr && *u8allday &&
+	    shape.get(NtAppointmentRecur) == nullptr &&
+	    (shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionStartDisplay)) ||
+	    shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionEndDisplay))) &&
+	    (u64 = shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY)) != nullptr &&
+	    rop_util_nttime_to_unix(*u64) % 86400 == 0)
+		tzid = "UTC";
 	if (!tzid.empty())
 		timezoneId(tzid);
 
@@ -1018,9 +1050,9 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 			auto sp = shape.get<uint64_t>(PR_START_DATE);
 			if (!sp)
 				sp = shape.get<uint64_t>(NtCommonStart);
-			if (sp && shape.recurrenceFrame != nullptr) {
+			if (sp) {
 				auto tzdef = binary_to_tzdef(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY));
-				recurrence_to_frame(rec, *shape.recurrenceFrame, apprecurr,
+				recurrence_zone(rec, apprecurr,
 					rop_util_nttime_to_unix(*sp), tzdef ? &*tzdef : nullptr);
 			}
 
@@ -2399,8 +2431,10 @@ void tCalendarItem::update(const sShape& shape)
 			UID.emplace(goid_to_uid(*goid));
 	}
 
-	if ((prop = shape.get(NtExceptionReplaceTime)))
+	if ((prop = shape.get(NtExceptionReplaceTime))) {
 		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+		OriginalStart = RecurrenceId;
+	}
 
 	if ((prop = shape.get(PR_CREATION_TIME)))
 		fromProp(prop, DateTimeStamp);
@@ -2417,7 +2451,7 @@ void tCalendarItem::update(const sShape& shape)
 void tCalendarItem::setDatetimeFields(sShape& shape)
 {
 	int64_t startOffset = 0, endOffset = 0;
-	std::optional<uint64_t> startTime = 0, endTime = 0;
+	std::optional<uint64_t> startTime, endTime;
 	fromProp(shape.writes(NtCommonStart), startTime);
 	fromProp(shape.writes(NtCommonEnd), endTime);
 	if (shape.tag(NtCalendarTimeZone) != 0) {
@@ -2479,25 +2513,18 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 		}
 	}
 
-	for (auto &prop : {NtCommonStart, NtCommonEnd}) {
-		if (shape.tag(prop) == 0)
-			continue;
-		switch (prop.lid) {
-		case PidLidCommonStart: {
-			auto start = EWSContext::construct<uint64_t>(startTime.value() + startOffset * 600000000);
-			shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
-			shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
-			shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
-			break;
-		}
-		case PidLidCommonEnd: {
-			auto end = EWSContext::construct<uint64_t>(endTime.value() + endOffset * 600000000);
-			shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
-			shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
-			shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
-			break;
-		}
-		}
+	/* Only rewrite what the client set, not a deleted field */
+	if (startTime.has_value()) {
+		auto start = EWSContext::construct<uint64_t>(*startTime + startOffset * 600000000);
+		shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
+		shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
+		shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+	}
+	if (endTime.has_value()) {
+		auto end = EWSContext::construct<uint64_t>(*endTime + endOffset * 600000000);
+		shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
+		shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
+		shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
 	}
 }
 
@@ -5059,6 +5086,12 @@ void tItemResponseShape::tags(sShape& shape) const
 		for (const auto& named : namedTagsAllProperties)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
+	/*
+	 * The UTC fallback zone of all-day items needs these. Added last so
+	 * that a field request made above keeps its flags.
+	 */
+	shape.add(NtAppointmentSubType, PT_BOOLEAN);
+	shape.add(NtCommonStart, PT_SYSTIME);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

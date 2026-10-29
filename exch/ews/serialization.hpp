@@ -167,7 +167,7 @@ template<> struct ExplicitConvert<EWS::time_point> {
 		auto timestamp = clock::to_time_t(tp);
 		if (gmtime_r(&timestamp, &t) == nullptr)
 			t = {};
-		auto frac = tp.time_since_epoch() % std::chrono::seconds(1);
+		auto frac = tp - std::chrono::floor<std::chrono::seconds>(tp);
 		long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
 		setter(fmt::format("{:%FT%T}.{:06}Z", t, fsec).c_str());
 	}

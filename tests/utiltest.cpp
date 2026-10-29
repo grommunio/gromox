@@ -669,7 +669,7 @@ static int t_time()
 #define SYSTEMTIME_MAX 0x7fff35f4f06c7fffLL
 
 	printf("It is now approximately %lld (mapitime_t)\n",
-		static_cast<long long>(rop_util_unix_to_nttime(std::chrono::system_clock::now())));
+		static_cast<long long>(rop_util_unix_to_nttime(std::chrono::time_point_cast<mapitime_point::duration>(std::chrono::system_clock::now()))));
 
 	assert(rop_util_unix_to_nttime(INT_MAX) > 0);
 
@@ -698,6 +698,22 @@ static int t_time()
 	}
 	assert(rop_util_nttime_to_unix(TIME_FIXUP_CONSTANT_INT * 10000000) == 0);
 	assert(rop_util_nttime_to_unix(INT64_MAX) >= INT32_MAX);
+
+	/* PidLidClipEnd of a series without end, 4500-08-31 23:59 */
+	auto tp = rop_util_nttime_to_unix2(915045983400000000ULL);
+	assert(std::chrono::floor<std::chrono::seconds>(tp).time_since_epoch().count() == 79860124740);
+	assert(rop_util_unix_to_nttime(tp) == 915045983400000000ULL);
+	assert(rop_util_rtime_to_unix2(1525076639) == tp);
+	assert(rop_util_nttime_to_unix2(0).time_since_epoch() == -std::chrono::seconds(TIME_FIXUP_CONSTANT_INT));
+	assert(rop_util_unix_to_nttime(rop_util_nttime_to_unix2(0)) == 0);
+	assert(rop_util_unix_to_nttime(rop_util_nttime_to_unix2(0) - std::chrono::hours(24)) == 0);
+	assert(rop_util_unix_to_nttime(mapitime_point::max()) == INT64_MAX);
+
+	/* 4501-01-01, MS-OXORMDR v16 §3.1.4.6.2 */
+	static constexpr uint64_t nt4501 = 0x0CB34557A3DD4000;
+	tp = rop_util_nttime_to_unix2(nt4501);
+	assert(tp.time_since_epoch() == std::chrono::seconds(79870665600));
+	assert(rop_util_unix_to_nttime(tp) == nt4501);
 	return EXIT_SUCCESS;
 }
 

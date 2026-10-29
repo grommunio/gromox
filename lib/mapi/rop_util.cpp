@@ -19,9 +19,9 @@
 namespace {
 
 /// NT timestamp unit (100 ns)
-using nt_dur = std::chrono::duration<uint64_t, std::ratio<1, 10'000'000>>;
+using nt_dur = gromox::mapitime_point::duration;
 /// Offset for NT timestamps
-static constexpr nt_dur nt_offset = std::chrono::duration_cast<nt_dur>(std::chrono::seconds(TIME_FIXUP_CONSTANT_INT));
+static constexpr nt_dur nt_offset = std::chrono::seconds(TIME_FIXUP_CONSTANT_INT);
 
 } // anonymous namespace
 
@@ -150,13 +150,14 @@ uint64_t rop_util_unix_to_nttime(time_t unix_time)
 	return v * 10000000;
 }
 
-uint64_t rop_util_unix_to_nttime(std::chrono::system_clock::time_point unix_time)
+uint64_t rop_util_unix_to_nttime(mapitime_point unix_time)
 {
-	/*
-	 * LIBCXX-GRANULARITY: time_point has a coarser resolution than
-	 * intermediate results, and so needs an extra duration_cast<>.
-	 */
-	return (std::chrono::duration_cast<nt_dur>(unix_time.time_since_epoch()) + nt_offset).count();
+	auto t = unix_time.time_since_epoch().count();
+	if (t < -nt_offset.count())
+		return 0;
+	if (t > INT64_MAX - nt_offset.count())
+		return INT64_MAX;
+	return t + nt_offset.count();
 }
 
 time_t rop_util_nttime_to_unix(uint64_t nt_time)
@@ -181,16 +182,14 @@ time_t rop_util_nttime_to_unix(uint64_t nt_time)
 	}
 }
 
-std::chrono::system_clock::time_point rop_util_nttime_to_unix2(uint64_t nt_time)
+mapitime_point rop_util_nttime_to_unix2(uint64_t nt_time)
 {
-	using namespace std::chrono;
-	return system_clock::time_point(duration_cast<system_clock::duration>(nt_dur(nt_time) - nt_offset)); /* LIBCXX-GRANULARITY */
+	return mapitime_point(nt_dur(std::min(nt_time, static_cast<uint64_t>(INT64_MAX))) - nt_offset);
 }
 
-std::chrono::system_clock::time_point rop_util_rtime_to_unix2(uint32_t t)
+mapitime_point rop_util_rtime_to_unix2(uint32_t t)
 {
-	using namespace std::chrono;
-	return system_clock::time_point(duration_cast<system_clock::duration>(nt_dur(rop_util_rtime_to_nttime(t)) - nt_offset)); /* LIBCXX-GRANULARITY */
+	return rop_util_nttime_to_unix2(rop_util_rtime_to_nttime(t));
 }
 
 time_t rop_util_rtime_to_unix(uint32_t t)

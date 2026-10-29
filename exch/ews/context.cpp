@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <bit>
 #include <cctype>
 #include <chrono>
 #include <climits>
@@ -218,6 +219,7 @@ void calc_firstdatetime(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		break;
 	}
 	case rptMonth:
+	case rptMonthEnd:
 	case rptMonthNth: {
 		recur_pat.firstdatetime = 0;
 		int fdt = ((((12 % recur_pat.period) * ((tmp_tm->tm_year + 299) % recur_pat.period)) % recur_pat.period) + tmp_tm->tm_mon) % recur_pat.period;
@@ -258,7 +260,9 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 	// be inside the recurrence range (minus one to make sure there is
 	// always at least one occurrence left)
 	uint32_t forwardcount = 0;
-	switch(recur_pat.recurfrequency) {
+	/* every weekday is a daily frequency with a weekly pattern */
+	switch (recur_pat.patterntype == rptWeek ? IDC_RCEV_PAT_ORB_WEEKLY :
+	        recur_pat.recurfrequency) {
 	case IDC_RCEV_PAT_ORB_DAILY:
 		if (recur_pat.patterntype == rptMinute)
 			// occurrencecount - 1 because the first day already counts
@@ -431,8 +435,9 @@ find_exc(const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
 /**
  * @brief      Test whether a date is truly deleted (not a modified exception)
  *
- * Compared by day: a moved exception keeps only its original day in the
- * deleted list, and imported blobs carry a time of day in both lists.
+ * Compared by day, as imported blobs carry a time of day. The modified
+ * list holds the new day of a moved exception, so only the exceptions
+ * tell whether the original day was modified.
  *
  * @param      apr    Appointment recurrence pattern
  * @param      date   Date in rtime format
@@ -444,7 +449,6 @@ bool isTrulyDeleted(const APPOINTMENT_RECUR_PAT &apr, uint32_t date)
 	auto &rp = apr.recur_pat;
 	auto same_day = [&](uint32_t d) { return d / 1440 == date / 1440; };
 	return std::any_of(rp.pdeletedinstancedates.cbegin(), rp.pdeletedinstancedates.cend(), same_day) &&
-	       std::none_of(rp.pmodifiedinstancedates.cbegin(), rp.pmodifiedinstancedates.cend(), same_day) &&
 	       find_exc(apr, date) == nullptr;
 }
 
@@ -676,7 +680,8 @@ occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
 	size_t visited = 0;
 	uint32_t last_exc = 0;
 	for (const auto &ei : apr.pexceptioninfo)
-		last_exc = std::max(last_exc, ei.originalstartdate);
+		last_exc = std::max(last_exc, ei.originalstartdate / 1440 *
+		           1440 + apr.starttimeoffset);
 
 	walkOccurrenceDates(apr, [&](uint32_t date) {
 		if (++visited > walk_cap)
@@ -746,7 +751,9 @@ static inline time_t unix_day(time_t t)
  * @brief      Convert a client-supplied recurrence to the item's time zone
  *
  * The pattern and range are given relative to the request's time zone
- * (or the zone of the range start date, if it has one).
+ * (or the zone of the range start date, if it has one). A start date
+ * without a zone on the local day of the item start is taken as local,
+ * since responses give the range in the item's time zone.
  *
  * @param      rec    Recurrence as received
  * @param      frame  Time zone of the request
@@ -759,8 +766,22 @@ void shift_recurrence(tRecurrenceType &rec, const sRecurrenceFrame &frame,
 	int64_t b;
 	if (!tz_to_offset(tz, start, b))
 		return;
+	auto day = unix_day(start - b * 60);
+	auto first = clock::to_time_t(std::visit([](const auto &r) STATIC_IN_CXX23 {
+	             return r.StartDate; }, rec.RecurrenceRange));
+	if (!rec.startDateZone() && unix_day(first) == day)
+		return;
 	auto east = rec.startDateZone().value_or(frame.offset(start));
-	rec.shift(unix_day(start - b * 60) - unix_day(start + east * 60));
+	int days = day - unix_day(start + east * 60);
+	/*
+	 * The series start is its first instance, MS-OXOCAL v22.1 §2.2.1.5.
+	 * A weekly rule that names the local weekday of the start, and would
+	 * lose it when moved, was given in the item's time zone already.
+	 */
+	auto wday = [](time_t d) { return static_cast<int>((d % 7 + 11) % 7); };
+	if (rec.weeklyOn(wday(day)) && !rec.weeklyOn(wday(day - days)))
+		return;
+	rec.shift(days);
 }
 
 bool has_element(const tinyxml2::XMLElement *xml, const char *name)
@@ -1064,6 +1085,31 @@ std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calend
 	if (!mid)
 		return std::nullopt;
 	return std::optional<uint64_t>(*mid);
+}
+
+/**
+ * @brief      Get the attachment numbers of a message instance
+ *
+ * They have gaps once an attachment was deleted from a cached instance.
+ *
+ * @return     false if the instance could not be read
+ */
+static bool attachment_nums(const EWSPlugin &plugin, const std::string &dir,
+    uint32_t inst, std::vector<uint32_t> &nums)
+{
+	static constexpr proptag_t tags[] = {PR_ATTACH_NUM};
+	TARRAY_SET rows{};
+	if (!plugin.exmdb.query_message_instance_attachment_table(dir.c_str(),
+	    inst, proptag_cspan{tags}, 0, INT32_MAX, &rows))
+		return false;
+	nums.clear();
+	nums.reserve(rows.count);
+	for (uint32_t i = 0; i < rows.count; ++i) {
+		auto num = rows.pparray[i]->get<const uint32_t>(PR_ATTACH_NUM);
+		if (num != nullptr)
+			nums.push_back(*num);
+	}
+	return true;
 }
 
 /**
@@ -1706,7 +1752,7 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 
 	auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
 	if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
-		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 		MESSAGE_CONTENT content{};
 		if (!m_plugin.exmdb.read_message_instance(dir.c_str(),
 		    eInst->instanceId, &content))
@@ -1861,12 +1907,12 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			PR_ATTACHMENT_HIDDEN,
 		};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
-		uint16_t count;
-		if (!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+		std::vector<uint32_t> nums;
+		if (!attachment_nums(m_plugin, dir, mInst->instanceId, nums))
 			throw DispatchError(E3079);
 		sAttachmentId aid(this->getItemEntryId(dir, mid), 0);
-		item.Attachments.emplace().reserve(count);
-		for (uint16_t i = 0; i < count; ++i) {
+		item.Attachments.emplace().reserve(nums.size());
+		for (auto i : nums) {
 			auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 			TPROPVAL_ARRAY props;
 			if (!exmdb.get_instance_properties(dir.c_str(), 0,
@@ -1878,7 +1924,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			sShape shape(props);
 			auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
 			if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
-				auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+				auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 				MESSAGE_CONTENT eInstContent{};
 				if (!exmdb.read_message_instance(dir.c_str(), eInst->instanceId, &eInstContent))
 					throw DispatchError(E3333);
@@ -2104,7 +2150,14 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	loadSpecial(dir, fid, mid, static_cast<tItem&>(calItem), special);
 	if (!(special & sShape::Attendees))
 		return;
-	if (!calItem.IsMeeting || !*calItem.IsMeeting)
+	/* IsMeeting is only there when the shape asked for it */
+	bool meeting = calItem.IsMeeting && *calItem.IsMeeting;
+	if (!calItem.IsMeeting) {
+		auto flags = getItemProp<uint32_t>(dir, mid, PROP_TAG(PT_LONG,
+		             getNamedPropId(dir, NtAppointmentStateFlags)));
+		meeting = flags != nullptr && *flags & asfMeeting;
+	}
+	if (!meeting)
 		return;
 	TARRAY_SET rcpts;
 	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
@@ -2163,7 +2216,6 @@ void EWSContext::updateProps(tCalendarItem& calItem, sShape& shape, const TPROPV
 sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sShape& shape) const
 {
 	shape.clean();
-	shape.recurrenceFrame = get_recurrence_frame();
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 	sItem item = tItem::create(shape);
@@ -2181,6 +2233,22 @@ clock::time_point EWSContext::sOccurrenceSeries::toUtc(uint32_t rtime) const
 	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
 		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
 	return rop_util_rtime_to_unix2(rtime) + tzOffset;
+}
+
+/**
+ * @brief      Convert a UTC NTTIME to a local-as-UTC rtime of the series
+ *
+ * The offset is taken at the converted instant, so a series that
+ * crosses a DST change keeps the wall clock time of each occurrence.
+ */
+uint32_t EWSContext::sOccurrenceSeries::toLocal(uint64_t nttime) const
+{
+	auto utc = rop_util_nttime_to_unix(nttime);
+	int64_t off;
+	if (tzdef && tz_to_offset(*tzdef, utc, off) &&
+	    tz_to_offset(*tzdef, utc - off * 60, off))
+		return rop_util_unix_to_rtime(utc - off * 60);
+	return rop_util_unix_to_rtime(utc - tzOffset.count());
 }
 
 /**
@@ -2303,7 +2371,6 @@ EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
 	s.fid = fid;
 	s.mid = mid;
 	shape.clean();
-	shape.recurrenceFrame = get_recurrence_frame();
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 
@@ -2330,8 +2397,8 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
     sOccurrenceSeries &s, sShape &shape) const
 {
 	auto mInst = m_plugin.loadMessageInstance(dir, s.fid, s.mid);
-	uint16_t count;
-	if (!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+	std::vector<uint32_t> nums;
+	if (!attachment_nums(m_plugin, dir, mInst->instanceId, nums))
 		throw DispatchError(E3210);
 
 	PROPNAME_ARRAY propnames;
@@ -2354,11 +2421,11 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
 		}, *s.base);
 
 	const proptag_t ex_tags[] = {ex_replace_time_tag};
-	for (uint16_t i = 0; i < count; ++i) {
+	for (auto i : nums) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, s.fid, s.mid, i);
 		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
 		try {
-			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 		} catch (const DispatchError &) {
 			continue; /* skip non-embedded attachments */
 		}
@@ -2398,6 +2465,7 @@ sItem EWSContext::materializeOccurrence(const std::string &dir,
 			cal->End.emplace(t.end);
 			cal->CalendarItemType.emplace(type);
 			cal->RecurrenceId.emplace(s.toUtc(basedate + s.startOff));
+			cal->OriginalStart = cal->RecurrenceId;
 			cal->Recurrence.reset();
 			cal->ModifiedOccurrences.reset();
 			cal->DeletedOccurrences.reset();
@@ -2579,7 +2647,6 @@ void EWSContext::deleteExceptionAttachment(const std::string &dir,
 	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
 	    mInst->instanceId, &count))
 		throw DispatchError(E3485);
-	m_plugin.evictAttachmentInstances(dir, mid, count);
 	const proptag_t tags[] = {PROP_TAG(PT_SYSTIME,
 		getNamedPropId(dir, NtExceptionReplaceTime, true))};
 	auto series = loadSeriesTimes(dir, mid);
@@ -2587,7 +2654,7 @@ void EWSContext::deleteExceptionAttachment(const std::string &dir,
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
 		try {
-			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 		} catch (const DispatchError &) {
 			continue; /* skip non-embedded attachments */
 		}
@@ -2606,7 +2673,6 @@ void EWSContext::deleteExceptionAttachment(const std::string &dir,
 			throw EWSError::ItemSave(E3487);
 		/* The attachment numbers have a gap now */
 		m_plugin.unloadMessageInstance(dir, mid);
-		m_plugin.evictAttachmentInstances(dir, mid, count);
 		return;
 	}
 }
@@ -2634,10 +2700,10 @@ int32_t EWSContext::recurTzOffset(const std::string &dir, uint64_t mid,
  * Apply property changes to an EXCEPTIONINFO/EXTENDEDEXCEPTION pair
  * in the recurrence blob.
  */
-static void applyExceptionOverrides(EXCEPTIONINFO &ei, EXTENDEDEXCEPTION &ee,
-    const TPROPVAL_ARRAY &props, propid_t location_id, propid_t busystatus_id,
-    propid_t subtype_id, propid_t reminderdelta_id, propid_t reminderset_id,
-    int32_t tz_min)
+template<typename F> static void applyExceptionOverrides(EXCEPTIONINFO &ei,
+    EXTENDEDEXCEPTION &ee, const TPROPVAL_ARRAY &props, propid_t location_id,
+    propid_t busystatus_id, propid_t subtype_id, propid_t reminderdelta_id,
+    propid_t reminderset_id, F &&to_local)
 {
 	for (unsigned int j = 0; j < props.count; ++j) {
 		auto tag = props.ppropval[j].proptag;
@@ -2665,11 +2731,11 @@ static void applyExceptionOverrides(EXCEPTIONINFO &ei, EXTENDEDEXCEPTION &ee,
 			ei.reminderset = *static_cast<uint32_t *>(props.ppropval[j].pvalue);
 		} else if (tag == PR_START_DATE) {
 			auto nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
-			ei.startdatetime = rop_util_nttime_to_rtime(nt) - tz_min;
+			ei.startdatetime = to_local(nt);
 			ee.startdatetime = ei.startdatetime;
 		} else if (tag == PR_END_DATE) {
 			auto nt = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
-			ei.enddatetime = rop_util_nttime_to_rtime(nt) - tz_min;
+			ei.enddatetime = to_local(nt);
 			ee.enddatetime = ei.enddatetime;
 		} else if (tag == PR_BODY || tag == PR_BODY_W || tag == PR_HTML) {
 			ei.overrideflags |= ARO_EXCEPTIONAL_BODY;
@@ -2677,6 +2743,27 @@ static void applyExceptionOverrides(EXCEPTIONINFO &ei, EXTENDEDEXCEPTION &ee,
 	}
 	ei.overrideflags |= ARO_ATTACHMENT;
 	ei.attachment = 1;
+}
+
+/**
+ * Move the ModifiedInstanceDates entry of an exception whose start changed
+ * from @old_start to @new_start. Blobs written by older versions keyed the
+ * entry by the original day @basedate.
+ */
+static void moveModifiedDate(RECURRENCE_PATTERN &rp, uint32_t old_start,
+    uint32_t basedate, uint32_t new_start)
+{
+	auto &mods = rp.pmodifiedinstancedates;
+	auto day = [](uint32_t d) { return d / 1440; };
+	auto it = std::find_if(mods.begin(), mods.end(),
+	          [&](uint32_t m) { return day(m) == day(old_start); });
+	if (it == mods.end())
+		it = std::find_if(mods.begin(), mods.end(),
+		     [&](uint32_t m) { return day(m) == day(basedate); });
+	if (it == mods.end())
+		return;
+	*it = day(new_start) * 1440;
+	rp.sort_mods();
 }
 
 /**
@@ -2693,8 +2780,41 @@ bool EWSContext::saveRecurBlob(const std::string &dir, uint64_t mid,
 	BINARY new_bin;
 	new_bin.cb = ext_push.m_offset;
 	new_bin.pb = ext_push.m_udata;
-	const TAGGED_PROPVAL rprop[] = {{recur_tag, &new_bin}};
-	const TPROPVAL_ARRAY rpropvals = {std::size(rprop), deconst(rprop)};
+	std::vector<TAGGED_PROPVAL> rprop = {{recur_tag, &new_bin}};
+
+	/*
+	 * The series changed with its occurrence, so give it a new change
+	 * number and key. Otherwise SyncFolderItems and ICS never report
+	 * the change and other clients keep the old occurrences.
+	 */
+	uint64_t cn = 0;
+	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &cn))
+		return false;
+	uint64_t now = rop_util_current_nttime();
+	rprop.push_back({PidTagChangeNumber, &cn});
+	rprop.push_back({PR_LAST_MODIFICATION_TIME, &now});
+	const proptag_t ctags[] = {PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST};
+	auto cur = getItemProps(dir, mid, ctags);
+	auto oldkey = cur.get<const BINARY>(PR_CHANGE_KEY);
+	XID xid;
+	EXT_PULL ep;
+	BINARY ckey{};
+	binary_ptr pcl_buf;
+	if (oldkey != nullptr) {
+		ep.init(oldkey->pb, oldkey->cb, nullptr, 0);
+		if (ep.g_xid(oldkey->cb, &xid) == pack_result::ok) {
+			xid = XID{xid.guid, cn};
+			ckey = serialize(xid);
+			PCL pcl;
+			auto oldpcl = cur.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+			if (oldpcl != nullptr && !pcl.deserialize(oldpcl))
+				pcl = PCL{};
+			pcl_buf = mkPCL(xid, std::move(pcl));
+			rprop.push_back({PR_CHANGE_KEY, &ckey});
+			rprop.push_back({PR_PREDECESSOR_CHANGE_LIST, pcl_buf.get()});
+		}
+	}
+	const TPROPVAL_ARRAY rpropvals = {static_cast<uint16_t>(rprop.size()), rprop.data()};
 	PROBLEM_ARRAY rproblems;
 	return m_plugin.exmdb.set_message_properties(dir.c_str(),
 	       nullptr, CP_ACP, mid, &rpropvals, &rproblems) &&
@@ -2767,7 +2887,6 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	if (!exmdb.get_message_instance_attachments_num(dir.c_str(),
 	    mInst->instanceId, &att_count))
 		throw DispatchError(E3335);
-	m_plugin.evictAttachmentInstances(dir, mid, att_count);
 
 	/* Search for an existing exception matching this basedate */
 	auto series = loadSeriesTimes(dir, mid);
@@ -2776,7 +2895,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
 		try {
-			eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
 		} catch (const DispatchError &) {
 			continue; /* skip non-embedded attachments */
 		}
@@ -2897,17 +3016,20 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 			ext_pull.init(recur_bin->pb, recur_bin->cb, nullptr, 0);
 			APPOINTMENT_RECUR_PAT apr{};
 			if (ext_pull.g_apptrecpat(&apr) == pack_result::ok) {
-				int32_t tz_min = recurTzOffset(dir, mid, apr);
+				auto to_local = [&](uint64_t nt) { return series.toLocal(nt); };
 				for (size_t k = 0; k < apr.pexceptioninfo.size(); ++k) {
-					if (apr.pexceptioninfo[k].originalstartdate / 1440 !=
-					    basedate / 1440)
+					auto &ei = apr.pexceptioninfo[k];
+					if (ei.originalstartdate / 1440 != basedate / 1440)
 						continue;
-					applyExceptionOverrides(apr.pexceptioninfo[k],
+					auto old_start = ei.startdatetime;
+					applyExceptionOverrides(ei,
 						apr.pextendedexception[k],
 						props, location_id,
 						busystatus_id, subtype_id,
 						reminderdelta_id,
-						reminderset_id, tz_min);
+						reminderset_id, to_local);
+					moveModifiedDate(apr.recur_pat, old_start,
+						basedate, ei.startdatetime);
 					break;
 				}
 				saveRecurBlob(dir, mid, recur_tag, apr);
@@ -2931,7 +3053,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok)
 		throw EWSError::ItemCorrupt(E3345);
 
-	int32_t tz_minutes = recurTzOffset(dir, mid, apr);
+	auto to_local = [&](uint64_t nt) { return series.toLocal(nt); };
 
 	/* Compute occurrence start/end as local-as-UTC rtimes */
 	auto start_rtime = basedate + apr.starttimeoffset;
@@ -2952,11 +3074,11 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		auto tag = props.ppropval[j].proptag;
 		if (tag == PR_START_DATE) {
 			start_nttime = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
-			start_rtime  = rop_util_nttime_to_rtime(start_nttime) - tz_minutes;
+			start_rtime  = to_local(start_nttime);
 			has_explicit_start = true;
 		} else if (tag == PR_END_DATE) {
 			end_nttime = *static_cast<const uint64_t *>(props.ppropval[j].pvalue);
-			end_rtime  = rop_util_nttime_to_rtime(end_nttime) - tz_minutes;
+			end_rtime  = to_local(end_nttime);
 			has_explicit_end = true;
 		} else if (!disp_name && (tag == PR_SUBJECT ||
 		    tag == PR_NORMALIZED_SUBJECT)) {
@@ -3140,28 +3262,27 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		rp.sort_dels();
 	}
 
-	/* Add to modified instances */
-	if (!rp.contains_mod(basedate)) {
-		rp.pmodifiedinstancedates.emplace_back(basedate);
-		rp.sort_mods();
-	}
-
 	/* Build new EXCEPTIONINFO + EXTENDEDEXCEPTION entries */
 	auto &ei = apr.pexceptioninfo.emplace_back();
 	ei.startdatetime = start_rtime;
 	ei.enddatetime = end_rtime;
-	ei.originalstartdate = basedate;
+	/* MS-OXOCAL v22.1 §2.2.1.44.2: the original start, not its day */
+	ei.originalstartdate = basedate / 1440 * 1440 + apr.starttimeoffset;
 	ei.overrideflags = 0;
 
 	auto &ee = apr.pextendedexception.emplace_back();
 	ee.changehighlight.size = sizeof(uint32_t);
 	ee.startdatetime = start_rtime;
 	ee.enddatetime = end_rtime;
-	ee.originalstartdate = basedate;
+	ee.originalstartdate = ei.originalstartdate;
 
 	applyExceptionOverrides(ei, ee, props, location_id,
 		busystatus_id, subtype_id, reminderdelta_id,
-		reminderset_id, tz_minutes);
+		reminderset_id, to_local);
+
+	/* MS-OXOCAL v22.1 §3.1.4.6.2: the new start day of the exception */
+	rp.pmodifiedinstancedates.emplace_back(ei.startdatetime / 1440 * 1440);
+	rp.sort_mods();
 
 	apr.sort_exceptions();
 	if (!saveRecurBlob(dir, mid, recur_tag, apr))
@@ -3365,6 +3486,19 @@ lookup_tz_get_offset(const char *name, time_t local_start)
 	return std::nullopt;
 }
 
+/*
+ * MS-OXOCAL v22.1 §2.2.1.14/§2.2.1.15: the clip bounds of a series are
+ * midnight in the local zone on the first/last day, stored as UTC.
+ */
+static uint64_t clip_time(const std::optional<TZDEF> &tz, uint32_t rtime)
+{
+	time_t t = rop_util_rtime_to_unix(rtime);
+	int64_t off = 0;
+	if (rtime != ENDDATE_MISSING && tz && tz_to_offset(*tz, t, off))
+		t += off * 60;
+	return rop_util_unix_to_nttime(t);
+}
+
 /**
  * @brief      Convert EWS Recurrence XML to MAPI properties and write to shape
  *
@@ -3418,9 +3552,12 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	std::optional<TZDEF> item_tz;
 	if (auto caltz = shape.writes(NtCalendarTimeZone))
 		item_tz = lookup_tz_get_tzdef(static_cast<const char *>(caltz->pvalue));
-	if (!item_tz && shape.tag(NtAppointmentTimeZoneDefinitionRecur) != 0)
-		item_tz = binary_to_tzdef(getItemProp<const BINARY>(dir, mid,
-		          shape.tag(NtAppointmentTimeZoneDefinitionRecur)));
+	if (!item_tz && shape.tag(NtAppointmentTimeZoneDefinitionRecur) != 0) {
+		/* An item stored with an unknown zone name has no definition */
+		const proptag_t tztag = shape.tag(NtAppointmentTimeZoneDefinitionRecur);
+		auto props = getItemProps(dir, mid, {&tztag, 1});
+		item_tz = binary_to_tzdef(props.get<const BINARY>(tztag));
+	}
 	if (item_tz && m_recurrence_frame)
 		shift_recurrence(recurrence, *m_recurrence_frame, *item_tz, localStartTime);
 
@@ -3437,15 +3574,26 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 
 	/*
 	 * For all-day events the duration must be a whole number of days.
-	 * Round up to the next day boundary if not.
+	 * Round up to the next day boundary if not. Days are counted in
+	 * local time, where a DST change day is not 86400s long.
 	 */
-	if (isAllDay && (localEndTime - localStartTime) % 86400 != 0) {
-		auto days = (localEndTime - localStartTime + 86399) / 86400;
-		localEndTime = localStartTime + days * 86400;
-		auto corrected_end = construct<uint64_t>(rop_util_unix_to_nttime(localEndTime));
-		shape.write(TAGGED_PROPVAL{end_tag, corrected_end});
-	}
 	auto duration = localEndTime - localStartTime;
+	if (isAllDay) {
+		int64_t sb = 0, eb = 0;
+		if (item_tz && (!tz_to_offset(*item_tz, localStartTime, sb) ||
+		    !tz_to_offset(*item_tz, localEndTime, eb)))
+			sb = eb = 0;
+		duration = localEndTime - eb * 60 - (localStartTime - sb * 60);
+		if (duration % 86400 != 0) {
+			duration = (duration + 86399) / 86400 * 86400;
+			auto le = localStartTime - sb * 60 + duration;
+			if (item_tz && !tz_to_offset(*item_tz, le, eb))
+				eb = sb;
+			localEndTime = le + eb * 60;
+			auto corrected_end = construct<uint64_t>(rop_util_unix_to_nttime(localEndTime));
+			shape.write(TAGGED_PROPVAL{end_tag, corrected_end});
+		}
+	}
 	/*
 	 * Use RecurrenceRange StartDate for the recurrence start date. For
 	 * all-day events, the Start time is midnight local in UTC (e.g. 23:00Z
@@ -3461,20 +3609,14 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 
 	if (isAllDay) {
 		apr.starttimeoffset = 0;
-		apr.endtimeoffset = 1440;
+		apr.endtimeoffset = duration / 60;
 	} else {
 		/* localStartTime is real UTC from NTTIME.  Convert to
 		 * the appointment's local timezone for the blob. */
 		time_t appt_local = localStartTime;
-		auto caltz_tag = shape.tag(NtCalendarTimeZone);
-		if (caltz_tag != 0) {
-			const TAGGED_PROPVAL *caltz = shape.writes(NtCalendarTimeZone);
-			if (caltz) {
-				auto offset = lookup_tz_get_offset(static_cast<char *>(caltz->pvalue), localStartTime);
-				if (offset)
-					appt_local = localStartTime - static_cast<time_t>(*offset) * 60;
-			}
-		}
+		int64_t b;
+		if (item_tz && tz_to_offset(*item_tz, localStartTime, b))
+			appt_local = localStartTime - static_cast<time_t>(b) * 60;
 		struct tm start_tm{};
 		gmtime_r(&appt_local, &start_tm);
 		apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
@@ -3605,10 +3747,218 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	shape.write(NtRecurrenceType, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(rectype)});
 	shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY, construct<BINARY>(BINARY{tmp_bin.cb, {recurdata}})});
 	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(1)});
-	auto clipstart = construct<uint64_t>(rop_util_unix_to_nttime(startdate));
+	auto clipstart = construct<uint64_t>(clip_time(item_tz, apr.recur_pat.startdate));
 	shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME, clipstart});
-	auto clipend = construct<uint64_t>(rop_util_rtime_to_nttime(apr.recur_pat.enddate));
+	auto clipend = construct<uint64_t>(clip_time(item_tz, apr.recur_pat.enddate));
 	shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
+}
+
+/**
+ * @brief      Anchor a recurrence pattern on a new start date
+ *
+ * The pattern is kept if the date is one of its days. Otherwise a single
+ * weekday, day of month or nth weekday is moved to the date, and a set
+ * of weekdays is rotated by the same number of days as the start.
+ *
+ * @param      rp    Pattern to change
+ * @param      date  Midnight of the new start date, local time as UTC
+ * @param      days  Number of days the start was moved by
+ *
+ * @return     false if the pattern cannot be moved
+ */
+static bool move_pattern(RECURRENCE_PATTERN &rp, time_t date, int days)
+{
+	switch (rp.calendartype) {
+	case CAL_DEFAULT:
+	case CAL_GREGORIAN:
+	case CAL_GREGORIAN_US:
+	case CAL_GREGORIAN_ME_FRENCH:
+	case CAL_GREGORIAN_ARABIC:
+	case CAL_GREGORIAN_XLIT_ENGLISH:
+	case CAL_GREGORIAN_XLIT_FRENCH:
+		break;
+	default:
+		return false;
+	}
+	struct tm tm;
+	if (rp.slidingflag != 0 || rp.period == 0 ||
+	    gmtime_r(&date, &tm) == nullptr)
+		return false;
+	int year = tm.tm_year + 1900, month = tm.tm_mon + 1, mday = tm.tm_mday;
+	int mdays = ical_get_monthdays(year, month);
+	uint32_t wbit = 1U << tm.tm_wday;
+	switch (rp.patterntype) {
+	case rptMinute:
+		break;
+	case rptWeek: {
+		auto &w = rp.pts.weekrecur;
+		w &= 0x7f;
+		if (w & wbit)
+			break;
+		if (std::popcount(w) == 1) {
+			w = wbit;
+		} else {
+			int r = (days % 7 + 7) % 7;
+			w = ((w << r) | (w >> (7 - r))) & 0x7f;
+		}
+		if (!(w & wbit))
+			return false;
+		if (rp.recurfrequency == IDC_RCEV_PAT_ORB_DAILY ||
+		    rp.recurfrequency == IDC_RCEV_PAT_ORB_WEEKLY)
+			rp.recurfrequency = w == 0x3E ? IDC_RCEV_PAT_ORB_DAILY :
+			                    IDC_RCEV_PAT_ORB_WEEKLY;
+		break;
+	}
+	case rptMonth:
+		if (std::min<int>(rp.pts.dayofmonth, mdays) != mday)
+			rp.pts.dayofmonth = mday;
+		break;
+	case rptMonthEnd:
+		if (mday != mdays) {
+			rp.patterntype = rptMonth;
+			rp.pts.dayofmonth = mday;
+		}
+		break;
+	case rptMonthNth: {
+		auto &mn = rp.pts.monthnth;
+		if (mn.recurnum >= 1 && mn.recurnum <= 5 &&
+		    nth_matching_mday(year, month, mn.recurnum, mn.weekrecur) == mday)
+			break;
+		if (std::popcount(mn.weekrecur & 0x7f) != 1)
+			return false;
+		unsigned int nth = (mday - 1) / 7 + 1;
+		if (nth == 5 || (mn.recurnum == 5 && mday + 7 > mdays))
+			nth = 5;
+		mn.weekrecur = wbit;
+		mn.recurnum = nth;
+		break;
+	}
+	default:
+		return false;
+	}
+	rp.startdate = rop_util_unix_to_rtime(date);
+	if (rp.endtype == IDC_RCEV_PAT_ERB_END) {
+		rp.enddate += days * 1440;
+		if (rp.enddate < rp.startdate)
+			return false;
+	}
+	calc_firstdatetime(rp, &tm);
+	return true;
+}
+
+/**
+ * @brief      Keep a series in line with its start and end
+ *
+ * macOS Calendar moves a series by sending a new Start and End without
+ * the Recurrence. Series with exceptions are left alone.
+ *
+ * @param      dir    Store directory
+ * @param      mid    Message ID of the series
+ * @param      shape  Shape of the update
+ */
+void EWSContext::moveRecurrence(const std::string &dir, uint64_t mid,
+    sShape &shape) const
+{
+	auto sp = shape.writes(NtCommonStart);
+	auto ep = shape.writes(NtCommonEnd);
+	if (sp == nullptr && ep == nullptr)
+		return;
+	const PROPERTY_NAME pn[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
+		{MNID_ID, PSETID_Appointment, PidLidRecurring},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentSubType},
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna);
+	/* the Recurrence is being deleted */
+	for (auto t : shape.remove_vec())
+		if (PROP_ID(t) == ids[0] || PROP_ID(t) == ids[1])
+			return;
+	const proptag_t tags[] = {PROP_TAG(PT_BINARY, ids[0]),
+		PROP_TAG(PT_BOOLEAN, ids[1]), PROP_TAG(PT_BINARY, ids[2]),
+		PROP_TAG(PT_BOOLEAN, ids[3]), PR_START_DATE, PR_END_DATE};
+	auto props = getItemProps(dir, mid, tags);
+	auto bin = props.get<const BINARY>(tags[0]);
+	auto recurring = props.get<const uint8_t>(tags[1]);
+	auto ostart = props.get<const uint64_t>(PR_START_DATE);
+	auto oend = props.get<const uint64_t>(PR_END_DATE);
+	if (bin == nullptr || (recurring != nullptr && *recurring == 0) ||
+	    ostart == nullptr || oend == nullptr)
+		return;
+	EXT_PULL ext_pull;
+	ext_pull.init(bin->pb, bin->cb, nullptr, EXT_FLAG_UTF16);
+	APPOINTMENT_RECUR_PAT apr{};
+	if (ext_pull.g_apptrecpat(&apr) != pack_result::ok ||
+	    !apr.recur_pat.pdeletedinstancedates.empty() ||
+	    !apr.recur_pat.pmodifiedinstancedates.empty() ||
+	    !apr.pexceptioninfo.empty())
+		return;
+	std::optional<TZDEF> tz;
+	if (auto t = shape.writes(NtAppointmentTimeZoneDefinitionRecur))
+		tz = binary_to_tzdef(static_cast<const BINARY *>(t->pvalue));
+	if (!tz)
+		tz = binary_to_tzdef(props.get<const BINARY>(tags[2]));
+	/* a series moved without its pattern has a bogus offset */
+	int64_t fallback = recurTzOffset(dir, mid, apr);
+	if (fallback < -840 || fallback > 840)
+		fallback = 0;
+	auto local = [&](time_t t) {
+		int64_t b;
+		if (!tz || !tz_to_offset(*tz, t, b))
+			b = fallback;
+		return t - b * 60;
+	};
+	auto allday = shape.writes(tags[3]);
+	auto alldayv = allday != nullptr ? static_cast<const uint8_t *>(allday->pvalue) :
+	               props.get<const uint8_t>(tags[3]);
+	bool isAllDay = alldayv != nullptr && *alldayv != 0;
+	auto nt = [](const TAGGED_PROPVAL *p, const uint64_t *o) {
+		return rop_util_nttime_to_unix(p != nullptr ?
+		       *static_cast<const uint64_t *>(p->pvalue) : *o);
+	};
+	time_t os = local(rop_util_nttime_to_unix(*ostart));
+	time_t ns = local(nt(sp, ostart)), ne = local(nt(ep, oend));
+	if (isAllDay) {
+		/* tolerate an offset that is off by the DST bias */
+		os = unix_day(os + 43200) * 86400;
+		ns = unix_day(ns + 43200) * 86400;
+		ne = unix_day(ne + 43200) * 86400;
+	}
+	if (ne < ns)
+		return;
+	int days = unix_day(ns) - unix_day(os);
+	uint32_t st = (ns - unix_day(ns) * 86400) / 60;
+	uint32_t et = st + (ne - ns) / 60;
+	if (days == 0 && st == apr.starttimeoffset && et == apr.endtimeoffset)
+		return;
+	if (days != 0 &&
+	    !move_pattern(apr.recur_pat, unix_day(ns) * 86400, days))
+		return;
+	if (days != 0 && apr.recur_pat.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR) try {
+		apr.recur_pat.enddate = nthOccurrenceDate(apr,
+		                        apr.recur_pat.occurrencecount, true);
+	} catch (const InputError &) {
+		return;
+	}
+	apr.starttimeoffset = st;
+	apr.endtimeoffset = et;
+	EXT_PUSH ext_push;
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ext_push.p_apptrecpat(apr) != pack_result::ok)
+		throw DispatchError(E3120);
+	auto recurdata = alloc<char>(ext_push.m_offset);
+	memcpy(recurdata, ext_push.m_udata, ext_push.m_offset);
+	shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY,
+		construct<BINARY>(BINARY{ext_push.m_offset, {recurdata}})});
+	const auto &rp = apr.recur_pat;
+	shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME,
+		construct<uint64_t>(clip_time(tz, rp.startdate))});
+	auto clipend = rp.endtype == IDC_RCEV_PAT_ERB_NOEND ||
+	               rp.endtype == IDC_RCEV_PAT_ERB_NOEND1 ?
+	               ENDDATE_MISSING : rp.enddate;
+	shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME,
+		construct<uint64_t>(clip_time(tz, clipend))});
 }
 
 /**
@@ -4790,7 +5140,7 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 
 		if (isAllDay) {
 			apr.starttimeoffset = 0;
-			apr.endtimeoffset = 1440;
+			apr.endtimeoffset = duration / 60;
 		} else {
 			/*
 			 * The blob stores times in the appointment's local
@@ -4958,11 +5308,10 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		isrecurring = 1;
 		shape.write(NtRecurrenceType, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(rectype)});
 		shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY, construct<BINARY>(BINARY{tmp_bin.cb, {recurdata}})});
-		// TODO: midnight in local time persist in UTC
-		auto clipstart = EWSContext::construct<uint64_t>(rop_util_unix_to_nttime(startdate));
+		auto item_tz = lookup_tz_get_tzdef(item.timezoneId().c_str());
+		auto clipstart = EWSContext::construct<uint64_t>(clip_time(item_tz, apr.recur_pat.startdate));
 		shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME, clipstart});
-		// TODO: midnight in local time persist in UTC
-		auto clipend = EWSContext::construct<uint64_t>(rop_util_rtime_to_nttime(apr.recur_pat.enddate));
+		auto clipend = EWSContext::construct<uint64_t>(clip_time(item_tz, apr.recur_pat.enddate));
 		shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
 	}
 	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(isrecurring)});
@@ -5836,12 +6185,31 @@ void EWSContext::updateReminder(const std::string &dir, uint64_t mid, sShape &sh
 		tagStart = PROP_TAG(PT_SYSTIME, ids[0]);
 	}
 	auto tagRecur = shape.tag(NtRecurring);
-	const proptag_t tags[] = {PR_MESSAGE_CLASS, tagDelta, tagTime, tagStart, tagRecur};
+	const proptag_t tags[] = {PR_MESSAGE_CLASS, tagDelta, tagTime, tagStart, tagSignal, tagRecur};
 	auto props = getItemProps(dir, mid, {tags, tagRecur != 0 ? std::size(tags) : std::size(tags) - 1});
 
 	auto recur = currentValue<uint8_t>(shape, props, NtRecurring, tagRecur);
-	if (tagRecur != 0 && recur != nullptr && *recur)
+	if (tagRecur != 0 && recur != nullptr && *recur) {
+		/*
+		 * A series signals at the next instance, or at 4501-01-01
+		 * once no instance is left, see MS-OXORMDR v16 §3.1.4.6.2.
+		 * Keep it on that instance when only the delta changes.
+		 */
+		static constexpr uint64_t noMoreSignals = 0x0CB34557A3DD4000;
+		auto newDelta = shape.writes(NtReminderDelta);
+		auto oldDelta = props.get<const int32_t>(tagDelta);
+		auto signal = props.get<const uint64_t>(tagSignal);
+		if (newDelta == nullptr || oldDelta == nullptr ||
+		    signal == nullptr || *signal >= noMoreSignals ||
+		    shape.writes(NtCommonStart) ||
+		    shape.writes(NtReminderSignalTime))
+			return;
+		auto diff = static_cast<int64_t>(*oldDelta) -
+		            *static_cast<const int32_t *>(newDelta->pvalue);
+		shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME,
+			construct<uint64_t>(*signal + diff * 600000000)});
 		return;
+	}
 	auto cls = props.get<const char>(PR_MESSAGE_CLASS);
 	bool appt = class_match_prefix(cls, "IPM.Appointment") == 0 ||
 	            class_match_prefix(cls, "IPM.Schedule.Meeting") == 0;

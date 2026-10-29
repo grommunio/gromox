@@ -373,7 +373,7 @@ void sTimePoint::serialize(XMLElement *xml) const
 	tm t;
 	if (gmtime_r(&timestamp, &t) == nullptr)
 		t = {};
-	auto frac = time.time_since_epoch() % std::chrono::seconds(1);
+	auto frac = time - std::chrono::floor<std::chrono::seconds>(time);
 	unsigned long long fsec = std::chrono::duration_cast<std::chrono::nanoseconds>(frac).count();
 	int off = -static_cast<int>(std::chrono::duration_cast<std::chrono::minutes>(offset).count());
 	std::string dtstr = fmt::format("{:%FT%T}", t);

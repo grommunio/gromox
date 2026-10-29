@@ -508,7 +508,7 @@ static bool icsdownctx_object_extract_msgctntinfo(message_content &msg,
 		if (ts == nullptr)
 			return false;
 		/* Faking it seems to work */
-		*ts = rop_util_unix_to_nttime(std::chrono::system_clock::now());
+		*ts = rop_util_current_nttime();
 	}
 	pchgheader->emplace_back(PR_LAST_MODIFICATION_TIME, ts);
 	

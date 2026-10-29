@@ -11,6 +11,8 @@ Fixes:
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
   and CancelCalendarItem now refuse private items of others for users who
   are not allowed to see private items.
+* EWS: GetItem now returns the attendees of a meeting when the shape asks for
+  them without calendar:IsMeeting.
 
 
 Gromox 3.13 (2026-10-28)

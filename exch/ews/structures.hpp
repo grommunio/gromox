@@ -15,6 +15,7 @@
 #include <gromox/freebusy.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/rop_util.hpp>
 
 #include "enums.hpp"
 
@@ -32,7 +33,32 @@ using SubscriptionKey = uint32_t;
 }
 
 class EWSContext;
-using clock = std::chrono::system_clock;
+/**
+ * @brief      System clock with mapitime_t resolution
+ *
+ * Nanoseconds cannot hold MAPI dates past 2262, such as the 4500-08-31
+ * end of a series without end.
+ */
+struct clock {
+	using time_point = mapitime_point;
+	using duration = time_point::duration;
+	using rep = duration::rep;
+	using period = duration::period;
+	static constexpr bool is_steady = false;
+
+	static time_point now() noexcept
+	{
+		return std::chrono::time_point_cast<duration>(std::chrono::system_clock::now());
+	}
+	static time_t to_time_t(time_point t) noexcept
+	{
+		return std::chrono::floor<std::chrono::seconds>(t).time_since_epoch().count();
+	}
+	static time_point from_time_t(time_t t) noexcept
+	{
+		return time_point(std::chrono::seconds(t));
+	}
+};
 using time_point = clock::time_point;
 
 }
@@ -456,7 +482,6 @@ class sShape {
 	const tinyxml2::XMLElement *toRecipients = nullptr; ///< ToRecipients for update
 	const tinyxml2::XMLElement *ccRecipients = nullptr; ///< CcRecipients for update
 	const tinyxml2::XMLElement *bccRecipients = nullptr; ///< BccRecipients for update
-	const sRecurrenceFrame *recurrenceFrame = nullptr; ///< Time zone to return recurrences in
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 
@@ -521,7 +546,7 @@ struct sTimePoint {
 	bool needCalcOffset() const;
 
 	time_point time{};
-	gromox::time_duration offset = std::chrono::minutes(0);
+	std::chrono::minutes offset{0};
 	bool calcOffset = false;
 };
 
@@ -1912,16 +1937,17 @@ struct tRecurrenceType {
 
 	void shift(int);
 	std::optional<int32_t> startDateZone() const;
+	bool weeklyOn(int) const;
 	void zone(int32_t);
 };
 
 /**
  * @brief      Time zone that a request expresses recurrence patterns in
  *
- * Recurrence patterns and ranges carry no time zone of their own. Like
- * Exchange, they are taken relative to the request's TimeZoneContext,
- * or UTC if there is none, and converted from/to the time zone of the
- * calendar item.
+ * Recurrence patterns and ranges carry no time zone of their own. In a
+ * request, they are taken relative to the TimeZoneContext, or UTC if there
+ * is none, and converted to the time zone of the calendar item. Responses
+ * return them in the item's time zone.
  */
 struct sRecurrenceFrame {
 	std::optional<TZDEF> tz; ///< Zone from TimeZoneContext
