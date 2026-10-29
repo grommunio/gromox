@@ -183,6 +183,12 @@ static bool is_negotiate_syntax(const SYNTAX_ID &i)
 	return i.version == 1 && is_negotiate_uuid(i.uuid);
 }
 
+static bool is_negotiate_ctx(const dcerpc_ctx_list &c)
+{
+	return c.transfer_syntaxes.size() == 1 &&
+	       is_negotiate_syntax(c.transfer_syntaxes[0]);
+}
+
 static bool is_requesting_negotiate(const dcerpc_bind &b)
 {
 	if (!support_negotiate || b.ctx_list.size() <= 1)
@@ -831,50 +837,58 @@ static BOOL pdu_processor_process_bind(dcerpc_call *pcall)
 {
 	GUID uuid;
 	BOOL b_ndr64;
-	uint32_t reason;
-	uint32_t result;
 	uint32_t context_id;
 	uint32_t if_version;
 	uint32_t extra_flags;
 	auto pbind = static_cast<dcerpc_bind *>(pcall->pkt.payload.get());
+	auto pendpoint = pcall->pprocessor->pendpoint;
 
 	if (pbind->ctx_list.size() < 1 || pbind->ctx_list[0].transfer_syntaxes.size() < 1)
 		return pdu_processor_bind_nak(pcall, 0);
-	
+
 	/* can not bind twice on the same connection */
 	if (pcall->pprocessor->assoc_group_id != 0)
 		return pdu_processor_bind_nak(pcall, 0);
-	context_id = pbind->ctx_list[0].context_id;
 
 	/* bind only there's no context, otherwise, use alter */
 	if (pcall->pprocessor->context_list.size() > 0)
 		return pdu_processor_bind_nak(pcall, 0);
+
+	auto ctx_intf = [&](const dcerpc_ctx_list &c) {
+		return pdu_processor_find_interface_by_uuid(pendpoint,
+		       &c.abstract_syntax.uuid, c.abstract_syntax.version);
+	};
+	/* Accept the first context with a known interface and NDR/NDR64 */
+	const dcerpc_ctx_list *acc = nullptr;
+	const DCERPC_INTERFACE *pinterface = nullptr;
+	b_ndr64 = FALSE;
+	for (const auto &c : pbind->ctx_list) {
+		if (is_negotiate_ctx(c))
+			continue;
+		auto intf = ctx_intf(c);
+		if (intf == nullptr)
+			continue;
+		if (c.contains(g_transfer_syntax_ndr))
+			b_ndr64 = FALSE;
+		else if (c.contains(g_transfer_syntax_ndr64))
+			b_ndr64 = TRUE;
+		else
+			continue;
+		acc = &c;
+		pinterface = intf;
+		break;
+	}
+	context_id = acc != nullptr ? acc->context_id :
+	             pbind->ctx_list[0].context_id;
 	if_version = pbind->ctx_list[0].abstract_syntax.version;
 	uuid = pbind->ctx_list[0].abstract_syntax.uuid;
-
-	b_ndr64 = FALSE;
-	bool b_found = pbind->ctx_list[0].contains(g_transfer_syntax_ndr);
-	if (!b_found) {
-		b_found = pbind->ctx_list[0].contains(g_transfer_syntax_ndr64);
-		if (!b_found) {
-			mlog(LV_DEBUG, "pdu_processor: only NDR or NDR64 transfer syntax "
-				"can be accepted by system");
-			return pdu_processor_bind_nak(pcall, 0);
-		}
-		b_ndr64 = TRUE;
-	}
-	bool b_negotiate = b_found && is_requesting_negotiate(*pbind);
-	auto pinterface = pdu_processor_find_interface_by_uuid(
-					pcall->pprocessor->pendpoint, &uuid, if_version);
+	bool b_negotiate = acc != nullptr && is_requesting_negotiate(*pbind);
 	std::shared_ptr<dcerpc_context> pcontext;
 	if (NULL == pinterface) {
 		char uuid_str[GUIDSTR_SIZE];
 		uuid.to_str(uuid_str, std::size(uuid_str));
 		mlog(LV_DEBUG, "pdu_processor: interface %s/%d unknown when binding",
 			uuid_str, if_version);
-		/* we don't know about that interface */
-		result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
-		reason = DCERPC_BIND_REASON_ASYNTAX;
 	} else {
 		/* add this context to the list of available context_ids */
 		try {
@@ -894,8 +908,6 @@ static BOOL pdu_processor_process_bind(dcerpc_call *pcall)
 		pcontext->assoc_group_id = pcall->pprocessor->assoc_group_id;
 		double_list_init(&pcontext->async_list);
 		pcall->pcontext = pcontext;
-		result = 0;
-		reason = 0;
 	}
 
 	/* pcontext will only be set when a new ctx was made */
@@ -945,21 +957,35 @@ static BOOL pdu_processor_process_bind(dcerpc_call *pcall)
 	} else {
 		bind_ack->secondary_address[0] = '\0';
 	}
+	/* One result per presentation context */
 	try {
-		bind_ack->ctx_list.resize(b_negotiate ? 2 : 1);
+		bind_ack->ctx_list.resize(pbind->ctx_list.size());
 	} catch (const std::bad_alloc &) {
 		return pdu_processor_bind_nak(pcall, 0);
 	}
-	if (b_negotiate) {
-		bind_ack->ctx_list[1].result = DCERPC_BIND_RESULT_NEGOTIATE_ACK;
-		auto &u = pbind->ctx_list[1].transfer_syntaxes[0].uuid;
-		char bitmap = pcall->b_bigendian ? u.node[5] : u.clock_seq[0];
-		bind_ack->ctx_list[1].reason = bitmap & DCERPC_SECURITY_CONTEXT_MULTIPLEXING;;
-		bind_ack->ctx_list[1].syntax = {};
+	for (size_t i = 0; i < pbind->ctx_list.size(); ++i) {
+		auto &in  = pbind->ctx_list[i];
+		auto &out = bind_ack->ctx_list[i];
+		out.syntax = {};
+		if (&in == acc) {
+			out.result = 0;
+			out.reason = 0;
+			out.syntax = b_ndr64 ? g_transfer_syntax_ndr64 :
+			             g_transfer_syntax_ndr;
+		} else if (b_negotiate && is_negotiate_ctx(in)) {
+			auto &u = in.transfer_syntaxes[0].uuid;
+			auto big = pcall->b_bigendian;
+			uint8_t bm = big ? u.node[5] : u.clock_seq[0];
+			out.result = DCERPC_BIND_RESULT_NEGOTIATE_ACK;
+			out.reason = bm & DCERPC_SECURITY_CONTEXT_MULTIPLEXING;
+		} else {
+			auto known = is_negotiate_ctx(in) ||
+			             ctx_intf(in) != nullptr;
+			out.result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
+			out.reason = known ? DCERPC_BIND_REASON_TSYNTAX :
+			             DCERPC_BIND_REASON_ASYNTAX;
+		}
 	}
-	bind_ack->ctx_list[0].result = result;
-	bind_ack->ctx_list[0].reason = reason;
-	bind_ack->ctx_list[0].syntax = g_transfer_syntax_ndr;
 	bind_ack->auth_info.clear();
 	
 	if (pcall->pprocessor->auth_list.empty()) {
