@@ -383,6 +383,30 @@ bool delegate_eid_is(std::string_view eid, const char *org, const char *actor)
 }
 
 /**
+ * @org:   X500DN setting, just passed through
+ * @found: The result of the existence check
+ *
+ * Test @props for presence of an ACE for @actor, and their
+ * permission level. (These are not the normal MAPI permissions.)
+ * Returns an indication whether private items may be viewed.
+ */
+static bool sees_private_items(const TPROPVAL_ARRAY &props, const char *org,
+    const char *actor, bool &found)
+{
+	auto eids  = props.get<const BINARY_ARRAY>(PR_SCHDINFO_DELEGATE_ENTRYIDS);
+	auto flags = props.get<const LONG_ARRAY>(PR_DELEGATE_FLAGS);
+	if (eids == nullptr || flags == nullptr)
+		return false;
+	for (size_t i = 0; i < eids->count && i < flags->count; ++i) {
+		if (!delegate_eid_is(eids->pbin[i], org, actor))
+			continue;
+		found = true;
+		return (flags->pl[i] & 1) != 0;
+	}
+	return false;
+}
+
+/**
  * Returns whether the delegate list of the store at @dir lets @actor see
  * private items, that is ShowPrivate in PidTagDelegateFlags of the
  * LocalFreebusy message.
@@ -390,19 +414,6 @@ bool delegate_eid_is(std::string_view eid, const char *org, const char *actor)
 bool sees_private_items(const char *dir, const char *org, const char *actor)
 {
 	static constexpr proptag_t tags[] = {PR_SCHDINFO_DELEGATE_ENTRYIDS, PR_DELEGATE_FLAGS};
-	auto sees = [&](const TPROPVAL_ARRAY &props, bool &found) {
-		auto eids  = props.get<const BINARY_ARRAY>(PR_SCHDINFO_DELEGATE_ENTRYIDS);
-		auto flags = props.get<const LONG_ARRAY>(PR_DELEGATE_FLAGS);
-		if (eids == nullptr || flags == nullptr)
-			return false;
-		for (size_t i = 0; i < eids->count && i < flags->count; ++i) {
-			if (!delegate_eid_is(eids->pbin[i], org, actor))
-				continue;
-			found = true;
-			return (flags->pl[i] & 1) != 0;
-		}
-		return false;
-	};
 	/* Clients use the message named in PidTagFreeBusyEntryIds[1] */
 	static constexpr proptag_t fbtag[] = {PR_FREEBUSY_ENTRYIDS};
 	TPROPVAL_ARRAY fbprops;
@@ -422,7 +433,7 @@ bool sees_private_items(const char *dir, const char *org, const char *actor)
 		    exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
 		    eid_t(1, rop_util_gc_to_value(meid.message_gc)), mtags, &props) &&
 		    props.has(PR_MESSAGE_CLASS))
-			return sees(props, found);
+			return sees_private_items(props, org, actor, found);
 	}
 	for (uint8_t tflags : {uint8_t{0}, uint8_t{TABLE_FLAG_ASSOCIATED}}) {
 		uint32_t table_id = 0, row_count = 0;
@@ -438,7 +449,7 @@ bool sees_private_items(const char *dir, const char *org, const char *actor)
 			return false;
 		for (const auto &row : rows) {
 			bool found = false;
-			auto ret = sees(row, found);
+			auto ret = sees_private_items(row, org, actor, found);
 			if (found)
 				return ret;
 		}
