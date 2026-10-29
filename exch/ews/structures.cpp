@@ -900,7 +900,8 @@ void sCalendarMeetingRequestCommon::loadConflicts(const char *user,
 	auto &conflicts = ConflictingMeetings.emplace();
 	auto &adjacent = AdjacentMeetings.emplace();
 	for (const auto &ev : events) {
-		if (!self.empty() ? ev.id && *ev.id == self :
+		/* Private events of others come without ID */
+		if (!self.empty() && ev.id ? *ev.id == self :
 		    !selfSeen && ev.start_time == start && ev.end_time == end) {
 			selfSeen = true;
 			continue;
@@ -1471,7 +1472,8 @@ PROPTAG_ARRAY sShape::remove() const
 bool sShape::requested(proptag_t tag, uint8_t mask) const
 {
 	auto it = props.find(tag);
-	return it != props.end() && (mask == FL_ANY || it->second.flags & mask);
+	return it != props.end() && (mask == FL_ANY || it->second.flags & mask) &&
+	       readable(tag, access);
 }
 
 /**
@@ -1575,11 +1577,28 @@ const TAGGED_PROPVAL* sShape::writes(const PROPERTY_NAME& name) const
 
 /**
  * @brief      Reset all properties to unloaded
+ *
+ * @param      exception  Next item is an exception of the last series master
  */
-void sShape::clean()
+void sShape::clean(bool exception)
 {
 	for (auto &entry : props)
 		entry.second.prop = nullptr;
+	/* A private series makes all of its exceptions private */
+	if (exception)
+		applySeriesAccess();
+	else
+		privateItem = false;
+	inException = exception;
+}
+
+/**
+ * @brief      Give the next item the access level of the last series master
+ */
+void sShape::applySeriesAccess()
+{
+	privateItem = seriesPrivate;
+	access = seriesAccess;
 }
 
 /**
@@ -1731,6 +1750,157 @@ void sShape::properties(const TPROPVAL_ARRAY& properties)
 {
 	for (const auto &prop : properties)
 		props[prop.proptag].prop = &prop;
+	if (rights.has_value())
+		redact();
+}
+
+/**
+ * Named properties readable without frightsReadAny. The first one is only
+ * readable with frightsFreeBusyDetailed, the second one is not passed on
+ * as is, see putExtended().
+ */
+static const PROPERTY_NAME fbNameList[] = {
+	NtLocation, NtAppointmentRecur,
+	NtAppointmentStartWhole, NtAppointmentEndWhole,
+	NtAppointmentDuration, NtAppointmentSubType, NtRecurring,
+	NtRecurrenceType, NtRecurrencePattern, NtBusyStatus,
+	NtAppointmentStateFlags, NtCommonStart, NtCommonEnd, NtClipStart,
+	NtClipEnd, NtExceptionReplaceTime, NtIsException, NtPrivate,
+	NtTimeZone, NtTimeZoneStruct,
+	NtAppointmentTimeZoneDefinitionStartDisplay,
+	NtAppointmentTimeZoneDefinitionEndDisplay,
+	NtAppointmentTimeZoneDefinitionRecur,
+	NtGlobalObjectId, NtCleanGlobalObjectId,
+};
+
+const PROPNAME_ARRAY sShape::fbNames = {std::size(fbNameList), deconst(fbNameList)};
+
+/**
+ * @brief      Limit item contents to what folder rights allow
+ *
+ * Readers without frightsReadAny only get times and busy status of items.
+ * With frightsFreeBusyDetailed, they also get subject and location of
+ * items that are not private. Readers who do not see private items only
+ * get times and busy status of those, whatever their rights.
+ *
+ * @param      folderRights  Rights of the reader on the parent folder
+ * @param      ids           IDs of fbNames in the store of the folder
+ * @param      seesPrivate   Reader sees private items in full
+ */
+void sShape::restrict(uint32_t folderRights, const PROPID_ARRAY &ids,
+    bool seesPrivate)
+{
+	/* Not after named tags, namedProperties() drops those from the end */
+	add(PR_SENSITIVITY);
+	privateItem = seriesPrivate = false;
+	if (folderRights & frightsGromoxStoreOwner) {
+		rights.reset();
+		access = seriesAccess = Access::full;
+		return;
+	}
+	rights = folderRights;
+	seesPrivateItems = seesPrivate;
+	fbIds.clear();
+	locationId = recurId = 0;
+	if (ids.size() != std::size(fbNameList))
+		return;
+	locationId = ids[0];
+	recurId = ids[1];
+	for (size_t i = 1; i < ids.size(); ++i)
+		if (ids[i] != 0)
+			fbIds.push_back(ids[i]);
+}
+
+/**
+ * @brief      Determine access level of the current item and drop the rest
+ */
+void sShape::redact()
+{
+	auto sens = get<const uint32_t>(PR_SENSITIVITY, FL_ANY);
+	if (sens != nullptr && *sens == SENSITIVITY_PRIVATE)
+		privateItem = true;
+	access = privateItem && !seesPrivateItems ? Access::fbsimple :
+	         *rights & frightsReadAny ? Access::full :
+	         !privateItem && *rights & frightsFreeBusyDetailed ?
+	         Access::fbdetail : Access::fbsimple;
+	if (!inException) {
+		seriesPrivate = privateItem;
+		seriesAccess = access;
+	}
+	if (access == Access::full)
+		return;
+	for (auto &entry : props)
+		if (entry.second.prop != nullptr && !readable(entry.first, access))
+			entry.second.prop = nullptr;
+}
+
+/**
+ * @brief      Returns whether a property is readable at an access level
+ */
+bool sShape::readable(proptag_t tag, Access level) const
+{
+	if (level == Access::full)
+		return true;
+	auto id = PROP_ID(tag);
+	if (level == Access::fbdetail) {
+		if (id == PROP_ID(PR_SUBJECT) ||
+		    id == PROP_ID(PR_NORMALIZED_SUBJECT) ||
+		    id == PROP_ID(PR_SUBJECT_PREFIX))
+			return true;
+		if (locationId != 0 && id == locationId)
+			return true;
+	}
+	static constexpr propid_t fbIdList[] = {
+		PROP_ID(PR_ENTRYID), PROP_ID(PR_PARENT_ENTRYID),
+		PROP_ID(PR_CHANGE_KEY), PROP_ID(PR_MESSAGE_CLASS),
+		PROP_ID(PR_SENSITIVITY), PROP_ID(PR_START_DATE),
+		PROP_ID(PR_END_DATE), PROP_ID(PR_MESSAGE_SIZE),
+		PROP_ID(PR_CREATION_TIME), PROP_ID(PR_LAST_MODIFICATION_TIME),
+		PROP_ID(PidTagMid), PROP_ID(PidTagFolderId),
+		PROP_ID(PidTagChangeNumber),
+	};
+	if (std::find(std::begin(fbIdList), std::end(fbIdList), id) != std::end(fbIdList))
+		return true;
+	return is_nameprop_id(id) &&
+	       std::find(fbIds.begin(), fbIds.end(), id) != fbIds.end();
+}
+
+/**
+ * @brief      Returns whether the reader may read every property of every item
+ */
+bool sShape::allReadable() const
+{
+	return !rights.has_value() ||
+	       (*rights & frightsReadAny && seesPrivateItems);
+}
+
+/**
+ * @brief      Returns in which items a property may be filtered or sorted by
+ */
+sShape::Query sShape::queryable(proptag_t tag) const
+{
+	/* No item has a property with ID 0 */
+	if (allReadable() || PROP_ID(tag) == 0 ||
+	    readable(tag, Access::fbsimple))
+		return Query::all;
+	/* Private items are at Access::fbsimple here, see redact() */
+	auto pubAccess = *rights & frightsReadAny ? Access::full :
+	                 *rights & frightsFreeBusyDetailed ? Access::fbdetail :
+	                 Access::fbsimple;
+	return readable(tag, pubAccess) ? Query::publicOnly : Query::none;
+}
+
+/**
+ * @brief      Returns the special fields to load for the current item
+ */
+uint64_t sShape::specials() const
+{
+	if (access == Access::full)
+		return special;
+	auto s = special & (Rights | Occurrences | ResponseObjects);
+	if (s & Rights && privateItem && !seesPrivateItems)
+		s |= Redacted;
+	return s;
 }
 
 /**
@@ -1751,7 +1921,10 @@ PROPTAG_ARRAY sShape::proptags() const
 void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
 {
 	for (const auto &prop : props)
-		if (prop.second.flags & FL_EXT && prop.second.prop)
+		/* Exceptions in the recurrence blob carry subject and location */
+		if (prop.second.flags & FL_EXT && prop.second.prop &&
+		    (access == Access::full || recurId == 0 ||
+		    PROP_ID(prop.first) != recurId))
 			extprops.emplace_back(*prop.second.prop,
 				prop.second.name ? *prop.second.name : NONAME);
 }
@@ -4048,6 +4221,7 @@ SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const s
 		current->type = PROP_TYPE(tag);
 		current->propid = PROP_ID(tag);
 		current->table_sort = sort.Order.index();
+		++current;
 	}
 	return sset;
 }
@@ -5180,6 +5354,22 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 }
 
 /**
+ * @brief      Rights of a calendar permission level
+ *
+ * Calendar levels that can read items can also read free/busy data, as in
+ * Exchange and Outlook.
+ */
+static uint32_t calendarProfile(size_t index)
+{
+	uint32_t rights = tBasePermission::profileTable[index];
+	if (rights & frightsReadAny)
+		rights |= frightsFreeBusySimple | frightsFreeBusyDetailed;
+	else if (rights & frightsFreeBusyDetailed)
+		rights |= frightsFreeBusySimple;
+	return rights;
+}
+
+/**
  * @brief      Create permission from properties
  *
  * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
@@ -5193,13 +5383,17 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
 	if (!rights)
 		rights = &uint_value_zero;
 	ReadItems.emplace(*rights & frightsReadAny ? Enum::FullDetails :
-	                  *rights & frightsFreeBusyDetailed ? Enum::FreeBusyTimeAndSubjectAndLocation :
-	                  *rights & frightsFreeBusySimple ? Enum::TimeOnly :Enum::None);
-	auto index = ct_index(profileTable, *rights);
-	if (index < calendarProfiles)
-		CalendarPermissionLevel = static_cast<uint8_t>(index);
-	else
-		CalendarPermissionLevel = Enum::Custom;
+	                  *rights & frightsFreeBusyDetailed ? Enum::TimeAndSubjectAndLocation :
+	                  *rights & frightsFreeBusySimple ? Enum::TimeOnly : Enum::None);
+	CalendarPermissionLevel = Enum::Custom;
+	for (size_t i = 0; i < calendarProfiles; ++i) {
+		/* The free/busy levels may come with a visible folder */
+		auto masked = i >= profiles ? *rights & ~frightsVisible : *rights;
+		if (*rights == profileTable[i] || masked == calendarProfile(i)) {
+			CalendarPermissionLevel = static_cast<uint8_t>(i);
+			break;
+		}
+	}
 }
 
 
@@ -5210,10 +5404,13 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
  */
 PERMISSION_DATA tCalendarPermission::write() const
 {
+	static constexpr uint32_t fb = frightsFreeBusySimple | frightsFreeBusyDetailed;
 	uint32_t rights = CalendarPermissionLevel == Enum::Custom ?
-	                  0 : profileTable[CalendarPermissionLevel.index()];
+	                  0 : calendarProfile(CalendarPermissionLevel.index());
 	if (ReadItems)
-		rights |= *ReadItems == Enum::FullDetails ? frightsReadAny : 0;
+		rights |= *ReadItems == Enum::FullDetails ? frightsReadAny | fb :
+		          *ReadItems == Enum::TimeAndSubjectAndLocation ? fb :
+		          *ReadItems == Enum::TimeOnly ? frightsFreeBusySimple : 0;
 	return tBasePermission::write(rights);
 }
 

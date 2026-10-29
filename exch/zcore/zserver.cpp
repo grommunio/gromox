@@ -5169,7 +5169,10 @@ ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
 	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	std::vector<freebusy_event> fb_data;
-	auto err = get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
+	auto actor = pinfo->get_username();
+	if (strcmp(actor, mres.username.c_str()) == 0)
+		actor = nullptr;
+	auto err = get_freebusy(actor, mres.maildir.c_str(),
 	           starttime, endtime, fb_data);
 	if (err != ecSuccess)
 		return err;

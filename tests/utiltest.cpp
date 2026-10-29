@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <chrono>
 #include <climits>
 #include <cstdio>
@@ -14,6 +15,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/freebusy.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/mail_func.hpp>
@@ -711,6 +713,66 @@ static int t_tzdef()
 	return EXIT_SUCCESS;
 }
 
+static std::vector<time_t> fb_starts(const APPOINTMENT_RECUR_PAT &apr,
+    time_t start_whole, time_t start, time_t end)
+{
+	std::vector<fb_instance> ev;
+	std::vector<time_t> out;
+	if (!fb_recur_times(nullptr, start_whole, apr, start, end, ev))
+		return {-1};
+	for (const auto &e : ev)
+		out.push_back(e.start_time);
+	std::sort(out.begin(), out.end());
+	return out;
+}
+
+static int t_fb_recur()
+{
+	/* Daily 08:00 to 09:00 UTC from 2026-11-02 */
+	static constexpr time_t day = 86400, nov2 = 1793577600, h8 = nov2 + 8 * 3600;
+	APPOINTMENT_RECUR_PAT apr;
+	auto &rp = apr.recur_pat;
+	rp.recurfrequency = IDC_RCEV_PAT_ORB_DAILY;
+	rp.patterntype = rptMinute;
+	rp.period = 1440;
+	rp.endtype = IDC_RCEV_PAT_ERB_NOEND;
+	rp.startdate = rop_util_unix_to_rtime(nov2);
+	apr.starttimeoffset = 480;
+	apr.endtimeoffset = 540;
+
+	/* Nothing that starts after the window */
+	auto v = fb_starts(apr, h8, nov2 + 3 * day, nov2 + 5 * day);
+	if (v != std::vector<time_t>{h8 + 3 * day, h8 + 4 * day}) {
+		printf("fb_recur: window end not honored\n");
+		return EXIT_FAILURE;
+	}
+	/* An occurrence that began before the window still overlaps it */
+	v = fb_starts(apr, h8, h8 + 3 * day + 1800, h8 + 3 * day + 3600);
+	if (v != std::vector<time_t>{h8 + 3 * day}) {
+		printf("fb_recur: overlapping occurrence missing\n");
+		return EXIT_FAILURE;
+	}
+
+	/* The 11-06 occurrence moved to 10:00 to 11:00 */
+	auto nov6 = rop_util_unix_to_rtime(nov2 + 4 * day);
+	rp.pdeletedinstancedates.push_back(nov6);
+	rp.pmodifiedinstancedates.push_back(nov6);
+	auto &ei = apr.pexceptioninfo.emplace_back();
+	ei.startdatetime = nov6 + 600;
+	ei.enddatetime = nov6 + 660;
+	ei.originalstartdate = nov6 + 480;
+	auto &xe = apr.pextendedexception.emplace_back();
+	xe.startdatetime = ei.startdatetime;
+	xe.enddatetime = ei.enddatetime;
+	xe.originalstartdate = ei.originalstartdate;
+	v = fb_starts(apr, h8, h8 + 4 * day + 9000, h8 + 4 * day + 9900);
+	if (v != std::vector<time_t>{h8 + 4 * day + 7200}) {
+		printf("fb_recur: overlapping exception missing\n");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 static alloc_context t_alloc_mgr;
 static void *t_alloc(size_t z) { return t_alloc_mgr.alloc(z); }
 
@@ -819,7 +881,7 @@ static int runner()
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
-		t_string, t_time, t_tzdef, t_floating_dt, t_essdn,
+		t_string, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
 	};
 	for (auto f : fct) {
 		auto ret = f();

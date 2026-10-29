@@ -303,7 +303,7 @@ class EWSContext {
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
-	TARRAY_SET loadPermissions(const std::string&, uint64_t) const;
+	TARRAY_SET loadPermissions(const std::string&, uint64_t, bool freebusy = false) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
 	std::vector<Structures::sItem> expandOccurrences(const std::string &, uint64_t, uint64_t, time_t, time_t, Structures::sShape &) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
@@ -337,6 +337,9 @@ class EWSContext {
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
+	bool seesPrivateItems(const std::string &, const Structures::sFolderSpec &, uint32_t) const;
+	void assertCanReadPrivate(const std::string &, const Structures::sFolderSpec &, uint32_t, uint64_t) const;
+	void restrictShape(const std::string &, const Structures::sFolderSpec &, uint32_t, Structures::sShape &) const;
 	const BINARY *findContactPhoto(const std::string &dir, const std::string &email) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
 	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool, std::optional<uint32_t> = std::nullopt) const;
@@ -357,6 +360,7 @@ class EWSContext {
 	void updateReminder(const std::string &, uint64_t, Structures::sShape &) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
 	bool writeDelegatePermissions(const std::string&, const std::string&, const Structures::tDelegatePermissions&) const;
+	void writeDelegateFlags(const std::string &, const std::string &, std::optional<bool>, bool) const;
 	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
 
 	gromox::time_duration age() const { return tp_now() - m_created; }
@@ -455,6 +459,8 @@ private:
 	void toContent(const std::string &, Structures::tReplyAllToItem &, Structures::sShape &, message_content_ptr &) const;
 	void toContent(const std::string &, Structures::tForwardItem &, Structures::sShape &, message_content_ptr &) const;
 	std::optional<uint64_t> findExistingByGoid(const Structures::sFolderSpec&, const std::string&, const MESSAGE_CONTENT&) const;
+	std::optional<uint64_t> findDelegateMessage(const std::string &, std::optional<uint64_t>) const;
+	void stampDelegateMessage(const std::string &, const BINARY_ARRAY *, uint64_t) const;
 
 	inline void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {}
 	void updateProps(Structures::tCalendarItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const;
@@ -475,6 +481,7 @@ private:
 	gromox::time_point m_created{};
 	std::unique_ptr<NotificationContext> m_notify;
 	std::optional<Structures::sRecurrenceFrame> m_recurrence_frame; ///< Time zone of recurrences in the request
+	mutable std::unordered_map<std::string, bool> m_seesPrivateItems; ///< Whether the user sees private items, per store
 };
 
 /**
