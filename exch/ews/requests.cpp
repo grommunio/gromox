@@ -2123,8 +2123,9 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				CP_UTF8, privTable, tags, privOffset,
 				offset + results - pubCount - privOffset, &privRows);
 		}
-		for (auto set : {&table, &privRows})
-			rows.insert(rows.end(), set->pparray, set->pparray + set->count);
+		rows.insert(rows.end(), table.pparray, table.pparray + table.count);
+		rows.insert(rows.end(), privRows.pparray, privRows.pparray + privRows.count);
+
 		mFindItemResponseMessage msg;
 		auto &items = msg.RootFolder.emplace().Items;
 		items.reserve(rowCount);
