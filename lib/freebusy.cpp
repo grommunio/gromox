@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
@@ -374,10 +374,10 @@ unsigned int freebusy_perms(const char *actor, const char *target)
  * Returns whether @eid, an entry of PidTagScheduleInfoDelegateEntryIds, is
  * @actor.
  */
-bool delegate_eid_is(const BINARY &eid, const char *org, const char *actor)
+bool delegate_eid_is(std::string_view eid, const char *org, const char *actor)
 {
 	std::string user;
-	return cvt_entryid_to_smtpaddr(std::string_view(eid.pc, eid.cb), org,
+	return cvt_entryid_to_smtpaddr(eid, org,
 	       mysql_adaptor_userid_to_name, user) == ecSuccess &&
 	       strcasecmp(user.c_str(), actor) == 0;
 }

@@ -903,6 +903,9 @@ struct GX_EXPORT ADVISE_INFO {
 
 /*
  * @pv:		may legitimately be nullptr (only if cb==0)
+ *
+ * An archaic container. New code should use std::string/string_view
+ * when possible.
  */
 struct GX_EXPORT BINARY {
 	uint32_t cb;
