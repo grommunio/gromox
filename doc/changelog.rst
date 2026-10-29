@@ -11,6 +11,8 @@ Fixes:
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
   and CancelCalendarItem now refuse private items of others for users who
   are not allowed to see private items.
+* imap: The greeting on implicit TLS connections advertised a truncated
+  capability list.
 
 
 Gromox 3.13 (2026-10-28)
