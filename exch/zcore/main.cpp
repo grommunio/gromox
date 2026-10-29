@@ -53,7 +53,7 @@ using namespace gromox;
 
 decltype(system_services_auth_login) system_services_auth_login;
 decltype(system_services_auth_login_token) system_services_auth_login_token;
-int (*system_services_add_timer)(const char *, int);
+int (*system_services_add_timer)(const char *, uint64_t, int);
 
 gromox::atomic_bool g_main_notify_stop;
 std::shared_ptr<config_file> g_config_file;
@@ -97,7 +97,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
-	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
 	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"x500_org_name", "Gromox default"},
@@ -307,8 +306,7 @@ int main(int argc, char **argv)
 	mlog(LV_NOTICE, "system: SMTP server is %s", smtp_url.c_str());
 	
 	common_util_init(g_config_file->get_value("x500_org_name"),
-		max_rcpt, max_length, max_rule_len, std::move(smtp_url),
-		g_config_file->get_value("submit_command"));
+		max_rcpt, max_length, max_rule_len, std::move(smtp_url));
 	
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	mlog(LV_INFO, "system: exmdb proxy connection number is %d", proxy_num);

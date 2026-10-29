@@ -56,7 +56,7 @@ struct message_object;
 struct store_object;
 struct user_object;
 
-extern void common_util_init(const char *org_name, unsigned int max_rcpt, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
+extern void common_util_init(const char *org_name, unsigned int max_rcpt, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url);
 extern int common_util_run(const char *data_path);
 extern bool cu_verify_columns_and_sorts(proptag_cspan, const SORTORDER_SET *);
 extern bool cu_extract_delegator(message_object &, std::string &);
@@ -127,7 +127,6 @@ extern ec_error_t cu_abentry_to_vcf(user_object &, bool is_group, BINARY *vcfout
 extern std::unique_ptr<message_content, gromox::mc_delete> common_util_vcf_to_message(store_object &, const BINARY *vcf);
 extern ec_error_t cu_vcf_to_message2(store_object &, char *vcf_data, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
 extern const char *common_util_get_default_timezone();
-extern const char *common_util_get_submit_command();
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 extern const char *zcore_rpc_idtoname(zcore_callid);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, message_content *, const char *bounce_type, MAIL *);

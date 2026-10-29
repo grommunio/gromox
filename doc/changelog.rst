@@ -3,16 +3,38 @@ Schedule
 It's ready when it's ready.
 
 
-Development 3.12.94
-===================
+Gromox 3.13 (2026-10-28)
+========================
+
+Enhancements:
+
+* Added scripts to help convert E4A systems to Gromox
+* php_mapi can be combined with php-opcache again
+* midb/imap: Full synchronization of IMAP keywords from and to MAPI categories
+  (both directions).
+* `gromox-export --vcard` can be invoked with multiple message object IDs,
+  generating a vCard bundle.
+* Added audit logging to emsmdb and zcore. (Enabled as before via
+  log_level >=5.)
 
 Fixes:
 
-* php_mapi: The declared return type of resource-returning functions named
-  a nonexistent class "resource", which made opcache's optimizer fold
-  ``is_resource()`` on such values to false. The arginfo was corrected and
-  php_mapi no longer refuses to run with opcache enabled; opcache.enable=0 is
-  no longer shipped in mapi.ini.
+* oxcical: Resolved a condition inversion related to the emission of
+  EXDATE/RDATE lines.
+* oxcical: Conversions between iCal and MAPI no longer lose ATTENDEE and
+  ORGANIZER.
+* exmdb: Avoid dangling body and attachment file references when
+  mbop purge-datafiles races against a reinstantiation of a (de)duplicated
+  attachment.
+* EWS: Avoid a case of listing the organizer as a required attendee.
+* EWS: AcceptItem, TentativelyAcceptItem and DeclineItem now require Read and
+  Edit rights on the referenced item, and Create and Edit rights on the
+  calendar that accepting writes to. Declining an occurrence, which removes
+  it, also requires Delete rights. SuppressReadReceipt requires Edit rights.
+  CancelCalendarItem and DeleteItem with meeting cancellations require Read
+  rights on the meeting.
+  Previously any user could answer, alter or move meeting requests and
+  calendar items in other mailboxes.
 
 
 Gromox 3.12 (2026-10-02)

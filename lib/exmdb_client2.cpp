@@ -483,7 +483,7 @@ void async_listener::connect_and_listen()
 	struct pollfd pfd = {fd.get(), POLLIN | POLLPRI};
 	size_t offset = 0;
 	std::string buff;
-	while (process_packet(fd, pfd, buff, offset) == 0)
+	while (!m_stop && process_packet(fd, pfd, buff, offset) == 0)
 		/* */;
 	/* Return closes @fd right away; the next call paces the reconnect. */
 }

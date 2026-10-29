@@ -1143,7 +1143,8 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 		requestFolder.target = m_auth_info.username;
 	std::string calendarDir = getDir(requestFolder);
 
-	if (!(permissions(calendarDir, requestFolder.folderId) & (frightsOwner | frightsCreate)))
+	auto calRights = permissions(calendarDir, requestFolder.folderId);
+	if (!(calRights & (frightsOwner | frightsCreate)))
 		throw EWSError::AccessDenied(E3130);
 
 	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
@@ -1181,6 +1182,8 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 		throw EWSError::ItemSave(E3475);
 
 	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *content);
+	if (existingMid && !(calRights & (frightsOwner | frightsEditAny)))
+		throw EWSError::AccessDenied(E3601);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3328);
 
@@ -4059,7 +4062,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	}
 
 	mlog(LV_INFO,
-		"gromox-audit: %s sent message \"%s\"%s in mailbox %s via EWS",
+		"ews-audit: %s sent message \"%s\"%s in mailbox %s",
 		znul(actor), txt2cstr(subject).c_str(),
 		txt2cstr(representation.c_str()).c_str(),
 		znul(m_auth_info.username));
@@ -4208,6 +4211,9 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	    cancelcontent->children.prcpts == nullptr ||
 	    cancelcontent->children.prcpts->count == 0)
 		return;
+	/* The cancellation carries the content of the meeting */
+	if (!(permissions(dir, parent.folderId) & frightsReadAny))
+		throw EWSError::AccessDenied(E3604);
 	if (basedate) {
 		message_content_ptr inst(cancelcontent->dup());
 		if (!inst)
@@ -4415,6 +4421,8 @@ void EWSContext::suppressReadReceipt(const tItemId &refId) const
 	sFolderSpec parent = resolveFolder(mid);
 	std::string dir = getDir(parent);
 	validate(dir, mid);
+	if (!(permissions(dir, parent.folderId) & frightsEditAny))
+		throw EWSError::AccessDenied(E3527);
 	const TAGGED_PROPVAL propval_buff[] = {
 		{PR_READ_RECEIPT_REQUESTED, deconst(&byte_value_zero)},
 		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&byte_value_zero)},

@@ -61,7 +61,7 @@ static void *tmrag_scanwork(void *);
 
 static int read_line(int sockd, char *buff, int length);
 static int connect_timer();
-static int add_timer(const char *command, int interval);
+static int add_timer(const char *, uint64_t, int);
 
 static BOOL cancel_timer(int timer_id);
 
@@ -198,7 +198,7 @@ static void *tmrag_scanwork(void *param)
 	return NULL;
 }
 
-static int add_timer(const char *command, int interval)
+static int add_timer(const char *actor, uint64_t msg_gcv, int interval)
 {
 	int len;
 	char temp_buff[MAX_CMD_LENGTH];
@@ -210,8 +210,8 @@ static int add_timer(const char *command, int interval)
 	hold.splice(hold.end(), g_back_list, g_back_list.begin());
 	bk_hold.unlock();
 	auto pback = &hold.front();
-	len = gx_snprintf(temp_buff, std::size(temp_buff), "ADD %d %s\r\n",
-			interval, command);
+	len = gx_snprintf(temp_buff, std::size(temp_buff), "ADD2 %d %s %llu\r\n",
+	      interval, actor, static_cast<unsigned long long>(msg_gcv));
 	if (len != write(pback->sockd, temp_buff, len)) {
 		close(pback->sockd);
 		pback->sockd = -1;

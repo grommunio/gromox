@@ -266,7 +266,7 @@ class EWSPlugin {
  */
 class EWSContext {
 	public:
-	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
+	enum State : uint8_t { S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY };
 
 	EWSContext(detail::ContextKey, const HTTP_AUTH_INFO &, const char *, uint64_t, EWSPlugin &);
 	~EWSContext();

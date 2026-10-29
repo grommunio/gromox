@@ -386,6 +386,20 @@ tbl_msgtimeindex_22[] =
 "CREATE UNIQUE INDEX msgtime_mt_idx ON msgtime_index (folder_id, mtime, message_id);"
 "CREATE UNIQUE INDEX msgtime_rt_idx ON msgtime_index (folder_id, rcvtime, message_id);"
 "CREATE UNIQUE INDEX msgtime_st_idx ON msgtime_index (folder_id, sndtime, message_id);",
+tbl_msgtimeindex_30[] =
+"CREATE TABLE msgtime_index ("
+"  folder_id INTEGER NOT NULL,"
+"  message_id INTEGER NOT NULL,"
+"  mtime INTEGER,"
+"  rcvtime INTEGER,"
+"  sndtime INTEGER,"
+"  PRIMARY KEY (folder_id, message_id),"
+"  FOREIGN KEY (folder_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE,"
+"  FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE UNIQUE INDEX msgtime_mt_idx ON msgtime_index (folder_id, mtime, message_id);"
+"CREATE UNIQUE INDEX msgtime_rt_idx ON msgtime_index (folder_id, rcvtime, message_id);"
+"CREATE UNIQUE INDEX msgtime_st_idx ON msgtime_index (folder_id, sndtime, message_id);"
+"CREATE INDEX msgtime_mid_idx ON msgtime_index (message_id);",
 tbl_rebuildmsgtimeindex_28[] =
 "DELETE FROM msgtime_index;"
 "INSERT INTO msgtime_index "
@@ -406,6 +420,9 @@ static constexpr char tbl_convidindex_27[] =
 
 static constexpr char tbl_fixupperms_29[] =
 "UPDATE permissions SET permission=(permission & ~0x2000) | 0x100 WHERE folder_id=9 AND (permission & 0x2000) <> 0";
+
+static constexpr char tbl_msgtimemidindex_30[] =
+"CREATE INDEX IF NOT EXISTS msgtime_mid_idx ON msgtime_index (message_id)";
 
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
@@ -521,7 +538,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"search_scopes", tbl_pvt_searchscopes_0},
 	{"search_result", tbl_pvt_searchresult_0},
 	{"autoreply_ts", tbl_pvt_autoreply_ts_11},
-	{"msgtime_index", tbl_msgtimeindex_22},
+	{"msgtime_index", tbl_msgtimeindex_30},
 	TABLE_END,
 };
 
@@ -566,7 +583,7 @@ static constexpr tbl_init tbl_pub_init_top[] = {
 	{"read_states", tbl_pub_readst_0},
 	{"read_cns", tbl_pub_readcn_0},
 	{"replguidmap", tbl_replguidmap_14},
-	{"msgtime_index", tbl_msgtimeindex_22},
+	{"msgtime_index", tbl_msgtimeindex_30},
 	TABLE_END,
 };
 
@@ -761,6 +778,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{27, tbl_convidindex_27},
 	{28, tbl_rebuildmsgtimeindex_28},
 	{29, tbl_fixupperms_29},
+	{30, tbl_msgtimemidindex_30},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -785,6 +803,7 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{26, tbl_pub_msgs_upgrade26},
 	{27, tbl_convidindex_27},
 	{28, tbl_rebuildmsgtimeindex_28},
+	{30, tbl_msgtimemidindex_30},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };

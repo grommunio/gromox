@@ -451,6 +451,8 @@ static void print_nttime(const char *str)
 	auto nt = strtoll(str, nullptr, 0);
 	auto ut = rop_util_nttime_to_unix(nt);
 	printf("%lld ... is unixtime %lld\n", LLD{nt}, LLD{ut});
+	auto rt = rop_util_nttime_to_rtime(nt);
+	printf("%lld ... is rtime %llu\n", LLD{nt}, LLU{rt});
 	char buf[64];
 	auto tm = localtime(&ut);
 	strftime(buf, std::size(buf), "%FT%T", tm);
@@ -461,7 +463,9 @@ static void print_unixtime(const char *str)
 {
 	time_t ut = strtoll(str, nullptr, 0);
 	auto nt = rop_util_unix_to_nttime(ut);
-	printf("%lld ... is nttime %lld\n", LLD{ut}, LLU{nt});
+	printf("%lld ... is nttime %llu\n", LLD{ut}, LLU{nt});
+	auto rt = rop_util_unix_to_rtime(ut);
+	printf("%lld ... is rtime %llu\n", LLD{ut}, LLU{rt});
 	char buf[64];
 	auto tm = localtime(&ut);
 	strftime(buf, std::size(buf), "%FT%T", tm);

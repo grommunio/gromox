@@ -21,11 +21,17 @@ using proptag_t = uint32_t;
 /* N.B.: PidLids are not propids (they are also 32-bit wide) */
 
 /*
- * MS-DTYP §2.3.3 specifies it as unsigned; though, WinAPI functions
+ * mapitime counts in units of 100ns since the NT epoch (1601-01-01).
+ * MS-DTYP §2.3.3 specifies it as unsigned, but WinAPI functions
  * for FILETIME<>SYSTIME conversions only allow for year <30828 (~63 bits).
  */
-#define TIME_FIXUP_CONSTANT_INT 11644473600LL
 using mapitime_t = uint64_t;
+
+/* rtime is units of 1min since the NT epoch. */
+#define RTIME_FACTOR 600000000LL
+
+/* The number of seconds between 1601-01-01 and the Unix epoch of 1970-01-01 */
+#define TIME_FIXUP_CONSTANT_INT 11644473600LL
 
 }
 

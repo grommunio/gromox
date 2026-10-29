@@ -14,8 +14,6 @@
 #define NFID_UPPER_PART 0xFF00000000000000ULL
 #define NFID_LOWER_PART 0x00FFFFFFFFFFFFFFULL
 
-#define RTIME_FACTOR 600000000LL
-
 extern GX_EXPORT uint16_t rop_util_get_replid(eid_t);
 extern GX_EXPORT uint64_t rop_util_get_gc_value(eid_t);
 extern GX_EXPORT GLOBCNT rop_util_get_gc_array(eid_t);

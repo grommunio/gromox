@@ -83,7 +83,7 @@ void command_overview()
 		"clear-rwz delmsg echo-maildir echo-username emptyfld "
 		"freeze get-freebusy get-msgcopy get-photo get-websettings "
 		"get-websettings-persistent get-websettings-recipients movemsg ping "
-		"purge-datafiles purge-softdelete recalc-sizes set-locale "
+		"purge-datafiles purge-orphan-perms purge-softdelete recalc-sizes set-locale "
 		"set-msgcopy set-photo set-websettings set-websettings-persistent "
 		"set-websettings-recipients sync-midb thaw unload vacuum\n");
 	fprintf(stderr, "Command chaining: ( command1 c1args... ) ( command2 c2args... )...\n");
@@ -605,6 +605,8 @@ int cmd_parser(int argc, char **argv)
 		return msgcopy::main(argc, argv);
 	else if (strcmp(argv[0], "purge-softdelete") == 0)
 		return purgesoftdel::main(argc, argv);
+	else if (strcmp(argv[0], "purge-orphan-perms") == 0)
+		return purgeperms::main(argc, argv);
 	else if (strcmp(argv[0], "set-locale") == 0)
 		return set_locale::main(argc, argv);
 	else if (strcmp(argv[0], "get-freebusy") == 0 || strcmp(argv[0], "gfb") == 0)

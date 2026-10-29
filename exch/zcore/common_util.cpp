@@ -90,7 +90,6 @@ char g_org_name[256];
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
 static thread_local std::unique_ptr<env_context> g_env_key;
-static char g_submit_command[1024];
 static constexpr char ZCORE_UA[] = PACKAGE_NAME "-zcore " PACKAGE_VERSION;
 
 bool cu_verify_columns_and_sorts(proptag_cspan cols, const SORTORDER_SET *psort_criteria)
@@ -353,14 +352,13 @@ bool common_util_exmdb_locinfo_from_string(const char *loc_string,
 
 void common_util_init(const char *org_name,
     unsigned int max_rcpt, size_t max_mail_len,
-    unsigned int max_rule_len, std::string &&smtp_url, const char *submit_command)
+    unsigned int max_rule_len, std::string &&smtp_url)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
 	g_max_rcpt = max_rcpt;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
 	g_smtp_url = std::move(smtp_url);
-	gx_strlcpy(g_submit_command, submit_command, std::size(g_submit_command));
 }
 
 int common_util_run(const char *data_path)
@@ -1293,7 +1291,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 			identity = representing;
 		}
 	}
-	mlog(LV_INFO, "gromox-audit: %s sent message \"%s\"%s%s in mailbox %s via ZCORE",
+	mlog(LV_INFO, "zcore-audit: %s sent message \"%s\"%s%s in mailbox %s",
 		audit_actor == nullptr ? "(unknown)" : audit_actor,
 		txt2cstr(subject).c_str(), representation,
 		txt2cstr(identity).c_str(), store.get_account());
@@ -2105,11 +2103,6 @@ ec_error_t cu_vcf_to_message2(store_object &store, char *vcf_data,
 const char* common_util_get_default_timezone()
 {
 	return GROMOX_FALLBACK_TIMEZONE;
-}
-
-const char* common_util_get_submit_command()
-{
-	return g_submit_command;
 }
 
 void *cu_read_storenamedprop(const char *dir, const GUID &guid,

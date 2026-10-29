@@ -73,7 +73,6 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"max_mail_length", "64M", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"rop_debug", "0"},
-	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
@@ -140,7 +139,6 @@ bool PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 	int max_rule_len;
 	int ping_interval;
 	char org_name[256];
-	char submit_command[1024];
 	
 	/* path contains the config files directory */
 	switch (reason) {
@@ -189,7 +187,6 @@ bool PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 				str, e.what());
 			return false;
 		}
-		gx_strlcpy(submit_command, pfile->get_value("submit_command"), std::size(submit_command));
 		async_num = pfile->get_ll("async_threads_num");
 
 		mlog(LV_INFO, "emsmdb: x500=\"%s\", max_rcpt=%d, "
@@ -224,7 +221,7 @@ bool PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 			return FALSE;
 		}
 		common_util_init(org_name, max_rcpt, max_length,
-			max_rule_len, std::move(smtp_url), submit_command);
+			max_rule_len, std::move(smtp_url));
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
 		if (bounce_gen_init(get_config_path(), get_data_path(),

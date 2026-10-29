@@ -480,7 +480,7 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 			}
 			auto ucount = users.emplace(emplaced.first->second.username, 0);
 			++ucount.first->second;
-		}  catch (std::bad_alloc&) {
+		} catch (const std::bad_alloc &) {
 			hl_hold.unlock();
 			nsp_bridge_unbind(ctx.session_guid);
 			return ctx.failure_response(ecServerOOM);

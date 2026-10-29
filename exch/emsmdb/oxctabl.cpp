@@ -780,7 +780,7 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 		if (!exmdb_client->empty_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id))
 			return ecError;
-		mlog(LV_INFO, "gromox-audit: %s cleared permissions on folder \"%s\" in %s via EMSMDB",
+		mlog(LV_INFO, "emsmdb-audit: %s cleared permissions on folder \"%s\" in %s",
 			actor, txt2cstr(folder_name).c_str(), mailbox.c_str());
 	}
 	if (count == 0)
@@ -816,7 +816,7 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	if (!exmdb_client->update_folder_permission(plogon->get_dir(),
 	    folder_id, 0, count, prow))
 		return ecError;
-	mlog(LV_INFO, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EMSMDB",
+	mlog(LV_INFO, "emsmdb-audit: %s changed permissions on folder \"%s\" in %s",
 		actor, txt2cstr(folder_name).c_str(), mailbox.c_str());
 	return ecSuccess;
 }

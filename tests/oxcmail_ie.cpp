@@ -1865,7 +1865,7 @@ struct pgp_block {
 static int openpgp_roundtrip3(message_content &mc, oxcmail_converter &cvt,
     const pgp_block &ct_info, const char *out_class)
 {
-	assert(mc.proplist.set(PR_MESSAGE_CLASS, ct_info.msg_class) == ecSuccess);
+	assert(mc.proplist.set(PR_MESSAGE_CLASS, out_class) == ecSuccess);
 	auto output = vmime::make_shared<vmime::message>();
 	assert(cvt.mapi_to_inet(mc, output) == ecSuccess);
 	auto &vhdr = *output->getHeader();
@@ -1874,6 +1874,8 @@ static int openpgp_roundtrip3(message_content &mc, oxcmail_converter &cvt,
 	assert(vhdr.findField("Bcc") == nullptr);
 	auto param = phf->findParameter("protocol");
 	assert(param != nullptr && param->getValue().generate() == ct_info.ct_protocol);
+	/* The signature covers these bytes; they must not be re-serialized. */
+	assert(output->generate().find(ct_info.payload) != std::string::npos);
 	return EXIT_SUCCESS;
 }
 
@@ -1944,17 +1946,6 @@ static int openpgp_roundtrip()
 		"multipart/signed", "application/pgp-signature",
 		"IPM.Note.SMIME.MultipartSigned",
 		"IPM.Note.GpgOL.MultipartSigned",
-		"IPM.Note.InfoPathForm.GpgOL.SMIME.MultipartSigned",
-
-		"--pgp-boundary\r\nContent-Type: application/pgp-encrypted\r\n\r\nVersion: 1\r\n"
-		"--pgp-boundary\r\nContent-Type: application/octet-stream\r\n\r\n"
-		"-----BEGIN PGP MESSAGE-----\r\n\r\nopaque-ciphertext\r\n-----END PGP MESSAGE-----\r\n"
-		"--pgp-boundary--\r\n",
-	},
-	{
-		"multipart/encrypted", "application/pgp-encrypted",
-		"IPM.Note.GpgOL.MultipartEncrypted",
-		"IPM.Note.GpgOL.MultipartEncrypted",
 		"IPM.Note.InfoPathForm.GpgOLS.SMIME.MultipartSigned",
 
 		"--pgp-boundary\r\nContent-Type: text/plain;\r\n\tcharset=utf-8\r\n"
@@ -1962,6 +1953,17 @@ static int openpgp_roundtrip()
 		"First line=20\r\nSecond =C3=A4 line\r\n\r\n"
 		"--pgp-boundary\r\nContent-Type: application/pgp-signature\r\n\r\n"
 		"-----BEGIN PGP SIGNATURE-----\r\n\r\nopaque-signature\r\n-----END PGP SIGNATURE-----\r\n"
+		"--pgp-boundary--\r\n",
+	},
+	{
+		"multipart/encrypted", "application/pgp-encrypted",
+		"IPM.Note.GpgOL.MultipartEncrypted",
+		"IPM.Note.GpgOL.MultipartEncrypted",
+		"IPM.Note.InfoPathForm.GpgOL.SMIME.MultipartSigned",
+
+		"--pgp-boundary\r\nContent-Type: application/pgp-encrypted\r\n\r\nVersion: 1\r\n"
+		"--pgp-boundary\r\nContent-Type: application/octet-stream\r\n\r\n"
+		"-----BEGIN PGP MESSAGE-----\r\n\r\nopaque-ciphertext\r\n-----END PGP MESSAGE-----\r\n"
 		"--pgp-boundary--\r\n",
 	}};
 	auto ret = openpgp_roundtrip2(info[0]);

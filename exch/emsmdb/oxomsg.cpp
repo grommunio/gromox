@@ -263,7 +263,7 @@ static void oxomsg_audit_send(const char *actor, const char *mailbox,
 			represented = delegator;
 		}
 	}
-	mlog(LV_INFO, "gromox-audit: %s %s message \"%s\"%s%s%s in mailbox %s via EMSMDB",
+	mlog(LV_INFO, "emsmdb-audit: %s %s message \"%s\"%s%s%s in mailbox %s",
 		actor, verb, txt2cstr(subject).c_str(), event, mode,
 		represented, mailbox);
 }
@@ -275,7 +275,6 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	BOOL b_marked;
 	ems_objtype object_type;
 	uint16_t rcpt_num;
-	char command_buff[1024];
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -425,12 +424,8 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	
 	auto deferred_time = props_to_defer_interval(tmp_propvals);
 	if (deferred_time > 0) {
-		snprintf(command_buff, 1024, "%s %s %llu",
-		         common_util_get_submit_command(),
-		         plogon->get_account(),
-		         static_cast<unsigned long long>(rop_util_get_gc_value(pmessage->get_id())));
-		timer_id = common_util_add_timer(
-			command_buff, deferred_time);
+		timer_id = common_util_add_timer(plogon->get_account(),
+		           pmessage->get_id().gcv(), deferred_time);
 		if (0 == timer_id) {
 			exmdb_client->clear_submit(dir, pmessage->get_id(), b_unsent);
 			return ecError;

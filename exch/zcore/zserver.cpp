@@ -915,7 +915,7 @@ static ec_error_t zs_openstoreentry_1(store_object &store, eid_t folder_id,
 	}
 	std::string mailbox = store.b_private ?
 		std::string("mailbox ") + store.get_account() : "public folders";
-	mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via ZCORE",
+	mlog(LV_INFO, "zcore-audit: %s accessed message \"%s\" in %s",
 		uinfo.get_username(), txt2cstr(subject).c_str(),
 		mailbox.c_str());
 	return ecSuccess;
@@ -1372,7 +1372,7 @@ ec_error_t zs_modifypermissions(GUID hsession,
 		return ret;
 	std::string mailbox = pfolder->pstore->b_private ?
 		std::string("mailbox ") + pfolder->pstore->get_account() : "public folders";
-	mlog(LV_INFO, "gromox-audit: %s changed folder permissions in %s via ZCORE",
+	mlog(LV_INFO, "zcore-audit: %s changed folder permissions in %s",
 		pinfo->get_username(), mailbox.c_str());
 	return ecSuccess;
 }
@@ -1474,7 +1474,7 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 			mlog(LV_DEBUG, "zs_openstore: get_store_handle.1 %u: %s",
 				user_id, mapi_strerror(err));
 		if (err == ecSuccess)
-			mlog(LV_INFO, "gromox-audit: %s accessed mailbox %s via ZCORE",
+			mlog(LV_INFO, "zcore-audit: %s accessed mailbox %s",
 				pinfo->get_username(), pinfo->get_username());
 		return err;
 	}
@@ -1519,7 +1519,7 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		mlog(LV_DEBUG, "zs_openstore: get_store_handle.2 %u: %s",
 			user_id, mapi_strerror(err));
 	if (err == ecSuccess)
-		mlog(LV_INFO, "gromox-audit: %s accessed mailbox %s via ZCORE",
+		mlog(LV_INFO, "zcore-audit: %s accessed mailbox %s",
 			pinfo->get_username(), username.c_str());
 	return err;
 }
@@ -3413,7 +3413,6 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	BOOL b_marked;
 	zs_objtype mapi_type;
 	uint16_t rcpt_num;
-	char command_buff[1024];
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = zs_query_session(hsession);
@@ -3525,11 +3524,8 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			return ecAccessDenied;
 		auto deferred_time = props_to_defer_interval(tmp_propvals);
 		if (deferred_time > 0) {
-			snprintf(command_buff, 1024, "%s %s %llu",
-			         common_util_get_submit_command(), actor,
-			         LLU{rop_util_get_gc_value(pmessage->get_id())});
-			timer_id = system_services_add_timer(
-					command_buff, deferred_time);
+			timer_id = system_services_add_timer(actor,
+			           pmessage->get_id().gcv(), deferred_time);
 			if (0 == timer_id) {
 				exmdb_client->clear_submit(pstore->get_dir(),
 					pmessage->get_id(), b_unsent);

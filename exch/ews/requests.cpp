@@ -319,7 +319,7 @@ void process(mConvertIdRequest &&request, XMLElement *response, EWSContext &ctx)
 			data.ResponseMessages.emplace_back(std::move(msg));
 		}
 		data.ResponseMessages.back().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -851,7 +851,7 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 		throw EWSError::InternalServerError(E3317);
 
 	if (changed) {
-		mlog(LV_INFO, "gromox-audit: %s added delegates to mailbox %s via EWS",
+		mlog(LV_INFO, "ews-audit: %s added delegates to mailbox %s",
 			znul(actor), znul(mailbox));
 	}
 
@@ -908,7 +908,7 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 		throw EWSError::InternalServerError(E3319);
 
 	if (changed) {
-		mlog(LV_INFO, "gromox-audit: %s removed delegates from mailbox %s via EWS",
+		mlog(LV_INFO, "ews-audit: %s removed delegates from mailbox %s",
 			znul(actor), znul(mailbox));
 	}
 
@@ -962,7 +962,7 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 	}
 
 	if (changed) {
-		mlog(LV_INFO, "gromox-audit: %s updated delegates in mailbox %s via EWS",
+		mlog(LV_INFO, "ews-audit: %s updated delegates in mailbox %s",
 			znul(actor), znul(mailbox));
 	}
 	data.success();
@@ -992,7 +992,7 @@ void process(mCreateFolderRequest &&request, XMLElement *response, const EWSCont
 		mCreateFolderResponseMessage msg;
 		msg.Folders.emplace_back(ctx.create(dir, parent, folder));
 		data.ResponseMessages.emplace_back(std::move(msg)).success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1006,9 +1006,17 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 	sFolderSpec pf = ctx.resolveFolder(oid);
 	std::string rdir = ctx.getDir(pf);
 	ctx.validate(rdir, oid);
+	auto rights = ctx.permissions(rdir, pf.folderId);
+	if (!(rights & frightsEditAny))
+		throw EWSError::AccessDenied(E3525);
+	/* The response is built from the content of the referenced item */
+	if (!(rights & frightsReadAny))
+		throw EWSError::AccessDenied(E3602);
 	ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
 	/* A declined occurrence goes once the reply is out */
 	if (resp == respDeclined && send_message) {
+		if (!(rights & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3131);
 		declinedOcc.emplace(oid);
 		return;
 	}
@@ -1039,6 +1047,19 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	sFolderSpec pf = ctx.resolveFolder(mid);
 	std::string rdir = ctx.getDir(pf);
 	ctx.validate(rdir, mid);
+	auto rights = ctx.permissions(rdir, pf.folderId);
+	if (!(rights & frightsEditAny))
+		throw EWSError::AccessDenied(E3526);
+	if (!(rights & frightsReadAny))
+		throw EWSError::AccessDenied(E3602);
+	/* Accepting writes the meeting into the calendar of the same store */
+	if ((resp == respAccepted || resp == respTentative) &&
+	    pf.location == sFolderSpec::PRIVATE) {
+		auto cal = ctx.permissions(rdir, eid_t(1, PRIVATE_FID_CALENDAR));
+		if (!(cal & frightsOwner) &&
+		    (cal & (frightsCreate | frightsEditAny)) != (frightsCreate | frightsEditAny))
+			throw EWSError::AccessDenied(E3600);
+	}
 	const char *username = ctx.effectiveUser(pf);
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	auto rstat = EWSContext::construct<uint32_t>(resp);
@@ -1067,7 +1088,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	if (resp == respAccepted || resp == respTentative)
 		ctx.createCalendarItemFromMeetingRequest(refId, resp);
 	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
-	if (pf.location == sFolderSpec::PRIVATE &&
+	if (pf.location == sFolderSpec::PRIVATE && rights & frightsDeleteAny &&
 	    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
 		refDir = rdir;
 		refMid = mid;
@@ -1259,7 +1280,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1471,14 +1492,24 @@ void process(mDeleteFolderRequest &&request, XMLElement *response, const EWSCont
 			uint64_t newParentId = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
 			ctx.moveCopyFolder(dir, folder, newParentId, accountId, false);
 		} else {
+			if (!(ctx.permissions(dir, folder.folderId) & frightsOwner))
+				throw EWSError::AccessDenied(E3573);
 			bool hard = request.DeleteType == Enum::HardDelete;
+			/* exmdb only deletes empty folders, Exchange takes the content along */
+			uint32_t flags = DEL_MESSAGES | DEL_FOLDERS | DEL_ASSOCIATED |
+			                 (hard ? DELETE_HARD_DELETE : 0);
+			BOOL partial;
+			if (!ctx.plugin().exmdb.empty_folder(dir.c_str(), CP_ACP,
+			    ctx.effectiveUser(folder), folder.folderId, flags,
+			    &partial) || partial)
+				throw EWSError::CannotDeleteObject(E3574);
 			BOOL result;
 			if (!ctx.plugin().exmdb.delete_folder(dir.c_str(), CP_ACP,
 			    folder.folderId, hard ? TRUE : false, &result) || !result)
 				throw EWSError::CannotDeleteObject(E3165);
 		}
 		data.ResponseMessages.emplace_back().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1557,7 +1588,7 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 
 			data.ResponseMessages.emplace_back().success();
 		}
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1594,7 +1625,7 @@ void process(mEmptyFolderRequest &&request, XMLElement *response, const EWSConte
 		    username, folder.folderId, deleteFlags, &partial) || partial)
 			throw EWSError::CannotEmptyFolder(E3180);
 		data.ResponseMessages.emplace_back().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1681,7 +1712,7 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 		msg.RootFolder->TotalItemsInView = rowCount;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1881,7 +1912,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 			total : rowCount;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -1952,7 +1983,7 @@ void process(mGetAttachmentRequest &&request, XMLElement *response, const EWSCon
 		msg.Attachments.emplace_back(ctx.loadAttachment(dir, aid));
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -2018,7 +2049,7 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, shape));
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -2273,10 +2304,10 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 			}
 		}
 		fbr.ResponseMessage.emplace().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
 		fbr.ResponseMessage.emplace(err);
-	} catch(const std::exception& err) {
+	} catch (const std::exception &err) {
 		mlog(LV_ERR, "[ews#%d] failed to resolve availability for %s: %s",
 		    ctx.context_id(), MailboxData.Email.Address.c_str(), err.what());
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
@@ -2857,7 +2888,7 @@ void process(const mBaseMoveCopyFolder &request, XMLElement *response, const EWS
 			                    {return static_cast<mFolderInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, shape));
 		msg.success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		std::visit([&](auto& d){d.ResponseMessages.emplace_back(err);}, data);
 	}
 
@@ -2907,7 +2938,7 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 		if (request.ReturnNewItemIds.value_or(true))
 			msg.Items.emplace_back(ctx.loadItem(dir, dstFolder.folderId, newItemId, shape));
 		msg.success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		std::visit([&](auto& d){d.ResponseMessages.emplace_back(err);}, data);
 	}
 
@@ -2962,7 +2993,7 @@ void process(mMarkAsJunkRequest &&request, XMLElement *response, const EWSContex
 			msg.MovedItemId = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> { return i.ItemId; }, movedItem);
 		}
 		msg.success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -3223,7 +3254,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 		msg.IncludesLastItemInRange = !clipped;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 	data.serialize(response);
@@ -3297,12 +3328,12 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 		if (parentFolder.location == sFolderSpec::PRIVATE)
 			mailbox = "mailbox " + *parentFolder.target;
 
-		mlog(LV_INFO, "gromox-audit: %s accessed message \"%s\" in %s via EWS",
+		mlog(LV_INFO, "ews-audit: %s accessed message \"%s\" in %s",
 			znul(actor), txt2cstr(subject).c_str(), mailbox.c_str());
 
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	} catch (const std::exception &) {
 		data.ResponseMessages.emplace_back(EWSError::ItemCorrupt(E3303));
@@ -3546,7 +3577,7 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 			ctx.create(dir, folder, *content);
 
 		data.ResponseMessages.emplace_back().success();
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -3607,14 +3638,14 @@ void process(mUpdateFolderRequest &&request, XMLElement *response, const EWSCont
 			if (folder.location == sFolderSpec::PRIVATE)
 				mailbox = "mailbox " + *folder.target;
 
-			mlog(LV_INFO, "gromox-audit: %s changed permissions on folder \"%s\" in %s via EWS",
+			mlog(LV_INFO, "ews-audit: %s changed permissions on folder \"%s\" in %s",
 				znul(actor), txt2cstr(folder_name).c_str(),
 				mailbox.c_str());
 		}
 
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -3946,7 +3977,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			process_upditem_2(request, ctx, dir, username, mid);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
-	} catch(const EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 

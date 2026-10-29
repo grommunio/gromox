@@ -83,7 +83,7 @@ ab::const_base_ref ab::get(int32_t base_id)
 		if (!res.second)
 			return nullptr;
 		base = res.first->second;
-	} catch (std::bad_alloc &) {
+	} catch (const std::bad_alloc &) {
 		return nullptr;
 	}
 	lock.unlock();
@@ -216,7 +216,7 @@ bool ab_base::load()
 		domain.id = domid;
 		if (!mysql_adaptor_get_domain_info(domid, domain.info))
 			return false;
-	} catch (std::exception &) {
+	} catch (const std::exception &) {
 		return false;
 	}
 	if (m_users.size() > minid::MAXVAL)

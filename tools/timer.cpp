@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cerrno>
 #include <condition_variable>
 #include <csignal>
@@ -86,6 +87,7 @@ static std::mutex g_list_lock /*(g_exec_list)*/, g_connection_lock /*(g_connecti
 static std::condition_variable g_waken_cond;
 static const char *opt_config_file;
 static unsigned int opt_show_version;
+static std::string g_submit_command;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
@@ -97,6 +99,7 @@ static constexpr HXoption g_options_table[] = {
 static constexpr cfg_directive timer_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR},
 	{"running_identity", RUNNING_IDENTITY},
+	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"timer_hosts_allow", ""}, /* default set added later during startup */
 	{"timer_listen", "unix:/run/gromox/timer.sock"},
 	{"timer_log_file", "-"},
@@ -300,6 +303,7 @@ int main(int argc, char **argv)
 		pconfig->get_ll("timer_log_level"),
 		pconfig->get_value("running_identity"));
 	g_list_path = pconfig->get_value("timer_state_path");
+	g_submit_command = pconfig->get_value("submit_command");
 	auto listen_port = pconfig->get_ll("timer_listen_port");
 	auto listen_ip = pconfig->get_value("timer_listen_ip");
 	g_threads_num = pconfig->get_ll("timer_threads_num");
@@ -340,7 +344,7 @@ int main(int argc, char **argv)
 			tmr.exec_time = pitem[i].exectime;
 			tmr.command = pitem[i].command;
 			put_timer(std::move(tmr));
-		} catch (std::bad_alloc &) {
+		} catch (const std::bad_alloc &) {
 		}
 	}
 	pfile.reset();
@@ -478,6 +482,13 @@ static void execute_timer(TIMER *ptimer)
 
 enum { X_STOP, X_LOOP };
 
+static bool disallowed_chars(std::string_view sv)
+{
+	return std::any_of(sv.begin(), sv.end(), [](unsigned char c) {
+	       	return c < 0x21 || c == 0x7f || isspace(c) || c == '"' || c == '\\';
+	       });
+}
+
 static int tmr_thrwork_1()
 {
 	char *pspace, temp_line[2048];
@@ -523,17 +534,38 @@ static int tmr_thrwork_1()
 			}
 			li_hold.unlock();
 			pconnection->sk_write(removed_timer ? "TRUE\r\n" : "FALSE\r\n");
-		} else if (0 == strncasecmp(pconnection->line, "ADD ", 4)) {
-			pspace = strchr(pconnection->line + 4, ' ');
+		} else if (0 == strncasecmp(pconnection->line, "ADD2 ", 5)) {
+			pspace = strchr(&pconnection->line[5], ' ');
 			if (NULL == pspace) {
 				pconnection->sk_write("FALSE 1\r\n");
 				continue;
 			}
 			*pspace++ = '\0';
 
-			int exec_interval = strtol(pconnection->line + 4, nullptr, 0);
-			if (exec_interval <= 0 || strlen(pspace) >= COMMAND_LENGTH) {
+			int exec_interval = strtol(&pconnection->line[5], nullptr, 0);
+			if (exec_interval <= 0) {
 				pconnection->sk_write("FALSE 2\r\n");
+				continue;
+			}
+			char *start_ptr = pspace;
+			pspace = strchr(start_ptr, ' ');
+			if (pspace == nullptr || pspace == start_ptr) {
+				pconnection->sk_write("FALSE 1\r\n");
+				continue;
+			}
+			std::string actor(start_ptr, pspace - start_ptr);
+			*pspace++ = '\0';
+			/* parse_line would interpret quotes and backslashes */
+			if (disallowed_chars(actor)) {
+				pconnection->sk_write("FALSE 1\r\n");
+				continue;
+			}
+			char *end = nullptr;
+			errno = 0;
+			auto msg_gcv = strtoull(pspace, &end, 0);
+			if (*pspace < '0' || *pspace > '9' || *end != '\0' ||
+			    errno != 0 || msg_gcv == 0) {
+				pconnection->sk_write("FALSE 1\r\n");
 				continue;
 			}
 
@@ -541,9 +573,15 @@ static int tmr_thrwork_1()
 			tmr.t_id = ++g_last_tid;
 			tmr.exec_time = exec_interval + time(nullptr);
 			try {
-				tmr.command = pspace;
+				tmr.command = g_submit_command + " " + actor + " " +
+				              std::to_string(msg_gcv);
 			} catch (const std::bad_alloc &) {
 				pconnection->sk_write("FALSE 3\r\n");
+				continue;
+			}
+			/* srcitem::command bounds what the state file can hold */
+			if (tmr.command.size() >= COMMAND_LENGTH) {
+				pconnection->sk_write("FALSE 2\r\n");
 				continue;
 			}
 
