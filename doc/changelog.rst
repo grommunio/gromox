@@ -13,6 +13,8 @@ Fixes:
   are not allowed to see private items.
 * EWS: GetItem now returns the attendees of a meeting when the shape asks for
   them without calendar:IsMeeting.
+* imap: The greeting on implicit TLS connections advertised a truncated
+  capability list.
 
 
 Gromox 3.13 (2026-10-28)
