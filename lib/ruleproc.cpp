@@ -1284,18 +1284,24 @@ static ec_error_t rx_set_sender(TPROPVAL_ARRAY &props, const char *addr,
 	return ecSuccess;
 }
 
+static constexpr char rx_loop_hdr[] = "X-MS-Exchange-Inbox-Rules-Loop";
+
 /*
- * Whether a forward by a rule already reached @rcpt. Forwards and alerts name
- * their recipients in Delivered-To, which stops forwarding loops.
+ * Whether a forward by a rule already reached @rcpt, which stops forwarding
+ * loops. Redirects and alerts name their recipients in Delivered-To. Forwards
+ * name every mailbox they passed in X-MS-Exchange-Inbox-Rules-Loop, as EXC
+ * does.
  */
 static bool rx_delivered_before(const MIME &head, const char *rcpt)
 {
-	auto num = head.get_field_num("Delivered-To");
-	for (int i = 0; i < num; ++i) {
-		std::string dvto;
-		if (head.search_field("Delivered-To", i, dvto) &&
-		    strcasecmp(dvto.c_str(), rcpt) == 0)
-			return true;
+	for (auto name : {"Delivered-To", rx_loop_hdr}) {
+		auto num = head.get_field_num(name);
+		for (int i = 0; i < num; ++i) {
+			std::string v;
+			if (head.search_field(name, i, v) &&
+			    strcasecmp(v.c_str(), rcpt) == 0)
+				return true;
+		}
 	}
 	return false;
 }
@@ -1540,6 +1546,7 @@ static ec_error_t rx_fwd_new(rxparam &par,
     const std::vector<std::string> &rcpt_list,
     const std::vector<std::string> &rcpt_names)
 {
+	std::vector<std::string> loop;
 	auto eml = par.get_eml();
 	if (eml != nullptr) {
 		MAIL orig;
@@ -1551,6 +1558,12 @@ static ec_error_t rx_fwd_new(rxparam &par,
 				"message was already delivered to %s",
 				par.orig_dir.c_str(), par.ev_to);
 			return ecSuccess;
+		}
+		auto num = head != nullptr ? head->get_field_num(rx_loop_hdr) : 0;
+		for (int i = 0; i < num; ++i) {
+			std::string v;
+			if (head->search_field(rx_loop_hdr, i, v))
+				loop.push_back(std::move(v));
 		}
 	}
 	message_content_ptr fwd(message_content_init());
@@ -1579,8 +1592,9 @@ static ec_error_t rx_fwd_new(rxparam &par,
 	auto head = imail.get_head();
 	if (head == nullptr)
 		return ecError;
-	for (const auto &eaddr : rcpt_list)
-		head->append_field("Delivered-To", eaddr.c_str());
+	for (const auto &v : loop)
+		head->append_field(rx_loop_hdr, v.c_str());
+	head->append_field(rx_loop_hdr, par.ev_to);
 	err = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, rcpt_list);
 	if (err != ecSuccess)
 		mlog(LV_ERR, "ruleproc: OP_FORWARD cu_send_mail: %s",
