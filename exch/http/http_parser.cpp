@@ -37,6 +37,7 @@
 #include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <openssl/err.h>
@@ -173,11 +174,60 @@ class VCONN_REF {
 }
 
 std::string g_http_remote_host_hdr;
+static std::mutex g_remote_host_trusted_lock;
+static std::vector<in6_addr> g_remote_host_trusted;
 unsigned int g_http_debug;
 size_t g_rqbody_flush_size, g_rqbody_max_size;
 bool g_enforce_auth;
 time_duration g_http_basic_auth_validity;
 static thread_local http_context *g_context_key;
+
+/* Parse an IPv6 or IPv4 address. An IPv4 address becomes a v4-mapped IPv6 address. */
+static bool http_parse_addr(const char *s, in6_addr &a)
+{
+	if (inet_pton(AF_INET6, s, &a) == 1)
+		return true;
+	in_addr a4;
+	if (inet_pton(AF_INET, s, &a4) != 1)
+		return false;
+	a = {};
+	a.s6_addr[10] = a.s6_addr[11] = 0xFF;
+	memcpy(&a.s6_addr[12], &a4, sizeof(a4));
+	return true;
+}
+
+/* Replace the list of http_remote_host_trusted. On error, the old list stays. */
+bool http_parser_set_remote_host_trusted(const char *list) try
+{
+	std::vector<in6_addr> v;
+	for (auto &&s : gx_split_ws(list)) {
+		in6_addr a;
+		if (!http_parse_addr(s.c_str(), a)) {
+			mlog(LV_ERR, "http_remote_host_trusted: \"%s\" is not an IPv6/IPv4 address", s.c_str());
+			return false;
+		}
+		v.push_back(a);
+	}
+	std::lock_guard hold(g_remote_host_trusted_lock);
+	g_remote_host_trusted = std::move(v);
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1987: ENOMEM");
+	return false;
+}
+
+static bool http_remote_host_trusted(const char *peer)
+{
+	in6_addr a;
+	if (!http_parse_addr(peer, a))
+		return false;
+	std::lock_guard hold(g_remote_host_trusted_lock);
+	for (const auto &t : g_remote_host_trusted)
+		if (memcmp(&t, &a, sizeof(a)) == 0)
+			return true;
+	return false;
+}
+
 static std::optional<http_parser> g_parser;
 static listener_ctx http_listen_ctx;
 
@@ -776,10 +826,23 @@ tproc_status http_parser::rdhead_mt(http_context *pcontext, char *line,
 	} else if (g_http_remote_host_hdr.size() > 0 &&
 	    strcasecmp(field_name, g_http_remote_host_hdr.c_str()) == 0) {
 		auto &cn = pcontext->connection;
-		gx_strlcpy(cn.proxy_addr, cn.client_addr, std::size(cn.proxy_addr));
-		cn.proxy_port = cn.client_port;
-		snprintf(cn.client_addr, std::size(cn.client_addr), "%.*s", static_cast<int>(tmp_len), ptoken);
-		cn.client_port = 0;
+		/*
+		 * proxy_port is 0 until the header is accepted for the first
+		 * time on this connection. Then proxy_addr keeps the socket
+		 * peer for the subsequent requests (proxies reuse connections
+		 * for different clients).
+		 */
+		if (cn.proxy_port == 0 && http_remote_host_trusted(cn.client_addr)) {
+			gx_strlcpy(cn.proxy_addr, cn.client_addr, std::size(cn.proxy_addr));
+			cn.proxy_port = cn.client_port;
+		}
+		if (cn.proxy_port != 0) {
+			snprintf(cn.client_addr, std::size(cn.client_addr), "%.*s", static_cast<int>(tmp_len), ptoken);
+			cn.client_port = 0;
+		} else if (g_http_debug) {
+			pcontext->log(LV_DEBUG, "%s ignored: peer is not in http_remote_host_trusted",
+				g_http_remote_host_hdr.c_str());
+		}
 	} else {
 		if (strcasecmp(field_name, "Connection") == 0 &&
 		    strncasecmp(ptoken, "keep-alive", tmp_len) == 0)

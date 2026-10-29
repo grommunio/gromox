@@ -81,6 +81,7 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"http_basic_auth_cred_caching", "1min", CFG_TIME_NS},
 	{"http_fd_limit", "0", CFG_SIZE},
 	{"http_remote_host_hdr", ""},
+	{"http_remote_host_trusted", "::1 127.0.0.1"},
 	{"istore_standalone", "0"},
 	{"malloc_trim_interval", "10min", CFG_TIME},
 	CFG_TABLE_END,
@@ -149,7 +150,7 @@ static bool http_reload_config(std::shared_ptr<config_file> xcfg = nullptr,
 		return false;
 	g_http_remote_host_hdr = znul(xcfg->get_value("http_remote_host_hdr"));
 	g_http_basic_auth_validity = std::chrono::duration_cast<time_duration>(std::chrono::nanoseconds(xcfg->get_ll("http_basic_auth_cred_caching")));
-	return true;
+	return http_parser_set_remote_host_trusted(znul(xcfg->get_value("http_remote_host_trusted")));
 }
 
 int main(int argc, char **argv)
