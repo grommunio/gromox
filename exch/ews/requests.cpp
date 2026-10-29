@@ -2292,7 +2292,16 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 	auto end   = clock::to_time_t(windowEnd);
 
 	for (const tMailboxData &MailboxData : request.MailboxDataArray) try {
-		std::string maildir = ctx.get_maildir(MailboxData.Email);
+		std::string maildir;
+		try {
+			maildir = ctx.get_maildir(MailboxData.Email);
+		} catch (const EWSError &) {
+			/* Not a local mailbox: report an empty view like Exchange */
+			auto &fbr = data.FreeBusyResponseArray->emplace_back();
+			fbr.FreeBusyView.emplace();
+			fbr.ResponseMessage.emplace(EWSError::MailRecipientNotFound(E3499));
+			continue;
+		}
 		tFreeBusyView fbv(ctx.auth_info().username, maildir.c_str(), start, end);
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
 		if (fbr.FreeBusyView && fbr.FreeBusyView->CalendarEventArray) {
