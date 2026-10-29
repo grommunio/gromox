@@ -381,6 +381,7 @@ class EWSContext {
 	static char *cpystr(const std::string_view);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);
+	static bool has_rcpt_address(const MESSAGE_CONTENT &);
 	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);
 
 private:

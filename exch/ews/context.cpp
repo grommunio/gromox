@@ -3189,6 +3189,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 		     entry != nullptr;
 		     entry = entry->NextSiblingElement("Attendee")) {
 			tAttendee att(entry);
+			if (att.empty_address())
+				continue;
 			auto rcpt = rcpts->emplace();
 			att.Mailbox.mkRecipient(rcpt, type);
 			/* update_message_instance_rcpts wants PR_ROWID */
@@ -3984,6 +3986,30 @@ const BINARY *EWSContext::findContactPhoto(const std::string &dir,
 }
 
 /**
+ * @brief      Check whether a message has a recipient with an address
+ *
+ * Clients leave attendee rows without any address behind. A meeting
+ * message whose recipients are all like that has nobody to go to, and
+ * submitting it would produce an <invalid@invalid> envelope recipient.
+ * Where such rows sit next to real attendees, send() leaves them out of
+ * the envelope.
+ */
+bool EWSContext::has_rcpt_address(const MESSAGE_CONTENT &content)
+{
+	if (content.children.prcpts == nullptr)
+		return false;
+	for (const auto &rcpt : *content.children.prcpts) {
+		auto a = rcpt.get<const char>(PR_SMTP_ADDRESS);
+		if (a != nullptr && *a != '\0')
+			return true;
+		a = rcpt.get<const char>(PR_EMAIL_ADDRESS);
+		if (a != nullptr && *a != '\0')
+			return true;
+	}
+	return false;
+}
+
+/**
  * @brief     Send message
  *
  * @param     dir      Home directory the message is associtated with
@@ -4019,7 +4045,8 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 		if (!addr.EmailAddress)
 			continue;
 		normalize(addr);
-		rcpts.emplace_back(*addr.EmailAddress);
+		if (!addr.EmailAddress->empty())
+			rcpts.emplace_back(*addr.EmailAddress);
 	}
 	auto err = cu_send_vmail(mail, m_plugin.smtp_url.c_str(),
 	           m_auth_info.username, rcpts);
@@ -4208,8 +4235,7 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	auto cls = cancelcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (cls == nullptr ||
 	    class_match_prefix(cls, "IPM.Appointment") != 0 ||
-	    cancelcontent->children.prcpts == nullptr ||
-	    cancelcontent->children.prcpts->count == 0)
+	    !has_rcpt_address(*cancelcontent))
 		return;
 	/* The cancellation carries the content of the meeting */
 	if (!(permissions(dir, parent.folderId) & frightsReadAny))
@@ -5006,9 +5032,11 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, gb});
 	}
 
-	size_t recipients = (item.RequiredAttendees ? item.RequiredAttendees->size() : 0) +
-	                    (item.OptionalAttendees ? item.OptionalAttendees->size() : 0) +
-	                    (item.Resources ? item.Resources->size() : 0);
+	size_t recipients = 0;
+	for (const auto &list : {&item.RequiredAttendees, &item.OptionalAttendees, &item.Resources})
+		if (*list)
+			recipients += std::count_if((*list)->begin(), (*list)->end(),
+			              [](const tAttendee &a) { return !a.empty_address(); });
 	if (recipients) {
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3377);
@@ -5021,13 +5049,16 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		};
 		if (item.RequiredAttendees)
 			for (const auto &att : *item.RequiredAttendees)
-				add_attendee(rcpts->emplace(), att, MAPI_TO);
+				if (!att.empty_address())
+					add_attendee(rcpts->emplace(), att, MAPI_TO);
 		if (item.OptionalAttendees)
 			for (const auto &att : *item.OptionalAttendees)
-				add_attendee(rcpts->emplace(), att, MAPI_CC);
+				if (!att.empty_address())
+					add_attendee(rcpts->emplace(), att, MAPI_CC);
 		if (item.Resources)
 			for (const auto &att : *item.Resources)
-				add_attendee(rcpts->emplace(), att, MAPI_TO);
+				if (!att.empty_address())
+					add_attendee(rcpts->emplace(), att, MAPI_TO);
 		std::string dispName;
 		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
 			throw DispatchError(E3378);
