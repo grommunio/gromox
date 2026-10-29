@@ -999,7 +999,8 @@ void process(mGetDelegateRequest &&request, XMLElement *response, const EWSConte
 			    std::move(dispname));
 		if (request.IncludePermissions && *request.IncludePermissions) {
 			msg.DelegateUser.DelegatePermissions.emplace(ctx.readDelegatePermissions(dir, deleg));
-			msg.DelegateUser.ViewPrivateItems = sees_private_items(dir.c_str(), deleg.c_str());
+			msg.DelegateUser.ViewPrivateItems = sees_private_items(dir.c_str(),
+				ctx.plugin().x500_org_name.c_str(), deleg.c_str());
 		}
 		found.insert(deleg);
 	}
@@ -2586,7 +2587,8 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 		}
 		/* No user means the owner, see get_freebusy() */
 		tFreeBusyView fbv(maildir == ctx.auth_info().maildir ? nullptr :
-			ctx.auth_info().username, maildir.c_str(), start, end);
+			ctx.auth_info().username, maildir.c_str(),
+			ctx.plugin().x500_org_name.c_str(), start, end);
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
 		if (fbr.FreeBusyView && fbr.FreeBusyView->CalendarEventArray) {
 			for (auto &event : *fbr.FreeBusyView->CalendarEventArray) {
@@ -3615,6 +3617,7 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 						return;
 					item.loadConflicts(dir == ctx.auth_info().maildir ? nullptr :
 						ctx.auth_info().username, dir.c_str(),
+						ctx.plugin().x500_org_name.c_str(),
 						shape.get<BINARY>(NtCleanGlobalObjectId, sShape::FL_ANY), start, end);
 					if (item.ConflictingMeetings)
 						ctx.conflictItemIds(parentFolder, dir, *item.ConflictingMeetings);

@@ -5152,7 +5152,7 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 	auto actor = pinfo->get_username();
 	if (strcmp(actor, mres.username.c_str()) == 0)
 		actor = nullptr;
-	return get_freebusy(actor, mres.maildir.c_str(),
+	return get_freebusy(actor, mres.maildir.c_str(), g_org_name,
 	       starttime, endtime, *fb_data);
 }
 
@@ -5172,7 +5172,7 @@ ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
 	auto actor = pinfo->get_username();
 	if (strcmp(actor, mres.username.c_str()) == 0)
 		actor = nullptr;
-	auto err = get_freebusy(actor, mres.maildir.c_str(),
+	auto err = get_freebusy(actor, mres.maildir.c_str(), g_org_name,
 	           starttime, endtime, fb_data);
 	if (err != ecSuccess)
 		return err;

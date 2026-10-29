@@ -2223,7 +2223,7 @@ struct sCalendarMeetingRequestCommon {
 
 	void timezoneId(std::string_view, bool=true, bool=true);
 	void firstLastOccurrence(const TAGGED_PROPVAL &, const APPOINTMENT_RECUR_PAT &, const BINARY *, const uint64_t *);
-	void loadConflicts(const char *, const char *, const BINARY *, time_t, time_t);
+	void loadConflicts(const char *, const char *, const char *, const BINARY *, time_t, time_t);
 	const std::string &timezoneId() const;
 
 	//<!-- Single and Occurrence only -->
@@ -3031,7 +3031,7 @@ struct tFolderResponseShape {
  */
 struct tFreeBusyView {
 	tFreeBusyView() = default;
-	tFreeBusyView(const char*, const char*, time_t, time_t);
+	tFreeBusyView(const char*, const char*, const char*, time_t, time_t);
 
 	void serialize(tinyxml2::XMLElement *) const;
 

@@ -908,15 +908,17 @@ static std::string tzdef_keyname(const BINARY *bin)
  *
  * @param      user   Acting user (for free/busy permissions)
  * @param      dir    Store directory
+ * @param      org    X500 organization name of the store
  * @param      goid   PidLidCleanGlobalObjectId of the item itself
  * @param      start  Start of the item
  * @param      end    End of the item
  */
 void sCalendarMeetingRequestCommon::loadConflicts(const char *user,
-    const char *dir, const BINARY *goid, time_t start, time_t end)
+    const char *dir, const char *org, const BINARY *goid, time_t start,
+    time_t end)
 {
 	std::vector<freebusy_event> events;
-	if (get_freebusy(user, dir, start, end, events) != ecSuccess)
+	if (get_freebusy(user, dir, org, start, end, events) != ecSuccess)
 		return;
 	auto self = goid != nullptr ? goid_to_uid(*goid) : std::string();
 	bool selfSeen = false;
@@ -2709,10 +2711,10 @@ RESTRICTION* tCalendarView::restriction(const sGetNameId& getId) const
 ///////////////////////////////////////////////////////////////////////////////
 
 tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
-    time_t start_time, time_t end_time)
+    const char *org, time_t start_time, time_t end_time)
 {
 	std::vector<freebusy_event> fb_data;
-	auto err = get_freebusy(username, dir, start_time, end_time, fb_data);
+	auto err = get_freebusy(username, dir, org, start_time, end_time, fb_data);
 	if (err != ecSuccess)
 		throw EWSError::FreeBusyGenerationFailed(E3144);
 
