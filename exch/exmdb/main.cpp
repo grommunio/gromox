@@ -34,6 +34,7 @@
 #include <gromox/listener_ctx.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
@@ -303,9 +304,26 @@ bool SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		register_service("exmdb_pickup_run", exmdb_pickup_run);
 		register_service("exmdb_pickup_running", exmdb_pickup_running);
 		register_service("exmdb_pickup_stop", exmdb_pickup_stop);
+		/*
+		 * Deferred-send scheduler. A worker runs its own store; a plain
+		 * director executes; a split-worker director only wakes workers.
+		 */
+		if (strncmp(prog_id, "istore-worker:", 14) == 0) {
+			if (deferred_run(defer_role::worker) == 0) {
+				auto md = getenv("ISTORE_USER");
+				if (md != nullptr)
+					deferred_arm_store(md);
+			}
+		} else if (strcmp(prog_id, "istore-director") == 0) {
+			auto role = (g_istore_standalone & ISTORE_SPLIT_WORKERS) ?
+			            defer_role::director : defer_role::executor;
+			if (deferred_run(role) != 0)
+				mlog(LV_WARN, "exmdb_provider: deferred-send scheduler failed to start");
+		}
 		return TRUE;
 	}
 	case PLUGIN_FREE:
+		deferred_stop();
 		exmdb_listener_stop();
 		exmdb_client.reset();
 		exmdb_parser_stop();

@@ -64,8 +64,6 @@ static thread_local const char *g_dir_key;
 static constexpr char EMSMDB_UA[] = PACKAGE_NAME "-emsmdb " PACKAGE_VERSION;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
-E(add_timer)
-E(cancel_timer)
 #undef E
 
 static void mlog2(unsigned int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
@@ -1705,8 +1703,6 @@ int common_util_run()
 		return -1; \
 	} \
 } while (false)
-	E(common_util_add_timer, "add_timer");
-	E(common_util_cancel_timer, "cancel_timer");
 #undef E
 
 	if (!oxcmail_init_library(g_emsmdb_org_name, mysql_adaptor_get_user_ids,

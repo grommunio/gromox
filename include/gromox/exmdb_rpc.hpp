@@ -788,17 +788,6 @@ struct exreq_rule_new_message final : public exreq {
 	uint64_t folder_id = 0, message_id = 0;
 };
 
-struct exreq_set_message_timer final : public exreq {
-	using view_t = exreq_set_message_timer;
-	uint64_t message_id = 0;
-	uint32_t timer_id = 0;
-};
-
-struct exreq_get_message_timer final : public exreq {
-	using view_t = exreq_get_message_timer;
-	uint64_t message_id = 0;
-};
-
 struct exreq_empty_folder_permission final : public exreq {
 	using view_t = exreq_empty_folder_permission;
 	uint64_t folder_id = 0;
@@ -1416,11 +1405,6 @@ struct exresp_link_messages final : public exresp {
 	BOOL b_partial = false;
 };
 
-struct exresp_get_message_timer final : public exresp {
-	using view_t = exresp_get_message_timer;
-	uint32_t *ptimer_id = nullptr;
-};
-
 struct exresp_update_folder_rule final : public exresp {
 	using view_t = exresp_update_folder_rule;
 	BOOL b_exceed = false;
@@ -1543,7 +1527,6 @@ using exresp_mark_modified = exresp;
 using exresp_clear_submit = exresp;
 using exresp_unlink_message = exresp;
 using exresp_rule_new_message = exresp;
-using exresp_set_message_timer = exresp;
 using exresp_empty_folder_permission = exresp;
 using exresp_update_folder_permission = exresp;
 using exresp_empty_folder_rule = exresp;

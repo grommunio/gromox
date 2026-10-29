@@ -1257,7 +1257,32 @@ BOOL exmdb_server::try_mark_submit(const char *dir,
 	if (!cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
 	    PR_MESSAGE_FLAGS, pmessage_flags, pb_marked))
 		return false;
-	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
+	/* Record the future delivery time for the deferred.cpp scheduler. */
+	time_t due = 0;
+	if (*pb_marked) {
+		static constexpr proptag_t tags[] = {PR_DEFERRED_SEND_TIME,
+			PR_DEFERRED_SEND_NUMBER, PR_DEFERRED_SEND_UNITS};
+		TPROPVAL_ARRAY pv{};
+		if (cu_get_properties(MAPI_MESSAGE, mid_val, CP_ACP, *pdb,
+		    tags, &pv)) {
+			auto interval = props_to_defer_interval(pv);
+			if (interval > 0) {
+				due = time(nullptr) + interval;
+				char q[160];
+				snprintf(q, std::size(q), "INSERT OR REPLACE INTO "
+					"deferred_sends (message_id, due_time) VALUES "
+					"(%llu, %lld)", LLU{mid_val},
+					static_cast<long long>(due));
+				if (pdb->exec(q) != SQLITE_OK)
+					return false;
+			}
+		}
+	}
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
+	if (due != 0)
+		deferred_sched_arm(dir, mid_val, due);
+	return TRUE;
 }
 
 /* clear MSGFLAG_SUBMITTED set by
@@ -1288,18 +1313,225 @@ BOOL exmdb_server::clear_submit(const char *dir,
 	if (!cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
 	    PR_MESSAGE_FLAGS, pmessage_flags, &b_result))
 		return FALSE;
-	if (!b_result)
-		return TRUE;
-	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
-	          " timer_id=? WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = pdb->prep(sql_string);
-	if (pstmt == nullptr)
+	/* Cancel any pending deferred send, even if the flag was already clear. */
+	snprintf(sql_string, std::size(sql_string),
+		"DELETE FROM deferred_sends WHERE message_id=%llu", LLU{mid_val});
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
-	sqlite3_bind_null(pstmt, 1);
-	if (pstmt.step() != SQLITE_DONE)
-		return FALSE;
-	pstmt.finalize();
-	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
+	deferred_sched_cancel(dir, mid_val);
+	return TRUE;
+}
+
+static bool message_read_message(const db_conn &, cpid_t, uint64_t, MESSAGE_CONTENT **);
+static BOOL message_get_propids(const PROPNAME_ARRAY *, PROPID_ARRAY *);
+static BOOL message_get_propname(propid_t, PROPERTY_NAME **);
+
+/**
+ * Re-check at send time that actor may represent delegator. send_as=true for
+ * Send-As or self, false for On-Behalf; ecSendAsDenied if revoked.
+ */
+static ec_error_t defer_check_repr(const char *actor, const char *delegator,
+    bool &send_as)
+{
+	send_as = true;
+	if (delegator == nullptr || *delegator == '\0' ||
+	    strcasecmp(actor, delegator) == 0)
+		return ecSuccess;
+	sql_meta_result mres;
+	if (mysql_adaptor_meta(delegator, WANTPRIV_METAONLY, mres) != 0)
+		return ecSendAsDenied;
+	if (strcasecmp(actor, mres.username.c_str()) == 0)
+		return ecSuccess;
+	/* mode 1 = sendas.txt (Send-As), mode 0 = delegates.txt (On-Behalf) */
+	for (uint32_t mode : {uint32_t(1), uint32_t(0)}) {
+		std::vector<std::string> dl;
+		if (!exmdb_server::read_delegates(mres.maildir.c_str(), mode, &dl))
+			continue;
+		for (const auto &d : dl)
+			if (strcasecmp(d.c_str(), actor) == 0 ||
+			    mysql_adaptor_check_mlist_include(d.c_str(), actor)) {
+				send_as = mode == 1;
+				return ecSuccess;
+			}
+	}
+	return ecSendAsDenied;
+}
+
+/**
+ * Resolve the represented sender the way oxcmail derives the From header
+ * (SMTP, then EX ADDRTYPE+EMAIL, then ENTRYID), so the identity we authorize
+ * is the one that goes on the wire. Empty output = no representation. A repr
+ * that does not resolve to a local user is refused.
+ */
+static ec_error_t defer_extract_delegator(const MESSAGE_CONTENT &ctnt,
+    std::string &out)
+{
+	out.clear();
+	auto smtp = ctnt.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (smtp != nullptr && *smtp != '\0') {
+		out = smtp;
+		return ecSuccess;
+	}
+	auto addrtype = ctnt.proplist.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+	auto emaddr = ctnt.proplist.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_exmdb_org_name,
+		           mysql_adaptor_userid_to_name, out);
+		if (ret == ecSuccess)
+			return ecSuccess;
+		if (ret != ecNullObject && ret != ecUnknownUser)
+			return ret;
+	}
+	auto eid = ctnt.proplist.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID);
+	if (eid == nullptr)
+		return ecSuccess; /* no representation requested */
+	auto ret = cvt_entryid_to_smtpaddr(eid, g_exmdb_org_name,
+	           mysql_adaptor_userid_to_name, out);
+	if (ret == ecSuccess)
+		return ecSuccess;
+	if (ret == ecNullObject) {
+		out.clear();
+		return ecSuccess;
+	}
+	return ecSendAsDenied; /* Refuse unresolvable representation */
+}
+
+/**
+ * Deferred-send second stage (run by deferred.cpp when the time arrives).
+ * Build the mime object, submit to the MTA, then file or delete the message.
+ */
+ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
+{
+	exmdb_server::build_env(EM_PRIVATE, dir);
+	auto cl_env = HX::make_scope_exit(exmdb_server::free_env);
+	auto pdb = db_engine_get_db(dir);
+	if (!pdb)
+		return ecError;
+
+	/*
+	 * Claim the job by deleting its row first, so a racing clear_submit
+	 * loses and a crash hereafter cannot re-send (at-most-once). Recheck the
+	 * message in the same transaction.
+	 */
+	uint64_t parent_fid = 0;
+	bool present = false;
+	{
+		auto xact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+		if (!xact)
+			return ecError;
+		char q[160];
+		snprintf(q, std::size(q), "DELETE FROM deferred_sends "
+			"WHERE message_id=%llu", LLU{mid_val});
+		if (pdb->exec(q) != SQLITE_OK)
+			return ecError;
+		if (sqlite3_changes(pdb->psqlite) != 1)
+			return ecSuccess; /* cancelled or already claimed */
+		snprintf(q, std::size(q), "SELECT parent_fid FROM messages "
+			"WHERE message_id=%llu AND is_deleted=0", LLU{mid_val});
+		auto st = pdb->prep(q);
+		if (st != nullptr && st.step() == SQLITE_ROW) {
+			present = true;
+			parent_fid = st.col_uint64(0);
+		}
+		if (xact.commit() != SQLITE_OK)
+			return ecError;
+	}
+	if (!present)
+		return ecNotFound;        /* deleted after scheduling */
+	if (parent_fid != PRIVATE_FID_OUTBOX)
+		return ecSuccess;         /* moved out of the Outbox = cancelled */
+
+	unsigned int uid = 0;
+	std::string actor;
+	if (!mysql_adaptor_get_id_from_maildir(dir, &uid) ||
+	    mysql_adaptor_userid_to_name(uid, actor) != ecSuccess) {
+		mlog(LV_ERR, "deferred send %s:m%llu: cannot resolve store owner",
+			dir, LLU{mid_val});
+		return ecError;
+	}
+
+	MESSAGE_CONTENT *ctnt = nullptr;
+	if (!message_read_message(*pdb, CP_ACP, mid_val, &ctnt) || ctnt == nullptr)
+		return ecError;
+	auto prcpts = ctnt->children.prcpts;
+	if (prcpts == nullptr || prcpts->count == 0)
+		return MAPI_E_NO_RECIPIENTS;
+
+	std::string delegator;
+	auto xret = defer_extract_delegator(*ctnt, delegator);
+	bool send_as = true;
+	auto perr = xret == ecSuccess ?
+	            defer_check_repr(actor.c_str(), delegator.c_str(), send_as) : xret;
+	if (perr != ecSuccess) {
+		mlog(LV_WARN, "deferred send %s:m%llu denied: <%s> may no longer "
+			"be represented by <%s>", dir, LLU{mid_val},
+			delegator.c_str(), actor.c_str());
+		exmdb_server::clear_submit(dir, eid_t(1, mid_val), TRUE);
+		return perr;
+	}
+	const char *ev_from = (send_as && !delegator.empty()) ?
+	                      delegator.c_str() : actor.c_str();
+
+	auto msgflags = ctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	bool b_resend = msgflags != nullptr && (*msgflags & MSGFLAG_RESEND);
+	std::vector<std::string> rcpt_list;
+	for (auto &rcpt : *prcpts) {
+		TPROPVAL_ARRAY pv = {rcpt.count, rcpt.ppropval};
+		if (cu_rcpt_to_list(std::move(pv), g_exmdb_org_name, rcpt_list,
+		    mysql_adaptor_userid_to_name, b_resend) != ecSuccess)
+			return ecError;
+	}
+	if (rcpt_list.empty())
+		return MAPI_E_NO_RECIPIENTS;
+
+	MAIL imail;
+	g_sqlite_for_oxcmail = pdb->psqlite;
+	auto log_id = dir + ":m"s + std::to_string(mid_val);
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = message_get_propids;
+	cvt.get_propname = message_get_propname;
+	cvt.use_format_override(*ctnt);
+	auto ok = cvt.mapi_to_inet(*ctnt, imail);
+	g_sqlite_for_oxcmail = nullptr;
+	if (!ok)
+		return ecError;
+
+	auto ret = cu_send_mail(std::move(imail), g_exmdb_smtp_url.c_str(),
+	           ev_from, rcpt_list);
+	if (ret != ecSuccess) {
+		mlog(LV_ERR, "E-1760: deferred send %s:m%llu via SMTP failed: %s",
+			dir, LLU{mid_val}, mapi_strerror(ret));
+		exmdb_server::clear_submit(dir, eid_t(1, mid_val), TRUE);
+		return ret;
+	}
+	mlog(LV_INFO, "gromox-audit: deferred message sent from <%s> in mailbox %s",
+		ev_from, dir);
+
+	/* Clear MSGFLAG_SUBMITTED on the copy about to be filed. */
+	exmdb_server::clear_submit(dir, eid_t(1, mid_val), false);
+	auto del_after = ctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
+	eid_t mid_eid = eid_t(1, mid_val);
+	EID_ARRAY ids = {1, &mid_eid};
+	BOOL partial = false;
+	if (del_after != nullptr && *del_after != 0)
+		exmdb_server::delete_messages(dir, CP_ACP, nullptr,
+			eid_t(1, parent_fid), &ids, TRUE, &partial);
+	else
+		/*
+		 * NB: Filing always targets Sent Items. PR_SENTMAIL_ENTRYID and the
+		 * represented mailbox copy are not honored for deferred sends.
+		 */
+		exmdb_server::movecopy_messages(dir, CP_ACP, false, nullptr,
+			eid_t(1, parent_fid), eid_t(1, PRIVATE_FID_SENT_ITEMS),
+			false, &ids, &partial);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 /* private only */
@@ -1466,54 +1698,6 @@ BOOL exmdb_server::unlink_message(const char *dir,
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	dg_notify(std::move(notifq));
-	return TRUE;
-}
-
-/* private only */
-BOOL exmdb_server::set_message_timer(const char *dir,
-	uint64_t message_id, uint32_t timer_id)
-{
-	char sql_string[256];
-	
-	if (!exmdb_server::is_private())
-		return FALSE;
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
-	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
-		" timer_id=%u WHERE message_id=%llu",
-		XUI{timer_id}, LLU{rop_util_get_gc_value(message_id)});
-	return pdb->exec(sql_string) == SQLITE_OK ? TRUE : false;
-}
-
-/* private only */
-BOOL exmdb_server::get_message_timer(const char *dir,
-	uint64_t message_id, uint32_t **pptimer_id)
-{
-	char sql_string[256];
-	
-	if (!exmdb_server::is_private())
-		return FALSE;
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
-	auto mid_val = rop_util_get_gc_value(message_id);
-	snprintf(sql_string, std::size(sql_string), "SELECT timer_id FROM "
-	          "messages WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = pdb->prep(sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	if (pstmt.step() != SQLITE_ROW ||
-	    sqlite3_column_type(pstmt, 0) == SQLITE_NULL) {
-		*pptimer_id = NULL;
-		return TRUE;
-	}
-	*pptimer_id = cu_alloc<uint32_t>();
-	if (*pptimer_id == nullptr)
-		return FALSE;
-	**pptimer_id = sqlite3_column_int64(pstmt, 0);
 	return TRUE;
 }
 

@@ -46,8 +46,6 @@ FastCGI servers
 .IP \(bu 4
 mod_rewrite(4gx) \(em Handler for altering HTTP request
 URIs before processing
-.IP \(bu 4
-timer(8gx) \(em deferred command executor
 .SS Exchange subsystem and its components
 .IP \(bu 4
 exchange_emsmdb(4gx) \(em Handler for the Wire Format
@@ -175,8 +173,6 @@ ldap_adaptor(4gx) \(em LDAP connector for authentication
 .IP \(bu 4
 mysql_adaptor(4gx) \(em MySQL/MariaDB connector for user metadata and
 authentication
-.IP \(bu 4
-timer_agent(4gx) \(em Client for timer(8gx)
 .SS Historic commands that have been removed
 The following is a list of programs that no longer exist. It is intended solely
 to capture keyword searches within the documentation for said obsolete/removed commands.
@@ -274,15 +270,11 @@ pop3(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/event_proxy.cfg,
 /etc/gromox/imap.cfg, /etc/gromox/ldap_adaptor.cfg,
 /etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
-timer(8gx): /etc/gromox/timer.cfg
-.IP \(bu 4
-timer_agent(4gx) inside http(8gx), zcore(8gx): /etc/gromox/timer_agent.cfg
-.IP \(bu 4
 user_filter(4gx) inside http(8gx), imap(8gx), pop3(8gx): /etc/gromox/gromox.cfg
 .IP \(bu 4
 zcore(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/zcore.cfg,
 /etc/gromox/ldap_adaptor.cfg,
-/etc/gromox/mysql_adaptor.cfg, /etc/gromox/timer_agent.cfg
+/etc/gromox/mysql_adaptor.cfg
 .SS Listing of components per config file
 .IP \(bu 4
 /etc/gromox/alias_resolve.cfg: used by the alias_resolve(4gx) component, accessed
@@ -358,11 +350,6 @@ by arbitrary PAM applications.
 .IP \(bu 4
 /etc/gromox/pop3.cfg: used by the pop3(8gx) process.
 .IP \(bu 4
-/etc/gromox/timer.cfg: used by the timer(8gx) process.
-.IP \(bu 4
-/etc/gromox/timer_agent.cfg: used by the timer_agent(4gx) component, accessed
-process-wise by http(8gx), zcore(8gx).
-.IP \(bu 4
 /etc/gromox/zcore.cfg: used by the zcore(8gx) process.
 .SH Databases
 .IP \(bu 4
@@ -413,8 +400,6 @@ cut and skip Postfix/etc. to get a simpler test setup.
 [::1]:5555 \(em midb(8gx) service
 .IP \(bu 4
 /run/gromox/event.sock \(em event(8gx) service
-.IP \(bu 4
-/run/gromox/timer.sock \(em timer(8gx) service
 .IP \(bu 4
 /run/gromox/zcore.sock \(em zcore(8gx)
 .SH Files
