@@ -401,7 +401,7 @@ static bool sees_private_items(const TPROPVAL_ARRAY &props, const char *org,
 		if (!delegate_eid_is(eids->pbin[i], org, actor))
 			continue;
 		found = true;
-		return (flags->pl[i] & 1) != 0;
+		return flags->pl[i] & DF_SHOWPRIVATE;
 	}
 	return false;
 }

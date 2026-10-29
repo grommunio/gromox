@@ -6343,7 +6343,7 @@ DelegateList readDelegateList(const TPROPVAL_ARRAY &props)
 		list.eids.assign(e->pbin, e->pbin + e->count);
 	for (size_t i = 0; i < list.eids.size(); ++i) {
 		list.names.emplace_back(n != nullptr && i < n->count ? n->ppstr[i] : deconst(""));
-		list.flags.emplace_back(f != nullptr && i < f->count ? f->pl[i] : 0);
+		list.flags.emplace_back(f != nullptr && i < f->count ? f->pl[i] : DF_HIDEPRIVATE);
 	}
 	return list;
 }

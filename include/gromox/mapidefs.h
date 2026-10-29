@@ -314,6 +314,11 @@ enum {
 	_DTCT_NONE = 0xff, /* (sentinel value for gromox) */
 };
 
+enum { /* PR_DELEGATE_FLAGS */
+	DF_HIDEPRIVATE = 0,
+	DF_SHOWPRIVATE,
+};
+
 enum mapi_folder_type : uint32_t {
 	FOLDER_ROOT = 0,
 	FOLDER_GENERIC = 1,
