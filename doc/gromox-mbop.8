@@ -318,7 +318,8 @@ foreach.mb.here purge\-softdelete -r /
 .SS Description
 Runs the get_freebusy routine on the mailbox specified by the global \-d/\-u
 option(s) [or the mailbox currently in scope when using foreach.*], and asks
-for free/busy status within the given time period.
+for free/busy status within the given time period. The X.500 organization name
+for resolving delegate entryids is read from exmdb_provider.cfg:x500_org_name.
 .SS Options
 .TP
 \fB\-a\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP[\fBZ\fP|\fB+\fP\fIhhmm\fP|\fB\-\fP\fIhhmm\fP]|\fIunixtime\fP}

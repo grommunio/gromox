@@ -4144,7 +4144,7 @@ bool EWSContext::seesPrivateItems(const std::string &dir,
 	auto it = m_seesPrivateItems.find(dir);
 	if (it == m_seesPrivateItems.end())
 		it = m_seesPrivateItems.emplace(dir, sees_private_items(dir.c_str(),
-		     m_auth_info.username)).first;
+		     m_plugin.x500_org_name.c_str(), m_auth_info.username)).first;
 	return it->second;
 }
 
@@ -6363,7 +6363,8 @@ bool editDelegateList(DelegateList &list, const std::string &username,
     const char *org, std::optional<bool> viewPrivate, bool remove)
 {
 	size_t idx = 0;
-	while (idx < list.eids.size() && !delegate_eid_is(list.eids[idx], username.c_str()))
+	while (idx < list.eids.size() &&
+	       !delegate_eid_is(list.eids[idx], org, username.c_str()))
 		++idx;
 	if (remove) {
 		if (idx == list.eids.size())

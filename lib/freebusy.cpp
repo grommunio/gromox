@@ -374,22 +374,12 @@ unsigned int freebusy_perms(const char *actor, const char *target)
  * Returns whether @eid, an entry of PidTagScheduleInfoDelegateEntryIds, is
  * @actor.
  */
-bool delegate_eid_is(const BINARY &eid, const char *actor)
+bool delegate_eid_is(const BINARY &eid, const char *org, const char *actor)
 {
-	std::string_view sv(eid.pc, eid.cb);
-	std::string essdn, user;
-	if (cvt_emsab_to_essdn(sv, essdn) == ecSuccess) {
-		/* Any organization name, only the user ID and name count */
-		auto end = essdn.find('/', 3);
-		if (strncasecmp(essdn.c_str(), "/o=", 3) != 0 || end == essdn.npos ||
-		    cvt_essdn_to_username(essdn.c_str(), essdn.substr(3, end - 3).c_str(),
-		    mysql_adaptor_userid_to_name, user) != ecSuccess)
-			return false;
-	} else if (cvt_entryid_to_smtpaddr(sv, "", mysql_adaptor_userid_to_name,
-	    user) != ecSuccess) {
-		return false;
-	}
-	return strcasecmp(user.c_str(), actor) == 0;
+	std::string user;
+	return cvt_entryid_to_smtpaddr(std::string_view(eid.pc, eid.cb), org,
+	       mysql_adaptor_userid_to_name, user) == ecSuccess &&
+	       strcasecmp(user.c_str(), actor) == 0;
 }
 
 /**
@@ -397,7 +387,7 @@ bool delegate_eid_is(const BINARY &eid, const char *actor)
  * private items, that is ShowPrivate in PidTagDelegateFlags of the
  * LocalFreebusy message.
  */
-bool sees_private_items(const char *dir, const char *actor)
+bool sees_private_items(const char *dir, const char *org, const char *actor)
 {
 	static constexpr proptag_t tags[] = {PR_SCHDINFO_DELEGATE_ENTRYIDS, PR_DELEGATE_FLAGS};
 	auto sees = [&](const TPROPVAL_ARRAY &props, bool &found) {
@@ -406,7 +396,7 @@ bool sees_private_items(const char *dir, const char *actor)
 		if (eids == nullptr || flags == nullptr)
 			return false;
 		for (size_t i = 0; i < eids->count && i < flags->count; ++i) {
-			if (!delegate_eid_is(eids->pbin[i], actor))
+			if (!delegate_eid_is(eids->pbin[i], org, actor))
 				continue;
 			found = true;
 			return (flags->pl[i] & 1) != 0;
@@ -492,8 +482,8 @@ static bool exception_private(const message_content &master,
 	return best != nullptr && appt_is_private(best->proplist, ptag);
 }
 
-ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time,
-    time_t end_time, std::vector<freebusy_event> &fb_data)
+ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
+    time_t start_time, time_t end_time, std::vector<freebusy_event> &fb_data)
 {
 	uint32_t permission = 0;
 	eid_t cal_eid(1, PRIVATE_FID_CALENDAR);
@@ -526,7 +516,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 	auto clip_nttime  = start_nttime - clip_slack;
 	/* Owners and delegates allowed to see private items get their details */
 	bool see_private  = username == nullptr ||
-	                    (detailed && sees_private_items(dir, username));
+	                    (detailed && sees_private_items(dir, org, username));
 
 	/* C1: apptstartwhole >= start && apptstartwhole <= end */
 	RESTRICTION_PROPERTY rst_1 = {RELOP_GE, ptag.apptstartwhole, {ptag.apptstartwhole, &start_nttime}};
