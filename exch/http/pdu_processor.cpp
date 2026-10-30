@@ -49,6 +49,7 @@
 
 #define NDR_STACK_IN					0
 #define NDR_STACK_OUT					1
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -334,11 +335,120 @@ static uint16_t pdu_processor_find_secondary(const char *host,
 	return ix != lst.cend() ? ei->tcp_port : tcp_port;
 }
 
+/*
+ * DCE/RPC remote management interface, C706 Appendix Q. Windows serves it
+ * for every endpoint. Clients like MS RCA use it to ping a server.
+ */
+namespace {
+
+enum {
+	mgmt_inq_if_ids = 0,
+	mgmt_inq_stats = 1,
+	mgmt_is_server_listening = 2,
+};
+
+/* calls in, calls out, pkts in, pkts out */
+constexpr uint32_t MGMT_STATS_MAX = 4;
+
+struct mgmt_inq_stats_in final : public rpc_request {
+	uint32_t count = 0;
+};
+
+struct mgmt_out final : public rpc_response {
+	std::vector<SYNTAX_ID> if_ids;
+	uint32_t count = 0;
+};
+
+}
+
+static pack_result mgmt_ndr_pull(unsigned int op, NDR_PULL &x,
+    std::unique_ptr<rpc_request> &in) try
+{
+	switch (op) {
+	case mgmt_inq_if_ids:
+	case mgmt_is_server_listening:
+		in = std::make_unique<rpc_request>();
+		return pack_result::ok;
+	case mgmt_inq_stats: {
+		auto r = std::make_unique<mgmt_inq_stats_in>();
+		TRY(x.g_uint32(&r->count));
+		in = std::move(r);
+		return pack_result::ok;
+	}
+	default:
+		return pack_result::bad_switch;
+	}
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
+static int mgmt_dispatch(unsigned int op, const GUID *, uint64_t,
+    const rpc_request *in, std::unique_ptr<rpc_response> &out,
+    ec_error_t *) try
+{
+	auto r = std::make_unique<mgmt_out>();
+	if (op == mgmt_inq_if_ids) {
+		auto &ep = *g_call_key->pprocessor->pendpoint;
+		for (const auto &i : ep.interface_list)
+			r->if_ids.push_back({i.uuid, i.version});
+	} else if (op == mgmt_inq_stats) {
+		auto &rq = *static_cast<const mgmt_inq_stats_in *>(in);
+		r->count = std::min(rq.count, MGMT_STATS_MAX);
+	}
+	out = std::move(r);
+	return DISPATCH_SUCCESS;
+} catch (const std::bad_alloc &) {
+	return DISPATCH_FAIL;
+}
+
+static pack_result mgmt_ndr_push(unsigned int op, NDR_PUSH &x,
+    const rpc_response *pout)
+{
+	auto &r = *static_cast<const mgmt_out *>(pout);
+	switch (op) {
+	case mgmt_inq_if_ids:
+		TRY(x.p_unique_ptr(&r.if_ids));
+		TRY(x.p_ulong(r.if_ids.size()));
+		TRY(x.p_uint32(r.if_ids.size()));
+		for (const auto &i : r.if_ids)
+			TRY(x.p_unique_ptr(&i));
+		for (const auto &i : r.if_ids) {
+			TRY(x.p_guid(i.uuid));
+			TRY(x.p_uint16(i.version & 0xffff));
+			TRY(x.p_uint16(i.version >> 16));
+		}
+		break;
+	case mgmt_inq_stats:
+		/* Counters are not kept, report zeroes */
+		TRY(x.p_uint32(r.count));
+		TRY(x.p_ulong(r.count));
+		for (uint32_t i = 0; i < r.count; ++i)
+			TRY(x.p_uint32(0));
+		break;
+	case mgmt_is_server_listening:
+		/* status, then the result, which Exchange also sends as 0 */
+		TRY(x.p_uint32(0));
+		return x.p_uint32(0);
+	default:
+		return pack_result::bad_switch;
+	}
+	return x.p_uint32(0); /* status */
+}
+
+static constexpr DCERPC_INTERFACE g_mgmt_interface = {
+	"mgmt",
+	/* {afa8bd80-7d8a-11c9-bef4-08002b102989} */
+	{0xafa8bd80, 0x7d8a, 0x11c9, {0xbe, 0xf4}, {0x08, 0x00, 0x2b, 0x10, 0x29, 0x89}},
+	1, mgmt_ndr_pull, mgmt_dispatch, mgmt_ndr_push,
+};
+
 /* find the interface operations on an endpoint by uuid */
 static const DCERPC_INTERFACE *
 pdu_processor_find_interface_by_uuid(const dcerpc_endpoint *pendpoint,
     const GUID *puuid, uint32_t if_version)
 {
+	if (interface_eq(*puuid, if_version)(g_mgmt_interface))
+		return &g_mgmt_interface;
 	auto &lst = pendpoint->interface_list;
 	auto ix = ct_find_if(lst, interface_eq(*puuid, if_version));
 	return ix != lst.end() ? &*ix : nullptr;
