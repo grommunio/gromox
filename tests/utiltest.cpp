@@ -880,6 +880,22 @@ static int t_essdn()
 	return EXIT_SUCCESS;
 }
 
+static int t_res_mvprop()
+{
+	char x[] = "X", y[] = "Y";
+	char *a1[] = {x}, *a2[] = {y}, *a3[] = {x, y};
+	STRING_ARRAY s1{1, a1}, s2{1, a2}, s3{2, a3}, s0{0, nullptr};
+	RESTRICTION_PROPERTY r{};
+	r.relop = RELOP_EQ;
+	r.proptag = PROP_TAG(PT_MV_UNICODE, 0x8000);
+	r.propval = {PROP_TAG(PT_UNICODE, 0x8000), x};
+	assert(r.comparable());
+	assert(r.eval(&s1) && !r.eval(&s2) && r.eval(&s3) && !r.eval(&s0));
+	r.relop = RELOP_NE;
+	assert(!r.eval(&s1) && r.eval(&s2) && !r.eval(&s3) && r.eval(&s0));
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -898,6 +914,7 @@ static int runner()
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
 		t_string, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
+		t_res_mvprop,
 	};
 	for (auto f : fct) {
 		auto ret = f();

@@ -3683,41 +3683,47 @@ RESTRICTION* tRestriction::any(RESTRICTION* r1, RESTRICTION* r2)
  *
  * New restriction is stack allocated and must not be freed manually.
  *
- * @param      getId   Function to resolve property name
+ * @param      getId     Function to resolve property name
+ * @param      getEssdn  Function to resolve SMTP addresses to ESSDNs
  *
  * @return     RESTRICTION* or nullptr if empty
  */
-RESTRICTION* tRestriction::build(const sGetNameId& getId) const
+RESTRICTION *tRestriction::build(const sGetNameId &getId, const sGetEssdn &getEssdn) const
 {
 	if (!source)
 		return nullptr;
 	RESTRICTION* restriction = EWSContext::alloc<RESTRICTION>();
-	deserialize(*restriction, source, getId);
+	deserialize(*restriction, source, getId, getEssdn);
 	return restriction;
 }
 
-void tRestriction::deserialize(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
+void tRestriction::deserialize(RESTRICTION &dst, const tinyxml2::XMLElement *src,
+    const sGetNameId &getId, const sGetEssdn &getEssdn)
 {
 	const char* name = src->Name();
 	if (!strcmp(name, "And") || !strcmp(name, "Or")) {
-		build_andor(dst, src, getId);
+		build_andor(dst, src, getId, getEssdn);
 	} else if (!strcmp(name, "Contains")) {
 		build_contains(dst, src, getId);
+		widen_addr(dst, src, getEssdn);
 	} else if (!strcmp(name, "Excludes")) {
 		build_excludes(dst, src, getId);
 	} else if (!strcmp(name, "Exists")) {
 		build_exists(dst, src, getId);
+		widen_addr(dst, src, getEssdn);
 	} else if (!strcmp(name, "Not")) {
-		build_not(dst, src, getId);
+		build_not(dst, src, getId, getEssdn);
 	} else try {
 		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()), getId);
+		widen_addr(dst, src, getEssdn);
 	} catch (const EnumError &) {
 		/* The name of the node could not be mapped to a relop */
 		throw EWSError::InvalidRestriction(E3220(name));
 	}
 }
 
-void tRestriction::build_andor(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
+void tRestriction::build_andor(RESTRICTION &dst, const tinyxml2::XMLElement *src,
+    const sGetNameId &getId, const sGetEssdn &getEssdn)
 {
 	dst.rt = strcmp(src->Name(), "And") ? mapi_rtype::r_or : mapi_rtype::r_and;
 	dst.andor = EWSContext::alloc<RESTRICTION_AND_OR>();
@@ -3728,7 +3734,7 @@ void tRestriction::build_andor(RESTRICTION &dst, const tinyxml2::XMLElement *src
 	RESTRICTION* res = dst.andor->pres = EWSContext::alloc<RESTRICTION>(dst.andor->count);
 	for (const tinyxml2::XMLElement *child = src->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
-		deserialize(*res++, child, getId);
+		deserialize(*res++, child, getId, getEssdn);
 }
 
 void tRestriction::build_compare(RESTRICTION &dst, const tinyxml2::XMLElement *src, relop op, const sGetNameId &getId)
@@ -3737,14 +3743,16 @@ void tRestriction::build_compare(RESTRICTION &dst, const tinyxml2::XMLElement *s
 	const tinyxml2::XMLElement *cmptarget = src->FirstChildElement("FieldURIOrConstant");
 	if (!cmptarget)
 		throw EWSError::InvalidRestriction(E3221);
-	void* constantData = loadConstant(cmptarget, PROP_TYPE(tag));
+	/* A multivalue property matches if any of its values does */
+	proptype_t ctype = PROP_TYPE(tag) & ~MV_FLAG;
+	void *constantData = loadConstant(cmptarget, ctype);
 	dst.rt = constantData ? mapi_rtype::property : mapi_rtype::propcmp;
 	if (constantData) {
 		/* Constant found and loaded -> compare to static data */
 		dst.prop = EWSContext::construct<RESTRICTION_PROPERTY>();
 		dst.prop->relop = op;
 		dst.prop->proptag = tag;
-		dst.prop->propval = TAGGED_PROPVAL{tag, constantData};
+		dst.prop->propval = TAGGED_PROPVAL{CHANGE_PROP_TYPE(tag, ctype), constantData};
 	} else {
 		dst.pcmp = EWSContext::construct<RESTRICTION_PROPCOMPARE>();
 		dst.pcmp->relop = op;
@@ -3759,11 +3767,13 @@ void tRestriction::build_contains(RESTRICTION &dst, const tinyxml2::XMLElement *
 {
 	dst.rt = mapi_rtype::content;
 	dst.cont = EWSContext::construct<RESTRICTION_CONTENT>();
-	if (!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src, getId)))
+	if (!(dst.cont->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3224);
+	proptype_t ctype = PROP_TYPE(dst.cont->proptag) & ~MV_FLAG;
+	dst.cont->propval.proptag = CHANGE_PROP_TYPE(dst.cont->proptag, ctype);
 	if (!dst.cont->comparable())
 			throw EWSError::InvalidRestriction(E3225);
-	if (!(dst.cont->propval.pvalue = loadConstant(src, PROP_TYPE(dst.cont->proptag))))
+	if (!(dst.cont->propval.pvalue = loadConstant(src, ctype)))
 		throw EWSError::InvalidRestriction(E3226);
 	const char* mode = src->Attribute("ContainmentMode");
 	if (!mode || !strcmp(mode, "FullString"))
@@ -3820,14 +3830,115 @@ void tRestriction::build_exists(RESTRICTION &dst, const tinyxml2::XMLElement *sr
 		throw EWSError::InvalidRestriction(E3232);
 }
 
-void tRestriction::build_not(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
+void tRestriction::build_not(RESTRICTION &dst, const tinyxml2::XMLElement *src,
+    const sGetNameId &getId, const sGetEssdn &getEssdn)
 {
 	const tinyxml2::XMLElement *child = src->FirstChildElement();
 	if (!child)
 		throw EWSError::InvalidRestriction(E3233);
 	dst.rt = mapi_rtype::r_not;
 	dst.xnot = EWSContext::construct<RESTRICTION_NOT>();
-	deserialize(dst.xnot->res, child, getId);
+	deserialize(dst.xnot->res, child, getId, getEssdn);
+}
+
+/**
+ * @brief      Match address fields against their SMTP address
+ *
+ * Address fields are compared by SMTP address. Items carry it either in the
+ * dedicated SMTP property or, with an SMTP address type, in the plain email
+ * address property. Use the SMTP property where present and the email
+ * address otherwise. Items with an EX address type and no SMTP property,
+ * such as delivered mail for ReceivedBy, are compared by ESSDN.
+ *
+ * @param      dst       Restriction built for the field
+ * @param      src       XML node the restriction was built from
+ * @param      getEssdn  Function to resolve SMTP addresses to ESSDNs
+ */
+void tRestriction::widen_addr(RESTRICTION &dst, const tinyxml2::XMLElement *src,
+    const sGetEssdn &getEssdn)
+{
+	static constexpr struct {
+		const char *uri;
+		proptag_t smtp, type, addr;
+	} fields[] = {
+		{"calendar:Organizer", PR_SENDER_SMTP_ADDRESS,
+		 PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS},
+		{"message:From", PR_SENT_REPRESENTING_SMTP_ADDRESS,
+		 PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+		{"message:ReceivedBy", PR_RECEIVED_BY_SMTP_ADDRESS,
+		 PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS},
+		{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_SMTP_ADDRESS,
+		 PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS},
+		{"message:Sender", PR_SENDER_SMTP_ADDRESS,
+		 PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS},
+	};
+	if (dst.rt != mapi_rtype::property && dst.rt != mapi_rtype::content &&
+	    dst.rt != mapi_rtype::exist)
+		return;
+	auto uri = src->FirstChildElement("FieldURI");
+	auto name = uri != nullptr ? uri->Attribute("FieldURI") : nullptr;
+	if (name == nullptr)
+		return;
+	auto f = std::find_if(std::begin(fields), std::end(fields),
+	         [&](const auto &e) { return strcmp(e.uri, name) == 0; });
+	if (f == std::end(fields))
+		return;
+
+	auto exist = [](proptag_t tag) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = mapi_rtype::exist;
+		r->exist = EWSContext::construct<RESTRICTION_EXIST>();
+		r->exist->proptag = tag;
+		return r;
+	};
+	auto negate = [](RESTRICTION *in) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = mapi_rtype::r_not;
+		r->xnot = EWSContext::construct<RESTRICTION_NOT>();
+		r->xnot->res = std::move(*in);
+		return r;
+	};
+	if (dst.rt == mapi_rtype::exist) {
+		dst = std::move(*any(exist(f->smtp), exist(f->addr)));
+		return;
+	}
+	auto retag = [&](proptag_t tag) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = dst.rt;
+		if (dst.rt == mapi_rtype::property) {
+			r->prop = EWSContext::construct<RESTRICTION_PROPERTY>(*dst.prop);
+			r->prop->proptag = r->prop->propval.proptag = tag;
+		} else {
+			r->cont = EWSContext::construct<RESTRICTION_CONTENT>(*dst.cont);
+			r->cont->proptag = r->cont->propval.proptag = tag;
+		}
+		return r;
+	};
+	/* No SMTP property, but the given address type */
+	auto useAddr = [&](const char *type) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = mapi_rtype::property;
+		r->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+		r->prop->relop = RELOP_EQ;
+		r->prop->proptag = f->type;
+		r->prop->propval = TAGGED_PROPVAL{f->type, deconst(type)};
+		return all(negate(exist(f->smtp)), r);
+	};
+	RESTRICTION *viaEx = nullptr;
+	if (dst.rt == mapi_rtype::property && PROP_TYPE(dst.prop->proptag) == PT_UNICODE) {
+		/* An address that does not resolve is compared as is */
+		auto addr = static_cast<const char *>(dst.prop->propval.pvalue);
+		auto essdn = getEssdn ? getEssdn(addr) : std::string();
+		viaEx = retag(f->addr);
+		if (!essdn.empty())
+			viaEx->prop->propval.pvalue = EWSContext::cpystr(essdn);
+		viaEx = all(useAddr("EX"), viaEx);
+	}
+	auto viaAddr = all(useAddr("SMTP"), retag(f->addr));
+	auto viaSmtp = all(negate(useAddr("SMTP")), retag(f->smtp));
+	if (viaEx != nullptr)
+		viaSmtp = all(negate(useAddr("EX")), viaSmtp);
+	dst = std::move(*any(any(viaAddr, viaEx), viaSmtp));
 }
 
 void *tRestriction::loadConstant(const tinyxml2::XMLElement *parent, proptype_t type)
@@ -3881,6 +3992,20 @@ void *tRestriction::loadConstant(const tinyxml2::XMLElement *parent, proptype_t 
 		memcpy(static_cast<char *>(dest), value, len + 1);
 		break;
 	}
+	case PT_BINARY: {
+		std::string_view src = value;
+		auto bin = static_cast<BINARY *>(dest);
+		bin->pv = EWSContext::alloc(src.size() + 1);
+		size_t outlen = 0;
+		if (base64nl_decode_sized(src, bin->pv, src.size() + 1, &outlen) < 0)
+			throw EWSError::InvalidRestriction(E3580(src));
+		bin->cb = outlen;
+		break;
+	}
+	case PT_CLSID:
+		if (!static_cast<GUID *>(dest)->from_str(value))
+			throw EWSError::InvalidRestriction(E3581(value));
+		break;
 	default:
 		throw EWSError::InvalidRestriction(E3241(tExtendedFieldURI::typeName(type)));
 	}
@@ -5177,6 +5302,7 @@ void tMessage::update(const sShape& shape)
 		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.Name);
 	fromProp(shape.get(PR_READ), IsRead);
 	fromProp(shape.get(PR_READ_RECEIPT_REQUESTED), IsReadReceiptRequested);
+	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
 	if ((prop = shape.get(PR_RECEIVED_BY_ADDRTYPE)))
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.RoutingType);
 	if ((prop = shape.get(PR_RECEIVED_BY_EMAIL_ADDRESS)))
