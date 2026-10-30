@@ -150,13 +150,10 @@ static AWUR ec_error_t omv_export_addresses(const tarray_set &rcpt_list,
  * Set a Sender field in the vmime object based on the MAPI object.
  * @mct:   Input MAPI object
  * @vhead: Output vmime object
- * @sched: Selects the logic for a MAPI scheduling object.
  */
 static AWUR ec_error_t omv_export_sender(const message_content &mct,
-    vmime::header &vhead, bool sched)
+    vmime::header &vhead)
 {
-	if (sched)
-		return ecSuccess;
 	auto str  = mct.proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto str1 = mct.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr && str1 != nullptr) {
@@ -200,7 +197,13 @@ static AWUR ec_error_t omv_export_fromsender(const message_content &mct,
 {
 	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (sched) {
-		auto err = omv_export_address(mct, tags_sender, *mb);
+		auto err = omv_export_address(mct, tags_sent_repr, *mb);
+		if (err == ecServerOOM || err == ecMAPIOOM)
+			return err;
+		if (err != ecSuccess) {
+			mb = vmime::make_shared<vmime::mailbox>("");
+			err = omv_export_address(mct, tags_sender, *mb);
+		}
 		if (err == ecSuccess)
 			vhead.From()->setValue(std::move(mb));
 		return err;
@@ -515,7 +518,7 @@ static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
 {
 	auto sched = skel.mail_type == oxcmail_type::calendar;
 	vhead.getField("MIME-Version")->setValue("1.0");
-	auto err = omv_export_sender(mct, vhead, sched);
+	auto err = omv_export_sender(mct, vhead);
 	if (err != ecSuccess && err != ecNullObject)
 		return err;
 	err = omv_export_fromsender(mct, vhead, sched);

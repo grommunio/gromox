@@ -365,6 +365,10 @@ class sShape {
 	std::vector<proptag_t> dTags; ///< List of tags to remove
 
 	std::unordered_map<proptag_t, PropInfo> props; ///< Tag -> Property mapping
+	TAGGED_PROPVAL smtpProps[4]{}; ///< SMTP addresses derived from EX ones
+	std::unordered_map<std::string, std::string> smtpCache; ///< ESSDN -> SMTP
+
+	void deriveSmtp();
 
 	void collectExtendedProperty(const tExtendedFieldURI&);
 	void collectExtendedProperty(const tFieldURI&);
@@ -485,6 +489,7 @@ class sShape {
 	const tinyxml2::XMLElement *toRecipients = nullptr; ///< ToRecipients for update
 	const tinyxml2::XMLElement *ccRecipients = nullptr; ///< CcRecipients for update
 	const tinyxml2::XMLElement *bccRecipients = nullptr; ///< BccRecipients for update
+	const char *x500Org = nullptr; ///< Organization for resolving EX addresses
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 

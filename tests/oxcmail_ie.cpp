@@ -1745,6 +1745,50 @@ static int vexport_recipients()
 	return EXIT_SUCCESS;
 }
 
+static int vexport_sched_delegate()
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+	};
+	PROPNAME_ARRAY na = {static_cast<uint16_t>(std::size(namelist)), deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	static constexpr uint64_t v_time = 0x1dabd02f773da00;
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Resp.Pos");
+	props.set(PR_SUBJECT, "appointment");
+	props.set(PROP_TAG(PT_SYSTIME, pids[0]), &v_time);
+	props.set(PROP_TAG(PT_SYSTIME, pids[1]), &v_time);
+	props.set(PR_SENDER_NAME, "Sunder");
+	props.set(PR_SENDER_SMTP_ADDRESS, "sender@ex.de");
+	props.set(PR_SENT_REPRESENTING_NAME, "Riprezenting");
+	props.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, "boss@ex.de");
+	assert(ve_new_rcpt(mct.get(), MAPI_TO, nullptr, "org@ex.de") != nullptr);
+
+	/* A delegate answers in the owner's name */
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "method=REPLY") != nullptr);
+	assert(strstr(ostr.c_str(), "From: \"Riprezenting\" <boss@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "Sender: \"Sunder\" <sender@ex.de>") != nullptr);
+
+	/* Without a represented sender, the sender is the From */
+	props.erase(PR_SENT_REPRESENTING_NAME);
+	props.erase(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	vmsg = vmime::make_shared<vmime::message>();
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "From: \"Sunder\" <sender@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "\nSender:") == nullptr);
+	return EXIT_SUCCESS;
+}
+
 static int vexport_headers()
 {
 	auto cvt = ve_converter();
@@ -2349,6 +2393,7 @@ int main()
 		E(vcard_fileas_categories),
 		E(vexport_head), E(vexport_simple_body), E(vexport_image),
 		E(vexport_inline_image), E(vexport_recipients),
+		E(vexport_sched_delegate),
 		E(vexport_headers), E(vexport_internet_headers),
 		E(vexport_dsn), E(vexport_mdn), E(vexport_smime),
 		E(vexport_embedded), E(vexport_depth_cap), E(vexport_tnef),

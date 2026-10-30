@@ -308,6 +308,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_tzdef(const TZDEF &);
 	pack_result p_apptrecpat(const APPOINTMENT_RECUR_PAT &);
 	pack_result p_goid(const GLOBALOBJECTID &);
+	pack_result p_rcpt_stream(const TARRAY_SET &);
 	pack_result p_msgctnt(const MESSAGE_CONTENT &);
 	pack_result p_rpchdr(const RPC_HEADER_EXT &);
 	pack_result p_fbevent(const freebusy_event &);

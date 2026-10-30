@@ -1299,27 +1299,27 @@ void OxdiscoPlugin::soap_user(XMLElement *ur, const char *actor,
 	auto value_of = [&](const std::string &n) -> std::optional<std::string> {
 		if (n == "UserDisplayName")
 			return dispname;
-		else if (n == "UserDN")
+		if (n == "UserDN")
 			return essdn;
-		else if (n == "UserDeploymentId")
+		if (n == "UserDeploymentId")
 			return depl_id;
-		else if (n == "AutoDiscoverSMTPAddress")
+		if (n == "AutoDiscoverSMTPAddress")
 			return mres.username;
-		else if (n == "InternalMailboxServerDN")
+		if (n == "InternalMailboxServerDN")
 			return serverdn;
-		else if (n == "MailboxDN")
+		if (n == "MailboxDN")
 			return mdbdn;
-		else if (n == "InternalRpcClientServer")
+		if (n == "InternalRpcClientServer")
 			return mailboxid.empty() ? std::string() :
 			       fmt::format("{}@{}", mailboxid, domain);
-		else if (n == "EwsSupportedSchemas")
+		if (n == "EwsSupportedSchemas")
 			return "Exchange2007, Exchange2007_SP1, Exchange2010, Exchange2010_SP1, Exchange2010_SP2, Exchange2013, Exchange2013_SP1";
-		else if (n == "CasVersion")
+		if (n == "CasVersion")
 			return m_server_version_dotted;
-		else if (n == "InternalMailboxServer" ||
+		if (n == "InternalMailboxServer" ||
 		    n == "ExternalMailboxServer" || n == "PublicFolderServer")
 			return may_connect() ? homesrv : std::string();
-		else if (n == "InternalEwsUrl" || n == "ExternalEwsUrl")
+		if (n == "InternalEwsUrl" || n == "ExternalEwsUrl")
 			return may_connect() ? ews_url : std::string();
 		return std::nullopt;
 	};

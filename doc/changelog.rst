@@ -14,10 +14,18 @@ Fixes:
 * EWS: the subject prefix of meeting responses, e.g. "Accepted: ", is now in
   the language of the MailboxCulture header of the request, or else of the
   user, like Exchange does. A German mailbox answers with "Angenommen: ".
+* EWS: the "Canceled: " prefix of meeting cancellations now follows the same
+  language as the prefix of meeting responses.
 * EWS: GetItem now returns the attendees of a meeting when the shape asks for
   them without calendar:IsMeeting.
 * imap: The greeting on implicit TLS connections advertised a truncated
   capability list.
+* EWS: meeting updates sent by UpdateItem now carry PidLidChangeHighlight
+  and are marked as full or informational updates instead of as a new
+  request.
+* EWS: changing the attendees of a meeting with UpdateItem no longer drops
+  the responses of the attendees that stay, unless the start, end or
+  recurrence changed too.
 
 
 Gromox 3.13 (2026-10-28)

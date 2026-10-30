@@ -108,6 +108,7 @@ class EWSError : public DispatchError {
 	ERR(NameResolutionNoResults) ///< Name resolution failed / no results
 	ERR(NotEnoughMemory) ///< Out of memory
 	ERR(SchemaValidation) ///< XML value is does not confirm to schema
+	ERR(SendAsDenied) ///< Caller may not send as or on behalf of the claimed sender
 	ERR(ServerBusy) ///< Server declined to process the request (e.g. batch exceeds a configured limit)
 	ERR(SubscriptionAccessDenied) ///< Trying to access subscription from another user
 	ERR(TimeZone) ///< Invalid or missing time zone
@@ -623,8 +624,10 @@ E(3488, "occurrence has been deleted from the series");
 E(3489, "item is not a recurring master");
 E(3490, "failed to write cancellation copy to Sent Items");
 E(3491, "failed to build occurrence message");
-E(3492, "failed to build occurrence cancellation");
+E(3492, "failed to build occurrence meeting message");
 inline std::string E3493(std::string_view val) {return fmt::format("E-3493: invalid binary value '{}'", val);}
+E(3494, "failed to load meeting recipients");
+E(3495, "failed to resolve meeting cancellation properties");
 E(3496, "cannot save the sent item in another store");
 E(3497, "failed to delete sent item");
 E(3498, "failed to mark sent item as sent");
@@ -645,6 +648,12 @@ E(3527, "cannot write to the folder of the item to suppress the read receipt for
 E(3530, "failed to set the sender identity");
 E(3531, "failed to remove a stale sender identity");
 E(3532, "failed to copy the message to submit");
+E(3535, "failed to copy the exception body");
+E(3536, "failed to build occurrence meeting request");
+E(3537, "failed to read series master for occurrence update");
+E(3540, "failed to write meeting request copy to Sent Items");
+E(3541, "failed to resolve meeting sequence properties");
+E(3542, "failed to store meeting sequence number");
 E(3570, "out of memory adding an attachment");
 E(3571, "failed to add an attachment");
 E(3572, "only file attachments can be created with an item");

@@ -117,6 +117,35 @@ static int t_extpp()
 	return EXIT_SUCCESS;
 }
 
+static int t_rcpt_stream()
+{
+	char name[] = "Ab";
+	uint32_t type = MAPI_TO, flags = recipOriginal;
+	uint8_t resp = 1;
+	BINARY eid = {2, {deconst("\xde\xad")}};
+	TAGGED_PROPVAL pv[] = {
+		{PR_DISPLAY_NAME, name}, {PR_RECIPIENT_TYPE, &type},
+		{PR_RECIPIENT_FLAGS, &flags}, {PR_RESPONSIBILITY, &resp},
+		{PR_ENTRYID, &eid},
+	};
+	TPROPVAL_ARRAY row = {std::size(pv), pv};
+	TPROPVAL_ARRAY *rows[] = {&row};
+	TARRAY_SET set = {1, rows};
+	EXT_PUSH ep;
+	assert(ep.init(nullptr, 0, EXT_FLAG_UTF16));
+	assert(ep.p_rcpt_stream(set) == pack_result::ok);
+	assert(std::string_view(ep.m_cdata, ep.m_offset) == hex2bin(
+	       "0100000001000000" "0500000000000000"
+	       "1f0001300600410062000000" "0300150c01000000"
+	       "0300fd5f00010000" "0b000f0e0100" "0201ff0f0200dead"));
+	STRING_ARRAY mv{};
+	TAGGED_PROPVAL bad = {PR_EMS_AB_PROXY_ADDRESSES, &mv};
+	row = {1, &bad};
+	assert(ep.init(nullptr, 0, 0));
+	assert(ep.p_rcpt_stream(set) == pack_result::format);
+	return EXIT_SUCCESS;
+}
+
 static int t_convert()
 {
 	char out[1];
@@ -908,7 +937,7 @@ static int runner()
 
 	using fpt = decltype(&t_interval);
 	static constexpr fpt fct[] = {
-		t_extpp, t_convert, t_emailaddr, t_mimefield, t_base64,
+		t_extpp, t_rcpt_stream, t_convert, t_emailaddr, t_mimefield, t_base64,
 		t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,

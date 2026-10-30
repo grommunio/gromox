@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cctype>
 #include <chrono>
@@ -1499,6 +1500,117 @@ std::string EWSContext::essdn_to_username(const std::string& essdn) const
 }
 
 /**
+ * @brief      Get the user owning a store
+ *
+ * @param      dir   Home directory of the store
+ *
+ * @return     Owner of a private store, the caller otherwise
+ */
+std::string EWSContext::storeOwner(const std::string &dir) const
+{
+	if (dir == m_auth_info.maildir)
+		return m_auth_info.username;
+	unsigned int user_id = 0;
+	std::string owner;
+	if (!mysql_adaptor_get_id_from_maildir(dir.c_str(), &user_id) ||
+	    mysql_adaptor_userid_to_name(user_id, owner) != ecSuccess)
+		return m_auth_info.username;
+	return owner;
+}
+
+/**
+ * @brief      Check whether the caller acts as the owner of a store
+ *
+ * Store owners, which is what Full Access amounts to, send as the
+ * mailbox, like emsmdb and zcore do when submitting from that store.
+ *
+ * @param      dir   Home directory of the store
+ */
+bool EWSContext::actsAsOwner(const std::string &dir) const
+{
+	if (dir == m_auth_info.maildir)
+		return true;
+	uint32_t perm = 0;
+	return m_plugin.exmdb.get_mbox_perm(dir.c_str(),
+	       m_auth_info.username, &perm) && (perm & frightsGromoxStoreOwner);
+}
+
+/**
+ * @brief      Check whether the caller is on the Send-As list of a store
+ *
+ * @param      dir   Home directory of the store
+ */
+bool EWSContext::onSendAsList(const std::string &dir) const
+{
+	std::vector<std::string> list;
+	if (!m_plugin.exmdb.read_delegates(dir.c_str(), 1, &list))
+		return false;
+	for (const auto &d : list)
+		if (strcasecmp(d.c_str(), m_auth_info.username) == 0 ||
+		    mysql_adaptor_check_mlist_include(d.c_str(), m_auth_info.username))
+			return true;
+	return false;
+}
+
+/**
+ * @brief      Sender properties of meeting mail sent from a store
+ *
+ * The store owner organizes, the caller may be a delegate. A caller
+ * acting as the owner or holding Send-As rights sends as the owner.
+ * Values are allocated with alloc() and stay valid for the request.
+ *
+ * @param      dir   Home directory of the store
+ */
+std::vector<TAGGED_PROPVAL> EWSContext::meetingIdentity(const std::string &dir) const
+{
+	auto copyStr = [](const std::string &str) {
+		return strcpy(alloc<char>(str.size() + 1), str.c_str());
+	};
+	auto mkAbEid = [&](const char *user) {
+		std::string essdn;
+		if (cvt_username_to_essdn(user, m_plugin.x500_org_name.c_str(),
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
+			throw DispatchError(E3379);
+		EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
+		EXT_PUSH ext_push;
+		static constexpr size_t ABEIDBUFFSIZE = 1280;
+		auto abEidBuff = alloc<char>(ABEIDBUFFSIZE);
+		if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
+		    ext_push.p_abk_eid(abEid) != pack_result::ok)
+			throw DispatchError(E3380);
+		return construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
+	};
+	auto organizer = copyStr(storeOwner(dir));
+	auto username = actsAsOwner(dir) || onSendAsList(dir) ? organizer :
+	                deconst(m_auth_info.username);
+	std::string dispName;
+	if (!mysql_adaptor_get_user_displayname(username, dispName))
+		throw DispatchError(E3378);
+	auto displayName = copyStr(dispName);
+	auto orgName = displayName;
+	auto senderEid = mkAbEid(username), orgEid = senderEid;
+	if (strcasecmp(organizer, username) != 0) {
+		if (!mysql_adaptor_get_user_displayname(organizer, dispName))
+			throw DispatchError(E3378);
+		orgName = copyStr(dispName);
+		orgEid = mkAbEid(organizer);
+	}
+	auto addrType = deconst("SMTP");
+	return {
+		{PR_SENT_REPRESENTING_NAME, orgName},
+		{PR_SENT_REPRESENTING_SMTP_ADDRESS, organizer},
+		{PR_SENT_REPRESENTING_ADDRTYPE, addrType},
+		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, organizer},
+		{PR_SENT_REPRESENTING_ENTRYID, orgEid},
+		{PR_SENDER_NAME, displayName},
+		{PR_SENDER_SMTP_ADDRESS, username},
+		{PR_SENDER_ADDRTYPE, addrType},
+		{PR_SENDER_EMAIL_ADDRESS, username},
+		{PR_SENDER_ENTRYID, senderEid},
+	};
+}
+
+/**
  * @brief      Get user maildir from Mailbox speciication
  *
  * @param      Mailbox   Mailbox structure
@@ -2293,6 +2405,7 @@ void EWSContext::updateProps(tCalendarItem& calItem, sShape& shape, const TPROPV
 sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sShape& shape) const
 {
 	shape.clean();
+	shape.x500Org = m_plugin.x500_org_name.c_str();
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 	sItem item = tItem::create(shape);
@@ -2448,6 +2561,7 @@ EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
 	s.fid = fid;
 	s.mid = mid;
 	shape.clean();
+	shape.x500Org = m_plugin.x500_org_name.c_str();
 	getNamedTags(dir, shape);
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 
@@ -3370,17 +3484,21 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
  * @brief      Update attendee recipients on existing calendar item
  *
  * Used by UpdateItem when the client sets RequiredAttendees,
- * OptionalAttendees, or Resources. Replaces all recipients via the
- * message instance API and sets organizer properties.
+ * OptionalAttendees, or Resources. Replaces the attendee kinds present
+ * in the update via the message instance API, keeps the organizer row
+ * and the other kinds, and sets organizer properties.
  *
- * @param      dir     Store directory
- * @param      parent  Parent folder specification
- * @param      mid     Message ID of the calendar item
- * @param      shape   Shape containing attendee XML pointers
+ * @param      dir       Store directory
+ * @param      parent    Parent folder specification
+ * @param      mid       Message ID of the calendar item
+ * @param      shape     Shape containing attendee XML pointers
+ * @param      oldRcpts  Recipients of the item before the update
+ * @param      keepResponses  Whether attendees that stay keep their
+ *                       response
  */
 void EWSContext::updateAttendees(const std::string &dir,
-    const sFolderSpec &parent, uint64_t mid,
-    const sShape &shape) const
+    const sFolderSpec &parent, uint64_t mid, const sShape &shape,
+    const TARRAY_SET &oldRcpts, bool keepResponses) const
 {
 	auto &exmdb = plugin().exmdb;
 	auto inst = m_plugin.loadMessageInstance(dir, parent.folderId, mid);
@@ -3391,6 +3509,9 @@ void EWSContext::updateAttendees(const std::string &dir,
 	if (rcpts == nullptr)
 		throw EWSError::NotEnoughMemory(E3455);
 	auto cl_rcpts = HX::make_scope_exit([&]() { tarray_set_free(rcpts); });
+	std::vector<std::string> oldAddrs;
+	for (const auto &row : oldRcpts)
+		oldAddrs.emplace_back(rcptAddress(row));
 	uint32_t row_id = 0;
 	auto parseAttendees = [&](const tinyxml2::XMLElement *xml, uint32_t type) {
 		for (auto entry = xml->FirstChildElement("Attendee");
@@ -3405,38 +3526,60 @@ void EWSContext::updateAttendees(const std::string &dir,
 			    rcpt->set(PR_RECIPIENT_FLAGS, &sendable) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3456);
 			++row_id;
+			/* MS-OXOCAL v22.1 §3.1.4.7.3.2 */
+			if (!keepResponses)
+				continue;
+			auto addr = rcptAddress(*rcpt);
+			auto it = addr.empty() ? oldAddrs.cend() :
+			          std::find_if(oldAddrs.cbegin(), oldAddrs.cend(),
+			          [&](const std::string &o) { return strcasecmp(o.c_str(), addr.c_str()) == 0; });
+			if (it == oldAddrs.cend())
+				continue;
+			auto &old = oldRcpts.pparray[it - oldAddrs.cbegin()];
+			for (auto tag : {PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME}) {
+				auto v = old->getval(tag);
+				if (v != nullptr && rcpt->set(tag, v) != ecSuccess)
+					throw EWSError::NotEnoughMemory(E3456);
+			}
 		}
 	};
+	for (const auto &row : oldRcpts) {
+		auto type = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		bool keep = flags != nullptr && *flags & recipOrganizer;
+		if (!keep && type != nullptr) {
+			auto t = *type & 0xf;
+			keep = (t == MAPI_TO && !shape.requiredAttendees) ||
+			       (t == MAPI_CC && !shape.optionalAttendees) ||
+			       (t == MAPI_BCC && !shape.resourceAttendees);
+		}
+		if (!keep)
+			continue;
+		tpropval_array_ptr dup(row.dup());
+		if (dup == nullptr ||
+		    dup->set(PR_ROWID, &row_id) != ecSuccess ||
+		    rcpts->append_move(std::move(dup)) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3456);
+		++row_id;
+	}
 	if (shape.requiredAttendees)
 		parseAttendees(shape.requiredAttendees, MAPI_TO);
 	if (shape.optionalAttendees)
 		parseAttendees(shape.optionalAttendees, MAPI_CC);
 	if (shape.resourceAttendees)
-		parseAttendees(shape.resourceAttendees, MAPI_TO);
+		parseAttendees(shape.resourceAttendees, MAPI_BCC);
 
 	if (rcpts->count > 0) {
 		if (!exmdb.update_message_instance_rcpts(dir.c_str(),
 		    inst->instanceId, rcpts))
 			throw EWSError::ItemSave(E3351);
 		/* Set organizer properties when attendees are present */
-		std::string dispName;
-		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
-			throw DispatchError(E3352);
+		auto oprops = meetingIdentity(dir);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType   = construct<uint32_t>(mtgRequest);
 		auto apptState  = construct<uint32_t>(asfMeeting);
 		auto respStatus = construct<uint32_t>(respOrganized);
-		const TAGGED_PROPVAL oprops[] = {
-			{PR_SENT_REPRESENTING_NAME, deconst(dispName.c_str())},
-			{PR_SENDER_NAME, deconst(dispName.c_str())},
-			{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(m_auth_info.username)},
-			{PR_SENDER_SMTP_ADDRESS, deconst(m_auth_info.username)},
-			{PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP")},
-			{PR_SENDER_ADDRTYPE, deconst("SMTP")},
-			{PR_SENT_REPRESENTING_EMAIL_ADDRESS, deconst(m_auth_info.username)},
-			{PR_SENDER_EMAIL_ADDRESS, deconst(m_auth_info.username)},
-		};
-		const TPROPVAL_ARRAY oproplist = {std::size(oprops), deconst(oprops)};
+		const TPROPVAL_ARRAY oproplist = {static_cast<uint16_t>(oprops.size()), oprops.data()};
 		PROBLEM_ARRAY problems;
 		if (!exmdb.set_instance_properties(dir.c_str(),
 		    inst->instanceId, &oproplist, &problems))
@@ -4265,7 +4408,7 @@ void EWSContext::restrictShape(const std::string &dir, const sFolderSpec &folder
  *
  * @param      identity   SMTP address the message claims to be sent from
  *
- * @throw      EWSError::AccessDenied   Caller lacks Send-As rights on
+ * @throw      EWSError::SendAsDenied   Caller lacks Send-As rights on
  *              the claimed identity
  */
 void EWSContext::validate_sendas_perms(const std::string &identity) const
@@ -4278,15 +4421,19 @@ void EWSContext::validate_sendas_perms(const std::string &identity) const
 		maildir = get_maildir(identity);
 	} catch (...) {
 		/* Unresolvable (external/nonexistent) address is never a valid Send-As target */
-		throw EWSError::AccessDenied(E3474);
+		throw EWSError::SendAsDenied(E3474);
 	}
 	if (maildir == m_auth_info.maildir)
 		return; /* alias of the caller's own mailbox */
 	uint32_t permission = 0;
 	if (!m_plugin.exmdb.get_mbox_perm(maildir.c_str(),
-	    m_auth_info.username, &permission) ||
-	    !(permission & (frightsGromoxSendAs | frightsGromoxStoreOwner)))
+	    m_auth_info.username, &permission))
 		throw EWSError::AccessDenied(E3474);
+	if (permission & (frightsGromoxSendAs | frightsGromoxStoreOwner))
+		return;
+	/* get_mbox_perm only knows the Send-On-Behalf list */
+	if (!onSendAsList(maildir))
+		throw EWSError::SendAsDenied(E3474);
 }
 
 /**
@@ -4650,13 +4797,24 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 
 	std::vector<std::string> rcpts;
 	rcpts.reserve(content.children.prcpts->count);
+	bool organizer = false;
 	for (auto &rcpt : *content.children.prcpts) {
+		/* The organizer row of a meeting is not an addressee */
+		auto flags = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (flags != nullptr && *flags & recipOrganizer) {
+			organizer = true;
+			continue;
+		}
+		if (flags != nullptr && !(*flags & recipSendable))
+			continue;
 		tEmailAddressType addr(rcpt);
 		if (!addr.EmailAddress)
 			continue;
 		normalize(addr);
 		rcpts.emplace_back(*addr.EmailAddress);
 	}
+	if (rcpts.empty() && organizer)
+		return;
 	auto err = cu_send_vmail(mail, m_plugin.smtp_url.c_str(),
 	           m_auth_info.username, rcpts);
 	if (err != ecSuccess)
@@ -4817,12 +4975,176 @@ void EWSContext::toInstance(const std::string &dir, uint32_t basedate,
 		    xe.location.c_str()) != ecSuccess)
 			throw EWSError::NotEnoughMemory(E3491);
 	}
+
+	/* The exception message carries the body of the occurrence */
+	auto xrt_tag = PROP_TAG(PT_SYSTIME, ids[l_replacetime]);
+	const MESSAGE_CONTENT *emb = nullptr;
+	if (exc != nullptr && msg.children.pattachments != nullptr)
+		for (const auto &at : *msg.children.pattachments) {
+			if (at.pembedded == nullptr)
+				continue;
+			auto xrt = at.pembedded->proplist.get<const uint64_t>(xrt_tag);
+			if (xrt != nullptr && s.replaces(basedate, *xrt)) {
+				emb = at.pembedded;
+				break;
+			}
+		}
+	static constexpr proptag_t body_tags[] =
+		{PR_BODY, PR_HTML, PR_RTF_COMPRESSED, PR_RTF_IN_SYNC};
+	if (emb != nullptr && (emb->proplist.has(PR_BODY) ||
+	    emb->proplist.has(PR_HTML) || emb->proplist.has(PR_RTF_COMPRESSED))) {
+		for (auto tag : body_tags)
+			props.erase(tag);
+		for (auto tag : body_tags) {
+			auto v = emb->proplist.getval(tag);
+			if (v != nullptr && props.set(tag, v) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3535);
+		}
+	}
 	props.erase(recur_tag);
 	props.erase(tzr_tag);
 	props.erase(PROP_TAG(PT_UNICODE, ids[l_pattern]));
 	props.erase(PROP_TAG(PT_LONG, ids[l_rectype]));
 	/* oxcical would export each exception as an extra VEVENT */
 	msg.set_attachments_internal(nullptr);
+}
+
+/**
+ * @brief      Prefix the subject of a meeting cancellation
+ *
+ * MS-OXOCAL v22.1 §2.2.8.2 gives cancellations a localized subject prefix.
+ * Use the one Exchange and Outlook use in that language.
+ *
+ * @param      props  Properties of the cancellation
+ * @param      lang   Language of the prefix
+ * @param      norm   Storage for the normalized subject
+ * @param      full   Storage for the full subject
+ *
+ * @return     Tagged values to set, pointing into norm and full
+ */
+static std::array<TAGGED_PROPVAL, 3> cancel_subject(const TPROPVAL_ARRAY &props,
+    const char *lang, std::string &norm, std::string &full)
+{
+	auto subj = props.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (subj == nullptr)
+		subj = props.get<const char>(PR_SUBJECT);
+	auto pfx = meeting_subject_prefix(lang, "canceled");
+	norm = znul(subj);
+	full = pfx + norm;
+	return {{
+		{PR_SUBJECT_PREFIX, deconst(pfx)},
+		{PR_NORMALIZED_SUBJECT, norm.data()},
+		{PR_SUBJECT, full.data()},
+	}};
+}
+
+/**
+ * @brief      Send a meeting message for one occurrence of a series
+ *
+ * @param      dir       Store directory
+ * @param      parent    Parent folder of the meeting
+ * @param      mid       Message ID of the series master
+ * @param      master    Content of the series master
+ * @param      basedate  Basedate of the occurrence
+ * @param      cls       Message class to send
+ * @param      saveCopy  Whether to keep a copy in Sent Items
+ */
+void EWSContext::sendInstance(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid, const MESSAGE_CONTENT &master,
+    uint32_t basedate, const char *cls, bool saveCopy) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	message_content_ptr inst(master.dup());
+	if (!inst)
+		throw EWSError::NotEnoughMemory(E3492);
+	toInstance(dir, basedate, *inst);
+	const PROPERTY_NAME pn[] = {NtAppointmentSequence, NtOwnerCriticalChange};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	auto now = rop_util_current_nttime();
+	/* MS-OXOCAL v22.1 §3.1.5.4: the Meeting object keeps the new number */
+	uint32_t newseq = nextSequence(dir, parent, mid, true, now);
+	m_plugin.unloadMessageInstance(dir, mid);
+	auto &props = inst->proplist;
+	if (props.set(PR_MESSAGE_CLASS, cls) != ecSuccess ||
+	    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+	    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, ids[0]), &newseq) != ecSuccess ||
+	    props.set(PROP_TAG(PT_SYSTIME, ids[1]), &now) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3492);
+	if (strcmp(cls, "IPM.Schedule.Meeting.Request") == 0 &&
+	    props.set(PR_RESPONSE_REQUESTED, &byte_value_one) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3536);
+	if (strcmp(cls, "IPM.Schedule.Meeting.Canceled") == 0) {
+		std::string norm, full;
+		for (const auto &p : cancel_subject(props, culture(), norm, full))
+			if (props.set(p) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3492);
+	}
+	/* The owner organizes and the caller sends */
+	for (const auto &prop : meetingIdentity(dir))
+		if (props.set(prop) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3492);
+	props.erase(PR_SENDER_SEARCH_KEY);
+	props.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
+	send(dir, mid, *inst);
+	if (!saveCopy)
+		return;
+	static constexpr proptag_t rmProps[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+	};
+	for (auto tag : rmProps)
+		props.erase(tag);
+	auto sentitems = resolveFolder(
+	                 tDistinguishedFolderId(Enum::sentitems));
+	uint64_t newMid = 0, newCn = 0;
+	ec_error_t err = ecSuccess;
+	if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
+	    inst.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3490);
+}
+
+/**
+ * @brief      Stamp properties on the exceptions of a series message
+ *
+ * oxcical exports each exception as its own VEVENT and takes ORGANIZER,
+ * ATTENDEE, DTSTAMP and SEQUENCE from the exception message, which
+ * UpdateItem creates without them.
+ *
+ * @param      msg     Duplicated series message
+ * @param      props   Properties to set
+ *
+ * @return     false if memory ran out
+ */
+static bool stamp_exceptions(MESSAGE_CONTENT &msg,
+    const std::vector<TAGGED_PROPVAL> &props)
+{
+	if (msg.children.pattachments == nullptr)
+		return true;
+	for (auto &at : *msg.children.pattachments) {
+		if (at.pembedded == nullptr)
+			continue;
+		auto cls = at.pembedded->proplist.get<const char>(PR_MESSAGE_CLASS);
+		if (cls == nullptr ||
+		    class_match_prefix(cls, IPM_Appointment_Exception) != 0)
+			continue;
+		for (const auto &p : props)
+			if (at.pembedded->proplist.set(p) != ecSuccess)
+				return false;
+		auto rcpts = at.pembedded->children.prcpts;
+		if (msg.children.prcpts == nullptr ||
+		    (rcpts != nullptr && rcpts->count > 0))
+			continue;
+		rcpts = msg.children.prcpts->dup();
+		if (rcpts == nullptr)
+			return false;
+		at.pembedded->set_rcpts_internal(rcpts);
+	}
+	return true;
 }
 
 /**
@@ -4850,41 +5172,31 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	/* The cancellation carries the content of the meeting */
 	if (!(permissions(dir, parent.folderId) & frightsReadAny))
 		throw EWSError::AccessDenied(E3604);
+	/* Callers delete the item afterwards, so check before that */
+	validate_sendas_perms(storeOwner(dir));
 	if (basedate) {
-		message_content_ptr inst(cancelcontent->dup());
-		if (!inst)
-			throw EWSError::NotEnoughMemory(E3492);
-		toInstance(dir, *basedate, *inst);
-		auto &props = inst->proplist;
-		auto seq_tag = PROP_TAG(PT_LONG,
-		               getNamedPropId(dir, NtAppointmentSequence, true));
-		auto seq = props.get<const uint32_t>(seq_tag);
-		uint32_t newseq = seq != nullptr ? *seq + 1 : 1;
-		auto now = rop_util_current_nttime();
-		if (props.set(PR_MESSAGE_CLASS,
-		    "IPM.Schedule.Meeting.Canceled") != ecSuccess ||
-		    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
-		    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
-		    props.set(seq_tag, &newseq) != ecSuccess)
-			throw EWSError::NotEnoughMemory(E3492);
-		send(dir, meid.messageId(), *inst);
-		if (!saveCopy)
-			return;
-		static constexpr proptag_t rmProps[] = {
-			PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
-			PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
-		};
-		for (auto tag : rmProps)
-			props.erase(tag);
-		auto sentitems = resolveFolder(
-		                 tDistinguishedFolderId(Enum::sentitems));
-		uint64_t newMid = 0, newCn = 0;
-		ec_error_t err = ecSuccess;
-		if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
-		    inst.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
-			throw EWSError::ItemSave(E3490);
+		sendInstance(dir, parent, meid.messageId(), *cancelcontent,
+			*basedate, "IPM.Schedule.Meeting.Canceled", saveCopy);
 		return;
 	}
+	/* The caller sends, the stored PR_SENDER may name someone else */
+	auto ident = meetingIdentity(dir);
+	const std::vector<proptag_t> staleKeys
+		{PR_SENDER_SEARCH_KEY, PR_SENT_REPRESENTING_SEARCH_KEY};
+	const PROPERTY_NAME pn[] = {NtAppointmentSequence, NtOwnerCriticalChange};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	auto seq_tag = PROP_TAG(PT_LONG, ids[0]);
+	auto crit_tag = PROP_TAG(PT_SYSTIME, ids[1]);
+	auto now = rop_util_current_nttime();
+	uint32_t newseq = nextSequence(dir, parent, meid.messageId(), true, now);
+	/* RFC 5546 §3.2.5: every VEVENT of the CANCEL needs these */
+	auto excProps = ident;
+	excProps.push_back({seq_tag, &newseq});
+	excProps.push_back({crit_tag, &now});
 	if (saveCopy) {
 		sFolderSpec sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 		uint64_t newMid = 0;
@@ -4895,30 +5207,56 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		    sentitems.folderId, newMid, false, &result) || !result)
 			throw EWSError::InternalServerError(E3301);
 		const char *sentuser = effectiveUser(sentitems);
-		auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-		const TAGGED_PROPVAL sprops[] = {
+		std::vector<TAGGED_PROPVAL> sprops = {
 			{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Canceled")},
-			{PR_CLIENT_SUBMIT_TIME, now},
-			{PR_MESSAGE_DELIVERY_TIME, now},
+			{PR_CLIENT_SUBMIT_TIME, &now},
+			{PR_MESSAGE_DELIVERY_TIME, &now},
+			{seq_tag, &newseq},
+			{crit_tag, &now},
 		};
-		const TPROPVAL_ARRAY sproplist{std::size(sprops), deconst(sprops)};
+		sprops.insert(sprops.end(), ident.begin(), ident.end());
+		std::string norm, full;
+		auto subj = cancel_subject(cancelcontent->proplist, culture(), norm, full);
+		sprops.insert(sprops.end(), subj.begin(), subj.end());
+		const TPROPVAL_ARRAY sproplist{static_cast<uint16_t>(sprops.size()), sprops.data()};
 		PROBLEM_ARRAY sproblems;
 		if (!exmdb.set_message_properties(dir.c_str(), sentuser, CP_ACP,
-		    newMid, &sproplist, &sproblems))
+		    newMid, &sproplist, &sproblems) ||
+		    !exmdb.remove_message_properties(dir.c_str(), CP_ACP,
+		    newMid, staleKeys))
 			throw EWSError::ItemSave(E3092);
 		MESSAGE_CONTENT *sentcontent = nullptr;
 		if (!exmdb.read_message(dir.c_str(), sentuser, CP_ACP, newMid,
 		    &sentcontent) || sentcontent == nullptr)
 			throw EWSError::ItemNotFound(E3390);
-		send(dir, meid.messageId(), *sentcontent);
+		message_content_ptr outcontent(sentcontent->dup());
+		if (!outcontent ||
+		    !stamp_exceptions(*outcontent, excProps))
+			throw EWSError::NotEnoughMemory(E3407);
+		send(dir, meid.messageId(), *outcontent);
 	} else {
 		message_content_ptr dupcontent(cancelcontent->dup());
 		if (!dupcontent)
 			throw EWSError::NotEnoughMemory(E3407);
-		dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Canceled");
-		auto now = EWSContext::construct<uint64_t>( rop_util_current_nttime());
-		dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
-		dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
+		auto &props = dupcontent->proplist;
+		if (props.set(PR_MESSAGE_CLASS,
+		    "IPM.Schedule.Meeting.Canceled") != ecSuccess ||
+		    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+		    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
+		    props.set(seq_tag, &newseq) != ecSuccess ||
+		    props.set(crit_tag, &now) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3407);
+		for (const auto &prop : ident)
+			if (props.set(prop) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3407);
+		std::string norm, full;
+		for (const auto &p : cancel_subject(props, culture(), norm, full))
+			if (props.set(p) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3407);
+		for (auto tag : staleKeys)
+			props.erase(tag);
+		if (!stamp_exceptions(*dupcontent, excProps))
+			throw EWSError::NotEnoughMemory(E3407);
 		send(dir, meid.messageId(), *dupcontent);
 	}
 }
@@ -4934,6 +5272,435 @@ static const char *resp_subject_prefix(const char *cls, const char *lang)
 	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Neg") == 0)
 		return meeting_subject_prefix(lang, "declined");
 	return nullptr;
+}
+
+/**
+ * @brief      Get the SMTP address of a recipient row
+ *
+ * @param      row     Recipient row
+ *
+ * @return     Address, or an empty string if it cannot be resolved
+ */
+std::string EWSContext::rcptAddress(const TPROPVAL_ARRAY &row) const
+{
+	tEmailAddressType addr(row);
+	try {
+		normalize(addr);
+	} catch (const DispatchError &) {
+		return {};
+	}
+	return addr.EmailAddress.value_or("");
+}
+
+/**
+ * @brief      Send a cancellation to attendees dropped from a meeting
+ *
+ * MS-OXOCAL v22.1 §3.1.4.9.1.1: only the removed attendees get the
+ * Meeting Cancellation object.
+ *
+ * @param      dir       Store directory
+ * @param      parent    Parent folder of the meeting
+ * @param      mid       Message ID of the meeting
+ * @param      oldRcpts  Recipients of the meeting before the update
+ * @param      saveCopy  Whether to keep a copy in Sent Items
+ */
+void EWSContext::cancelRemovedAttendees(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid, const TARRAY_SET &oldRcpts,
+    bool saveCopy) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	MESSAGE_CONTENT *cur = nullptr;
+	if (!exmdb.read_message(dir.c_str(), effectiveUser(parent), CP_ACP,
+	    mid, &cur) || cur == nullptr)
+		throw EWSError::ItemNotFound(E3389);
+	auto cls = cur->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr || class_match_prefix(cls, "IPM.Appointment") != 0)
+		return;
+	std::vector<std::string> kept;
+	if (cur->children.prcpts != nullptr)
+		for (const auto &row : *cur->children.prcpts)
+			kept.emplace_back(rcptAddress(row));
+	auto is_kept = [&](const std::string &a) {
+		return std::any_of(kept.cbegin(), kept.cend(),
+		       [&](const std::string &k) {
+		       	return strcasecmp(k.c_str(), a.c_str()) == 0;
+		       });
+	};
+	message_content_ptr cancel(cur->dup());
+	if (!cancel)
+		throw EWSError::NotEnoughMemory(E3407);
+	auto rcpts = tarray_set_init();
+	if (rcpts == nullptr)
+		throw EWSError::NotEnoughMemory(E3406);
+	cancel->set_rcpts_internal(rcpts);
+	for (const auto &row : oldRcpts) {
+		auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (flags != nullptr && *flags & recipOrganizer)
+			continue;
+		auto addr = rcptAddress(row);
+		if (addr.empty()) {
+			mlog(LV_WARN, "[ews] %s:m%llu: removed attendee has "
+			     "no usable address, no cancellation sent",
+			     dir.c_str(), static_cast<unsigned long long>(mid));
+			continue;
+		}
+		if (is_kept(addr))
+			continue;
+		tpropval_array_ptr dup(row.dup());
+		if (dup == nullptr ||
+		    rcpts->append_move(std::move(dup)) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3406);
+	}
+	if (rcpts->count == 0)
+		return;
+
+	/* MS-OXOCAL v22.1 §2.2.8, §3.1.4.9.1 */
+	const PROPERTY_NAME pn[] = {
+		NtAppointmentSequence, NtAppointmentStateFlags,
+		NtResponseStatus, NtBusyStatus, NtIntendedBusyStatus,
+		NtOwnerCriticalChange,
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3495);
+	auto &props = cancel->proplist;
+	auto seq_tag = PROP_TAG(PT_LONG, ids[0]);
+	auto state_tag = PROP_TAG(PT_LONG, ids[1]);
+	auto now = rop_util_current_nttime();
+	uint32_t newseq = nextSequence(dir, parent, mid, false, now);
+	auto st = props.get<const uint32_t>(state_tag);
+	uint32_t state = (st != nullptr ? *st : asfMeeting) |
+	                 asfReceived | asfCanceled;
+	uint32_t resp = respNotResponded, busy = olFree;
+	std::string norm, full;
+	auto subjProps = cancel_subject(props, culture(), norm, full);
+	if (props.set(PR_MESSAGE_CLASS,
+	    "IPM.Schedule.Meeting.Canceled") != ecSuccess ||
+	    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+	    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess ||
+	    props.set(seq_tag, &newseq) != ecSuccess ||
+	    props.set(PROP_TAG(PT_SYSTIME, ids[5]), &now) != ecSuccess ||
+	    props.set(state_tag, &state) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, ids[2]), &resp) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, ids[3]), &busy) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, ids[4]), &busy) != ecSuccess ||
+	    props.set(subjProps[0]) != ecSuccess ||
+	    props.set(subjProps[1]) != ecSuccess ||
+	    props.set(subjProps[2]) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3406);
+	/* The owner organizes and the caller sends */
+	auto ident = meetingIdentity(dir);
+	for (const auto &prop : ident)
+		if (props.set(prop) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3406);
+	props.erase(PR_SENDER_SEARCH_KEY);
+	props.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
+	/* RFC 5546 §3.2.5: every VEVENT of the CANCEL needs these */
+	ident.push_back({seq_tag, &newseq});
+	ident.push_back({PROP_TAG(PT_SYSTIME, ids[5]), &now});
+	if (!stamp_exceptions(*cancel, ident))
+		throw EWSError::NotEnoughMemory(E3406);
+	send(dir, mid, *cancel);
+	if (!saveCopy)
+		return;
+	static constexpr proptag_t rmProps[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+	};
+	for (auto tag : rmProps)
+		props.erase(tag);
+	auto sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+	uint64_t newMid = 0, newCn = 0;
+	ec_error_t err = ecSuccess;
+	if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
+	    cancel.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3490);
+}
+
+/**
+ * @brief      Pick the sequence number of an outgoing meeting message
+ *
+ * MS-OXOCAL v22.1 §3.1.5.4: every update or cancellation increments it.
+ * The Meeting object records the new number as its last sequence, and
+ * as its sequence with the sequence time only when all attendees are
+ * told.
+ *
+ * @param      dir       Store directory
+ * @param      parent    Parent folder of the meeting
+ * @param      mid       Message ID of the meeting
+ * @param      toAll     Whether the message goes to all attendees
+ * @param      critical  PidLidOwnerCriticalChange of the message
+ *
+ * @return     Sequence number for the outgoing message
+ */
+uint32_t EWSContext::nextSequence(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid, bool toAll,
+    uint64_t critical) const
+{
+	const PROPERTY_NAME pn[] = {
+		NtAppointmentSequence, NtAppointmentLastSequence,
+		NtAppointmentSequenceTime, NtOwnerCriticalChange,
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	const proptag_t tags[] = {
+		PROP_TAG(PT_LONG, ids[0]), PROP_TAG(PT_LONG, ids[1]),
+		PROP_TAG(PT_SYSTIME, ids[2]), PROP_TAG(PT_SYSTIME, ids[3]),
+	};
+	auto props = getItemProps(dir, mid, tags);
+	auto seq = props.get<const uint32_t>(tags[0]);
+	auto last = props.get<const uint32_t>(tags[1]);
+	auto seqtime = props.get<const uint64_t>(tags[2]);
+	auto owncrit = props.get<const uint64_t>(tags[3]);
+	uint32_t val = std::max(seq != nullptr ? *seq : 0,
+	               last != nullptr ? *last : 0) + 1;
+	std::vector<TAGGED_PROPVAL> vals{{tags[1], &val}};
+	if (toAll) {
+		vals.push_back({tags[0], &val});
+		vals.push_back({tags[2], &critical});
+		vals.push_back({tags[3], &critical});
+	} else if (seqtime == nullptr && owncrit != nullptr) {
+		vals.push_back({tags[2], deconst(owncrit)});
+	}
+	const TPROPVAL_ARRAY list = {static_cast<uint16_t>(vals.size()),
+	                            vals.data()};
+	PROBLEM_ARRAY problems;
+	if (!m_plugin.exmdb.set_message_properties(dir.c_str(),
+	    effectiveUser(parent), CP_ACP, mid, &list, &problems))
+		throw EWSError::ItemSave(E3542);
+	return val;
+}
+
+/**
+ * @brief      Record the attendees an update is not sent to
+ *
+ * MS-OXOCAL v22.1 §2.2.1.25, §3.1.4.7.3.4. An empty list removes
+ * the property, so a copied calendar item does not pass on a stale one.
+ *
+ * @param      props  Properties of the meeting update
+ * @param      tag    Tag of PidLidAppointmentUnsendableRecipients
+ * @param      rows   Recipient rows of the unsendable attendees
+ */
+void EWSContext::setUnsendable(TPROPVAL_ARRAY &props, proptag_t tag,
+    const std::vector<TPROPVAL_ARRAY *> &rows)
+{
+	props.erase(tag);
+	if (rows.empty())
+		return;
+	static constexpr proptag_t keep[] = {
+		PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
+		PR_SMTP_ADDRESS, PR_ENTRYID, PR_DISPLAY_TYPE,
+		PR_RECIPIENT_TYPE, PR_RECIPIENT_FLAGS,
+		PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME,
+	};
+	std::vector<std::vector<TAGGED_PROPVAL>> vals(rows.size());
+	std::vector<TPROPVAL_ARRAY> sub(rows.size());
+	std::vector<TPROPVAL_ARRAY *> ptrs(rows.size());
+	for (size_t i = 0; i < rows.size(); ++i) {
+		for (auto t : keep) {
+			auto v = rows[i]->getval(t);
+			if (v != nullptr)
+				vals[i].emplace_back(TAGGED_PROPVAL{t, deconst(v)});
+		}
+		sub[i] = {static_cast<uint16_t>(vals[i].size()), vals[i].data()};
+		ptrs[i] = &sub[i];
+	}
+	const TARRAY_SET set = {static_cast<uint32_t>(ptrs.size()), ptrs.data()};
+	/* Only a SHOULD, so the update goes out without it */
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ep.p_rcpt_stream(set) != pack_result::ok)
+		return;
+	BINARY bin;
+	bin.cb = ep.m_offset;
+	bin.pv = ep.m_udata;
+	if (props.set(tag, &bin) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3408);
+}
+
+/**
+ * @brief      Record that the meeting requests went out
+ *
+ * Sets PidLidFInvited, which EWS reports as MeetingRequestWasSent. Outlook
+ * shows a meeting without it as not sent yet. The mail is out already, so
+ * a failure is only logged.
+ */
+static void mark_invited(const EWSContext &ctx, const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid)
+{
+	auto propid = ctx.getNamedPropId(dir, NtFInvited, true);
+	if (propid == 0)
+		return;
+	const TAGGED_PROPVAL val = {PROP_TAG(PT_BOOLEAN, propid), deconst(&byte_value_one)};
+	const TPROPVAL_ARRAY list = {1, deconst(&val)};
+	PROBLEM_ARRAY problems;
+	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+	    ctx.effectiveUser(parent), CP_ACP, mid, &list, &problems))
+		mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited",
+			dir.c_str(), static_cast<unsigned long long>(rop_util_get_gc_value(mid)));
+}
+
+/**
+ * @brief      Send the update of a meeting changed by UpdateItem
+ *
+ * MS-OXWSMTGS v14.0 §2.2.5.3: the SendToChanged modes only address
+ * the attendees that were added or removed. Removed attendees are
+ * handled by cancelRemovedAttendees.
+ *
+ * @param      dir       Store directory
+ * @param      parent    Parent folder of the meeting
+ * @param      mid       Message ID of the meeting
+ * @param      oldRcpts  Recipients before the update to send only to
+ *                       the added attendees, nullptr to send to all
+ * @param      saveCopy  Whether to keep a copy in Sent Items
+ * @param      highlight PidLidChangeHighlight of the update
+ * @param      full      Whether it is a full update
+ */
+void EWSContext::sendMeetingUpdate(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid, const TARRAY_SET *oldRcpts,
+    bool saveCopy, uint32_t highlight, bool full) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	MESSAGE_CONTENT *cur = nullptr;
+	if (!exmdb.read_message(dir.c_str(), effectiveUser(parent), CP_ACP,
+	    mid, &cur) || cur == nullptr)
+		throw EWSError::ItemNotFound(E3404);
+	auto cls = cur->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr || class_match_prefix(cls, "IPM.Appointment") != 0 ||
+	    cur->children.prcpts == nullptr || cur->children.prcpts->count == 0)
+		return;
+	/*
+	 * read_message returns pointers backed by ndr_stack regions, which
+	 * set() must not free. Thus, dup() first.
+	 */
+	message_content_ptr req(cur->dup());
+	if (!req)
+		throw EWSError::NotEnoughMemory(E3408);
+	auto rcpts = req->children.prcpts;
+	std::vector<TPROPVAL_ARRAY *> unsendable;
+	if (oldRcpts != nullptr) {
+		/*
+		 * MS-OXOCAL v22.1 §3.1.4.7.3.4: the other attendees stay
+		 * listed in the request but are marked unsendable.
+		 */
+		std::vector<std::string> old;
+		for (const auto &row : *oldRcpts)
+			old.emplace_back(rcptAddress(row));
+		for (auto &row : *rcpts) {
+			auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+			uint32_t f = flags != nullptr ? *flags : 0;
+			if (f & recipOrganizer)
+				continue;
+			auto a = rcptAddress(row);
+			if (!a.empty() && std::none_of(old.cbegin(), old.cend(),
+			    [&](const std::string &o) {
+			    	return strcasecmp(o.c_str(), a.c_str()) == 0;
+			    }))
+				continue;
+			if (flags == nullptr || f & recipSendable)
+				f |= recipOriginal;
+			f &= ~recipSendable;
+			if (row.set(PR_RECIPIENT_FLAGS, &f) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3408);
+			unsendable.push_back(&row);
+		}
+	}
+	if (std::none_of(rcpts->begin(), rcpts->end(),
+	    [](const TPROPVAL_ARRAY &row) {
+	    	auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+	    	return flags == nullptr || (*flags & recipSendable &&
+	    	       !(*flags & recipOrganizer));
+	    }))
+		return;
+	const PROPERTY_NAME pn[] = {
+		NtAppointmentSequence, NtOwnerCriticalChange,
+		NtAppointmentUnsendableRecipients, NtFInvited,
+		NtChangeHighlight, NtMeetingType,
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	auto &props = req->proplist;
+	/*
+	 * MS-OXOCAL v22.1 §2.2.6.2, §2.2.6.5. The first invitation to go
+	 * out stays the initial request.
+	 */
+	auto invited = props.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, ids[3]));
+	uint32_t mtgType = full ? mtgFull : mtgInfo;
+	if (invited != nullptr && *invited != 0 &&
+	    (props.set(PROP_TAG(PT_LONG, ids[4]), &highlight) != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, ids[5]), &mtgType) != ecSuccess))
+		throw EWSError::NotEnoughMemory(E3408);
+	auto now = rop_util_current_nttime();
+	uint32_t seq = nextSequence(dir, parent, mid, oldRcpts == nullptr, now);
+	setUnsendable(props, PROP_TAG(PT_BINARY, ids[2]), unsendable);
+	if (props.set(PR_MESSAGE_CLASS,
+	    "IPM.Schedule.Meeting.Request") != ecSuccess ||
+	    props.set(PROP_TAG(PT_LONG, ids[0]), &seq) != ecSuccess ||
+	    props.set(PROP_TAG(PT_SYSTIME, ids[1]), &now) != ecSuccess ||
+	    props.set(PR_RESPONSE_REQUESTED, &byte_value_one) != ecSuccess ||
+	    props.set(PR_CLIENT_SUBMIT_TIME, &now) != ecSuccess ||
+	    props.set(PR_MESSAGE_DELIVERY_TIME, &now) != ecSuccess)
+		throw EWSError::NotEnoughMemory(E3408);
+	/* The owner organizes and the caller sends */
+	auto ident = meetingIdentity(dir);
+	for (const auto &prop : ident)
+		if (props.set(prop) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3408);
+	props.erase(PR_SENDER_SEARCH_KEY);
+	props.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
+	/* RFC 5546 §3.2.2: every VEVENT of the REQUEST needs these */
+	ident.push_back({PROP_TAG(PT_LONG, ids[0]), &seq});
+	ident.push_back({PROP_TAG(PT_SYSTIME, ids[1]), &now});
+	if (!stamp_exceptions(*req, ident))
+		throw EWSError::NotEnoughMemory(E3408);
+	send(dir, mid, *req);
+	mark_invited(*this, dir, parent, mid);
+	if (!saveCopy)
+		return;
+	static constexpr proptag_t rmProps[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+	};
+	for (auto tag : rmProps)
+		props.erase(tag);
+	auto sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+	uint64_t newMid = 0, newCn = 0;
+	ec_error_t err = ecSuccess;
+	if (!exmdb.write_message(dir.c_str(), CP_ACP, sentitems.folderId,
+	    req.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3540);
+}
+
+/**
+ * @brief      Send a meeting update for one occurrence to the attendees
+ *
+ * MS-OXOCAL v22.1 §3.1.4.7.3: the update is a meeting request for
+ * the instance, which oxcical exports with RECURRENCE-ID.
+ */
+void EWSContext::sendOccurrenceUpdate(const std::string &dir,
+    const sMessageEntryId &meid, const sFolderSpec &parent, bool saveCopy,
+    uint32_t basedate) const
+{
+	MESSAGE_CONTENT *content = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), effectiveUser(parent),
+	    CP_ACP, meid.messageId(), &content) || content == nullptr)
+		throw EWSError::ItemNotFound(E3537);
+	auto cls = content->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr ||
+	    class_match_prefix(cls, "IPM.Appointment") != 0 ||
+	    content->children.prcpts == nullptr ||
+	    content->children.prcpts->count == 0)
+		return;
+	sendInstance(dir, parent, meid.messageId(), *content, basedate,
+		"IPM.Schedule.Meeting.Request", saveCopy);
 }
 
 /**
@@ -5022,22 +5789,30 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 	content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
-	auto respUser = deconst(m_auth_info.username);
-	std::string respName;
-	mysql_adaptor_get_user_displayname(m_auth_info.username, respName);
+	/* The attendee is the owner of the request, the caller may be a delegate */
+	std::string attendee = refFolder.location == sFolderSpec::PRIVATE ?
+	                       *refFolder.target : m_auth_info.username;
+	auto respUser = actsAsOwner(refDir) || onSendAsList(refDir) ?
+	                cpystr(attendee) :
+	                deconst(m_auth_info.username);
+	std::string respName, attName;
+	mysql_adaptor_get_user_displayname(respUser, respName);
+	mysql_adaptor_get_user_displayname(attendee.c_str(), attName);
 	content->proplist.set(PR_SENDER_SMTP_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_EMAIL_ADDRESS, respUser);
 	content->proplist.set(PR_SENDER_ADDRTYPE, deconst("SMTP"));
 	/* oxcical takes the ATTENDEE of a REPLY from PR_SENT_REPRESENTING_* */
-	content->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, respUser);
-	content->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, respUser);
+	content->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, attendee.c_str());
+	content->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, attendee.c_str());
 	content->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, deconst("SMTP"));
 	content->proplist.erase(PR_SENT_REPRESENTING_ENTRYID);
 	content->proplist.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
-	if (!respName.empty()) {
+	if (!respName.empty())
 		content->proplist.set(PR_SENDER_NAME, respName.c_str());
-		content->proplist.set(PR_SENT_REPRESENTING_NAME, respName.c_str());
-	}
+	if (!attName.empty())
+		content->proplist.set(PR_SENT_REPRESENTING_NAME, attName.c_str());
+	else
+		content->proplist.erase(PR_SENT_REPRESENTING_NAME);
 	if (content->children.prcpts)
 		tarray_set_free(content->children.prcpts);
 	content->children.prcpts = tarray_set_init();
@@ -5769,27 +6544,9 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 				add_attendee(rcpts->emplace(), att, MAPI_CC);
 		if (item.Resources)
 			for (const auto &att : *item.Resources)
-				add_attendee(rcpts->emplace(), att, MAPI_TO);
-		std::string dispName;
-		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
-			throw DispatchError(E3378);
-		/*
-		 * shape.write() does not deep-copy string property values (the
-		 * backing memory must outlive this call, per its own doc
-		 * comment) - dispName is local to this function and would be
-		 * dangling by the time the shape is materialized by the
-		 * caller, corrupting PR_SENDER_NAME/PR_SENT_REPRESENTING_NAME
-		 * with whatever later reuses this stack slot.
-		 */
-		auto displayName = strcpy(alloc<char>(dispName.size() + 1), dispName.c_str());
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, displayName});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_NAME, displayName});
-		auto username = deconst(m_auth_info.username);
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_SMTP_ADDRESS, username});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_SMTP_ADDRESS, username});
-		auto addrType = deconst("SMTP");
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, addrType});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_ADDRTYPE, addrType});
+				add_attendee(rcpts->emplace(), att, MAPI_BCC);
+		for (const auto &prop : meetingIdentity(dir))
+			shape.write(prop);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
 		auto meetType = construct<uint32_t>(mtgRequest);
 		auto apptState = construct<uint32_t>(asfMeeting);
@@ -5797,22 +6554,6 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, meetType});
 		shape.write(NtAppointmentStateFlags, TAGGED_PROPVAL{PT_LONG, apptState});
 		shape.write(NtResponseStatus, TAGGED_PROPVAL{PT_LONG, respStatus});
-		std::string essdn;
-		if (cvt_username_to_essdn(m_auth_info.username, m_plugin.x500_org_name.c_str(),
-		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
-			throw DispatchError(E3379);
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, username});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_EMAIL_ADDRESS, username});
-		EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
-		EXT_PUSH ext_push;
-		static constexpr size_t ABEIDBUFFSIZE = 1280;
-		auto abEidBuff = alloc<char>(ABEIDBUFFSIZE);
-		if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
-		    ext_push.p_abk_eid(abEid) != pack_result::ok)
-			throw DispatchError(E3380);
-		BINARY* abEidContainer = construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
-		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ENTRYID, abEidContainer});
-		shape.write(TAGGED_PROPVAL{PR_SENDER_ENTRYID, abEidContainer});
 	}
 }
 

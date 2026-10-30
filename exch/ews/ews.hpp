@@ -304,6 +304,10 @@ class EWSContext {
 	std::string get_maildir(const std::string&) const;
 	uint32_t getAccountId(const std::string&, bool) const;
 	std::string getDir(const Structures::sFolderSpec&) const;
+	std::string storeOwner(const std::string &) const;
+	bool actsAsOwner(const std::string &) const;
+	bool onSendAsList(const std::string &) const;
+	std::vector<TAGGED_PROPVAL> meetingIdentity(const std::string &) const;
 	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T *getFolderProp(const std::string &, uint64_t, proptag_t) const;
 	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, proptag_cspan) const;
@@ -332,7 +336,7 @@ class EWSContext {
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
 	void applyRecurrence(const std::string &, uint64_t, const tinyxml2::XMLElement *, Structures::sShape &) const;
 	void moveRecurrence(const std::string &, uint64_t, Structures::sShape &) const;
-	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
+	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&, const TARRAY_SET&, bool) const;
 	void updateMessageRecipients(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
@@ -366,8 +370,14 @@ class EWSContext {
 	std::vector<TAGGED_PROPVAL> submitIdentity(const std::string &dir, const TPROPVAL_ARRAY &, std::vector<proptag_t> &) const;
 	void stampSubmitIdentity(const std::string &dir, MESSAGE_CONTENT &) const;
 	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool, std::optional<uint32_t> = std::nullopt) const;
+	void sendOccurrenceUpdate(const std::string &, const Structures::sMessageEntryId &, const Structures::sFolderSpec &, bool, uint32_t) const;
 	void suppressReadReceipt(const Structures::tItemId&) const;
 	void cancelCalendarItem(const Structures::tItemId&, bool) const;
+	void cancelRemovedAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const TARRAY_SET&, bool) const;
+	void sendMeetingUpdate(const std::string&, const Structures::sFolderSpec&, uint64_t, const TARRAY_SET *, bool, uint32_t, bool) const;
+	static void setUnsendable(TPROPVAL_ARRAY &, proptag_t, const std::vector<TPROPVAL_ARRAY *> &);
+	uint32_t nextSequence(const std::string&, const Structures::sFolderSpec&, uint64_t, bool, uint64_t) const;
+	std::string rcptAddress(const TPROPVAL_ARRAY &) const;
 	bool sendMeetingResponse(const Structures::tItemId&, MESSAGE_CONTENT&, bool) const;
 	BINARY serialize(const XID&) const;
 	const char *culture() const;
@@ -419,6 +429,7 @@ private:
 	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
 	void deleteExceptionAttachment(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void toInstance(const std::string &, uint32_t, MESSAGE_CONTENT &) const;
+	void sendInstance(const std::string &, const Structures::sFolderSpec &, uint64_t, const MESSAGE_CONTENT &, uint32_t, const char *, bool) const;
 
 	/* State shared by the occurrences of one recurring series */
 	struct sOccurrenceSeries {

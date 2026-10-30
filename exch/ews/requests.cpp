@@ -24,6 +24,7 @@
 #include <gromox/mapitags.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -1515,6 +1516,23 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		    request.SendMeetingInvitations != Enum::SendToNone))
 			ctx.validate_sendas_perms(*content);
 
+		const tItemId *responseRef = nullptr;
+		if (auto acc = std::get_if<tAcceptItem>(&item))
+			responseRef = acc->ReferenceItemId ?
+			              &*acc->ReferenceItemId : nullptr;
+		else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item))
+			responseRef = tent->ReferenceItemId ?
+			              &*tent->ReferenceItemId : nullptr;
+		else if (auto dec = std::get_if<tDeclineItem>(&item))
+			responseRef = dec->ReferenceItemId ?
+			              &*dec->ReferenceItemId : nullptr;
+		if (send_message && responseRef != nullptr) {
+			auto refFolder = ctx.resolveFolder(sMessageEntryId(
+			                 responseRef->Id.data(), responseRef->Id.size()));
+			if (refFolder.location == sFolderSpec::PRIVATE)
+				ctx.validate_sendas_perms(*refFolder.target);
+		}
+
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
@@ -1536,16 +1554,6 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				          send_message, declinedOcc, &calItem);
 		}
 		if (isResponse) {
-			const tItemId *responseRef = nullptr;
-			if (auto acc = std::get_if<tAcceptItem>(&item))
-				responseRef = acc->ReferenceItemId ?
-				              &*acc->ReferenceItemId : nullptr;
-			else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item))
-				responseRef = tent->ReferenceItemId ?
-				              &*tent->ReferenceItemId : nullptr;
-			else if (auto dec2 = std::get_if<tDeclineItem>(&item))
-				responseRef = dec2->ReferenceItemId ?
-				              &*dec2->ReferenceItemId : nullptr;
 			bool sent = responseRef != nullptr &&
 			            ctx.sendMeetingResponse(*responseRef,
 			            *content, send_message);
@@ -1637,6 +1645,15 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				|| sendcontent == nullptr)
 				throw EWSError::ItemNotFound(E3391);
 			ctx.send(dir, messageId, *sendcontent);
+			/* Exchange reports MeetingRequestWasSent from now on */
+			auto invited = ctx.getNamedPropId(dir, NtFInvited, true);
+			const TAGGED_PROPVAL ival = {PROP_TAG(PT_BOOLEAN, invited), deconst(&byte_value_one)};
+			const TPROPVAL_ARRAY ilist = {1, deconst(&ival)};
+			if (invited == 0 ||
+			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			    ctx.effectiveUser(*targetFolder), CP_ACP, messageId,
+			    &ilist, &problems))
+				mlog(LV_ERR, "[ews] %s: cannot set PidLidFInvited", dir.c_str());
 		}
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
@@ -2116,6 +2133,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 	response->SetName("m:FindItemResponse");
 
 	sShape shape(request.ItemShape);
+	shape.x500Org = ctx.plugin().x500_org_name.c_str();
 	uint8_t tableFlags = request.Traversal == Enum::SoftDeleted ? TABLE_FLAG_SOFTDELETES :
 	                     request.Traversal == Enum::Associated ? TABLE_FLAG_ASSOCIATED :
 	                     request.Traversal == Enum::Shallow ? 0 : TABLE_FLAG_DEPTH;
@@ -4163,6 +4181,55 @@ void process(mUnsubscribeRequest &&request, XMLElement *response, const EWSConte
 	data.serialize(response);
 }
 
+/**
+ * @brief      Apply DeleteItemField to a meeting attendee list
+ *
+ * An attendee list without Attendee children clears that kind, so
+ * updateAttendees drops the rows and cancels the meeting for them.
+ */
+static void delete_attendees(const sItemChangeDescription &update,
+    sShape &shape)
+{
+	static const XMLElement *const empty = [] {
+		static XMLDocument doc;
+		return doc.NewElement("Attendees");
+	}();
+	auto del = std::get_if<tDeleteItemField>(&update);
+	if (del == nullptr)
+		return;
+	auto uri = std::get_if<tFieldURI>(&del->fieldURI.asVariant());
+	if (uri == nullptr)
+		return;
+	if (uri->FieldURI == "calendar:RequiredAttendees")
+		shape.requiredAttendees = empty;
+	else if (uri->FieldURI == "calendar:OptionalAttendees")
+		shape.optionalAttendees = empty;
+	else if (uri->FieldURI == "calendar:Resources")
+		shape.resourceAttendees = empty;
+}
+
+/**
+ * @brief      Check whether an ItemChange only edits attendee lists
+ *
+ * MS-OXOCAL v22.1 §3.1.4.7.3.4: only such an update can go to the added
+ * attendees alone. Any other change concerns all attendees.
+ */
+static bool attendees_only(const tItemChange &change)
+{
+	for (const auto &update : change.Updates) {
+		auto &path = std::visit([](const auto &u) -> const tPath & {
+		             	return u.fieldURI;
+		             }, update);
+		auto uri = std::get_if<tFieldURI>(&path.asVariant());
+		if (uri == nullptr ||
+		    (uri->FieldURI != "calendar:RequiredAttendees" &&
+		    uri->FieldURI != "calendar:OptionalAttendees" &&
+		    uri->FieldURI != "calendar:Resources"))
+			return false;
+	}
+	return true;
+}
+
 static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx,
     const std::string &dir, const char *username, sMessageEntryId &mid)
 {
@@ -4235,6 +4302,112 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
  *
  * @todo check whether instances should rathe be used
  */
+/**
+ * @brief      Whether the item is the organizer's copy of a meeting
+ */
+static bool upd_is_organizer_copy(const EWSContext &ctx,
+    const std::string &dir, uint64_t mid)
+{
+	void *cls = nullptr;
+	if (!ctx.plugin().exmdb.get_message_property(dir.c_str(), nullptr,
+	    CP_ACP, mid, PR_MESSAGE_CLASS, &cls) || cls == nullptr)
+		return false;
+	return class_match_prefix(static_cast<const char *>(cls),
+	       "IPM.Appointment") == 0 && ctx.isOrganizer(dir, mid);
+}
+
+/* Properties PidLidChangeHighlight looks at, in BIT_CH order */
+static std::vector<proptag_t> upd_highlight_tags(const EWSContext &ctx,
+    const std::string &dir)
+{
+	const PROPERTY_NAME pn[] = {
+		NtAppointmentStartWhole, NtAppointmentEndWhole,
+		NtAppointmentRecur, NtLocation,
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = ctx.getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	return {PROP_TAG(PT_SYSTIME, ids[0]), PROP_TAG(PT_SYSTIME, ids[1]),
+	        PROP_TAG(PT_BINARY, ids[2]), PROP_TAG(PT_UNICODE, ids[3]),
+	        PR_SUBJECT, PR_BODY};
+}
+
+static std::vector<std::string> upd_attendees(const EWSContext &ctx,
+    const TARRAY_SET &rows, uint32_t type)
+{
+	std::vector<std::string> out;
+	for (const auto &row : rows) {
+		auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (rtype == nullptr || (*rtype & 0xf) != type ||
+		    (flags != nullptr && *flags & recipOrganizer))
+			continue;
+		auto a = ctx.rcptAddress(row);
+		HX_strlower(a.data());
+		out.emplace_back(std::move(a));
+	}
+	std::sort(out.begin(), out.end());
+	return out;
+}
+
+/**
+ * @brief      Work out what an update changed in the item properties
+ *
+ * MS-OXOCAL v22.1 §2.2.6.2
+ *
+ * @param      before    Values of @tags before the update
+ *
+ * @return     PidLidChangeHighlight bits
+ */
+static uint32_t upd_highlight(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, const std::vector<proptag_t> &tags,
+    const TPROPVAL_ARRAY &before)
+{
+	static constexpr uint32_t bits[] = {
+		BIT_CH_START, BIT_CH_END, BIT_CH_RECUR, BIT_CH_LOCATION,
+		BIT_CH_SUBJECT, BIT_CH_BODY,
+	};
+	if (tags.empty())
+		return 0;
+	if (tags.size() != std::size(bits))
+		throw EWSError::ItemSave(E3541);
+	auto after = ctx.getItemProps(dir, mid, tags);
+	uint32_t ch = 0;
+	for (size_t i = 0; i < tags.size(); ++i)
+		if (!propval_compare_relop_nullok(RELOP_EQ, PROP_TYPE(tags[i]),
+		    before.getval(tags[i]), after.getval(tags[i])))
+			ch |= bits[i];
+	return ch;
+}
+
+/**
+ * @brief      Work out which attendee kinds an update added to
+ *
+ * MS-OXOCAL v22.1 §2.2.6.2: BIT_CH_REQATT and BIT_CH_OPTATT stand for
+ * added attendees, removed ones set no bit.
+ *
+ * @param      oldRcpts  Recipients before the update
+ *
+ * @return     PidLidChangeHighlight bits
+ */
+static uint32_t upd_added_attendees(const EWSContext &ctx,
+    const std::string &dir, uint64_t mid, const TARRAY_SET &oldRcpts)
+{
+	TARRAY_SET rcpts{};
+	if (!ctx.plugin().exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+		throw EWSError::ItemNotFound(E3494);
+	uint32_t ch = 0;
+	for (auto [type, bit] : {std::pair{MAPI_TO, BIT_CH_REQATT}, std::pair{MAPI_CC, BIT_CH_OPTATT}}) {
+		auto o = upd_attendees(ctx, oldRcpts, type);
+		auto n = upd_attendees(ctx, rcpts, type);
+		if (!std::includes(o.cbegin(), o.cend(), n.cbegin(), n.cend()))
+			ch |= bit;
+	}
+	return ch;
+}
+
 void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:UpdateItemResponse");
@@ -4259,6 +4432,18 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		if (!(rights & frightsEditAny))
 			throw EWSError::AccessDenied(E3445);
 		ctx.assertCanReadPrivate(dir, parentFolder, rights, mid.messageId());
+		/* The update goes out in the owner's name, check before writing */
+		bool orgCopy = request.SendMeetingInvitationsOrCancellations &&
+		    *request.SendMeetingInvitationsOrCancellations != Enum::SendToNone &&
+		    upd_is_organizer_copy(ctx, dir, mid.messageId());
+		if (orgCopy)
+			ctx.validate_sendas_perms(ctx.storeOwner(dir));
+		std::vector<proptag_t> hlTags;
+		TPROPVAL_ARRAY hlBefore{};
+		if (orgCopy && !change.ItemId.isOccurrence()) {
+			hlTags = upd_highlight_tags(ctx, dir);
+			hlBefore = ctx.getItemProps(dir, mid.messageId(), hlTags);
+		}
 		sShape shape(change);
 		/*
 		 * Pre-register timezone properties that setDatetimeFields may
@@ -4284,6 +4469,7 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		for (const auto &update : change.Updates) {
 			if (std::holds_alternative<tSetItemField>(update))
 				std::get<tSetItemField>(update).put(shape);
+			delete_attendees(update, shape);
 		}
 		tContact::genFields(shape);
 		tCalendarItem::setDatetimeFields(shape);
@@ -4296,6 +4482,11 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		const char* username = ctx.effectiveUser(parentFolder);
 		mUpdateItemResponseMessage msg;
 		uint32_t occ_basedate = 0;
+		Enum::CalendarItemUpdateOperationType mode =
+			request.SendMeetingInvitationsOrCancellations.value_or(
+			Enum::SendToNone);
+		std::optional<TARRAY_SET> oldRcpts;
+		bool organizer = false;
 		if (change.ItemId.holds_alternative<tOccurrenceItemId>()) {
 			const auto& occurrence  = std::get<tOccurrenceItemId>(change.ItemId.asVariant());
 			occ_basedate = ctx.resolveOccurrenceIndex(dir,
@@ -4368,9 +4559,24 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			msg.ConflictResults.Count = problems.count;
 			ctx.plugin().unloadMessageInstance(dir, mid.messageId());
 			if (shape.requiredAttendees || shape.optionalAttendees ||
-			    shape.resourceAttendees)
+			    shape.resourceAttendees) {
+				oldRcpts.emplace();
+				if (!ctx.plugin().exmdb.get_message_rcpts(
+				    dir.c_str(), mid.messageId(), &*oldRcpts))
+					throw EWSError::ItemNotFound(E3494);
+				/* updateAttendees marks it as organized */
+				organizer = ctx.isOrganizer(dir,
+				            mid.messageId());
+				/*
+				 * MS-OXOCAL v22.1 §3.1.4.7.3.2: responses stay
+				 * unless the update is a significant change
+				 */
+				auto ch = upd_highlight(ctx, dir,
+				          mid.messageId(), hlTags, hlBefore);
 				ctx.updateAttendees(dir, parentFolder,
-				    mid.messageId(), shape);
+				    mid.messageId(), shape, *oldRcpts,
+				    !(ch & (BIT_CH_START | BIT_CH_END | BIT_CH_RECUR)));
+			}
 			if (shape.toRecipients || shape.ccRecipients ||
 			    shape.bccRecipients)
 				ctx.updateMessageRecipients(dir, parentFolder,
@@ -4380,68 +4586,43 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
 		else
 			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
-		if (occ_basedate == 0 &&
-		    request.SendMeetingInvitationsOrCancellations &&
-		    *request.SendMeetingInvitationsOrCancellations != Enum::SendToNone) {
-			MESSAGE_CONTENT *sendcontent = nullptr;
-			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-			    username, CP_ACP, mid.messageId(), &sendcontent) ||
-			    sendcontent == nullptr)
-				throw EWSError::ItemNotFound(E3404);
-			auto cls = sendcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
-			if (cls != nullptr &&
-			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
-			    sendcontent->children.prcpts != nullptr &&
-			    sendcontent->children.prcpts->count > 0) {
-				if (*request.SendMeetingInvitationsOrCancellations == Enum::SendToAllAndSaveCopy ||
-				    *request.SendMeetingInvitationsOrCancellations == Enum::SendToChangedAndSaveCopy) {
-					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
-					uint64_t newMid = 0;
-					if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
-					    sentitems.folderId, &newMid))
-						throw EWSError::InternalServerError(E3426);
-					BOOL result = false;
-					if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(), CP_ACP,
-					    mid.messageId(), sentitems.folderId, newMid, false, &result) ||
-					    !result)
-						throw EWSError::InternalServerError(E3428);
-					const char *sentuser = ctx.effectiveUser(sentitems);
-					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					const TAGGED_PROPVAL sprops[] = {
-						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
-						{PR_RESPONSE_REQUESTED, deconst(&byte_value_one)},
-						{PR_CLIENT_SUBMIT_TIME, now},
-						{PR_MESSAGE_DELIVERY_TIME, now},
-					};
-					const TPROPVAL_ARRAY sproplist = {std::size(sprops), deconst(sprops)};
-					PROBLEM_ARRAY sproblems;
-					if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-					    sentuser, CP_ACP, newMid, &sproplist, &sproblems))
-						throw EWSError::ItemSave(E3419);
-					MESSAGE_CONTENT *sentcontent = nullptr;
-					if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-					    sentuser, CP_ACP, newMid, &sentcontent) ||
-					    sentcontent == nullptr)
-						throw EWSError::ItemNotFound(E3405);
-					ctx.send(dir, mid.messageId(), *sentcontent);
-				} else {
-					/*
-					 * read_message returns pointers backed by ndr_stack
-					 * regions. Calling cancelcontent->set() invokes
-					 * propval_free() and tpropval_array_append(), which use
-					 * incompatible malloc/realloc/free. Thus, dup() first.
-					 */
-					message_content_ptr dupcontent(sendcontent->dup());
-					if (!dupcontent)
-						throw EWSError::NotEnoughMemory(E3408);
-					dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");
-					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
-					dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
-					ctx.send(dir, mid.messageId(), *dupcontent);
-				}
-			}
+		/* An attendee's copy sends nothing, like in Exchange */
+		if (orgCopy && occ_basedate != 0) {
+			ctx.sendOccurrenceUpdate(dir, mid, parentFolder,
+				mode == Enum::SendToAllAndSaveCopy ||
+				mode == Enum::SendToChangedAndSaveCopy, occ_basedate);
+		} else if (orgCopy) {
+			/*
+			 * A change other than to the attendee lists affects
+			 * every attendee, so it goes to all of them.
+			 */
+			bool addedOnly = oldRcpts && attendees_only(change) &&
+			                 (mode == Enum::SendOnlyToChanged ||
+			                 mode == Enum::SendToChangedAndSaveCopy);
+			/*
+			 * MS-OXOCAL v22.1 §2.2.6.5, §3.1.4.7.3.1: a new start,
+			 * end or recurrence, or added attendees, make a full
+			 * update, everything else an informational one.
+			 */
+			auto hl = upd_highlight(ctx, dir, mid.messageId(),
+			          hlTags, hlBefore);
+			if (oldRcpts)
+				hl |= upd_added_attendees(ctx, dir,
+				      mid.messageId(), *oldRcpts);
+			bool full = hl & (BIT_CH_START | BIT_CH_END |
+			            BIT_CH_RECUR | BIT_CH_REQATT | BIT_CH_OPTATT);
+			ctx.sendMeetingUpdate(dir, parentFolder,
+			    mid.messageId(), addedOnly ? &*oldRcpts : nullptr,
+			    mode == Enum::SendToAllAndSaveCopy ||
+			    mode == Enum::SendToChangedAndSaveCopy, hl,
+			    full || addedOnly);
 		}
+		if (orgCopy && oldRcpts && organizer)
+			/* MS-OXWSMTGS v14.0 §2.2.5.3 */
+			ctx.cancelRemovedAttendees(dir, parentFolder,
+			    mid.messageId(), *oldRcpts,
+			    mode == Enum::SendToAllAndSaveCopy ||
+			    mode == Enum::SendToChangedAndSaveCopy);
 		if (occ_basedate == 0 && request.MessageDisposition &&
 		    (*request.MessageDisposition == Enum::SendOnly ||
 		    *request.MessageDisposition == Enum::SendAndSaveCopy))

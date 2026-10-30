@@ -23,10 +23,12 @@
 #include <gromox/freebusy.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include "ews.hpp"
 #include "structures.hpp"
 #include "namedtags.hpp"
@@ -965,19 +967,29 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	fromProp(shape.get(NtRecurrencePattern), When);
 
 
+	/* MS-OXOCAL v22.1 §4.2.2.3: the represented sender organizes */
 	const TAGGED_PROPVAL* prop;
-	if ((prop = shape.get(PR_SENDER_ADDRTYPE)))
+	bool repr = shape.get(PR_SENT_REPRESENTING_EMAIL_ADDRESS) != nullptr ||
+	            shape.get(PR_SENT_REPRESENTING_SMTP_ADDRESS) != nullptr;
+	if ((prop = shape.get(repr ? PR_SENT_REPRESENTING_ADDRTYPE : PR_SENDER_ADDRTYPE)))
 		fromProp(prop, defaulted(Organizer).Mailbox.RoutingType);
-	if ((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
+	if ((prop = shape.get(repr ? PR_SENT_REPRESENTING_EMAIL_ADDRESS : PR_SENDER_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
-	if ((prop = shape.get(PR_SENDER_NAME)))
+	if ((prop = shape.get(repr ? PR_SENT_REPRESENTING_NAME : PR_SENDER_NAME)))
 		fromProp(prop, defaulted(Organizer).Mailbox.Name);
-	if (Organizer && Organizer->Mailbox.RoutingType &&
-	    strcasecmp(Organizer->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
-	    (prop = shape.get(PR_SENDER_SMTP_ADDRESS))) {
-		fromProp(prop, Organizer->Mailbox.EmailAddress);
+	if ((!Organizer || !Organizer->Mailbox.RoutingType ||
+	    strcasecmp(Organizer->Mailbox.RoutingType->c_str(), "SMTP") != 0) &&
+	    (prop = shape.get(repr ? PR_SENT_REPRESENTING_SMTP_ADDRESS : PR_SENDER_SMTP_ADDRESS))) {
+		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
 		Organizer->Mailbox.RoutingType = "SMTP";
 	}
+	/* iCal import leaves the name unset if ORGANIZER has no CN */
+	auto sender = shape.get<char>(PR_SENDER_SMTP_ADDRESS);
+	if (repr && Organizer && !Organizer->Mailbox.Name &&
+	    Organizer->Mailbox.EmailAddress && sender != nullptr &&
+	    strcasecmp(sender, Organizer->Mailbox.EmailAddress->c_str()) == 0 &&
+	    (prop = shape.get(PR_SENDER_NAME)))
+		fromProp(prop, Organizer->Mailbox.Name);
 
 	const uint8_t* u8;
 	if ((u8 = shape.get<uint8_t>(NtAppointmentNotAllowPropose)))
@@ -1787,8 +1799,54 @@ void sShape::properties(const TPROPVAL_ARRAY& properties)
 {
 	for (const auto &prop : properties)
 		props[prop.proptag].prop = &prop;
+	deriveSmtp();
 	if (rights.has_value())
 		redact();
+}
+
+/**
+ * @brief      Fill in missing SMTP addresses of EX type originators
+ */
+void sShape::deriveSmtp()
+{
+	static constexpr proptag_t tags[][3] = {
+		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_SMTP_ADDRESS},
+		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS},
+		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS, PR_RECEIVED_BY_SMTP_ADDRESS},
+		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, PR_RCVD_REPRESENTING_SMTP_ADDRESS},
+	};
+	static_assert(std::size(tags) == std::size(smtpProps));
+	for (size_t i = 0; i < std::size(tags); ++i) {
+		auto it = props.find(tags[i][2]);
+		if (it == props.end() || it->second.prop != nullptr)
+			continue;
+		auto type = get<char>(tags[i][0], FL_ANY);
+		auto addr = get<char>(tags[i][1], FL_ANY);
+		if (type == nullptr || addr == nullptr || strcasecmp(type, "EX") != 0)
+			continue;
+		const char *smtp = nullptr;
+		if (x500Org != nullptr) {
+			auto c = smtpCache.find(addr);
+			if (c == smtpCache.end()) {
+				std::string user;
+				if (cvt_essdn_to_username(addr, x500Org,
+				    mysql_adaptor_userid_to_name, user) != ecSuccess)
+					user.clear();
+				c = smtpCache.emplace(addr, std::move(user)).first;
+			}
+			if (!c->second.empty())
+				smtp = c->second.c_str();
+		}
+		/* Sender and representee are often the same mailbox */
+		auto sender = get<char>(PR_SENDER_EMAIL_ADDRESS, FL_ANY);
+		if (smtp == nullptr && i == 1 && sender != nullptr &&
+		    strcasecmp(sender, addr) == 0)
+			smtp = get<char>(PR_SENDER_SMTP_ADDRESS, FL_ANY);
+		if (smtp == nullptr)
+			continue;
+		smtpProps[i] = TAGGED_PROPVAL{tags[i][2], deconst(smtp)};
+		it->second.prop = &smtpProps[i];
+	}
 }
 
 /**
@@ -4408,6 +4466,10 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
 	{"calendar:Organizer", PR_SENDER_SMTP_ADDRESS},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_ADDRTYPE},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_NAME},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_SMTP_ADDRESS},
 	{"calendar:Start", PR_START_DATE},
 	{"contacts:AssistantName", PR_ASSISTANT},
 	{"contacts:Birthday", PR_BIRTHDAY},
@@ -4625,6 +4687,17 @@ void tFieldURI::tags(sShape& shape, bool add) const
 	for (auto it = tags.first; it != tags.second; ++it)
 		shape.add(it->second, add ? sShape::FL_FIELD : sShape::FL_RM);
 	bool found = tags.first != tags.second;
+	/*
+	 * Only filled by deriveSmtp. Kept out of tagMap so that tag does not
+	 * pick them for restrictions and sorting.
+	 */
+	static constexpr std::pair<const char *, proptag_t> smtpTags[] = {
+		{"message:ReceivedBy", PR_RECEIVED_BY_SMTP_ADDRESS},
+		{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_SMTP_ADDRESS},
+	};
+	for (const auto &[uri, tag] : smtpTags)
+		if (FieldURI == uri)
+			shape.add(tag, add ? sShape::FL_FIELD : sShape::FL_RM);
 
 	auto names = nameMap.equal_range(FieldURI);
 	for (auto it = names.first; it != names.second; ++it)
@@ -5303,6 +5376,12 @@ void tMessage::update(const sShape& shape)
 		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.EmailAddress);
 	if ((prop = shape.get(PR_RCVD_REPRESENTING_NAME)))
 		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.Name);
+	if (ReceivedRepresenting && ReceivedRepresenting->Mailbox.RoutingType &&
+	    strcasecmp(ReceivedRepresenting->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
+	    (prop = shape.get(PR_RCVD_REPRESENTING_SMTP_ADDRESS))) {
+		fromProp(prop, ReceivedRepresenting->Mailbox.EmailAddress);
+		ReceivedRepresenting->Mailbox.RoutingType = "SMTP";
+	}
 	fromProp(shape.get(PR_READ), IsRead);
 	fromProp(shape.get(PR_READ_RECEIPT_REQUESTED), IsReadReceiptRequested);
 	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
@@ -5312,6 +5391,12 @@ void tMessage::update(const sShape& shape)
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.EmailAddress);
 	if ((prop = shape.get(PR_RECEIVED_BY_NAME)))
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.Name);
+	if (ReceivedBy && ReceivedBy->Mailbox.RoutingType &&
+	    strcasecmp(ReceivedBy->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
+	    (prop = shape.get(PR_RECEIVED_BY_SMTP_ADDRESS))) {
+		fromProp(prop, ReceivedBy->Mailbox.EmailAddress);
+		ReceivedBy->Mailbox.RoutingType = "SMTP";
+	}
 	if ((prop = shape.get(PR_SENDER_ADDRTYPE)))
 		fromProp(prop, defaulted(Sender).Mailbox.RoutingType);
 	if ((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
