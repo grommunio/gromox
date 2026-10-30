@@ -293,12 +293,13 @@ class EWSContext {
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&, bool = false) const;
-	void createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
+	std::optional<uint64_t> createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
 	void disableEventStream();
 	const char* effectiveUser(const Structures::sFolderSpec&) const;
 	void enableEventStream(int);
 	std::string essdn_to_username(const std::string&) const;
 	std::string exportContent(const std::string&, const MESSAGE_CONTENT&, const std::string&) const;
+	std::optional<uint64_t> findMeetingObject(const Structures::tItemId &) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
 	uint32_t getAccountId(const std::string&, bool) const;
@@ -362,11 +363,14 @@ class EWSContext {
 	void restrictShape(const std::string &, const Structures::sFolderSpec &, uint32_t, Structures::sShape &) const;
 	const BINARY *findContactPhoto(const std::string &dir, const std::string &email) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
+	std::vector<TAGGED_PROPVAL> submitIdentity(const std::string &dir, const TPROPVAL_ARRAY &, std::vector<proptag_t> &) const;
+	void stampSubmitIdentity(const std::string &dir, MESSAGE_CONTENT &) const;
 	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool, std::optional<uint32_t> = std::nullopt) const;
 	void suppressReadReceipt(const Structures::tItemId&) const;
 	void cancelCalendarItem(const Structures::tItemId&, bool) const;
-	void sendMeetingResponse(const Structures::tItemId&, const MESSAGE_CONTENT&) const;
+	bool sendMeetingResponse(const Structures::tItemId&, MESSAGE_CONTENT&, bool) const;
 	BINARY serialize(const XID&) const;
+	const char *culture() const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
 	void rcpt_add_unique(TARRAY_SET *, gromox::EWS::Structures::tEmailAddressType, uint32_t) const;
 	message_content_ptr toContent(const std::string &, std::string &) const;
@@ -479,6 +483,8 @@ private:
 	void toContent(const std::string &, Structures::tReplyToItem &, Structures::sShape &, message_content_ptr &) const;
 	void toContent(const std::string &, Structures::tReplyAllToItem &, Structures::sShape &, message_content_ptr &) const;
 	void toContent(const std::string &, Structures::tForwardItem &, Structures::sShape &, message_content_ptr &) const;
+	enum class smart_type { reply, reply_all, forward };
+	void smartResponse(const Structures::tItemId &, smart_type, const std::optional<Structures::tBody> &, bool, Structures::sShape &, message_content_ptr &) const;
 	std::optional<uint64_t> findExistingByGoid(const Structures::sFolderSpec&, const std::string&, const MESSAGE_CONTENT&) const;
 	std::optional<uint64_t> findDelegateMessage(const std::string &, std::optional<uint64_t>) const;
 	void stampDelegateMessage(const std::string &, const BINARY_ARRAY *, uint64_t) const;

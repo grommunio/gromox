@@ -852,6 +852,22 @@ EWSContext::EWSContext(detail::ContextKey id, const HTTP_AUTH_INFO &ai,
 		impersonate(imp->Name(), imp->GetText());
 }
 
+/**
+ * @brief      Get the language for text the server writes
+ *
+ * Like the mailbox session of Exchange, this is the MailboxCulture header
+ * of the request if there is one, else the language of the user.
+ *
+ * @return     Locale string, possibly empty
+ */
+const char *EWSContext::culture() const
+{
+	auto hdr = m_request.header != nullptr ?
+	           m_request.header->FirstChildElement("MailboxCulture") : nullptr;
+	auto text = hdr != nullptr ? hdr->GetText() : nullptr;
+	return !znoval(text) ? text : znul(m_auth_info.lang);
+}
+
 EWSContext::~EWSContext()
 {
 	if (m_notify)
@@ -1139,8 +1155,10 @@ static bool goid_is_instance(const BINARY *goid_bin)
  *
  * @param refId          Item id
  * @param response       Response type
+ *
+ * @return Message ID of the calendar item, none for a single occurrence
  */
-void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint32_t response) const
+std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint32_t response) const
 {
 	// Duplicate the original request and persist it as a calendar appointment.
 	assertIdType(refId.type, tItemId::ID_ITEM);
@@ -1162,7 +1180,7 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	 */
 	auto pidGoid = getNamedPropId(dir, NtGlobalObjectId);
 	if (goid_is_instance(content->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGoid))))
-		return;
+		return std::nullopt;
 
 	message_content_ptr calendarItem(content->dup());
 	if (!calendarItem)
@@ -1226,6 +1244,25 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	    props.set(PROP_TAG(PT_LONG, pidBusy), construct<uint32_t>(busyValue)) != ecSuccess)
 		throw EWSError::ItemSave(E3327);
 
+	/*
+	 * MS-OXOCAL v22.1 §2.2.1.32/33: PidLidCommonStart and PidLidCommonEnd
+	 * equal the whole start and end. Outlook deletes both from the request
+	 * when it clears its flag, and EWS reads Start and End from them.
+	 */
+	const std::pair<const PROPERTY_NAME &, const PROPERTY_NAME &> times[] = {
+		{NtAppointmentStartWhole, NtCommonStart},
+		{NtAppointmentEndWhole, NtCommonEnd},
+	};
+	for (const auto &[whole, common] : times) {
+		auto src = getNamedPropId(calendarDir, whole);
+		auto v = src != 0 ? props.get<const uint64_t>(PROP_TAG(PT_SYSTIME, src)) : nullptr;
+		if (v == nullptr)
+			continue;
+		auto dst = PROP_TAG(PT_SYSTIME, getNamedPropId(calendarDir, common, true));
+		if (props.set(dst, construct<uint64_t>(*v)) != ecSuccess)
+			throw EWSError::ItemSave(E3327);
+	}
+
 	/* eM Client drops calendar items without IsAllDayEvent */
 	auto pidSubType = getNamedPropId(calendarDir, NtAppointmentSubType, true);
 	if (!props.has(PROP_TAG(PT_BOOLEAN, pidSubType)) &&
@@ -1243,6 +1280,34 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, requestFolder.folderId,
 	        calendarItem.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
 		throw EWSError::ItemSave(E3329);
+	return existingMid ? *existingMid : newMid;
+}
+
+/**
+ * @brief Find the Meeting object of a meeting request
+ *
+ * @param refId  Meeting request
+ *
+ * @return Message ID in the calendar of the same store, none for a single
+ *         occurrence or when there is no Meeting object
+ */
+std::optional<uint64_t> EWSContext::findMeetingObject(const tItemId &refId) const
+{
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId requestId(refId.Id.data(), refId.Id.size());
+	sFolderSpec folder = resolveFolder(requestId);
+	std::string dir = getDir(folder);
+	auto goidTag  = PROP_TAG(PT_BINARY, getNamedPropId(dir, NtGlobalObjectId, true));
+	auto cgoidTag = PROP_TAG(PT_BINARY, getNamedPropId(dir, NtCleanGlobalObjectId, true));
+	const proptag_t tags[] = {goidTag, cgoidTag};
+	TPROPVAL_ARRAY goids = getItemProps(dir, requestId.messageId(), tags);
+	/* An occurrence matches the series master through the clean goid */
+	if (goid_is_instance(goids.get<const BINARY>(goidTag)))
+		return std::nullopt;
+	MESSAGE_CONTENT content{};
+	content.proplist = goids;
+	folder.folderId = eid_t(1, PRIVATE_FID_CALENDAR);
+	return findExistingByGoid(folder, dir, content);
 }
 
 /**
@@ -1956,6 +2021,43 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	}
 }
 
+/* Reply-To addresses of a message */
+static std::vector<tEmailAddressType> reply_to_list(const BINARY &entries)
+{
+	std::vector<tEmailAddressType> list;
+	if (entries.pb == nullptr || entries.cb == 0)
+		return list;
+	EXT_PULL pull;
+	BINARY_ARRAY addressArray{};
+	auto cleanup = HX::make_scope_exit([&]() {
+		for (uint32_t i = 0; i < addressArray.count; ++i)
+			std::free(addressArray.pbin[i].pb);
+		std::free(addressArray.pbin);
+	});
+	pull.init(entries.pb, entries.cb, zalloc, EXT_FLAG_WCOUNT);
+	if (pull.g_flatentry_a(&addressArray) != pack_result::ok)
+		return list;
+	list.reserve(addressArray.count);
+	for (uint32_t i = 0; i < addressArray.count; ++i) {
+		EXT_PULL entryPull;
+		entryPull.init(addressArray.pbin[i].pb, addressArray.pbin[i].cb, zalloc, EXT_FLAG_UTF16);
+		ONEOFF_ENTRYID entry{};
+		if (entryPull.g_oneoff_eid(&entry) != pack_result::ok)
+			continue;
+		if (entry.pmail_address.empty())
+			continue;
+		auto &recipient = list.emplace_back();
+		recipient.EmailAddress = std::move(entry.pmail_address);
+		if (!entry.pdisplay_name.empty())
+			recipient.Name = std::move(entry.pdisplay_name);
+		if (!entry.paddress_type.empty())
+			recipient.RoutingType = std::move(entry.paddress_type);
+		else
+			recipient.RoutingType = "SMTP";
+	}
+	return list;
+}
+
 /**
  * @brief     Load message attributes not contained in tags
  *
@@ -2006,41 +2108,12 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP, mid,
 	    PR_REPLY_RECIPIENT_ENTRIES, &propval) || propval == nullptr)
 		return;
-	auto replyEntries = static_cast<const BINARY *>(propval);
-	if (replyEntries->pb == nullptr || replyEntries->cb == 0)
+	auto list = reply_to_list(*static_cast<const BINARY *>(propval));
+	if (list.empty())
 		return;
-
-	EXT_PULL pull;
-	BINARY_ARRAY addressArray{};
-	auto cleanup = HX::make_scope_exit([&]() {
-		for (uint32_t i = 0; i < addressArray.count; ++i)
-			std::free(addressArray.pbin[i].pb);
-		std::free(addressArray.pbin);
-	});
-	pull.init(replyEntries->pb, replyEntries->cb, zalloc, EXT_FLAG_WCOUNT);
-	auto parseResult = pull.g_flatentry_a(&addressArray);
-	if (parseResult != pack_result::ok || addressArray.count == 0)
-		return;
-
 	auto &replyList = defaulted(message.ReplyTo);
-	replyList.reserve(replyList.size() + static_cast<size_t>(addressArray.count));
-	for (uint32_t i = 0; i < addressArray.count; ++i) {
-		EXT_PULL entryPull;
-		entryPull.init(addressArray.pbin[i].pb, addressArray.pbin[i].cb, zalloc, EXT_FLAG_UTF16);
-		ONEOFF_ENTRYID entry{};
-		if (entryPull.g_oneoff_eid(&entry) != pack_result::ok)
-			continue;
-		if (entry.pmail_address.empty())
-			continue;
-		auto &recipient = replyList.emplace_back();
-		recipient.EmailAddress = std::move(entry.pmail_address);
-		if (!entry.pdisplay_name.empty())
-			recipient.Name = std::move(entry.pdisplay_name);
-		if (!entry.paddress_type.empty())
-			recipient.RoutingType = std::move(entry.paddress_type);
-		else
-			recipient.RoutingType = "SMTP";
-	}
+	replyList.insert(replyList.end(), std::make_move_iterator(list.begin()),
+		std::make_move_iterator(list.end()));
 }
 
 /**
@@ -4240,6 +4313,130 @@ void EWSContext::validate_sendas_perms(const MESSAGE_CONTENT &content) const
 }
 
 /**
+ * @brief      Sender identity of mail the caller is about to submit
+ *
+ * Without From, the caller sends in its own name. The caller is also
+ * the Sender, unless it holds Send-As rights on From, or owns the store
+ * of From and submits from that store.
+ *
+ * @param      dir     Home directory of the store submitting the mail
+ * @param      props   Message properties
+ * @param      drop    Receives stale tags of a replaced identity
+ *
+ * @return     Properties to set
+ */
+std::vector<TAGGED_PROPVAL> EWSContext::submitIdentity(const std::string &dir,
+    const TPROPVAL_ARRAY &props, std::vector<proptag_t> &drop) const
+{
+	auto user = m_auth_info.username;
+	auto smtpOf = [&](proptag_t smtpTag, proptag_t typeTag,
+	              proptag_t addrTag) -> std::string {
+		auto smtp = props.get<const char>(smtpTag);
+		if (smtp != nullptr && *smtp != '\0')
+			return smtp;
+		auto addr = props.get<const char>(addrTag);
+		if (addr == nullptr || *addr == '\0')
+			return {};
+		auto type = props.get<const char>(typeTag);
+		if (type == nullptr || strcasecmp(type, "SMTP") == 0)
+			return addr;
+		if (strcasecmp(type, "EX") == 0) try {
+			return essdn_to_username(addr);
+		} catch (const DispatchError &) {
+		}
+		return {};
+	};
+	auto sendAs = [&](const std::string &repr) {
+		std::string maildir;
+		try {
+			maildir = get_maildir(repr);
+		} catch (const EWSError &) {
+			return false;
+		}
+		if (maildir == m_auth_info.maildir)
+			return true;
+		/* Store owners act as the mailbox only in its own store */
+		uint32_t perm = 0;
+		if (maildir == dir &&
+		    m_plugin.exmdb.get_mbox_perm(maildir.c_str(), user, &perm) &&
+		    (perm & frightsGromoxStoreOwner))
+			return true;
+		std::vector<std::string> list;
+		if (!m_plugin.exmdb.read_delegates(maildir.c_str(), 1, &list))
+			return false;
+		for (const auto &d : list)
+			if (strcasecmp(d.c_str(), user) == 0 ||
+			    mysql_adaptor_check_mlist_include(d.c_str(), user))
+				return true;
+		return false;
+	};
+	auto copyStr = [](const std::string &str) {
+		return strcpy(alloc<char>(str.size() + 1), str.c_str());
+	};
+	auto dispName = [&](const std::string &who) -> char * {
+		std::string name;
+		if (!mysql_adaptor_get_user_displayname(who.c_str(), name) ||
+		    name.empty())
+			return nullptr;
+		return copyStr(name);
+	};
+	std::vector<TAGGED_PROPVAL> out;
+	auto stamp = [&](const std::string &who, proptag_t nameTag,
+	             proptag_t typeTag, proptag_t addrTag, proptag_t smtpTag,
+	             proptag_t eidTag, proptag_t skeyTag) {
+		auto addr = copyStr(who);
+		auto name = dispName(who);
+		out.push_back({nameTag, name != nullptr ? name : addr});
+		out.push_back({typeTag, deconst("SMTP")});
+		out.push_back({addrTag, addr});
+		out.push_back({smtpTag, addr});
+		drop.push_back(eidTag);
+		drop.push_back(skeyTag);
+	};
+	auto repr = smtpOf(PR_SENT_REPRESENTING_SMTP_ADDRESS,
+	            PR_SENT_REPRESENTING_ADDRTYPE,
+	            PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+	if (repr.empty() && !props.has(PR_SENT_REPRESENTING_ENTRYID)) {
+		repr = user;
+		stamp(repr, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
+		      PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+		      PR_SENT_REPRESENTING_SMTP_ADDRESS,
+		      PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_SEARCH_KEY);
+	} else if (!repr.empty() && !props.has(PR_SENT_REPRESENTING_NAME)) {
+		auto name = dispName(repr);
+		if (name != nullptr)
+			out.push_back({PR_SENT_REPRESENTING_NAME, name});
+	}
+	std::string sender = user;
+	if (!repr.empty() && strcasecmp(repr.c_str(), user) != 0 && sendAs(repr))
+		sender = repr;
+	auto cur = smtpOf(PR_SENDER_SMTP_ADDRESS, PR_SENDER_ADDRTYPE,
+	           PR_SENDER_EMAIL_ADDRESS);
+	if (strcasecmp(cur.c_str(), sender.c_str()) != 0)
+		stamp(sender, PR_SENDER_NAME, PR_SENDER_ADDRTYPE,
+		      PR_SENDER_EMAIL_ADDRESS, PR_SENDER_SMTP_ADDRESS,
+		      PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY);
+	return out;
+}
+
+/**
+ * @brief      Complete the sender identity of mail about to be submitted
+ *
+ * @param      dir       Home directory of the store submitting the mail
+ * @param      content   Message to submit
+ */
+void EWSContext::stampSubmitIdentity(const std::string &dir,
+    MESSAGE_CONTENT &content) const
+{
+	std::vector<proptag_t> drop;
+	for (const auto &prop : submitIdentity(dir, content.proplist, drop))
+		if (content.proplist.set(prop) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3530);
+	for (auto tag : drop)
+		content.proplist.erase(tag);
+}
+
+/**
  * @brief      Read delegate permissions from folder ACLs
  */
 tDelegatePermissions EWSContext::readDelegatePermissions(const std::string &dir, const std::string &username) const
@@ -4409,14 +4606,30 @@ const BINARY *EWSContext::findContactPhoto(const std::string &dir,
 /**
  * @brief     Send message
  *
+ * The submit identity is completed on the outgoing copy only, callers
+ * that keep a copy stamp it themselves.
+ *
  * @param     dir      Home directory the message is associtated with
- * @param     content  Message content
+ * @param     msg      Message content
  */
 void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
-    const MESSAGE_CONTENT &content) const
+    const MESSAGE_CONTENT &msg) const
 {
-	if (!content.children.prcpts)
+	if (msg.children.prcpts == nullptr ||
+	    msg.children.prcpts->count == 0)
 		throw EWSError::MissingRecipients(E3115);
+	std::vector<proptag_t> drop;
+	auto ident = submitIdentity(dir, msg.proplist, drop);
+	for (const auto &prop : ident)
+		drop.push_back(prop.proptag);
+	std::vector<TAGGED_PROPVAL> props;
+	props.reserve(msg.proplist.count + ident.size());
+	for (const auto &prop : msg.proplist)
+		if (std::find(drop.begin(), drop.end(), prop.proptag) == drop.end())
+			props.push_back(prop);
+	props.insert(props.end(), ident.begin(), ident.end());
+	auto content = msg;
+	content.proplist = {static_cast<uint16_t>(props.size()), props.data()};
 	std::string log_id;
 	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
@@ -4709,14 +4922,36 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		send(dir, meid.messageId(), *dupcontent);
 	}
 }
+/* Subject prefix of a meeting response, MS-OXOCAL v22.1 §2.2.7.2 */
+static const char *resp_subject_prefix(const char *cls, const char *lang)
+{
+	if (cls == nullptr)
+		return nullptr;
+	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Pos") == 0)
+		return meeting_subject_prefix(lang, "accepted");
+	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Tent") == 0)
+		return meeting_subject_prefix(lang, "tentative");
+	if (strcasecmp(cls, "IPM.Schedule.Meeting.Resp.Neg") == 0)
+		return meeting_subject_prefix(lang, "declined");
+	return nullptr;
+}
+
 /**
  * @brief      Send a meeting response to the organizer
  *
- * Duplicates the original meeting request, stamps the responder's
- * identity on PR_SENDER_*, preserves PR_SENT_REPRESENTING_* as the
- * organizer, and sends.
+ * Gives the response the prefixed subject of the request and the
+ * organizer as recipient. To send, duplicates the original meeting request,
+ * stamps the responder's identity on PR_SENDER_*, preserves
+ * PR_SENT_REPRESENTING_* as the organizer, and sends.
+ *
+ * @param      responseRef  Meeting request or meeting responded to
+ * @param      respItem     Response to complete
+ * @param      doSend       Whether to send the response
+ *
+ * @return     false if no response was sent
  */
-void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_CONTENT &respItem) const
+bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
+    MESSAGE_CONTENT &respItem, bool doSend) const
 {
 	std::optional<uint32_t> basedate;
 	if (responseRef.type == tItemId::ID_OCCURRENCE)
@@ -4736,16 +4971,54 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 	auto orgSmtp = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (!orgSmtp)
 		orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
-	if ((wantResp != nullptr && *wantResp == 0) || orgSmtp == nullptr)
-		return;
+	tEmailAddressType org;
+	if (orgSmtp != nullptr) {
+		org.EmailAddress = orgSmtp;
+		auto orgName = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
+		if (orgName)
+			org.Name = orgName;
+		org.RoutingType = "SMTP";
+	}
+
+	/* Subject and recipient for the saved copy or the draft */
+	auto respClass = respItem.proplist.get<const char>(PR_MESSAGE_CLASS);
+	auto topic = reqContent->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (topic == nullptr)
+		topic = reqContent->proplist.get<const char>(PR_SUBJECT);
+	if (topic != nullptr && !respItem.proplist.has(PR_SUBJECT)) {
+		auto pfx = resp_subject_prefix(respClass, culture());
+		if (pfx == nullptr)
+			pfx = "";
+		if (respItem.proplist.set(PR_SUBJECT_PREFIX, pfx) != ecSuccess ||
+		    respItem.proplist.set(PR_NORMALIZED_SUBJECT, topic) != ecSuccess ||
+		    respItem.proplist.set(PR_SUBJECT, cpystr(std::string(pfx) + topic)) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3288);
+	}
+	if (orgSmtp != nullptr && (respItem.children.prcpts == nullptr ||
+	    respItem.children.prcpts->count == 0)) {
+		auto rcpts = tarray_set_init();
+		if (rcpts == nullptr)
+			throw EWSError::NotEnoughMemory(E3288);
+		respItem.set_rcpts_internal(rcpts);
+		org.mkRecipient(rcpts->emplace(), MAPI_TO);
+	}
+	if (!doSend || (wantResp != nullptr && *wantResp == 0) || orgSmtp == nullptr)
+		return false;
+
 	message_content_ptr content(reqContent->dup());
 	if (!content)
 		throw EWSError::NotEnoughMemory(E3288);
 	if (basedate)
 		toInstance(refDir, *basedate, *content);
-	auto respClass = respItem.proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (respClass)
 		content->proplist.set(PR_MESSAGE_CLASS, respClass);
+	for (auto tag : {PR_SUBJECT, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT}) {
+		auto str = respItem.proplist.get<const char>(tag);
+		if (str == nullptr)
+			content->proplist.erase(tag);
+		else if (content->proplist.set(tag, str) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3288);
+	}
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 	content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
@@ -4770,14 +5043,24 @@ void EWSContext::sendMeetingResponse(const tItemId &responseRef, const MESSAGE_C
 	content->children.prcpts = tarray_set_init();
 	if (!content->children.prcpts)
 		throw EWSError::NotEnoughMemory(E3406);
-	tEmailAddressType org;
-	org.EmailAddress = orgSmtp;
-	auto orgName = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
-	if (orgName)
-		org.Name = orgName;
-	org.RoutingType = "SMTP";
 	org.mkRecipient(content->children.prcpts->emplace(), MAPI_TO);
+	/* The copy in Sent Items names the same sender as the mail */
+	for (auto tag : {PR_SENDER_NAME, PR_SENDER_ADDRTYPE,
+	     PR_SENDER_EMAIL_ADDRESS, PR_SENDER_SMTP_ADDRESS,
+	     PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
+	     PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+	     PR_SENT_REPRESENTING_SMTP_ADDRESS}) {
+		auto str = content->proplist.get<const char>(tag);
+		if (str == nullptr)
+			respItem.proplist.erase(tag);
+		else if (respItem.proplist.set(tag, str) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3288);
+	}
+	for (auto tag : {PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY,
+	     PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_SEARCH_KEY})
+		respItem.proplist.erase(tag);
 	send(refDir, 0, *content);
+	return true;
 }
 
 /**
@@ -5941,26 +6224,29 @@ void EWSContext::toContent(const std::string &dir, tMessage &item,
 			for (const auto &rcpt : *bcc)
 				rcpt_add_unique(rcpts, rcpt, MAPI_BCC);
 	}
-	if (item.From) {
-		if (item.From->Mailbox.RoutingType)
-			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, item.From->Mailbox.RoutingType->data()});
-		if (item.From->Mailbox.EmailAddress)
-			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, item.From->Mailbox.EmailAddress->data()});
-		if (item.From->Mailbox.Name)
-			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, item.From->Mailbox.Name->data()});
-	}
-	if (item.Sender) {
-		writeProp(shape, item.Sender->Mailbox.RoutingType, PR_SENDER_ADDRTYPE);
-		writeProp(shape, item.Sender->Mailbox.EmailAddress, PR_SENDER_EMAIL_ADDRESS);
-		writeProp(shape, item.Sender->Mailbox.Name, PR_SENDER_NAME);
-		if (item.Sender->Mailbox.EmailAddress) {
-			auto isSmtp = !item.Sender->Mailbox.RoutingType ||
-				strcasecmp(item.Sender->Mailbox.RoutingType->c_str(), "SMTP") == 0;
-			if (isSmtp)
-				shape.write(TAGGED_PROPVAL{PR_SENDER_SMTP_ADDRESS,
-					deconst(item.Sender->Mailbox.EmailAddress->c_str())});
+	/* An address without RoutingType is an SMTP address */
+	auto writeAddr = [&](const tEmailAddressType &mb, proptag_t typeTag,
+	                 proptag_t addrTag, proptag_t nameTag, proptag_t smtpTag) {
+		writeProp(shape, mb.Name, nameTag);
+		if (!mb.EmailAddress) {
+			writeProp(shape, mb.RoutingType, typeTag);
+			return;
 		}
-	}
+		auto addr = deconst(mb.EmailAddress->c_str());
+		auto type = mb.RoutingType ? mb.RoutingType->c_str() : "SMTP";
+		shape.write(TAGGED_PROPVAL{typeTag, deconst(type)});
+		shape.write(TAGGED_PROPVAL{addrTag, addr});
+		if (strcasecmp(type, "SMTP") == 0)
+			shape.write(TAGGED_PROPVAL{smtpTag, addr});
+	};
+	if (item.From)
+		writeAddr(item.From->Mailbox, PR_SENT_REPRESENTING_ADDRTYPE,
+			PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+			PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (item.Sender)
+		writeAddr(item.Sender->Mailbox, PR_SENDER_ADDRTYPE,
+			PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,
+			PR_SENDER_SMTP_ADDRESS);
 	if (item.References)
 		shape.write(TAGGED_PROPVAL{PR_INTERNET_REFERENCES, deconst(item.References->c_str())});
 	if (item.ConversationIndex) {
@@ -6021,28 +6307,282 @@ void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
 }
 
 /*
- * ReplyToItem/ReplyAllToItem/ForwardItem wrap a full <t:Message> rather than
- * extending tMessage directly (see the comment on tReplyToItem). The message
- * content itself is otherwise handled exactly like a normal saved message.
- * ReferenceItemId (the item being replied to/forwarded) is not otherwise acted
- * upon yet.
+ * ReplyToItem/ReplyAllToItem/ForwardItem carry their message in Message, as
+ * the comment on tReplyToItem explains. Whatever the message leaves out is
+ * taken from the item referred to.
  */
 void EWSContext::toContent(const std::string &dir, tReplyToItem &item,
     sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
+	smartResponse(item.ReferenceItemId, smart_type::reply,
+		item.NewBodyContent, !item.Nested, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tReplyAllToItem &item,
     sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
+	smartResponse(item.ReferenceItemId, smart_type::reply_all,
+		item.NewBodyContent, !item.Nested, shape, content);
 }
 
 void EWSContext::toContent(const std::string &dir, tForwardItem &item,
     sShape &shape, message_content_ptr &content) const
 {
 	toContent(dir, item.Message, shape, content);
+	smartResponse(item.ReferenceItemId, smart_type::forward,
+		item.NewBodyContent, !item.Nested, shape, content);
+}
+
+/* Author of a message, as the representing or the actual sender */
+static std::optional<tEmailAddressType> msg_author(const TPROPVAL_ARRAY &props)
+{
+	static constexpr proptag_t tags[][4] = {
+		{PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+		 PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_NAME},
+		{PR_SENDER_SMTP_ADDRESS, PR_SENDER_EMAIL_ADDRESS,
+		 PR_SENDER_ADDRTYPE, PR_SENDER_NAME},
+	};
+	for (const auto &t : tags) {
+		tEmailAddressType addr;
+		auto str = props.get<const char>(t[0]);
+		if (str != nullptr) {
+			addr.EmailAddress = str;
+			addr.RoutingType = "SMTP";
+		} else if ((str = props.get<const char>(t[1])) != nullptr) {
+			addr.EmailAddress = str;
+			auto type = props.get<const char>(t[2]);
+			if (type != nullptr)
+				addr.RoutingType = type;
+		} else {
+			continue;
+		}
+		auto name = props.get<const char>(t[3]);
+		if (name != nullptr)
+			addr.Name = name;
+		return addr;
+	}
+	return std::nullopt;
+}
+
+/* Display names of the recipients of one type */
+static std::string rcpt_names(const TARRAY_SET *rcpts, uint32_t type)
+{
+	std::string out;
+	if (rcpts == nullptr)
+		return out;
+	for (const auto &row : *rcpts) {
+		auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rtype == nullptr || *rtype != type)
+			continue;
+		auto name = row.get<const char>(PR_DISPLAY_NAME);
+		if (name == nullptr)
+			name = row.get<const char>(PR_SMTP_ADDRESS);
+		if (name == nullptr)
+			name = row.get<const char>(PR_EMAIL_ADDRESS);
+		if (name == nullptr)
+			continue;
+		if (!out.empty())
+			out += "; ";
+		out += name;
+	}
+	return out;
+}
+
+/*
+ * NewBodyContent followed by a header and the body of the referenced
+ * message, the way Exchange quotes it.
+ */
+static std::string smart_body(const tBody &nb, const MESSAGE_CONTENT &ref)
+{
+	const auto &props = ref.proplist;
+	bool html = nb.BodyType == Enum::HTML;
+	std::vector<std::pair<const char *, std::string>> hdr;
+	auto author = msg_author(props);
+	if (author && author->EmailAddress) {
+		std::string from = author->Name ? *author->Name + " <" +
+		                   *author->EmailAddress + ">" : *author->EmailAddress;
+		hdr.emplace_back("From", std::move(from));
+	}
+	auto when = props.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
+	if (when == nullptr)
+		when = props.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
+	if (when != nullptr) {
+		auto t = rop_util_nttime_to_unix(*when);
+		struct tm tm{};
+		char buf[64];
+		if (localtime_r(&t, &tm) != nullptr &&
+		    strftime(buf, std::size(buf), "%a, %d %b %Y %H:%M", &tm) > 0)
+			hdr.emplace_back("Sent", buf);
+	}
+	auto to = rcpt_names(ref.children.prcpts, MAPI_TO);
+	if (!to.empty())
+		hdr.emplace_back("To", std::move(to));
+	auto cc = rcpt_names(ref.children.prcpts, MAPI_CC);
+	if (!cc.empty())
+		hdr.emplace_back("Cc", std::move(cc));
+	auto subj = props.get<const char>(PR_SUBJECT);
+	hdr.emplace_back("Subject", subj != nullptr ? subj : "");
+
+	auto cpid = props.get<const uint32_t>(PR_INTERNET_CPID);
+	auto text = props.get<const char>(PR_BODY);
+	auto hbin = props.get<const BINARY>(PR_HTML);
+	std::string orig;
+	const char *cset;
+	if (html && hbin != nullptr && hbin->pc != nullptr)
+		orig = cpid != nullptr && *cpid != CP_UTF8 &&
+		       (cset = cpid_to_cset(static_cast<cpid_t>(*cpid))) != nullptr ?
+		       iconvtext({hbin->pc, hbin->cb}, cset, "UTF-8") :
+		       std::string(hbin->pc, hbin->cb);
+	else if (html && text != nullptr)
+		plain_to_html(text, orig);
+	else if (text != nullptr)
+		orig = text;
+	else if (hbin != nullptr && hbin->pc != nullptr &&
+	    html_to_plain({hbin->pc, hbin->cb}, cpid != nullptr ?
+	    static_cast<cpid_t>(*cpid) : CP_UTF8, orig) < 0)
+		orig.clear();
+
+	std::string out = nb;
+	if (!html) {
+		out += "\r\n\r\n________________________________\r\n";
+		for (const auto &[k, v] : hdr)
+			out += std::string(k) + ": " + v + "\r\n";
+		return out + "\r\n" + orig;
+	}
+	out += "<hr><div>";
+	for (const auto &[k, v] : hdr) {
+		std::unique_ptr<char[], stdlib_delete> q(HX_strquote(v.c_str(), HXQUOTE_HTML, nullptr));
+		if (q == nullptr)
+			throw std::bad_alloc();
+		out += std::string("<b>") + k + ":</b> " + q.get() + "<br>";
+	}
+	return out + "</div><br>" + orig;
+}
+
+/**
+ * @brief      Complete a reply or forward from the item it refers to
+ *
+ * Exchange addresses a reply to the Reply-To or the sender of the
+ * referenced item, and a reply to all additionally to its To and Cc
+ * recipients, leaving out the mailbox owner. Recipients given in the
+ * request are added to those. NewBodyContent is put above the quoted
+ * referenced message, and a forward carries its attachments.
+ *
+ * @param      refId    Item replied to or forwarded
+ * @param      type     Kind of response
+ * @param      newBody  NewBodyContent of the request
+ * @param      merge    Whether to add recipients to those given
+ * @param      shape    Shape of the response
+ * @param      content  Content of the response
+ */
+void EWSContext::smartResponse(const tItemId &refId, smart_type type,
+    const std::optional<tBody> &newBody, bool merge, sShape &shape,
+    message_content_ptr &content) const
+{
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId mid(refId.Id.data(), refId.Id.size());
+	sFolderSpec folder = resolveFolder(mid);
+	std::string dir = getDir(folder);
+	validate(dir, mid);
+	if (!(permissions(dir, folder.folderId) & (frightsOwner | frightsReadAny)))
+		throw EWSError::AccessDenied(E3515);
+	auto owner = effectiveUser(folder);
+	MESSAGE_CONTENT *ref = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), owner, CP_ACP,
+	    mid.messageId(), &ref) || ref == nullptr)
+		throw EWSError::ItemNotFound(E3516);
+	const auto &props = ref->proplist;
+
+	auto topic = props.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (topic == nullptr)
+		topic = props.get<const char>(PR_SUBJECT);
+	if (topic == nullptr)
+		topic = "";
+	if (!shape.writes(PR_SUBJECT))
+		shape.write(TAGGED_PROPVAL{PR_SUBJECT, cpystr(std::string(
+			type == smart_type::forward ? "FW: " : "RE: ") + topic)});
+	if (!shape.writes(PR_CONVERSATION_TOPIC)) {
+		auto ct = props.get<const char>(PR_CONVERSATION_TOPIC);
+		shape.write(TAGGED_PROPVAL{PR_CONVERSATION_TOPIC,
+			cpystr(ct != nullptr ? ct : topic)});
+	}
+	if (newBody && !shape.writes(PR_BODY) && !shape.writes(PR_HTML)) {
+		auto body = smart_body(*newBody, *ref);
+		if (newBody->BodyType == Enum::HTML) {
+			if (body.size() > UINT32_MAX)
+				throw InputError(E3256);
+			shape.write(TAGGED_PROPVAL{PR_HTML, construct<BINARY>(BINARY{
+				static_cast<uint32_t>(body.size()), {cpystr(body)}})});
+		} else {
+			shape.write(TAGGED_PROPVAL{PR_BODY, cpystr(body)});
+		}
+		shape.write(TAGGED_PROPVAL{PR_INTERNET_CPID, construct<uint32_t>(CP_UTF8)});
+	}
+	if (type == smart_type::forward) {
+		auto atts = ref->children.pattachments;
+		if (atts == nullptr || atts->count == 0 ||
+		    (content->children.pattachments != nullptr &&
+		    content->children.pattachments->count > 0))
+			return;
+		auto dup = atts->dup();
+		if (dup == nullptr)
+			throw EWSError::NotEnoughMemory(E3518);
+		content->set_attachments_internal(dup);
+		return;
+	}
+
+	auto msgid = props.get<const char>(PR_INTERNET_MESSAGE_ID);
+	if (msgid != nullptr && *msgid != '\0') {
+		if (!shape.writes(PR_IN_REPLY_TO_ID))
+			shape.write(TAGGED_PROPVAL{PR_IN_REPLY_TO_ID, cpystr(msgid)});
+		auto refs = props.get<const char>(PR_INTERNET_REFERENCES);
+		if (!shape.writes(PR_INTERNET_REFERENCES))
+			shape.write(TAGGED_PROPVAL{PR_INTERNET_REFERENCES,
+				cpystr(refs != nullptr && *refs != '\0' ?
+				std::string(refs) + " " + msgid : std::string(msgid))});
+	}
+
+	auto rcpts = content->children.prcpts;
+	if (!merge && rcpts != nullptr && rcpts->count > 0)
+		return;
+	if (rcpts == nullptr) {
+		rcpts = content->children.prcpts = tarray_set_init();
+		if (rcpts == nullptr)
+			throw EWSError::NotEnoughMemory(E3517);
+	}
+	auto add = [&](tEmailAddressType &&addr, uint32_t rtype) {
+		if (!addr.EmailAddress)
+			return;
+		try {
+			normalize(addr);
+		} catch (const EWSError &) {
+			return;
+		}
+		if (type == smart_type::reply_all &&
+		    ((owner != nullptr && strcasecmp(addr.EmailAddress->c_str(), owner) == 0) ||
+		    strcasecmp(addr.EmailAddress->c_str(), m_auth_info.username) == 0))
+			return;
+		rcpt_add_unique(rcpts, std::move(addr), rtype);
+	};
+	auto replyTo = props.get<const BINARY>(PR_REPLY_RECIPIENT_ENTRIES);
+	auto targets = replyTo != nullptr ? reply_to_list(*replyTo) :
+	               std::vector<tEmailAddressType>();
+	if (targets.empty()) {
+		auto author = msg_author(props);
+		if (author)
+			targets.emplace_back(std::move(*author));
+	}
+	for (auto &addr : targets)
+		add(std::move(addr), MAPI_TO);
+	if (type != smart_type::reply_all || ref->children.prcpts == nullptr)
+		return;
+	for (const auto &row : *ref->children.prcpts) {
+		auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rtype != nullptr && (*rtype == MAPI_TO || *rtype == MAPI_CC))
+			add(tEmailAddressType(row), *rtype);
+	}
 }
 
 /**

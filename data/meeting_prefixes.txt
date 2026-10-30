@@ -1,0 +1,41 @@
+[de]
+accepted=Angenommen:
+tentative=Mit Vorbehalt angenommen:
+declined=Abgelehnt:
+newtime=Neuer Zeitvorschlag:
+canceled=Abgesagt:
+
+[en]
+accepted=Accepted:
+tentative=Tentative:
+declined=Declined:
+newtime=New Time Proposed:
+canceled=Canceled:
+
+[es]
+accepted=Aceptado:
+tentative=Provisional:
+declined=Rechazado:
+newtime=Nueva hora propuesta:
+canceled=Cancelado:
+
+[fr]
+accepted=Accepté:
+tentative=Provisoire:
+declined=Refusé:
+newtime=Nouvelle heure proposée:
+canceled=Annulé:
+
+[it]
+accepted=Accettato:
+tentative=Provvisorio:
+declined=Rifiutato:
+newtime=Nuovo orario proposto:
+canceled=Annullato:
+
+[nl]
+accepted=Geaccepteerd:
+tentative=Voorlopig geaccepteerd:
+declined=Geweigerd:
+newtime=Nieuwe tijd voorgesteld:
+canceled=Geannuleerd:

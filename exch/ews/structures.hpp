@@ -2890,10 +2890,10 @@ struct tCancelCalendarItem : public tMessage {
 };
 
 /**
- * Smart-reply/forward "wrapper" types (Types.xsd:2262 documents a flat
- * SmartResponseType instead, but the Outlook for Mac client sends a full
- * nested <t:Message> element alongside <t:ReferenceItemId> rather than flat
- * Subject/Body/ToRecipients fields.
+ * Smart-reply/forward types, Types.xsd:2262. Besides the flat
+ * SmartResponseType, the Outlook for Mac client sends a full nested
+ * <t:Message> element alongside <t:ReferenceItemId>. Both are read into
+ * Message.
  */
 struct tReplyToItem : public NS_EWS_Types {
 	static constexpr char NAME[] = "ReplyToItem";
@@ -2903,6 +2903,8 @@ struct tReplyToItem : public NS_EWS_Types {
 
 	tItemId ReferenceItemId;
 	tMessage Message;
+	std::optional<tBody> NewBodyContent;
+	bool Nested = false;
 };
 
 struct tReplyAllToItem : public NS_EWS_Types {
@@ -2913,7 +2915,9 @@ struct tReplyAllToItem : public NS_EWS_Types {
 
 	tItemId ReferenceItemId;
 	tMessage Message;
+	std::optional<tBody> NewBodyContent;
 	std::optional<bool> IsSpecificMessageReply;
+	bool Nested = false;
 };
 
 struct tForwardItem : public NS_EWS_Types {
@@ -2924,6 +2928,8 @@ struct tForwardItem : public NS_EWS_Types {
 
 	tItemId ReferenceItemId;
 	tMessage Message;
+	std::optional<tBody> NewBodyContent;
+	bool Nested = false;
 };
 
 /**

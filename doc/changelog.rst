@@ -11,6 +11,9 @@ Fixes:
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
   and CancelCalendarItem now refuse private items of others for users who
   are not allowed to see private items.
+* EWS: the subject prefix of meeting responses, e.g. "Accepted: ", is now in
+  the language of the MailboxCulture header of the request, or else of the
+  user, like Exchange does. A German mailbox answers with "Angenommen: ".
 * EWS: GetItem now returns the attendees of a meeting when the shape asks for
   them without calendar:IsMeeting.
 * imap: The greeting on implicit TLS connections advertised a truncated

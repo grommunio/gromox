@@ -1267,7 +1267,8 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
     uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
-    bool send_message, std::optional<sOccurrenceId> &declinedOcc)
+    bool send_message, std::optional<sOccurrenceId> &declinedOcc,
+    std::optional<std::pair<std::string, uint64_t>> *calItem = nullptr)
 {
 	if (refId.type == tItemId::ID_OCCURRENCE)
 		return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
@@ -1312,17 +1313,107 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	};
 	TPROPVAL_ARRAY proplist{std::size(props), props};
 	PROBLEM_ARRAY problems;
+	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+	/* A declined Meeting object leaves the calendar once the reply is out */
+	std::optional<uint64_t> declinedCal;
+	bool isRequest = class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0;
+	if (resp == respDeclined && send_message && calItem != nullptr &&
+	    pf.location == sFolderSpec::PRIVATE) {
+		uint64_t calFid = pf.folderId;
+		if (class_match_prefix(cls, "IPM.Appointment") == 0) {
+			if (pf.folderId != eid_t(1, PRIVATE_FID_DELETED_ITEMS))
+				declinedCal = mid.messageId();
+		} else if (isRequest) {
+			declinedCal = ctx.findMeetingObject(refId);
+			calFid = eid_t(1, PRIVATE_FID_CALENDAR);
+		}
+		auto calRights = declinedCal ? ctx.permissions(rdir, calFid) : 0;
+		if (declinedCal && !(calRights & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3131);
+		/* The response status is also written to the calendar item */
+		if (declinedCal && *declinedCal != mid.messageId() &&
+		    !(calRights & frightsEditAny))
+			throw EWSError::AccessDenied(E3603);
+	}
 	if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
 		mid.messageId(), &proplist, &problems))
 		throw EWSError::ItemSave(E3409);
-	if (resp == respAccepted || resp == respTentative)
-		ctx.createCalendarItemFromMeetingRequest(refId, resp);
-	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+	if (resp == respAccepted || resp == respTentative) {
+		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp);
+		if (cal && calItem != nullptr)
+			calItem->emplace(rdir, *cal);
+	}
+	if (declinedCal) {
+		if (*declinedCal != mid.messageId()) {
+			/* All but PR_PROCESSED, which is for the request */
+			TPROPVAL_ARRAY calProps{std::size(props) - 1, props};
+			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(),
+			    username, CP_ACP, *declinedCal, &calProps, &problems))
+				throw EWSError::ItemSave(E3582);
+		}
+		calItem->emplace(rdir, *declinedCal);
+	}
 	if (pf.location == sFolderSpec::PRIVATE && rights & frightsDeleteAny &&
-	    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
+	    isRequest) {
 		refDir = rdir;
 		refMid = mid;
 	}
+}
+
+/*
+ * Reply/forward and meeting response objects are treated the same way as a
+ * regular tMessage for persistence and sender identity purposes.
+ */
+static bool is_message_like(const sCreateItem &item)
+{
+	return std::holds_alternative<tMessage>(item) ||
+	       std::holds_alternative<tReplyToItem>(item) ||
+	       std::holds_alternative<tReplyAllToItem>(item) ||
+	       std::holds_alternative<tForwardItem>(item) ||
+	       std::holds_alternative<tAcceptItem>(item) ||
+	       std::holds_alternative<tTentativelyAcceptItem>(item) ||
+	       std::holds_alternative<tDeclineItem>(item);
+}
+
+/*
+ * Exchange keeps a SaveOnly message as a draft until it is sent. Importers
+ * opt out by setting PR_MESSAGE_FLAGS themselves.
+ */
+static bool client_sets_msgflags(const sCreateItem &item)
+{
+	auto &base = std::visit([](const auto &i) -> const tItem & {
+		if constexpr (std::is_base_of_v<tItem, std::decay_t<decltype(i)>>)
+			return i;
+		else
+			return i.Message;
+	}, item);
+	return base.IsDraft || std::any_of(base.ExtendedProperty.begin(),
+	       base.ExtendedProperty.end(), [](const tExtendedProperty &p) {
+	       	return p.propval.proptag == PR_MESSAGE_FLAGS;
+	       });
+}
+
+/*
+ * Folder for CreateItem when no SavedItemFolderId is given. Exchange keeps
+ * the copy of a sent message in Sent Items and an unsent one in Drafts.
+ * Calendar items, contacts and tasks go to their own default folder.
+ */
+static const char *default_folder(const sCreateItem &item,
+    const Enum::MessageDispositionType &disp)
+{
+	if (std::holds_alternative<tCalendarItem>(item))
+		return Enum::calendar;
+	if (std::holds_alternative<tContact>(item))
+		return Enum::contacts;
+	if (std::holds_alternative<tTask>(item))
+		return Enum::tasks;
+	if (is_message_like(item)) {
+		if (disp == Enum::SendAndSaveCopy)
+			return Enum::sentitems;
+		if (disp == Enum::SaveOnly)
+			return Enum::drafts;
+	}
+	return Enum::outbox;
 }
 
 /**
@@ -1338,13 +1429,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 
 	mCreateItemResponse data;
 
-	std::optional<sFolderSpec> targetFolder;
+	std::optional<sFolderSpec> savedFolder;
 	if (request.SavedItemFolderId)
-		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->FolderId);
-	else
-		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
-	std::string dir = ctx.getDir(*targetFolder);
-	bool hasAccess = ctx.permissions(dir, targetFolder->folderId) & (frightsOwner | frightsCreate);
+		savedFolder = ctx.resolveFolder(request.SavedItemFolderId->FolderId);
 
 	if (!request.MessageDisposition)
 		request.MessageDisposition = Enum::SaveOnly;
@@ -1355,7 +1442,13 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 
 	data.ResponseMessages.reserve(request.Items.size());
 	for (sCreateItem &item : request.Items) try {
-		if (!hasAccess)
+		auto targetFolder = savedFolder;
+		if (!targetFolder)
+			targetFolder = ctx.resolveFolder(tDistinguishedFolderId(
+			               default_folder(item, *request.MessageDisposition)));
+		std::string dir = ctx.getDir(*targetFolder);
+		if (!(ctx.permissions(dir, targetFolder->folderId) &
+		    (frightsOwner | frightsCreate)))
 			throw EWSError::AccessDenied(E3130);
 
 		if (auto srr = std::get_if<tSuppressReadReceipt>(&item)) {
@@ -1375,18 +1468,19 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 
 		mCreateItemResponseMessage msg;
-		/*
-		 * ReplyToItem/ReplyAllToItem/ForwardItem wrap a plain message
-		 * (see tReplyToItem) and should be treated the same way as a
-		 * regular tMessage for persistence/sender-identity purposes.
-		 */
-		bool isMessageLike = std::holds_alternative<tMessage>(item) ||
-		                     std::holds_alternative<tReplyToItem>(item) ||
-		                     std::holds_alternative<tReplyAllToItem>(item) ||
-		                     std::holds_alternative<tForwardItem>(item);
+		bool isMessageLike = is_message_like(item);
 		bool persist = !(isMessageLike && request.MessageDisposition == Enum::SendOnly);
 
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
+
+		if (isMessageLike &&
+		    request.MessageDisposition == Enum::SaveOnly &&
+		    !client_sets_msgflags(item)) {
+			auto flags = content->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
+			uint32_t newFlags = (flags != nullptr ? *flags : 0) | MSGFLAG_UNSENT;
+			if (content->proplist.set(PR_MESSAGE_FLAGS, &newFlags) == ecServerOOM)
+				throw EWSError::NotEnoughMemory(E3358);
+		}
 
 		if (isMessageLike &&
 		    request.MessageDisposition == Enum::SaveOnly &&
@@ -1411,6 +1505,12 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			}
 		}
 
+		bool isResponse = std::holds_alternative<tAcceptItem>(item) ||
+		                  std::holds_alternative<tTentativelyAcceptItem>(item) ||
+		                  std::holds_alternative<tDeclineItem>(item);
+		/* Responses carry the attendee identity, see sendMeetingResponse */
+		if (isMessageLike && !isResponse && send_message)
+			ctx.stampSubmitIdentity(dir, *content);
 		if (send_message || (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations != Enum::SendToNone))
 			ctx.validate_sendas_perms(*content);
@@ -1418,23 +1518,24 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
+		std::optional<std::pair<std::string, uint64_t>> calItem;
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
 				updateRef(ctx, *acc->ReferenceItemId,
 				          respAccepted, refDir, refMid,
-				          send_message, declinedOcc);
+				          send_message, declinedOcc, &calItem);
 		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
 			if (tent->ReferenceItemId)
 				updateRef(ctx, *tent->ReferenceItemId,
 				          respTentative, refDir, refMid,
-				          send_message, declinedOcc);
+				          send_message, declinedOcc, &calItem);
 		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
 			if (dec->ReferenceItemId)
 				updateRef(ctx, *dec->ReferenceItemId,
 				          respDeclined, refDir, refMid,
-				          send_message, declinedOcc);
+				          send_message, declinedOcc, &calItem);
 		}
-		if (send_message) {
+		if (isResponse) {
 			const tItemId *responseRef = nullptr;
 			if (auto acc = std::get_if<tAcceptItem>(&item))
 				responseRef = acc->ReferenceItemId ?
@@ -1445,8 +1546,36 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			else if (auto dec2 = std::get_if<tDeclineItem>(&item))
 				responseRef = dec2->ReferenceItemId ?
 				              &*dec2->ReferenceItemId : nullptr;
-			if (responseRef != nullptr)
-				ctx.sendMeetingResponse(*responseRef, *content);
+			bool sent = responseRef != nullptr &&
+			            ctx.sendMeetingResponse(*responseRef,
+			            *content, send_message);
+			/* Keep no copy of a response that was not sent */
+			if (send_message && !sent)
+				persist = false;
+		}
+		/*
+		 * Exchange returns the calendar item of the attendee along with
+		 * the response. macOS Calendar keys its event to the first item.
+		 */
+		if (calItem) {
+			uint64_t calFid = eid_t(1, PRIVATE_FID_CALENDAR);
+			/* A declined one is returned from Deleted Items */
+			if (std::holds_alternative<tDeclineItem>(item)) {
+				auto eid = ctx.getItemEntryId(calItem->first, calItem->second);
+				auto bin = static_cast<const BINARY *>(eid.pvalue);
+				sMessageEntryId calMeid(bin->pb, bin->cb);
+				calFid = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
+				calItem->second = ctx.moveCopyItem(calItem->first,
+				                  calMeid, calFid, false);
+			}
+			sShape calShape;
+			calShape.add(PR_ENTRYID, sShape::FL_FIELD).add(PR_CHANGE_KEY, sShape::FL_FIELD).add(PR_MESSAGE_CLASS);
+			/* The CalendarItemType of a series is derived from these */
+			calShape.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD)
+			        .add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD)
+			        .add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
+			msg.Items.emplace_back(ctx.loadItem(calItem->first,
+				calFid, calItem->second, calShape));
 		}
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)
@@ -1463,6 +1592,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				*flags &= ~(MSGFLAG_SUBMITTED | MSGFLAG_UNSENT);
 			content->proplist.set(PR_READ, &byte_value_one);
 		}
+		/* Send first so that a failed send leaves no copy behind */
+		if (isMessageLike && !isResponse && send_message)
+			ctx.send(dir, 0, *content);
 		if (persist) {
 			/* Exchange returns the IDs of attachments it was given */
 			bool atts = std::visit([](const auto &i) {
@@ -1506,8 +1638,6 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemNotFound(E3391);
 			ctx.send(dir, messageId, *sendcontent);
 		}
-		if (std::holds_alternative<tMessage>(item) && send_message)
-			ctx.send(dir, 0, *content);
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
 			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
@@ -3870,16 +4000,53 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 			throw EWSError::AccessDenied(E3142);
 		ctx.assertCanReadPrivate(dir, folder, rights, meid.messageId());
 
-		MESSAGE_CONTENT *content = nullptr;
+		MESSAGE_CONTENT *rdcontent = nullptr;
 		if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 		    ctx.effectiveUser(folder), CP_ACP, meid.messageId(),
-		    &content) || content == nullptr)
+		    &rdcontent) || rdcontent == nullptr)
 			throw EWSError::ItemNotFound(E3403);
+		/* read_message memory is ndr_stack backed, so dup() before editing */
+		message_content_ptr content(rdcontent->dup());
+		if (content == nullptr)
+			throw EWSError::NotEnoughMemory(E3532);
+		ctx.stampSubmitIdentity(dir, *content);
 		ctx.validate_sendas_perms(*content);
+		uint64_t saveFid = 0;
+		if (request.SavedItemFolderId) {
+			if (saveFolder.target != folder.target)
+				throw EWSError::CrossMailboxMoveCopy(E3496);
+			saveFid = saveFolder.folderId;
+		} else if (folder.location == sFolderSpec::PRIVATE) {
+			saveFid = eid_t(1, PRIVATE_FID_SENT_ITEMS);
+		}
 		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
 
-		if (request.SaveItemToFolder)
-			ctx.create(dir, folder, *content);
+		/* Exchange moves the sent item to the save folder or drops it */
+		auto username = ctx.effectiveUser(folder);
+		if (!request.SaveItemToFolder) {
+			auto eid = meid.messageId();
+			EID_ARRAY eids{1, &eid};
+			BOOL partial = false;
+			if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
+			    CP_ACP, username, folder.folderId, &eids, false,
+			    &partial) || partial)
+				throw EWSError::CannotDeleteObject(E3497);
+		} else {
+			auto flags = content->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+			uint32_t newFlags = (flags != nullptr ? *flags : 0) &
+			                    ~(MSGFLAG_SUBMITTED | MSGFLAG_UNSENT);
+			const TAGGED_PROPVAL sprops[] = {
+				{PR_MESSAGE_FLAGS, &newFlags},
+				{PR_READ, deconst(&byte_value_one)},
+			};
+			const TPROPVAL_ARRAY proplist = {std::size(sprops), deconst(sprops)};
+			PROBLEM_ARRAY problems;
+			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			    username, CP_ACP, meid.messageId(), &proplist, &problems))
+				throw EWSError::ItemSave(E3498);
+			if (saveFid != 0 && saveFid != folder.folderId)
+				ctx.moveCopyItem(dir, meid, saveFid, false);
+		}
 
 		data.ResponseMessages.emplace_back().success();
 	} catch (const EWSError &err) {
@@ -4017,28 +4184,18 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 		sprops.push_back({PR_MESSAGE_FLAGS,
 			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
 
-	std::string dispname;
-	auto smtpaddr = deconst(ctx.auth_info().username);
-	if (sendcontent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS) == nullptr &&
-	    mysql_adaptor_get_user_displayname(ctx.auth_info().username, dispname)) {
-		auto sName = deconst(dispname.empty() ?
-			     ctx.auth_info().username : dispname.c_str());
-		auto addrtype = deconst("SMTP");
-		sprops.push_back({PR_SENT_REPRESENTING_NAME, sName});
-		sprops.push_back({PR_SENDER_NAME, sName});
-		sprops.push_back({PR_SENT_REPRESENTING_SMTP_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENDER_SMTP_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENT_REPRESENTING_EMAIL_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENDER_EMAIL_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENT_REPRESENTING_ADDRTYPE, addrtype});
-		sprops.push_back({PR_SENDER_ADDRTYPE, addrtype});
-	}
+	std::vector<proptag_t> drop;
+	auto ident = ctx.submitIdentity(dir, sendcontent->proplist, drop);
+	sprops.insert(sprops.end(), ident.begin(), ident.end());
 
 	const TPROPVAL_ARRAY proplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
 	PROBLEM_ARRAY problems;
 	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 	    username, CP_ACP, mid.messageId(), &proplist, &problems))
 		throw EWSError::ItemSave(E3465);
+	if (!drop.empty() && !ctx.plugin().exmdb.remove_message_properties(
+	    dir.c_str(), CP_ACP, mid.messageId(), drop))
+		throw EWSError::ItemSave(E3531);
 	if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 	    username, CP_ACP, mid.messageId(), &sendcontent) ||
 	    sendcontent == nullptr)

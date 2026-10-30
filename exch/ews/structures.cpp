@@ -1007,9 +1007,12 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	const uint64_t* u64;
 	if ((u64 = shape.get<uint64_t>(NtAppointmentReplyTime)))
 		AppointmentReplyTime.emplace(rop_util_nttime_to_unix2(*u64));
-	if((u64 = shape.get<uint64_t>(NtCommonEnd)))
+	/* Items that lost the common times still have the whole ones */
+	if ((u64 = shape.get<uint64_t>(NtCommonEnd)) ||
+	    (u64 = shape.get<uint64_t>(NtAppointmentEndWhole)))
 		End.emplace(rop_util_nttime_to_unix2(*u64));
-	if((u64 =  shape.get<uint64_t>(NtCommonStart)))
+	if ((u64 = shape.get<uint64_t>(NtCommonStart)) ||
+	    (u64 = shape.get<uint64_t>(NtAppointmentStartWhole)))
 		Start.emplace(rop_util_nttime_to_unix2(*u64));
 
 	auto tzid = tzdef_keyname(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionStartDisplay));
