@@ -45,6 +45,8 @@ Enhancements:
 * oxcmail: ``X-MS-Exchange-Organization-AutoForwarded: true`` now sets
   PR_AUTO_FORWARDED on import, so rule conditions on automatic forwards can
   match.
+* EWS: GetInboxRules now returns the Inbox rules and UpdateInboxRules is
+  implemented, so Outlook for Mac and eM Client can manage server rules.
 
 Changes:
 
@@ -58,6 +60,10 @@ Changes:
 * ruleproc: meeting autoprocessing now writes the subject prefixes of its
   responses and of cancelled calendar items in the language of the mailbox,
   e.g. "Angenommen: " and "Abgesagt: " for German mailboxes.
+* EWS: UpdateInboxRules now removes leading and trailing ``*`` from the
+  strings of the Contains*Strings conditions and exceptions. eM Client wraps
+  each of these strings in asterisks, which a substring match takes
+  literally, so its server rules never matched.
 
 Fixes:
 
@@ -138,6 +144,10 @@ Fixes:
 * ruleproc: when meeting autoprocessing marks a cancelled series in an
   attendee calendar, it now cancels the exceptions of the series too. Before,
   a moved occurrence stayed active under its old subject.
+* exmdb: rule batches can no longer exceed max_rule_number, and renaming a
+  rule takes effect.
+* zcore: rule updates rejected for exceeding max_rule_number are now
+  reported as failures.
 
 
 Gromox 3.13 (2026-10-28)

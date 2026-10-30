@@ -700,9 +700,10 @@ ec_error_t folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 	for (auto &rule : *plist)
 		if (!common_util_convert_from_zrule(&rule.propvals))
 			return ecError;
-	return exmdb_client->update_folder_rule(pfolder->pstore->get_dir(),
-	       pfolder->folder_id, plist->count, plist->prule, &b_exceed) ?
-	       ecSuccess : ecRpcFailed;
+	if (!exmdb_client->update_folder_rule(pfolder->pstore->get_dir(),
+	    pfolder->folder_id, plist->count, plist->prule, &b_exceed))
+		return ecRpcFailed;
+	return b_exceed ? ecServerOOM : ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return ecServerOOM;

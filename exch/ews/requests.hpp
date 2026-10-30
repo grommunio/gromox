@@ -64,6 +64,7 @@ EWSFUNC(mSyncFolderHierarchyRequest);
 EWSFUNC(mSyncFolderItemsRequest);
 EWSFUNC(mUnsubscribeRequest);
 EWSFUNC(mUpdateFolderRequest);
+EWSFUNC(mUpdateInboxRulesRequest);
 EWSFUNC(mUpdateItemRequest);
 EWSFUNC(mUpdateUserConfigurationRequest);
 
