@@ -6,6 +6,7 @@
 #	include <cassert>
 #	include <stdexcept>
 #endif
+#include <iterator>
 #include <string>
 #include <type_traits>
 #define FMODE_PRIVATE 0660U
@@ -241,6 +242,11 @@ constexpr inline bool pvb_enabled(const void *z)
 }
 
 template<typename T> struct deref_iterator {
+	using iterator_category = std::forward_iterator_tag;
+	using difference_type = std::ptrdiff_t;
+	using value_type = std::remove_cv_t<T>;
+	using pointer = T *;
+	using reference = T &;
 	T **ptr = nullptr;
 	constexpr deref_iterator(T **p = nullptr) : ptr(p) {}
 	constexpr T &operator*() { return **ptr; }
@@ -250,6 +256,11 @@ template<typename T> struct deref_iterator {
 };
 
 template<typename T> struct const_deref_iterator {
+	using iterator_category = std::forward_iterator_tag;
+	using difference_type = std::ptrdiff_t;
+	using value_type = std::remove_cv_t<T>;
+	using pointer = const T *;
+	using reference = const T &;
 	T **ptr = nullptr;
 	constexpr const_deref_iterator(T **p = nullptr) : ptr(p) {}
 	constexpr const T &operator*() { return **ptr; }
