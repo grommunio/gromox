@@ -959,10 +959,12 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
  * @param      dir       Store directory
  * @param      parent    Parent folder to create item in
  * @param      content   Item content to store
+ * @param      withAttachments  Whether to return the attachment IDs as well
  *
  * @return     Item object containing ItemId
  */
-sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, const MESSAGE_CONTENT& content) const
+sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent,
+    const MESSAGE_CONTENT &content, bool withAttachments) const
 {
 	ec_error_t error;
 	auto messageId = content.proplist.get<const uint64_t>(PidTagMid);
@@ -976,6 +978,8 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 		throw EWSError::ItemSave(E3324);
 
 	sShape retshape = sShape(tItemResponseShape());
+	if (withAttachments)
+		retshape.special |= sShape::Attachments;
 	return loadItem(dir, parent.folderId, *messageId, retshape);
 }
 
@@ -1742,7 +1746,7 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 	static constexpr proptag_t tagIDs[] = {
 		PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
 		PR_ATTACH_DATA_BIN, PR_ATTACH_CONTENT_ID,
-		PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS,
+		PR_ATTACH_LONG_FILENAME, PR_ATTACH_FLAGS,
 	};
 	TPROPVAL_ARRAY props;
 	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
@@ -1903,7 +1907,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		static constexpr proptag_t tagIDs[] = {
 			PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
 			PR_ATTACH_CONTENT_ID, PR_ATTACH_LONG_FILENAME,
-			PR_ATTACHMENT_FLAGS, PR_ATTACH_SIZE,
+			PR_ATTACH_FLAGS, PR_ATTACH_SIZE,
 			PR_ATTACHMENT_HIDDEN,
 		};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
@@ -4973,6 +4977,39 @@ message_content_ptr EWSContext::toContent(const std::string &dir,
 }
 
 /**
+ * @brief      Add a file attachment to a new message
+ *
+ * @param      content  Message to add to
+ * @param      file     Attachment to add
+ */
+void EWSContext::addAttachment(MESSAGE_CONTENT &content,
+    const tFileAttachment &file)
+{
+	if (content.children.pattachments == nullptr) {
+		auto list = attachment_list_init();
+		if (list == nullptr)
+			throw EWSError::NotEnoughMemory(E3570);
+		content.set_attachments_internal(list);
+	}
+	auto ac = attachment_content_init();
+	if (ac == nullptr)
+		throw EWSError::NotEnoughMemory(E3570);
+	if (!content.children.pattachments->append_internal(ac)) {
+		attachment_content_free(ac);
+		throw EWSError::ItemSave(E3571);
+	}
+	static constexpr uint32_t rendpos = UINT32_MAX;
+	auto now = construct<mapitime_t>(rop_util_current_nttime());
+	auto props = file.props();
+	props.push_back({PR_RENDERING_POSITION, deconst(&rendpos)});
+	props.push_back({PR_CREATION_TIME, now});
+	props.push_back({PR_LAST_MODIFICATION_TIME, now});
+	for (const auto &prop : props)
+		if (ac->proplist.set(prop) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3570);
+}
+
+/**
  * @brief     Convert item to MESSAGE_CONTENT
  *
  * @param     dir      Home directory of the associated store
@@ -5734,6 +5771,13 @@ void EWSContext::toContent(const std::string &dir, tItem &item, sShape &shape,
 {
 	if (item.MimeContent)
 		content = toContent(dir, *item.MimeContent);
+	if (item.Attachments)
+		for (const auto &att : *item.Attachments) {
+			auto file = std::get_if<tFileAttachment>(&att);
+			if (file == nullptr)
+				throw EWSError::ItemSave(E3572);
+			addAttachment(*content, *file);
+		}
 	if (item.Body) {
 		auto body = item.Body.value().c_str();
 		if (item.Body.value().BodyType == Enum::Text) {
@@ -6059,7 +6103,6 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId> &folderIds,
 			subscriptionId.tsub_rawkey));
 		return subscriptionId;
 	}
-	mgr->inner_subs.reserve(folderIds.size());
 	std::string target;
 	std::string maildir;
 	for (const sFolderId &f : folderIds) {
@@ -6075,9 +6118,12 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId> &folderIds,
 		}
 		if (!(permissions(maildir, folderspec.folderId) & frightsReadAny))
 			continue; // TODO: proper error handling
-		mgr->inner_subs.emplace_back(m_plugin.subscribe(maildir,
-			eventMask, all, folderspec.folderId, subscriptionId.tsub_rawkey));
+		mgr->folders.emplace(rop_util_get_gc_value(folderspec.folderId));
 	}
+	/* Filtered in EWSPlugin::event */
+	if (!mgr->folders.empty())
+		mgr->inner_subs.emplace_back(m_plugin.subscribe(maildir,
+			eventMask, true, 0, subscriptionId.tsub_rawkey));
 	return subscriptionId;
 }
 

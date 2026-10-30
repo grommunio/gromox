@@ -1198,12 +1198,21 @@ tFileAttachment::tFileAttachment(const XMLElement *xml)
 {
 	if (const XMLElement *xp = xml->FirstChildElement("Name"))
 		Name = fromXMLNode<std::string>(xp);
+	if (const XMLElement *xp = xml->FirstChildElement("ContentType"))
+		ContentType = fromXMLNode<std::string>(xp);
+	if (const XMLElement *xp = xml->FirstChildElement("ContentId"))
+		ContentId = fromXMLNode<std::string>(xp);
 	if (const XMLElement *xp = xml->FirstChildElement("IsInline"))
 		IsInline.emplace(fromXMLNode<bool>(xp));
 	if (const XMLElement *xp = xml->FirstChildElement("IsContactPhoto"))
 		IsContactPhoto.emplace(fromXMLNode<bool>(xp));
-	if (const XMLElement *xp = xml->FirstChildElement("Content"))
-		Content.emplace(xp);
+	if (const XMLElement *xp = xml->FirstChildElement("Content")) {
+		/* eM Client sends an empty sharing_metadata.xml */
+		if (xp->GetText() == nullptr)
+			Content.emplace();
+		else
+			Content.emplace(xp);
+	}
 }
 
 void tFileAttachment::serialize(tinyxml2::XMLElement *xml) const
@@ -1458,6 +1467,17 @@ tItem::tItem(const tinyxml2::XMLElement *xml) :
 	for (const tinyxml2::XMLElement *xp = xml->FirstChildElement("ExtendedProperty");
 	     xp != nullptr; xp = xp->NextSiblingElement("ExtendedProperty"))
 		ExtendedProperty.emplace_back(xp);
+	auto atts = xml->FirstChildElement("Attachments");
+	if (atts == nullptr)
+		return;
+	Attachments.emplace();
+	for (auto xp = atts->FirstChildElement(); xp != nullptr;
+	     xp = xp->NextSiblingElement())
+		if (strcmp(xp->Name(), "FileAttachment") == 0)
+			Attachments->emplace_back(tFileAttachment(xp));
+		else
+			/* Placeholder that toContent refuses */
+			Attachments->emplace_back(tItemAttachment());
 }
 
 void tItem::serialize(XMLElement *xml) const

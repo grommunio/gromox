@@ -4122,6 +4122,17 @@ void tExtendedProperty::deserialize(const XMLElement *xml, proptype_t type, void
 		memcpy(static_cast<char*>(dest), src, len + 1);
 		break;
 	}
+	case PT_BINARY: {
+		std::string_view src = znul(content);
+		auto bin = static_cast<BINARY *>(dest);
+		bin->cb = 0;
+		bin->pv = EWSContext::alloc(src.size() + 1);
+		size_t outlen = 0;
+		if (base64nl_decode_sized(src, bin->pv, src.size() + 1, &outlen) < 0)
+			throw EWSError::InvalidExtendedPropertyValue(E3493(src));
+		bin->cb = outlen;
+		break;
+	}
 	case PT_MV_SHORT:
 		deserializeMV(xml, type, &SHORT_ARRAY::ps); break;
 	case PT_MV_LONG:
@@ -4138,6 +4149,8 @@ void tExtendedProperty::deserialize(const XMLElement *xml, proptype_t type, void
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		deserializeMV(xml, type, &STRING_ARRAY::ppstr); break;
+	case PT_MV_BINARY:
+		deserializeMV(xml, type, &BINARY_ARRAY::pbin); break;
 	default:
 		throw NotImplementedError(E3107(tExtendedFieldURI::typeName(type)));
 	}
@@ -4219,6 +4232,8 @@ void tExtendedProperty::serialize(const void *data, proptype_t type, XMLElement 
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		return serializeMV(data, type, xml, &STRING_ARRAY::ppstr);
+	case PT_MV_BINARY:
+		return serializeMV(data, type, xml, &BINARY_ARRAY::pbin);
 	}
 }
 
@@ -4543,6 +4558,41 @@ tFileAttachment::tFileAttachment(const sAttachmentId& aid, const sShape& shape) 
 		Content.emplace(*tp);
 		Size = Content->size();
 	}
+}
+
+/**
+ * @brief      Properties of a new attachment made from this one
+ *
+ * @return     Properties, valid for the duration of the request
+ */
+std::vector<TAGGED_PROPVAL> tFileAttachment::props() const
+{
+	std::vector<TAGGED_PROPVAL> props;
+	if (Name) {
+		auto name = EWSContext::cpystr(*Name);
+		props.push_back({PR_ATTACH_LONG_FILENAME, name});
+		props.push_back({PR_ATTACH_FILENAME, name});
+		props.push_back({PR_DISPLAY_NAME, name});
+	}
+	if (ContentType)
+		props.push_back({PR_ATTACH_MIME_TAG, EWSContext::cpystr(*ContentType)});
+	if (ContentId)
+		props.push_back({PR_ATTACH_CONTENT_ID, EWSContext::cpystr(*ContentId)});
+	static constexpr uint32_t method = ATTACH_BY_VALUE;
+	props.push_back({PR_ATTACH_METHOD, deconst(&method)});
+	if (IsInline && *IsInline) {
+		static constexpr uint32_t flags = ATT_MHTML_REF;
+		props.push_back({PR_ATTACH_FLAGS, deconst(&flags)});
+	}
+	if (IsContactPhoto && *IsContactPhoto)
+		props.push_back({PR_ATTACHMENT_CONTACTPHOTO, deconst(&byte_value_one)});
+	if (Content) {
+		auto bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(Content->size()), {EWSContext::alloc<char>(Content->size())}});
+		memcpy(bin->pc, Content->data(), bin->cb);
+		props.push_back({PR_ATTACH_DATA_BIN, bin});
+		props.push_back({PR_ATTACH_SIZE, EWSContext::construct<int32_t>(bin->cb)});
+	}
+	return props;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4951,7 +5001,10 @@ sItem tItem::create(const sShape& shape)
 		return tMeetingRequestMessage(shape);
 	else if (class_match_prefix(itemClass, "IPM.Schedule.Meeting.Resp") == 0)
 		return tMeetingResponseMessage(shape);
-	return tItem(shape);
+	else if (class_match_prefix(itemClass, "IPM.DistList") == 0)
+		return tItem(shape);
+	/* Exchange serves classes without a dedicated EWS type as Message */
+	return tMessage(shape);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

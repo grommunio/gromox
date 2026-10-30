@@ -511,6 +511,9 @@ std::string http_make_err_response(const http_context &ctx, http_status code)
 			else
 				rsp += "WWW-Authenticate: Negotiate\r\n";
 		}
+		/* The EWS Managed API probes without credentials */
+		if (is_autodiscover_xml(ctx.request.f_request_uri.c_str()))
+			rsp += "X-SOAP-Enabled: True\r\n";
 	}
 	rsp += "\r\n";
 	rsp += msg;

@@ -624,6 +624,7 @@ E(3489, "item is not a recurring master");
 E(3490, "failed to write cancellation copy to Sent Items");
 E(3491, "failed to build occurrence message");
 E(3492, "failed to build occurrence cancellation");
+inline std::string E3493(std::string_view val) {return fmt::format("E-3493: invalid binary value '{}'", val);}
 E(3499, "no availability data for this email address");
 E(3501, "private item");
 E(3520, "failed to load the LocalFreebusy table");
@@ -634,6 +635,9 @@ E(3524, "failed to update the LocalFreebusy message");
 E(3525, "cannot write to the folder of the referenced occurrence");
 E(3526, "cannot write to the folder of the referenced item");
 E(3527, "cannot write to the folder of the item to suppress the read receipt for");
+E(3570, "out of memory adding an attachment");
+E(3571, "failed to add an attachment");
+E(3572, "only file attachments can be created with an item");
 E(3573, "no permission to delete folder");
 E(3574, "failed to delete the content of a folder");
 E(3600, "cannot write to the calendar of the referenced item");

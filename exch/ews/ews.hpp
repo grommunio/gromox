@@ -6,6 +6,7 @@
 #include <list>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 #include <gromox/clock.hpp>
@@ -127,6 +128,7 @@ class EWSPlugin {
 		Structures::sMailboxInfo mailboxInfo; ///< Target mailbox metadata
 		std::mutex lock; ///< I/O mutex
 		std::vector<detail::ExmdbSubscriptionKey> inner_subs; ///< Exmdb subscription keys
+		std::unordered_set<uint64_t> folders; ///< Subscribed folder GC values, empty for all
 		std::list<Structures::sNotificationEvent> events; ///< Events that occurred since last check
 		detail::ContextKey waitingContext = -1; ///< ID of context waiting for events
 		bool overflow = false; ///< Backlog hit ews_max_pending_events; faulted out so the client re-subscribes and resyncs
@@ -290,7 +292,7 @@ class EWSContext {
 	NOMOVE(EWSContext);
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
-	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
+	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&, bool = false) const;
 	void createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
 	void disableEventStream();
 	const char* effectiveUser(const Structures::sFolderSpec&) const;
@@ -399,6 +401,7 @@ class EWSContext {
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
+	static void addAttachment(MESSAGE_CONTENT &, const Structures::tFileAttachment &);
 	static char *cpystr(const std::string_view);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);

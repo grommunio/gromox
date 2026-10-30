@@ -625,7 +625,7 @@ struct tAttachment : public NS_EWS_Types {
 	std::optional<std::string> AttachmentOriginalUrl;
 	std::optional<int32_t> Size;
 	std::optional<sTimePoint> LastModifiedTime; ///< PR_LAST_MODIFICATION_TIME
-	std::optional<bool> IsInline; ///< PR_ATTACHMENT_FLAGS & ATT_MHTML_REF
+	std::optional<bool> IsInline; ///< PR_ATTACH_FLAGS & ATT_MHTML_REF
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
@@ -1136,6 +1136,7 @@ struct tFileAttachment : public tAttachment {
 	std::optional<bool> IsContactPhoto;
 	std::optional<sBase64Binary> Content;
 
+	std::vector<TAGGED_PROPVAL> props() const;
 	void serialize(tinyxml2::XMLElement *) const;
 };
 
