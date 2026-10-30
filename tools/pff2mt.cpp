@@ -584,7 +584,9 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 	}
 
 	auto buf = std::make_unique<uint8_t[]>(dsize + 1);
-	static_assert(__STDCPP_DEFAULT_NEW_ALIGNMENT__ >= sizeof(GUID));
+	static_assert(__STDCPP_DEFAULT_NEW_ALIGNMENT__ >= alignof(GUID) &&
+	    __STDCPP_DEFAULT_NEW_ALIGNMENT__ >= alignof(uint64_t) &&
+	    __STDCPP_DEFAULT_NEW_ALIGNMENT__ >= alignof(double));
 	if (dsize == 0)
 		buf[0] = '\0';
 	else if (libpff_record_entry_get_data(rent, buf.get(), dsize + 1, &~unique_tie(err)) < 1)
