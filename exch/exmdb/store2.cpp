@@ -618,6 +618,17 @@ BOOL exmdb_server::autoreply_tsquery(const char *dir, const char *peer,
 {
 	if (window == 0)
 		window = INT64_MAX;
+	if (strcmp(peer, OOF_STATE_CHANGE_PEER) == 0) {
+		/*
+		 * Age of the Out of Office settings. Every writer of the state,
+		 * grommunio-admin-api included, rewrites autoreply.cfg.
+		 */
+		struct stat sb;
+		auto now = time(nullptr);
+		*status = stat(autoreply_fspath(dir, PR_EC_OUTOFOFFICE).c_str(), &sb) == 0 &&
+		          sb.st_mtime <= now ? now - sb.st_mtime : now;
+		return TRUE;
+	}
 	auto db = db_engine_get_db(dir);
 	if (!db)
 		return false;

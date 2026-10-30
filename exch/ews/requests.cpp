@@ -1269,7 +1269,8 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
     uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
     bool send_message, std::optional<sOccurrenceId> &declinedOcc,
-    std::optional<std::pair<std::string, uint64_t>> *calItem = nullptr)
+    std::optional<std::pair<std::string, uint64_t>> *calItem = nullptr,
+    uint32_t *calDate = nullptr)
 {
 	if (refId.type == tItemId::ID_OCCURRENCE)
 		return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
@@ -1293,6 +1294,25 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 			throw EWSError::AccessDenied(E3600);
 	}
 	const char *username = ctx.effectiveUser(pf);
+	/*
+	 * A delegate answering its copy acts for the principal, in the
+	 * principal's calendar, see MS-OXOCAL v22.1 §3.1.5.1. Check the rights
+	 * before anything is touched.
+	 */
+	std::optional<std::string> principal;
+	if (pf.location == sFolderSpec::PRIVATE) {
+		static constexpr proptag_t dtags[] = {
+			PR_DELEGATED_BY_RULE, PR_RCVD_REPRESENTING_ADDRTYPE,
+			PR_RCVD_REPRESENTING_EMAIL_ADDRESS,
+		};
+		principal = ctx.delegatePrincipal(ctx.getItemProps(rdir,
+		            mid.messageId(), dtags), *pf.target);
+	}
+	if (principal) {
+		ctx.checkPrincipalCalendar(*principal);
+		if (send_message)
+			ctx.validate_sendas_perms(*principal);
+	}
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	auto rstat = EWSContext::construct<uint32_t>(resp);
 	uint32_t state = asfMeeting | asfReceived;
@@ -1315,8 +1335,12 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	TPROPVAL_ARRAY proplist{std::size(props), props};
 	PROBLEM_ARRAY problems;
 	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
-	/* A declined Meeting object leaves the calendar once the reply is out */
+	/*
+	 * A declined Meeting object leaves the calendar once the reply is out.
+	 * For a delegate copy that is the principal's calendar only.
+	 */
 	std::optional<uint64_t> declinedCal;
+	std::string calDir = rdir;
 	bool isRequest = class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0;
 	if (resp == respDeclined && send_message && calItem != nullptr &&
 	    pf.location == sFolderSpec::PRIVATE) {
@@ -1325,14 +1349,17 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 			if (pf.folderId != eid_t(1, PRIVATE_FID_DELETED_ITEMS))
 				declinedCal = mid.messageId();
 		} else if (isRequest) {
-			declinedCal = ctx.findMeetingObject(refId);
+			declinedCal = ctx.findMeetingObject(refId,
+			              principal ? &*principal : nullptr);
+			if (principal)
+				calDir = ctx.get_maildir(*principal);
 			calFid = eid_t(1, PRIVATE_FID_CALENDAR);
 		}
-		auto calRights = declinedCal ? ctx.permissions(rdir, calFid) : 0;
+		auto calRights = declinedCal ? ctx.permissions(calDir, calFid) : 0;
 		if (declinedCal && !(calRights & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
 		/* The response status is also written to the calendar item */
-		if (declinedCal && *declinedCal != mid.messageId() &&
+		if (declinedCal && (calDir != rdir || *declinedCal != mid.messageId()) &&
 		    !(calRights & frightsEditAny))
 			throw EWSError::AccessDenied(E3603);
 	}
@@ -1340,19 +1367,29 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		mid.messageId(), &proplist, &problems))
 		throw EWSError::ItemSave(E3409);
 	if (resp == respAccepted || resp == respTentative) {
-		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp);
+		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp,
+		           principal ? &*principal : nullptr, calDate);
 		if (cal && calItem != nullptr)
-			calItem->emplace(rdir, *cal);
+			calItem->emplace(principal ? ctx.get_maildir(*principal) : rdir, *cal);
 	}
 	if (declinedCal) {
-		if (*declinedCal != mid.messageId()) {
+		if (calDir != rdir || *declinedCal != mid.messageId()) {
 			/* All but PR_PROCESSED, which is for the request */
-			TPROPVAL_ARRAY calProps{std::size(props) - 1, props};
-			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(),
+			auto cpid = [&](const PROPERTY_NAME &name) {
+				return ctx.getNamedPropId(calDir, name, true);
+			};
+			TAGGED_PROPVAL cprops[] = {
+				{PROP_TAG(PT_LONG, cpid(NtResponseStatus)), rstat},
+				{PROP_TAG(PT_SYSTIME, cpid(NtAppointmentReplyTime)), now},
+				{PROP_TAG(PT_LONG, cpid(NtAppointmentStateFlags)), astat},
+				{PROP_TAG(PT_LONG, cpid(NtBusyStatus)), bstat},
+			};
+			TPROPVAL_ARRAY calProps{std::size(cprops), cprops};
+			if (!ctx.plugin().exmdb.set_message_properties(calDir.c_str(),
 			    username, CP_ACP, *declinedCal, &calProps, &problems))
 				throw EWSError::ItemSave(E3582);
 		}
-		calItem->emplace(rdir, *declinedCal);
+		calItem->emplace(calDir, *declinedCal);
 	}
 	if (pf.location == sFolderSpec::PRIVATE && rights & frightsDeleteAny &&
 	    isRequest) {
@@ -1537,16 +1574,17 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
 		std::optional<std::pair<std::string, uint64_t>> calItem;
+		uint32_t calDate = 0;
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
 				updateRef(ctx, *acc->ReferenceItemId,
 				          respAccepted, refDir, refMid,
-				          send_message, declinedOcc, &calItem);
+				          send_message, declinedOcc, &calItem, &calDate);
 		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
 			if (tent->ReferenceItemId)
 				updateRef(ctx, *tent->ReferenceItemId,
 				          respTentative, refDir, refMid,
-				          send_message, declinedOcc, &calItem);
+				          send_message, declinedOcc, &calItem, &calDate);
 		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
 			if (dec->ReferenceItemId)
 				updateRef(ctx, *dec->ReferenceItemId,
@@ -1582,8 +1620,16 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			calShape.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD)
 			        .add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD)
 			        .add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
-			msg.Items.emplace_back(ctx.loadItem(calItem->first,
-				calFid, calItem->second, calShape));
+			/* For one occurrence, Exchange returns that occurrence */
+			if (calDate != 0) {
+				/* The occurrence times need the series start and zone */
+				calShape.add(PR_START_DATE, sShape::FL_FIELD)
+				        .add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
+				msg.Items.emplace_back(ctx.loadOccurrence(calItem->first,
+					calFid, calItem->second, calDate, calShape));
+			} else
+				msg.Items.emplace_back(ctx.loadItem(calItem->first,
+					calFid, calItem->second, calShape));
 		}
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)
@@ -3498,6 +3544,12 @@ void process(mSetUserOofSettingsRequest &&request, XMLElement *response, const E
 	if (OofSettings.ExternalReply && OofSettings.ExternalReply->Message)
 		ext_msg = *OofSettings.ExternalReply->Message;
 	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_REPLY, deconst(ext_msg.c_str())});
+	/*
+	 * Exchange has no OOF reply subject, its replies are titled
+	 * "Automatic reply: <subject>". Drop one a non-EWS client stored.
+	 */
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_SUBJECT, deconst("")});
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_SUBJECT, deconst("")});
 	TPROPVAL_ARRAY vals = {static_cast<uint16_t>(pvs.size()), pvs.data()};
 	PROBLEM_ARRAY problems{};
 	if (!ctx.plugin().exmdb.autoreply_setprop(maildir.c_str(), CP_UTF8,

@@ -293,13 +293,18 @@ class EWSContext {
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&, bool = false) const;
-	std::optional<uint64_t> createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
+	std::optional<uint64_t> createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t, const std::string * = nullptr, uint32_t * = nullptr) const;
+	uint32_t occurrenceSequence(const std::string &, uint64_t, uint32_t, proptag_t) const;
+	std::optional<uint64_t> acceptOccurrence(const Structures::sFolderSpec &, const std::string &, const TPROPVAL_ARRAY &, uint32_t, uint32_t) const;
+	std::optional<std::string> delegatePrincipal(const TPROPVAL_ARRAY &, const std::string &) const;
+	void checkPrincipalCalendar(const std::string &) const;
+	void remapNamedProps(const std::string &, const std::string &, MESSAGE_CONTENT &) const;
 	void disableEventStream();
 	const char* effectiveUser(const Structures::sFolderSpec&) const;
 	void enableEventStream(int);
 	std::string essdn_to_username(const std::string&) const;
 	std::string exportContent(const std::string&, const MESSAGE_CONTENT&, const std::string&) const;
-	std::optional<uint64_t> findMeetingObject(const Structures::tItemId &) const;
+	std::optional<uint64_t> findMeetingObject(const Structures::tItemId &, const std::string * = nullptr) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
 	uint32_t getAccountId(const std::string&, bool) const;

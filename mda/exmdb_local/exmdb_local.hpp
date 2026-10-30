@@ -3,6 +3,7 @@
 #include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/hook_common.h>
+#include "bounce_producer.hpp"
 
 enum class delivery_status {
 	ok, no_user, mailbox_full, perm_fail, temp_fail, bounce_sent,
@@ -10,12 +11,10 @@ enum class delivery_status {
 
 struct MAIL;
 
-extern void auto_response_reply(const char *user_home, const char *from, const char *rcpt, std::string &&orig_subject);
+extern void auto_response_reply(const char *user_home, const char *from, const char *rcpt, const char *lang, std::string &&orig_subject);
 
 extern void bounce_audit_init(int audit_num, int audit_interval);
 extern BOOL bounce_audit_check(const char *audit_string);
-
-extern bool exml_bouncer_make(const char *from, const char *rcpt, MAIL *orig, time_t orig_time, const char *bounce_type, MAIL *cur);
 
 extern void cache_queue_init(std::string &&path, int scan_interval, int retrying_times);
 extern int cache_queue_run();
@@ -31,3 +30,4 @@ extern void exmdb_local_log_info(const CONTROL_INFO &, const char *rcpt, int lev
 
 extern unsigned int autoreply_silence_window;
 extern std::string autoreply_subject_prefix;
+extern bool autoreply_subject_prefix_set;

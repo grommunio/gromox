@@ -925,6 +925,38 @@ static int t_res_mvprop()
 	return EXIT_SUCCESS;
 }
 
+static int t_srchkey_words()
+{
+	std::string essdn;
+	assert(cvt_username_to_essdn("sender@example.org", "example",
+	       0x11, 0x22, essdn) == ecSuccess);
+	std::string exkey = "EX:" + essdn;
+	HX_strupper(exkey.data());
+	BINARY lhs;
+	lhs.cb = exkey.size() + 1;
+	lhs.pc = exkey.data();
+	auto test = [&](const char *needle, uint32_t fuzzy, proptag_t tag = PR_SENDER_SEARCH_KEY) {
+		BINARY rhs;
+		rhs.cb = strlen(needle);
+		rhs.pc = deconst(needle);
+		RESTRICTION_CONTENT rc{};
+		rc.fuzzy_level = fuzzy;
+		rc.proptag = tag;
+		rc.propval = {tag, &rhs};
+		return rcont_srchkey_eval(rc, &lhs, "example", essdn_id2user);
+	};
+	assert(test("@EXAMPLE.ORG", FL_SUBSTRING));
+	assert(test("@example.org", FL_SUBSTRING));
+	assert(test("/o=example", FL_SUBSTRING));
+	assert(!test("@example.com", FL_SUBSTRING));
+	assert(test("SMTP:SENDER@EXAMPLE.ORG", FL_FULLSTRING));
+	assert(test("smtp:sen", FL_PREFIX));
+	assert(!test("SENDER", FL_PREFIX));
+	/* not a search key: bytewise as before */
+	assert(!test("@example.org", FL_SUBSTRING, PR_ENTRYID));
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -943,7 +975,7 @@ static int runner()
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
 		t_string, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
-		t_res_mvprop,
+		t_res_mvprop, t_srchkey_words,
 	};
 	for (auto f : fct) {
 		auto ret = f();

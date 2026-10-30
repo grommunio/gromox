@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <vector>
 #include <fmt/format.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/bounce_gen.hpp>
@@ -104,7 +105,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->ctrl.from,
+			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
 			    rcpt_buff, &pcontext->mail, time(nullptr),
 			    "BOUNCE_MAIL_DELIVERED", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
@@ -140,7 +141,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->ctrl.from,
+			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
 			    rcpt_buff, &pcontext->mail, time(nullptr),
 			    "BOUNCE_NO_USER", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
@@ -165,7 +166,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->ctrl.from,
+			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
 			    rcpt_buff, &pcontext->mail, time(nullptr),
 			    "BOUNCE_MAILBOX_FULL", &pbounce_context->mail)) {
 				put_context(pbounce_context);
@@ -189,7 +190,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->ctrl.from,
+			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
 			    rcpt_buff, &pcontext->mail, time(nullptr),
 			    "BOUNCE_OPERATION_ERROR", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
@@ -463,7 +464,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		    strcmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) != 0&&
 		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
 			auto_response_reply(home_dir, address, pcontext->ctrl.from,
-				std::move(orig_subject));
+				mres.lang.c_str(), std::move(orig_subject));
 		break;
 	case deliver_message_result::partial_completion:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
@@ -525,9 +526,14 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 	}
 }
 
+static constexpr cfg_directive exmdb_local_cfg_defaults[] = {
+	{"lda_mrautoproc", "1", CFG_BOOL},
+	{"lda_twostep_ruleproc", "1", CFG_BOOL},
+	CFG_TABLE_END,
+};
+
 static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 	{"autoreply_silence_window", "1day", CFG_TIME, "0"},
-	{"autoreply_subject_prefix", "Out of office: "},
 	{"lda_relay_unknown_recipients", "0", CFG_BOOL},
 	CFG_TABLE_END,
 };
@@ -551,13 +557,19 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		auto cfg = config_file_initd("gromox.cfg", get_config_path(), mdlgx_cfg_defaults);
 		if (cfg != nullptr) {
 			autoreply_silence_window = cfg->get_ll("autoreply_silence_window");
-			autoreply_subject_prefix = znul(cfg->get_value("autoreply_subject_prefix"));
+			auto v = cfg->get_value("autoreply_subject_prefix");
+			autoreply_subject_prefix_set = v != nullptr;
+			autoreply_subject_prefix = znul(v);
+			/* The config parser strips trailing blanks */
+			if (!autoreply_subject_prefix.empty() &&
+			    !HX_isspace(autoreply_subject_prefix.back()))
+				autoreply_subject_prefix += ' ';
 			g_junk_rules = parse_junk_rules(cfg->get_value("lda_junk_rules"));
 			g_lda_relay_unknown = cfg->get_ll("lda_relay_unknown_recipients");
 		}
 
 		auto pfile = config_file_initd("exmdb_local.cfg",
-		             get_config_path(), nullptr);
+		             get_config_path(), exmdb_local_cfg_defaults);
 		if (pfile == nullptr) {
 			mlog(LV_ERR, "exmdb_local: config_file_initd exmdb_local.cfg: %s",
 				strerror(errno));
@@ -610,8 +622,8 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		HX_unit_seconds(temp_buff, std::size(temp_buff), response_interval, 0);
 		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
 
-		g_lda_twostep = parse_bool(pfile->get_value("lda_twostep_ruleproc"));
-		g_lda_mrautoproc = parse_bool(pfile->get_value("lda_mrautoproc"));
+		g_lda_twostep = pfile->get_ll("lda_twostep_ruleproc");
+		g_lda_mrautoproc = pfile->get_ll("lda_mrautoproc");
 
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(get_queue_path() + std::string("/cache"), cache_interval, retrying_times);

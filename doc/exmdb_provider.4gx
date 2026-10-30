@@ -219,6 +219,10 @@ conform to gromox(7) \(sc "Host addresses".
 Default: \fI::1\fP
 .TP
 \fBmax_ext_rule_number\fP
+Run at most this many extended rules of a folder on a delivered message, in
+the order of their sequence numbers. The TwoStep rule processor of
+delivery(8gx) reads this setting from exmdb_provider.cfg too.
+.br
 Default: \fI20\fP
 .TP
 \fBmax_router_connections\fP
