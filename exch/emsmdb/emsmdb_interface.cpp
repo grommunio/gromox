@@ -59,11 +59,10 @@ using namespace gromox;
 template<> struct std::hash<GUID> {
 	STATIC_IN_CXX23 std::size_t operator()(const GUID &g) CONST_BEFORE_CXX23
 	{
+		std::hash<uint64_t> h;
 		uint64_t x[2];
 		memcpy(x, &g, sizeof(x));
-		auto c = reinterpret_cast<const char *>(x);
-		return std::hash<uint64_t>()(*reinterpret_cast<const uint64_t *>(c)) ^
-		       std::hash<uint64_t>()(*reinterpret_cast<const uint64_t *>(c + 8));
+		return h(x[0]) ^ h(x[1]);
 	}
 };
 
