@@ -1815,7 +1815,7 @@ void sShape::deriveSmtp()
 		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS, PR_RECEIVED_BY_SMTP_ADDRESS},
 		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, PR_RCVD_REPRESENTING_SMTP_ADDRESS},
 	};
-	static_assert(std::size(tags) == std::size(smtpProps));
+	static_assert(std::size(tags) == std::extent_v<decltype(smtpProps)>);
 	for (size_t i = 0; i < std::size(tags); ++i) {
 		auto it = props.find(tags[i][2]);
 		if (it == props.end() || it->second.prop != nullptr)
