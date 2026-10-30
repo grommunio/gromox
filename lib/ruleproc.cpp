@@ -18,8 +18,11 @@
 #include <vmime/addressList.hpp>
 #include <vmime/headerFieldFactory.hpp>
 #include <vmime/dateTime.hpp>
+#include <vmime/defaultAttachment.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/message.hpp>
+#include <vmime/messageBuilder.hpp>
+#include <vmime/messageIdSequence.hpp>
 #include <vmime/stringContentHandler.hpp>
 #include <vmime/utility/url.hpp>
 #include <gromox/algorithm.hpp>
@@ -1306,6 +1309,20 @@ static bool rx_delivered_before(const MIME &head, const char *rcpt)
 	return false;
 }
 
+/* The forwarding mailboxes named in @orig, plus @owner */
+static std::vector<std::string> rx_loop_trace(const MIME *orig, const char *owner)
+{
+	std::vector<std::string> out;
+	auto num = orig != nullptr ? orig->get_field_num(rx_loop_hdr) : 0;
+	for (int i = 0; i < num; ++i) {
+		std::string v;
+		if (orig->search_field(rx_loop_hdr, i, v))
+			out.push_back(std::move(v));
+	}
+	out.emplace_back(owner);
+	return out;
+}
+
 static std::string mr_owner_lang(const rxparam &);
 
 static std::string rx_html_quote(std::string_view s)
@@ -1546,24 +1563,18 @@ static ec_error_t rx_fwd_new(rxparam &par,
     const std::vector<std::string> &rcpt_list,
     const std::vector<std::string> &rcpt_names)
 {
-	std::vector<std::string> loop;
+	MAIL orig;
+	const MIME *orig_head = nullptr;
 	auto eml = par.get_eml();
 	if (eml != nullptr) {
-		MAIL orig;
 		if (!orig.refonly_parse(eml->c_str(), eml->size()))
 			return ecError;
-		auto head = orig.get_head();
-		if (head != nullptr && rx_delivered_before(*head, par.ev_to)) {
+		orig_head = orig.get_head();
+		if (orig_head != nullptr && rx_delivered_before(*orig_head, par.ev_to)) {
 			mlog(LV_DEBUG, "ruleproc: %s: OP_FORWARD skipped, "
 				"message was already delivered to %s",
 				par.orig_dir.c_str(), par.ev_to);
 			return ecSuccess;
-		}
-		auto num = head != nullptr ? head->get_field_num(rx_loop_hdr) : 0;
-		for (int i = 0; i < num; ++i) {
-			std::string v;
-			if (head->search_field(rx_loop_hdr, i, v))
-				loop.push_back(std::move(v));
 		}
 	}
 	message_content_ptr fwd(message_content_init());
@@ -1592,9 +1603,8 @@ static ec_error_t rx_fwd_new(rxparam &par,
 	auto head = imail.get_head();
 	if (head == nullptr)
 		return ecError;
-	for (const auto &v : loop)
+	for (const auto &v : rx_loop_trace(orig_head, par.ev_to))
 		head->append_field(rx_loop_hdr, v.c_str());
-	head->append_field(rx_loop_hdr, par.ev_to);
 	err = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, rcpt_list);
 	if (err != ecSuccess)
 		mlog(LV_ERR, "ruleproc: OP_FORWARD cu_send_mail: %s",
@@ -1782,43 +1792,48 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 
 	ec_error_t ret = ecSuccess;
 	if (flavor & FWD_AS_ATTACHMENT) {
-		MAIL imail1;
-		auto pmime = imail1.add_head();
-		if (pmime == nullptr)
-			return ecServerOOM;
-		if (!pmime->set_content_type("message/rfc822"))
-			mlog(LV_WARN, "W-2326: set_content_type not successful");
-		char tmp_buff[64*1024];
-		snprintf(tmp_buff, std::size(tmp_buff), "<%s>", par.ev_to);
-		pmime->set_field("From", tmp_buff);
-		int offset = 0;
-		for (const auto &eaddr : rcpt_list) {
-			if (offset == 0)
-				offset = gx_snprintf(tmp_buff, std::size(tmp_buff),
-				         "<%s>", eaddr.c_str());
-			else
-				offset += gx_snprintf(tmp_buff + offset,
-				          std::size(tmp_buff) - offset, ", <%s>",
-				          eaddr.c_str());
-			pmime->append_field("Delivered-To", eaddr.c_str());
+		/* The original goes in as stored, which keeps its signatures */
+		std::string inner;
+		if (eml != nullptr)
+			inner = *eml;
+		else if (imail.to_str(inner) != 0)
+			return ecError;
+		auto &props = par.ctnt->proplist;
+		auto subj = props.get<const char>(PR_NORMALIZED_SUBJECT);
+		if (subj == nullptr)
+			subj = znul(props.get<const char>(PR_SUBJECT));
+		std::string owner_name;
+		if (!mysql_adaptor_get_user_displayname(par.ev_to, owner_name))
+			owner_name.clear();
+		vmime::messageBuilder mb;
+		mb.setExpeditor(vmime::mailbox(vmime::text(owner_name,
+			vmime::charsets::UTF_8), par.ev_to));
+		vmime::addressList to;
+		for (const auto &r : rcpt_list)
+			to.appendAddress(vmime::make_shared<vmime::mailbox>(r));
+		mb.setRecipients(to);
+		mb.setSubject(vmime::text(meeting_subject_prefix(mr_owner_lang(par).c_str(),
+			"forward") + std::string(subj), vmime::charsets::UTF_8));
+		mb.appendAttachment(vmime::make_shared<vmime::defaultAttachment>(
+			vmime::make_shared<vmime::stringContentHandler>(std::move(inner)),
+			vmime::encoding(vmime::encodingTypes::EIGHT_BIT),
+			vmime::mediaType(vmime::mediaTypes::MESSAGE,
+			vmime::mediaTypes::MESSAGE_RFC822), vmime::NULL_TEXT,
+			vmime::word(std::string(subj) + ".eml", vmime::charsets::UTF_8)));
+		auto msg = mb.construct();
+		auto hdr = msg->getHeader();
+		auto omid = props.get<const char>(PR_INTERNET_MESSAGE_ID);
+		if (!znoval(omid)) {
+			vmime::messageIdSequence ids;
+			ids.appendMessageId(vmime::make_shared<vmime::messageId>(omid));
+			hdr->InReplyTo()->setValue(ids);
+			hdr->References()->setValue(ids);
 		}
-		pmime->set_field("To", tmp_buff);
-		const std::string *old_subject = nullptr;
-		if (auto pmime_old = imail.get_head())
-			old_subject = pmime_old->get_field("Subject");
-		if (old_subject != nullptr)
-			pmime->set_field("Subject", "Fwd: " + *old_subject);
-		else
-			pmime->set_field("Subject", "Fwd: (no subject)");
-		struct tm time_buff;
-		auto cur_time = time(nullptr);
-		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
-			localtime_r(&cur_time, &time_buff));
-		pmime->set_field("Date", tmp_buff);
-		pmime->write_mail(&imail);
+		for (const auto &v : rx_loop_trace(imail.get_head(), par.ev_to))
+			hdr->appendField(vmime::headerFieldFactory::getInstance()->create(rx_loop_hdr, v));
 		auto env_from = (flavor & FWD_PRESERVE_SENDER) ?
 		                par.ev_from : par.ev_to;
-		ret = cu_send_mail(imail1, rp_smtp_url.c_str(), env_from, rcpt_list);
+		ret = cu_send_vmail(std::move(msg), rp_smtp_url.c_str(), env_from, rcpt_list);
 	} else {
 		auto pmime = imail.get_head();
 		if (pmime == nullptr)
