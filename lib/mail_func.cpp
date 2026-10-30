@@ -410,6 +410,34 @@ size_t parse_mime_field(const char *in_buff, size_t buff_len,
 	return 0;
 }
 
+/**
+ * Unfold @v like parse_mime_field does, minus leading whitespace.
+ */
+std::string mime_unfold(std::string_view v)
+{
+	auto p = v.find_first_not_of(" \t");
+	v.remove_prefix(p == v.npos ? v.size() : p);
+	if (v.find_first_of("\r\n") == v.npos)
+		return std::string(v);
+	std::string out;
+	out.reserve(v.size());
+	size_t i = 0, n = v.size();
+	while (true) {
+		for (; i < n && v[i] != '\r' && v[i] != '\n'; ++i)
+			out += v[i];
+		if (i < n && v[i] == '\r')
+			++i;
+		if (i < n && v[i] == '\n')
+			++i;
+		if (i == n || (v[i] != ' ' && v[i] != '\t'))
+			return out;
+		while (i < n && (v[i] == ' ' || v[i] == '\t'))
+			++i;
+		if (!out.empty())
+			out += ' ';
+	}
+}
+
 /*
  *	this function parse the buffer containing the parameters in mime 
  *	field value

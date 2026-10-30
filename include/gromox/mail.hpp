@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <string_view>
 #include <json/value.h>
 #include <gromox/defs.h>
 #include <gromox/mime.hpp>
@@ -20,6 +21,7 @@ struct GX_EXPORT MAIL {
 
 	void clear();
 	bool refonly_parse(const char *in_buff, size_t length);
+	bool refonly_parse_prepended(std::string_view pre, const char *in_buff, size_t length);
 	bool serialize(STREAM *) const;
 	gromox::errno_t to_fd(int) const;
 	gromox::errno_t to_str(std::string &) const;

@@ -6,6 +6,7 @@
 #include <vmime/generationContext.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/message.hpp>
+#include <vmime/text.hpp>
 #include <gromox/mapi_types.hpp>
 #define MIME_NAME_LEN 80U
 #define MIME_FIELD_LEN (64U * 1024)
@@ -39,6 +40,7 @@ using GET_USERNAME = ec_error_t (*)(unsigned int, std::string &);
 struct MAIL;
 extern GX_EXPORT BOOL parse_uri(const char *uri_buff, char *parsed_uri);
 extern GX_EXPORT size_t parse_mime_field(const char *, size_t, MIME_FIELD *);
+extern GX_EXPORT std::string mime_unfold(std::string_view);
 extern GX_EXPORT void parse_field_value(const char *in_buff, long buff_len, char *value, long val_len, std::vector<kvpair> &);
 extern GX_EXPORT int mutf7_to_utf8(const char *u7, size_t u7len, char *u8, size_t u8len);
 extern GX_EXPORT int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len);
@@ -65,5 +67,7 @@ extern GX_EXPORT vmime::parsingContext vmail_default_parsectx();
 extern GX_EXPORT vmime::generationContext vmail_default_genctx();
 extern GX_EXPORT std::string vmail_to_string(const vmime::message &);
 extern GX_EXPORT std::string vmail_to_string(const vmime::header &);
+extern GX_EXPORT std::string vmail_fold(const vmime::component &, size_t col, bool wrap_msgid = false);
+extern GX_EXPORT std::string vmail_fold_text(const vmime::text &, size_t col, size_t maxlen = vmime::lineLengthLimits::convenient, int flags = 0);
 
 }

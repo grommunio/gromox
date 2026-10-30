@@ -145,4 +145,35 @@ std::string vmail_to_string(const vmime::header &msg)
 	return ss;
 }
 
+/**
+ * Generate @c as a header value that starts at column @col, folded to the
+ * default line length.
+ */
+std::string vmail_fold(const vmime::component &c, size_t col, bool wrap_msgid)
+{
+	auto ctx = vmail_default_genctx();
+	ctx.setWrapMessageId(wrap_msgid);
+	std::string s;
+	vmime::utility::outputStreamStringAdapter os(s);
+	c.generate(ctx, os, col);
+	/* Lenient parsers take backslash-newline for a continuation */
+	auto t = dynamic_cast<const vmime::text *>(&c);
+	if (t != nullptr && s.find("\\\r\n") != s.npos) {
+		s.clear();
+		t->encodeAndFold(ctx, os, col, nullptr, vmime::text::FORCE_ENCODING);
+	}
+	return s;
+}
+
+std::string vmail_fold_text(const vmime::text &t, size_t col, size_t maxlen,
+    int flags)
+{
+	auto ctx = vmail_default_genctx();
+	ctx.setMaxLineLength(maxlen);
+	std::string s;
+	vmime::utility::outputStreamStringAdapter os(s);
+	t.encodeAndFold(ctx, os, col, nullptr, flags);
+	return s;
+}
+
 }

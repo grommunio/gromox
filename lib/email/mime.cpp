@@ -1407,9 +1407,9 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 		}
 	}
 	if (auto hval = pmime->get_field("Content-ID"))
-		digest["cid"] = base64_encode(*hval);
+		digest["cid"] = base64_encode(mime_unfold(*hval));
 	if (auto hval = pmime->get_field("Content-Location"))
-		digest["cntl"] = base64_encode(*hval);
+		digest["cntl"] = base64_encode(mime_unfold(*hval));
 	dsarray.append(std::move(digest));
 	return 0;
 }

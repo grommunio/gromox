@@ -28,6 +28,7 @@
 #include <vmime/mailbox.hpp>
 #include <vmime/mailboxList.hpp>
 #include <vmime/messageId.hpp>
+#include <vmime/messageIdSequence.hpp>
 #include <vmime/stringContentHandler.hpp>
 #include <vmime/text.hpp>
 #include <vmime/utility/outputStreamStringAdapter.hpp>
@@ -2787,9 +2788,147 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 }
 #undef imp_null
 
-static inline std::string enc_text(auto &&s)
+static bool set_folded(MIME *phead, const char *tag, const vmime::component &c)
 {
-	return vmime::text(s, vmime::charsets::UTF_8).generate();
+	return phead->set_field(tag, vmail_fold(c, strlen(tag) + 2));
+}
+
+/* Printable ASCII that a reader cannot take for an encoded-word */
+static bool plain_ascii(std::string_view s)
+{
+	return s.find("=?") == s.npos && std::all_of(s.begin(), s.end(),
+	       [](unsigned char c) { return c >= 0x20 && c < 0x7f; });
+}
+
+static bool line_over_998(std::string_view v, size_t col)
+{
+	for (size_t e; (e = v.find("\r\n")) != v.npos; v.remove_prefix(e + 2), col = 0)
+		if (col + e > vmime::lineLengthLimits::max)
+			return true;
+	return col + v.size() > vmime::lineLengthLimits::max;
+}
+
+static bool set_text(MIME *phead, const char *tag, const std::string &s)
+{
+	vmime::text t(s, vmime::charsets::UTF_8);
+	if (!plain_ascii(s))
+		return set_folded(phead, tag, t);
+	/* fold at spaces only, rather than encode a long word */
+	vmime::text w;
+	w.appendWord(vmime::make_shared<vmime::word>(s, vmime::charsets::US_ASCII));
+	auto v = vmail_fold_text(w, strlen(tag) + 2,
+	         vmime::lineLengthLimits::convenient,
+	         vmime::text::FORCE_NO_ENCODING);
+	if (v.find("\\\r\n") != v.npos || line_over_998(v, strlen(tag) + 2))
+		return phead->set_field(tag, vmail_fold_text(t, strlen(tag) + 2,
+		       vmime::lineLengthLimits::convenient,
+		       vmime::text::FORCE_ENCODING));
+	return phead->set_field(tag, std::move(v));
+}
+
+/*
+ * Plain names are quoted as they are. Others become one encoded word,
+ * leaving room for the closing quote and ';'.
+ */
+static std::string enc_param(const char *s, size_t col)
+{
+	if (plain_ascii(s)) {
+		std::string r;
+		for (; *s != '\0'; ++s) {
+			if (*s == '"' || *s == '\\')
+				r += '\\';
+			r += *s;
+		}
+		return r;
+	}
+	vmime::text t;
+	t.appendWord(vmime::make_shared<vmime::word>(s, vmime::charsets::UTF_8));
+	return vmail_fold_text(t, col, 76, vmime::text::FORCE_ENCODING);
+}
+
+/* Passthrough values fold at whitespace only */
+static bool set_raw(MIME *phead, const char *tag, const char *v)
+{
+	if (strpbrk(v, "\r\n") != nullptr)
+		return phead->set_field(tag, v);
+	vmime::text t;
+	t.appendWord(vmime::make_shared<vmime::word>(v, vmime::charsets::US_ASCII));
+	return phead->set_field(tag, vmail_fold_text(t, strlen(tag) + 2,
+	       vmime::lineLengthLimits::convenient, vmime::text::FORCE_NO_ENCODING));
+}
+
+static std::string squeeze_ws(std::string_view v)
+{
+	std::string out;
+	for (auto c : v) {
+		if (!HX_isspace(c))
+			out += c;
+		else if (!out.empty() && out.back() != ' ')
+			out += ' ';
+	}
+	if (!out.empty() && out.back() == ' ')
+		out.pop_back();
+	return out;
+}
+
+/* The first id stays on the header line, readers keep a fold before it */
+static bool set_msgids(MIME *phead, const char *tag, const char *raw)
+{
+	/* Some MUAs separate the ids by commas */
+	std::string v = raw;
+	for (size_t i = 0, depth = 0; i < v.size(); ++i)
+		if (v[i] == '<')
+			++depth;
+		else if (v[i] == '>' && depth > 0)
+			--depth;
+		else if (v[i] == ',' && depth == 0)
+			v[i] = ' ';
+	vmime::messageIdSequence ids;
+	ids.parse(v);
+	if (ids.isEmpty())
+		return set_raw(phead, tag, raw);
+	auto out = vmail_fold(*ids.getMessageIdAt(0), 0);
+	ids.removeMessageId(0);
+	if (!ids.isEmpty()) {
+		auto rest = vmail_fold(ids, strlen(tag) + 3 + out.size(), true);
+		out += rest.starts_with("\r\n") ? rest : " " + rest;
+	}
+	/* vmime drops or makes up ids when the list is malformed */
+	if (squeeze_ws(out) != squeeze_ws(v))
+		return set_raw(phead, tag, raw);
+	return phead->set_field(tag, std::move(out));
+}
+
+/* Each keyword on its own, a comma inside an encoded-word separates nothing */
+static std::string fold_keywords(const STRING_ARRAY &sa)
+{
+	std::string out;
+	size_t col = strlen("Keywords: "), last = 0;
+	for (size_t i = 0; i < sa.count; ++i)
+		if (sa.ppstr[i] != nullptr)
+			last = i;
+	for (size_t i = 0; i < sa.count; ++i) {
+		if (sa.ppstr[i] == nullptr)
+			continue;
+		vmime::text t(sa.ppstr[i], vmime::charsets::UTF_8);
+		/* leave room for the comma that follows */
+		size_t max = vmime::lineLengthLimits::convenient - (i != last);
+		if (!out.empty()) {
+			auto kw = vmail_fold_text(t, col + 2, max);
+			if (kw.find('\n') == kw.npos && col + 2 + kw.size() <= max) {
+				out += ", " + kw;
+				col += 2 + kw.size();
+				continue;
+			}
+			out += ",\r\n ";
+			col = 1;
+		}
+		auto kw = vmail_fold_text(t, col, max);
+		auto nl = kw.rfind('\n');
+		col = nl == kw.npos ? col + kw.size() : kw.size() - nl - 1;
+		out += std::move(kw);
+	}
+	return out;
 }
 
 BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
@@ -3204,8 +3343,7 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
 		auto mb = vmime::make_shared<vmime::mailbox>("");
 		if (!oxcmail_export_address(pmsg, tags_sender, *mb))
 			return true; /* not present */
-		auto mg = mb->generate();
-		if (!phead->set_field("Sender", std::move(mg)))
+		if (!set_folded(phead, "Sender", *mb))
 			return FALSE;
 		return true;
 	}
@@ -3220,8 +3358,7 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
 		return true;
 	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (oxcmail_export_address(pmsg, tags_sender, *mb)) {
-		auto mg = mb->generate();
-		if (!phead->set_field("Sender", std::move(mg)))
+		if (!set_folded(phead, "Sender", *mb))
 			return false;
 	}
 	return true;
@@ -3245,17 +3382,14 @@ static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
 			if (!oxcmail_export_address(pmsg, tags_sender, *mb))
 				return true;
 		}
-		auto mg = mb->generate();
-		return phead->set_field("From", std::move(mg));
+		return set_folded(phead, "From", *mb);
 	}
 	if (oxcmail_export_address(pmsg, tags_sent_repr, *mb)) { {
-		auto mg = mb->generate();
-		if (!phead->set_field("From", std::move(mg)))
+		if (!set_folded(phead, "From", *mb))
 			return FALSE;
 	}
 	} else if (oxcmail_export_address(pmsg, tags_sender, *mb)) {
-		auto mg = mb->generate();
-		if (!phead->set_field("Sender", std::move(mg)))
+		if (!set_folded(phead, "Sender", *mb))
 			return FALSE;
 	}
 	return true;
@@ -3278,8 +3412,7 @@ static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
 		/* ok */;
 	else
 		return true; /* No recipient */
-	auto mg = mb->generate();
-	return phead->set_field("Return-Receipt-To", std::move(mg));
+	return set_folded(phead, "Return-Receipt-To", *mb);
 } catch (...) {
 	return false;
 }
@@ -3299,8 +3432,7 @@ static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
 		/* ok */;
 	else
 		return true; /* No recipient */
-	auto mg = mb->generate();
-	return phead->set_field("Disposition-Notification-To", std::move(mg));
+	return set_folded(phead, "Disposition-Notification-To", *mb);
 } catch (...) {
 	return false;
 }
@@ -3312,14 +3444,12 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 		return true;
 	auto mblist = vmime::make_shared<vmime::mailboxList>();
 	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_TO, *mblist)) {
-		auto mg = mblist->generate();
-		if (!phead->set_field("To", std::move(mg)))
+		if (!set_folded(phead, "To", *mblist))
 			return FALSE;
 	}
 	mblist = vmime::make_shared<vmime::mailboxList>();
 	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_CC, *mblist)) {
-		auto mg = mblist->generate();
-		if (!phead->set_field("Cc", std::move(mg)))
+		if (!set_folded(phead, "Cc", *mblist))
 			return FALSE;
 	}
 	if (class_match_prefix(pskeleton->pmessage_class, "IPM.Schedule.Meeting") == 0 ||
@@ -3335,8 +3465,7 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 	}
 	mblist = vmime::make_shared<vmime::mailboxList>();
 	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_BCC, *mblist)) {
-		auto mg = mblist->generate();
-		if (!phead->set_field("Bcc", std::move(mg)))
+		if (!set_folded(phead, "Bcc", *mblist))
 			return FALSE;
 	}
 	return true;
@@ -3363,8 +3492,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 		return false;
 	auto adrlist = vmime::make_shared<vmime::addressList>();
 	if (oxcmail_export_reply_to(pmsg, *adrlist)) {
-		auto mg = adrlist->generate();
-		if (!phead->set_field("Reply-To", std::move(mg)))
+		if (!set_folded(phead, "Reply-To", *adrlist))
 			return FALSE;
 	}
 
@@ -3404,24 +3532,24 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 		}
 	}
 	auto str = pmsg->proplist.get<const char>(PR_SENDER_TELEPHONE_NUMBER);
-	if (str != nullptr && !phead->set_field("X-CallingTelephoneNumber", str))
+	if (str != nullptr && !set_raw(phead, "X-CallingTelephoneNumber", str))
 		return FALSE;
 	auto num = pmsg->proplist.get<const uint32_t>(PidTagVoiceMessageDuration);
 	if (num != nullptr &&
 	    !phead->set_field("X-VoiceMessageDuration", std::to_string(*num)))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PidTagVoiceMessageSenderName);
-	if (str != nullptr && !phead->set_field("X-VoiceMessageSenderName", str))
+	if (str != nullptr && !set_raw(phead, "X-VoiceMessageSenderName", str))
 		return FALSE;
 	num = pmsg->proplist.get<uint32_t>(PidTagFaxNumberOfPages);
 	if (num != nullptr &&
 	    !phead->set_field("X-FaxNumberOfPages", std::to_string(*num)))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PidTagVoiceMessageAttachmentOrder);
-	if (str != nullptr && !phead->set_field("X-AttachmentOrder", str))
+	if (str != nullptr && !set_raw(phead, "X-AttachmentOrder", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PidTagCallId);
-	if (str != nullptr && !phead->set_field("X-CallID", str))
+	if (str != nullptr && !set_raw(phead, "X-CallID", str))
 		return FALSE;
 	str = importance_to_text(pmsg->proplist.get<const uint32_t>(PR_IMPORTANCE));
 	if (str != nullptr && !phead->set_field("Importance", str))
@@ -3443,16 +3571,16 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	str  = pmsg->proplist.get<char>(PR_SUBJECT_PREFIX);
 	auto str1 = pmsg->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
 	if (str != nullptr && str1 != nullptr) {
-		if (!phead->set_field("Subject", enc_text(std::string(str) + str1)))
+		if (!set_text(phead, "Subject", std::string(str) + str1))
 			return FALSE;
 	} else {
 		str = pmsg->proplist.get<char>(PR_SUBJECT);
-		if (str != nullptr && !phead->set_field("Subject", enc_text(str)))
+		if (str != nullptr && !set_text(phead, "Subject", str))
 			return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PR_CONVERSATION_TOPIC);
 	if (str != nullptr && *str != '\0' &&
-	    !phead->set_field("Thread-Topic", enc_text(str)))
+	    !set_text(phead, "Thread-Topic", str))
 		return FALSE;
 	auto bv = pmsg->proplist.get<BINARY>(PR_CONVERSATION_INDEX);
 	if (bv != nullptr &&
@@ -3462,32 +3590,22 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	if (str != nullptr && !phead->set_field("Message-ID", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_INTERNET_REFERENCES);
-	if (str != nullptr && !phead->set_field("References", str))
+	if (str != nullptr && !set_msgids(phead, "References", str))
 		return FALSE;
 	auto sa = pmsg->proplist.get<STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids[l_keywords]));
-	if (sa != nullptr) {
-		ostr.clear();
-		for (size_t i = 0; i < sa->count; ++i) {
-			if (sa->ppstr[i] == nullptr)
-				continue;
-			if (!ostr.empty())
-				ostr += ", ";
-			ostr += enc_text(sa->ppstr[i]);
-		}
-		if (!phead->set_field("Keywords", std::move(ostr)))
-			return FALSE;
-	}
+	if (sa != nullptr && !phead->set_field("Keywords", fold_keywords(*sa)))
+		return FALSE;
 	str = pmsg->proplist.get<char>(PR_IN_REPLY_TO_ID);
-	if (str != nullptr && !phead->set_field("In-Reply-To", str))
+	if (str != nullptr && !set_msgids(phead, "In-Reply-To", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_LIST_HELP);
-	if (str != nullptr && !phead->set_field("List-Help", str))
+	if (str != nullptr && !set_raw(phead, "List-Help", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_LIST_SUBSCRIBE);
-	if (str != nullptr && !phead->set_field("List-Subscribe", str))
+	if (str != nullptr && !set_raw(phead, "List-Subscribe", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_LIST_UNSUBSCRIBE);
-	if (str != nullptr && !phead->set_field("List-Unsubscribe", str))
+	if (str != nullptr && !set_raw(phead, "List-Unsubscribe", str))
 		return FALSE;
 	num = pmsg->proplist.get<uint32_t>(PR_MESSAGE_LOCALE_ID);
 	if (num != nullptr) {
@@ -3504,13 +3622,13 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	    !phead->set_field("X-Microsoft-ClassKeep", "true"))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_classification]));
-	if (str != nullptr && !phead->set_field("X-Microsoft-Classification", str))
+	if (str != nullptr && !set_raw(phead, "X-Microsoft-Classification", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_classdesc]));
-	if (str != nullptr && !phead->set_field("X-Microsoft-ClassDesc", str))
+	if (str != nullptr && !set_raw(phead, "X-Microsoft-ClassDesc", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_classguid]));
-	if (str != nullptr && !phead->set_field("X-Microsoft-ClassID", str))
+	if (str != nullptr && !set_raw(phead, "X-Microsoft-ClassID", str))
 		return FALSE;
 	
 	if ((NULL != pmsg->children.pattachments &&
@@ -3556,7 +3674,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 		return false;
 	
 	str = pmsg->proplist.get<char>(PR_PURPORTED_SENDER_DOMAIN);
-	if (str != nullptr && !phead->set_field("X-MS-Exchange-Organization-PRD", str))
+	if (str != nullptr && !set_raw(phead, "X-MS-Exchange-Organization-PRD", str))
 		return FALSE;
 	
 	auto inum = pmsg->proplist.get<const int32_t>(PR_CONTENT_FILTER_SCL);
@@ -3566,7 +3684,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_flagreq]));
 	if (str != nullptr && *str != '\0') {
-		if (!phead->set_field("X-Message-Flag", str))
+		if (!set_raw(phead, "X-Message-Flag", str))
 			return FALSE;
 		lnum = pmsg->proplist.get<uint64_t>(PR_REPLY_TIME);
 		if (lnum != nullptr) {
@@ -3599,7 +3717,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 		return FALSE;
 	
 	str = pmsg->proplist.get<char>(PR_BODY_CONTENT_LOCATION);
-	if (str != nullptr && !phead->set_field("Content-Location", str))
+	if (str != nullptr && !set_raw(phead, "Content-Location", str))
 		return FALSE;
 	
 	if (!phead->set_field("X-Mailer", "gromox-oxcmail " PACKAGE_VERSION))
@@ -3620,7 +3738,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 		if (ppropname->kind != MNID_STRING ||
 		    strcasecmp(ppropname->pname, "Content-Type") == 0)
 			continue;
-		if (!phead->set_field(ppropname->pname,
+		if (!set_raw(phead, ppropname->pname,
 		    static_cast<char *>(pmsg->proplist.ppropval[i].pvalue)))
 			return FALSE;
 	}
@@ -3824,7 +3942,7 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 		if (!pmime->set_content_type(pcontent_type))
 			return FALSE;
 		if (pfile_name != nullptr && *pfile_name != '\0' &&
-		    !pmime->set_content_param("name", ("\"" + enc_text(pfile_name) + "\"").c_str()))
+		    !pmime->set_content_param("name", ("\"" + enc_param(pfile_name, 7) + "\"").c_str()))
 			return FALSE;
 	} else if (b_vcard) {
 		pfile_name = pattachment->proplist.get<char>(PR_ATTACH_LONG_FILENAME);
@@ -3842,20 +3960,21 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 	
 	auto str = pattachment->proplist.get<const char>(PR_DISPLAY_NAME);
 	if (str != nullptr && *str != '\0' &&
-	    !pmime->set_field("Content-Description", enc_text(str)))
+	    !set_text(pmime, "Content-Description", str))
 		return FALSE;
 	
 	auto pctime = pattachment->proplist.get<uint64_t>(PR_CREATION_TIME);
 	auto pmtime = pattachment->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
-	std::string ostr = b_inline ? "inline; " : "attachment; ";
+	std::string ostr = b_inline ? "inline" : "attachment";
 	if (pfile_name != nullptr)
-		ostr += "filename=\"" + enc_text(pfile_name) + "\";\r\n\t";
+		ostr += ";\r\n\tfilename=\"" + enc_param(pfile_name, 11) + "\"";
 	if (pctime != nullptr) {
 		auto tmp_time = rop_util_nttime_to_unix(*pctime);
 		if (gmtime_r(&tmp_time, &time_buff) != nullptr) {
 			char buf[64];
 			strftime(buf, std::size(buf),
-				"creation-date=\"%a, %d %b %Y %H:%M:%S GMT\";\r\n\t",
+				";\r\n\tcreation-date="
+				"\"%a, %d %b %Y %H:%M:%S GMT\"",
 				&time_buff);
 			ostr += buf;
 		}
@@ -3865,7 +3984,8 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 		if (gmtime_r(&tmp_time, &time_buff) != nullptr) {
 			char buf[64];
 			strftime(buf, std::size(buf),
-				"modification-date=\"%a, %d %b %Y %H:%M:%S GMT\"",
+				";\r\n\tmodification-date="
+				"\"%a, %d %b %Y %H:%M:%S GMT\"",
 				&time_buff);
 			ostr += buf;
 		}
@@ -3878,10 +3998,10 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 	    !pmime->set_field("Content-ID", "<"s + str + ">"))
 		return FALSE;
 	str = pattachment->proplist.get<char>(PR_ATTACH_CONTENT_LOCATION);
-	if (str != nullptr && !pmime->set_field("Content-Location", str))
+	if (str != nullptr && !set_raw(pmime, "Content-Location", str))
 		return FALSE;
 	str = pattachment->proplist.get<char>(PR_ATTACH_CONTENT_BASE);
-	if (str != nullptr && !pmime->set_field("Content-Base", str))
+	if (str != nullptr && !set_raw(pmime, "Content-Base", str))
 		return FALSE;
 	
 	{
