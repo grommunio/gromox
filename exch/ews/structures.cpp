@@ -855,6 +855,8 @@ void tRecurrenceType::zone(int32_t z)
 static void recurrence_to_frame(tRecurrenceType &rec, const sRecurrenceFrame &frame,
     const APPOINTMENT_RECUR_PAT &apr, time_t start, const TZDEF *tz)
 {
+	if (frame.item_local)
+		return;
 	auto first = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
 	int64_t east = (first - start) / 60;
 	if (tz != nullptr) {
