@@ -35,6 +35,7 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
+#include <gromox/ruleproc.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
