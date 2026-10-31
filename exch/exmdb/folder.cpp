@@ -197,22 +197,27 @@ BOOL exmdb_server::get_folder_class_table(
 
 static eid_t cu_resolve_folder(sqlite3 *db, eid_t orig)
 {
-	if (!exmdb_server::is_private())
+	if (!exmdb_server::is_private() ||
+	    orig != eid_t(1, PRIVATE_FID_RECIPIENT_CACHE))
 		return orig;
 	BOOL exist = false;
 	if (cu_is_folder_present(db, orig.gcv(), &exist) && exist)
 		return orig;
 
-	if (orig == eid_t(1, PRIVATE_FID_RECIPIENT_CACHE)) {
-		auto qstr = fmt::format("SELECT FROM folders AS f "
-		            "INNER JOIN folder_properties AS fp "
-		            "ON f.folder_id=fp.folder_id "
-		            "WHERE fp.proptag={} AND fp.propval='IPF.Contact.RecipientCache'",
-		            static_cast<unsigned int>(PR_CONTAINER_CLASS));
-		auto stm = gx_sql_prep(db, std::move(qstr));
-		if (stm != nullptr && stm.step() == SQLITE_ROW)
-			return eid_t(1, stm.col_uint64(0));
-	}
+	/*
+	 * Older stores may have more than one such folder (e.g. one created
+	 * by a client, another restored from backup); pick the same one every
+	 * time.
+	 */
+	auto qstr = fmt::format("SELECT f.folder_id FROM folders AS f "
+	            "INNER JOIN folder_properties AS fp "
+	            "ON f.folder_id=fp.folder_id "
+	            "WHERE fp.proptag={} AND fp.propval='IPF.Contact.RecipientCache' "
+	            "AND f.is_deleted=0 ORDER BY f.folder_id LIMIT 1",
+	            static_cast<unsigned int>(PR_CONTAINER_CLASS));
+	auto stm = gx_sql_prep(db, std::move(qstr));
+	if (stm != nullptr && stm.step() == SQLITE_ROW)
+		return eid_t(1, stm.col_uint64(0));
 	return orig;
 }
 
