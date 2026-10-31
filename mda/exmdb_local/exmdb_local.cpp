@@ -548,6 +548,8 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_HOOK_API(ppdata);
+		if (service_run_library({"libgxs_ruleproc.so", SVC_ruleproc}) != PLUGIN_LOAD_OK)
+			return false;
 		query_service2("rules_execute", exmdb_local_rules_execute);
 		if (exmdb_local_rules_execute == nullptr) {
 			mlog(LV_ERR, "exmdb_local: libgxs_ruleproc not initialized");

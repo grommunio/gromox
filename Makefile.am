@@ -80,7 +80,7 @@ libgromox_ndr_la_SOURCES = exch/ndr.cpp
 libgromox_ndr_la_LIBADD = libgromox_common.la
 
 delivery_SOURCES = mda/delivery_app/delivery.hpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/transporter.cpp
-delivery_LDADD = -lpthread ${libHX_LIBS} ${libssl_LIBS} ${vmime_LIBS} libgromox_auth.la libgromox_common.la libgromox_mapi.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgxs_mysql_adaptor.la libgxs_ruleproc.la
+delivery_LDADD = -lpthread ${libHX_LIBS} ${libssl_LIBS} ${vmime_LIBS} libgromox_auth.la libgromox_common.la libgromox_mapi.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgxs_mysql_adaptor.la
 delivery_queue_SOURCES = mda/message_enqueue.cpp mda/smtp/aux.hpp mda/smtp/cmd.cpp mda/smtp/cmd.hpp mda/smtp/flusher.cpp mda/smtp/main.cpp mda/smtp/parser.cpp mda/smtp/parser.hpp mda/smtp/resource.cpp
 delivery_queue_LDADD = -lpthread ${libcrypto_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgxs_mysql_adaptor.la
 libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp mda/mdabounce.cpp mda/mdabounce.hpp lib/bounce_mda.cpp
@@ -89,7 +89,7 @@ libgxm_alias_resolve_la_LIBADD = -lpthread ${libHX_LIBS} ${mysql_LIBS} libgromox
 EXTRA_libgxm_alias_resolve_la_DEPENDENCIES = default.sym
 libgxm_exmdb_local_la_SOURCES = lib/bounce_mda.cpp mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/bounce_producer.hpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/exmdb_local.hpp
 libgxm_exmdb_local_la_LDFLAGS = ${default_SYFLAGS}
-libgxm_exmdb_local_la_LIBADD = -lpthread ${fmt_LIBS} ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
+libgxm_exmdb_local_la_LIBADD = -lpthread ${fmt_LIBS} ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la libgxs_ruleproc.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = default.sym
 EXTRA_DIST = mda/junk.cpp
 
