@@ -7408,65 +7408,15 @@ static std::optional<tEmailAddressType> msg_author(const TPROPVAL_ARRAY &props)
 	return std::nullopt;
 }
 
-/* Display names of the recipients of one type */
-static std::string rcpt_names(const TARRAY_SET *rcpts, uint32_t type)
-{
-	std::string out;
-	if (rcpts == nullptr)
-		return out;
-	for (const auto &row : *rcpts) {
-		auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
-		if (rtype == nullptr || *rtype != type)
-			continue;
-		auto name = row.get<const char>(PR_DISPLAY_NAME);
-		if (name == nullptr)
-			name = row.get<const char>(PR_SMTP_ADDRESS);
-		if (name == nullptr)
-			name = row.get<const char>(PR_EMAIL_ADDRESS);
-		if (name == nullptr)
-			continue;
-		if (!out.empty())
-			out += "; ";
-		out += name;
-	}
-	return out;
-}
-
 /*
  * NewBodyContent followed by a header and the body of the referenced
  * message, the way Exchange quotes it.
  */
-static std::string smart_body(const tBody &nb, const MESSAGE_CONTENT &ref)
+static std::string smart_body(const tBody &nb, const MESSAGE_CONTENT &ref,
+    const char *lang)
 {
 	const auto &props = ref.proplist;
 	bool html = nb.BodyType == Enum::HTML;
-	std::vector<std::pair<const char *, std::string>> hdr;
-	auto author = msg_author(props);
-	if (author && author->EmailAddress) {
-		std::string from = author->Name ? *author->Name + " <" +
-		                   *author->EmailAddress + ">" : *author->EmailAddress;
-		hdr.emplace_back("From", std::move(from));
-	}
-	auto when = props.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
-	if (when == nullptr)
-		when = props.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
-	if (when != nullptr) {
-		auto t = rop_util_nttime_to_unix(*when);
-		struct tm tm{};
-		char buf[64];
-		if (localtime_r(&t, &tm) != nullptr &&
-		    strftime(buf, std::size(buf), "%a, %d %b %Y %H:%M", &tm) > 0)
-			hdr.emplace_back("Sent", buf);
-	}
-	auto to = rcpt_names(ref.children.prcpts, MAPI_TO);
-	if (!to.empty())
-		hdr.emplace_back("To", std::move(to));
-	auto cc = rcpt_names(ref.children.prcpts, MAPI_CC);
-	if (!cc.empty())
-		hdr.emplace_back("Cc", std::move(cc));
-	auto subj = props.get<const char>(PR_SUBJECT);
-	hdr.emplace_back("Subject", subj != nullptr ? subj : "");
-
 	auto cpid = props.get<const uint32_t>(PR_INTERNET_CPID);
 	auto text = props.get<const char>(PR_BODY);
 	auto hbin = props.get<const BINARY>(PR_HTML);
@@ -7486,21 +7436,13 @@ static std::string smart_body(const tBody &nb, const MESSAGE_CONTENT &ref)
 	    static_cast<cpid_t>(*cpid) : CP_UTF8, orig) < 0)
 		orig.clear();
 
+	auto hdr = make_quote_header(ref, lang);
 	std::string out = nb;
-	if (!html) {
-		out += "\r\n\r\n________________________________\r\n";
-		for (const auto &[k, v] : hdr)
-			out += std::string(k) + ": " + v + "\r\n";
-		return out + "\r\n" + orig;
-	}
-	out += "<hr><div>";
-	for (const auto &[k, v] : hdr) {
-		std::unique_ptr<char[], stdlib_delete> q(HX_strquote(v.c_str(), HXQUOTE_HTML, nullptr));
-		if (q == nullptr)
-			throw std::bad_alloc();
-		out += std::string("<b>") + k + ":</b> " + q.get() + "<br>";
-	}
-	return out + "</div><br>" + orig;
+	if (!html)
+		return out + quote_plain(hdr, orig);
+	if (quote_html(hdr, orig) != ecSuccess)
+		throw std::bad_alloc();
+	return out + orig;
 }
 
 /**
@@ -7551,7 +7493,7 @@ void EWSContext::smartResponse(const tItemId &refId, smart_type type,
 			cpystr(ct != nullptr ? ct : topic)});
 	}
 	if (newBody && !shape.writes(PR_BODY) && !shape.writes(PR_HTML)) {
-		auto body = smart_body(*newBody, *ref);
+		auto body = smart_body(*newBody, *ref, culture());
 		if (newBody->BodyType == Enum::HTML) {
 			if (body.size() > UINT32_MAX)
 				throw InputError(E3256);
