@@ -4297,7 +4297,7 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
 		{MNID_ID, PSETID_Meeting,     PidLidIsException},
-		{MNID_ID, PSETID_Meeting,     PidLidTimeZoneStruct},
+		{MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct},
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur},
 		{MNID_ID, PSETID_Meeting,     PidLidIsRecurring},
