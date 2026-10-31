@@ -177,10 +177,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 			return FALSE;
 	}
-	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
+	auto fid_val = rop_util_get_gc_value(folder_id);
 	/* No teardown guard needed for this begin_optim, as ~db_conn drops it too */
 	if (!pdb->begin_optim())
 		return FALSE;
@@ -716,10 +717,11 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	    "(idx INTEGER PRIMARY KEY AUTOINCREMENT,"
 	    " folder_id INTEGER UNIQUE NOT NULL)") != SQLITE_OK)
 		return FALSE;
-	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
+	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto sql_transact2 = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact2)
 		return false;

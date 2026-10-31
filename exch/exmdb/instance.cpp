@@ -447,6 +447,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto dbase = pdb->lock_base_wr();
 	auto instance_id = dbase->next_instance_id();
 	if (instance_id == UINT32_MAX)

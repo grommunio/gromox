@@ -8,7 +8,6 @@
 #include <cstring>
 #include <memory>
 #include <vector>
-#include <fmt/format.h>
 #include <libHX/string.h>
 #include <gromox/algorithm.hpp>
 #include <gromox/database.h>
@@ -91,6 +90,7 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	if (0 == folder_id) {
 		auto pstmt = pdb->prep("DELETE FROM"
 		             " receive_table WHERE class=?");
@@ -193,32 +193,6 @@ BOOL exmdb_server::get_folder_class_table(
 		ptable->pparray[ptable->count++] = ppropvals;
 	}
 	return TRUE;
-}
-
-static eid_t cu_resolve_folder(sqlite3 *db, eid_t orig)
-{
-	if (!exmdb_server::is_private() ||
-	    orig != eid_t(1, PRIVATE_FID_RECIPIENT_CACHE))
-		return orig;
-	BOOL exist = false;
-	if (cu_is_folder_present(db, orig.gcv(), &exist) && exist)
-		return orig;
-
-	/*
-	 * Older stores may have more than one such folder (e.g. one created
-	 * by a client, another restored from backup); pick the same one every
-	 * time.
-	 */
-	auto qstr = fmt::format("SELECT f.folder_id FROM folders AS f "
-	            "INNER JOIN folder_properties AS fp "
-	            "ON f.folder_id=fp.folder_id "
-	            "WHERE fp.proptag={} AND fp.propval='IPF.Contact.RecipientCache' "
-	            "AND f.is_deleted=0 ORDER BY f.folder_id LIMIT 1",
-	            static_cast<unsigned int>(PR_CONTAINER_CLASS));
-	auto stm = gx_sql_prep(db, std::move(qstr));
-	if (stm != nullptr && stm.step() == SQLITE_ROW)
-		return eid_t(1, stm.col_uint64(0));
-	return orig;
 }
 
 BOOL exmdb_server::is_folder_present(const char *dir,
@@ -366,6 +340,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
+	parent_id = cu_resolve_folder(pdb->psqlite, eid_t(1, parent_id)).gcv();
 	if (!common_util_get_folder_type(pdb->psqlite, parent_id, &parent_type)) {
 		*errcode = ecNotFound;
 		return FALSE;
@@ -2408,6 +2383,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	snprintf(sql_string, std::size(sql_string), "SELECT count(*) "
 	          "FROM rules WHERE folder_id=%llu", LLU{fid_val});
