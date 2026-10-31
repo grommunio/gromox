@@ -18,6 +18,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mime.hpp>
 #include <gromox/oxcmail.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -258,7 +259,9 @@ static void filter_meta(xmlNode *root)
 		    xml_strcasecmp(curr->name, "meta") != 0)
 			continue;
 		xmlastr val(gx_xml_getprop(curr, "http-equiv"));
-		if (val == nullptr || strcasecmp(val.get(), "Content-Type") != 0)
+		xmlastr cs(gx_xml_getprop(curr, "charset"));
+		if (cs == nullptr && (val == nullptr ||
+		    strcasecmp(val.get(), "Content-Type") != 0))
 			continue;
 		xmlUnlinkNode(curr);
 		xmlFreeNode(curr);
@@ -580,6 +583,177 @@ bool vmail_to_mail(const vmime::message &in, MAIL &out) try
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
+}
+
+/* Display names of the recipients of @type, as exmdb computes PR_DISPLAY_TO */
+std::string rcpt_display_list(const TARRAY_SET *rcpts, uint32_t type) try
+{
+	std::string out;
+	if (rcpts == nullptr)
+		return out;
+	for (const auto &rcpt : *rcpts) {
+		auto rt = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rt == nullptr || (*rt & 0xf) != type)
+			continue;
+		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
+		if (name == nullptr)
+			name = rcpt.get<const char>(PR_SMTP_ADDRESS);
+		if (name == nullptr)
+			name = rcpt.get<const char>(PR_EMAIL_ADDRESS);
+		if (name == nullptr)
+			continue;
+		if (!out.empty())
+			out += "; ";
+		out += name;
+	}
+	return out;
+} catch (const std::bad_alloc &) {
+	return {};
+}
+
+/**
+ * The header block of @ct that Outlook puts above the quoted text of a reply
+ * or forward, with labels in the language @lang.
+ */
+quote_header make_quote_header(const message_content &ct, const char *lang)
+{
+	auto &p = ct.proplist;
+	quote_header h;
+	static constexpr proptag_t author[][3] = {
+		{PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_SMTP_ADDRESS,
+		 PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+		{PR_SENDER_NAME, PR_SENDER_SMTP_ADDRESS, PR_SENDER_EMAIL_ADDRESS},
+	};
+	for (const auto &t : author) {
+		auto name = p.get<const char>(t[0]);
+		auto addr = p.get<const char>(t[1]);
+		if (znoval(addr))
+			addr = p.get<const char>(t[2]);
+		if (znoval(name) && znoval(addr))
+			continue;
+		h.emplace_back(forward_header_label(lang, "from"),
+			znoval(addr) || (!znoval(name) && strcasecmp(name, addr) == 0) ? name :
+			znoval(name) ? addr : std::string(name) + " <" + addr + ">");
+		break;
+	}
+	auto when = p.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
+	if (when == nullptr)
+		when = p.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
+	if (when != nullptr) {
+		auto t = rop_util_nttime_to_unix(*when);
+		struct tm tm{};
+		char buf[64];
+		if (localtime_r(&t, &tm) != nullptr &&
+		    strftime(buf, std::size(buf), "%a, %d %b %Y %H:%M", &tm) > 0)
+			h.emplace_back(forward_header_label(lang, "sent"), buf);
+	}
+	auto to = rcpt_display_list(ct.children.prcpts, MAPI_TO);
+	if (!to.empty())
+		h.emplace_back(forward_header_label(lang, "to"), std::move(to));
+	auto cc = rcpt_display_list(ct.children.prcpts, MAPI_CC);
+	if (!cc.empty())
+		h.emplace_back(forward_header_label(lang, "cc"), std::move(cc));
+	h.emplace_back(forward_header_label(lang, "subject"),
+		znul(p.get<const char>(PR_SUBJECT)));
+	return h;
+}
+
+/* @text below the separator line and the header block @hdr */
+std::string quote_plain(const quote_header &hdr, std::string_view text)
+{
+	std::string out = "\r\n\r\n________________________________\r\n";
+	for (const auto &[k, v] : hdr)
+		out += k + ": " + v + "\r\n";
+	out += "\r\n";
+	out += text;
+	return out;
+}
+
+/* Put the header block @hdr in front of the body content of @html (UTF-8) */
+ec_error_t quote_html(const quote_header &hdr, std::string &html) try
+{
+	xmldocptr doc(htmlReadMemory(html.c_str(), html.size(), nullptr, "utf-8",
+		HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET));
+	if (doc == nullptr)
+		doc.reset(htmlNewDocNoDtD(nullptr, nullptr));
+	if (doc == nullptr)
+		return ecServerOOM;
+	auto mknode = [&](xmlNode *parent, const char *name) {
+		auto n = xmlNewDocNode(doc.get(), nullptr,
+		         reinterpret_cast<const xmlChar *>(name), nullptr);
+		if (n == nullptr)
+			throw std::bad_alloc();
+		return xmlAddChild(parent, n);
+	};
+	auto mktext = [&](xmlNode *parent, const std::string &str) {
+		auto n = xmlNewDocTextLen(doc.get(),
+		         reinterpret_cast<const xmlChar *>(str.c_str()), str.size());
+		if (n == nullptr)
+			throw std::bad_alloc();
+		xmlAddChild(parent, n);
+	};
+	auto setprop = [](xmlNode *n, const char *k, const char *v) {
+		xmlSetProp(n, reinterpret_cast<const xmlChar *>(k),
+			reinterpret_cast<const xmlChar *>(v));
+	};
+	auto root = xmlDocGetRootElement(doc.get());
+	if (root == nullptr) {
+		root = xmlNewDocNode(doc.get(), nullptr,
+		       reinterpret_cast<const xmlChar *>("html"), nullptr);
+		if (root == nullptr)
+			return ecServerOOM;
+		xmlDocSetRootElement(doc.get(), root);
+	}
+	/* The charset goes with the MIME part, which is UTF-8 now */
+	oxcmail::filter_meta(oxcmail::find_element(root, "head"));
+	auto body = oxcmail::find_element(root, "body");
+	if (body == nullptr)
+		body = mknode(root, "body");
+
+	/* Built apart, then moved in front of the existing content */
+	auto quote = xmlNewDocNode(doc.get(), nullptr,
+	             reinterpret_cast<const xmlChar *>("div"), nullptr);
+	if (quote == nullptr)
+		return ecServerOOM;
+	std::unique_ptr<xmlNode, void (*)(xmlNode *)> qhold(quote, xmlFreeNode);
+	mknode(mknode(quote, "div"), "br");
+	auto hr = mknode(quote, "hr");
+	setprop(hr, "style", "display:inline-block;width:98%");
+	setprop(hr, "tabindex", "-1");
+	auto box = mknode(quote, "div");
+	setprop(box, "id", "divRplyFwdMsg");
+	setprop(box, "dir", "ltr");
+	for (const auto &[k, v] : hdr) {
+		mktext(mknode(box, "b"), k + ":");
+		mktext(box, " " + v);
+		mknode(box, "br");
+	}
+	mknode(quote, "br");
+	qhold.release();
+	auto first = body->children;
+	if (first == nullptr)
+		xmlAddChild(body, quote);
+	else
+		xmlAddPrevSibling(first, quote);
+	/* Only the inner nodes are wanted, not the extra div */
+	while (quote->children != nullptr) {
+		auto c = quote->children;
+		xmlUnlinkNode(c);
+		xmlAddPrevSibling(quote, c);
+	}
+	xmlUnlinkNode(quote);
+	xmlFreeNode(quote);
+
+	std::unique_ptr<xmlChar[], xmlfree> raw;
+	int rawsize = 0;
+	htmlDocDumpMemoryFormat(doc.get(), &unique_tie(raw), &rawsize, 0);
+	if (raw == nullptr || rawsize <= 0)
+		return ecServerOOM;
+	html.assign(reinterpret_cast<const char *>(raw.get()), rawsize);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 }
