@@ -217,6 +217,27 @@ static BOOL cu_get_propname(propid_t propid, PROPERTY_NAME **name) try
 	return false;
 }
 
+/*
+ * Export @msg, whose named properties are numbered as in the store @dir.
+ * @fmt supplies PR_INETMAIL_OVERRIDE_FORMAT, if any.
+ */
+static bool rx_mapi_to_inet(const char *dir, const message_content &msg,
+    const message_content *fmt, const std::string &log_id, MAIL &out)
+{
+	rp_storedir = dir;
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = cu_alloc;
+	cvt.get_propids = cu_get_propids;
+	cvt.get_propname = cu_get_propname;
+	if (fmt != nullptr)
+		cvt.use_format_override(*fmt);
+	auto ok = cvt.mapi_to_inet(msg, out);
+	rp_alloc_ctx.clear();
+	rp_storedir = nullptr;
+	return ok;
+}
+
 rule_node::rule_node(rule_node &&o) :
 	seq(o.seq), state(o.state), extended(o.extended), rule_id(o.rule_id),
 	name(std::move(o.name)), provider(std::move(o.provider)),
@@ -1492,17 +1513,7 @@ static ec_error_t rx_fwd_new(rxparam &par,
 	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
 	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
 	MAIL imail;
-	rp_storedir = par.orig_dir.c_str();
-	oxcmail_converter cvt;
-	cvt.log_id = log_id.c_str();
-	cvt.alloc = cu_alloc;
-	cvt.get_propids = cu_get_propids;
-	cvt.get_propname = cu_get_propname;
-	cvt.use_format_override(*par.ctnt);
-	auto ok = cvt.mapi_to_inet(*fwd, imail);
-	rp_alloc_ctx.clear();
-	rp_storedir = nullptr;
-	if (!ok) {
+	if (!rx_mapi_to_inet(par.orig_dir.c_str(), *fwd, par.ctnt, log_id, imail)) {
 		mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed");
 		return ecError;
 	}
@@ -1679,21 +1690,11 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 	} else {
 		auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
 		              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
-		rp_storedir = par.orig_dir.c_str();
-		oxcmail_converter cvt;
-		cvt.log_id = log_id.c_str();
-		cvt.alloc = cu_alloc;
-		cvt.get_propids = cu_get_propids;
-		cvt.get_propname = cu_get_propname;
-		cvt.use_format_override(*par.ctnt);
-		if (!cvt.mapi_to_inet(*par.ctnt, imail)) {
+		if (!rx_mapi_to_inet(par.orig_dir.c_str(), *par.ctnt,
+		    par.ctnt, log_id, imail)) {
 			mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed");
-			rp_alloc_ctx.clear();
-			rp_storedir = nullptr;
 			return ecError;
 		}
-		rp_alloc_ctx.clear();
-		rp_storedir = nullptr;
 	}
 
 	ec_error_t ret = ecSuccess;
@@ -1920,16 +1921,7 @@ static ec_error_t op_reply2(rxparam &par, uint8_t act_type, uint32_t flavor,
 
 	auto log_id = par.orig_dir + ":m" + std::to_string(rop_util_get_gc_value(tpl_mid));
 	MAIL imail;
-	rp_storedir = dir;
-	oxcmail_converter cvt;
-	cvt.log_id = log_id.c_str();
-	cvt.alloc = cu_alloc;
-	cvt.get_propids = cu_get_propids;
-	cvt.get_propname = cu_get_propname;
-	auto ok = cvt.mapi_to_inet(*tpl, imail);
-	rp_alloc_ctx.clear();
-	rp_storedir = nullptr;
-	if (!ok) {
+	if (!rx_mapi_to_inet(dir, *tpl, nullptr, log_id, imail)) {
 		mlog(LV_ERR, "ruleproc: OP_REPLY oxcmail_export failed");
 		return ecError;
 	}
@@ -2744,21 +2736,11 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
 	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
 	MAIL imail;
-	rp_storedir = par.cur.dirc();
-
-	oxcmail_converter cvt;
-	cvt.log_id = log_id.c_str();
-	cvt.alloc = cu_alloc;
-	cvt.get_propids = cu_get_propids;
-	cvt.get_propname = cu_get_propname;
-	if (!cvt.mapi_to_inet(*rsp_ctnt, imail)) {
+	if (!rx_mapi_to_inet(par.cur.dirc(), *rsp_ctnt, nullptr, log_id, imail)) {
 		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.");
 		return ecError;
 	}
-	err = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, {txt});
-	rp_alloc_ctx.clear();
-	rp_storedir = nullptr;
-	return err;
+	return cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, {txt});
 } catch (const std::bad_alloc &) {
 	return ecMAPIOOM;
 }
