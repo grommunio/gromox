@@ -4671,7 +4671,6 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	}
 	rp_org_name = *znul(org) != '\0' ? org : "Gromox default";
 	mlog(LV_DEBUG, "ruleproc: x500 org name is \"%s\"", rp_org_name.c_str());
-	/* Same limit as the legacy processor in exmdb_provider */
 	static constexpr cfg_directive xp_defaults[] = {
 		{"max_ext_rule_number", "20", CFG_SIZE},
 		CFG_TABLE_END,
