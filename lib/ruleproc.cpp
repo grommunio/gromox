@@ -1696,12 +1696,24 @@ static ec_error_t op_reply(rxparam &par, const rule_node &rule,
 	return ecSuccess;
 }
 
+/* Whether @guid names the mailbox the rules came from */
+static bool rx_is_own_store(const rxparam &par, const GUID &guid)
+{
+	unsigned int user_id = 0, domain_id = 0;
+	return mysql_adaptor_get_user_ids(par.ev_to, &user_id, &domain_id, nullptr) &&
+	       guid == rop_util_make_user_guid(user_id);
+}
+
 static ec_error_t opx_reply(rxparam &par, const rule_node &rule,
     const EXT_ACTION_BLOCK &act)
 {
 	auto ra = static_cast<const EXT_REPLY_ACTION *>(act.pdata);
 	if (ra == nullptr)
 		return ecSuccess;
+	if (!rx_is_own_store(par, ra->message_eid.message_dbguid)) {
+		rx_disable_rule(par, rule);
+		return ecSuccess;
+	}
 	auto mid = eid_t(1, rop_util_gc_to_value(ra->message_eid.message_gc));
 	auto err = op_reply2(par, act.type, act.flavor, mid, ra->template_guid);
 	if (err != ecNotFound)
@@ -2132,7 +2144,8 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 static ec_error_t opx_move(rxparam &par, const rule_node &rule,
     const EXT_MOVECOPY_ACTION &mc, uint8_t act_type)
 {
-	if (mc.folder_eid.eid_type != EITLT_PRIVATE_FOLDER) {
+	if (mc.folder_eid.eid_type != EITLT_PRIVATE_FOLDER ||
+	    !rx_is_own_store(par, mc.folder_eid.folder_dbguid)) {
 		rx_disable_rule(par, rule);
 		return ecSuccess;
 	}
