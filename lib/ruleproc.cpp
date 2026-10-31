@@ -12,7 +12,7 @@
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <json/value.h>
 #include <vmime/addressList.hpp>
 #include <vmime/headerFieldFactory.hpp>
