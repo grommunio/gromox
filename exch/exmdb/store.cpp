@@ -389,7 +389,8 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	/* No database access, so no transaction. */
+	/* Single lookup at most, so no transaction. */
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto dbase = pdb->lock_base_wr();
 	uint32_t last_id = dbase->nsub_list.size() == 0 ? 0 :
 	                   dbase->nsub_list.back().sub_id;
