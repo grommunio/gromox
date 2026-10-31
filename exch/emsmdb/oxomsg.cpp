@@ -25,6 +25,8 @@
 using namespace std::string_literals;
 using namespace gromox;
 
+using LLU = unsigned long long;
+
 enum { /* for RopSubmitMessage */
 	ROP_SUBMIT_FLAG_PREPROCESS = 0x1U,
 	ROP_SUBMIT_FLAG_NEEDS_SPOOLER = 0x2U,
@@ -178,8 +180,7 @@ static ec_error_t oxomsg_extract_delegator(message_object *pmessage,
 	}
 	mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because "
 		"its PR_SENT_REPRESENTING_ENTRYID does not reference "
-		"a user in the local system",
-		static_cast<unsigned long long>(pmessage->message_id));
+		"a user in the local system", LLU{pmessage->message_id});
 	return ecAccessDenied;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
@@ -244,8 +245,7 @@ static ec_error_t pass_scheduling(const char *code, const char *account,
 		return ecSuccess;
 	mlog(LV_ERR, "%s: %s tried to send message %llxh (class %s) with repr/from=<%s>, "
 		"but user has no delegate/sendas permission.",
-		code, account, static_cast<unsigned long long>(msg.get_id()),
-		znul(cls), username);
+		code, account, LLU{msg.get_id()}, znul(cls), username);
 	return ecAccessDenied;
 }
 
@@ -299,15 +299,14 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (pmessage->importing()) {
 		mlog(LV_INFO, "I-2146: submitmessage denied because "
 		        "message %llxh is under construction",
-		        static_cast<unsigned long long>(pmessage->get_id()));
+		        LLU{pmessage->get_id()});
 		return ecAccessDenied;
 	}
 	auto tag_access = pmessage->get_tag_access();
 	if (!(tag_access & MAPI_ACCESS_MODIFY)) {
 		mlog(LV_INFO, "I-2147: submitmessage denied because "
 		        "%s has no MAPI_ACCESS_MODIFY on message %llxh",
-		        plogon->account,
-		        static_cast<unsigned long long>(pmessage->get_id()));
+		        plogon->account, LLU{pmessage->get_id()});
 		return ecAccessDenied;
 	}
 	auto err = pmessage->get_recipient_num(&rcpt_num);
@@ -324,8 +323,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0) {
 		mlog(LV_INFO, "I-2160: submitmessage denied because "
-		        "message %llxh is FAI",
-		        static_cast<unsigned long long>(pmessage->get_id()));
+		        "message %llxh is FAI", LLU{pmessage->get_id()});
 		return ecAccessDenied;
 	}
 	std::string delegator;
@@ -388,7 +386,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (*message_flags & MSGFLAG_SUBMITTED) {
 		mlog(LV_INFO, "I-2148: submitmessage denied because "
 		        "message %llxh is already submitted",
-		        static_cast<unsigned long long>(pmessage->get_id()));
+		        LLU{pmessage->get_id()});
 		return ecAccessDenied;
 	}
 	BOOL b_unsent = (*message_flags & MSGFLAG_UNSENT) ? TRUE : false;
@@ -417,7 +415,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (!b_marked) {
 		mlog(LV_INFO, "I-2149: submitmessage denied because "
 		        "message %llxh failed try_mark_submit",
-		        static_cast<unsigned long long>(pmessage->get_id()));
+		        LLU{pmessage->get_id()});
 		return ecAccessDenied;
 	}
 	
@@ -600,7 +598,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (pmessage->importing()) {
 		mlog(LV_INFO, "I-2144: transportsend disallowed because "
 		        "message %llxh is under construction",
-		        static_cast<unsigned long long>(pmessage->get_id()));
+		        LLU{pmessage->get_id()});
 		return ecAccessDenied;
 	}
 
@@ -614,7 +612,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED) {
 		mlog(LV_INFO, "I-2068: transportsend disallowed because "
 		        "message %llxh was already submitted once",
-		        static_cast<unsigned long long>(pmessage->get_id()));
+		        LLU{pmessage->get_id()});
 		return ecAccessDenied;
 	}
 	std::string delegator;

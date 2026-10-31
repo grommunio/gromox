@@ -37,6 +37,8 @@
 #include "structures.hpp"
 #include "../bounce_exch.cpp"
 
+using LLU = unsigned long long;
+
 DECLARE_HPM_API(gromox::EWS, extern);
 
 namespace gromox::EWS {
@@ -2480,7 +2482,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		TARRAY_SET rcpts;
 		if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
 			mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
-				dir.c_str(), static_cast<unsigned long long>(mid));
+				dir.c_str(), LLU{mid});
 		} else {
 			for (const auto &rcpt : rcpts) {
 				auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
@@ -2588,8 +2590,7 @@ void EWSContext::loadSpecial(const std::string &dir, uint64_t fid, uint64_t mid,
 	TARRAY_SET rcpts;
 	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
 		mlog(LV_ERR, "[ews] failed to load meeting request "
-		     "attendees (%s:%llu)", dir.c_str(),
-		     static_cast<unsigned long long>(mid));
+		     "attendees (%s:%llu)", dir.c_str(), LLU{mid});
 		return;
 	}
 	for (const auto &rcpt : rcpts) {
@@ -2642,7 +2643,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	TARRAY_SET rcpts;
 	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
 		mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%llu)",
-			dir.c_str(), static_cast<unsigned long long>(mid));
+			dir.c_str(), LLU{mid});
 		return;
 	}
 	for (const auto &rcpt : rcpts) {
@@ -5632,7 +5633,7 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 		if (addr.empty()) {
 			mlog(LV_WARN, "[ews] %s:m%llu: removed attendee has "
 			     "no usable address, no cancellation sent",
-			     dir.c_str(), static_cast<unsigned long long>(mid));
+			     dir.c_str(), LLU{mid});
 			continue;
 		}
 		if (is_kept(addr))
@@ -5833,7 +5834,7 @@ static void mark_invited(const EWSContext &ctx, const std::string &dir,
 	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 	    ctx.effectiveUser(parent), CP_ACP, mid, &list, &problems))
 		mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited",
-			dir.c_str(), static_cast<unsigned long long>(rop_util_get_gc_value(mid)));
+			dir.c_str(), LLU{rop_util_get_gc_value(mid)});
 }
 
 /**

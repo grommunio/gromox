@@ -49,6 +49,7 @@
 #include "../mda/exmdb_local/bounce_producer.hpp"
 
 using namespace gromox;
+using LLU = unsigned long long;
 DECLARE_SVC_API(,);
 
 namespace {
@@ -617,13 +618,13 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 			if (ep.g_namedprop_info(&rule.xcnames) != pack_result::ok ||
 			    ep.g_restriction(&rule.xcond) != pack_result::ok) {
 				mlog(LV_WARN, "ruleproc: %s: extrule %llxh: unparsable condition",
-					dir, static_cast<unsigned long long>(*mid));
+					dir, LLU{*mid});
 				continue;
 			}
 			npid_map map;
 			if (!rx_xrule_npmap(dir, rule.xcnames, map)) {
 				mlog(LV_WARN, "ruleproc: %s: extrule %llxh: named properties unresolvable",
-					dir, static_cast<unsigned long long>(*mid));
+					dir, LLU{*mid});
 				continue;
 			}
 			rx_xrule_retag(map, rule.xcond);
@@ -637,13 +638,13 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		    version != 1 ||
 		    ep.g_ext_rule_actions(&rule.xact) != pack_result::ok) {
 			mlog(LV_WARN, "ruleproc: %s: extrule %llxh: unparsable actions",
-				dir, static_cast<unsigned long long>(*mid));
+				dir, LLU{*mid});
 			continue;
 		}
 		npid_map map;
 		if (!rx_xrule_npmap(dir, rule.xanames, map)) {
 			mlog(LV_WARN, "ruleproc: %s: extrule %llxh: named properties unresolvable",
-				dir, static_cast<unsigned long long>(*mid));
+				dir, LLU{*mid});
 			continue;
 		}
 		for (auto &blk : rule.xact)
@@ -889,7 +890,6 @@ static constexpr size_t rx_max_rule_rcpts = 256, rx_max_dams = 128;
  */
 static void rx_disable_rule(rxparam &par, const rule_node &rule)
 {
-	using LLU = unsigned long long;
 	auto dir = par.orig_dir.c_str();
 	uint32_t state = rule.state | ST_ERROR;
 	bool ok;
@@ -978,7 +978,6 @@ static void rx_rule_error(rxparam &par, const rule_node &rule,
 static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
     const MOVECOPY_ACTION &mc, uint8_t act_type)
 {
-	using LLU = unsigned long long;
 	/* Resolve store */
 	if (mc.pstore_eid == nullptr)
 		return ecNotFound;
@@ -1124,7 +1123,7 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 		return ecRpcFailed;
 	if (!exist) {
 		mlog(LV_WARN, "ruleproc: %s: OP_MOVE/OP_COPY target folder %llxh does not exist",
-			par.cur.dirc(), static_cast<unsigned long long>(rop_util_get_gc_value(dst_fid)));
+			par.cur.dirc(), LLU{rop_util_get_gc_value(dst_fid)});
 		rx_rule_error(par, rule, RULE_ERROR_MOVECOPY, true);
 		return ecSuccess;
 	}
@@ -1994,7 +1993,7 @@ static bool rx_rule_matches(const rxparam &par, const rule_node &rule)
 		if (g_ruleproc_debug)
 			mlog(LV_DEBUG, "ruleproc: %s: %srule %llxh has no condition, skipped",
 				par.orig_dir.c_str(), rule.extended ? "ext" : "",
-				static_cast<unsigned long long>(rule.rule_id));
+				LLU{rule.rule_id});
 		return false;
 	}
 	auto matched = rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond);
@@ -2085,7 +2084,7 @@ static bool rx_rule_applies(rxparam &par, const rule_node &rule)
 		if (g_ruleproc_debug)
 			mlog(LV_DEBUG, "ruleproc: %s: %srule %llxh skipped, %s was answered before",
 				par.orig_dir.c_str(), rule.extended ? "ext" : "",
-				static_cast<unsigned long long>(rule.rule_id), key.c_str());
+				LLU{rule.rule_id}, key.c_str());
 		return false;
 	}
 	if (!rx_rule_matches(par, rule))
@@ -3429,7 +3428,7 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	APPOINTMENT_RECUR_PAT apr{};
 	if (ep.g_apptrecpat(&apr) != pack_result::success) {
 		mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: unparsable recurrence blob",
-			par.cur.dirc(), static_cast<unsigned long long>(rop_util_get_gc_value(cal_mid)));
+			par.cur.dirc(), LLU{rop_util_get_gc_value(cal_mid)});
 		return ecSuccess;
 	}
 	auto ret = apr.remove_instance(basedate);
@@ -3438,7 +3437,7 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	if (ret == 2)
 		mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: no modified-instance "
 			"entry for exception, leaving exception in place.",
-			par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+			par.cur.dirc(), LLU{cal_mid.gcv()});
 	EXT_PUSH epu;
 	if (!epu.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    epu.p_apptrecpat(apr) != pack_result::success)
@@ -3595,7 +3594,7 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	if (ep.g_apptrecpat(&apr) != pack_result::success ||
 	    apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
 		mlog(LV_WARN, "mr_cancel_occurrence: %s:m%llu: unparsable recurrence blob",
-			par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+			par.cur.dirc(), LLU{cal_mid.gcv()});
 		return ecSuccess;
 	}
 	auto &rp = apr.recur_pat;
@@ -3693,7 +3692,7 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 		} else {
 			mlog(LV_WARN, "mr_cancel_occurrence: %s:m%llu: no embedded "
 				"message for the exception, blob updated only",
-				par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+				par.cur.dirc(), LLU{cal_mid.gcv()});
 		}
 	} else {
 		uint32_t lstart = basedate + apr.starttimeoffset;
@@ -3873,7 +3872,7 @@ static ec_error_t mr_update_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	if (ep.g_apptrecpat(&apr) != pack_result::success ||
 	    apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
 		mlog(LV_WARN, "mr_update_occurrence: %s:m%llu: unparsable recurrence blob",
-			par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+			par.cur.dirc(), LLU{cal_mid.gcv()});
 		return ecSuccess;
 	}
 
@@ -4379,7 +4378,7 @@ ec_error_t rxparam::run_rules()
 			/* One failing rule must not keep the others from running */
 			mlog(LV_ERR, "ruleproc: %s: %srule %llxh \"%s\" failed: %s",
 				orig_dir.c_str(), rule.extended ? "ext" : "",
-				static_cast<unsigned long long>(rule.rule_id),
+				LLU{rule.rule_id},
 				rule.name.c_str(), mapi_strerror(err));
 	}
 	if (!del)
@@ -4615,7 +4614,7 @@ void rxparam::notify()
 	auto cls   = vals.get<const char>(PR_MESSAGE_CLASS);
 	auto Tflags = vals.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (cls == nullptr || Tflags == nullptr) {
-		mlog(LV_ERR, "ruleproc: msg %llxh oddly missing FL/C", static_cast<unsigned long long>(cur.mid));
+		mlog(LV_ERR, "ruleproc: msg %llxh oddly missing FL/C", LLU{cur.mid});
 		return;
 	}
 	if (!exmdb_client->transport_new_mail(cur.dirc(), cur.fid, cur.mid, *Tflags, cls))
