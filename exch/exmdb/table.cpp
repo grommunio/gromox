@@ -205,6 +205,7 @@ BOOL exmdb_server::sum_hierarchy(const char *dir,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	fid_val = rop_util_get_gc_value(folder_id);
 	*pcount = table_sum_hierarchy(pdb->psqlite,
 					fid_val, username, b_depth);
@@ -227,6 +228,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
 	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto table_id = pdb->next_table_id();
 	auto table_transact = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
@@ -301,7 +303,10 @@ BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
+	if (!sql_transact)
+		return false;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	fid_val = rop_util_get_gc_value(folder_id);
 	snprintf(sql_string, std::size(sql_string), "SELECT count(*)"
 	         " FROM messages WHERE parent_fid=%llu AND "
@@ -1267,6 +1272,7 @@ BOOL exmdb_server::load_content_table(const char *dir, cpid_t cpid,
 	if (!sql_transact)
 		return false;
 	*ptable_id = 0;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	fid_val = rop_util_get_gc_value(folder_id);
 	return table_load_content_table(*pdb, dbase, cpid, fid_val, username,
 	       table_flags, prestriction, psorts, ptable_id, prow_count);
@@ -1366,7 +1372,10 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	/* Only one SQL operation on main, no transaction needed. */
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
+	if (!sql_transact)
+		return false;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto table_id = pdb->next_table_id();
 	auto table_transact = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
@@ -1537,6 +1546,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto table_id = pdb->next_table_id();
 	auto table_transact = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);

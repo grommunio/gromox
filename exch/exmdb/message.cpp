@@ -165,6 +165,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	    cu_store_msgcount_limit_reached(pdb->psqlite))
 		return TRUE;		
 	auto mid_val = rop_util_get_gc_value(message_id);
+	dst_fid = cu_resolve_folder(pdb->psqlite, dst_fid);
 	auto fid_val = rop_util_get_gc_value(dst_fid);
 	auto dst_val = rop_util_get_gc_value(dst_id);
 	BOOL b_result = false;
@@ -330,6 +331,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	if (!sql_transact)
 		return false;
 	*pb_partial = FALSE;
+	src_fid = cu_resolve_folder(pdb->psqlite, src_fid);
+	dst_fid = cu_resolve_folder(pdb->psqlite, dst_fid);
 	auto src_val = rop_util_get_gc_value(src_fid);
 	auto dst_val = rop_util_get_gc_value(dst_fid);
 	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type, dir))
@@ -586,6 +589,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	if (!sql_transact)
 		return false;
 	*pb_partial = FALSE;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto src_val = rop_util_get_gc_value(folder_id);
 	uint32_t folder_type = 0;
 	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type))
@@ -957,6 +961,7 @@ BOOL exmdb_server::is_msg_present(const char *dir,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
 	uint32_t folder_type = 0;
@@ -1207,6 +1212,7 @@ BOOL exmdb_server::allocate_message_id(const char *dir,
 		*pmessage_id = eid_t(1, eid_val);
 		return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 	}
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (!common_util_allocate_eid_from_folder(pdb->psqlite, fid_val, &eid_val))
 		return FALSE;
@@ -1321,6 +1327,7 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
@@ -1386,6 +1393,7 @@ BOOL exmdb_server::link_messages(const char *dir, cpid_t cpid,
 	auto db = db_engine_get_db(dir);
 	if (!db)
 		return false;
+	folder_id = cu_resolve_folder(db->psqlite, folder_id);
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (!common_util_get_folder_type(db->psqlite, fid_val, &folder_type))
 		return false;
@@ -1454,7 +1462,8 @@ BOOL exmdb_server::unlink_message(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
+	/* Only one SQL write, no transaction needed. */
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
 	snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result"
@@ -3975,7 +3984,8 @@ BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	/* No database access, so no transaction. */
+	/* Single lookup at most, so no transaction. */
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto dbase = pdb->lock_base_rd();
 	db_conn::NOTIFQ notifq;
 	pdb->transport_new_mail(rop_util_get_gc_value(folder_id),
@@ -4014,6 +4024,7 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 		*pe_result = MAPI_E_STORE_FULL;
 		return TRUE;	
 	}
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL != pmid) {
 		uint64_t parent_fid = 0;
@@ -4150,6 +4161,7 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	if (!is_pvt)
 		exmdb_server::set_public_username(username);
 	auto cl_0 = HX::make_scope_exit([]() STATIC_IN_CXX23 { exmdb_server::set_public_username(nullptr); });
+	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
 	if (is_pvt && !common_util_get_mid_string(pdb->psqlite, mid_val, &pmid_string))
