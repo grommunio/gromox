@@ -163,7 +163,7 @@ struct rxparam {
 	bool eml_loaded = false;
 	unsigned int m_flags = ~0U;
 	uint32_t act_type = 0, act_idx = 0; /* action being run, for DEMs */
-	bool del = false, exit = false, cal_changed = false;
+	bool del = false, exit = false, cal_changed = false, moved_out = false;
 	int64_t oof_hist_window = -1; /* seconds, see rx_oof_hist_window */
 };
 
@@ -1099,6 +1099,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	par.cur.dir = newdir;
 	par.cur.fid = eid_t(dst_fid);
 	par.cur.mid = eid_t(dst_mid);
+	par.moved_out = !owner_mode;
 	return ecSuccess;
 }
 
@@ -1860,20 +1861,25 @@ static ec_error_t op_delegate(rxparam &par, const rule_node &rule,
 
 /*
  * After OP_DELETE only Out of Office rules still run. Actions that would keep
- * the message in a mailbox are dropped then.
+ * the message in a mailbox are dropped then. A message moved into another
+ * store is out of reach of the remaining actions as well.
  */
 static bool rx_skip_after_delete(const rxparam &par, uint8_t type)
 {
-	if (!par.del)
+	if (!par.del && !par.moved_out)
 		return false;
 	switch (type) {
+	case OP_DELETE:
+		if (!par.moved_out)
+			return false;
+		[[fallthrough]];
 	case OP_MOVE:
 	case OP_COPY:
 	case OP_TAG:
 	case OP_MARK_AS_READ:
 	case OP_DEFER_ACTION:
 		if (g_ruleproc_debug)
-			mlog(LV_DEBUG, "ruleproc: %s: action %u skipped, message is deleted",
+			mlog(LV_DEBUG, "ruleproc: %s: action %u skipped, message is gone",
 				par.orig_dir.c_str(), type);
 		return true;
 	default:
@@ -4447,7 +4453,7 @@ ec_error_t rxparam::run_rules()
 	}
 	if (!del)
 		make_dams();
-	if (del) {
+	if (del && !moved_out) {
 		const EID_ARRAY ids = {1, &cur.mid};
 		BOOL partial;
 		if (!exmdb_client->delete_messages(cur.dirc(), CP_ACP, nullptr,
@@ -4472,7 +4478,7 @@ ec_error_t rxparam::run()
 		/* Message is gone, nothing left to process or announce */
 		return ret;
 
-	if (m_flags & DELIVERY_DO_MRAUTOPROC) {
+	if (m_flags & DELIVERY_DO_MRAUTOPROC && !moved_out) {
 		mr_policy res_policy;
 		auto err = ecSuccess;
 		if (ctnt == nullptr && (!exmdb_client->read_message(cur.dirc(),
