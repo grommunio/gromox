@@ -21,6 +21,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/json.hpp>
 #include <gromox/mail.hpp>
+#include <gromox/ruleproc.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -512,10 +513,6 @@ static int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
 	}
 	if (!(mode & DELIVERY_TWOSTEP))
 		return EXIT_SUCCESS;
-	if (exmdb_local_rules_execute == nullptr) {
-		fprintf(stderr, "Programmer's error: libgxs_ruleproc.so was not activated, cannot perform rule processing");
-		return EXIT_FAILURE;
-	}
 	fprintf(stderr, "Exercising TWOSTEP ruleprocessor:\n");
 	if (msg_id == 0) {
 		fprintf(stderr, "deliver_message RPC did not give us a message_id -- not executing any rules.\n");

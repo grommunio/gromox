@@ -41,6 +41,7 @@
 #include <gromox/pcl.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/ruleproc.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -4621,7 +4622,9 @@ void rxparam::notify()
 		mlog(LV_ERR, "ruleproc: tnewmail notification unsuccessful");
 }
 
-static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
+namespace gromox {
+
+ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
     const char *ev_to, eid_t folder_id, eid_t msg_id, unsigned int flags) try
 {
 	rxparam p({dir, folder_id, msg_id});
@@ -4632,6 +4635,8 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
+}
+
 }
 
 static constexpr cfg_directive rp_config_defaults[] = {
@@ -4645,8 +4650,6 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_SVC_API(param);
-	if (!register_service("rules_execute", exmdb_local_rules_execute))
-		return false;
 	auto cfg = config_file_initd("gromox.cfg", get_config_path(), rp_config_defaults);
 	if (cfg == nullptr)
 		/* e.g. permission error */

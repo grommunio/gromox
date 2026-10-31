@@ -30,6 +30,7 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/ruleproc.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
@@ -45,7 +46,6 @@ static char g_org_name[256];
 static thread_local alloc_context g_alloc_ctx;
 static thread_local const char *g_storedir;
 
-static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int flags);
 static junk_rule_list g_junk_rules;
 
 void exmdb_local_init(const char *org_name)
@@ -550,11 +550,6 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		LINK_HOOK_API(ppdata);
 		if (service_run_library({"libgxs_ruleproc.so", SVC_ruleproc}) != PLUGIN_LOAD_OK)
 			return false;
-		query_service2("rules_execute", exmdb_local_rules_execute);
-		if (exmdb_local_rules_execute == nullptr) {
-			mlog(LV_ERR, "exmdb_local: libgxs_ruleproc not initialized");
-			return false;
-		}
 		textmaps_init();
 		auto cfg = config_file_initd("gromox.cfg", get_config_path(), mdlgx_cfg_defaults);
 		if (cfg != nullptr) {

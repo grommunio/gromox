@@ -81,7 +81,6 @@ extern std::string g_dstuser, g_storedir_s;
 extern const char *g_storedir;
 extern unsigned int g_user_id, g_wet_run;
 extern unsigned int g_public_folder, g_verbose_create;
-extern ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int);
 
 extern void gi_dump_folder_map(const gi_folder_map_t &);
 extern void gi_dump_name_map(const gi_name_map &);
