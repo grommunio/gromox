@@ -1470,7 +1470,7 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 			if (flavor & FWD_PRESERVE_SENDER)
 				pmime->set_field("X-MS-Exchange-Organization-AutoForwarded", "true");
 		}
-		auto env_from = (flavor & FWD_PRESERVE_SENDER) ?
+		auto env_from = (flavor & FWD_PRESERVE_SENDER) || par.ev_to == nullptr ?
 		                par.ev_from : par.ev_to;
 		ret = cu_send_mail(imail, rp_smtp_url.c_str(), env_from, rcpt_list);
 	}
@@ -2187,6 +2187,8 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 
 static ec_error_t mr_get_policy(const char *ev_to, mr_policy &pol)
 {
+	if (ev_to == nullptr)
+		return ecSuccess;
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
 		return ecServerOOM;

@@ -17,6 +17,7 @@
 #include <gromox/pcl.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/ruleproc.hpp>
 #include <gromox/util.hpp>
 #include "attachment_object.hpp"
 #include "common_util.hpp"
@@ -444,9 +445,9 @@ ec_error_t message_object::save() try
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
 	    !pmessage->plogon->is_private())
-		exmdb_client->rule_new_message(dir, rpc_info.username,
-			pmessage->cpid, pmessage->folder_id,
-			pmessage->message_id);
+		exmdb_local_rules_execute(dir, rpc_info.username, nullptr,
+			pmessage->folder_id, pmessage->message_id,
+			DELIVERY_DO_RULES_CL);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
