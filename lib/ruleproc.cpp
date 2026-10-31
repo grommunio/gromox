@@ -1565,7 +1565,16 @@ static ec_error_t rx_fwd_new(rxparam &par,
 {
 	MAIL orig;
 	const MIME *orig_head = nullptr;
+	std::string thdr;
 	auto eml = par.get_eml();
+	if (eml == nullptr) {
+		/* Without the loop trace, a forward loop would not end */
+		auto th = par.ctnt->proplist.get<const char>(PR_TRANSPORT_MESSAGE_HEADERS);
+		if (th != nullptr) {
+			thdr = th + std::string("\r\n");
+			eml = &thdr;
+		}
+	}
 	if (eml != nullptr) {
 		if (!orig.refonly_parse(eml->c_str(), eml->size()))
 			return ecError;
