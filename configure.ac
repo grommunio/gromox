@@ -178,7 +178,7 @@ PKG_CHECK_MODULES([libxxhash], [libxxhash >= 0.7], [have_xxhash=1], [have_xxhash
 PKG_CHECK_MODULES([libzstd], [libzstd >= 1.4])
 PKG_CHECK_MODULES([sqlite], [sqlite3])
 PKG_CHECK_MODULES([tinyxml2], [tinyxml2 >= 8])
-PKG_CHECK_MODULES([vmime], [wmime >= 1.2])
+PKG_CHECK_MODULES([vmime], [wmime >= 1])
 PKG_CHECK_MODULES([zlib], [zlib])
 dnl Linux-PAM only gained a .pc file in v1.5.1-41-gb4f0e2e1 (2021)
 have_pamheader=""

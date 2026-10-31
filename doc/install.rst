@@ -30,7 +30,7 @@ dependencies are needed:
 * perl5
 * SQLite3
 * tinyxml2 >= 8 (we use this for all things XML)
-* wmime >= 1.2 <https://github.com/grommunio/wmime/>
+* wmime <https://github.com/grommunio/wmime/>
 * zlib
 
 Optional deps:
@@ -116,10 +116,10 @@ for everything to come together:
 wmime notes
 -----------
 
-Upstream vmime lacks the header folding fixes of wmime 1.2. Where no
-pkg-config data for wmime are available, the flags can be given directly:
+If instead of wmime you want to use vmime, provided it is new enough, you can
+do so with:
 
-	./configure vmime_CFLAGS="-I/opt/wmime/include" vmime_LIBS="-L/opt/wmime/lib64 -lwmime"
+	./configure vmime_CFLAGS="$(pkg-config vmime --cflags)" vmime_LIBS="$(pkg-config vmime --libs)"
 
 ASAN notes
 ----------
