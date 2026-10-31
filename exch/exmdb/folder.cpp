@@ -2159,13 +2159,15 @@ BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	snprintf(sql_string, 1024, "DELETE FROM permissions WHERE"
 	         " folder_id=%llu", LLU{rop_util_get_gc_value(folder_id)});
-	return pdb->exec(sql_string) == SQLITE_OK ? TRUE : false;
+	if (pdb->exec(sql_string) != SQLITE_OK)
+		return false;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 /**
@@ -2385,7 +2387,9 @@ BOOL exmdb_server::empty_folder_rule(const char *dir, uint64_t folder_id)
 	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	snprintf(sql_string, 1024, "DELETE FROM rules WHERE "
 	         "folder_id=%llu", LLU{rop_util_get_gc_value(folder_id)});
-	return pdb->exec(sql_string) == SQLITE_OK ? TRUE : false;
+	if (pdb->exec(sql_string) != SQLITE_OK)
+		return false;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 /* after updating the database, update the table too! */
