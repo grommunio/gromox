@@ -546,7 +546,7 @@ static void emit_namedprop(namedprop_bimap &name_map, libpff_record_entry_t *ren
 }
 
 namespace {
-#if __cplusplus >= 202300L
+#if defined(__cpp_lib_start_lifetime_as)
 #define start_lt std::start_lifetime_as
 #else
 template<typename T> static inline T *start_lt(void *p) noexcept
