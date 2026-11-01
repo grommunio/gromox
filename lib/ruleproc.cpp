@@ -165,6 +165,7 @@ struct rxparam {
 	uint32_t act_type = 0, act_idx = 0; /* action being run, for DEMs */
 	bool del = false, exit = false, cal_changed = false;
 	int64_t oof_hist_window = -1; /* seconds, see rx_oof_hist_window */
+	std::string oof_hist_key; /* of the rule being run */
 };
 
 }
@@ -1675,8 +1676,13 @@ static ec_error_t op_reply2(rxparam &par, uint8_t act_type, uint32_t flavor,
 	if (rcpt_list.empty())
 		return ecSuccess;
 	auto ret = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, rcpt_list);
-	if (ret != ecSuccess)
+	if (ret != ecSuccess) {
 		mlog(LV_ERR, "ruleproc: OP_REPLY cu_send_mail: %s", mapi_strerror(ret));
+		return ecSuccess;
+	}
+	if (act_type == OP_OOF_REPLY && !par.oof_hist_key.empty() &&
+	    !exmdb_client->autoreply_tsupdate(dir, par.oof_hist_key.c_str()))
+		mlog(LV_WARN, "ruleproc: %s: could not update the OOF history", dir);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecMAPIOOM;
@@ -2101,10 +2107,8 @@ static bool rx_rule_applies(rxparam &par, const rule_node &rule)
 	}
 	if (!rx_rule_matches(par, rule))
 		return false;
-	if (!key.empty() &&
-	    !exmdb_client->autoreply_tsupdate(par.orig_dir.c_str(), key.c_str()))
-		mlog(LV_WARN, "ruleproc: %s: could not update the OOF history",
-			par.orig_dir.c_str());
+	/* Recorded by op_reply2 once a reply went out */
+	par.oof_hist_key = std::move(key);
 	return true;
 }
 
