@@ -2404,12 +2404,31 @@ static int meeting_prefixes()
 		{"", "canceled", "Canceled: "},
 		{nullptr, "newtime", "New Time Proposed: "},
 		{"de", "nosuchkey", ""},
+		{"de-AT", "forward", "WG: "},
+		{"it", "forward", "I: "},
+		{"xx", "forward", "FW: "},
 	};
 	for (const auto &c : cases) {
 		auto p = meeting_subject_prefix(c.loc, c.key);
 		if (strcmp(p, c.exp) != 0) {
 			fprintf(stderr, "meeting_subject_prefix(%s, %s) = \"%s\"\n",
 			        znul(c.loc), c.key, p);
+			return EXIT_FAILURE;
+		}
+	}
+	static constexpr struct {
+		const char *loc, *key, *exp;
+	} labels[] = {
+		{"de_DE", "sent", "Gesendet"},
+		{"fr", "to", "À"},
+		{"xx", "subject", "Subject"},
+		{nullptr, "from", "From"},
+	};
+	for (const auto &c : labels) {
+		auto l = forward_header_label(c.loc, c.key);
+		if (l != c.exp) {
+			fprintf(stderr, "forward_header_label(%s, %s) = \"%s\"\n",
+			        znul(c.loc), c.key, l.c_str());
 			return EXIT_FAILURE;
 		}
 	}
