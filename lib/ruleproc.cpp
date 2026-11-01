@@ -1571,6 +1571,39 @@ static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 	return false;
 }
 
+/*
+ * Mail that RFC 3834 §2 says not to answer automatically, the same checks
+ * that exmdb_local applies to its own OOF reply.
+ */
+static bool rx_reply_suppressed(rxparam &par, uint8_t act_type)
+{
+	auto &props = par.ctnt->proplist;
+	auto suppress = props.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
+	if (suppress != nullptr && *suppress & (act_type == OP_REPLY ?
+	    AUTO_RESPONSE_SUPPRESS_AUTOREPLY : AUTO_RESPONSE_SUPPRESS_OOF))
+		return true;
+	auto prec = props.get<const char>(PR_INTERNET_PRECEDENCE);
+	if (prec != nullptr && (strcasecmp(prec, "bulk") == 0 ||
+	    strcasecmp(prec, "list") == 0 || strcasecmp(prec, "junk") == 0))
+		return true;
+	for (auto tag : {PR_LIST_HELP, PR_LIST_HELP_A, PR_LIST_SUBSCRIBE,
+	    PR_LIST_SUBSCRIBE_A, PR_LIST_UNSUBSCRIBE, PR_LIST_UNSUBSCRIBE_A})
+		if (props.has(tag))
+			return true;
+	/* Auto-Submitted is lost on import when X-Auto-Response-Suppress is present */
+	auto eml = par.get_eml();
+	if (eml == nullptr)
+		return false;
+	MAIL mail;
+	if (!mail.refonly_parse(eml->c_str(), eml->size()))
+		return false;
+	auto head = mail.get_head();
+	if (head == nullptr)
+		return false;
+	auto as = head->get_field("Auto-Submitted");
+	return as != nullptr && strncasecmp(as->c_str(), "no", 2) != 0;
+}
+
 /**
  * OP_REPLY and OP_OOF_REPLY, MS-OXORULE v23.0 §3.2.5.1. @tpl_mid is the
  * template, an FAI message in the rule folder.
@@ -1581,13 +1614,10 @@ static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 static ec_error_t op_reply2(rxparam &par, uint8_t act_type, uint32_t flavor,
     eid_t tpl_mid, const GUID &tpl_guid) try
 {
-	if (strcasecmp(par.ev_from, ENVELOPE_FROM_NULL) == 0)
+	if (strcasecmp(par.ev_from, ENVELOPE_FROM_NULL) == 0 ||
+	    rx_reply_suppressed(par, act_type))
 		return ecSuccess;
 	auto &props = par.ctnt->proplist;
-	auto suppress = props.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
-	if (suppress != nullptr && *suppress & (act_type == OP_REPLY ?
-	    AUTO_RESPONSE_SUPPRESS_AUTOREPLY : AUTO_RESPONSE_SUPPRESS_OOF))
-		return ecSuccess;
 
 	auto dir = par.orig_dir.c_str();
 	message_content *tpl = nullptr;
@@ -1669,6 +1699,7 @@ static ec_error_t op_reply2(rxparam &par, uint8_t act_type, uint32_t flavor,
 	if (head == nullptr)
 		return ecError;
 	head->set_field("X-Auto-Response-Suppress", "All");
+	head->set_field("Auto-Submitted", "auto-replied");
 	head->set_field("From", par.ev_to);
 	std::vector<std::string> rcpt_list;
 	for (const auto &r : *tpl->children.prcpts) {
