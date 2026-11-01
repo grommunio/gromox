@@ -2590,6 +2590,50 @@ static ec_error_t mr_find_cal_items(rxparam &par, proptag_t match_tag,
 }
 
 /**
+ * Whether the calendar holds the organizer's own item of the meeting, which
+ * has asfMeeting without asfReceived (MS-OXOCAL v22.1 §2.2.1.10). A request or
+ * cancellation reaches the organizer only as a forwarded copy, and that must
+ * not replace the item.
+ */
+static ec_error_t mr_have_organizer_item(rxparam &par,
+    const PROPID_ARRAY &propids, bool &found)
+{
+	found = false;
+	if (propids[l_appt_state_flags] == 0)
+		return ecSuccess;
+	auto &rq_prop = par.ctnt->proplist;
+	RESTRICTION_PROPERTY id_prop[2];
+	RESTRICTION id_rst[2];
+	uint32_t id_count = 0;
+	for (auto ix : {l_goid, l_cleangoid}) {
+		auto tag = PROP_TAG(PT_BINARY, propids[ix]);
+		auto val = rq_prop.get<const BINARY>(tag);
+		if (propids[ix] == 0 || val == nullptr || val->cb == 0)
+			continue;
+		id_prop[id_count] = {RELOP_EQ, tag, {tag, deconst(val)}};
+		id_rst[id_count] = {RES_PROPERTY, {&id_prop[id_count]}};
+		++id_count;
+	}
+	if (id_count == 0)
+		return ecSuccess;
+	auto state_tag = PROP_TAG(PT_LONG, propids[l_appt_state_flags]);
+	RESTRICTION_AND_OR id_or   = {id_count, id_rst};
+	RESTRICTION_BITMASK mtg    = {BMR_NEZ, state_tag, asfMeeting};
+	RESTRICTION_BITMASK rcvd   = {BMR_EQZ, state_tag, asfReceived};
+	RESTRICTION all[]          = {{RES_OR, {&id_or}}, {RES_BITMASK, {&mtg}}, {RES_BITMASK, {&rcvd}}};
+	RESTRICTION_AND_OR all_and = {std::size(all), all};
+	RESTRICTION rst            = {RES_AND, {&all_and}};
+	uint32_t table_id = 0, row_count = 0;
+	if (!exmdb_client->load_content_table(par.cur.dirc(), CP_ACP,
+	    eid_t(1, PRIVATE_FID_CALENDAR), nullptr, TABLE_FLAG_NONOTIFICATIONS,
+	    &rst, nullptr, &table_id, &row_count))
+		return ecRpcFailed;
+	exmdb_client->unload_table(par.cur.dirc(), table_id);
+	found = row_count > 0;
+	return ecSuccess;
+}
+
+/**
  * Write a modified calendar item back to the store: allocate a new change
  * number, derive a new change key that keeps the replica GUID of the old one,
  * and extend the predecessor change list, so that ICS clients pick up the
@@ -4318,9 +4362,17 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 
 	auto &rq_prop = par.ctnt->proplist;
 	auto rq_class = mr_get_class(rq_prop);
-	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Request") == 0)
+	bool is_rq = class_match_prefix(rq_class, "IPM.Schedule.Meeting.Request") == 0;
+	bool is_cn = class_match_prefix(rq_class, "IPM.Schedule.Meeting.Canceled") == 0;
+	if (is_rq || is_cn) {
+		bool organizer = false;
+		auto err = mr_have_organizer_item(par, propids, organizer);
+		if (err != ecSuccess || organizer)
+			return err;
+	}
+	if (is_rq)
 		return mr_do_request(par, propids, policy);
-	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Canceled") == 0)
+	if (is_cn)
 		return mr_do_cancel(par, propids, policy);
 	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Resp") == 0) {
 		auto err = mr_do_response(par, propids);
