@@ -1231,9 +1231,9 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	char tmp_buff[2048];
 	gx_strlcpy(tmp_buff, pcontext->request.f_request_uri.c_str(), std::size(tmp_buff));
 	char *ptoken;
-	if (0 == strncmp(tmp_buff, "/rpc/rpcproxy.dll?", 18)) {
+	if (0 == strncasecmp(tmp_buff, "/rpc/rpcproxy.dll?", 18)) {
 		ptoken = tmp_buff + 18;
-	} else if (0 == strncmp(tmp_buff,
+	} else if (0 == strncasecmp(tmp_buff,
 	    "/rpcwithcert/rpcproxy.dll?", 26)) {
 		ptoken = tmp_buff + 26;
 	} else {
@@ -1892,7 +1892,10 @@ tproc_status http_parser::rdbody_nochan2(http_context *pcontext)
 
 tproc_status http_parser::rdbody_nochan(http_context *pcontext)
 {
-	if (0 == pcontext->total_length ||
+	auto is_rpc = pcontext->request.imethod == http_method::rpcin ||
+	              pcontext->request.imethod == http_method::rpcout;
+	/* An empty RPC echo request has no body to wait for */
+	if ((!is_rpc && pcontext->total_length == 0) ||
 	    pcontext->bytes_rw < pcontext->total_length) {
 		auto ret = rdbody_nochan2(pcontext);
 		if (ret == tproc_status::endproc)

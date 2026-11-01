@@ -267,21 +267,33 @@ static pack_result rop_ext_pull(EXT_PULL &x, MESSAGE_READ_STAT &r)
 static pack_result rop_ext_pull(EXT_PULL &x, LOGON_REQUEST &r)
 {
 	uint16_t size;
+	uint32_t ext_flags = 0;
 	
 	TRY(x.g_uint8(&r.logon_flags));
 	TRY(x.g_uint32(&r.open_flags));
 	TRY(x.g_uint32(&r.store_stat));
 	TRY(x.g_uint16(&size));
+	if (r.logon_flags & LOGON_FLAG_EXTENDED) {
+		r.logon_flags &= ~LOGON_FLAG_EXTENDED;
+		TRY(x.g_uint32(&ext_flags));
+		if (ext_flags & ~LOGON_EXTFLAG_APPLICATION_ID)
+			return pack_result::format;
+	}
 	if (0 == size) {
 		r.pessdn = nullptr;
-		return pack_result::ok;
+	} else {
+		r.pessdn = x.anew<char>(size);
+		if (r.pessdn == nullptr)
+			return pack_result::alloc;
+		TRY(x.g_bytes(r.pessdn, size));
+		if (r.pessdn[size-1] != '\0')
+			return pack_result::format;
 	}
-	r.pessdn = x.anew<char>(size);
-	if (r.pessdn == nullptr)
-		return pack_result::alloc;
-	TRY(x.g_bytes(r.pessdn, size));
-	if (r.pessdn[size-1] != '\0')
-		return pack_result::format;
+	if (ext_flags & LOGON_EXTFLAG_APPLICATION_ID) {
+		uint16_t appid_size;
+		TRY(x.g_uint16(&appid_size));
+		TRY(x.advance(appid_size));
+	}
 	return pack_result::ok;
 }
 
