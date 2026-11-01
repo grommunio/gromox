@@ -8,7 +8,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <libHX/ctype_helper.h>
 #include <libHX/endian.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
@@ -735,32 +734,6 @@ static bool rx_eval_sub(const MESSAGE_CONTENT *ct, proptag_t tag,
  * PT_UNICODE, while Outlook rules reference the PT_UNICODE tag. Fall back to
  * the sibling string type when the exact tag is absent.
  */
-/* PR_DISPLAY_TO/CC/BCC as exmdb computes them from the recipients */
-static std::string rx_display_list(const MESSAGE_CONTENT &ct, uint32_t type) try
-{
-	std::string out;
-	if (ct.children.prcpts == nullptr)
-		return out;
-	for (const auto &rcpt : *ct.children.prcpts) {
-		auto rt = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
-		if (rt == nullptr || (*rt & 0xf) != type)
-			continue;
-		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
-		if (name == nullptr)
-			name = rcpt.get<const char>(PR_SMTP_ADDRESS);
-		if (name == nullptr)
-			name = rcpt.get<const char>(PR_EMAIL_ADDRESS);
-		if (name == nullptr)
-			continue;
-		if (!out.empty())
-			out += "; ";
-		out += name;
-	}
-	return out;
-} catch (const std::bad_alloc &) {
-	return {};
-}
-
 /*
  * @ct is the message whose properties @props are, or nullptr for recipients
  * and attachments. @buf holds a computed value.
@@ -794,7 +767,7 @@ static const void *rx_getval(const MESSAGE_CONTENT *ct,
 	case CHANGE_PROP_TYPE(PR_DISPLAY_BCC, PT_UNSPECIFIED):
 		if (ct == nullptr || (t != PT_UNICODE && t != PT_STRING8))
 			return nullptr;
-		buf = rx_display_list(*ct, PROP_ID(tag) == PROP_ID(PR_DISPLAY_TO) ? MAPI_TO :
+		buf = rcpt_display_list(ct->children.prcpts, PROP_ID(tag) == PROP_ID(PR_DISPLAY_TO) ? MAPI_TO :
 		      PROP_ID(tag) == PROP_ID(PR_DISPLAY_CC) ? MAPI_CC : MAPI_BCC);
 		return buf.c_str();
 	}
@@ -1331,56 +1304,6 @@ static std::vector<std::string> rx_loop_trace(const MIME *orig, const char *owne
 
 static std::string mr_owner_lang(const rxparam &);
 
-static std::string rx_html_quote(std::string_view s)
-{
-	std::unique_ptr<char[], stdlib_delete> q(HX_strquote(std::string(s).c_str(),
-		HXQUOTE_HTML, nullptr));
-	if (q == nullptr)
-		throw std::bad_alloc();
-	return q.get();
-}
-
-using fwd_header = std::vector<std::pair<std::string, std::string>>;
-
-/* The header block of @ct that a forward quotes above the original text */
-static fwd_header rx_fwd_header(const message_content &ct, const char *lang)
-{
-	auto &p = ct.proplist;
-	fwd_header h;
-	auto name = p.get<const char>(PR_SENT_REPRESENTING_NAME);
-	auto addr = p.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-	if (znoval(name) && znoval(addr)) {
-		name = p.get<const char>(PR_SENDER_NAME);
-		addr = p.get<const char>(PR_SENDER_SMTP_ADDRESS);
-	}
-	if (!znoval(name) && !znoval(addr) && strcasecmp(name, addr) != 0)
-		h.emplace_back(forward_header_label(lang, "from"),
-			std::string(name) + " <" + addr + ">");
-	else if (!znoval(name) || !znoval(addr))
-		h.emplace_back(forward_header_label(lang, "from"),
-			!znoval(name) ? name : addr);
-	auto when = p.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
-	if (when == nullptr)
-		when = p.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
-	if (when != nullptr) {
-		auto t = rop_util_nttime_to_unix(*when);
-		struct tm tm{};
-		char buf[64];
-		if (localtime_r(&t, &tm) != nullptr &&
-		    strftime(buf, std::size(buf), "%a, %d %b %Y %H:%M", &tm) > 0)
-			h.emplace_back(forward_header_label(lang, "sent"), buf);
-	}
-	auto to = rx_display_list(ct, MAPI_TO);
-	if (!to.empty())
-		h.emplace_back(forward_header_label(lang, "to"), std::move(to));
-	auto cc = rx_display_list(ct, MAPI_CC);
-	if (!cc.empty())
-		h.emplace_back(forward_header_label(lang, "cc"), std::move(cc));
-	h.emplace_back(forward_header_label(lang, "subject"),
-		znul(p.get<const char>(PR_SUBJECT)));
-	return h;
-}
-
 /* Bodies of @orig with its header block quoted on top, into @out */
 static ec_error_t rx_fwd_body(const message_content &orig, const char *lang,
     TPROPVAL_ARRAY &out)
@@ -1409,54 +1332,28 @@ static ec_error_t rx_fwd_body(const message_content &orig, const char *lang,
 		}
 		text = "";
 	}
-	auto hdr = rx_fwd_header(orig, lang);
-	std::string plain;
-	if (text != nullptr) {
-		plain = "\r\n\r\n________________________________\r\n";
-		for (const auto &[k, v] : hdr)
-			plain += k + ": " + v + "\r\n";
-		plain += "\r\n";
-		plain += text;
-		if ((err = out.set(PR_BODY, plain.c_str())) != ecSuccess)
-			return err;
-	}
+	auto hdr = make_quote_header(orig, lang);
+	if (text != nullptr &&
+	    (err = out.set(PR_BODY, quote_plain(hdr, text).c_str())) != ecSuccess)
+		return err;
 	/* As with EWS ForwardItem, the HTML part goes out in UTF-8 */
 	static constexpr uint32_t utf8_cpid = CP_UTF8;
-	const uint32_t *out_cpid = &utf8_cpid;
 	if (html != nullptr && html->pc != nullptr) {
-		std::string_view orig_html(html->pc, html->cb);
-		std::string conv_html;
+		std::string s(html->pc, html->cb);
 		auto cset = cpid != nullptr && *cpid != CP_UTF8 ?
 		            cpid_to_cset(static_cast<cpid_t>(*cpid)) : nullptr;
-		if (cset != nullptr && !orig_html.empty()) {
-			conv_html = iconvtext(orig_html, cset, "UTF-8");
-			if (conv_html.empty()) {
+		if (cset != nullptr && !s.empty()) {
+			auto conv = iconvtext(s, cset, "UTF-8");
+			if (conv.empty()) {
 				/* Charset unknown to iconv, pass the HTML on unchanged */
-				out_cpid = cpid;
 				if ((err = out.set(PR_HTML, html)) != ecSuccess)
 					return err;
-				return out.set(PR_INTERNET_CPID, out_cpid);
+				return out.set(PR_INTERNET_CPID, cpid);
 			}
-			orig_html = conv_html;
+			s = std::move(conv);
 		}
-		std::string q = "<div><br></div><hr style=\"display:inline-block;"
-		                "width:98%\" tabindex=\"-1\"><div id=\"divRplyFwdMsg\" "
-		                "dir=\"ltr\">";
-		for (const auto &[k, v] : hdr)
-			q += "<b>" + rx_html_quote(k) + ":</b> " + rx_html_quote(v) + "<br>";
-		q += "</div><br>";
-		static constexpr std::string_view tag = "<body";
-		auto it = std::search(orig_html.begin(), orig_html.end(), tag.begin(), tag.end(),
-		          [](char a, char b) { return HX_tolower(a) == b; });
-		size_t pos = 0;
-		if (it != orig_html.end()) {
-			auto gt = orig_html.find('>', it - orig_html.begin());
-			if (gt != orig_html.npos)
-				pos = gt + 1;
-		}
-		std::string s(orig_html.substr(0, pos));
-		s += q;
-		s.append(orig_html.substr(pos));
+		if ((err = quote_html(hdr, s)) != ecSuccess)
+			return err;
 		if (s.size() > UINT32_MAX)
 			return ecInvalidParam;
 		BINARY bin;
@@ -1465,7 +1362,7 @@ static ec_error_t rx_fwd_body(const message_content &orig, const char *lang,
 		if ((err = out.set(PR_HTML, &bin)) != ecSuccess)
 			return err;
 	}
-	return out.set(PR_INTERNET_CPID, out_cpid);
+	return out.set(PR_INTERNET_CPID, &utf8_cpid);
 }
 
 /**
