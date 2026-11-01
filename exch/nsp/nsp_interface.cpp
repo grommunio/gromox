@@ -1899,14 +1899,62 @@ static bool nsp_interface_resolve_node(const ab_tree::ab_node &node, const char 
 	return FALSE;
 }
 
+static bool nsp_interface_resolve_exact(const ab_tree::ab_node &node, const char *pstr)
+{
+	std::string dn = node.displayname();
+
+	if (strcasecmp(dn.c_str(), pstr) == 0)
+		return true;
+	if (node.dn(dn) && strcasecmp(dn.c_str(), pstr) == 0)
+		return true;
+	switch (node.type()) {
+	case ab_tree::abnode_type::user: {
+		auto s = node.user_info(ab_tree::userinfo::mail_address);
+		if (s != nullptr && strcasecmp(s, pstr) == 0)
+			return true;
+		for (const auto &a : node.aliases())
+			if (strcasecmp(a.c_str(), pstr) == 0)
+				return true;
+		break;
+	}
+	case ab_tree::abnode_type::mlist:
+		node.mlist_info(&dn, nullptr, nullptr);
+		return strcasecmp(dn.c_str(), pstr) == 0;
+	default:
+		break;
+	}
+	return false;
+}
+
+static bool nsp_interface_resolve_match(const ab_tree::ab_node &node,
+    const char *pstr, bool exact)
+{
+	return exact ? nsp_interface_resolve_exact(node, pstr) :
+	       nsp_interface_resolve_node(node, pstr);
+}
+
+/* "=" requests an exact match, as in AD ANR. "=SMTP:x" -> "x". */
+static std::string nsp_interface_resolve_token(const std::string &kw, bool &exact)
+{
+	const char *p = kw.c_str();
+	exact = *p == '=';
+	if (exact)
+		++p;
+	auto colon = strchr(p, ':');
+	if (colon != nullptr)
+		p = colon + 1;
+	return gx_utf8_to_punycode(p);
+}
+
 static ab_tree::minid nsp_interface_resolve_gal(const ab_tree::ab::const_base_ref &base,
-    const char *pstr, bool& b_ambiguous)
+    const char *pstr, bool exact, bool &b_ambiguous)
 {
 	ab_tree::minid res;
 
 	for (ab_tree::minid mid : *base) {
 		ab_tree::ab_node node(base, mid);
-		if (node.hidden() & AB_HIDE_RESOLVE || !nsp_interface_resolve_node(node, pstr))
+		if (node.hidden() & AB_HIDE_RESOLVE ||
+		    !nsp_interface_resolve_match(node, pstr, exact))
 			continue;
 		if (res.valid()) {
 			b_ambiguous = true;
@@ -1972,16 +2020,10 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
 			if (keyword.empty())
 				continue; /* OXNSPI v14 §3.1.4.7 */
-			/* =SMTP:user@company.com */
-			const char *ptoken = strchr(keyword.c_str(), ':');
-			if (ptoken != nullptr)
-				ptoken ++;
-			else
-				ptoken = keyword.c_str();
-			std::string idn_deco = gx_utf8_to_punycode(ptoken);
-			ptoken = idn_deco.c_str();
-			bool b_ambiguous = false;
-			auto mid = nsp_interface_resolve_gal(base, ptoken, b_ambiguous);
+			bool exact = false, b_ambiguous = false;
+			auto token = nsp_interface_resolve_token(keyword, exact);
+			auto mid = nsp_interface_resolve_gal(base, token.c_str(),
+			           exact, b_ambiguous);
 			if (!mid.valid()) {
 				outmid = b_ambiguous ? ab_tree::minid::AMBIGUOUS : ab_tree::minid::UNRESOLVED;
 				continue;
@@ -2011,20 +2053,14 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
 		if (keyword.empty())
 			continue;
-		/* =SMTP:user@company.com */
-		const char *ptoken = strchr(keyword.c_str(), ':');
-		if (ptoken != nullptr)
-			ptoken++;
-		else
-			ptoken = keyword.c_str();
-		std::string idn_deco = gx_utf8_to_punycode(ptoken);
-		ptoken = idn_deco.c_str();
+		bool exact = false;
+		auto token = nsp_interface_resolve_token(keyword, exact);
 
 		ab_tree::minid found;
 		for (ab_tree::minid mid : node) {
 			ab_tree::ab_node node1(base, mid);
 			// Removed container check as there are currently no recursive containers
-			if (nsp_interface_resolve_node(node1, ptoken)) {
+			if (nsp_interface_resolve_match(node1, token.c_str(), exact)) {
 				if (outmid == ab_tree::minid::RESOLVED) {
 					outmid = ab_tree::minid::AMBIGUOUS;
 					break;
