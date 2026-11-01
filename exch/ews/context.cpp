@@ -1642,6 +1642,43 @@ void EWSContext::enableEventStream(int timeout)
 }
 
 /**
+ * @brief      Put the received header fields back into a generated header
+ *
+ * @param      gen       Header of the generated MIME message
+ * @param      xhdr      PR_TRANSPORT_MESSAGE_HEADERS value
+ *
+ * @return     Verbatim CRLF-terminated fields of @xhdr that now replace
+ *             their counterparts in @gen
+ */
+static std::string take_transport_headers(vmime::header &gen, std::string_view xhdr)
+{
+	std::string out;
+	bool keep = false;
+	while (!xhdr.empty()) {
+		auto nl = xhdr.find('\n');
+		auto line = xhdr.substr(0, nl);
+		xhdr = nl == xhdr.npos ? std::string_view() : xhdr.substr(nl + 1);
+		if (!line.empty() && line.back() == '\r')
+			line.remove_suffix(1);
+		if (line.empty())
+			break;
+		if (line[0] != ' ' && line[0] != '\t') {
+			auto name = line.substr(0, line.find(':'));
+			while (!name.empty() && (name.back() == ' ' || name.back() == '\t'))
+				name.remove_suffix(1);
+			keep = name.size() != line.size() && !name.empty() &&
+			       strncasecmp(name.data(), "Content-", 8) != 0 &&
+			       !(name.size() == 12 && strncasecmp(name.data(), "MIME-Version", 12) == 0);
+			if (keep)
+				gen.removeAllFields(std::string(name));
+		}
+		if (keep)
+			out.append(line).append("\r\n");
+	}
+	return out;
+}
+
+/**
  * @brief      Export message content to string
  *
  * @param      dir       Parent store
@@ -1666,7 +1703,13 @@ std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONT
 	                   };
 	if (cvt.mapi_to_inet(content, mail) != ecSuccess)
 		throw EWSError::ItemCorrupt(E3072);
-	return vmail_to_string(*mail);
+	auto xhdr = content.proplist.get<const char>(PR_TRANSPORT_MESSAGE_HEADERS);
+	if (xhdr == nullptr)
+		xhdr = content.proplist.get<const char>(PR_TRANSPORT_MESSAGE_HEADERS_A);
+	if (xhdr == nullptr)
+		return vmail_to_string(*mail);
+	auto lines = take_transport_headers(*mail->getHeader(), xhdr);
+	return lines + vmail_to_string(*mail);
 }
 
 /**
