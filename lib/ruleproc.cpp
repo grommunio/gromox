@@ -1349,6 +1349,17 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 		rx_rule_error(par, rule, RULE_ERROR_TOO_MANY_RCPTS, true);
 		return ecSuccess;
 	}
+	/*
+	 * A forward goes out with a non-null envelope sender. Doing that
+	 * for a bounce sends the next bounce back here, which the rule
+	 * forwards again (RFC 5321 §4.5.5).
+	 */
+	if (strcasecmp(par.ev_from, ENVELOPE_FROM_NULL) == 0) {
+		mlog(LV_DEBUG, "ruleproc: %s: OP_FORWARD skipped, "
+			"message has a null envelope sender",
+			par.orig_dir.c_str());
+		return ecSuccess;
+	}
 	if (flavor & FWD_AS_SMS_ALERT)
 		return op_sms_alert(par, rule, blk);
 	std::vector<std::string> rcpt_list;

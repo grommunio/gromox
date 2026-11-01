@@ -3269,6 +3269,9 @@ static ec_error_t op_forward(const rulexec_in &rp, seen_list &seen,
 			block.type, act_idx, rule.provider.c_str(), seen);
 		return message_disable_rule(rp.db, false, rule.id);
 	}
+	/* Forwarding a bounce with a non-null sender loops, RFC 5321 §4.5.5 */
+	if (strcasecmp(rp.ev_from, ENVELOPE_FROM_NULL) == 0)
+		return ecSuccess;
 	std::vector<std::string> rcpt_list;
 	if (!msg_rcpt_blocks_to_list(*pfwddlgt, rcpt_list))
 		return ecError;
