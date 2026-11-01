@@ -497,11 +497,13 @@ static void rx_xrule_retag(const npid_map &map, RESTRICTION &res)
 		break;
 	case RES_CONTENT:
 		rx_xrule_retag(map, res.cont->proptag);
-		res.cont->propval.proptag = res.cont->proptag;
+		res.cont->propval.proptag = PROP_TAG(PROP_TYPE(res.cont->propval.proptag),
+		                           PROP_ID(res.cont->proptag));
 		break;
 	case RES_PROPERTY:
 		rx_xrule_retag(map, res.prop->proptag);
-		res.prop->propval.proptag = res.prop->proptag;
+		res.prop->propval.proptag = PROP_TAG(PROP_TYPE(res.prop->propval.proptag),
+		                           PROP_ID(res.prop->proptag));
 		break;
 	case RES_PROPCOMPARE:
 		rx_xrule_retag(map, res.pcmp->proptag1);
