@@ -3127,9 +3127,11 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	auto recurring_ptr = rq_prop.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_recurring]));
 	auto recurring_flg = recurring_ptr != nullptr && *recurring_ptr != 0;
 	if (recurring_flg && policy.decline_recurring) {
-		auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
-		if (err != ecSuccess)
-			return err;
+		if (freebusy_perms(par.ev_from, par.cur.dirc()) != 0) {
+			auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
+			if (err != ecSuccess)
+				return err;
+		}
 		return mr_mark_done(par);
 	}
 
