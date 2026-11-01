@@ -172,6 +172,7 @@ struct rxparam {
 unsigned int g_ruleproc_debug;
 static std::string rp_smtp_url, rp_org_name;
 static unsigned int rp_max_ext_rules = 20;
+static bool rp_enable_dam = true;
 /*
  * Exchange 2007 marks Out of Office rules with ST_ONLY_WHEN_OOF_EX, with the
  * same meaning as ST_ONLY_WHEN_OOF, MS-OXORULE v23.0 §2.2.1.3.1.3 note 1.
@@ -924,6 +925,8 @@ static void rx_disable_rule(rxparam &par, const rule_node &rule)
 static void rx_make_dem(rxparam &par, const rule_node &rule,
     uint32_t rule_error)
 {
+	if (!rp_enable_dam)
+		return;
 	if (rule.extended)
 		return; /* §2.2.7: extended rules are not used in DEMs */
 	auto dir = par.orig_dir.c_str();
@@ -4560,7 +4563,7 @@ const std::string *rxparam::get_eml()
  */
 void rxparam::make_dams() try
 {
-	if (dams.empty())
+	if (dams.empty() || !rp_enable_dam)
 		return;
 	auto dir = orig_dir.c_str();
 	if (dams.size() > rx_max_dams) {
@@ -4734,12 +4737,15 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	mlog(LV_DEBUG, "ruleproc: x500 org name is \"%s\"", rp_org_name.c_str());
 	/* Same limit as the legacy processor in exmdb_provider */
 	static constexpr cfg_directive xp_defaults[] = {
+		{"enable_dam", "1", CFG_BOOL},
 		{"max_ext_rule_number", "20", CFG_SIZE},
 		CFG_TABLE_END,
 	};
 	auto xpc = config_file_initd("exmdb_provider.cfg", get_config_path(), xp_defaults);
-	if (xpc != nullptr)
+	if (xpc != nullptr) {
+		rp_enable_dam = parse_bool(xpc->get_value("enable_dam"));
 		rp_max_ext_rules = xpc->get_ll("max_ext_rule_number");
+	}
 	auto str = cfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {
