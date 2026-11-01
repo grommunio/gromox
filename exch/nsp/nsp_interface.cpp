@@ -2024,7 +2024,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		for (ab_tree::minid mid : node) {
 			ab_tree::ab_node node1(base, mid);
 			// Removed container check as there are currently no recursive containers
-			if (nsp_interface_resolve_node(node, ptoken)) {
+			if (nsp_interface_resolve_node(node1, ptoken)) {
 				if (outmid == ab_tree::minid::RESOLVED) {
 					outmid = ab_tree::minid::AMBIGUOUS;
 					break;
