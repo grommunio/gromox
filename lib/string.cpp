@@ -641,7 +641,7 @@ void make_rfc_date(char *buf, size_t z, const struct tm &tm)
 	 * RFC 2822: [%a,] %d %b %4Y %T %z
 	 */
 	/* Typically, this will emit 31 chars, so z should be >=32. */
-	strftime(buf, z, "%a, %d %b %Y %T GMT", &tm);
+	strftime(buf, z, "%a, %d %b %Y %T %z", &tm);
 }
 
 void make_rfc_date(char *buf, size_t z, time_t ts)
