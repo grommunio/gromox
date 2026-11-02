@@ -61,7 +61,7 @@ bool exmdb_bouncer_make_content(const char *from, const char *rcpt,
     std::string &subject, std::string &content) try
 {
 	void *pvalue;
-	char mixed_buf[128];
+	char mixed_buf[64];
 
 	sql_meta_result mres;
 	auto charset = mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0 ?

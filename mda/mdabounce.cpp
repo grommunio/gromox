@@ -58,7 +58,7 @@ int mlex_bounce_init(const char *cfg_path,
 bool mlex_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail_original, const char *bounce_type, MAIL *qmail) try
 {
-	char mixed_buf[128];
+	char mixed_buf[64];
 	sql_meta_result mres;
 	const char *charset = nullptr;
 

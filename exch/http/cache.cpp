@@ -256,10 +256,8 @@ static BOOL mod_cache_parse_rfc_date(
 
 static BOOL mod_cache_response_single_header(http_context *phttp) try
 {
-	char etag[128];
-	char date_string[128];
+	char etag[128], date_string[32], modified_string[32];
 	cache_context *pcontext;
-	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	make_rfc_date(date_string, std::size(date_string));
@@ -274,8 +272,7 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 		"Accept-Ranges: bytes\r\n"
 		"Last-Modified: {}\r\n",
 		emit_206 ? "206 Partial Content\r\n" : "200 OK\r\n",
-		date_string, pcontext->until - pcontext->offset,
-		modified_string);
+		date_string, pcontext->until - pcontext->offset, modified_string);
 	if (mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag)))
 		rsp += fmt::format("ETag: \"{}\"\r\n", etag);
 	if (phttp->request.imethod == http_method::options)
@@ -325,11 +322,9 @@ static uint32_t mod_cache_calculate_content_length(cache_context *pcontext)
 
 static BOOL mod_cache_response_multiple_header(http_context *phttp) try
 {
-	char etag[128];
-	char date_string[128];
+	char etag[128], date_string[32], modified_string[32];
 	uint32_t content_length;
 	cache_context *pcontext;
-	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	make_rfc_date(date_string, std::size(date_string));
@@ -341,7 +336,8 @@ static BOOL mod_cache_response_multiple_header(http_context *phttp) try
 	           "Content-Type: multipart/byteranges; boundary=%s\r\n"
 	           "Content-Length: %u\r\n"
 	           "Last-Modified: %s\r\n",
-	           date_string, BOUNDARY_STRING, content_length, modified_string);
+	           date_string, BOUNDARY_STRING, content_length,
+	           modified_string);
 	if (mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag)))
 		rsp += fmt::format("ETag: \"{}\"\r\n", etag);
 	return phttp->stream_out.write(rsp.c_str(), rsp.size()) == STREAM_WRITE_OK ? TRUE : false;

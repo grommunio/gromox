@@ -1821,8 +1821,8 @@ static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 			parts += name;
 		}
 	}
-	char date_buf[128], size_buf[64];
-	make_rfc_date(date_buf, std::size(date_buf), 0);
+	char date_buf[32], size_buf[64];
+	make_rfc_date(date_buf, std::size(date_buf));
 	auto size = props.get<const uint32_t>(PR_MESSAGE_SIZE);
 	HX_unit_size(size_buf, std::size(size_buf), size != nullptr ? *size : 0, 1000, 0);
 	auto fa = HXformat_init();

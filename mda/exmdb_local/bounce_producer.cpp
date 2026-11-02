@@ -49,7 +49,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
     MAIL *pmail_original, time_t original_time, const char *bounce_type,
     MAIL *qmail) try
 {
-	char date_buff[128], size_buff[64];
+	char date_buff[32], size_buff[64];
 	sql_meta_result mres;
 	const char *charset = nullptr;
 

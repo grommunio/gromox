@@ -823,7 +823,7 @@ BOOL mod_fastcgi_read_response(http_context *phttp)
 	auto &rq = phttp->request;
 	unsigned int tmp_len;
 	NDR_PULL ndr_pull;
-	char dstring[128], tmp_buff[80000], response_buff[65536];
+	char dstring[32], tmp_buff[80000], response_buff[65536];
 	char status_line[1024], *pbody, *ptoken, *ptoken1;
 	RECORD_HEADER header;
 	uint8_t header_buff[8];

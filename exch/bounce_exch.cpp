@@ -29,7 +29,7 @@ static bool bounce_producer_make_content(meta_t meta,
     const char *username, MESSAGE_CONTENT *pbrief, const char *bounce_type,
     std::string &subject, std::string &content)
 {
-	char mixed_buf[128];
+	char mixed_buf[64];
 
 	auto tsptr = pbrief->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
 	auto ts = tsptr == nullptr ? time(nullptr) : rop_util_nttime_to_unix(*tsptr);
