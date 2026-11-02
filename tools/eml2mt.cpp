@@ -203,6 +203,8 @@ static int do_eml(const char *file, const parent_desc &pd)
 			"(which is for Internet/RFC5322 mail).\n", file);
 	}
 	mo.content = do_mail(file, raw, mo.im_len);
+	if (mo.content == nullptr)
+		return -1;
 	return do_emit(pd, std::move(mo));
 }
 
