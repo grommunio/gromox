@@ -66,7 +66,7 @@ bool exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	sql_meta_result mres;
 	auto charset = mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0 ?
 	               lang_to_charset(mres.lang.c_str()) : nullptr;
-	make_rfc_date(mixed_buf, std::size(mixed_buf), 0);
+	make_rfc_date(mixed_buf, std::size(mixed_buf));
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue))
 		return FALSE;

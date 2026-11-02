@@ -257,16 +257,13 @@ static BOOL mod_cache_parse_rfc_date(
 static BOOL mod_cache_response_single_header(http_context *phttp) try
 {
 	char etag[128];
-	struct tm tmp_tm;
 	char date_string[128];
 	cache_context *pcontext;
 	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	make_rfc_date(date_string, std::size(date_string));
-	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
-		tmp_tm = {};
-	make_rfc_date(modified_string, std::size(modified_string), tmp_tm);
+	make_rfc_date(modified_string, std::size(modified_string), pcontext->pitem->sb.st_mtime);
 	auto pcontent_type = pcontext->pitem->content_type;
 	bool emit_206 = pcontext->offset != 0 ||
 	                pcontext->until != static_cast<uint64_t>(pcontext->pitem->sb.st_size);
@@ -329,7 +326,6 @@ static uint32_t mod_cache_calculate_content_length(cache_context *pcontext)
 static BOOL mod_cache_response_multiple_header(http_context *phttp) try
 {
 	char etag[128];
-	struct tm tmp_tm;
 	char date_string[128];
 	uint32_t content_length;
 	cache_context *pcontext;
@@ -337,9 +333,7 @@ static BOOL mod_cache_response_multiple_header(http_context *phttp) try
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	make_rfc_date(date_string, std::size(date_string));
-	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
-		tmp_tm = {};
-	make_rfc_date(modified_string, std::size(modified_string), tmp_tm);
+	make_rfc_date(modified_string, std::size(modified_string), pcontext->pitem->sb.st_mtime);
 	content_length =  mod_cache_calculate_content_length(pcontext);	
 	auto rsp = fmt::format(
 	           "HTTP/1.1 206 Partial Content\r\n"
