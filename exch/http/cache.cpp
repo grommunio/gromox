@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -240,13 +240,14 @@ mod_cache_get_others_field(const http_request::other_map &m, const char *k)
 	return i != m.end() ? i->second.c_str() : nullptr;
 }
 
-static BOOL mod_cache_parse_rfc1123_dstring(
+static BOOL mod_cache_parse_rfc_date(
 	const char *dstring, time_t *pmtime)
 {
 	struct tm tmp_tm;
 	auto cur_time = time(nullptr);
 	if (gmtime_r(&cur_time, &tmp_tm) == nullptr)
 		tmp_tm = {};
+	/* RFC 7231 (§7.1.1.1) wants to be single-zone (GMT) */
 	if (strptime(dstring, "%a, %d %b %Y %T GMT", &tmp_tm) == nullptr)
 		return FALSE;	
 	*pmtime = timegm(&tmp_tm);
@@ -262,10 +263,10 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	rfc1123_dstring(date_string, std::size(date_string));
+	make_rfc_date(date_string, std::size(date_string));
 	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
 		tmp_tm = {};
-	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
+	make_rfc_date(modified_string, std::size(modified_string), tmp_tm);
 	auto pcontent_type = pcontext->pitem->content_type;
 	bool emit_206 = pcontext->offset != 0 ||
 	                pcontext->until != static_cast<uint64_t>(pcontext->pitem->sb.st_size);
@@ -335,10 +336,10 @@ static BOOL mod_cache_response_multiple_header(http_context *phttp) try
 	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	rfc1123_dstring(date_string, std::size(date_string));
+	make_rfc_date(date_string, std::size(date_string));
 	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
 		tmp_tm = {};
-	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
+	make_rfc_date(modified_string, std::size(modified_string), tmp_tm);
 	content_length =  mod_cache_calculate_content_length(pcontext);	
 	auto rsp = fmt::format(
 	           "HTTP/1.1 206 Partial Content\r\n"
@@ -512,7 +513,7 @@ http_status mod_cache_take_request(http_context *phttp)
 			if (stat4_eq(sb, node_stat))
 				return http_status::not_modified;
 		} else if ((val = mod_cache_get_others_field(phttp->request.f_others, "If-Modified-Since")) != nullptr &&
-		    mod_cache_parse_rfc1123_dstring(val, &sb.st_mtime)) {
+		    mod_cache_parse_rfc_date(val, &sb.st_mtime)) {
 			if (sb.st_mtime == node_stat.st_mtime)
 				return http_status::not_modified;
 		}

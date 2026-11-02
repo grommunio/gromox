@@ -119,8 +119,8 @@ inline std::string bin2hex(const std::string &s) { return bin2hex(std::string_vi
 inline std::string bin2hex(const void *v, size_t z) { return v != nullptr ? bin2hex(std::string_view(static_cast<const char *>(v), z)) : std::string(); }
 template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }
 extern GX_EXPORT std::string hex2bin(std::string_view, hex2bin_mode = HEX2BIN_EMPTY);
-extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
-extern GX_EXPORT void rfc1123_dstring(char *, size_t, const struct tm &);
+extern GX_EXPORT void make_rfc_date(char *, size_t, time_t = 0);
+extern GX_EXPORT void make_rfc_date(char *, size_t, const struct tm &);
 extern GX_EXPORT size_t qp_encoded_size_estimate(const char *, size_t);
 extern GX_EXPORT void safe_memset(void *, int, size_t);
 extern GX_EXPORT unsigned int newline_size(const char *, size_t);

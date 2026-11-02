@@ -1822,7 +1822,7 @@ static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 		}
 	}
 	char date_buf[128], size_buf[64];
-	rfc1123_dstring(date_buf, std::size(date_buf), 0);
+	make_rfc_date(date_buf, std::size(date_buf), 0);
 	auto size = props.get<const uint32_t>(PR_MESSAGE_SIZE);
 	HX_unit_size(size_buf, std::size(size_buf), size != nullptr ? *size : 0, 1000, 0);
 	auto fa = HXformat_init();

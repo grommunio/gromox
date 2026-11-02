@@ -489,7 +489,7 @@ std::string http_make_err_response(const http_context &ctx, http_status code)
 	if (static_cast<int>(code) >= 1000)
 		code = static_cast<http_status>(static_cast<int>(code) / 10);
 	char dstring[128];
-	rfc1123_dstring(dstring, std::size(dstring));
+	make_rfc_date(dstring, std::size(dstring));
 	auto rsp = fmt::format(
 		"HTTP/1.1 {} {}\r\n"
 		"Date: {}\r\n"
@@ -2087,7 +2087,7 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 			}
 			/* first send http response head */
 			char dstring[128], response_buff[1024];
-			rfc1123_dstring(dstring, std::size(dstring));
+			make_rfc_date(dstring, std::size(dstring));
 			auto response_len = gx_snprintf(
 				response_buff, std::size(response_buff),
 				"HTTP/1.1 200 Success\r\n"

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <ctime>
 #include <string>
@@ -39,7 +39,7 @@ static bool bounce_producer_make_content(meta_t meta,
 	sql_meta_result mres;
 	auto charset = meta(from, WANTPRIV_METAONLY, mres) == 0 ?
 	               lang_to_charset(mres.lang.c_str()) : nullptr;
-	rfc1123_dstring(date_buff, std::size(date_buff), ts);
+	make_rfc_date(date_buff, std::size(date_buff), ts);
 	auto message_size = pbrief->proplist.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (message_size == nullptr)
 		return false;

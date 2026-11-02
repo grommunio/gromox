@@ -60,7 +60,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 		    mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0)
 			charset = lang_to_charset(mres.lang.c_str());
 	}
-	rfc1123_dstring(date_buff, std::size(date_buff), original_time);
+	make_rfc_date(date_buff, std::size(date_buff), original_time);
 	auto mcharset = bounce_gen_charset(*pmail_original);
 	if (charset == nullptr)
 		charset = mcharset.c_str();

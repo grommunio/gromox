@@ -64,7 +64,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 
 	if (mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0)
 		charset = lang_to_charset(mres.lang.c_str());
-	rfc1123_dstring(date_buff, std::size(date_buff), 0);
+	make_rfc_date(date_buff, std::size(date_buff), 0);
 	auto mcharset = bounce_gen_charset(*pmail_original);
 	if (znoval(charset))
 		charset = mcharset.c_str();

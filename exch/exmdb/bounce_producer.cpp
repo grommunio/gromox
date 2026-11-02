@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -66,7 +66,7 @@ bool exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	sql_meta_result mres;
 	auto charset = mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0 ?
 	               lang_to_charset(mres.lang.c_str()) : nullptr;
-	rfc1123_dstring(date_buff, std::size(date_buff), 0);
+	make_rfc_date(date_buff, std::size(date_buff), 0);
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue))
 		return FALSE;
